@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "file": "XmlTypes.js",
+  "sourceRoot": "../../../../lib/Types/",
+  "sources": [
+    "XmlTypes.coffee"
+  ],
+  "names": [],
+  "mappings": "AAAA,IAAA,CAAA;;AAAA,CAAA,GAAI,OAAA,CAAQ,YAAR,CAAJ,CAAA"
+}

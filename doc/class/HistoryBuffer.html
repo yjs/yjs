@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta charset='UTF-8'>
+  <title>Yatta! Documentation</title>
+  <script src='../javascript/application.js'></script>
+  <script src='../javascript/search.js'></script>
+  <link rel='stylesheet' href='../stylesheets/application.css' type='text/css'>
+</head>
+  <body>
+    <div id='base' data-path='../'></div>
+<div id='header'>
+  <div id='menu'>
+    <a href='../extra/README.md.html' title='Yatta!'>
+      Yatta!
+    </a>
+    &raquo;
+    <a href='../alphabetical_index.html' title='Index'>
+      Index
+    </a>
+    &raquo;
+    <span class='title'>HistoryBuffer</span>
+  </div>
+</div>
+    <div id='content'>
+      <h1>
+        Class:
+        HistoryBuffer
+      </h1>
+      <table class='box'>
+        <tr>
+          <td>Defined in:</td>
+          <td>lib&#47;HistoryBuffer.coffee</td>
+        </tr>
+      </table>
+      <h2>Overview</h2>
+      <div class='docstring'>
+  <div class='note'>
+    <strong>Note:</strong>
+    The HistoryBuffer is commonly abbreviated to HB. 
+  </div>
+  <p>An object that holds all applied operations.</p>
+</div>
+<div class='tags'>
+</div>
+      <h2>Instance Method Summary</h2>
+      <ul class='summary'>
+  <li>
+    <span class='signature'>
+      <a href='#getUserId-dynamic'>
+        #
+(void)
+<b>getUserId</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#getOperationCounter-dynamic'>
+        #
+(void)
+<b>getOperationCounter</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#toJson-dynamic'>
+        #
+(void)
+<b>toJson</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#getNextOperationIdentifier-dynamic'>
+        #
+(void)
+<b>getNextOperationIdentifier</b><span>(user_id)</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Get the number of operations that were created by a user. 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#getOperation-dynamic'>
+        #
+(void)
+<b>getOperation</b><span>(uid)</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Retrieve an operation from a unique id. 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#addOperation-dynamic'>
+        #
+(void)
+<b>addOperation</b><span>(o)</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Add an operation to the HB. 
+    </span>
+  </li>
+</ul>
+      <h2>Constructor Details</h2>
+      <div class='methods'>
+  <div class='method_details'>
+    <p class='signature' id='constructor-dynamic'>
+      ~
+(void)
+<b>new HistoryBuffer</b><span>()</span>
+      <br>
+      ~
+(void)
+<b>new HistoryBuffer</b><span>(initial_content)</span>
+      <br>
+    </p>
+    <div class='tags'>
+  <div class='overloads'>
+    <h3>Overloads:</h3>
+    <div class='overload'>
+      <p class='signature'>
+        ~
+(void)
+<b>new HistoryBuffer</b><span>()</span>
+      </p>
+      <div class='docstring'>
+  <p>Creates an empty HB.</p>
+</div>
+<div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>user_id</span>
+      <span class='type'>
+        (
+          <tt>Object</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>Creator of the HB. </span>
+    </li>
+  </ul>
+</div>
+    </div>
+    <div class='overload'>
+      <p class='signature'>
+        ~
+(void)
+<b>new HistoryBuffer</b><span>(initial_content)</span>
+      </p>
+      <div class='docstring'>
+  <p>Creates an HB with initial operations that represent the initial_value.</p>
+</div>
+<div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>initial_content</span>
+      <span class='type'>
+        (
+          <tt>Array&lt;Object&gt;</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>Initial content of the DUC </span>
+    </li>
+  </ul>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='DUC'>DUC - Document Under Collaboration</a>
+    </li>
+  </ul>
+</div>
+    </div>
+  </div>
+</div>
+  </div>
+</div>
+      <h2>Instance Method Details</h2>
+      <div class='methods'>
+  <div class='method_details'>
+    <p class='signature' id='getUserId-dynamic'>
+      #
+(void)
+<b>getUserId</b><span>()</span>
+      <br>
+    </p>
+    
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='getOperationCounter-dynamic'>
+      #
+(void)
+<b>getOperationCounter</b><span>()</span>
+      <br>
+    </p>
+    
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='toJson-dynamic'>
+      #
+(void)
+<b>toJson</b><span>()</span>
+      <br>
+    </p>
+    
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='getNextOperationIdentifier-dynamic'>
+      #
+(void)
+<b>getNextOperationIdentifier</b><span>(user_id)</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>Get the number of operations that were created by a user.
+Accordingly you will get the next operation number that is expected from that user.
+You&#39;ll get new results only if you added the operation with $addOperation.</p>
+</div>
+<div class='tags'>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='getOperation-dynamic'>
+      #
+(void)
+<b>getOperation</b><span>(uid)</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>Retrieve an operation from a unique id.</p>
+</div>
+<div class='tags'>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='addOperation-dynamic'>
+      #
+(void)
+<b>addOperation</b><span>(o)</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>Add an operation to the HB. Note that this will not link it against
+other operations (it wont be executable)</p>
+</div>
+<div class='tags'>
+</div>
+  </div>
+</div>
+    </div>
+    <div id='footer'>
+  July 29, 14 20:52:59 by
+  <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
+    Codo
+  </a>
+  2.0.9
+  &#10034;
+  Press H to see the keyboard shortcuts
+  &#10034;
+  <a href='http://twitter.com/netzpirat' target='_parent'>@netzpirat</a>
+  &#10034;
+  <a href='http://twitter.com/_inossidabile' target='_parent'>@_inossidabile</a>
+</div>
+<iframe id='search_frame'></iframe>
+<div id='fuzzySearch'>
+  <input type='text'>
+  <ol></ol>
+</div>
+<div id='help'>
+  <p>
+    Quickly fuzzy find classes, mixins, methods, file:
+  </p>
+  <ul>
+    <li>
+      <span>T</span>
+      Open fuzzy finder dialog
+    </li>
+  </ul>
+  <p>
+    Control the navigation frame:
+  </p>
+  <ul>
+    <li>
+      <span>L</span>
+      Toggle list view
+    </li>
+    <li>
+      <span>C</span>
+      Show class list
+    </li>
+    <li>
+      <span>I</span>
+      Show mixin list
+    </li>
+    <li>
+      <span>F</span>
+      Show file list
+    </li>
+    <li>
+      <span>M</span>
+      Show method list
+    </li>
+    <li>
+      <span>E</span>
+      Show extras list
+    </li>
+  </ul>
+  <p>
+    You can focus and blur the search input:
+  </p>
+  <ul>
+    <li>
+      <span>S</span>
+      Focus search input
+    </li>
+    <li>
+      <span>Esc</span>
+      Blur search input
+    </li>
+  </ul>
+</div>
+  </body>
+</html>
