@@ -19,6 +19,7 @@ module.exports = function(HB) {
 
     Operation.prototype.execute = function() {
       var l, _i, _len;
+      this.is_executed = true;
       for (_i = 0, _len = execution_listener.length; _i < _len; _i++) {
         l = execution_listener[_i];
         l(this.toJson());
@@ -48,7 +49,7 @@ module.exports = function(HB) {
         if (op) {
           this[name] = op;
         } else {
-          uninstantiated[name] = op;
+          uninstantiated[name] = op_uid;
           success = false;
         }
       }
@@ -94,7 +95,7 @@ module.exports = function(HB) {
   parser['Delete'] = function(_arg) {
     var deletes_uid, uid;
     uid = _arg['uid'], deletes_uid = _arg['deletes'];
-    return new D(uid, deletes_uid);
+    return new Delete(uid, deletes_uid);
   };
   Insert = (function(_super) {
     __extends(Insert, _super);
@@ -131,6 +132,9 @@ module.exports = function(HB) {
           break;
         }
         d++;
+        if (this === this.prev_cl) {
+          throw new Error("this should not happen ;) ");
+        }
         o = o.prev_cl;
       }
       return d;
@@ -159,11 +163,14 @@ module.exports = function(HB) {
     };
 
     Insert.prototype.execute = function() {
-      var distance_to_origin, i, o;
+      var distance_to_origin, i, o, _ref, _ref1;
+      if (this.is_executed != null) {
+        return this;
+      }
       if (!this.validateSavedOperations()) {
         return false;
       } else {
-        if ((this.prev_cl != null) && (this.next_cl != null)) {
+        if (((_ref = this.prev_cl) != null ? _ref.validateSavedOperations() : void 0) && ((_ref1 = this.next_cl) != null ? _ref1.validateSavedOperations() : void 0) && this.prev_cl.next_cl !== this) {
           distance_to_origin = 0;
           o = this.prev_cl.next_cl;
           i = 0;
@@ -228,21 +235,25 @@ module.exports = function(HB) {
     };
 
     Delimiter.prototype.execute = function() {
-      var a, l, _i, _len;
-      a = this.validateSavedOperations();
-      for (_i = 0, _len = execution_listener.length; _i < _len; _i++) {
-        l = execution_listener[_i];
-        l(this.toJson());
+      var l, _i, _len;
+      if (this.validateSavedOperations()) {
+        for (_i = 0, _len = execution_listener.length; _i < _len; _i++) {
+          l = execution_listener[_i];
+          l(this.toJson());
+        }
+        return this;
+      } else {
+        return false;
       }
-      return a;
     };
 
     Delimiter.prototype.toJson = function() {
+      var _ref, _ref1;
       return {
         'type': "Delimiter",
         'uid': this.getUid(),
-        'prev': this.prev_cl.getUid(),
-        'next': this.next_cl.getUid()
+        'prev': (_ref = this.prev_cl) != null ? _ref.getUid() : void 0,
+        'next': (_ref1 = this.next_cl) != null ? _ref1.getUid() : void 0
       };
     };
 

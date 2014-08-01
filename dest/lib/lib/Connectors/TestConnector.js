@@ -16,10 +16,6 @@ module.exports = function(user_list) {
         };
       })(this);
       this.execution_listener.push(send_);
-      if (!((user_list != null ? user_list.length : void 0) === 0)) {
-        this.engine.applyOps(user_list[0].getHistoryBuffer().toJson());
-      }
-      this.unexecuted = {};
       this.applied_operations = [];
       appliedOperationsListener = (function(_this) {
         return function(o) {
@@ -27,6 +23,10 @@ module.exports = function(user_list) {
         };
       })(this);
       this.execution_listener.push(appliedOperationsListener);
+      if (!((user_list != null ? user_list.length : void 0) === 0)) {
+        this.engine.applyOps(user_list[0].getHistoryBuffer().toJson());
+      }
+      this.unexecuted = {};
     }
 
     TestConnector.prototype.getOpsInExecutionOrder = function() {
@@ -35,17 +35,17 @@ module.exports = function(user_list) {
 
     TestConnector.prototype.getRootElement = function() {
       if (user_list.length > 0) {
-        return user_list[0].getRootElement();
+        return user_list[0].getRootElement().getUid();
       }
     };
 
     TestConnector.prototype.send = function(o) {
       var user, _i, _len, _results;
-      if (o.creator === this.HB.getUserId()) {
+      if ((o.uid.creator === this.HB.getUserId()) && (typeof o.uid.op_number !== "string")) {
         _results = [];
         for (_i = 0, _len = user_list.length; _i < _len; _i++) {
           user = user_list[_i];
-          if (!user.getUserId() === this.HB.getUserId()) {
+          if (user.getUserId() !== this.HB.getUserId()) {
             _results.push(user.getConnector().receive(o));
           } else {
             _results.push(void 0);
@@ -75,8 +75,10 @@ module.exports = function(user_list) {
     };
 
     TestConnector.prototype.flushAll = function() {
-      var ops;
-      for (ops in this.unexecuted) {
+      var n, ops, _ref;
+      _ref = this.unexecuted;
+      for (n in _ref) {
+        ops = _ref[n];
         this.engine.applyOps(ops);
       }
       return this.unexecuted = {};

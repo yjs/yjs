@@ -1,1 +1,4 @@
 /node_modules/
+.kateproject.d
+.kateproject
+.directory

@@ -1,4 +1,3 @@
-_ = require "underscore"
 basic_types_uninitialized = require "./BasicTypes.coffee"
 
 module.exports = (HB)->
@@ -6,24 +5,75 @@ module.exports = (HB)->
   types = basic_types.types
   parser = basic_types.parser
 
-  class MapManager
-    constructor: ()->
+  class MapManager extends types.Operation
+    constructor: (uid)->
       @map = {}
+      super uid
 
-    set: (name, content)->
-      if not @map[name]?
-        @map[name] = new Replaceable HB,
+    val: (name, content)->
+      if content?
+        if not @map[name]?
+          HB.addOperation(new AddName HB.getNextOperationIdentifier(), @, name).execute()
         @map[name].replace content
+      else if name?
+        @map[name]?.val()
+      else
+        result = {}
+        for name,o of @map
+          result[name] = o.val()
+        result
+
+  class AddName extends types.Operation
+    constructor: (uid, map_manager, @name)->
+      @saveOperation 'map_manager', map_manager
+      super uid
+
+    execute: ()->
+      if not @validateSavedOperations()
+        return false
+      else
+        uid_r = @map_manager.getUid()
+        uid_r.op_number = "_#{uid_r.op_number}_RM_#{@name}"
+        if not HB.getOperation(uid_r)?
+          uid_beg = @map_manager.getUid()
+          uid_beg.op_number = "_#{uid_beg.op_number}_RM_#{@name}_beginning"
+          uid_end = @map_manager.getUid()
+          uid_end.op_number = "_#{uid_end.op_number}_RM_#{@name}_end"
+          beg = HB.addOperation(new types.Delimiter uid_beg, undefined, uid_end)
+          end = HB.addOperation(new types.Delimiter uid_end, beg, undefined).execute()
+          beg.execute()
+          @map_manager.map[@name] = HB.addOperation(new ReplaceManager undefined, uid_r, beg, end).execute()
+        super
+
+    toJson: ()->
+      {
+        'type' : "AddName"
+        'uid' : @getUid()
+        'map_manager' : @map_manager.getUid()
+        'name' : @name
+      }
+
+  parser['AddName'] = (json)->
+    {
+      'map_manager' : map_manager
+      'uid' : uid
+      'name' : name
+    } = json
+    new AddName uid, map_manager, name
+
 
   class ListManager extends types.Insert
     constructor: (uid, beginning, end, prev, next, origin)->
       if beginning? and end?
-        saveOperation "beginning", beginning
-        saveOperation "end", end
+        @saveOperation 'beginning', beginning
+        @saveOperation 'end', end
       else
         @beginning = HB.addOperation new types.Delimiter HB.getNextOperationIdentifier(), undefined, undefined
         @end =       HB.addOperation new types.Delimiter HB.getNextOperationIdentifier(), @beginning, undefined
         @beginning.next_cl = @end
+        @beginning.execute()
+        @end.execute()
+
       super uid, prev, next, origin
 
     # Get the element previous to the delemiter at the end
@@ -83,8 +133,8 @@ module.exports = (HB)->
         {
           'type': "ReplaceManager"
           'uid' : @getUid()
-          'beginning' : @beginning
-          'end' : @end
+          'beginning' : @beginning.getUid()
+          'end' : @end.getUid()
         }
       if @prev_cl? and @next_cl?
         json['prev'] = @prev_cl.getUid()
@@ -113,8 +163,8 @@ module.exports = (HB)->
     constructor: (content, parent, uid, prev, next, origin)->
       @saveOperation 'content', content
       @saveOperation 'parent', parent
-      if not (prev? and next?)
-        throw new Error "You must define prev, and next for Replaceable-types!"
+      if not (prev? and next? and content?)
+        throw new Error "You must define content, prev, and next for Replaceable-types!"
       super uid, prev, next, origin
 
     #
@@ -126,9 +176,12 @@ module.exports = (HB)->
       @parent.replace content
 
     execute: ()->
-      super
-      @content.setReplaceManager?(@parent)
-      @
+      if not @validateSavedOperations()
+        return false
+      else
+        @content.setReplaceManager?(@parent)
+        super
+        @
 
     #
     # Convert all relevant information of this operation to the json-format.
@@ -139,7 +192,7 @@ module.exports = (HB)->
         {
           'type': "Replaceable"
           'content': @content.getUid()
-          'ReplaceManager' : @parent
+          'ReplaceManager' : @parent.getUid()
           'prev': @prev_cl.getUid()
           'next': @next_cl.getUid()
           'uid' : @getUid()

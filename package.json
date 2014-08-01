@@ -1,31 +1,30 @@
 {
-  "name": "JACK",
-  "version": "0.0.0",
-  "description": "Just Another Collaboration frameworK",
+  "name": "Yatta",
+  "version": "0.0.1",
+  "description": "",
   "main": "lib/index.js",
   "scripts": {
     "test": "grunt test"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/DadaMonad/JACK"
+    "url": "https://github.com/DadaMonad/Yatta"
   },
   "keywords": [
     "OT",
-    "Complex",
-    "Data",
-    "Structures",
+    "Complex Data Structures",
     "XML",
     "collaboration"
   ],
   "author": "Kevin Jahns",
-  "license": "GPLv3",
+  "license": "LGPL",
   "bugs": {
-    "url": "https://github.com/DadaMonad/JACK/issues"
+    "url": "https://github.com/DadaMonad/Yatta/issues"
   },
-  "homepage": "https://github.com/DadaMonad/JACK",
+  "homepage": "https://github.com/DadaMonad/Yatta",
   "dependencies": {
-    "underscore": "^1.6.0"
+    "underscore": "^1.6.0",
+    "grunt-contrib-connect": "~0.8.0"
   },
   "devDependencies": {
     "grunt-contrib-coffee": "^0.10.1",

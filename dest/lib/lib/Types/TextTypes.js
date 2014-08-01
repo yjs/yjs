@@ -1,8 +1,6 @@
-var structured_types_uninitialized, _,
+var structured_types_uninitialized,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
-
-_ = require("underscore");
 
 structured_types_uninitialized = require("./StructuredTypes.coffee");
 
@@ -75,8 +73,11 @@ module.exports = function(HB) {
   Word = (function(_super) {
     __extends(Word, _super);
 
-    function Word(uid, prev, next, origin) {
-      Word.__super__.constructor.call(this, uid, prev, next, origin);
+    function Word(uid, initial_content, beginning, end, prev, next, origin) {
+      Word.__super__.constructor.call(this, uid, beginning, end, prev, next, origin);
+      if (initial_content != null) {
+        this.insertText(0, initial_content);
+      }
     }
 
     Word.prototype.insertText = function(position, content) {
@@ -147,9 +148,10 @@ module.exports = function(HB) {
     Word.prototype.toJson = function() {
       var json;
       json = {
-        'type': "TextInsert",
-        'content': this.content,
-        'uid': this.getUid()
+        'type': "Word",
+        'uid': this.getUid(),
+        'beginning': this.beginning.getUid(),
+        'end': this.end.getUid()
       };
       if (this.prev_cl != null) {
         json['prev'] = this.prev_cl.getUid();
@@ -167,9 +169,9 @@ module.exports = function(HB) {
 
   })(types.ListManager);
   parser['Word'] = function(json) {
-    var content, next, origin, prev, uid;
-    content = json['content'], uid = json['uid'], prev = json['prev'], next = json['next'], origin = json['origin'];
-    return new Word(uid, prev, next, origin);
+    var beginning, end, next, origin, prev, uid;
+    uid = json['uid'], beginning = json['beginning'], end = json['end'], prev = json['prev'], next = json['next'], origin = json['origin'];
+    return new Word(uid, void 0, beginning, end, prev, next, origin);
   };
   types['TextInsert'] = TextInsert;
   types['TextDelete'] = TextDelete;

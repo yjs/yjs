@@ -1,4 +1,3 @@
-_ = require "underscore"
 
 #
 # An object that holds all applied operations.
@@ -22,13 +21,17 @@ class HistoryBuffer
     @user_id
 
   getOperationCounter: ()->
-    _.clone @operation_counter
+    res = {}
+    for user,ctn of @operation_counter
+      res[user] = ctn
+    res
 
   toJson: ()->
     json = []
-    for user in @buffer
-      for o of user
-        json.push o.toJson()
+    for u_name,user of @buffer
+      for o_number,o of user
+        if not isNaN(parseInt(o_number))
+          json.push o.toJson()
     json
 
   # Get the number of operations that were created by a user.
@@ -51,6 +54,7 @@ class HistoryBuffer
   getOperation: (uid)->
     if uid instanceof Object
       @buffer[uid.creator]?[uid.op_number]
+    else if not uid?
     else
       throw new Error "This type of uid is not defined!"
 
@@ -69,7 +73,5 @@ class HistoryBuffer
     if typeof o.op_number is 'number' and o.creator isnt @getUserId()
       @operation_counter[o.creator]++
     o
-
-
 
 module.exports = HistoryBuffer

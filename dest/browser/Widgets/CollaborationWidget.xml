@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Module>
+ <ModulePrefs title="Video upload" description="Upload videos in Sevianno" author="Kevin Jahns, Chair of Computer Science 5, RWTH Aachen University, Germany" author_email="jahns@dbis.rwth-aachen.de"  scrolling="true">
+        <Require feature="dynamic-height"/>
+
+</ModulePrefs>
+
+  <Content type="html"><![CDATA[
+<script type="application/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+<script src="http://open-app.googlecode.com/files/openapp.js"></script>
+<script src="http://dbis.rwth-aachen.de/gadgets/lib/las/storage.js"></script>
+<script src="http://dbis.rwth-aachen.de/gadgets/iwc/lib/iwc.js"></script>
+<script src="http://dbis.rwth-aachen.de/gadgets/lib/las/lasAjaxClient.js"></script>
+<script src="../Widgets/libs/DUIClient.js"></script>
+<script src="../Frameworks/JsonIwcYatta.js"></script>
+<script>
+  function init(){
+      window.createIwcConnector(function(Connector){
+        console.log("initializing..");
+        yatta = new window.JsonYatta(1, Connector);
+        var dui = yatta.getConnector().duiClient
+        dui.getAppState()
+        console.log("initialized!");
+
+      })
+  }
+  $(document).ready(init)
+</script>
+<h1> awesomewidget </h1>
+  ]]></Content>
+</Module>

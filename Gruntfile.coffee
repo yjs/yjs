@@ -72,16 +72,36 @@ module.exports = (grunt) ->
     browserify:
       dist:
         files:
-          'dest/browser/Yatta.js': ['lib/index.coffee']
           'dest/browser/Yatta_test.js': ['test/**/*.coffee']
+          'dest/browser/Connectors/IwcConnector.js': ['lib/Connectors/IwcConnector.coffee']
+          'dest/browser/Frameworks/JsonIwcYatta.js': ['./lib/Frameworks/JsonYatta.coffee', './lib/Connectors/IwcConnector.coffee']
         options:
           transform: ['coffeeify']
-          debug: true
-          bundleOptions: {debug: true}
+          debug: false
+          bundleOptions: {debug: false}
+           # Serve files via http-server
+    connect:
+      server:
+        options:
+          hostname: '*'
+          port: 1337
+          base: './dest/browser/'
+          keepalive: true
+          middleware: (connect, options, middlewares)->
+            middlewares.push (req, res, next)->
+                if res.header?
+                  res.header('Access-Control-Allow-Origin', "*")
+                  res.header('Access-Control-Allow-Credentials', true)
+                  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
+                  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+                  res.header('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0')
+                return next()
+            return middlewares
 
   # These plugins provide necessary tasks.
   grunt.loadNpmTasks "grunt-browserify"
   grunt.loadNpmTasks "grunt-contrib-coffee"
+  grunt.loadNpmTasks 'grunt-contrib-connect'
   grunt.loadNpmTasks "grunt-contrib-watch"
   grunt.loadNpmTasks "grunt-simple-mocha"
   grunt.loadNpmTasks "grunt-coffeelint"

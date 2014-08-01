@@ -1,4 +1,3 @@
-_ = require "underscore"
 structured_types_uninitialized = require "./StructuredTypes.coffee"
 
 module.exports = (HB)->
@@ -69,8 +68,10 @@ module.exports = (HB)->
     new TextInsert content, uid, prev, next, origin
 
   class Word extends types.ListManager
-    constructor: (uid, prev, next, origin)->
-      super uid, prev, next, origin
+    constructor: (uid, initial_content, beginning, end, prev, next, origin)->
+      super uid, beginning, end, prev, next, origin
+      if initial_content?
+        @insertText 0, initial_content
 
     # inserts a
     insertText: (position, content)->
@@ -114,9 +115,10 @@ module.exports = (HB)->
 
     toJson: ()->
       json = {
-        'type': "TextInsert"
-        'content': @content
+        'type': "Word"
         'uid' : @getUid()
+        'beginning' : @beginning.getUid()
+        'end' : @end.getUid()
       }
       if @prev_cl?
         json['prev'] = @prev_cl.getUid()
@@ -128,13 +130,14 @@ module.exports = (HB)->
 
   parser['Word'] = (json)->
     {
-      'content' : content
       'uid' : uid
+      'beginning' : beginning
+      'end' : end
       'prev': prev
       'next': next
       'origin' : origin
     } = json
-    new Word uid, prev, next, origin
+    new Word uid, undefined, beginning, end, prev, next, origin
 
   types['TextInsert'] = TextInsert
   types['TextDelete'] = TextDelete

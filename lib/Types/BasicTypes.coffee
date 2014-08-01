@@ -16,6 +16,7 @@ module.exports = (HB)->
       { 'creator': @creator, 'op_number': @op_number }
 
     execute: ()->
+      @is_executed = true
       for l in execution_listener
         l @toJson()
       @
@@ -62,7 +63,7 @@ module.exports = (HB)->
         if op
           @[name] = op
         else
-          uninstantiated[name] = op
+          uninstantiated[name] = op_uid
           success = false
       delete @unchecked
       if not success
@@ -102,7 +103,7 @@ module.exports = (HB)->
   # Define how to parse $Delete operations.
   #
   parser['Delete'] = ({'uid' : uid, 'deletes': deletes_uid})->
-    new D uid, deletes_uid
+    new Delete uid, deletes_uid
 
   #
   # A simple insert-type operation.
@@ -114,7 +115,6 @@ module.exports = (HB)->
   #   - The complete-list (abbrev. cl) maintains all operations
   #
   class Insert extends Operation
-    # @param {Value} content The value of the insert operation. E.g. for strings content is a char.
     # @param {Object} creator A unique user identifier
     # @param {Integer} op_number This Number was assigned via getNextOperationIdentifier().
     # @param {Operation} prev_cl The predecessor of this operation in the complete-list (cl)
@@ -150,6 +150,9 @@ module.exports = (HB)->
         if @origin is o
           break
         d++
+        #TODO: delete this
+        if @ is @prev_cl
+          throw new Error "this should not happen ;) "
         o = o.prev_cl
       d
 
@@ -175,10 +178,12 @@ module.exports = (HB)->
     # Include this operation in the associative lists.
     #
     execute: ()->
+      if @is_executed?
+        return @
       if not @validateSavedOperations()
         return false
       else
-        if @prev_cl? and @next_cl?
+        if @prev_cl?.validateSavedOperations() and @next_cl?.validateSavedOperations() and @prev_cl.next_cl isnt @
           distance_to_origin = 0
           o = @prev_cl.next_cl
           i = 0
@@ -247,17 +252,19 @@ module.exports = (HB)->
       0
 
     execute: ()->
-      a = @validateSavedOperations()
-      for l in execution_listener
-        l @toJson()
-      a
+      if @validateSavedOperations()
+        for l in execution_listener
+          l @toJson()
+        @
+      else
+        false
 
     toJson: ()->
       {
         'type' : "Delimiter"
         'uid' : @getUid()
-        'prev' : @prev_cl.getUid()
-        'next' : @next_cl.getUid()
+        'prev' : @prev_cl?.getUid()
+        'next' : @next_cl?.getUid()
       }
 
   parser['Delimiter'] = (json)->

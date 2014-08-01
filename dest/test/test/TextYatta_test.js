@@ -30,15 +30,16 @@
       }
       return done();
     });
+    it("handles inserts correctly", function() {});
     return it("can handle many engines, many operations, concurrently (random)", function() {
-      var Connector, applyRandomOp, doSomething, doSomething_amount, found_error, generateDeleteOp, generateInsertOp, generateRandomOp, generateReplaceOp, i, j, maximum_ops_per_engine, number_of_created_operations, number_of_engines, number_of_test_cases_multiplier, ops, ops_per_msek, printOpsInExecutionOrder, repeat_this, time_now, times, u, user, user_number, users, _i, _j, _k, _l, _len, _m, _ref, _results;
+      var Connector, applyRandomOp, doSomething, doSomething_amount, found_error, found_inconsistency, generateDeleteOp, generateInsertOp, generateRandomOp, generateReplaceOp, i, j, number_of_created_operations, number_of_engines, number_of_test_cases_multiplier, ops, ops_per_msek, printOpsInExecutionOrder, repeat_this, time_now, times, u, user, user_number, users, _i, _j, _k, _l, _len, _len1, _m, _n, _o, _ref, _ref1, _results;
       number_of_test_cases_multiplier = 1;
-      repeat_this = 1000 * number_of_test_cases_multiplier;
-      doSomething_amount = 1000 * number_of_test_cases_multiplier;
-      number_of_engines = 300 + number_of_test_cases_multiplier - 1;
-      maximum_ops_per_engine = 20 * number_of_test_cases_multiplier;
+      repeat_this = 1 * number_of_test_cases_multiplier;
+      doSomething_amount = 500 * number_of_test_cases_multiplier;
+      number_of_engines = 12 + number_of_test_cases_multiplier - 1;
       this.time = 0;
       this.ops = 0;
+      users = [];
       generateInsertOp = function(user_num) {
         var chars, length, nextchar, pos, text;
         chars = "1234567890";
@@ -97,7 +98,7 @@
       for (times = _i = 1; 1 <= repeat_this ? _i <= repeat_this : _i >= repeat_this; times = 1 <= repeat_this ? ++_i : --_i) {
         users = [];
         Connector = Connector_uninitialized(users);
-        for (i = _j = 0; 0 <= number_of_engines ? _j < number_of_engines : _j > number_of_engines; i = 0 <= number_of_engines ? ++_j : --_j) {
+        for (i = _j = 0; 0 <= number_of_engines ? _j <= number_of_engines : _j >= number_of_engines; i = 0 <= number_of_engines ? ++_j : --_j) {
           users.push(new Yatta(i, Connector));
         }
         found_error = false;
@@ -110,12 +111,6 @@
           user.getConnector().flushAll();
         }
         this.time += (new Date()).getTime() - time_now;
-
-        /*catch error
-          found_error = true
-          console.log "Just found some error!!! :-)"
-          console.log error
-         */
         number_of_created_operations = 0;
         for (i = _m = 0, _ref = users.length; 0 <= _ref ? _m < _ref : _m > _ref; i = 0 <= _ref ? ++_m : --_m) {
           number_of_created_operations += users[i].getConnector().getOpsInExecutionOrder().length;
@@ -124,51 +119,51 @@
         ops_per_msek = Math.floor(this.ops / this.time);
         console.log(("" + times + "/" + repeat_this + ": Every collaborator (" + users.length + ") applied " + number_of_created_operations + " ops in a different order.") + (" Over all we consumed " + this.ops + " operations in " + (this.time / 1000) + " seconds (" + ops_per_msek + " ops/msek)."));
         console.log(users[0].val());
-        _results.push((function() {
-          var _len1, _n, _o, _ref1, _results1;
-          _results1 = [];
-          for (i = _n = 0, _ref1 = users.length - 1; 0 <= _ref1 ? _n < _ref1 : _n > _ref1; i = 0 <= _ref1 ? ++_n : --_n) {
-            if (users[i].val() !== users[i + 1].val()) {
-              printOpsInExecutionOrder = function(otnumber, otherotnumber) {
-                var j, o, ops, s, _len1, _len2, _o, _p;
-                ops = users[otnumber].getConnector().getOpsInExecutionOrder();
-                for (_o = 0, _len1 = ops.length; _o < _len1; _o++) {
-                  s = ops[_o];
-                  console.log(JSON.stringify(s));
-                }
-                console.log("");
-                s = "ops = [";
-                for (j = _p = 0, _len2 = ops.length; _p < _len2; j = ++_p) {
-                  o = ops[j];
-                  if (j !== 0) {
-                    s += ", ";
-                  }
-                  s += "op" + j;
-                }
-                s += "]";
-                console.log(s);
-                console.log("@users[@last_user].ot.applyOps ops");
-                console.log("expect(@users[@last_user].ot.val()).to.equal(\"" + (users[otherotnumber].val()) + "\")");
-                return ops;
-              };
-              console.log("");
-              console.log("Found an OT Puzzle!");
-              console.log("OT states:");
-              for (j = _o = 0, _len1 = users.length; _o < _len1; j = ++_o) {
-                u = users[j];
-                console.log(("OT" + j + ": ") + u.val());
+        found_inconsistency = false;
+        for (i = _n = 0, _ref1 = users.length - 1; 0 <= _ref1 ? _n < _ref1 : _n > _ref1; i = 0 <= _ref1 ? ++_n : --_n) {
+          if (users[i].val() !== users[i + 1].val()) {
+            found_inconsistency = true;
+            printOpsInExecutionOrder = function(otnumber, otherotnumber) {
+              var j, o, ops, s, _len1, _len2, _o, _p;
+              ops = users[otnumber].getConnector().getOpsInExecutionOrder();
+              for (j = _o = 0, _len1 = ops.length; _o < _len1; j = ++_o) {
+                s = ops[j];
+                console.log("op" + j + " = " + (JSON.stringify(s)));
               }
-              console.log("\nOT execution order (" + i + "," + (i + 1) + "):");
-              printOpsInExecutionOrder(i, i + 1);
               console.log("");
-              ops = printOpsInExecutionOrder(i + 1, i);
-              _results1.push(console.log(""));
-            } else {
-              _results1.push(void 0);
+              s = "ops = [";
+              for (j = _p = 0, _len2 = ops.length; _p < _len2; j = ++_p) {
+                o = ops[j];
+                if (j !== 0) {
+                  s += ", ";
+                }
+                s += "op" + j;
+              }
+              s += "]";
+              console.log(s);
+              console.log("@users[@last_user].ot.applyOps ops");
+              console.log("expect(@users[@last_user].val()).to.equal(\"" + (users[otherotnumber].val()) + "\")");
+              return ops;
+            };
+            console.log("");
+            console.log("Found an OT Puzzle!");
+            console.log("OT states:");
+            for (j = _o = 0, _len1 = users.length; _o < _len1; j = ++_o) {
+              u = users[j];
+              console.log(("OT" + j + ": ") + u.val());
             }
+            console.log("\nOT execution order (" + i + "," + (i + 1) + "):");
+            printOpsInExecutionOrder(i, i + 1);
+            console.log("");
+            ops = printOpsInExecutionOrder(i + 1, i);
+            console.log("");
           }
-          return _results1;
-        })());
+        }
+        if (found_inconsistency) {
+          throw new Error("dtrn");
+        } else {
+          _results.push(void 0);
+        }
       }
       return _results;
     });

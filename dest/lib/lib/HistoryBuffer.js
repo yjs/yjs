@@ -1,6 +1,4 @@
-var HistoryBuffer, _;
-
-_ = require("underscore");
+var HistoryBuffer;
 
 HistoryBuffer = (function() {
   function HistoryBuffer(user_id) {
@@ -15,17 +13,27 @@ HistoryBuffer = (function() {
   };
 
   HistoryBuffer.prototype.getOperationCounter = function() {
-    return _.clone(this.operation_counter);
+    var ctn, res, user, _ref;
+    res = {};
+    _ref = this.operation_counter;
+    for (user in _ref) {
+      ctn = _ref[user];
+      res[user] = ctn;
+    }
+    return res;
   };
 
   HistoryBuffer.prototype.toJson = function() {
-    var json, o, user, _i, _len, _ref;
+    var json, o, o_number, u_name, user, _ref;
     json = [];
     _ref = this.buffer;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      user = _ref[_i];
-      for (o in user) {
-        json.push(o.toJson());
+    for (u_name in _ref) {
+      user = _ref[u_name];
+      for (o_number in user) {
+        o = user[o_number];
+        if (!isNaN(parseInt(o_number))) {
+          json.push(o.toJson());
+        }
       }
     }
     return json;
@@ -51,6 +59,8 @@ HistoryBuffer = (function() {
     var _ref;
     if (uid instanceof Object) {
       return (_ref = this.buffer[uid.creator]) != null ? _ref[uid.op_number] : void 0;
+    } else if (uid == null) {
+
     } else {
       throw new Error("This type of uid is not defined!");
     }

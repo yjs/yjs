@@ -8,17 +8,19 @@ Engine = require("../Engine.coffee");
 
 TextYatta = (function() {
   function TextYatta(user_id, Connector) {
-    var first_word, text_types;
+    var first_word, root_elem, text_types;
     this.HB = new HistoryBuffer(user_id);
     text_types = text_types_uninitialized(this.HB);
     this.engine = new Engine(this.HB, text_types.parser);
     this.connector = new Connector(this.engine, this.HB, text_types.execution_listener);
-    this.root_element = this.connector.getRootElement();
-    if (this.root_element == null) {
+    root_elem = this.connector.getRootElement();
+    if (root_elem == null) {
       first_word = new text_types.types.Word(this.HB.getNextOperationIdentifier());
       this.HB.addOperation(first_word);
       first_word.execute();
       this.root_element = this.HB.addOperation(new text_types.types.ReplaceManager(first_word, this.HB.getNextOperationIdentifier())).execute();
+    } else {
+      this.root_element = this.HB.getOperation(root_elem);
     }
   }
 

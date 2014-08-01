@@ -19,15 +19,19 @@ describe "TextYatta", ->
       @users.push(new Yatta i, @Connector)
     done()
 
+  it "handles inserts correctly", ->
+
+
   it "can handle many engines, many operations, concurrently (random)", ->
     number_of_test_cases_multiplier = 1
-    repeat_this = 1000 * number_of_test_cases_multiplier
-    doSomething_amount = 1000 * number_of_test_cases_multiplier
-    number_of_engines =  300 + number_of_test_cases_multiplier - 1
-    maximum_ops_per_engine = 20 * number_of_test_cases_multiplier
+    repeat_this = 1 * number_of_test_cases_multiplier
+    doSomething_amount = 500 * number_of_test_cases_multiplier
+    number_of_engines =  12 + number_of_test_cases_multiplier - 1
+    #maximum_ops_per_engine = 20 * number_of_test_cases_multiplier
 
     @time = 0
     @ops = 0
+    users = []
 
     generateInsertOp = (user_num)->
           chars = "1234567890"
@@ -85,8 +89,8 @@ describe "TextYatta", ->
       #console.log "repeated_this x #{times} times"
       users = []
       Connector = Connector_uninitialized users
-      for i in [0...number_of_engines]
-            users.push(new Yatta i, Connector)
+      for i in [0..number_of_engines]
+        users.push(new Yatta i, Connector)
 
       found_error = false
 
@@ -100,11 +104,6 @@ describe "TextYatta", ->
 
       @time += (new Date()).getTime() - time_now
 
-      ###catch error
-        found_error = true
-        console.log "Just found some error!!! :-)"
-        console.log error
-      ###
       number_of_created_operations = 0
       for i in [0...(users.length)]
         number_of_created_operations += users[i].getConnector().getOpsInExecutionOrder().length
@@ -114,13 +113,14 @@ describe "TextYatta", ->
       console.log "#{times}/#{repeat_this}: Every collaborator (#{users.length}) applied #{number_of_created_operations} ops in a different order." + " Over all we consumed #{@ops} operations in #{@time/1000} seconds (#{ops_per_msek} ops/msek)."
 
       console.log users[0].val()
+      found_inconsistency = false
       for i in [0...(users.length-1)]
         if ((users[i].val() isnt users[i+1].val()) )# and (number_of_created_operations <= 6 or true)) or found_error
-
+          found_inconsistency =true
           printOpsInExecutionOrder = (otnumber, otherotnumber)->
             ops = users[otnumber].getConnector().getOpsInExecutionOrder()
-            for s in ops
-              console.log JSON.stringify s
+            for s,j in ops
+              console.log "op#{j} = #{JSON.stringify s}"
             console.log ""
             s = "ops = ["
             for o,j in ops
@@ -130,7 +130,7 @@ describe "TextYatta", ->
             s += "]"
             console.log s
             console.log "@users[@last_user].ot.applyOps ops"
-            console.log "expect(@users[@last_user].ot.val()).to.equal(\"#{users[otherotnumber].val()}\")"
+            console.log "expect(@users[@last_user].val()).to.equal(\"#{users[otherotnumber].val()}\")"
             ops
           console.log ""
           console.log "Found an OT Puzzle!"
@@ -143,6 +143,8 @@ describe "TextYatta", ->
           ops = printOpsInExecutionOrder i+1, i
 
           console.log ""
+      if found_inconsistency
+        throw new Error "dtrn"
 
           # expect(users[i].ot.val()).to.equal(users[i+1].ot.val())
 
