@@ -32,14 +32,13 @@ module.exports = function(HB) {
         if (typeof content === 'string') {
           word = HB.addOperation(new types.Word(HB.getNextOperationIdentifier(), content)).execute();
           JsonType.__super__.val.call(this, name, word);
-          return content;
         } else if (typeof content === 'object') {
           json = HB.addOperation(JsonType(HB.getNextOperationIdentifier(), content)).execute();
           JsonType.__super__.val.call(this, name, json);
-          return content;
         } else {
           throw new Error("You must not set " + (typeof content) + "-types in collaborative Json-objects!");
         }
+        return this;
       } else {
         return JsonType.__super__.val.call(this, name, content);
       }

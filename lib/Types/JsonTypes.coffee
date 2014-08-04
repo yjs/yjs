@@ -5,6 +5,9 @@ module.exports = (HB)->
   types = text_types.types
   parser = text_types.parser
 
+  #
+  # Manages Object-like values.
+  #
   class JsonType extends types.MapManager
     constructor: (uid, initial_value)->
       super uid
@@ -14,18 +17,32 @@ module.exports = (HB)->
         for name,o of initial_value
           @val name, o
 
+    #
+    # Get this as a Json object. Note that none of the values of the result is of type Operation.
+    # @overload val()
+    #   @results [Json]
+    #
+    # Get value of a property.
+    # @overload val(name)
+    #   @param {String} name Name of the object property.
+    #   @results [JsonType|WordType]
+    #
+    # Set a new property.
+    # @overload val(name, content)
+    #   @param {String} name Name of the object property.
+    #   @param {Object|String} content Content of the object property.
+    #
     val: (name, content)->
       if name? and content?
         if typeof content is 'string'
           word = HB.addOperation(new types.Word HB.getNextOperationIdentifier(), content).execute()
           super name, word
-          content
         else if typeof content is 'object'
           json = HB.addOperation(JsonType HB.getNextOperationIdentifier(), content).execute()
           super name, json
-          content
         else
           throw new Error "You must not set #{typeof content}-types in collaborative Json-objects!"
+        @
       else
         super name, content
 

@@ -37,7 +37,7 @@ module.exports = (grunt) ->
       all:
         src: ['test/**/*.coffee']
         options:
-          timeout: 3000
+          timeout: 9999999
           ignoreLeaks: false
           ui: 'bdd'
           reporter: 'list'
@@ -67,7 +67,7 @@ module.exports = (grunt) ->
             extras: ["LICENSE-LGPL"]
             #undocumented: yes
             verbose: false
-            stats: false
+            stats: true
         src: ["./lib"]
     browserify:
       dist:

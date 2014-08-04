@@ -16,7 +16,11 @@ createIwcConnector = (callback)->
   root_element = null
   received_HB = null
 
-
+  #
+  # The Iwc Connector adds support for the Inter-Widget-Communication protocol that is used in the Role-SDK.
+  # @see http://dbis.rwth-aachen.de/cms/projects/the-xmpp-experience#interwidget-communication
+  # @see http://dbis.rwth-aachen.de/cms/projects/ROLE
+  #
   class IwcConnector
     constructor: (@engine, @HB, @execution_listener, @yatta)->
       @duiClient = duiClient

@@ -2,6 +2,10 @@
 _ = require "underscore"
 
 module.exports = (user_list)->
+
+  #
+  # A trivial Connector that simulates network delay.
+  #
   class TestConnector
     constructor: (@engine, @HB, @execution_listener)->
       send_ = (o)=>

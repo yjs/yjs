@@ -409,8 +409,8 @@ module.exports = function(HB) {
   parser = {};
   execution_listener = [];
   Operation = (function() {
-    function Operation(_arg) {
-      this.creator = _arg['creator'], this.op_number = _arg['op_number'];
+    function Operation(uid) {
+      this.creator = uid['creator'], this.op_number = uid['op_number'];
     }
 
     Operation.prototype.getUid = function() {
@@ -495,9 +495,9 @@ module.exports = function(HB) {
     return Delete;
 
   })(Operation);
-  parser['Delete'] = function(_arg) {
+  parser['Delete'] = function(o) {
     var deletes_uid, uid;
-    uid = _arg['uid'], deletes_uid = _arg['deletes'];
+    uid = o['uid'], deletes_uid = o['deletes'];
     return new Delete(uid, deletes_uid);
   };
   Insert = (function(_super) {
@@ -716,14 +716,13 @@ module.exports = function(HB) {
         if (typeof content === 'string') {
           word = HB.addOperation(new types.Word(HB.getNextOperationIdentifier(), content)).execute();
           JsonType.__super__.val.call(this, name, word);
-          return content;
         } else if (typeof content === 'object') {
           json = HB.addOperation(JsonType(HB.getNextOperationIdentifier(), content)).execute();
           JsonType.__super__.val.call(this, name, json);
-          return content;
         } else {
           throw new Error("You must not set " + (typeof content) + "-types in collaborative Json-objects!");
         }
+        return this;
       } else {
         return JsonType.__super__.val.call(this, name, content);
       }
@@ -13200,156 +13199,142 @@ Yatta = require("../lib/Frameworks/JsonYatta.coffee");
 
 Connector_uninitialized = require("../lib/Connectors/TestConnector.coffee");
 
-describe("JsonYatta", function() {
-  beforeEach(function(done) {
-    var i, _i, _ref;
-    this.last_user = 10;
-    this.users = [];
-    this.Connector = Connector_uninitialized(this.users);
-    for (i = _i = 0, _ref = this.last_user + 1; 0 <= _ref ? _i <= _ref : _i >= _ref; i = 0 <= _ref ? ++_i : --_i) {
-      this.users.push(new Yatta(i, this.Connector));
-    }
-    return done();
-  });
-  return it("can handle many engines, many operations, concurrently (random)", function() {
-    var Connector, applyRandomOp, doSomething, doSomething_amount, found_error, generateDeleteOp, generateInsertOp, generateRandomOp, generateReplaceOp, i, j, number_of_created_operations, number_of_engines, number_of_test_cases_multiplier, ops, ops_per_msek, printOpsInExecutionOrder, repeat_this, time_now, times, u, user, user_number, users, _i, _j, _k, _l, _len, _m, _ref, _results;
-    number_of_test_cases_multiplier = 1;
-    repeat_this = 1 * number_of_test_cases_multiplier;
-    doSomething_amount = 200 * number_of_test_cases_multiplier;
-    number_of_engines = 12 + number_of_test_cases_multiplier - 1;
-    this.time = 0;
-    this.ops = 0;
-    users = [];
-    generateInsertOp = function(user_num) {
-      var chars, length, nextchar, pos, text;
-      chars = "1234567890";
-      pos = _.random(0, users[user_num].val('name').length - 1);
-      length = 1;
-      nextchar = chars[_.random(0, chars.length - 1)];
-      text = "";
-      _(length).times(function() {
-        return text += nextchar;
-      });
-      users[user_num].val('name').insertText(pos, text);
-      return null;
-    };
-    generateReplaceOp = function(user_num) {
-      var chars, length, nextchar, text;
-      chars = "abcdefghijklmnopqrstuvwxyz";
-      length = _.random(0, 10);
-      nextchar = chars[_.random(0, chars.length - 1)];
-      text = "";
-      _(length).times(function() {
-        return text += nextchar;
-      });
-      return users[user_num].val('name').replaceText(text);
-    };
-    generateDeleteOp = function(user_num) {
-      var length, ops1, pos;
-      if (users[user_num].val('name').val().length > 0) {
-        pos = _.random(0, users[user_num].val('name').val().length - 1);
-        length = 1;
-        ops1 = users[user_num].val('name').deleteText(pos, length);
-      }
-      return void 0;
-    };
-    generateRandomOp = function(user_num) {
-      var i, op, op_gen;
-      op_gen = [generateDeleteOp, generateInsertOp, generateReplaceOp];
-      i = _.random(op_gen.length - 1);
-      return op = op_gen[i](user_num);
-    };
-    applyRandomOp = function(user_num) {
-      var user;
-      user = users[user_num];
-      return user.getConnector().flushOneRandom();
-    };
-    doSomething = (function() {
-      return function() {
-        var choice, choices, user_num;
-        user_num = _.random(number_of_engines - 1);
-        choices = [applyRandomOp, generateRandomOp];
-        choice = _.random(choices.length - 1);
-        return choices[choice](user_num);
-      };
-    })();
-    console.log("");
-    _results = [];
-    for (times = _i = 1; 1 <= repeat_this ? _i <= repeat_this : _i >= repeat_this; times = 1 <= repeat_this ? ++_i : --_i) {
-      users = [];
-      Connector = Connector_uninitialized(users);
-      users.push(new Yatta(0, Connector));
-      users[0].val('name', "initial");
-      for (i = _j = 1; 1 <= number_of_engines ? _j < number_of_engines : _j > number_of_engines; i = 1 <= number_of_engines ? ++_j : --_j) {
-        users.push(new Yatta(i, Connector));
-      }
-      found_error = false;
-      time_now = (new Date).getTime();
-      for (i = _k = 1; 1 <= doSomething_amount ? _k <= doSomething_amount : _k >= doSomething_amount; i = 1 <= doSomething_amount ? ++_k : --_k) {
-        doSomething();
-      }
-      for (user_number = _l = 0, _len = users.length; _l < _len; user_number = ++_l) {
-        user = users[user_number];
-        user.getConnector().flushAll();
-      }
-      this.time += (new Date()).getTime() - time_now;
-      number_of_created_operations = 0;
-      for (i = _m = 0, _ref = users.length; 0 <= _ref ? _m < _ref : _m > _ref; i = 0 <= _ref ? ++_m : --_m) {
-        number_of_created_operations += users[i].getConnector().getOpsInExecutionOrder().length;
-      }
-      this.ops += number_of_created_operations * users.length;
-      ops_per_msek = Math.floor(this.ops / this.time);
-      console.log(("" + times + "/" + repeat_this + ": Every collaborator (" + users.length + ") applied " + number_of_created_operations + " ops in a different order.") + (" Over all we consumed " + this.ops + " operations in " + (this.time / 1000) + " seconds (" + ops_per_msek + " ops/msek)."));
-      console.log(users[0].val('name').val());
-      _results.push((function() {
-        var _len1, _n, _o, _ref1, _results1;
-        _results1 = [];
-        for (i = _n = 0, _ref1 = users.length - 1; 0 <= _ref1 ? _n < _ref1 : _n > _ref1; i = 0 <= _ref1 ? ++_n : --_n) {
-          if (users[i].val('name').val() !== users[i + 1].val('name').val()) {
-            printOpsInExecutionOrder = function(otnumber, otherotnumber) {
-              var j, o, ops, s, _len1, _len2, _o, _p;
-              ops = users[otnumber].getConnector().getOpsInExecutionOrder();
-              for (_o = 0, _len1 = ops.length; _o < _len1; _o++) {
-                s = ops[_o];
-                console.log(JSON.stringify(s));
-              }
-              console.log("");
-              s = "ops = [";
-              for (j = _p = 0, _len2 = ops.length; _p < _len2; j = ++_p) {
-                o = ops[j];
-                if (j !== 0) {
-                  s += ", ";
-                }
-                s += "op" + j;
-              }
-              s += "]";
-              console.log(s);
-              console.log("@users[@last_user].ot.applyOps ops");
-              console.log("expect(@users[@last_user].ot.val('name')).to.equal(\"" + (users[otherotnumber].val('name')) + "\")");
-              return ops;
-            };
-            console.log("");
-            console.log("Found an OT Puzzle!");
-            console.log("OT states:");
-            for (j = _o = 0, _len1 = users.length; _o < _len1; j = ++_o) {
-              u = users[j];
-              console.log(("OT" + j + ": ") + u.val('name'));
-            }
-            console.log("\nOT execution order (" + i + "," + (i + 1) + "):");
-            printOpsInExecutionOrder(i, i + 1);
-            console.log("");
-            ops = printOpsInExecutionOrder(i + 1, i);
-            _results1.push(console.log(""));
-          } else {
-            _results1.push(void 0);
-          }
-        }
-        return _results1;
-      })());
-    }
-    return _results;
-  });
-});
+
+/*
+describe "JsonYatta", ->
+  beforeEach (done)->
+    @last_user = 10
+    @users = []
+    @Connector = Connector_uninitialized @users
+    for i in [0..(@last_user+1)]
+      @users.push(new Yatta i, @Connector)
+
+
+    done()
+
+  it "can handle many engines, many operations, concurrently (random)", ->
+    number_of_test_cases_multiplier = 1
+    repeat_this = 100 * number_of_test_cases_multiplier
+    doSomething_amount = 200 * number_of_test_cases_multiplier
+    number_of_engines =  12 + number_of_test_cases_multiplier - 1
+
+    @time = 0
+    @ops = 0
+
+    users = []
+
+    generateInsertOp = (user_num)->
+          chars = "1234567890"
+
+          pos = _.random 0, (users[user_num].val('name').length-1)
+          length = 1 #_.random 0, 10
+
+          nextchar = chars[(_.random 0, (chars.length-1))]
+
+          text = ""
+          _(length).times ()-> text += nextchar
+
+          users[user_num].val('name').insertText pos, text
+          null
+
+    generateReplaceOp = (user_num)->
+          chars = "abcdefghijklmnopqrstuvwxyz"
+          length = _.random 0, 10
+
+          nextchar = chars[(_.random 0, (chars.length-1))]
+
+          text = ""
+          _(length).times ()-> text += nextchar
+          users[user_num].val('name').replaceText text
+
+    generateDeleteOp = (user_num)->
+        if users[user_num].val('name').val().length > 0
+          pos = _.random 0, (users[user_num].val('name').val().length-1)
+          length = 1 # _.random 0, ot.val('name').length - pos
+          ops1 = users[user_num].val('name').deleteText pos, length
+        undefined
+
+    generateRandomOp = (user_num)->
+      op_gen = [generateDeleteOp, generateInsertOp, generateReplaceOp]
+      i = _.random (op_gen.length - 1)
+      op = op_gen[i](user_num)
+
+    applyRandomOp = (user_num)->
+      user = users[user_num]
+      user.getConnector().flushOneRandom()
+
+    doSomething = do ()->
+      ()->
+        user_num = _.random (number_of_engines-1)
+        choices = [applyRandomOp, generateRandomOp]
+         *if (users[user_num].buffer[user_num].length < maximum_ops_per_engine)
+         *  choices = choices.concat generateRandomOp
+
+        choice = _.random (choices.length-1)
+
+        choices[choice](user_num)
+
+    console.log ""
+    for times in [1..repeat_this]
+       *console.log "repeated_this x #{times} times"
+      users = []
+      Connector = Connector_uninitialized users
+      users.push(new Yatta 0, Connector)
+      users[0].val('name',"initial")
+      for i in [1...number_of_engines]
+        users.push(new Yatta i, Connector)
+
+      found_error = false
+
+       *try
+      time_now = (new Date).getTime()
+      for i in [1..doSomething_amount]
+        doSomething()
+
+      for user,user_number in users
+        user.getConnector().flushAll()
+
+      @time += (new Date()).getTime() - time_now
+
+      number_of_created_operations = 0
+      for i in [0...(users.length)]
+        number_of_created_operations += users[i].getConnector().getOpsInExecutionOrder().length
+      @ops += number_of_created_operations*users.length
+
+      ops_per_msek = Math.floor(@ops/@time)
+      console.log "#{times}/#{repeat_this}: Every collaborator (#{users.length}) applied #{number_of_created_operations} ops in a different order." + " Over all we consumed #{@ops} operations in #{@time/1000} seconds (#{ops_per_msek} ops/msek)."
+
+      console.log users[0].val('name').val()
+      for i in [0...(users.length-1)]
+        if ((users[i].val('name').val() isnt users[i+1].val('name').val()) )# and (number_of_created_operations <= 6 or true)) or found_error
+
+          printOpsInExecutionOrder = (otnumber, otherotnumber)->
+            ops = users[otnumber].getConnector().getOpsInExecutionOrder()
+            for s in ops
+              console.log JSON.stringify s
+            console.log ""
+            s = "ops = ["
+            for o,j in ops
+              if j isnt 0
+                s += ", "
+              s += "op#{j}"
+            s += "]"
+            console.log s
+            console.log "@users[@last_user].ot.applyOps ops"
+            console.log "expect(@users[@last_user].ot.val('name')).to.equal(\"#{users[otherotnumber].val('name')}\")"
+            ops
+          console.log ""
+          console.log "Found an OT Puzzle!"
+          console.log "OT states:"
+          for u,j in users
+            console.log "OT#{j}: "+u.val('name')
+          console.log "\nOT execution order (#{i},#{i+1}):"
+          printOpsInExecutionOrder i, i+1
+          console.log ""
+          ops = printOpsInExecutionOrder i+1, i
+
+          console.log ""
+ */
 
 
 },{"../lib/Connectors/TestConnector.coffee":1,"../lib/Frameworks/JsonYatta.coffee":3,"chai":17,"sinon":50,"sinon-chai":49,"underscore":65}],67:[function(require,module,exports){
@@ -13373,155 +13358,343 @@ Yatta = require("../lib/Frameworks/TextYatta.coffee");
 
 Connector_uninitialized = require("../lib/Connectors/TestConnector.coffee");
 
-describe("TextYatta", function() {
-  beforeEach(function(done) {
-    var i, _i, _ref;
-    this.last_user = 10;
-    this.users = [];
-    this.Connector = Connector_uninitialized(this.users);
-    for (i = _i = 0, _ref = this.last_user + 1; 0 <= _ref ? _i <= _ref : _i >= _ref; i = 0 <= _ref ? ++_i : --_i) {
-      this.users.push(new Yatta(i, this.Connector));
-    }
-    return done();
-  });
-  it("handles inserts correctly", function() {});
-  return it("can handle many engines, many operations, concurrently (random)", function() {
-    var Connector, applyRandomOp, doSomething, doSomething_amount, found_error, found_inconsistency, generateDeleteOp, generateInsertOp, generateRandomOp, generateReplaceOp, i, j, number_of_created_operations, number_of_engines, number_of_test_cases_multiplier, ops, ops_per_msek, printOpsInExecutionOrder, repeat_this, time_now, times, u, user, user_number, users, _i, _j, _k, _l, _len, _len1, _m, _n, _o, _ref, _ref1, _results;
-    number_of_test_cases_multiplier = 1;
-    repeat_this = 1 * number_of_test_cases_multiplier;
-    doSomething_amount = 500 * number_of_test_cases_multiplier;
-    number_of_engines = 12 + number_of_test_cases_multiplier - 1;
+
+/*
+describe "TextYatta", ->
+  beforeEach (done)->
+    @last_user = 10
+    @users = []
+    @Connector = Connector_uninitialized @users
+    for i in [0..(@last_user+1)]
+      @users.push(new Yatta i, @Connector)
+    done()
+
+  it "handles inserts correctly", ->
+
+
+  it "can handle many engines, many operations, concurrently (random)", ->
+    number_of_test_cases_multiplier = 1
+    repeat_this = 1 * number_of_test_cases_multiplier
+    doSomething_amount = 500 * number_of_test_cases_multiplier
+    number_of_engines =  12 + number_of_test_cases_multiplier - 1
+     *maximum_ops_per_engine = 20 * number_of_test_cases_multiplier
+
+    @time = 0
+    @ops = 0
+    users = []
+
+    generateInsertOp = (user_num)->
+          chars = "1234567890"
+
+          pos = _.random 0, (users[user_num].val().length-1)
+          length = 1 #_.random 0, 10
+
+          nextchar = chars[(_.random 0, (chars.length-1))]
+
+          text = ""
+          _(length).times ()-> text += nextchar
+
+          users[user_num].insertText pos, text
+          null
+
+    generateReplaceOp = (user_num)->
+          chars = "abcdefghijklmnopqrstuvwxyz"
+          length = _.random 0, 10
+
+          nextchar = chars[(_.random 0, (chars.length-1))]
+
+          text = ""
+          _(length).times ()-> text += nextchar
+          users[user_num].replaceText text
+
+    generateDeleteOp = (user_num)->
+        if users[user_num].val().length > 0
+          pos = _.random 0, (users[user_num].val().length-1)
+          length = 1 # _.random 0, ot.val().length - pos
+          ops1 = users[user_num].deleteText pos, length
+        undefined
+
+    generateRandomOp = (user_num)->
+      op_gen = [generateDeleteOp, generateInsertOp, generateReplaceOp]
+      i = _.random (op_gen.length - 1)
+      op = op_gen[i](user_num)
+
+    applyRandomOp = (user_num)->
+      user = users[user_num]
+      user.getConnector().flushOneRandom()
+
+    doSomething = do ()->
+      ()->
+        user_num = _.random (number_of_engines-1)
+        choices = [applyRandomOp, generateRandomOp]
+         *if (users[user_num].buffer[user_num].length < maximum_ops_per_engine)
+         *  choices = choices.concat generateRandomOp
+
+        choice = _.random (choices.length-1)
+
+        choices[choice](user_num)
+
+    console.log ""
+    for times in [1..repeat_this]
+       *console.log "repeated_this x #{times} times"
+      users = []
+      Connector = Connector_uninitialized users
+      for i in [0..number_of_engines]
+        users.push(new Yatta i, Connector)
+
+      found_error = false
+
+       *try
+      time_now = (new Date).getTime()
+      for i in [1..doSomething_amount]
+        doSomething()
+
+      for user,user_number in users
+        user.getConnector().flushAll()
+
+      @time += (new Date()).getTime() - time_now
+
+      number_of_created_operations = 0
+      for i in [0...(users.length)]
+        number_of_created_operations += users[i].getConnector().getOpsInExecutionOrder().length
+      @ops += number_of_created_operations*users.length
+
+      ops_per_msek = Math.floor(@ops/@time)
+      console.log "#{times}/#{repeat_this}: Every collaborator (#{users.length}) applied #{number_of_created_operations} ops in a different order." + " Over all we consumed #{@ops} operations in #{@time/1000} seconds (#{ops_per_msek} ops/msek)."
+
+      console.log users[0].val()
+      found_inconsistency = false
+      for i in [0...(users.length-1)]
+        if ((users[i].val() isnt users[i+1].val()) )# and (number_of_created_operations <= 6 or true)) or found_error
+          found_inconsistency =true
+          printOpsInExecutionOrder = (otnumber, otherotnumber)->
+            ops = users[otnumber].getConnector().getOpsInExecutionOrder()
+            for s,j in ops
+              console.log "op#{j} = #{JSON.stringify s}"
+            console.log ""
+            s = "ops = ["
+            for o,j in ops
+              if j isnt 0
+                s += ", "
+              s += "op#{j}"
+            s += "]"
+            console.log s
+            console.log "@users[@last_user].ot.applyOps ops"
+            console.log "expect(@users[@last_user].val()).to.equal(\"#{users[otherotnumber].val()}\")"
+            ops
+          console.log ""
+          console.log "Found an OT Puzzle!"
+          console.log "OT states:"
+          for u,j in users
+            console.log "OT#{j}: "+u.val()
+          console.log "\nOT execution order (#{i},#{i+1}):"
+          printOpsInExecutionOrder i, i+1
+          console.log ""
+          ops = printOpsInExecutionOrder i+1, i
+
+          console.log ""
+      if found_inconsistency
+        throw new Error "dtrn"
+
+           * expect(users[i].ot.val()).to.equal(users[i+1].ot.val())
+ */
+
+
+},{"../lib/Connectors/TestConnector.coffee":1,"../lib/Frameworks/TextYatta.coffee":4,"chai":17,"sinon":50,"sinon-chai":49,"underscore":65}],68:[function(require,module,exports){
+var Connector_uninitialized, Test, Yatta, chai, expect, should, sinon, sinonChai, _,
+  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+chai = require('chai');
+
+expect = chai.expect;
+
+should = chai.should();
+
+sinon = require('sinon');
+
+sinonChai = require('sinon-chai');
+
+_ = require("underscore");
+
+chai.use(sinonChai);
+
+Yatta = require("../lib/Frameworks/JsonYatta.coffee");
+
+Connector_uninitialized = require("../lib/Connectors/TestConnector.coffee");
+
+Test = (function() {
+  function Test() {
+    this.applyRandomOp = __bind(this.applyRandomOp, this);
+    this.generateRandomOp = __bind(this.generateRandomOp, this);
+    this.generateDeleteOp = __bind(this.generateDeleteOp, this);
+    this.generateReplaceOp = __bind(this.generateReplaceOp, this);
+    this.generateInsertOp = __bind(this.generateInsertOp, this);
+    this.number_of_test_cases_multiplier = 1;
+    this.repeat_this = 100 * this.number_of_test_cases_multiplier;
+    this.doSomething_amount = 200 * this.number_of_test_cases_multiplier;
+    this.number_of_engines = 12 + this.number_of_test_cases_multiplier - 1;
     this.time = 0;
     this.ops = 0;
-    users = [];
-    generateInsertOp = function(user_num) {
-      var chars, length, nextchar, pos, text;
-      chars = "1234567890";
-      pos = _.random(0, users[user_num].val().length - 1);
-      length = 1;
-      nextchar = chars[_.random(0, chars.length - 1)];
-      text = "";
-      _(length).times(function() {
-        return text += nextchar;
-      });
-      users[user_num].insertText(pos, text);
-      return null;
-    };
-    generateReplaceOp = function(user_num) {
-      var chars, length, nextchar, text;
-      chars = "abcdefghijklmnopqrstuvwxyz";
-      length = _.random(0, 10);
-      nextchar = chars[_.random(0, chars.length - 1)];
-      text = "";
-      _(length).times(function() {
-        return text += nextchar;
-      });
-      return users[user_num].replaceText(text);
-    };
-    generateDeleteOp = function(user_num) {
-      var length, ops1, pos;
-      if (users[user_num].val().length > 0) {
-        pos = _.random(0, users[user_num].val().length - 1);
-        length = 1;
-        ops1 = users[user_num].deleteText(pos, length);
-      }
-      return void 0;
-    };
-    generateRandomOp = function(user_num) {
-      var i, op, op_gen;
-      op_gen = [generateDeleteOp, generateInsertOp, generateReplaceOp];
-      i = _.random(op_gen.length - 1);
-      return op = op_gen[i](user_num);
-    };
-    applyRandomOp = function(user_num) {
-      var user;
-      user = users[user_num];
-      return user.getConnector().flushOneRandom();
-    };
-    doSomething = (function() {
-      return function() {
-        var choice, choices, user_num;
-        user_num = _.random(number_of_engines - 1);
-        choices = [applyRandomOp, generateRandomOp];
-        choice = _.random(choices.length - 1);
-        return choices[choice](user_num);
-      };
-    })();
-    console.log("");
+    this.reinitialize();
+  }
+
+  Test.prototype.reinitialize = function() {
+    var i, _i, _ref, _results;
+    this.users = [];
+    this.Connector = Connector_uninitialized(this.users);
+    this.users.push(new Yatta(0, this.Connector));
+    this.users[0].val('name', "initial");
     _results = [];
-    for (times = _i = 1; 1 <= repeat_this ? _i <= repeat_this : _i >= repeat_this; times = 1 <= repeat_this ? ++_i : --_i) {
-      users = [];
-      Connector = Connector_uninitialized(users);
-      for (i = _j = 0; 0 <= number_of_engines ? _j <= number_of_engines : _j >= number_of_engines; i = 0 <= number_of_engines ? ++_j : --_j) {
-        users.push(new Yatta(i, Connector));
-      }
-      found_error = false;
-      time_now = (new Date).getTime();
-      for (i = _k = 1; 1 <= doSomething_amount ? _k <= doSomething_amount : _k >= doSomething_amount; i = 1 <= doSomething_amount ? ++_k : --_k) {
-        doSomething();
-      }
-      for (user_number = _l = 0, _len = users.length; _l < _len; user_number = ++_l) {
-        user = users[user_number];
-        user.getConnector().flushAll();
-      }
-      this.time += (new Date()).getTime() - time_now;
-      number_of_created_operations = 0;
-      for (i = _m = 0, _ref = users.length; 0 <= _ref ? _m < _ref : _m > _ref; i = 0 <= _ref ? ++_m : --_m) {
-        number_of_created_operations += users[i].getConnector().getOpsInExecutionOrder().length;
-      }
-      this.ops += number_of_created_operations * users.length;
-      ops_per_msek = Math.floor(this.ops / this.time);
-      console.log(("" + times + "/" + repeat_this + ": Every collaborator (" + users.length + ") applied " + number_of_created_operations + " ops in a different order.") + (" Over all we consumed " + this.ops + " operations in " + (this.time / 1000) + " seconds (" + ops_per_msek + " ops/msek)."));
-      console.log(users[0].val());
-      found_inconsistency = false;
-      for (i = _n = 0, _ref1 = users.length - 1; 0 <= _ref1 ? _n < _ref1 : _n > _ref1; i = 0 <= _ref1 ? ++_n : --_n) {
-        if (users[i].val() !== users[i + 1].val()) {
-          found_inconsistency = true;
-          printOpsInExecutionOrder = function(otnumber, otherotnumber) {
-            var j, o, ops, s, _len1, _len2, _o, _p;
-            ops = users[otnumber].getConnector().getOpsInExecutionOrder();
-            for (j = _o = 0, _len1 = ops.length; _o < _len1; j = ++_o) {
-              s = ops[j];
-              console.log("op" + j + " = " + (JSON.stringify(s)));
-            }
-            console.log("");
-            s = "ops = [";
-            for (j = _p = 0, _len2 = ops.length; _p < _len2; j = ++_p) {
-              o = ops[j];
-              if (j !== 0) {
-                s += ", ";
-              }
-              s += "op" + j;
-            }
-            s += "]";
-            console.log(s);
-            console.log("@users[@last_user].ot.applyOps ops");
-            console.log("expect(@users[@last_user].val()).to.equal(\"" + (users[otherotnumber].val()) + "\")");
-            return ops;
-          };
-          console.log("");
-          console.log("Found an OT Puzzle!");
-          console.log("OT states:");
-          for (j = _o = 0, _len1 = users.length; _o < _len1; j = ++_o) {
-            u = users[j];
-            console.log(("OT" + j + ": ") + u.val());
-          }
-          console.log("\nOT execution order (" + i + "," + (i + 1) + "):");
-          printOpsInExecutionOrder(i, i + 1);
-          console.log("");
-          ops = printOpsInExecutionOrder(i + 1, i);
-          console.log("");
-        }
-      }
-      if (found_inconsistency) {
-        throw new Error("dtrn");
-      } else {
-        _results.push(void 0);
-      }
+    for (i = _i = 1, _ref = this.number_of_engines; 1 <= _ref ? _i < _ref : _i > _ref; i = 1 <= _ref ? ++_i : --_i) {
+      _results.push(this.users.push(new Yatta(i, this.Connector)));
     }
     return _results;
+  };
+
+  Test.prototype.getRandomText = function() {
+    var chars, length, nextchar, text;
+    chars = "abcdefghijklmnopqrstuvwxyz";
+    length = _.random(0, 10);
+    nextchar = chars[_.random(0, chars.length - 1)];
+    text = "";
+    _(length).times(function() {
+      return text += nextchar;
+    });
+    return text;
+  };
+
+  Test.prototype.generateInsertOp = function(user_num) {
+    var pos;
+    pos = _.random(0, this.users[user_num].val('name').val().length - 1);
+    this.users[user_num].val('name').insertText(pos, this.getRandomText());
+    return null;
+  };
+
+  Test.prototype.generateReplaceOp = function(user_num) {
+    this.users[user_num].val('name').replaceText(this.getRandomText());
+    return null;
+  };
+
+  Test.prototype.generateDeleteOp = function(user_num) {
+    var length, ops1, pos;
+    if (this.users[user_num].val('name').val().length > 0) {
+      pos = _.random(0, this.users[user_num].val('name').val().length - 1);
+      length = 1;
+      ops1 = this.users[user_num].val('name').deleteText(pos, length);
+    }
+    return void 0;
+  };
+
+  Test.prototype.generateRandomOp = function(user_num) {
+    var i, op, op_gen;
+    op_gen = [this.generateDeleteOp, this.generateInsertOp, this.generateReplaceOp];
+    i = _.random(op_gen.length - 1);
+    return op = op_gen[i](user_num);
+  };
+
+  Test.prototype.applyRandomOp = function(user_num) {
+    var user;
+    user = this.users[user_num];
+    return user.getConnector().flushOneRandom();
+  };
+
+  Test.prototype.doSomething = function() {
+    var choice, choices, user_num;
+    user_num = _.random(this.number_of_engines - 1);
+    choices = [this.applyRandomOp, this.generateRandomOp];
+    choice = _.random(choices.length - 1);
+    return choices[choice](user_num);
+  };
+
+  Test.prototype.flushAll = function() {
+    var user, user_number, _i, _len, _ref, _results;
+    _ref = this.users;
+    _results = [];
+    for (user_number = _i = 0, _len = _ref.length; _i < _len; user_number = ++_i) {
+      user = _ref[user_number];
+      _results.push(user.getConnector().flushAll());
+    }
+    return _results;
+  };
+
+  Test.prototype.run = function() {
+    var i, j, number_of_created_operations, ops, ops_per_msek, printOpsInExecutionOrder, time_now, times, u, _i, _j, _k, _ref, _ref1, _ref2, _results;
+    _results = [];
+    for (times = _i = 1, _ref = this.repeat_this; 1 <= _ref ? _i <= _ref : _i >= _ref; times = 1 <= _ref ? ++_i : --_i) {
+      this.reinitialize();
+      time_now = (new Date).getTime();
+      for (i = _j = 1, _ref1 = this.doSomething_amount; 1 <= _ref1 ? _j <= _ref1 : _j >= _ref1; i = 1 <= _ref1 ? ++_j : --_j) {
+        this.doSomething();
+      }
+      this.flushAll();
+      this.time += (new Date()).getTime() - time_now;
+      number_of_created_operations = 0;
+      for (i = _k = 0, _ref2 = this.users.length; 0 <= _ref2 ? _k < _ref2 : _k > _ref2; i = 0 <= _ref2 ? ++_k : --_k) {
+        number_of_created_operations += this.users[i].getConnector().getOpsInExecutionOrder().length;
+      }
+      this.ops += number_of_created_operations * this.users.length;
+      ops_per_msek = Math.floor(this.ops / this.time);
+      console.log(("" + times + "/" + this.repeat_this + ": Every collaborator (" + this.users.length + ") applied " + this.number_of_created_operations + " ops in a different order.") + (" Over all we consumed " + this.ops + " operations in " + (this.time / 1000) + " seconds (" + ops_per_msek + " ops/msek)."));
+      _results.push((function() {
+        var _l, _len, _m, _ref3, _results1;
+        _results1 = [];
+        for (i = _l = 0, _ref3 = this.users.length - 1; 0 <= _ref3 ? _l < _ref3 : _l > _ref3; i = 0 <= _ref3 ? ++_l : --_l) {
+          if (this.users[i].val('name').val() !== this.users[i + 1].val('name').val()) {
+            printOpsInExecutionOrder = function(otnumber, otherotnumber) {
+              var j, o, ops, s, _len, _len1, _m, _n;
+              ops = this.users[otnumber].getConnector().getOpsInExecutionOrder();
+              for (_m = 0, _len = ops.length; _m < _len; _m++) {
+                s = ops[_m];
+                console.log(JSON.stringify(s));
+              }
+              console.log("");
+              s = "ops = [";
+              for (j = _n = 0, _len1 = ops.length; _n < _len1; j = ++_n) {
+                o = ops[j];
+                if (j !== 0) {
+                  s += ", ";
+                }
+                s += "op" + j;
+              }
+              s += "]";
+              console.log(s);
+              console.log("@users[@last_user].ot.applyOps ops");
+              console.log("expect(@users[@last_user].ot.val('name')).to.equal(\"" + (users[otherotnumber].val('name')) + "\")");
+              return ops;
+            };
+            console.log("");
+            console.log("Found an OT Puzzle!");
+            console.log("OT states:");
+            for (j = _m = 0, _len = users.length; _m < _len; j = ++_m) {
+              u = users[j];
+              console.log(("OT" + j + ": ") + u.val('name'));
+            }
+            console.log("\nOT execution order (" + i + "," + (i + 1) + "):");
+            printOpsInExecutionOrder(i, i + 1);
+            console.log("");
+            ops = printOpsInExecutionOrder(i + 1, i);
+            _results1.push(console.log(""));
+          } else {
+            _results1.push(void 0);
+          }
+        }
+        return _results1;
+      }).call(this));
+    }
+    return _results;
+  };
+
+  return Test;
+
+})();
+
+describe("JsonYatta", function() {
+  return it("can handle many engines, many operations, concurrently (random)", function() {
+    var yTest;
+    yTest = new Test();
+    return yTest.run();
   });
 });
 
 
-},{"../lib/Connectors/TestConnector.coffee":1,"../lib/Frameworks/TextYatta.coffee":4,"chai":17,"sinon":50,"sinon-chai":49,"underscore":65}]},{},[66,67]);
+},{"../lib/Connectors/TestConnector.coffee":1,"../lib/Frameworks/JsonYatta.coffee":3,"chai":17,"sinon":50,"sinon-chai":49,"underscore":65}]},{},[66,67,68]);

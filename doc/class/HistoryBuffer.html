@@ -54,6 +54,7 @@
       </a>
     </span>
     <span class='desc'>
+      Get the user id with wich the History Buffer was initialized. 
     </span>
   </li>
   <li>
@@ -65,6 +66,7 @@
       </a>
     </span>
     <span class='desc'>
+      Get the operation counter that describes the current state of the document. 
     </span>
   </li>
   <li>
@@ -119,25 +121,12 @@
       <div class='methods'>
   <div class='method_details'>
     <p class='signature' id='constructor-dynamic'>
-      ~
+      #
 (void)
-<b>new HistoryBuffer</b><span>()</span>
-      <br>
-      ~
-(void)
-<b>new HistoryBuffer</b><span>(initial_content)</span>
+<b>constructor</b><span>(user_id)</span>
       <br>
     </p>
-    <div class='tags'>
-  <div class='overloads'>
-    <h3>Overloads:</h3>
-    <div class='overload'>
-      <p class='signature'>
-        ~
-(void)
-<b>new HistoryBuffer</b><span>()</span>
-      </p>
-      <div class='docstring'>
+    <div class='docstring'>
   <p>Creates an empty HB.</p>
 </div>
 <div class='tags'>
@@ -155,40 +144,6 @@
     </li>
   </ul>
 </div>
-    </div>
-    <div class='overload'>
-      <p class='signature'>
-        ~
-(void)
-<b>new HistoryBuffer</b><span>(initial_content)</span>
-      </p>
-      <div class='docstring'>
-  <p>Creates an HB with initial operations that represent the initial_value.</p>
-</div>
-<div class='tags'>
-  <h3>Parameters:</h3>
-  <ul class='param'>
-    <li>
-      <span class='name'>initial_content</span>
-      <span class='type'>
-        (
-          <tt>Array&lt;Object&gt;</tt>
-        )
-      </span>
-      &mdash;
-      <span class='desc'>Initial content of the DUC </span>
-    </li>
-  </ul>
-  <h3>See also:</h3>
-  <ul class='see'>
-    <li>
-      <a href='DUC'>DUC - Document Under Collaboration</a>
-    </li>
-  </ul>
-</div>
-    </div>
-  </div>
-</div>
   </div>
 </div>
       <h2>Instance Method Details</h2>
@@ -200,7 +155,11 @@
 <b>getUserId</b><span>()</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>Get the user id with wich the History Buffer was initialized.</p>
+</div>
+<div class='tags'>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='getOperationCounter-dynamic'>
@@ -209,7 +168,11 @@
 <b>getOperationCounter</b><span>()</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>Get the operation counter that describes the current state of the document.</p>
+</div>
+<div class='tags'>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='toJson-dynamic'>
@@ -230,7 +193,7 @@
     <div class='docstring'>
   <p>Get the number of operations that were created by a user.
 Accordingly you will get the next operation number that is expected from that user.
-You&#39;ll get new results only if you added the operation with $addOperation.</p>
+This will increment the operation counter.</p>
 </div>
 <div class='tags'>
 </div>
@@ -257,7 +220,7 @@ You&#39;ll get new results only if you added the operation with $addOperation.</
     </p>
     <div class='docstring'>
   <p>Add an operation to the HB. Note that this will not link it against
-other operations (it wont be executable)</p>
+other operations (it wont executed)</p>
 </div>
 <div class='tags'>
 </div>
@@ -265,7 +228,7 @@ other operations (it wont be executable)</p>
 </div>
     </div>
     <div id='footer'>
-  August 02, 14 01:38:26 by
+  August 03, 14 03:14:41 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

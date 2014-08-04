@@ -6,8 +6,8 @@ module.exports = function(HB) {
   parser = {};
   execution_listener = [];
   Operation = (function() {
-    function Operation(_arg) {
-      this.creator = _arg['creator'], this.op_number = _arg['op_number'];
+    function Operation(uid) {
+      this.creator = uid['creator'], this.op_number = uid['op_number'];
     }
 
     Operation.prototype.getUid = function() {
@@ -92,9 +92,9 @@ module.exports = function(HB) {
     return Delete;
 
   })(Operation);
-  parser['Delete'] = function(_arg) {
+  parser['Delete'] = function(o) {
     var deletes_uid, uid;
-    uid = _arg['uid'], deletes_uid = _arg['deletes'];
+    uid = o['uid'], deletes_uid = o['deletes'];
     return new Delete(uid, deletes_uid);
   };
   Insert = (function(_super) {

@@ -9,7 +9,7 @@ chai.use(sinonChai)
 
 Yatta = require "../lib/Frameworks/JsonYatta.coffee"
 Connector_uninitialized = require "../lib/Connectors/TestConnector.coffee"
-
+###
 describe "JsonYatta", ->
   beforeEach (done)->
     @last_user = 10
@@ -17,14 +17,15 @@ describe "JsonYatta", ->
     @Connector = Connector_uninitialized @users
     for i in [0..(@last_user+1)]
       @users.push(new Yatta i, @Connector)
+
+
     done()
 
   it "can handle many engines, many operations, concurrently (random)", ->
     number_of_test_cases_multiplier = 1
-    repeat_this = 1 * number_of_test_cases_multiplier
+    repeat_this = 100 * number_of_test_cases_multiplier
     doSomething_amount = 200 * number_of_test_cases_multiplier
     number_of_engines =  12 + number_of_test_cases_multiplier - 1
-    #maximum_ops_per_engine = 20 * number_of_test_cases_multiplier
 
     @time = 0
     @ops = 0
@@ -142,3 +143,4 @@ describe "JsonYatta", ->
           ops = printOpsInExecutionOrder i+1, i
 
           console.log ""
+###

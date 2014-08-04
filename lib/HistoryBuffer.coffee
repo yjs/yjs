@@ -5,21 +5,25 @@
 # @note The HistoryBuffer is commonly abbreviated to HB.
 #
 class HistoryBuffer
-  # @overload new HistoryBuffer()
-  #   Creates an empty HB.
-  #   @param {Object} user_id Creator of the HB.
-  # @overload new HistoryBuffer(initial_content)
-  #   Creates an HB with initial operations that represent the initial_value.
-  #   @param {Array<Object>} initial_content Initial content of the DUC
-  #   @see DUC DUC - Document Under Collaboration
+
+  #
+  # Creates an empty HB.
+  # @param {Object} user_id Creator of the HB.
+  #
   constructor: (@user_id)->
     @operation_counter = {}
     @buffer = {}
     @change_listeners = []
 
+  #
+  # Get the user id with wich the History Buffer was initialized.
+  #
   getUserId: ()->
     @user_id
 
+  #
+  # Get the operation counter that describes the current state of the document.
+  #
   getOperationCounter: ()->
     res = {}
     for user,ctn of @operation_counter
@@ -34,9 +38,10 @@ class HistoryBuffer
           json.push o.toJson()
     json
 
+  #
   # Get the number of operations that were created by a user.
   # Accordingly you will get the next operation number that is expected from that user.
-  # You'll get new results only if you added the operation with $addOperation.
+  # This will increment the operation counter.
   #
   getNextOperationIdentifier: (user_id)->
     if not user_id?
@@ -59,7 +64,7 @@ class HistoryBuffer
       throw new Error "This type of uid is not defined!"
 
   # Add an operation to the HB. Note that this will not link it against
-  # other operations (it wont be executable)
+  # other operations (it wont executed)
   addOperation: (o)->
     if not @buffer[o.creator]?
       @buffer[o.creator] = {}

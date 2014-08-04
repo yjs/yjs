@@ -35,13 +35,251 @@
       </table>
       <h2>Overview</h2>
       <div class='docstring'>
-  <p>A generic interface to operations.</p>
+  <p>A generic interface to operations.</p><p>An operation has the following methods:
+toJson: encodes an operation (needed only if instance of this operation is sent).
+execute: execute the effects of this operations. Good examples are Insert-type and AddName-type
+val: in the case that the operation holds a value</p><p>Furthermore an encodable operation has a parser.</p>
 </div>
 <div class='tags'>
 </div>
+      <h2>Direct Known Subclasses</h2>
+      <p class='children'>
+        <a href='../class/Delete.html'>Delete</a>
+        <a href='../class/Insert.html'>Insert</a>
+      </p>
+      <h2>Instance Method Summary</h2>
+      <ul class='summary'>
+  <li>
+    <span class='signature'>
+      <a href='#getUid-dynamic'>
+        #
+(void)
+<b>getUid</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Computes a unique identifier (uid). 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#execute-dynamic'>
+        #
+(void)
+<b>execute</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Notify the all the listeners. 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#saveOperation-dynamic'>
+        ~
+(void)
+<b>saveOperation</b><span>(name, op_uid)</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Operations may depend on other operations (linked lists, etc.). 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#validateSavedOperations-dynamic'>
+        #
+(Boolean)
+<b>validateSavedOperations</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+      After calling this function all not instantiated operations will be accessible. 
+    </span>
+  </li>
+</ul>
+      <h2>Constructor Details</h2>
+      <div class='methods'>
+  <div class='method_details'>
+    <p class='signature' id='constructor-dynamic'>
+      #
+(void)
+<b>constructor</b><span>(uid)</span>
+      <br>
+    </p>
+    <div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>uid</span>
+      <span class='type'>
+        (
+          <tt>Object</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>A unique identifier </span>
+    </li>
+  </ul>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='HistoryBuffer.getNextOperationIdentifier'>HistoryBuffer.getNextOperationIdentifier</a>
+    </li>
+  </ul>
+</div>
+  </div>
+</div>
+      <h2>Instance Method Details</h2>
+      <div class='methods'>
+  <div class='method_details'>
+    <p class='signature' id='getUid-dynamic'>
+      #
+(void)
+<b>getUid</b><span>()</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>Computes a unique identifier (uid).</p>
+</div>
+<div class='tags'>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='execute-dynamic'>
+      #
+(void)
+<b>execute</b><span>()</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>Notify the all the listeners.</p>
+</div>
+<div class='tags'>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='saveOperation-dynamic'>
+      ~
+(void)
+<b>saveOperation</b><span>(name, op_uid)</span>
+      <br>
+      ~
+(void)
+<b>saveOperation</b><span>(name, op)</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>Operations may depend on other operations (linked lists, etc.).
+The saveOperation and validateSavedOperations methods provide
+an easy way to refer to these operations via an uid or object reference.</p><p>For example: We can create a new Delete operation that deletes the operation $o like this</p><pre><code>- var d = new Delete(uid, $o);   or
+- var d = new Delete(uid, $o.getUid());
+</code></pre><p>Either way we want to access $o via d.deletes. In the second case validateSavedOperations must be called first.</p>
+</div>
+<div class='tags'>
+  <div class='overloads'>
+    <h3>Overloads:</h3>
+    <div class='overload'>
+      <p class='signature'>
+        ~
+(void)
+<b>saveOperation</b><span>(name, op_uid)</span>
+      </p>
+      <div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>name</span>
+      <span class='type'>
+        (
+          <tt>String</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>The name of the operation. After validating (with validateSavedOperations) the instantiated operation will be accessible via this[name]. </span>
+    </li>
+    <li>
+      <span class='name'>op_uid</span>
+      <span class='type'>
+        (
+          <tt>Object</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>A uid that refers to an operation </span>
+    </li>
+  </ul>
+</div>
+    </div>
+    <div class='overload'>
+      <p class='signature'>
+        ~
+(void)
+<b>saveOperation</b><span>(name, op)</span>
+      </p>
+      <div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>name</span>
+      <span class='type'>
+        (
+          <tt>String</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>The name of the operation. After calling this function op is accessible via this[name]. </span>
+    </li>
+    <li>
+      <span class='name'>op</span>
+      <span class='type'>
+        (
+          <tt><a href='../class/Operation.html'>Operation</a></tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>An Operation object </span>
+    </li>
+  </ul>
+</div>
+    </div>
+  </div>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='validateSavedOperations-dynamic'>
+      #
+(Boolean)
+<b>validateSavedOperations</b><span>()</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>After calling this function all not instantiated operations will be accessible.</p>
+</div>
+<div class='tags'>
+  <h3>Returns:</h3>
+  <ul class='return'>
+    <li>
+      <span class='type'></span>
+      (
+        <tt>Boolean</tt>
+      )
+      &mdash;
+      <span class='desc'>Whether it was possible to instantiate all operations. </span>
+    </li>
+  </ul>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='Operation.saveOperation'>Operation.saveOperation</a>
+    </li>
+  </ul>
+</div>
+  </div>
+</div>
     </div>
     <div id='footer'>
-  August 02, 14 01:38:26 by
+  August 03, 14 03:14:41 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

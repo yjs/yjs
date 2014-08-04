@@ -1,7 +1,7 @@
 {
   "name": "Yatta",
   "version": "0.0.1",
-  "description": "",
+  "description": "A Collaboration Framework for arbitrary data structures that is NOT based on the Operational Transformation.",
   "main": "lib/index.js",
   "scripts": {
     "test": "grunt test"
@@ -14,7 +14,8 @@
     "OT",
     "Complex Data Structures",
     "XML",
-    "collaboration"
+    "collaboration",
+    "Yata"
   ],
   "author": "Kevin Jahns",
   "license": "LGPL",
@@ -23,8 +24,6 @@
   },
   "homepage": "https://github.com/DadaMonad/Yatta",
   "dependencies": {
-    "underscore": "^1.6.0",
-    "grunt-contrib-connect": "~0.8.0"
   },
   "devDependencies": {
     "grunt-contrib-coffee": "^0.10.1",
@@ -39,6 +38,8 @@
     "grunt-coffeelint": "0.0.10",
     "mocha": "^1.20.1",
     "browserify": "^4.2.0",
-    "grunt-codo": "^0.2.0"
+    "grunt-codo": "^0.2.0",
+    "underscore": "^1.6.0",
+    "grunt-contrib-connect": "~0.8.0"
   }
 }

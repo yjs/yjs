@@ -19,63 +19,34 @@
       Index
     </a>
     &raquo;
-    <span class='title'>ReplaceManager</span>
+    <span class='title'>Delete</span>
   </div>
 </div>
     <div id='content'>
       <h1>
         Class:
-        ReplaceManager
+        Delete
       </h1>
       <table class='box'>
         <tr>
           <td>Defined in:</td>
-          <td>lib&#47;Types&#47;StructuredTypes.coffee</td>
+          <td>lib&#47;Types&#47;BasicTypes.coffee</td>
         </tr>
         <tr>
           <td>Inherits:</td>
           <td>
-            <a href='../class/ListManager.html'>ListManager</a>
+            <a href='../class/Operation.html'>Operation</a>
           </td>
         </tr>
       </table>
       <h2>Overview</h2>
       <div class='docstring'>
-  <p>Adds support for replace. The ReplaceManager manages Replaceable operations.
-Each Replaceable holds a value that is now replaceable.</p><p>The Word-type has implemented support for replace</p>
+  <p>A simple Delete-type operation that deletes an Insert-type operation.</p>
 </div>
 <div class='tags'>
-  <h3>See also:</h3>
-  <ul class='see'>
-    <li>
-      <a href='../class/Word.html'>Word</a>
-    </li>
-  </ul>
 </div>
       <h2>Instance Method Summary</h2>
       <ul class='summary'>
-  <li>
-    <span class='signature'>
-      <a href='#replace-dynamic'>
-        #
-(void)
-<b>replace</b><span>(content)</span>
-      </a>
-    </span>
-    <span class='desc'>
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#val-dynamic'>
-        #
-(void)
-<b>val</b><span>()</span>
-      </a>
-    </span>
-    <span class='desc'>
-    </span>
-  </li>
   <li>
     <span class='signature'>
       <a href='#toJson-dynamic'>
@@ -85,6 +56,19 @@ Each Replaceable holds a value that is now replaceable.</p><p>The Word-type has 
       </a>
     </span>
     <span class='desc'>
+      Convert all relevant information of this operation to the json-format. 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#execute-dynamic'>
+        #
+(void)
+<b>execute</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Apply the deletion. 
     </span>
   </li>
 </ul>
@@ -92,13 +76,13 @@ Each Replaceable holds a value that is now replaceable.</p><p>The Word-type has 
         <small>Inherited Method Summary</small>
         <h3 class='inherited'>
           Methods inherited from
-          <a href='../class/ListManager.html'>ListManager</a>
+          <a href='../class/Operation.html'>Operation</a>
         </h3>
         <p class='inherited'>
-          <a href='../class/ListManager.html#getLastOperation-dynamic'>#getLastOperation</a>
-          <a href='../class/ListManager.html#getFirstOperation-dynamic'>#getFirstOperation</a>
-          <a href='../class/ListManager.html#toArray-dynamic'>#toArray</a>
-          <a href='../class/ListManager.html#getOperationByPosition-dynamic'>#getOperationByPosition</a>
+          <a href='../class/Operation.html#getUid-dynamic'>#getUid</a>
+          <a href='../class/Operation.html#execute-dynamic'>#execute</a>
+          <a href='../class/Operation.html#saveOperation-dynamic'>#saveOperation</a>
+          <a href='../class/Operation.html#validateSavedOperations-dynamic'>#validateSavedOperations</a>
         </p>
       </h2>
       <h2>Constructor Details</h2>
@@ -107,7 +91,7 @@ Each Replaceable holds a value that is now replaceable.</p><p>The Word-type has 
     <p class='signature' id='constructor-dynamic'>
       #
 (void)
-<b>constructor</b><span>(initial_content, uid, beginning, end, prev, next, origin)</span>
+<b>constructor</b><span>(uid, deletes)</span>
       <br>
     </p>
     
@@ -116,31 +100,31 @@ Each Replaceable holds a value that is now replaceable.</p><p>The Word-type has 
       <h2>Instance Method Details</h2>
       <div class='methods'>
   <div class='method_details'>
-    <p class='signature' id='replace-dynamic'>
-      #
-(void)
-<b>replace</b><span>(content)</span>
-      <br>
-    </p>
-    
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='val-dynamic'>
-      #
-(void)
-<b>val</b><span>()</span>
-      <br>
-    </p>
-    
-  </div>
-  <div class='method_details'>
     <p class='signature' id='toJson-dynamic'>
       #
 (void)
 <b>toJson</b><span>()</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>Convert all relevant information of this operation to the json-format.
+This result can be sent to other clients.</p>
+</div>
+<div class='tags'>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='execute-dynamic'>
+      #
+(void)
+<b>execute</b><span>()</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>Apply the deletion.</p>
+</div>
+<div class='tags'>
+</div>
   </div>
 </div>
     </div>

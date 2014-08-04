@@ -39,6 +39,12 @@
           </td>
         </tr>
       </table>
+      <h2>Overview</h2>
+      <div class='docstring'>
+  <p>Handles a Text-like data structures with support for insertText/deleteText at a word-position.</p>
+</div>
+<div class='tags'>
+</div>
       <h2>Instance Method Summary</h2>
       <ul class='summary'>
   <li>
@@ -50,7 +56,7 @@
       </a>
     </span>
     <span class='desc'>
-      inserts a 
+      Inserts a string into the word 
     </span>
   </li>
   <li>
@@ -62,7 +68,7 @@
       </a>
     </span>
     <span class='desc'>
-      Creates a set of delete operations 
+      Deletes a part of the word. 
     </span>
   </li>
   <li>
@@ -74,6 +80,7 @@
       </a>
     </span>
     <span class='desc'>
+      Replace the content of this word with another one. 
     </span>
   </li>
   <li>
@@ -85,6 +92,7 @@
       </a>
     </span>
     <span class='desc'>
+      @returns [Json] A Json object. 
     </span>
   </li>
   <li>
@@ -96,6 +104,8 @@
       </a>
     </span>
     <span class='desc'>
+      In most cases you would embed a Word in a Replaceable, wich is handled by the ReplaceManager in order to provide replace functionality.
+
     </span>
   </li>
   <li>
@@ -132,7 +142,7 @@
       <br>
     </p>
     <div class='docstring'>
-  <p>inserts a</p>
+  <p>Inserts a string into the word</p>
 </div>
 <div class='tags'>
 </div>
@@ -145,7 +155,7 @@
       <br>
     </p>
     <div class='docstring'>
-  <p>Creates a set of delete operations</p>
+  <p>Deletes a part of the word.</p>
 </div>
 <div class='tags'>
 </div>
@@ -157,7 +167,18 @@
 <b>replaceText</b><span>(text)</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>Replace the content of this word with another one. Concurrent replacements are not merged!
+Only one of the replacements will be used.</p><p>Can only be used if the ReplaceManager was set!</p>
+</div>
+<div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='Word.setReplaceManager'>Word.setReplaceManager</a>
+    </li>
+  </ul>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='val-dynamic'>
@@ -166,7 +187,11 @@
 <b>val</b><span>()</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>@returns [Json] A Json object.</p>
+</div>
+<div class='tags'>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='setReplaceManager-dynamic'>
@@ -175,7 +200,12 @@
 <b>setReplaceManager</b><span>(op)</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>In most cases you would embed a Word in a Replaceable, wich is handled by the ReplaceManager in order
+to provide replace functionality.</p>
+</div>
+<div class='tags'>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='toJson-dynamic'>
@@ -189,7 +219,7 @@
 </div>
     </div>
     <div id='footer'>
-  August 02, 14 01:38:26 by
+  August 03, 14 03:14:41 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

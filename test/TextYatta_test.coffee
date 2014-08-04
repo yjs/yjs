@@ -9,7 +9,7 @@ chai.use(sinonChai)
 
 Yatta = require "../lib/Frameworks/TextYatta.coffee"
 Connector_uninitialized = require "../lib/Connectors/TestConnector.coffee"
-
+###
 describe "TextYatta", ->
   beforeEach (done)->
     @last_user = 10
@@ -149,3 +149,4 @@ describe "TextYatta", ->
           # expect(users[i].ot.val()).to.equal(users[i+1].ot.val())
 
 
+###

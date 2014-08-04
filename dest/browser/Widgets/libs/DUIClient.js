@@ -21,9 +21,9 @@ DUIClient = function(){
 	var that = this;
 	var _iwcClient = new iwc.Client(["*"]);
 	_iwcClient._componentName = "duiclient-"+_widgetId;
-	
+
 	this.externalCallback = function(intent){};
-	
+
 /**
  * The target function when the intent is for updating widget state request
  */
@@ -35,6 +35,9 @@ DUIClient = function(){
 			this.updateState(intent);
 	};
 
+        this.getIwcClient = function(){
+          return _iwcClient;
+        }
 	/**
 	 * The target function when the intent is for getting the current widget state.<br/>
 	 * The intent.extras object here is always a Json object.
@@ -47,7 +50,7 @@ DUIClient = function(){
 			forMigration = true;
 		}
 		var states = this.getWidgetState(forMigration);
-		
+
 		var resIntent = {};
 		if (forMigration)
 			resIntent = {
@@ -67,10 +70,10 @@ DUIClient = function(){
 				"dataType":"",
 				"extras":{"widgetId": _widgetId, "widgetStates": states}
 			};
-		
+
 		_iwcClient.publish(resIntent);
 	};
-	
+
 	/**
 	 * The target function when the intent is to inform a change in the scope of the application
 	 */
@@ -85,7 +88,7 @@ DUIClient = function(){
 		console.log("do sth before the widget is removed");
 		this.prepareMigration();
 	};
-	
+
 	this._logOff = function(intent){
 		var states = this.getWidgetState(false);
 		resIntent = {
@@ -96,10 +99,10 @@ DUIClient = function(){
 			"dataType":"",
 			"extras":{"widgetId": _widgetId, "widgetStates": states}
 		};
-		
+
 		_iwcClient.publish(resIntent);
 	};
-	
+
 	/**
 	 * The intent dispatcher and the callback function connected to the private field of iwc.Client.onIntent.<br/>
 	 * This function is called once an intent is received by the iwc.Client and passed the first level filter of the iwc.Client.<br/>
@@ -109,7 +112,7 @@ DUIClient = function(){
 		that.externalCallback(intent);
 		//does not accept global intents(global intents are processed by normal iwc.Client, normal iwc.Proxy and DUI manager)
 		//does not accept intents that are not categorized as "DUI"
-		if ((typeof intent.flags != "undefined" && intent.flags.indexOf("PUBLISH_GLOBAL")!=-1) 
+		if ((typeof intent.flags != "undefined" && intent.flags.indexOf("PUBLISH_GLOBAL")!=-1)
 				|| typeof intent.categories == "undefined" || intent.categories.indexOf("DUI") == -1)
 			return;
 		//then does not accept intents for other widgets
@@ -128,7 +131,7 @@ DUIClient = function(){
 				that._prepareMigration(intent);
 				return;
 			}
-		}else if (typeof intent.extras.widgetId == "undefined"){		
+		}else if (typeof intent.extras.widgetId == "undefined"){
 			if (action == "DUI_LOG_OFF"){
 				that._logOff(intent);
 				return;
@@ -146,11 +149,11 @@ DUIClient = function(){
 			}
 		}
 	};
-	
+
 	_iwcClient.connect(_iwcCallback);
-	
+
 	//remember to bind(this) the function when override
-	
+
 	/**
 	 * The function is called when the dui manager wants the widget states.<br/>
 	 * <strong>Notice</strong>: avoid putting complex data and data structure to the state value, the browser and Java JSON encoder and parser might cause inconsistent input and output.
@@ -160,9 +163,9 @@ DUIClient = function(){
 	this.getWidgetState = function(isForMigration){
 		console.log("the widget collects it is state and return, overwrite it");
 		var states = {};
-		return states; 
+		return states;
 	};
-	
+
 	/**
 	 * The function is called when there detected a application state change at the dui manager and the manager informs the widget about the change.<br/>
 	 * Override this function to apply changes to the widget according to the valuable application state changes.<br/>
@@ -196,7 +199,7 @@ DUIClient = function(){
 	/**
 	 * The function is called when the dui manager asks the widget to update its states.<br/>
 	 * Compared to the function DUIClient.finishMigration(), this is a typical normal state update for active widget on presence.<br/>
-	 * This method will be called as a callback for DUIClient#requireWidgetState(); or DUIClient#initOK() when it is not a migration. 
+	 * This method will be called as a callback for DUIClient#requireWidgetState(); or DUIClient#initOK() when it is not a migration.
 	 * Override this method to perform state update for each different widget.
 	 * @param intent The Intent object that contains infos of required widget states, the infos are in intent.extras.widgetStates e.g. {"state1":value1,"state2":value2}.
 	 * The object might contain appStates as well if there is any application state, get it in intent.extras.appStates e.g. {"appstate1":value1,"appstate2":value2}.
@@ -210,7 +213,7 @@ DUIClient = function(){
 			console.log(appStates);
 		console.log("update the widget state, widget need to overwrite it");
 	};
-	
+
 	/**
 	 * The function is called to finish the Migration and update the widget state.<br/>
 	 * Compared to the method DUIClient.updateState(), this method is a special widget state update for the widget that has just migrated.<br/>
@@ -227,10 +230,10 @@ DUIClient = function(){
 			console.log(appStates);
 		console.log("the migration is done, the widget may need to perform special inits before update the widget state e.g. login to the lasServer again.");
 	};
-	
+
 	/**
 	 * The function to signal the dui manager that the preparation for the migration is ready on this widget.<br/>
-	 * This function should be called at the end of the overwritten function {@link DUIClient#prepareMigration}<br/> 
+	 * This function should be called at the end of the overwritten function {@link DUIClient#prepareMigration}<br/>
 	 * Do not override this method unless there is really an unstoppable reason.
 	 */
 	this.prepareMigDone = function(){
@@ -263,7 +266,7 @@ DUIClient = function(){
 		};
 		_iwcClient.publish(intent);
 	};
-	
+
 	/**
 	 * An open interface to send any intent
 	 */
@@ -271,7 +274,7 @@ DUIClient = function(){
 		//or to send the intent to "duimanager"
 		_iwcClient.publish(intent);
 	};
-	
+
 	/**
 	 * This function asks the framework for the states stored on the server.
 	 * Do not override it.
@@ -287,7 +290,7 @@ DUIClient = function(){
 		};
 		_iwcClient.publish(intent);
 	};
-	
+
 	/**
 	 * Store the global app state
 	 * @param states the app state to be stored e.g. {"state1":value1, "state2":value2}
@@ -303,7 +306,7 @@ DUIClient = function(){
 		};
 		_iwcClient.publish(intent);
 	};
-	
+
 	/**
 	 * Ask the dui manager for the app state.
 	 */
@@ -317,15 +320,15 @@ DUIClient = function(){
 		};
 		_iwcClient.publish(intent);
 	};
-	
+
 	/**
 	 * Override this function to do something when the requested app state comes.
 	 * @param appStates the json format of the app state:{"name1": value1, "name2": value2};
 	 */
 	this.onAppState = function(appStates){};
-	
+
 	/**
-	 * call this function to register the duiclient to duimanager after all things are OK 
+	 * call this function to register the duiclient to duimanager after all things are OK
 	 */
 	this.initOK = function(){
 		var okIntent = {
@@ -334,12 +337,12 @@ DUIClient = function(){
 			"component": "duimanager",// the overwritten dui manager from the iwc.Proxy should have the _componentName set to "duimanager"
 			"data":"",
 			"dataType":"",
-			"extras":{"widgetId": _widgetId}	
+			"extras":{"widgetId": _widgetId}
 		};
-		
+
 		_iwcClient.publish(okIntent);
 	};
-	
+
 	/**
 	 * publish the intent in the domain of the user only
 	 */
@@ -355,7 +358,7 @@ DUIClient = function(){
 		_iwcClient.publish(intent);
 		_iwcClient.publish(wrap);
 	};
-	
+
 	/**
 	 * register the call back function of the widget to the DUI client.
 	 */

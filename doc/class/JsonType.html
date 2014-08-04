@@ -39,17 +39,24 @@
           </td>
         </tr>
       </table>
+      <h2>Overview</h2>
+      <div class='docstring'>
+  <p>Manages Object-like values.</p>
+</div>
+<div class='tags'>
+</div>
       <h2>Instance Method Summary</h2>
       <ul class='summary'>
   <li>
     <span class='signature'>
       <a href='#val-dynamic'>
-        #
+        ~
 (void)
-<b>val</b><span>(name, content)</span>
+<b>val</b><span>()</span>
       </a>
     </span>
     <span class='desc'>
+      Get this as a Json object. 
     </span>
   </li>
   <li>
@@ -80,12 +87,98 @@
       <div class='methods'>
   <div class='method_details'>
     <p class='signature' id='val-dynamic'>
-      #
+      ~
+(void)
+<b>val</b><span>()</span>
+      <br>
+      ~
+(void)
+<b>val</b><span>(name)</span>
+      <br>
+      ~
 (void)
 <b>val</b><span>(name, content)</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>Get this as a Json object. Note that none of the values of the result is of type Operation.
+Get value of a property.
+Set a new property.</p>
+</div>
+<div class='tags'>
+  <div class='overloads'>
+    <h3>Overloads:</h3>
+    <div class='overload'>
+      <p class='signature'>
+        ~
+(void)
+<b>val</b><span>()</span>
+      </p>
+      <div class='docstring'>
+  <p>@results [Json]</p>
+</div>
+<div class='tags'>
+</div>
+    </div>
+    <div class='overload'>
+      <p class='signature'>
+        ~
+(void)
+<b>val</b><span>(name)</span>
+      </p>
+      <div class='docstring'>
+  <p>@results [JsonType|WordType]</p>
+</div>
+<div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>name</span>
+      <span class='type'>
+        (
+          <tt>String</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>Name of the object property. </span>
+    </li>
+  </ul>
+</div>
+    </div>
+    <div class='overload'>
+      <p class='signature'>
+        ~
+(void)
+<b>val</b><span>(name, content)</span>
+      </p>
+      <div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>name</span>
+      <span class='type'>
+        (
+          <tt>String</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>Name of the object property. </span>
+    </li>
+    <li>
+      <span class='name'>content</span>
+      <span class='type'>
+        (
+          <tt>Object|String</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>Content of the object property. </span>
+    </li>
+  </ul>
+</div>
+    </div>
+  </div>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='toJson-dynamic'>
@@ -99,7 +192,7 @@
 </div>
     </div>
     <div id='footer'>
-  August 02, 14 01:38:26 by
+  August 03, 14 03:14:41 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

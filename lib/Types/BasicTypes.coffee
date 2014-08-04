@@ -6,15 +6,29 @@ module.exports = (HB)->
   #
   # A generic interface to operations.
   #
+  # An operation has the following methods:
+  # toJson: encodes an operation (needed only if instance of this operation is sent).
+  # execute: execute the effects of this operations. Good examples are Insert-type and AddName-type
+  # val: in the case that the operation holds a value
+  #
+  # Furthermore an encodable operation has a parser.
+  #
   class Operation
     # @param {Object} uid A unique identifier
     # @see HistoryBuffer.getNextOperationIdentifier
-    constructor: ({'creator': @creator, 'op_number' : @op_number})->
+    constructor: (uid)->
+      {
+        'creator': @creator
+        'op_number' : @op_number
+      } = uid
 
     # Computes a unique identifier (uid).
     getUid: ()->
       { 'creator': @creator, 'op_number': @op_number }
 
+    #
+    # Notify the all the listeners.
+    #
     execute: ()->
       @is_executed = true
       for l in execution_listener
@@ -22,13 +36,14 @@ module.exports = (HB)->
       @
 
     #
-    # Operations may depend on other operations (linked lists, etc.). The saveOperation and validateSavedOperations methods provide
+    # Operations may depend on other operations (linked lists, etc.).
+    # The saveOperation and validateSavedOperations methods provide
     # an easy way to refer to these operations via an uid or object reference.
     #
     # For example: We can create a new Delete operation that deletes the operation $o like this
     #     - var d = new Delete(uid, $o);   or
     #     - var d = new Delete(uid, $o.getUid());
-    # Either way we want to access $o via d.deletes. This is possible after calling validateSavedOperations.
+    # Either way we want to access $o via d.deletes. In the second case validateSavedOperations must be called first.
     #
     # @overload saveOperation(name, op_uid)
     #   @param {String} name The name of the operation. After validating (with validateSavedOperations) the instantiated operation will be accessible via this[name].
@@ -38,9 +53,12 @@ module.exports = (HB)->
     #   @param {Operation} op An Operation object
     #
     saveOperation: (name, op)->
+
+      #
       # Every instance of $Operation must have an $execute function.
       # We use duck-typing to check if op is instantiated since there
       # could exist multiple classes of $Operation
+      #
       if op?.execute?
         # is instantiated
         @[name] = op
@@ -73,7 +91,7 @@ module.exports = (HB)->
 
 
   #
-  # A simple delete-type operation.
+  # A simple Delete-type operation that deletes an Insert-type operation.
   #
   class Delete extends Operation
     constructor: (uid, deletes)->
@@ -91,6 +109,9 @@ module.exports = (HB)->
         'deletes': @deletes.getUid()
       }
 
+    #
+    # Apply the deletion.
+    #
     execute: ()->
       if @validateSavedOperations()
         @deletes.applyDelete @
@@ -100,9 +121,13 @@ module.exports = (HB)->
         false
 
   #
-  # Define how to parse $Delete operations.
+  # Define how to parse Delete operations.
   #
-  parser['Delete'] = ({'uid' : uid, 'deletes': deletes_uid})->
+  parser['Delete'] = (o)->
+    {
+      'uid' : uid
+      'deletes': deletes_uid
+    } = o
     new Delete uid, deletes_uid
 
   #
@@ -115,12 +140,15 @@ module.exports = (HB)->
   #   - The complete-list (abbrev. cl) maintains all operations
   #
   class Insert extends Operation
+
+    #
     # @param {Object} creator A unique user identifier
     # @param {Integer} op_number This Number was assigned via getNextOperationIdentifier().
     # @param {Operation} prev_cl The predecessor of this operation in the complete-list (cl)
     # @param {Operation} next_cl The successor of this operation in the complete-list (cl)
     #
     # @see HistoryBuffer.getNextOperationIdentifier
+    #
     constructor: (uid, prev_cl, next_cl, origin)->
       @saveOperation 'prev_cl', prev_cl
       @saveOperation 'next_cl', next_cl

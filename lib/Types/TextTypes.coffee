@@ -13,7 +13,7 @@ module.exports = (HB)->
   parser["TextDelete"] = parser["Delete"]
 
   #
-  #  Extends the basic Insert type.
+  #  Extends the basic Insert type to an operation that holds a text value
   #
   class TextInsert extends types.Insert
     constructor: (@content, uid, prev, next, origin)->
@@ -67,20 +67,26 @@ module.exports = (HB)->
     } = json
     new TextInsert content, uid, prev, next, origin
 
+  #
+  # Handles a Text-like data structures with support for insertText/deleteText at a word-position.
+  #
   class Word extends types.ListManager
     constructor: (uid, initial_content, beginning, end, prev, next, origin)->
       super uid, beginning, end, prev, next, origin
       if initial_content?
         @insertText 0, initial_content
-
-    # inserts a
+    #
+    # Inserts a string into the word
+    #
     insertText: (position, content)->
       o = @getOperationByPosition position
       for c in content
         op = new TextInsert c, HB.getNextOperationIdentifier(), o.prev_cl, o
         HB.addOperation(op).execute()
 
-    # Creates a set of delete operations
+    #
+    # Deletes a part of the word.
+    #
     deleteText: (position, length)->
       o = @getOperationByPosition position
 
@@ -93,6 +99,13 @@ module.exports = (HB)->
           o = o.next_cl
         d.toJson()
 
+    #
+    # Replace the content of this word with another one. Concurrent replacements are not merged!
+    # Only one of the replacements will be used.
+    #
+    # Can only be used if the ReplaceManager was set!
+    # @see Word.setReplaceManager
+    #
     replaceText: (text)->
       if @replace_manager?
         word = HB.addOperation(new Word HB.getNextOperationIdentifier()).execute()
@@ -101,6 +114,9 @@ module.exports = (HB)->
       else
         throw new Error "This type is currently not maintained by a ReplaceManager!"
 
+    #
+    # @returns [Json] A Json object.
+    #
     val: ()->
       c = for o in @toArray()
         if o.val?
@@ -109,6 +125,10 @@ module.exports = (HB)->
           ""
       c.join('')
 
+    #
+    # In most cases you would embed a Word in a Replaceable, wich is handled by the ReplaceManager in order
+    # to provide replace functionality.
+    #
     setReplaceManager: (op)->
       @saveOperation 'replace_manager', op
       @validateSavedOperations

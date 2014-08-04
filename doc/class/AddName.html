@@ -39,6 +39,15 @@
           </td>
         </tr>
       </table>
+      <h2>Overview</h2>
+      <div class='docstring'>
+  <p>When a new property in a map manager is created, then the uids of the inserted Operations
+must be unique (think about concurrent operations). Therefore only an AddName operation is allowed to
+add a property in a MapManager. If two AddName operations on the same MapManager name happen concurrently
+only one will AddName operation will be executed.</p>
+</div>
+<div class='tags'>
+</div>
       <h2>Instance Method Summary</h2>
       <ul class='summary'>
   <li>
@@ -99,7 +108,7 @@
 </div>
     </div>
     <div id='footer'>
-  August 02, 14 01:38:26 by
+  August 03, 14 03:14:41 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

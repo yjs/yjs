@@ -1,4 +1,7 @@
 
+#
+# The Engine handles how and in which order to execute operations and add operations to the HistoryBuffer.
+#
 class Engine
   constructor: (@HB, @parser)->
     @unprocessed_ops = []
@@ -10,7 +13,6 @@ class Engine
     else
       throw new Error "You forgot to specify a parser for type #{json.type}. The message is #{JSON.stringify json}."
 
-  # TODO:
   applyOps: (ops_json)->
     ops = []
     for o in ops_json

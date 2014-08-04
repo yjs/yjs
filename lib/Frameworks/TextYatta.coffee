@@ -3,6 +3,9 @@ text_types_uninitialized = require "../Types/TextTypes.coffee"
 HistoryBuffer = require "../HistoryBuffer.coffee"
 Engine = require "../Engine.coffee"
 
+#
+# Framework for Text Datastructures.
+#
 class TextYatta
   constructor: (user_id, Connector)->
     @HB = new HistoryBuffer user_id

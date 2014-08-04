@@ -3,6 +3,9 @@ json_types_uninitialized = require "../Types/JsonTypes.coffee"
 HistoryBuffer = require "../HistoryBuffer.coffee"
 Engine = require "../Engine.coffee"
 
+#
+# Framework for arbitrary Json data-structures.
+#
 class JsonYatta
   constructor: (user_id, Connector)->
     @HB = new HistoryBuffer user_id

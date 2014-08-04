@@ -371,8 +371,8 @@ module.exports = function(HB) {
   parser = {};
   execution_listener = [];
   Operation = (function() {
-    function Operation(_arg) {
-      this.creator = _arg['creator'], this.op_number = _arg['op_number'];
+    function Operation(uid) {
+      this.creator = uid['creator'], this.op_number = uid['op_number'];
     }
 
     Operation.prototype.getUid = function() {
@@ -457,9 +457,9 @@ module.exports = function(HB) {
     return Delete;
 
   })(Operation);
-  parser['Delete'] = function(_arg) {
+  parser['Delete'] = function(o) {
     var deletes_uid, uid;
-    uid = _arg['uid'], deletes_uid = _arg['deletes'];
+    uid = o['uid'], deletes_uid = o['deletes'];
     return new Delete(uid, deletes_uid);
   };
   Insert = (function(_super) {
@@ -678,14 +678,13 @@ module.exports = function(HB) {
         if (typeof content === 'string') {
           word = HB.addOperation(new types.Word(HB.getNextOperationIdentifier(), content)).execute();
           JsonType.__super__.val.call(this, name, word);
-          return content;
         } else if (typeof content === 'object') {
           json = HB.addOperation(JsonType(HB.getNextOperationIdentifier(), content)).execute();
           JsonType.__super__.val.call(this, name, json);
-          return content;
         } else {
           throw new Error("You must not set " + (typeof content) + "-types in collaborative Json-objects!");
         }
+        return this;
       } else {
         return JsonType.__super__.val.call(this, name, content);
       }

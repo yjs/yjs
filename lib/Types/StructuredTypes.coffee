@@ -5,6 +5,9 @@ module.exports = (HB)->
   types = basic_types.types
   parser = basic_types.parser
 
+  #
+  # Manages map like objects. E.g. Json-Type and XML attributes.
+  #
   class MapManager extends types.Operation
     constructor: (uid)->
       @map = {}
@@ -23,6 +26,12 @@ module.exports = (HB)->
           result[name] = o.val()
         result
 
+  #
+  # When a new property in a map manager is created, then the uids of the inserted Operations
+  # must be unique (think about concurrent operations). Therefore only an AddName operation is allowed to
+  # add a property in a MapManager. If two AddName operations on the same MapManager name happen concurrently
+  # only one will AddName operation will be executed.
+  #
   class AddName extends types.Operation
     constructor: (uid, map_manager, @name)->
       @saveOperation 'map_manager', map_manager
@@ -61,7 +70,9 @@ module.exports = (HB)->
     } = json
     new AddName uid, map_manager, name
 
-
+  #
+  # Manages a list of Insert-type operations.
+  #
   class ListManager extends types.Insert
     constructor: (uid, beginning, end, prev, next, origin)->
       if beginning? and end?
@@ -110,7 +121,13 @@ module.exports = (HB)->
             throw new Error "position parameter exceeded the length of the document!"
       o
 
-
+  #
+  # Adds support for replace. The ReplaceManager manages Replaceable operations.
+  # Each Replaceable holds a value that is now replaceable.
+  #
+  # The Word-type has implemented support for replace
+  # @see Word
+  #
   class ReplaceManager extends ListManager
     constructor: (initial_content, uid, beginning, end, prev, next, origin)->
       super uid, beginning, end, prev, next, origin
@@ -157,7 +174,8 @@ module.exports = (HB)->
 
 
   #
-  #  Extends the basic Insert type.
+  # The ReplaceManager manages Replaceables.
+  # @see ReplaceManager
   #
   class Replaceable extends types.Insert
     constructor: (content, parent, uid, prev, next, origin)->
@@ -167,8 +185,6 @@ module.exports = (HB)->
         throw new Error "You must define content, prev, and next for Replaceable-types!"
       super uid, prev, next, origin
 
-    #
-    #
     val: ()->
       @content
 
