@@ -16,6 +16,10 @@ module.exports = (HB)->
   #  Extends the basic Insert type to an operation that holds a text value
   #
   class TextInsert extends types.Insert
+    #
+    # @param {String} content The content of this Insert-type Operation. Usually you restrict the length of content to size 1
+    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
+    #
     constructor: (@content, uid, prev, next, origin)->
       if not (prev? and next?)
         throw new Error "You must define prev, and next for TextInsert-types!"
@@ -44,7 +48,7 @@ module.exports = (HB)->
     # Convert all relevant information of this operation to the json-format.
     # This result can be send to other clients.
     #
-    toJson: ()->
+    _encode: ()->
       json =
         {
           'type': "TextInsert"
@@ -71,6 +75,11 @@ module.exports = (HB)->
   # Handles a Text-like data structures with support for insertText/deleteText at a word-position.
   #
   class Word extends types.ListManager
+
+    #
+    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
+    # @param {String} initial_content
+    #
     constructor: (uid, initial_content, beginning, end, prev, next, origin)->
       super uid, beginning, end, prev, next, origin
       if initial_content?
@@ -97,7 +106,7 @@ module.exports = (HB)->
           if o instanceof types.Delimiter
             throw new Error "You can't delete more than there is.."
           o = o.next_cl
-        d.toJson()
+        d._encode()
 
     #
     # Replace the content of this word with another one. Concurrent replacements are not merged!
@@ -133,7 +142,7 @@ module.exports = (HB)->
       @saveOperation 'replace_manager', op
       @validateSavedOperations
 
-    toJson: ()->
+    _encode: ()->
       json = {
         'type': "Word"
         'uid' : @getUid()
@@ -162,7 +171,6 @@ module.exports = (HB)->
   types['TextInsert'] = TextInsert
   types['TextDelete'] = TextDelete
   types['Word'] = Word
-
   structured_types
 
 

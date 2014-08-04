@@ -49,6 +49,7 @@ For the sake of efficiency we maintain two lists: - The short-list (abbrev. sl) 
 </div>
       <h2>Direct Known Subclasses</h2>
       <p class='children'>
+        <a href='../class/ImmutableObject.html'>ImmutableObject</a>
         <a href='../class/Delimiter.html'>Delimiter</a>
       </p>
       <h2>Instance Method Summary</h2>
@@ -61,6 +62,7 @@ For the sake of efficiency we maintain two lists: - The short-list (abbrev. sl) 
 <b>applyDelete</b><span>(o)</span>
       </a>
     </span>
+    <span class='note private title'>Private</span>
     <span class='desc'>
     </span>
   </li>
@@ -84,6 +86,7 @@ For the sake of efficiency we maintain two lists: - The short-list (abbrev. sl) 
 <b>getDistanceToOrigin</b><span>()</span>
       </a>
     </span>
+    <span class='note private title'>Private</span>
     <span class='desc'>
       The amount of positions that $this operation was moved to the right. 
     </span>
@@ -96,6 +99,7 @@ For the sake of efficiency we maintain two lists: - The short-list (abbrev. sl) 
 <b>update_sl</b><span>()</span>
       </a>
     </span>
+    <span class='note private title'>Private</span>
     <span class='desc'>
       Update the short list TODO (Unused)
 
@@ -109,19 +113,9 @@ For the sake of efficiency we maintain two lists: - The short-list (abbrev. sl) 
 <b>execute</b><span>()</span>
       </a>
     </span>
+    <span class='note private title'>Private</span>
     <span class='desc'>
       Include this operation in the associative lists. 
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#val-dynamic'>
-        #
-(void)
-<b>val</b><span>()</span>
-      </a>
-    </span>
-    <span class='desc'>
     </span>
   </li>
 </ul>
@@ -151,24 +145,14 @@ For the sake of efficiency we maintain two lists: - The short-list (abbrev. sl) 
   <h3>Parameters:</h3>
   <ul class='param'>
     <li>
-      <span class='name'>creator</span>
+      <span class='name'>uid</span>
       <span class='type'>
         (
           <tt>Object</tt>
         )
       </span>
       &mdash;
-      <span class='desc'>A unique user identifier </span>
-    </li>
-    <li>
-      <span class='name'>op_number</span>
-      <span class='type'>
-        (
-          <tt>Integer</tt>
-        )
-      </span>
-      &mdash;
-      <span class='desc'>This Number was assigned via getNextOperationIdentifier(). </span>
+      <span class='desc'>A unique identifier. If uid is undefined, a new uid will be created. </span>
     </li>
     <li>
       <span class='name'>prev_cl</span>
@@ -207,9 +191,11 @@ For the sake of efficiency we maintain two lists: - The short-list (abbrev. sl) 
       #
 (void)
 <b>applyDelete</b><span>(o)</span>
+      <span class='note private'>Private</span>
       <br>
     </p>
-    
+    <div class='tags'>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='isDeleted-dynamic'>
@@ -229,6 +215,7 @@ For the sake of efficiency we maintain two lists: - The short-list (abbrev. sl) 
       #
 (void)
 <b>getDistanceToOrigin</b><span>()</span>
+      <span class='note private'>Private</span>
       <br>
     </p>
     <div class='docstring'>
@@ -242,6 +229,7 @@ For the sake of efficiency we maintain two lists: - The short-list (abbrev. sl) 
       #
 (void)
 <b>update_sl</b><span>()</span>
+      <span class='note private'>Private</span>
       <br>
     </p>
     <div class='docstring'>
@@ -256,6 +244,7 @@ TODO (Unused)</p>
       #
 (void)
 <b>execute</b><span>()</span>
+      <span class='note private'>Private</span>
       <br>
     </p>
     <div class='docstring'>
@@ -264,19 +253,10 @@ TODO (Unused)</p>
 <div class='tags'>
 </div>
   </div>
-  <div class='method_details'>
-    <p class='signature' id='val-dynamic'>
-      #
-(void)
-<b>val</b><span>()</span>
-      <br>
-    </p>
-    
-  </div>
 </div>
     </div>
     <div id='footer'>
-  August 03, 14 03:14:41 by
+  August 04, 14 23:05:04 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

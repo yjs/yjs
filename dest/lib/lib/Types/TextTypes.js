@@ -47,7 +47,7 @@ module.exports = function(HB) {
       }
     };
 
-    TextInsert.prototype.toJson = function() {
+    TextInsert.prototype._encode = function() {
       var json;
       json = {
         'type': "TextInsert",
@@ -105,7 +105,7 @@ module.exports = function(HB) {
           }
           o = o.next_cl;
         }
-        _results.push(d.toJson());
+        _results.push(d._encode());
       }
       return _results;
     };
@@ -145,7 +145,7 @@ module.exports = function(HB) {
       return this.validateSavedOperations;
     };
 
-    Word.prototype.toJson = function() {
+    Word.prototype._encode = function() {
       var json;
       json = {
         'type': "Word",

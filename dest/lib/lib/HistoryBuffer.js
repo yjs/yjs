@@ -23,7 +23,7 @@ HistoryBuffer = (function() {
     return res;
   };
 
-  HistoryBuffer.prototype.toJson = function() {
+  HistoryBuffer.prototype._encode = function() {
     var json, o, o_number, u_name, user, _ref;
     json = [];
     _ref = this.buffer;
@@ -32,7 +32,7 @@ HistoryBuffer = (function() {
       for (o_number in user) {
         o = user[o_number];
         if (!isNaN(parseInt(o_number))) {
-          json.push(o.toJson());
+          json.push(o._encode());
         }
       }
     }

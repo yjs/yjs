@@ -30,12 +30,12 @@ class HistoryBuffer
       res[user] = ctn
     res
 
-  toJson: ()->
+  _encode: ()->
     json = []
     for u_name,user of @buffer
       for o_number,o of user
         if not isNaN(parseInt(o_number))
-          json.push o.toJson()
+          json.push o._encode()
     json
 
   #

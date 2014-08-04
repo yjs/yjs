@@ -17,7 +17,7 @@ module.exports = (user_list)->
         @applied_operations.push o
       @execution_listener.push appliedOperationsListener
       if not (user_list?.length is 0)
-        @engine.applyOps user_list[0].getHistoryBuffer().toJson()
+        @engine.applyOps user_list[0].getHistoryBuffer()._encode()
 
       @unexecuted = {}
 

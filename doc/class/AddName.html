@@ -63,10 +63,10 @@ only one will AddName operation will be executed.</p>
   </li>
   <li>
     <span class='signature'>
-      <a href='#toJson-dynamic'>
+      <a href='#_encode-dynamic'>
         #
 (void)
-<b>toJson</b><span>()</span>
+<b>_encode</b><span>()</span>
       </a>
     </span>
     <span class='desc'>
@@ -82,7 +82,41 @@ only one will AddName operation will be executed.</p>
 <b>constructor</b><span>(uid, map_manager, name)</span>
       <br>
     </p>
-    
+    <div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>uid</span>
+      <span class='type'>
+        (
+          <tt>Object</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>A unique identifier. If uid is undefined, a new uid will be created. </span>
+    </li>
+    <li>
+      <span class='name'>map_manager</span>
+      <span class='type'>
+        (
+          <tt>Object</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>Uid or reference to the MapManager. </span>
+    </li>
+    <li>
+      <span class='name'>name</span>
+      <span class='type'>
+        (
+          <tt>String</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>Name of the property that will be added. </span>
+    </li>
+  </ul>
+</div>
   </div>
 </div>
       <h2>Instance Method Details</h2>
@@ -97,10 +131,10 @@ only one will AddName operation will be executed.</p>
     
   </div>
   <div class='method_details'>
-    <p class='signature' id='toJson-dynamic'>
+    <p class='signature' id='_encode-dynamic'>
       #
 (void)
-<b>toJson</b><span>()</span>
+<b>_encode</b><span>()</span>
       <br>
     </p>
     
@@ -108,7 +142,7 @@ only one will AddName operation will be executed.</p>
 </div>
     </div>
     <div id='footer'>
-  August 03, 14 03:14:41 by
+  August 04, 14 23:05:04 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

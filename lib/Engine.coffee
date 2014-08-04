@@ -22,9 +22,17 @@ class Engine
     for o in ops
       if not o.execute()
         @unprocessed_ops.push o
-    @cleanUp()
+    @tryUnprocessed()
 
-  cleanUp: ()->
+  applyOp: (op_json)->
+    # $parse_and_execute will return false if $o_json was parsed and executed, otherwise the parsed operadion
+    o = @parseOperation op_json
+    @HB.addOperation o
+    if not o.execute()
+      @unprocessed_ops.push o
+    @tryUnprocessed()
+
+  tryUnprocessed: ()->
     while true
       old_length = @unprocessed_ops.length
       unprocessed = []
@@ -35,15 +43,7 @@ class Engine
       if @unprocessed_ops.length is old_length
         break
 
-  applyOp: (op_json)->
-    # $parse_and_execute will return false if $o_json was parsed and executed, otherwise the parsed operadion
-    o = @parseOperation op_json
-    @HB.addOperation o
-    if not o.execute()
-      @unprocessed_ops.push o
-    @cleanUp()
-
-
+  
 
 
 module.exports = Engine

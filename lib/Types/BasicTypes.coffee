@@ -7,35 +7,44 @@ module.exports = (HB)->
   # A generic interface to operations.
   #
   # An operation has the following methods:
-  # toJson: encodes an operation (needed only if instance of this operation is sent).
+  # _encode: encodes an operation (needed only if instance of this operation is sent).
   # execute: execute the effects of this operations. Good examples are Insert-type and AddName-type
   # val: in the case that the operation holds a value
   #
   # Furthermore an encodable operation has a parser.
   #
   class Operation
-    # @param {Object} uid A unique identifier
+
+    #
+    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @see HistoryBuffer.getNextOperationIdentifier
+    #
     constructor: (uid)->
+      if not uid?
+        uid = HB.getNextOperationIdentifier()
       {
         'creator': @creator
         'op_number' : @op_number
       } = uid
 
-    # Computes a unique identifier (uid).
+    #
+    # Computes a unique identifier (uid) that identifies this operation.
+    #
     getUid: ()->
       { 'creator': @creator, 'op_number': @op_number }
 
     #
+    # @private
     # Notify the all the listeners.
     #
     execute: ()->
       @is_executed = true
       for l in execution_listener
-        l @toJson()
+        l @_encode()
       @
 
     #
+    # @private
     # Operations may depend on other operations (linked lists, etc.).
     # The saveOperation and validateSavedOperations methods provide
     # an easy way to refer to these operations via an uid or object reference.
@@ -68,6 +77,7 @@ module.exports = (HB)->
         @unchecked[name] = op
 
     #
+    # @private
     # After calling this function all not instantiated operations will be accessible.
     # @see Operation.saveOperation
     #
@@ -94,15 +104,21 @@ module.exports = (HB)->
   # A simple Delete-type operation that deletes an Insert-type operation.
   #
   class Delete extends Operation
+
+    #
+    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
+    # @param {Object} deletes UID or reference of the operation that this to be deleted.
+    #
     constructor: (uid, deletes)->
       @saveOperation 'deletes', deletes
       super uid
 
     #
+    # @private
     # Convert all relevant information of this operation to the json-format.
     # This result can be sent to other clients.
     #
-    toJson: ()->
+    _encode: ()->
       {
         'type': "Delete"
         'uid': @getUid()
@@ -110,6 +126,7 @@ module.exports = (HB)->
       }
 
     #
+    # @private
     # Apply the deletion.
     #
     execute: ()->
@@ -142,8 +159,7 @@ module.exports = (HB)->
   class Insert extends Operation
 
     #
-    # @param {Object} creator A unique user identifier
-    # @param {Integer} op_number This Number was assigned via getNextOperationIdentifier().
+    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Operation} prev_cl The predecessor of this operation in the complete-list (cl)
     # @param {Operation} next_cl The successor of this operation in the complete-list (cl)
     #
@@ -158,6 +174,9 @@ module.exports = (HB)->
         @saveOperation 'origin', prev_cl
       super uid
 
+    #
+    # @private
+    #
     applyDelete: (o)->
       @deleted_by ?= []
       @deleted_by.push o
@@ -169,6 +188,7 @@ module.exports = (HB)->
       @deleted_by?.length > 0
 
     #
+    # @private
     # The amount of positions that $this operation was moved to the right.
     #
     getDistanceToOrigin: ()->
@@ -185,6 +205,7 @@ module.exports = (HB)->
       d
 
     #
+    # @private
     # Update the short list
     # TODO (Unused)
     update_sl: ()->
@@ -203,6 +224,7 @@ module.exports = (HB)->
 
 
     #
+    # @private
     # Include this operation in the associative lists.
     #
     execute: ()->
@@ -263,8 +285,47 @@ module.exports = (HB)->
         super # notify the execution_listeners
         @
 
-    val: ()->
-      throw new Error "Implement this function!"
+  #
+  # Defines an object that is cannot be changed. You can use this to set an immutable string, or a number.
+  #
+  class ImmutableObject extends Insert
+
+    #
+    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
+    # @param {Object} content
+    #
+    constructor: (uid, @content="", prev, next, origin)->
+      super uid, prev, next, origin
+
+    #
+    # @return [String] The content of this operation.
+    #
+    val : ()->
+      @content
+
+    _encode: ()->
+      json = {
+        'type': "ImmutableObject"
+        'uid' : @getUid()
+        'content' : @content
+      }
+      if @prev_cl?
+        json['prev'] = @prev_cl.getUid()
+      if @next_cl?
+        json['next'] = @next_cl.getUid()
+      if @origin? and @origin isnt @prev_cl
+        json["origin"] = @origin.getUid()
+      json
+
+  parser['ImmutableObject'] = (json)->
+    {
+      'uid' : uid
+      'content' : content
+      'prev': prev
+      'next': next
+      'origin' : origin
+    } = json
+    new ImmutableObject uid, content, prev, next, origin
 
   #
   # A delimiter is placed at the end and at the beginning of the associative lists.
@@ -273,21 +334,21 @@ module.exports = (HB)->
   #
   class Delimiter extends Insert
 
-    isDeleted: ()->
-      false
-
-    getDistanceToOrigin: ()->
-      0
-
+    #
+    # @private
+    #
     execute: ()->
       if @validateSavedOperations()
         for l in execution_listener
-          l @toJson()
+          l @_encode()
         @
       else
         false
 
-    toJson: ()->
+    #
+    # @private
+    #
+    _encode: ()->
       {
         'type' : "Delimiter"
         'uid' : @getUid()
@@ -310,6 +371,7 @@ module.exports = (HB)->
       'Insert' : Insert
       'Delimiter': Delimiter
       'Operation': Operation
+      'ImmutableObject' : ImmutableObject
     'parser' : parser
     'execution_listener' : execution_listener
   }

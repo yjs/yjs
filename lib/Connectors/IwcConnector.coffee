@@ -41,7 +41,7 @@ createIwcConnector = (callback)->
       sendRootElement = ()=>
         json = {
             root_element : @yatta.getRootElement()
-            HB : @yatta.getHistoryBuffer().toJson()
+            HB : @yatta.getHistoryBuffer()._encode()
           }
         @sendIwcIntent "Yatta_push_root_element", json
       @iwcHandler["Yatta_get_root_element"] = [sendRootElement]
@@ -94,5 +94,5 @@ createIwcConnector = (callback)->
 
   undefined
 module.exports = createIwcConnector
-window?.createIwcConnector = createIwcConnector
+window?.createConnector = createIwcConnector
 

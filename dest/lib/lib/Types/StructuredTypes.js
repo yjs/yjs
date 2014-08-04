@@ -18,20 +18,30 @@ module.exports = function(HB) {
     }
 
     MapManager.prototype.val = function(name, content) {
-      var o, result, _ref, _ref1;
+      var o, obj, result, _ref, _ref1;
       if (content != null) {
         if (this.map[name] == null) {
           HB.addOperation(new AddName(HB.getNextOperationIdentifier(), this, name)).execute();
         }
-        return this.map[name].replace(content);
+        this.map[name].replace(content);
+        return this;
       } else if (name != null) {
-        return (_ref = this.map[name]) != null ? _ref.val() : void 0;
+        obj = (_ref = this.map[name]) != null ? _ref.val() : void 0;
+        if (obj instanceof types.ImmutableObject) {
+          return obj.val();
+        } else {
+          return obj;
+        }
       } else {
         result = {};
         _ref1 = this.map;
         for (name in _ref1) {
           o = _ref1[name];
-          result[name] = o.val();
+          obj = o.val();
+          if (obj instanceof types.ImmutableObject || obj instanceof MapManager) {
+            obj = obj.val();
+          }
+          result[name] = obj;
         }
         return result;
       }
@@ -70,7 +80,7 @@ module.exports = function(HB) {
       }
     };
 
-    AddName.prototype.toJson = function() {
+    AddName.prototype._encode = function() {
       return {
         'type': "AddName",
         'uid': this.getUid(),
@@ -172,7 +182,7 @@ module.exports = function(HB) {
       return o.val();
     };
 
-    ReplaceManager.prototype.toJson = function() {
+    ReplaceManager.prototype._encode = function() {
       var json;
       json = {
         'type': "ReplaceManager",
@@ -231,7 +241,7 @@ module.exports = function(HB) {
       }
     };
 
-    Replaceable.prototype.toJson = function() {
+    Replaceable.prototype._encode = function() {
       var json;
       json = {
         'type': "Replaceable",

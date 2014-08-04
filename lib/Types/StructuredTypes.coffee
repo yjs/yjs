@@ -9,6 +9,10 @@ module.exports = (HB)->
   # Manages map like objects. E.g. Json-Type and XML attributes.
   #
   class MapManager extends types.Operation
+
+    #
+    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
+    #
     constructor: (uid)->
       @map = {}
       super uid
@@ -18,12 +22,20 @@ module.exports = (HB)->
         if not @map[name]?
           HB.addOperation(new AddName HB.getNextOperationIdentifier(), @, name).execute()
         @map[name].replace content
+        @
       else if name?
-        @map[name]?.val()
+        obj = @map[name]?.val()
+        if obj instanceof types.ImmutableObject
+          obj.val()
+        else
+          obj
       else
         result = {}
         for name,o of @map
-          result[name] = o.val()
+          obj = o.val()
+          if obj instanceof types.ImmutableObject or obj instanceof MapManager
+            obj = obj.val()
+          result[name] = obj
         result
 
   #
@@ -33,6 +45,12 @@ module.exports = (HB)->
   # only one will AddName operation will be executed.
   #
   class AddName extends types.Operation
+
+    #
+    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
+    # @param {Object} map_manager Uid or reference to the MapManager.
+    # @param {String} name Name of the property that will be added.
+    #
     constructor: (uid, map_manager, @name)->
       @saveOperation 'map_manager', map_manager
       super uid
@@ -54,7 +72,7 @@ module.exports = (HB)->
           @map_manager.map[@name] = HB.addOperation(new ReplaceManager undefined, uid_r, beg, end).execute()
         super
 
-    toJson: ()->
+    _encode: ()->
       {
         'type' : "AddName"
         'uid' : @getUid()
@@ -74,6 +92,12 @@ module.exports = (HB)->
   # Manages a list of Insert-type operations.
   #
   class ListManager extends types.Insert
+
+    #
+    # A ListManager maintains a non-empty list that has a beginning and an end (both Delimiters!)
+    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
+    # @param {Delimiter} beginning Reference or Object.
+    # @param {Delimiter} end Reference or Object.
     constructor: (uid, beginning, end, prev, next, origin)->
       if beginning? and end?
         @saveOperation 'beginning', beginning
@@ -129,6 +153,11 @@ module.exports = (HB)->
   # @see Word
   #
   class ReplaceManager extends ListManager
+    #
+    # @param {Operation} initial_content Initialize this with a Replaceable that holds the initial_content.
+    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
+    # @param {Delimiter} beginning Reference or Object.
+    # @param {Delimiter} end Reference or Object.
     constructor: (initial_content, uid, beginning, end, prev, next, origin)->
       super uid, beginning, end, prev, next, origin
       if initial_content?
@@ -145,7 +174,7 @@ module.exports = (HB)->
         throw new Error "dtrn"
       o.val()
 
-    toJson: ()->
+    _encode: ()->
       json =
         {
           'type': "ReplaceManager"
@@ -178,6 +207,12 @@ module.exports = (HB)->
   # @see ReplaceManager
   #
   class Replaceable extends types.Insert
+
+    #
+    # @param {Operation} content The value that this Replaceable holds.
+    # @param {ReplaceManager} parent Used to replace this Replaceable with another one.
+    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
+    #
     constructor: (content, parent, uid, prev, next, origin)->
       @saveOperation 'content', content
       @saveOperation 'parent', parent
@@ -203,7 +238,7 @@ module.exports = (HB)->
     # Convert all relevant information of this operation to the json-format.
     # This result can be send to other clients.
     #
-    toJson: ()->
+    _encode: ()->
       json =
         {
           'type': "Replaceable"

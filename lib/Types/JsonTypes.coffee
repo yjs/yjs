@@ -5,48 +5,179 @@ module.exports = (HB)->
   types = text_types.types
   parser = text_types.parser
 
+  createJsonWrapper = (_jsonType)->
+
+    #
+    # A JsonWrapper was intended to be a convenient wrapper for the JsonType.
+    # But it can make things more difficult than they are.
+    # @see JsonType
+    #
+    # @example create a JsonWrapper
+    #   # You get a JsonWrapper from a JsonType by calling
+    #   w = yatta.value
+    #
+    # It creates Javascripts -getter and -setter methods for each property that JsonType maintains.
+    # @see getter https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
+    #
+    # @example Getter Example
+    #   # you can access the x property of yatta by calling
+    #   w.x
+    #   # instead of
+    #   yatta.val('x')
+    #
+    # @note You can only overwrite existing values! Setting a new property won't have any effect!
+    #
+    # @example Setter Example
+    #   # you can set an existing x property of yatta by calling
+    #   w.x = "text"
+    #   # instead of
+    #   yatta.val('x', "text")
+    #
+    # In order to set a new property you have to overwrite an existing property.
+    # Therefore the JsonWrapper supports a special feature that should make things more convenient
+    # (we can argue about that, use the JsonType if you don't like it ;).
+    # If you overwrite an object property of the JsonWrapper with a new object, it will result in a merged version of the objects.
+    # Let w.p the property that is to be overwritten and o the new value. E.g. w.p = o
+    # * The result has all properties of o
+    # * The result has all properties of w.p if they don't occur under the same property-name in o.
+    #
+    # @example Conflict Example
+    #   yatta.value = {a : "string"}
+    #   w = yatta.value
+    #   console.log(w) # {a : "string"}
+    #   w.a = {a : {b : "string"}}
+    #   console.log(w) # {a : {b : "String"}}
+    #   w.a = {a : {c : 4}}
+    #   console.log(w) # {a : {b : "String", c : 4}}
+    #
+    # @example Common Pitfalls
+    #   w = yatta.value
+    #   # Setting a new property
+    #   w.newProperty = "Awesome"
+    #   console.log(w.newProperty == "Awesome") # false, w.newProperty is undefined
+    #   # overwrite the w object
+    #   w = {newProperty : "Awesome"}
+    #   console.log(w.newProperty == "Awesome") # true!, but ..
+    #   console.log(yatta.value.newProperty == "Awesome") # false, you are only allowed to set properties!
+    #   # The solution
+    #   yatta.value = {newProperty : "Awesome"}
+    #   console.log(w.newProperty == "Awesome") # true!
+    #
+    class JsonWrapper
+      constructor: (jsonType)->
+        for name, obj of jsonType.map
+          do (name, obj)->
+            Object.defineProperty JsonWrapper.prototype, name,
+              get : ->
+                x = obj.val()
+                if x instanceof JsonType
+                  createJsonWrapper x
+                else if x instanceof types.ImmutableObject
+                  x.val()
+                else
+                  x
+              set : (o)->
+                if o.constructor is {}.constructor
+                  overwrite = jsonType.val(name)
+                  for o_name,o_obj of o
+                    overwrite.val(o_name, o_obj, 'immutable')
+                else
+                  jsonType.val(name, o, 'immutable')
+              enumerable: true
+              configurable: false
+    new JsonWrapper _jsonType
+
   #
   # Manages Object-like values.
   #
   class JsonType extends types.MapManager
-    constructor: (uid, initial_value)->
+
+    #
+    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
+    # @param {Object} initial_value Create this operation with an initial value.
+    # @param {String|Boolean} Whether the initial_value should be created as mutable. (Optional - see setMutableDefault)
+    #
+    constructor: (uid, initial_value, mutable)->
       super uid
       if initial_value?
         if typeof initial_value isnt "object"
           throw new Error "The initial value of JsonTypes must be of type Object! (current type: #{typeof initial_value})"
         for name,o of initial_value
-          @val name, o
+          @val name, o, mutable
+
+    mutable_default:
+      true
+
+    setMutableDefault: (mutable)->
+      if mutable is true or mutable is 'mutable'
+        JsonType.prototype.mutable_default = true
+      else if mutable is false or mutable is 'immutable'
+        JsonType.prototype.mutable_default = false
+      else
+        throw new Error 'Set mutable either "mutable" or "immutable"!'
+      'OK'
 
     #
-    # Get this as a Json object. Note that none of the values of the result is of type Operation.
     # @overload val()
-    #   @results [Json]
+    #   Get this as a Json object.
+    #   @return [Json]
     #
-    # Get value of a property.
     # @overload val(name)
+    #   Get value of a property.
     #   @param {String} name Name of the object property.
-    #   @results [JsonType|WordType]
+    #   @return [JsonType|Word|String|Object] Depending on the value of the property. If mutable it will return a Operation-type object, if immutable it will return String/Object.
     #
-    # Set a new property.
     # @overload val(name, content)
+    #   Set a new property.
     #   @param {String} name Name of the object property.
     #   @param {Object|String} content Content of the object property.
+    #   @return [JsonType] This object. (supports chaining)
     #
-    val: (name, content)->
-      if name? and content?
-        if typeof content is 'string'
-          word = HB.addOperation(new types.Word HB.getNextOperationIdentifier(), content).execute()
-          super name, word
-        else if typeof content is 'object'
-          json = HB.addOperation(JsonType HB.getNextOperationIdentifier(), content).execute()
-          super name, json
-        else
-          throw new Error "You must not set #{typeof content}-types in collaborative Json-objects!"
+    val: (name, content, mutable)->
+      if typeof name is 'object'
+        # Special case. First argument is an object. Then the second arg is mutable.
+        # Keep that in mind when reading the following..
+        for o_name,o of name
+          @val(o_name,o,content)
         @
+      else if name? and content?
+        if mutable?
+          if mutable is true or mutable is 'mutable'
+            mutable = true
+          else
+            mutable = false
+        else
+          mutable = @mutable_default
+        if typeof content is 'function'
+          @ # Just do nothing
+        else if ((not mutable) or typeof content is 'number') and content.constructor isnt Object
+          obj = HB.addOperation(new types.ImmutableObject undefined, content).execute()
+          super name, obj
+        else
+          if typeof content is 'string'
+            word = HB.addOperation(new types.Word HB.getNextOperationIdentifier(), content).execute()
+            super name, word
+          else if content.constructor is Object
+            json = HB.addOperation(new JsonType HB.getNextOperationIdentifier(), content, mutable).execute()
+            super name, json
+          else
+            throw new Error "You must not set #{typeof content}-types in collaborative Json-objects!"
       else
         super name, content
 
-    toJson: ()->
+    Object.defineProperty JsonType.prototype, 'value',
+      get : -> createJsonWrapper @
+      set : (o)->
+        if o.constructor is {}.constructor
+          for o_name,o_obj of o
+            @val(o_name, o_obj, 'immutable')
+        else
+          throw new Error "You must only set Object values!"
+
+    #
+    # @private
+    #
+    _encode: ()->
       {
         'type' : "JsonType"
         'uid' : @getUid()
@@ -57,6 +188,8 @@ module.exports = (HB)->
       'uid' : uid
     } = json
     new JsonType uid
+
+
 
 
   types['JsonType'] = JsonType

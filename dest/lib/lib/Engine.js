@@ -34,10 +34,20 @@ Engine = (function() {
         this.unprocessed_ops.push(o);
       }
     }
-    return this.cleanUp();
+    return this.tryUnprocessed();
   };
 
-  Engine.prototype.cleanUp = function() {
+  Engine.prototype.applyOp = function(op_json) {
+    var o;
+    o = this.parseOperation(op_json);
+    this.HB.addOperation(o);
+    if (!o.execute()) {
+      this.unprocessed_ops.push(o);
+    }
+    return this.tryUnprocessed();
+  };
+
+  Engine.prototype.tryUnprocessed = function() {
     var old_length, op, unprocessed, _i, _len, _ref, _results;
     _results = [];
     while (true) {
@@ -58,16 +68,6 @@ Engine = (function() {
       }
     }
     return _results;
-  };
-
-  Engine.prototype.applyOp = function(op_json) {
-    var o;
-    o = this.parseOperation(op_json);
-    this.HB.addOperation(o);
-    if (!o.execute()) {
-      this.unprocessed_ops.push(o);
-    }
-    return this.cleanUp();
   };
 
   return Engine;

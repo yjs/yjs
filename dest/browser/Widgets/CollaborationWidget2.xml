@@ -23,7 +23,7 @@
         console.log("initialized!");
       });
     }
-    setTimeout(f, 1000)
+    setTimeout(f, 8000)
   }
   $(document).ready(init)
 </script>

@@ -77,8 +77,8 @@ module.exports = (grunt) ->
           'dest/browser/Frameworks/JsonIwcYatta.js': ['./lib/Frameworks/JsonYatta.coffee', './lib/Connectors/IwcConnector.coffee']
         options:
           transform: ['coffeeify']
-          debug: false
-          bundleOptions: {debug: false}
+          debug: true
+          bundleOptions: {debug: true}
            # Serve files via http-server
     connect:
       server:

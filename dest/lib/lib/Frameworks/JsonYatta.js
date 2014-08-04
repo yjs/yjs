@@ -40,12 +40,20 @@ JsonYatta = (function() {
     return this.HB;
   };
 
+  JsonYatta.prototype.setMutableDefault = function(mutable) {
+    return this.root_element.setMutableDefault(mutable);
+  };
+
   JsonYatta.prototype.getUserId = function() {
     return this.HB.getUserId();
   };
 
-  JsonYatta.prototype.val = function(name, content) {
-    return this.root_element.val(name, content);
+  JsonYatta.prototype.val = function(name, content, mutable) {
+    return this.root_element.val(name, content, mutable);
+  };
+
+  JsonYatta.prototype.value = function() {
+    return this.root_element.value;
   };
 
   return JsonYatta;

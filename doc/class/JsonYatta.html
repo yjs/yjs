@@ -35,7 +35,13 @@
       </table>
       <h2>Overview</h2>
       <div class='docstring'>
-  <p>Framework for arbitrary Json data-structures.</p>
+  <p>Framework for Json data-structures.
+Known values that are supported:</p><ul>
+<li>String</li>
+<li>Integer</li>
+<li>Array</li>
+</ul>
+
 </div>
 <div class='tags'>
 </div>
@@ -50,6 +56,7 @@
       </a>
     </span>
     <span class='desc'>
+      @result JsonType 
     </span>
   </li>
   <li>
@@ -72,6 +79,7 @@
       </a>
     </span>
     <span class='desc'>
+      Get the initialized connector. 
     </span>
   </li>
   <li>
@@ -87,10 +95,10 @@
   </li>
   <li>
     <span class='signature'>
-      <a href='#getUserId-dynamic'>
+      <a href='#setMutableDefault-dynamic'>
         #
 (void)
-<b>getUserId</b><span>()</span>
+<b>setMutableDefault</b><span>(mutable)</span>
       </a>
     </span>
     <span class='desc'>
@@ -98,10 +106,33 @@
   </li>
   <li>
     <span class='signature'>
+      <a href='#getUserId-dynamic'>
+        #
+(void)
+<b>getUserId</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Get the UserId from the HistoryBuffer object. 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
       <a href='#val-dynamic'>
         #
 (void)
-<b>val</b><span>(name, content)</span>
+<b>val</b><span>(name, content, mutable)</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#value-dynamic'>
+        #
+(void)
+<b>value</b><span>()</span>
       </a>
     </span>
     <span class='desc'>
@@ -129,7 +160,11 @@
 <b>getRootElement</b><span>()</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>@result JsonType</p>
+</div>
+<div class='tags'>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='getEngine-dynamic'>
@@ -138,7 +173,14 @@
 <b>getEngine</b><span>()</span>
       <br>
     </p>
-    
+    <div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='../class/Engine.html'>Engine</a>
+    </li>
+  </ul>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='getConnector-dynamic'>
@@ -147,7 +189,11 @@
 <b>getConnector</b><span>()</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>Get the initialized connector.</p>
+</div>
+<div class='tags'>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='getHistoryBuffer-dynamic'>
@@ -156,7 +202,30 @@
 <b>getHistoryBuffer</b><span>()</span>
       <br>
     </p>
-    
+    <div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='../class/HistoryBuffer.html'>HistoryBuffer</a>
+    </li>
+  </ul>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='setMutableDefault-dynamic'>
+      #
+(void)
+<b>setMutableDefault</b><span>(mutable)</span>
+      <br>
+    </p>
+    <div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='JsonType.setMutableDefault'>JsonType.setMutableDefault</a>
+    </li>
+  </ul>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='getUserId-dynamic'>
@@ -165,21 +234,50 @@
 <b>getUserId</b><span>()</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>Get the UserId from the HistoryBuffer object.
+In most cases this will be the same as the user_id value with which
+JsonYatta was initialized (Depending on the HistoryBuffer implementation).</p>
+</div>
+<div class='tags'>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='val-dynamic'>
       #
 (void)
-<b>val</b><span>(name, content)</span>
+<b>val</b><span>(name, content, mutable)</span>
       <br>
     </p>
-    
+    <div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='JsonType.val'>JsonType.val</a>
+    </li>
+  </ul>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='value-dynamic'>
+      #
+(void)
+<b>value</b><span>()</span>
+      <br>
+    </p>
+    <div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='JsonType.value'>JsonType.value</a>
+    </li>
+  </ul>
+</div>
   </div>
 </div>
     </div>
     <div id='footer'>
-  August 03, 14 03:14:41 by
+  August 04, 14 23:05:04 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

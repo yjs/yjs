@@ -2,11 +2,14 @@ var __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
 module.exports = function(HB) {
-  var Delete, Delimiter, Insert, Operation, execution_listener, parser;
+  var Delete, Delimiter, ImmutableObject, Insert, Operation, execution_listener, parser;
   parser = {};
   execution_listener = [];
   Operation = (function() {
     function Operation(uid) {
+      if (uid == null) {
+        uid = HB.getNextOperationIdentifier();
+      }
       this.creator = uid['creator'], this.op_number = uid['op_number'];
     }
 
@@ -22,7 +25,7 @@ module.exports = function(HB) {
       this.is_executed = true;
       for (_i = 0, _len = execution_listener.length; _i < _len; _i++) {
         l = execution_listener[_i];
-        l(this.toJson());
+        l(this._encode());
       }
       return this;
     };
@@ -71,7 +74,7 @@ module.exports = function(HB) {
       Delete.__super__.constructor.call(this, uid);
     }
 
-    Delete.prototype.toJson = function() {
+    Delete.prototype._encode = function() {
       return {
         'type': "Delete",
         'uid': this.getUid(),
@@ -212,13 +215,48 @@ module.exports = function(HB) {
       }
     };
 
-    Insert.prototype.val = function() {
-      throw new Error("Implement this function!");
-    };
-
     return Insert;
 
   })(Operation);
+  ImmutableObject = (function(_super) {
+    __extends(ImmutableObject, _super);
+
+    function ImmutableObject(uid, content, prev, next, origin) {
+      this.content = content != null ? content : "";
+      ImmutableObject.__super__.constructor.call(this, uid, prev, next, origin);
+    }
+
+    ImmutableObject.prototype.val = function() {
+      return this.content;
+    };
+
+    ImmutableObject.prototype._encode = function() {
+      var json;
+      json = {
+        'type': "ImmutableObject",
+        'uid': this.getUid(),
+        'content': this.content
+      };
+      if (this.prev_cl != null) {
+        json['prev'] = this.prev_cl.getUid();
+      }
+      if (this.next_cl != null) {
+        json['next'] = this.next_cl.getUid();
+      }
+      if ((this.origin != null) && this.origin !== this.prev_cl) {
+        json["origin"] = this.origin.getUid();
+      }
+      return json;
+    };
+
+    return ImmutableObject;
+
+  })(Insert);
+  parser['ImmutableObject'] = function(json) {
+    var content, next, origin, prev, uid;
+    uid = json['uid'], content = json['content'], prev = json['prev'], next = json['next'], origin = json['origin'];
+    return new ImmutableObject(uid, content, prev, next, origin);
+  };
   Delimiter = (function(_super) {
     __extends(Delimiter, _super);
 
@@ -226,20 +264,12 @@ module.exports = function(HB) {
       return Delimiter.__super__.constructor.apply(this, arguments);
     }
 
-    Delimiter.prototype.isDeleted = function() {
-      return false;
-    };
-
-    Delimiter.prototype.getDistanceToOrigin = function() {
-      return 0;
-    };
-
     Delimiter.prototype.execute = function() {
       var l, _i, _len;
       if (this.validateSavedOperations()) {
         for (_i = 0, _len = execution_listener.length; _i < _len; _i++) {
           l = execution_listener[_i];
-          l(this.toJson());
+          l(this._encode());
         }
         return this;
       } else {
@@ -247,7 +277,7 @@ module.exports = function(HB) {
       }
     };
 
-    Delimiter.prototype.toJson = function() {
+    Delimiter.prototype._encode = function() {
       var _ref, _ref1;
       return {
         'type': "Delimiter",
@@ -270,7 +300,8 @@ module.exports = function(HB) {
       'Delete': Delete,
       'Insert': Insert,
       'Delimiter': Delimiter,
-      'Operation': Operation
+      'Operation': Operation,
+      'ImmutableObject': ImmutableObject
     },
     'parser': parser,
     'execution_listener': execution_listener

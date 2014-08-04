@@ -50,7 +50,7 @@ createIwcConnector = function(callback) {
           var json;
           json = {
             root_element: _this.yatta.getRootElement(),
-            HB: _this.yatta.getHistoryBuffer().toJson()
+            HB: _this.yatta.getHistoryBuffer()._encode()
           };
           return _this.sendIwcIntent("Yatta_push_root_element", json);
         };
@@ -122,7 +122,7 @@ createIwcConnector = function(callback) {
 module.exports = createIwcConnector;
 
 if (typeof window !== "undefined" && window !== null) {
-  window.createIwcConnector = createIwcConnector;
+  window.createConnector = createIwcConnector;
 }
 
 //# sourceMappingURL=IwcConnector.js.map

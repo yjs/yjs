@@ -24,7 +24,7 @@ module.exports = function(user_list) {
       })(this);
       this.execution_listener.push(appliedOperationsListener);
       if (!((user_list != null ? user_list.length : void 0) === 0)) {
-        this.engine.applyOps(user_list[0].getHistoryBuffer().toJson());
+        this.engine.applyOps(user_list[0].getHistoryBuffer()._encode());
       }
       this.unexecuted = {};
     }

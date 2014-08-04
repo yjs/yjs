@@ -28,11 +28,12 @@
       this.generateReplaceOp = __bind(this.generateReplaceOp, this);
       this.generateInsertOp = __bind(this.generateInsertOp, this);
       this.number_of_test_cases_multiplier = 1;
-      this.repeat_this = 100 * this.number_of_test_cases_multiplier;
+      this.repeat_this = 10 * this.number_of_test_cases_multiplier;
       this.doSomething_amount = 200 * this.number_of_test_cases_multiplier;
       this.number_of_engines = 12 + this.number_of_test_cases_multiplier - 1;
       this.time = 0;
       this.ops = 0;
+      this.time_now = 0;
       this.reinitialize();
     }
 
@@ -47,6 +48,12 @@
         _results.push(this.users.push(new Yatta(i, this.Connector)));
       }
       return _results;
+    };
+
+    Test.prototype.getSomeUser = function() {
+      var i;
+      i = _.random(0, this.users.length - 1);
+      return this.users[i];
     };
 
     Test.prototype.getRandomText = function() {
@@ -115,69 +122,74 @@
       return _results;
     };
 
+    Test.prototype.compareAll = function(test_number) {
+      var i, j, number_of_created_operations, ops, ops_per_msek, printOpsInExecutionOrder, u, _i, _j, _k, _len, _ref, _ref1, _results;
+      this.flushAll();
+      this.time += (new Date()).getTime() - this.time_now;
+      number_of_created_operations = 0;
+      for (i = _i = 0, _ref = this.users.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+        number_of_created_operations += this.users[i].getConnector().getOpsInExecutionOrder().length;
+      }
+      this.ops += number_of_created_operations * this.users.length;
+      ops_per_msek = Math.floor(this.ops / this.time);
+      if (test_number != null) {
+        console.log(("" + test_number + "/" + this.repeat_this + ": Every collaborator (" + this.users.length + ") applied " + this.number_of_created_operations + " ops in a different order.") + (" Over all we consumed " + this.ops + " operations in " + (this.time / 1000) + " seconds (" + ops_per_msek + " ops/msek)."));
+      }
+      _results = [];
+      for (i = _j = 0, _ref1 = this.users.length - 1; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
+        if (this.users[i].val('name').val() !== this.users[i + 1].val('name').val()) {
+          printOpsInExecutionOrder = function(otnumber, otherotnumber) {
+            var j, o, ops, s, _k, _l, _len, _len1;
+            ops = this.users[otnumber].getConnector().getOpsInExecutionOrder();
+            for (_k = 0, _len = ops.length; _k < _len; _k++) {
+              s = ops[_k];
+              console.log(JSON.stringify(s));
+            }
+            console.log("");
+            s = "ops = [";
+            for (j = _l = 0, _len1 = ops.length; _l < _len1; j = ++_l) {
+              o = ops[j];
+              if (j !== 0) {
+                s += ", ";
+              }
+              s += "op" + j;
+            }
+            s += "]";
+            console.log(s);
+            console.log("@users[@last_user].ot.applyOps ops");
+            console.log("expect(@users[@last_user].ot.val('name')).to.equal(\"" + (users[otherotnumber].val('name')) + "\")");
+            return ops;
+          };
+          console.log("");
+          console.log("Found an OT Puzzle!");
+          console.log("OT states:");
+          for (j = _k = 0, _len = users.length; _k < _len; j = ++_k) {
+            u = users[j];
+            console.log(("OT" + j + ": ") + u.val('name'));
+          }
+          console.log("\nOT execution order (" + i + "," + (i + 1) + "):");
+          printOpsInExecutionOrder(i, i + 1);
+          console.log("");
+          ops = printOpsInExecutionOrder(i + 1, i);
+          _results.push(console.log(""));
+        } else {
+          _results.push(void 0);
+        }
+      }
+      return _results;
+    };
+
     Test.prototype.run = function() {
-      var i, j, number_of_created_operations, ops, ops_per_msek, printOpsInExecutionOrder, time_now, times, u, _i, _j, _k, _ref, _ref1, _ref2, _results;
+      var i, times, _i, _j, _ref, _ref1, _results;
+      console.log('');
       _results = [];
       for (times = _i = 1, _ref = this.repeat_this; 1 <= _ref ? _i <= _ref : _i >= _ref; times = 1 <= _ref ? ++_i : --_i) {
-        this.reinitialize();
-        time_now = (new Date).getTime();
+        this.time_now = (new Date).getTime();
         for (i = _j = 1, _ref1 = this.doSomething_amount; 1 <= _ref1 ? _j <= _ref1 : _j >= _ref1; i = 1 <= _ref1 ? ++_j : --_j) {
           this.doSomething();
         }
-        this.flushAll();
-        this.time += (new Date()).getTime() - time_now;
-        number_of_created_operations = 0;
-        for (i = _k = 0, _ref2 = this.users.length; 0 <= _ref2 ? _k < _ref2 : _k > _ref2; i = 0 <= _ref2 ? ++_k : --_k) {
-          number_of_created_operations += this.users[i].getConnector().getOpsInExecutionOrder().length;
-        }
-        this.ops += number_of_created_operations * this.users.length;
-        ops_per_msek = Math.floor(this.ops / this.time);
-        console.log(("" + times + "/" + this.repeat_this + ": Every collaborator (" + this.users.length + ") applied " + this.number_of_created_operations + " ops in a different order.") + (" Over all we consumed " + this.ops + " operations in " + (this.time / 1000) + " seconds (" + ops_per_msek + " ops/msek)."));
-        _results.push((function() {
-          var _l, _len, _m, _ref3, _results1;
-          _results1 = [];
-          for (i = _l = 0, _ref3 = this.users.length - 1; 0 <= _ref3 ? _l < _ref3 : _l > _ref3; i = 0 <= _ref3 ? ++_l : --_l) {
-            if (this.users[i].val('name').val() !== this.users[i + 1].val('name').val()) {
-              printOpsInExecutionOrder = function(otnumber, otherotnumber) {
-                var j, o, ops, s, _len, _len1, _m, _n;
-                ops = this.users[otnumber].getConnector().getOpsInExecutionOrder();
-                for (_m = 0, _len = ops.length; _m < _len; _m++) {
-                  s = ops[_m];
-                  console.log(JSON.stringify(s));
-                }
-                console.log("");
-                s = "ops = [";
-                for (j = _n = 0, _len1 = ops.length; _n < _len1; j = ++_n) {
-                  o = ops[j];
-                  if (j !== 0) {
-                    s += ", ";
-                  }
-                  s += "op" + j;
-                }
-                s += "]";
-                console.log(s);
-                console.log("@users[@last_user].ot.applyOps ops");
-                console.log("expect(@users[@last_user].ot.val('name')).to.equal(\"" + (users[otherotnumber].val('name')) + "\")");
-                return ops;
-              };
-              console.log("");
-              console.log("Found an OT Puzzle!");
-              console.log("OT states:");
-              for (j = _m = 0, _len = users.length; _m < _len; j = ++_m) {
-                u = users[j];
-                console.log(("OT" + j + ": ") + u.val('name'));
-              }
-              console.log("\nOT execution order (" + i + "," + (i + 1) + "):");
-              printOpsInExecutionOrder(i, i + 1);
-              console.log("");
-              ops = printOpsInExecutionOrder(i + 1, i);
-              _results1.push(console.log(""));
-            } else {
-              _results1.push(void 0);
-            }
-          }
-          return _results1;
-        }).call(this));
+        this.compareAll(times);
+        _results.push(this.reinitialize());
       }
       return _results;
     };
@@ -187,10 +199,58 @@
   })();
 
   describe("JsonYatta", function() {
+    beforeEach(function(done) {
+      this.yTest = new Test();
+      return done();
+    });
+    it("has a JsonWrapper", function() {
+      var w, y;
+      y = this.yTest.getSomeUser().root_element;
+      y.val('x', "dtrn", 'immutable');
+      y.val('set', {
+        x: "x"
+      }, 'immutable');
+      w = y.value;
+      w.x;
+      w.set = {
+        y: ""
+      };
+      w.x;
+      w.set;
+      w.set.x;
+      expect(w.x).to.equal("dtrn");
+      return expect(w.set.x).to.equal("x");
+    });
+    it("can handle creaton of complex json", function() {
+      this.yTest.getSomeUser().val('x', {
+        'a': 'b'
+      });
+      this.yTest.getSomeUser().val('a', {
+        'a': {
+          q: "dtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt"
+        }
+      });
+      this.yTest.getSomeUser().val('b', {
+        'a': {}
+      });
+      this.yTest.getSomeUser().val('c', {
+        'a': 'b'
+      });
+      return this.yTest.compareAll();
+    });
+    it("handles some immutable tests", function() {
+      this.yTest.getSomeUser().val('string', "text", "immutable");
+      this.yTest.getSomeUser().val('number', 4, "immutable");
+      this.yTest.getSomeUser().val('object', {
+        q: "rr"
+      }, "immutable");
+      this.yTest.compareAll();
+      expect(this.yTest.getSomeUser().val('string')).to.equal("text");
+      expect(this.yTest.getSomeUser().val('number')).to.equal(4);
+      return expect(this.yTest.getSomeUser().val('object').val('q')).to.equal("rr");
+    });
     return it("can handle many engines, many operations, concurrently (random)", function() {
-      var yTest;
-      yTest = new Test();
-      return yTest.run();
+      return this.yTest.run();
     });
   });
 
