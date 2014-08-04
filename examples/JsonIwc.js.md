@@ -1,8 +1,6 @@
 
 Here, I will give a short overview on how to use the IwcYatta Framework.
 
-
-
     function init(){
         window.createIwcConnector(function(Connector){
           console.log("initializing..");
