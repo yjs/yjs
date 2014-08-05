@@ -3,11 +3,10 @@ Here, I will give a short overview on how to use the IwcJson Framework in Role-S
 First you have to include the following libraries in your widget file:
 ```
 <script src="http://open-app.googlecode.com/files/openapp.js"></script>
-<script src="http://dbis.rwth-aachen.de/gadgets/lib/las/storage.js"></script>
 <script src="http://dbis.rwth-aachen.de/gadgets/iwc/lib/iwc.js"></script>
-<script src="http://dbis.rwth-aachen.de/gadgets/lib/las/lasAjaxClient.js"></script>
 <script src="http://dbis.rwth-aachen.de/~jahns/role-widgets/widgetbundles/libraries/DUIClient.js"></script>
 <script src="../dest/browser/Frameworks/JsonIwcYatta.js"></script>
+<script src="./IwcJson.js"></script>
 ```
 
 
