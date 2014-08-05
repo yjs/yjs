@@ -1,5 +1,5 @@
 ## IWC + JSON Example
-Here, I will give a short overview on how to use the IwcJsanYatta Framework in Role-SDK widgets.
+Here, I will give a short overview on how to use the IwcJson Framework in Role-SDK widgets.
 First you have to include the following libraries in your widget file:
 ```
 <script src="http://open-app.googlecode.com/files/openapp.js"></script>
@@ -21,7 +21,7 @@ yatta is the shared json object
 
 
 ```js
-      yatta = new window.JsonYatta(user_id, Connector);
+      yatta = new JsonYatta(user_id, Connector);
 ```
 
 
@@ -55,7 +55,7 @@ A string property can be either mutable or immutable.
 ```
 
 
-You can omit the is_mutable - parameter. In that case the default will be used.
+You can omit the mutable - parameter. In that case the default will be used.
 Initially the default is 'mutable'. You can set it like this:
 
 
@@ -151,8 +151,11 @@ Consider this case.
 ```
 
 
+Did you notice that you always set immutable objects if you set properties like this?
+Even if the default is 'mutable'. If you want to work with mutable objects you have to work with .val().
+
 One last thing. You are only allowed to set properties like this `yatta.value = o`.
-I can't observe if you overwrite object references `yatta = "Awesome"`.
+Yatta can't observe if you overwrite object references `yatta = "Awesome"`.
 
 
 ```js
