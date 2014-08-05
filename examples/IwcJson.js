@@ -5,11 +5,10 @@
  First you have to include the following libraries in your widget file:
  ```
 <script src="http://open-app.googlecode.com/files/openapp.js"></script>
-<script src="http://dbis.rwth-aachen.de/gadgets/lib/las/storage.js"></script>
 <script src="http://dbis.rwth-aachen.de/gadgets/iwc/lib/iwc.js"></script>
-<script src="http://dbis.rwth-aachen.de/gadgets/lib/las/lasAjaxClient.js"></script>
 <script src="http://dbis.rwth-aachen.de/~jahns/role-widgets/widgetbundles/libraries/DUIClient.js"></script>
 <script src="../dest/browser/Frameworks/JsonIwcYatta.js"></script>
+<script src="./IwcJson.js"></script>
  ```
  */
 function init(){
@@ -82,7 +81,6 @@ function init(){
       /**
        The downside is that you are only allowed to overwrite existing properties.
       */
-
       yatta.value.newProperty = "Awesome"
       console.log(yatta.value.newProperty !== "Awesome") // true, yatta.value.newProperty is undefined.
 
