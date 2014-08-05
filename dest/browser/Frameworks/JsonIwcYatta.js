@@ -5,16 +5,14 @@ createIwcConnector = function(callback) {
   var IwcConnector, duiClient, get_root_intent, init, iwcHandler, received_HB, root_element;
   iwcHandler = {};
   duiClient = new DUIClient();
-  duiClient.connect((function(_this) {
-    return function(intent) {
-      var _ref;
-      return (_ref = iwcHandler[intent.action]) != null ? _ref.map(function(f) {
-        return setTimeout(function() {
-          return f(intent);
-        }, 0);
-      }) : void 0;
-    };
-  })(this));
+  duiClient.connect(function(intent) {
+    var _ref;
+    return (_ref = iwcHandler[intent.action]) != null ? _ref.map(function(f) {
+      return setTimeout(function() {
+        return f(intent);
+      }, 0);
+    }) : void 0;
+  });
   duiClient.initOK();
   root_element = null;
   received_HB = null;

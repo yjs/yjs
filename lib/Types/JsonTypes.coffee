@@ -17,7 +17,7 @@ module.exports = (HB)->
     #   w = yatta.value
     #
     # It creates Javascripts -getter and -setter methods for each property that JsonType maintains.
-    # @see getter https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
+    # @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
     #
     # @example Getter Example
     #   # you can access the x property of yatta by calling

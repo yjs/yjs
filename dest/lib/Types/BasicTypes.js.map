@@ -1,7 +1,7 @@
 {
   "version": 3,
   "file": "BasicTypes.js",
-  "sourceRoot": "../../../../lib/Types/",
+  "sourceRoot": "../../../lib/Types/",
   "sources": [
     "BasicTypes.coffee"
   ],

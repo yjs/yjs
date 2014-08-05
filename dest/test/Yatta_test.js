@@ -28,9 +28,9 @@
       this.generateReplaceOp = __bind(this.generateReplaceOp, this);
       this.generateInsertOp = __bind(this.generateInsertOp, this);
       this.number_of_test_cases_multiplier = 1;
-      this.repeat_this = 10 * this.number_of_test_cases_multiplier;
-      this.doSomething_amount = 200 * this.number_of_test_cases_multiplier;
-      this.number_of_engines = 12 + this.number_of_test_cases_multiplier - 1;
+      this.repeat_this = 1 * this.number_of_test_cases_multiplier;
+      this.doSomething_amount = 5000 * this.number_of_test_cases_multiplier;
+      this.number_of_engines = 10 + this.number_of_test_cases_multiplier - 1;
       this.time = 0;
       this.ops = 0;
       this.time_now = 0;
@@ -133,7 +133,7 @@
       this.ops += number_of_created_operations * this.users.length;
       ops_per_msek = Math.floor(this.ops / this.time);
       if (test_number != null) {
-        console.log(("" + test_number + "/" + this.repeat_this + ": Every collaborator (" + this.users.length + ") applied " + this.number_of_created_operations + " ops in a different order.") + (" Over all we consumed " + this.ops + " operations in " + (this.time / 1000) + " seconds (" + ops_per_msek + " ops/msek)."));
+        console.log(("" + test_number + "/" + this.repeat_this + ": Every collaborator (" + this.users.length + ") applied " + number_of_created_operations + " ops in a different order.") + (" Over all we consumed " + this.ops + " operations in " + (this.time / 1000) + " seconds (" + ops_per_msek + " ops/msek)."));
       }
       _results = [];
       for (i = _j = 0, _ref1 = this.users.length - 1; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
@@ -234,9 +234,15 @@
         'a': {}
       });
       this.yTest.getSomeUser().val('c', {
+        'a': 'c'
+      });
+      this.yTest.getSomeUser().val('c', {
         'a': 'b'
       });
-      return this.yTest.compareAll();
+      this.yTest.compareAll();
+      this.yTest.getSomeUser().value.a.a.q.insertText(0, 'AAA');
+      this.yTest.compareAll();
+      return expect(this.yTest.getSomeUser().value.a.a.q.val()).to.equal("AAAdtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt");
     });
     it("handles some immutable tests", function() {
       this.yTest.getSomeUser().val('string', "text", "immutable");

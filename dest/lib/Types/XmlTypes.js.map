@@ -1,7 +1,7 @@
 {
   "version": 3,
   "file": "XmlTypes.js",
-  "sourceRoot": "../../../../lib/Types/",
+  "sourceRoot": "../../../lib/Types/",
   "sources": [
     "XmlTypes.coffee"
   ],

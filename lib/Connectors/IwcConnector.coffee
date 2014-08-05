@@ -3,7 +3,7 @@ createIwcConnector = (callback)->
   iwcHandler = {}
   duiClient = new DUIClient()
   #@duiClient = new iwc.Client()
-  duiClient.connect (intent)=>
+  duiClient.connect (intent)->
     #console.log "intent received iwc: #{JSON.stringify(intent)}"
     #console.log "#{JSON.stringify(@iwcHandler)}"
     iwcHandler[intent.action]?.map (f)->

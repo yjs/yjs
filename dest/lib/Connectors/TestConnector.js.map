@@ -1,7 +1,7 @@
 {
   "version": 3,
   "file": "TestConnector.js",
-  "sourceRoot": "../../../../lib/Connectors/",
+  "sourceRoot": "../../../lib/Connectors/",
   "sources": [
     "TestConnector.coffee"
   ],

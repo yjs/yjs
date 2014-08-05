@@ -10,14 +10,14 @@ module.exports = (grunt) ->
           sourceMap: true
         expand: true
         src: ["lib/**/*.coffee"]
-        dest: "dest/lib"
+        dest: "dest/"
         ext: ".js"
       test:
         #options:
           #bare: true
         expand: true
         src: ["test/**/*.coffee"]
-        dest: "dest/test"
+        dest: "dest/"
         ext: ".js"
 
     watch:
@@ -32,7 +32,7 @@ module.exports = (grunt) ->
           "<%= coffee.test.src %>"
           "examples/*"
         ]
-        tasks: ["coffeelint", "literate", "browserify", "test", "codo"]
+        tasks: ["build"]
 
     simplemocha:
       all:
@@ -65,22 +65,36 @@ module.exports = (grunt) ->
         options:
             name: "Yatta!"
             title: "Yatta! Documentation"
-            extras: ["LICENSE-LGPL"]
+            extras: ["LICENSE-LGPL", "examples/README.md", "examples/IwcJson.md"]
             #undocumented: yes
             verbose: false
             stats: true
         src: ["./lib"]
     browserify:
-      dist:
+      dest:
         files:
           'dest/browser/Yatta_test.js': ['test/**/*.coffee']
-          'dest/browser/Connectors/IwcConnector.js': ['lib/Connectors/IwcConnector.coffee']
+        options:
+          transform: ['coffeeify']
+          debug: true
+          bundleOptions: {debug: true}
+           # Serve files via http-server
+      lib:
+        files:
           'dest/browser/Frameworks/JsonIwcYatta.js': ['./lib/Frameworks/JsonYatta.coffee', './lib/Connectors/IwcConnector.coffee']
         options:
           transform: ['coffeeify']
           debug: false
           bundleOptions: {debug: false}
-           # Serve files via http-server
+    uglify:
+      browser:
+        files: [
+            expand: true
+            cwd: './dest/browser/'
+            src: '**/*.js'
+            dest: './dest/browser'
+            ext: '.min.js'
+          ]
     connect:
       server:
         options:
@@ -105,6 +119,7 @@ module.exports = (grunt) ->
 
   # These plugins provide necessary tasks.
   grunt.loadNpmTasks "grunt-browserify"
+  grunt.loadNpmTasks "grunt-contrib-uglify"
   grunt.loadNpmTasks "grunt-contrib-coffee"
   grunt.loadNpmTasks 'grunt-contrib-connect'
   grunt.loadNpmTasks "grunt-contrib-watch"
@@ -113,6 +128,7 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks "grunt-coffeelint"
   grunt.loadNpmTasks "grunt-codo"
 
-  grunt.registerTask "default", ["coffee","coffeelint", "literate", "browserify", "simplemocha", "watch"]
+  grunt.registerTask "build", ["test", "coffee","coffeelint", "literate", "browserify", "uglify", "codo"]
+  grunt.registerTask "default", ["build", "watch"]
   grunt.registerTask "production", ["coffee"]
   grunt.registerTask "test", ["simplemocha"]

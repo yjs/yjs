@@ -13,9 +13,9 @@ Connector_uninitialized = require "../lib/Connectors/TestConnector.coffee"
 class Test
   constructor: ()->
     @number_of_test_cases_multiplier = 1
-    @repeat_this = 10 * @number_of_test_cases_multiplier
-    @doSomething_amount = 200 * @number_of_test_cases_multiplier
-    @number_of_engines =  12 + @number_of_test_cases_multiplier - 1
+    @repeat_this = 1 * @number_of_test_cases_multiplier
+    @doSomething_amount = 5000 * @number_of_test_cases_multiplier
+    @number_of_engines =  10 + @number_of_test_cases_multiplier - 1
 
     @time = 0
     @ops = 0
@@ -91,7 +91,7 @@ class Test
 
     ops_per_msek = Math.floor(@ops/@time)
     if test_number?
-      console.log "#{test_number}/#{@repeat_this}: Every collaborator (#{@users.length}) applied #{@number_of_created_operations} ops in a different order." + " Over all we consumed #{@ops} operations in #{@time/1000} seconds (#{ops_per_msek} ops/msek)."
+      console.log "#{test_number}/#{@repeat_this}: Every collaborator (#{@users.length}) applied #{number_of_created_operations} ops in a different order." + " Over all we consumed #{@ops} operations in #{@time/1000} seconds (#{ops_per_msek} ops/msek)."
 
     #console.log users[0].val('name').val()
     for i in [0...(@users.length-1)]
@@ -156,8 +156,13 @@ describe "JsonYatta", ->
     @yTest.getSomeUser().val('x', {'a':'b'})
     @yTest.getSomeUser().val('a', {'a':{q:"dtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt"}})
     @yTest.getSomeUser().val('b', {'a':{}})
+    @yTest.getSomeUser().val('c', {'a':'c'})
     @yTest.getSomeUser().val('c', {'a':'b'})
     @yTest.compareAll()
+    @yTest.getSomeUser().value.a.a.q.insertText(0,'AAA')
+    @yTest.compareAll()
+    expect(@yTest.getSomeUser().value.a.a.q.val()).to.equal("AAAdtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt")
+
 
   it "handles some immutable tests", ->
     @yTest.getSomeUser().val('string', "text", "immutable")

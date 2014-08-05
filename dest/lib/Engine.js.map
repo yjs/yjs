@@ -1,7 +1,7 @@
 {
   "version": 3,
   "file": "Engine.js",
-  "sourceRoot": "../../../lib/",
+  "sourceRoot": "../../lib/",
   "sources": [
     "Engine.coffee"
   ],

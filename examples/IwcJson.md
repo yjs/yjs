@@ -5,14 +5,14 @@ First you have to include the following libraries in your widget file:
 <script src="http://open-app.googlecode.com/files/openapp.js"></script>
 <script src="http://dbis.rwth-aachen.de/gadgets/iwc/lib/iwc.js"></script>
 <script src="http://dbis.rwth-aachen.de/~jahns/role-widgets/widgetbundles/libraries/DUIClient.js"></script>
-<script src="../dest/browser/Frameworks/JsonIwcYatta.js"></script>
+<script src="../dest/browser/Frameworks/JsonIwcYatta.min.js"></script>
 <script src="./IwcJson.js"></script>
 ```
 
 
 ```js
 function init(){
-    window.createConnector(function(Connector, user_id){
+    createConnector(function(Connector, user_id){
 ```
 
 
@@ -102,9 +102,9 @@ But there is a much more convenient way!
 ```js
       console.log(yatta.value.list[2] === 3) // true
       yatta.value.list = [3,4,5]
-      console.log(yatta.val('list')[2] === 5)
+      console.log(yatta.val('list')[2] === 5) // true
       yatta.value.object = {c : 4}
-      console.log(yatta.value.object.c === 4)
+      console.log(yatta.value.object.c === 4) // true
 ```
 
 
@@ -146,7 +146,7 @@ Consider this case.
 
 ```js
       yatta.value = {newProperty : { x : 4} }
-      console.log(yatta.value.newProperty.Awesome == null) // true, Awesome was replaced, therefore it is now undefined
+      console.log(yatta.value.newProperty.Awesome == null) // true, newProperty was replaced, therefore it is now undefined
 ```
 
 

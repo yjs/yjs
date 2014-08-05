@@ -1,20 +1,17 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var createIwcConnector;
 
 createIwcConnector = function(callback) {
   var IwcConnector, duiClient, get_root_intent, init, iwcHandler, received_HB, root_element;
   iwcHandler = {};
   duiClient = new DUIClient();
-  duiClient.connect((function(_this) {
-    return function(intent) {
-      var _ref;
-      return (_ref = iwcHandler[intent.action]) != null ? _ref.map(function(f) {
-        return setTimeout(function() {
-          return f(intent);
-        }, 0);
-      }) : void 0;
-    };
-  })(this));
+  duiClient.connect(function(intent) {
+    var _ref;
+    return (_ref = iwcHandler[intent.action]) != null ? _ref.map(function(f) {
+      return setTimeout(function() {
+        return f(intent);
+      }, 0);
+    }) : void 0;
+  });
   duiClient.initOK();
   root_element = null;
   received_HB = null;
@@ -126,5 +123,4 @@ if (typeof window !== "undefined" && window !== null) {
   window.createConnector = createIwcConnector;
 }
 
-
-},{}]},{},[1]);
+//# sourceMappingURL=IwcConnector.js.map
