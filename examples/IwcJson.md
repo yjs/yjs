@@ -162,7 +162,7 @@ I can't observe if you overwrite object references `yatta = "Awesome"`.
 ```
 
 
-Please also read [https://rawgit.com/DadaMonad/Yatta/master/doc/class/JsonWrapper.html](JsonWrapper).
+Please also read [JsonWrapper](https://rawgit.com/DadaMonad/Yatta/master/doc/class/JsonWrapper.html)
 
 
 ```js

@@ -119,7 +119,7 @@ function init(){
       console.log(yatta.value.newProperty !== "Awesome") // true, still not awesome..
 
       /**
-       Please also read [https://rawgit.com/DadaMonad/Yatta/master/doc/class/JsonWrapper.html](JsonWrapper).
+       Please also read [JsonWrapper](https://rawgit.com/DadaMonad/Yatta/master/doc/class/JsonWrapper.html)
       */
     })
 }
