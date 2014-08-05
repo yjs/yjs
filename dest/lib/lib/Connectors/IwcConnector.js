@@ -7,8 +7,6 @@ createIwcConnector = function(callback) {
   duiClient.connect((function(_this) {
     return function(intent) {
       var _ref;
-      console.log("intent received iwc: " + (JSON.stringify(intent)));
-      console.log("" + (JSON.stringify(_this.iwcHandler)));
       return (_ref = iwcHandler[intent.action]) != null ? _ref.map(function(f) {
         return setTimeout(function() {
           return f(intent);
@@ -83,7 +81,7 @@ createIwcConnector = function(callback) {
         dataType: "",
         extras: content
       };
-      return this.duiClient.publishToUser(intent);
+      return this.duiClient.sendIntent(intent);
     };
 
     IwcConnector.prototype.sync = function() {
@@ -102,20 +100,22 @@ createIwcConnector = function(callback) {
   };
   init = function() {
     var is_initialized, receiveRootElement;
-    duiClient.publishToUser(get_root_intent);
+    duiClient.sendIntent(get_root_intent);
     is_initialized = false;
     receiveRootElement = function(json) {
+      var proposed_user_id;
+      proposed_user_id = duiClient.getIwcClient()._componentName;
       root_element = json != null ? json.extras.root_element : void 0;
       received_HB = json != null ? json.extras.HB : void 0;
       if (!is_initialized) {
         is_initialized = true;
-        return callback(IwcConnector);
+        return callback(IwcConnector, proposed_user_id);
       }
     };
     iwcHandler["Yatta_push_root_element"] = [receiveRootElement];
-    return setTimeout(receiveRootElement, 3000);
+    return setTimeout(receiveRootElement, 800);
   };
-  setTimeout(init, 10);
+  setTimeout(init, Math.random() * 4000);
   return void 0;
 };
 

@@ -19,34 +19,34 @@
       Index
     </a>
     &raquo;
-    <span class='title'>Engine</span>
+    <span class='title'>WordImmutable</span>
   </div>
 </div>
     <div id='content'>
       <h1>
         Class:
-        Engine
+        WordImmutable
       </h1>
       <table class='box'>
         <tr>
           <td>Defined in:</td>
-          <td>lib&#47;Engine.coffee</td>
+          <td>lib&#47;Types&#47;TextTypes.coffee</td>
+        </tr>
+        <tr>
+          <td>Inherits:</td>
+          <td>
+            types.Insert
+          </td>
         </tr>
       </table>
-      <h2>Overview</h2>
-      <div class='docstring'>
-  <p>The Engine handles how and in which order to execute operations and add operations to the HistoryBuffer.</p>
-</div>
-<div class='tags'>
-</div>
       <h2>Instance Method Summary</h2>
       <ul class='summary'>
   <li>
     <span class='signature'>
-      <a href='#parseOperation-dynamic'>
+      <a href='#val-dynamic'>
         #
-(void)
-<b>parseOperation</b><span>(json)</span>
+(String)
+<b>val</b><span>()</span>
       </a>
     </span>
     <span class='desc'>
@@ -54,32 +54,10 @@
   </li>
   <li>
     <span class='signature'>
-      <a href='#applyOps-dynamic'>
+      <a href='#toJson-dynamic'>
         #
 (void)
-<b>applyOps</b><span>(ops_json)</span>
-      </a>
-    </span>
-    <span class='desc'>
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#applyOp-dynamic'>
-        #
-(void)
-<b>applyOp</b><span>(op_json)</span>
-      </a>
-    </span>
-    <span class='desc'>
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#tryUnprocessed-dynamic'>
-        #
-(void)
-<b>tryUnprocessed</b><span>()</span>
+<b>toJson</b><span>()</span>
       </a>
     </span>
     <span class='desc'>
@@ -92,46 +70,62 @@
     <p class='signature' id='constructor-dynamic'>
       #
 (void)
-<b>constructor</b><span>(HB, parser)</span>
+<b>constructor</b><span>(uid, content = &quot;&quot;, prev, next, origin)</span>
       <br>
     </p>
-    
+    <div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>uid</span>
+      <span class='type'>
+        (
+          <tt>Object</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>A unique identifier. If uid is undefined, a new uid will be created. </span>
+    </li>
+    <li>
+      <span class='name'>content</span>
+      <span class='type'>
+        (
+          <tt>String</tt>
+        )
+      </span>
+    </li>
+  </ul>
+</div>
   </div>
 </div>
       <h2>Instance Method Details</h2>
       <div class='methods'>
   <div class='method_details'>
-    <p class='signature' id='parseOperation-dynamic'>
+    <p class='signature' id='val-dynamic'>
       #
-(void)
-<b>parseOperation</b><span>(json)</span>
+(String)
+<b>val</b><span>()</span>
       <br>
     </p>
-    
+    <div class='tags'>
+  <h3>Returns:</h3>
+  <ul class='return'>
+    <li>
+      <span class='type'></span>
+      (
+        <tt>String</tt>
+      )
+      &mdash;
+      <span class='desc'>The content of this operation. </span>
+    </li>
+  </ul>
+</div>
   </div>
   <div class='method_details'>
-    <p class='signature' id='applyOps-dynamic'>
+    <p class='signature' id='toJson-dynamic'>
       #
 (void)
-<b>applyOps</b><span>(ops_json)</span>
-      <br>
-    </p>
-    
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='applyOp-dynamic'>
-      #
-(void)
-<b>applyOp</b><span>(op_json)</span>
-      <br>
-    </p>
-    
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='tryUnprocessed-dynamic'>
-      #
-(void)
-<b>tryUnprocessed</b><span>()</span>
+<b>toJson</b><span>()</span>
       <br>
     </p>
     
@@ -139,7 +133,7 @@
 </div>
     </div>
     <div id='footer'>
-  August 05, 14 05:00:00 by
+  August 04, 14 16:39:02 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

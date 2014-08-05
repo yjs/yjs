@@ -72,8 +72,13 @@ class JsonYatta
   #
   # @see JsonType.value
   #
-  value : ()->
-    @root_element.value
-
+  Object.defineProperty JsonYatta.prototype, 'value',
+    get : -> @root_element.value
+    set : (o)->
+      if o.constructor is {}.constructor
+        for o_name,o_obj of o
+          @val(o_name, o_obj, 'immutable')
+      else
+        throw new Error "You must only set Object values!"
 window?.JsonYatta = JsonYatta
 module.exports = JsonYatta

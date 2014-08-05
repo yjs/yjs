@@ -52,9 +52,24 @@ JsonYatta = (function() {
     return this.root_element.val(name, content, mutable);
   };
 
-  JsonYatta.prototype.value = function() {
-    return this.root_element.value;
-  };
+  Object.defineProperty(JsonYatta.prototype, 'value', {
+    get: function() {
+      return this.root_element.value;
+    },
+    set: function(o) {
+      var o_name, o_obj, _results;
+      if (o.constructor === {}.constructor) {
+        _results = [];
+        for (o_name in o) {
+          o_obj = o[o_name];
+          _results.push(this.val(o_name, o_obj, 'immutable'));
+        }
+        return _results;
+      } else {
+        throw new Error("You must only set Object values!");
+      }
+    }
+  });
 
   return JsonYatta;
 

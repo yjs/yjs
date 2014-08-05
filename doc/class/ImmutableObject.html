@@ -19,23 +19,29 @@
       Index
     </a>
     &raquo;
-    <span class='title'>Engine</span>
+    <span class='title'>ImmutableObject</span>
   </div>
 </div>
     <div id='content'>
       <h1>
         Class:
-        Engine
+        ImmutableObject
       </h1>
       <table class='box'>
         <tr>
           <td>Defined in:</td>
-          <td>lib&#47;Engine.coffee</td>
+          <td>lib&#47;Types&#47;BasicTypes.coffee</td>
+        </tr>
+        <tr>
+          <td>Inherits:</td>
+          <td>
+            <a href='../class/Insert.html'>Insert</a>
+          </td>
         </tr>
       </table>
       <h2>Overview</h2>
       <div class='docstring'>
-  <p>The Engine handles how and in which order to execute operations and add operations to the HistoryBuffer.</p>
+  <p>Defines an object that is cannot be changed. You can use this to set an immutable string, or a number.</p>
 </div>
 <div class='tags'>
 </div>
@@ -43,10 +49,10 @@
       <ul class='summary'>
   <li>
     <span class='signature'>
-      <a href='#parseOperation-dynamic'>
+      <a href='#val-dynamic'>
         #
-(void)
-<b>parseOperation</b><span>(json)</span>
+(String)
+<b>val</b><span>()</span>
       </a>
     </span>
     <span class='desc'>
@@ -54,84 +60,95 @@
   </li>
   <li>
     <span class='signature'>
-      <a href='#applyOps-dynamic'>
+      <a href='#_encode-dynamic'>
         #
 (void)
-<b>applyOps</b><span>(ops_json)</span>
-      </a>
-    </span>
-    <span class='desc'>
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#applyOp-dynamic'>
-        #
-(void)
-<b>applyOp</b><span>(op_json)</span>
-      </a>
-    </span>
-    <span class='desc'>
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#tryUnprocessed-dynamic'>
-        #
-(void)
-<b>tryUnprocessed</b><span>()</span>
+<b>_encode</b><span>()</span>
       </a>
     </span>
     <span class='desc'>
     </span>
   </li>
 </ul>
+      <h2>
+        <small>Inherited Method Summary</small>
+        <h3 class='inherited'>
+          Methods inherited from
+          <a href='../class/Insert.html'>Insert</a>
+        </h3>
+        <p class='inherited'>
+          <a href='../class/Insert.html#applyDelete-dynamic'>#applyDelete</a>
+          <a href='../class/Insert.html#isDeleted-dynamic'>#isDeleted</a>
+          <a href='../class/Insert.html#getDistanceToOrigin-dynamic'>#getDistanceToOrigin</a>
+          <a href='../class/Insert.html#update_sl-dynamic'>#update_sl</a>
+          <a href='../class/Insert.html#execute-dynamic'>#execute</a>
+          <a href='../class/Operation.html#getUid-dynamic'>#getUid</a>
+          <a href='../class/Operation.html#saveOperation-dynamic'>#saveOperation</a>
+          <a href='../class/Operation.html#validateSavedOperations-dynamic'>#validateSavedOperations</a>
+        </p>
+      </h2>
       <h2>Constructor Details</h2>
       <div class='methods'>
   <div class='method_details'>
     <p class='signature' id='constructor-dynamic'>
       #
 (void)
-<b>constructor</b><span>(HB, parser)</span>
+<b>constructor</b><span>(uid, content = &quot;&quot;, prev, next, origin)</span>
       <br>
     </p>
-    
+    <div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>uid</span>
+      <span class='type'>
+        (
+          <tt>Object</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>A unique identifier. If uid is undefined, a new uid will be created. </span>
+    </li>
+    <li>
+      <span class='name'>content</span>
+      <span class='type'>
+        (
+          <tt>Object</tt>
+        )
+      </span>
+    </li>
+  </ul>
+</div>
   </div>
 </div>
       <h2>Instance Method Details</h2>
       <div class='methods'>
   <div class='method_details'>
-    <p class='signature' id='parseOperation-dynamic'>
+    <p class='signature' id='val-dynamic'>
       #
-(void)
-<b>parseOperation</b><span>(json)</span>
+(String)
+<b>val</b><span>()</span>
       <br>
     </p>
-    
+    <div class='tags'>
+  <h3>Returns:</h3>
+  <ul class='return'>
+    <li>
+      <span class='type'></span>
+      (
+        <tt>String</tt>
+      )
+      &mdash;
+      <span class='desc'>The content of this operation. </span>
+    </li>
+  </ul>
+</div>
   </div>
   <div class='method_details'>
-    <p class='signature' id='applyOps-dynamic'>
+    <p class='signature' id='_encode-dynamic'>
       #
 (void)
-<b>applyOps</b><span>(ops_json)</span>
-      <br>
-    </p>
-    
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='applyOp-dynamic'>
-      #
-(void)
-<b>applyOp</b><span>(op_json)</span>
-      <br>
-    </p>
-    
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='tryUnprocessed-dynamic'>
-      #
-(void)
-<b>tryUnprocessed</b><span>()</span>
+<b>_encode</b><span>()</span>
       <br>
     </p>
     

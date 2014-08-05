@@ -24,6 +24,7 @@
   },
   "homepage": "https://github.com/DadaMonad/Yatta",
   "dependencies": {
+    "grunt-literate": "^0.2.0"
   },
   "devDependencies": {
     "grunt-contrib-coffee": "^0.10.1",

@@ -4,8 +4,8 @@ createIwcConnector = (callback)->
   duiClient = new DUIClient()
   #@duiClient = new iwc.Client()
   duiClient.connect (intent)=>
-    console.log "intent received iwc: #{JSON.stringify(intent)}"
-    console.log "#{JSON.stringify(@iwcHandler)}"
+    #console.log "intent received iwc: #{JSON.stringify(intent)}"
+    #console.log "#{JSON.stringify(@iwcHandler)}"
     iwcHandler[intent.action]?.map (f)->
       setTimeout ()->
           f intent
@@ -65,7 +65,7 @@ createIwcConnector = (callback)->
         dataType: ""
         extras: content
 
-      @duiClient.publishToUser(intent)
+      @duiClient.sendIntent(intent)
 
     sync: ()->
       throw new Error "Can't use this a.t.m."
@@ -78,19 +78,20 @@ createIwcConnector = (callback)->
     extras: {}
 
   init = ()->
-    duiClient.publishToUser(get_root_intent)
+    duiClient.sendIntent(get_root_intent)
 
     is_initialized = false
     receiveRootElement = (json)->
+      proposed_user_id = duiClient.getIwcClient()._componentName
       root_element = json?.extras.root_element
       received_HB = json?.extras.HB
       if not is_initialized
         is_initialized = true
-        callback IwcConnector
+        callback IwcConnector, proposed_user_id
     iwcHandler["Yatta_push_root_element"] = [receiveRootElement]
-    setTimeout receiveRootElement, 3000
+    setTimeout receiveRootElement, 800
 
-  setTimeout init, 10
+  setTimeout init, (Math.random()*4000)
 
   undefined
 module.exports = createIwcConnector

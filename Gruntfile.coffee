@@ -30,8 +30,9 @@ module.exports = (grunt) ->
         files: [
           "<%= coffee.lib.src %>"
           "<%= coffee.test.src %>"
+          "examples/*"
         ]
-        tasks: ["coffeelint", "coffee", "browserify", "test", "codo"]
+        tasks: ["coffeelint", "literate", "browserify", "test", "codo"]
 
     simplemocha:
       all:
@@ -77,15 +78,15 @@ module.exports = (grunt) ->
           'dest/browser/Frameworks/JsonIwcYatta.js': ['./lib/Frameworks/JsonYatta.coffee', './lib/Connectors/IwcConnector.coffee']
         options:
           transform: ['coffeeify']
-          debug: true
-          bundleOptions: {debug: true}
+          debug: false
+          bundleOptions: {debug: false}
            # Serve files via http-server
     connect:
       server:
         options:
           hostname: '*'
           port: 1337
-          base: './dest/browser/'
+          base: './'
           keepalive: true
           middleware: (connect, options, middlewares)->
             middlewares.push (req, res, next)->
@@ -97,16 +98,21 @@ module.exports = (grunt) ->
                   res.header('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0')
                 return next()
             return middlewares
+    literate:
+      "examples/IwcJson.md": "examples/IwcJson.js"
+      options:
+        code: true
 
   # These plugins provide necessary tasks.
   grunt.loadNpmTasks "grunt-browserify"
   grunt.loadNpmTasks "grunt-contrib-coffee"
   grunt.loadNpmTasks 'grunt-contrib-connect'
   grunt.loadNpmTasks "grunt-contrib-watch"
+  grunt.loadNpmTasks "grunt-literate"
   grunt.loadNpmTasks "grunt-simple-mocha"
   grunt.loadNpmTasks "grunt-coffeelint"
   grunt.loadNpmTasks "grunt-codo"
 
-  grunt.registerTask "default", ["coffee","coffeelint", "browserify", "simplemocha", "watch"]
+  grunt.registerTask "default", ["coffee","coffeelint", "literate", "browserify", "simplemocha", "watch"]
   grunt.registerTask "production", ["coffee"]
   grunt.registerTask "test", ["simplemocha"]
