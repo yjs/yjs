@@ -40,13 +40,13 @@ In contrast, an OT algorithm can have an empty History Buffer while the document
 
 So, how did I come up with the name for the implementation (Yatta! is not Yata)?
 ![YATTA!](./extras/imgs/YATTA.png)
-Yatta! means "I did it!" in Japanese. You scream it when you accomplish something you are proud of (for proper application I refer to the Yatta-man in [Heroes](http://heroeswiki.com/Yatta!)).
+Yatta! means "I did it!" in Japanese. You scream it when you accomplish something (for proper application I refer to the Yatta-man in [Heroes](http://heroeswiki.com/Yatta!)).
 There is also this awesome video on the Internet that will change your life [Yatta](https://www.youtube.com/watch?v=kL5DDSglM_s).
 # Status
-Yatta!is still in an early development phase.
+Yatta! is still in an early development phase.
 
 # Support
-Please report any issues to the Github Issue
+Please report any issues to the [Github issue page](https://github.com/DadaMonad/Yatta/issues)!
 
 # License
 Yatta! is licensed under the [MIT License](./LICENSE.txt).
