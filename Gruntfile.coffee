@@ -65,7 +65,7 @@ module.exports = (grunt) ->
         options:
             name: "Yatta!"
             title: "Yatta! Documentation"
-            extras: ["LICENSE-LGPL", "examples/README.md", "examples/IwcJson.md"]
+            extras: ["LICENSE.txt", "examples/README.md", "examples/IwcJson.md"]
             #undocumented: yes
             verbose: false
             stats: true
@@ -128,7 +128,8 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks "grunt-coffeelint"
   grunt.loadNpmTasks "grunt-codo"
 
-  grunt.registerTask "build", ["test", "coffee","coffeelint", "literate", "browserify", "uglify", "codo"]
+  grunt.registerTask "build", ["coffeelint", "codo", "test"]
+  grunt.registerTask "production", ["test", "coffee","coffeelint", "literate", "browserify", "uglify", "codo"]
   grunt.registerTask "default", ["build", "watch"]
   grunt.registerTask "production", ["coffee"]
   grunt.registerTask "test", ["simplemocha"]

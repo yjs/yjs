@@ -42,9 +42,10 @@ First you have to include the following libraries in your widget file:</p><pre><
 &lt;script src=&quot;http://dbis.rwth-aachen.de/~jahns/role-widgets/widgetbundles/libraries/DUIClient.js&quot;&gt;&lt;/script&gt;
 &lt;script src=&quot;../dest/browser/Frameworks/JsonIwcYatta.min.js&quot;&gt;&lt;/script&gt;
 &lt;script src=&quot;./IwcJson.js&quot;&gt;&lt;/script&gt;
-</code></pre><pre><code class="lang-js">function init(){
+</code></pre><p>A working widget implementation is maintained <a href="./IwcJson.xml">here</a> and the js-file is <a href="./IwcJson.js">here</a></p><pre><code class="lang-js">function init(){
     createConnector(function(Connector, user_id){
-</code></pre><p>yatta is the shared json object</p><pre><code class="lang-js">      yatta = new JsonYatta(user_id, Connector);
+</code></pre><p>yatta is the shared json object. If you change something on this object,
+it will be instantly shared with all the other collaborators.</p><pre><code class="lang-js">      yatta = new JsonYatta(user_id, Connector);
 </code></pre><p>Add a integer-property like this</p><pre><code class="lang-js">      yatta.val(&#39;x&#39;, 7);
 </code></pre><p>Get the value of property x like this</p><pre><code class="lang-js">      console.log(yatta.val(&#39;x&#39;) === 7); // true
 </code></pre><p>A string property can be either mutable or immutable.</p><pre><code class="lang-js">      yatta.val(&#39;mutable_string&#39;, &quot;text&quot;, &quot;mutable&quot;);
@@ -102,7 +103,7 @@ window.onload = init
       </div>
     </div>
     <div id='footer'>
-  August 05, 14 16:58:39 by
+  August 05, 14 20:37:47 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

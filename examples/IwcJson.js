@@ -10,11 +10,13 @@
 <script src="../dest/browser/Frameworks/JsonIwcYatta.min.js"></script>
 <script src="./IwcJson.js"></script>
  ```
+A working widget implementation is maintained [here](./IwcJson.xml) and the js-file is [here](./IwcJson.js)
  */
 function init(){
     createConnector(function(Connector, user_id){
       /**
-       yatta is the shared json object
+       yatta is the shared json object. If you change something on this object,
+       it will be instantly shared with all the other collaborators.
       */
       yatta = new JsonYatta(user_id, Connector);
 
