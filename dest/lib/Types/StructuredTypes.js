@@ -21,7 +21,7 @@ module.exports = function(HB) {
       var o, obj, result, _ref, _ref1;
       if (content != null) {
         if (this.map[name] == null) {
-          HB.addOperation(new AddName(HB.getNextOperationIdentifier(), this, name)).execute();
+          HB.addOperation(new AddName(void 0, this, name)).execute();
         }
         this.map[name].replace(content);
         return this;
@@ -105,8 +105,8 @@ module.exports = function(HB) {
         this.saveOperation('beginning', beginning);
         this.saveOperation('end', end);
       } else {
-        this.beginning = HB.addOperation(new types.Delimiter(HB.getNextOperationIdentifier(), void 0, void 0));
-        this.end = HB.addOperation(new types.Delimiter(HB.getNextOperationIdentifier(), this.beginning, void 0));
+        this.beginning = HB.addOperation(new types.Delimiter(void 0, void 0, void 0));
+        this.end = HB.addOperation(new types.Delimiter(void 0, this.beginning, void 0));
         this.beginning.next_cl = this.end;
         this.beginning.execute();
         this.end.execute();
@@ -169,7 +169,7 @@ module.exports = function(HB) {
     ReplaceManager.prototype.replace = function(content) {
       var o, op;
       o = this.getLastOperation();
-      op = new Replaceable(content, this, HB.getNextOperationIdentifier(), o, o.next_cl);
+      op = new Replaceable(content, this, void 0, o, o.next_cl);
       return HB.addOperation(op).execute();
     };
 

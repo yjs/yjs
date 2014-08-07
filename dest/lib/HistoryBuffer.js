@@ -12,6 +12,13 @@ HistoryBuffer = (function() {
     return this.user_id;
   };
 
+  HistoryBuffer.prototype.getReservedUniqueIdentifier = function() {
+    return {
+      creator: '_',
+      op_number: '_'
+    };
+  };
+
   HistoryBuffer.prototype.getOperationCounter = function() {
     var ctn, res, user, _ref;
     res = {};

@@ -59,6 +59,18 @@
   </li>
   <li>
     <span class='signature'>
+      <a href='#getReservedUniqueIdentifier-dynamic'>
+        #
+(void)
+<b>getReservedUniqueIdentifier</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+      There is only one reserved unique identifier (uid), so use it wisely. 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
       <a href='#getOperationCounter-dynamic'>
         #
 (void)
@@ -162,6 +174,22 @@
 </div>
   </div>
   <div class='method_details'>
+    <p class='signature' id='getReservedUniqueIdentifier-dynamic'>
+      #
+(void)
+<b>getReservedUniqueIdentifier</b><span>()</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>There is only one reserved unique identifier (uid), so use it wisely.
+I propose to use it in your Framework, to create something like a root element.
+An operation with this identifier is not propagated to other clients.
+This is why everybode must create the same operation with this uid.</p>
+</div>
+<div class='tags'>
+</div>
+  </div>
+  <div class='method_details'>
     <p class='signature' id='getOperationCounter-dynamic'>
       #
 (void)
@@ -228,7 +256,7 @@ other operations (it wont executed)</p>
 </div>
     </div>
     <div id='footer'>
-  August 05, 14 20:37:47 by
+  August 07, 14 21:48:38 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

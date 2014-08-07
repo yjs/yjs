@@ -294,7 +294,7 @@ module.exports = (HB)->
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Object} content
     #
-    constructor: (uid, @content="", prev, next, origin)->
+    constructor: (uid, @content, prev, next, origin)->
       super uid, prev, next, origin
 
     #

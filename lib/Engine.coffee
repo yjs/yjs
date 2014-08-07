@@ -14,6 +14,9 @@ class Engine
       throw new Error "You forgot to specify a parser for type #{json.type}. The message is #{JSON.stringify json}."
 
   applyOps: (ops_json)->
+    for o in ops_json
+      @applyOp o
+    ###
     ops = []
     for o in ops_json
       ops.push @parseOperation o
@@ -23,7 +26,7 @@ class Engine
       if not o.execute()
         @unprocessed_ops.push o
     @tryUnprocessed()
-
+    ###
   applyOp: (op_json)->
     # $parse_and_execute will return false if $o_json was parsed and executed, otherwise the parsed operadion
     o = @parseOperation op_json
@@ -43,7 +46,7 @@ class Engine
       if @unprocessed_ops.length is old_length
         break
 
-  
+
 
 
 module.exports = Engine

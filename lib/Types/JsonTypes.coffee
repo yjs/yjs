@@ -155,10 +155,11 @@ module.exports = (HB)->
           super name, obj
         else
           if typeof content is 'string'
-            word = HB.addOperation(new types.Word HB.getNextOperationIdentifier(), content).execute()
+            word = HB.addOperation(new types.Word undefined).execute()
+            word.insertText 0, content
             super name, word
           else if content.constructor is Object
-            json = HB.addOperation(new JsonType HB.getNextOperationIdentifier(), content, mutable).execute()
+            json = HB.addOperation(new JsonType undefined, content, mutable).execute()
             super name, json
           else
             throw new Error "You must not set #{typeof content}-types in collaborative Json-objects!"

@@ -73,11 +73,8 @@ module.exports = function(HB) {
   Word = (function(_super) {
     __extends(Word, _super);
 
-    function Word(uid, initial_content, beginning, end, prev, next, origin) {
+    function Word(uid, beginning, end, prev, next, origin) {
       Word.__super__.constructor.call(this, uid, beginning, end, prev, next, origin);
-      if (initial_content != null) {
-        this.insertText(0, initial_content);
-      }
     }
 
     Word.prototype.insertText = function(position, content) {
@@ -86,7 +83,7 @@ module.exports = function(HB) {
       _results = [];
       for (_i = 0, _len = content.length; _i < _len; _i++) {
         c = content[_i];
-        op = new TextInsert(c, HB.getNextOperationIdentifier(), o.prev_cl, o);
+        op = new TextInsert(c, void 0, o.prev_cl, o);
         _results.push(HB.addOperation(op).execute());
       }
       return _results;
@@ -171,7 +168,7 @@ module.exports = function(HB) {
   parser['Word'] = function(json) {
     var beginning, end, next, origin, prev, uid;
     uid = json['uid'], beginning = json['beginning'], end = json['end'], prev = json['prev'], next = json['next'], origin = json['origin'];
-    return new Word(uid, void 0, beginning, end, prev, next, origin);
+    return new Word(uid, beginning, end, prev, next, origin);
   };
   types['TextInsert'] = TextInsert;
   types['TextDelete'] = TextDelete;

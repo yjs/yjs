@@ -112,10 +112,11 @@ module.exports = function(HB) {
           return JsonType.__super__.val.call(this, name, obj);
         } else {
           if (typeof content === 'string') {
-            word = HB.addOperation(new types.Word(HB.getNextOperationIdentifier(), content)).execute();
+            word = HB.addOperation(new types.Word(void 0)).execute();
+            word.insertText(0, content);
             return JsonType.__super__.val.call(this, name, word);
           } else if (content.constructor === Object) {
-            json = HB.addOperation(new JsonType(HB.getNextOperationIdentifier(), content, mutable)).execute();
+            json = HB.addOperation(new JsonType(void 0, content, mutable)).execute();
             return JsonType.__super__.val.call(this, name, json);
           } else {
             throw new Error("You must not set " + (typeof content) + "-types in collaborative Json-objects!");

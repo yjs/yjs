@@ -57,10 +57,10 @@ module.exports = function(user_list) {
 
     TestConnector.prototype.receive = function(o) {
       var _base, _name;
-      if ((_base = this.unexecuted)[_name = o.creator] == null) {
+      if ((_base = this.unexecuted)[_name = o.uid.creator] == null) {
         _base[_name] = [];
       }
-      return this.unexecuted[o.creator].push(o);
+      return this.unexecuted[o.uid.creator].push(o);
     };
 
     TestConnector.prototype.flushOne = function(user) {

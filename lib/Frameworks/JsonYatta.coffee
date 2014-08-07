@@ -16,14 +16,11 @@ class JsonYatta
     json_types = json_types_uninitialized @HB
     @engine = new Engine @HB, json_types.parser
     @connector = new Connector @engine, @HB, json_types.execution_listener, @
-    root_elem = @connector.getRootElement()
-    if not root_elem?
-      first_word = new json_types.types.JsonType @HB.getNextOperationIdentifier()
-      @HB.addOperation(first_word)
-      first_word.execute()
-      @root_element = first_word
-    else
-      @root_element = @HB.getOperation(root_elem)
+
+    first_word = new json_types.types.JsonType @HB.getReservedUniqueIdentifier()
+    @HB.addOperation(first_word).execute()
+    @root_element = first_word
+
 
   #
   # @result JsonType

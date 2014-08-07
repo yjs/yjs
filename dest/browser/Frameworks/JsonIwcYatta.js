@@ -146,23 +146,25 @@ Engine = (function() {
   };
 
   Engine.prototype.applyOps = function(ops_json) {
-    var o, ops, _i, _j, _k, _len, _len1, _len2;
-    ops = [];
+    var o, _i, _len, _results;
+    _results = [];
     for (_i = 0, _len = ops_json.length; _i < _len; _i++) {
       o = ops_json[_i];
-      ops.push(this.parseOperation(o));
+      _results.push(this.applyOp(o));
     }
-    for (_j = 0, _len1 = ops.length; _j < _len1; _j++) {
-      o = ops[_j];
-      this.HB.addOperation(o);
-    }
-    for (_k = 0, _len2 = ops.length; _k < _len2; _k++) {
-      o = ops[_k];
-      if (!o.execute()) {
-        this.unprocessed_ops.push(o);
-      }
-    }
-    return this.tryUnprocessed();
+    return _results;
+
+    /*
+    ops = []
+    for o in ops_json
+      ops.push @parseOperation o
+    for o in ops
+      @HB.addOperation o
+    for o in ops
+      if not o.execute()
+        @unprocessed_ops.push o
+    @tryUnprocessed()
+     */
   };
 
   Engine.prototype.applyOp = function(op_json) {
@@ -216,20 +218,14 @@ Engine = require("../Engine.coffee");
 
 JsonYatta = (function() {
   function JsonYatta(user_id, Connector) {
-    var first_word, json_types, root_elem;
+    var first_word, json_types;
     this.HB = new HistoryBuffer(user_id);
     json_types = json_types_uninitialized(this.HB);
     this.engine = new Engine(this.HB, json_types.parser);
     this.connector = new Connector(this.engine, this.HB, json_types.execution_listener, this);
-    root_elem = this.connector.getRootElement();
-    if (root_elem == null) {
-      first_word = new json_types.types.JsonType(this.HB.getNextOperationIdentifier());
-      this.HB.addOperation(first_word);
-      first_word.execute();
-      this.root_element = first_word;
-    } else {
-      this.root_element = this.HB.getOperation(root_elem);
-    }
+    first_word = new json_types.types.JsonType(this.HB.getReservedUniqueIdentifier());
+    this.HB.addOperation(first_word).execute();
+    this.root_element = first_word;
   }
 
   JsonYatta.prototype.getRootElement = function() {
@@ -303,6 +299,13 @@ HistoryBuffer = (function() {
 
   HistoryBuffer.prototype.getUserId = function() {
     return this.user_id;
+  };
+
+  HistoryBuffer.prototype.getReservedUniqueIdentifier = function() {
+    return {
+      creator: '_',
+      op_number: '_'
+    };
   };
 
   HistoryBuffer.prototype.getOperationCounter = function() {
@@ -608,7 +611,7 @@ module.exports = function(HB) {
     __extends(ImmutableObject, _super);
 
     function ImmutableObject(uid, content, prev, next, origin) {
-      this.content = content != null ? content : "";
+      this.content = content;
       ImmutableObject.__super__.constructor.call(this, uid, prev, next, origin);
     }
 
@@ -810,10 +813,11 @@ module.exports = function(HB) {
           return JsonType.__super__.val.call(this, name, obj);
         } else {
           if (typeof content === 'string') {
-            word = HB.addOperation(new types.Word(HB.getNextOperationIdentifier(), content)).execute();
+            word = HB.addOperation(new types.Word(void 0)).execute();
+            word.insertText(0, content);
             return JsonType.__super__.val.call(this, name, word);
           } else if (content.constructor === Object) {
-            json = HB.addOperation(new JsonType(HB.getNextOperationIdentifier(), content, mutable)).execute();
+            json = HB.addOperation(new JsonType(void 0, content, mutable)).execute();
             return JsonType.__super__.val.call(this, name, json);
           } else {
             throw new Error("You must not set " + (typeof content) + "-types in collaborative Json-objects!");
@@ -887,7 +891,7 @@ module.exports = function(HB) {
       var o, obj, result, _ref, _ref1;
       if (content != null) {
         if (this.map[name] == null) {
-          HB.addOperation(new AddName(HB.getNextOperationIdentifier(), this, name)).execute();
+          HB.addOperation(new AddName(void 0, this, name)).execute();
         }
         this.map[name].replace(content);
         return this;
@@ -971,8 +975,8 @@ module.exports = function(HB) {
         this.saveOperation('beginning', beginning);
         this.saveOperation('end', end);
       } else {
-        this.beginning = HB.addOperation(new types.Delimiter(HB.getNextOperationIdentifier(), void 0, void 0));
-        this.end = HB.addOperation(new types.Delimiter(HB.getNextOperationIdentifier(), this.beginning, void 0));
+        this.beginning = HB.addOperation(new types.Delimiter(void 0, void 0, void 0));
+        this.end = HB.addOperation(new types.Delimiter(void 0, this.beginning, void 0));
         this.beginning.next_cl = this.end;
         this.beginning.execute();
         this.end.execute();
@@ -1035,7 +1039,7 @@ module.exports = function(HB) {
     ReplaceManager.prototype.replace = function(content) {
       var o, op;
       o = this.getLastOperation();
-      op = new Replaceable(content, this, HB.getNextOperationIdentifier(), o, o.next_cl);
+      op = new Replaceable(content, this, void 0, o, o.next_cl);
       return HB.addOperation(op).execute();
     };
 
@@ -1215,11 +1219,8 @@ module.exports = function(HB) {
   Word = (function(_super) {
     __extends(Word, _super);
 
-    function Word(uid, initial_content, beginning, end, prev, next, origin) {
+    function Word(uid, beginning, end, prev, next, origin) {
       Word.__super__.constructor.call(this, uid, beginning, end, prev, next, origin);
-      if (initial_content != null) {
-        this.insertText(0, initial_content);
-      }
     }
 
     Word.prototype.insertText = function(position, content) {
@@ -1228,7 +1229,7 @@ module.exports = function(HB) {
       _results = [];
       for (_i = 0, _len = content.length; _i < _len; _i++) {
         c = content[_i];
-        op = new TextInsert(c, HB.getNextOperationIdentifier(), o.prev_cl, o);
+        op = new TextInsert(c, void 0, o.prev_cl, o);
         _results.push(HB.addOperation(op).execute());
       }
       return _results;
@@ -1313,7 +1314,7 @@ module.exports = function(HB) {
   parser['Word'] = function(json) {
     var beginning, end, next, origin, prev, uid;
     uid = json['uid'], beginning = json['beginning'], end = json['end'], prev = json['prev'], next = json['next'], origin = json['origin'];
-    return new Word(uid, void 0, beginning, end, prev, next, origin);
+    return new Word(uid, beginning, end, prev, next, origin);
   };
   types['TextInsert'] = TextInsert;
   types['TextDelete'] = TextDelete;

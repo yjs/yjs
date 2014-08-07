@@ -22,6 +22,18 @@ class HistoryBuffer
     @user_id
 
   #
+  # There is only one reserved unique identifier (uid), so use it wisely.
+  # I propose to use it in your Framework, to create something like a root element.
+  # An operation with this identifier is not propagated to other clients.
+  # This is why everybode must create the same operation with this uid.
+  #
+  getReservedUniqueIdentifier: ()->
+    {
+      creator : '_'
+      op_number : '_'
+    }
+
+  #
   # Get the operation counter that describes the current state of the document.
   #
   getOperationCounter: ()->

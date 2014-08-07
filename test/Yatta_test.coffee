@@ -13,7 +13,7 @@ Connector_uninitialized = require "../lib/Connectors/TestConnector.coffee"
 class Test
   constructor: ()->
     @number_of_test_cases_multiplier = 1
-    @repeat_this = 1 * @number_of_test_cases_multiplier
+    @repeat_this = 1000 * @number_of_test_cases_multiplier
     @doSomething_amount = 5000 * @number_of_test_cases_multiplier
     @number_of_engines =  10 + @number_of_test_cases_multiplier - 1
 
@@ -21,16 +21,18 @@ class Test
     @ops = 0
     @time_now = 0
 
+    @debug = false
+
     @reinitialize()
 
   reinitialize: ()->
 
     @users = []
     @Connector = Connector_uninitialized @users
-    @users.push(new Yatta 0, @Connector)
-    @users[0].val('name',"initial")
-    for i in [1...@number_of_engines]
+    for i in [0...@number_of_engines]
       @users.push(new Yatta i, @Connector)
+    @users[0].val('name',"initial")
+    @flushAll()
 
   getSomeUser: ()->
     i = _.random 0, (@users.length-1)
@@ -61,7 +63,7 @@ class Test
     undefined
 
   generateRandomOp: (user_num)=>
-    op_gen = [@generateDeleteOp, @generateInsertOp, @generateReplaceOp]
+    op_gen = [@generateDeleteOp, @generateInsertOp]#, @generateReplaceOp]
     i = _.random (op_gen.length - 1)
     op = op_gen[i](user_num)
 
@@ -92,37 +94,41 @@ class Test
     ops_per_msek = Math.floor(@ops/@time)
     if test_number?
       console.log "#{test_number}/#{@repeat_this}: Every collaborator (#{@users.length}) applied #{number_of_created_operations} ops in a different order." + " Over all we consumed #{@ops} operations in #{@time/1000} seconds (#{ops_per_msek} ops/msek)."
-
+    console.log @users.length
     #console.log users[0].val('name').val()
     for i in [0...(@users.length-1)]
-      if ((@users[i].val('name').val() isnt @users[i+1].val('name').val()) )# and (number_of_created_operations <= 6 or true)) or found_error
-
-        printOpsInExecutionOrder = (otnumber, otherotnumber)->
-          ops = @users[otnumber].getConnector().getOpsInExecutionOrder()
-          for s in ops
-            console.log JSON.stringify s
+      if not @debug
+        if (@users[i].val('name').val() isnt @users[i+1].val('name').val())
+          console.log "found error"
+        expect(@users[i].val('name').val()).to.equal(@users[i+1].val('name').val())
+      else
+        if ((@users[i].val('name').val() isnt @users[i+1].val('name').val()) )# and (number_of_created_operations <= 6 or true)) or found_error
+          printOpsInExecutionOrder = (otnumber, otherotnumber)=>
+            ops = @users[otnumber].getConnector().getOpsInExecutionOrder()
+            for s in ops
+              console.log JSON.stringify s
+            console.log ""
+            s = "ops = ["
+            for o,j in ops
+              if j isnt 0
+                s += ", "
+              s += "op#{j}"
+            s += "]"
+            console.log s
+            console.log "@users[@last_user].ot.applyOps ops"
+            console.log "expect(@users[@last_user].ot.val('name')).to.equal(\"#{@users[otherotnumber].val('name')}\")"
+            ops
           console.log ""
-          s = "ops = ["
-          for o,j in ops
-            if j isnt 0
-              s += ", "
-            s += "op#{j}"
-          s += "]"
-          console.log s
-          console.log "@users[@last_user].ot.applyOps ops"
-          console.log "expect(@users[@last_user].ot.val('name')).to.equal(\"#{users[otherotnumber].val('name')}\")"
-          ops
-        console.log ""
-        console.log "Found an OT Puzzle!"
-        console.log "OT states:"
-        for u,j in users
-          console.log "OT#{j}: "+u.val('name')
-        console.log "\nOT execution order (#{i},#{i+1}):"
-        printOpsInExecutionOrder i, i+1
-        console.log ""
-        ops = printOpsInExecutionOrder i+1, i
+          console.log "Found an OT Puzzle!"
+          console.log "OT states:"
+          for u,j in @users
+            console.log "OT#{j}: "+u.val('name')
+          console.log "\nOT execution order (#{i},#{i+1}):"
+          printOpsInExecutionOrder i, i+1
+          console.log ""
+          ops = printOpsInExecutionOrder i+1, i
 
-        console.log ""
+          console.log ""
 
   run: ()->
     console.log ''
@@ -136,6 +142,7 @@ class Test
 
 describe "JsonYatta", ->
   beforeEach (done)->
+    @timeout 50000
     @yTest = new Test()
     done()
 

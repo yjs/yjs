@@ -78,19 +78,17 @@ module.exports = (HB)->
 
     #
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
-    # @param {String} initial_content
     #
-    constructor: (uid, initial_content, beginning, end, prev, next, origin)->
+    constructor: (uid, beginning, end, prev, next, origin)->
       super uid, beginning, end, prev, next, origin
-      if initial_content?
-        @insertText 0, initial_content
+
     #
     # Inserts a string into the word
     #
     insertText: (position, content)->
       o = @getOperationByPosition position
       for c in content
-        op = new TextInsert c, HB.getNextOperationIdentifier(), o.prev_cl, o
+        op = new TextInsert c, undefined, o.prev_cl, o
         HB.addOperation(op).execute()
 
     #
@@ -166,7 +164,7 @@ module.exports = (HB)->
       'next': next
       'origin' : origin
     } = json
-    new Word uid, undefined, beginning, end, prev, next, origin
+    new Word uid, beginning, end, prev, next, origin
 
   types['TextInsert'] = TextInsert
   types['TextDelete'] = TextDelete

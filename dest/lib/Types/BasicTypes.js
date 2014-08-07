@@ -222,7 +222,7 @@ module.exports = function(HB) {
     __extends(ImmutableObject, _super);
 
     function ImmutableObject(uid, content, prev, next, origin) {
-      this.content = content != null ? content : "";
+      this.content = content;
       ImmutableObject.__super__.constructor.call(this, uid, prev, next, origin);
     }
 

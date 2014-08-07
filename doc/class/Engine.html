@@ -72,6 +72,11 @@
       </a>
     </span>
     <span class='desc'>
+      <p>ops = [] for o in ops_json ops.push @parseOperation o
+for o in ops @HB.addOperation o
+for o in ops if not o.execute()
+    @unprocessed_ops.push o
+@tryUnprocessed()</p>
     </span>
   </li>
   <li>
@@ -125,7 +130,16 @@
 <b>applyOp</b><span>(op_json)</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>ops = []
+for o in ops_json ops.push @parseOperation o
+for o in ops @HB.addOperation o
+for o in ops if not o.execute()
+    @unprocessed_ops.push o
+@tryUnprocessed()</p>
+</div>
+<div class='tags'>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='tryUnprocessed-dynamic'>
@@ -139,7 +153,7 @@
 </div>
     </div>
     <div id='footer'>
-  August 05, 14 20:37:47 by
+  August 07, 14 21:48:38 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

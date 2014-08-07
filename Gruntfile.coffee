@@ -73,7 +73,7 @@ module.exports = (grunt) ->
     browserify:
       dest:
         files:
-          'dest/browser/Yatta_test.js': ['test/**/*.coffee']
+          'dest/browser/test/Yatta_test.js': ['test/**/*.coffee']
         options:
           transform: ['coffeeify']
           debug: true
@@ -128,7 +128,7 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks "grunt-coffeelint"
   grunt.loadNpmTasks "grunt-codo"
 
-  grunt.registerTask "build", ["coffeelint", "codo", "test"]
+  grunt.registerTask "build", ["coffeelint", "codo", "browserify", "test"]
   grunt.registerTask "production", ["test", "coffee","coffeelint", "literate", "browserify", "uglify", "codo"]
   grunt.registerTask "default", ["build", "watch"]
   grunt.registerTask "production", ["coffee"]

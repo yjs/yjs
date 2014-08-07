@@ -34,6 +34,7 @@
       this.time = 0;
       this.ops = 0;
       this.time_now = 0;
+      this.debug = false;
       this.reinitialize();
     }
 
@@ -123,7 +124,7 @@
     };
 
     Test.prototype.compareAll = function(test_number) {
-      var i, j, number_of_created_operations, ops, ops_per_msek, printOpsInExecutionOrder, u, _i, _j, _k, _len, _ref, _ref1, _results;
+      var i, j, number_of_created_operations, ops, ops_per_msek, printOpsInExecutionOrder, u, _i, _j, _k, _len, _ref, _ref1, _ref2, _results;
       this.flushAll();
       this.time += (new Date()).getTime() - this.time_now;
       number_of_created_operations = 0;
@@ -135,45 +136,53 @@
       if (test_number != null) {
         console.log(("" + test_number + "/" + this.repeat_this + ": Every collaborator (" + this.users.length + ") applied " + number_of_created_operations + " ops in a different order.") + (" Over all we consumed " + this.ops + " operations in " + (this.time / 1000) + " seconds (" + ops_per_msek + " ops/msek)."));
       }
+      console.log(this.users.length);
       _results = [];
       for (i = _j = 0, _ref1 = this.users.length - 1; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
-        if (this.users[i].val('name').val() !== this.users[i + 1].val('name').val()) {
-          printOpsInExecutionOrder = function(otnumber, otherotnumber) {
-            var j, o, ops, s, _k, _l, _len, _len1;
-            ops = this.users[otnumber].getConnector().getOpsInExecutionOrder();
-            for (_k = 0, _len = ops.length; _k < _len; _k++) {
-              s = ops[_k];
-              console.log(JSON.stringify(s));
-            }
-            console.log("");
-            s = "ops = [";
-            for (j = _l = 0, _len1 = ops.length; _l < _len1; j = ++_l) {
-              o = ops[j];
-              if (j !== 0) {
-                s += ", ";
-              }
-              s += "op" + j;
-            }
-            s += "]";
-            console.log(s);
-            console.log("@users[@last_user].ot.applyOps ops");
-            console.log("expect(@users[@last_user].ot.val('name')).to.equal(\"" + (users[otherotnumber].val('name')) + "\")");
-            return ops;
-          };
-          console.log("");
-          console.log("Found an OT Puzzle!");
-          console.log("OT states:");
-          for (j = _k = 0, _len = users.length; _k < _len; j = ++_k) {
-            u = users[j];
-            console.log(("OT" + j + ": ") + u.val('name'));
-          }
-          console.log("\nOT execution order (" + i + "," + (i + 1) + "):");
-          printOpsInExecutionOrder(i, i + 1);
-          console.log("");
-          ops = printOpsInExecutionOrder(i + 1, i);
-          _results.push(console.log(""));
+        if (!this.debug) {
+          _results.push(expect(this.users[i].val('name').val()).to.equal(this.users[i + 1].val('name').val()));
         } else {
-          _results.push(void 0);
+          if (this.users[i].val('name').val() !== this.users[i + 1].val('name').val()) {
+            printOpsInExecutionOrder = (function(_this) {
+              return function(otnumber, otherotnumber) {
+                var j, o, ops, s, _k, _l, _len, _len1;
+                ops = _this.users[otnumber].getConnector().getOpsInExecutionOrder();
+                for (_k = 0, _len = ops.length; _k < _len; _k++) {
+                  s = ops[_k];
+                  console.log(JSON.stringify(s));
+                }
+                console.log("");
+                s = "ops = [";
+                for (j = _l = 0, _len1 = ops.length; _l < _len1; j = ++_l) {
+                  o = ops[j];
+                  if (j !== 0) {
+                    s += ", ";
+                  }
+                  s += "op" + j;
+                }
+                s += "]";
+                console.log(s);
+                console.log("@users[@last_user].ot.applyOps ops");
+                console.log("expect(@users[@last_user].ot.val('name')).to.equal(\"" + (_this.users[otherotnumber].val('name')) + "\")");
+                return ops;
+              };
+            })(this);
+            console.log("");
+            console.log("Found an OT Puzzle!");
+            console.log("OT states:");
+            _ref2 = this.users;
+            for (j = _k = 0, _len = _ref2.length; _k < _len; j = ++_k) {
+              u = _ref2[j];
+              console.log(("OT" + j + ": ") + u.val('name'));
+            }
+            console.log("\nOT execution order (" + i + "," + (i + 1) + "):");
+            printOpsInExecutionOrder(i, i + 1);
+            console.log("");
+            ops = printOpsInExecutionOrder(i + 1, i);
+            _results.push(console.log(""));
+          } else {
+            _results.push(void 0);
+          }
         }
       }
       return _results;

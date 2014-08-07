@@ -35,8 +35,8 @@ module.exports = (user_list)->
             user.getConnector().receive(o)
 
     receive: (o)->
-      @unexecuted[o.creator] ?= []
-      @unexecuted[o.creator].push o
+      @unexecuted[o.uid.creator] ?= []
+      @unexecuted[o.uid.creator].push o
 
     flushOne: (user)->
       if @unexecuted[user]?.length > 0

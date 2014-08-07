@@ -20,7 +20,7 @@ module.exports = (HB)->
     val: (name, content)->
       if content?
         if not @map[name]?
-          HB.addOperation(new AddName HB.getNextOperationIdentifier(), @, name).execute()
+          HB.addOperation(new AddName undefined, @, name).execute()
         @map[name].replace content
         @
       else if name?
@@ -103,13 +103,13 @@ module.exports = (HB)->
         @saveOperation 'beginning', beginning
         @saveOperation 'end', end
       else
-        @beginning = HB.addOperation new types.Delimiter HB.getNextOperationIdentifier(), undefined, undefined
-        @end =       HB.addOperation new types.Delimiter HB.getNextOperationIdentifier(), @beginning, undefined
+        @beginning = HB.addOperation new types.Delimiter undefined, undefined, undefined
+        @end =       HB.addOperation new types.Delimiter undefined, @beginning, undefined
         @beginning.next_cl = @end
         @beginning.execute()
         @end.execute()
-
       super uid, prev, next, origin
+
 
     # Get the element previous to the delemiter at the end
     getLastOperation: ()->
@@ -165,7 +165,7 @@ module.exports = (HB)->
 
     replace: (content)->
       o = @getLastOperation()
-      op = new Replaceable content, @, HB.getNextOperationIdentifier(), o, o.next_cl
+      op = new Replaceable content, @, undefined, o, o.next_cl
       HB.addOperation(op).execute()
 
     val: ()->
