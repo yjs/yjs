@@ -15,6 +15,16 @@ Unlike other frameworks, Yatta! supports P2P message propagation and is not boun
 Currently supported communication protocols:
 * [IWC](http://dbis.rwth-aachen.de/gadgets/iwc/resources/iwc.manual.pdf) - Inter-widget Communication
 
+
+# Use it!
+Either clone this git repository or install this package with [bower](http://bower.io/).
+
+```
+bower install Yatta
+```
+
+Use the [examples](./examples/README.md) to struggle your way through this mess..
+
 # About
 Find out more about the concurrent editing problem here
 [Cooperation, Concurrency, Conflicts, and Convergence](http://opencoweb.org/ocwdocs/intro/openg.html) and here
