@@ -23,5 +23,6 @@
     "test",
     "Gruntfile.coffee",
     "extras"
+    "tests"
   ]
 }
