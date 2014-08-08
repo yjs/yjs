@@ -64,6 +64,10 @@ module.exports = (HB)->
     #   console.log(w.newProperty == "Awesome") # true!
     #
     class JsonWrapper
+
+      #
+      # @param {JsonType} jsonType Instance of the JsonType that this class wrappes.
+      #
       constructor: (jsonType)->
         for name, obj of jsonType.map
           do (name, obj)->
@@ -105,9 +109,15 @@ module.exports = (HB)->
         for name,o of initial_value
           @val name, o, mutable
 
+    #
+    # Whether the default is 'mutable' (true) or 'immutable' (false)
+    #
     mutable_default:
       true
 
+    #
+    # Set if the default is 'mutable' or 'immutable'
+    # @param {String|Boolean} mutable Set either 'mutable' / true or 'immutable' / false
     setMutableDefault: (mutable)->
       if mutable is true or mutable is 'mutable'
         JsonType.prototype.mutable_default = true

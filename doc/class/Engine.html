@@ -74,6 +74,7 @@
       </a>
     </span>
     <span class='desc'>
+      Same as applyOps but operations that are already in the HB are not applied. 
     </span>
   </li>
   <li>
@@ -122,7 +123,29 @@
 <b>constructor</b><span>(HB, parser)</span>
       <br>
     </p>
-    
+    <div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>HB</span>
+      <span class='type'>
+        (
+          <tt><a href='../class/HistoryBuffer.html'>HistoryBuffer</a></tt>
+        )
+      </span>
+    </li>
+    <li>
+      <span class='name'>parser</span>
+      <span class='type'>
+        (
+          <tt>Array</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>Defines how to parse encoded messages. </span>
+    </li>
+  </ul>
+</div>
   </div>
 </div>
       <h2>Instance Method Details</h2>
@@ -164,7 +187,17 @@
 <b>applyOpsCheckDouble</b><span>(ops_json)</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>Same as applyOps but operations that are already in the HB are not applied.</p>
+</div>
+<div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='Engine.applyOps'>Engine.applyOps</a>
+    </li>
+  </ul>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='applyOps-dynamic'>
@@ -215,7 +248,7 @@ It checks if operations that were previously not executable are now executable.<
 </div>
     </div>
     <div id='footer'>
-  August 08, 14 04:37:31 by
+  August 09, 14 00:30:33 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

@@ -59,6 +59,7 @@ only one will AddName operation will be executed.</p>
       </a>
     </span>
     <span class='desc'>
+      If map_manager doesn&#39;t have the property name, then add it. 
     </span>
   </li>
   <li>
@@ -70,6 +71,7 @@ only one will AddName operation will be executed.</p>
       </a>
     </span>
     <span class='desc'>
+      Encode this operation in such a way that it can be parsed by remote peers. 
     </span>
   </li>
 </ul>
@@ -128,7 +130,14 @@ only one will AddName operation will be executed.</p>
 <b>execute</b><span>()</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>If map_manager doesn&#39;t have the property name, then add it.
+The ReplaceManager that is being written on the property is unique
+in such a way that if AddName is executed (from another peer) it will
+always have the same result (ReplaceManager, and its beginning and end are the same)</p>
+</div>
+<div class='tags'>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='_encode-dynamic'>
@@ -137,12 +146,16 @@ only one will AddName operation will be executed.</p>
 <b>_encode</b><span>()</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>Encode this operation in such a way that it can be parsed by remote peers.</p>
+</div>
+<div class='tags'>
+</div>
   </div>
 </div>
     </div>
     <div id='footer'>
-  August 08, 14 04:37:31 by
+  August 09, 14 00:30:33 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

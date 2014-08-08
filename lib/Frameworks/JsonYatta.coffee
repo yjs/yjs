@@ -11,6 +11,11 @@ Engine = require "../Engine.coffee"
 # * Array
 #
 class JsonYatta
+
+  #
+  # @param {String} user_id Unique id of the peer.
+  # @param {Connector} Connector the connector class.
+  #
   constructor: (user_id, Connector)->
     @HB = new HistoryBuffer user_id
     json_types = json_types_uninitialized @HB
@@ -20,7 +25,6 @@ class JsonYatta
     first_word = new json_types.types.JsonType @HB.getReservedUniqueIdentifier()
     @HB.addOperation(first_word).execute()
     @root_element = first_word
-
 
   #
   # @result JsonType

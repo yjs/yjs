@@ -64,6 +64,7 @@ Engine = (function() {
   Engine.prototype.applyOp = function(op_json) {
     var o;
     o = this.parseOperation(op_json);
+    this.HB.addToCounter(o);
     if (!o.execute()) {
       this.unprocessed_ops.push(o);
     } else {

@@ -62,6 +62,7 @@
       </a>
     </span>
     <span class='desc'>
+      Return the content that this operation holds. 
     </span>
   </li>
   <li>
@@ -73,6 +74,7 @@
       </a>
     </span>
     <span class='desc'>
+      Replace the content of this replaceable with new content. 
     </span>
   </li>
   <li>
@@ -84,6 +86,7 @@
       </a>
     </span>
     <span class='desc'>
+      If possible set the replace manager in the content. 
     </span>
   </li>
   <li>
@@ -95,7 +98,7 @@
       </a>
     </span>
     <span class='desc'>
-      Convert all relevant information of this operation to the json-format. 
+      Encode this operation in such a way that it can be parsed by remote peers. 
     </span>
   </li>
 </ul>
@@ -154,7 +157,11 @@
 <b>val</b><span>()</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>Return the content that this operation holds.</p>
+</div>
+<div class='tags'>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='replace-dynamic'>
@@ -163,7 +170,11 @@
 <b>replace</b><span>(content)</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>Replace the content of this replaceable with new content.</p>
+</div>
+<div class='tags'>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='execute-dynamic'>
@@ -172,7 +183,17 @@
 <b>execute</b><span>()</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>If possible set the replace manager in the content.</p>
+</div>
+<div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='Word.setReplaceManager'>Word.setReplaceManager</a>
+    </li>
+  </ul>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='_encode-dynamic'>
@@ -182,8 +203,7 @@
       <br>
     </p>
     <div class='docstring'>
-  <p>Convert all relevant information of this operation to the json-format.
-This result can be send to other clients.</p>
+  <p>Encode this operation in such a way that it can be parsed by remote peers.</p>
 </div>
 <div class='tags'>
 </div>
@@ -191,7 +211,7 @@ This result can be send to other clients.</p>
 </div>
     </div>
     <div id='footer'>
-  August 08, 14 04:37:31 by
+  August 09, 14 00:30:33 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

@@ -13,9 +13,9 @@ Connector_uninitialized = require "../lib/Connectors/TestConnector.coffee"
 class Test
   constructor: (@name_suffix = "")->
     @number_of_test_cases_multiplier = 1
-    @repeat_this = 5 * @number_of_test_cases_multiplier
+    @repeat_this = 1 * @number_of_test_cases_multiplier
     @doSomething_amount = 1000 * @number_of_test_cases_multiplier
-    @number_of_engines =  10 + @number_of_test_cases_multiplier - 1
+    @number_of_engines =  2 + @number_of_test_cases_multiplier - 1
 
     @time = 0
     @ops = 0
@@ -169,7 +169,7 @@ describe "JsonYatta", ->
     expect(w.set.x).to.equal("x")
 
   it "handles double-late-join", ->
-    test = new Test("doubble")
+    test = new Test("double")
     test.run()
     @yTest.run()
     u1 = test.users[0]

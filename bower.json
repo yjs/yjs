@@ -5,7 +5,7 @@
   "authors": [
     "Kevin Jahns <kevin.jahns@rwth-aachen.de>"
   ],
-  "description": "A Framework for Real-Time collaboration on arbitrary data structures.",
+  "description": "A Framework that enables Real-Time Collaboration on arbitrary data structures.",
   "main": "./dest/browser/**",
   "keywords": [
     "OT",

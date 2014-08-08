@@ -59,6 +59,7 @@
       </a>
     </span>
     <span class='desc'>
+      This function is called whenever an operation was executed. 
     </span>
   </li>
   <li>
@@ -70,6 +71,7 @@
       </a>
     </span>
     <span class='desc'>
+      This function is called whenever an operation was received from another peer. 
     </span>
   </li>
   <li>
@@ -81,17 +83,7 @@
       </a>
     </span>
     <span class='desc'>
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#sync-dynamic'>
-        #
-(void)
-<b>sync</b><span>()</span>
-      </a>
-    </span>
-    <span class='desc'>
+      Helper for sending iwc intents. 
     </span>
   </li>
 </ul>
@@ -104,7 +96,49 @@
 <b>constructor</b><span>(engine, HB, execution_listener, yatta)</span>
       <br>
     </p>
-    
+    <div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>engine</span>
+      <span class='type'>
+        (
+          <tt><a href='../class/Engine.html'>Engine</a></tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>The transformation engine </span>
+    </li>
+    <li>
+      <span class='name'>HB</span>
+      <span class='type'>
+        (
+          <tt><a href='../class/HistoryBuffer.html'>HistoryBuffer</a></tt>
+        )
+      </span>
+    </li>
+    <li>
+      <span class='name'>execution_listener</span>
+      <span class='type'>
+        (
+          <tt>Array&lt;Function&gt;</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>You must ensure that whenever an operation is executed, every function in this Array is called. </span>
+    </li>
+    <li>
+      <span class='name'>yatta</span>
+      <span class='type'>
+        (
+          <tt>Yatta</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>The Yatta framework. </span>
+    </li>
+  </ul>
+</div>
   </div>
 </div>
       <h2>Instance Method Details</h2>
@@ -116,7 +150,24 @@
 <b>send</b><span>(o)</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>This function is called whenever an operation was executed.</p>
+</div>
+<div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>o</span>
+      <span class='type'>
+        (
+          <tt><a href='../class/Operation.html'>Operation</a></tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>The operation that was executed. </span>
+    </li>
+  </ul>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='receive-dynamic'>
@@ -125,7 +176,24 @@
 <b>receive</b><span>(o)</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>This function is called whenever an operation was received from another peer.</p>
+</div>
+<div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>o</span>
+      <span class='type'>
+        (
+          <tt><a href='../class/Operation.html'>Operation</a></tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>The operation that was received. </span>
+    </li>
+  </ul>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='sendIwcIntent-dynamic'>
@@ -134,21 +202,39 @@
 <b>sendIwcIntent</b><span>(action_name, content)</span>
       <br>
     </p>
-    
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='sync-dynamic'>
-      #
-(void)
-<b>sync</b><span>()</span>
-      <br>
-    </p>
-    
+    <div class='docstring'>
+  <p>Helper for sending iwc intents.</p>
+</div>
+<div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>action_name</span>
+      <span class='type'>
+        (
+          <tt>String</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>The name of the action that is going to be send. </span>
+    </li>
+    <li>
+      <span class='name'>content</span>
+      <span class='type'>
+        (
+          <tt>String</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>The content that is atteched to the intent. </span>
+    </li>
+  </ul>
+</div>
   </div>
 </div>
     </div>
     <div id='footer'>
-  August 08, 14 04:37:31 by
+  August 09, 14 00:30:33 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

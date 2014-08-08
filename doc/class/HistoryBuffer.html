@@ -90,6 +90,7 @@
       </a>
     </span>
     <span class='desc'>
+      Encode this operation in such a way that it can be parsed by remote peers. 
     </span>
   </li>
   <li>
@@ -126,6 +127,18 @@
     </span>
     <span class='desc'>
       Add an operation to the HB. 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#addToCounter-dynamic'>
+        #
+(void)
+<b>addToCounter</b><span>(o)</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Increment the operation_counter that defines the current state of the Engine. 
     </span>
   </li>
 </ul>
@@ -209,7 +222,11 @@ This is why everybode must create the same operation with this uid.</p>
 <b>_encode</b><span>(state_vector = {})</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>Encode this operation in such a way that it can be parsed by remote peers.</p>
+</div>
+<div class='tags'>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='getNextOperationIdentifier-dynamic'>
@@ -253,10 +270,23 @@ other operations (it wont executed)</p>
 <div class='tags'>
 </div>
   </div>
+  <div class='method_details'>
+    <p class='signature' id='addToCounter-dynamic'>
+      #
+(void)
+<b>addToCounter</b><span>(o)</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>Increment the operation_counter that defines the current state of the Engine.</p>
+</div>
+<div class='tags'>
+</div>
+  </div>
 </div>
     </div>
     <div id='footer'>
-  August 08, 14 04:37:31 by
+  August 09, 14 00:30:33 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

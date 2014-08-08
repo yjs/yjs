@@ -13,8 +13,7 @@ Predefined data structures:
 Unlike other frameworks, Yatta! supports P2P message propagation and is not bound to a specific communication protocol.
 
 Currently supported communication protocols:
-* [IWC](http://dbis.rwth-aachen.de/gadgets/iwc/resources/iwc.manual.pdf) - Inter-widget Communication
-
+* [IWC](http://dbis.rwth-aachen.de/cms/projects/the-xmpp-experience#interwidget-communication) - Inter-widget Communication
 
 # Use it!
 Either clone this git repository or install this package with [bower](http://bower.io/).
@@ -43,7 +42,7 @@ This means that my approach beats all OT time complexities. Furthermore, it is p
 show that it is never violated.
 
 Another advantage of my approach is that propagated messages are very small.
-Background: In real-time P2P OT algorithms you have to send a state-vector with every message that defines the state of the History Buffer
+Background: In real-time P2P OT algorithms you have to send a state-vector with each message that defines the state of the History Buffer
 on which the operation was created. This is not necessary in Yata.
 
 One downside is that the History Buffer holds at least as many operations as there are characters in the document.

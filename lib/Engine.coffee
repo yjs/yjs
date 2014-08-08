@@ -3,6 +3,11 @@
 # The Engine handles how and in which order to execute operations and add operations to the HistoryBuffer.
 #
 class Engine
+
+  #
+  # @param {HistoryBuffer} HB
+  # @param {Array} parser Defines how to parse encoded messages.
+  #
   constructor: (@HB, @parser)->
     @unprocessed_ops = []
 
@@ -31,6 +36,10 @@ class Engine
         @unprocessed_ops.push o
     @tryUnprocessed()
 
+  #
+  # Same as applyOps but operations that are already in the HB are not applied.
+  # @see Engine.applyOps
+  #
   applyOpsCheckDouble: (ops_json)->
     for o in ops_json
       if @HB.getOperation(o.uid)?
@@ -49,6 +58,7 @@ class Engine
   applyOp: (op_json)->
     # $parse_and_execute will return false if $o_json was parsed and executed, otherwise the parsed operadion
     o = @parseOperation op_json
+    @HB.addToCounter o
     # @HB.addOperation o
     if not o.execute()
       @unprocessed_ops.push o

@@ -78,10 +78,6 @@ module.exports = function(user_list) {
       return this.unexecuted = {};
     };
 
-    TestConnector.prototype.sync = function() {
-      throw new Error("Can't use this a.t.m.");
-    };
-
     return TestConnector;
 
   })();

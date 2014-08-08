@@ -50,6 +50,7 @@
       </a>
     </span>
     <span class='desc'>
+      @result Word 
     </span>
   </li>
   <li>
@@ -72,6 +73,7 @@
       </a>
     </span>
     <span class='desc'>
+      Get the initialized connector. 
     </span>
   </li>
   <li>
@@ -94,6 +96,7 @@
       </a>
     </span>
     <span class='desc'>
+      Get the UserId from the HistoryBuffer object. 
     </span>
   </li>
   <li>
@@ -150,7 +153,31 @@
 <b>constructor</b><span>(user_id, Connector)</span>
       <br>
     </p>
-    
+    <div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>user_id</span>
+      <span class='type'>
+        (
+          <tt>String</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>Uniqe user id that defines this peer. </span>
+    </li>
+    <li>
+      <span class='name'>Connector</span>
+      <span class='type'>
+        (
+          <tt>Connector</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>The connector defines how you connect to the other peers. </span>
+    </li>
+  </ul>
+</div>
   </div>
 </div>
       <h2>Instance Method Details</h2>
@@ -162,7 +189,11 @@
 <b>getRootElement</b><span>()</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>@result Word</p>
+</div>
+<div class='tags'>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='getEngine-dynamic'>
@@ -171,7 +202,14 @@
 <b>getEngine</b><span>()</span>
       <br>
     </p>
-    
+    <div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='../class/Engine.html'>Engine</a>
+    </li>
+  </ul>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='getConnector-dynamic'>
@@ -180,7 +218,11 @@
 <b>getConnector</b><span>()</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>Get the initialized connector.</p>
+</div>
+<div class='tags'>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='getHistoryBuffer-dynamic'>
@@ -189,7 +231,14 @@
 <b>getHistoryBuffer</b><span>()</span>
       <br>
     </p>
-    
+    <div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='../class/HistoryBuffer.html'>HistoryBuffer</a>
+    </li>
+  </ul>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='getUserId-dynamic'>
@@ -198,7 +247,13 @@
 <b>getUserId</b><span>()</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>Get the UserId from the HistoryBuffer object.
+In most cases this will be the same as the user_id value with which
+JsonYatta was initialized (Depending on the HistoryBuffer implementation).</p>
+</div>
+<div class='tags'>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='val-dynamic'>
@@ -207,7 +262,14 @@
 <b>val</b><span>()</span>
       <br>
     </p>
-    
+    <div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='JsonType.val'>JsonType.val</a>
+    </li>
+  </ul>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='insertText-dynamic'>
@@ -216,7 +278,14 @@
 <b>insertText</b><span>(pos, content)</span>
       <br>
     </p>
-    
+    <div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='Word.insertText'>Word.insertText</a>
+    </li>
+  </ul>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='deleteText-dynamic'>
@@ -225,7 +294,14 @@
 <b>deleteText</b><span>(pos, length)</span>
       <br>
     </p>
-    
+    <div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='Word.deleteText'>Word.deleteText</a>
+    </li>
+  </ul>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='replaceText-dynamic'>
@@ -234,12 +310,19 @@
 <b>replaceText</b><span>(text)</span>
       <br>
     </p>
-    
+    <div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='Word.replaceText'>Word.replaceText</a>
+    </li>
+  </ul>
+</div>
   </div>
 </div>
     </div>
     <div id='footer'>
-  August 08, 14 04:37:31 by
+  August 09, 14 00:30:33 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

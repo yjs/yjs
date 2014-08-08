@@ -17,6 +17,9 @@ module.exports = (HB)->
       @map = {}
       super uid
 
+    #
+    # @see JsonTypes.val
+    #
     val: (name, content)->
       if content?
         if not @map[name]?
@@ -55,6 +58,12 @@ module.exports = (HB)->
       @saveOperation 'map_manager', map_manager
       super uid
 
+    #
+    # If map_manager doesn't have the property name, then add it.
+    # The ReplaceManager that is being written on the property is unique
+    # in such a way that if AddName is executed (from another peer) it will
+    # always have the same result (ReplaceManager, and its beginning and end are the same)
+    #
     execute: ()->
       if not @validateSavedOperations()
         return false
@@ -72,6 +81,9 @@ module.exports = (HB)->
           @map_manager.map[@name] = HB.addOperation(new ReplaceManager undefined, uid_r, beg, end).execute()
         super
 
+    #
+    # Encode this operation in such a way that it can be parsed by remote peers.
+    #
     _encode: ()->
       {
         'type' : "AddName"
@@ -163,17 +175,27 @@ module.exports = (HB)->
       if initial_content?
         @replace initial_content
 
+    #
+    # Replace the existing word with a new word.
+    #
     replace: (content)->
       o = @getLastOperation()
       op = new Replaceable content, @, undefined, o, o.next_cl
       HB.addOperation(op).execute()
 
+    #
+    # Get the value of this Word
+    # @return {String}
+    #
     val: ()->
       o = @getLastOperation()
       if o instanceof types.Delimiter
         throw new Error "dtrn"
       o.val()
 
+    #
+    # Encode this operation in such a way that it can be parsed by remote peers.
+    #
     _encode: ()->
       json =
         {
@@ -220,12 +242,22 @@ module.exports = (HB)->
         throw new Error "You must define content, prev, and next for Replaceable-types!"
       super uid, prev, next, origin
 
+    #
+    # Return the content that this operation holds.
+    #
     val: ()->
       @content
 
+    #
+    # Replace the content of this replaceable with new content.
+    #
     replace: (content)->
       @parent.replace content
 
+    #
+    # If possible set the replace manager in the content.
+    # @see Word.setReplaceManager
+    #
     execute: ()->
       if not @validateSavedOperations()
         return false
@@ -235,8 +267,7 @@ module.exports = (HB)->
         @
 
     #
-    # Convert all relevant information of this operation to the json-format.
-    # This result can be send to other clients.
+    # Encode this operation in such a way that it can be parsed by remote peers.
     #
     _encode: ()->
       json =

@@ -66,7 +66,7 @@ module.exports = (grunt) ->
             name: "Yatta!"
             title: "Yatta! Documentation"
             extras: ["LICENSE.txt", "examples/README.md", "examples/IwcJson.md"]
-            #undocumented: yes
+            undocumented: yes
             verbose: false
             stats: true
         src: ["./lib"]

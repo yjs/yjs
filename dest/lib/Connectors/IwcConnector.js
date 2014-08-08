@@ -76,10 +76,6 @@ createIwcConnector = function(callback) {
       return this.duiClient.sendIntent(intent);
     };
 
-    IwcConnector.prototype.sync = function() {
-      throw new Error("Can't use this a.t.m.");
-    };
-
     return IwcConnector;
 
   })();

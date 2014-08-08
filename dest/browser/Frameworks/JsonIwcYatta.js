@@ -77,10 +77,6 @@ createIwcConnector = function(callback) {
       return this.duiClient.sendIntent(intent);
     };
 
-    IwcConnector.prototype.sync = function() {
-      throw new Error("Can't use this a.t.m.");
-    };
-
     return IwcConnector;
 
   })();
@@ -185,6 +181,7 @@ Engine = (function() {
   Engine.prototype.applyOp = function(op_json) {
     var o;
     o = this.parseOperation(op_json);
+    this.HB.addToCounter(o);
     if (!o.execute()) {
       this.unprocessed_ops.push(o);
     } else {
@@ -407,17 +404,20 @@ HistoryBuffer = (function() {
     if (this.buffer[o.creator] == null) {
       this.buffer[o.creator] = {};
     }
-    if (this.operation_counter[o.creator] == null) {
-      this.operation_counter[o.creator] = 0;
-    }
     if (this.buffer[o.creator][o.op_number] != null) {
       throw new Error("You must not overwrite operations!");
     }
     this.buffer[o.creator][o.op_number] = o;
-    if (typeof o.op_number === 'number' && o.creator !== this.getUserId()) {
-      this.operation_counter[o.creator]++;
-    }
     return o;
+  };
+
+  HistoryBuffer.prototype.addToCounter = function(o) {
+    if (this.operation_counter[o.creator] == null) {
+      this.operation_counter[o.creator] = 0;
+    }
+    if (typeof o.op_number === 'number' && o.creator !== this.getUserId()) {
+      return this.operation_counter[o.creator]++;
+    }
   };
 
   return HistoryBuffer;

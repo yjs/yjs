@@ -1,7 +1,7 @@
 {
-  "name": "Yatta",
-  "version": "0.0.1",
-  "description": "A Collaboration Framework for arbitrary data structures that is NOT based on Operational Transformation.",
+  "name": "yatta",
+  "version": "0.0.0",
+  "description": "A Framework that enables Real-Time Collaboration on arbitrary data structures.",
   "main": "lib/index.js",
   "scripts": {
     "test": "grunt test"
@@ -12,13 +12,16 @@
   },
   "keywords": [
     "OT",
-    "Complex Data Structures",
-    "XML",
     "collaboration",
-    "Yata"
+    "Yata",
+    "synchronization",
+    "ShareJS",
+    "Coweb",
+    "concurrency"
   ],
   "author": "Kevin Jahns",
-  "license": "LGPL",
+  "email" : "kevin.jahns@rwth-aachen.de",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/DadaMonad/Yatta/issues"
   },

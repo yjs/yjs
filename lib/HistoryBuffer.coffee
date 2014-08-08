@@ -42,6 +42,9 @@ class HistoryBuffer
       res[user] = ctn
     res
 
+  #
+  # Encode this operation in such a way that it can be parsed by remote peers.
+  #
   _encode: (state_vector={})->
     json = []
     unknown = (user, o_number)->
@@ -84,28 +87,38 @@ class HistoryBuffer
     @operation_counter[user_id]++
     uid
 
+  #
   # Retrieve an operation from a unique id.
+  #
   getOperation: (uid)->
     if uid instanceof Object
       @buffer[uid.creator]?[uid.op_number]
     else if not uid?
     else
       throw new Error "This type of uid is not defined!"
-
+  #
   # Add an operation to the HB. Note that this will not link it against
   # other operations (it wont executed)
+  #
   addOperation: (o)->
     if not @buffer[o.creator]?
       @buffer[o.creator] = {}
-    if not @operation_counter[o.creator]?
-      @operation_counter[o.creator] = 0
-    #if @operation_counter[o.creator] isnt o.op_number and typeof o.op_number is 'number'
-    #  throw new Error "You don't receive operations in the proper order. Try counting like this 0,1,2,3,4,.. ;)"
     if @buffer[o.creator][o.op_number]?
       throw new Error "You must not overwrite operations!"
     @buffer[o.creator][o.op_number] = o
+    o
+
+  #
+  # Increment the operation_counter that defines the current state of the Engine.
+  #
+  addToCounter: (o)->
+    if not @operation_counter[o.creator]?
+      @operation_counter[o.creator] = 0
     if typeof o.op_number is 'number' and o.creator isnt @getUserId()
       @operation_counter[o.creator]++
-    o
+    #if @operation_counter[o.creator] isnt (o.op_number + 1)
+      #console.log (@operation_counter[o.creator] - (o.op_number + 1))
+      #console.log o
+      #throw new Error "You don't receive operations in the proper order. Try counting like this 0,1,2,3,4,.. ;)"
 
 module.exports = HistoryBuffer

@@ -140,6 +140,9 @@ module.exports = (HB)->
       @saveOperation 'replace_manager', op
       @validateSavedOperations
 
+    #
+    # Encode this operation in such a way that it can be parsed by remote peers.
+    #
     _encode: ()->
       json = {
         'type': "Word"

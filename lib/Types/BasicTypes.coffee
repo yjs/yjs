@@ -303,6 +303,9 @@ module.exports = (HB)->
     val : ()->
       @content
 
+    #
+    # Encode this operation in such a way that it can be parsed by remote peers.
+    #
     _encode: ()->
       json = {
         'type': "ImmutableObject"

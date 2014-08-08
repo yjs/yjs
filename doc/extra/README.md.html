@@ -41,9 +41,10 @@ but does not require you to understand how the internals work. The predefined da
 <li>Json - <a href="./examples/IwcJson.md">example</a></li>
 <li>XML (coming soon)</li>
 </ul><p>Unlike other frameworks, Yatta! supports P2P message propagation and is not bound to a specific communication protocol.</p><p>Currently supported communication protocols:</p><ul>
-<li><a href="http://dbis.rwth-aachen.de/gadgets/iwc/resources/iwc.manual.pdf">IWC</a> - Inter-widget Communication</li>
+<li><a href="http://dbis.rwth-aachen.de/cms/projects/the-xmpp-experience#interwidget-communication">IWC</a> - Inter-widget Communication</li>
 </ul>
-<h1 id="about">About</h1><p>Find out more about the concurrent editing problem here
+<h1 id="use-it-">Use it!</h1><p>Either clone this git repository or install this package with <a href="http://bower.io/">bower</a>.</p><pre><code>bower install Yatta
+</code></pre><p>Use the <a href="./examples/README.md">examples</a> to struggle your way through this mess..</p><h1 id="about">About</h1><p>Find out more about the concurrent editing problem here
 <a href="http://opencoweb.org/ocwdocs/intro/openg.html">Cooperation, Concurrency, Conflicts, and Convergence</a> and here
 <a href="http://en.wikipedia.org/wiki/Operational_transformation">Operational Transformation (OT)</a></p><p>My Bachelor Thesis project aim was to develop a P2P OT Framework that enables collaboration on XML documents and supports
 <a href="http://www3.ntu.edu.sg/home/czsun/projects/otfaq/#intentionPreservation">Intention Preservation</a>.
@@ -53,16 +54,15 @@ It enables concurrent editing with the following space and time properties:</p><
 <li>Space complexity = O(|Document|), whereby |Document| is the size of the shared document. Depending on the used data structure, Yata may needs 4*|Document| of space.</li>
 </ul><p>This means that my approach beats all OT time complexities. Furthermore, it is possible to make a very strict definition of Intention Preservation, and I was able to
 show that it is never violated.</p><p>Another advantage of my approach is that propagated messages are very small.
-Background: In real-time P2P OT algorithms you have to send a state-vector with every message that defines the state of the History Buffer
+Background: In real-time P2P OT algorithms you have to send a state-vector with each message that defines the state of the History Buffer
 on which the operation was created. This is not necessary in Yata.</p><p>One downside is that the History Buffer holds at least as many operations as there are characters in the document.
 In contrast, an OT algorithm can have an empty History Buffer while the document size is very big.</p><p>So, how did I come up with the name for the implementation (Yatta! is not Yata)?
-<img src="./extras/imgs/YATTA.png" alt="YATTA!">
 Yatta! means &quot;I did it!&quot; in Japanese. You scream it when you accomplish something (for proper application I refer to the Yatta-man in <a href="http://heroeswiki.com/Yatta!">Heroes</a>).
 There is also this awesome video on the Internet that will change your life <a href="https://www.youtube.com/watch?v=kL5DDSglM_s">Yatta</a>.</p><h1 id="status">Status</h1><p>Yatta! is still in an early development phase.</p><h1 id="support">Support</h1><p>Please report any issues to the <a href="https://github.com/DadaMonad/Yatta/issues">Github issue page</a>!</p><h1 id="license">License</h1><p>Yatta! is licensed under the <a href="./LICENSE.txt">MIT License</a>.</p>
       </div>
     </div>
     <div id='footer'>
-  August 08, 14 04:37:31 by
+  August 09, 14 00:30:33 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

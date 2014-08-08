@@ -1,4 +1,7 @@
 
+#
+# @param {Function} callback The callback is called when the connector is initialized.
+#
 createIwcConnector = (callback)->
   iwcHandler = {}
   duiClient = new DUIClient()
@@ -21,6 +24,13 @@ createIwcConnector = (callback)->
   # @see http://dbis.rwth-aachen.de/cms/projects/ROLE
   #
   class IwcConnector
+
+    #
+    # @param {Engine} engine The transformation engine
+    # @param {HistoryBuffer} HB
+    # @param {Array<Function>} execution_listener You must ensure that whenever an operation is executed, every function in this Array is called.
+    # @param {Yatta} yatta The Yatta framework.
+    #
     constructor: (@engine, @HB, @execution_listener, @yatta)->
       @duiClient = duiClient
       @iwcHandler = iwcHandler
@@ -44,14 +54,27 @@ createIwcConnector = (callback)->
         @sendIwcIntent "Yatta_push_HB_element", json
       @iwcHandler["Yatta_get_HB_element"] = [sendHistoryBuffer]
 
+    #
+    # This function is called whenever an operation was executed.
+    # @param {Operation} o The operation that was executed.
+    #
     send: (o)->
       if o.uid.creator is @HB.getUserId() and (typeof o.uid.op_number isnt "string")
         @sendIwcIntent "Yatta_new_operation", o
 
+    #
+    # This function is called whenever an operation was received from another peer.
+    # @param {Operation} o The operation that was received.
+    #
     receive: (o)->
       if o.uid.creator isnt @HB.getUserId()
         @engine.applyOp o
 
+    #
+    # Helper for sending iwc intents.
+    # @param {String} action_name The name of the action that is going to be send.
+    # @param {String} content The content that is atteched to the intent.
+    #
     sendIwcIntent: (action_name, content)->
       intent =
         action: action_name
@@ -61,9 +84,6 @@ createIwcConnector = (callback)->
         extras: content
 
       @duiClient.sendIntent(intent)
-
-    sync: ()->
-      throw new Error "Can't use this a.t.m."
 
   get_HB_intent =
     action: "Yatta_get_HB_element"
