@@ -1,0 +1,26 @@
+{
+  "name": "Yatta!",
+  "version": "0.0.0",
+  "homepage": "https://github.com/DadaMonad/Yatta",
+  "authors": [
+    "Kevin Jahns <kevin.jahns@rwth-aachen.de>"
+  ],
+  "description": "A Framework for Real-Time collaboration on arbitrary data structures.",
+  "main": "./dest/browser/**",
+  "keywords": [
+    "OT",
+    "collaboration",
+    "synchronization",
+    "ShareJS",
+    "Coweb",
+    "concurrency"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

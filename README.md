@@ -40,7 +40,6 @@ One downside is that the History Buffer holds at least as many operations as the
 In contrast, an OT algorithm can have an empty History Buffer while the document size is very big.
 
 So, how did I come up with the name for the implementation (Yatta! is not Yata)?
-![YATTA!](./extras/imgs/YATTA.png)
 Yatta! means "I did it!" in Japanese. You scream it when you accomplish something (for proper application I refer to the Yatta-man in [Heroes](http://heroeswiki.com/Yatta!)).
 There is also this awesome video on the Internet that will change your life [Yatta](https://www.youtube.com/watch?v=kL5DDSglM_s).
 
