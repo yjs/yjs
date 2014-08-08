@@ -71,9 +71,8 @@ module.exports = function(HB) {
           uid_beg.op_number = "_" + uid_beg.op_number + "_RM_" + this.name + "_beginning";
           uid_end = this.map_manager.getUid();
           uid_end.op_number = "_" + uid_end.op_number + "_RM_" + this.name + "_end";
-          beg = HB.addOperation(new types.Delimiter(uid_beg, void 0, uid_end));
+          beg = HB.addOperation(new types.Delimiter(uid_beg, void 0, uid_end)).execute();
           end = HB.addOperation(new types.Delimiter(uid_end, beg, void 0)).execute();
-          beg.execute();
           this.map_manager.map[this.name] = HB.addOperation(new ReplaceManager(void 0, uid_r, beg, end)).execute();
         }
         return AddName.__super__.execute.apply(this, arguments);

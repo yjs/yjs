@@ -66,9 +66,9 @@ module.exports = (HB)->
           uid_beg.op_number = "_#{uid_beg.op_number}_RM_#{@name}_beginning"
           uid_end = @map_manager.getUid()
           uid_end.op_number = "_#{uid_end.op_number}_RM_#{@name}_end"
-          beg = HB.addOperation(new types.Delimiter uid_beg, undefined, uid_end)
+          beg = HB.addOperation(new types.Delimiter uid_beg, undefined, uid_end).execute()
           end = HB.addOperation(new types.Delimiter uid_end, beg, undefined).execute()
-          beg.execute()
+          #beg.execute()
           @map_manager.map[@name] = HB.addOperation(new ReplaceManager undefined, uid_r, beg, end).execute()
         super
 

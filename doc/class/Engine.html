@@ -50,6 +50,30 @@
       </a>
     </span>
     <span class='desc'>
+      Parses an operatio from the json format. 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#applyOpsBundle-dynamic'>
+        #
+(void)
+<b>applyOpsBundle</b><span>(ops_json)</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Apply a set of operations. 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#applyOpsCheckDouble-dynamic'>
+        #
+(void)
+<b>applyOpsCheckDouble</b><span>(ops_json)</span>
+      </a>
+    </span>
+    <span class='desc'>
     </span>
   </li>
   <li>
@@ -61,6 +85,7 @@
       </a>
     </span>
     <span class='desc'>
+      Apply a set of operations. 
     </span>
   </li>
   <li>
@@ -72,11 +97,7 @@
       </a>
     </span>
     <span class='desc'>
-      <p>ops = [] for o in ops_json ops.push @parseOperation o
-for o in ops @HB.addOperation o
-for o in ops if not o.execute()
-    @unprocessed_ops.push o
-@tryUnprocessed()</p>
+      Apply an operation that you received from another peer. 
     </span>
   </li>
   <li>
@@ -88,6 +109,7 @@ for o in ops if not o.execute()
       </a>
     </span>
     <span class='desc'>
+      Call this method when you applied a new operation. 
     </span>
   </li>
 </ul>
@@ -112,6 +134,36 @@ for o in ops if not o.execute()
 <b>parseOperation</b><span>(json)</span>
       <br>
     </p>
+    <div class='docstring'>
+  <p>Parses an operatio from the json format. It uses the specified parser in your OperationType module.</p>
+</div>
+<div class='tags'>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='applyOpsBundle-dynamic'>
+      #
+(void)
+<b>applyOpsBundle</b><span>(ops_json)</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <div class='note'>
+    <strong>Note:</strong>
+    You must not use this method when you already have ops in your HB! 
+  </div>
+  <p>Apply a set of operations. E.g. the operations you received from another users HB.toJson().</p>
+</div>
+<div class='tags'>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='applyOpsCheckDouble-dynamic'>
+      #
+(void)
+<b>applyOpsCheckDouble</b><span>(ops_json)</span>
+      <br>
+    </p>
     
   </div>
   <div class='method_details'>
@@ -121,7 +173,17 @@ for o in ops if not o.execute()
 <b>applyOps</b><span>(ops_json)</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>Apply a set of operations. (Helper for using applyOp on Arrays)</p>
+</div>
+<div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='Engine.applyOp'>Engine.applyOp</a>
+    </li>
+  </ul>
+</div>
   </div>
   <div class='method_details'>
     <p class='signature' id='applyOp-dynamic'>
@@ -131,12 +193,7 @@ for o in ops if not o.execute()
       <br>
     </p>
     <div class='docstring'>
-  <p>ops = []
-for o in ops_json ops.push @parseOperation o
-for o in ops @HB.addOperation o
-for o in ops if not o.execute()
-    @unprocessed_ops.push o
-@tryUnprocessed()</p>
+  <p>Apply an operation that you received from another peer.</p>
 </div>
 <div class='tags'>
 </div>
@@ -148,12 +205,17 @@ for o in ops if not o.execute()
 <b>tryUnprocessed</b><span>()</span>
       <br>
     </p>
-    
+    <div class='docstring'>
+  <p>Call this method when you applied a new operation.
+It checks if operations that were previously not executable are now executable.</p>
+</div>
+<div class='tags'>
+</div>
   </div>
 </div>
     </div>
     <div id='footer'>
-  August 07, 14 21:48:38 by
+  August 08, 14 04:37:31 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

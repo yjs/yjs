@@ -30,16 +30,39 @@ HistoryBuffer = (function() {
     return res;
   };
 
-  HistoryBuffer.prototype._encode = function() {
-    var json, o, o_number, u_name, user, _ref;
+  HistoryBuffer.prototype._encode = function(state_vector) {
+    var json, o, o_json, o_next, o_number, o_prev, u_name, unknown, user, _ref;
+    if (state_vector == null) {
+      state_vector = {};
+    }
     json = [];
+    unknown = function(user, o_number) {
+      if ((user == null) || (o_number == null)) {
+        throw new Error("dah!");
+      }
+      return (state_vector[user] == null) || state_vector[user] <= o_number;
+    };
     _ref = this.buffer;
     for (u_name in _ref) {
       user = _ref[u_name];
       for (o_number in user) {
         o = user[o_number];
-        if (!isNaN(parseInt(o_number))) {
-          json.push(o._encode());
+        if (!isNaN(parseInt(o_number)) && unknown(u_name, o_number)) {
+          o_json = o._encode();
+          if (o.next_cl != null) {
+            o_next = o.next_cl;
+            while ((o_next.next_cl != null) && unknown(o_next.creator, o_next.op_number)) {
+              o_next = o_next.next_cl;
+            }
+            o_json.next = o_next.getUid();
+          } else if (o.prev_cl != null) {
+            o_prev = o.prev_cl;
+            while ((o_prev.prev_cl != null) && unknown(o_next.creator, o_next.op_number)) {
+              o_prev = o_prev.prev_cl;
+            }
+            o_json.prev = o_prev.getUid();
+          }
+          json.push(o_json);
         }
       }
     }

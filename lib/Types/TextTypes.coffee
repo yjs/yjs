@@ -98,7 +98,7 @@ module.exports = (HB)->
       o = @getOperationByPosition position
 
       for i in [0...length]
-        d = HB.addOperation(new TextDelete HB.getNextOperationIdentifier(), o).execute()
+        d = HB.addOperation(new TextDelete undefined, o).execute()
         o = o.next_cl
         while o.isDeleted()
           if o instanceof types.Delimiter
@@ -115,7 +115,7 @@ module.exports = (HB)->
     #
     replaceText: (text)->
       if @replace_manager?
-        word = HB.addOperation(new Word HB.getNextOperationIdentifier()).execute()
+        word = HB.addOperation(new Word undefined).execute()
         word.insertText 0, text
         @replace_manager.replace(word)
       else

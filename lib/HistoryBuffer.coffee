@@ -42,12 +42,29 @@ class HistoryBuffer
       res[user] = ctn
     res
 
-  _encode: ()->
+  _encode: (state_vector={})->
     json = []
+    unknown = (user, o_number)->
+      if (not user?) or (not o_number?)
+        throw new Error "dah!"
+      not state_vector[user]? or state_vector[user] <= o_number
+
     for u_name,user of @buffer
       for o_number,o of user
-        if not isNaN(parseInt(o_number))
-          json.push o._encode()
+        if not isNaN(parseInt(o_number)) and unknown(u_name, o_number)
+          o_json = o._encode()
+          if o.next_cl?
+            o_next = o.next_cl
+            while o_next.next_cl? and unknown(o_next.creator, o_next.op_number)
+              o_next = o_next.next_cl
+            o_json.next = o_next.getUid()
+          else if o.prev_cl?
+            o_prev = o.prev_cl
+            while o_prev.prev_cl? and unknown(o_next.creator, o_next.op_number)
+              o_prev = o_prev.prev_cl
+            o_json.prev = o_prev.getUid()
+          json.push o_json
+
     json
 
   #

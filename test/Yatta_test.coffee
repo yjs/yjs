@@ -11,17 +11,17 @@ Yatta = require "../lib/Frameworks/JsonYatta.coffee"
 Connector_uninitialized = require "../lib/Connectors/TestConnector.coffee"
 
 class Test
-  constructor: ()->
+  constructor: (@name_suffix = "")->
     @number_of_test_cases_multiplier = 1
-    @repeat_this = 1000 * @number_of_test_cases_multiplier
-    @doSomething_amount = 5000 * @number_of_test_cases_multiplier
+    @repeat_this = 5 * @number_of_test_cases_multiplier
+    @doSomething_amount = 1000 * @number_of_test_cases_multiplier
     @number_of_engines =  10 + @number_of_test_cases_multiplier - 1
 
     @time = 0
     @ops = 0
     @time_now = 0
 
-    @debug = false
+    @debug = true
 
     @reinitialize()
 
@@ -30,8 +30,8 @@ class Test
     @users = []
     @Connector = Connector_uninitialized @users
     for i in [0...@number_of_engines]
-      @users.push(new Yatta i, @Connector)
-    @users[0].val('name',"initial")
+      @users.push(new Yatta (i+@name_suffix), @Connector)
+    @users[0].val('name',"i")
     @flushAll()
 
   getSomeUser: ()->
@@ -58,12 +58,12 @@ class Test
   generateDeleteOp: (user_num)=>
     if @users[user_num].val('name').val().length > 0
       pos = _.random 0, (@users[user_num].val('name').val().length-1) # TODO!!!!
-      length = 1 # _.random 0, ot.val('name').length - pos TODO:!!!
+      length = _.random 0, (@users[user_num].val('name').val().length - pos)
       ops1 = @users[user_num].val('name').deleteText pos, length
     undefined
 
   generateRandomOp: (user_num)=>
-    op_gen = [@generateDeleteOp, @generateInsertOp]#, @generateReplaceOp]
+    op_gen = [@generateInsertOp, @generateDeleteOp, @generateReplaceOp]
     i = _.random (op_gen.length - 1)
     op = op_gen[i](user_num)
 
@@ -94,19 +94,15 @@ class Test
     ops_per_msek = Math.floor(@ops/@time)
     if test_number?
       console.log "#{test_number}/#{@repeat_this}: Every collaborator (#{@users.length}) applied #{number_of_created_operations} ops in a different order." + " Over all we consumed #{@ops} operations in #{@time/1000} seconds (#{ops_per_msek} ops/msek)."
-    console.log @users.length
     #console.log users[0].val('name').val()
     for i in [0...(@users.length-1)]
-      if not @debug
-        if (@users[i].val('name').val() isnt @users[i+1].val('name').val())
-          console.log "found error"
-        expect(@users[i].val('name').val()).to.equal(@users[i+1].val('name').val())
-      else
+      if @debug
         if ((@users[i].val('name').val() isnt @users[i+1].val('name').val()) )# and (number_of_created_operations <= 6 or true)) or found_error
           printOpsInExecutionOrder = (otnumber, otherotnumber)=>
-            ops = @users[otnumber].getConnector().getOpsInExecutionOrder()
-            for s in ops
-              console.log JSON.stringify s
+            ops = _.filter @users[otnumber].getConnector().getOpsInExecutionOrder(), (o)->
+              typeof o.uid.op_name isnt 'string' and o.uid.creator isnt '_'
+            for s,j in ops
+              console.log "op#{j} = " + (JSON.stringify s)
             console.log ""
             s = "ops = ["
             for o,j in ops
@@ -115,20 +111,23 @@ class Test
               s += "op#{j}"
             s += "]"
             console.log s
-            console.log "@users[@last_user].ot.applyOps ops"
-            console.log "expect(@users[@last_user].ot.val('name')).to.equal(\"#{@users[otherotnumber].val('name')}\")"
+            console.log "@test_user.engine.applyOps ops"
+            console.log "expect(@test_user.val('name').val()).to.equal(\"#{@users[otherotnumber].val('name').val()}\")"
             ops
           console.log ""
           console.log "Found an OT Puzzle!"
           console.log "OT states:"
           for u,j in @users
-            console.log "OT#{j}: "+u.val('name')
+            console.log "OT#{j}: "+u.val('name').val()
           console.log "\nOT execution order (#{i},#{i+1}):"
           printOpsInExecutionOrder i, i+1
           console.log ""
           ops = printOpsInExecutionOrder i+1, i
 
           console.log ""
+      if (@users[i].val('name').val() isnt @users[i+1].val('name').val())
+        console.log "found error"
+      expect(@users[i].val('name').val()).to.equal(@users[i+1].val('name').val())
 
   run: ()->
     console.log ''
@@ -138,12 +137,22 @@ class Test
         @doSomething()
 
       @compareAll(times)
-      @reinitialize()
+      @testHBencoding()
+      if times isnt @repeat_this
+        @reinitialize()
+
+  testHBencoding: ()->
+    user = new Yatta 'testuser', (Connector_uninitialized [])
+    user.engine.applyOps @users[0].HB._encode()
+    expect(user.value.name.val()).to.equal(@users[0].value.name.val())
 
 describe "JsonYatta", ->
   beforeEach (done)->
     @timeout 50000
     @yTest = new Test()
+    @users = @yTest.users
+
+    @test_user = new Yatta 0, (Connector_uninitialized [])
     done()
 
   it "has a JsonWrapper", ->
@@ -158,6 +167,20 @@ describe "JsonYatta", ->
     w.set.x
     expect(w.x).to.equal("dtrn")
     expect(w.set.x).to.equal("x")
+
+  it "handles double-late-join", ->
+    test = new Test("doubble")
+    test.run()
+    @yTest.run()
+    u1 = test.users[0]
+    u2 = @yTest.users[1]
+    ops1 = u1.HB._encode()
+    ops2 = u2.HB._encode()
+    u1.engine.applyOps ops2
+    u2.engine.applyOps ops1
+    expect(u2.value.name.val()).to.equal(u2.value.name.val())
+
+
 
   it "can handle creaton of complex json", ->
     @yTest.getSomeUser().val('x', {'a':'b'})
@@ -183,6 +206,18 @@ describe "JsonYatta", ->
   it "can handle many engines, many operations, concurrently (random)", ->
     @yTest.run()
 
+  it "converges t1", ->
+    op0 = {"type":"Delimiter","uid":{"creator":0,"op_number":0},"next":{"creator":0,"op_number":1}}
+    op1 = {"type":"Delimiter","uid":{"creator":0,"op_number":1},"prev":{"creator":0,"op_number":0}}
+    op2 = {"type":"Word","uid":{"creator":0,"op_number":2},"beginning":{"creator":0,"op_number":0},"end":{"creator":0,"op_number":1}}
+    op3 = {"type":"AddName","uid":{"creator":0,"op_number":3},"map_manager":{"creator":"_","op_number":"_"},"name":"name"}
+    op4 = {"type":"Replaceable","content":{"creator":0,"op_number":2},"ReplaceManager":{"creator":"_","op_number":"___RM_name"},"prev":{"creator":"_","op_number":"___RM_name_beginning"},"next":{"creator":"_","op_number":"___RM_name_end"},"uid":{"creator":0,"op_number":4}}
+    op5 = {"type":"TextInsert","content":"u","uid":{"creator":1,"op_number":2},"prev":{"creator":1,"op_number":0},"next":{"creator":1,"op_number":1}}
+    op6 = {"type":"TextInsert","content":"w","uid":{"creator":2,"op_number":0},"prev":{"creator":0,"op_number":0},"next":{"creator":0,"op_number":1}}
+    op7 = {"type":"TextInsert","content":"d","uid":{"creator":1,"op_number":0},"prev":{"creator":0,"op_number":0},"next":{"creator":2,"op_number":0}}
+    op8 = {"type":"TextInsert","content":"a","uid":{"creator":1,"op_number":1},"prev":{"creator":1,"op_number":0},"next":{"creator":2,"op_number":0}}
 
-
+    ops = [op0, op1, op2, op3, op4, op5, op6, op7, op8]
+    @test_user.engine.applyOps ops
+    expect(@test_user.val('name').val()).to.equal("duaw")
 

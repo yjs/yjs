@@ -35,7 +35,7 @@
         <tr>
           <td>Inherits:</td>
           <td>
-            <a href='../class/Insert.html'>Insert</a>
+            <a href='../class/Operation.html'>Operation</a>
           </td>
         </tr>
       </table>
@@ -49,6 +49,18 @@ of the Engine is empty.</p>
 </div>
       <h2>Instance Method Summary</h2>
       <ul class='summary'>
+  <li>
+    <span class='signature'>
+      <a href='#isDeleted-dynamic'>
+        #
+(void)
+<b>isDeleted</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+      If isDeleted() is true this operation won&#39;t be maintained in the sl 
+    </span>
+  </li>
   <li>
     <span class='signature'>
       <a href='#execute-dynamic'>
@@ -78,21 +90,82 @@ of the Engine is empty.</p>
         <small>Inherited Method Summary</small>
         <h3 class='inherited'>
           Methods inherited from
-          <a href='../class/Insert.html'>Insert</a>
+          <a href='../class/Operation.html'>Operation</a>
         </h3>
         <p class='inherited'>
-          <a href='../class/Insert.html#applyDelete-dynamic'>#applyDelete</a>
-          <a href='../class/Insert.html#isDeleted-dynamic'>#isDeleted</a>
-          <a href='../class/Insert.html#getDistanceToOrigin-dynamic'>#getDistanceToOrigin</a>
-          <a href='../class/Insert.html#update_sl-dynamic'>#update_sl</a>
-          <a href='../class/Insert.html#execute-dynamic'>#execute</a>
           <a href='../class/Operation.html#getUid-dynamic'>#getUid</a>
+          <a href='../class/Operation.html#execute-dynamic'>#execute</a>
           <a href='../class/Operation.html#saveOperation-dynamic'>#saveOperation</a>
           <a href='../class/Operation.html#validateSavedOperations-dynamic'>#validateSavedOperations</a>
         </p>
       </h2>
+      <h2>Constructor Details</h2>
+      <div class='methods'>
+  <div class='method_details'>
+    <p class='signature' id='constructor-dynamic'>
+      #
+(void)
+<b>constructor</b><span>(uid, prev_cl, next_cl, origin)</span>
+      <br>
+    </p>
+    <div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>uid</span>
+      <span class='type'>
+        (
+          <tt>Object</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>A unique identifier. If uid is undefined, a new uid will be created. </span>
+    </li>
+    <li>
+      <span class='name'>prev_cl</span>
+      <span class='type'>
+        (
+          <tt><a href='../class/Operation.html'>Operation</a></tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>The predecessor of this operation in the complete-list (cl) </span>
+    </li>
+    <li>
+      <span class='name'>next_cl</span>
+      <span class='type'>
+        (
+          <tt><a href='../class/Operation.html'>Operation</a></tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>The successor of this operation in the complete-list (cl) </span>
+    </li>
+  </ul>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='HistoryBuffer.getNextOperationIdentifier'>HistoryBuffer.getNextOperationIdentifier</a>
+    </li>
+  </ul>
+</div>
+  </div>
+</div>
       <h2>Instance Method Details</h2>
       <div class='methods'>
+  <div class='method_details'>
+    <p class='signature' id='isDeleted-dynamic'>
+      #
+(void)
+<b>isDeleted</b><span>()</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>If isDeleted() is true this operation won&#39;t be maintained in the sl</p>
+</div>
+<div class='tags'>
+</div>
+  </div>
   <div class='method_details'>
     <p class='signature' id='execute-dynamic'>
       #
@@ -118,7 +191,7 @@ of the Engine is empty.</p>
 </div>
     </div>
     <div id='footer'>
-  August 07, 14 21:48:38 by
+  August 08, 14 04:37:31 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

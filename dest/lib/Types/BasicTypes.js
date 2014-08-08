@@ -260,20 +260,39 @@ module.exports = function(HB) {
   Delimiter = (function(_super) {
     __extends(Delimiter, _super);
 
-    function Delimiter() {
-      return Delimiter.__super__.constructor.apply(this, arguments);
+    function Delimiter(uid, prev_cl, next_cl, origin) {
+      this.saveOperation('prev_cl', prev_cl);
+      this.saveOperation('next_cl', next_cl);
+      this.saveOperation('origin', prev_cl);
+      Delimiter.__super__.constructor.call(this, uid);
     }
 
+    Delimiter.prototype.isDeleted = function() {
+      return false;
+    };
+
     Delimiter.prototype.execute = function() {
-      var l, _i, _len;
-      if (this.validateSavedOperations()) {
-        for (_i = 0, _len = execution_listener.length; _i < _len; _i++) {
-          l = execution_listener[_i];
-          l(this._encode());
+      var _ref, _ref1;
+      if (((_ref = this.unchecked) != null ? _ref['next_cl'] : void 0) != null) {
+        return Delimiter.__super__.execute.apply(this, arguments);
+      } else if ((_ref1 = this.unchecked) != null ? _ref1['prev_cl'] : void 0) {
+        if (this.validateSavedOperations()) {
+          if (this.prev_cl.next_cl != null) {
+            throw new Error("Probably duplicated operations");
+          }
+          this.prev_cl.next_cl = this;
+          delete this.prev_cl.unchecked.next_cl;
+          return Delimiter.__super__.execute.apply(this, arguments);
+        } else {
+          return false;
         }
-        return this;
+      } else if ((this.prev_cl != null) && (this.prev_cl.next_cl == null)) {
+        delete this.prev_cl.unchecked.next_cl;
+        return this.prev_cl.next_cl = this;
+      } else if ((this.prev_cl != null) || (this.next_cl != null)) {
+        return Delimiter.__super__.execute.apply(this, arguments);
       } else {
-        return false;
+        throw new Error("Delimiter is unsufficient defined!");
       }
     };
 
@@ -289,7 +308,7 @@ module.exports = function(HB) {
 
     return Delimiter;
 
-  })(Insert);
+  })(Operation);
   parser['Delimiter'] = function(json) {
     var next, prev, uid;
     uid = json['uid'], prev = json['prev'], next = json['next'];

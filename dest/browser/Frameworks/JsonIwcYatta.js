@@ -2,7 +2,7 @@
 var createIwcConnector;
 
 createIwcConnector = function(callback) {
-  var IwcConnector, duiClient, get_root_intent, init, iwcHandler, received_HB, root_element;
+  var IwcConnector, duiClient, get_HB_intent, init, iwcHandler, received_HB;
   iwcHandler = {};
   duiClient = new DUIClient();
   duiClient.connect(function(intent) {
@@ -14,11 +14,10 @@ createIwcConnector = function(callback) {
     }) : void 0;
   });
   duiClient.initOK();
-  root_element = null;
   received_HB = null;
   IwcConnector = (function() {
     function IwcConnector(engine, HB, execution_listener, yatta) {
-      var receive_, sendRootElement, send_;
+      var receive_, sendHistoryBuffer, send_;
       this.engine = engine;
       this.HB = HB;
       this.execution_listener = execution_listener;
@@ -39,25 +38,20 @@ createIwcConnector = function(callback) {
         };
       })(this);
       this.iwcHandler["Yatta_new_operation"] = [receive_];
-      if (root_element != null) {
-        this.engine.applyOps(received_HB);
+      if (received_HB != null) {
+        this.engine.applyOpsCheckDouble(received_HB);
       }
-      sendRootElement = (function(_this) {
+      sendHistoryBuffer = (function(_this) {
         return function() {
           var json;
           json = {
-            root_element: _this.yatta.getRootElement(),
             HB: _this.yatta.getHistoryBuffer()._encode()
           };
-          return _this.sendIwcIntent("Yatta_push_root_element", json);
+          return _this.sendIwcIntent("Yatta_push_HB_element", json);
         };
       })(this);
-      this.iwcHandler["Yatta_get_root_element"] = [sendRootElement];
+      this.iwcHandler["Yatta_get_HB_element"] = [sendHistoryBuffer];
     }
-
-    IwcConnector.prototype.getRootElement = function() {
-      return root_element;
-    };
 
     IwcConnector.prototype.send = function(o) {
       if (o.uid.creator === this.HB.getUserId() && (typeof o.uid.op_number !== "string")) {
@@ -90,31 +84,30 @@ createIwcConnector = function(callback) {
     return IwcConnector;
 
   })();
-  get_root_intent = {
-    action: "Yatta_get_root_element",
+  get_HB_intent = {
+    action: "Yatta_get_HB_element",
     component: "",
     data: "",
     dataType: "",
     extras: {}
   };
   init = function() {
-    var is_initialized, receiveRootElement;
-    duiClient.sendIntent(get_root_intent);
+    var is_initialized, receiveHB;
+    duiClient.sendIntent(get_HB_intent);
     is_initialized = false;
-    receiveRootElement = function(json) {
+    receiveHB = function(json) {
       var proposed_user_id;
       proposed_user_id = duiClient.getIwcClient()._componentName;
-      root_element = json != null ? json.extras.root_element : void 0;
       received_HB = json != null ? json.extras.HB : void 0;
       if (!is_initialized) {
         is_initialized = true;
         return callback(IwcConnector, proposed_user_id);
       }
     };
-    iwcHandler["Yatta_push_root_element"] = [receiveRootElement];
-    return setTimeout(receiveRootElement, 800);
+    iwcHandler["Yatta_push_HB_element"] = [receiveHB];
+    return setTimeout(receiveHB, 0);
   };
-  setTimeout(init, Math.random() * 4000);
+  setTimeout(init, Math.random() * 0);
   return void 0;
 };
 
@@ -145,6 +138,40 @@ Engine = (function() {
     }
   };
 
+  Engine.prototype.applyOpsBundle = function(ops_json) {
+    var o, ops, _i, _j, _k, _len, _len1, _len2;
+    ops = [];
+    for (_i = 0, _len = ops_json.length; _i < _len; _i++) {
+      o = ops_json[_i];
+      ops.push(this.parseOperation(o));
+    }
+    for (_j = 0, _len1 = ops.length; _j < _len1; _j++) {
+      o = ops[_j];
+      this.HB.addOperation(o);
+    }
+    for (_k = 0, _len2 = ops.length; _k < _len2; _k++) {
+      o = ops[_k];
+      if (!o.execute()) {
+        this.unprocessed_ops.push(o);
+      }
+    }
+    return this.tryUnprocessed();
+  };
+
+  Engine.prototype.applyOpsCheckDouble = function(ops_json) {
+    var o, _i, _len, _results;
+    _results = [];
+    for (_i = 0, _len = ops_json.length; _i < _len; _i++) {
+      o = ops_json[_i];
+      if (this.HB.getOperation(o.uid) != null) {
+        _results.push(this.applyOp(o));
+      } else {
+        _results.push(void 0);
+      }
+    }
+    return _results;
+  };
+
   Engine.prototype.applyOps = function(ops_json) {
     var o, _i, _len, _results;
     _results = [];
@@ -153,26 +180,15 @@ Engine = (function() {
       _results.push(this.applyOp(o));
     }
     return _results;
-
-    /*
-    ops = []
-    for o in ops_json
-      ops.push @parseOperation o
-    for o in ops
-      @HB.addOperation o
-    for o in ops
-      if not o.execute()
-        @unprocessed_ops.push o
-    @tryUnprocessed()
-     */
   };
 
   Engine.prototype.applyOp = function(op_json) {
     var o;
     o = this.parseOperation(op_json);
-    this.HB.addOperation(o);
     if (!o.execute()) {
       this.unprocessed_ops.push(o);
+    } else {
+      this.HB.addOperation(o);
     }
     return this.tryUnprocessed();
   };
@@ -188,6 +204,8 @@ Engine = (function() {
         op = _ref[_i];
         if (!op.execute()) {
           unprocessed.push(op);
+        } else {
+          this.HB.addOperation(op);
         }
       }
       this.unprocessed_ops = unprocessed;
@@ -319,16 +337,39 @@ HistoryBuffer = (function() {
     return res;
   };
 
-  HistoryBuffer.prototype._encode = function() {
-    var json, o, o_number, u_name, user, _ref;
+  HistoryBuffer.prototype._encode = function(state_vector) {
+    var json, o, o_json, o_next, o_number, o_prev, u_name, unknown, user, _ref;
+    if (state_vector == null) {
+      state_vector = {};
+    }
     json = [];
+    unknown = function(user, o_number) {
+      if ((user == null) || (o_number == null)) {
+        throw new Error("dah!");
+      }
+      return (state_vector[user] == null) || state_vector[user] <= o_number;
+    };
     _ref = this.buffer;
     for (u_name in _ref) {
       user = _ref[u_name];
       for (o_number in user) {
         o = user[o_number];
-        if (!isNaN(parseInt(o_number))) {
-          json.push(o._encode());
+        if (!isNaN(parseInt(o_number)) && unknown(u_name, o_number)) {
+          o_json = o._encode();
+          if (o.next_cl != null) {
+            o_next = o.next_cl;
+            while ((o_next.next_cl != null) && unknown(o_next.creator, o_next.op_number)) {
+              o_next = o_next.next_cl;
+            }
+            o_json.next = o_next.getUid();
+          } else if (o.prev_cl != null) {
+            o_prev = o.prev_cl;
+            while ((o_prev.prev_cl != null) && unknown(o_next.creator, o_next.op_number)) {
+              o_prev = o_prev.prev_cl;
+            }
+            o_json.prev = o_prev.getUid();
+          }
+          json.push(o_json);
         }
       }
     }
@@ -649,20 +690,39 @@ module.exports = function(HB) {
   Delimiter = (function(_super) {
     __extends(Delimiter, _super);
 
-    function Delimiter() {
-      return Delimiter.__super__.constructor.apply(this, arguments);
+    function Delimiter(uid, prev_cl, next_cl, origin) {
+      this.saveOperation('prev_cl', prev_cl);
+      this.saveOperation('next_cl', next_cl);
+      this.saveOperation('origin', prev_cl);
+      Delimiter.__super__.constructor.call(this, uid);
     }
 
+    Delimiter.prototype.isDeleted = function() {
+      return false;
+    };
+
     Delimiter.prototype.execute = function() {
-      var l, _i, _len;
-      if (this.validateSavedOperations()) {
-        for (_i = 0, _len = execution_listener.length; _i < _len; _i++) {
-          l = execution_listener[_i];
-          l(this._encode());
+      var _ref, _ref1;
+      if (((_ref = this.unchecked) != null ? _ref['next_cl'] : void 0) != null) {
+        return Delimiter.__super__.execute.apply(this, arguments);
+      } else if ((_ref1 = this.unchecked) != null ? _ref1['prev_cl'] : void 0) {
+        if (this.validateSavedOperations()) {
+          if (this.prev_cl.next_cl != null) {
+            throw new Error("Probably duplicated operations");
+          }
+          this.prev_cl.next_cl = this;
+          delete this.prev_cl.unchecked.next_cl;
+          return Delimiter.__super__.execute.apply(this, arguments);
+        } else {
+          return false;
         }
-        return this;
+      } else if ((this.prev_cl != null) && (this.prev_cl.next_cl == null)) {
+        delete this.prev_cl.unchecked.next_cl;
+        return this.prev_cl.next_cl = this;
+      } else if ((this.prev_cl != null) || (this.next_cl != null)) {
+        return Delimiter.__super__.execute.apply(this, arguments);
       } else {
-        return false;
+        throw new Error("Delimiter is unsufficient defined!");
       }
     };
 
@@ -678,7 +738,7 @@ module.exports = function(HB) {
 
     return Delimiter;
 
-  })(Insert);
+  })(Operation);
   parser['Delimiter'] = function(json) {
     var next, prev, uid;
     uid = json['uid'], prev = json['prev'], next = json['next'];
@@ -941,9 +1001,8 @@ module.exports = function(HB) {
           uid_beg.op_number = "_" + uid_beg.op_number + "_RM_" + this.name + "_beginning";
           uid_end = this.map_manager.getUid();
           uid_end.op_number = "_" + uid_end.op_number + "_RM_" + this.name + "_end";
-          beg = HB.addOperation(new types.Delimiter(uid_beg, void 0, uid_end));
+          beg = HB.addOperation(new types.Delimiter(uid_beg, void 0, uid_end)).execute();
           end = HB.addOperation(new types.Delimiter(uid_end, beg, void 0)).execute();
-          beg.execute();
           this.map_manager.map[this.name] = HB.addOperation(new ReplaceManager(void 0, uid_r, beg, end)).execute();
         }
         return AddName.__super__.execute.apply(this, arguments);
@@ -1240,7 +1299,7 @@ module.exports = function(HB) {
       o = this.getOperationByPosition(position);
       _results = [];
       for (i = _i = 0; 0 <= length ? _i < length : _i > length; i = 0 <= length ? ++_i : --_i) {
-        d = HB.addOperation(new TextDelete(HB.getNextOperationIdentifier(), o)).execute();
+        d = HB.addOperation(new TextDelete(void 0, o)).execute();
         o = o.next_cl;
         while (o.isDeleted()) {
           if (o instanceof types.Delimiter) {
@@ -1256,7 +1315,7 @@ module.exports = function(HB) {
     Word.prototype.replaceText = function(text) {
       var word;
       if (this.replace_manager != null) {
-        word = HB.addOperation(new Word(HB.getNextOperationIdentifier())).execute();
+        word = HB.addOperation(new Word(void 0)).execute();
         word.insertText(0, text);
         return this.replace_manager.replace(word);
       } else {

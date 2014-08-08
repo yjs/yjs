@@ -332,18 +332,48 @@ module.exports = (HB)->
   # This is necessary in order to have a beginning and an end even if the content
   # of the Engine is empty.
   #
-  class Delimiter extends Insert
+  class Delimiter extends Operation
+    #
+    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
+    # @param {Operation} prev_cl The predecessor of this operation in the complete-list (cl)
+    # @param {Operation} next_cl The successor of this operation in the complete-list (cl)
+    #
+    # @see HistoryBuffer.getNextOperationIdentifier
+    #
+    constructor: (uid, prev_cl, next_cl, origin)->
+      @saveOperation 'prev_cl', prev_cl
+      @saveOperation 'next_cl', next_cl
+      @saveOperation 'origin', prev_cl
+      super uid
+
+    #
+    # If isDeleted() is true this operation won't be maintained in the sl
+    #
+    isDeleted: ()->
+      false
 
     #
     # @private
     #
     execute: ()->
-      if @validateSavedOperations()
-        for l in execution_listener
-          l @_encode()
-        @
+      if @unchecked?['next_cl']?
+        super
+      else if @unchecked?['prev_cl']
+        if @validateSavedOperations()
+          if @prev_cl.next_cl?
+            throw new Error "Probably duplicated operations"
+          @prev_cl.next_cl = @
+          delete @prev_cl.unchecked.next_cl
+          super
+        else
+          false
+      else if @prev_cl? and not @prev_cl.next_cl?
+        delete @prev_cl.unchecked.next_cl
+        @prev_cl.next_cl = @
+      else if @prev_cl? or @next_cl?
+        super
       else
-        false
+        throw new Error "Delimiter is unsufficient defined!"
 
     #
     # @private

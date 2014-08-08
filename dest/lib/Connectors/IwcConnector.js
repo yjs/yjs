@@ -1,7 +1,7 @@
 var createIwcConnector;
 
 createIwcConnector = function(callback) {
-  var IwcConnector, duiClient, get_root_intent, init, iwcHandler, received_HB, root_element;
+  var IwcConnector, duiClient, get_HB_intent, init, iwcHandler, received_HB;
   iwcHandler = {};
   duiClient = new DUIClient();
   duiClient.connect(function(intent) {
@@ -13,11 +13,10 @@ createIwcConnector = function(callback) {
     }) : void 0;
   });
   duiClient.initOK();
-  root_element = null;
   received_HB = null;
   IwcConnector = (function() {
     function IwcConnector(engine, HB, execution_listener, yatta) {
-      var receive_, sendRootElement, send_;
+      var receive_, sendHistoryBuffer, send_;
       this.engine = engine;
       this.HB = HB;
       this.execution_listener = execution_listener;
@@ -38,25 +37,20 @@ createIwcConnector = function(callback) {
         };
       })(this);
       this.iwcHandler["Yatta_new_operation"] = [receive_];
-      if (root_element != null) {
-        this.engine.applyOps(received_HB);
+      if (received_HB != null) {
+        this.engine.applyOpsCheckDouble(received_HB);
       }
-      sendRootElement = (function(_this) {
+      sendHistoryBuffer = (function(_this) {
         return function() {
           var json;
           json = {
-            root_element: _this.yatta.getRootElement(),
             HB: _this.yatta.getHistoryBuffer()._encode()
           };
-          return _this.sendIwcIntent("Yatta_push_root_element", json);
+          return _this.sendIwcIntent("Yatta_push_HB_element", json);
         };
       })(this);
-      this.iwcHandler["Yatta_get_root_element"] = [sendRootElement];
+      this.iwcHandler["Yatta_get_HB_element"] = [sendHistoryBuffer];
     }
-
-    IwcConnector.prototype.getRootElement = function() {
-      return root_element;
-    };
 
     IwcConnector.prototype.send = function(o) {
       if (o.uid.creator === this.HB.getUserId() && (typeof o.uid.op_number !== "string")) {
@@ -89,31 +83,30 @@ createIwcConnector = function(callback) {
     return IwcConnector;
 
   })();
-  get_root_intent = {
-    action: "Yatta_get_root_element",
+  get_HB_intent = {
+    action: "Yatta_get_HB_element",
     component: "",
     data: "",
     dataType: "",
     extras: {}
   };
   init = function() {
-    var is_initialized, receiveRootElement;
-    duiClient.sendIntent(get_root_intent);
+    var is_initialized, receiveHB;
+    duiClient.sendIntent(get_HB_intent);
     is_initialized = false;
-    receiveRootElement = function(json) {
+    receiveHB = function(json) {
       var proposed_user_id;
       proposed_user_id = duiClient.getIwcClient()._componentName;
-      root_element = json != null ? json.extras.root_element : void 0;
       received_HB = json != null ? json.extras.HB : void 0;
       if (!is_initialized) {
         is_initialized = true;
         return callback(IwcConnector, proposed_user_id);
       }
     };
-    iwcHandler["Yatta_push_root_element"] = [receiveRootElement];
-    return setTimeout(receiveRootElement, 800);
+    iwcHandler["Yatta_push_HB_element"] = [receiveHB];
+    return setTimeout(receiveHB, 0);
   };
-  setTimeout(init, Math.random() * 4000);
+  setTimeout(init, Math.random() * 0);
   return void 0;
 };
 

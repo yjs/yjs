@@ -94,7 +94,7 @@ module.exports = function(HB) {
       o = this.getOperationByPosition(position);
       _results = [];
       for (i = _i = 0; 0 <= length ? _i < length : _i > length; i = 0 <= length ? ++_i : --_i) {
-        d = HB.addOperation(new TextDelete(HB.getNextOperationIdentifier(), o)).execute();
+        d = HB.addOperation(new TextDelete(void 0, o)).execute();
         o = o.next_cl;
         while (o.isDeleted()) {
           if (o instanceof types.Delimiter) {
@@ -110,7 +110,7 @@ module.exports = function(HB) {
     Word.prototype.replaceText = function(text) {
       var word;
       if (this.replace_manager != null) {
-        word = HB.addOperation(new Word(HB.getNextOperationIdentifier())).execute();
+        word = HB.addOperation(new Word(void 0)).execute();
         word.insertText(0, text);
         return this.replace_manager.replace(word);
       } else {

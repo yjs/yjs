@@ -33,12 +33,6 @@ module.exports = function(user_list) {
       return this.applied_operations;
     };
 
-    TestConnector.prototype.getRootElement = function() {
-      if (user_list.length > 0) {
-        return user_list[0].getRootElement().getUid();
-      }
-    };
-
     TestConnector.prototype.send = function(o) {
       var user, _i, _len, _results;
       if ((o.uid.creator === this.HB.getUserId()) && (typeof o.uid.op_number !== "string")) {

@@ -13,7 +13,6 @@ createIwcConnector = (callback)->
 
   duiClient.initOK()
 
-  root_element = null
   received_HB = null
 
   #
@@ -35,19 +34,15 @@ createIwcConnector = (callback)->
         @receive o
       @iwcHandler["Yatta_new_operation"] = [receive_]
 
-      if root_element?
-        @engine.applyOps received_HB
+      if received_HB?
+        @engine.applyOpsCheckDouble received_HB
 
-      sendRootElement = ()=>
+      sendHistoryBuffer = ()=>
         json = {
-            root_element : @yatta.getRootElement()
             HB : @yatta.getHistoryBuffer()._encode()
           }
-        @sendIwcIntent "Yatta_push_root_element", json
-      @iwcHandler["Yatta_get_root_element"] = [sendRootElement]
-
-    getRootElement: ()->
-      root_element
+        @sendIwcIntent "Yatta_push_HB_element", json
+      @iwcHandler["Yatta_get_HB_element"] = [sendHistoryBuffer]
 
     send: (o)->
       if o.uid.creator is @HB.getUserId() and (typeof o.uid.op_number isnt "string")
@@ -70,28 +65,27 @@ createIwcConnector = (callback)->
     sync: ()->
       throw new Error "Can't use this a.t.m."
 
-  get_root_intent =
-    action: "Yatta_get_root_element"
+  get_HB_intent =
+    action: "Yatta_get_HB_element"
     component: ""
     data: ""
     dataType: ""
     extras: {}
 
   init = ()->
-    duiClient.sendIntent(get_root_intent)
+    duiClient.sendIntent(get_HB_intent)
 
     is_initialized = false
-    receiveRootElement = (json)->
+    receiveHB = (json)->
       proposed_user_id = duiClient.getIwcClient()._componentName
-      root_element = json?.extras.root_element
       received_HB = json?.extras.HB
       if not is_initialized
         is_initialized = true
         callback IwcConnector, proposed_user_id
-    iwcHandler["Yatta_push_root_element"] = [receiveRootElement]
-    setTimeout receiveRootElement, 800
+    iwcHandler["Yatta_push_HB_element"] = [receiveHB]
+    setTimeout receiveHB, 0
 
-  setTimeout init, (Math.random()*4000)
+  setTimeout init, (Math.random()*0)
 
   undefined
 module.exports = createIwcConnector

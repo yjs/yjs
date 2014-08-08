@@ -24,10 +24,6 @@ module.exports = (user_list)->
     getOpsInExecutionOrder: ()->
       @applied_operations
 
-    getRootElement: ()->
-      if user_list.length > 0
-        user_list[0].getRootElement().getUid()
-
     send: (o)->
       if (o.uid.creator is @HB.getUserId()) and (typeof o.uid.op_number isnt "string")
         for user in user_list
