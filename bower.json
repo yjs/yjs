@@ -22,7 +22,7 @@
     "bower_components",
     "test",
     "Gruntfile.coffee",
-    "extras"
+    "extras",
     "tests"
   ]
 }
