@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta charset='UTF-8'>
+  <title>CoffeeScript API Documentation</title>
+  <script src='../javascript/application.js'></script>
+  <script src='../javascript/search.js'></script>
+  <link rel='stylesheet' href='../stylesheets/application.css' type='text/css'>
+</head>
+  <body>
+    <div id='base' data-path='../'></div>
+<div id='header'>
+  <div id='menu'>
+    <a href='../extra/README.md.html' title='Yatta'>
+      Yatta
+    </a>
+    &raquo;
+    <a href='../alphabetical_index.html' title='Index'>
+      Index
+    </a>
+    &raquo;
+    <span class='title'>NoThrowingStrings</span>
+  </div>
+</div>
+    <div id='content'>
+      <h1>
+        Class:
+        NoThrowingStrings
+      </h1>
+      <table class='box'>
+        <tr>
+          <td>Defined in:</td>
+          <td>node_modules&#47;gulp-coffeelint&#47;node_modules&#47;coffeelint&#47;src&#47;rules&#47;no_throwing_strings.coffee</td>
+        </tr>
+      </table>
+      <h2>Variables Summary</h2>
+      <dl class='constants'>
+  <dt id='rule-variable'>
+    rule
+    =
+  </dt>
+  <dd>
+    <pre><code class='coffeescript'>{
+  name: &#39;no_throwing_strings&#39;,
+  level: &#39;error&#39;,
+  message: &#39;Throwing strings is forbidden&#39;,
+  description: &quot;This rule forbids throwing string literals or interpolations. While\nJavaScript (and CoffeeScript by extension) allow any expression to\nbe thrown, it is best to only throw &lt;a\nhref=\&quot;https:&#47;&#47;developer.mozilla.org\n&#47;en&#47;JavaScript&#47;Reference&#47;Global_Objects&#47;Error\&quot;&gt; Error&lt;&#47;a&gt; objects,\nbecause they contain valuable debugging information like the stack\ntrace. Because of JavaScript&#39;s dynamic nature, CoffeeLint cannot\nensure you are always throwing instances of &lt;tt&gt;Error&lt;&#47;tt&gt;. It will\nonly catch the simple but real case of throwing literal strings.\n&lt;pre&gt;\n&lt;code&gt;# CoffeeLint will catch this:\nthrow \&quot;i made a boo boo\&quot;\n\nthrow getSomeString()\n&lt;&#47;code&gt;\n&lt;&#47;pre&gt;\nThis rule is enabled by default.&quot;
+}</code></pre>
+    
+  </dd>
+  <dt id='tokens-variable'>
+    tokens
+    =
+  </dt>
+  <dd>
+    <pre><code class='coffeescript'>[&#39;THROW&#39;]</code></pre>
+    
+  </dd>
+</dl>
+      <h2>Instance Method Summary</h2>
+      <ul class='summary'>
+  <li>
+    <span class='signature'>
+      <a href='#lintToken-dynamic'>
+        #
+(void)
+<b>lintToken</b><span>(token, tokenApi)</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+</ul>
+      <h2>Instance Method Details</h2>
+      <div class='methods'>
+  <div class='method_details'>
+    <p class='signature' id='lintToken-dynamic'>
+      #
+(void)
+<b>lintToken</b><span>(token, tokenApi)</span>
+      <br>
+    </p>
+    
+  </div>
+</div>
+    </div>
+    <div id='footer'>
+  August 12, 14 06:33:02 by
+  <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
+    Codo
+  </a>
+  2.0.9
+  &#10034;
+  Press H to see the keyboard shortcuts
+  &#10034;
+  <a href='http://twitter.com/netzpirat' target='_parent'>@netzpirat</a>
+  &#10034;
+  <a href='http://twitter.com/_inossidabile' target='_parent'>@_inossidabile</a>
+</div>
+<iframe id='search_frame'></iframe>
+<div id='fuzzySearch'>
+  <input type='text'>
+  <ol></ol>
+</div>
+<div id='help'>
+  <p>
+    Quickly fuzzy find classes, mixins, methods, file:
+  </p>
+  <ul>
+    <li>
+      <span>T</span>
+      Open fuzzy finder dialog
+    </li>
+  </ul>
+  <p>
+    Control the navigation frame:
+  </p>
+  <ul>
+    <li>
+      <span>L</span>
+      Toggle list view
+    </li>
+    <li>
+      <span>C</span>
+      Show class list
+    </li>
+    <li>
+      <span>I</span>
+      Show mixin list
+    </li>
+    <li>
+      <span>F</span>
+      Show file list
+    </li>
+    <li>
+      <span>M</span>
+      Show method list
+    </li>
+    <li>
+      <span>E</span>
+      Show extras list
+    </li>
+  </ul>
+  <p>
+    You can focus and blur the search input:
+  </p>
+  <ul>
+    <li>
+      <span>S</span>
+      Focus search input
+    </li>
+    <li>
+      <span>Esc</span>
+      Blur search input
+    </li>
+  </ul>
+</div>
+  </body>
+</html>
