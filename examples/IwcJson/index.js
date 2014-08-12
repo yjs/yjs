@@ -11,7 +11,7 @@
 <script src="../../build/browser/Connectors/IwcConnector.min.js"></script>
 <script src="./index.js"></script>
  ```
-A working widget implementation is maintained [here](./IwcJson.xml) and the js-file is [here](./IwcJson.js)
+A working widget implementation is [IwcJson.xml](./IwcJson.xml) and the js-file is [index.js](./index.js)
  */
 function init(){
     createConnector(function(Connector, user_id){
