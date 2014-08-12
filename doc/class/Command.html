@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta charset='UTF-8'>
+  <title>CoffeeScript API Documentation</title>
+  <script src='../javascript/application.js'></script>
+  <script src='../javascript/search.js'></script>
+  <link rel='stylesheet' href='../stylesheets/application.css' type='text/css'>
+</head>
+  <body>
+    <div id='base' data-path='../'></div>
+<div id='header'>
+  <div id='menu'>
+    <a href='../extra/README.md.html' title='Yatta'>
+      Yatta
+    </a>
+    &raquo;
+    <a href='../alphabetical_index.html' title='Index'>
+      Index
+    </a>
+    &raquo;
+    <span class='title'>Command</span>
+  </div>
+</div>
+    <div id='content'>
+      <h1>
+        Class:
+        Command
+      </h1>
+      <table class='box'>
+        <tr>
+          <td>Defined in:</td>
+          <td>node_modules&#47;grunt-codo&#47;node_modules&#47;codo&#47;lib&#47;command.coffee</td>
+        </tr>
+      </table>
+      <h2>Direct Known Subclasses</h2>
+      <p class='children'>
+        <a href='../class/CodoCommand.html'>CodoCommand</a>
+      </p>
+      <h2>Variables Summary</h2>
+      <dl class='constants'>
+  <dt id='options-variable'>
+    options
+    =
+  </dt>
+  <dd>
+    <pre><code class='coffeescript'>[
+  {
+    name: &#39;help&#39;,
+    alias: &#39;h&#39;,
+    describe: &#39;Show this help&#39;
+  }, {
+    name: &#39;version&#39;,
+    describe: &#39;Show version&#39;
+  }, {
+    name: &#39;extension&#39;,
+    alias: &#39;x&#39;,
+    describe: &#39;Coffee files extension&#39;,
+    &quot;default&quot;: &#39;coffee&#39;
+  }, {
+    name: &#39;output&#39;,
+    alias: &#39;o&#39;,
+    describe: &#39;The output directory&#39;,
+    &quot;default&quot;: &#39;.&#47;doc&#39;
+  }, {
+    name: &#39;output-dir&#39;
+  }, {
+    name: &#39;theme&#39;,
+    describe: &#39;The theme to be used&#39;,
+    &quot;default&quot;: &#39;default&#39;
+  }, {
+    name: &#39;name&#39;,
+    alias: &#39;n&#39;,
+    describe: &#39;The project name used&#39;
+  }, {
+    name: &#39;readme&#39;,
+    alias: &#39;r&#39;,
+    describe: &#39;The readme file used&#39;
+  }, {
+    name: &#39;quiet&#39;,
+    alias: &#39;q&#39;,
+    describe: &#39;Supress warnings&#39;,
+    boolean: true,
+    &quot;default&quot;: false
+  }, {
+    name: &#39;verbose&#39;,
+    alias: &#39;v&#39;,
+    describe: &#39;Show parsing errors&#39;,
+    boolean: true,
+    &quot;default&quot;: false
+  }, {
+    name: &#39;undocumented&#39;,
+    alias: &#39;u&#39;,
+    describe: &#39;List undocumented objects&#39;,
+    boolean: true,
+    &quot;default&quot;: false
+  }, {
+    name: &#39;closure&#39;,
+    describe: &#39;Try to parse closure-like block comments&#39;,
+    boolean: true,
+    &quot;default&quot;: false
+  }, {
+    name: &#39;debug&#39;,
+    alias: &#39;d&#39;,
+    boolean: true
+  }
+]</code></pre>
+    
+  </dd>
+</dl>
+      <h2>Class Method Summary</h2>
+      <ul class='summary'>
+  <li>
+    <span class='signature'>
+      <a href='#run-static'>
+        .
+(void)
+<b>run</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+</ul>
+      <h2>Instance Method Summary</h2>
+      <ul class='summary'>
+  <li>
+    <span class='signature'>
+      <a href='#extendOptimist-dynamic'>
+        #
+(void)
+<b>extendOptimist</b><span>(optimist, defaults = {}, options = {})</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#lookupTheme-dynamic'>
+        #
+(void)
+<b>lookupTheme</b><span>(name)</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#prepareOptions-dynamic'>
+        #
+(void)
+<b>prepareOptions</b><span>(optimist, defaults)</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#collectStats-dynamic'>
+        #
+(void)
+<b>collectStats</b><span>(environment)</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#generate-dynamic'>
+        #
+(void)
+<b>generate</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+</ul>
+      <h2>Class Method Details</h2>
+      <div class='methods'>
+  <div class='method_details'>
+    <p class='signature' id='run-static'>
+      .
+(void)
+<b>run</b><span>()</span>
+      <br>
+    </p>
+    
+  </div>
+</div>
+      <h2>Constructor Details</h2>
+      <div class='methods'>
+  <div class='method_details'>
+    <p class='signature' id='constructor-dynamic'>
+      #
+(void)
+<b>constructor</b><span>()</span>
+      <br>
+    </p>
+    
+  </div>
+</div>
+      <h2>Instance Method Details</h2>
+      <div class='methods'>
+  <div class='method_details'>
+    <p class='signature' id='extendOptimist-dynamic'>
+      #
+(void)
+<b>extendOptimist</b><span>(optimist, defaults = {}, options = {})</span>
+      <br>
+    </p>
+    
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='lookupTheme-dynamic'>
+      #
+(void)
+<b>lookupTheme</b><span>(name)</span>
+      <br>
+    </p>
+    
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='prepareOptions-dynamic'>
+      #
+(void)
+<b>prepareOptions</b><span>(optimist, defaults)</span>
+      <br>
+    </p>
+    
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='collectStats-dynamic'>
+      #
+(void)
+<b>collectStats</b><span>(environment)</span>
+      <br>
+    </p>
+    
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='generate-dynamic'>
+      #
+(void)
+<b>generate</b><span>()</span>
+      <br>
+    </p>
+    
+  </div>
+</div>
+    </div>
+    <div id='footer'>
+  August 12, 14 06:33:02 by
+  <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
+    Codo
+  </a>
+  2.0.9
+  &#10034;
+  Press H to see the keyboard shortcuts
+  &#10034;
+  <a href='http://twitter.com/netzpirat' target='_parent'>@netzpirat</a>
+  &#10034;
+  <a href='http://twitter.com/_inossidabile' target='_parent'>@_inossidabile</a>
+</div>
+<iframe id='search_frame'></iframe>
+<div id='fuzzySearch'>
+  <input type='text'>
+  <ol></ol>
+</div>
+<div id='help'>
+  <p>
+    Quickly fuzzy find classes, mixins, methods, file:
+  </p>
+  <ul>
+    <li>
+      <span>T</span>
+      Open fuzzy finder dialog
+    </li>
+  </ul>
+  <p>
+    Control the navigation frame:
+  </p>
+  <ul>
+    <li>
+      <span>L</span>
+      Toggle list view
+    </li>
+    <li>
+      <span>C</span>
+      Show class list
+    </li>
+    <li>
+      <span>I</span>
+      Show mixin list
+    </li>
+    <li>
+      <span>F</span>
+      Show file list
+    </li>
+    <li>
+      <span>M</span>
+      Show method list
+    </li>
+    <li>
+      <span>E</span>
+      Show extras list
+    </li>
+  </ul>
+  <p>
+    You can focus and blur the search input:
+  </p>
+  <ul>
+    <li>
+      <span>S</span>
+      Focus search input
+    </li>
+    <li>
+      <span>Esc</span>
+      Blur search input
+    </li>
+  </ul>
+</div>
+  </body>
+</html>

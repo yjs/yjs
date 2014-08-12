@@ -3,12 +3,12 @@ expect    = chai.expect
 should    = chai.should()
 sinon     = require('sinon')
 sinonChai = require('sinon-chai')
-_ = require "underscore"
+_         = require("underscore")
 
 chai.use(sinonChai)
 
-Yatta = require "../lib/Frameworks/JsonYatta.coffee"
-Connector_uninitialized = require "../lib/Connectors/TestConnector.coffee"
+Yatta = require "../lib/Frameworks/JsonYatta"
+Connector_uninitialized = require "../lib/Connectors/TestConnector"
 
 class Test
   constructor: (@name_suffix = "")->

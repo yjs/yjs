@@ -1,10 +1,13 @@
 {
   "name": "yatta",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A Framework that enables Real-Time Collaboration on arbitrary data structures.",
-  "main": "lib/index.js",
+  "main": "./build/node/index",
+  "directories": {
+    "lib": "./build/node/"
+  },
   "scripts": {
-    "test": "grunt test"
+    "test": "./node_modules/.bin/gulp test"
   },
   "repository": {
     "type": "git",
@@ -20,29 +23,37 @@
     "concurrency"
   ],
   "author": "Kevin Jahns",
-  "email" : "kevin.jahns@rwth-aachen.de",
+  "email": "kevin.jahns@rwth-aachen.de",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/DadaMonad/Yatta/issues"
   },
   "homepage": "https://github.com/DadaMonad/Yatta",
-  "dependencies": {},
+  "dependencies": {
+    "underscore": "^1.6.0"
+  },
   "devDependencies": {
     "chai": "^1.9.1",
+    "coffee-script": "^1.7.1",
     "coffeeify": "^0.6.0",
-    "grunt": "^0.4.5",
-    "grunt-browserify": "^2.1.3",
-    "grunt-codo": "^0.2.0",
-    "grunt-coffeelint": "0.0.10",
-    "grunt-contrib-coffee": "^0.10.1",
-    "grunt-contrib-connect": "~0.8.0",
-    "grunt-contrib-uglify": "^0.5.1",
-    "grunt-contrib-watch": "^0.6.1",
-    "grunt-literate": "^0.2.0",
-    "grunt-simple-mocha": "^0.4.0",
+    "gulp": "^3.8.7",
+    "gulp-browserify": "^0.5.0",
+    "gulp-coffee": "^2.1.1",
+    "gulp-coffeelint": "^0.3.3",
+    "gulp-concat": "^2.3.4",
+    "gulp-debug": "^1.0.0",
+    "gulp-git": "^0.5.0",
+    "gulp-if": "^1.2.4",
+    "gulp-ignore": "^1.2.0",
+    "gulp-ljs": "^0.1.1",
+    "gulp-mocha": "^0.5.2",
+    "gulp-rename": "^1.2.0",
+    "gulp-rimraf": "^0.1.0",
+    "gulp-run": "^1.6.3",
+    "gulp-sourcemaps": "^1.1.1",
+    "gulp-uglify": "^0.3.1",
     "mocha": "^1.21.4",
     "sinon": "^1.10.2",
-    "sinon-chai": "^2.5.0",
-    "underscore": "^1.6.0"
+    "sinon-chai": "^2.5.0"
   }
 }

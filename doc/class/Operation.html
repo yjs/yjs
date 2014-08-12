@@ -2,7 +2,7 @@
 <html>
   <head>
   <meta charset='UTF-8'>
-  <title>Yatta! Documentation</title>
+  <title>CoffeeScript API Documentation</title>
   <script src='../javascript/application.js'></script>
   <script src='../javascript/search.js'></script>
   <link rel='stylesheet' href='../stylesheets/application.css' type='text/css'>
@@ -11,8 +11,8 @@
     <div id='base' data-path='../'></div>
 <div id='header'>
   <div id='menu'>
-    <a href='../extra/README.md.html' title='Yatta!'>
-      Yatta!
+    <a href='../extra/README.md.html' title='Yatta'>
+      Yatta
     </a>
     &raquo;
     <a href='../alphabetical_index.html' title='Index'>
@@ -50,6 +50,42 @@ val: in the case that the operation holds a value</p><p>Furthermore an encodable
       </p>
       <h2>Instance Method Summary</h2>
       <ul class='summary'>
+  <li>
+    <span class='signature'>
+      <a href='#on-dynamic'>
+        #
+(void)
+<b>on</b><span>(event, f)</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Add an event listener. 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#callEvent-dynamic'>
+        #
+(void)
+<b>callEvent</b><span>(event, args)</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Fire an event. 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#setParent-dynamic'>
+        #
+(void)
+<b>setParent</b><span>(o)</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Set the parent of this operation. 
+    </span>
+  </li>
   <li>
     <span class='signature'>
       <a href='#getUid-dynamic'>
@@ -136,6 +172,69 @@ val: in the case that the operation holds a value</p><p>Furthermore an encodable
 </div>
       <h2>Instance Method Details</h2>
       <div class='methods'>
+  <div class='method_details'>
+    <p class='signature' id='on-dynamic'>
+      #
+(void)
+<b>on</b><span>(event, f)</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>Add an event listener. It depends on the operation which events are supported.</p>
+</div>
+<div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>event</span>
+      <span class='type'>
+        (
+          <tt>String</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>Name of the event. </span>
+    </li>
+    <li>
+      <span class='name'>f</span>
+      <span class='type'>
+        (
+          <tt>Function</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>f is executed in case the event fires. </span>
+    </li>
+  </ul>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='callEvent-dynamic'>
+      #
+(void)
+<b>callEvent</b><span>(event, args)</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>Fire an event.
+TODO: Do something with timeouts. You don&#39;t want this to fire for every operation (e.g. insert).</p>
+</div>
+<div class='tags'>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='setParent-dynamic'>
+      #
+(void)
+<b>setParent</b><span>(o)</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>Set the parent of this operation.</p>
+</div>
+<div class='tags'>
+</div>
+  </div>
   <div class='method_details'>
     <p class='signature' id='getUid-dynamic'>
       #
@@ -285,7 +384,7 @@ an easy way to refer to these operations via an uid or object reference.</p><p>F
 </div>
     </div>
     <div id='footer'>
-  August 09, 14 00:30:33 by
+  August 12, 14 06:33:02 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>
