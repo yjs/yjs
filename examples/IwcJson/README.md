@@ -5,7 +5,8 @@ First you have to include the following libraries in your widget file:
 <script src="http://open-app.googlecode.com/files/openapp.js"></script>
 <script src="http://dbis.rwth-aachen.de/gadgets/iwc/lib/iwc.js"></script>
 <script src="http://dbis.rwth-aachen.de/~jahns/role-widgets/widgetbundles/libraries/DUIClient.js"></script>
-<script src="../../dest/browser/Frameworks/JsonIwcYatta.min.js"></script>
+<script src="../../build/browser/Frameworks/JsonYatta.min.js"></script>
+<script src="../../build/browser/Connectors/IwcConnector.min.js"></script>
 <script src="./index.js"></script>
 ```
 A working widget implementation is maintained [here](./IwcJson.xml) and the js-file is [here](./IwcJson.js)
