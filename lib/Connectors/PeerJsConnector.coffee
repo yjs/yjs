@@ -76,5 +76,8 @@ createPeerJsConnector = (callback)->
 
 
 module.exports = createPeerJsConnector
-window?.createPeerJsConnector = createPeerJsConnector
+if window?
+  if not window.Y?
+    window.Y = {}
+  window.Y.createPeerJsConnector = createPeerJsConnector
 

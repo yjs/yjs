@@ -169,6 +169,13 @@ TextYatta = (function() {
 
 module.exports = TextYatta;
 
+if (typeof window !== "undefined" && window !== null) {
+  if (window.Y == null) {
+    window.Y = {};
+  }
+  window.Y.TextYatta = TextYatta;
+}
+
 
 },{"../Engine":1,"../HistoryBuffer":3,"../Types/TextTypes":6}],3:[function(require,module,exports){
 var HistoryBuffer;
@@ -220,7 +227,7 @@ HistoryBuffer = (function() {
       user = _ref[u_name];
       for (o_number in user) {
         o = user[o_number];
-        if (!isNaN(parseInt(o_number)) && unknown(u_name, o_number)) {
+        if ((!isNaN(parseInt(o_number))) && unknown(u_name, o_number)) {
           o_json = o._encode();
           if (o.next_cl != null) {
             o_next = o.next_cl;

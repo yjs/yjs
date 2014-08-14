@@ -113,5 +113,8 @@ createIwcConnector = (callback, initial_user_id)->
 
   undefined
 module.exports = createIwcConnector
-window?.createIwcConnector = createIwcConnector
+if window?
+  if not window.Y?
+    window.Y = {}
+  window.Y.createIwcConnector = createIwcConnector
 

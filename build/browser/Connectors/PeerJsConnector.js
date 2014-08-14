@@ -91,7 +91,10 @@ createPeerJsConnector = function(callback) {
 module.exports = createPeerJsConnector;
 
 if (typeof window !== "undefined" && window !== null) {
-  window.createPeerJsConnector = createPeerJsConnector;
+  if (window.Y == null) {
+    window.Y = {};
+  }
+  window.Y.createPeerJsConnector = createPeerJsConnector;
 }
 
 

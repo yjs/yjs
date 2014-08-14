@@ -115,7 +115,10 @@ createIwcConnector = function(callback, initial_user_id) {
 module.exports = createIwcConnector;
 
 if (typeof window !== "undefined" && window !== null) {
-  window.createIwcConnector = createIwcConnector;
+  if (window.Y == null) {
+    window.Y = {};
+  }
+  window.Y.createIwcConnector = createIwcConnector;
 }
 
 

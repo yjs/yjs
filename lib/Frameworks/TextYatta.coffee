@@ -80,3 +80,7 @@ class TextYatta
 
 
 module.exports = TextYatta
+if window?
+  if not window.Y?
+    window.Y = {}
+  window.Y.TextYatta = TextYatta

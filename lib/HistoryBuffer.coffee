@@ -54,7 +54,7 @@ class HistoryBuffer
 
     for u_name,user of @buffer
       for o_number,o of user
-        if not isNaN(parseInt(o_number)) and unknown(u_name, o_number)
+        if (not isNaN(parseInt(o_number))) and unknown(u_name, o_number)
           o_json = o._encode()
           if o.next_cl?
             o_next = o.next_cl

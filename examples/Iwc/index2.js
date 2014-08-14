@@ -14,12 +14,12 @@
 A working widget implementation is [IwcJson.xml](./IwcJson.xml) and the js-file is [index.js](./index.js)
  */
 function init(){
-    createIwcConnector(function(Connector, user_id){
+    Y.createIwcConnector(function(Connector, user_id){
       /**
        You don't have to use the proposed user_id.
       */
       console.log("me is number 2")
-      yatta = new JsonYatta(2, Connector);
+      yatta = new Y.JsonYatta(2, Connector);
 
     })
 }

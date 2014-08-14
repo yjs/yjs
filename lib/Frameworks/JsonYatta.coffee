@@ -81,5 +81,9 @@ class JsonYatta
           @val(o_name, o_obj, 'immutable')
       else
         throw new Error "You must only set Object values!"
-window?.JsonYatta = JsonYatta
+
 module.exports = JsonYatta
+if window?
+  if not window.Y?
+    window.Y = {}
+  window.Y.JsonYatta = JsonYatta

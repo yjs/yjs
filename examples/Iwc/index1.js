@@ -14,7 +14,7 @@
 A working widget implementation is [IwcJson.xml](./IwcJson.xml) and the js-file is [index.js](./index.js)
  */
 function init(){
-    createIwcConnector(function(Connector, user_id){
+    Y.createIwcConnector(function(Connector, user_id){
       /**
        You don't have to use the proposed user_id.
       */
@@ -24,7 +24,7 @@ function init(){
       /**
        Though, it is recommended to use the user_id
       */
-      yatta = new JsonYatta(user_id, Connector);
+      yatta = new Y.JsonYatta(user_id, Connector);
 
 
     })

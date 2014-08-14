@@ -48,7 +48,7 @@ HistoryBuffer = (function() {
       user = _ref[u_name];
       for (o_number in user) {
         o = user[o_number];
-        if (!isNaN(parseInt(o_number)) && unknown(u_name, o_number)) {
+        if ((!isNaN(parseInt(o_number))) && unknown(u_name, o_number)) {
           o_json = o._encode();
           if (o.next_cl != null) {
             o_next = o.next_cl;

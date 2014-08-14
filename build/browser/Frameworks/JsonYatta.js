@@ -178,11 +178,14 @@ JsonYatta = (function() {
 
 })();
 
-if (typeof window !== "undefined" && window !== null) {
-  window.JsonYatta = JsonYatta;
-}
-
 module.exports = JsonYatta;
+
+if (typeof window !== "undefined" && window !== null) {
+  if (window.Y == null) {
+    window.Y = {};
+  }
+  window.Y.JsonYatta = JsonYatta;
+}
 
 
 },{"../Engine":1,"../HistoryBuffer":3,"../Types/JsonTypes":5}],3:[function(require,module,exports){
@@ -235,7 +238,7 @@ HistoryBuffer = (function() {
       user = _ref[u_name];
       for (o_number in user) {
         o = user[o_number];
-        if (!isNaN(parseInt(o_number)) && unknown(u_name, o_number)) {
+        if ((!isNaN(parseInt(o_number))) && unknown(u_name, o_number)) {
           o_json = o._encode();
           if (o.next_cl != null) {
             o_next = o.next_cl;

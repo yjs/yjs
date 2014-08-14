@@ -14,7 +14,7 @@ A working widget implementation is [IwcJson.xml](./IwcJson.xml) and the js-file 
 
 ```js
 function init(){
-    createPeerJsConnector(function(Connector, user_id){
+    Y.createPeerJsConnector(function(Connector, user_id){
 ```
 
 
@@ -23,7 +23,7 @@ it will be instantly shared with all the other collaborators.
 
 
 ```js
-      yatta = new JsonYatta(user_id, Connector);
+      Y.yatta = new JsonYatta(user_id, Connector);
 
 
     });

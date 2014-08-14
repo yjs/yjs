@@ -115,7 +115,10 @@ createIwcConnector = function(callback, initial_user_id) {
 module.exports = createIwcConnector;
 
 if (typeof window !== "undefined" && window !== null) {
-  window.createIwcConnector = createIwcConnector;
+  if (window.Y == null) {
+    window.Y = {};
+  }
+  window.Y.createIwcConnector = createIwcConnector;
 }
 
 
@@ -386,11 +389,14 @@ JsonYatta = (function() {
 
 })();
 
-if (typeof window !== "undefined" && window !== null) {
-  window.JsonYatta = JsonYatta;
-}
-
 module.exports = JsonYatta;
+
+if (typeof window !== "undefined" && window !== null) {
+  if (window.Y == null) {
+    window.Y = {};
+  }
+  window.Y.JsonYatta = JsonYatta;
+}
 
 
 },{"../Engine":3,"../HistoryBuffer":6,"../Types/JsonTypes":8}],5:[function(require,module,exports){
@@ -456,6 +462,13 @@ TextYatta = (function() {
 
 module.exports = TextYatta;
 
+if (typeof window !== "undefined" && window !== null) {
+  if (window.Y == null) {
+    window.Y = {};
+  }
+  window.Y.TextYatta = TextYatta;
+}
+
 
 },{"../Engine":3,"../HistoryBuffer":6,"../Types/TextTypes":10}],6:[function(require,module,exports){
 var HistoryBuffer;
@@ -507,7 +520,7 @@ HistoryBuffer = (function() {
       user = _ref[u_name];
       for (o_number in user) {
         o = user[o_number];
-        if (!isNaN(parseInt(o_number)) && unknown(u_name, o_number)) {
+        if ((!isNaN(parseInt(o_number))) && unknown(u_name, o_number)) {
           o_json = o._encode();
           if (o.next_cl != null) {
             o_next = o.next_cl;
