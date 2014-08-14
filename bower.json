@@ -6,7 +6,7 @@
     "Kevin Jahns <kevin.jahns@rwth-aachen.de>"
   ],
   "description": "A Framework that enables Real-Time Collaboration on arbitrary data structures.",
-  "main": "./build/browser/**",
+  "main": "./build/**",
   "keywords": [
     "OT",
     "collaboration",
@@ -17,7 +17,6 @@
   ],
   "license": "MIT",
   "ignore": [
-    "**/.*",
     "node_modules",
     "bower_components",
     "test",

@@ -7,7 +7,7 @@ but does not require you to understand how the internals work. The predefined da
 
 Predefined data structures:
 * Text
-* Json - [example](./examples/IwcJson.md)
+* Json - [example](./examples/IwcJson/)
 * XML (coming soon)
 
 Unlike other frameworks, Yatta! supports P2P message propagation and is not bound to a specific communication protocol.

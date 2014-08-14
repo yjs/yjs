@@ -15,11 +15,13 @@ mocha = require 'gulp-mocha'
 run = require 'gulp-run'
 ljs = require 'gulp-ljs'
 
-gulp.task 'default', ['clean', 'build', 'test', 'literate']
+
+gulp.task 'default', ['build', 'test', 'literate']
 gulp.task 'build', ['lint', 'lib', 'browser']
 
 files =
   lib : ['./lib/**/*.coffee']
+  build : ['./build/**']
   browser : ['./lib/**/*.coffee']
   test : ['./test/**/*.coffee']
   gulp : ['./gulpfile.coffee']
@@ -44,7 +46,7 @@ gulp.task 'browser', ->
     .pipe browserify
       transform: ['coffeeify']
       extensions: ['.coffee']
-      debug : true
+      debug : false
     .pipe rename
       extname: ".js"
     .pipe gulp.dest './build/browser'
@@ -89,6 +91,9 @@ gulp.task 'literate', ->
       extname : ".md"
     .pipe gulp.dest 'examples/'
     .pipe gulpif '!**/', git.add({args : "-A"})
+
+gulp.task 'upload', ()->
+  run('scp -r ./build ./examples jahns@manet.informatik.rwth-aachen.de:/home/jahns/public_html/role-widgets/collaborative_preview/').exec()
 
 gulp.task 'clean', ->
   gulp.src './build/{browser,test,node}/*.{js,map}', { read: false }

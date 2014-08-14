@@ -23,8 +23,9 @@ createPeerJsConnector = (callback)->
       @connections = []
 
       @peer.on 'connection', (conn)=>
-        console.log "received conn"
+        conn.send "hey"
         @addConnection conn
+
 
 
 
@@ -39,8 +40,8 @@ createPeerJsConnector = (callback)->
       @connections.push conn
 
       conn.on 'data', (data)=>
-        console.log "data: #{data}"
-        if data.HB?
+        if data is "hey"
+        else if data.HB?
           @engine.applyOpsCheckDouble data.HB
         else if data.op?
           @engine.applyOp data.op
@@ -48,7 +49,6 @@ createPeerJsConnector = (callback)->
           throw new Error "Can't parse this operation"
 
       sendHB = ()=>
-        console.log "sending..."
         conn.send
           HB: @yatta.getHistoryBuffer()._encode()
       setTimeout sendHB, 1000
@@ -59,9 +59,7 @@ createPeerJsConnector = (callback)->
     #
     send: (o)->
       if o.uid.creator is @HB.getUserId() and (typeof o.uid.op_number isnt "string")
-        console.log "trying to send ops"
         for conn in @connections
-          console.log "sent op"
           conn.send
             op: o
 
@@ -74,7 +72,6 @@ createPeerJsConnector = (callback)->
         @engine.applyOp o
 
   peer.on 'open', (id)->
-    console.log id
     callback PeerJsConnector, id
 
 

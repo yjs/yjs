@@ -264,7 +264,6 @@ module.exports = (HB)->
       else
         @content.setReplaceManager?(@parent)
         super
-        @
 
     #
     # Encode this operation in such a way that it can be parsed by remote peers.

@@ -8,8 +8,6 @@ createIwcConnector = (callback, initial_user_id)->
   duiClient = new DUIClient()
   #@duiClient = new iwc.Client()
   duiClient.connect (intent)->
-    #console.log "intent received iwc: #{JSON.stringify(intent)}"
-    #console.log "#{JSON.stringify(@iwcHandler)}"
     iwcHandler[intent.action]?.map (f)->
       setTimeout ()->
         f intent
@@ -39,6 +37,12 @@ createIwcConnector = (callback, initial_user_id)->
       send_ = (o)=>
         @send o
       @execution_listener.push send_
+
+      receiveHB = (json)=>
+        HB = json?.extras.HB
+        this.engine.applyOpsCheckDouble HB
+      iwcHandler["Yatta_push_HB_element"] = [receiveHB]
+
 
       receive_ = (intent)=>
         o = intent.extras
@@ -94,26 +98,22 @@ createIwcConnector = (callback, initial_user_id)->
     flags: ["PUBLISH_GLOBAL"]
     extras: {}
 
-  init = ()->
+  send_get_HB_intent = ()->
     duiClient.sendIntent(get_HB_intent)
 
-    is_initialized = false
-    receiveHB = (json)->
-      proposed_user_id = null
-      if initial_user_id?
-        proposed_user_id = initial_user_id
-      else
-        proposed_user_id = duiClient.getIwcClient()._componentName
-      received_HB = json?.extras.HB
-      if not is_initialized
-        is_initialized = true
-        callback IwcConnector, proposed_user_id
-    iwcHandler["Yatta_push_HB_element"] = [receiveHB]
-    setTimeout receiveHB, 4000
+  init = ()->
+    setTimeout send_get_HB_intent, 1000
+    proposed_user_id = null
+    if initial_user_id?
+      proposed_user_id = initial_user_id
+    else
+      # proposed_user_id = duiClient.getIwcClient()._componentName #TODO: This is stupid! why can't i use this?
+      proposed_user_id = Math.floor(Math.random()*1000000)
+    callback IwcConnector, proposed_user_id
 
   setTimeout init, (1000)
 
   undefined
 module.exports = createIwcConnector
-window?.createConnector = createIwcConnector
+window?.createIwcConnector = createIwcConnector
 

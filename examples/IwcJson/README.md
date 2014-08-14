@@ -14,7 +14,7 @@ A working widget implementation is [IwcJson.xml](./IwcJson.xml) and the js-file 
 
 ```js
 function init(){
-    createConnector(function(Connector, user_id){
+    createIwcConnector(function(Connector, user_id){
 ```
 
 

@@ -42,7 +42,7 @@ class Engine
   #
   applyOpsCheckDouble: (ops_json)->
     for o in ops_json
-      if @HB.getOperation(o.uid)?
+      if not @HB.getOperation(o.uid)?
         @applyOp o
 
   #

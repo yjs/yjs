@@ -308,7 +308,7 @@ module.exports = (HB)->
           @prev_cl.next_cl = @
           @next_cl.prev_cl = @
         super # notify the execution_listeners
-        @
+        
 
   #
   # Defines an object that is cannot be changed. You can use this to set an immutable string, or a number.

@@ -8,20 +8,19 @@
 <script src="http://dbis.rwth-aachen.de/gadgets/iwc/lib/iwc.js"></script>
 <script src="http://dbis.rwth-aachen.de/~jahns/role-widgets/widgetbundles/libraries/DUIClient.js"></script>
 <script src="../../build/browser/Frameworks/JsonYatta.min.js"></script>
-<script src="../../build/browser/Connectors/PeerJsConnector.min.js"></script>
+<script src="../../build/browser/Connectors/IwcConnector.min.js"></script>
 <script src="./index.js"></script>
  ```
 A working widget implementation is [IwcJson.xml](./IwcJson.xml) and the js-file is [index.js](./index.js)
  */
 function init(){
-    createPeerJsConnector(function(Connector, user_id){
+    createIwcConnector(function(Connector, user_id){
       /**
-       yatta is the shared json object. If you change something on this object,
-       it will be instantly shared with all the other collaborators.
+       You don't have to use the proposed user_id.
       */
-      yatta = new JsonYatta(user_id, Connector);
+      console.log("me is number 2")
+      yatta = new JsonYatta(2, Connector);
 
-
-    });
+    })
 }
 window.onload = init
