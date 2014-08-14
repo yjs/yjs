@@ -2,7 +2,7 @@
 var createIwcConnector;
 
 createIwcConnector = function(callback, initial_user_id) {
-  var IwcConnector, duiClient, get_HB_intent, init, iwcHandler, received_HB, send_get_HB_intent;
+  var IwcConnector, duiClient, init, iwcHandler, received_HB;
   iwcHandler = {};
   duiClient = new DUIClient();
   duiClient.connect(function(intent) {
@@ -26,22 +26,31 @@ createIwcConnector = function(callback, initial_user_id) {
       this.iwcHandler = iwcHandler;
       send_ = (function(_this) {
         return function(o) {
-          return _this.send(o);
+          if (Object.getOwnPropertyNames(_this.initialized).length !== 0) {
+            return _this.send(o);
+          }
         };
       })(this);
       this.execution_listener.push(send_);
+      this.initialized = {};
       receiveHB = (function(_this) {
         return function(json) {
-          HB = json != null ? json.extras.HB : void 0;
-          return _this.engine.applyOpsCheckDouble(HB);
+          var him;
+          HB = json.extras.HB;
+          him = json.extras.user;
+          _this.engine.applyOpsCheckDouble(HB);
+          return _this.initialized[him] = true;
         };
       })(this);
       iwcHandler["Yatta_push_HB_element"] = [receiveHB];
+      this.sendIwcIntent("Yatta_get_HB_element", {});
       receive_ = (function(_this) {
         return function(intent) {
           var o;
           o = intent.extras;
-          return _this.receive(o);
+          if (_this.initialized[o.uid.creator] != null) {
+            return _this.receive(o);
+          }
         };
       })(this);
       this.iwcHandler["Yatta_new_operation"] = [receive_];
@@ -52,7 +61,8 @@ createIwcConnector = function(callback, initial_user_id) {
         return function() {
           var json;
           json = {
-            HB: _this.yatta.getHistoryBuffer()._encode()
+            HB: _this.yatta.getHistoryBuffer()._encode(),
+            user: _this.yatta.getUserId()
           };
           return _this.sendIwcIntent("Yatta_push_HB_element", json);
         };
@@ -88,20 +98,8 @@ createIwcConnector = function(callback, initial_user_id) {
     return IwcConnector;
 
   })();
-  get_HB_intent = {
-    action: "Yatta_get_HB_element",
-    component: "",
-    data: "",
-    dataType: "",
-    flags: ["PUBLISH_GLOBAL"],
-    extras: {}
-  };
-  send_get_HB_intent = function() {
-    return duiClient.sendIntent(get_HB_intent);
-  };
   init = function() {
     var proposed_user_id;
-    setTimeout(send_get_HB_intent, 1000);
     proposed_user_id = null;
     if (initial_user_id != null) {
       proposed_user_id = initial_user_id;
@@ -110,7 +108,7 @@ createIwcConnector = function(callback, initial_user_id) {
     }
     return callback(IwcConnector, proposed_user_id);
   };
-  setTimeout(init, 1000.);
+  setTimeout(init, 5000);
   return void 0;
 };
 

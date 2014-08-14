@@ -35,18 +35,25 @@ createIwcConnector = (callback, initial_user_id)->
       @iwcHandler = iwcHandler
 
       send_ = (o)=>
-        @send o
+        if Object.getOwnPropertyNames(@initialized).length isnt 0
+          @send o
       @execution_listener.push send_
 
+      @initialized = {}
       receiveHB = (json)=>
-        HB = json?.extras.HB
+        HB = json.extras.HB
+        him = json.extras.user
         this.engine.applyOpsCheckDouble HB
+        @initialized[him] = true
       iwcHandler["Yatta_push_HB_element"] = [receiveHB]
 
+      @sendIwcIntent "Yatta_get_HB_element", {}
 
       receive_ = (intent)=>
         o = intent.extras
-        @receive o
+        if @initialized[o.uid.creator]? # initialize first
+          @receive o
+
       @iwcHandler["Yatta_new_operation"] = [receive_]
 
       if received_HB?
@@ -55,6 +62,7 @@ createIwcConnector = (callback, initial_user_id)->
       sendHistoryBuffer = ()=>
         json =
           HB : @yatta.getHistoryBuffer()._encode()
+          user : @yatta.getUserId()
         @sendIwcIntent "Yatta_push_HB_element", json
       @iwcHandler["Yatta_get_HB_element"] = [sendHistoryBuffer]
 
@@ -90,19 +98,9 @@ createIwcConnector = (callback, initial_user_id)->
 
       @duiClient.sendIntent(intent)
 
-  get_HB_intent =
-    action: "Yatta_get_HB_element"
-    component: ""
-    data: ""
-    dataType: ""
-    flags: ["PUBLISH_GLOBAL"]
-    extras: {}
 
-  send_get_HB_intent = ()->
-    duiClient.sendIntent(get_HB_intent)
 
   init = ()->
-    setTimeout send_get_HB_intent, 1000
     proposed_user_id = null
     if initial_user_id?
       proposed_user_id = initial_user_id
@@ -111,7 +109,7 @@ createIwcConnector = (callback, initial_user_id)->
       proposed_user_id = Math.floor(Math.random()*1000000)
     callback IwcConnector, proposed_user_id
 
-  setTimeout init, (1000)
+  setTimeout init, 5000
 
   undefined
 module.exports = createIwcConnector
