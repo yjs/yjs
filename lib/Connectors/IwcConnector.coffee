@@ -1,6 +1,7 @@
 
 #
 # @param {Function} callback The callback is called when the connector is initialized.
+# @param {String} initial_user_id Optional. You can set you own user_id (since the ids of duiclient are not always unique)
 #
 createIwcConnector = (callback, initial_user_id)->
   iwcHandler = {}
