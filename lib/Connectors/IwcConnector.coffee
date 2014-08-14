@@ -80,6 +80,7 @@ createIwcConnector = (callback)->
         component: ""
         data: ""
         dataType: ""
+        flags: ["PUBLISH_GLOBAL"]
         extras: content
 
       @duiClient.sendIntent(intent)
@@ -89,6 +90,7 @@ createIwcConnector = (callback)->
     component: ""
     data: ""
     dataType: ""
+    flags: ["PUBLISH_GLOBAL"]
     extras: {}
 
   init = ()->

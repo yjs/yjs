@@ -22,7 +22,7 @@ Either clone this git repository or install this package with [bower](http://bow
 bower install Yatta
 ```
 
-Use the [examples](./examples/README.md) to struggle your way through this mess..
+Use the [examples](./examples/) to struggle your way through this mess..
 
 # About
 Find out more about the concurrent editing problem here
