@@ -2,7 +2,7 @@
 #
 # @param {Function} callback The callback is called when the connector is initialized.
 #
-createIwcConnector = (callback)->
+createIwcConnector = (callback, initial_user_id)->
   iwcHandler = {}
   duiClient = new DUIClient()
   #@duiClient = new iwc.Client()
@@ -98,15 +98,19 @@ createIwcConnector = (callback)->
 
     is_initialized = false
     receiveHB = (json)->
-      proposed_user_id = duiClient.getIwcClient()._componentName
+      proposed_user_id = null
+      if initial_user_id?
+        proposed_user_id = initial_user_id
+      else
+        proposed_user_id = duiClient.getIwcClient()._componentName
       received_HB = json?.extras.HB
       if not is_initialized
         is_initialized = true
         callback IwcConnector, proposed_user_id
     iwcHandler["Yatta_push_HB_element"] = [receiveHB]
-    setTimeout receiveHB, 0
+    setTimeout receiveHB, 4000
 
-  setTimeout init, (Math.random()*0)
+  setTimeout init, (1000)
 
   undefined
 module.exports = createIwcConnector
