@@ -112,6 +112,8 @@ createIwcConnector = (callback, initial_user_id)->
   setTimeout init, 5000
 
   undefined
+
+
 module.exports = createIwcConnector
 if window?
   if not window.Y?

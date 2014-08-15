@@ -97,14 +97,18 @@ module.exports = (HB)->
     deleteText: (position, length)->
       o = @getOperationByPosition position
 
+      delete_ops = []
       for i in [0...length]
         d = HB.addOperation(new TextDelete undefined, o).execute()
         o = o.next_cl
-        while o.isDeleted()
+        while o.isDeleted() and not (o instanceof types.Delimiter)
           if o instanceof types.Delimiter
             throw new Error "You can't delete more than there is.."
           o = o.next_cl
-        d._encode()
+        delete_ops.push d._encode()
+        if o instanceof types.Delimiter
+          break
+
 
     #
     # Replace the content of this word with another one. Concurrent replacements are not merged!
@@ -140,6 +144,82 @@ module.exports = (HB)->
       @saveOperation 'replace_manager', op
       @validateSavedOperations
 
+    #
+    # Bind this Word to a textfield.
+    # TODO:
+    #   insert_pressing+mouse new position
+    #   concurrent pressing (two user pressing stuff)
+    bind: (textfield)->
+      word = @
+      textfield.value = @val()
+      position_start = null
+      document_length = null
+
+      @on "insert", (event, op)->
+        if op.creator isnt HB.getUserId()
+          o_pos = op.getPosition()
+          fix = (cursor)->
+            if cursor <= o_pos
+              cursor
+            else
+              cursor += 1
+              cursor
+          left = fix textfield.selectionStart
+          right = fix textfield.selectionEnd
+          if position_start?
+            document_length += 1
+            position_start = fix position_start
+
+          textfield.value = word.val()
+          textfield.setSelectionRange left, right
+
+
+      @on "delete", (event, op)->
+        if op.creator isnt HB.getUserId()
+          o_pos = op.getPosition()
+          fix = (cursor)->
+            if cursor <= o_pos
+              cursor
+            else
+              cursor -= 1
+              cursor
+          left = fix textfield.selectionStart
+          right = fix textfield.selectionEnd
+          if position_start?
+            document_length -= 1
+            position_start = fix position_start
+
+          textfield.value = word.val()
+          textfield.setSelectionRange left, right
+
+
+      update_yatta = ()->
+        if position_start?
+          document_length_diff = textfield.value.length - document_length
+          current_position = Math.min textfield.selectionStart, textfield.selectionEnd
+          if document_length_diff < 0 # deletion
+            deletion_position = Math.min current_position, position_start
+            word.deleteText deletion_position, Math.abs document_length_diff
+          else if document_length_diff > 0 # insertion
+            text_insert = textfield.value.substring position_start, (position_start + document_length_diff)
+            word.insertText position_start, text_insert
+
+          position_start = null
+          document_length = null
+
+      textfield.onkeydown = (event)->
+        #console.log "down"
+        if position_start?
+          update_yatta()
+
+        selection_range = Math.abs(textfield.selectionEnd - textfield.selectionStart)
+        position_start = Math.min(textfield.selectionStart, textfield.selectionEnd)
+        word.deleteText position_start, selection_range
+        document_length = textfield.value.length - selection_range
+
+      textfield.onkeyup = (event)->
+        #console.log "up"
+        update_yatta()
     #
     # Encode this operation in such a way that it can be parsed by remote peers.
     #

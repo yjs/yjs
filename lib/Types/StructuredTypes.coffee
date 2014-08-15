@@ -122,6 +122,13 @@ module.exports = (HB)->
         @end.execute()
       super uid, prev, next, origin
 
+    execute: ()->
+      if @validateSavedOperations()
+        @beginning.setParent @
+        @end.setParent @
+        super
+      else
+        false
 
     # Get the element previous to the delemiter at the end
     getLastOperation: ()->
@@ -154,7 +161,9 @@ module.exports = (HB)->
           if position is 0
             break
           if o instanceof types.Delimiter
-            throw new Error "position parameter exceeded the length of the document!"
+            console.log "position parameter exceeded the length of the document!"
+            o = null
+            break
       o
 
   #

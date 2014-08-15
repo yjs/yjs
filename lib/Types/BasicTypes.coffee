@@ -42,7 +42,7 @@ module.exports = (HB)->
     # TODO: Do something with timeouts. You don't want this to fire for every operation (e.g. insert).
     #
     callEvent: (event, args)->
-      if @event_listeners[event]?
+      if @event_listeners?[event]?
         for f in @event_listeners[event]
           f.call @, event, args
 
@@ -51,6 +51,12 @@ module.exports = (HB)->
     #
     setParent: (o)->
       @parent = o
+
+    #
+    # Get the parent of this operation.
+    #
+    getParent: ()->
+      @parent
 
     #
     # Computes a unique identifier (uid) that identifies this operation.
@@ -158,7 +164,6 @@ module.exports = (HB)->
       if @validateSavedOperations()
         @deletes.applyDelete @
         super
-        @
       else
         false
 
@@ -205,6 +210,9 @@ module.exports = (HB)->
     applyDelete: (o)->
       @deleted_by ?= []
       @deleted_by.push o
+      if @parent? and @deleted_by.length is 1
+        # call iff wasn't deleted earlyer
+        @parent.callEvent "delete", @
 
     #
     # If isDeleted() is true this operation won't be maintained in the sl
@@ -307,9 +315,24 @@ module.exports = (HB)->
           @next_cl = @prev_cl.next_cl
           @prev_cl.next_cl = @
           @next_cl.prev_cl = @
+        parent = @prev_cl?.getParent()
+        if parent?
+          @setParent parent
+          @parent.callEvent "insert", @
         super # notify the execution_listeners
-        
 
+    #
+    # Compute the position of this operation.
+    #
+    getPosition: ()->
+      position = 0
+      prev = @prev_cl
+      while true
+        if prev instanceof Delimiter
+          break
+        position++
+        prev = prev.prev_cl
+      position
   #
   # Defines an object that is cannot be changed. You can use this to set an immutable string, or a number.
   #

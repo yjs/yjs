@@ -16,13 +16,13 @@ run = require 'gulp-run'
 ljs = require 'gulp-ljs'
 
 
-gulp.task 'default', ['build', 'test', 'literate']
-gulp.task 'build', ['lint', 'lib', 'browser']
+gulp.task 'default', ['build', 'test', 'literate', 'lib']
+gulp.task 'build', ['lint', 'browser']
 
 files =
   lib : ['./lib/**/*.coffee']
   build : ['./build/**']
-  browser : ['./lib/**/*.coffee']
+  browser : ['./lib/**/*.coffee', './lib/Connectors/**/*', './lib/Frameworks/**/*', './lib/index.coffee']
   test : ['./test/**/*.coffee']
   gulp : ['./gulpfile.coffee']
   examples : ['./examples/**/*.js']
@@ -46,7 +46,7 @@ gulp.task 'browser', ->
     .pipe browserify
       transform: ['coffeeify']
       extensions: ['.coffee']
-      debug : false
+      debug : true
     .pipe rename
       extname: ".js"
     .pipe gulp.dest './build/browser'
@@ -92,8 +92,8 @@ gulp.task 'literate', ->
     .pipe gulp.dest 'examples/'
     .pipe gulpif '!**/', git.add({args : "-A"})
 
-gulp.task 'upload', ()->
-  run('scp -r ./build ./examples jahns@manet.informatik.rwth-aachen.de:/home/jahns/public_html/role-widgets/collaborative_preview/').exec()
+gulp.task 'upload', [], ()->
+  run('scp -r ./build ./examples jahns@manet.informatik.rwth-aachen.de:/home/jahns/public_html/collaborative_preview/').exec()
 
 gulp.task 'clean', ->
   gulp.src './build/{browser,test,node}/*.{js,map}', { read: false }

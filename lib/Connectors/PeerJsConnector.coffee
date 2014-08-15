@@ -20,37 +20,47 @@ createPeerJsConnector = (callback)->
     constructor: (@engine, @HB, @execution_listener, @yatta)->
 
       @peer = peer
-      @connections = []
+      @connections = {}
 
       @peer.on 'connection', (conn)=>
-        conn.send "hey"
+        conn.send "hey" # is never send. But without it it won't work either..
         @addConnection conn
-
-
-
 
       send_ = (o)=>
         @send o
       @execution_listener.push send_
 
     connectToPeer: (id)->
-      @addConnection peer.connect id
+      if not @connections[id]? and id isnt @yatta.getUserId()
+        @addConnection peer.connect id
+
+    getAllConnectionIds: ()->
+      for conn_id of @connections
+        conn_id
 
     addConnection: (conn)->
-      @connections.push conn
+      @connections[conn.peer] = conn
 
       conn.on 'data', (data)=>
         if data is "hey"
+          console.log "Yatta: Connection received with init message (debug)" # I can remove this hey stuff when this happens.
         else if data.HB?
           @engine.applyOpsCheckDouble data.HB
         else if data.op?
           @engine.applyOp data.op
+        else if data.conns?
+          console.log "conns received"
+          for conn_id in data.conns
+            @connectToPeer conn_id
         else
           throw new Error "Can't parse this operation"
 
       sendHB = ()=>
         conn.send
           HB: @yatta.getHistoryBuffer()._encode()
+        conn.send
+          conns: @getAllConnectionIds()
+
       setTimeout sendHB, 1000
 
     #
@@ -59,7 +69,7 @@ createPeerJsConnector = (callback)->
     #
     send: (o)->
       if o.uid.creator is @HB.getUserId() and (typeof o.uid.op_number isnt "string")
-        for conn in @connections
+        for conn_id,conn of @connections
           conn.send
             op: o
 
