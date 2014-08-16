@@ -180,7 +180,11 @@ module.exports = (HB)->
 
       # consume all text-insert changes.
       textfield.onkeypress = (event)->
-        char = String.fromCharCode event.keyCode
+        char = null
+        if event.key?
+          char = event.key
+        else
+          char = String.fromCharCode event.keyCode
         if char.length > 0
           pos = Math.min textfield.selectionStart, textfield.selectionEnd
           diff = Math.abs(textfield.selectionEnd - textfield.selectionStart)
