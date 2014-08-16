@@ -6,8 +6,8 @@ Yatta! provides similar functionality as [ShareJs](https://github.com/share/Shar
 but does not require you to understand how the internals work. The predefined data structures provide a simple API to access your shared data structures.
 
 Predefined data structures:
-* Text - [Collaborative Text Editing Example](./examples/TextEditing/)
-* Json - [example](./examples/Json/)
+* Text - [Collaborative Text Editing Example](http://dadamonad.github.io/Yatta/examples/TextEditing/) and [example code](./examples/TextEditing/)
+* Json - [example code](./examples/Json/)
 * XML (coming soon)
 
 Unlike other frameworks, Yatta! supports P2P message propagation and is not bound to a specific communication protocol.
