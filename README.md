@@ -68,6 +68,7 @@ Please report any issues to the [Github issue page](https://github.com/DadaMonad
 
 # License
 Yatta! is licensed under the [MIT License](./LICENSE.txt).
+
 <kevin.jahns@rwth-aachen.de>
 
 
