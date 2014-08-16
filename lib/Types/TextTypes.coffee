@@ -192,6 +192,11 @@ module.exports = (HB)->
         else
           event.preventDefault()
 
+      textfield.onpaste = (event)->
+        event.preventDefault()
+      textfield.oncut = (event)->
+        event.preventDefault()
+
       #
       # consume deletes. Note that
       #   chrome: won't consume deletions on keypress event.
