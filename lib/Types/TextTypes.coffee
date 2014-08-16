@@ -152,19 +152,18 @@ module.exports = (HB)->
       textfield.value = @val()
 
       @on "insert", (event, op)->
-        if op.creator isnt HB.getUserId()
-          o_pos = op.getPosition()
-          fix = (cursor)->
-            if cursor <= o_pos
-              cursor
-            else
-              cursor += 1
-              cursor
-          left = fix textfield.selectionStart
-          right = fix textfield.selectionEnd
+        o_pos = op.getPosition()
+        fix = (cursor)->
+          if cursor <= o_pos
+            cursor
+          else
+            cursor += 1
+            cursor
+        left = fix textfield.selectionStart
+        right = fix textfield.selectionEnd
 
-          textfield.value = word.val()
-          textfield.setSelectionRange left, right
+        textfield.value = word.val()
+        textfield.setSelectionRange left, right
 
 
       @on "delete", (event, op)->
@@ -185,10 +184,14 @@ module.exports = (HB)->
       textfield.onkeypress = (event)->
         char = String.fromCharCode event.keyCode
         if char.length > 0
+          console.log char
           pos = Math.min textfield.selectionStart, textfield.selectionEnd
           diff = Math.abs(textfield.selectionEnd - textfield.selectionStart)
-          word.deleteText pos, diff
+          word.deleteText (pos), diff
           word.insertText pos, char
+          new_pos = pos + char.length
+          textfield.setSelectionRange new_pos, new_pos
+          event.preventDefault()
         else
           event.preventDefault()
 

@@ -1,7 +1,7 @@
 
 # ![Yatta!](./extras/imgs/Yatta_logo.png?raw=true)
 
-A real-time web framework that manages concurrency control for arbitrary data structures, which is _not_ based on Operational Transformation.
+A real-time web framework that manages concurrency control for arbitrary data structures.
 Yatta! provides similar functionality as [ShareJs](https://github.com/share/ShareJS) and [OpenCoweb](https://github.com/opencoweb/coweb)
 but does not require you to understand how the internals work. The predefined data structures provide a simple API to access your shared data structures.
 
