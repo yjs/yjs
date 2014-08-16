@@ -1,7 +1,8 @@
 
 /**
  ## Text Editing Example
- Here, I will give a short overview on how to enable collaborative text editing with the PeerJs Connector and the TextYatta Framework.
+ Here, I will give a short overview on how to enable collaborative text editing with the
+ [PeerJs](http://peerjs.com/) Connector and the TextYatta Framework.
  First you have to include the following libraries in your html file:
  ```
 <script src="http://cdn.peerjs.com/0.3/peer.js"></script>

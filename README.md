@@ -6,13 +6,14 @@ Yatta! provides similar functionality as [ShareJs](https://github.com/share/Shar
 but does not require you to understand how the internals work. The predefined data structures provide a simple API to access your shared data structures.
 
 Predefined data structures:
-* Text
-* Json - [example](./examples/IwcJson/)
+* Text - [Collaborative Text Editing Example](./examples/TextEditing/)
+* Json - [example](./examples/Json/)
 * XML (coming soon)
 
 Unlike other frameworks, Yatta! supports P2P message propagation and is not bound to a specific communication protocol.
 
 Currently supported communication protocols:
+* [PeerJs](http://peerjs.com/) - WebRTC library
 * [IWC](http://dbis.rwth-aachen.de/cms/projects/the-xmpp-experience#interwidget-communication) - Inter-widget Communication
 
 # Use it!
@@ -53,14 +54,15 @@ Yatta! means "I did it!" in Japanese. You scream it when you accomplish somethin
 There is also this awesome video on the Internet that will change your life [Yatta](https://www.youtube.com/watch?v=kL5DDSglM_s).
 
 # Status
-Yatta! is still in an early development phase.
+Yatta! is still in an early development phase. Don't expect that everything is working fine.
+But I would become really motivated if you give me some feedback ([github](https://github.com/DadaMonad/Yatta/issues) or mail).
 
 # Support
 Please report any issues to the [Github issue page](https://github.com/DadaMonad/Yatta/issues)!
 
 # License
 Yatta! is licensed under the [MIT License](./LICENSE.txt).
-
+<kevin.jahns@rwth-aachen.de>
 
 
 
