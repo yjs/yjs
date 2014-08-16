@@ -15,7 +15,7 @@ Open [index.html](./index.html) in order to start collaboration.
 var yatta;
 
 function init(){
-    Y.createPeerJsConnector(function(Connector, user_id){
+    Y.createPeerJsConnector({key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
 ```
 
 

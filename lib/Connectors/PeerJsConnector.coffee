@@ -2,9 +2,9 @@
 #
 # @param {Function} callback The callback is called when the connector is initialized.
 #
-createPeerJsConnector = (callback)->
+createPeerJsConnector = (peer_js_parameters, callback)->
 
-  peer = new Peer {key: 'h7nlefbgavh1tt9'}
+  peer = new Peer peer_js_parameters 
 
   #
   # @see http://peerjs.com

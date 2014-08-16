@@ -15,7 +15,11 @@ Open [index.html](./index.html) in order to start collaboration.
 var yatta;
 
 function init(){
-    Y.createPeerJsConnector(function(Connector, user_id){
+    /**
+     First create the connector - the underlaying communication protocol.
+     Here, we use the PeerJs connector. Its first parameter is the API key that you need to specify (see [website](http://peerjs.com/))
+    */
+    Y.createPeerJsConnector({key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
       /**
        TextYatta is a shared text object. If you change something on this object,
        it will be instantaneously shared with all the other collaborators.
