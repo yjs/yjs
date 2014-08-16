@@ -153,17 +153,21 @@ module.exports = (HB)->
     #
     getOperationByPosition: (position)->
       o = @beginning.next_cl
-      if position > 0
+      if (position > 0 or o.isDeleted()) and not (o instanceof types.Delimiter)
+        while o.isDeleted() and not (o instanceof types.Delimiter)
+          # find first non deleted op
+          o = o.next_cl
         while true
+          # find the i-th op
+          if o instanceof types.Delimiter
+            break
+          if position <= 0 and not o.isDeleted()
+            break
           o = o.next_cl
           if not o.isDeleted()
             position -= 1
-          if position is 0
-            break
-          if o instanceof types.Delimiter
-            console.log "position parameter exceeded the length of the document!"
-            o = null
-            break
+
+
       o
 
   #

@@ -49,7 +49,6 @@ createPeerJsConnector = (callback)->
         else if data.op?
           @engine.applyOp data.op
         else if data.conns?
-          console.log "conns received"
           for conn_id in data.conns
             @connectToPeer conn_id
         else

@@ -12,7 +12,7 @@ Predefined data structures:
 
 Unlike other frameworks, Yatta! supports P2P message propagation and is not bound to a specific communication protocol.
 
-Currently supported communication protocols:
+It is possible to add any communication protocol to yatta. Currently it supports:
 * [PeerJs](http://peerjs.com/) - WebRTC library
 * [IWC](http://dbis.rwth-aachen.de/cms/projects/the-xmpp-experience#interwidget-communication) - Inter-widget Communication
 

@@ -99,16 +99,14 @@ module.exports = (HB)->
 
       delete_ops = []
       for i in [0...length]
-        d = HB.addOperation(new TextDelete undefined, o).execute()
-        o = o.next_cl
-        while o.isDeleted() and not (o instanceof types.Delimiter)
-          if o instanceof types.Delimiter
-            throw new Error "You can't delete more than there is.."
-          o = o.next_cl
-        delete_ops.push d._encode()
         if o instanceof types.Delimiter
           break
-
+        d = HB.addOperation(new TextDelete undefined, o).execute()
+        o = o.next_cl
+        while not (o instanceof types.Delimiter) and o.isDeleted()
+          o = o.next_cl
+        delete_ops.push d._encode()
+      delete_ops
 
     #
     # Replace the content of this word with another one. Concurrent replacements are not merged!
@@ -184,7 +182,6 @@ module.exports = (HB)->
       textfield.onkeypress = (event)->
         char = String.fromCharCode event.keyCode
         if char.length > 0
-          console.log char
           pos = Math.min textfield.selectionStart, textfield.selectionEnd
           diff = Math.abs(textfield.selectionEnd - textfield.selectionStart)
           word.deleteText (pos), diff
@@ -205,9 +202,10 @@ module.exports = (HB)->
       textfield.onkeydown = (event)->
         pos = Math.min textfield.selectionStart, textfield.selectionEnd
         diff = Math.abs(textfield.selectionEnd - textfield.selectionStart)
-        if event.keyCode? and event.keyCode is 8
+        if event.keyCode? and event.keyCode is 8 # Backspace
           if diff > 0
             word.deleteText pos, diff
+            textfield.setSelectionRange pos, pos
           else
             if event.ctrlKey? and event.ctrlKey
               val = textfield.value
@@ -224,11 +222,13 @@ module.exports = (HB)->
             else
               word.deleteText (pos-1), 1
           event.preventDefault()
-        else if event.keyCode? and event.keyCode is 46
+        else if event.keyCode? and event.keyCode is 46 # Delete
           if diff > 0
             word.deleteText pos, diff
+            textfield.setSelectionRange pos, pos
           else
             word.deleteText pos, 1
+            textfield.setSelectionRange pos, pos
           event.preventDefault()
 
 
