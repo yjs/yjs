@@ -22,7 +22,7 @@ function init(){
       */
       yatta = new Y.TextYatta(user_id, Connector);
 
-      /*
+      /**
        Get the url of this frame. If it has a url-encoded parameter
        we will connect to the foreign peer.
        */
@@ -31,19 +31,19 @@ function init(){
       var url = url.substring(0,-peer_id.length);
       peer_id = peer_id.substring(1);
 
-      /*
+      /**
        Set the shareable link.
        */
       document.getElementById("peer_link").setAttribute("href",url+"?"+user_id);
 
-      /*
+      /**
        Connect to other peer.
        */
       if (peer_id.length > 0){
         yatta.connector.connectToPeer(peer_id);
       }
 
-      /*
+      /**
        Bind yatta to the textfield.
 
        The .bind property is a method of the Word class. You can also use it with all the other Frameworks in Yatta (e.g. Json).

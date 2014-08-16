@@ -25,33 +25,45 @@ it will be instantaneously shared with all the other collaborators.
 
 ```js
       yatta = new Y.TextYatta(user_id, Connector);
+```
 
-      /*
-       Get the url of this frame. If it has a url-encoded parameter
-       we will connect to the foreign peer.
-       */
+
+Get the url of this frame. If it has a url-encoded parameter
+we will connect to the foreign peer.
+
+
+```js
       var url = window.location.href;
       var peer_id = location.search
       var url = url.substring(0,-peer_id.length);
       peer_id = peer_id.substring(1);
+```
 
-      /*
-       Set the shareable link.
-       */
+
+Set the shareable link.
+
+
+```js
       document.getElementById("peer_link").setAttribute("href",url+"?"+user_id);
+```
 
-      /*
-       Connect to other peer.
-       */
+
+Connect to other peer.
+
+
+```js
       if (peer_id.length > 0){
         yatta.connector.connectToPeer(peer_id);
       }
+```
 
-      /*
-       Bind yatta to the textfield.
 
-       The .bind property is a method of the Word class. You can also use it with all the other Frameworks in Yatta (e.g. Json).
-       */
+Bind yatta to the textfield.
+
+The .bind property is a method of the Word class. You can also use it with all the other Frameworks in Yatta (e.g. Json).
+
+
+```js
       var textbox = document.getElementById("textfield");
       yatta.bind(textbox);
     });

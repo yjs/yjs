@@ -34,20 +34,22 @@ My Bachelor Thesis project aim was to develop a P2P OT Framework that enables co
 [Intention Preservation](http://www3.ntu.edu.sg/home/czsun/projects/otfaq/#intentionPreservation).
 After some time I realized that OT has significant drawbacks in P2P environments.
 
-With my gained experiences I came up with a new approach. I named it Yata - Yet Another Transformation Approach.
+With my gained experiences I came up with a new approach. I named it *Yata* - Yet Another Transformation Approach.
 It enables concurrent editing with the following space and time properties:
-* Time complexity: O(S), whereby S is the number of operations that are inserted concurrently at the same position. This means that my approach does not transform against operations that happen on other positions.
-* Space complexity = O(|Document|), whereby |Document| is the size of the shared document. Depending on the used data structure, Yata may needs 4*|Document| of space.
+* Time complexity: O(S), whereby S is the number of operations that are inserted concurrently at the same position (no transformation against operations that happen on different positions).
+* Space complexity = O(|Document|), whereby |Document| is the size of the shared document.
 
-This means that my approach beats all OT time complexities. Furthermore, it is possible to make a very strict definition of Intention Preservation, and I was able to
+This means that my approach beats all OT time complexities. Furthermore, Yatta has a very strict definition of Intention Preservation, and I was able to
 show that it is never violated.
 
-Another advantage of my approach is that propagated messages are very small.
+Another advantage of Yata is that propagated messages are very small.
 Background: In real-time P2P OT algorithms you have to send a state-vector with each message that defines the state of the History Buffer
 on which the operation was created. This is not necessary in Yata.
 
-One downside is that the History Buffer holds at least as many operations as there are characters in the document.
+The downside of this approach is that the History Buffer holds at least as many operations as there are characters in the document.
 In contrast, an OT algorithm can have an empty History Buffer while the document size is very big.
+
+Eventually (after my thesis), I will publish more information about Yata.
 
 So, how did I come up with the name for the implementation (Yatta! is not Yata)?
 Yatta! means "I did it!" in Japanese. You scream it when you accomplish something (for proper application I refer to the Yatta-man in [Heroes](http://heroeswiki.com/Yatta!)).
@@ -56,6 +58,10 @@ There is also this awesome video on the Internet that will change your life [Yat
 # Status
 Yatta! is still in an early development phase. Don't expect that everything is working fine.
 But I would become really motivated if you give me some feedback ([github](https://github.com/DadaMonad/Yatta/issues) or mail).
+
+## Current Issues
+* Garbage Collection
+* XML support
 
 # Support
 Please report any issues to the [Github issue page](https://github.com/DadaMonad/Yatta/issues)!
