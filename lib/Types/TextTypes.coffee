@@ -182,7 +182,12 @@ module.exports = (HB)->
       textfield.onkeypress = (event)->
         char = null
         if event.key?
-          char = event.key
+          if event.charCode is 32
+            char = " "
+          else if event.keyCode is 13
+            char = '\n'
+          else
+            char = event.key
         else
           char = String.fromCharCode event.keyCode
         if char.length > 0
