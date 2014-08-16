@@ -146,14 +146,10 @@ module.exports = (HB)->
 
     #
     # Bind this Word to a textfield.
-    # TODO:
-    #   insert_pressing+mouse new position
-    #   concurrent pressing (two user pressing stuff)
+    #
     bind: (textfield)->
       word = @
       textfield.value = @val()
-      position_start = null
-      document_length = null
 
       @on "insert", (event, op)->
         if op.creator isnt HB.getUserId()
@@ -166,60 +162,74 @@ module.exports = (HB)->
               cursor
           left = fix textfield.selectionStart
           right = fix textfield.selectionEnd
-          if position_start?
-            document_length += 1
-            position_start = fix position_start
 
           textfield.value = word.val()
           textfield.setSelectionRange left, right
 
 
       @on "delete", (event, op)->
-        if op.creator isnt HB.getUserId()
-          o_pos = op.getPosition()
-          fix = (cursor)->
-            if cursor <= o_pos
-              cursor
-            else
-              cursor -= 1
-              cursor
-          left = fix textfield.selectionStart
-          right = fix textfield.selectionEnd
-          if position_start?
-            document_length -= 1
-            position_start = fix position_start
+        o_pos = op.getPosition()
+        fix = (cursor)->
+          if cursor < o_pos
+            cursor
+          else
+            cursor -= 1
+            cursor
+        left = fix textfield.selectionStart
+        right = fix textfield.selectionEnd
 
-          textfield.value = word.val()
-          textfield.setSelectionRange left, right
+        textfield.value = word.val()
+        textfield.setSelectionRange left, right
 
+      # consume all text-insert changes.
+      textfield.onkeypress = (event)->
+        char = String.fromCharCode event.keyCode
+        if char.length > 0
+          pos = Math.min textfield.selectionStart, textfield.selectionEnd
+          diff = Math.abs(textfield.selectionEnd - textfield.selectionStart)
+          word.deleteText pos, diff
+          word.insertText pos, char
+        else
+          event.preventDefault()
 
-      update_yatta = ()->
-        if position_start?
-          document_length_diff = textfield.value.length - document_length
-          current_position = Math.min textfield.selectionStart, textfield.selectionEnd
-          if document_length_diff < 0 # deletion
-            deletion_position = Math.min current_position, position_start
-            word.deleteText deletion_position, Math.abs document_length_diff
-          else if document_length_diff > 0 # insertion
-            text_insert = textfield.value.substring position_start, (position_start + document_length_diff)
-            word.insertText position_start, text_insert
-
-          position_start = null
-          document_length = null
-
+      #
+      # consume deletes. Note that
+      #   chrome: won't consume deletions on keypress event.
+      #   keyCode is deprecated. BUT: I don't see another way.
+      #     since event.key is not implemented in the current version of chrome.
+      #     Every browser supports keyCode. Let's stick with it for now..
+      #
       textfield.onkeydown = (event)->
-        #console.log "down"
-        if position_start?
-          update_yatta()
+        pos = Math.min textfield.selectionStart, textfield.selectionEnd
+        diff = Math.abs(textfield.selectionEnd - textfield.selectionStart)
+        if event.keyCode? and event.keyCode is 8
+          if diff > 0
+            word.deleteText pos, diff
+          else
+            if event.ctrlKey? and event.ctrlKey
+              val = textfield.value
+              new_pos = pos
+              del_length = 0
+              if pos > 0
+                new_pos--
+                del_length++
+              while new_pos > 0 and val[new_pos] isnt " " and val[new_pos] isnt '\n'
+                new_pos--
+                del_length++
+              word.deleteText new_pos, (pos-new_pos)
+              textfield.setSelectionRange new_pos, new_pos
+            else
+              word.deleteText (pos-1), 1
+          event.preventDefault()
+        else if event.keyCode? and event.keyCode is 46
+          if diff > 0
+            word.deleteText pos, diff
+          else
+            word.deleteText pos, 1
+          event.preventDefault()
 
-        selection_range = Math.abs(textfield.selectionEnd - textfield.selectionStart)
-        position_start = Math.min(textfield.selectionStart, textfield.selectionEnd)
-        word.deleteText position_start, selection_range
-        document_length = textfield.value.length - selection_range
 
-      textfield.onkeyup = (event)->
-        #console.log "up"
-        update_yatta()
+
     #
     # Encode this operation in such a way that it can be parsed by remote peers.
     #

@@ -14,7 +14,7 @@
 A working widget implementation is [IwcJson.xml](./IwcJson.xml) and the js-file is [index.js](./index.js)
  */
 function init(){
-    Y.createIwcConnector(function(Connector, user_id){
+    Y.createPeerJsConnector(function(Connector, user_id){
       /**
        yatta is the shared json object. If you change something on this object,
        it will be instantly shared with all the other collaborators.

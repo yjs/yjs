@@ -15,10 +15,16 @@ class TextYatta
   constructor: (user_id, Connector)->
     @HB = new HistoryBuffer user_id
     text_types = text_types_uninitialized @HB
+    types = text_types.types
     @engine = new Engine @HB, text_types.parser
-    @connector = new Connector @engine, @HB, text_types.execution_listener
+    @connector = new Connector @engine, @HB, text_types.execution_listener, @
 
-    first_word = new text_types.types.Word undefined
+    beginning = @HB.addOperation new types.Delimiter {creator: '_', op_number: '_beginning'} , undefined, undefined
+    end =       @HB.addOperation new types.Delimiter {creator: '_', op_number: '_end'}       , beginning, undefined
+    beginning.next_cl = end
+    beginning.execute()
+    end.execute()
+    first_word = new text_types.types.Word {creator: '_', op_number: '_'}, beginning, end
     @HB.addOperation(first_word).execute()
     @root_element = first_word
 
@@ -71,6 +77,12 @@ class TextYatta
   #
   deleteText: (pos, length)->
     @root_element.deleteText pos, length
+
+  #
+  # @see Word.bind
+  #
+  bind: (textarea)->
+    @root_element.bind textarea
 
   #
   # @see Word.replaceText

@@ -330,7 +330,8 @@ module.exports = (HB)->
       while true
         if prev instanceof Delimiter
           break
-        position++
+        if prev.isDeleted? and not prev.isDeleted()
+          position++
         prev = prev.prev_cl
       position
   #
