@@ -4,7 +4,7 @@
 #
 createPeerJsConnector = (peer_js_parameters, callback)->
 
-  peer = new Peer peer_js_parameters 
+  peer = new Peer peer_js_parameters
 
   #
   # @see http://peerjs.com

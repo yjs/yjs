@@ -81,8 +81,8 @@ module.exports = (HB)->
                 else
                   x
               set : (o)->
-                if o.constructor is {}.constructor
-                  overwrite = jsonType.val(name)
+                overwrite = jsonType.val(name)
+                if o.constructor is {}.constructor and overwrite instanceof types.Operation
                   for o_name,o_obj of o
                     overwrite.val(o_name, o_obj, 'immutable')
                 else
@@ -108,6 +108,24 @@ module.exports = (HB)->
           throw new Error "The initial value of JsonTypes must be of type Object! (current type: #{typeof initial_value})"
         for name,o of initial_value
           @val name, o, mutable
+
+    #
+    # Transform this to a Json and loose all the sharing-abilities (the new object will be a deep clone)!
+    # @return {Json}
+    #
+    toJson: ()->
+      val = @val()
+      json = {}
+      for name, o of val
+        if o.constructor is {}.constructor
+          json[name] = @val(name).toJson()
+        else if o instanceof types.Operation
+          while o instanceof types.Operation
+            o = o.val()
+          json[name] = o
+        else
+          json[name] = o
+      json
 
     #
     # Whether the default is 'mutable' (true) or 'immutable' (false)

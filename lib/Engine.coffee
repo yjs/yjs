@@ -22,7 +22,7 @@ class Engine
       throw new Error "You forgot to specify a parser for type #{json.type}. The message is #{JSON.stringify json}."
 
   #
-  # Apply a set of operations. E.g. the operations you received from another users HB.toJson().
+  # Apply a set of operations. E.g. the operations you received from another users HB._encode().
   # @note You must not use this method when you already have ops in your HB!
   #
   applyOpsBundle: (ops_json)->

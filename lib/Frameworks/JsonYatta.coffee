@@ -18,11 +18,12 @@ class JsonYatta
   #
   constructor: (user_id, Connector)->
     @HB = new HistoryBuffer user_id
-    json_types = json_types_uninitialized @HB
-    @engine = new Engine @HB, json_types.parser
-    @connector = new Connector @engine, @HB, json_types.execution_listener, @
+    type_manager = json_types_uninitialized @HB
+    @types = type_manager.types
+    @engine = new Engine @HB, type_manager.parser
+    @connector = new Connector @engine, @HB, type_manager.execution_listener, @
 
-    first_word = new json_types.types.JsonType @HB.getReservedUniqueIdentifier()
+    first_word = new @types.JsonType @HB.getReservedUniqueIdentifier()
     @HB.addOperation(first_word).execute()
     @root_element = first_word
 
@@ -63,6 +64,12 @@ class JsonYatta
   #
   getUserId: ()->
     @HB.getUserId()
+
+  #
+  # @see JsonType.toJson
+  #
+  toJson : ()->
+    @root_element.toJson()
 
   #
   # @see JsonType.val

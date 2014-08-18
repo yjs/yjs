@@ -23,7 +23,7 @@ files =
   lib : ['./lib/**/*.coffee']
   build : ['./build/**']
   browser : ['./lib/**/*.coffee', './lib/Connectors/**/*', './lib/Frameworks/**/*', './lib/index.coffee']
-  test : ['./test/**/*.coffee']
+  test : ['./test/**/*_test.coffee']
   gulp : ['./gulpfile.coffee']
   examples : ['./examples/**/*.js']
 
@@ -55,6 +55,15 @@ gulp.task 'browser', ->
       extname: ".min.js"
     .pipe gulp.dest 'build/browser'
     .pipe gulpif '!**/', git.add({args : "-A"})
+
+  gulp.src files.test, {read: false}
+    .pipe browserify
+      transform: ['coffeeify']
+      extensions: ['.coffee']
+      debug: true
+    .pipe rename
+      extname: ".js"
+    .pipe gulp.dest './build/test'
 
 gulp.task 'test', ->
   gulp.src files.test, { read: false }

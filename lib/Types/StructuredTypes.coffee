@@ -77,7 +77,6 @@ module.exports = (HB)->
           uid_end.op_number = "_#{uid_end.op_number}_RM_#{@name}_end"
           beg = HB.addOperation(new types.Delimiter uid_beg, undefined, uid_end).execute()
           end = HB.addOperation(new types.Delimiter uid_end, beg, undefined).execute()
-          #beg.execute()
           @map_manager.map[@name] = HB.addOperation(new ReplaceManager undefined, uid_r, beg, end).execute()
         super
 
@@ -191,9 +190,12 @@ module.exports = (HB)->
     #
     # Replace the existing word with a new word.
     #
-    replace: (content)->
+    # @param content {Operation} The new value of this ReplaceManager.
+    # @param replaceable_uid {UID} Optional: Unique id of the Replaceable that is created
+    #
+    replace: (content, replaceable_uid)->
       o = @getLastOperation()
-      op = new Replaceable content, @, undefined, o, o.next_cl
+      op = new Replaceable content, @, replaceable_uid, o, o.next_cl
       HB.addOperation(op).execute()
 
     #
@@ -202,9 +204,9 @@ module.exports = (HB)->
     #
     val: ()->
       o = @getLastOperation()
-      if o instanceof types.Delimiter
-        throw new Error "dtrn"
-      o.val()
+      #if o instanceof types.Delimiter
+        # throw new Error "Replace Manager doesn't contain anything."
+      o.val?() # ? - for the case that (currently) the RM does not contain anything (then o is a Delimiter)
 
     #
     # Encode this operation in such a way that it can be parsed by remote peers.

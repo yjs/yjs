@@ -15,24 +15,32 @@ class TextYatta
   constructor: (user_id, Connector)->
     @HB = new HistoryBuffer user_id
     text_types = text_types_uninitialized @HB
-    types = text_types.types
+    @types = text_types.types
     @engine = new Engine @HB, text_types.parser
     @connector = new Connector @engine, @HB, text_types.execution_listener, @
 
-    beginning = @HB.addOperation new types.Delimiter {creator: '_', op_number: '_beginning'} , undefined, undefined
-    end =       @HB.addOperation new types.Delimiter {creator: '_', op_number: '_end'}       , beginning, undefined
+    beginning = @HB.addOperation new @types.Delimiter {creator: '_', op_number: '_beginning'} , undefined, undefined
+    end =       @HB.addOperation new @types.Delimiter {creator: '_', op_number: '_end'}       , beginning, undefined
     beginning.next_cl = end
     beginning.execute()
     end.execute()
-    first_word = new text_types.types.Word {creator: '_', op_number: '_'}, beginning, end
+    first_word = new @types.Word {creator: '_', op_number: '_'}, beginning, end
     @HB.addOperation(first_word).execute()
-    @root_element = first_word
+
+    uid_r = { creator: '_', op_number: "RM" }
+    uid_beg = { creator: '_', op_number: "_RM_beginning" }
+    uid_end = { creator: '_', op_number: "_RM_end" }
+    beg = @HB.addOperation(new @types.Delimiter uid_beg, undefined, uid_end).execute()
+    end = @HB.addOperation(new @types.Delimiter uid_end, beg, undefined).execute()
+    @root_element = @HB.addOperation(new @types.ReplaceManager undefined, uid_r, beg, end).execute()
+    @root_element.replace first_word, { creator: '_', op_number: 'Replaceable'}
+
 
   #
   # @result Word
   #
   getRootElement: ()->
-    @root_element
+    @root_element.val()
 
   #
   # @see Engine
@@ -64,31 +72,31 @@ class TextYatta
   # @see JsonType.val
   #
   val: ()->
-    @root_element.val()
+    @getRootElement().val()
 
   #
   # @see Word.insertText
   #
   insertText: (pos, content)->
-    @root_element.insertText pos, content
+    @getRootElement().insertText pos, content
 
   #
   # @see Word.deleteText
   #
   deleteText: (pos, length)->
-    @root_element.deleteText pos, length
+    @getRootElement().deleteText pos, length
 
   #
   # @see Word.bind
   #
   bind: (textarea)->
-    @root_element.bind textarea
+    @getRootElement().bind textarea
 
   #
   # @see Word.replaceText
   #
   replaceText: (text)->
-    @root_element.replaceText text
+    @getRootElement().replaceText text
 
 
 module.exports = TextYatta
