@@ -17,7 +17,8 @@ A working widget implementation is [IwcJson.xml](./IwcJson.xml) and the js-file 
 
 The PeerJs Framework requires an API key, or you need to set up your own PeerJs server.
 Get an API key from the Website.
-The first parameter of `createPeerJsConnector` is the options object in PeerJs.
+The first parameter of `createPeerJsConnector` is forwarded as the options object in PeerJs.
+Therefore, you may also specify the server/port here.
  */
 var yatta, yattaHandler;
 Y.createPeerJsConnector({key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
@@ -87,7 +88,7 @@ Y.createPeerJsConnector({key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
     console.log("Property '" + property_name + "' was created!");
   };
   yatta.on('addProperty', addProperty);
-  yatta.val('q', {z: 7}); // Property 'newString' was created!
+  yatta.val('new', {z: 7}); // Property 'new' was created!
 
   /**
     Apply a 'change' - listener to a JsonType.

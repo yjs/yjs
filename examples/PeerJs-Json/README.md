@@ -115,7 +115,7 @@ Apply a 'addProperty' - listener to a JsonType.
     console.log("Property '" + property_name + "' was created!");
   };
   yatta.on('addProperty', addProperty);
-  yatta.val('q', {z: 7}); // Property 'newString' was created!
+  yatta.val('new', {z: 7}); // Property 'new' was created!
 ```
 
 
