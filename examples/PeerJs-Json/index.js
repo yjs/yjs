@@ -87,7 +87,7 @@ Y.createPeerJsConnector({key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
     console.log("Property '" + property_name + "' was created!");
   };
   yatta.on('addProperty', addProperty);
-  yatta.val('q', {z: 7}); // Property 'newString' was created!
+  yatta.val('new', {z: 7}); // Property 'new' was created!
 
   /**
     Apply a 'change' - listener to a JsonType.
