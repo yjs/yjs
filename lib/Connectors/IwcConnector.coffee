@@ -4,8 +4,10 @@
 # @param {String} initial_user_id Optional. You can set you own user_id (since the ids of duiclient are not always unique)
 #
 createIwcConnector = (callback, options)->
+  userIwcHandler = null
   if options?
     {iwcHandler: userIwcHandler} = options
+
   iwcHandler = {}
   duiClient = new DUIClient()
   #@duiClient = new iwc.Client()
@@ -110,6 +112,8 @@ createIwcConnector = (callback, options)->
 
       @duiClient.sendIntent(intent)
 
+    setIwcHandler: (f)->
+      userIwcHandler = f
 
 
   init = ()->
