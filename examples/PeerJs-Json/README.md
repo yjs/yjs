@@ -15,7 +15,8 @@ A working widget implementation is [IwcJson.xml](./IwcJson.xml) and the js-file 
 
 The PeerJs Framework requires an API key, or you need to set up your own PeerJs server.
 Get an API key from the Website.
-The first parameter of `createPeerJsConnector` is the options object in PeerJs.
+The first parameter of `createPeerJsConnector` is forwarded as the options object in PeerJs.
+Therefore, you may also specify the server/port here.
 
 
 ```js

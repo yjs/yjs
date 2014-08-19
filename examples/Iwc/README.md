@@ -27,6 +27,19 @@ it will be instantly shared with all the other collaborators.
 ```
 
 
+You may want to get the created DUI client (you must not create two DUI/IWC clients!!),
+or set an IwcHandler.
+
+
+```js
+      var duiclient = yatta.getConnector().duiclient;
+      function iwcHandler (intent) {
+        console.log("Received intent: "+JSON.stringify(intent));
+      }
+      yatta.getConnector().setIwcHandler(iwcHandler);
+```
+
+
 Add a integer-property like this
 
 
@@ -54,8 +67,6 @@ A string property can be either mutable or immutable.
       yatta.val('mutable_string').insertText(2,"XXX"); // position, string
       yatta.val('mutable_string').deleteText(0,1); // position, deletion length
       console.log(yatta.val('mutable_string').val() === "eXXXxt"); // true
-
-
 
     })
 }
