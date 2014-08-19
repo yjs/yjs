@@ -105,7 +105,7 @@ gulp.task 'upload', [], ()->
   run('scp -r ./build ./examples jahns@manet.informatik.rwth-aachen.de:/home/jahns/public_html/collaborative_preview/').exec()
 
 gulp.task 'clean', ->
-  gulp.src './build/{browser,test,node}/*.{js,map}', { read: false }
+  gulp.src './build/{browser,test,node}/**/*.{js,map}', { read: false }
     .pipe ignore '*.html'
     .pipe rimraf()
 

@@ -3,7 +3,9 @@
 # @param {Function} callback The callback is called when the connector is initialized.
 # @param {String} initial_user_id Optional. You can set you own user_id (since the ids of duiclient are not always unique)
 #
-createIwcConnector = (callback, initial_user_id)->
+createIwcConnector = (callback, options)->
+  if options?
+    {iwcHandler: userIwcHandler} = options
   iwcHandler = {}
   duiClient = new DUIClient()
   #@duiClient = new iwc.Client()
@@ -12,6 +14,8 @@ createIwcConnector = (callback, initial_user_id)->
       setTimeout ()->
         f intent
       , 0
+    if userIwcHandler?
+      userIwcHandler intent
 
   duiClient.initOK()
 
@@ -101,12 +105,8 @@ createIwcConnector = (callback, initial_user_id)->
 
 
   init = ()->
-    proposed_user_id = null
-    if initial_user_id?
-      proposed_user_id = initial_user_id
-    else
-      # proposed_user_id = duiClient.getIwcClient()._componentName #TODO: This is stupid! why can't i use this?
-      proposed_user_id = Math.floor(Math.random()*1000000)
+    # proposed_user_id = duiClient.getIwcClient()._componentName #TODO: This is stupid! why can't i use this?
+    proposed_user_id = Math.floor(Math.random()*1000000)
     callback IwcConnector, proposed_user_id
 
   setTimeout init, 5000
