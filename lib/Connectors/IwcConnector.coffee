@@ -88,17 +88,25 @@ createIwcConnector = (callback, options)->
 
     #
     # Helper for sending iwc intents.
-    # @param {String} action_name The name of the action that is going to be send.
-    # @param {String} content The content that is atteched to the intent.
+    # @overload sendIwcIntent intent
+    #   @param {Object} intent The intent object.
+    # @overload sendIwcIntent action_name, content
+    #   @param {String} action_name The name of the action that is going to be send.
+    #   @param {String} content The content that is atteched to the intent.
     #
     sendIwcIntent: (action_name, content)->
-      intent =
-        action: action_name
-        component: ""
-        data: ""
-        dataType: ""
-        flags: ["PUBLISH_GLOBAL"]
-        extras: content
+      intent = null
+      if arguments.length >= 2
+        [action_name, content] = arguments
+        intent =
+          action: action_name
+          component: ""
+          data: ""
+          dataType: ""
+          flags: ["PUBLISH_GLOBAL"]
+          extras: content
+      else
+        intent = arguments[0]
 
       @duiClient.sendIntent(intent)
 
