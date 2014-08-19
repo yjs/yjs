@@ -25,7 +25,7 @@ class TextYatta
   #
   # @result Word
   #
-  getRootElement: ()->
+  getSharedObject: ()->
     @root_element
 
   #

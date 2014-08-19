@@ -77,7 +77,10 @@ module.exports = (HB)->
           uid_end.op_number = "_#{uid_end.op_number}_RM_#{@name}_end"
           beg = HB.addOperation(new types.Delimiter uid_beg, undefined, uid_end).execute()
           end = HB.addOperation(new types.Delimiter uid_end, beg, undefined).execute()
-          @map_manager.map[@name] = HB.addOperation(new ReplaceManager undefined, uid_r, beg, end).execute()
+          @map_manager.map[@name] = HB.addOperation(new ReplaceManager undefined, uid_r, beg, end)
+          @map_manager.map[@name].setParent @map_manager, @name
+          @map_manager.map[@name].execute()
+        @map_manager.callEvent 'addProperty', @name
         super
 
     #
@@ -165,8 +168,6 @@ module.exports = (HB)->
           o = o.next_cl
           if not o.isDeleted()
             position -= 1
-
-
       o
 
   #
@@ -198,6 +199,16 @@ module.exports = (HB)->
       op = new Replaceable content, @, replaceable_uid, o, o.next_cl
       HB.addOperation(op).execute()
 
+    #
+    # Add change listeners for parent.
+    #
+    setParent: (parent, property_name)->
+      @on 'insert', (event, op)=>
+        if op.next_cl instanceof types.Delimiter
+          @parent.callEvent 'change', property_name
+      @on 'change', (event)=>
+        @parent.callEvent 'change', property_name
+      super parent
     #
     # Get the value of this Word
     # @return {String}

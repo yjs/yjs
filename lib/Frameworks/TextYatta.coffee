@@ -39,7 +39,7 @@ class TextYatta
   #
   # @result Word
   #
-  getRootElement: ()->
+  getSharedObject: ()->
     @root_element.val()
 
   #
@@ -72,31 +72,34 @@ class TextYatta
   # @see JsonType.val
   #
   val: ()->
-    @getRootElement().val()
+    @getSharedObject().val()
 
   #
   # @see Word.insertText
   #
   insertText: (pos, content)->
-    @getRootElement().insertText pos, content
+    @getSharedObject().insertText pos, content
 
   #
   # @see Word.deleteText
   #
   deleteText: (pos, length)->
-    @getRootElement().deleteText pos, length
+    @getSharedObject().deleteText pos, length
 
   #
   # @see Word.bind
   #
   bind: (textarea)->
-    @getRootElement().bind textarea
+    @getSharedObject().bind textarea
 
   #
   # @see Word.replaceText
   #
   replaceText: (text)->
-    @getRootElement().replaceText text
+    @getSharedObject().replaceText text
+
+  on: ()->
+    @root_element.on arguments...
 
 
 module.exports = TextYatta

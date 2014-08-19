@@ -17,7 +17,7 @@ class JsonTest extends Test
     new Y.JsonYatta user, conn
 
   getRandomRoot: (user_num, root)->
-    root ?= @users[user_num].getRootElement()
+    root ?= @users[user_num].getSharedObject()
     types = @users[user_num].types
     if _.random(0,1) is 1 # take root
       root
@@ -70,6 +70,29 @@ describe "JsonYatta", ->
 
   it "can handle many engines, many operations, concurrently (random)", ->
     @yTest.run()
+
+  it "has a change listener", ()->
+    addName = false
+    change = false
+    change2 = 0
+    @test_user.on 'addProperty', (eventname, property_name)->
+      if property_name is 'x'
+        addName = true
+    @test_user.val('x',5)
+    @test_user.on 'change', (eventname, property_name)->
+      if property_name is 'x'
+        change = true
+    @test_user.val('x', 6)
+    @test_user.val('ins', "text", 'mutable')
+    @test_user.on 'change', (eventname, property_name)->
+      if property_name is 'ins'
+        change2++
+    @test_user.val('ins').insertText 4, " yay"
+    @test_user.val('ins').deleteText 0, 4
+    expect(addName).to.be.ok
+    expect(change).to.be.ok
+    expect(change2).to.equal 8
+
 
   it "has a JsonWrapper", ->
     y = this.yTest.getSomeUser().root_element

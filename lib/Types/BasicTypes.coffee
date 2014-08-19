@@ -32,25 +32,35 @@ module.exports = (HB)->
     # @param {String} event Name of the event.
     # @param {Function} f f is executed in case the event fires.
     #
-    on: (event, f)->
+    on: (events, f)->
       @event_listeners ?= {}
-      @event_listeners[event] ?= []
-      @event_listeners[event].push f
+      if events.constructor isnt [].constructor
+        events = [events]
+      for e in events
+        @event_listeners[e] ?= []
+        @event_listeners[e].push f
+
+    deleteListener: (events, f)->
+      if events.constructor isnt [].constructor
+        events = [events]
+      for e in events
+        if @event_listeners?[e]?
+          @event_listeners[e] = @event_listeners[e].filter (g)->
+            f isnt g
 
     #
     # Fire an event.
     # TODO: Do something with timeouts. You don't want this to fire for every operation (e.g. insert).
     #
-    callEvent: (event, args)->
+    callEvent: (event, args...)->
       if @event_listeners?[event]?
         for f in @event_listeners[event]
-          f.call @, event, args
+          f.call @, event, args...
 
     #
     # Set the parent of this operation.
     #
-    setParent: (o)->
-      @parent = o
+    setParent: (@parent)->
 
     #
     # Get the parent of this operation.

@@ -140,7 +140,9 @@ module.exports = (HB)->
     #
     setReplaceManager: (op)->
       @saveOperation 'replace_manager', op
-      @validateSavedOperations
+      @validateSavedOperations()
+      @on ['insert', 'delete'], ()=>
+        @replace_manager?.callEvent 'change'
 
     #
     # Bind this Word to a textfield.

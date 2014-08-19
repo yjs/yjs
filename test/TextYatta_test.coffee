@@ -17,7 +17,7 @@ class TextTest extends Test
     new Y.TextYatta user, conn
 
   getRandomRoot: (user_num)->
-    @users[user_num].getRootElement()
+    @users[user_num].getSharedObject()
 
   getContent: (user_num)->
     @users[user_num].val()

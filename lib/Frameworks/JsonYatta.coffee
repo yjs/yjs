@@ -30,7 +30,7 @@ class JsonYatta
   #
   # @result JsonType
   #
-  getRootElement: ()->
+  getSharedObject: ()->
     @root_element
 
   #
@@ -76,6 +76,9 @@ class JsonYatta
   #
   val : (name, content, mutable)->
     @root_element.val(name, content, mutable)
+
+  on: ()->
+    @root_element.on arguments...
 
   #
   # @see JsonType.value

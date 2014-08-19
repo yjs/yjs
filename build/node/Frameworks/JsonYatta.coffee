@@ -29,7 +29,7 @@ class JsonYatta
   #
   # @result JsonType
   #
-  getRootElement: ()->
+  getSharedObject: ()->
     @root_element
 
   #
