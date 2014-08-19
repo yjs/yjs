@@ -11,6 +11,11 @@ First you have to include the following libraries in your html file:
 <script src="./index.js"></script>
 ```
 A working widget implementation is [IwcJson.xml](./IwcJson.xml) and the js-file is [index.js](./index.js)
+### Create Connector
+
+The PeerJs Framework requires an API key, or you need to set up your own PeerJs server.
+Get an API key from the Website.
+The first parameter of `createPeerJsConnector` is the options object in PeerJs.
 
 
 ```js
@@ -19,13 +24,13 @@ Y.createPeerJsConnector({key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
 ```
 
 
+### Yatta
 yatta is the shared json object. If you change something on this object,
 it will be instantly shared with all the other collaborators.
 
 
 ```js
-  yattaHandler = new Y.JsonYatta(user_id, Connector);
-  yatta = yattaHandler.getSharedObject();
+  yatta = new Y.JsonYatta(user_id, Connector);
 ```
 
 
@@ -156,6 +161,7 @@ Apply 'insert' and 'delete' - listeners to Words.
 ```
 
 
+### Experimental method
 But there is a much more convenient way!
 
 
