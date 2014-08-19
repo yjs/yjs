@@ -18,44 +18,12 @@ function init(){
 ```
 
 
-yatta is the shared json object. If you change something on this object,
-it will be instantly shared with all the other collaborators.
+You don't have to use the proposed user_id.
 
 
 ```js
-      yatta = new Y.JsonYatta(user_id, Connector);
-```
-
-
-Add a integer-property like this
-
-
-```js
-      yatta.val('x', 7);
-```
-
-
-Get the value of property x like this
-
-
-```js
-      console.log(yatta.val('x') === 7); // true
-```
-
-
-A string property can be either mutable or immutable.
-
-
-```js
-      yatta.val('mutable_string', "text", "mutable");
-      yatta.val('immutable_string', "text", "immutable");
-
-      console.log(yatta.val('immutable_string') === "text"); // true
-      yatta.val('mutable_string').insertText(2,"XXX"); // position, string
-      yatta.val('mutable_string').deleteText(0,1); // position, deletion length
-      console.log(yatta.val('mutable_string').val() === "eXXXxt"); // true
-
-
+      console.log("me is number 2")
+      yatta = new Y.JsonYatta(2, Connector);
 
     })
 }

@@ -22,6 +22,16 @@ function init(){
       yatta = new Y.JsonYatta(user_id, Connector);
 
       /**
+       You may want to get the created DUI client (you must not create two DUI/IWC clients!!),
+       or set an IwcHandler.
+      */
+      var duiclient = yatta.getConnector().duiclient;
+      function iwcHandler (intent) {
+        console.log("Received intent: "+JSON.stringify(intent));
+      }
+      yatta.getConnector().setIwcHandler(iwcHandler);
+
+      /**
        Add a integer-property like this
       */
       yatta.val('x', 7);
@@ -41,8 +51,6 @@ function init(){
       yatta.val('mutable_string').insertText(2,"XXX"); // position, string
       yatta.val('mutable_string').deleteText(0,1); // position, deletion length
       console.log(yatta.val('mutable_string').val() === "eXXXxt"); // true
-
-
 
     })
 }
