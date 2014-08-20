@@ -4,11 +4,10 @@ Here, I will give a short overview on how to enable collaborative json with the
 First you have to include the following libraries in your html file:
 ```
 <script src="http://cdn.peerjs.com/0.3/peer.js"></script>
-<script src="../../build/browser/Frameworks/TextYatta.js"></script>
+<script src="../../build/browser/Frameworks/JsonYatta.js"></script>
 <script src="../../build/browser/Connectors/PeerJsConnector.js"></script>
 <script src="./index.js"></script>
 ```
-A working widget implementation is [IwcJson.xml](./IwcJson.xml) and the js-file is [index.js](./index.js)
 ### Create Connector
 
 The PeerJs Framework requires an API key, or you need to set up your own PeerJs server.
@@ -30,6 +29,19 @@ it will be instantly shared with all the other collaborators.
 
 ```js
   yatta = new Y.JsonYatta(user_id, Connector);
+```
+
+
+Next, you may want to connect to another peer. Therefore you have to receive his
+user_id. If the other peer is connected to other peers, the PeerJsConnector
+will automatically connect to them too.
+
+Transmitting the user_id is your job.
+See the [TextEditing](../TextEditing/) an example on how to do that with urls.
+
+
+```js
+  // yatta.connector.connectToPeer(peer_user_id);
 ```
 
 
