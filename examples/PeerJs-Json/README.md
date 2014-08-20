@@ -22,6 +22,14 @@ Y.createPeerJsConnector({key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
 ```
 
 
+You can also specify your own user_id with peerjs. But you have to make sure that no other client has this user_id.
+
+
+```js
+// Y.createPeerJsConnector("unique_id", {key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
+```
+
+
 ### Yatta
 yatta is the shared json object. If you change something on this object,
 it will be instantly shared with all the other collaborators.
@@ -147,7 +155,7 @@ Does not fire for nested properties.
 
 
 ```js
-  yatta.val('q').val('z', 8); // No output!
+  yatta.val('new').val('z', 8); // No output!
 ```
 
 
@@ -168,7 +176,7 @@ Apply 'insert' and 'delete' - listeners to Words.
 
   yatta.deleteListener('addProperty', addProperty);
   yatta.deleteListener('change', change);
-  yatta.deleteListener('insert_delete', insert_delete);
+  yatta.val('mutable_string').deleteListener('insert_delete', insert_delete);
 ```
 
 

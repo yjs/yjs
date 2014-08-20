@@ -80,6 +80,9 @@ class JsonYatta
   on: ()->
     @root_element.on arguments...
 
+  deleteListener: ()->
+    @root_element.deleteListener arguments...
+
   #
   # @see JsonType.value
   #

@@ -1,10 +1,22 @@
 
 #
-# @param {Function} callback The callback is called when the connector is initialized.
+# @overload createPeerJsConnector peerjs_options, callback
+#   @param {Object} peerjs_options Is the options object that is passed to PeerJs.
+#   @param {Function} callback The callback is called when the connector is initialized.
+# @overload createPeerJsConnector peerjs_user_id, peerjs_options, callback
+#   @param {String} peerjs_user_id The user_id that is passed to PeerJs as the user_id and should be unique between all (also the unconnected) Peers.
+#   @param {Object} peerjs_options Is the options object that is passed to PeerJs.
+#   @param {Function} callback The callback is called when the connector is initialized.
 #
-createPeerJsConnector = (peer_js_parameters, callback)->
+createPeerJsConnector = ()->
+  peer = null
+  if arguments.length is 2
+    peer = new Peer arguments[0]
+    callback = arguments[1]
+  else
+    peer = new Peer arguments[0], arguments[1]
+    callback = arguments[2]
 
-  peer = new Peer peer_js_parameters
 
   #
   # @see http://peerjs.com
