@@ -5,11 +5,9 @@
  [PeerJs](http://peerjs.com/) Connector and the JsonYatta Framework.
  First you have to include the following libraries in your html file:
  ```
-<script src="http://open-app.googlecode.com/files/openapp.js"></script>
-<script src="http://dbis.rwth-aachen.de/gadgets/iwc/lib/iwc.js"></script>
-<script src="http://dbis.rwth-aachen.de/~jahns/role-widgets/widgetbundles/libraries/DUIClient.js"></script>
-<script src="../../build/browser/Frameworks/JsonYatta.min.js"></script>
-<script src="../../build/browser/Connectors/PeerJsConnector.min.js"></script>
+<script src="http://cdn.peerjs.com/0.3/peer.js"></script>
+<script src="../../build/browser/Frameworks/TextYatta.js"></script>
+<script src="../../build/browser/Connectors/PeerJsConnector.js"></script>
 <script src="./index.js"></script>
  ```
 A working widget implementation is [IwcJson.xml](./IwcJson.xml) and the js-file is [index.js](./index.js)
