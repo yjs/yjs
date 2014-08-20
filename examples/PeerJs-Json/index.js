@@ -13,9 +13,9 @@
 ### Create Connector
 
 The PeerJs Framework requires an API key, or you need to set up your own PeerJs server.
-Get an API key from the Website.
+Get an API key from the [Website](http://peerjs.com/peerserver).
 The first parameter of `createPeerJsConnector` is forwarded as the options object in PeerJs.
-Therefore, you may also specify the server/port here.
+Therefore, you may also specify the server/port here, if you have set up your own server.
  */
 var yatta, yattaHandler;
 Y.createPeerJsConnector({key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
