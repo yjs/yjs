@@ -154,7 +154,7 @@ Y.createPeerJsConnector({key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
   console.log(yatta.value.newProperty === "Awesome") // true, it's awesome ;)
 
   /**
-    This is stupid! I don't want to overwrite all my existing properties!
+    This is stupid! I need to create new properties!
     Very well.. The solution is that we merge yatta.value with the new assignment.
     For example: assuming we want to overwrite yatta.value with some object o.
     Then these two rules apply:

@@ -11,9 +11,9 @@ First you have to include the following libraries in your html file:
 ### Create Connector
 
 The PeerJs Framework requires an API key, or you need to set up your own PeerJs server.
-Get an API key from the Website.
+Get an API key from the [Website](http://peerjs.com/peerserver).
 The first parameter of `createPeerJsConnector` is forwarded as the options object in PeerJs.
-Therefore, you may also specify the server/port here.
+Therefore, you may also specify the server/port here, if you have set up your own server.
 
 
 ```js
@@ -203,7 +203,7 @@ So, how do we create new properties?
 ```
 
 
-This is stupid! I don't want to overwrite all my existing properties!
+This is stupid! I need to create new properties!
 Very well.. The solution is that we merge yatta.value with the new assignment.
 For example: assuming we want to overwrite yatta.value with some object o.
 Then these two rules apply:
