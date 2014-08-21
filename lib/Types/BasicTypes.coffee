@@ -52,10 +52,16 @@ module.exports = (HB)->
     # Fire an event.
     # TODO: Do something with timeouts. You don't want this to fire for every operation (e.g. insert).
     #
-    callEvent: (event, args...)->
+    callEvent: ()->
+      @forwardEvent @, arguments...
+
+    #
+    # Fire an event and specify in which context the listener is called (set 'this').
+    #
+    forwardEvent: (op, event, args...)->
       if @event_listeners?[event]?
         for f in @event_listeners[event]
-          f.call @, event, args...
+          f.call op, event, args...
 
     #
     # Set the parent of this operation.

@@ -125,6 +125,29 @@ Lists are always immutable.
 ```
 
 
+### Check Types
+Certainly you want to check types!
+
+Here, we create a function that parses an Yatta type to a string.
+You find all the types that Yatta provides in `yatta.types`.
+
+
+```js
+  function show(o){
+    var t = yatta.types
+    if (o instanceof t.JsonType){
+      return JSON.stringify(o.toJson());
+    } else if (o instanceof t.Word) {
+      return o.val();
+    } else if (o.constructor === {}.constructor) { // It's an Object
+      return JSON.stringify(o);
+    } else { // It's a primitive data type (E.g. string, int)
+      return o;
+    }
+  }
+```
+
+
 ### Add listeners
 Apply a 'addProperty' - listener to a JsonType.
 
@@ -132,6 +155,7 @@ Apply a 'addProperty' - listener to a JsonType.
 ```js
   function addProperty(event_name, property_name){
     console.log("Property '" + property_name + "' was created!");
+    console.log("Value: " + show(this.val(property_name))); // 'this' is the object on which the property was created.
   };
   yatta.on('addProperty', addProperty);
   yatta.val('new', {z: 7}); // Property 'new' was created!
@@ -143,19 +167,20 @@ Apply a 'change' - listener to a JsonType.
 
 ```js
   function change(event_name, property_name){
-    console.log("Property '" + property_name + "' was replaced or changed!");
-    console.log("New value: \"" + this.val(property_name).val() + "\""); // 'this' is the new/created value
+    console.log("Value of property '" + property_name + "' changed!");
+    console.log("New value: " + show(this.val(property_name)) + ""); // 'this' is the object on which the property changed.
   };
   yatta.on('change', change);
   yatta.val('mutable_string', "text", 'mutable'); // Property 'mutable_string' was replaced or changed!
 ```
 
 
-Does not fire for nested properties.
+'change' and 'addProperty' do also fire for nested properties.
 
 
 ```js
-  yatta.val('new').val('z', 8); // No output!
+  yatta.val('new').val('z', {'replace' : "x"}); // Property 'z' was replaced or changed!
+  yatta.val('new').val('z').val('new', {"true": true}); // Property 'z' was replaced or changed! + Property 'new' was created!
 ```
 
 

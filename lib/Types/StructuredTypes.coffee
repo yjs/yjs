@@ -80,7 +80,6 @@ module.exports = (HB)->
           @map_manager.map[@name] = HB.addOperation(new ReplaceManager undefined, uid_r, beg, end)
           @map_manager.map[@name].setParent @map_manager, @name
           @map_manager.map[@name].execute()
-        @map_manager.callEvent 'addProperty', @name
         super
 
     #
@@ -208,6 +207,12 @@ module.exports = (HB)->
           @parent.callEvent 'change', property_name
       @on 'change', (event)=>
         @parent.callEvent 'change', property_name
+      # Call this, when the first element is inserted. Then delete the listener.
+      addPropertyListener = (event, op)=>
+        if op.next_cl instanceof types.Delimiter and op.prev_cl instanceof types.Delimiter
+          @parent.callEvent 'addProperty', property_name
+        @deleteListener 'addProperty', addPropertyListener
+      @on 'insert', addPropertyListener
       super parent
     #
     # Get the value of this Word

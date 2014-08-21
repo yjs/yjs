@@ -128,6 +128,21 @@ module.exports = (HB)->
       json
 
     #
+    # @see Word.setReplaceManager
+    # Sets the parent of this JsonType object.
+    #
+    setReplaceManager: (rm)->
+      @parent = rm.parent
+      @on ['change','addProperty'], ()->
+        rm.parent.forwardEvent this, arguments...
+    #
+    # Get the parent of this JsonType.
+    # @return {JsonType}
+    #
+    getParent: ()->
+      @parent
+
+    #
     # Whether the default is 'mutable' (true) or 'immutable' (false)
     #
     mutable_default:
