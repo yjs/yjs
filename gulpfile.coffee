@@ -22,7 +22,7 @@ gulp.task 'build', ['lint', 'browser']
 files =
   lib : ['./lib/**/*.coffee']
   build : ['./build/**']
-  browser : ['./lib/**/*.coffee', './lib/Connectors/**/*', './lib/Frameworks/**/*', './lib/index.coffee']
+  browser : ['./lib/Connectors/**/*', './lib/Frameworks/**/*', './lib/index.coffee']
   test : ['./test/**/*_test.coffee']
   gulp : ['./gulpfile.coffee']
   examples : ['./examples/**/*.js']

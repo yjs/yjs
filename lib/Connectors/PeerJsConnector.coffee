@@ -35,7 +35,6 @@ createPeerJsConnector = ()->
       @connections = {}
 
       @peer.on 'connection', (conn)=>
-        conn.send "hey" # is never send. But without it it won't work either..
         @addConnection conn
 
       send_ = (o)=>
@@ -50,29 +49,47 @@ createPeerJsConnector = ()->
       for conn_id of @connections
         conn_id
 
+    #
+    # What this method does:
+    # * Send state vector
+    # * Receive HB -> apply them
+    # * Send connections
+    # * Receive Connections -> Connect to unknow connections
+    #
     addConnection: (conn)->
       @connections[conn.peer] = conn
-
+      initialized_me = false
+      initialized_him = false
       conn.on 'data', (data)=>
-        if data is "hey"
-          console.log "Yatta: Connection received with init message (debug)" # I can remove this hey stuff when this happens.
+        if data is "empty_message"
+          # nop
         else if data.HB?
+          initialized_me = true
           @engine.applyOpsCheckDouble data.HB
+          conn.send
+            conns: @getAllConnectionIds()
         else if data.op?
           @engine.applyOp data.op
         else if data.conns?
           for conn_id in data.conns
             @connectToPeer conn_id
+        else if data.state_vector?
+          if not initialized_him
+            # make sure, that it is sent only once
+            conn.send
+              HB: @yatta.getHistoryBuffer()._encode(data.state_vector)
+            initialized_him = true
         else
           throw new Error "Can't parse this operation"
 
-      sendHB = ()=>
+      sendStateVector = ()=>
         conn.send
-          HB: @yatta.getHistoryBuffer()._encode()
-        conn.send
-          conns: @getAllConnectionIds()
-
-      setTimeout sendHB, 1000
+          state_vector: @HB.getOperationCounter()
+        if not initialized_me
+          # Because of a bug in PeerJs,
+          # we never know if state vector was actually sent
+          setTimeout sendStateVector, 100
+      sendStateVector()
 
     #
     # This function is called whenever an operation was executed.

@@ -53,7 +53,7 @@ createIwcConnector = (callback, options)->
         @initialized[him] = true
       iwcHandler["Yatta_push_HB_element"] = [receiveHB]
 
-      @sendIwcIntent "Yatta_get_HB_element", {}
+      @sendIwcIntent "Yatta_get_HB_element", @HB.getOperationCounter()
 
       receive_ = (intent)=>
         o = intent.extras
@@ -65,9 +65,11 @@ createIwcConnector = (callback, options)->
       if received_HB?
         @engine.applyOpsCheckDouble received_HB
 
-      sendHistoryBuffer = ()=>
+      sendHistoryBuffer = (intent)=>
+        state_vector = intent.extras
+        console.log state_vector
         json =
-          HB : @yatta.getHistoryBuffer()._encode()
+          HB : @yatta.getHistoryBuffer()._encode(state_vector)
           user : @yatta.getUserId()
         @sendIwcIntent "Yatta_push_HB_element", json
       @iwcHandler["Yatta_get_HB_element"] = [sendHistoryBuffer]

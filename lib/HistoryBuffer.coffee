@@ -44,7 +44,7 @@ class HistoryBuffer
 
   #
   # Encode this operation in such a way that it can be parsed by remote peers.
-  #
+  # TODO: Make this more efficient!
   _encode: (state_vector={})->
     json = []
     unknown = (user, o_number)->
@@ -55,15 +55,18 @@ class HistoryBuffer
     for u_name,user of @buffer
       for o_number,o of user
         if (not isNaN(parseInt(o_number))) and unknown(u_name, o_number)
+          # its necessary to send it, and not known in state_vector
           o_json = o._encode()
           if o.next_cl?
+            # search for the next _known_ operation. (When state_vector is {} then this is the Delimiter)
             o_next = o.next_cl
             while o_next.next_cl? and unknown(o_next.creator, o_next.op_number)
               o_next = o_next.next_cl
             o_json.next = o_next.getUid()
           else if o.prev_cl?
+            # same as the above with prev.
             o_prev = o.prev_cl
-            while o_prev.prev_cl? and unknown(o_next.creator, o_next.op_number)
+            while o_prev.prev_cl? and unknown(o_prev.creator, o_prev.op_number)
               o_prev = o_prev.prev_cl
             o_json.prev = o_prev.getUid()
           json.push o_json
@@ -114,7 +117,14 @@ class HistoryBuffer
     if not @operation_counter[o.creator]?
       @operation_counter[o.creator] = 0
     if typeof o.op_number is 'number' and o.creator isnt @getUserId()
-      @operation_counter[o.creator]++
+      # TODO: fix this issue better.
+      # Operations should income in order
+      # Then you don't have to do this..
+      if o.op_number is @operation_counter[o.creator]
+        @operation_counter[o.creator]++
+        while @getOperation({creator:o.creator, op_number: @operation_counter[o.creator]})?
+          @operation_counter[o.creator]++
+
     #if @operation_counter[o.creator] isnt (o.op_number + 1)
       #console.log (@operation_counter[o.creator] - (o.op_number + 1))
       #console.log o

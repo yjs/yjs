@@ -117,8 +117,16 @@ module.exports = class Test
     choices[choice](user_num)
 
   flushAll: ()->
-    for user,user_number in @users
-      user.getConnector().flushAll()
+    if @users.length <= 1
+      for user,user_number in @users
+        user.getConnector().flushAll()
+    else
+      for user,user_number in @users[1..]
+        user.getConnector().flushAll()
+      ops = @users[1].getHistoryBuffer()._encode @users[0].HB.getOperationCounter()
+      @users[0].getEngine().applyOpsCheckDouble ops
+
+
 
   compareAll: (test_number)->
     @flushAll()
