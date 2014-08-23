@@ -2,7 +2,7 @@
 <html>
   <head>
   <meta charset='UTF-8'>
-  <title>CoffeeScript API Documentation</title>
+  <title>Yatta! API</title>
   <script src='../javascript/application.js'></script>
   <script src='../javascript/search.js'></script>
   <link rel='stylesheet' href='../stylesheets/application.css' type='text/css'>
@@ -11,8 +11,8 @@
     <div id='base' data-path='../'></div>
 <div id='header'>
   <div id='menu'>
-    <a href='../extra/README.md.html' title='Yatta'>
-      Yatta
+    <a href='../extra/README.md.html' title='Yatta!'>
+      Yatta!
     </a>
     &raquo;
     <a href='../alphabetical_index.html' title='Index'>
@@ -37,6 +37,10 @@
       <div class='docstring'>
   <div class='note'>
     <strong>Note:</strong>
+    EXPERIMENTAL 
+  </div>
+  <div class='note'>
+    <strong>Note:</strong>
     You can only overwrite existing values! Setting a new property won&#39;t have any effect! 
   </div>
   <p>A JsonWrapper was intended to be a convenient wrapper for the JsonType.
@@ -44,7 +48,7 @@ But it can make things more difficult than they are.</p><p>It creates Javascript
 Therefore the JsonWrapper supports a special feature that should make things more convenient
 (we can argue about that, use the JsonType if you don&#39;t like it ;).
 If you overwrite an object property of the JsonWrapper with a new object, it will result in a merged version of the objects.
-Let w.p the property that is to be overwritten and o the new value. E.g. w.p = o</p><ul>
+Let <code>yatta.value.p</code> the property that is to be overwritten and o the new value. E.g. <code>yatta.value.p = o</code></p><ul>
 <li>The result has all properties of o</li>
 <li>The result has all properties of w.p if they don&#39;t occur under the same property-name in o.</li>
 </ul>
@@ -135,7 +139,7 @@ console.log(w.newProperty == &quot;Awesome&quot;) # true!</code></pre>
 </div>
     </div>
     <div id='footer'>
-  August 12, 14 06:33:02 by
+  August 23, 14 21:38:13 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

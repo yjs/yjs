@@ -2,7 +2,7 @@
 <html>
   <head>
   <meta charset='UTF-8'>
-  <title>CoffeeScript API Documentation</title>
+  <title>Yatta! API</title>
   <script src='../javascript/application.js'></script>
   <script src='../javascript/search.js'></script>
   <link rel='stylesheet' href='../stylesheets/application.css' type='text/css'>
@@ -11,8 +11,8 @@
     <div id='base' data-path='../'></div>
 <div id='header'>
   <div id='menu'>
-    <a href='../extra/README.md.html' title='Yatta'>
-      Yatta
+    <a href='../extra/README.md.html' title='Yatta!'>
+      Yatta!
     </a>
     &raquo;
     <a href='../alphabetical_index.html' title='Index'>
@@ -34,35 +34,52 @@
         </p>
       </nav>
       <div id='filecontents'>
-        <h1 id="-yatta-extras-imgs-yatta_logo-png-raw-true-"><img src="./extras/imgs/Yatta_logo.png?raw=true" alt="Yatta!"></h1><p>A real-time web framework that manages concurrency control for arbitrary data structures and is <em>not</em> based on Operational Transformation.
-Yatta! provides similar functionality as <a href="https://github.com/share/ShareJS">ShareJs</a> and <a href="https://github.com/opencoweb/coweb">OpenCoweb</a>
+        <h1 id="-yatta-extras-imgs-yatta_logo-png-raw-true-"><img src="./extras/imgs/Yatta_logo.png?raw=true" alt="Yatta!"></h1><p>A Real-Time web framework that manages concurrency control for arbitrary data structures.
+Yatta! provides similar functionality as <a href="https://github.com/share/ShareJS">ShareJs</a> and <a href="https://github.com/opencoweb/coweb">OpenCoweb</a>,
 but does not require you to understand how the internals work. The predefined data structures provide a simple API to access your shared data structures.</p><p>Predefined data structures:</p><ul>
-<li>Text</li>
-<li>Json - <a href="./examples/IwcJson.md">example</a></li>
+<li>Text - <a href="http://dadamonad.github.io/Yatta/examples/TextEditing/">Collaborative Text Editing Example</a> and <a href="./examples/TextEditing/">Source</a></li>
+<li>Json - <a href="./examples/PeerJs-Json/">Tutorial</a></li>
 <li>XML (coming soon)</li>
-</ul><p>Unlike other frameworks, Yatta! supports P2P message propagation and is not bound to a specific communication protocol.</p><p>Currently supported communication protocols:</p><ul>
+</ul><p>Unlike other frameworks, Yatta! supports P2P message propagation and is not bound to a specific communication protocol.</p><p>It is possible to add any communication protocol to Yatta. Currently it supports:</p><ul>
+<li><a href="http://peerjs.com/">PeerJs</a> - A WebRTC Framework</li>
 <li><a href="http://dbis.rwth-aachen.de/cms/projects/the-xmpp-experience#interwidget-communication">IWC</a> - Inter-widget Communication</li>
 </ul>
-<h1 id="use-it-">Use it!</h1><p>Either clone this git repository or install this package with <a href="http://bower.io/">bower</a>.</p><pre><code>bower install Yatta
-</code></pre><p>Use the <a href="./examples/README.md">examples</a> to struggle your way through this mess..</p><h1 id="about">About</h1><p>Find out more about the concurrent editing problem here
+<h2 id="use-it-">Use it!</h2><p>The <a href="./examples/">examples</a> provide an excellent starting point for beginners. Also the <a href="http://dadamonad.github.io/Yatta/doc/">API Documentation</a> could prove to be very helpful.</p><p>Either clone this git repository, install it with <a href="http://bower.io/">bower</a>, or install it with <a href="https://www.npmjs.org/package/yatta">npm</a>.</p><h3 id="bower">Bower</h3>
+<pre><code>bower install Yatta
+</code></pre><p>Then you include the libraries directly from the installation folder.</p><h3 id="npm">Npm</h3>
+<pre><code>npm install yatta --save
+</code></pre><p>And use it like this with <em>npm</em>:</p><pre><code>Y = require(&quot;yatta&quot;);
+Y.createPeerJsConnector({key: &#39;xxx&#39;}, function(Connector, user_id){
+  yatta = new Y.JsonFramework(user_id, Connector);
+</code></pre><h2 id="about">About</h2><p>Find out more about the concurrent editing problem here
 <a href="http://opencoweb.org/ocwdocs/intro/openg.html">Cooperation, Concurrency, Conflicts, and Convergence</a> and here
 <a href="http://en.wikipedia.org/wiki/Operational_transformation">Operational Transformation (OT)</a></p><p>My Bachelor Thesis project aim was to develop a P2P OT Framework that enables collaboration on XML documents and supports
 <a href="http://www3.ntu.edu.sg/home/czsun/projects/otfaq/#intentionPreservation">Intention Preservation</a>.
-After some time I realized that OT has significant drawbacks in P2P environments.</p><p>With my gained experiences I came up with a new approach. I named it Yata - Yet Another Transformation Approach.
+After some time I realized that OT has significant drawbacks in P2P environments.</p><p>With my gained experiences I came up with a new approach. I named it <em>Yata</em> - Yet Another Transformation Approach.
 It enables concurrent editing with the following space and time properties:</p><ul>
-<li>Time complexity: O(S), whereby S is the number of operations that are inserted concurrently at the same position. This means that my approach does not transform against operations that happen on other positions.</li>
-<li>Space complexity = O(|Document|), whereby |Document| is the size of the shared document. Depending on the used data structure, Yata may needs 4*|Document| of space.</li>
-</ul><p>This means that my approach beats all OT time complexities. Furthermore, it is possible to make a very strict definition of Intention Preservation, and I was able to
-show that it is never violated.</p><p>Another advantage of my approach is that propagated messages are very small.
-Background: In real-time P2P OT algorithms you have to send a state-vector with each message that defines the state of the History Buffer
-on which the operation was created. This is not necessary in Yata.</p><p>One downside is that the History Buffer holds at least as many operations as there are characters in the document.
-In contrast, an OT algorithm can have an empty History Buffer while the document size is very big.</p><p>So, how did I come up with the name for the implementation (Yatta! is not Yata)?
+<li>Time complexity: O(S), whereby S is the number of operations that are inserted concurrently at the same position (no transformation against operations that happen on different positions).</li>
+<li>Space complexity = O(|Document|), whereby |Document| is the size of the shared document.</li>
+</ul><p>This means that my approach beats all OT time complexities. Furthermore, Yatta has a very strict definition of Intention Preservation, and I was able to
+show that it is never violated.</p><p>Another advantage of Yata is that propagated messages are very small.
+Background: In Real-Time P2P OT algorithms you have to send a state-vector with each message that defines the state of the History Buffer
+on which the operation was created. This is not necessary in Yata.</p><p>The downside of this approach is that the History Buffer holds at least as many operations as there are characters in the document.
+In contrast, an OT algorithm can have an empty History Buffer while the document size is very big.</p><p>Eventually (after my thesis), I will publish more information about Yata.</p><p>So, how did I come up with the name for the implementation (Yatta! is not Yata)?
 Yatta! means &quot;I did it!&quot; in Japanese. You scream it when you accomplish something (for proper application I refer to the Yatta-man in <a href="http://heroeswiki.com/Yatta!">Heroes</a>).
-There is also this awesome video on the Internet that will change your life <a href="https://www.youtube.com/watch?v=kL5DDSglM_s">Yatta</a>.</p><h1 id="status">Status</h1><p>Yatta! is still in an early development phase.</p><h1 id="support">Support</h1><p>Please report any issues to the <a href="https://github.com/DadaMonad/Yatta/issues">Github issue page</a>!</p><h1 id="license">License</h1><p>Yatta! is licensed under the <a href="./LICENSE.txt">MIT License</a>.</p>
+There is also this awesome video on the Internet that will change your life <a href="https://www.youtube.com/watch?v=kL5DDSglM_s">Yatta</a>.</p><h2 id="status">Status</h2><p>Yatta! is still in an early development phase. Don&#39;t expect that everything is working fine.
+But I would become really motivated if you gave me some feedback :) (<a href="https://github.com/DadaMonad/Yatta/issues">github</a>).</p><h3 id="current-issues">Current Issues</h3><p>Currently, I don&#39;t perform Garbage Collection. Therefore, the space requirement will never decrease.</p><ul>
+<li>Garbage Collection</li>
+<li>XML support</li>
+</ul>
+<h2 id="support">Support</h2><p>Please report any issues to the <a href="https://github.com/DadaMonad/Yatta/issues">Github issue page</a>!</p><h2 id="license">License</h2><p>Yatta! is licensed under the <a href="./LICENSE.txt">MIT License</a>.</p><a href="&#109;&#x61;&#105;&#108;&#116;&#111;&#x3a;&#x6b;&#101;&#118;&#x69;&#110;&#x2e;&#106;&#97;&#104;&#110;&#115;&#64;&#x72;&#x77;&#116;&#104;&#x2d;&#x61;&#97;&#99;&#x68;&#x65;&#x6e;&#46;&#100;&#101;">&#x6b;&#101;&#118;&#x69;&#110;&#x2e;&#106;&#97;&#104;&#110;&#115;&#64;&#x72;&#x77;&#116;&#104;&#x2d;&#x61;&#97;&#99;&#x68;&#x65;&#x6e;&#46;&#100;&#101;</a>
+
+
+
+
+
       </div>
     </div>
     <div id='footer'>
-  August 12, 14 06:33:03 by
+  August 24, 14 01:51:08 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

@@ -1,5 +1,6 @@
 
 #
+# @nodoc
 # The Engine handles how and in which order to execute operations and add operations to the HistoryBuffer.
 #
 class Engine

@@ -1,2 +1,110 @@
-(function(){var t;t=function(){function t(t,e){this.HB=t,this.parser=e,this.unprocessed_ops=[]}return t.prototype.parseOperation=function(t){var e;if(e=this.parser[t.type],null!=e)return e(t);throw new Error("You forgot to specify a parser for type "+t.type+". The message is "+JSON.stringify(t)+".")},t.prototype.applyOpsBundle=function(t){var e,r,p,s,o,n,i,u;for(r=[],p=0,n=t.length;n>p;p++)e=t[p],r.push(this.parseOperation(e));for(s=0,i=r.length;i>s;s++)e=r[s],this.HB.addOperation(e);for(o=0,u=r.length;u>o;o++)e=r[o],e.execute()||this.unprocessed_ops.push(e);return this.tryUnprocessed()},t.prototype.applyOpsCheckDouble=function(t){var e,r,p,s;for(s=[],r=0,p=t.length;p>r;r++)e=t[r],s.push(null==this.HB.getOperation(e.uid)?this.applyOp(e):void 0);return s},t.prototype.applyOps=function(t){var e,r,p,s;for(s=[],r=0,p=t.length;p>r;r++)e=t[r],s.push(this.applyOp(e));return s},t.prototype.applyOp=function(t){var e;return e=this.parseOperation(t),this.HB.addToCounter(e),e.execute()?this.HB.addOperation(e):this.unprocessed_ops.push(e),this.tryUnprocessed()},t.prototype.tryUnprocessed=function(){var t,e,r,p,s,o,n;for(n=[];;){for(t=this.unprocessed_ops.length,r=[],o=this.unprocessed_ops,p=0,s=o.length;s>p;p++)e=o[p],e.execute()?this.HB.addOperation(e):r.push(e);if(this.unprocessed_ops=r,this.unprocessed_ops.length===t)break;n.push(void 0)}return n},t}(),module.exports=t}).call(this);
+(function() {
+  var Engine;
+
+  Engine = (function() {
+    function Engine(HB, parser) {
+      this.HB = HB;
+      this.parser = parser;
+      this.unprocessed_ops = [];
+    }
+
+    Engine.prototype.parseOperation = function(json) {
+      var typeParser;
+      typeParser = this.parser[json.type];
+      if (typeParser != null) {
+        return typeParser(json);
+      } else {
+        throw new Error("You forgot to specify a parser for type " + json.type + ". The message is " + (JSON.stringify(json)) + ".");
+      }
+    };
+
+    Engine.prototype.applyOpsBundle = function(ops_json) {
+      var o, ops, _i, _j, _k, _len, _len1, _len2;
+      ops = [];
+      for (_i = 0, _len = ops_json.length; _i < _len; _i++) {
+        o = ops_json[_i];
+        ops.push(this.parseOperation(o));
+      }
+      for (_j = 0, _len1 = ops.length; _j < _len1; _j++) {
+        o = ops[_j];
+        this.HB.addOperation(o);
+      }
+      for (_k = 0, _len2 = ops.length; _k < _len2; _k++) {
+        o = ops[_k];
+        if (!o.execute()) {
+          this.unprocessed_ops.push(o);
+        }
+      }
+      return this.tryUnprocessed();
+    };
+
+    Engine.prototype.applyOpsCheckDouble = function(ops_json) {
+      var o, _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = ops_json.length; _i < _len; _i++) {
+        o = ops_json[_i];
+        if (this.HB.getOperation(o.uid) == null) {
+          _results.push(this.applyOp(o));
+        } else {
+          _results.push(void 0);
+        }
+      }
+      return _results;
+    };
+
+    Engine.prototype.applyOps = function(ops_json) {
+      var o, _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = ops_json.length; _i < _len; _i++) {
+        o = ops_json[_i];
+        _results.push(this.applyOp(o));
+      }
+      return _results;
+    };
+
+    Engine.prototype.applyOp = function(op_json) {
+      var o;
+      o = this.parseOperation(op_json);
+      this.HB.addToCounter(o);
+      if (!o.execute()) {
+        this.unprocessed_ops.push(o);
+      } else {
+        this.HB.addOperation(o);
+      }
+      return this.tryUnprocessed();
+    };
+
+    Engine.prototype.tryUnprocessed = function() {
+      var old_length, op, unprocessed, _i, _len, _ref, _results;
+      _results = [];
+      while (true) {
+        old_length = this.unprocessed_ops.length;
+        unprocessed = [];
+        _ref = this.unprocessed_ops;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          op = _ref[_i];
+          if (!op.execute()) {
+            unprocessed.push(op);
+          } else {
+            this.HB.addOperation(op);
+          }
+        }
+        this.unprocessed_ops = unprocessed;
+        if (this.unprocessed_ops.length === old_length) {
+          break;
+        } else {
+          _results.push(void 0);
+        }
+      }
+      return _results;
+    };
+
+    return Engine;
+
+  })();
+
+  module.exports = Engine;
+
+}).call(this);
+
 //# sourceMappingURL=Engine.js.map

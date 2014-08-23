@@ -2,7 +2,7 @@
 <html>
   <head>
   <meta charset='UTF-8'>
-  <title>CoffeeScript API Documentation</title>
+  <title>Yatta! API</title>
   <script src='../javascript/application.js'></script>
   <script src='../javascript/search.js'></script>
   <link rel='stylesheet' href='../stylesheets/application.css' type='text/css'>
@@ -11,8 +11,8 @@
     <div id='base' data-path='../'></div>
 <div id='header'>
   <div id='menu'>
-    <a href='../extra/README.md.html' title='Yatta'>
-      Yatta
+    <a href='../extra/README.md.html' title='Yatta!'>
+      Yatta!
     </a>
     &raquo;
     <a href='../alphabetical_index.html' title='Index'>
@@ -41,7 +41,11 @@
       </table>
       <h2>Overview</h2>
       <div class='docstring'>
-  <p>Handles a Text-like data structures with support for insertText/deleteText at a word-position.</p>
+  <div class='note'>
+    <strong>Note:</strong>
+    Currently, only Text is supported! 
+  </div>
+  <p>Handles a Word-like data structures with support for insertText/deleteText at a word-position.</p>
 </div>
 <div class='tags'>
 </div>
@@ -51,19 +55,19 @@
     <span class='signature'>
       <a href='#insertText-dynamic'>
         #
-(void)
+(Word)
 <b>insertText</b><span>(position, content)</span>
       </a>
     </span>
     <span class='desc'>
-      Inserts a string into the word 
+      Inserts a string into the word. 
     </span>
   </li>
   <li>
     <span class='signature'>
       <a href='#deleteText-dynamic'>
         #
-(void)
+(Word)
 <b>deleteText</b><span>(position, length)</span>
       </a>
     </span>
@@ -75,7 +79,7 @@
     <span class='signature'>
       <a href='#replaceText-dynamic'>
         #
-(void)
+(Word)
 <b>replaceText</b><span>(text)</span>
       </a>
     </span>
@@ -87,12 +91,23 @@
     <span class='signature'>
       <a href='#val-dynamic'>
         #
-(void)
+(String)
 <b>val</b><span>()</span>
       </a>
     </span>
     <span class='desc'>
-      @returns [Json] A Json object. 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#toString-dynamic'>
+        #
+(void)
+<b>toString</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Same as Word.val 
     </span>
   </li>
   <li>
@@ -103,9 +118,22 @@
 <b>setReplaceManager</b><span>(op)</span>
       </a>
     </span>
+    <span class='note private title'>Private</span>
     <span class='desc'>
       In most cases you would embed a Word in a Replaceable, wich is handled by the ReplaceManager in order to provide replace functionality.
 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#bind-dynamic'>
+        #
+(void)
+<b>bind</b><span>(textfield)</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Bind this Word to a textfield or input field. 
     </span>
   </li>
   <li>
@@ -116,6 +144,7 @@
 <b>_encode</b><span>()</span>
       </a>
     </span>
+    <span class='note private title'>Private</span>
     <span class='desc'>
       Encode this operation in such a way that it can be parsed by remote peers. 
     </span>
@@ -128,6 +157,7 @@
       #
 (void)
 <b>constructor</b><span>(uid, beginning, end, prev, next, origin)</span>
+      <span class='note private'>Private</span>
       <br>
     </p>
     <div class='tags'>
@@ -152,20 +182,31 @@
   <div class='method_details'>
     <p class='signature' id='insertText-dynamic'>
       #
-(void)
+(Word)
 <b>insertText</b><span>(position, content)</span>
       <br>
     </p>
     <div class='docstring'>
-  <p>Inserts a string into the word</p>
+  <p>Inserts a string into the word.</p>
 </div>
 <div class='tags'>
+  <h3>Returns:</h3>
+  <ul class='return'>
+    <li>
+      <span class='type'></span>
+      (
+        <tt><a href='../class/Word.html'>Word</a></tt>
+      )
+      &mdash;
+      <span class='desc'>This Word object. </span>
+    </li>
+  </ul>
 </div>
   </div>
   <div class='method_details'>
     <p class='signature' id='deleteText-dynamic'>
       #
-(void)
+(Word)
 <b>deleteText</b><span>(position, length)</span>
       <br>
     </p>
@@ -173,24 +214,40 @@
   <p>Deletes a part of the word.</p>
 </div>
 <div class='tags'>
+  <h3>Returns:</h3>
+  <ul class='return'>
+    <li>
+      <span class='type'></span>
+      (
+        <tt><a href='../class/Word.html'>Word</a></tt>
+      )
+      &mdash;
+      <span class='desc'>This Word object </span>
+    </li>
+  </ul>
 </div>
   </div>
   <div class='method_details'>
     <p class='signature' id='replaceText-dynamic'>
       #
-(void)
+(Word)
 <b>replaceText</b><span>(text)</span>
       <br>
     </p>
     <div class='docstring'>
   <p>Replace the content of this word with another one. Concurrent replacements are not merged!
-Only one of the replacements will be used.</p><p>Can only be used if the ReplaceManager was set!</p>
+Only one of the replacements will be used.</p>
 </div>
 <div class='tags'>
-  <h3>See also:</h3>
-  <ul class='see'>
+  <h3>Returns:</h3>
+  <ul class='return'>
     <li>
-      <a href='Word.setReplaceManager'>Word.setReplaceManager</a>
+      <span class='type'></span>
+      (
+        <tt><a href='../class/Word.html'>Word</a></tt>
+      )
+      &mdash;
+      <span class='desc'>Returns the new Word object. </span>
     </li>
   </ul>
 </div>
@@ -198,14 +255,41 @@ Only one of the replacements will be used.</p><p>Can only be used if the Replace
   <div class='method_details'>
     <p class='signature' id='val-dynamic'>
       #
-(void)
+(String)
 <b>val</b><span>()</span>
       <br>
     </p>
+    <div class='tags'>
+  <h3>Returns:</h3>
+  <ul class='return'>
+    <li>
+      <span class='type'></span>
+      (
+        <tt>String</tt>
+      )
+      &mdash;
+      <span class='desc'>The String-representation of this object. </span>
+    </li>
+  </ul>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='toString-dynamic'>
+      #
+(void)
+<b>toString</b><span>()</span>
+      <br>
+    </p>
     <div class='docstring'>
-  <p>@returns [Json] A Json object.</p>
+  <p>Same as Word.val</p>
 </div>
 <div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='Word.val'>Word.val</a>
+    </li>
+  </ul>
 </div>
   </div>
   <div class='method_details'>
@@ -213,6 +297,7 @@ Only one of the replacements will be used.</p><p>Can only be used if the Replace
       #
 (void)
 <b>setReplaceManager</b><span>(op)</span>
+      <span class='note private'>Private</span>
       <br>
     </p>
     <div class='docstring'>
@@ -223,10 +308,32 @@ to provide replace functionality.</p>
 </div>
   </div>
   <div class='method_details'>
+    <p class='signature' id='bind-dynamic'>
+      #
+(void)
+<b>bind</b><span>(textfield)</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>Bind this Word to a textfield or input field.</p>
+  <div class='examples'>
+    <h3>Examples:</h3>
+    <h4>
+      
+    </h4>
+    <pre><code class='coffeescript'>var textbox = document.getElementById(&quot;textfield&quot;);
+yatta.bind(textbox);</code></pre>
+  </div>
+</div>
+<div class='tags'>
+</div>
+  </div>
+  <div class='method_details'>
     <p class='signature' id='_encode-dynamic'>
       #
 (void)
 <b>_encode</b><span>()</span>
+      <span class='note private'>Private</span>
       <br>
     </p>
     <div class='docstring'>
@@ -238,7 +345,7 @@ to provide replace functionality.</p>
 </div>
     </div>
     <div id='footer'>
-  August 12, 14 06:33:02 by
+  August 23, 14 21:38:13 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

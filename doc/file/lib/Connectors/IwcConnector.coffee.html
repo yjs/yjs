@@ -2,7 +2,7 @@
 <html>
   <head>
   <meta charset='UTF-8'>
-  <title>CoffeeScript API Documentation</title>
+  <title>Yatta! API</title>
   <script src='../../../javascript/application.js'></script>
   <script src='../../../javascript/search.js'></script>
   <link rel='stylesheet' href='../../../stylesheets/application.css' type='text/css'>
@@ -11,8 +11,8 @@
     <div id='base' data-path='../../../'></div>
 <div id='header'>
   <div id='menu'>
-    <a href='../../../extra/README.md.html' title='Yatta'>
-      Yatta
+    <a href='../../../extra/README.md.html' title='Yatta!'>
+      Yatta!
     </a>
     &raquo;
     <a href='../../../alphabetical_index.html' title='Index'>
@@ -47,14 +47,6 @@
     <pre><code class='coffeescript'>createIwcConnector</code></pre>
     
   </dd>
-  <dt id='window.createConnector-variable'>
-    window.createConnector
-    =
-  </dt>
-  <dd>
-    <pre><code class='coffeescript'>createIwcConnector</code></pre>
-    
-  </dd>
 </dl>
       <h2>Method Summary</h2>
       <ul class='summary'>
@@ -63,7 +55,7 @@
       <a href='#createIwcConnector-'>
         ~
 (void)
-<b>createIwcConnector</b><span>(callback)</span>
+<b>createIwcConnector</b><span>(callback, options)</span>
       </a>
     </span>
     <span class='desc'>
@@ -76,7 +68,7 @@
     <p class='signature' id='createIwcConnector-'>
       ~
 (void)
-<b>createIwcConnector</b><span>(callback)</span>
+<b>createIwcConnector</b><span>(callback, options)</span>
       <br>
     </p>
     <div class='tags'>
@@ -92,13 +84,23 @@
       &mdash;
       <span class='desc'>The callback is called when the connector is initialized. </span>
     </li>
+    <li>
+      <span class='name'>initial_user_id</span>
+      <span class='type'>
+        (
+          <tt>String</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>Optional. You can set you own user_id (since the ids of duiclient are not always unique) </span>
+    </li>
   </ul>
 </div>
   </div>
 </div>
     </div>
     <div id='footer'>
-  August 12, 14 06:33:02 by
+  August 24, 14 01:51:08 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

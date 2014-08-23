@@ -73,12 +73,12 @@ module.exports = class Test
           pos = _.random 0, (y.val().length-1)
           y.insertText pos, @getRandomText()
           null
-        types: [types.Word]
+        types: [types.WordType]
       ,
         f : (y)=> # REPLACE TEXT
           y.replaceText @getRandomText()
           null
-        types: [types.Word]
+        types: [types.WordType]
       ,
         f : (y)-> # DELETE TEXT
           if y.val().length > 0
@@ -86,7 +86,7 @@ module.exports = class Test
             length = _.random 0, (y.val().length - pos)
             ops1 = y.deleteText pos, length
           undefined
-        types : [types.Word]
+        types : [types.WordType]
     ]
 
   getRandomRoot: (user_num)->
@@ -124,7 +124,7 @@ module.exports = class Test
       for user,user_number in @users[1..]
         user.getConnector().flushAll()
       ops = @users[1].getHistoryBuffer()._encode @users[0].HB.getOperationCounter()
-      @users[0].getEngine().applyOpsCheckDouble ops
+      @users[0].engine.applyOpsCheckDouble ops
 
 
 

@@ -4,6 +4,7 @@ _ = require "underscore"
 module.exports = (user_list)->
 
   #
+  # @nodoc
   # A trivial Connector that simulates network delay.
   #
   class TestConnector

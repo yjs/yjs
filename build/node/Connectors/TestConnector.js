@@ -1,2 +1,89 @@
-(function(){var e;e=require("underscore"),module.exports=function(t){var n;return n=function(){function n(e,n,i){var r,u;this.engine=e,this.HB=n,this.execution_listener=i,u=function(e){return function(t){return e.send(t)}}(this),this.execution_listener.push(u),this.applied_operations=[],r=function(e){return function(t){return e.applied_operations.push(t)}}(this),this.execution_listener.push(r),0!==(null!=t?t.length:void 0)&&this.engine.applyOps(t[0].getHistoryBuffer()._encode()),this.unexecuted={}}return n.prototype.getOpsInExecutionOrder=function(){return this.applied_operations},n.prototype.send=function(e){var n,i,r,u;if(e.uid.creator===this.HB.getUserId()&&"string"!=typeof e.uid.op_number){for(u=[],i=0,r=t.length;r>i;i++)n=t[i],u.push(n.getUserId()!==this.HB.getUserId()?n.getConnector().receive(e):void 0);return u}},n.prototype.receive=function(e){var t,n;return null==(t=this.unexecuted)[n=e.uid.creator]&&(t[n]=[]),this.unexecuted[e.uid.creator].push(e)},n.prototype.flushOne=function(e){var t;return(null!=(t=this.unexecuted[e])?t.length:void 0)>0?this.engine.applyOp(this.unexecuted[e].shift()):void 0},n.prototype.flushOneRandom=function(){return this.flushOne(e.random(0,t.length-1))},n.prototype.flushAll=function(){var e,t,n;n=this.unexecuted;for(e in n)t=n[e],this.engine.applyOps(t);return this.unexecuted={}},n}()}}).call(this);
+(function() {
+  var _;
+
+  _ = require("underscore");
+
+  module.exports = function(user_list) {
+    var TestConnector;
+    return TestConnector = (function() {
+      function TestConnector(engine, HB, execution_listener) {
+        var appliedOperationsListener, send_;
+        this.engine = engine;
+        this.HB = HB;
+        this.execution_listener = execution_listener;
+        send_ = (function(_this) {
+          return function(o) {
+            return _this.send(o);
+          };
+        })(this);
+        this.execution_listener.push(send_);
+        this.applied_operations = [];
+        appliedOperationsListener = (function(_this) {
+          return function(o) {
+            return _this.applied_operations.push(o);
+          };
+        })(this);
+        this.execution_listener.push(appliedOperationsListener);
+        if (!((user_list != null ? user_list.length : void 0) === 0)) {
+          this.engine.applyOps(user_list[0].getHistoryBuffer()._encode());
+        }
+        this.unexecuted = {};
+      }
+
+      TestConnector.prototype.getOpsInExecutionOrder = function() {
+        return this.applied_operations;
+      };
+
+      TestConnector.prototype.send = function(o) {
+        var user, _i, _len, _results;
+        if ((o.uid.creator === this.HB.getUserId()) && (typeof o.uid.op_number !== "string")) {
+          _results = [];
+          for (_i = 0, _len = user_list.length; _i < _len; _i++) {
+            user = user_list[_i];
+            if (user.getUserId() !== this.HB.getUserId()) {
+              _results.push(user.getConnector().receive(o));
+            } else {
+              _results.push(void 0);
+            }
+          }
+          return _results;
+        }
+      };
+
+      TestConnector.prototype.receive = function(o) {
+        var _base, _name;
+        if ((_base = this.unexecuted)[_name = o.uid.creator] == null) {
+          _base[_name] = [];
+        }
+        return this.unexecuted[o.uid.creator].push(o);
+      };
+
+      TestConnector.prototype.flushOne = function(user) {
+        var _ref;
+        if (((_ref = this.unexecuted[user]) != null ? _ref.length : void 0) > 0) {
+          return this.engine.applyOp(this.unexecuted[user].shift());
+        }
+      };
+
+      TestConnector.prototype.flushOneRandom = function() {
+        return this.flushOne(_.random(0, user_list.length - 1));
+      };
+
+      TestConnector.prototype.flushAll = function() {
+        var n, ops, _ref;
+        _ref = this.unexecuted;
+        for (n in _ref) {
+          ops = _ref[n];
+          this.engine.applyOps(ops);
+        }
+        return this.unexecuted = {};
+      };
+
+      return TestConnector;
+
+    })();
+  };
+
+}).call(this);
+
 //# sourceMappingURL=../Connectors/TestConnector.js.map

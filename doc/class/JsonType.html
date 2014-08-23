@@ -2,7 +2,7 @@
 <html>
   <head>
   <meta charset='UTF-8'>
-  <title>CoffeeScript API Documentation</title>
+  <title>Yatta! API</title>
   <script src='../javascript/application.js'></script>
   <script src='../javascript/search.js'></script>
   <link rel='stylesheet' href='../stylesheets/application.css' type='text/css'>
@@ -11,8 +11,8 @@
     <div id='base' data-path='../'></div>
 <div id='header'>
   <div id='menu'>
-    <a href='../extra/README.md.html' title='Yatta'>
-      Yatta
+    <a href='../extra/README.md.html' title='Yatta!'>
+      Yatta!
     </a>
     &raquo;
     <a href='../alphabetical_index.html' title='Index'>
@@ -47,6 +47,29 @@
 </div>
       <h2>Variables Summary</h2>
       <dl class='constants'>
+  <dt id='type-variable'>
+    type
+    =
+  </dt>
+  <dd>
+    <pre><code class='coffeescript'>&quot;JsonType&quot;</code></pre>
+    <div class='docstring'>
+  <p>Identifies this class.
+Use it to check whether this is a json-type or something else.</p>
+  <div class='examples'>
+    <h3>Examples:</h3>
+    <h4>
+      
+    </h4>
+    <pre><code class='coffeescript'>var x = yatta.val(&#39;unknown&#39;)
+if (x.type === &quot;JsonType&quot;) {
+  console.log JSON.stringify(x.toJson())
+}</code></pre>
+  </div>
+</div>
+<div class='tags'>
+</div>
+  </dd>
   <dt id='mutable_default-variable'>
     mutable_default
     =
@@ -62,6 +85,42 @@
 </dl>
       <h2>Instance Method Summary</h2>
       <ul class='summary'>
+  <li>
+    <span class='signature'>
+      <a href='#toJson-dynamic'>
+        #
+(Json)
+<b>toJson</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Transform this to a Json and loose all the sharing-abilities (the new object will be a deep clone)! 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#setReplaceManager-dynamic'>
+        #
+(void)
+<b>setReplaceManager</b><span>(rm)</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Sets the parent of this JsonType object. 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#getParent-dynamic'>
+        #
+(JsonType)
+<b>getParent</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Get the parent of this JsonType. 
+    </span>
+  </li>
   <li>
     <span class='signature'>
       <a href='#setMutableDefault-dynamic'>
@@ -147,6 +206,65 @@
       <h2>Instance Method Details</h2>
       <div class='methods'>
   <div class='method_details'>
+    <p class='signature' id='toJson-dynamic'>
+      #
+(Json)
+<b>toJson</b><span>()</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>Transform this to a Json and loose all the sharing-abilities (the new object will be a deep clone)!</p>
+</div>
+<div class='tags'>
+  <h3>Returns:</h3>
+  <ul class='return'>
+    <li>
+      <span class='type'></span>
+      <tt>Json</tt>
+    </li>
+  </ul>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='setReplaceManager-dynamic'>
+      #
+(void)
+<b>setReplaceManager</b><span>(rm)</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>Sets the parent of this JsonType object.</p>
+</div>
+<div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='WordType.setReplaceManager'>WordType.setReplaceManager</a>
+    </li>
+  </ul>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='getParent-dynamic'>
+      #
+(JsonType)
+<b>getParent</b><span>()</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>Get the parent of this JsonType.</p>
+</div>
+<div class='tags'>
+  <h3>Returns:</h3>
+  <ul class='return'>
+    <li>
+      <span class='type'></span>
+      <tt><a href='../class/JsonType.html'>JsonType</a></tt>
+    </li>
+  </ul>
+</div>
+  </div>
+  <div class='method_details'>
     <p class='signature' id='setMutableDefault-dynamic'>
       #
 (void)
@@ -179,7 +297,7 @@
 <b>val</b><span>()</span>
       <br>
       ~
-(JsonType|Word|String|Object)
+(JsonType|WordType|String|Object)
 <b>val</b><span>(name)</span>
       <br>
       ~
@@ -212,7 +330,7 @@
     <div class='overload'>
       <p class='signature'>
         ~
-(JsonType|Word|String|Object)
+(JsonType|WordType|String|Object)
 <b>val</b><span>(name)</span>
       </p>
       <div class='docstring'>
@@ -237,7 +355,7 @@
     <li>
       <span class='type'></span>
       (
-        <tt>JsonType|Word|String|Object</tt>
+        <tt>JsonType|WordType|String|Object</tt>
       )
       &mdash;
       <span class='desc'>Depending on the value of the property. If mutable it will return a Operation-type object, if immutable it will return String/Object. </span>
@@ -308,7 +426,7 @@
 </div>
     </div>
     <div id='footer'>
-  August 12, 14 06:33:02 by
+  August 24, 14 01:51:08 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

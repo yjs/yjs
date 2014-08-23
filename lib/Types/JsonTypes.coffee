@@ -5,15 +5,17 @@ module.exports = (HB)->
   types = text_types.types
   parser = text_types.parser
 
-  createJsonWrapper = (_jsonType)->
+  createJsonTypeWrapper = (_jsonType)->
 
     #
-    # A JsonWrapper was intended to be a convenient wrapper for the JsonType.
+    # @note EXPERIMENTAL
+    #
+    # A JsonTypeWrapper was intended to be a convenient wrapper for the JsonType.
     # But it can make things more difficult than they are.
     # @see JsonType
     #
-    # @example create a JsonWrapper
-    #   # You get a JsonWrapper from a JsonType by calling
+    # @example create a JsonTypeWrapper
+    #   # You get a JsonTypeWrapper from a JsonType by calling
     #   w = yatta.value
     #
     # It creates Javascripts -getter and -setter methods for each property that JsonType maintains.
@@ -34,10 +36,10 @@ module.exports = (HB)->
     #   yatta.val('x', "text")
     #
     # In order to set a new property you have to overwrite an existing property.
-    # Therefore the JsonWrapper supports a special feature that should make things more convenient
+    # Therefore the JsonTypeWrapper supports a special feature that should make things more convenient
     # (we can argue about that, use the JsonType if you don't like it ;).
-    # If you overwrite an object property of the JsonWrapper with a new object, it will result in a merged version of the objects.
-    # Let w.p the property that is to be overwritten and o the new value. E.g. w.p = o
+    # If you overwrite an object property of the JsonTypeWrapper with a new object, it will result in a merged version of the objects.
+    # Let `yatta.value.p` the property that is to be overwritten and o the new value. E.g. `yatta.value.p = o`
     # * The result has all properties of o
     # * The result has all properties of w.p if they don't occur under the same property-name in o.
     #
@@ -63,7 +65,7 @@ module.exports = (HB)->
     #   yatta.value = {newProperty : "Awesome"}
     #   console.log(w.newProperty == "Awesome") # true!
     #
-    class JsonWrapper
+    class JsonTypeWrapper
 
       #
       # @param {JsonType} jsonType Instance of the JsonType that this class wrappes.
@@ -71,11 +73,11 @@ module.exports = (HB)->
       constructor: (jsonType)->
         for name, obj of jsonType.map
           do (name, obj)->
-            Object.defineProperty JsonWrapper.prototype, name,
+            Object.defineProperty JsonTypeWrapper.prototype, name,
               get : ->
                 x = obj.val()
                 if x instanceof JsonType
-                  createJsonWrapper x
+                  createJsonTypeWrapper x
                 else if x instanceof types.ImmutableObject
                   x.val()
                 else
@@ -89,7 +91,7 @@ module.exports = (HB)->
                   jsonType.val(name, o, 'immutable')
               enumerable: true
               configurable: false
-    new JsonWrapper _jsonType
+    new JsonTypeWrapper _jsonType
 
   #
   # Manages Object-like values.
@@ -110,6 +112,18 @@ module.exports = (HB)->
           @val name, o, mutable
 
     #
+    # Identifies this class.
+    # Use it to check whether this is a json-type or something else.
+    #
+    # @example
+    #   var x = yatta.val('unknown')
+    #   if (x.type === "JsonType") {
+    #     console.log JSON.stringify(x.toJson())
+    #   }
+    #
+    type: "JsonType"
+
+    #
     # Transform this to a Json and loose all the sharing-abilities (the new object will be a deep clone)!
     # @return {Json}
     #
@@ -128,7 +142,7 @@ module.exports = (HB)->
       json
 
     #
-    # @see Word.setReplaceManager
+    # @see WordType.setReplaceManager
     # Sets the parent of this JsonType object.
     #
     setReplaceManager: (rm)->
@@ -168,7 +182,7 @@ module.exports = (HB)->
     # @overload val(name)
     #   Get value of a property.
     #   @param {String} name Name of the object property.
-    #   @return [JsonType|Word|String|Object] Depending on the value of the property. If mutable it will return a Operation-type object, if immutable it will return String/Object.
+    #   @return [JsonType|WordType|String|Object] Depending on the value of the property. If mutable it will return a Operation-type object, if immutable it will return String/Object.
     #
     # @overload val(name, content)
     #   Set a new property.
@@ -198,7 +212,7 @@ module.exports = (HB)->
           super name, obj
         else
           if typeof content is 'string'
-            word = HB.addOperation(new types.Word undefined).execute()
+            word = HB.addOperation(new types.WordType undefined).execute()
             word.insertText 0, content
             super name, word
           else if content.constructor is Object
@@ -210,7 +224,7 @@ module.exports = (HB)->
         super name, content
 
     Object.defineProperty JsonType.prototype, 'value',
-      get : -> createJsonWrapper @
+      get : -> createJsonTypeWrapper @
       set : (o)->
         if o.constructor is {}.constructor
           for o_name,o_obj of o

@@ -14,7 +14,7 @@ Test = require "./TestSuite"
 
 class JsonTest extends Test
   makeNewUser: (user, conn)->
-    new Y.JsonYatta user, conn
+    new Y.JsonFramework user, conn
 
   getRandomRoot: (user_num, root)->
     root ?= @users[user_num].getSharedObject()
@@ -59,7 +59,7 @@ class JsonTest extends Test
 
 
 
-describe "JsonYatta", ->
+describe "JsonFramework", ->
   beforeEach (done)->
     @timeout 50000
     @yTest = new JsonTest()
@@ -94,7 +94,7 @@ describe "JsonYatta", ->
     expect(change2).to.equal 8
 
 
-  it "has a JsonWrapper", ->
+  it "has a JsonTypeWrapper", ->
     y = this.yTest.getSomeUser().root_element
     y.val('x',"dtrn", 'immutable')
     y.val('set',{x:"x"}, 'immutable')
@@ -147,7 +147,7 @@ describe "JsonYatta", ->
   it "converges t1", ->
     op0 = {"type":"Delimiter","uid":{"creator":0,"op_number":0},"next":{"creator":0,"op_number":1}}
     op1 = {"type":"Delimiter","uid":{"creator":0,"op_number":1},"prev":{"creator":0,"op_number":0}}
-    op2 = {"type":"Word","uid":{"creator":0,"op_number":2},"beginning":{"creator":0,"op_number":0},"end":{"creator":0,"op_number":1}}
+    op2 = {"type":"WordType","uid":{"creator":0,"op_number":2},"beginning":{"creator":0,"op_number":0},"end":{"creator":0,"op_number":1}}
     op3 = {"type":"AddName","uid":{"creator":0,"op_number":3},"map_manager":{"creator":"_","op_number":"_"},"name":"name"}
     op4 = {"type":"Replaceable","content":{"creator":0,"op_number":2},"ReplaceManager":{"creator":"_","op_number":"___RM_name"},"prev":{"creator":"_","op_number":"___RM_name_beginning"},"next":{"creator":"_","op_number":"___RM_name_end"},"uid":{"creator":0,"op_number":4}}
     op5 = {"type":"TextInsert","content":"u","uid":{"creator":1,"op_number":2},"prev":{"creator":1,"op_number":0},"next":{"creator":1,"op_number":1}}

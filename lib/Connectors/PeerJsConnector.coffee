@@ -19,6 +19,8 @@ createPeerJsConnector = ()->
 
 
   #
+  # PeerJs is a Framework that enables you to connect to other peers. You just need the
+  # user-id of the peer (browser/client). And then you can connect to it.
   # @see http://peerjs.com
   #
   class PeerJsConnector
@@ -38,25 +40,46 @@ createPeerJsConnector = ()->
         @addConnection conn
 
       send_ = (o)=>
-        @send o
+        if o.uid.creator is @HB.getUserId() and (typeof o.uid.op_number isnt "string")
+          for conn_id,conn of @connections
+            conn.send
+              op: o
       @execution_listener.push send_
 
+    #
+    # Connect the Framework to another peer. Therefore you have to receive his
+    # user_id. If the other peer is connected to other peers, the PeerJsConnector
+    # will automatically connect to them too.
+    #
+    # Transmitting the user_id is your job.
+    # See [TextEditing](../../examples/TextEditing/) for a nice example
+    # on how to do that with urls.
+    #
+    # @param id {String} Connection id
+    #
     connectToPeer: (id)->
       if not @connections[id]? and id isnt @yatta.getUserId()
         @addConnection peer.connect id
 
+    #
+    # Receive the id of every connected peer.
+    # @return {Array<String>} A list of Peer-Ids
+    #
     getAllConnectionIds: ()->
       for conn_id of @connections
         conn_id
 
     #
-    # What this method does:
-    # * Send state vector
-    # * Receive HB -> apply them
-    # * Send connections
-    # * Receive Connections -> Connect to unknow connections
+    # Adds an existing connection to this connector.
+    # @param conn {PeerJsConnection}
     #
     addConnection: (conn)->
+      #
+      # What this method does:
+      # * Send state vector
+      # * Receive HB -> apply them
+      # * Send connections
+      # * Receive Connections -> Connect to unknow connections
       @connections[conn.peer] = conn
       initialized_me = false
       initialized_him = false
@@ -90,24 +113,6 @@ createPeerJsConnector = ()->
           # we never know if state vector was actually sent
           setTimeout sendStateVector, 100
       sendStateVector()
-
-    #
-    # This function is called whenever an operation was executed.
-    # @param {Operation} o The operation that was executed.
-    #
-    send: (o)->
-      if o.uid.creator is @HB.getUserId() and (typeof o.uid.op_number isnt "string")
-        for conn_id,conn of @connections
-          conn.send
-            op: o
-
-    #
-    # This function is called whenever an operation was received from another peer.
-    # @param {Operation} o The operation that was received.
-    #
-    receive: (o)->
-      if o.uid.creator isnt @HB.getUserId()
-        @engine.applyOp o
 
   peer.on 'open', (id)->
     callback PeerJsConnector, id

@@ -2,7 +2,7 @@
 <html>
   <head>
   <meta charset='UTF-8'>
-  <title>CoffeeScript API Documentation</title>
+  <title>Yatta! API</title>
   <script src='../javascript/application.js'></script>
   <script src='../javascript/search.js'></script>
   <link rel='stylesheet' href='../stylesheets/application.css' type='text/css'>
@@ -11,8 +11,8 @@
     <div id='base' data-path='../'></div>
 <div id='header'>
   <div id='menu'>
-    <a href='../extra/README.md.html' title='Yatta'>
-      Yatta
+    <a href='../extra/README.md.html' title='Yatta!'>
+      Yatta!
     </a>
     &raquo;
     <a href='../alphabetical_index.html' title='Index'>
@@ -35,7 +35,7 @@
       </table>
       <h2>Overview</h2>
       <div class='docstring'>
-  <p>The Iwc Connector adds support for the Inter-Widget-Communication protocol that is used in the Role-SDK.</p>
+  <p>The Iwc Connector adds support for the Inter-Widget-Communication protocol that is used in the Role-SDK.</p><p>You must not use your own IWC client when using this connector!!</p>
 </div>
 <div class='tags'>
   <h3>See also:</h3>
@@ -52,12 +52,37 @@
       <ul class='summary'>
   <li>
     <span class='signature'>
+      <a href='#setIwcHandler-dynamic'>
+        #
+(void)
+<b>setIwcHandler</b><span>(f)</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Set your own IWC handler. 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#sendIwcIntent-dynamic'>
+        ~
+(void)
+<b>sendIwcIntent intent</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Helper for sending iwc intents. 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
       <a href='#send-dynamic'>
         #
 (void)
 <b>send</b><span>(o)</span>
       </a>
     </span>
+    <span class='note private title'>Private</span>
     <span class='desc'>
       This function is called whenever an operation was executed. 
     </span>
@@ -70,20 +95,9 @@
 <b>receive</b><span>(o)</span>
       </a>
     </span>
+    <span class='note private title'>Private</span>
     <span class='desc'>
       This function is called whenever an operation was received from another peer. 
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#sendIwcIntent-dynamic'>
-        #
-(void)
-<b>sendIwcIntent</b><span>(action_name, content)</span>
-      </a>
-    </span>
-    <span class='desc'>
-      Helper for sending iwc intents. 
     </span>
   </li>
 </ul>
@@ -103,7 +117,7 @@
       <span class='name'>engine</span>
       <span class='type'>
         (
-          <tt><a href='../class/Engine.html'>Engine</a></tt>
+          <tt>Engine</tt>
         )
       </span>
       &mdash;
@@ -113,7 +127,7 @@
       <span class='name'>HB</span>
       <span class='type'>
         (
-          <tt><a href='../class/HistoryBuffer.html'>HistoryBuffer</a></tt>
+          <tt>HistoryBuffer</tt>
         )
       </span>
     </li>
@@ -131,7 +145,7 @@
       <span class='name'>yatta</span>
       <span class='type'>
         (
-          <tt>Yatta</tt>
+          <tt>YattaFramework</tt>
         )
       </span>
       &mdash;
@@ -144,68 +158,65 @@
       <h2>Instance Method Details</h2>
       <div class='methods'>
   <div class='method_details'>
-    <p class='signature' id='send-dynamic'>
+    <p class='signature' id='setIwcHandler-dynamic'>
       #
 (void)
-<b>send</b><span>(o)</span>
+<b>setIwcHandler</b><span>(f)</span>
       <br>
     </p>
     <div class='docstring'>
-  <p>This function is called whenever an operation was executed.</p>
+  <p>Set your own IWC handler. It will be called after Yatta consumed the
+data from the received intent.</p>
 </div>
 <div class='tags'>
-  <h3>Parameters:</h3>
-  <ul class='param'>
-    <li>
-      <span class='name'>o</span>
-      <span class='type'>
-        (
-          <tt><a href='../class/Operation.html'>Operation</a></tt>
-        )
-      </span>
-      &mdash;
-      <span class='desc'>The operation that was executed. </span>
-    </li>
-  </ul>
-</div>
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='receive-dynamic'>
-      #
-(void)
-<b>receive</b><span>(o)</span>
-      <br>
-    </p>
-    <div class='docstring'>
-  <p>This function is called whenever an operation was received from another peer.</p>
-</div>
-<div class='tags'>
-  <h3>Parameters:</h3>
-  <ul class='param'>
-    <li>
-      <span class='name'>o</span>
-      <span class='type'>
-        (
-          <tt><a href='../class/Operation.html'>Operation</a></tt>
-        )
-      </span>
-      &mdash;
-      <span class='desc'>The operation that was received. </span>
-    </li>
-  </ul>
 </div>
   </div>
   <div class='method_details'>
     <p class='signature' id='sendIwcIntent-dynamic'>
-      #
+      ~
 (void)
-<b>sendIwcIntent</b><span>(action_name, content)</span>
+<b>sendIwcIntent intent</b><span>()</span>
+      <br>
+      ~
+(void)
+<b>sendIwcIntent action_name, content</b><span>()</span>
       <br>
     </p>
     <div class='docstring'>
   <p>Helper for sending iwc intents.</p>
 </div>
 <div class='tags'>
+  <div class='overloads'>
+    <h3>Overloads:</h3>
+    <div class='overload'>
+      <p class='signature'>
+        ~
+(void)
+<b>sendIwcIntent intent</b><span>()</span>
+      </p>
+      <div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>intent</span>
+      <span class='type'>
+        (
+          <tt>Object</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>The intent object. </span>
+    </li>
+  </ul>
+</div>
+    </div>
+    <div class='overload'>
+      <p class='signature'>
+        ~
+(void)
+<b>sendIwcIntent action_name, content</b><span>()</span>
+      </p>
+      <div class='tags'>
   <h3>Parameters:</h3>
   <ul class='param'>
     <li>
@@ -230,11 +241,68 @@
     </li>
   </ul>
 </div>
+    </div>
+  </div>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='send-dynamic'>
+      #
+(void)
+<b>send</b><span>(o)</span>
+      <span class='note private'>Private</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>This function is called whenever an operation was executed.</p>
+</div>
+<div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>o</span>
+      <span class='type'>
+        (
+          <tt>Operation</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>The operation that was executed. </span>
+    </li>
+  </ul>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='receive-dynamic'>
+      #
+(void)
+<b>receive</b><span>(o)</span>
+      <span class='note private'>Private</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>This function is called whenever an operation was received from another peer.</p>
+</div>
+<div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>o</span>
+      <span class='type'>
+        (
+          <tt>Operation</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>The operation that was received. </span>
+    </li>
+  </ul>
+</div>
   </div>
 </div>
     </div>
     <div id='footer'>
-  August 12, 14 06:33:02 by
+  August 24, 14 01:51:08 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

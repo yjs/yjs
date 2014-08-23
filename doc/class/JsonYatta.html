@@ -2,7 +2,7 @@
 <html>
   <head>
   <meta charset='UTF-8'>
-  <title>CoffeeScript API Documentation</title>
+  <title>Yatta! API</title>
   <script src='../javascript/application.js'></script>
   <script src='../javascript/search.js'></script>
   <link rel='stylesheet' href='../stylesheets/application.css' type='text/css'>
@@ -11,8 +11,8 @@
     <div id='base' data-path='../'></div>
 <div id='header'>
   <div id='menu'>
-    <a href='../extra/README.md.html' title='Yatta'>
-      Yatta
+    <a href='../extra/README.md.html' title='Yatta!'>
+      Yatta!
     </a>
     &raquo;
     <a href='../alphabetical_index.html' title='Index'>
@@ -49,22 +49,10 @@ Known values that are supported:</p><ul>
       <ul class='summary'>
   <li>
     <span class='signature'>
-      <a href='#getRootElement-dynamic'>
+      <a href='#getSharedObject-dynamic'>
         #
-(void)
-<b>getRootElement</b><span>()</span>
-      </a>
-    </span>
-    <span class='desc'>
-      @result JsonType 
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#getEngine-dynamic'>
-        #
-(void)
-<b>getEngine</b><span>()</span>
+(?)
+<b>getSharedObject</b><span>()</span>
       </a>
     </span>
     <span class='desc'>
@@ -118,10 +106,43 @@ Known values that are supported:</p><ul>
   </li>
   <li>
     <span class='signature'>
+      <a href='#toJson-dynamic'>
+        #
+(void)
+<b>toJson</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
       <a href='#val-dynamic'>
         #
 (void)
 <b>val</b><span>(name, content, mutable)</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#on-dynamic'>
+        #
+(void)
+<b>on</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#deleteListener-dynamic'>
+        #
+(void)
+<b>deleteListener</b><span>()</span>
       </a>
     </span>
     <span class='desc'>
@@ -167,30 +188,22 @@ Known values that are supported:</p><ul>
       <h2>Instance Method Details</h2>
       <div class='methods'>
   <div class='method_details'>
-    <p class='signature' id='getRootElement-dynamic'>
+    <p class='signature' id='getSharedObject-dynamic'>
       #
-(void)
-<b>getRootElement</b><span>()</span>
-      <br>
-    </p>
-    <div class='docstring'>
-  <p>@result JsonType</p>
-</div>
-<div class='tags'>
-</div>
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='getEngine-dynamic'>
-      #
-(void)
-<b>getEngine</b><span>()</span>
+(?)
+<b>getSharedObject</b><span>()</span>
       <br>
     </p>
     <div class='tags'>
-  <h3>See also:</h3>
-  <ul class='see'>
+  <h3>Returns:</h3>
+  <ul class='return'>
     <li>
-      <a href='../class/Engine.html'>Engine</a>
+      <span class='type'></span>
+      (
+        <tt>?</tt>
+      )
+      &mdash;
+      <span class='desc'>JsonType </span>
     </li>
   </ul>
 </div>
@@ -219,7 +232,7 @@ Known values that are supported:</p><ul>
   <h3>See also:</h3>
   <ul class='see'>
     <li>
-      <a href='../class/HistoryBuffer.html'>HistoryBuffer</a>
+      <a href='HistoryBuffer'>HistoryBuffer</a>
     </li>
   </ul>
 </div>
@@ -256,6 +269,22 @@ JsonYatta was initialized (Depending on the HistoryBuffer implementation).</p>
 </div>
   </div>
   <div class='method_details'>
+    <p class='signature' id='toJson-dynamic'>
+      #
+(void)
+<b>toJson</b><span>()</span>
+      <br>
+    </p>
+    <div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='JsonType.toJson'>JsonType.toJson</a>
+    </li>
+  </ul>
+</div>
+  </div>
+  <div class='method_details'>
     <p class='signature' id='val-dynamic'>
       #
 (void)
@@ -271,10 +300,42 @@ JsonYatta was initialized (Depending on the HistoryBuffer implementation).</p>
   </ul>
 </div>
   </div>
+  <div class='method_details'>
+    <p class='signature' id='on-dynamic'>
+      #
+(void)
+<b>on</b><span>()</span>
+      <br>
+    </p>
+    <div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='Operation.on'>Operation.on</a>
+    </li>
+  </ul>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='deleteListener-dynamic'>
+      #
+(void)
+<b>deleteListener</b><span>()</span>
+      <br>
+    </p>
+    <div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='Operation.deleteListener'>Operation.deleteListener</a>
+    </li>
+  </ul>
+</div>
+  </div>
 </div>
     </div>
     <div id='footer'>
-  August 12, 14 06:33:02 by
+  August 23, 14 21:18:25 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

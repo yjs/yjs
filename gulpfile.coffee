@@ -16,13 +16,13 @@ run = require 'gulp-run'
 ljs = require 'gulp-ljs'
 
 
-gulp.task 'default', ['build', 'test', 'literate', 'lib']
+gulp.task 'default', ['build', 'test', 'literate', 'lib', 'codo']
 gulp.task 'build', ['lint', 'browser']
 
 files =
   lib : ['./lib/**/*.coffee']
   build : ['./build/**']
-  browser : ['./lib/Connectors/**/*', './lib/Frameworks/**/*', './lib/index.coffee']
+  browser : ['./lib/{Connectors,Frameworks}/**/*']
   test : ['./test/**/*_test.coffee']
   gulp : ['./gulpfile.coffee']
   examples : ['./examples/**/*.js']
@@ -36,7 +36,6 @@ gulp.task 'lib', ->
   gulp.src files.lib
     .pipe sourcemaps.init()
     .pipe coffee()
-    .pipe uglify()
     .pipe sourcemaps.write './'
     .pipe gulp.dest 'build/node/'
     .pipe gulpif '!**/', git.add({args : "-A"})
@@ -103,6 +102,10 @@ gulp.task 'literate', ->
 
 gulp.task 'upload', [], ()->
   run('scp -r ./build ./examples jahns@manet.informatik.rwth-aachen.de:/home/jahns/public_html/collaborative_preview/').exec()
+
+gulp.task 'codo', [], ()->
+  command = 'codo -o "./doc" --name "Yatta!" --readme "README.md" --undocumented false --private true --title "Yatta! API" ./lib - LICENSE.txt ./extras/*'
+  run(command).exec()
 
 gulp.task 'clean', ->
   gulp.src './build/{browser,test,node}/**/*.{js,map}', { read: false }

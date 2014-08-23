@@ -6,6 +6,7 @@ module.exports = (HB)->
   parser = basic_types.parser
 
   #
+  # @nodoc
   # Manages map like objects. E.g. Json-Type and XML attributes.
   #
   class MapManager extends types.Operation
@@ -42,6 +43,7 @@ module.exports = (HB)->
         result
 
   #
+  # @nodoc
   # When a new property in a map manager is created, then the uids of the inserted Operations
   # must be unique (think about concurrent operations). Therefore only an AddName operation is allowed to
   # add a property in a MapManager. If two AddName operations on the same MapManager name happen concurrently
@@ -102,6 +104,7 @@ module.exports = (HB)->
     new AddName uid, map_manager, name
 
   #
+  # @nodoc
   # Manages a list of Insert-type operations.
   #
   class ListManager extends types.Insert
@@ -123,6 +126,10 @@ module.exports = (HB)->
         @end.execute()
       super uid, prev, next, origin
 
+    #
+    # @private
+    # @see Operation.execute
+    #
     execute: ()->
       if @validateSavedOperations()
         @beginning.setParent @
@@ -170,11 +177,12 @@ module.exports = (HB)->
       o
 
   #
+  # @nodoc
   # Adds support for replace. The ReplaceManager manages Replaceable operations.
   # Each Replaceable holds a value that is now replaceable.
   #
-  # The Word-type has implemented support for replace
-  # @see Word
+  # The WordType-type has implemented support for replace
+  # @see WordType
   #
   class ReplaceManager extends ListManager
     #
@@ -214,8 +222,9 @@ module.exports = (HB)->
         @deleteListener 'addProperty', addPropertyListener
       @on 'insert', addPropertyListener
       super parent
+      
     #
-    # Get the value of this Word
+    # Get the value of this WordType
     # @return {String}
     #
     val: ()->
@@ -256,6 +265,7 @@ module.exports = (HB)->
 
 
   #
+  # @nodoc
   # The ReplaceManager manages Replaceables.
   # @see ReplaceManager
   #
@@ -287,7 +297,7 @@ module.exports = (HB)->
 
     #
     # If possible set the replace manager in the content.
-    # @see Word.setReplaceManager
+    # @see WordType.setReplaceManager
     #
     execute: ()->
       if not @validateSavedOperations()

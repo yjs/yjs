@@ -4,14 +4,17 @@ module.exports = (HB)->
   execution_listener = []
 
   #
+  # @private
+  # @abstract
+  # @nodoc
   # A generic interface to operations.
   #
   # An operation has the following methods:
-  # _encode: encodes an operation (needed only if instance of this operation is sent).
-  # execute: execute the effects of this operations. Good examples are Insert-type and AddName-type
-  # val: in the case that the operation holds a value
+  # * _encode: encodes an operation (needed only if instance of this operation is sent).
+  # * execute: execute the effects of this operations. Good examples are Insert-type and AddName-type
+  # * val: in the case that the operation holds a value
   #
-  # Furthermore an encodable operation has a parser.
+  # Furthermore an encodable operation has a parser. We extend the parser object in order to parse encoded operations.
   #
   class Operation
 
@@ -40,6 +43,16 @@ module.exports = (HB)->
         @event_listeners[e] ?= []
         @event_listeners[e].push f
 
+    #
+    # Deletes a function from an event / list of events.
+    # @see Operation.on
+    #
+    # @overload deleteListener(event, f)
+    #   @param event {String} An event name
+    #   @param f     {Function} The function that you want to delete from these events
+    # @overload deleteListener(events, f)
+    #   @param events {Array<String>} A list of event names
+    #   @param f      {Function} The function that you want to delete from these events.
     deleteListener: (events, f)->
       if events.constructor isnt [].constructor
         events = [events]
@@ -148,6 +161,7 @@ module.exports = (HB)->
 
 
   #
+  # @nodoc
   # A simple Delete-type operation that deletes an Insert-type operation.
   #
   class Delete extends Operation
@@ -194,6 +208,7 @@ module.exports = (HB)->
     new Delete uid, deletes_uid
 
   #
+  # @nodoc
   # A simple insert-type operation.
   #
   # An insert operation is always positioned between two other insert operations.
@@ -350,7 +365,9 @@ module.exports = (HB)->
           position++
         prev = prev.prev_cl
       position
+
   #
+  # @nodoc
   # Defines an object that is cannot be changed. You can use this to set an immutable string, or a number.
   #
   class ImmutableObject extends Insert
@@ -396,6 +413,7 @@ module.exports = (HB)->
     new ImmutableObject uid, content, prev, next, origin
 
   #
+  # @nodoc
   # A delimiter is placed at the end and at the beginning of the associative lists.
   # This is necessary in order to have a beginning and an end even if the content
   # of the Engine is empty.

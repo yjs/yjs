@@ -1,8 +1,8 @@
 
 # ![Yatta!](./extras/imgs/Yatta_logo.png?raw=true)
 
-A real-time web framework that manages concurrency control for arbitrary data structures.
-Yatta! provides similar functionality as [ShareJs](https://github.com/share/ShareJS) and [OpenCoweb](https://github.com/opencoweb/coweb)
+A Real-Time web framework that manages concurrency control for arbitrary data structures.
+Yatta! provides similar functionality as [ShareJs](https://github.com/share/ShareJS) and [OpenCoweb](https://github.com/opencoweb/coweb),
 but does not require you to understand how the internals work. The predefined data structures provide a simple API to access your shared data structures.
 
 Predefined data structures:
@@ -12,20 +12,35 @@ Predefined data structures:
 
 Unlike other frameworks, Yatta! supports P2P message propagation and is not bound to a specific communication protocol.
 
-It is possible to add any communication protocol to yatta. Currently it supports:
-* [PeerJs](http://peerjs.com/) - WebRTC library
+It is possible to add any communication protocol to Yatta. Currently it supports:
+* [PeerJs](http://peerjs.com/) - A WebRTC Framework
 * [IWC](http://dbis.rwth-aachen.de/cms/projects/the-xmpp-experience#interwidget-communication) - Inter-widget Communication
 
-# Use it!
-Either clone this git repository or install this package with [bower](http://bower.io/).
+## Use it!
+The [examples](./examples/) provide an excellent starting point for beginners. Also the [API Documentation](http://dadamonad.github.io/Yatta/doc/) could prove to be very helpful.
 
+Either clone this git repository, install it with [bower](http://bower.io/), or install it with [npm](https://www.npmjs.org/package/yatta).
+
+### Bower
 ```
 bower install Yatta
 ```
+Then you include the libraries directly from the installation folder.
 
-Use the [examples](./examples/) to struggle your way through this mess..
+### Npm
+```
+npm install yatta --save
+```
 
-# About
+And use it like this with *npm*:
+```
+Y = require("yatta");
+Y.createPeerJsConnector({key: 'xxx'}, function(Connector, user_id){
+  yatta = new Y.JsonFramework(user_id, Connector);
+```
+
+
+## About
 Find out more about the concurrent editing problem here
 [Cooperation, Concurrency, Conflicts, and Convergence](http://opencoweb.org/ocwdocs/intro/openg.html) and here
 [Operational Transformation (OT)](http://en.wikipedia.org/wiki/Operational_transformation)
@@ -43,7 +58,7 @@ This means that my approach beats all OT time complexities. Furthermore, Yatta h
 show that it is never violated.
 
 Another advantage of Yata is that propagated messages are very small.
-Background: In real-time P2P OT algorithms you have to send a state-vector with each message that defines the state of the History Buffer
+Background: In Real-Time P2P OT algorithms you have to send a state-vector with each message that defines the state of the History Buffer
 on which the operation was created. This is not necessary in Yata.
 
 The downside of this approach is that the History Buffer holds at least as many operations as there are characters in the document.
@@ -55,18 +70,20 @@ So, how did I come up with the name for the implementation (Yatta! is not Yata)?
 Yatta! means "I did it!" in Japanese. You scream it when you accomplish something (for proper application I refer to the Yatta-man in [Heroes](http://heroeswiki.com/Yatta!)).
 There is also this awesome video on the Internet that will change your life [Yatta](https://www.youtube.com/watch?v=kL5DDSglM_s).
 
-# Status
+## Status
 Yatta! is still in an early development phase. Don't expect that everything is working fine.
-But I would become really motivated if you give me some feedback ([github](https://github.com/DadaMonad/Yatta/issues) or mail).
+But I would become really motivated if you gave me some feedback :) ([github](https://github.com/DadaMonad/Yatta/issues)).
 
-## Current Issues
+### Current Issues
+Currently, I don't perform Garbage Collection. Therefore, the space requirement will never decrease.
 * Garbage Collection
 * XML support
 
-# Support
+
+## Support
 Please report any issues to the [Github issue page](https://github.com/DadaMonad/Yatta/issues)!
 
-# License
+## License
 Yatta! is licensed under the [MIT License](./LICENSE.txt).
 
 <kevin.jahns@rwth-aachen.de>

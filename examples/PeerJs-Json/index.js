@@ -2,11 +2,17 @@
 /**
  ## PeerJs + JSON Example
  Here, I will give a short overview on how to enable collaborative json with the
- [PeerJs](http://peerjs.com/) Connector and the JsonYatta Framework.
+ [PeerJs](http://peerjs.com/) Connector and the JsonYatta Framework. Open
+ [index.html](http://dadamonad.github.io/Yatta/examples/PeerJs-Json/index.html) in your Browser and
+ use the console to explore Yatta!
+
+ [PeerJs](http://peerjs.com) is a Framework that enables you to connect to other peers. You just need the
+ user-id of the peer (browser/client). And then you can connect to it.
+
  First you have to include the following libraries in your html file:
  ```
 <script src="http://cdn.peerjs.com/0.3/peer.js"></script>
-<script src="../../build/browser/Frameworks/JsonYatta.js"></script>
+<script src="../../build/browser/Frameworks/JsonFramework.js"></script>
 <script src="../../build/browser/Connectors/PeerJsConnector.js"></script>
 <script src="./index.js"></script>
  ```
@@ -21,7 +27,8 @@ var yatta, yattaHandler;
 Y.createPeerJsConnector({key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
 
 /**
-You can also specify your own user_id with peerjs. But you have to make sure that no other client has this user_id.
+You can also specify your own user_id with peerjs.
+But you have to make sure that no other client associated to your API-key has the same user_id.
 */
 // Y.createPeerJsConnector("unique_id", {key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
 
@@ -31,7 +38,7 @@ You can also specify your own user_id with peerjs. But you have to make sure tha
     yatta is the shared json object. If you change something on this object,
     it will be instantly shared with all the other collaborators.
   */
-  yatta = new Y.JsonYatta(user_id, Connector);
+  yatta = new Y.JsonFramework(user_id, Connector);
 
   /**
     Next, you may want to connect to another peer. Therefore you have to receive his
@@ -39,8 +46,11 @@ You can also specify your own user_id with peerjs. But you have to make sure tha
     will automatically connect to them too.
 
     Transmitting the user_id is your job.
-    See the [TextEditing](../TextEditing/) an example on how to do that with urls.
+    See [TextEditing](../../examples/TextEditing/) for a nice example
+    on how to do that with urls.
   */
+    console.log("This is your user-id: "+user_id);
+
   // yatta.connector.connectToPeer(peer_user_id);
 
   /**
@@ -63,6 +73,13 @@ You can also specify your own user_id with peerjs. But you have to make sure tha
   yatta.val('mutable_string').insertText(2,"XXX"); // position, string
   yatta.val('mutable_string').deleteText(0,1); // position, deletion length
   console.log(yatta.val('mutable_string').val() === "eXXXxt"); // true
+
+  /**
+   Did you recognize that we have to use anoter `.val()` for mutable strings?
+   Thats because yatta.val('mutable_string') is of type WordType.
+   Since we implemented `toString` in this for WordType's, you can use it like a string:
+   */
+  console.log(""+yatta.val("mutable_string") === "eXXXxt") // true, concatenating it with a string will implicitly invoke toString()
 
   /**
     You can omit the mutable - parameter. In that case the default will be used.
@@ -98,14 +115,12 @@ You can also specify your own user_id with peerjs. But you have to make sure tha
     ### Check Types
     Certainly you want to check types!
 
-    Here, we create a function that parses an Yatta type to a string.
-    You find all the types that Yatta provides in `yatta.types`.
+    Here, we create a function that parses a Yatta type to a string.
   */
   function show(o){
-    var t = yatta.types
-    if (o instanceof t.JsonType){
+    if (o.type === "JsonType"){
       return JSON.stringify(o.toJson());
-    } else if (o instanceof t.Word) {
+    } else if (o.type === "WordType") {
       return o.val();
     } else if (o.constructor === {}.constructor) { // It's an Object
       return JSON.stringify(o);

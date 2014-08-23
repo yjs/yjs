@@ -1,2 +1,206 @@
-(function(){var t,e={}.hasOwnProperty,r=function(t,r){function n(){this.constructor=t}for(var o in r)e.call(r,o)&&(t[o]=r[o]);return n.prototype=r.prototype,t.prototype=new n,t.__super__=r.prototype,t},n=[].slice;t=require("./TextTypes"),module.exports=function(e){var o,u,a,i,c;return i=t(e),c=i.types,a=i.parser,u=function(t){var e;return new(e=function(){function t(e){var r,n,a,i;i=e.map,a=function(r,n){return Object.defineProperty(t.prototype,r,{get:function(){var t;return t=n.val(),t instanceof o?u(t):t instanceof c.ImmutableObject?t.val():t},set:function(t){var n,o,u,a;if(u=e.val(r),t.constructor==={}.constructor&&u instanceof c.Operation){a=[];for(n in t)o=t[n],a.push(u.val(n,o,"immutable"));return a}return e.val(r,t,"immutable")},enumerable:!0,configurable:!1})};for(r in i)n=i[r],a(r,n)}return t}())(t)},o=function(t){function o(t,e,r){var n,u;if(o.__super__.constructor.call(this,t),null!=e){if("object"!=typeof e)throw new Error("The initial value of JsonTypes must be of type Object! (current type: "+typeof e+")");for(n in e)u=e[n],this.val(n,u,r)}}return r(o,t),o.prototype.toJson=function(){var t,e,r,n;n=this.val(),t={};for(e in n)if(r=n[e],r.constructor==={}.constructor)t[e]=this.val(e).toJson();else if(r instanceof c.Operation){for(;r instanceof c.Operation;)r=r.val();t[e]=r}else t[e]=r;return t},o.prototype.setReplaceManager=function(t){return this.parent=t.parent,this.on(["change","addProperty"],function(){var e;return(e=t.parent).forwardEvent.apply(e,[this].concat(n.call(arguments)))})},o.prototype.getParent=function(){return this.parent},o.prototype.mutable_default=!0,o.prototype.setMutableDefault=function(t){if(t===!0||"mutable"===t)o.prototype.mutable_default=!0;else{if(t!==!1&&"immutable"!==t)throw new Error('Set mutable either "mutable" or "immutable"!');o.prototype.mutable_default=!1}return"OK"},o.prototype.val=function(t,r,n){var u,a,i,l,p;if("object"==typeof t){for(i in t)a=t[i],this.val(i,a,r);return this}if(null!=t&&null!=r){if(n=null!=n?n===!0||"mutable"===n?!0:!1:this.mutable_default,"function"==typeof r)return this;if(n&&"number"!=typeof r||r.constructor===Object){if("string"==typeof r)return p=e.addOperation(new c.Word(void 0)).execute(),p.insertText(0,r),o.__super__.val.call(this,t,p);if(r.constructor===Object)return u=e.addOperation(new o(void 0,r,n)).execute(),o.__super__.val.call(this,t,u);throw new Error("You must not set "+typeof r+"-types in collaborative Json-objects!")}return l=e.addOperation(new c.ImmutableObject(void 0,r)).execute(),o.__super__.val.call(this,t,l)}return o.__super__.val.call(this,t,r)},Object.defineProperty(o.prototype,"value",{get:function(){return u(this)},set:function(t){var e,r,n;if(t.constructor==={}.constructor){n=[];for(e in t)r=t[e],n.push(this.val(e,r,"immutable"));return n}throw new Error("You must only set Object values!")}}),o.prototype._encode=function(){return{type:"JsonType",uid:this.getUid()}},o}(c.MapManager),a.JsonType=function(t){var e;return e=t.uid,new o(e)},c.JsonType=o,i}}).call(this);
+(function() {
+  var text_types_uninitialized,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    __slice = [].slice;
+
+  text_types_uninitialized = require("./TextTypes");
+
+  module.exports = function(HB) {
+    var JsonType, createJsonTypeWrapper, parser, text_types, types;
+    text_types = text_types_uninitialized(HB);
+    types = text_types.types;
+    parser = text_types.parser;
+    createJsonTypeWrapper = function(_jsonType) {
+      var JsonTypeWrapper;
+      JsonTypeWrapper = (function() {
+        function JsonTypeWrapper(jsonType) {
+          var name, obj, _fn, _ref;
+          _ref = jsonType.map;
+          _fn = function(name, obj) {
+            return Object.defineProperty(JsonTypeWrapper.prototype, name, {
+              get: function() {
+                var x;
+                x = obj.val();
+                if (x instanceof JsonType) {
+                  return createJsonTypeWrapper(x);
+                } else if (x instanceof types.ImmutableObject) {
+                  return x.val();
+                } else {
+                  return x;
+                }
+              },
+              set: function(o) {
+                var o_name, o_obj, overwrite, _results;
+                overwrite = jsonType.val(name);
+                if (o.constructor === {}.constructor && overwrite instanceof types.Operation) {
+                  _results = [];
+                  for (o_name in o) {
+                    o_obj = o[o_name];
+                    _results.push(overwrite.val(o_name, o_obj, 'immutable'));
+                  }
+                  return _results;
+                } else {
+                  return jsonType.val(name, o, 'immutable');
+                }
+              },
+              enumerable: true,
+              configurable: false
+            });
+          };
+          for (name in _ref) {
+            obj = _ref[name];
+            _fn(name, obj);
+          }
+        }
+
+        return JsonTypeWrapper;
+
+      })();
+      return new JsonTypeWrapper(_jsonType);
+    };
+    JsonType = (function(_super) {
+      __extends(JsonType, _super);
+
+      function JsonType(uid, initial_value, mutable) {
+        var name, o;
+        JsonType.__super__.constructor.call(this, uid);
+        if (initial_value != null) {
+          if (typeof initial_value !== "object") {
+            throw new Error("The initial value of JsonTypes must be of type Object! (current type: " + (typeof initial_value) + ")");
+          }
+          for (name in initial_value) {
+            o = initial_value[name];
+            this.val(name, o, mutable);
+          }
+        }
+      }
+
+      JsonType.prototype.type = "JsonType";
+
+      JsonType.prototype.toJson = function() {
+        var json, name, o, val;
+        val = this.val();
+        json = {};
+        for (name in val) {
+          o = val[name];
+          if (o.constructor === {}.constructor) {
+            json[name] = this.val(name).toJson();
+          } else if (o instanceof types.Operation) {
+            while (o instanceof types.Operation) {
+              o = o.val();
+            }
+            json[name] = o;
+          } else {
+            json[name] = o;
+          }
+        }
+        return json;
+      };
+
+      JsonType.prototype.setReplaceManager = function(rm) {
+        this.parent = rm.parent;
+        return this.on(['change', 'addProperty'], function() {
+          var _ref;
+          return (_ref = rm.parent).forwardEvent.apply(_ref, [this].concat(__slice.call(arguments)));
+        });
+      };
+
+      JsonType.prototype.getParent = function() {
+        return this.parent;
+      };
+
+      JsonType.prototype.mutable_default = true;
+
+      JsonType.prototype.setMutableDefault = function(mutable) {
+        if (mutable === true || mutable === 'mutable') {
+          JsonType.prototype.mutable_default = true;
+        } else if (mutable === false || mutable === 'immutable') {
+          JsonType.prototype.mutable_default = false;
+        } else {
+          throw new Error('Set mutable either "mutable" or "immutable"!');
+        }
+        return 'OK';
+      };
+
+      JsonType.prototype.val = function(name, content, mutable) {
+        var json, o, o_name, obj, word;
+        if (typeof name === 'object') {
+          for (o_name in name) {
+            o = name[o_name];
+            this.val(o_name, o, content);
+          }
+          return this;
+        } else if ((name != null) && (content != null)) {
+          if (mutable != null) {
+            if (mutable === true || mutable === 'mutable') {
+              mutable = true;
+            } else {
+              mutable = false;
+            }
+          } else {
+            mutable = this.mutable_default;
+          }
+          if (typeof content === 'function') {
+            return this;
+          } else if (((!mutable) || typeof content === 'number') && content.constructor !== Object) {
+            obj = HB.addOperation(new types.ImmutableObject(void 0, content)).execute();
+            return JsonType.__super__.val.call(this, name, obj);
+          } else {
+            if (typeof content === 'string') {
+              word = HB.addOperation(new types.WordType(void 0)).execute();
+              word.insertText(0, content);
+              return JsonType.__super__.val.call(this, name, word);
+            } else if (content.constructor === Object) {
+              json = HB.addOperation(new JsonType(void 0, content, mutable)).execute();
+              return JsonType.__super__.val.call(this, name, json);
+            } else {
+              throw new Error("You must not set " + (typeof content) + "-types in collaborative Json-objects!");
+            }
+          }
+        } else {
+          return JsonType.__super__.val.call(this, name, content);
+        }
+      };
+
+      Object.defineProperty(JsonType.prototype, 'value', {
+        get: function() {
+          return createJsonTypeWrapper(this);
+        },
+        set: function(o) {
+          var o_name, o_obj, _results;
+          if (o.constructor === {}.constructor) {
+            _results = [];
+            for (o_name in o) {
+              o_obj = o[o_name];
+              _results.push(this.val(o_name, o_obj, 'immutable'));
+            }
+            return _results;
+          } else {
+            throw new Error("You must only set Object values!");
+          }
+        }
+      });
+
+      JsonType.prototype._encode = function() {
+        return {
+          'type': "JsonType",
+          'uid': this.getUid()
+        };
+      };
+
+      return JsonType;
+
+    })(types.MapManager);
+    parser['JsonType'] = function(json) {
+      var uid;
+      uid = json['uid'];
+      return new JsonType(uid);
+    };
+    types['JsonType'] = JsonType;
+    return text_types;
+  };
+
+}).call(this);
+
 //# sourceMappingURL=../Types/JsonTypes.js.map

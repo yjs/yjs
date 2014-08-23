@@ -14,7 +14,7 @@ Test = require "./TestSuite"
 
 class TextTest extends Test
   makeNewUser: (user, conn)->
-    new Y.TextYatta user, conn
+    new Y.TextFramework user, conn
 
   getRandomRoot: (user_num)->
     @users[user_num].getSharedObject()
@@ -23,7 +23,7 @@ class TextTest extends Test
     @users[user_num].val()
 
 
-describe "TextYatta", ->
+describe "TextFramework", ->
   beforeEach (done)->
     @timeout 50000
     @yTest = new TextTest()

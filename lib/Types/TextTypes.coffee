@@ -6,6 +6,7 @@ module.exports = (HB)->
   parser = structured_types.parser
 
   #
+  # @nodoc
   # At the moment TextDelete type equals the Delete type in BasicTypes.
   # @see BasicTypes.Delete
   #
@@ -13,7 +14,8 @@ module.exports = (HB)->
   parser["TextDelete"] = parser["Delete"]
 
   #
-  #  Extends the basic Insert type to an operation that holds a text value
+  # @nodoc
+  # Extends the basic Insert type to an operation that holds a text value
   #
   class TextInsert extends types.Insert
     #
@@ -72,27 +74,46 @@ module.exports = (HB)->
     new TextInsert content, uid, prev, next, origin
 
   #
-  # Handles a Text-like data structures with support for insertText/deleteText at a word-position.
+  # Handles a WordType-like data structures with support for insertText/deleteText at a word-position.
+  # @note Currently, only Text is supported!
   #
-  class Word extends types.ListManager
+  class WordType extends types.ListManager
 
     #
+    # @private
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     #
     constructor: (uid, beginning, end, prev, next, origin)->
       super uid, beginning, end, prev, next, origin
 
     #
-    # Inserts a string into the word
+    # Identifies this class.
+    # Use it to check whether this is a word-type or something else.
+    #
+    # @example
+    #   var x = yatta.val('unknown')
+    #   if (x.type === "WordType") {
+    #     console.log JSON.stringify(x.toJson())
+    #   }
+    #
+    type: "WordType"
+
+    #
+    # Inserts a string into the word.
+    #
+    # @return {WordType} This WordType object.
     #
     insertText: (position, content)->
       o = @getOperationByPosition position
       for c in content
         op = new TextInsert c, undefined, o.prev_cl, o
         HB.addOperation(op).execute()
+      @
 
     #
     # Deletes a part of the word.
+    #
+    # @return {WordType} This WordType object
     #
     deleteText: (position, length)->
       o = @getOperationByPosition position
@@ -106,25 +127,28 @@ module.exports = (HB)->
         while not (o instanceof types.Delimiter) and o.isDeleted()
           o = o.next_cl
         delete_ops.push d._encode()
-      delete_ops
+      @
 
     #
     # Replace the content of this word with another one. Concurrent replacements are not merged!
     # Only one of the replacements will be used.
     #
-    # Can only be used if the ReplaceManager was set!
-    # @see Word.setReplaceManager
+    # @return {WordType} Returns the new WordType object.
     #
     replaceText: (text)->
+      # Can only be used if the ReplaceManager was set!
+      # @see WordType.setReplaceManager
       if @replace_manager?
-        word = HB.addOperation(new Word undefined).execute()
+        word = HB.addOperation(new WordType undefined).execute()
         word.insertText 0, text
         @replace_manager.replace(word)
+        word
       else
         throw new Error "This type is currently not maintained by a ReplaceManager!"
 
     #
-    # @returns [Json] A Json object.
+    # Get the String-representation of this word.
+    # @return {String} The String-representation of this object.
     #
     val: ()->
       c = for o in @toArray()
@@ -135,7 +159,15 @@ module.exports = (HB)->
       c.join('')
 
     #
-    # In most cases you would embed a Word in a Replaceable, wich is handled by the ReplaceManager in order
+    # Same as WordType.val
+    # @see WordType.val
+    #
+    toString: ()->
+      @val()
+
+    #
+    # @private
+    # In most cases you would embed a WordType in a Replaceable, wich is handled by the ReplaceManager in order
     # to provide replace functionality.
     #
     setReplaceManager: (op)->
@@ -145,7 +177,11 @@ module.exports = (HB)->
         @replace_manager?.callEvent 'change'
 
     #
-    # Bind this Word to a textfield.
+    # Bind this WordType to a textfield or input field.
+    #
+    # @example
+    #   var textbox = document.getElementById("textfield");
+    #   yatta.bind(textbox);
     #
     bind: (textfield)->
       word = @
@@ -250,11 +286,12 @@ module.exports = (HB)->
 
 
     #
+    # @private
     # Encode this operation in such a way that it can be parsed by remote peers.
     #
     _encode: ()->
       json = {
-        'type': "Word"
+        'type': "WordType"
         'uid' : @getUid()
         'beginning' : @beginning.getUid()
         'end' : @end.getUid()
@@ -267,7 +304,7 @@ module.exports = (HB)->
         json["origin"] = @origin.getUid()
       json
 
-  parser['Word'] = (json)->
+  parser['WordType'] = (json)->
     {
       'uid' : uid
       'beginning' : beginning
@@ -276,11 +313,11 @@ module.exports = (HB)->
       'next': next
       'origin' : origin
     } = json
-    new Word uid, beginning, end, prev, next, origin
+    new WordType uid, beginning, end, prev, next, origin
 
   types['TextInsert'] = TextInsert
   types['TextDelete'] = TextDelete
-  types['Word'] = Word
+  types['WordType'] = WordType
   structured_types
 
 

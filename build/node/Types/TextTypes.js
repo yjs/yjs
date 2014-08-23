@@ -1,2 +1,303 @@
-(function(){var e,t={}.hasOwnProperty,n=function(e,n){function r(){this.constructor=e}for(var i in n)t.call(n,i)&&(e[i]=n[i]);return r.prototype=n.prototype,e.prototype=new r,e.__super__=n.prototype,e};e=require("./StructuredTypes"),module.exports=function(t){var r,i,o,l,u,s;return u=e(t),s=u.types,l=u.parser,r=function(e){function t(){return t.__super__.constructor.apply(this,arguments)}return n(t,e),t}(s.Delete),l.TextDelete=l.Delete,i=function(e){function t(e,n,r,i,o){if(this.content=e,null==r||null==i)throw new Error("You must define prev, and next for TextInsert-types!");t.__super__.constructor.call(this,n,r,i,o)}return n(t,e),t.prototype.getLength=function(){return this.isDeleted()?0:this.content.length},t.prototype.val=function(){return this.isDeleted()?"":this.content},t.prototype._encode=function(){var e;return e={type:"TextInsert",content:this.content,uid:this.getUid(),prev:this.prev_cl.getUid(),next:this.next_cl.getUid()},null!=this.origin&&this.origin!==this.prev_cl&&(e.origin=this.origin.getUid()),e},t}(s.Insert),l.TextInsert=function(e){var t,n,r,o,l;return t=e.content,l=e.uid,o=e.prev,n=e.next,r=e.origin,new i(t,l,o,n,r)},o=function(e){function o(e,t,n,r,i,l){o.__super__.constructor.call(this,e,t,n,r,i,l)}return n(o,e),o.prototype.insertText=function(e,n){var r,o,l,u,s,a;for(o=this.getOperationByPosition(e),a=[],u=0,s=n.length;s>u;u++)r=n[u],l=new i(r,void 0,o.prev_cl,o),a.push(t.addOperation(l).execute());return a},o.prototype.deleteText=function(e,n){var i,o,l,u,a;for(u=this.getOperationByPosition(e),o=[],l=a=0;(n>=0?n>a:a>n)&&!(u instanceof s.Delimiter);l=n>=0?++a:--a){for(i=t.addOperation(new r(void 0,u)).execute(),u=u.next_cl;!(u instanceof s.Delimiter)&&u.isDeleted();)u=u.next_cl;o.push(i._encode())}return o},o.prototype.replaceText=function(e){var n;if(null!=this.replace_manager)return n=t.addOperation(new o(void 0)).execute(),n.insertText(0,e),this.replace_manager.replace(n);throw new Error("This type is currently not maintained by a ReplaceManager!")},o.prototype.val=function(){var e,t;return e=function(){var e,n,r,i;for(r=this.toArray(),i=[],e=0,n=r.length;n>e;e++)t=r[e],i.push(null!=t.val?t.val():"");return i}.call(this),e.join("")},o.prototype.setReplaceManager=function(e){return this.saveOperation("replace_manager",e),this.validateSavedOperations(),this.on(["insert","delete"],function(e){return function(){var t;return null!=(t=e.replace_manager)?t.callEvent("change"):void 0}}(this))},o.prototype.bind=function(e){var t;return t=this,e.value=this.val(),this.on("insert",function(n,r){var i,o,l,u;return l=r.getPosition(),i=function(e){return l>=e?e:e+=1},o=i(e.selectionStart),u=i(e.selectionEnd),e.value=t.val(),e.setSelectionRange(o,u)}),this.on("delete",function(n,r){var i,o,l,u;return l=r.getPosition(),i=function(e){return l>e?e:e-=1},o=i(e.selectionStart),u=i(e.selectionEnd),e.value=t.val(),e.setSelectionRange(o,u)}),e.onkeypress=function(n){var r,i,o,l;return r=null,r=null!=n.key?32===n.charCode?" ":13===n.keyCode?"\n":n.key:String.fromCharCode(n.keyCode),r.length>0?(l=Math.min(e.selectionStart,e.selectionEnd),i=Math.abs(e.selectionEnd-e.selectionStart),t.deleteText(l,i),t.insertText(l,r),o=l+r.length,e.setSelectionRange(o,o),n.preventDefault()):n.preventDefault()},e.onpaste=function(e){return e.preventDefault()},e.oncut=function(e){return e.preventDefault()},e.onkeydown=function(n){var r,i,o,l,u;if(l=Math.min(e.selectionStart,e.selectionEnd),i=Math.abs(e.selectionEnd-e.selectionStart),null!=n.keyCode&&8===n.keyCode){if(i>0)t.deleteText(l,i),e.setSelectionRange(l,l);else if(null!=n.ctrlKey&&n.ctrlKey){for(u=e.value,o=l,r=0,l>0&&(o--,r++);o>0&&" "!==u[o]&&"\n"!==u[o];)o--,r++;t.deleteText(o,l-o),e.setSelectionRange(o,o)}else t.deleteText(l-1,1);return n.preventDefault()}return null!=n.keyCode&&46===n.keyCode?(i>0?(t.deleteText(l,i),e.setSelectionRange(l,l)):(t.deleteText(l,1),e.setSelectionRange(l,l)),n.preventDefault()):void 0}},o.prototype._encode=function(){var e;return e={type:"Word",uid:this.getUid(),beginning:this.beginning.getUid(),end:this.end.getUid()},null!=this.prev_cl&&(e.prev=this.prev_cl.getUid()),null!=this.next_cl&&(e.next=this.next_cl.getUid()),null!=this.origin&&this.origin!==this.prev_cl&&(e.origin=this.origin.getUid()),e},o}(s.ListManager),l.Word=function(e){var t,n,r,i,l,u;return u=e.uid,t=e.beginning,n=e.end,l=e.prev,r=e.next,i=e.origin,new o(u,t,n,l,r,i)},s.TextInsert=i,s.TextDelete=r,s.Word=o,u}}).call(this);
+(function() {
+  var structured_types_uninitialized,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  structured_types_uninitialized = require("./StructuredTypes");
+
+  module.exports = function(HB) {
+    var TextDelete, TextInsert, WordType, parser, structured_types, types;
+    structured_types = structured_types_uninitialized(HB);
+    types = structured_types.types;
+    parser = structured_types.parser;
+    TextDelete = (function(_super) {
+      __extends(TextDelete, _super);
+
+      function TextDelete() {
+        return TextDelete.__super__.constructor.apply(this, arguments);
+      }
+
+      return TextDelete;
+
+    })(types.Delete);
+    parser["TextDelete"] = parser["Delete"];
+    TextInsert = (function(_super) {
+      __extends(TextInsert, _super);
+
+      function TextInsert(content, uid, prev, next, origin) {
+        this.content = content;
+        if (!((prev != null) && (next != null))) {
+          throw new Error("You must define prev, and next for TextInsert-types!");
+        }
+        TextInsert.__super__.constructor.call(this, uid, prev, next, origin);
+      }
+
+      TextInsert.prototype.getLength = function() {
+        if (this.isDeleted()) {
+          return 0;
+        } else {
+          return this.content.length;
+        }
+      };
+
+      TextInsert.prototype.val = function(current_position) {
+        if (this.isDeleted()) {
+          return "";
+        } else {
+          return this.content;
+        }
+      };
+
+      TextInsert.prototype._encode = function() {
+        var json;
+        json = {
+          'type': "TextInsert",
+          'content': this.content,
+          'uid': this.getUid(),
+          'prev': this.prev_cl.getUid(),
+          'next': this.next_cl.getUid()
+        };
+        if ((this.origin != null) && this.origin !== this.prev_cl) {
+          json["origin"] = this.origin.getUid();
+        }
+        return json;
+      };
+
+      return TextInsert;
+
+    })(types.Insert);
+    parser["TextInsert"] = function(json) {
+      var content, next, origin, prev, uid;
+      content = json['content'], uid = json['uid'], prev = json['prev'], next = json['next'], origin = json['origin'];
+      return new TextInsert(content, uid, prev, next, origin);
+    };
+    WordType = (function(_super) {
+      __extends(WordType, _super);
+
+      function WordType(uid, beginning, end, prev, next, origin) {
+        WordType.__super__.constructor.call(this, uid, beginning, end, prev, next, origin);
+      }
+
+      WordType.prototype.type = "WordType";
+
+      WordType.prototype.insertText = function(position, content) {
+        var c, o, op, _i, _len;
+        o = this.getOperationByPosition(position);
+        for (_i = 0, _len = content.length; _i < _len; _i++) {
+          c = content[_i];
+          op = new TextInsert(c, void 0, o.prev_cl, o);
+          HB.addOperation(op).execute();
+        }
+        return this;
+      };
+
+      WordType.prototype.deleteText = function(position, length) {
+        var d, delete_ops, i, o, _i;
+        o = this.getOperationByPosition(position);
+        delete_ops = [];
+        for (i = _i = 0; 0 <= length ? _i < length : _i > length; i = 0 <= length ? ++_i : --_i) {
+          if (o instanceof types.Delimiter) {
+            break;
+          }
+          d = HB.addOperation(new TextDelete(void 0, o)).execute();
+          o = o.next_cl;
+          while (!(o instanceof types.Delimiter) && o.isDeleted()) {
+            o = o.next_cl;
+          }
+          delete_ops.push(d._encode());
+        }
+        return this;
+      };
+
+      WordType.prototype.replaceText = function(text) {
+        var word;
+        if (this.replace_manager != null) {
+          word = HB.addOperation(new WordType(void 0)).execute();
+          word.insertText(0, text);
+          this.replace_manager.replace(word);
+          return word;
+        } else {
+          throw new Error("This type is currently not maintained by a ReplaceManager!");
+        }
+      };
+
+      WordType.prototype.val = function() {
+        var c, o;
+        c = (function() {
+          var _i, _len, _ref, _results;
+          _ref = this.toArray();
+          _results = [];
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            o = _ref[_i];
+            if (o.val != null) {
+              _results.push(o.val());
+            } else {
+              _results.push("");
+            }
+          }
+          return _results;
+        }).call(this);
+        return c.join('');
+      };
+
+      WordType.prototype.toString = function() {
+        return this.val();
+      };
+
+      WordType.prototype.setReplaceManager = function(op) {
+        this.saveOperation('replace_manager', op);
+        this.validateSavedOperations();
+        return this.on(['insert', 'delete'], (function(_this) {
+          return function() {
+            var _ref;
+            return (_ref = _this.replace_manager) != null ? _ref.callEvent('change') : void 0;
+          };
+        })(this));
+      };
+
+      WordType.prototype.bind = function(textfield) {
+        var word;
+        word = this;
+        textfield.value = this.val();
+        this.on("insert", function(event, op) {
+          var fix, left, o_pos, right;
+          o_pos = op.getPosition();
+          fix = function(cursor) {
+            if (cursor <= o_pos) {
+              return cursor;
+            } else {
+              cursor += 1;
+              return cursor;
+            }
+          };
+          left = fix(textfield.selectionStart);
+          right = fix(textfield.selectionEnd);
+          textfield.value = word.val();
+          return textfield.setSelectionRange(left, right);
+        });
+        this.on("delete", function(event, op) {
+          var fix, left, o_pos, right;
+          o_pos = op.getPosition();
+          fix = function(cursor) {
+            if (cursor < o_pos) {
+              return cursor;
+            } else {
+              cursor -= 1;
+              return cursor;
+            }
+          };
+          left = fix(textfield.selectionStart);
+          right = fix(textfield.selectionEnd);
+          textfield.value = word.val();
+          return textfield.setSelectionRange(left, right);
+        });
+        textfield.onkeypress = function(event) {
+          var char, diff, new_pos, pos;
+          char = null;
+          if (event.key != null) {
+            if (event.charCode === 32) {
+              char = " ";
+            } else if (event.keyCode === 13) {
+              char = '\n';
+            } else {
+              char = event.key;
+            }
+          } else {
+            char = String.fromCharCode(event.keyCode);
+          }
+          if (char.length > 0) {
+            pos = Math.min(textfield.selectionStart, textfield.selectionEnd);
+            diff = Math.abs(textfield.selectionEnd - textfield.selectionStart);
+            word.deleteText(pos, diff);
+            word.insertText(pos, char);
+            new_pos = pos + char.length;
+            textfield.setSelectionRange(new_pos, new_pos);
+            return event.preventDefault();
+          } else {
+            return event.preventDefault();
+          }
+        };
+        textfield.onpaste = function(event) {
+          return event.preventDefault();
+        };
+        textfield.oncut = function(event) {
+          return event.preventDefault();
+        };
+        return textfield.onkeydown = function(event) {
+          var del_length, diff, new_pos, pos, val;
+          pos = Math.min(textfield.selectionStart, textfield.selectionEnd);
+          diff = Math.abs(textfield.selectionEnd - textfield.selectionStart);
+          if ((event.keyCode != null) && event.keyCode === 8) {
+            if (diff > 0) {
+              word.deleteText(pos, diff);
+              textfield.setSelectionRange(pos, pos);
+            } else {
+              if ((event.ctrlKey != null) && event.ctrlKey) {
+                val = textfield.value;
+                new_pos = pos;
+                del_length = 0;
+                if (pos > 0) {
+                  new_pos--;
+                  del_length++;
+                }
+                while (new_pos > 0 && val[new_pos] !== " " && val[new_pos] !== '\n') {
+                  new_pos--;
+                  del_length++;
+                }
+                word.deleteText(new_pos, pos - new_pos);
+                textfield.setSelectionRange(new_pos, new_pos);
+              } else {
+                word.deleteText(pos - 1, 1);
+              }
+            }
+            return event.preventDefault();
+          } else if ((event.keyCode != null) && event.keyCode === 46) {
+            if (diff > 0) {
+              word.deleteText(pos, diff);
+              textfield.setSelectionRange(pos, pos);
+            } else {
+              word.deleteText(pos, 1);
+              textfield.setSelectionRange(pos, pos);
+            }
+            return event.preventDefault();
+          }
+        };
+      };
+
+      WordType.prototype._encode = function() {
+        var json;
+        json = {
+          'type': "WordType",
+          'uid': this.getUid(),
+          'beginning': this.beginning.getUid(),
+          'end': this.end.getUid()
+        };
+        if (this.prev_cl != null) {
+          json['prev'] = this.prev_cl.getUid();
+        }
+        if (this.next_cl != null) {
+          json['next'] = this.next_cl.getUid();
+        }
+        if ((this.origin != null) && this.origin !== this.prev_cl) {
+          json["origin"] = this.origin.getUid();
+        }
+        return json;
+      };
+
+      return WordType;
+
+    })(types.ListManager);
+    parser['WordType'] = function(json) {
+      var beginning, end, next, origin, prev, uid;
+      uid = json['uid'], beginning = json['beginning'], end = json['end'], prev = json['prev'], next = json['next'], origin = json['origin'];
+      return new WordType(uid, beginning, end, prev, next, origin);
+    };
+    types['TextInsert'] = TextInsert;
+    types['TextDelete'] = TextDelete;
+    types['WordType'] = WordType;
+    return structured_types;
+  };
+
+}).call(this);
+
 //# sourceMappingURL=../Types/TextTypes.js.map

@@ -25,6 +25,9 @@ createIwcConnector = (callback, options)->
 
   #
   # The Iwc Connector adds support for the Inter-Widget-Communication protocol that is used in the Role-SDK.
+  #
+  # You must not use your own IWC client when using this connector!!
+  #
   # @see http://dbis.rwth-aachen.de/cms/projects/the-xmpp-experience#interwidget-communication
   # @see http://dbis.rwth-aachen.de/cms/projects/ROLE
   #
@@ -34,7 +37,7 @@ createIwcConnector = (callback, options)->
     # @param {Engine} engine The transformation engine
     # @param {HistoryBuffer} HB
     # @param {Array<Function>} execution_listener You must ensure that whenever an operation is executed, every function in this Array is called.
-    # @param {Yatta} yatta The Yatta framework.
+    # @param {YattaFramework} yatta The Yatta framework.
     #
     constructor: (@engine, @HB, @execution_listener, @yatta)->
       @duiClient = duiClient
@@ -75,20 +78,11 @@ createIwcConnector = (callback, options)->
       @iwcHandler["Yatta_get_HB_element"] = [sendHistoryBuffer]
 
     #
-    # This function is called whenever an operation was executed.
-    # @param {Operation} o The operation that was executed.
+    # Set your own IWC handler. It will be called after Yatta consumed the
+    # data from the received intent.
     #
-    send: (o)->
-      if o.uid.creator is @HB.getUserId() and (typeof o.uid.op_number isnt "string")
-        @sendIwcIntent "Yatta_new_operation", o
-
-    #
-    # This function is called whenever an operation was received from another peer.
-    # @param {Operation} o The operation that was received.
-    #
-    receive: (o)->
-      if o.uid.creator isnt @HB.getUserId()
-        @engine.applyOp o
+    setIwcHandler: (f)->
+      userIwcHandler = f
 
     #
     # Helper for sending iwc intents.
@@ -114,8 +108,23 @@ createIwcConnector = (callback, options)->
 
       @duiClient.sendIntent(intent)
 
-    setIwcHandler: (f)->
-      userIwcHandler = f
+    #
+    # @private
+    # This function is called whenever an operation was executed.
+    # @param {Operation} o The operation that was executed.
+    #
+    send: (o)->
+      if o.uid.creator is @HB.getUserId() and (typeof o.uid.op_number isnt "string")
+        @sendIwcIntent "Yatta_new_operation", o
+
+    #
+    # @private
+    # This function is called whenever an operation was received from another peer.
+    # @param {Operation} o The operation that was received.
+    #
+    receive: (o)->
+      if o.uid.creator isnt @HB.getUserId()
+        @engine.applyOp o
 
 
   init = ()->

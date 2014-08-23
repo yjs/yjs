@@ -1,2 +1,314 @@
-(function(){var e,t={}.hasOwnProperty,n=function(e,n){function i(){this.constructor=e}for(var r in n)t.call(n,r)&&(e[r]=n[r]);return i.prototype=n.prototype,e.prototype=new i,e.__super__=n.prototype,e};e=require("./BasicTypes"),module.exports=function(t){var i,r,a,o,s,p,u,c;return p=e(t),c=p.types,u=p.parser,a=function(e){function r(e){this.map={},r.__super__.constructor.call(this,e)}return n(r,e),r.prototype.val=function(e,n){var a,o,s,p,u;if(null!=n)return null==this.map[e]&&t.addOperation(new i(void 0,this,e)).execute(),this.map[e].replace(n),this;if(null!=e)return o=null!=(p=this.map[e])?p.val():void 0,o instanceof c.ImmutableObject?o.val():o;s={},u=this.map;for(e in u)a=u[e],o=a.val(),(o instanceof c.ImmutableObject||o instanceof r)&&(o=o.val()),s[e]=o;return s},r}(c.Operation),i=function(e){function i(e,t,n){this.name=n,this.saveOperation("map_manager",t),i.__super__.constructor.call(this,e)}return n(i,e),i.prototype.execute=function(){var e,n,r,a,s;return this.validateSavedOperations()?(s=this.map_manager.getUid(),s.op_number="_"+s.op_number+"_RM_"+this.name,null==t.getOperation(s)&&(r=this.map_manager.getUid(),r.op_number="_"+r.op_number+"_RM_"+this.name+"_beginning",a=this.map_manager.getUid(),a.op_number="_"+a.op_number+"_RM_"+this.name+"_end",e=t.addOperation(new c.Delimiter(r,void 0,a)).execute(),n=t.addOperation(new c.Delimiter(a,e,void 0)).execute(),this.map_manager.map[this.name]=t.addOperation(new o(void 0,s,e,n)),this.map_manager.map[this.name].setParent(this.map_manager,this.name),this.map_manager.map[this.name].execute()),i.__super__.execute.apply(this,arguments)):!1},i.prototype._encode=function(){return{type:"AddName",uid:this.getUid(),map_manager:this.map_manager.getUid(),name:this.name}},i}(c.Operation),u.AddName=function(e){var t,n,r;return t=e.map_manager,r=e.uid,n=e.name,new i(r,t,n)},r=function(e){function i(e,n,r,a,o,s){null!=n&&null!=r?(this.saveOperation("beginning",n),this.saveOperation("end",r)):(this.beginning=t.addOperation(new c.Delimiter(void 0,void 0,void 0)),this.end=t.addOperation(new c.Delimiter(void 0,this.beginning,void 0)),this.beginning.next_cl=this.end,this.beginning.execute(),this.end.execute()),i.__super__.constructor.call(this,e,a,o,s)}return n(i,e),i.prototype.execute=function(){return this.validateSavedOperations()?(this.beginning.setParent(this),this.end.setParent(this),i.__super__.execute.apply(this,arguments)):!1},i.prototype.getLastOperation=function(){return this.end.prev_cl},i.prototype.getFirstOperation=function(){return this.beginning.next_cl},i.prototype.toArray=function(){var e,t;for(e=this.beginning.next_cl,t=[];e!==this.end;)t.push(e),e=e.next_cl;return t},i.prototype.getOperationByPosition=function(e){var t;if(t=this.beginning.next_cl,(e>0||t.isDeleted())&&!(t instanceof c.Delimiter)){for(;t.isDeleted()&&!(t instanceof c.Delimiter);)t=t.next_cl;for(;;){if(t instanceof c.Delimiter)break;if(0>=e&&!t.isDeleted())break;t=t.next_cl,t.isDeleted()||(e-=1)}}return t},i}(c.Insert),o=function(e){function i(e,t,n,r,a,o,s){i.__super__.constructor.call(this,t,n,r,a,o,s),null!=e&&this.replace(e)}return n(i,e),i.prototype.replace=function(e,n){var i,r;return i=this.getLastOperation(),r=new s(e,this,n,i,i.next_cl),t.addOperation(r).execute()},i.prototype.setParent=function(e,t){var n;return this.on("insert",function(e){return function(n,i){return i.next_cl instanceof c.Delimiter?e.parent.callEvent("change",t):void 0}}(this)),this.on("change",function(e){return function(){return e.parent.callEvent("change",t)}}(this)),n=function(e){return function(i,r){return r.next_cl instanceof c.Delimiter&&r.prev_cl instanceof c.Delimiter&&e.parent.callEvent("addProperty",t),e.deleteListener("addProperty",n)}}(this),this.on("insert",n),i.__super__.setParent.call(this,e)},i.prototype.val=function(){var e;return e=this.getLastOperation(),"function"==typeof e.val?e.val():void 0},i.prototype._encode=function(){var e;return e={type:"ReplaceManager",uid:this.getUid(),beginning:this.beginning.getUid(),end:this.end.getUid()},null!=this.prev_cl&&null!=this.next_cl&&(e.prev=this.prev_cl.getUid(),e.next=this.next_cl.getUid()),null!=this.origin&&this.origin!==this.prev_cl&&(e.origin=this.origin.getUid()),e},i}(r),u.ReplaceManager=function(e){var t,n,i,r,a,s,p;return n=e.content,p=e.uid,s=e.prev,r=e.next,a=e.origin,t=e.beginning,i=e.end,new o(n,p,t,i,s,r,a)},s=function(e){function t(e,n,i,r,a,o){if(this.saveOperation("content",e),this.saveOperation("parent",n),null==r||null==a||null==e)throw new Error("You must define content, prev, and next for Replaceable-types!");t.__super__.constructor.call(this,i,r,a,o)}return n(t,e),t.prototype.val=function(){return this.content},t.prototype.replace=function(e){return this.parent.replace(e)},t.prototype.execute=function(){var e;return this.validateSavedOperations()?("function"==typeof(e=this.content).setReplaceManager&&e.setReplaceManager(this.parent),t.__super__.execute.apply(this,arguments)):!1},t.prototype._encode=function(){var e;return e={type:"Replaceable",content:this.content.getUid(),ReplaceManager:this.parent.getUid(),prev:this.prev_cl.getUid(),next:this.next_cl.getUid(),uid:this.getUid()},null!=this.origin&&this.origin!==this.prev_cl&&(e.origin=this.origin.getUid()),e},t}(c.Insert),u.Replaceable=function(e){var t,n,i,r,a,o;return t=e.content,r=e.ReplaceManager,o=e.uid,a=e.prev,n=e.next,i=e.origin,new s(t,r,o,a,n,i)},c.ListManager=r,c.MapManager=a,c.ReplaceManager=o,c.Replaceable=s,p}}).call(this);
+(function() {
+  var basic_types_uninitialized,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  basic_types_uninitialized = require("./BasicTypes");
+
+  module.exports = function(HB) {
+    var AddName, ListManager, MapManager, ReplaceManager, Replaceable, basic_types, parser, types;
+    basic_types = basic_types_uninitialized(HB);
+    types = basic_types.types;
+    parser = basic_types.parser;
+    MapManager = (function(_super) {
+      __extends(MapManager, _super);
+
+      function MapManager(uid) {
+        this.map = {};
+        MapManager.__super__.constructor.call(this, uid);
+      }
+
+      MapManager.prototype.val = function(name, content) {
+        var o, obj, result, _ref, _ref1;
+        if (content != null) {
+          if (this.map[name] == null) {
+            HB.addOperation(new AddName(void 0, this, name)).execute();
+          }
+          this.map[name].replace(content);
+          return this;
+        } else if (name != null) {
+          obj = (_ref = this.map[name]) != null ? _ref.val() : void 0;
+          if (obj instanceof types.ImmutableObject) {
+            return obj.val();
+          } else {
+            return obj;
+          }
+        } else {
+          result = {};
+          _ref1 = this.map;
+          for (name in _ref1) {
+            o = _ref1[name];
+            obj = o.val();
+            if (obj instanceof types.ImmutableObject || obj instanceof MapManager) {
+              obj = obj.val();
+            }
+            result[name] = obj;
+          }
+          return result;
+        }
+      };
+
+      return MapManager;
+
+    })(types.Operation);
+    AddName = (function(_super) {
+      __extends(AddName, _super);
+
+      function AddName(uid, map_manager, name) {
+        this.name = name;
+        this.saveOperation('map_manager', map_manager);
+        AddName.__super__.constructor.call(this, uid);
+      }
+
+      AddName.prototype.execute = function() {
+        var beg, end, uid_beg, uid_end, uid_r;
+        if (!this.validateSavedOperations()) {
+          return false;
+        } else {
+          uid_r = this.map_manager.getUid();
+          uid_r.op_number = "_" + uid_r.op_number + "_RM_" + this.name;
+          if (HB.getOperation(uid_r) == null) {
+            uid_beg = this.map_manager.getUid();
+            uid_beg.op_number = "_" + uid_beg.op_number + "_RM_" + this.name + "_beginning";
+            uid_end = this.map_manager.getUid();
+            uid_end.op_number = "_" + uid_end.op_number + "_RM_" + this.name + "_end";
+            beg = HB.addOperation(new types.Delimiter(uid_beg, void 0, uid_end)).execute();
+            end = HB.addOperation(new types.Delimiter(uid_end, beg, void 0)).execute();
+            this.map_manager.map[this.name] = HB.addOperation(new ReplaceManager(void 0, uid_r, beg, end));
+            this.map_manager.map[this.name].setParent(this.map_manager, this.name);
+            this.map_manager.map[this.name].execute();
+          }
+          return AddName.__super__.execute.apply(this, arguments);
+        }
+      };
+
+      AddName.prototype._encode = function() {
+        return {
+          'type': "AddName",
+          'uid': this.getUid(),
+          'map_manager': this.map_manager.getUid(),
+          'name': this.name
+        };
+      };
+
+      return AddName;
+
+    })(types.Operation);
+    parser['AddName'] = function(json) {
+      var map_manager, name, uid;
+      map_manager = json['map_manager'], uid = json['uid'], name = json['name'];
+      return new AddName(uid, map_manager, name);
+    };
+    ListManager = (function(_super) {
+      __extends(ListManager, _super);
+
+      function ListManager(uid, beginning, end, prev, next, origin) {
+        if ((beginning != null) && (end != null)) {
+          this.saveOperation('beginning', beginning);
+          this.saveOperation('end', end);
+        } else {
+          this.beginning = HB.addOperation(new types.Delimiter(void 0, void 0, void 0));
+          this.end = HB.addOperation(new types.Delimiter(void 0, this.beginning, void 0));
+          this.beginning.next_cl = this.end;
+          this.beginning.execute();
+          this.end.execute();
+        }
+        ListManager.__super__.constructor.call(this, uid, prev, next, origin);
+      }
+
+      ListManager.prototype.execute = function() {
+        if (this.validateSavedOperations()) {
+          this.beginning.setParent(this);
+          this.end.setParent(this);
+          return ListManager.__super__.execute.apply(this, arguments);
+        } else {
+          return false;
+        }
+      };
+
+      ListManager.prototype.getLastOperation = function() {
+        return this.end.prev_cl;
+      };
+
+      ListManager.prototype.getFirstOperation = function() {
+        return this.beginning.next_cl;
+      };
+
+      ListManager.prototype.toArray = function() {
+        var o, result;
+        o = this.beginning.next_cl;
+        result = [];
+        while (o !== this.end) {
+          result.push(o);
+          o = o.next_cl;
+        }
+        return result;
+      };
+
+      ListManager.prototype.getOperationByPosition = function(position) {
+        var o;
+        o = this.beginning.next_cl;
+        if ((position > 0 || o.isDeleted()) && !(o instanceof types.Delimiter)) {
+          while (o.isDeleted() && !(o instanceof types.Delimiter)) {
+            o = o.next_cl;
+          }
+          while (true) {
+            if (o instanceof types.Delimiter) {
+              break;
+            }
+            if (position <= 0 && !o.isDeleted()) {
+              break;
+            }
+            o = o.next_cl;
+            if (!o.isDeleted()) {
+              position -= 1;
+            }
+          }
+        }
+        return o;
+      };
+
+      return ListManager;
+
+    })(types.Insert);
+    ReplaceManager = (function(_super) {
+      __extends(ReplaceManager, _super);
+
+      function ReplaceManager(initial_content, uid, beginning, end, prev, next, origin) {
+        ReplaceManager.__super__.constructor.call(this, uid, beginning, end, prev, next, origin);
+        if (initial_content != null) {
+          this.replace(initial_content);
+        }
+      }
+
+      ReplaceManager.prototype.replace = function(content, replaceable_uid) {
+        var o, op;
+        o = this.getLastOperation();
+        op = new Replaceable(content, this, replaceable_uid, o, o.next_cl);
+        return HB.addOperation(op).execute();
+      };
+
+      ReplaceManager.prototype.setParent = function(parent, property_name) {
+        var addPropertyListener;
+        this.on('insert', (function(_this) {
+          return function(event, op) {
+            if (op.next_cl instanceof types.Delimiter) {
+              return _this.parent.callEvent('change', property_name);
+            }
+          };
+        })(this));
+        this.on('change', (function(_this) {
+          return function(event) {
+            return _this.parent.callEvent('change', property_name);
+          };
+        })(this));
+        addPropertyListener = (function(_this) {
+          return function(event, op) {
+            if (op.next_cl instanceof types.Delimiter && op.prev_cl instanceof types.Delimiter) {
+              _this.parent.callEvent('addProperty', property_name);
+            }
+            return _this.deleteListener('addProperty', addPropertyListener);
+          };
+        })(this);
+        this.on('insert', addPropertyListener);
+        return ReplaceManager.__super__.setParent.call(this, parent);
+      };
+
+      ReplaceManager.prototype.val = function() {
+        var o;
+        o = this.getLastOperation();
+        return typeof o.val === "function" ? o.val() : void 0;
+      };
+
+      ReplaceManager.prototype._encode = function() {
+        var json;
+        json = {
+          'type': "ReplaceManager",
+          'uid': this.getUid(),
+          'beginning': this.beginning.getUid(),
+          'end': this.end.getUid()
+        };
+        if ((this.prev_cl != null) && (this.next_cl != null)) {
+          json['prev'] = this.prev_cl.getUid();
+          json['next'] = this.next_cl.getUid();
+        }
+        if ((this.origin != null) && this.origin !== this.prev_cl) {
+          json["origin"] = this.origin.getUid();
+        }
+        return json;
+      };
+
+      return ReplaceManager;
+
+    })(ListManager);
+    parser["ReplaceManager"] = function(json) {
+      var beginning, content, end, next, origin, prev, uid;
+      content = json['content'], uid = json['uid'], prev = json['prev'], next = json['next'], origin = json['origin'], beginning = json['beginning'], end = json['end'];
+      return new ReplaceManager(content, uid, beginning, end, prev, next, origin);
+    };
+    Replaceable = (function(_super) {
+      __extends(Replaceable, _super);
+
+      function Replaceable(content, parent, uid, prev, next, origin) {
+        this.saveOperation('content', content);
+        this.saveOperation('parent', parent);
+        if (!((prev != null) && (next != null) && (content != null))) {
+          throw new Error("You must define content, prev, and next for Replaceable-types!");
+        }
+        Replaceable.__super__.constructor.call(this, uid, prev, next, origin);
+      }
+
+      Replaceable.prototype.val = function() {
+        return this.content;
+      };
+
+      Replaceable.prototype.replace = function(content) {
+        return this.parent.replace(content);
+      };
+
+      Replaceable.prototype.execute = function() {
+        var _base;
+        if (!this.validateSavedOperations()) {
+          return false;
+        } else {
+          if (typeof (_base = this.content).setReplaceManager === "function") {
+            _base.setReplaceManager(this.parent);
+          }
+          return Replaceable.__super__.execute.apply(this, arguments);
+        }
+      };
+
+      Replaceable.prototype._encode = function() {
+        var json;
+        json = {
+          'type': "Replaceable",
+          'content': this.content.getUid(),
+          'ReplaceManager': this.parent.getUid(),
+          'prev': this.prev_cl.getUid(),
+          'next': this.next_cl.getUid(),
+          'uid': this.getUid()
+        };
+        if ((this.origin != null) && this.origin !== this.prev_cl) {
+          json["origin"] = this.origin.getUid();
+        }
+        return json;
+      };
+
+      return Replaceable;
+
+    })(types.Insert);
+    parser["Replaceable"] = function(json) {
+      var content, next, origin, parent, prev, uid;
+      content = json['content'], parent = json['ReplaceManager'], uid = json['uid'], prev = json['prev'], next = json['next'], origin = json['origin'];
+      return new Replaceable(content, parent, uid, prev, next, origin);
+    };
+    types['ListManager'] = ListManager;
+    types['MapManager'] = MapManager;
+    types['ReplaceManager'] = ReplaceManager;
+    types['Replaceable'] = Replaceable;
+    return basic_types;
+  };
+
+}).call(this);
+
 //# sourceMappingURL=../Types/StructuredTypes.js.map

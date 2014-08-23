@@ -1,5 +1,6 @@
 
 #
+# @nodoc
 # An object that holds all applied operations.
 #
 # @note The HistoryBuffer is commonly abbreviated to HB.

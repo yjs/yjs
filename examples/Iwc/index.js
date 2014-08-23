@@ -7,7 +7,7 @@
 <script src="http://open-app.googlecode.com/files/openapp.js"></script>
 <script src="http://dbis.rwth-aachen.de/gadgets/iwc/lib/iwc.js"></script>
 <script src="http://dbis.rwth-aachen.de/~jahns/role-widgets/widgetbundles/libraries/DUIClient.js"></script>
-<script src="../../build/browser/Frameworks/JsonYatta.min.js"></script>
+<script src="../../build/browser/Frameworks/JsonFramework.min.js"></script>
 <script src="../../build/browser/Connectors/IwcConnector.min.js"></script>
 <script src="./index.js"></script>
  ```
