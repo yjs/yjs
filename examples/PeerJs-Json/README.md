@@ -1,4 +1,4 @@
-## PeerJs + JSON Example
+## PeerJs + JSON Tutorial
 Here, I will give a short overview on how to enable collaborative json with the
 [PeerJs](http://peerjs.com/) Connector and the JsonYatta Framework. Open
 [index.html](http://dadamonad.github.io/Yatta/examples/PeerJs-Json/index.html) in your Browser and

@@ -2,7 +2,7 @@
 /**
  ## PeerJs + JSON Example
  Here, I will give a short overview on how to enable collaborative json with the
- [PeerJs](http://peerjs.com/) Connector and the JsonYatta Framework. Open
+ [PeerJs](http://peerjs.com/) Connector and the Json Framework. Open
  [index.html](http://dadamonad.github.io/Yatta/examples/PeerJs-Json/index.html) in your Browser and
  use the console to explore Yatta!
 
@@ -28,10 +28,11 @@ Y.createPeerJsConnector({key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
 
 /**
 You can also specify your own user_id with peerjs.
-But you have to make sure that no other client associated to your API-key has the same user_id.
+But then you have to make sure that no other client associated to your API-key has the same user_id.
+```
+Y.createPeerJsConnector("unique_id", {key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
+```
 */
-// Y.createPeerJsConnector("unique_id", {key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
-
 
   /**
     ### Yatta
@@ -49,7 +50,7 @@ But you have to make sure that no other client associated to your API-key has th
     See [TextEditing](../../examples/TextEditing/) for a nice example
     on how to do that with urls.
   */
-    console.log("This is your user-id: "+user_id);
+    console.log("Copy your user-id: " + user_id);
 
   // yatta.connector.connectToPeer(peer_user_id);
 
@@ -75,11 +76,11 @@ But you have to make sure that no other client associated to your API-key has th
   console.log(yatta.val('mutable_string').val() === "eXXXxt"); // true
 
   /**
-   Did you recognize that we have to use anoter `.val()` for mutable strings?
-   Thats because yatta.val('mutable_string') is of type WordType.
-   Since we implemented `toString` in this for WordType's, you can use it like a string:
+   Did you recognize that we use anoter `.val()` for mutable strings?
+   Thats because `yatta.val('mutable_string')` is of type *WordType*.
+   Since WordType implements `toString`, you can use it like a string:
    */
-  console.log(""+yatta.val("mutable_string") === "eXXXxt") // true, concatenating it with a string will implicitly invoke toString()
+  console.log("" + yatta.val("mutable_string") === "eXXXxt") // true, concatenating it with a string will implicitly invoke toString()
 
   /**
     You can omit the mutable - parameter. In that case the default will be used.
@@ -93,7 +94,7 @@ But you have to make sure that no other client associated to your API-key has th
   console.log(yatta.val('new_string') === "string"); // true
 
   /**
-    yatta is chainable:
+    Yatta is [chainable](http://schier.co/post/method-chaining-in-javascript):
     */
   yatta.val('a', 4).val('b',5);
   console.log(yatta.val('a') === 4); // true
@@ -108,12 +109,13 @@ But you have to make sure that no other client associated to your API-key has th
   /**
     Lists are always immutable.
   */
-  yatta.val('list', [1,2,3]);
-  console.log(yatta.val('list')[2] === 3); // true
+  yatta.val('list', [0,1,2]);
+  console.log(yatta.val('list')[2] === 2); // true
 
   /**
     ### Check Types
     Certainly you want to check types!
+    You get the type of an YattaType with the `.type` property.
 
     Here, we create a function that parses a Yatta type to a string.
   */
@@ -177,7 +179,7 @@ But you have to make sure that no other client associated to your API-key has th
 
   /**
     ### Experimental method
-    But there is a much more convenient way!
+    Nah.. this is only for the cool kids.
   */
   console.log(yatta.value.list[2] === 3) // true
   yatta.value.list = [3,4,5]
@@ -186,6 +188,10 @@ But you have to make sure that no other client associated to your API-key has th
   console.log(yatta.value.object.c === 4) // true
 
   /**
+    How did I do that? ^^
+
+    In Javascript it is possible set setter- and getter- for properties. This is
+    why this method feels much more natural.
     The downside is that you are only allowed to overwrite existing properties.
   */
   yatta.value.newProperty = "Awesome"
@@ -198,7 +204,7 @@ But you have to make sure that no other client associated to your API-key has th
   console.log(yatta.value.newProperty === "Awesome") // true, it's awesome ;)
 
   /**
-    This is stupid! I need to create new properties!
+    This is stupid! I don't want to overwrite all my existing properties!
     Very well.. The solution is that we merge yatta.value with the new assignment.
     For example: assuming we want to overwrite yatta.value with some object o.
     Then these two rules apply:
@@ -227,6 +233,7 @@ But you have to make sure that no other client associated to your API-key has th
   console.log(yatta.value.newProperty !== "Awesome") // true, still not awesome..
 
   /**
-    Please also read [JsonWrapper](https://rawgit.com/DadaMonad/Yatta/master/doc/class/JsonWrapper.html)
+    Please also read [JsonWrapper](https://rawgit.com/DadaMonad/Yatta/master/doc/class/JsonWrapper.html).
+    I really want to hear what you think about this method :)
   */
 });
