@@ -131,7 +131,9 @@ module.exports = (HB)->
       val = @val()
       json = {}
       for name, o of val
-        if o.constructor is {}.constructor
+        if o is null
+          json[name] = o
+        else if o.constructor is {}.constructor
           json[name] = @val(name).toJson()
         else if o instanceof types.Operation
           while o instanceof types.Operation
@@ -197,7 +199,7 @@ module.exports = (HB)->
         for o_name,o of name
           @val(o_name,o,content)
         @
-      else if name? and content?
+      else if name? and (content? or content is null)
         if mutable?
           if mutable is true or mutable is 'mutable'
             mutable = true
@@ -207,7 +209,7 @@ module.exports = (HB)->
           mutable = @mutable_default
         if typeof content is 'function'
           @ # Just do nothing
-        else if ((not mutable) or typeof content is 'number') and content.constructor isnt Object
+        else if content is null or (((not mutable) or typeof content is 'number') and content.constructor isnt Object)
           obj = HB.addOperation(new types.ImmutableObject undefined, content).execute()
           super name, obj
         else

@@ -121,8 +121,6 @@ describe "JsonFramework", ->
     u2.engine.applyOps ops1
     expect(u2.value.name.val()).to.equal(u2.value.name.val())
 
-
-
   it "can handle creaton of complex json", ->
     @yTest.getSomeUser().val('x', {'a':'b'})
     @yTest.getSomeUser().val('a', {'a':{q:"dtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt"}})
@@ -135,14 +133,16 @@ describe "JsonFramework", ->
     expect(@yTest.getSomeUser().value.a.a.q.val()).to.equal("AAAdtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt")
 
 
-  it "handles some immutable tests", ->
+  it "handles immutables and primitive data types", ->
     @yTest.getSomeUser().val('string', "text", "immutable")
     @yTest.getSomeUser().val('number', 4, "immutable")
     @yTest.getSomeUser().val('object', {q:"rr"}, "immutable")
+    @yTest.getSomeUser().val('null', null)
     @yTest.compareAll()
     expect(@yTest.getSomeUser().val('string')).to.equal "text"
     expect(@yTest.getSomeUser().val('number')).to.equal 4
     expect(@yTest.getSomeUser().val('object').val('q')).to.equal "rr"
+    expect(@yTest.getSomeUser().val('null') is null).to.be.ok
 
   it "converges t1", ->
     op0 = {"type":"Delimiter","uid":{"creator":0,"op_number":0},"next":{"creator":0,"op_number":1}}

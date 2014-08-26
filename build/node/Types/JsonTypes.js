@@ -84,7 +84,9 @@
         json = {};
         for (name in val) {
           o = val[name];
-          if (o.constructor === {}.constructor) {
+          if (o === null) {
+            json[name] = o;
+          } else if (o.constructor === {}.constructor) {
             json[name] = this.val(name).toJson();
           } else if (o instanceof types.Operation) {
             while (o instanceof types.Operation) {
@@ -131,7 +133,7 @@
             this.val(o_name, o, content);
           }
           return this;
-        } else if ((name != null) && (content != null)) {
+        } else if ((name != null) && ((content != null) || content === null)) {
           if (mutable != null) {
             if (mutable === true || mutable === 'mutable') {
               mutable = true;
@@ -143,7 +145,7 @@
           }
           if (typeof content === 'function') {
             return this;
-          } else if (((!mutable) || typeof content === 'number') && content.constructor !== Object) {
+          } else if (content === null || (((!mutable) || typeof content === 'number') && content.constructor !== Object)) {
             obj = HB.addOperation(new types.ImmutableObject(void 0, content)).execute();
             return JsonType.__super__.val.call(this, name, obj);
           } else {
