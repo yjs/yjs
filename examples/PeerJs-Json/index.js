@@ -40,7 +40,7 @@ Y.createPeerJsConnector("unique_id", {key: 'h7nlefbgavh1tt9'}, function(Connecto
     it will be instantly shared with all the other collaborators.
   */
   yatta = new Y.JsonFramework(user_id, Connector);
-  
+
   /**
     Next, you may want to connect to another peer. Therefore you have to receive his
     user_id. If the other peer is connected to other peers, the PeerJsConnector
@@ -135,8 +135,9 @@ Y.createPeerJsConnector("unique_id", {key: 'h7nlefbgavh1tt9'}, function(Connecto
     ### Add listeners
     Apply a 'addProperty' - listener to a JsonType.
   */
-  function addProperty(event_name, property_name){
-    console.log("Property '" + property_name + "' was created!");
+  function addProperty(event_name, property_name, op){
+    // op is the operation that changed the objects value. In addProperty it is most likely to be a 'Replaceable' (see doc).
+    console.log("Property '" + property_name + "' was created by '"+op.creator+"'!");
     console.log("Value: " + show(this.val(property_name))); // 'this' is the object on which the property was created.
   };
   yatta.on('addProperty', addProperty);
@@ -145,8 +146,13 @@ Y.createPeerJsConnector("unique_id", {key: 'h7nlefbgavh1tt9'}, function(Connecto
   /**
     Apply a 'change' - listener to a JsonType.
   */
-  function change(event_name, property_name){
-    console.log("Value of property '" + property_name + "' changed!");
+  function change(event_name, property_name, op){
+    // Check who made this property change!
+    if(op.creator == yatta.getUserId()){
+      console.log("You changed the value of property '" + property_name + "'!");
+    }else{
+      console.log("User '"+op.creator+"' changed the value of property '" + property_name + "'!");
+    }
     console.log("New value: " + show(this.val(property_name)) + ""); // 'this' is the object on which the property changed.
   };
   yatta.on('change', change);

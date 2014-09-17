@@ -1,6 +1,6 @@
 {
   "name": "yatta",
-  "version": "0.0.5",
+  "version": "0.1.0",
   "description": "A Framework that enables Real-Time Collaboration on arbitrary data structures.",
   "main": "./build/node/index",
   "directories": {

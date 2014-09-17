@@ -272,7 +272,7 @@ module.exports = (HB)->
       @deleted_by ?= []
       if @parent? and not @isDeleted()
         # call iff wasn't deleted earlyer
-        @parent.callEvent "delete", @
+        @parent.callEvent "delete", @, o
       if o?
         @deleted_by.push o
       garbagecollect = false

@@ -196,9 +196,10 @@ module.exports = (HB)->
     setReplaceManager: (op)->
       @saveOperation 'replace_manager', op
       @validateSavedOperations()
-      @on ['insert', 'delete'], ()=>
-        @replace_manager?.callEvent 'change'
-
+      @on 'insert', (event, ins)=>
+        @replace_manager?.forwardEvent @, 'change', ins
+      @on 'delete', (event, ins, del)=>
+        @replace_manager?.forwardEvent @, 'change', del
     #
     # Bind this WordType to a textfield or input field.
     #

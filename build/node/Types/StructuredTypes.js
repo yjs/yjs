@@ -242,27 +242,24 @@
       };
 
       ReplaceManager.prototype.setParent = function(parent, property_name) {
-        var addPropertyListener;
-        this.on('insert', (function(_this) {
-          return function(event, op) {
-            if (op.next_cl instanceof types.Delimiter) {
-              return _this.parent.callEvent('change', property_name);
-            }
-          };
-        })(this));
-        this.on('change', (function(_this) {
-          return function(event) {
-            return _this.parent.callEvent('change', property_name);
-          };
-        })(this));
-        addPropertyListener = (function(_this) {
-          return function(event, op) {
-            if (op.next_cl instanceof types.Delimiter && op.prev_cl instanceof types.Delimiter) {
-              _this.parent.callEvent('addProperty', property_name);
-            }
-            return _this.deleteListener('addProperty', addPropertyListener);
-          };
-        })(this);
+        var addPropertyListener, repl_manager;
+        repl_manager = this;
+        this.on('insert', function(event, op) {
+          if (op.next_cl instanceof types.Delimiter) {
+            return repl_manager.parent.callEvent('change', property_name, op);
+          }
+        });
+        this.on('change', function(event, op) {
+          if (repl_manager !== this) {
+            return repl_manager.parent.callEvent('change', property_name, op);
+          }
+        });
+        addPropertyListener = function(event, op) {
+          if (op.next_cl instanceof types.Delimiter && op.prev_cl instanceof types.Delimiter) {
+            repl_manager.parent.callEvent('addProperty', property_name, op);
+          }
+          return repl_manager.deleteListener('addProperty', addPropertyListener);
+        };
         this.on('insert', addPropertyListener);
         return ReplaceManager.__super__.setParent.call(this, parent);
       };

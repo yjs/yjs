@@ -11,6 +11,7 @@
       function Operation(uid) {
         this.is_deleted = false;
         this.doSync = true;
+        this.garbage_collected = false;
         if (uid != null) {
           this.doSync = !isNaN(parseInt(uid.op_number));
         } else {
@@ -85,9 +86,10 @@
         if (garbagecollect == null) {
           garbagecollect = true;
         }
-        if (!this.isDeleted()) {
+        if (!this.garbage_collected) {
           this.is_deleted = true;
           if (garbagecollect) {
+            this.garbage_collected = true;
             return HB.addToGarbageCollector(this);
           }
         }
@@ -220,7 +222,7 @@
           this.deleted_by = [];
         }
         if ((this.parent != null) && !this.isDeleted()) {
-          this.parent.callEvent("delete", this);
+          this.parent.callEvent("delete", this, o);
         }
         if (o != null) {
           this.deleted_by.push(o);
@@ -228,10 +230,11 @@
         garbagecollect = false;
         if (this.prev_cl.isDeleted()) {
           garbagecollect = true;
-        } else if (this.next_cl.isDeleted()) {
-          this.next_cl.applyDelete();
         }
-        return Insert.__super__.applyDelete.call(this, garbagecollect);
+        Insert.__super__.applyDelete.call(this, garbagecollect);
+        if (this.next_cl.isDeleted()) {
+          return this.next_cl.applyDelete();
+        }
       };
 
       Insert.prototype.cleanup = function() {

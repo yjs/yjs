@@ -248,16 +248,18 @@ module.exports = (HB)->
     # Add change listeners for parent.
     #
     setParent: (parent, property_name)->
-      @on 'insert', (event, op)=>
+      repl_manager = this
+      @on 'insert', (event, op)->
         if op.next_cl instanceof types.Delimiter
-          @parent.callEvent 'change', property_name
-      @on 'change', (event)=>
-        @parent.callEvent 'change', property_name
+          repl_manager.parent.callEvent 'change', property_name, op
+      @on 'change', (event, op)->
+        if repl_manager isnt this
+          repl_manager.parent.callEvent 'change', property_name, op
       # Call this, when the first element is inserted. Then delete the listener.
-      addPropertyListener = (event, op)=>
+      addPropertyListener = (event, op)->
         if op.next_cl instanceof types.Delimiter and op.prev_cl instanceof types.Delimiter
-          @parent.callEvent 'addProperty', property_name
-        @deleteListener 'addProperty', addPropertyListener
+          repl_manager.parent.callEvent 'addProperty', property_name, op
+        repl_manager.deleteListener 'addProperty', addPropertyListener
       @on 'insert', addPropertyListener
       super parent
 
