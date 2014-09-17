@@ -227,7 +227,7 @@ Nah.. this is only for the cool kids.
 
 
 ```js
-  console.log(yatta.value.list[2] === 3) // true
+  console.log(yatta.value.list[2] === 2) // true
   yatta.value.list = [3,4,5]
   console.log(yatta.val('list')[2] === 5) // true
   yatta.value.object = {c : 4}

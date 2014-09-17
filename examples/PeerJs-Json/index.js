@@ -40,7 +40,7 @@ Y.createPeerJsConnector("unique_id", {key: 'h7nlefbgavh1tt9'}, function(Connecto
     it will be instantly shared with all the other collaborators.
   */
   yatta = new Y.JsonFramework(user_id, Connector);
-
+  
   /**
     Next, you may want to connect to another peer. Therefore you have to receive his
     user_id. If the other peer is connected to other peers, the PeerJsConnector
@@ -181,7 +181,7 @@ Y.createPeerJsConnector("unique_id", {key: 'h7nlefbgavh1tt9'}, function(Connecto
     ### Experimental method
     Nah.. this is only for the cool kids.
   */
-  console.log(yatta.value.list[2] === 3) // true
+  console.log(yatta.value.list[2] === 2) // true
   yatta.value.list = [3,4,5]
   console.log(yatta.val('list')[2] === 5) // true
   yatta.value.object = {c : 4}

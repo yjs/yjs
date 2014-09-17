@@ -32,6 +32,8 @@
         TextInsert.__super__.constructor.call(this, uid, prev, next, origin);
       }
 
+      TextInsert.prototype.type = "TextInsert";
+
       TextInsert.prototype.getLength = function() {
         if (this.isDeleted()) {
           return 0;
@@ -40,8 +42,13 @@
         }
       };
 
+      TextInsert.prototype.applyDelete = function() {
+        this.content = null;
+        return TextInsert.__super__.applyDelete.apply(this, arguments);
+      };
+
       TextInsert.prototype.val = function(current_position) {
-        if (this.isDeleted()) {
+        if (this.isDeleted() || (this.content == null)) {
           return "";
         } else {
           return this.content;
@@ -57,7 +64,7 @@
           'prev': this.prev_cl.getUid(),
           'next': this.next_cl.getUid()
         };
-        if ((this.origin != null) && this.origin !== this.prev_cl) {
+        if (this.origin !== this.prev_cl) {
           json["origin"] = this.origin.getUid();
         }
         return json;
@@ -80,13 +87,33 @@
 
       WordType.prototype.type = "WordType";
 
+      WordType.prototype.applyDelete = function() {
+        var o;
+        o = this.beginning;
+        while (o != null) {
+          o.applyDelete();
+          o = o.next_cl;
+        }
+        return WordType.__super__.applyDelete.call(this);
+      };
+
+      WordType.prototype.cleanup = function() {
+        return WordType.__super__.cleanup.call(this);
+      };
+
       WordType.prototype.insertText = function(position, content) {
-        var c, o, op, _i, _len;
-        o = this.getOperationByPosition(position);
+        var c, ith, left, op, right, _i, _len;
+        ith = this.getOperationByPosition(position);
+        left = ith.prev_cl;
+        while (left.isDeleted()) {
+          left = left.prev_cl;
+        }
+        right = left.next_cl;
         for (_i = 0, _len = content.length; _i < _len; _i++) {
           c = content[_i];
-          op = new TextInsert(c, void 0, o.prev_cl, o);
+          op = new TextInsert(c, void 0, left, right);
           HB.addOperation(op).execute();
+          left = op;
         }
         return this;
       };
@@ -278,8 +305,8 @@
         if (this.next_cl != null) {
           json['next'] = this.next_cl.getUid();
         }
-        if ((this.origin != null) && this.origin !== this.prev_cl) {
-          json["origin"] = this.origin.getUid();
+        if (this.origin != null) {
+          json["origin"] = this.origin().getUid();
         }
         return json;
       };

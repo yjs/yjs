@@ -75,10 +75,7 @@ Yatta! is still in an early development phase. Don't expect that everything is w
 But I would become really motivated if you gave me some feedback :) ([github](https://github.com/DadaMonad/Yatta/issues)).
 
 ### Current Issues
-Currently, I don't perform Garbage Collection. Therefore, the space requirement will never decrease.
-* Garbage Collection
 * XML support
-
 
 ## Support
 Please report any issues to the [Github issue page](https://github.com/DadaMonad/Yatta/issues)!

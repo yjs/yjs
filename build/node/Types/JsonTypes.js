@@ -78,6 +78,14 @@
 
       JsonType.prototype.type = "JsonType";
 
+      JsonType.prototype.applyDelete = function() {
+        return JsonType.__super__.applyDelete.call(this);
+      };
+
+      JsonType.prototype.cleanup = function() {
+        return JsonType.__super__.cleanup.call(this);
+      };
+
       JsonType.prototype.toJson = function() {
         var json, name, o, val;
         val = this.val();
@@ -100,16 +108,18 @@
         return json;
       };
 
-      JsonType.prototype.setReplaceManager = function(rm) {
-        this.parent = rm.parent;
+      JsonType.prototype.setReplaceManager = function(replace_manager) {
+        this.replace_manager = replace_manager;
         return this.on(['change', 'addProperty'], function() {
           var _ref;
-          return (_ref = rm.parent).forwardEvent.apply(_ref, [this].concat(__slice.call(arguments)));
+          if (replace_manager.parent != null) {
+            return (_ref = replace_manager.parent).forwardEvent.apply(_ref, [this].concat(__slice.call(arguments)));
+          }
         });
       };
 
       JsonType.prototype.getParent = function() {
-        return this.parent;
+        return this.replace_manager.parent;
       };
 
       JsonType.prototype.mutable_default = true;
@@ -126,12 +136,11 @@
       };
 
       JsonType.prototype.val = function(name, content, mutable) {
-        var json, o, o_name, obj, word;
+        var json, obj, word;
         if (typeof name === 'object') {
-          for (o_name in name) {
-            o = name[o_name];
-            this.val(o_name, o, content);
-          }
+          json = new JsonType(void 0, name, content);
+          HB.addOperation(json).execute();
+          this.replace_manager.replace(json);
           return this;
         } else if ((name != null) && ((content != null) || content === null)) {
           if (mutable != null) {

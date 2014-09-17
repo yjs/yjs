@@ -18,6 +18,22 @@
         MapManager.__super__.constructor.call(this, uid);
       }
 
+      MapManager.prototype.type = "MapManager";
+
+      MapManager.prototype.applyDelete = function() {
+        var name, p, _ref;
+        _ref = this.map;
+        for (name in _ref) {
+          p = _ref[name];
+          p.applyDelete();
+        }
+        return MapManager.__super__.applyDelete.call(this);
+      };
+
+      MapManager.prototype.cleanup = function() {
+        return MapManager.__super__.cleanup.call(this);
+      };
+
       MapManager.prototype.val = function(name, content) {
         var o, obj, result, _ref, _ref1;
         if (content != null) {
@@ -60,8 +76,18 @@
         AddName.__super__.constructor.call(this, uid);
       }
 
+      AddName.prototype.type = "AddName";
+
+      AddName.prototype.applyDelete = function() {
+        return AddName.__super__.applyDelete.call(this);
+      };
+
+      AddName.prototype.cleanup = function() {
+        return AddName.__super__.cleanup.call(this);
+      };
+
       AddName.prototype.execute = function() {
-        var beg, end, uid_beg, uid_end, uid_r;
+        var beg, end, uid_beg, uid_end, uid_r, _base;
         if (!this.validateSavedOperations()) {
           return false;
         } else {
@@ -76,6 +102,7 @@
             end = HB.addOperation(new types.Delimiter(uid_end, beg, void 0)).execute();
             this.map_manager.map[this.name] = HB.addOperation(new ReplaceManager(void 0, uid_r, beg, end));
             this.map_manager.map[this.name].setParent(this.map_manager, this.name);
+            ((_base = this.map_manager.map[this.name]).add_name_ops != null ? _base.add_name_ops : _base.add_name_ops = []).push(this);
             this.map_manager.map[this.name].execute();
           }
           return AddName.__super__.execute.apply(this, arguments);
@@ -115,6 +142,8 @@
         }
         ListManager.__super__.constructor.call(this, uid, prev, next, origin);
       }
+
+      ListManager.prototype.type = "ListManager";
 
       ListManager.prototype.execute = function() {
         if (this.validateSavedOperations()) {
@@ -170,7 +199,7 @@
 
       return ListManager;
 
-    })(types.Insert);
+    })(types.Operation);
     ReplaceManager = (function(_super) {
       __extends(ReplaceManager, _super);
 
@@ -181,11 +210,35 @@
         }
       }
 
+      ReplaceManager.prototype.type = "ReplaceManager";
+
+      ReplaceManager.prototype.applyDelete = function() {
+        var o, _i, _len, _ref;
+        o = this.beginning;
+        while (o != null) {
+          o.applyDelete();
+          o = o.next_cl;
+        }
+        if (this.add_name_ops != null) {
+          _ref = this.add_name_ops;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            o = _ref[_i];
+            o.applyDelete();
+          }
+        }
+        return ReplaceManager.__super__.applyDelete.call(this);
+      };
+
+      ReplaceManager.prototype.cleanup = function() {
+        return ReplaceManager.__super__.cleanup.call(this);
+      };
+
       ReplaceManager.prototype.replace = function(content, replaceable_uid) {
         var o, op;
         o = this.getLastOperation();
         op = new Replaceable(content, this, replaceable_uid, o, o.next_cl);
-        return HB.addOperation(op).execute();
+        HB.addOperation(op).execute();
+        return void 0;
       };
 
       ReplaceManager.prototype.setParent = function(parent, property_name) {
@@ -232,8 +285,8 @@
           json['prev'] = this.prev_cl.getUid();
           json['next'] = this.next_cl.getUid();
         }
-        if ((this.origin != null) && this.origin !== this.prev_cl) {
-          json["origin"] = this.origin.getUid();
+        if (this.origin != null) {
+          json["origin"] = this.origin().getUid();
         }
         return json;
       };
@@ -252,11 +305,13 @@
       function Replaceable(content, parent, uid, prev, next, origin) {
         this.saveOperation('content', content);
         this.saveOperation('parent', parent);
-        if (!((prev != null) && (next != null) && (content != null))) {
-          throw new Error("You must define content, prev, and next for Replaceable-types!");
+        if (!((prev != null) && (next != null))) {
+          throw new Error("You must define prev, and next for Replaceable-types!");
         }
         Replaceable.__super__.constructor.call(this, uid, prev, next, origin);
       }
+
+      Replaceable.prototype.type = "Replaceable";
 
       Replaceable.prototype.val = function() {
         return this.content;
@@ -266,23 +321,47 @@
         return this.parent.replace(content);
       };
 
+      Replaceable.prototype.applyDelete = function() {
+        if (this.content != null) {
+          this.content.applyDelete();
+          this.content.dontSync();
+        }
+        this.beforeDelete = this.content;
+        this.content = null;
+        return Replaceable.__super__.applyDelete.apply(this, arguments);
+      };
+
+      Replaceable.prototype.cleanup = function() {
+        return Replaceable.__super__.cleanup.apply(this, arguments);
+      };
+
       Replaceable.prototype.execute = function() {
-        var _base;
+        var ins_result, _ref;
         if (!this.validateSavedOperations()) {
           return false;
         } else {
-          if (typeof (_base = this.content).setReplaceManager === "function") {
-            _base.setReplaceManager(this.parent);
+          if ((_ref = this.content) != null) {
+            if (typeof _ref.setReplaceManager === "function") {
+              _ref.setReplaceManager(this.parent);
+            }
           }
-          return Replaceable.__super__.execute.apply(this, arguments);
+          ins_result = Replaceable.__super__.execute.call(this);
+          if (ins_result) {
+            if (this.next_cl.type === "Delimiter" && this.prev_cl.type !== "Delimiter") {
+              this.prev_cl.applyDelete();
+            } else if (this.next_cl.type !== "Delimiter") {
+              this.applyDelete();
+            }
+          }
+          return ins_result;
         }
       };
 
       Replaceable.prototype._encode = function() {
-        var json;
+        var json, _ref;
         json = {
           'type': "Replaceable",
-          'content': this.content.getUid(),
+          'content': (_ref = this.content) != null ? _ref.getUid() : void 0,
           'ReplaceManager': this.parent.getUid(),
           'prev': this.prev_cl.getUid(),
           'next': this.next_cl.getUid(),

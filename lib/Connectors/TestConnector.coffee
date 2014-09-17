@@ -27,6 +27,7 @@ module.exports = (user_list)->
       if not (user_list?.length is 0)
         @engine.applyOps user_list[0].getHistoryBuffer()._encode()
 
+      @HB.setManualGarbageCollect()
       @unexecuted = {}
 
     #

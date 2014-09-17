@@ -9,11 +9,17 @@
     execution_listener = [];
     Operation = (function() {
       function Operation(uid) {
-        if (uid == null) {
+        this.is_deleted = false;
+        this.doSync = true;
+        if (uid != null) {
+          this.doSync = !isNaN(parseInt(uid.op_number));
+        } else {
           uid = HB.getNextOperationIdentifier();
         }
         this.creator = uid['creator'], this.op_number = uid['op_number'];
       }
+
+      Operation.prototype.type = "Insert";
 
       Operation.prototype.on = function(events, f) {
         var e, _base, _i, _len, _results;
@@ -71,6 +77,26 @@
         }
       };
 
+      Operation.prototype.isDeleted = function() {
+        return this.is_deleted;
+      };
+
+      Operation.prototype.applyDelete = function(garbagecollect) {
+        if (garbagecollect == null) {
+          garbagecollect = true;
+        }
+        if (!this.isDeleted()) {
+          this.is_deleted = true;
+          if (garbagecollect) {
+            return HB.addToGarbageCollector(this);
+          }
+        }
+      };
+
+      Operation.prototype.cleanup = function() {
+        return HB.removeOperation(this);
+      };
+
       Operation.prototype.setParent = function(parent) {
         this.parent = parent;
       };
@@ -82,8 +108,13 @@
       Operation.prototype.getUid = function() {
         return {
           'creator': this.creator,
-          'op_number': this.op_number
+          'op_number': this.op_number,
+          'sync': this.doSync
         };
+      };
+
+      Operation.prototype.dontSync = function() {
+        return this.doSync = false;
       };
 
       Operation.prototype.execute = function() {
@@ -140,6 +171,8 @@
         Delete.__super__.constructor.call(this, uid);
       }
 
+      Delete.prototype.type = "Delete";
+
       Delete.prototype._encode = function() {
         return {
           'type': "Delete",
@@ -179,19 +212,47 @@
         Insert.__super__.constructor.call(this, uid);
       }
 
+      Insert.prototype.type = "Insert";
+
       Insert.prototype.applyDelete = function(o) {
+        var garbagecollect;
         if (this.deleted_by == null) {
           this.deleted_by = [];
         }
-        this.deleted_by.push(o);
-        if ((this.parent != null) && this.deleted_by.length === 1) {
-          return this.parent.callEvent("delete", this);
+        if ((this.parent != null) && !this.isDeleted()) {
+          this.parent.callEvent("delete", this);
         }
+        if (o != null) {
+          this.deleted_by.push(o);
+        }
+        garbagecollect = false;
+        if (this.prev_cl.isDeleted()) {
+          garbagecollect = true;
+        } else if (this.next_cl.isDeleted()) {
+          this.next_cl.applyDelete();
+        }
+        return Insert.__super__.applyDelete.call(this, garbagecollect);
       };
 
-      Insert.prototype.isDeleted = function() {
-        var _ref;
-        return ((_ref = this.deleted_by) != null ? _ref.length : void 0) > 0;
+      Insert.prototype.cleanup = function() {
+        var d, o, _i, _len, _ref;
+        if (this.prev_cl.isDeleted()) {
+          _ref = this.deleted_by;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            d = _ref[_i];
+            d.cleanup();
+          }
+          o = this.next_cl;
+          while (o.type !== "Delimiter") {
+            if (o.origin === this) {
+              o.origin = this.prev_cl;
+            }
+            o = o.next_cl;
+          }
+          this.prev_cl.next_cl = this.next_cl;
+          this.next_cl.prev_cl = this.prev_cl;
+          return Insert.__super__.cleanup.apply(this, arguments);
+        }
       };
 
       Insert.prototype.getDistanceToOrigin = function() {
@@ -203,53 +264,21 @@
             break;
           }
           d++;
-          if (this === this.prev_cl) {
-            throw new Error("this should not happen ;) ");
-          }
           o = o.prev_cl;
         }
         return d;
       };
 
-      Insert.prototype.update_sl = function() {
-        var o;
-        o = this.prev_cl;
-        ({
-          update: function(dest_cl, dest_sl) {
-            var _results;
-            _results = [];
-            while (true) {
-              if (o.isDeleted()) {
-                _results.push(o = o[dest_cl]);
-              } else {
-                this[dest_sl] = o;
-                break;
-              }
-            }
-            return _results;
-          }
-        });
-        update("prev_cl", "prev_sl");
-        return update("next_cl", "prev_sl");
-      };
-
       Insert.prototype.execute = function() {
-        var distance_to_origin, i, o, parent, _ref, _ref1, _ref2;
-        if (this.is_executed != null) {
-          return this;
-        }
+        var distance_to_origin, i, o, parent, _ref;
         if (!this.validateSavedOperations()) {
           return false;
         } else {
-          if (((_ref = this.prev_cl) != null ? _ref.validateSavedOperations() : void 0) && ((_ref1 = this.next_cl) != null ? _ref1.validateSavedOperations() : void 0) && this.prev_cl.next_cl !== this) {
-            distance_to_origin = 0;
+          if (this.prev_cl != null) {
+            distance_to_origin = this.getDistanceToOrigin();
             o = this.prev_cl.next_cl;
-            i = 0;
+            i = distance_to_origin;
             while (true) {
-              if (o == null) {
-                console.log(JSON.stringify(this.prev_cl.getUid()));
-                console.log(JSON.stringify(this.next_cl.getUid()));
-              }
               if (o !== this.next_cl) {
                 if (o.getDistanceToOrigin() === i) {
                   if (o.creator < this.creator) {
@@ -278,7 +307,7 @@
             this.prev_cl.next_cl = this;
             this.next_cl.prev_cl = this;
           }
-          parent = (_ref2 = this.prev_cl) != null ? _ref2.getParent() : void 0;
+          parent = (_ref = this.prev_cl) != null ? _ref.getParent() : void 0;
           if (parent != null) {
             this.setParent(parent);
             this.parent.callEvent("insert", this);
@@ -295,7 +324,7 @@
           if (prev instanceof Delimiter) {
             break;
           }
-          if ((prev.isDeleted != null) && !prev.isDeleted()) {
+          if (!prev.isDeleted()) {
             position++;
           }
           prev = prev.prev_cl;
@@ -314,6 +343,8 @@
         ImmutableObject.__super__.constructor.call(this, uid, prev, next, origin);
       }
 
+      ImmutableObject.prototype.type = "ImmutableObject";
+
       ImmutableObject.prototype.val = function() {
         return this.content;
       };
@@ -331,15 +362,15 @@
         if (this.next_cl != null) {
           json['next'] = this.next_cl.getUid();
         }
-        if ((this.origin != null) && this.origin !== this.prev_cl) {
-          json["origin"] = this.origin.getUid();
+        if (this.origin != null) {
+          json["origin"] = this.origin().getUid();
         }
         return json;
       };
 
       return ImmutableObject;
 
-    })(Insert);
+    })(Operation);
     parser['ImmutableObject'] = function(json) {
       var content, next, origin, prev, uid;
       uid = json['uid'], content = json['content'], prev = json['prev'], next = json['next'], origin = json['origin'];
@@ -355,8 +386,21 @@
         Delimiter.__super__.constructor.call(this, uid);
       }
 
-      Delimiter.prototype.isDeleted = function() {
-        return false;
+      Delimiter.prototype.type = "Delimiter";
+
+      Delimiter.prototype.applyDelete = function() {
+        var o;
+        Delimiter.__super__.applyDelete.call(this);
+        o = this.next_cl;
+        while (o != null) {
+          o.applyDelete();
+          o = o.next_cl;
+        }
+        return void 0;
+      };
+
+      Delimiter.prototype.cleanup = function() {
+        return Delimiter.__super__.cleanup.call(this);
       };
 
       Delimiter.prototype.execute = function() {

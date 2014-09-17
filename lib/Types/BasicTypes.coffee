@@ -23,12 +23,19 @@ module.exports = (HB)->
     # @see HistoryBuffer.getNextOperationIdentifier
     #
     constructor: (uid)->
-      if not uid?
+      @is_deleted = false
+      @doSync = true
+      @garbage_collected = false
+      if uid?
+        @doSync = not isNaN(parseInt(uid.op_number))
+      else
         uid = HB.getNextOperationIdentifier()
       {
         'creator': @creator
         'op_number' : @op_number
       } = uid
+
+    type: "Insert"
 
     #
     # Add an event listener. It depends on the operation which events are supported.
@@ -76,6 +83,21 @@ module.exports = (HB)->
         for f in @event_listeners[event]
           f.call op, event, args...
 
+    isDeleted: ()->
+      @is_deleted
+
+    applyDelete: (garbagecollect = true)->
+      if not @garbage_collected
+        #console.log "applyDelete: #{@type}"
+        @is_deleted = true
+        if garbagecollect
+          @garbage_collected = true
+          HB.addToGarbageCollector @
+
+    cleanup: ()->
+      #console.log "cleanup: #{@type}"
+      HB.removeOperation @
+
     #
     # Set the parent of this operation.
     #
@@ -91,7 +113,10 @@ module.exports = (HB)->
     # Computes a unique identifier (uid) that identifies this operation.
     #
     getUid: ()->
-      { 'creator': @creator, 'op_number': @op_number }
+      { 'creator': @creator, 'op_number': @op_number , 'sync': @doSync}
+
+    dontSync: ()->
+      @doSync = false
 
     #
     # @private
@@ -162,7 +187,7 @@ module.exports = (HB)->
 
   #
   # @nodoc
-  # A simple Delete-type operation that deletes an Insert-type operation.
+  # A simple Delete-type operation that deletes an operation.
   #
   class Delete extends Operation
 
@@ -173,6 +198,8 @@ module.exports = (HB)->
     constructor: (uid, deletes)->
       @saveOperation 'deletes', deletes
       super uid
+
+    type: "Delete"
 
     #
     # @private
@@ -235,21 +262,46 @@ module.exports = (HB)->
         @saveOperation 'origin', prev_cl
       super uid
 
+    type: "Insert"
+
     #
+    # set content to null and other stuff
     # @private
     #
     applyDelete: (o)->
       @deleted_by ?= []
-      @deleted_by.push o
-      if @parent? and @deleted_by.length is 1
+      if @parent? and not @isDeleted()
         # call iff wasn't deleted earlyer
         @parent.callEvent "delete", @
+      if o?
+        @deleted_by.push o
+      garbagecollect = false
+      if @prev_cl.isDeleted()
+        garbagecollect = true
+      super garbagecollect
+      if @next_cl.isDeleted()
+        # garbage collect next_cl
+        @next_cl.applyDelete()
 
-    #
-    # If isDeleted() is true this operation won't be maintained in the sl
-    #
-    isDeleted: ()->
-      @deleted_by?.length > 0
+    cleanup: ()->
+      # TODO: Debugging
+      if @prev_cl.isDeleted()
+        # delete all ops that delete this insertion
+        for d in @deleted_by
+          d.cleanup()
+
+        # throw new Error "left is not deleted. inconsistency!, wrararar"
+        # delete origin references to the right
+        o = @next_cl
+        while o.type isnt "Delimiter"
+          if o.origin is @
+            o.origin = @prev_cl
+          o = o.next_cl
+        # reconnect left/right
+        @prev_cl.next_cl = @next_cl
+        @next_cl.prev_cl = @prev_cl
+        super
+
 
     #
     # @private
@@ -262,45 +314,22 @@ module.exports = (HB)->
         if @origin is o
           break
         d++
-        #TODO: delete this
-        if @ is @prev_cl
-          throw new Error "this should not happen ;) "
         o = o.prev_cl
       d
-
-    #
-    # @private
-    # Update the short list
-    # TODO (Unused)
-    update_sl: ()->
-      o = @prev_cl
-      update: (dest_cl,dest_sl)->
-        while true
-          if o.isDeleted()
-            o = o[dest_cl]
-          else
-            @[dest_sl] = o
-
-            break
-      update "prev_cl", "prev_sl"
-      update "next_cl", "prev_sl"
-
-
 
     #
     # @private
     # Include this operation in the associative lists.
     #
     execute: ()->
-      if @is_executed?
-        return @
       if not @validateSavedOperations()
         return false
       else
-        if @prev_cl?.validateSavedOperations() and @next_cl?.validateSavedOperations() and @prev_cl.next_cl isnt @
-          distance_to_origin = 0
+        if @prev_cl?
+          distance_to_origin = @getDistanceToOrigin() # most cases: 0
           o = @prev_cl.next_cl
-          i = 0
+          i = distance_to_origin # loop counter
+
           # $this has to find a unique position between origin and the next known character
           # case 1: $origin equals $o.origin: the $creator parameter decides if left or right
           #         let $OL= [o1,o2,o3,o4], whereby $this is to be inserted between o1 and o4
@@ -314,10 +343,6 @@ module.exports = (HB)->
           # case 3: $origin > $o.origin
           #         $this insert_position is to the left of $o (forever!)
           while true
-            if not o?
-              # TODO: Debugging
-              console.log JSON.stringify @prev_cl.getUid()
-              console.log JSON.stringify @next_cl.getUid()
             if o isnt @next_cl
               # $o happened concurrently
               if o.getDistanceToOrigin() is i
@@ -346,6 +371,7 @@ module.exports = (HB)->
           @next_cl = @prev_cl.next_cl
           @prev_cl.next_cl = @
           @next_cl.prev_cl = @
+
         parent = @prev_cl?.getParent()
         if parent?
           @setParent parent
@@ -361,7 +387,7 @@ module.exports = (HB)->
       while true
         if prev instanceof Delimiter
           break
-        if prev.isDeleted? and not prev.isDeleted()
+        if not prev.isDeleted()
           position++
         prev = prev.prev_cl
       position
@@ -370,7 +396,7 @@ module.exports = (HB)->
   # @nodoc
   # Defines an object that is cannot be changed. You can use this to set an immutable string, or a number.
   #
-  class ImmutableObject extends Insert
+  class ImmutableObject extends Operation
 
     #
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
@@ -378,6 +404,8 @@ module.exports = (HB)->
     #
     constructor: (uid, @content, prev, next, origin)->
       super uid, prev, next, origin
+
+    type: "ImmutableObject"
 
     #
     # @return [String] The content of this operation.
@@ -398,8 +426,8 @@ module.exports = (HB)->
         json['prev'] = @prev_cl.getUid()
       if @next_cl?
         json['next'] = @next_cl.getUid()
-      if @origin? and @origin isnt @prev_cl
-        json["origin"] = @origin.getUid()
+      if @origin? # and @origin isnt @prev_cl
+        json["origin"] = @origin().getUid()
       json
 
   parser['ImmutableObject'] = (json)->
@@ -432,11 +460,18 @@ module.exports = (HB)->
       @saveOperation 'origin', prev_cl
       super uid
 
-    #
-    # If isDeleted() is true this operation won't be maintained in the sl
-    #
-    isDeleted: ()->
-      false
+    type: "Delimiter"
+
+    applyDelete: ()->
+      super()
+      o = @next_cl
+      while o?
+        o.applyDelete()
+        o = o.next_cl
+      undefined
+
+    cleanup: ()->
+      super()
 
     #
     # @private

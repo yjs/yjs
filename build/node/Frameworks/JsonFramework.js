@@ -9,19 +9,26 @@
 
   JsonFramework = (function() {
     function JsonFramework(user_id, Connector) {
-      var first_word, type_manager;
+      var beg, end, first_word, type_manager, uid_beg, uid_end;
       this.HB = new HistoryBuffer(user_id);
       type_manager = json_types_uninitialized(this.HB);
       this.types = type_manager.types;
       this.engine = new Engine(this.HB, type_manager.parser);
+      this.HB.engine = this.engine;
       this.connector = new Connector(this.engine, this.HB, type_manager.execution_listener, this);
       first_word = new this.types.JsonType(this.HB.getReservedUniqueIdentifier());
       this.HB.addOperation(first_word).execute();
-      this.root_element = first_word;
+      uid_beg = this.HB.getReservedUniqueIdentifier();
+      uid_end = this.HB.getReservedUniqueIdentifier();
+      beg = this.HB.addOperation(new this.types.Delimiter(uid_beg, void 0, uid_end)).execute();
+      end = this.HB.addOperation(new this.types.Delimiter(uid_end, beg, void 0)).execute();
+      this.root_element = new this.types.ReplaceManager(void 0, this.HB.getReservedUniqueIdentifier(), beg, end);
+      this.HB.addOperation(this.root_element).execute();
+      this.root_element.replace(first_word, this.HB.getReservedUniqueIdentifier());
     }
 
     JsonFramework.prototype.getSharedObject = function() {
-      return this.root_element;
+      return this.root_element.val();
     };
 
     JsonFramework.prototype.getConnector = function() {
@@ -33,7 +40,7 @@
     };
 
     JsonFramework.prototype.setMutableDefault = function(mutable) {
-      return this.root_element.setMutableDefault(mutable);
+      return this.getSharedObject().setMutableDefault(mutable);
     };
 
     JsonFramework.prototype.getUserId = function() {
@@ -41,26 +48,26 @@
     };
 
     JsonFramework.prototype.toJson = function() {
-      return this.root_element.toJson();
+      return this.getSharedObject().toJson();
     };
 
     JsonFramework.prototype.val = function(name, content, mutable) {
-      return this.root_element.val(name, content, mutable);
+      return this.getSharedObject().val(name, content, mutable);
     };
 
     JsonFramework.prototype.on = function() {
       var _ref;
-      return (_ref = this.root_element).on.apply(_ref, arguments);
+      return (_ref = this.getSharedObject()).on.apply(_ref, arguments);
     };
 
     JsonFramework.prototype.deleteListener = function() {
       var _ref;
-      return (_ref = this.root_element).deleteListener.apply(_ref, arguments);
+      return (_ref = this.getSharedObject()).deleteListener.apply(_ref, arguments);
     };
 
     Object.defineProperty(JsonFramework.prototype, 'value', {
       get: function() {
-        return this.root_element.value;
+        return this.getSharedObject().value;
       },
       set: function(o) {
         var o_name, o_obj, _results;

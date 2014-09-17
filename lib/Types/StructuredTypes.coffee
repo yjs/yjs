@@ -18,6 +18,16 @@ module.exports = (HB)->
       @map = {}
       super uid
 
+    type: "MapManager"
+
+    applyDelete: ()->
+      for name,p of @map
+        p.applyDelete()
+      super()
+
+    cleanup: ()->
+      super()
+
     #
     # @see JsonTypes.val
     #
@@ -60,6 +70,14 @@ module.exports = (HB)->
       @saveOperation 'map_manager', map_manager
       super uid
 
+    type: "AddName"
+
+    applyDelete: ()->
+      super()
+
+    cleanup: ()->
+      super()
+
     #
     # If map_manager doesn't have the property name, then add it.
     # The ReplaceManager that is being written on the property is unique
@@ -81,6 +99,7 @@ module.exports = (HB)->
           end = HB.addOperation(new types.Delimiter uid_end, beg, undefined).execute()
           @map_manager.map[@name] = HB.addOperation(new ReplaceManager undefined, uid_r, beg, end)
           @map_manager.map[@name].setParent @map_manager, @name
+          (@map_manager.map[@name].add_name_ops ?= []).push @
           @map_manager.map[@name].execute()
         super
 
@@ -107,7 +126,7 @@ module.exports = (HB)->
   # @nodoc
   # Manages a list of Insert-type operations.
   #
-  class ListManager extends types.Insert
+  class ListManager extends types.Operation
 
     #
     # A ListManager maintains a non-empty list that has a beginning and an end (both Delimiters!)
@@ -125,6 +144,8 @@ module.exports = (HB)->
         @beginning.execute()
         @end.execute()
       super uid, prev, next, origin
+
+    type: "ListManager"
 
     #
     # @private
@@ -195,6 +216,22 @@ module.exports = (HB)->
       if initial_content?
         @replace initial_content
 
+    type: "ReplaceManager"
+
+    applyDelete: ()->
+      o = @beginning
+      while o?
+        o.applyDelete()
+        o = o.next_cl
+      # if this was created by an AddName operation, delete it too
+      if @add_name_ops?
+        for o in @add_name_ops
+          o.applyDelete()
+      super()
+
+    cleanup: ()->
+      super()
+
     #
     # Replace the existing word with a new word.
     #
@@ -205,6 +242,7 @@ module.exports = (HB)->
       o = @getLastOperation()
       op = new Replaceable content, @, replaceable_uid, o, o.next_cl
       HB.addOperation(op).execute()
+      undefined
 
     #
     # Add change listeners for parent.
@@ -222,7 +260,7 @@ module.exports = (HB)->
         @deleteListener 'addProperty', addPropertyListener
       @on 'insert', addPropertyListener
       super parent
-      
+
     #
     # Get the value of this WordType
     # @return {String}
@@ -247,8 +285,8 @@ module.exports = (HB)->
       if @prev_cl? and @next_cl?
         json['prev'] = @prev_cl.getUid()
         json['next'] = @next_cl.getUid()
-      if @origin? and @origin isnt @prev_cl
-        json["origin"] = @origin.getUid()
+      if @origin? # and @origin isnt @prev_cl
+        json["origin"] = @origin().getUid()
       json
 
   parser["ReplaceManager"] = (json)->
@@ -279,9 +317,11 @@ module.exports = (HB)->
     constructor: (content, parent, uid, prev, next, origin)->
       @saveOperation 'content', content
       @saveOperation 'parent', parent
-      if not (prev? and next? and content?)
-        throw new Error "You must define content, prev, and next for Replaceable-types!"
+      if not (prev? and next?)
+        throw new Error "You must define prev, and next for Replaceable-types!"
       super uid, prev, next, origin
+
+    type: "Replaceable"
 
     #
     # Return the content that this operation holds.
@@ -295,6 +335,17 @@ module.exports = (HB)->
     replace: (content)->
       @parent.replace content
 
+    applyDelete: ()->
+      if @content?
+        @content.applyDelete()
+        @content.dontSync()
+      @beforeDelete = @content # TODO!!!!!!!!!!
+      @content = null
+      super
+
+    cleanup: ()->
+      super
+
     #
     # If possible set the replace manager in the content.
     # @see WordType.setReplaceManager
@@ -303,8 +354,15 @@ module.exports = (HB)->
       if not @validateSavedOperations()
         return false
       else
-        @content.setReplaceManager?(@parent)
-        super
+        @content?.setReplaceManager?(@parent)
+        ins_result = super()
+        if ins_result
+          if @next_cl.type is "Delimiter" and @prev_cl.type isnt "Delimiter"
+            @prev_cl.applyDelete()
+          else if @next_cl.type isnt "Delimiter"
+            @applyDelete()
+
+        return ins_result
 
     #
     # Encode this operation in such a way that it can be parsed by remote peers.
@@ -313,7 +371,7 @@ module.exports = (HB)->
       json =
         {
           'type': "Replaceable"
-          'content': @content.getUid()
+          'content': @content?.getUid()
           'ReplaceManager' : @parent.getUid()
           'prev': @prev_cl.getUid()
           'next': @next_cl.getUid()

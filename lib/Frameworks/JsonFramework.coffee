@@ -21,16 +21,25 @@ class JsonFramework
     type_manager = json_types_uninitialized @HB
     @types = type_manager.types
     @engine = new Engine @HB, type_manager.parser
+    @HB.engine = @engine # TODO: !! only for debugging
     @connector = new Connector @engine, @HB, type_manager.execution_listener, @
-    first_word = new @types.JsonType @HB.getReservedUniqueIdentifier()
+    first_word = new @types.JsonType(@HB.getReservedUniqueIdentifier())
     @HB.addOperation(first_word).execute()
-    @root_element = first_word
+
+    uid_beg = @HB.getReservedUniqueIdentifier()
+    uid_end = @HB.getReservedUniqueIdentifier()
+    beg = @HB.addOperation(new @types.Delimiter uid_beg, undefined, uid_end).execute()
+    end = @HB.addOperation(new @types.Delimiter uid_end, beg, undefined).execute()
+
+    @root_element = new @types.ReplaceManager undefined, @HB.getReservedUniqueIdentifier(), beg, end
+    @HB.addOperation(@root_element).execute()
+    @root_element.replace first_word, @HB.getReservedUniqueIdentifier()
 
   #
   # @return JsonType
   #
   getSharedObject: ()->
-    @root_element
+    @root_element.val()
 
   #
   # Get the initialized connector.
@@ -48,7 +57,7 @@ class JsonFramework
   # @see JsonType.setMutableDefault
   #
   setMutableDefault: (mutable)->
-    @root_element.setMutableDefault(mutable)
+    @getSharedObject().setMutableDefault(mutable)
 
   #
   # Get the UserId from the HistoryBuffer object.
@@ -62,31 +71,31 @@ class JsonFramework
   # @see JsonType.toJson
   #
   toJson : ()->
-    @root_element.toJson()
+    @getSharedObject().toJson()
 
   #
   # @see JsonType.val
   #
   val : (name, content, mutable)->
-    @root_element.val(name, content, mutable)
+    @getSharedObject().val(name, content, mutable)
 
   #
   # @see Operation.on
   #
   on: ()->
-    @root_element.on arguments...
+    @getSharedObject().on arguments...
 
   #
   # @see Operation.deleteListener
   #
   deleteListener: ()->
-    @root_element.deleteListener arguments...
+    @getSharedObject().deleteListener arguments...
 
   #
   # @see JsonType.value
   #
   Object.defineProperty JsonFramework.prototype, 'value',
-    get : -> @root_element.value
+    get : -> @getSharedObject().value
     set : (o)->
       if o.constructor is {}.constructor
         for o_name,o_obj of o

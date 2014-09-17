@@ -123,6 +123,11 @@ module.exports = (HB)->
     #
     type: "JsonType"
 
+    applyDelete: ()->
+      super()
+
+    cleanup: ()->
+      super()
     #
     # Transform this to a Json and loose all the sharing-abilities (the new object will be a deep clone)!
     # @return {Json}
@@ -147,16 +152,18 @@ module.exports = (HB)->
     # @see WordType.setReplaceManager
     # Sets the parent of this JsonType object.
     #
-    setReplaceManager: (rm)->
-      @parent = rm.parent
+    setReplaceManager: (replace_manager)->
+      @replace_manager = replace_manager
       @on ['change','addProperty'], ()->
-        rm.parent.forwardEvent this, arguments...
+        if replace_manager.parent?
+          replace_manager.parent.forwardEvent this, arguments...
+
     #
     # Get the parent of this JsonType.
     # @return {JsonType}
     #
     getParent: ()->
-      @parent
+      @replace_manager.parent
 
     #
     # Whether the default is 'mutable' (true) or 'immutable' (false)
@@ -196,8 +203,9 @@ module.exports = (HB)->
       if typeof name is 'object'
         # Special case. First argument is an object. Then the second arg is mutable.
         # Keep that in mind when reading the following..
-        for o_name,o of name
-          @val(o_name,o,content)
+        json = new JsonType undefined, name, content
+        HB.addOperation(json).execute()
+        @replace_manager.replace json
         @
       else if name? and (content? or content is null)
         if mutable?

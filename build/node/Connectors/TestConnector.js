@@ -27,6 +27,7 @@
         if (!((user_list != null ? user_list.length : void 0) === 0)) {
           this.engine.applyOps(user_list[0].getHistoryBuffer()._encode());
         }
+        this.HB.setManualGarbageCollect();
         this.unexecuted = {};
       }
 

@@ -14,8 +14,8 @@ module.exports = class Test
   constructor: (@name_suffix = "")->
     @number_of_test_cases_multiplier = 1
     @repeat_this = 1 * @number_of_test_cases_multiplier
-    @doSomething_amount = 200 * @number_of_test_cases_multiplier
-    @number_of_engines =  7 + @number_of_test_cases_multiplier - 1
+    @doSomething_amount = 800 * @number_of_test_cases_multiplier
+    @number_of_engines = 5 + @number_of_test_cases_multiplier - 1
 
     @time = 0
     @ops = 0
@@ -29,12 +29,14 @@ module.exports = class Test
     @users = []
     @Connector = Connector_uninitialized @users
     for i in [0...@number_of_engines]
-      @users.push @makeNewUser (i+@name_suffix), @Connector
+      u = @makeNewUser (i+@name_suffix), @Connector
+      @users.push u
     @users[0].val('name',"i")
     @flushAll()
 
-  makeNewUser: (user_id, Connector)->
-    throw new Error "overwrite me!"
+  makeNewUser: (user)->
+    user.HB.setManualGarbageCollect()
+    user
 
   getSomeUser: ()->
     i = _.random 0, (@users.length-1)
@@ -43,6 +45,7 @@ module.exports = class Test
   getRandomText: (chars, min_length = 0)->
     chars ?= "abcdefghijklmnopqrstuvwxyz"
     length = _.random min_length, 10
+    #length = 1
     nextchar = chars[(_.random 0, (chars.length-1))]
     text = ""
     _(length).times ()-> text += nextchar
@@ -75,11 +78,6 @@ module.exports = class Test
           null
         types: [types.WordType]
       ,
-        f : (y)=> # REPLACE TEXT
-          y.replaceText @getRandomText()
-          null
-        types: [types.WordType]
-      ,
         f : (y)-> # DELETE TEXT
           if y.val().length > 0
             pos = _.random 0, (y.val().length-1)
@@ -87,8 +85,12 @@ module.exports = class Test
             ops1 = y.deleteText pos, length
           undefined
         types : [types.WordType]
+      ,
+        f : (y)=> # REPLACE TEXT
+          y.replaceText @getRandomText()
+          null
+        types: [types.WordType]
     ]
-
   getRandomRoot: (user_num)->
     throw new Error "overwrite me!"
 
@@ -116,8 +118,10 @@ module.exports = class Test
     choice = _.random (choices.length-1)
     choices[choice](user_num)
 
-  flushAll: ()->
-    if @users.length <= 1
+  flushAll: (final)->
+    # TODO:!!
+    final = false
+    if @users.length <= 1 or not final
       for user,user_number in @users
         user.getConnector().flushAll()
     else
@@ -129,7 +133,7 @@ module.exports = class Test
 
 
   compareAll: (test_number)->
-    @flushAll()
+    @flushAll(true)
 
     @time += (new Date()).getTime() - @time_now
 
@@ -139,8 +143,8 @@ module.exports = class Test
     @ops += number_of_created_operations*@users.length
 
     ops_per_msek = Math.floor(@ops/@time)
-    if test_number? and @debug
-      console.log "#{test_number}/#{@repeat_this}: Every collaborator (#{@users.length}) applied #{number_of_created_operations} ops in a different order." + " Over all we consumed #{@ops} operations in #{@time/1000} seconds (#{ops_per_msek} ops/msek)."
+    if test_number? # and @debug
+      console.log "#{test_number}/#{@repeat_this}: #{number_of_created_operations} were created and applied on (#{@users.length}) users ops in a different order." + " Over all we consumed #{@ops} operations in #{@time/1000} seconds (#{ops_per_msek} ops/msek)."
 
     for i in [0...(@users.length-1)]
       if @debug
@@ -179,7 +183,12 @@ module.exports = class Test
       console.log ''
     for times in [1..@repeat_this]
       @time_now = (new Date).getTime()
-      for i in [1..@doSomething_amount]
+      for i in [1..Math.floor(@doSomething_amount/2)]
+        @doSomething()
+      @flushAll(false)
+      for u in @users
+        u.HB.emptyGarbage()
+      for i in [1..Math.floor(@doSomething_amount/2)]
         @doSomething()
 
       @compareAll(times)
@@ -188,8 +197,13 @@ module.exports = class Test
         @reinitialize()
 
   testHBencoding: ()->
-    @users[@users.length] = @makeNewUser 'testuser', (Connector_uninitialized [])
+    # in case of JsonFramework, every user will create its JSON first! therefore, the testusers id must be small than all the others (see InsertType)
+    @users[@users.length] = @makeNewUser (-1), (Connector_uninitialized [])
     @users[@users.length-1].engine.applyOps @users[0].HB._encode()
 
+    #if @getContent(@users.length-1) isnt @getContent(0)
+    #  console.log "testHBencoding:"
+    #  console.log "Unprocessed ops first: #{@users[0].engine.unprocessed_ops.length}"
+    #  console.log "Unprocessed ops last: #{@users[@users.length-1].engine.unprocessed_ops.length}"
     expect(@getContent(@users.length-1)).to.deep.equal(@getContent(0))
 

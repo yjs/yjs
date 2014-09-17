@@ -26,6 +26,9 @@ module.exports = (HB)->
       if not (prev? and next?)
         throw new Error "You must define prev, and next for TextInsert-types!"
       super uid, prev, next, origin
+
+    type: "TextInsert"
+
     #
     # Retrieve the effective length of the $content of this operation.
     #
@@ -35,13 +38,17 @@ module.exports = (HB)->
       else
         @content.length
 
+    applyDelete: ()->
+      @content = null
+      super
+
     #
     # The result will be concatenated with the results from the other insert operations
     # in order to retrieve the content of the engine.
     # @see HistoryBuffer.toExecutedArray
     #
     val: (current_position)->
-      if @isDeleted()
+      if @isDeleted() or not @content?
         ""
       else
         @content
@@ -59,7 +66,7 @@ module.exports = (HB)->
           'prev': @prev_cl.getUid()
           'next': @next_cl.getUid()
         }
-      if @origin? and @origin isnt @prev_cl
+      if @origin isnt @prev_cl
         json["origin"] = @origin.getUid()
       json
 
@@ -98,16 +105,32 @@ module.exports = (HB)->
     #
     type: "WordType"
 
+    applyDelete: ()->
+      o = @beginning
+      while o?
+        o.applyDelete()
+        o = o.next_cl
+      super()
+
+    cleanup: ()->
+      super()
+
     #
     # Inserts a string into the word.
     #
     # @return {WordType} This WordType object.
     #
     insertText: (position, content)->
-      o = @getOperationByPosition position
+      # TODO: getOperationByPosition should return "(i-2)th" character
+      ith = @getOperationByPosition position # the (i-1)th character. e.g. "abc" a is the 0th character
+      left = ith.prev_cl # left is the non-deleted charather to the left of ith
+      while left.isDeleted()
+        left = left.prev_cl # find the first character to the left, that is not deleted. Case position is 0, its the Delimiter.
+      right = left.next_cl
       for c in content
-        op = new TextInsert c, undefined, o.prev_cl, o
+        op = new TextInsert c, undefined, left, right
         HB.addOperation(op).execute()
+        left = op
       @
 
     #
@@ -300,8 +323,8 @@ module.exports = (HB)->
         json['prev'] = @prev_cl.getUid()
       if @next_cl?
         json['next'] = @next_cl.getUid()
-      if @origin? and @origin isnt @prev_cl
-        json["origin"] = @origin.getUid()
+      if @origin? # and @origin isnt @prev_cl
+        json["origin"] = @origin().getUid()
       json
 
   parser['WordType'] = (json)->
