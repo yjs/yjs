@@ -93,6 +93,17 @@
       }
     };
 
+    HistoryBuffer.prototype.renewOperationCounter = function(state_vector) {
+      var key, value;
+      for (key in state_vector) {
+        value = state_vector[key];
+        if (this.operation_counter[key] < value) {
+          this.operation_counter[key] = value;
+        }
+      }
+      return void 0;
+    };
+
     HistoryBuffer.prototype._encode = function(state_vector) {
       var json, o, o_json, o_next, o_number, o_prev, u_name, unknown, user, _ref;
       if (state_vector == null) {

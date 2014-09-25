@@ -38,18 +38,17 @@
       return this.tryUnprocessed();
     };
 
-    Engine.prototype.applyOpsCheckDouble = function(ops_json) {
-      var o, _i, _len, _results;
-      _results = [];
+    Engine.prototype.applyOpsCheckDouble = function(ops_json, state_vector) {
+      var o, _i, _len;
       for (_i = 0, _len = ops_json.length; _i < _len; _i++) {
         o = ops_json[_i];
         if (this.HB.getOperation(o.uid) == null) {
-          _results.push(this.applyOp(o));
-        } else {
-          _results.push(void 0);
+          this.applyOp(o);
         }
       }
-      return _results;
+      if (state_vector != null) {
+        return this.HB.renewStateVector(state_vector);
+      }
     };
 
     Engine.prototype.applyOps = function(ops_json) {
@@ -83,7 +82,9 @@
         _ref = this.unprocessed_ops;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           op = _ref[_i];
-          if (!op.execute()) {
+          if (this.HB.getOperation(op.getUid()) != null) {
+
+          } else if (!op.execute()) {
             unprocessed.push(op);
           } else {
             this.HB.addOperation(op);
