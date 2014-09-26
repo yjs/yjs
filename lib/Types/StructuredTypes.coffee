@@ -341,7 +341,6 @@ module.exports = (HB)->
       if @content?
         @content.applyDelete()
         @content.dontSync()
-      @beforeDelete = @content # TODO!!!!!!!!!!
       @content = null
       super
 

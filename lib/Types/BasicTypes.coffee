@@ -26,13 +26,14 @@ module.exports = (HB)->
       @is_deleted = false
       @doSync = true
       @garbage_collected = false
-      if uid?
-        @doSync = not isNaN(parseInt(uid.op_number))
-      else
+      if not uid?
         uid = HB.getNextOperationIdentifier()
+      if not uid.doSync?
+        uid.doSync = not isNaN(parseInt(uid.op_number))
       {
         'creator': @creator
         'op_number' : @op_number
+        'doSync' : @doSync
       } = uid
 
     type: "Insert"

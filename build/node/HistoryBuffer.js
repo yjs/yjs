@@ -74,7 +74,8 @@
     HistoryBuffer.prototype.getReservedUniqueIdentifier = function() {
       return {
         creator: '_',
-        op_number: "_" + (this.reserved_identifier_counter++)
+        op_number: "_" + (this.reserved_identifier_counter++),
+        doSync: false
       };
     };
 

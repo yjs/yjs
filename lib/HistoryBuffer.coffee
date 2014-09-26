@@ -69,6 +69,7 @@ class HistoryBuffer
     {
       creator : '_'
       op_number : "_#{@reserved_identifier_counter++}"
+      doSync: false
     }
 
   #
