@@ -103,7 +103,7 @@ gulp.task 'literate', ->
 gulp.task 'upload', [], ()->
   run('scp -r ./build ./examples jahns@manet.informatik.rwth-aachen.de:/home/jahns/public_html/collaborative_preview/').exec()
 
-gulp.task 'codo', [], ()->
+gulp.task 'codo', [], ()-> 
   command = 'codo -o "./doc" --name "Yatta!" --readme "README.md" --undocumented false --private true --title "Yatta! API" ./lib - LICENSE.txt '
   run(command).exec()
 
