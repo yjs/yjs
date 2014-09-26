@@ -54,6 +54,7 @@
     "gulp-uglify": "^0.3.1",
     "mocha": "^1.21.4",
     "sinon": "^1.10.2",
-    "sinon-chai": "^2.5.0"
+    "sinon-chai": "^2.5.0",
+    "codo": "^2.0.9"
   }
 }

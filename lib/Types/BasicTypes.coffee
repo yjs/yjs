@@ -321,8 +321,8 @@ module.exports = (HB)->
     #
     # @private
     # Include this operation in the associative lists.
-    #
-    execute: ()->
+    # @param fire_event {boolean} Whether to fire the insert-event.
+    execute: (fire_event = true)->
       if not @validateSavedOperations()
         return false
       else
@@ -374,7 +374,7 @@ module.exports = (HB)->
           @next_cl.prev_cl = @
 
         parent = @prev_cl?.getParent()
-        if parent?
+        if parent? and fire_event
           @setParent parent
           @parent.callEvent "insert", @
         super # notify the execution_listeners

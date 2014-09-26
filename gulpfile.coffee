@@ -16,7 +16,7 @@ run = require 'gulp-run'
 ljs = require 'gulp-ljs'
 
 
-gulp.task 'default', ['build', 'test', 'literate', 'lib', 'codo']
+gulp.task 'default', ['lint', 'browser', 'test', 'literate', 'lib', 'codo']
 gulp.task 'build', ['lint', 'browser']
 
 files =
@@ -104,7 +104,7 @@ gulp.task 'upload', [], ()->
   run('scp -r ./build ./examples jahns@manet.informatik.rwth-aachen.de:/home/jahns/public_html/collaborative_preview/').exec()
 
 gulp.task 'codo', [], ()->
-  command = 'codo -o "./doc" --name "Yatta!" --readme "README.md" --undocumented false --private true --title "Yatta! API" ./lib - LICENSE.txt ./extras/*'
+  command = 'codo -o "./doc" --name "Yatta!" --readme "README.md" --undocumented false --private true --title "Yatta! API" ./lib - LICENSE.txt '
   run(command).exec()
 
 gulp.task 'clean', ->

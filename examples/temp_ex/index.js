@@ -40,6 +40,25 @@ Y.createPeerJsConnector("unique_id", {key: 'h7nlefbgavh1tt9'}, function(Connecto
     it will be instantly shared with all the other collaborators.
   */
   yatta = new Y.JsonFramework(user_id, Connector);
-  yatta.val('w','w');
+  console.log(yatta.getUserId());
+
+  function show(o){
+    if (o.type === "JsonType"){
+      return JSON.stringify(o.toJson());
+    } else if (o.type === "WordType") {
+      return o.val();
+    } else if (o.constructor === {}.constructor) { // It's an Object
+      return JSON.stringify(o);
+    } else { // It's a primitive data type (E.g. string, int)
+      return o;
+    }
+  }
+
+  function addProperty(event_name, property_name, op){
+    // op is the operation that changed the objects value. In addProperty it is most likely to be a 'Replaceable' (see doc).
+    console.log("Property '" + property_name + "' was created by '"+op.creator+"'!");
+    console.log("Value: " + show(this.val(property_name))); // 'this' is the object on which the property was created.
+  };
+  yatta.on('addProperty', addProperty);
 
 });

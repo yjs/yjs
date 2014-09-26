@@ -257,8 +257,7 @@ module.exports = (HB)->
           repl_manager.parent.callEvent 'change', property_name, op
       # Call this, when the first element is inserted. Then delete the listener.
       addPropertyListener = (event, op)->
-        if op.next_cl instanceof types.Delimiter and op.prev_cl instanceof types.Delimiter
-          repl_manager.parent.callEvent 'addProperty', property_name, op
+        repl_manager.parent.callEvent 'addProperty', property_name, op
         repl_manager.deleteListener 'addProperty', addPropertyListener
       @on 'insert', addPropertyListener
       super parent
@@ -356,7 +355,10 @@ module.exports = (HB)->
         return false
       else
         @content?.setReplaceManager?(@parent)
-        ins_result = super()
+        # only fire 'insert-event' (which will result in addProperty and change events),
+        # when content is added. In case of Json, empty content means that this is not the last update,
+        # since content is deleted when 'applyDelete' was exectuted.
+        ins_result = super(@content?) # @content? whether to fire or not
         if ins_result
           if @next_cl.type is "Delimiter" and @prev_cl.type isnt "Delimiter"
             @prev_cl.applyDelete()
