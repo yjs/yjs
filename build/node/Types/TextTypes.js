@@ -174,16 +174,12 @@
       WordType.prototype.setReplaceManager = function(op) {
         this.saveOperation('replace_manager', op);
         this.validateSavedOperations();
-        this.on('insert', (function(_this) {
-          return function(event, ins) {
-            var _ref;
-            return (_ref = _this.replace_manager) != null ? _ref.forwardEvent(_this, 'change', ins) : void 0;
-          };
-        })(this));
+        this.on('insert', function(event, ins) {
+          return op.forwardEvent(this, 'change', ins);
+        });
         return this.on('delete', (function(_this) {
           return function(event, ins, del) {
-            var _ref;
-            return (_ref = _this.replace_manager) != null ? _ref.forwardEvent(_this, 'change', del) : void 0;
+            return op.forwardEvent(_this, 'change', del);
           };
         })(this));
       };

@@ -222,7 +222,9 @@
           this.deleted_by = [];
         }
         if ((this.parent != null) && !this.isDeleted()) {
-          this.parent.callEvent("delete", this, o);
+          if (o != null) {
+            this.parent.callEvent("delete", this, o);
+          }
         }
         if (o != null) {
           this.deleted_by.push(o);

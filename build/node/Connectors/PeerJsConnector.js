@@ -28,7 +28,7 @@
         send_ = (function(_this) {
           return function(o) {
             var conn, conn_id, _ref, _results;
-            if (o.uid.creator === _this.HB.getUserId() && (typeof o.uid.op_number !== "string")) {
+            if (o.creator === _this.HB.getUserId() && (typeof o.uid.op_number !== "string") && o.uid.sync) {
               _ref = _this.connections;
               _results = [];
               for (conn_id in _ref) {
@@ -71,7 +71,7 @@
 
             } else if (data.HB != null) {
               initialized_me = true;
-              _this.engine.applyOpsCheckDouble(data.HB);
+              _this.engine.applyOpsCheckDouble(data.HB, data.state_vector);
               return conn.send({
                 conns: _this.getAllConnectionIds()
               });
@@ -88,7 +88,8 @@
             } else if (data.state_vector != null) {
               if (!initialized_him) {
                 conn.send({
-                  HB: _this.yatta.getHistoryBuffer()._encode(data.state_vector)
+                  HB: _this.yatta.getHistoryBuffer()._encode(data.state_vector),
+                  state_vector: _this.yatta.HB.getOperationCounter()
                 });
                 return initialized_him = true;
               }
