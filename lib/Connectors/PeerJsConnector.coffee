@@ -111,7 +111,6 @@ createPeerJsConnector = ()->
           for conn_id in data.conns
             @connectToPeer conn_id
         else if data.sync_state_vector?
-          console.log "turinae"
           conn.send
             HB: @yatta.getHistoryBuffer()._encode(data.sync_state_vector)
             initialized: true
