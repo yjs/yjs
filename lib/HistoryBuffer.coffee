@@ -152,6 +152,8 @@ class HistoryBuffer
     if @buffer[o.creator][o.op_number]?
       throw new Error "You must not overwrite operations!"
     @buffer[o.creator][o.op_number] = o
+    @number_of_operations_added_to_HB ?= 0 # TODO: Debug, remove this
+    @number_of_operations_added_to_HB++
     o
 
   removeOperation: (o)->

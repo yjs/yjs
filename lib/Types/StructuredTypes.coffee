@@ -395,8 +395,6 @@ module.exports = (HB)->
     } = json
     new Replaceable content, parent, uid, prev, next, origin
 
-
-
   types['ListManager'] = ListManager
   types['MapManager'] = MapManager
   types['ReplaceManager'] = ReplaceManager
