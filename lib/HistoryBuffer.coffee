@@ -20,7 +20,7 @@ class HistoryBuffer
     @garbage = [] # Will be cleaned on next call of garbageCollector
     @trash = [] # Is deleted. Wait until it is not used anymore.
     @performGarbageCollection = true
-    @garbageCollectTimeout = 8000
+    @garbageCollectTimeout = 1000
     @reserved_identifier_counter = 0
     setTimeout @emptyGarbage, @garbageCollectTimeout
 
@@ -96,6 +96,7 @@ class HistoryBuffer
       not state_vector[user]? or state_vector[user] <= o_number
 
     for u_name,user of @buffer
+      # TODO next, if @state_vector[user] <= state_vector[user]
       for o_number,o of user
         if o.doSync and unknown(u_name, o_number)
           # its necessary to send it, and not known in state_vector

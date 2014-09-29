@@ -45,7 +45,7 @@
             return _results;
           };
         })(this);
-        setInterval(sync_every_collaborator, 8000);
+        setInterval(sync_every_collaborator, 4000);
         send_ = (function(_this) {
           return function(o) {
             var conn, conn_id, _ref, _results;
@@ -109,7 +109,6 @@
               }
               return _results;
             } else if (data.sync_state_vector != null) {
-              console.log("turinae");
               return conn.send({
                 HB: _this.yatta.getHistoryBuffer()._encode(data.sync_state_vector),
                 initialized: true
@@ -123,7 +122,7 @@
                 return initialized_him = true;
               }
             } else {
-              throw new Error("Can't parse this operation");
+              throw new Error("Can't parse this operation " + data);
             }
           };
         })(this));
