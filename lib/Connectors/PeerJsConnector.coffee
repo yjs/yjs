@@ -43,12 +43,21 @@ createPeerJsConnector = ()->
       @peer.on 'connection', (conn)=>
         @addConnection conn
 
+      sync_every_collaborator = ()=>
+          for conn_id, conn of @connections
+            conn.send
+              sync_state_vector: @HB.getOperationCounter()
+      setInterval sync_every_collaborator, 8000
+
       send_ = (o)=>
         if o.uid.creator is @HB.getUserId() and (typeof o.uid.op_number isnt "string")
           for conn_id,conn of @connections
             conn.send
               op: o
       @execution_listener.push send_
+
+
+
 
     #
     # Connect the Framework to another peer. Therefore you have to receive his
@@ -93,18 +102,25 @@ createPeerJsConnector = ()->
         else if data.HB?
           initialized_me = true
           @engine.applyOpsCheckDouble data.HB
-          conn.send
-            conns: @getAllConnectionIds()
+          if not data.initialized
+            conn.send
+              conns: @getAllConnectionIds()
         else if data.op?
           @engine.applyOp data.op
         else if data.conns?
           for conn_id in data.conns
             @connectToPeer conn_id
+        else if data.sync_state_vector?
+          console.log "turinae"
+          conn.send
+            HB: @yatta.getHistoryBuffer()._encode(data.sync_state_vector)
+            initialized: true
         else if data.state_vector?
           if not initialized_him
             # make sure, that it is sent only once
             conn.send
               HB: @yatta.getHistoryBuffer()._encode(data.state_vector)
+              initialized: false
             initialized_him = true
         else
           throw new Error "Can't parse this operation"

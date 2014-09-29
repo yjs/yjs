@@ -19,7 +19,7 @@
     }
     PeerJsConnector = (function() {
       function PeerJsConnector(engine, HB, execution_listener, yatta) {
-        var send_;
+        var send_, sync_every_collaborator;
         this.engine = engine;
         this.HB = HB;
         this.execution_listener = execution_listener;
@@ -31,6 +31,21 @@
             return _this.addConnection(conn);
           };
         })(this));
+        sync_every_collaborator = (function(_this) {
+          return function() {
+            var conn, conn_id, _ref, _results;
+            _ref = _this.connections;
+            _results = [];
+            for (conn_id in _ref) {
+              conn = _ref[conn_id];
+              _results.push(conn.send({
+                sync_state_vector: _this.HB.getOperationCounter()
+              }));
+            }
+            return _results;
+          };
+        })(this);
+        setInterval(sync_every_collaborator, 8000);
         send_ = (function(_this) {
           return function(o) {
             var conn, conn_id, _ref, _results;
@@ -78,9 +93,11 @@
             } else if (data.HB != null) {
               initialized_me = true;
               _this.engine.applyOpsCheckDouble(data.HB);
-              return conn.send({
-                conns: _this.getAllConnectionIds()
-              });
+              if (!data.initialized) {
+                return conn.send({
+                  conns: _this.getAllConnectionIds()
+                });
+              }
             } else if (data.op != null) {
               return _this.engine.applyOp(data.op);
             } else if (data.conns != null) {
@@ -91,10 +108,17 @@
                 _results.push(_this.connectToPeer(conn_id));
               }
               return _results;
+            } else if (data.sync_state_vector != null) {
+              console.log("turinae");
+              return conn.send({
+                HB: _this.yatta.getHistoryBuffer()._encode(data.sync_state_vector),
+                initialized: true
+              });
             } else if (data.state_vector != null) {
               if (!initialized_him) {
                 conn.send({
-                  HB: _this.yatta.getHistoryBuffer()._encode(data.state_vector)
+                  HB: _this.yatta.getHistoryBuffer()._encode(data.state_vector),
+                  initialized: false
                 });
                 return initialized_him = true;
               }

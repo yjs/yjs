@@ -61,7 +61,8 @@ class Engine
     o = @parseOperation op_json
     @HB.addToCounter o
     # @HB.addOperation o
-    if not o.execute()
+    if @HB.getOperation(o)?
+    else if not o.execute()
       @unprocessed_ops.push o
     else
       @HB.addOperation o
@@ -76,7 +77,8 @@ class Engine
       old_length = @unprocessed_ops.length
       unprocessed = []
       for op in @unprocessed_ops
-        if not op.execute()
+        if @HB.getOperation(op)?
+        else if not op.execute()
           unprocessed.push op
         else
           @HB.addOperation op

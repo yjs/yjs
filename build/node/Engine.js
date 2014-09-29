@@ -66,7 +66,9 @@
       var o;
       o = this.parseOperation(op_json);
       this.HB.addToCounter(o);
-      if (!o.execute()) {
+      if (this.HB.getOperation(o) != null) {
+
+      } else if (!o.execute()) {
         this.unprocessed_ops.push(o);
       } else {
         this.HB.addOperation(o);
@@ -83,7 +85,9 @@
         _ref = this.unprocessed_ops;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           op = _ref[_i];
-          if (!op.execute()) {
+          if (this.HB.getOperation(op) != null) {
+
+          } else if (!op.execute()) {
             unprocessed.push(op);
           } else {
             this.HB.addOperation(op);
