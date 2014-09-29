@@ -255,9 +255,7 @@
           }
         });
         addPropertyListener = function(event, op) {
-          if (op.next_cl instanceof types.Delimiter && op.prev_cl instanceof types.Delimiter) {
-            repl_manager.parent.callEvent('addProperty', property_name, op);
-          }
+          repl_manager.parent.callEvent('addProperty', property_name, op);
           return repl_manager.deleteListener('addProperty', addPropertyListener);
         };
         this.on('insert', addPropertyListener);
@@ -323,7 +321,6 @@
           this.content.applyDelete();
           this.content.dontSync();
         }
-        this.beforeDelete = this.content;
         this.content = null;
         return Replaceable.__super__.applyDelete.apply(this, arguments);
       };
@@ -342,7 +339,7 @@
               _ref.setReplaceManager(this.parent);
             }
           }
-          ins_result = Replaceable.__super__.execute.call(this);
+          ins_result = Replaceable.__super__.execute.call(this, this.content != null);
           if (ins_result) {
             if (this.next_cl.type === "Delimiter" && this.prev_cl.type !== "Delimiter") {
               this.prev_cl.applyDelete();

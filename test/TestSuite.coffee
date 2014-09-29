@@ -14,7 +14,7 @@ module.exports = class Test
   constructor: (@name_suffix = "")->
     @number_of_test_cases_multiplier = 1
     @repeat_this = 1 * @number_of_test_cases_multiplier
-    @doSomething_amount = 800 * @number_of_test_cases_multiplier
+    @doSomething_amount = 20 + @number_of_test_cases_multiplier
     @number_of_engines = 5 + @number_of_test_cases_multiplier - 1
 
     @time = 0
@@ -31,7 +31,7 @@ module.exports = class Test
     for i in [0...@number_of_engines]
       u = @makeNewUser (i+@name_suffix), @Connector
       @users.push u
-    @users[0].val('name',"i")
+    #@users[0].val('name',"i")
     @flushAll()
 
   makeNewUser: (user)->

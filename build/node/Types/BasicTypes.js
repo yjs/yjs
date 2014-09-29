@@ -12,12 +12,13 @@
         this.is_deleted = false;
         this.doSync = true;
         this.garbage_collected = false;
-        if (uid != null) {
-          this.doSync = !isNaN(parseInt(uid.op_number));
-        } else {
+        if (uid == null) {
           uid = HB.getNextOperationIdentifier();
         }
-        this.creator = uid['creator'], this.op_number = uid['op_number'];
+        if (uid.doSync == null) {
+          uid.doSync = !isNaN(parseInt(uid.op_number));
+        }
+        this.creator = uid['creator'], this.op_number = uid['op_number'], this.doSync = uid['doSync'];
       }
 
       Operation.prototype.type = "Insert";
@@ -217,34 +218,32 @@
       Insert.prototype.type = "Insert";
 
       Insert.prototype.applyDelete = function(o) {
-        var garbagecollect;
+        var garbagecollect, _ref;
         if (this.deleted_by == null) {
           this.deleted_by = [];
         }
         if ((this.parent != null) && !this.isDeleted()) {
-          if (o != null) {
-            this.parent.callEvent("delete", this, o);
-          }
+          this.parent.callEvent("delete", this, o);
         }
         if (o != null) {
           this.deleted_by.push(o);
         }
         garbagecollect = false;
-        if (this.prev_cl.isDeleted()) {
+        if (!((this.prev_cl != null) && (this.next_cl != null)) || this.prev_cl.isDeleted()) {
           garbagecollect = true;
         }
         Insert.__super__.applyDelete.call(this, garbagecollect);
-        if (this.next_cl.isDeleted()) {
+        if ((_ref = this.next_cl) != null ? _ref.isDeleted() : void 0) {
           return this.next_cl.applyDelete();
         }
       };
 
       Insert.prototype.cleanup = function() {
-        var d, o, _i, _len, _ref;
-        if (this.prev_cl.isDeleted()) {
-          _ref = this.deleted_by;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            d = _ref[_i];
+        var d, o, _i, _len, _ref, _ref1;
+        if ((_ref = this.prev_cl) != null ? _ref.isDeleted() : void 0) {
+          _ref1 = this.deleted_by;
+          for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+            d = _ref1[_i];
             d.cleanup();
           }
           o = this.next_cl;
@@ -274,8 +273,11 @@
         return d;
       };
 
-      Insert.prototype.execute = function() {
+      Insert.prototype.execute = function(fire_event) {
         var distance_to_origin, i, o, parent, _ref;
+        if (fire_event == null) {
+          fire_event = true;
+        }
         if (!this.validateSavedOperations()) {
           return false;
         } else {
@@ -313,7 +315,7 @@
             this.next_cl.prev_cl = this;
           }
           parent = (_ref = this.prev_cl) != null ? _ref.getParent() : void 0;
-          if (parent != null) {
+          if ((parent != null) && fire_event) {
             this.setParent(parent);
             this.parent.callEvent("insert", this);
           }

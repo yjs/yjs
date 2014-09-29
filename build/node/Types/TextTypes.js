@@ -101,21 +101,35 @@
         return WordType.__super__.cleanup.call(this);
       };
 
-      WordType.prototype.insertText = function(position, content) {
-        var c, ith, left, op, right, _i, _len;
-        ith = this.getOperationByPosition(position);
-        left = ith.prev_cl;
+      WordType.prototype.push = function(content) {
+        return this.insertAfter(this.end.prev_cl, content);
+      };
+
+      WordType.prototype.insertAfter = function(left, content) {
+        var c, op, right, _i, _len;
         while (left.isDeleted()) {
           left = left.prev_cl;
         }
         right = left.next_cl;
-        for (_i = 0, _len = content.length; _i < _len; _i++) {
-          c = content[_i];
-          op = new TextInsert(c, void 0, left, right);
+        if (content.type != null) {
+          op = new TextInsert(content, void 0, left, right);
           HB.addOperation(op).execute();
-          left = op;
+        } else {
+          for (_i = 0, _len = content.length; _i < _len; _i++) {
+            c = content[_i];
+            op = new TextInsert(c, void 0, left, right);
+            HB.addOperation(op).execute();
+            left = op;
+          }
         }
         return this;
+      };
+
+      WordType.prototype.insertText = function(position, content) {
+        var ith, left;
+        ith = this.getOperationByPosition(position);
+        left = ith.prev_cl;
+        return this.insertAfter(left, content);
       };
 
       WordType.prototype.deleteText = function(position, length) {
@@ -174,12 +188,16 @@
       WordType.prototype.setReplaceManager = function(op) {
         this.saveOperation('replace_manager', op);
         this.validateSavedOperations();
-        this.on('insert', function(event, ins) {
-          return op.forwardEvent(this, 'change', ins);
-        });
+        this.on('insert', (function(_this) {
+          return function(event, ins) {
+            var _ref;
+            return (_ref = _this.replace_manager) != null ? _ref.forwardEvent(_this, 'change', ins) : void 0;
+          };
+        })(this));
         return this.on('delete', (function(_this) {
           return function(event, ins, del) {
-            return op.forwardEvent(_this, 'change', del);
+            var _ref;
+            return (_ref = _this.replace_manager) != null ? _ref.forwardEvent(_this, 'change', del) : void 0;
           };
         })(this));
       };

@@ -277,16 +277,16 @@ module.exports = (HB)->
       if o?
         @deleted_by.push o
       garbagecollect = false
-      if @prev_cl.isDeleted()
+      if not (@prev_cl? and @next_cl?) or @prev_cl.isDeleted()
         garbagecollect = true
       super garbagecollect
-      if @next_cl.isDeleted()
+      if @next_cl?.isDeleted()
         # garbage collect next_cl
         @next_cl.applyDelete()
 
     cleanup: ()->
       # TODO: Debugging
-      if @prev_cl.isDeleted()
+      if @prev_cl?.isDeleted()
         # delete all ops that delete this insertion
         for d in @deleted_by
           d.cleanup()

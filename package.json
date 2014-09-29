@@ -34,6 +34,7 @@
   },
   "devDependencies": {
     "chai": "^1.9.1",
+    "codo": "^2.0.9",
     "coffee-script": "^1.7.1",
     "coffeeify": "^0.6.0",
     "gulp": "^3.8.7",
@@ -47,14 +48,15 @@
     "gulp-ignore": "^1.2.0",
     "gulp-ljs": "^0.1.1",
     "gulp-mocha": "^0.5.2",
+    "gulp-mocha-phantomjs": "^0.5.0",
     "gulp-rename": "^1.2.0",
     "gulp-rimraf": "^0.1.0",
     "gulp-run": "^1.6.3",
     "gulp-sourcemaps": "^1.1.1",
     "gulp-uglify": "^0.3.1",
+    "jquery": "^2.1.1",
     "mocha": "^1.21.4",
     "sinon": "^1.10.2",
-    "sinon-chai": "^2.5.0",
-    "codo": "^2.0.9"
+    "sinon-chai": "^2.5.0"
   }
 }

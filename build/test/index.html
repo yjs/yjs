@@ -6,13 +6,21 @@
 </head>
 <body>
   <div id="mocha"></div>
-  <script src="../../node_modules/mocha/mocha.js"></script>
-  <script>mocha.setup('bdd')</script>
-  <script src="TextYatta_test.js"></script>
-  <script src="JsonYatta_test.js"></script>
+  <div id="test_dom"><p>This is a test object for <b>XmlFramework</b></p></div>
+  <script src="../../node_modules/mocha/mocha.js" class="awesome"></script>
   <script>
-    mocha.checkLeaks();
-    mocha.run();
+    mocha.setup('bdd');
+    mocha.ui('bdd');
+    mocha.reporter('html');
+  </script>
+  <!--script src="TextYatta_test.js"></script>
+  <script src="JsonYatta_test.js"></script-->
+  <script src="XmlYatta_test_browser.js"></script>
+  <script>
+    //mocha.checkLeaks();
+    //mocha.run();
+    if (window.mochaPhantomJS) { mochaPhantomJS.run(); }
+    else { mocha.run(); }
   </script>
 </body>
 </html>

@@ -87,10 +87,21 @@ Use it in order to check whether this is an xml-type or something else.</p>
   </li>
   <li>
     <span class='signature'>
+      <a href='#setXmlProxy-dynamic'>
+        #
+(void)
+<b>setXmlProxy</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
       <a href='#val-dynamic'>
         #
 (void)
-<b>val</b><span>()</span>
+<b>val</b><span>(enforce = false)</span>
       </a>
     </span>
     <span class='desc'>
@@ -140,7 +151,7 @@ Use it in order to check whether this is an xml-type or something else.</p>
     <p class='signature' id='constructor-dynamic'>
       #
 (void)
-<b>constructor</b><span>(uid, tagname, attributes, elements, prev_cl, next_cl, origin)</span>
+<b>constructor</b><span>(uid, tagname, attributes, elements, xml, prev, next, origin)</span>
       <br>
     </p>
     
@@ -167,10 +178,19 @@ Use it in order to check whether this is an xml-type or something else.</p>
     
   </div>
   <div class='method_details'>
+    <p class='signature' id='setXmlProxy-dynamic'>
+      #
+(void)
+<b>setXmlProxy</b><span>()</span>
+      <br>
+    </p>
+    
+  </div>
+  <div class='method_details'>
     <p class='signature' id='val-dynamic'>
       #
 (void)
-<b>val</b><span>()</span>
+<b>val</b><span>(enforce = false)</span>
       <br>
     </p>
     
@@ -232,7 +252,7 @@ This result can be send to other clients.</p>
 </div>
     </div>
     <div id='footer'>
-  September 26, 14 11:52:44 by
+  September 29, 14 09:30:23 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

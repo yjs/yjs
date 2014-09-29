@@ -1,6 +1,16 @@
 
 json_types_uninitialized = require "./JsonTypes"
 
+Element?.prototype._proxy = (f_name, f)->
+  old_f = @[f_name]
+  if old_f?
+    @[f_name] = ()->
+      f.apply this, arguments
+      old_f.apply this, arguments
+  else
+    @[f_name] = f
+
+
 module.exports = (HB)->
   json_types = json_types_uninitialized HB
   types = json_types.types
@@ -11,8 +21,16 @@ module.exports = (HB)->
   #
   class XmlType extends types.Insert
 
-    constructor: (uid, @tagname, attributes, elements, prev_cl, next_cl, origin)->
-      super uid, prev_cl, next_cl, origin
+    constructor: (uid, @tagname, attributes, elements, @xml, prev, next, origin)->
+      if prev? and (not next?) and prev.type?
+        # adjust what you actually mean. you want to insert after prev, then
+        # next is not defined. but we only insert after non-deleted elements.
+        # This is also handled in TextInsert.
+        while prev.isDeleted()
+          prev = prev.prev_cl
+        next = prev.next_cl
+
+      super uid, prev, next, origin
 
       if attributes? and elements?
         @saveOperation 'attributes', attributes
@@ -21,10 +39,31 @@ module.exports = (HB)->
         @attributes = new types.JsonType()
         HB.addOperation(@attributes).execute()
         @elements = new types.WordType()
+        @elements.parent = @
         HB.addOperation(@elements).execute()
       else
         throw new Error "Either define attribute and elements both, or none of them"
 
+      if @xml?
+        @tagname = @xml.tagName
+        for i in [0...@xml.attributes.length]
+          attr = xml.attributes[i]
+          @attributes.val(attr.name, attr.value)
+        for n in @xml.childNodes
+          if n.nodeType is n.TEXT_NODE
+            word = new types.WordType()
+            HB.addOperation(word).execute()
+            word.push n.textContent
+            @elements.push word
+          else if n.nodeType is n.ELEMENT_NODE
+            last = @elements.end
+            element = new XmlType undefined, undefined, undefined, undefined, n, last.prev_cl, last
+            HB.addOperation(element).execute()
+            @elements.push element
+          else
+            throw new Error "I don't know Node-type #{n.nodeType}!!"
+        @setXmlProxy()
+      undefined
 
     #
     # Identifies this class.
@@ -40,28 +79,43 @@ module.exports = (HB)->
     cleanup: ()->
       super()
 
-    val: ()->
-      if document?
-        if arguments.length is 0
-          if not @xml?
-            @xml = document.createElement @tagname
-
-            attr = @attributes.val()
-            for attr_name, value of attr
-              a = document.createAttribute attr_name
-              a.value = value
-              @xml.setAttributeNode a
-
-            e = @elements.beginning.next_cl
-            while e.type isnt "Delimiter"
-              if not e.isDeleted()
-                @xml.appendChild e.val()
-              e.next_cl
-          @xml
-        else if arguments.length is 1
-          
+    setXmlProxy: ()->
+      @xml._yatta = @
+      @xml._proxy 'insertBefore', (insertedNode, adjacentNode)->
+        next = adjacentNode?._yatta
+        prev = null
+        if next?
+          prev = next.prev_cl
         else
-          throw new Error "Can only parse one parameter"
+          prev = @_yatta.elements.end.prev_cl
+        element = new XmlType undefined, undefined, undefined, undefined, insertedNode, prev
+        HB.addOperation(element).execute()
+
+    val: (enforce = false)->
+      if document?
+        if (not @xml?) or enforce
+          @xml = document.createElement @tagname
+
+          attr = @attributes.val()
+          for attr_name, value of attr
+            a = document.createAttribute attr_name
+            a.value = value
+            @xml.setAttributeNode a
+
+          e = @elements.beginning.next_cl
+          while e.type isnt "Delimiter"
+            if not e.isDeleted()
+              if e.type is "XmlType"
+                @xml.appendChild e.val(enforce)
+              else if e.type is "WordType"
+                text_node = document.createTextNode e.val()
+                @xml.appendChild text_node
+              else
+                throw new Error "Internal structure cannot be transformed to dom"
+            e = e.next_cl
+        @setXmlProxy()
+        @xml
+
 
 
     #
@@ -99,12 +153,11 @@ module.exports = (HB)->
           'elements' : @elements.getUid()
           'tagname' : @tagname
           'uid' : @getUid()
-          'uid' : @getUid()
-          'prev': @prev_cl.getUid()
-          'next': @next_cl.getUid()
+          'prev': @prev_cl?.getUid()
+          'next': @next_cl?.getUid()
         }
       if @origin isnt @prev_cl
-        json["origin"] = @origin.getUid()
+        json["origin"] = @origin?.getUid()
       json
 
   parser['XmlType'] = (json)->
@@ -117,7 +170,8 @@ module.exports = (HB)->
       'next': next
       'origin' : origin
     } = json
-    new XmlType uid, tagname, attributes, elements, prev, next, origin
+
+    new XmlType uid, tagname, attributes, elements, undefined, prev, next, origin
 
 
   types['XmlType'] = XmlType

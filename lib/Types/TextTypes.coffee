@@ -115,6 +115,22 @@ module.exports = (HB)->
     cleanup: ()->
       super()
 
+    push: (content)->
+      @insertAfter @end.prev_cl, content
+
+    insertAfter: (left, content)->
+      while left.isDeleted()
+        left = left.prev_cl # find the first character to the left, that is not deleted. Case position is 0, its the Delimiter.
+      right = left.next_cl
+      if content.type?
+        op = new TextInsert content, undefined, left, right
+        HB.addOperation(op).execute()
+      else
+        for c in content
+          op = new TextInsert c, undefined, left, right
+          HB.addOperation(op).execute()
+          left = op
+      @
     #
     # Inserts a string into the word.
     #
@@ -124,14 +140,7 @@ module.exports = (HB)->
       # TODO: getOperationByPosition should return "(i-2)th" character
       ith = @getOperationByPosition position # the (i-1)th character. e.g. "abc" a is the 0th character
       left = ith.prev_cl # left is the non-deleted charather to the left of ith
-      while left.isDeleted()
-        left = left.prev_cl # find the first character to the left, that is not deleted. Case position is 0, its the Delimiter.
-      right = left.next_cl
-      for c in content
-        op = new TextInsert c, undefined, left, right
-        HB.addOperation(op).execute()
-        left = op
-      @
+      @insertAfter left, content
 
     #
     # Deletes a part of the word.

@@ -14,6 +14,8 @@ coffeelint = require 'gulp-coffeelint'
 mocha = require 'gulp-mocha'
 run = require 'gulp-run'
 ljs = require 'gulp-ljs'
+mochaPhantomJS = require 'gulp-mocha-phantomjs'
+
 
 
 gulp.task 'default', ['lint', 'browser', 'test', 'literate', 'lib', 'codo']
@@ -24,6 +26,7 @@ files =
   build : ['./build/**']
   browser : ['./lib/{Connectors,Frameworks}/**/*']
   test : ['./test/**/*_test.coffee']
+  browser_test : ['./test/**/*_test_browser.coffee']
   gulp : ['./gulpfile.coffee']
   examples : ['./examples/**/*.js']
 
@@ -55,7 +58,7 @@ gulp.task 'browser', ->
     .pipe gulp.dest 'build/browser'
     .pipe gulpif '!**/', git.add({args : "-A"})
 
-  gulp.src files.test, {read: false}
+  gulp.src (files.test.concat files.browser_test), {read: false}
     .pipe browserify
       transform: ['coffeeify']
       extensions: ['.coffee']
@@ -91,6 +94,9 @@ gulp.task 'watch', ['default'], ->
   gulp.watch files.test, ['test']
   gulp.watch files.examples, ['literate']
 
+gulp.task 'phantom_watch', ['phantom_test'], ->
+  gulp.watch files.all, ['phantom_test']
+
 gulp.task 'literate', ->
   gulp.src files.examples
     .pipe ljs { code : true }
@@ -103,9 +109,13 @@ gulp.task 'literate', ->
 gulp.task 'upload', [], ()->
   run('scp -r ./build ./examples jahns@manet.informatik.rwth-aachen.de:/home/jahns/public_html/collaborative_preview/').exec()
 
-gulp.task 'codo', [], ()-> 
+gulp.task 'codo', [], ()->
   command = 'codo -o "./doc" --name "Yatta!" --readme "README.md" --undocumented false --private true --title "Yatta! API" ./lib - LICENSE.txt '
   run(command).exec()
+
+gulp.task 'phantom_test', ['browser'], ()->
+  gulp.src 'build/test/index.html'
+    .pipe mochaPhantomJS()
 
 gulp.task 'clean', ->
   gulp.src './build/{browser,test,node}/**/*.{js,map}', { read: false }
