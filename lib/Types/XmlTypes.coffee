@@ -21,7 +21,8 @@ module.exports = (HB)->
   #
   class XmlType extends types.Insert
 
-    constructor: (uid, @tagname, attributes, elements, @xml, prev, next, origin)->
+    constructor: (uid, @tagname, attributes, elements, @xml)->
+      ### In case you make this instanceof Insert again
       if prev? and (not next?) and prev.type?
         # adjust what you actually mean. you want to insert after prev, then
         # next is not defined. but we only insert after non-deleted elements.
@@ -29,8 +30,9 @@ module.exports = (HB)->
         while prev.isDeleted()
           prev = prev.prev_cl
         next = prev.next_cl
+      ###
 
-      super uid, prev, next, origin
+      super()
 
       if attributes? and elements?
         @saveOperation 'attributes', attributes
@@ -56,8 +58,7 @@ module.exports = (HB)->
             word.push n.textContent
             @elements.push word
           else if n.nodeType is n.ELEMENT_NODE
-            last = @elements.end
-            element = new XmlType undefined, undefined, undefined, undefined, n, last.prev_cl, last
+            element = new XmlType undefined, undefined, undefined, undefined, n
             HB.addOperation(element).execute()
             @elements.push element
           else
@@ -88,8 +89,9 @@ module.exports = (HB)->
           prev = next.prev_cl
         else
           prev = @_yatta.elements.end.prev_cl
-        element = new XmlType undefined, undefined, undefined, undefined, insertedNode, prev
+        element = new XmlType undefined, undefined, undefined, undefined
         HB.addOperation(element).execute()
+        @elements.insertAfter prev, element
 
     val: (enforce = false)->
       if document?
@@ -104,11 +106,12 @@ module.exports = (HB)->
 
           e = @elements.beginning.next_cl
           while e.type isnt "Delimiter"
-            if not e.isDeleted()
-              if e.type is "XmlType"
-                @xml.appendChild e.val(enforce)
-              else if e.type is "WordType"
-                text_node = document.createTextNode e.val()
+            n = e.content
+            if not n.isDeleted()
+              if n.type is "XmlType"
+                @xml.appendChild n.val(enforce)
+              else if n.type is "WordType"
+                text_node = document.createTextNode n.val()
                 @xml.appendChild text_node
               else
                 throw new Error "Internal structure cannot be transformed to dom"
@@ -153,11 +156,8 @@ module.exports = (HB)->
           'elements' : @elements.getUid()
           'tagname' : @tagname
           'uid' : @getUid()
-          'prev': @prev_cl?.getUid()
-          'next': @next_cl?.getUid()
+
         }
-      if @origin isnt @prev_cl
-        json["origin"] = @origin?.getUid()
       json
 
   parser['XmlType'] = (json)->
@@ -166,12 +166,9 @@ module.exports = (HB)->
       'attributes' : attributes
       'elements' : elements
       'tagname' : tagname
-      'prev': prev
-      'next': next
-      'origin' : origin
     } = json
 
-    new XmlType uid, tagname, attributes, elements, undefined, prev, next, origin
+    new XmlType uid, tagname, attributes, elements, undefined
 
 
   types['XmlType'] = XmlType

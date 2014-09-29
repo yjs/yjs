@@ -28,17 +28,21 @@
     XmlType = (function(_super) {
       __extends(XmlType, _super);
 
-      function XmlType(uid, tagname, attributes, elements, xml, prev, next, origin) {
-        var attr, element, i, last, n, word, _i, _j, _len, _ref, _ref1;
+      function XmlType(uid, tagname, attributes, elements, xml) {
+        var attr, element, i, n, word, _i, _j, _len, _ref, _ref1;
         this.tagname = tagname;
         this.xml = xml;
-        if ((prev != null) && (next == null) && (prev.type != null)) {
-          while (prev.isDeleted()) {
-            prev = prev.prev_cl;
-          }
-          next = prev.next_cl;
-        }
-        XmlType.__super__.constructor.call(this, uid, prev, next, origin);
+
+        /* In case you make this instanceof Insert again
+        if prev? and (not next?) and prev.type?
+           * adjust what you actually mean. you want to insert after prev, then
+           * next is not defined. but we only insert after non-deleted elements.
+           * This is also handled in TextInsert.
+          while prev.isDeleted()
+            prev = prev.prev_cl
+          next = prev.next_cl
+         */
+        XmlType.__super__.constructor.call(this);
         if ((attributes != null) && (elements != null)) {
           this.saveOperation('attributes', attributes);
           this.saveOperation('elements', elements);
@@ -66,8 +70,7 @@
               word.push(n.textContent);
               this.elements.push(word);
             } else if (n.nodeType === n.ELEMENT_NODE) {
-              last = this.elements.end;
-              element = new XmlType(void 0, void 0, void 0, void 0, n, last.prev_cl, last);
+              element = new XmlType(void 0, void 0, void 0, void 0, n);
               HB.addOperation(element).execute();
               this.elements.push(element);
             } else {
@@ -102,8 +105,9 @@
           } else {
             prev = this._yatta.elements.end.prev_cl;
           }
-          element = new XmlType(void 0, void 0, void 0, void 0, insertedNode, prev);
-          return HB.addOperation(element).execute();
+          element = new XmlType(void 0, void 0, void 0, void 0);
+          HB.addOperation(element).execute();
+          return this.elements.insertAfter(prev, element);
         });
       };
 
@@ -161,19 +165,14 @@
       };
 
       XmlType.prototype._encode = function() {
-        var json, _ref, _ref1, _ref2;
+        var json;
         json = {
           'type': this.type,
           'attributes': this.attributes.getUid(),
           'elements': this.elements.getUid(),
           'tagname': this.tagname,
-          'uid': this.getUid(),
-          'prev': (_ref = this.prev_cl) != null ? _ref.getUid() : void 0,
-          'next': (_ref1 = this.next_cl) != null ? _ref1.getUid() : void 0
+          'uid': this.getUid()
         };
-        if (this.origin !== this.prev_cl) {
-          json["origin"] = (_ref2 = this.origin) != null ? _ref2.getUid() : void 0;
-        }
         return json;
       };
 
@@ -181,9 +180,9 @@
 
     })(types.Insert);
     parser['XmlType'] = function(json) {
-      var attributes, elements, next, origin, prev, tagname, uid;
-      uid = json['uid'], attributes = json['attributes'], elements = json['elements'], tagname = json['tagname'], prev = json['prev'], next = json['next'], origin = json['origin'];
-      return new XmlType(uid, tagname, attributes, elements, void 0, prev, next, origin);
+      var attributes, elements, tagname, uid;
+      uid = json['uid'], attributes = json['attributes'], elements = json['elements'], tagname = json['tagname'];
+      return new XmlType(uid, tagname, attributes, elements, void 0);
     };
     types['XmlType'] = XmlType;
     return json_types;

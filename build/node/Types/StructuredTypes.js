@@ -255,8 +255,8 @@
           }
         });
         addPropertyListener = function(event, op) {
-          repl_manager.parent.callEvent('addProperty', property_name, op);
-          return repl_manager.deleteListener('addProperty', addPropertyListener);
+          repl_manager.deleteListener('addProperty', addPropertyListener);
+          return repl_manager.parent.callEvent('addProperty', property_name, op);
         };
         this.on('insert', addPropertyListener);
         return ReplaceManager.__super__.setParent.call(this, parent);

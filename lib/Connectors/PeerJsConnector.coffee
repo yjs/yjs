@@ -15,6 +15,10 @@ createPeerJsConnector = ()->
     callback = arguments[1]
   else
     peer = new Peer arguments[0], arguments[1]
+    peer.on 'error', (err)->
+      throw new Error "Peerjs connector: #{err}"
+    peer.on 'disconnected', ()->
+      throw new Error "Peerjs connector disconnected from signalling server. Cannot accept new connections. Not fatal, but not so good either.."
     callback = arguments[2]
 
 
