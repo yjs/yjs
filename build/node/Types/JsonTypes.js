@@ -142,7 +142,7 @@
           HB.addOperation(json).execute();
           this.replace_manager.replace(json);
           return this;
-        } else if ((name != null) && ((content != null) || content === null)) {
+        } else if ((name != null) && arguments.length > 1) {
           if (mutable != null) {
             if (mutable === true || mutable === 'mutable') {
               mutable = true;
@@ -154,7 +154,7 @@
           }
           if (typeof content === 'function') {
             return this;
-          } else if (content === null || (((!mutable) || typeof content === 'number') && content.constructor !== Object)) {
+          } else if ((content == null) || (((!mutable) || typeof content === 'number') && content.constructor !== Object)) {
             obj = HB.addOperation(new types.ImmutableObject(void 0, content)).execute();
             return JsonType.__super__.val.call(this, name, obj);
           } else {

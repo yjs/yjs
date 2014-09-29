@@ -22,7 +22,11 @@ module.exports = (HB)->
     # @param {String} content The content of this Insert-type Operation. Usually you restrict the length of content to size 1
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     #
-    constructor: (@content, uid, prev, next, origin)->
+    constructor: (content, uid, prev, next, origin)->
+      if content?.creator?
+        @saveOperation 'content', content
+      else
+        @content = content
       if not (prev? and next?)
         throw new Error "You must define prev, and next for TextInsert-types!"
       super uid, prev, next, origin
@@ -61,11 +65,14 @@ module.exports = (HB)->
       json =
         {
           'type': "TextInsert"
-          'content': @content
           'uid' : @getUid()
           'prev': @prev_cl.getUid()
           'next': @next_cl.getUid()
         }
+      if @content?.getUid?
+        json['content'] = @content.getUid()
+      else
+        json['content'] = @content
       if @origin isnt @prev_cl
         json["origin"] = @origin.getUid()
       json

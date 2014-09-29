@@ -76,8 +76,8 @@ class JsonFramework
   #
   # @see JsonType.val
   #
-  val : (name, content, mutable)->
-    @getSharedObject().val(name, content, mutable)
+  val : ()->
+    @getSharedObject().val arguments...
 
   #
   # @see Operation.on

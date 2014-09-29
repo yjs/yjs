@@ -37,19 +37,43 @@ describe "XmlFramework", ->
     @users = @yTest.users
     ###
     @test_user = @yTest.makeNewUser 0, (Connector_uninitialized [])
+    @dom = $("#test_dom")[0]
+    @test_user.val(@dom)
+
+    @check = ()=>
+      dom_ = @test_user.val(true)
+      expect(dom_.outerHTML).to.equal(@dom.outerHTML)
     done()
 
-  it "can transform to a real Dom element", ->
-    dom = $("#test_dom")[0]
-    @test_user.val(dom)
+  it "can transform to a new real Dom element", ->
     dom_ = @test_user.val(true)
-    expect(dom_ isnt dom).to.be.true
-    expect(dom_.outerHTML).to.equal(dom.outerHTML)
+    expect(dom_ isnt @dom).to.be.true
+    @check()
 
-  it "can transform to a real Dom element", ->
-    dom = $("#test_dom")[0]
-    @test_user.val(dom)
+  it "supports dom.insertBefore", ->
     newdom = $("<p>dtrn</p>")[0]
-    dom.insertBefore(newdom)
-    dom_ = @test_user.val(true)
+    @dom.insertBefore(newdom, null)
+    @check()
+
+  it "supports dom.appendChild", ->
+    newdom = $("<p>dtrn</p>")[0]
+    @dom.appendChild(newdom)
+    @check()
+
+  it "supports dom.removeAttribute", ->
+    @dom.removeAttribute("test_attribute")
+    @check()
+
+  it "supports dom.removeAttribute", ->
+    @dom.removeChild($("#removeme")[0])
+    expect($("#removeme").length).to.equal(0)
+    @check()
+
+
+
+
+
+
+
+
 

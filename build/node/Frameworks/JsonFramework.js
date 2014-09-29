@@ -51,8 +51,9 @@
       return this.getSharedObject().toJson();
     };
 
-    JsonFramework.prototype.val = function(name, content, mutable) {
-      return this.getSharedObject().val(name, content, mutable);
+    JsonFramework.prototype.val = function() {
+      var _ref;
+      return (_ref = this.getSharedObject()).val.apply(_ref, arguments);
     };
 
     JsonFramework.prototype.on = function() {

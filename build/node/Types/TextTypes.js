@@ -25,7 +25,11 @@
       __extends(TextInsert, _super);
 
       function TextInsert(content, uid, prev, next, origin) {
-        this.content = content;
+        if ((content != null ? content.creator : void 0) != null) {
+          this.saveOperation('content', content);
+        } else {
+          this.content = content;
+        }
         if (!((prev != null) && (next != null))) {
           throw new Error("You must define prev, and next for TextInsert-types!");
         }
@@ -56,14 +60,18 @@
       };
 
       TextInsert.prototype._encode = function() {
-        var json;
+        var json, _ref;
         json = {
           'type': "TextInsert",
-          'content': this.content,
           'uid': this.getUid(),
           'prev': this.prev_cl.getUid(),
           'next': this.next_cl.getUid()
         };
+        if (((_ref = this.content) != null ? _ref.getUid : void 0) != null) {
+          json['content'] = this.content.getUid();
+        } else {
+          json['content'] = this.content;
+        }
         if (this.origin !== this.prev_cl) {
           json["origin"] = this.origin.getUid();
         }

@@ -122,7 +122,7 @@
                 return initialized_him = true;
               }
             } else {
-              throw new Error("Can't parse this operation " + data);
+              throw new Error("Can't parse this operation: " + data);
             }
           };
         })(this));

@@ -207,7 +207,7 @@ module.exports = (HB)->
         HB.addOperation(json).execute()
         @replace_manager.replace json
         @
-      else if name? and (content? or content is null)
+      else if name? and arguments.length > 1
         if mutable?
           if mutable is true or mutable is 'mutable'
             mutable = true
@@ -217,7 +217,7 @@ module.exports = (HB)->
           mutable = @mutable_default
         if typeof content is 'function'
           @ # Just do nothing
-        else if content is null or (((not mutable) or typeof content is 'number') and content.constructor isnt Object)
+        else if (not content?) or (((not mutable) or typeof content is 'number') and content.constructor isnt Object)
           obj = HB.addOperation(new types.ImmutableObject undefined, content).execute()
           super name, obj
         else

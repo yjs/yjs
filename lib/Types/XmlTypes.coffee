@@ -1,14 +1,23 @@
 
 json_types_uninitialized = require "./JsonTypes"
 
+# some dom implementations may call another dom.method that simulates the behavior of another.
+# For example xml.insertChild(dom) , wich inserts an element at the end, and xml.insertAfter(dom,null) wich does the same
+# But yatta's proxy may be called only once!
+proxy_token = false
 Element?.prototype._proxy = (f_name, f)->
   old_f = @[f_name]
   if old_f?
     @[f_name] = ()->
-      f.apply this, arguments
-      old_f.apply this, arguments
-  else
-    @[f_name] = f
+      if not proxy_token
+        proxy_token = true
+        old_f.apply this, arguments
+        f.apply this, arguments
+        proxy_token = false
+      else
+        old_f.apply this, arguments
+  #else
+  #  @[f_name] = f
 
 
 module.exports = (HB)->
@@ -18,7 +27,10 @@ module.exports = (HB)->
 
   #
   # Manages XML types
-  #
+  # Not supported:
+  # * Attribute nodes
+  # * Real replace of child elements (to much overhead). Currently, the new element is inserted after the 'replaced' element, and then it is deleted.
+  # *
   class XmlType extends types.Insert
 
     constructor: (uid, @tagname, attributes, elements, @xml)->
@@ -82,16 +94,24 @@ module.exports = (HB)->
 
     setXmlProxy: ()->
       @xml._yatta = @
-      @xml._proxy 'insertBefore', (insertedNode, adjacentNode)->
+      that = @
+      insertBefore = (insertedNode, adjacentNode)->
         next = adjacentNode?._yatta
         prev = null
         if next?
           prev = next.prev_cl
         else
           prev = @_yatta.elements.end.prev_cl
-        element = new XmlType undefined, undefined, undefined, undefined
+        element = new XmlType undefined, undefined, undefined, undefined, insertedNode
         HB.addOperation(element).execute()
-        @elements.insertAfter prev, element
+        that.elements.insertAfter prev, element
+      @xml._proxy 'insertBefore', insertBefore
+      @xml._proxy 'appendChild', insertBefore
+      @xml._proxy 'removeAttribute', (name)->
+        that.attributes.val(name, undefined)
+      @xml._proxy 'removeChild', (node)->
+        
+
 
     val: (enforce = false)->
       if document?
@@ -100,9 +120,10 @@ module.exports = (HB)->
 
           attr = @attributes.val()
           for attr_name, value of attr
-            a = document.createAttribute attr_name
-            a.value = value
-            @xml.setAttributeNode a
+            if value?
+              a = document.createAttribute attr_name
+              a.value = value
+              @xml.setAttributeNode a
 
           e = @elements.beginning.next_cl
           while e.type isnt "Delimiter"

@@ -1,9 +1,11 @@
 (function() {
-  var json_types_uninitialized,
+  var json_types_uninitialized, proxy_token,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   json_types_uninitialized = require("./JsonTypes");
+
+  proxy_token = false;
 
   if (typeof Element !== "undefined" && Element !== null) {
     Element.prototype._proxy = function(f_name, f) {
@@ -11,11 +13,15 @@
       old_f = this[f_name];
       if (old_f != null) {
         return this[f_name] = function() {
-          f.apply(this, arguments);
-          return old_f.apply(this, arguments);
+          if (!proxy_token) {
+            proxy_token = true;
+            old_f.apply(this, arguments);
+            f.apply(this, arguments);
+            return proxy_token = false;
+          } else {
+            return old_f.apply(this, arguments);
+          }
         };
-      } else {
-        return this[f_name] = f;
       }
     };
   }
@@ -95,8 +101,10 @@
       };
 
       XmlType.prototype.setXmlProxy = function() {
+        var insertBefore, that;
         this.xml._yatta = this;
-        return this.xml._proxy('insertBefore', function(insertedNode, adjacentNode) {
+        that = this;
+        insertBefore = function(insertedNode, adjacentNode) {
           var element, next, prev;
           next = adjacentNode != null ? adjacentNode._yatta : void 0;
           prev = null;
@@ -105,10 +113,16 @@
           } else {
             prev = this._yatta.elements.end.prev_cl;
           }
-          element = new XmlType(void 0, void 0, void 0, void 0);
+          element = new XmlType(void 0, void 0, void 0, void 0, insertedNode);
           HB.addOperation(element).execute();
-          return this.elements.insertAfter(prev, element);
+          return that.elements.insertAfter(prev, element);
+        };
+        this.xml._proxy('insertBefore', insertBefore);
+        this.xml._proxy('appendChild', insertBefore);
+        this.xml._proxy('removeAttribute', function(name) {
+          return that.attributes.val(name, void 0);
         });
+        return this.xml._proxy('removeChild', function(node) {});
       };
 
       XmlType.prototype.val = function(enforce) {
@@ -122,9 +136,11 @@
             attr = this.attributes.val();
             for (attr_name in attr) {
               value = attr[attr_name];
-              a = document.createAttribute(attr_name);
-              a.value = value;
-              this.xml.setAttributeNode(a);
+              if (value != null) {
+                a = document.createAttribute(attr_name);
+                a.value = value;
+                this.xml.setAttributeNode(a);
+              }
             }
             e = this.elements.beginning.next_cl;
             while (e.type !== "Delimiter") {
