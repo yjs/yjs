@@ -93,8 +93,6 @@ describe "XmlFramework", ->
     @dom.classList.add "classy"
     @check()
 
-
-
   it "supports jquery.addClass", ->
     @$dom.addClass("testy")
     @check()
@@ -124,7 +122,7 @@ describe "XmlFramework", ->
     @check()
 
   it "supports jquery.empty", ->
-    d = $("p") 
+    d = $("#test_dom p")
     d.empty()
     @check()
 
@@ -136,10 +134,45 @@ describe "XmlFramework", ->
     $("<p>before span</p>").insertBefore(".span_element")
     @check()
 
-  it "supports jquery.insertBefore", ->
-    d = $("p")
-    d.empty()
+  it "supports jquery.prepend", ->
+    d = $("#test_dom div")
+    d.prepend("<p>prepended</p>")
     @check()
+
+  it "supports jquery.prependTo", ->
+    $("<p atone=false attwo=\"dtrn\" class=\"attr_node sudo su\">prepended to</p>").prependTo("#test_dom div")
+    @check()
+
+  it "supports jquery.remove", ->
+    d = $("#test_dom b")
+    d.remove()
+    @check()
+
+  it "supports jquery.removeAttr", ->
+    d = $(".attr_node")
+    d.removeAttr("attwo")
+    @check()
+
+  it "supports jquery.removeClass", ->
+    d = $(".attr_node")
+    d.removeClass("sudo")
+    @check()
+
+  it "supports jquery.attr", ->
+    d = $(".attr_node")
+    d.attr("atone", true)
+    @check()
+
+  it "supports jquery.replaceAll", ->
+    $("<span>New span content </span>").replaceAll("#test_dom div")
+    @check()
+
+  it "supports jquery.replaceWith", ->
+    d = $("#test_dom span")
+    d.replaceWith("<div>me is div again </div>")
+    @check()
+
+
 
 
 

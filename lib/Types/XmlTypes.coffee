@@ -71,6 +71,7 @@ module.exports = (HB)->
             HB.addOperation(word).execute()
             word.push n.textContent
             @elements.push word
+            n._yatta = word
           else if n.nodeType is n.ELEMENT_NODE
             element = new XmlType undefined, undefined, undefined, undefined, n
             HB.addOperation(element).execute()
@@ -140,9 +141,11 @@ module.exports = (HB)->
         that.attributes.val('class')
       @xml.__defineSetter__ 'textContent', (val)->
         # remove all nodes
-        elems = that.xml.childNodes
-        for elem in elems
-          that.xml.removeChild elem
+        elem = that.xml.firstChild
+        while elem?
+          remove = elem
+          elem = elem.nextSibling
+          that.xml.removeChild remove
 
         # insert word content
         if val isnt ""
@@ -182,6 +185,7 @@ module.exports = (HB)->
                 @xml.appendChild n.val(enforce)
               else if n.type is "WordType"
                 text_node = document.createTextNode n.val()
+                text_node._yatta = @
                 @xml.appendChild text_node
               else
                 throw new Error "Internal structure cannot be transformed to dom"
