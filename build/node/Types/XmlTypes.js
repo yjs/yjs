@@ -101,7 +101,7 @@
       };
 
       XmlType.prototype.setXmlProxy = function() {
-        var insertBefore, that;
+        var insertBefore, removeChild, that;
         this.xml._yatta = this;
         that = this;
         insertBefore = function(insertedNode, adjacentNode) {
@@ -122,7 +122,23 @@
         this.xml._proxy('removeAttribute', function(name) {
           return that.attributes.val(name, void 0);
         });
-        return this.xml._proxy('removeChild', function(node) {});
+        removeChild = function(node) {
+          var d, elem;
+          elem = that.elements.beginning.next_cl;
+          while (elem.type !== 'Delimiter' && elem.content !== node._yatta) {
+            elem = elem.next_cl;
+          }
+          if (elem.type === 'Delimiter') {
+            throw new Error("You are only allowed to delete existing (direct) child elements!");
+          }
+          d = new types.Delete(void 0, elem);
+          return HB.addOperation(d).execute();
+        };
+        this.xml._proxy('removeChild', removeChild);
+        return this.xml._proxy('replaceChild', function(insertedNode, replacedNode) {
+          insertBefore.call(this, replacedNode, insertedNode);
+          return removeChild.call(this, replacedNode);
+        });
       };
 
       XmlType.prototype.val = function(enforce) {
@@ -145,7 +161,7 @@
             e = this.elements.beginning.next_cl;
             while (e.type !== "Delimiter") {
               n = e.content;
-              if (!n.isDeleted()) {
+              if (!e.isDeleted()) {
                 if (n.type === "XmlType") {
                   this.xml.appendChild(n.val(enforce));
                 } else if (n.type === "WordType") {

@@ -47,6 +47,9 @@
       };
 
       TextInsert.prototype.applyDelete = function() {
+        if (this.content instanceof types.Operation) {
+          this.content.applyDelete();
+        }
         this.content = null;
         return TextInsert.__super__.applyDelete.apply(this, arguments);
       };

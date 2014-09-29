@@ -43,6 +43,8 @@ module.exports = (HB)->
         @content.length
 
     applyDelete: ()->
+      if @content instanceof types.Operation
+        @content.applyDelete()
       @content = null
       super
 

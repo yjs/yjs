@@ -168,6 +168,10 @@
         throw new Error("You must not overwrite operations!");
       }
       this.buffer[o.creator][o.op_number] = o;
+      if (this.number_of_operations_added_to_HB == null) {
+        this.number_of_operations_added_to_HB = 0;
+      }
+      this.number_of_operations_added_to_HB++;
       return o;
     };
 
