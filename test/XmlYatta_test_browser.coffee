@@ -45,5 +45,11 @@ describe "XmlFramework", ->
     dom_ = @test_user.val(true)
     expect(dom_ isnt dom).to.be.true
     expect(dom_.outerHTML).to.equal(dom.outerHTML)
-    console.log "dtrn"
+
+  it "can transform to a real Dom element", ->
+    dom = $("#test_dom")[0]
+    @test_user.val(dom)
+    newdom = $("<p>dtrn</p>")[0]
+    dom.insertBefore(newdom)
+    dom_ = @test_user.val(true)
 

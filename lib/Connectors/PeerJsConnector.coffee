@@ -44,10 +44,10 @@ createPeerJsConnector = ()->
         @addConnection conn
 
       sync_every_collaborator = ()=>
-          for conn_id, conn of @connections
-            conn.send
-              sync_state_vector: @HB.getOperationCounter()
-      setInterval sync_every_collaborator, 8000
+        for conn_id, conn of @connections
+          conn.send
+            sync_state_vector: @HB.getOperationCounter()
+      setInterval sync_every_collaborator, 4000
 
       send_ = (o)=>
         if o.uid.creator is @HB.getUserId() and (typeof o.uid.op_number isnt "string")
@@ -122,7 +122,7 @@ createPeerJsConnector = ()->
               initialized: false
             initialized_him = true
         else
-          throw new Error "Can't parse this operation"
+          throw new Error "Can't parse this operation: #{data}"
 
       sendStateVector = ()=>
         conn.send
