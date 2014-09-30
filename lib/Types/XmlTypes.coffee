@@ -9,7 +9,7 @@ _proxy = (f_name, f)->
   old_f = @[f_name]
   if old_f?
     @[f_name] = ()->
-      if not proxy_token
+      if not proxy_token and not @_yatta?.isDeleted()
         proxy_token = true
         old_f.apply this, arguments
         f.apply this, arguments
@@ -46,7 +46,7 @@ module.exports = (HB)->
         next = prev.next_cl
       ###
 
-      super()
+      super(uid)
 
       if attributes? and elements?
         @saveOperation 'attributes', attributes
@@ -194,13 +194,8 @@ module.exports = (HB)->
         @xml
 
 
-
-    #
-    # If possible set the replace manager in the content.
-    # @see WordType.setReplaceManager
-    #
     execute: ()->
-      super
+      super()
     ###
       if not @validateSavedOperations()
         return false
@@ -230,7 +225,6 @@ module.exports = (HB)->
           'elements' : @elements.getUid()
           'tagname' : @tagname
           'uid' : @getUid()
-
         }
       json
 

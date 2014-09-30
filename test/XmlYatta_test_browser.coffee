@@ -37,6 +37,8 @@ describe "XmlFramework", ->
     @users = @yTest.users
     ###
     @test_user = @yTest.makeNewUser 0, (Connector_uninitialized [])
+    @test_user2 = @yTest.makeNewUser 1, (Connector_uninitialized [])
+
     @$dom = $("#test_dom")
     @dom = @$dom[0]
     @test_user.val(@dom)
@@ -44,6 +46,11 @@ describe "XmlFramework", ->
     @check = ()=>
       dom_ = @test_user.val(true)
       expect(dom_.outerHTML).to.equal(@dom.outerHTML)
+      # now test if other collaborators can parse the HB and result in the same content
+      hb = @test_user.HB._encode()
+      @test_user2.engine.applyOps(hb)
+      dom2 = @test_user2.val()
+      expect(dom_.outerHTML).to.equal(dom2.outerHTML)
     done()
 
   it "can transform to a new real Dom element", ->
