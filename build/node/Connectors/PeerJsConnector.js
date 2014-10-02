@@ -26,6 +26,7 @@
         this.yatta = yatta;
         this.peer = peer;
         this.connections = {};
+        this.new_connection_listeners = [];
         this.peer.on('connection', (function(_this) {
           return function(conn) {
             return _this.addConnection(conn);
@@ -80,6 +81,10 @@
         return _results;
       };
 
+      PeerJsConnector.prototype.onNewConnection = function(f) {
+        return this.new_connection_listeners.push(f);
+      };
+
       PeerJsConnector.prototype.addConnection = function(conn) {
         var initialized_him, initialized_me, sendStateVector;
         this.connections[conn.peer] = conn;
@@ -94,8 +99,11 @@
               initialized_me = true;
               _this.engine.applyOpsCheckDouble(data.HB);
               if (!data.initialized) {
-                return conn.send({
+                conn.send({
                   conns: _this.getAllConnectionIds()
+                });
+                return _this.new_connection_listeners.map(function(f) {
+                  return f(conn);
                 });
               }
             } else if (data.op != null) {

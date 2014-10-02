@@ -36,27 +36,36 @@ describe "XmlFramework", ->
 
     @users = @yTest.users
     ###
-    @test_user = @yTest.makeNewUser 0, (Connector_uninitialized [])
+    test_users = []
+    connector = (Connector_uninitialized test_users)
+    @test_user = @yTest.makeNewUser 0, connector
+    test_users.push @test_user
+    # test_user_listen listens to the actions of test_user. He will update his dom when he receives from test_user.
+    @test_user_listen = @yTest.makeNewUser 2, connector
+    test_users.push @test_user_listen
     @test_user2 = @yTest.makeNewUser 1, (Connector_uninitialized [])
 
+    $("#test_dom").replaceWith('<div id="test_dom" test_attribute="the test" class="stuffy" style="color: blue"><p id="replaceme">replace me</p><p id="removeme">remove me</p><p>This is a test object for <b>XmlFramework</b></p><span class="span_element"><p>span</p></span></div>')
     @$dom = $("#test_dom")
     @dom = @$dom[0]
     @test_user.val(@dom)
+    @test_user_listen.getConnector().flushAll()
+    @test_user_listen_dom = @test_user_listen.val()
 
     @check = ()=>
-      dom_ = @test_user.val(true)
-      expect(dom_.outerHTML).to.equal(@dom.outerHTML)
+      dom_ = @dom.outerHTML
       # now test if other collaborators can parse the HB and result in the same content
       hb = @test_user.HB._encode()
       @test_user2.engine.applyOps(hb)
       dom2 = @test_user2.val()
-      expect(dom_.outerHTML).to.equal(dom2.outerHTML)
+      expect(dom_).to.equal(dom2.outerHTML)
+      @test_user_listen.getConnector().flushAll()
+      expect(dom_).to.equal(@test_user_listen_dom.outerHTML)
     done()
 
   it "can transform to a new real Dom element", ->
     dom_ = @test_user.val(true)
     expect(dom_ isnt @dom).to.be.true
-    @check()
 
   it "supports dom.insertBefore", ->
     newdom = $("<p>dtrn</p>")[0]
@@ -116,6 +125,7 @@ describe "XmlFramework", ->
 
   it "supports jquery.appendTo", ->
     $("<b>appendedTo</b>").appendTo("#test_dom p")
+    $("p").appendTo("#test_dom")
     @check()
 
   it "supports jquery.before", ->

@@ -271,15 +271,18 @@ module.exports = (HB)->
     #
     applyDelete: (o)->
       @deleted_by ?= []
+      callLater = false
       if @parent? and not @isDeleted()
         # call iff wasn't deleted earlyer
-        @parent.callEvent "delete", @, o
+        callLater = true
       if o?
         @deleted_by.push o
       garbagecollect = false
       if not (@prev_cl? and @next_cl?) or @prev_cl.isDeleted()
         garbagecollect = true
       super garbagecollect
+      if callLater
+        @parent.callEvent "delete", @, o
       if @next_cl?.isDeleted()
         # garbage collect next_cl
         @next_cl.applyDelete()

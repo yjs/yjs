@@ -156,7 +156,7 @@ Y.createPeerJsConnector("unique_id", {key: 'h7nlefbgavh1tt9'}, function(Connecto
     console.log("New value: " + show(this.val(property_name)) + ""); // 'this' is the object on which the property changed.
   };
   yatta.on('change', change);
-  yatta.val('mutable_string', "text", 'mutable'); // Property 'mutable_string' was replaced or changed!
+  yatta.val('mutable_string', "text", 'mutable'); // You changed the value of property 'mutable_string'!
 
   /**
     'change' and 'addProperty' do also fire for nested properties.

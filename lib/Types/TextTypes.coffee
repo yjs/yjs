@@ -43,10 +43,18 @@ module.exports = (HB)->
         @content.length
 
     applyDelete: ()->
+      super # no braces indeed!
       if @content instanceof types.Operation
         @content.applyDelete()
       @content = null
-      super
+
+    execute: ()->
+      if not @validateSavedOperations()
+        return false
+      else
+        if @content instanceof types.Operation
+          @content.insert_parent = @
+        super()
 
     #
     # The result will be concatenated with the results from the other insert operations

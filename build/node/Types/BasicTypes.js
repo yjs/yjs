@@ -218,12 +218,13 @@
       Insert.prototype.type = "Insert";
 
       Insert.prototype.applyDelete = function(o) {
-        var garbagecollect, _ref;
+        var callLater, garbagecollect, _ref;
         if (this.deleted_by == null) {
           this.deleted_by = [];
         }
+        callLater = false;
         if ((this.parent != null) && !this.isDeleted()) {
-          this.parent.callEvent("delete", this, o);
+          callLater = true;
         }
         if (o != null) {
           this.deleted_by.push(o);
@@ -233,6 +234,9 @@
           garbagecollect = true;
         }
         Insert.__super__.applyDelete.call(this, garbagecollect);
+        if (callLater) {
+          this.parent.callEvent("delete", this, o);
+        }
         if ((_ref = this.next_cl) != null ? _ref.isDeleted() : void 0) {
           return this.next_cl.applyDelete();
         }

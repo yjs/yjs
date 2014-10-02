@@ -39,6 +39,7 @@ createPeerJsConnector = ()->
 
       @peer = peer
       @connections = {}
+      @new_connection_listeners = []
 
       @peer.on 'connection', (conn)=>
         @addConnection conn
@@ -82,6 +83,9 @@ createPeerJsConnector = ()->
       for conn_id of @connections
         conn_id
 
+    onNewConnection: (f)->
+      @new_connection_listeners.push f
+
     #
     # Adds an existing connection to this connector.
     # @param conn {PeerJsConnection}
@@ -105,6 +109,8 @@ createPeerJsConnector = ()->
           if not data.initialized
             conn.send
               conns: @getAllConnectionIds()
+            @new_connection_listeners.map (f)->
+              f(conn)
         else if data.op?
           @engine.applyOp data.op
         else if data.conns?

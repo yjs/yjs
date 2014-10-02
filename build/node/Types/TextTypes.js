@@ -47,11 +47,22 @@
       };
 
       TextInsert.prototype.applyDelete = function() {
+        TextInsert.__super__.applyDelete.apply(this, arguments);
         if (this.content instanceof types.Operation) {
           this.content.applyDelete();
         }
-        this.content = null;
-        return TextInsert.__super__.applyDelete.apply(this, arguments);
+        return this.content = null;
+      };
+
+      TextInsert.prototype.execute = function() {
+        if (!this.validateSavedOperations()) {
+          return false;
+        } else {
+          if (this.content instanceof types.Operation) {
+            this.content.insert_parent = this;
+          }
+          return TextInsert.__super__.execute.call(this);
+        }
       };
 
       TextInsert.prototype.val = function(current_position) {
