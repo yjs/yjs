@@ -2,21 +2,43 @@
 <html>
 <head>
         <meta charset=utf-8 />
-        <title>PeerJs Json Example</title>
+        <title>PeerJs Xml Example</title>
         <script src="http://cdn.peerjs.com/0.3/peer.js"></script>
         <script src="../../build/browser/Frameworks/XmlFramework.js"></script>
         <script src="../../build/browser/Connectors/PeerJsConnector.js"></script>
         <script src="./index.js"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<style>
+        /* Browser specific (not valid) styles to make preformatted text wrap */
+code {
+ white-space: nowrap;       /* css-3 */
+}
+</style>
 </head>
-<body>
-<h1> PeerJs + Json Tutorial</h1>
-<p> Collaborative Json editing with <a href="https://github.com/DadaMonad/Yatta/">Yatta</a>
+<body id="collaborative">
+<h1> PeerJs + XML Example</h1>
+<p> Collaborative XML editing with <a href="https://github.com/DadaMonad/Yatta/">Yatta</a>
 and <a href="http://peerjs.com/">PeerJs</a> (WebRTC). </p>
 
 
 <p> <a href="https://github.com/DadaMonad/Yatta/">Yatta</a> is a Framework for Real-Time collaboration on arbitrary data structures.
-You can find the code for this example <a href="https://github.com/DadaMonad/Yatta/tree/master/examples/PeerJs-Json">here</a>.
+You can find the code for this example <a href="https://github.com/DadaMonad/Yatta/tree/master/examples/XmlExample">here</a>.
+
+<p>Open this link on other clients: <a id="peer_link" target="_blank">Drop me </a></p>. Share this link and build a peer-to-peer based network. Changes won't be recorded by any server.
+
+<p>Open the console and use DOM and jQuery in order to manipulate the body-element of this website. You can see live changes on other clients.</p>
+
+<h4>Sample code for the console </h4>
+
+<nowrap>
+<code>$("body").append('&lt;div id="div_tag"&gt;some new div tag &lt;/div&gt;');</code><br />
+<code>$("#div_tag").empty();</code><br />
+<code>$("&lt;p&gt;&lt;i&gt;This is inserted after every p tag&lt;/i&gt;&lt;/p&gt;").insertAfter("p");</code><br />
+<code>$("p i").remove();</code><br />
+
+</nowrap>
+
+
 </p>
 </body>
 </html>

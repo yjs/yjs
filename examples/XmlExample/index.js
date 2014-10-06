@@ -27,5 +27,32 @@ var yatta, yattaHandler;
 Y.createPeerJsConnector({key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
 
   yatta = new Y.XmlFramework(user_id, Connector);
-  console.log(yatta.getUserId());
+
+   /**
+      Get the url of this frame. If it has a url-encoded parameter
+      we will connect to the foreign peer.
+    */
+    var url = window.location.href;
+    var peer_id = location.search
+    var url = url.substring(0,-peer_id.length);
+    peer_id = peer_id.substring(1);
+
+    /**
+      Set the shareable link.
+      */
+    document.getElementById("peer_link").setAttribute("href",url+"?"+user_id);
+
+    /**
+      Connect to other peer.
+      */
+    if (peer_id.length > 0){
+      yatta.connector.connectToPeer(peer_id);
+    }
+    yatta.connector.onNewConnection(function(){
+      $("#collaborative").replaceWith(yatta.val())
+    });
+
+    yatta.val($("#collaborative")[0])
+    console.log(yatta.getUserId());
+
 });
