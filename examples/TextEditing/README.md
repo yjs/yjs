@@ -29,7 +29,14 @@ Here, we use the PeerJs connector. Its first parameter is the API key that you n
 
 
 ```js
-    Y.createPeerJsConnector({key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
+    /*
+     var conn = {key: 'h7nlefbgavh1tt9'}; // this will connect to the server owned by the peerjs team.
+     */
+    var conn = {
+      host: "127.0.0.1/", //"terrific-peerjs.herokuapp.com/",
+      port: 5000
+    };
+    Y.createPeerJsConnector(conn , function(Connector, user_id){
 ```
 
 

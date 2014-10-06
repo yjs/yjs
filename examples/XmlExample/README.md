@@ -63,13 +63,6 @@ Connect to other peer.
 
     yatta.val($("#collaborative")[0])
     console.log(yatta.getUserId());
-    $("#collaborative").attr("contenteditable","true");
-    $("#collaborative")[0].onkeyup = function(){
-      console.log("dtrn");
-      console.log("rtdn");
-    }
-    $("p")[0].onfocus = function(){
-      console.log("nrtduiaenrtduiaer");
-    }
+
 });
 ```

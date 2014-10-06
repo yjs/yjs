@@ -14,7 +14,7 @@ Unlike other frameworks, Yatta! supports P2P message propagation and is not boun
 
 It is possible to add any communication protocol to Yatta. Currently it supports:
 * [PeerJs](http://peerjs.com/) - A WebRTC Framework
-* [SimpleWebRTC](http://simplewebrtc.com/) - Another WebRTC Framework
+* [SimpleWebRTC](http://simplewebrtc.com/) - Another WebRTC Framework (coming soon)
 * [IWC](http://dbis.rwth-aachen.de/cms/projects/the-xmpp-experience#interwidget-communication) - Inter-widget Communication
 
 ## Use it!
