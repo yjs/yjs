@@ -49,7 +49,7 @@ Y.createPeerJsConnector(conn, function(Connector, user_id){
 You can also specify your own user_id with peerjs.
 But then you have to make sure that no other client associated to your API-key has the same user_id.
 ```
-Y.createPeerJsConnector("unique_id", {key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
+Y.createPeerJsConnector("unique_id", conn, function(Connector, user_id){
 ```
 */
 
