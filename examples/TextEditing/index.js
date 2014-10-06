@@ -25,18 +25,23 @@ function init(){
      First create the connector - the underlaying communication protocol.
      Here, we use the PeerJs connector. Its first parameter is the API key that you need to specify (see [website](http://peerjs.com/))
     */
-    /*
-     // this will connect to the server owned by the peerjs team.
-     // For now, you can use my API key.
-     var conn = {key: 'h7nlefbgavh1tt9'};
-     */
+
+    /**
+     This will connect to the server owned by the peerjs team.
+     For now, you can use my API key.
+    */
+     // var conn = {key: 'h7nlefbgavh1tt9'};
+
+    /**
+    This will connect to one of my peerjs instances.
+    I can't guaranty that this will be always up. This is why you should use the previous method with the api key,
+    or set up your own server.
+    */
     var conn = {
-      host: "terrific-peerjs.herokuapp.com/",
-      port: 4609,
-      path: "/",
-      debug: true,
-      secure: false
-    }; // I can't guaranty that this will be always up. This is why you should use the previous method with the api key.
+      host: "terrific-peerjs.herokuapp.com",
+      port: "", // this works because heroku can forward to the right port.
+      // debug: true,
+    };
 
     Y.createPeerJsConnector(conn, function(Connector, user_id){
       /**
