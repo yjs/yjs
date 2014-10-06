@@ -24,7 +24,31 @@ Therefore, you may also specify the server/port here, if you have set up your ow
 
 ```js
 var yatta, yattaHandler;
-Y.createPeerJsConnector({key: 'h7nlefbgavh1tt9'}, function(Connector, user_id){
+```
+
+
+This will connect to the server owned by the peerjs team.
+For now, you can use my API key.
+
+
+```js
+// var conn = {key: 'h7nlefbgavh1tt9'};
+```
+
+
+This will connect to one of my peerjs instances.
+I can't guaranty that this will be always up. This is why you should use the previous method with the api key,
+or set up your own server.
+
+
+```js
+var conn = {
+  host: "terrific-peerjs.herokuapp.com",
+  port: "", // this works because heroku can forward to the right port.
+  // debug: true,
+};
+
+Y.createPeerJsConnector(conn, function(Connector, user_id){
 
   yatta = new Y.XmlFramework(user_id, Connector);
 ```
