@@ -19,23 +19,24 @@
       Index
     </a>
     &raquo;
-    <span class='title'>TextFramework</span>
+    <span class='title'>XmlFramework</span>
   </div>
 </div>
     <div id='content'>
       <h1>
         Class:
-        TextFramework
+        XmlFramework
       </h1>
       <table class='box'>
         <tr>
           <td>Defined in:</td>
-          <td>lib&#47;Frameworks&#47;TextFramework.coffee</td>
+          <td>lib&#47;Frameworks&#47;XmlFramework.coffee</td>
         </tr>
       </table>
       <h2>Overview</h2>
       <div class='docstring'>
-  <p>Framework for Text Datastructures.</p>
+  <p>Framework for Xml-like data-structures.
+Known values that are supported:</p>
 </div>
 <div class='tags'>
 </div>
@@ -77,6 +78,17 @@
   </li>
   <li>
     <span class='signature'>
+      <a href='#setMutableDefault-dynamic'>
+        #
+(void)
+<b>setMutableDefault</b><span>(mutable)</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
       <a href='#getUserId-dynamic'>
         #
 (void)
@@ -89,54 +101,21 @@
   </li>
   <li>
     <span class='signature'>
+      <a href='#toJson-dynamic'>
+        #
+(void)
+<b>toJson</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
       <a href='#val-dynamic'>
         #
 (void)
 <b>val</b><span>()</span>
-      </a>
-    </span>
-    <span class='desc'>
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#insertText-dynamic'>
-        #
-(void)
-<b>insertText</b><span>(pos, content)</span>
-      </a>
-    </span>
-    <span class='desc'>
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#deleteText-dynamic'>
-        #
-(void)
-<b>deleteText</b><span>(pos, length)</span>
-      </a>
-    </span>
-    <span class='desc'>
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#bind-dynamic'>
-        #
-(void)
-<b>bind</b><span>(textarea)</span>
-      </a>
-    </span>
-    <span class='desc'>
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#replaceText-dynamic'>
-        #
-(void)
-<b>replaceText</b><span>(text)</span>
       </a>
     </span>
     <span class='desc'>
@@ -174,7 +153,7 @@
         )
       </span>
       &mdash;
-      <span class='desc'>Uniqe user id that defines this peer. </span>
+      <span class='desc'>Unique id of the peer. </span>
     </li>
     <li>
       <span class='name'>Connector</span>
@@ -184,7 +163,7 @@
         )
       </span>
       &mdash;
-      <span class='desc'>The connector defines how you connect to the other peers. </span>
+      <span class='desc'>the connector class. </span>
     </li>
   </ul>
 </div>
@@ -208,7 +187,7 @@
         <tt>?</tt>
       )
       &mdash;
-      <span class='desc'>WordType </span>
+      <span class='desc'>JsonType </span>
     </li>
   </ul>
 </div>
@@ -243,6 +222,22 @@
 </div>
   </div>
   <div class='method_details'>
+    <p class='signature' id='setMutableDefault-dynamic'>
+      #
+(void)
+<b>setMutableDefault</b><span>(mutable)</span>
+      <br>
+    </p>
+    <div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='JsonType.setMutableDefault'>JsonType.setMutableDefault</a>
+    </li>
+  </ul>
+</div>
+  </div>
+  <div class='method_details'>
     <p class='signature' id='getUserId-dynamic'>
       #
 (void)
@@ -258,6 +253,22 @@ JsonFramework was initialized (Depending on the HistoryBuffer implementation).</
 </div>
   </div>
   <div class='method_details'>
+    <p class='signature' id='toJson-dynamic'>
+      #
+(void)
+<b>toJson</b><span>()</span>
+      <br>
+    </p>
+    <div class='tags'>
+  <h3>See also:</h3>
+  <ul class='see'>
+    <li>
+      <a href='JsonType.toJson'>JsonType.toJson</a>
+    </li>
+  </ul>
+</div>
+  </div>
+  <div class='method_details'>
     <p class='signature' id='val-dynamic'>
       #
 (void)
@@ -269,70 +280,6 @@ JsonFramework was initialized (Depending on the HistoryBuffer implementation).</
   <ul class='see'>
     <li>
       <a href='JsonType.val'>JsonType.val</a>
-    </li>
-  </ul>
-</div>
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='insertText-dynamic'>
-      #
-(void)
-<b>insertText</b><span>(pos, content)</span>
-      <br>
-    </p>
-    <div class='tags'>
-  <h3>See also:</h3>
-  <ul class='see'>
-    <li>
-      <a href='WordType.insertText'>WordType.insertText</a>
-    </li>
-  </ul>
-</div>
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='deleteText-dynamic'>
-      #
-(void)
-<b>deleteText</b><span>(pos, length)</span>
-      <br>
-    </p>
-    <div class='tags'>
-  <h3>See also:</h3>
-  <ul class='see'>
-    <li>
-      <a href='WordType.deleteText'>WordType.deleteText</a>
-    </li>
-  </ul>
-</div>
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='bind-dynamic'>
-      #
-(void)
-<b>bind</b><span>(textarea)</span>
-      <br>
-    </p>
-    <div class='tags'>
-  <h3>See also:</h3>
-  <ul class='see'>
-    <li>
-      <a href='WordType.bind'>WordType.bind</a>
-    </li>
-  </ul>
-</div>
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='replaceText-dynamic'>
-      #
-(void)
-<b>replaceText</b><span>(text)</span>
-      <br>
-    </p>
-    <div class='tags'>
-  <h3>See also:</h3>
-  <ul class='see'>
-    <li>
-      <a href='WordType.replaceText'>WordType.replaceText</a>
     </li>
   </ul>
 </div>
