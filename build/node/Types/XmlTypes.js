@@ -307,7 +307,6 @@
                   this.xml.appendChild(n.val(enforce));
                 } else if (n.type === "TextNodeType") {
                   text_node = n.val();
-                  text_node._yatta = this;
                   this.xml.appendChild(text_node);
                 } else {
                   throw new Error("Internal structure cannot be transformed to dom");
@@ -368,7 +367,7 @@
           HB.addOperation(d).execute();
           content._yatta = null;
         }
-        this._yatta = this;
+        content._yatta = this;
         TextNodeType.__super__.constructor.call(this, uid, content);
       }
 
