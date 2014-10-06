@@ -8,5 +8,6 @@ Here you find some (hopefully) usefull examples on how to use Yatta!
 
 ## Demos
 * [Text Editing](./TextEditing/) Simple collaborative text editing demo with PeerJs and Text Framework.
-* [IWC Demo](./IwcDemo/) More IWC example widgets..
+* [XML Example](./XmlExample) Collaboratively manipulate the dom with native dom-features and jQuery.
+* [IWC Demo](./IwcDemo/) More IWC example widgets.
 
