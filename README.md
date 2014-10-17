@@ -8,7 +8,7 @@ but does not require you to understand how the internals work. The predefined da
 Predefined data structures:
 * Text - [Collaborative Text Editing Example](http://dadamonad.github.io/Yatta/examples/TextEditing/)
 * Json - [Tutorial](http://dadamonad.github.io/Yatta/examples/PeerJs-Json/)
-* XML - [XML Example](http://dadamonad.github.io/Yatta/XmlExample/) Collaboratively manipulate the dom with native dom-features and jQuery.
+* XML - [XML Example](http://dadamonad.github.io/Yatta/examples/XmlExample/) Collaboratively manipulate the dom with native dom-features and jQuery.
 
 Unlike other frameworks, Yatta! supports P2P message propagation and is not bound to a specific communication protocol.
 
