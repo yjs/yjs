@@ -38,6 +38,31 @@ describe "TextFramework", ->
     u.insertText 0, "abc"
     @yTest.compareAll()
     expect(u.val()).to.equal("abc")
+  
+  number_of_concurrent_operations = 100000
+  it "concurrent against #{number_of_concurrent_operations}", ->
+    a = @yTest.users[0]
+    b = @yTest.users[1]
+    str = ""
+    for i in [0...number_of_concurrent_operations]
+      str += "a"
+    
+    countTime = (name, task)->
+      start = (new Date()).getTime()
+      task()
+      console.log "Time needed to complete task '#{name}': #{(new Date().getTime())-start}"
+    
+    countTime "insert #{number_of_concurrent_operations} characters", ()->
+      a.insertText 0, str
+    
+    b.insertText 0, "b"
+    b_hb = b.HB._encode()
+    b.engine.applyOps a.HB._encode()  
+    countTime "transform one operation against #{number_of_concurrent_operations} operations", ()->
+      a.engine.applyOps b_hb
+    
+    console.log a.val()
+    expect(a.val()).to.equal(b.val())
 
   it "can handle many engines, many operations, concurrently (random)", ->
     @yTest.run()

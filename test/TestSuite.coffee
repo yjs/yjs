@@ -14,7 +14,7 @@ module.exports = class Test
   constructor: (@name_suffix = "")->
     @number_of_test_cases_multiplier = 1
     @repeat_this = 1 * @number_of_test_cases_multiplier
-    @doSomething_amount = 20 + @number_of_test_cases_multiplier
+    @doSomething_amount = 100 + @number_of_test_cases_multiplier
     @number_of_engines = 5 + @number_of_test_cases_multiplier - 1
 
     @time = 0
