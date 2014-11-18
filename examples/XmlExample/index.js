@@ -30,20 +30,21 @@ var yatta, yattaHandler;
   This will connect to the server owned by the peerjs team.
   For now, you can use my API key.
 */
-// var conn = {key: 'h7nlefbgavh1tt9'};
+var conn = {key: 'h7nlefbgavh1tt9'};
 
 /**
 This will connect to one of my peerjs instances.
 I can't guaranty that this will be always up. This is why you should use the previous method with the api key,
 or set up your own server.
 */
-var conn = {
+/*var conn = {
   host: "terrific-peerjs.herokuapp.com",
   port: "", // this works because heroku can forward to the right port.
   // debug: true,
-};
+};*/
+var rid = Math.floor(Math.random()*100 + 1)
 
-Y.createPeerJsConnector(conn, function(Connector, user_id){
+Y.createPeerJsConnector(rid, conn, function(Connector, user_id){
 
   yatta = new Y.XmlFramework(user_id, Connector);
 

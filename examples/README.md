@@ -7,7 +7,7 @@ Here you find some (hopefully) usefull examples on how to use Yatta!
 * [IWC Tutorial](./Iwc/) Tutorial on how to use IWC Connector.
 
 ## Demos
-* [Text Editing](http://dadamonad.github.io/Yatta/TextEditing/) Simple collaborative text editing demo with PeerJs and Text Framework.
-* [XML Example](http://dadamonad.github.io/Yatta/XmlExample) Collaboratively manipulate the dom with native dom-features and jQuery.
+* [Text Editing](http://dadamonad.github.io/Yatta/examples/TextEditing/) Simple collaborative text editing demo with PeerJs and Text Framework.
+* [XML Example](http://dadamonad.github.io/Yatta/examples/XmlExample) Collaboratively manipulate the dom with native dom-features and jQuery.
 * [IWC Demo](./IwcDemo/) More IWC example widgets.
 
