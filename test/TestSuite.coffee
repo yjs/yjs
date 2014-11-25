@@ -8,13 +8,13 @@ _         = require("underscore")
 chai.use(sinonChai)
 
 Y = require "../lib/index"
-Connector_uninitialized = require "../lib/Connectors/TestConnector"
+Connector = require "../bower_components/connector/lib/test-connector/test-connector.coffee"
 
 module.exports = class Test
   constructor: (@name_suffix = "")->
     @number_of_test_cases_multiplier = 1
     @repeat_this = 1 * @number_of_test_cases_multiplier
-    @doSomething_amount = 100 + @number_of_test_cases_multiplier
+    @doSomething_amount = 400 + @number_of_test_cases_multiplier
     @number_of_engines = 5 + @number_of_test_cases_multiplier - 1
 
     @time = 0
@@ -27,9 +27,11 @@ module.exports = class Test
 
   reinitialize: ()->
     @users = []
-    @Connector = Connector_uninitialized @users
     for i in [0...@number_of_engines]
-      u = @makeNewUser (i+@name_suffix), @Connector
+      connector = new Connector i
+      if @users.length > 0
+        connector.join @users[0].connector
+      u = @makeNewUser (i+@name_suffix), connector
       @users.push u
     #@users[0].val('name',"i")
     @flushAll()
@@ -198,7 +200,7 @@ module.exports = class Test
 
   testHBencoding: ()->
     # in case of JsonFramework, every user will create its JSON first! therefore, the testusers id must be small than all the others (see InsertType)
-    @users[@users.length] = @makeNewUser (-1), (Connector_uninitialized [])
+    @users[@users.length] = @makeNewUser (-1), (new Connector (-1), [])
     @users[@users.length-1].engine.applyOps @users[0].HB._encode()
 
     #if @getContent(@users.length-1) isnt @getContent(0)

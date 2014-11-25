@@ -32,7 +32,7 @@ For now, you can use my API key.
 
 
 ```js
-// var conn = {key: 'h7nlefbgavh1tt9'};
+var conn = {key: 'h7nlefbgavh1tt9'};
 ```
 
 
@@ -42,13 +42,14 @@ or set up your own server.
 
 
 ```js
-var conn = {
+/*var conn = {
   host: "terrific-peerjs.herokuapp.com",
   port: "", // this works because heroku can forward to the right port.
   // debug: true,
-};
+};*/
+var rid = Math.floor(Math.random()*100 + 1)
 
-Y.createPeerJsConnector(conn, function(Connector, user_id){
+Y.createPeerJsConnector(rid, conn, function(Connector, user_id){
 
   yatta = new Y.XmlFramework(user_id, Connector);
 ```

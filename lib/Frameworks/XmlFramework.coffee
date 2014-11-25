@@ -2,6 +2,7 @@
 json_types_uninitialized = require "../Types/XmlTypes"
 HistoryBuffer = require "../HistoryBuffer"
 Engine = require "../Engine"
+adaptConnector = require "../ConnectorAdapter"
 
 #
 # Framework for Xml-like data-structures.
@@ -13,13 +14,13 @@ class XmlFramework
   # @param {String} user_id Unique id of the peer.
   # @param {Connector} Connector the connector class.
   #
-  constructor: (user_id, Connector)->
+  constructor: (user_id, @connector)->
     @HB = new HistoryBuffer user_id
     type_manager = json_types_uninitialized @HB
     @types = type_manager.types
     @engine = new Engine @HB, type_manager.parser
     @HB.engine = @engine # TODO: !! only for debugging
-    @connector = new Connector @engine, @HB, type_manager.execution_listener, @
+    adaptConnector @connector, @engine, @HB, type_manager.execution_listener
     #first_word = new @types.XmlType(undefined, undefined, undefined, undefined, document.createElement("shared"))
     #@HB.addOperation(first_word).execute()
 

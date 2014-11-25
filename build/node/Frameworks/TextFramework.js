@@ -1,5 +1,5 @@
 (function() {
-  var Engine, HistoryBuffer, TextFramework, text_types_uninitialized;
+  var Engine, HistoryBuffer, TextFramework, adaptConnector, text_types_uninitialized;
 
   text_types_uninitialized = require("../Types/TextTypes");
 
@@ -7,14 +7,17 @@
 
   Engine = require("../Engine");
 
+  adaptConnector = require("../ConnectorAdapter");
+
   TextFramework = (function() {
-    function TextFramework(user_id, Connector) {
+    function TextFramework(user_id, connector) {
       var beg, beginning, end, first_word, text_types, uid_beg, uid_end, uid_r;
+      this.connector = connector;
       this.HB = new HistoryBuffer(user_id);
       text_types = text_types_uninitialized(this.HB);
       this.types = text_types.types;
       this.engine = new Engine(this.HB, text_types.parser);
-      this.connector = new Connector(this.engine, this.HB, text_types.execution_listener, this);
+      adaptConnector(this.connector, this.engine, this.HB, text_types.execution_listener);
       beginning = this.HB.addOperation(new this.types.Delimiter({
         creator: '_',
         op_number: '_beginning'

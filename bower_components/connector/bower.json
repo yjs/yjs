@@ -1,0 +1,30 @@
+{
+  "name": "connector",
+  "version": "0.0.0",
+  "authors": [
+    "Kevin Jahns <kevin.jahns@rwth-aachen.de>"
+  ],
+  "description": "Connect to other users via a generic connector. The interface is standardized, so you can use other connectors without changing your code.",
+  "main": [
+    "peerjs-connector/peerjs-connector.min.js",
+    "peerjs-connector/peerjs-connector.html"
+  ],
+  "moduleType": [
+    "globals",
+    "node"
+  ],
+  "keywords": [
+    "peerjs"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#~0.5.1"
+  }
+}

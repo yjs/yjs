@@ -2,6 +2,7 @@
 text_types_uninitialized = require "../Types/TextTypes"
 HistoryBuffer = require "../HistoryBuffer"
 Engine = require "../Engine"
+adaptConnector = require "../ConnectorAdapter"
 
 #
 # Framework for Text Datastructures.
@@ -12,12 +13,12 @@ class TextFramework
   # @param {String} user_id Uniqe user id that defines this peer.
   # @param {Connector} Connector The connector defines how you connect to the other peers.
   #
-  constructor: (user_id, Connector)->
+  constructor: (user_id, @connector)->
     @HB = new HistoryBuffer user_id
     text_types = text_types_uninitialized @HB
     @types = text_types.types
     @engine = new Engine @HB, text_types.parser
-    @connector = new Connector @engine, @HB, text_types.execution_listener, @
+    adaptConnector @connector, @engine, @HB, text_types.execution_listener
 
     beginning = @HB.addOperation new @types.Delimiter {creator: '_', op_number: '_beginning'} , undefined, undefined
     end =       @HB.addOperation new @types.Delimiter {creator: '_', op_number: '_end'}       , beginning, undefined

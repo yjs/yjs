@@ -8,7 +8,7 @@ _         = require("underscore")
 chai.use(sinonChai)
 
 Y = require "../lib/index"
-Connector_uninitialized = require "../lib/Connectors/TestConnector"
+Connector = require "../bower_components/connector/lib/test-connector/test-connector.coffee"
 
 Test = require "./TestSuite"
 
@@ -67,7 +67,7 @@ describe "JsonFramework", ->
     @yTest = new JsonTest()
     @users = @yTest.users
 
-    @test_user = @yTest.makeNewUser 0, (Connector_uninitialized [])
+    @test_user = @yTest.makeNewUser 0, (new Connector 0, [])
     done()
 
   it "can handle many engines, many operations, concurrently (random)", ->

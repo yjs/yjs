@@ -11,7 +11,7 @@ require 'coffee-errors'
 chai.use(sinonChai)
 
 Y = require "../lib/index"
-Connector_uninitialized = require "../lib/Connectors/TestConnector"
+Connector = require "../bower_components/connector/lib/test-connector/test-connector.coffee"
 
 Test = require "./TestSuite"
 class XmlTest extends Test
@@ -37,7 +37,7 @@ describe "XmlFramework", ->
     @users = @yTest.users
     ###
     test_users = []
-    connector = (Connector_uninitialized test_users)
+    connector = (new Connector 0, test_users)
     @test_user = @yTest.makeNewUser 0, connector
     test_users.push @test_user
     # test_user_listen listens to the actions of test_user. He will update his dom when he receives from test_user.

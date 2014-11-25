@@ -1,5 +1,5 @@
 (function() {
-  var Engine, HistoryBuffer, JsonFramework, json_types_uninitialized;
+  var Engine, HistoryBuffer, JsonFramework, adaptConnector, json_types_uninitialized;
 
   json_types_uninitialized = require("../Types/JsonTypes");
 
@@ -7,15 +7,18 @@
 
   Engine = require("../Engine");
 
+  adaptConnector = require("../ConnectorAdapter");
+
   JsonFramework = (function() {
-    function JsonFramework(user_id, Connector) {
+    function JsonFramework(user_id, connector) {
       var beg, end, first_word, type_manager, uid_beg, uid_end;
+      this.connector = connector;
       this.HB = new HistoryBuffer(user_id);
       type_manager = json_types_uninitialized(this.HB);
       this.types = type_manager.types;
       this.engine = new Engine(this.HB, type_manager.parser);
       this.HB.engine = this.engine;
-      this.connector = new Connector(this.engine, this.HB, type_manager.execution_listener, this);
+      adaptConnector(this.connector, this.engine, this.HB, type_manager.execution_listener);
       first_word = new this.types.JsonType(this.HB.getReservedUniqueIdentifier());
       this.HB.addOperation(first_word).execute();
       uid_beg = this.HB.getReservedUniqueIdentifier();

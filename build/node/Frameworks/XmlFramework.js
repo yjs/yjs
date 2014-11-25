@@ -1,5 +1,5 @@
 (function() {
-  var Engine, HistoryBuffer, XmlFramework, json_types_uninitialized;
+  var Engine, HistoryBuffer, XmlFramework, adaptConnector, json_types_uninitialized;
 
   json_types_uninitialized = require("../Types/XmlTypes");
 
@@ -7,15 +7,18 @@
 
   Engine = require("../Engine");
 
+  adaptConnector = require("../ConnectorAdapter");
+
   XmlFramework = (function() {
-    function XmlFramework(user_id, Connector) {
+    function XmlFramework(user_id, connector) {
       var beg, end, type_manager, uid_beg, uid_end;
+      this.connector = connector;
       this.HB = new HistoryBuffer(user_id);
       type_manager = json_types_uninitialized(this.HB);
       this.types = type_manager.types;
       this.engine = new Engine(this.HB, type_manager.parser);
       this.HB.engine = this.engine;
-      this.connector = new Connector(this.engine, this.HB, type_manager.execution_listener, this);
+      adaptConnector(this.connector, this.engine, this.HB, type_manager.execution_listener);
       uid_beg = this.HB.getReservedUniqueIdentifier();
       uid_end = this.HB.getReservedUniqueIdentifier();
       beg = this.HB.addOperation(new this.types.Delimiter(uid_beg, void 0, uid_end)).execute();
