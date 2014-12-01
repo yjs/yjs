@@ -68,6 +68,14 @@ module.exports = (HB)->
         if @event_listeners?[e]?
           @event_listeners[e] = @event_listeners[e].filter (g)->
             f isnt g
+    
+    # 
+    # Deletes all subscribed event listeners. 
+    # This should be called, e.g. after this has been replaced. 
+    # (Then only one replace event should fire. )
+    # This is also called in the cleanup method. 
+    deleteAllListeners: ()->
+      @event_listeners = []
 
     #
     # Fire an event.
@@ -98,6 +106,7 @@ module.exports = (HB)->
     cleanup: ()->
       #console.log "cleanup: #{@type}"
       HB.removeOperation @
+      @deleteAllListeners()
 
     #
     # Set the parent of this operation.

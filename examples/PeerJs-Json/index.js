@@ -29,35 +29,29 @@ var yatta, yattaHandler;
   This will connect to the server owned by the peerjs team.
   For now, you can use my API key.
 */
-// var conn = {key: 'h7nlefbgavh1tt9'};
+var options = {key: 'h7nlefbgavh1tt9'};
 
 /**
 This will connect to one of my peerjs instances.
 I can't guaranty that this will be always up. This is why you should use the previous method with the api key,
 or set up your own server.
 */
-var conn = {
+/*
+var options = {
   host: "terrific-peerjs.herokuapp.com",
   port: "", // this works because heroku can forward to the right port.
   // debug: true,
-};
+};*/
 
-Y.createPeerJsConnector(conn, function(Connector, user_id){
-
-/**
-You can also specify your own user_id with peerjs.
-But then you have to make sure that no other client associated to your API-key has the same user_id.
-```
-Y.createPeerJsConnector("unique_id", conn, function(Connector, user_id){
-```
-*/
+var user_id = Math.ceil(Math.random()*100);
+connector = new PeerJsConnector(user_id,options);
 
   /**
     ### Yatta
     yatta is the shared json object. If you change something on this object,
     it will be instantly shared with all the other collaborators.
   */
-  yatta = new Y.JsonFramework(user_id, Connector);
+  yatta = new Y.JsonFramework(user_id, connector);
 
   /**
     Next, you may want to connect to another peer. Therefore you have to receive his
@@ -166,10 +160,14 @@ Y.createPeerJsConnector("unique_id", conn, function(Connector, user_id){
   */
   function change(event_name, property_name, op){
     // Check who made this property change!
-    if(op.creator == yatta.getUserId()){
-      console.log("You changed the value of property '" + property_name + "'!");
-    }else{
-      console.log("User '"+op.creator+"' changed the value of property '" + property_name + "'!");
+    if(op != null){
+      if(op.creator == yatta.getUserId()){
+        console.log("You changed the value of property '" + property_name + "'!");
+      }else{
+        console.log("User '"+op.creator+"' changed the value of property '" + property_name + "'!");
+      }
+    } else {
+      console.log("The value of property '"+property_name+"' changed!")
     }
     console.log("New value: " + show(this.val(property_name)) + ""); // 'this' is the object on which the property changed.
   };
@@ -260,4 +258,3 @@ Y.createPeerJsConnector("unique_id", conn, function(Connector, user_id){
     Please also read [JsonWrapper](https://rawgit.com/DadaMonad/Yatta/master/doc/class/JsonWrapper.html).
     I really want to hear what you think about this method :)
   */
-});

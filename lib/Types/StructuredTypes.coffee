@@ -257,7 +257,7 @@ module.exports = (HB)->
           repl_manager.parent.callEvent 'change', property_name, op
       # Call this, when the first element is inserted. Then delete the listener.
       addPropertyListener = (event, op)->
-        repl_manager.deleteListener 'addProperty', addPropertyListener
+        repl_manager.deleteListener 'insert', addPropertyListener
         repl_manager.parent.callEvent 'addProperty', property_name, op
       @on 'insert', addPropertyListener
       super parent
@@ -338,6 +338,8 @@ module.exports = (HB)->
 
     applyDelete: ()->
       if @content?
+        if @next_cl.type isnt "Delimiter"
+          @content.deleteAllListeners()
         @content.applyDelete()
         @content.dontSync()
       @content = null

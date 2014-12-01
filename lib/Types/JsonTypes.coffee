@@ -128,25 +128,28 @@ module.exports = (HB)->
 
     cleanup: ()->
       super()
+      
     #
     # Transform this to a Json and loose all the sharing-abilities (the new object will be a deep clone)!
     # @return {Json}
     #
     toJson: ()->
-      val = @val()
-      json = {}
-      for name, o of val
-        if o is null
-          json[name] = o
-        else if o.constructor is {}.constructor
-          json[name] = @val(name).toJson()
-        else if o instanceof types.Operation
-          while o instanceof types.Operation
-            o = o.val()
-          json[name] = o
-        else
-          json[name] = o
-      json
+      if not @bound_json?
+        val = @val()
+        json = {}
+        for name, o of val
+          if o is null
+            json[name] = o
+          else if o.constructor is {}.constructor
+            json[name] = @val(name).toJson()
+          else if o instanceof types.Operation
+            while o instanceof types.Operation
+              o = o.val()
+            json[name] = o
+          else
+            json[name] = o
+        @bound_json = json
+      @bound_json
 
     #
     # @see WordType.setReplaceManager
