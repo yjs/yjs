@@ -255,7 +255,7 @@
           }
         });
         addPropertyListener = function(event, op) {
-          repl_manager.deleteListener('addProperty', addPropertyListener);
+          repl_manager.deleteListener('insert', addPropertyListener);
           return repl_manager.parent.callEvent('addProperty', property_name, op);
         };
         this.on('insert', addPropertyListener);
@@ -318,6 +318,9 @@
 
       Replaceable.prototype.applyDelete = function() {
         if (this.content != null) {
+          if (this.next_cl.type !== "Delimiter") {
+            this.content.deleteAllListeners();
+          }
           this.content.applyDelete();
           this.content.dontSync();
         }

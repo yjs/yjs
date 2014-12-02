@@ -61,6 +61,10 @@
         return _results;
       };
 
+      Operation.prototype.deleteAllListeners = function() {
+        return this.event_listeners = [];
+      };
+
       Operation.prototype.callEvent = function() {
         return this.forwardEvent.apply(this, [this].concat(__slice.call(arguments)));
       };
@@ -97,7 +101,8 @@
       };
 
       Operation.prototype.cleanup = function() {
-        return HB.removeOperation(this);
+        HB.removeOperation(this);
+        return this.deleteAllListeners();
       };
 
       Operation.prototype.setParent = function(parent) {

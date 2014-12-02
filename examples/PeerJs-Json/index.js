@@ -29,22 +29,23 @@ var yatta, yattaHandler;
   This will connect to the server owned by the peerjs team.
   For now, you can use my API key.
 */
-var options = {key: 'h7nlefbgavh1tt9'};
+//var options = {key: 'h7nlefbgavh1tt9'};
 
 /**
 This will connect to one of my peerjs instances.
 I can't guaranty that this will be always up. This is why you should use the previous method with the api key,
 or set up your own server.
 */
-/*
+
 var options = {
   host: "terrific-peerjs.herokuapp.com",
   port: "", // this works because heroku can forward to the right port.
   // debug: true,
-};*/
+};
 
 var user_id = Math.ceil(Math.random()*100);
 connector = new PeerJsConnector(user_id,options);
+//var connector = new TestConnector(user_id);
 
   /**
     ### Yatta
@@ -160,15 +161,12 @@ connector = new PeerJsConnector(user_id,options);
   */
   function change(event_name, property_name, op){
     // Check who made this property change!
-    if(op != null){
-      if(op.creator == yatta.getUserId()){
-        console.log("You changed the value of property '" + property_name + "'!");
-      }else{
-        console.log("User '"+op.creator+"' changed the value of property '" + property_name + "'!");
-      }
-    } else {
-      console.log("The value of property '"+property_name+"' changed!")
+    if(op.creator == yatta.getUserId()){
+      console.log("You changed the value of property '" + property_name + "'!");
+    }else{
+      console.log("User '"+op.creator+"' changed the value of property '" + property_name + "'!");
     }
+
     console.log("New value: " + show(this.val(property_name)) + ""); // 'this' is the object on which the property changed.
   };
   yatta.on('change', change);
@@ -179,6 +177,12 @@ connector = new PeerJsConnector(user_id,options);
   */
   yatta.val('new').val('z', {'replace' : "x"}); // Property 'z' was replaced or changed!
   yatta.val('new').val('z').val('new', {"true": true}); // Property 'z' was replaced or changed! + Property 'new' was created!
+  
+  /**
+   Delete the listeners
+  */
+  yatta.deleteListener('addProperty', addProperty);
+  yatta.deleteListener('change', change);
 
   /**
     Apply 'insert' and 'delete' - listeners to Words.
@@ -194,8 +198,7 @@ connector = new PeerJsConnector(user_id,options);
   yatta.val('mutable_string').insertText(0, 'a'); // Inserted 'a' at position 0
   yatta.val('mutable_string').deleteText(0, 1); // Deleted character at position 0
 
-  yatta.deleteListener('addProperty', addProperty);
-  yatta.deleteListener('change', change);
+
   yatta.val('mutable_string').deleteListener('insert_delete', insert_delete);
 
 

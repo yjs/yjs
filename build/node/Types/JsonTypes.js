@@ -87,25 +87,74 @@
       };
 
       JsonType.prototype.toJson = function() {
-        var json, name, o, val;
-        val = this.val();
-        json = {};
-        for (name in val) {
-          o = val[name];
-          if (o === null) {
-            json[name] = o;
-          } else if (o.constructor === {}.constructor) {
-            json[name] = this.val(name).toJson();
-          } else if (o instanceof types.Operation) {
-            while (o instanceof types.Operation) {
-              o = o.val();
+        var json, name, o, that, val;
+        if ((this.bound_json == null) || (Object.observe == null) || true) {
+          val = this.val();
+          json = {};
+          for (name in val) {
+            o = val[name];
+            if (o === null) {
+              json[name] = o;
+            } else if (o.constructor === {}.constructor) {
+              json[name] = this.val(name).toJson();
+            } else if (o instanceof types.Operation) {
+              while (o instanceof types.Operation) {
+                o = o.val();
+              }
+              json[name] = o;
+            } else {
+              json[name] = o;
             }
-            json[name] = o;
-          } else {
-            json[name] = o;
+          }
+          this.bound_json = json;
+          if ((Object.observe != null) && false) {
+            that = this;
+            Object.observe(this.bound_json, function(events) {
+              var event, _i, _len, _results;
+              _results = [];
+              for (_i = 0, _len = events.length; _i < _len; _i++) {
+                event = events[_i];
+                if (event.type === "add" || (event.type = "update")) {
+                  _results.push(that.val(event.name, event.object[event.name]));
+                } else {
+                  _results.push(void 0);
+                }
+              }
+              return _results;
+            });
+            that.on('change', function(event_name, property_name, op) {
+              var notifier, oldVal;
+              if (this === that) {
+                notifier = Object.getNotifier(that.bound_json);
+                oldVal = that.bound_json[property_name];
+                if (oldVal != null) {
+                  notifier.performChange('update', function() {
+                    return that.bound_json[property_name] = that.val(property_name);
+                  }, that.bound_json);
+                  return notifier.notify({
+                    object: that.bound_json,
+                    type: 'update',
+                    name: property_name,
+                    oldValue: oldVal,
+                    changed_by: op.creator
+                  });
+                } else {
+                  notifier.performChange('add', function() {
+                    return that.bound_json[property_name] = that.val(property_name);
+                  }, that.bound_json);
+                  return notifier.notify({
+                    object: that.bound_json,
+                    type: 'add',
+                    name: property_name,
+                    oldValue: oldVal,
+                    changed_by: op.creator
+                  });
+                }
+              }
+            });
           }
         }
-        return json;
+        return this.bound_json;
       };
 
       JsonType.prototype.setReplaceManager = function(replace_manager) {

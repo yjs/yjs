@@ -116,7 +116,7 @@ if (x.type === &quot;JsonType&quot;) {
       </a>
     </span>
     <span class='desc'>
-      Transform this to a Json and loose all the sharing-abilities (the new object will be a deep clone)! 
+      Transform this to a Json. 
     </span>
   </li>
   <li>
@@ -253,7 +253,8 @@ if (x.type === &quot;JsonType&quot;) {
       <br>
     </p>
     <div class='docstring'>
-  <p>Transform this to a Json and loose all the sharing-abilities (the new object will be a deep clone)!</p>
+  <p>Transform this to a Json. If your browser supports Object.observe it will be transformed automatically when a change arrives. 
+Otherwise you will loose all the sharing-abilities (the new object will be a deep clone)!</p>
 </div>
 <div class='tags'>
   <h3>Returns:</h3>
@@ -466,7 +467,7 @@ if (x.type === &quot;JsonType&quot;) {
 </div>
     </div>
     <div id='footer'>
-  December 01, 14 10:47:17 by
+  December 02, 14 09:37:37 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

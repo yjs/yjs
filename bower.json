@@ -23,5 +23,8 @@
     "Gruntfile.coffee",
     "extras",
     "tests"
-  ]
+  ],
+  "dependencies": {
+    "peerjs": "~0.3.14",
+  }
 }
