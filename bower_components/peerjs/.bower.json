@@ -1,0 +1,34 @@
+{
+  "name": "peerjs",
+  "version": "0.3.14",
+  "homepage": "http://peerjs.com",
+  "authors": [
+    "Michelle Bu <michelle@michellebu.com>"
+  ],
+  "description": "Simple peer-to-peer data and media using WebRTC.",
+  "main": "peer.js",
+  "keywords": [
+    "WebRTC",
+    "peer",
+    "peerjs",
+    "p2p"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "_release": "0.3.14",
+  "_resolution": {
+    "type": "version",
+    "tag": "0.3.14",
+    "commit": "708cb482682a3c7599dd177090e789722e2b8346"
+  },
+  "_source": "git://github.com/peers/bower-peerjs.git",
+  "_target": "~0.3.14",
+  "_originalSource": "peerjs",
+  "_direct": true
+}

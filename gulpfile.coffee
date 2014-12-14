@@ -55,8 +55,9 @@ gulp.task 'browser', ->
     .pipe gulp.dest './build/browser'
     .pipe uglify()
     .pipe rename
-      extname: ".min.js"
-    .pipe gulp.dest 'build/browser'
+      extname: ".js"
+      basename: "index"
+    .pipe gulp.dest './'
     .pipe gulpif '!**/', git.add({args : "-A"})
 
   gulp.src (files.test.concat files.browser_test), {read: false}

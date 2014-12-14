@@ -1,0 +1,63 @@
+<!--
+Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<script src="../change_summary.js"></script>
+<script src="constrain.js"></script>
+<script src="persist.js"></script>
+<script src="mdv-object-observe/include.js"></script>
+
+<h1>Circles</h1>
+<div data-controller="CircleController">
+  <template iterate>
+    <div style="border: 1px solid black; margin: 8px">
+      <table>
+      <tr><td>radius:</td><td><input type="number" value="{{ radius }}"></td></tr>
+      <tr><td>area:</td><td><input type="number" value="{{ area }}"></td></tr>
+      <tr><td>circumference:</td><td><input type="number" value="{{ circumference }}"></td></tr>
+      </table>
+      <button data-action="click:delete">Delete</button>
+    </div>
+  </template>
+  <button data-action="click:add">New</button>
+</div>
+<script>
+
+function Circle(radius) {
+  // circumference = 2*PI*radius
+  constrain(this, {
+    radius: function() { return this.circumference / (2*Math.PI); },
+    circumference: function() { return 2 * Math.PI * this.radius; }
+  });
+
+  // area = PI*r^2'
+  constrain(this, {
+    area: function() { return Math.PI * Math.pow(this.radius, 2); },
+    radius: function() { return Math.sqrt(this.area / Math.PI); }
+  });
+
+  if (radius)
+    this.radius = radius;
+}
+
+function CircleController(elm) {
+  this.circles = elm.model = persistDB.retrieve(Circle);
+}
+
+CircleController.prototype = {
+  delete: function(circle) {
+    var index = this.circles.indexOf(circle);
+    this.circles.splice(index, 1);
+  },
+
+  add: function() {
+    this.circles.push(new Circle());
+  }
+}
+
+</script>

@@ -1,0 +1,22 @@
+{
+  "name": "observe-js",
+  "homepage": "https://github.com/Polymer/observe-js",
+  "authors": [
+    "The Polymer Authors"
+  ],
+  "description": "A library for observing Arrays, Objects and PathValues",
+  "main": "src/observe.js",
+  "keywords": [
+    "Object.observe"
+  ],
+  "license": "BSD",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "version": "0.5.1"
+}

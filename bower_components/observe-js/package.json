@@ -1,0 +1,33 @@
+{
+  "name": "observe-js",
+  "version": "0.4.2",
+  "description": "observe-js is a library for observing changes on JavaScript objects/arrays",
+  "main": "src/observe.js",
+  "directories": {
+    "example": "examples",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Polymer/observe-js.git"
+  },
+  "author": "The Polymer Authors",
+  "license": "BSD",
+  "readmeFilename": "README.md",
+  "devDependencies": {
+    "chai": "*",
+    "mocha": "*",
+    "grunt": "*",
+    "grunt-karma": "*",
+    "karma": "~0.12.0",
+    "karma-mocha": "*",
+    "karma-firefox-launcher": "*",
+    "karma-ie-launcher": "*",
+    "karma-safari-launcher": "*",
+    "karma-script-launcher": "*",
+    "karma-crbot-reporter": "*"
+  }
+}
