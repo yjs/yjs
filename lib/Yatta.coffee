@@ -1,8 +1,8 @@
 
-json_types_uninitialized = require "../Types/JsonTypes"
-HistoryBuffer = require "../HistoryBuffer"
-Engine = require "../Engine"
-adaptConnector = require "../ConnectorAdapter"
+json_types_uninitialized = require "./Types/JsonTypes"
+HistoryBuffer = require "./HistoryBuffer"
+Engine = require "./Engine"
+adaptConnector = require "./ConnectorAdapter"
 
 
 #
@@ -12,29 +12,28 @@ adaptConnector = require "../ConnectorAdapter"
 # * Integer
 # * Array
 #
-class JsonFramework
+class Yatta
 
   #
   # @param {String} user_id Unique id of the peer.
   # @param {Connector} Connector the connector class.
   #
-  constructor: (user_id, @connector)->
+  constructor: (@connector)->
+    user_id = @connector.id # TODO: change to getUniqueId()
     @HB = new HistoryBuffer user_id
     type_manager = json_types_uninitialized @HB
     @types = type_manager.types
     @engine = new Engine @HB, type_manager.parser
     @HB.engine = @engine # TODO: !! only for debugging
     adaptConnector @connector, @engine, @HB, type_manager.execution_listener
-    first_word = new @types.JsonType(@HB.getReservedUniqueIdentifier())
-    @HB.addOperation(first_word).execute()
+    first_word = new @types.JsonType(@HB.getReservedUniqueIdentifier()).execute()
 
     uid_beg = @HB.getReservedUniqueIdentifier()
     uid_end = @HB.getReservedUniqueIdentifier()
-    beg = @HB.addOperation(new @types.Delimiter uid_beg, undefined, uid_end).execute()
-    end = @HB.addOperation(new @types.Delimiter uid_end, beg, undefined).execute()
+    beg = (new @types.Delimiter uid_beg, undefined, uid_end).execute()
+    end = (new @types.Delimiter uid_end, beg, undefined).execute()
 
-    @root_element = new @types.ReplaceManager undefined, @HB.getReservedUniqueIdentifier(), beg, end
-    @HB.addOperation(@root_element).execute()
+    @root_element = (new @types.ReplaceManager undefined, @HB.getReservedUniqueIdentifier(), beg, end).execute()
     @root_element.replace first_word, @HB.getReservedUniqueIdentifier()
 
   #
@@ -64,7 +63,7 @@ class JsonFramework
   #
   # Get the UserId from the HistoryBuffer object.
   # In most cases this will be the same as the user_id value with which
-  # JsonFramework was initialized (Depending on the HistoryBuffer implementation).
+  # Yatta was initialized (Depending on the HistoryBuffer implementation).
   #
   getUserId: ()->
     @HB.getUserId()
@@ -96,7 +95,7 @@ class JsonFramework
   #
   # @see JsonType.value
   #
-  Object.defineProperty JsonFramework.prototype, 'value',
+  Object.defineProperty Yatta.prototype, 'value',
     get : -> @getSharedObject().value
     set : (o)->
       if o.constructor is {}.constructor
@@ -105,8 +104,6 @@ class JsonFramework
       else
         throw new Error "You must only set Object values!"
 
-module.exports = JsonFramework
-if window?
-  if not window.Y?
-    window.Y = {}
-  window.Y.JsonFramework = JsonFramework
+module.exports = Yatta
+if window? and not window.Yatta?
+  window.Yatta = Yatta

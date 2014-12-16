@@ -29,19 +29,20 @@ var yatta, yattaHandler;
   This will connect to the server owned by the peerjs team.
   For now, you can use my API key.
 */
-//var options = {key: 'h7nlefbgavh1tt9'};
+var options = {key: 'h7nlefbgavh1tt9'};
 
 /**
 This will connect to one of my peerjs instances.
 I can't guaranty that this will be always up. This is why you should use the previous method with the api key,
 or set up your own server.
 */
-
+/*
 var options = {
   host: "terrific-peerjs.herokuapp.com",
   port: "", // this works because heroku can forward to the right port.
   // debug: true,
 };
+*/
 
 var user_id = Math.ceil(Math.random()*100);
 connector = new PeerJsConnector(user_id,options);
@@ -52,7 +53,7 @@ connector = new PeerJsConnector(user_id,options);
     yatta is the shared json object. If you change something on this object,
     it will be instantly shared with all the other collaborators.
   */
-  yatta = new Y.JsonFramework(user_id, connector);
+  yatta = new Yatta(connector);
 
   /**
     Next, you may want to connect to another peer. Therefore you have to receive his

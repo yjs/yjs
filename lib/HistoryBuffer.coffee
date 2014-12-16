@@ -26,7 +26,7 @@ class HistoryBuffer
 
   emptyGarbage: ()=>
     for o in @garbage
-      #if @getOperationCounter(o.creator) > o.op_number
+      #if @getOperationCounter(o.uid.creator) > o.uid.op_number
       o.cleanup?()
 
     @garbage = @trash
@@ -104,13 +104,13 @@ class HistoryBuffer
           if o.next_cl? # applies for all ops but the most right delimiter!
             # search for the next _known_ operation. (When state_vector is {} then this is the Delimiter)
             o_next = o.next_cl
-            while o_next.next_cl? and unknown(o_next.creator, o_next.op_number)
+            while o_next.next_cl? and unknown(o_next.uid.creator, o_next.uid.op_number)
               o_next = o_next.next_cl
             o_json.next = o_next.getUid()
           else if o.prev_cl? # most right delimiter only!
             # same as the above with prev.
             o_prev = o.prev_cl
-            while o_prev.prev_cl? and unknown(o_prev.creator, o_prev.op_number)
+            while o_prev.prev_cl? and unknown(o_prev.uid.creator, o_prev.uid.op_number)
               o_prev = o_prev.prev_cl
             o_json.prev = o_prev.getUid()
           json.push o_json
@@ -130,6 +130,7 @@ class HistoryBuffer
     uid =
       'creator' : user_id
       'op_number' : @operation_counter[user_id]
+      'doSync' : true
     @operation_counter[user_id]++
     uid
 
@@ -147,35 +148,35 @@ class HistoryBuffer
   # other operations (it wont executed)
   #
   addOperation: (o)->
-    if not @buffer[o.creator]?
-      @buffer[o.creator] = {}
-    if @buffer[o.creator][o.op_number]?
+    if not @buffer[o.uid.creator]?
+      @buffer[o.uid.creator] = {}
+    if @buffer[o.uid.creator][o.uid.op_number]?
       throw new Error "You must not overwrite operations!"
-    @buffer[o.creator][o.op_number] = o
+    @buffer[o.uid.creator][o.uid.op_number] = o
     @number_of_operations_added_to_HB ?= 0 # TODO: Debug, remove this
     @number_of_operations_added_to_HB++
     o
 
   removeOperation: (o)->
-    delete @buffer[o.creator]?[o.op_number]
+    delete @buffer[o.uid.creator]?[o.uid.op_number]
 
   #
   # Increment the operation_counter that defines the current state of the Engine.
   #
   addToCounter: (o)->
-    if not @operation_counter[o.creator]?
-      @operation_counter[o.creator] = 0
-    if typeof o.op_number is 'number' and o.creator isnt @getUserId()
+    if not @operation_counter[o.uid.creator]?
+      @operation_counter[o.uid.creator] = 0
+    if typeof o.uid.op_number is 'number' and o.uid.creator isnt @getUserId()
       # TODO: fix this issue better.
       # Operations should income in order
       # Then you don't have to do this..
-      if o.op_number is @operation_counter[o.creator]
-        @operation_counter[o.creator]++
-        while @getOperation({creator:o.creator, op_number: @operation_counter[o.creator]})?
-          @operation_counter[o.creator]++
+      if o.uid.op_number is @operation_counter[o.uid.creator]
+        @operation_counter[o.uid.creator]++
+        while @getOperation({creator:o.uid.creator, op_number: @operation_counter[o.uid.creator]})?
+          @operation_counter[o.uid.creator]++
 
-    #if @operation_counter[o.creator] isnt (o.op_number + 1)
-      #console.log (@operation_counter[o.creator] - (o.op_number + 1))
+    #if @operation_counter[o.uid.creator] isnt (o.uid.op_number + 1)
+      #console.log (@operation_counter[o.uid.creator] - (o.uid.op_number + 1))
       #console.log o
       #throw new Error "You don't receive operations in the proper order. Try counting like this 0,1,2,3,4,.. ;)"
 

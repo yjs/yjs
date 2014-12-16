@@ -22,6 +22,7 @@ class Engine
     else
       throw new Error "You forgot to specify a parser for type #{json.type}. The message is #{JSON.stringify json}."
 
+  
   #
   # Apply a set of operations. E.g. the operations you received from another users HB._encode().
   # @note You must not use this method when you already have ops in your HB!
@@ -30,8 +31,6 @@ class Engine
     ops = []
     for o in ops_json
       ops.push @parseOperation o
-    for o in ops
-      @HB.addOperation o
     for o in ops
       if not o.execute()
         @unprocessed_ops.push o
@@ -64,8 +63,6 @@ class Engine
     if @HB.getOperation(o)?
     else if not o.execute()
       @unprocessed_ops.push o
-    else
-      @HB.addOperation o
     @tryUnprocessed()
 
   #

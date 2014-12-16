@@ -34,7 +34,13 @@ module.exports = (HB)->
     val: (name, content)->
       if content?
         if not @map[name]?
-          HB.addOperation(new AddName undefined, @, name).execute()
+          (new AddName undefined, @, name).execute()
+        ## TODO: del this
+        if @map[name] == null
+          qqq = @
+          x = new AddName undefined, @, name
+          x.execute()
+        ## endtodo
         @map[name].replace content
         @
       else if name?
@@ -88,16 +94,23 @@ module.exports = (HB)->
       if not @validateSavedOperations()
         return false
       else
-        uid_r = @map_manager.getUid()
+        # helper for cloning an object 
+        clone = (o)->
+          p = {}
+          for name,value of o
+            p[name] = value
+          p
+        uid_r = clone(@map_manager.getUid())
+        uid_r.doSync = false
         uid_r.op_number = "_#{uid_r.op_number}_RM_#{@name}"
         if not HB.getOperation(uid_r)?
-          uid_beg = @map_manager.getUid()
+          uid_beg = clone(uid_r)
           uid_beg.op_number = "_#{uid_beg.op_number}_RM_#{@name}_beginning"
-          uid_end = @map_manager.getUid()
+          uid_end = clone(uid_r)
           uid_end.op_number = "_#{uid_end.op_number}_RM_#{@name}_end"
-          beg = HB.addOperation(new types.Delimiter uid_beg, undefined, uid_end).execute()
-          end = HB.addOperation(new types.Delimiter uid_end, beg, undefined).execute()
-          @map_manager.map[@name] = HB.addOperation(new ReplaceManager undefined, uid_r, beg, end)
+          beg = (new types.Delimiter uid_beg, undefined, uid_end).execute()
+          end = (new types.Delimiter uid_end, beg, undefined).execute()
+          @map_manager.map[@name] = new ReplaceManager undefined, uid_r, beg, end
           @map_manager.map[@name].setParent @map_manager, @name
           (@map_manager.map[@name].add_name_ops ?= []).push @
           @map_manager.map[@name].execute()
@@ -138,8 +151,8 @@ module.exports = (HB)->
         @saveOperation 'beginning', beginning
         @saveOperation 'end', end
       else
-        @beginning = HB.addOperation new types.Delimiter undefined, undefined, undefined
-        @end =       HB.addOperation new types.Delimiter undefined, @beginning, undefined
+        @beginning = new types.Delimiter undefined, undefined, undefined
+        @end =       new types.Delimiter undefined, @beginning, undefined
         @beginning.next_cl = @end
         @beginning.execute()
         @end.execute()
@@ -240,8 +253,7 @@ module.exports = (HB)->
     #
     replace: (content, replaceable_uid)->
       o = @getLastOperation()
-      op = new Replaceable content, @, replaceable_uid, o, o.next_cl
-      HB.addOperation(op).execute()
+      (new Replaceable content, @, replaceable_uid, o, o.next_cl).execute()
       undefined
 
     #

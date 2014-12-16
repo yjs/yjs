@@ -24,10 +24,9 @@ gulp.task 'build', ['lint', 'browser']
 files =
   lib : ['./lib/**/*.coffee']
   build : ['./build/**']
-  browser : ['./lib/{Connectors,Frameworks}/**/*']
-  test : ['./test/**/*_test.coffee']
-  #test : ['./test/TextYatta_test.coffee']
-  browser_test : ['./test/**/*_test_browser.coffee']
+  browser : './lib/Yatta.coffee'
+  #test : ['./test/**/*_test.coffee']
+  test : ['./test/JsonYatta_test.coffee']
   gulp : ['./gulpfile.coffee']
   examples : ['./examples/**/*.js']
 
@@ -51,16 +50,13 @@ gulp.task 'browser', ->
       extensions: ['.coffee']
       debug : true
     .pipe rename
+      basename: "yatta"	  
       extname: ".js"
-    .pipe gulp.dest './build/browser'
+    .pipe gulp.dest './build/browser/'
     .pipe uglify()
-    .pipe rename
-      extname: ".js"
-      basename: "index"
-    .pipe gulp.dest './'
-    .pipe gulpif '!**/', git.add({args : "-A"})
+    .pipe gulp.dest '.'
 
-  gulp.src (files.test.concat files.browser_test), {read: false}
+  gulp.src files.test, {read: false}
     .pipe browserify
       transform: ['coffeeify']
       extensions: ['.coffee']

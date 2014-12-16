@@ -19,22 +19,14 @@ module.exports = (HB)->
   class Operation
 
     #
-    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
-    # @see HistoryBuffer.getNextOperationIdentifier
+    # @param {Object} uid A unique identifier. 
+    # If uid is undefined, a new uid will be created before at the end of the execution sequence
     #
     constructor: (uid)->
       @is_deleted = false
-      @doSync = true
       @garbage_collected = false
-      if not uid?
-        uid = HB.getNextOperationIdentifier()
-      if not uid.doSync?
-        uid.doSync = not isNaN(parseInt(uid.op_number))
-      {
-        'creator': @creator
-        'op_number' : @op_number
-        'doSync' : @doSync
-      } = uid
+      if uid?
+        @uid = uid
 
     type: "Insert"
 
@@ -123,20 +115,28 @@ module.exports = (HB)->
     # Computes a unique identifier (uid) that identifies this operation.
     #
     getUid: ()->
-      { 'creator': @creator, 'op_number': @op_number , 'sync': @doSync}
+      @uid
 
     dontSync: ()->
       @doSync = false
 
     #
     # @private
+    # If not already done, set the uid
+    # Add this to the HB
     # Notify the all the listeners.
     #
     execute: ()->
       @is_executed = true
+      if not @uid? 
+        # When this operation was created without a uid, then set it here. 
+        # There is only one other place, where this can be done - before an Insertion 
+        # is executed (because we need the creator_id)
+        @uid = HB.getNextOperationIdentifier() 
+      HB.addOperation @
       for l in execution_listener
         l @_encode()
-      @
+      @      
 
     #
     # @private
@@ -261,8 +261,6 @@ module.exports = (HB)->
     # @param {Operation} prev_cl The predecessor of this operation in the complete-list (cl)
     # @param {Operation} next_cl The successor of this operation in the complete-list (cl)
     #
-    # @see HistoryBuffer.getNextOperationIdentifier
-    #
     constructor: (uid, prev_cl, next_cl, origin)->
       @saveOperation 'prev_cl', prev_cl
       @saveOperation 'next_cl', next_cl
@@ -360,7 +358,7 @@ module.exports = (HB)->
               # $o happened concurrently
               if o.getDistanceToOrigin() is i
                 # case 1
-                if o.creator < @creator
+                if o.uid.creator < @uid.creator
                   @prev_cl = o
                   distance_to_origin = i + 1
                 else
@@ -465,8 +463,6 @@ module.exports = (HB)->
     # @param {Operation} prev_cl The predecessor of this operation in the complete-list (cl)
     # @param {Operation} next_cl The successor of this operation in the complete-list (cl)
     #
-    # @see HistoryBuffer.getNextOperationIdentifier
-    #
     constructor: (uid, prev_cl, next_cl, origin)->
       @saveOperation 'prev_cl', prev_cl
       @saveOperation 'next_cl', next_cl
@@ -504,10 +500,10 @@ module.exports = (HB)->
       else if @prev_cl? and not @prev_cl.next_cl?
         delete @prev_cl.unchecked.next_cl
         @prev_cl.next_cl = @
-      else if @prev_cl? or @next_cl?
+      else if @prev_cl? or @next_cl? or true # TODO: are you sure? This can happen right? 
         super
-      else
-        throw new Error "Delimiter is unsufficient defined!"
+      #else
+      #  throw new Error "Delimiter is unsufficient defined!"
 
     #
     # @private

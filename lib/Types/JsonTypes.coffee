@@ -99,19 +99,6 @@ module.exports = (HB)->
   class JsonType extends types.MapManager
 
     #
-    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
-    # @param {Object} initial_value Create this operation with an initial value.
-    # @param {String|Boolean} Whether the initial_value should be created as mutable. (Optional - see setMutableDefault)
-    #
-    constructor: (uid, initial_value, mutable)->
-      super uid
-      if initial_value?
-        if typeof initial_value isnt "object"
-          throw new Error "The initial value of JsonTypes must be of type Object! (current type: #{typeof initial_value})"
-        for name,o of initial_value
-          @val name, o, mutable
-
-    #
     # Identifies this class.
     # Use it to check whether this is a json-type or something else.
     #
@@ -158,7 +145,7 @@ module.exports = (HB)->
                 # this event is not created by Yatta.
                 that.val(event.name, event.object[event.name])
           that.on 'change', (event_name, property_name, op)->
-            if this is that and op.creator isnt HB.getUserId()
+            if this is that and op.uid.creator isnt HB.getUserId()
               notifier = Object.getNotifier(that.bound_json)
               oldVal = that.bound_json[property_name]
               if oldVal?
@@ -170,7 +157,7 @@ module.exports = (HB)->
                   type: 'update'
                   name: property_name
                   oldValue: oldVal
-                  changed_by: op.creator
+                  changed_by: op.uid.creator
               else 
                 notifier.performChange 'add', ()->
                     that.bound_json[property_name] = that.val(property_name)
@@ -180,7 +167,7 @@ module.exports = (HB)->
                   type: 'add'
                   name: property_name
                   oldValue: oldVal
-                  changed_by: op.creator
+                  changed_by: op.uid.creator
       @bound_json
 
     #
@@ -236,11 +223,13 @@ module.exports = (HB)->
     #
     val: (name, content, mutable)->
       if typeof name is 'object'
-        # Special case. First argument is an object. Then the second arg is mutable.
+        # Special case. First argument is an object. Then the second arg is mutable. 
+        # (I refer to var name and content here)
         # Keep that in mind when reading the following..
-        json = new JsonType undefined, name, content
-        HB.addOperation(json).execute()
-        @replace_manager.replace json
+        jt = new JsonType()
+        @replace_manager.replace jt.execute()
+        for n,o of name
+          jt.val n, o, mutable
         @
       else if name? and arguments.length > 1
         if mutable?
@@ -253,15 +242,16 @@ module.exports = (HB)->
         if typeof content is 'function'
           @ # Just do nothing
         else if (not content?) or (((not mutable) or typeof content is 'number') and content.constructor isnt Object)
-          obj = HB.addOperation(new types.ImmutableObject undefined, content).execute()
-          super name, obj
+          super name, (new types.ImmutableObject undefined, content).execute()
         else
           if typeof content is 'string'
-            word = HB.addOperation(new types.WordType undefined).execute()
+            word = (new types.WordType undefined).execute()
             word.insertText 0, content
             super name, word
           else if content.constructor is Object
-            json = HB.addOperation(new JsonType undefined, content, mutable).execute()
+            json = new JsonType().execute()
+            for n,o of content
+              json.val n, o, mutable
             super name, json
           else
             throw new Error "You must not set #{typeof content}-types in collaborative Json-objects!"

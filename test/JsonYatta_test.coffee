@@ -7,14 +7,14 @@ _         = require("underscore")
 
 chai.use(sinonChai)
 
-Y = require "../lib/index"
 Connector = require "../bower_components/connector/lib/test-connector/test-connector.coffee"
+Yatta = require "../lib/Yatta.coffee"
 
 Test = require "./TestSuite"
 
 class JsonTest extends Test
   makeNewUser: (user, conn)->
-    super new Y.JsonFramework user, conn
+    super new Yatta conn
 
   type: "JsonTest"
 

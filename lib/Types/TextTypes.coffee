@@ -23,7 +23,7 @@ module.exports = (HB)->
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     #
     constructor: (content, uid, prev, next, origin)->
-      if content?.creator?
+      if content?.uid?.creator
         @saveOperation 'content', content
       else
         @content = content
@@ -140,13 +140,10 @@ module.exports = (HB)->
         left = left.prev_cl # find the first character to the left, that is not deleted. Case position is 0, its the Delimiter.
       right = left.next_cl
       if content.type?
-        op = new TextInsert content, undefined, left, right
-        HB.addOperation(op).execute()
+        (new TextInsert content, undefined, left, right).execute()
       else
         for c in content
-          op = new TextInsert c, undefined, left, right
-          HB.addOperation(op).execute()
-          left = op
+          left = (new TextInsert c, undefined, left, right).execute()
       @
     #
     # Inserts a string into the word.
@@ -171,7 +168,7 @@ module.exports = (HB)->
       for i in [0...length]
         if o instanceof types.Delimiter
           break
-        d = HB.addOperation(new TextDelete undefined, o).execute()
+        d = (new TextDelete undefined, o).execute()
         o = o.next_cl
         while not (o instanceof types.Delimiter) and o.isDeleted()
           o = o.next_cl
@@ -188,7 +185,7 @@ module.exports = (HB)->
       # Can only be used if the ReplaceManager was set!
       # @see WordType.setReplaceManager
       if @replace_manager?
-        word = HB.addOperation(new WordType undefined).execute()
+        word = (new WordType undefined).execute()
         word.insertText 0, text
         @replace_manager.replace(word)
         word
