@@ -19,7 +19,7 @@
     };
 
     Engine.prototype.applyOpsBundle = function(ops_json) {
-      var o, ops, _i, _j, _k, _len, _len1, _len2;
+      var o, ops, _i, _j, _len, _len1;
       ops = [];
       for (_i = 0, _len = ops_json.length; _i < _len; _i++) {
         o = ops_json[_i];
@@ -27,10 +27,6 @@
       }
       for (_j = 0, _len1 = ops.length; _j < _len1; _j++) {
         o = ops[_j];
-        this.HB.addOperation(o);
-      }
-      for (_k = 0, _len2 = ops.length; _k < _len2; _k++) {
-        o = ops[_k];
         if (!o.execute()) {
           this.unprocessed_ops.push(o);
         }
@@ -70,8 +66,6 @@
 
       } else if (!o.execute()) {
         this.unprocessed_ops.push(o);
-      } else {
-        this.HB.addOperation(o);
       }
       return this.tryUnprocessed();
     };
@@ -89,8 +83,6 @@
 
           } else if (!op.execute()) {
             unprocessed.push(op);
-          } else {
-            this.HB.addOperation(op);
           }
         }
         this.unprocessed_ops = unprocessed;

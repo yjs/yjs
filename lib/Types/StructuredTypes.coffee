@@ -91,7 +91,7 @@ module.exports = (HB)->
     # always have the same result (ReplaceManager, and its beginning and end are the same)
     #
     execute: ()->
-      if not @validateSavedOperations()
+      if not @validateSavedOperations() 
         return false
       else
         # helper for cloning an object 
@@ -105,9 +105,9 @@ module.exports = (HB)->
         uid_r.op_number = "_#{uid_r.op_number}_RM_#{@name}"
         if not HB.getOperation(uid_r)?
           uid_beg = clone(uid_r)
-          uid_beg.op_number = "_#{uid_beg.op_number}_RM_#{@name}_beginning"
+          uid_beg.op_number = "#{uid_r.op_number}_beginning"
           uid_end = clone(uid_r)
-          uid_end.op_number = "_#{uid_end.op_number}_RM_#{@name}_end"
+          uid_end.op_number = "#{uid_r.op_number}_end"
           beg = (new types.Delimiter uid_beg, undefined, uid_end).execute()
           end = (new types.Delimiter uid_end, beg, undefined).execute()
           @map_manager.map[@name] = new ReplaceManager undefined, uid_r, beg, end

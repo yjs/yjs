@@ -14,6 +14,7 @@ coffeelint = require 'gulp-coffeelint'
 mocha = require 'gulp-mocha'
 run = require 'gulp-run'
 ljs = require 'gulp-ljs'
+plumber = require 'gulp-plumber'
 mochaPhantomJS = require 'gulp-mocha-phantomjs'
 
 
@@ -29,11 +30,12 @@ files =
   test : ['./test/JsonYatta_test.coffee']
   gulp : ['./gulpfile.coffee']
   examples : ['./examples/**/*.js']
-
+  other: ['./lib/**/*']
 
 files.all = []
 for name,file_list of files
-  files.all = files.all.concat file_list
+  if name isnt 'build'
+    files.all = files.all.concat file_list
 
 gulp.task 'lib', ->
   gulp.src files.lib
@@ -45,6 +47,7 @@ gulp.task 'lib', ->
 
 gulp.task 'browser', ->
   gulp.src files.browser, { read: false }
+    .pipe plumber()
     .pipe browserify
       transform: ['coffeeify']
       extensions: ['.coffee']
@@ -57,6 +60,7 @@ gulp.task 'browser', ->
     .pipe gulp.dest '.'
 
   gulp.src files.test, {read: false}
+    .pipe plumber()
     .pipe browserify
       transform: ['coffeeify']
       extensions: ['.coffee']
@@ -65,6 +69,10 @@ gulp.task 'browser', ->
       extname: ".js"
     .pipe gulp.dest './build/test'
 
+gulp.task 'browser_test_watch', ['browser'], ->
+  gulp.watch files.all, ['browser']
+
+    
 gulp.task 'test', ->
   gulp.src files.test, { read: false }
     .pipe mocha {reporter : 'list'}

@@ -77,8 +77,6 @@ class Engine
         if @HB.getOperation(op)?
         else if not op.execute()
           unprocessed.push op
-        else
-          @HB.addOperation op
       @unprocessed_ops = unprocessed
       if @unprocessed_ops.length is old_length
         break

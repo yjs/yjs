@@ -13,7 +13,8 @@ Yatta = require "../lib/Yatta.coffee"
 Test = require "./TestSuite"
 
 class JsonTest extends Test
-  makeNewUser: (user, conn)->
+  makeNewUser: (userId)->
+    conn = new Connector userId
     super new Yatta conn
 
   type: "JsonTest"
@@ -59,15 +60,13 @@ class JsonTest extends Test
         types: [types.JsonType]
     ]
 
-
-
 describe "JsonFramework", ->
   beforeEach (done)->
     @timeout 50000
     @yTest = new JsonTest()
     @users = @yTest.users
 
-    @test_user = @yTest.makeNewUser 0, (new Connector 0, [])
+    @test_user = @yTest.makeNewUser "test_user"
     done()
 
   it "can handle many engines, many operations, concurrently (random)", ->
@@ -96,7 +95,6 @@ describe "JsonFramework", ->
     expect(change).to.be.ok
     expect(change2).to.equal 8
 
-
   it "has a JsonTypeWrapper", ->
     y = this.yTest.getSomeUser().getSharedObject()
     y.val('x',"dtrn", 'immutable')
@@ -112,7 +110,10 @@ describe "JsonFramework", ->
     y.value.x = {q:4}
     expect(y.value.x.q).to.equal(4)
 
-  ### TODO: Handle this test
+
+  it "has a working test suite", ->
+    @yTest.compareAll()
+
   it "handles double-late-join", ->
     test = new JsonTest("double")
     test.run()
@@ -123,14 +124,18 @@ describe "JsonFramework", ->
     ops2 = u2.HB._encode()
     u1.engine.applyOps ops2
     u2.engine.applyOps ops1
-    expect(u2.value.name.val()).to.equal(u2.value.name.val())
-  ###
-
-  it "has a working test suite", ->
+    expect(test.getContent(0)).to.equal(@yTest.getContent(1))
+    
+  it "can handle creaton of complex json (1)", ->
+    @yTest.users[0].val('a', 'q')
+    @yTest.users[2].val('a', 't')
     @yTest.compareAll()
+    q = @yTest.users[1].val('a') 
+    q.insertText(0,'A')
+    @yTest.compareAll()
+    expect(@yTest.getSomeUser().value.a.val()).to.equal("At")
 
-
-  it "can handle creaton of complex json", ->
+  it "can handle creaton of complex json (2)", ->
     @yTest.getSomeUser().val('x', {'a':'b'})
     @yTest.getSomeUser().val('a', {'a':{q:"dtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt"}})
     @yTest.getSomeUser().val('b', {'a':{}})
@@ -152,6 +157,5 @@ describe "JsonFramework", ->
     expect(@yTest.getSomeUser().val('number')).to.equal 4
     expect(@yTest.getSomeUser().val('object').val('q')).to.equal "rr"
     expect(@yTest.getSomeUser().val('null') is null).to.be.ok
-
 
 

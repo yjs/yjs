@@ -118,7 +118,7 @@ module.exports = (HB)->
       @uid
 
     dontSync: ()->
-      @doSync = false
+      @uid.doSync = false
 
     #
     # @private
@@ -279,7 +279,7 @@ module.exports = (HB)->
     applyDelete: (o)->
       @deleted_by ?= []
       callLater = false
-      if @parent? and not @isDeleted()
+      if @parent? and not @isDeleted() and o? # o? : if not o?, then the delimiter deleted this Insertion. Furthermore, it would be wrong to call it. TODO: make this more expressive and save
         # call iff wasn't deleted earlyer
         callLater = true
       if o?
@@ -384,10 +384,11 @@ module.exports = (HB)->
           @next_cl.prev_cl = @
 
         parent = @prev_cl?.getParent()
+        super # notify the execution_listeners
         if parent? and fire_event
           @setParent parent
           @parent.callEvent "insert", @
-        super # notify the execution_listeners
+        @  
 
     #
     # Compute the position of this operation.
@@ -493,13 +494,13 @@ module.exports = (HB)->
           if @prev_cl.next_cl?
             throw new Error "Probably duplicated operations"
           @prev_cl.next_cl = @
-          delete @prev_cl.unchecked.next_cl
           super
         else
           false
       else if @prev_cl? and not @prev_cl.next_cl?
         delete @prev_cl.unchecked.next_cl
         @prev_cl.next_cl = @
+        super
       else if @prev_cl? or @next_cl? or true # TODO: are you sure? This can happen right? 
         super
       #else

@@ -7,8 +7,6 @@
 #
 class HistoryBuffer
 
-
-
   #
   # Creates an empty HB.
   # @param {Object} user_id Creator of the HB.
@@ -84,7 +82,6 @@ class HistoryBuffer
     else
       @operation_counter[user_id]
 
-
   #
   # Encode this operation in such a way that it can be parsed by remote peers.
   # TODO: Make this more efficient!
@@ -98,7 +95,7 @@ class HistoryBuffer
     for u_name,user of @buffer
       # TODO next, if @state_vector[user] <= state_vector[user]
       for o_number,o of user
-        if o.doSync and unknown(u_name, o_number)
+        if o.uid.doSync and unknown(u_name, o_number)
           # its necessary to send it, and not known in state_vector
           o_json = o._encode()
           if o.next_cl? # applies for all ops but the most right delimiter!
@@ -137,12 +134,11 @@ class HistoryBuffer
   #
   # Retrieve an operation from a unique id.
   #
-  getOperation: (uid)->
-    if uid instanceof Object
-      @buffer[uid.creator]?[uid.op_number]
-    else if not uid?
-    else
-      throw new Error "This type of uid is not defined!"
+  getOperation: (uid)-> 
+    if uid.uid?
+      uid = uid.uid
+    @buffer[uid.creator]?[uid.op_number]
+
   #
   # Add an operation to the HB. Note that this will not link it against
   # other operations (it wont executed)

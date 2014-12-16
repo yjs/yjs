@@ -13,9 +13,9 @@ module.exports = class Test
   constructor: (@name_suffix = "")->
     @number_of_test_cases_multiplier = 1
     @repeat_this = 1 * @number_of_test_cases_multiplier
-    @doSomething_amount = 400 + @number_of_test_cases_multiplier
+    @doSomething_amount = 50 + @number_of_test_cases_multiplier
     @number_of_engines = 5 + @number_of_test_cases_multiplier - 1
-
+ 
     @time = 0
     @ops = 0
     @time_now = 0
@@ -27,14 +27,13 @@ module.exports = class Test
   reinitialize: ()->
     @users = []
     for i in [0...@number_of_engines]
-      connector = new Connector i
-      if @users.length > 0
-        connector.join @users[0].connector
-      u = @makeNewUser (i+@name_suffix), connector
+      u = @makeNewUser (i+@name_suffix)
+      for user in @users
+        u.getConnector().join(user.getConnector()) # TODO: change the test-connector to make this more convenient
       @users.push u
-    #@users[0].val('name',"i")
     @flushAll()
 
+  # is called by implementing class 
   makeNewUser: (user)->
     user.HB.setManualGarbageCollect()
     user
@@ -199,7 +198,7 @@ module.exports = class Test
 
   testHBencoding: ()->
     # in case of JsonFramework, every user will create its JSON first! therefore, the testusers id must be small than all the others (see InsertType)
-    @users[@users.length] = @makeNewUser (-1), (new Connector (-1), [])
+    @users[@users.length] = @makeNewUser (-1) # this does not want to join with anymody
     @users[@users.length-1].engine.applyOps @users[0].HB._encode()
 
     #if @getContent(@users.length-1) isnt @getContent(0)

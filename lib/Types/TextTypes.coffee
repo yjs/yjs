@@ -143,7 +143,8 @@ module.exports = (HB)->
         (new TextInsert content, undefined, left, right).execute()
       else
         for c in content
-          left = (new TextInsert c, undefined, left, right).execute()
+          tmp = (new TextInsert c, undefined, left, right).execute()
+          left = tmp
       @
     #
     # Inserts a string into the word.

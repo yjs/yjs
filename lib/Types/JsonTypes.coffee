@@ -122,11 +122,11 @@ module.exports = (HB)->
     # @return {Json}
     #
     toJson: ()->
-      if not @bound_json? or not Object.observe? 
+      if not @bound_json? or not Object.observe? or true # TODO: currently, you are not watching mutable strings for changes, and, therefore, the @bound_json is not updated. TODO TODO  wuawuawua easy
         val = @val()
         json = {}
         for name, o of val
-          if o is null
+          if not o?
             json[name] = o
           else if o.constructor is {}.constructor
             json[name] = @val(name).toJson()

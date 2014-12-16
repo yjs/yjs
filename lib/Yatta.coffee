@@ -4,17 +4,16 @@ HistoryBuffer = require "./HistoryBuffer"
 Engine = require "./Engine"
 adaptConnector = require "./ConnectorAdapter"
 
-
 #
 # Framework for Json data-structures.
 # Known values that are supported:
 # * String
 # * Integer
-# * Array
+# * Array 
 #
 class Yatta
 
-  #
+  # 
   # @param {String} user_id Unique id of the peer.
   # @param {Connector} Connector the connector class.
   #
@@ -35,7 +34,7 @@ class Yatta
 
     @root_element = (new @types.ReplaceManager undefined, @HB.getReservedUniqueIdentifier(), beg, end).execute()
     @root_element.replace first_word, @HB.getReservedUniqueIdentifier()
-
+ 
   #
   # @return JsonType
   #
