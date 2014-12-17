@@ -19,12 +19,13 @@ module.exports = (HB)->
   class Operation
 
     #
-    # @param {Object} uid A unique identifier. 
+    # @param {Object} uid A unique identifier.
     # If uid is undefined, a new uid will be created before at the end of the execution sequence
     #
     constructor: (uid)->
       @is_deleted = false
       @garbage_collected = false
+      @event_listeners = [] # TODO: rename to observers or sth like that
       if uid?
         @uid = uid
 
@@ -32,41 +33,27 @@ module.exports = (HB)->
 
     #
     # Add an event listener. It depends on the operation which events are supported.
-    # @param {String} event Name of the event.
     # @param {Function} f f is executed in case the event fires.
     #
-    on: (events, f)->
-      @event_listeners ?= {}
-      if events.constructor isnt [].constructor
-        events = [events]
-      for e in events
-        @event_listeners[e] ?= []
-        @event_listeners[e].push f
+    observe: (f)->
+      @event_listeners.push f
 
     #
-    # Deletes a function from an event / list of events.
-    # @see Operation.on
+    # Deletes function from the observer list
+    # @see Operation.observe
     #
-    # @overload deleteListener(event, f)
-    #   @param event {String} An event name
-    #   @param f     {Function} The function that you want to delete from these events
-    # @overload deleteListener(events, f)
-    #   @param events {Array<String>} A list of event names
-    #   @param f      {Function} The function that you want to delete from these events.
-    deleteListener: (events, f)->
-      if events.constructor isnt [].constructor
-        events = [events]
-      for e in events
-        if @event_listeners?[e]?
-          @event_listeners[e] = @event_listeners[e].filter (g)->
-            f isnt g
-    
-    # 
-    # Deletes all subscribed event listeners. 
-    # This should be called, e.g. after this has been replaced. 
+    # @overload unobserve(event, f)
+    #   @param f     {Function} The function that you want to delete 
+    unobserve: (f)->
+      @event_listeners.filter (g)->
+        f isnt g
+
+    #
+    # Deletes all subscribed event listeners.
+    # This should be called, e.g. after this has been replaced.
     # (Then only one replace event should fire. )
-    # This is also called in the cleanup method. 
-    deleteAllListeners: ()->
+    # This is also called in the cleanup method.
+    deleteAllObservers: ()->
       @event_listeners = []
 
     #
@@ -78,11 +65,10 @@ module.exports = (HB)->
 
     #
     # Fire an event and specify in which context the listener is called (set 'this').
-    #
-    forwardEvent: (op, event, args...)->
-      if @event_listeners?[event]?
-        for f in @event_listeners[event]
-          f.call op, event, args...
+    # TODO: do you need this ?
+    forwardEvent: (op, args...)->
+      for f in @event_listeners
+        f.call op, args...
 
     isDeleted: ()->
       @is_deleted
@@ -98,7 +84,7 @@ module.exports = (HB)->
     cleanup: ()->
       #console.log "cleanup: #{@type}"
       HB.removeOperation @
-      @deleteAllListeners()
+      @deleteAllObservers()
 
     #
     # Set the parent of this operation.
@@ -128,15 +114,15 @@ module.exports = (HB)->
     #
     execute: ()->
       @is_executed = true
-      if not @uid? 
-        # When this operation was created without a uid, then set it here. 
-        # There is only one other place, where this can be done - before an Insertion 
+      if not @uid?
+        # When this operation was created without a uid, then set it here.
+        # There is only one other place, where this can be done - before an Insertion
         # is executed (because we need the creator_id)
-        @uid = HB.getNextOperationIdentifier() 
+        @uid = HB.getNextOperationIdentifier()
       HB.addOperation @
       for l in execution_listener
         l @_encode()
-      @      
+      @
 
     #
     # @private
@@ -388,7 +374,7 @@ module.exports = (HB)->
         if parent? and fire_event
           @setParent parent
           @parent.callEvent "insert", @
-        @  
+        @
 
     #
     # Compute the position of this operation.
@@ -501,7 +487,7 @@ module.exports = (HB)->
         delete @prev_cl.unchecked.next_cl
         @prev_cl.next_cl = @
         super
-      else if @prev_cl? or @next_cl? or true # TODO: are you sure? This can happen right? 
+      else if @prev_cl? or @next_cl? or true # TODO: are you sure? This can happen right?
         super
       #else
       #  throw new Error "Delimiter is unsufficient defined!"

@@ -9,11 +9,11 @@ adaptConnector = require "./ConnectorAdapter"
 # Known values that are supported:
 # * String
 # * Integer
-# * Array 
+# * Array
 #
 class Yatta
 
-  # 
+  #
   # @param {String} user_id Unique id of the peer.
   # @param {Connector} Connector the connector class.
   #
@@ -25,21 +25,23 @@ class Yatta
     @engine = new Engine @HB, type_manager.parser
     @HB.engine = @engine # TODO: !! only for debugging
     adaptConnector @connector, @engine, @HB, type_manager.execution_listener
-    first_word = new @types.JsonType(@HB.getReservedUniqueIdentifier()).execute()
-
+    #first_word = 
+    @root_element = new @types.JsonType(@HB.getReservedUniqueIdentifier()).execute()
+    ###
     uid_beg = @HB.getReservedUniqueIdentifier()
     uid_end = @HB.getReservedUniqueIdentifier()
     beg = (new @types.Delimiter uid_beg, undefined, uid_end).execute()
     end = (new @types.Delimiter uid_end, beg, undefined).execute()
 
-    @root_element = (new @types.ReplaceManager undefined, @HB.getReservedUniqueIdentifier(), beg, end).execute()
+    @root_element = (new @types.ReplaceManager @HB.getReservedUniqueIdentifier(), beg, end).execute()
     @root_element.replace first_word, @HB.getReservedUniqueIdentifier()
- 
+    ###
+
   #
   # @return JsonType
   #
   getSharedObject: ()->
-    @root_element.val()
+    @root_element
 
   #
   # Get the initialized connector.
@@ -82,14 +84,14 @@ class Yatta
   #
   # @see Operation.on
   #
-  on: ()->
-    @getSharedObject().on arguments...
+  observe: ()->
+    @getSharedObject().observe arguments...
 
   #
   # @see Operation.deleteListener
   #
-  deleteListener: ()->
-    @getSharedObject().deleteListener arguments...
+  unobserve: ()->
+    @getSharedObject().unobserve arguments...
 
   #
   # @see JsonType.value

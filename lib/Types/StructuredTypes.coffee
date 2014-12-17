@@ -91,10 +91,10 @@ module.exports = (HB)->
     # always have the same result (ReplaceManager, and its beginning and end are the same)
     #
     execute: ()->
-      if not @validateSavedOperations() 
+      if not @validateSavedOperations()
         return false
       else
-        # helper for cloning an object 
+        # helper for cloning an object
         clone = (o)->
           p = {}
           for name,value of o
@@ -110,7 +110,7 @@ module.exports = (HB)->
           uid_end.op_number = "#{uid_r.op_number}_end"
           beg = (new types.Delimiter uid_beg, undefined, uid_end).execute()
           end = (new types.Delimiter uid_end, beg, undefined).execute()
-          @map_manager.map[@name] = new ReplaceManager undefined, uid_r, beg, end
+          @map_manager.map[@name] = new ReplaceManager uid_r, beg, end
           @map_manager.map[@name].setParent @map_manager, @name
           (@map_manager.map[@name].add_name_ops ?= []).push @
           @map_manager.map[@name].execute()
@@ -224,10 +224,8 @@ module.exports = (HB)->
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Delimiter} beginning Reference or Object.
     # @param {Delimiter} end Reference or Object.
-    constructor: (initial_content, uid, beginning, end, prev, next, origin)->
-      super uid, beginning, end, prev, next, origin
-      if initial_content?
-        @replace initial_content
+    # constructor: (uid, beginning, end, prev, next, origin)->
+    #  super uid, beginning, end, prev, next, origin
 
     type: "ReplaceManager"
 
@@ -255,24 +253,6 @@ module.exports = (HB)->
       o = @getLastOperation()
       (new Replaceable content, @, replaceable_uid, o, o.next_cl).execute()
       undefined
-
-    #
-    # Add change listeners for parent.
-    #
-    setParent: (parent, property_name)->
-      repl_manager = this
-      @on 'insert', (event, op)->
-        if op.next_cl instanceof types.Delimiter
-          repl_manager.parent.callEvent 'change', property_name, op
-      @on 'change', (event, op)->
-        if repl_manager isnt this
-          repl_manager.parent.callEvent 'change', property_name, op
-      # Call this, when the first element is inserted. Then delete the listener.
-      addPropertyListener = (event, op)->
-        repl_manager.deleteListener 'insert', addPropertyListener
-        repl_manager.parent.callEvent 'addProperty', property_name, op
-      @on 'insert', addPropertyListener
-      super parent
 
     #
     # Get the value of this WordType
@@ -304,7 +284,6 @@ module.exports = (HB)->
 
   parser["ReplaceManager"] = (json)->
     {
-      'content' : content
       'uid' : uid
       'prev': prev
       'next': next
@@ -312,7 +291,7 @@ module.exports = (HB)->
       'beginning' : beginning
       'end' : end
     } = json
-    new ReplaceManager content, uid, beginning, end, prev, next, origin
+    new ReplaceManager uid, beginning, end, prev, next, origin
 
 
   #
@@ -342,16 +321,10 @@ module.exports = (HB)->
     val: ()->
       @content
 
-    #
-    # Replace the content of this replaceable with new content.
-    #
-    replace: (content)->
-      @parent.replace content
-
     applyDelete: ()->
       if @content?
         if @next_cl.type isnt "Delimiter"
-          @content.deleteAllListeners()
+          @content.deleteAllObservers()
         @content.applyDelete()
         @content.dontSync()
       @content = null
@@ -361,16 +334,14 @@ module.exports = (HB)->
       super
 
     #
-    # If possible set the replace manager in the content.
-    # @see WordType.setReplaceManager
     #
     execute: ()->
       if not @validateSavedOperations()
         return false
       else
-        @content?.setReplaceManager?(@parent)
         # only fire 'insert-event' (which will result in addProperty and change events),
-        # when content is added. In case of Json, empty content means that this is not the last update,
+        # when content is added. 
+        # In case of Json, empty content means that this is not the last update,
         # since content is deleted when 'applyDelete' was exectuted.
         ins_result = super(@content?) # @content? whether to fire or not
         if ins_result

@@ -115,11 +115,15 @@ module.exports = (HB)->
 
     cleanup: ()->
       super()
-      
+
+
     #
-    # Transform this to a Json. If your browser supports Object.observe it will be transformed automatically when a change arrives. 
+    # Transform this to a Json. If your browser supports Object.observe it will be transformed automatically when a change arrives.
     # Otherwise you will loose all the sharing-abilities (the new object will be a deep clone)!
     # @return {Json}
+    #
+    # TODO: at the moment you don't consider changing of properties.
+    # E.g.: let x = {a:[]}. Then x.a.push 1 wouldn't change anything
     #
     toJson: ()->
       if not @bound_json? or not Object.observe? or true # TODO: currently, you are not watching mutable strings for changes, and, therefore, the @bound_json is not updated. TODO TODO  wuawuawua easy
@@ -137,14 +141,14 @@ module.exports = (HB)->
           else
             json[name] = o
         @bound_json = json
-        if Object.observe? 
+        if Object.observe?
           that = @
           Object.observe @bound_json, (events)->
             for event in events
               if not event.changed_by? and (event.type is "add" or event.type = "update")
                 # this event is not created by Yatta.
                 that.val(event.name, event.object[event.name])
-          that.on 'change', (event_name, property_name, op)->
+          that.observe (event_name, property_name, op)->
             if this is that and op.uid.creator isnt HB.getUserId()
               notifier = Object.getNotifier(that.bound_json)
               oldVal = that.bound_json[property_name]
@@ -152,40 +156,23 @@ module.exports = (HB)->
                 notifier.performChange 'update', ()->
                     that.bound_json[property_name] = that.val(property_name)
                   , that.bound_json
-                notifier.notify 
+                notifier.notify
                   object: that.bound_json
                   type: 'update'
                   name: property_name
                   oldValue: oldVal
                   changed_by: op.uid.creator
-              else 
+              else
                 notifier.performChange 'add', ()->
                     that.bound_json[property_name] = that.val(property_name)
                   , that.bound_json
-                notifier.notify 
+                notifier.notify
                   object: that.bound_json
                   type: 'add'
                   name: property_name
                   oldValue: oldVal
                   changed_by: op.uid.creator
       @bound_json
-
-    #
-    # @see WordType.setReplaceManager
-    # Sets the parent of this JsonType object.
-    #
-    setReplaceManager: (replace_manager)->
-      @replace_manager = replace_manager
-      @on ['change','addProperty'], ()->
-        if replace_manager.parent?
-          replace_manager.parent.forwardEvent this, arguments...
-
-    #
-    # Get the parent of this JsonType.
-    # @return {JsonType}
-    #
-    getParent: ()->
-      @replace_manager.parent
 
     #
     # Whether the default is 'mutable' (true) or 'immutable' (false)
@@ -222,16 +209,7 @@ module.exports = (HB)->
     #   @return [JsonType] This object. (supports chaining)
     #
     val: (name, content, mutable)->
-      if typeof name is 'object'
-        # Special case. First argument is an object. Then the second arg is mutable. 
-        # (I refer to var name and content here)
-        # Keep that in mind when reading the following..
-        jt = new JsonType()
-        @replace_manager.replace jt.execute()
-        for n,o of name
-          jt.val n, o, mutable
-        @
-      else if name? and arguments.length > 1
+      if name? and arguments.length > 1
         if mutable?
           if mutable is true or mutable is 'mutable'
             mutable = true

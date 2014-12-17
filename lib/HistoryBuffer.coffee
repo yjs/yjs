@@ -134,7 +134,7 @@ class HistoryBuffer
   #
   # Retrieve an operation from a unique id.
   #
-  getOperation: (uid)-> 
+  getOperation: (uid)->
     if uid.uid?
       uid = uid.uid
     @buffer[uid.creator]?[uid.op_number]

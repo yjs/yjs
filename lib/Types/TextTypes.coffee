@@ -177,23 +177,6 @@ module.exports = (HB)->
       @
 
     #
-    # Replace the content of this word with another one. Concurrent replacements are not merged!
-    # Only one of the replacements will be used.
-    #
-    # @return {WordType} Returns the new WordType object.
-    #
-    replaceText: (text)->
-      # Can only be used if the ReplaceManager was set!
-      # @see WordType.setReplaceManager
-      if @replace_manager?
-        word = (new WordType undefined).execute()
-        word.insertText 0, text
-        @replace_manager.replace(word)
-        word
-      else
-        throw new Error "This type is currently not maintained by a ReplaceManager!"
-
-    #
     # Get the String-representation of this word.
     # @return {String} The String-representation of this object.
     #
@@ -212,18 +195,6 @@ module.exports = (HB)->
     toString: ()->
       @val()
 
-    #
-    # @private
-    # In most cases you would embed a WordType in a Replaceable, wich is handled by the ReplaceManager in order
-    # to provide replace functionality.
-    #
-    setReplaceManager: (op)->
-      @saveOperation 'replace_manager', op
-      @validateSavedOperations()
-      @on 'insert', (event, ins)=>
-        @replace_manager?.forwardEvent @, 'change', ins
-      @on 'delete', (event, ins, del)=>
-        @replace_manager?.forwardEvent @, 'change', del
     #
     # Bind this WordType to a textfield or input field.
     #

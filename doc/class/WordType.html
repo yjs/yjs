@@ -147,18 +147,6 @@ if (x.type === &quot;WordType&quot;) {
   </li>
   <li>
     <span class='signature'>
-      <a href='#replaceText-dynamic'>
-        #
-(WordType)
-<b>replaceText</b><span>(text)</span>
-      </a>
-    </span>
-    <span class='desc'>
-      Replace the content of this word with another one. 
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
       <a href='#val-dynamic'>
         #
 (String)
@@ -179,20 +167,6 @@ if (x.type === &quot;WordType&quot;) {
     </span>
     <span class='desc'>
       Same as WordType.val 
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#setReplaceManager-dynamic'>
-        #
-(void)
-<b>setReplaceManager</b><span>(op)</span>
-      </a>
-    </span>
-    <span class='note private title'>Private</span>
-    <span class='desc'>
-      In most cases you would embed a WordType in a Replaceable, wich is handled by the ReplaceManager in order to provide replace functionality.
-
     </span>
   </li>
   <li>
@@ -335,31 +309,6 @@ if (x.type === &quot;WordType&quot;) {
 </div>
   </div>
   <div class='method_details'>
-    <p class='signature' id='replaceText-dynamic'>
-      #
-(WordType)
-<b>replaceText</b><span>(text)</span>
-      <br>
-    </p>
-    <div class='docstring'>
-  <p>Replace the content of this word with another one. Concurrent replacements are not merged!
-Only one of the replacements will be used.</p>
-</div>
-<div class='tags'>
-  <h3>Returns:</h3>
-  <ul class='return'>
-    <li>
-      <span class='type'></span>
-      (
-        <tt><a href='../class/WordType.html'>WordType</a></tt>
-      )
-      &mdash;
-      <span class='desc'>Returns the new WordType object. </span>
-    </li>
-  </ul>
-</div>
-  </div>
-  <div class='method_details'>
     <p class='signature' id='val-dynamic'>
       #
 (String)
@@ -403,21 +352,6 @@ Only one of the replacements will be used.</p>
 </div>
   </div>
   <div class='method_details'>
-    <p class='signature' id='setReplaceManager-dynamic'>
-      #
-(void)
-<b>setReplaceManager</b><span>(op)</span>
-      <span class='note private'>Private</span>
-      <br>
-    </p>
-    <div class='docstring'>
-  <p>In most cases you would embed a WordType in a Replaceable, wich is handled by the ReplaceManager in order
-to provide replace functionality.</p>
-</div>
-<div class='tags'>
-</div>
-  </div>
-  <div class='method_details'>
     <p class='signature' id='bind-dynamic'>
       #
 (void)
@@ -455,7 +389,7 @@ yatta.bind(textbox);</code></pre>
 </div>
     </div>
     <div id='footer'>
-  December 16, 14 17:57:44 by
+  December 17, 14 22:46:39 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

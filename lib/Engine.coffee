@@ -1,4 +1,8 @@
 
+window?.unprocessed_counter = 0 # del this
+window?.unprocessed_exec_counter = 0 # TODO
+window?.unprocessed_types = []
+
 #
 # @nodoc
 # The Engine handles how and in which order to execute operations and add operations to the HistoryBuffer.
@@ -22,7 +26,7 @@ class Engine
     else
       throw new Error "You forgot to specify a parser for type #{json.type}. The message is #{JSON.stringify json}."
 
-  
+
   #
   # Apply a set of operations. E.g. the operations you received from another users HB._encode().
   # @note You must not use this method when you already have ops in your HB!
@@ -63,6 +67,8 @@ class Engine
     if @HB.getOperation(o)?
     else if not o.execute()
       @unprocessed_ops.push o
+      window?.unprocessed_counter++ # TODO: del this
+      window?.unprocessed_types.push o.type
     @tryUnprocessed()
 
   #
@@ -71,6 +77,7 @@ class Engine
   #
   tryUnprocessed: ()->
     while true
+      window?.unprocessed_exec_counter++ # TODO: del this
       old_length = @unprocessed_ops.length
       unprocessed = []
       for op in @unprocessed_ops

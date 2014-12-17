@@ -121,30 +121,6 @@ if (x.type === &quot;JsonType&quot;) {
   </li>
   <li>
     <span class='signature'>
-      <a href='#setReplaceManager-dynamic'>
-        #
-(void)
-<b>setReplaceManager</b><span>(replace_manager)</span>
-      </a>
-    </span>
-    <span class='desc'>
-      Sets the parent of this JsonType object. 
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#getParent-dynamic'>
-        #
-(JsonType)
-<b>getParent</b><span>()</span>
-      </a>
-    </span>
-    <span class='desc'>
-      Get the parent of this JsonType. 
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
       <a href='#setMutableDefault-dynamic'>
         #
 (void)
@@ -207,8 +183,9 @@ if (x.type === &quot;JsonType&quot;) {
       <br>
     </p>
     <div class='docstring'>
-  <p>Transform this to a Json. If your browser supports Object.observe it will be transformed automatically when a change arrives. 
-Otherwise you will loose all the sharing-abilities (the new object will be a deep clone)!</p>
+  <p>Transform this to a Json. If your browser supports Object.observe it will be transformed automatically when a change arrives.
+Otherwise you will loose all the sharing-abilities (the new object will be a deep clone)!</p><p>TODO: at the moment you don&#39;t consider changing of properties.
+E.g.: let x = {a:[]}. Then x.a.push 1 wouldn&#39;t change anything</p>
 </div>
 <div class='tags'>
   <h3>Returns:</h3>
@@ -216,45 +193,6 @@ Otherwise you will loose all the sharing-abilities (the new object will be a dee
     <li>
       <span class='type'></span>
       <tt>Json</tt>
-    </li>
-  </ul>
-</div>
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='setReplaceManager-dynamic'>
-      #
-(void)
-<b>setReplaceManager</b><span>(replace_manager)</span>
-      <br>
-    </p>
-    <div class='docstring'>
-  <p>Sets the parent of this JsonType object.</p>
-</div>
-<div class='tags'>
-  <h3>See also:</h3>
-  <ul class='see'>
-    <li>
-      <a href='WordType.setReplaceManager'>WordType.setReplaceManager</a>
-    </li>
-  </ul>
-</div>
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='getParent-dynamic'>
-      #
-(JsonType)
-<b>getParent</b><span>()</span>
-      <br>
-    </p>
-    <div class='docstring'>
-  <p>Get the parent of this JsonType.</p>
-</div>
-<div class='tags'>
-  <h3>Returns:</h3>
-  <ul class='return'>
-    <li>
-      <span class='type'></span>
-      <tt><a href='../class/JsonType.html'>JsonType</a></tt>
     </li>
   </ul>
 </div>
@@ -421,7 +359,7 @@ Otherwise you will loose all the sharing-abilities (the new object will be a dee
 </div>
     </div>
     <div id='footer'>
-  December 16, 14 17:57:44 by
+  December 17, 14 22:46:39 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

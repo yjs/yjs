@@ -1,6 +1,18 @@
 (function() {
   var Engine;
 
+  if (typeof window !== "undefined" && window !== null) {
+    window.unprocessed_counter = 0;
+  }
+
+  if (typeof window !== "undefined" && window !== null) {
+    window.unprocessed_exec_counter = 0;
+  }
+
+  if (typeof window !== "undefined" && window !== null) {
+    window.unprocessed_types = [];
+  }
+
   Engine = (function() {
     function Engine(HB, parser) {
       this.HB = HB;
@@ -66,6 +78,12 @@
 
       } else if (!o.execute()) {
         this.unprocessed_ops.push(o);
+        if (typeof window !== "undefined" && window !== null) {
+          window.unprocessed_counter++;
+        }
+        if (typeof window !== "undefined" && window !== null) {
+          window.unprocessed_types.push(o.type);
+        }
       }
       return this.tryUnprocessed();
     };
@@ -74,6 +92,9 @@
       var old_length, op, unprocessed, _i, _len, _ref, _results;
       _results = [];
       while (true) {
+        if (typeof window !== "undefined" && window !== null) {
+          window.unprocessed_exec_counter++;
+        }
         old_length = this.unprocessed_ops.length;
         unprocessed = [];
         _ref = this.unprocessed_ops;

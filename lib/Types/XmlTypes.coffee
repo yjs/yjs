@@ -135,7 +135,7 @@ module.exports = (HB)->
           dont_proxy ()->
             that.xml.removeChild deleted
 
-      @attributes.on ['addProperty', 'change'], (event, property_name, op)->
+      @attributes.on ['add', 'update'], (event, property_name, op)->
         if op.creator isnt HB.getUserId() and this is that.attributes
           dont_proxy ()->
             newval = op.val().val()
