@@ -13,12 +13,12 @@ module.exports = class Test
   constructor: (@name_suffix = "")->
     @number_of_test_cases_multiplier = 1
     @repeat_this = 1 * @number_of_test_cases_multiplier
-    @doSomething_amount = 50 + @number_of_test_cases_multiplier
-    @number_of_engines = 5 + @number_of_test_cases_multiplier - 1
- 
-    @time = 0
-    @ops = 0
-    @time_now = 0
+    @doSomething_amount = 50 * @number_of_test_cases_multiplier
+    @number_of_engines = 4 + @number_of_test_cases_multiplier - 1
+
+    @time = 0 # denotes to the time when run was started
+    @ops = 0 # number of operations (used with @time)
+    @time_now = 0 # current time
 
     @debug = false
 
@@ -33,7 +33,7 @@ module.exports = class Test
       @users.push u
     @flushAll()
 
-  # is called by implementing class 
+  # is called by implementing class
   makeNewUser: (user)->
     user.HB.setManualGarbageCollect()
     user
@@ -85,11 +85,6 @@ module.exports = class Test
             ops1 = y.deleteText pos, length
           undefined
         types : [types.WordType]
-      ,
-        f : (y)=> # REPLACE TEXT
-          y.replaceText @getRandomText()
-          null
-        types: [types.WordType]
     ]
   getRandomRoot: (user_num)->
     throw new Error "overwrite me!"

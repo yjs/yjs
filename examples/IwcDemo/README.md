@@ -22,8 +22,17 @@ You don't have to use the proposed user_id.
 
 
 ```js
-      console.log("me is number 2")
-      yatta = new Y.JsonYatta(2, Connector);
+      // console.log("me is number 1");
+      // yatta = new JsonYatta(1, Connector);
+```
+
+
+Though, it is recommended to use the user_id
+
+
+```js
+      yatta = new Y.JsonYatta(user_id, Connector);
+
 
     })
 }

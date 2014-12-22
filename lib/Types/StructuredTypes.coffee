@@ -110,7 +110,10 @@ module.exports = (HB)->
           uid_end.op_number = "#{uid_r.op_number}_end"
           beg = (new types.Delimiter uid_beg, undefined, uid_end).execute()
           end = (new types.Delimiter uid_end, beg, undefined).execute()
-          @map_manager.map[@name] = new ReplaceManager uid_r, beg, end
+          event_properties =
+            name: @name
+          event_this = @map_manager
+          @map_manager.map[@name] = new ReplaceManager event_properties, event_this, uid_r, beg, end
           @map_manager.map[@name].setParent @map_manager, @name
           (@map_manager.map[@name].add_name_ops ?= []).push @
           @map_manager.map[@name].execute()
@@ -192,22 +195,27 @@ module.exports = (HB)->
 
     #
     # Retrieves the x-th not deleted element.
+    # e.g. "abc" : the 1th character is "a"
+    # the 0th character is the left Delimiter
     #
     getOperationByPosition: (position)->
-      o = @beginning.next_cl
-      if (position > 0 or o.isDeleted()) and not (o instanceof types.Delimiter)
-        while o.isDeleted() and not (o instanceof types.Delimiter)
-          # find first non deleted op
-          o = o.next_cl
-        while true
-          # find the i-th op
-          if o instanceof types.Delimiter
-            break
-          if position <= 0 and not o.isDeleted()
-            break
-          o = o.next_cl
-          if not o.isDeleted()
-            position -= 1
+      o = @beginning
+      while true
+        # find the i-th op
+        if o instanceof types.Delimiter and o.prev_cl?
+          # the user or you gave a position parameter that is to big
+          # for the current array. Therefore we reach a Delimiter.
+          # Then, we'll just return the last character.
+          o = o.prev_cl
+          while o.isDeleted() or not (o instanceof types.Delimiter)
+            o = o.prev_cl
+          break
+        if position <= 0 and not o.isDeleted()
+          break
+
+        o = o.next_cl
+        if not o.isDeleted()
+          position -= 1
       o
 
   #
@@ -220,12 +228,14 @@ module.exports = (HB)->
   #
   class ReplaceManager extends ListManager
     #
+    # @param {Object} event_properties Decorates the event that is thrown by the RM
+    # @param {Object} event_this The object on which the event shall be executed
     # @param {Operation} initial_content Initialize this with a Replaceable that holds the initial_content.
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Delimiter} beginning Reference or Object.
     # @param {Delimiter} end Reference or Object.
-    # constructor: (uid, beginning, end, prev, next, origin)->
-    #  super uid, beginning, end, prev, next, origin
+    constructor: (@event_porperties, @event_this, uid, beginning, end, prev, next, origin)->
+      super uid, beginning, end, prev, next, origin
 
     type: "ReplaceManager"
 
@@ -242,6 +252,21 @@ module.exports = (HB)->
 
     cleanup: ()->
       super()
+
+    #
+    # This doesn't throw the same events as the ListManager. Therefore, the
+    # Replaceables also not throw the same events.
+    # So, ReplaceManager and ListManager both implement
+    # these functions that are called when an Insertion is executed (at the end).
+    #
+    #
+    callEventDecorator: (events)->
+      if not @isDeleted()
+        for name,prop of @event_porperties
+          for event in events
+            event[name] = prop
+        @event_this.callEvent events
+      undefined
 
     #
     # Replace the existing word with a new word.
@@ -278,7 +303,7 @@ module.exports = (HB)->
       if @prev_cl? and @next_cl?
         json['prev'] = @prev_cl.getUid()
         json['next'] = @next_cl.getUid()
-      if @origin? # and @origin isnt @prev_cl
+      if @origin? # TODO: do this everywhere: and @origin isnt @prev_cl
         json["origin"] = @origin().getUid()
       json
 
@@ -334,23 +359,30 @@ module.exports = (HB)->
       super
 
     #
+    # This is called, when the Insert-type was successfully executed.
+    # TODO: consider doing this in a more consistent manner. This could also be
+    # done with execute. But currently, there are no specital Insert-types for ListManager.
     #
-    execute: ()->
-      if not @validateSavedOperations()
-        return false
-      else
-        # only fire 'insert-event' (which will result in addProperty and change events),
-        # when content is added. 
-        # In case of Json, empty content means that this is not the last update,
-        # since content is deleted when 'applyDelete' was exectuted.
-        ins_result = super(@content?) # @content? whether to fire or not
-        if ins_result
-          if @next_cl.type is "Delimiter" and @prev_cl.type isnt "Delimiter"
-            @prev_cl.applyDelete()
-          else if @next_cl.type isnt "Delimiter"
-            @applyDelete()
-
-        return ins_result
+    callOperationSpecificEvents: ()->
+      if @next_cl.type is "Delimiter" and @prev_cl.type isnt "Delimiter"
+        # this replaces another Replaceable
+        old_value = @prev_cl.content
+        @prev_cl.applyDelete()
+        @parent.callEventDecorator [
+          type: "update"
+          changed_by: @uid.creator
+          oldValue: old_value
+        ]
+      else if @next_cl.type isnt "Delimiter"
+        # This will never be recognized by the user, because another
+        # concurrent operation is set as the current value of the RM
+        @applyDelete()
+      else # prev _and_ next are Delimiters. This is the first created Replaceable in the RM
+        @parent.callEventDecorator [
+          type: "add"
+          changed_by: @uid.creator
+        ]
+      undefined
 
     #
     # Encode this operation in such a way that it can be parsed by remote peers.

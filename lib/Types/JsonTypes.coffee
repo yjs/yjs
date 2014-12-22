@@ -148,30 +148,31 @@ module.exports = (HB)->
               if not event.changed_by? and (event.type is "add" or event.type = "update")
                 # this event is not created by Yatta.
                 that.val(event.name, event.object[event.name])
-          that.observe (event_name, property_name, op)->
-            if this is that and op.uid.creator isnt HB.getUserId()
-              notifier = Object.getNotifier(that.bound_json)
-              oldVal = that.bound_json[property_name]
-              if oldVal?
-                notifier.performChange 'update', ()->
-                    that.bound_json[property_name] = that.val(property_name)
-                  , that.bound_json
-                notifier.notify
-                  object: that.bound_json
-                  type: 'update'
-                  name: property_name
-                  oldValue: oldVal
-                  changed_by: op.uid.creator
-              else
-                notifier.performChange 'add', ()->
-                    that.bound_json[property_name] = that.val(property_name)
-                  , that.bound_json
-                notifier.notify
-                  object: that.bound_json
-                  type: 'add'
-                  name: property_name
-                  oldValue: oldVal
-                  changed_by: op.uid.creator
+          @observe (events)->
+            for event in events
+              if event.created_ isnt HB.getUserId()
+                notifier = Object.getNotifier(that.bound_json)
+                oldVal = that.bound_json[event.name]
+                if oldVal?
+                  notifier.performChange 'update', ()->
+                      that.bound_json[event.name] = that.val(event.name)
+                    , that.bound_json
+                  notifier.notify
+                    object: that.bound_json
+                    type: 'update'
+                    name: event.name
+                    oldValue: oldVal
+                    changed_by: event.changed_by
+                else
+                  notifier.performChange 'add', ()->
+                      that.bound_json[event.name] = that.val(event.name)
+                    , that.bound_json
+                  notifier.notify
+                    object: that.bound_json
+                    type: 'add'
+                    name: event.name
+                    oldValue: oldVal
+                    changed_by:event.changed_by
       @bound_json
 
     #

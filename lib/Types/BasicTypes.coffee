@@ -45,7 +45,7 @@ module.exports = (HB)->
     # @overload unobserve(event, f)
     #   @param f     {Function} The function that you want to delete 
     unobserve: (f)->
-      @event_listeners.filter (g)->
+      @event_listeners = @event_listeners.filter (g)->
         f isnt g
 
     #
@@ -59,7 +59,7 @@ module.exports = (HB)->
     #
     # Fire an event.
     # TODO: Do something with timeouts. You don't want this to fire for every operation (e.g. insert).
-    #
+    # TODO: do you need callEvent+forwardEvent? Only one suffices probably
     callEvent: ()->
       @forwardEvent @, arguments...
 
@@ -215,8 +215,10 @@ module.exports = (HB)->
     #
     execute: ()->
       if @validateSavedOperations()
-        @deletes.applyDelete @
-        super
+        res = super
+        if res
+          @deletes.applyDelete @
+        res
       else
         false
 
@@ -275,7 +277,12 @@ module.exports = (HB)->
         garbagecollect = true
       super garbagecollect
       if callLater
-        @parent.callEvent "delete", @, o
+        @parent.callEvent [
+              type: "insert"
+              position: @getPosition()
+              object: @parent # TODO: You can combine getPosition + getParent in a more efficient manner! (only left Delimiter will hold @parent)
+              changed_by: o.uid.creator
+            ]
       if @next_cl?.isDeleted()
         # garbage collect next_cl
         @next_cl.applyDelete()
@@ -317,8 +324,7 @@ module.exports = (HB)->
     #
     # @private
     # Include this operation in the associative lists.
-    # @param fire_event {boolean} Whether to fire the insert-event.
-    execute: (fire_event = true)->
+    execute: ()->
       if not @validateSavedOperations()
         return false
       else
@@ -336,7 +342,8 @@ module.exports = (HB)->
           #         therefore $this would be always to the right of o3
           # case 2: $origin < $o.origin
           #         if current $this insert_position > $o origin: $this ins
-          #         else $insert_position will not change (maybe we encounter case 1 later, then this will be to the right of $o)
+          #         else $insert_position will not change
+          #         (maybe we encounter case 1 later, then this will be to the right of $o)
           # case 3: $origin > $o.origin
           #         $this insert_position is to the left of $o (forever!)
           while true
@@ -369,12 +376,19 @@ module.exports = (HB)->
           @prev_cl.next_cl = @
           @next_cl.prev_cl = @
 
-        parent = @prev_cl?.getParent()
+        @setParent @prev_cl.getParent() # do Insertions always have a parent?
         super # notify the execution_listeners
-        if parent? and fire_event
-          @setParent parent
-          @parent.callEvent "insert", @
+        @callOperationSpecificEvents()
         @
+
+    callOperationSpecificEvents: ()->
+      @parent?.callEvent [
+        type: "insert"
+        position: @getPosition()
+        object: @parent
+        changed_by: @uid.creator
+        value: @content
+      ]
 
     #
     # Compute the position of this operation.

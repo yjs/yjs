@@ -20,7 +20,7 @@ class JsonTest extends Test
   type: "JsonTest"
 
   getRandomRoot: (user_num, root)->
-    root ?= @users[user_num].getSharedObject()
+    root ?= @users[user_num]
     types = @users[user_num].types
     if _.random(0,1) is 1 # take root
       root
@@ -98,7 +98,7 @@ describe "JsonFramework", ->
   ###
 
   it "has a JsonTypeWrapper", ->
-    y = this.yTest.getSomeUser().getSharedObject()
+    y = this.yTest.getSomeUser()
     y.val('x',"dtrn", 'immutable')
     y.val('set',{x:"x"}, 'immutable')
     w = y.value
@@ -127,7 +127,7 @@ describe "JsonFramework", ->
     u1.engine.applyOps ops2
     u2.engine.applyOps ops1
     expect(test.getContent(0)).to.equal(@yTest.getContent(1))
-    
+
   it "can handle creaton of complex json (1)", ->
     @yTest.users[0].val('a', 'q')
     @yTest.users[2].val('a', 't')

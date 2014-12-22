@@ -152,10 +152,10 @@ module.exports = (HB)->
     # @return {WordType} This WordType object.
     #
     insertText: (position, content)->
-      # TODO: getOperationByPosition should return "(i-2)th" character
-      ith = @getOperationByPosition position # the (i-1)th character. e.g. "abc" a is the 0th character
-      left = ith.prev_cl # left is the non-deleted charather to the left of ith
-      @insertAfter left, content
+      ith = @getOperationByPosition position
+      # the (i-1)th character. e.g. "abc" the 1th character is "a"
+      # the 0th character is the left Delimiter
+      @insertAfter ith, content
 
     #
     # Deletes a part of the word.
@@ -163,7 +163,7 @@ module.exports = (HB)->
     # @return {WordType} This WordType object
     #
     deleteText: (position, length)->
-      o = @getOperationByPosition position
+      o = @getOperationByPosition(position+1) # position 0 in this case is the deletion of the first character
 
       delete_ops = []
       for i in [0...length]

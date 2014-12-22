@@ -32,6 +32,12 @@
           <td>Defined in:</td>
           <td>lib&#47;Yatta.coffee</td>
         </tr>
+        <tr>
+          <td>Inherits:</td>
+          <td>
+            types.JsonType
+          </td>
+        </tr>
       </table>
       <h2>Overview</h2>
       <div class='docstring'>
@@ -49,100 +55,10 @@ Known values that are supported:</p><ul>
       <ul class='summary'>
   <li>
     <span class='signature'>
-      <a href='#getSharedObject-dynamic'>
-        #
-(?)
-<b>getSharedObject</b><span>()</span>
-      </a>
-    </span>
-    <span class='desc'>
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
       <a href='#getConnector-dynamic'>
         #
 (void)
 <b>getConnector</b><span>()</span>
-      </a>
-    </span>
-    <span class='desc'>
-      Get the initialized connector. 
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#getHistoryBuffer-dynamic'>
-        #
-(void)
-<b>getHistoryBuffer</b><span>()</span>
-      </a>
-    </span>
-    <span class='desc'>
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#setMutableDefault-dynamic'>
-        #
-(void)
-<b>setMutableDefault</b><span>(mutable)</span>
-      </a>
-    </span>
-    <span class='desc'>
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#getUserId-dynamic'>
-        #
-(void)
-<b>getUserId</b><span>()</span>
-      </a>
-    </span>
-    <span class='desc'>
-      Get the UserId from the HistoryBuffer object. 
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#toJson-dynamic'>
-        #
-(void)
-<b>toJson</b><span>()</span>
-      </a>
-    </span>
-    <span class='desc'>
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#val-dynamic'>
-        #
-(void)
-<b>val</b><span>()</span>
-      </a>
-    </span>
-    <span class='desc'>
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#observe-dynamic'>
-        #
-(void)
-<b>observe</b><span>()</span>
-      </a>
-    </span>
-    <span class='desc'>
-    </span>
-  </li>
-  <li>
-    <span class='signature'>
-      <a href='#unobserve-dynamic'>
-        #
-(void)
-<b>unobserve</b><span>()</span>
       </a>
     </span>
     <span class='desc'>
@@ -155,7 +71,7 @@ Known values that are supported:</p><ul>
     <p class='signature' id='constructor-dynamic'>
       #
 (void)
-<b>constructor</b><span>(connector)</span>
+<b>constructor</b><span>()</span>
       <br>
     </p>
     <div class='tags'>
@@ -188,154 +104,18 @@ Known values that are supported:</p><ul>
       <h2>Instance Method Details</h2>
       <div class='methods'>
   <div class='method_details'>
-    <p class='signature' id='getSharedObject-dynamic'>
-      #
-(?)
-<b>getSharedObject</b><span>()</span>
-      <br>
-    </p>
-    <div class='tags'>
-  <h3>Returns:</h3>
-  <ul class='return'>
-    <li>
-      <span class='type'></span>
-      (
-        <tt>?</tt>
-      )
-      &mdash;
-      <span class='desc'>JsonType </span>
-    </li>
-  </ul>
-</div>
-  </div>
-  <div class='method_details'>
     <p class='signature' id='getConnector-dynamic'>
       #
 (void)
 <b>getConnector</b><span>()</span>
       <br>
     </p>
-    <div class='docstring'>
-  <p>Get the initialized connector.</p>
-</div>
-<div class='tags'>
-</div>
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='getHistoryBuffer-dynamic'>
-      #
-(void)
-<b>getHistoryBuffer</b><span>()</span>
-      <br>
-    </p>
-    <div class='tags'>
-  <h3>See also:</h3>
-  <ul class='see'>
-    <li>
-      <a href='HistoryBuffer'>HistoryBuffer</a>
-    </li>
-  </ul>
-</div>
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='setMutableDefault-dynamic'>
-      #
-(void)
-<b>setMutableDefault</b><span>(mutable)</span>
-      <br>
-    </p>
-    <div class='tags'>
-  <h3>See also:</h3>
-  <ul class='see'>
-    <li>
-      <a href='JsonType.setMutableDefault'>JsonType.setMutableDefault</a>
-    </li>
-  </ul>
-</div>
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='getUserId-dynamic'>
-      #
-(void)
-<b>getUserId</b><span>()</span>
-      <br>
-    </p>
-    <div class='docstring'>
-  <p>Get the UserId from the HistoryBuffer object.
-In most cases this will be the same as the user_id value with which
-Yatta was initialized (Depending on the HistoryBuffer implementation).</p>
-</div>
-<div class='tags'>
-</div>
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='toJson-dynamic'>
-      #
-(void)
-<b>toJson</b><span>()</span>
-      <br>
-    </p>
-    <div class='tags'>
-  <h3>See also:</h3>
-  <ul class='see'>
-    <li>
-      <a href='JsonType.toJson'>JsonType.toJson</a>
-    </li>
-  </ul>
-</div>
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='val-dynamic'>
-      #
-(void)
-<b>val</b><span>()</span>
-      <br>
-    </p>
-    <div class='tags'>
-  <h3>See also:</h3>
-  <ul class='see'>
-    <li>
-      <a href='JsonType.val'>JsonType.val</a>
-    </li>
-  </ul>
-</div>
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='observe-dynamic'>
-      #
-(void)
-<b>observe</b><span>()</span>
-      <br>
-    </p>
-    <div class='tags'>
-  <h3>See also:</h3>
-  <ul class='see'>
-    <li>
-      <a href='Operation.on'>Operation.on</a>
-    </li>
-  </ul>
-</div>
-  </div>
-  <div class='method_details'>
-    <p class='signature' id='unobserve-dynamic'>
-      #
-(void)
-<b>unobserve</b><span>()</span>
-      <br>
-    </p>
-    <div class='tags'>
-  <h3>See also:</h3>
-  <ul class='see'>
-    <li>
-      <a href='Operation.deleteListener'>Operation.deleteListener</a>
-    </li>
-  </ul>
-</div>
+    
   </div>
 </div>
     </div>
     <div id='footer'>
-  December 17, 14 22:46:39 by
+  December 22, 14 14:36:45 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

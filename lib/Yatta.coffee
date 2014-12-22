@@ -4,107 +4,38 @@ HistoryBuffer = require "./HistoryBuffer"
 Engine = require "./Engine"
 adaptConnector = require "./ConnectorAdapter"
 
-#
-# Framework for Json data-structures.
-# Known values that are supported:
-# * String
-# * Integer
-# * Array
-#
-class Yatta
+createYatta = (connector)->
+  user_id = connector.id # TODO: change to getUniqueId()
+  HB = new HistoryBuffer user_id
+  type_manager = json_types_uninitialized HB
+  types = type_manager.types
 
   #
-  # @param {String} user_id Unique id of the peer.
-  # @param {Connector} Connector the connector class.
+  # Framework for Json data-structures.
+  # Known values that are supported:
+  # * String
+  # * Integer
+  # * Array
   #
-  constructor: (@connector)->
-    user_id = @connector.id # TODO: change to getUniqueId()
-    @HB = new HistoryBuffer user_id
-    type_manager = json_types_uninitialized @HB
-    @types = type_manager.types
-    @engine = new Engine @HB, type_manager.parser
-    @HB.engine = @engine # TODO: !! only for debugging
-    adaptConnector @connector, @engine, @HB, type_manager.execution_listener
-    #first_word = 
-    @root_element = new @types.JsonType(@HB.getReservedUniqueIdentifier()).execute()
-    ###
-    uid_beg = @HB.getReservedUniqueIdentifier()
-    uid_end = @HB.getReservedUniqueIdentifier()
-    beg = (new @types.Delimiter uid_beg, undefined, uid_end).execute()
-    end = (new @types.Delimiter uid_end, beg, undefined).execute()
+  class Yatta extends types.JsonType
 
-    @root_element = (new @types.ReplaceManager @HB.getReservedUniqueIdentifier(), beg, end).execute()
-    @root_element.replace first_word, @HB.getReservedUniqueIdentifier()
-    ###
+    #
+    # @param {String} user_id Unique id of the peer.
+    # @param {Connector} Connector the connector class.
+    #
+    constructor: ()->
+      @connector = connector
+      @HB = HB
+      @types = types
+      @engine = new Engine @HB, type_manager.parser
+      adaptConnector @connector, @engine, @HB, type_manager.execution_listener
+      super
 
-  #
-  # @return JsonType
-  #
-  getSharedObject: ()->
-    @root_element
+    getConnector: ()->
+      @connector
 
-  #
-  # Get the initialized connector.
-  #
-  getConnector: ()->
-    @connector
+  return new Yatta(HB.getReservedUniqueIdentifier()).execute()
 
-  #
-  # @see HistoryBuffer
-  #
-  getHistoryBuffer: ()->
-    @HB
-
-  #
-  # @see JsonType.setMutableDefault
-  #
-  setMutableDefault: (mutable)->
-    @getSharedObject().setMutableDefault(mutable)
-
-  #
-  # Get the UserId from the HistoryBuffer object.
-  # In most cases this will be the same as the user_id value with which
-  # Yatta was initialized (Depending on the HistoryBuffer implementation).
-  #
-  getUserId: ()->
-    @HB.getUserId()
-
-  #
-  # @see JsonType.toJson
-  #
-  toJson : ()->
-    @getSharedObject().toJson()
-
-  #
-  # @see JsonType.val
-  #
-  val : ()->
-    @getSharedObject().val arguments...
-
-  #
-  # @see Operation.on
-  #
-  observe: ()->
-    @getSharedObject().observe arguments...
-
-  #
-  # @see Operation.deleteListener
-  #
-  unobserve: ()->
-    @getSharedObject().unobserve arguments...
-
-  #
-  # @see JsonType.value
-  #
-  Object.defineProperty Yatta.prototype, 'value',
-    get : -> @getSharedObject().value
-    set : (o)->
-      if o.constructor is {}.constructor
-        for o_name,o_obj of o
-          @val(o_name, o_obj, 'immutable')
-      else
-        throw new Error "You must only set Object values!"
-
-module.exports = Yatta
+module.exports = createYatta
 if window? and not window.Yatta?
-  window.Yatta = Yatta
+  window.Yatta = createYatta
