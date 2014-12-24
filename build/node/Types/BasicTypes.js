@@ -24,7 +24,7 @@
       };
 
       Operation.prototype.unobserve = function(f) {
-        return this.event_listeners.filter(function(g) {
+        return this.event_listeners = this.event_listeners.filter(function(g) {
           return f !== g;
         });
       };
@@ -156,9 +156,13 @@
       };
 
       Delete.prototype.execute = function() {
+        var res;
         if (this.validateSavedOperations()) {
-          this.deletes.applyDelete(this);
-          return Delete.__super__.execute.apply(this, arguments);
+          res = Delete.__super__.execute.apply(this, arguments);
+          if (res) {
+            this.deletes.applyDelete(this);
+          }
+          return res;
         } else {
           return false;
         }
@@ -307,7 +311,8 @@
             type: "insert",
             position: this.getPosition(),
             object: this.parent,
-            changed_by: this.uid.creator
+            changed_by: this.uid.creator,
+            value: this.content
           }
         ]) : void 0;
       };

@@ -35,29 +35,31 @@ module.exports = (HB)->
       if content?
         if not @map[name]?
           (new AddName undefined, @, name).execute()
-        ## TODO: del this
-        if @map[name] == null
-          qqq = @
-          x = new AddName undefined, @, name
-          x.execute()
-        ## endtodo
         @map[name].replace content
         @
       else if name?
-        obj = @map[name]?.val()
-        if obj instanceof types.ImmutableObject
-          obj.val()
+        prop = @map[name]
+        if prop? and not prop.isContentDeleted()
+          obj = prop.val()
+          if obj instanceof types.ImmutableObject
+            obj.val()
+          else
+            obj
         else
-          obj
+          undefined
       else
         result = {}
         for name,o of @map
-          obj = o.val()
-          if obj instanceof types.ImmutableObject or obj instanceof MapManager
-            obj = obj.val()
-          result[name] = obj
+          if not o.isContentDeleted()
+            obj = o.val()
+            if obj instanceof types.ImmutableObject or obj instanceof MapManager
+              obj = obj.val()
+            result[name] = obj
         result
 
+    delete: (name)->
+      @map[name]?.deleteContent()
+      @
   #
   # @nodoc
   # When a new property in a map manager is created, then the uids of the inserted Operations
@@ -234,7 +236,9 @@ module.exports = (HB)->
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Delimiter} beginning Reference or Object.
     # @param {Delimiter} end Reference or Object.
-    constructor: (@event_porperties, @event_this, uid, beginning, end, prev, next, origin)->
+    constructor: (@event_properties, @event_this, uid, beginning, end, prev, next, origin)->
+      if not @event_properties['object']?
+        @event_properties['object'] = @event_this
       super uid, beginning, end, prev, next, origin
 
     type: "ReplaceManager"
@@ -262,8 +266,8 @@ module.exports = (HB)->
     #
     callEventDecorator: (events)->
       if not @isDeleted()
-        for name,prop of @event_porperties
-          for event in events
+        for event in events
+          for name,prop of @event_properties
             event[name] = prop
         @event_this.callEvent events
       undefined
@@ -276,7 +280,15 @@ module.exports = (HB)->
     #
     replace: (content, replaceable_uid)->
       o = @getLastOperation()
-      (new Replaceable content, @, replaceable_uid, o, o.next_cl).execute()
+      relp = (new Replaceable content, @, replaceable_uid, o, o.next_cl).execute()
+      # TODO: delete repl (for debugging)
+      undefined
+
+    isContentDeleted: ()->
+      @getLastOperation().isDeleted()
+
+    deleteContent: ()->
+      (new types.Delete undefined, @getLastOperation().uid).execute()
       undefined
 
     #
@@ -347,13 +359,14 @@ module.exports = (HB)->
       @content
 
     applyDelete: ()->
+      res = super
       if @content?
         if @next_cl.type isnt "Delimiter"
           @content.deleteAllObservers()
         @content.applyDelete()
         @content.dontSync()
       @content = null
-      super
+      res
 
     cleanup: ()->
       super
@@ -363,26 +376,34 @@ module.exports = (HB)->
     # TODO: consider doing this in a more consistent manner. This could also be
     # done with execute. But currently, there are no specital Insert-types for ListManager.
     #
-    callOperationSpecificEvents: ()->
+    callOperationSpecificInsertEvents: ()->
       if @next_cl.type is "Delimiter" and @prev_cl.type isnt "Delimiter"
         # this replaces another Replaceable
         old_value = @prev_cl.content
-        @prev_cl.applyDelete()
         @parent.callEventDecorator [
           type: "update"
-          changed_by: @uid.creator
+          changedBy: @uid.creator
           oldValue: old_value
         ]
+        @prev_cl.applyDelete()
       else if @next_cl.type isnt "Delimiter"
-        # This will never be recognized by the user, because another
+        # This won't be recognized by the user, because another
         # concurrent operation is set as the current value of the RM
         @applyDelete()
       else # prev _and_ next are Delimiters. This is the first created Replaceable in the RM
         @parent.callEventDecorator [
           type: "add"
-          changed_by: @uid.creator
+          changedBy: @uid.creator
         ]
       undefined
+
+    callOperationSpecificDeleteEvents: (o)->
+      if @next_cl.type is "Delimiter"
+        @parent.callEventDecorator [
+          type: "delete"
+          changedBy: o.uid.creator
+          oldValue: @content
+        ]
 
     #
     # Encode this operation in such a way that it can be parsed by remote peers.

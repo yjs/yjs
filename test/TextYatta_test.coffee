@@ -56,7 +56,7 @@ describe "TextFramework", ->
       expect(change.object).to.equal(u)
       expect(change.value).to.equal("a")
       expect(change.position).to.equal(1)
-      expect(change.changed_by).to.equal('0')
+      expect(change.changedBy).to.equal('0')
       last_task = "observer1"
     u.observe observer1
     u.insertText 1, "a"
@@ -70,7 +70,7 @@ describe "TextFramework", ->
       expect(change.object).to.equal(u)
       expect(change.value).to.equal("x")
       expect(change.position).to.equal(0)
-      expect(change.changed_by).to.equal('1')
+      expect(change.changedBy).to.equal('1')
       last_task = "observer2"
     u.observe observer2
     v = @yTest.users[1].val("TextTest")
@@ -90,10 +90,10 @@ describe "TextFramework", ->
       expect(change.object).to.equal(u)
       expect(change.position).to.equal(1)
       expect(change.length).to.equal(1)
-      expect(change.changed_by).to.equal('0')
+      expect(change.changedBy).to.equal('0')
       last_task = "observer1"
     u.observe observer1
-    u.deleteText 1
+    u.deleteText 1, 1
     expect(last_task).to.equal("observer1")
     u.unobserve observer1
 
@@ -103,12 +103,12 @@ describe "TextFramework", ->
       expect(change.type).to.equal("delete")
       expect(change.object).to.equal(u)
       expect(change.position).to.equal(0)
-      expect(change.length).to.equal(0)
-      expect(change.changed_by).to.equal('1')
+      expect(change.length).to.equal(1)
+      expect(change.changedBy).to.equal('1')
       last_task = "observer2"
     u.observe observer2
     v = @yTest.users[1].val("TextTest")
-    v.deleteText 0
+    v.deleteText 0, 1
     @yTest.flushAll()
     expect(last_task).to.equal("observer2")
     u.unobserve observer2

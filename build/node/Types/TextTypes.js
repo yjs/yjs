@@ -147,15 +147,14 @@
       };
 
       WordType.prototype.insertText = function(position, content) {
-        var ith, left;
+        var ith;
         ith = this.getOperationByPosition(position);
-        left = ith.prev_cl;
-        return this.insertAfter(left, content);
+        return this.insertAfter(ith, content);
       };
 
       WordType.prototype.deleteText = function(position, length) {
         var d, delete_ops, i, o, _i;
-        o = this.getOperationByPosition(position);
+        o = this.getOperationByPosition(position + 1);
         delete_ops = [];
         for (i = _i = 0; 0 <= length ? _i < length : _i > length; i = 0 <= length ? ++_i : --_i) {
           if (o instanceof types.Delimiter) {

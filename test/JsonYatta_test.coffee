@@ -161,3 +161,106 @@ describe "JsonFramework", ->
     expect(@yTest.getSomeUser().val('null') is null).to.be.ok
 
 
+  it "Observers work on JSON Types (add type observers, local and foreign)", ->
+    u = @yTest.users[0]
+    @yTest.flushAll()
+    last_task = null
+    observer1 = (changes)->
+      expect(changes.length).to.equal(1)
+      change = changes[0]
+      expect(change.type).to.equal("add")
+      expect(change.object).to.equal(u)
+      expect(change.changedBy).to.equal('0')
+      expect(change.name).to.equal("newStuff")
+      last_task = "observer1"
+    u.observe observer1
+    u.val("newStuff","someStuff")
+    expect(last_task).to.equal("observer1")
+    u.unobserve observer1
+
+    observer2 = (changes)->
+      expect(changes.length).to.equal(1)
+      change = changes[0]
+      expect(change.type).to.equal("add")
+      expect(change.object).to.equal(u)
+      expect(change.changedBy).to.equal('1')
+      expect(change.name).to.equal("moreStuff")
+      last_task = "observer2"
+    u.observe observer2
+    v = @yTest.users[1]
+    v.val("moreStuff","someMoreStuff")
+    @yTest.flushAll()
+    expect(last_task).to.equal("observer2")
+    u.unobserve observer2
+
+  it "Observers work on JSON Types (update type observers, local and foreign)", ->
+    u = @yTest.users[0].val("newStuff","oldStuff").val("moreStuff","moreOldStuff")
+    @yTest.flushAll()
+    last_task = null
+    observer1 = (changes)->
+      expect(changes.length).to.equal(1)
+      change = changes[0]
+      expect(change.type).to.equal("update")
+      expect(change.object).to.equal(u)
+      expect(change.changedBy).to.equal('0')
+      expect(change.name).to.equal("newStuff")
+      expect(change.oldValue.val()).to.equal("oldStuff")
+      last_task = "observer1"
+    u.observe observer1
+    u.val("newStuff","someStuff")
+    expect(last_task).to.equal("observer1")
+    u.unobserve observer1
+
+    observer2 = (changes)->
+      expect(changes.length).to.equal(1)
+      change = changes[0]
+      expect(change.type).to.equal("update")
+      expect(change.object).to.equal(u)
+      expect(change.changedBy).to.equal('1')
+      expect(change.name).to.equal("moreStuff")
+      expect(change.oldValue.val()).to.equal("moreOldStuff")
+      last_task = "observer2"
+    u.observe observer2
+    v = @yTest.users[1]
+    v.val("moreStuff","someMoreStuff")
+    @yTest.flushAll()
+    expect(last_task).to.equal("observer2")
+    u.unobserve observer2
+
+
+  it "Observers work on JSON Types (delete type observers, local and foreign)", ->
+    u = @yTest.users[0].val("newStuff","oldStuff").val("moreStuff","moreOldStuff")
+    @yTest.flushAll()
+    last_task = null
+    observer1 = (changes)->
+      expect(changes.length).to.equal(1)
+      change = changes[0]
+      expect(change.type).to.equal("delete")
+      expect(change.object).to.equal(u)
+      expect(change.changedBy).to.equal('0')
+      expect(change.name).to.equal("newStuff")
+      expect(change.oldValue.val()).to.equal("oldStuff")
+      last_task = "observer1"
+    u.observe observer1
+    u.delete("newStuff")
+    expect(last_task).to.equal("observer1")
+    u.unobserve observer1
+
+    observer2 = (changes)->
+      expect(changes.length).to.equal(1)
+      change = changes[0]
+      expect(change.type).to.equal("delete")
+      expect(change.object).to.equal(u)
+      expect(change.changedBy).to.equal('1')
+      expect(change.name).to.equal("moreStuff")
+      expect(change.oldValue.val()).to.equal("moreOldStuff")
+      last_task = "observer2"
+    u.observe observer2
+    v = @yTest.users[1]
+    v.delete("moreStuff")
+    @yTest.flushAll()
+    expect(last_task).to.equal("observer2")
+    u.unobserve observer2
+
+
+

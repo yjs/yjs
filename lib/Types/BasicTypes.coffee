@@ -277,12 +277,7 @@ module.exports = (HB)->
         garbagecollect = true
       super garbagecollect
       if callLater
-        @parent.callEvent [
-              type: "insert"
-              position: @getPosition()
-              object: @parent # TODO: You can combine getPosition + getParent in a more efficient manner! (only left Delimiter will hold @parent)
-              changed_by: o.uid.creator
-            ]
+        @callOperationSpecificDeleteEvents(o)
       if @next_cl?.isDeleted()
         # garbage collect next_cl
         @next_cl.applyDelete()
@@ -378,16 +373,25 @@ module.exports = (HB)->
 
         @setParent @prev_cl.getParent() # do Insertions always have a parent?
         super # notify the execution_listeners
-        @callOperationSpecificEvents()
+        @callOperationSpecificInsertEvents()
         @
 
-    callOperationSpecificEvents: ()->
+    callOperationSpecificInsertEvents: ()->
       @parent?.callEvent [
         type: "insert"
         position: @getPosition()
         object: @parent
-        changed_by: @uid.creator
+        changedBy: @uid.creator
         value: @content
+      ]
+
+    callOperationSpecificDeleteEvents: (o)->
+      @parent.callEvent [
+        type: "delete"
+        position: @getPosition()
+        object: @parent # TODO: You can combine getPosition + getParent in a more efficient manner! (only left Delimiter will hold @parent)
+        length: 1
+        changedBy: o.uid.creator
       ]
 
     #

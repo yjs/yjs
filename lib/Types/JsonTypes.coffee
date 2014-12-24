@@ -145,7 +145,7 @@ module.exports = (HB)->
           that = @
           Object.observe @bound_json, (events)->
             for event in events
-              if not event.changed_by? and (event.type is "add" or event.type = "update")
+              if not event.changedBy? and (event.type is "add" or event.type = "update")
                 # this event is not created by Yatta.
                 that.val(event.name, event.object[event.name])
           @observe (events)->
@@ -162,7 +162,7 @@ module.exports = (HB)->
                     type: 'update'
                     name: event.name
                     oldValue: oldVal
-                    changed_by: event.changed_by
+                    changedBy: event.changedBy
                 else
                   notifier.performChange 'add', ()->
                       that.bound_json[event.name] = that.val(event.name)
@@ -172,7 +172,7 @@ module.exports = (HB)->
                     type: 'add'
                     name: event.name
                     oldValue: oldVal
-                    changed_by:event.changed_by
+                    changedBy:event.changedBy
       @bound_json
 
     #

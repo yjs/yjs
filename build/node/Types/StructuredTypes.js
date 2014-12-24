@@ -195,22 +195,21 @@
 
       ListManager.prototype.getOperationByPosition = function(position) {
         var o;
-        o = this.beginning.next_cl;
-        if ((position > 0 || o.isDeleted()) && !(o instanceof types.Delimiter)) {
-          while (o.isDeleted() && !(o instanceof types.Delimiter)) {
-            o = o.next_cl;
+        o = this.beginning;
+        while (true) {
+          if (o instanceof types.Delimiter && (o.prev_cl != null)) {
+            o = o.prev_cl;
+            while (o.isDeleted() || !(o instanceof types.Delimiter)) {
+              o = o.prev_cl;
+            }
+            break;
           }
-          while (true) {
-            if (o instanceof types.Delimiter) {
-              break;
-            }
-            if (position <= 0 && !o.isDeleted()) {
-              break;
-            }
-            o = o.next_cl;
-            if (!o.isDeleted()) {
-              position -= 1;
-            }
+          if (position <= 0 && !o.isDeleted()) {
+            break;
+          }
+          o = o.next_cl;
+          if (!o.isDeleted()) {
+            position -= 1;
           }
         }
         return o;

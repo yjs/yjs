@@ -1,11 +1,11 @@
 
 # ![Yatta!](https://dadamonad.github.io/files/layout/Yatta_logo.png)
 
-A Real-Time web framework that manages concurrency control for arbitrary data structures.
+A Real-Time web framework that manages concurrency control for arbitrary data types.
 Yatta! provides similar functionality as [ShareJs](https://github.com/share/ShareJS) and [OpenCoweb](https://github.com/opencoweb/coweb),
-but does not require you to understand how the internals work. The predefined data structures provide a simple API to access your shared data structures.
+but does not require you to understand how the internals work. The predefined data types provide a simple API to access your shared data types.
 
-Predefined data structures:
+Predefined data types:
 * Text - [Collaborative Text Editing Example](http://dadamonad.github.io/Yatta/examples/TextEditing/)
 * Json - [Tutorial](http://dadamonad.github.io/Yatta/examples/PeerJs-Json/)
 * XML - [XML Example](http://dadamonad.github.io/Yatta/examples/XmlExample/) Collaboratively manipulate the dom with native dom-features and jQuery.
@@ -27,6 +27,9 @@ Either clone this git repository, install it with [bower](http://bower.io/), or 
 bower install Yatta
 ```
 Then you include the libraries directly from the installation folder.
+```
+<script src="./bower_components/yatta.js"></script>
+```
 
 ### Npm
 ```
@@ -35,9 +38,7 @@ npm install yatta --save
 
 And use it like this with *npm*:
 ```
-Y = require("yatta");
-Y.createPeerJsConnector({key: 'xxx'}, function(Connector, user_id){
-  yatta = new Y.JsonFramework(user_id, Connector);
+Yatta = require("yatta");
 ```
 
 

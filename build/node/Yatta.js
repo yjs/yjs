@@ -42,7 +42,7 @@
   module.exports = createYatta;
 
   if ((typeof window !== "undefined" && window !== null) && (window.Yatta == null)) {
-    window.Yatta = Yatta;
+    window.Yatta = createYatta;
   }
 
 }).call(this);
