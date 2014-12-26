@@ -52,7 +52,7 @@ module.exports = (HB)->
         for name,o of @map
           if not o.isContentDeleted()
             obj = o.val()
-            if obj instanceof types.ImmutableObject or obj instanceof MapManager
+            if obj instanceof types.ImmutableObject # or obj instanceof MapManager TODO: do you want deep json? 
               obj = obj.val()
             result[name] = obj
         result

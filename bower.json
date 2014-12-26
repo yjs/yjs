@@ -25,6 +25,7 @@
     "tests"
   ],
   "dependencies": {
-    "peerjs": "~0.3.14"
+    "peerjs": "~0.3.14",
+    "polymer": "Polymer/polymer#~0.5.2"
   }
 }

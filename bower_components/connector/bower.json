@@ -20,11 +20,11 @@
   "ignore": [
     "**/.*",
     "node_modules",
-    "bower_components",
     "test",
     "tests"
   ],
   "dependencies": {
-    "polymer": "Polymer/polymer#~0.5.1"
+    "polymer": "Polymer/polymer#~0.5.1",
+    "peerjs": "~0.3.14"
   }
 }

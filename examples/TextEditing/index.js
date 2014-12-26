@@ -11,14 +11,15 @@
 
  First you have to include the following libraries in your html file:
  ```
-<script src="http://cdn.peerjs.com/0.3/peer.js"></script>
-<script src="../../build/browser/Frameworks/TextFramework.js"></script>
-<script src="../../build/browser/Connectors/PeerJsConnector.js"></script>
+<script src="../../bower_components/peerjs/peer.js"></script>
+<script src="../../bower_components/connector/peerjs-connector/peerjs-connector.js"></script>
+<script src="../../yatta.js"></script>
 <script src="./index.js"></script>
  ```
 Open [index.html](./index.html) in order to start collaboration.
  */
 var yatta;
+var connector;
 
 function init(){
     /**
@@ -30,25 +31,26 @@ function init(){
      This will connect to the server owned by the peerjs team.
      For now, you can use my API key.
     */
-     // var conn = {key: 'h7nlefbgavh1tt9'};
+    var options = {key: 'h7nlefbgavh1tt9'};
 
     /**
     This will connect to one of my peerjs instances.
     I can't guaranty that this will be always up. This is why you should use the previous method with the api key,
     or set up your own server.
     */
-    var conn = {
+    /*var options = {
       host: "terrific-peerjs.herokuapp.com",
       port: "", // this works because heroku can forward to the right port.
       // debug: true,
-    };
-
-    Y.createPeerJsConnector(conn, function(Connector, user_id){
+    };*/
+    var user_id = Math.ceil(Math.random()*1000);
+    connector = new PeerJsConnector(user_id, options);
       /**
        TextFramework is a shared text object. If you change something on this object,
        it will be instantaneously shared with all the other collaborators.
       */
-      yatta = new Y.TextFramework(user_id, Connector);
+      yatta = new Yatta(connector);
+      yatta.val()
 
       /**
        Get the url of this frame. If it has a url-encoded parameter
@@ -68,7 +70,7 @@ function init(){
        Connect to other peer.
        */
       if (peer_id.length > 0){
-        yatta.connector.connectToPeer(peer_id);
+        yatta.connector.join(peer_id);
       }
 
       /**
@@ -77,7 +79,14 @@ function init(){
        The .bind property is a method of the Word class. You can also use it with all the other Frameworks in Yatta (e.g. Json).
        */
       var textbox = document.getElementById("textfield");
-      yatta.bind(textbox);
-    });
+      function textbind(){
+        yatta.val("textbox").bind(textbox);
+      }
+      if(peer_id.length > 0){
+        connector.whenSynced([textbind]);
+      } else {
+        yatta.val("textbox",textbox.value)
+        textbind()
+      }
 }
 window.onload = init

@@ -25,7 +25,7 @@ gulp.task 'default', ['deploy']
 files =
   lib : ['./lib/**/*.coffee']
   build : ['./build/**']
-  browser : './lib/Yatta.coffee'
+  browser : ['./lib/yatta.coffee','./lib/yatta-element.coffee']
   #test : ['./test/**/*_test.coffee']
   test : ['./test/JsonYatta_test.coffee', './test/TextYatta_test.coffee']
   gulp : ['./gulpfile.coffee']
@@ -55,7 +55,6 @@ gulp.task 'build_browser', ->
       extensions: ['.coffee']
       debug : true
     .pipe rename
-      basename: "yatta"
       extname: ".js"
     .pipe gulp.dest './build/browser/'
     .pipe uglify()

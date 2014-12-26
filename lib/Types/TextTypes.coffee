@@ -206,34 +206,34 @@ module.exports = (HB)->
       word = @
       textfield.value = @val()
 
-      @on "insert", (event, op)->
-        o_pos = op.getPosition()
-        fix = (cursor)->
-          if cursor <= o_pos
-            cursor
-          else
-            cursor += 1
-            cursor
-        left = fix textfield.selectionStart
-        right = fix textfield.selectionEnd
+      @observe (events)->
+        for event in events
+          if event.type is "insert"
+            o_pos = event.position
+            fix = (cursor)->
+              if cursor <= o_pos
+                cursor
+              else
+                cursor += 1
+                cursor
+            left = fix textfield.selectionStart
+            right = fix textfield.selectionEnd
 
-        textfield.value = word.val()
-        textfield.setSelectionRange left, right
+            textfield.value = word.val()
+            textfield.setSelectionRange left, right
+          else if event.type is "delete"
+            o_pos = event.position
+            fix = (cursor)->
+              if cursor < o_pos
+                cursor
+              else
+                cursor -= 1
+                cursor
+            left = fix textfield.selectionStart
+            right = fix textfield.selectionEnd
 
-
-      @on "delete", (event, op)->
-        o_pos = op.getPosition()
-        fix = (cursor)->
-          if cursor < o_pos
-            cursor
-          else
-            cursor -= 1
-            cursor
-        left = fix textfield.selectionStart
-        right = fix textfield.selectionEnd
-
-        textfield.value = word.val()
-        textfield.setSelectionRange left, right
+            textfield.value = word.val()
+            textfield.setSelectionRange left, right
 
       # consume all text-insert changes.
       textfield.onkeypress = (event)->

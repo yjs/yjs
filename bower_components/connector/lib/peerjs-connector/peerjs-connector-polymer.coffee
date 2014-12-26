@@ -5,7 +5,7 @@ new Polymer 'peerjs-connector',
     if this.is_initialized
       throw new Error "You must not set the user_id twice!"
     else
-      this.initializeConnection()        
+      this.initializeConnection()
 
   initializeConnection: ()-> 
     if this.conn_id?
@@ -22,8 +22,7 @@ new Polymer 'peerjs-connector',
       writeIfAvailable 'debug', this.debug
       this.is_initialized = true;
       this.connector = new PeerJsConnector this.conn_id, options
-    
+
   ready: ()->
     if this.conn_id != null
       this.initializeConnection()
-  

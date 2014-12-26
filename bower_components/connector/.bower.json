@@ -19,22 +19,21 @@
   "ignore": [
     "**/.*",
     "node_modules",
-    "bower_components",
     "test",
     "tests"
   ],
   "dependencies": {
-    "polymer": "Polymer/polymer#~0.5.1"
+    "polymer": "Polymer/polymer#~0.5.1",
+    "peerjs": "~0.3.14"
   },
   "homepage": "https://github.com/DadaMonad/Connector",
-  "_release": "35f8d81ce7",
+  "_release": "27a5fbf2af",
   "_resolution": {
     "type": "branch",
     "branch": "master",
-    "commit": "35f8d81ce73ecac317b3dd7fabf32a871a4926a6"
+    "commit": "27a5fbf2af5c336df0dc4b27adbe43a0959bbdb1"
   },
   "_source": "git://github.com/DadaMonad/Connector.git",
   "_target": "*",
-  "_originalSource": "DadaMonad/Connector",
-  "_direct": true
+  "_originalSource": "DadaMonad/Connector"
 }

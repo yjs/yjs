@@ -14,7 +14,10 @@ class Connector
     @receive_handlers = []
     # A list of functions that are executed (left to right) when syncing with a peer. 
     @sync_process_order = []
-    
+  
+  getUniqueConnectionId: ->
+    @id # make sure, that every connector implementation does it like this
+  
   #
   # Execute a function _when_ we are connected. If not connected, wait until connected.
   # @param f {Function} Will be executed on the PeerJs-Connector context.
