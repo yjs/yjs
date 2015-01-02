@@ -1,0 +1,26 @@
+<link rel="import" href="../../yatta-element.html">
+
+<link rel="import" href="../../bower_components/connector/peerjs-connector/peerjs-connector.html">
+
+<polymer-element name="yatta-test" attributes="yatta connector stuff">
+  <template>
+    <peerjs-connector id="connector" conn_id="1234" key="h7nlefbgavh1tt9" connector={{connector}}></peerjs-connector>
+    <yatta-element connector={{connector}} val={{yatta}}>
+      <yatta-property name="stuff" val={{stuff}}>
+        <yatta-property id="otherstuff" name="otherstuff" val={{otherstuff}}>
+        </yatta-property>
+      </yatta-property>
+    </yatta-element>
+    <yatta-element val={{otherstuff}}>
+      <yatta-property name="nostuff" val={{nostuff}}>
+      </yatta-property>
+    </yatta-element>
+  </template>
+  <script>
+  Polymer({
+    ready: function(){
+      window.y_stuff_property = this.$.otherstuff;
+    }
+  })
+  </script>
+</polymer-element>

@@ -1,0 +1,24 @@
+{
+  "name": "peerjs",
+  "version": "0.3.14",
+  "homepage": "http://peerjs.com",
+  "authors": [
+    "Michelle Bu <michelle@michellebu.com>"
+  ],
+  "description": "Simple peer-to-peer data and media using WebRTC.",
+  "main": "peer.js",
+  "keywords": [
+    "WebRTC",
+    "peer",
+    "peerjs",
+    "p2p"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
