@@ -108,6 +108,7 @@ module.exports = (HB)->
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     #
     constructor: (uid, beginning, end, prev, next, origin)->
+      @textfields = []
       super uid, beginning, end, prev, next, origin
 
     #
@@ -123,6 +124,10 @@ module.exports = (HB)->
     type: "WordType"
 
     applyDelete: ()->
+      for textfield in @textfields
+        textfield.onkeypress = null
+        textfield.onpaste = null
+        textfield.oncut = null
       o = @beginning
       while o?
         o.applyDelete()
@@ -205,6 +210,7 @@ module.exports = (HB)->
     bind: (textfield)->
       word = @
       textfield.value = @val()
+      @textfields.push textfield
 
       @observe (events)->
         for event in events

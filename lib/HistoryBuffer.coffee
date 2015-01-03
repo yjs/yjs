@@ -22,6 +22,15 @@ class HistoryBuffer
     @reserved_identifier_counter = 0
     setTimeout @emptyGarbage, @garbageCollectTimeout
 
+  resetUserId: (id)->
+    own = @buffer[@user_id]
+    if own?
+      for o in own
+        o.uid.creator = id
+    @operation_counter[id] = @operation_counter[@user_id]
+    delete @operation_counter[@user_id]
+    @user_id = id
+
   emptyGarbage: ()=>
     for o in @garbage
       #if @getOperationCounter(o.uid.creator) > o.uid.op_number

@@ -34,9 +34,9 @@
         </p>
       </nav>
       <div id='filecontents'>
-        <h1 id="-yatta-https-dadamonad-github-io-files-layout-yatta_logo-png-"><img src="https://dadamonad.github.io/files/layout/Yatta_logo.png" alt="Yatta!"></h1><p>A Real-Time web framework that manages concurrency control for arbitrary data structures.
+        <h1 id="-yatta-https-dadamonad-github-io-files-layout-yatta_logo-png-"><img src="https://dadamonad.github.io/files/layout/Yatta_logo.png" alt="Yatta!"></h1><p>A Real-Time web framework that manages concurrency control for arbitrary data types.
 Yatta! provides similar functionality as <a href="https://github.com/share/ShareJS">ShareJs</a> and <a href="https://github.com/opencoweb/coweb">OpenCoweb</a>,
-but does not require you to understand how the internals work. The predefined data structures provide a simple API to access your shared data structures.</p><p>Predefined data structures:</p><ul>
+but does not require you to understand how the internals work. The predefined data types provide a simple API to access your shared data types.</p><p>Predefined data types:</p><ul>
 <li>Text - <a href="http://dadamonad.github.io/Yatta/examples/TextEditing/">Collaborative Text Editing Example</a></li>
 <li>Json - <a href="http://dadamonad.github.io/Yatta/examples/PeerJs-Json/">Tutorial</a></li>
 <li>XML - <a href="http://dadamonad.github.io/Yatta/examples/XmlExample/">XML Example</a> Collaboratively manipulate the dom with native dom-features and jQuery.</li>
@@ -47,11 +47,10 @@ but does not require you to understand how the internals work. The predefined da
 </ul>
 <h2 id="use-it-">Use it!</h2><p>The <a href="./examples/">examples</a> provide an excellent starting point for beginners. Also the <a href="http://dadamonad.github.io/Yatta/doc/">API Documentation</a> could prove to be very helpful.</p><p>Either clone this git repository, install it with <a href="http://bower.io/">bower</a>, or install it with <a href="https://www.npmjs.org/package/yatta">npm</a>.</p><h3 id="bower">Bower</h3>
 <pre><code>bower install Yatta
-</code></pre><p>Then you include the libraries directly from the installation folder.</p><h3 id="npm">Npm</h3>
+</code></pre><p>Then you include the libraries directly from the installation folder.</p><pre><code>&lt;script src=&quot;./bower_components/yatta.js&quot;&gt;&lt;/script&gt;
+</code></pre><h3 id="npm">Npm</h3>
 <pre><code>npm install yatta --save
-</code></pre><p>And use it like this with <em>npm</em>:</p><pre><code>Y = require(&quot;yatta&quot;);
-Y.createPeerJsConnector({key: &#39;xxx&#39;}, function(Connector, user_id){
-  yatta = new Y.JsonFramework(user_id, Connector);
+</code></pre><p>And use it like this with <em>npm</em>:</p><pre><code>Yatta = require(&quot;yatta&quot;);
 </code></pre><h2 id="about">About</h2><p>Find out more about the concurrent editing problem here
 <a href="http://opencoweb.org/ocwdocs/intro/openg.html">Cooperation, Concurrency, Conflicts, and Convergence</a> and here
 <a href="http://en.wikipedia.org/wiki/Operational_transformation">Operational Transformation (OT)</a></p><p>My Bachelor Thesis project aim was to develop a P2P OT Framework that enables collaboration on XML documents and supports
@@ -76,7 +75,7 @@ But I would become really motivated if you gave me some feedback :) (<a href="ht
 </ul>
 <h2 id="support">Support</h2><p>Please report <em>any</em> issues to the <a href="https://github.com/DadaMonad/Yatta/issues">Github issue page</a>!
 I would appreciate if developers gave me feedback on how <em>convenient</em> the framework is, and if it is easy to use. Particularly the XML-support may not support every DOM-methods - if you encounter a method that does not cause any change on other peers,
-please state function name, and sample parameters. However, there are browser-specific features, that Yatta won&#39;t support.</p><h2 id="license">License</h2><p>Yatta! is licensed under the <a href="./LICENSE.txt">MIT License</a>.</p><a href="&#109;&#97;&#x69;&#108;&#116;&#111;&#x3a;&#107;&#101;&#118;&#105;&#x6e;&#46;&#x6a;&#x61;&#104;&#110;&#115;&#64;&#114;&#119;&#x74;&#104;&#45;&#97;&#97;&#99;&#104;&#x65;&#x6e;&#x2e;&#x64;&#x65;">&#107;&#101;&#118;&#105;&#x6e;&#46;&#x6a;&#x61;&#104;&#110;&#115;&#64;&#114;&#119;&#x74;&#104;&#45;&#97;&#97;&#99;&#104;&#x65;&#x6e;&#x2e;&#x64;&#x65;</a>
+please state function name, and sample parameters. However, there are browser-specific features, that Yatta won&#39;t support.</p><h2 id="license">License</h2><p>Yatta! is licensed under the <a href="./LICENSE.txt">MIT License</a>.</p><a href="&#109;&#97;&#x69;&#108;&#x74;&#111;&#x3a;&#x6b;&#x65;&#118;&#105;&#x6e;&#x2e;&#x6a;&#97;&#x68;&#x6e;&#x73;&#x40;&#114;&#x77;&#116;&#x68;&#45;&#97;&#x61;&#99;&#x68;&#x65;&#x6e;&#46;&#100;&#101;">&#x6b;&#x65;&#118;&#105;&#x6e;&#x2e;&#x6a;&#97;&#x68;&#x6e;&#x73;&#x40;&#114;&#x77;&#116;&#x68;&#45;&#97;&#x61;&#99;&#x68;&#x65;&#x6e;&#46;&#100;&#101;</a>
 
 
 
@@ -85,7 +84,7 @@ please state function name, and sample parameters. However, there are browser-sp
       </div>
     </div>
     <div id='footer'>
-  December 23, 14 11:09:09 by
+  January 02, 15 22:41:24 by
   <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
     Codo
   </a>

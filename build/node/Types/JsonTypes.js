@@ -103,7 +103,7 @@
               _results = [];
               for (_i = 0, _len = events.length; _i < _len; _i++) {
                 event = events[_i];
-                if ((event.changed_by == null) && (event.type === "add" || (event.type = "update"))) {
+                if ((event.changedBy == null) && (event.type === "add" || (event.type = "update"))) {
                   _results.push(that.val(event.name, event.object[event.name]));
                 } else {
                   _results.push(void 0);
@@ -128,7 +128,7 @@
                       type: 'update',
                       name: event.name,
                       oldValue: oldVal,
-                      changed_by: event.changed_by
+                      changedBy: event.changedBy
                     }));
                   } else {
                     notifier.performChange('add', function() {
@@ -139,7 +139,7 @@
                       type: 'add',
                       name: event.name,
                       oldValue: oldVal,
-                      changed_by: event.changed_by
+                      changedBy: event.changedBy
                     }));
                   }
                 } else {

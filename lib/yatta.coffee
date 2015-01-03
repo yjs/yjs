@@ -5,7 +5,14 @@ Engine = require "./Engine"
 adaptConnector = require "./ConnectorAdapter"
 
 createYatta = (connector)->
-  user_id = connector.id # TODO: change to getUniqueId()
+  user_id = null
+  if connector.id?
+    user_id = connector.id # TODO: change to getUniqueId()
+  else
+    user_id = "_temp"
+    connector.whenUserIdSet (id)->
+      user_id = id
+      HB.resetUserId id
   HB = new HistoryBuffer user_id
   type_manager = json_types_uninitialized HB
   types = type_manager.types

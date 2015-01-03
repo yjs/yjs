@@ -35,38 +35,48 @@
       };
 
       MapManager.prototype.val = function(name, content) {
-        var o, obj, qqq, result, x, _ref, _ref1;
+        var o, obj, prop, result, _ref;
         if (content != null) {
           if (this.map[name] == null) {
             (new AddName(void 0, this, name)).execute();
           }
-          if (this.map[name] === null) {
-            qqq = this;
-            x = new AddName(void 0, this, name);
-            x.execute();
-          }
           this.map[name].replace(content);
           return this;
         } else if (name != null) {
-          obj = (_ref = this.map[name]) != null ? _ref.val() : void 0;
-          if (obj instanceof types.ImmutableObject) {
-            return obj.val();
+          prop = this.map[name];
+          if ((prop != null) && !prop.isContentDeleted()) {
+            obj = prop.val();
+            if (obj instanceof types.ImmutableObject) {
+              return obj.val();
+            } else {
+              return obj;
+            }
           } else {
-            return obj;
+            return void 0;
           }
         } else {
           result = {};
-          _ref1 = this.map;
-          for (name in _ref1) {
-            o = _ref1[name];
-            obj = o.val();
-            if (obj instanceof types.ImmutableObject || obj instanceof MapManager) {
-              obj = obj.val();
+          _ref = this.map;
+          for (name in _ref) {
+            o = _ref[name];
+            if (!o.isContentDeleted()) {
+              obj = o.val();
+              if (obj instanceof types.ImmutableObject) {
+                obj = obj.val();
+              }
+              result[name] = obj;
             }
-            result[name] = obj;
           }
           return result;
         }
+      };
+
+      MapManager.prototype["delete"] = function(name) {
+        var _ref;
+        if ((_ref = this.map[name]) != null) {
+          _ref.deleteContent();
+        }
+        return this;
       };
 
       return MapManager;
@@ -221,9 +231,12 @@
     ReplaceManager = (function(_super) {
       __extends(ReplaceManager, _super);
 
-      function ReplaceManager(event_porperties, event_this, uid, beginning, end, prev, next, origin) {
-        this.event_porperties = event_porperties;
+      function ReplaceManager(event_properties, event_this, uid, beginning, end, prev, next, origin) {
+        this.event_properties = event_properties;
         this.event_this = event_this;
+        if (this.event_properties['object'] == null) {
+          this.event_properties['object'] = this.event_this;
+        }
         ReplaceManager.__super__.constructor.call(this, uid, beginning, end, prev, next, origin);
       }
 
@@ -253,11 +266,11 @@
       ReplaceManager.prototype.callEventDecorator = function(events) {
         var event, name, prop, _i, _len, _ref;
         if (!this.isDeleted()) {
-          _ref = this.event_porperties;
-          for (name in _ref) {
-            prop = _ref[name];
-            for (_i = 0, _len = events.length; _i < _len; _i++) {
-              event = events[_i];
+          for (_i = 0, _len = events.length; _i < _len; _i++) {
+            event = events[_i];
+            _ref = this.event_properties;
+            for (name in _ref) {
+              prop = _ref[name];
               event[name] = prop;
             }
           }
@@ -267,9 +280,18 @@
       };
 
       ReplaceManager.prototype.replace = function(content, replaceable_uid) {
-        var o;
+        var o, relp;
         o = this.getLastOperation();
-        (new Replaceable(content, this, replaceable_uid, o, o.next_cl)).execute();
+        relp = (new Replaceable(content, this, replaceable_uid, o, o.next_cl)).execute();
+        return void 0;
+      };
+
+      ReplaceManager.prototype.isContentDeleted = function() {
+        return this.getLastOperation().isDeleted();
+      };
+
+      ReplaceManager.prototype.deleteContent = function() {
+        (new types.Delete(void 0, this.getLastOperation().uid)).execute();
         return void 0;
       };
 
@@ -324,6 +346,8 @@
       };
 
       Replaceable.prototype.applyDelete = function() {
+        var res;
+        res = Replaceable.__super__.applyDelete.apply(this, arguments);
         if (this.content != null) {
           if (this.next_cl.type !== "Delimiter") {
             this.content.deleteAllObservers();
@@ -332,36 +356,48 @@
           this.content.dontSync();
         }
         this.content = null;
-        return Replaceable.__super__.applyDelete.apply(this, arguments);
+        return res;
       };
 
       Replaceable.prototype.cleanup = function() {
         return Replaceable.__super__.cleanup.apply(this, arguments);
       };
 
-      Replaceable.prototype.callOperationSpecificEvents = function() {
+      Replaceable.prototype.callOperationSpecificInsertEvents = function() {
         var old_value;
         if (this.next_cl.type === "Delimiter" && this.prev_cl.type !== "Delimiter") {
           old_value = this.prev_cl.content;
-          this.prev_cl.applyDelete();
           this.parent.callEventDecorator([
             {
               type: "update",
-              changed_by: this.uid.creator,
+              changedBy: this.uid.creator,
               oldValue: old_value
             }
           ]);
+          this.prev_cl.applyDelete();
         } else if (this.next_cl.type !== "Delimiter") {
           this.applyDelete();
         } else {
           this.parent.callEventDecorator([
             {
               type: "add",
-              changed_by: this.uid.creator
+              changedBy: this.uid.creator
             }
           ]);
         }
         return void 0;
+      };
+
+      Replaceable.prototype.callOperationSpecificDeleteEvents = function(o) {
+        if (this.next_cl.type === "Delimiter") {
+          return this.parent.callEventDecorator([
+            {
+              type: "delete",
+              changedBy: o.uid.creator,
+              oldValue: this.content
+            }
+          ]);
+        }
       };
 
       Replaceable.prototype._encode = function() {

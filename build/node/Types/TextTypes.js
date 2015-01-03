@@ -197,37 +197,44 @@
         var word;
         word = this;
         textfield.value = this.val();
-        this.on("insert", function(event, op) {
-          var fix, left, o_pos, right;
-          o_pos = op.getPosition();
-          fix = function(cursor) {
-            if (cursor <= o_pos) {
-              return cursor;
+        this.observe(function(events) {
+          var event, fix, left, o_pos, right, _i, _len, _results;
+          _results = [];
+          for (_i = 0, _len = events.length; _i < _len; _i++) {
+            event = events[_i];
+            if (event.type === "insert") {
+              o_pos = event.position;
+              fix = function(cursor) {
+                if (cursor <= o_pos) {
+                  return cursor;
+                } else {
+                  cursor += 1;
+                  return cursor;
+                }
+              };
+              left = fix(textfield.selectionStart);
+              right = fix(textfield.selectionEnd);
+              textfield.value = word.val();
+              _results.push(textfield.setSelectionRange(left, right));
+            } else if (event.type === "delete") {
+              o_pos = event.position;
+              fix = function(cursor) {
+                if (cursor < o_pos) {
+                  return cursor;
+                } else {
+                  cursor -= 1;
+                  return cursor;
+                }
+              };
+              left = fix(textfield.selectionStart);
+              right = fix(textfield.selectionEnd);
+              textfield.value = word.val();
+              _results.push(textfield.setSelectionRange(left, right));
             } else {
-              cursor += 1;
-              return cursor;
+              _results.push(void 0);
             }
-          };
-          left = fix(textfield.selectionStart);
-          right = fix(textfield.selectionEnd);
-          textfield.value = word.val();
-          return textfield.setSelectionRange(left, right);
-        });
-        this.on("delete", function(event, op) {
-          var fix, left, o_pos, right;
-          o_pos = op.getPosition();
-          fix = function(cursor) {
-            if (cursor < o_pos) {
-              return cursor;
-            } else {
-              cursor -= 1;
-              return cursor;
-            }
-          };
-          left = fix(textfield.selectionStart);
-          right = fix(textfield.selectionEnd);
-          textfield.value = word.val();
-          return textfield.setSelectionRange(left, right);
+          }
+          return _results;
         });
         textfield.onkeypress = function(event) {
           var char, diff, new_pos, pos;

@@ -20,7 +20,7 @@ cache = require 'gulp-cached'
 
 
 
-gulp.task 'default', ['deploy']
+gulp.task 'default', ['build_browser']
 
 files =
   lib : ['./lib/**/*.coffee']
