@@ -1,0 +1,31 @@
+<link rel="import" href="../../yatta-element.html">
+
+<link rel="import" href="../../../Connector/xmpp-connector/xmpp-connector.html">
+<link rel="import" href="../../bower_components/paper-slider/paper-slider.html">
+
+<polymer-element name="yatta-test" attributes="yatta connector stuff">
+  <template>
+    <xmpp-connector id="connector" connector={{connector}}></xmpp-connector>
+    <yatta-element connector={{connector}} val={{yatta}}>
+      <yatta-property name="slider" val={{slider}}>
+      </yatta-property>
+      <yatta-property name="stuff" val={{stuff}}>
+        <yatta-property id="otherstuff" name="otherstuff" val={{otherstuff}}>
+        </yatta-property>
+      </yatta-property>
+    </yatta-element>
+    <yatta-element val={{otherstuff}}>
+      <yatta-property name="nostuff" val={{nostuff}}>
+      </yatta-property>
+    </yatta-element>
+    <paper-slider min="0" max="200" immediateValue={{slider}}></paper-slider>
+  </template>
+  <script>
+  Polymer({
+    ready: function(){
+      window.y_stuff_property = this.$.otherstuff;
+      this.yatta.val("slider",50)
+    }
+  })
+  </script>
+</polymer-element>

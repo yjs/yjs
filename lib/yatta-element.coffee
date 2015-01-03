@@ -46,7 +46,9 @@ Polymer "yatta-property",
         @val = @parentElement.val.val(@name,@val).val(@name)
         # TODO: please use instanceof instead of .type,
         # since it is more safe (consider someone putting a custom Object type here)
-      if @val.type is "JsonType"
+      else if @val.type is "JsonType"
         bindToChildren @
+      else if @val isnt @parentElement.val.val(@name)
+        @parentElement.val.val @name, @val
 
 

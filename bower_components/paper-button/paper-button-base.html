@@ -1,0 +1,121 @@
+<!--
+Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<!--
+@group Paper Elements
+
+`paper-button-base` is the base class for button-like elements with ripple and optional shadow.
+
+@element paper-button-base
+@mixins Polymer.CoreFocusable
+@status unstable
+-->
+
+<link href="../polymer/polymer.html" rel="import">
+<link href="../core-focusable/core-focusable.html" rel="import">
+<link href="../paper-ripple/paper-ripple.html" rel="import">
+
+<polymer-element name="paper-button-base" tabindex="0">
+
+<script>
+
+  (function() {
+
+    var p = {
+
+      eventDelegates: {
+        down: 'downAction'
+      },
+
+      activeChanged: function() {
+        this.super();
+
+        if (this.$.ripple) {
+          if (this.active) {
+            // FIXME: remove when paper-ripple can have a default 'down' state.
+            if (!this.lastEvent) {
+              var rect = this.getBoundingClientRect();
+              this.lastEvent = {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2
+              }
+            }
+            this.$.ripple.downAction(this.lastEvent);
+          } else {
+            this.$.ripple.upAction();
+          }
+        }
+
+        this.adjustZ();
+      },
+
+      disabledChanged: function() {
+        this._disabledChanged();
+        this.adjustZ();
+      },
+
+      recenteringTouchChanged: function() {
+        if (this.$.ripple) {
+          this.$.ripple.classList.toggle('recenteringTouch', this.recenteringTouch);
+        }
+      },
+
+      fillChanged: function() {
+        if (this.$.ripple) {
+          this.$.ripple.classList.toggle('fill', this.fill);
+        }
+      },
+
+      adjustZ: function() {
+        if (!this.$.shadow) {
+          return;
+        }
+        if (this.active) {
+          this.$.shadow.setZ(2);
+        } else if (this.disabled) {
+          this.$.shadow.setZ(0);
+        } else {
+          this.$.shadow.setZ(1);
+        }
+      },
+
+      downAction: function(e) {
+        this._downAction();
+
+        if (this.hasAttribute('noink')) {
+          return;
+        }
+
+        this.lastEvent = e;
+        if (!this.$.ripple) {
+          var ripple = document.createElement('paper-ripple');
+          ripple.setAttribute('id', 'ripple');
+          ripple.setAttribute('fit', '');
+          if (this.recenteringTouch) {
+            ripple.classList.add('recenteringTouch');
+          }
+          if (!this.fill) {
+            ripple.classList.add('circle');
+          }
+          this.$.ripple = ripple;
+          this.shadowRoot.insertBefore(ripple, this.shadowRoot.firstChild);
+          // No need to forward the event to the ripple because the ripple
+          // is triggered in activeChanged
+        }
+      }
+
+    };
+
+    Polymer.mixin2(p, Polymer.CoreFocusable);
+    Polymer(p);
+
+  })();
+
+</script>
+</polymer-element>
