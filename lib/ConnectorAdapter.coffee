@@ -14,9 +14,16 @@ adaptConnector = (connector, engine, HB, execution_listener)->
   sendStateVector = ()->
     HB.getOperationCounter()
   sendHb = (state_vector)->
-    HB._encode(state_vector)
+    json = HB._encode(state_vector)
+    if json.length > 0
+      json
+    else
+      null
   applyHb = (hb)->
-    engine.applyOpsCheckDouble hb
+    if hb?
+      engine.applyOpsCheckDouble hb
+    else
+      null
   connector.whenSyncing sendStateVector, sendHb, applyHb
 
   connector.whenReceiving (sender, op)->

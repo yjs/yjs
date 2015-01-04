@@ -18,15 +18,20 @@ class HistoryBuffer
     @garbage = [] # Will be cleaned on next call of garbageCollector
     @trash = [] # Is deleted. Wait until it is not used anymore.
     @performGarbageCollection = true
-    @garbageCollectTimeout = 1000
+    @garbageCollectTimeout = 30000
     @reserved_identifier_counter = 0
     setTimeout @emptyGarbage, @garbageCollectTimeout
 
   resetUserId: (id)->
     own = @buffer[@user_id]
     if own?
-      for o in own
+      for o_name,o of own
         o.uid.creator = id
+      if @buffer[id]?
+        throw new Error "You are re-assigning an old user id - this is not (yet) possible!"
+      @buffer[id] = own
+      delete @buffer[@user_id]
+
     @operation_counter[id] = @operation_counter[@user_id]
     delete @operation_counter[@user_id]
     @user_id = id
