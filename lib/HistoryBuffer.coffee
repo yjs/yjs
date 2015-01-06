@@ -18,7 +18,7 @@ class HistoryBuffer
     @garbage = [] # Will be cleaned on next call of garbageCollector
     @trash = [] # Is deleted. Wait until it is not used anymore.
     @performGarbageCollection = true
-    @garbageCollectTimeout = 30000
+    @garbageCollectTimeout = 2000
     @reserved_identifier_counter = 0
     setTimeout @emptyGarbage, @garbageCollectTimeout
 
@@ -96,6 +96,10 @@ class HistoryBuffer
     else
       @operation_counter[user_id]
 
+  isExpectedOperation: (o)->
+    @operation_counter[o.uid.creator] ?= 0
+    o.uid.op_number <= @operation_counter[o.uid.creator]
+
   #
   # Encode this operation in such a way that it can be parsed by remote peers.
   # TODO: Make this more efficient!
@@ -162,13 +166,30 @@ class HistoryBuffer
       @buffer[o.uid.creator] = {}
     if @buffer[o.uid.creator][o.uid.op_number]?
       throw new Error "You must not overwrite operations!"
+    if (o.uid.op_number.constructor isnt String) and (not @isExpectedOperation(o)) # you already do this in the engine, so delete it here!
+      throw new Error "this operation was not expected!"
+    @addToCounter(o)
     @buffer[o.uid.creator][o.uid.op_number] = o
-    @number_of_operations_added_to_HB ?= 0 # TODO: Debug, remove this
-    @number_of_operations_added_to_HB++
     o
 
   removeOperation: (o)->
     delete @buffer[o.uid.creator]?[o.uid.op_number]
+
+  # When the HB determines inconsistencies, then the invokeSync
+  # handler wil be called, which should somehow invoke the sync with another collaborator.
+  # The parameter of the sync handler is the user_id with wich an inconsistency was determined
+  setInvokeSyncHandler: (f)->
+    @invokeSync = f
+
+  # empty per default # TODO: do i need this?
+  invokeSync: ()->
+
+  # after you received the HB of another user (in the sync process),
+  # you renew your own state_vector to the state_vector of the other user
+  renewStateVector: (state_vector)->
+    for user,state of state_vector
+      if (not @operation_counter[user]?) or (@operation_counter[user] < state_vector[user])
+        @operation_counter[user] = state_vector[user]
 
   #
   # Increment the operation_counter that defines the current state of the Engine.
@@ -177,13 +198,11 @@ class HistoryBuffer
     if not @operation_counter[o.uid.creator]?
       @operation_counter[o.uid.creator] = 0
     if typeof o.uid.op_number is 'number' and o.uid.creator isnt @getUserId()
-      # TODO: fix this issue better.
-      # Operations should income in order
-      # Then you don't have to do this..
+      # TODO: check if operations are send in order
       if o.uid.op_number is @operation_counter[o.uid.creator]
         @operation_counter[o.uid.creator]++
-        while @getOperation({creator:o.uid.creator, op_number: @operation_counter[o.uid.creator]})?
-          @operation_counter[o.uid.creator]++
+      else
+        @invokeSync o.uid.creator
 
     #if @operation_counter[o.uid.creator] isnt (o.uid.op_number + 1)
       #console.log (@operation_counter[o.uid.creator] - (o.uid.op_number + 1))

@@ -7,7 +7,7 @@
  * Code distributed by Google as part of the polymer project is also
  * subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
  */
-// @version 0.5.1
+// @version 0.5.1-1
 if (typeof WeakMap === "undefined") {
   (function() {
     var defineProperty = Object.defineProperty;
@@ -47,7 +47,7 @@ if (typeof WeakMap === "undefined") {
 (function(global) {
   var registrationsTable = new WeakMap();
   var setImmediate;
-  if (/Trident/.test(navigator.userAgent)) {
+  if (/Trident|Edge/.test(navigator.userAgent)) {
     setImmediate = setTimeout;
   } else if (window.setImmediate) {
     setImmediate = window.setImmediate;
@@ -365,7 +365,7 @@ window.HTMLImports = window.HTMLImports || {
   };
   Object.defineProperty(document, "_currentScript", currentScriptDescriptor);
   Object.defineProperty(rootDocument, "_currentScript", currentScriptDescriptor);
-  var isIE = /Trident/.test(navigator.userAgent);
+  var isIE = /Trident|Edge/.test(navigator.userAgent);
   function whenReady(callback, doc) {
     doc = doc || rootDocument;
     whenDocumentReady(function() {
@@ -787,12 +787,7 @@ HTMLImports.addModule(function(scope) {
     },
     addElementToDocument: function(elt) {
       var port = this.rootImportForElement(elt.__importElement || elt);
-      var l = port.__insertedElements = port.__insertedElements || 0;
-      var refNode = port.nextElementSibling;
-      for (var i = 0; i < l; i++) {
-        refNode = refNode && refNode.nextElementSibling;
-      }
-      port.parentNode.insertBefore(elt, refNode);
+      port.parentNode.insertBefore(elt, port);
     },
     trackElement: function(elt, callback) {
       var self = this;
@@ -972,7 +967,9 @@ HTMLImports.addModule(function(scope) {
     var base = doc.createElement("base");
     base.setAttribute("href", url);
     if (!doc.baseURI) {
-      doc.baseURI = url;
+      Object.defineProperty(doc, "baseURI", {
+        value: url
+      });
     }
     var meta = doc.createElement("meta");
     meta.setAttribute("charset", "utf-8");
@@ -1031,16 +1028,19 @@ HTMLImports.addModule(function(scope) {
 });
 
 (function(scope) {
-  initializeModules = scope.initializeModules;
+  var initializeModules = scope.initializeModules;
+  var isIE = scope.isIE;
   if (scope.useNative) {
     return;
   }
-  if (typeof window.CustomEvent !== "function") {
-    window.CustomEvent = function(inType, dictionary) {
-      var e = document.createEvent("HTMLEvents");
-      e.initEvent(inType, dictionary.bubbles === false ? false : true, dictionary.cancelable === false ? false : true, dictionary.detail);
+  if (isIE && typeof window.CustomEvent !== "function") {
+    window.CustomEvent = function(inType, params) {
+      params = params || {};
+      var e = document.createEvent("CustomEvent");
+      e.initCustomEvent(inType, Boolean(params.bubbles), Boolean(params.cancelable), params.detail);
       return e;
     };
+    window.CustomEvent.prototype = window.Event.prototype;
   }
   initializeModules();
   var rootDocument = scope.rootDocument;

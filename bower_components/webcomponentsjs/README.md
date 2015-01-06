@@ -1,7 +1,7 @@
 webcomponents.js
 ================
 
-A suite of polyfills supporting the HTML web components specs:
+A suite of polyfills supporting the [Web Components](http://webcomponents.org) specs:
 
 **Custom Elements**: allows authors to define their own custom tags ([spec](https://w3c.github.io/webcomponents/spec/custom/)).
 
@@ -14,7 +14,7 @@ This also folds in polyfills for `MutationObserver` and `WeakMap`.
 
 ## Releases
 
-Pre-built (concatenated & minified) versions of the polyfills are maintained in the [tagged versions](https://github.com/Polymer/webcomponentsjs/releases) of this repo. There are two variants:
+Pre-built (concatenated & minified) versions of the polyfills are maintained in the [tagged versions](https://github.com/webcomponents/webcomponentsjs/releases) of this repo. There are two variants:
 
 `webcomponents.js` includes all of the polyfills.
 
@@ -36,3 +36,9 @@ Now you are ready to build the polyfills with:
     gulp build
 
 The builds will be placed into the `dist/` directory.
+
+## Contribute
+
+See the [contributing guide](CONTRIBUTING.md)
+
+

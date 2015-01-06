@@ -30,7 +30,7 @@ class Engine
   #
   # Apply a set of operations. E.g. the operations you received from another users HB._encode().
   # @note You must not use this method when you already have ops in your HB!
-  #
+  ###
   applyOpsBundle: (ops_json)->
     ops = []
     for o in ops_json
@@ -39,6 +39,7 @@ class Engine
       if not o.execute()
         @unprocessed_ops.push o
     @tryUnprocessed()
+  ###
 
   #
   # Same as applyOps but operations that are already in the HB are not applied.
@@ -53,22 +54,25 @@ class Engine
   # Apply a set of operations. (Helper for using applyOp on Arrays)
   # @see Engine.applyOp
   applyOps: (ops_json)->
-    for o in ops_json
-      @applyOp o
+    @applyOp ops_json
 
   #
   # Apply an operation that you received from another peer.
-  #
-  applyOp: (op_json)->
-    # $parse_and_execute will return false if $o_json was parsed and executed, otherwise the parsed operadion
-    o = @parseOperation op_json
-    @HB.addToCounter o
-    # @HB.addOperation o
-    if @HB.getOperation(o)?
-    else if not o.execute()
-      @unprocessed_ops.push o
-      window?.unprocessed_counter++ # TODO: del this
-      window?.unprocessed_types.push o.type
+  # TODO: make this more efficient!!
+  # - operations may only executed in order by creator, order them in object of arrays (key by creator)
+  # - you can probably make something like dependencies (creator1 waits for creator2)
+  applyOp: (op_json_array)->
+    if op_json_array.constructor isnt Array
+      op_json_array = [op_json_array]
+    for op_json in op_json_array
+      # $parse_and_execute will return false if $o_json was parsed and executed, otherwise the parsed operadion
+      o = @parseOperation op_json
+      # @HB.addOperation o
+      if @HB.getOperation(o)?
+        # nop
+      else if (not @HB.isExpectedOperation(o)) or (not o.execute())
+        @unprocessed_ops.push o
+        window?.unprocessed_types.push o.type # TODO: delete this
     @tryUnprocessed()
 
   #
@@ -77,18 +81,18 @@ class Engine
   #
   tryUnprocessed: ()->
     while true
-      window?.unprocessed_exec_counter++ # TODO: del this
       old_length = @unprocessed_ops.length
       unprocessed = []
       for op in @unprocessed_ops
         if @HB.getOperation(op)?
-        else if not op.execute()
+          # nop
+        else if (not @HB.isExpectedOperation(op)) or (not op.execute())
           unprocessed.push op
       @unprocessed_ops = unprocessed
       if @unprocessed_ops.length is old_length
         break
-
-
+    if @unprocessed_ops.length isnt 0
+      @HB.invokeSync()
 
 
 module.exports = Engine

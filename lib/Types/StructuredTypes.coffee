@@ -413,7 +413,7 @@ module.exports = (HB)->
         {
           'type': "Replaceable"
           'content': @content?.getUid()
-          'ReplaceManager' : @parent.getUid()
+          'replace_manager' : @parent.getUid()
           'prev': @prev_cl.getUid()
           'next': @next_cl.getUid()
           'uid' : @getUid()
@@ -425,7 +425,7 @@ module.exports = (HB)->
   parser["Replaceable"] = (json)->
     {
       'content' : content
-      'ReplaceManager' : parent
+      'replace_manager' : parent
       'uid' : uid
       'prev': prev
       'next': next
