@@ -28,6 +28,11 @@ Polymer "yatta-element",
     if @val? and @val.type is "JsonType"
       bindToChildren @
 
+  connectorChanged: ()->
+    if (not @val?)
+      @val = new Yatta @connector
+      bindToChildren @
+
 Polymer "yatta-property",
   ready: ()->
     if @val? and @name?
