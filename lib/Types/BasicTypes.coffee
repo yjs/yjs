@@ -273,18 +273,18 @@ module.exports = (HB)->
       if o?
         @deleted_by.push o
       garbagecollect = false
-      if not (@prev_cl? and @next_cl?) or @prev_cl.isDeleted()
+      if @next_cl.isDeleted()
         garbagecollect = true
       super garbagecollect
       if callLater
         @callOperationSpecificDeleteEvents(o)
-      if @next_cl?.isDeleted()
-        # garbage collect next_cl
-        @next_cl.applyDelete()
+      if @prev_cl?.isDeleted()
+        # garbage collect prev_cl
+        @prev_cl.applyDelete()
 
     cleanup: ()->
       # TODO: Debugging
-      if @prev_cl?.isDeleted()
+      if @next_cl?.isDeleted()
         # delete all ops that delete this insertion
         for d in @deleted_by
           d.cleanup()
@@ -300,7 +300,8 @@ module.exports = (HB)->
         @prev_cl.next_cl = @next_cl
         @next_cl.prev_cl = @prev_cl
         super
-
+      else if @next_cl? and @prev_cl?
+        throw new Error "This insertion was not supposed to be deleted!"
 
     #
     # @private

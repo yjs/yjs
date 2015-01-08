@@ -343,12 +343,13 @@ module.exports = (HB)->
     # @param {ReplaceManager} parent Used to replace this Replaceable with another one.
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     #
-    constructor: (content, parent, uid, prev, next, origin)->
+    constructor: (content, parent, uid, prev, next, origin, is_deleted)->
       @saveOperation 'content', content
       @saveOperation 'parent', parent
       if not (prev? and next?)
         throw new Error "You must define prev, and next for Replaceable-types!"
       super uid, prev, next, origin
+      @is_deleted = is_deleted
 
     type: "Replaceable"
 
@@ -379,12 +380,13 @@ module.exports = (HB)->
     callOperationSpecificInsertEvents: ()->
       if @next_cl.type is "Delimiter" and @prev_cl.type isnt "Delimiter"
         # this replaces another Replaceable
-        old_value = @prev_cl.content
-        @parent.callEventDecorator [
-          type: "update"
-          changedBy: @uid.creator
-          oldValue: old_value
-        ]
+        if not @is_deleted # When this is received from the HB, this could already be deleted!
+          old_value = @prev_cl.content
+          @parent.callEventDecorator [
+            type: "update"
+            changedBy: @uid.creator
+            oldValue: old_value
+          ]
         @prev_cl.applyDelete()
       else if @next_cl.type isnt "Delimiter"
         # This won't be recognized by the user, because another
@@ -417,6 +419,7 @@ module.exports = (HB)->
           'prev': @prev_cl.getUid()
           'next': @next_cl.getUid()
           'uid' : @getUid()
+          'is_deleted': @is_deleted
         }
       if @origin? and @origin isnt @prev_cl
         json["origin"] = @origin.getUid()
@@ -430,8 +433,9 @@ module.exports = (HB)->
       'prev': prev
       'next': next
       'origin' : origin
+      'is_deleted': is_deleted
     } = json
-    new Replaceable content, parent, uid, prev, next, origin
+    new Replaceable content, parent, uid, prev, next, origin, is_deleted
 
   types['ListManager'] = ListManager
   types['MapManager'] = MapManager

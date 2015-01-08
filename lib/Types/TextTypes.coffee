@@ -124,10 +124,6 @@ module.exports = (HB)->
     type: "WordType"
 
     applyDelete: ()->
-      for textfield in @textfields
-        textfield.onkeypress = null
-        textfield.onpaste = null
-        textfield.oncut = null
       o = @beginning
       while o?
         o.applyDelete()
@@ -141,9 +137,10 @@ module.exports = (HB)->
       @insertAfter @end.prev_cl, content
 
     insertAfter: (left, content)->
-      while left.isDeleted()
-        left = left.prev_cl # find the first character to the left, that is not deleted. Case position is 0, its the Delimiter.
       right = left.next_cl
+      while right.isDeleted()
+        right = right.next_cl # find the first character to the right, that is not deleted. In the case that position is 0, its the Delimiter.
+      left = right.prev_cl
       if content.type?
         (new TextInsert content, undefined, left, right).execute()
       else
@@ -243,6 +240,10 @@ module.exports = (HB)->
 
       # consume all text-insert changes.
       textfield.onkeypress = (event)->
+        if word.is_deleted
+          # if word is deleted, do not do anything ever again
+          textfield.onkeypress = null
+          return true
         char = null
         if event.key?
           if event.charCode is 32
@@ -265,8 +266,16 @@ module.exports = (HB)->
           event.preventDefault()
 
       textfield.onpaste = (event)->
+        if word.is_deleted
+          # if word is deleted, do not do anything ever again
+          textfield.onpaste = null
+          return true
         event.preventDefault()
       textfield.oncut = (event)->
+        if word.is_deleted
+          # if word is deleted, do not do anything ever again
+          textfield.oncut = null
+          return true
         event.preventDefault()
 
       #
@@ -277,6 +286,10 @@ module.exports = (HB)->
       #     Every browser supports keyCode. Let's stick with it for now..
       #
       textfield.onkeydown = (event)->
+        if word.is_deleted
+          # if word is deleted, do not do anything ever again
+          textfield.onkeydown = null
+          return true
         pos = Math.min textfield.selectionStart, textfield.selectionEnd
         diff = Math.abs(textfield.selectionEnd - textfield.selectionStart)
         if event.keyCode? and event.keyCode is 8 # Backspace

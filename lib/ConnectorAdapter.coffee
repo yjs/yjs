@@ -10,6 +10,9 @@ adaptConnector = (connector, engine, HB, execution_listener)->
     if o.uid.creator is HB.getUserId() and (typeof o.uid.op_number isnt "string")
       connector.broadcast o
 
+  if connector.invokeSync?
+    HB.setInvokeSyncHandler connector.invokeSync
+
   execution_listener.push send_
   # For the XMPPConnector: lets send it as an array
   # therefore, we have to restructure it later
@@ -43,6 +46,5 @@ adaptConnector = (connector, engine, HB, execution_listener)->
     if op.uid.creator isnt HB.getUserId()
       engine.applyOp op
 
-  HB.setInvokeSyncHandler connector.invokeSync
 
 module.exports = adaptConnector

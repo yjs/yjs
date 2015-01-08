@@ -77,15 +77,7 @@ gulp.task 'mocha', ->
   gulp.src files.test, { read: false }
     .pipe plumber()
     .pipe mocha {reporter : 'list'}
-    .pipe ignore.include '**/*.coffee'
-    .pipe browserify
-      transform: ['coffeeify']
-      extensions: ['.coffee']
-      debug: true
-    .pipe rename
-      extname: ".js"
-    .pipe gulp.dest 'build/test/'
-    .pipe gulpif '!**/', git.add({args : "-A"})
+
 
 gulp.task 'lint', ->
   gulp.src files.all
