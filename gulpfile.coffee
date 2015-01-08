@@ -68,7 +68,7 @@ gulp.task 'build_browser', ->
       debug: true
     .pipe rename
       extname: ".js"
-    .pipe gulp.dest './build/test'
+    .pipe gulp.dest './build/test/'
 
 gulp.task 'watch', ['build_browser','mocha'], ->
   gulp.watch files.all, ['build_browser', 'mocha']

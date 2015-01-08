@@ -194,6 +194,8 @@ module.exports = class Test
   testHBencoding: ()->
     # in case of JsonFramework, every user will create its JSON first! therefore, the testusers id must be small than all the others (see InsertType)
     @users[@users.length] = @makeNewUser (-1) # this does not want to join with anymody
+
+    @users[@users.length-1].HB.renewStateVector @users[0].HB.getOperationCounter()
     @users[@users.length-1].engine.applyOps @users[0].HB._encode()
 
     #if @getContent(@users.length-1) isnt @getContent(0)

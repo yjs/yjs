@@ -114,6 +114,7 @@ describe "TextFramework", ->
     u.unobserve observer2
 
   it "can handle many engines, many operations, concurrently (random)", ->
+    console.log("testiy deleted this TODO:dtrn")
     @yTest.run()
 
 

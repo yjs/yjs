@@ -125,19 +125,15 @@ module.exports = (HB)->
     # TODO: at the moment you don't consider changing of properties.
     # E.g.: let x = {a:[]}. Then x.a.push 1 wouldn't change anything
     #
-    toJson: ()->
+    toJson: (transform_to_value = false)->
       if not @bound_json? or not Object.observe? or true # TODO: currently, you are not watching mutable strings for changes, and, therefore, the @bound_json is not updated. TODO TODO  wuawuawua easy
         val = @val()
         json = {}
         for name, o of val
-          if not o?
-            json[name] = o
-          else if o.constructor is {}.constructor
-            json[name] = @val(name).toJson()
-          else if o instanceof types.Operation
-            while o instanceof types.Operation
-              o = o.val()
-            json[name] = o
+          if o instanceof JsonType
+            json[name] = o.toJson(transform_to_value)
+          else if transform_to_value and o instanceof types.Operation
+            json[name] = o.val()
           else
             json[name] = o
         @bound_json = json

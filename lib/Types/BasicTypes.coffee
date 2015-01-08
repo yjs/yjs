@@ -29,7 +29,7 @@ module.exports = (HB)->
       if uid?
         @uid = uid
 
-    type: "Insert"
+    type: "Operation"
 
     #
     # Add an event listener. It depends on the operation which events are supported.
@@ -284,13 +284,13 @@ module.exports = (HB)->
 
     cleanup: ()->
       # TODO: Debugging
-      if @next_cl?.isDeleted()
+      if @next_cl.isDeleted()
         # delete all ops that delete this insertion
         for d in @deleted_by
           d.cleanup()
 
-        # throw new Error "left is not deleted. inconsistency!, wrararar"
-        # delete origin references to the right
+        # throw new Error "right is not deleted. inconsistency!, wrararar"
+        # change origin references to the right
         o = @next_cl
         while o.type isnt "Delimiter"
           if o.origin is @
@@ -479,10 +479,10 @@ module.exports = (HB)->
 
     applyDelete: ()->
       super()
-      o = @next_cl
+      o = @prev_cl
       while o?
         o.applyDelete()
-        o = o.next_cl
+        o = o.prev_cl
       undefined
 
     cleanup: ()->

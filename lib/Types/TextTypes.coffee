@@ -124,10 +124,10 @@ module.exports = (HB)->
     type: "WordType"
 
     applyDelete: ()->
-      o = @beginning
+      o = @end
       while o?
         o.applyDelete()
-        o = o.next_cl
+        o = o.prev_cl
       super()
 
     cleanup: ()->

@@ -37,7 +37,7 @@ class JsonTest extends Test
         @getRandomRoot user_num, p
 
   getContent: (user_num)->
-    @users[user_num].toJson()
+    @users[user_num].toJson(true)
 
   getGeneratingFunctions: (user_num)->
     types = @users[user_num].types
@@ -124,9 +124,11 @@ describe "JsonFramework", ->
     u2 = @yTest.users[1]
     ops1 = u1.HB._encode()
     ops2 = u2.HB._encode()
+    u1.HB.renewStateVector u2.HB.getOperationCounter()
+    u2.HB.renewStateVector u1.HB.getOperationCounter()
     u1.engine.applyOps ops2
     u2.engine.applyOps ops1
-    expect(test.getContent(0)).to.equal(@yTest.getContent(1))
+    expect(test.getContent(0)).to.deep.equal(@yTest.getContent(1))
 
   it "can handle creaton of complex json (1)", ->
     @yTest.users[0].val('a', 'q')
