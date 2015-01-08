@@ -18,7 +18,7 @@ class HistoryBuffer
     @garbage = [] # Will be cleaned on next call of garbageCollector
     @trash = [] # Is deleted. Wait until it is not used anymore.
     @performGarbageCollection = true
-    @garbageCollectTimeout = 2000
+    @garbageCollectTimeout = 20000
     @reserved_identifier_counter = 0
     setTimeout @emptyGarbage, @garbageCollectTimeout
 
