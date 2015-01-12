@@ -46,5 +46,7 @@ adaptConnector = (connector, engine, HB, execution_listener)->
     if op.uid.creator isnt HB.getUserId()
       engine.applyOp op
 
+  if connector._whenBoundToYatta?
+    connector._whenBoundToYatta()
 
 module.exports = adaptConnector

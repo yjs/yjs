@@ -53,7 +53,7 @@ Polymer "yatta-property",
         # since it is more safe (consider someone putting a custom Object type here)
       else if @val.type is "JsonType"
         bindToChildren @
-      else if @val isnt @parentElement.val.val(@name)
+      else if @parentElement.val?.val? and @val isnt @parentElement.val.val(@name)
         @parentElement.val.val @name, @val
 
 

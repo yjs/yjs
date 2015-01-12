@@ -175,7 +175,7 @@ module.exports = (HB)->
     # Whether the default is 'mutable' (true) or 'immutable' (false)
     #
     mutable_default:
-      true
+      false
 
     #
     # Set if the default is 'mutable' or 'immutable'
