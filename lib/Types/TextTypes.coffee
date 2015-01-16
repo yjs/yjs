@@ -320,7 +320,7 @@ module.exports = (HB)->
           else
             char = event.key
         else
-          char = String.fromCharCode event.keyCode
+          char = window.String.fromCharCode event.keyCode
         if char.length > 0
           pos = Math.min textfield.selectionStart, textfield.selectionEnd
           diff = Math.abs(textfield.selectionEnd - textfield.selectionStart)

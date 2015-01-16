@@ -25,7 +25,7 @@ Polymer "yatta-element",
       bindToChildren @
 
   valChanged: ()->
-    if @val? and @val.type is "JsonType"
+    if @val? and @val.type is "Object"
       bindToChildren @
 
   connectorChanged: ()->
@@ -42,7 +42,7 @@ Polymer "yatta-property",
         # since it is more safe (consider someone putting a custom Object type here)
       else if typeof @val is "string"
         @parentElement.val(@name,@val)
-      if @val.type is "JsonType"
+      if @val.type is "Object"
         bindToChildren @
 
   valChanged: ()->
@@ -51,7 +51,7 @@ Polymer "yatta-property",
         @val = @parentElement.val.val(@name,@val).val(@name)
         # TODO: please use instanceof instead of .type,
         # since it is more safe (consider someone putting a custom Object type here)
-      else if @val.type is "JsonType"
+      else if @val.type is "Object"
         bindToChildren @
       else if @parentElement.val?.val? and @val isnt @parentElement.val.val(@name)
         @parentElement.val.val @name, @val
