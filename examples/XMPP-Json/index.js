@@ -49,5 +49,5 @@ window.onload = function(){
       }
     }
   });
-  yatta.val("textfield","");
+  yatta.val("textfield","", "mutable");
 };

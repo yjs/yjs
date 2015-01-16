@@ -22,14 +22,12 @@ module.exports = (HB)->
     # @param {String} content The content of this Insert-type Operation. Usually you restrict the length of content to size 1
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     #
-    constructor: (content, uid, prev, next, origin)->
+    constructor: (content, uid, prev, next, origin, parent)->
       if content?.uid?.creator
         @saveOperation 'content', content
       else
         @content = content
-      if not (prev? and next?)
-        throw new Error "You must define prev, and next for TextInsert-types!"
-      super uid, prev, next, origin
+      super uid, prev, next, origin, parent
 
     type: "TextInsert"
 
@@ -78,13 +76,14 @@ module.exports = (HB)->
           'uid' : @getUid()
           'prev': @prev_cl.getUid()
           'next': @next_cl.getUid()
+          'origin': @origin.getUid()
+          'parent': @parent.getUid()
         }
+
       if @content?.getUid?
         json['content'] = @content.getUid()
       else
         json['content'] = @content
-      if @origin isnt @prev_cl
-        json["origin"] = @origin.getUid()
       json
 
   parser["TextInsert"] = (json)->
@@ -94,8 +93,9 @@ module.exports = (HB)->
       'prev': prev
       'next': next
       'origin' : origin
+      'parent' : parent
     } = json
-    new TextInsert content, uid, prev, next, origin
+    new TextInsert content, uid, prev, next, origin, parent
 
   #
   # Handles a WordType-like data structures with support for insertText/deleteText at a word-position.
@@ -107,9 +107,9 @@ module.exports = (HB)->
     # @private
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     #
-    constructor: (uid, beginning, end, prev, next, origin)->
+    constructor: (uid)->
       @textfields = []
-      super uid, beginning, end, prev, next, origin
+      super uid
 
     #
     # Identifies this class.
@@ -331,27 +331,14 @@ module.exports = (HB)->
       json = {
         'type': "WordType"
         'uid' : @getUid()
-        'beginning' : @beginning.getUid()
-        'end' : @end.getUid()
       }
-      if @prev_cl?
-        json['prev'] = @prev_cl.getUid()
-      if @next_cl?
-        json['next'] = @next_cl.getUid()
-      if @origin? # and @origin isnt @prev_cl
-        json["origin"] = @origin().getUid()
       json
 
   parser['WordType'] = (json)->
     {
       'uid' : uid
-      'beginning' : beginning
-      'end' : end
-      'prev': prev
-      'next': next
-      'origin' : origin
     } = json
-    new WordType uid, beginning, end, prev, next, origin
+    new WordType uid
 
   types['TextInsert'] = TextInsert
   types['TextDelete'] = TextDelete

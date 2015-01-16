@@ -97,22 +97,6 @@ describe "JsonFramework", ->
     expect(change2).to.equal 8
   ###
 
-  it "has a JsonTypeWrapper", ->
-    y = this.yTest.getSomeUser()
-    y.val('x',"dtrn", 'immutable')
-    y.val('set',{x:"x"}, 'immutable')
-    w = y.value
-    w.x
-    w.set = {y:""}
-    w.x
-    w.set
-    w.set.x
-    expect(w.x).to.equal("dtrn")
-    expect(w.set.x).to.equal("x")
-    y.value.x = {q:4}
-    expect(y.value.x.q).to.equal(4)
-
-
   it "has a working test suite", ->
     @yTest.compareAll()
 
@@ -131,17 +115,17 @@ describe "JsonFramework", ->
     expect(test.getContent(0)).to.deep.equal(@yTest.getContent(1))
 
   it "can handle creaton of complex json (1)", ->
-    @yTest.users[0].val('a', 'q')
-    @yTest.users[2].val('a', 't')
+    @yTest.users[0].val('a', 'q', "mutable")
+    @yTest.users[1].val('a', 't', "mutable")
     @yTest.compareAll()
-    q = @yTest.users[1].val('a') 
+    q = @yTest.users[2].val('a')
     q.insertText(0,'A')
     @yTest.compareAll()
     expect(@yTest.getSomeUser().value.a.val()).to.equal("At")
 
   it "can handle creaton of complex json (2)", ->
     @yTest.getSomeUser().val('x', {'a':'b'})
-    @yTest.getSomeUser().val('a', {'a':{q:"dtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt"}})
+    @yTest.getSomeUser().val('a', {'a':{q:"dtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt"}}, "mutable")
     @yTest.getSomeUser().val('b', {'a':{}})
     @yTest.getSomeUser().val('c', {'a':'c'})
     @yTest.getSomeUser().val('c', {'a':'b'})
@@ -176,7 +160,7 @@ describe "JsonFramework", ->
       expect(change.name).to.equal("newStuff")
       last_task = "observer1"
     u.observe observer1
-    u.val("newStuff","someStuff")
+    u.val("newStuff","someStuff","mutable")
     expect(last_task).to.equal("observer1")
     u.unobserve observer1
 
@@ -196,7 +180,7 @@ describe "JsonFramework", ->
     u.unobserve observer2
 
   it "Observers work on JSON Types (update type observers, local and foreign)", ->
-    u = @yTest.users[0].val("newStuff","oldStuff").val("moreStuff","moreOldStuff")
+    u = @yTest.users[0].val("newStuff","oldStuff","mutable").val("moreStuff","moreOldStuff","mutable")
     @yTest.flushAll()
     last_task = null
     observer1 = (changes)->
@@ -231,7 +215,7 @@ describe "JsonFramework", ->
 
 
   it "Observers work on JSON Types (delete type observers, local and foreign)", ->
-    u = @yTest.users[0].val("newStuff","oldStuff").val("moreStuff","moreOldStuff")
+    u = @yTest.users[0].val("newStuff","oldStuff","mutable").val("moreStuff","moreOldStuff","mutable")
     @yTest.flushAll()
     last_task = null
     observer1 = (changes)->

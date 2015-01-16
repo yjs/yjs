@@ -17,9 +17,7 @@ class TextTest extends Test
 
   makeNewUser: (userId)->
     conn = new Connector userId
-    y = new Yatta conn
-    y.val("TextTest","","mutable")
-    y
+    new Yatta conn
 
   getRandomRoot: (user_num)->
     @users[user_num].val("TextTest")
@@ -35,6 +33,8 @@ describe "TextFramework", ->
     test_user_connector = new Connector 'test_user'
     @test_user = @yTest.makeNewUser 'test_user', test_user_connector
     test_user_connector.join @users[0].connector
+    @users[0].val("TextTest","","mutable")
+    @yTest.flushAll()
     done()
 
   it "simple multi-char insert", ->
@@ -46,7 +46,7 @@ describe "TextFramework", ->
     expect(u.val()).to.equal("abcxyz")
 
   it "Observers work on shared Text (insert type observers, local and foreign)", ->
-    u = @yTest.users[0].val("TextTest","my awesome Text").val("TextTest")
+    u = @yTest.users[0].val("TextTest","my awesome Text","mutable").val("TextTest")
     @yTest.flushAll()
     last_task = null
     observer1 = (changes)->
@@ -80,7 +80,7 @@ describe "TextFramework", ->
     u.unobserve observer2
 
   it "Observers work on shared Text (delete type observers, local and foreign)", ->
-    u = @yTest.users[0].val("TextTest","my awesome Text").val("TextTest")
+    u = @yTest.users[0].val("TextTest","my awesome Text","mutable").val("TextTest")
     @yTest.flushAll()
     last_task = null
     observer1 = (changes)->

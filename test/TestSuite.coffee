@@ -12,9 +12,9 @@ Connector = require "../bower_components/connector/lib/test-connector/test-conne
 module.exports = class Test
   constructor: (@name_suffix = "")->
     @number_of_test_cases_multiplier = 1
-    @repeat_this = 1 * @number_of_test_cases_multiplier
-    @doSomething_amount = 50 * @number_of_test_cases_multiplier
-    @number_of_engines = 4 + @number_of_test_cases_multiplier - 1
+    @repeat_this = 503 * @number_of_test_cases_multiplier
+    @doSomething_amount = 5 * @number_of_test_cases_multiplier
+    @number_of_engines = 3 + @number_of_test_cases_multiplier - 1
 
     @time = 0 # denotes to the time when run was started
     @ops = 0 # number of operations (used with @time)

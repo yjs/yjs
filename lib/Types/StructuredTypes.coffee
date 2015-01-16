@@ -33,9 +33,7 @@ module.exports = (HB)->
     #
     val: (name, content)->
       if content?
-        if not @map[name]?
-          (new AddName undefined, @, name).execute()
-        @map[name].replace content
+        @retrieveSub(name).replace content
         @
       else if name?
         prop = @map[name]
@@ -60,85 +58,22 @@ module.exports = (HB)->
     delete: (name)->
       @map[name]?.deleteContent()
       @
-  #
-  # @nodoc
-  # When a new property in a map manager is created, then the uids of the inserted Operations
-  # must be unique (think about concurrent operations). Therefore only an AddName operation is allowed to
-  # add a property in a MapManager. If two AddName operations on the same MapManager name happen concurrently
-  # only one will AddName operation will be executed.
-  #
-  class AddName extends types.Operation
 
-    #
-    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
-    # @param {Object} map_manager Uid or reference to the MapManager.
-    # @param {String} name Name of the property that will be added.
-    #
-    constructor: (uid, map_manager, @name)->
-      @saveOperation 'map_manager', map_manager
-      super uid
-
-    type: "AddName"
-
-    applyDelete: ()->
-      super()
-
-    cleanup: ()->
-      super()
-
-    #
-    # If map_manager doesn't have the property name, then add it.
-    # The ReplaceManager that is being written on the property is unique
-    # in such a way that if AddName is executed (from another peer) it will
-    # always have the same result (ReplaceManager, and its beginning and end are the same)
-    #
-    execute: ()->
-      if not @validateSavedOperations()
-        return false
-      else
-        # helper for cloning an object
-        clone = (o)->
-          p = {}
-          for name,value of o
-            p[name] = value
-          p
-        uid_r = clone(@map_manager.getUid())
-        uid_r.doSync = false
-        uid_r.op_number = "_#{uid_r.op_number}_RM_#{@name}"
-        if not HB.getOperation(uid_r)?
-          uid_beg = clone(uid_r)
-          uid_beg.op_number = "#{uid_r.op_number}_beginning"
-          uid_end = clone(uid_r)
-          uid_end.op_number = "#{uid_r.op_number}_end"
-          beg = (new types.Delimiter uid_beg, undefined, uid_end).execute()
-          end = (new types.Delimiter uid_end, beg, undefined).execute()
-          event_properties =
-            name: @name
-          event_this = @map_manager
-          @map_manager.map[@name] = new ReplaceManager event_properties, event_this, uid_r, beg, end
-          @map_manager.map[@name].setParent @map_manager, @name
-          (@map_manager.map[@name].add_name_ops ?= []).push @
-          @map_manager.map[@name].execute()
-        super
-
-    #
-    # Encode this operation in such a way that it can be parsed by remote peers.
-    #
-    _encode: ()->
-      {
-        'type' : "AddName"
-        'uid' : @getUid()
-        'map_manager' : @map_manager.getUid()
-        'name' : @name
-      }
-
-  parser['AddName'] = (json)->
-    {
-      'map_manager' : map_manager
-      'uid' : uid
-      'name' : name
-    } = json
-    new AddName uid, map_manager, name
+    retrieveSub: (property_name)->
+      if not @map[property_name]?
+        event_properties =
+          name: property_name
+        event_this = @
+        map_uid = @cloneUid()
+        map_uid.sub = property_name
+        rm_uid =
+          noOperation: true
+          alt: map_uid
+        rm = new ReplaceManager event_properties, event_this, rm_uid # this operation shall not be saved in the HB
+        @map[property_name] = rm
+        rm.setParent @, property_name
+        rm.execute()
+      @map[property_name]
 
   #
   # @nodoc
@@ -151,17 +86,13 @@ module.exports = (HB)->
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Delimiter} beginning Reference or Object.
     # @param {Delimiter} end Reference or Object.
-    constructor: (uid, beginning, end, prev, next, origin)->
-      if beginning? and end?
-        @saveOperation 'beginning', beginning
-        @saveOperation 'end', end
-      else
-        @beginning = new types.Delimiter undefined, undefined, undefined
-        @end =       new types.Delimiter undefined, @beginning, undefined
-        @beginning.next_cl = @end
-        @beginning.execute()
-        @end.execute()
-      super uid, prev, next, origin
+    constructor: (uid)->
+      @beginning = new types.Delimiter undefined, undefined
+      @end =       new types.Delimiter @beginning, undefined
+      @beginning.next_cl = @end
+      @beginning.execute()
+      @end.execute()
+      super uid
 
     type: "ListManager"
 
@@ -236,10 +167,10 @@ module.exports = (HB)->
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Delimiter} beginning Reference or Object.
     # @param {Delimiter} end Reference or Object.
-    constructor: (@event_properties, @event_this, uid, beginning, end, prev, next, origin)->
+    constructor: (@event_properties, @event_this, uid, beginning, end)->
       if not @event_properties['object']?
         @event_properties['object'] = @event_this
-      super uid, beginning, end, prev, next, origin
+      super uid, beginning, end
 
     type: "ReplaceManager"
 
@@ -248,10 +179,6 @@ module.exports = (HB)->
       while o?
         o.applyDelete()
         o = o.next_cl
-      # if this was created by an AddName operation, delete it too
-      if @add_name_ops?
-        for o in @add_name_ops
-          o.applyDelete()
       super()
 
     cleanup: ()->
@@ -312,24 +239,7 @@ module.exports = (HB)->
           'beginning' : @beginning.getUid()
           'end' : @end.getUid()
         }
-      if @prev_cl? and @next_cl?
-        json['prev'] = @prev_cl.getUid()
-        json['next'] = @next_cl.getUid()
-      if @origin? # TODO: do this everywhere: and @origin isnt @prev_cl
-        json["origin"] = @origin().getUid()
       json
-
-  parser["ReplaceManager"] = (json)->
-    {
-      'uid' : uid
-      'prev': prev
-      'next': next
-      'origin' : origin
-      'beginning' : beginning
-      'end' : end
-    } = json
-    new ReplaceManager uid, beginning, end, prev, next, origin
-
 
   #
   # @nodoc
@@ -346,9 +256,7 @@ module.exports = (HB)->
     constructor: (content, parent, uid, prev, next, origin, is_deleted)->
       @saveOperation 'content', content
       @saveOperation 'parent', parent
-      if not (prev? and next?)
-        throw new Error "You must define prev, and next for Replaceable-types!"
-      super uid, prev, next, origin
+      super uid, prev, next, origin # Parent is already saved by Replaceable
       @is_deleted = is_deleted
 
     type: "Replaceable"
@@ -415,20 +323,19 @@ module.exports = (HB)->
         {
           'type': "Replaceable"
           'content': @content?.getUid()
-          'replace_manager' : @parent.getUid()
+          'parent' : @parent.getUid()
           'prev': @prev_cl.getUid()
           'next': @next_cl.getUid()
+          'origin' : @origin.getUid()
           'uid' : @getUid()
           'is_deleted': @is_deleted
         }
-      if @origin? and @origin isnt @prev_cl
-        json["origin"] = @origin.getUid()
       json
 
   parser["Replaceable"] = (json)->
     {
       'content' : content
-      'replace_manager' : parent
+      'parent' : parent
       'uid' : uid
       'prev': prev
       'next': next

@@ -31,6 +31,9 @@ module.exports = (HB)->
 
     type: "Operation"
 
+    retrieveSub: ()->
+      throw new Error "sub properties are not enable on this operation type!"
+
     #
     # Add an event listener. It depends on the operation which events are supported.
     # @param {Function} f f is executed in case the event fires.
@@ -101,7 +104,16 @@ module.exports = (HB)->
     # Computes a unique identifier (uid) that identifies this operation.
     #
     getUid: ()->
-      @uid
+      if not @uid.noOperation?
+        @uid
+      else
+        @uid.alt # could be (safely) undefined
+
+    cloneUid: ()->
+      uid = {}
+      for n,v of @getUid()
+        uid[n] = v
+      uid
 
     dontSync: ()->
       @uid.doSync = false
@@ -119,9 +131,10 @@ module.exports = (HB)->
         # There is only one other place, where this can be done - before an Insertion
         # is executed (because we need the creator_id)
         @uid = HB.getNextOperationIdentifier()
-      HB.addOperation @
-      for l in execution_listener
-        l @_encode()
+      if not @uid.noOperation?
+        HB.addOperation @
+        for l in execution_listener
+          l @_encode()
       @
 
     #
@@ -178,7 +191,6 @@ module.exports = (HB)->
       if not success
         @unchecked = uninstantiated
       success
-
 
 
   #
@@ -249,7 +261,8 @@ module.exports = (HB)->
     # @param {Operation} prev_cl The predecessor of this operation in the complete-list (cl)
     # @param {Operation} next_cl The successor of this operation in the complete-list (cl)
     #
-    constructor: (uid, prev_cl, next_cl, origin)->
+    constructor: (uid, prev_cl, next_cl, origin, parent)->
+      @saveOperation 'parent', parent
       @saveOperation 'prev_cl', prev_cl
       @saveOperation 'next_cl', next_cl
       if origin?
@@ -283,7 +296,6 @@ module.exports = (HB)->
         @prev_cl.applyDelete()
 
     cleanup: ()->
-      # TODO: Debugging
       if @next_cl.isDeleted()
         # delete all ops that delete this insertion
         for d in @deleted_by
@@ -300,8 +312,9 @@ module.exports = (HB)->
         @prev_cl.next_cl = @next_cl
         @next_cl.prev_cl = @prev_cl
         super
-      else if @next_cl? and @prev_cl?
-        throw new Error "This insertion was not supposed to be deleted!"
+      # else
+      #   Someone inserted something in the meantime.
+      #   Remember: this can only be garbage collected when next_cl is deleted
 
     #
     # @private
@@ -324,6 +337,13 @@ module.exports = (HB)->
       if not @validateSavedOperations()
         return false
       else
+        if @parent?
+          if not @prev_cl?
+            @prev_cl = @parent.beginning
+          if not @origin?
+            @origin = @parent.beginning
+          if not @next_cl?
+            @next_cl = @parent.end
         if @prev_cl?
           distance_to_origin = @getDistanceToOrigin() # most cases: 0
           o = @prev_cl.next_cl
@@ -419,8 +439,8 @@ module.exports = (HB)->
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Object} content
     #
-    constructor: (uid, @content, prev, next, origin)->
-      super uid, prev, next, origin
+    constructor: (uid, @content)->
+      super uid
 
     type: "ImmutableObject"
 
@@ -439,23 +459,14 @@ module.exports = (HB)->
         'uid' : @getUid()
         'content' : @content
       }
-      if @prev_cl?
-        json['prev'] = @prev_cl.getUid()
-      if @next_cl?
-        json['next'] = @next_cl.getUid()
-      if @origin? # and @origin isnt @prev_cl
-        json["origin"] = @origin().getUid()
       json
 
   parser['ImmutableObject'] = (json)->
     {
       'uid' : uid
       'content' : content
-      'prev': prev
-      'next': next
-      'origin' : origin
     } = json
-    new ImmutableObject uid, content, prev, next, origin
+    new ImmutableObject uid, content
 
   #
   # @nodoc
@@ -469,11 +480,11 @@ module.exports = (HB)->
     # @param {Operation} prev_cl The predecessor of this operation in the complete-list (cl)
     # @param {Operation} next_cl The successor of this operation in the complete-list (cl)
     #
-    constructor: (uid, prev_cl, next_cl, origin)->
+    constructor: (prev_cl, next_cl, origin)->
       @saveOperation 'prev_cl', prev_cl
       @saveOperation 'next_cl', next_cl
       @saveOperation 'origin', prev_cl
-      super uid
+      super {noOperation: true}
 
     type: "Delimiter"
 

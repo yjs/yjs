@@ -152,10 +152,17 @@ class HistoryBuffer
   #
   # Retrieve an operation from a unique id.
   #
+  # when uid has a "sub" property, the value of it will be applied
+  # on the operations retrieveSub method (which must! be defined)
+  #
   getOperation: (uid)->
     if uid.uid?
       uid = uid.uid
-    @buffer[uid.creator]?[uid.op_number]
+    o = @buffer[uid.creator]?[uid.op_number]
+    if uid.sub? and o?
+      o.retrieveSub uid.sub
+    else
+      o
 
   #
   # Add an operation to the HB. Note that this will not link it against
