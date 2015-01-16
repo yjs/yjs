@@ -104,27 +104,57 @@ module.exports = (HB)->
     cleanup: ()->
       super()
 
-    val: ()->
-      o = @beginning.next_cl
-      result = []
-      while o isnt @end
-        result.push o.val()
-        o = o.next_cl
-      result
+    toJson: (transform_to_value = false)->
+      val = @val()
+      for i, o in val
+        if o instanceof types.Object
+          o.toJson(transform_to_value)
+        else if o instanceof types.Array
+          o.toJson(transform_to_value)
+        else if transform_to_value and o instanceof types.Operation
+          o.val()
+        else
+          o
+
+    val: (pos)->
+      if pos?
+        o = @getOperationByPosition(pos+1)
+        if not (o instanceof types.Delimiter)
+          o.val()
+        else
+          throw new Error "this position does not exist"
+      else
+        o = @beginning.next_cl
+        result = []
+        while o isnt @end
+          result.push o.val()
+          o = o.next_cl
+        result
 
     push: (content)->
       @insertAfter @end.prev_cl, content
 
-    insertAfter: (left, content)->
+    insertAfter: (left, content, options)->
+      createContent = (content, options)->
+        if content? and content.constructor?
+          type = types[content.constructor.name]
+          if type? and type.create?
+            type.create content, options
+          else
+            throw new Error "The #{content.constructor.name}-type is not (yet) supported in Yatta."
+        else
+          content
+
       right = left.next_cl
       while right.isDeleted()
         right = right.next_cl # find the first character to the right, that is not deleted. In the case that position is 0, its the Delimiter.
       left = right.prev_cl
-      if content.type?
+
+      if content instanceof types.Operation
         (new types.TextInsert content, undefined, left, right).execute()
       else
         for c in content
-          tmp = (new types.TextInsert c, undefined, left, right).execute()
+          tmp = (new types.TextInsert createContent(c, options), undefined, left, right).execute()
           left = tmp
       @
 
@@ -133,11 +163,11 @@ module.exports = (HB)->
     #
     # @return {Array Type} This String object.
     #
-    insert: (position, content)->
+    insert: (position, content, options)->
       ith = @getOperationByPosition position
       # the (i-1)th character. e.g. "abc" the 1th character is "a"
       # the 0th character is the left Delimiter
-      @insertAfter ith, content
+      @insertAfter ith, content, options
 
     #
     # Deletes a part of the word.
@@ -229,6 +259,10 @@ module.exports = (HB)->
     #
     toString: ()->
       @val()
+
+    # String must not set options! (the third parameter)
+    insert: (position, content)->
+      super position, content
 
     #
     # Bind this String to a textfield or input field.

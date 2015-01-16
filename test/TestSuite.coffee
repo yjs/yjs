@@ -100,6 +100,7 @@ module.exports = class Test
         y instanceof type
 
     if choices.length is 0
+      console.dir(y)
       throw new Error "You forgot to specify a test generation methot for this Operation! (#{y.type})"
     i = _.random 0, (choices.length-1)
     choices[i].f y

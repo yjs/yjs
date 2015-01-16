@@ -43,6 +43,8 @@ module.exports = (HB)->
         for name, o of val
           if o instanceof types.Object
             json[name] = o.toJson(transform_to_value)
+          else if o instanceof types.Array
+            json[name] = o.toJson(transform_to_value)
           else if transform_to_value and o instanceof types.Operation
             json[name] = o.val()
           else

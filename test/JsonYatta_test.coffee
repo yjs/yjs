@@ -25,16 +25,24 @@ class JsonTest extends Test
     if _.random(0,1) is 1 # take root
       root
     else # take child
-      properties =
-        for oname,val of root.val()
-          oname
-      properties.filter (oname)->
-        root[oname] instanceof types.Operation
-      if properties.length is 0
+      elems = null
+      if root.type is "Object"
+        elems =
+          for oname,val of root.val()
+            val
+      else if root.type is "Array"
+        elems = root.val()
+      else
+        return root
+
+      elems = elems.filter (elem)->
+        (elem.type is "Array") or (elem.type is "Object")
+      if elems.length is 0
         root
       else
-        p = root[properties[_.random(0, properties.length-1)]]
+        p = elems[_.random(0, elems.length-1)]
         @getRandomRoot user_num, p
+
 
   getContent: (user_num)->
     @users[user_num].toJson(true)
@@ -43,15 +51,33 @@ class JsonTest extends Test
     types = @users[user_num].types
     super(user_num).concat [
         f : (y)=> # SET PROPERTY
-          y.val(@getRandomKey(), @getRandomText(), 'immutable')
+          l = y.val().length
+          y.val(_.random(0, l-1), @getRandomText(), 'immutable')
           null
-        types : [types.Object]
-      ,
-        f : (y)=> # SET Object Property 1)
-          y.val(@getRandomObject())
+        types : [types.Array]
+      , f : (y)=> # Delete Array Element
+          list = y.val()
+          if list.length > 0
+            key = list[_random(0,list.length-1)]
+            y.delete(key)
+        types: [types.Array]
+      , f : (y)=> # insert TEXT mutable
+          l = y.val().length
+          y.val(_.random(0, l-1), @getRamdomObject())
+        types: [types.Array]
+      , f : (y)=> # insert string
+          l = y.val().length
+          y.val(_.random(0, l-1), @getRandomText(), 'immutable')
+          null
+        types : [types.Array]
+      , f : (y)=> # Delete Object Property
+          list = for name, o of y.val()
+            name
+          if list.length > 0
+            key = list[_random(0,list.length-1)]
+            y.delete(key)
         types: [types.Object]
-      ,
-        f : (y)=> # SET Object Property 2)
+      , f : (y)=> # SET Object Property
           y.val(@getRandomKey(), @getRandomObject())
         types: [types.Object]
       ,
@@ -116,7 +142,9 @@ describe "JsonFramework", ->
     @yTest.users[1].val('l', [4,5,6], "mutable")
     @yTest.compareAll()
     @yTest.users[2].val('l').insert(0,'A')
-    @yTest.users[1].val('l').insert(0,'B')
+    w = @yTest.users[1].val('l').insert(0,'B', "mutable").val(0)
+    w.insert 1, "C"
+    expect(w.val()).to.equal("BC")
     @yTest.compareAll()
 
   it "handles immutables and primitive data types", ->
