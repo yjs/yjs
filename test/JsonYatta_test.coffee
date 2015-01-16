@@ -130,6 +130,16 @@ describe "JsonFramework", ->
     expect(@yTest.getSomeUser().val('object').val('q')).to.equal "rr"
     expect(@yTest.getSomeUser().val('null') is null).to.be.ok
 
+  it "handles immutables and primitive data types (2)", ->
+    @yTest.users[0].val('string', "text", "immutable")
+    @yTest.users[1].val('number', 4, "immutable")
+    @yTest.users[2].val('object', {q:"rr"}, "immutable")
+    @yTest.users[0].val('null', null)
+    @yTest.compareAll()
+    expect(@yTest.getSomeUser().val('string')).to.equal "text"
+    expect(@yTest.getSomeUser().val('number')).to.equal 4
+    expect(@yTest.getSomeUser().val('object').val('q')).to.equal "rr"
+    expect(@yTest.getSomeUser().val('null') is null).to.be.ok
 
   it "Observers work on JSON Types (add type observers, local and foreign)", ->
     u = @yTest.users[0]

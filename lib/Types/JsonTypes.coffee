@@ -111,7 +111,7 @@ module.exports = (HB)->
           else
             throw new Error "The #{content.constructor.name}-type is not (yet) supported in Yatta."
         else
-          super name, (new types.ImmutableObject undefined, content).execute()
+          super name, content
       else # is this even necessary ? I have to define every type anyway.. (see Number type below)
         super name
 
@@ -139,7 +139,7 @@ module.exports = (HB)->
 
   types.Number = {}
   types.Number.create = (content)->
-    (new types.ImmutableObject undefined, content).execute()
+    content
 
   text_types
 

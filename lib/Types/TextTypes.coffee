@@ -181,7 +181,7 @@ module.exports = (HB)->
       list.insert 0, content
       list
     else if (not mutable?) or (mutable is "immutable")
-      (new types.ImmutableObject undefined, content).execute()
+      content
     else
       throw new Error "Specify either \"mutable\" or \"immutable\"!!"
 
@@ -377,7 +377,7 @@ module.exports = (HB)->
       word.insert 0, content
       word
     else if (not mutable?) or (mutable is "immutable")
-      (new types.ImmutableObject undefined, content).execute()
+      content
     else
       throw new Error "Specify either \"mutable\" or \"immutable\"!!"
 

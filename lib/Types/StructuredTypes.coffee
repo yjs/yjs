@@ -31,27 +31,20 @@ module.exports = (HB)->
     # @see JsonTypes.val
     #
     val: (name, content)->
-      if content?
+      if arguments.length > 1
         @retrieveSub(name).replace content
         @
       else if name?
         prop = @map[name]
         if prop? and not prop.isContentDeleted()
-          obj = prop.val()
-          if obj instanceof types.ImmutableObject
-            obj.val()
-          else
-            obj
+          prop.val()
         else
           undefined
       else
         result = {}
         for name,o of @map
           if not o.isContentDeleted()
-            obj = o.val()
-            if obj instanceof types.ImmutableObject # or obj instanceof MapManager TODO: do you want deep json? 
-              obj = obj.val()
-            result[name] = obj
+            result[name] = o.val()
         result
 
     delete: (name)->
@@ -253,7 +246,11 @@ module.exports = (HB)->
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     #
     constructor: (content, parent, uid, prev, next, origin, is_deleted)->
-      @saveOperation 'content', content
+      # see encode to see, why we are doing it this way
+      if content? and content.creator?
+        @saveOperation 'content', content
+      else
+        @content = content
       @saveOperation 'parent', parent
       super uid, prev, next, origin # Parent is already saved by Replaceable
       @is_deleted = is_deleted
@@ -270,9 +267,9 @@ module.exports = (HB)->
       res = super
       if @content?
         if @next_cl.type isnt "Delimiter"
-          @content.deleteAllObservers()
-        @content.applyDelete()
-        @content.dontSync()
+          @content.deleteAllObservers?()
+        @content.applyDelete?()
+        @content.dontSync?()
       @content = null
       res
 
@@ -321,7 +318,6 @@ module.exports = (HB)->
       json =
         {
           'type': @type
-          'content': @content?.getUid()
           'parent' : @parent.getUid()
           'prev': @prev_cl.getUid()
           'next': @next_cl.getUid()
@@ -329,6 +325,14 @@ module.exports = (HB)->
           'uid' : @getUid()
           'is_deleted': @is_deleted
         }
+      if @content instanceof types.Operation
+        json['content'] = @content.getUid()
+      else
+        # This could be a security concern.
+        # Throw error if the users wants to trick us
+        if @content? and @content.creator?
+          throw new Error "You must not set creator here!"
+        json['content'] = @content
       json
 
   types.Replaceable.parse = (json)->
