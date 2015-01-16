@@ -45,19 +45,19 @@ class JsonTest extends Test
         f : (y)=> # SET PROPERTY
           y.val(@getRandomKey(), @getRandomText(), 'immutable')
           null
-        types : [types.JsonType]
+        types : [types.Object]
       ,
         f : (y)=> # SET Object Property 1)
           y.val(@getRandomObject())
-        types: [types.JsonType]
+        types: [types.Object]
       ,
         f : (y)=> # SET Object Property 2)
           y.val(@getRandomKey(), @getRandomObject())
-        types: [types.JsonType]
+        types: [types.Object]
       ,
         f : (y)=> # SET PROPERTY TEXT
           y.val(@getRandomKey(), @getRandomText(), 'mutable')
-        types: [types.JsonType]
+        types: [types.Object]
     ]
 
 describe "JsonFramework", ->
@@ -72,30 +72,6 @@ describe "JsonFramework", ->
   it "can handle many engines, many operations, concurrently (random)", ->
     console.log "" # TODO
     @yTest.run()
-
-  ### TODO
-  it "has a update listener", ()->
-    addName = false
-    change = false
-    change2 = 0
-    @test_user.on 'add', (eventname, property_name)->
-      if property_name is 'x'
-        addName = true
-    @test_user.val('x',5)
-    @test_user.on 'change', (eventname, property_name)->
-      if property_name is 'x'
-        change = true
-    @test_user.val('x', 6)
-    @test_user.val('ins', "text", 'mutable')
-    @test_user.on 'update', (eventname, property_name)->
-      if property_name is 'ins'
-        change2++
-    @test_user.val('ins').insertText 4, " yay"
-    @test_user.val('ins').deleteText 0, 4
-    expect(addName).to.be.ok
-    expect(change).to.be.ok
-    expect(change2).to.equal 8
-  ###
 
   it "has a working test suite", ->
     @yTest.compareAll()
@@ -119,9 +95,9 @@ describe "JsonFramework", ->
     @yTest.users[1].val('a', 't', "mutable")
     @yTest.compareAll()
     q = @yTest.users[2].val('a')
-    q.insertText(0,'A')
+    q.insert(0,'A')
     @yTest.compareAll()
-    expect(@yTest.getSomeUser().value.a.val()).to.equal("At")
+    expect(@yTest.getSomeUser().val("a").val()).to.equal("At")
 
   it "can handle creaton of complex json (2)", ->
     @yTest.getSomeUser().val('x', {'a':'b'})
@@ -130,10 +106,18 @@ describe "JsonFramework", ->
     @yTest.getSomeUser().val('c', {'a':'c'})
     @yTest.getSomeUser().val('c', {'a':'b'})
     @yTest.compareAll()
-    q = @yTest.getSomeUser().value.a.a.q
-    q.insertText(0,'A')
+    q = @yTest.getSomeUser().val("a").val("a").val("q")
+    q.insert(0,'A')
     @yTest.compareAll()
-    expect(@yTest.getSomeUser().value.a.a.q.val()).to.equal("Adtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt")
+    expect(@yTest.getSomeUser().val("a").val("a").val("q").val()).to.equal("Adtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt")
+
+  it "can handle creaton of complex json (3)", ->
+    @yTest.users[0].val('l', [1,2,3], "mutable")
+    @yTest.users[1].val('l', [4,5,6], "mutable")
+    @yTest.compareAll()
+    @yTest.users[2].val('l').insert(0,'A')
+    @yTest.users[1].val('l').insert(0,'B')
+    @yTest.compareAll()
 
   it "handles immutables and primitive data types", ->
     @yTest.getSomeUser().val('string', "text", "immutable")

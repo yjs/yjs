@@ -19,6 +19,9 @@ class TextTest extends Test
     conn = new Connector userId
     new Yatta conn
 
+  initUsers: (u)->
+    u.val("TextTest","","mutable")
+
   getRandomRoot: (user_num)->
     @users[user_num].val("TextTest")
 
@@ -29,21 +32,17 @@ describe "TextFramework", ->
   beforeEach (done)->
     @timeout 50000
     @yTest = new TextTest()
-    @users = @yTest.users
-    test_user_connector = new Connector 'test_user'
-    @test_user = @yTest.makeNewUser 'test_user', test_user_connector
-    test_user_connector.join @users[0].connector
-    @users[0].val("TextTest","","mutable")
-    @yTest.flushAll()
     done()
 
   it "simple multi-char insert", ->
     u = @yTest.users[0].val("TextTest")
-    u.insertText 0, "abc"
+    u.insert 0, "abc"
     u = @yTest.users[1].val("TextTest")
-    u.insertText 0, "xyz"
+    u.insert 0, "xyz"
     @yTest.compareAll()
-    expect(u.val()).to.equal("abcxyz")
+    u.delete 0, 1
+    @yTest.compareAll()
+    expect(u.val()).to.equal("bcxyz")
 
   it "Observers work on shared Text (insert type observers, local and foreign)", ->
     u = @yTest.users[0].val("TextTest","my awesome Text","mutable").val("TextTest")
@@ -59,7 +58,7 @@ describe "TextFramework", ->
       expect(change.changedBy).to.equal('0')
       last_task = "observer1"
     u.observe observer1
-    u.insertText 1, "a"
+    u.insert 1, "a"
     expect(last_task).to.equal("observer1")
     u.unobserve observer1
 
@@ -74,7 +73,7 @@ describe "TextFramework", ->
       last_task = "observer2"
     u.observe observer2
     v = @yTest.users[1].val("TextTest")
-    v.insertText 0, "x"
+    v.insert 0, "x"
     @yTest.flushAll()
     expect(last_task).to.equal("observer2")
     u.unobserve observer2
@@ -93,7 +92,7 @@ describe "TextFramework", ->
       expect(change.changedBy).to.equal('0')
       last_task = "observer1"
     u.observe observer1
-    u.deleteText 1, 1
+    u.delete 1, 1
     expect(last_task).to.equal("observer1")
     u.unobserve observer1
 
@@ -108,7 +107,7 @@ describe "TextFramework", ->
       last_task = "observer2"
     u.observe observer2
     v = @yTest.users[1].val("TextTest")
-    v.deleteText 0, 1
+    v.delete 0, 1
     @yTest.flushAll()
     expect(last_task).to.equal("observer2")
     u.unobserve observer2

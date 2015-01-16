@@ -7,17 +7,9 @@ module.exports = (HB)->
 
   #
   # @nodoc
-  # At the moment TextDelete type equals the Delete type in BasicTypes.
-  # @see BasicTypes.Delete
-  #
-  class TextDelete extends types.Delete
-  parser["TextDelete"] = parser["Delete"]
-
-  #
-  # @nodoc
   # Extends the basic Insert type to an operation that holds a text value
   #
-  class TextInsert extends types.Insert
+  class types.TextInsert extends types.Insert
     #
     # @param {String} content The content of this Insert-type Operation. Usually you restrict the length of content to size 1
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
@@ -72,7 +64,7 @@ module.exports = (HB)->
     _encode: ()->
       json =
         {
-          'type': "TextInsert"
+          'type': @type
           'uid' : @getUid()
           'prev': @prev_cl.getUid()
           'next': @next_cl.getUid()
@@ -86,7 +78,7 @@ module.exports = (HB)->
         json['content'] = @content
       json
 
-  parser["TextInsert"] = (json)->
+  types.TextInsert.parse = (json)->
     {
       'content' : content
       'uid' : uid
@@ -95,13 +87,109 @@ module.exports = (HB)->
       'origin' : origin
       'parent' : parent
     } = json
-    new TextInsert content, uid, prev, next, origin, parent
+    new types.TextInsert content, uid, prev, next, origin, parent
+
+
+  class types.Array extends types.ListManager
+
+    type: "Array"
+
+    applyDelete: ()->
+      o = @end
+      while o?
+        o.applyDelete()
+        o = o.prev_cl
+      super()
+
+    cleanup: ()->
+      super()
+
+    val: ()->
+      o = @beginning.next_cl
+      result = []
+      while o isnt @end
+        result.push o.val()
+        o = o.next_cl
+      result
+
+    push: (content)->
+      @insertAfter @end.prev_cl, content
+
+    insertAfter: (left, content)->
+      right = left.next_cl
+      while right.isDeleted()
+        right = right.next_cl # find the first character to the right, that is not deleted. In the case that position is 0, its the Delimiter.
+      left = right.prev_cl
+      if content.type?
+        (new types.TextInsert content, undefined, left, right).execute()
+      else
+        for c in content
+          tmp = (new types.TextInsert c, undefined, left, right).execute()
+          left = tmp
+      @
+
+    #
+    # Inserts a string into the word.
+    #
+    # @return {Array Type} This String object.
+    #
+    insert: (position, content)->
+      ith = @getOperationByPosition position
+      # the (i-1)th character. e.g. "abc" the 1th character is "a"
+      # the 0th character is the left Delimiter
+      @insertAfter ith, content
+
+    #
+    # Deletes a part of the word.
+    #
+    # @return {Array Type} This String object
+    #
+    delete: (position, length)->
+      o = @getOperationByPosition(position+1) # position 0 in this case is the deletion of the first character
+
+      delete_ops = []
+      for i in [0...length]
+        if o instanceof types.Delimiter
+          break
+        d = (new types.Delete undefined, o).execute()
+        o = o.next_cl
+        while not (o instanceof types.Delimiter) and o.isDeleted()
+          o = o.next_cl
+        delete_ops.push d._encode()
+      @
+
+    #
+    # @private
+    # Encode this operation in such a way that it can be parsed by remote peers.
+    #
+    _encode: ()->
+      json = {
+        'type': @type
+        'uid' : @getUid()
+      }
+      json
+
+  types.Array.parse = (json)->
+    {
+      'uid' : uid
+    } = json
+    new this(uid)
+
+  types.Array.create = (content, mutable)->
+    if (mutable is "mutable")
+      list = new types.Array().execute()
+      list.insert 0, content
+      list
+    else if (not mutable?) or (mutable is "immutable")
+      (new types.ImmutableObject undefined, content).execute()
+    else
+      throw new Error "Specify either \"mutable\" or \"immutable\"!!"
 
   #
-  # Handles a WordType-like data structures with support for insertText/deleteText at a word-position.
+  # Handles a String-like data structures with support for insert/delete at a word-position.
   # @note Currently, only Text is supported!
   #
-  class WordType extends types.ListManager
+  class types.String extends types.Array
 
     #
     # @private
@@ -117,66 +205,11 @@ module.exports = (HB)->
     #
     # @example
     #   var x = yatta.val('unknown')
-    #   if (x.type === "WordType") {
+    #   if (x.type === "String") {
     #     console.log JSON.stringify(x.toJson())
     #   }
     #
-    type: "WordType"
-
-    applyDelete: ()->
-      o = @end
-      while o?
-        o.applyDelete()
-        o = o.prev_cl
-      super()
-
-    cleanup: ()->
-      super()
-
-    push: (content)->
-      @insertAfter @end.prev_cl, content
-
-    insertAfter: (left, content)->
-      right = left.next_cl
-      while right.isDeleted()
-        right = right.next_cl # find the first character to the right, that is not deleted. In the case that position is 0, its the Delimiter.
-      left = right.prev_cl
-      if content.type?
-        (new TextInsert content, undefined, left, right).execute()
-      else
-        for c in content
-          tmp = (new TextInsert c, undefined, left, right).execute()
-          left = tmp
-      @
-    #
-    # Inserts a string into the word.
-    #
-    # @return {WordType} This WordType object.
-    #
-    insertText: (position, content)->
-      ith = @getOperationByPosition position
-      # the (i-1)th character. e.g. "abc" the 1th character is "a"
-      # the 0th character is the left Delimiter
-      @insertAfter ith, content
-
-    #
-    # Deletes a part of the word.
-    #
-    # @return {WordType} This WordType object
-    #
-    deleteText: (position, length)->
-      o = @getOperationByPosition(position+1) # position 0 in this case is the deletion of the first character
-
-      delete_ops = []
-      for i in [0...length]
-        if o instanceof types.Delimiter
-          break
-        d = (new TextDelete undefined, o).execute()
-        o = o.next_cl
-        while not (o instanceof types.Delimiter) and o.isDeleted()
-          o = o.next_cl
-        delete_ops.push d._encode()
-      @
+    type: "String"
 
     #
     # Get the String-representation of this word.
@@ -191,14 +224,14 @@ module.exports = (HB)->
       c.join('')
 
     #
-    # Same as WordType.val
-    # @see WordType.val
+    # Same as String.val
+    # @see String.val
     #
     toString: ()->
       @val()
 
     #
-    # Bind this WordType to a textfield or input field.
+    # Bind this String to a textfield or input field.
     #
     # @example
     #   var textbox = document.getElementById("textfield");
@@ -257,8 +290,8 @@ module.exports = (HB)->
         if char.length > 0
           pos = Math.min textfield.selectionStart, textfield.selectionEnd
           diff = Math.abs(textfield.selectionEnd - textfield.selectionStart)
-          word.deleteText (pos), diff
-          word.insertText pos, char
+          word.delete (pos), diff
+          word.insert pos, char
           new_pos = pos + char.length
           textfield.setSelectionRange new_pos, new_pos
           event.preventDefault()
@@ -294,7 +327,7 @@ module.exports = (HB)->
         diff = Math.abs(textfield.selectionEnd - textfield.selectionStart)
         if event.keyCode? and event.keyCode is 8 # Backspace
           if diff > 0
-            word.deleteText pos, diff
+            word.delete pos, diff
             textfield.setSelectionRange pos, pos
           else
             if event.ctrlKey? and event.ctrlKey
@@ -307,21 +340,19 @@ module.exports = (HB)->
               while new_pos > 0 and val[new_pos] isnt " " and val[new_pos] isnt '\n'
                 new_pos--
                 del_length++
-              word.deleteText new_pos, (pos-new_pos)
+              word.delete new_pos, (pos-new_pos)
               textfield.setSelectionRange new_pos, new_pos
             else
-              word.deleteText (pos-1), 1
+              word.delete (pos-1), 1
           event.preventDefault()
         else if event.keyCode? and event.keyCode is 46 # Delete
           if diff > 0
-            word.deleteText pos, diff
+            word.delete pos, diff
             textfield.setSelectionRange pos, pos
           else
-            word.deleteText pos, 1
+            word.delete pos, 1
             textfield.setSelectionRange pos, pos
           event.preventDefault()
-
-
 
     #
     # @private
@@ -329,20 +360,28 @@ module.exports = (HB)->
     #
     _encode: ()->
       json = {
-        'type': "WordType"
+        'type': @type
         'uid' : @getUid()
       }
       json
 
-  parser['WordType'] = (json)->
+  types.String.parse = (json)->
     {
       'uid' : uid
     } = json
-    new WordType uid
+    new this(uid)
 
-  types['TextInsert'] = TextInsert
-  types['TextDelete'] = TextDelete
-  types['WordType'] = WordType
+  types.String.create = (content, mutable)->
+    if (mutable is "mutable")
+      word = new types.String().execute()
+      word.insert 0, content
+      word
+    else if (not mutable?) or (mutable is "immutable")
+      (new types.ImmutableObject undefined, content).execute()
+    else
+      throw new Error "Specify either \"mutable\" or \"immutable\"!!"
+
+
   structured_types
 
 

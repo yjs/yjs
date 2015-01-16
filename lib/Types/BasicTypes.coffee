@@ -1,6 +1,6 @@
 module.exports = (HB)->
   # @see Engine.parse
-  parser = {}
+  types = {}
   execution_listener = []
 
   #
@@ -16,7 +16,7 @@ module.exports = (HB)->
   #
   # Furthermore an encodable operation has a parser. We extend the parser object in order to parse encoded operations.
   #
-  class Operation
+  class types.Operation
 
     #
     # @param {Object} uid A unique identifier.
@@ -192,12 +192,11 @@ module.exports = (HB)->
         @unchecked = uninstantiated
       success
 
-
   #
   # @nodoc
   # A simple Delete-type operation that deletes an operation.
   #
-  class Delete extends Operation
+  class types.Delete extends types.Operation
 
     #
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
@@ -237,12 +236,12 @@ module.exports = (HB)->
   #
   # Define how to parse Delete operations.
   #
-  parser['Delete'] = (o)->
+  types.Delete.parse = (o)->
     {
       'uid' : uid
       'deletes': deletes_uid
     } = o
-    new Delete uid, deletes_uid
+    new this(uid, deletes_uid)
 
   #
   # @nodoc
@@ -254,7 +253,7 @@ module.exports = (HB)->
   #   - The short-list (abbrev. sl) maintains only the operations that are not deleted
   #   - The complete-list (abbrev. cl) maintains all operations
   #
-  class Insert extends Operation
+  class types.Insert extends types.Operation
 
     #
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
@@ -422,7 +421,7 @@ module.exports = (HB)->
       position = 0
       prev = @prev_cl
       while true
-        if prev instanceof Delimiter
+        if prev instanceof types.Delimiter
           break
         if not prev.isDeleted()
           position++
@@ -433,7 +432,7 @@ module.exports = (HB)->
   # @nodoc
   # Defines an object that is cannot be changed. You can use this to set an immutable string, or a number.
   #
-  class ImmutableObject extends Operation
+  class types.ImmutableObject extends types.Operation
 
     #
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
@@ -455,18 +454,18 @@ module.exports = (HB)->
     #
     _encode: ()->
       json = {
-        'type': "ImmutableObject"
+        'type': @type
         'uid' : @getUid()
         'content' : @content
       }
       json
 
-  parser['ImmutableObject'] = (json)->
+  types.ImmutableObject.parse = (json)->
     {
       'uid' : uid
       'content' : content
     } = json
-    new ImmutableObject uid, content
+    new this(uid, content)
 
   #
   # @nodoc
@@ -474,7 +473,7 @@ module.exports = (HB)->
   # This is necessary in order to have a beginning and an end even if the content
   # of the Engine is empty.
   #
-  class Delimiter extends Operation
+  class types.Delimiter extends types.Operation
     #
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Operation} prev_cl The predecessor of this operation in the complete-list (cl)
@@ -527,29 +526,23 @@ module.exports = (HB)->
     #
     _encode: ()->
       {
-        'type' : "Delimiter"
+        'type' : @type
         'uid' : @getUid()
         'prev' : @prev_cl?.getUid()
         'next' : @next_cl?.getUid()
       }
 
-  parser['Delimiter'] = (json)->
+  types.Delimiter.parse = (json)->
     {
     'uid' : uid
     'prev' : prev
     'next' : next
     } = json
-    new Delimiter uid, prev, next
+    new this(uid, prev, next)
 
   # This is what this module exports after initializing it with the HistoryBuffer
   {
-    'types' :
-      'Delete' : Delete
-      'Insert' : Insert
-      'Delimiter': Delimiter
-      'Operation': Operation
-      'ImmutableObject' : ImmutableObject
-    'parser' : parser
+    'types' : types
     'execution_listener' : execution_listener
   }
 

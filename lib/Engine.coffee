@@ -11,18 +11,18 @@ class Engine
 
   #
   # @param {HistoryBuffer} HB
-  # @param {Array} parser Defines how to parse encoded messages.
+  # @param {Object} types list of available types
   #
-  constructor: (@HB, @parser)->
+  constructor: (@HB, @types)->
     @unprocessed_ops = []
 
   #
   # Parses an operatio from the json format. It uses the specified parser in your OperationType module.
   #
   parseOperation: (json)->
-    typeParser = @parser[json.type]
-    if typeParser?
-      typeParser json
+    type = @types[json.type]
+    if type?.parse?
+      type.parse json
     else
       throw new Error "You forgot to specify a parser for type #{json.type}. The message is #{JSON.stringify json}."
 

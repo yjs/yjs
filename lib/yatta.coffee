@@ -24,7 +24,7 @@ createYatta = (connector)->
   # * Integer
   # * Array
   #
-  class Yatta extends types.JsonType
+  class Yatta extends types.Object
 
     #
     # @param {String} user_id Unique id of the peer.
@@ -34,7 +34,7 @@ createYatta = (connector)->
       @connector = connector
       @HB = HB
       @types = types
-      @engine = new Engine @HB, type_manager.parser
+      @engine = new Engine @HB, type_manager.types
       adaptConnector @connector, @engine, @HB, type_manager.execution_listener
       super
 

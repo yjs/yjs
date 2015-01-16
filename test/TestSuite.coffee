@@ -12,9 +12,9 @@ Connector = require "../bower_components/connector/lib/test-connector/test-conne
 module.exports = class Test
   constructor: (@name_suffix = "")->
     @number_of_test_cases_multiplier = 1
-    @repeat_this = 503 * @number_of_test_cases_multiplier
-    @doSomething_amount = 5 * @number_of_test_cases_multiplier
-    @number_of_engines = 3 + @number_of_test_cases_multiplier - 1
+    @repeat_this = 3 * @number_of_test_cases_multiplier
+    @doSomething_amount = 123 * @number_of_test_cases_multiplier
+    @number_of_engines = 5 + @number_of_test_cases_multiplier - 1
 
     @time = 0 # denotes to the time when run was started
     @ops = 0 # number of operations (used with @time)
@@ -31,6 +31,7 @@ module.exports = class Test
       for user in @users
         u.getConnector().join(user.getConnector()) # TODO: change the test-connector to make this more convenient
       @users.push u
+    @initUsers?(@users[0])
     @flushAll()
 
   # is called by implementing class
@@ -74,17 +75,17 @@ module.exports = class Test
         f : (y)=> # INSERT TEXT
           y
           pos = _.random 0, (y.val().length-1)
-          y.insertText pos, @getRandomText()
+          y.insert pos, @getRandomText()
           null
-        types: [types.WordType]
+        types: [types.String]
       ,
         f : (y)-> # DELETE TEXT
           if y.val().length > 0
-            pos = _.random 0, (y.val().length-1)
+            pos = _.random 0, (y.val().length-1) # TODO: put here also arbitrary number (test behaviour in error cases)
             length = _.random 0, (y.val().length - pos)
-            ops1 = y.deleteText pos, length
+            ops1 = y.delete pos, length
           undefined
-        types : [types.WordType]
+        types : [types.String]
     ]
   getRandomRoot: (user_num)->
     throw new Error "overwrite me!"
@@ -99,7 +100,7 @@ module.exports = class Test
         y instanceof type
 
     if choices.length is 0
-      throw new Error "You forgot to specify a test generation methot for this Operation!"
+      throw new Error "You forgot to specify a test generation methot for this Operation! (#{y.type})"
     i = _.random 0, (choices.length-1)
     choices[i].f y
 

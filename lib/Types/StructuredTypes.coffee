@@ -3,13 +3,12 @@ basic_types_uninitialized = require "./BasicTypes"
 module.exports = (HB)->
   basic_types = basic_types_uninitialized HB
   types = basic_types.types
-  parser = basic_types.parser
 
   #
   # @nodoc
   # Manages map like objects. E.g. Json-Type and XML attributes.
   #
-  class MapManager extends types.Operation
+  class types.MapManager extends types.Operation
 
     #
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
@@ -69,7 +68,7 @@ module.exports = (HB)->
         rm_uid =
           noOperation: true
           alt: map_uid
-        rm = new ReplaceManager event_properties, event_this, rm_uid # this operation shall not be saved in the HB
+        rm = new types.ReplaceManager event_properties, event_this, rm_uid # this operation shall not be saved in the HB
         @map[property_name] = rm
         rm.setParent @, property_name
         rm.execute()
@@ -79,7 +78,7 @@ module.exports = (HB)->
   # @nodoc
   # Manages a list of Insert-type operations.
   #
-  class ListManager extends types.Operation
+  class types.ListManager extends types.Operation
 
     #
     # A ListManager maintains a non-empty list that has a beginning and an end (both Delimiters!)
@@ -156,10 +155,10 @@ module.exports = (HB)->
   # Adds support for replace. The ReplaceManager manages Replaceable operations.
   # Each Replaceable holds a value that is now replaceable.
   #
-  # The WordType-type has implemented support for replace
-  # @see WordType
+  # The TextType-type has implemented support for replace
+  # @see TextType
   #
-  class ReplaceManager extends ListManager
+  class types.ReplaceManager extends types.ListManager
     #
     # @param {Object} event_properties Decorates the event that is thrown by the RM
     # @param {Object} event_this The object on which the event shall be executed
@@ -207,7 +206,7 @@ module.exports = (HB)->
     #
     replace: (content, replaceable_uid)->
       o = @getLastOperation()
-      relp = (new Replaceable content, @, replaceable_uid, o, o.next_cl).execute()
+      relp = (new types.Replaceable content, @, replaceable_uid, o, o.next_cl).execute()
       # TODO: delete repl (for debugging)
       undefined
 
@@ -219,7 +218,7 @@ module.exports = (HB)->
       undefined
 
     #
-    # Get the value of this WordType
+    # Get the value of this
     # @return {String}
     #
     val: ()->
@@ -234,7 +233,7 @@ module.exports = (HB)->
     _encode: ()->
       json =
         {
-          'type': "ReplaceManager"
+          'type': @type
           'uid' : @getUid()
           'beginning' : @beginning.getUid()
           'end' : @end.getUid()
@@ -246,7 +245,7 @@ module.exports = (HB)->
   # The ReplaceManager manages Replaceables.
   # @see ReplaceManager
   #
-  class Replaceable extends types.Insert
+  class types.Replaceable extends types.Insert
 
     #
     # @param {Operation} content The value that this Replaceable holds.
@@ -321,7 +320,7 @@ module.exports = (HB)->
     _encode: ()->
       json =
         {
-          'type': "Replaceable"
+          'type': @type
           'content': @content?.getUid()
           'parent' : @parent.getUid()
           'prev': @prev_cl.getUid()
@@ -332,7 +331,7 @@ module.exports = (HB)->
         }
       json
 
-  parser["Replaceable"] = (json)->
+  types.Replaceable.parse = (json)->
     {
       'content' : content
       'parent' : parent
@@ -342,12 +341,8 @@ module.exports = (HB)->
       'origin' : origin
       'is_deleted': is_deleted
     } = json
-    new Replaceable content, parent, uid, prev, next, origin, is_deleted
+    new this(content, parent, uid, prev, next, origin, is_deleted)
 
-  types['ListManager'] = ListManager
-  types['MapManager'] = MapManager
-  types['ReplaceManager'] = ReplaceManager
-  types['Replaceable'] = Replaceable
 
   basic_types
 
