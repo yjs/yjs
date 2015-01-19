@@ -67,10 +67,12 @@ class Engine
     for op_json in op_json_array
       # $parse_and_execute will return false if $o_json was parsed and executed, otherwise the parsed operadion
       o = @parseOperation op_json
+      if op_json.fromHB?
+        o.fromHB = op_json.fromHB
       # @HB.addOperation o
       if @HB.getOperation(o)?
         # nop
-      else if (not @HB.isExpectedOperation(o)) or (not o.execute())
+      else if ((not @HB.isExpectedOperation(o)) and (not o.fromHB?)) or (not o.execute())
         @unprocessed_ops.push o
         window?.unprocessed_types.push o.type # TODO: delete this
     @tryUnprocessed()
@@ -86,7 +88,7 @@ class Engine
       for op in @unprocessed_ops
         if @HB.getOperation(op)?
           # nop
-        else if (not @HB.isExpectedOperation(op)) or (not op.execute())
+        else if (not @HB.isExpectedOperation(op) and (not op.fromHB?)) or (not op.execute())
           unprocessed.push op
       @unprocessed_ops = unprocessed
       if @unprocessed_ops.length is old_length

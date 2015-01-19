@@ -26,21 +26,25 @@ adaptConnector = (connector, engine, HB, execution_listener)->
       state_vector[s.user] = s.state
     state_vector
 
-  sendStateVector = ()->
+  getStateVector = ()->
     encode_state_vector HB.getOperationCounter()
 
-  sendHb = (v)->
+  getHB = (v)->
     state_vector = parse_state_vector v
+    hb = HB._encode state_vector
+    for o in hb
+      o.fromHB = "true" # execute immediately
     json =
-      hb: HB._encode(state_vector)
+      hb: hb
       state_vector: encode_state_vector HB.getOperationCounter()
     json
 
-  applyHb = (res)->
-    HB.renewStateVector parse_state_vector res.state_vector
-    engine.applyOpsCheckDouble res.hb
+  applyHB = (hb)->
+    engine.applyOp hb
 
-  connector.whenSyncing sendStateVector, sendHb, applyHb
+  connector.getStateVector = getStateVector
+  connector.getHB = getHB
+  connector.applyHB = applyHB
 
   connector.whenReceiving (sender, op)->
     if op.uid.creator isnt HB.getUserId()

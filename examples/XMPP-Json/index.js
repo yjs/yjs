@@ -50,5 +50,10 @@ window.onload = function(){
       }
     }
   });
-  yatta.val("textfield","stuff", "mutable");
+  connector.whenSynced(function(){
+    if(yatta.val("textfield") == null){
+      yatta.val("textfield","stuff", "mutable");
+    }
+  })
+
 };

@@ -18,7 +18,7 @@ class HistoryBuffer
     @garbage = [] # Will be cleaned on next call of garbageCollector
     @trash = [] # Is deleted. Wait until it is not used anymore.
     @performGarbageCollection = true
-    @garbageCollectTimeout = 20000
+    @garbageCollectTimeout = 30000
     @reserved_identifier_counter = 0
     setTimeout @emptyGarbage, @garbageCollectTimeout
 
@@ -173,7 +173,7 @@ class HistoryBuffer
       @buffer[o.uid.creator] = {}
     if @buffer[o.uid.creator][o.uid.op_number]?
       throw new Error "You must not overwrite operations!"
-    if (o.uid.op_number.constructor isnt String) and (not @isExpectedOperation(o)) # you already do this in the engine, so delete it here!
+    if (o.uid.op_number.constructor isnt String) and (not @isExpectedOperation(o)) and (not o.fromHB?) # you already do this in the engine, so delete it here!
       throw new Error "this operation was not expected!"
     @addToCounter(o)
     @buffer[o.uid.creator][o.uid.op_number] = o
