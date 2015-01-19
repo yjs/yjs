@@ -332,6 +332,7 @@ module.exports = (HB)->
             s.addRange(r)
         writeContent = (content)->
           textfield.textContent = content
+          textfield.innerHTML += '&nbsp;'
 
       writeContent this.val()
 
