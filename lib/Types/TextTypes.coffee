@@ -276,34 +276,81 @@ module.exports = (HB)->
       textfield.value = @val()
       @textfields.push textfield
 
+      if textfield.selectionStart? and textfield.setSelectionRange?
+        createRange = (fix)->
+          left = textfield.selectionStart
+          right = textfield.selectionEnd
+          if fix?
+            left = fix left
+            right = fix right
+          {
+            left: left
+            right: right
+          }
+
+        writeRange = (range)->
+          textfield.setSelectionRange range.left, range.right
+        writeContent = (content)->
+          textfield.value = content
+      else
+        createRange = (fix)->
+          textnode = textfield.childNodes[0]
+          s = window.getSelection().getRangeAt(0)
+          if s.startContainer is textnode and s.endContainer is textnode
+            left = s.startOffset
+            right = s.endOffset
+            if fix?
+              left = fix left
+              right = fix right
+            {
+              left: left
+              right: right
+              isReal: true
+            }
+          else
+            {
+              left: 0
+              right: 0
+            }
+        writeRange = (range)->
+          textnode = textfield.childNodes[0]
+          if range.isReal
+            r = new Range()
+            r.setStart(textnode, range.left)
+            r.setEnd(textnode, range.right)
+            s = window.getSelection()
+            s.removeAllRanges()
+            s.addRange(r)
+        writeContent = (content)->
+          textfield.textContent = content
+
+
+
       @observe (events)->
         for event in events
-          if event.type is "insert"
-            o_pos = event.position
-            fix = (cursor)->
-              if cursor <= o_pos
-                cursor
-              else
-                cursor += 1
-                cursor
-            left = fix textfield.selectionStart
-            right = fix textfield.selectionEnd
+            if event.type is "insert"
+              o_pos = event.position
+              fix = (cursor)->
+                if cursor <= o_pos
+                  cursor
+                else
+                  cursor += 1
+                  cursor
+              r = createRange fix
+              writeContent word.val()
+              writeRange r
 
-            textfield.value = word.val()
-            textfield.setSelectionRange left, right
-          else if event.type is "delete"
-            o_pos = event.position
-            fix = (cursor)->
-              if cursor < o_pos
-                cursor
-              else
-                cursor -= 1
-                cursor
-            left = fix textfield.selectionStart
-            right = fix textfield.selectionEnd
-
-            textfield.value = word.val()
-            textfield.setSelectionRange left, right
+            else if event.type is "delete"
+              o_pos = event.position
+              fix = (cursor)->
+                if cursor < o_pos
+                  cursor
+                else
+                  cursor -= 1
+                  cursor
+              r = createRange fix
+              writeContent word.val()
+              writeRange r
 
       # consume all text-insert changes.
       textfield.onkeypress = (event)->
@@ -322,12 +369,14 @@ module.exports = (HB)->
         else
           char = window.String.fromCharCode event.keyCode
         if char.length > 0
-          pos = Math.min textfield.selectionStart, textfield.selectionEnd
-          diff = Math.abs(textfield.selectionEnd - textfield.selectionStart)
-          word.delete (pos), diff
+          r = createRange()
+          pos = Math.min r.left, r.right
+          diff = Math.abs(r.right - r.left)
+          word.delete pos, diff
           word.insert pos, char
-          new_pos = pos + char.length
-          textfield.setSelectionRange new_pos, new_pos
+          r.left = pos + char.length
+          r.right = r.left
+          writeRange r
           event.preventDefault()
         else
           event.preventDefault()
@@ -357,15 +406,21 @@ module.exports = (HB)->
           # if word is deleted, do not do anything ever again
           textfield.onkeydown = null
           return true
-        pos = Math.min textfield.selectionStart, textfield.selectionEnd
-        diff = Math.abs(textfield.selectionEnd - textfield.selectionStart)
+        r = createRange()
+        pos = Math.min r.left, r.right
+        diff = Math.abs(r.left - r.right)
         if event.keyCode? and event.keyCode is 8 # Backspace
           if diff > 0
             word.delete pos, diff
-            textfield.setSelectionRange pos, pos
+            r.left = pos
+            r.right = pos
+            writeRange r
           else
             if event.ctrlKey? and event.ctrlKey
-              val = textfield.value
+              if textfield.value?
+                val = textfield.value
+              else
+                val = textfield.textContent
               new_pos = pos
               del_length = 0
               if pos > 0
@@ -375,18 +430,23 @@ module.exports = (HB)->
                 new_pos--
                 del_length++
               word.delete new_pos, (pos-new_pos)
-              textfield.setSelectionRange new_pos, new_pos
+              r.left = new_pos
+              r.right = new_pos
+              writeRange r
             else
               word.delete (pos-1), 1
           event.preventDefault()
         else if event.keyCode? and event.keyCode is 46 # Delete
           if diff > 0
             word.delete pos, diff
-            textfield.setSelectionRange pos, pos
+            r.left = pos
+            r.right = pos
+            writeRange r
           else
             word.delete pos, 1
-            textfield.setSelectionRange pos, pos
-          event.preventDefault()
+            r.left = pos
+            r.right = pos
+            writeRange r
 
     #
     # @private

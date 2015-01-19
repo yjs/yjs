@@ -46,6 +46,7 @@ window.onload = function(){
       var event = events[i];
       if(event.name === "textfield" && event.type !== "delete"){
         yatta.val("textfield").bind(textbox);
+        yatta.val("textfield").bind(document.querySelector("h1"))
       }
     }
   });

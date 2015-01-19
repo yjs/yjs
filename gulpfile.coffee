@@ -70,8 +70,8 @@ gulp.task 'build_browser', ->
       extname: ".js"
     .pipe gulp.dest './build/test/'
 
-gulp.task 'watch', ['build_browser','mocha'], ->
-  gulp.watch files.all, ['build_browser', 'mocha']
+gulp.task 'watch', ['build_browser'], ->
+  gulp.watch files.all, ['build_browser']
 
 gulp.task 'mocha', ->
   gulp.src files.test, { read: false }
