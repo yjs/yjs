@@ -284,6 +284,11 @@ module.exports = (HB)->
     #   yatta.bind(textbox);
     #
     bind: (textfield)->
+      # don't duplicate!
+      for t in @textfields
+        if t is textfield
+          return
+
       word = @
       textfield.value = @val()
       @textfields.push textfield
@@ -336,7 +341,7 @@ module.exports = (HB)->
         writeContent = (content)->
           textfield.textContent = content
 
-
+      writeContent this.val()
 
       @observe (events)->
         for event in events
