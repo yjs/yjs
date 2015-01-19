@@ -99,6 +99,7 @@ class HistoryBuffer
   isExpectedOperation: (o)->
     @operation_counter[o.uid.creator] ?= 0
     o.uid.op_number <= @operation_counter[o.uid.creator]
+    true #TODO: !! this could break stuff. But I dunno why
 
   #
   # Encode this operation in such a way that it can be parsed by remote peers.
