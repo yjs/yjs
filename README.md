@@ -1,5 +1,6 @@
 
 # ![Yatta!](https://dadamonad.github.io/files/layout/Yatta_logo.png)
+[![Build Status](http://layers.dbis.rwth-aachen.de/jenkins/job/Yatta/badge/icon)](http://layers.dbis.rwth-aachen.de/jenkins/job/Yatta/)
 
 A Real-Time web framework that manages concurrency control for arbitrary data types.
 Yatta! provides similar functionality as [ShareJs](https://github.com/share/ShareJS) and [OpenCoweb](https://github.com/opencoweb/coweb),
