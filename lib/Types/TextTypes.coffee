@@ -310,8 +310,8 @@ module.exports = (HB)->
         createRange = (fix)->
           s = dom_root.getSelection()
           clength = textfield.textContent.length
-          left = Math.min s.baseOffset, clength
-          right = Math.min s.extentOffset, clength
+          left = Math.min s.anchorOffset, clength
+          right = Math.min s.focusOffset, clength
           if fix?
             left = fix left
             right = fix right
@@ -323,7 +323,7 @@ module.exports = (HB)->
 
         writeRange = (range)->
           textnode = textfield.childNodes[0]
-          if range.isReal
+          if range.isReal and textnode?
             r = new Range()
             r.setStart(textnode, range.left)
             r.setEnd(textnode, range.right)
@@ -331,8 +331,12 @@ module.exports = (HB)->
             s.removeAllRanges()
             s.addRange(r)
         writeContent = (content)->
+          append = ""
+          if content[content.length - 1] is " "
+            content = content.slice(0,content.length-1)
+            append = '&nbsp;'
           textfield.textContent = content
-          textfield.innerHTML += '&nbsp;'
+          textfield.innerHTML += append
 
       writeContent this.val()
 
