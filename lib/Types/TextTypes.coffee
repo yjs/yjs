@@ -24,17 +24,6 @@ module.exports = (HB)->
     type: "TextInsert"
 
     #
-    # Inserts a string into the word.
-    #
-    # @return {Array Type} This String object.
-    #
-    insert: (position, content, options)->
-      ith = @getOperationByPosition position
-      # the (i-1)th character. e.g. "abc" the 1th character is "a"
-      # the 0th character is the left Delimiter
-      @insertAfter ith, content, options
-
-    #
     # Retrieve the effective length of the $content of this operation.
     #
     getLength: ()->
@@ -272,9 +261,16 @@ module.exports = (HB)->
     toString: ()->
       @val()
 
-    # String must not set options! (the third parameter)
-    insert: (position, content)->
-      super position, content
+    #
+    # Inserts a string into the word.
+    #
+    # @return {Array Type} This String object.
+    #
+    insert: (position, content, options)->
+      ith = @getOperationByPosition position
+      # the (i-1)th character. e.g. "abc" the 1th character is "a"
+      # the 0th character is the left Delimiter
+      @insertAfter ith, content, options
 
     #
     # Bind this String to a textfield or input field.
@@ -313,8 +309,9 @@ module.exports = (HB)->
       else
         createRange = (fix)->
           s = dom_root.getSelection()
-          left = s.baseOffset
-          right = s.extentOffset
+          clength = textfield.textContent.length
+          left = Math.min s.baseOffset, clength
+          right = Math.min s.extentOffset, clength
           if fix?
             left = fix left
             right = fix right

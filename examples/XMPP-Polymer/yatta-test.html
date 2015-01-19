@@ -4,6 +4,7 @@
 
 <polymer-element name="yatta-test" attributes="yatta connector stuff">
   <template>
+    <h1 id="text" contentEditable> Check this out !</h1>
     <xmpp-connector id="connector" connector={{connector}} room="testy-xmpp-polymer"></xmpp-connector>
     <yatta-element connector={{connector}} val={{yatta}}>
       <yatta-property name="slider" val={{slider}}>
@@ -23,8 +24,14 @@
   Polymer({
     ready: function(){
       window.y_stuff_property = this.$.otherstuff;
-
       this.yatta.val("slider",50)
+      var that = this;
+      this.connector.whenSynced(function(){
+        if(that.yatta.val("text") == null){
+          that.yatta.val("text","stuff","mutable");
+        }
+        that.yatta.val("text").bind(that.$.text,that.shadowRoot)
+      })
     }
   })
   </script>
