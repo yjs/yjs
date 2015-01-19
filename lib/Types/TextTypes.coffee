@@ -313,22 +313,17 @@ module.exports = (HB)->
         createRange = (fix)->
           textnode = textfield.childNodes[0]
           s = window.getSelection().getRangeAt(0)
-          if s.startContainer is textnode and s.endContainer is textnode
-            left = s.startOffset
-            right = s.endOffset
-            if fix?
-              left = fix left
-              right = fix right
-            {
-              left: left
-              right: right
-              isReal: true
-            }
-          else
-            {
-              left: 0
-              right: 0
-            }
+          left = s.startOffset
+          right = s.endOffset
+          if fix?
+            left = fix left
+            right = fix right
+          {
+            left: left
+            right: right
+            isReal: true
+          }
+
         writeRange = (range)->
           textnode = textfield.childNodes[0]
           if range.isReal
