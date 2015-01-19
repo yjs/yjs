@@ -30,7 +30,7 @@ var yatta, yattaHandler;
   For now, you can use my API key.
 */
 
-connector = new XMPPConnector("testy-xmpp-json");
+connector = new XMPPConnector("testy-xmpp-json2");
 connector.debug = true
 /**
   ### Yatta

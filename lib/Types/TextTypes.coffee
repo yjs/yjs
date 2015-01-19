@@ -15,13 +15,24 @@ module.exports = (HB)->
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     #
     constructor: (content, uid, prev, next, origin, parent)->
-      if content?.uid?.creator
+      if content?.creator
         @saveOperation 'content', content
       else
         @content = content
       super uid, prev, next, origin, parent
 
     type: "TextInsert"
+
+    #
+    # Inserts a string into the word.
+    #
+    # @return {Array Type} This String object.
+    #
+    insert: (position, content, options)->
+      ith = @getOperationByPosition position
+      # the (i-1)th character. e.g. "abc" the 1th character is "a"
+      # the 0th character is the left Delimiter
+      @insertAfter ith, content, options
 
     #
     # Retrieve the effective length of the $content of this operation.
@@ -167,7 +178,7 @@ module.exports = (HB)->
       ith = @getOperationByPosition position
       # the (i-1)th character. e.g. "abc" the 1th character is "a"
       # the 0th character is the left Delimiter
-      @insertAfter ith, content, options
+      @insertAfter ith, [content], options
 
     #
     # Deletes a part of the word.
@@ -208,7 +219,8 @@ module.exports = (HB)->
   types.Array.create = (content, mutable)->
     if (mutable is "mutable")
       list = new types.Array().execute()
-      list.insert 0, content
+      ith = list.getOperationByPosition 0
+      list.insertAfter ith, content
       list
     else if (not mutable?) or (mutable is "immutable")
       content
