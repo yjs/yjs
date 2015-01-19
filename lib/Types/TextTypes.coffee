@@ -283,7 +283,8 @@ module.exports = (HB)->
     #   var textbox = document.getElementById("textfield");
     #   yatta.bind(textbox);
     #
-    bind: (textfield)->
+    bind: (textfield, dom_root)->
+      dom_root ?= window;
       # don't duplicate!
       for t in @textfields
         if t is textfield
@@ -311,10 +312,9 @@ module.exports = (HB)->
           textfield.value = content
       else
         createRange = (fix)->
-          textnode = textfield.childNodes[0]
-          s = window.getSelection().getRangeAt(0)
-          left = s.startOffset
-          right = s.endOffset
+          s = dom_root.getSelection()
+          left = s.baseOffset
+          right = s.extentOffset
           if fix?
             left = fix left
             right = fix right
