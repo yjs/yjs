@@ -285,6 +285,7 @@ module.exports = (HB)->
       for t in @textfields
         if t is textfield
           return
+      creator_token = false;
 
       word = @
       textfield.value = @val()
@@ -303,7 +304,9 @@ module.exports = (HB)->
           }
 
         writeRange = (range)->
+          writeContent word.val()
           textfield.setSelectionRange range.left, range.right
+
         writeContent = (content)->
           textfield.value = content
       else
@@ -322,8 +325,15 @@ module.exports = (HB)->
           }
 
         writeRange = (range)->
+          writeContent word.val()
           textnode = textfield.childNodes[0]
           if range.isReal and textnode?
+            if range.left < 0
+              range.left = 0
+            range.right = Math.max range.left, range.right
+            if range.right > textnode.length
+              range.right = textnode.length
+            range.left = Math.min range.left, range.right
             r = new Range()
             r.setStart(textnode, range.left)
             r.setEnd(textnode, range.right)
@@ -342,6 +352,7 @@ module.exports = (HB)->
 
       @observe (events)->
         for event in events
+          if not creator_token
             if event.type is "insert"
               o_pos = event.position
               fix = (cursor)->
@@ -351,7 +362,6 @@ module.exports = (HB)->
                   cursor += 1
                   cursor
               r = createRange fix
-              writeContent word.val()
               writeRange r
 
             else if event.type is "delete"
@@ -363,11 +373,11 @@ module.exports = (HB)->
                   cursor -= 1
                   cursor
               r = createRange fix
-              writeContent word.val()
               writeRange r
 
       # consume all text-insert changes.
       textfield.onkeypress = (event)->
+        creator_token = true
         if word.is_deleted
           # if word is deleted, do not do anything ever again
           textfield.onkeypress = null
@@ -394,6 +404,7 @@ module.exports = (HB)->
           event.preventDefault()
         else
           event.preventDefault()
+        creator_token = false
 
       textfield.onpaste = (event)->
         if word.is_deleted
@@ -416,6 +427,7 @@ module.exports = (HB)->
       #     Every browser supports keyCode. Let's stick with it for now..
       #
       textfield.onkeydown = (event)->
+        creator_token = true
         if word.is_deleted
           # if word is deleted, do not do anything ever again
           textfield.onkeydown = null
@@ -448,7 +460,11 @@ module.exports = (HB)->
               r.right = new_pos
               writeRange r
             else
-              word.delete (pos-1), 1
+              if pos > 0
+                word.delete (pos-1), 1
+                r.left = pos-1
+                r.right = pos-1
+                writeRange r
           event.preventDefault()
         else if event.keyCode? and event.keyCode is 46 # Delete
           if diff > 0
@@ -461,6 +477,8 @@ module.exports = (HB)->
             r.left = pos
             r.right = pos
             writeRange r
+        creator_token = false
+        true
 
     #
     # @private

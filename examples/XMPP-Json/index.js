@@ -45,10 +45,10 @@ window.onload = function(){
     for(var i=0; i<events.length; i++){
       var event = events[i];
       if(event.name === "textfield" && event.type !== "delete"){
-        yatta.val("textfield").bind(textbox);
+        //yatta.val("textfield").bind(textbox);
         yatta.val("textfield").bind(document.querySelector("h1"))
       }
     }
   });
-  yatta.val("textfield","", "mutable");
+  yatta.val("textfield","stuff", "mutable");
 };
