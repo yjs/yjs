@@ -59,6 +59,10 @@ module.exports = (HB)->
     deleteAllObservers: ()->
       @event_listeners = []
 
+    delete: ()->
+      (new types.Delete undefined, @).execute()
+      null
+
     #
     # Fire an event.
     # TODO: Do something with timeouts. You don't want this to fire for every operation (e.g. insert).

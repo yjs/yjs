@@ -127,7 +127,8 @@ module.exports = (HB)->
         o = @beginning.next_cl
         result = []
         while o isnt @end
-          result.push o.val()
+          if not o.isDeleted()
+            result.push o.val()
           o = o.next_cl
         result
 
@@ -183,7 +184,7 @@ module.exports = (HB)->
           break
         d = (new types.Delete undefined, o).execute()
         o = o.next_cl
-        while not (o instanceof types.Delimiter) and o.isDeleted()
+        while (not (o instanceof types.Delimiter)) or o.isDeleted()
           o = o.next_cl
         delete_ops.push d._encode()
       @
