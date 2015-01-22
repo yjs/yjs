@@ -281,7 +281,10 @@ module.exports = (HB)->
     #   yatta.bind(textbox);
     #
     bind: (textfield, dom_root)->
-      dom_root ?= window;
+      dom_root ?= window
+      if (not dom_root.getSelection?)
+        dom_root = window
+
       # don't duplicate!
       for t in @textfields
         if t is textfield
