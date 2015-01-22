@@ -184,7 +184,7 @@ module.exports = (HB)->
           break
         d = (new types.Delete undefined, o).execute()
         o = o.next_cl
-        while (not (o instanceof types.Delimiter)) or o.isDeleted()
+        while (not (o instanceof types.Delimiter)) and o.isDeleted()
           o = o.next_cl
         delete_ops.push d._encode()
       @
@@ -338,7 +338,7 @@ module.exports = (HB)->
             if range.right > textnode.length
               range.right = textnode.length
             range.left = Math.min range.left, range.right
-            r = new Range()
+            r = document.createRange()
             r.setStart(textnode, range.left)
             r.setEnd(textnode, range.right)
             s = window.getSelection()
@@ -381,11 +381,11 @@ module.exports = (HB)->
 
       # consume all text-insert changes.
       textfield.onkeypress = (event)->
-        creator_token = true
         if word.is_deleted
           # if word is deleted, do not do anything ever again
           textfield.onkeypress = null
           return true
+        creator_token = true
         char = null
         if event.key?
           if event.charCode is 32
@@ -396,7 +396,9 @@ module.exports = (HB)->
             char = event.key
         else
           char = window.String.fromCharCode event.keyCode
-        if char.length > 0
+        if char.length > 1
+          return true
+        else if char.length > 0
           r = createRange()
           pos = Math.min r.left, r.right
           diff = Math.abs(r.right - r.left)
@@ -405,10 +407,10 @@ module.exports = (HB)->
           r.left = pos + char.length
           r.right = r.left
           writeRange r
-          event.preventDefault()
-        else
-          event.preventDefault()
+
+        event.preventDefault()
         creator_token = false
+        false
 
       textfield.onpaste = (event)->
         if word.is_deleted
@@ -437,7 +439,7 @@ module.exports = (HB)->
           textfield.onkeydown = null
           return true
         r = createRange()
-        pos = Math.min r.left, r.right
+        pos = Math.min(r.left, r.right, word.val().length)
         diff = Math.abs(r.left - r.right)
         if event.keyCode? and event.keyCode is 8 # Backspace
           if diff > 0
@@ -447,10 +449,7 @@ module.exports = (HB)->
             writeRange r
           else
             if event.ctrlKey? and event.ctrlKey
-              if textfield.value?
-                val = textfield.value
-              else
-                val = textfield.textContent
+              val = word.val()
               new_pos = pos
               del_length = 0
               if pos > 0
@@ -470,6 +469,8 @@ module.exports = (HB)->
                 r.right = pos-1
                 writeRange r
           event.preventDefault()
+          creator_token = false
+          return false
         else if event.keyCode? and event.keyCode is 46 # Delete
           if diff > 0
             word.delete pos, diff
@@ -481,8 +482,12 @@ module.exports = (HB)->
             r.left = pos
             r.right = pos
             writeRange r
-        creator_token = false
-        true
+          event.preventDefault()
+          creator_token = false
+          return false
+        else
+          creator_token = false
+          true
 
     #
     # @private
