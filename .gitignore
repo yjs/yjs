@@ -1,8 +1,6 @@
 /node_modules/
-.kateproject.d
-.kateproject
+bower_components
 .directory
 .c9
-myftppass
 .codio
 .settings

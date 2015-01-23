@@ -2,24 +2,32 @@
 # ![Yatta!](https://dadamonad.github.io/files/layout/Yatta_logo.png)
 [![Build Status](http://layers.dbis.rwth-aachen.de/jenkins/job/Yatta/badge/icon)](http://layers.dbis.rwth-aachen.de/jenkins/job/Yatta/)
 
-A Real-Time web framework that manages concurrency control for arbitrary data types.
-Yatta! provides similar functionality as [ShareJs](https://github.com/share/ShareJS) and [OpenCoweb](https://github.com/opencoweb/coweb),
-but does not require you to understand how the internals work. The predefined data types provide a simple API to access your shared data types.
 
-Predefined data types:
-* Text - [Collaborative Text Editing Example](http://dadamonad.github.io/Yatta/examples/TextEditing/)
-* Json - [Tutorial](http://dadamonad.github.io/Yatta/examples/PeerJs-Json/)
-* XML - [XML Example](http://dadamonad.github.io/Yatta/examples/XmlExample/) Collaboratively manipulate the dom with native dom-features and jQuery.
+Yatta is a framework for optimistic concurrency control and automatic conflict resolution on arbitrary data types. The framework implements a new OT-like concurrency algorithm and provides similar functionality as [ShareJs] and [OpenCoweb]. Yatta was designed to take away the pain from concurrently editing complex data types like Text, Json, and XML. You can find some applications for this framework [here](https://dadamonad.github.io/Yatta/examples/).
 
-Unlike other frameworks, Yatta! supports P2P message propagation and is not bound to a specific communication protocol.
+In the future, we want to enable users to implement their own collaborative types. Currently we provide data types for
+* Text
+* Json
+* XML
 
-It is possible to add any communication protocol to Yatta. Currently it supports:
-* [PeerJs](http://peerjs.com/) - A WebRTC Framework
-* [SimpleWebRTC](http://simplewebrtc.com/) - Another WebRTC Framework (coming soon)
-* [IWC](http://dbis.rwth-aachen.de/cms/projects/the-xmpp-experience#interwidget-communication) - Inter-widget Communication
+Unlike other frameworks, Yatta supports P2P message propagation and is not bound to a specific communication protocol. Therefore, Yatta is extremely scalable and can be used in a wide range of application scenarios.
+
+We support several communication protocols as so called *Connectors*. You find a bunch of Connectors in the [Yatta-Connectors](https://github.com/rwth-acis/Yatta-Connectors) repository. Currently supported communication protocols:
+* [XMPP-Connector](http://xmpp.org) - Propagates updates in a XMPP multi-user-chat room
+* [WebRTC-Connector](http://peerjs.com/) - Propagate updates directly with WebRTC
+* [IWC-Connector](http://dbis.rwth-aachen.de/cms/projects/the-xmpp-experience#interwidget-communication) - Inter-widget Communication
+
+You can use Yatta client-, and server- side. You can get it as via npm, and bower. We even provide a polymer element for Yatta!
+
+The theoretical advantages over similar frameworks are support for
+* .. P2P message propagation and arbitrary communication protocols
+* .. arbitrary complex data types
+* .. offline editing: Only relevant changes are propagated on rejoin (unimplemented)
+* .. AnyUndo: Undo *any* action that was executed in constant time (unimplemented)
+* .. Intention Preservation: When working on Text, the intention of your changes are preserved. This is particularily important when working offline.
 
 ## Use it!
-The [examples](./examples/) provide an excellent starting point for beginners. Also the [API Documentation](http://dadamonad.github.io/Yatta/doc/) could prove to be very helpful.
+You find a tutorial, examples, and documentation on the [website](https://dadamonad.github.io/Yatta/).
 
 Either clone this git repository, install it with [bower](http://bower.io/), or install it with [npm](https://www.npmjs.org/package/yatta).
 
@@ -29,7 +37,7 @@ bower install Yatta
 ```
 Then you include the libraries directly from the installation folder.
 ```
-<script src="./bower_components/yatta.js"></script>
+<script src="./bower_components/yatta/yatta.js"></script>
 ```
 
 ### Npm
@@ -42,55 +50,25 @@ And use it like this with *npm*:
 Yatta = require("yatta");
 ```
 
-
-## About
-Find out more about the concurrent editing problem here
-[Cooperation, Concurrency, Conflicts, and Convergence](http://opencoweb.org/ocwdocs/intro/openg.html) and here
-[Operational Transformation (OT)](http://en.wikipedia.org/wiki/Operational_transformation)
-
-My Bachelor Thesis project aim was to develop a P2P OT Framework that enables collaboration on XML documents and supports
-[Intention Preservation](http://www3.ntu.edu.sg/home/czsun/projects/otfaq/#intentionPreservation).
-After some time I realized that OT has significant drawbacks in P2P environments.
-
-With my gained experiences I came up with a new approach. I named it *Yata* - Yet Another Transformation Approach.
-It enables concurrent editing with the following space and time properties:
-* Time complexity: O(S), whereby S is the number of operations that are inserted concurrently at the same position (no transformation against operations that happen on different positions).
-* Space complexity = O(|Document|), whereby |Document| is the size of the shared document.
-
-This means that my approach beats all OT time complexities. Furthermore, Yatta has a very strict definition of Intention Preservation, and I was able to
-show that it is never violated.
-
-Another advantage of Yata is that propagated messages are very small.
-Background: In Real-Time P2P OT algorithms you have to send a state-vector with each message that defines the state of the History Buffer
-on which the operation was created. This is not necessary in Yata.
-
-The downside of this approach is that the History Buffer holds at least as many operations as there are characters in the document.
-In contrast, an OT algorithm can have an empty History Buffer while the document size is very big.
-
-Eventually (after my thesis), I will publish more information about Yata.
-
-So, how did I come up with the name for the implementation (Yatta! is not Yata)?
-Yatta! means "I did it!" in Japanese. You scream it when you accomplish something (for proper application I refer to the Yatta-man in [Heroes](http://heroeswiki.com/Yatta!)).
-There is also this awesome video on the Internet that will change your life [Yatta](https://www.youtube.com/watch?v=kL5DDSglM_s).
-
 ## Status
 Yatta! is still in an early development phase. Don't expect that everything is working fine.
 But I would become really motivated if you gave me some feedback :) ([github](https://github.com/DadaMonad/Yatta/issues)).
 
 ### Current Issues
-* HTML editable tag
-* More efficient representation of text.
-* Use a better data structure for the History Buffer - it should be possible to use Arrays.
-* SimpleRTC support
-
+* The History Buffer should be able to store operations in a database
+* Documentation
+* Reimplement support for XML as a data type
+* Custom data types
 
 ## Support
-Please report _any_ issues to the [Github issue page](https://github.com/DadaMonad/Yatta/issues)!
-I would appreciate if developers gave me feedback on how _convenient_ the framework is, and if it is easy to use. Particularly the XML-support may not support every DOM-methods - if you encounter a method that does not cause any change on other peers,
-please state function name, and sample parameters. However, there are browser-specific features, that Yatta won't support.
+Please report _any_ issues to the [Github issue page](https://github.com/DadaMonad/Yatta/issues)! 
+I would appreciate if developers give me feedback on how _convenient_ the framework is, and if it is easy to use. Particularly the XML-support may not support every DOM-methods - if you encounter a method that does not cause any change on other peers, please state function name, and sample parameters. However, there are browser-specific features, that Yatta won't support.
 
 ## License
 Yatta! is licensed under the [MIT License](./LICENSE.txt).
+
+[ShareJs]: https://github.com/share/ShareJS
+[OpenCoweb]: https://github.com/opencoweb/coweb
 
 <kevin.jahns@rwth-aachen.de>
 

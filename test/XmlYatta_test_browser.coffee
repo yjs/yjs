@@ -11,7 +11,7 @@ require 'coffee-errors'
 chai.use(sinonChai)
 
 Y = require "../lib/index"
-Connector = require "../bower_components/connector/lib/test-connector/test-connector.coffee"
+Connector = require "../../Yatta-Connectors/lib/test-connector/test-connector.coffee"
 
 Test = require "./TestSuite"
 class XmlTest extends Test

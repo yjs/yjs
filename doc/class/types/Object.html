@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta charset='UTF-8'>
+  <title>Yatta! API</title>
+  <script src='../../javascript/application.js'></script>
+  <script src='../../javascript/search.js'></script>
+  <link rel='stylesheet' href='../../stylesheets/application.css' type='text/css'>
+</head>
+  <body>
+    <div id='base' data-path='../../'></div>
+<div id='header'>
+  <div id='menu'>
+    <a href='../../extra/README.md.html' title='Yatta!'>
+      Yatta!
+    </a>
+    &raquo;
+    <a href='../../alphabetical_index.html' title='Index'>
+      Index
+    </a>
+    &raquo;
+    <span class='title'>types</span>
+    &raquo;
+    <span class='title'>Object</span>
+  </div>
+</div>
+    <div id='content'>
+      <h1>
+        Class:
+        types.Object
+      </h1>
+      <table class='box'>
+        <tr>
+          <td>Defined in:</td>
+          <td>lib&#47;Types&#47;JsonTypes.coffee</td>
+        </tr>
+        <tr>
+          <td>Inherits:</td>
+          <td>
+            types.MapManager
+          </td>
+        </tr>
+      </table>
+      <h2>Overview</h2>
+      <div class='docstring'>
+  <p>Manages Object-like values.</p>
+</div>
+<div class='tags'>
+</div>
+      <h2>Direct Known Subclasses</h2>
+      <p class='children'>
+        <a href='../../class/Yatta.html'>Yatta</a>
+      </p>
+      <h2>Variables Summary</h2>
+      <dl class='constants'>
+  <dt id='type-variable'>
+    type
+    =
+  </dt>
+  <dd>
+    <pre><code class='coffeescript'>&quot;Object&quot;</code></pre>
+    <div class='docstring'>
+  <p>Identifies this class.
+Use it to check whether this is a json-type or something else.</p>
+  <div class='examples'>
+    <h3>Examples:</h3>
+    <h4>
+      
+    </h4>
+    <pre><code class='coffeescript'>var x = yatta.val(&#39;unknown&#39;)
+if (x.type === &quot;Object&quot;) {
+  console.log JSON.stringify(x.toJson())
+}</code></pre>
+  </div>
+</div>
+<div class='tags'>
+</div>
+  </dd>
+</dl>
+      <h2>Instance Method Summary</h2>
+      <ul class='summary'>
+  <li>
+    <span class='signature'>
+      <a href='#applyDelete-dynamic'>
+        #
+(void)
+<b>applyDelete</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#cleanup-dynamic'>
+        #
+(void)
+<b>cleanup</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#toJson-dynamic'>
+        #
+(Json)
+<b>toJson</b><span>(transform_to_value = false)</span>
+      </a>
+    </span>
+    <span class='desc'>
+      Transform this to a Json. 
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#val-dynamic'>
+        ~
+(Json)
+<b>val</b><span>()</span>
+      </a>
+    </span>
+    <span class='desc'>
+    </span>
+  </li>
+  <li>
+    <span class='signature'>
+      <a href='#_encode-dynamic'>
+        #
+(void)
+<b>_encode</b><span>()</span>
+      </a>
+    </span>
+    <span class='note private title'>Private</span>
+    <span class='desc'>
+    </span>
+  </li>
+</ul>
+      <h2>Instance Method Details</h2>
+      <div class='methods'>
+  <div class='method_details'>
+    <p class='signature' id='applyDelete-dynamic'>
+      #
+(void)
+<b>applyDelete</b><span>()</span>
+      <br>
+    </p>
+    
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='cleanup-dynamic'>
+      #
+(void)
+<b>cleanup</b><span>()</span>
+      <br>
+    </p>
+    
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='toJson-dynamic'>
+      #
+(Json)
+<b>toJson</b><span>(transform_to_value = false)</span>
+      <br>
+    </p>
+    <div class='docstring'>
+  <p>Transform this to a Json. If your browser supports Object.observe it will be transformed automatically when a change arrives.
+Otherwise you will loose all the sharing-abilities (the new object will be a deep clone)!</p><p>TODO: at the moment you don&#39;t consider changing of properties.
+E.g.: let x = {a:[]}. Then x.a.push 1 wouldn&#39;t change anything</p>
+</div>
+<div class='tags'>
+  <h3>Returns:</h3>
+  <ul class='return'>
+    <li>
+      <span class='type'></span>
+      <tt>Json</tt>
+    </li>
+  </ul>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='val-dynamic'>
+      ~
+(Json)
+<b>val</b><span>()</span>
+      <br>
+      ~
+(Object Type||String|Object)
+<b>val</b><span>(name)</span>
+      <br>
+      ~
+(Object Type)
+<b>val</b><span>(name, content)</span>
+      <br>
+    </p>
+    <div class='tags'>
+  <div class='overloads'>
+    <h3>Overloads:</h3>
+    <div class='overload'>
+      <p class='signature'>
+        ~
+(Json)
+<b>val</b><span>()</span>
+      </p>
+      <div class='docstring'>
+  <p>Get this as a Json object.</p>
+</div>
+<div class='tags'>
+  <h3>Returns:</h3>
+  <ul class='return'>
+    <li>
+      <span class='type'></span>
+      <tt>Json</tt>
+    </li>
+  </ul>
+</div>
+    </div>
+    <div class='overload'>
+      <p class='signature'>
+        ~
+(Object Type||String|Object)
+<b>val</b><span>(name)</span>
+      </p>
+      <div class='docstring'>
+  <p>Get value of a property.</p>
+</div>
+<div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>name</span>
+      <span class='type'>
+        (
+          <tt>String</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>Name of the object property. </span>
+    </li>
+  </ul>
+  <h3>Returns:</h3>
+  <ul class='return'>
+    <li>
+      <span class='type'></span>
+      (
+        <tt>Object Type||String|Object</tt>
+      )
+      &mdash;
+      <span class='desc'>Depending on the value of the property. If mutable it will return a Operation-type object, if immutable it will return String/Object. </span>
+    </li>
+  </ul>
+</div>
+    </div>
+    <div class='overload'>
+      <p class='signature'>
+        ~
+(Object Type)
+<b>val</b><span>(name, content)</span>
+      </p>
+      <div class='docstring'>
+  <p>Set a new property.</p>
+</div>
+<div class='tags'>
+  <h3>Parameters:</h3>
+  <ul class='param'>
+    <li>
+      <span class='name'>name</span>
+      <span class='type'>
+        (
+          <tt>String</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>Name of the object property. </span>
+    </li>
+    <li>
+      <span class='name'>content</span>
+      <span class='type'>
+        (
+          <tt>Object|String</tt>
+        )
+      </span>
+      &mdash;
+      <span class='desc'>Content of the object property. </span>
+    </li>
+  </ul>
+  <h3>Returns:</h3>
+  <ul class='return'>
+    <li>
+      <span class='type'></span>
+      (
+        <tt>Object Type</tt>
+      )
+      &mdash;
+      <span class='desc'>This object. (supports chaining) </span>
+    </li>
+  </ul>
+</div>
+    </div>
+  </div>
+</div>
+  </div>
+  <div class='method_details'>
+    <p class='signature' id='_encode-dynamic'>
+      #
+(void)
+<b>_encode</b><span>()</span>
+      <span class='note private'>Private</span>
+      <br>
+    </p>
+    <div class='tags'>
+</div>
+  </div>
+</div>
+    </div>
+    <div id='footer'>
+  January 23, 15 15:59:30 by
+  <a href='https://github.com/coffeedoc/codo' title='CoffeeScript API documentation generator'>
+    Codo
+  </a>
+  2.0.9
+  &#10034;
+  Press H to see the keyboard shortcuts
+  &#10034;
+  <a href='http://twitter.com/netzpirat' target='_parent'>@netzpirat</a>
+  &#10034;
+  <a href='http://twitter.com/_inossidabile' target='_parent'>@_inossidabile</a>
+</div>
+<iframe id='search_frame'></iframe>
+<div id='fuzzySearch'>
+  <input type='text'>
+  <ol></ol>
+</div>
+<div id='help'>
+  <p>
+    Quickly fuzzy find classes, mixins, methods, file:
+  </p>
+  <ul>
+    <li>
+      <span>T</span>
+      Open fuzzy finder dialog
+    </li>
+  </ul>
+  <p>
+    Control the navigation frame:
+  </p>
+  <ul>
+    <li>
+      <span>L</span>
+      Toggle list view
+    </li>
+    <li>
+      <span>C</span>
+      Show class list
+    </li>
+    <li>
+      <span>I</span>
+      Show mixin list
+    </li>
+    <li>
+      <span>F</span>
+      Show file list
+    </li>
+    <li>
+      <span>M</span>
+      Show method list
+    </li>
+    <li>
+      <span>E</span>
+      Show extras list
+    </li>
+  </ul>
+  <p>
+    You can focus and blur the search input:
+  </p>
+  <ul>
+    <li>
+      <span>S</span>
+      Focus search input
+    </li>
+    <li>
+      <span>Esc</span>
+      Blur search input
+    </li>
+  </ul>
+</div>
+  </body>
+</html>

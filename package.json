@@ -1,17 +1,14 @@
 {
   "name": "yatta",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A Framework that enables Real-Time Collaboration on arbitrary data structures.",
-  "main": "./build/node/",
-  "directories": {
-    "lib": "./build/node/"
-  },
+  "main": "./build/node/yatta.js",
   "scripts": {
     "test": "./node_modules/.bin/gulp test"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/DadaMonad/Yatta"
+    "url": "https://github.com/rwth-acis/Yatta"
   },
   "keywords": [
     "OT",
@@ -28,11 +25,12 @@
   "bugs": {
     "url": "https://github.com/DadaMonad/Yatta/issues"
   },
-  "homepage": "https://github.com/DadaMonad/Yatta",
+  "homepage": "https://github.com/DadaMonad/Yatta/",
   "dependencies": {
-    "underscore": "^1.6.0"
+    "codo": "^2.0.9"
   },
   "devDependencies": {
+    "underscore": "^1.6.0",
     "chai": "^1.9.1",
     "codo": "^2.0.9",
     "coffee-errors": "~0.8.6",
@@ -42,6 +40,7 @@
     "gulp-browserify": "^0.5.0",
     "gulp-cached": "^1.0.1",
     "gulp-coffee": "^2.1.1",
+    "gulp-coffeeify": "^0.1.2",
     "gulp-coffeelint": "^0.3.3",
     "gulp-concat": "^2.3.4",
     "gulp-copy": "0.0.2",

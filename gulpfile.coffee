@@ -17,14 +17,12 @@ ljs = require 'gulp-ljs'
 plumber = require 'gulp-plumber'
 mochaPhantomJS = require 'gulp-mocha-phantomjs'
 cache = require 'gulp-cached'
-
-
+coffeeify = require 'gulp-coffeeify'
 
 gulp.task 'default', ['build_browser']
 
 files =
   lib : ['./lib/**/*.coffee']
-  build : ['./build/**']
   browser : ['./lib/yatta.coffee','./lib/yatta-element.coffee']
   #test : ['./test/**/*_test.coffee']
   test : ['./test/JsonYatta_test.coffee', './test/TextYatta_test.coffee']
@@ -70,6 +68,14 @@ gulp.task 'build_browser', ->
       extname: ".js"
     .pipe gulp.dest './build/test/'
 
+gulp.task 'build_node', ->
+  gulp.src files.lib
+    .pipe plumber()
+    .pipe coffee({bare:true})
+    .pipe gulp.dest './build/node'
+
+gulp.task 'build', ['build_node', 'build_browser'], ->
+
 gulp.task 'watch', ['build_browser'], ->
   gulp.watch files.all, ['build_browser']
 
@@ -101,7 +107,7 @@ gulp.task 'literate', ->
     .pipe gulpif '!**/', git.add({args : "-A"})
 
 gulp.task 'codo', [], ()->
-  command = 'codo -o "./doc" --name "Yatta!" --readme "README.md" --undocumented false --private true --title "Yatta! API" ./lib - LICENSE.txt '
+  command = './node_modules/codo/bin/codo -o "./doc" --name "Yatta!" --readme "README.md" --undocumented false --private true --title "Yatta! API" ./lib - LICENSE.txt '
   run(command).exec()
 
 gulp.task 'phantom_test', ['build_browser'], ()->
@@ -109,7 +115,8 @@ gulp.task 'phantom_test', ['build_browser'], ()->
     .pipe mochaPhantomJS()
 
 gulp.task 'clean', ->
-  gulp.src './build/{browser,test,node}/**/*.{js,map}', { read: false }
-    .pipe ignore '*.html'
+  gulp.src ['./build/{browser,test,node}/**/*.{js,map}','./doc/'], { read: false }
     .pipe rimraf()
+
+gulp.task 'default', ['clean','build', 'codo'], ->
 

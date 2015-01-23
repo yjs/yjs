@@ -8,7 +8,7 @@ _         = require("underscore")
 chai.use(sinonChai)
 
 Yatta = require "../lib/yatta"
-Connector = require "../bower_components/connector/lib/test-connector/test-connector.coffee"
+Connector = require "../../Yatta-Connectors/lib/test-connector/test-connector.coffee"
 
 Test = require "./TestSuite"
 class TextTest extends Test

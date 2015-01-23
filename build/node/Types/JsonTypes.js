@@ -1,246 +1,158 @@
-(function() {
-  var text_types_uninitialized,
-    __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+var text_types_uninitialized,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  text_types_uninitialized = require("./TextTypes");
+text_types_uninitialized = require("./TextTypes");
 
-  module.exports = function(HB) {
-    var JsonType, createJsonTypeWrapper, parser, text_types, types;
-    text_types = text_types_uninitialized(HB);
-    types = text_types.types;
-    parser = text_types.parser;
-    createJsonTypeWrapper = function(_jsonType) {
-      var JsonTypeWrapper;
-      JsonTypeWrapper = (function() {
-        function JsonTypeWrapper(jsonType) {
-          var name, obj, _fn, _ref;
-          _ref = jsonType.map;
-          _fn = function(name, obj) {
-            return Object.defineProperty(JsonTypeWrapper.prototype, name, {
-              get: function() {
-                var x;
-                x = obj.val();
-                if (x instanceof JsonType) {
-                  return createJsonTypeWrapper(x);
-                } else if (x instanceof types.ImmutableObject) {
-                  return x.val();
-                } else {
-                  return x;
-                }
-              },
-              set: function(o) {
-                var o_name, o_obj, overwrite, _results;
-                overwrite = jsonType.val(name);
-                if (o.constructor === {}.constructor && overwrite instanceof types.Operation) {
-                  _results = [];
-                  for (o_name in o) {
-                    o_obj = o[o_name];
-                    _results.push(overwrite.val(o_name, o_obj, 'immutable'));
-                  }
-                  return _results;
-                } else {
-                  return jsonType.val(name, o, 'immutable');
-                }
-              },
-              enumerable: true,
-              configurable: false
-            });
-          };
-          for (name in _ref) {
-            obj = _ref[name];
-            _fn(name, obj);
-          }
-        }
+module.exports = function(HB) {
+  var text_types, types;
+  text_types = text_types_uninitialized(HB);
+  types = text_types.types;
+  types.Object = (function(_super) {
+    __extends(Object, _super);
 
-        return JsonTypeWrapper;
+    function Object() {
+      return Object.__super__.constructor.apply(this, arguments);
+    }
 
-      })();
-      return new JsonTypeWrapper(_jsonType);
+    Object.prototype.type = "Object";
+
+    Object.prototype.applyDelete = function() {
+      return Object.__super__.applyDelete.call(this);
     };
-    JsonType = (function(_super) {
-      __extends(JsonType, _super);
 
-      function JsonType() {
-        return JsonType.__super__.constructor.apply(this, arguments);
+    Object.prototype.cleanup = function() {
+      return Object.__super__.cleanup.call(this);
+    };
+
+    Object.prototype.toJson = function(transform_to_value) {
+      var json, name, o, that, val;
+      if (transform_to_value == null) {
+        transform_to_value = false;
       }
-
-      JsonType.prototype.type = "JsonType";
-
-      JsonType.prototype.applyDelete = function() {
-        return JsonType.__super__.applyDelete.call(this);
-      };
-
-      JsonType.prototype.cleanup = function() {
-        return JsonType.__super__.cleanup.call(this);
-      };
-
-      JsonType.prototype.toJson = function() {
-        var json, name, o, that, val;
-        if ((this.bound_json == null) || (Object.observe == null) || true) {
-          val = this.val();
-          json = {};
-          for (name in val) {
-            o = val[name];
-            if (o == null) {
-              json[name] = o;
-            } else if (o.constructor === {}.constructor) {
-              json[name] = this.val(name).toJson();
-            } else if (o instanceof types.Operation) {
-              while (o instanceof types.Operation) {
-                o = o.val();
-              }
-              json[name] = o;
-            } else {
-              json[name] = o;
-            }
-          }
-          this.bound_json = json;
-          if (Object.observe != null) {
-            that = this;
-            Object.observe(this.bound_json, function(events) {
-              var event, _i, _len, _results;
-              _results = [];
-              for (_i = 0, _len = events.length; _i < _len; _i++) {
-                event = events[_i];
-                if ((event.changedBy == null) && (event.type === "add" || (event.type = "update"))) {
-                  _results.push(that.val(event.name, event.object[event.name]));
-                } else {
-                  _results.push(void 0);
-                }
-              }
-              return _results;
-            });
-            this.observe(function(events) {
-              var event, notifier, oldVal, _i, _len, _results;
-              _results = [];
-              for (_i = 0, _len = events.length; _i < _len; _i++) {
-                event = events[_i];
-                if (event.created_ !== HB.getUserId()) {
-                  notifier = Object.getNotifier(that.bound_json);
-                  oldVal = that.bound_json[event.name];
-                  if (oldVal != null) {
-                    notifier.performChange('update', function() {
-                      return that.bound_json[event.name] = that.val(event.name);
-                    }, that.bound_json);
-                    _results.push(notifier.notify({
-                      object: that.bound_json,
-                      type: 'update',
-                      name: event.name,
-                      oldValue: oldVal,
-                      changedBy: event.changedBy
-                    }));
-                  } else {
-                    notifier.performChange('add', function() {
-                      return that.bound_json[event.name] = that.val(event.name);
-                    }, that.bound_json);
-                    _results.push(notifier.notify({
-                      object: that.bound_json,
-                      type: 'add',
-                      name: event.name,
-                      oldValue: oldVal,
-                      changedBy: event.changedBy
-                    }));
-                  }
-                } else {
-                  _results.push(void 0);
-                }
-              }
-              return _results;
-            });
-          }
-        }
-        return this.bound_json;
-      };
-
-      JsonType.prototype.mutable_default = true;
-
-      JsonType.prototype.setMutableDefault = function(mutable) {
-        if (mutable === true || mutable === 'mutable') {
-          JsonType.prototype.mutable_default = true;
-        } else if (mutable === false || mutable === 'immutable') {
-          JsonType.prototype.mutable_default = false;
-        } else {
-          throw new Error('Set mutable either "mutable" or "immutable"!');
-        }
-        return 'OK';
-      };
-
-      JsonType.prototype.val = function(name, content, mutable) {
-        var json, n, o, word;
-        if ((name != null) && arguments.length > 1) {
-          if (mutable != null) {
-            if (mutable === true || mutable === 'mutable') {
-              mutable = true;
-            } else {
-              mutable = false;
-            }
+      if ((this.bound_json == null) || (Object.observe == null) || true) {
+        val = this.val();
+        json = {};
+        for (name in val) {
+          o = val[name];
+          if (o instanceof types.Object) {
+            json[name] = o.toJson(transform_to_value);
+          } else if (o instanceof types.Array) {
+            json[name] = o.toJson(transform_to_value);
+          } else if (transform_to_value && o instanceof types.Operation) {
+            json[name] = o.val();
           } else {
-            mutable = this.mutable_default;
+            json[name] = o;
           }
-          if (typeof content === 'function') {
-            return this;
-          } else if ((content == null) || (((!mutable) || typeof content === 'number') && content.constructor !== Object)) {
-            return JsonType.__super__.val.call(this, name, (new types.ImmutableObject(void 0, content)).execute());
-          } else {
-            if (typeof content === 'string') {
-              word = (new types.WordType(void 0)).execute();
-              word.insertText(0, content);
-              return JsonType.__super__.val.call(this, name, word);
-            } else if (content.constructor === Object) {
-              json = new JsonType().execute();
-              for (n in content) {
-                o = content[n];
-                json.val(n, o, mutable);
-              }
-              return JsonType.__super__.val.call(this, name, json);
-            } else {
-              throw new Error("You must not set " + (typeof content) + "-types in collaborative Json-objects!");
-            }
-          }
-        } else {
-          return JsonType.__super__.val.call(this, name, content);
         }
-      };
-
-      Object.defineProperty(JsonType.prototype, 'value', {
-        get: function() {
-          return createJsonTypeWrapper(this);
-        },
-        set: function(o) {
-          var o_name, o_obj, _results;
-          if (o.constructor === {}.constructor) {
+        this.bound_json = json;
+        if (Object.observe != null) {
+          that = this;
+          Object.observe(this.bound_json, function(events) {
+            var event, _i, _len, _results;
             _results = [];
-            for (o_name in o) {
-              o_obj = o[o_name];
-              _results.push(this.val(o_name, o_obj, 'immutable'));
+            for (_i = 0, _len = events.length; _i < _len; _i++) {
+              event = events[_i];
+              if ((event.changedBy == null) && (event.type === "add" || (event.type = "update"))) {
+                _results.push(that.val(event.name, event.object[event.name]));
+              } else {
+                _results.push(void 0);
+              }
             }
             return _results;
-          } else {
-            throw new Error("You must only set Object values!");
-          }
+          });
+          this.observe(function(events) {
+            var event, notifier, oldVal, _i, _len, _results;
+            _results = [];
+            for (_i = 0, _len = events.length; _i < _len; _i++) {
+              event = events[_i];
+              if (event.created_ !== HB.getUserId()) {
+                notifier = Object.getNotifier(that.bound_json);
+                oldVal = that.bound_json[event.name];
+                if (oldVal != null) {
+                  notifier.performChange('update', function() {
+                    return that.bound_json[event.name] = that.val(event.name);
+                  }, that.bound_json);
+                  _results.push(notifier.notify({
+                    object: that.bound_json,
+                    type: 'update',
+                    name: event.name,
+                    oldValue: oldVal,
+                    changedBy: event.changedBy
+                  }));
+                } else {
+                  notifier.performChange('add', function() {
+                    return that.bound_json[event.name] = that.val(event.name);
+                  }, that.bound_json);
+                  _results.push(notifier.notify({
+                    object: that.bound_json,
+                    type: 'add',
+                    name: event.name,
+                    oldValue: oldVal,
+                    changedBy: event.changedBy
+                  }));
+                }
+              } else {
+                _results.push(void 0);
+              }
+            }
+            return _results;
+          });
         }
-      });
-
-      JsonType.prototype._encode = function() {
-        return {
-          'type': "JsonType",
-          'uid': this.getUid()
-        };
-      };
-
-      return JsonType;
-
-    })(types.MapManager);
-    parser['JsonType'] = function(json) {
-      var uid;
-      uid = json['uid'];
-      return new JsonType(uid);
+      }
+      return this.bound_json;
     };
-    types['JsonType'] = JsonType;
-    return text_types;
+
+    Object.prototype.val = function(name, content) {
+      var args, i, o, type, _i, _ref;
+      if ((name != null) && arguments.length > 1) {
+        if ((content != null) && (content.constructor != null)) {
+          type = types[content.constructor.name];
+          if ((type != null) && (type.create != null)) {
+            args = [];
+            for (i = _i = 1, _ref = arguments.length; 1 <= _ref ? _i < _ref : _i > _ref; i = 1 <= _ref ? ++_i : --_i) {
+              args.push(arguments[i]);
+            }
+            o = type.create.apply(null, args);
+            return Object.__super__.val.call(this, name, o);
+          } else {
+            throw new Error("The " + content.constructor.name + "-type is not (yet) supported in Yatta.");
+          }
+        } else {
+          return Object.__super__.val.call(this, name, content);
+        }
+      } else {
+        return Object.__super__.val.call(this, name);
+      }
+    };
+
+    Object.prototype._encode = function() {
+      return {
+        'type': this.type,
+        'uid': this.getUid()
+      };
+    };
+
+    return Object;
+
+  })(types.MapManager);
+  types.Object.parse = function(json) {
+    var uid;
+    uid = json['uid'];
+    return new this(uid);
   };
-
-}).call(this);
-
-//# sourceMappingURL=../Types/JsonTypes.js.map
+  types.Object.create = function(content, mutable) {
+    var json, n, o;
+    json = new types.Object().execute();
+    for (n in content) {
+      o = content[n];
+      json.val(n, o, mutable);
+    }
+    return json;
+  };
+  types.Number = {};
+  types.Number.create = function(content) {
+    return content;
+  };
+  return text_types;
+};

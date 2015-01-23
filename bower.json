@@ -1,12 +1,16 @@
 {
   "name": "Yatta",
-  "version": "0.0.7",
+  "version": "0.2.0",
   "homepage": "https://github.com/DadaMonad/Yatta",
   "authors": [
     "Kevin Jahns <kevin.jahns@rwth-aachen.de>"
   ],
   "description": "A Framework that enables Real-Time collaboration on arbitrary data structures.",
-  "main": "./build/**",
+  "main": [
+    "./yatta.js",
+    "./yatta-element.html",
+    "./build/node/yatta.js"
+  ],
   "keywords": [
     "OT",
     "collaboration",
@@ -20,14 +24,10 @@
     "node_modules",
     "bower_components",
     "test",
-    "Gruntfile.coffee",
     "extras",
-    "tests"
+    "test"
   ],
   "dependencies": {
-    "peerjs": "~0.3.14",
-    "polymer": "~0.5.2",
-    "paper-slider": "Polymer/paper-slider#~0.5.2",
-    "webcomponentsjs": "~0.5.2"
+    "polymer": "Polymer/polymer#~0.5.3"
   }
 }
