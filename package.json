@@ -1,6 +1,6 @@
 {
   "name": "yatta",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A Framework that enables Real-Time Collaboration on arbitrary data structures.",
   "main": "./build/node/yatta.js",
   "scripts": {
@@ -25,11 +25,11 @@
   "bugs": {
     "url": "https://github.com/DadaMonad/Yatta/issues"
   },
-  "homepage": "https://github.com/DadaMonad/Yatta/",
+  "homepage": "https://dadamonad.github.io/Yattay/",
   "dependencies": {
-    "codo": "^2.0.9"
   },
   "devDependencies": {
+    "codo": "^2.0.9",
     "underscore": "^1.6.0",
     "chai": "^1.9.1",
     "codo": "^2.0.9",

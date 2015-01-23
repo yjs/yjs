@@ -3,7 +3,7 @@
 [![Build Status](http://layers.dbis.rwth-aachen.de/jenkins/job/Yatta/badge/icon)](http://layers.dbis.rwth-aachen.de/jenkins/job/Yatta/)
 
 
-Yatta is a framework for optimistic concurrency control and automatic conflict resolution on arbitrary data types. The framework implements a new OT-like concurrency algorithm and provides similar functionality as [ShareJs] and [OpenCoweb]. Yatta was designed to take away the pain from concurrently editing complex data types like Text, Json, and XML. You can find some applications for this framework [here](https://dadamonad.github.io/Yatta/examples/).
+Yatta is a framework for optimistic concurrency control and automatic conflict resolution on arbitrary data types. The framework implements a new OT-like concurrency algorithm and provides similar functionality as [ShareJs] and [OpenCoweb]. Yatta was designed to take away the pain from concurrently editing complex data types like Text, Json, and XML. For more information you should check out the [website](https://dadamonad.github.io/Yatta/)!
 
 In the future, we want to enable users to implement their own collaborative types. Currently we provide data types for
 * Text
