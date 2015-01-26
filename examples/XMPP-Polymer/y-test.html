@@ -1,0 +1,38 @@
+<link rel="import" href="../../y-object.html">
+<link rel="import" href="../../../y-connectors/y-xmpp/y-xmpp.html">
+<link rel="import" href="../../../paper-slider/paper-slider.html">
+
+<polymer-element name="y-test" attributes="y connector stuff">
+  <template>
+    <h1 id="text" contentEditable> Check this out !</h1>
+    <y-xmpp id="connector" connector={{connector}} room="testy-xmpp-polymer"></y-xmpp>
+    <y-object connector={{connector}} val={{y}}>
+      <y-property name="slider" val={{slider}}>
+      </y-property>
+      <y-property name="stuff" val={{stuff}}>
+        <y-property id="otherstuff" name="otherstuff" val={{otherstuff}}>
+        </y-property>
+      </y-property>
+    </y-object>
+    <y-object val={{otherstuff}}>
+      <y-property name="nostuff" val={{nostuff}}>
+      </y-property>
+    </y-object>
+    <paper-slider min="0" max="200" immediateValue={{slider}}></paper-slider>
+  </template>
+  <script>
+  Polymer({
+    ready: function(){
+      window.y_stuff_property = this.$.otherstuff;
+      this.y.val("slider",50)
+      var that = this;
+      this.connector.whenSynced(function(){
+        if(that.y.val("text") == null){
+          that.y.val("text","stuff","mutable");
+        }
+        that.y.val("text").bind(that.$.text,that.shadowRoot)
+      })
+    }
+  })
+  </script>
+</polymer-element>
