@@ -1,15 +1,15 @@
 {
-  "name": "Y",
-  "version": "0.2.3",
-  "homepage": "https://github.com/DadaMonad/Yatta",
+  "name": "yjs",
+  "version": "0.3.0",
+  "homepage": "https://github.com/DadaMonad/yjs",
   "authors": [
     "Kevin Jahns <kevin.jahns@rwth-aachen.de>"
   ],
   "description": "A Framework that enables Real-Time collaboration on arbitrary data structures.",
   "main": [
-    "./yatta.js",
-    "./yatta-element.html",
-    "./build/node/yatta.js"
+    "./y.js",
+    "./y-object.html",
+    "./build/node/y.js"
   ],
   "keywords": [
     "OT",

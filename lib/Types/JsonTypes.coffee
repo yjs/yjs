@@ -14,7 +14,7 @@ module.exports = (HB)->
     # Use it to check whether this is a json-type or something else.
     #
     # @example
-    #   var x = yatta.val('unknown')
+    #   var x = y.val('unknown')
     #   if (x.type === "Object") {
     #     console.log JSON.stringify(x.toJson())
     #   }
@@ -55,7 +55,7 @@ module.exports = (HB)->
           Object.observe @bound_json, (events)->
             for event in events
               if not event.changedBy? and (event.type is "add" or event.type = "update")
-                # this event is not created by Yatta.
+                # this event is not created by Y.
                 that.val(event.name, event.object[event.name])
           @observe (events)->
             for event in events
@@ -111,7 +111,7 @@ module.exports = (HB)->
             o = type.create.apply null, args
             super name, o
           else
-            throw new Error "The #{content.constructor.name}-type is not (yet) supported in Yatta."
+            throw new Error "The #{content.constructor.name}-type is not (yet) supported in Y."
         else
           super name, content
       else # is this even necessary ? I have to define every type anyway.. (see Number type below)

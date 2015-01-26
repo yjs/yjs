@@ -164,7 +164,7 @@ module.exports = function(HB) {
           if ((type != null) && (type.create != null)) {
             return type.create(content, options);
           } else {
-            throw new Error("The " + content.constructor.name + "-type is not (yet) supported in Yatta.");
+            throw new Error("The " + content.constructor.name + "-type is not (yet) supported in Y.");
           }
         } else {
           return content;

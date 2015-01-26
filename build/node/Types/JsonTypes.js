@@ -116,7 +116,7 @@ module.exports = function(HB) {
             o = type.create.apply(null, args);
             return Object.__super__.val.call(this, name, o);
           } else {
-            throw new Error("The " + content.constructor.name + "-type is not (yet) supported in Yatta.");
+            throw new Error("The " + content.constructor.name + "-type is not (yet) supported in Y.");
           }
         } else {
           return Object.__super__.val.call(this, name, content);

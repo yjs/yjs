@@ -23,9 +23,9 @@ gulp.task 'default', ['build_browser']
 
 files =
   lib : ['./lib/**/*.coffee']
-  browser : ['./lib/yatta.coffee','./lib/yatta-element.coffee']
+  browser : ['./lib/y.coffee','./lib/y-object.coffee']
   #test : ['./test/**/*_test.coffee']
-  test : ['./test/JsonYatta_test.coffee', './test/TextYatta_test.coffee']
+  test : ['./test/Json_test.coffee', './test/Text_test.coffee']
   gulp : ['./gulpfile.coffee']
   examples : ['./examples/**/*.js']
   other: ['./lib/**/*']
@@ -107,7 +107,7 @@ gulp.task 'literate', ->
     .pipe gulpif '!**/', git.add({args : "-A"})
 
 gulp.task 'codo', [], ()->
-  command = './node_modules/codo/bin/codo -o "./doc" --name "Yatta!" --readme "README.md" --undocumented false --private true --title "Yatta! API" ./lib - LICENSE.txt '
+  command = './node_modules/codo/bin/codo -o "./doc" --name "yjs" --readme "README.md" --undocumented false --private true --title "yjs API" ./lib - LICENSE.txt '
   run(command).exec()
 
 gulp.task 'phantom_test', ['build_browser'], ()->
@@ -118,5 +118,5 @@ gulp.task 'clean', ->
   gulp.src ['./build/{browser,test,node}/**/*.{js,map}','./doc/'], { read: false }
     .pipe rimraf()
 
-gulp.task 'default', ['clean','build', 'codo'], ->
+gulp.task 'default', ['clean','build'], ->
 

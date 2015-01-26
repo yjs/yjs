@@ -142,7 +142,7 @@ module.exports = (HB)->
           if type? and type.create?
             type.create content, options
           else
-            throw new Error "The #{content.constructor.name}-type is not (yet) supported in Yatta."
+            throw new Error "The #{content.constructor.name}-type is not (yet) supported in Y."
         else
           content
 
@@ -236,7 +236,7 @@ module.exports = (HB)->
     # Use it to check whether this is a word-type or something else.
     #
     # @example
-    #   var x = yatta.val('unknown')
+    #   var x = y.val('unknown')
     #   if (x.type === "String") {
     #     console.log JSON.stringify(x.toJson())
     #   }
@@ -278,7 +278,7 @@ module.exports = (HB)->
     #
     # @example
     #   var textbox = document.getElementById("textfield");
-    #   yatta.bind(textbox);
+    #   y.bind(textbox);
     #
     bind: (textfield, dom_root)->
       dom_root ?= window

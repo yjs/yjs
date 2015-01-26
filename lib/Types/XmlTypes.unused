@@ -3,7 +3,7 @@ json_types_uninitialized = require "./JsonTypes"
 
 # some dom implementations may call another dom.method that simulates the behavior of another.
 # For example xml.insertChild(dom) , wich inserts an element at the end, and xml.insertAfter(dom,null) wich does the same
-# But yatta's proxy may be called only once!
+# But Y's proxy may be called only once!
 proxy_token = false
 dont_proxy = (f)->
   proxy_token = true
@@ -18,7 +18,7 @@ _proxy = (f_name, f)->
   old_f = @[f_name]
   if old_f?
     @[f_name] = ()->
-      if not proxy_token and not @_yatta?.isDeleted()
+      if not proxy_token and not @_y?.isDeleted()
         that = this
         args = arguments
         dont_proxy ()->
@@ -59,10 +59,10 @@ module.exports = (HB)->
       super(uid)
 
 
-      if @xml?._yatta?
-        d = new types.Delete undefined, @xml._yatta
+      if @xml?._y?
+        d = new types.Delete undefined, @xml._y
         HB.addOperation(d).execute()
-        @xml._yatta = null
+        @xml._y = null
 
       if attributes? and elements?
         @saveOperation 'attributes', attributes
@@ -114,7 +114,7 @@ module.exports = (HB)->
       super()
 
     setXmlProxy: ()->
-      @xml._yatta = @
+      @xml._y = @
       that = @
 
       @elements.on 'insert', (event, op)->
@@ -160,7 +160,7 @@ module.exports = (HB)->
       findNode = (child)->
         if not child?
           throw new Error "you must specify a parameter!"
-        child = child._yatta
+        child = child._y
         elem = that.elements.beginning.next_cl
         while elem.type isnt 'Delimiter' and elem.content isnt child
           elem = elem.next_cl
@@ -177,7 +177,7 @@ module.exports = (HB)->
         if next
           prev = next.prev_cl
         else
-          prev = @_yatta.elements.end.prev_cl
+          prev = @_y.elements.end.prev_cl
           while prev.isDeleted()
             prev = prev.prev_cl
         inserted_nodes = null
@@ -235,7 +235,7 @@ module.exports = (HB)->
           throw new Error "You are only allowed to delete existing (direct) child elements!"
         d = new types.Delete undefined, elem
         HB.addOperation(d).execute()
-        node._yatta = null
+        node._y = null
       @xml._proxy 'removeChild', removeChild
       @xml._proxy 'replaceChild', (insertedNode, replacedNode)->
         insertBefore.call this, insertedNode, replacedNode
@@ -326,11 +326,11 @@ module.exports = (HB)->
     # @param {Object} content
     #
     constructor: (uid, content)->
-      if content._yatta?
-        d = new types.Delete undefined, content._yatta
+      if content._y?
+        d = new types.Delete undefined, content._y
         HB.addOperation(d).execute()
-        content._yatta = null
-      content._yatta = @
+        content._y = null
+      content._y = @
       super uid, content
 
     applyDelete: (op)->

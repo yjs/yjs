@@ -1,14 +1,14 @@
 {
-  "name": "Y",
-  "version": "0.2.3",
+  "name": "yjs",
+  "version": "0.3.0",
   "description": "A Framework that enables Real-Time Collaboration on arbitrary data structures.",
-  "main": "./build/node/yatta.js",
+  "main": "./build/node/y.js",
   "scripts": {
     "test": "./node_modules/.bin/gulp test"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/rwth-acis/Yatta"
+    "url": "https://github.com/rwth-acis/yjs"
   },
   "keywords": [
     "OT",
@@ -23,9 +23,9 @@
   "email": "kevin.jahns@rwth-aachen.de",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/DadaMonad/Yatta/issues"
+    "url": "https://github.com/rwth-acis/yjs/issues"
   },
-  "homepage": "https://dadamonad.github.io/Yatta/",
+  "homepage": "https://dadamonad.github.io/yjs/",
   "dependencies": {
   },
   "devDependencies": {

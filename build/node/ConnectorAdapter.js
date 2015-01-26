@@ -60,8 +60,8 @@ adaptConnector = function(connector, engine, HB, execution_listener) {
       return engine.applyOp(op);
     }
   });
-  if (connector._whenBoundToYatta != null) {
-    return connector._whenBoundToYatta();
+  if (connector._whenBoundToY != null) {
+    return connector._whenBoundToY();
   }
 };
 
