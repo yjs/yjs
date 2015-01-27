@@ -3,21 +3,21 @@
 [![Build Status](http://layers.dbis.rwth-aachen.de/jenkins/job/Yatta/badge/icon)](http://layers.dbis.rwth-aachen.de/jenkins/job/Yatta/)
 
 
-Y is a framework for optimistic concurrency control and automatic conflict resolution on arbitrary data types. The framework implements a new OT-like concurrency algorithm and provides similar functionality as [ShareJs] and [OpenCoweb]. Y was designed to take away the pain from concurrently editing complex data types like Text, Json, and XML. For more information you should check out the [website](https://dadamonad.github.io/yjs/)!
+yjs is a framework for optimistic concurrency control and automatic conflict resolution on arbitrary data types. The framework implements a new OT-like concurrency algorithm and provides similar functionality as [ShareJs] and [OpenCoweb]. yjs was designed to take away the pain from concurrently editing complex data types like Text, Json, and XML. You can find some applications for this framework [here](https://dadamonad.github.io/yjs/examples/).
 
 In the future, we want to enable users to implement their own collaborative types. Currently we provide data types for
 * Text
 * Json
 * XML
 
-Unlike other frameworks, Y supports P2P message propagation and is not bound to a specific communication protocol. Therefore, Y is extremely scalable and can be used in a wide range of application scenarios.
+Unlike other frameworks, yjs supports P2P message propagation and is not bound to a specific communication protocol. Therefore, yjs is extremely scalable and can be used in a wide range of application scenarios.
 
-We support several communication protocols as so called *Connectors*. You find a bunch of Connectors in the [Y-Connectors](https://github.com/rwth-acis/y-connectors) repository. Currently supported communication protocols:
+We support several communication protocols as so called *Connectors*. You find a bunch of Connectors in the [y-connectors](https://github.com/rwth-acis/y-connectors) repository. Currently supported communication protocols:
 * [XMPP-Connector](http://xmpp.org) - Propagates updates in a XMPP multi-user-chat room
 * [WebRTC-Connector](http://peerjs.com/) - Propagate updates directly with WebRTC
 * [IWC-Connector](http://dbis.rwth-aachen.de/cms/projects/the-xmpp-experience#interwidget-communication) - Inter-widget Communication
 
-You can use Y client-, and server- side. You can get it as via npm, and bower. We even provide a polymer element for Y!
+You can use yjs client-, and server- side. You can get it as via npm, and bower. We even provide a polymer element for yjs!
 
 The theoretical advantages over similar frameworks are support for
 * .. P2P message propagation and arbitrary communication protocols
@@ -25,6 +25,7 @@ The theoretical advantages over similar frameworks are support for
 * .. offline editing: Only relevant changes are propagated on rejoin (unimplemented)
 * .. AnyUndo: Undo *any* action that was executed in constant time (unimplemented)
 * .. Intention Preservation: When working on Text, the intention of your changes are preserved. This is particularily important when working offline.
+
 
 ## Use it!
 You find a tutorial, examples, and documentation on the [website](https://dadamonad.github.io/yjs/).
