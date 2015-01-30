@@ -315,18 +315,21 @@ module.exports = (HB)->
           textfield.value = content
       else
         createRange = (fix)->
+          range = {}
           s = dom_root.getSelection()
           clength = textfield.textContent.length
-          left = Math.min s.anchorOffset, clength
-          right = Math.min s.focusOffset, clength
+          range.left = Math.min s.anchorOffset, clength
+          range.right = Math.min s.focusOffset, clength
           if fix?
-            left = fix left
-            right = fix right
-          {
-            left: left
-            right: right
-            isReal: true
-          }
+            range.left = fix range.left
+            range.right = fix range.right
+
+          edited_element = s.focusNode
+          if edited_element is textfield or edited_element is textfield.childNodes[0]
+            range.isReal = true
+          else
+            range.isReal = false
+          range
 
         writeRange = (range)->
           writeContent word.val()

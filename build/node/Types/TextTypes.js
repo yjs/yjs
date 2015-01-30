@@ -322,20 +322,23 @@ module.exports = function(HB) {
         };
       } else {
         createRange = function(fix) {
-          var clength, left, right, s;
+          var clength, edited_element, range, s;
+          range = {};
           s = dom_root.getSelection();
           clength = textfield.textContent.length;
-          left = Math.min(s.anchorOffset, clength);
-          right = Math.min(s.focusOffset, clength);
+          range.left = Math.min(s.anchorOffset, clength);
+          range.right = Math.min(s.focusOffset, clength);
           if (fix != null) {
-            left = fix(left);
-            right = fix(right);
+            range.left = fix(range.left);
+            range.right = fix(range.right);
           }
-          return {
-            left: left,
-            right: right,
-            isReal: true
-          };
+          edited_element = s.focusNode;
+          if (edited_element === textfield || edited_element === textfield.childNodes[0]) {
+            range.isReal = true;
+          } else {
+            range.isReal = false;
+          }
+          return range;
         };
         writeRange = function(range) {
           var r, s, textnode;
