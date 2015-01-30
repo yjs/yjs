@@ -46,11 +46,10 @@ adaptConnector = (connector, engine, HB, execution_listener)->
   connector.getHB = getHB
   connector.applyHB = applyHB
 
-  connector.whenReceiving (sender, op)->
+  connector.receive_handlers.push (sender, op)->
     if op.uid.creator isnt HB.getUserId()
       engine.applyOp op
 
-  if connector._whenBoundToY?
-    connector._whenBoundToY()
+  connector.setIsBoundToY()
 
 module.exports = adaptConnector

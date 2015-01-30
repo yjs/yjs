@@ -55,14 +55,12 @@ adaptConnector = function(connector, engine, HB, execution_listener) {
   connector.getStateVector = getStateVector;
   connector.getHB = getHB;
   connector.applyHB = applyHB;
-  connector.whenReceiving(function(sender, op) {
+  connector.receive_handlers.push(function(sender, op) {
     if (op.uid.creator !== HB.getUserId()) {
       return engine.applyOp(op);
     }
   });
-  if (connector._whenBoundToY != null) {
-    return connector._whenBoundToY();
-  }
+  return connector.setIsBoundToY();
 };
 
 module.exports = adaptConnector;

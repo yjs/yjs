@@ -10,7 +10,7 @@ createY = (connector)->
     user_id = connector.id # TODO: change to getUniqueId()
   else
     user_id = "_temp"
-    connector.whenUserIdSet (id)->
+    connector.onUserIdSet (id)->
       user_id = id
       HB.resetUserId id
   HB = new HistoryBuffer user_id

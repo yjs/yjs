@@ -17,7 +17,7 @@ createY = function(connector) {
     user_id = connector.id;
   } else {
     user_id = "_temp";
-    connector.whenUserIdSet(function(id) {
+    connector.onUserIdSet(function(id) {
       user_id = id;
       return HB.resetUserId(id);
     });

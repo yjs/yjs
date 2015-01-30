@@ -34,7 +34,7 @@ Either clone this git repository, install it with [bower](http://bower.io/), or 
 
 ### Bower
 ```
-bower install yjs
+bower install rwth-acis/yjs
 ```
 Then you include the libraries directly from the installation folder.
 ```
