@@ -13,14 +13,14 @@ adaptConnector = require("./ConnectorAdapter");
 createY = function(connector) {
   var HB, Y, type_manager, types, user_id;
   user_id = null;
-  if (connector.id != null) {
-    user_id = connector.id;
+  if (connector.user_id != null) {
+    user_id = connector.user_id;
   } else {
     user_id = "_temp";
-    connector.onUserIdSet(function(id) {
+    connector.on_user_id_set = function(id) {
       user_id = id;
       return HB.resetUserId(id);
-    });
+    };
   }
   HB = new HistoryBuffer(user_id);
   type_manager = json_types_uninitialized(HB);

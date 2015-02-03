@@ -30,8 +30,10 @@ HistoryBuffer = (function() {
       this.buffer[id] = own;
       delete this.buffer[this.user_id];
     }
-    this.operation_counter[id] = this.operation_counter[this.user_id];
-    delete this.operation_counter[this.user_id];
+    if (this.operation_counter[this.user_id] != null) {
+      this.operation_counter[id] = this.operation_counter[this.user_id];
+      delete this.operation_counter[this.user_id];
+    }
     return this.user_id = id;
   };
 
@@ -221,7 +223,7 @@ HistoryBuffer = (function() {
     _results = [];
     for (user in state_vector) {
       state = state_vector[user];
-      if ((this.operation_counter[user] == null) || (this.operation_counter[user] < state_vector[user])) {
+      if (((this.operation_counter[user] == null) || (this.operation_counter[user] < state_vector[user])) && (state_vector[user] != null)) {
         _results.push(this.operation_counter[user] = state_vector[user]);
       } else {
         _results.push(void 0);

@@ -6,11 +6,11 @@ adaptConnector = require "./ConnectorAdapter"
 
 createY = (connector)->
   user_id = null
-  if connector.id?
-    user_id = connector.id # TODO: change to getUniqueId()
+  if connector.user_id?
+    user_id = connector.user_id # TODO: change to getUniqueId()
   else
     user_id = "_temp"
-    connector.onUserIdSet (id)->
+    connector.on_user_id_set = (id)->
       user_id = id
       HB.resetUserId id
   HB = new HistoryBuffer user_id

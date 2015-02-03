@@ -1,7 +1,13 @@
-var adaptConnector;
+var ConnectorClass, adaptConnector;
+
+ConnectorClass = require("./ConnectorClass");
 
 adaptConnector = function(connector, engine, HB, execution_listener) {
-  var applyHB, encode_state_vector, getHB, getStateVector, parse_state_vector, send_;
+  var applyHB, encode_state_vector, f, getHB, getStateVector, name, parse_state_vector, send_;
+  for (name in ConnectorClass) {
+    f = ConnectorClass[name];
+    connector[name] = f;
+  }
   send_ = function(o) {
     if (o.uid.creator === HB.getUserId() && (typeof o.uid.op_number !== "string")) {
       return connector.broadcast(o);
@@ -12,7 +18,7 @@ adaptConnector = function(connector, engine, HB, execution_listener) {
   }
   execution_listener.push(send_);
   encode_state_vector = function(v) {
-    var name, value, _results;
+    var value, _results;
     _results = [];
     for (name in v) {
       value = v[name];
@@ -55,6 +61,7 @@ adaptConnector = function(connector, engine, HB, execution_listener) {
   connector.getStateVector = getStateVector;
   connector.getHB = getHB;
   connector.applyHB = applyHB;
+  connector.receive_handlers = [];
   connector.receive_handlers.push(function(sender, op) {
     if (op.uid.creator !== HB.getUserId()) {
       return engine.applyOp(op);

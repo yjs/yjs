@@ -1,6 +1,6 @@
 
 
-connector = new Y.XMPP("testy-xmpp-json2");
+connector = new Y.XMPP().join("testy-xmpp-json3", {syncMode: "syncAll"});
 connector.debug = true
 
 y = new Y(connector);
