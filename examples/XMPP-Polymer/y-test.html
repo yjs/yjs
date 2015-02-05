@@ -1,11 +1,11 @@
-<link rel="import" href="../../y-object.html">
+<link rel="import" href="../../build/browser/y-object.html">
 <link rel="import" href="../../../y-xmpp/build/browser/y-xmpp.html">
 <link rel="import" href="../../../paper-slider/paper-slider.html">
 
 <polymer-element name="y-test" attributes="y connector stuff">
   <template>
     <h1 id="text" contentEditable> Check this out !</h1>
-    <y-xmpp id="connector" connector={{connector}} room="testy-xmpp-polymer" syncMode="syncAll"></y-xmpp>
+    <y-xmpp id="connector" connector={{connector}} room="testy-xmpp-polymer" syncMode="syncAll" debug="true"></y-xmpp>
     <y-object connector={{connector}} val={{y}}>
       <y-property name="slider" val={{slider}}>
       </y-property>

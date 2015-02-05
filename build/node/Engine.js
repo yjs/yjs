@@ -59,13 +59,19 @@ Engine = (function() {
     return this.applyOp(ops_json);
   };
 
-  Engine.prototype.applyOp = function(op_json_array) {
+  Engine.prototype.applyOp = function(op_json_array, fromHB) {
     var o, op_json, _i, _len;
+    if (fromHB == null) {
+      fromHB = false;
+    }
     if (op_json_array.constructor !== Array) {
       op_json_array = [op_json_array];
     }
     for (_i = 0, _len = op_json_array.length; _i < _len; _i++) {
       op_json = op_json_array[_i];
+      if (fromHB) {
+        op_json.fromHB = "true";
+      }
       o = this.parseOperation(op_json);
       if (op_json.fromHB != null) {
         o.fromHB = op_json.fromHB;

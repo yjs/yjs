@@ -22,7 +22,12 @@ HistoryBuffer = (function() {
     if (own != null) {
       for (o_name in own) {
         o = own[o_name];
-        o.uid.creator = id;
+        if (o.uid.creator != null) {
+          o.uid.creator = id;
+        }
+        if (o.uid.alt != null) {
+          o.uid.alt.creator = id;
+        }
       }
       if (this.buffer[id] != null) {
         throw new Error("You are re-assigning an old user id - this is not (yet) possible!");
@@ -140,7 +145,7 @@ HistoryBuffer = (function() {
       user = _ref[u_name];
       for (o_number in user) {
         o = user[o_number];
-        if (o.uid.doSync && unknown(u_name, o_number)) {
+        if ((o.uid.noOperation == null) && o.uid.doSync && unknown(u_name, o_number)) {
           o_json = o._encode();
           if (o.next_cl != null) {
             o_next = o.next_cl;

@@ -66,17 +66,16 @@ module.exports = function(HB) {
     };
 
     MapManager.prototype.retrieveSub = function(property_name) {
-      var event_properties, event_this, map_uid, rm, rm_uid;
+      var event_properties, event_this, rm, rm_uid;
       if (this.map[property_name] == null) {
         event_properties = {
           name: property_name
         };
         event_this = this;
-        map_uid = this.cloneUid();
-        map_uid.sub = property_name;
         rm_uid = {
           noOperation: true,
-          alt: map_uid
+          sub: property_name,
+          alt: this
         };
         rm = new types.ReplaceManager(event_properties, event_this, rm_uid);
         this.map[property_name] = rm;

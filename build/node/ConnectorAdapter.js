@@ -8,8 +8,9 @@ adaptConnector = function(connector, engine, HB, execution_listener) {
     f = ConnectorClass[name];
     connector[name] = f;
   }
+  connector.setIsBoundToY();
   send_ = function(o) {
-    if (o.uid.creator === HB.getUserId() && (typeof o.uid.op_number !== "string")) {
+    if ((o.uid.creator === HB.getUserId()) && (typeof o.uid.op_number !== "string") && (o.uid.doSync === "true" || o.uid.doSync === true) && (HB.getUserId() !== "_temp")) {
       return connector.broadcast(o);
     }
   };
@@ -42,32 +43,27 @@ adaptConnector = function(connector, engine, HB, execution_listener) {
     return encode_state_vector(HB.getOperationCounter());
   };
   getHB = function(v) {
-    var hb, json, o, state_vector, _i, _len;
+    var hb, json, state_vector;
     state_vector = parse_state_vector(v);
     hb = HB._encode(state_vector);
-    for (_i = 0, _len = hb.length; _i < _len; _i++) {
-      o = hb[_i];
-      o.fromHB = "true";
-    }
     json = {
       hb: hb,
       state_vector: encode_state_vector(HB.getOperationCounter())
     };
     return json;
   };
-  applyHB = function(hb) {
-    return engine.applyOp(hb);
+  applyHB = function(hb, fromHB) {
+    return engine.applyOp(hb, fromHB);
   };
   connector.getStateVector = getStateVector;
   connector.getHB = getHB;
   connector.applyHB = applyHB;
   connector.receive_handlers = [];
-  connector.receive_handlers.push(function(sender, op) {
+  return connector.receive_handlers.push(function(sender, op) {
     if (op.uid.creator !== HB.getUserId()) {
       return engine.applyOp(op);
     }
   });
-  return connector.setIsBoundToY();
 };
 
 module.exports = adaptConnector;

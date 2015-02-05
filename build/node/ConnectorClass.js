@@ -24,11 +24,11 @@ module.exports = {
       this.syncMode = "syncAll";
     }
     this.is_synced = false;
-    this.is_syncing = false;
     this.connections = {};
     this.is_bound_to_y = false;
     this.connections = {};
-    return this.current_sync_target = null;
+    this.current_sync_target = null;
+    return this.sent_hb_to_all_users = false;
   },
   isRoleMaster: function() {
     return this.role === "master";
@@ -49,6 +49,9 @@ module.exports = {
         }
       }
     }
+    if (this.current_sync_target == null) {
+      this.setStateSynced();
+    }
     return null;
   },
   userLeft: function(user) {
@@ -57,7 +60,7 @@ module.exports = {
   },
   userJoined: function(user, role) {
     if (role == null) {
-      throw new Error("Internal: You must specify the role of the joined user!");
+      throw new Error("Internal: You must specify the role of the joined user! E.g. userJoined('uid:3939','slave')");
     }
     this.connections[user] = {
       is_synced: false
@@ -101,42 +104,61 @@ module.exports = {
     throw new Error "You must implement send!"
    */
   performSync: function(user) {
+    var hb, o, _hb, _i, _len;
     if (this.current_sync_target == null) {
       this.current_sync_target = user;
-      return this.send(user, {
-        sync_step: "getHB",
-        data: this.getStateVector()
-      });
-    }
-  },
-  performSyncWithMaster: function(user) {
-    var hb, o, _hb, _i, _len;
-    if (!this.is_syncing) {
-      this.current_sync_target = user;
-      this.is_syncing = true;
       this.send(user, {
         sync_step: "getHB",
         send_again: "true",
         data: []
       });
-      hb = this.getHB([]).hb;
-      _hb = [];
-      for (_i = 0, _len = hb.length; _i < _len; _i++) {
-        o = hb[_i];
-        _hb.push(o);
-        if (_hb.length > 30) {
-          this.broadcast({
-            sync_step: "applyHB_",
-            data: _hb
-          });
-          _hb = [];
+      if (!this.sent_hb_to_all_users) {
+        this.sent_hb_to_all_users = true;
+        hb = this.getHB([]).hb;
+        _hb = [];
+        for (_i = 0, _len = hb.length; _i < _len; _i++) {
+          o = hb[_i];
+          _hb.push(o);
+          if (_hb.length > 30) {
+            this.broadcast({
+              sync_step: "applyHB_",
+              data: _hb
+            });
+            _hb = [];
+          }
         }
+        return this.broadcast({
+          sync_step: "applyHB",
+          data: _hb
+        });
       }
-      return this.broadcast({
-        sync_step: "applyHB",
-        data: _hb
-      });
     }
+  },
+  performSyncWithMaster: function(user) {
+    var hb, o, _hb, _i, _len;
+    this.current_sync_target = user;
+    this.send(user, {
+      sync_step: "getHB",
+      send_again: "true",
+      data: []
+    });
+    hb = this.getHB([]).hb;
+    _hb = [];
+    for (_i = 0, _len = hb.length; _i < _len; _i++) {
+      o = hb[_i];
+      _hb.push(o);
+      if (_hb.length > 30) {
+        this.broadcast({
+          sync_step: "applyHB_",
+          data: _hb
+        });
+        _hb = [];
+      }
+    }
+    return this.broadcast({
+      sync_step: "applyHB",
+      data: _hb
+    });
   },
   setStateSynced: function() {
     var f, _i, _len, _ref;
@@ -152,7 +174,7 @@ module.exports = {
     }
   },
   receiveMessage: function(sender, res) {
-    var data, f, hb, o, send_again, _hb, _i, _j, _len, _len1, _ref, _results;
+    var data, f, hb, o, sendApplyHB, send_again, _hb, _i, _j, _len, _len1, _ref, _results;
     if (res.sync_step == null) {
       _ref = this.receive_handlers;
       _results = [];
@@ -162,22 +184,38 @@ module.exports = {
       }
       return _results;
     } else {
+      if (sender === this.user_id) {
+        return;
+      }
       if (res.sync_step === "getHB") {
         data = this.getHB(res.data);
         hb = data.hb;
         _hb = [];
+        if (this.is_synced) {
+          sendApplyHB = (function(_this) {
+            return function(m) {
+              return _this.send(sender, m);
+            };
+          })(this);
+        } else {
+          sendApplyHB = (function(_this) {
+            return function(m) {
+              return _this.broadcast(m);
+            };
+          })(this);
+        }
         for (_j = 0, _len1 = hb.length; _j < _len1; _j++) {
           o = hb[_j];
           _hb.push(o);
           if (_hb.length > 30) {
-            this.send(sender, {
+            sendApplyHB({
               sync_step: "applyHB_",
               data: _hb
             });
             _hb = [];
           }
         }
-        this.send(sender, {
+        sendApplyHB({
           sync_step: "applyHB",
           data: _hb
         });
@@ -197,14 +235,13 @@ module.exports = {
           return setTimeout(send_again, 3000);
         }
       } else if (res.sync_step === "applyHB") {
-        this.applyHB(res.data);
-        if ((this.syncMode === "syncAll" || (res.sent_again != null)) && !this.is_synced) {
-          this.setStateSynced();
+        this.applyHB(res.data, sender === this.current_sync_target);
+        if ((this.syncMode === "syncAll" || (res.sent_again != null)) && (!this.is_synced) && (this.current_sync_target === sender)) {
           this.connections[sender].is_synced = true;
           return this.findNewSyncTarget();
         }
       } else if (res.sync_step === "applyHB_") {
-        return this.applyHB(res.data);
+        return this.applyHB(res.data, sender === this.current_sync_target);
       }
     }
   },

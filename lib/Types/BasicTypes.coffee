@@ -111,7 +111,13 @@ module.exports = (HB)->
       if not @uid.noOperation?
         @uid
       else
-        @uid.alt # could be (safely) undefined
+        if @uid.alt? # could be (safely) undefined
+          map_uid = @uid.alt.cloneUid()
+          map_uid.sub = @uid.sub
+          map_uid.doSync = false
+          map_uid
+        else
+          undefined
 
     cloneUid: ()->
       uid = {}

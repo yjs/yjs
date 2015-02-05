@@ -88,10 +88,18 @@ module.exports = function(HB) {
     };
 
     Operation.prototype.getUid = function() {
+      var map_uid;
       if (this.uid.noOperation == null) {
         return this.uid;
       } else {
-        return this.uid.alt;
+        if (this.uid.alt != null) {
+          map_uid = this.uid.alt.cloneUid();
+          map_uid.sub = this.uid.sub;
+          map_uid.doSync = false;
+          return map_uid;
+        } else {
+          return void 0;
+        }
       }
     };
 

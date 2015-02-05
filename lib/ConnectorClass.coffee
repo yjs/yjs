@@ -27,8 +27,6 @@ module.exports =
 
     # is set to true when this is synced with all other connections
     @is_synced = false
-    # true, iff the client is currently syncing
-    @is_syncing = false
     # Peerjs Connections: key: conn-id, value: object
     @connections = {}
     # List of functions that shall process incoming data
@@ -38,6 +36,7 @@ module.exports =
     @is_bound_to_y = false
     @connections = {}
     @current_sync_target = null
+    @sent_hb_to_all_users = false
 
   isRoleMaster: ->
     @role is "master"
@@ -52,6 +51,8 @@ module.exports =
         if not c.is_synced
           @performSync user
           break
+    if not @current_sync_target?
+      @setStateSynced()
     null
 
   userLeft: (user)->
@@ -60,7 +61,7 @@ module.exports =
 
   userJoined: (user, role)->
     if not role?
-      throw new Error "Internal: You must specify the role of the joined user!"
+      throw new Error "Internal: You must specify the role of the joined user! E.g. userJoined('uid:3939','slave')"
     # a user joined the room
     @connections[user] =
       is_synced : false
@@ -115,32 +116,49 @@ module.exports =
       @current_sync_target = user
       @send user,
         sync_step: "getHB"
-        data: @getStateVector()
+        send_again: "true"
+        data: [] # @getStateVector()
+      if not @sent_hb_to_all_users
+        @sent_hb_to_all_users = true
+
+        hb = @getHB([]).hb
+        _hb = []
+        for o in hb
+          _hb.push o
+          if _hb.length > 30
+            @broadcast
+              sync_step: "applyHB_"
+              data: _hb
+            _hb = []
+        @broadcast
+          sync_step: "applyHB"
+          data: _hb
+
+
 
   #
   # When a master node joined the room, perform this sync with him. It will ask the master for the HB,
   # and will broadcast his own HB
   #
   performSyncWithMaster: (user)->
-    if not @is_syncing
-      @current_sync_target = user
-      @is_syncing = true
-      @send user,
-        sync_step: "getHB"
-        send_again: "true"
-        data: []
-      hb = @getHB([]).hb
-      _hb = []
-      for o in hb
-        _hb.push o
-        if _hb.length > 30
-          @broadcast
-            sync_step: "applyHB_"
-            data: _hb
-          _hb = []
-      @broadcast
-        sync_step: "applyHB"
-        data: _hb
+    @current_sync_target = user
+    @send user,
+      sync_step: "getHB"
+      send_again: "true"
+      data: []
+    hb = @getHB([]).hb
+    _hb = []
+    for o in hb
+      _hb.push o
+      if _hb.length > 30
+        @broadcast
+          sync_step: "applyHB_"
+          data: _hb
+        _hb = []
+    @broadcast
+      sync_step: "applyHB"
+      data: _hb
+
   #
   # You are sure that all clients are synced, call this function.
   #
@@ -160,25 +178,36 @@ module.exports =
       for f in @receive_handlers
         f sender, res
     else
+      if sender is @user_id
+        return
       if res.sync_step is "getHB"
         data = @getHB(res.data)
         hb = data.hb
         _hb = []
+        # always broadcast, when not synced.
+        # This reduces errors, when the clients goes offline prematurely.
+        # When this client only syncs to one other clients, but looses connectors,
+        # before syncing to the other clients, the online clients have different states.
+        # Since we do not want to perform regular syncs, this is a good alternative
         if @is_synced
-          sendApplyHB =  ()->
-            
-         for o in hb
+          sendApplyHB = (m)=>
+            @send sender, m
+        else
+          sendApplyHB = (m)=>
+            @broadcast m
+
+        for o in hb
           _hb.push o
           if _hb.length > 30
-            @send sender,
+            sendApplyHB
               sync_step: "applyHB_"
               data: _hb
             _hb = []
-        if @is_synced
-          @send   sender,
-            sync_s  tep: "applyHB"
-            data:   _hb
-        
+
+        sendApplyHB
+          sync_step : "applyHB"
+          data: _hb
+
         if res.send_again?
           send_again = do (sv = data.state_vector)=>
             ()=>
@@ -189,15 +218,14 @@ module.exports =
                 sent_again: "true"
           setTimeout send_again, 3000
       else if res.sync_step is "applyHB"
-        @applyHB(res.data)
+        @applyHB(res.data, sender is @current_sync_target)
 
-        if (@syncMode is "syncAll" or res.sent_again?) and not @is_synced
-          @setStateSynced()
+        if (@syncMode is "syncAll" or res.sent_again?) and (not @is_synced) and (@current_sync_target is sender)
           @connections[sender].is_synced = true
           @findNewSyncTarget()
 
       else if res.sync_step is "applyHB_"
-        @applyHB(res.data)
+        @applyHB(res.data, sender is @current_sync_target)
 
 
   # Currently, the HB encodes operations as JSON. For the moment I want to keep it

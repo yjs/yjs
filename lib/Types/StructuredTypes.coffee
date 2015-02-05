@@ -56,11 +56,10 @@ module.exports = (HB)->
         event_properties =
           name: property_name
         event_this = @
-        map_uid = @cloneUid()
-        map_uid.sub = property_name
         rm_uid =
           noOperation: true
-          alt: map_uid
+          sub: property_name
+          alt: @
         rm = new types.ReplaceManager event_properties, event_this, rm_uid # this operation shall not be saved in the HB
         @map[property_name] = rm
         rm.setParent @, property_name

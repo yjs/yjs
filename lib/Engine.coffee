@@ -61,10 +61,12 @@ class Engine
   # TODO: make this more efficient!!
   # - operations may only executed in order by creator, order them in object of arrays (key by creator)
   # - you can probably make something like dependencies (creator1 waits for creator2)
-  applyOp: (op_json_array)->
+  applyOp: (op_json_array, fromHB = false)->
     if op_json_array.constructor isnt Array
       op_json_array = [op_json_array]
     for op_json in op_json_array
+      if fromHB
+        op_json.fromHB = "true" # execute immediately, if 
       # $parse_and_execute will return false if $o_json was parsed and executed, otherwise the parsed operadion
       o = @parseOperation op_json
       if op_json.fromHB?
