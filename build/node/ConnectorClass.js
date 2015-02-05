@@ -16,7 +16,7 @@ module.exports = {
         }
       };
     })(this);
-    req("syncMode", ["syncAll", "master-slave"]);
+    req("syncMethod", ["syncAll", "master-slave"]);
     req("role", ["master", "slave"]);
     req("user_id");
     if (typeof this.on_user_id_set === "function") {
@@ -28,11 +28,13 @@ module.exports = {
       this.perform_send_again = true;
     }
     if (this.role === "master") {
-      this.syncMode = "syncAll";
+      this.syncMethod = "syncAll";
     }
     this.is_synced = false;
     this.connections = {};
-    this.receive_handlers = [];
+    if (this.receive_handlers == null) {
+      this.receive_handlers = [];
+    }
     this.is_bound_to_y = false;
     this.connections = {};
     this.current_sync_target = null;
@@ -47,7 +49,7 @@ module.exports = {
   findNewSyncTarget: function() {
     var c, user, _ref;
     this.current_sync_target = null;
-    if (this.syncMode === "syncAll") {
+    if (this.syncMethod === "syncAll") {
       _ref = this.connections;
       for (user in _ref) {
         c = _ref[user];
@@ -75,8 +77,8 @@ module.exports = {
       _base[user] = {};
     }
     this.connections[user].is_synced = false;
-    if ((!this.is_synced) || this.syncMode === "syncAll") {
-      if (this.syncMode === "syncAll") {
+    if ((!this.is_synced) || this.syncMethod === "syncAll") {
+      if (this.syncMethod === "syncAll") {
         return this.performSync(user);
       } else if (role === "master") {
         return this.performSyncWithMaster(user);
@@ -248,7 +250,7 @@ module.exports = {
         }
       } else if (res.sync_step === "applyHB") {
         this.applyHB(res.data, sender === this.current_sync_target);
-        if ((this.syncMode === "syncAll" || (res.sent_again != null)) && (!this.is_synced) && (this.current_sync_target === sender)) {
+        if ((this.syncMethod === "syncAll" || (res.sent_again != null)) && (!this.is_synced) && (this.current_sync_target === sender)) {
           this.connections[sender].is_synced = true;
           return this.findNewSyncTarget();
         }

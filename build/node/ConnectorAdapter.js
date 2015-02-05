@@ -58,6 +58,9 @@ adaptConnector = function(connector, engine, HB, execution_listener) {
   connector.getStateVector = getStateVector;
   connector.getHB = getHB;
   connector.applyHB = applyHB;
+  if (connector.receive_handlers == null) {
+    connector.receive_handlers = [];
+  }
   return connector.receive_handlers.push(function(sender, op) {
     if (op.uid.creator !== HB.getUserId()) {
       return engine.applyOp(op);

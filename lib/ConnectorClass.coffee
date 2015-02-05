@@ -2,9 +2,9 @@
 module.exports =
   #
   # @params new Connector(options)
-  #   @param options.syncMode {String}  is either "syncAll" or "master-slave".
+  #   @param options.syncMethod {String}  is either "syncAll" or "master-slave".
   #   @param options.role {String} The role of this client
-  #            (slave or master (only used when syncMode is master-slave))
+  #            (slave or master (only used when syncMethod is master-slave))
   #   @param options.perform_send_again {Boolean} Whetehr to whether to resend the HB after some time period. This reduces sync errors, but has some overhead (optional)
   #
   init: (options)->
@@ -17,7 +17,7 @@ module.exports =
       else
         throw new Error "You must specify "+name+", when initializing the Connector!"
 
-    req "syncMode", ["syncAll", "master-slave"]
+    req "syncMethod", ["syncAll", "master-slave"]
     req "role", ["master", "slave"]
     req "user_id"
     @on_user_id_set?(@user_id)
@@ -31,14 +31,14 @@ module.exports =
 
     # A Master should sync with everyone! TODO: really? - for now its safer this way!
     if @role is "master"
-      @syncMode = "syncAll"
+      @syncMethod = "syncAll"
 
     # is set to true when this is synced with all other connections
     @is_synced = false
     # Peerjs Connections: key: conn-id, value: object
     @connections = {}
     # List of functions that shall process incoming data
-    @receive_handlers = []
+    @receive_handlers ?= []
 
     # whether this instance is bound to any y instance
     @is_bound_to_y = false
@@ -54,7 +54,7 @@ module.exports =
 
   findNewSyncTarget: ()->
     @current_sync_target = null
-    if @syncMode is "syncAll"
+    if @syncMethod is "syncAll"
       for user, c of @connections
         if not c.is_synced
           @performSync user
@@ -74,8 +74,8 @@ module.exports =
     @connections[user] ?= {}
     @connections[user].is_synced = false
 
-    if (not @is_synced) or @syncMode is "syncAll"
-      if @syncMode is "syncAll"
+    if (not @is_synced) or @syncMethod is "syncAll"
+      if @syncMethod is "syncAll"
         @performSync user
       else if role is "master"
         # TODO: What if there are two masters? Prevent sending everything two times!
@@ -229,7 +229,7 @@ module.exports =
       else if res.sync_step is "applyHB"
         @applyHB(res.data, sender is @current_sync_target)
 
-        if (@syncMode is "syncAll" or res.sent_again?) and (not @is_synced) and (@current_sync_target is sender)
+        if (@syncMethod is "syncAll" or res.sent_again?) and (not @is_synced) and (@current_sync_target is sender)
           @connections[sender].is_synced = true
           @findNewSyncTarget()
 
