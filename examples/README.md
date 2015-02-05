@@ -1,5 +1,5 @@
 # Examples
 
-Here you find some (hopefully) usefull examples on how to use Yatta!
+Here you find some (hopefully) usefull examples on how to use Yjs!
 
-Please note, that the XMPP Connector is the best supported Connector at the moment.
+Feel free to use the code of the examples in your own project. They include basic examples how to use Yjs.

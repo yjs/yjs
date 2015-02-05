@@ -1,10 +1,11 @@
 
 module.exports =
   #
-  # @params new Connector(syncMode, role)
-  #   @param syncMode {String}  is either "syncAll" or "master-slave".
-  #   @param role {String} The role of this client
+  # @params new Connector(options)
+  #   @param options.syncMode {String}  is either "syncAll" or "master-slave".
+  #   @param options.role {String} The role of this client
   #            (slave or master (only used when syncMode is master-slave))
+  #   @param options.perform_send_again {Boolean} Whetehr to whether to resend the HB after some time period. This reduces sync errors, but has some overhead (optional)
   #
   init: (options)->
     req = (name, choices)=>
@@ -19,7 +20,14 @@ module.exports =
     req "syncMode", ["syncAll", "master-slave"]
     req "role", ["master", "slave"]
     req "user_id"
-    @on_user_id_set(@user_id)
+    @on_user_id_set?(@user_id)
+
+    # whether to resend the HB after some time period. This reduces sync errors.
+    # But this is not necessary in the test-connector
+    if options.perform_send_again?
+      @perform_send_again = options.perform_send_again
+    else
+      @perform_send_again = true
 
     # A Master should sync with everyone! TODO: really? - for now its safer this way!
     if @role is "master"
@@ -30,7 +38,7 @@ module.exports =
     # Peerjs Connections: key: conn-id, value: object
     @connections = {}
     # List of functions that shall process incoming data
-    # @receive_handlers = [] # this is already set in the ConnectorAdapter!
+    @receive_handlers = []
 
     # whether this instance is bound to any y instance
     @is_bound_to_y = false
@@ -63,8 +71,8 @@ module.exports =
     if not role?
       throw new Error "Internal: You must specify the role of the joined user! E.g. userJoined('uid:3939','slave')"
     # a user joined the room
-    @connections[user] =
-      is_synced : false
+    @connections[user] ?= {}
+    @connections[user].is_synced = false
 
     if (not @is_synced) or @syncMode is "syncAll"
       if @syncMode is "syncAll"
@@ -165,9 +173,10 @@ module.exports =
   setStateSynced: ()->
     if not @is_synced
       @is_synced = true
-      for f in @compute_when_synced
-        f()
-      delete @compute_when_synced
+      if @compute_when_synced?
+        for f in @compute_when_synced
+          f()
+        delete @compute_when_synced
       null
 
   #
@@ -208,7 +217,7 @@ module.exports =
           sync_step : "applyHB"
           data: _hb
 
-        if res.send_again?
+        if res.send_again? and @perform_send_again
           send_again = do (sv = data.state_vector)=>
             ()=>
               hb = @getHB(sv).hb

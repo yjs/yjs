@@ -186,7 +186,7 @@ module.exports = function(HB) {
 
     ReplaceManager.prototype.callEventDecorator = function(events) {
       var event, name, prop, _i, _len, _ref;
-      if (!(this.isDeleted() || this.getLastOperation().isDeleted())) {
+      if (!this.isDeleted()) {
         for (_i = 0, _len = events.length; _i < _len; _i++) {
           event = events[_i];
           _ref = this.event_properties;

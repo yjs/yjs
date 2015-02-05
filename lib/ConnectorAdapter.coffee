@@ -53,7 +53,6 @@ adaptConnector = (connector, engine, HB, execution_listener)->
   connector.getHB = getHB
   connector.applyHB = applyHB
 
-  connector.receive_handlers = []
   connector.receive_handlers.push (sender, op)->
     if op.uid.creator isnt HB.getUserId()
       engine.applyOp op

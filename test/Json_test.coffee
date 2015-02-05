@@ -7,7 +7,7 @@ _         = require("underscore")
 
 chai.use(sinonChai)
 
-Connector = require "../../y-connectors/lib/y-test/y-test.coffee"
+Connector = require "../../y-test/lib/y-test.coffee"
 Y = require "../lib/y.coffee"
 
 Test = require "./TestSuite"

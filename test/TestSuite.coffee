@@ -7,7 +7,7 @@ _         = require("underscore")
 
 chai.use(sinonChai)
 
-Connector = require "../../y-connectors/lib/y-test/y-test.coffee"
+Connector = require "../../y-test/lib/y-test.coffee"
 
 module.exports = class Test
   constructor: (@name_suffix = "")->

@@ -183,7 +183,7 @@ module.exports = (HB)->
     #
     #
     callEventDecorator: (events)->
-      if not (@isDeleted() or @getLastOperation().isDeleted())
+      if not @isDeleted()
         for event in events
           for name,prop of @event_properties
             event[name] = prop

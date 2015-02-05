@@ -19,12 +19,20 @@ module.exports = {
     req("syncMode", ["syncAll", "master-slave"]);
     req("role", ["master", "slave"]);
     req("user_id");
-    this.on_user_id_set(this.user_id);
+    if (typeof this.on_user_id_set === "function") {
+      this.on_user_id_set(this.user_id);
+    }
+    if (options.perform_send_again != null) {
+      this.perform_send_again = options.perform_send_again;
+    } else {
+      this.perform_send_again = true;
+    }
     if (this.role === "master") {
       this.syncMode = "syncAll";
     }
     this.is_synced = false;
     this.connections = {};
+    this.receive_handlers = [];
     this.is_bound_to_y = false;
     this.connections = {};
     this.current_sync_target = null;
@@ -59,12 +67,14 @@ module.exports = {
     return this.findNewSyncTarget();
   },
   userJoined: function(user, role) {
+    var _base;
     if (role == null) {
       throw new Error("Internal: You must specify the role of the joined user! E.g. userJoined('uid:3939','slave')");
     }
-    this.connections[user] = {
-      is_synced: false
-    };
+    if ((_base = this.connections)[user] == null) {
+      _base[user] = {};
+    }
+    this.connections[user].is_synced = false;
     if ((!this.is_synced) || this.syncMode === "syncAll") {
       if (this.syncMode === "syncAll") {
         return this.performSync(user);
@@ -164,12 +174,14 @@ module.exports = {
     var f, _i, _len, _ref;
     if (!this.is_synced) {
       this.is_synced = true;
-      _ref = this.compute_when_synced;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        f = _ref[_i];
-        f();
+      if (this.compute_when_synced != null) {
+        _ref = this.compute_when_synced;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          f = _ref[_i];
+          f();
+        }
+        delete this.compute_when_synced;
       }
-      delete this.compute_when_synced;
       return null;
     }
   },
@@ -219,7 +231,7 @@ module.exports = {
           sync_step: "applyHB",
           data: _hb
         });
-        if (res.send_again != null) {
+        if ((res.send_again != null) && this.perform_send_again) {
           send_again = (function(_this) {
             return function(sv) {
               return function() {
