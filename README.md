@@ -61,9 +61,11 @@ But I would become really motivated if you gave me some feedback :) ([github](ht
 * Reimplement support for XML as a data type
 * Custom data types
 
-## Support
-Please report _any_ issues to the [Github issue page](https://github.com/rwth-acis/yjs/issues)!
-I would appreciate if developers give me feedback on how _convenient_ the framework is, and if it is easy to use. Particularly the XML-support may not support every DOM-methods - if you encounter a method that does not cause any change on other peers, please state function name, and sample parameters. However, there are browser-specific features, that Yjs won't support.
+
+## Get help
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/rwth-acis/yjs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
+Please report _any_ issues to the [Github issue page](https://github.com/rwth-acis/yjs/issues)! I try to fix them very soon, if possible.
 
 ## Contribution
 I created this framework during my bachelor thesis at the chair of computer science 5 [(i5)](http://dbis.rwth-aachen.de/cms), RWTH University. Since December 2014 I'm working on Yjs as a part of my student worker job at the i5.
