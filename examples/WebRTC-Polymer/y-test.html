@@ -1,0 +1,55 @@
+<link rel="import" href="../../build/browser/y-object.html">
+<link rel="import" href="../../../y-webrtc/build/browser/y-webrtc.html">
+<link rel="import" href="../../../paper-slider/paper-slider.html">
+
+<polymer-element name="y-test" attributes="y connector stuff">
+  <template>
+    <h1 id="text" contentEditable> Check this out !</h1>
+    <y-webrtc id="connector" connector={{connector}} room="testy-webrtc-polymer" debug="true"></y-webrtc>
+    <y-object connector={{connector}} val={{y}}>
+      <y-property name="slider" val={{slider}}>
+      </y-property>
+      <y-property name="stuff" val={{stuff}}>
+        <y-property id="otherstuff" name="otherstuff" val={{otherstuff}}>
+        </y-property>
+      </y-property>
+    </y-object>
+    <y-object val={{otherstuff}}>
+      <y-property name="nostuff" val={{nostuff}}>
+      </y-property>
+    </y-object>
+    <paper-slider min="0" max="200" immediateValue={{slider}}></paper-slider>
+  </template>
+  <script>
+  Polymer({
+    ready: function(){
+      window.y_stuff_property = this.$.otherstuff;
+      this.y.val("slider",50)
+      var that = this;
+      this.connector.whenSynced(function(){
+        if(that.y.val("text") == null){
+          that.y.val("text","stuff","mutable");
+        }
+        that.y.val("text").bind(that.$.text,that.shadowRoot)
+      })
+
+      // Everything is initialized. Lets test stuff!
+      window.y_test = this;
+      window.y_test.y.val("stuff",{otherstuff:{nostuff:"this is no stuff"}})
+      setTimeout(function(){
+        var res = y_test.y.val("stuff");
+        if(!(y_test.nostuff === "this is no stuff")){
+          console.log("Deep inherit doesn't work!")
+        }
+        window.y_stuff_property.val = {nostuff: "this is also no stuff"};
+        setTimeout(function(){
+          if(!(y_test.nostuff === "this is also no stuff")){
+            console.log("Element val overwrite doesn't work")
+          }
+          console.log("Everything is fine :)");
+        },500)
+      },500);
+    }
+  })
+  </script>
+</polymer-element>

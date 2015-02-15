@@ -41,10 +41,10 @@ module.exports =
     @receive_handlers ?= []
 
     # whether this instance is bound to any y instance
-    @is_bound_to_y = false
     @connections = {}
     @current_sync_target = null
     @sent_hb_to_all_users = false
+    @is_initialized = true
 
   isRoleMaster: ->
     @role is "master"
@@ -229,7 +229,7 @@ module.exports =
       else if res.sync_step is "applyHB"
         @applyHB(res.data, sender is @current_sync_target)
 
-        if (@syncMethod is "syncAll" or res.sent_again?) and (not @is_synced) and (@current_sync_target is sender)
+        if (@syncMethod is "syncAll" or res.sent_again?) and (not @is_synced) and ((@current_sync_target is sender) or (not @current_sync_target?))
           @connections[sender].is_synced = true
           @findNewSyncTarget()
 

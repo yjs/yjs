@@ -35,10 +35,10 @@ module.exports = {
     if (this.receive_handlers == null) {
       this.receive_handlers = [];
     }
-    this.is_bound_to_y = false;
     this.connections = {};
     this.current_sync_target = null;
-    return this.sent_hb_to_all_users = false;
+    this.sent_hb_to_all_users = false;
+    return this.is_initialized = true;
   },
   isRoleMaster: function() {
     return this.role === "master";
@@ -250,7 +250,7 @@ module.exports = {
         }
       } else if (res.sync_step === "applyHB") {
         this.applyHB(res.data, sender === this.current_sync_target);
-        if ((this.syncMethod === "syncAll" || (res.sent_again != null)) && (!this.is_synced) && (this.current_sync_target === sender)) {
+        if ((this.syncMethod === "syncAll" || (res.sent_again != null)) && (!this.is_synced) && ((this.current_sync_target === sender) || (this.current_sync_target == null))) {
           this.connections[sender].is_synced = true;
           return this.findNewSyncTarget();
         }

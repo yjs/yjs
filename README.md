@@ -68,11 +68,9 @@ I would appreciate if developers give me feedback on how _convenient_ the framew
 ## License
 Yjs is licensed under the [MIT License](./LICENSE.txt).
 
-[ShareJs]: https://github.com/share/ShareJS
-[OpenCoweb]: https://github.com/opencoweb/coweb
-
 <kevin.jahns@rwth-aachen.de>
 
-
+[ShareJs]: https://github.com/share/ShareJS
+[OpenCoweb]: https://github.com/opencoweb/coweb
 
 
