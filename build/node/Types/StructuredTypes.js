@@ -1,6 +1,6 @@
 var basic_types_uninitialized,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  __hasProp = {}.hasOwnProperty;
 
 basic_types_uninitialized = require("./BasicTypes");
 
@@ -159,9 +159,9 @@ module.exports = function(HB) {
   types.ReplaceManager = (function(_super) {
     __extends(ReplaceManager, _super);
 
-    function ReplaceManager(event_properties, event_this, uid, beginning, end) {
-      this.event_properties = event_properties;
-      this.event_this = event_this;
+    function ReplaceManager(_at_event_properties, _at_event_this, uid, beginning, end) {
+      this.event_properties = _at_event_properties;
+      this.event_this = _at_event_this;
       if (this.event_properties['object'] == null) {
         this.event_properties['object'] = this.event_this;
       }
@@ -326,10 +326,14 @@ module.exports = function(HB) {
         'parent': this.parent.getUid(),
         'prev': this.prev_cl.getUid(),
         'next': this.next_cl.getUid(),
-        'origin': this.origin.getUid(),
         'uid': this.getUid(),
         'is_deleted': this.is_deleted
       };
+      if (this.origin.type === "Delimiter") {
+        json.origin = "Delimiter";
+      } else if (this.origin !== this.prev_cl) {
+        json.origin = this.origin.getUid();
+      }
       if (this.content instanceof types.Operation) {
         json['content'] = this.content.getUid();
       } else {

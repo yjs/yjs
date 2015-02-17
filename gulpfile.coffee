@@ -76,8 +76,8 @@ gulp.task 'build_node', ->
 
 gulp.task 'build', ['build_node', 'build_browser'], ->
 
-gulp.task 'watch', ['build_browser'], ->
-  gulp.watch files.all, ['build_browser']
+gulp.task 'watch', ['build'], ->
+  gulp.watch files.all, ['build']
 
 gulp.task 'mocha', ->
   gulp.src files.test, { read: false }

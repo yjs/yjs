@@ -36,7 +36,7 @@ class JsonTest extends Test
         return root
 
       elems = elems.filter (elem)->
-        (elem.type is "Array") or (elem.type is "Object")
+        elem? and ((elem.type is "Array") or (elem.type is "Object"))
       if elems.length is 0
         root
       else
@@ -110,10 +110,19 @@ describe "JsonFramework", ->
     u2 = @yTest.users[1]
     ops1 = u1.HB._encode()
     ops2 = u2.HB._encode()
-    u1.HB.renewStateVector u2.HB.getOperationCounter()
-    u2.HB.renewStateVector u1.HB.getOperationCounter()
-    u1.engine.applyOps ops2
-    u2.engine.applyOps ops1
+    u1.engine.applyOp ops2, true
+    u2.engine.applyOp ops1, true
+    compare = (o1, o2)->
+      if o1.type? and o1.type isnt o2.type
+        throw new Error "different types"
+      else if o1.type is "Object"
+        for name, val of o1.val()
+          compare(val, o2.val(name))
+      else if o1.type?
+        compare(o1.val(), o2.val())
+      else if o1 isnt o2
+        throw new Error "different values"
+    compare u1, u2
     expect(test.getContent(0)).to.deep.equal(@yTest.getContent(1))
 
   it "can handle creaton of complex json (1)", ->

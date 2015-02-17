@@ -105,13 +105,13 @@ module.exports = {
   /*
    * Broadcast a message to all connected peers.
    * @param message {Object} The message to broadcast.
-   *
+  #
   broadcast: (message)->
     throw new Error "You must implement broadcast!"
   
-   *
+  #
    * Send a message to a peer, or set of peers
-   *
+  #
   send: (peer_s, message)->
     throw new Error "You must implement send!"
    */

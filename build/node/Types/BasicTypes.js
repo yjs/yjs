@@ -1,6 +1,6 @@
 var __slice = [].slice,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  __hasProp = {}.hasOwnProperty;
 
 module.exports = function(HB) {
   var execution_listener, types;
@@ -79,8 +79,8 @@ module.exports = function(HB) {
       return this.deleteAllObservers();
     };
 
-    Operation.prototype.setParent = function(parent) {
-      this.parent = parent;
+    Operation.prototype.setParent = function(_at_parent) {
+      this.parent = _at_parent;
     };
 
     Operation.prototype.getParent = function() {
@@ -95,7 +95,6 @@ module.exports = function(HB) {
         if (this.uid.alt != null) {
           map_uid = this.uid.alt.cloneUid();
           map_uid.sub = this.uid.sub;
-          map_uid.doSync = false;
           return map_uid;
         } else {
           return void 0;
@@ -112,10 +111,6 @@ module.exports = function(HB) {
         uid[n] = v;
       }
       return uid;
-    };
-
-    Operation.prototype.dontSync = function() {
-      return this.uid.doSync = false;
     };
 
     Operation.prototype.execute = function() {
@@ -135,7 +130,7 @@ module.exports = function(HB) {
     };
 
     Operation.prototype.saveOperation = function(name, op) {
-      if ((op != null ? op.execute : void 0) != null) {
+      if (((op != null ? op.execute : void 0) != null) || typeof op === "string") {
         return this[name] = op;
       } else if (op != null) {
         if (this.unchecked == null) {
@@ -296,6 +291,8 @@ module.exports = function(HB) {
             this.prev_cl = this.parent.beginning;
           }
           if (this.origin == null) {
+            this.origin = this.prev_cl;
+          } else if (this.origin === "Delimiter") {
             this.origin = this.parent.beginning;
           }
           if (this.next_cl == null) {
@@ -389,8 +386,8 @@ module.exports = function(HB) {
   types.ImmutableObject = (function(_super) {
     __extends(ImmutableObject, _super);
 
-    function ImmutableObject(uid, content) {
-      this.content = content;
+    function ImmutableObject(uid, _at_content) {
+      this.content = _at_content;
       ImmutableObject.__super__.constructor.call(this, uid);
     }
 

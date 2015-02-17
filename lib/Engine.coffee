@@ -66,9 +66,10 @@ class Engine
       op_json_array = [op_json_array]
     for op_json in op_json_array
       if fromHB
-        op_json.fromHB = "true" # execute immediately, if 
+        op_json.fromHB = "true" # execute immediately, if
       # $parse_and_execute will return false if $o_json was parsed and executed, otherwise the parsed operadion
       o = @parseOperation op_json
+      o.parsed_from_json = op_json
       if op_json.fromHB?
         o.fromHB = op_json.fromHB
       # @HB.addOperation o

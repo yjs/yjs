@@ -2,8 +2,8 @@ var HistoryBuffer,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 HistoryBuffer = (function() {
-  function HistoryBuffer(user_id) {
-    this.user_id = user_id;
+  function HistoryBuffer(_at_user_id) {
+    this.user_id = _at_user_id;
     this.emptyGarbage = __bind(this.emptyGarbage, this);
     this.operation_counter = {};
     this.buffer = {};
@@ -92,15 +92,14 @@ HistoryBuffer = (function() {
     return this.garbageCollectTimeoutId = void 0;
   };
 
-  HistoryBuffer.prototype.setGarbageCollectTimeout = function(garbageCollectTimeout) {
-    this.garbageCollectTimeout = garbageCollectTimeout;
+  HistoryBuffer.prototype.setGarbageCollectTimeout = function(_at_garbageCollectTimeout) {
+    this.garbageCollectTimeout = _at_garbageCollectTimeout;
   };
 
   HistoryBuffer.prototype.getReservedUniqueIdentifier = function() {
     return {
       creator: '_',
-      op_number: "_" + (this.reserved_identifier_counter++),
-      doSync: false
+      op_number: "_" + (this.reserved_identifier_counter++)
     };
   };
 
@@ -143,9 +142,12 @@ HistoryBuffer = (function() {
     _ref = this.buffer;
     for (u_name in _ref) {
       user = _ref[u_name];
+      if (u_name === "_") {
+        continue;
+      }
       for (o_number in user) {
         o = user[o_number];
-        if ((o.uid.noOperation == null) && o.uid.doSync && unknown(u_name, o_number)) {
+        if ((o.uid.noOperation == null) && unknown(u_name, o_number)) {
           o_json = o._encode();
           if (o.next_cl != null) {
             o_next = o.next_cl;
@@ -177,8 +179,7 @@ HistoryBuffer = (function() {
     }
     uid = {
       'creator': user_id,
-      'op_number': this.operation_counter[user_id],
-      'doSync': true
+      'op_number': this.operation_counter[user_id]
     };
     this.operation_counter[user_id]++;
     return uid;
@@ -238,15 +239,18 @@ HistoryBuffer = (function() {
   };
 
   HistoryBuffer.prototype.addToCounter = function(o) {
-    if (this.operation_counter[o.uid.creator] == null) {
-      this.operation_counter[o.uid.creator] = 0;
+    var _base, _name;
+    if ((_base = this.operation_counter)[_name = o.uid.creator] == null) {
+      _base[_name] = 0;
     }
-    if (typeof o.uid.op_number === 'number' && o.uid.creator !== this.getUserId()) {
+    if (o.uid.creator !== this.getUserId()) {
       if (o.uid.op_number === this.operation_counter[o.uid.creator]) {
-        return this.operation_counter[o.uid.creator]++;
-      } else {
-        return this.invokeSync(o.uid.creator);
+        this.operation_counter[o.uid.creator]++;
       }
+      while (this.buffer[o.uid.creator][this.operation_counter[o.uid.creator]] != null) {
+        this.operation_counter[o.uid.creator]++;
+      }
+      return void 0;
     }
   };
 

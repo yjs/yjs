@@ -13,9 +13,9 @@ if (typeof window !== "undefined" && window !== null) {
 }
 
 Engine = (function() {
-  function Engine(HB, types) {
-    this.HB = HB;
-    this.types = types;
+  function Engine(_at_HB, _at_types) {
+    this.HB = _at_HB;
+    this.types = _at_types;
     this.unprocessed_ops = [];
   }
 
@@ -73,6 +73,7 @@ Engine = (function() {
         op_json.fromHB = "true";
       }
       o = this.parseOperation(op_json);
+      o.parsed_from_json = op_json;
       if (op_json.fromHB != null) {
         o.fromHB = op_json.fromHB;
       }

@@ -10,7 +10,7 @@ adaptConnector = function(connector, engine, HB, execution_listener) {
   }
   connector.setIsBoundToY();
   send_ = function(o) {
-    if ((o.uid.creator === HB.getUserId()) && (typeof o.uid.op_number !== "string") && (o.uid.doSync === "true" || o.uid.doSync === true) && (HB.getUserId() !== "_temp")) {
+    if ((o.uid.creator === HB.getUserId()) && (typeof o.uid.op_number !== "string") && (HB.getUserId() !== "_temp")) {
       return connector.broadcast(o);
     }
   };

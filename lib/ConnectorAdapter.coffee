@@ -15,7 +15,6 @@ adaptConnector = (connector, engine, HB, execution_listener)->
   send_ = (o)->
     if (o.uid.creator is HB.getUserId()) and
         (typeof o.uid.op_number isnt "string") and # TODO: i don't think that we need this anymore..
-        (o.uid.doSync is "true" or o.uid.doSync is true) and # TODO: ensure, that only true is valid
         (HB.getUserId() isnt "_temp")
       connector.broadcast o
 

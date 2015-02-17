@@ -114,7 +114,6 @@ module.exports = (HB)->
         if @uid.alt? # could be (safely) undefined
           map_uid = @uid.alt.cloneUid()
           map_uid.sub = @uid.sub
-          map_uid.doSync = false
           map_uid
         else
           undefined
@@ -124,9 +123,6 @@ module.exports = (HB)->
       for n,v of @getUid()
         uid[n] = v
       uid
-
-    dontSync: ()->
-      @uid.doSync = false
 
     #
     # @private
@@ -172,8 +168,9 @@ module.exports = (HB)->
       # We use duck-typing to check if op is instantiated since there
       # could exist multiple classes of $Operation
       #
-      if op?.execute?
-        # is instantiated
+      if op?.execute? or typeof op is "string"
+        # is instantiated, or op is string. Currently "Delimiter" is saved as string 
+        # (in combination with @parent you can retrieve the delimiter..)
         @[name] = op
       else if op?
         # not initialized. Do it when calling $validateSavedOperations()
@@ -350,6 +347,8 @@ module.exports = (HB)->
           if not @prev_cl?
             @prev_cl = @parent.beginning
           if not @origin?
+            @origin = @prev_cl
+          else if @origin is "Delimiter"
             @origin = @parent.beginning
           if not @next_cl?
             @next_cl = @parent.end

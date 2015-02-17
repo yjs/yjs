@@ -320,10 +320,14 @@ module.exports = (HB)->
           'parent' : @parent.getUid()
           'prev': @prev_cl.getUid()
           'next': @next_cl.getUid()
-          'origin' : @origin.getUid()
           'uid' : @getUid()
           'is_deleted': @is_deleted
         }
+      if @origin.type is "Delimiter"
+        json.origin = "Delimiter"
+      else if @origin isnt @prev_cl
+        json.origin = @origin.getUid()
+
       if @content instanceof types.Operation
         json['content'] = @content.getUid()
       else

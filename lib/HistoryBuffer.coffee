@@ -84,7 +84,6 @@ class HistoryBuffer
     {
       creator : '_'
       op_number : "_#{@reserved_identifier_counter++}"
-      doSync: false
     }
 
   #
@@ -116,8 +115,10 @@ class HistoryBuffer
 
     for u_name,user of @buffer
       # TODO next, if @state_vector[user] <= state_vector[user]
+      if u_name is "_"
+        continue
       for o_number,o of user
-        if (not o.uid.noOperation?) and o.uid.doSync and unknown(u_name, o_number)
+        if (not o.uid.noOperation?) and unknown(u_name, o_number)
           # its necessary to send it, and not known in state_vector
           o_json = o._encode()
           if o.next_cl? # applies for all ops but the most right delimiter!
@@ -149,7 +150,6 @@ class HistoryBuffer
     uid =
       'creator' : user_id
       'op_number' : @operation_counter[user_id]
-      'doSync' : true
     @operation_counter[user_id]++
     uid
 
@@ -206,14 +206,14 @@ class HistoryBuffer
   # Increment the operation_counter that defines the current state of the Engine.
   #
   addToCounter: (o)->
-    if not @operation_counter[o.uid.creator]?
-      @operation_counter[o.uid.creator] = 0
-    if typeof o.uid.op_number is 'number' and o.uid.creator isnt @getUserId()
+    @operation_counter[o.uid.creator] ?= 0
+    if o.uid.creator isnt @getUserId()
       # TODO: check if operations are send in order
       if o.uid.op_number is @operation_counter[o.uid.creator]
         @operation_counter[o.uid.creator]++
-      else
-        @invokeSync o.uid.creator
+      while @buffer[o.uid.creator][@operation_counter[o.uid.creator]]?
+        @operation_counter[o.uid.creator]++
+      undefined
 
     #if @operation_counter[o.uid.creator] isnt (o.uid.op_number + 1)
       #console.log (@operation_counter[o.uid.creator] - (o.uid.op_number + 1))
