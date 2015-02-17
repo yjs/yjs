@@ -28,6 +28,7 @@
     "test"
   ],
   "dependencies": {
-    "polymer": "Polymer/polymer#~0.5.3"
+    "polymer" : "Polymer/polymer#~0.5.3",
+    "y-test" : "y-test#~0.4.0"
   }
 }
