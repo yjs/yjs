@@ -168,11 +168,13 @@ module.exports = (HB)->
       # We use duck-typing to check if op is instantiated since there
       # could exist multiple classes of $Operation
       #
-      if op?.execute? or typeof op is "string"
-        # is instantiated, or op is string. Currently "Delimiter" is saved as string 
+      if not op?
+        # nop
+      else if op.execute? or not (op.op_number? and op.creator?)
+        # is instantiated, or op is string. Currently "Delimiter" is saved as string
         # (in combination with @parent you can retrieve the delimiter..)
         @[name] = op
-      else if op?
+      else
         # not initialized. Do it when calling $validateSavedOperations()
         @unchecked ?= {}
         @unchecked[name] = op
@@ -267,7 +269,14 @@ module.exports = (HB)->
     # @param {Operation} prev_cl The predecessor of this operation in the complete-list (cl)
     # @param {Operation} next_cl The successor of this operation in the complete-list (cl)
     #
-    constructor: (uid, prev_cl, next_cl, origin, parent)->
+    constructor: (content, uid, prev_cl, next_cl, origin, parent)->
+      # see encode to see, why we are doing it this way
+      if content is undefined
+        # nop
+      else if content? and content.creator?
+        @saveOperation 'content', content
+      else
+        @content = content
       @saveOperation 'parent', parent
       @saveOperation 'prev_cl', prev_cl
       @saveOperation 'next_cl', next_cl
@@ -278,6 +287,9 @@ module.exports = (HB)->
       super uid
 
     type: "Insert"
+
+    val: ()->
+      @content
 
     #
     # set content to null and other stuff
@@ -300,6 +312,12 @@ module.exports = (HB)->
       if @prev_cl?.isDeleted()
         # garbage collect prev_cl
         @prev_cl.applyDelete()
+
+      # delete content
+      if @content instanceof types.Operation
+        @content.applyDelete()
+      delete @content
+
 
     cleanup: ()->
       if @next_cl.isDeleted()
@@ -343,6 +361,8 @@ module.exports = (HB)->
       if not @validateSavedOperations()
         return false
       else
+        if @content instanceof types.Operation
+          @content.insert_parent = @ # TODO: this is probably not necessary and only nice for debugging
         if @parent?
           if not @prev_cl?
             @prev_cl = @parent.beginning
@@ -436,6 +456,46 @@ module.exports = (HB)->
           position++
         prev = prev.prev_cl
       position
+
+    #
+    # Convert all relevant information of this operation to the json-format.
+    # This result can be send to other clients.
+    #
+    _encode: ()->
+      json =
+        {
+          'type': @type
+          'uid' : @getUid()
+          'prev': @prev_cl.getUid()
+          'next': @next_cl.getUid()
+          'parent': @parent.getUid()
+        }
+
+      if @origin.type is "Delimiter"
+        json.origin = "Delimiter"
+      else if @origin isnt @prev_cl
+        json.origin = @origin.getUid()
+
+      if @content?.getUid?
+        json['content'] = @content.getUid()
+      else
+        json['content'] = JSON.stringify @content
+      json
+
+  types.Insert.parse = (json)->
+    {
+      'content' : content
+      'uid' : uid
+      'prev': prev
+      'next': next
+      'origin' : origin
+      'parent' : parent
+    } = json
+    if typeof content is "string"
+      content = JSON.parse(content)
+    new this content, uid, prev, next, origin, parent
+
+
 
   #
   # @nodoc

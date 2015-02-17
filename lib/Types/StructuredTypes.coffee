@@ -87,6 +87,28 @@ module.exports = (HB)->
 
     type: "ListManager"
 
+    applyDelete: ()->
+      o = @end
+      while o?
+        o.applyDelete()
+        o = o.prev_cl
+      super()
+
+    cleanup: ()->
+      super()
+
+    toJson: (transform_to_value = false)->
+      val = @val()
+      for i, o in val
+        if o instanceof types.Object
+          o.toJson(transform_to_value)
+        else if o instanceof types.ListManager
+          o.toJson(transform_to_value)
+        else if transform_to_value and o instanceof types.Operation
+          o.val()
+        else
+          o
+
     #
     # @private
     # @see Operation.execute
@@ -113,9 +135,38 @@ module.exports = (HB)->
       o = @beginning.next_cl
       result = []
       while o isnt @end
-        result.push o
+        if not o.is_deleted
+          result.push o
         o = o.next_cl
       result
+
+    map: (f)->
+      o = @beginning.next_cl
+      result = []
+      while o isnt @end
+        if not o.is_deleted
+          result.push f(o)
+        o = o.next_cl
+      result
+
+    fold: (init, f)->
+      o = @beginning.next_cl
+      while o isnt @end
+        if not o.is_deleted
+          init = f(init, o)
+        o = o.next_cl
+      init
+
+    val: (pos)->
+      if pos?
+        o = @getOperationByPosition(pos+1)
+        if not (o instanceof types.Delimiter)
+          o.val()
+        else
+          throw new Error "this position does not exist"
+      else
+        @toArray()
+
 
     #
     # Retrieves the x-th not deleted element.
@@ -141,6 +192,93 @@ module.exports = (HB)->
         if not o.isDeleted()
           position -= 1
       o
+
+    push: (content)->
+      @insertAfter @end.prev_cl, content
+
+    insertAfter: (left, content, options)->
+      createContent = (content, options)->
+        if content? and content.constructor?
+          type = types[content.constructor.name]
+          if type? and type.create?
+            type.create content, options
+          else
+            throw new Error "The #{content.constructor.name}-type is not (yet) supported in Y."
+        else
+          content
+
+      right = left.next_cl
+      while right.isDeleted()
+        right = right.next_cl # find the first character to the right, that is not deleted. In the case that position is 0, its the Delimiter.
+      left = right.prev_cl
+
+      if content instanceof types.Operation
+        (new types.Insert content, undefined, left, right).execute()
+      else
+        for c in content
+          tmp = (new types.Insert createContent(c, options), undefined, left, right).execute()
+          left = tmp
+      @
+
+    #
+    # Inserts a string into the word.
+    #
+    # @return {ListManager Type} This String object.
+    #
+    insert: (position, content, options)->
+      ith = @getOperationByPosition position
+      # the (i-1)th character. e.g. "abc" the 1th character is "a"
+      # the 0th character is the left Delimiter
+      @insertAfter ith, [content], options
+
+    #
+    # Deletes a part of the word.
+    #
+    # @return {ListManager Type} This String object
+    #
+    delete: (position, length)->
+      o = @getOperationByPosition(position+1) # position 0 in this case is the deletion of the first character
+
+      delete_ops = []
+      for i in [0...length]
+        if o instanceof types.Delimiter
+          break
+        d = (new types.Delete undefined, o).execute()
+        o = o.next_cl
+        while (not (o instanceof types.Delimiter)) and o.isDeleted()
+          o = o.next_cl
+        delete_ops.push d._encode()
+      @
+
+    #
+    # @private
+    # Encode this operation in such a way that it can be parsed by remote peers.
+    #
+    _encode: ()->
+      json = {
+        'type': @type
+        'uid' : @getUid()
+      }
+      json
+
+  types.ListManager.parse = (json)->
+    {
+      'uid' : uid
+    } = json
+    new this(uid)
+
+  types.Array = ()->
+  types.Array.create = (content, mutable)->
+      if (mutable is "mutable")
+        list = new types.ListManager().execute()
+        ith = list.getOperationByPosition 0
+        list.insertAfter ith, content
+        list
+      else if (not mutable?) or (mutable is "immutable")
+        content
+      else
+        throw new Error "Specify either \"mutable\" or \"immutable\"!!"
+
 
   #
   # @nodoc
@@ -245,13 +383,8 @@ module.exports = (HB)->
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     #
     constructor: (content, parent, uid, prev, next, origin, is_deleted)->
-      # see encode to see, why we are doing it this way
-      if content? and content.creator?
-        @saveOperation 'content', content
-      else
-        @content = content
       @saveOperation 'parent', parent
-      super uid, prev, next, origin # Parent is already saved by Replaceable
+      super content, uid, prev, next, origin # Parent is already saved by Replaceable
       @is_deleted = is_deleted
 
     type: "Replaceable"

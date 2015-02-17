@@ -27,7 +27,6 @@ module.exports = (HB)->
     cleanup: ()->
       super()
 
-
     #
     # Transform this to a Json. If your browser supports Object.observe it will be transformed automatically when a change arrives.
     # Otherwise you will loose all the sharing-abilities (the new object will be a deep clone)!
@@ -43,7 +42,7 @@ module.exports = (HB)->
         for name, o of val
           if o instanceof types.Object
             json[name] = o.toJson(transform_to_value)
-          else if o instanceof types.Array
+          else if o instanceof types.ListManager
             json[name] = o.toJson(transform_to_value)
           else if transform_to_value and o instanceof types.Operation
             json[name] = o.val()

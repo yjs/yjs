@@ -130,9 +130,11 @@ module.exports = function(HB) {
     };
 
     Operation.prototype.saveOperation = function(name, op) {
-      if (((op != null ? op.execute : void 0) != null) || typeof op === "string") {
+      if (op == null) {
+
+      } else if ((op.execute != null) || !((op.op_number != null) && (op.creator != null))) {
         return this[name] = op;
-      } else if (op != null) {
+      } else {
         if (this.unchecked == null) {
           this.unchecked = {};
         }
@@ -207,7 +209,14 @@ module.exports = function(HB) {
   types.Insert = (function(_super) {
     __extends(Insert, _super);
 
-    function Insert(uid, prev_cl, next_cl, origin, parent) {
+    function Insert(content, uid, prev_cl, next_cl, origin, parent) {
+      if (content === void 0) {
+
+      } else if ((content != null) && (content.creator != null)) {
+        this.saveOperation('content', content);
+      } else {
+        this.content = content;
+      }
       this.saveOperation('parent', parent);
       this.saveOperation('prev_cl', prev_cl);
       this.saveOperation('next_cl', next_cl);
@@ -220,6 +229,10 @@ module.exports = function(HB) {
     }
 
     Insert.prototype.type = "Insert";
+
+    Insert.prototype.val = function() {
+      return this.content;
+    };
 
     Insert.prototype.applyDelete = function(o) {
       var callLater, garbagecollect, _ref;
@@ -242,8 +255,12 @@ module.exports = function(HB) {
         this.callOperationSpecificDeleteEvents(o);
       }
       if ((_ref = this.prev_cl) != null ? _ref.isDeleted() : void 0) {
-        return this.prev_cl.applyDelete();
+        this.prev_cl.applyDelete();
       }
+      if (this.content instanceof types.Operation) {
+        this.content.applyDelete();
+      }
+      return delete this.content;
     };
 
     Insert.prototype.cleanup = function() {
@@ -286,6 +303,9 @@ module.exports = function(HB) {
       if (!this.validateSavedOperations()) {
         return false;
       } else {
+        if (this.content instanceof types.Operation) {
+          this.content.insert_parent = this;
+        }
         if (this.parent != null) {
           if (this.prev_cl == null) {
             this.prev_cl = this.parent.beginning;
@@ -380,9 +400,39 @@ module.exports = function(HB) {
       return position;
     };
 
+    Insert.prototype._encode = function() {
+      var json, _ref;
+      json = {
+        'type': this.type,
+        'uid': this.getUid(),
+        'prev': this.prev_cl.getUid(),
+        'next': this.next_cl.getUid(),
+        'parent': this.parent.getUid()
+      };
+      if (this.origin.type === "Delimiter") {
+        json.origin = "Delimiter";
+      } else if (this.origin !== this.prev_cl) {
+        json.origin = this.origin.getUid();
+      }
+      if (((_ref = this.content) != null ? _ref.getUid : void 0) != null) {
+        json['content'] = this.content.getUid();
+      } else {
+        json['content'] = JSON.stringify(this.content);
+      }
+      return json;
+    };
+
     return Insert;
 
   })(types.Operation);
+  types.Insert.parse = function(json) {
+    var content, next, origin, parent, prev, uid;
+    content = json['content'], uid = json['uid'], prev = json['prev'], next = json['next'], origin = json['origin'], parent = json['parent'];
+    if (typeof content === "string") {
+      content = JSON.parse(content);
+    }
+    return new this(content, uid, prev, next, origin, parent);
+  };
   types.ImmutableObject = (function(_super) {
     __extends(ImmutableObject, _super);
 

@@ -118,4 +118,50 @@ describe "TextFramework", ->
     console.log("testiy deleted this TODO:dtrn")
     @yTest.run()
 
+  it "handles double-late-join", ->
+    test = new TextTest("double")
+    test.run()
+    @yTest.run()
+    u1 = test.users[0]
+    u2 = @yTest.users[1]
+    ops1 = u1.HB._encode()
+    ops2 = u2.HB._encode()
+    u1.engine.applyOp ops2, true
+    u2.engine.applyOp ops1, true
+    compare = (o1, o2)->
+      if o1.type? and o1.type isnt o2.type
+        throw new Error "different types"
+      else if o1.type is "Object"
+        for name, val of o1.val()
+          compare(val, o2.val(name))
+      else if o1.type?
+        compare(o1.val(), o2.val())
+      else if o1 isnt o2
+        throw new Error "different values"
+    compare u1, u2
+    expect(test.getContent(0)).to.deep.equal(@yTest.getContent(1))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

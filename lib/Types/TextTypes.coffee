@@ -6,224 +6,10 @@ module.exports = (HB)->
   parser = structured_types.parser
 
   #
-  # @nodoc
-  # Extends the basic Insert type to an operation that holds a text value
-  #
-  class types.TextInsert extends types.Insert
-    #
-    # @param {String} content The content of this Insert-type Operation. Usually you restrict the length of content to size 1
-    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
-    #
-    constructor: (content, uid, prev, next, origin, parent)->
-      if content?.creator
-        @saveOperation 'content', content
-      else
-        @content = content
-      super uid, prev, next, origin, parent
-
-    type: "TextInsert"
-
-    #
-    # Retrieve the effective length of the $content of this operation.
-    #
-    getLength: ()->
-      if @isDeleted()
-        0
-      else
-        @content.length
-
-    applyDelete: ()->
-      super # no braces indeed!
-      if @content instanceof types.Operation
-        @content.applyDelete()
-      @content = null
-
-    execute: ()->
-      if not @validateSavedOperations()
-        return false
-      else
-        if @content instanceof types.Operation
-          @content.insert_parent = @
-        super()
-
-    #
-    # The result will be concatenated with the results from the other insert operations
-    # in order to retrieve the content of the engine.
-    # @see HistoryBuffer.toExecutedArray
-    #
-    val: (current_position)->
-      if @isDeleted() or not @content?
-        ""
-      else
-        @content
-
-    #
-    # Convert all relevant information of this operation to the json-format.
-    # This result can be send to other clients.
-    #
-    _encode: ()->
-      json =
-        {
-          'type': @type
-          'uid' : @getUid()
-          'prev': @prev_cl.getUid()
-          'next': @next_cl.getUid()
-          'origin': @origin.getUid()
-          'parent': @parent.getUid()
-        }
-
-      if @content?.getUid?
-        json['content'] = @content.getUid()
-      else
-        json['content'] = JSON.stringify @content
-      json
-
-  types.TextInsert.parse = (json)->
-    {
-      'content' : content
-      'uid' : uid
-      'prev': prev
-      'next': next
-      'origin' : origin
-      'parent' : parent
-    } = json
-    if typeof content is "string"
-      content = JSON.parse(content)
-    new types.TextInsert content, uid, prev, next, origin, parent
-
-
-  class types.Array extends types.ListManager
-
-    type: "Array"
-
-    applyDelete: ()->
-      o = @end
-      while o?
-        o.applyDelete()
-        o = o.prev_cl
-      super()
-
-    cleanup: ()->
-      super()
-
-    toJson: (transform_to_value = false)->
-      val = @val()
-      for i, o in val
-        if o instanceof types.Object
-          o.toJson(transform_to_value)
-        else if o instanceof types.Array
-          o.toJson(transform_to_value)
-        else if transform_to_value and o instanceof types.Operation
-          o.val()
-        else
-          o
-
-    val: (pos)->
-      if pos?
-        o = @getOperationByPosition(pos+1)
-        if not (o instanceof types.Delimiter)
-          o.val()
-        else
-          throw new Error "this position does not exist"
-      else
-        o = @beginning.next_cl
-        result = []
-        while o isnt @end
-          if not o.isDeleted()
-            result.push o.val()
-          o = o.next_cl
-        result
-
-    push: (content)->
-      @insertAfter @end.prev_cl, content
-
-    insertAfter: (left, content, options)->
-      createContent = (content, options)->
-        if content? and content.constructor?
-          type = types[content.constructor.name]
-          if type? and type.create?
-            type.create content, options
-          else
-            throw new Error "The #{content.constructor.name}-type is not (yet) supported in Y."
-        else
-          content
-
-      right = left.next_cl
-      while right.isDeleted()
-        right = right.next_cl # find the first character to the right, that is not deleted. In the case that position is 0, its the Delimiter.
-      left = right.prev_cl
-
-      if content instanceof types.Operation
-        (new types.TextInsert content, undefined, left, right).execute()
-      else
-        for c in content
-          tmp = (new types.TextInsert createContent(c, options), undefined, left, right).execute()
-          left = tmp
-      @
-
-    #
-    # Inserts a string into the word.
-    #
-    # @return {Array Type} This String object.
-    #
-    insert: (position, content, options)->
-      ith = @getOperationByPosition position
-      # the (i-1)th character. e.g. "abc" the 1th character is "a"
-      # the 0th character is the left Delimiter
-      @insertAfter ith, [content], options
-
-    #
-    # Deletes a part of the word.
-    #
-    # @return {Array Type} This String object
-    #
-    delete: (position, length)->
-      o = @getOperationByPosition(position+1) # position 0 in this case is the deletion of the first character
-
-      delete_ops = []
-      for i in [0...length]
-        if o instanceof types.Delimiter
-          break
-        d = (new types.Delete undefined, o).execute()
-        o = o.next_cl
-        while (not (o instanceof types.Delimiter)) and o.isDeleted()
-          o = o.next_cl
-        delete_ops.push d._encode()
-      @
-
-    #
-    # @private
-    # Encode this operation in such a way that it can be parsed by remote peers.
-    #
-    _encode: ()->
-      json = {
-        'type': @type
-        'uid' : @getUid()
-      }
-      json
-
-  types.Array.parse = (json)->
-    {
-      'uid' : uid
-    } = json
-    new this(uid)
-
-  types.Array.create = (content, mutable)->
-    if (mutable is "mutable")
-      list = new types.Array().execute()
-      ith = list.getOperationByPosition 0
-      list.insertAfter ith, content
-      list
-    else if (not mutable?) or (mutable is "immutable")
-      content
-    else
-      throw new Error "Specify either \"mutable\" or \"immutable\"!!"
-
-  #
   # Handles a String-like data structures with support for insert/delete at a word-position.
   # @note Currently, only Text is supported!
   #
-  class types.String extends types.Array
+  class types.String extends types.ListManager
 
     #
     # @private
@@ -250,12 +36,8 @@ module.exports = (HB)->
     # @return {String} The String-representation of this object.
     #
     val: ()->
-      c = for o in @toArray()
-        if o.val?
-          o.val()
-        else
-          ""
-      c.join('')
+      @fold "", (left, o)->
+        left + o.val()
 
     #
     # Same as String.val
@@ -267,7 +49,7 @@ module.exports = (HB)->
     #
     # Inserts a string into the word.
     #
-    # @return {Array Type} This String object.
+    # @return {ListManager Type} This String object.
     #
     insert: (position, content, options)->
       ith = @getOperationByPosition position

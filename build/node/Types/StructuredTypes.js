@@ -102,6 +102,42 @@ module.exports = function(HB) {
 
     ListManager.prototype.type = "ListManager";
 
+    ListManager.prototype.applyDelete = function() {
+      var o;
+      o = this.end;
+      while (o != null) {
+        o.applyDelete();
+        o = o.prev_cl;
+      }
+      return ListManager.__super__.applyDelete.call(this);
+    };
+
+    ListManager.prototype.cleanup = function() {
+      return ListManager.__super__.cleanup.call(this);
+    };
+
+    ListManager.prototype.toJson = function(transform_to_value) {
+      var i, o, val, _i, _len, _results;
+      if (transform_to_value == null) {
+        transform_to_value = false;
+      }
+      val = this.val();
+      _results = [];
+      for (o = _i = 0, _len = val.length; _i < _len; o = ++_i) {
+        i = val[o];
+        if (o instanceof types.Object) {
+          _results.push(o.toJson(transform_to_value));
+        } else if (o instanceof types.ListManager) {
+          _results.push(o.toJson(transform_to_value));
+        } else if (transform_to_value && o instanceof types.Operation) {
+          _results.push(o.val());
+        } else {
+          _results.push(o);
+        }
+      }
+      return _results;
+    };
+
     ListManager.prototype.execute = function() {
       if (this.validateSavedOperations()) {
         this.beginning.setParent(this);
@@ -125,10 +161,51 @@ module.exports = function(HB) {
       o = this.beginning.next_cl;
       result = [];
       while (o !== this.end) {
-        result.push(o);
+        if (!o.is_deleted) {
+          result.push(o);
+        }
         o = o.next_cl;
       }
       return result;
+    };
+
+    ListManager.prototype.map = function(f) {
+      var o, result;
+      o = this.beginning.next_cl;
+      result = [];
+      while (o !== this.end) {
+        if (!o.is_deleted) {
+          result.push(f(o));
+        }
+        o = o.next_cl;
+      }
+      return result;
+    };
+
+    ListManager.prototype.fold = function(init, f) {
+      var o;
+      o = this.beginning.next_cl;
+      while (o !== this.end) {
+        if (!o.is_deleted) {
+          init = f(init, o);
+        }
+        o = o.next_cl;
+      }
+      return init;
+    };
+
+    ListManager.prototype.val = function(pos) {
+      var o;
+      if (pos != null) {
+        o = this.getOperationByPosition(pos + 1);
+        if (!(o instanceof types.Delimiter)) {
+          return o.val();
+        } else {
+          throw new Error("this position does not exist");
+        }
+      } else {
+        return this.toArray();
+      }
     };
 
     ListManager.prototype.getOperationByPosition = function(position) {
@@ -153,9 +230,97 @@ module.exports = function(HB) {
       return o;
     };
 
+    ListManager.prototype.push = function(content) {
+      return this.insertAfter(this.end.prev_cl, content);
+    };
+
+    ListManager.prototype.insertAfter = function(left, content, options) {
+      var c, createContent, right, tmp, _i, _len;
+      createContent = function(content, options) {
+        var type;
+        if ((content != null) && (content.constructor != null)) {
+          type = types[content.constructor.name];
+          if ((type != null) && (type.create != null)) {
+            return type.create(content, options);
+          } else {
+            throw new Error("The " + content.constructor.name + "-type is not (yet) supported in Y.");
+          }
+        } else {
+          return content;
+        }
+      };
+      right = left.next_cl;
+      while (right.isDeleted()) {
+        right = right.next_cl;
+      }
+      left = right.prev_cl;
+      if (content instanceof types.Operation) {
+        (new types.Insert(content, void 0, left, right)).execute();
+      } else {
+        for (_i = 0, _len = content.length; _i < _len; _i++) {
+          c = content[_i];
+          tmp = (new types.Insert(createContent(c, options), void 0, left, right)).execute();
+          left = tmp;
+        }
+      }
+      return this;
+    };
+
+    ListManager.prototype.insert = function(position, content, options) {
+      var ith;
+      ith = this.getOperationByPosition(position);
+      return this.insertAfter(ith, [content], options);
+    };
+
+    ListManager.prototype["delete"] = function(position, length) {
+      var d, delete_ops, i, o, _i;
+      o = this.getOperationByPosition(position + 1);
+      delete_ops = [];
+      for (i = _i = 0; 0 <= length ? _i < length : _i > length; i = 0 <= length ? ++_i : --_i) {
+        if (o instanceof types.Delimiter) {
+          break;
+        }
+        d = (new types.Delete(void 0, o)).execute();
+        o = o.next_cl;
+        while ((!(o instanceof types.Delimiter)) && o.isDeleted()) {
+          o = o.next_cl;
+        }
+        delete_ops.push(d._encode());
+      }
+      return this;
+    };
+
+    ListManager.prototype._encode = function() {
+      var json;
+      json = {
+        'type': this.type,
+        'uid': this.getUid()
+      };
+      return json;
+    };
+
     return ListManager;
 
   })(types.Operation);
+  types.ListManager.parse = function(json) {
+    var uid;
+    uid = json['uid'];
+    return new this(uid);
+  };
+  types.Array = function() {};
+  types.Array.create = function(content, mutable) {
+    var ith, list;
+    if (mutable === "mutable") {
+      list = new types.ListManager().execute();
+      ith = list.getOperationByPosition(0);
+      list.insertAfter(ith, content);
+      return list;
+    } else if ((mutable == null) || (mutable === "immutable")) {
+      return content;
+    } else {
+      throw new Error("Specify either \"mutable\" or \"immutable\"!!");
+    }
+  };
   types.ReplaceManager = (function(_super) {
     __extends(ReplaceManager, _super);
 
@@ -240,13 +405,8 @@ module.exports = function(HB) {
     __extends(Replaceable, _super);
 
     function Replaceable(content, parent, uid, prev, next, origin, is_deleted) {
-      if ((content != null) && (content.creator != null)) {
-        this.saveOperation('content', content);
-      } else {
-        this.content = content;
-      }
       this.saveOperation('parent', parent);
-      Replaceable.__super__.constructor.call(this, uid, prev, next, origin);
+      Replaceable.__super__.constructor.call(this, content, uid, prev, next, origin);
       this.is_deleted = is_deleted;
     }
 
