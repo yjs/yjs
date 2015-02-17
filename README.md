@@ -1,7 +1,7 @@
 
 # ![Yatta!](https://dadamonad.github.io/files/layout/yjs.svg)
 
-[![Build Status](http://layers.dbis.rwth-aachen.de/jenkins/job/Yatta/badge/icon)](http://layers.dbis.rwth-aachen.de/jenkins/job/Yatta/)
+[![Build Status](https://travis-ci.org/rwth-acis/yjs.svg)](https://travis-ci.org/rwth-acis/yjs)
 
 Yjs is a framework for optimistic concurrency control and automatic conflict resolution on arbitrary data types. The framework implements a new OT-like concurrency algorithm and provides similar functionality as [ShareJs] and [OpenCoweb]. Yjs was designed to take away the pain from concurrently editing complex data types like Text, Json, and XML. You can find some applications for this framework [here](https://dadamonad.github.io/yjs/examples/).
 
