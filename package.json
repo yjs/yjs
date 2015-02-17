@@ -27,12 +27,13 @@
   },
   "homepage": "https://dadamonad.github.io/yjs/",
   "dependencies": {
+    "mocha": "^2.1.0",
+    "sinon": "^1.12.2",
+    "sinon-chai": "^2.7.0"
   },
   "devDependencies": {
     "codo": "^2.0.9",
     "underscore": "^1.6.0",
-    "chai": "^1.9.1",
-    "codo": "^2.0.9",
     "coffee-errors": "~0.8.6",
     "coffee-script": "^1.7.1",
     "coffeeify": "^0.6.0",
@@ -58,9 +59,6 @@
     "gulp-sourcemaps": "^1.1.1",
     "gulp-uglify": "^0.3.1",
     "gulp-watch": "^3.0.0",
-    "jquery": "^2.1.1",
-    "mocha": "^1.21.4",
-    "sinon": "^1.10.2",
-    "sinon-chai": "^2.5.0"
+    "jquery": "^2.1.1"
   }
 }

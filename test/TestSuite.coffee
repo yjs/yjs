@@ -1,6 +1,5 @@
 chai      = require('chai')
 expect    = chai.expect
-should    = chai.should()
 sinon     = require('sinon')
 sinonChai = require('sinon-chai')
 _         = require("underscore")
@@ -13,7 +12,7 @@ module.exports = class Test
   constructor: (@name_suffix = "")->
     @number_of_test_cases_multiplier = 1
     @repeat_this = 3 * @number_of_test_cases_multiplier
-    @doSomething_amount = 1230 * @number_of_test_cases_multiplier
+    @doSomething_amount = 123 * @number_of_test_cases_multiplier
     @number_of_engines = 5 + @number_of_test_cases_multiplier - 1
 
     @time = 0 # denotes to the time when run was started

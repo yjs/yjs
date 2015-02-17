@@ -87,8 +87,9 @@ class JsonTest extends Test
     ]
 
 describe "JsonFramework", ->
+  @timeout 50000
+
   beforeEach (done)->
-    @timeout 50000
     @yTest = new JsonTest()
     @users = @yTest.users
 
