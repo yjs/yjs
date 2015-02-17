@@ -71,7 +71,7 @@ module.exports = function(HB) {
       if (((_ref = this.content) != null ? _ref.getUid : void 0) != null) {
         json['content'] = this.content.getUid();
       } else {
-        json['content'] = this.content;
+        json['content'] = JSON.stringify(this.content);
       }
       return json;
     };
@@ -82,6 +82,9 @@ module.exports = function(HB) {
   types.TextInsert.parse = function(json) {
     var content, next, origin, parent, prev, uid;
     content = json['content'], uid = json['uid'], prev = json['prev'], next = json['next'], origin = json['origin'], parent = json['parent'];
+    if (typeof content === "string") {
+      content = JSON.parse(content);
+    }
     return new types.TextInsert(content, uid, prev, next, origin, parent);
   };
   types.Array = (function(_super) {
@@ -362,14 +365,20 @@ module.exports = function(HB) {
           }
         };
         writeContent = function(content) {
-          var append;
-          append = "";
-          if (content[content.length - 1] === " ") {
-            content = content.slice(0, content.length - 1);
-            append = '&nbsp;';
+          var c, content_array, i, _j, _len1, _results;
+          content_array = content.replace(new RegExp("\n", 'g'), " ").split(" ");
+          textfield.innerText = "";
+          _results = [];
+          for (i = _j = 0, _len1 = content_array.length; _j < _len1; i = ++_j) {
+            c = content_array[i];
+            textfield.innerText += c;
+            if (i !== content_array.length - 1) {
+              _results.push(textfield.innerHTML += '&nbsp;');
+            } else {
+              _results.push(void 0);
+            }
           }
-          textfield.textContent = content;
-          return textfield.innerHTML += append;
+          return _results;
         };
       }
       writeContent(this.val());
@@ -420,11 +429,11 @@ module.exports = function(HB) {
         }
         creator_token = true;
         char = null;
-        if (event.key != null) {
+        if (event.keyCode === 13) {
+          char = '\n';
+        } else if (event.key != null) {
           if (event.charCode === 32) {
             char = " ";
-          } else if (event.keyCode === 13) {
-            char = '\n';
           } else {
             char = event.key;
           }

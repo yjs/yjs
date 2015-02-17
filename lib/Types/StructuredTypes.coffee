@@ -131,7 +131,7 @@ module.exports = (HB)->
           # for the current array. Therefore we reach a Delimiter.
           # Then, we'll just return the last character.
           o = o.prev_cl
-          while o.isDeleted() or not (o instanceof types.Delimiter)
+          while o.isDeleted() and o.prev_cl?
             o = o.prev_cl
           break
         if position <= 0 and not o.isDeleted()

@@ -75,7 +75,7 @@ module.exports = (HB)->
       if @content?.getUid?
         json['content'] = @content.getUid()
       else
-        json['content'] = @content
+        json['content'] = JSON.stringify @content
       json
 
   types.TextInsert.parse = (json)->
@@ -87,6 +87,8 @@ module.exports = (HB)->
       'origin' : origin
       'parent' : parent
     } = json
+    if typeof content is "string"
+      content = JSON.parse(content)
     new types.TextInsert content, uid, prev, next, origin, parent
 
 
@@ -348,12 +350,12 @@ module.exports = (HB)->
             s.removeAllRanges()
             s.addRange(r)
         writeContent = (content)->
-          append = ""
-          if content[content.length - 1] is " "
-            content = content.slice(0,content.length-1)
-            append = '&nbsp;'
-          textfield.textContent = content
-          textfield.innerHTML += append
+          content_array = content.replace(new RegExp("\n",'g')," ").split(" ")
+          textfield.innerText = ""
+          for c, i in content_array
+            textfield.innerText += c
+            if i isnt content_array.length-1
+              textfield.innerHTML += '&nbsp;'
 
       writeContent this.val()
 
@@ -390,11 +392,11 @@ module.exports = (HB)->
           return true
         creator_token = true
         char = null
-        if event.key?
+        if event.keyCode is 13
+          char = '\n'
+        else if event.key?
           if event.charCode is 32
             char = " "
-          else if event.keyCode is 13
-            char = '\n'
           else
             char = event.key
         else

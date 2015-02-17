@@ -137,7 +137,7 @@ module.exports = function(HB) {
       while (true) {
         if (o instanceof types.Delimiter && (o.prev_cl != null)) {
           o = o.prev_cl;
-          while (o.isDeleted() || !(o instanceof types.Delimiter)) {
+          while (o.isDeleted() && (o.prev_cl != null)) {
             o = o.prev_cl;
           }
           break;
