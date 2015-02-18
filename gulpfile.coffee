@@ -18,6 +18,7 @@ plumber = require 'gulp-plumber'
 mochaPhantomJS = require 'gulp-mocha-phantomjs'
 cache = require 'gulp-cached'
 coffeeify = require 'gulp-coffeeify'
+exit = require 'gulp-exit'
 
 gulp.task 'default', ['build_browser']
 
@@ -81,9 +82,8 @@ gulp.task 'watch', ['build'], ->
 
 gulp.task 'mocha', ->
   gulp.src files.test, { read: false }
-    .pipe plumber()
     .pipe mocha {reporter : 'list'}
-
+    .pipe exit()
 
 gulp.task 'lint', ->
   gulp.src files.all

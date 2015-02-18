@@ -29,10 +29,9 @@ class TextTest extends Test
     @users[user_num].val("TextTest").val()
 
 describe "TextFramework", ->
-  @timeout 50000
+  @timeout 500000
 
   beforeEach (done)->
-    @timeout 50000
     @yTest = new TextTest()
     done()
 
