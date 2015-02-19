@@ -10,6 +10,18 @@ chai.use(sinonChai)
 Connector = require "../../y-test/lib/y-test.coffee"
 Y = require "../lib/y.coffee"
 
+compare = (o1, o2)->
+  if o1.type? and o1.type isnt o2.type
+    throw new Error "different types"
+  else if o1.type is "Object"
+    for name, val of o1.val()
+      compare(val, o2.val(name))
+  else if o1.type?
+    compare(o1.val(), o2.val())
+  else if o1 isnt o2
+    throw new Error "different values"
+
+
 Test = require "./TestSuite"
 
 class JsonTest extends Test
@@ -43,12 +55,8 @@ class JsonTest extends Test
         p = elems[_.random(0, elems.length-1)]
         @getRandomRoot user_num, p
 
-
-  getContent: (user_num)->
-    @users[user_num].toJson(true)
-
   getGeneratingFunctions: (user_num)->
-    types = @users[user_num].operations
+    types = @users[user_num]._model.operations
     super(user_num).concat [
         f : (y)=> # SET PROPERTY
           l = y.val().length
@@ -113,18 +121,8 @@ describe "JsonFramework", ->
     ops2 = u2.HB._encode()
     u1.engine.applyOp ops2, true
     u2.engine.applyOp ops1, true
-    compare = (o1, o2)->
-      if o1.type? and o1.type isnt o2.type
-        throw new Error "different types"
-      else if o1.type is "Object"
-        for name, val of o1.val()
-          compare(val, o2.val(name))
-      else if o1.type?
-        compare(o1.val(), o2.val())
-      else if o1 isnt o2
-        throw new Error "different values"
-    compare u1, u2
-    expect(test.getContent(0)).to.deep.equal(@yTest.getContent(1))
+
+    expect(compare(u1, u2)).to.not.be.undefined
 
   it "can handle creaton of complex json (1)", ->
     @yTest.users[0].val('a', 'q', "mutable")
@@ -136,16 +134,16 @@ describe "JsonFramework", ->
     expect(@yTest.getSomeUser().val("a").val()).to.equal("At")
 
   it "can handle creaton of complex json (2)", ->
-    @yTest.getSomeUser().val('x', {'a':'b'})
-    @yTest.getSomeUser().val('a', {'a':{q:"dtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt"}}, "mutable")
-    @yTest.getSomeUser().val('b', {'a':{}})
-    @yTest.getSomeUser().val('c', {'a':'c'})
-    @yTest.getSomeUser().val('c', {'a':'b'})
+    @yTest.getSomeUser().val('x', new Y.Object({'a':'b'}))
+    @yTest.getSomeUser().val('a', new Y.Object({'a':{q:"dtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt"}}))
+    @yTest.getSomeUser().val('b', new Y.Object({'a':{}}))
+    @yTest.getSomeUser().val('c', new Y.Object({'a':'c'}))
+    @yTest.getSomeUser().val('c', new Y.Object({'a':'b'}))
     @yTest.compareAll()
     q = @yTest.getSomeUser().val("a").val("a").val("q")
     q.insert(0,'A')
     @yTest.compareAll()
-    expect(@yTest.getSomeUser().val("a").val("a").val("q").val()).to.equal("Adtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt")
+    expect(@yTest.getSomeUser().val("a").val("a").val("q")).to.equal("Adtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt")
 
   it "can handle creaton of complex json (3)", ->
     @yTest.users[0].val('l', [1,2,3], "mutable")
@@ -171,7 +169,7 @@ describe "JsonFramework", ->
   it "handles immutables and primitive data types (2)", ->
     @yTest.users[0].val('string', "text", "immutable")
     @yTest.users[1].val('number', 4, "immutable")
-    @yTest.users[2].val('object', {q:"rr"}, "immutable")
+    @yTest.users[2].val('object', {q:"rr"})
     @yTest.users[0].val('null', null)
     @yTest.compareAll()
     expect(@yTest.getSomeUser().val('string')).to.equal "text"

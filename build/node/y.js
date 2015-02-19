@@ -1,6 +1,6 @@
-var Engine, HistoryBuffer, adaptConnector, createY, json_ops_uninitialized;
+var Engine, HistoryBuffer, adaptConnector, createY, text_ops_uninitialized;
 
-json_ops_uninitialized = require("./Operations/Json");
+text_ops_uninitialized = require("./Operations/Text");
 
 HistoryBuffer = require("./HistoryBuffer");
 
@@ -9,7 +9,7 @@ Engine = require("./Engine");
 adaptConnector = require("./ConnectorAdapter");
 
 createY = function(connector) {
-  var HB, engine, ops, ops_manager, user_id;
+  var HB, ct, engine, model, ops, ops_manager, user_id;
   user_id = null;
   if (connector.user_id != null) {
     user_id = connector.user_id;
@@ -21,7 +21,7 @@ createY = function(connector) {
     };
   }
   HB = new HistoryBuffer(user_id);
-  ops_manager = json_ops_uninitialized(HB, this.constructor);
+  ops_manager = text_ops_uninitialized(HB, this.constructor);
   ops = ops_manager.operations;
   engine = new Engine(HB, ops);
   adaptConnector(connector, engine, HB, ops_manager.execution_listener);
@@ -30,11 +30,16 @@ createY = function(connector) {
   ops.Operation.prototype.engine = engine;
   ops.Operation.prototype.connector = connector;
   ops.Operation.prototype.custom_ops = this.constructor;
-  return new ops.Object(HB.getReservedUniqueIdentifier()).execute();
+  ct = new createY.Object();
+  model = new ops.MapManager(ct, HB.getReservedUniqueIdentifier()).execute();
+  ct._setModel(model);
+  return ct;
 };
 
 module.exports = createY;
 
-if ((typeof window !== "undefined" && window !== null) && (window.Y == null)) {
+if (typeof window !== "undefined" && window !== null) {
   window.Y = createY;
 }
+
+createY.Object = require("./Types/Object");

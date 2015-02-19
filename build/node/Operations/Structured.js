@@ -11,8 +11,11 @@ module.exports = function() {
   ops.MapManager = (function(_super) {
     __extends(MapManager, _super);
 
-    function MapManager(uid) {
-      this.map = {};
+    function MapManager(custom_type, uid) {
+      if (custom_type != null) {
+        this.custom_type = custom_type;
+      }
+      this._map = {};
       MapManager.__super__.constructor.call(this, uid);
     }
 
@@ -20,7 +23,7 @@ module.exports = function() {
 
     MapManager.prototype.applyDelete = function() {
       var name, p, _ref;
-      _ref = this.map;
+      _ref = this._map;
       for (name in _ref) {
         p = _ref[name];
         p.applyDelete();
@@ -32,25 +35,50 @@ module.exports = function() {
       return MapManager.__super__.cleanup.call(this);
     };
 
+    MapManager.prototype.map = function(f) {
+      var n, v, _ref;
+      _ref = this._map;
+      for (n in _ref) {
+        v = _ref[n];
+        f(n, v);
+      }
+      return void 0;
+    };
+
     MapManager.prototype.val = function(name, content) {
-      var o, prop, result, _ref;
+      var o, prop, rep, res, result, _ref;
       if (arguments.length > 1) {
-        this.retrieveSub(name).replace(content);
+        if ((content != null) && (content._model != null) && content._model instanceof ops.Operation) {
+          rep = content._model;
+        } else {
+          rep = content;
+        }
+        this.retrieveSub(name).replace(rep);
         return this;
       } else if (name != null) {
-        prop = this.map[name];
+        prop = this._map[name];
         if ((prop != null) && !prop.isContentDeleted()) {
-          return prop.val();
+          res = prop.val();
+          if (res instanceof ops.Operation) {
+            return res.getCustomType();
+          } else {
+            return res;
+          }
         } else {
           return void 0;
         }
       } else {
         result = {};
-        _ref = this.map;
+        _ref = this._map;
         for (name in _ref) {
           o = _ref[name];
           if (!o.isContentDeleted()) {
-            result[name] = o.val();
+            res = prop.val();
+            if (res instanceof ops.Operation) {
+              result[name] = res.getCustomType();
+            } else {
+              result[name] = res;
+            }
           }
         }
         return result;
@@ -59,7 +87,7 @@ module.exports = function() {
 
     MapManager.prototype["delete"] = function(name) {
       var _ref;
-      if ((_ref = this.map[name]) != null) {
+      if ((_ref = this._map[name]) != null) {
         _ref.deleteContent();
       }
       return this;
@@ -67,7 +95,7 @@ module.exports = function() {
 
     MapManager.prototype.retrieveSub = function(property_name) {
       var event_properties, event_this, rm, rm_uid;
-      if (this.map[property_name] == null) {
+      if (this._map[property_name] == null) {
         event_properties = {
           name: property_name
         };
@@ -78,16 +106,35 @@ module.exports = function() {
           alt: this
         };
         rm = new ops.ReplaceManager(event_properties, event_this, rm_uid);
-        this.map[property_name] = rm;
+        this._map[property_name] = rm;
         rm.setParent(this, property_name);
         rm.execute();
       }
-      return this.map[property_name];
+      return this._map[property_name];
+    };
+
+    MapManager.prototype._encode = function() {
+      var json;
+      json = {
+        'type': this.type,
+        'uid': this.getUid()
+      };
+      if (this.custom_type.constructor === String) {
+        json.custom_type = this.custom_type;
+      } else {
+        json.custom_type = this.custom_type._name;
+      }
+      return json;
     };
 
     return MapManager;
 
   })(ops.Operation);
+  ops.MapManager.parse = function(json) {
+    var custom_type, uid;
+    uid = json['uid'], custom_type = json['custom_type'];
+    return new this(custom_type, uid);
+  };
   ops.ListManager = (function(_super) {
     __extends(ListManager, _super);
 
@@ -413,7 +460,11 @@ module.exports = function() {
     Replaceable.prototype.type = "Replaceable";
 
     Replaceable.prototype.val = function() {
-      return this.content;
+      if ((this.content != null) && (this.content.getCustomType != null)) {
+        return this.content.getCustomType();
+      } else {
+        return this.content;
+      }
     };
 
     Replaceable.prototype.applyDelete = function() {

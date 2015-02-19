@@ -13,46 +13,65 @@ module.exports = ()->
     #
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     #
-    constructor: (uid)->
-      @map = {}
+    constructor: (custom_type, uid)->
+      if custom_type?
+        @custom_type = custom_type
+      @_map = {}
       super uid
 
     type: "MapManager"
 
     applyDelete: ()->
-      for name,p of @map
+      for name,p of @_map
         p.applyDelete()
       super()
 
     cleanup: ()->
       super()
 
+    map: (f)->
+      for n,v of @_map
+        f(n,v)
+      undefined
+
     #
     # @see JsonOperations.val
     #
     val: (name, content)->
       if arguments.length > 1
-        @retrieveSub(name).replace content
+        if content? and content._model? and content._model instanceof ops.Operation
+          rep = content._model
+        else
+          rep = content
+        @retrieveSub(name).replace rep
         @
       else if name?
-        prop = @map[name]
+        prop = @_map[name]
         if prop? and not prop.isContentDeleted()
-          prop.val()
+          res = prop.val()
+          if res instanceof ops.Operation
+            res.getCustomType()
+          else
+            res
         else
           undefined
       else
         result = {}
-        for name,o of @map
+        for name,o of @_map
           if not o.isContentDeleted()
-            result[name] = o.val()
+            res = prop.val()
+            if res instanceof ops.Operation
+              result[name] = res.getCustomType()
+            else
+              result[name] = res
         result
 
     delete: (name)->
-      @map[name]?.deleteContent()
+      @_map[name]?.deleteContent()
       @
 
     retrieveSub: (property_name)->
-      if not @map[property_name]?
+      if not @_map[property_name]?
         event_properties =
           name: property_name
         event_this = @
@@ -61,10 +80,33 @@ module.exports = ()->
           sub: property_name
           alt: @
         rm = new ops.ReplaceManager event_properties, event_this, rm_uid # this operation shall not be saved in the HB
-        @map[property_name] = rm
+        @_map[property_name] = rm
         rm.setParent @, property_name
         rm.execute()
-      @map[property_name]
+      @_map[property_name]
+
+    #
+    # @private
+    #
+    _encode: ()->
+      json = {
+        'type' : @type
+        'uid' : @getUid()
+      }
+      if @custom_type.constructor is String
+        json.custom_type = @custom_type
+      else
+        json.custom_type = @custom_type._name
+      json
+
+  ops.MapManager.parse = (json)->
+    {
+      'uid' : uid
+      'custom_type' : custom_type
+    } = json
+    new this(custom_type, uid)
+
+
 
   #
   # @nodoc
@@ -393,7 +435,10 @@ module.exports = ()->
     # Return the content that this operation holds.
     #
     val: ()->
-      @content
+      if @content? and @content.getCustomType?
+        @content.getCustomType()
+      else
+        @content
 
     applyDelete: ()->
       res = super

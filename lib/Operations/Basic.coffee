@@ -201,6 +201,16 @@ module.exports = ()->
         @unchecked = uninstantiated
       success
 
+    getCustomType: ()->
+      if not @custom_type?
+        throw new Error "This operation was not initialized with a custom type"
+      if @custom_type.constructor is String
+        # has not been initialized yet (only the name is specified)
+        @custom_type = new @custom_types[@custom_type]()
+        @custom_type._setModel @
+      @custom_type
+
+
   #
   # @nodoc
   # A simple Delete-type operation that deletes an operation.

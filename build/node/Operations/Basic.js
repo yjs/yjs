@@ -164,6 +164,17 @@ module.exports = function() {
       return success;
     };
 
+    Operation.prototype.getCustomType = function() {
+      if (this.custom_type == null) {
+        throw new Error("This operation was not initialized with a custom type");
+      }
+      if (this.custom_type.constructor === String) {
+        this.custom_type = new this.custom_types[this.custom_type]();
+        this.custom_type._setModel(this);
+      }
+      return this.custom_type;
+    };
+
     return Operation;
 
   })();

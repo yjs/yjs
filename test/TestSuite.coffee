@@ -28,14 +28,14 @@ module.exports = class Test
     for i in [0...@number_of_engines]
       u = @makeNewUser (i+@name_suffix)
       for user in @users
-        u.connector.join(user.connector) # TODO: change the test-connector to make this more convenient
+        u._model.connector.join(user._model.connector) # TODO: change the test-connector to make this more convenient
       @users.push u
     @initUsers?(@users[0])
     @flushAll()
 
   # is called by implementing class
   makeNewUser: (user)->
-    user.HB.stopGarbageCollection()
+    user._model.HB.stopGarbageCollection()
     user
 
   getSomeUser: ()->
@@ -69,7 +69,7 @@ module.exports = class Test
     @getRandomText [1,2,'x','y'], 1 # only 4 keys
 
   getGeneratingFunctions: (user_num)=>
-    types = @users[user_num].operations
+    types = @users[user_num]._model.operations
     [
         f : (y)=> # INSERT TEXT
           y
@@ -106,7 +106,7 @@ module.exports = class Test
 
   applyRandomOp: (user_num)=>
     user = @users[user_num]
-    user.connector.flushOneRandom()
+    user._model.connector.flushOneRandom()
 
   doSomething: ()->
     user_num = _.random (@number_of_engines-1)
@@ -119,13 +119,12 @@ module.exports = class Test
     final = false
     if @users.length <= 1 or not final
       for user,user_number in @users
-        user.connector.flushAll()
+        user._model.connector.flushAll()
     else
       for user,user_number in @users[1..]
-        user.connector.flushAll()
+        user._model.connector.flushAll()
       ops = @users[1].getHistoryBuffer()._encode @users[0].HB.getOperationCounter()
       @users[0].engine.applyOpsCheckDouble ops
-
 
 
   compareAll: (test_number)->
@@ -135,7 +134,7 @@ module.exports = class Test
 
     number_of_created_operations = 0
     for i in [0...(@users.length)]
-      number_of_created_operations += @users[i].connector.getOpsInExecutionOrder().length
+      number_of_created_operations += @users[i]._model.connector.getOpsInExecutionOrder().length
     @ops += number_of_created_operations*@users.length
 
     ops_per_msek = Math.floor(@ops/@time)
@@ -146,7 +145,7 @@ module.exports = class Test
       if @debug
         if not _.isEqual @getContent(i), @getContent(i+1)
           printOpsInExecutionOrder = (otnumber, otherotnumber)=>
-            ops = _.filter @users[otnumber].connector.getOpsInExecutionOrder(), (o)->
+            ops = _.filter @users[otnumber]._model.connector.getOpsInExecutionOrder(), (o)->
               typeof o.uid.op_name isnt 'string' and o.uid.creator isnt '_'
             for s,j in ops
               console.log "op#{j} = " + (JSON.stringify s)
