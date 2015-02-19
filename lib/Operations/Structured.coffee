@@ -1,14 +1,14 @@
-basic_types_uninitialized = require "./BasicTypes"
+basic_ops_uninitialized = require "./Basic"
 
-module.exports = (HB)->
-  basic_types = basic_types_uninitialized HB
-  types = basic_types.types
+module.exports = ()->
+  basic_ops = basic_ops_uninitialized()
+  ops = basic_ops.operations
 
   #
   # @nodoc
   # Manages map like objects. E.g. Json-Type and XML attributes.
   #
-  class types.MapManager extends types.Operation
+  class ops.MapManager extends ops.Operation
 
     #
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
@@ -28,7 +28,7 @@ module.exports = (HB)->
       super()
 
     #
-    # @see JsonTypes.val
+    # @see JsonOperations.val
     #
     val: (name, content)->
       if arguments.length > 1
@@ -60,7 +60,7 @@ module.exports = (HB)->
           noOperation: true
           sub: property_name
           alt: @
-        rm = new types.ReplaceManager event_properties, event_this, rm_uid # this operation shall not be saved in the HB
+        rm = new ops.ReplaceManager event_properties, event_this, rm_uid # this operation shall not be saved in the HB
         @map[property_name] = rm
         rm.setParent @, property_name
         rm.execute()
@@ -70,7 +70,7 @@ module.exports = (HB)->
   # @nodoc
   # Manages a list of Insert-type operations.
   #
-  class types.ListManager extends types.Operation
+  class ops.ListManager extends ops.Operation
 
     #
     # A ListManager maintains a non-empty list that has a beginning and an end (both Delimiters!)
@@ -78,8 +78,8 @@ module.exports = (HB)->
     # @param {Delimiter} beginning Reference or Object.
     # @param {Delimiter} end Reference or Object.
     constructor: (uid)->
-      @beginning = new types.Delimiter undefined, undefined
-      @end =       new types.Delimiter @beginning, undefined
+      @beginning = new ops.Delimiter undefined, undefined
+      @end =       new ops.Delimiter @beginning, undefined
       @beginning.next_cl = @end
       @beginning.execute()
       @end.execute()
@@ -100,11 +100,11 @@ module.exports = (HB)->
     toJson: (transform_to_value = false)->
       val = @val()
       for i, o in val
-        if o instanceof types.Object
+        if o instanceof ops.Object
           o.toJson(transform_to_value)
-        else if o instanceof types.ListManager
+        else if o instanceof ops.ListManager
           o.toJson(transform_to_value)
-        else if transform_to_value and o instanceof types.Operation
+        else if transform_to_value and o instanceof ops.Operation
           o.val()
         else
           o
@@ -160,7 +160,7 @@ module.exports = (HB)->
     val: (pos)->
       if pos?
         o = @getOperationByPosition(pos+1)
-        if not (o instanceof types.Delimiter)
+        if not (o instanceof ops.Delimiter)
           o.val()
         else
           throw new Error "this position does not exist"
@@ -177,7 +177,7 @@ module.exports = (HB)->
       o = @beginning
       while true
         # find the i-th op
-        if o instanceof types.Delimiter and o.prev_cl?
+        if o instanceof ops.Delimiter and o.prev_cl?
           # the user or you gave a position parameter that is to big
           # for the current array. Therefore we reach a Delimiter.
           # Then, we'll just return the last character.
@@ -199,7 +199,7 @@ module.exports = (HB)->
     insertAfter: (left, content, options)->
       createContent = (content, options)->
         if content? and content.constructor?
-          type = types[content.constructor.name]
+          type = ops[content.constructor.name]
           if type? and type.create?
             type.create content, options
           else
@@ -212,11 +212,11 @@ module.exports = (HB)->
         right = right.next_cl # find the first character to the right, that is not deleted. In the case that position is 0, its the Delimiter.
       left = right.prev_cl
 
-      if content instanceof types.Operation
-        (new types.Insert content, undefined, left, right).execute()
+      if content instanceof ops.Operation
+        (new ops.Insert content, undefined, left, right).execute()
       else
         for c in content
-          tmp = (new types.Insert createContent(c, options), undefined, left, right).execute()
+          tmp = (new ops.Insert createContent(c, options), undefined, left, right).execute()
           left = tmp
       @
 
@@ -241,11 +241,11 @@ module.exports = (HB)->
 
       delete_ops = []
       for i in [0...length]
-        if o instanceof types.Delimiter
+        if o instanceof ops.Delimiter
           break
-        d = (new types.Delete undefined, o).execute()
+        d = (new ops.Delete undefined, o).execute()
         o = o.next_cl
-        while (not (o instanceof types.Delimiter)) and o.isDeleted()
+        while (not (o instanceof ops.Delimiter)) and o.isDeleted()
           o = o.next_cl
         delete_ops.push d._encode()
       @
@@ -261,16 +261,16 @@ module.exports = (HB)->
       }
       json
 
-  types.ListManager.parse = (json)->
+  ops.ListManager.parse = (json)->
     {
       'uid' : uid
     } = json
     new this(uid)
 
-  types.Array = ()->
-  types.Array.create = (content, mutable)->
+  ops.Array = ()->
+  ops.Array.create = (content, mutable)->
       if (mutable is "mutable")
-        list = new types.ListManager().execute()
+        list = new ops.ListManager().execute()
         ith = list.getOperationByPosition 0
         list.insertAfter ith, content
         list
@@ -288,7 +288,7 @@ module.exports = (HB)->
   # The TextType-type has implemented support for replace
   # @see TextType
   #
-  class types.ReplaceManager extends types.ListManager
+  class ops.ReplaceManager extends ops.ListManager
     #
     # @param {Object} event_properties Decorates the event that is thrown by the RM
     # @param {Object} event_this The object on which the event shall be executed
@@ -336,7 +336,7 @@ module.exports = (HB)->
     #
     replace: (content, replaceable_uid)->
       o = @getLastOperation()
-      relp = (new types.Replaceable content, @, replaceable_uid, o, o.next_cl).execute()
+      relp = (new ops.Replaceable content, @, replaceable_uid, o, o.next_cl).execute()
       # TODO: delete repl (for debugging)
       undefined
 
@@ -344,7 +344,7 @@ module.exports = (HB)->
       @getLastOperation().isDeleted()
 
     deleteContent: ()->
-      (new types.Delete undefined, @getLastOperation().uid).execute()
+      (new ops.Delete undefined, @getLastOperation().uid).execute()
       undefined
 
     #
@@ -353,7 +353,7 @@ module.exports = (HB)->
     #
     val: ()->
       o = @getLastOperation()
-      #if o instanceof types.Delimiter
+      #if o instanceof ops.Delimiter
         # throw new Error "Replace Manager doesn't contain anything."
       o.val?() # ? - for the case that (currently) the RM does not contain anything (then o is a Delimiter)
 
@@ -375,7 +375,7 @@ module.exports = (HB)->
   # The ReplaceManager manages Replaceables.
   # @see ReplaceManager
   #
-  class types.Replaceable extends types.Insert
+  class ops.Replaceable extends ops.Insert
 
     #
     # @param {Operation} content The value that this Replaceable holds.
@@ -411,7 +411,7 @@ module.exports = (HB)->
     #
     # This is called, when the Insert-type was successfully executed.
     # TODO: consider doing this in a more consistent manner. This could also be
-    # done with execute. But currently, there are no specital Insert-types for ListManager.
+    # done with execute. But currently, there are no specital Insert-ops for ListManager.
     #
     callOperationSpecificInsertEvents: ()->
       if @next_cl.type is "Delimiter" and @prev_cl.type isnt "Delimiter"
@@ -461,7 +461,7 @@ module.exports = (HB)->
       else if @origin isnt @prev_cl
         json.origin = @origin.getUid()
 
-      if @content instanceof types.Operation
+      if @content instanceof ops.Operation
         json['content'] = @content.getUid()
       else
         # This could be a security concern.
@@ -471,7 +471,7 @@ module.exports = (HB)->
         json['content'] = @content
       json
 
-  types.Replaceable.parse = (json)->
+  ops.Replaceable.parse = (json)->
     {
       'content' : content
       'parent' : parent
@@ -484,7 +484,7 @@ module.exports = (HB)->
     new this(content, parent, uid, prev, next, origin, is_deleted)
 
 
-  basic_types
+  basic_ops
 
 
 

@@ -1,14 +1,14 @@
-var basic_types_uninitialized,
+var basic_ops_uninitialized,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   __hasProp = {}.hasOwnProperty;
 
-basic_types_uninitialized = require("./BasicTypes");
+basic_ops_uninitialized = require("./Basic");
 
-module.exports = function(HB) {
-  var basic_types, types;
-  basic_types = basic_types_uninitialized(HB);
-  types = basic_types.types;
-  types.MapManager = (function(_super) {
+module.exports = function() {
+  var basic_ops, ops;
+  basic_ops = basic_ops_uninitialized();
+  ops = basic_ops.operations;
+  ops.MapManager = (function(_super) {
     __extends(MapManager, _super);
 
     function MapManager(uid) {
@@ -77,7 +77,7 @@ module.exports = function(HB) {
           sub: property_name,
           alt: this
         };
-        rm = new types.ReplaceManager(event_properties, event_this, rm_uid);
+        rm = new ops.ReplaceManager(event_properties, event_this, rm_uid);
         this.map[property_name] = rm;
         rm.setParent(this, property_name);
         rm.execute();
@@ -87,13 +87,13 @@ module.exports = function(HB) {
 
     return MapManager;
 
-  })(types.Operation);
-  types.ListManager = (function(_super) {
+  })(ops.Operation);
+  ops.ListManager = (function(_super) {
     __extends(ListManager, _super);
 
     function ListManager(uid) {
-      this.beginning = new types.Delimiter(void 0, void 0);
-      this.end = new types.Delimiter(this.beginning, void 0);
+      this.beginning = new ops.Delimiter(void 0, void 0);
+      this.end = new ops.Delimiter(this.beginning, void 0);
       this.beginning.next_cl = this.end;
       this.beginning.execute();
       this.end.execute();
@@ -125,11 +125,11 @@ module.exports = function(HB) {
       _results = [];
       for (o = _i = 0, _len = val.length; _i < _len; o = ++_i) {
         i = val[o];
-        if (o instanceof types.Object) {
+        if (o instanceof ops.Object) {
           _results.push(o.toJson(transform_to_value));
-        } else if (o instanceof types.ListManager) {
+        } else if (o instanceof ops.ListManager) {
           _results.push(o.toJson(transform_to_value));
-        } else if (transform_to_value && o instanceof types.Operation) {
+        } else if (transform_to_value && o instanceof ops.Operation) {
           _results.push(o.val());
         } else {
           _results.push(o);
@@ -198,7 +198,7 @@ module.exports = function(HB) {
       var o;
       if (pos != null) {
         o = this.getOperationByPosition(pos + 1);
-        if (!(o instanceof types.Delimiter)) {
+        if (!(o instanceof ops.Delimiter)) {
           return o.val();
         } else {
           throw new Error("this position does not exist");
@@ -212,7 +212,7 @@ module.exports = function(HB) {
       var o;
       o = this.beginning;
       while (true) {
-        if (o instanceof types.Delimiter && (o.prev_cl != null)) {
+        if (o instanceof ops.Delimiter && (o.prev_cl != null)) {
           o = o.prev_cl;
           while (o.isDeleted() && (o.prev_cl != null)) {
             o = o.prev_cl;
@@ -239,7 +239,7 @@ module.exports = function(HB) {
       createContent = function(content, options) {
         var type;
         if ((content != null) && (content.constructor != null)) {
-          type = types[content.constructor.name];
+          type = ops[content.constructor.name];
           if ((type != null) && (type.create != null)) {
             return type.create(content, options);
           } else {
@@ -254,12 +254,12 @@ module.exports = function(HB) {
         right = right.next_cl;
       }
       left = right.prev_cl;
-      if (content instanceof types.Operation) {
-        (new types.Insert(content, void 0, left, right)).execute();
+      if (content instanceof ops.Operation) {
+        (new ops.Insert(content, void 0, left, right)).execute();
       } else {
         for (_i = 0, _len = content.length; _i < _len; _i++) {
           c = content[_i];
-          tmp = (new types.Insert(createContent(c, options), void 0, left, right)).execute();
+          tmp = (new ops.Insert(createContent(c, options), void 0, left, right)).execute();
           left = tmp;
         }
       }
@@ -277,12 +277,12 @@ module.exports = function(HB) {
       o = this.getOperationByPosition(position + 1);
       delete_ops = [];
       for (i = _i = 0; 0 <= length ? _i < length : _i > length; i = 0 <= length ? ++_i : --_i) {
-        if (o instanceof types.Delimiter) {
+        if (o instanceof ops.Delimiter) {
           break;
         }
-        d = (new types.Delete(void 0, o)).execute();
+        d = (new ops.Delete(void 0, o)).execute();
         o = o.next_cl;
-        while ((!(o instanceof types.Delimiter)) && o.isDeleted()) {
+        while ((!(o instanceof ops.Delimiter)) && o.isDeleted()) {
           o = o.next_cl;
         }
         delete_ops.push(d._encode());
@@ -301,17 +301,17 @@ module.exports = function(HB) {
 
     return ListManager;
 
-  })(types.Operation);
-  types.ListManager.parse = function(json) {
+  })(ops.Operation);
+  ops.ListManager.parse = function(json) {
     var uid;
     uid = json['uid'];
     return new this(uid);
   };
-  types.Array = function() {};
-  types.Array.create = function(content, mutable) {
+  ops.Array = function() {};
+  ops.Array.create = function(content, mutable) {
     var ith, list;
     if (mutable === "mutable") {
-      list = new types.ListManager().execute();
+      list = new ops.ListManager().execute();
       ith = list.getOperationByPosition(0);
       list.insertAfter(ith, content);
       return list;
@@ -321,7 +321,7 @@ module.exports = function(HB) {
       throw new Error("Specify either \"mutable\" or \"immutable\"!!");
     }
   };
-  types.ReplaceManager = (function(_super) {
+  ops.ReplaceManager = (function(_super) {
     __extends(ReplaceManager, _super);
 
     function ReplaceManager(_at_event_properties, _at_event_this, uid, beginning, end) {
@@ -368,7 +368,7 @@ module.exports = function(HB) {
     ReplaceManager.prototype.replace = function(content, replaceable_uid) {
       var o, relp;
       o = this.getLastOperation();
-      relp = (new types.Replaceable(content, this, replaceable_uid, o, o.next_cl)).execute();
+      relp = (new ops.Replaceable(content, this, replaceable_uid, o, o.next_cl)).execute();
       return void 0;
     };
 
@@ -377,7 +377,7 @@ module.exports = function(HB) {
     };
 
     ReplaceManager.prototype.deleteContent = function() {
-      (new types.Delete(void 0, this.getLastOperation().uid)).execute();
+      (new ops.Delete(void 0, this.getLastOperation().uid)).execute();
       return void 0;
     };
 
@@ -400,8 +400,8 @@ module.exports = function(HB) {
 
     return ReplaceManager;
 
-  })(types.ListManager);
-  types.Replaceable = (function(_super) {
+  })(ops.ListManager);
+  ops.Replaceable = (function(_super) {
     __extends(Replaceable, _super);
 
     function Replaceable(content, parent, uid, prev, next, origin, is_deleted) {
@@ -494,7 +494,7 @@ module.exports = function(HB) {
       } else if (this.origin !== this.prev_cl) {
         json.origin = this.origin.getUid();
       }
-      if (this.content instanceof types.Operation) {
+      if (this.content instanceof ops.Operation) {
         json['content'] = this.content.getUid();
       } else {
         if ((this.content != null) && (this.content.creator != null)) {
@@ -507,11 +507,11 @@ module.exports = function(HB) {
 
     return Replaceable;
 
-  })(types.Insert);
-  types.Replaceable.parse = function(json) {
+  })(ops.Insert);
+  ops.Replaceable.parse = function(json) {
     var content, is_deleted, next, origin, parent, prev, uid;
     content = json['content'], parent = json['parent'], uid = json['uid'], prev = json['prev'], next = json['next'], origin = json['origin'], is_deleted = json['is_deleted'];
     return new this(content, parent, uid, prev, next, origin, is_deleted);
   };
-  return basic_types;
+  return basic_ops;
 };

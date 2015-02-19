@@ -48,7 +48,7 @@ class JsonTest extends Test
     @users[user_num].toJson(true)
 
   getGeneratingFunctions: (user_num)->
-    types = @users[user_num].types
+    types = @users[user_num].operations
     super(user_num).concat [
         f : (y)=> # SET PROPERTY
           l = y.val().length

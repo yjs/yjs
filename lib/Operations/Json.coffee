@@ -1,13 +1,13 @@
-text_types_uninitialized = require "./TextTypes"
+text_ops_uninitialized = require "./Text"
 
-module.exports = (HB)->
-  text_types = text_types_uninitialized HB
-  types = text_types.types
+module.exports = ()->
+  text_ops = text_ops_uninitialized()
+  ops = text_ops.operations
 
   #
   # Manages Object-like values.
   #
-  class types.Object extends types.MapManager
+  class ops.Object extends ops.MapManager
 
     #
     # Identifies this class.
@@ -40,11 +40,11 @@ module.exports = (HB)->
         val = @val()
         json = {}
         for name, o of val
-          if o instanceof types.Object
+          if o instanceof ops.Object
             json[name] = o.toJson(transform_to_value)
-          else if o instanceof types.ListManager
+          else if o instanceof ops.ListManager
             json[name] = o.toJson(transform_to_value)
-          else if transform_to_value and o instanceof types.Operation
+          else if transform_to_value and o instanceof ops.Operation
             json[name] = o.val()
           else
             json[name] = o
@@ -58,7 +58,7 @@ module.exports = (HB)->
                 that.val(event.name, event.object[event.name])
           @observe (events)->
             for event in events
-              if event.created_ isnt HB.getUserId()
+              if event.created_ isnt @HB.getUserId()
                 notifier = Object.getNotifier(that.bound_json)
                 oldVal = that.bound_json[event.name]
                 if oldVal?
@@ -102,7 +102,7 @@ module.exports = (HB)->
     val: (name, content)->
       if name? and arguments.length > 1
         if content? and content.constructor?
-          type = types[content.constructor.name]
+          type = ops[content.constructor.name]
           if type? and type.create?
             args = []
             for i in [1...arguments.length]
@@ -125,23 +125,23 @@ module.exports = (HB)->
         'uid' : @getUid()
       }
 
-  types.Object.parse = (json)->
+  ops.Object.parse = (json)->
     {
       'uid' : uid
     } = json
     new this(uid)
 
-  types.Object.create = (content, mutable)->
-    json = new types.Object().execute()
+  ops.Object.create = (content, mutable)->
+    json = new ops.Object().execute()
     for n,o of content
       json.val n, o, mutable
     json
 
 
-  types.Number = {}
-  types.Number.create = (content)->
+  ops.Number = {}
+  ops.Number.create = (content)->
     content
 
-  text_types
+  text_ops
 
 

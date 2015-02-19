@@ -1,15 +1,14 @@
-var structured_types_uninitialized,
+var structured_ops_uninitialized,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   __hasProp = {}.hasOwnProperty;
 
-structured_types_uninitialized = require("./StructuredTypes");
+structured_ops_uninitialized = require("./Structured");
 
-module.exports = function(HB) {
-  var parser, structured_types, types;
-  structured_types = structured_types_uninitialized(HB);
-  types = structured_types.types;
-  parser = structured_types.parser;
-  types.String = (function(_super) {
+module.exports = function() {
+  var ops, structured_ops;
+  structured_ops = structured_ops_uninitialized();
+  ops = structured_ops.operations;
+  ops.String = (function(_super) {
     __extends(String, _super);
 
     function String(uid) {
@@ -300,16 +299,16 @@ module.exports = function(HB) {
 
     return String;
 
-  })(types.ListManager);
-  types.String.parse = function(json) {
+  })(ops.ListManager);
+  ops.String.parse = function(json) {
     var uid;
     uid = json['uid'];
     return new this(uid);
   };
-  types.String.create = function(content, mutable) {
+  ops.String.create = function(content, mutable) {
     var word;
     if (mutable === "mutable") {
-      word = new types.String().execute();
+      word = new ops.String().execute();
       word.insert(0, content);
       return word;
     } else if ((mutable == null) || (mutable === "immutable")) {
@@ -318,5 +317,5 @@ module.exports = function(HB) {
       throw new Error("Specify either \"mutable\" or \"immutable\"!!");
     }
   };
-  return structured_types;
+  return structured_ops;
 };

@@ -1,5 +1,6 @@
 
-json_types_uninitialized = require "./Types/JsonTypes"
+json_ops_uninitialized = require "./Operations/Json"
+
 HistoryBuffer = require "./HistoryBuffer"
 Engine = require "./Engine"
 adaptConnector = require "./ConnectorAdapter"
@@ -14,34 +15,19 @@ createY = (connector)->
       user_id = id
       HB.resetUserId id
   HB = new HistoryBuffer user_id
-  type_manager = json_types_uninitialized HB
-  types = type_manager.types
+  ops_manager = json_ops_uninitialized HB, this.constructor
+  ops = ops_manager.operations
 
-  #
-  # Framework for Json data-structures.
-  # Known values that are supported:
-  # * String
-  # * Integer
-  # * Array
-  #
-  class Y extends types.Object
+  engine = new Engine HB, ops
+  adaptConnector connector, engine, HB, ops_manager.execution_listener
 
-    #
-    # @param {String} user_id Unique id of the peer.
-    # @param {Connector} Connector the connector class.
-    #
-    constructor: ()->
-      @connector = connector
-      @HB = HB
-      @types = types
-      @engine = new Engine @HB, type_manager.types
-      adaptConnector @connector, @engine, @HB, type_manager.execution_listener
-      super
+  ops.Operation.prototype.HB = HB
+  ops.Operation.prototype.operations = ops
+  ops.Operation.prototype.engine = engine
+  ops.Operation.prototype.connector = connector
+  ops.Operation.prototype.custom_ops = this.constructor
 
-    getConnector: ()->
-      @connector
-
-  return new Y(HB.getReservedUniqueIdentifier()).execute()
+  return new ops.Object(HB.getReservedUniqueIdentifier()).execute()
 
 module.exports = createY
 if window? and not window.Y?

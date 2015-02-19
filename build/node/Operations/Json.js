@@ -1,14 +1,14 @@
-var text_types_uninitialized,
+var text_ops_uninitialized,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   __hasProp = {}.hasOwnProperty;
 
-text_types_uninitialized = require("./TextTypes");
+text_ops_uninitialized = require("./Text");
 
-module.exports = function(HB) {
-  var text_types, types;
-  text_types = text_types_uninitialized(HB);
-  types = text_types.types;
-  types.Object = (function(_super) {
+module.exports = function() {
+  var ops, text_ops;
+  text_ops = text_ops_uninitialized();
+  ops = text_ops.operations;
+  ops.Object = (function(_super) {
     __extends(Object, _super);
 
     function Object() {
@@ -35,11 +35,11 @@ module.exports = function(HB) {
         json = {};
         for (name in val) {
           o = val[name];
-          if (o instanceof types.Object) {
+          if (o instanceof ops.Object) {
             json[name] = o.toJson(transform_to_value);
-          } else if (o instanceof types.ListManager) {
+          } else if (o instanceof ops.ListManager) {
             json[name] = o.toJson(transform_to_value);
-          } else if (transform_to_value && o instanceof types.Operation) {
+          } else if (transform_to_value && o instanceof ops.Operation) {
             json[name] = o.val();
           } else {
             json[name] = o;
@@ -66,7 +66,7 @@ module.exports = function(HB) {
             _results = [];
             for (_i = 0, _len = events.length; _i < _len; _i++) {
               event = events[_i];
-              if (event.created_ !== HB.getUserId()) {
+              if (event.created_ !== this.HB.getUserId()) {
                 notifier = Object.getNotifier(that.bound_json);
                 oldVal = that.bound_json[event.name];
                 if (oldVal != null) {
@@ -107,7 +107,7 @@ module.exports = function(HB) {
       var args, i, o, type, _i, _ref;
       if ((name != null) && arguments.length > 1) {
         if ((content != null) && (content.constructor != null)) {
-          type = types[content.constructor.name];
+          type = ops[content.constructor.name];
           if ((type != null) && (type.create != null)) {
             args = [];
             for (i = _i = 1, _ref = arguments.length; 1 <= _ref ? _i < _ref : _i > _ref; i = 1 <= _ref ? ++_i : --_i) {
@@ -135,24 +135,24 @@ module.exports = function(HB) {
 
     return Object;
 
-  })(types.MapManager);
-  types.Object.parse = function(json) {
+  })(ops.MapManager);
+  ops.Object.parse = function(json) {
     var uid;
     uid = json['uid'];
     return new this(uid);
   };
-  types.Object.create = function(content, mutable) {
+  ops.Object.create = function(content, mutable) {
     var json, n, o;
-    json = new types.Object().execute();
+    json = new ops.Object().execute();
     for (n in content) {
       o = content[n];
       json.val(n, o, mutable);
     }
     return json;
   };
-  types.Number = {};
-  types.Number.create = function(content) {
+  ops.Number = {};
+  ops.Number.create = function(content) {
     return content;
   };
-  return text_types;
+  return text_ops;
 };

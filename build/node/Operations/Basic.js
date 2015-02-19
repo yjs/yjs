@@ -2,11 +2,11 @@ var __slice = [].slice,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   __hasProp = {}.hasOwnProperty;
 
-module.exports = function(HB) {
-  var execution_listener, types;
-  types = {};
+module.exports = function() {
+  var execution_listener, ops;
+  ops = {};
   execution_listener = [];
-  types.Operation = (function() {
+  ops.Operation = (function() {
     function Operation(uid) {
       this.is_deleted = false;
       this.garbage_collected = false;
@@ -37,7 +37,7 @@ module.exports = function(HB) {
     };
 
     Operation.prototype["delete"] = function() {
-      (new types.Delete(void 0, this)).execute();
+      (new ops.Delete(void 0, this)).execute();
       return null;
     };
 
@@ -69,13 +69,13 @@ module.exports = function(HB) {
         this.is_deleted = true;
         if (garbagecollect) {
           this.garbage_collected = true;
-          return HB.addToGarbageCollector(this);
+          return this.HB.addToGarbageCollector(this);
         }
       }
     };
 
     Operation.prototype.cleanup = function() {
-      HB.removeOperation(this);
+      this.HB.removeOperation(this);
       return this.deleteAllObservers();
     };
 
@@ -117,10 +117,10 @@ module.exports = function(HB) {
       var l, _i, _len;
       this.is_executed = true;
       if (this.uid == null) {
-        this.uid = HB.getNextOperationIdentifier();
+        this.uid = this.HB.getNextOperationIdentifier();
       }
       if (this.uid.noOperation == null) {
-        HB.addOperation(this);
+        this.HB.addOperation(this);
         for (_i = 0, _len = execution_listener.length; _i < _len; _i++) {
           l = execution_listener[_i];
           l(this._encode());
@@ -149,7 +149,7 @@ module.exports = function(HB) {
       _ref = this.unchecked;
       for (name in _ref) {
         op_uid = _ref[name];
-        op = HB.getOperation(op_uid);
+        op = this.HB.getOperation(op_uid);
         if (op) {
           this[name] = op;
         } else {
@@ -167,7 +167,7 @@ module.exports = function(HB) {
     return Operation;
 
   })();
-  types.Delete = (function(_super) {
+  ops.Delete = (function(_super) {
     __extends(Delete, _super);
 
     function Delete(uid, deletes) {
@@ -200,13 +200,13 @@ module.exports = function(HB) {
 
     return Delete;
 
-  })(types.Operation);
-  types.Delete.parse = function(o) {
+  })(ops.Operation);
+  ops.Delete.parse = function(o) {
     var deletes_uid, uid;
     uid = o['uid'], deletes_uid = o['deletes'];
     return new this(uid, deletes_uid);
   };
-  types.Insert = (function(_super) {
+  ops.Insert = (function(_super) {
     __extends(Insert, _super);
 
     function Insert(content, uid, prev_cl, next_cl, origin, parent) {
@@ -257,7 +257,7 @@ module.exports = function(HB) {
       if ((_ref = this.prev_cl) != null ? _ref.isDeleted() : void 0) {
         this.prev_cl.applyDelete();
       }
-      if (this.content instanceof types.Operation) {
+      if (this.content instanceof ops.Operation) {
         this.content.applyDelete();
       }
       return delete this.content;
@@ -303,7 +303,7 @@ module.exports = function(HB) {
       if (!this.validateSavedOperations()) {
         return false;
       } else {
-        if (this.content instanceof types.Operation) {
+        if (this.content instanceof ops.Operation) {
           this.content.insert_parent = this;
         }
         if (this.parent != null) {
@@ -389,7 +389,7 @@ module.exports = function(HB) {
       position = 0;
       prev = this.prev_cl;
       while (true) {
-        if (prev instanceof types.Delimiter) {
+        if (prev instanceof ops.Delimiter) {
           break;
         }
         if (!prev.isDeleted()) {
@@ -424,8 +424,8 @@ module.exports = function(HB) {
 
     return Insert;
 
-  })(types.Operation);
-  types.Insert.parse = function(json) {
+  })(ops.Operation);
+  ops.Insert.parse = function(json) {
     var content, next, origin, parent, prev, uid;
     content = json['content'], uid = json['uid'], prev = json['prev'], next = json['next'], origin = json['origin'], parent = json['parent'];
     if (typeof content === "string") {
@@ -433,7 +433,7 @@ module.exports = function(HB) {
     }
     return new this(content, uid, prev, next, origin, parent);
   };
-  types.ImmutableObject = (function(_super) {
+  ops.ImmutableObject = (function(_super) {
     __extends(ImmutableObject, _super);
 
     function ImmutableObject(uid, _at_content) {
@@ -459,13 +459,13 @@ module.exports = function(HB) {
 
     return ImmutableObject;
 
-  })(types.Operation);
-  types.ImmutableObject.parse = function(json) {
+  })(ops.Operation);
+  ops.ImmutableObject.parse = function(json) {
     var content, uid;
     uid = json['uid'], content = json['content'];
     return new this(uid, content);
   };
-  types.Delimiter = (function(_super) {
+  ops.Delimiter = (function(_super) {
     __extends(Delimiter, _super);
 
     function Delimiter(prev_cl, next_cl, origin) {
@@ -529,14 +529,14 @@ module.exports = function(HB) {
 
     return Delimiter;
 
-  })(types.Operation);
-  types.Delimiter.parse = function(json) {
+  })(ops.Operation);
+  ops.Delimiter.parse = function(json) {
     var next, prev, uid;
     uid = json['uid'], prev = json['prev'], next = json['next'];
     return new this(uid, prev, next);
   };
   return {
-    'types': types,
+    'operations': ops,
     'execution_listener': execution_listener
   };
 };

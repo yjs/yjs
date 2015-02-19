@@ -1,15 +1,14 @@
-structured_types_uninitialized = require "./StructuredTypes"
+structured_ops_uninitialized = require "./Structured"
 
-module.exports = (HB)->
-  structured_types = structured_types_uninitialized HB
-  types = structured_types.types
-  parser = structured_types.parser
+module.exports = ()->
+  structured_ops = structured_ops_uninitialized()
+  ops = structured_ops.operations
 
   #
   # Handles a String-like data structures with support for insert/delete at a word-position.
   # @note Currently, only Text is supported!
   #
-  class types.String extends types.ListManager
+  class ops.String extends ops.ListManager
 
     #
     # @private
@@ -287,15 +286,15 @@ module.exports = (HB)->
       }
       json
 
-  types.String.parse = (json)->
+  ops.String.parse = (json)->
     {
       'uid' : uid
     } = json
     new this(uid)
 
-  types.String.create = (content, mutable)->
+  ops.String.create = (content, mutable)->
     if (mutable is "mutable")
-      word = new types.String().execute()
+      word = new ops.String().execute()
       word.insert 0, content
       word
     else if (not mutable?) or (mutable is "immutable")
@@ -304,6 +303,6 @@ module.exports = (HB)->
       throw new Error "Specify either \"mutable\" or \"immutable\"!!"
 
 
-  structured_types
+  structured_ops
 
 

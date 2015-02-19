@@ -1,13 +1,13 @@
-module.exports = (HB)->
+module.exports = ()->
   # @see Engine.parse
-  types = {}
+  ops = {}
   execution_listener = []
 
   #
   # @private
   # @abstract
   # @nodoc
-  # A generic interface to operations.
+  # A generic interface to ops.
   #
   # An operation has the following methods:
   # * _encode: encodes an operation (needed only if instance of this operation is sent).
@@ -16,7 +16,7 @@ module.exports = (HB)->
   #
   # Furthermore an encodable operation has a parser. We extend the parser object in order to parse encoded operations.
   #
-  class types.Operation
+  class ops.Operation
 
     #
     # @param {Object} uid A unique identifier.
@@ -60,7 +60,7 @@ module.exports = (HB)->
       @event_listeners = []
 
     delete: ()->
-      (new types.Delete undefined, @).execute()
+      (new ops.Delete undefined, @).execute()
       null
 
     #
@@ -86,11 +86,11 @@ module.exports = (HB)->
         @is_deleted = true
         if garbagecollect
           @garbage_collected = true
-          HB.addToGarbageCollector @
+          @HB.addToGarbageCollector @
 
     cleanup: ()->
       #console.log "cleanup: #{@type}"
-      HB.removeOperation @
+      @HB.removeOperation @
       @deleteAllObservers()
 
     #
@@ -136,9 +136,9 @@ module.exports = (HB)->
         # When this operation was created without a uid, then set it here.
         # There is only one other place, where this can be done - before an Insertion
         # is executed (because we need the creator_id)
-        @uid = HB.getNextOperationIdentifier()
+        @uid = @HB.getNextOperationIdentifier()
       if not @uid.noOperation?
-        HB.addOperation @
+        @HB.addOperation @
         for l in execution_listener
           l @_encode()
       @
@@ -190,7 +190,7 @@ module.exports = (HB)->
       uninstantiated = {}
       success = @
       for name, op_uid of @unchecked
-        op = HB.getOperation op_uid
+        op = @HB.getOperation op_uid
         if op
           @[name] = op
         else
@@ -205,7 +205,7 @@ module.exports = (HB)->
   # @nodoc
   # A simple Delete-type operation that deletes an operation.
   #
-  class types.Delete extends types.Operation
+  class ops.Delete extends ops.Operation
 
     #
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
@@ -245,7 +245,7 @@ module.exports = (HB)->
   #
   # Define how to parse Delete operations.
   #
-  types.Delete.parse = (o)->
+  ops.Delete.parse = (o)->
     {
       'uid' : uid
       'deletes': deletes_uid
@@ -262,7 +262,7 @@ module.exports = (HB)->
   #   - The short-list (abbrev. sl) maintains only the operations that are not deleted
   #   - The complete-list (abbrev. cl) maintains all operations
   #
-  class types.Insert extends types.Operation
+  class ops.Insert extends ops.Operation
 
     #
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
@@ -314,7 +314,7 @@ module.exports = (HB)->
         @prev_cl.applyDelete()
 
       # delete content
-      if @content instanceof types.Operation
+      if @content instanceof ops.Operation
         @content.applyDelete()
       delete @content
 
@@ -361,7 +361,7 @@ module.exports = (HB)->
       if not @validateSavedOperations()
         return false
       else
-        if @content instanceof types.Operation
+        if @content instanceof ops.Operation
           @content.insert_parent = @ # TODO: this is probably not necessary and only nice for debugging
         if @parent?
           if not @prev_cl?
@@ -450,7 +450,7 @@ module.exports = (HB)->
       position = 0
       prev = @prev_cl
       while true
-        if prev instanceof types.Delimiter
+        if prev instanceof ops.Delimiter
           break
         if not prev.isDeleted()
           position++
@@ -482,7 +482,7 @@ module.exports = (HB)->
         json['content'] = JSON.stringify @content
       json
 
-  types.Insert.parse = (json)->
+  ops.Insert.parse = (json)->
     {
       'content' : content
       'uid' : uid
@@ -501,7 +501,7 @@ module.exports = (HB)->
   # @nodoc
   # Defines an object that is cannot be changed. You can use this to set an immutable string, or a number.
   #
-  class types.ImmutableObject extends types.Operation
+  class ops.ImmutableObject extends ops.Operation
 
     #
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
@@ -529,7 +529,7 @@ module.exports = (HB)->
       }
       json
 
-  types.ImmutableObject.parse = (json)->
+  ops.ImmutableObject.parse = (json)->
     {
       'uid' : uid
       'content' : content
@@ -542,7 +542,7 @@ module.exports = (HB)->
   # This is necessary in order to have a beginning and an end even if the content
   # of the Engine is empty.
   #
-  class types.Delimiter extends types.Operation
+  class ops.Delimiter extends ops.Operation
     #
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Operation} prev_cl The predecessor of this operation in the complete-list (cl)
@@ -601,7 +601,7 @@ module.exports = (HB)->
         'next' : @next_cl?.getUid()
       }
 
-  types.Delimiter.parse = (json)->
+  ops.Delimiter.parse = (json)->
     {
     'uid' : uid
     'prev' : prev
@@ -611,7 +611,7 @@ module.exports = (HB)->
 
   # This is what this module exports after initializing it with the HistoryBuffer
   {
-    'types' : types
+    'operations' : ops
     'execution_listener' : execution_listener
   }
 
