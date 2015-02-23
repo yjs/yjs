@@ -301,7 +301,10 @@ module.exports = ()->
     type: "Insert"
 
     val: ()->
-      @content
+      if @content? and @content.getCustomType?
+        @content.getCustomType()
+      else
+        @content
 
     #
     # set content to null and other stuff

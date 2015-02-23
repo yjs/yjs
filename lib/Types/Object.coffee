@@ -24,6 +24,11 @@ class YObject
 
   observe: (f)->
     @_model.observe f
+    @
+
+  unobserve: (f)->
+    @_model.unobserve f
+    @
 
   #
   # @overload val()
@@ -57,6 +62,7 @@ class YObject
 
   delete: (name)->
     @_model.delete(name)
+    @
 
 if window?
   if window.Y?

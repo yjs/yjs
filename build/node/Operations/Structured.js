@@ -51,7 +51,7 @@ module.exports = function() {
           rep = content;
         }
         this.retrieveSub(name).replace(rep);
-        return this;
+        return this.getCustomType();
       } else if (name != null) {
         prop = this._map[name];
         if ((prop != null) && !prop.isContentDeleted()) {
@@ -201,7 +201,7 @@ module.exports = function() {
       result = [];
       while (o !== this.end) {
         if (!o.is_deleted) {
-          result.push(o);
+          result.push(o.val());
         }
         o = o.next_cl;
       }
@@ -285,6 +285,9 @@ module.exports = function() {
       } else {
         for (_i = 0, _len = content.length; _i < _len; _i++) {
           c = content[_i];
+          if ((c != null) && (c._name != null) && (c._getModel != null)) {
+            c = c._getModel(this.custom_types, this.operations);
+          }
           tmp = (new ops.Insert(null, c, void 0, left, right)).execute();
           left = tmp;
         }
@@ -345,7 +348,7 @@ module.exports = function() {
       this.event_properties = _at_event_properties;
       this.event_this = _at_event_this;
       if (this.event_properties['object'] == null) {
-        this.event_properties['object'] = this.event_this;
+        this.event_properties['object'] = this.event_this.getCustomType();
       }
       ReplaceManager.__super__.constructor.call(this, custom_type, uid, beginning, end);
     }
@@ -465,7 +468,7 @@ module.exports = function() {
       var old_value;
       if (this.next_cl.type === "Delimiter" && this.prev_cl.type !== "Delimiter") {
         if (!this.is_deleted) {
-          old_value = this.prev_cl.content;
+          old_value = this.prev_cl.val();
           this.parent.callEventDecorator([
             {
               type: "update",
@@ -494,7 +497,7 @@ module.exports = function() {
           {
             type: "delete",
             changedBy: o.uid.creator,
-            oldValue: this.content
+            oldValue: this.val()
           }
         ]);
       }

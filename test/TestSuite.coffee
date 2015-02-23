@@ -7,13 +7,14 @@ _         = require("underscore")
 chai.use(sinonChai)
 
 Connector = require "../../y-test/lib/y-test.coffee"
-Y = require "../lib/y"
+Y = null
 
 module.exports = class Test
-  constructor: (@name_suffix = "")->
+  constructor: (@name_suffix = "", Yjs)->
+    Y = Yjs
     @number_of_test_cases_multiplier = 1
     @repeat_this = 1 * @number_of_test_cases_multiplier
-    @doSomething_amount = 1230 * @number_of_test_cases_multiplier
+    @doSomething_amount = 123 * @number_of_test_cases_multiplier
     @number_of_engines = 5 + @number_of_test_cases_multiplier - 1
 
     @time = 0 # denotes to the time when run was started
@@ -94,13 +95,20 @@ module.exports = class Test
     throw new Error "implement me!"
 
   compare: (o1, o2)->
-    if o1._name? and o1._name isnt o2._name
+    if o1 is o2
+      true
+    else if o1._name? and o1._name isnt o2._name
       throw new Error "different types"
     else if o1._name is "Object"
       for name, val of o1.val()
         @compare(val, o2.val(name))
     else if o1._name?
       @compare(o1.val(), o2.val())
+    else if o1.constructor is Array and o2.constructor is Array
+      if o1.length isnt o2.length
+        throw new Error "The Arrays do not have the same size!"
+      for o,i in o1
+        @compare o, o2[i]
     else if o1 isnt o2
       throw new Error "different values"
 

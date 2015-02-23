@@ -1,6 +1,5 @@
 #
 # Handles a String-like data structures with support for insert/delete at a word-position.
-# @note Currently, only Text is supported!
 #
 class YText
 
@@ -59,7 +58,7 @@ class YText
     if content.constructor isnt String
       throw new Error "Y.String.insert expects a String as the second parameter!"
     if typeof position isnt "number"
-      throw new Error "Y.String.insert expects a Number as the second parameter!"
+      throw new Error "Y.String.insert expects a Number as the first parameter!"
     if content.length > 0
       ith = @_model.getOperationByPosition position
       # the (i-1)th character. e.g. "abc" the 1th character is "a"

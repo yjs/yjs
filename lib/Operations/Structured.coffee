@@ -42,7 +42,7 @@ module.exports = ()->
         else
           rep = content
         @retrieveSub(name).replace rep
-        @
+        @getCustomType()
       else if name?
         prop = @_map[name]
         if prop? and not prop.isContentDeleted()
@@ -172,7 +172,7 @@ module.exports = ()->
       result = []
       while o isnt @end
         if not o.is_deleted
-          result.push o
+          result.push o.val()
         o = o.next_cl
       result
 
@@ -243,6 +243,8 @@ module.exports = ()->
         (new ops.Insert null, content, undefined, left, right).execute()
       else
         for c in content
+          if c? and c._name? and c._getModel?
+            c = c._getModel(@custom_types, @operations)
           tmp = (new ops.Insert null, c, undefined, left, right).execute()
           left = tmp
       @
@@ -317,7 +319,7 @@ module.exports = ()->
     # @param {Delimiter} end Reference or Object.
     constructor: (custom_type, @event_properties, @event_this, uid, beginning, end)->
       if not @event_properties['object']?
-        @event_properties['object'] = @event_this
+        @event_properties['object'] = @event_this.getCustomType()
       super custom_type, uid, beginning, end
 
     type: "ReplaceManager"
@@ -439,7 +441,7 @@ module.exports = ()->
       if @next_cl.type is "Delimiter" and @prev_cl.type isnt "Delimiter"
         # this replaces another Replaceable
         if not @is_deleted # When this is received from the HB, this could already be deleted!
-          old_value = @prev_cl.content
+          old_value = @prev_cl.val()
           @parent.callEventDecorator [
             type: "update"
             changedBy: @uid.creator
@@ -462,7 +464,7 @@ module.exports = ()->
         @parent.callEventDecorator [
           type: "delete"
           changedBy: o.uid.creator
-          oldValue: @content
+          oldValue: @val()
         ]
 
     #

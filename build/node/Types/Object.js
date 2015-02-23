@@ -39,7 +39,13 @@ YObject = (function() {
   };
 
   YObject.prototype.observe = function(f) {
-    return this._model.observe(f);
+    this._model.observe(f);
+    return this;
+  };
+
+  YObject.prototype.unobserve = function(f) {
+    this._model.unobserve(f);
+    return this;
   };
 
   YObject.prototype.val = function(name, content) {
@@ -64,7 +70,8 @@ YObject = (function() {
   };
 
   YObject.prototype["delete"] = function(name) {
-    return this._model["delete"](name);
+    this._model["delete"](name);
+    return this;
   };
 
   return YObject;

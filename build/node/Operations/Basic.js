@@ -245,7 +245,11 @@ module.exports = function() {
     Insert.prototype.type = "Insert";
 
     Insert.prototype.val = function() {
-      return this.content;
+      if ((this.content != null) && (this.content.getCustomType != null)) {
+        return this.content.getCustomType();
+      } else {
+        return this.content;
+      }
     };
 
     Insert.prototype.applyDelete = function(o) {

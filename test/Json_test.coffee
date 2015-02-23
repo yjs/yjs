@@ -9,6 +9,8 @@ chai.use(sinonChai)
 
 Connector = require "../../y-test/lib/y-test.coffee"
 Y = require "../lib/y.coffee"
+Y.Text = require "../lib/Types/Text"
+Y.List = require "../lib/Types/List"
 
 compare = (o1, o2)->
   if o1._name? and o1._name isnt o2._name
@@ -24,6 +26,10 @@ compare = (o1, o2)->
 Test = require "./TestSuite"
 
 class JsonTest extends Test
+
+  constructor: (suffix)->
+    super suffix, Y
+
   makeNewUser: (userId)->
     conn = new Connector userId
     super new Y conn
@@ -148,19 +154,19 @@ describe "JsonFramework", ->
     expect(@yTest.getSomeUser().val("a").val("a").val("q").val()).to.equal("Adtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt")
 
   it "can handle creaton of complex json (3)", ->
-    @yTest.users[0].val('l', [1,2,3], "mutable")
-    @yTest.users[1].val('l', [4,5,6], "mutable")
+    @yTest.users[0].val('l', new Y.List([1,2,3]))
+    @yTest.users[1].val('l', new Y.List([4,5,6]))
     @yTest.compareAll()
     @yTest.users[2].val('l').insert(0,'A')
-    w = @yTest.users[1].val('l').insert(0,'B', "mutable").val(0)
+    w = @yTest.users[1].val('l').insert(0,new Y.Text('B')).val(0)
     w.insert 1, "C"
     expect(w.val()).to.equal("BC")
     @yTest.compareAll()
 
   it "handles immutables and primitive data types", ->
-    @yTest.getSomeUser().val('string', new Y.Text("text"))
+    @yTest.getSomeUser().val('string', "text")
     @yTest.getSomeUser().val('number', 4)
-    @yTest.getSomeUser().val('object', {q:"rr"})
+    @yTest.getSomeUser().val('object', new Y.Object({q:"rr"}))
     @yTest.getSomeUser().val('null', null)
     @yTest.compareAll()
     expect(@yTest.getSomeUser().val('string')).to.equal "text"

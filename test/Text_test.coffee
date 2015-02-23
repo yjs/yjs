@@ -8,10 +8,15 @@ _         = require("underscore")
 chai.use(sinonChai)
 
 Y = require "../lib/y"
+Y.Text = require "../lib/Types/Text"
+
 Connector = require "../../y-test/lib/y-test.coffee"
 
 Test = require "./TestSuite"
 class TextTest extends Test
+
+  constructor: (suffix)->
+    super suffix, Y
 
   type: "TextTest"
 

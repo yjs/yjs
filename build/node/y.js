@@ -43,5 +43,3 @@ if (typeof window !== "undefined" && window !== null) {
 }
 
 createY.Object = require("./Types/Object");
-
-createY.Text = require("./Types/Text");

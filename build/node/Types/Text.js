@@ -52,7 +52,7 @@ YText = (function() {
       throw new Error("Y.String.insert expects a String as the second parameter!");
     }
     if (typeof position !== "number") {
-      throw new Error("Y.String.insert expects a Number as the second parameter!");
+      throw new Error("Y.String.insert expects a Number as the first parameter!");
     }
     if (content.length > 0) {
       ith = this._model.getOperationByPosition(position);

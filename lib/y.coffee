@@ -37,4 +37,3 @@ if window?
   window.Y = createY
 
 createY.Object = require "./Types/Object"
-createY.Text = require "./Types/Text"
