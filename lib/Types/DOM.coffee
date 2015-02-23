@@ -1,4 +1,4 @@
-###
+
 json_types_uninitialized = require "./JsonTypes"
 
 # some dom implementations may call another dom.method that simulates the behavior of another.
@@ -364,4 +364,3 @@ module.exports = (HB)->
   types['XmlType'] = XmlType
 
   json_types
-###

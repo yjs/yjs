@@ -14,7 +14,7 @@ module.exports = class Test
     Y = Yjs
     @number_of_test_cases_multiplier = 1
     @repeat_this = 1 * @number_of_test_cases_multiplier
-    @doSomething_amount = 123 * @number_of_test_cases_multiplier
+    @doSomething_amount = 1230 * @number_of_test_cases_multiplier
     @number_of_engines = 5 + @number_of_test_cases_multiplier - 1
 
     @time = 0 # denotes to the time when run was started
@@ -24,6 +24,9 @@ module.exports = class Test
     @debug = false
 
     @reinitialize()
+    for gf in @getGeneratingFunctions(0)
+      if not (gf.types? and gf.f?)
+        throw new Error "Generating Functions are not initialized properly!"
 
   reinitialize: ()->
     @users = []

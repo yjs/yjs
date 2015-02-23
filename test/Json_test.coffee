@@ -61,7 +61,6 @@ class JsonTest extends Test
         @getRandomRoot user_num, p
 
   getGeneratingFunctions: (user_num)->
-    types = @users[user_num]._model.operations
     super(user_num).concat [
         f : (y)=> # Delete Object Property
           list = for name, o of y.val()
@@ -78,29 +77,35 @@ class JsonTest extends Test
         f : (y)=> # SET PROPERTY TEXT
           y.val(@getRandomKey(), new Y.Text(@getRandomText()))
         types: [Y.Object]
-      ]
-###
-        f : (y)=> # SET PROPERTY
+      ,
+        f : (y)=> # SET PROPERTY (primitive)
           l = y.val().length
           y.val(_.random(0, l-1), @getRandomText())
           null
-        types : [types.Array]
-      , f : (y)=> # Delete Array Element
+        types : [Y.List]
+      ,
+        f : (y)=> # Delete Array Element
           list = y.val()
           if list.length > 0
-            key = list[_random(0,list.length-1)]
-            y.delete(key)
-        types: [types.Array]
-      , f : (y)=> # insert TEXT mutable
+            i = _.random(0,list.length-1)
+            y.delete(i)
+        types: [Y.List]
+      ,
+        f : (y)=> # insert Object mutable
           l = y.val().length
           y.val(_.random(0, l-1), new Y.Object(@getRamdomObject()))
-        types: [types.Array]
-      , f : (y)=> # insert string
+        types: [Y.List]
+      ,
+        f : (y)=> # insert Text mutable
           l = y.val().length
-          y.val(_.random(0, l-1), @getRandomText())
-          null
-        types : [Y.Array]
-###
+          y.val(_.random(0, l-1), new Y.Text(@getRandomText()))
+        types : [Y.List]
+      ,
+        f : (y)=> # insert Number (primitive object)
+          l = y.val().length
+          y.val(_.random(0,l-1), _.random(0,42))
+        types : [Y.List]
+      ]
 
 describe "JsonFramework", ->
   @timeout 500000
