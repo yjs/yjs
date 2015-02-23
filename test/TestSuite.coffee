@@ -7,6 +7,7 @@ _         = require("underscore")
 chai.use(sinonChai)
 
 Connector = require "../../y-test/lib/y-test.coffee"
+Y = require "../lib/y"
 
 module.exports = class Test
   constructor: (@name_suffix = "")->
@@ -76,7 +77,7 @@ module.exports = class Test
           pos = _.random 0, (y.val().length-1)
           y.insert pos, @getRandomText()
           null
-        types: [types.String]
+        types: [Y.Text]
       ,
         f : (y)-> # DELETE TEXT
           if y.val().length > 0
@@ -84,13 +85,24 @@ module.exports = class Test
             length = _.random 0, (y.val().length - pos)
             ops1 = y.delete pos, length
           undefined
-        types : [types.String]
+        types : [Y.Text]
     ]
   getRandomRoot: (user_num)->
-    throw new Error "overwrite me!"
+    throw new Error "implement me!"
 
   getContent: (user_num)->
-    throw new Error "overwrite me!"
+    throw new Error "implement me!"
+
+  compare: (o1, o2)->
+    if o1._name? and o1._name isnt o2._name
+      throw new Error "different types"
+    else if o1._name is "Object"
+      for name, val of o1.val()
+        @compare(val, o2.val(name))
+    else if o1._name?
+      @compare(o1.val(), o2.val())
+    else if o1 isnt o2
+      throw new Error "different values"
 
   generateRandomOp: (user_num)=>
     y = @getRandomRoot(user_num)
@@ -171,7 +183,7 @@ module.exports = class Test
           ops = printOpsInExecutionOrder i+1, i
 
           console.log ""
-      expect(@getContent(i)).to.deep.equal(@getContent(i+1))
+      expect(@compare(@users[i], @users[i+1])).to.not.be.undefined
 
   run: ()->
     if @debug
@@ -182,7 +194,7 @@ module.exports = class Test
         @doSomething()
       @flushAll(false)
       for u in @users
-        u.HB.emptyGarbage()
+        u._model.HB.emptyGarbage()
       for i in [1..Math.floor(@doSomething_amount/2)]
         @doSomething()
 
@@ -195,12 +207,11 @@ module.exports = class Test
     # in case of JsonFramework, every user will create its JSON first! therefore, the testusers id must be small than all the others (see InsertType)
     @users[@users.length] = @makeNewUser (-1) # this does not want to join with anymody
 
-    @users[@users.length-1].HB.renewStateVector @users[0].HB.getOperationCounter()
-    @users[@users.length-1].engine.applyOps @users[0].HB._encode()
+    @users[@users.length-1]._model.HB.renewStateVector @users[0]._model.HB.getOperationCounter()
+    @users[@users.length-1]._model.engine.applyOps @users[0]._model.HB._encode()
 
     #if @getContent(@users.length-1) isnt @getContent(0)
     #  console.log "testHBencoding:"
     #  console.log "Unprocessed ops first: #{@users[0].engine.unprocessed_ops.length}"
     #  console.log "Unprocessed ops last: #{@users[@users.length-1].engine.unprocessed_ops.length}"
-    expect(@getContent(@users.length-1)).to.deep.equal(@getContent(0))
-
+    expect(@compare(@users[@users.length-1], @users[0])).to.not.be.undefined

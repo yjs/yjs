@@ -1,5 +1,5 @@
 
-text_ops_uninitialized = require "./Operations/Text"
+structured_ops_uninitialized = require "./Operations/Structured"
 
 HistoryBuffer = require "./HistoryBuffer"
 Engine = require "./Engine"
@@ -15,7 +15,7 @@ createY = (connector)->
       user_id = id
       HB.resetUserId id
   HB = new HistoryBuffer user_id
-  ops_manager = text_ops_uninitialized HB, this.constructor
+  ops_manager = structured_ops_uninitialized HB, this.constructor
   ops = ops_manager.operations
 
   engine = new Engine HB, ops
@@ -25,7 +25,7 @@ createY = (connector)->
   ops.Operation.prototype.operations = ops
   ops.Operation.prototype.engine = engine
   ops.Operation.prototype.connector = connector
-  ops.Operation.prototype.custom_ops = this.constructor
+  ops.Operation.prototype.custom_types = this.constructor
 
   ct = new createY.Object()
   model = new ops.MapManager(ct, HB.getReservedUniqueIdentifier()).execute()
@@ -37,3 +37,4 @@ if window?
   window.Y = createY
 
 createY.Object = require "./Types/Object"
+createY.Text = require "./Types/Text"

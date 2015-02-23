@@ -29,7 +29,7 @@ files =
   test : ['./test/Json_test.coffee', './test/Text_test.coffee']
   gulp : ['./gulpfile.coffee']
   examples : ['./examples/**/*.js']
-  other: ['./lib/**/*']
+  other: ['./lib/**/*', './test/*']
 
 files.all = []
 for name,file_list of files

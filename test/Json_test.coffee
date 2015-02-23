@@ -11,16 +11,15 @@ Connector = require "../../y-test/lib/y-test.coffee"
 Y = require "../lib/y.coffee"
 
 compare = (o1, o2)->
-  if o1.type? and o1.type isnt o2.type
+  if o1._name? and o1._name isnt o2._name
     throw new Error "different types"
-  else if o1.type is "Object"
+  else if o1._name is "Object"
     for name, val of o1.val()
       compare(val, o2.val(name))
-  else if o1.type?
+  else if o1._name?
     compare(o1.val(), o2.val())
   else if o1 isnt o2
     throw new Error "different values"
-
 
 Test = require "./TestSuite"
 
@@ -38,17 +37,17 @@ class JsonTest extends Test
       root
     else # take child
       elems = null
-      if root.type is "Object"
+      if root._name is "Object"
         elems =
           for oname,val of root.val()
             val
-      else if root.type is "Array"
+      else if root._name is "Array"
         elems = root.val()
       else
         return root
 
       elems = elems.filter (elem)->
-        elem? and ((elem.type is "Array") or (elem.type is "Object"))
+        elem? and ((elem._name is "Array") or (elem._name is "Object"))
       if elems.length is 0
         root
       else
@@ -58,9 +57,26 @@ class JsonTest extends Test
   getGeneratingFunctions: (user_num)->
     types = @users[user_num]._model.operations
     super(user_num).concat [
+        f : (y)=> # Delete Object Property
+          list = for name, o of y.val()
+            name
+          if list.length > 0
+            key = list[_.random(0,list.length-1)]
+            y.delete(key)
+        types: [Y.Object]
+      ,
+        f : (y)=> # SET Object Property
+          y.val(@getRandomKey(), new Y.Object(@getRandomObject()))
+        types: [Y.Object]
+      ,
+        f : (y)=> # SET PROPERTY TEXT
+          y.val(@getRandomKey(), new Y.Text(@getRandomText()))
+        types: [Y.Object]
+      ]
+###
         f : (y)=> # SET PROPERTY
           l = y.val().length
-          y.val(_.random(0, l-1), @getRandomText(), 'immutable')
+          y.val(_.random(0, l-1), @getRandomText())
           null
         types : [types.Array]
       , f : (y)=> # Delete Array Element
@@ -71,28 +87,14 @@ class JsonTest extends Test
         types: [types.Array]
       , f : (y)=> # insert TEXT mutable
           l = y.val().length
-          y.val(_.random(0, l-1), @getRamdomObject())
+          y.val(_.random(0, l-1), new Y.Object(@getRamdomObject()))
         types: [types.Array]
       , f : (y)=> # insert string
           l = y.val().length
-          y.val(_.random(0, l-1), @getRandomText(), 'immutable')
+          y.val(_.random(0, l-1), @getRandomText())
           null
-        types : [types.Array]
-      , f : (y)=> # Delete Object Property
-          list = for name, o of y.val()
-            name
-          if list.length > 0
-            key = list[_random(0,list.length-1)]
-            y.delete(key)
-        types: [types.Object]
-      , f : (y)=> # SET Object Property
-          y.val(@getRandomKey(), @getRandomObject())
-        types: [types.Object]
-      ,
-        f : (y)=> # SET PROPERTY TEXT
-          y.val(@getRandomKey(), @getRandomText(), 'mutable')
-        types: [types.Object]
-    ]
+        types : [Y.Array]
+###
 
 describe "JsonFramework", ->
   @timeout 500000
@@ -117,16 +119,16 @@ describe "JsonFramework", ->
     @yTest.run()
     u1 = test.users[0]
     u2 = @yTest.users[1]
-    ops1 = u1.HB._encode()
-    ops2 = u2.HB._encode()
-    u1.engine.applyOp ops2, true
-    u2.engine.applyOp ops1, true
+    ops1 = u1._model.HB._encode()
+    ops2 = u2._model.HB._encode()
+    u1._model.engine.applyOp ops2, true
+    u2._model.engine.applyOp ops1, true
 
     expect(compare(u1, u2)).to.not.be.undefined
 
   it "can handle creaton of complex json (1)", ->
-    @yTest.users[0].val('a', 'q', "mutable")
-    @yTest.users[1].val('a', 't', "mutable")
+    @yTest.users[0].val('a', new Y.Text('q'))
+    @yTest.users[1].val('a', new Y.Text('t'))
     @yTest.compareAll()
     q = @yTest.users[2].val('a')
     q.insert(0,'A')
@@ -135,7 +137,7 @@ describe "JsonFramework", ->
 
   it "can handle creaton of complex json (2)", ->
     @yTest.getSomeUser().val('x', new Y.Object({'a':'b'}))
-    @yTest.getSomeUser().val('a', new Y.Object({'a':{q:"dtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt"}}))
+    @yTest.getSomeUser().val('a', new Y.Object({'a':{q: new Y.Text("dtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt")}}))
     @yTest.getSomeUser().val('b', new Y.Object({'a':{}}))
     @yTest.getSomeUser().val('c', new Y.Object({'a':'c'}))
     @yTest.getSomeUser().val('c', new Y.Object({'a':'b'}))
@@ -143,7 +145,7 @@ describe "JsonFramework", ->
     q = @yTest.getSomeUser().val("a").val("a").val("q")
     q.insert(0,'A')
     @yTest.compareAll()
-    expect(@yTest.getSomeUser().val("a").val("a").val("q")).to.equal("Adtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt")
+    expect(@yTest.getSomeUser().val("a").val("a").val("q").val()).to.equal("Adtrndtrtdrntdrnrtdnrtdnrtdnrtdnrdnrdt")
 
   it "can handle creaton of complex json (3)", ->
     @yTest.users[0].val('l', [1,2,3], "mutable")
@@ -156,9 +158,9 @@ describe "JsonFramework", ->
     @yTest.compareAll()
 
   it "handles immutables and primitive data types", ->
-    @yTest.getSomeUser().val('string', "text", "immutable")
-    @yTest.getSomeUser().val('number', 4, "immutable")
-    @yTest.getSomeUser().val('object', {q:"rr"}, "immutable")
+    @yTest.getSomeUser().val('string', new Y.Text("text"))
+    @yTest.getSomeUser().val('number', 4)
+    @yTest.getSomeUser().val('object', {q:"rr"})
     @yTest.getSomeUser().val('null', null)
     @yTest.compareAll()
     expect(@yTest.getSomeUser().val('string')).to.equal "text"
@@ -167,9 +169,9 @@ describe "JsonFramework", ->
     expect(@yTest.getSomeUser().val('null') is null).to.be.ok
 
   it "handles immutables and primitive data types (2)", ->
-    @yTest.users[0].val('string', "text", "immutable")
-    @yTest.users[1].val('number', 4, "immutable")
-    @yTest.users[2].val('object', {q:"rr"})
+    @yTest.users[0].val('string', "text")
+    @yTest.users[1].val('number', 4)
+    @yTest.users[2].val('object', new Y.Object({q:"rr"}))
     @yTest.users[0].val('null', null)
     @yTest.compareAll()
     expect(@yTest.getSomeUser().val('string')).to.equal "text"
@@ -190,7 +192,7 @@ describe "JsonFramework", ->
       expect(change.name).to.equal("newStuff")
       last_task = "observer1"
     u.observe observer1
-    u.val("newStuff","someStuff","mutable")
+    u.val("newStuff",new Y.Text("someStuff"))
     expect(last_task).to.equal("observer1")
     u.unobserve observer1
 
@@ -210,7 +212,7 @@ describe "JsonFramework", ->
     u.unobserve observer2
 
   it "Observers work on JSON Types (update type observers, local and foreign)", ->
-    u = @yTest.users[0].val("newStuff","oldStuff","mutable").val("moreStuff","moreOldStuff","mutable")
+    u = @yTest.users[0].val("newStuff", new Y.Text("oldStuff")).val("moreStuff",new Y.Text("moreOldStuff"))
     @yTest.flushAll()
     last_task = null
     observer1 = (changes)->
@@ -245,7 +247,7 @@ describe "JsonFramework", ->
 
 
   it "Observers work on JSON Types (delete type observers, local and foreign)", ->
-    u = @yTest.users[0].val("newStuff","oldStuff","mutable").val("moreStuff","moreOldStuff","mutable")
+    u = @yTest.users[0].val("newStuff",new Y.Text("oldStuff")).val("moreStuff",new Y.Text("moreOldStuff"))
     @yTest.flushAll()
     last_task = null
     observer1 = (changes)->

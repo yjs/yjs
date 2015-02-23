@@ -63,6 +63,10 @@ YObject = (function() {
     }
   };
 
+  YObject.prototype["delete"] = function(name) {
+    return this._model["delete"](name);
+  };
+
   return YObject;
 
 })();

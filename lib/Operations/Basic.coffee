@@ -22,7 +22,9 @@ module.exports = ()->
     # @param {Object} uid A unique identifier.
     # If uid is undefined, a new uid will be created before at the end of the execution sequence
     #
-    constructor: (uid)->
+    constructor: (custom_type, uid)->
+      if custom_type?
+        @custom_type = custom_type
       @is_deleted = false
       @garbage_collected = false
       @event_listeners = [] # TODO: rename to observers or sth like that
@@ -221,9 +223,9 @@ module.exports = ()->
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Object} deletes UID or reference of the operation that this to be deleted.
     #
-    constructor: (uid, deletes)->
+    constructor: (custom_type, uid, deletes)->
       @saveOperation 'deletes', deletes
-      super uid
+      super custom_type, uid
 
     type: "Delete"
 
@@ -260,7 +262,7 @@ module.exports = ()->
       'uid' : uid
       'deletes': deletes_uid
     } = o
-    new this(uid, deletes_uid)
+    new this(null, uid, deletes_uid)
 
   #
   # @nodoc
@@ -279,7 +281,7 @@ module.exports = ()->
     # @param {Operation} prev_cl The predecessor of this operation in the complete-list (cl)
     # @param {Operation} next_cl The successor of this operation in the complete-list (cl)
     #
-    constructor: (content, uid, prev_cl, next_cl, origin, parent)->
+    constructor: (custom_type, content, uid, prev_cl, next_cl, origin, parent)->
       # see encode to see, why we are doing it this way
       if content is undefined
         # nop
@@ -294,7 +296,7 @@ module.exports = ()->
         @saveOperation 'origin', origin
       else
         @saveOperation 'origin', prev_cl
-      super uid
+      super custom_type, uid
 
     type: "Insert"
 
@@ -436,19 +438,24 @@ module.exports = ()->
         @
 
     callOperationSpecificInsertEvents: ()->
+      getContentType = (content)->
+        if content instanceof ops.Operation
+          content.getCustomType()
+        else
+          content
       @parent?.callEvent [
         type: "insert"
         position: @getPosition()
-        object: @parent
+        object: @parent.getCustomType()
         changedBy: @uid.creator
-        value: @content
+        value: getContentType @content
       ]
 
     callOperationSpecificDeleteEvents: (o)->
       @parent.callEvent [
         type: "delete"
         position: @getPosition()
-        object: @parent # TODO: You can combine getPosition + getParent in a more efficient manner! (only left Delimiter will hold @parent)
+        object: @parent.getCustomType() # TODO: You can combine getPosition + getParent in a more efficient manner! (only left Delimiter will hold @parent)
         length: 1
         changedBy: o.uid.creator
       ]
@@ -503,7 +510,7 @@ module.exports = ()->
     } = json
     if typeof content is "string"
       content = JSON.parse(content)
-    new this content, uid, prev, next, origin, parent
+    new this null, content, uid, prev, next, origin, parent
 
 
 
@@ -517,8 +524,8 @@ module.exports = ()->
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Object} content
     #
-    constructor: (uid, @content)->
-      super uid
+    constructor: (custom_type, uid, @content)->
+      super custom_type, uid
 
     type: "ImmutableObject"
 
@@ -544,7 +551,7 @@ module.exports = ()->
       'uid' : uid
       'content' : content
     } = json
-    new this(uid, content)
+    new this(null, uid, content)
 
   #
   # @nodoc
@@ -562,7 +569,7 @@ module.exports = ()->
       @saveOperation 'prev_cl', prev_cl
       @saveOperation 'next_cl', next_cl
       @saveOperation 'origin', prev_cl
-      super {noOperation: true}
+      super null, {noOperation: true}
 
     type: "Delimiter"
 

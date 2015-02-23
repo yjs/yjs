@@ -1,6 +1,6 @@
-var Engine, HistoryBuffer, adaptConnector, createY, text_ops_uninitialized;
+var Engine, HistoryBuffer, adaptConnector, createY, structured_ops_uninitialized;
 
-text_ops_uninitialized = require("./Operations/Text");
+structured_ops_uninitialized = require("./Operations/Structured");
 
 HistoryBuffer = require("./HistoryBuffer");
 
@@ -21,7 +21,7 @@ createY = function(connector) {
     };
   }
   HB = new HistoryBuffer(user_id);
-  ops_manager = text_ops_uninitialized(HB, this.constructor);
+  ops_manager = structured_ops_uninitialized(HB, this.constructor);
   ops = ops_manager.operations;
   engine = new Engine(HB, ops);
   adaptConnector(connector, engine, HB, ops_manager.execution_listener);
@@ -29,7 +29,7 @@ createY = function(connector) {
   ops.Operation.prototype.operations = ops;
   ops.Operation.prototype.engine = engine;
   ops.Operation.prototype.connector = connector;
-  ops.Operation.prototype.custom_ops = this.constructor;
+  ops.Operation.prototype.custom_types = this.constructor;
   ct = new createY.Object();
   model = new ops.MapManager(ct, HB.getReservedUniqueIdentifier()).execute();
   ct._setModel(model);
@@ -43,3 +43,5 @@ if (typeof window !== "undefined" && window !== null) {
 }
 
 createY.Object = require("./Types/Object");
+
+createY.Text = require("./Types/Text");

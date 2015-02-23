@@ -55,6 +55,9 @@ class YObject
           res[n] = v
         res
 
+  delete: (name)->
+    @_model.delete(name)
+
 if window?
   if window.Y?
     window.Y.Object = YObject

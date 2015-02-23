@@ -14,10 +14,8 @@ module.exports = ()->
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     #
     constructor: (custom_type, uid)->
-      if custom_type?
-        @custom_type = custom_type
       @_map = {}
-      super uid
+      super custom_type, uid
 
     type: "MapManager"
 
@@ -39,8 +37,8 @@ module.exports = ()->
     #
     val: (name, content)->
       if arguments.length > 1
-        if content? and content._model? and content._model instanceof ops.Operation
-          rep = content._model
+        if content? and content._getModel?
+          rep = content._getModel(@custom_types, @operations)
         else
           rep = content
         @retrieveSub(name).replace rep
@@ -59,11 +57,7 @@ module.exports = ()->
         result = {}
         for name,o of @_map
           if not o.isContentDeleted()
-            res = prop.val()
-            if res instanceof ops.Operation
-              result[name] = res.getCustomType()
-            else
-              result[name] = res
+            result[name] = o.val()
         result
 
     delete: (name)->
@@ -79,7 +73,7 @@ module.exports = ()->
           noOperation: true
           sub: property_name
           alt: @
-        rm = new ops.ReplaceManager event_properties, event_this, rm_uid # this operation shall not be saved in the HB
+        rm = new ops.ReplaceManager null, event_properties, event_this, rm_uid # this operation shall not be saved in the HB
         @_map[property_name] = rm
         rm.setParent @, property_name
         rm.execute()
@@ -119,13 +113,13 @@ module.exports = ()->
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Delimiter} beginning Reference or Object.
     # @param {Delimiter} end Reference or Object.
-    constructor: (uid)->
+    constructor: (custom_type, uid)->
       @beginning = new ops.Delimiter undefined, undefined
       @end =       new ops.Delimiter @beginning, undefined
       @beginning.next_cl = @end
       @beginning.execute()
       @end.execute()
-      super uid
+      super custom_type, uid
 
     type: "ListManager"
 
@@ -238,27 +232,18 @@ module.exports = ()->
     push: (content)->
       @insertAfter @end.prev_cl, content
 
-    insertAfter: (left, content, options)->
-      createContent = (content, options)->
-        if content? and content.constructor?
-          type = ops[content.constructor.name]
-          if type? and type.create?
-            type.create content, options
-          else
-            throw new Error "The #{content.constructor.name}-type is not (yet) supported in Y."
-        else
-          content
-
+    insertAfter: (left, content)->
       right = left.next_cl
       while right.isDeleted()
         right = right.next_cl # find the first character to the right, that is not deleted. In the case that position is 0, its the Delimiter.
       left = right.prev_cl
 
+      # TODO: always expect an array as content. Then you can combine this with the other option (else)
       if content instanceof ops.Operation
-        (new ops.Insert content, undefined, left, right).execute()
+        (new ops.Insert null, content, undefined, left, right).execute()
       else
         for c in content
-          tmp = (new ops.Insert createContent(c, options), undefined, left, right).execute()
+          tmp = (new ops.Insert null, c, undefined, left, right).execute()
           left = tmp
       @
 
@@ -267,11 +252,11 @@ module.exports = ()->
     #
     # @return {ListManager Type} This String object.
     #
-    insert: (position, content, options)->
+    insert: (position, content)->
       ith = @getOperationByPosition position
       # the (i-1)th character. e.g. "abc" the 1th character is "a"
       # the 0th character is the left Delimiter
-      @insertAfter ith, [content], options
+      @insertAfter ith, [content]
 
     #
     # Deletes a part of the word.
@@ -285,7 +270,7 @@ module.exports = ()->
       for i in [0...length]
         if o instanceof ops.Delimiter
           break
-        d = (new ops.Delete undefined, o).execute()
+        d = (new ops.Delete null, undefined, o).execute()
         o = o.next_cl
         while (not (o instanceof ops.Delimiter)) and o.isDeleted()
           o = o.next_cl
@@ -301,26 +286,18 @@ module.exports = ()->
         'type': @type
         'uid' : @getUid()
       }
+      if @custom_type.constructor is String
+        json.custom_type = @custom_type
+      else
+        json.custom_type = @custom_type._name
       json
 
   ops.ListManager.parse = (json)->
     {
       'uid' : uid
+      'custom_type': custom_type
     } = json
-    new this(uid)
-
-  ops.Array = ()->
-  ops.Array.create = (content, mutable)->
-      if (mutable is "mutable")
-        list = new ops.ListManager().execute()
-        ith = list.getOperationByPosition 0
-        list.insertAfter ith, content
-        list
-      else if (not mutable?) or (mutable is "immutable")
-        content
-      else
-        throw new Error "Specify either \"mutable\" or \"immutable\"!!"
-
+    new this(custom_type, uid)
 
   #
   # @nodoc
@@ -338,10 +315,10 @@ module.exports = ()->
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Delimiter} beginning Reference or Object.
     # @param {Delimiter} end Reference or Object.
-    constructor: (@event_properties, @event_this, uid, beginning, end)->
+    constructor: (custom_type, @event_properties, @event_this, uid, beginning, end)->
       if not @event_properties['object']?
         @event_properties['object'] = @event_this
-      super uid, beginning, end
+      super custom_type, uid, beginning, end
 
     type: "ReplaceManager"
 
@@ -378,7 +355,7 @@ module.exports = ()->
     #
     replace: (content, replaceable_uid)->
       o = @getLastOperation()
-      relp = (new ops.Replaceable content, @, replaceable_uid, o, o.next_cl).execute()
+      relp = (new ops.Replaceable null, content, @, replaceable_uid, o, o.next_cl).execute()
       # TODO: delete repl (for debugging)
       undefined
 
@@ -386,7 +363,7 @@ module.exports = ()->
       @getLastOperation().isDeleted()
 
     deleteContent: ()->
-      (new ops.Delete undefined, @getLastOperation().uid).execute()
+      (new ops.Delete null, undefined, @getLastOperation().uid).execute()
       undefined
 
     #
@@ -424,9 +401,9 @@ module.exports = ()->
     # @param {ReplaceManager} parent Used to replace this Replaceable with another one.
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     #
-    constructor: (content, parent, uid, prev, next, origin, is_deleted)->
+    constructor: (custom_type, content, parent, uid, prev, next, origin, is_deleted)->
       @saveOperation 'parent', parent
-      super content, uid, prev, next, origin # Parent is already saved by Replaceable
+      super custom_type, content, uid, prev, next, origin # Parent is already saved by Replaceable
       @is_deleted = is_deleted
 
     type: "Replaceable"
@@ -525,8 +502,9 @@ module.exports = ()->
       'next': next
       'origin' : origin
       'is_deleted': is_deleted
+      'custom_type' : custom_type
     } = json
-    new this(content, parent, uid, prev, next, origin, is_deleted)
+    new this(custom_type, content, parent, uid, prev, next, origin, is_deleted)
 
 
   basic_ops

@@ -7,7 +7,10 @@ module.exports = function() {
   ops = {};
   execution_listener = [];
   ops.Operation = (function() {
-    function Operation(uid) {
+    function Operation(custom_type, uid) {
+      if (custom_type != null) {
+        this.custom_type = custom_type;
+      }
       this.is_deleted = false;
       this.garbage_collected = false;
       this.event_listeners = [];
@@ -181,9 +184,9 @@ module.exports = function() {
   ops.Delete = (function(_super) {
     __extends(Delete, _super);
 
-    function Delete(uid, deletes) {
+    function Delete(custom_type, uid, deletes) {
       this.saveOperation('deletes', deletes);
-      Delete.__super__.constructor.call(this, uid);
+      Delete.__super__.constructor.call(this, custom_type, uid);
     }
 
     Delete.prototype.type = "Delete";
@@ -215,12 +218,12 @@ module.exports = function() {
   ops.Delete.parse = function(o) {
     var deletes_uid, uid;
     uid = o['uid'], deletes_uid = o['deletes'];
-    return new this(uid, deletes_uid);
+    return new this(null, uid, deletes_uid);
   };
   ops.Insert = (function(_super) {
     __extends(Insert, _super);
 
-    function Insert(content, uid, prev_cl, next_cl, origin, parent) {
+    function Insert(custom_type, content, uid, prev_cl, next_cl, origin, parent) {
       if (content === void 0) {
 
       } else if ((content != null) && (content.creator != null)) {
@@ -236,7 +239,7 @@ module.exports = function() {
       } else {
         this.saveOperation('origin', prev_cl);
       }
-      Insert.__super__.constructor.call(this, uid);
+      Insert.__super__.constructor.call(this, custom_type, uid);
     }
 
     Insert.prototype.type = "Insert";
@@ -371,14 +374,21 @@ module.exports = function() {
     };
 
     Insert.prototype.callOperationSpecificInsertEvents = function() {
-      var _ref;
+      var getContentType, _ref;
+      getContentType = function(content) {
+        if (content instanceof ops.Operation) {
+          return content.getCustomType();
+        } else {
+          return content;
+        }
+      };
       return (_ref = this.parent) != null ? _ref.callEvent([
         {
           type: "insert",
           position: this.getPosition(),
-          object: this.parent,
+          object: this.parent.getCustomType(),
           changedBy: this.uid.creator,
-          value: this.content
+          value: getContentType(this.content)
         }
       ]) : void 0;
     };
@@ -388,7 +398,7 @@ module.exports = function() {
         {
           type: "delete",
           position: this.getPosition(),
-          object: this.parent,
+          object: this.parent.getCustomType(),
           length: 1,
           changedBy: o.uid.creator
         }
@@ -442,14 +452,14 @@ module.exports = function() {
     if (typeof content === "string") {
       content = JSON.parse(content);
     }
-    return new this(content, uid, prev, next, origin, parent);
+    return new this(null, content, uid, prev, next, origin, parent);
   };
   ops.ImmutableObject = (function(_super) {
     __extends(ImmutableObject, _super);
 
-    function ImmutableObject(uid, _at_content) {
+    function ImmutableObject(custom_type, uid, _at_content) {
       this.content = _at_content;
-      ImmutableObject.__super__.constructor.call(this, uid);
+      ImmutableObject.__super__.constructor.call(this, custom_type, uid);
     }
 
     ImmutableObject.prototype.type = "ImmutableObject";
@@ -474,7 +484,7 @@ module.exports = function() {
   ops.ImmutableObject.parse = function(json) {
     var content, uid;
     uid = json['uid'], content = json['content'];
-    return new this(uid, content);
+    return new this(null, uid, content);
   };
   ops.Delimiter = (function(_super) {
     __extends(Delimiter, _super);
@@ -483,7 +493,7 @@ module.exports = function() {
       this.saveOperation('prev_cl', prev_cl);
       this.saveOperation('next_cl', next_cl);
       this.saveOperation('origin', prev_cl);
-      Delimiter.__super__.constructor.call(this, {
+      Delimiter.__super__.constructor.call(this, null, {
         noOperation: true
       });
     }

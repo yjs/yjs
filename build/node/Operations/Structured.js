@@ -12,11 +12,8 @@ module.exports = function() {
     __extends(MapManager, _super);
 
     function MapManager(custom_type, uid) {
-      if (custom_type != null) {
-        this.custom_type = custom_type;
-      }
       this._map = {};
-      MapManager.__super__.constructor.call(this, uid);
+      MapManager.__super__.constructor.call(this, custom_type, uid);
     }
 
     MapManager.prototype.type = "MapManager";
@@ -48,8 +45,8 @@ module.exports = function() {
     MapManager.prototype.val = function(name, content) {
       var o, prop, rep, res, result, _ref;
       if (arguments.length > 1) {
-        if ((content != null) && (content._model != null) && content._model instanceof ops.Operation) {
-          rep = content._model;
+        if ((content != null) && (content._getModel != null)) {
+          rep = content._getModel(this.custom_types, this.operations);
         } else {
           rep = content;
         }
@@ -73,12 +70,7 @@ module.exports = function() {
         for (name in _ref) {
           o = _ref[name];
           if (!o.isContentDeleted()) {
-            res = prop.val();
-            if (res instanceof ops.Operation) {
-              result[name] = res.getCustomType();
-            } else {
-              result[name] = res;
-            }
+            result[name] = o.val();
           }
         }
         return result;
@@ -105,7 +97,7 @@ module.exports = function() {
           sub: property_name,
           alt: this
         };
-        rm = new ops.ReplaceManager(event_properties, event_this, rm_uid);
+        rm = new ops.ReplaceManager(null, event_properties, event_this, rm_uid);
         this._map[property_name] = rm;
         rm.setParent(this, property_name);
         rm.execute();
@@ -138,13 +130,13 @@ module.exports = function() {
   ops.ListManager = (function(_super) {
     __extends(ListManager, _super);
 
-    function ListManager(uid) {
+    function ListManager(custom_type, uid) {
       this.beginning = new ops.Delimiter(void 0, void 0);
       this.end = new ops.Delimiter(this.beginning, void 0);
       this.beginning.next_cl = this.end;
       this.beginning.execute();
       this.end.execute();
-      ListManager.__super__.constructor.call(this, uid);
+      ListManager.__super__.constructor.call(this, custom_type, uid);
     }
 
     ListManager.prototype.type = "ListManager";
@@ -281,42 +273,29 @@ module.exports = function() {
       return this.insertAfter(this.end.prev_cl, content);
     };
 
-    ListManager.prototype.insertAfter = function(left, content, options) {
-      var c, createContent, right, tmp, _i, _len;
-      createContent = function(content, options) {
-        var type;
-        if ((content != null) && (content.constructor != null)) {
-          type = ops[content.constructor.name];
-          if ((type != null) && (type.create != null)) {
-            return type.create(content, options);
-          } else {
-            throw new Error("The " + content.constructor.name + "-type is not (yet) supported in Y.");
-          }
-        } else {
-          return content;
-        }
-      };
+    ListManager.prototype.insertAfter = function(left, content) {
+      var c, right, tmp, _i, _len;
       right = left.next_cl;
       while (right.isDeleted()) {
         right = right.next_cl;
       }
       left = right.prev_cl;
       if (content instanceof ops.Operation) {
-        (new ops.Insert(content, void 0, left, right)).execute();
+        (new ops.Insert(null, content, void 0, left, right)).execute();
       } else {
         for (_i = 0, _len = content.length; _i < _len; _i++) {
           c = content[_i];
-          tmp = (new ops.Insert(createContent(c, options), void 0, left, right)).execute();
+          tmp = (new ops.Insert(null, c, void 0, left, right)).execute();
           left = tmp;
         }
       }
       return this;
     };
 
-    ListManager.prototype.insert = function(position, content, options) {
+    ListManager.prototype.insert = function(position, content) {
       var ith;
       ith = this.getOperationByPosition(position);
-      return this.insertAfter(ith, [content], options);
+      return this.insertAfter(ith, [content]);
     };
 
     ListManager.prototype["delete"] = function(position, length) {
@@ -327,7 +306,7 @@ module.exports = function() {
         if (o instanceof ops.Delimiter) {
           break;
         }
-        d = (new ops.Delete(void 0, o)).execute();
+        d = (new ops.Delete(null, void 0, o)).execute();
         o = o.next_cl;
         while ((!(o instanceof ops.Delimiter)) && o.isDeleted()) {
           o = o.next_cl;
@@ -343,6 +322,11 @@ module.exports = function() {
         'type': this.type,
         'uid': this.getUid()
       };
+      if (this.custom_type.constructor === String) {
+        json.custom_type = this.custom_type;
+      } else {
+        json.custom_type = this.custom_type._name;
+      }
       return json;
     };
 
@@ -350,34 +334,20 @@ module.exports = function() {
 
   })(ops.Operation);
   ops.ListManager.parse = function(json) {
-    var uid;
-    uid = json['uid'];
-    return new this(uid);
-  };
-  ops.Array = function() {};
-  ops.Array.create = function(content, mutable) {
-    var ith, list;
-    if (mutable === "mutable") {
-      list = new ops.ListManager().execute();
-      ith = list.getOperationByPosition(0);
-      list.insertAfter(ith, content);
-      return list;
-    } else if ((mutable == null) || (mutable === "immutable")) {
-      return content;
-    } else {
-      throw new Error("Specify either \"mutable\" or \"immutable\"!!");
-    }
+    var custom_type, uid;
+    uid = json['uid'], custom_type = json['custom_type'];
+    return new this(custom_type, uid);
   };
   ops.ReplaceManager = (function(_super) {
     __extends(ReplaceManager, _super);
 
-    function ReplaceManager(_at_event_properties, _at_event_this, uid, beginning, end) {
+    function ReplaceManager(custom_type, _at_event_properties, _at_event_this, uid, beginning, end) {
       this.event_properties = _at_event_properties;
       this.event_this = _at_event_this;
       if (this.event_properties['object'] == null) {
         this.event_properties['object'] = this.event_this;
       }
-      ReplaceManager.__super__.constructor.call(this, uid, beginning, end);
+      ReplaceManager.__super__.constructor.call(this, custom_type, uid, beginning, end);
     }
 
     ReplaceManager.prototype.type = "ReplaceManager";
@@ -415,7 +385,7 @@ module.exports = function() {
     ReplaceManager.prototype.replace = function(content, replaceable_uid) {
       var o, relp;
       o = this.getLastOperation();
-      relp = (new ops.Replaceable(content, this, replaceable_uid, o, o.next_cl)).execute();
+      relp = (new ops.Replaceable(null, content, this, replaceable_uid, o, o.next_cl)).execute();
       return void 0;
     };
 
@@ -424,7 +394,7 @@ module.exports = function() {
     };
 
     ReplaceManager.prototype.deleteContent = function() {
-      (new ops.Delete(void 0, this.getLastOperation().uid)).execute();
+      (new ops.Delete(null, void 0, this.getLastOperation().uid)).execute();
       return void 0;
     };
 
@@ -451,9 +421,9 @@ module.exports = function() {
   ops.Replaceable = (function(_super) {
     __extends(Replaceable, _super);
 
-    function Replaceable(content, parent, uid, prev, next, origin, is_deleted) {
+    function Replaceable(custom_type, content, parent, uid, prev, next, origin, is_deleted) {
       this.saveOperation('parent', parent);
-      Replaceable.__super__.constructor.call(this, content, uid, prev, next, origin);
+      Replaceable.__super__.constructor.call(this, custom_type, content, uid, prev, next, origin);
       this.is_deleted = is_deleted;
     }
 
@@ -560,9 +530,9 @@ module.exports = function() {
 
   })(ops.Insert);
   ops.Replaceable.parse = function(json) {
-    var content, is_deleted, next, origin, parent, prev, uid;
-    content = json['content'], parent = json['parent'], uid = json['uid'], prev = json['prev'], next = json['next'], origin = json['origin'], is_deleted = json['is_deleted'];
-    return new this(content, parent, uid, prev, next, origin, is_deleted);
+    var content, custom_type, is_deleted, next, origin, parent, prev, uid;
+    content = json['content'], parent = json['parent'], uid = json['uid'], prev = json['prev'], next = json['next'], origin = json['origin'], is_deleted = json['is_deleted'], custom_type = json['custom_type'];
+    return new this(custom_type, content, parent, uid, prev, next, origin, is_deleted);
   };
   return basic_ops;
 };
