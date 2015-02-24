@@ -7,8 +7,8 @@ _         = require("underscore")
 
 chai.use(sinonChai)
 
-Connector = require "../../y-test/lib/y-test.coffee"
 Y = require "../lib/y.coffee"
+Y.Test = require "../../y-test/lib/y-test.coffee"
 Y.Text = require "../lib/Types/Text"
 Y.List = require "../lib/Types/List"
 
@@ -20,14 +20,13 @@ class JsonTest extends Test
     super suffix, Y
 
   makeNewUser: (userId)->
-    conn = new Connector userId
+    conn = new Y.Test userId
     super new Y conn
 
   type: "JsonTest"
 
   getRandomRoot: (user_num, root, depth = @max_depth)->
     root ?= @users[user_num]
-    types = @users[user_num].types
     if depth is 0 or _.random(0,1) is 1 # take root
       root
     else # take child

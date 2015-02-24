@@ -50,6 +50,10 @@ class YList
     @_model.delete position, length
     @
 
+  push: (content)->
+    @_model.push content
+    @
+
 if window?
   if window.Y?
     window.Y.List = YList

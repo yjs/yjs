@@ -54,6 +54,11 @@ YList = (function() {
     return this;
   };
 
+  YList.prototype.push = function(content) {
+    this._model.push(content);
+    return this;
+  };
+
   return YList;
 
 })();

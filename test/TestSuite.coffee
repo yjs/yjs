@@ -14,7 +14,7 @@ module.exports = class Test
     Y = Yjs
     @number_of_test_cases_multiplier = 1
     @repeat_this = 1 * @number_of_test_cases_multiplier
-    @doSomething_amount = 1230 * @number_of_test_cases_multiplier
+    @doSomething_amount = 123 * @number_of_test_cases_multiplier
     @number_of_engines = 5 + @number_of_test_cases_multiplier - 1
 
     @time = 0 # denotes to the time when run was started
@@ -95,15 +95,12 @@ module.exports = class Test
   getRandomRoot: (user_num)->
     throw new Error "implement me!"
 
-  getContent: (user_num)->
-    throw new Error "implement me!"
-
   compare: (o1, o2, depth = (@max_depth+1))->
     if o1 is o2 or depth <= 0
       true
     else if o1._name? and o1._name isnt o2._name
       throw new Error "different types"
-    else if o1._name is "Object"
+    else if o1._name is "Object" or o1.type is "MapManager"
       for name, val of o1.val()
         @compare(val, o2.val(name), depth-1)
     else if o1._name?
@@ -115,6 +112,8 @@ module.exports = class Test
         @compare o, o2[i], (depth-1)
     else if o1 isnt o2
       throw new Error "different values"
+    else
+      throw new Error "I don't know what to do .. "
 
   generateRandomOp: (user_num)=>
     y = @getRandomRoot(user_num)
