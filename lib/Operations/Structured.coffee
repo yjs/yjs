@@ -79,20 +79,6 @@ module.exports = ()->
         rm.execute()
       @_map[property_name]
 
-    #
-    # @private
-    #
-    _encode: ()->
-      json = {
-        'type' : @type
-        'uid' : @getUid()
-      }
-      if @custom_type.constructor is String
-        json.custom_type = @custom_type
-      else
-        json.custom_type = @custom_type._name
-      json
-
   ops.MapManager.parse = (json)->
     {
       'uid' : uid
@@ -279,21 +265,6 @@ module.exports = ()->
         delete_ops.push d._encode()
       @
 
-    #
-    # @private
-    # Encode this operation in such a way that it can be parsed by remote peers.
-    #
-    _encode: ()->
-      json = {
-        'type': @type
-        'uid' : @getUid()
-      }
-      if @custom_type.constructor is String
-        json.custom_type = @custom_type
-      else
-        json.custom_type = @custom_type._name
-      json
-
   ops.ListManager.parse = (json)->
     {
       'uid' : uid
@@ -381,15 +352,10 @@ module.exports = ()->
     #
     # Encode this operation in such a way that it can be parsed by remote peers.
     #
-    _encode: ()->
-      json =
-        {
-          'type': @type
-          'uid' : @getUid()
-          'beginning' : @beginning.getUid()
-          'end' : @end.getUid()
-        }
-      json
+    _encode: (json = {})->
+      json.beginning = @beginning.getUid()
+      json.end = @end.getUid()
+      super json
 
   #
   # @nodoc
@@ -403,34 +369,11 @@ module.exports = ()->
     # @param {ReplaceManager} parent Used to replace this Replaceable with another one.
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     #
-    constructor: (custom_type, content, parent, uid, prev, next, origin, is_deleted)->
+    constructor: (custom_type, content, parent, uid, prev, next, origin)->
       @saveOperation 'parent', parent
       super custom_type, content, uid, prev, next, origin # Parent is already saved by Replaceable
-      @is_deleted = is_deleted
 
     type: "Replaceable"
-
-    #
-    # Return the content that this operation holds.
-    #
-    val: ()->
-      if @content? and @content.getCustomType?
-        @content.getCustomType()
-      else
-        @content
-
-    applyDelete: ()->
-      res = super
-      if @content?
-        if @next_cl.type isnt "Delimiter"
-          @content.deleteAllObservers?()
-        @content.applyDelete?()
-        @content.dontSync?()
-      @content = null
-      res
-
-    cleanup: ()->
-      super
 
     #
     # This is called, when the Insert-type was successfully executed.
@@ -470,30 +413,8 @@ module.exports = ()->
     #
     # Encode this operation in such a way that it can be parsed by remote peers.
     #
-    _encode: ()->
-      json =
-        {
-          'type': @type
-          'parent' : @parent.getUid()
-          'prev': @prev_cl.getUid()
-          'next': @next_cl.getUid()
-          'uid' : @getUid()
-          'is_deleted': @is_deleted
-        }
-      if @origin.type is "Delimiter"
-        json.origin = "Delimiter"
-      else if @origin isnt @prev_cl
-        json.origin = @origin.getUid()
-
-      if @content instanceof ops.Operation
-        json['content'] = @content.getUid()
-      else
-        # This could be a security concern.
-        # Throw error if the users wants to trick us
-        if @content? and @content.creator?
-          throw new Error "You must not set creator here!"
-        json['content'] = @content
-      json
+    _encode: (json = {})->
+      super json
 
   ops.Replaceable.parse = (json)->
     {
@@ -503,10 +424,11 @@ module.exports = ()->
       'prev': prev
       'next': next
       'origin' : origin
-      'is_deleted': is_deleted
       'custom_type' : custom_type
     } = json
-    new this(custom_type, content, parent, uid, prev, next, origin, is_deleted)
+    if typeof content is "string"
+      content = JSON.parse(content)
+    new this(custom_type, content, parent, uid, prev, next, origin)
 
 
   basic_ops

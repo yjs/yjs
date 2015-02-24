@@ -12,17 +12,6 @@ Y = require "../lib/y.coffee"
 Y.Text = require "../lib/Types/Text"
 Y.List = require "../lib/Types/List"
 
-compare = (o1, o2)->
-  if o1._name? and o1._name isnt o2._name
-    throw new Error "different types"
-  else if o1._name is "Object"
-    for name, val of o1.val()
-      compare(val, o2.val(name))
-  else if o1._name?
-    compare(o1.val(), o2.val())
-  else if o1 isnt o2
-    throw new Error "different values"
-
 Test = require "./TestSuite"
 
 class JsonTest extends Test
@@ -36,12 +25,13 @@ class JsonTest extends Test
 
   type: "JsonTest"
 
-  getRandomRoot: (user_num, root)->
+  getRandomRoot: (user_num, root, depth = @max_depth)->
     root ?= @users[user_num]
     types = @users[user_num].types
-    if _.random(0,1) is 1 # take root
+    if depth is 0 or _.random(0,1) is 1 # take root
       root
     else # take child
+      depth--
       elems = null
       if root._name is "Object"
         elems =
@@ -58,7 +48,7 @@ class JsonTest extends Test
         root
       else
         p = elems[_.random(0, elems.length-1)]
-        @getRandomRoot user_num, p
+        @getRandomRoot user_num, p, depth
 
   getGeneratingFunctions: (user_num)->
     super(user_num).concat [
@@ -105,7 +95,19 @@ class JsonTest extends Test
           l = y.val().length
           y.val(_.random(0,l-1), _.random(0,42))
         types : [Y.List]
+      ,
+        f : (y)=> # SET Object Property (circular)
+          y.val(@getRandomKey(), @getRandomRoot user_num)
+        types: [Y.Object]
+      ,
+        f : (y)=> # insert Object mutable (circular)
+          l = y.val().length
+          y.val(_.random(0, l-1), @getRandomRoot user_num)
+        types: [Y.List]
       ]
+###     
+
+###
 
 describe "JsonFramework", ->
   @timeout 500000
@@ -135,7 +137,7 @@ describe "JsonFramework", ->
     u1._model.engine.applyOp ops2, true
     u2._model.engine.applyOp ops1, true
 
-    expect(compare(u1, u2)).to.not.be.undefined
+    expect(@yTest.compare(u1, u2)).to.not.be.undefined
 
   it "can handle creaton of complex json (1)", ->
     @yTest.users[0].val('a', new Y.Text('q'))
@@ -290,6 +292,18 @@ describe "JsonFramework", ->
     @yTest.flushAll()
     expect(last_task).to.equal("observer2")
     u.unobserve observer2
+
+  it "can handle circular JSON", ->
+    u = @yTest.users[0]
+    u.val("me", u)
+    @yTest.compareAll()
+    u.val("stuff", new Y.Object({x: true}))
+    u.val("same_stuff", u.val("stuff"))
+    u.val("same_stuff").val("x", 5)
+    expect(u.val("same_stuff").val("x")).to.equal(5)
+    @yTest.compareAll()
+    u.val("stuff").val("y", u.val("stuff"))
+    @yTest.compareAll()
 
 
 

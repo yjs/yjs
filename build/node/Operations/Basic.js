@@ -132,6 +132,22 @@ module.exports = function() {
       return this;
     };
 
+    Operation.prototype._encode = function(json) {
+      if (json == null) {
+        json = {};
+      }
+      json.type = this.type;
+      json.uid = this.getUid();
+      if (this.custom_type != null) {
+        if (this.custom_type.constructor === String) {
+          json.custom_type = this.custom_type;
+        } else {
+          json.custom_type = this.custom_type._name;
+        }
+      }
+      return json;
+    };
+
     Operation.prototype.saveOperation = function(name, op) {
       if (op == null) {
 
@@ -258,7 +274,7 @@ module.exports = function() {
         this.deleted_by = [];
       }
       callLater = false;
-      if ((this.parent != null) && !this.isDeleted() && (o != null)) {
+      if ((this.parent != null) && !this.is_deleted && (o != null)) {
         callLater = true;
       }
       if (o != null) {
@@ -273,12 +289,8 @@ module.exports = function() {
         this.callOperationSpecificDeleteEvents(o);
       }
       if ((_ref = this.prev_cl) != null ? _ref.isDeleted() : void 0) {
-        this.prev_cl.applyDelete();
+        return this.prev_cl.applyDelete();
       }
-      if (this.content instanceof ops.Operation) {
-        this.content.applyDelete();
-      }
-      return delete this.content;
     };
 
     Insert.prototype.cleanup = function() {
@@ -298,6 +310,13 @@ module.exports = function() {
         }
         this.prev_cl.next_cl = this.next_cl;
         this.next_cl.prev_cl = this.prev_cl;
+        if (this.content instanceof ops.Operation && !deleted_earlyer) {
+          this.content.referenced_by--;
+          if (this.content.referenced_by <= 0 && !this.content.is_deleted) {
+            this.content.applyDelete();
+          }
+        }
+        delete this.content;
         return Insert.__super__.cleanup.apply(this, arguments);
       }
     };
@@ -317,12 +336,16 @@ module.exports = function() {
     };
 
     Insert.prototype.execute = function() {
-      var distance_to_origin, i, o;
+      var distance_to_origin, i, o, _base;
       if (!this.validateSavedOperations()) {
         return false;
       } else {
         if (this.content instanceof ops.Operation) {
           this.content.insert_parent = this;
+          if ((_base = this.content).referenced_by == null) {
+            _base.referenced_by = 0;
+          }
+          this.content.referenced_by++;
         }
         if (this.parent != null) {
           if (this.prev_cl == null) {
@@ -425,15 +448,14 @@ module.exports = function() {
       return position;
     };
 
-    Insert.prototype._encode = function() {
-      var json, _ref;
-      json = {
-        'type': this.type,
-        'uid': this.getUid(),
-        'prev': this.prev_cl.getUid(),
-        'next': this.next_cl.getUid(),
-        'parent': this.parent.getUid()
-      };
+    Insert.prototype._encode = function(json) {
+      var _ref;
+      if (json == null) {
+        json = {};
+      }
+      json.prev = this.prev_cl.getUid();
+      json.next = this.next_cl.getUid();
+      json.parent = this.parent.getUid();
       if (this.origin.type === "Delimiter") {
         json.origin = "Delimiter";
       } else if (this.origin !== this.prev_cl) {
@@ -444,7 +466,7 @@ module.exports = function() {
       } else {
         json['content'] = JSON.stringify(this.content);
       }
-      return json;
+      return Insert.__super__._encode.call(this, json);
     };
 
     return Insert;
@@ -457,38 +479,6 @@ module.exports = function() {
       content = JSON.parse(content);
     }
     return new this(null, content, uid, prev, next, origin, parent);
-  };
-  ops.ImmutableObject = (function(_super) {
-    __extends(ImmutableObject, _super);
-
-    function ImmutableObject(custom_type, uid, _at_content) {
-      this.content = _at_content;
-      ImmutableObject.__super__.constructor.call(this, custom_type, uid);
-    }
-
-    ImmutableObject.prototype.type = "ImmutableObject";
-
-    ImmutableObject.prototype.val = function() {
-      return this.content;
-    };
-
-    ImmutableObject.prototype._encode = function() {
-      var json;
-      json = {
-        'type': this.type,
-        'uid': this.getUid(),
-        'content': this.content
-      };
-      return json;
-    };
-
-    return ImmutableObject;
-
-  })(ops.Operation);
-  ops.ImmutableObject.parse = function(json) {
-    var content, uid;
-    uid = json['uid'], content = json['content'];
-    return new this(null, uid, content);
   };
   ops.Delimiter = (function(_super) {
     __extends(Delimiter, _super);

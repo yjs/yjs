@@ -147,6 +147,21 @@ module.exports = ()->
 
     #
     # @private
+    # Encode this operation in such a way that it can be parsed by remote peers.
+    #
+    _encode: (json = {})->
+      json.type = @type
+      json.uid = @getUid()
+      if @custom_type?
+        if @custom_type.constructor is String
+          json.custom_type = @custom_type
+        else
+          json.custom_type = @custom_type._name
+      json
+
+
+    #
+    # @private
     # Operations may depend on other operations (linked lists, etc.).
     # The saveOperation and validateSavedOperations methods provide
     # an easy way to refer to these operations via an uid or object reference.
@@ -313,7 +328,7 @@ module.exports = ()->
     applyDelete: (o)->
       @deleted_by ?= []
       callLater = false
-      if @parent? and not @isDeleted() and o? # o? : if not o?, then the delimiter deleted this Insertion. Furthermore, it would be wrong to call it. TODO: make this more expressive and save
+      if @parent? and not @is_deleted and o? # o? : if not o?, then the delimiter deleted this Insertion. Furthermore, it would be wrong to call it. TODO: make this more expressive and save
         # call iff wasn't deleted earlyer
         callLater = true
       if o?
@@ -327,12 +342,6 @@ module.exports = ()->
       if @prev_cl?.isDeleted()
         # garbage collect prev_cl
         @prev_cl.applyDelete()
-
-      # delete content
-      if @content instanceof ops.Operation
-        @content.applyDelete()
-      delete @content
-
 
     cleanup: ()->
       if @next_cl.isDeleted()
@@ -350,6 +359,17 @@ module.exports = ()->
         # reconnect left/right
         @prev_cl.next_cl = @next_cl
         @next_cl.prev_cl = @prev_cl
+
+        # delete content
+        # - we must not do this in applyDelete, because this would lead to inconsistencies
+        # (e.g. the following operation order must be invertible :
+        #   Insert refers to content, then the content is deleted)
+        # Therefore, we have to do this in the cleanup
+        if @content instanceof ops.Operation and not deleted_earlyer
+          @content.referenced_by--
+          if @content.referenced_by <= 0 and not @content.is_deleted
+            @content.applyDelete()
+        delete @content
         super
       # else
       #   Someone inserted something in the meantime.
@@ -378,6 +398,8 @@ module.exports = ()->
       else
         if @content instanceof ops.Operation
           @content.insert_parent = @ # TODO: this is probably not necessary and only nice for debugging
+          @content.referenced_by ?= 0
+          @content.referenced_by++
         if @parent?
           if not @prev_cl?
             @prev_cl = @parent.beginning
@@ -481,15 +503,10 @@ module.exports = ()->
     # Convert all relevant information of this operation to the json-format.
     # This result can be send to other clients.
     #
-    _encode: ()->
-      json =
-        {
-          'type': @type
-          'uid' : @getUid()
-          'prev': @prev_cl.getUid()
-          'next': @next_cl.getUid()
-          'parent': @parent.getUid()
-        }
+    _encode: (json = {})->
+      json.prev = @prev_cl.getUid()
+      json.next = @next_cl.getUid()
+      json.parent = @parent.getUid()
 
       if @origin.type is "Delimiter"
         json.origin = "Delimiter"
@@ -500,7 +517,7 @@ module.exports = ()->
         json['content'] = @content.getUid()
       else
         json['content'] = JSON.stringify @content
-      json
+      super json
 
   ops.Insert.parse = (json)->
     {
@@ -514,47 +531,6 @@ module.exports = ()->
     if typeof content is "string"
       content = JSON.parse(content)
     new this null, content, uid, prev, next, origin, parent
-
-
-
-  #
-  # @nodoc
-  # Defines an object that is cannot be changed. You can use this to set an immutable string, or a number.
-  #
-  class ops.ImmutableObject extends ops.Operation
-
-    #
-    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
-    # @param {Object} content
-    #
-    constructor: (custom_type, uid, @content)->
-      super custom_type, uid
-
-    type: "ImmutableObject"
-
-    #
-    # @return [String] The content of this operation.
-    #
-    val : ()->
-      @content
-
-    #
-    # Encode this operation in such a way that it can be parsed by remote peers.
-    #
-    _encode: ()->
-      json = {
-        'type': @type
-        'uid' : @getUid()
-        'content' : @content
-      }
-      json
-
-  ops.ImmutableObject.parse = (json)->
-    {
-      'uid' : uid
-      'content' : content
-    } = json
-    new this(null, uid, content)
 
   #
   # @nodoc

@@ -20,6 +20,7 @@ module.exports = class Test
     @time = 0 # denotes to the time when run was started
     @ops = 0 # number of operations (used with @time)
     @time_now = 0 # current time
+    @max_depth = 4
 
     @debug = false
 
@@ -97,21 +98,21 @@ module.exports = class Test
   getContent: (user_num)->
     throw new Error "implement me!"
 
-  compare: (o1, o2)->
-    if o1 is o2
+  compare: (o1, o2, depth = (@max_depth+1))->
+    if o1 is o2 or depth <= 0
       true
     else if o1._name? and o1._name isnt o2._name
       throw new Error "different types"
     else if o1._name is "Object"
       for name, val of o1.val()
-        @compare(val, o2.val(name))
+        @compare(val, o2.val(name), depth-1)
     else if o1._name?
-      @compare(o1.val(), o2.val())
+      @compare(o1.val(), o2.val(), depth-1)
     else if o1.constructor is Array and o2.constructor is Array
       if o1.length isnt o2.length
         throw new Error "The Arrays do not have the same size!"
       for o,i in o1
-        @compare o, o2[i]
+        @compare o, o2[i], (depth-1)
     else if o1 isnt o2
       throw new Error "different values"
 

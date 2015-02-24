@@ -105,20 +105,6 @@ module.exports = function() {
       return this._map[property_name];
     };
 
-    MapManager.prototype._encode = function() {
-      var json;
-      json = {
-        'type': this.type,
-        'uid': this.getUid()
-      };
-      if (this.custom_type.constructor === String) {
-        json.custom_type = this.custom_type;
-      } else {
-        json.custom_type = this.custom_type._name;
-      }
-      return json;
-    };
-
     return MapManager;
 
   })(ops.Operation);
@@ -319,20 +305,6 @@ module.exports = function() {
       return this;
     };
 
-    ListManager.prototype._encode = function() {
-      var json;
-      json = {
-        'type': this.type,
-        'uid': this.getUid()
-      };
-      if (this.custom_type.constructor === String) {
-        json.custom_type = this.custom_type;
-      } else {
-        json.custom_type = this.custom_type._name;
-      }
-      return json;
-    };
-
     return ListManager;
 
   })(ops.Operation);
@@ -407,15 +379,13 @@ module.exports = function() {
       return typeof o.val === "function" ? o.val() : void 0;
     };
 
-    ReplaceManager.prototype._encode = function() {
-      var json;
-      json = {
-        'type': this.type,
-        'uid': this.getUid(),
-        'beginning': this.beginning.getUid(),
-        'end': this.end.getUid()
-      };
-      return json;
+    ReplaceManager.prototype._encode = function(json) {
+      if (json == null) {
+        json = {};
+      }
+      json.beginning = this.beginning.getUid();
+      json.end = this.end.getUid();
+      return ReplaceManager.__super__._encode.call(this, json);
     };
 
     return ReplaceManager;
@@ -424,45 +394,12 @@ module.exports = function() {
   ops.Replaceable = (function(_super) {
     __extends(Replaceable, _super);
 
-    function Replaceable(custom_type, content, parent, uid, prev, next, origin, is_deleted) {
+    function Replaceable(custom_type, content, parent, uid, prev, next, origin) {
       this.saveOperation('parent', parent);
       Replaceable.__super__.constructor.call(this, custom_type, content, uid, prev, next, origin);
-      this.is_deleted = is_deleted;
     }
 
     Replaceable.prototype.type = "Replaceable";
-
-    Replaceable.prototype.val = function() {
-      if ((this.content != null) && (this.content.getCustomType != null)) {
-        return this.content.getCustomType();
-      } else {
-        return this.content;
-      }
-    };
-
-    Replaceable.prototype.applyDelete = function() {
-      var res, _base, _base1, _base2;
-      res = Replaceable.__super__.applyDelete.apply(this, arguments);
-      if (this.content != null) {
-        if (this.next_cl.type !== "Delimiter") {
-          if (typeof (_base = this.content).deleteAllObservers === "function") {
-            _base.deleteAllObservers();
-          }
-        }
-        if (typeof (_base1 = this.content).applyDelete === "function") {
-          _base1.applyDelete();
-        }
-        if (typeof (_base2 = this.content).dontSync === "function") {
-          _base2.dontSync();
-        }
-      }
-      this.content = null;
-      return res;
-    };
-
-    Replaceable.prototype.cleanup = function() {
-      return Replaceable.__super__.cleanup.apply(this, arguments);
-    };
 
     Replaceable.prototype.callOperationSpecificInsertEvents = function() {
       var old_value;
@@ -503,39 +440,23 @@ module.exports = function() {
       }
     };
 
-    Replaceable.prototype._encode = function() {
-      var json;
-      json = {
-        'type': this.type,
-        'parent': this.parent.getUid(),
-        'prev': this.prev_cl.getUid(),
-        'next': this.next_cl.getUid(),
-        'uid': this.getUid(),
-        'is_deleted': this.is_deleted
-      };
-      if (this.origin.type === "Delimiter") {
-        json.origin = "Delimiter";
-      } else if (this.origin !== this.prev_cl) {
-        json.origin = this.origin.getUid();
+    Replaceable.prototype._encode = function(json) {
+      if (json == null) {
+        json = {};
       }
-      if (this.content instanceof ops.Operation) {
-        json['content'] = this.content.getUid();
-      } else {
-        if ((this.content != null) && (this.content.creator != null)) {
-          throw new Error("You must not set creator here!");
-        }
-        json['content'] = this.content;
-      }
-      return json;
+      return Replaceable.__super__._encode.call(this, json);
     };
 
     return Replaceable;
 
   })(ops.Insert);
   ops.Replaceable.parse = function(json) {
-    var content, custom_type, is_deleted, next, origin, parent, prev, uid;
-    content = json['content'], parent = json['parent'], uid = json['uid'], prev = json['prev'], next = json['next'], origin = json['origin'], is_deleted = json['is_deleted'], custom_type = json['custom_type'];
-    return new this(custom_type, content, parent, uid, prev, next, origin, is_deleted);
+    var content, custom_type, next, origin, parent, prev, uid;
+    content = json['content'], parent = json['parent'], uid = json['uid'], prev = json['prev'], next = json['next'], origin = json['origin'], custom_type = json['custom_type'];
+    if (typeof content === "string") {
+      content = JSON.parse(content);
+    }
+    return new this(custom_type, content, parent, uid, prev, next, origin);
   };
   return basic_ops;
 };
