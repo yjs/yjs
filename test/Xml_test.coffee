@@ -29,9 +29,9 @@ class XmlTest extends Test
 
   type: "XmlTest"
 
-  compare: (o1, o2)->
+  compare: (o1, o2, depth)->
     if o1.constructor is Y.Xml
-      @compare o1._model, o2._model
+      @compare o1._model, o2._model, depth
     else
       super
 
@@ -156,7 +156,7 @@ describe "Y-Xml", ->
       @yTest.compareAll()
       @u2.removeAttr("dtrn")
       @yTest.compareAll()
-      @expect(@u3.attr("dtrn")).to.be.undefined
+      expect(@u3.attr("dtrn")).to.be.undefined
 
     it "removeClass", ->
       @u1.addClass("dtrn")
@@ -164,7 +164,7 @@ describe "Y-Xml", ->
       @yTest.compareAll()
       @u2.removeClass("dtrn")
       @yTest.compareAll()
-      @expect(@u3.attr("class")).to.equal("iExist")
+      expect(@u3.attr("class")).to.equal("iExist")
 
     it "toggleClass", ->
       @u1.addClass("dtrn")
@@ -172,7 +172,7 @@ describe "Y-Xml", ->
       @yTest.compareAll()
       @u2.removeClass("dtrn")
       @yTest.compareAll()
-      @expect(@u3.attr("class")).to.equal("iExist")
+      expect(@u3.attr("class")).to.equal("iExist")
       @u3.toggleClass("iExist")
       @u3.toggleClass("wraa")
       @yTest.compareAll()

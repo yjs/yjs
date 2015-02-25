@@ -256,21 +256,21 @@ module.exports = function() {
     };
 
     ListManager.prototype.push = function(content) {
-      return this.insertAfter(this.end.prev_cl, content);
+      return this.insertAfter(this.end.prev_cl, [content]);
     };
 
-    ListManager.prototype.insertAfter = function(left, content) {
+    ListManager.prototype.insertAfter = function(left, contents) {
       var c, right, tmp, _i, _len;
       right = left.next_cl;
       while (right.isDeleted()) {
         right = right.next_cl;
       }
       left = right.prev_cl;
-      if (content instanceof ops.Operation) {
+      if (contents instanceof ops.Operation) {
         (new ops.Insert(null, content, void 0, left, right)).execute();
       } else {
-        for (_i = 0, _len = content.length; _i < _len; _i++) {
-          c = content[_i];
+        for (_i = 0, _len = contents.length; _i < _len; _i++) {
+          c = contents[_i];
           if ((c != null) && (c._name != null) && (c._getModel != null)) {
             c = c._getModel(this.custom_types, this.operations);
           }
@@ -281,14 +281,17 @@ module.exports = function() {
       return this;
     };
 
-    ListManager.prototype.insert = function(position, content) {
+    ListManager.prototype.insert = function(position, contents) {
       var ith;
       ith = this.getOperationByPosition(position);
-      return this.insertAfter(ith, [content]);
+      return this.insertAfter(ith, contents);
     };
 
     ListManager.prototype["delete"] = function(position, length) {
       var d, delete_ops, i, o, _i;
+      if (length == null) {
+        length = 1;
+      }
       o = this.getOperationByPosition(position + 1);
       delete_ops = [];
       for (i = _i = 0; 0 <= length ? _i < length : _i > length; i = 0 <= length ? ++_i : --_i) {

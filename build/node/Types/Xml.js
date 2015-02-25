@@ -42,6 +42,9 @@ YXml = (function() {
       this._model.val("classes", new Y.Object(this._xml.classes));
       this._model.val("tagname", this._xml.tagname);
       this._model.val("children", new Y.List());
+      if (this._xml.parent != null) {
+        this._model.val("parent", this._xml.parent);
+      }
     }
     delete this._xml;
     return this._model;
@@ -54,8 +57,12 @@ YXml = (function() {
 
   YXml.prototype._setParent = function(parent) {
     if (parent instanceof YXml) {
-      this.remove();
-      return this._model.val("parent", parent);
+      if (this._model != null) {
+        this.remove();
+        return this._model.val("parent", parent);
+      } else {
+        return this._xml.parent = parent;
+      }
     } else {
       throw new Error("parent must be of type Y.Xml!");
     }
@@ -119,7 +126,7 @@ YXml = (function() {
     if (parent == null) {
       throw new Error("This Xml Element must not have siblings! (for it does not have a parent)");
     }
-    _ref = parent.val("children").val();
+    _ref = parent.getChildren();
     for (position = _i = 0, _len = _ref.length; _i < _len; position = ++_i) {
       c = _ref[position];
       if (c === this) {
@@ -129,25 +136,28 @@ YXml = (function() {
     contents = [];
     for (_j = 0, _len1 = arguments.length; _j < _len1; _j++) {
       content = arguments[_j];
-      if (!(content instanceof YXml || content.constructor === String)) {
+      if (content instanceof YXml) {
+        content._setParent(this._model.val("parent"));
+      } else if (content.constructor !== String) {
         throw new Error("Y.Xml.after expects instances of YXml or String as a parameter");
       }
       contents.push(content);
     }
-    return parent._model.val("children").insert(position + 1, contents);
+    return parent._model.val("children").insertContents(position + 1, contents);
   };
 
   YXml.prototype.append = function() {
-    var content, contents, _i, _len;
-    contents = [];
+    var content, _i, _len;
     for (_i = 0, _len = arguments.length; _i < _len; _i++) {
       content = arguments[_i];
-      if (!(content instanceof YXml || content.constructor === String)) {
+      if (content instanceof YXml) {
+        content._setParent(this);
+      } else if (content.constructor !== String) {
         throw new Error("Y.Xml.after expects instances of YXml or String as a parameter");
       }
-      contents.push(content);
+      this._model.val("children").push(content);
     }
-    return this._model.val("children").push(contents);
+    return this;
   };
 
   YXml.prototype.before = function() {
@@ -156,7 +166,7 @@ YXml = (function() {
     if (parent == null) {
       throw new Error("This Xml Element must not have siblings! (for it does not have a parent)");
     }
-    _ref = parent.val("children").val();
+    _ref = parent.getChildren();
     for (position = _i = 0, _len = _ref.length; _i < _len; position = ++_i) {
       c = _ref[position];
       if (c === this) {
@@ -166,12 +176,14 @@ YXml = (function() {
     contents = [];
     for (_j = 0, _len1 = arguments.length; _j < _len1; _j++) {
       content = arguments[_j];
-      if (!(content instanceof YXml || content.constructor === String)) {
+      if (content instanceof YXml) {
+        content._setParent(this._model.val("parent"));
+      } else if (content.constructor !== String) {
         throw new Error("Y.Xml.after expects instances of YXml or String as a parameter");
       }
       contents.push(content);
     }
-    return parent._model.val("children").insert(position, contents);
+    return parent._model.val("children").insertContents(position, contents);
   };
 
   YXml.prototype.empty = function() {
@@ -194,16 +206,17 @@ YXml = (function() {
   };
 
   YXml.prototype.prepend = function() {
-    var content, contents, _i, _len;
-    contents = [];
+    var content, _i, _len;
     for (_i = 0, _len = arguments.length; _i < _len; _i++) {
       content = arguments[_i];
-      if (!(content instanceof YXml || content.constructor === String)) {
+      if (content instanceof YXml) {
+        content._setParent(this);
+      } else if (content.constructor !== String) {
         throw new Error("Y.Xml.after expects instances of YXml or String as a parameter");
       }
-      contents.push(content);
+      this._model.val("children").insert(0, content);
     }
-    return this._model.val("children").insert(0, contents);
+    return this;
   };
 
   YXml.prototype.remove = function() {
@@ -214,7 +227,7 @@ YXml = (function() {
       for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
         c = _ref[i];
         if (c === this) {
-          parent._model["delete"](i);
+          parent._model.val("children")["delete"](i);
           break;
         }
       }

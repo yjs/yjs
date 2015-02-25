@@ -16,7 +16,7 @@ YList = (function() {
   YList.prototype._getModel = function(types, ops) {
     if (this._model == null) {
       this._model = new ops.ListManager(this).execute();
-      this.insert(0, this._list);
+      this._model.insert(0, this._list);
     }
     delete this._list;
     return this._model;
@@ -45,7 +45,15 @@ YList = (function() {
     if (typeof position !== "number") {
       throw new Error("Y.List.insert expects a Number as the first parameter!");
     }
-    this._model.insert(position, content);
+    this._model.insert(position, [content]);
+    return this;
+  };
+
+  YList.prototype.insertContents = function(position, contents) {
+    if (typeof position !== "number") {
+      throw new Error("Y.List.insert expects a Number as the first parameter!");
+    }
+    this._model.insert(position, contents);
     return this;
   };
 

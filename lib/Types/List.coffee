@@ -17,7 +17,7 @@ class YList
   _getModel: (types, ops)->
     if not @_model?
       @_model = new ops.ListManager(@).execute()
-      @insert 0, @_list
+      @_model.insert 0, @_list
     delete @_list
     @_model
 
@@ -36,14 +36,20 @@ class YList
     @
 
   #
-  # Inserts a Array into the list.
+  # Inserts an Object into the list.
   #
   # @return {ListManager Type} This String object.
   #
   insert: (position, content)->
     if typeof position isnt "number"
       throw new Error "Y.List.insert expects a Number as the first parameter!"
-    @_model.insert position, content
+    @_model.insert position, [content]
+    @
+
+  insertContents: (position, contents)->
+    if typeof position isnt "number"
+      throw new Error "Y.List.insert expects a Number as the first parameter!"
+    @_model.insert position, contents
     @
 
   delete: (position, length)->

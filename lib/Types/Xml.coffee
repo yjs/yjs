@@ -30,6 +30,8 @@ class YXml
       @_model.val("classes", new Y.Object(@_xml.classes))
       @_model.val("tagname", @_xml.tagname)
       @_model.val("children", new Y.List())
+      if @_xml.parent?
+        @_model.val("parent", @_xml.parent)
     delete @_xml
     @_model
 
@@ -38,8 +40,11 @@ class YXml
 
   _setParent: (parent)->
     if parent instanceof YXml
-      @remove()
-      @_model.val("parent", parent)
+      if @_model?
+        @remove()
+        @_model.val("parent", parent)
+      else
+        @_xml.parent = parent
     else
       throw new Error "parent must be of type Y.Xml!"
 
@@ -95,30 +100,32 @@ class YXml
       throw new Error "This Xml Element must not have siblings! (for it does not have a parent)"
 
     # find the position of this element
-    for c,position in parent.val("children").val()
+    for c,position in parent.getChildren()
       if c is @
         break
 
     contents = []
     for content in arguments
-      if not (content instanceof YXml or content.constructor is String)
+      if content instanceof YXml
+        content._setParent(@_model.val("parent"))
+      else if content.constructor isnt String
         throw new Error "Y.Xml.after expects instances of YXml or String as a parameter"
       contents.push content
 
-    parent._model.val("children").insert(position+1, contents)
+    parent._model.val("children").insertContents(position+1, contents)
 
   #
   # Insert content, specified by the parameter, to the end of this element
   # .append(content [, content])
   #
   append: ()->
-    contents = []
     for content in arguments
-      if not (content instanceof YXml or content.constructor is String)
+      if content instanceof YXml
+        content._setParent(@)
+      else if content.constructor isnt String
         throw new Error "Y.Xml.after expects instances of YXml or String as a parameter"
-      contents.push content
-
-    @_model.val("children").push(contents)
+      @_model.val("children").push(content)
+    @
 
   #
   # Insert content, specified by the parameter, after this element
@@ -130,23 +137,26 @@ class YXml
       throw new Error "This Xml Element must not have siblings! (for it does not have a parent)"
 
     # find the position of this element
-    for c,position in parent.val("children").val()
+    for c,position in parent.getChildren()
       if c is @
         break
 
     contents = []
     for content in arguments
-      if not (content instanceof YXml or content.constructor is String)
+      if content instanceof YXml
+        content._setParent(@_model.val("parent"))
+      else if content.constructor isnt String
         throw new Error "Y.Xml.after expects instances of YXml or String as a parameter"
       contents.push content
 
-    parent._model.val("children").insert(position, contents)
+    parent._model.val("children").insertContents(position, contents)
 
   #
   # Remove all child nodes of the set of matched elements from the DOM.
   # .empty()
   #
   empty: ()->
+    # TODO: do it like this : @_model.val("children", new Y.List())
     for child in @_model.val("children").val()
       child.remove()
 
@@ -165,13 +175,13 @@ class YXml
   # .prepend(content [, content])
   #
   prepend: ()->
-    contents = []
     for content in arguments
-      if not (content instanceof YXml or content.constructor is String)
+      if content instanceof YXml
+        content._setParent(@)
+      else if content.constructor isnt String
         throw new Error "Y.Xml.after expects instances of YXml or String as a parameter"
-      contents.push content
-
-    @_model.val("children").insert(0, contents)
+      @_model.val("children").insert(0, content)
+    @
 
   #
   # Remove this element from the DOM
@@ -182,7 +192,7 @@ class YXml
     if parent instanceof YXml
       for c,i in parent.getChildren()
         if c is @
-          parent._model.delete i
+          parent._model.val("children").delete i
           break
     undefined
 

@@ -216,19 +216,19 @@ module.exports = ()->
       o
 
     push: (content)->
-      @insertAfter @end.prev_cl, content
+      @insertAfter @end.prev_cl, [content]
 
-    insertAfter: (left, content)->
+    insertAfter: (left, contents)->
       right = left.next_cl
       while right.isDeleted()
         right = right.next_cl # find the first character to the right, that is not deleted. In the case that position is 0, its the Delimiter.
       left = right.prev_cl
 
       # TODO: always expect an array as content. Then you can combine this with the other option (else)
-      if content instanceof ops.Operation
+      if contents instanceof ops.Operation
         (new ops.Insert null, content, undefined, left, right).execute()
       else
-        for c in content
+        for c in contents
           if c? and c._name? and c._getModel?
             c = c._getModel(@custom_types, @operations)
           tmp = (new ops.Insert null, c, undefined, left, right).execute()
@@ -236,22 +236,23 @@ module.exports = ()->
       @
 
     #
-    # Inserts a string into the word.
+    # Inserts an array of content into this list.
+    # @Note: This expects an array as content!
     #
     # @return {ListManager Type} This String object.
     #
-    insert: (position, content)->
+    insert: (position, contents)->
       ith = @getOperationByPosition position
       # the (i-1)th character. e.g. "abc" the 1th character is "a"
       # the 0th character is the left Delimiter
-      @insertAfter ith, [content]
+      @insertAfter ith, contents
 
     #
     # Deletes a part of the word.
     #
     # @return {ListManager Type} This String object
     #
-    delete: (position, length)->
+    delete: (position, length = 1)->
       o = @getOperationByPosition(position+1) # position 0 in this case is the deletion of the first character
 
       delete_ops = []
