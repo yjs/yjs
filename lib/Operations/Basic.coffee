@@ -70,7 +70,11 @@ module.exports = ()->
     # TODO: Do something with timeouts. You don't want this to fire for every operation (e.g. insert).
     # TODO: do you need callEvent+forwardEvent? Only one suffices probably
     callEvent: ()->
-      @forwardEvent @, arguments...
+      if @custom_type?
+        callon = @getCustomType()
+      else
+        callon = @
+      @forwardEvent callon, arguments...
 
     #
     # Fire an event and specify in which context the listener is called (set 'this').

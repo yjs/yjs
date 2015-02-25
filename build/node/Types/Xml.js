@@ -46,13 +46,31 @@ YXml = (function() {
         this._model.val("parent", this._xml.parent);
       }
     }
-    delete this._xml;
+    this._setModel(this._model);
     return this._model;
   };
 
   YXml.prototype._setModel = function(_at__model) {
     this._model = _at__model;
-    return delete this._xml;
+    delete this._xml;
+    return this._model.observe(function(events) {
+      var c, event, i, parent, _i, _j, _len, _len1, _ref;
+      for (_i = 0, _len = events.length; _i < _len; _i++) {
+        event = events[_i];
+        if (event.name === "parent" && event.type !== "add") {
+          parent = event.oldValue;
+          _ref = parent.getChildren();
+          for (i = _j = 0, _len1 = _ref.length; _j < _len1; i = ++_j) {
+            c = _ref[i];
+            if (c === this) {
+              parent._model.val("children")["delete"](i);
+              break;
+            }
+          }
+        }
+      }
+      return void 0;
+    });
   };
 
   YXml.prototype._setParent = function(parent) {
@@ -220,19 +238,9 @@ YXml = (function() {
   };
 
   YXml.prototype.remove = function() {
-    var c, i, parent, _i, _len, _ref;
-    parent = this._model.val("parent");
-    if (parent instanceof YXml) {
-      _ref = parent.getChildren();
-      for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-        c = _ref[i];
-        if (c === this) {
-          parent._model.val("children")["delete"](i);
-          break;
-        }
-      }
-    }
-    return void 0;
+    var parent;
+    parent = this._model["delete"]("parent");
+    return this;
   };
 
   YXml.prototype.removeAttr = function(attrName) {

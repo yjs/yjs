@@ -45,7 +45,13 @@ module.exports = function() {
     };
 
     Operation.prototype.callEvent = function() {
-      return this.forwardEvent.apply(this, [this].concat(__slice.call(arguments)));
+      var callon;
+      if (this.custom_type != null) {
+        callon = this.getCustomType();
+      } else {
+        callon = this;
+      }
+      return this.forwardEvent.apply(this, [callon].concat(__slice.call(arguments)));
     };
 
     Operation.prototype.forwardEvent = function() {

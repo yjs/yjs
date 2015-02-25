@@ -32,11 +32,21 @@ class YXml
       @_model.val("children", new Y.List())
       if @_xml.parent?
         @_model.val("parent", @_xml.parent)
-    delete @_xml
+    @_setModel @_model
     @_model
 
   _setModel: (@_model)->
     delete @_xml
+    @_model.observe (events)->
+      for event in events
+        if event.name is "parent" and event.type isnt "add"
+          parent = event.oldValue
+          for c,i in parent.getChildren()
+            if c is @
+              parent._model.val("children").delete i
+              break
+      undefined
+
 
   _setParent: (parent)->
     if parent instanceof YXml
@@ -188,13 +198,8 @@ class YXml
   # .remove()
   #
   remove: ()->
-    parent = @_model.val("parent")
-    if parent instanceof YXml
-      for c,i in parent.getChildren()
-        if c is @
-          parent._model.val("children").delete i
-          break
-    undefined
+    parent = @_model.delete("parent")
+    @
 
   #
   # Remove an attribute from this element
