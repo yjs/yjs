@@ -54,17 +54,19 @@ YXml = (function() {
     this._model = _at__model;
     delete this._xml;
     return this._model.observe(function(events) {
-      var c, event, i, parent, _i, _j, _len, _len1, _ref;
+      var c, children, event, i, parent, _i, _j, _len, _len1, _ref;
       for (_i = 0, _len = events.length; _i < _len; _i++) {
         event = events[_i];
         if (event.name === "parent" && event.type !== "add") {
           parent = event.oldValue;
-          _ref = parent.getChildren();
-          for (i = _j = 0, _len1 = _ref.length; _j < _len1; i = ++_j) {
-            c = _ref[i];
-            if (c === this) {
-              parent._model.val("children")["delete"](i);
-              break;
+          children = (_ref = parent._model.val("children")) != null ? _ref.val() : void 0;
+          if (children != null) {
+            for (i = _j = 0, _len1 = children.length; _j < _len1; i = ++_j) {
+              c = children[i];
+              if (c === this) {
+                parent._model.val("children")["delete"](i);
+                break;
+              }
             }
           }
         }
@@ -205,12 +207,17 @@ YXml = (function() {
   };
 
   YXml.prototype.empty = function() {
-    var child, _i, _len, _ref, _results;
-    _ref = this._model.val("children").val();
+    var child, children, _i, _len, _ref, _results;
+    children = this._model.val("children");
+    _ref = children.val();
     _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       child = _ref[_i];
-      _results.push(child.remove());
+      if (child.constructor === String) {
+        _results.push(children["delete"](0));
+      } else {
+        _results.push(child.remove());
+      }
     }
     return _results;
   };
@@ -245,7 +252,7 @@ YXml = (function() {
 
   YXml.prototype.removeAttr = function(attrName) {
     if (attrName === "class") {
-      this._model.val("classes", new Y.Object());
+      this._model.val("classes", new this._model.custom_types.Object());
     } else {
       this._model.val("attributes")["delete"](attrName);
     }
@@ -255,7 +262,7 @@ YXml = (function() {
   YXml.prototype.removeClass = function() {
     var className, _i, _len;
     if (arguments.length === 0) {
-      this._model.val("classes", new Y.Object());
+      this._model.val("classes", new this._model.custom_types.Object());
     } else {
       for (_i = 0, _len = arguments.length; _i < _len; _i++) {
         className = arguments[_i];

@@ -41,10 +41,12 @@ class YXml
       for event in events
         if event.name is "parent" and event.type isnt "add"
           parent = event.oldValue
-          for c,i in parent.getChildren()
-            if c is @
-              parent._model.val("children").delete i
-              break
+          children = parent._model.val("children")?.val()
+          if children?
+            for c,i in children
+              if c is @
+                parent._model.val("children").delete i
+                break
       undefined
 
 
@@ -167,8 +169,12 @@ class YXml
   #
   empty: ()->
     # TODO: do it like this : @_model.val("children", new Y.List())
-    for child in @_model.val("children").val()
-      child.remove()
+    children = @_model.val("children")
+    for child in children.val()
+      if child.constructor is String
+        children.delete(0)
+      else
+        child.remove()
 
   #
   # Determine whether any of the matched elements are assigned the given class.
@@ -207,7 +213,7 @@ class YXml
   #
   removeAttr: (attrName)->
     if attrName is "class"
-      @_model.val("classes", new Y.Object())
+      @_model.val("classes", new @_model.custom_types.Object())
     else
       @_model.val("attributes").delete(attrName)
     @
@@ -218,7 +224,7 @@ class YXml
   #
   removeClass: ()->
     if arguments.length is 0
-      @_model.val("classes", new Y.Object())
+      @_model.val("classes", new @_model.custom_types.Object())
     else
       for className in arguments
         @_model.val("classes").delete(className)

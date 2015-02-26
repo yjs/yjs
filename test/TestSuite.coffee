@@ -20,7 +20,7 @@ module.exports = class Test
     @time = 0 # denotes to the time when run was started
     @ops = 0 # number of operations (used with @time)
     @time_now = 0 # current time
-    @max_depth = 10
+    @max_depth = 4
 
     @debug = false
 

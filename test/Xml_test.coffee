@@ -20,6 +20,7 @@ class XmlTest extends Test
 
   constructor: (suffix)->
     super suffix, Y
+    @doSomething_amount *= 20
 
   makeNewUser: (userId)->
     conn = new Y.Test userId
@@ -32,7 +33,7 @@ class XmlTest extends Test
 
   compare: (o1, o2, depth)->
     if o1.constructor is Y.Xml
-      @compare o1._model, o2._model, depth
+      super o1._model, o2._model, depth
     else
       super
 
@@ -54,6 +55,12 @@ class XmlTest extends Test
       else
         p = elems[_.random(0, elems.length-1)]
         @getRandomRoot user_num, p, depth--
+
+  getRandomXmlElement: ()->
+    if _.random(0,1) is 0
+      new Y.Xml(@getRandomKey())
+    else
+      @getRandomText()
 
   getGeneratingFunctions: (user_num)->
     that = @
@@ -81,24 +88,24 @@ class XmlTest extends Test
         types : [Y.Xml]
       ,
         f : (y)-> # append XML
-          child = new Y.Xml(that.getRandomKey())
+          child = that.getRandomXmlElement()
           y.append(child)
         types : [Y.Xml]
       ,
         f : (y)-> # pepend XML
-          child = new Y.Xml(that.getRandomKey())
+          child = that.getRandomXmlElement()
           y.prepend child
         types : [Y.Xml]
       ,
         f : (y)-> # after XML
           if y.getParent()?
-            child = new Y.Xml(that.getRandomKey())
+            child = that.getRandomXmlElement()
             y.after child
         types : [Y.Xml]
       ,
         f : (y)-> # before XML
           if y.getParent()?
-            child = new Y.Xml(that.getRandomKey())
+            child = that.getRandomXmlElement()
             y.before child
         types : [Y.Xml]
       ,
