@@ -433,7 +433,8 @@ module.exports = function() {
           position: this.getPosition(),
           object: this.parent.getCustomType(),
           length: 1,
-          changedBy: o.uid.creator
+          changedBy: o.uid.creator,
+          oldValue: this.val()
         }
       ]);
     };

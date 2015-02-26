@@ -487,6 +487,7 @@ module.exports = ()->
         object: @parent.getCustomType() # TODO: You can combine getPosition + getParent in a more efficient manner! (only left Delimiter will hold @parent)
         length: 1
         changedBy: o.uid.creator
+        oldValue: @val()
       ]
 
     #
