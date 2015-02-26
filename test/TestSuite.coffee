@@ -20,7 +20,7 @@ module.exports = class Test
     @time = 0 # denotes to the time when run was started
     @ops = 0 # number of operations (used with @time)
     @time_now = 0 # current time
-    @max_depth = 4
+    @max_depth = 10
 
     @debug = false
 
@@ -28,6 +28,9 @@ module.exports = class Test
     for gf in @getGeneratingFunctions(0)
       if not (gf.types? and gf.f?)
         throw new Error "Generating Functions are not initialized properly!"
+      for t in gf.types
+        if not t?
+          throw new Error "You havent includedt this type in Y (do require 'y-whatever')"
 
   reinitialize: ()->
     @users = []

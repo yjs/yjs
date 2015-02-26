@@ -12,6 +12,7 @@ Y.Test = require "../../y-test/lib/y-test.coffee"
 
 Y.List = require "../lib/Types/List"
 Y.Xml = require "../lib/Types/Xml"
+Y.Text = require "../lib/Types/Text"
 
 Test = require "./TestSuite"
 
@@ -36,11 +37,10 @@ class XmlTest extends Test
       super
 
   getRandomRoot: (user_num, root, depth = @max_depth)->
-    root ?= @users[user_num]
+    root ?= @users[user_num].val("xml")
     if depth is 0 or _.random(0,1) is 1 # take root
       root
     else # take child
-      depth--
       elems = null
       if root._name is "Xml"
         elems = root.getChildren()
@@ -53,10 +53,63 @@ class XmlTest extends Test
         root
       else
         p = elems[_.random(0, elems.length-1)]
-        @getRandomRoot user_num, p, depth
+        @getRandomRoot user_num, p, depth--
 
   getGeneratingFunctions: (user_num)->
+    that = @
     super(user_num).concat [
+        f : (y)=> # set Attribute
+          y.attr(that.getRandomKey(), that.getRandomText())
+        types: [Y.Xml]
+      ,
+        f : (y)-> # DELETE Attribute
+          keys = Object.keys(y.attr())
+          y.removeAttr(keys[_.random(0,keys.length-1)])
+        types : [Y.Xml]
+      ,
+        f : (y)-> # Add Class
+          y.addClass(that.getRandomKey())
+        types : [Y.Xml]
+      ,
+        f : (y)-> # toggleClass
+          y.toggleClass(that.getRandomKey())
+        types : [Y.Xml]
+      ,
+        f : (y)-> # Remove Class
+          keys = y.attr("class").split(" ")
+          y.removeClass(keys[_.random(0,keys.length-1)])
+        types : [Y.Xml]
+      ,
+        f : (y)-> # append XML
+          child = new Y.Xml(that.getRandomKey())
+          y.append(child)
+        types : [Y.Xml]
+      ,
+        f : (y)-> # pepend XML
+          child = new Y.Xml(that.getRandomKey())
+          y.prepend child
+        types : [Y.Xml]
+      ,
+        f : (y)-> # after XML
+          if y.getParent()?
+            child = new Y.Xml(that.getRandomKey())
+            y.after child
+        types : [Y.Xml]
+      ,
+        f : (y)-> # before XML
+          if y.getParent()?
+            child = new Y.Xml(that.getRandomKey())
+            y.before child
+        types : [Y.Xml]
+      ,
+        f : (y)-> # empty
+          y.empty()
+        types : [Y.Xml]
+      ,
+        f : (y)-> # remove
+          if y.getParent()?
+            y.remove()
+        types : [Y.Xml]
     ]
 
 describe "Y-Xml", ->
@@ -71,14 +124,24 @@ describe "Y-Xml", ->
     @u3 = @users[3].val("xml")
     done()
 
-  ###
   it "can handle many engines, many operations, concurrently (random)", ->
     console.log "" # TODO
     @yTest.run()
+    console.log(@yTest.users[0].val("xml")+"")
 
   it "has a working test suite", ->
     @yTest.compareAll()
-  ###
+
+  it "handles double-late-join", ->
+    test = new XmlTest("double")
+    test.run()
+    @yTest.run()
+    u1 = test.users[0]
+    u2 = @yTest.users[1]
+    ops1 = u1._model.HB._encode()
+    ops2 = u2._model.HB._encode()
+    u1._model.engine.applyOp ops2, true
+    u2._model.engine.applyOp ops1, true
 
   it "Create Xml Element", ->
     @u1.attr("stuff", "true")
