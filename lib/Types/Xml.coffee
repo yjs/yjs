@@ -109,7 +109,15 @@ class YXml
     if arguments.length > 1
       if value.constructor isnt String
         throw new Error "The attributes must be of type String!"
-      @_model.val("attributes").val(name, value)
+      if name is "class"
+        classes = value.split(" ")
+        cs = {}
+        for c in classes
+          cs[c] = true
+
+        @_model.val("classes", new @_model.custom_types.Object(cs))
+      else
+        @_model.val("attributes").val(name, value)
       @
     else if arguments.length > 0
       if name is "class"
@@ -323,13 +331,17 @@ class YXml
       @_model.val("children").observe (events)->
         for event in events
           if event.type is "insert"
-            newNode = event.value.getDom()
-            children = that._dom.childNodes
-            if children.length > 0
-              rightNode = children[0]
+            if event.value.constructor is String
+              newNode = document.createTextNode(event.value)
             else
+              newNode = event.value.getDom()
+              event.value._setParent that
+            children = that._dom.childNodes
+            if children.length is event.position
               rightNode = null
-            event.value._setParent that
+            else
+              rightNode = children[event.position]
+
             dont_proxy ()->
               that._dom.insertBefore newNode, rightNode
           else if event.type is "delete"
@@ -345,14 +357,27 @@ class YXml
           else if event.type is "delete"
             dont_proxy ()->
               that._dom.removeAttribute event.name
-      @_model.val("classes").observe (events)->
+      setClasses = ()->
+        that._model.val("classes").observe (events)->
+          for event in events
+            if event.type is "add" or event.type is "update"
+              dont_proxy ()->
+                that._dom.classList.add event.name # classes are stored as the keys
+            else if event.type is "delete"
+              dont_proxy ()->
+                that._dom.classList.remove event.name
+      setClasses()
+      @_model.observe (events)->
         for event in events
           if event.type is "add" or event.type is "update"
             dont_proxy ()->
-              that._dom.classList.add event.name # classes are stored as the keys
-          else if event.type is "delete"
-            dont_proxy ()->
-              that._dom.classList.remove event.name
+              classes = that.attr("class")
+              if (not classes?) or classes is ""
+                that._dom.removeAttribute "class"
+              else
+                that._dom.setAttribute "class", that.attr("class")
+            setClasses()
+
     @_dom
 
 proxies_are_initialized = false
@@ -371,19 +396,25 @@ dont_proxy = (f)->
 
 initialize_proxies = ()->
 
-  _proxy = (f_name, f, source = Element.prototype)->
+  _proxy = (f_name, f, source = Element.prototype, y)->
     old_f = source[f_name]
     source[f_name] = ()->
-      if (not @_y_xml?) or proxy_token
+      if (not (y? or @_y_xml?)) or proxy_token
         old_f.apply this, arguments
-      else
+      else if @_y_xml?
         f.apply @_y_xml, arguments
+      else
+        f.apply y, arguments
 
   that = this
-  @_dom.classList.add = (c)->
+  f_add = (c)->
     that.addClass c
-  @_dom.classList.remove = (c)->
+  _proxy "add", f_add, @_dom.classList, @
+
+  f_remove = (c)->
     that.removeClass c
+
+  _proxy "remove", f_remove, @_dom.classList, @
 
   @_dom.__defineSetter__ 'className', (val)->
     that.attr('class', val)
@@ -436,11 +467,11 @@ initialize_proxies = ()->
 
   removeChild = (node)->
     node._y_xml.remove()
-  _proxy 'removeChild', removeChild, @_dom
-  replaceChild = (insertedNode, replacedNode)->
+  _proxy 'removeChild', removeChild
+  replaceChild = (insertedNode, replacedNode)-> # TODO: handle replace with replace behavior...
     insertBefore.call this, insertedNode, replacedNode
     removeChild.call this, replacedNode
-  _proxy 'replaceChild', replaceChild, @_dom
+  _proxy 'replaceChild', replaceChild
 
 if window?
   if window.Y?

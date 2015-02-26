@@ -160,12 +160,22 @@ YXml = (function() {
   };
 
   YXml.prototype.attr = function(name, value) {
-    var attrs, classes;
+    var attrs, c, classes, cs, _i, _len;
     if (arguments.length > 1) {
       if (value.constructor !== String) {
         throw new Error("The attributes must be of type String!");
       }
-      this._model.val("attributes").val(name, value);
+      if (name === "class") {
+        classes = value.split(" ");
+        cs = {};
+        for (_i = 0, _len = classes.length; _i < _len; _i++) {
+          c = classes[_i];
+          cs[c] = true;
+        }
+        this._model.val("classes", new this._model.custom_types.Object(cs));
+      } else {
+        this._model.val("attributes").val(name, value);
+      }
       return this;
     } else if (arguments.length > 0) {
       if (name === "class") {
@@ -365,7 +375,7 @@ YXml = (function() {
   };
 
   YXml.prototype.getDom = function() {
-    var attr_name, attr_value, child, dom, i, that, _i, _len, _ref, _ref1;
+    var attr_name, attr_value, child, dom, i, setClasses, that, _i, _len, _ref, _ref1;
     if (this._dom == null) {
       this._dom = document.createElement(this._model.val("tagname"));
       _ref = this.attr();
@@ -394,14 +404,18 @@ YXml = (function() {
         for (_j = 0, _len1 = events.length; _j < _len1; _j++) {
           event = events[_j];
           if (event.type === "insert") {
-            newNode = event.value.getDom();
-            children = that._dom.childNodes;
-            if (children.length > 0) {
-              rightNode = children[0];
+            if (event.value.constructor === String) {
+              newNode = document.createTextNode(event.value);
             } else {
-              rightNode = null;
+              newNode = event.value.getDom();
+              event.value._setParent(that);
             }
-            event.value._setParent(that);
+            children = that._dom.childNodes;
+            if (children.length === event.position) {
+              rightNode = null;
+            } else {
+              rightNode = children[event.position];
+            }
             _results.push(dont_proxy(function() {
               return that._dom.insertBefore(newNode, rightNode);
             }));
@@ -436,19 +450,44 @@ YXml = (function() {
         }
         return _results;
       });
-      this._model.val("classes").observe(function(events) {
+      setClasses = function() {
+        return that._model.val("classes").observe(function(events) {
+          var event, _j, _len1, _results;
+          _results = [];
+          for (_j = 0, _len1 = events.length; _j < _len1; _j++) {
+            event = events[_j];
+            if (event.type === "add" || event.type === "update") {
+              _results.push(dont_proxy(function() {
+                return that._dom.classList.add(event.name);
+              }));
+            } else if (event.type === "delete") {
+              _results.push(dont_proxy(function() {
+                return that._dom.classList.remove(event.name);
+              }));
+            } else {
+              _results.push(void 0);
+            }
+          }
+          return _results;
+        });
+      };
+      setClasses();
+      this._model.observe(function(events) {
         var event, _j, _len1, _results;
         _results = [];
         for (_j = 0, _len1 = events.length; _j < _len1; _j++) {
           event = events[_j];
           if (event.type === "add" || event.type === "update") {
-            _results.push(dont_proxy(function() {
-              return that._dom.classList.add(event.name);
-            }));
-          } else if (event.type === "delete") {
-            _results.push(dont_proxy(function() {
-              return that._dom.classList.remove(event.name);
-            }));
+            dont_proxy(function() {
+              var classes;
+              classes = that.attr("class");
+              if ((classes == null) || classes === "") {
+                return that._dom.removeAttribute("class");
+              } else {
+                return that._dom.setAttribute("class", that.attr("class"));
+              }
+            });
+            _results.push(setClasses());
           } else {
             _results.push(void 0);
           }
@@ -481,28 +520,32 @@ dont_proxy = function(f) {
 };
 
 initialize_proxies = function() {
-  var insertBefore, removeChild, replaceChild, that, _proxy;
-  _proxy = function(f_name, f, source) {
+  var f_add, f_remove, insertBefore, removeChild, replaceChild, that, _proxy;
+  _proxy = function(f_name, f, source, y) {
     var old_f;
     if (source == null) {
       source = Element.prototype;
     }
     old_f = source[f_name];
     return source[f_name] = function() {
-      if ((this._y_xml == null) || proxy_token) {
+      if ((!((y != null) || (this._y_xml != null))) || proxy_token) {
         return old_f.apply(this, arguments);
-      } else {
+      } else if (this._y_xml != null) {
         return f.apply(this._y_xml, arguments);
+      } else {
+        return f.apply(y, arguments);
       }
     };
   };
   that = this;
-  this._dom.classList.add = function(c) {
+  f_add = function(c) {
     return that.addClass(c);
   };
-  this._dom.classList.remove = function(c) {
+  _proxy("add", f_add, this._dom.classList, this);
+  f_remove = function(c) {
     return that.removeClass(c);
   };
+  _proxy("remove", f_remove, this._dom.classList, this);
   this._dom.__defineSetter__('className', function(val) {
     return that.attr('class', val);
   });
@@ -558,12 +601,12 @@ initialize_proxies = function() {
   removeChild = function(node) {
     return node._y_xml.remove();
   };
-  _proxy('removeChild', removeChild, this._dom);
+  _proxy('removeChild', removeChild);
   replaceChild = function(insertedNode, replacedNode) {
     insertBefore.call(this, insertedNode, replacedNode);
     return removeChild.call(this, replacedNode);
   };
-  return _proxy('replaceChild', replaceChild, this._dom);
+  return _proxy('replaceChild', replaceChild);
 };
 
 if (typeof window !== "undefined" && window !== null) {

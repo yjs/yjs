@@ -1,9 +1,6 @@
 
 json_types_uninitialized = require "./JsonTypes"
 
-
-
-
 module.exports = (HB)->
   json_types = json_types_uninitialized HB
   types = json_types.types

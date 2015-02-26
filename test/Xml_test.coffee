@@ -296,7 +296,8 @@ describe "Y-Xml", ->
         expect(@dom.getAttribute("test_attribute")).to.equal("newVal")
         @dom.removeAttribute("test_attribute")
         expect(@u1.attr("test_attribute")).to.be.undefined
-        expect(@dom.getAttribute("test_attribute")).to.be.undefined
+        attr = @dom.getAttribute("test_attribute")
+        expect(attr?).to.be.false
 
       it "supports dom.removeChild", ->
         newdom = $("<p>dtrn</p>")[0]
@@ -310,12 +311,12 @@ describe "Y-Xml", ->
 
       it "supports dom.replaceChild", ->
         dom = $("<p>dtrn</p>")[0]
-        @dom.appendChild(newdom)
+        @dom.appendChild(dom)
         expect(@u1+"").to.equal("<div><p>dtrn</p></div>")
         expect(@dom.outerHTML).to.equal("<div><p>dtrn</p></div>")
 
         newdom = $("<p>replaced</p>")[0]
-        @dom.replaceChild(dom,newdom)
+        @dom.replaceChild(newdom, dom)
         expect(@dom.outerHTML).to.equal("<div><p>replaced</p></div>")
         expect(@u1+"").to.equal("<div><p>replaced</p></div>")
 
@@ -328,7 +329,7 @@ describe "Y-Xml", ->
 
       it "supports dom.textContent", ->
         dom = $("<p>dtrn</p>")[0]
-        @dom.appendChild(newdom)
+        @dom.appendChild(dom)
         expect(@u1+"").to.equal("<div><p>dtrn</p></div>")
         expect(@dom.outerHTML).to.equal("<div><p>dtrn</p></div>")
 
@@ -338,7 +339,7 @@ describe "Y-Xml", ->
 
       it "suppports dom.textContent (non empty string)", ->
         dom = $("<p>dtrn</p>")[0]
-        @dom.appendChild(newdom)
+        @dom.appendChild(dom)
         expect(@u1+"").to.equal("<div><p>dtrn</p></div>")
         expect(@dom.outerHTML).to.equal("<div><p>dtrn</p></div>")
 
@@ -347,9 +348,8 @@ describe "Y-Xml", ->
         expect(@dom.outerHTML).to.equal("<div>stuff</div>")
 
       it "supports jquery.addClass", ->
-        @j.addClass("testy")
         @j.addClass("testedy tested")
-        expect(@dom.getAttribute("class")).to.equal("testy testedy tested")
+        expect(@dom.getAttribute("class")).to.equal("testedy tested")
 
       it "supports jquery.after", ->
         d = $("<span></span>")
@@ -362,27 +362,27 @@ describe "Y-Xml", ->
         d = $("<span></span>")[0]
         @j.append(d)
         d = $("<div></div>")[0]
-        @dom.append(d)
+        @j.append(d)
         expect(@dom.outerHTML).to.equal("<div><span></span><div></div></div>")
         expect(@u1+"").to.equal("<div><span></span><div></div></div>")
 
       it "supports jquery.appendTo", ->
         $("<b>appendedTo</b>").appendTo(@dom)
-        $("p").appendTo(@dom)
+        $("<p>").appendTo(@dom)
         expect(@dom.outerHTML).to.equal("<div><b>appendedTo</b><p></p></div>")
         expect(@u1+"").to.equal("<div><b>appendedTo</b><p></p></div>")
 
       it "supports jquery.before", ->
-        newdom = $("p")
+        newdom = $("<p>")
         $(@dom).append(newdom)
         newdom.before("<div>before</div>")
         expect(@dom.outerHTML).to.equal("<div><div>before</div><p></p></div>")
         expect(@u1+"").to.equal("<div><div>before</div><p></p></div>")
 
       it "supports jquery.detach", ->
-        d = $("p")
-        $j.append(d)
-        $j.detach("p")
+        d = $("<p>")
+        @j.append(d)
+        d.detach()
         expect(@dom.outerHTML).to.equal("<div></div>")
         expect(@u1+"").to.equal("<div></div>")
 
@@ -396,16 +396,16 @@ describe "Y-Xml", ->
         expect(@u1+"").to.equal("<div></div>")
 
       it "supports jquery.insertAfter", ->
-        d = $("span")
+        d = $("<span>")
         d.appendTo(@dom)
         $("<p>after</p>").insertAfter(d)
         expect(@dom.outerHTML).to.equal("<div><span></span><p>after</p></div>")
         expect(@u1+"").to.equal("<div><span></span><p>after</p></div>")
 
       it "supports jquery.insertBefore", ->
-        d = $("span")
+        d = $("<span>")
         d.appendTo(@j)
-        $("<p>after</p>").insertAfter(d)
+        $("<p>before</p>").insertBefore(d)
         expect(@dom.outerHTML).to.equal("<div><p>before</p><span></span></div>")
         expect(@u1+"").to.equal("<div><p>before</p><span></span></div>")
 
@@ -438,30 +438,35 @@ describe "Y-Xml", ->
         expect(@j.attr("test_attribute")).to.be.undefined
 
       it "supports jquery.removeClass", ->
-        @j.addClass("testy")
         @j.addClass("testedy tested")
-        expect(@dom.getAttribute("class")).to.equal("testy testedy tested")
+        expect(@dom.getAttribute("class")).to.equal("testedy tested")
 
         @j.removeClass("testedy")
-        expect(@dom.getAttribute("class")).to.equal("testy tested")
+        expect(@dom.getAttribute("class")).to.equal("tested")
         expect(@u1.hasClass("testedy")).to.be.false
 
       it "supports jquery.attr", ->
         @j.attr("atone", "yeah")
         expect(@u1.attr("atone")).to.equal("yeah")
+        expect(@j.attr("atone")).to.equal("yeah")
 
       it "supports jquery.replaceAll", ->
-        $("<span>New span content </span>").replaceAll("#test_dom div")
-        @check()
+        d = $("<p />")
+        d.appendTo(@dom)
+        d = $("<p />")
+        d.appendTo(@dom)
+        $("<span>").replaceAll($(@dom).find("p"))
+        expect(@dom.outerHTML).to.equal("<div><span></span><span></span></div>")
+        expect(@u1+"").to.equal("<div><span></span><span></span></div>")
 
       it "supports jquery.replaceWith", ->
-        d = $("span")
+        d = $("<span>")
         @j.prepend(d)
-        d = $("span")
+        d = $("<span>")
         @j.prepend(d)
-        d = $("span")
+        d = $("<span>")
         @j.prepend(d)
-        d = @j.getElementsByTagName("span")
+        d = @j.find("span")
         d.replaceWith("<div></div>")
 
         expect(@dom.outerHTML).to.equal("<div><div></div><div></div><div></div></div>")
