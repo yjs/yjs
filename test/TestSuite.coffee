@@ -7,7 +7,7 @@ _         = require("underscore")
 chai.use(sinonChai)
 
 Connector = require "../../y-test/lib/y-test.coffee"
-Y = null
+Y = null # need global reference!
 
 module.exports = class Test
   constructor: (@name_suffix = "", Yjs)->
@@ -20,7 +20,7 @@ module.exports = class Test
     @time = 0 # denotes to the time when run was started
     @ops = 0 # number of operations (used with @time)
     @time_now = 0 # current time
-    @max_depth = 4
+    @max_depth = 3
 
     @debug = false
 
@@ -79,22 +79,7 @@ module.exports = class Test
 
   getGeneratingFunctions: (user_num)=>
     types = @users[user_num]._model.operations
-    [
-        f : (y)=> # INSERT TEXT
-          y
-          pos = _.random 0, (y.val().length-1)
-          y.insert pos, @getRandomText()
-          null
-        types: [Y.Text]
-      ,
-        f : (y)-> # DELETE TEXT
-          if y.val().length > 0
-            pos = _.random 0, (y.val().length-1) # TODO: put here also arbitrary number (test behaviour in error cases)
-            length = _.random 0, (y.val().length - pos)
-            ops1 = y.delete pos, length
-          undefined
-        types : [Y.Text]
-    ]
+    []
   getRandomRoot: (user_num)->
     throw new Error "implement me!"
 
@@ -103,11 +88,14 @@ module.exports = class Test
       true
     else if o1._name? and o1._name isnt o2._name
       throw new Error "different types"
-    else if o1._name is "Object" or o1.type is "MapManager"
+    else if o1._model?
+      @compare o1._model, o2._model, depth
+    else if o1.type is "MapManager"
       for name, val of o1.val()
         @compare(val, o2.val(name), depth-1)
-    else if o1._name?
-      @compare(o1.val(), o2.val(), depth-1)
+    else if o1.type is "ListManager"
+      for val,i in o1.val()
+        @compare(val, o2.val(i), depth-1)
     else if o1.constructor is Array and o2.constructor is Array
       if o1.length isnt o2.length
         throw new Error "The Arrays do not have the same size!"

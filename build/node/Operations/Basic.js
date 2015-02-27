@@ -316,7 +316,7 @@ module.exports = function() {
         }
         this.prev_cl.next_cl = this.next_cl;
         this.next_cl.prev_cl = this.prev_cl;
-        if (this.content instanceof ops.Operation && !deleted_earlyer) {
+        if (this.content instanceof ops.Operation) {
           this.content.referenced_by--;
           if (this.content.referenced_by <= 0 && !this.content.is_deleted) {
             this.content.applyDelete();

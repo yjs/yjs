@@ -9,12 +9,11 @@ chai.use(sinonChai)
 
 Y = require "../lib/y.coffee"
 Y.Test = require "../../y-test/lib/y-test.coffee"
-Y.Text = require "../lib/Types/Text"
-Y.List = require "../lib/Types/List"
+Y.Text = require "../../y-text/lib/y-text"
+Y.List = require "../../y-list/lib/y-list"
 
-Test = require "./TestSuite"
-
-class JsonTest extends Test
+TestSuite = require "./TestSuite"
+class ObjectTest extends TestSuite
 
   constructor: (suffix)->
     super suffix, Y
@@ -23,7 +22,7 @@ class JsonTest extends Test
     conn = new Y.Test userId
     super new Y conn
 
-  type: "JsonTest"
+  type: "ObjectTest"
 
   getRandomRoot: (user_num, root, depth = @max_depth)->
     root ?= @users[user_num]
@@ -67,11 +66,9 @@ class JsonTest extends Test
           y.val(@getRandomKey(), new Y.Text(@getRandomText()))
         types: [Y.Object]
       ,
-        f : (y)=> # SET PROPERTY (primitive)
-          l = y.val().length
-          y.val(_.random(0, l-1), @getRandomText())
-          null
-        types : [Y.List]
+        f : (y)=> # SET PROPERTY List
+          y.val(@getRandomKey(), new Y.List(@getRandomText().split("")))
+        types: [Y.Object]
       ,
         f : (y)=> # Delete Array Element
           list = y.val()
@@ -82,17 +79,22 @@ class JsonTest extends Test
       ,
         f : (y)=> # insert Object mutable
           l = y.val().length
-          y.val(_.random(0, l-1), new Y.Object(@getRamdomObject()))
+          y.insert(_.random(0, l-1), new Y.Object(@getRandomObject()))
         types: [Y.List]
       ,
         f : (y)=> # insert Text mutable
           l = y.val().length
-          y.val(_.random(0, l-1), new Y.Text(@getRandomText()))
+          y.insert(_.random(0, l-1), new Y.Text(@getRandomText()))
+        types : [Y.List]
+      ,
+        f : (y)=> # insert List mutable
+          l = y.val().length
+          y.insert(_.random(0, l-1), new Y.List(@getRandomText().split("")))
         types : [Y.List]
       ,
         f : (y)=> # insert Number (primitive object)
           l = y.val().length
-          y.val(_.random(0,l-1), _.random(0,42))
+          y.insert(_.random(0,l-1), _.random(0,42))
         types : [Y.List]
       ,
         f : (y)=> # SET Object Property (circular)
@@ -101,18 +103,32 @@ class JsonTest extends Test
       ,
         f : (y)=> # insert Object mutable (circular)
           l = y.val().length
-          y.val(_.random(0, l-1), @getRandomRoot user_num)
+          y.insert(_.random(0, l-1), @getRandomRoot user_num)
         types: [Y.List]
+      ,
+        f : (y)=> # INSERT TEXT
+          y
+          pos = _.random 0, (y.val().length-1)
+          y.insert pos, @getRandomText()
+          null
+        types: [Y.Text]
+      ,
+        f : (y)-> # DELETE TEXT
+          if y.val().length > 0
+            pos = _.random 0, (y.val().length-1) # TODO: put here also arbitrary number (test behaviour in error cases)
+            length = _.random 0, (y.val().length - pos)
+            ops1 = y.delete pos, length
+          undefined
+        types : [Y.Text]
       ]
-###     
 
-###
+module.exports = ObjectTest
 
-describe "JsonFramework", ->
+describe "Object Test", ->
   @timeout 500000
 
   beforeEach (done)->
-    @yTest = new JsonTest()
+    @yTest = new ObjectTest()
     @users = @yTest.users
 
     @test_user = @yTest.makeNewUser "test_user"
@@ -126,7 +142,7 @@ describe "JsonFramework", ->
     @yTest.compareAll()
 
   it "handles double-late-join", ->
-    test = new JsonTest("double")
+    test = new ObjectTest("double")
     test.run()
     @yTest.run()
     u1 = test.users[0]

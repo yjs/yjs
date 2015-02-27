@@ -369,7 +369,7 @@ module.exports = ()->
         # (e.g. the following operation order must be invertible :
         #   Insert refers to content, then the content is deleted)
         # Therefore, we have to do this in the cleanup
-        if @content instanceof ops.Operation and not deleted_earlyer
+        if @content instanceof ops.Operation
           @content.referenced_by--
           if @content.referenced_by <= 0 and not @content.is_deleted
             @content.applyDelete()

@@ -36,4 +36,4 @@ module.exports = createY
 if window?
   window.Y = createY
 
-createY.Object = require "./Types/Object"
+createY.Object = require "./ObjectType"

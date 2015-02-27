@@ -42,4 +42,4 @@ if (typeof window !== "undefined" && window !== null) {
   window.Y = createY;
 }
 
-createY.Object = require("./Types/Object");
+createY.Object = require("./ObjectType");

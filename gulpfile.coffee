@@ -25,7 +25,7 @@ gulp.task 'default', ['build_browser']
 files =
   lib : ['./lib/**/*.coffee']
   browser : ['./lib/y.coffee','./lib/y-object.coffee']
-  test : ['./test/**/*_test.coffee']
+  test : ['./test/**/*test.coffee', '../y-*/test/*test.coffee']
   #test : ['./test/Json_test.coffee', './test/Text_test.coffee']
   gulp : ['./gulpfile.coffee']
   examples : ['./examples/**/*.js']
@@ -67,6 +67,7 @@ gulp.task 'build_browser', ->
       debug: true
     .pipe rename
       extname: ".js"
+      dirname: "./"
     .pipe gulp.dest './build/test/'
 
 gulp.task 'build_node', ->
