@@ -5,21 +5,22 @@
 
 Yjs is a framework for optimistic concurrency control and automatic conflict resolution on arbitrary data types. The framework implements a new OT-like concurrency algorithm and provides similar functionality as [ShareJs] and [OpenCoweb]. Yjs was designed to take away the pain from concurrently editing complex data types like Text, Json, and XML. You can find some applications for this framework [here](https://dadamonad.github.io/yjs/examples/).
 
-In the future, we want to enable users to implement their own collaborative types. Currently we provide data types for
-* Text
-* Json (even circular structures)
-* XML
+You can create your own shared data types easily. Therefore, you can take matters into your own hand by defining the meaning of the shared types and ensure that it is valid, while Yjs ensures data consistency (everyone will eventually end up with the same data).
+You can use existing types in your custom data type as well. We provide data types for
+* (circular) Json Object
+* [Text](https://github.com/rwth-acis/y-text)
+* [List](https://github.com/rwth-acis/y-list)
+* [XML](https://github.com/rwth-acis/y-xml)
 
 Unlike other frameworks, Yjs supports P2P message propagation and is not bound to a specific communication protocol. Therefore, Yjs is extremely scalable and can be used in a wide range of application scenarios.
 
-We support several communication protocols as so called *Connectors*. You can create your own connector too - as it is described [here](https://dadamonad.github.io/yjs/connector/Howto-create-your-own-Connector.html). Currently, we support the following communication protocols:
-* [XMPP-Connector](http://xmpp.org) - Propagates updates in a XMPP multi-user-chat room
-* [WebRTC-Connector](http://peerjs.com) - Propagate updates directly with WebRTC
-* [IWC-Connector](http://dbis.rwth-aachen.de/cms/projects/the-xmpp-experience#interwidget-communication) - Inter-widget Communication
+We support several communication protocols as so called *Connectors*. You can create your own connector too - read [this blog post](https://dadamonad.github.io/yjs/connector/Howto-create-your-own-Connector.html). Currently, we support the following communication protocols:
+* [XMPP](https://github.com/rwth-acis/y-xmpp) - Propagates updates in a XMPP multi-user-chat room
+* [WebRTC](https://github.com/rwth-acis/y-webrtc) - Propagate updates directly with WebRTC
 
-You can use Yjs client-, and server- side. You can get it as via npm, and bower. We even provide a polymer element for Yjs!
+You can use Yjs client-, and server- side. You can get it as via npm, and bower. We even provide polymer element for Yjs!
 
-The theoretical advantages over similar frameworks are support for
+The advantages over similar frameworks are support for
 * .. P2P message propagation and arbitrary communication protocols
 * .. arbitrary complex data types
 * .. offline editing: Only relevant changes are propagated on rejoin (unimplemented)
