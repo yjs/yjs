@@ -18,14 +18,14 @@ We support several communication protocols as so called *Connectors*. You can cr
 * [XMPP](https://github.com/rwth-acis/y-xmpp) - Propagates updates in a XMPP multi-user-chat room
 * [WebRTC](https://github.com/rwth-acis/y-webrtc) - Propagate updates directly with WebRTC
 
-You can use Yjs client-, and server- side. You can get it as via npm, and bower. We even provide polymer element for Yjs!
+You can use Yjs client-, and server- side. You can get it as via npm, and bower. We even provide polymer elements for Yjs!
 
 The advantages over similar frameworks are support for
 * .. P2P message propagation and arbitrary communication protocols
 * .. arbitrary complex data types
 * .. offline editing: Only relevant changes are propagated on rejoin (unimplemented)
 * .. AnyUndo: Undo *any* action that was executed in constant time (unimplemented)
-* .. Intention Preservation: When working on Text, the intention of your changes are preserved. This is particularily important when working offline.
+* .. Intention Preservation: When working on Text, the intention of your changes are preserved. This is particularily important when working offline. Every type has some notion on how we define Intention Preservation on it.
 
 
 ## Use it!
@@ -52,16 +52,67 @@ And use it like this with *npm*:
 Y = require("yjs");
 ```
 
-## Status
+# Y()
+In order to create an instance of Y, you need to have a connection object (instance of a Connector). Then, you can create a shared data type like this:
+```
+var y = new Y(connector);
+```
+
+
+# Y.Object
+Yjs includes only one type by default - the Y.Object type. It mimics the behaviour of a JSON Object. You can create, update, and remove properies on the Y.Object type. Furthermore, you can observe changes on this type as you can observe changes on Javascript Objects with [Object.observe](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/observe) - an ECMAScript 7 proposal which is likely to become accepted by the committee. Until then, we have our own implementation.
+
+
+##### Reference
+* Create
+```
+var y = new Y.Object();
+```
+* Create with existing Object
+```
+var y = new Y.Object({number: 73});
+```
+* Every instance of Y is an Y.Object
+```
+var y = new Y(connector);
+```
+* .val()
+  * Retrieve all properties of this type as a JSON Object
+* .val(name)
+  * Retrieve the value of a property
+* .val(name, value)
+  * Set/update a property. Returns `this` Y.Object
+* .delete(name)
+  * Delete a property
+* .observe(observer)
+  * The `observer` is called whenever something on this object changes. Throws *add*, *update*, and *delete* events
+
+
+# A note on intention preservation
+When users create/update/delete the same property concurrently, only one change will prevail. Changes on different properties do not conflict with each other.
+
+# A note on time complexities
+* .val()
+  * O(|properties|)
+* .val(name)
+  * O(1)
+* .val(name, value)
+  * O(1)
+* .delete(name)
+  * O(1)
+* Apply a delete operation from another user
+  * O(1)
+* Apply an update operation from another user (set/update a property)
+  * Yjs does not transform against operations that do not conflict with each other.
+  * An operation conflicts with another operation if it changes the same property.
+  * Overall worst case complexety: O(|conflicts|!)
+
+# Status
 Yjs is still in an early development phase. Don't expect that everything is working fine.
-But I would become really motivated if you gave me some feedback :) ([github](https://github.com/rwth-acis/yjs/issues)).
+But it would be really nice to get some feedback :)
 
 ### Current Issues
 * The History Buffer should be able to store operations in a database
-* Documentation
-* Reimplement support for XML as a data type
-* Custom data types
-
 
 ## Get help
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/rwth-acis/yjs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
