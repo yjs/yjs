@@ -133,7 +133,7 @@ module.exports =
         _hb = []
         for o in hb
           _hb.push o
-          if _hb.length > 30
+          if _hb.length > 10
             @broadcast
               sync_step: "applyHB_"
               data: _hb
@@ -158,7 +158,7 @@ module.exports =
     _hb = []
     for o in hb
       _hb.push o
-      if _hb.length > 30
+      if _hb.length > 10
         @broadcast
           sync_step: "applyHB_"
           data: _hb
@@ -207,7 +207,7 @@ module.exports =
 
         for o in hb
           _hb.push o
-          if _hb.length > 30
+          if _hb.length > 10
             sendApplyHB
               sync_step: "applyHB_"
               data: _hb

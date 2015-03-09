@@ -190,11 +190,18 @@ module.exports = function() {
     };
 
     Operation.prototype.getCustomType = function() {
+      var Type, t, _i, _len, _ref;
       if (this.custom_type == null) {
         throw new Error("This operation was not initialized with a custom type");
       }
       if (this.custom_type.constructor === String) {
-        this.custom_type = new this.custom_types[this.custom_type]();
+        Type = this.custom_types;
+        _ref = this.custom_type.split(".");
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          t = _ref[_i];
+          Type = Type[t];
+        }
+        this.custom_type = new Type();
         this.custom_type._setModel(this);
       }
       return this.custom_type;

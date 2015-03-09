@@ -131,7 +131,7 @@ module.exports = {
         for (_i = 0, _len = hb.length; _i < _len; _i++) {
           o = hb[_i];
           _hb.push(o);
-          if (_hb.length > 30) {
+          if (_hb.length > 10) {
             this.broadcast({
               sync_step: "applyHB_",
               data: _hb
@@ -159,7 +159,7 @@ module.exports = {
     for (_i = 0, _len = hb.length; _i < _len; _i++) {
       o = hb[_i];
       _hb.push(o);
-      if (_hb.length > 30) {
+      if (_hb.length > 10) {
         this.broadcast({
           sync_step: "applyHB_",
           data: _hb
@@ -221,7 +221,7 @@ module.exports = {
         for (_j = 0, _len1 = hb.length; _j < _len1; _j++) {
           o = hb[_j];
           _hb.push(o);
-          if (_hb.length > 30) {
+          if (_hb.length > 10) {
             sendApplyHB({
               sync_step: "applyHB_",
               data: _hb
