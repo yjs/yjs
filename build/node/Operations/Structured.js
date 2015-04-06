@@ -308,6 +308,39 @@ module.exports = function() {
       return this;
     };
 
+    ListManager.prototype.callOperationSpecificInsertEvents = function(op) {
+      var getContentType;
+      getContentType = function(content) {
+        if (content instanceof ops.Operation) {
+          return content.getCustomType();
+        } else {
+          return content;
+        }
+      };
+      return this.callEvent([
+        {
+          type: "insert",
+          position: op.getPosition(),
+          object: this.getCustomType(),
+          changedBy: op.uid.creator,
+          value: getContentType(op.content)
+        }
+      ]);
+    };
+
+    ListManager.prototype.callOperationSpecificDeleteEvents = function(op, del_op) {
+      return this.callEvent([
+        {
+          type: "delete",
+          position: op.getPosition(),
+          object: this.getCustomType(),
+          length: 1,
+          changedBy: del_op.uid.creator,
+          oldValue: op.val()
+        }
+      ]);
+    };
+
     return ListManager;
 
   })(ops.Operation);
@@ -360,6 +393,45 @@ module.exports = function() {
       return void 0;
     };
 
+    ReplaceManager.prototype.callOperationSpecificInsertEvents = function(op) {
+      var old_value;
+      if (op.next_cl.type === "Delimiter" && op.prev_cl.type !== "Delimiter") {
+        if (!op.is_deleted) {
+          old_value = op.prev_cl.val();
+          this.callEventDecorator([
+            {
+              type: "update",
+              changedBy: op.uid.creator,
+              oldValue: old_value
+            }
+          ]);
+        }
+        op.prev_cl.applyDelete();
+      } else if (op.next_cl.type !== "Delimiter") {
+        op.applyDelete();
+      } else {
+        this.callEventDecorator([
+          {
+            type: "add",
+            changedBy: op.uid.creator
+          }
+        ]);
+      }
+      return void 0;
+    };
+
+    ReplaceManager.prototype.callOperationSpecificDeleteEvents = function(op, del_op) {
+      if (op.next_cl.type === "Delimiter") {
+        return this.callEventDecorator([
+          {
+            type: "delete",
+            changedBy: del_op.uid.creator,
+            oldValue: op.val()
+          }
+        ]);
+      }
+    };
+
     ReplaceManager.prototype.replace = function(content, replaceable_uid) {
       var o, relp;
       o = this.getLastOperation();
@@ -394,54 +466,34 @@ module.exports = function() {
     return ReplaceManager;
 
   })(ops.ListManager);
+  ops.Composition = (function(_super) {
+    __extends(Composition, _super);
+
+    function Composition(custom_type, _at_composition_value, uid, beginning, end) {
+      this.composition_value = _at_composition_value;
+      if (this.composition_value == null) {
+        throw new Error("You must instanziate ops.Composition with a composition_value!");
+      }
+      Composition.__super__.constructor.call(this, custom_type, null, null, uid, beginning, end);
+    }
+
+    Composition.prototype.type = "Composition";
+
+    Composition.prototype.val = function() {
+      return this.composition_value;
+    };
+
+    return Composition;
+
+  })(ops.ReplaceManager);
   ops.Replaceable = (function(_super) {
     __extends(Replaceable, _super);
 
     function Replaceable(custom_type, content, parent, uid, prev, next, origin) {
-      this.saveOperation('parent', parent);
-      Replaceable.__super__.constructor.call(this, custom_type, content, uid, prev, next, origin);
+      Replaceable.__super__.constructor.call(this, custom_type, content, uid, prev, next, origin, parent);
     }
 
     Replaceable.prototype.type = "Replaceable";
-
-    Replaceable.prototype.callOperationSpecificInsertEvents = function() {
-      var old_value;
-      if (this.next_cl.type === "Delimiter" && this.prev_cl.type !== "Delimiter") {
-        if (!this.is_deleted) {
-          old_value = this.prev_cl.val();
-          this.parent.callEventDecorator([
-            {
-              type: "update",
-              changedBy: this.uid.creator,
-              oldValue: old_value
-            }
-          ]);
-        }
-        this.prev_cl.applyDelete();
-      } else if (this.next_cl.type !== "Delimiter") {
-        this.applyDelete();
-      } else {
-        this.parent.callEventDecorator([
-          {
-            type: "add",
-            changedBy: this.uid.creator
-          }
-        ]);
-      }
-      return void 0;
-    };
-
-    Replaceable.prototype.callOperationSpecificDeleteEvents = function(o) {
-      if (this.next_cl.type === "Delimiter") {
-        return this.parent.callEventDecorator([
-          {
-            type: "delete",
-            changedBy: o.uid.creator,
-            oldValue: this.val()
-          }
-        ]);
-      }
-    };
 
     Replaceable.prototype._encode = function(json) {
       if (json == null) {

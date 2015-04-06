@@ -86,7 +86,8 @@ var y = new Y(connector);
   * Delete a property
 * .observe(observer)
   * The `observer` is called whenever something on this object changes. Throws *add*, *update*, and *delete* events
-
+* .unobserve(f)
+  * Delete an observer
 
 # A note on intention preservation
 When users create/update/delete the same property concurrently, only one change will prevail. Changes on different properties do not conflict with each other.
@@ -115,7 +116,7 @@ But it would be really nice to get some feedback :)
 * The History Buffer should be able to store operations in a database
 
 ## Get help
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/rwth-acis/yjs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/y-js/yjs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 Please report _any_ issues to the [Github issue page](https://github.com/rwth-acis/yjs/issues)! I try to fix them very soon, if possible.
 

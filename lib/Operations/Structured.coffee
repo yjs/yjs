@@ -109,15 +109,17 @@ module.exports = ()->
 
     type: "ListManager"
 
+
     applyDelete: ()->
-      o = @end
+      o = @beginning
       while o?
         o.applyDelete()
-        o = o.prev_cl
+        o = o.next_cl
       super()
 
     cleanup: ()->
       super()
+
 
     toJson: (transform_to_value = false)->
       val = @val()
@@ -226,12 +228,12 @@ module.exports = ()->
 
       # TODO: always expect an array as content. Then you can combine this with the other option (else)
       if contents instanceof ops.Operation
-        (new ops.Insert null, content, undefined, left, right).execute()
+        (new ops.Insert null, content, undefined, undefined, left, right).execute()
       else
         for c in contents
           if c? and c._name? and c._getModel?
             c = c._getModel(@custom_types, @operations)
-          tmp = (new ops.Insert null, c, undefined, left, right).execute()
+          tmp = (new ops.Insert null, c, undefined, undefined, left, right).execute()
           left = tmp
       @
 
@@ -266,12 +268,110 @@ module.exports = ()->
         delete_ops.push d._encode()
       @
 
+
+    callOperationSpecificInsertEvents: (op)->
+      getContentType = (content)->
+        if content instanceof ops.Operation
+          content.getCustomType()
+        else
+          content
+      @callEvent [
+        type: "insert"
+        position: op.getPosition()
+        object: @getCustomType()
+        changedBy: op.uid.creator
+        value: getContentType op.content
+      ]
+
+    callOperationSpecificDeleteEvents: (op, del_op)->
+      @callEvent [
+        type: "delete"
+        position: op.getPosition()
+        object: @getCustomType() # TODO: You can combine getPosition + getParent in a more efficient manner! (only left Delimiter will hold @parent)
+        length: 1
+        changedBy: del_op.uid.creator
+        oldValue: op.val()
+      ]
+
   ops.ListManager.parse = (json)->
     {
       'uid' : uid
       'custom_type': custom_type
     } = json
     new this(custom_type, uid)
+
+
+
+
+
+  class ops.Composition extends ops.ListManager
+
+    constructor: (custom_type, @composition_value, uid, composition_ref)->
+      super custom_type, null, null, uid
+      if composition_ref
+        @saveOperation 'composition_ref', composition_ref
+      else
+        @composition_ref = @beginning
+
+    type: "Composition"
+
+    val: ()->
+      @composition_value
+
+    #
+    # This is called, when the Insert-operation was successfully executed.
+    #
+    callOperationSpecificInsertEvents: (op)->
+      if @composition_ref.next_cl is op
+        @custom_type._apply op.content
+      else
+        o = @end.prev_cl
+        while o isnt op
+          @custom_type._undo o.content
+          o = o.next_cl
+        while o isnt @end
+          @custom_type._apply o.content
+          o = o.next_cl
+      @composition_ref = @end.prev_cl
+
+      @callEvent [
+        type: "update"
+        changedBy: op.uid.creator
+        newValue: @val()
+      ]
+
+    callOperationSpecificDeleteEvents: (op, del_op)->
+      return
+
+    #
+    # Create a new Delta
+    # - inserts new Content at the end of the list
+    # - updates the composition_value
+    # - updates the composition_ref
+    #
+    # @param delta The delta that is applied to the composition_value
+    #
+    applyDelta: (delta)->
+      (new ops.Insert null, content, @, null, @end.prev_cl, @end).execute()
+      undefined
+
+    #
+    # Encode this operation in such a way that it can be parsed by remote peers.
+    #
+    _encode: (json = {})->
+      json.composition_value = JSON.stringify @composition_value
+      json.composition_ref = @composition_ref.getUid()
+      super json
+
+  ops.Composition.parse = (json)->
+    {
+      'uid' : uid
+      'custom_type': custom_type
+      'composition_value' : composition_value
+      'composition_ref' : composition_ref
+    } = json
+    new this(custom_type, JSON.parse(composition_value), uid, composition_ref)
+
 
   #
   # @nodoc
@@ -289,22 +389,12 @@ module.exports = ()->
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Delimiter} beginning Reference or Object.
     # @param {Delimiter} end Reference or Object.
-    constructor: (custom_type, @event_properties, @event_this, uid, beginning, end)->
+    constructor: (custom_type, @event_properties, @event_this, uid)->
       if not @event_properties['object']?
         @event_properties['object'] = @event_this.getCustomType()
-      super custom_type, uid, beginning, end
+      super custom_type, uid
 
     type: "ReplaceManager"
-
-    applyDelete: ()->
-      o = @beginning
-      while o?
-        o.applyDelete()
-        o = o.next_cl
-      super()
-
-    cleanup: ()->
-      super()
 
     #
     # This doesn't throw the same events as the ListManager. Therefore, the
@@ -322,6 +412,42 @@ module.exports = ()->
       undefined
 
     #
+    # This is called, when the Insert-type was successfully executed.
+    # TODO: consider doing this in a more consistent manner. This could also be
+    # done with execute. But currently, there are no specital Insert-ops for ListManager.
+    #
+    callOperationSpecificInsertEvents: (op)->
+      if op.next_cl.type is "Delimiter" and op.prev_cl.type isnt "Delimiter"
+        # this replaces another Replaceable
+        if not op.is_deleted # When this is received from the HB, this could already be deleted!
+          old_value = op.prev_cl.val()
+          @callEventDecorator [
+            type: "update"
+            changedBy: op.uid.creator
+            oldValue: old_value
+          ]
+        op.prev_cl.applyDelete()
+      else if op.next_cl.type isnt "Delimiter"
+        # This won't be recognized by the user, because another
+        # concurrent operation is set as the current value of the RM
+        op.applyDelete()
+      else # prev _and_ next are Delimiters. This is the first created Replaceable in the RM
+        @callEventDecorator [
+          type: "add"
+          changedBy: op.uid.creator
+        ]
+      undefined
+
+    callOperationSpecificDeleteEvents: (op, del_op)->
+      if op.next_cl.type is "Delimiter"
+        @callEventDecorator [
+          type: "delete"
+          changedBy: del_op.uid.creator
+          oldValue: op.val()
+        ]
+
+
+    #
     # Replace the existing word with a new word.
     #
     # @param content {Operation} The new value of this ReplaceManager.
@@ -329,7 +455,7 @@ module.exports = ()->
     #
     replace: (content, replaceable_uid)->
       o = @getLastOperation()
-      relp = (new ops.Replaceable null, content, @, replaceable_uid, o, o.next_cl).execute()
+      relp = (new ops.Insert null, content, @, replaceable_uid, o, o.next_cl).execute()
       # TODO: delete repl (for debugging)
       undefined
 
@@ -350,86 +476,6 @@ module.exports = ()->
         # throw new Error "Replace Manager doesn't contain anything."
       o.val?() # ? - for the case that (currently) the RM does not contain anything (then o is a Delimiter)
 
-    #
-    # Encode this operation in such a way that it can be parsed by remote peers.
-    #
-    _encode: (json = {})->
-      json.beginning = @beginning.getUid()
-      json.end = @end.getUid()
-      super json
-
-  #
-  # @nodoc
-  # The ReplaceManager manages Replaceables.
-  # @see ReplaceManager
-  #
-  class ops.Replaceable extends ops.Insert
-
-    #
-    # @param {Operation} content The value that this Replaceable holds.
-    # @param {ReplaceManager} parent Used to replace this Replaceable with another one.
-    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
-    #
-    constructor: (custom_type, content, parent, uid, prev, next, origin)->
-      @saveOperation 'parent', parent
-      super custom_type, content, uid, prev, next, origin # Parent is already saved by Replaceable
-
-    type: "Replaceable"
-
-    #
-    # This is called, when the Insert-type was successfully executed.
-    # TODO: consider doing this in a more consistent manner. This could also be
-    # done with execute. But currently, there are no specital Insert-ops for ListManager.
-    #
-    callOperationSpecificInsertEvents: ()->
-      if @next_cl.type is "Delimiter" and @prev_cl.type isnt "Delimiter"
-        # this replaces another Replaceable
-        if not @is_deleted # When this is received from the HB, this could already be deleted!
-          old_value = @prev_cl.val()
-          @parent.callEventDecorator [
-            type: "update"
-            changedBy: @uid.creator
-            oldValue: old_value
-          ]
-        @prev_cl.applyDelete()
-      else if @next_cl.type isnt "Delimiter"
-        # This won't be recognized by the user, because another
-        # concurrent operation is set as the current value of the RM
-        @applyDelete()
-      else # prev _and_ next are Delimiters. This is the first created Replaceable in the RM
-        @parent.callEventDecorator [
-          type: "add"
-          changedBy: @uid.creator
-        ]
-      undefined
-
-    callOperationSpecificDeleteEvents: (o)->
-      if @next_cl.type is "Delimiter"
-        @parent.callEventDecorator [
-          type: "delete"
-          changedBy: o.uid.creator
-          oldValue: @val()
-        ]
-
-    #
-    # Encode this operation in such a way that it can be parsed by remote peers.
-    #
-    _encode: (json = {})->
-      super json
-
-  ops.Replaceable.parse = (json)->
-    {
-      'content' : content
-      'parent' : parent
-      'uid' : uid
-      'prev': prev
-      'next': next
-      'origin' : origin
-      'custom_type' : custom_type
-    } = json
-    if typeof content is "string"
-      content = JSON.parse(content)
-    new this(custom_type, content, parent, uid, prev, next, origin)
 
 
   basic_ops

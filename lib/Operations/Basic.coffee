@@ -303,7 +303,7 @@ module.exports = ()->
     # @param {Operation} prev_cl The predecessor of this operation in the complete-list (cl)
     # @param {Operation} next_cl The successor of this operation in the complete-list (cl)
     #
-    constructor: (custom_type, content, uid, prev_cl, next_cl, origin, parent)->
+    constructor: (custom_type, content, parent, uid, prev_cl, next_cl, origin)->
       # see encode to see, why we are doing it this way
       if content is undefined
         # nop
@@ -345,7 +345,7 @@ module.exports = ()->
         garbagecollect = true
       super garbagecollect
       if callLater
-        @callOperationSpecificDeleteEvents(o)
+        @parent.callOperationSpecificDeleteEvents(this, o)
       if @prev_cl?.isDeleted()
         # garbage collect prev_cl
         @prev_cl.applyDelete()
@@ -466,32 +466,8 @@ module.exports = ()->
 
         @setParent @prev_cl.getParent() # do Insertions always have a parent?
         super # notify the execution_listeners
-        @callOperationSpecificInsertEvents()
+        @parent.callOperationSpecificInsertEvents(this)
         @
-
-    callOperationSpecificInsertEvents: ()->
-      getContentType = (content)->
-        if content instanceof ops.Operation
-          content.getCustomType()
-        else
-          content
-      @parent?.callEvent [
-        type: "insert"
-        position: @getPosition()
-        object: @parent.getCustomType()
-        changedBy: @uid.creator
-        value: getContentType @content
-      ]
-
-    callOperationSpecificDeleteEvents: (o)->
-      @parent.callEvent [
-        type: "delete"
-        position: @getPosition()
-        object: @parent.getCustomType() # TODO: You can combine getPosition + getParent in a more efficient manner! (only left Delimiter will hold @parent)
-        length: 1
-        changedBy: o.uid.creator
-        oldValue: @val()
-      ]
 
     #
     # Compute the position of this operation.
@@ -538,7 +514,7 @@ module.exports = ()->
     } = json
     if typeof content is "string"
       content = JSON.parse(content)
-    new this null, content, uid, prev, next, origin, parent
+    new this null, content, parent, uid, prev, next, origin
 
   #
   # @nodoc

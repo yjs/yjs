@@ -299,7 +299,7 @@ module.exports = function() {
       }
       Insert.__super__.applyDelete.call(this, garbagecollect);
       if (callLater) {
-        this.callOperationSpecificDeleteEvents(o);
+        this.parent.callOperationSpecificDeleteEvents(this, o);
       }
       if ((_ref = this.prev_cl) != null ? _ref.isDeleted() : void 0) {
         return this.prev_cl.applyDelete();
@@ -408,42 +408,9 @@ module.exports = function() {
         }
         this.setParent(this.prev_cl.getParent());
         Insert.__super__.execute.apply(this, arguments);
-        this.callOperationSpecificInsertEvents();
+        this.parent.callOperationSpecificInsertEvents(this);
         return this;
       }
-    };
-
-    Insert.prototype.callOperationSpecificInsertEvents = function() {
-      var getContentType, _ref;
-      getContentType = function(content) {
-        if (content instanceof ops.Operation) {
-          return content.getCustomType();
-        } else {
-          return content;
-        }
-      };
-      return (_ref = this.parent) != null ? _ref.callEvent([
-        {
-          type: "insert",
-          position: this.getPosition(),
-          object: this.parent.getCustomType(),
-          changedBy: this.uid.creator,
-          value: getContentType(this.content)
-        }
-      ]) : void 0;
-    };
-
-    Insert.prototype.callOperationSpecificDeleteEvents = function(o) {
-      return this.parent.callEvent([
-        {
-          type: "delete",
-          position: this.getPosition(),
-          object: this.parent.getCustomType(),
-          length: 1,
-          changedBy: o.uid.creator,
-          oldValue: this.val()
-        }
-      ]);
     };
 
     Insert.prototype.getPosition = function() {
