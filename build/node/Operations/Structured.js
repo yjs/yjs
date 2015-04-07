@@ -385,15 +385,15 @@ module.exports = function() {
     Composition.prototype.callOperationSpecificInsertEvents = function(op) {
       var o;
       if (this.composition_ref.next_cl === op) {
-        o.undo_delta = this.custom_type._apply(op.content);
+        op.undo_delta = this.getCustomType()._apply(op.content);
       } else {
         o = this.end.prev_cl;
         while (o !== op) {
-          this.custom_type._unapply(o.undo_delta);
+          this.getCustomType()._unapply(o.undo_delta);
           o = o.next_cl;
         }
         while (o !== this.end) {
-          o.undo_delta = this.custom_type._apply(o.content);
+          o.undo_delta = this.getCustomType()._apply(o.content);
           o = o.next_cl;
         }
       }
@@ -410,7 +410,7 @@ module.exports = function() {
     Composition.prototype.callOperationSpecificDeleteEvents = function(op, del_op) {};
 
     Composition.prototype.applyDelta = function(delta) {
-      (new ops.Insert(null, content, this, null, this.end.prev_cl, this.end)).execute();
+      (new ops.Insert(null, delta, this, null, this.end.prev_cl, this.end)).execute();
       return void 0;
     };
 

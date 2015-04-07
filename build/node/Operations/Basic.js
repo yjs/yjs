@@ -281,6 +281,28 @@ module.exports = function() {
       }
     };
 
+    Insert.prototype.getNext = function() {
+      var n;
+      n = this.next_cl;
+      while (n.is_deleted && (n.next_cl != null)) {
+        n = n.next_cl;
+      }
+      return n;
+    };
+
+    Insert.prototype.getPrev = function() {
+      var n;
+      n((function(_this) {
+        return function() {
+          return _this.prev_cl;
+        };
+      })(this));
+      while (n.is_deleted && (n.prev_cl != null)) {
+        n = n.prev_cl;
+      }
+      return n;
+    };
+
     Insert.prototype.applyDelete = function(o) {
       var callLater, garbagecollect, _ref;
       if (this.deleted_by == null) {

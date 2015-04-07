@@ -328,6 +328,18 @@ module.exports = ()->
       else
         @content
 
+    getNext: ()->
+      n = @next_cl
+      while n.is_deleted and n.next_cl?
+        n = n.next_cl
+      n
+
+    getPrev: ()->
+      n => @prev_cl
+      while n.is_deleted and n.prev_cl?
+        n = n.prev_cl
+      n
+
     #
     # set content to null and other stuff
     # @private
