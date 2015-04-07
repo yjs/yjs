@@ -188,7 +188,7 @@ module.exports = ()->
       # Every instance of $Operation must have an $execute function.
       # We use duck-typing to check if op is instantiated since there
       # could exist multiple classes of $Operation
-      #
+      #         
       if not op?
         # nop
       else if op.execute? or not (op.op_number? and op.creator?)
@@ -212,7 +212,7 @@ module.exports = ()->
       success = @
       for name, op_uid of @unchecked
         op = @HB.getOperation op_uid
-        if op
+        if op 
           @[name] = op
         else
           uninstantiated[name] = op_uid

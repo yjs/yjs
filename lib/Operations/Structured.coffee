@@ -191,6 +191,15 @@ module.exports = ()->
       else
         @toArray()
 
+    ref: (pos)->
+      if pos?
+        o = @getOperationByPosition(pos+1)
+        if not (o instanceof ops.Delimiter)
+          o
+        else
+          throw new Error "this position does not exist"
+      else
+        throw new Error "you must specify a position parameter"
 
     #
     # Retrieves the x-th not deleted element.
@@ -307,7 +316,7 @@ module.exports = ()->
   class ops.Composition extends ops.ListManager
 
     constructor: (custom_type, @composition_value, uid, composition_ref)->
-      super custom_type, null, null, uid
+      super custom_type, uid
       if composition_ref
         @saveOperation 'composition_ref', composition_ref
       else
@@ -323,14 +332,14 @@ module.exports = ()->
     #
     callOperationSpecificInsertEvents: (op)->
       if @composition_ref.next_cl is op
-        @custom_type._apply op.content
+        o.undo_delta = @custom_type._apply op.content
       else
         o = @end.prev_cl
         while o isnt op
-          @custom_type._undo o.content
+          @custom_type._unapply o.undo_delta
           o = o.next_cl
         while o isnt @end
-          @custom_type._apply o.content
+          o.undo_delta = @custom_type._apply o.content
           o = o.next_cl
       @composition_ref = @end.prev_cl
 
