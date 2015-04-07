@@ -129,10 +129,10 @@ module.exports = function() {
 
     ListManager.prototype.applyDelete = function() {
       var o;
-      o = this.end;
+      o = this.beginning;
       while (o != null) {
         o.applyDelete();
-        o = o.prev_cl;
+        o = o.next_cl;
       }
       return ListManager.__super__.applyDelete.call(this);
     };
@@ -233,6 +233,20 @@ module.exports = function() {
       }
     };
 
+    ListManager.prototype.ref = function(pos) {
+      var o;
+      if (pos != null) {
+        o = this.getOperationByPosition(pos + 1);
+        if (!(o instanceof ops.Delimiter)) {
+          return o;
+        } else {
+          throw new Error("this position does not exist");
+        }
+      } else {
+        throw new Error("you must specify a position parameter");
+      }
+    };
+
     ListManager.prototype.getOperationByPosition = function(position) {
       var o;
       o = this.beginning;
@@ -267,14 +281,14 @@ module.exports = function() {
       }
       left = right.prev_cl;
       if (contents instanceof ops.Operation) {
-        (new ops.Insert(null, content, void 0, left, right)).execute();
+        (new ops.Insert(null, content, void 0, void 0, left, right)).execute();
       } else {
         for (_i = 0, _len = contents.length; _i < _len; _i++) {
           c = contents[_i];
           if ((c != null) && (c._name != null) && (c._getModel != null)) {
             c = c._getModel(this.custom_types, this.operations);
           }
-          tmp = (new ops.Insert(null, c, void 0, left, right)).execute();
+          tmp = (new ops.Insert(null, c, void 0, void 0, left, right)).execute();
           left = tmp;
         }
       }
@@ -349,33 +363,87 @@ module.exports = function() {
     uid = json['uid'], custom_type = json['custom_type'];
     return new this(custom_type, uid);
   };
+  ops.Composition = (function(_super) {
+    __extends(Composition, _super);
+
+    function Composition(custom_type, _at_composition_value, uid, composition_ref) {
+      this.composition_value = _at_composition_value;
+      Composition.__super__.constructor.call(this, custom_type, uid);
+      if (composition_ref) {
+        this.saveOperation('composition_ref', composition_ref);
+      } else {
+        this.composition_ref = this.beginning;
+      }
+    }
+
+    Composition.prototype.type = "Composition";
+
+    Composition.prototype.val = function() {
+      return this.composition_value;
+    };
+
+    Composition.prototype.callOperationSpecificInsertEvents = function(op) {
+      var o;
+      if (this.composition_ref.next_cl === op) {
+        o.undo_delta = this.custom_type._apply(op.content);
+      } else {
+        o = this.end.prev_cl;
+        while (o !== op) {
+          this.custom_type._unapply(o.undo_delta);
+          o = o.next_cl;
+        }
+        while (o !== this.end) {
+          o.undo_delta = this.custom_type._apply(o.content);
+          o = o.next_cl;
+        }
+      }
+      this.composition_ref = this.end.prev_cl;
+      return this.callEvent([
+        {
+          type: "update",
+          changedBy: op.uid.creator,
+          newValue: this.val()
+        }
+      ]);
+    };
+
+    Composition.prototype.callOperationSpecificDeleteEvents = function(op, del_op) {};
+
+    Composition.prototype.applyDelta = function(delta) {
+      (new ops.Insert(null, content, this, null, this.end.prev_cl, this.end)).execute();
+      return void 0;
+    };
+
+    Composition.prototype._encode = function(json) {
+      if (json == null) {
+        json = {};
+      }
+      json.composition_value = JSON.stringify(this.composition_value);
+      json.composition_ref = this.composition_ref.getUid();
+      return Composition.__super__._encode.call(this, json);
+    };
+
+    return Composition;
+
+  })(ops.ListManager);
+  ops.Composition.parse = function(json) {
+    var composition_ref, composition_value, custom_type, uid;
+    uid = json['uid'], custom_type = json['custom_type'], composition_value = json['composition_value'], composition_ref = json['composition_ref'];
+    return new this(custom_type, JSON.parse(composition_value), uid, composition_ref);
+  };
   ops.ReplaceManager = (function(_super) {
     __extends(ReplaceManager, _super);
 
-    function ReplaceManager(custom_type, _at_event_properties, _at_event_this, uid, beginning, end) {
+    function ReplaceManager(custom_type, _at_event_properties, _at_event_this, uid) {
       this.event_properties = _at_event_properties;
       this.event_this = _at_event_this;
       if (this.event_properties['object'] == null) {
         this.event_properties['object'] = this.event_this.getCustomType();
       }
-      ReplaceManager.__super__.constructor.call(this, custom_type, uid, beginning, end);
+      ReplaceManager.__super__.constructor.call(this, custom_type, uid);
     }
 
     ReplaceManager.prototype.type = "ReplaceManager";
-
-    ReplaceManager.prototype.applyDelete = function() {
-      var o;
-      o = this.beginning;
-      while (o != null) {
-        o.applyDelete();
-        o = o.next_cl;
-      }
-      return ReplaceManager.__super__.applyDelete.call(this);
-    };
-
-    ReplaceManager.prototype.cleanup = function() {
-      return ReplaceManager.__super__.cleanup.call(this);
-    };
 
     ReplaceManager.prototype.callEventDecorator = function(events) {
       var event, name, prop, _i, _len, _ref;
@@ -435,7 +503,7 @@ module.exports = function() {
     ReplaceManager.prototype.replace = function(content, replaceable_uid) {
       var o, relp;
       o = this.getLastOperation();
-      relp = (new ops.Replaceable(null, content, this, replaceable_uid, o, o.next_cl)).execute();
+      relp = (new ops.Insert(null, content, this, replaceable_uid, o, o.next_cl)).execute();
       return void 0;
     };
 
@@ -454,64 +522,8 @@ module.exports = function() {
       return typeof o.val === "function" ? o.val() : void 0;
     };
 
-    ReplaceManager.prototype._encode = function(json) {
-      if (json == null) {
-        json = {};
-      }
-      json.beginning = this.beginning.getUid();
-      json.end = this.end.getUid();
-      return ReplaceManager.__super__._encode.call(this, json);
-    };
-
     return ReplaceManager;
 
   })(ops.ListManager);
-  ops.Composition = (function(_super) {
-    __extends(Composition, _super);
-
-    function Composition(custom_type, _at_composition_value, uid, beginning, end) {
-      this.composition_value = _at_composition_value;
-      if (this.composition_value == null) {
-        throw new Error("You must instanziate ops.Composition with a composition_value!");
-      }
-      Composition.__super__.constructor.call(this, custom_type, null, null, uid, beginning, end);
-    }
-
-    Composition.prototype.type = "Composition";
-
-    Composition.prototype.val = function() {
-      return this.composition_value;
-    };
-
-    return Composition;
-
-  })(ops.ReplaceManager);
-  ops.Replaceable = (function(_super) {
-    __extends(Replaceable, _super);
-
-    function Replaceable(custom_type, content, parent, uid, prev, next, origin) {
-      Replaceable.__super__.constructor.call(this, custom_type, content, uid, prev, next, origin, parent);
-    }
-
-    Replaceable.prototype.type = "Replaceable";
-
-    Replaceable.prototype._encode = function(json) {
-      if (json == null) {
-        json = {};
-      }
-      return Replaceable.__super__._encode.call(this, json);
-    };
-
-    return Replaceable;
-
-  })(ops.Insert);
-  ops.Replaceable.parse = function(json) {
-    var content, custom_type, next, origin, parent, prev, uid;
-    content = json['content'], parent = json['parent'], uid = json['uid'], prev = json['prev'], next = json['next'], origin = json['origin'], custom_type = json['custom_type'];
-    if (typeof content === "string") {
-      content = JSON.parse(content);
-    }
-    return new this(custom_type, content, parent, uid, prev, next, origin);
-  };
   return basic_ops;
 };

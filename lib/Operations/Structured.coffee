@@ -332,14 +332,14 @@ module.exports = ()->
     #
     callOperationSpecificInsertEvents: (op)->
       if @composition_ref.next_cl is op
-        o.undo_delta = @custom_type._apply op.content
+        op.undo_delta = @getCustomType()._apply op.content
       else
         o = @end.prev_cl
         while o isnt op
-          @custom_type._unapply o.undo_delta
+          @getCustomType()._unapply o.undo_delta
           o = o.next_cl
         while o isnt @end
-          o.undo_delta = @custom_type._apply o.content
+          o.undo_delta = @getCustomType()._apply o.content
           o = o.next_cl
       @composition_ref = @end.prev_cl
 
@@ -361,7 +361,7 @@ module.exports = ()->
     # @param delta The delta that is applied to the composition_value
     #
     applyDelta: (delta)->
-      (new ops.Insert null, content, @, null, @end.prev_cl, @end).execute()
+      (new ops.Insert null, delta, @, null, @end.prev_cl, @end).execute()
       undefined
 
     #

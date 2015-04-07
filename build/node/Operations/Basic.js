@@ -252,7 +252,7 @@ module.exports = function() {
   ops.Insert = (function(_super) {
     __extends(Insert, _super);
 
-    function Insert(custom_type, content, uid, prev_cl, next_cl, origin, parent) {
+    function Insert(custom_type, content, parent, uid, prev_cl, next_cl, origin) {
       if (content === void 0) {
 
       } else if ((content != null) && (content.creator != null)) {
@@ -459,7 +459,7 @@ module.exports = function() {
     if (typeof content === "string") {
       content = JSON.parse(content);
     }
-    return new this(null, content, uid, prev, next, origin, parent);
+    return new this(null, content, parent, uid, prev, next, origin);
   };
   ops.Delimiter = (function(_super) {
     __extends(Delimiter, _super);
