@@ -337,7 +337,7 @@ module.exports = ()->
         o = @end.prev_cl
         while o isnt op
           @getCustomType()._unapply o.undo_delta
-          o = o.next_cl
+          o = o.prev_cl
         while o isnt @end
           o.undo_delta = @getCustomType()._apply o.content
           o = o.next_cl
