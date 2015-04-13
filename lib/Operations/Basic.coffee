@@ -48,7 +48,7 @@ module.exports = ()->
     # @see Operation.observe
     #
     # @overload unobserve(event, f)
-    #   @param f     {Function} The function that you want to delete 
+    #   @param f     {Function} The function that you want to delete
     unobserve: (f)->
       @event_listeners = @event_listeners.filter (g)->
         f isnt g
@@ -188,7 +188,7 @@ module.exports = ()->
       # Every instance of $Operation must have an $execute function.
       # We use duck-typing to check if op is instantiated since there
       # could exist multiple classes of $Operation
-      #         
+      #
       if not op?
         # nop
       else if op.execute? or not (op.op_number? and op.creator?)
@@ -212,7 +212,7 @@ module.exports = ()->
       success = @
       for name, op_uid of @unchecked
         op = @HB.getOperation op_uid
-        if op 
+        if op
           @[name] = op
         else
           uninstantiated[name] = op_uid
@@ -224,15 +224,17 @@ module.exports = ()->
 
     getCustomType: ()->
       if not @custom_type?
-        throw new Error "This operation was not initialized with a custom type"
-      if @custom_type.constructor is String
-        # has not been initialized yet (only the name is specified)
-        Type = @custom_types
-        for t in @custom_type.split(".")
-          Type = Type[t]
-        @custom_type = new Type()
-        @custom_type._setModel @
-      @custom_type
+        # throw new Error "This operation was not initialized with a custom type"
+        @
+      else
+        if @custom_type.constructor is String
+          # has not been initialized yet (only the name is specified)
+          Type = @custom_types
+          for t in @custom_type.split(".")
+            Type = Type[t]
+          @custom_type = new Type()
+          @custom_type._setModel @
+        @custom_type
 
 
   #
@@ -606,7 +608,3 @@ module.exports = ()->
     'operations' : ops
     'execution_listener' : execution_listener
   }
-
-
-
-

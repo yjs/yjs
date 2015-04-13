@@ -47,12 +47,12 @@ module.exports = {
     return this.role === "slave";
   },
   findNewSyncTarget: function() {
-    var c, user, _ref;
+    var c, ref, user;
     this.current_sync_target = null;
     if (this.syncMethod === "syncAll") {
-      _ref = this.connections;
-      for (user in _ref) {
-        c = _ref[user];
+      ref = this.connections;
+      for (user in ref) {
+        c = ref[user];
         if (!c.is_synced) {
           this.performSync(user);
           break;
@@ -69,12 +69,12 @@ module.exports = {
     return this.findNewSyncTarget();
   },
   userJoined: function(user, role) {
-    var _base;
+    var base;
     if (role == null) {
       throw new Error("Internal: You must specify the role of the joined user! E.g. userJoined('uid:3939','slave')");
     }
-    if ((_base = this.connections)[user] == null) {
-      _base[user] = {};
+    if ((base = this.connections)[user] == null) {
+      base[user] = {};
     }
     this.connections[user].is_synced = false;
     if ((!this.is_synced) || this.syncMethod === "syncAll") {
@@ -116,7 +116,7 @@ module.exports = {
     throw new Error "You must implement send!"
    */
   performSync: function(user) {
-    var hb, o, _hb, _i, _len;
+    var _hb, hb, i, len, o;
     if (this.current_sync_target == null) {
       this.current_sync_target = user;
       this.send(user, {
@@ -128,8 +128,8 @@ module.exports = {
         this.sent_hb_to_all_users = true;
         hb = this.getHB([]).hb;
         _hb = [];
-        for (_i = 0, _len = hb.length; _i < _len; _i++) {
-          o = hb[_i];
+        for (i = 0, len = hb.length; i < len; i++) {
+          o = hb[i];
           _hb.push(o);
           if (_hb.length > 10) {
             this.broadcast({
@@ -147,7 +147,7 @@ module.exports = {
     }
   },
   performSyncWithMaster: function(user) {
-    var hb, o, _hb, _i, _len;
+    var _hb, hb, i, len, o;
     this.current_sync_target = user;
     this.send(user, {
       sync_step: "getHB",
@@ -156,8 +156,8 @@ module.exports = {
     });
     hb = this.getHB([]).hb;
     _hb = [];
-    for (_i = 0, _len = hb.length; _i < _len; _i++) {
-      o = hb[_i];
+    for (i = 0, len = hb.length; i < len; i++) {
+      o = hb[i];
       _hb.push(o);
       if (_hb.length > 10) {
         this.broadcast({
@@ -173,13 +173,13 @@ module.exports = {
     });
   },
   setStateSynced: function() {
-    var f, _i, _len, _ref;
+    var f, i, len, ref;
     if (!this.is_synced) {
       this.is_synced = true;
       if (this.compute_when_synced != null) {
-        _ref = this.compute_when_synced;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          f = _ref[_i];
+        ref = this.compute_when_synced;
+        for (i = 0, len = ref.length; i < len; i++) {
+          f = ref[i];
           f();
         }
         delete this.compute_when_synced;
@@ -188,15 +188,15 @@ module.exports = {
     }
   },
   receiveMessage: function(sender, res) {
-    var data, f, hb, o, sendApplyHB, send_again, _hb, _i, _j, _len, _len1, _ref, _results;
+    var _hb, data, f, hb, i, j, len, len1, o, ref, results, sendApplyHB, send_again;
     if (res.sync_step == null) {
-      _ref = this.receive_handlers;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        f = _ref[_i];
-        _results.push(f(sender, res));
+      ref = this.receive_handlers;
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        f = ref[i];
+        results.push(f(sender, res));
       }
-      return _results;
+      return results;
     } else {
       if (sender === this.user_id) {
         return;
@@ -218,8 +218,8 @@ module.exports = {
             };
           })(this);
         }
-        for (_j = 0, _len1 = hb.length; _j < _len1; _j++) {
-          o = hb[_j];
+        for (j = 0, len1 = hb.length; j < len1; j++) {
+          o = hb[j];
           _hb.push(o);
           if (_hb.length > 10) {
             sendApplyHB({
@@ -262,25 +262,25 @@ module.exports = {
   parseMessageFromXml: function(m) {
     var parse_array, parse_object;
     parse_array = function(node) {
-      var n, _i, _len, _ref, _results;
-      _ref = node.children;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        n = _ref[_i];
+      var i, len, n, ref, results;
+      ref = node.children;
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        n = ref[i];
         if (n.getAttribute("isArray") === "true") {
-          _results.push(parse_array(n));
+          results.push(parse_array(n));
         } else {
-          _results.push(parse_object(n));
+          results.push(parse_object(n));
         }
       }
-      return _results;
+      return results;
     };
     parse_object = function(node) {
-      var int, json, n, name, value, _i, _len, _ref, _ref1;
+      var i, int, json, len, n, name, ref, ref1, value;
       json = {};
-      _ref = node.attrs;
-      for (name in _ref) {
-        value = _ref[name];
+      ref = node.attrs;
+      for (name in ref) {
+        value = ref[name];
         int = parseInt(value);
         if (isNaN(int) || ("" + int) !== value) {
           json[name] = value;
@@ -288,9 +288,9 @@ module.exports = {
           json[name] = int;
         }
       }
-      _ref1 = node.children;
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        n = _ref1[_i];
+      ref1 = node.children;
+      for (i = 0, len = ref1.length; i < len; i++) {
+        n = ref1[i];
         name = n.name;
         if (n.getAttribute("isArray") === "true") {
           json[name] = parse_array(n);
@@ -321,10 +321,10 @@ module.exports = {
       return m;
     };
     encode_array = function(m, array) {
-      var e, _i, _len;
+      var e, i, len;
       m.setAttribute("isArray", "true");
-      for (_i = 0, _len = array.length; _i < _len; _i++) {
-        e = array[_i];
+      for (i = 0, len = array.length; i < len; i++) {
+        e = array[i];
         if (e.constructor === Object) {
           encode_object(m.c("array-element"), e);
         } else {

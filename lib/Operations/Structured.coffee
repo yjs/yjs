@@ -197,7 +197,8 @@ module.exports = ()->
         if not (o instanceof ops.Delimiter)
           o
         else
-          throw new Error "this position does not exist"
+          null
+          # throw new Error "this position does not exist"
       else
         throw new Error "you must specify a position parameter"
 
@@ -488,9 +489,3 @@ module.exports = ()->
 
 
   basic_ops
-
-
-
-
-
-
