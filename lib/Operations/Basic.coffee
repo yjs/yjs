@@ -328,16 +328,20 @@ module.exports = ()->
       else
         @content
 
-    getNext: ()->
-      n = @next_cl
-      while n.is_deleted and n.next_cl?
+    getNext: (i=1)->
+      n = @
+      while i > 0 and n.is_deleted and n.next_cl?
         n = n.next_cl
+        if not n.is_deleted
+          i--
       n
 
-    getPrev: ()->
-      n => @prev_cl
-      while n.is_deleted and n.prev_cl?
+    getPrev: (i=1)->
+      n = @
+      while i > 0 and n.is_deleted and n.prev_cl?
         n = n.prev_cl
+        if not n.is_deleted
+          i--
       n
 
     #
