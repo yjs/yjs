@@ -3,42 +3,42 @@ var Y, bindToChildren;
 Y = require('./y');
 
 bindToChildren = function(that) {
-  var attr, i, j, ref;
-  for (i = j = 0, ref = that.children.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+  var attr, i, _i, _ref;
+  for (i = _i = 0, _ref = that.children.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
     attr = that.children.item(i);
     if (attr.name != null) {
       attr.val = that.val.val(attr.name);
     }
   }
   return that.val.observe(function(events) {
-    var event, k, len, newVal, results;
-    results = [];
-    for (k = 0, len = events.length; k < len; k++) {
-      event = events[k];
+    var event, newVal, _j, _len, _results;
+    _results = [];
+    for (_j = 0, _len = events.length; _j < _len; _j++) {
+      event = events[_j];
       if (event.name != null) {
-        results.push((function() {
-          var l, ref1, results1;
-          results1 = [];
-          for (i = l = 0, ref1 = that.children.length; 0 <= ref1 ? l < ref1 : l > ref1; i = 0 <= ref1 ? ++l : --l) {
+        _results.push((function() {
+          var _k, _ref1, _results1;
+          _results1 = [];
+          for (i = _k = 0, _ref1 = that.children.length; 0 <= _ref1 ? _k < _ref1 : _k > _ref1; i = 0 <= _ref1 ? ++_k : --_k) {
             attr = that.children.item(i);
             if ((attr.name != null) && attr.name === event.name) {
               newVal = that.val.val(attr.name);
               if (attr.val !== newVal) {
-                results1.push(attr.val = newVal);
+                _results1.push(attr.val = newVal);
               } else {
-                results1.push(void 0);
+                _results1.push(void 0);
               }
             } else {
-              results1.push(void 0);
+              _results1.push(void 0);
             }
           }
-          return results1;
+          return _results1;
         })());
       } else {
-        results.push(void 0);
+        _results.push(void 0);
       }
     }
-    return results;
+    return _results;
   });
 };
 
@@ -78,13 +78,13 @@ Polymer("y-property", {
     }
   },
   valChanged: function() {
-    var ref;
+    var _ref;
     if ((this.val != null) && (this.name != null)) {
       if (this.val.constructor === Object) {
         return this.val = this.parentElement.val.val(this.name, this.val).val(this.name);
       } else if (this.val.type === "Object") {
         return bindToChildren(this);
-      } else if ((((ref = this.parentElement.val) != null ? ref.val : void 0) != null) && this.val !== this.parentElement.val.val(this.name)) {
+      } else if ((((_ref = this.parentElement.val) != null ? _ref.val : void 0) != null) && this.val !== this.parentElement.val.val(this.name)) {
         return this.parentElement.val.val(this.name, this.val);
       }
     }

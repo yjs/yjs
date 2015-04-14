@@ -13,9 +13,9 @@ if (typeof window !== "undefined" && window !== null) {
 }
 
 Engine = (function() {
-  function Engine(HB, types) {
-    this.HB = HB;
-    this.types = types;
+  function Engine(_at_HB, _at_types) {
+    this.HB = _at_HB;
+    this.types = _at_types;
     this.unprocessed_ops = [];
   }
 
@@ -42,17 +42,17 @@ Engine = (function() {
    */
 
   Engine.prototype.applyOpsCheckDouble = function(ops_json) {
-    var i, len, o, results;
-    results = [];
-    for (i = 0, len = ops_json.length; i < len; i++) {
-      o = ops_json[i];
+    var o, _i, _len, _results;
+    _results = [];
+    for (_i = 0, _len = ops_json.length; _i < _len; _i++) {
+      o = ops_json[_i];
       if (this.HB.getOperation(o.uid) == null) {
-        results.push(this.applyOp(o));
+        _results.push(this.applyOp(o));
       } else {
-        results.push(void 0);
+        _results.push(void 0);
       }
     }
-    return results;
+    return _results;
   };
 
   Engine.prototype.applyOps = function(ops_json) {
@@ -60,15 +60,15 @@ Engine = (function() {
   };
 
   Engine.prototype.applyOp = function(op_json_array, fromHB) {
-    var i, len, o, op_json;
+    var o, op_json, _i, _len;
     if (fromHB == null) {
       fromHB = false;
     }
     if (op_json_array.constructor !== Array) {
       op_json_array = [op_json_array];
     }
-    for (i = 0, len = op_json_array.length; i < len; i++) {
-      op_json = op_json_array[i];
+    for (_i = 0, _len = op_json_array.length; _i < _len; _i++) {
+      op_json = op_json_array[_i];
       if (fromHB) {
         op_json.fromHB = "true";
       }
@@ -90,13 +90,13 @@ Engine = (function() {
   };
 
   Engine.prototype.tryUnprocessed = function() {
-    var i, len, old_length, op, ref, unprocessed;
+    var old_length, op, unprocessed, _i, _len, _ref;
     while (true) {
       old_length = this.unprocessed_ops.length;
       unprocessed = [];
-      ref = this.unprocessed_ops;
-      for (i = 0, len = ref.length; i < len; i++) {
-        op = ref[i];
+      _ref = this.unprocessed_ops;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        op = _ref[_i];
         if (this.HB.getOperation(op) != null) {
 
         } else if ((!this.HB.isExpectedOperation(op) && (op.fromHB == null)) || (!op.execute())) {

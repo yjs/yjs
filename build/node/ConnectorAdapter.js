@@ -19,22 +19,22 @@ adaptConnector = function(connector, engine, HB, execution_listener) {
   }
   execution_listener.push(send_);
   encode_state_vector = function(v) {
-    var results, value;
-    results = [];
+    var value, _results;
+    _results = [];
     for (name in v) {
       value = v[name];
-      results.push({
+      _results.push({
         user: name,
         state: value
       });
     }
-    return results;
+    return _results;
   };
   parse_state_vector = function(v) {
-    var i, len, s, state_vector;
+    var s, state_vector, _i, _len;
     state_vector = {};
-    for (i = 0, len = v.length; i < len; i++) {
-      s = v[i];
+    for (_i = 0, _len = v.length; _i < _len; _i++) {
+      s = v[_i];
       state_vector[s.user] = s.state;
     }
     return state_vector;

@@ -1,10 +1,10 @@
 var HistoryBuffer,
-  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 HistoryBuffer = (function() {
-  function HistoryBuffer(user_id1) {
-    this.user_id = user_id1;
-    this.emptyGarbage = bind(this.emptyGarbage, this);
+  function HistoryBuffer(_at_user_id) {
+    this.user_id = _at_user_id;
+    this.emptyGarbage = __bind(this.emptyGarbage, this);
     this.operation_counter = {};
     this.buffer = {};
     this.change_listeners = [];
@@ -43,10 +43,10 @@ HistoryBuffer = (function() {
   };
 
   HistoryBuffer.prototype.emptyGarbage = function() {
-    var i, len, o, ref;
-    ref = this.garbage;
-    for (i = 0, len = ref.length; i < len; i++) {
-      o = ref[i];
+    var o, _i, _len, _ref;
+    _ref = this.garbage;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      o = _ref[_i];
       if (typeof o.cleanup === "function") {
         o.cleanup();
       }
@@ -64,18 +64,18 @@ HistoryBuffer = (function() {
   };
 
   HistoryBuffer.prototype.addToGarbageCollector = function() {
-    var i, len, o, results;
+    var o, _i, _len, _results;
     if (this.performGarbageCollection) {
-      results = [];
-      for (i = 0, len = arguments.length; i < len; i++) {
-        o = arguments[i];
+      _results = [];
+      for (_i = 0, _len = arguments.length; _i < _len; _i++) {
+        o = arguments[_i];
         if (o != null) {
-          results.push(this.garbage.push(o));
+          _results.push(this.garbage.push(o));
         } else {
-          results.push(void 0);
+          _results.push(void 0);
         }
       }
-      return results;
+      return _results;
     }
   };
 
@@ -92,8 +92,8 @@ HistoryBuffer = (function() {
     return this.garbageCollectTimeoutId = void 0;
   };
 
-  HistoryBuffer.prototype.setGarbageCollectTimeout = function(garbageCollectTimeout) {
-    this.garbageCollectTimeout = garbageCollectTimeout;
+  HistoryBuffer.prototype.setGarbageCollectTimeout = function(_at_garbageCollectTimeout) {
+    this.garbageCollectTimeout = _at_garbageCollectTimeout;
   };
 
   HistoryBuffer.prototype.getReservedUniqueIdentifier = function() {
@@ -104,12 +104,12 @@ HistoryBuffer = (function() {
   };
 
   HistoryBuffer.prototype.getOperationCounter = function(user_id) {
-    var ctn, ref, res, user;
+    var ctn, res, user, _ref;
     if (user_id == null) {
       res = {};
-      ref = this.operation_counter;
-      for (user in ref) {
-        ctn = ref[user];
+      _ref = this.operation_counter;
+      for (user in _ref) {
+        ctn = _ref[user];
         res[user] = ctn;
       }
       return res;
@@ -119,16 +119,16 @@ HistoryBuffer = (function() {
   };
 
   HistoryBuffer.prototype.isExpectedOperation = function(o) {
-    var base, name;
-    if ((base = this.operation_counter)[name = o.uid.creator] == null) {
-      base[name] = 0;
+    var _base, _name;
+    if ((_base = this.operation_counter)[_name = o.uid.creator] == null) {
+      _base[_name] = 0;
     }
     o.uid.op_number <= this.operation_counter[o.uid.creator];
     return true;
   };
 
   HistoryBuffer.prototype._encode = function(state_vector) {
-    var json, o, o_json, o_next, o_number, o_prev, ref, u_name, unknown, user;
+    var json, o, o_json, o_next, o_number, o_prev, u_name, unknown, user, _ref;
     if (state_vector == null) {
       state_vector = {};
     }
@@ -139,9 +139,9 @@ HistoryBuffer = (function() {
       }
       return (state_vector[user] == null) || state_vector[user] <= o_number;
     };
-    ref = this.buffer;
-    for (u_name in ref) {
-      user = ref[u_name];
+    _ref = this.buffer;
+    for (u_name in _ref) {
+      user = _ref[u_name];
       if (u_name === "_") {
         continue;
       }
@@ -186,11 +186,11 @@ HistoryBuffer = (function() {
   };
 
   HistoryBuffer.prototype.getOperation = function(uid) {
-    var o, ref;
+    var o, _ref;
     if (uid.uid != null) {
       uid = uid.uid;
     }
-    o = (ref = this.buffer[uid.creator]) != null ? ref[uid.op_number] : void 0;
+    o = (_ref = this.buffer[uid.creator]) != null ? _ref[uid.op_number] : void 0;
     if ((uid.sub != null) && (o != null)) {
       return o.retrieveSub(uid.sub);
     } else {
@@ -214,8 +214,8 @@ HistoryBuffer = (function() {
   };
 
   HistoryBuffer.prototype.removeOperation = function(o) {
-    var ref;
-    return (ref = this.buffer[o.uid.creator]) != null ? delete ref[o.uid.op_number] : void 0;
+    var _ref;
+    return (_ref = this.buffer[o.uid.creator]) != null ? delete _ref[o.uid.op_number] : void 0;
   };
 
   HistoryBuffer.prototype.setInvokeSyncHandler = function(f) {
@@ -225,23 +225,23 @@ HistoryBuffer = (function() {
   HistoryBuffer.prototype.invokeSync = function() {};
 
   HistoryBuffer.prototype.renewStateVector = function(state_vector) {
-    var results, state, user;
-    results = [];
+    var state, user, _results;
+    _results = [];
     for (user in state_vector) {
       state = state_vector[user];
       if (((this.operation_counter[user] == null) || (this.operation_counter[user] < state_vector[user])) && (state_vector[user] != null)) {
-        results.push(this.operation_counter[user] = state_vector[user]);
+        _results.push(this.operation_counter[user] = state_vector[user]);
       } else {
-        results.push(void 0);
+        _results.push(void 0);
       }
     }
-    return results;
+    return _results;
   };
 
   HistoryBuffer.prototype.addToCounter = function(o) {
-    var base, name;
-    if ((base = this.operation_counter)[name = o.uid.creator] == null) {
-      base[name] = 0;
+    var _base, _name;
+    if ((_base = this.operation_counter)[_name = o.uid.creator] == null) {
+      _base[_name] = 0;
     }
     if (o.uid.creator !== this.getUserId()) {
       if (o.uid.op_number === this.operation_counter[o.uid.creator]) {
