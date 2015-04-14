@@ -1,6 +1,6 @@
-var __slice = [].slice,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  __hasProp = {}.hasOwnProperty;
+var slice = [].slice,
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 module.exports = function() {
   var execution_listener, ops;
@@ -51,19 +51,19 @@ module.exports = function() {
       } else {
         callon = this;
       }
-      return this.forwardEvent.apply(this, [callon].concat(__slice.call(arguments)));
+      return this.forwardEvent.apply(this, [callon].concat(slice.call(arguments)));
     };
 
     Operation.prototype.forwardEvent = function() {
-      var args, f, op, _i, _len, _ref, _results;
-      op = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-      _ref = this.event_listeners;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        f = _ref[_i];
-        _results.push(f.call.apply(f, [op].concat(__slice.call(args))));
+      var args, f, j, len, op, ref, results;
+      op = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
+      ref = this.event_listeners;
+      results = [];
+      for (j = 0, len = ref.length; j < len; j++) {
+        f = ref[j];
+        results.push(f.call.apply(f, [op].concat(slice.call(args))));
       }
-      return _results;
+      return results;
     };
 
     Operation.prototype.isDeleted = function() {
@@ -88,8 +88,8 @@ module.exports = function() {
       return this.deleteAllObservers();
     };
 
-    Operation.prototype.setParent = function(_at_parent) {
-      this.parent = _at_parent;
+    Operation.prototype.setParent = function(parent1) {
+      this.parent = parent1;
     };
 
     Operation.prototype.getParent = function() {
@@ -112,26 +112,26 @@ module.exports = function() {
     };
 
     Operation.prototype.cloneUid = function() {
-      var n, uid, v, _ref;
+      var n, ref, uid, v;
       uid = {};
-      _ref = this.getUid();
-      for (n in _ref) {
-        v = _ref[n];
+      ref = this.getUid();
+      for (n in ref) {
+        v = ref[n];
         uid[n] = v;
       }
       return uid;
     };
 
     Operation.prototype.execute = function() {
-      var l, _i, _len;
+      var j, l, len;
       this.is_executed = true;
       if (this.uid == null) {
         this.uid = this.HB.getNextOperationIdentifier();
       }
       if (this.uid.noOperation == null) {
         this.HB.addOperation(this);
-        for (_i = 0, _len = execution_listener.length; _i < _len; _i++) {
-          l = execution_listener[_i];
+        for (j = 0, len = execution_listener.length; j < len; j++) {
+          l = execution_listener[j];
           l(this._encode());
         }
       }
@@ -168,12 +168,12 @@ module.exports = function() {
     };
 
     Operation.prototype.validateSavedOperations = function() {
-      var name, op, op_uid, success, uninstantiated, _ref;
+      var name, op, op_uid, ref, success, uninstantiated;
       uninstantiated = {};
       success = this;
-      _ref = this.unchecked;
-      for (name in _ref) {
-        op_uid = _ref[name];
+      ref = this.unchecked;
+      for (name in ref) {
+        op_uid = ref[name];
         op = this.HB.getOperation(op_uid);
         if (op) {
           this[name] = op;
@@ -190,28 +190,29 @@ module.exports = function() {
     };
 
     Operation.prototype.getCustomType = function() {
-      var Type, t, _i, _len, _ref;
+      var Type, j, len, ref, t;
       if (this.custom_type == null) {
-        throw new Error("This operation was not initialized with a custom type");
-      }
-      if (this.custom_type.constructor === String) {
-        Type = this.custom_types;
-        _ref = this.custom_type.split(".");
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          t = _ref[_i];
-          Type = Type[t];
+        return this;
+      } else {
+        if (this.custom_type.constructor === String) {
+          Type = this.custom_types;
+          ref = this.custom_type.split(".");
+          for (j = 0, len = ref.length; j < len; j++) {
+            t = ref[j];
+            Type = Type[t];
+          }
+          this.custom_type = new Type();
+          this.custom_type._setModel(this);
         }
-        this.custom_type = new Type();
-        this.custom_type._setModel(this);
+        return this.custom_type;
       }
-      return this.custom_type;
     };
 
     return Operation;
 
   })();
-  ops.Delete = (function(_super) {
-    __extends(Delete, _super);
+  ops.Delete = (function(superClass) {
+    extend(Delete, superClass);
 
     function Delete(custom_type, uid, deletes) {
       this.saveOperation('deletes', deletes);
@@ -249,8 +250,8 @@ module.exports = function() {
     uid = o['uid'], deletes_uid = o['deletes'];
     return new this(null, uid, deletes_uid);
   };
-  ops.Insert = (function(_super) {
-    __extends(Insert, _super);
+  ops.Insert = (function(superClass) {
+    extend(Insert, superClass);
 
     function Insert(custom_type, content, parent, uid, prev_cl, next_cl, origin) {
       if (content === void 0) {
@@ -304,7 +305,7 @@ module.exports = function() {
     };
 
     Insert.prototype.applyDelete = function(o) {
-      var callLater, garbagecollect, _ref;
+      var callLater, garbagecollect, ref;
       if (this.deleted_by == null) {
         this.deleted_by = [];
       }
@@ -323,17 +324,17 @@ module.exports = function() {
       if (callLater) {
         this.parent.callOperationSpecificDeleteEvents(this, o);
       }
-      if ((_ref = this.prev_cl) != null ? _ref.isDeleted() : void 0) {
+      if ((ref = this.prev_cl) != null ? ref.isDeleted() : void 0) {
         return this.prev_cl.applyDelete();
       }
     };
 
     Insert.prototype.cleanup = function() {
-      var d, o, _i, _len, _ref;
+      var d, j, len, o, ref;
       if (this.next_cl.isDeleted()) {
-        _ref = this.deleted_by;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          d = _ref[_i];
+        ref = this.deleted_by;
+        for (j = 0, len = ref.length; j < len; j++) {
+          d = ref[j];
           d.cleanup();
         }
         o = this.next_cl;
@@ -371,14 +372,14 @@ module.exports = function() {
     };
 
     Insert.prototype.execute = function() {
-      var distance_to_origin, i, o, _base;
+      var base, distance_to_origin, i, o;
       if (!this.validateSavedOperations()) {
         return false;
       } else {
         if (this.content instanceof ops.Operation) {
           this.content.insert_parent = this;
-          if ((_base = this.content).referenced_by == null) {
-            _base.referenced_by = 0;
+          if ((base = this.content).referenced_by == null) {
+            base.referenced_by = 0;
           }
           this.content.referenced_by++;
         }
@@ -452,7 +453,7 @@ module.exports = function() {
     };
 
     Insert.prototype._encode = function(json) {
-      var _ref;
+      var ref;
       if (json == null) {
         json = {};
       }
@@ -464,7 +465,7 @@ module.exports = function() {
       } else if (this.origin !== this.prev_cl) {
         json.origin = this.origin.getUid();
       }
-      if (((_ref = this.content) != null ? _ref.getUid : void 0) != null) {
+      if (((ref = this.content) != null ? ref.getUid : void 0) != null) {
         json['content'] = this.content.getUid();
       } else {
         json['content'] = JSON.stringify(this.content);
@@ -483,8 +484,8 @@ module.exports = function() {
     }
     return new this(null, content, parent, uid, prev, next, origin);
   };
-  ops.Delimiter = (function(_super) {
-    __extends(Delimiter, _super);
+  ops.Delimiter = (function(superClass) {
+    extend(Delimiter, superClass);
 
     function Delimiter(prev_cl, next_cl, origin) {
       this.saveOperation('prev_cl', prev_cl);
@@ -513,10 +514,10 @@ module.exports = function() {
     };
 
     Delimiter.prototype.execute = function() {
-      var _ref, _ref1;
-      if (((_ref = this.unchecked) != null ? _ref['next_cl'] : void 0) != null) {
+      var ref, ref1;
+      if (((ref = this.unchecked) != null ? ref['next_cl'] : void 0) != null) {
         return Delimiter.__super__.execute.apply(this, arguments);
-      } else if ((_ref1 = this.unchecked) != null ? _ref1['prev_cl'] : void 0) {
+      } else if ((ref1 = this.unchecked) != null ? ref1['prev_cl'] : void 0) {
         if (this.validateSavedOperations()) {
           if (this.prev_cl.next_cl != null) {
             throw new Error("Probably duplicated operations");
@@ -536,12 +537,12 @@ module.exports = function() {
     };
 
     Delimiter.prototype._encode = function() {
-      var _ref, _ref1;
+      var ref, ref1;
       return {
         'type': this.type,
         'uid': this.getUid(),
-        'prev': (_ref = this.prev_cl) != null ? _ref.getUid() : void 0,
-        'next': (_ref1 = this.next_cl) != null ? _ref1.getUid() : void 0
+        'prev': (ref = this.prev_cl) != null ? ref.getUid() : void 0,
+        'next': (ref1 = this.next_cl) != null ? ref1.getUid() : void 0
       };
     };
 
