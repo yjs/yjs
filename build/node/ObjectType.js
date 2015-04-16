@@ -1,13 +1,13 @@
 var YObject;
 
 YObject = (function() {
-  function YObject(_at__object) {
-    var name, val, _ref;
-    this._object = _at__object != null ? _at__object : {};
+  function YObject(_object) {
+    var name, ref, val;
+    this._object = _object != null ? _object : {};
     if (this._object.constructor === Object) {
-      _ref = this._object;
-      for (name in _ref) {
-        val = _ref[name];
+      ref = this._object;
+      for (name in ref) {
+        val = ref[name];
         if (val.constructor === Object) {
           this._object[name] = new YObject(val);
         }
@@ -20,12 +20,12 @@ YObject = (function() {
   YObject.prototype._name = "Object";
 
   YObject.prototype._getModel = function(types, ops) {
-    var n, o, _ref;
+    var n, o, ref;
     if (this._model == null) {
       this._model = new ops.MapManager(this).execute();
-      _ref = this._object;
-      for (n in _ref) {
-        o = _ref[n];
+      ref = this._object;
+      for (n in ref) {
+        o = ref[n];
         this._model.val(n, o);
       }
     }
@@ -33,8 +33,8 @@ YObject = (function() {
     return this._model;
   };
 
-  YObject.prototype._setModel = function(_at__model) {
-    this._model = _at__model;
+  YObject.prototype._setModel = function(_model) {
+    this._model = _model;
     return delete this._object;
   };
 
@@ -49,7 +49,7 @@ YObject = (function() {
   };
 
   YObject.prototype.val = function(name, content) {
-    var n, res, v, _ref;
+    var n, ref, res, v;
     if (this._model != null) {
       return this._model.val.apply(this._model, arguments);
     } else {
@@ -59,9 +59,9 @@ YObject = (function() {
         return this._object[name];
       } else {
         res = {};
-        _ref = this._object;
-        for (n in _ref) {
-          v = _ref[n];
+        ref = this._object;
+        for (n in ref) {
+          v = ref[n];
           res[n] = v;
         }
         return res;

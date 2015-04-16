@@ -1,6 +1,6 @@
 var basic_ops_uninitialized,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  __hasProp = {}.hasOwnProperty;
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 basic_ops_uninitialized = require("./Basic");
 
@@ -8,8 +8,8 @@ module.exports = function() {
   var basic_ops, ops;
   basic_ops = basic_ops_uninitialized();
   ops = basic_ops.operations;
-  ops.MapManager = (function(_super) {
-    __extends(MapManager, _super);
+  ops.MapManager = (function(superClass) {
+    extend(MapManager, superClass);
 
     function MapManager(custom_type, uid) {
       this._map = {};
@@ -19,10 +19,10 @@ module.exports = function() {
     MapManager.prototype.type = "MapManager";
 
     MapManager.prototype.applyDelete = function() {
-      var name, p, _ref;
-      _ref = this._map;
-      for (name in _ref) {
-        p = _ref[name];
+      var name, p, ref;
+      ref = this._map;
+      for (name in ref) {
+        p = ref[name];
         p.applyDelete();
       }
       return MapManager.__super__.applyDelete.call(this);
@@ -33,17 +33,17 @@ module.exports = function() {
     };
 
     MapManager.prototype.map = function(f) {
-      var n, v, _ref;
-      _ref = this._map;
-      for (n in _ref) {
-        v = _ref[n];
+      var n, ref, v;
+      ref = this._map;
+      for (n in ref) {
+        v = ref[n];
         f(n, v);
       }
       return void 0;
     };
 
     MapManager.prototype.val = function(name, content) {
-      var o, prop, rep, res, result, _ref;
+      var o, prop, ref, rep, res, result;
       if (arguments.length > 1) {
         if ((content != null) && (content._getModel != null)) {
           rep = content._getModel(this.custom_types, this.operations);
@@ -66,9 +66,9 @@ module.exports = function() {
         }
       } else {
         result = {};
-        _ref = this._map;
-        for (name in _ref) {
-          o = _ref[name];
+        ref = this._map;
+        for (name in ref) {
+          o = ref[name];
           if (!o.isContentDeleted()) {
             result[name] = o.val();
           }
@@ -78,9 +78,9 @@ module.exports = function() {
     };
 
     MapManager.prototype["delete"] = function(name) {
-      var _ref;
-      if ((_ref = this._map[name]) != null) {
-        _ref.deleteContent();
+      var ref;
+      if ((ref = this._map[name]) != null) {
+        ref.deleteContent();
       }
       return this;
     };
@@ -113,8 +113,8 @@ module.exports = function() {
     uid = json['uid'], custom_type = json['custom_type'];
     return new this(custom_type, uid);
   };
-  ops.ListManager = (function(_super) {
-    __extends(ListManager, _super);
+  ops.ListManager = (function(superClass) {
+    extend(ListManager, superClass);
 
     function ListManager(custom_type, uid) {
       this.beginning = new ops.Delimiter(void 0, void 0);
@@ -142,25 +142,25 @@ module.exports = function() {
     };
 
     ListManager.prototype.toJson = function(transform_to_value) {
-      var i, o, val, _i, _len, _results;
+      var i, j, len, o, results, val;
       if (transform_to_value == null) {
         transform_to_value = false;
       }
       val = this.val();
-      _results = [];
-      for (o = _i = 0, _len = val.length; _i < _len; o = ++_i) {
+      results = [];
+      for (o = j = 0, len = val.length; j < len; o = ++j) {
         i = val[o];
         if (o instanceof ops.Object) {
-          _results.push(o.toJson(transform_to_value));
+          results.push(o.toJson(transform_to_value));
         } else if (o instanceof ops.ListManager) {
-          _results.push(o.toJson(transform_to_value));
+          results.push(o.toJson(transform_to_value));
         } else if (transform_to_value && o instanceof ops.Operation) {
-          _results.push(o.val());
+          results.push(o.val());
         } else {
-          _results.push(o);
+          results.push(o);
         }
       }
-      return _results;
+      return results;
     };
 
     ListManager.prototype.execute = function() {
@@ -274,7 +274,7 @@ module.exports = function() {
     };
 
     ListManager.prototype.insertAfter = function(left, contents) {
-      var c, right, tmp, _i, _len;
+      var c, j, len, right, tmp;
       right = left.next_cl;
       while (right.isDeleted()) {
         right = right.next_cl;
@@ -283,8 +283,8 @@ module.exports = function() {
       if (contents instanceof ops.Operation) {
         (new ops.Insert(null, content, void 0, void 0, left, right)).execute();
       } else {
-        for (_i = 0, _len = contents.length; _i < _len; _i++) {
-          c = contents[_i];
+        for (j = 0, len = contents.length; j < len; j++) {
+          c = contents[j];
           if ((c != null) && (c._name != null) && (c._getModel != null)) {
             c = c._getModel(this.custom_types, this.operations);
           }
@@ -302,13 +302,13 @@ module.exports = function() {
     };
 
     ListManager.prototype["delete"] = function(position, length) {
-      var d, delete_ops, i, o, _i;
+      var d, delete_ops, i, j, o, ref;
       if (length == null) {
         length = 1;
       }
       o = this.getOperationByPosition(position + 1);
       delete_ops = [];
-      for (i = _i = 0; 0 <= length ? _i < length : _i > length; i = 0 <= length ? ++_i : --_i) {
+      for (i = j = 0, ref = length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
         if (o instanceof ops.Delimiter) {
           break;
         }
@@ -363,27 +363,36 @@ module.exports = function() {
     uid = json['uid'], custom_type = json['custom_type'];
     return new this(custom_type, uid);
   };
-  ops.Composition = (function(_super) {
-    __extends(Composition, _super);
+  ops.Composition = (function(superClass) {
+    extend(Composition, superClass);
 
-    function Composition(custom_type, _at_composition_value, uid, composition_ref) {
-      this.composition_value = _at_composition_value;
+    function Composition(custom_type, composition_value, uid, tmp_composition_ref) {
       Composition.__super__.constructor.call(this, custom_type, uid);
-      if (composition_ref) {
-        this.saveOperation('composition_ref', composition_ref);
+      if (tmp_composition_ref != null) {
+        this.tmp_composition_ref = tmp_composition_ref;
       } else {
-        this.composition_ref = this.beginning;
+        this.composition_ref = this.end.prev_cl;
       }
     }
 
     Composition.prototype.type = "Composition";
 
-    Composition.prototype.val = function() {
-      return this.composition_value;
-    };
-
     Composition.prototype.callOperationSpecificInsertEvents = function(op) {
       var o;
+      if (this.tmp_composition_ref != null) {
+        if (op.uid.creator === this.tmp_composition_ref.creator && op.uid.op_number === this.tmp_composition_ref.op_number) {
+          this.composition_ref = op;
+          delete this.tmp_composition_ref;
+          o = op.next_cl;
+          while (o.next_cl != null) {
+            if (!o.isDeleted()) {
+              this.callOperationSpecificInsertEvents(o);
+            }
+            o = o.next_cl;
+          }
+        }
+        return;
+      }
       if (this.composition_ref.next_cl === op) {
         op.undo_delta = this.getCustomType()._apply(op.content);
       } else {
@@ -418,8 +427,12 @@ module.exports = function() {
       if (json == null) {
         json = {};
       }
-      json.composition_value = JSON.stringify(this.composition_value);
-      json.composition_ref = this.composition_ref.getUid();
+      json.composition_value = JSON.stringify(this.getCustomType()._getCompositionValue());
+      if (this.composition_ref != null) {
+        json.composition_ref = this.composition_ref.getUid();
+      } else {
+        json.composition_ref = this.tmp_composition_ref;
+      }
       return Composition.__super__._encode.call(this, json);
     };
 
@@ -431,12 +444,12 @@ module.exports = function() {
     uid = json['uid'], custom_type = json['custom_type'], composition_value = json['composition_value'], composition_ref = json['composition_ref'];
     return new this(custom_type, JSON.parse(composition_value), uid, composition_ref);
   };
-  ops.ReplaceManager = (function(_super) {
-    __extends(ReplaceManager, _super);
+  ops.ReplaceManager = (function(superClass) {
+    extend(ReplaceManager, superClass);
 
-    function ReplaceManager(custom_type, _at_event_properties, _at_event_this, uid) {
-      this.event_properties = _at_event_properties;
-      this.event_this = _at_event_this;
+    function ReplaceManager(custom_type, event_properties1, event_this1, uid) {
+      this.event_properties = event_properties1;
+      this.event_this = event_this1;
       if (this.event_properties['object'] == null) {
         this.event_properties['object'] = this.event_this.getCustomType();
       }
@@ -446,13 +459,13 @@ module.exports = function() {
     ReplaceManager.prototype.type = "ReplaceManager";
 
     ReplaceManager.prototype.callEventDecorator = function(events) {
-      var event, name, prop, _i, _len, _ref;
+      var event, j, len, name, prop, ref;
       if (!this.isDeleted()) {
-        for (_i = 0, _len = events.length; _i < _len; _i++) {
-          event = events[_i];
-          _ref = this.event_properties;
-          for (name in _ref) {
-            prop = _ref[name];
+        for (j = 0, len = events.length; j < len; j++) {
+          event = events[j];
+          ref = this.event_properties;
+          for (name in ref) {
+            prop = ref[name];
             event[name] = prop;
           }
         }
