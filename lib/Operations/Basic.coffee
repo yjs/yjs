@@ -508,12 +508,14 @@ module.exports = ()->
     _encode: (json = {})->
       json.prev = @prev_cl.getUid()
       json.next = @next_cl.getUid()
-      json.parent = @parent.getUid()
 
       if @origin.type is "Delimiter"
         json.origin = "Delimiter"
       else if @origin isnt @prev_cl
         json.origin = @origin.getUid()
+
+      # if not (json.prev? and json.next?)
+      json.parent = @parent.getUid()
 
       if @content?.getUid?
         json['content'] = @content.getUid()

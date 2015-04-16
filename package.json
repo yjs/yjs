@@ -26,6 +26,7 @@
   },
   "homepage": "https://dadamonad.github.io/yjs/",
   "dependencies": {
+    "chai": "^2.2.0"
   },
   "devDependencies": {
     "codo": "^2.0.9",
