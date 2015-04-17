@@ -238,12 +238,12 @@ module.exports = ()->
 
       # TODO: always expect an array as content. Then you can combine this with the other option (else)
       if contents instanceof ops.Operation
-        (new ops.Insert null, content, undefined, undefined, left, right).execute()
+        (new ops.Insert null, content, null, undefined, undefined, left, right).execute()
       else
         for c in contents
           if c? and c._name? and c._getModel?
             c = c._getModel(@custom_types, @operations)
-          tmp = (new ops.Insert null, c, undefined, undefined, left, right).execute()
+          tmp = (new ops.Insert null, c, null, undefined, undefined, left, right).execute()
           left = tmp
       @
 
@@ -290,7 +290,7 @@ module.exports = ()->
         position: op.getPosition()
         object: @getCustomType()
         changedBy: op.uid.creator
-        value: getContentType op.content
+        value: getContentType op.val()
       ]
 
     callOperationSpecificDeleteEvents: (op, del_op)->
@@ -316,31 +316,60 @@ module.exports = ()->
 
   class ops.Composition extends ops.ListManager
 
-    constructor: (custom_type, @composition_value, uid, composition_ref)->
+    constructor: (custom_type, @_composition_value, composition_value_operations, uid, tmp_composition_ref)->
+      # we can't use @seveOperation 'composition_ref', tmp_composition_ref here,
+      # because then there is a "loop" (insertion refers to parant, refers to insertion..)
+      # This is why we have to check in @callOperationSpecificInsertEvents until we find it
+      console.log("delete this ...")
+      this.constructed_with = [custom_type, @_composition_value, composition_value_operations, uid, tmp_composition_ref] # debug!
       super custom_type, uid
-      if composition_ref
-        @saveOperation 'composition_ref', composition_ref
+      if tmp_composition_ref?
+        @tmp_composition_ref = tmp_composition_ref
       else
-        @composition_ref = @beginning
+        @composition_ref = @end.prev_cl
+      if composition_value_operations?
+        @composition_value_operations = {}
+        for n,o of composition_value_operations
+          @saveOperation n, o, '_composition_value'
 
     type: "Composition"
 
-    val: ()->
-      @composition_value
+    #
+    # @private
+    # @see Operation.execute
+    #
+    execute: ()->
+      if @validateSavedOperations()
+        @getCustomType()._setCompositionValue @_composition_value
+        delete @_composition_value
+        super
+      else
+        false
 
     #
     # This is called, when the Insert-operation was successfully executed.
     #
     callOperationSpecificInsertEvents: (op)->
+      if @tmp_composition_ref?
+        if op.uid.creator is @tmp_composition_ref.creator and op.uid.op_number is @tmp_composition_ref.op_number
+          @composition_ref = op
+          delete @tmp_composition_ref
+          o = op.next_cl
+          while o.next_cl?
+            if not o.isDeleted()
+              @callOperationSpecificInsertEvents o
+            o = o.next_cl
+        return
+
       if @composition_ref.next_cl is op
-        op.undo_delta = @getCustomType()._apply op.content
+        op.undo_delta = @getCustomType()._apply op.val()
       else
         o = @end.prev_cl
         while o isnt op
           @getCustomType()._unapply o.undo_delta
           o = o.prev_cl
         while o isnt @end
-          o.undo_delta = @getCustomType()._apply o.content
+          o.undo_delta = @getCustomType()._apply o.val()
           o = o.next_cl
       @composition_ref = @end.prev_cl
 
@@ -361,16 +390,24 @@ module.exports = ()->
     #
     # @param delta The delta that is applied to the composition_value
     #
-    applyDelta: (delta)->
-      (new ops.Insert null, delta, @, null, @end.prev_cl, @end).execute()
+    applyDelta: (delta, operations)->
+      (new ops.Insert null, delta, operations, @, null, @end.prev_cl, @end).execute()
       undefined
 
     #
     # Encode this operation in such a way that it can be parsed by remote peers.
     #
     _encode: (json = {})->
-      json.composition_value = JSON.stringify @composition_value
-      json.composition_ref = @composition_ref.getUid()
+      custom = @getCustomType()._getCompositionValue()
+      json.composition_value = custom.composition_value
+      if custom.composition_value_operations?
+        json.composition_value_operations = {}
+        for n,o of custom.composition_value_operations
+          json.composition_value_operations[n] = o.getUid()
+      if @composition_ref?
+        json.composition_ref = @composition_ref.getUid()
+      else
+        json.composition_ref = @tmp_composition_ref
       super json
 
   ops.Composition.parse = (json)->
@@ -378,9 +415,10 @@ module.exports = ()->
       'uid' : uid
       'custom_type': custom_type
       'composition_value' : composition_value
+      'composition_value_operations' : composition_value_operations
       'composition_ref' : composition_ref
     } = json
-    new this(custom_type, JSON.parse(composition_value), uid, composition_ref)
+    new this(custom_type, composition_value, composition_value_operations, uid, composition_ref)
 
 
   #
@@ -465,7 +503,7 @@ module.exports = ()->
     #
     replace: (content, replaceable_uid)->
       o = @getLastOperation()
-      relp = (new ops.Insert null, content, @, replaceable_uid, o, o.next_cl).execute()
+      relp = (new ops.Insert null, content, null, @, replaceable_uid, o, o.next_cl).execute()
       # TODO: delete repl (for debugging)
       undefined
 

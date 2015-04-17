@@ -154,32 +154,67 @@ module.exports = function() {
       return json;
     };
 
-    Operation.prototype.saveOperation = function(name, op) {
+    Operation.prototype.saveOperation = function(name, op, base) {
+      var base1, dest, j, last_path, len, path, paths;
+      if (base == null) {
+        base = "this";
+      }
       if (op == null) {
 
       } else if ((op.execute != null) || !((op.op_number != null) && (op.creator != null))) {
-        return this[name] = op;
+        if (base === "this") {
+          return this[name] = op;
+        } else {
+          dest = this[base];
+          paths = name.split("/");
+          last_path = paths.pop();
+          for (j = 0, len = paths.length; j < len; j++) {
+            path = paths[j];
+            dest = dest[path];
+          }
+          return dest[last_path] = op;
+        }
       } else {
         if (this.unchecked == null) {
           this.unchecked = {};
         }
-        return this.unchecked[name] = op;
+        if ((base1 = this.unchecked)[base] == null) {
+          base1[base] = {};
+        }
+        return this.unchecked[base][name] = op;
       }
     };
 
     Operation.prototype.validateSavedOperations = function() {
-      var name, op, op_uid, ref, success, uninstantiated;
+      var base, base_name, dest, j, last_path, len, name, op, op_uid, path, paths, ref, success, uninstantiated;
       uninstantiated = {};
       success = this;
       ref = this.unchecked;
-      for (name in ref) {
-        op_uid = ref[name];
-        op = this.HB.getOperation(op_uid);
-        if (op) {
-          this[name] = op;
-        } else {
-          uninstantiated[name] = op_uid;
-          success = false;
+      for (base_name in ref) {
+        base = ref[base_name];
+        for (name in base) {
+          op_uid = base[name];
+          op = this.HB.getOperation(op_uid);
+          if (op) {
+            if (base_name === "this") {
+              this[name] = op;
+            } else {
+              dest = this[base_name];
+              paths = name.split("/");
+              last_path = paths.pop();
+              for (j = 0, len = paths.length; j < len; j++) {
+                path = paths[j];
+                dest = dest[path];
+              }
+              dest[last_path] = op;
+            }
+          } else {
+            if (uninstantiated[base_name] == null) {
+              uninstantiated[base_name] = {};
+            }
+            uninstantiated[base_name][name] = op_uid;
+            success = false;
+          }
         }
       }
       delete this.unchecked;
@@ -253,13 +288,21 @@ module.exports = function() {
   ops.Insert = (function(superClass) {
     extend(Insert, superClass);
 
-    function Insert(custom_type, content, parent, uid, prev_cl, next_cl, origin) {
+    function Insert(custom_type, content, content_operations, parent, uid, prev_cl, next_cl, origin) {
+      var name, op;
       if (content === void 0) {
 
       } else if ((content != null) && (content.creator != null)) {
         this.saveOperation('content', content);
       } else {
         this.content = content;
+      }
+      if (content_operations != null) {
+        this.content_operations = {};
+        for (name in content_operations) {
+          op = content_operations[name];
+          this.saveOperation(name, op, 'content_operations');
+        }
       }
       this.saveOperation('parent', parent);
       this.saveOperation('prev_cl', prev_cl);
@@ -275,8 +318,28 @@ module.exports = function() {
     Insert.prototype.type = "Insert";
 
     Insert.prototype.val = function() {
-      if ((this.content != null) && (this.content.getCustomType != null)) {
-        return this.content.getCustomType();
+      var content, n, ref, ref1, v;
+      if (this.content != null) {
+        if (this.content.getCustomType != null) {
+          return this.content.getCustomType();
+        } else if (this.content.constructor === Object) {
+          content = {};
+          ref = this.content;
+          for (n in ref) {
+            v = ref[n];
+            content[n] = v;
+          }
+          if (this.content_operations != null) {
+            ref1 = this.content_operations;
+            for (n in ref1) {
+              v = ref1[n];
+              content[n] = v;
+            }
+          }
+          return content;
+        } else {
+          return this.content;
+        }
       } else {
         return this.content;
       }
@@ -380,14 +443,14 @@ module.exports = function() {
     };
 
     Insert.prototype.execute = function() {
-      var base, distance_to_origin, i, o;
+      var base1, distance_to_origin, i, o;
       if (!this.validateSavedOperations()) {
         return false;
       } else {
         if (this.content instanceof ops.Operation) {
           this.content.insert_parent = this;
-          if ((base = this.content).referenced_by == null) {
-            base.referenced_by = 0;
+          if ((base1 = this.content).referenced_by == null) {
+            base1.referenced_by = 0;
           }
           this.content.referenced_by++;
         }
@@ -461,7 +524,7 @@ module.exports = function() {
     };
 
     Insert.prototype._encode = function(json) {
-      var ref;
+      var n, o, operations, ref, ref1;
       if (json == null) {
         json = {};
       }
@@ -474,9 +537,18 @@ module.exports = function() {
       }
       json.parent = this.parent.getUid();
       if (((ref = this.content) != null ? ref.getUid : void 0) != null) {
-        json['content'] = this.content.getUid();
+        json.content = this.content.getUid();
       } else {
-        json['content'] = JSON.stringify(this.content);
+        json.content = JSON.stringify(this.content);
+      }
+      if (this.content_operations != null) {
+        operations = {};
+        ref1 = this.content_operations;
+        for (n in ref1) {
+          o = ref1[n];
+          operations[n] = o.getUid();
+        }
+        json.content_operations = operations;
       }
       return Insert.__super__._encode.call(this, json);
     };
@@ -485,12 +557,12 @@ module.exports = function() {
 
   })(ops.Operation);
   ops.Insert.parse = function(json) {
-    var content, next, origin, parent, prev, uid;
-    content = json['content'], uid = json['uid'], prev = json['prev'], next = json['next'], origin = json['origin'], parent = json['parent'];
+    var content, content_operations, next, origin, parent, prev, uid;
+    content = json['content'], content_operations = json['content_operations'], uid = json['uid'], prev = json['prev'], next = json['next'], origin = json['origin'], parent = json['parent'];
     if (typeof content === "string") {
       content = JSON.parse(content);
     }
-    return new this(null, content, parent, uid, prev, next, origin);
+    return new this(null, content, content_operations, parent, uid, prev, next, origin);
   };
   ops.Delimiter = (function(superClass) {
     extend(Delimiter, superClass);

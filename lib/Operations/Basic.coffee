@@ -182,7 +182,7 @@ module.exports = ()->
     #   @param {String} name The name of the operation. After calling this function op is accessible via this[name].
     #   @param {Operation} op An Operation object
     #
-    saveOperation: (name, op)->
+    saveOperation: (name, op, base = "this")->
 
       #
       # Every instance of $Operation must have an $execute function.
@@ -194,11 +194,20 @@ module.exports = ()->
       else if op.execute? or not (op.op_number? and op.creator?)
         # is instantiated, or op is string. Currently "Delimiter" is saved as string
         # (in combination with @parent you can retrieve the delimiter..)
-        @[name] = op
+        if base is "this"
+          @[name] = op
+        else
+          dest = @[base]
+          paths = name.split("/")
+          last_path = paths.pop()
+          for path in paths
+            dest = dest[path]
+          dest[last_path] = op
       else
         # not initialized. Do it when calling $validateSavedOperations()
         @unchecked ?= {}
-        @unchecked[name] = op
+        @unchecked[base] ?= {}
+        @unchecked[base][name] = op
 
     #
     # @private
@@ -210,13 +219,23 @@ module.exports = ()->
     validateSavedOperations: ()->
       uninstantiated = {}
       success = @
-      for name, op_uid of @unchecked
-        op = @HB.getOperation op_uid
-        if op
-          @[name] = op
-        else
-          uninstantiated[name] = op_uid
-          success = false
+      for base_name, base of @unchecked
+        for name, op_uid of base
+          op = @HB.getOperation op_uid
+          if op
+            if base_name is "this"
+              @[name] = op
+            else
+              dest = @[base_name]
+              paths = name.split("/")
+              last_path = paths.pop()
+              for path in paths
+                dest = dest[path]
+              dest[last_path] = op
+          else
+            uninstantiated[base_name] ?= {}
+            uninstantiated[base_name][name] = op_uid
+            success = false
       delete @unchecked
       if not success
         @unchecked = uninstantiated
@@ -305,7 +324,7 @@ module.exports = ()->
     # @param {Operation} prev_cl The predecessor of this operation in the complete-list (cl)
     # @param {Operation} next_cl The successor of this operation in the complete-list (cl)
     #
-    constructor: (custom_type, content, parent, uid, prev_cl, next_cl, origin)->
+    constructor: (custom_type, content, content_operations, parent, uid, prev_cl, next_cl, origin)->
       # see encode to see, why we are doing it this way
       if content is undefined
         # nop
@@ -313,6 +332,10 @@ module.exports = ()->
         @saveOperation 'content', content
       else
         @content = content
+      if content_operations?
+        @content_operations = {}
+        for name, op of content_operations
+          @saveOperation name, op, 'content_operations'
       @saveOperation 'parent', parent
       @saveOperation 'prev_cl', prev_cl
       @saveOperation 'next_cl', next_cl
@@ -325,8 +348,19 @@ module.exports = ()->
     type: "Insert"
 
     val: ()->
-      if @content? and @content.getCustomType?
-        @content.getCustomType()
+      if @content?
+        if @content.getCustomType?
+          @content.getCustomType()
+        else if @content.constructor is Object
+          content = {}
+          for n,v of @content
+            content[n] = v
+          if @content_operations?
+            for n,v of @content_operations
+              content[n] = v
+          content
+        else
+          @content
       else
         @content
 
@@ -518,14 +552,20 @@ module.exports = ()->
       json.parent = @parent.getUid()
 
       if @content?.getUid?
-        json['content'] = @content.getUid()
+        json.content = @content.getUid()
       else
-        json['content'] = JSON.stringify @content
+        json.content = JSON.stringify @content
+      if @content_operations?
+        operations = {}
+        for n,o of @content_operations
+          operations[n] = o.getUid()
+        json.content_operations = operations
       super json
 
   ops.Insert.parse = (json)->
     {
       'content' : content
+      'content_operations' : content_operations
       'uid' : uid
       'prev': prev
       'next': next
@@ -534,7 +574,7 @@ module.exports = ()->
     } = json
     if typeof content is "string"
       content = JSON.parse(content)
-    new this null, content, parent, uid, prev, next, origin
+    new this null, content, content_operations, parent, uid, prev, next, origin
 
   #
   # @nodoc

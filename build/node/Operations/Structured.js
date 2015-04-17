@@ -281,14 +281,14 @@ module.exports = function() {
       }
       left = right.prev_cl;
       if (contents instanceof ops.Operation) {
-        (new ops.Insert(null, content, void 0, void 0, left, right)).execute();
+        (new ops.Insert(null, content, null, void 0, void 0, left, right)).execute();
       } else {
         for (j = 0, len = contents.length; j < len; j++) {
           c = contents[j];
           if ((c != null) && (c._name != null) && (c._getModel != null)) {
             c = c._getModel(this.custom_types, this.operations);
           }
-          tmp = (new ops.Insert(null, c, void 0, void 0, left, right)).execute();
+          tmp = (new ops.Insert(null, c, null, void 0, void 0, left, right)).execute();
           left = tmp;
         }
       }
@@ -337,7 +337,7 @@ module.exports = function() {
           position: op.getPosition(),
           object: this.getCustomType(),
           changedBy: op.uid.creator,
-          value: getContentType(op.content)
+          value: getContentType(op.val())
         }
       ]);
     };
@@ -366,16 +366,37 @@ module.exports = function() {
   ops.Composition = (function(superClass) {
     extend(Composition, superClass);
 
-    function Composition(custom_type, composition_value, uid, tmp_composition_ref) {
+    function Composition(custom_type, _composition_value, composition_value_operations, uid, tmp_composition_ref) {
+      var n, o;
+      this._composition_value = _composition_value;
+      console.log("delete this ...");
+      this.constructed_with = [custom_type, this._composition_value, composition_value_operations, uid, tmp_composition_ref];
       Composition.__super__.constructor.call(this, custom_type, uid);
       if (tmp_composition_ref != null) {
         this.tmp_composition_ref = tmp_composition_ref;
       } else {
         this.composition_ref = this.end.prev_cl;
       }
+      if (composition_value_operations != null) {
+        this.composition_value_operations = {};
+        for (n in composition_value_operations) {
+          o = composition_value_operations[n];
+          this.saveOperation(n, o, '_composition_value');
+        }
+      }
     }
 
     Composition.prototype.type = "Composition";
+
+    Composition.prototype.execute = function() {
+      if (this.validateSavedOperations()) {
+        this.getCustomType()._setCompositionValue(this._composition_value);
+        delete this._composition_value;
+        return Composition.__super__.execute.apply(this, arguments);
+      } else {
+        return false;
+      }
+    };
 
     Composition.prototype.callOperationSpecificInsertEvents = function(op) {
       var o;
@@ -394,7 +415,7 @@ module.exports = function() {
         return;
       }
       if (this.composition_ref.next_cl === op) {
-        op.undo_delta = this.getCustomType()._apply(op.content);
+        op.undo_delta = this.getCustomType()._apply(op.val());
       } else {
         o = this.end.prev_cl;
         while (o !== op) {
@@ -402,7 +423,7 @@ module.exports = function() {
           o = o.prev_cl;
         }
         while (o !== this.end) {
-          o.undo_delta = this.getCustomType()._apply(o.content);
+          o.undo_delta = this.getCustomType()._apply(o.val());
           o = o.next_cl;
         }
       }
@@ -418,16 +439,26 @@ module.exports = function() {
 
     Composition.prototype.callOperationSpecificDeleteEvents = function(op, del_op) {};
 
-    Composition.prototype.applyDelta = function(delta) {
-      (new ops.Insert(null, delta, this, null, this.end.prev_cl, this.end)).execute();
+    Composition.prototype.applyDelta = function(delta, operations) {
+      (new ops.Insert(null, delta, operations, this, null, this.end.prev_cl, this.end)).execute();
       return void 0;
     };
 
     Composition.prototype._encode = function(json) {
+      var custom, n, o, ref;
       if (json == null) {
         json = {};
       }
-      json.composition_value = JSON.stringify(this.getCustomType()._getCompositionValue());
+      custom = this.getCustomType()._getCompositionValue();
+      json.composition_value = custom.composition_value;
+      if (custom.composition_value_operations != null) {
+        json.composition_value_operations = {};
+        ref = custom.composition_value_operations;
+        for (n in ref) {
+          o = ref[n];
+          json.composition_value_operations[n] = o.getUid();
+        }
+      }
       if (this.composition_ref != null) {
         json.composition_ref = this.composition_ref.getUid();
       } else {
@@ -440,9 +471,9 @@ module.exports = function() {
 
   })(ops.ListManager);
   ops.Composition.parse = function(json) {
-    var composition_ref, composition_value, custom_type, uid;
-    uid = json['uid'], custom_type = json['custom_type'], composition_value = json['composition_value'], composition_ref = json['composition_ref'];
-    return new this(custom_type, JSON.parse(composition_value), uid, composition_ref);
+    var composition_ref, composition_value, composition_value_operations, custom_type, uid;
+    uid = json['uid'], custom_type = json['custom_type'], composition_value = json['composition_value'], composition_value_operations = json['composition_value_operations'], composition_ref = json['composition_ref'];
+    return new this(custom_type, composition_value, composition_value_operations, uid, composition_ref);
   };
   ops.ReplaceManager = (function(superClass) {
     extend(ReplaceManager, superClass);
@@ -516,7 +547,7 @@ module.exports = function() {
     ReplaceManager.prototype.replace = function(content, replaceable_uid) {
       var o, relp;
       o = this.getLastOperation();
-      relp = (new ops.Insert(null, content, this, replaceable_uid, o, o.next_cl)).execute();
+      relp = (new ops.Insert(null, content, null, this, replaceable_uid, o, o.next_cl)).execute();
       return void 0;
     };
 
