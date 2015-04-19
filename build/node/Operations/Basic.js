@@ -7,7 +7,8 @@ module.exports = function() {
   ops = {};
   execution_listener = [];
   ops.Operation = (function() {
-    function Operation(custom_type, uid) {
+    function Operation(custom_type, uid, content, content_operations) {
+      var name, op;
       if (custom_type != null) {
         this.custom_type = custom_type;
       }
@@ -17,9 +18,60 @@ module.exports = function() {
       if (uid != null) {
         this.uid = uid;
       }
+      if (content === void 0) {
+
+      } else if ((content != null) && (content.creator != null)) {
+        this.saveOperation('content', content);
+      } else {
+        this.content = content;
+      }
+      if (content_operations != null) {
+        this.content_operations = {};
+        for (name in content_operations) {
+          op = content_operations[name];
+          this.saveOperation(name, op, 'content_operations');
+        }
+      }
     }
 
     Operation.prototype.type = "Operation";
+
+    Operation.prototype.getContent = function(name) {
+      var content, n, ref, ref1, v;
+      if (this.content != null) {
+        if (this.content.getCustomType != null) {
+          return this.content.getCustomType();
+        } else if (this.content.constructor === Object) {
+          if (name != null) {
+            if (this.content[name] != null) {
+              return this.content[name];
+            } else {
+              return this.content_operations[name].getCustomType();
+            }
+          } else {
+            content = {};
+            ref = this.content;
+            for (n in ref) {
+              v = ref[n];
+              content[n] = v;
+            }
+            if (this.content_operations != null) {
+              ref1 = this.content_operations;
+              for (n in ref1) {
+                v = ref1[n];
+                v = v.getCustomType();
+                content[n] = v;
+              }
+            }
+            return content;
+          }
+        } else {
+          return this.content;
+        }
+      } else {
+        return this.content;
+      }
+    };
 
     Operation.prototype.retrieveSub = function() {
       throw new Error("sub properties are not enable on this operation type!");
@@ -124,40 +176,31 @@ module.exports = function() {
 
     Operation.prototype.execute = function() {
       var j, l, len;
-      this.is_executed = true;
-      if (this.uid == null) {
-        this.uid = this.HB.getNextOperationIdentifier();
-      }
-      if (this.uid.noOperation == null) {
-        this.HB.addOperation(this);
-        for (j = 0, len = execution_listener.length; j < len; j++) {
-          l = execution_listener[j];
-          l(this._encode());
+      if (this.validateSavedOperations()) {
+        this.is_executed = true;
+        if (this.uid == null) {
+          this.uid = this.HB.getNextOperationIdentifier();
         }
-      }
-      return this;
-    };
-
-    Operation.prototype._encode = function(json) {
-      if (json == null) {
-        json = {};
-      }
-      json.type = this.type;
-      json.uid = this.getUid();
-      if (this.custom_type != null) {
-        if (this.custom_type.constructor === String) {
-          json.custom_type = this.custom_type;
-        } else {
-          json.custom_type = this.custom_type._name;
+        if (this.uid.noOperation == null) {
+          this.HB.addOperation(this);
+          for (j = 0, len = execution_listener.length; j < len; j++) {
+            l = execution_listener[j];
+            l(this._encode());
+          }
         }
+        return this;
+      } else {
+        return false;
       }
-      return json;
     };
 
     Operation.prototype.saveOperation = function(name, op, base) {
       var base1, dest, j, last_path, len, path, paths;
       if (base == null) {
         base = "this";
+      }
+      if ((op != null) && (op._getModel != null)) {
+        op = op._getModel(this.custom_types, this.operations);
       }
       if (op == null) {
 
@@ -188,7 +231,7 @@ module.exports = function() {
     Operation.prototype.validateSavedOperations = function() {
       var base, base_name, dest, j, last_path, len, name, op, op_uid, path, paths, ref, success, uninstantiated;
       uninstantiated = {};
-      success = this;
+      success = true;
       ref = this.unchecked;
       for (base_name in ref) {
         base = ref[base_name];
@@ -217,11 +260,13 @@ module.exports = function() {
           }
         }
       }
-      delete this.unchecked;
       if (!success) {
         this.unchecked = uninstantiated;
+        return false;
+      } else {
+        delete this.unchecked;
+        return this;
       }
-      return success;
     };
 
     Operation.prototype.getCustomType = function() {
@@ -241,6 +286,40 @@ module.exports = function() {
         }
         return this.custom_type;
       }
+    };
+
+    Operation.prototype._encode = function(json) {
+      var n, o, operations, ref, ref1;
+      if (json == null) {
+        json = {};
+      }
+      json.type = this.type;
+      json.uid = this.getUid();
+      if (this.custom_type != null) {
+        if (this.custom_type.constructor === String) {
+          json.custom_type = this.custom_type;
+        } else {
+          json.custom_type = this.custom_type._name;
+        }
+      }
+      if (((ref = this.content) != null ? ref.getUid : void 0) != null) {
+        json.content = this.content.getUid();
+      } else {
+        json.content = this.content;
+      }
+      if (this.content_operations != null) {
+        operations = {};
+        ref1 = this.content_operations;
+        for (n in ref1) {
+          o = ref1[n];
+          if (o._getModel != null) {
+            o = o._getModel(this.custom_types, this.operations);
+          }
+          operations[n] = o.getUid();
+        }
+        json.content_operations = operations;
+      }
+      return json;
     };
 
     return Operation;
@@ -289,21 +368,6 @@ module.exports = function() {
     extend(Insert, superClass);
 
     function Insert(custom_type, content, content_operations, parent, uid, prev_cl, next_cl, origin) {
-      var name, op;
-      if (content === void 0) {
-
-      } else if ((content != null) && (content.creator != null)) {
-        this.saveOperation('content', content);
-      } else {
-        this.content = content;
-      }
-      if (content_operations != null) {
-        this.content_operations = {};
-        for (name in content_operations) {
-          op = content_operations[name];
-          this.saveOperation(name, op, 'content_operations');
-        }
-      }
       this.saveOperation('parent', parent);
       this.saveOperation('prev_cl', prev_cl);
       this.saveOperation('next_cl', next_cl);
@@ -312,37 +376,13 @@ module.exports = function() {
       } else {
         this.saveOperation('origin', prev_cl);
       }
-      Insert.__super__.constructor.call(this, custom_type, uid);
+      Insert.__super__.constructor.call(this, custom_type, uid, content, content_operations);
     }
 
     Insert.prototype.type = "Insert";
 
     Insert.prototype.val = function() {
-      var content, n, ref, ref1, v;
-      if (this.content != null) {
-        if (this.content.getCustomType != null) {
-          return this.content.getCustomType();
-        } else if (this.content.constructor === Object) {
-          content = {};
-          ref = this.content;
-          for (n in ref) {
-            v = ref[n];
-            content[n] = v;
-          }
-          if (this.content_operations != null) {
-            ref1 = this.content_operations;
-            for (n in ref1) {
-              v = ref1[n];
-              content[n] = v;
-            }
-          }
-          return content;
-        } else {
-          return this.content;
-        }
-      } else {
-        return this.content;
-      }
+      return this.getContent();
     };
 
     Insert.prototype.getNext = function(i) {
@@ -524,7 +564,6 @@ module.exports = function() {
     };
 
     Insert.prototype._encode = function(json) {
-      var n, o, operations, ref, ref1;
       if (json == null) {
         json = {};
       }
@@ -536,20 +575,6 @@ module.exports = function() {
         json.origin = this.origin.getUid();
       }
       json.parent = this.parent.getUid();
-      if (((ref = this.content) != null ? ref.getUid : void 0) != null) {
-        json.content = this.content.getUid();
-      } else {
-        json.content = JSON.stringify(this.content);
-      }
-      if (this.content_operations != null) {
-        operations = {};
-        ref1 = this.content_operations;
-        for (n in ref1) {
-          o = ref1[n];
-          operations[n] = o.getUid();
-        }
-        json.content_operations = operations;
-      }
       return Insert.__super__._encode.call(this, json);
     };
 
@@ -559,9 +584,6 @@ module.exports = function() {
   ops.Insert.parse = function(json) {
     var content, content_operations, next, origin, parent, prev, uid;
     content = json['content'], content_operations = json['content_operations'], uid = json['uid'], prev = json['prev'], next = json['next'], origin = json['origin'], parent = json['parent'];
-    if (typeof content === "string") {
-      content = JSON.parse(content);
-    }
     return new this(null, content, content_operations, parent, uid, prev, next, origin);
   };
   ops.Delimiter = (function(superClass) {

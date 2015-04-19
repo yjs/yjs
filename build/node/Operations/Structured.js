@@ -11,9 +11,11 @@ module.exports = function() {
   ops.MapManager = (function(superClass) {
     extend(MapManager, superClass);
 
-    function MapManager(custom_type, uid) {
+    function MapManager(custom_type, uid, content, content_operations) {
       this._map = {};
-      MapManager.__super__.constructor.call(this, custom_type, uid);
+      console.log("delete this ...");
+      this.constructed_with = [custom_type, content, content_operations];
+      MapManager.__super__.constructor.call(this, custom_type, uid, content, content_operations);
     }
 
     MapManager.prototype.type = "MapManager";
@@ -109,20 +111,20 @@ module.exports = function() {
 
   })(ops.Operation);
   ops.MapManager.parse = function(json) {
-    var custom_type, uid;
-    uid = json['uid'], custom_type = json['custom_type'];
-    return new this(custom_type, uid);
+    var content, content_operations, custom_type, uid;
+    uid = json['uid'], custom_type = json['custom_type'], content = json['content'], content_operations = json['content_operations'];
+    return new this(custom_type, uid, content, content_operations);
   };
   ops.ListManager = (function(superClass) {
     extend(ListManager, superClass);
 
-    function ListManager(custom_type, uid) {
+    function ListManager(custom_type, uid, content, content_operations) {
       this.beginning = new ops.Delimiter(void 0, void 0);
       this.end = new ops.Delimiter(this.beginning, void 0);
       this.beginning.next_cl = this.end;
       this.beginning.execute();
       this.end.execute();
-      ListManager.__super__.constructor.call(this, custom_type, uid);
+      ListManager.__super__.constructor.call(this, custom_type, uid, content, content_operations);
     }
 
     ListManager.prototype.type = "ListManager";
@@ -359,9 +361,9 @@ module.exports = function() {
 
   })(ops.Operation);
   ops.ListManager.parse = function(json) {
-    var custom_type, uid;
-    uid = json['uid'], custom_type = json['custom_type'];
-    return new this(custom_type, uid);
+    var content, content_operations, custom_type, uid;
+    uid = json['uid'], custom_type = json['custom_type'], content = json['content'], content_operations = json['content_operations'];
+    return new this(custom_type, uid, content, content_operations);
   };
   ops.Composition = (function(superClass) {
     extend(Composition, superClass);
@@ -369,8 +371,6 @@ module.exports = function() {
     function Composition(custom_type, _composition_value, composition_value_operations, uid, tmp_composition_ref) {
       var n, o;
       this._composition_value = _composition_value;
-      console.log("delete this ...");
-      this.constructed_with = [custom_type, this._composition_value, composition_value_operations, uid, tmp_composition_ref];
       Composition.__super__.constructor.call(this, custom_type, uid);
       if (tmp_composition_ref != null) {
         this.tmp_composition_ref = tmp_composition_ref;

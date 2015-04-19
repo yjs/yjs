@@ -22,7 +22,7 @@ module.exports = ()->
     # @param {Object} uid A unique identifier.
     # If uid is undefined, a new uid will be created before at the end of the execution sequence
     #
-    constructor: (custom_type, uid)->
+    constructor: (custom_type, uid, content, content_operations)->
       if custom_type?
         @custom_type = custom_type
       @is_deleted = false
@@ -31,7 +31,43 @@ module.exports = ()->
       if uid?
         @uid = uid
 
+      # see encode to see, why we are doing it this way
+      if content is undefined
+        # nop
+      else if content? and content.creator?
+        @saveOperation 'content', content
+      else
+        @content = content
+      if content_operations?
+        @content_operations = {}
+        for name, op of content_operations
+          @saveOperation name, op, 'content_operations'
+
     type: "Operation"
+
+    getContent: (name)->
+      if @content?
+        if @content.getCustomType?
+          @content.getCustomType()
+        else if @content.constructor is Object
+          if name?
+            if @content[name]?
+              @content[name]
+            else
+              @content_operations[name].getCustomType()
+          else
+            content = {}
+            for n,v of @content
+              content[n] = v
+            if @content_operations?
+              for n,v of @content_operations
+                v = v.getCustomType()
+                content[n] = v
+            content
+        else
+          @content
+      else
+        @content
 
     retrieveSub: ()->
       throw new Error "sub properties are not enable on this operation type!"
@@ -137,32 +173,20 @@ module.exports = ()->
     # Notify the all the listeners.
     #
     execute: ()->
-      @is_executed = true
-      if not @uid?
-        # When this operation was created without a uid, then set it here.
-        # There is only one other place, where this can be done - before an Insertion
-        # is executed (because we need the creator_id)
-        @uid = @HB.getNextOperationIdentifier()
-      if not @uid.noOperation?
-        @HB.addOperation @
-        for l in execution_listener
-          l @_encode()
-      @
-
-    #
-    # @private
-    # Encode this operation in such a way that it can be parsed by remote peers.
-    #
-    _encode: (json = {})->
-      json.type = @type
-      json.uid = @getUid()
-      if @custom_type?
-        if @custom_type.constructor is String
-          json.custom_type = @custom_type
-        else
-          json.custom_type = @custom_type._name
-      json
-
+      if @validateSavedOperations()
+        @is_executed = true
+        if not @uid?
+          # When this operation was created without a uid, then set it here.
+          # There is only one other place, where this can be done - before an Insertion
+          # is executed (because we need the creator_id)
+          @uid = @HB.getNextOperationIdentifier()
+        if not @uid.noOperation?
+          @HB.addOperation @
+          for l in execution_listener
+            l @_encode()
+        @
+      else
+        false
 
     #
     # @private
@@ -183,7 +207,8 @@ module.exports = ()->
     #   @param {Operation} op An Operation object
     #
     saveOperation: (name, op, base = "this")->
-
+      if op? and op._getModel?
+        op = op._getModel(@custom_types, @operations)
       #
       # Every instance of $Operation must have an $execute function.
       # We use duck-typing to check if op is instantiated since there
@@ -218,7 +243,7 @@ module.exports = ()->
     #
     validateSavedOperations: ()->
       uninstantiated = {}
-      success = @
+      success = true
       for base_name, base of @unchecked
         for name, op_uid of base
           op = @HB.getOperation op_uid
@@ -236,10 +261,12 @@ module.exports = ()->
             uninstantiated[base_name] ?= {}
             uninstantiated[base_name][name] = op_uid
             success = false
-      delete @unchecked
       if not success
         @unchecked = uninstantiated
-      success
+        return false
+      else
+        delete @unchecked
+        return @
 
     getCustomType: ()->
       if not @custom_type?
@@ -255,6 +282,31 @@ module.exports = ()->
           @custom_type._setModel @
         @custom_type
 
+    #
+    # @private
+    # Encode this operation in such a way that it can be parsed by remote peers.
+    #
+    _encode: (json = {})->
+      json.type = @type
+      json.uid = @getUid()
+      if @custom_type?
+        if @custom_type.constructor is String
+          json.custom_type = @custom_type
+        else
+          json.custom_type = @custom_type._name
+
+      if @content?.getUid?
+        json.content = @content.getUid()
+      else
+        json.content = @content
+      if @content_operations?
+        operations = {}
+        for n,o of @content_operations
+          if o._getModel?
+            o = o._getModel(@custom_types, @operations)
+          operations[n] = o.getUid()
+        json.content_operations = operations
+      json
 
   #
   # @nodoc
@@ -325,17 +377,6 @@ module.exports = ()->
     # @param {Operation} next_cl The successor of this operation in the complete-list (cl)
     #
     constructor: (custom_type, content, content_operations, parent, uid, prev_cl, next_cl, origin)->
-      # see encode to see, why we are doing it this way
-      if content is undefined
-        # nop
-      else if content? and content.creator?
-        @saveOperation 'content', content
-      else
-        @content = content
-      if content_operations?
-        @content_operations = {}
-        for name, op of content_operations
-          @saveOperation name, op, 'content_operations'
       @saveOperation 'parent', parent
       @saveOperation 'prev_cl', prev_cl
       @saveOperation 'next_cl', next_cl
@@ -343,26 +384,12 @@ module.exports = ()->
         @saveOperation 'origin', origin
       else
         @saveOperation 'origin', prev_cl
-      super custom_type, uid
+      super custom_type, uid, content, content_operations
 
     type: "Insert"
 
     val: ()->
-      if @content?
-        if @content.getCustomType?
-          @content.getCustomType()
-        else if @content.constructor is Object
-          content = {}
-          for n,v of @content
-            content[n] = v
-          if @content_operations?
-            for n,v of @content_operations
-              content[n] = v
-          content
-        else
-          @content
-      else
-        @content
+      @getContent()
 
     getNext: (i=1)->
       n = @
@@ -551,15 +578,6 @@ module.exports = ()->
       # if not (json.prev? and json.next?)
       json.parent = @parent.getUid()
 
-      if @content?.getUid?
-        json.content = @content.getUid()
-      else
-        json.content = JSON.stringify @content
-      if @content_operations?
-        operations = {}
-        for n,o of @content_operations
-          operations[n] = o.getUid()
-        json.content_operations = operations
       super json
 
   ops.Insert.parse = (json)->
@@ -572,8 +590,6 @@ module.exports = ()->
       'origin' : origin
       'parent' : parent
     } = json
-    if typeof content is "string"
-      content = JSON.parse(content)
     new this null, content, content_operations, parent, uid, prev, next, origin
 
   #

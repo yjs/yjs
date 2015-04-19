@@ -13,9 +13,11 @@ module.exports = ()->
     #
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     #
-    constructor: (custom_type, uid)->
+    constructor: (custom_type, uid, content, content_operations)->
       @_map = {}
-      super custom_type, uid
+      console.log("delete this ...")
+      this.constructed_with = [custom_type, content, content_operations] # debug!
+      super custom_type, uid, content, content_operations
 
     type: "MapManager"
 
@@ -83,8 +85,10 @@ module.exports = ()->
     {
       'uid' : uid
       'custom_type' : custom_type
+      'content' : content
+      'content_operations' : content_operations
     } = json
-    new this(custom_type, uid)
+    new this(custom_type, uid, content, content_operations)
 
 
 
@@ -99,13 +103,13 @@ module.exports = ()->
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Delimiter} beginning Reference or Object.
     # @param {Delimiter} end Reference or Object.
-    constructor: (custom_type, uid)->
+    constructor: (custom_type, uid, content, content_operations)->
       @beginning = new ops.Delimiter undefined, undefined
       @end =       new ops.Delimiter @beginning, undefined
       @beginning.next_cl = @end
       @beginning.execute()
       @end.execute()
-      super custom_type, uid
+      super custom_type, uid, content, content_operations
 
     type: "ListManager"
 
@@ -307,12 +311,10 @@ module.exports = ()->
     {
       'uid' : uid
       'custom_type': custom_type
+      'content' : content
+      'content_operations' : content_operations
     } = json
-    new this(custom_type, uid)
-
-
-
-
+    new this(custom_type, uid, content, content_operations)
 
   class ops.Composition extends ops.ListManager
 
@@ -320,8 +322,6 @@ module.exports = ()->
       # we can't use @seveOperation 'composition_ref', tmp_composition_ref here,
       # because then there is a "loop" (insertion refers to parant, refers to insertion..)
       # This is why we have to check in @callOperationSpecificInsertEvents until we find it
-      console.log("delete this ...")
-      this.constructed_with = [custom_type, @_composition_value, composition_value_operations, uid, tmp_composition_ref] # debug!
       super custom_type, uid
       if tmp_composition_ref?
         @tmp_composition_ref = tmp_composition_ref
