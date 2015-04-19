@@ -13,8 +13,6 @@ module.exports = function() {
 
     function MapManager(custom_type, uid, content, content_operations) {
       this._map = {};
-      console.log("delete this ...");
-      this.constructed_with = [custom_type, content, content_operations];
       MapManager.__super__.constructor.call(this, custom_type, uid, content, content_operations);
     }
 

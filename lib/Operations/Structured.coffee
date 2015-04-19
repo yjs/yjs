@@ -15,8 +15,6 @@ module.exports = ()->
     #
     constructor: (custom_type, uid, content, content_operations)->
       @_map = {}
-      console.log("delete this ...")
-      this.constructed_with = [custom_type, content, content_operations] # debug!
       super custom_type, uid, content, content_operations
 
     type: "MapManager"
