@@ -48,7 +48,6 @@
     "gulp-ignore": "^1.2.0",
     "gulp-ljs": "^0.1.1",
     "gulp-mocha": "^0.5.2",
-    "gulp-mocha-phantomjs": "^0.5.0",
     "gulp-plumber": "^0.6.6",
     "gulp-rename": "^1.2.0",
     "gulp-rimraf": "^0.1.0",
