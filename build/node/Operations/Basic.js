@@ -416,7 +416,7 @@ module.exports = function() {
     };
 
     Insert.prototype.applyDelete = function(o) {
-      var callLater, garbagecollect, ref;
+      var callLater, garbagecollect;
       if (this.deleted_by == null) {
         this.deleted_by = [];
       }
@@ -435,7 +435,7 @@ module.exports = function() {
       if (callLater) {
         this.parent.callOperationSpecificDeleteEvents(this, o);
       }
-      if ((ref = this.prev_cl) != null ? ref.isDeleted() : void 0) {
+      if ((this.prev_cl != null) && this.prev_cl.isDeleted()) {
         return this.prev_cl.applyDelete();
       }
     };
@@ -457,7 +457,7 @@ module.exports = function() {
         }
         this.prev_cl.next_cl = this.next_cl;
         this.next_cl.prev_cl = this.prev_cl;
-        if (this.content instanceof ops.Operation) {
+        if (this.content instanceof ops.Operation && !(this.content instanceof ops.Insert)) {
           this.content.referenced_by--;
           if (this.content.referenced_by <= 0 && !this.content.is_deleted) {
             this.content.applyDelete();

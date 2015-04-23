@@ -320,7 +320,7 @@ module.exports = ()->
 
     constructor: (custom_type, @_composition_value, composition_value_operations, uid, tmp_composition_ref)->
       # we can't use @seveOperation 'composition_ref', tmp_composition_ref here,
-      # because then there is a "loop" (insertion refers to parant, refers to insertion..)
+      # because then there is a "loop" (insertion refers to parent, refers to insertion..)
       # This is why we have to check in @callOperationSpecificInsertEvents until we find it
       super custom_type, uid
       if tmp_composition_ref?

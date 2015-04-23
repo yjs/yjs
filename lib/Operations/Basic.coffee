@@ -366,7 +366,7 @@ module.exports = ()->
   # An insert operation is always positioned between two other insert operations.
   # Internally this is realized as associative lists, whereby each insert operation has a predecessor and a successor.
   # For the sake of efficiency we maintain two lists:
-  #   - The short-list (abbrev. sl) maintains only the operations that are not deleted
+  #   - The short-list (abbrev. sl) maintains only the operations that are not deleted (unimplemented, good idea?)
   #   - The complete-list (abbrev. cl) maintains all operations
   #
   class ops.Insert extends ops.Operation
@@ -425,7 +425,7 @@ module.exports = ()->
       super garbagecollect
       if callLater
         @parent.callOperationSpecificDeleteEvents(this, o)
-      if @prev_cl?.isDeleted()
+      if @prev_cl? and @prev_cl.isDeleted()
         # garbage collect prev_cl
         @prev_cl.applyDelete()
 
@@ -451,7 +451,8 @@ module.exports = ()->
         # (e.g. the following operation order must be invertible :
         #   Insert refers to content, then the content is deleted)
         # Therefore, we have to do this in the cleanup
-        if @content instanceof ops.Operation
+        # * NODE: We never delete Insertions!
+        if @content instanceof ops.Operation and not (@content instanceof ops.Insert)
           @content.referenced_by--
           if @content.referenced_by <= 0 and not @content.is_deleted
             @content.applyDelete()
