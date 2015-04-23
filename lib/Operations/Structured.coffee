@@ -289,6 +289,7 @@ module.exports = ()->
           content
       @callEvent [
         type: "insert"
+        reference: op
         position: op.getPosition()
         object: @getCustomType()
         changedBy: op.uid.creator
@@ -298,6 +299,7 @@ module.exports = ()->
     callOperationSpecificDeleteEvents: (op, del_op)->
       @callEvent [
         type: "delete"
+        reference: op
         position: op.getPosition()
         object: @getCustomType() # TODO: You can combine getPosition + getParent in a more efficient manner! (only left Delimiter will hold @parent)
         length: 1

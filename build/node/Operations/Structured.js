@@ -334,6 +334,7 @@ module.exports = function() {
       return this.callEvent([
         {
           type: "insert",
+          reference: op,
           position: op.getPosition(),
           object: this.getCustomType(),
           changedBy: op.uid.creator,
@@ -346,6 +347,7 @@ module.exports = function() {
       return this.callEvent([
         {
           type: "delete",
+          reference: op,
           position: op.getPosition(),
           object: this.getCustomType(),
           length: 1,
