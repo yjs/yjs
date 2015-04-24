@@ -391,11 +391,14 @@ module.exports = function() {
         i = 1;
       }
       n = this;
-      while (i > 0 && n.is_deleted && (n.next_cl != null)) {
+      while (i > 0 && (n.next_cl != null)) {
         n = n.next_cl;
         if (!n.is_deleted) {
           i--;
         }
+      }
+      if (n.is_deleted) {
+        null;
       }
       return n;
     };
@@ -406,13 +409,17 @@ module.exports = function() {
         i = 1;
       }
       n = this;
-      while (i > 0 && n.is_deleted && (n.prev_cl != null)) {
+      while (i > 0 && (n.prev_cl != null)) {
         n = n.prev_cl;
         if (!n.is_deleted) {
           i--;
         }
       }
-      return n;
+      if (n.is_deleted) {
+        return null;
+      } else {
+        return n;
+      }
     };
 
     Insert.prototype.applyDelete = function(o) {

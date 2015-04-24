@@ -393,19 +393,24 @@ module.exports = ()->
 
     getNext: (i=1)->
       n = @
-      while i > 0 and n.is_deleted and n.next_cl?
+      while i > 0 and n.next_cl?
         n = n.next_cl
         if not n.is_deleted
           i--
+      if n.is_deleted
+        null
       n
 
     getPrev: (i=1)->
       n = @
-      while i > 0 and n.is_deleted and n.prev_cl?
+      while i > 0 and n.prev_cl?
         n = n.prev_cl
         if not n.is_deleted
           i--
-      n
+      if n.is_deleted
+        null
+      else
+        n
 
     #
     # set content to null and other stuff
