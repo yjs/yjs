@@ -354,23 +354,19 @@ module.exports = ()->
         if op.uid.creator is @tmp_composition_ref.creator and op.uid.op_number is @tmp_composition_ref.op_number
           @composition_ref = op
           delete @tmp_composition_ref
-          o = op.next_cl
-          while o.next_cl?
-            if not o.isDeleted()
-              @callOperationSpecificInsertEvents o
-            o = o.next_cl
-        return
+          op = op.next_cl
+          if op is @end
+            return
+        else
+          return
 
-      if @composition_ref.next_cl is op
-        op.undo_delta = @getCustomType()._apply op.val()
-      else
-        o = @end.prev_cl
-        while o isnt op
-          @getCustomType()._unapply o.undo_delta
-          o = o.prev_cl
-        while o isnt @end
-          o.undo_delta = @getCustomType()._apply o.val()
-          o = o.next_cl
+      o = @end.prev_cl
+      while o isnt op
+        @getCustomType()._unapply o.undo_delta
+        o = o.prev_cl
+      while o isnt @end
+        o.undo_delta = @getCustomType()._apply o.val()
+        o = o.next_cl
       @composition_ref = @end.prev_cl
 
       @callEvent [

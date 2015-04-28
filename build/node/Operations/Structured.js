@@ -404,28 +404,22 @@ module.exports = function() {
         if (op.uid.creator === this.tmp_composition_ref.creator && op.uid.op_number === this.tmp_composition_ref.op_number) {
           this.composition_ref = op;
           delete this.tmp_composition_ref;
-          o = op.next_cl;
-          while (o.next_cl != null) {
-            if (!o.isDeleted()) {
-              this.callOperationSpecificInsertEvents(o);
-            }
-            o = o.next_cl;
+          op = op.next_cl;
+          if (op === this.end) {
+            return;
           }
+        } else {
+          return;
         }
-        return;
       }
-      if (this.composition_ref.next_cl === op) {
-        op.undo_delta = this.getCustomType()._apply(op.val());
-      } else {
-        o = this.end.prev_cl;
-        while (o !== op) {
-          this.getCustomType()._unapply(o.undo_delta);
-          o = o.prev_cl;
-        }
-        while (o !== this.end) {
-          o.undo_delta = this.getCustomType()._apply(o.val());
-          o = o.next_cl;
-        }
+      o = this.end.prev_cl;
+      while (o !== op) {
+        this.getCustomType()._unapply(o.undo_delta);
+        o = o.prev_cl;
+      }
+      while (o !== this.end) {
+        o.undo_delta = this.getCustomType()._apply(o.val());
+        o = o.next_cl;
       }
       this.composition_ref = this.end.prev_cl;
       return this.callEvent([
