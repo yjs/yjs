@@ -1,5 +1,5 @@
 
-# ![Yatta!](http://y-js/files/layout/yjs.svg)
+# ![Yjs](http://y-js.org/files/layout/yjs.svg)
 
 [![Build Status](https://travis-ci.org/y-js/yjs.svg)](https://travis-ci.org/y-js/yjs)
 
