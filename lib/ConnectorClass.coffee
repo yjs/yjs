@@ -45,6 +45,10 @@ module.exports =
     @current_sync_target = null
     @sent_hb_to_all_users = false
     @is_initialized = true
+    @connections_listeners = []
+
+  onUserEvent: (f)->
+    @connections_listeners.push f
 
   isRoleMaster: ->
     @role is "master"
@@ -66,6 +70,12 @@ module.exports =
   userLeft: (user)->
     delete @connections[user]
     @findNewSyncTarget()
+    for f in @connections_listeners
+      f {
+        action: "userLeft"
+        user: user
+      }
+
 
   userJoined: (user, role)->
     if not role?
@@ -81,6 +91,12 @@ module.exports =
         # TODO: What if there are two masters? Prevent sending everything two times!
         @performSyncWithMaster user
 
+    for f in @connections_listeners
+      f {
+        action: "userJoined"
+        user: user
+        role: role
+      }
 
   #
   # Execute a function _when_ we are connected. If not connected, wait until connected.

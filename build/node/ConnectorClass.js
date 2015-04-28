@@ -38,7 +38,11 @@ module.exports = {
     this.connections = {};
     this.current_sync_target = null;
     this.sent_hb_to_all_users = false;
-    return this.is_initialized = true;
+    this.is_initialized = true;
+    return this.connections_listeners = [];
+  },
+  onUserEvent: function(f) {
+    return this.connections_listeners.push(f);
   },
   isRoleMaster: function() {
     return this.role === "master";
@@ -65,11 +69,22 @@ module.exports = {
     return null;
   },
   userLeft: function(user) {
+    var f, i, len, ref, results;
     delete this.connections[user];
-    return this.findNewSyncTarget();
+    this.findNewSyncTarget();
+    ref = this.connections_listeners;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      f = ref[i];
+      results.push(f({
+        action: "userLeft",
+        user: user
+      }));
+    }
+    return results;
   },
   userJoined: function(user, role) {
-    var base;
+    var base, f, i, len, ref, results;
     if (role == null) {
       throw new Error("Internal: You must specify the role of the joined user! E.g. userJoined('uid:3939','slave')");
     }
@@ -79,11 +94,22 @@ module.exports = {
     this.connections[user].is_synced = false;
     if ((!this.is_synced) || this.syncMethod === "syncAll") {
       if (this.syncMethod === "syncAll") {
-        return this.performSync(user);
+        this.performSync(user);
       } else if (role === "master") {
-        return this.performSyncWithMaster(user);
+        this.performSyncWithMaster(user);
       }
     }
+    ref = this.connections_listeners;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      f = ref[i];
+      results.push(f({
+        action: "userJoined",
+        user: user,
+        role: role
+      }));
+    }
+    return results;
   },
   whenSynced: function(args) {
     if (args.constructore === Function) {
