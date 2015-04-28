@@ -19,7 +19,7 @@ y-object | Add, update, and remove properties of an object. Circular references 
 
 Unlike other frameworks, Yjs supports P2P message propagation and is not bound to a specific communication protocol. Therefore, Yjs is extremely scalable and can be used in a wide range of application scenarios.
 
-We support several communication protocols as so called *Connectors*. You can create your own connector too - read [this blog post](https://github.com/y-js/yjs/wiki/Custom-Connectors). Currently, we support the following communication protocols:
+We support several communication protocols as so called *Connectors*. You can create your own connector too - read [this wiki page](https://github.com/y-js/yjs/wiki/Custom-Connectors). Currently, we support the following communication protocols:
 
 Name                                     | Description
 ---------------------------------------- | -------------------------------------------------------
