@@ -550,7 +550,11 @@ module.exports = function() {
     };
 
     ReplaceManager.prototype.deleteContent = function() {
-      (new ops.Delete(null, void 0, this.getLastOperation().uid)).execute();
+      var last_op;
+      last_op = this.getLastOperation();
+      if ((!last_op.isDeleted()) && last_op.type !== "Delimiter") {
+        (new ops.Delete(null, void 0, this.getLastOperation().uid)).execute();
+      }
       return void 0;
     };
 

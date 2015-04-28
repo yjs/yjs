@@ -507,7 +507,9 @@ module.exports = ()->
       @getLastOperation().isDeleted()
 
     deleteContent: ()->
-      (new ops.Delete null, undefined, @getLastOperation().uid).execute()
+      last_op = @getLastOperation()
+      if (not last_op.isDeleted()) and last_op.type isnt "Delimiter"
+        (new ops.Delete null, undefined, @getLastOperation().uid).execute()
       undefined
 
     #
