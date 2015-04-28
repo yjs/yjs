@@ -35,11 +35,11 @@ The advantages over similar frameworks are support for
 * .. arbitrary complex data types
 * .. offline editing: Only relevant changes are propagated on rejoin (unimplemented)
 * .. AnyUndo: Undo *any* action that was executed in constant time (unimplemented)
-* .. Intention Preservation: When working on Text, the intention of your changes are preserved. This is particularily important when working offline. Every type has some notion on how we define Intention Preservation on it.
+* .. Intention Preservation: When working on Text, the intention of your changes are preserved. This is particularily important when working offline. Every type has a notion on how we define Intention Preservation on it.
 
 
 ## Use it!
-You find a tutorial, examples, and documentation on the [website](http://y-js).
+You can find a tutorial, and examples on the [website](http://y-js.org). Furthermore, the [github wiki](https://github.com/y-js/yjs/wiki) offers more information about how you can use Yjs in your application.
 
 Either clone this git repository, install it with [bower](http://bower.io/), or install it with [npm](https://www.npmjs.org/package/yjs).
 
@@ -119,11 +119,7 @@ When users create/update/delete the same property concurrently, only one change 
   * Overall worst case complexety: O(|conflicts|!)
 
 # Status
-Yjs is still in an early development phase. Don't expect that everything is working fine.
-But it would be really nice to get some feedback :)
-
-### Current Issues
-* The History Buffer should be able to store operations in a database
+Yjs is a work in progress. Different versions of the *y-* repositories may not work together. Just drop me a line if you run into troubles.
 
 ## Get help
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/y-js/yjs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
