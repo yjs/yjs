@@ -45,9 +45,9 @@ module.exports =
     @current_sync_target = null
     @sent_hb_to_all_users = false
     @is_initialized = true
-    @connections_listeners = []
 
   onUserEvent: (f)->
+    @connections_listeners ?= []
     @connections_listeners.push f
 
   isRoleMaster: ->
