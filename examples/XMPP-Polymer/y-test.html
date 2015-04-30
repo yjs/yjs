@@ -30,7 +30,7 @@
       var that = this;
       this.connector.whenSynced(function(){
         if(that.y.val("text") == null){
-          that.y.val("text",Y.Text("stuff"));
+          that.y.val("text",new Y.Text("stuff"));
         }
         that.y.val("text").bind(that.$.text,that.shadowRoot)
       })

@@ -1,6 +1,4 @@
-var Y, bindToChildren;
-
-Y = require('./y');
+var bindToChildren;
 
 bindToChildren = function(that) {
   var attr, i, j, ref;
@@ -52,7 +50,7 @@ Polymer("y-object", {
     }
   },
   valChanged: function() {
-    if ((this.val != null) && this.val.type === "Object") {
+    if ((this.val != null) && this.val._name === "Object") {
       return bindToChildren(this);
     }
   },
@@ -68,11 +66,11 @@ Polymer("y-property", {
   ready: function() {
     if ((this.val != null) && (this.name != null)) {
       if (this.val.constructor === Object) {
-        this.val = this.parentElement.val(this.name, this.val).val(this.name);
+        this.val = this.parentElement.val(this.name, new Y.Object(this.val)).val(this.name);
       } else if (typeof this.val === "string") {
         this.parentElement.val(this.name, this.val);
       }
-      if (this.val.type === "Object") {
+      if (this.val._name === "Object") {
         return bindToChildren(this);
       }
     }
@@ -81,8 +79,8 @@ Polymer("y-property", {
     var ref;
     if ((this.val != null) && (this.name != null)) {
       if (this.val.constructor === Object) {
-        return this.val = this.parentElement.val.val(this.name, this.val).val(this.name);
-      } else if (this.val.type === "Object") {
+        return this.val = this.parentElement.val.val(this.name, new Y.Object(this.val)).val(this.name);
+      } else if (this.val._name === "Object") {
         return bindToChildren(this);
       } else if ((((ref = this.parentElement.val) != null ? ref.val : void 0) != null) && this.val !== this.parentElement.val.val(this.name)) {
         return this.parentElement.val.val(this.name, this.val);
