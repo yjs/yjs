@@ -1,3 +1,5 @@
+<script src="../../build/browser/y.js"></script>
+<script src="../../../y-text/build/browser/y-text.js"></script>
 <link rel="import" href="../../build/browser/y-object.html">
 <link rel="import" href="../../../y-xmpp/build/browser/y-xmpp.html">
 <link rel="import" href="../../../paper-slider/paper-slider.html">
@@ -28,7 +30,7 @@
       var that = this;
       this.connector.whenSynced(function(){
         if(that.y.val("text") == null){
-          that.y.val("text","stuff","mutable");
+          that.y.val("text",Y.Text("stuff"));
         }
         that.y.val("text").bind(that.$.text,that.shadowRoot)
       })

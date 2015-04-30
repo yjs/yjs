@@ -18,8 +18,8 @@ window.onload = function(){
   });
   connector.whenSynced(function(){
     if(y.val("textfield") == null){
-      y.val("headline","headline", "mutable");
-      y.val("textfield","stuff", "mutable")
+      y.val("headline", new Y.Text("headline"));
+      y.val("textfield",new Y.Text("stuff"))
     }
   })
 
