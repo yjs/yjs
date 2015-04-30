@@ -38,7 +38,7 @@ class YObject
   # @overload val(name)
   #   Get value of a property.
   #   @param {String} name Name of the object property.
-  #   @return [Object Type||String|Object] Depending on the value of the property. If mutable it will return a Operation-type object, if immutable it will return String/Object.
+  #   @return [*] Depends on the value of the property.
   #
   # @overload val(name, content)
   #   Set a new property.
@@ -72,11 +72,3 @@ if window?
 
 if module?
   module.exports = YObject
-
-
-
-
-
-
-
-
