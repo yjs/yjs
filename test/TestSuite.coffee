@@ -7,35 +7,44 @@ _         = require("underscore")
 chai.use(sinonChai)
 
 Connector = require "../../y-test/lib/y-test.coffee"
+Y = null # need global reference!
 
 module.exports = class Test
-  constructor: (@name_suffix = "")->
+  constructor: (@name_suffix = "", Yjs)->
+    Y = Yjs
     @number_of_test_cases_multiplier = 1
     @repeat_this = 1 * @number_of_test_cases_multiplier
-    @doSomething_amount = 1230 * @number_of_test_cases_multiplier
+    @doSomething_amount = 123 * @number_of_test_cases_multiplier
     @number_of_engines = 5 + @number_of_test_cases_multiplier - 1
 
     @time = 0 # denotes to the time when run was started
     @ops = 0 # number of operations (used with @time)
     @time_now = 0 # current time
+    @max_depth = 3
 
     @debug = false
 
     @reinitialize()
+    for gf in @getGeneratingFunctions(0)
+      if not (gf.types? and gf.f?)
+        throw new Error "Generating Functions are not initialized properly!"
+      for t in gf.types
+        if not t?
+          throw new Error "You havent includedt this type in Y (do require 'y-whatever')"
 
   reinitialize: ()->
     @users = []
     for i in [0...@number_of_engines]
       u = @makeNewUser (i+@name_suffix)
       for user in @users
-        u.getConnector().join(user.getConnector()) # TODO: change the test-connector to make this more convenient
+        u._model.connector.join(user._model.connector) # TODO: change the test-connector to make this more convenient
       @users.push u
     @initUsers?(@users[0])
     @flushAll()
 
   # is called by implementing class
   makeNewUser: (user)->
-    user.HB.stopGarbageCollection()
+    user._model.HB.stopGarbageCollection()
     user
 
   getSomeUser: ()->
@@ -69,28 +78,33 @@ module.exports = class Test
     @getRandomText [1,2,'x','y'], 1 # only 4 keys
 
   getGeneratingFunctions: (user_num)=>
-    types = @users[user_num].types
-    [
-        f : (y)=> # INSERT TEXT
-          y
-          pos = _.random 0, (y.val().length-1)
-          y.insert pos, @getRandomText()
-          null
-        types: [types.String]
-      ,
-        f : (y)-> # DELETE TEXT
-          if y.val().length > 0
-            pos = _.random 0, (y.val().length-1) # TODO: put here also arbitrary number (test behaviour in error cases)
-            length = _.random 0, (y.val().length - pos)
-            ops1 = y.delete pos, length
-          undefined
-        types : [types.String]
-    ]
+    types = @users[user_num]._model.operations
+    []
   getRandomRoot: (user_num)->
-    throw new Error "overwrite me!"
+    throw new Error "implement me!"
 
-  getContent: (user_num)->
-    throw new Error "overwrite me!"
+  compare: (o1, o2, depth = (@max_depth+1))->
+    if o1 is o2 or depth <= 0
+      true
+    else if o1._name? and o1._name isnt o2._name
+      throw new Error "different types"
+    else if o1._model?
+      @compare o1._model, o2._model, depth
+    else if o1.type is "MapManager"
+      for name, val of o1.val()
+        @compare(val, o2.val(name), depth-1)
+    else if o1.type is "ListManager"
+      for val,i in o1.val()
+        @compare(val, o2.val(i), depth-1)
+    else if o1.constructor is Array and o2.constructor is Array
+      if o1.length isnt o2.length
+        throw new Error "The Arrays do not have the same size!"
+      for o,i in o1
+        @compare o, o2[i], (depth-1)
+    else if o1 isnt o2
+      throw new Error "different values"
+    else
+      throw new Error "I don't know what to do .. "
 
   generateRandomOp: (user_num)=>
     y = @getRandomRoot(user_num)
@@ -106,7 +120,7 @@ module.exports = class Test
 
   applyRandomOp: (user_num)=>
     user = @users[user_num]
-    user.getConnector().flushOneRandom()
+    user._model.connector.flushOneRandom()
 
   doSomething: ()->
     user_num = _.random (@number_of_engines-1)
@@ -119,13 +133,12 @@ module.exports = class Test
     final = false
     if @users.length <= 1 or not final
       for user,user_number in @users
-        user.getConnector().flushAll()
+        user._model.connector.flushAll()
     else
       for user,user_number in @users[1..]
-        user.getConnector().flushAll()
+        user._model.connector.flushAll()
       ops = @users[1].getHistoryBuffer()._encode @users[0].HB.getOperationCounter()
       @users[0].engine.applyOpsCheckDouble ops
-
 
 
   compareAll: (test_number)->
@@ -135,7 +148,7 @@ module.exports = class Test
 
     number_of_created_operations = 0
     for i in [0...(@users.length)]
-      number_of_created_operations += @users[i].getConnector().getOpsInExecutionOrder().length
+      number_of_created_operations += @users[i]._model.connector.getOpsInExecutionOrder().length
     @ops += number_of_created_operations*@users.length
 
     ops_per_msek = Math.floor(@ops/@time)
@@ -146,7 +159,7 @@ module.exports = class Test
       if @debug
         if not _.isEqual @getContent(i), @getContent(i+1)
           printOpsInExecutionOrder = (otnumber, otherotnumber)=>
-            ops = _.filter @users[otnumber].getConnector().getOpsInExecutionOrder(), (o)->
+            ops = _.filter @users[otnumber]._model.connector.getOpsInExecutionOrder(), (o)->
               typeof o.uid.op_name isnt 'string' and o.uid.creator isnt '_'
             for s,j in ops
               console.log "op#{j} = " + (JSON.stringify s)
@@ -172,7 +185,7 @@ module.exports = class Test
           ops = printOpsInExecutionOrder i+1, i
 
           console.log ""
-      expect(@getContent(i)).to.deep.equal(@getContent(i+1))
+      expect(@compare(@users[i], @users[i+1])).to.not.be.undefined
 
   run: ()->
     if @debug
@@ -183,7 +196,7 @@ module.exports = class Test
         @doSomething()
       @flushAll(false)
       for u in @users
-        u.HB.emptyGarbage()
+        u._model.HB.emptyGarbage()
       for i in [1..Math.floor(@doSomething_amount/2)]
         @doSomething()
 
@@ -196,12 +209,11 @@ module.exports = class Test
     # in case of JsonFramework, every user will create its JSON first! therefore, the testusers id must be small than all the others (see InsertType)
     @users[@users.length] = @makeNewUser (-1) # this does not want to join with anymody
 
-    @users[@users.length-1].HB.renewStateVector @users[0].HB.getOperationCounter()
-    @users[@users.length-1].engine.applyOps @users[0].HB._encode()
+    @users[@users.length-1]._model.HB.renewStateVector @users[0]._model.HB.getOperationCounter()
+    @users[@users.length-1]._model.engine.applyOps @users[0]._model.HB._encode()
 
     #if @getContent(@users.length-1) isnt @getContent(0)
     #  console.log "testHBencoding:"
     #  console.log "Unprocessed ops first: #{@users[0].engine.unprocessed_ops.length}"
     #  console.log "Unprocessed ops last: #{@users[@users.length-1].engine.unprocessed_ops.length}"
-    expect(@getContent(@users.length-1)).to.deep.equal(@getContent(0))
-
+    expect(@compare(@users[@users.length-1], @users[0])).to.not.be.undefined

@@ -2,20 +2,20 @@
 <head>
   <meta charset="utf-8">
   <title>Test Yjs!</title>
-    <link rel="stylesheet" href="../../node_modules/mocha/mocha.css" />
+  <link rel="stylesheet" href="../../node_modules/mocha/mocha.css" />
 </head>
 <body>
   <div id="mocha"></div>
-  <div id="test_dom" test_attribute="the test" class="stuffy" style="color: blue"><p id="replaceme">replace me</p><p id="removeme">remove me</p><p>This is a test object for <b>XmlFramework</b></p><span class="span_element"><p>span</p></span></div>
   <script src="../../node_modules/mocha/mocha.js" class="awesome"></script>
   <script>
     mocha.setup('bdd');
     mocha.ui('bdd');
     mocha.reporter('html');
   </script>
-  <script src="Text_test.js"></script>
-  <script src="Json_test.js"></script>
-  <!--script src="Xml_test_browser.js"></script-->
+  <script src="object-test.js"></script>
+  <script src="xml-test.js"></script>
+  <script src="list-test.js"></script>
+  <script src="text-test.js"></script>
   <script>
     //mocha.checkLeaks();
     //mocha.run();

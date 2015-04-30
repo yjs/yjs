@@ -1,13 +1,13 @@
-module.exports = (HB)->
+module.exports = ()->
   # @see Engine.parse
-  types = {}
+  ops = {}
   execution_listener = []
 
   #
   # @private
   # @abstract
   # @nodoc
-  # A generic interface to operations.
+  # A generic interface to ops.
   #
   # An operation has the following methods:
   # * _encode: encodes an operation (needed only if instance of this operation is sent).
@@ -16,20 +16,58 @@ module.exports = (HB)->
   #
   # Furthermore an encodable operation has a parser. We extend the parser object in order to parse encoded operations.
   #
-  class types.Operation
+  class ops.Operation
 
     #
     # @param {Object} uid A unique identifier.
     # If uid is undefined, a new uid will be created before at the end of the execution sequence
     #
-    constructor: (uid)->
+    constructor: (custom_type, uid, content, content_operations)->
+      if custom_type?
+        @custom_type = custom_type
       @is_deleted = false
       @garbage_collected = false
       @event_listeners = [] # TODO: rename to observers or sth like that
       if uid?
         @uid = uid
 
+      # see encode to see, why we are doing it this way
+      if content is undefined
+        # nop
+      else if content? and content.creator?
+        @saveOperation 'content', content
+      else
+        @content = content
+      if content_operations?
+        @content_operations = {}
+        for name, op of content_operations
+          @saveOperation name, op, 'content_operations'
+
     type: "Operation"
+
+    getContent: (name)->
+      if @content?
+        if @content.getCustomType?
+          @content.getCustomType()
+        else if @content.constructor is Object
+          if name?
+            if @content[name]?
+              @content[name]
+            else
+              @content_operations[name].getCustomType()
+          else
+            content = {}
+            for n,v of @content
+              content[n] = v
+            if @content_operations?
+              for n,v of @content_operations
+                v = v.getCustomType()
+                content[n] = v
+            content
+        else
+          @content
+      else
+        @content
 
     retrieveSub: ()->
       throw new Error "sub properties are not enable on this operation type!"
@@ -46,7 +84,7 @@ module.exports = (HB)->
     # @see Operation.observe
     #
     # @overload unobserve(event, f)
-    #   @param f     {Function} The function that you want to delete 
+    #   @param f     {Function} The function that you want to delete
     unobserve: (f)->
       @event_listeners = @event_listeners.filter (g)->
         f isnt g
@@ -60,7 +98,7 @@ module.exports = (HB)->
       @event_listeners = []
 
     delete: ()->
-      (new types.Delete undefined, @).execute()
+      (new ops.Delete undefined, @).execute()
       null
 
     #
@@ -68,7 +106,11 @@ module.exports = (HB)->
     # TODO: Do something with timeouts. You don't want this to fire for every operation (e.g. insert).
     # TODO: do you need callEvent+forwardEvent? Only one suffices probably
     callEvent: ()->
-      @forwardEvent @, arguments...
+      if @custom_type?
+        callon = @getCustomType()
+      else
+        callon = @
+      @forwardEvent callon, arguments...
 
     #
     # Fire an event and specify in which context the listener is called (set 'this').
@@ -86,11 +128,11 @@ module.exports = (HB)->
         @is_deleted = true
         if garbagecollect
           @garbage_collected = true
-          HB.addToGarbageCollector @
+          @HB.addToGarbageCollector @
 
     cleanup: ()->
       #console.log "cleanup: #{@type}"
-      HB.removeOperation @
+      @HB.removeOperation @
       @deleteAllObservers()
 
     #
@@ -131,17 +173,20 @@ module.exports = (HB)->
     # Notify the all the listeners.
     #
     execute: ()->
-      @is_executed = true
-      if not @uid?
-        # When this operation was created without a uid, then set it here.
-        # There is only one other place, where this can be done - before an Insertion
-        # is executed (because we need the creator_id)
-        @uid = HB.getNextOperationIdentifier()
-      if not @uid.noOperation?
-        HB.addOperation @
-        for l in execution_listener
-          l @_encode()
-      @
+      if @validateSavedOperations()
+        @is_executed = true
+        if not @uid?
+          # When this operation was created without a uid, then set it here.
+          # There is only one other place, where this can be done - before an Insertion
+          # is executed (because we need the creator_id)
+          @uid = @HB.getNextOperationIdentifier()
+        if not @uid.noOperation?
+          @HB.addOperation @
+          for l in execution_listener
+            l @_encode()
+        @
+      else
+        false
 
     #
     # @private
@@ -161,8 +206,9 @@ module.exports = (HB)->
     #   @param {String} name The name of the operation. After calling this function op is accessible via this[name].
     #   @param {Operation} op An Operation object
     #
-    saveOperation: (name, op)->
-
+    saveOperation: (name, op, base = "this")->
+      if op? and op._getModel?
+        op = op._getModel(@custom_types, @operations)
       #
       # Every instance of $Operation must have an $execute function.
       # We use duck-typing to check if op is instantiated since there
@@ -173,11 +219,20 @@ module.exports = (HB)->
       else if op.execute? or not (op.op_number? and op.creator?)
         # is instantiated, or op is string. Currently "Delimiter" is saved as string
         # (in combination with @parent you can retrieve the delimiter..)
-        @[name] = op
+        if base is "this"
+          @[name] = op
+        else
+          dest = @[base]
+          paths = name.split("/")
+          last_path = paths.pop()
+          for path in paths
+            dest = dest[path]
+          dest[last_path] = op
       else
         # not initialized. Do it when calling $validateSavedOperations()
         @unchecked ?= {}
-        @unchecked[name] = op
+        @unchecked[base] ?= {}
+        @unchecked[base][name] = op
 
     #
     # @private
@@ -188,32 +243,84 @@ module.exports = (HB)->
     #
     validateSavedOperations: ()->
       uninstantiated = {}
-      success = @
-      for name, op_uid of @unchecked
-        op = HB.getOperation op_uid
-        if op
-          @[name] = op
-        else
-          uninstantiated[name] = op_uid
-          success = false
-      delete @unchecked
+      success = true
+      for base_name, base of @unchecked
+        for name, op_uid of base
+          op = @HB.getOperation op_uid
+          if op
+            if base_name is "this"
+              @[name] = op
+            else
+              dest = @[base_name]
+              paths = name.split("/")
+              last_path = paths.pop()
+              for path in paths
+                dest = dest[path]
+              dest[last_path] = op
+          else
+            uninstantiated[base_name] ?= {}
+            uninstantiated[base_name][name] = op_uid
+            success = false
       if not success
         @unchecked = uninstantiated
-      success
+        return false
+      else
+        delete @unchecked
+        return @
+
+    getCustomType: ()->
+      if not @custom_type?
+        # throw new Error "This operation was not initialized with a custom type"
+        @
+      else
+        if @custom_type.constructor is String
+          # has not been initialized yet (only the name is specified)
+          Type = @custom_types
+          for t in @custom_type.split(".")
+            Type = Type[t]
+          @custom_type = new Type()
+          @custom_type._setModel @
+        @custom_type
+
+    #
+    # @private
+    # Encode this operation in such a way that it can be parsed by remote peers.
+    #
+    _encode: (json = {})->
+      json.type = @type
+      json.uid = @getUid()
+      if @custom_type?
+        if @custom_type.constructor is String
+          json.custom_type = @custom_type
+        else
+          json.custom_type = @custom_type._name
+
+      if @content?.getUid?
+        json.content = @content.getUid()
+      else
+        json.content = @content
+      if @content_operations?
+        operations = {}
+        for n,o of @content_operations
+          if o._getModel?
+            o = o._getModel(@custom_types, @operations)
+          operations[n] = o.getUid()
+        json.content_operations = operations
+      json
 
   #
   # @nodoc
   # A simple Delete-type operation that deletes an operation.
   #
-  class types.Delete extends types.Operation
+  class ops.Delete extends ops.Operation
 
     #
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Object} deletes UID or reference of the operation that this to be deleted.
     #
-    constructor: (uid, deletes)->
+    constructor: (custom_type, uid, deletes)->
       @saveOperation 'deletes', deletes
-      super uid
+      super custom_type, uid
 
     type: "Delete"
 
@@ -245,12 +352,12 @@ module.exports = (HB)->
   #
   # Define how to parse Delete operations.
   #
-  types.Delete.parse = (o)->
+  ops.Delete.parse = (o)->
     {
       'uid' : uid
       'deletes': deletes_uid
     } = o
-    new this(uid, deletes_uid)
+    new this(null, uid, deletes_uid)
 
   #
   # @nodoc
@@ -259,24 +366,17 @@ module.exports = (HB)->
   # An insert operation is always positioned between two other insert operations.
   # Internally this is realized as associative lists, whereby each insert operation has a predecessor and a successor.
   # For the sake of efficiency we maintain two lists:
-  #   - The short-list (abbrev. sl) maintains only the operations that are not deleted
+  #   - The short-list (abbrev. sl) maintains only the operations that are not deleted (unimplemented, good idea?)
   #   - The complete-list (abbrev. cl) maintains all operations
   #
-  class types.Insert extends types.Operation
+  class ops.Insert extends ops.Operation
 
     #
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Operation} prev_cl The predecessor of this operation in the complete-list (cl)
     # @param {Operation} next_cl The successor of this operation in the complete-list (cl)
     #
-    constructor: (content, uid, prev_cl, next_cl, origin, parent)->
-      # see encode to see, why we are doing it this way
-      if content is undefined
-        # nop
-      else if content? and content.creator?
-        @saveOperation 'content', content
-      else
-        @content = content
+    constructor: (custom_type, content, content_operations, parent, uid, prev_cl, next_cl, origin)->
       @saveOperation 'parent', parent
       @saveOperation 'prev_cl', prev_cl
       @saveOperation 'next_cl', next_cl
@@ -284,12 +384,33 @@ module.exports = (HB)->
         @saveOperation 'origin', origin
       else
         @saveOperation 'origin', prev_cl
-      super uid
+      super custom_type, uid, content, content_operations
 
     type: "Insert"
 
     val: ()->
-      @content
+      @getContent()
+
+    getNext: (i=1)->
+      n = @
+      while i > 0 and n.next_cl?
+        n = n.next_cl
+        if not n.is_deleted
+          i--
+      if n.is_deleted
+        null
+      n
+
+    getPrev: (i=1)->
+      n = @
+      while i > 0 and n.prev_cl?
+        n = n.prev_cl
+        if not n.is_deleted
+          i--
+      if n.is_deleted
+        null
+      else
+        n
 
     #
     # set content to null and other stuff
@@ -298,7 +419,7 @@ module.exports = (HB)->
     applyDelete: (o)->
       @deleted_by ?= []
       callLater = false
-      if @parent? and not @isDeleted() and o? # o? : if not o?, then the delimiter deleted this Insertion. Furthermore, it would be wrong to call it. TODO: make this more expressive and save
+      if @parent? and not @is_deleted and o? # o? : if not o?, then the delimiter deleted this Insertion. Furthermore, it would be wrong to call it. TODO: make this more expressive and save
         # call iff wasn't deleted earlyer
         callLater = true
       if o?
@@ -308,16 +429,10 @@ module.exports = (HB)->
         garbagecollect = true
       super garbagecollect
       if callLater
-        @callOperationSpecificDeleteEvents(o)
-      if @prev_cl?.isDeleted()
+        @parent.callOperationSpecificDeleteEvents(this, o)
+      if @prev_cl? and @prev_cl.isDeleted()
         # garbage collect prev_cl
         @prev_cl.applyDelete()
-
-      # delete content
-      if @content instanceof types.Operation
-        @content.applyDelete()
-      delete @content
-
 
     cleanup: ()->
       if @next_cl.isDeleted()
@@ -335,6 +450,18 @@ module.exports = (HB)->
         # reconnect left/right
         @prev_cl.next_cl = @next_cl
         @next_cl.prev_cl = @prev_cl
+
+        # delete content
+        # - we must not do this in applyDelete, because this would lead to inconsistencies
+        # (e.g. the following operation order must be invertible :
+        #   Insert refers to content, then the content is deleted)
+        # Therefore, we have to do this in the cleanup
+        # * NODE: We never delete Insertions!
+        if @content instanceof ops.Operation and not (@content instanceof ops.Insert)
+          @content.referenced_by--
+          if @content.referenced_by <= 0 and not @content.is_deleted
+            @content.applyDelete()
+        delete @content
         super
       # else
       #   Someone inserted something in the meantime.
@@ -361,8 +488,10 @@ module.exports = (HB)->
       if not @validateSavedOperations()
         return false
       else
-        if @content instanceof types.Operation
+        if @content instanceof ops.Operation
           @content.insert_parent = @ # TODO: this is probably not necessary and only nice for debugging
+          @content.referenced_by ?= 0
+          @content.referenced_by++
         if @parent?
           if not @prev_cl?
             @prev_cl = @parent.beginning
@@ -422,26 +551,8 @@ module.exports = (HB)->
 
         @setParent @prev_cl.getParent() # do Insertions always have a parent?
         super # notify the execution_listeners
-        @callOperationSpecificInsertEvents()
+        @parent.callOperationSpecificInsertEvents(this)
         @
-
-    callOperationSpecificInsertEvents: ()->
-      @parent?.callEvent [
-        type: "insert"
-        position: @getPosition()
-        object: @parent
-        changedBy: @uid.creator
-        value: @content
-      ]
-
-    callOperationSpecificDeleteEvents: (o)->
-      @parent.callEvent [
-        type: "delete"
-        position: @getPosition()
-        object: @parent # TODO: You can combine getPosition + getParent in a more efficient manner! (only left Delimiter will hold @parent)
-        length: 1
-        changedBy: o.uid.creator
-      ]
 
     #
     # Compute the position of this operation.
@@ -450,7 +561,7 @@ module.exports = (HB)->
       position = 0
       prev = @prev_cl
       while true
-        if prev instanceof types.Delimiter
+        if prev instanceof ops.Delimiter
           break
         if not prev.isDeleted()
           position++
@@ -461,80 +572,31 @@ module.exports = (HB)->
     # Convert all relevant information of this operation to the json-format.
     # This result can be send to other clients.
     #
-    _encode: ()->
-      json =
-        {
-          'type': @type
-          'uid' : @getUid()
-          'prev': @prev_cl.getUid()
-          'next': @next_cl.getUid()
-          'parent': @parent.getUid()
-        }
+    _encode: (json = {})->
+      json.prev = @prev_cl.getUid()
+      json.next = @next_cl.getUid()
 
       if @origin.type is "Delimiter"
         json.origin = "Delimiter"
       else if @origin isnt @prev_cl
         json.origin = @origin.getUid()
 
-      if @content?.getUid?
-        json['content'] = @content.getUid()
-      else
-        json['content'] = JSON.stringify @content
-      json
+      # if not (json.prev? and json.next?)
+      json.parent = @parent.getUid()
 
-  types.Insert.parse = (json)->
+      super json
+
+  ops.Insert.parse = (json)->
     {
       'content' : content
+      'content_operations' : content_operations
       'uid' : uid
       'prev': prev
       'next': next
       'origin' : origin
       'parent' : parent
     } = json
-    if typeof content is "string"
-      content = JSON.parse(content)
-    new this content, uid, prev, next, origin, parent
-
-
-
-  #
-  # @nodoc
-  # Defines an object that is cannot be changed. You can use this to set an immutable string, or a number.
-  #
-  class types.ImmutableObject extends types.Operation
-
-    #
-    # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
-    # @param {Object} content
-    #
-    constructor: (uid, @content)->
-      super uid
-
-    type: "ImmutableObject"
-
-    #
-    # @return [String] The content of this operation.
-    #
-    val : ()->
-      @content
-
-    #
-    # Encode this operation in such a way that it can be parsed by remote peers.
-    #
-    _encode: ()->
-      json = {
-        'type': @type
-        'uid' : @getUid()
-        'content' : @content
-      }
-      json
-
-  types.ImmutableObject.parse = (json)->
-    {
-      'uid' : uid
-      'content' : content
-    } = json
-    new this(uid, content)
+    new this null, content, content_operations, parent, uid, prev, next, origin
 
   #
   # @nodoc
@@ -542,7 +604,7 @@ module.exports = (HB)->
   # This is necessary in order to have a beginning and an end even if the content
   # of the Engine is empty.
   #
-  class types.Delimiter extends types.Operation
+  class ops.Delimiter extends ops.Operation
     #
     # @param {Object} uid A unique identifier. If uid is undefined, a new uid will be created.
     # @param {Operation} prev_cl The predecessor of this operation in the complete-list (cl)
@@ -552,7 +614,7 @@ module.exports = (HB)->
       @saveOperation 'prev_cl', prev_cl
       @saveOperation 'next_cl', next_cl
       @saveOperation 'origin', prev_cl
-      super {noOperation: true}
+      super null, {noOperation: true}
 
     type: "Delimiter"
 
@@ -601,7 +663,7 @@ module.exports = (HB)->
         'next' : @next_cl?.getUid()
       }
 
-  types.Delimiter.parse = (json)->
+  ops.Delimiter.parse = (json)->
     {
     'uid' : uid
     'prev' : prev
@@ -611,10 +673,6 @@ module.exports = (HB)->
 
   # This is what this module exports after initializing it with the HistoryBuffer
   {
-    'types' : types
+    'operations' : ops
     'execution_listener' : execution_listener
   }
-
-
-
-
