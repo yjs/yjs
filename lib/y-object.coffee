@@ -1,6 +1,4 @@
 
-Y = require './y'
-
 bindToChildren = (that)->
   for i in [0...that.children.length]
     attr = that.children.item(i)
@@ -25,7 +23,7 @@ Polymer "y-object",
       bindToChildren @
 
   valChanged: ()->
-    if @val? and @val.type is "Object"
+    if @val? and @val._name is "Object"
       bindToChildren @
 
   connectorChanged: ()->
@@ -37,23 +35,21 @@ Polymer "y-property",
   ready: ()->
     if @val? and @name?
       if @val.constructor is Object
-        @val = @parentElement.val(@name,@val).val(@name)
-        # TODO: please use instanceof instead of .type,
+        @val = @parentElement.val(@name,new Y.Object(@val)).val(@name)
+        # TODO: please use instanceof instead of ._name,
         # since it is more safe (consider someone putting a custom Object type here)
       else if typeof @val is "string"
         @parentElement.val(@name,@val)
-      if @val.type is "Object"
+      if @val._name is "Object"
         bindToChildren @
 
   valChanged: ()->
     if @val? and @name?
       if @val.constructor is Object
-        @val = @parentElement.val.val(@name,@val).val(@name)
-        # TODO: please use instanceof instead of .type,
+        @val = @parentElement.val.val(@name, new Y.Object(@val)).val(@name)
+        # TODO: please use instanceof instead of ._name,
         # since it is more safe (consider someone putting a custom Object type here)
-      else if @val.type is "Object"
+      else if @val._name is "Object"
         bindToChildren @
       else if @parentElement.val?.val? and @val isnt @parentElement.val.val(@name)
         @parentElement.val.val @name, @val
-
-

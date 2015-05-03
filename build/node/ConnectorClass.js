@@ -38,10 +38,12 @@ module.exports = {
     this.connections = {};
     this.current_sync_target = null;
     this.sent_hb_to_all_users = false;
-    this.is_initialized = true;
-    return this.connections_listeners = [];
+    return this.is_initialized = true;
   },
   onUserEvent: function(f) {
+    if (this.connections_listeners == null) {
+      this.connections_listeners = [];
+    }
     return this.connections_listeners.push(f);
   },
   isRoleMaster: function() {
@@ -72,16 +74,18 @@ module.exports = {
     var f, i, len, ref, results;
     delete this.connections[user];
     this.findNewSyncTarget();
-    ref = this.connections_listeners;
-    results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      f = ref[i];
-      results.push(f({
-        action: "userLeft",
-        user: user
-      }));
+    if (this.connections_listeners != null) {
+      ref = this.connections_listeners;
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        f = ref[i];
+        results.push(f({
+          action: "userLeft",
+          user: user
+        }));
+      }
+      return results;
     }
-    return results;
   },
   userJoined: function(user, role) {
     var base, f, i, len, ref, results;
@@ -99,17 +103,19 @@ module.exports = {
         this.performSyncWithMaster(user);
       }
     }
-    ref = this.connections_listeners;
-    results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      f = ref[i];
-      results.push(f({
-        action: "userJoined",
-        user: user,
-        role: role
-      }));
+    if (this.connections_listeners != null) {
+      ref = this.connections_listeners;
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        f = ref[i];
+        results.push(f({
+          action: "userJoined",
+          user: user,
+          role: role
+        }));
+      }
+      return results;
     }
-    return results;
   },
   whenSynced: function(args) {
     if (args.constructore === Function) {
