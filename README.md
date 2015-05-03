@@ -3,7 +3,7 @@
 
 [![Build Status](https://travis-ci.org/y-js/yjs.svg)](https://travis-ci.org/y-js/yjs)
 
-Yjs is a framework for optimistic concurrency control and automatic conflict resolution on arbitrary data types. The framework implements a new OT-like concurrency algorithm and provides similar functionality as [ShareJs] and [OpenCoweb]. Yjs was designed to handle concurrent actions on arbitrary complex data types like Text, Json, and XML. You can find some applications for this framework [here](http://y-js.org/examples/).
+Yjs is a framework for optimistic concurrency control and automatic conflict resolution on arbitrary data types. The framework implements a new OT-like concurrency algorithm and provides similar functionality as [ShareJs] and [OpenCoweb]. Yjs was designed to handle concurrent actions on arbitrary complex data types like Text, Json, and XML. You can find a tutorial and some applications for this framework on our [homepage](http://y-js.org/).
 
 You can create your own shared data types easily. Therefore, you can take matters into your own hand by defining the meaning of the shared types and ensure that it is valid, while Yjs ensures data consistency (everyone will eventually end up with the same data).
 You can use existing types in your custom data type as well. Learn in [this wiki page](https://github.com/y-js/yjs/wiki/Custom-Types) how to craft your own custom data types. We already provide data types for
@@ -132,7 +132,7 @@ I created this framework during my bachelor thesis at the chair of computer scie
 ## License
 Yjs is licensed under the [MIT License](./LICENSE.txt).
 
-<kevin.jahns@rwth-aachen.de>
+<yjs@dbis.rwth-aachen.de>
 
 [ShareJs]: https://github.com/share/ShareJS
 [OpenCoweb]: https://github.com/opencoweb/coweb
