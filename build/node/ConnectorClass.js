@@ -269,10 +269,22 @@ module.exports = {
           send_again = (function(_this) {
             return function(sv) {
               return function() {
+                var k, len2;
                 hb = _this.getHB(sv).hb;
+                for (k = 0, len2 = hb.length; k < len2; k++) {
+                  o = hb[k];
+                  _hb.push(o);
+                  if (_hb.length > 10) {
+                    _this.send(sender, {
+                      sync_step: "applyHB_",
+                      data: _hb
+                    });
+                    _hb = [];
+                  }
+                }
                 return _this.send(sender, {
                   sync_step: "applyHB",
-                  data: hb,
+                  data: _hb,
                   sent_again: "true"
                 });
               };

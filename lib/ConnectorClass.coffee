@@ -239,9 +239,16 @@ module.exports =
           send_again = do (sv = data.state_vector)=>
             ()=>
               hb = @getHB(sv).hb
+              for o in hb
+                _hb.push o
+                if _hb.length > 10
+                  @send sender,
+                    sync_step: "applyHB_"
+                    data: _hb
+                  _hb = []
               @send sender,
                 sync_step: "applyHB",
-                data: hb
+                data: _hb
                 sent_again: "true"
           setTimeout send_again, 3000
       else if res.sync_step is "applyHB"
