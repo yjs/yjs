@@ -389,9 +389,17 @@ module.exports = function() {
     Composition.prototype.type = "Composition";
 
     Composition.prototype.execute = function() {
+      var composition_ref;
       if (this.validateSavedOperations()) {
         this.getCustomType()._setCompositionValue(this._composition_value);
         delete this._composition_value;
+        if (this.tmp_composition_ref) {
+          composition_ref = this.HB.getOperation(this.tmp_composition_ref);
+          if (composition_ref != null) {
+            delete this.tmp_composition_ref;
+            this.composition_ref = composition_ref;
+          }
+        }
         return Composition.__super__.execute.apply(this, arguments);
       } else {
         return false;

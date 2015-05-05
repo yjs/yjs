@@ -342,6 +342,11 @@ module.exports = ()->
       if @validateSavedOperations()
         @getCustomType()._setCompositionValue @_composition_value
         delete @_composition_value
+        if @tmp_composition_ref
+          composition_ref = @HB.getOperation @tmp_composition_ref
+          if composition_ref?
+            delete @tmp_composition_ref
+            @composition_ref = composition_ref
         super
       else
         false
