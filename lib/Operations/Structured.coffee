@@ -342,6 +342,7 @@ module.exports = ()->
       if @validateSavedOperations()
         @getCustomType()._setCompositionValue @_composition_value
         delete @_composition_value
+        # check if tmp_composition_ref already exists
         if @tmp_composition_ref
           composition_ref = @HB.getOperation @tmp_composition_ref
           if composition_ref?
