@@ -1,9 +1,10 @@
 {
   "name": "yjs",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "A Framework that enables Real-Time Collaboration on arbitrary data structures.",
   "main": "./build/node/y.js",
   "scripts": {
+    "prepublish": "./node_module/.bin/gulp build_node",
     "test": "./node_modules/.bin/gulp mocha"
   },
   "repository": {
@@ -26,9 +27,9 @@
   },
   "homepage": "https://dadamonad.github.io/yjs/",
   "dependencies": {
-    "chai": "^2.2.0"
   },
   "devDependencies": {
+    "chai": "^2.2.0",
     "codo": "^2.0.9",
     "coffee-errors": "~0.8.6",
     "coffee-script": "^1.7.1",
