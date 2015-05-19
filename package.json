@@ -4,8 +4,8 @@
   "description": "A Framework that enables Real-Time Collaboration on arbitrary data structures.",
   "main": "./build/node/y.js",
   "scripts": {
-    "prepublish": "./node_module/.bin/gulp build_node",
-    "test": "./node_modules/.bin/gulp mocha"
+    "prepublish": "./node_modules/gulp/bin/gulp.js build_node",
+    "test": "./node_modules/gulp/bin/gulp.js mocha"
   },
   "repository": {
     "type": "git",
