@@ -118,7 +118,7 @@ module.exports = {
     }
   },
   whenSynced: function(args) {
-    if (args.constructore === Function) {
+    if (args.constructor === Function) {
       args = [args];
     }
     if (this.is_synced) {
@@ -205,14 +205,16 @@ module.exports = {
     });
   },
   setStateSynced: function() {
-    var f, i, len, ref;
+    var args, el, f, i, len, ref;
     if (!this.is_synced) {
       this.is_synced = true;
       if (this.compute_when_synced != null) {
         ref = this.compute_when_synced;
         for (i = 0, len = ref.length; i < len; i++) {
-          f = ref[i];
-          f();
+          el = ref[i];
+          f = el[0];
+          args = el.slice(1);
+          f.apply(args);
         }
         delete this.compute_when_synced;
       }

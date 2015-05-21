@@ -105,7 +105,7 @@ module.exports =
   # @param f {Function} Will be executed on the PeerJs-Connector context.
   #
   whenSynced: (args)->
-    if args.constructore is Function
+    if args.constructor is Function
       args = [args]
     if @is_synced
       args[0].apply this, args[1..]
@@ -192,8 +192,10 @@ module.exports =
     if not @is_synced
       @is_synced = true
       if @compute_when_synced?
-        for f in @compute_when_synced
-          f()
+        for el in @compute_when_synced
+          f = el[0]
+          args = el[1..]
+          f.apply(args)
         delete @compute_when_synced
       null
 
