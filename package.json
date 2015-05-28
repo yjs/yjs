@@ -1,6 +1,6 @@
 {
   "name": "yjs",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "A Framework that enables Real-Time Collaboration on arbitrary data structures.",
   "main": "./build/node/y.js",
   "scripts": {
