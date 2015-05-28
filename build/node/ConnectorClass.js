@@ -154,7 +154,7 @@ module.exports = {
       this.send(user, {
         sync_step: "getHB",
         send_again: "true",
-        data: []
+        data: this.getStateVector()
       });
       if (!this.sent_hb_to_all_users) {
         this.sent_hb_to_all_users = true;
@@ -184,7 +184,7 @@ module.exports = {
     this.send(user, {
       sync_step: "getHB",
       send_again: "true",
-      data: []
+      data: this.getStateVector()
     });
     hb = this.getHB([]).hb;
     _hb = [];
@@ -221,8 +221,14 @@ module.exports = {
       return null;
     }
   },
+  whenReceivedStateVector: function(f) {
+    if (this.when_received_state_vector_listeners == null) {
+      this.when_received_state_vector_listeners = [];
+    }
+    return this.when_received_state_vector_listeners.push(f);
+  },
   receiveMessage: function(sender, res) {
-    var _hb, data, f, hb, i, j, len, len1, o, ref, results, sendApplyHB, send_again;
+    var _hb, data, f, hb, i, j, k, len, len1, len2, o, ref, ref1, results, sendApplyHB, send_again;
     if (res.sync_step == null) {
       ref = this.receive_handlers;
       results = [];
@@ -236,6 +242,14 @@ module.exports = {
         return;
       }
       if (res.sync_step === "getHB") {
+        if (this.when_received_state_vector_listeners != null) {
+          ref1 = this.when_received_state_vector_listeners;
+          for (j = 0, len1 = ref1.length; j < len1; j++) {
+            f = ref1[j];
+            f.call(this, res.data);
+          }
+        }
+        delete this.when_received_state_vector_listeners;
         data = this.getHB(res.data);
         hb = data.hb;
         _hb = [];
@@ -252,8 +266,8 @@ module.exports = {
             };
           })(this);
         }
-        for (j = 0, len1 = hb.length; j < len1; j++) {
-          o = hb[j];
+        for (k = 0, len2 = hb.length; k < len2; k++) {
+          o = hb[k];
           _hb.push(o);
           if (_hb.length > 10) {
             sendApplyHB({
@@ -271,10 +285,10 @@ module.exports = {
           send_again = (function(_this) {
             return function(sv) {
               return function() {
-                var k, len2;
+                var l, len3;
                 hb = _this.getHB(sv).hb;
-                for (k = 0, len2 = hb.length; k < len2; k++) {
-                  o = hb[k];
+                for (l = 0, len3 = hb.length; l < len3; l++) {
+                  o = hb[l];
                   _hb.push(o);
                   if (_hb.length > 10) {
                     _this.send(sender, {

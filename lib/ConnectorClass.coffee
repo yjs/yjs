@@ -102,7 +102,7 @@ module.exports =
 
   #
   # Execute a function _when_ we are connected. If not connected, wait until connected.
-  # @param f {Function} Will be executed on the PeerJs-Connector context.
+  # @param f {Function} Will be executed on the Connector context.
   #
   whenSynced: (args)->
     if args.constructor is Function
@@ -143,7 +143,7 @@ module.exports =
       @send user,
         sync_step: "getHB"
         send_again: "true"
-        data: [] # @getStateVector()
+        data: @getStateVector()
       if not @sent_hb_to_all_users
         @sent_hb_to_all_users = true
 
@@ -171,7 +171,7 @@ module.exports =
     @send user,
       sync_step: "getHB"
       send_again: "true"
-      data: []
+      data: @getStateVector()
     hb = @getHB([]).hb
     _hb = []
     for o in hb
@@ -199,6 +199,12 @@ module.exports =
         delete @compute_when_synced
       null
 
+  # executed when the a state_vector is received. listener will be called only once!
+  whenReceivedStateVector: (f)->
+    @when_received_state_vector_listeners ?= []
+    @when_received_state_vector_listeners.push f
+
+
   #
   # You received a raw message, and you know that it is intended for to Yjs. Then call this function.
   #
@@ -210,6 +216,12 @@ module.exports =
       if sender is @user_id
         return
       if res.sync_step is "getHB"
+        # call listeners
+        if @when_received_state_vector_listeners?
+          for f in @when_received_state_vector_listeners
+            f.call this, res.data
+        delete @when_received_state_vector_listeners
+
         data = @getHB(res.data)
         hb = data.hb
         _hb = []

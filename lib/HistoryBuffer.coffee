@@ -22,22 +22,32 @@ class HistoryBuffer
     @reserved_identifier_counter = 0
     setTimeout @emptyGarbage, @garbageCollectTimeout
 
-  resetUserId: (id)->
-    own = @buffer[@user_id]
-    if own?
-      for o_name,o of own
-        if o.uid.creator?
-          o.uid.creator = id
-        if o.uid.alt?
-          o.uid.alt.creator = id
-      if @buffer[id]?
-        throw new Error "You are re-assigning an old user id - this is not (yet) possible!"
-      @buffer[id] = own
-      delete @buffer[@user_id]
-    if @operation_counter[@user_id]?
-      @operation_counter[id] = @operation_counter[@user_id]
-      delete @operation_counter[@user_id]
-    @user_id = id
+  # At the beginning (when the user id was not assigned yet),
+  # the operations are added to buffer._temp. When you finally get your user id,
+  # the operations are copies from buffer._temp to buffer[id]. Furthermore, when buffer[id] does already contain operations
+  # (because of a previous session), the uid.op_numbers of the operations have to be reassigned.
+  # This is what this function does. It adds them to buffer[id],
+  # and assigns them the correct uid.op_number and uid.creator
+  setUserId: (@user_id, state_vector)->
+    @buffer[@user_id] ?= []
+    buff = @buffer[@user_id]
+
+    # we assumed that we started with counter = 0.
+    # when we receive tha state_vector, and actually have
+    # counter = 10. Then we have to add 10 to every op_counter
+    counter_diff = state_vector[@user_id] or 0
+
+    if @buffer._temp?
+      for o_name,o of @buffer._temp
+        o.uid.creator = @user_id
+        o.uid.op_number += counter_diff
+        buff[o.uid.op_number] = o
+
+    @operation_counter[@user_id] = (@operation_counter._temp or 0) + counter_diff
+
+    delete @operation_counter._temp
+    delete @buffer._temp
+
 
   emptyGarbage: ()=>
     for o in @garbage
@@ -207,17 +217,11 @@ class HistoryBuffer
   #
   addToCounter: (o)->
     @operation_counter[o.uid.creator] ?= 0
-    if o.uid.creator isnt @getUserId()
-      # TODO: check if operations are send in order
-      if o.uid.op_number is @operation_counter[o.uid.creator]
-        @operation_counter[o.uid.creator]++
-      while @buffer[o.uid.creator][@operation_counter[o.uid.creator]]?
-        @operation_counter[o.uid.creator]++
-      undefined
-
-    #if @operation_counter[o.uid.creator] isnt (o.uid.op_number + 1)
-      #console.log (@operation_counter[o.uid.creator] - (o.uid.op_number + 1))
-      #console.log o
-      #throw new Error "You don't receive operations in the proper order. Try counting like this 0,1,2,3,4,.. ;)"
+    # TODO: check if operations are send in order
+    if o.uid.op_number is @operation_counter[o.uid.creator]
+      @operation_counter[o.uid.creator]++
+    while @buffer[o.uid.creator][@operation_counter[o.uid.creator]]?
+      @operation_counter[o.uid.creator]++
+    undefined
 
 module.exports = HistoryBuffer

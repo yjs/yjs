@@ -16,30 +16,26 @@ HistoryBuffer = (function() {
     setTimeout(this.emptyGarbage, this.garbageCollectTimeout);
   }
 
-  HistoryBuffer.prototype.resetUserId = function(id) {
-    var o, o_name, own;
-    own = this.buffer[this.user_id];
-    if (own != null) {
-      for (o_name in own) {
-        o = own[o_name];
-        if (o.uid.creator != null) {
-          o.uid.creator = id;
-        }
-        if (o.uid.alt != null) {
-          o.uid.alt.creator = id;
-        }
-      }
-      if (this.buffer[id] != null) {
-        throw new Error("You are re-assigning an old user id - this is not (yet) possible!");
-      }
-      this.buffer[id] = own;
-      delete this.buffer[this.user_id];
+  HistoryBuffer.prototype.setUserId = function(user_id1, state_vector) {
+    var base, buff, counter_diff, name, o, o_name, ref;
+    this.user_id = user_id1;
+    if ((base = this.buffer)[name = this.user_id] == null) {
+      base[name] = [];
     }
-    if (this.operation_counter[this.user_id] != null) {
-      this.operation_counter[id] = this.operation_counter[this.user_id];
-      delete this.operation_counter[this.user_id];
+    buff = this.buffer[this.user_id];
+    counter_diff = state_vector[this.user_id] || 0;
+    if (this.buffer._temp != null) {
+      ref = this.buffer._temp;
+      for (o_name in ref) {
+        o = ref[o_name];
+        o.uid.creator = this.user_id;
+        o.uid.op_number += counter_diff;
+        buff[o.uid.op_number] = o;
+      }
     }
-    return this.user_id = id;
+    this.operation_counter[this.user_id] = (this.operation_counter._temp || 0) + counter_diff;
+    delete this.operation_counter._temp;
+    return delete this.buffer._temp;
   };
 
   HistoryBuffer.prototype.emptyGarbage = function() {
@@ -243,15 +239,13 @@ HistoryBuffer = (function() {
     if ((base = this.operation_counter)[name = o.uid.creator] == null) {
       base[name] = 0;
     }
-    if (o.uid.creator !== this.getUserId()) {
-      if (o.uid.op_number === this.operation_counter[o.uid.creator]) {
-        this.operation_counter[o.uid.creator]++;
-      }
-      while (this.buffer[o.uid.creator][this.operation_counter[o.uid.creator]] != null) {
-        this.operation_counter[o.uid.creator]++;
-      }
-      return void 0;
+    if (o.uid.op_number === this.operation_counter[o.uid.creator]) {
+      this.operation_counter[o.uid.creator]++;
     }
+    while (this.buffer[o.uid.creator][this.operation_counter[o.uid.creator]] != null) {
+      this.operation_counter[o.uid.creator]++;
+    }
+    return void 0;
   };
 
   return HistoryBuffer;

@@ -6,14 +6,13 @@ Engine = require "./Engine"
 adaptConnector = require "./ConnectorAdapter"
 
 createY = (connector)->
-  user_id = null
   if connector.user_id?
     user_id = connector.user_id # TODO: change to getUniqueId()
   else
     user_id = "_temp"
-    connector.on_user_id_set = (id)->
-      user_id = id
-      HB.resetUserId id
+    connector.when_received_state_vector_listeners = [(state_vector)->
+        HB.setUserId this.user_id, state_vector
+      ]
   HB = new HistoryBuffer user_id
   ops_manager = structured_ops_uninitialized HB, this.constructor
   ops = ops_manager.operations

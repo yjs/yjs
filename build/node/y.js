@@ -10,15 +10,15 @@ adaptConnector = require("./ConnectorAdapter");
 
 createY = function(connector) {
   var HB, ct, engine, model, ops, ops_manager, user_id;
-  user_id = null;
   if (connector.user_id != null) {
     user_id = connector.user_id;
   } else {
     user_id = "_temp";
-    connector.on_user_id_set = function(id) {
-      user_id = id;
-      return HB.resetUserId(id);
-    };
+    connector.when_received_state_vector_listeners = [
+      function(state_vector) {
+        return HB.setUserId(this.user_id, state_vector);
+      }
+    ];
   }
   HB = new HistoryBuffer(user_id);
   ops_manager = structured_ops_uninitialized(HB, this.constructor);
