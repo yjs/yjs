@@ -1,6 +1,8 @@
 
 # ![Yjs](http://y-js.org/files/layout/yjs.svg)
 
+Note: This branch implements IndexedDB / Redis to store operations. This is highly experimental!!!!
+
 [![Build Status](https://travis-ci.org/y-js/yjs.svg)](https://travis-ci.org/y-js/yjs)
 
 Yjs is a framework for optimistic concurrency control and automatic conflict resolution on arbitrary data types. The framework implements a new OT-like concurrency algorithm and provides similar functionality as [ShareJs] and [OpenCoweb]. Yjs was designed to handle concurrent actions on arbitrary complex data types like Text, Json, and XML. We provide a tutorial and some applications for this framework on our [homepage](http://y-js.org/).
