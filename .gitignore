@@ -1,5 +1,6 @@
-/node_modules/
+node_modules
 bower_components
+build
 .directory
 .c9
 .codio

@@ -1,0 +1,13 @@
+{
+  "env": {
+    "es6": true
+  },
+  "rules": {
+    "strict": 0,
+    "camelcase": [1, {"properties": "never"}]
+  },
+  "parser": "babel-eslint",
+  "globals": {
+        "Buffer": true
+    }
+}

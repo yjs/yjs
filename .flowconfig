@@ -1,0 +1,10 @@
+[ignore]
+./build_node
+
+[include]
+./src
+
+[libs]
+./interfaces
+
+[options]

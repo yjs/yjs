@@ -1,65 +1,41 @@
 {
   "name": "yjs",
-  "version": "0.5.2",
-  "description": "A Framework that enables Real-Time Collaboration on arbitrary data structures.",
-  "main": "./build/node/y.js",
+  "version": "0.6.0",
+  "description": "A framework for real-time p2p shared editing on arbitrary complex data types",
+  "main": "y.js",
   "scripts": {
-    "prepublish": "./node_modules/gulp/bin/gulp.js build_node",
-    "test": "./node_modules/gulp/bin/gulp.js mocha"
+    "test": "gulp test"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/rwth-acis/yjs"
+    "url": "https://github.com/y-js/yjs.git"
   },
   "keywords": [
     "OT",
+    "Operational Transformation",
     "collaboration",
     "synchronization",
-    "ShareJS",
-    "Coweb",
+    "ShareJs",
+    "OpenCoweb",
     "concurrency"
   ],
   "author": "Kevin Jahns",
   "email": "kevin.jahns@rwth-aachen.de",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/rwth-acis/yjs/issues"
+    "url": "https://github.com/y-js/yjs/issues"
   },
-  "homepage": "https://dadamonad.github.io/yjs/",
-  "dependencies": {
-  },
+  "homepage": "http://y-js.org",
   "devDependencies": {
-    "chai": "^2.2.0",
-    "codo": "^2.0.9",
-    "coffee-errors": "~0.8.6",
-    "coffee-script": "^1.7.1",
-    "coffeeify": "^0.6.0",
-    "gulp": "^3.8.7",
-    "gulp-browserify": "^0.5.0",
-    "gulp-cached": "^1.0.1",
-    "gulp-coffee": "^2.1.1",
-    "gulp-coffeeify": "^0.1.2",
-    "gulp-coffeelint": "^0.3.3",
-    "gulp-concat": "^2.3.4",
-    "gulp-copy": "0.0.2",
-    "gulp-debug": "^1.0.0",
-    "gulp-exit": "0.0.2",
-    "gulp-git": "^0.5.0",
-    "gulp-if": "^1.2.4",
-    "gulp-ignore": "^1.2.0",
-    "gulp-ljs": "^0.1.1",
-    "gulp-mocha": "^0.5.2",
-    "gulp-plumber": "^0.6.6",
-    "gulp-rename": "^1.2.0",
-    "gulp-rimraf": "^0.1.0",
-    "gulp-run": "^1.6.3",
-    "gulp-sourcemaps": "^1.1.1",
-    "gulp-uglify": "^0.3.1",
-    "gulp-watch": "^3.0.0",
-    "jquery": "^2.1.1",
-    "underscore": "^1.6.0",
-    "mocha": "^2.1.0",
-    "sinon": "^1.12.2",
-    "sinon-chai": "^2.7.0"
+    "babel-eslint": "^3.1.15",
+    "eslint": "^0.22.1",
+    "gulp": "^3.9.0",
+    "gulp-babel": "^5.1.0",
+    "gulp-concat": "^2.5.2",
+    "gulp-eslint": "^0.13.2",
+    "gulp-jasmine": "^2.0.1",
+    "gulp-sourcemaps": "^1.5.2",
+    "gulp-uglify": "^1.2.0",
+    "minimist": "^1.1.1"
   }
 }
