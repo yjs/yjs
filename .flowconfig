@@ -1,5 +1,8 @@
 [ignore]
 ./build_node
+./build
+./build_test
+./y.js
 
 [include]
 ./src

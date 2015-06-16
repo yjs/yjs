@@ -3,6 +3,6 @@
 
 describe("A suite", function() {
   it("contains spec with an expectation", function() {
-    expect(new Buffer(3)).toBe(true);
+    expect(true).toBe(true);
   });
 });

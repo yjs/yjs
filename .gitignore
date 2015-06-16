@@ -1,6 +1,7 @@
 node_modules
 bower_components
 build
+build_test
 .directory
 .c9
 .codio
