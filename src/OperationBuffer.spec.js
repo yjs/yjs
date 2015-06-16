@@ -2,7 +2,7 @@
 /*eslint-env browser,jasmine,console */
 
 describe("Operation Buffer", function() {
-  var OB = new OperationBuffer(void 0);
+  var OB = new OperationBuffer();
 
   it("contains spec with an expectation", function(done) {
     setTimeout(function(){

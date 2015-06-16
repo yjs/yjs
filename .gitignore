@@ -6,3 +6,6 @@ build_test
 .c9
 .codio
 .settings
+.jshintignore
+.jshintrc
+.validate.json

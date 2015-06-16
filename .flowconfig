@@ -1,10 +1,7 @@
-[ignore]
-./build_test
-
 [include]
-./src
 
 [libs]
 ./interfaces
+./src
 
 [options]

@@ -49,9 +49,9 @@ var concat = require("gulp-concat");
 var watch = require("gulp-watch");
 
 var files = {
-  y: ["src/**/*.js"],
+  y: ["src/**/*.js", "!src/**/*.spec.js"],
   lint: ["src/**/*.js", "gulpfile.js"],
-  specs: ["src/**/*.spec.js"],
+  test: ["src/**/*.js"],
   build_test: ["build_test/y.js"]
 };
 
@@ -65,7 +65,7 @@ var options = minimist(process.argv.slice(2), {
 });
 
 gulp.task("build_test", function () {
-  return gulp.src(files.y.concat(files.specs))
+  return gulp.src(files.test)
     .pipe(sourcemaps.init())
     .pipe(concat(options.name))
     .pipe(babel({
@@ -105,7 +105,7 @@ gulp.task("lint", function(){
     .pipe(eslint.failOnError());
 });
 
-gulp.task("develop", ["build_test", "build"], function(){
+gulp.task("develop", ["test", "build"], function(){
   gulp.src(files.build_test)
     .pipe(watch(files.build_test))
     .pipe(jasmineBrowser.specRunner())
@@ -114,4 +114,4 @@ gulp.task("develop", ["build_test", "build"], function(){
   return gulp.watch(files.build_test, ["test"]);
 });
 
-gulp.task("default", ["build"]);
+gulp.task("default", ["build", "test"]);
