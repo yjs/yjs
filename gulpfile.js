@@ -18,14 +18,14 @@
     - umdStrict
 
   Test port (TestPort):
-    Serve the tests on port 8888 (default)
+    Serve the specs on port 8888 (default)
 
   Commands:
     - build:
         Build this library
     - develop:
         Watch the ./src directory.
-        Builds and tests the library on changes.
+        Builds and specs the library on changes.
         Starts an http-server and serves the test suite on http://127.0.0.1:8888.
     - build_test:
         Builds the test suite
@@ -51,7 +51,7 @@ var watch = require("gulp-watch");
 var files = {
   y: ["src/**/*.js"],
   lint: ["src/**/*.js", "gulpfile.js"],
-  tests: ["tests/**/*.js"],
+  specs: ["src/**/*.spec.js"],
   build_test: ["build_test/y.js"]
 };
 
@@ -65,7 +65,7 @@ var options = minimist(process.argv.slice(2), {
 });
 
 gulp.task("build_test", function () {
-  return gulp.src(files.y.concat(files.tests))
+  return gulp.src(files.y.concat(files.specs))
     .pipe(sourcemaps.init())
     .pipe(concat(options.name))
     .pipe(babel({
