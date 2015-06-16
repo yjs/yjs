@@ -8,6 +8,6 @@
   },
   "parser": "babel-eslint",
   "globals": {
-        "Buffer": true
+        "OperationBuffer": true
     }
 }

@@ -1,2 +1,2 @@
-"use strict";function _classCallCheck(n,t){if(!(n instanceof t))throw new TypeError("Cannot call a class as a function")}function add(n){return n+4}var Buffer=function n(){_classCallCheck(this,n),this.i=4};add("5"),add("6"),describe("A suite",function(){it("contains spec with an expectation",function(){expect(!0).toBe(!0)})});
+"use strict";function _classCallCheck(n,e){if(!(n instanceof e))throw new TypeError("Cannot call a class as a function")}var OperationBuffer=function n(){_classCallCheck(this,n),this.i=4};describe("Operation Buffer",function(){var n=new OperationBuffer(void 0);window.console.log(n),it("contains spec with an expectation",function(n){setTimeout(function(){n()},1e3),expect(!0).toBe(!0)})});
 //# sourceMappingURL=y.js.map
