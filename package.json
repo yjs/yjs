@@ -5,11 +5,13 @@
   "main": "y.js",
   "scripts": {
     "test": "gulp test",
-    "lint": "gulp lint"
+    "lint": "gulp lint",
+    "build": "gulp build"
   },
   "pre-commit": [
     "lint",
-    "test"
+    "test",
+    "build"
   ],
   "repository": {
     "type": "git",
