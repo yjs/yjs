@@ -110,7 +110,7 @@ gulp.task("develop", ["test", "build"], function(){
     .pipe(watch(files.build_test))
     .pipe(jasmineBrowser.specRunner())
     .pipe(jasmineBrowser.server({port: options.testport}));
-  gulp.watch(files.src, ["build_test", "build"]);
+  gulp.watch(files.test, ["build_test", "build"]);
   return gulp.watch(files.build_test, ["test"]);
 });
 

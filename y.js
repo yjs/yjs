@@ -1,2 +1,2 @@
-"use strict";function _classCallCheck(a,n){if(!(a instanceof n))throw new TypeError("Cannot call a class as a function")}var OperationBuffer=function a(){_classCallCheck(this,a),this.i=4};
+"use strict";function _classCallCheck(t,n){if(!(t instanceof n))throw new TypeError("Cannot call a class as a function")}var OperationBuffer=function t(){_classCallCheck(this,t),this.i=4},Operation=function(){function t(n){_classCallCheck(this,t),this.i=n.i}return t.prototype.yay=function(){return this.i},t}();
 //# sourceMappingURL=y.js.map
