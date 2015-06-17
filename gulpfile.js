@@ -48,10 +48,14 @@ var jasmineBrowser = require("gulp-jasmine-browser");
 var concat = require("gulp-concat");
 var watch = require("gulp-watch");
 
+var polyfills = [
+  "./node_modules/regenerator/runtime.js"
+];
+
 var files = {
-  y: ["src/**/*.js", "!src/**/*.spec.js"],
+  y: polyfills.concat(["src/**/*.js", "!src/**/*.spec.js"]),
   lint: ["src/**/*.js", "gulpfile.js"],
-  test: ["src/**/*.js"],
+  test: polyfills.concat(["./node_modules/regenerator/runtime.js", "src/**/*.js"]),
   build_test: ["build_test/y.js"]
 };
 

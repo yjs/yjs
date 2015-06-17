@@ -1,16 +1,16 @@
 
-DB = (function(){
-  class DBTransaction {
+var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
+  class Transaction {
     constructor (transaction) {
       this.transaction = transaction;
     }
     setOperation (op) {
       return new Promise((resolve, reject)=> {
         var req = this.transaction.objectStore("OperationBuffer").put(op);
-        req.onsuccess = function (event) {
+        req.onsuccess = function () {
           resolve(op);
         };
-        req.onerror = function (event) {
+        req.onerror = function () {
           reject("Could not set Operation!");
         };
       });
@@ -18,198 +18,59 @@ DB = (function(){
     getOperation (uid) {
       return new Promise((resolve, reject)=>{
         var req = this.transaction.objectStore("OperationBuffer").get(uid);
-        req.onsuccess = function (event) {
+        req.onsuccess = function () {
           resolve(req.result);
-        }
-        req.onerror = function (event) {
+        };
+        req.onerror = function () {
           reject("Could not get Operation");
-        }
+        };
       });
     }
-    getOperations (state_map) {
-      var flow = Promise.resolve();
-      var ops = [];
-      var ob = that.transaction.objectStore("OperationBuffer");
-
-      this.getStateVector().then((end_state_vector)=>{
-         // convert to the db-structure
-        end_state_vector.forEach((end_state)=>{
-          var start_state = {
-            user: end_state.name,
-            state: state_map[end_state] || 0
-          }
-
-          flow = flow.then ()->
-            from = [start_state.user, start_state.number]
-            to = [end_state.user, end_state.number]
-            range = IDBKeyRange.bound from, to
-            defer = Promise.defer()
-
-            hb.openCursor(range).onsuccess = ()->
-              cursor = event.target.result
-              if cursor?
-                ops.push cursor.value # add Operation
-                cursor.continue()
-              else
-                # got all ops from this user
-                defer.resolve ops
-            defer.promise
-        })
-      })
+  }
+  class DB {
+    constructor (namespace : string) {
+      this.namespace = namespace;
+      this.ready = new Promise(function(yay, nay){
+        var req = indexedDB.open(namespace); //eslint-disable-line no-undef
+        req.onerror = function(){
+          nay("Couldn't open the IndexedDB database!");
+        };
+        req.onsuccess = function(event){
+          yay(event.target.result);
+        };
+        req.onupgradeneeded = function(event){
+          var db = event.target.result;
+          db.createObjectStore("OperationBuffer", {keyPath: "uid"});
+          db.createObjectStore("StateVector", {keyPath: "user"});
+        };
+      }).catch(function(message){
+          throw new Error(message);
+      });
+    }
+    requestTransaction (generator : Function) {
+      this.ready.then(function(){
+        var gen = generator(3);//new Transaction(db.transaction(["OperationBuffer", "StateVector"], "readwrite"))
+        gen.next();
+      });
     }
   }
+  return {
+    "DB": DB,
+    "Transaction": Transaction
+  };
+})();
 
-})()
-
-class DBTransaction
-
-  getOperations: (state_map)->
-    flow = Promise.resolve()
-    ops = []
-    that = this
-    hb = that.t.objectStore("OperationBuffer")
-
-    that.getStateVector().then (end_state_vector)->
-      for end_state of end_state_vector
-        # convert to the db-structure
-        do (end_state = end_state)->
-          start_state =
-            user: end_state.name
-            state: state_map[end_state] ? 0
-
-          flow = flow.then ()->
-            from = [start_state.user, start_state.number]
-            to = [end_state.user, end_state.number]
-            range = IDBKeyRange.bound from, to
-            defer = Promise.defer()
-
-            hb.openCursor(range).onsuccess = ()->
-              cursor = event.target.result
-              if cursor?
-                ops.push cursor.value # add Operation
-                cursor.continue()
-              else
-                # got all ops from this user
-                defer.resolve ops
-            defer.promise
-
-  setState: (state)->
-    that = this
-    new Promise (resolve, reject)->
-      req = that.t.objectStore("StateVector").put state
-      req.onsuccess = (event)->
-        resolve state
-      req.onerror = (event)->
-        reject "Could not set state vector!"
-
-  getState: (user)->
-    defer = Promise.defer()
-    req = @t.objectStore("StateVector").get user
-    req.onsuccess = (event)->
-      defer.resolve req.result
-    req.onerror = (event)->
-      defer.reject "Could not get state vector!"
-    defer.promise
-
-  getStateVector: ()->
-    defer = Promise.defer()
-    state_vector = []
-    @t.objectStore("StateVector").openCursor().onsuccess = ()->
-      cursor = event.target.result
-      if cursor?
-        state = cursor.value
-        state_vector.push state
-        cursor.continue()
-      else
-        # got all ops from this user
-        defer.resolve state_vector
-    defer.promise
-
-
-
-class Transaction
-  constructor: (@t)->
-
-  updateOperation: (op)->
-    @t.setOperation op
-
-  addOperation: (op)->
-    that = this
-    @t.getState op.uid[0]
-      .then (state)->
-        # only add operation if this is an expected operation
-        if not state?
-          state =
-            user: op.uid[0]
-            number: 0
-        if op.uid[1] is state.number
-          state.number++
-          that.t.setState state
-        else
-          return Promise.reject("Unexpected Operation")
-      .then that.t.setOperation op
-
-  getOperation: (uid)->
-    @t.getOperation uid
-
-  getState: (user)->
-    @t.getState user
-
-  getOperations: (state_vector)->
-    @t.getOperations state_vector
-
-
-class window.DB
-  constructor: ()->
-    @ready = (new Promise (resolve, reject)->
-      req = indexedDB.open "Testy", 7
-      req.onerror = ()->
-        reject "Couldn't open the IndexedDB database!"
-      req.onsuccess = (event)->
-        resolve event.target.result
-      req.onupgradeneeded = (event)->
-        db = event.target.result
-        objectStore = db.createObjectStore "OperationBuffer", {keyPath: "uid"}
-        objectStore = db.createObjectStore "StateVector", {keyPath: "user"}
-
-    ).catch (message)->
-      throw new Error message
-
-  requestTransaction: ()->
-    @ready.then (db)->
-      new Promise (resolve, reject)->
-        resolve new Transaction( new DBTransaction(db.transaction(["OperationBuffer", "StateVector"], "readwrite")) )
-
-  removeDatabase: ()->
-    req = indexedDB.deleteDatabase "Testy"
-    req.onsuccess = ()->
-      console.log("Deleted database successfully");
-    req.onblocked = ()->
-      console.log("Database is currently being blocked")
-      console.dir arguments
-    req.onerror = ()->
-      console.log("Couldn't delete database")
-      console.dir arguments
-    null
-
-window.db = new DB()
-
-window.addDummyDataSet = ()->
-  db.requestTransaction().then (t)->
-    t.getState("dmonad").then (state)->
-      state ?= {number: 0}
-      t.addOperation({uid: ["dmonad", state.number]})
-
-window.getOp = (num = 3)->
-  db.requestTransaction().then (t)->
-    t.getOperation(["dmonad", num])
-      .then (op)->
-        console.log("yay:")
-        console.log(op)
-
-window.getOps = (state_map = {dmonad: 5})->
-  db.requestTransaction().then (t)->
-    t.getOperations(state_map)
-      .then (op)->
-        console.log("yay:")
-        console.log(op)
+function requestTransaction(makeGen : Function){ //eslint-disable-line no-unused-vars
+  var gen = makeGen([1, 2, 3]);
+  function handle(result : Object){
+    if (result.done) {
+      return result.value;
+    }
+    return result.value.then(function(res){
+      return handle(gen.next(res));
+    }, function(err){
+      return handle(gen.throw(err));
+    });
+  }
+  return handle(gen.next());
+}
