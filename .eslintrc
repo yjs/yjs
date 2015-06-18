@@ -9,6 +9,7 @@
   "parser": "babel-eslint",
   "globals": {
         "OperationBuffer": true,
-        "IndexedDB": true
+        "IndexedDB": true,
+        "IDBRequest": true
     }
 }

@@ -1,32 +1,46 @@
 
-var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
-  var GeneratorFunction = (function*(){}).constructor;
+type State = {
+  user: string,
+  clock: number
+};
 
+type StateVector = Array<State>;
+
+type StateSet = Object<number>;
+
+var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
   class Transaction {
+
     constructor (transaction) {
       this.transaction = transaction;
+      this.sv = transaction.objectStore("StateVector");
+      this.ob = transaction.objectStore("OperationBuffer");
     }
-    setOperation (op) {
-      return new Promise((resolve, reject)=> {
-        var req = this.transaction.objectStore("OperationBuffer").put(op);
-        req.onsuccess = function () {
-          resolve(op);
-        };
-        req.onerror = function () {
-          reject("Could not set Operation!");
-        };
-      });
+    *setOperation (op) {
+        yield this.ob.put(op);
+        return op;
     }
-    getOperation (uid) {
-      return new Promise((resolve, reject)=>{
-        var req = this.transaction.objectStore("OperationBuffer").get(uid);
-        req.onsuccess = function () {
-          resolve(req.result);
-        };
-        req.onerror = function () {
-          reject("Could not get Operation");
-        };
-      });
+    *getOperation (uid) {
+        return yield this.ob.get(uid);
+    }
+    *setState (state : State) : State {
+      return yield this.sv.put(state);
+    }
+    *getState (user : string) : State {
+      return (yield this.sv.get(user)) || {
+        user: user,
+        clock: 0
+      };
+    }
+    *getStateVector () : StateVector {
+      var stateVector = [];
+      var cursor = yield this.sv.openCursor();
+      while ((cursor = yield cursor.continue) != null) {
+        stateVector.push(cursor.value);
+      }
+      return stateVector;
+    }
+    *getStateSet () : StateSet {
     }
     getOperations () {
       return function* () {
@@ -86,22 +100,23 @@ var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
       this.ready.then(function(db){
         var transaction = new Transaction(db.transaction(["OperationBuffer", "StateVector"], "readwrite"));
         var gen = makeGen.apply(transaction);
-        function handle(result : Object){
-          var v = result.value;
-          if (result.done) {
-            return v;
-          } else if (v.constructor === Promise) {
-            return result.value.then(function(res){
-              return handle(gen.next(res));
-            }, function(err){
-              return handle(gen.throw(err));
-            });
-          } else if (v.constructor === GeneratorFunction){
-            return handle(v.apply(transaction).next());
+
+        function handle(res){
+          var request = res.value;
+          if (res.done){
+            return;
+          } else if (request.constructor === IDBRequest) {
+            request.onsuccess = function(){
+              handle(gen.next(request.result));
+            };
+            request.onerror = function(err){
+              gen.throw(err);
+            };
           } else {
-            throw new Error("I do only accept Promises and Generators!");
+            gen.throw("You may not yield this type!");
           }
         }
+
         return handle(gen.next());
       });
     }

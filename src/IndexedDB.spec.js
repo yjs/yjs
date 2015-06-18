@@ -7,23 +7,35 @@ if(typeof window !== "undefined"){
 
     it("can create transactions", function(done) {
       ob.requestTransaction(function*(){
-        var op = yield this.setOperation({
+        var op = yield* this.setOperation({
           "uid": ["u1", 0],
           "stuff": true
         });
-        expect(yield this.getOperation(["u1", 0]))
+        expect(yield* this.getOperation(["u1", 0]))
           .toEqual(op);
         done();
       });
     });
 
-    it("receive remaining operations", function(done){
+    it("getOperation(op) returns undefined if op does not exist", function(done){
       ob.requestTransaction(function*(){
-        expect(yield this.getOperations(["u1", 0]))
-          .toEqual({
-            "uid": ["u1", 0],
-            "stuff": true
-          });
+        var op = yield* this.getOperation("plzDon'tBeThere");
+        expect(op).toBeUndefined();
+        done();
+      });
+    });
+
+    it("yield throws if request is unknown", function(done){
+
+      ob.requestTransaction(function*(){
+        try {
+          yield this.getOperations(["u1", 0]);
+        } catch (e) {
+          expect(true).toEqual(true);
+          done();
+          return;
+        }
+        expect("Expected an Error!").toEqual(true);
         done();
       });
     });
