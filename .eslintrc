@@ -8,6 +8,7 @@
   },
   "parser": "babel-eslint",
   "globals": {
-        "OperationBuffer": true
+        "OperationBuffer": true,
+        "IndexedDB": true
     }
 }

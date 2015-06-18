@@ -1,24 +1,31 @@
 /* @flow */
-/*eslint-env browser,jasmine,console */
+/*eslint-env browser,jasmine */
 
-var number = 0;
-function llater(time){
-  return new Promise(function(yay){
-    setTimeout(function(){
-      yay(number++);
-    }, time); //eslint-disable-line no-undef
-  });
-}
+if(typeof window !== "undefined"){
+  describe("IndexedDB", function() {
+    var ob = new IndexedDB("Test");
 
-describe("IndexedDB", function() {
+    it("can create transactions", function(done) {
+      ob.requestTransaction(function*(){
+        var op = yield this.setOperation({
+          "uid": ["u1", 0],
+          "stuff": true
+        });
+        expect(yield this.getOperation(["u1", 0]))
+          .toEqual(op);
+        done();
+      });
+    });
 
-  it("can create transactions", function(done) {
-    requestTransaction(function*(numbers){
-      expect(numbers).toEqual([1, 2, 3]);
-      expect(yield llater(10)).toEqual(0);
-      expect(yield llater(50)).toEqual(1);
-      done();
-      return 10;
+    it("receive remaining operations", function(done){
+      ob.requestTransaction(function*(){
+        expect(yield this.getOperations(["u1", 0]))
+          .toEqual({
+            "uid": ["u1", 0],
+            "stuff": true
+          });
+        done();
+      });
     });
   });
-});
+}

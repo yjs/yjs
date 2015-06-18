@@ -55,7 +55,7 @@ var polyfills = [
 var files = {
   y: polyfills.concat(["src/**/*.js", "!src/**/*.spec.js"]),
   lint: ["src/**/*.js", "gulpfile.js"],
-  test: polyfills.concat(["./node_modules/regenerator/runtime.js", "src/**/*.js"]),
+  test: polyfills.concat(["src/**/*.js"]),
   build_test: ["build_test/y.js"]
 };
 
@@ -66,19 +66,6 @@ var options = minimist(process.argv.slice(2), {
     name: "y.js",
     testport: "8888"
   }
-});
-
-gulp.task("build_test", function () {
-  return gulp.src(files.test)
-    .pipe(sourcemaps.init())
-    .pipe(concat(options.name))
-    .pipe(babel({
-      loose: "all",
-      modules: "ignore"
-    }))
-    .pipe(uglify())
-    .pipe(sourcemaps.write())
-    .pipe(gulp.dest("build_test"));
 });
 
 gulp.task("build", function () {
@@ -94,14 +81,6 @@ gulp.task("build", function () {
     .pipe(gulp.dest("."));
 });
 
-gulp.task("test", ["build_test"], function () {
-  return gulp.src(files.build_test)
-    .pipe(jasmine({
-      verbose: true,
-      includeStuckTrace: true
-    }));
-});
-
 gulp.task("lint", function(){
   return gulp.src(files.lint)
     .pipe(eslint())
@@ -109,13 +88,47 @@ gulp.task("lint", function(){
     .pipe(eslint.failOnError());
 });
 
-gulp.task("develop", ["test", "build"], function(){
-  gulp.src(files.build_test)
-    .pipe(watch(files.build_test))
+gulp.task("test", function () {
+  return gulp.src(files.test)
+    .pipe(sourcemaps.init())
+    .pipe(concat("jasmine"))
+    .pipe(babel({
+      loose: "all",
+      modules: "ignore"
+    }))
+    .pipe(uglify())
+    .pipe(sourcemaps.write())
+    .pipe(gulp.dest("build"))
+    .pipe(jasmine({
+      verbose: true,
+      includeStuckTrace: true
+    }));
+});
+
+gulp.task("build_jasmine_browser", function(){
+  gulp.src(files.test)
+   .pipe(sourcemaps.init())
+   .pipe(concat("jasmine_browser.js"))
+   .pipe(babel({
+     loose: "all",
+     modules: "ignore",
+     blacklist: ["regenerator"]
+   }))
+   .pipe(sourcemaps.write())
+   .pipe(gulp.dest("build"));
+});
+
+gulp.task("develop", ["build_jasmine_browser", "test", "build"], function(){
+
+  gulp.watch(files.test, ["build_jasmine_browser"]);
+  gulp.watch(files.test, ["test"]);
+  gulp.watch(files.test, ["build"]);
+
+  return gulp.src("build/jasmine_browser.js")
+    .pipe(watch("build/jasmine_browser.js"))
     .pipe(jasmineBrowser.specRunner())
     .pipe(jasmineBrowser.server({port: options.testport}));
-  gulp.watch(files.test, ["build_test", "build"]);
-  return gulp.watch(files.build_test, ["test"]);
+
 });
 
 gulp.task("default", ["build", "test"]);
