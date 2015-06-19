@@ -1,3 +1,9 @@
+[ignore]
+.*/node_modules/.*
+.*/build/.*
+./y.js
+./y.js.map
+
 [include]
 
 [libs]

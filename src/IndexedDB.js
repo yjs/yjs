@@ -6,17 +6,54 @@ type State = {
 
 type StateVector = Array<State>;
 
-type StateSet = Object<number>;
+type StateSet = Object;
+
+type IDBTransaction = Function;
+type IDBObjectStore = Function;
+type IDBRequest = Function;
+type IDBCursor = Function;
+type IDBKeyRange = Function;
+
+type IDBOpenDBRequest = Function;
+
+declare var indexedDB : Object;
+
+declare var setTimeout : Function;
+
+class AbstractTransaction { //eslint-disable-line no-unused-vars
+  constructor () {
+  }
+  *addOperation (op) {
+    var state = yield* this.getState(op.uid[0]);
+    if (state == null){
+      state = {
+        user: op.uid[0],
+        clock: 0
+      };
+    }
+    if (op.uid[1] === state.clock){
+      state.clock++;
+      yield* this.setState(state);
+      return true;
+    } else {
+      return false;
+    }
+  }
+}
 
 var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
-  class Transaction {
-
+  class Transaction extends AbstractTransaction{
+    transaction: IDBTransaction;
+    sv: IDBObjectStore;
+    ob: IDBObjectStore;
     constructor (transaction) {
+      super();
       this.transaction = transaction;
       this.sv = transaction.objectStore("StateVector");
       this.ob = transaction.objectStore("OperationBuffer");
     }
     *setOperation (op) {
+        yield* (function*(){})();
         yield this.ob.put(op);
         return op;
     }
@@ -34,78 +71,91 @@ var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
     }
     *getStateVector () : StateVector {
       var stateVector = [];
-      var cursor = yield this.sv.openCursor();
-      while ((cursor = yield cursor.continue) != null) {
+      var cursorResult = this.sv.openCursor();
+      var cursor;
+      while ((cursor = yield cursorResult) != null) {
         stateVector.push(cursor.value);
+        cursor.continue();
       }
       return stateVector;
     }
     *getStateSet () : StateSet {
+      var sv : StateVector = yield* this.getStateVector();
+      var ss : StateSet = {};
+      for (var state of sv){
+        ss[state.user] = state.clock;
+      }
+      return ss;
     }
-    getOperations () {
-      return function* () {
-        var op = yield this.getOperation(["u1", 0]);
-        return op.uid;
-      };
+
+    *getOperations (startSS : StateSet) {
+      if (startSS == null){
+        startSS = {};
+      }
+      var ops = [];
+
+      var endSV : StateVector = yield* this.getStateVector();
+      for (var endState of endSV) {
+        var user = endState.user;
+        var startPos = startSS[user] || 0;
+        var endPos = endState.clock;
+        var range = IDBKeyRange.bound([user, startPos], [user, endPos]);
+        var cursorResult = this.ob.openCursor(range);
+        var cursor;
+        while ((cursor = yield cursorResult) != null) {
+          ops.push(cursor.value);
+          cursor.continue();
+        }
+      }
+      return ops;
     }
-    /*
-    getOperations: (state_map)->
-      flow = Promise.resolve()
-      ops = []
-      that = this
-      hb = that.t.objectStore("HistoryBuffer")
-
-      that.getStateVector().then (end_state_vector)->
-        for end_state of end_state_vector
-          # convert to the db-structure
-          do (end_state = end_state)->
-            start_state =
-              user: end_state.name
-              state: state_map[end_state] ? 0
-
-            flow = flow.then ()->
-              from = [start_state.user, start_state.number]
-              to = [end_state.user, end_state.number]
-                cursor = event.target.result
-                if cursor?
-                  ops.push cursor.value # add Operation
-                  cursor.continue()
-                else
-                  # got all ops from this user
-                  defer.resolve ops
-              defer.promise
-    */
   }
   class DB {
+    namespace: string;
+    ready: Promise;
+    whenReadyListeners: Array<Function>;
     constructor (namespace : string) {
+      this.whenReadyListeners = [];
       this.namespace = namespace;
-      this.ready = new Promise(function(yay, nay){
-        var req = indexedDB.open(namespace); //eslint-disable-line no-undef
-        req.onerror = function(){
-          nay("Couldn't open the IndexedDB database!");
-        };
-        req.onsuccess = function(event){
-          yay(event.target.result);
-        };
-        req.onupgradeneeded = function(event){
-          var db = event.target.result;
-          db.createObjectStore("OperationBuffer", {keyPath: "uid"});
-          db.createObjectStore("StateVector", {keyPath: "user"});
-        };
-      }).catch(function(message){
-          throw new Error(message);
-      });
+      this.ready = false;
+
+      var req = indexedDB.open(namespace); //eslint-disable-line no-undef
+      req.onerror = function(){
+        throw new Error("Couldn't open the IndexedDB database!");
+      };
+      req.onsuccess = (event)=>{
+        this.db = event.target.result;
+        this.whenReadyListeners.forEach(function(f){
+          setTimeout(f, 0);
+        });
+        this.whenReadyListeners = null;
+        this.ready = true;
+      };
+      req.onupgradeneeded = function(event){
+        var db = event.target.result;
+        db.createObjectStore("OperationBuffer", {keyPath: "uid"});
+        db.createObjectStore("StateVector", {keyPath: "user"});
+      };
+    }
+    whenReady (f : Function) {
+      if (this.ready){
+        setTimeout(f, 0);
+      } else {
+        this.whenReadyListeners.push(f);
+      }
     }
     requestTransaction (makeGen : Function) {
-      this.ready.then(function(db){
-        var transaction = new Transaction(db.transaction(["OperationBuffer", "StateVector"], "readwrite"));
+      this.whenReady(()=>{
+        var transaction = new Transaction(this.db.transaction(["OperationBuffer", "StateVector"], "readwrite"));
         var gen = makeGen.apply(transaction);
 
-        function handle(res){
-          var request = res.value;
+        function handle(res : any){
+          var request : any = res.value;
           if (res.done){
             return;
-          } else if (request.constructor === IDBRequest) {
+          } else if (request.constructor === IDBRequest
+                     || request.constructor === IDBCursor
+                     || request.constructor === IDBOpenDBRequest) {
             request.onsuccess = function(){
               handle(gen.next(request.result));
             };
@@ -113,12 +163,14 @@ var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
               gen.throw(err);
             };
           } else {
-            gen.throw("You may not yield this type!");
+            gen.throw("You can not yield this type!");
           }
         }
-
-        return handle(gen.next());
+        handle(gen.next());
       });
+    }
+    *removeDatabase () {
+      return yield indexedDB.deleteDatabase(this.namespace);
     }
   }
   return DB;
