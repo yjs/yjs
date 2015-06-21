@@ -26,6 +26,9 @@ type Id = [string, number];
 
 class AbstractOperationStore { //eslint-disable-line no-unused-vars
   constructor () {
+    this.parentListeners = {};
+    this.parentListenersRequestPending = false;
+    this.parentListenersActivated = {};
     // E.g. this.listenersById[id] : Array<Listener>
     this.listenersById = {};
     // Execute the next time a transaction is requested
@@ -106,6 +109,7 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
   }
   // called by a transaction when an operation is added
   operationAdded (op) {
+    // notify whenOperation listeners (by id)
     var l = this.listenersById[op.id];
     if (l != null) {
       for (var listener of l){
@@ -114,5 +118,47 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
         }
       }
     }
+    // notify parent listeners, if possible
+    var listeners = this.parentListeners[op.parent];
+    if (     this.parentListenersRequestPending
+        || ( listeners == null )
+        || ( listeners.length === 0 )) {
+      return;
+    }
+    var al = this.parentListenersActivated[JSON.stringify(op.parent)];
+    if ( al == null ){
+      al = [];
+      this.parentListenersActivated[JSON.stringify(op.parent)] = al;
+    }
+    al.push(op);
+
+    this.parentListenersRequestPending = true;
+    var store = this;
+    this.requestTransaction(function*(myRequest){ // you can throw error on myRequest, then restart if you have to
+      store.parentListenersRequestPending = false;
+      var activatedOperations = store.parentListenersActivated;
+      store.parentListenersActivated = {};
+      for (var parent_id in activatedOperations){
+        var parent = yield* this.getOperation(parent_id);
+        Struct[parent.type].notifyObservers(activatedOperations[parent_id]);
+      }  
+    })
+
+  }
+  removeParentListener (id, f) {
+    var ls = this.parentListeners[id];
+    if (ls != null) {
+      this.parentListeners[id] = ls.filter(function(g){
+        return (f !== g);
+      });
+    }
+  }
+  addParentListener (id, f) {
+    var ls = this.parentListeners[JSON.stringify(id)];
+    if (ls == null) {
+      ls = [];
+      this.parentListeners[JSON.stringify(id)] = ls;
+    }
+    ls.push(f);
   }
 }

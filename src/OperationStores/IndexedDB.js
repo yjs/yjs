@@ -128,7 +128,7 @@ var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
           var request = yield transactionQueue;
           transaction = new Transaction(store);
 
-          yield* request.call(transaction);/*
+          yield* request.call(transaction, request);/*
           while (transactionQueue.queue.length > 0) {
             yield* transactionQueue.queue.shift().call(transaction);
           }*/
