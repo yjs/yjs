@@ -5,14 +5,29 @@ if(typeof window !== "undefined"){
   describe("IndexedDB", function() {
     var ob = new IndexedDB("Test");
 
-    it("can create transactions", function(done) {
+    it("can add and get operation", function(done) {
       ob.requestTransaction(function*(){
         var op = yield* this.setOperation({
-          "uid": ["1", 0],
+          "id": ["1", 0],
           "stuff": true
         });
         expect(yield* this.getOperation(["1", 0]))
           .toEqual(op);
+        done();
+      });
+    });
+
+    it("can remove operation", function(done) {
+      ob.requestTransaction(function*(){
+        var op = yield* this.setOperation({
+          "id": ["1", 0],
+          "stuff": true
+        });
+        expect(yield* this.getOperation(["1", 0]))
+          .toEqual(op);
+        yield* this.removeOperation(["1", 0]);
+        expect(yield* this.getOperation(["1", 0]))
+          .toBeUndefined();
         done();
       });
     });
@@ -73,11 +88,11 @@ if(typeof window !== "undefined"){
         var s1 = {user: "1", clock: 55};
         yield* this.setState(s1);
         var op1 = yield* this.setOperation({
-          "uid": ["1", 0],
+          "id": ["1", 0],
           "stuff": true
         });
         var op2 = yield* this.setOperation({
-          "uid": ["1", 3],
+          "id": ["1", 3],
           "stuff": true
         });
         var ops = yield* this.getOperations();
@@ -87,9 +102,11 @@ if(typeof window !== "undefined"){
         done();
       });
     });
-    afterAll(function(){
+    afterAll(function(done){
       ob.requestTransaction(function*(){
         yield* ob.removeDatabase();
+        ob = null;
+        done();
       });
     });
   });

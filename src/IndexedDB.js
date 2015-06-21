@@ -20,54 +20,49 @@ declare var indexedDB : Object;
 
 declare var setTimeout : Function;
 
-class AbstractTransaction { //eslint-disable-line no-unused-vars
-  constructor () {
-  }
-  *addOperation (op) {
-    var state = yield* this.getState(op.uid[0]);
-    if (state == null){
-      state = {
-        user: op.uid[0],
-        clock: 0
-      };
-    }
-    if (op.uid[1] === state.clock){
-      state.clock++;
-      yield* this.setState(state);
-      return true;
-    } else {
-      return false;
-    }
-  }
-}
-
 var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
-  class Transaction extends AbstractTransaction{
+  class Transaction extends AbstractTransaction { //eslint-disable-line
     transaction: IDBTransaction;
     sv: IDBObjectStore;
-    ob: IDBObjectStore;
-    constructor (transaction) {
-      super();
-      this.transaction = transaction;
-      this.sv = transaction.objectStore("StateVector");
-      this.ob = transaction.objectStore("OperationBuffer");
+    os: IDBObjectStore;
+    store: OperationStore;
+
+    constructor (store : OperationStore) {
+      super(store);
+      this.transaction = store.db.transaction(["OperationStore", "StateVector"], "readwrite");
+      this.sv = this.transaction.objectStore("StateVector");
+      this.os = this.transaction.objectStore("OperationStore");
+      this.buffer = {};
     }
     *setOperation (op) {
-        yield* (function*(){})();
-        yield this.ob.put(op);
-        return op;
+      yield this.os.put(op);
+      this.buffer[JSON.stringify(op.uid)] = op;
+      return op;
     }
-    *getOperation (uid) {
-        return yield this.ob.get(uid);
+    *getOperation (id) {
+      var op = this.buffer[JSON.stringify(id)];
+      if (op == null) {
+        op = yield this.os.get(id);
+        this.buffer[JSON.stringify(id)] = op;
+      }
+      return op;
+    }
+    *removeOperation (id) {
+      return yield this.os.delete(id);
     }
     *setState (state : State) : State {
       return yield this.sv.put(state);
     }
     *getState (user : string) : State {
-      return (yield this.sv.get(user)) || {
-        user: user,
-        clock: 0
-      };
+      var state;
+      if ((state = yield this.sv.get(user)) != null){
+        return state;
+      } else {
+        return {
+          user: user,
+          clock: 0
+        };
+      }
     }
     *getStateVector () : StateVector {
       var stateVector = [];
@@ -100,7 +95,7 @@ var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
         var startPos = startSS[user] || 0;
         var endPos = endState.clock;
         var range = IDBKeyRange.bound([user, startPos], [user, endPos]);
-        var cursorResult = this.ob.openCursor(range);
+        var cursorResult = this.os.openCursor(range);
         var cursor;
         while ((cursor = yield cursorResult) != null) {
           ops.push(cursor.value);
@@ -110,16 +105,17 @@ var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
       return ops;
     }
   }
-  class DB {
+  class OperationStore extends AbstractOperationStore { //eslint-disable-line no-undef
     namespace: string;
     ready: Promise;
     whenReadyListeners: Array<Function>;
     constructor (namespace : string) {
+      super();
       this.whenReadyListeners = [];
       this.namespace = namespace;
       this.ready = false;
 
-      var req = indexedDB.open(namespace); //eslint-disable-line no-undef
+      var req = indexedDB.open(namespace, 2); //eslint-disable-line no-undef
       req.onerror = function(){
         throw new Error("Couldn't open the IndexedDB database!");
       };
@@ -133,7 +129,7 @@ var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
       };
       req.onupgradeneeded = function(event){
         var db = event.target.result;
-        db.createObjectStore("OperationBuffer", {keyPath: "uid"});
+        db.createObjectStore("OperationStore", {keyPath: "id"});
         db.createObjectStore("StateVector", {keyPath: "user"});
       };
     }
@@ -146,7 +142,7 @@ var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
     }
     requestTransaction (makeGen : Function) {
       this.whenReady(()=>{
-        var transaction = new Transaction(this.db.transaction(["OperationBuffer", "StateVector"], "readwrite"));
+        var transaction = new Transaction(this);
         var gen = makeGen.apply(transaction);
 
         function handle(res : any){
@@ -170,8 +166,9 @@ var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
       });
     }
     *removeDatabase () {
-      return yield indexedDB.deleteDatabase(this.namespace);
+      this.db.close();
+      yield indexedDB.deleteDatabase(this.namespace);
     }
   }
-  return DB;
+  return OperationStore;
 })();

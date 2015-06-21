@@ -128,7 +128,6 @@ gulp.task("develop", ["build_jasmine_browser", "test", "build"], function(){
     .pipe(watch("build/jasmine_browser.js"))
     .pipe(jasmineBrowser.specRunner())
     .pipe(jasmineBrowser.server({port: options.testport}));
-
 });
 
 gulp.task("default", ["build", "test"]);

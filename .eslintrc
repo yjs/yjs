@@ -8,7 +8,10 @@
   },
   "parser": "babel-eslint",
   "globals": {
-        "OperationBuffer": true,
+        "OperationStore": true,
+        "AbstractOperationStore": true,
+        "AbstractTransaction": true,
+        "Transaction": true,
         "IndexedDB": true,
         "IDBRequest": true
     }
