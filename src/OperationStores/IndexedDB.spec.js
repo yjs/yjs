@@ -2,6 +2,7 @@
 /*eslint-env browser,jasmine */
 
 if(typeof window !== "undefined"){
+  jasmine.DEFAULT_TIMEOUT_INTERVAL = 1000;
   describe("IndexedDB", function() {
     var ob = new IndexedDB("Test");
 
@@ -43,7 +44,7 @@ if(typeof window !== "undefined"){
     it("yield throws if request is unknown", function(done){
       ob.requestTransaction(function*(){
         try {
-          yield this.getOperations(["u1", 0]);
+          yield* this.setOperation();
         } catch (e) {
           expect(true).toEqual(true);
           done();

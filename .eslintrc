@@ -13,6 +13,7 @@
         "AbstractTransaction": true,
         "Transaction": true,
         "IndexedDB": true,
-        "IDBRequest": true
+        "IDBRequest": true,
+        "GeneratorFunction": true
     }
 }

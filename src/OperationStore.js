@@ -22,8 +22,6 @@ type Listener = {
   missing : number // number of operations that are missing
 }
 
-type GeneratorFunction = Function;
-
 type Id = [string, number];
 
 class AbstractOperationStore { //eslint-disable-line no-unused-vars
@@ -105,7 +103,6 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
         }
       }
     });
-
   }
   // called by a transaction when an operation is added
   operationAdded (op) {

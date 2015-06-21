@@ -18,8 +18,6 @@ type IDBOpenDBRequest = Function;
 
 declare var indexedDB : Object;
 
-declare var setTimeout : Function;
-
 var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
   class Transaction extends AbstractTransaction { //eslint-disable-line
     transaction: IDBTransaction;
@@ -36,7 +34,7 @@ var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
     }
     *setOperation (op) {
       yield this.os.put(op);
-      this.buffer[JSON.stringify(op.uid)] = op;
+      this.buffer[JSON.stringify(op.id)] = op;
       return op;
     }
     *getOperation (id) {
@@ -112,59 +110,77 @@ var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
     whenReadyListeners: Array<Function>;
     constructor (namespace : string) {
       super();
-      this.whenReadyListeners = [];
       this.namespace = namespace;
-      this.ready = false;
+      this.transactionQueue = {
+        queue: [],
+        onRequest: null
+      };
 
-      var req = indexedDB.open(namespace, 2); //eslint-disable-line no-undef
-      req.onerror = function(){
-        throw new Error("Couldn't open the IndexedDB database!");
-      };
-      req.onsuccess = (event)=>{
-        this.db = event.target.result;
-        this.whenReadyListeners.forEach(function(f){
-          setTimeout(f, 0);
-        });
-        this.whenReadyListeners = null;
-        this.ready = true;
-      };
-      req.onupgradeneeded = function(event){
-        var db = event.target.result;
-        db.createObjectStore("OperationStore", {keyPath: "id"});
-        db.createObjectStore("StateVector", {keyPath: "user"});
-      };
-    }
-    whenReady (f : Function) {
-      if (this.ready){
-        setTimeout(f, 0);
-      } else {
-        this.whenReadyListeners.push(f);
+      var store = this;
+
+      var tGen = (function *transactionGen(){
+        store.db = yield indexedDB.open(namespace, 3);
+        var transactionQueue = store.transactionQueue;
+
+        var transaction = null;
+        var cont = true;
+        while (cont) {
+          var request = yield transactionQueue;
+          transaction = new Transaction(store);
+
+          yield* request.call(transaction);/*
+          while (transactionQueue.queue.length > 0) {
+            yield* transactionQueue.queue.shift().call(transaction);
+          }*/
+        }
+      })();
+
+      function handleTransactions(t){ //eslint-disable-line no-unused-vars
+        var request = t.value;
+        if (t.done){
+          return;
+        } else if (request.constructor === IDBRequest
+                   || request.constructor === IDBCursor ) {
+          request.onsuccess = function(){
+            handleTransactions(tGen.next(request.result));
+          };
+          request.onerror = function(err){
+            tGen.throw(err);
+          };
+        } else if (request === store.transactionQueue) {
+          if (request.queue.length > 0){
+            handleTransactions(tGen.next(request.queue.shift()));
+          } else {
+            request.onRequest = function(){
+              request.onRequest = null;
+              handleTransactions(tGen.next(request.queue.shift()));
+            };
+          }
+        } else if ( request.constructor === IDBOpenDBRequest ) {
+          request.onsuccess = function(event){
+            var db = event.target.result;
+            handleTransactions(tGen.next(db));
+          };
+          request.onerror = function(){
+            tGen.throw("Couldn't open IndexedDB database!");
+          };
+          request.onupgradeneeded = function(event){
+            var db = event.target.result;
+            db.createObjectStore("OperationStore", {keyPath: "id"});
+            db.createObjectStore("StateVector", {keyPath: "user"});
+          };
+        } else {
+          tGen.throw("You can not yield this type!");
+        }
       }
+      handleTransactions(tGen.next());
+
     }
     requestTransaction (makeGen : Function) {
-      this.whenReady(()=>{
-        var transaction = new Transaction(this);
-        var gen = makeGen.apply(transaction);
-
-        function handle(res : any){
-          var request : any = res.value;
-          if (res.done){
-            return;
-          } else if (request.constructor === IDBRequest
-                     || request.constructor === IDBCursor
-                     || request.constructor === IDBOpenDBRequest) {
-            request.onsuccess = function(){
-              handle(gen.next(request.result));
-            };
-            request.onerror = function(err){
-              gen.throw(err);
-            };
-          } else {
-            gen.throw("You can not yield this type!");
-          }
-        }
-        handle(gen.next());
-      });
+      this.transactionQueue.queue.push(makeGen);
+      if (this.transactionQueue.onRequest != null) {
+        this.transactionQueue.onRequest();
+      }
     }
     *removeDatabase () {
       this.db.close();
