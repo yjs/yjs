@@ -48,6 +48,7 @@ var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
       return op;
     }
     *removeOperation (id) {
+      this.buffer[JSON.stringify(id)] = null;
       return yield this.os.delete(id);
     }
     *setState (state : State) : State {

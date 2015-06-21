@@ -79,14 +79,18 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
     var store = this;
 
     this.requestTransaction(function*(){
-      var exe = store.listenersByIdExecuteNow;
+      var exeNow = store.listenersByIdExecuteNow;
       store.listenersByIdExecuteNow = [];
-      for (let listener of exe) {
-        yield* listener.f.apply(this, listener.args);
-      }
 
       var ls = store.listenersById;
       store.listenersById = {};
+
+      store.listenersByIdRequestPending = false;
+
+      for (let listener of exeNow) {
+        yield* listener.f.apply(this, listener.args);
+      }
+
       for (var sid in ls){
         var l = ls[sid];
         var id = JSON.parse(sid);
@@ -100,17 +104,17 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
           }
         }
       }
-
-      store.listenersByIdRequestPending = false;
     });
 
   }
   // called by a transaction when an operation is added
   operationAdded (op) {
     var l = this.listenersById[op.id];
-    for (var listener of l){
-      if (--listener.missing === 0){
-        this.whenOperationsExist([], listener.f, listener.args);
+    if (l != null) {
+      for (var listener of l){
+        if (--listener.missing === 0){
+          this.whenOperationsExist([], listener.f, listener.args);
+        }
       }
     }
   }

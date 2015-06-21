@@ -118,10 +118,11 @@ gulp.task("build_jasmine_browser", function(){
    .pipe(gulp.dest("build"));
 });
 
-gulp.task("develop", ["build_jasmine_browser", "test", "build"], function(){
+
+gulp.task("develop", ["build_jasmine_browser", "build"], function(){
 
   gulp.watch(files.test, ["build_jasmine_browser"]);
-  gulp.watch(files.test, ["test"]);
+  // gulp.watch(files.test, ["test"]);
   gulp.watch(files.test, ["build"]);
 
   return gulp.src("build/jasmine_browser.js")
