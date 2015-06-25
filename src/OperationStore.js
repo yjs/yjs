@@ -120,7 +120,7 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
     }
     // notify parent listeners, if possible
     var listeners = this.parentListeners[op.parent];
-    if (     this.parentListenersRequestPending
+    if ( this.parentListenersRequestPending
         || ( listeners == null )
         || ( listeners.length === 0 )) {
       return;
@@ -141,7 +141,7 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
       for (var parent_id in activatedOperations){
         var parent = yield* this.getOperation(parent_id);
         Struct[parent.type].notifyObservers(activatedOperations[parent_id]);
-      }  
+      }
     })
 
   }

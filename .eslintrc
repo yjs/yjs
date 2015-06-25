@@ -4,16 +4,21 @@
   },
   "rules": {
     "strict": 0,
-    "camelcase": [1, {"properties": "never"}]
+    "camelcase": [1, {"properties": "never"}],
+    "no-underscore-dangle": 0
   },
   "parser": "babel-eslint",
   "globals": {
         "OperationStore": true,
         "AbstractOperationStore": true,
         "AbstractTransaction": true,
+        "AbstractConnector": true,
         "Transaction": true,
         "IndexedDB": true,
         "IDBRequest": true,
-        "GeneratorFunction": true
+        "GeneratorFunction": true,
+        "Y": true,
+        "setTimeout": true,
+        "setInterval": true
     }
 }

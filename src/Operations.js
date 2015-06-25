@@ -1,7 +1,7 @@
 /* @flow */
 
 // Op is anything that we could get from the OperationStore.
-struct Op = Object;
+type Op = Object;
 
 var Struct = {
   Operation: {  //eslint-disable-line no-unused-vars
@@ -17,10 +17,11 @@ var Struct = {
                       content : any,
                       left : Struct.Insert,
                       right : Struct.Insert,
-                      parent : Struct.List) : Struct.Insert {
+                      parent : Struct.List) : Insert {
       op.left = left ? left.id : null;
       op.origin = op.left;
       op.right = right ? right.id : null;
+      op.parent = parent.id;
       op.struct = "Insert";
       yield* Struct.Operation.create.call(this, op, user);
 
@@ -127,14 +128,26 @@ var Struct = {
     },
     execute: function* (op) {
       // nop
-    }
-    ref: function* (op, pos) : Struct.Insert | undefined{
+    },
+    ref: function* (op : Op, pos : number) : Insert {
       var o = op.start;
       while ( pos !== 0 || o == null) {
-        o = (yield* this.getOperation(op.start)).right;
+        o = (yield* this.getOperation(o)).right;
+        pos--;
       }
       return (o == null) ? null : yield* this.getOperation(o);
-    }
+    },
+    map: function* (o : Op, f : Function) : Array<any> {
+      o = o.start;
+      var res = [];
+      while ( pos !== 0 || o == null) {
+        var operation = yield* this.getOperation(o);
+        res.push(f(operation.content));
+        o = operation.right;
+        pos--;
+      }
+      return res;
+    },
     insert: function* (op, pos : number, contents : Array<any>) {
       var o = yield* Struct.List.ref.call(this, op, pos);
       var o_end = yield* this.getOperation(o.right);
