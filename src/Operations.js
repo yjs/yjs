@@ -169,5 +169,50 @@ var Struct = {
         o = yield* Struct.Insert.create.call(this, {}, content, o, or, op);
       }
     }
+  },
+  Map: {
+    create: function*( op : Op){
+      op.start = null;
+      op.end = null;
+      op.struct = "Map";
+      return yield* Struct.Operation.create.call(this, op);
+    },
+    requiredOps: function(op, ids){
+      if (op.start != null) {
+        ids.push(op.start);
+      }
+      if (op.end != null){
+        ids.push(op.end);
+      }
+      return ids;
+    },
+    execute: function* () {
+      // nop
+    },
+    ref: function* (op : Op, pos : number) : Insert {
+      var o = op.start;
+      while ( pos !== 0 || o != null) {
+        o = (yield* this.getOperation(o)).right;
+        pos--;
+      }
+      return (o == null) ? null : yield* this.getOperation(o);
+    },
+    map: function* (o : Op, f : Function) : Array<any> {
+      o = o.start;
+      var res = [];
+      while ( o != null) {
+        var operation = yield* this.getOperation(o);
+        res.push(f(operation.content));
+        o = operation.right;
+      }
+      return res;
+    },
+    insert: function* (op, pos : number, contents : Array<any>) {
+      var o = yield* Struct.List.ref.call(this, op, pos);
+      var or = yield* this.getOperation(o.right);
+      for (var content of contents) {
+        o = yield* Struct.Insert.create.call(this, {}, content, o, or, op);
+      }
+    }
   }
 };

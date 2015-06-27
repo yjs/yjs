@@ -8,4 +8,13 @@ class Y { //eslint-disable-line no-unused-vars
   transact (generator) {
     this.db.requestTransaction(generator);
   }
+  destroy () {
+    this.connector.disconnect();
+    this.db.removeDatabase();
+    this.connector = null;
+    this.db = null;
+    this.transact = function(){
+      throw new Error("Remember?, you destroyed this type ;)");
+    };
+  }
 }

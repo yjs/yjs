@@ -1,4 +1,4 @@
-// returns a rendom element of o
+// returns a random element of o
 // works on Object, and Array
 function getRandom (o) {
   if (o instanceof Array) {
