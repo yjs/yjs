@@ -1,5 +1,5 @@
 
-class AbstractConnector {
+class AbstractConnector { //eslint-disable-line no-unused-vars
   /*
     opts
      .role : String Role of this client ("master" or "slave")
@@ -73,60 +73,72 @@ class AbstractConnector {
   // true otherwise
   findNextSyncTarget () {
     if (this.currentSyncTarget != null && this.connections[this.currentSyncTarget].isSynced === false) {
-      throw new Error("The current sync has not finished!")
+      throw new Error("The current sync has not finished!");
     }
 
+
+    var syncUser = null;
     for (var uid in this.connections) {
-      var u = this.connections[uid];
-      if (!u.isSynced) {
-        this.currentSyncTarget = uid;
-        this.send(uid, {
-            type: "sync step 1",
-            stateVector: hb.getStateVector()
-        });
-        return true;
+      syncUser = this.connections[uid];
+      if (!syncUser.isSynced) {
+        break;
       }
+    }
+    if (syncUser != null){
+      var conn = this;
+      this.y.os.requestTransaction(function*(){
+        conn.currentSyncTarget = uid;
+        conn.send(uid, {
+          type: "sync step 1",
+          stateVector: yield* this.getStateVector()
+        });
+      });
     }
     // set the state to synced!
     if (!this.isSynced) {
       this.isSynced = true;
       for (var f of this.whenSyncedListeners) {
-        f()
+        f();
       }
       this.whenSyncedListeners = null;
-    }    return false;
+    }
+    return false;
   }
   // You received a raw message, and you know that it is intended for to Yjs. Then call this function.
   receiveMessage (sender, m) {
     if (m.type === "sync step 1") {
       // TODO: make transaction, stream the ops
-      var ops = yield* this.os.getOperations(m.stateVector);
-      // TODO: compare against m.sv!
-      var sv = yield* this.getStateVector();
-      this.send (sender, {
-        type: "sync step 2"
-        os: ops,
-        stateVector: sv
-      });
-      this.syncingClients.push(sender);
-      setTimeout(()=>{
-        this.syncingClients = this.syncingClients.filter(function(client){
-          return client !== sender;
+      let conn = this;
+      this.os.requestTransaction(function*(){
+        var ops = yield* this.getOperations(m.stateVector);
+        var sv = yield* this.getStateVector();
+        conn.send(sender, {
+          type: "sync step 2",
+          os: ops,
+          stateVector: sv
         });
-        this.send(sender, {
-          type: "sync done"
-        })
-      }, this.syncingClientDuration);
+        conn.syncingClients.push(sender);
+        setTimeout(function(){
+          conn.syncingClients = conn.syncingClients.filter(function(cli){
+            return cli !== sender;
+          });
+          conn.send(sender, {
+            type: "sync done"
+          });
+        }, conn.syncingClientDuration);
+      });
     } else if (m.type === "sync step 2") {
-      var ops = this.os.getOperations(m.stateVector);
-      this.broadcast {
-        type: "update",
-        ops: ops
-      }
+      let conn = this;
+      this.os.requestTransaction(function*(){
+        var ops = yield* this.getOperations(m.stateVector);
+        conn.broadcast({
+          type: "update",
+          ops: ops
+        });
+      });
     } else if (m.type === "sync done") {
       this.connections[sender].isSynced = true;
       this.findNextSyncTarget();
-    }
     } else if (m.type === "update") {
       for (var client of this.syncingClients) {
         this.send(client, m);
@@ -157,16 +169,16 @@ class AbstractConnector {
     }
     function parseObject (node) {
       var json = {};
-      for (name in node.attrs) {
-        var value = node.attrs[name];
+      for (var attrName in node.attrs) {
+        var value = node.attrs[attrName];
         var int = parseInt(value);
-        if (isNaN(int) or (""+int) !== value){
-          json[name] = value;
+        if (isNaN(int) || ("" + int) !== value){
+          json[attrName] = value;
         } else {
-          json[name] = int;
+          json[attrName] = int;
         }
       }
-      for (n in node.children){
+      for (var n in node.children){
         var name = n.name;
         if (n.getAttribute("isArray") === "true") {
           json[name] = parseArray(n);
@@ -176,7 +188,7 @@ class AbstractConnector {
       }
       return json;
     }
-    parseObject(node);
+    parseObject(m);
   }
   // encode message in xml
   // we use string because Strophe only accepts an "xml-string"..
@@ -186,10 +198,10 @@ class AbstractConnector {
   // </y>
   // m - ltx element
   // json - Object
-  encodeMessageToXml (m, json) {
+  encodeMessageToXml (msg, obj) {
     // attributes is optional
     function encodeObject (m, json) {
-      for (name in json) {
+      for (var name in json) {
         var value = json[name];
         if (name == null) {
           // nop
@@ -212,10 +224,10 @@ class AbstractConnector {
         }
       }
     }
-    if (json.constructor === Object) {
-      encodeObject(m.c("y", {xmlns:"http://y.ninja/connector-stanza"}), json);
-    } else if (json.constructor === Array) {
-      encodeArray(m.c("y", {xmlns:"http://y.ninja/connector-stanza"}), json);
+    if (obj.constructor === Object) {
+      encodeObject(msg.c("y", { xmlns: "http://y.ninja/connector-stanza" }), obj);
+    } else if (obj.constructor === Array) {
+      encodeArray(msg.c("y", { xmlns: "http://y.ninja/connector-stanza" }), obj);
     } else {
       throw new Error("I can't encode this json!");
     }

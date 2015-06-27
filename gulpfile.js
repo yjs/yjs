@@ -49,7 +49,7 @@ var concat = require("gulp-concat");
 var watch = require("gulp-watch");
 
 var polyfills = [
-  "./node_modules/regenerator/runtime.js"
+  "./node_modules/gulp-babel/node_modules/babel-core/node_modules/regenerator/runtime.js"
 ];
 
 var files = {

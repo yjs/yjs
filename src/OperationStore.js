@@ -3,7 +3,7 @@ class AbstractTransaction { //eslint-disable-line no-unused-vars
   constructor (store : OperationStore) {
     this.store = store;
   }
-  // Throws if operation is not expected.
+  // returns false if operation is not expected.
   *addOperation (op) {
     var state = this.getState(op.id[0]);
     if (op.id[1] === state.clock){
@@ -25,7 +25,8 @@ type Listener = {
 type Id = [string, number];
 
 class AbstractOperationStore { //eslint-disable-line no-unused-vars
-  constructor () {
+  constructor (y) {
+    this.y = y;
     this.parentListeners = {};
     this.parentListenersRequestPending = false;
     this.parentListenersActivated = {};
@@ -45,6 +46,12 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
       Always remember to first overwrite over
       a property before you iterate over it!
     */
+  }
+  apply (ops) {
+    for (var o of ops) {
+      var required = Y.Struct[o.type].requiredOps(o);
+      this.whenOperationsExist(required, Y.Struct[o.type].execute, o);
+    }
   }
   // f is called as soon as every operation requested is available.
   // Note that Transaction can (and should) buffer requests.
@@ -134,15 +141,15 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
 
     this.parentListenersRequestPending = true;
     var store = this;
-    this.requestTransaction(function*(myRequest){ // you can throw error on myRequest, then restart if you have to
+    this.requestTransaction(function*(){
       store.parentListenersRequestPending = false;
       var activatedOperations = store.parentListenersActivated;
       store.parentListenersActivated = {};
-      for (var parent_id in activatedOperations){
-        var parent = yield* this.getOperation(parent_id);
-        Struct[parent.type].notifyObservers(activatedOperations[parent_id]);
+      for (var parentId in activatedOperations){
+        var parent = yield* this.getOperation(parentId);
+        Struct[parent.type].notifyObservers(activatedOperations[parentId]);
       }
-    })
+    });
 
   }
   removeParentListener (id, f) {

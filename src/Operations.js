@@ -2,28 +2,44 @@
 
 // Op is anything that we could get from the OperationStore.
 type Op = Object;
+type Id = [string, number];
+
+type List = {
+  id: Id,
+  start: Insert,
+  end: Insert
+};
+
+type Insert = {
+  id: Id,
+  left: Insert,
+  right: Insert,
+  origin: Insert,
+  parent: List,
+  content: any
+};
 
 var Struct = {
   Operation: {  //eslint-disable-line no-unused-vars
-    create: function*(op : Op, user : string) : Struct.Operation {
+    create: function*(op : Op) : Struct.Operation {
+      var user = this.store.y.connector.userId;
       var state = yield* this.getState(user);
       op.id = [user, state.clock];
       return yield* this.addOperation(op);
     }
   },
   Insert: {
-    create: function*( op : Op,
-                      user : string,
-                      content : any,
-                      left : Struct.Insert,
-                      right : Struct.Insert,
-                      parent : Struct.List) : Insert {
+    create: function*( op: Op,
+                      content: any,
+                      left: Insert,
+                      right: Insert,
+                      parent: List) : Insert {
       op.left = left ? left.id : null;
       op.origin = op.left;
       op.right = right ? right.id : null;
       op.parent = parent.id;
       op.struct = "Insert";
-      yield* Struct.Operation.create.call(this, op, user);
+      yield* Struct.Operation.create.call(this, op);
 
       if (left != null) {
         left.right = op.id;
@@ -69,8 +85,8 @@ var Struct = {
     #         $this insert_position is to the left of $o (forever!)
     */
     execute: function*(op){
-      var distance_to_origin = yield* Struct.Insert.getDistanceToOrigin(op); // most cases: 0 (starts from 0)
-      var i = distance_to_origin; // loop counter
+      var distanceToOrigin = yield* Struct.Insert.getDistanceToOrigin(op); // most cases: 0 (starts from 0)
+      var i = distanceToOrigin; // loop counter
       var o = yield* this.getOperation(this.left);
       o = yield* this.getOperation(o.right);
       var tmp;
@@ -80,13 +96,13 @@ var Struct = {
             // case 1
             if (o.id[0] < op.id[0]) {
               op.left = o;
-              distance_to_origin = i + 1;
+              distanceToOrigin = i + 1;
             }
           } else if ((tmp = Struct.Insert.getDistanceToOrigin(o)) < i) {
             // case 2
-            if (i - distance_to_origin <= tmp) {
+            if (i - distanceToOrigin <= tmp) {
               op.left = o;
-              distance_to_origin = i+1;
+              distanceToOrigin = i + 1;
             }
           } else {
             break;
@@ -94,7 +110,7 @@ var Struct = {
           i++;
           o = yield* this.getOperation(o.next_cl);
         } else {
-          break
+          break;
         }
       }
       // reconnect..
@@ -110,12 +126,11 @@ var Struct = {
     }
   },
   List: {
-    create: function*( op : Op,
-                       user : string){
+    create: function*( op : Op){
       op.start = null;
       op.end = null;
       op.struct = "List";
-      return yield* Struct.Operation.create.call(this, op, user);
+      return yield* Struct.Operation.create.call(this, op);
     },
     requiredOps: function(op, ids){
       if (op.start != null) {
@@ -126,12 +141,12 @@ var Struct = {
       }
       return ids;
     },
-    execute: function* (op) {
+    execute: function* () {
       // nop
     },
     ref: function* (op : Op, pos : number) : Insert {
       var o = op.start;
-      while ( pos !== 0 || o == null) {
+      while ( pos !== 0 || o != null) {
         o = (yield* this.getOperation(o)).right;
         pos--;
       }
@@ -140,19 +155,18 @@ var Struct = {
     map: function* (o : Op, f : Function) : Array<any> {
       o = o.start;
       var res = [];
-      while ( pos !== 0 || o == null) {
+      while ( o != null) {
         var operation = yield* this.getOperation(o);
         res.push(f(operation.content));
         o = operation.right;
-        pos--;
       }
       return res;
     },
     insert: function* (op, pos : number, contents : Array<any>) {
       var o = yield* Struct.List.ref.call(this, op, pos);
-      var o_end = yield* this.getOperation(o.right);
+      var or = yield* this.getOperation(o.right);
       for (var content of contents) {
-        o = yield* Struct.Insert.create.call(this, {}, user, content, o, o_end, op);
+        o = yield* Struct.Insert.create.call(this, {}, content, o, or, op);
       }
     }
   }

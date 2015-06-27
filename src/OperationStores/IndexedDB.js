@@ -18,7 +18,7 @@ type IDBOpenDBRequest = Function;
 
 declare var indexedDB : Object;
 
-var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
+Y.IndexedDB = (function(){ //eslint-disable-line no-unused-vars
   class Transaction extends AbstractTransaction { //eslint-disable-line
     transaction: IDBTransaction;
     sv: IDBObjectStore;
@@ -108,9 +108,17 @@ var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
     namespace: string;
     ready: Promise;
     whenReadyListeners: Array<Function>;
-    constructor (namespace : string) {
-      super();
-      this.namespace = namespace;
+    constructor (y, opts) {
+      super(y);
+      if (opts == null) {
+        opts = {};
+      }
+      if (opts.namespace != null || typeof opts.namespace !== "string") {
+        throw new Error("IndexedDB: expect a string (opts.namespace)!");
+      } else {
+        this.namespace = opts.namespace;
+      }
+
       this.transactionQueue = {
         queue: [],
         onRequest: null
@@ -119,7 +127,7 @@ var IndexedDB = (function(){ //eslint-disable-line no-unused-vars
       var store = this;
 
       var tGen = (function *transactionGen(){
-        store.db = yield indexedDB.open(namespace, 3);
+        store.db = yield indexedDB.open(opts.namespace, 3);
         var transactionQueue = store.transactionQueue;
 
         var transaction = null;
