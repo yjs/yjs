@@ -29,25 +29,31 @@ var Struct = {
     }
   },
   Insert: {
-    create: function*( op: Op,
-                      content: any,
-                      left: Insert,
-                      right: Insert,
-                      parent: List) : Insert {
-      op.left = left ? left.id : null;
+    /*{
+        content: any,
+        left: Id,
+        right: Id,
+        parent: Id,
+        parentSub: string (optional)
+      }
+    */
+    create: function*( op: Op ) : Insert {
+      if ( op.left === undefined
+        || op.right === undefined
+        || op.parent === undefined ) {
+          throw new Error("You must define left, right, and parent!");
+        }
       op.origin = op.left;
-      op.right = right ? right.id : null;
-      op.parent = parent.id;
       op.struct = "Insert";
       yield* Struct.Operation.create.call(this, op);
 
-      if (left != null) {
-        left.right = op.id;
-        yield* this.setOperation(left);
+      if (op.left != null) {
+        op.left.right = op.id;
+        yield* this.setOperation(op.left);
       }
-      if (right != null) {
-        right.left = op.id;
-        yield* this.setOperation(right);
+      if (op.right != null) {
+        op.right.left = op.id;
+        yield* this.setOperation(op.right);
       }
       return op;
     },
@@ -113,16 +119,42 @@ var Struct = {
           break;
         }
       }
+
       // reconnect..
-      var left = this.getOperation(op.left);
-      var right = this.getOperation(op.right);
-      left.right = op.id;
-      right.left = op.id;
+      var left = null;
+      var right = null;
+      if (op.left != null) {
+        left = this.getOperation(op.left);
+        left.right = op.id;
+        yield* this.setOperation(left);
+      }
+      if (op.right != null) {
+        right = this.getOperation(op.right);
+        right.left = op.id;
+        yield* this.setOperation(right);
+      }
       op.left = left;
       op.right = right;
-      yield* this.setOperation(left);
-      yield* this.setOperation(right);
       yield* this.setOperation(op);
+
+      // notify parent
+      var parent = this.getOperation(op.parent);
+      if (op.parentSub != null) {
+        if (right == null) {
+          parent.map[op.parentSub] = op.id;
+          yield* this.setOperation(parent);
+        }
+      } else {
+        if (right == null || left == null) {
+          if (right == null) {
+            parent.end = op.id;
+          }
+          if (left == null) {
+            parent.start = op.id;
+          }
+          yield* this.setOperation(parent);
+        }
+      }
     }
   },
   List: {
@@ -166,53 +198,48 @@ var Struct = {
       var o = yield* Struct.List.ref.call(this, op, pos);
       var or = yield* this.getOperation(o.right);
       for (var content of contents) {
-        o = yield* Struct.Insert.create.call(this, {}, content, o, or, op);
+        var insert = {
+          left: o,
+          right: or,
+          content: content,
+          parent: op
+        };
+        o = yield* Struct.Insert.create.call(this, insert);
       }
     }
   },
   Map: {
-    create: function*( op : Op){
-      op.start = null;
-      op.end = null;
+    create: function*( op : Op ){
+      op.map = {};
       op.struct = "Map";
       return yield* Struct.Operation.create.call(this, op);
     },
     requiredOps: function(op, ids){
-      if (op.start != null) {
-        ids.push(op.start);
-      }
-      if (op.end != null){
-        ids.push(op.end);
+      for (var end of op.map) {
+        ids.push(end);
       }
       return ids;
     },
     execute: function* () {
       // nop
     },
-    ref: function* (op : Op, pos : number) : Insert {
-      var o = op.start;
-      while ( pos !== 0 || o != null) {
-        o = (yield* this.getOperation(o)).right;
-        pos--;
-      }
-      return (o == null) ? null : yield* this.getOperation(o);
+    get: function* (op, name) {
+      return yield* this.getOperation(op.map[name].end);
     },
-    map: function* (o : Op, f : Function) : Array<any> {
-      o = o.start;
-      var res = [];
-      while ( o != null) {
-        var operation = yield* this.getOperation(o);
-        res.push(f(operation.content));
-        o = operation.right;
+    set: function* (op, name, value) {
+      var end = op.map[name];
+      if (end == null) {
+        end = null;
+        op.map[name] = end;
       }
-      return res;
-    },
-    insert: function* (op, pos : number, contents : Array<any>) {
-      var o = yield* Struct.List.ref.call(this, op, pos);
-      var or = yield* this.getOperation(o.right);
-      for (var content of contents) {
-        o = yield* Struct.Insert.create.call(this, {}, content, o, or, op);
-      }
+      var insert = {
+        left: end,
+        right: null,
+        content: value,
+        parent: op.id,
+        parentSub: name
+      };
+      yield* Struct.Insert.create.call(this, insert);
     }
   }
 };
