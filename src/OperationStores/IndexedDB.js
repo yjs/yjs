@@ -113,10 +113,15 @@ Y.IndexedDB = (function(){ //eslint-disable-line no-unused-vars
       if (opts == null) {
         opts = {};
       }
-      if (opts.namespace != null || typeof opts.namespace !== "string") {
+      if (opts.namespace == null || typeof opts.namespace !== "string") {
         throw new Error("IndexedDB: expect a string (opts.namespace)!");
       } else {
         this.namespace = opts.namespace;
+      }
+      if (opts.idbVersion != null) {
+        this.idbVersion = opts.idbVersion;
+      } else {
+        this.idbVersion = 5;
       }
 
       this.transactionQueue = {
@@ -127,7 +132,7 @@ Y.IndexedDB = (function(){ //eslint-disable-line no-unused-vars
       var store = this;
 
       var tGen = (function *transactionGen(){
-        store.db = yield indexedDB.open(opts.namespace, 3);
+        store.db = yield indexedDB.open(opts.namespace, store.idbVersion);
         var transactionQueue = store.transactionQueue;
 
         var transaction = null;
@@ -174,8 +179,12 @@ Y.IndexedDB = (function(){ //eslint-disable-line no-unused-vars
           };
           request.onupgradeneeded = function(event){
             var db = event.target.result;
-            db.createObjectStore("OperationStore", {keyPath: "id"});
-            db.createObjectStore("StateVector", {keyPath: "user"});
+            try {
+              db.createObjectStore("OperationStore", {keyPath: "id"});
+              db.createObjectStore("StateVector", {keyPath: "user"});
+            } catch (e) {
+                // console.log("Store already exists!");
+            }
           };
         } else {
           tGen.throw("You can not yield this type!");

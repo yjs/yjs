@@ -16,7 +16,7 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
 
     constructor (store : OperationStore) {
       super(store);
-      this.sv = store.ss;
+      this.ss = store.ss;
       this.os = store.os;
     }
     *setOperation (op) {
@@ -30,7 +30,7 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
       delete this.os[JSON.stringify(id)];
     }
     *setState (state : State) : State {
-      this.sv[state.user] = state.clock;
+      this.ss[state.user] = state.clock;
     }
     *getState (user : string) : State {
       var clock = this.ss[user];
@@ -80,18 +80,21 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
     }
   }
   class OperationStore extends AbstractOperationStore { //eslint-disable-line no-undef
-    namespace: string;
-    ready: Promise;
-    whenReadyListeners: Array<Function>;
     constructor (y) {
       super(y);
+      this.os = {};
+      this.ss = {};
     }
     requestTransaction (makeGen : Function) {
       var t = new Transaction(this);
       var gen = makeGen.call(t);
-      gen.next();
-      if (gen.done !== true) {
-        throw new Error("transaction is supposed to be done. Note: you may not yield with this transaction! (yield* is allowed though)");
+      var res = gen.next();
+      while(!res.done){
+        if (res.value === "transaction") {
+          res = gen.next(t);
+        } else {
+          throw new Error("You may not yield this type. (Maybe you meant to use 'yield*'?)");
+        }
       }
     }
     *removeDatabase () {

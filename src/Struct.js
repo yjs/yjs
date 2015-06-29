@@ -19,6 +19,21 @@ type Insert = {
   content: any
 };
 
+function compareIds(id1, id2) {
+  if (id1 == null) {
+    if (id2 == null) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  if (id1[0] === id2[0] && id1[1] === id2[1]) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 var Struct = {
   Operation: {  //eslint-disable-line no-unused-vars
     create: function*(op : Op) : Struct.Operation {
@@ -54,6 +69,25 @@ var Struct = {
       if (op.right != null) {
         op.right.left = op.id;
         yield* this.setOperation(op.right);
+      }
+      var parent = yield* this.getOperation(op.parent);
+      if (op.parentSub != null){
+        if (compareIds(parent.map[op.parentSub], op.left)) {
+          parent.map[op.parentSub] = op.id;
+          yield* this.setOperation(parent);
+        }
+      } else {
+        var start = compareIds(parent.start, op.right);
+        var end = compareIds(parent.end, op.left);
+        if (start || end) {
+          if (start) {
+            parent.start = op.id;
+          }
+          if (end) {
+            parent.end = op.id;
+          }
+          yield* this.setOperation(parent);
+        }
       }
       return op;
     },
@@ -209,6 +243,11 @@ var Struct = {
     }
   },
   Map: {
+    /*
+      {
+        // empty
+      }
+    */
     create: function*( op : Op ){
       op.map = {};
       op.struct = "Map";
@@ -224,7 +263,7 @@ var Struct = {
       // nop
     },
     get: function* (op, name) {
-      return yield* this.getOperation(op.map[name].end);
+      return (yield* this.getOperation(op.map[name])).content;
     },
     set: function* (op, name, value) {
       var end = op.map[name];
@@ -243,3 +282,5 @@ var Struct = {
     }
   }
 };
+
+Y.Struct = Struct;

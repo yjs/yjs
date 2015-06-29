@@ -53,9 +53,9 @@ var polyfills = [
 ];
 
 var files = {
-  y: polyfills.concat(["src/**/*.js", "!src/**/*.spec.js"]),
+  y: polyfills.concat(["src/y.js", "src/**/*.js", "!src/**/*.spec.js"]),
   lint: ["src/**/*.js", "gulpfile.js"],
-  test: polyfills.concat(["src/**/*.js"]),
+  test: polyfills.concat(["src/y.js", "src/**/*.js"]),
   build_test: ["build_test/y.js"]
 };
 
@@ -119,7 +119,7 @@ gulp.task("build_jasmine_browser", function(){
 });
 
 
-gulp.task("develop", ["build_jasmine_browser", "test", "build"], function(){
+gulp.task("develop", ["build_jasmine_browser", "build"], function(){
 
   gulp.watch(files.test, ["build_jasmine_browser"]);
   gulp.watch(files.test, ["test"]);

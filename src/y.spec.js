@@ -2,6 +2,7 @@
 /*eslint-env browser,jasmine */
 
 describe("Yjs (basic)", function(){
+  jasmine.DEFAULT_TIMEOUT_INTERVAL = 500;
   beforeEach(function(){
     this.users = [];
     for (var i = 0; i < 5; i++) {
@@ -21,9 +22,18 @@ describe("Yjs (basic)", function(){
     }
     this.users = [];
   });
-  it("can List.insert and get value from the other user", function(done){
-    this.users[0].val("name", 1);
-    this.users[0].connector.whenSynced(function(){
+  it("There is an initial Map type", function(done){
+    var y = this.users[0];
+    y.transact(function*(){
+      expect(y.root).not.toBeUndefined();
+      done();
+    });
+  });
+  it("Basic get&set of Map property", function(done){
+    var y = this.users[0];
+    y.transact(function*(){
+      yield* y.root.val("stuff", "stuffy");
+      expect(yield* y.root.val("stuff")).toEqual("stuffy");
       done();
     });
   });

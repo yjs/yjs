@@ -4,7 +4,7 @@
 if(typeof window !== "undefined"){
   jasmine.DEFAULT_TIMEOUT_INTERVAL = 1000;
   describe("IndexedDB", function() {
-    var ob = new IndexedDB("Test");
+    var ob = new Y.IndexedDB(null, {namespace: "Test"});
 
     it("can add and get operation", function(done) {
       ob.requestTransaction(function*(){

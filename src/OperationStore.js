@@ -5,10 +5,11 @@ class AbstractTransaction { //eslint-disable-line no-unused-vars
   }
   // returns false if operation is not expected.
   *addOperation (op) {
-    var state = this.getState(op.id[0]);
+    var state = yield* this.getState(op.id[0]);
     if (op.id[1] === state.clock){
       state.clock++;
       yield* this.setState(state);
+      yield* this.setOperation(op);
       this.store.operationAdded(op);
       return true;
     } else {
@@ -16,6 +17,7 @@ class AbstractTransaction { //eslint-disable-line no-unused-vars
     }
   }
 }
+Y.AbstractTransaction = AbstractTransaction;
 
 type Listener = {
   f : GeneratorFunction, // is called when all operations are available
@@ -46,6 +48,9 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
       Always remember to first overwrite over
       a property before you iterate over it!
     */
+  }
+  setUserId (userId) {
+    this.userId = userId;
   }
   apply (ops) {
     for (var o of ops) {
@@ -169,3 +174,4 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
     ls.push(f);
   }
 }
+Y.AbstractOperationStore = AbstractOperationStore;

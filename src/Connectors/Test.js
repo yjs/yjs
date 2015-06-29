@@ -16,8 +16,9 @@ var globalRoom = {
   users: {},
   buffers: {},
   removeUser: function(user){
-    for (var u of this.users) {
-      u.userLeft(user);
+
+    for (var i in this.users) {
+      this.users[i].userLeft(user);
     }
     delete this.users[user];
     delete this.buffers[user];
@@ -49,11 +50,11 @@ setInterval(function(){
 var userIdCounter = 0;
 
 class Test extends AbstractConnector {
-  constructor (options) {
+  constructor (y, options) {
     if(options === undefined){
       throw new Error("Options must not be undefined!");
     }
-    super({
+    super(y, {
       role: "master"
     });
 

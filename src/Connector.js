@@ -5,7 +5,8 @@ class AbstractConnector { //eslint-disable-line no-unused-vars
      .role : String Role of this client ("master" or "slave")
      .userId : String that uniquely defines the user.
   */
-  constructor (opts) {
+  constructor (y, opts) {
+    this.y = y;
     if (opts == null){
       opts = {};
     }
@@ -23,7 +24,8 @@ class AbstractConnector { //eslint-disable-line no-unused-vars
     this.currentSyncTarget = null;
   }
   setUserId (userId) {
-    this.os.setUserId(userId);
+    this.userId = userId;
+    this.y.db.setUserId(userId);
   }
   onUserEvent (f) {
     this.userEventListeners.push(f);
