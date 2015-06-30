@@ -23,52 +23,45 @@ describe("Yjs (basic)", function(){
     }
     this.users = [];
   });
-  it("There is an initial Map type", function(done){
+  it("There is an initial Map type", function(){
     var y = this.users[0];
-    y.transact(function*(){
-      expect(y.root).not.toBeUndefined();
-      done();
+    y.transact(function*(root){
+      expect(root).not.toBeUndefined();
     });
   });
-  it("Basic get&set of Map property (converge via sync)", function(done){
+  it("Basic get&set of Map property (converge via sync)", function(){
     var y = this.users[0];
-    y.transact(function*(){
-      yield* y.root.val("stuff", "stuffy");
-      expect(yield* y.root.val("stuff")).toEqual("stuffy");
+    y.transact(function*(root){
+      yield* root.val("stuff", "stuffy");
+      expect(yield* root.val("stuff")).toEqual("stuffy");
     });
 
     y.connector.flushAll();
 
-    function getTransaction(yy){
-      return function*(){
-        expect(yield* yy.root.val("stuff")).toEqual("stuffy");
-      };
-    }
+    var transaction = function*(root){
+      expect(yield* root.val("stuff")).toEqual("stuffy");
+    };
     for (var key in this.users) {
       var u = this.users[key];
-      u.transact(getTransaction(u));
+      u.transact(transaction);
     }
-    done();
   });
-  it("Basic get&set of Map property (converge via update)", function(done){
+  it("Basic get&set of Map property (converge via update)", function(){
     var y = this.users[0];
     y.connector.flushAll();
-    y.transact(function*(){
-      yield* y.root.val("stuff", "stuffy");
-      expect(yield* y.root.val("stuff")).toEqual("stuffy");
+    y.transact(function*(root){
+      yield* root.val("stuff", "stuffy");
+      expect(yield* root.val("stuff")).toEqual("stuffy");
     });
 
-    function getTransaction(yy){
-      return function*(){
-        expect(yield* yy.root.val("stuff")).toEqual("stuffy");
-      };
-    }
+    var transaction = function*(root){
+      expect(yield* root.val("stuff")).toEqual("stuffy");
+    };
     y.connector.flushAll();
 
     for (var key in this.users) {
       var u = this.users[key];
-      u.transact(getTransaction(u));
+      u.transact(transaction);
     }
-    done();
   });
 });

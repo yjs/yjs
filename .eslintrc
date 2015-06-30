@@ -11,6 +11,7 @@
   },
   "parser": "babel-eslint",
   "globals": {
+    "copyObject": true,
     "Struct": true,
     "OperationStore": true,
     "AbstractOperationStore": true,

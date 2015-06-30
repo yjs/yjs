@@ -4,6 +4,15 @@ type State = {
   clock: number
 };
 
+
+function copyObject (o) {
+  var c = {};
+  for (var key in o) {
+    c[key] = o[key];
+  }
+  return c;
+}
+
 type StateVector = Array<State>;
 type OperationSet = Object; // os[Id] = op
 type StateSet = Object;
@@ -75,11 +84,29 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
         for (var clock = startPos; clock <= endPos; clock++) {
           var op = yield* this.getOperation([user, clock]);
           if (op != null) {
-            ops.push(op);
+            ops.push(yield* this.makeOperationReady.call(this, startSS, op));
           }
         }
       }
       return ops;
+    }
+    *makeOperationReady (ss, op) {
+      var clock;
+      var o = op;
+      while (true){
+        // while unknown, go to the right
+        o = yield* this.getOperation(o.right);
+        if (o == null) {
+          break;
+        }
+        clock = ss[o.id[0]];
+        if (clock != null && o.id[1] < clock ) {
+          break;
+        }
+      }
+      op = copyObject(op);
+      op.right = (o == null) ? null : o.id;
+      return op;
     }
   }
   class OperationStore extends AbstractOperationStore { //eslint-disable-line no-undef
@@ -90,7 +117,7 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
     }
     requestTransaction (makeGen : Function) {
       var t = new Transaction(this);
-      var gen = makeGen.call(t);
+      var gen = makeGen.call(t, new Y.Map.Create(["_", 0]));
       var res = gen.next();
       while(!res.done){
         if (res.value === "transaction") {
