@@ -66,6 +66,9 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
       var endSV : StateVector = yield* this.getStateVector();
       for (var endState of endSV) {
         var user = endState.user;
+        if (user === "_") {
+          continue;
+        }
         var startPos = startSS[user] || 0;
         var endPos = endState.clock;
 

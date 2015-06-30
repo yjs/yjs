@@ -15,7 +15,7 @@ function getRandom (o) {
 var globalRoom = {
   users: {},
   buffers: {},
-  removeUser: function(user){
+  removeUser: function(user : AbstractConnector){
 
     for (var i in this.users) {
       this.users[i].userLeft(user);
@@ -24,15 +24,18 @@ var globalRoom = {
     delete this.buffers[user];
   },
   addUser: function(connector){
-    for (var u of this.users) {
-      u.userJoined(connector.userId);
-    }
     this.users[connector.userId] = connector;
     this.buffers[connector.userId] = [];
+    for (var uname in this.users) {
+      if (uname !== connector.userId) {
+        var u = this.users[uname];
+        u.userJoined(connector.userId, "master");
+        connector.userJoined(u.userId, "master");
+      }
+    }
   }
 };
-
-setInterval(function(){
+function flushOne(){
   var bufs = [];
   for (var i in globalRoom.buffers) {
     if (globalRoom.buffers[i].length > 0) {
@@ -41,11 +44,15 @@ setInterval(function(){
   }
   if (bufs.length > 0) {
     var userId = getRandom(bufs);
-    var m = globalRoom.buffers[userId];
+    var m = globalRoom.buffers[userId].shift();
     var user = globalRoom.users[userId];
-    user.receiveMessage(m);
+    user.receiveMessage(m[0], m[1]);
+    return true;
+  } else {
+    return false;
   }
-}, 10);
+}
+setInterval(flushOne, 10);
 
 var userIdCounter = 0;
 
@@ -54,22 +61,29 @@ class Test extends AbstractConnector {
     if(options === undefined){
       throw new Error("Options must not be undefined!");
     }
-    super(y, {
-      role: "master"
-    });
-
+    options.role = "master";
+    options.forwardToSyncingClients = false;
+    super(y, options);
     this.setUserId((userIdCounter++) + "");
+    globalRoom.addUser(this);
+    this.globalRoom = globalRoom;
   }
-  send (uid, message) {
-    globalRoom.buffers[uid].push(message);
+  send (userId, message) {
+    globalRoom.buffers[userId].push([this.userId, message]);
   }
   broadcast (message) {
-    for (var buf of globalRoom.buffers) {
-      buf.push(message);
+    for (var key in globalRoom.buffers) {
+      globalRoom.buffers[key].push([this.userId, message]);
     }
   }
   disconnect () {
     globalRoom.removeUser(this.userId);
+  }
+  flushAll () {
+    var c = true;
+    while (c) {
+      c = flushOne();
+    }
   }
 }
 

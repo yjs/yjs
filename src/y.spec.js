@@ -11,7 +11,8 @@ describe("Yjs (basic)", function(){
           name: "Memory"
         },
         connector: {
-          name: "Test"
+          name: "Test",
+          debug: true
         }
       }));
     }
@@ -29,12 +30,45 @@ describe("Yjs (basic)", function(){
       done();
     });
   });
-  it("Basic get&set of Map property", function(done){
+  it("Basic get&set of Map property (converge via sync)", function(done){
     var y = this.users[0];
     y.transact(function*(){
       yield* y.root.val("stuff", "stuffy");
       expect(yield* y.root.val("stuff")).toEqual("stuffy");
-      done();
     });
+
+    y.connector.flushAll();
+
+    function getTransaction(yy){
+      return function*(){
+        expect(yield* yy.root.val("stuff")).toEqual("stuffy");
+      };
+    }
+    for (var key in this.users) {
+      var u = this.users[key];
+      u.transact(getTransaction(u));
+    }
+    done();
+  });
+  it("Basic get&set of Map property (converge via update)", function(done){
+    var y = this.users[0];
+    y.connector.flushAll();
+    y.transact(function*(){
+      yield* y.root.val("stuff", "stuffy");
+      expect(yield* y.root.val("stuff")).toEqual("stuffy");
+    });
+
+    function getTransaction(yy){
+      return function*(){
+        expect(yield* yy.root.val("stuff")).toEqual("stuffy");
+      };
+    }
+    y.connector.flushAll();
+
+    for (var key in this.users) {
+      var u = this.users[key];
+      u.transact(getTransaction(u));
+    }
+    done();
   });
 });

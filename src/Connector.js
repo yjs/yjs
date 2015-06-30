@@ -22,6 +22,9 @@ class AbstractConnector { //eslint-disable-line no-unused-vars
     this.userEventListeners = [];
     this.whenSyncedListeners = [];
     this.currentSyncTarget = null;
+    this.syncingClients = [];
+    this.forwardToSyncingClients = (opts.forwardToSyncingClients === false) ? false : true;
+    this.debug = opts.debug ? true : false;
   }
   setUserId (userId) {
     this.userId = userId;
@@ -61,6 +64,9 @@ class AbstractConnector { //eslint-disable-line no-unused-vars
         role: role
       });
     }
+    if (this.currentSyncTarget == null) {
+      this.findNextSyncTarget();
+    }
   }
   // Execute a function _when_ we are connected.
   // If not connected, wait until connected
@@ -78,7 +84,6 @@ class AbstractConnector { //eslint-disable-line no-unused-vars
       throw new Error("The current sync has not finished!");
     }
 
-
     var syncUser = null;
     for (var uid in this.connections) {
       syncUser = this.connections[uid];
@@ -88,7 +93,7 @@ class AbstractConnector { //eslint-disable-line no-unused-vars
     }
     if (syncUser != null){
       var conn = this;
-      this.y.os.requestTransaction(function*(){
+      this.y.db.requestTransaction(function*(){
         conn.currentSyncTarget = uid;
         conn.send(uid, {
           type: "sync step 1",
@@ -107,11 +112,14 @@ class AbstractConnector { //eslint-disable-line no-unused-vars
     return false;
   }
   // You received a raw message, and you know that it is intended for to Yjs. Then call this function.
-  receiveMessage (sender, m) {
+  receiveMessage (sender, m){
+    if (this.debug) {
+      console.log(`${sender} -> ${this.userId}: ${JSON.stringify(m)}`); //eslint-disable-line
+    }
     if (m.type === "sync step 1") {
       // TODO: make transaction, stream the ops
       let conn = this;
-      this.os.requestTransaction(function*(){
+      this.y.db.requestTransaction(function*(){
         var ops = yield* this.getOperations(m.stateVector);
         var sv = yield* this.getStateVector();
         conn.send(sender, {
@@ -119,33 +127,40 @@ class AbstractConnector { //eslint-disable-line no-unused-vars
           os: ops,
           stateVector: sv
         });
-        conn.syncingClients.push(sender);
-        setTimeout(function(){
-          conn.syncingClients = conn.syncingClients.filter(function(cli){
-            return cli !== sender;
-          });
-          conn.send(sender, {
-            type: "sync done"
-          });
-        }, conn.syncingClientDuration);
+        if (this.forwardToSyncingClients) {
+          conn.syncingClients.push(sender);
+          setTimeout(function(){
+            conn.syncingClients = conn.syncingClients.filter(function(cli){
+              return cli !== sender;
+            });
+            conn.send(sender, {
+              type: "sync done"
+            });
+          }, conn.syncingClientDuration);
+        }
       });
     } else if (m.type === "sync step 2") {
+      this.y.db.apply(m.os);
       let conn = this;
-      this.os.requestTransaction(function*(){
+      this.y.db.requestTransaction(function*(){
         var ops = yield* this.getOperations(m.stateVector);
-        conn.broadcast({
-          type: "update",
-          ops: ops
-        });
+        if (ops.length > 0) {
+          conn.broadcast({
+            type: "update",
+            ops: ops
+          });
+        }
       });
     } else if (m.type === "sync done") {
       this.connections[sender].isSynced = true;
       this.findNextSyncTarget();
     } else if (m.type === "update") {
-      for (var client of this.syncingClients) {
-        this.send(client, m);
+      if (this.forwardToSyncingClients) {
+        for (var client of this.syncingClients) {
+          this.send(client, m);
+        }
       }
-      this.os.apply(m.ops);
+      this.y.db.apply(m.ops);
     }
   }
   // Currently, the HB encodes operations as JSON. For the moment I want to keep it

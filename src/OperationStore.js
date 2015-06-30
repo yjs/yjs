@@ -53,9 +53,10 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
     this.userId = userId;
   }
   apply (ops) {
-    for (var o of ops) {
-      var required = Y.Struct[o.type].requiredOps(o);
-      this.whenOperationsExist(required, Y.Struct[o.type].execute, o);
+    for (var key in ops) {
+      var o = ops[key];
+      var required = Y.Struct[o.struct].requiredOps(o);
+      this.whenOperationsExist(required, Y.Struct[o.struct].execute, o);
     }
   }
   // f is called as soon as every operation requested is available.
@@ -68,7 +69,8 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
         missing: ids.length
       };
 
-      for (let id of ids) {
+      for (let key in ids) {
+        let id = ids[key];
         let sid = JSON.stringify(id);
         let l = this.listenersById[sid];
         if (l == null){
@@ -100,8 +102,9 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
 
       store.listenersByIdRequestPending = false;
 
-      for (let listener of exeNow) {
-        yield* listener.f.apply(this, listener.args);
+      for (let key in exeNow) {
+        let listener = exeNow[key];
+        yield* listener.f.call(this, listener.args);
       }
 
       for (var sid in ls){
@@ -110,9 +113,10 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
         if ((yield* this.getOperation(id)) == null){
           store.listenersById[sid] = l;
         } else {
-          for (let listener of l) {
+          for (let key in l) {
+            let listener = l[key];
             if (--listener.missing === 0){
-              yield* listener.f.apply(this, listener.args);
+              yield* listener.f.call(this, listener.args);
             }
           }
         }
@@ -122,9 +126,10 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
   // called by a transaction when an operation is added
   operationAdded (op) {
     // notify whenOperation listeners (by id)
-    var l = this.listenersById[op.id];
+    var l = this.listenersById[JSON.stringify(op.id)];
     if (l != null) {
-      for (var listener of l){
+      for (var key in l){
+        var listener = l[key];
         if (--listener.missing === 0){
           this.whenOperationsExist([], listener.f, listener.args);
         }
@@ -152,7 +157,7 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
       store.parentListenersActivated = {};
       for (var parentId in activatedOperations){
         var parent = yield* this.getOperation(parentId);
-        Struct[parent.type].notifyObservers(activatedOperations[parentId]);
+        Struct[parent.struct].notifyObservers(activatedOperations[parentId]);
       }
     });
 
