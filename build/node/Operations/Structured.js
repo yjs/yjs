@@ -181,6 +181,21 @@ module.exports = function() {
       return this.beginning.next_cl;
     };
 
+    ListManager.prototype.getNext = function(start) {
+      var o;
+      o = start.next_cl;
+      while (!(o instanceof ops.Delimiter)) {
+        if (o.is_deleted) {
+          o = o.next_cl;
+        } else if (o instanceof ops.Delimiter) {
+          return false;
+        } else {
+          break;
+        }
+      }
+      return o;
+    };
+
     ListManager.prototype.toArray = function() {
       var o, result;
       o = this.beginning.next_cl;
@@ -273,6 +288,16 @@ module.exports = function() {
       return this.insertAfter(this.end.prev_cl, [content]);
     };
 
+    ListManager.prototype.insertAfterHelper = function(root, content) {
+      var right;
+      if (!root.right) {
+        root.bt.right = content;
+        return content.bt.parent = root;
+      } else {
+        return right = root.next_cl;
+      }
+    };
+
     ListManager.prototype.insertAfter = function(left, contents) {
       var c, j, len, right, tmp;
       right = left.next_cl;
@@ -301,12 +326,11 @@ module.exports = function() {
       return this.insertAfter(ith, contents);
     };
 
-    ListManager.prototype["delete"] = function(position, length) {
-      var d, delete_ops, i, j, o, ref;
+    ListManager.prototype.deleteRef = function(o, length) {
+      var d, delete_ops, i, j, ref;
       if (length == null) {
         length = 1;
       }
-      o = this.getOperationByPosition(position + 1);
       delete_ops = [];
       for (i = j = 0, ref = length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
         if (o instanceof ops.Delimiter) {
@@ -320,6 +344,15 @@ module.exports = function() {
         delete_ops.push(d._encode());
       }
       return this;
+    };
+
+    ListManager.prototype["delete"] = function(position, length) {
+      var o;
+      if (length == null) {
+        length = 1;
+      }
+      o = this.getOperationByPosition(position + 1);
+      return this.deleteRef(o, length);
     };
 
     ListManager.prototype.callOperationSpecificInsertEvents = function(op) {
