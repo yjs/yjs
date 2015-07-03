@@ -64,4 +64,26 @@ describe("Yjs (basic)", function(){
       u.transact(transaction);
     }
   });
+  it("Basic get&set of Map property (handle conflict)", function(){
+    var y = this.users[0];
+    y.connector.flushAll();
+    this.users[0].transact(function*(root){
+      yield* root.val("stuff", "c0");
+    });
+    this.users[1].transact(function*(root){
+      yield* root.val("stuff", "c1");
+    });
+
+    var transaction = function*(root){
+      expect(yield* root.val("stuff")).toEqual("c1");
+    };
+    y.connector.flushAll();
+
+    for (var key in this.users) {
+      var u = this.users[key];
+      u.transact(transaction);
+    }
+  });
+
+
 });

@@ -176,17 +176,17 @@ var Struct = {
         }
       }
       while (true) {
-        if (o.id !== op.right){
+        if (o != null && o.id !== op.right){
           if (Struct.Insert.getDistanceToOrigin(o) === i) {
             // case 1
             if (o.id[0] < op.id[0]) {
-              op.left = o;
+              op.left = o.id;
               distanceToOrigin = i + 1;
             }
           } else if ((tmp = Struct.Insert.getDistanceToOrigin(o)) < i) {
             // case 2
             if (i - distanceToOrigin <= tmp) {
-              op.left = o;
+              op.left = o.id;
               distanceToOrigin = i + 1;
             }
           } else {
