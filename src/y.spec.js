@@ -21,6 +21,22 @@ function getRandomNumber(n) {
   return Math.floor(Math.random() * n);
 }
 var keys = ["a", "b", "c", "d", "e", "f", 1, 2, 3, 4, 5, 6];
+var numberOfTests = 500;
+
+function applyRandomTransactions (users, transactions) {
+  function* randomTransaction (root) {
+    var f = getRandom(transactions);
+    yield* f(root);
+  }
+  for(var i = 0; i < numberOfTests; i++) {
+    var r = getRandomNumber(100);
+    if (r >= 50) {
+      users[0].connector.flushOne();
+    } else {
+      getRandom(users).transact(randomTransaction);
+    }
+  }
+}
 
 function compareAllUsers(users){
   var s1, s2;
@@ -47,7 +63,6 @@ function compareAllUsers(users){
 
 describe("Yjs", function(){
   jasmine.DEFAULT_TIMEOUT_INTERVAL = 500;
-  var numberOfTests = 400;
   beforeEach(function(){
     this.users = [];
     for (var i = 0; i < 5; i++) {
@@ -180,20 +195,13 @@ describe("Yjs", function(){
         yield* map.val("getRandom(keys)", getRandomNumber());
       }
     ];
-    it(`succeed after ${numberOfTests} actions`, function(){
+    it(`succeed after ${numberOfTests} actions with flush before transactions`, function(){
       this.users[0].connector.flushAll(); // TODO: Remove!!
-      function* randomTransaction (root) {
-        var f = getRandom(randomMapTransactions);
-        yield* f(root);
-      }
-      for(var i = 0; i < numberOfTests; i++) {
-        var r = getRandomNumber(100);
-        if (r >= 50) {
-          this.users[0].connector.flushOne();
-        } else {
-          getRandom(this.users).transact(randomTransaction);
-        }
-      }
+      applyRandomTransactions(this.users, randomMapTransactions);
+      compareAllUsers(this.users);
+    });
+    it(`succeed after ${numberOfTests} actions without flush before transactions`, function(){
+      applyRandomTransactions(this.users, randomMapTransactions);
       compareAllUsers(this.users);
     });
   });
