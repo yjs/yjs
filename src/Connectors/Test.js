@@ -69,11 +69,11 @@ class Test extends AbstractConnector {
     this.globalRoom = globalRoom;
   }
   send (userId, message) {
-    globalRoom.buffers[userId].push([this.userId, message]);
+    globalRoom.buffers[userId].push(JSON.parse(JSON.stringify([this.userId, message])));
   }
   broadcast (message) {
     for (var key in globalRoom.buffers) {
-      globalRoom.buffers[key].push([this.userId, message]);
+      globalRoom.buffers[key].push(JSON.parse(JSON.stringify([this.userId, message])));
     }
   }
   disconnect () {

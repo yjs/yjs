@@ -12,8 +12,10 @@ class AbstractTransaction { //eslint-disable-line no-unused-vars
       yield* this.setOperation(op);
       this.store.operationAdded(op);
       return true;
-    } else {
+    } else if (op.id[1] < state.clock) {
       return false;
+    } else {
+      throw new Error("Operations must arrive in order!");
     }
   }
 }
@@ -45,7 +47,7 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
        * sid : String (converted from id via JSON.stringify
                        so we can use it as a property name)
 
-      Always remember to first overwrite over
+      Always remember to first overwrite
       a property before you iterate over it!
     */
   }
@@ -56,16 +58,15 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
     for (var key in ops) {
       var o = ops[key];
       var required = Y.Struct[o.struct].requiredOps(o);
-      this.whenOperationsExist(required, Y.Struct[o.struct].execute, o);
+      this.whenOperationsExist(required, o);
     }
   }
-  // f is called as soon as every operation requested is available.
+  // op is executed as soon as every operation requested is available.
   // Note that Transaction can (and should) buffer requests.
-  whenOperationsExist (ids : Array<Id>, f : GeneratorFunction, args : Array<any>) {
+  whenOperationsExist (ids : Array<Id>, op : Operation) {
     if (ids.length > 0) {
       let listener : Listener = {
-        f: f,
-        args: args || [],
+        op: op,
         missing: ids.length
       };
 
@@ -81,8 +82,7 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
       }
     } else {
       this.listenersByIdExecuteNow.push({
-        f: f,
-        args: args || []
+        op: op
       });
     }
 
@@ -103,8 +103,8 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
       store.listenersByIdRequestPending = false;
 
       for (let key in exeNow) {
-        let listener = exeNow[key];
-        yield* listener.f.call(this, listener.args);
+        let o = exeNow[key].op;
+        yield* Struct[o.struct].execute.call(this, o);
       }
 
       for (var sid in ls){
@@ -115,8 +115,9 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
         } else {
           for (let key in l) {
             let listener = l[key];
+            let o = listener.op;
             if (--listener.missing === 0){
-              yield* listener.f.call(this, listener.args);
+              yield* Struct[o.struct].execute.call(this, o);
             }
           }
         }
@@ -125,13 +126,16 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
   }
   // called by a transaction when an operation is added
   operationAdded (op) {
+    var sid = JSON.stringify(op.id);
+    var l = this.listenersById[sid];
+    delete this.listenersById[sid];
+
     // notify whenOperation listeners (by id)
-    var l = this.listenersById[JSON.stringify(op.id)];
     if (l != null) {
       for (var key in l){
         var listener = l[key];
         if (--listener.missing === 0){
-          this.whenOperationsExist([], listener.f, listener.args);
+          this.whenOperationsExist([], listener.op);
         }
       }
     }

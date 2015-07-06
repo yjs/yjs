@@ -23,6 +23,7 @@
     "GeneratorFunction": true,
     "Y": true,
     "setTimeout": true,
-    "setInterval": true
+    "setInterval": true,
+    "Operation": true
   }
 }

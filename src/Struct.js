@@ -40,10 +40,12 @@ var Struct = {
       var user = this.store.y.connector.userId;
       var state = yield* this.getState(user);
       op.id = [user, state.clock];
-      yield* this.addOperation(op);
+      if ((yield* this.addOperation(op)) === false) {
+        throw new Error("This is highly unexpected :(");
+      }
       this.store.y.connector.broadcast({
         type: "update",
-        ops: [op]
+        ops: [Struct[op.struct].encode(op)]
       });
     }
   },
@@ -67,16 +69,18 @@ var Struct = {
       yield* Struct.Operation.create.call(this, op);
 
       if (op.left != null) {
-        op.left.right = op.id;
-        yield* this.setOperation(op.left);
+        var left = yield* this.getOperation(op.left);
+        left.right = op.id;
+        yield* this.setOperation(left);
       }
       if (op.right != null) {
-        op.right.left = op.id;
-        yield* this.setOperation(op.right);
+        var right = yield* this.getOperation(op.right);
+        right.left = op.id;
+        yield* this.setOperation(right);
       }
       var parent = yield* this.getOperation(op.parent);
       if (op.parentSub != null){
-        if (compareIds(parent.map[op.parentSub], op.left)) {
+        if (compareIds(parent.map[op.parentSub], op.right)) {
           parent.map[op.parentSub] = op.id;
           yield* this.setOperation(parent);
         }
@@ -93,6 +97,22 @@ var Struct = {
           yield* this.setOperation(parent);
         }
       }
+      return op;
+    },
+    encode: function(op){
+      /*var e = {
+        id: op.id,
+        left: op.left,
+        right: op.right,
+        origin: op.origin,
+        parent: op.parent,
+        content: op.content,
+        struct: "Insert"
+      };
+      if (op.parentSub != null){
+        e.parentSub = op.parentSub;
+      }
+      return e;*/
       return op;
     },
     requiredOps: function(op){
@@ -133,39 +153,11 @@ var Struct = {
     #         $this insert_position is to the left of $o (forever!)
     */
     execute: function*(op){
-      var distanceToOrigin = yield* Struct.Insert.getDistanceToOrigin.call(this, op); // most cases: 0 (starts from 0)
-      var i = distanceToOrigin; // loop counter
-      var o, tmp;
-      if (op.right == null && op.left == null) {
-       var p = yield* this.getOperation(op.parent);
-       if (op.parentSub != null) {
-         tmp = p.map[op.parentSub];
-         if (!compareIds(tmp, op.id)) {
-           op.right = tmp;
-         }
-         if (op.right == null) {
-           // this is the first ins in parent
-           p.map[op.parentSub] = op.id;
-           yield* this.setOperation(p);
-           yield* this.setOperation(op);
-           return;
-         }
-       } else {
-         tmp = p.start;
-         if (!compareIds(tmp, op.id)) {
-           op.left = tmp;
-         }
-         if (op.left == null) {
-           // this is the first ins in parent
-           p.start = op.id;
-           p.end = op.id;
-           yield* this.setOperation(p);
-           yield* this.setOperation(op);
-           return;
-         }
-       }
-      }
+      var i; // loop counter
+      var distanceToOrigin = i = yield* Struct.Insert.getDistanceToOrigin.call(this, op); // most cases: 0 (starts from 0)
+      var o;
 
+      // find o. o is the first conflicting operation
       if (op.left != null) {
         o = yield* this.getOperation(op.left);
         o = yield* this.getOperation(o.right);
@@ -174,18 +166,28 @@ var Struct = {
         while (o.left != null){
           o = yield* this.getOperation(o.left);
         }
+      } else { // left & right are null
+        var p = yield* this.getOperation(op.parent);
+        if (op.parentSub != null) {
+          o = yield* this.getOperation(p.map[op.parentSub]);
+        } else {
+          o = yield* this.getOperation(p.start);
+        }
       }
+
+      // handle conflicts
       while (true) {
         if (o != null && o.id !== op.right){
-          if (Struct.Insert.getDistanceToOrigin(o) === i) {
+          var oOriginDistance = yield* Struct.Insert.getDistanceToOrigin.call(this, o);
+          if (oOriginDistance === i) {
             // case 1
             if (o.id[0] < op.id[0]) {
               op.left = o.id;
               distanceToOrigin = i + 1;
             }
-          } else if ((tmp = Struct.Insert.getDistanceToOrigin(o)) < i) {
+          } else if (oOriginDistance < i) {
             // case 2
-            if (i - distanceToOrigin <= tmp) {
+            if (i - distanceToOrigin <= oOriginDistance) {
               op.left = o.id;
               distanceToOrigin = i + 1;
             }
@@ -202,22 +204,41 @@ var Struct = {
       // reconnect..
       var left = null;
       var right = null;
+      var parent = yield* this.getOperation(op.parent);
+
+      // NOTE: You you have to call addOperation before you set any other operation!
+
+      // reconnect left and set right of op
       if (op.left != null) {
         left = yield* this.getOperation(op.left);
+        op.right = left.right;
         left.right = op.id;
+        if ((yield* this.addOperation(op)) === false) { // add here
+          return;
+        }
         yield* this.setOperation(left);
+      } else {
+        if ((yield* this.addOperation(op)) === false) { // or here
+          return;
+        }
+        // only set right, if possible
+        if (op.parentSub != null) {
+          var sub = parent[op.parentSub];
+          op.right = sub != null ? sub : null;
+        } else {
+          op.right = parent.start;
+        }
       }
+      // reconnect right
       if (op.right != null) {
         right = yield* this.getOperation(op.right);
         right.left = op.id;
         yield* this.setOperation(right);
       }
-      yield* this.setOperation(op);
 
       // notify parent
-      var parent = yield* this.getOperation(op.parent);
       if (op.parentSub != null) {
-        if (right == null) {
+        if (left == null) {
           parent.map[op.parentSub] = op.id;
           yield* this.setOperation(parent);
         }
@@ -232,7 +253,6 @@ var Struct = {
           yield* this.setOperation(parent);
         }
       }
-      yield* this.setOperation(op);
     }
   },
   List: {
@@ -241,6 +261,12 @@ var Struct = {
       op.end = null;
       op.struct = "List";
       return yield* Struct.Operation.create.call(this, op);
+    },
+    encode: function(op){
+      return {
+        struct: "List",
+        id: op.id
+      };
     },
     requiredOps: function(op){
       var ids = [];
@@ -253,7 +279,9 @@ var Struct = {
       return ids;
     },
     execute: function* (op) {
-      yield* this.setOperation(op);
+      if ((yield* this.addOperation(op)) === false) {
+        return;
+      }
     },
     ref: function* (op : Op, pos : number) : Insert {
       var o = op.start;
@@ -298,6 +326,12 @@ var Struct = {
       op.struct = "Map";
       return yield* Struct.Operation.create.call(this, op);
     },
+    encode: function(op){
+      return {
+        struct: "Map",
+        id: op.id
+      };
+    },
     requiredOps: function(op){
       var ids = [];
       for (var end in op.map) {
@@ -306,21 +340,18 @@ var Struct = {
       return ids;
     },
     execute: function* (op) {
-      yield* this.setOperation(op);
+      if ((yield* this.addOperation(op)) === false) {
+        return;
+      }
     },
     get: function* (op, name) {
       var res = yield* this.getOperation(op.map[name]);
       return (res != null) ? res.content : void 0;
     },
     set: function* (op, name, value) {
-      var end = op.map[name];
-      if (end == null) {
-        end = null;
-        op.map[name] = end;
-      }
       var insert = {
-        left: end,
-        right: null,
+        left: null,
+        right: op.map[name] || null,
         content: value,
         parent: op.id,
         parentSub: name

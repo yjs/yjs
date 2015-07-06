@@ -84,6 +84,7 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
         for (var clock = startPos; clock <= endPos; clock++) {
           var op = yield* this.getOperation([user, clock]);
           if (op != null) {
+            op = Struct[op.struct].encode(op);
             ops.push(yield* this.makeOperationReady.call(this, startSS, op));
           }
         }
@@ -91,6 +92,7 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
       return ops;
     }
     *makeOperationReady (ss, op) {
+      // instead of ss, you could use currSS (a ss that increments when you add an operation)
       var clock;
       var o = op;
       while (true){

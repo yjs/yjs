@@ -75,7 +75,7 @@ describe("Yjs (basic)", function(){
     });
 
     var transaction = function*(root){
-      expect(yield* root.val("stuff")).toEqual("c1");
+      expect(yield* root.val("stuff")).toEqual("c0");
     };
     y.connector.flushAll();
 
