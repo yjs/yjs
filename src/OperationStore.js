@@ -3,6 +3,10 @@ class AbstractTransaction { //eslint-disable-line no-unused-vars
   constructor (store : OperationStore) {
     this.store = store;
   }
+  *getType (id) {
+    var op = yield* this.getOperation(id);
+    return new Y[op.type].Create(op);
+  }
   // returns false if operation is not expected.
   *addOperation (op) {
     var state = yield* this.getState(op.id[0]);

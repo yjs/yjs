@@ -7,20 +7,23 @@
       this._model = _model;
     }
     *val (pos) {
+      var t = yield "transaction";
       if (pos != null) {
-        var o = yield* this.Struct.List.ref(this._model, pos);
+        var o = yield* Y.Struct.List.ref.call(t, this._model, pos);
         return o ? o.content : null;
       } else {
-        return yield* this.Struct.List.map(this._model, function(c){return c; });
+        return yield* Y.Struct.List.map.call(t, this._model, function(c){return c; });
       }
     }
     *insert (pos, contents) {
-      yield* this.Struct.List.insert(pos, contents);
+      var t = yield "transaction";
+      yield* Y.Struct.List.insert.call(t, this._model, pos, contents);
     }
   }
 
   Y.List = function* YList(){
-    var model = yield* this.Struct.List.create();
+    var t = yield "transaction";
+    var model = yield* Y.Struct.List.create.call(t, {type: "List"});
     return new List(model);
   };
   Y.List.Create = List;

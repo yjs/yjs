@@ -5,21 +5,22 @@
       this._model = _model;
     }
     *val () {
-      var transaction = yield "transaction";
-      var model = yield* transaction.getOperation(this._model);
-      if (arguments.length === 0) {
-        throw new Error("Implement this case!");
-      } else if (arguments.length === 1) {
-        return yield* Y.Struct.Map.get.call(transaction, model, arguments[0]);
+      var t = yield "transaction";
+      var model = yield* t.getOperation(this._model);
+      if (arguments.length === 1) {
+        return yield* Y.Struct.Map.get.call(t, model, arguments[0]);
+      } else if (arguments.length === 2) {
+        return yield* Y.Struct.Map.set.call(t, model, arguments[0], arguments[1]);
       } else {
-        return yield* Y.Struct.Map.set.call(transaction, model, arguments[0], arguments[1]);
+        throw new Error("Implement this case!");
       }
     }
   }
 
   Y.Map = function* YMap(){
+    var t = yield "transaction";
     if (this instanceof Y.AbstractOperationStore) {
-      var model = yield* Y.Struct.map.create.call(this);
+      var model = yield* Y.Struct.map.create.call(t, {type: "Map"});
       return new Map(model);
     } else {
       throw new Error("Don't use `new` to create this type!");

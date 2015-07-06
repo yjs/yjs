@@ -109,5 +109,21 @@ describe("Yjs (basic)", function(){
       u.transact(transaction);
     }
   });
-
+  it("can create a List type", function(){
+    var y = this.users[0];
+    y.transact(function*(root){
+      var list = yield* Y.List();
+      yield* root.val("list", list);
+      yield* list.insert(0, [1, 2, 3, 4]);
+      expect(yield* root.val("list")).not.toBeUndefined();
+    });
+    y.connector.flushAll();
+    function* transaction (root) {
+      var list = yield* root.val("list");
+      expect(yield* list.val()).toEqual([1, 2, 3, 4]);
+    }
+    for (var u of this.users) {
+      u.transact(transaction);
+    }
+  });
 });

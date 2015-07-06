@@ -20,12 +20,11 @@ type Insert = {
 };
 
 function compareIds(id1, id2) {
-  if (id1 == null) {
-    if (id2 == null) {
-      return true;
-    } else {
-      return false;
-    }
+  if (id1 == null && id2 == null) {
+    return true;
+  }
+  if (id1 == null || id2 == null) {
+    return false;
   }
   if (id1[0] === id2[0] && id1[1] === id2[1]) {
     return true;
@@ -47,6 +46,7 @@ var Struct = {
         type: "update",
         ops: [Struct[op.struct].encode(op)]
       });
+      return op;
     }
   },
   Insert: {
@@ -126,12 +126,15 @@ var Struct = {
       if(op.right == null && op.left == null) {
         ids.push(op.parent);
       }
+      if (op.opContent != null) {
+        ids.push(op.opContent);
+      }
       return ids;
     },
     getDistanceToOrigin: function *(op){
       var d = 0;
       var o = yield* this.getOperation(op.left);
-      while (op.origin !== (o ? o.id : null)) {
+      while (!compareIds(op.origin, (o ? o.id : null))) {
         d++;
         o = yield* this.getOperation(o.left);
       }
@@ -265,10 +268,12 @@ var Struct = {
     encode: function(op){
       return {
         struct: "List",
-        id: op.id
+        id: op.id,
+        type: op.type
       };
     },
-    requiredOps: function(op){
+    requiredOps: function(){
+      /*
       var ids = [];
       if (op.start != null) {
         ids.push(op.start);
@@ -277,6 +282,8 @@ var Struct = {
         ids.push(op.end);
       }
       return ids;
+      */
+      return [];
     },
     execute: function* (op) {
       if ((yield* this.addOperation(op)) === false) {
@@ -284,12 +291,15 @@ var Struct = {
       }
     },
     ref: function* (op : Op, pos : number) : Insert {
-      var o = op.start;
-      while ( pos !== 0 || o != null) {
-        o = (yield* this.getOperation(o)).right;
+      if (op.start == null) {
+        return null;
+      }
+      var o = yield* this.getOperation(op.start);
+      while ( pos !== 0 && o.right != null) {
+        o = (yield* this.getOperation(o.right));
         pos--;
       }
-      return (o == null) ? null : yield* this.getOperation(o);
+      return o;
     },
     map: function* (o : Op, f : Function) : Array<any> {
       o = o.start;
@@ -302,16 +312,17 @@ var Struct = {
       return res;
     },
     insert: function* (op, pos : number, contents : Array<any>) {
-      var o = yield* Struct.List.ref.call(this, op, pos);
-      var or = yield* this.getOperation(o.right);
+      var ref = yield* Struct.List.ref.call(this, op, pos);
+      var right = ref != null ? ref.id : null;
+      var left = ref != null ? ref.left : null;
       for (var key in contents) {
         var insert = {
-          left: o,
-          right: or,
+          left: left,
+          right: right,
           content: contents[key],
-          parent: op
+          parent: op.id
         };
-        o = yield* Struct.Insert.create.call(this, insert);
+        left = (yield* Struct.Insert.create.call(this, insert)).id;
       }
     }
   },
@@ -329,15 +340,19 @@ var Struct = {
     encode: function(op){
       return {
         struct: "Map",
+        type: op.type,
         id: op.id
       };
     },
-    requiredOps: function(op){
+    requiredOps: function(){
+      /*
       var ids = [];
       for (var end in op.map) {
         ids.push(op.map[end]);
       }
       return ids;
+      */
+      return [];
     },
     execute: function* (op) {
       if ((yield* this.addOperation(op)) === false) {
@@ -346,16 +361,23 @@ var Struct = {
     },
     get: function* (op, name) {
       var res = yield* this.getOperation(op.map[name]);
-      return (res != null) ? res.content : void 0;
+      return (res == null) ? void 0 : (res.opContent == null
+                ? res.content : yield* this.getType(res.opContent));
     },
     set: function* (op, name, value) {
       var insert = {
         left: null,
         right: op.map[name] || null,
-        content: value,
         parent: op.id,
         parentSub: name
       };
+      var oid;
+      if ( value != null && value._model != null
+           && (oid = value._model.id) != null && oid.length === 2) {
+        insert.opContent = oid;
+      } else {
+        insert.content = value;
+      }
       yield* Struct.Insert.create.call(this, insert);
     }
   }
