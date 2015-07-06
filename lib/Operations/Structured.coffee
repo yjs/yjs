@@ -155,6 +155,19 @@ module.exports = ()->
     getFirstOperation: ()->
       @beginning.next_cl
 
+    # get the next non-deleted operation
+    getNext: (start)->
+      o = start.next_cl
+      while not ((o instanceof ops.Delimiter))
+        if o.is_deleted
+          o = o.next_cl
+        else if o instanceof ops.Delimiter
+          return false
+        else break
+
+      o
+
+
     # Transforms the the list to an array
     # Doesn't return left-right delimiter.
     toArray: ()->
@@ -232,6 +245,14 @@ module.exports = ()->
     push: (content)->
       @insertAfter @end.prev_cl, [content]
 
+    insertAfterHelper: (root, content)->
+      if !root.right
+        root.bt.right = content
+        content.bt.parent = root
+      else
+        right = root.next_cl
+
+
     insertAfter: (left, contents)->
       right = left.next_cl
       while right.isDeleted()
@@ -266,9 +287,8 @@ module.exports = ()->
     #
     # @return {ListManager Type} This String object
     #
-    delete: (position, length = 1)->
-      o = @getOperationByPosition(position+1) # position 0 in this case is the deletion of the first character
 
+    deleteRef: (o, length = 1) ->
       delete_ops = []
       for i in [0...length]
         if o instanceof ops.Delimiter
@@ -279,6 +299,11 @@ module.exports = ()->
           o = o.next_cl
         delete_ops.push d._encode()
       @
+
+    delete: (position, length = 1)->
+      o = @getOperationByPosition(position+1) # position 0 in this case is the deletion of the first character
+
+      @deleteRef o, length
 
 
     callOperationSpecificInsertEvents: (op)->
