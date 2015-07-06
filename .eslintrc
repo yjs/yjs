@@ -25,6 +25,7 @@
     "Y": true,
     "setTimeout": true,
     "setInterval": true,
-    "Operation": true
+    "Operation": true,
+    "getRandom": true
   }
 }

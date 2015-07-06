@@ -1,17 +1,3 @@
-// returns a random element of o
-// works on Object, and Array
-function getRandom (o) {
-  if (o instanceof Array) {
-    return o[Math.floor(Math.random() * o.length)];
-  } else if (o.constructor === Object) {
-    var keys = [];
-    for (var key in o) {
-      keys.push(key);
-    }
-    return o[getRandom(keys)];
-  }
-}
-
 var globalRoom = {
   users: {},
   buffers: {},
@@ -52,7 +38,7 @@ function flushOne(){
     return false;
   }
 }
-setInterval(flushOne, 10);
+// setInterval(flushOne, 10);
 
 var userIdCounter = 0;
 
@@ -84,6 +70,9 @@ class Test extends AbstractConnector {
     while (c) {
       c = flushOne();
     }
+  }
+  flushOne() {
+    flushOne();
   }
 }
 

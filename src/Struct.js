@@ -20,10 +20,11 @@ type Insert = {
 };
 
 function compareIds(id1, id2) {
-  if (id1 == null && id2 == null) {
-    return true;
-  }
+
   if (id1 == null || id2 == null) {
+    if (id1 == null && id2 == null) {
+      return true;
+    }
     return false;
   }
   if (id1[0] === id2[0] && id1[1] === id2[1]) {
@@ -132,13 +133,21 @@ var Struct = {
       return ids;
     },
     getDistanceToOrigin: function *(op){
-      var d = 0;
-      var o = yield* this.getOperation(op.left);
-      while (!compareIds(op.origin, (o ? o.id : null))) {
-        d++;
-        o = yield* this.getOperation(o.left);
+      if (op.left == null) {
+        return 0;
+      } else {
+        var d = 0;
+        var o = yield* this.getOperation(op.left);
+        while (!compareIds(op.origin, (o ? o.id : null))) {
+          d++;
+          if (o.left == null) {
+            break;
+          } else {
+            o = yield* this.getOperation(o.left);
+          }
+        }
+        return d;
       }
-      return d;
     },
     /*
     # $this has to find a unique position between origin and the next known character
@@ -159,28 +168,23 @@ var Struct = {
       var i; // loop counter
       var distanceToOrigin = i = yield* Struct.Insert.getDistanceToOrigin.call(this, op); // most cases: 0 (starts from 0)
       var o;
+      var parent;
+      var start;
 
       // find o. o is the first conflicting operation
       if (op.left != null) {
         o = yield* this.getOperation(op.left);
-        o = yield* this.getOperation(o.right);
-      } else if (op.right != null) {
-        o = yield* this.getOperation(op.right);
-        while (o.left != null){
-          o = yield* this.getOperation(o.left);
-        }
-      } else { // left & right are null
-        var p = yield* this.getOperation(op.parent);
-        if (op.parentSub != null) {
-          o = yield* this.getOperation(p.map[op.parentSub]);
-        } else {
-          o = yield* this.getOperation(p.start);
-        }
+        o = (o.right == null) ? null : yield* this.getOperation(o.right);
+      } else { // left == null
+        parent = yield* this.getOperation(op.parent);
+        let startId = op.parentSub ? parent.map[op.parentSub] : parent.start;
+        start = startId == null ? null : yield* this.getOperation(startId);
+        o = start;
       }
 
       // handle conflicts
       while (true) {
-        if (o != null && o.id !== op.right){
+        if (o != null && !compareIds(o.id, op.right)){
           var oOriginDistance = yield* Struct.Insert.getDistanceToOrigin.call(this, o);
           if (oOriginDistance === i) {
             // case 1
@@ -198,7 +202,7 @@ var Struct = {
             break;
           }
           i++;
-          o = yield* this.getOperation(o.next_cl);
+          o = o.right ? yield* this.getOperation(o.right) : null;
         } else {
           break;
         }
@@ -207,7 +211,7 @@ var Struct = {
       // reconnect..
       var left = null;
       var right = null;
-      var parent = yield* this.getOperation(op.parent);
+      parent = parent || (yield* this.getOperation(op.parent));
 
       // NOTE: You you have to call addOperation before you set any other operation!
 
@@ -215,21 +219,15 @@ var Struct = {
       if (op.left != null) {
         left = yield* this.getOperation(op.left);
         op.right = left.right;
-        left.right = op.id;
         if ((yield* this.addOperation(op)) === false) { // add here
           return;
         }
+        left.right = op.id;
         yield* this.setOperation(left);
       } else {
+        op.right = op.parentSub ? (parent.map[op.parentSub] || null) : parent.start;
         if ((yield* this.addOperation(op)) === false) { // or here
           return;
-        }
-        // only set right, if possible
-        if (op.parentSub != null) {
-          var sub = parent[op.parentSub];
-          op.right = sub != null ? sub : null;
-        } else {
-          op.right = parent.start;
         }
       }
       // reconnect right
@@ -286,6 +284,8 @@ var Struct = {
       return [];
     },
     execute: function* (op) {
+      op.start = null;
+      op.end = null;
       if ((yield* this.addOperation(op)) === false) {
         return;
       }

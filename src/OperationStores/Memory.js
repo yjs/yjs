@@ -29,11 +29,19 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
       this.os = store.os;
     }
     *setOperation (op) {
+      if (op.struct === "Insert" && op.right === undefined) {
+        throw new Error("here!");
+      }
       this.os[JSON.stringify(op.id)] = op;
       return op;
     }
     *getOperation (id) {
-      return this.os[JSON.stringify(id)];
+      var op = this.os[JSON.stringify(id)];
+      if (op == null) {
+        throw new Error("Op does not exist..");
+      } else {
+        return op;
+      }
     }
     *removeOperation (id) {
       delete this.os[JSON.stringify(id)];
@@ -82,7 +90,7 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
         var endPos = endState.clock;
 
         for (var clock = startPos; clock <= endPos; clock++) {
-          var op = yield* this.getOperation([user, clock]);
+          var op = this.os[JSON.stringify([user, clock])];
           if (op != null) {
             op = Struct[op.struct].encode(op);
             ops.push(yield* this.makeOperationReady.call(this, startSS, op));
@@ -95,14 +103,11 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
       // instead of ss, you could use currSS (a ss that increments when you add an operation)
       var clock;
       var o = op;
-      while (true){
+      while (o.right != null){
         // while unknown, go to the right
         o = yield* this.getOperation(o.right);
-        if (o == null) {
-          break;
-        }
         clock = ss[o.id[0]];
-        if (clock != null && o.id[1] < clock ) {
+        if (clock != null && o.id[1] < clock) {
           break;
         }
       }
