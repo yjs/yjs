@@ -2,7 +2,11 @@
 
 /** Gulp Commands
 
-  gulp command* [--export ModuleType] [--name ModuleName] [--testport TestPort]
+  gulp command*
+    [--export ModuleType]
+    [--name ModuleName]
+    [--testport TestPort]
+    [--testfiles TestFiles]
 
   Module name (ModuleName):
     Compile this to "y.js" (default)
@@ -19,6 +23,9 @@
 
   Test port (TestPort):
     Serve the specs on port 8888 (default)
+
+  Test files (TestFiles):
+    Specify which specs to use!
 
   Commands:
     - build:
@@ -52,21 +59,22 @@ var polyfills = [
   "./node_modules/gulp-babel/node_modules/babel-core/node_modules/regenerator/runtime.js"
 ];
 
-var files = {
-  y: polyfills.concat(["src/y.js", "src/**/*.js", "!src/**/*.spec.js"]),
-  lint: ["src/**/*.js", "gulpfile.js"],
-  test: polyfills.concat(["src/y.js", "src/**/*.js"]),
-  build_test: ["build_test/y.js"]
-};
-
 var options = minimist(process.argv.slice(2), {
-  string: ["export", "name", "testport"],
+  string: ["export", "name", "testport", "testfiles"],
   default: {
     export: "ignore",
     name: "y.js",
-    testport: "8888"
+    testport: "8888",
+    testfiles: "src/**/*.js"
   }
 });
+
+var files = {
+  y: polyfills.concat(["src/y.js", "src/**/*.js", "!src/**/*.spec.js"]),
+  lint: ["src/**/*.js", "gulpfile.js"],
+  test: polyfills.concat([options.testfiles]),
+  build_test: ["build_test/y.js"]
+};
 
 gulp.task("build", function () {
   return gulp.src(files.y)

@@ -26,6 +26,7 @@
     "setTimeout": true,
     "setInterval": true,
     "Operation": true,
-    "getRandom": true
+    "getRandom": true,
+    "RBTree": true
   }
 }
