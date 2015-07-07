@@ -49,6 +49,7 @@ class N {
     this.right = newRight;
     if (parent == null) {
       tree.root = newParent;
+      newParent._parent = null;
     } else if (parent.left === this) {
       parent.left = newParent;
     } else if (parent.right === this) {
@@ -65,6 +66,7 @@ class N {
     this.left = newLeft;
     if (parent == null) {
       tree.root = newParent;
+      newParent._parent = null;
     } else if (parent.left === this) {
       parent.left = newParent;
     } else if (parent.right === this) {

@@ -1,7 +1,7 @@
 /* @flow */
 /*eslint-env browser,jasmine */
 
-var numberOfTests = 1000;
+var numberOfTests = 100000;
 
 describe("RedBlack Tree", function(){
   beforeEach(function(){
@@ -24,7 +24,7 @@ describe("RedBlack Tree", function(){
     var elements = [];
     var tree = new RBTree();
     for(var i = 0; i < numberOfTests; i++) {
-      var obj = (Math.random() + 1).toString(36).substring(15);
+      var obj = Math.floor(Math.random() * numberOfTests * 10000);
       elements.push(obj);
       tree.add({id: obj});
     }
