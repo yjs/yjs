@@ -9,7 +9,7 @@ function getRandom (o) {
   } else if (o.constructor === Object) {
     var ks = [];
     for (var key in o) {
-      keys.push(key);
+      ks.push(key);
     }
     return o[getRandom(ks)];
   }
@@ -20,7 +20,8 @@ function getRandomNumber(n) {
   }
   return Math.floor(Math.random() * n);
 }
-var keys = ["a", "b", "c", "d", "e", "f", 1, 2, 3, 4, 5, 6];
+
+
 var numberOfYMapTests = 30;
 
 function applyRandomTransactions (users, transactions, numberOfTransactions) {
