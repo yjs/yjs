@@ -21,7 +21,7 @@ function getRandomNumber(n) {
   return Math.floor(Math.random() * n);
 }
 var keys = ["a", "b", "c", "d", "e", "f", 1, 2, 3, 4, 5, 6];
-var numberOfYMapTests = 20;
+var numberOfYMapTests = 30;
 
 function applyRandomTransactions (users, transactions, numberOfTransactions) {
   function* randomTransaction (root) {
@@ -180,18 +180,43 @@ describe("Yjs", function(){
       }
     });
   });
-  it("can create a List type", function(){
+  it("Basic get&set&delete with Map property", function(){
+    var y = this.users[0];
+    y.connector.flushAll();
+    this.users[0].transact(function*(root){
+      yield* root.val("stuff", "c0");
+    });
+    this.users[0].transact(function*(root){
+      yield* root.val("stuff", "c1");
+    });
+    this.users[0].transact(function*(root){
+      yield* root.delete("stuff");
+    });
+
+    y.connector.flushAll();
+    var transaction = function*(root){
+      expect(yield* root.val("stuff")).toBeUndefined();
+    };
+
+    for (var key in this.users) {
+      var u = this.users[key];
+      u.transact(transaction);
+    }
+  });
+
+  it("List type: can create, insert, and delete elements", function(){
     var y = this.users[0];
     y.transact(function*(root){
       var list = yield* Y.List();
       yield* root.val("list", list);
       yield* list.insert(0, [1, 2, 3, 4]);
+      yield* list.delete(1);
       expect(yield* root.val("list")).not.toBeUndefined();
     });
     y.connector.flushAll();
     function* transaction (root) {
       var list = yield* root.val("list");
-      expect(yield* list.val()).toEqual([1, 2, 3, 4]);
+      expect(yield* list.val()).toEqual([1, 3, 4]);
     }
     for (var u of this.users) {
       u.transact(transaction);
@@ -200,19 +225,66 @@ describe("Yjs", function(){
   describe("Map random tests", function(){
     var randomMapTransactions = [
       function* set (map) {
-        yield* map.val("getRandom(keys)", getRandomNumber());
+        yield* map.val("somekey", getRandomNumber());
+      },
+      function* delete_ (map) {
+        yield* map.delete("somekey");
       }
     ];
     it(`succeed after ${numberOfYMapTests} actions with flush before transactions`, function(){
       this.users[0].connector.flushAll();
       applyRandomTransactions(this.users, randomMapTransactions, numberOfYMapTests);
       compareAllUsers(this.users);
+      var firstMap;
+      for (var u of this.users) {
+        u.transact(function*(root){//eslint-disable-line
+          var val = yield* root.val();
+          if (firstMap == null) {
+            firstMap = val;
+          } else {
+            expect(val).toEqual(firstMap);
+          }
+        });
+      }
     });
     it(`succeed after ${numberOfYMapTests} actions without flush before transactions`, function(){
       applyRandomTransactions(this.users, randomMapTransactions, numberOfYMapTests);
       compareAllUsers(this.users);
     });
   });
+  var numberOfYListTests = 100;
+  describe("List random tests", function(){
+    var randomListTests = [function* insert (root) {
+      var list = yield* root.val("list");
+      yield* list.insert(Math.floor(Math.random() * 10), [getRandomNumber()]);
+    }, function* delete_(root) {
+      var list = yield* root.val("list");
+      yield* list.delete(Math.floor(Math.random() * 10));
+    }];
+    beforeEach(function(){
+      this.users[0].transact(function*(root){
+        var list = yield* Y.List();
+        yield* root.val("list", list);
+      });
+      this.users[0].connector.flushAll();
+    });
+
+    it(`succeeds after ${numberOfYListTests} actions`, function(){
+      applyRandomTransactions(this.users, randomListTests, numberOfYListTests);
+      compareAllUsers(this.users);
+      var userList;
+      this.users[0].transact(function*(root){
+        var list = yield* root.val("list");
+        if (userList == null) {
+          userList = yield* list.val();
+        } else {
+          expect(userList).toEqual(yield* list.val());
+          expect(userList.length > 0).toBeTruthy();
+        }
+      });
+    });
+  });
+
   describe("Map debug tests", function(){
     beforeEach(function(){
       this.u1 = this.users[0];

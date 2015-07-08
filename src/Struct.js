@@ -50,6 +50,33 @@ var Struct = {
       return op;
     }
   },
+  Delete: {
+    create: function* (op) {
+      if (op.target == null) {
+        throw new Error("You must define a delete target!");
+      }
+      op.struct = "Delete";
+      yield* Struct.Operation.create.call(this, op);
+
+      var target = yield* this.getOperation(op.target);
+      target.deleted = true;
+      yield* this.setOperation(target);
+    },
+    encode: function (op) {
+      return op;
+    },
+    requiredOps: function (op) {
+      return [op.target];
+    },
+    execute: function* (op) {
+      if ((yield* this.addOperation(op)) === false) {
+        return;
+      }
+      var target = yield* this.getOperation(op.target);
+      target.deleted = true;
+      yield* this.setOperation(target);
+    }
+  },
   Insert: {
     /*{
         content: any,
@@ -294,27 +321,57 @@ var Struct = {
       if (op.start == null) {
         return null;
       }
+      var res = null;
       var o = yield* this.getOperation(op.start);
-      while ( pos !== 0 && o.right != null) {
-        o = (yield* this.getOperation(o.right));
-        pos--;
+
+      while ( true ) {
+        if (!o.deleted) {
+          res = o;
+          pos--;
+        }
+        if (pos >= 0 && o.right != null) {
+          o = (yield* this.getOperation(o.right));
+        } else {
+          break;
+        }
       }
-      return o;
+      return res;
+    },
+    delete: function* (op, pos) {
+      var ref = yield* Struct.List.ref.call(this, op, pos);
+      if (ref != null) {
+        yield* Struct.Delete.create.call(this, {
+          target: ref.id
+        });
+      }
     },
     map: function* (o : Op, f : Function) : Array<any> {
       o = o.start;
       var res = [];
       while ( o != null) {
         var operation = yield* this.getOperation(o);
-        res.push(f(operation.content));
+        if (!operation.deleted) {
+          res.push(f(operation.content));
+        }
         o = operation.right;
       }
       return res;
     },
     insert: function* (op, pos : number, contents : Array<any>) {
-      var ref = yield* Struct.List.ref.call(this, op, pos);
-      var right = ref != null ? ref.id : null;
-      var left = ref != null ? ref.left : null;
+      var left, right;
+      if (pos === 0) {
+        left = null;
+        right = op.start;
+      } else {
+        var ref = yield* Struct.List.ref.call(this, op, pos - 1);
+        if (ref === null) {
+          left = op.end;
+          right = null;
+        } else {
+          left = ref.id;
+          right = ref.right;
+        }
+      }
       for (var key in contents) {
         var insert = {
           left: left,
@@ -361,13 +418,14 @@ var Struct = {
     },
     get: function* (op, name) {
       var res = yield* this.getOperation(op.map[name]);
-      return (res == null) ? void 0 : (res.opContent == null
+      return (res == null || res.deleted) ? void 0 : (res.opContent == null
                 ? res.content : yield* this.getType(res.opContent));
     },
     set: function* (op, name, value) {
+      var right = op.map[name] || null;
       var insert = {
         left: null,
-        right: op.map[name] || null,
+        right: right,
         parent: op.id,
         parentSub: name
       };
@@ -379,6 +437,19 @@ var Struct = {
         insert.content = value;
       }
       yield* Struct.Insert.create.call(this, insert);
+      if (right != null) {
+        yield* Struct.Delete.create.call(this, {
+          target: right
+        });
+      }
+    },
+    delete: function* (op, name) {
+      var v = op.map[name] || null;
+      if (v != null) {
+        yield* Struct.Delete.create.call(this, {
+          target: v
+        });
+      }
     }
   }
 };

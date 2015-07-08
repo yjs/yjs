@@ -16,8 +16,21 @@
       }
     }
     *insert (pos, contents) {
+      if (typeof pos !== "number") {
+        throw new Error("pos must be a number!");
+      }
+      if (!(contents instanceof Array)) {
+        throw new Error("contents must be an Array of objects!");
+      }
       var t = yield "transaction";
       yield* Y.Struct.List.insert.call(t, this._model, pos, contents);
+    }
+    *delete (pos) {
+      if (typeof pos !== "number") {
+        throw new Error("pos must be a number!");
+      }
+      var t = yield "transaction";
+      yield* Y.Struct.List.delete.call(t, this._model, pos);
     }
   }
 
