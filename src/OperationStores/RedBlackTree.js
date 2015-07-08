@@ -1,6 +1,4 @@
 
-
-
 class N {
   // A created node is always red!
   constructor (val) {

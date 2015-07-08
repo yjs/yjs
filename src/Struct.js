@@ -382,5 +382,3 @@ var Struct = {
     }
   }
 };
-
-Y.Struct = Struct;

@@ -29,14 +29,13 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
       this.os = store.os;
     }
     *setOperation (op) {
-      if (op.struct === "Insert" && op.right === undefined) {
-        throw new Error("here!");
-      }
-      this.os[JSON.stringify(op.id)] = op;
+      // TODO: you can remove this step! probs..
+      var n = this.os.findNode(op.id);
+      n.val = op;
       return op;
     }
     *getOperation (id) {
-      var op = this.os[JSON.stringify(id)];
+      var op = this.os.find(id);
       if (op == null) {
         throw new Error("Op does not exist..");
       } else {
@@ -44,7 +43,7 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
       }
     }
     *removeOperation (id) {
-      delete this.os[JSON.stringify(id)];
+      this.os.delete(id);
     }
     *setState (state : State) : State {
       this.ss[state.user] = state.clock;
@@ -61,7 +60,6 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
     }
     *getStateVector () : StateVector {
       var stateVector = [];
-
       for (var user in this.ss) {
         var clock = this.ss[user];
         stateVector.push({
@@ -75,6 +73,7 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
       return this.ss;
     }
     *getOperations (startSS : StateSet) {
+      // TODO: use bounds here!
       if (startSS == null){
         startSS = {};
       }
@@ -89,15 +88,15 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
         var startPos = startSS[user] || 0;
         var endPos = endState.clock;
 
-        for (var clock = startPos; clock <= endPos; clock++) {
-          var op = this.os[JSON.stringify([user, clock])];
-          if (op != null) {
-            op = Struct[op.struct].encode(op);
-            ops.push(yield* this.makeOperationReady.call(this, startSS, op));
-          }
-        }
+        this.os.iterate([user, startPos], [user, endPos], function(op){//eslint-disable-line
+          ops.push(Struct[op.struct].encode(op));
+        });
       }
-      return ops;
+      var res = [];
+      for (var op of ops) {
+        res.push(yield* this.makeOperationReady.call(this, startSS, op));
+      }
+      return res;
     }
     *makeOperationReady (ss, op) {
       // instead of ss, you could use currSS (a ss that increments when you add an operation)
@@ -119,7 +118,7 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
   class OperationStore extends AbstractOperationStore { //eslint-disable-line no-undef
     constructor (y) {
       super(y);
-      this.os = {};
+      this.os = new RBTree();
       this.ss = {};
     }
     requestTransaction (makeGen : Function) {

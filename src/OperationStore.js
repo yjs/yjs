@@ -13,7 +13,7 @@ class AbstractTransaction { //eslint-disable-line no-unused-vars
     if (op.id[1] === state.clock){
       state.clock++;
       yield* this.setState(state);
-      yield* this.setOperation(op);
+      this.os.add(op);
       this.store.operationAdded(op);
       return true;
     } else if (op.id[1] < state.clock) {
@@ -23,7 +23,6 @@ class AbstractTransaction { //eslint-disable-line no-unused-vars
     }
   }
 }
-Y.AbstractTransaction = AbstractTransaction;
 
 type Listener = {
   f : GeneratorFunction, // is called when all operations are available
@@ -187,4 +186,3 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
     ls.push(f);
   }
 }
-Y.AbstractOperationStore = AbstractOperationStore;

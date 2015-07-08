@@ -1,7 +1,7 @@
 /* @flow */
 /*eslint-env browser,jasmine,console */
 
-var numberOfTests = 10009;
+var numberOfRBTreeTests = 1000;
 
 function itRedNodesDoNotHaveBlackChildren (tree) {
   it("Red nodes do not have black children", function(){
@@ -107,16 +107,15 @@ describe("RedBlack Tree", function(){
 
     itRootNodeIsBlack(tree, []);
     itBlackHeightOfSubTreesAreEqual(tree, []);
-    itRedNodesDoNotHaveBlackChildren(tree, []);
   });
 
-  describe(`After adding&deleting (0.8/0.2) ${numberOfTests} times`, function () {
+  describe(`After adding&deleting (0.8/0.2) ${numberOfRBTreeTests} times`, function () {
     var elements = [];
     var tree = new RBTree();
-    for(var i = 0; i < numberOfTests; i++) {
+    for(var i = 0; i < numberOfRBTreeTests; i++) {
       var r = Math.random();
       if (r < 0.8) {
-        var obj = Math.floor(Math.random() * numberOfTests * 10000);
+        var obj = Math.floor(Math.random() * numberOfRBTreeTests * 10000);
         elements.push(obj);
         tree.add({id: obj});
       } else if (elements.length > 0) {

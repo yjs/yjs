@@ -21,16 +21,17 @@ function getRandomNumber(n) {
   return Math.floor(Math.random() * n);
 }
 var keys = ["a", "b", "c", "d", "e", "f", 1, 2, 3, 4, 5, 6];
-var numberOfTests = 500;
+var numberOfYMapTests = 20;
 
-function applyRandomTransactions (users, transactions) {
+function applyRandomTransactions (users, transactions, numberOfTransactions) {
   function* randomTransaction (root) {
     var f = getRandom(transactions);
     yield* f(root);
   }
-  for(var i = 0; i < numberOfTests; i++) {
-    var r = getRandomNumber(100);
-    if (r >= 50) {
+  for(var i = 0; i < numberOfTransactions; i++) {
+    var r = Math.random();
+    if (r >= 0.9) {
+      // 10% chance to flush
       users[0].connector.flushOne();
     } else {
       getRandom(users).transact(randomTransaction);
@@ -53,8 +54,15 @@ function compareAllUsers(users){
     u1.transact(t1);
     u2.transact(t2);
     expect(s1).toEqual(s2);
-    var db1 = u1.db.os;
-    var db2 = u2.db.os;
+    var db1 = [];
+    var db2 = [];
+    u1.db.os.iterate(null, null, function(o){//eslint-disable-line
+      db1.push(o);
+    });
+    u2.db.os.iterate(null, null, function(o){//eslint-disable-line
+      db2.push(o);
+    });
+
     for (var key in db1) {
       expect(db1[key]).toEqual(db2[key]);
     }
@@ -195,13 +203,13 @@ describe("Yjs", function(){
         yield* map.val("getRandom(keys)", getRandomNumber());
       }
     ];
-    it(`succeed after ${numberOfTests} actions with flush before transactions`, function(){
-      this.users[0].connector.flushAll(); // TODO: Remove!!
-      applyRandomTransactions(this.users, randomMapTransactions);
+    it(`succeed after ${numberOfYMapTests} actions with flush before transactions`, function(){
+      this.users[0].connector.flushAll();
+      applyRandomTransactions(this.users, randomMapTransactions, numberOfYMapTests);
       compareAllUsers(this.users);
     });
-    it(`succeed after ${numberOfTests} actions without flush before transactions`, function(){
-      applyRandomTransactions(this.users, randomMapTransactions);
+    it(`succeed after ${numberOfYMapTests} actions without flush before transactions`, function(){
+      applyRandomTransactions(this.users, randomMapTransactions, numberOfYMapTests);
       compareAllUsers(this.users);
     });
   });

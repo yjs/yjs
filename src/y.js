@@ -31,3 +31,7 @@ class Y { //eslint-disable-line no-unused-vars
     };
   }
 }
+
+Y.AbstractTransaction = AbstractTransaction;
+Y.AbstractOperationStore = AbstractOperationStore;
+Y.Struct = Struct;
