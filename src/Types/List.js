@@ -8,11 +8,12 @@
     }
     *val (pos) {
       var t = yield "transaction";
+      var model = yield* t.getOperation(this._model);
       if (pos != null) {
-        var o = yield* Y.Struct.List.ref.call(t, this._model, pos);
+        var o = yield* Y.Struct.List.ref.call(t, model, pos);
         return o ? o.content : null;
       } else {
-        return yield* Y.Struct.List.map.call(t, this._model, function(c){return c; });
+        return yield* Y.Struct.List.map.call(t, model, function(c){return c; });
       }
     }
     *insert (pos, contents) {
@@ -23,21 +24,25 @@
         throw new Error("contents must be an Array of objects!");
       }
       var t = yield "transaction";
-      yield* Y.Struct.List.insert.call(t, this._model, pos, contents);
+      var model = yield* t.getOperation(this._model);
+      yield* Y.Struct.List.insert.call(t, model, pos, contents);
     }
     *delete (pos) {
       if (typeof pos !== "number") {
         throw new Error("pos must be a number!");
       }
       var t = yield "transaction";
-      yield* Y.Struct.List.delete.call(t, this._model, pos);
+      var model = yield* t.getOperation(this._model);
+      yield* Y.Struct.List.delete.call(t, model, pos);
+    }
+    _changed () {
     }
   }
 
   Y.List = function* YList(){
     var t = yield "transaction";
     var model = yield* Y.Struct.List.create.call(t, {type: "List"});
-    return new List(model);
+    return t.createType(model);
   };
   Y.List.Create = List;
 })();

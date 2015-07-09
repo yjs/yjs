@@ -417,9 +417,12 @@ var Struct = {
       }
     },
     get: function* (op, name) {
-      var res = yield* this.getOperation(op.map[name]);
-      return (res == null || res.deleted) ? void 0 : (res.opContent == null
-                ? res.content : yield* this.getType(res.opContent));
+      var oid = op.map[name];
+      if (oid != null) {
+        var res = yield* this.getOperation(oid);
+        return (res == null || res.deleted) ? void 0 : (res.opContent == null
+                  ? res.content : yield* this.getType(res.opContent));
+      }
     },
     set: function* (op, name, value) {
       var right = op.map[name] || null;
@@ -429,19 +432,13 @@ var Struct = {
         parent: op.id,
         parentSub: name
       };
-      var oid;
       if ( value != null && value._model != null
-           && (oid = value._model.id) != null && oid.length === 2) {
-        insert.opContent = oid;
+           && value._model.length === 2) {
+        insert.opContent = value._model;
       } else {
         insert.content = value;
       }
       yield* Struct.Insert.create.call(this, insert);
-      if (right != null) {
-        yield* Struct.Delete.create.call(this, {
-          target: right
-        });
-      }
     },
     delete: function* (op, name) {
       var v = op.map[name] || null;

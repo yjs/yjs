@@ -35,12 +35,10 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
       return op;
     }
     *getOperation (id) {
-      var op = this.os.find(id);
-      if (op == null) {
-        throw new Error("Op does not exist..");
-      } else {
-        return op;
+      if (id == null) {
+        throw new Error("You must define id!");
       }
+      return this.os.find(id);
     }
     *removeOperation (id) {
       this.os.delete(id);
@@ -123,13 +121,13 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
     }
     requestTransaction (makeGen : Function) {
       var t = new Transaction(this);
-      var gen = makeGen.call(t, new Y.Map.Create(["_", 0]));
+      var gen = makeGen.call(t, t.getType(["_", 0]).next().value);
       var res = gen.next();
       while(!res.done){
         if (res.value === "transaction") {
           res = gen.next(t);
         } else {
-          throw new Error("You may not yield this type. (Maybe you meant to use 'yield*'?)");
+          throw new Error("You must not yield this type. (Maybe you meant to use 'yield*'?)");
         }
       }
     }

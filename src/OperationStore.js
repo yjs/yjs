@@ -4,8 +4,22 @@ class AbstractTransaction { //eslint-disable-line no-unused-vars
     this.store = store;
   }
   *getType (id) {
-    var op = yield* this.getOperation(id);
-    return new Y[op.type].Create(op);
+    var sid = JSON.stringify(id);
+    var t = this.store.initializedTypes[sid];
+    if (t == null) {
+      var op = yield* this.getOperation(id);
+      if (op != null) {
+        t = new Y[op.type].Create(op.id);
+        this.store.initializedTypes[sid] = t;
+      }
+    }
+    return t;
+  }
+  createType (model) {
+    var sid = JSON.stringify(model.id);
+    var t = new Y[model.type].Create(model.id);
+    this.store.initializedTypes[sid] = t;
+    return t;
   }
   // returns false if operation is not expected.
   *addOperation (op) {
@@ -34,9 +48,6 @@ type Id = [string, number];
 class AbstractOperationStore { //eslint-disable-line no-unused-vars
   constructor (y) {
     this.y = y;
-    this.parentListeners = {};
-    this.parentListenersRequestPending = false;
-    this.parentListenersActivated = {};
     // E.g. this.listenersById[id] : Array<Listener>
     this.listenersById = {};
     // Execute the next time a transaction is requested
@@ -53,6 +64,9 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
       Always remember to first overwrite
       a property before you iterate over it!
     */
+    // TODO: Use ES7 Weak Maps. This way types that are no longer user,
+    // wont be kept in memory.
+    this.initializedTypes = {};
   }
   setUserId (userId) {
     this.userId = userId;
@@ -142,32 +156,11 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
         }
       }
     }
-    // notify parent listeners, if possible
-    var listeners = this.parentListeners[op.parent];
-    if ( this.parentListenersRequestPending
-        || ( listeners == null )
-        || ( listeners.length === 0 )) {
-      return;
+    // notify parent, if it has been initialized as a custom type
+    var t = this.initializedTypes[JSON.stringify(op.parent)];
+    if (t != null) {
+      t._changed(op);
     }
-    var al = this.parentListenersActivated[JSON.stringify(op.parent)];
-    if ( al == null ){
-      al = [];
-      this.parentListenersActivated[JSON.stringify(op.parent)] = al;
-    }
-    al.push(op);
-
-    this.parentListenersRequestPending = true;
-    var store = this;
-    this.requestTransaction(function*(){
-      store.parentListenersRequestPending = false;
-      var activatedOperations = store.parentListenersActivated;
-      store.parentListenersActivated = {};
-      for (var parentId in activatedOperations){
-        var parent = yield* this.getOperation(parentId);
-        Struct[parent.struct].notifyObservers(activatedOperations[parentId]);
-      }
-    });
-
   }
   removeParentListener (id, f) {
     var ls = this.parentListeners[id];

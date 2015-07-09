@@ -29,13 +29,15 @@
       var model = yield* t.getOperation(this._model);
       yield* Y.Struct.Map.delete.call(t, model, key);
     }
+    _changed () {
+    }
   }
 
   Y.Map = function* YMap(){
     var t = yield "transaction";
     if (this instanceof Y.AbstractOperationStore) {
       var model = yield* Y.Struct.map.create.call(t, {type: "Map"});
-      return new Map(model);
+      return t.createType(model);
     } else {
       throw new Error("Don't use `new` to create this type!");
     }

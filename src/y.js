@@ -8,11 +8,14 @@ class Y { //eslint-disable-line no-unused-vars
     this.connector = new Y[opts.connector.name](this, opts.connector);
     this.db.requestTransaction(function*(){
       // create initial Map type
-      yield* this.addOperation({
+      var model = {
         id: ["_", 0],
         struct: "Map",
+        type: "Map",
         map: {}
-      });
+      };
+      yield* this.addOperation(model);
+      this.createType(model);
     });
   }
   transact (generator) {

@@ -21,7 +21,6 @@ function getRandomNumber(n) {
   return Math.floor(Math.random() * n);
 }
 
-
 var numberOfYMapTests = 30;
 
 function applyRandomTransactions (users, transactions, numberOfTransactions) {
@@ -94,12 +93,30 @@ describe("Yjs", function(){
   });
 
   describe("Basic tests", function(){
-    it("There is an initial Map type", function(){
+    it("There is an initial Map type & it is created only once", function(){
       var y = this.users[0];
+      var root1;
       y.transact(function*(root){
         expect(root).not.toBeUndefined();
+        root1 = root;
+      });
+      y.transact(function*(root2){
+        expect(root1).toBe(root2);
       });
     });
+    it("Custom Types are created only once", function(){
+      var y = this.users[0];
+      var l1;
+      y.transact(function*(root){
+        var l = yield* Y.List();
+        yield* root.val("list", l);
+        l1 = l;
+      });
+      y.transact(function*(root){
+        expect(l1).toBe(yield* root.val("list"));
+      });
+    });
+
     it("Basic get&set of Map property (converge via sync)", function(){
       var y = this.users[0];
       y.transact(function*(root){
