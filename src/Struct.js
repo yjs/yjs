@@ -94,37 +94,6 @@ var Struct = {
         }
       op.origin = op.left;
       op.struct = "Insert";
-      yield* Struct.Operation.create.call(this, op);
-
-      if (op.left != null) {
-        var left = yield* this.getOperation(op.left);
-        left.right = op.id;
-        yield* this.setOperation(left);
-      }
-      if (op.right != null) {
-        var right = yield* this.getOperation(op.right);
-        right.left = op.id;
-        yield* this.setOperation(right);
-      }
-      var parent = yield* this.getOperation(op.parent);
-      if (op.parentSub != null){
-        if (compareIds(parent.map[op.parentSub], op.right)) {
-          parent.map[op.parentSub] = op.id;
-          yield* this.setOperation(parent);
-        }
-      } else {
-        var start = compareIds(parent.start, op.right);
-        var end = compareIds(parent.end, op.left);
-        if (start || end) {
-          if (start) {
-            parent.start = op.id;
-          }
-          if (end) {
-            parent.end = op.id;
-          }
-          yield* this.setOperation(parent);
-        }
-      }
       return op;
     },
     encode: function(op){
@@ -284,11 +253,11 @@ var Struct = {
     }
   },
   List: {
-    create: function*( op : Op){
+    create: function( op : Op){
       op.start = null;
       op.end = null;
       op.struct = "List";
-      return yield* Struct.Operation.create.call(this, op);
+      return Struct.Operation.create(op);
     },
     encode: function(op){
       return {

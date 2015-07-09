@@ -1,35 +1,50 @@
 
 (function(){
   class Map {
-    constructor (_model) {
+    constructor (os, _model) {
       this._model = _model;
+      this.os = os;
     }
-    *val () {
-      var t = yield "transaction";
-      var model = yield* t.getOperation(this._model);
-      if (arguments.length === 0) {
-        var res = {};
-        for (var key in model.map) {
-          var v = yield* Y.Struct.Map.get.call(t, model, key);
-          if (v != null) {
-            res[key] = v;
-          }
+    val () {
+      if (arguments.length === 1) {
+        if (this.opContents[arguments[0]] == null) {
+          return this.contents[arguments[0]];
+        } else {
+          let def = Promise.defer();
+          var oid = this.opContents[arguments[0]];
+          this.os.requestTransaction(function*(){
+            def.resolve(yield* this.getType(oid));
+          });
+          return def.promise;
         }
-        return res;
-      } else if (arguments.length === 1) {
-        return yield* Y.Struct.Map.get.call(t, model, arguments[0]);
       } else if (arguments.length === 2) {
-        return yield* Y.Struct.Map.set.call(t, model, arguments[0], arguments[1]);
+        var key = arguments[0];
+        var value = arguments[1];
+        let def = Promise.defer();
+        var _model = this._model;
+        this.os.requestTransaction(function*(){
+          var model = yield* this.getOperation(_model);
+          def.resolve(yield* Y.Struct.Map.set.call(this, model, key, value));
+        });
+        return def.promise;
       } else {
         throw new Error("Implement this case!");
       }
     }
+    /*
     *delete (key) {
       var t = yield "transaction";
       var model = yield* t.getOperation(this._model);
       yield* Y.Struct.Map.delete.call(t, model, key);
-    }
-    _changed () {
+    }*/
+    _changed (op) {
+      if (op.left === null) {
+        if (op.opContent != null) {
+          this.opContents[op.parentSub] = op.opContent;
+        } else {
+          this.contents[op.parentSub] = op.opContent;
+        }
+      }
     }
   }
 

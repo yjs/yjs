@@ -9,3 +9,5 @@ build_test
 .jshintignore
 .jshintrc
 .validate.json
+y.js
+y.js.map
