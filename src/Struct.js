@@ -40,9 +40,8 @@ var Struct = {
       var user = this.store.y.connector.userId;
       var state = yield* this.getState(user);
       op.id = [user, state.clock];
-      if ((yield* this.addOperation(op)) === false) {
-        throw new Error("This is highly unexpected :(");
-      }
+      yield* Struct[op.struct].execute.call(this, op);
+
       this.store.y.connector.broadcast({
         type: "update",
         ops: [Struct[op.struct].encode(op)]
@@ -56,11 +55,7 @@ var Struct = {
         throw new Error("You must define a delete target!");
       }
       op.struct = "Delete";
-      yield* Struct.Operation.create.call(this, op);
-
-      var target = yield* this.getOperation(op.target);
-      target.deleted = true;
-      yield* this.setOperation(target);
+      return yield* Struct.Operation.create.call(this, op);
     },
     encode: function (op) {
       return op;
@@ -86,7 +81,7 @@ var Struct = {
         parentSub: string (optional)
       }
     */
-    create: function*( op: Op ) : Insert {
+    create: function* ( op: Op ) : Insert {
       if ( op.left === undefined
         || op.right === undefined
         || op.parent === undefined ) {
@@ -94,7 +89,7 @@ var Struct = {
         }
       op.origin = op.left;
       op.struct = "Insert";
-      return op;
+      return yield* Struct.Operation.create.call(this, op);
     },
     encode: function(op){
       /*var e = {
@@ -253,11 +248,11 @@ var Struct = {
     }
   },
   List: {
-    create: function( op : Op){
+    create: function* ( op : Op){
       op.start = null;
       op.end = null;
       op.struct = "List";
-      return Struct.Operation.create(op);
+      return yield* Struct.Operation.create.call(this, op);
     },
     encode: function(op){
       return {
@@ -358,7 +353,7 @@ var Struct = {
         // empty
       }
     */
-    create: function*( op : Op ){
+    create: function* ( op : Op ){
       op.map = {};
       op.struct = "Map";
       return yield* Struct.Operation.create.call(this, op);
@@ -392,22 +387,6 @@ var Struct = {
         return (res == null || res.deleted) ? void 0 : (res.opContent == null
                   ? res.content : yield* this.getType(res.opContent));
       }
-    },
-    set: function* (op, name, value) {
-      var right = op.map[name] || null;
-      var insert = {
-        left: null,
-        right: right,
-        parent: op.id,
-        parentSub: name
-      };
-      if ( value != null && value._model != null
-           && value._model.length === 2) {
-        insert.opContent = value._model;
-      } else {
-        insert.content = value;
-      }
-      yield* Struct.Insert.create.call(this, insert);
     },
     delete: function* (op, name) {
       var v = op.map[name] || null;

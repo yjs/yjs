@@ -8,7 +8,7 @@
     "no-underscore-dangle": 0,
     "no-constant-condition": 0,
     "no-empty": 0,
-    "new-cap": [2, { "capIsNewExceptions": ["List"] }],
+    "new-cap": [2, { "capIsNewExceptions": ["List", "Y"] }],
   },
   "parser": "babel-eslint",
   "globals": {
@@ -27,6 +27,7 @@
     "setInterval": true,
     "Operation": true,
     "getRandom": true,
-    "RBTree": true
+    "RBTree": true,
+    "compareIds": true
   }
 }

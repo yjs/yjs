@@ -24,9 +24,9 @@ function getRandomNumber(n) {
 var numberOfYMapTests = 30;
 
 function applyRandomTransactions (users, transactions, numberOfTransactions) {
-  function* randomTransaction (root) {
+  function randomTransaction (root) {
     var f = getRandom(transactions);
-    yield* f(root);
+    f(root);
   }
   for(var i = 0; i < numberOfTransactions; i++) {
     var r = Math.random();
@@ -34,7 +34,7 @@ function applyRandomTransactions (users, transactions, numberOfTransactions) {
       // 10% chance to flush
       users[0].connector.flushOne();
     } else {
-      getRandom(users).transact(randomTransaction);
+      randomTransaction(getRandom(users).root);
     }
   }
 }
@@ -51,8 +51,8 @@ function compareAllUsers(users){
   for (var uid = 0; uid + 1 < users.length; uid++) {
     var u1 = users[uid];
     var u2 = users[uid + 1];
-    u1.transact(t1);
-    u2.transact(t2);
+    u1.db.requestTransaction(t1);
+    u2.db.requestTransaction(t2);
     expect(s1).toEqual(s2);
     var db1 = [];
     var db2 = [];
@@ -71,10 +71,17 @@ function compareAllUsers(users){
 
 describe("Yjs", function(){
   jasmine.DEFAULT_TIMEOUT_INTERVAL = 500;
-  beforeEach(function(){
+  beforeEach(function(done){
+    if (this.users != null) {
+      for (var y of this.users) {
+        y.destroy();
+      }
+    }
     this.users = [];
+
+    var promises = [];
     for (var i = 0; i < 5; i++) {
-      this.users.push(new Y({
+      promises.push(Y({
         db: {
           name: "Memory"
         },
@@ -84,205 +91,142 @@ describe("Yjs", function(){
         }
       }));
     }
-  });
-  afterEach(function(){
-    for (var y of this.users) {
-      y.destroy();
-    }
-    this.users = [];
+    Promise.all(promises).then( users => {
+      this.users = users;
+      done();
+    });
   });
 
   describe("Basic tests", function(){
-    it("There is an initial Map type & it is created only once", function(){
-      var y = this.users[0];
-      var root1;
-      y.transact(function*(root){
-        expect(root).not.toBeUndefined();
-        root1 = root;
-      });
-      y.transact(function*(root2){
-        expect(root1).toBe(root2);
-      });
-    });
-    it("Custom Types are created only once", function(){
-      var y = this.users[0];
-      var l1;
-      y.transact(function*(root){
-        var l = yield* Y.List();
-        yield* root.val("list", l);
-        l1 = l;
-      });
-      y.transact(function*(root){
-        expect(l1).toBe(yield* root.val("list"));
-      });
-    });
-
     it("Basic get&set of Map property (converge via sync)", function(){
-      var y = this.users[0];
-      y.transact(function*(root){
-        yield* root.val("stuff", "stuffy");
-        expect(yield* root.val("stuff")).toEqual("stuffy");
-      });
+      var y = this.users[0].root;
+      y.set("stuff", "stuffy");
+      expect(y.get("stuff")).toEqual("stuffy");
 
-      y.connector.flushAll();
-
-      var transaction = function*(root){
-        expect(yield* root.val("stuff")).toEqual("stuffy");
-      };
-      for (var key in this.users) {
-        var u = this.users[key];
-        u.transact(transaction);
-      }
-    });
-    it("Basic get&set of Map property (converge via update)", function(){
-      var y = this.users[0];
-      y.connector.flushAll();
-      y.transact(function*(root){
-        yield* root.val("stuff", "stuffy");
-        expect(yield* root.val("stuff")).toEqual("stuffy");
-      });
-
-      var transaction = function*(root){
-        expect(yield* root.val("stuff")).toEqual("stuffy");
-      };
-      y.connector.flushAll();
+      this.users[0].connector.flushAll();
 
       for (var key in this.users) {
-        var u = this.users[key];
-        u.transact(transaction);
+        var u = this.users[key].root;
+        expect(u.get("stuff")).toEqual("stuffy");
       }
+      compareAllUsers(this.users);
     });
-    it("Basic get&set of Map property (handle conflict)", function(){
+    it("Map can set custom types (Map)", function(done){
+      var y = this.users[0].root;
+      y.set("Map", Y.Map).then(function(map) {
+        map.set("one", 1);
+        return y.get("Map");
+      }).then(function(map){
+        expect(map.get("one")).toEqual(1);
+        done();
+      });
+    });
+    it("Basic get&set of Map property (converge via update)", function(done){
+      var u = this.users[0];
+      u.connector.flushAll();
+      var y = u.root;
+      y.set("stuff", "stuffy");
+      expect(y.get("stuff")).toEqual("stuffy");
+
+      u.connector.flushAll();
+      setTimeout(() => {
+        for (var key in this.users) {
+          var r = this.users[key].root;
+          expect(r.get("stuff")).toEqual("stuffy");
+        }
+        done();
+      }, 50);
+    });
+    it("Basic get&set of Map property (handle conflict)", function(done){
       var y = this.users[0];
       y.connector.flushAll();
-      this.users[0].transact(function*(root){
-        yield* root.val("stuff", "c0");
-      });
-      this.users[1].transact(function*(root){
-        yield* root.val("stuff", "c1");
-      });
+      y.root.set("stuff", "c0");
 
-      var transaction = function*(root){
-        expect(yield* root.val("stuff")).toEqual("c0");
-      };
+      this.users[1].root.set("stuff", "c1");
+
       y.connector.flushAll();
 
-      for (var key in this.users) {
-        var u = this.users[key];
-        u.transact(transaction);
-      }
+      setTimeout( () => {
+        for (var key in this.users) {
+          var u = this.users[key];
+          expect(u.root.get("stuff")).toEqual("c0");
+          compareAllUsers(this.users);
+        }
+        done();
+      }, 50);
     });
-    it("Basic get&set of Map property (handle three conflicts)", function(){
+    it("Basic get&set of Map property (handle three conflicts)", function(done){
       var y = this.users[0];
+      this.users[0].root.set("stuff", "c0");
+      this.users[1].root.set("stuff", "c1");
+      this.users[2].root.set("stuff", "c2");
+      this.users[3].root.set("stuff", "c3");
       y.connector.flushAll();
-      this.users[0].transact(function*(root){
-        yield* root.val("stuff", "c0");
-      });
-      this.users[1].transact(function*(root){
-        yield* root.val("stuff", "c1");
-      });
-      this.users[2].transact(function*(root){
-        yield* root.val("stuff", "c2");
-      });
-      this.users[3].transact(function*(root){
-        yield* root.val("stuff", "c3");
-      });
-      y.connector.flushAll();
-      var transaction = function*(root){
-        expect(yield* root.val("stuff")).toEqual("c0");
-      };
 
-      for (var key in this.users) {
-        var u = this.users[key];
-        u.transact(transaction);
-      }
+      setTimeout( () => {
+        for (var key in this.users) {
+          var u = this.users[key];
+          expect(u.root.get("stuff")).toEqual("c0");
+        }
+        compareAllUsers(this.users);
+        done();
+      }, 50);
     });
-  });
-  it("Basic get&set&delete with Map property", function(){
-    var y = this.users[0];
-    y.connector.flushAll();
-    this.users[0].transact(function*(root){
-      yield* root.val("stuff", "c0");
-    });
-    this.users[0].transact(function*(root){
-      yield* root.val("stuff", "c1");
-    });
-    this.users[0].transact(function*(root){
-      yield* root.delete("stuff");
-    });
-
-    y.connector.flushAll();
-    var transaction = function*(root){
-      expect(yield* root.val("stuff")).toBeUndefined();
-    };
-
-    for (var key in this.users) {
-      var u = this.users[key];
-      u.transact(transaction);
-    }
-  });
-
-  it("List type: can create, insert, and delete elements", function(){
-    var y = this.users[0];
-    y.transact(function*(root){
-      var list = yield* Y.List();
-      yield* root.val("list", list);
-      yield* list.insert(0, [1, 2, 3, 4]);
-      yield* list.delete(1);
-      expect(yield* root.val("list")).not.toBeUndefined();
-    });
-    y.connector.flushAll();
-    function* transaction (root) {
-      var list = yield* root.val("list");
-      expect(yield* list.val()).toEqual([1, 3, 4]);
-    }
-    for (var u of this.users) {
-      u.transact(transaction);
-    }
   });
   describe("Map random tests", function(){
     var randomMapTransactions = [
-      function* set (map) {
-        yield* map.val("somekey", getRandomNumber());
+      function set (map) {
+        map.set("somekey", getRandomNumber());
       },
       function* delete_ (map) {
-        yield* map.delete("somekey");
+        map.delete("somekey");
       }
     ];
-    it(`succeed after ${numberOfYMapTests} actions with flush before transactions`, function(){
+    function compareMapValues(users){
+      var firstMap;
+      for (var u of users) {
+        var val = u.root.get();
+        if (firstMap == null) {
+          firstMap = val;
+        } else {
+          expect(val).toEqual(firstMap);
+        }
+      }
+    }
+    it(`succeed after ${numberOfYMapTests} actions with flush before transactions`, function(done){
       this.users[0].connector.flushAll();
       applyRandomTransactions(this.users, randomMapTransactions, numberOfYMapTests);
-      compareAllUsers(this.users);
-      var firstMap;
-      for (var u of this.users) {
-        u.transact(function*(root){//eslint-disable-line
-          var val = yield* root.val();
-          if (firstMap == null) {
-            firstMap = val;
-          } else {
-            expect(val).toEqual(firstMap);
-          }
-        });
-      }
+      setTimeout(()=>{
+        compareAllUsers(this.users);
+        compareMapValues(this.users);
+        done();
+      }, 500);
     });
-    it(`succeed after ${numberOfYMapTests} actions without flush before transactions`, function(){
+    it(`succeed after ${numberOfYMapTests} actions without flush before transactions`, function(done){
       applyRandomTransactions(this.users, randomMapTransactions, numberOfYMapTests);
-      compareAllUsers(this.users);
+      setTimeout(()=>{
+        compareAllUsers(this.users);
+        compareMapValues(this.users);
+        done();
+      }, 500);
     });
   });
+
+/*
+
   var numberOfYListTests = 100;
   describe("List random tests", function(){
     var randomListTests = [function* insert (root) {
-      var list = yield* root.val("list");
+      var list = yield* root.get("list");
       yield* list.insert(Math.floor(Math.random() * 10), [getRandomNumber()]);
     }, function* delete_(root) {
-      var list = yield* root.val("list");
+      var list = yield* root.get("list");
       yield* list.delete(Math.floor(Math.random() * 10));
     }];
     beforeEach(function(){
       this.users[0].transact(function*(root){
         var list = yield* Y.List();
-        yield* root.val("list", list);
+        yield* root.set("list", list);
       });
       this.users[0].connector.flushAll();
     });
@@ -292,11 +236,11 @@ describe("Yjs", function(){
       compareAllUsers(this.users);
       var userList;
       this.users[0].transact(function*(root){
-        var list = yield* root.val("list");
+        var list = yield* root.get("list");
         if (userList == null) {
-          userList = yield* list.val();
+          userList = yield* list.get();
         } else {
-          expect(userList).toEqual(yield* list.val());
+          expect(userList).toEqual(yield* list.get());
           expect(userList.length > 0).toBeTruthy();
         }
       });
@@ -323,4 +267,5 @@ describe("Yjs", function(){
       compareAllUsers(this.users);
     });
   });
+  */
 });

@@ -1,11 +1,18 @@
 /* @flow */
 
-const GeneratorFunction = (function*(){}).constructor;
+function Y (opts) {
+  var def = Promise.defer();
+  new YConfig(opts, function(config){ //eslint-disable-line
+    def.resolve(config);
+  });
+  return def.promise;
+}
 
-class Y { //eslint-disable-line no-unused-vars
-  constructor (opts) {
+class YConfig { //eslint-disable-line no-unused-vars
+  constructor (opts, callback) {
     this.db = new Y[opts.db.name](this, opts.db);
     this.connector = new Y[opts.connector.name](this, opts.connector);
+    var yconfig = this;
     this.db.requestTransaction(function*(){
       // create initial Map type
       var model = {
@@ -15,14 +22,10 @@ class Y { //eslint-disable-line no-unused-vars
         map: {}
       };
       yield* this.addOperation(model);
-      this.createType(model);
+      var root = yield* this.createType(model);
+      this.store.y.root = root;
+      callback(yconfig);
     });
-  }
-  transact (generator) {
-    if (generator.constructor !== GeneratorFunction) {
-      throw new Error("y.transact requires a Generator function! E.g. function*(){/*..*/}");
-    }
-    this.db.requestTransaction(generator);
   }
   destroy () {
     this.connector.disconnect();

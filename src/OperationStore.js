@@ -9,15 +9,15 @@ class AbstractTransaction { //eslint-disable-line no-unused-vars
     if (t == null) {
       var op = yield* this.getOperation(id);
       if (op != null) {
-        t = new Y[op.type].Create(op.id);
+        t = yield* Y[op.type].create(this.store, op.id);
         this.store.initializedTypes[sid] = t;
       }
     }
     return t;
   }
-  createType (model) {
+  *createType (model) {
     var sid = JSON.stringify(model.id);
-    var t = new Y[model.type].Create(model.id);
+    var t = yield* Y[model.type].create(this.store, model);
     this.store.initializedTypes[sid] = t;
     return t;
   }
