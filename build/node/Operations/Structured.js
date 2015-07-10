@@ -1,8 +1,10 @@
-var basic_ops_uninitialized,
+var RBTReeByIndex, basic_ops_uninitialized,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   hasProp = {}.hasOwnProperty;
 
 basic_ops_uninitialized = require("./Basic");
+
+RBTReeByIndex = require('bintrees/lib/rbtree_by_index');
 
 module.exports = function() {
   var basic_ops, ops;
@@ -606,6 +608,121 @@ module.exports = function() {
     };
 
     return ReplaceManager;
+
+  })(ops.ListManager);
+  ops.FastListManager = (function(superClass) {
+    extend(FastListManager, superClass);
+
+    function FastListManager() {
+      this.shortTree = new RBTreeByIndex();
+      FastListManager.__super__.constructor.apply(this, arguments);
+    }
+
+    FastListManager.prototype.type = 'FastListManager';
+
+    FastListManager.prototype.getNext = function(start) {
+      return start.node.next().data;
+    };
+
+    FastListManager.prototype.getPrev = function(start) {
+      return start.node.prev().data;
+    };
+
+    FastListManager.prototype.map = function(fun) {
+      return this.shortTree.map(function(operation) {
+        return fun(operation);
+      });
+    };
+
+    FastListManager.prototype.fold = function(init, f) {
+      this.shortTree.each(function(operation) {
+        return init = f(init, operation);
+      });
+      return init;
+    };
+
+    FastListManager.prototype.val = function(position) {
+      if (position != null) {
+        return (this.shortTree.find(position)).val();
+      } else {
+        return this.shortTree.map(function(operation) {
+          return operation.val();
+        });
+      }
+    };
+
+    FastListManager.prototype.ref = function(position) {
+      if (position != null) {
+        return this.shortTree.find(position);
+      } else {
+        return this.shortTree.map(function(operation) {
+          return operation;
+        });
+      }
+    };
+
+    FastListManager.prototype.push = function(content) {
+      return this.insertAfter(this.end.prev_cl, [content]);
+    };
+
+    FastListManager.prototype.insertAfter = function(left, contents) {
+      var nodeOnLeft, nodeOnRight, operation, right;
+      nodeOnLeft = left === this.beginning ? null : left.node;
+      nodeOnRight = nodeOnLeft ? nodeOnLeft.next() : this.shortTree.find(0);
+      right = nodeOnRight ? nodeOnRight.data : this.end;
+      left = right.prev_cl;
+      if (contents instanceof ops.Operation) {
+        operation = new ops.Insert(null, content, null, void 0, void 0, left, right);
+        operation.node = this.shortTree.insertAfter(nodeOnLeft, operation);
+        operation.execute();
+      } else {
+        contents.forEach(function(content) {
+          if ((content != null) && (content._name != null) && (content._getModel != null)) {
+            content = content._getModel(this.custom_types, this.operations);
+          }
+          operation = new ops.Insert(null, c, null, void 0, void 0, left, right);
+          operation.node = this.shortTree.insertAfter(nodeOnLeft, operation);
+          operation.execute();
+          left = operation;
+          return nodeOnLeft = operation.node;
+        });
+      }
+      return this;
+    };
+
+    FastListManager.prototype.insert = function(position, contents) {
+      var left;
+      left = (this.shortTree.find(position - 1)) || this.beginning;
+      return this.insertAfter(left, contents);
+    };
+
+    FastListManager.prototype["delete"] = function(position, length) {
+      var deleteOp, delete_ops, i, j, nextNode, operation, ref;
+      if (length == null) {
+        length = 1;
+      }
+      delete_ops = [];
+      operation = this.shortTree.find(position);
+      for (i = j = 0, ref = length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+        if (operation instanceof ops.Delimiter) {
+          break;
+        }
+        deleteOp = new ops.Delete(null, void 0, operation);
+        deleteOp.execute();
+        nextNode = operation.node.next();
+        operation = nextNode ? nextNode.data : this.end;
+        this.shortTree.remove_node(operation.node);
+        operation.node = null;
+        delete_ops.push(d._encode());
+      }
+      return this;
+    };
+
+    FastListManager.prototype.getLength = function() {
+      return this.tree.size;
+    };
+
+    return FastListManager;
 
   })(ops.ListManager);
   return basic_ops;
