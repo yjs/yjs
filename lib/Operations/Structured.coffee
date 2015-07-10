@@ -1,4 +1,5 @@
 basic_ops_uninitialized = require "./Basic"
+RBTReeByIndex = require 'bintrees/lib/rbtree_by_index'
 
 module.exports = ()->
   basic_ops = basic_ops_uninitialized()
@@ -554,5 +555,102 @@ module.exports = ()->
       o.val?() # ? - for the case that (currently) the RM does not contain anything (then o is a Delimiter)
 
 
+  class ops.FastListManager extends ops.ListManager
+    constructor: () ->
+      @shortTree = new RBTreeByIndex()
+
+      super arguments...
+
+    type: 'FastListManager'
+
+    getNext: (start)->
+      start.node.next().data
+
+    getPrev: (start)->
+      start.node.prev().data
+
+    map: (fun)->
+      @shortTree.map (operation) ->
+        fun operation
+
+    fold: (init, f) ->
+      @shortTree.each (operation) ->
+        init = f(init, operation)
+      init
+
+    val: (position)->
+      if position?
+        (@shortTree.find position).val()
+      else
+        @shortTree.map (operation) ->
+          operation.val()
+
+    ref: (position)->
+      if position?
+        @shortTree.find position
+      else
+        @shortTree.map (operation) ->
+          operation
+
+    push: (content) ->
+      @insertAfter @end.prev_cl, [content]
+
+    insertAfter: (left, contents) ->
+      # the operation is inserted just before the next non deleted insertion
+      # the operation is stored in the tree just after left
+      nodeOnLeft = if left is @beginning then null else left.node
+
+      nodeOnRight = if nodeOnLeft then nodeOnLeft.next() else @shortTree.find 0
+      right = if nodeOnRight then nodeOnRight.data else @end
+      left = right.prev_cl
+
+      if contents instanceof ops.Operation
+        operation = new ops.Insert null, content, null, undefined, undefined, left, right
+        operation.node = @shortTree.insertAfter nodeOnLeft, operation
+
+        operation.execute()
+
+      else
+        contents.forEach (content) ->
+          if content? and content._name? and content._getModel?
+            content = content._getModel(@custom_types, @operations)
+          #TODO: override Insert.prototype.getDistanceToOrigin (in Insert.prototype.execute)
+          operation = new ops.Insert null, c, null, undefined, undefined, left, right
+          operation.node = @shortTree.insertAfter nodeOnLeft, operation
+
+          operation.execute()
+
+          left = operation
+          nodeOnLeft = operation.node
+      @
+
+    insert: (position, contents) ->
+      left = (@shortTree.find (position-1)) or @beginning
+      @insertAfter left, contents
+
+    delete: (position, length = 1) ->
+      delete_ops = []
+      operation = @shortTree.find position
+      for i in [0...length]
+        if operation instanceof ops.Delimiter
+          break
+        deleteOp = new ops.Delete null, undefined, operation
+
+        # execute the delete operation
+        deleteOp.execute()
+
+        # get the next operation from the shortTree
+        nextNode = operation.node.next()
+        operation = if nextNode then nextNode.data else @end
+
+        # remove the operation from the shortTree
+        @shortTree.remove_node operation.node
+        operation.node = null
+
+        delete_ops.push d._encode()
+      @
+
+    getLength: () ->
+      @tree.size
 
   basic_ops
