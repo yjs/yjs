@@ -519,9 +519,9 @@ module.exports = function() {
           o = this.prev_cl.next_cl;
           i = distance_to_origin;
           while (true) {
-            oDistance = o.getDistanceToOrigin();
             if (o !== this.next_cl) {
-              if (o.getDistanceToOrigin() === i) {
+              oDistance = o.getDistanceToOrigin();
+              if (oDistance === i) {
                 if (o.uid.creator < this.uid.creator) {
                   this.prev_cl = o;
                   distance_to_origin = i + 1;

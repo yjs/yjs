@@ -124,6 +124,7 @@ module.exports = function() {
       this.beginning.next_cl = this.end;
       this.beginning.execute();
       this.end.execute();
+      this.shortTree = new RBTreeByIndex();
       ListManager.__super__.constructor.call(this, custom_type, uid, content, content_operations);
     }
 
@@ -183,107 +184,72 @@ module.exports = function() {
       return this.beginning.next_cl;
     };
 
-    ListManager.prototype.getNext = function(start) {
-      var o;
-      o = start.next_cl;
-      while (!(o instanceof ops.Delimiter)) {
-        if (o.is_deleted) {
-          o = o.next_cl;
-        } else if (o instanceof ops.Delimiter) {
+    ListManager.prototype.getNextNonDeleted = function(start) {
+      var operation;
+      if (start.isDeleted()) {
+        operation = start.next_cl;
+        while (!(operation instanceof ops.Delimiter)) {
+          if (operation.is_deleted) {
+            operation = operation.next_cl;
+          } else if (operation instanceof ops.Delimiter) {
+            return false;
+          } else {
+            break;
+          }
+        }
+      } else {
+        operation = start.node.next().node;
+        if (!operation) {
           return false;
-        } else {
-          break;
         }
       }
-      return o;
+      return operation;
     };
 
     ListManager.prototype.toArray = function() {
-      var o, result;
-      o = this.beginning.next_cl;
-      result = [];
-      while (o !== this.end) {
-        if (!o.is_deleted) {
-          result.push(o.val());
-        }
-        o = o.next_cl;
-      }
-      return result;
+      return this.shortTree.map(function(operation) {
+        return operation.val();
+      });
     };
 
-    ListManager.prototype.map = function(f) {
-      var o, result;
-      o = this.beginning.next_cl;
-      result = [];
-      while (o !== this.end) {
-        if (!o.is_deleted) {
-          result.push(f(o));
-        }
-        o = o.next_cl;
-      }
-      return result;
+    ListManager.prototype.map = function(fun) {
+      return this.shortTree.map(fun);
     };
 
-    ListManager.prototype.fold = function(init, f) {
-      var o;
-      o = this.beginning.next_cl;
-      while (o !== this.end) {
-        if (!o.is_deleted) {
-          init = f(init, o);
-        }
-        o = o.next_cl;
-      }
-      return init;
+    ListManager.prototype.fold = function(init, fun) {
+      return this.shortTree.map(function(operation) {
+        return init = fun(init, operation);
+      });
     };
 
     ListManager.prototype.val = function(pos) {
-      var o;
-      if (pos != null) {
-        o = this.getOperationByPosition(pos + 1);
-        if (!(o instanceof ops.Delimiter)) {
-          return o.val();
-        } else {
-          throw new Error("this position does not exist");
-        }
+      var ref;
+      if ((0 <= (ref = pos != null) && ref < this.shortTree.size)) {
+        return this.shortTree.find(pos).val();
       } else {
         return this.toArray();
       }
     };
 
     ListManager.prototype.ref = function(pos) {
-      var o;
-      if (pos != null) {
-        o = this.getOperationByPosition(pos + 1);
-        if (!(o instanceof ops.Delimiter)) {
-          return o;
-        } else {
-          return null;
-        }
+      var ref;
+      if ((0 <= (ref = pos != null) && ref < this.shortTree.size)) {
+        return this.shortTree.find(pos);
       } else {
-        throw new Error("you must specify a position parameter");
+        return this.shortTree.map(function(operation) {
+          return operation;
+        });
       }
     };
 
     ListManager.prototype.getOperationByPosition = function(position) {
-      var o;
-      o = this.beginning;
-      while (true) {
-        if (o instanceof ops.Delimiter && (o.prev_cl != null)) {
-          o = o.prev_cl;
-          while (o.isDeleted() && (o.prev_cl != null)) {
-            o = o.prev_cl;
-          }
-          break;
-        }
-        if (position <= 0 && !o.isDeleted()) {
-          break;
-        }
-        o = o.next_cl;
-        if (!o.isDeleted()) {
-          position -= 1;
-        }
+      if (position === 0) {
+        return this.beginning;
+      } else if (position === this.shortTree.size + 1) {
+        return this.end;
+      } else {
+        return this.shortTree.find(position - 1);
       }
-      return o;
     };
 
     ListManager.prototype.push = function(content) {
@@ -301,14 +267,20 @@ module.exports = function() {
     };
 
     ListManager.prototype.insertAfter = function(left, contents) {
-      var c, j, len, right, tmp;
-      right = left.next_cl;
-      while (right.isDeleted()) {
-        right = right.next_cl;
+      var c, j, leftNode, len, right, rightNode, tmp;
+      if (left === this.beginning) {
+        leftNode = null;
+        rightNode = this.shortTree.findNode(0);
+        right = rightNode.data;
+      } else {
+        rightNode = left.node.nextNode();
+        leftNode = left.node;
+        right = rightNode.data;
       }
       left = right.prev_cl;
       if (contents instanceof ops.Operation) {
-        (new ops.Insert(null, content, null, void 0, void 0, left, right)).execute();
+        tmp = (new ops.Insert(null, content, null, void 0, void 0, left, right)).execute();
+        this.shortTree.insert_between(leftNode, rightNode, tmp);
       } else {
         for (j = 0, len = contents.length; j < len; j++) {
           c = contents[j];
@@ -316,6 +288,7 @@ module.exports = function() {
             c = c._getModel(this.custom_types, this.operations);
           }
           tmp = (new ops.Insert(null, c, null, void 0, void 0, left, right)).execute();
+          leftNode = this.shortTree.insert_between(leftNode, rightNode, tmp);
           left = tmp;
         }
       }
@@ -328,36 +301,35 @@ module.exports = function() {
       return this.insertAfter(ith, contents);
     };
 
-    ListManager.prototype.deleteRef = function(o, length) {
-      var d, delete_ops, i, j, ref;
+    ListManager.prototype.deleteRef = function(operation, length) {
+      var deleteOperation, i, j, ref;
       if (length == null) {
         length = 1;
       }
-      delete_ops = [];
       for (i = j = 0, ref = length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
-        if (o instanceof ops.Delimiter) {
+        if (operation instanceof ops.Delimiter) {
           break;
         }
-        d = (new ops.Delete(null, void 0, o)).execute();
-        o = o.next_cl;
-        while ((!(o instanceof ops.Delimiter)) && o.isDeleted()) {
-          o = o.next_cl;
-        }
-        delete_ops.push(d._encode());
+        deleteOperation = (new ops.Delete(null, void 0, operation)).execute();
+        operation.node.traverse_up(function(node, parent) {
+          return parent.deleted_weight = (parent.deleted_weight || 0) + 1;
+        });
+        this.shortTree.remove_node(operation.node);
+        operation = getNextNonDeleted(operation);
       }
       return this;
     };
 
     ListManager.prototype["delete"] = function(position, length) {
-      var o;
+      var operation;
       if (length == null) {
         length = 1;
       }
-      o = this.getOperationByPosition(position + 1);
-      return this.deleteRef(o, length);
+      operation = this.getOperationByPosition(position + 1);
+      return this.deleteRef(operation, length);
     };
 
-    ListManager.prototype.callOperationSpecificInsertEvents = function(op) {
+    ListManager.prototype.callOperationSpecificInsertEvents = function(operation) {
       var getContentType;
       getContentType = function(content) {
         if (content instanceof ops.Operation) {
@@ -369,25 +341,25 @@ module.exports = function() {
       return this.callEvent([
         {
           type: "insert",
-          reference: op,
-          position: op.getPosition(),
+          reference: operation,
+          position: operation.getPosition(),
           object: this.getCustomType(),
-          changedBy: op.uid.creator,
-          value: getContentType(op.val())
+          changedBy: operation.uid.creator,
+          value: getContentType(operation.val())
         }
       ]);
     };
 
-    ListManager.prototype.callOperationSpecificDeleteEvents = function(op, del_op) {
+    ListManager.prototype.callOperationSpecificDeleteEvents = function(operation, del_op) {
       return this.callEvent([
         {
           type: "delete",
-          reference: op,
-          position: op.getPosition(),
+          reference: operation,
+          position: operation.getPosition(),
           object: this.getCustomType(),
           length: 1,
           changedBy: del_op.uid.creator,
-          oldValue: op.val()
+          oldValue: operation.val()
         }
       ]);
     };
@@ -441,14 +413,14 @@ module.exports = function() {
       }
     };
 
-    Composition.prototype.callOperationSpecificInsertEvents = function(op) {
+    Composition.prototype.callOperationSpecificInsertEvents = function(operation) {
       var o;
       if (this.tmp_composition_ref != null) {
-        if (op.uid.creator === this.tmp_composition_ref.creator && op.uid.op_number === this.tmp_composition_ref.op_number) {
-          this.composition_ref = op;
+        if (operation.uid.creator === this.tmp_composition_ref.creator && operation.uid.op_number === this.tmp_composition_ref.op_number) {
+          this.composition_ref = operation;
           delete this.tmp_composition_ref;
-          op = op.next_cl;
-          if (op === this.end) {
+          operation = operation.next_cl;
+          if (operation === this.end) {
             return;
           }
         } else {
@@ -456,7 +428,7 @@ module.exports = function() {
         }
       }
       o = this.end.prev_cl;
-      while (o !== op) {
+      while (o !== operation) {
         this.getCustomType()._unapply(o.undo_delta);
         o = o.prev_cl;
       }
@@ -468,13 +440,13 @@ module.exports = function() {
       return this.callEvent([
         {
           type: "update",
-          changedBy: op.uid.creator,
+          changedBy: operation.uid.creator,
           newValue: this.val()
         }
       ]);
     };
 
-    Composition.prototype.callOperationSpecificDeleteEvents = function(op, del_op) {};
+    Composition.prototype.callOperationSpecificDeleteEvents = function(operation, del_op) {};
 
     Composition.prototype.applyDelta = function(delta, operations) {
       (new ops.Insert(null, delta, operations, this, null, this.end.prev_cl, this.end)).execute();
@@ -542,40 +514,40 @@ module.exports = function() {
       return void 0;
     };
 
-    ReplaceManager.prototype.callOperationSpecificInsertEvents = function(op) {
+    ReplaceManager.prototype.callOperationSpecificInsertEvents = function(operation) {
       var old_value;
-      if (op.next_cl.type === "Delimiter" && op.prev_cl.type !== "Delimiter") {
-        if (!op.is_deleted) {
-          old_value = op.prev_cl.val();
+      if (operation.next_cl.type === "Delimiter" && operation.prev_cl.type !== "Delimiter") {
+        if (!operation.is_deleted) {
+          old_value = operation.prev_cl.val();
           this.callEventDecorator([
             {
               type: "update",
-              changedBy: op.uid.creator,
+              changedBy: operation.uid.creator,
               oldValue: old_value
             }
           ]);
         }
-        op.prev_cl.applyDelete();
-      } else if (op.next_cl.type !== "Delimiter") {
-        op.applyDelete();
+        operation.prev_cl.applyDelete();
+      } else if (operation.next_cl.type !== "Delimiter") {
+        operation.applyDelete();
       } else {
         this.callEventDecorator([
           {
             type: "add",
-            changedBy: op.uid.creator
+            changedBy: operation.uid.creator
           }
         ]);
       }
       return void 0;
     };
 
-    ReplaceManager.prototype.callOperationSpecificDeleteEvents = function(op, del_op) {
-      if (op.next_cl.type === "Delimiter") {
+    ReplaceManager.prototype.callOperationSpecificDeleteEvents = function(operation, del_op) {
+      if (operation.next_cl.type === "Delimiter") {
         return this.callEventDecorator([
           {
             type: "delete",
             changedBy: del_op.uid.creator,
-            oldValue: op.val()
+            oldValue: operation.val()
           }
         ]);
       }
@@ -608,121 +580,6 @@ module.exports = function() {
     };
 
     return ReplaceManager;
-
-  })(ops.ListManager);
-  ops.FastListManager = (function(superClass) {
-    extend(FastListManager, superClass);
-
-    function FastListManager() {
-      this.shortTree = new RBTreeByIndex();
-      FastListManager.__super__.constructor.apply(this, arguments);
-    }
-
-    FastListManager.prototype.type = 'FastListManager';
-
-    FastListManager.prototype.getNext = function(start) {
-      return start.node.next().data;
-    };
-
-    FastListManager.prototype.getPrev = function(start) {
-      return start.node.prev().data;
-    };
-
-    FastListManager.prototype.map = function(fun) {
-      return this.shortTree.map(function(operation) {
-        return fun(operation);
-      });
-    };
-
-    FastListManager.prototype.fold = function(init, f) {
-      this.shortTree.each(function(operation) {
-        return init = f(init, operation);
-      });
-      return init;
-    };
-
-    FastListManager.prototype.val = function(position) {
-      if (position != null) {
-        return (this.shortTree.find(position)).val();
-      } else {
-        return this.shortTree.map(function(operation) {
-          return operation.val();
-        });
-      }
-    };
-
-    FastListManager.prototype.ref = function(position) {
-      if (position != null) {
-        return this.shortTree.find(position);
-      } else {
-        return this.shortTree.map(function(operation) {
-          return operation;
-        });
-      }
-    };
-
-    FastListManager.prototype.push = function(content) {
-      return this.insertAfter(this.end.prev_cl, [content]);
-    };
-
-    FastListManager.prototype.insertAfter = function(left, contents) {
-      var nodeOnLeft, nodeOnRight, operation, right;
-      nodeOnLeft = left === this.beginning ? null : left.node;
-      nodeOnRight = nodeOnLeft ? nodeOnLeft.next() : this.shortTree.find(0);
-      right = nodeOnRight ? nodeOnRight.data : this.end;
-      left = right.prev_cl;
-      if (contents instanceof ops.Operation) {
-        operation = new ops.Insert(null, content, null, void 0, void 0, left, right);
-        operation.node = this.shortTree.insertAfter(nodeOnLeft, operation);
-        operation.execute();
-      } else {
-        contents.forEach(function(content) {
-          if ((content != null) && (content._name != null) && (content._getModel != null)) {
-            content = content._getModel(this.custom_types, this.operations);
-          }
-          operation = new ops.Insert(null, c, null, void 0, void 0, left, right);
-          operation.node = this.shortTree.insertAfter(nodeOnLeft, operation);
-          operation.execute();
-          left = operation;
-          return nodeOnLeft = operation.node;
-        });
-      }
-      return this;
-    };
-
-    FastListManager.prototype.insert = function(position, contents) {
-      var left;
-      left = (this.shortTree.find(position - 1)) || this.beginning;
-      return this.insertAfter(left, contents);
-    };
-
-    FastListManager.prototype["delete"] = function(position, length) {
-      var deleteOp, delete_ops, i, j, nextNode, operation, ref;
-      if (length == null) {
-        length = 1;
-      }
-      delete_ops = [];
-      operation = this.shortTree.find(position);
-      for (i = j = 0, ref = length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
-        if (operation instanceof ops.Delimiter) {
-          break;
-        }
-        deleteOp = new ops.Delete(null, void 0, operation);
-        deleteOp.execute();
-        nextNode = operation.node.next();
-        operation = nextNode ? nextNode.data : this.end;
-        this.shortTree.remove_node(operation.node);
-        operation.node = null;
-        delete_ops.push(d._encode());
-      }
-      return this;
-    };
-
-    FastListManager.prototype.getLength = function() {
-      return this.tree.size;
-    };
-
-    return FastListManager;
 
   })(ops.ListManager);
   return basic_ops;
