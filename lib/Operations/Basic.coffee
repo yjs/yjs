@@ -430,7 +430,7 @@ module.exports = ()->
       super garbagecollect
       if callLater
         @parent.callOperationSpecificDeleteEvents(this, o)
-      if @prev_cl? and @prev_cl.isDeleted()
+      if @prev_cl? and @prev_cl.isDeleted() and @prev_cl.garbage_collected isnt true
         # garbage collect prev_cl
         @prev_cl.applyDelete()
 

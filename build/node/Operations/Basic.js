@@ -442,7 +442,7 @@ module.exports = function() {
       if (callLater) {
         this.parent.callOperationSpecificDeleteEvents(this, o);
       }
-      if ((this.prev_cl != null) && this.prev_cl.isDeleted()) {
+      if ((this.prev_cl != null) && this.prev_cl.isDeleted() && this.prev_cl.garbage_collected !== true) {
         return this.prev_cl.applyDelete();
       }
     };
