@@ -14,13 +14,12 @@ function copyObject (o) {
 }
 
 type StateVector = Array<State>;
-type OperationSet = Object; // os[Id] = op
 type StateSet = Object;
 
 Y.Memory = (function(){ //eslint-disable-line no-unused-vars
   class Transaction extends AbstractTransaction { //eslint-disable-line
     ss: StateSet;
-    os: OperationSet;
+    os: RBTree;
     store: OperationStore;
 
     constructor (store : OperationStore) {

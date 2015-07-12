@@ -9,7 +9,7 @@ class AbstractTransaction { //eslint-disable-line no-unused-vars
     if (t == null) {
       var op = yield* this.getOperation(id);
       if (op != null) {
-        t = yield* Y[op.type].create(this.store, op.id);
+        t = yield* Y[op.type].create(this.store, op);
         this.store.initializedTypes[sid] = t;
       }
     }
@@ -35,6 +35,18 @@ class AbstractTransaction { //eslint-disable-line no-unused-vars
     } else {
       throw new Error("Operations must arrive in order!");
     }
+  }
+  *applyCreatedOperations (ops) {
+    var send = [];
+    for (var i = 0; i < ops.length; i++) {
+      var op = ops[i];
+      yield* Struct[op.struct].execute.call(this, op);
+      send.push(Struct[op.struct].encode(op));
+    }
+    this.store.y.connector.broadcast({
+      type: "update",
+      ops: send
+    });
   }
 }
 
@@ -70,6 +82,13 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
   }
   setUserId (userId) {
     this.userId = userId;
+    this.opClock = 0;
+  }
+  getNextOpId () {
+    if (this.userId == null) {
+      throw new Error("OperationStore not yet initialized!");
+    }
+    return [this.userId, this.opClock++];
   }
   apply (ops) {
     for (var key in ops) {

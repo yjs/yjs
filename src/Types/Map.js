@@ -14,25 +14,29 @@ class EventHandler {
       this.waiting.push(copyObject(op));
     }
   }
-  awaitAndPrematurelyCall (op) {
+  awaitAndPrematurelyCall (ops) {
     this.awaiting++;
-    this.onevent([op]);
+    this.onevent(ops);
   }
-  awaitedLastOp () {
-    var op = this.waiting.pop();
-    for (var i = this.waiting.length - 1; i >= 0; i--) {
-      var w = this.waiting[i];
-      if (compareIds(op.left, w.id)) {
-        // include the effect of op in w
-        w.right = op.id;
-        // exclude the effect of w in op
-        op.left = w.left;
-      } else if (compareIds(op.right, w.id)) {
-        // similar..
-        w.left = op.id;
-        op.right = w.right;
+  awaitedLastOp (n) {
+    var ops = this.waiting.splice(this.waiting.length - n);
+    for (var oid = 0; oid < ops.length; oid++) {
+      var op = ops[oid];
+      for (var i = this.waiting.length - 1; i >= 0; i--) {
+        var w = this.waiting[i];
+        if (compareIds(op.left, w.id)) {
+          // include the effect of op in w
+          w.right = op.id;
+          // exclude the effect of w in op
+          op.left = w.left;
+        } else if (compareIds(op.right, w.id)) {
+          // similar..
+          w.left = op.id;
+          op.right = w.right;
+        }
       }
     }
+
     this.awaiting--;
     if (this.awaiting <= 0) {
       var events = this.waiting;
@@ -87,8 +91,10 @@ class EventHandler {
       var insert = {
         left: null,
         right: right,
+        origin: null,
         parent: this._model,
-        parentSub: key
+        parentSub: key,
+        struct: "Insert"
       };
       var def = Promise.defer();
       if ( value != null && value.constructor === GeneratorFunction) {
@@ -96,17 +102,19 @@ class EventHandler {
         this.os.requestTransaction(function*(){
           var type = yield* value.call(this);
           insert.opContent = type._model;
-          yield* Struct.Insert.create.call(this, insert);
+          insert.id = this.store.getNextOpId();
+          yield* this.applyCreatedOperations([insert]);
           def.resolve(type);
         });
       } else {
         insert.content = value;
+        insert.id = this.os.getNextOpId();
         var eventHandler = this.eventHandler;
-        eventHandler.awaitAndPrematurelyCall(insert);
+        eventHandler.awaitAndPrematurelyCall([insert]);
 
         this.os.requestTransaction(function*(){
-          yield* Struct.Insert.create.call(this, insert);
-          eventHandler.awaitedLastOp();
+          yield* this.applyCreatedOperations([insert]);
+          eventHandler.awaitedLastOp(1);
         });
         def.resolve(value);
       }
@@ -124,7 +132,13 @@ class EventHandler {
   }
 
   Y.Map = function* YMap(){
-    var model = yield* Y.Struct.Map.create.call(this, {type: "Map"});
+    var model = {
+      map: {},
+      struct: "Map",
+      type: "Map",
+      id: this.store.getNextOpId()
+    };
+    yield* this.applyCreatedOperations([model]);
     return yield* this.createType(model);
   };
   Y.Map.create = function* YMapCreate(os, model){

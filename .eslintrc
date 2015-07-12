@@ -28,6 +28,7 @@
     "Operation": true,
     "getRandom": true,
     "RBTree": true,
-    "compareIds": true
+    "compareIds": true,
+    "EventHandler": true
   }
 }

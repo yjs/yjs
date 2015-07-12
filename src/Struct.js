@@ -35,28 +35,12 @@ function compareIds(id1, id2) {
 }
 
 var Struct = {
-  Operation: {  //eslint-disable-line no-unused-vars
-    create: function*(op : Op) : Struct.Operation {
-      var user = this.store.y.connector.userId;
-      var state = yield* this.getState(user);
-      op.id = [user, state.clock];
-      yield* Struct[op.struct].execute.call(this, op);
-
-      this.store.y.connector.broadcast({
-        type: "update",
-        ops: [Struct[op.struct].encode(op)]
-      });
-      return op;
-    }
-  },
+  /*
+  {
+  target: Id
+  }
+  */
   Delete: {
-    create: function* (op) {
-      if (op.target == null) {
-        throw new Error("You must define a delete target!");
-      }
-      op.struct = "Delete";
-      return yield* Struct.Operation.create.call(this, op);
-    },
     encode: function (op) {
       return op;
     },
@@ -77,20 +61,12 @@ var Struct = {
         content: any,
         left: Id,
         right: Id,
+        origin: id,
         parent: Id,
-        parentSub: string (optional)
+        parentSub: string (optional),
+        id: this.os.getNextOpId()
       }
     */
-    create: function* ( op: Op ) : Insert {
-      if ( op.left === undefined
-        || op.right === undefined
-        || op.parent === undefined ) {
-          throw new Error("You must define left, right, and parent!");
-        }
-      op.origin = op.left;
-      op.struct = "Insert";
-      return yield* Struct.Operation.create.call(this, op);
-    },
     encode: function(op){
       /*var e = {
         id: op.id,
@@ -248,12 +224,15 @@ var Struct = {
     }
   },
   List: {
-    create: function* ( op : Op){
-      op.start = null;
-      op.end = null;
-      op.struct = "List";
-      return yield* Struct.Operation.create.call(this, op);
-    },
+    /*
+    {
+      start: null,
+      end: null,
+      struct: "List",
+      type: "",
+      id: this.os.getNextOpId()
+    }
+    */
     encode: function(op){
       return {
         struct: "List",
@@ -315,7 +294,7 @@ var Struct = {
       while ( o != null) {
         var operation = yield* this.getOperation(o);
         if (!operation.deleted) {
-          res.push(f(operation.content));
+          res.push(f(operation));
         }
         o = operation.right;
       }
@@ -350,19 +329,18 @@ var Struct = {
   Map: {
     /*
       {
-        // empty
+        map: {},
+        struct: "Map",
+        type: "",
+        id: this.os.getNextOpId()
       }
     */
-    create: function* ( op : Op ){
-      op.map = {};
-      op.struct = "Map";
-      return yield* Struct.Operation.create.call(this, op);
-    },
     encode: function(op){
       return {
         struct: "Map",
         type: op.type,
-        id: op.id
+        id: op.id,
+        map: {} // overwrite map!!
       };
     },
     requiredOps: function(){

@@ -21,9 +21,9 @@ function getRandomNumber(n) {
   return Math.floor(Math.random() * n);
 }
 
-var numberOfYMapTests = 30;
+var numberOfYMapTests = 5;
 
-function applyRandomTransactions (users, transactions, numberOfTransactions) {
+function applyRandomTransactions (users, objects, transactions, numberOfTransactions) {
   function randomTransaction (root) {
     var f = getRandom(transactions);
     f(root);
@@ -34,7 +34,7 @@ function applyRandomTransactions (users, transactions, numberOfTransactions) {
       // 10% chance to flush
       users[0].connector.flushOne();
     } else {
-      randomTransaction(getRandom(users).root);
+      randomTransaction(getRandom(objects));
     }
   }
 }
@@ -70,7 +70,7 @@ function compareAllUsers(users){
 }
 
 describe("Yjs", function(){
-  jasmine.DEFAULT_TIMEOUT_INTERVAL = 500;
+  jasmine.DEFAULT_TIMEOUT_INTERVAL = 3000;
   beforeEach(function(done){
     if (this.users != null) {
       for (var y of this.users) {
@@ -118,6 +118,16 @@ describe("Yjs", function(){
         return y.get("Map");
       }).then(function(map){
         expect(map.get("one")).toEqual(1);
+        done();
+      });
+    });
+    it("Map can set custom types (Array)", function(done){
+      var y = this.users[0].root;
+      y.set("Array", Y.Array).then(function(array) {
+        array.insert(0, [1, 2, 3]);
+        return y.get("Array");
+      }).then(function(array){
+        expect(array.toArray()).toEqual([1, 2, 3]);
         done();
       });
     });
@@ -172,6 +182,28 @@ describe("Yjs", function(){
         done();
       }, 50);
     });
+    it("Basic insert in array (handle three conflicts)", function(done){
+      var y = this.users[0];
+      var l1, l2, l3;
+      y.root.set("Array", Y.Array).then((array)=>{
+        l1 = array;
+        y.connector.flushAll();
+        l1.insert(0, [0]);
+        return this.users[1].root.get("Array");
+      }).then((array)=>{
+        l2 = array;
+        l2.insert(0, [1]);
+        return this.users[2].root.get("Array");
+      }).then((array)=>{
+        l3 = array;
+        l3.insert(0, [2]);
+        y.connector.flushAll();
+        expect(l1.toArray()).toEqual(l2.toArray());
+        expect(l2.toArray()).toEqual(l3.toArray());
+        compareAllUsers(this.users);
+        done();
+      });
+    });
   });
   describe("Map random tests", function(){
     var randomMapTransactions = [
@@ -182,10 +214,10 @@ describe("Yjs", function(){
         map.delete("somekey");
       }
     ];
-    function compareMapValues(users){
+    function compareMapValues(maps){
       var firstMap;
-      for (var u of users) {
-        var val = u.root.get();
+      for (var map of maps) {
+        var val = map.get();
         if (firstMap == null) {
           firstMap = val;
         } else {
@@ -193,79 +225,80 @@ describe("Yjs", function(){
         }
       }
     }
-    it(`succeed after ${numberOfYMapTests} actions with flush before transactions`, function(done){
+    beforeEach(function(done){
+      this.users[0].root.set("Map", Y.Map);
       this.users[0].connector.flushAll();
-      applyRandomTransactions(this.users, randomMapTransactions, numberOfYMapTests);
-      setTimeout(()=>{
-        compareAllUsers(this.users);
-        compareMapValues(this.users);
+
+      var then = Promise.resolve();
+      var maps = [];
+      for (var u of this.users) {
+        then = then.then(function(){ //eslint-disable-line
+          return u.root.get("Map");
+        }).then(function(map){//eslint-disable-line
+          maps.push(map);
+        });
+      }
+      this.maps = maps;
+      then.then(function(){
         done();
-      }, 500);
+      });
     });
-    it(`succeed after ${numberOfYMapTests} actions without flush before transactions`, function(done){
-      applyRandomTransactions(this.users, randomMapTransactions, numberOfYMapTests);
+    it(`succeed after ${numberOfYMapTests} actions`, function(done){
+      applyRandomTransactions(this.users, this.maps, randomMapTransactions, numberOfYMapTests);
       setTimeout(()=>{
         compareAllUsers(this.users);
-        compareMapValues(this.users);
+        compareMapValues(this.maps);
         done();
       }, 500);
     });
   });
 
-/*
-
-  var numberOfYListTests = 100;
-  describe("List random tests", function(){
-    var randomListTests = [function* insert (root) {
-      var list = yield* root.get("list");
-      yield* list.insert(Math.floor(Math.random() * 10), [getRandomNumber()]);
-    }, function* delete_(root) {
-      var list = yield* root.get("list");
-      yield* list.delete(Math.floor(Math.random() * 10));
-    }];
-    beforeEach(function(){
-      this.users[0].transact(function*(root){
-        var list = yield* Y.List();
-        yield* root.set("list", list);
-      });
-      this.users[0].connector.flushAll();
-    });
-
-    it(`succeeds after ${numberOfYListTests} actions`, function(){
-      applyRandomTransactions(this.users, randomListTests, numberOfYListTests);
-      compareAllUsers(this.users);
-      var userList;
-      this.users[0].transact(function*(root){
-        var list = yield* root.get("list");
-        if (userList == null) {
-          userList = yield* list.get();
+  var numberOfYArrayTests = 10;
+  describe("Array random tests", function(){
+    var randomMapTransactions = [
+      function insert (array) {
+        array.insert(getRandomNumber(array.toArray().length), [getRandomNumber()]);
+      }
+    ];
+    function compareArrayValues(arrays){
+      var firstArray;
+      for (var l of arrays) {
+        var val = l.toArray();
+        if (firstArray == null) {
+          firstArray = val;
         } else {
-          expect(userList).toEqual(yield* list.get());
-          expect(userList.length > 0).toBeTruthy();
+          expect(val).toEqual(firstArray);
         }
-      });
-    });
-  });
+      }
+    }
+    beforeEach(function(done){
+      this.users[0].root.set("Array", Y.Array);
+      this.users[0].connector.flushAll();
 
-  describe("Map debug tests", function(){
-    beforeEach(function(){
-      this.u1 = this.users[0];
-      this.u2 = this.users[1];
-      this.u3 = this.users[2];
-    });
-    it("concurrent insertions #1", function(){
-      this.u1.transact(function*(root){
-        var op = {
-          content: 1,
-          left: null,
-          right: null,
-          parent: root._model,
-          parentSub: "a"
-        };
-        Struct.Insert.create.call(this, op);
+      var then = Promise.resolve();
+      var arrays = [];
+      for (var u of this.users) {
+        then = then.then(function(){ //eslint-disable-line
+          return u.root.get("Array");
+        }).then(function(array){//eslint-disable-line
+          arrays.push(array);
+        });
+      }
+      this.arrays = arrays;
+      then.then(function(){
+        done();
       });
-      compareAllUsers(this.users);
+    });
+    it("arrays.length equals users.length", function(){
+      expect(this.arrays.length).toEqual(this.users.length);
+    });
+    it(`succeed after ${numberOfYArrayTests} actions`, function(done){
+      applyRandomTransactions(this.users, this.arrays, randomMapTransactions, numberOfYArrayTests);
+      setTimeout(()=>{
+        compareAllUsers(this.users);
+        compareArrayValues(this.arrays);
+        done();
+      }, 500);
     });
   });
-  */
 });
