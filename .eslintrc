@@ -29,6 +29,10 @@
     "getRandom": true,
     "RBTree": true,
     "compareIds": true,
-    "EventHandler": true
+    "EventHandler": true,
+    "compareAllUsers": true,
+    "createUsers": true,
+    "getRandomNumber": true,
+    "applyRandomTransactions": true
   }
 }
