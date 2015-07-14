@@ -130,8 +130,8 @@ gulp.task("build_jasmine_browser", function(){
 gulp.task("develop", ["build_jasmine_browser", "build"], function(){
 
   gulp.watch(files.test, ["build_jasmine_browser"]);
-  gulp.watch(files.test, ["test"]);
-  gulp.watch(files.test, ["build"]);
+  //gulp.watch(files.test, ["test"]);
+  //gulp.watch(files.test, ["build"]);
 
   return gulp.src("build/jasmine_browser.js")
     .pipe(watch("build/jasmine_browser.js"))

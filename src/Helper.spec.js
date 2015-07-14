@@ -73,10 +73,9 @@ function compareAllUsers(users){//eslint-disable-line
 }
 
 function createUsers(self, numberOfUsers, done) {//eslint-disable-line
-  if (self.users != null) {
-    for (var y of self.users) {
-      y.destroy();
-    }
+  //destroy old users
+  for (var u in globalRoom.users) {//eslint-disable-line
+    globalRoom.users[u].y.destroy()//eslint-disable-line
   }
   self.users = [];
 

@@ -120,7 +120,7 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
     }
     requestTransaction (makeGen : Function) {
       var t = new Transaction(this);
-      var gen = makeGen.call(t, t.getType(["_", 0]).next().value);
+      var gen = makeGen.call(t);
       var res = gen.next();
       while(!res.done){
         if (res.value === "transaction") {

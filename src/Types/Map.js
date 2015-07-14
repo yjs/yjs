@@ -18,12 +18,12 @@ class EventHandler {
     this.awaiting++;
     this.onevent(ops);
   }
-  awaitedLastOp (n) {
+  awaitedLastInserts (n) {
     var ops = this.waiting.splice(this.waiting.length - n);
     for (var oid = 0; oid < ops.length; oid++) {
       var op = ops[oid];
       for (var i = this.waiting.length - 1; i >= 0; i--) {
-        var w = this.waiting[i];
+        let w = this.waiting[i];
         if (compareIds(op.left, w.id)) {
           // include the effect of op in w
           w.right = op.id;
@@ -36,7 +36,25 @@ class EventHandler {
         }
       }
     }
-
+    this.tryCallEvents();
+  }
+  awaitedLastDeletes (n, newLeft) {
+    var ops = this.waiting.splice(this.waiting.length - n);
+    for (var j in ops) {
+      var del = ops[j];
+      if (newLeft != null) {
+        for (var i in this.waiting) {
+          let w = this.waiting[i];
+          // We will just care about w.left
+          if (compareIds(del.target, w.left)) {
+            del.left = newLeft;
+          }
+        }
+      }
+    }
+    this.tryCallEvents();
+  }
+  tryCallEvents () {
     this.awaiting--;
     if (this.awaiting <= 0) {
       var events = this.waiting;
@@ -44,25 +62,39 @@ class EventHandler {
       this.onevent(events);
     }
   }
-}
 
+}
 (function(){
   class Map {
     constructor (os, model) {
       this._model = model.id;
       this.os = os;
-      this.map = model.map;
+      this.map = copyObject(model.map);
       this.contents = {};
       this.opContents = {};
       this.eventHandler = new EventHandler( ops =>{
         for (var i in ops) {
           var op = ops[i];
-          if (op.left === null) {
-            if (op.opContent != null) {
-              this.opContents[op.parentSub] = op.opContent;
-            } else {
-              this.contents[op.parentSub] = op.content;
+          if (op.struct === "Insert"){
+            if (op.left === null) {
+              if (op.opContent != null) {
+                this.opContents[op.parentSub] = op.opContent;
+              } else {
+                this.contents[op.parentSub] = op.content;
+              }
+              this.map[op.parentSub] = op.id;
             }
+          } else if (op.struct === "Delete") {
+            var key = op.key;
+            if (compareIds(this.map[key], op.target)) {
+              if (this.contents[key] != null) {
+                delete this.contents[key];
+              } else {
+                delete this.opContents[key];
+              }
+            }
+          } else {
+            throw new Error("Unexpected Operation!");
           }
         }
       });
@@ -80,6 +112,23 @@ class EventHandler {
           def.resolve(yield* this.getType(oid));
         });
         return def.promise;
+      }
+    }
+    delete (key) {
+      var right = this.map[key];
+      if (right != null) {
+        var del = {
+          target: right,
+          struct: "Delete"
+        };
+        var eventHandler = this.eventHandler;
+        var modDel = copyObject(del);
+        modDel.key = key;
+        eventHandler.awaitAndPrematurelyCall([modDel]);
+        this.os.requestTransaction(function*(){
+          yield* this.applyCreatedOperations([del]);
+          eventHandler.awaitedLastDeletes(1);
+        });
       }
     }
     set (key, value) {
@@ -114,7 +163,7 @@ class EventHandler {
 
         this.os.requestTransaction(function*(){
           yield* this.applyCreatedOperations([insert]);
-          eventHandler.awaitedLastOp(1);
+          eventHandler.awaitedLastInserts(1);
         });
         def.resolve(value);
       }
@@ -126,7 +175,10 @@ class EventHandler {
       var model = yield* t.getOperation(this._model);
       yield* Y.Struct.Map.delete.call(t, model, key);
     }*/
-    _changed (op) {
+    *_changed (transaction, op) {
+      if (op.struct === "Delete") {
+        op.key = (yield* transaction.getOperation(op.target)).parentSub;
+      }
       this.eventHandler.receivedOp(op);
     }
   }

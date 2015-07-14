@@ -9,7 +9,7 @@ class AbstractTransaction { //eslint-disable-line no-unused-vars
     if (t == null) {
       var op = yield* this.getOperation(id);
       if (op != null) {
-        t = yield* Y[op.type].create(this.store, op);
+        t = yield* Y[op.type].create.call(this, this.store, op);
         this.store.initializedTypes[sid] = t;
       }
     }
@@ -28,7 +28,7 @@ class AbstractTransaction { //eslint-disable-line no-unused-vars
       state.clock++;
       yield* this.setState(state);
       this.os.add(op);
-      this.store.operationAdded(op);
+      yield* this.store.operationAdded(this, op);
       return true;
     } else if (op.id[1] < state.clock) {
       return false;
@@ -41,7 +41,7 @@ class AbstractTransaction { //eslint-disable-line no-unused-vars
     for (var i = 0; i < ops.length; i++) {
       var op = ops[i];
       yield* Struct[op.struct].execute.call(this, op);
-      send.push(Struct[op.struct].encode(op));
+      send.push(copyObject(Struct[op.struct].encode(op)));
     }
     this.store.y.connector.broadcast({
       type: "update",
@@ -161,7 +161,7 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
     });
   }
   // called by a transaction when an operation is added
-  operationAdded (op) {
+  *operationAdded (transaction, op) {
     var sid = JSON.stringify(op.id);
     var l = this.listenersById[sid];
     delete this.listenersById[sid];
@@ -178,7 +178,7 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
     // notify parent, if it has been initialized as a custom type
     var t = this.initializedTypes[JSON.stringify(op.parent)];
     if (t != null) {
-      t._changed(op);
+      yield* t._changed(transaction, copyObject(op));
     }
   }
   removeParentListener (id, f) {

@@ -1,7 +1,7 @@
 /* @flow */
 /*eslint-env browser,jasmine */
 
-var numberOfYMapTests = 5;
+var numberOfYMapTests = 70;
 
 describe("Map Type", function(){
   jasmine.DEFAULT_TIMEOUT_INTERVAL = 3000;
@@ -77,6 +77,25 @@ describe("Map Type", function(){
         done();
       }, 50);
     });
+    it("Basic get&set&delete of Map property (handle conflict)", function(done){
+      var y = this.users[0];
+      y.connector.flushAll();
+      y.root.set("stuff", "c0");
+      y.root.delete("stuff");
+
+      this.users[1].root.set("stuff", "c1");
+
+      y.connector.flushAll();
+
+      setTimeout( () => {
+        for (var key in this.users) {
+          var u = this.users[key];
+          expect(u.root.get("stuff")).toBeUndefined();
+          compareAllUsers(this.users);
+        }
+        done();
+      }, 50);
+    });
     it("Basic get&set of Map property (handle three conflicts)", function(done){
       var y = this.users[0];
       this.users[0].root.set("stuff", "c0");
@@ -94,13 +113,36 @@ describe("Map Type", function(){
         done();
       }, 50);
     });
+    it("Basic get&set&delete of Map property (handle three conflicts)", function(done){
+      var y = this.users[0];
+      this.users[0].root.set("stuff", "c0");
+      this.users[1].root.set("stuff", "c1");
+      this.users[2].root.set("stuff", "c2");
+      this.users[3].root.set("stuff", "c3");
+      y.connector.flushAll();
+      this.users[0].root.set("stuff", "deleteme");
+      this.users[0].root.delete("stuff");
+      this.users[1].root.set("stuff", "c1");
+      this.users[2].root.set("stuff", "c2");
+      this.users[3].root.set("stuff", "c3");
+      y.connector.flushAll();
+
+      setTimeout( () => {
+        for (var key in this.users) {
+          var u = this.users[key];
+          expect(u.root.get("stuff")).toBeUndefined();
+        }
+        compareAllUsers(this.users);
+        done();
+      }, 50);
+    });
   });
-  describe("Random tests", function(){
+  describe(`${numberOfYMapTests} Random tests`, function(){
     var randomMapTransactions = [
       function set (map) {
         map.set("somekey", getRandomNumber());
       },
-      function* delete_ (map) {
+      function delete_ (map) {
         map.delete("somekey");
       }
     ];

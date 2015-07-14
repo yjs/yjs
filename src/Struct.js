@@ -35,7 +35,7 @@ function compareIds(id1, id2) {
 }
 
 var Struct = {
-  /*
+  /* This Operations does _not_ have an id!
   {
   target: Id
   }
@@ -48,12 +48,16 @@ var Struct = {
       return [op.target];
     },
     execute: function* (op) {
-      if ((yield* this.addOperation(op)) === false) {
-        return;
-      }
       var target = yield* this.getOperation(op.target);
-      target.deleted = true;
-      yield* this.setOperation(target);
+      if (!target.deleted) {
+        target.deleted = true;
+        yield* this.setOperation(target);
+        var t = this.store.initializedTypes[JSON.stringify(target.parent)];
+        if (t != null) {
+          yield* t._changed(this, copyObject(op));
+        }
+      }
+
     }
   },
   Insert: {
@@ -280,14 +284,6 @@ var Struct = {
       }
       return res;
     },
-    delete: function* (op, pos) {
-      var ref = yield* Struct.List.ref.call(this, op, pos);
-      if (ref != null) {
-        yield* Struct.Delete.create.call(this, {
-          target: ref.id
-        });
-      }
-    },
     map: function* (o : Op, f : Function) : Array<any> {
       o = o.start;
       var res = [];
@@ -299,31 +295,6 @@ var Struct = {
         o = operation.right;
       }
       return res;
-    },
-    insert: function* (op, pos : number, contents : Array<any>) {
-      var left, right;
-      if (pos === 0) {
-        left = null;
-        right = op.start;
-      } else {
-        var ref = yield* Struct.List.ref.call(this, op, pos - 1);
-        if (ref === null) {
-          left = op.end;
-          right = null;
-        } else {
-          left = ref.id;
-          right = ref.right;
-        }
-      }
-      for (var key in contents) {
-        var insert = {
-          left: left,
-          right: right,
-          content: contents[key],
-          parent: op.id
-        };
-        left = (yield* Struct.Insert.create.call(this, insert)).id;
-      }
     }
   },
   Map: {

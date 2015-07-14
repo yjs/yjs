@@ -12,18 +12,28 @@
       this.eventHandler = new EventHandler( ops =>{
         for (var i in ops) {
           var op = ops[i];
-          var pos;
-          if (op.right === null) {
-            pos = this.idArray.length;
+          if (op.struct === "Insert") {
+            let pos;
+            // we check op.left only!,
+            // because op.right might not be defined when this is called
+            if (op.left === null) {
+              pos = 0;
+            } else {
+              var sid = JSON.stringify(op.left);
+              pos = this.idArray.indexOf(sid) + 1;
+              if (pos <= 0) {
+                throw new Error("Unexpected operation!");
+              }
+            }
+            this.idArray.splice(pos, 0, JSON.stringify(op.id));
+            this.valArray.splice(pos, 0, op.content);
+          } else if (op.struct === "Delete") {
+            let pos = this.idArray.indexOf(JSON.stringify(op.target));
+            this.idArray.splice(pos, 1);
+            this.valArray.splice(pos, 1);
           } else {
-            var sid = JSON.stringify(op.right);
-            pos = this.idArray.indexOf(sid);
+            throw new Error("Unexpected struct!");
           }
-          if (pos < 0) {
-            throw new Error("Unexpected operation!");
-          }
-          this.idArray.splice(pos, 0, JSON.stringify(op.id));
-          this.valArray.splice(pos, 0, op.content);
         }
       });
     }
@@ -50,7 +60,6 @@
         throw new Error("This position exceeds the range of the array!");
       }
       var mostLeft = pos === 0 ? null : JSON.parse(this.idArray[pos - 1]);
-      var mostRight = pos === this.idArray.length ? null : JSON.parse(this.idArray[pos]);
 
       var ops = [];
       var prevId = mostLeft;
@@ -58,7 +67,9 @@
         var op = {
           left: prevId,
           origin: prevId,
-          right: mostRight,
+          // right: mostRight,
+          // NOTE: I intentionally do not define right here, because it could be deleted
+          // at the time of creating this operation, and is therefore not defined in idArray
           parent: this._model,
           content: contents[i],
           struct: "Insert",
@@ -70,19 +81,58 @@
       var eventHandler = this.eventHandler;
       eventHandler.awaitAndPrematurelyCall(ops);
       this.os.requestTransaction(function*(){
+        // now we can set the right reference.
+        var mostRight;
+        if (mostLeft != null) {
+          mostRight = (yield* this.getOperation(mostLeft)).right;
+        } else {
+          mostRight = (yield* this.getOperation(ops[0].parent)).start;
+        }
+        for (var j in ops) {
+          ops[j].right = mostRight;
+        }
         yield* this.applyCreatedOperations(ops);
-        eventHandler.awaitedLastOp(ops.length);
+        eventHandler.awaitedLastInserts(ops.length);
       });
     }
-    *delete (pos) {
+    delete (pos, length = 1) {
+      if (typeof length !== "number") {
+        throw new Error("pos must be a number!");
+      }
       if (typeof pos !== "number") {
         throw new Error("pos must be a number!");
       }
-      var t = yield "transaction";
-      var model = yield* t.getOperation(this._model);
-      yield* Y.Struct.Array.delete.call(t, model, pos);
+      if (pos + length > this.idArray.length || pos < 0 || length < 0) {
+        throw new Error("The deletion range exceeds the range of the array!");
+      }
+      var eventHandler = this.eventHandler;
+      var newLeft = pos > 0 ? JSON.parse(this.idArray[pos - 1]) : null;
+      var dels = [];
+      for (var i = 0; i < length; i++) {
+        dels.push({
+          target: JSON.parse(this.idArray[pos + i]),
+          struct: "Delete"
+        });
+      }
+      eventHandler.awaitAndPrematurelyCall(dels);
+      this.os.requestTransaction(function*(){
+        yield* this.applyCreatedOperations(dels);
+        eventHandler.awaitedLastDeletes(dels.length, newLeft);
+      });
     }
-    _changed (op) {
+    *_changed (transaction, op) {
+      if (op.struct === "Insert") {
+        var l = op.left;
+        var left;
+        while (l != null) {
+          left = yield* transaction.getOperation(l);
+          if (!left.deleted) {
+            break;
+          }
+          l = left.left;
+        }
+        op.left = l;
+      }
       this.eventHandler.receivedOp(op);
     }
   }

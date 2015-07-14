@@ -2,7 +2,6 @@ var globalRoom = {
   users: {},
   buffers: {},
   removeUser: function(user : AbstractConnector){
-
     for (var i in this.users) {
       this.users[i].userLeft(user);
     }
