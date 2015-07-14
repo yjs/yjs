@@ -97,6 +97,9 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
     }
     *makeOperationReady (ss, op) {
       // instead of ss, you could use currSS (a ss that increments when you add an operation)
+      if (op.right == null) {
+        return op;
+      }
       var clock;
       var o = op;
       while (o.right != null){

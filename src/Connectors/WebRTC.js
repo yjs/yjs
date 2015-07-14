@@ -1,12 +1,14 @@
 
 class WebRTC extends AbstractConnector {
-  constructor (options) {
+  constructor (y, options) {
     if(options === undefined){
       throw new Error("Options must not be undefined!");
     }
-    super({
-      role: "slave"
-    });
+    if(options.room == null) {
+      throw new Error("You must define a room name!");
+    }
+    options.role = "slave";
+    super(y, options);
 
     var room = options.room;
 
@@ -25,12 +27,13 @@ class WebRTC extends AbstractConnector {
 
       swr.once("joinedRoom", function(){
         self.setUserId(userId);
+        /*
         var i;
         // notify the connector class about all the users that already
         // joined the session
         for(i in self.swr.webrtc.peers){
           self.userJoined(self.swr.webrtc.peers[i].id, "master");
-        }
+        }*/
         swr.on("channelMessage", function(peer, room_, message){
           // The client received a message
           // Check if the connector is already initialized,

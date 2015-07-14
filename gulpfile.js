@@ -70,23 +70,34 @@ var options = minimist(process.argv.slice(2), {
 });
 
 var files = {
-  y: polyfills.concat(["src/y.js", "src/**/*.js", "!src/**/*.spec.js"]),
+  y: polyfills.concat(["src/y.js", "src/Connector.js", "src/OperationStore.js", "src/Struct.js", "src/**/*.js", "!src/**/*.spec.js"]),
   lint: ["src/**/*.js", "gulpfile.js"],
   test: polyfills.concat([options.testfiles]),
   build_test: ["build_test/y.js"]
 };
 
 gulp.task("build", function () {
-  return gulp.src(files.y)
+  /*return gulp.src(files.y)
     .pipe(sourcemaps.init())
     .pipe(concat(options.name))
     .pipe(babel({
       loose: "all",
-      modules: options.export
+      modules: options.export,
+      // blacklist: "regenerator" // you can't uglify when regenerator is blacklisted!
     }))
     .pipe(uglify())
     .pipe(sourcemaps.write("."))
-    .pipe(gulp.dest("."));
+    .pipe(gulp.dest("."));*/
+  return gulp.src(files.y)
+     .pipe(sourcemaps.init())
+     .pipe(concat(options.name))
+     .pipe(babel({
+       loose: "all",
+       modules: "ignore",
+       blacklist: ["regenerator"]
+     }))
+     .pipe(sourcemaps.write())
+     .pipe(gulp.dest("."));
 });
 
 gulp.task("lint", function(){
@@ -131,7 +142,7 @@ gulp.task("develop", ["build_jasmine_browser", "build"], function(){
 
   gulp.watch(files.test, ["build_jasmine_browser"]);
   //gulp.watch(files.test, ["test"]);
-  //gulp.watch(files.test, ["build"]);
+  gulp.watch(files.test, ["build"]);
 
   return gulp.src("build/jasmine_browser.js")
     .pipe(watch("build/jasmine_browser.js"))

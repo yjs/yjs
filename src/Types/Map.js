@@ -104,7 +104,11 @@ class EventHandler {
       // if property does not exist, return null
       // if property is a type, return a promise
       if (this.opContents[key] == null) {
-        return this.contents[key];
+        if (key == null) {
+          return copyObject(this.contents);
+        } else {
+          return this.contents[key];
+        }
       } else {
         let def = Promise.defer();
         var oid = this.opContents[key];

@@ -8,6 +8,7 @@
       this._model = _model;
       // Array of all the operation id's
       this.idArray = idArray;
+      // Array of all the values
       this.valArray = valArray;
       this.eventHandler = new EventHandler( ops =>{
         for (var i in ops) {

@@ -113,6 +113,9 @@ class AbstractConnector { //eslint-disable-line no-unused-vars
   }
   // You received a raw message, and you know that it is intended for to Yjs. Then call this function.
   receiveMessage (sender, m){
+    if (sender === this.userId) {
+      return;
+    }
     if (this.debug) {
       console.log(`${sender} -> ${this.userId}: ${JSON.stringify(m)}`); //eslint-disable-line
     }

@@ -93,7 +93,7 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
   apply (ops) {
     for (var key in ops) {
       var o = ops[key];
-      var required = Y.Struct[o.struct].requiredOps(o);
+      var required = Struct[o.struct].requiredOps(o);
       this.whenOperationsExist(required, o);
     }
   }
