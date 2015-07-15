@@ -109,7 +109,12 @@ module.exports = ()->
       @beginning.execute()
       @end.execute()
 
+
+      # The short tree is storing the non deleted operations
       @shortTree = new RBTreeByIndex()
+      # The complete tree is storing all the operations
+      @completeTree = new RBTreeByIndex()
+
       super custom_type, uid, content, content_operations
 
     type: "ListManager"
@@ -160,20 +165,35 @@ module.exports = ()->
 
     # get the next non-deleted operation
     getNextNonDeleted: (start)->
-      if start.isDeleted()
+      if start.isDeleted() or not start.node?
         operation = start.next_cl
         while not ((operation instanceof ops.Delimiter))
           if operation.is_deleted
             operation = operation.next_cl
-          else if operation instanceof ops.Delimiter
-            return false
-          else break
+          else
+            break
       else
-        operation = start.node.next().node
+        operation = start.node.next.node
         if not operation
           return false
 
       operation
+
+    getPrevNonDeleted: (start) ->
+      if start.isDeleted() or not start.node?
+        operation = start.prev_cl
+        while not ((operation instanceof ops.Delimiter))
+          if operation.is_deleted
+            operation = operation.prev_cl
+          else
+            break
+      else
+        operation = start.node.prev.node
+        if not operation
+          return false
+
+      operation
+
 
     # Transforms the list to an array
     # Doesn't return left-right delimiter.
@@ -189,13 +209,13 @@ module.exports = ()->
         init = fun(init, operation)
 
     val: (pos)->
-      if 0 <= pos? < @shortTree.size
+      if pos?
         @shortTree.find(pos).val()
       else
         @toArray()
 
     ref: (pos)->
-      if 0 <= pos? < @shortTree.size
+      if pos?
         @shortTree.find(pos)
       else
         @shortTree.map (operation) ->
@@ -229,24 +249,26 @@ module.exports = ()->
       if left is @beginning
         leftNode = null
         rightNode = @shortTree.findNode 0
-        right = rightNode.data
+        right = if rightNode then rightNode.data else @end
       else
-        rightNode = left.node.nextNode()
+        # left.node should always exist (insert after a non-deleted element)
+        rightNode = left.node.next
         leftNode = left.node
-        right = rightNode.data
+        right = if rightNode then rightNode.data else @end
 
       left = right.prev_cl
 
       # TODO: always expect an array as content. Then you can combine this with the other option (else)
       if contents instanceof ops.Operation
-        tmp = (new ops.Insert null, content, null, undefined, undefined, left, right).execute()
-        @shortTree.insert_between leftNode, rightNode, tmp
+        tmp = new ops.Insert null, content, null, undefined, undefined, left, right
+        tmp.execute()
       else
         for c in contents
           if c? and c._name? and c._getModel?
             c = c._getModel(@custom_types, @operations)
-          tmp = (new ops.Insert null, c, null, undefined, undefined, left, right).execute()
-          leftNode = @shortTree.insert_between leftNode, rightNode, tmp
+          tmp = new ops.Insert null, c, null, undefined, undefined, left, right
+          tmp.execute()
+          leftNode = tmp.node
 
           left = tmp
       @
@@ -268,44 +290,58 @@ module.exports = ()->
     #
     # @return {ListManager Type} This String object
     #
-    deleteRef: (operation, length = 1) ->
+    deleteRef: (operation, length = 1, dir = 'right') ->
+      nextOperation = (operation) =>
+        if dir == 'right' then @getNextNonDeleted operation else @getPrevNonDeleted operation
+
       for i in [0...length]
         if operation instanceof ops.Delimiter
           break
         deleteOperation = (new ops.Delete null, undefined, operation).execute()
-        operation.node.traverse_up (node, parent) ->
-          parent.deleted_weight = (parent.deleted_weight or 0) + 1
-        @shortTree.remove_node operation.node
 
-        operation = getNextNonDeleted operation
+        operation = nextOperation operation
       @
 
     delete: (position, length = 1)->
-      operation = @getOperationByPosition(position+1) # position 0 in this case is the deletion of the first character
+      operation = @getOperationByPosition(position+length) # position 0 in this case is the deletion of the first character
 
-      @deleteRef operation, length
+      @deleteRef operation, length, 'left'
 
 
     callOperationSpecificInsertEvents: (operation)->
+      prev = (@getPrevNonDeleted operation) or @beginning
+      prevNode = if prev then prev.node else null
+
+      next = (@getNextNonDeleted operation) or @end
+      nextNode = if next then next.node else null
+      operation.node = operation.node or (@shortTree.insert_between prevNode, nextNode, operation)
+      operation.completeNode = operation.completeNode or (@completeTree.insert_between operation.prev_cl.completeNode, operation.next_cl.completeNode, operation)
+
       getContentType = (content)->
         if content instanceof ops.Operation
           content.getCustomType()
         else
           content
+
       @callEvent [
         type: "insert"
         reference: operation
-        position: operation.getPosition()
+        position: operation.node.position()
         object: @getCustomType()
         changedBy: operation.uid.creator
         value: getContentType operation.val()
       ]
 
     callOperationSpecificDeleteEvents: (operation, del_op)->
+      if operation.node
+        position = operation.node.position()
+        @shortTree.remove_node operation.node
+        operation.node = null
+
       @callEvent [
         type: "delete"
         reference: operation
-        position: operation.getPosition()
+        position: position
         object: @getCustomType() # TODO: You can combine getPosition + getParent in a more efficient manner! (only left Delimiter will hold @parent)
         length: 1
         changedBy: del_op.uid.creator

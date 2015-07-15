@@ -125,6 +125,7 @@ module.exports = function() {
       this.beginning.execute();
       this.end.execute();
       this.shortTree = new RBTreeByIndex();
+      this.completeTree = new RBTreeByIndex();
       ListManager.__super__.constructor.call(this, custom_type, uid, content, content_operations);
     }
 
@@ -186,19 +187,37 @@ module.exports = function() {
 
     ListManager.prototype.getNextNonDeleted = function(start) {
       var operation;
-      if (start.isDeleted()) {
+      if (start.isDeleted() || (start.node == null)) {
         operation = start.next_cl;
         while (!(operation instanceof ops.Delimiter)) {
           if (operation.is_deleted) {
             operation = operation.next_cl;
-          } else if (operation instanceof ops.Delimiter) {
-            return false;
           } else {
             break;
           }
         }
       } else {
         operation = start.node.next().node;
+        if (!operation) {
+          return false;
+        }
+      }
+      return operation;
+    };
+
+    ListManager.prototype.getPrevNonDeleted = function(start) {
+      var operation;
+      if (start.isDeleted() || (start.node == null)) {
+        operation = start.prev_cl;
+        while (!(operation instanceof ops.Delimiter)) {
+          if (operation.is_deleted) {
+            operation = operation.prev_cl;
+          } else {
+            break;
+          }
+        }
+      } else {
+        operation = start.node.prev().node;
         if (!operation) {
           return false;
         }
@@ -223,8 +242,7 @@ module.exports = function() {
     };
 
     ListManager.prototype.val = function(pos) {
-      var ref;
-      if ((0 <= (ref = pos != null) && ref < this.shortTree.size)) {
+      if (pos != null) {
         return this.shortTree.find(pos).val();
       } else {
         return this.toArray();
@@ -232,8 +250,7 @@ module.exports = function() {
     };
 
     ListManager.prototype.ref = function(pos) {
-      var ref;
-      if ((0 <= (ref = pos != null) && ref < this.shortTree.size)) {
+      if (pos != null) {
         return this.shortTree.find(pos);
       } else {
         return this.shortTree.map(function(operation) {
@@ -271,24 +288,25 @@ module.exports = function() {
       if (left === this.beginning) {
         leftNode = null;
         rightNode = this.shortTree.findNode(0);
-        right = rightNode.data;
+        right = rightNode ? rightNode.data : this.end;
       } else {
-        rightNode = left.node.nextNode();
+        rightNode = left.node.next();
         leftNode = left.node;
-        right = rightNode.data;
+        right = rightNode ? rightNode.data : this.end;
       }
       left = right.prev_cl;
       if (contents instanceof ops.Operation) {
-        tmp = (new ops.Insert(null, content, null, void 0, void 0, left, right)).execute();
-        this.shortTree.insert_between(leftNode, rightNode, tmp);
+        tmp = new ops.Insert(null, content, null, void 0, void 0, left, right);
+        tmp.execute();
       } else {
         for (j = 0, len = contents.length; j < len; j++) {
           c = contents[j];
           if ((c != null) && (c._name != null) && (c._getModel != null)) {
             c = c._getModel(this.custom_types, this.operations);
           }
-          tmp = (new ops.Insert(null, c, null, void 0, void 0, left, right)).execute();
-          leftNode = this.shortTree.insert_between(leftNode, rightNode, tmp);
+          tmp = new ops.Insert(null, c, null, void 0, void 0, left, right);
+          tmp.execute();
+          leftNode = tmp.node;
           left = tmp;
         }
       }
@@ -311,11 +329,8 @@ module.exports = function() {
           break;
         }
         deleteOperation = (new ops.Delete(null, void 0, operation)).execute();
-        operation.node.traverse_up(function(node, parent) {
-          return parent.deleted_weight = (parent.deleted_weight || 0) + 1;
-        });
-        this.shortTree.remove_node(operation.node);
-        operation = getNextNonDeleted(operation);
+        operation.node = null;
+        operation = this.getNextNonDeleted(operation);
       }
       return this;
     };
@@ -330,7 +345,13 @@ module.exports = function() {
     };
 
     ListManager.prototype.callOperationSpecificInsertEvents = function(operation) {
-      var getContentType;
+      var getContentType, next, nextNode, prev, prevNode;
+      prev = (this.getPrevNonDeleted(operation)) || this.beginning;
+      prevNode = prev ? prev.node : null;
+      next = (this.getNextNonDeleted(operation)) || this.end;
+      nextNode = next ? next.node : null;
+      operation.node = operation.node || (this.shortTree.insert_between(prevNode, nextNode, operation));
+      operation.completeNode = operation.completeNode || (this.completeTree.insert_between(operation.prev_cl.completeNode, operation.next_cl.completeNode, operation));
       getContentType = function(content) {
         if (content instanceof ops.Operation) {
           return content.getCustomType();
@@ -342,7 +363,7 @@ module.exports = function() {
         {
           type: "insert",
           reference: operation,
-          position: operation.getPosition(),
+          position: operation.completeNode.position(),
           object: this.getCustomType(),
           changedBy: operation.uid.creator,
           value: getContentType(operation.val())
@@ -351,11 +372,15 @@ module.exports = function() {
     };
 
     ListManager.prototype.callOperationSpecificDeleteEvents = function(operation, del_op) {
+      if (operation.node) {
+        this.shortTree.remove_node(operation.node);
+        operation.node = null;
+      }
       return this.callEvent([
         {
           type: "delete",
           reference: operation,
-          position: operation.getPosition(),
+          position: operation.completeNode.position(),
           object: this.getCustomType(),
           length: 1,
           changedBy: del_op.uid.creator,

@@ -27,6 +27,7 @@
   },
   "homepage": "https://dadamonad.github.io/yjs/",
   "dependencies": {
+    "bintrees": "git://github.com/cphyc/js_bintrees#rbtree-by-index"
   },
   "devDependencies": {
     "chai": "^2.2.0",
