@@ -89,6 +89,29 @@ describe("Array Type", function(){
         done();
       });
     });
+    it("throw insert & delete events", function(done){
+      this.users[0].root.set("array", Y.Array).then(function(array){
+        var event;
+        array.observe(function(e){
+          event = e;
+        });
+        array.insert(0, [0]);
+        expect(event).toEqual([{
+          type: "insert",
+          object: array,
+          index: 0,
+          length: 1
+        }]);
+        array.delete(0);
+        expect(event).toEqual([{
+          type: "delete",
+          object: array,
+          index: 0,
+          length: 1
+        }]);
+        done();
+      });
+    });
   });
   describe(`${numberOfYArrayTests} Random tests`, function(){
     var randomArrayTransactions = [

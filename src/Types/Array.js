@@ -11,6 +11,7 @@
       // Array of all the values
       this.valArray = valArray;
       this.eventHandler = new EventHandler( ops =>{
+        var userEvents = [];
         for (var i in ops) {
           var op = ops[i];
           if (op.struct === "Insert") {
@@ -28,14 +29,27 @@
             }
             this.idArray.splice(pos, 0, JSON.stringify(op.id));
             this.valArray.splice(pos, 0, op.content);
+            userEvents.push({
+              type: "insert",
+              object: this,
+              index: pos,
+              length: 1
+            });
           } else if (op.struct === "Delete") {
             let pos = this.idArray.indexOf(JSON.stringify(op.target));
             this.idArray.splice(pos, 1);
             this.valArray.splice(pos, 1);
+            userEvents.push({
+              type: "delete",
+              object: this,
+              index: pos,
+              length: 1
+            });
           } else {
             throw new Error("Unexpected struct!");
           }
         }
+        this.eventHandler.callUserEventListeners(userEvents);
       });
     }
     get (pos) {
@@ -120,6 +134,9 @@
         yield* this.applyCreatedOperations(dels);
         eventHandler.awaitedLastDeletes(dels.length, newLeft);
       });
+    }
+    observe (f) {
+      this.eventHandler.addUserEventListener(f);
     }
     *_changed (transaction, op) {
       if (op.struct === "Insert") {

@@ -1,6 +1,6 @@
 language: node_js
 before_install:
-  - "npm install -g bower coffee-script"
+  - "npm install -g bower"
   - "bower install"
 node_js:
   - "0.12"
@@ -9,3 +9,4 @@ node_js:
 branches:
   only:
     - master
+    - 0.6

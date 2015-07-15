@@ -6,6 +6,7 @@ class EventHandler {
     this.waiting = [];
     this.awaiting = 0;
     this.onevent = onevent;
+    this.userEventListeners = [];
   }
   receivedOp (op) {
     if (this.awaiting <= 0) {
@@ -17,6 +18,26 @@ class EventHandler {
   awaitAndPrematurelyCall (ops) {
     this.awaiting++;
     this.onevent(ops);
+  }
+  addUserEventListener (f) {
+    this.userEventListeners.push(f);
+  }
+  removeUserEventListener (f) {
+    this.userEventListeners = this.userEventListeners.filter(function(g){
+      return f !== g;
+    });
+  }
+  removeAllUserEventListeners () {
+    this.userEventListeners = [];
+  }
+  callUserEventListeners (event) {
+    for (var i in this.userEventListeners) {
+      try {
+        this.userEventListeners[i](event);
+      } catch (e) {
+        console.log("User events must not throw Errors!");//eslint-disable-line
+      }
+    }
   }
   awaitedLastInserts (n) {
     var ops = this.waiting.splice(this.waiting.length - n);
@@ -56,7 +77,7 @@ class EventHandler {
   }
   tryCallEvents () {
     this.awaiting--;
-    if (this.awaiting <= 0) {
+    if (this.awaiting <= 0 && this.waiting.length > 0) {
       var events = this.waiting;
       this.waiting = [];
       this.onevent(events);
@@ -73,30 +94,69 @@ class EventHandler {
       this.contents = {};
       this.opContents = {};
       this.eventHandler = new EventHandler( ops =>{
+        var userEvents = [];
         for (var i in ops) {
           var op = ops[i];
+          var oldValue;
+          // key is the name to use to access (op)content
+          var key = op.struct === "Delete" ? op.key : op.parentSub;
+
+          // compute oldValue
+          if (this.opContents[key] != null) {
+            let prevType = this.opContents[key];
+            oldValue = () => { //eslint-disable-line
+              let def = Promise.defer();
+              this.os.requestTransaction(function*(){//eslint-disable-line
+                def.resolve(yield* this.getType(prevType));
+              });
+              return def.promise;
+            };
+          } else {
+            oldValue = this.contents[key];
+          }
+          // compute op event
           if (op.struct === "Insert"){
             if (op.left === null) {
               if (op.opContent != null) {
-                this.opContents[op.parentSub] = op.opContent;
-              } else {
-                this.contents[op.parentSub] = op.content;
-              }
-              this.map[op.parentSub] = op.id;
-            }
-          } else if (op.struct === "Delete") {
-            var key = op.key;
-            if (compareIds(this.map[key], op.target)) {
-              if (this.contents[key] != null) {
                 delete this.contents[key];
+                this.opContents[key] = op.opContent;
               } else {
                 delete this.opContents[key];
+                this.contents[key] = op.content;
               }
+              this.map[key] = op.id;
+              var insertEvent = {
+                name: key,
+                object: this
+              };
+              if (oldValue === undefined) {
+                insertEvent.type = "add";
+              } else {
+                insertEvent.type = "update";
+                insertEvent.oldValue = oldValue;
+              }
+              userEvents.push(insertEvent);
+            }
+          } else if (op.struct === "Delete") {
+            if (compareIds(this.map[key], op.target)) {
+              if (this.opContents[key] != null) {
+                delete this.opContents[key];
+              } else {
+                delete this.contents[key];
+              }
+              var deleteEvent = {
+                name: key,
+                object: this,
+                oldValue: oldValue,
+                type: "delete"
+              };
+              userEvents.push(deleteEvent);
             }
           } else {
             throw new Error("Unexpected Operation!");
           }
         }
+        this.eventHandler.callUserEventListeners(userEvents);
       });
     }
     get (key) {
@@ -173,12 +233,9 @@ class EventHandler {
       }
       return def.promise;
     }
-    /*
-    *delete (key) {
-      var t = yield "transaction";
-      var model = yield* t.getOperation(this._model);
-      yield* Y.Struct.Map.delete.call(t, model, key);
-    }*/
+    observe (f) {
+      this.eventHandler.addUserEventListener(f);
+    }
     *_changed (transaction, op) {
       if (op.struct === "Delete") {
         op.key = (yield* transaction.getOperation(op.target)).parentSub;

@@ -136,6 +136,46 @@ describe("Map Type", function(){
         done();
       }, 50);
     });
+    it("throws add & update & delete events (with type and primitive content)", function(done){
+      var y = this.users[0].root;
+      var event;
+      y.observe(function(e){
+        event = e; // just put it on event, should be thrown synchronously anyway
+      });
+      y.set("stuff", 4);
+      expect(event).toEqual([{
+        type: "add",
+        object: y,
+        name: "stuff"
+      }]);
+      // update, oldValue is in contents
+      y.set("stuff", Y.Array);
+      expect(event).toEqual([{
+        type: "update",
+        object: y,
+        name: "stuff",
+        oldValue: 4
+      }]);
+      y.get("stuff").then(function(replacedArray){
+        // update, oldValue is in opContents
+        y.set("stuff", 5);
+        var getYArray = event[0].oldValue;
+        expect(typeof getYArray.constructor === "function").toBeTruthy();
+        getYArray().then(function(array){
+          expect(array).toEqual(replacedArray);
+
+          // delete
+          y.delete("stuff");
+          expect(event).toEqual([{
+            type: "delete",
+            name: "stuff",
+            object: y,
+            oldValue: 5
+          }]);
+          done();
+        });
+      });
+    });
   });
   describe(`${numberOfYMapTests} Random tests`, function(){
     var randomMapTransactions = [
