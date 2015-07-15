@@ -9,7 +9,7 @@ class AbstractTransaction { //eslint-disable-line no-unused-vars
     if (t == null) {
       var op = yield* this.getOperation(id);
       if (op != null) {
-        t = yield* Y[op.type].create.call(this, this.store, op);
+        t = yield* Y[op.type].initType.call(this, this.store, op);
         this.store.initializedTypes[sid] = t;
       }
     }
@@ -17,7 +17,7 @@ class AbstractTransaction { //eslint-disable-line no-unused-vars
   }
   *createType (model) {
     var sid = JSON.stringify(model.id);
-    var t = yield* Y[model.type].create(this.store, model);
+    var t = yield* Y[model.type].initType.call(this, this.store, model);
     this.store.initializedTypes[sid] = t;
     return t;
   }

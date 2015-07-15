@@ -33,6 +33,7 @@
     "compareAllUsers": true,
     "createUsers": true,
     "getRandomNumber": true,
-    "applyRandomTransactions": true
+    "applyRandomTransactions": true,
+    "CustomType": true
   }
 }

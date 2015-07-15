@@ -155,23 +155,26 @@
     }
   }
 
-  Y.Array = function* _YArray(){
-    var model = {
-      start: null,
-      end: null,
-      struct: "List",
-      type: "Array",
-      id: this.store.getNextOpId()
-    };
-    yield* this.applyCreatedOperations([model]);
-    return yield* this.createType(model);
-  };
-  Y.Array.create = function* YArrayCreate(os, model){
-    var valArray = [];
-    var idArray = yield* Y.Struct.List.map.call(this, model, function(c){
-      valArray.push(c.content);
-      return JSON.stringify(c.id);
-    });
-    return new YArray(os, model.id, idArray, valArray);
-  };
+  Y.Array = new CustomType({
+    class: YArray,
+    createType: function* YArrayCreator () {
+      var model = {
+        start: null,
+        end: null,
+        struct: "List",
+        type: "Array",
+        id: this.store.getNextOpId()
+      };
+      yield* this.applyCreatedOperations([model]);
+      return yield* this.createType(model);
+    },
+    initType: function* YArrayInitializer(os, model){
+      var valArray = [];
+      var idArray = yield* Y.Struct.List.map.call(this, model, function(c){
+        valArray.push(c.content);
+        return JSON.stringify(c.id);
+      });
+      return new YArray(os, model.id, idArray, valArray);
+    }
+  });
 })();
