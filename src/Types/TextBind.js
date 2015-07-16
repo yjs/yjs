@@ -70,7 +70,7 @@
           };
 
           writeRange = function (range) {
-            writeContent(word.val());
+            writeContent(word.toString());
             var textnode = textfield.childNodes[0];
             if(range.isReal && textnode != null) {
               if(range.left < 0){
