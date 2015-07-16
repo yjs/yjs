@@ -12,12 +12,12 @@ class WebRTC extends AbstractConnector {
 
     var room = options.room;
 
-    // connect per default to our server
-    if(options.url == null){
-      options.url = "https://yatta.ninja:8888";
-    }
+    var webrtcOptions = {
+      url: options.url || "https://yatta.ninja:8888",
+      room: options.room
+    };
 
-    var swr = new SimpleWebRTC(options); //eslint-disable-line no-undef
+    var swr = new SimpleWebRTC(webrtcOptions); //eslint-disable-line no-undef
     this.swr = swr;
     var self = this;
 

@@ -149,6 +149,51 @@
     observe (f) {
       this.eventHandler.addUserEventListener(f);
     }
+    unobserve (f) {
+      this.eventHandler.removeUserEventListener(f);
+    }
+    observePath (path, f) {
+      var self = this;
+      if (path.length === 0) {
+        this.observe(f);
+        return Promise.resolve(function(){
+          self.unobserve(f);
+        });
+      } else {
+        var deleteChildObservers;
+        var resetObserverPath = function(){
+          var promise = self.get(path[0]);
+          if (!promise instanceof Promise) {
+            // its either not defined or a premitive value
+            promise = self.set(path[0], Y.Map);
+          }
+          return promise.then(function(map){
+            return map.observePath(path.slice(1), f);
+          }).then(function(_deleteChildObservers){
+            deleteChildObservers = _deleteChildObservers;
+            return Promise.resolve();
+          });
+        };
+        var observer = function(events){
+          for (var e in events) {
+            var event = events[e];
+            if (event.name === path[0]) {
+              deleteChildObservers();
+              if (event.type === "add" || event.type === "update") {
+                resetObserverPath();
+              }
+            }
+          }
+        };
+        self.observe(observer);
+        return resetObserverPath().then(
+          Promise.resolve(function(){
+            deleteChildObservers();
+            self.unobserve(observer);
+          })
+        );
+      }
+    }
     *_changed (transaction, op) {
       if (op.struct === "Delete") {
         op.key = (yield* transaction.getOperation(op.target)).parentSub;

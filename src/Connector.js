@@ -25,6 +25,7 @@ class AbstractConnector { //eslint-disable-line no-unused-vars
     this.syncingClients = [];
     this.forwardToSyncingClients = (opts.forwardToSyncingClients === false) ? false : true;
     this.debug = opts.debug ? true : false;
+    this.broadcastedHB = false;
   }
   setUserId (userId) {
     this.userId = userId;
@@ -117,7 +118,8 @@ class AbstractConnector { //eslint-disable-line no-unused-vars
       return;
     }
     if (this.debug) {
-      console.log(`${sender} -> ${this.userId}: ${JSON.stringify(m)}`); //eslint-disable-line
+      console.log(`${sender} -> me: ${m.type}`);//eslint-disable-line
+      console.dir(m); //eslint-disable-line
     }
     if (m.type === "sync step 1") {
       // TODO: make transaction, stream the ops
@@ -148,6 +150,7 @@ class AbstractConnector { //eslint-disable-line no-unused-vars
       this.y.db.requestTransaction(function*(){
         var ops = yield* this.getOperations(m.stateVector);
         if (ops.length > 0) {
+          conn.broadcastedHB = true;
           conn.broadcast({
             type: "update",
             ops: ops

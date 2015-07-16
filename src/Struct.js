@@ -184,22 +184,14 @@ var Struct = {
       var right = null;
       parent = parent || (yield* this.getOperation(op.parent));
 
-      // NOTE: You you have to call addOperation before you set any other operation!
-
       // reconnect left and set right of op
       if (op.left != null) {
         left = yield* this.getOperation(op.left);
         op.right = left.right;
-        if ((yield* this.addOperation(op)) === false) { // add here
-          return;
-        }
         left.right = op.id;
         yield* this.setOperation(left);
       } else {
         op.right = op.parentSub ? (parent.map[op.parentSub] || null) : parent.start;
-        if ((yield* this.addOperation(op)) === false) { // or here
-          return;
-        }
       }
       // reconnect right
       if (op.right != null) {
@@ -260,9 +252,6 @@ var Struct = {
     execute: function* (op) {
       op.start = null;
       op.end = null;
-      if ((yield* this.addOperation(op)) === false) {
-        return;
-      }
     },
     ref: function* (op : Op, pos : number) : Insert {
       if (op.start == null) {
@@ -324,10 +313,7 @@ var Struct = {
       */
       return [];
     },
-    execute: function* (op) {
-      if ((yield* this.addOperation(op)) === false) {
-        return;
-      }
+    execute: function* () {
     },
     get: function* (op, name) {
       var oid = op.map[name];
@@ -347,3 +333,4 @@ var Struct = {
     }
   }
 };
+Y.Struct = Struct;

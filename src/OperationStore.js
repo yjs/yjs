@@ -21,32 +21,19 @@ class AbstractTransaction { //eslint-disable-line no-unused-vars
     this.store.initializedTypes[sid] = t;
     return t;
   }
-  // returns false if operation is not expected.
-  *addOperation (op) {
-    var state = yield* this.getState(op.id[0]);
-    if (op.id[1] === state.clock){
-      state.clock++;
-      yield* this.setState(state);
-      this.os.add(op);
-      yield* this.store.operationAdded(this, op);
-      return true;
-    } else if (op.id[1] < state.clock) {
-      return false;
-    } else {
-      throw new Error("Operations must arrive in order!");
-    }
-  }
   *applyCreatedOperations (ops) {
     var send = [];
     for (var i = 0; i < ops.length; i++) {
       var op = ops[i];
-      yield* Struct[op.struct].execute.call(this, op);
+      yield* this.store.tryExecute.call(this, op);
       send.push(copyObject(Struct[op.struct].encode(op)));
     }
-    this.store.y.connector.broadcast({
-      type: "update",
-      ops: send
-    });
+    if (this.store.y.connector.broadcastedHB){
+      this.store.y.connector.broadcast({
+        type: "update",
+        ops: send
+      });
+    }
   }
 }
 
@@ -79,10 +66,23 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
     // TODO: Use ES7 Weak Maps. This way types that are no longer user,
     // wont be kept in memory.
     this.initializedTypes = {};
+    this.whenUserIdSetListener = null;
+    this.waitingOperations = new RBTree();
   }
   setUserId (userId) {
     this.userId = userId;
     this.opClock = 0;
+    if (this.whenUserIdSetListener != null) {
+      this.whenUserIdSetListener();
+      this.whenUserIdSetListener = null;
+    }
+  }
+  whenUserIdSet (f) {
+    if (this.userId != null) {
+      f();
+    } else {
+      this.whenUserIdSetListener = f;
+    }
   }
   getNextOpId () {
     if (this.userId == null) {
@@ -140,7 +140,7 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
 
       for (let key in exeNow) {
         let o = exeNow[key].op;
-        yield* Struct[o.struct].execute.call(this, o);
+        yield* store.tryExecute.call(this, o);
       }
 
       for (var sid in ls){
@@ -153,12 +153,36 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
             let listener = l[key];
             let o = listener.op;
             if (--listener.missing === 0){
-              yield* Struct[o.struct].execute.call(this, o);
+              yield* store.tryExecute.call(this, o);
             }
           }
         }
       }
     });
+  }
+  *tryExecute (op) {
+    if (op.struct === "Delete") {
+      yield* Struct.Delete.execute.call(this, op);
+    } else {
+      while (op != null) {
+        var state = yield* this.getState(op.id[0]);
+        if (op.id[1] === state.clock){
+          state.clock++;
+          yield* this.setState.call(this, state);
+          yield* Struct[op.struct].execute.call(this, op);
+          yield* this.addOperation(op);
+          yield* this.store.operationAdded(this, op);
+          // find next operation to execute
+          op = this.store.waitingOperations.find([op.id[0], state.clock]);
+        } else {
+          if (op.id[1] > state.clock) {
+            // has to be executed at some point later
+            this.store.waitingOperations.add(op);
+          }
+          op = null;
+        }
+      }
+    }
   }
   // called by a transaction when an operation is added
   *operationAdded (transaction, op) {

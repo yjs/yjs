@@ -33,6 +33,9 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
       n.val = op;
       return op;
     }
+    *addOperation (op) {
+      this.os.add(op);
+    }
     *getOperation (id) {
       if (id == null) {
         throw new Error("You must define id!");
@@ -97,21 +100,18 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
     }
     *makeOperationReady (ss, op) {
       // instead of ss, you could use currSS (a ss that increments when you add an operation)
-      if (op.right == null) {
-        return op;
-      }
       var clock;
       var o = op;
       while (o.right != null){
         // while unknown, go to the right
-        o = yield* this.getOperation(o.right);
-        clock = ss[o.id[0]];
-        if (clock != null && o.id[1] < clock) {
+        clock = ss[o.right[0]];
+        if (clock != null && o.right[1] < clock) {
           break;
         }
+        o = yield* this.getOperation(o.right);
       }
       op = copyObject(op);
-      op.right = (o == null) ? null : o.id;
+      op.right = o.right;
       return op;
     }
   }

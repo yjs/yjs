@@ -1,4 +1,8 @@
 
+function smaller (a, b) {
+  return a[0] < b[0] || (a[0] === b[0] && a[1] < b[1]);
+}
+
 class N {
   // A created node is always red!
   constructor (val) {
@@ -106,6 +110,7 @@ class N {
 class RBTree { //eslint-disable-line no-unused-vars
   constructor () {
     this.root = null;
+    this.length = 0;
   }
   findNodeWithLowerBound (from) {
     var o = this.root;
@@ -113,11 +118,11 @@ class RBTree { //eslint-disable-line no-unused-vars
       return false;
     } else {
       while (true) {
-        if ((from === null || from < o.val.id) && o.left !== null) {
+        if ((from === null || smaller(from, o.val.id)) && o.left !== null) {
           // o is included in the bound
           // try to find an element that is closer to the bound
           o = o.left;
-        } else if (o.val.id < from) {
+        } else if (smaller(o.val.id, from)) {
           // o is not within the bound, maybe one of the right elements is..
           if (o.right !== null) {
             o = o.right;
@@ -134,7 +139,7 @@ class RBTree { //eslint-disable-line no-unused-vars
   }
   iterate (from, to, f) {
     var o = this.findNodeWithLowerBound(from);
-    while ( o !== null && (to === null || o.val.id <= to) ) {
+    while ( o !== null && (to === null || smaller(o.val.id, to) || compareIds(o.val.id, to)) ) {
       f(o.val);
       o = o.next();
     }
@@ -152,9 +157,9 @@ class RBTree { //eslint-disable-line no-unused-vars
         if (o === null) {
           return false;
         }
-        if (id < o.val.id) {
+        if (smaller(id, o.val.id)) {
           o = o.left;
-        } else if (o.val.id < id) {
+        } else if (smaller(o.val.id, id)) {
           o = o.right;
         } else {
           return o;
@@ -164,6 +169,10 @@ class RBTree { //eslint-disable-line no-unused-vars
   }
   delete (id) {
     var d = this.findNode(id);
+    if (d == null) {
+      throw new Error("Element does not exist!");
+    }
+    this.length--;
     if (d.left !== null && d.right !== null) {
       // switch d with the greates element in the left subtree.
       // o should have at most one child.
@@ -302,14 +311,14 @@ class RBTree { //eslint-disable-line no-unused-vars
     if (this.root !== null) {
       var p = this.root; // p abbrev. parent
       while (true) {
-        if (node.val.id < p.val.id) {
+        if (smaller(node.val.id, p.val.id)) {
           if (p.left === null) {
             p.left = node;
             break;
           } else {
             p = p.left;
           }
-        } else if (p.val.id < node.val.id) {
+        } else if (smaller(p.val.id, node.val.id)) {
           if (p.right === null) {
             p.right = node;
             break;
@@ -324,6 +333,7 @@ class RBTree { //eslint-disable-line no-unused-vars
     } else {
       this.root = node;
     }
+    this.length++;
     this.root.blacken();
   }
   _fixInsert (n) {

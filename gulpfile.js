@@ -70,7 +70,8 @@ var options = minimist(process.argv.slice(2), {
 });
 
 var files = {
-  y: polyfills.concat(["src/y.js", "src/Connector.js", "src/OperationStore.js", "src/Struct.js", "src/**/*.js", "!src/**/*.spec.js"]),
+  y: polyfills.concat(["src/y.js", "src/Connector.js", "src/OperationStore.js", "src/Struct.js", "src/Utils.js",
+    "src/OperationStores/RedBlackTree.js", "src/**/*.js", "!src/**/*.spec.js"]),
   lint: ["src/**/*.js", "gulpfile.js"],
   test: polyfills.concat([options.testfiles]),
   build_test: ["build_test/y.js"]

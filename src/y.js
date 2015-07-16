@@ -2,8 +2,10 @@
 
 function Y (opts) {
   var def = Promise.defer();
-  new YConfig(opts, function(config){ //eslint-disable-line
-    def.resolve(config);
+  new YConfig(opts, function(yconfig){ //eslint-disable-line
+    yconfig.db.whenUserIdSet(function(){
+      def.resolve(yconfig);
+    });
   });
   return def.promise;
 }
@@ -37,7 +39,3 @@ class YConfig { //eslint-disable-line no-unused-vars
     };
   }
 }
-
-Y.AbstractTransaction = AbstractTransaction;
-Y.AbstractOperationStore = AbstractOperationStore;
-Y.Struct = Struct;
