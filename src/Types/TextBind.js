@@ -160,7 +160,7 @@
             return true;
           } else if (char.length > 0) {
             var r = createRange();
-            var pos = Math.min(r.left, r.right);
+            var pos = Math.min(r.left, r.right, word.length);
             var diff = Math.abs(r.right - r.left);
             word.delete(pos, diff);
             word.insert(pos, char);

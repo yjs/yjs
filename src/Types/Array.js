@@ -52,6 +52,9 @@
         this.eventHandler.callUserEventListeners(userEvents);
       });
     }
+    get length () {
+      return this.idArray.length;
+    }
     get (pos) {
       if (pos == null || typeof pos !== "number") {
           throw new Error("pos must be a number!");
