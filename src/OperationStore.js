@@ -174,6 +174,9 @@ class AbstractOperationStore { //eslint-disable-line no-unused-vars
           yield* this.store.operationAdded(this, op);
           // find next operation to execute
           op = this.store.waitingOperations.find([op.id[0], state.clock]);
+          if (op != null) {
+            this.store.waitingOperations.delete([op.id[0], state.clock]);
+          }
         } else {
           if (op.id[1] > state.clock) {
             // has to be executed at some point later

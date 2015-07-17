@@ -123,6 +123,9 @@
       if (pos + length > this.idArray.length || pos < 0 || length < 0) {
         throw new Error("The deletion range exceeds the range of the array!");
       }
+      if (length === 0) {
+        return;
+      }
       var eventHandler = this.eventHandler;
       var newLeft = pos > 0 ? JSON.parse(this.idArray[pos - 1]) : null;
       var dels = [];

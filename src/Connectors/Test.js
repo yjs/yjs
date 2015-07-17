@@ -37,6 +37,7 @@ function flushOne(){
     return false;
   }
 }
+
 // setInterval(flushOne, 10);
 
 var userIdCounter = 0;
@@ -63,6 +64,13 @@ class Test extends AbstractConnector {
   }
   disconnect () {
     globalRoom.removeUser(this.userId);
+  }
+  flush() {
+    var buff = globalRoom.buffers[this.userId];
+    while (buff.length > 0) {
+      var m = buff.shift();
+      this.receiveMessage(m[0], m[1]);
+    }
   }
   flushAll () {
     var c = true;

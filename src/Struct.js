@@ -95,9 +95,9 @@ var Struct = {
       if(op.right != null){
         ids.push(op.right);
       }
-      if(op.right == null && op.left == null) {
-        ids.push(op.parent);
-      }
+      //if(op.right == null && op.left == null) {}
+      ids.push(op.parent);
+
       if (op.opContent != null) {
         ids.push(op.opContent);
       }
@@ -276,7 +276,7 @@ var Struct = {
     map: function* (o : Op, f : Function) : Array<any> {
       o = o.start;
       var res = [];
-      while ( o != null) {
+      while ( o !== null) {
         var operation = yield* this.getOperation(o);
         if (!operation.deleted) {
           res.push(f(operation));

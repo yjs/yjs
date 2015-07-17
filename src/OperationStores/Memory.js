@@ -120,17 +120,31 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
       super(y);
       this.os = new RBTree();
       this.ss = {};
+      this.waitingTransactions = [];
+      this.transactionInProgress = false;
     }
-    requestTransaction (makeGen : Function) {
-      var t = new Transaction(this);
-      var gen = makeGen.call(t);
-      var res = gen.next();
-      while(!res.done){
-        if (res.value === "transaction") {
-          res = gen.next(t);
-        } else {
-          throw new Error("You must not yield this type. (Maybe you meant to use 'yield*'?)");
-        }
+    requestTransaction (_makeGen : Function) {
+      if (!this.transactionInProgress) {
+        this.transactionInProgress = true;
+        window.setTimeout(() => {
+          var makeGen = _makeGen;
+          while (makeGen != null) {
+            var t = new Transaction(this);
+            var gen = makeGen.call(t);
+            var res = gen.next();
+            while(!res.done){
+              if (res.value === "transaction") {
+                res = gen.next(t);
+              } else {
+                throw new Error("You must not yield this type. (Maybe you meant to use 'yield*'?)");
+              }
+            }
+            makeGen = this.waitingTransactions.shift();
+          }
+          this.transactionInProgress = false;
+        }, 0);
+      } else {
+        this.waitingTransactions.push(_makeGen);
       }
     }
     *removeDatabase () {
