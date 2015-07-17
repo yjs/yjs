@@ -54,56 +54,56 @@ describe("RedBlack Tree", function(){
     this.tree = new RBTree();
   });
   it("can add&retrieve 5 elements", function(){
-    this.tree.add({val: "four", id: 4});
-    this.tree.add({val: "one", id: 1});
-    this.tree.add({val: "three", id: 3});
-    this.tree.add({val: "two", id: 2});
-    this.tree.add({val: "five", id: 5});
-    expect(this.tree.find(1).val).toEqual("one");
-    expect(this.tree.find(2).val).toEqual("two");
-    expect(this.tree.find(3).val).toEqual("three");
-    expect(this.tree.find(4).val).toEqual("four");
-    expect(this.tree.find(5).val).toEqual("five");
+    this.tree.add({val: "four", id: [4]});
+    this.tree.add({val: "one", id: [1]});
+    this.tree.add({val: "three", id: [3]});
+    this.tree.add({val: "two", id: [2]});
+    this.tree.add({val: "five", id: [5]});
+    expect(this.tree.find([1]).val).toEqual("one");
+    expect(this.tree.find([2]).val).toEqual("two");
+    expect(this.tree.find([3]).val).toEqual("three");
+    expect(this.tree.find([4]).val).toEqual("four");
+    expect(this.tree.find([5]).val).toEqual("five");
   });
 
   it("5 elements do not exist anymore after deleting them", function(){
-    this.tree.add({val: "four", id: 4});
-    this.tree.add({val: "one", id: 1});
-    this.tree.add({val: "three", id: 3});
-    this.tree.add({val: "two", id: 2});
-    this.tree.add({val: "five", id: 5});
-    this.tree.delete(4);
-    expect(this.tree.find(4)).not.toBeTruthy();
-    this.tree.delete(3);
-    expect(this.tree.find(3)).not.toBeTruthy();
-    this.tree.delete(2);
-    expect(this.tree.find(2)).not.toBeTruthy();
-    this.tree.delete(1);
-    expect(this.tree.find(1)).not.toBeTruthy();
-    this.tree.delete(5);
-    expect(this.tree.find(5)).not.toBeTruthy();
+    this.tree.add({val: "four", id: [4]});
+    this.tree.add({val: "one", id: [1]});
+    this.tree.add({val: "three", id: [3]});
+    this.tree.add({val: "two", id: [2]});
+    this.tree.add({val: "five", id: [5]});
+    this.tree.delete([4]);
+    expect(this.tree.find([4])).not.toBeTruthy();
+    this.tree.delete([3]);
+    expect(this.tree.find([3])).not.toBeTruthy();
+    this.tree.delete([2]);
+    expect(this.tree.find([2])).not.toBeTruthy();
+    this.tree.delete([1]);
+    expect(this.tree.find([1])).not.toBeTruthy();
+    this.tree.delete([5]);
+    expect(this.tree.find([5])).not.toBeTruthy();
   });
 
   it("debug #1", function(){
-    this.tree.add({id: 2});
-    this.tree.add({id: 0});
-    this.tree.delete(2);
-    this.tree.add({id: 1});
-    expect(this.tree.find(0)).not.toBeUndefined();
-    expect(this.tree.find(1)).not.toBeUndefined();
-    expect(this.tree.find(2)).toBeUndefined();
+    this.tree.add({id: [2]});
+    this.tree.add({id: [0]});
+    this.tree.delete([2]);
+    this.tree.add({id: [1]});
+    expect(this.tree.find([0])).not.toBeUndefined();
+    expect(this.tree.find([1])).not.toBeUndefined();
+    expect(this.tree.find([2])).toBeUndefined();
   });
   describe("debug #2", function(){
     var tree = new RBTree();
-    tree.add({id: 8433});
-    tree.add({id: 12844});
-    tree.add({id: 1795});
-    tree.add({id: 30302});
-    tree.add({id: 64287});
-    tree.delete(8433);
-    tree.add({id: 28996});
-    tree.delete(64287);
-    tree.add({id: 22721});
+    tree.add({id: [8433]});
+    tree.add({id: [12844]});
+    tree.add({id: [1795]});
+    tree.add({id: [30302]});
+    tree.add({id: [64287]});
+    tree.delete([8433]);
+    tree.add({id: [28996]});
+    tree.delete([64287]);
+    tree.add({id: [22721]});
 
     itRootNodeIsBlack(tree, []);
     itBlackHeightOfSubTreesAreEqual(tree, []);
@@ -115,13 +115,13 @@ describe("RedBlack Tree", function(){
     for(var i = 0; i < numberOfRBTreeTests; i++) {
       var r = Math.random();
       if (r < 0.8) {
-        var obj = Math.floor(Math.random() * numberOfRBTreeTests * 10000);
+        var obj = [Math.floor(Math.random() * numberOfRBTreeTests * 10000)];
         elements.push(obj);
         tree.add({id: obj});
       } else if (elements.length > 0) {
         var elemid = Math.floor(Math.random() * elements.length);
         var elem = elements[elemid];
-        elements = elements.filter(function(e){return e != elem; }); //eslint-disable-line
+        elements = elements.filter(function(e){return !compareIds(e,elem); }); //eslint-disable-line
         tree.delete(elem);
       }
     }
@@ -145,7 +145,7 @@ describe("RedBlack Tree", function(){
     it("iterating over a tree with lower bound yields the right amount of results", function(){
       var lowerBound = elements[Math.floor(Math.random() * elements.length)];
       var expectedResults = elements.filter(function(e, pos){
-        return e >= lowerBound && elements.indexOf(e) === pos;
+        return (smaller(lowerBound, e) || compareIds(e, lowerBound)) && elements.indexOf(e) === pos;
       }).length;
 
       var actualResults = 0;
@@ -172,7 +172,7 @@ describe("RedBlack Tree", function(){
     it("iterating over a tree with upper bound yields the right amount of results", function(){
       var upperBound = elements[Math.floor(Math.random() * elements.length)];
       var expectedResults = elements.filter(function(e, pos){
-        return e <= upperBound && elements.indexOf(e) === pos;
+        return (smaller(e, upperBound) || compareIds(e, upperBound)) && elements.indexOf(e) === pos;
       }).length;
 
       var actualResults = 0;
@@ -187,7 +187,7 @@ describe("RedBlack Tree", function(){
       var b1 = elements[Math.floor(Math.random() * elements.length)];
       var b2 = elements[Math.floor(Math.random() * elements.length)];
       var upperBound, lowerBound;
-      if (b1 < b2) {
+      if (smaller(b1, b2)) {
         lowerBound = b1;
         upperBound = b2;
       } else {
@@ -195,7 +195,8 @@ describe("RedBlack Tree", function(){
         upperBound = b1;
       }
       var expectedResults = elements.filter(function(e, pos){
-        return e >= lowerBound && e <= upperBound && elements.indexOf(e) === pos;
+        return (smaller(lowerBound, e) || compareIds(e, lowerBound))
+                && (smaller(e, upperBound) || compareIds(e, upperBound)) && elements.indexOf(e) === pos;
       }).length;
       var actualResults = 0;
       tree.iterate(lowerBound, upperBound, function(val){

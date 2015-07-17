@@ -36,6 +36,7 @@
     "applyRandomTransactions": true,
     "CustomType": true,
     "window": true,
-    "document": true
+    "document": true,
+    "smaller": true
   }
 }

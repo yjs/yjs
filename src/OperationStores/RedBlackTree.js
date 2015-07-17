@@ -113,6 +113,9 @@ class RBTree { //eslint-disable-line no-unused-vars
     this.length = 0;
   }
   findNodeWithLowerBound (from) {
+    if (from === void 0) {
+      throw new Error("You must define from!");
+    }
     var o = this.root;
     if (o === null) {
       return false;
@@ -122,7 +125,7 @@ class RBTree { //eslint-disable-line no-unused-vars
           // o is included in the bound
           // try to find an element that is closer to the bound
           o = o.left;
-        } else if (smaller(o.val.id, from)) {
+        } else if (from !== null && smaller(o.val.id, from)) {
           // o is not within the bound, maybe one of the right elements is..
           if (o.right !== null) {
             o = o.right;
@@ -149,6 +152,9 @@ class RBTree { //eslint-disable-line no-unused-vars
     return this.findNode(id).val;
   }
   findNode (id) {
+    if (id == null || id.constructor !== Array) {
+      throw new Error("Expect id to be an array!");
+    }
     var o = this.root;
     if (o === null) {
       return false;
@@ -168,6 +174,9 @@ class RBTree { //eslint-disable-line no-unused-vars
     }
   }
   delete (id) {
+    if (id == null || id.constructor !== Array) {
+      throw new Error("id is expected to be an Array!");
+    }
     var d = this.findNode(id);
     if (d == null) {
       throw new Error("Element does not exist!");
@@ -307,6 +316,9 @@ class RBTree { //eslint-disable-line no-unused-vars
     }
   }
   add (v) {
+    if (v == null || v.id == null || v.id.constructor !== Array) {
+      throw new Error("v is expected to have an id property which is an Array!");
+    }
     var node = new N(v);
     if (this.root !== null) {
       var p = this.root; // p abbrev. parent

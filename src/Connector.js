@@ -149,8 +149,8 @@ class AbstractConnector { //eslint-disable-line no-unused-vars
       let conn = this;
       this.y.db.requestTransaction(function*(){
         var ops = yield* this.getOperations(m.stateVector);
+        conn.broadcastedHB = true;
         if (ops.length > 0) {
-          conn.broadcastedHB = true;
           conn.broadcast({
             type: "update",
             ops: ops
