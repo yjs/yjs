@@ -73,10 +73,26 @@ class Test extends AbstractConnector {
     }
   }
   flushAll () {
-    var c = true;
-    while (c) {
-      c = flushOne();
+    var def = Promise.defer();
+    // flushes may result in more created operations,
+    // flush until there is nothing more to flush
+    function nextFlush() {
+      var c = flushOne();
+      if (c) {
+        while(flushOne()) {
+          //nop
+        }
+        wait().then(nextFlush);
+      } else {
+        wait().then(function(){
+          def.resolve();
+        });
+      }
     }
+    // in the case that there are
+    // still actions that want to be performed
+    wait(0).then(nextFlush);
+    return def.promise;
   }
   flushOne() {
     flushOne();

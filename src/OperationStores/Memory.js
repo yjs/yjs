@@ -126,7 +126,7 @@ Y.Memory = (function(){ //eslint-disable-line no-unused-vars
     requestTransaction (_makeGen : Function) {
       if (!this.transactionInProgress) {
         this.transactionInProgress = true;
-        window.setTimeout(() => {
+        setTimeout(() => {
           var makeGen = _makeGen;
           while (makeGen != null) {
             var t = new Transaction(this);

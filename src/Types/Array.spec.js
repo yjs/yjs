@@ -1,116 +1,98 @@
 /* @flow */
 /*eslint-env browser,jasmine */
 
-var numberOfYArrayTests = 20;
+var numberOfYArrayTests = 80;
 
 describe("Array Type", function(){
-  jasmine.DEFAULT_TIMEOUT_INTERVAL = 5000;
-  beforeEach(function(done){
-    createUsers(this, 5, done);
+  var y1, y2, y3, flushAll;
+
+  jasmine.DEFAULT_TIMEOUT_INTERVAL = 50000;
+  beforeEach(async function(done){
+    await createUsers(this, 5);
+    y1 = this.users[0].root;
+    y2 = this.users[1].root;
+    y3 = this.users[2].root;
+    flushAll = this.users[0].connector.flushAll;
+    done();
+  });
+  afterEach(async function(done) {
+    await compareAllUsers(this.users);
+    done();
   });
 
   describe("Basic tests", function(){
-    it("insert three elements", function(done){
-      var y = this.users[0].root;
-      y.set("Array", Y.Array).then(function(array) {
-        array.insert(0, [1, 2, 3]);
-        return y.get("Array");
-      }).then(function(array){
-        expect(array.toArray()).toEqual([1, 2, 3]);
-        done();
-      });
+    it("insert three elements, try re-get property", async function(done){
+      var array = await y1.set("Array", Y.Array);
+      array.insert(0, [1, 2, 3]);
+      array = await y1.get("Array"); // re-get property
+      expect(array.toArray()).toEqual([1, 2, 3]);
+      done();
     });
-    it("Basic insert in array (handle three conflicts)", function(done){
-      var y = this.users[0];
+    it("Basic insert in array (handle three conflicts)", async function(done){
       var l1, l2, l3;
-      y.root.set("Array", Y.Array).then((array)=>{
-        l1 = array;
-        y.connector.flushAll();
-        l1.insert(0, [0]);
-        return this.users[1].root.get("Array");
-      }).then((array)=>{
-        l2 = array;
-        l2.insert(0, [1]);
-        return this.users[2].root.get("Array");
-      }).then((array)=>{
-        l3 = array;
-        l3.insert(0, [2]);
-        y.connector.flushAll();
-        expect(l1.toArray()).toEqual(l2.toArray());
-        expect(l2.toArray()).toEqual(l3.toArray());
-        compareAllUsers(this.users);
-        done();
-      });
+      await y1.set("Array", Y.Array);
+      await flushAll();
+      (l1 = await y1.get("Array")).insert(0, [0]);
+      (l2 = await y2.get("Array")).insert(0, [1]);
+      (l3 = await y3.get("Array")).insert(0, [2]);
+      await flushAll();
+      expect(l1.toArray()).toEqual(l2.toArray());
+      expect(l2.toArray()).toEqual(l3.toArray());
+      done();
     });
-    it("Basic insert&delete in array (handle three conflicts)", function(done){
-      var y = this.users[0];
+    it("Basic insert&delete in array (handle three conflicts)", async function(done){
       var l1, l2, l3;
-      y.root.set("Array", Y.Array).then((array)=>{
-        l1 = array;
-        l1.insert(0, ["x", "y", "z"]);
-        y.connector.flushAll();
-        l1.insert(1, [0]);
-        return this.users[1].root.get("Array");
-      }).then((array)=>{
-        l2 = array;
-        l2.delete(0);
-        l2.delete(1);
-        return this.users[2].root.get("Array");
-      }).then((array)=>{
-        l3 = array;
-        l3.insert(1, [2]);
-        y.connector.flushAll();
-        expect(l1.toArray()).toEqual(l2.toArray());
-        expect(l2.toArray()).toEqual(l3.toArray());
-        expect(l2.toArray()).toEqual([0, 2, "y"]);
-        compareAllUsers(this.users);
-        done();
-      });
+      l1 = await y1.set("Array", Y.Array);
+      l1.insert(0, ["x", "y", "z"]);
+      await flushAll();
+      l1.insert(1, [0]);
+      l2 = await y2.get("Array");
+      l2.delete(0);
+      l2.delete(1);
+      l3 = await y3.get("Array");
+      l3.insert(1, [2]);
+      await flushAll();
+      expect(l1.toArray()).toEqual(l2.toArray());
+      expect(l2.toArray()).toEqual(l3.toArray());
+      expect(l2.toArray()).toEqual([0, 2, "y"]);
+      done();
     });
-    it("Basic insert. Then delete the whole array", function(done){
-      var y = this.users[0];
+    it("Basic insert. Then delete the whole array", async function(done){
       var l1, l2, l3;
-      y.root.set("Array", Y.Array).then((array)=>{
-        l1 = array;
-        l1.insert(0, ["x", "y", "z"]);
-        y.connector.flushAll();
-        l1.delete(0, 3);
-        return this.users[1].root.get("Array");
-      }).then((array)=>{
-        l2 = array;
-        return this.users[2].root.get("Array");
-      }).then((array)=>{
-        l3 = array;
-        y.connector.flushAll();
-        expect(l1.toArray()).toEqual(l2.toArray());
-        expect(l2.toArray()).toEqual(l3.toArray());
-        expect(l2.toArray()).toEqual([]);
-        compareAllUsers(this.users);
-        done();
-      });
+      l1 = await y1.set("Array", Y.Array);
+      l1.insert(0, ["x", "y", "z"]);
+      await flushAll();
+      l1.delete(0, 3);
+      l2 = await y2.get("Array");
+      l3 = await y3.get("Array");
+      await flushAll();
+      expect(l1.toArray()).toEqual(l2.toArray());
+      expect(l2.toArray()).toEqual(l3.toArray());
+      expect(l2.toArray()).toEqual([]);
+      done();
     });
-    it("throw insert & delete events", function(done){
-      this.users[0].root.set("array", Y.Array).then(function(array){
-        var event;
-        array.observe(function(e){
-          event = e;
-        });
-        array.insert(0, [0]);
-        expect(event).toEqual([{
-          type: "insert",
-          object: array,
-          index: 0,
-          length: 1
-        }]);
-        array.delete(0);
-        expect(event).toEqual([{
-          type: "delete",
-          object: array,
-          index: 0,
-          length: 1
-        }]);
-        done();
+    it("throw insert & delete events", async function(done){
+      var array = await this.users[0].root.set("array", Y.Array);
+      var event;
+      array.observe(function(e){
+        event = e;
       });
+      array.insert(0, [0]);
+      expect(event).toEqual([{
+        type: "insert",
+        object: array,
+        index: 0,
+        length: 1
+      }]);
+      array.delete(0);
+      expect(event).toEqual([{
+        type: "delete",
+        object: array,
+        index: 0,
+        length: 1
+      }]);
+      await wait(50);
+      done();
     });
   });
   describe(`${numberOfYArrayTests} Random tests`, function(){
@@ -136,34 +118,26 @@ describe("Array Type", function(){
         }
       }
     }
-    beforeEach(function(done){
-      this.users[0].root.set("Array", Y.Array);
-      this.users[0].connector.flushAll();
+    beforeEach(async function(done){
+      await this.users[0].root.set("Array", Y.Array);
+      await flushAll();
 
-      var then = Promise.resolve();
-      var arrays = [];
-      for (var u of this.users) {
-        then = then.then(function(){ //eslint-disable-line
-          return u.root.get("Array");
-        }).then(function(array){//eslint-disable-line
-          arrays.push(array);
-        });
+      var promises = [];
+      for (var u = 0; u < this.users.length; u++) {
+        promises.push(this.users[u].root.get("Array"));
       }
-      this.arrays = arrays;
-      then.then(function(){
-        done();
-      });
+      this.arrays = await Promise.all(promises);
+      done();
     });
-    it("arrays.length equals users.length", function(){
+    it("arrays.length equals users.length", async function(done){
       expect(this.arrays.length).toEqual(this.users.length);
+      done();
     });
-    it(`succeed after ${numberOfYArrayTests} actions`, function(done){
-      applyRandomTransactions(this.users, this.arrays, randomArrayTransactions, numberOfYArrayTests);
-      setTimeout(()=>{
-        compareAllUsers(this.users);
-        compareArrayValues(this.arrays);
-        done();
-      }, 500);
+    it(`succeed after ${numberOfYArrayTests} actions`, async function(done){
+      await applyRandomTransactions(this.users, this.arrays, randomArrayTransactions, numberOfYArrayTests);
+      await flushAll();
+      await compareArrayValues(this.arrays);
+      done();
     });
   });
 });

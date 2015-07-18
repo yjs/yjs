@@ -5,6 +5,13 @@
   This is "just" a compilation of functions that help to test this library!
 ***/
 
+function wait(t = 0) {//eslint-disable-line
+  var def = Promise.defer();
+  setTimeout(function(){
+    def.resolve();
+  }, t);
+  return def.promise;
+}
 
 // returns a random element of o
 // works on Object, and Array
@@ -26,7 +33,7 @@ function getRandomNumber(n) {//eslint-disable-line
   return Math.floor(Math.random() * n);
 }
 
-function applyRandomTransactions (users, objects, transactions, numberOfTransactions) {//eslint-disable-line
+async function applyRandomTransactions (users, objects, transactions, numberOfTransactions) {//eslint-disable-line
   function randomTransaction (root) {
     var f = getRandom(transactions);
     f(root);
@@ -39,40 +46,45 @@ function applyRandomTransactions (users, objects, transactions, numberOfTransact
     } else {
       randomTransaction(getRandom(objects));
     }
+    wait();
   }
 }
 
-function compareAllUsers(users){//eslint-disable-line
+async function compareAllUsers(users){//eslint-disable-line
   var s1, s2;
+  var db1 = [];
   function* t1(){
     s1 = yield* this.getStateSet();
   }
   function* t2(){
     s2 = yield* this.getStateSet();
   }
-  users[0].connector.flushAll();
-  for (var uid = 0; uid + 1 < users.length; uid++) {
-    var u1 = users[uid];
-    var u2 = users[uid + 1];
-    u1.db.requestTransaction(t1);
-    u2.db.requestTransaction(t2);
-    expect(s1).toEqual(s2);
-    var db1 = [];
-    var db2 = [];
-    u1.db.os.iterate(null, null, function(o){//eslint-disable-line
-      db1.push(o);
-    });
-    u2.db.os.iterate(null, null, function(o){//eslint-disable-line
-      db2.push(o);
-    });
-
-    for (var key in db1) {
-      expect(db1[key]).toEqual(db2[key]);
+  await users[0].connector.flushAll();
+  for (var uid = 0; uid < users.length; uid++) {
+    if (s1 == null) {
+      var u = users[uid];
+      u.db.requestTransaction(t1);
+      await wait();
+      u.db.os.iterate(null, null, function(o){//eslint-disable-line
+        db1.push(o);
+      });
+    } else {
+      var u2 = users[uid];
+      u2.db.requestTransaction(t2);
+      await wait();
+      expect(s1).toEqual(s2);
+      var count = 0;
+      u2.db.os.iterate(null, null, function(o){//eslint-disable-line
+        expect(db1[count++]).toEqual(o);
+      });
     }
   }
 }
 
-function createUsers(self, numberOfUsers, done) {//eslint-disable-line
+async function createUsers(self, numberOfUsers) {//eslint-disable-line
+  if (globalRoom.users[0] != null) {//eslint-disable-line
+    await globalRoom.users[0].flushAll();//eslint-disable-line
+  }
   //destroy old users
   for (var u in globalRoom.users) {//eslint-disable-line
     globalRoom.users[u].y.destroy()//eslint-disable-line
@@ -91,8 +103,5 @@ function createUsers(self, numberOfUsers, done) {//eslint-disable-line
       }
     }));
   }
-  Promise.all(promises).then( users => {
-    self.users = users;
-    done();
-  });
+  self.users = await Promise.all(promises);
 }

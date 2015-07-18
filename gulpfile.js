@@ -95,7 +95,9 @@ gulp.task("build", function () {
      .pipe(babel({
        loose: "all",
        modules: "ignore",
-       blacklist: ["regenerator"]
+       optional: ["es7.asyncFunctions"],
+       blacklist: ["regenerator"],
+       experimental: true
      }))
      .pipe(sourcemaps.write())
      .pipe(gulp.dest("."));
@@ -114,7 +116,9 @@ gulp.task("test", function () {
     .pipe(concat("jasmine"))
     .pipe(babel({
       loose: "all",
-      modules: "ignore"
+      optional: ["es7.asyncFunctions"],
+      modules: "ignore",
+      experimental: true
     }))
     .pipe(uglify())
     .pipe(sourcemaps.write())
@@ -132,7 +136,9 @@ gulp.task("build_jasmine_browser", function(){
    .pipe(babel({
      loose: "all",
      modules: "ignore",
-     blacklist: ["regenerator"]
+     optional: ["es7.asyncFunctions"],
+     blacklist: "regenerator",
+     experimental: true
    }))
    .pipe(sourcemaps.write())
    .pipe(gulp.dest("build"));

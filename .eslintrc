@@ -37,6 +37,7 @@
     "CustomType": true,
     "window": true,
     "document": true,
-    "smaller": true
+    "smaller": true,
+    "wait": true
   }
 }

@@ -81,22 +81,22 @@ class AbstractConnector { //eslint-disable-line no-unused-vars
   // returns false, if there is no sync target
   // true otherwise
   findNextSyncTarget () {
-    if (this.currentSyncTarget != null && this.connections[this.currentSyncTarget].isSynced === false) {
-      throw new Error("The current sync has not finished!");
+    if (this.currentSyncTarget != null) {
+      return; // "The current sync has not finished!"
     }
 
     var syncUser = null;
     for (var uid in this.connections) {
-      syncUser = this.connections[uid];
-      if (!syncUser.isSynced) {
+      if (!this.connections[uid].isSynced) {
+        syncUser = uid;
         break;
       }
     }
     if (syncUser != null){
       var conn = this;
+      this.currentSyncTarget = syncUser;
       this.y.db.requestTransaction(function*(){
-        conn.currentSyncTarget = uid;
-        conn.send(uid, {
+        conn.send(syncUser, {
           type: "sync step 1",
           stateVector: yield* this.getStateVector()
         });
@@ -110,7 +110,6 @@ class AbstractConnector { //eslint-disable-line no-unused-vars
       }
       this.whenSyncedListeners = null;
     }
-    return false;
   }
   send (uid, message) {
     if (this.debug) {
@@ -149,24 +148,38 @@ class AbstractConnector { //eslint-disable-line no-unused-vars
               type: "sync done"
             });
           }, conn.syncingClientDuration);
+        } else {
+          conn.send(sender, {
+            type: "sync done"
+          });
         }
       });
     } else if (m.type === "sync step 2") {
       this.y.db.apply(m.os);
       let conn = this;
+      var broadcastHB = !this.broadcastedHB;
+      this.broadcastedHB = true;
       this.y.db.requestTransaction(function*(){
         var ops = yield* this.getOperations(m.stateVector);
-        conn.broadcastedHB = true;
         if (ops.length > 0) {
-          conn.broadcast({
+          m = {
             type: "update",
             ops: ops
-          });
+          };
+          if (!broadcastHB) {
+            conn.send(sender, m);
+          } else {
+            // broadcast only once!
+            conn.broadcast(m);
+          }
         }
       });
     } else if (m.type === "sync done") {
       this.connections[sender].isSynced = true;
-      this.findNextSyncTarget();
+      if (sender === this.currentSyncTarget) {
+        this.currentSyncTarget = null;
+        this.findNextSyncTarget();
+      }
     } else if (m.type === "update") {
       if (this.forwardToSyncingClients) {
         for (var client of this.syncingClients) {
