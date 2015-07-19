@@ -1,175 +1,164 @@
 /* @flow */
 /*eslint-env browser,jasmine */
 
-var numberOfYMapTests = 70;
+var numberOfYMapTests = 100;
 
 describe("Map Type", function(){
-  jasmine.DEFAULT_TIMEOUT_INTERVAL = 3000;
-  beforeEach(function(done){
-    createUsers(this, 5, done);
+  var y1, y2, y3, y4, flushAll;
+
+  jasmine.DEFAULT_TIMEOUT_INTERVAL = 50000;
+  beforeEach(async function(done){
+    await createUsers(this, 5);
+    y1 = this.users[0].root;
+    y2 = this.users[1].root;
+    y3 = this.users[2].root;
+    y4 = this.users[3].root;
+    flushAll = this.users[0].connector.flushAll;
+    done();
   });
+  afterEach(async function(done) {
+    await compareAllUsers(this.users);
+    done();
+  }, 5000);
 
   describe("Basic tests", function(){
-    it("Basic get&set of Map property (converge via sync)", function(){
-      var y = this.users[0].root;
-      y.set("stuff", "stuffy");
-      expect(y.get("stuff")).toEqual("stuffy");
-
-      this.users[0].connector.flushAll();
-
+    it("Basic get&set of Map property (converge via sync)", async function(done){
+      y1.set("stuff", "stuffy");
+      expect(y1.get("stuff")).toEqual("stuffy");
+      await flushAll();
       for (var key in this.users) {
         var u = this.users[key].root;
         expect(u.get("stuff")).toEqual("stuffy");
       }
-      compareAllUsers(this.users);
+      await compareAllUsers(this.users);
+      done();
     });
-    it("Map can set custom types (Map)", function(done){
-      var y = this.users[0].root;
-      y.set("Map", Y.Map).then(function(map) {
-        map.set("one", 1);
-        return y.get("Map");
-      }).then(function(map){
-        expect(map.get("one")).toEqual(1);
-        done();
-      });
+    it("Map can set custom types (Map)", async function(done){
+      var map = await y1.set("Map", Y.Map);
+      map.set("one", 1);
+      map = await y1.get("Map");
+      expect(map.get("one")).toEqual(1);
+      await compareAllUsers(this.users);
+      done();
     });
-    it("Map can set custom types (Array)", function(done){
-      var y = this.users[0].root;
-      y.set("Array", Y.Array).then(function(array) {
-        array.insert(0, [1, 2, 3]);
-        return y.get("Array");
-      }).then(function(array){
-        expect(array.toArray()).toEqual([1, 2, 3]);
-        done();
-      });
+    it("Map can set custom types (Array)", async function(done){
+      var array = await y1.set("Array", Y.Array);
+      array.insert(0, [1, 2, 3]);
+      array = await y1.get("Array");
+      expect(array.toArray()).toEqual([1, 2, 3]);
+      await compareAllUsers(this.users);
+      done();
     });
-    it("Basic get&set of Map property (converge via update)", function(done){
-      var u = this.users[0];
-      u.connector.flushAll();
-      var y = u.root;
-      y.set("stuff", "stuffy");
-      expect(y.get("stuff")).toEqual("stuffy");
+    it("Basic get&set of Map property (converge via update)", async function(done){
+      await flushAll();
+      y1.set("stuff", "stuffy");
+      expect(y1.get("stuff")).toEqual("stuffy");
 
-      u.connector.flushAll();
-      setTimeout(() => {
-        for (var key in this.users) {
-          var r = this.users[key].root;
-          expect(r.get("stuff")).toEqual("stuffy");
-        }
-        done();
-      }, 50);
+      await flushAll();
+      for (var key in this.users) {
+        var r = this.users[key].root;
+        expect(r.get("stuff")).toEqual("stuffy");
+      }
+      done();
     });
-    it("Basic get&set of Map property (handle conflict)", function(done){
-      var y = this.users[0];
-      y.connector.flushAll();
-      y.root.set("stuff", "c0");
+    it("Basic get&set of Map property (handle conflict)", async function(done){
+      await flushAll();
+      y1.set("stuff", "c0");
 
-      this.users[1].root.set("stuff", "c1");
+      y2.set("stuff", "c1");
 
-      y.connector.flushAll();
-
-      setTimeout( () => {
-        for (var key in this.users) {
-          var u = this.users[key];
-          expect(u.root.get("stuff")).toEqual("c0");
-          compareAllUsers(this.users);
-        }
-        done();
-      }, 50);
+      await flushAll();
+      for (var key in this.users) {
+        var u = this.users[key];
+        expect(u.root.get("stuff")).toEqual("c0");
+      }
+      await compareAllUsers(this.users);
+      done();
     });
-    it("Basic get&set&delete of Map property (handle conflict)", function(done){
-      var y = this.users[0];
-      y.connector.flushAll();
-      y.root.set("stuff", "c0");
-      y.root.delete("stuff");
+    it("Basic get&set&delete of Map property (handle conflict)", async function(done){
+      await flushAll();
+      y1.set("stuff", "c0");
+      y1.delete("stuff");
+      y2.set("stuff", "c1");
+      await flushAll();
 
-      this.users[1].root.set("stuff", "c1");
-
-      y.connector.flushAll();
-
-      setTimeout( () => {
-        for (var key in this.users) {
-          var u = this.users[key];
-          expect(u.root.get("stuff")).toBeUndefined();
-          compareAllUsers(this.users);
-        }
-        done();
-      }, 50);
+      for (var key in this.users) {
+        var u = this.users[key];
+        expect(u.root.get("stuff")).toBeUndefined();
+      }
+      await compareAllUsers(this.users);
+      done();
     });
-    it("Basic get&set of Map property (handle three conflicts)", function(done){
-      var y = this.users[0];
-      this.users[0].root.set("stuff", "c0");
-      this.users[1].root.set("stuff", "c1");
-      this.users[2].root.set("stuff", "c2");
-      this.users[3].root.set("stuff", "c3");
-      y.connector.flushAll();
+    it("Basic get&set of Map property (handle three conflicts)", async function(done){
+      await flushAll();
+      y1.set("stuff", "c0");
+      y2.set("stuff", "c1");
+      y2.set("stuff", "c2");
+      y3.set("stuff", "c3");
+      await flushAll();
 
-      setTimeout( () => {
-        for (var key in this.users) {
-          var u = this.users[key];
-          expect(u.root.get("stuff")).toEqual("c0");
-        }
-        compareAllUsers(this.users);
-        done();
-      }, 50);
+      for (var key in this.users) {
+        var u = this.users[key];
+        expect(u.root.get("stuff")).toEqual("c0");
+      }
+      await compareAllUsers(this.users);
+      done();
     });
-    it("Basic get&set&delete of Map property (handle three conflicts)", function(done){
-      var y = this.users[0];
-      this.users[0].root.set("stuff", "c0");
-      this.users[1].root.set("stuff", "c1");
-      this.users[2].root.set("stuff", "c2");
-      this.users[3].root.set("stuff", "c3");
-      y.connector.flushAll();
-      this.users[0].root.set("stuff", "deleteme");
-      this.users[0].root.delete("stuff");
-      this.users[1].root.set("stuff", "c1");
-      this.users[2].root.set("stuff", "c2");
-      this.users[3].root.set("stuff", "c3");
-      y.connector.flushAll();
+    it("Basic get&set&delete of Map property (handle three conflicts)", async function(done){
+      await flushAll();
+      y1.set("stuff", "c0");
+      y2.set("stuff", "c1");
+      y2.set("stuff", "c2");
+      y3.set("stuff", "c3");
+      await flushAll();
+      y1.set("stuff", "deleteme");
+      y1.delete("stuff");
+      y2.set("stuff", "c1");
+      y3.set("stuff", "c2");
+      y4.set("stuff", "c3");
+      await flushAll();
 
-      setTimeout( () => {
-        for (var key in this.users) {
-          var u = this.users[key];
-          expect(u.root.get("stuff")).toBeUndefined();
-        }
-        compareAllUsers(this.users);
-        done();
-      }, 50);
+      for (var key in this.users) {
+        var u = this.users[key];
+        expect(u.root.get("stuff")).toBeUndefined();
+      }
+      await compareAllUsers(this.users);
+      done();
     });
-    it("throws add & update & delete events (with type and primitive content)", function(done){
-      var y = this.users[0].root;
+    it("throws add & update & delete events (with type and primitive content)", async function(done){
       var event;
-      y.observe(function(e){
+      await flushAll();
+      y1.observe(function(e){
         event = e; // just put it on event, should be thrown synchronously anyway
       });
-      y.set("stuff", 4);
+      y1.set("stuff", 4);
       expect(event).toEqual([{
         type: "add",
-        object: y,
+        object: y1,
         name: "stuff"
       }]);
       // update, oldValue is in contents
-      y.set("stuff", Y.Array);
+      await y1.set("stuff", Y.Array);
       expect(event).toEqual([{
         type: "update",
-        object: y,
+        object: y1,
         name: "stuff",
         oldValue: 4
       }]);
-      y.get("stuff").then(function(replacedArray){
+      y1.get("stuff").then(function(replacedArray){
         // update, oldValue is in opContents
-        y.set("stuff", 5);
+        y1.set("stuff", 5);
         var getYArray = event[0].oldValue;
         expect(typeof getYArray.constructor === "function").toBeTruthy();
         getYArray().then(function(array){
           expect(array).toEqual(replacedArray);
 
           // delete
-          y.delete("stuff");
+          y1.delete("stuff");
           expect(event).toEqual([{
             type: "delete",
             name: "stuff",
-            object: y,
+            object: y1,
             oldValue: 5
           }]);
           done();
@@ -197,31 +186,22 @@ describe("Map Type", function(){
         }
       }
     }
-    beforeEach(function(done){
-      this.users[0].root.set("Map", Y.Map);
-      this.users[0].connector.flushAll();
+    beforeEach(async function(done){
+      await y1.set("Map", Y.Map);
+      await flushAll();
 
-      var then = Promise.resolve();
-      var maps = [];
-      for (var u of this.users) {
-        then = then.then(function(){ //eslint-disable-line
-          return u.root.get("Map");
-        }).then(function(map){//eslint-disable-line
-          maps.push(map);
-        });
+      var promises = [];
+      for (var u = 0; u < this.users.length; u++) {
+        promises.push(this.users[u].root.get("Map"));
       }
-      this.maps = maps;
-      then.then(function(){
-        done();
-      });
+      this.maps = await Promise.all(promises);
+      done();
     });
-    it(`succeed after ${numberOfYMapTests} actions`, function(done){
-      applyRandomTransactions(this.users, this.maps, randomMapTransactions, numberOfYMapTests);
-      setTimeout(()=>{
-        compareAllUsers(this.users);
-        compareMapValues(this.maps);
-        done();
-      }, 500);
+    it(`succeed after ${numberOfYMapTests} actions`, async function(done){
+      await applyRandomTransactions(this.users, this.maps, randomMapTransactions, numberOfYMapTests);
+      await flushAll();
+      await compareMapValues(this.maps);
+      done();
     });
   });
 });
