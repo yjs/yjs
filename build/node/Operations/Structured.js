@@ -197,7 +197,7 @@ module.exports = function() {
           }
         }
       } else {
-        operation = start.node.next().node;
+        operation = start.node.next.node;
         if (!operation) {
           return false;
         }
@@ -217,7 +217,7 @@ module.exports = function() {
           }
         }
       } else {
-        operation = start.node.prev().node;
+        operation = start.node.prev.node;
         if (!operation) {
           return false;
         }
@@ -290,7 +290,7 @@ module.exports = function() {
         rightNode = this.shortTree.findNode(0);
         right = rightNode ? rightNode.data : this.end;
       } else {
-        rightNode = left.node.next();
+        rightNode = left.node.next;
         leftNode = left.node;
         right = rightNode ? rightNode.data : this.end;
       }
@@ -319,18 +319,29 @@ module.exports = function() {
       return this.insertAfter(ith, contents);
     };
 
-    ListManager.prototype.deleteRef = function(operation, length) {
-      var deleteOperation, i, j, ref;
+    ListManager.prototype.deleteRef = function(operation, length, dir) {
+      var deleteOperation, i, j, nextOperation, ref;
       if (length == null) {
         length = 1;
       }
+      if (dir == null) {
+        dir = 'right';
+      }
+      nextOperation = (function(_this) {
+        return function(operation) {
+          if (dir === 'right') {
+            return _this.getNextNonDeleted(operation);
+          } else {
+            return _this.getPrevNonDeleted(operation);
+          }
+        };
+      })(this);
       for (i = j = 0, ref = length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
         if (operation instanceof ops.Delimiter) {
           break;
         }
         deleteOperation = (new ops.Delete(null, void 0, operation)).execute();
-        operation.node = null;
-        operation = this.getNextNonDeleted(operation);
+        operation = nextOperation(operation);
       }
       return this;
     };
@@ -340,8 +351,8 @@ module.exports = function() {
       if (length == null) {
         length = 1;
       }
-      operation = this.getOperationByPosition(position + 1);
-      return this.deleteRef(operation, length);
+      operation = this.getOperationByPosition(position + length);
+      return this.deleteRef(operation, length, 'left');
     };
 
     ListManager.prototype.callOperationSpecificInsertEvents = function(operation) {
@@ -363,7 +374,7 @@ module.exports = function() {
         {
           type: "insert",
           reference: operation,
-          position: operation.completeNode.position(),
+          position: operation.node.position(),
           object: this.getCustomType(),
           changedBy: operation.uid.creator,
           value: getContentType(operation.val())
@@ -372,7 +383,9 @@ module.exports = function() {
     };
 
     ListManager.prototype.callOperationSpecificDeleteEvents = function(operation, del_op) {
+      var position;
       if (operation.node) {
+        position = operation.node.position();
         this.shortTree.remove_node(operation.node);
         operation.node = null;
       }
@@ -380,7 +393,7 @@ module.exports = function() {
         {
           type: "delete",
           reference: operation,
-          position: operation.completeNode.position(),
+          position: position,
           object: this.getCustomType(),
           length: 1,
           changedBy: del_op.uid.creator,
