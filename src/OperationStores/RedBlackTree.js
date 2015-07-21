@@ -1,367 +1,367 @@
-
+/* global compareIds */
 function smaller (a, b) {
-  return a[0] < b[0] || (a[0] === b[0] && a[1] < b[1]);
+  return a[0] < b[0] || (a[0] === b[0] && a[1] < b[1])
 }
 
 class N {
   // A created node is always red!
   constructor (val) {
-    this.val = val;
-    this.color = true;
-    this._left = null;
-    this._right = null;
-    this._parent = null;
+    this.val = val
+    this.color = true
+    this._left = null
+    this._right = null
+    this._parent = null
     if (val.id === null) {
-      throw new Error("You must define id!");
+      throw new Error('You must define id!')
     }
   }
-  isRed () { return this.color; }
-  isBlack () { return !this.color; }
-  redden () { this.color = true; return this; }
-  blacken () { this.color = false; return this; }
+  isRed () { return this.color }
+  isBlack () { return !this.color }
+  redden () { this.color = true; return this }
+  blacken () { this.color = false; return this }
   get grandparent () {
-    return this.parent.parent;
+    return this.parent.parent
   }
   get parent () {
-    return this._parent;
+    return this._parent
   }
   get sibling () {
     return (this === this.parent.left) ?
-            this.parent.right : this.parent.left;
+      this.parent.right : this.parent.left
   }
   get left () {
-    return this._left;
+    return this._left
   }
   get right () {
-    return this._right;
+    return this._right
   }
   set left (n) {
     if (n !== null) {
-      n._parent = this;
+      n._parent = this
     }
-    this._left = n;
+    this._left = n
   }
   set right (n) {
     if (n !== null) {
-      n._parent = this;
+      n._parent = this
     }
-    this._right = n;
+    this._right = n
   }
   rotateLeft (tree) {
-    var parent = this.parent;
-    var newParent = this.right;
-    var newRight = this.right.left;
-    newParent.left = this;
-    this.right = newRight;
+    var parent = this.parent
+    var newParent = this.right
+    var newRight = this.right.left
+    newParent.left = this
+    this.right = newRight
     if (parent === null) {
-      tree.root = newParent;
-      newParent._parent = null;
+      tree.root = newParent
+      newParent._parent = null
     } else if (parent.left === this) {
-      parent.left = newParent;
+      parent.left = newParent
     } else if (parent.right === this) {
-      parent.right = newParent;
+      parent.right = newParent
     } else {
-      throw new Error("The elements are wrongly connected!");
+      throw new Error('The elements are wrongly connected!')
     }
   }
   next () {
-    if ( this.right !== null ) {
+    if (this.right !== null) {
       // search the most left node in the right tree
-      var o = this.right;
+      var o = this.right
       while (o.left !== null) {
-        o = o.left;
+        o = o.left
       }
-      return o;
+      return o
     } else {
-      var p = this;
+      var p = this
       while (p.parent !== null && p !== p.parent.left) {
-        p = p.parent;
+        p = p.parent
       }
-      return p.parent;
+      return p.parent
     }
   }
   rotateRight (tree) {
-    var parent = this.parent;
-    var newParent = this.left;
-    var newLeft = this.left.right;
-    newParent.right = this;
-    this.left = newLeft;
+    var parent = this.parent
+    var newParent = this.left
+    var newLeft = this.left.right
+    newParent.right = this
+    this.left = newLeft
     if (parent === null) {
-      tree.root = newParent;
-      newParent._parent = null;
+      tree.root = newParent
+      newParent._parent = null
     } else if (parent.left === this) {
-      parent.left = newParent;
+      parent.left = newParent
     } else if (parent.right === this) {
-      parent.right = newParent;
+      parent.right = newParent
     } else {
-      throw new Error("The elements are wrongly connected!");
+      throw new Error('The elements are wrongly connected!')
     }
   }
   getUncle () {
     // we can assume that grandparent exists when this is called!
     if (this.parent === this.parent.parent.left) {
-      return this.parent.parent.right;
+      return this.parent.parent.right
     } else {
-      return this.parent.parent.left;
+      return this.parent.parent.left
     }
   }
 }
 
-class RBTree { //eslint-disable-line no-unused-vars
+class RBTree { // eslint-disable-line no-unused-vars
   constructor () {
-    this.root = null;
-    this.length = 0;
+    this.root = null
+    this.length = 0
   }
   findNodeWithLowerBound (from) {
     if (from === void 0) {
-      throw new Error("You must define from!");
+      throw new Error('You must define from!')
     }
-    var o = this.root;
+    var o = this.root
     if (o === null) {
-      return false;
+      return false
     } else {
       while (true) {
         if ((from === null || smaller(from, o.val.id)) && o.left !== null) {
           // o is included in the bound
           // try to find an element that is closer to the bound
-          o = o.left;
+          o = o.left
         } else if (from !== null && smaller(o.val.id, from)) {
           // o is not within the bound, maybe one of the right elements is..
           if (o.right !== null) {
-            o = o.right;
+            o = o.right
           } else {
             // there is no right element. Search for the next bigger element,
             // this should be within the bounds
-            return o.next();
+            return o.next()
           }
         } else {
-          return o;
+          return o
         }
       }
     }
   }
   iterate (from, to, f) {
-    var o = this.findNodeWithLowerBound(from);
-    while ( o !== null && (to === null || smaller(o.val.id, to) || compareIds(o.val.id, to)) ) {
-      f(o.val);
-      o = o.next();
+    var o = this.findNodeWithLowerBound(from)
+    while (o !== null && (to === null || smaller(o.val.id, to) || compareIds(o.val.id, to))) {
+      f(o.val)
+      o = o.next()
     }
-    return true;
+    return true
   }
   find (id) {
-    return this.findNode(id).val;
+    return this.findNode(id).val
   }
   findNode (id) {
     if (id == null || id.constructor !== Array) {
-      throw new Error("Expect id to be an array!");
+      throw new Error('Expect id to be an array!')
     }
-    var o = this.root;
+    var o = this.root
     if (o === null) {
-      return false;
+      return false
     } else {
       while (true) {
         if (o === null) {
-          return false;
+          return false
         }
         if (smaller(id, o.val.id)) {
-          o = o.left;
+          o = o.left
         } else if (smaller(o.val.id, id)) {
-          o = o.right;
+          o = o.right
         } else {
-          return o;
+          return o
         }
       }
     }
   }
   delete (id) {
     if (id == null || id.constructor !== Array) {
-      throw new Error("id is expected to be an Array!");
+      throw new Error('id is expected to be an Array!')
     }
-    var d = this.findNode(id);
+    var d = this.findNode(id)
     if (d == null) {
-      throw new Error("Element does not exist!");
+      throw new Error('Element does not exist!')
     }
-    this.length--;
+    this.length--
     if (d.left !== null && d.right !== null) {
       // switch d with the greates element in the left subtree.
       // o should have at most one child.
-      var o = d.left;
+      var o = d.left
       // find
       while (o.right !== null) {
-        o = o.right;
+        o = o.right
       }
       // switch
-      d.val = o.val;
-      d = o;
+      d.val = o.val
+      d = o
     }
     // d has at most one child
     // let n be the node that replaces d
-    var isFakeChild;
-    var child = d.left || d.right;
-    if ( child === null) {
-      isFakeChild = true;
-      child = new N({id: 0});
-      child.blacken();
-      d.right = child;
+    var isFakeChild
+    var child = d.left || d.right
+    if (child === null) {
+      isFakeChild = true
+      child = new N({id: 0})
+      child.blacken()
+      d.right = child
     } else {
-      isFakeChild = false;
+      isFakeChild = false
     }
 
     if (d.parent === null) {
       if (!isFakeChild) {
-        this.root = child;
-        child.blacken();
-        child._parent = null;
+        this.root = child
+        child.blacken()
+        child._parent = null
       } else {
-        this.root = null;
+        this.root = null
       }
-      return;
+      return
     } else if (d.parent.left === d) {
-      d.parent.left = child;
+      d.parent.left = child
     } else if (d.parent.right === d) {
-      d.parent.right = child;
+      d.parent.right = child
     } else {
-      throw new Error("Impossible!");
+      throw new Error('Impossible!')
     }
-    if ( d.isBlack() ) {
-      if ( child.isRed() ) {
-        child.blacken();
+    if (d.isBlack()) {
+      if (child.isRed()) {
+        child.blacken()
       } else {
-        this._fixDelete(child);
+        this._fixDelete(child)
       }
     }
-    this.root.blacken();
+    this.root.blacken()
     if (isFakeChild) {
       if (child.parent.left === child) {
-        child.parent.left = null;
+        child.parent.left = null
       } else if (child.parent.right === child) {
-        child.parent.right = null;
+        child.parent.right = null
       } else {
-        throw new Error("Impossible #3");
+        throw new Error('Impossible #3')
       }
     }
   }
   _fixDelete (n) {
     function isBlack (node) {
-      return node !== null ? node.isBlack() : true;
+      return node !== null ? node.isBlack() : true
     }
-    function isRed(node) {
-      return node !== null ? node.isRed() : false;
+    function isRed (node) {
+      return node !== null ? node.isRed() : false
     }
     if (n.parent === null) {
       // this can only be called after the first iteration of fixDelete.
-      return;
+      return
     }
     // d was already replaced by the child
     // d is not the root
     // d and child are black
-    var sibling = n.sibling;
+    var sibling = n.sibling
     if (isRed(sibling)) {
       // make sibling the grandfather
-      n.parent.redden();
-      sibling.blacken();
+      n.parent.redden()
+      sibling.blacken()
       if (n === n.parent.left) {
-        n.parent.rotateLeft(this);
+        n.parent.rotateLeft(this)
       } else if (n === n.parent.right) {
-        n.parent.rotateRight(this);
+        n.parent.rotateRight(this)
       } else {
-        throw new Error("Impossible #2");
+        throw new Error('Impossible #2')
       }
-      sibling = n.sibling;
+      sibling = n.sibling
     }
     // parent, sibling, and children of n are black
-    if ( n.parent.isBlack() &&
-         sibling.isBlack() &&
-         isBlack(sibling.left) &&
-         isBlack(sibling.right)
+    if (n.parent.isBlack() &&
+      sibling.isBlack() &&
+      isBlack(sibling.left) &&
+      isBlack(sibling.right)
     ) {
-      sibling.redden();
-      this._fixDelete(n.parent);
-    } else if ( n.parent.isRed() &&
-                sibling.isBlack() &&
-                isBlack(sibling.left) &&
-                isBlack(sibling.right)
+      sibling.redden()
+      this._fixDelete(n.parent)
+    } else if (n.parent.isRed() &&
+      sibling.isBlack() &&
+      isBlack(sibling.left) &&
+      isBlack(sibling.right)
     ) {
-      sibling.redden();
-      n.parent.blacken();
+      sibling.redden()
+      n.parent.blacken()
     } else {
-      if ( n === n.parent.left &&
-           sibling.isBlack() &&
-           isRed(sibling.left) &&
-           isBlack(sibling.right)
+      if (n === n.parent.left &&
+        sibling.isBlack() &&
+        isRed(sibling.left) &&
+        isBlack(sibling.right)
       ) {
-        sibling.redden();
-        sibling.left.blacken();
-        sibling.rotateRight(this);
-        sibling = n.sibling;
-      } else if ( n === n.parent.right &&
-                  sibling.isBlack() &&
-                  isRed(sibling.right) &&
-                  isBlack(sibling.left)
+        sibling.redden()
+        sibling.left.blacken()
+        sibling.rotateRight(this)
+        sibling = n.sibling
+      } else if (n === n.parent.right &&
+        sibling.isBlack() &&
+        isRed(sibling.right) &&
+        isBlack(sibling.left)
       ) {
-        sibling.redden();
-        sibling.right.blacken();
-        sibling.rotateLeft(this);
-        sibling = n.sibling;
+        sibling.redden()
+        sibling.right.blacken()
+        sibling.rotateLeft(this)
+        sibling = n.sibling
       }
-      sibling.color = n.parent.color;
-      n.parent.blacken();
+      sibling.color = n.parent.color
+      n.parent.blacken()
       if (n === n.parent.left) {
-        sibling.right.blacken();
-        n.parent.rotateLeft(this);
+        sibling.right.blacken()
+        n.parent.rotateLeft(this)
       } else {
-        sibling.left.blacken();
-        n.parent.rotateRight(this);
+        sibling.left.blacken()
+        n.parent.rotateRight(this)
       }
     }
   }
   add (v) {
     if (v == null || v.id == null || v.id.constructor !== Array) {
-      throw new Error("v is expected to have an id property which is an Array!");
+      throw new Error('v is expected to have an id property which is an Array!')
     }
-    var node = new N(v);
+    var node = new N(v)
     if (this.root !== null) {
-      var p = this.root; // p abbrev. parent
+      var p = this.root // p abbrev. parent
       while (true) {
         if (smaller(node.val.id, p.val.id)) {
           if (p.left === null) {
-            p.left = node;
-            break;
+            p.left = node
+            break
           } else {
-            p = p.left;
+            p = p.left
           }
         } else if (smaller(p.val.id, node.val.id)) {
           if (p.right === null) {
-            p.right = node;
-            break;
+            p.right = node
+            break
           } else {
-            p = p.right;
+            p = p.right
           }
         } else {
-          return false;
+          return false
         }
       }
-      this._fixInsert(node);
+      this._fixInsert(node)
     } else {
-      this.root = node;
+      this.root = node
     }
-    this.length++;
-    this.root.blacken();
+    this.length++
+    this.root.blacken()
   }
   _fixInsert (n) {
     if (n.parent === null) {
-      n.blacken();
-      return;
+      n.blacken()
+      return
     } else if (n.parent.isBlack()) {
-      return;
+      return
     }
-    var uncle = n.getUncle();
+    var uncle = n.getUncle()
     if (uncle !== null && uncle.isRed()) {
       // Note: parent: red, uncle: red
-      n.parent.blacken();
-      uncle.blacken();
-      n.grandparent.redden();
-      this._fixInsert(n.grandparent);
+      n.parent.blacken()
+      uncle.blacken()
+      n.grandparent.redden()
+      this._fixInsert(n.grandparent)
     } else {
       // Note: parent: red, uncle: black or null
       // Now we transform the tree in such a way that
@@ -370,30 +370,28 @@ class RBTree { //eslint-disable-line no-unused-vars
       //     and grandparent.left.left.isRed
       //   2) grandparent.right.isRed
       //     and grandparent.right.right.isRed
-      if (n === n.parent.right
-        && n.parent === n.grandparent.left) {
-          n.parent.rotateLeft(this);
-          // Since we rotated and want to use the previous
-          // cases, we need to set n in such a way that
-          // n.parent.isRed again
-          n = n.left;
-      } else if (n === n.parent.left
-        && n.parent === n.grandparent.right) {
-          n.parent.rotateRight(this);
-          // see above
-          n = n.right;
+      if (n === n.parent.right && n.parent === n.grandparent.left) {
+        n.parent.rotateLeft(this)
+        // Since we rotated and want to use the previous
+        // cases, we need to set n in such a way that
+        // n.parent.isRed again
+        n = n.left
+      } else if (n === n.parent.left && n.parent === n.grandparent.right) {
+        n.parent.rotateRight(this)
+        // see above
+        n = n.right
       }
       // Case 1) or 2) hold from here on.
       // Now traverse grandparent, make parent a black node
       // on the highest level which holds two red nodes.
-      n.parent.blacken();
-      n.grandparent.redden();
+      n.parent.blacken()
+      n.grandparent.redden()
       if (n === n.parent.left) {
         // Case 1
-        n.grandparent.rotateRight(this);
+        n.grandparent.rotateRight(this)
       } else {
         // Case 2
-        n.grandparent.rotateLeft(this);
+        n.grandparent.rotateLeft(this)
       }
     }
   }

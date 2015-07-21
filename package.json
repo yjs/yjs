@@ -5,13 +5,21 @@
   "main": "y.js",
   "scripts": {
     "test": "gulp test",
-    "lint": "gulp lint",
+    "lint": "standard",
     "build": "gulp build"
   },
   "pre-commit": [
     "lint",
     "build"
   ],
+  "standard": {
+    "parser": "babel-eslint",
+    "ignore": [
+      "build/**",
+      "./y.js",
+      "./y.js.map"
+    ]
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/y-js/yjs.git"
@@ -33,12 +41,10 @@
   },
   "homepage": "http://y-js.org",
   "devDependencies": {
-    "babel-eslint": "^3.1.15",
-    "eslint": "^0.22.1",
+    "babel-eslint": "^3.1.23",
     "gulp": "^3.9.0",
     "gulp-babel": "^5.1.0",
     "gulp-concat": "^2.5.2",
-    "gulp-eslint": "^0.13.2",
     "gulp-jasmine": "^2.0.1",
     "gulp-jasmine-browser": "^0.1.3",
     "gulp-sourcemaps": "^1.5.2",
@@ -46,6 +52,7 @@
     "gulp-util": "^3.0.5",
     "gulp-watch": "^4.2.4",
     "minimist": "^1.1.1",
-    "pre-commit": "^1.0.10"
+    "pre-commit": "^1.0.10",
+    "standard": "^5.0.0-2"
   }
 }

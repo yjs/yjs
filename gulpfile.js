@@ -1,4 +1,4 @@
-/*eslint-env node */
+/* eslint-env node */
 
 /** Gulp Commands
 
@@ -38,47 +38,42 @@
         Builds the test suite
     - test:
         Test this library
-    - lint:
-        Lint this library. A successful lint is required for committing to this repository!
-
 */
 
-
-var gulp = require("gulp");
-var sourcemaps = require("gulp-sourcemaps");
-var babel = require("gulp-babel");
-var uglify = require("gulp-uglify");
-var minimist = require("minimist");
-var eslint = require("gulp-eslint");
-var jasmine = require("gulp-jasmine");
-var jasmineBrowser = require("gulp-jasmine-browser");
-var concat = require("gulp-concat");
-var watch = require("gulp-watch");
+var gulp = require('gulp')
+var sourcemaps = require('gulp-sourcemaps')
+var babel = require('gulp-babel')
+var uglify = require('gulp-uglify')
+var minimist = require('minimist')
+var jasmine = require('gulp-jasmine')
+var jasmineBrowser = require('gulp-jasmine-browser')
+var concat = require('gulp-concat')
+var watch = require('gulp-watch')
 
 var polyfills = [
-  "./node_modules/gulp-babel/node_modules/babel-core/node_modules/regenerator/runtime.js"
-];
+  './node_modules/gulp-babel/node_modules/babel-core/node_modules/regenerator/runtime.js'
+]
 
 var options = minimist(process.argv.slice(2), {
-  string: ["export", "name", "testport", "testfiles"],
+  string: ['export', 'name', 'testport', 'testfiles'],
   default: {
-    export: "ignore",
-    name: "y.js",
-    testport: "8888",
-    testfiles: "src/**/*.js"
+    export: 'ignore',
+    name: 'y.js',
+    testport: '8888',
+    testfiles: 'src/**/*.js'
   }
-});
+})
 
 var files = {
-  y: polyfills.concat(["src/y.js", "src/Connector.js", "src/OperationStore.js", "src/Struct.js", "src/Utils.js",
-    "src/OperationStores/RedBlackTree.js", "src/**/*.js", "!src/**/*.spec.js"]),
-  lint: ["src/**/*.js", "gulpfile.js"],
+  y: polyfills.concat(['src/y.js', 'src/Connector.js', 'src/OperationStore.js', 'src/Struct.js', 'src/Utils.js',
+    'src/OperationStores/RedBlackTree.js', 'src/**/*.js', '!src/**/*.spec.js']),
   test: polyfills.concat([options.testfiles]),
-  build_test: ["build_test/y.js"]
-};
+  build_test: ['build_test/y.js']
+}
 
-gulp.task("build", function () {
-  /*return gulp.src(files.y)
+gulp.task('build', function () {
+  /*
+    return gulp.src(files.y)
     .pipe(sourcemaps.init())
     .pipe(concat(options.name))
     .pipe(babel({
@@ -90,71 +85,62 @@ gulp.task("build", function () {
     .pipe(sourcemaps.write("."))
     .pipe(gulp.dest("."));*/
   return gulp.src(files.y)
-     .pipe(sourcemaps.init())
-     .pipe(concat(options.name))
-     .pipe(babel({
-       loose: "all",
-       modules: "ignore",
-       optional: ["es7.asyncFunctions"],
-       blacklist: ["regenerator"],
-       experimental: true
-     }))
-     .pipe(sourcemaps.write())
-     .pipe(gulp.dest("."));
-});
+    .pipe(sourcemaps.init())
+    .pipe(concat(options.name))
+    .pipe(babel({
+      loose: 'all',
+      modules: 'ignore',
+      optional: ['es7.asyncFunctions'],
+      blacklist: ['regenerator'],
+      experimental: true
+    }))
+    .pipe(sourcemaps.write())
+    .pipe(gulp.dest('.'))
+})
 
-gulp.task("lint", function(){
-  return gulp.src(files.lint)
-    .pipe(eslint())
-    .pipe(eslint.format())
-    .pipe(eslint.failOnError());
-});
-
-gulp.task("test", function () {
+gulp.task('test', function () {
   return gulp.src(files.test)
     .pipe(sourcemaps.init())
-    .pipe(concat("jasmine"))
+    .pipe(concat('jasmine'))
     .pipe(babel({
-      loose: "all",
-      optional: ["es7.asyncFunctions"],
-      modules: "ignore",
+      loose: 'all',
+      optional: ['es7.asyncFunctions'],
+      modules: 'ignore',
       experimental: true
     }))
     .pipe(uglify())
     .pipe(sourcemaps.write())
-    .pipe(gulp.dest("build"))
+    .pipe(gulp.dest('build'))
     .pipe(jasmine({
       verbose: true,
       includeStuckTrace: true
-    }));
-});
+    }))
+})
 
-gulp.task("build_jasmine_browser", function(){
+gulp.task('build_jasmine_browser', function () {
   gulp.src(files.test)
-   .pipe(sourcemaps.init())
-   .pipe(concat("jasmine_browser.js"))
-   .pipe(babel({
-     loose: "all",
-     modules: "ignore",
-     optional: ["es7.asyncFunctions"],
-     // blacklist: "regenerator",
-     experimental: true
-   }))
-   .pipe(sourcemaps.write())
-   .pipe(gulp.dest("build"));
-});
+    .pipe(sourcemaps.init())
+    .pipe(concat('jasmine_browser.js'))
+    .pipe(babel({
+      loose: 'all',
+      modules: 'ignore',
+      optional: ['es7.asyncFunctions'],
+      // blacklist: "regenerator",
+      experimental: true
+    }))
+    .pipe(sourcemaps.write())
+    .pipe(gulp.dest('build'))
+})
 
+gulp.task('develop', ['build_jasmine_browser', 'build'], function () {
+  gulp.watch(files.test, ['build_jasmine_browser'])
+  // gulp.watch(files.test, ["test"])
+  gulp.watch(files.test, ['build'])
 
-gulp.task("develop", ["build_jasmine_browser", "build"], function(){
-
-  gulp.watch(files.test, ["build_jasmine_browser"]);
-  //gulp.watch(files.test, ["test"]);
-  gulp.watch(files.test, ["build"]);
-
-  return gulp.src("build/jasmine_browser.js")
-    .pipe(watch("build/jasmine_browser.js"))
+  return gulp.src('build/jasmine_browser.js')
+    .pipe(watch('build/jasmine_browser.js'))
     .pipe(jasmineBrowser.specRunner())
-    .pipe(jasmineBrowser.server({port: options.testport}));
-});
+    .pipe(jasmineBrowser.server({port: options.testport}))
+})
 
-gulp.task("default", ["build", "test"]);
+gulp.task('default', ['build', 'test'])

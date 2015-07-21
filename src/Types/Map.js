@@ -1,76 +1,78 @@
-(function(){
+/* global EventHandler, Y, CustomType, copyObject, compareIds */
+
+;(function () {
   class YMap {
     constructor (os, model) {
-      this._model = model.id;
-      this.os = os;
-      this.map = copyObject(model.map);
-      this.contents = {};
-      this.opContents = {};
-      this.eventHandler = new EventHandler( ops =>{
-        var userEvents = [];
+      this._model = model.id
+      this.os = os
+      this.map = copyObject(model.map)
+      this.contents = {}
+      this.opContents = {}
+      this.eventHandler = new EventHandler(ops => {
+        var userEvents = []
         for (var i in ops) {
-          var op = ops[i];
-          var oldValue;
+          var op = ops[i]
+          var oldValue
           // key is the name to use to access (op)content
-          var key = op.struct === "Delete" ? op.key : op.parentSub;
+          var key = op.struct === 'Delete' ? op.key : op.parentSub
 
           // compute oldValue
           if (this.opContents[key] != null) {
-            let prevType = this.opContents[key];
-            oldValue = () => { //eslint-disable-line
-              let def = Promise.defer();
-              this.os.requestTransaction(function*(){//eslint-disable-line
-                def.resolve(yield* this.getType(prevType));
-              });
-              return def.promise;
-            };
+            let prevType = this.opContents[key]
+            oldValue = () => {// eslint-disable-line
+              let def = Promise.defer()
+              this.os.requestTransaction(function *() {// eslint-disable-line
+                def.resolve(yield* this.getType(prevType))
+              })
+              return def.promise
+            }
           } else {
-            oldValue = this.contents[key];
+            oldValue = this.contents[key]
           }
           // compute op event
-          if (op.struct === "Insert"){
+          if (op.struct === 'Insert') {
             if (op.left === null) {
               if (op.opContent != null) {
-                delete this.contents[key];
-                this.opContents[key] = op.opContent;
+                delete this.contents[key]
+                this.opContents[key] = op.opContent
               } else {
-                delete this.opContents[key];
-                this.contents[key] = op.content;
+                delete this.opContents[key]
+                this.contents[key] = op.content
               }
-              this.map[key] = op.id;
+              this.map[key] = op.id
               var insertEvent = {
                 name: key,
                 object: this
-              };
-              if (oldValue === undefined) {
-                insertEvent.type = "add";
-              } else {
-                insertEvent.type = "update";
-                insertEvent.oldValue = oldValue;
               }
-              userEvents.push(insertEvent);
+              if (oldValue === undefined) {
+                insertEvent.type = 'add'
+              } else {
+                insertEvent.type = 'update'
+                insertEvent.oldValue = oldValue
+              }
+              userEvents.push(insertEvent)
             }
-          } else if (op.struct === "Delete") {
+          } else if (op.struct === 'Delete') {
             if (compareIds(this.map[key], op.target)) {
               if (this.opContents[key] != null) {
-                delete this.opContents[key];
+                delete this.opContents[key]
               } else {
-                delete this.contents[key];
+                delete this.contents[key]
               }
               var deleteEvent = {
                 name: key,
                 object: this,
                 oldValue: oldValue,
-                type: "delete"
-              };
-              userEvents.push(deleteEvent);
+                type: 'delete'
+              }
+              userEvents.push(deleteEvent)
             }
           } else {
-            throw new Error("Unexpected Operation!");
+            throw new Error('Unexpected Operation!')
           }
         }
-        this.eventHandler.callUserEventListeners(userEvents);
-      });
+        this.eventHandler.callUserEventListeners(userEvents)
+      })
     }
     get (key) {
       // return property.
@@ -78,34 +80,34 @@
       // if property is a type, return a promise
       if (this.opContents[key] == null) {
         if (key == null) {
-          return copyObject(this.contents);
+          return copyObject(this.contents)
         } else {
-          return this.contents[key];
+          return this.contents[key]
         }
       } else {
-        let def = Promise.defer();
-        var oid = this.opContents[key];
-        this.os.requestTransaction(function*(){
-          def.resolve(yield* this.getType(oid));
-        });
-        return def.promise;
+        let def = Promise.defer()
+        var oid = this.opContents[key]
+        this.os.requestTransaction(function *() {
+          def.resolve(yield* this.getType(oid))
+        })
+        return def.promise
       }
     }
     delete (key) {
-      var right = this.map[key];
+      var right = this.map[key]
       if (right != null) {
         var del = {
           target: right,
-          struct: "Delete"
-        };
-        var eventHandler = this.eventHandler;
-        var modDel = copyObject(del);
-        modDel.key = key;
-        eventHandler.awaitAndPrematurelyCall([modDel]);
-        this.os.requestTransaction(function*(){
-          yield* this.applyCreatedOperations([del]);
-          eventHandler.awaitedLastDeletes(1);
-        });
+          struct: 'Delete'
+        }
+        var eventHandler = this.eventHandler
+        var modDel = copyObject(del)
+        modDel.key = key
+        eventHandler.awaitAndPrematurelyCall([modDel])
+        this.os.requestTransaction(function *() {
+          yield* this.applyCreatedOperations([del])
+          eventHandler.awaitedLastDeletes(1)
+        })
       }
     }
     set (key, value) {
@@ -113,108 +115,108 @@
       // if property is a type, return a promise
       // if not, apply immediately on this type an call event
 
-      var right = this.map[key] || null;
+      var right = this.map[key] || null
       var insert = {
         left: null,
         right: right,
         origin: null,
         parent: this._model,
         parentSub: key,
-        struct: "Insert"
-      };
-      var def = Promise.defer();
-      if ( value instanceof CustomType) {
-        // construct a new type
-        this.os.requestTransaction(function*(){
-          var type = yield* value.createType.call(this);
-          insert.opContent = type._model;
-          insert.id = this.store.getNextOpId();
-          yield* this.applyCreatedOperations([insert]);
-          def.resolve(type);
-        });
-      } else {
-        insert.content = value;
-        insert.id = this.os.getNextOpId();
-        var eventHandler = this.eventHandler;
-        eventHandler.awaitAndPrematurelyCall([insert]);
-
-        this.os.requestTransaction(function*(){
-          yield* this.applyCreatedOperations([insert]);
-          eventHandler.awaitedLastInserts(1);
-        });
-        def.resolve(value);
+        struct: 'Insert'
       }
-      return def.promise;
+      var def = Promise.defer()
+      if (value instanceof CustomType) {
+        // construct a new type
+        this.os.requestTransaction(function *() {
+          var type = yield* value.createType.call(this)
+          insert.opContent = type._model
+          insert.id = this.store.getNextOpId()
+          yield* this.applyCreatedOperations([insert])
+          def.resolve(type)
+        })
+      } else {
+        insert.content = value
+        insert.id = this.os.getNextOpId()
+        var eventHandler = this.eventHandler
+        eventHandler.awaitAndPrematurelyCall([insert])
+
+        this.os.requestTransaction(function *() {
+          yield* this.applyCreatedOperations([insert])
+          eventHandler.awaitedLastInserts(1)
+        })
+        def.resolve(value)
+      }
+      return def.promise
     }
     observe (f) {
-      this.eventHandler.addUserEventListener(f);
+      this.eventHandler.addUserEventListener(f)
     }
     unobserve (f) {
-      this.eventHandler.removeUserEventListener(f);
+      this.eventHandler.removeUserEventListener(f)
     }
     observePath (path, f) {
-      var self = this;
+      var self = this
       if (path.length === 0) {
-        this.observe(f);
-        return Promise.resolve(function(){
-          self.unobserve(f);
-        });
+        this.observe(f)
+        return Promise.resolve(function () {
+          self.unobserve(f)
+        })
       } else {
-        var deleteChildObservers;
-        var resetObserverPath = function(){
-          var promise = self.get(path[0]);
+        var deleteChildObservers
+        var resetObserverPath = function () {
+          var promise = self.get(path[0])
           if (!promise instanceof Promise) {
             // its either not defined or a premitive value
-            promise = self.set(path[0], Y.Map);
+            promise = self.set(path[0], Y.Map)
           }
-          return promise.then(function(map){
-            return map.observePath(path.slice(1), f);
-          }).then(function(_deleteChildObservers){
-            deleteChildObservers = _deleteChildObservers;
-            return Promise.resolve();
-          });
-        };
-        var observer = function(events){
+          return promise.then(function (map) {
+            return map.observePath(path.slice(1), f)
+          }).then(function (_deleteChildObservers) {
+            deleteChildObservers = _deleteChildObservers
+            return Promise.resolve()
+          })
+        }
+        var observer = function (events) {
           for (var e in events) {
-            var event = events[e];
+            var event = events[e]
             if (event.name === path[0]) {
-              deleteChildObservers();
-              if (event.type === "add" || event.type === "update") {
-                resetObserverPath();
+              deleteChildObservers()
+              if (event.type === 'add' || event.type === 'update') {
+                resetObserverPath()
               }
             }
           }
-        };
-        self.observe(observer);
+        }
+        self.observe(observer)
         return resetObserverPath().then(
-          Promise.resolve(function(){
-            deleteChildObservers();
-            self.unobserve(observer);
+          Promise.resolve(function () {
+            deleteChildObservers()
+            self.unobserve(observer)
           })
-        );
+        )
       }
     }
-    *_changed (transaction, op) {
-      if (op.struct === "Delete") {
-        op.key = (yield* transaction.getOperation(op.target)).parentSub;
+    * _changed (transaction, op) {
+      if (op.struct === 'Delete') {
+        op.key = (yield* transaction.getOperation(op.target)).parentSub
       }
-      this.eventHandler.receivedOp(op);
+      this.eventHandler.receivedOp(op)
     }
   }
   Y.Map = new CustomType({
     class: YMap,
-    createType: function* YMapCreator(){
+    createType: function * YMapCreator () {
       var model = {
         map: {},
-        struct: "Map",
-        type: "Map",
+        struct: 'Map',
+        type: 'Map',
         id: this.store.getNextOpId()
-      };
-      yield* this.applyCreatedOperations([model]);
-      return yield* this.createType(model);
+      }
+      yield* this.applyCreatedOperations([model])
+      return yield* this.createType(model)
     },
-    initType: function* YMapInitializer(os, model){
-      return new YMap(os, model);
+    initType: function * YMapInitializer (os, model) { // eslint-disable-line
+      return new YMap(os, model)
     }
-  });
-})();
+  })
+})()
