@@ -172,7 +172,7 @@ var Struct = {
         left.right = op.id
         yield* this.setOperation(left)
       } else {
-        op.right = op.parentSub ? (parent.map[op.parentSub] || null) : parent.start
+        op.right = op.parentSub ? parent.map[op.parentSub] || null : parent.start
       }
       // reconnect right
       if (op.right != null) {
