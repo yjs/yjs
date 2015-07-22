@@ -8,6 +8,27 @@ function copyObject (o) {
   return c
 }
 
+class DeletionStore { // eslint-disable-line
+  constructor  () {
+    this.ds = {}
+  }
+  deleteId (id) {
+    var dv = this.db[id[0]]
+    if (dv === void 0) {
+      dv = []
+      this.db[id[0]] = dv
+    }
+    for (var i in dv) {
+      if (dv[i].pos <= id[1] && id[1] < dv[i].pos + length) {
+        // within the bound, already deleted
+        return
+      } else {
+
+      }
+    }
+  }
+}
+
 Y.Memory = (function () { // eslint-disable-line no-unused-vars
   class Transaction extends AbstractTransaction { // eslint-disable-line
 

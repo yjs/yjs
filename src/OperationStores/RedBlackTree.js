@@ -80,6 +80,22 @@ class N {
       return p.parent
     }
   }
+  prev () {
+    if (this.left !== null) {
+      // search the most right node in the left tree
+      var o = this.left
+      while (o.right !== null) {
+        o = o.right
+      }
+      return o
+    } else {
+      var p = this
+      while (p.parent !== null && p !== p.parent.right) {
+        p = p.parent
+      }
+      return p.parent
+    }
+  }
   rotateRight (tree) {
     var parent = this.parent
     var newParent = this.left
@@ -118,7 +134,7 @@ class RBTree { // eslint-disable-line no-unused-vars
     }
     var o = this.root
     if (o === null) {
-      return false
+      return null
     } else {
       while (true) {
         if ((from === null || smaller(from, o.val.id)) && o.left !== null) {
@@ -133,6 +149,34 @@ class RBTree { // eslint-disable-line no-unused-vars
             // there is no right element. Search for the next bigger element,
             // this should be within the bounds
             return o.next()
+          }
+        } else {
+          return o
+        }
+      }
+    }
+  }
+  findNodeWithUpperBound (to) {
+    if (to === void 0) {
+      throw new Error('You must define from!')
+    }
+    var o = this.root
+    if (o === null) {
+      return null
+    } else {
+      while (true) {
+        if ((to === null || smaller(o.val.id, to)) && o.right !== null) {
+          // o is included in the bound
+          // try to find an element that is closer to the bound
+          o = o.right
+        } else if (to !== null && smaller(to, o.val.id)) {
+          // o is not within the bound, maybe one of the left elements is..
+          if (o.left !== null) {
+            o = o.left
+          } else {
+            // there is no left element. Search for the prev smaller element,
+            // this should be within the bounds
+            return o.prev()
           }
         } else {
           return o
