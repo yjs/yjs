@@ -1,7 +1,7 @@
 /* global createUsers, wait, Y, compareAllUsers, getRandomNumber, applyRandomTransactions */
 /* eslint-env browser,jasmine */
 
-var numberOfYArrayTests = 10
+var numberOfYArrayTests = 100
 
 describe('Array Type', function () {
   var y1, y2, y3, yconfig1, yconfig2, yconfig3, flushAll
@@ -91,6 +91,17 @@ describe('Array Type', function () {
       await flushAll()
       yconfig2.reconnect()
       await wait()
+      await flushAll()
+      expect(l1.toArray()).toEqual(l2.toArray())
+      done()
+    })
+    it('Handles deletions in late sync (2)', async function (done) {
+      var l1, l2
+      l1 = await y1.set('Array', Y.Array)
+      await flushAll()
+      l2 = await y2.get('Array')
+      l1.insert(0, ['x', 'y'])
+      l1.delete(0, 2)
       await flushAll()
       expect(l1.toArray()).toEqual(l2.toArray())
       done()
@@ -208,13 +219,6 @@ describe('Array Type', function () {
       done()
     })
     it(`succeed after ${numberOfYArrayTests} actions`, async function (done) {
-      while (this.users.length > 2) {
-        this.users.pop().disconnect()
-        this.arrays.pop()
-      }
-      for (var u of this.users) {
-        u.connector.debug = true
-      }
       await applyRandomTransactions(this.users, this.arrays, randomArrayTransactions, numberOfYArrayTests)
       await flushAll()
       await compareArrayValues(this.arrays)

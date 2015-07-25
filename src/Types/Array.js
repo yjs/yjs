@@ -144,19 +144,21 @@
       this.eventHandler.addUserEventListener(f)
     }
     * _changed (transaction, op) {
-      if (op.struct === 'Insert') {
-        var l = op.left
-        var left
-        while (l != null) {
-          left = yield* transaction.getOperation(l)
-          if (!left.deleted) {
-            break
+      if (!op.deleted) {
+        if (op.struct === 'Insert') {
+          var l = op.left
+          var left
+          while (l != null) {
+            left = yield* transaction.getOperation(l)
+            if (!left.deleted) {
+              break
+            }
+            l = left.left
           }
-          l = left.left
+          op.left = l
         }
-        op.left = l
+        this.eventHandler.receivedOp(op)
       }
-      this.eventHandler.receivedOp(op)
     }
   }
 
