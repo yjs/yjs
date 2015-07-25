@@ -1,4 +1,4 @@
-/* global Struct, RBTree, Y */
+/* global Struct, RBTree, Y, compareIds */
 
 function copyObject (o) {
   var c = {}
@@ -8,9 +8,13 @@ function copyObject (o) {
   return c
 }
 
-class DeletionStore { // eslint-disable-line
-  constructor  () {
-    this.ds = {}
+class DeleteStore extends RBTree { // eslint-disable-line
+  constructor () {
+    super()
+  }
+  isDeleted (id) {
+    var n = this.findNodeWithUpperBound(id)
+    return n !== null && n.val.id[0] === id[0] && id[0] < n.val.id[0] + n.val.len
   }
   delete (id) {
     var n = this.findNodeWithUpperBound(id)
@@ -18,92 +22,97 @@ class DeletionStore { // eslint-disable-line
       if (n.val.id[1] === id[1]) {
         // already deleted
         return
-      } else if (n.val.id[1] + n.val.length === id[1]) {
+      } else if (n.val.id[1] + n.val.len === id[1]) {
         // can extend existing deletion
-        n.val.length++
+        n.val.len++
       } else {
         // cannot extend left
-        n = this.add({id: id, length: 1})
+        n = this.add({id: id, len: 1})
       }
     } else {
       // cannot extend left
-      n = this.add({id: id, length: 1})
+      n = this.add({id: id, len: 1})
     }
+    // can extend right?
     var next = n.next()
-    if compareIds([n.val.id[0], n.val.id[1] + n.val.length], next.val.id) {
-      n.val.length += next.val.length
-      this.delete(next.val.id)
+    if (next !== null && compareIds([n.val.id[0], n.val.id[1] + n.val.len], next.val.id)) {
+      n.val.len = n.val.len + next.val.len
+      super.delete(next.val.id)
     }
   }
   // a DeleteSet (ds) describes all the deleted ops in the OS
   toDeleteSet () {
     var ds = {}
     this.iterate(null, null, function (n) {
-      var user = n.val.id[0]
-      var counter = n.val.id[1]
-      var length = n.val.length
+      var user = n.id[0]
+      var counter = n.id[1]
+      var len = n.len
       var dv = ds[user]
       if (dv === void 0) {
         dv = []
         ds[user] = dv
       }
-      dv.push([counter, length])
+      dv.push([counter, len])
     })
-    // returns a set of deletions that need to be applied in order to get to
-    // the state of the supplied ds
-    getDeletions (ds) {
-      var deletions = []
-      function createDeletions (user, start, length) {
-        for (var c = start; c < start + length; c++) {
-          deletions.push({
-            target: [user, c],
-            struct: 'Delete'
-          })
-        }
-      }
-      for (var user in ds) {
-        var dv = ds[user]
-        var pos = 0
-        var d = dv[pos]
-        this.iterate([user, 0], [user, Number.MAX_VALUE], function (n) {
-          // cases:
-          // 1. d deletes something to the right of n
-          //  => go to next n (break)
-          // 2. d deletes something to the left of n
-          //  => create deletions
-          //  => reset d accordingly
-          //  *)=> if d doesn't delete anything anymore, go to next d (continue)
-          // 3. not 2) and d deletes something that also n deletes
-          //  => reset d so that it doesn't contain n's deletion
-          //  *)=> if d does not delete anything anymore, go to next d (continue)
-          while (d != null) {
-            var diff // describe the diff of length in 1) and 2)
-            if (n.val.id[1] + n.val.length <= d[0]) {
-              // 1)
-              break
-            } else if (d[0] < n.val.id[1]) {
-              // 2)
-              // delete maximum the length of d
-              // else delete as much as possible
-              diff = Math.min(n.val.id[1]-d[0], d[1])
-              createDeletions(user, d[0], diff)
-            } else {
-              // 3)
-              diff = n.val.id[1] + n.val.length - d[0] // never null (see 1)
-            }
-            if (d[1] <= diff) {
-              // d doesn't delete anything anymore
-              d = dv[++pos]
-            } else {
-              d[0] = d[0] + diff // reset pos
-              d[1] = d[1] - diff // reset length
-            }
-          }
+    return ds
+  }
+  // returns a set of deletions that need to be applied in order to get to
+  // the state of the supplied ds
+  getDeletions (ds) {
+    var deletions = []
+    function createDeletions (user, start, len) {
+      for (var c = start; c < start + len; c++) {
+        deletions.push({
+          target: [user, c],
+          struct: 'Delete'
         })
       }
-      this.iterater()
-
     }
+    for (var user in ds) {
+      var dv = ds[user]
+      var pos = 0
+      var d = dv[pos]
+      this.iterate([user, 0], [user, Number.MAX_VALUE], function (n) {
+        // cases:
+        // 1. d deletes something to the right of n
+        //  => go to next n (break)
+        // 2. d deletes something to the left of n
+        //  => create deletions
+        //  => reset d accordingly
+        //  *)=> if d doesn't delete anything anymore, go to next d (continue)
+        // 3. not 2) and d deletes something that also n deletes
+        //  => reset d so that it doesn't contain n's deletion
+        //  *)=> if d does not delete anything anymore, go to next d (continue)
+        while (d != null) {
+          var diff // describe the diff of length in 1) and 2)
+          if (n.id[1] + n.len <= d[0]) {
+            // 1)
+            break
+          } else if (d[0] < n.id[1]) {
+            // 2)
+            // delete maximum the len of d
+            // else delete as much as possible
+            diff = Math.min(n.id[1] - d[0], d[1])
+            createDeletions(user, d[0], diff)
+          } else {
+            // 3)
+            diff = n.id[1] + n.len - d[0] // never null (see 1)
+          }
+          if (d[1] <= diff) {
+            // d doesn't delete anything anymore
+            d = dv[++pos]
+          } else {
+            d[0] = d[0] + diff // reset pos
+            d[1] = d[1] - diff // reset length
+          }
+        }
+      })
+      for (; pos < dv.len; pos++) {
+        d = dv[pos]
+        createDeletions(user, d[0], d[1])
+      }
+    }
+  }
 }
 
 Y.Memory = (function () { // eslint-disable-line no-unused-vars
@@ -113,6 +122,16 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
       super(store)
       this.ss = store.ss
       this.os = store.os
+      this.ds = store.ds
+    }
+    * getDeletionSet (id) {
+      return this.ds.toDeleteSet(id)
+    }
+    * isDeleted (id) {
+      return this.ds.isDeleted(id)
+    }
+    * getDeletions (ds) {
+      return this.ds.getDeletions(ds)
     }
     * setOperation (op) { // eslint-disable-line
       // TODO: you can remove this step! probs..
@@ -209,6 +228,10 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
       this.ss = {}
       this.waitingTransactions = []
       this.transactionInProgress = false
+      this.ds = new DeleteStore()
+    }
+    logTable () {
+      this.os.logTable()
     }
     requestTransaction (_makeGen) {
       if (!this.transactionInProgress) {

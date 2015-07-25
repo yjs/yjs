@@ -1,4 +1,4 @@
-/* global compareIds */
+/* global compareIds, copyObject */
 function smaller (a, b) {
   return a[0] < b[0] || (a[0] === b[0] && a[1] < b[1])
 }
@@ -192,6 +192,18 @@ class RBTree { // eslint-disable-line no-unused-vars
     }
     return true
   }
+  logTable (from = null, to = null) {
+    var os = []
+    this.iterate(from, to, function (o) {
+      var o_ = copyObject(o)
+      var id = o_.id
+      delete o_.id
+      o_['id[0]'] = id[0]
+      o_['id[1]'] = id[1]
+      os.push(o_)
+    })
+    console.table(os)
+  }
   find (id) {
     return this.findNode(id).val
   }
@@ -382,7 +394,7 @@ class RBTree { // eslint-disable-line no-unused-vars
             p = p.right
           }
         } else {
-          return false
+          return null
         }
       }
       this._fixInsert(node)
@@ -391,6 +403,7 @@ class RBTree { // eslint-disable-line no-unused-vars
     }
     this.length++
     this.root.blacken()
+    return node
   }
   _fixInsert (n) {
     if (n.parent === null) {

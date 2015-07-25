@@ -32,6 +32,7 @@ var Struct = {
       if (!target.deleted) {
         target.deleted = true
         yield* this.setOperation(target)
+        this.ds.delete(target.id)
         var t = this.store.initializedTypes[JSON.stringify(target.parent)]
         if (t != null) {
           yield* t._changed(this, copyObject(op))

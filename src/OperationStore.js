@@ -166,6 +166,9 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
           yield* Struct[op.struct].execute.call(this, op)
           yield* this.addOperation(op)
           yield* this.store.operationAdded(this, op)
+          if (op.deleted === true) {
+            this.ds.delete(op.id)
+          }
           // find next operation to execute
           op = this.store.waitingOperations.find([op.id[0], state.clock])
           if (op != null) {

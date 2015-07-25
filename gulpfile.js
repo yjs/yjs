@@ -63,11 +63,12 @@ var options = minimist(process.argv.slice(2), {
     testfiles: 'src/**/*.js'
   }
 })
+var yfiles = polyfills.concat(['src/y.js', 'src/Connector.js', 'src/OperationStore.js', 'src/Struct.js', 'src/Utils.js',
+    'src/OperationStores/RedBlackTree.js', 'src/Memory.js', 'src/**/*.js'])
 
 var files = {
-  y: polyfills.concat(['src/y.js', 'src/Connector.js', 'src/OperationStore.js', 'src/Struct.js', 'src/Utils.js',
-    'src/OperationStores/RedBlackTree.js', 'src/**/*.js', '!src/**/*.spec.js']),
-  test: polyfills.concat([options.testfiles]),
+  y: yfiles.concat(['!src/**/*.spec.js']),
+  test: yfiles.concat([options.testfiles]),
   build_test: ['build_test/y.js']
 }
 

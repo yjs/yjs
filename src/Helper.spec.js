@@ -51,30 +51,63 @@ async function applyRandomTransactions (users, objects, transactions, numberOfTr
 }
 
 async function compareAllUsers(users){//eslint-disable-line
-  var s1, s2
+  var s1, s2, ds1, ds2, allDels1, allDels2
   var db1 = []
   function * t1 () {
     s1 = yield* this.getStateSet()
+    ds1 = yield* this.getDeletionSet()
+    allDels1 = []
+    yield* this.ds.iterate(null, null, function (d) {
+      allDels1.push(d)
+    })
   }
   function * t2 () {
     s2 = yield* this.getStateSet()
+    ds2 = yield* this.getDeletionSet()
+    allDels2 = []
+    yield* this.ds.iterate(null, null, function (d) {
+      allDels2.push(d)
+    })
   }
   await users[0].connector.flushAll()
   for (var uid = 0; uid < users.length; uid++) {
+    var u = users[uid]
+    // compare deleted ops against deleteStore
+    u.db.os.iterate(null, null, function (o) {
+      if (o.deleted === true) {
+        expect(u.db.ds.isDeleted(o.id)).toBeTruthy()
+      }
+    })
+    // compare deleteStore against deleted ops
+    u.db.requestTransaction(function * () {
+      var ds = []
+      u.db.ds.iterate(null, null, function (d) {
+        ds.push(d)
+      })
+      for (var j in ds) {
+        var d = ds[j]
+        for (var i = 0; i < d.len; i++) {
+          var o = yield* this.getOperation([d.id[0], d.id[1] + i])
+          expect(o.deleted).toBeTruthy()
+        }
+      }
+    })
+    // compare allDels tree
+    await wait()
     if (s1 == null) {
-      var u = users[uid]
       u.db.requestTransaction(t1)
       await wait()
       u.db.os.iterate(null, null, function(o){//eslint-disable-line
         db1.push(o)
       })
     } else {
-      var u2 = users[uid]
-      u2.db.requestTransaction(t2)
+      u.db.requestTransaction(t2)
       await wait()
       expect(s1).toEqual(s2)
+      expect(allDels1).toEqual(allDels2) // inner structure
+      expect(ds1).toEqual(ds2) // exported structure
       var count = 0
-      u2.db.os.iterate(null, null, function(o){//eslint-disable-line
+      u.db.os.iterate(null, null, function(o){//eslint-disable-line
         expect(db1[count++]).toEqual(o)
       })
     }
