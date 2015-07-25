@@ -38,16 +38,27 @@ async function applyRandomTransactions (users, objects, transactions, numberOfTr
     var f = getRandom(transactions)
     f(root)
   }
-  for (var i = 0; i < numberOfTransactions; i++) {
-    var r = Math.random()
-    if (r >= 0.9) {
-      // 10% chance to flush
-      users[0].connector.flushOne()
-    } else {
-      randomTransaction(getRandom(objects))
+  function applyTransactions () {
+    for (var i = 0; i < numberOfTransactions / 2 + 1; i++) {
+      var r = Math.random()
+      if (r >= 0.9) {
+        // 10% chance to flush
+        users[0].connector.flushOne()
+      } else {
+        randomTransaction(getRandom(objects))
+      }
+      wait()
     }
-    wait()
   }
+  applyTransactions()
+  await users[0].connector.flushAll()
+  users[0].disconnect()
+  await wait()
+  applyTransactions()
+  await users[0].connector.flushAll()
+  users[0].reconnect()
+  await wait()
+  await users[0].connector.flushAll()
 }
 
 async function compareAllUsers(users){//eslint-disable-line
@@ -55,7 +66,7 @@ async function compareAllUsers(users){//eslint-disable-line
   var db1 = []
   function * t1 () {
     s1 = yield* this.getStateSet()
-    ds1 = yield* this.getDeletionSet()
+    ds1 = yield* this.getDeleteSet()
     allDels1 = []
     yield* this.ds.iterate(null, null, function (d) {
       allDels1.push(d)
@@ -63,7 +74,7 @@ async function compareAllUsers(users){//eslint-disable-line
   }
   function * t2 () {
     s2 = yield* this.getStateSet()
-    ds2 = yield* this.getDeletionSet()
+    ds2 = yield* this.getDeleteSet()
     allDels2 = []
     yield* this.ds.iterate(null, null, function (d) {
       allDels2.push(d)

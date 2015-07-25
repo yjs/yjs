@@ -64,8 +64,13 @@ class Test extends AbstractConnector {
       globalRoom.buffers[key].push(JSON.parse(JSON.stringify([this.userId, message])))
     }
   }
+  reconnect () {
+    globalRoom.addUser(this)
+    super()
+  }
   disconnect () {
     globalRoom.removeUser(this.userId)
+    super()
   }
   flush () {
     var buff = globalRoom.buffers[this.userId]

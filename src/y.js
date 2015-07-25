@@ -29,6 +29,15 @@ class YConfig { // eslint-disable-line no-unused-vars
       callback(yconfig)
     })
   }
+  isConnected () {
+    return this.connector.isSynced
+  }
+  disconnect () {
+    this.connector.disconnect()
+  }
+  reconnect () {
+    this.connector.reconnect()
+  }
   destroy () {
     this.connector.disconnect()
     this.db.removeDatabase()

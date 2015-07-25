@@ -107,11 +107,12 @@ class DeleteStore extends RBTree { // eslint-disable-line
           }
         }
       })
-      for (; pos < dv.len; pos++) {
+      for (; pos < dv.length; pos++) {
         d = dv[pos]
         createDeletions(user, d[0], d[1])
       }
     }
+    return deletions
   }
 }
 
@@ -124,13 +125,13 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
       this.os = store.os
       this.ds = store.ds
     }
-    * getDeletionSet (id) {
+    * getDeleteSet (id) {
       return this.ds.toDeleteSet(id)
     }
     * isDeleted (id) {
       return this.ds.isDeleted(id)
     }
-    * getDeletions (ds) {
+    * getOpsFromDeleteSet (ds) {
       return this.ds.getDeletions(ds)
     }
     * setOperation (op) { // eslint-disable-line
@@ -201,13 +202,20 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
       var res = []
       for (var op of ops) {
         res.push(yield* this.makeOperationReady(startSS, op))
+        var state = startSS[op.id[0]] || 0
+        if (state === op.id[1]) {
+          startSS[op.id[0]] = state + 1
+        } else {
+          throw new Error('Unexpected operation!')
+        }
       }
       return res
     }
     * makeOperationReady (ss, op) {
       // instead of ss, you could use currSS (a ss that increments when you add an operation)
-      var clock
+      op = copyObject(op)
       var o = op
+      var clock
       while (o.right != null) {
         // while unknown, go to the right
         clock = ss[o.right[0]]
@@ -216,8 +224,16 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
         }
         o = yield* this.getOperation(o.right)
       }
-      op = copyObject(op)
       op.right = o.right
+      while (o.left != null) {
+        // while unknown, go to the right
+        clock = ss[o.left[0]]
+        if (clock != null && o.left[1] < clock) {
+          break
+        }
+        o = yield* this.getOperation(o.left)
+      }
+      op.left = o.left
       return op
     }
   }

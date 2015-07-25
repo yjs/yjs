@@ -1,17 +1,17 @@
 /* global createUsers, wait, Y, compareAllUsers, getRandomNumber, applyRandomTransactions */
 /* eslint-env browser,jasmine */
 
-var numberOfYArrayTests = 80
+var numberOfYArrayTests = 10
 
 describe('Array Type', function () {
-  var y1, y2, y3, flushAll
+  var y1, y2, y3, yconfig1, yconfig2, yconfig3, flushAll
 
-  jasmine.DEFAULT_TIMEOUT_INTERVAL = 50000
+  jasmine.DEFAULT_TIMEOUT_INTERVAL = 5000
   beforeEach(async function (done) {
     await createUsers(this, 5)
-    y1 = this.users[0].root
-    y2 = this.users[1].root
-    y3 = this.users[2].root
+    y1 = (yconfig1 = this.users[0]).root
+    y2 = (yconfig2 = this.users[1]).root
+    y3 = (yconfig3 = this.users[2]).root
     flushAll = this.users[0].connector.flushAll
     done()
   })
@@ -59,6 +59,42 @@ describe('Array Type', function () {
       expect(l2.toArray()).toEqual([0, 2, 'y'])
       done()
     })
+    it('Handles getOperations ascending ids bug in late sync', async function (done) {
+      var l1, l2
+      l1 = await y1.set('Array', Y.Array)
+      l1.insert(0, ['x', 'y'])
+      await flushAll()
+      yconfig3.disconnect()
+      yconfig2.disconnect()
+      await wait()
+      l2 = await y2.get('Array')
+      l2.insert(1, [2])
+      l2.insert(1, [3])
+      await flushAll()
+      yconfig2.reconnect()
+      yconfig3.reconnect()
+      await wait()
+      await flushAll()
+      expect(l1.toArray()).toEqual(l2.toArray())
+      done()
+    })
+    it('Handles deletions in late sync', async function (done) {
+      var l1, l2
+      l1 = await y1.set('Array', Y.Array)
+      l1.insert(0, ['x', 'y'])
+      await flushAll()
+      yconfig2.disconnect()
+      await wait()
+      l2 = await y2.get('Array')
+      l2.delete(1, 1)
+      l1.delete(0, 2)
+      await flushAll()
+      yconfig2.reconnect()
+      await wait()
+      await flushAll()
+      expect(l1.toArray()).toEqual(l2.toArray())
+      done()
+    })
     it('Basic insert. Then delete the whole array', async function (done) {
       var l1, l2, l3
       l1 = await y1.set('Array', Y.Array)
@@ -66,6 +102,42 @@ describe('Array Type', function () {
       await flushAll()
       l1.delete(0, 3)
       l2 = await y2.get('Array')
+      l3 = await y3.get('Array')
+      await flushAll()
+      expect(l1.toArray()).toEqual(l2.toArray())
+      expect(l2.toArray()).toEqual(l3.toArray())
+      expect(l2.toArray()).toEqual([])
+      done()
+    })
+    it('Basic insert. Then delete the whole array (merge listeners on late sync)', async function (done) {
+      var l1, l2, l3
+      l1 = await y1.set('Array', Y.Array)
+      l1.insert(0, ['x', 'y', 'z'])
+      await flushAll()
+      yconfig2.disconnect()
+      l1.delete(0, 3)
+      l2 = await y2.get('Array')
+      await wait()
+      yconfig2.reconnect()
+      await wait()
+      l3 = await y3.get('Array')
+      await flushAll()
+      expect(l1.toArray()).toEqual(l2.toArray())
+      expect(l2.toArray()).toEqual(l3.toArray())
+      expect(l2.toArray()).toEqual([])
+      done()
+    })
+    it('Basic insert. Then delete the whole array (merge deleter on late sync)', async function (done) {
+      var l1, l2, l3
+      l1 = await y1.set('Array', Y.Array)
+      l1.insert(0, ['x', 'y', 'z'])
+      await flushAll()
+      yconfig1.disconnect()
+      l1.delete(0, 3)
+      l2 = await y2.get('Array')
+      await wait()
+      yconfig1.reconnect()
+      await wait()
       l3 = await y3.get('Array')
       await flushAll()
       expect(l1.toArray()).toEqual(l2.toArray())
@@ -97,7 +169,7 @@ describe('Array Type', function () {
       done()
     })
   })
-  describe(`${numberOfYArrayTests} Random tests`, function () {
+  describe(`Random tests`, function () {
     var randomArrayTransactions = [
       function insert (array) {
         array.insert(getRandomNumber(array.toArray().length), [getRandomNumber()])
@@ -136,6 +208,13 @@ describe('Array Type', function () {
       done()
     })
     it(`succeed after ${numberOfYArrayTests} actions`, async function (done) {
+      while (this.users.length > 2) {
+        this.users.pop().disconnect()
+        this.arrays.pop()
+      }
+      for (var u of this.users) {
+        u.connector.debug = true
+      }
       await applyRandomTransactions(this.users, this.arrays, randomArrayTransactions, numberOfYArrayTests)
       await flushAll()
       await compareArrayValues(this.arrays)

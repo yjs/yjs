@@ -26,6 +26,16 @@ class AbstractConnector { // eslint-disable-line no-unused-vars
     this.debug = opts.debug === true
     this.broadcastedHB = false
   }
+  reconnect () {
+  }
+  disconnect () {
+    this.connections = {}
+    this.isSynced = false
+    this.currentSyncTarget = null
+    this.broadcastedHB = false
+    this.syncingClients = []
+    this.whenSyncedListeners = []
+  }
   setUserId (userId) {
     this.userId = userId
     this.y.db.setUserId(userId)
@@ -97,7 +107,8 @@ class AbstractConnector { // eslint-disable-line no-unused-vars
       this.y.db.requestTransaction(function *() {
         conn.send(syncUser, {
           type: 'sync step 1',
-          stateVector: yield* this.getStateVector()
+          stateSet: yield* this.getStateSet(),
+          deleteSet: yield* this.getDeleteSet()
         })
       })
     }
@@ -107,13 +118,12 @@ class AbstractConnector { // eslint-disable-line no-unused-vars
       for (var f of this.whenSyncedListeners) {
         f()
       }
-      this.whenSyncedListeners = null
+      this.whenSyncedListeners = []
     }
   }
   send (uid, message) {
     if (this.debug) {
-      console.log(`me -> ${uid}: ${message.type}`);// eslint-disable-line
-      console.dir(m); // eslint-disable-line
+      console.log(`me -> ${uid}: ${message.type}`, m);// eslint-disable-line
     }
     super(uid, message)
   }
@@ -123,19 +133,27 @@ class AbstractConnector { // eslint-disable-line no-unused-vars
       return
     }
     if (this.debug) {
-      console.log(`${sender} -> me: ${m.type}`);// eslint-disable-line
-      console.dir(m); // eslint-disable-line
+      console.log(`${sender} -> me: ${m.type}`, m);// eslint-disable-line
     }
     if (m.type === 'sync step 1') {
       // TODO: make transaction, stream the ops
       let conn = this
       this.y.db.requestTransaction(function *() {
-        var ops = yield* this.getOperations(m.stateVector)
-        var sv = yield* this.getStateVector()
+        var ops = yield* this.getOperations(m.stateSet)
+        var dels = yield* this.getOpsFromDeleteSet(m.deleteSet)
+        if (dels.length > 0) {
+          this.store.apply(dels)
+          // broadcast missing dels from syncing client
+          this.store.y.connector.broadcast({
+            type: 'update',
+            ops: dels
+          })
+        }
         conn.send(sender, {
           type: 'sync step 2',
           os: ops,
-          stateVector: sv
+          stateSet: yield* this.getStateSet(),
+          deleteSet: yield* this.getDeleteSet()
         })
         if (this.forwardToSyncingClients) {
           conn.syncingClients.push(sender)
@@ -159,7 +177,10 @@ class AbstractConnector { // eslint-disable-line no-unused-vars
       var broadcastHB = !this.broadcastedHB
       this.broadcastedHB = true
       this.y.db.requestTransaction(function *() {
-        var ops = yield* this.getOperations(m.stateVector)
+        var ops = yield* this.getOperations(m.stateSet)
+        var dels = yield* this.getOpsFromDeleteSet(m.deleteSet)
+        this.store.apply(dels)
+        this.store.apply(m.os)
         if (ops.length > 0) {
           m = {
             type: 'update',
