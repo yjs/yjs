@@ -179,6 +179,27 @@ describe('Array Type', function () {
       await wait(50)
       done()
     })
+    it('garbage collects', async function (done) {
+      var l1, l2, l3
+      l1 = await y1.set('Array', Y.Array)
+      l1.insert(0, ['x', 'y', 'z'])
+      await flushAll()
+      yconfig1.disconnect()
+      l1.delete(0, 3)
+      l2 = await y2.get('Array')
+      await wait()
+      yconfig1.reconnect()
+      await wait()
+      l3 = await y3.get('Array')
+      await flushAll()
+      yconfig1.db.garbageCollect()
+      yconfig1.db.garbageCollect()
+      yconfig1.db.logTable()
+      expect(l1.toArray()).toEqual(l2.toArray())
+      expect(l2.toArray()).toEqual(l3.toArray())
+      expect(l2.toArray()).toEqual([])
+      done()
+    })
   })
   describe(`Random tests`, function () {
     var randomArrayTransactions = [

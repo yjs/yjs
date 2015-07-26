@@ -34,10 +34,18 @@
             if (op.left === null) {
               if (op.opContent != null) {
                 delete this.contents[key]
-                this.opContents[key] = op.opContent
+                if (op.deleted) {
+                  delete this.opContents[key]
+                } else {
+                  this.opContents[key] = op.opContent
+                }
               } else {
                 delete this.opContents[key]
-                this.contents[key] = op.content
+                if (op.deleted) {
+                  delete this.contents[key]
+                } else {
+                  this.contents[key] = op.content
+                }
               }
               this.map[key] = op.id
               var insertEvent = {
@@ -54,11 +62,8 @@
             }
           } else if (op.struct === 'Delete') {
             if (compareIds(this.map[key], op.target)) {
-              if (this.opContents[key] != null) {
-                delete this.opContents[key]
-              } else {
-                delete this.contents[key]
-              }
+              delete this.opContents[key]
+              delete this.contents[key]
               var deleteEvent = {
                 name: key,
                 object: this,

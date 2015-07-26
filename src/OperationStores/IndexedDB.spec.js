@@ -6,7 +6,7 @@ if (typeof window !== 'undefined') {
   describe('IndexedDB', function () {
     var ob
     beforeAll(function () {
-      ob = new Y.IndexedDB(null, {namespace: 'Test'})
+      ob = new Y.IndexedDB(null, {namespace: 'Test', gcTimeout: -1})
     })
 
     it('can add and get operation', function (done) {

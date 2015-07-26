@@ -81,7 +81,7 @@ Y.IndexedDB = (function () { // eslint-disable-line
   }
   class OperationStore extends AbstractOperationStore { // eslint-disable-line no-undef
     constructor (y, opts) {
-      super(y)
+      super(y, opts)
       if (opts == null) {
         opts = {}
       }

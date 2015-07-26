@@ -40,7 +40,7 @@ class YConfig { // eslint-disable-line no-unused-vars
   }
   destroy () {
     this.connector.disconnect()
-    this.db.removeDatabase()
+    this.db.destroy()
     this.connector = null
     this.db = null
     this.transact = function () {

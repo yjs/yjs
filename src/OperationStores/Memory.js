@@ -238,8 +238,8 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
     }
   }
   class OperationStore extends AbstractOperationStore { // eslint-disable-line no-undef
-    constructor (y) {
-      super(y)
+    constructor (y, opts) {
+      super(y, opts)
       this.os = new RBTree()
       this.ss = {}
       this.waitingTransactions = []
@@ -249,10 +249,10 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
     logTable () {
       this.os.logTable()
     }
-    requestTransaction (_makeGen) {
+    requestTransaction (_makeGen, requestNow = false) {
       if (!this.transactionInProgress) {
         this.transactionInProgress = true
-        setTimeout(() => {
+        var transact = () => {
           var makeGen = _makeGen
           while (makeGen != null) {
             var t = new Transaction(this)
@@ -268,12 +268,18 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
             makeGen = this.waitingTransactions.shift()
           }
           this.transactionInProgress = false
-        }, 0)
+        }
+        if (!requestNow) {
+          setTimeout(transact, 0)
+        } else {
+          transact()
+        }
       } else {
         this.waitingTransactions.push(_makeGen)
       }
     }
-    * removeDatabase () { // eslint-disable-line
+    * destroy () { // eslint-disable-line
+      super.destroy()
       delete this.os
     }
   }

@@ -99,7 +99,9 @@ async function compareAllUsers(users){//eslint-disable-line
         var d = ds[j]
         for (var i = 0; i < d.len; i++) {
           var o = yield* this.getOperation([d.id[0], d.id[1] + i])
-          expect(o.deleted).toBeTruthy()
+          if (o != null) {
+            expect(o.deleted).toBeTruthy()
+          }
         }
       }
     })
@@ -139,7 +141,8 @@ async function createUsers(self, numberOfUsers) {//eslint-disable-line
   for (var i = 0; i < numberOfUsers; i++) {
     promises.push(Y({
       db: {
-        name: 'Memory'
+        name: 'Memory',
+        gcTimeout: -1
       },
       connector: {
         name: 'Test',

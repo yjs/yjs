@@ -39,7 +39,7 @@ class AbstractTransaction { // eslint-disable-line no-unused-vars
 }
 
 class AbstractOperationStore { // eslint-disable-line no-unused-vars
-  constructor (y) {
+  constructor (y, opts) {
     this.y = y
     // E.g. this.listenersById[id] : Array<Listener>
     this.listenersById = {}
@@ -62,6 +62,44 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
     this.initializedTypes = {}
     this.whenUserIdSetListener = null
     this.waitingOperations = new RBTree()
+
+    this.gc1 = [] // first stage
+    this.gc2 = [] // second stage -> after that, kill it
+    this.gcTimeout = opts.gcTimeout || 5000
+    var os = this
+    function garbageCollect () {
+      os.requestTransaction(function * () {
+        for (var i in os.gc2) {
+          var oid = os.gc2[i]
+          var o = yield* this.getOperation(oid)
+          if (o.left != null) {
+            var left = yield* this.getOperation(o.left)
+            left.right = o.right
+          }
+          if (o.right != null) {
+            var right = yield* this.getOperation(o.right)
+            right.left = o.left
+          }
+          yield* this.removeOperation(o.id)
+        }
+        os.gc2 = os.gc1
+        os.gc1 = []
+        if (os.gcTimeout > 0) {
+          os.gcInterval = setTimeout(garbageCollect, os.gcTimeout)
+        }
+      })
+    }
+    this.garbageCollect = garbageCollect
+    if (this.gcTimeout > 0) {
+      garbageCollect()
+    }
+  }
+  addToGarbageCollector (op) {
+    this.gc1.push(op)
+  }
+  destroy () {
+    clearInterval(this.gcInterval)
+    this.gcInterval = null
   }
   setUserId (userId) {
     this.userId = userId
@@ -201,7 +239,7 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
     }
     // notify parent, if it has been initialized as a custom type
     var t = this.initializedTypes[JSON.stringify(op.parent)]
-    if (t != null) {
+    if (t != null && !op.deleted) {
       yield* t._changed(transaction, copyObject(op))
     }
   }
