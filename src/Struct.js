@@ -25,11 +25,12 @@ var Struct = {
       return op
     },
     requiredOps: function (op) {
-      return [op.target]
+      return [] // [op.target]
     },
     execute: function * (op) {
+      console.log('Delete', op, console.trace())
       var target = yield* this.getOperation(op.target)
-      if (!target.deleted) {
+      if (target != null && !target.deleted) {
         target.deleted = true
         if (target.left !== null && (yield* this.getOperation(target.left)).deleted) {
           this.store.addToGarbageCollector(target.id)
@@ -44,13 +45,19 @@ var Struct = {
           }
         }
         yield* this.setOperation(target)
-        this.ds.delete(target.id)
         var t = this.store.initializedTypes[JSON.stringify(target.parent)]
         if (t != null) {
           yield* t._changed(this, copyObject(op))
         }
       }
-
+      if (target == null || !target.deleted) {
+        this.ds.delete(op.target)
+        var state = yield* this.getState(op.target[0])
+        if (state === op.target[1]) {
+          yield* this.checkDeleteStoreForState(state)
+          yield* this.setState(state)
+        }
+      }
     }
   },
   Insert: {
@@ -65,7 +72,7 @@ var Struct = {
       }
     */
     encode: function (op) {
-      /*
+      /* bad idea, right?
       var e = {
         id: op.id,
         left: op.left,

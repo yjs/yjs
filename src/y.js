@@ -35,7 +35,9 @@ class YConfig { // eslint-disable-line no-unused-vars
   disconnect () {
     this.connector.disconnect()
   }
-  reconnect () {
+  async reconnect () {
+    await this.db.garbageCollect()
+    await this.db.garbageCollect()
     this.connector.reconnect()
   }
   destroy () {

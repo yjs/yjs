@@ -68,6 +68,7 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
     this.gcTimeout = opts.gcTimeout || 5000
     var os = this
     function garbageCollect () {
+      var def = Promise.defer()
       os.requestTransaction(function * () {
         for (var i in os.gc2) {
           var oid = os.gc2[i]
@@ -87,7 +88,9 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
         if (os.gcTimeout > 0) {
           os.gcInterval = setTimeout(garbageCollect, os.gcTimeout)
         }
+        def.resolve()
       })
+      return def.promise
     }
     this.garbageCollect = garbageCollect
     if (this.gcTimeout > 0) {
@@ -125,8 +128,12 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
   apply (ops) {
     for (var key in ops) {
       var o = ops[key]
-      var required = Struct[o.struct].requiredOps(o)
-      this.whenOperationsExist(required, o)
+      if (!o.gc) {
+        var required = Struct[o.struct].requiredOps(o)
+        this.whenOperationsExist(required, o)
+      } else {
+        throw new Error("Must not receive gc'd ops!")
+      }
     }
   }
   // op is executed as soon as every operation requested is available.
@@ -200,6 +207,7 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
         var state = yield* this.getState(op.id[0])
         if (op.id[1] === state.clock) {
           state.clock++
+          yield* this.checkDeleteStoreForState(state)
           yield* this.setState(state)
           yield* Struct[op.struct].execute.call(this, op)
           yield* this.addOperation(op)

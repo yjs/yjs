@@ -125,6 +125,12 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
       this.os = store.os
       this.ds = store.ds
     }
+    * checkDeleteStoreForState (state) {
+      var n = this.ds.findNodeWithUpperBound([state.user, state.clock])
+      if (n !== null && n.val.id[0] === state.user) {
+        state.clock = Math.max(state.clock, n.val.id[1] + n.val.len)
+      }
+    } 
     * getDeleteSet (id) {
       return this.ds.toDeleteSet(id)
     }
@@ -196,14 +202,16 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
         var endPos = endState.clock
 
         this.os.iterate([user, startPos], [user, endPos], function (op) {// eslint-disable-line
-          ops.push(Struct[op.struct].encode(op))
+          if (!op.gc) {
+            ops.push(Struct[op.struct].encode(op))
+          }
         })
       }
       var res = []
       for (var op of ops) {
         res.push(yield* this.makeOperationReady(startSS, op))
         var state = startSS[op.id[0]] || 0
-        if (state === op.id[1]) {
+        if (state === op.id[1] || true) {
           startSS[op.id[0]] = state + 1
         } else {
           throw new Error('Unexpected operation!')
@@ -218,8 +226,8 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
       var clock
       while (o.right != null) {
         // while unknown, go to the right
-        clock = ss[o.right[0]]
-        if (clock != null && o.right[1] < clock) {
+        clock = ss[o.right[0]] || 0
+        if (o.right[1] < clock && !o.gc) {
           break
         }
         o = yield* this.getOperation(o.right)
@@ -227,8 +235,8 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
       op.right = o.right
       while (o.left != null) {
         // while unknown, go to the right
-        clock = ss[o.left[0]]
-        if (clock != null && o.left[1] < clock) {
+        clock = ss[o.left[0]] || 0
+        if (o.left[1] < clock && !o.gc) {
           break
         }
         o = yield* this.getOperation(o.left)

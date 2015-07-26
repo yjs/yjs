@@ -61,6 +61,13 @@ async function applyRandomTransactions (users, objects, transactions, numberOfTr
   await users[0].connector.flushAll()
 }
 
+async function garbageCollectAllUsers (users) {
+  for (var i in users) {
+    await users[i].db.garbageCollect()
+    await users[i].db.garbageCollect()
+  }
+}
+
 async function compareAllUsers(users){//eslint-disable-line
   var s1, s2, ds1, ds2, allDels1, allDels2
   var db1 = []
@@ -81,6 +88,8 @@ async function compareAllUsers(users){//eslint-disable-line
     })
   }
   await users[0].connector.flushAll()
+  await garbageCollectAllUsers(users)
+  await wait(200)
   for (var uid = 0; uid < users.length; uid++) {
     var u = users[uid]
     // compare deleted ops against deleteStore
@@ -99,9 +108,8 @@ async function compareAllUsers(users){//eslint-disable-line
         var d = ds[j]
         for (var i = 0; i < d.len; i++) {
           var o = yield* this.getOperation([d.id[0], d.id[1] + i])
-          if (o != null) {
-            expect(o.deleted).toBeTruthy()
-          }
+          // gc'd or deleted
+          expect(o == null || o.deleted).toBeTruthy()
         }
       }
     })

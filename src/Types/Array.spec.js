@@ -1,17 +1,17 @@
 /* global createUsers, wait, Y, compareAllUsers, getRandomNumber, applyRandomTransactions */
 /* eslint-env browser,jasmine */
 
-var numberOfYArrayTests = 100
+var numberOfYArrayTests = 5
 
 describe('Array Type', function () {
   var y1, y2, y3, yconfig1, yconfig2, yconfig3, flushAll
 
   jasmine.DEFAULT_TIMEOUT_INTERVAL = 5000
   beforeEach(async function (done) {
-    await createUsers(this, 5)
+    await createUsers(this, 2)
     y1 = (yconfig1 = this.users[0]).root
     y2 = (yconfig2 = this.users[1]).root
-    y3 = (yconfig3 = this.users[2]).root
+    // y3 = (yconfig3 = this.users[2]).root
     flushAll = this.users[0].connector.flushAll
     done()
   })
@@ -192,12 +192,12 @@ describe('Array Type', function () {
       await wait()
       l3 = await y3.get('Array')
       await flushAll()
-      yconfig1.db.garbageCollect()
-      yconfig1.db.garbageCollect()
+      await garbageCollectAllUsers(this.users)
       yconfig1.db.logTable()
       expect(l1.toArray()).toEqual(l2.toArray())
       expect(l2.toArray()).toEqual(l3.toArray())
       expect(l2.toArray()).toEqual([])
+      await compareAllUsers(this.users)
       done()
     })
   })
@@ -240,6 +240,9 @@ describe('Array Type', function () {
       done()
     })
     it(`succeed after ${numberOfYArrayTests} actions`, async function (done) {
+      for (var u of this.users) {
+        u.connector.debug = true
+      }
       await applyRandomTransactions(this.users, this.arrays, randomArrayTransactions, numberOfYArrayTests)
       await flushAll()
       await compareArrayValues(this.arrays)
