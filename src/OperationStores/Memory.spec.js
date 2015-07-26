@@ -20,12 +20,11 @@ describe('Memory', function () {
       expect(ds.toDeleteSet()).toBeTruthy({'u1': [10, 2]})
     })
     it('Creates operations', function () {
-      ds.add({id: ['5', 3], len: 2})
       var dels = ds.getDeletions({5: [[4, 1]]})
       expect(dels.length === 1).toBeTruthy()
       expect(dels[0]).toEqual({
         struct: 'Delete',
-        target: ['5', 3]
+        target: ['5', 4]
       })
     })
   })
