@@ -1,4 +1,5 @@
 basic_ops_uninitialized = require "./Basic"
+RBTReeByIndex = require 'bintrees/lib/rbtree_by_index'
 
 module.exports = ()->
   basic_ops = basic_ops_uninitialized()
@@ -107,6 +108,13 @@ module.exports = ()->
       @beginning.next_cl = @end
       @beginning.execute()
       @end.execute()
+
+
+      # The short tree is storing the non deleted operations
+      @shortTree = new RBTreeByIndex()
+      # The complete tree is storing all the operations
+      @completeTree = new RBTreeByIndex()
+
       super custom_type, uid, content, content_operations
 
     type: "ListManager"
@@ -155,54 +163,63 @@ module.exports = ()->
     getFirstOperation: ()->
       @beginning.next_cl
 
-    # Transforms the the list to an array
+    # get the next non-deleted operation
+    getNextNonDeleted: (start)->
+      if start.isDeleted() or not start.node?
+        operation = start.next_cl
+        while not ((operation instanceof ops.Delimiter))
+          if operation.is_deleted
+            operation = operation.next_cl
+          else
+            break
+      else
+        operation = start.node.next.node
+        if not operation
+          return false
+
+      operation
+
+    getPrevNonDeleted: (start) ->
+      if start.isDeleted() or not start.node?
+        operation = start.prev_cl
+        while not ((operation instanceof ops.Delimiter))
+          if operation.is_deleted
+            operation = operation.prev_cl
+          else
+            break
+      else
+        operation = start.node.prev.node
+        if not operation
+          return false
+
+      operation
+
+
+    # Transforms the list to an array
     # Doesn't return left-right delimiter.
     toArray: ()->
-      o = @beginning.next_cl
-      result = []
-      while o isnt @end
-        if not o.is_deleted
-          result.push o.val()
-        o = o.next_cl
-      result
+      @shortTree.map (operation) ->
+        operation.val()
 
-    map: (f)->
-      o = @beginning.next_cl
-      result = []
-      while o isnt @end
-        if not o.is_deleted
-          result.push f(o)
-        o = o.next_cl
-      result
+    map: (fun)->
+      @shortTree.map fun
 
-    fold: (init, f)->
-      o = @beginning.next_cl
-      while o isnt @end
-        if not o.is_deleted
-          init = f(init, o)
-        o = o.next_cl
-      init
+    fold: (init, fun)->
+      @shortTree.map (operation) ->
+        init = fun(init, operation)
 
     val: (pos)->
       if pos?
-        o = @getOperationByPosition(pos+1)
-        if not (o instanceof ops.Delimiter)
-          o.val()
-        else
-          throw new Error "this position does not exist"
+        @shortTree.find(pos).val()
       else
         @toArray()
 
     ref: (pos)->
       if pos?
-        o = @getOperationByPosition(pos+1)
-        if not (o instanceof ops.Delimiter)
-          o
-        else
-          null
-          # throw new Error "this position does not exist"
+        @shortTree.find(pos)
       else
-        throw new Error "you must specify a position parameter"
+        @shortTree.map (operation) ->
+          operation
 
     #
     # Retrieves the x-th not deleted element.
@@ -210,42 +227,49 @@ module.exports = ()->
     # the 0th character is the left Delimiter
     #
     getOperationByPosition: (position)->
-      o = @beginning
-      while true
-        # find the i-th op
-        if o instanceof ops.Delimiter and o.prev_cl?
-          # the user or you gave a position parameter that is to big
-          # for the current array. Therefore we reach a Delimiter.
-          # Then, we'll just return the last character.
-          o = o.prev_cl
-          while o.isDeleted() and o.prev_cl?
-            o = o.prev_cl
-          break
-        if position <= 0 and not o.isDeleted()
-          break
-
-        o = o.next_cl
-        if not o.isDeleted()
-          position -= 1
-      o
+      if position == 0
+        @beginning
+      else if position == @shortTree.size + 1
+        @end
+      else
+        @shortTree.find (position-1)
 
     push: (content)->
       @insertAfter @end.prev_cl, [content]
 
+    insertAfterHelper: (root, content)->
+      if !root.right
+        root.bt.right = content
+        content.bt.parent = root
+      else
+        right = root.next_cl
+
+
     insertAfter: (left, contents)->
-      right = left.next_cl
-      while right.isDeleted()
-        right = right.next_cl # find the first character to the right, that is not deleted. In the case that position is 0, its the Delimiter.
+      if left is @beginning
+        leftNode = null
+        rightNode = @shortTree.findNode 0
+        right = if rightNode then rightNode.data else @end
+      else
+        # left.node should always exist (insert after a non-deleted element)
+        rightNode = left.node.next
+        leftNode = left.node
+        right = if rightNode then rightNode.data else @end
+
       left = right.prev_cl
 
       # TODO: always expect an array as content. Then you can combine this with the other option (else)
       if contents instanceof ops.Operation
-        (new ops.Insert null, content, null, undefined, undefined, left, right).execute()
+        tmp = new ops.Insert null, content, null, undefined, undefined, left, right
+        tmp.execute()
       else
         for c in contents
           if c? and c._name? and c._getModel?
             c = c._getModel(@custom_types, @operations)
-          tmp = (new ops.Insert null, c, null, undefined, undefined, left, right).execute()
+          tmp = new ops.Insert null, c, null, undefined, undefined, left, right
+          tmp.execute()
+          leftNode = tmp.node
+
           left = tmp
       @
 
@@ -266,45 +290,62 @@ module.exports = ()->
     #
     # @return {ListManager Type} This String object
     #
-    delete: (position, length = 1)->
-      o = @getOperationByPosition(position+1) # position 0 in this case is the deletion of the first character
+    deleteRef: (operation, length = 1, dir = 'right') ->
+      nextOperation = (operation) =>
+        if dir == 'right' then @getNextNonDeleted operation else @getPrevNonDeleted operation
 
-      delete_ops = []
       for i in [0...length]
-        if o instanceof ops.Delimiter
+        if operation instanceof ops.Delimiter
           break
-        d = (new ops.Delete null, undefined, o).execute()
-        o = o.next_cl
-        while (not (o instanceof ops.Delimiter)) and o.isDeleted()
-          o = o.next_cl
-        delete_ops.push d._encode()
+        deleteOperation = (new ops.Delete null, undefined, operation).execute()
+
+        operation = nextOperation operation
       @
 
+    delete: (position, length = 1)->
+      operation = @getOperationByPosition(position+length) # position 0 in this case is the deletion of the first character
 
-    callOperationSpecificInsertEvents: (op)->
+      @deleteRef operation, length, 'left'
+
+
+    callOperationSpecificInsertEvents: (operation)->
+      prev = (@getPrevNonDeleted operation) or @beginning
+      prevNode = if prev then prev.node else null
+
+      next = (@getNextNonDeleted operation) or @end
+      nextNode = if next then next.node else null
+      operation.node = operation.node or (@shortTree.insert_between prevNode, nextNode, operation)
+      operation.completeNode = operation.completeNode or (@completeTree.insert_between operation.prev_cl.completeNode, operation.next_cl.completeNode, operation)
+
       getContentType = (content)->
         if content instanceof ops.Operation
           content.getCustomType()
         else
           content
+
       @callEvent [
         type: "insert"
-        reference: op
-        position: op.getPosition()
+        reference: operation
+        position: operation.node.position()
         object: @getCustomType()
-        changedBy: op.uid.creator
-        value: getContentType op.val()
+        changedBy: operation.uid.creator
+        value: getContentType operation.val()
       ]
 
-    callOperationSpecificDeleteEvents: (op, del_op)->
+    callOperationSpecificDeleteEvents: (operation, del_op)->
+      if operation.node
+        position = operation.node.position()
+        @shortTree.remove_node operation.node
+        operation.node = null
+
       @callEvent [
         type: "delete"
-        reference: op
-        position: op.getPosition()
+        reference: operation
+        position: position
         object: @getCustomType() # TODO: You can combine getPosition + getParent in a more efficient manner! (only left Delimiter will hold @parent)
         length: 1
         changedBy: del_op.uid.creator
-        oldValue: op.val()
+        oldValue: operation.val()
       ]
 
   ops.ListManager.parse = (json)->
@@ -355,19 +396,19 @@ module.exports = ()->
     #
     # This is called, when the Insert-operation was successfully executed.
     #
-    callOperationSpecificInsertEvents: (op)->
+    callOperationSpecificInsertEvents: (operation)->
       if @tmp_composition_ref?
-        if op.uid.creator is @tmp_composition_ref.creator and op.uid.op_number is @tmp_composition_ref.op_number
-          @composition_ref = op
+        if operation.uid.creator is @tmp_composition_ref.creator and operation.uid.op_number is @tmp_composition_ref.op_number
+          @composition_ref = operation
           delete @tmp_composition_ref
-          op = op.next_cl
-          if op is @end
+          operation = operation.next_cl
+          if operation is @end
             return
         else
           return
 
       o = @end.prev_cl
-      while o isnt op
+      while o isnt operation
         @getCustomType()._unapply o.undo_delta
         o = o.prev_cl
       while o isnt @end
@@ -377,11 +418,11 @@ module.exports = ()->
 
       @callEvent [
         type: "update"
-        changedBy: op.uid.creator
+        changedBy: operation.uid.creator
         newValue: @val()
       ]
 
-    callOperationSpecificDeleteEvents: (op, del_op)->
+    callOperationSpecificDeleteEvents: (operation, del_op)->
       return
 
     #
@@ -466,34 +507,34 @@ module.exports = ()->
     # TODO: consider doing this in a more consistent manner. This could also be
     # done with execute. But currently, there are no specital Insert-ops for ListManager.
     #
-    callOperationSpecificInsertEvents: (op)->
-      if op.next_cl.type is "Delimiter" and op.prev_cl.type isnt "Delimiter"
+    callOperationSpecificInsertEvents: (operation)->
+      if operation.next_cl.type is "Delimiter" and operation.prev_cl.type isnt "Delimiter"
         # this replaces another Replaceable
-        if not op.is_deleted # When this is received from the HB, this could already be deleted!
-          old_value = op.prev_cl.val()
+        if not operation.is_deleted # When this is received from the HB, this could already be deleted!
+          old_value = operation.prev_cl.val()
           @callEventDecorator [
             type: "update"
-            changedBy: op.uid.creator
+            changedBy: operation.uid.creator
             oldValue: old_value
           ]
-        op.prev_cl.applyDelete()
-      else if op.next_cl.type isnt "Delimiter"
+        operation.prev_cl.applyDelete()
+      else if operation.next_cl.type isnt "Delimiter"
         # This won't be recognized by the user, because another
         # concurrent operation is set as the current value of the RM
-        op.applyDelete()
+        operation.applyDelete()
       else # prev _and_ next are Delimiters. This is the first created Replaceable in the RM
         @callEventDecorator [
           type: "add"
-          changedBy: op.uid.creator
+          changedBy: operation.uid.creator
         ]
       undefined
 
-    callOperationSpecificDeleteEvents: (op, del_op)->
-      if op.next_cl.type is "Delimiter"
+    callOperationSpecificDeleteEvents: (operation, del_op)->
+      if operation.next_cl.type is "Delimiter"
         @callEventDecorator [
           type: "delete"
           changedBy: del_op.uid.creator
-          oldValue: op.val()
+          oldValue: operation.val()
         ]
 
 
@@ -527,7 +568,5 @@ module.exports = ()->
       #if o instanceof ops.Delimiter
         # throw new Error "Replace Manager doesn't contain anything."
       o.val?() # ? - for the case that (currently) the RM does not contain anything (then o is a Delimiter)
-
-
 
   basic_ops

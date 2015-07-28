@@ -490,7 +490,7 @@ module.exports = function() {
     };
 
     Insert.prototype.execute = function() {
-      var base1, distance_to_origin, i, o;
+      var base1, distance_to_origin, i, o, oDistance;
       if (!this.validateSavedOperations()) {
         return false;
       } else {
@@ -520,15 +520,16 @@ module.exports = function() {
           i = distance_to_origin;
           while (true) {
             if (o !== this.next_cl) {
-              if (o.getDistanceToOrigin() === i) {
+              oDistance = o.getDistanceToOrigin();
+              if (oDistance === i) {
                 if (o.uid.creator < this.uid.creator) {
                   this.prev_cl = o;
                   distance_to_origin = i + 1;
                 } else {
 
                 }
-              } else if (o.getDistanceToOrigin() < i) {
-                if (i - distance_to_origin <= o.getDistanceToOrigin()) {
+              } else if (oDistance < i) {
+                if (i - distance_to_origin <= oDistance) {
                   this.prev_cl = o;
                   distance_to_origin = i + 1;
                 } else {

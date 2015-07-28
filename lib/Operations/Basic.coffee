@@ -521,17 +521,18 @@ module.exports = ()->
           #         $this insert_position is to the left of $o (forever!)
           while true
             if o isnt @next_cl
+              oDistance = o.getDistanceToOrigin()
               # $o happened concurrently
-              if o.getDistanceToOrigin() is i
+              if oDistance is i
                 # case 1
                 if o.uid.creator < @uid.creator
                   @prev_cl = o
                   distance_to_origin = i + 1
                 else
                   # nop
-              else if o.getDistanceToOrigin() < i
+              else if oDistance < i
                 # case 2
-                if i - distance_to_origin <= o.getDistanceToOrigin()
+                if i - distance_to_origin <= oDistance
                   @prev_cl = o
                   distance_to_origin = i + 1
                 else
