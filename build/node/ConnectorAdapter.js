@@ -8,16 +8,6 @@ adaptConnector = function(connector, engine, HB, execution_listener) {
     f = ConnectorClass[name];
     connector[name] = f;
   }
-  connector.setIsBoundToY();
-  send_ = function(o) {
-    if ((o.uid.creator === HB.getUserId()) && (typeof o.uid.op_number !== "string") && (HB.getUserId() !== "_temp")) {
-      return connector.broadcast(o);
-    }
-  };
-  if (connector.invokeSync != null) {
-    HB.setInvokeSyncHandler(connector.invokeSync);
-  }
-  execution_listener.push(send_);
   encode_state_vector = function(v) {
     var results, value;
     results = [];
@@ -61,11 +51,21 @@ adaptConnector = function(connector, engine, HB, execution_listener) {
   if (connector.receive_handlers == null) {
     connector.receive_handlers = [];
   }
-  return connector.receive_handlers.push(function(sender, op) {
+  connector.receive_handlers.push(function(sender, op) {
     if (op.uid.creator !== HB.getUserId()) {
       return engine.applyOp(op);
     }
   });
+  connector.setIsBoundToY();
+  send_ = function(o) {
+    if ((o.uid.creator === HB.getUserId()) && (typeof o.uid.op_number !== "string") && (HB.getUserId() !== "_temp")) {
+      return connector.broadcast(o);
+    }
+  };
+  if (connector.invokeSync != null) {
+    HB.setInvokeSyncHandler(connector.invokeSync);
+  }
+  return execution_listener.push(send_);
 };
 
 module.exports = adaptConnector;
