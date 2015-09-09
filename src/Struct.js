@@ -28,7 +28,7 @@ var Struct = {
       return [] // [op.target]
     },
     execute: function * (op) {
-      console.log('Delete', op, console.trace())
+      // console.log('Delete', op, console.trace())
       var target = yield* this.getOperation(op.target)
       if (target != null && !target.deleted) {
         target.deleted = true
@@ -50,13 +50,11 @@ var Struct = {
           yield* t._changed(this, copyObject(op))
         }
       }
-      if (target == null || !target.deleted) {
-        this.ds.delete(op.target)
-        var state = yield* this.getState(op.target[0])
-        if (state === op.target[1]) {
-          yield* this.checkDeleteStoreForState(state)
-          yield* this.setState(state)
-        }
+      this.ds.delete(op.target)
+      var state = yield* this.getState(op.target[0])
+      if (state.clock === op.target[1]) {
+        yield* this.checkDeleteStoreForState(state)
+        yield* this.setState(state)
       }
     }
   },

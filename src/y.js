@@ -15,7 +15,7 @@ class YConfig { // eslint-disable-line no-unused-vars
     this.db = new Y[opts.db.name](this, opts.db)
     this.connector = new Y[opts.connector.name](this, opts.connector)
     var yconfig = this
-    this.db.requestTransaction(function *() {
+    this.db.requestTransaction(function * requestTransaction () {
       // create initial Map type
       var model = {
         id: ['_', 0],

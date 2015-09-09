@@ -8,10 +8,10 @@ describe('Array Type', function () {
 
   jasmine.DEFAULT_TIMEOUT_INTERVAL = 5000
   beforeEach(async function (done) {
-    await createUsers(this, 2)
+    await createUsers(this, 3)
     y1 = (yconfig1 = this.users[0]).root
     y2 = (yconfig2 = this.users[1]).root
-    // y3 = (yconfig3 = this.users[2]).root
+    y3 = (yconfig3 = this.users[2]).root
     flushAll = this.users[0].connector.flushAll
     done()
   })
@@ -102,8 +102,11 @@ describe('Array Type', function () {
       l2 = await y2.get('Array')
       l1.insert(0, ['x', 'y'])
       l1.delete(0, 2)
+      await wait(500)
       await flushAll()
+      await wait(500)
       expect(l1.toArray()).toEqual(l2.toArray())
+      await compareAllUsers(this.users)
       done()
     })
     it('Basic insert. Then delete the whole array', async function (done) {

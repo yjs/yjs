@@ -49,6 +49,7 @@ var jasmine = require('gulp-jasmine')
 var jasmineBrowser = require('gulp-jasmine-browser')
 var concat = require('gulp-concat')
 var watch = require('gulp-watch')
+var ignore = require('gulp-ignore')
 
 var polyfills = [
   './node_modules/gulp-babel/node_modules/babel-core/node_modules/regenerator/runtime.js'
@@ -95,7 +96,7 @@ gulp.task('build', function () {
       blacklist: ['regenerator'],
       experimental: true
     }))
-    .pipe(sourcemaps.write())
+    .pipe(sourcemaps.write('.'))
     .pipe(gulp.dest('.'))
 })
 
@@ -110,8 +111,9 @@ gulp.task('test', function () {
       experimental: true
     }))
     .pipe(uglify())
-    .pipe(sourcemaps.write())
+    .pipe(sourcemaps.write('.'))
     .pipe(gulp.dest('build'))
+    .pipe(ignore.include('*.js'))
     .pipe(jasmine({
       verbose: true,
       includeStuckTrace: true
@@ -125,9 +127,9 @@ gulp.task('build_jasmine_browser', function () {
     .pipe(babel({
       loose: 'all',
       modules: 'ignore',
-      optional: ['es7.asyncFunctions'],
-      // blacklist: "regenerator",
-      experimental: true
+      // optional: ['es7.asyncFunctions'],
+      blacklist: "regenerator",
+      //experimental: true
     }))
     .pipe(sourcemaps.write())
     .pipe(gulp.dest('build'))

@@ -5,7 +5,7 @@
   This is just a compilation of functions that help to test this library!
 ***/
 
-function wait(t = 0) {//eslint-disable-line
+function wait(t = 10) {//eslint-disable-line
   var def = Promise.defer()
   setTimeout(function () {
     def.resolve()
@@ -88,6 +88,8 @@ async function compareAllUsers(users){//eslint-disable-line
     })
   }
   await users[0].connector.flushAll()
+  await garbageCollectAllUsers(users)
+  await wait(200)
   await garbageCollectAllUsers(users)
   await wait(200)
   for (var uid = 0; uid < users.length; uid++) {
