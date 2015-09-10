@@ -1,4 +1,5 @@
 /* global getRandom, AbstractConnector, Y, wait */
+'use strict'
 
 var globalRoom = {
   users: {},
@@ -66,11 +67,11 @@ class Test extends AbstractConnector {
   }
   reconnect () {
     globalRoom.addUser(this)
-    super()
+    super.reconnect()
   }
   disconnect () {
     globalRoom.removeUser(this.userId)
-    super()
+    super.disconnect()
   }
   flush () {
     var buff = globalRoom.buffers[this.userId]

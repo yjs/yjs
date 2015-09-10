@@ -1,5 +1,7 @@
-/* global DeleteStore */
+/* global Y */
 /* eslint-env browser,jasmine,console */
+
+var DeleteStore = Y.DeleteStore
 
 describe('Memory', function () {
   describe('DeleteStore', function () {

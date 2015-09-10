@@ -5,13 +5,23 @@
   This is just a compilation of functions that help to test this library!
 ***/
 
-function wait(t = 10) {//eslint-disable-line
+var g = global || window
+g.g = g
+
+var co = require('co')
+g.co = co
+
+function wait (t) {
+  if (t == null) {
+    t = 10
+  }
   var def = Promise.defer()
   setTimeout(function () {
     def.resolve()
   }, t)
   return def.promise
 }
+g.wait = wait
 
 // returns a random element of o
 // works on Object, and Array
@@ -26,14 +36,17 @@ function getRandom (o) {
     return o[getRandom(ks)]
   }
 }
+g.getRandom = getRandom
+
 function getRandomNumber(n) {//eslint-disable-line
   if (n == null) {
     n = 9999
   }
   return Math.floor(Math.random() * n)
 }
+g.getRandomNumber = getRandomNumber
 
-async function applyRandomTransactions (users, objects, transactions, numberOfTransactions) {//eslint-disable-line
+g.applyRandomTransactions = co.wrap(function * applyRandomTransactions (users, objects, transactions, numberOfTransactions) { //eslint-disable-line
   function randomTransaction (root) {
     var f = getRandom(transactions)
     f(root)
@@ -51,24 +64,24 @@ async function applyRandomTransactions (users, objects, transactions, numberOfTr
     }
   }
   applyTransactions()
-  await users[0].connector.flushAll()
+  yield users[0].connector.flushAll()
   users[0].disconnect()
-  await wait()
+  yield wait()
   applyTransactions()
-  await users[0].connector.flushAll()
+  yield users[0].connector.flushAll()
   users[0].reconnect()
-  await wait()
-  await users[0].connector.flushAll()
-}
+  yield wait()
+  yield users[0].connector.flushAll()
+})
 
-async function garbageCollectAllUsers (users) {
+g.garbageCollectAllUsers = co.wrap(function * garbageCollectAllUsers (users) {
   for (var i in users) {
-    await users[i].db.garbageCollect()
-    await users[i].db.garbageCollect()
+    yield users[i].db.garbageCollect()
+    yield users[i].db.garbageCollect()
   }
-}
+})
 
-async function compareAllUsers(users){//eslint-disable-line
+g.compareAllUsers = co.wrap(function * compareAllUsers (users) { //eslint-disable-line
   var s1, s2, ds1, ds2, allDels1, allDels2
   var db1 = []
   function * t1 () {
@@ -87,11 +100,11 @@ async function compareAllUsers(users){//eslint-disable-line
       allDels2.push(d)
     })
   }
-  await users[0].connector.flushAll()
-  await garbageCollectAllUsers(users)
-  await wait(200)
-  await garbageCollectAllUsers(users)
-  await wait(200)
+  yield users[0].connector.flushAll()
+  yield g.garbageCollectAllUsers(users)
+  yield wait(200)
+  yield g.garbageCollectAllUsers(users)
+  yield wait(200)
   for (var uid = 0; uid < users.length; uid++) {
     var u = users[uid]
     // compare deleted ops against deleteStore
@@ -116,16 +129,16 @@ async function compareAllUsers(users){//eslint-disable-line
       }
     })
     // compare allDels tree
-    await wait()
+    yield wait()
     if (s1 == null) {
       u.db.requestTransaction(t1)
-      await wait()
+      yield wait()
       u.db.os.iterate(null, null, function(o){//eslint-disable-line
         db1.push(o)
       })
     } else {
       u.db.requestTransaction(t2)
-      await wait()
+      yield wait()
       expect(s1).toEqual(s2)
       expect(allDels1).toEqual(allDels2) // inner structure
       expect(ds1).toEqual(ds2) // exported structure
@@ -135,11 +148,11 @@ async function compareAllUsers(users){//eslint-disable-line
       })
     }
   }
-}
+})
 
-async function createUsers(self, numberOfUsers) {//eslint-disable-line
+g.createUsers = co.wrap(function * createUsers (self, numberOfUsers) { //eslint-disable-line
   if (globalRoom.users[0] != null) {//eslint-disable-line
-    await globalRoom.users[0].flushAll()//eslint-disable-line
+    yield globalRoom.users[0].flushAll()//eslint-disable-line
   }
   // destroy old users
   for (var u in globalRoom.users) {//eslint-disable-line
@@ -160,5 +173,5 @@ async function createUsers(self, numberOfUsers) {//eslint-disable-line
       }
     }))
   }
-  self.users = await Promise.all(promises)
-}
+  self.users = yield Promise.all(promises)
+})

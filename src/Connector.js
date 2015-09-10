@@ -1,3 +1,5 @@
+'use strict'
+
 class AbstractConnector { // eslint-disable-line no-unused-vars
   /*
     opts
@@ -125,7 +127,6 @@ class AbstractConnector { // eslint-disable-line no-unused-vars
     if (this.debug) {
       console.log(`me -> ${uid}: ${message.type}`, m);// eslint-disable-line
     }
-    super(uid, message)
   }
   // You received a raw message, and you know that it is intended for to Yjs. Then call this function.
   receiveMessage (sender, m) {

@@ -1,4 +1,8 @@
-/* global compareIds, copyObject */
+/* global Y, copyObject */
+'use strict'
+
+var compareIds = Y.compareIds
+
 function smaller (a, b) {
   return a[0] < b[0] || (a[0] === b[0] && a[1] < b[1])
 }
@@ -26,8 +30,8 @@ class N {
     return this._parent
   }
   get sibling () {
-    return (this === this.parent.left) ?
-      this.parent.right : this.parent.left
+    return (this === this.parent.left)
+      ? this.parent.right : this.parent.left
   }
   get left () {
     return this._left
@@ -192,7 +196,9 @@ class RBTree { // eslint-disable-line no-unused-vars
     }
     return true
   }
-  logTable (from = null, to = null) {
+  logTable (from, to) {
+    if (from == null) { from = null }
+    if (to == null) { to = null }
     var os = []
     this.iterate(from, to, function (o) {
       var o_ = copyObject(o)
@@ -453,3 +459,5 @@ class RBTree { // eslint-disable-line no-unused-vars
     }
   }
 }
+
+Y.RBTree = RBTree

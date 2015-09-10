@@ -1,0 +1,16 @@
+{
+    "spec_dir": "src",
+    "spec_files": [
+        "**/**.spec.js"
+    ],
+    "helpers": [
+       "Helper.spec.js",
+       "y.js",
+       "Connector.js",
+       "OperationStore.js",
+       "Struct.js",
+       "Utils.js",
+       "OperationStores/RedBlackTree.js",
+       "OperationStores/Memory.js"
+    ]
+}

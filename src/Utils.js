@@ -1,5 +1,8 @@
-/* global copyObject, compareIds */
+/* global Y */
+'use strict'
 
+var compareIds = Y.compareIds
+var copyObject = Y.copyObject
 var GeneratorFunction = (function *() {}).constructor;// eslint-disable-line
 
 class EventHandler { // eslint-disable-line

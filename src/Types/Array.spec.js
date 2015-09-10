@@ -1,4 +1,4 @@
-/* global createUsers, wait, Y, compareAllUsers, getRandomNumber, applyRandomTransactions */
+/* global createUsers, wait, Y, compareAllUsers, getRandomNumber, applyRandomTransactions, co, garbageCollectAllUsers */
 /* eslint-env browser,jasmine */
 
 var numberOfYArrayTests = 5
@@ -7,160 +7,160 @@ describe('Array Type', function () {
   var y1, y2, y3, yconfig1, yconfig2, yconfig3, flushAll
 
   jasmine.DEFAULT_TIMEOUT_INTERVAL = 5000
-  beforeEach(async function (done) {
-    await createUsers(this, 3)
+  beforeEach(co.wrap(function * (done) {
+    yield createUsers(this, 3)
     y1 = (yconfig1 = this.users[0]).root
     y2 = (yconfig2 = this.users[1]).root
     y3 = (yconfig3 = this.users[2]).root
     flushAll = this.users[0].connector.flushAll
     done()
-  })
-  afterEach(async function(done) {
-    await compareAllUsers(this.users)
+  }))
+  afterEach(co.wrap(function * (done) {
+    yield compareAllUsers(this.users)
     done()
-  })
+  }))
 
   describe('Basic tests', function () {
-    it('insert three elements, try re-get property', async function (done) {
-      var array = await y1.set('Array', Y.Array)
+    it('insert three elements, try re-get property', co.wrap(function * (done) {
+      var array = yield y1.set('Array', Y.Array)
       array.insert(0, [1, 2, 3])
-      array = await y1.get('Array') // re-get property
+      array = yield y1.get('Array') // re-get property
       expect(array.toArray()).toEqual([1, 2, 3])
       done()
-    })
-    it('Basic insert in array (handle three conflicts)', async function (done) {
-      await y1.set('Array', Y.Array)
-      await flushAll()
-      var l1 = await y1.get('Array')
+    }))
+    it('Basic insert in array (handle three conflicts)', co.wrap(function * (done) {
+      yield y1.set('Array', Y.Array)
+      yield flushAll()
+      var l1 = yield y1.get('Array')
       l1.insert(0, [0])
-      var l2 = await y2.get('Array')
+      var l2 = yield y2.get('Array')
       l2.insert(0, [1])
-      var l3 = await y3.get('Array')
+      var l3 = yield y3.get('Array')
       l3.insert(0, [2])
-      await flushAll()
+      yield flushAll()
       expect(l1.toArray()).toEqual(l2.toArray())
       expect(l2.toArray()).toEqual(l3.toArray())
       done()
-    })
-    it('Basic insert&delete in array (handle three conflicts)', async function (done) {
+    }))
+    it('Basic insert&delete in array (handle three conflicts)', co.wrap(function * (done) {
       var l1, l2, l3
-      l1 = await y1.set('Array', Y.Array)
+      l1 = yield y1.set('Array', Y.Array)
       l1.insert(0, ['x', 'y', 'z'])
-      await flushAll()
+      yield flushAll()
       l1.insert(1, [0])
-      l2 = await y2.get('Array')
+      l2 = yield y2.get('Array')
       l2.delete(0)
       l2.delete(1)
-      l3 = await y3.get('Array')
+      l3 = yield y3.get('Array')
       l3.insert(1, [2])
-      await flushAll()
+      yield flushAll()
       expect(l1.toArray()).toEqual(l2.toArray())
       expect(l2.toArray()).toEqual(l3.toArray())
       expect(l2.toArray()).toEqual([0, 2, 'y'])
       done()
-    })
-    it('Handles getOperations ascending ids bug in late sync', async function (done) {
+    }))
+    it('Handles getOperations ascending ids bug in late sync', co.wrap(function * (done) {
       var l1, l2
-      l1 = await y1.set('Array', Y.Array)
+      l1 = yield y1.set('Array', Y.Array)
       l1.insert(0, ['x', 'y'])
-      await flushAll()
+      yield flushAll()
       yconfig3.disconnect()
       yconfig2.disconnect()
-      await wait()
-      l2 = await y2.get('Array')
+      yield wait()
+      l2 = yield y2.get('Array')
       l2.insert(1, [2])
       l2.insert(1, [3])
-      await flushAll()
+      yield flushAll()
       yconfig2.reconnect()
       yconfig3.reconnect()
-      await wait()
-      await flushAll()
+      yield wait()
+      yield flushAll()
       expect(l1.toArray()).toEqual(l2.toArray())
       done()
-    })
-    it('Handles deletions in late sync', async function (done) {
+    }))
+    it('Handles deletions in late sync', co.wrap(function * (done) {
       var l1, l2
-      l1 = await y1.set('Array', Y.Array)
+      l1 = yield y1.set('Array', Y.Array)
       l1.insert(0, ['x', 'y'])
-      await flushAll()
+      yield flushAll()
       yconfig2.disconnect()
-      await wait()
-      l2 = await y2.get('Array')
+      yield wait()
+      l2 = yield y2.get('Array')
       l2.delete(1, 1)
       l1.delete(0, 2)
-      await flushAll()
+      yield flushAll()
       yconfig2.reconnect()
-      await wait()
-      await flushAll()
+      yield wait()
+      yield flushAll()
       expect(l1.toArray()).toEqual(l2.toArray())
       done()
-    })
-    it('Handles deletions in late sync (2)', async function (done) {
+    }))
+    it('Handles deletions in late sync (2)', co.wrap(function * (done) {
       var l1, l2
-      l1 = await y1.set('Array', Y.Array)
-      await flushAll()
-      l2 = await y2.get('Array')
+      l1 = yield y1.set('Array', Y.Array)
+      yield flushAll()
+      l2 = yield y2.get('Array')
       l1.insert(0, ['x', 'y'])
       l1.delete(0, 2)
-      await wait(500)
-      await flushAll()
-      await wait(500)
+      yield wait(500)
+      yield flushAll()
+      yield wait(500)
       expect(l1.toArray()).toEqual(l2.toArray())
-      await compareAllUsers(this.users)
+      yield compareAllUsers(this.users)
       done()
-    })
-    it('Basic insert. Then delete the whole array', async function (done) {
+    }))
+    it('Basic insert. Then delete the whole array', co.wrap(function * (done) {
       var l1, l2, l3
-      l1 = await y1.set('Array', Y.Array)
+      l1 = yield y1.set('Array', Y.Array)
       l1.insert(0, ['x', 'y', 'z'])
-      await flushAll()
+      yield flushAll()
       l1.delete(0, 3)
-      l2 = await y2.get('Array')
-      l3 = await y3.get('Array')
-      await flushAll()
+      l2 = yield y2.get('Array')
+      l3 = yield y3.get('Array')
+      yield flushAll()
       expect(l1.toArray()).toEqual(l2.toArray())
       expect(l2.toArray()).toEqual(l3.toArray())
       expect(l2.toArray()).toEqual([])
       done()
-    })
-    it('Basic insert. Then delete the whole array (merge listeners on late sync)', async function (done) {
+    }))
+    it('Basic insert. Then delete the whole array (merge listeners on late sync)', co.wrap(function * (done) {
       var l1, l2, l3
-      l1 = await y1.set('Array', Y.Array)
+      l1 = yield y1.set('Array', Y.Array)
       l1.insert(0, ['x', 'y', 'z'])
-      await flushAll()
+      yield flushAll()
       yconfig2.disconnect()
       l1.delete(0, 3)
-      l2 = await y2.get('Array')
-      await wait()
+      l2 = yield y2.get('Array')
+      yield wait()
       yconfig2.reconnect()
-      await wait()
-      l3 = await y3.get('Array')
-      await flushAll()
+      yield wait()
+      l3 = yield y3.get('Array')
+      yield flushAll()
       expect(l1.toArray()).toEqual(l2.toArray())
       expect(l2.toArray()).toEqual(l3.toArray())
       expect(l2.toArray()).toEqual([])
       done()
-    })
-    it('Basic insert. Then delete the whole array (merge deleter on late sync)', async function (done) {
+    }))
+    it('Basic insert. Then delete the whole array (merge deleter on late sync)', co.wrap(function * (done) {
       var l1, l2, l3
-      l1 = await y1.set('Array', Y.Array)
+      l1 = yield y1.set('Array', Y.Array)
       l1.insert(0, ['x', 'y', 'z'])
-      await flushAll()
+      yield flushAll()
       yconfig1.disconnect()
       l1.delete(0, 3)
-      l2 = await y2.get('Array')
-      await wait()
+      l2 = yield y2.get('Array')
+      yield wait()
       yconfig1.reconnect()
-      await wait()
-      l3 = await y3.get('Array')
-      await flushAll()
+      yield wait()
+      l3 = yield y3.get('Array')
+      yield flushAll()
       expect(l1.toArray()).toEqual(l2.toArray())
       expect(l2.toArray()).toEqual(l3.toArray())
       expect(l2.toArray()).toEqual([])
       done()
-    })
-    it('throw insert & delete events', async function (done) {
-      var array = await this.users[0].root.set('array', Y.Array)
+    }))
+    it('throw insert & delete events', co.wrap(function * (done) {
+      var array = yield this.users[0].root.set('array', Y.Array)
       var event
       array.observe(function (e) {
         event = e
@@ -179,30 +179,30 @@ describe('Array Type', function () {
         index: 0,
         length: 1
       }])
-      await wait(50)
+      yield wait(50)
       done()
-    })
-    it('garbage collects', async function (done) {
+    }))
+    it('garbage collects', co.wrap(function * (done) {
       var l1, l2, l3
-      l1 = await y1.set('Array', Y.Array)
+      l1 = yield y1.set('Array', Y.Array)
       l1.insert(0, ['x', 'y', 'z'])
-      await flushAll()
+      yield flushAll()
       yconfig1.disconnect()
       l1.delete(0, 3)
-      l2 = await y2.get('Array')
-      await wait()
+      l2 = yield y2.get('Array')
+      yield wait()
       yconfig1.reconnect()
-      await wait()
-      l3 = await y3.get('Array')
-      await flushAll()
-      await garbageCollectAllUsers(this.users)
+      yield wait()
+      l3 = yield y3.get('Array')
+      yield flushAll()
+      yield garbageCollectAllUsers(this.users)
       yconfig1.db.logTable()
       expect(l1.toArray()).toEqual(l2.toArray())
       expect(l2.toArray()).toEqual(l3.toArray())
       expect(l2.toArray()).toEqual([])
-      await compareAllUsers(this.users)
+      yield compareAllUsers(this.users)
       done()
-    })
+    }))
   })
   describe(`Random tests`, function () {
     var randomArrayTransactions = [
@@ -227,29 +227,29 @@ describe('Array Type', function () {
         }
       }
     }
-    beforeEach(async function (done) {
-      await this.users[0].root.set('Array', Y.Array)
-      await flushAll()
+    beforeEach(co.wrap(function * (done) {
+      yield this.users[0].root.set('Array', Y.Array)
+      yield flushAll()
 
       var promises = []
       for (var u = 0; u < this.users.length; u++) {
         promises.push(this.users[u].root.get('Array'))
       }
-      this.arrays = await Promise.all(promises)
+      this.arrays = yield Promise.all(promises)
       done()
-    })
-    it('arrays.length equals users.length', async function (done) { // eslint-disable-line
+    }))
+    it('arrays.length equals users.length', co.wrap(function * (done) { // eslint-disable-line
       expect(this.arrays.length).toEqual(this.users.length)
       done()
-    })
-    it(`succeed after ${numberOfYArrayTests} actions`, async function (done) {
+    }))
+    it(`succeed after ${numberOfYArrayTests} actions`, co.wrap(function * (done) {
       for (var u of this.users) {
         u.connector.debug = true
       }
-      await applyRandomTransactions(this.users, this.arrays, randomArrayTransactions, numberOfYArrayTests)
-      await flushAll()
-      await compareArrayValues(this.arrays)
+      yield applyRandomTransactions(this.users, this.arrays, randomArrayTransactions, numberOfYArrayTests)
+      yield flushAll()
+      yield compareArrayValues(this.arrays)
       done()
-    })
+    }))
   })
 })

@@ -1,4 +1,5 @@
 /* @flow */
+'use strict'
 
 function Y (opts) {
   var def = Promise.defer()
@@ -35,10 +36,13 @@ class YConfig { // eslint-disable-line no-unused-vars
   disconnect () {
     this.connector.disconnect()
   }
-  async reconnect () {
-    await this.db.garbageCollect()
-    await this.db.garbageCollect()
-    this.connector.reconnect()
+  reconnect () {
+    Promise.all([
+      this.db.garbageCollect(),
+      this.db.garbageCollect()
+    ]).then(function () {
+      this.connector.reconnect()
+    })
   }
   destroy () {
     this.connector.disconnect()
@@ -50,3 +54,5 @@ class YConfig { // eslint-disable-line no-unused-vars
     }
   }
 }
+
+if (g) g.Y = Y //eslint-disable-line

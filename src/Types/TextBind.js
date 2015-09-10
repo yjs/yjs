@@ -1,4 +1,6 @@
-/* global Y, CustomType */
+/* global Y */
+
+var CustomType = Y.CustomType
 
 ;(function () {
   class YTextBind extends Y . Array . class {

@@ -1,4 +1,7 @@
-/* global copyObject, Y*/
+/* global Y */
+'use strict'
+
+var copyObject = Y.copyObject
 
 function compareIds (id1, id2) {
   if (id1 == null || id2 == null) {
@@ -13,6 +16,7 @@ function compareIds (id1, id2) {
     return false
   }
 }
+Y.compareIds = compareIds
 
 var Struct = {
   /* This Operations does _not_ have an id!

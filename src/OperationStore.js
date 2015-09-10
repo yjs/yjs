@@ -1,4 +1,10 @@
-/* global Y, copyObject, Struct, RBTree */
+/* global Y */
+
+'use strict'
+
+var RBTree = Y.RBTree
+var Struct = Y.Struct
+var copyObject = Y.copyObject
 
 class AbstractTransaction { // eslint-disable-line no-unused-vars
   constructor (store) {
@@ -37,6 +43,7 @@ class AbstractTransaction { // eslint-disable-line no-unused-vars
     }
   }
 }
+Y.AbstractTransaction = AbstractTransaction
 
 class AbstractOperationStore { // eslint-disable-line no-unused-vars
   constructor (y, opts) {
@@ -216,7 +223,7 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
           yield* this.store.operationAdded(this, op)
 
           if (isDeleted) {
-            yield* Struct["Delete"].execute.call(this, {target: op.id})
+            yield* Struct['Delete'].execute.call(this, {target: op.id})
           }
 
           // find next operation to execute
@@ -272,3 +279,4 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
     ls.push(f)
   }
 }
+Y.AbstractOperationStore = AbstractOperationStore

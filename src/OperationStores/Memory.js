@@ -1,4 +1,5 @@
 /* global Struct, RBTree, Y, compareIds */
+'use strict'
 
 function copyObject (o) {
   var c = {}
@@ -8,7 +9,7 @@ function copyObject (o) {
   return c
 }
 
-class DeleteStore extends RBTree { // eslint-disable-line
+class DeleteStore extends Y.RBTree {
   constructor () {
     super()
   }
@@ -116,8 +117,10 @@ class DeleteStore extends RBTree { // eslint-disable-line
   }
 }
 
+Y.DeleteStore = DeleteStore
+
 Y.Memory = (function () { // eslint-disable-line no-unused-vars
-  class Transaction extends AbstractTransaction { // eslint-disable-line
+  class Transaction extends Y.AbstractTransaction { // eslint-disable-line
 
     constructor (store) {
       super(store)
@@ -130,7 +133,7 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
       if (n !== null && n.val.id[0] === state.user) {
         state.clock = Math.max(state.clock, n.val.id[1] + n.val.len)
       }
-    } 
+    }
     * getDeleteSet (id) {
       return this.ds.toDeleteSet(id)
     }
@@ -245,7 +248,7 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
       return op
     }
   }
-  class OperationStore extends AbstractOperationStore { // eslint-disable-line no-undef
+  class OperationStore extends Y.AbstractOperationStore { // eslint-disable-line no-undef
     constructor (y, opts) {
       super(y, opts)
       this.os = new RBTree()
@@ -257,10 +260,11 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
     logTable () {
       this.os.logTable()
     }
-    requestTransaction (_makeGen, requestNow = false) {
+    requestTransaction (_makeGen, requestNow) {
+      if (requestNow == null) { requestNow = false }
       if (!this.transactionInProgress) {
         this.transactionInProgress = true
-        var transact = () => {
+        var transact = (xxxx) => {
           var makeGen = _makeGen
           while (makeGen != null) {
             var t = new Transaction(this)

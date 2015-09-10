@@ -128,8 +128,8 @@ gulp.task('build_jasmine_browser', function () {
       loose: 'all',
       modules: 'ignore',
       // optional: ['es7.asyncFunctions'],
-      blacklist: "regenerator",
-      //experimental: true
+      blacklist: 'regenerator'
+      // experimental: true
     }))
     .pipe(sourcemaps.write())
     .pipe(gulp.dest('build'))

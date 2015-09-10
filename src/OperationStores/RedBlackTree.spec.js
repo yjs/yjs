@@ -1,6 +1,9 @@
-/* global RBTree, smaller, compareIds */
+/* global Y */
 /* eslint-env browser,jasmine,console */
 
+var RBTree = Y.RBTree
+var compareIds = Y.compareIds
+var smaller = Y.smaller
 var numberOfRBTreeTests = 1000
 
 function itRedNodesDoNotHaveBlackChildren (tree) {
