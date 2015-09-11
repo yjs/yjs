@@ -1,4 +1,5 @@
-/* global EventHandler, Y, CustomType, Struct */
+/* global Y */
+'use strict'
 
 ;(function () {
   class YArray {
@@ -9,7 +10,7 @@
       this.idArray = idArray
       // Array of all the values
       this.valArray = valArray
-      this.eventHandler = new EventHandler(ops => {
+      this.eventHandler = new Y.utils.EventHandler(ops => {
         var userEvents = []
         for (var i in ops) {
           var op = ops[i]
@@ -112,7 +113,8 @@
         eventHandler.awaitedLastInserts(ops.length)
       })
     }
-    delete (pos, length = 1) {
+    delete (pos, length) {
+      if (length == null) { length = 1 }
       if (typeof length !== 'number') {
         throw new Error('pos must be a number!')
       }
@@ -162,7 +164,7 @@
     }
   }
 
-  Y.Array = new CustomType({
+  Y.Array = new Y.utils.CustomType({
     class: YArray,
     createType: function * YArrayCreator () {
       var model = {
@@ -177,7 +179,7 @@
     },
     initType: function * YArrayInitializer (os, model) {
       var valArray = []
-      var idArray = yield* Struct.List.map.call(this, model, function (c) {
+      var idArray = yield* Y.Struct.List.map.call(this, model, function (c) {
         valArray.push(c.content)
         return JSON.stringify(c.id)
       })

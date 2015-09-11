@@ -2,10 +2,6 @@
 
 'use strict'
 
-var RBTree = Y.RBTree
-var Struct = Y.Struct
-var copyObject = Y.copyObject
-
 class AbstractTransaction { // eslint-disable-line no-unused-vars
   constructor (store) {
     this.store = store
@@ -33,7 +29,7 @@ class AbstractTransaction { // eslint-disable-line no-unused-vars
     for (var i = 0; i < ops.length; i++) {
       var op = ops[i]
       yield* this.store.tryExecute.call(this, op)
-      send.push(copyObject(Struct[op.struct].encode(op)))
+      send.push(Y.utils.copyObject(Y.Struct[op.struct].encode(op)))
     }
     if (this.store.y.connector.broadcastedHB) {
       this.store.y.connector.broadcast({
@@ -68,7 +64,7 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
     // wont be kept in memory.
     this.initializedTypes = {}
     this.whenUserIdSetListener = null
-    this.waitingOperations = new RBTree()
+    this.waitingOperations = new Y.utils.RBTree()
 
     this.gc1 = [] // first stage
     this.gc2 = [] // second stage -> after that, kill it
@@ -136,7 +132,7 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
     for (var key in ops) {
       var o = ops[key]
       if (!o.gc) {
-        var required = Struct[o.struct].requiredOps(o)
+        var required = Y.Struct[o.struct].requiredOps(o)
         this.whenOperationsExist(required, o)
       } else {
         throw new Error("Must not receive gc'd ops!")
@@ -208,7 +204,7 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
   }
   * tryExecute (op) {
     if (op.struct === 'Delete') {
-      yield* Struct.Delete.execute.call(this, op)
+      yield* Y.Struct.Delete.execute.call(this, op)
     } else {
       while (op != null) {
         var state = yield* this.getState(op.id[0])
@@ -216,14 +212,14 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
           state.clock++
           yield* this.checkDeleteStoreForState(state)
           yield* this.setState(state)
-          var isDeleted = yield* this.store.ds.isDeleted(op.id)
+          var isDeleted = this.store.ds.isDeleted(op.id)
 
-          yield* Struct[op.struct].execute.call(this, op)
+          yield* Y.Struct[op.struct].execute.call(this, op)
           yield* this.addOperation(op)
           yield* this.store.operationAdded(this, op)
 
           if (isDeleted) {
-            yield* Struct['Delete'].execute.call(this, {target: op.id})
+            yield* Y.Struct['Delete'].execute.call(this, {struct: 'Delete', target: op.id})
           }
 
           // find next operation to execute
@@ -259,7 +255,7 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
     // notify parent, if it has been initialized as a custom type
     var t = this.initializedTypes[JSON.stringify(op.parent)]
     if (t != null && !op.deleted) {
-      yield* t._changed(transaction, copyObject(op))
+      yield* t._changed(transaction, Y.utils.copyObject(op))
     }
   }
   removeParentListener (id, f) {

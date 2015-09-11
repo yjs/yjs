@@ -1,7 +1,7 @@
 /* global Y */
 /* eslint-env browser,jasmine */
 
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && false) {
   jasmine.DEFAULT_TIMEOUT_INTERVAL = 1000
   describe('IndexedDB', function () {
     var ob

@@ -1,5 +1,7 @@
+'use strict'
+
 Y.IndexedDB = (function () { // eslint-disable-line
-  class Transaction extends AbstractTransaction { // eslint-disable-line
+  class Transaction extends Y.AbstractTransaction { // eslint-disable-line
     constructor (store) {
       super(store)
       this.transaction = store.db.transaction(['OperationStore', 'StateVector'], 'readwrite')
@@ -79,7 +81,7 @@ Y.IndexedDB = (function () { // eslint-disable-line
       return ops
     }
   }
-  class OperationStore extends AbstractOperationStore { // eslint-disable-line no-undef
+  class OperationStore extends Y.AbstractOperationStore { // eslint-disable-line no-undef
     constructor (y, opts) {
       super(y, opts)
       if (opts == null) {
@@ -162,7 +164,6 @@ Y.IndexedDB = (function () { // eslint-disable-line
         }
       }
       handleTransactions(tGen.next())
-
     }
     requestTransaction (makeGen) {
       this.transactionQueue.queue.push(makeGen)

@@ -1,10 +1,6 @@
 /* global Y */
 'use strict'
 
-var compareIds = Y.compareIds
-var copyObject = Y.copyObject
-var GeneratorFunction = (function *() {}).constructor;// eslint-disable-line
-
 class EventHandler { // eslint-disable-line
   constructor (onevent) {
     this.waiting = []
@@ -16,7 +12,7 @@ class EventHandler { // eslint-disable-line
     if (this.awaiting <= 0) {
       this.onevent([op])
     } else {
-      this.waiting.push(copyObject(op))
+      this.waiting.push(Y.utils.copyObject(op))
     }
   }
   awaitAndPrematurelyCall (ops) {
@@ -49,12 +45,12 @@ class EventHandler { // eslint-disable-line
       var op = ops[oid]
       for (var i = this.waiting.length - 1; i >= 0; i--) {
         let w = this.waiting[i]
-        if (compareIds(op.left, w.id)) {
+        if (Y.utils.compareIds(op.left, w.id)) {
           // include the effect of op in w
           w.right = op.id
           // exclude the effect of w in op
           op.left = w.left
-        } else if (compareIds(op.right, w.id)) {
+        } else if (Y.utils.compareIds(op.right, w.id)) {
           // similar..
           w.left = op.id
           op.right = w.right
@@ -71,7 +67,7 @@ class EventHandler { // eslint-disable-line
         for (var i in this.waiting) {
           let w = this.waiting[i]
           // We will just care about w.left
-          if (compareIds(del.target, w.left)) {
+          if (Y.utils.compareIds(del.target, w.left)) {
             del.left = newLeft
           }
         }
@@ -88,6 +84,7 @@ class EventHandler { // eslint-disable-line
     }
   }
 }
+Y.utils.EventHandler = EventHandler
 
 class CustomType { // eslint-disable-line
   constructor (def) {
@@ -102,3 +99,4 @@ class CustomType { // eslint-disable-line
     this.class = def.class
   }
 }
+Y.utils.CustomType = CustomType

@@ -1,3 +1,4 @@
+/* globals Y */
 'use strict'
 
 class AbstractConnector { // eslint-disable-line no-unused-vars
@@ -297,3 +298,4 @@ class AbstractConnector { // eslint-disable-line no-unused-vars
     }
   }
 }
+Y.AbstractConnector = AbstractConnector

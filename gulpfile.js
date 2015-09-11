@@ -100,24 +100,18 @@ gulp.task('build', function () {
     .pipe(gulp.dest('.'))
 })
 
-gulp.task('test', function () {
-  return gulp.src(files.test)
+gulp.task('testbuild', function () {
+  gulp.src('src/**/*.js')
     .pipe(sourcemaps.init())
-    .pipe(concat('jasmine'))
     .pipe(babel({
       loose: 'all',
-      optional: ['es7.asyncFunctions'],
       modules: 'ignore',
+      // optional: ['es7.asyncFunctions'],
+      blacklist: 'regenerator',
       experimental: true
     }))
-    .pipe(uglify())
-    .pipe(sourcemaps.write('.'))
+    .pipe(sourcemaps.write())
     .pipe(gulp.dest('build'))
-    .pipe(ignore.include('*.js'))
-    .pipe(jasmine({
-      verbose: true,
-      includeStuckTrace: true
-    }))
 })
 
 gulp.task('build_jasmine_browser', function () {
@@ -134,16 +128,40 @@ gulp.task('build_jasmine_browser', function () {
     .pipe(sourcemaps.write())
     .pipe(gulp.dest('build'))
 })
-
-gulp.task('develop', ['build_jasmine_browser'], function () {
-  gulp.watch(files.test, ['build_jasmine_browser'])
+var testy = [
+   "build/Helper.spec.js",
+   "build/y.js",
+   "build/Connector.js",
+   "build/OperationStore.js",
+   "build/Struct.js",
+   "build/Utils.js",
+   "build/OperationStores/RedBlackTree.js",
+   "build/OperationStores/Memory.js",
+   "build/OperationStores/IndexedDB.js",
+   "build/Connectors/Test.js",
+   "build/Connectors/WebRTC.js",
+   "build/Types/Array.js",
+   "build/Types/Map.js",
+   "build/Types/TextBind.js",
+   "build/**/*.spec.js"
+]
+gulp.task('develop', ['testbuild'], function () {
+  //gulp.watch(files.test, ['build_jasmine_browser'])
   // gulp.watch(files.test, ["test"])
-  gulp.watch(files.test, ['build'])
+  gulp.watch('src/**/*.js', ['testbuild'])
 
-  return gulp.src('build/jasmine_browser.js')
-    .pipe(watch('build/jasmine_browser.js'))
+  return gulp.src(testy)
+    .pipe(watch('build/**/*.js'))
     .pipe(jasmineBrowser.specRunner())
     .pipe(jasmineBrowser.server({port: options.testport}))
+})
+
+gulp.task('test', ['testbuild'], function () {
+  return gulp.src(testy)
+    .pipe(jasmine({
+      verbose: true,
+      includeStuckTrace: true
+    }))
 })
 
 gulp.task('default', ['build', 'test'])

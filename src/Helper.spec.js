@@ -5,11 +5,18 @@
   This is just a compilation of functions that help to test this library!
 ***/
 
-var g = global || window
+var g
+if (typeof global !== 'undefined') {
+  g = global
+} else if (typeof window !== 'undefined') {
+  g = window
+} else {
+  throw new Error('No global object?')
+}
 g.g = g
 
-var co = require('co')
-g.co = co
+//var co = require('co')
+// g.co = co
 
 function wait (t) {
   if (t == null) {
@@ -46,7 +53,7 @@ function getRandomNumber(n) {//eslint-disable-line
 }
 g.getRandomNumber = getRandomNumber
 
-g.applyRandomTransactions = co.wrap(function * applyRandomTransactions (users, objects, transactions, numberOfTransactions) { //eslint-disable-line
+g.applyRandomTransactions = async(function * applyRandomTransactions (users, objects, transactions, numberOfTransactions) { //eslint-disable-line
   function randomTransaction (root) {
     var f = getRandom(transactions)
     f(root)
@@ -74,21 +81,21 @@ g.applyRandomTransactions = co.wrap(function * applyRandomTransactions (users, o
   yield users[0].connector.flushAll()
 })
 
-g.garbageCollectAllUsers = co.wrap(function * garbageCollectAllUsers (users) {
+g.garbageCollectAllUsers = async(function * garbageCollectAllUsers (users) {
   for (var i in users) {
     yield users[i].db.garbageCollect()
     yield users[i].db.garbageCollect()
   }
 })
 
-g.compareAllUsers = co.wrap(function * compareAllUsers (users) { //eslint-disable-line
+g.compareAllUsers = async(function * compareAllUsers (users) { //eslint-disable-line
   var s1, s2, ds1, ds2, allDels1, allDels2
   var db1 = []
   function * t1 () {
     s1 = yield* this.getStateSet()
     ds1 = yield* this.getDeleteSet()
     allDels1 = []
-    yield* this.ds.iterate(null, null, function (d) {
+    this.ds.iterate(null, null, function (d) {
       allDels1.push(d)
     })
   }
@@ -96,7 +103,7 @@ g.compareAllUsers = co.wrap(function * compareAllUsers (users) { //eslint-disabl
     s2 = yield* this.getStateSet()
     ds2 = yield* this.getDeleteSet()
     allDels2 = []
-    yield* this.ds.iterate(null, null, function (d) {
+    this.ds.iterate(null, null, function (d) {
       allDels2.push(d)
     })
   }
@@ -150,13 +157,13 @@ g.compareAllUsers = co.wrap(function * compareAllUsers (users) { //eslint-disabl
   }
 })
 
-g.createUsers = co.wrap(function * createUsers (self, numberOfUsers) { //eslint-disable-line
-  if (globalRoom.users[0] != null) {//eslint-disable-line
-    yield globalRoom.users[0].flushAll()//eslint-disable-line
+g.createUsers = async(function * createUsers (self, numberOfUsers) { //eslint-disable-line
+  if (Y.utils.globalRoom.users[0] != null) {//eslint-disable-line
+    yield Y.utils.globalRoom.users[0].flushAll()//eslint-disable-line
   }
   // destroy old users
-  for (var u in globalRoom.users) {//eslint-disable-line
-    globalRoom.users[u].y.destroy()//eslint-disable-line
+  for (var u in Y.utils.globalRoom.users) {//eslint-disable-line
+    Y.utils.globalRoom.users[u].y.destroy()//eslint-disable-line
   }
   self.users = []
 
@@ -175,3 +182,35 @@ g.createUsers = co.wrap(function * createUsers (self, numberOfUsers) { //eslint-
   }
   self.users = yield Promise.all(promises)
 })
+
+function async (makeGenerator) {
+  return function (arg) {
+    var generator = makeGenerator.apply(this, arguments)
+
+    function handle (result) {
+      // result => { done: [Boolean], value: [Object] }
+      if (result.done) return Promise.resolve(result.value)
+
+      return Promise.resolve(result.value).then(function (res) {
+        return handle(generator.next(res))
+      }, function (err) {
+        debugger
+        return handle(generator.throw(err))
+      })
+    }
+
+    try {
+      return handle(generator.next())
+    } catch (ex) {
+      return Promise.reject(ex)
+    }
+  }
+}
+g.wrapCo = async
+
+/*function wrapCo (gen) {
+  return function (done) {
+    return co.wrap(gen)(done)
+  }
+}
+g.wrapCo = wrapCo*/

@@ -40,7 +40,7 @@ class YConfig { // eslint-disable-line no-unused-vars
     Promise.all([
       this.db.garbageCollect(),
       this.db.garbageCollect()
-    ]).then(function () {
+    ]).then(() => {
       this.connector.reconnect()
     })
   }
@@ -55,4 +55,8 @@ class YConfig { // eslint-disable-line no-unused-vars
   }
 }
 
-if (g) g.Y = Y //eslint-disable-line
+if (g) { // eslint-disable-line
+  g.Y = Y //eslint-disable-line
+  debugger //eslint-disable-line
+}
+Y.utils = {}

@@ -1,4 +1,4 @@
-/* global Struct, RBTree, Y, compareIds */
+/* global Y */
 'use strict'
 
 function copyObject (o) {
@@ -8,8 +8,9 @@ function copyObject (o) {
   }
   return c
 }
+Y.utils.copyObject = copyObject
 
-class DeleteStore extends Y.RBTree {
+class DeleteStore extends Y.utils.RBTree {
   constructor () {
     super()
   }
@@ -36,7 +37,7 @@ class DeleteStore extends Y.RBTree {
     }
     // can extend right?
     var next = n.next()
-    if (next !== null && compareIds([n.val.id[0], n.val.id[1] + n.val.len], next.val.id)) {
+    if (next !== null && Y.utils.compareIds([n.val.id[0], n.val.id[1] + n.val.len], next.val.id)) {
       n.val.len = n.val.len + next.val.len
       super.delete(next.val.id)
     }
@@ -117,7 +118,7 @@ class DeleteStore extends Y.RBTree {
   }
 }
 
-Y.DeleteStore = DeleteStore
+Y.utils.DeleteStore = DeleteStore
 
 Y.Memory = (function () { // eslint-disable-line no-unused-vars
   class Transaction extends Y.AbstractTransaction { // eslint-disable-line
@@ -206,7 +207,7 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
 
         this.os.iterate([user, startPos], [user, endPos], function (op) {// eslint-disable-line
           if (!op.gc) {
-            ops.push(Struct[op.struct].encode(op))
+            ops.push(Y.Struct[op.struct].encode(op))
           }
         })
       }
@@ -251,7 +252,7 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
   class OperationStore extends Y.AbstractOperationStore { // eslint-disable-line no-undef
     constructor (y, opts) {
       super(y, opts)
-      this.os = new RBTree()
+      this.os = new Y.utils.RBTree()
       this.ss = {}
       this.waitingTransactions = []
       this.transactionInProgress = false

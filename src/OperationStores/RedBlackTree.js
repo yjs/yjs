@@ -1,11 +1,10 @@
-/* global Y, copyObject */
+/* global Y */
 'use strict'
-
-var compareIds = Y.compareIds
 
 function smaller (a, b) {
   return a[0] < b[0] || (a[0] === b[0] && a[1] < b[1])
 }
+Y.utils.smaller = smaller
 
 class N {
   // A created node is always red!
@@ -190,7 +189,7 @@ class RBTree { // eslint-disable-line no-unused-vars
   }
   iterate (from, to, f) {
     var o = this.findNodeWithLowerBound(from)
-    while (o !== null && (to === null || smaller(o.val.id, to) || compareIds(o.val.id, to))) {
+    while (o !== null && (to === null || smaller(o.val.id, to) || Y.utils.compareIds(o.val.id, to))) {
       f(o.val)
       o = o.next()
     }
@@ -201,7 +200,7 @@ class RBTree { // eslint-disable-line no-unused-vars
     if (to == null) { to = null }
     var os = []
     this.iterate(from, to, function (o) {
-      var o_ = copyObject(o)
+      var o_ = Y.utils.copyObject(o)
       var id = o_.id
       delete o_.id
       o_['id[0]'] = id[0]
@@ -460,4 +459,4 @@ class RBTree { // eslint-disable-line no-unused-vars
   }
 }
 
-Y.RBTree = RBTree
+Y.utils.RBTree = RBTree

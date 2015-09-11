@@ -1,5 +1,5 @@
 {
-    "spec_dir": "src",
+    "spec_dir": "build",
     "spec_files": [
         "**/**.spec.js"
     ],
@@ -11,6 +11,12 @@
        "Struct.js",
        "Utils.js",
        "OperationStores/RedBlackTree.js",
-       "OperationStores/Memory.js"
+       "OperationStores/Memory.js",
+       "OperationStores/IndexedDB.js",
+       "Connectors/Test.js",
+       "Connectors/WebRTC.js",
+       "Types/Array.js",
+       "Types/Map.js",
+       "Types/TextBind.js"
     ]
 }

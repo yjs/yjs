@@ -1,4 +1,4 @@
-/* global getRandom, AbstractConnector, Y, wait */
+/* global getRandom, Y, wait */
 'use strict'
 
 var globalRoom = {
@@ -23,6 +23,8 @@ var globalRoom = {
     }
   }
 }
+Y.utils.globalRoom = globalRoom
+
 function flushOne () {
   var bufs = []
   for (var i in globalRoom.buffers) {
@@ -45,7 +47,7 @@ function flushOne () {
 
 var userIdCounter = 0
 
-class Test extends AbstractConnector {
+class Test extends Y.AbstractConnector {
   constructor (y, options) {
     if (options === undefined) {
       throw new Error('Options must not be undefined!')

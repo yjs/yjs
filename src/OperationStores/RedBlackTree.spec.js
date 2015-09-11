@@ -1,9 +1,6 @@
 /* global Y */
 /* eslint-env browser,jasmine,console */
 
-var RBTree = Y.RBTree
-var compareIds = Y.compareIds
-var smaller = Y.smaller
 var numberOfRBTreeTests = 1000
 
 function itRedNodesDoNotHaveBlackChildren (tree) {
@@ -54,7 +51,7 @@ function itRootNodeIsBlack (tree) {
 
 describe('RedBlack Tree', function () {
   beforeEach(function () {
-    this.tree = new RBTree()
+    this.tree = new Y.utils.RBTree()
   })
   it('can add&retrieve 5 elements', function () {
     this.tree.add({val: 'four', id: [4]})
@@ -97,7 +94,7 @@ describe('RedBlack Tree', function () {
     expect(this.tree.find([2])).toBeUndefined()
   })
   describe('debug #2', function () {
-    var tree = new RBTree()
+    var tree = new Y.utils.RBTree()
     tree.add({id: [8433]})
     tree.add({id: [12844]})
     tree.add({id: [1795]})
@@ -114,17 +111,19 @@ describe('RedBlack Tree', function () {
 
   describe(`After adding&deleting (0.8/0.2) ${numberOfRBTreeTests} times`, function () {
     var elements = []
-    var tree = new RBTree()
+    var tree = new Y.utils.RBTree()
     for (var i = 0; i < numberOfRBTreeTests; i++) {
       var r = Math.random()
       if (r < 0.8) {
         var obj = [Math.floor(Math.random() * numberOfRBTreeTests * 10000)]
-        elements.push(obj)
-        tree.add({id: obj})
+        if (!tree.findNode(obj)) {
+          elements.push(obj)
+          tree.add({id: obj})
+        }
       } else if (elements.length > 0) {
         var elemid = Math.floor(Math.random() * elements.length)
         var elem = elements[elemid]
-        elements = elements.filter(function (e) {return !compareIds(e, elem); }); // eslint-disable-line
+        elements = elements.filter(function (e) {return !Y.utils.compareIds(e, elem); }); // eslint-disable-line
         tree.delete(elem)
       }
     }
@@ -148,7 +147,7 @@ describe('RedBlack Tree', function () {
     it('iterating over a tree with lower bound yields the right amount of results', function () {
       var lowerBound = elements[Math.floor(Math.random() * elements.length)]
       var expectedResults = elements.filter(function (e, pos) {
-        return (smaller(lowerBound, e) || compareIds(e, lowerBound)) && elements.indexOf(e) === pos
+        return (Y.utils.smaller(lowerBound, e) || Y.utils.compareIds(e, lowerBound)) && elements.indexOf(e) === pos
       }).length
 
       var actualResults = 0
@@ -175,7 +174,7 @@ describe('RedBlack Tree', function () {
     it('iterating over a tree with upper bound yields the right amount of results', function () {
       var upperBound = elements[Math.floor(Math.random() * elements.length)]
       var expectedResults = elements.filter(function (e, pos) {
-        return (smaller(e, upperBound) || compareIds(e, upperBound)) && elements.indexOf(e) === pos
+        return (Y.utils.smaller(e, upperBound) || Y.utils.compareIds(e, upperBound)) && elements.indexOf(e) === pos
       }).length
 
       var actualResults = 0
@@ -190,7 +189,7 @@ describe('RedBlack Tree', function () {
       var b1 = elements[Math.floor(Math.random() * elements.length)]
       var b2 = elements[Math.floor(Math.random() * elements.length)]
       var upperBound, lowerBound
-      if (smaller(b1, b2)) {
+      if (Y.utils.smaller(b1, b2)) {
         lowerBound = b1
         upperBound = b2
       } else {
@@ -198,8 +197,8 @@ describe('RedBlack Tree', function () {
         upperBound = b1
       }
       var expectedResults = elements.filter(function (e, pos) {
-        return (smaller(lowerBound, e) || compareIds(e, lowerBound)) &&
-          (smaller(e, upperBound) || compareIds(e, upperBound)) && elements.indexOf(e) === pos
+        return (Y.utils.smaller(lowerBound, e) || Y.utils.compareIds(e, lowerBound)) &&
+          (Y.utils.smaller(e, upperBound) || Y.utils.compareIds(e, upperBound)) && elements.indexOf(e) === pos
       }).length
       var actualResults = 0
       tree.iterate(lowerBound, upperBound, function (val) {

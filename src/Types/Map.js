@@ -1,14 +1,15 @@
-/* global EventHandler, Y, CustomType, copyObject, compareIds */
+/* global Y */
+'use strict'
 
 ;(function () {
   class YMap {
     constructor (os, model) {
       this._model = model.id
       this.os = os
-      this.map = copyObject(model.map)
+      this.map = Y.utils.copyObject(model.map)
       this.contents = {}
       this.opContents = {}
-      this.eventHandler = new EventHandler(ops => {
+      this.eventHandler = new Y.utils.EventHandler(ops => {
         var userEvents = []
         for (var i in ops) {
           var op = ops[i]
@@ -61,7 +62,7 @@
               userEvents.push(insertEvent)
             }
           } else if (op.struct === 'Delete') {
-            if (compareIds(this.map[key], op.target)) {
+            if (Y.utils.compareIds(this.map[key], op.target)) {
               delete this.opContents[key]
               delete this.contents[key]
               var deleteEvent = {
@@ -85,7 +86,7 @@
       // if property is a type, return a promise
       if (this.opContents[key] == null) {
         if (key == null) {
-          return copyObject(this.contents)
+          return Y.utils.copyObject(this.contents)
         } else {
           return this.contents[key]
         }
@@ -106,7 +107,7 @@
           struct: 'Delete'
         }
         var eventHandler = this.eventHandler
-        var modDel = copyObject(del)
+        var modDel = Y.utils.copyObject(del)
         modDel.key = key
         eventHandler.awaitAndPrematurelyCall([modDel])
         this.os.requestTransaction(function *() {
@@ -130,7 +131,7 @@
         struct: 'Insert'
       }
       var def = Promise.defer()
-      if (value instanceof CustomType) {
+      if (value instanceof Y.utils.CustomType) {
         // construct a new type
         this.os.requestTransaction(function *() {
           var type = yield* value.createType.call(this)
@@ -208,7 +209,7 @@
       this.eventHandler.receivedOp(op)
     }
   }
-  Y.Map = new CustomType({
+  Y.Map = new Y.utils.CustomType({
     class: YMap,
     createType: function * YMapCreator () {
       var model = {

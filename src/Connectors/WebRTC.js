@@ -1,6 +1,7 @@
-/* global AbstractConnector, Y */
+/* global Y */
+'use strict'
 
-class WebRTC extends AbstractConnector {
+class WebRTC extends Y.AbstractConnector {
   constructor (y, options) {
     if (options === undefined) {
       throw new Error('Options must not be undefined!')

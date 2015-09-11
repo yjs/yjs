@@ -1,13 +1,11 @@
 /* global Y */
 /* eslint-env browser,jasmine,console */
 
-var DeleteStore = Y.DeleteStore
-
 describe('Memory', function () {
   describe('DeleteStore', function () {
     var ds
     beforeEach(function () {
-      ds = new DeleteStore()
+      ds = new Y.utils.DeleteStore()
     })
     it('Deleted operation is deleted', function () {
       ds.delete(['u1', 10])

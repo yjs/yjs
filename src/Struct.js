@@ -1,8 +1,6 @@
 /* global Y */
 'use strict'
 
-var copyObject = Y.copyObject
-
 function compareIds (id1, id2) {
   if (id1 == null || id2 == null) {
     if (id1 == null && id2 == null) {
@@ -16,7 +14,7 @@ function compareIds (id1, id2) {
     return false
   }
 }
-Y.compareIds = compareIds
+Y.utils.compareIds = compareIds
 
 var Struct = {
   /* This Operations does _not_ have an id!
@@ -51,7 +49,7 @@ var Struct = {
         yield* this.setOperation(target)
         var t = this.store.initializedTypes[JSON.stringify(target.parent)]
         if (t != null) {
-          yield* t._changed(this, copyObject(op))
+          yield* t._changed(this, Y.utils.copyObject(op))
         }
       }
       this.ds.delete(op.target)

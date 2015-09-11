@@ -1,9 +1,8 @@
 /* global Y */
-
-var CustomType = Y.CustomType
+'use strict'
 
 ;(function () {
-  class YTextBind extends Y . Array . class {
+  class YTextBind extends Y.Array.class {
     constructor (os, _model, idArray, valArray) {
       super(os, _model, idArray, valArray)
       this.textfields = []
@@ -12,7 +11,7 @@ var CustomType = Y.CustomType
       return this.valArray.join('')
     }
     insert (pos, content) {
-      super(pos, content.split(''))
+      super.insert(pos, content.split(''))
     }
     bind (textfield, domRoot) {
       domRoot = domRoot || window; // eslint-disable-line
@@ -265,7 +264,7 @@ var CustomType = Y.CustomType
       }
     }
   }
-  Y.TextBind = new CustomType({
+  Y.TextBind = new Y.utils.CustomType({
     class: YTextBind,
     createType: function * YTextBindCreator () {
       var model = {
