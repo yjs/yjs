@@ -79,10 +79,25 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
           if (o.left != null) {
             var left = yield* this.getOperation(o.left)
             left.right = o.right
+            yield* this.setOperation(left)
           }
           if (o.right != null) {
             var right = yield* this.getOperation(o.right)
             right.left = o.left
+            yield* this.setOperation(right)
+          }
+          var parent = yield* this.getOperation(o.parent)
+          var setParent = false
+          if (Y.utils.compareIds(parent.start, o.id)) {
+            setParent = true
+            parent.start = o.right
+          }
+          if (Y.utils.compareIds(parent.end, o.id)) {
+            setParent = true
+            parent.end = o.left
+          }
+          if (setParent) {
+            yield* this.setOperation(parent)
           }
           yield* this.removeOperation(o.id)
         }

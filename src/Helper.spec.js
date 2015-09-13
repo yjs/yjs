@@ -1,5 +1,5 @@
 /* global Y */
-/* eslint-env browser,jasmine */
+/* eslint-env browser, jasmine */
 
 /*
   This is just a compilation of functions that help to test this library!
@@ -14,9 +14,6 @@ if (typeof global !== 'undefined') {
   throw new Error('No global object?')
 }
 g.g = g
-
-//var co = require('co')
-// g.co = co
 
 function wait (t) {
   if (t == null) {
@@ -194,7 +191,6 @@ function async (makeGenerator) {
       return Promise.resolve(result.value).then(function (res) {
         return handle(generator.next(res))
       }, function (err) {
-        debugger
         return handle(generator.throw(err))
       })
     }
@@ -207,10 +203,3 @@ function async (makeGenerator) {
   }
 }
 g.wrapCo = async
-
-/*function wrapCo (gen) {
-  return function (done) {
-    return co.wrap(gen)(done)
-  }
-}
-g.wrapCo = wrapCo*/

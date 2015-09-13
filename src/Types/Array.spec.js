@@ -6,7 +6,7 @@ var numberOfYArrayTests = 5
 describe('Array Type', function () {
   var y1, y2, y3, yconfig1, yconfig2, yconfig3, flushAll
 
-  jasmine.DEFAULT_TIMEOUT_INTERVAL = 5000
+  jasmine.DEFAULT_TIMEOUT_INTERVAL = 100
   beforeEach(wrapCo(function * (done) {
     yield createUsers(this, 3)
     y1 = (yconfig1 = this.users[0]).root
@@ -23,7 +23,6 @@ describe('Array Type', function () {
 
   describe('Basic tests', function () {
     it('insert three elements, try re-get property', wrapCo(function * (done) {
-      console.log("blahhhhhhhhhhhhhhhhh ")
       var array = yield y1.set('Array', Y.Array)
       array.insert(0, [1, 2, 3])
       array = yield y1.get('Array') // re-get property
@@ -104,9 +103,9 @@ describe('Array Type', function () {
       l2 = yield y2.get('Array')
       l1.insert(0, ['x', 'y'])
       l1.delete(0, 2)
-      yield wait(500)
+      yield wait()
       yield flushAll()
-      yield wait(500)
+      yield wait()
       expect(l1.toArray()).toEqual(l2.toArray())
       yield compareAllUsers(this.users)
       done()

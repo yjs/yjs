@@ -34,7 +34,7 @@ var Struct = {
       var target = yield* this.getOperation(op.target)
       if (target != null && !target.deleted) {
         target.deleted = true
-        if (target.left !== null && (yield* this.getOperation(target.left)).deleted) {
+        if (target.left === null || (yield* this.getOperation(target.left)).deleted) {
           this.store.addToGarbageCollector(target.id)
           target.gc = true
         }

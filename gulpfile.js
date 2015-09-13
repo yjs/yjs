@@ -30,7 +30,7 @@
   Commands:
     - build:
         Build this library
-    - develop:
+    - dev:
         Watch the ./src directory.
         Builds and specs the library on changes.
         Starts an http-server and serves the test suite on http://127.0.0.1:8888.
@@ -49,11 +49,6 @@ var jasmine = require('gulp-jasmine')
 var jasmineBrowser = require('gulp-jasmine-browser')
 var concat = require('gulp-concat')
 var watch = require('gulp-watch')
-var ignore = require('gulp-ignore')
-
-var polyfills = [
-  './node_modules/gulp-babel/node_modules/babel-core/node_modules/regenerator/runtime.js'
-]
 
 var options = minimist(process.argv.slice(2), {
   string: ['export', 'name', 'testport', 'testfiles'],
@@ -64,49 +59,57 @@ var options = minimist(process.argv.slice(2), {
     testfiles: 'src/**/*.js'
   }
 })
-var yfiles = polyfills.concat(['src/y.js', 'src/Connector.js', 'src/OperationStore.js', 'src/Struct.js', 'src/Utils.js',
-    'src/OperationStores/RedBlackTree.js', 'src/Memory.js', 'src/**/*.js'])
+
+var polyfills = [
+  './node_modules/gulp-babel/node_modules/babel-core/node_modules/regenerator/runtime.js'
+]
+
+var concatOrder = [
+  'Helper.spec.js',
+  'y.js',
+  'Connector.js',
+  'OperationStore.js',
+  'Struct.js',
+  'Utils.js',
+  'OperationStores/RedBlackTree.js',
+  'OperationStores/Memory.js',
+  'OperationStores/IndexedDB.js',
+  'Connectors/Test.js',
+  'Connectors/WebRTC.js',
+  'Types/Array.js',
+  'Types/Map.js',
+  'Types/TextBind.js'
+]
 
 var files = {
-  y: yfiles.concat(['!src/**/*.spec.js']),
-  test: yfiles.concat([options.testfiles]),
-  build_test: ['build_test/y.js']
+  production: polyfills.concat(concatOrder.map(function (f) {
+    return 'src/' + f
+  })),
+  test: concatOrder.map(function (f) {
+    return 'build/' + f
+  }).concat(['build/**/*.spec.js'])
 }
 
-gulp.task('build', function () {
-  /*
-    return gulp.src(files.y)
+gulp.task('build:deploy', function () {
+  gulp.src('src/**/*.js')
     .pipe(sourcemaps.init())
-    .pipe(concat(options.name))
-    .pipe(babel({
-      loose: "all",
-      modules: options.export,
-      // blacklist: "regenerator" // you can't uglify when regenerator is blacklisted!
-    }))
-    .pipe(uglify())
-    .pipe(sourcemaps.write("."))
-    .pipe(gulp.dest("."));*/
-  return gulp.src(files.y)
-    .pipe(sourcemaps.init())
-    .pipe(concat(options.name))
+    .pipe(concat('y.js'))
     .pipe(babel({
       loose: 'all',
       modules: 'ignore',
-      optional: ['es7.asyncFunctions'],
-      blacklist: ['regenerator'],
       experimental: true
     }))
-    .pipe(sourcemaps.write('.'))
+    .pipe(uglify())
+    .pipe(sourcemaps.write())
     .pipe(gulp.dest('.'))
 })
 
-gulp.task('testbuild', function () {
+gulp.task('build:test', function () {
   gulp.src('src/**/*.js')
     .pipe(sourcemaps.init())
     .pipe(babel({
       loose: 'all',
       modules: 'ignore',
-      // optional: ['es7.asyncFunctions'],
       blacklist: 'regenerator',
       experimental: true
     }))
@@ -114,54 +117,30 @@ gulp.task('testbuild', function () {
     .pipe(gulp.dest('build'))
 })
 
-gulp.task('build_jasmine_browser', function () {
-  gulp.src(files.test)
-    .pipe(sourcemaps.init())
-    .pipe(concat('jasmine_browser.js'))
-    .pipe(babel({
-      loose: 'all',
-      modules: 'ignore',
-      // optional: ['es7.asyncFunctions'],
-      blacklist: 'regenerator'
-      // experimental: true
-    }))
-    .pipe(sourcemaps.write())
-    .pipe(gulp.dest('build'))
+gulp.task('dev:node', ['test'], function () {
+  gulp.watch('src/**/*.js', ['test'])
 })
-var testy = [
-   "build/Helper.spec.js",
-   "build/y.js",
-   "build/Connector.js",
-   "build/OperationStore.js",
-   "build/Struct.js",
-   "build/Utils.js",
-   "build/OperationStores/RedBlackTree.js",
-   "build/OperationStores/Memory.js",
-   "build/OperationStores/IndexedDB.js",
-   "build/Connectors/Test.js",
-   "build/Connectors/WebRTC.js",
-   "build/Types/Array.js",
-   "build/Types/Map.js",
-   "build/Types/TextBind.js",
-   "build/**/*.spec.js"
-]
-gulp.task('develop', ['testbuild'], function () {
-  //gulp.watch(files.test, ['build_jasmine_browser'])
-  // gulp.watch(files.test, ["test"])
-  gulp.watch('src/**/*.js', ['testbuild'])
 
-  return gulp.src(testy)
+gulp.task('dev:browser', ['build:test'], function () {
+  gulp.watch('src/**/*.js', ['build:test'])
+
+  gulp.src(files.test)
     .pipe(watch('build/**/*.js'))
     .pipe(jasmineBrowser.specRunner())
     .pipe(jasmineBrowser.server({port: options.testport}))
 })
 
-gulp.task('test', ['testbuild'], function () {
-  return gulp.src(testy)
+gulp.task('dev', ['build:test'], function () {
+  gulp.start('dev:browser')
+  gulp.start('dev:node')
+})
+
+gulp.task('test', ['build:test'], function () {
+  return gulp.src(files.test)
     .pipe(jasmine({
       verbose: true,
       includeStuckTrace: true
     }))
 })
 
-gulp.task('default', ['build', 'test'])
+gulp.task('default', ['test'])

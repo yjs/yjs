@@ -16,12 +16,12 @@ class DeleteStore extends Y.utils.RBTree {
   }
   isDeleted (id) {
     var n = this.findNodeWithUpperBound(id)
-    return n !== null && n.val.id[0] === id[0] && id[0] < n.val.id[0] + n.val.len
+    return n !== null && n.val.id[0] === id[0] && id[1] < n.val.id[1] + n.val.len
   }
   delete (id) {
     var n = this.findNodeWithUpperBound(id)
     if (n != null && n.val.id[0] === id[0]) {
-      if (n.val.id[1] === id[1]) {
+      if (n.val.id[1] <= id[1] && id[1] < n.val.id[1] + n.val.len) {
         // already deleted
         return
       } else if (n.val.id[1] + n.val.len === id[1]) {

@@ -57,6 +57,6 @@ class YConfig { // eslint-disable-line no-unused-vars
 
 if (g) { // eslint-disable-line
   g.Y = Y //eslint-disable-line
-  debugger //eslint-disable-line
+  // debugger //eslint-disable-line
 }
 Y.utils = {}
