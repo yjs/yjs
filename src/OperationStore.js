@@ -1,7 +1,76 @@
 /* global Y */
-
 'use strict'
 
+/*
+  Partial definition of a transaction
+  By convention, a transaction has the following properties:
+  * ss for StateSet
+  * os for OperationStore
+  * ds for DeleteStore
+
+  A transaction must also define the following methods:
+  * checkDeleteStoreForState(state)
+    - When increasing the state of a user, an operation with an higher id
+      may already be garbage collected, and therefore it will never be received.
+      update the state to reflect this knowledge. This won't call a method to save the state!
+  * getDeleteSet(id)
+    - Get the delete set in a readable format:
+      {
+        "userX": [
+          [5,1], // starting from position 5, one operations is deleted
+          [9,4]  // starting from position 9, four operations are deleted
+        ],
+        "userY": ...
+      }
+  * isDeleted(id)
+  * getOpsFromDeleteSet(ds) -- TODO: just call Struct.Delete.delete(id) here
+    - get a set of deletions that need to be applied in order to get to
+      achieve the state of the supplied ds
+  * setOperation(op)
+    - write `op` to the database.
+      Note: this is allowed to return an in-memory object.
+      E.g. the Memory adapter returns the object that it has in-memory.
+      Changing values on this object will be stored directly in the database
+      without calling this function. Therefore,
+      setOperation may have no functionality in some adapters. This also has
+      implications on the way we use operations that were served from the database.
+      We try not to call copyObject, if not necessary.
+  * addOperation(op)
+    - add an operation to the database.
+      This may only be called once for every op.id
+  * getOperation(id)
+  * removeOperation(id)
+    - remove an operation from the database. This is called when an operation
+      is garbage collected.
+  * setState(state)
+    - `state` is of the form
+      {
+        user: "1",
+        clock: 4
+      } <- meaning that we have four operations from user "1"
+           (with these id's respectively: 0, 1, 2, and 3)
+  * getState(user)
+  * getStateVector()
+    - Get the state of the OS in the form
+    [{
+      user: "userX",
+      clock: 11
+    },
+     ..
+    ]
+  * getStateSet()
+    - Get the state of the OS in the form
+    {
+      "userX": 11,
+      "userY": 22
+    }
+   * getOperations(startSS)
+     - Get the all the operations that are necessary in order to achive the
+       stateSet of this user, starting from a stateSet supplied by another user
+   * makeOperationReady(ss, op)
+     - this is called only by `getOperations(startSS)`. It makes an operation
+       applyable on a given SS.
+*/
 class AbstractTransaction {
   constructor (store) {
     this.store = store
@@ -41,6 +110,18 @@ class AbstractTransaction {
 }
 Y.AbstractTransaction = AbstractTransaction
 
+/*
+  Partial definition of an OperationStore.
+  TODO: name it Database, operation store only holds operations.
+
+  A database definition must alse define the following methods:
+  * logTable() (optional)
+    - show relevant information information in a table
+  * requestTransaction(makeGen)
+    - request a transaction
+  * destroy()
+    - destroy the database
+*/
 class AbstractOperationStore { // eslint-disable-line no-unused-vars
   constructor (y, opts) {
     this.y = y
@@ -71,44 +152,44 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
     this.gcTimeout = opts.gcTimeout || 5000
     var os = this
     function garbageCollect () {
-      var def = Promise.defer()
-      os.requestTransaction(function * () {
-        for (var i in os.gc2) {
-          var oid = os.gc2[i]
-          var o = yield* this.getOperation(oid)
-          if (o.left != null) {
-            var left = yield* this.getOperation(o.left)
-            left.right = o.right
-            yield* this.setOperation(left)
+      return new Promise((resolve) => {
+        os.requestTransaction(function * () {
+          for (var i in os.gc2) {
+            var oid = os.gc2[i]
+            var o = yield* this.getOperation(oid)
+            if (o.left != null) {
+              var left = yield* this.getOperation(o.left)
+              left.right = o.right
+              yield* this.setOperation(left)
+            }
+            if (o.right != null) {
+              var right = yield* this.getOperation(o.right)
+              right.left = o.left
+              yield* this.setOperation(right)
+            }
+            var parent = yield* this.getOperation(o.parent)
+            var setParent = false
+            if (Y.utils.compareIds(parent.start, o.id)) {
+              setParent = true
+              parent.start = o.right
+            }
+            if (Y.utils.compareIds(parent.end, o.id)) {
+              setParent = true
+              parent.end = o.left
+            }
+            if (setParent) {
+              yield* this.setOperation(parent)
+            }
+            yield* this.removeOperation(o.id)
           }
-          if (o.right != null) {
-            var right = yield* this.getOperation(o.right)
-            right.left = o.left
-            yield* this.setOperation(right)
+          os.gc2 = os.gc1
+          os.gc1 = []
+          if (os.gcTimeout > 0) {
+            os.gcInterval = setTimeout(garbageCollect, os.gcTimeout)
           }
-          var parent = yield* this.getOperation(o.parent)
-          var setParent = false
-          if (Y.utils.compareIds(parent.start, o.id)) {
-            setParent = true
-            parent.start = o.right
-          }
-          if (Y.utils.compareIds(parent.end, o.id)) {
-            setParent = true
-            parent.end = o.left
-          }
-          if (setParent) {
-            yield* this.setOperation(parent)
-          }
-          yield* this.removeOperation(o.id)
-        }
-        os.gc2 = os.gc1
-        os.gc1 = []
-        if (os.gcTimeout > 0) {
-          os.gcInterval = setTimeout(garbageCollect, os.gcTimeout)
-        }
-        def.resolve()
+          resolve()
+        })
       })
-      return def.promise
     }
     this.garbageCollect = garbageCollect
     if (this.gcTimeout > 0) {

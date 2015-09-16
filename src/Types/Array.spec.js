@@ -6,7 +6,6 @@ var numberOfYArrayTests = 10
 describe('Array Type', function () {
   var y1, y2, y3, yconfig1, yconfig2, yconfig3, flushAll
 
-  jasmine.DEFAULT_TIMEOUT_INTERVAL = 100
   beforeEach(async(function * (done) {
     yield createUsers(this, 3)
     y1 = (yconfig1 = this.users[0]).root
@@ -59,7 +58,7 @@ describe('Array Type', function () {
       expect(l2.toArray()).toEqual(l3.toArray())
       expect(l2.toArray()).toEqual([0, 2, 'y'])
       done()
-    }))
+    }), 100)
     it('Handles getOperations ascending ids bug in late sync', async(function * (done) {
       var l1, l2
       l1 = yield y1.set('Array', Y.Array)

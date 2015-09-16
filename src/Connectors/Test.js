@@ -83,26 +83,26 @@ class Test extends Y.AbstractConnector {
     }
   }
   flushAll () {
-    var def = Promise.defer()
-    // flushes may result in more created operations,
-    // flush until there is nothing more to flush
-    function nextFlush () {
-      var c = flushOne()
-      if (c) {
-        while (flushOne()) {
-          // nop
+    return new Promise(function (resolve) {
+      // flushes may result in more created operations,
+      // flush until there is nothing more to flush
+      function nextFlush () {
+        var c = flushOne()
+        if (c) {
+          while (flushOne()) {
+            // nop
+          }
+          wait().then(nextFlush)
+        } else {
+          wait().then(function () {
+            resolve()
+          })
         }
-        wait().then(nextFlush)
-      } else {
-        wait().then(function () {
-          def.resolve()
-        })
       }
-    }
-    // in the case that there are
-    // still actions that want to be performed
-    wait(0).then(nextFlush)
-    return def.promise
+      // in the case that there are
+      // still actions that want to be performed
+      wait(0).then(nextFlush)
+    })
   }
   flushOne () {
     flushOne()

@@ -21,11 +21,11 @@
           if (this.opContents[key] != null) {
             let prevType = this.opContents[key]
             oldValue = () => {// eslint-disable-line
-              let def = Promise.defer()
-              this.os.requestTransaction(function *() {// eslint-disable-line
-                def.resolve(yield* this.getType(prevType))
+              return new Promise((resolve) => {
+                this.os.requestTransaction(function *() {// eslint-disable-line
+                  resolve(yield* this.getType(prevType))
+                })
               })
-              return def.promise
             }
           } else {
             oldValue = this.contents[key]
@@ -77,7 +77,7 @@
             throw new Error('Unexpected Operation!')
           }
         }
-        this.eventHandler.callUserEventListeners(userEvents)
+        this.eventHandler.callEventListeners(userEvents)
       })
     }
     get (key) {
@@ -91,12 +91,12 @@
           return this.contents[key]
         }
       } else {
-        let def = Promise.defer()
-        var oid = this.opContents[key]
-        this.os.requestTransaction(function *() {
-          def.resolve(yield* this.getType(oid))
+        return new Promise((resolve) => {
+          var oid = this.opContents[key]
+          this.os.requestTransaction(function *() {
+            resolve(yield* this.getType(oid))
+          })
         })
-        return def.promise
       }
     }
     delete (key) {
@@ -112,7 +112,7 @@
         eventHandler.awaitAndPrematurelyCall([modDel])
         this.os.requestTransaction(function *() {
           yield* this.applyCreatedOperations([del])
-          eventHandler.awaitedLastDeletes(1)
+          eventHandler.awaitedDeletes(1)
         })
       }
     }
@@ -130,35 +130,35 @@
         parentSub: key,
         struct: 'Insert'
       }
-      var def = Promise.defer()
-      if (value instanceof Y.utils.CustomType) {
-        // construct a new type
-        this.os.requestTransaction(function *() {
-          var type = yield* value.createType.call(this)
-          insert.opContent = type._model
-          insert.id = this.store.getNextOpId()
-          yield* this.applyCreatedOperations([insert])
-          def.resolve(type)
-        })
-      } else {
-        insert.content = value
-        insert.id = this.os.getNextOpId()
-        var eventHandler = this.eventHandler
-        eventHandler.awaitAndPrematurelyCall([insert])
+      return new Promise((resolve) => {
+        if (value instanceof Y.utils.CustomType) {
+          // construct a new type
+          this.os.requestTransaction(function *() {
+            var type = yield* value.createType.call(this)
+            insert.opContent = type._model
+            insert.id = this.store.getNextOpId()
+            yield* this.applyCreatedOperations([insert])
+            resolve(type)
+          })
+        } else {
+          insert.content = value
+          insert.id = this.os.getNextOpId()
+          var eventHandler = this.eventHandler
+          eventHandler.awaitAndPrematurelyCall([insert])
 
-        this.os.requestTransaction(function *() {
-          yield* this.applyCreatedOperations([insert])
-          eventHandler.awaitedLastInserts(1)
-        })
-        def.resolve(value)
-      }
-      return def.promise
+          this.os.requestTransaction(function *() {
+            yield* this.applyCreatedOperations([insert])
+            eventHandler.awaitedInserts(1)
+          })
+          resolve(value)
+        }
+      })
     }
     observe (f) {
-      this.eventHandler.addUserEventListener(f)
+      this.eventHandler.addEventListener(f)
     }
     unobserve (f) {
-      this.eventHandler.removeUserEventListener(f)
+      this.eventHandler.removeEventListener(f)
     }
     observePath (path, f) {
       var self = this

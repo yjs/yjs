@@ -1,11 +1,12 @@
 /* globals Y */
 'use strict'
 
-class AbstractConnector { // eslint-disable-line no-unused-vars
+class AbstractConnector {
   /*
-    opts
-     .role : String Role of this client ("master" or "slave")
-     .userId : String that uniquely defines the user.
+    opts contains the following information:
+     role : String Role of this client ("master" or "slave")
+     userId : String Uniquely defines the user.
+     debug: Boolean Whether to print debug messages (optional)
   */
   constructor (y, opts) {
     this.y = y
@@ -90,8 +91,11 @@ class AbstractConnector { // eslint-disable-line no-unused-vars
       this.whenSyncedListeners.push(f)
     }
   }
-  // returns false, if there is no sync target
-  // true otherwise
+  /*
+
+   returns false, if there is no sync target
+   true otherwise
+  */
   findNextSyncTarget () {
     if (this.currentSyncTarget != null) {
       return // "The current sync has not finished!"
@@ -115,7 +119,7 @@ class AbstractConnector { // eslint-disable-line no-unused-vars
         })
       })
     }
-    // set the state to synced!
+    // This user synced with at least one user, set the state to synced (TODO: does this suffice?)
     if (!this.isSynced) {
       this.isSynced = true
       for (var f of this.whenSyncedListeners) {
@@ -129,7 +133,9 @@ class AbstractConnector { // eslint-disable-line no-unused-vars
       console.log(`me -> ${uid}: ${message.type}`, m);// eslint-disable-line
     }
   }
-  // You received a raw message, and you know that it is intended for to Yjs. Then call this function.
+  /*
+    You received a raw message, and you know that it is intended for Yjs. Then call this function.
+  */
   receiveMessage (sender, m) {
     if (sender === this.userId) {
       return

@@ -3,11 +3,10 @@ bower_components
 build
 build_test
 .directory
-.c9
 .codio
 .settings
 .jshintignore
 .jshintrc
 .validate.json
-y.js
-y.js.map
+./y.js
+./y.js.map

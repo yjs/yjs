@@ -1,25 +1,31 @@
 /* global Y */
 'use strict'
 
-function compareIds (id1, id2) {
-  if (id1 == null || id2 == null) {
-    if (id1 == null && id2 == null) {
-      return true
-    }
-    return false
-  }
-  if (id1[0] === id2[0] && id1[1] === id2[1]) {
-    return true
-  } else {
-    return false
-  }
-}
-Y.utils.compareIds = compareIds
+/*
+ An operation also defines the structure of a type. This is why operation and
+ structure are used interchangeably here.
+
+ It must be of the type Object. I hope to achieve some performance
+ improvements when working on databases that support the json format.
+
+ An operation must have the following properties:
+
+ * encode
+     - Encode the structure in a readable format (preferably string- todo)
+ * decode (todo)
+     - decode structure to json
+ * execute
+     - Execute the semantics of an operation.
+ * requiredOps
+     - Operations that are required to execute this operation.
+*/
 
 var Struct = {
-  /* This Operations does _not_ have an id!
-  {
-  target: Id
+  /* This is the only operation that is actually not a structure, because
+  it is not stored in the OS. This is why it _does not_ have an id
+
+  op = {
+    target: Id
   }
   */
   Delete: {
@@ -29,16 +35,18 @@ var Struct = {
     requiredOps: function (op) {
       return [op.target]
     },
-    execute: function * (op) {
-      // console.log('Delete', op, console.trace())
-      var target = yield* this.getOperation(op.target)
+    /*
+      Delete an operation from the OS, and add it to the GC, if necessary.
+    */
+    delete: function * (targetId) {
+      var target = yield* this.getOperation(targetId)
       if (target != null && !target.deleted) {
         target.deleted = true
-        if (target.left !== null && (yield* this.getOperation(target.left)).deleted) {
+        if (target.left != null && (yield* this.getOperation(target.left)).deleted) {
           this.store.addToGarbageCollector(target.id)
           target.gc = true
         }
-        if (target.right !== null) {
+        if (target.right != null) {
           var right = yield* this.getOperation(target.right)
           if (right.deleted && right.gc == null) {
             this.store.addToGarbageCollector(right.id)
@@ -49,15 +57,21 @@ var Struct = {
         yield* this.setOperation(target)
         var t = this.store.initializedTypes[JSON.stringify(target.parent)]
         if (t != null) {
-          yield* t._changed(this, Y.utils.copyObject(op))
+          yield* t._changed(this, {
+            struct: 'Delete',
+            target: targetId
+          })
         }
       }
-      this.ds.delete(op.target)
-      var state = yield* this.getState(op.target[0])
-      if (state.clock === op.target[1]) {
+      this.ds.delete(targetId)
+      var state = yield* this.getState(targetId[0])
+      if (state.clock === targetId[1]) {
         yield* this.checkDeleteStoreForState(state)
         yield* this.setState(state)
       }
+    },
+    execute: function * (op) {
+      yield* Struct.Delete.delete.call(this, op.target)
     }
   },
   Insert: {
@@ -65,27 +79,15 @@ var Struct = {
         content: any,
         left: Id,
         right: Id,
-        origin: id,
+        origin: Id,
         parent: Id,
-        parentSub: string (optional),
-        id: this.os.getNextOpId()
+        parentSub: string (optional), // child of Map type
+        id: Id
       }
     */
     encode: function (op) {
-      /* bad idea, right?
-      var e = {
-        id: op.id,
-        left: op.left,
-        right: op.right,
-        origin: op.origin,
-        parent: op.parent,
-        content: op.content,
-        struct: "Insert"
-      }
-      if (op.parentSub != null){
-        e.parentSub = op.parentSub
-      }
-      return e;*/
+      // TODO: you could not send the "left" property, then you also have to
+      // "op.left = null" in $execute or $decode
       return op
     },
     requiredOps: function (op) {
@@ -96,7 +98,7 @@ var Struct = {
       if (op.right != null) {
         ids.push(op.right)
       }
-      // if(op.right == null && op.left == null) {}
+      // if (op.right == null && op.left == null) {
       ids.push(op.parent)
 
       if (op.opContent != null) {
@@ -104,13 +106,13 @@ var Struct = {
       }
       return ids
     },
-    getDistanceToOrigin: function *(op) {
+    getDistanceToOrigin: function * (op) {
       if (op.left == null) {
         return 0
       } else {
         var d = 0
         var o = yield* this.getOperation(op.left)
-        while (!compareIds(op.origin, (o ? o.id : null))) {
+        while (!Y.utils.compareIds(op.origin, (o ? o.id : null))) {
           d++
           if (o.left == null) {
             break
@@ -156,7 +158,7 @@ var Struct = {
 
       // handle conflicts
       while (true) {
-        if (o != null && !compareIds(o.id, op.right)) {
+        if (o != null && !Y.utils.compareIds(o.id, op.right)) {
           var oOriginDistance = yield* Struct.Insert.getDistanceToOrigin.call(this, o)
           if (oOriginDistance === i) {
             // case 1
@@ -250,7 +252,7 @@ var Struct = {
       */
       return []
     },
-    execute: function * (op) { // eslint-disable-line
+    execute: function * (op) {
       op.start = null
       op.end = null
     },
@@ -277,7 +279,7 @@ var Struct = {
     map: function * (o, f) {
       o = o.start
       var res = []
-      while (o !== null) {
+      while (o !== null) { // TODO: change to != (at least some convention)
         var operation = yield* this.getOperation(o)
         if (!operation.deleted) {
           res.push(f(operation))
@@ -305,16 +307,12 @@ var Struct = {
       }
     },
     requiredOps: function () {
-      /*
-      var ids = []
-      for (var end in op.map) {
-        ids.push(op.map[end])
-      }
-      return ids
-      */
       return []
     },
     execute: function * () {},
+    /*
+      Get a property by name
+    */
     get: function * (op, name) {
       var oid = op.map[name]
       if (oid != null) {
@@ -323,6 +321,9 @@ var Struct = {
           ? res.content : yield* this.getType(res.opContent))
       }
     },
+    /*
+      Delete a property by name
+    */
     delete: function * (op, name) {
       var v = op.map[name] || null
       if (v != null) {

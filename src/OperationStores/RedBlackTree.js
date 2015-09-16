@@ -1,10 +1,9 @@
 /* global Y */
 'use strict'
 
-function smaller (a, b) {
-  return a[0] < b[0] || (a[0] === b[0] && a[1] < b[1])
-}
-Y.utils.smaller = smaller
+/*
+  This file contains a not so fancy implemantion of a Red Black Tree.
+*/
 
 class N {
   // A created node is always red!
@@ -126,7 +125,7 @@ class N {
   }
 }
 
-class RBTree { // eslint-disable-line no-unused-vars
+class RBTree {
   constructor () {
     this.root = null
     this.length = 0
@@ -140,11 +139,11 @@ class RBTree { // eslint-disable-line no-unused-vars
       return null
     } else {
       while (true) {
-        if ((from === null || smaller(from, o.val.id)) && o.left !== null) {
+        if ((from === null || Y.utils.smaller(from, o.val.id)) && o.left !== null) {
           // o is included in the bound
           // try to find an element that is closer to the bound
           o = o.left
-        } else if (from !== null && smaller(o.val.id, from)) {
+        } else if (from !== null && Y.utils.smaller(o.val.id, from)) {
           // o is not within the bound, maybe one of the right elements is..
           if (o.right !== null) {
             o = o.right
@@ -168,11 +167,11 @@ class RBTree { // eslint-disable-line no-unused-vars
       return null
     } else {
       while (true) {
-        if ((to === null || smaller(o.val.id, to)) && o.right !== null) {
+        if ((to === null || Y.utils.smaller(o.val.id, to)) && o.right !== null) {
           // o is included in the bound
           // try to find an element that is closer to the bound
           o = o.right
-        } else if (to !== null && smaller(to, o.val.id)) {
+        } else if (to !== null && Y.utils.smaller(to, o.val.id)) {
           // o is not within the bound, maybe one of the left elements is..
           if (o.left !== null) {
             o = o.left
@@ -189,7 +188,7 @@ class RBTree { // eslint-disable-line no-unused-vars
   }
   iterate (from, to, f) {
     var o = this.findNodeWithLowerBound(from)
-    while (o !== null && (to === null || smaller(o.val.id, to) || Y.utils.compareIds(o.val.id, to))) {
+    while (o !== null && (to === null || Y.utils.smaller(o.val.id, to) || Y.utils.compareIds(o.val.id, to))) {
       f(o.val)
       o = o.next()
     }
@@ -226,9 +225,9 @@ class RBTree { // eslint-disable-line no-unused-vars
         if (o === null) {
           return false
         }
-        if (smaller(id, o.val.id)) {
+        if (Y.utils.smaller(id, o.val.id)) {
           o = o.left
-        } else if (smaller(o.val.id, id)) {
+        } else if (Y.utils.smaller(o.val.id, id)) {
           o = o.right
         } else {
           return o
@@ -386,14 +385,14 @@ class RBTree { // eslint-disable-line no-unused-vars
     if (this.root !== null) {
       var p = this.root // p abbrev. parent
       while (true) {
-        if (smaller(node.val.id, p.val.id)) {
+        if (Y.utils.smaller(node.val.id, p.val.id)) {
           if (p.left === null) {
             p.left = node
             break
           } else {
             p = p.left
           }
-        } else if (smaller(p.val.id, node.val.id)) {
+        } else if (Y.utils.smaller(p.val.id, node.val.id)) {
           if (p.right === null) {
             p.right = node
             break

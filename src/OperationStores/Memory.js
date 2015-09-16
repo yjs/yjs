@@ -1,15 +1,6 @@
 /* global Y */
 'use strict'
 
-function copyObject (o) {
-  var c = {}
-  for (var key in o) {
-    c[key] = o[key]
-  }
-  return c
-}
-Y.utils.copyObject = copyObject
-
 class DeleteStore extends Y.utils.RBTree {
   constructor () {
     super()
@@ -120,8 +111,8 @@ class DeleteStore extends Y.utils.RBTree {
 
 Y.utils.DeleteStore = DeleteStore
 
-Y.Memory = (function () { // eslint-disable-line no-unused-vars
-  class Transaction extends Y.AbstractTransaction { // eslint-disable-line
+Y.Memory = (function () {
+  class Transaction extends Y.AbstractTransaction {
 
     constructor (store) {
       super(store)
@@ -144,28 +135,25 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
     * getOpsFromDeleteSet (ds) {
       return this.ds.getDeletions(ds)
     }
-    * setOperation (op) { // eslint-disable-line
+    * setOperation (op) {
       // TODO: you can remove this step! probs..
       var n = this.os.findNode(op.id)
       n.val = op
       return op
     }
-    * addOperation (op) { // eslint-disable-line
+    * addOperation (op) {
       this.os.add(op)
     }
-    * getOperation (id) { // eslint-disable-line
-      if (id == null) {
-        throw new Error('You must define id!')
-      }
+    * getOperation (id) {
       return this.os.find(id)
     }
-    * removeOperation (id) { // eslint-disable-line
+    * removeOperation (id) {
       this.os.delete(id)
     }
-    * setState (state) { // eslint-disable-line
+    * setState (state) {
       this.ss[state.user] = state.clock
     }
-    * getState (user) { // eslint-disable-line
+    * getState (user) {
       var clock = this.ss[user]
       if (clock == null) {
         clock = 0
@@ -175,7 +163,7 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
         clock: clock
       }
     }
-    * getStateVector () { // eslint-disable-line
+    * getStateVector () {
       var stateVector = []
       for (var user in this.ss) {
         var clock = this.ss[user]
@@ -186,7 +174,7 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
       }
       return stateVector
     }
-    * getStateSet () { // eslint-disable-line
+    * getStateSet () {
       return this.ss
     }
     * getOperations (startSS) {
@@ -225,7 +213,7 @@ Y.Memory = (function () { // eslint-disable-line no-unused-vars
     }
     * makeOperationReady (ss, op) {
       // instead of ss, you could use currSS (a ss that increments when you add an operation)
-      op = copyObject(op)
+      op = Y.utils.copyObject(op)
       var o = op
       var clock
       while (o.right != null) {

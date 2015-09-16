@@ -2,20 +2,19 @@
 'use strict'
 
 function Y (opts) {
-  var def = Promise.defer()
-  new YConfig(opts, function (yconfig) { // eslint-disable-line
-    yconfig.db.whenUserIdSet(function () {
-      def.resolve(yconfig)
+  return new Promise(function (resolve) {
+    var yconfig = new YConfig(opts, function () {
+      yconfig.db.whenUserIdSet(function () {
+        resolve(yconfig)
+      })
     })
   })
-  return def.promise
 }
 
-class YConfig { // eslint-disable-line no-unused-vars
+class YConfig {
   constructor (opts, callback) {
     this.db = new Y[opts.db.name](this, opts.db)
     this.connector = new Y[opts.connector.name](this, opts.connector)
-    var yconfig = this
     this.db.requestTransaction(function * requestTransaction () {
       // create initial Map type
       var model = {
@@ -27,7 +26,7 @@ class YConfig { // eslint-disable-line no-unused-vars
       yield* this.addOperation(model)
       var root = yield* this.createType(model)
       this.store.y.root = root
-      callback(yconfig)
+      callback()
     })
   }
   isConnected () {
@@ -55,7 +54,7 @@ class YConfig { // eslint-disable-line no-unused-vars
   }
 }
 
-if (g) { // eslint-disable-line
+if (typeof YConcurrency_TestingMode !== 'undefined') {
   g.Y = Y //eslint-disable-line
   // debugger //eslint-disable-line
 }

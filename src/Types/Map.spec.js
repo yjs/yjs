@@ -6,7 +6,6 @@ var numberOfYMapTests = 5
 describe('Map Type', function () {
   var y1, y2, y3, y4, flushAll
 
-  jasmine.DEFAULT_TIMEOUT_INTERVAL = 50000
   beforeEach(async(function * (done) {
     yield createUsers(this, 5)
     y1 = this.users[0].root

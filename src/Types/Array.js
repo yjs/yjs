@@ -49,7 +49,7 @@
             throw new Error('Unexpected struct!')
           }
         }
-        this.eventHandler.callUserEventListeners(userEvents)
+        this.eventHandler.callEventListeners(userEvents)
       })
     }
     get length () {
@@ -110,7 +110,7 @@
           ops[j].right = mostRight
         }
         yield* this.applyCreatedOperations(ops)
-        eventHandler.awaitedLastInserts(ops.length)
+        eventHandler.awaitedInserts(ops.length)
       })
     }
     delete (pos, length) {
@@ -139,11 +139,11 @@
       eventHandler.awaitAndPrematurelyCall(dels)
       this.os.requestTransaction(function *() {
         yield* this.applyCreatedOperations(dels)
-        eventHandler.awaitedLastDeletes(dels.length, newLeft)
+        eventHandler.awaitedDeletes(dels.length, newLeft)
       })
     }
     observe (f) {
-      this.eventHandler.addUserEventListener(f)
+      this.eventHandler.addEventListener(f)
     }
     * _changed (transaction, op) {
       if (!op.deleted) {
