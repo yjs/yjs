@@ -17,7 +17,7 @@ g.g = g
 
 function wait (t) {
   if (t == null) {
-    t = 10
+    t = 5
   }
   var def = Promise.defer()
   setTimeout(function () {
@@ -106,9 +106,9 @@ g.compareAllUsers = async(function * compareAllUsers (users) { //eslint-disable-
   }
   yield users[0].connector.flushAll()
   yield g.garbageCollectAllUsers(users)
-  yield wait(200)
+  yield wait(50)
   yield g.garbageCollectAllUsers(users)
-  yield wait(200)
+  yield wait(50)
   for (var uid = 0; uid < users.length; uid++) {
     var u = users[uid]
     // compare deleted ops against deleteStore
@@ -202,4 +202,4 @@ function async (makeGenerator) {
     }
   }
 }
-g.wrapCo = async
+g.async = async

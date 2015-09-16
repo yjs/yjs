@@ -1,4 +1,4 @@
-/* global createUsers, Y, compareAllUsers, getRandomNumber, applyRandomTransactions, wrapCo */
+/* global createUsers, Y, compareAllUsers, getRandomNumber, applyRandomTransactions, async */
 /* eslint-env browser,jasmine */
 
 var numberOfYMapTests = 5
@@ -7,7 +7,7 @@ describe('Map Type', function () {
   var y1, y2, y3, y4, flushAll
 
   jasmine.DEFAULT_TIMEOUT_INTERVAL = 50000
-  beforeEach(wrapCo(function * (done) {
+  beforeEach(async(function * (done) {
     yield createUsers(this, 5)
     y1 = this.users[0].root
     y2 = this.users[1].root
@@ -16,13 +16,13 @@ describe('Map Type', function () {
     flushAll = this.users[0].connector.flushAll
     done()
   }))
-  afterEach(wrapCo(function * (done) {
+  afterEach(async(function * (done) {
     yield compareAllUsers(this.users)
     done()
   }), 5000)
 
   describe('Basic tests', function () {
-    it('Basic get&set of Map property (converge via sync)', wrapCo(function * (done) {
+    it('Basic get&set of Map property (converge via sync)', async(function * (done) {
       y1.set('stuff', 'stuffy')
       expect(y1.get('stuff')).toEqual('stuffy')
       yield flushAll()
@@ -30,26 +30,23 @@ describe('Map Type', function () {
         var u = this.users[key].root
         expect(u.get('stuff')).toEqual('stuffy')
       }
-      yield compareAllUsers(this.users)
       done()
     }))
-    it('Map can set custom types (Map)', wrapCo(function * (done) {
+    it('Map can set custom types (Map)', async(function * (done) {
       var map = yield y1.set('Map', Y.Map)
       map.set('one', 1)
       map = yield y1.get('Map')
       expect(map.get('one')).toEqual(1)
-      yield compareAllUsers(this.users)
       done()
     }))
-    it('Map can set custom types (Array)', wrapCo(function * (done) {
+    it('Map can set custom types (Array)', async(function * (done) {
       var array = yield y1.set('Array', Y.Array)
       array.insert(0, [1, 2, 3])
       array = yield y1.get('Array')
       expect(array.toArray()).toEqual([1, 2, 3])
-      yield compareAllUsers(this.users)
       done()
     }))
-    it('Basic get&set of Map property (converge via update)', wrapCo(function * (done) {
+    it('Basic get&set of Map property (converge via update)', async(function * (done) {
       yield flushAll()
       y1.set('stuff', 'stuffy')
       expect(y1.get('stuff')).toEqual('stuffy')
@@ -61,10 +58,9 @@ describe('Map Type', function () {
       }
       done()
     }))
-    it('Basic get&set of Map property (handle conflict)', wrapCo(function * (done) {
+    it('Basic get&set of Map property (handle conflict)', async(function * (done) {
       yield flushAll()
       y1.set('stuff', 'c0')
-
       y2.set('stuff', 'c1')
 
       yield flushAll()
@@ -72,10 +68,9 @@ describe('Map Type', function () {
         var u = this.users[key]
         expect(u.root.get('stuff')).toEqual('c0')
       }
-      yield compareAllUsers(this.users)
       done()
     }))
-    it('Basic get&set&delete of Map property (handle conflict)', wrapCo(function * (done) {
+    it('Basic get&set&delete of Map property (handle conflict)', async(function * (done) {
       yield flushAll()
       y1.set('stuff', 'c0')
       y1.delete('stuff')
@@ -86,10 +81,9 @@ describe('Map Type', function () {
         var u = this.users[key]
         expect(u.root.get('stuff')).toBeUndefined()
       }
-      yield compareAllUsers(this.users)
       done()
     }))
-    it('Basic get&set of Map property (handle three conflicts)', wrapCo(function * (done) {
+    it('Basic get&set of Map property (handle three conflicts)', async(function * (done) {
       yield flushAll()
       y1.set('stuff', 'c0')
       y2.set('stuff', 'c1')
@@ -101,10 +95,9 @@ describe('Map Type', function () {
         var u = this.users[key]
         expect(u.root.get('stuff')).toEqual('c0')
       }
-      yield compareAllUsers(this.users)
       done()
     }))
-    it('Basic get&set&delete of Map property (handle three conflicts)', wrapCo(function * (done) {
+    it('Basic get&set&delete of Map property (handle three conflicts)', async(function * (done) {
       yield flushAll()
       y1.set('stuff', 'c0')
       y2.set('stuff', 'c1')
@@ -122,10 +115,9 @@ describe('Map Type', function () {
         var u = this.users[key]
         expect(u.root.get('stuff')).toBeUndefined()
       }
-      yield compareAllUsers(this.users)
       done()
     }))
-    it('throws add & update & delete events (with type and primitive content)', wrapCo(function * (done) {
+    it('throws add & update & delete events (with type and primitive content)', async(function * (done) {
       var event
       yield flushAll()
       y1.observe(function (e) {
@@ -186,7 +178,7 @@ describe('Map Type', function () {
         }
       }
     }
-    beforeEach(wrapCo(function * (done) {
+    beforeEach(async(function * (done) {
       yield y1.set('Map', Y.Map)
       yield flushAll()
 
@@ -197,7 +189,7 @@ describe('Map Type', function () {
       this.maps = yield Promise.all(promises)
       done()
     }))
-    it(`succeed after ${numberOfYMapTests} actions`, wrapCo(function * (done) {
+    it(`succeed after ${numberOfYMapTests} actions`, async(function * (done) {
       yield applyRandomTransactions(this.users, this.maps, randomMapTransactions, numberOfYMapTests)
       yield flushAll()
       yield compareMapValues(this.maps)

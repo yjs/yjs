@@ -27,14 +27,14 @@ var Struct = {
       return op
     },
     requiredOps: function (op) {
-      return [] // [op.target]
+      return [op.target]
     },
     execute: function * (op) {
       // console.log('Delete', op, console.trace())
       var target = yield* this.getOperation(op.target)
       if (target != null && !target.deleted) {
         target.deleted = true
-        if (target.left === null || (yield* this.getOperation(target.left)).deleted) {
+        if (target.left !== null && (yield* this.getOperation(target.left)).deleted) {
           this.store.addToGarbageCollector(target.id)
           target.gc = true
         }

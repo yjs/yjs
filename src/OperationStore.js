@@ -2,7 +2,7 @@
 
 'use strict'
 
-class AbstractTransaction { // eslint-disable-line no-unused-vars
+class AbstractTransaction {
   constructor (store) {
     this.store = store
   }

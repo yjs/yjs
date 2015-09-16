@@ -1,35 +1,35 @@
-/* global createUsers, wait, Y, compareAllUsers, getRandomNumber, applyRandomTransactions, wrapCo, garbageCollectAllUsers */
+/* global createUsers, wait, Y, compareAllUsers, getRandomNumber, applyRandomTransactions, async, garbageCollectAllUsers */
 /* eslint-env browser,jasmine */
 
-var numberOfYArrayTests = 5
+var numberOfYArrayTests = 10
 
 describe('Array Type', function () {
   var y1, y2, y3, yconfig1, yconfig2, yconfig3, flushAll
 
   jasmine.DEFAULT_TIMEOUT_INTERVAL = 100
-  beforeEach(wrapCo(function * (done) {
+  beforeEach(async(function * (done) {
     yield createUsers(this, 3)
     y1 = (yconfig1 = this.users[0]).root
     y2 = (yconfig2 = this.users[1]).root
     y3 = (yconfig3 = this.users[2]).root
     flushAll = this.users[0].connector.flushAll
-    yield wait(100)
+    yield wait(10)
     done()
   }))
-  afterEach(wrapCo(function * (done) {
+  afterEach(async(function * (done) {
     yield compareAllUsers(this.users)
     done()
   }))
 
   describe('Basic tests', function () {
-    it('insert three elements, try re-get property', wrapCo(function * (done) {
+    it('insert three elements, try re-get property', async(function * (done) {
       var array = yield y1.set('Array', Y.Array)
       array.insert(0, [1, 2, 3])
       array = yield y1.get('Array') // re-get property
       expect(array.toArray()).toEqual([1, 2, 3])
       done()
     }))
-    it('Basic insert in array (handle three conflicts)', wrapCo(function * (done) {
+    it('Basic insert in array (handle three conflicts)', async(function * (done) {
       yield y1.set('Array', Y.Array)
       yield flushAll()
       var l1 = yield y1.get('Array')
@@ -43,7 +43,7 @@ describe('Array Type', function () {
       expect(l2.toArray()).toEqual(l3.toArray())
       done()
     }))
-    it('Basic insert&delete in array (handle three conflicts)', wrapCo(function * (done) {
+    it('Basic insert&delete in array (handle three conflicts)', async(function * (done) {
       var l1, l2, l3
       l1 = yield y1.set('Array', Y.Array)
       l1.insert(0, ['x', 'y', 'z'])
@@ -60,7 +60,7 @@ describe('Array Type', function () {
       expect(l2.toArray()).toEqual([0, 2, 'y'])
       done()
     }))
-    it('Handles getOperations ascending ids bug in late sync', wrapCo(function * (done) {
+    it('Handles getOperations ascending ids bug in late sync', async(function * (done) {
       var l1, l2
       l1 = yield y1.set('Array', Y.Array)
       l1.insert(0, ['x', 'y'])
@@ -79,7 +79,7 @@ describe('Array Type', function () {
       expect(l1.toArray()).toEqual(l2.toArray())
       done()
     }))
-    it('Handles deletions in late sync', wrapCo(function * (done) {
+    it('Handles deletions in late sync', async(function * (done) {
       var l1, l2
       l1 = yield y1.set('Array', Y.Array)
       l1.insert(0, ['x', 'y'])
@@ -96,21 +96,18 @@ describe('Array Type', function () {
       expect(l1.toArray()).toEqual(l2.toArray())
       done()
     }))
-    it('Handles deletions in late sync (2)', wrapCo(function * (done) {
+    it('Handles deletions in late sync (2)', async(function * (done) {
       var l1, l2
       l1 = yield y1.set('Array', Y.Array)
       yield flushAll()
       l2 = yield y2.get('Array')
       l1.insert(0, ['x', 'y'])
       l1.delete(0, 2)
-      yield wait()
       yield flushAll()
-      yield wait()
       expect(l1.toArray()).toEqual(l2.toArray())
-      yield compareAllUsers(this.users)
       done()
     }))
-    it('Basic insert. Then delete the whole array', wrapCo(function * (done) {
+    it('Basic insert. Then delete the whole array', async(function * (done) {
       var l1, l2, l3
       l1 = yield y1.set('Array', Y.Array)
       l1.insert(0, ['x', 'y', 'z'])
@@ -124,7 +121,7 @@ describe('Array Type', function () {
       expect(l2.toArray()).toEqual([])
       done()
     }))
-    it('Basic insert. Then delete the whole array (merge listeners on late sync)', wrapCo(function * (done) {
+    it('Basic insert. Then delete the whole array (merge listeners on late sync)', async(function * (done) {
       var l1, l2, l3
       l1 = yield y1.set('Array', Y.Array)
       l1.insert(0, ['x', 'y', 'z'])
@@ -142,7 +139,7 @@ describe('Array Type', function () {
       expect(l2.toArray()).toEqual([])
       done()
     }))
-    it('Basic insert. Then delete the whole array (merge deleter on late sync)', wrapCo(function * (done) {
+    it('Basic insert. Then delete the whole array (merge deleter on late sync)', async(function * (done) {
       var l1, l2, l3
       l1 = yield y1.set('Array', Y.Array)
       l1.insert(0, ['x', 'y', 'z'])
@@ -150,9 +147,7 @@ describe('Array Type', function () {
       yconfig1.disconnect()
       l1.delete(0, 3)
       l2 = yield y2.get('Array')
-      yield wait()
       yconfig1.reconnect()
-      yield wait()
       l3 = yield y3.get('Array')
       yield flushAll()
       expect(l1.toArray()).toEqual(l2.toArray())
@@ -160,7 +155,7 @@ describe('Array Type', function () {
       expect(l2.toArray()).toEqual([])
       done()
     }))
-    it('throw insert & delete events', wrapCo(function * (done) {
+    it('throw insert & delete events', async(function * (done) {
       var array = yield this.users[0].root.set('array', Y.Array)
       var event
       array.observe(function (e) {
@@ -183,7 +178,7 @@ describe('Array Type', function () {
       yield wait(50)
       done()
     }))
-    it('garbage collects', wrapCo(function * (done) {
+    it('garbage collects', async(function * (done) {
       var l1, l2, l3
       l1 = yield y1.set('Array', Y.Array)
       l1.insert(0, ['x', 'y', 'z'])
@@ -201,7 +196,6 @@ describe('Array Type', function () {
       expect(l1.toArray()).toEqual(l2.toArray())
       expect(l2.toArray()).toEqual(l3.toArray())
       expect(l2.toArray()).toEqual([])
-      yield compareAllUsers(this.users)
       done()
     }))
   })
@@ -228,7 +222,7 @@ describe('Array Type', function () {
         }
       }
     }
-    beforeEach(wrapCo(function * (done) {
+    beforeEach(async(function * (done) {
       yield this.users[0].root.set('Array', Y.Array)
       yield flushAll()
 
@@ -239,11 +233,11 @@ describe('Array Type', function () {
       this.arrays = yield Promise.all(promises)
       done()
     }))
-    it('arrays.length equals users.length', wrapCo(function * (done) { // eslint-disable-line
+    it('arrays.length equals users.length', async(function * (done) { // eslint-disable-line
       expect(this.arrays.length).toEqual(this.users.length)
       done()
     }))
-    it(`succeed after ${numberOfYArrayTests} actions`, wrapCo(function * (done) {
+    it(`succeed after ${numberOfYArrayTests} actions`, async(function * (done) {
       for (var u of this.users) {
         u.connector.debug = true
       }

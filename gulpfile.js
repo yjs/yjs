@@ -125,7 +125,7 @@ gulp.task('dev:browser', ['build:test'], function () {
   gulp.watch('src/**/*.js', ['build:test'])
 
   gulp.src(files.test)
-    .pipe(watch('build/**/*.js'))
+    .pipe(watch(['build/**/*.js']))
     .pipe(jasmineBrowser.specRunner())
     .pipe(jasmineBrowser.server({port: options.testport}))
 })

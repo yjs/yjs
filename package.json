@@ -4,9 +4,9 @@
   "description": "A framework for real-time p2p shared editing on arbitrary complex data types",
   "main": "y.js",
   "scripts": {
-    "test": "gulp test",
-    "lint": "standard",
-    "build": "gulp build"
+    "test": "./node_modules/.bin/gulp test",
+    "lint": "./node_modules/.bin/standard",
+    "build": "./node_modules/.bin/standard build"
   },
   "pre-commit": [
     "lint",

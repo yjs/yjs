@@ -207,7 +207,9 @@ class RBTree { // eslint-disable-line no-unused-vars
       o_['id[1]'] = id[1]
       os.push(o_)
     })
-    console.table(os)
+    if (console.table != null) {
+      console.table(os)
+    }
   }
   find (id) {
     return this.findNode(id).val
