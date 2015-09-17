@@ -157,6 +157,7 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
           for (var i in os.gc2) {
             var oid = os.gc2[i]
             var o = yield* this.getOperation(oid)
+
             if (o.left != null) {
               var left = yield* this.getOperation(o.left)
               left.right = o.right
@@ -197,7 +198,18 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
     }
   }
   addToGarbageCollector (op) {
-    this.gc1.push(op)
+    if (op.gc == null) {
+      op.gc = true
+      this.gc1.push(op.id)
+    }
+  }
+  removeFromGarbageCollector (op) {
+    function filter (o) {
+      return !Y.utils.compareIds(o, op.id)
+    }
+    this.gc1 = this.gc1.filter(filter)
+    this.gc2 = this.gc2.filter(filter)
+    delete op.gc
   }
   destroy () {
     clearInterval(this.gcInterval)

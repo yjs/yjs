@@ -20,6 +20,12 @@ g.YConcurrency_TestingMode = true
 
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 5000
 
+g.describeManyTimes = function describeManyTimes (times, name, f) {
+  for (var i = 0; i < times; i++) {
+    describe(name, f)
+  }
+}
+
 /*
   Wait for a specified amount of time (in ms). defaults to 5ms
 */
@@ -78,12 +84,15 @@ g.applyRandomTransactions = async(function * applyRandomTransactions (users, obj
     }
   }
   applyTransactions()
+  applyTransactions()
+  /* TODO: call applyTransactions here..
   yield users[0].connector.flushAll()
   users[0].disconnect()
   yield wait()
   applyTransactions()
   yield users[0].connector.flushAll()
   users[0].reconnect()
+  */
   yield wait()
   yield users[0].connector.flushAll()
 })
@@ -120,10 +129,12 @@ g.compareAllUsers = async(function * compareAllUsers (users) { //eslint-disable-
   }
   yield users[0].connector.flushAll()
   // gc two times because of the two gc phases (really collect everything)
+  yield wait(100)
   yield g.garbageCollectAllUsers(users)
-  yield wait(50)
+  yield wait(100)
   yield g.garbageCollectAllUsers(users)
-  yield wait(50)
+  yield wait(100)
+
   for (var uid = 0; uid < users.length; uid++) {
     var u = users[uid]
     // compare deleted ops against deleteStore

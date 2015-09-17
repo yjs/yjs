@@ -1,7 +1,8 @@
-/* global createUsers, Y, compareAllUsers, getRandomNumber, applyRandomTransactions, async */
+/* global createUsers, Y, compareAllUsers, getRandomNumber, applyRandomTransactions, async, describeManyTimes */
 /* eslint-env browser,jasmine */
 
-var numberOfYMapTests = 5
+var numberOfYMapTests = 150
+var repeatMapTeasts = 1
 
 describe('Map Type', function () {
   var y1, y2, y3, y4, flushAll
@@ -157,7 +158,7 @@ describe('Map Type', function () {
       })
     }))
   })
-  describe(`${numberOfYMapTests} Random tests`, function () {
+  describeManyTimes(repeatMapTeasts, `${numberOfYMapTests} Random tests`, function () {
     var randomMapTransactions = [
       function set (map) {
         map.set('somekey', getRandomNumber())

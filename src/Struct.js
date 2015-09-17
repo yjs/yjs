@@ -37,20 +37,26 @@ var Struct = {
     },
     /*
       Delete an operation from the OS, and add it to the GC, if necessary.
+
+      Rulez:
+      * The most left element in a list must not be deleted.
+        => There is at least one element in the list
+      * When an operation o is deleted, then it checks if its right operation
+        can be gc'd (iff it's deleted)
     */
     delete: function * (targetId) {
       var target = yield* this.getOperation(targetId)
       if (target != null && !target.deleted) {
         target.deleted = true
         if (target.left != null && (yield* this.getOperation(target.left)).deleted) {
-          this.store.addToGarbageCollector(target.id)
-          target.gc = true
+          // left is defined & the left op is already deleted.
+          // => Then this may get gc'd
+          this.store.addToGarbageCollector(target)
         }
         if (target.right != null) {
           var right = yield* this.getOperation(target.right)
           if (right.deleted && right.gc == null) {
-            this.store.addToGarbageCollector(right.id)
-            right.gc = true
+            this.store.addToGarbageCollector(right)
             yield* this.setOperation(right)
           }
         }
@@ -77,18 +83,35 @@ var Struct = {
   Insert: {
     /* {
         content: any,
+        id: Id,
         left: Id,
-        right: Id,
         origin: Id,
+        right: Id,
         parent: Id,
         parentSub: string (optional), // child of Map type
-        id: Id
       }
     */
     encode: function (op) {
       // TODO: you could not send the "left" property, then you also have to
       // "op.left = null" in $execute or $decode
-      return op
+      var e = {
+        id: op.id,
+        left: op.left,
+        right: op.right,
+        origin: op.origin,
+        parent: op.parent,
+        struct: op.struct
+      }
+      if (op.parentSub != null) {
+        e.parentSub = op.parentSub
+      }
+      if (op.opContent != null) {
+        e.opContent = op.opContent
+      } else {
+        e.content = op.content
+      }
+
+      return e
     },
     requiredOps: function (op) {
       var ids = []
@@ -200,6 +223,12 @@ var Struct = {
       if (op.right != null) {
         right = yield* this.getOperation(op.right)
         right.left = op.id
+
+        // if right exists, and it is supposed to be gc'd. Remove it from the gc
+        if (right.gc != null) {
+          this.store.removeFromGarbageCollector(right)
+        }
+
         yield* this.setOperation(right)
       }
 

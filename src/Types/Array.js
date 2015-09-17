@@ -168,10 +168,10 @@
     class: YArray,
     createType: function * YArrayCreator () {
       var model = {
-        start: null,
-        end: null,
         struct: 'List',
         type: 'Array',
+        start: null,
+        end: null,
         id: this.store.getNextOpId()
       }
       yield* this.applyCreatedOperations([model])
