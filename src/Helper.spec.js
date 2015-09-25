@@ -71,8 +71,8 @@ g.applyRandomTransactions = async(function * applyRandomTransactions (users, obj
     var f = getRandom(transactions)
     f(root)
   }
-  function applyTransactions () {
-    for (var i = 0; i < numberOfTransactions / 2 + 1; i++) {
+  function applyTransactions (relAmount) {
+    for (var i = 0; i < numberOfTransactions * relAmount + 1; i++) {
       var r = Math.random()
       if (r >= 0.9) {
         // 10% chance to flush
@@ -83,16 +83,16 @@ g.applyRandomTransactions = async(function * applyRandomTransactions (users, obj
       wait()
     }
   }
-  applyTransactions()
-  applyTransactions()
-  /* TODO: call applyTransactions here..
+  applyTransactions(0.5)
+  yield users[0].connector.flushAll()
   yield users[0].connector.flushAll()
   users[0].disconnect()
   yield wait()
-  applyTransactions()
+  applyTransactions(0.5)
   yield users[0].connector.flushAll()
+  // TODO: gc here????
+  yield wait(100)
   users[0].reconnect()
-  */
   yield wait()
   yield users[0].connector.flushAll()
 })
@@ -104,7 +104,7 @@ g.garbageCollectAllUsers = async(function * garbageCollectAllUsers (users) {
   }
 })
 
-g.compareAllUsers = async(function * compareAllUsers (users) { //eslint-disable-line
+g.compareAllUsers = async(function * compareAllUsers (users) {
   var s1, s2 // state sets
   var ds1, ds2 // delete sets
   var allDels1, allDels2 // all deletions
@@ -224,14 +224,12 @@ function async (makeGenerator) {
         return handle(generator.throw(err))
       })
     }
-    // this may throw errors here, but its ok since this is used only for debugging
-    return handle(generator.next())
-    /* try {
+    try {
       return handle(generator.next())
     } catch (ex) {
       generator.throw(ex) // TODO: check this out
       // return Promise.reject(ex)
-    }*/
+    }
   }
 }
 g.async = async

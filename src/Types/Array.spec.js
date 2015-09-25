@@ -2,7 +2,7 @@
 /* eslint-env browser,jasmine */
 
 var numberOfYArrayTests = 100
-var repeatArrayTests = 1
+var repeatArrayTests = 3
 
 describe('Array Type', function () {
   var y1, y2, y3, yconfig1, yconfig2, yconfig3, flushAll
@@ -245,6 +245,8 @@ describe('Array Type', function () {
       yield applyRandomTransactions(this.users, this.arrays, randomArrayTransactions, numberOfYArrayTests)
       yield flushAll()
       yield compareArrayValues(this.arrays)
+      // yield compareAllUsers(this.users)
+
       done()
     }))
   })

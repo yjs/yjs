@@ -122,7 +122,7 @@ Y.AbstractTransaction = AbstractTransaction
   * destroy()
     - destroy the database
 */
-class AbstractOperationStore { // eslint-disable-line no-unused-vars
+class AbstractOperationStore {
   constructor (y, opts) {
     this.y = y
     // E.g. this.listenersById[id] : Array<Listener>
@@ -148,7 +148,7 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
     this.waitingOperations = new Y.utils.RBTree()
 
     this.gc1 = [] // first stage
-    this.gc2 = [] // second stage -> after that, kill it
+    this.gc2 = [] // second stage -> after that, remove the op
     this.gcTimeout = opts.gcTimeout || 5000
     var os = this
     function garbageCollect () {
@@ -197,10 +197,35 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
       garbageCollect()
     }
   }
-  addToGarbageCollector (op) {
-    if (op.gc == null) {
+  /*
+    Try to add to GC.
+
+    TODO: rename this function
+
+    Only gc when
+       * creator of op is online
+       * left & right defined and both are from the same creator as op
+
+    returns true iff op was added to GC
+  */
+  addToGarbageCollector (op, left, right) {
+    if (
+      op.gc == null &&
+      op.deleted === true &&
+      this.y.connector.isSynced &&
+      (this.y.connector.connections[op.id[0]] != null || op.id[0] === this.y.connector.userId) &&
+      left != null &&
+      right != null &&
+      left.deleted &&
+      right.deleted &&
+      left.id[0] === op.id[0] &&
+      right.id[0] === op.id[0]
+    ) {
       op.gc = true
       this.gc1.push(op.id)
+      return true
+    } else {
+      return false
     }
   }
   removeFromGarbageCollector (op) {

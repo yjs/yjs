@@ -175,7 +175,7 @@ Y.Memory = (function () {
       return stateVector
     }
     * getStateSet () {
-      return this.ss
+      return Y.utils.copyObject(this.ss)
     }
     * getOperations (startSS) {
       // TODO: use bounds here!
@@ -237,7 +237,7 @@ Y.Memory = (function () {
       return op
     }
   }
-  class OperationStore extends Y.AbstractOperationStore { // eslint-disable-line no-undef
+  class OperationStore extends Y.AbstractOperationStore {
     constructor (y, opts) {
       super(y, opts)
       this.os = new Y.utils.RBTree()

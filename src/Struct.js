@@ -46,34 +46,51 @@ var Struct = {
     */
     delete: function * (targetId) {
       var target = yield* this.getOperation(targetId)
-      if (target != null && !target.deleted) {
-        target.deleted = true
-        if (target.left != null && (yield* this.getOperation(target.left)).deleted) {
-          // left is defined & the left op is already deleted.
-          // => Then this may get gc'd
-          this.store.addToGarbageCollector(target)
-        }
-        if (target.right != null) {
-          var right = yield* this.getOperation(target.right)
-          if (right.deleted && right.gc == null) {
-            this.store.addToGarbageCollector(right)
-            yield* this.setOperation(right)
-          }
-        }
-        yield* this.setOperation(target)
-        var t = this.store.initializedTypes[JSON.stringify(target.parent)]
-        if (t != null) {
-          yield* t._changed(this, {
-            struct: 'Delete',
-            target: targetId
-          })
+
+      if (target == null || !target.deleted) {
+        this.ds.delete(targetId)
+        var state = yield* this.getState(targetId[0])
+        if (state.clock === targetId[1]) {
+          yield* this.checkDeleteStoreForState(state)
+          yield* this.setState(state)
         }
       }
-      this.ds.delete(targetId)
-      var state = yield* this.getState(targetId[0])
-      if (state.clock === targetId[1]) {
-        yield* this.checkDeleteStoreForState(state)
-        yield* this.setState(state)
+
+      if (target != null && target.gc == null) {
+        if (!target.deleted) {
+          // set deleted & notify type
+          target.deleted = true
+          var type = this.store.initializedTypes[JSON.stringify(target.parent)]
+          if (type != null) {
+            yield* type._changed(this, {
+              struct: 'Delete',
+              target: targetId
+            })
+          }
+        }
+        var left = target.left != null ? yield* this.getOperation(target.left) : null
+        var right = target.right != null ? yield* this.getOperation(target.right) : null
+
+        this.store.addToGarbageCollector(target, left, right)
+
+        // set here because it was deleted and/or gc'd
+        yield* this.setOperation(target)
+
+        if (
+          left != null &&
+          left.left != null &&
+          this.store.addToGarbageCollector(left, yield* this.getOperation(left.left), target)
+        ) {
+          yield* this.setOperation(left)
+        }
+
+        if (
+          right != null &&
+          right.right != null &&
+          this.store.addToGarbageCollector(right, target, yield* this.getOperation(right.right))
+        ) {
+          yield* this.setOperation(right)
+        }
       }
     },
     execute: function * (op) {
@@ -215,6 +232,12 @@ var Struct = {
         left = yield* this.getOperation(op.left)
         op.right = left.right
         left.right = op.id
+
+        // if left exists, and it is supposed to be gc'd. Remove it from the gc
+        if (left.gc != null) {
+          this.store.removeFromGarbageCollector(left)
+        }
+
         yield* this.setOperation(left)
       } else {
         op.right = op.parentSub ? parent.map[op.parentSub] || null : parent.start
@@ -228,7 +251,6 @@ var Struct = {
         if (right.gc != null) {
           this.store.removeFromGarbageCollector(right)
         }
-
         yield* this.setOperation(right)
       }
 

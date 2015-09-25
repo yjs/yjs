@@ -22,6 +22,7 @@ class AbstractConnector {
     }
     this.role = opts.role
     this.connections = {}
+    this.isSynced = false
     this.userEventListeners = []
     this.whenSyncedListeners = []
     this.currentSyncTarget = null
@@ -97,7 +98,7 @@ class AbstractConnector {
    true otherwise
   */
   findNextSyncTarget () {
-    if (this.currentSyncTarget != null) {
+    if (this.currentSyncTarget != null || this.isSynced) {
       return // "The current sync has not finished!"
     }
 
@@ -118,9 +119,7 @@ class AbstractConnector {
           deleteSet: yield* this.getDeleteSet()
         })
       })
-    }
-    // This user synced with at least one user, set the state to synced (TODO: does this suffice?)
-    if (!this.isSynced) {
+    } else {
       this.isSynced = true
       for (var f of this.whenSyncedListeners) {
         f()
@@ -141,26 +140,31 @@ class AbstractConnector {
       return
     }
     if (this.debug) {
-      console.log(`${sender} -> me: ${m.type}`, m);// eslint-disable-line
+      console.log(`${sender} -> ${this.userId}: ${m.type}`, m);// eslint-disable-line
     }
     if (m.type === 'sync step 1') {
       // TODO: make transaction, stream the ops
       let conn = this
       this.y.db.requestTransaction(function *() {
-        var ops = yield* this.getOperations(m.stateSet)
+        var currentStateSet = yield* this.getStateSet()
         var dels = yield* this.getOpsFromDeleteSet(m.deleteSet)
+        for (var d in dels) {
+          yield* Y.Struct.Delete.delete.call(this, dels[d].target)
+        }
         if (dels.length > 0) {
-          this.store.apply(dels)
           // broadcast missing dels from syncing client
+          /* TODO: solve this better?
           this.store.y.connector.broadcast({
             type: 'update',
             ops: dels
           })
+          */
         }
+        var ops = yield* this.getOperations(m.stateSet)
         conn.send(sender, {
           type: 'sync step 2',
           os: ops,
-          stateSet: yield* this.getStateSet(),
+          stateSet: currentStateSet,
           deleteSet: yield* this.getDeleteSet()
         })
         if (this.forwardToSyncingClients) {
@@ -185,16 +189,18 @@ class AbstractConnector {
       var broadcastHB = !this.broadcastedHB
       this.broadcastedHB = true
       this.y.db.requestTransaction(function *() {
-        var ops = yield* this.getOperations(m.stateSet)
         var dels = yield* this.getOpsFromDeleteSet(m.deleteSet)
-        this.store.apply(dels)
+        for (var d in dels) {
+          yield* Y.Struct.Delete.delete.call(this, dels[d].target)
+        }
+        var ops = yield* this.getOperations(m.stateSet)
         this.store.apply(m.os)
         if (ops.length > 0) {
           m = {
             type: 'update',
             ops: ops
           }
-          if (!broadcastHB) {
+          if (!broadcastHB || true) { // TODO: no broadcast?
             conn.send(sender, m)
           } else {
             // broadcast only once!
