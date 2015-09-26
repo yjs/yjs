@@ -175,7 +175,7 @@ Y.Memory = (function () {
       return stateVector
     }
     * getStateSet () {
-      return this.ss
+      return Y.utils.copyObject(this.ss)
     }
     * getOperations (startSS) {
       // TODO: use bounds here!

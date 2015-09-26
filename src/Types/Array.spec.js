@@ -1,17 +1,17 @@
 /* global createUsers, wait, Y, compareAllUsers, getRandomNumber, applyRandomTransactions, async, garbageCollectAllUsers, describeManyTimes */
 /* eslint-env browser,jasmine */
 
-var numberOfYArrayTests = 100
-var repeatArrayTests = 1
+var numberOfYArrayTests = 50
+var repeatArrayTests = 300
 
 describe('Array Type', function () {
   var y1, y2, y3, yconfig1, yconfig2, yconfig3, flushAll
 
   beforeEach(async(function * (done) {
-    yield createUsers(this, 2)
+    yield createUsers(this, 3)
     y1 = (yconfig1 = this.users[0]).root
     y2 = (yconfig2 = this.users[1]).root
-    // y3 = (yconfig3 = this.users[2]).root
+    y3 = (yconfig3 = this.users[2]).root
     flushAll = this.users[0].connector.flushAll
     yield wait(10)
     done()
@@ -244,7 +244,9 @@ describe('Array Type', function () {
       }
       yield applyRandomTransactions(this.users, this.arrays, randomArrayTransactions, numberOfYArrayTests)
       yield flushAll()
+      yield garbageCollectAllUsers(this.users)
       yield compareArrayValues(this.arrays)
+      yield compareAllUsers(this.users)
       done()
     }))
   })

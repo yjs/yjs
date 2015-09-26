@@ -71,8 +71,8 @@ g.applyRandomTransactions = async(function * applyRandomTransactions (users, obj
     var f = getRandom(transactions)
     f(root)
   }
-  function applyTransactions () {
-    for (var i = 0; i < numberOfTransactions / 2 + 1; i++) {
+  function applyTransactions (relAmount) {
+    for (var i = 0; i < numberOfTransactions * relAmount + 1; i++) {
       var r = Math.random()
       if (r >= 0.9) {
         // 10% chance to flush
@@ -83,16 +83,17 @@ g.applyRandomTransactions = async(function * applyRandomTransactions (users, obj
       wait()
     }
   }
-  applyTransactions()
+  applyTransactions(0.5)
   yield users[0].connector.flushAll()
   yield g.garbageCollectAllUsers(users)
+  yield wait()
   users[0].disconnect()
   yield wait()
-  applyTransactions()
+  applyTransactions(0.5)
   yield users[0].connector.flushAll()
-  yield g.garbageCollectAllUsers(users)
-  users[0].reconnect()
   yield wait(100)
+  users[0].reconnect()
+  yield wait()
   yield users[0].connector.flushAll()
 })
 
@@ -219,14 +220,25 @@ function async (makeGenerator) {
         return handle(generator.throw(err))
       })
     }
-    // this may throw errors here, but its ok since this is used only for debugging
-    return handle(generator.next())
-    /* try {
+    try {
       return handle(generator.next())
     } catch (ex) {
       generator.throw(ex) // TODO: check this out
       // return Promise.reject(ex)
-    }*/
+    }
   }
 }
 g.async = async
+
+function logUsers (self) {
+  if (self.constructor === Array) {
+    self = {users: self}
+  }
+  console.log('User 1: ', self.users[0].connector.userId) // eslint-disable-line
+  self.users[0].db.os.logTable() // eslint-disable-line
+  console.log('User 2: ', self.users[1].connector.userId) // eslint-disable-line
+  self.users[1].db.os.logTable() // eslint-disable-line
+  console.log('User 3: ', self.users[2].connector.userId) // eslint-disable-line
+  self.users[2].db.os.logTable() // eslint-disable-line
+}
+g.logUsers = logUsers
