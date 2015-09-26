@@ -122,7 +122,7 @@ Y.AbstractTransaction = AbstractTransaction
   * destroy()
     - destroy the database
 */
-class AbstractOperationStore { // eslint-disable-line no-unused-vars
+class AbstractOperationStore {
   constructor (y, opts) {
     this.y = y
     // E.g. this.listenersById[id] : Array<Listener>
@@ -239,7 +239,7 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
   apply (ops) {
     for (var key in ops) {
       var o = ops[key]
-      if (!o.gc) {
+      if (o.gc == null) { // TODO: why do i get the same op twice?
         var required = Y.Struct[o.struct].requiredOps(o)
         this.whenOperationsExist(required, o)
       } else {
@@ -316,17 +316,19 @@ class AbstractOperationStore { // eslint-disable-line no-unused-vars
     } else {
       while (op != null) {
         var state = yield* this.getState(op.id[0])
-        if (op.id[1] === state.clock) {
-          state.clock++
-          yield* this.checkDeleteStoreForState(state)
-          yield* this.setState(state)
-          var isDeleted = this.store.ds.isDeleted(op.id)
+        if (op.id[1] === state.clock || (op.id[1] < state.clock && (yield* this.getOperation(op.id)) == null)) {
+          // either its a new operation (1. case), or it is an operation that was deleted, but is not yet in the OS
+          if (op.id[1] === state.clock) {
+            state.clock++
+            yield* this.checkDeleteStoreForState(state)
+            yield* this.setState(state)
+          }
 
           yield* Y.Struct[op.struct].execute.call(this, op)
           yield* this.addOperation(op)
           yield* this.store.operationAdded(this, op)
 
-          if (isDeleted) {
+          if (this.store.ds.isDeleted(op.id)) {
             yield* Y.Struct['Delete'].execute.call(this, {struct: 'Delete', target: op.id})
           }
 

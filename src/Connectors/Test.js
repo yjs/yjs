@@ -59,6 +59,9 @@ class Test extends Y.AbstractConnector {
     globalRoom.addUser(this)
     this.globalRoom = globalRoom
   }
+  receiveMessage (sender, m) {
+    super.receiveMessage(sender, JSON.parse(JSON.stringify(m)))
+  }
   send (userId, message) {
     globalRoom.buffers[userId].push(JSON.parse(JSON.stringify([this.userId, message])))
   }

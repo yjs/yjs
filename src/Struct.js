@@ -33,7 +33,7 @@ var Struct = {
       return op
     },
     requiredOps: function (op) {
-      return [op.target]
+      return [] // [op.target]
     },
     /*
       Delete an operation from the OS, and add it to the GC, if necessary.

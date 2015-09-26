@@ -8,10 +8,10 @@ describe('Array Type', function () {
   var y1, y2, y3, yconfig1, yconfig2, yconfig3, flushAll
 
   beforeEach(async(function * (done) {
-    yield createUsers(this, 3)
+    yield createUsers(this, 2)
     y1 = (yconfig1 = this.users[0]).root
     y2 = (yconfig2 = this.users[1]).root
-    y3 = (yconfig3 = this.users[2]).root
+    // y3 = (yconfig3 = this.users[2]).root
     flushAll = this.users[0].connector.flushAll
     yield wait(10)
     done()

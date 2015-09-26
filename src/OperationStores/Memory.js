@@ -193,17 +193,15 @@ Y.Memory = (function () {
         var startPos = startSS[user] || 0
         var endPos = endState.clock
 
-        this.os.iterate([user, startPos], [user, endPos], function (op) {// eslint-disable-line
-          if (!op.gc) {
-            ops.push(Y.Struct[op.struct].encode(op))
-          }
+        this.os.iterate([user, startPos], [user, endPos], function (op) {
+          ops.push(op)
         })
       }
       var res = []
       for (var op of ops) {
         res.push(yield* this.makeOperationReady(startSS, op))
         var state = startSS[op.id[0]] || 0
-        if (state === op.id[1] || true) {
+        if ((state === op.id[1]) || true) {
           startSS[op.id[0]] = state + 1
         } else {
           throw new Error('Unexpected operation!')
@@ -212,32 +210,32 @@ Y.Memory = (function () {
       return res
     }
     * makeOperationReady (ss, op) {
+      op = Y.Struct[op.struct].encode(op)
       // instead of ss, you could use currSS (a ss that increments when you add an operation)
       op = Y.utils.copyObject(op)
       var o = op
-      var clock
       while (o.right != null) {
         // while unknown, go to the right
-        clock = ss[o.right[0]] || 0
-        if (o.right[1] < clock && !o.gc) {
+        if (o.right[1] < (ss[o.right[0]] || 0)) {
           break
         }
         o = yield* this.getOperation(o.right)
       }
+      // new right is not gc'd and known according to the ss
       op.right = o.right
       while (o.left != null) {
         // while unknown, go to the right
-        clock = ss[o.left[0]] || 0
-        if (o.left[1] < clock && !o.gc) {
+        if (o.left[1] < (ss[o.left[0]] || 0)) {
           break
         }
         o = yield* this.getOperation(o.left)
       }
+      // new left is not gc'd and known according to the ss
       op.left = o.left
       return op
     }
   }
-  class OperationStore extends Y.AbstractOperationStore { // eslint-disable-line no-undef
+  class OperationStore extends Y.AbstractOperationStore {
     constructor (y, opts) {
       super(y, opts)
       this.os = new Y.utils.RBTree()

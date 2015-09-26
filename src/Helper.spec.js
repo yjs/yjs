@@ -84,16 +84,15 @@ g.applyRandomTransactions = async(function * applyRandomTransactions (users, obj
     }
   }
   applyTransactions()
-  applyTransactions()
-  /* TODO: call applyTransactions here..
   yield users[0].connector.flushAll()
+  yield g.garbageCollectAllUsers(users)
   users[0].disconnect()
   yield wait()
   applyTransactions()
   yield users[0].connector.flushAll()
+  yield g.garbageCollectAllUsers(users)
   users[0].reconnect()
-  */
-  yield wait()
+  yield wait(100)
   yield users[0].connector.flushAll()
 })
 
@@ -104,7 +103,7 @@ g.garbageCollectAllUsers = async(function * garbageCollectAllUsers (users) {
   }
 })
 
-g.compareAllUsers = async(function * compareAllUsers (users) { //eslint-disable-line
+g.compareAllUsers = async(function * compareAllUsers (users) {
   var s1, s2 // state sets
   var ds1, ds2 // delete sets
   var allDels1, allDels2 // all deletions
@@ -129,11 +128,7 @@ g.compareAllUsers = async(function * compareAllUsers (users) { //eslint-disable-
   }
   yield users[0].connector.flushAll()
   // gc two times because of the two gc phases (really collect everything)
-  yield wait(100)
   yield g.garbageCollectAllUsers(users)
-  yield wait(100)
-  yield g.garbageCollectAllUsers(users)
-  yield wait(100)
 
   for (var uid = 0; uid < users.length; uid++) {
     var u = users[uid]

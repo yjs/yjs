@@ -194,17 +194,27 @@ class RBTree {
     }
     return true
   }
-  logTable (from, to) {
+  logTable (from, to, filter) {
+    if (filter == null) {
+      filter = function () {
+        return true
+      }
+    }
     if (from == null) { from = null }
     if (to == null) { to = null }
     var os = []
     this.iterate(from, to, function (o) {
-      var o_ = Y.utils.copyObject(o)
-      var id = o_.id
-      delete o_.id
-      o_['id[0]'] = id[0]
-      o_['id[1]'] = id[1]
-      os.push(o_)
+      if (filter(o)) {
+        var o_ = {}
+        for (var key in o) {
+          if (typeof o[key] === 'object') {
+            o_[key] = JSON.stringify(o[key])
+          } else {
+            o_[key] = o[key]
+          }
+        }
+        os.push(o_)
+      }
     })
     if (console.table != null) {
       console.table(os)

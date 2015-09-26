@@ -28,14 +28,17 @@
     Specify which specs to use!
 
   Commands:
-    - build:
+    - build
         Build this library
-    - dev:
+    - dev:browser
+        Watch the ./src directory.
+        Builds the library on changes.
+        Starts an http-server and serves the test suite on http://127.0.0.1:8888.
+    - dev:node
         Watch the ./src directory.
         Builds and specs the library on changes.
-        Starts an http-server and serves the test suite on http://127.0.0.1:8888.
-    - build_test:
-        Builds the test suite
+        Usefull to run with node-inspector.
+        `node-debug $(which gulp) dev:node
     - test:
         Test this library
 */

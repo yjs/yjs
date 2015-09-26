@@ -142,27 +142,35 @@ class AbstractConnector {
     }
     if (this.debug) {
       console.log(`${sender} -> me: ${m.type}`, m);// eslint-disable-line
+      if (m.os != null && m.os.some(function(o){return o.deleted })){
+        console.log("bullshit.. ")
+        debugger
+      }
     }
     if (m.type === 'sync step 1') {
       // TODO: make transaction, stream the ops
       let conn = this
       this.y.db.requestTransaction(function *() {
         var ops = yield* this.getOperations(m.stateSet)
-        var dels = yield* this.getOpsFromDeleteSet(m.deleteSet)
-        if (dels.length > 0) {
-          this.store.apply(dels)
-          // broadcast missing dels from syncing client
-          this.store.y.connector.broadcast({
-            type: 'update',
-            ops: dels
-          })
-        }
         conn.send(sender, {
           type: 'sync step 2',
           os: ops,
           stateSet: yield* this.getStateSet(),
-          deleteSet: yield* this.getDeleteSet()
+          deleteSet: yield* this.getDeleteSet() // TODO: consider that you have a ds from the other user..
         })
+        var dels = yield* this.getOpsFromDeleteSet(m.deleteSet)
+        if (dels.length > 0) {
+          for (var i in dels) {
+            // TODO: no longer get delete ops (just get the ids..)!
+            yield* Y.Struct.Delete.delete.call(this, dels[i].target)
+          }
+          /*/ broadcast missing dels from syncing client
+          this.store.y.connector.broadcast({
+            type: 'update',
+            ops: dels
+          })
+          */
+        }
         if (this.forwardToSyncingClients) {
           conn.syncingClients.push(sender)
           setTimeout(function () {
@@ -187,14 +195,14 @@ class AbstractConnector {
       this.y.db.requestTransaction(function *() {
         var ops = yield* this.getOperations(m.stateSet)
         var dels = yield* this.getOpsFromDeleteSet(m.deleteSet)
-        this.store.apply(dels)
         this.store.apply(m.os)
+        this.store.apply(dels)
         if (ops.length > 0) {
           m = {
             type: 'update',
             ops: ops
           }
-          if (!broadcastHB) {
+          if (!broadcastHB || true) { // TODO: consider to broadcast here..
             conn.send(sender, m)
           } else {
             // broadcast only once!
