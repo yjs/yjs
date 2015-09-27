@@ -9,22 +9,58 @@ class DeleteStore extends Y.utils.RBTree {
     var n = this.findNodeWithUpperBound(id)
     return n !== null && n.val.id[0] === id[0] && id[1] < n.val.id[1] + n.val.len
   }
+  garbageCollect (id) {
+    var n = this.delete(id)
+    if (!n.val.gc) {
+      if (n.val.id[1] < id[1]) {
+        // un-extend left
+        var newlen = n.val.len - (id[1] - n.val.id[1])
+        n.val.len -= newlen
+        n = this.add({id: id, len: newlen, gc: false})
+      }
+      if (id[1] < n.val.id[1] + n.val.len - 1) {
+        // un-extend right
+        this.add({id: id, len: n.val.len - 1, gc: false})
+        n.val.len = 1
+      }
+      // set gc'd
+      n.val.gc = true
+
+      // can extend left?
+      var prev = n.prev()
+      if (prev != null && prev.val.gc) {
+        prev.val.len += n.val.len
+        super.delete(n.val.id)
+      }
+      // can extend right?
+      var next = n.next()
+      if (next != null && next.val.gc) {
+        n.val.len += next.val.len
+        super.delete(next.val.id)
+      }
+    }
+  }
+  /*
+    Mark an operation as deleted.
+
+    returns the delete node
+  */
   delete (id) {
     var n = this.findNodeWithUpperBound(id)
     if (n != null && n.val.id[0] === id[0]) {
       if (n.val.id[1] <= id[1] && id[1] < n.val.id[1] + n.val.len) {
         // already deleted
-        return
+        return n
       } else if (n.val.id[1] + n.val.len === id[1]) {
         // can extend existing deletion
         n.val.len++
       } else {
         // cannot extend left
-        n = this.add({id: id, len: 1})
+        n = this.add({id: id, len: 1, gc: false})
       }
     } else {
       // cannot extend left
-      n = this.add({id: id, len: 1})
+      n = this.add({id: id, len: 1, gc: false})
     }
     // can extend right?
     var next = n.next()
@@ -32,6 +68,7 @@ class DeleteStore extends Y.utils.RBTree {
       n.val.len = n.val.len + next.val.len
       super.delete(next.val.id)
     }
+    return n
   }
   // a DeleteSet (ds) describes all the deleted ops in the OS
   toDeleteSet () {
