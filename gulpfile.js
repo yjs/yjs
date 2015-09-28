@@ -68,7 +68,6 @@ var polyfills = [
 ]
 
 var concatOrder = [
-  'Helper.spec.js',
   'y.js',
   'Connector.js',
   'OperationStore.js',
@@ -85,16 +84,16 @@ var concatOrder = [
 ]
 
 var files = {
-  production: polyfills.concat(concatOrder.map(function (f) {
+  src: polyfills.concat(concatOrder.map(function (f) {
     return 'src/' + f
   })),
-  test: concatOrder.map(function (f) {
+  test: ['Helper.spec.js'].concat(concatOrder.map(function (f) {
     return 'build/' + f
-  }).concat(['build/**/*.spec.js'])
+  }).concat(['build/**/*.spec.js']))
 }
 
 gulp.task('build:deploy', function () {
-  gulp.src('src/**/*.js')
+  gulp.src(files.src)
     .pipe(sourcemaps.init())
     .pipe(concat('y.js'))
     .pipe(babel({
@@ -103,7 +102,7 @@ gulp.task('build:deploy', function () {
       experimental: true
     }))
     .pipe(uglify())
-    .pipe(sourcemaps.write())
+    .pipe(sourcemaps.write('.'))
     .pipe(gulp.dest('.'))
 })
 
