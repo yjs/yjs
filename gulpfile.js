@@ -87,7 +87,7 @@ var files = {
   src: polyfills.concat(concatOrder.map(function (f) {
     return 'src/' + f
   })),
-  test: ['Helper.spec.js'].concat(concatOrder.map(function (f) {
+  test: ['build/Helper.spec.js'].concat(concatOrder.map(function (f) {
     return 'build/' + f
   }).concat(['build/**/*.spec.js']))
 }

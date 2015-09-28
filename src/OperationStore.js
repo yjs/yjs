@@ -167,6 +167,11 @@ class AbstractTransaction {
   }
   * garbageCollectOperation (id) {
     var o = yield* this.getOperation(id)
+
+    if (o == null) {
+      return
+    }
+
     if (!o.deleted) {
       yield* this.deleteOperation(id)
       o = yield* this.getOperation(id)
@@ -422,7 +427,7 @@ class AbstractOperationStore {
     } else {
       while (op != null) {
         var state = yield* this.getState(op.id[0])
-        if (op.id[1] === state.clock || (op.id[1] < state.clock && (yield* this.getOperation(op.id)) == null)) {
+        if (op.id[1] === state.clock) {
           // either its a new operation (1. case), or it is an operation that was deleted, but is not yet in the OS
           if (op.id[1] === state.clock) {
             state.clock++

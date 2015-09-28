@@ -110,7 +110,7 @@ Y.Memory = (function () {
     }
     * checkDeleteStoreForState (state) {
       var n = this.ds.findNodeWithUpperBound([state.user, state.clock])
-      if (n !== null && n.val.id[0] === state.user) {
+      if (n !== null && n.val.id[0] === state.user && n.val.gc) {
         state.clock = Math.max(state.clock, n.val.id[1] + n.val.len)
       }
     }
