@@ -23,7 +23,7 @@
         "userY": ...
       }
   * isDeleted(id)
-  * getOpsFromDeleteSet(ds) -- TODO: just call Struct.Delete.delete(id) here
+  * getOpsFromDeleteSet(ds) -- TODO: just call this.deleteOperation(id) here
     - get a set of deletions that need to be applied in order to get to
       achieve the state of the supplied ds
   * setOperation(op)
@@ -107,6 +107,97 @@ class AbstractTransaction {
       })
     }
   }
+  /*
+    Delete an operation from the OS, and add it to the GC, if necessary.
+
+    Rulez:
+    * The most left element in a list must not be deleted.
+      => There is at least one element in the list
+    * When an operation o is deleted, then it checks if its right operation
+      can be gc'd (iff it's deleted)
+  */
+  * deleteOperation (targetId) {
+    var target = yield* this.getOperation(targetId)
+
+    if (target == null || !target.deleted) {
+      this.ds.markDeleted(targetId)
+      var state = yield* this.getState(targetId[0])
+      if (state.clock === targetId[1]) {
+        yield* this.checkDeleteStoreForState(state)
+        yield* this.setState(state)
+      }
+    }
+
+    if (target != null && target.gc == null) {
+      if (!target.deleted) {
+        // set deleted & notify type
+        target.deleted = true
+        var type = this.store.initializedTypes[JSON.stringify(target.parent)]
+        if (type != null) {
+          yield* type._changed(this, {
+            struct: 'Delete',
+            target: targetId
+          })
+        }
+      }
+      var left = target.left != null ? yield* this.getOperation(target.left) : null
+      var right = target.right != null ? yield* this.getOperation(target.right) : null
+
+      this.store.addToGarbageCollector(target, left, right)
+
+      // set here because it was deleted and/or gc'd
+      yield* this.setOperation(target)
+
+      if (
+        left != null &&
+        left.left != null &&
+        this.store.addToGarbageCollector(left, yield* this.getOperation(left.left), target)
+      ) {
+        yield* this.setOperation(left)
+      }
+
+      if (
+        right != null &&
+        right.right != null &&
+        this.store.addToGarbageCollector(right, target, yield* this.getOperation(right.right))
+      ) {
+        yield* this.setOperation(right)
+      }
+    }
+  }
+  * garbageCollectOperation (id) {
+    var o = yield* this.getOperation(id)
+    if (!o.deleted) {
+      yield* this.deleteOperation(id)
+      o = yield* this.getOperation(id)
+    }
+
+    if (o.left != null) {
+      var left = yield* this.getOperation(o.left)
+      left.right = o.right
+      yield* this.setOperation(left)
+    }
+    if (o.right != null) {
+      var right = yield* this.getOperation(o.right)
+      right.left = o.left
+      yield* this.setOperation(right)
+    }
+    var parent = yield* this.getOperation(o.parent)
+    var setParent = false
+    if (Y.utils.compareIds(parent.start, o.id)) {
+      setParent = true
+      parent.start = o.right
+    }
+    if (Y.utils.compareIds(parent.end, o.id)) {
+      setParent = true
+      parent.end = o.left
+    }
+    if (setParent) {
+      yield* this.setOperation(parent)
+    }
+    yield* this.removeOperation(o.id)
+    yield* this.ds.markGarbageCollected(o.id)
+  }
 }
 Y.AbstractTransaction = AbstractTransaction
 
@@ -156,32 +247,7 @@ class AbstractOperationStore {
         os.requestTransaction(function * () {
           for (var i in os.gc2) {
             var oid = os.gc2[i]
-            var o = yield* this.getOperation(oid)
-
-            if (o.left != null) {
-              var left = yield* this.getOperation(o.left)
-              left.right = o.right
-              yield* this.setOperation(left)
-            }
-            if (o.right != null) {
-              var right = yield* this.getOperation(o.right)
-              right.left = o.left
-              yield* this.setOperation(right)
-            }
-            var parent = yield* this.getOperation(o.parent)
-            var setParent = false
-            if (Y.utils.compareIds(parent.start, o.id)) {
-              setParent = true
-              parent.start = o.right
-            }
-            if (Y.utils.compareIds(parent.end, o.id)) {
-              setParent = true
-              parent.end = o.left
-            }
-            if (setParent) {
-              yield* this.setOperation(parent)
-            }
-            yield* this.removeOperation(o.id)
+            yield* this.garbageCollectOperation(oid)
           }
           os.gc2 = os.gc1
           os.gc1 = []
@@ -276,8 +342,12 @@ class AbstractOperationStore {
     for (var key in ops) {
       var o = ops[key]
       if (o.gc == null) { // TODO: why do i get the same op twice?
-        var required = Y.Struct[o.struct].requiredOps(o)
-        this.whenOperationsExist(required, o)
+        if (o.deleted == null) {
+          var required = Y.Struct[o.struct].requiredOps(o)
+          this.whenOperationsExist(required, o)
+        } else {
+          throw new Error('Ops must not contain deleted field!')
+        }
       } else {
         throw new Error("Must not receive gc'd ops!")
       }

@@ -8,30 +8,22 @@ describe('Memory', function () {
       ds = new Y.utils.DeleteStore()
     })
     it('Deleted operation is deleted', function () {
-      ds.delete(['u1', 10])
+      ds.markDeleted(['u1', 10])
       expect(ds.isDeleted(['u1', 10])).toBeTruthy()
-      expect(ds.toDeleteSet()).toEqual({'u1': [[10, 1]]})
+      expect(ds.toDeleteSet()).toEqual({'u1': [[10, 1, false]]})
     })
     it('Deleted operation extends other deleted operation', function () {
-      ds.delete(['u1', 10])
-      ds.delete(['u1', 11])
+      ds.markDeleted(['u1', 10])
+      ds.markDeleted(['u1', 11])
       expect(ds.isDeleted(['u1', 10])).toBeTruthy()
       expect(ds.isDeleted(['u1', 11])).toBeTruthy()
-      expect(ds.toDeleteSet()).toEqual({'u1': [[10, 2]]})
+      expect(ds.toDeleteSet()).toEqual({'u1': [[10, 2, false]]})
     })
     it('Deleted operation extends other deleted operation', function () {
-      ds.delete(['0', 3])
-      ds.delete(['0', 4])
-      ds.delete(['0', 2])
-      expect(ds.toDeleteSet()).toEqual({'0': [[2, 3]]})
-    })
-    it('Creates operations', function () {
-      var dels = ds.getDeletions({5: [[4, 1]]})
-      expect(dels.length === 1).toBeTruthy()
-      expect(dels[0]).toEqual({
-        struct: 'Delete',
-        target: ['5', 4]
-      })
+      ds.markDeleted(['0', 3])
+      ds.markDeleted(['0', 4])
+      ds.markDeleted(['0', 2])
+      expect(ds.toDeleteSet()).toEqual({'0': [[2, 3, false]]})
     })
   })
 })

@@ -9,8 +9,13 @@ class DeleteStore extends Y.utils.RBTree {
     var n = this.findNodeWithUpperBound(id)
     return n !== null && n.val.id[0] === id[0] && id[1] < n.val.id[1] + n.val.len
   }
-  garbageCollect (id) {
-    var n = this.delete(id)
+  /*
+    Mark an operation as deleted&gc'd
+
+    returns the delete node
+  */
+  * markGarbageCollected (id) {
+    var n = this.markDeleted(id)
     if (!n.val.gc) {
       if (n.val.id[1] < id[1]) {
         // un-extend left
@@ -20,7 +25,7 @@ class DeleteStore extends Y.utils.RBTree {
       }
       if (id[1] < n.val.id[1] + n.val.len - 1) {
         // un-extend right
-        this.add({id: id, len: n.val.len - 1, gc: false})
+        this.add({id: [id[0], id[1] + 1], len: n.val.len - 1, gc: false})
         n.val.len = 1
       }
       // set gc'd
@@ -39,13 +44,14 @@ class DeleteStore extends Y.utils.RBTree {
         super.delete(next.val.id)
       }
     }
+    return n
   }
   /*
     Mark an operation as deleted.
 
     returns the delete node
   */
-  delete (id) {
+  markDeleted (id) {
     var n = this.findNodeWithUpperBound(id)
     if (n != null && n.val.id[0] === id[0]) {
       if (n.val.id[1] <= id[1] && id[1] < n.val.id[1] + n.val.len) {
@@ -70,79 +76,24 @@ class DeleteStore extends Y.utils.RBTree {
     }
     return n
   }
-  // a DeleteSet (ds) describes all the deleted ops in the OS
+  /*
+    A DeleteSet (ds) describes all the deleted ops in the OS
+  */
   toDeleteSet () {
     var ds = {}
     this.iterate(null, null, function (n) {
       var user = n.id[0]
       var counter = n.id[1]
       var len = n.len
+      var gc = n.gc
       var dv = ds[user]
       if (dv === void 0) {
         dv = []
         ds[user] = dv
       }
-      dv.push([counter, len])
+      dv.push([counter, len, gc])
     })
     return ds
-  }
-  // returns a set of deletions that need to be applied in order to get to
-  // the state of the supplied ds
-  getDeletions (ds) {
-    var deletions = []
-    function createDeletions (user, start, len) {
-      for (var c = start; c < start + len; c++) {
-        deletions.push({
-          target: [user, c],
-          struct: 'Delete'
-        })
-      }
-    }
-    for (var user in ds) {
-      var dv = ds[user]
-      var pos = 0
-      var d = dv[pos]
-      this.iterate([user, 0], [user, Number.MAX_VALUE], function (n) {
-        // cases:
-        // 1. d deletes something to the right of n
-        //  => go to next n (break)
-        // 2. d deletes something to the left of n
-        //  => create deletions
-        //  => reset d accordingly
-        //  *)=> if d doesn't delete anything anymore, go to next d (continue)
-        // 3. not 2) and d deletes something that also n deletes
-        //  => reset d so that it doesn't contain n's deletion
-        //  *)=> if d does not delete anything anymore, go to next d (continue)
-        while (d != null) {
-          var diff // describe the diff of length in 1) and 2)
-          if (n.id[1] + n.len <= d[0]) {
-            // 1)
-            break
-          } else if (d[0] < n.id[1]) {
-            // 2)
-            // delete maximum the len of d
-            // else delete as much as possible
-            diff = Math.min(n.id[1] - d[0], d[1])
-            createDeletions(user, d[0], diff)
-          } else {
-            // 3)
-            diff = n.id[1] + n.len - d[0] // never null (see 1)
-          }
-          if (d[1] <= diff) {
-            // d doesn't delete anything anymore
-            d = dv[++pos]
-          } else {
-            d[0] = d[0] + diff // reset pos
-            d[1] = d[1] - diff // reset length
-          }
-        }
-      })
-      for (; pos < dv.length; pos++) {
-        d = dv[pos]
-        createDeletions(user, d[0], d[1])
-      }
-    }
-    return deletions
   }
 }
 
@@ -166,11 +117,81 @@ Y.Memory = (function () {
     * getDeleteSet (id) {
       return this.ds.toDeleteSet(id)
     }
+    /*
+      apply a delete set in order to get
+      the state of the supplied ds
+    */
+    * applyDeleteSet (ds) {
+      var deletions = []
+      function createDeletions (user, start, len, gc) {
+        for (var c = start; c < start + len; c++) {
+          deletions.push([user, c, gc])
+        }
+      }
+      for (var user in ds) {
+        var dv = ds[user]
+        var pos = 0
+        var d = dv[pos]
+        this.ds.iterate([user, 0], [user, Number.MAX_VALUE], function (n) {
+          // cases:
+          // 1. d deletes something to the right of n
+          //  => go to next n (break)
+          // 2. d deletes something to the left of n
+          //  => create deletions
+          //  => reset d accordingly
+          //  *)=> if d doesn't delete anything anymore, go to next d (continue)
+          // 3. not 2) and d deletes something that also n deletes
+          //  => reset d so that it doesn't contain n's deletion
+          //  *)=> if d does not delete anything anymore, go to next d (continue)
+          while (d != null) {
+            var diff = 0 // describe the diff of length in 1) and 2)
+            if (n.id[1] + n.len <= d[0]) {
+              // 1)
+              break
+            } else if (d[0] < n.id[1]) {
+              // 2)
+              // delete maximum the len of d
+              // else delete as much as possible
+              diff = Math.min(n.id[1] - d[0], d[1])
+              createDeletions(user, d[0], diff, d[2])
+            } else {
+              // 3)
+              diff = n.id[1] + n.len - d[0] // never null (see 1)
+              if (d[2] && !n.gc) {
+                // d marks as gc'd but n does not
+                // then delete either way
+                createDeletions(user, d[0], diff, d[2])
+              }
+            }
+            if (d[1] <= diff) {
+              // d doesn't delete anything anymore
+              d = dv[++pos]
+            } else {
+              d[0] = d[0] + diff // reset pos
+              d[1] = d[1] - diff // reset length
+            }
+          }
+        })
+        // for the rest.. just apply it
+        for (; pos < dv.length; pos++) {
+          d = dv[pos]
+          createDeletions(user, d[0], d[1], d[2])
+        }
+      }
+      for (var i in deletions) {
+        var del = deletions[i]
+        var id = [del[0], del[1]]
+        if (del[2]) {
+          // gc
+          yield* this.garbageCollectOperation(id)
+        } else {
+          // delete
+          yield* this.deleteOperation(id)
+        }
+      }
+    }
     * isDeleted (id) {
       return this.ds.isDeleted(id)
-    }
-    * getOpsFromDeleteSet (ds) {
-      return this.ds.getDeletions(ds)
     }
     * setOperation (op) {
       // TODO: you can remove this step! probs..

@@ -148,13 +148,10 @@ class AbstractConnector {
       let conn = this
       this.y.db.requestTransaction(function *() {
         var currentStateSet = yield* this.getStateSet()
-        var dels = yield* this.getOpsFromDeleteSet(m.deleteSet)
-        for (var i in dels) {
-          // TODO: no longer get delete ops (just get the ids..)!
-          yield* Y.Struct.Delete.delete.call(this, dels[i].target)
-        }
+        yield* this.applyDeleteSet(m.deleteSet)
 
         var ops = yield* this.getOperations(m.stateSet)
+        ops = JSON.parse(JSON.stringify(ops)) // TODO: don't do something like that!!
         conn.send(sender, {
           type: 'sync step 2',
           os: ops,
@@ -178,17 +175,15 @@ class AbstractConnector {
         }
       })
     } else if (m.type === 'sync step 2') {
-      this.y.db.apply(m.os)
       let conn = this
       var broadcastHB = !this.broadcastedHB
       this.broadcastedHB = true
       this.y.db.requestTransaction(function * () {
-        var dels = yield* this.getOpsFromDeleteSet(m.deleteSet)
-        for (var i in dels) {
-          yield* Y.Struct.Delete.delete.call(this, dels[i].target)
-        }
-        var ops = yield* this.getOperations(m.stateSet)
+        yield* this.applyDeleteSet(m.deleteSet)
         this.store.apply(m.os)
+      })
+      this.y.db.requestTransaction(function * () {
+        var ops = yield* this.getOperations(m.stateSet)
         if (ops.length > 0) {
           m = {
             type: 'update',

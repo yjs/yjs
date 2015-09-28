@@ -35,66 +35,8 @@ var Struct = {
     requiredOps: function (op) {
       return [] // [op.target]
     },
-    /*
-      Delete an operation from the OS, and add it to the GC, if necessary.
-
-      Rulez:
-      * The most left element in a list must not be deleted.
-        => There is at least one element in the list
-      * When an operation o is deleted, then it checks if its right operation
-        can be gc'd (iff it's deleted)
-    */
-    delete: function * (targetId) {
-      var target = yield* this.getOperation(targetId)
-
-      if (target == null || !target.deleted) {
-        this.ds.delete(targetId)
-        var state = yield* this.getState(targetId[0])
-        if (state.clock === targetId[1]) {
-          yield* this.checkDeleteStoreForState(state)
-          yield* this.setState(state)
-        }
-      }
-
-      if (target != null && target.gc == null) {
-        if (!target.deleted) {
-          // set deleted & notify type
-          target.deleted = true
-          var type = this.store.initializedTypes[JSON.stringify(target.parent)]
-          if (type != null) {
-            yield* type._changed(this, {
-              struct: 'Delete',
-              target: targetId
-            })
-          }
-        }
-        var left = target.left != null ? yield* this.getOperation(target.left) : null
-        var right = target.right != null ? yield* this.getOperation(target.right) : null
-
-        this.store.addToGarbageCollector(target, left, right)
-
-        // set here because it was deleted and/or gc'd
-        yield* this.setOperation(target)
-
-        if (
-          left != null &&
-          left.left != null &&
-          this.store.addToGarbageCollector(left, yield* this.getOperation(left.left), target)
-        ) {
-          yield* this.setOperation(left)
-        }
-
-        if (
-          right != null &&
-          right.right != null &&
-          this.store.addToGarbageCollector(right, target, yield* this.getOperation(right.right))
-        ) {
-          yield* this.setOperation(right)
-        }
-      }
-    },
     execute: function * (op) {
-      yield* Struct.Delete.delete.call(this, op.target)
+      yield* this.deleteOperation(op.target)
     }
   },
   Insert: {

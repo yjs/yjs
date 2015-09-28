@@ -244,7 +244,6 @@ describe('Array Type', function () {
       }
       yield applyRandomTransactions(this.users, this.arrays, randomArrayTransactions, numberOfYArrayTests)
       yield flushAll()
-      yield garbageCollectAllUsers(this.users)
       yield compareArrayValues(this.arrays)
       yield compareAllUsers(this.users)
       done()
