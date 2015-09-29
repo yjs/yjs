@@ -1,12 +1,8 @@
 language: node_js
 before_install:
   - "npm install -g bower"
-  - "bower install"
 node_js:
   - "0.12"
-  - "0.11"
-  - "0.10"
 branches:
   only:
     - master
-    - 0.6

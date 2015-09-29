@@ -3,6 +3,9 @@
 
 /*
   Partial definition of a transaction
+  
+  A transaction provides all the the async functionality on a database.
+  
   By convention, a transaction has the following properties:
   * ss for StateSet
   * os for OperationStore
@@ -75,6 +78,10 @@ class AbstractTransaction {
   constructor (store) {
     this.store = store
   }
+  /*
+    Get a type based on the id of its model.
+    If it does not exist yes, create it.
+  */
   * getType (id) {
     var sid = JSON.stringify(id)
     var t = this.store.initializedTypes[sid]
@@ -87,12 +94,11 @@ class AbstractTransaction {
     }
     return t
   }
-  * createType (model) {
-    var sid = JSON.stringify(model.id)
-    var t = yield* Y[model.type].initType.call(this, this.store, model)
-    this.store.initializedTypes[sid] = t
-    return t
-  }
+  /*
+    Apply operations that this user created (no remote ones!)
+      * does not check for Struct.*.requiredOps()
+      * also broadcasts it through the connector
+  */
   * applyCreatedOperations (ops) {
     var send = []
     for (var i = 0; i < ops.length; i++) {
@@ -108,24 +114,13 @@ class AbstractTransaction {
     }
   }
   /*
-    Delete an operation from the OS, and add it to the GC, if necessary.
-
-    Rulez:
-    * The most left element in a list must not be deleted.
-      => There is at least one element in the list
-    * When an operation o is deleted, then it checks if its right operation
-      can be gc'd (iff it's deleted)
+    Mark an operation as deleted, and add it to the GC, if possible.
   */
   * deleteOperation (targetId) {
     var target = yield* this.getOperation(targetId)
 
     if (target == null || !target.deleted) {
       this.ds.markDeleted(targetId)
-      var state = yield* this.getState(targetId[0])
-      if (state.clock === targetId[1]) {
-        yield* this.checkDeleteStoreForState(state)
-        yield* this.setState(state)
-      }
     }
 
     if (target != null && target.gc == null) {
@@ -143,23 +138,16 @@ class AbstractTransaction {
       var left = target.left != null ? yield* this.getOperation(target.left) : null
       var right = target.right != null ? yield* this.getOperation(target.right) : null
 
-      this.store.addToGarbageCollector(target, left, right)
+      this.store.addToGarbageCollector(target, left)
 
       // set here because it was deleted and/or gc'd
       yield* this.setOperation(target)
 
-      if (
-        left != null &&
-        left.left != null &&
-        this.store.addToGarbageCollector(left, yield* this.getOperation(left.left), target)
-      ) {
-        yield* this.setOperation(left)
-      }
-
+      // check if it is possible to add right to the gc (this delete can't be responsible for left being gc'd)
       if (
         right != null &&
         right.right != null &&
-        this.store.addToGarbageCollector(right, target, yield* this.getOperation(right.right))
+        this.store.addToGarbageCollector(right, target)
       ) {
         yield* this.setOperation(right)
       }
@@ -176,31 +164,45 @@ class AbstractTransaction {
       yield* this.deleteOperation(id)
       o = yield* this.getOperation(id)
     }
+    
+    // check to increase the state of the respective user
+    var state = yield* this.getState(id[0])
+    if (state.clock === id[1]) {
+      // also check if more expected operations were gc'd
+      yield* this.checkDeleteStoreForState(state)
+      // then set the state
+      yield* this.setState(state)
+    }
 
+    // remove gc'd op from the left op, if it exists
     if (o.left != null) {
       var left = yield* this.getOperation(o.left)
       left.right = o.right
       yield* this.setOperation(left)
     }
+    // remove gc'd op from the right op, if it exists
     if (o.right != null) {
       var right = yield* this.getOperation(o.right)
       right.left = o.left
       yield* this.setOperation(right)
     }
+    // remove gc'd op from parent, if it exists
     var parent = yield* this.getOperation(o.parent)
-    var setParent = false
+    var setParent = false // whether to save parent to the os
     if (Y.utils.compareIds(parent.start, o.id)) {
+      // gc'd op is the start
       setParent = true
       parent.start = o.right
     }
     if (Y.utils.compareIds(parent.end, o.id)) {
+      // gc'd op is the end
       setParent = true
       parent.end = o.left
     }
     if (setParent) {
       yield* this.setOperation(parent)
     }
-    yield* this.removeOperation(o.id)
+    yield* this.removeOperation(o.id) // actually remove it from the os
     yield* this.ds.markGarbageCollected(o.id)
   }
 }
@@ -272,10 +274,9 @@ class AbstractOperationStore {
     var os = this.os
     var self = this
     os.iterate(null, null, function (op) {
-      if (op.deleted && op.left != null && op.right != null) {
+      if (op.deleted && op.left != null) {
         var left = os.find(op.left)
-        var right = os.find(op.right)
-        self.addToGarbageCollector(op, left, right)
+        self.addToGarbageCollector(op, left)
       }
     })
   }
@@ -283,25 +284,21 @@ class AbstractOperationStore {
     Try to add to GC.
 
     TODO: rename this function
-
-    Only gc when
-       * creator of op is online
-       * left & right defined and both are from the same creator as op
-
+    
+    Rulez:
+    * Only gc if this user is online
+    * The most left element in a list must not be gc'd.
+      => There is at least one element in the list
+    
     returns true iff op was added to GC
   */
-  addToGarbageCollector (op, left, right) {
+  addToGarbageCollector (op, left) {
     if (
       op.gc == null &&
       op.deleted === true &&
       this.y.connector.isSynced &&
-      // (this.y.connector.connections[op.id[0]] != null || op.id[0] === this.y.connector.userId) &&
       left != null &&
-      right != null &&
       left.deleted &&
-      right.deleted &&
-      left.id[0] === op.id[0] &&
-      right.id[0] === op.id[0]
     ) {
       op.gc = true
       this.gc1.push(op.id)
@@ -343,23 +340,25 @@ class AbstractOperationStore {
     }
     return [this.userId, this.opClock++]
   }
+  /*
+    Apply a list of operations.
+    
+    * get a transaction
+    * check whether all Struct.*.requiredOps are in the OS
+    * check if it is an expected op (otherwise wait for it)
+    * check if was deleted, apply a delete operation after op was applied
+  */
   apply (ops) {
     for (var key in ops) {
       var o = ops[key]
-      if (o.gc == null) { // TODO: why do i get the same op twice?
-        if (o.deleted == null) {
-          var required = Y.Struct[o.struct].requiredOps(o)
-          this.whenOperationsExist(required, o)
-        } else {
-          throw new Error('Ops must not contain deleted field!')
-        }
-      } else {
-        throw new Error("Must not receive gc'd ops!")
-      }
+      var required = Y.Struct[o.struct].requiredOps(o)
+      this.whenOperationsExist(required, o)
     }
   }
-  // op is executed as soon as every operation requested is available.
-  // Note that Transaction can (and should) buffer requests.
+  /*
+    op is executed as soon as every operation requested is available.
+    Note that Transaction can (and should) buffer requests.
+  */
   whenOperationsExist (ids, op) {
     if (ids.length > 0) {
       let listener = {
@@ -390,7 +389,7 @@ class AbstractOperationStore {
     this.listenersByIdRequestPending = true
     var store = this
 
-    this.requestTransaction(function *() {
+    this.requestTransaction(function * () {
       var exeNow = store.listenersByIdExecuteNow
       store.listenersByIdExecuteNow = []
 
@@ -421,6 +420,13 @@ class AbstractOperationStore {
       }
     })
   }
+  /*
+    Actually execute an operation, when all expected operations are available.
+    If op is not yet expected, add it to the list of waiting operations.
+      
+    This will also try to execute waiting operations
+    (ops that were not expected yet), after it was applied
+  */
   * tryExecute (op) {
     if (op.struct === 'Delete') {
       yield* Y.Struct.Delete.execute.call(this, op)
@@ -439,6 +445,7 @@ class AbstractOperationStore {
           yield* this.addOperation(op)
           yield* this.store.operationAdded(this, op)
 
+          // Delete if DS says this is actually deleted
           if (this.store.ds.isDeleted(op.id)) {
             yield* Y.Struct['Delete'].execute.call(this, {struct: 'Delete', target: op.id})
           }
@@ -478,22 +485,6 @@ class AbstractOperationStore {
     if (t != null && !op.deleted) {
       yield* t._changed(transaction, Y.utils.copyObject(op))
     }
-  }
-  removeParentListener (id, f) {
-    var ls = this.parentListeners[id]
-    if (ls != null) {
-      this.parentListeners[id] = ls.filter(function (g) {
-        return (f !== g)
-      })
-    }
-  }
-  addParentListener (id, f) {
-    var ls = this.parentListeners[JSON.stringify(id)]
-    if (ls == null) {
-      ls = []
-      this.parentListeners[JSON.stringify(id)] = ls
-    }
-    ls.push(f)
   }
 }
 Y.AbstractOperationStore = AbstractOperationStore

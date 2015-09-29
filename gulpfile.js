@@ -28,8 +28,8 @@
     Specify which specs to use!
 
   Commands:
-    - build
-        Build this library
+    - build:deploy
+        Build this library for deployment (es6->es5, minified)
     - dev:browser
         Watch the ./src directory.
         Builds the library on changes.

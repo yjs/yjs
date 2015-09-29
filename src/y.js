@@ -37,14 +37,6 @@ class YConfig {
   }
   reconnect () {
     this.connector.reconnect()
-    /* TODO: maybe do this..
-    Promise.all([
-      this.db.garbageCollect(),
-      this.db.garbageCollect()
-    ]).then(() => {
-      this.connector.reconnect()
-    })
-    */
   }
   destroy () {
     this.connector.disconnect()

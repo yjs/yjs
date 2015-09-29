@@ -130,7 +130,7 @@ class AbstractConnector {
   }
   send (uid, message) {
     if (this.debug) {
-      console.log(`send ${this.userId} -> ${uid}: ${message.type}`, m);// eslint-disable-line
+      console.log(`send ${this.userId} -> ${uid}: ${message.type}`, m) // eslint-disable-line
     }
   }
   /*
@@ -141,7 +141,7 @@ class AbstractConnector {
       return
     }
     if (this.debug) {
-      console.log(`receive ${sender} -> ${this.userId}: ${m.type}`, m);// eslint-disable-line
+      console.log(`receive ${sender} -> ${this.userId}: ${m.type}`, m) // eslint-disable-line
     }
     if (m.type === 'sync step 1') {
       // TODO: make transaction, stream the ops
@@ -212,17 +212,19 @@ class AbstractConnector {
       this.y.db.apply(m.ops)
     }
   }
-  // Currently, the HB encodes operations as JSON. For the moment I want to keep it
-  // that way. Maybe we support encoding in the HB as XML in the future, but for now I don't want
-  // too much overhead. Y is very likely to get changed a lot in the future
-  //
-  // Because we don't want to encode JSON as string (with character escaping, wich makes it pretty much unreadable)
-  // we encode the JSON as XML.
-  //
-  // When the HB support encoding as XML, the format should look pretty much like this.
-  //
-  // does not support primitive values as array elements
-  // expects an ltx (less than xml) object
+  /*
+    Currently, the HB encodes operations as JSON. For the moment I want to keep it
+    that way. Maybe we support encoding in the HB as XML in the future, but for now I don't want
+    too much overhead. Y is very likely to get changed a lot in the future
+
+    Because we don't want to encode JSON as string (with character escaping, wich makes it pretty much unreadable)
+    we encode the JSON as XML.
+
+    When the HB support encoding as XML, the format should look pretty much like this.
+
+    does not support primitive values as array elements
+    expects an ltx (less than xml) object
+  */
   parseMessageFromXml (m) {
     function parseArray (node) {
       for (var n of node.children) {
@@ -256,14 +258,16 @@ class AbstractConnector {
     }
     parseObject(m)
   }
-  // encode message in xml
-  // we use string because Strophe only accepts an "xml-string"..
-  // So {a:4,b:{c:5}} will look like
-  // <y a="4">
-  //   <b c="5"></b>
-  // </y>
-  // m - ltx element
-  // json - Object
+  /*
+    encode message in xml
+    we use string because Strophe only accepts an "xml-string"..
+    So {a:4,b:{c:5}} will look like
+    <y a="4">
+      <b c="5"></b>
+    </y>
+    m - ltx element
+    json - Object
+  */
   encodeMessageToXml (msg, obj) {
     // attributes is optional
     function encodeObject (m, json) {

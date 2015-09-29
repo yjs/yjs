@@ -134,8 +134,9 @@
         if (value instanceof Y.utils.CustomType) {
           // construct a new type
           this.os.requestTransaction(function *() {
-            var type = yield* value.createType.call(this)
-            insert.opContent = type._model
+            var typeid = yield* value.createType.call(this)
+            var type = yield* this.getType(typeid)
+            insert.opContent = typeid
             insert.id = this.store.getNextOpId()
             yield* this.applyCreatedOperations([insert])
             resolve(type)
@@ -212,14 +213,15 @@
   Y.Map = new Y.utils.CustomType({
     class: YMap,
     createType: function * YMapCreator () {
+      var modelid = this.store.getNextOpId()
       var model = {
         map: {},
         struct: 'Map',
         type: 'Map',
-        id: this.store.getNextOpId()
+        id: modelid
       }
       yield* this.applyCreatedOperations([model])
-      return yield* this.createType(model)
+      return modelid
     },
     initType: function * YMapInitializer (os, model) { // eslint-disable-line
       return new YMap(os, model)

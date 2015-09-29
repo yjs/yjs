@@ -267,15 +267,16 @@
   Y.TextBind = new Y.utils.CustomType({
     class: YTextBind,
     createType: function * YTextBindCreator () {
+      var modelid = this.store.getNextOpId()
       var model = {
         start: null,
         end: null,
         struct: 'List',
         type: 'TextBind',
-        id: this.store.getNextOpId()
+        id: modelid
       }
       yield* this.applyCreatedOperations([model])
-      return yield* this.createType(model)
+      return modelid
     },
     initType: function * YTextBindInitializer (os, model) {
       var valArray = []

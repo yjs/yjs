@@ -122,7 +122,7 @@ Y.IndexedDB = (function () { // eslint-disable-line
         }
       })()
 
-      function handleTransactions (t) { // eslint-disable-line no-unused-vars
+      function handleTransactions (t) {
         var request = t.value
         if (t.done) {
           return

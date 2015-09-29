@@ -167,15 +167,16 @@
   Y.Array = new Y.utils.CustomType({
     class: YArray,
     createType: function * YArrayCreator () {
+      var modelid = this.store.getNextOpId()
       var model = {
         struct: 'List',
         type: 'Array',
         start: null,
         end: null,
-        id: this.store.getNextOpId()
+        id: modelid
       }
       yield* this.applyCreatedOperations([model])
-      return yield* this.createType(model)
+      return modelid
     },
     initType: function * YArrayInitializer (os, model) {
       var valArray = []
