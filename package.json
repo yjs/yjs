@@ -53,6 +53,7 @@
     "gulp-watch": "^4.3.5",
     "minimist": "^1.2.0",
     "pre-commit": "^1.1.1",
+    "promise-polyfill": "^2.1.0",
     "standard": "^5.2.2"
   }
 }

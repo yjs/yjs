@@ -298,7 +298,7 @@ class AbstractOperationStore {
       op.deleted === true &&
       this.y.connector.isSynced &&
       left != null &&
-      left.deleted &&
+      left.deleted
     ) {
       op.gc = true
       this.gc1.push(op.id)

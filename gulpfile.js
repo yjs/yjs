@@ -54,12 +54,13 @@ var concat = require('gulp-concat')
 var watch = require('gulp-watch')
 
 var options = minimist(process.argv.slice(2), {
-  string: ['export', 'name', 'testport', 'testfiles'],
+  string: ['export', 'name', 'testport', 'testfiles', 'regenerator'],
   default: {
     export: 'ignore',
     name: 'y.js',
     testport: '8888',
-    testfiles: 'src/**/*.js'
+    testfiles: 'src/**/*.js',
+    regenerator: process.version < 'v0.12'
   }
 })
 
@@ -92,6 +93,10 @@ var files = {
   }).concat(['build/**/*.spec.js']))
 }
 
+if (options.regenerator) {
+  files.test = polyfills.concat(files.test)
+}
+
 gulp.task('build:deploy', function () {
   gulp.src(files.src)
     .pipe(sourcemaps.init())
@@ -107,14 +112,17 @@ gulp.task('build:deploy', function () {
 })
 
 gulp.task('build:test', function () {
+  var babelOptions = {
+    loose: 'all',
+    modules: 'ignore',
+    experimental: true
+  }
+  if (!options.regenerator) {
+    babelOptions.blacklist = 'regenerator'
+  }
   gulp.src('src/**/*.js')
     .pipe(sourcemaps.init())
-    .pipe(babel({
-      loose: 'all',
-      modules: 'ignore',
-      blacklist: 'regenerator',
-      experimental: true
-    }))
+    .pipe(babel(babelOptions))
     .pipe(sourcemaps.write())
     .pipe(gulp.dest('build'))
 })
@@ -138,7 +146,11 @@ gulp.task('dev', ['build:test'], function () {
 })
 
 gulp.task('test', ['build:test'], function () {
-  return gulp.src(files.test)
+  var testfiles = files.test
+  if (typeof Promise === 'undefined') {
+    testfiles = ['./node_modules/promise-polyfill/Promise.js'].concat(testfiles)
+  }
+  return gulp.src(testfiles)
     .pipe(jasmine({
       verbose: true,
       includeStuckTrace: true
