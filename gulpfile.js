@@ -148,7 +148,7 @@ gulp.task('dev', ['build:test'], function () {
 gulp.task('test', ['build:test'], function () {
   var testfiles = files.test
   if (typeof Promise === 'undefined') {
-    testfiles = ['./node_modules/promise-polyfill/Promise.js'].concat(testfiles)
+    testfiles.concat(['src/polyfills.js'])
   }
   return gulp.src(testfiles)
     .pipe(jasmine({
