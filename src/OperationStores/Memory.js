@@ -70,7 +70,10 @@ class DeleteStore extends Y.utils.RBTree {
     }
     // can extend right?
     var next = n.next()
-    if (next !== null && Y.utils.compareIds([n.val.id[0], n.val.id[1] + n.val.len], next.val.id)) {
+    if (next !== null &&
+        Y.utils.compareIds([n.val.id[0], n.val.id[1] + n.val.len], next.val.id) &&
+        next.val.gc === false
+    ) {
       n.val.len = n.val.len + next.val.len
       super.delete(next.val.id)
     }
@@ -303,7 +306,12 @@ Y.Memory = (function () {
       this.ds = new DeleteStore()
     }
     logTable () {
-      this.os.logTable()
+      console.log('User: ', this.y.connector.userId, "=============================================") // eslint-disable-line
+      console.log("State Set (SS):", this.ss) // eslint-disable-line
+      console.log("Operation Store (OS):") // eslint-disable-line
+      this.os.logTable() // eslint-disable-line
+      console.log("Deletion Store (DS):") //eslint-disable-line
+      this.ds.logTable() // eslint-disable-line
     }
     requestTransaction (_makeGen, requestNow) {
       if (requestNow == null) { requestNow = false }

@@ -3,9 +3,9 @@
 
 /*
   Partial definition of a transaction
-  
+
   A transaction provides all the the async functionality on a database.
-  
+
   By convention, a transaction has the following properties:
   * ss for StateSet
   * os for OperationStore
@@ -136,17 +136,20 @@ class AbstractTransaction {
         }
       }
       var left = target.left != null ? yield* this.getOperation(target.left) : null
-      var right = target.right != null ? yield* this.getOperation(target.right) : null
 
       this.store.addToGarbageCollector(target, left)
 
       // set here because it was deleted and/or gc'd
       yield* this.setOperation(target)
 
-      // check if it is possible to add right to the gc (this delete can't be responsible for left being gc'd)
+      /*
+        Check if it is possible to add right to the gc.
+        Because this delete can't be responsible for left being gc'd,
+        we don't have to add left to the gc..
+      */
+      var right = target.right != null ? yield* this.getOperation(target.right) : null
       if (
         right != null &&
-        right.right != null &&
         this.store.addToGarbageCollector(right, target)
       ) {
         yield* this.setOperation(right)
@@ -164,7 +167,8 @@ class AbstractTransaction {
       yield* this.deleteOperation(id)
       o = yield* this.getOperation(id)
     }
-    
+
+    // TODO: I don't think that this is necessary!!
     // check to increase the state of the respective user
     var state = yield* this.getState(id[0])
     if (state.clock === id[1]) {
@@ -270,6 +274,10 @@ class AbstractOperationStore {
       garbageCollect()
     }
   }
+  stopGarbageCollector () {
+    this.gc1 = []
+    this.gc2 = []
+  }
   garbageCollectAfterSync () {
     var os = this.os
     var self = this
@@ -284,12 +292,12 @@ class AbstractOperationStore {
     Try to add to GC.
 
     TODO: rename this function
-    
+
     Rulez:
     * Only gc if this user is online
     * The most left element in a list must not be gc'd.
       => There is at least one element in the list
-    
+
     returns true iff op was added to GC
   */
   addToGarbageCollector (op, left) {
@@ -342,7 +350,7 @@ class AbstractOperationStore {
   }
   /*
     Apply a list of operations.
-    
+
     * get a transaction
     * check whether all Struct.*.requiredOps are in the OS
     * check if it is an expected op (otherwise wait for it)
@@ -423,7 +431,7 @@ class AbstractOperationStore {
   /*
     Actually execute an operation, when all expected operations are available.
     If op is not yet expected, add it to the list of waiting operations.
-      
+
     This will also try to execute waiting operations
     (ops that were not expected yet), after it was applied
   */

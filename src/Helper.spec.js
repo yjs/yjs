@@ -36,7 +36,7 @@ function wait (t) {
   return new Promise(function (resolve) {
     setTimeout(function () {
       resolve()
-    }, t)
+    }, t * 5)
   })
 }
 g.wait = wait
@@ -150,7 +150,11 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
         for (var i = 0; i < d.len; i++) {
           var o = yield* this.getOperation([d.id[0], d.id[1] + i])
           // gc'd or deleted
-          expect(o == null || o.deleted).toBeTruthy()
+          if (d.gc) {
+            expect(o).toBeUndefined()
+          } else {
+            expect(o.deleted).toBeTruthy()
+          }
         }
       }
     })
@@ -234,11 +238,11 @@ function logUsers (self) {
   if (self.constructor === Array) {
     self = {users: self}
   }
-  console.log('User 1: ', self.users[0].connector.userId) // eslint-disable-line
-  self.users[0].db.os.logTable() // eslint-disable-line
-  console.log('User 2: ', self.users[1].connector.userId) // eslint-disable-line
-  self.users[1].db.os.logTable() // eslint-disable-line
-  console.log('User 3: ', self.users[2].connector.userId) // eslint-disable-line
-  self.users[2].db.os.logTable() // eslint-disable-line
+  console.log('User 1: ', self.users[0].connector.userId, "=============================================") // eslint-disable-line
+  self.users[0].db.logTable() // eslint-disable-line
+  console.log('User 2: ', self.users[1].connector.userId, "=============================================") // eslint-disable-line
+  self.users[1].db.logTable() // eslint-disable-line
+  console.log('User 3: ', self.users[2].connector.userId, "=============================================") // eslint-disable-line
+  self.users[2].db.logTable() // eslint-disable-line
 }
 g.logUsers = logUsers

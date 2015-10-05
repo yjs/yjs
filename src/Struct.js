@@ -175,10 +175,11 @@ var Struct = {
         op.right = left.right
         left.right = op.id
 
-        // if left exists, and it is supposed to be gc'd. Remove it from the gc
+        /*/ if left exists, and it is supposed to be gc'd. Remove it from the gc
         if (left.gc != null) {
           this.store.removeFromGarbageCollector(left)
         }
+        */
 
         yield* this.setOperation(left)
       } else {

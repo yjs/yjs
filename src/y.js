@@ -24,7 +24,7 @@ class YConfig {
         map: {}
       }
       yield* this.addOperation(model)
-      var root = yield* this.createType(model)
+      var root = yield* this.getType(model.id)
       this.store.y.root = root
       callback()
     })

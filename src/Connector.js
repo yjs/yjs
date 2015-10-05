@@ -40,6 +40,7 @@ class AbstractConnector {
     this.broadcastedHB = false
     this.syncingClients = []
     this.whenSyncedListeners = []
+    this.y.db.stopGarbageCollector()
   }
   setUserId (userId) {
     this.userId = userId
