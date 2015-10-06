@@ -81,6 +81,7 @@ class AbstractTransaction {
   /*
     Get a type based on the id of its model.
     If it does not exist yes, create it.
+    TODO: delete type from store.initializedTypes[id] when corresponding id was deleted!
   */
   * getType (id) {
     var sid = JSON.stringify(id)

@@ -3,12 +3,12 @@
 
 ;(function () {
   class YMap {
-    constructor (os, model) {
+    constructor (os, model, contents, opContents) {
       this._model = model.id
       this.os = os
       this.map = Y.utils.copyObject(model.map)
-      this.contents = {}
-      this.opContents = {}
+      this.contents = contents
+      this.opContents = opContents
       this.eventHandler = new Y.utils.EventHandler(ops => {
         var userEvents = []
         for (var i in ops) {
@@ -84,12 +84,11 @@
       // return property.
       // if property does not exist, return null
       // if property is a type, return a promise
+      if (key == null) {
+        throw new Error('You must specify key!')
+      }
       if (this.opContents[key] == null) {
-        if (key == null) {
-          return Y.utils.copyObject(this.contents)
-        } else {
-          return this.contents[key]
-        }
+        return this.contents[key]
       } else {
         return new Promise((resolve) => {
           var oid = this.opContents[key]
@@ -97,6 +96,19 @@
             resolve(yield* this.getType(oid))
           })
         })
+      }
+    }
+    /*
+      If there is a primitive (not a custom type), then return it.
+      Returns all primitive values, if propertyName is specified!
+      Note: modifying the return value could result in inconsistencies!
+        -- so make sure to copy it first!
+    */
+    getPrimitive (key) {
+      if (key == null) {
+        return Y.utils.copyObject(this.contents)
+      } else {
+        return this.contents[key]
       }
     }
     delete (key) {
@@ -161,10 +173,48 @@
     unobserve (f) {
       this.eventHandler.removeEventListener(f)
     }
+    /*
+      Observe a path.
+
+      E.g.
+      ```
+      o.set('textarea', Y.TextBind)
+      o.observePath(['textarea'], function(t){
+        // is called whenever textarea is replaced
+        t.bind(textarea)
+      })
+
+      returns a Promise that contains a function that removes the observer from the path.
+    */
     observePath (path, f) {
       var self = this
-      if (path.length === 0) {
-        this.observe(f)
+      function observeProperty (events) {
+        // call f whenever path changes
+        for (var i = 0; i < events.length; i++) {
+          var event = events[i]
+          if (event.name === propertyName) {
+            // call this also for delete events!
+            var property = self.get(propertyName)
+            if (property instanceof Promise) {
+              property.then(f)
+            } else {
+              f(property)
+            }
+          }
+        }
+      }
+
+      if (path.length < 1) {
+        throw new Error('Path must contain at least one element!')
+      } else if (path.length === 1) {
+        var propertyName = path[0]
+        var property = self.get(propertyName)
+        if (property instanceof Promise) {
+          property.then(f)
+        } else {
+          f(property)
+        }
+        this.observe(observeProperty)
         return Promise.resolve(function () {
           self.unobserve(f)
         })
@@ -173,14 +223,15 @@
         var resetObserverPath = function () {
           var promise = self.get(path[0])
           if (!promise instanceof Promise) {
-            // its either not defined or a premitive value
+            // its either not defined or a primitive value
             promise = self.set(path[0], Y.Map)
           }
           return promise.then(function (map) {
             return map.observePath(path.slice(1), f)
           }).then(function (_deleteChildObservers) {
+            // update deleteChildObservers
             deleteChildObservers = _deleteChildObservers
-            return Promise.resolve()
+            return Promise.resolve() // Promise does not return anything
           })
         }
         var observer = function (events) {
@@ -191,11 +242,14 @@
               if (event.type === 'add' || event.type === 'update') {
                 resetObserverPath()
               }
+              // TODO: what about the delete events?
             }
           }
         }
         self.observe(observer)
         return resetObserverPath().then(
+          // this promise contains a function that deletes all the child observers
+          // and how to unobserve the observe from this object
           Promise.resolve(function () {
             deleteChildObservers()
             self.unobserve(observer)
@@ -223,8 +277,19 @@
       yield* this.applyCreatedOperations([model])
       return modelid
     },
-    initType: function * YMapInitializer (os, model) { // eslint-disable-line
-      return new YMap(os, model)
+    initType: function * YMapInitializer (os, model) {
+      var contents = {}
+      var opContents = {}
+      var map = model.map
+      for (var name in map) {
+        var op = yield* this.getOperation(map[name])
+        if (op.opContent != null) {
+          opContents[name] = op.opContent
+        } else {
+          contents[name] = op.content
+        }
+      }
+      return new YMap(os, model, contents, opContents)
     }
   })
 })()

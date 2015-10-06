@@ -2,7 +2,7 @@
 /* eslint-env browser,jasmine */
 
 var numberOfYMapTests = 100
-var repeatMapTeasts = 10
+var repeatMapTeasts = 1
 
 describe('Map Type', function () {
   var y1, y2, y3, y4, flushAll
@@ -117,6 +117,18 @@ describe('Map Type', function () {
       }
       done()
     }))
+    it('observePath properties', async(function * (done) {
+      y1.observePath(['map'], function (map) {
+        if (map != null) {
+          map.set('yay', 4)
+        }
+      })
+      yield y2.set('map', Y.Map)
+      yield flushAll()
+      var map = yield y3.get('map')
+      expect(map.get('yay')).toEqual(4)
+      done()
+    }))
     it('throws add & update & delete events (with type and primitive content)', async(function * (done) {
       var event
       yield flushAll()
@@ -170,7 +182,7 @@ describe('Map Type', function () {
     function compareMapValues (maps) {
       var firstMap
       for (var map of maps) {
-        var val = map.get()
+        var val = map.getPrimitive()
         if (firstMap == null) {
           firstMap = val
         } else {
