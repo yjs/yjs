@@ -4,6 +4,8 @@
 class DeleteStore extends Y.utils.RBTree {
   constructor () {
     super()
+    // TODO: debugggg
+    this.mem = []
   }
   isDeleted (id) {
     var n = this.findNodeWithUpperBound(id)
@@ -14,8 +16,10 @@ class DeleteStore extends Y.utils.RBTree {
 
     returns the delete node
   */
-  * markGarbageCollected (id) {
+  markGarbageCollected (id) {
+    this.mem.push({"gc": id})
     var n = this.markDeleted(id)
+    this.mem.pop()
     if (!n.val.gc) {
       if (n.val.id[1] < id[1]) {
         // un-extend left
@@ -30,16 +34,24 @@ class DeleteStore extends Y.utils.RBTree {
       }
       // set gc'd
       n.val.gc = true
-
-      // can extend left?
       var prev = n.prev()
-      if (prev != null && prev.val.gc) {
+      var next = n.next()
+      // can extend left?
+      if (
+        prev != null &&
+        prev.val.gc &&
+        Y.utils.compareIds([prev.val.id[0], prev.val.id[1] + prev.val.len], n.val.id)
+      ) {
         prev.val.len += n.val.len
         super.delete(n.val.id)
+        n = prev
       }
       // can extend right?
-      var next = n.next()
-      if (next != null && next.val.gc) {
+      if (
+        next != null &&
+        next.val.gc &&
+        Y.utils.compareIds([n.val.id[0], n.val.id[1] + n.val.len], next.val.id)
+      ) {
         n.val.len += next.val.len
         super.delete(next.val.id)
       }
@@ -52,12 +64,13 @@ class DeleteStore extends Y.utils.RBTree {
     returns the delete node
   */
   markDeleted (id) {
+    this.mem.push({"del": id})
     var n = this.findNodeWithUpperBound(id)
     if (n != null && n.val.id[0] === id[0]) {
       if (n.val.id[1] <= id[1] && id[1] < n.val.id[1] + n.val.len) {
         // already deleted
         return n
-      } else if (n.val.id[1] + n.val.len === id[1]) {
+      } else if (n.val.id[1] + n.val.len === id[1] && !n.val.gc) {
         // can extend existing deletion
         n.val.len++
       } else {
@@ -70,9 +83,10 @@ class DeleteStore extends Y.utils.RBTree {
     }
     // can extend right?
     var next = n.next()
-    if (next !== null &&
-        Y.utils.compareIds([n.val.id[0], n.val.id[1] + n.val.len], next.val.id) &&
-        next.val.gc === false
+    if (
+      next !== null &&
+      Y.utils.compareIds([n.val.id[0], n.val.id[1] + n.val.len], next.val.id) &&
+      !next.val.gc
     ) {
       n.val.len = n.val.len + next.val.len
       super.delete(next.val.id)

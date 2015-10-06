@@ -1,8 +1,8 @@
 /* global createUsers, wait, Y, compareAllUsers, getRandomNumber, applyRandomTransactions, async, garbageCollectAllUsers, describeManyTimes */
 /* eslint-env browser,jasmine */
 
-var numberOfYArrayTests = 10
-var repeatArrayTests = 300
+var numberOfYArrayTests = 1000
+var repeatArrayTests = 5
 
 describe('Array Type', function () {
   var y1, y2, y3, yconfig1, yconfig2, yconfig3, flushAll

@@ -36,7 +36,7 @@ function wait (t) {
   return new Promise(function (resolve) {
     setTimeout(function () {
       resolve()
-    }, t * 5)
+    }, t)
   })
 }
 g.wait = wait

@@ -207,7 +207,7 @@ class AbstractTransaction {
       yield* this.setOperation(parent)
     }
     yield* this.removeOperation(o.id) // actually remove it from the os
-    yield* this.ds.markGarbageCollected(o.id)
+    this.ds.markGarbageCollected(o.id)
   }
 }
 Y.AbstractTransaction = AbstractTransaction
