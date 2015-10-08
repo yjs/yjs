@@ -55,6 +55,9 @@ class AbstractConnector {
       this.currentSyncTarget = null
       this.findNextSyncTarget()
     }
+    this.syncingClients = this.syncingClients.filter(function (cli) {
+      return cli !== user
+    })
     for (var f of this.userEventListeners) {
       f({
         action: 'userLeft',
@@ -142,7 +145,7 @@ class AbstractConnector {
       return
     }
     if (this.debug) {
-      console.log(`receive ${sender} -> ${this.userId}: ${m.type}`, m) // eslint-disable-line
+      console.log(`receive ${sender} -> ${this.userId}: ${m.type}`, JSON.parse(JSON.stringify(m))) // eslint-disable-line
     }
     if (m.type === 'sync step 1') {
       // TODO: make transaction, stream the ops
@@ -168,6 +171,7 @@ class AbstractConnector {
             conn.send(sender, {
               type: 'sync done'
             })
+            conn._setSyncedWith(sender)
           }, conn.syncingClientDuration)
         } else {
           conn.send(sender, {
@@ -199,11 +203,7 @@ class AbstractConnector {
         }
       })
     } else if (m.type === 'sync done') {
-      this.connections[sender].isSynced = true
-      if (sender === this.currentSyncTarget) {
-        this.currentSyncTarget = null
-        this.findNextSyncTarget()
-      }
+      this._setSyncedWith(sender)
     } else if (m.type === 'update') {
       if (this.forwardToSyncingClients) {
         for (var client of this.syncingClients) {
@@ -211,6 +211,16 @@ class AbstractConnector {
         }
       }
       this.y.db.apply(m.ops)
+    }
+  }
+  _setSyncedWith (user) {
+    var conn = this.connections[user]
+    if (conn != null) {
+      conn.isSynced = true
+    }
+    if (user === this.currentSyncTarget) {
+      this.currentSyncTarget = null
+      this.findNextSyncTarget()
     }
   }
   /*

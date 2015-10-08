@@ -46,7 +46,7 @@ describe('Memory', function () {
       ds.markGarbageCollected(['291', 2])
       expect(ds.toDeleteSet()).toEqual({'291': [[2, 1, true]], '293': [[0, 1, true], [1, 1, false]]})
     })
-    it('Debug #2', function () {
+    it('Debug #3', function () {
       ds.markDeleted(['581', 0])
       ds.markDeleted(['581', 1])
       ds.markDeleted(['580', 0])
@@ -62,7 +62,7 @@ describe('Memory', function () {
       ds.markGarbageCollected(['580', 1])
       expect(ds.toDeleteSet()).toEqual({'580': [[0, 1, false], [1, 1, true], [2, 1, false]], '581': [[0, 3, true]]})
     })
-    it('Debug #2', function () {
+    it('Debug #4', function () {
       ds.markDeleted(['544', 0])
       ds.markDeleted(['543', 2])
       ds.markDeleted(['544', 0])
@@ -81,5 +81,20 @@ describe('Memory', function () {
       ds.markGarbageCollected(['543', 3])
       expect(ds.toDeleteSet()).toEqual({'543': [[2, 3, true]], '544': [[0, 1, true], [1, 1, false], [2, 1, true]], '545': [[1, 1, false]]})
     })
+    it('Debug #5', async(function * (done) {
+      var store = new Y.Memory(null, {
+        db: {
+          name: 'Memory',
+          gcTimeout: -1
+        }
+      })
+      store.requestTransaction(function * () {
+        yield* this.applyDeleteSet({'16': [[1, 2, false]], '17': [[0, 1, true], [1, 3, false]]})
+        expect(this.ds.toDeleteSet()).toEqual({'16': [[1, 2, false]], '17': [[0, 1, true], [1, 3, false]]})
+        yield* this.applyDeleteSet({'16': [[1, 2, false]], '17': [[0, 4, true]]})
+        expect(this.ds.toDeleteSet()).toEqual({'16': [[1, 2, false]], '17': [[0, 4, true]]})
+        done()
+      })
+    }))
   })
 })

@@ -5,7 +5,8 @@ class DeleteStore extends Y.utils.RBTree {
   constructor () {
     super()
     // TODO: debugggg
-    this.mem = []
+    this.mem = [];
+    this.memDS = [];
   }
   isDeleted (id) {
     var n = this.findNodeWithUpperBound(id)
@@ -17,7 +18,7 @@ class DeleteStore extends Y.utils.RBTree {
     returns the delete node
   */
   markGarbageCollected (id) {
-    this.mem.push({"gc": id})
+    this.mem.push({"gc": id});
     var n = this.markDeleted(id)
     this.mem.pop()
     if (!n.val.gc) {
@@ -64,7 +65,7 @@ class DeleteStore extends Y.utils.RBTree {
     returns the delete node
   */
   markDeleted (id) {
-    this.mem.push({"del": id})
+    this.mem.push({"del": id});
     var n = this.findNodeWithUpperBound(id)
     if (n != null && n.val.id[0] === id[0]) {
       if (n.val.id[1] <= id[1] && id[1] < n.val.id[1] + n.val.len) {
@@ -124,6 +125,8 @@ Y.Memory = (function () {
       this.ss = store.ss
       this.os = store.os
       this.ds = store.ds
+
+      this.memDS = store.ds.memDS; // TODO: remove
     }
     * checkDeleteStoreForState (state) {
       var n = this.ds.findNodeWithUpperBound([state.user, state.clock])
@@ -145,6 +148,12 @@ Y.Memory = (function () {
           deletions.push([user, c, gc])
         }
       }
+
+      var memAction = {
+        before: yield* this.getDeleteSet(),
+        applied: JSON.parse(JSON.stringify(ds))
+      };
+
       for (var user in ds) {
         var dv = ds[user]
         var pos = 0
@@ -206,6 +215,8 @@ Y.Memory = (function () {
           yield* this.deleteOperation(id)
         }
       }
+      memAction.after = yield* this.getDeleteSet();
+      this.memDS.push(memAction);
     }
     * isDeleted (id) {
       return this.ds.isDeleted(id)

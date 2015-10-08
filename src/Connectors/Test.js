@@ -58,25 +58,36 @@ class Test extends Y.AbstractConnector {
     this.setUserId((userIdCounter++) + '')
     globalRoom.addUser(this)
     this.globalRoom = globalRoom
+    this.syncingClientDuration = 0
   }
   receiveMessage (sender, m) {
     super.receiveMessage(sender, JSON.parse(JSON.stringify(m)))
   }
   send (userId, message) {
-    globalRoom.buffers[userId].push(JSON.parse(JSON.stringify([this.userId, message])))
+    var buffer = globalRoom.buffers[userId]
+    if (buffer != null) {
+      buffer.push(JSON.parse(JSON.stringify([this.userId, message])))
+    }
   }
   broadcast (message) {
     for (var key in globalRoom.buffers) {
       globalRoom.buffers[key].push(JSON.parse(JSON.stringify([this.userId, message])))
     }
   }
+  isDisconnected () {
+    return globalRoom.users[this.userId] == null
+  }
   reconnect () {
-    globalRoom.addUser(this)
-    super.reconnect()
+    if (this.isDisconnected()) {
+      globalRoom.addUser(this)
+      super.reconnect()
+    }
   }
   disconnect () {
-    globalRoom.removeUser(this.userId)
-    super.disconnect()
+    if (!this.isDisconnected()) {
+      globalRoom.removeUser(this.userId)
+      super.disconnect()
+    }
   }
   flush () {
     var buff = globalRoom.buffers[this.userId]
@@ -107,6 +118,9 @@ class Test extends Y.AbstractConnector {
       wait(0).then(nextFlush)
     })
   }
+  /*
+    Flushes an operation for some user..
+  */
   flushOne () {
     flushOne()
   }

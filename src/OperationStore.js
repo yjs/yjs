@@ -158,57 +158,55 @@ class AbstractTransaction {
     }
   }
   * garbageCollectOperation (id) {
-    var o = yield* this.getOperation(id)
-
-    if (o == null) {
-      return
-    }
-
-    if (!o.deleted) {
-      yield* this.deleteOperation(id)
-      o = yield* this.getOperation(id)
-    }
-
-    // TODO: I don't think that this is necessary!!
     // check to increase the state of the respective user
     var state = yield* this.getState(id[0])
     if (state.clock === id[1]) {
+      state.clock++
       // also check if more expected operations were gc'd
       yield* this.checkDeleteStoreForState(state)
       // then set the state
       yield* this.setState(state)
     }
+    this.ds.markGarbageCollected(id)
 
-    // remove gc'd op from the left op, if it exists
-    if (o.left != null) {
-      var left = yield* this.getOperation(o.left)
-      left.right = o.right
-      yield* this.setOperation(left)
+    // if op exists, then clean that mess up..
+    var o = yield* this.getOperation(id)
+    if (o != null) {
+      if (!o.deleted) {
+        yield* this.deleteOperation(id)
+        o = yield* this.getOperation(id)
+      }
+
+      // remove gc'd op from the left op, if it exists
+      if (o.left != null) {
+        var left = yield* this.getOperation(o.left)
+        left.right = o.right
+        yield* this.setOperation(left)
+      }
+      // remove gc'd op from the right op, if it exists
+      if (o.right != null) {
+        var right = yield* this.getOperation(o.right)
+        right.left = o.left
+        yield* this.setOperation(right)
+      }
+      // remove gc'd op from parent, if it exists
+      var parent = yield* this.getOperation(o.parent)
+      var setParent = false // whether to save parent to the os
+      if (Y.utils.compareIds(parent.start, o.id)) {
+        // gc'd op is the start
+        setParent = true
+        parent.start = o.right
+      }
+      if (Y.utils.compareIds(parent.end, o.id)) {
+        // gc'd op is the end
+        setParent = true
+        parent.end = o.left
+      }
+      if (setParent) {
+        yield* this.setOperation(parent)
+      }
+      yield* this.removeOperation(o.id) // actually remove it from the os
     }
-    // remove gc'd op from the right op, if it exists
-    if (o.right != null) {
-      var right = yield* this.getOperation(o.right)
-      right.left = o.left
-      yield* this.setOperation(right)
-    }
-    // remove gc'd op from parent, if it exists
-    var parent = yield* this.getOperation(o.parent)
-    var setParent = false // whether to save parent to the os
-    if (Y.utils.compareIds(parent.start, o.id)) {
-      // gc'd op is the start
-      setParent = true
-      parent.start = o.right
-    }
-    if (Y.utils.compareIds(parent.end, o.id)) {
-      // gc'd op is the end
-      setParent = true
-      parent.end = o.left
-    }
-    if (setParent) {
-      yield* this.setOperation(parent)
-    }
-    yield* this.removeOperation(o.id) // actually remove it from the os
-    this.ds.markGarbageCollected(o.id)
   }
 }
 Y.AbstractTransaction = AbstractTransaction
@@ -276,8 +274,20 @@ class AbstractOperationStore {
     }
   }
   stopGarbageCollector () {
-    this.gc1 = []
-    this.gc2 = []
+    var self = this
+    return new Promise(function (resolve) {
+      self.requestTransaction(function * () {
+        var ungc = self.gc1.concat(self.gc2)
+        self.gc1 = []
+        self.gc2 = []
+        for (var i in ungc) {
+          var op = yield* this.getOperation(ungc[i])
+          delete op.gc
+          yield* this.setOperation(op)
+        }
+        resolve()
+      })
+    })
   }
   garbageCollectAfterSync () {
     var os = this.os
@@ -307,7 +317,7 @@ class AbstractOperationStore {
       op.deleted === true &&
       this.y.connector.isSynced &&
       left != null &&
-      left.deleted
+      left.deleted === true
     ) {
       op.gc = true
       this.gc1.push(op.id)

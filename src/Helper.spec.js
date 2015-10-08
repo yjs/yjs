@@ -36,7 +36,7 @@ function wait (t) {
   return new Promise(function (resolve) {
     setTimeout(function () {
       resolve()
-    }, t)
+    }, t * 7)
   })
 }
 g.wait = wait
@@ -71,29 +71,40 @@ g.applyRandomTransactions = async(function * applyRandomTransactions (users, obj
     var f = getRandom(transactions)
     f(root)
   }
-  function applyTransactions (relAmount) {
+  function * applyTransactions (relAmount) {
     for (var i = 0; i < numberOfTransactions * relAmount + 1; i++) {
       var r = Math.random()
       if (r >= 0.9) {
         // 10% chance to flush
-        users[0].connector.flushOne()
-      } else {
+        users[0].connector.flushOne() // flushes for some user.. (not necessarily 0)
+      } else if (r >= 0.1) {
+        // 80% chance to create operation
         randomTransaction(getRandom(objects))
+      } else {
+        // 10% chance to disconnect/reconnect
+        var u = getRandom(users)
+        if (u.connector.isDisconnected()) {
+          u.reconnect()
+        } else {
+          u.disconnect()
+        }
       }
-      wait()
+      yield wait()
     }
   }
-  applyTransactions(0.5)
+  yield* applyTransactions(0.5)
   yield users[0].connector.flushAll()
   yield g.garbageCollectAllUsers(users)
   yield wait()
   users[0].disconnect()
   yield wait()
-  applyTransactions(0.5)
+  yield* applyTransactions(0.5)
   yield users[0].connector.flushAll()
+  yield wait(50)
+  for (var u in users) {
+    users[u].reconnect()
+  }
   yield wait(100)
-  users[0].reconnect()
-  yield wait()
   yield users[0].connector.flushAll()
 })
 
