@@ -90,7 +90,7 @@ class AbstractConnector {
   // Execute a function _when_ we are connected.
   // If not connected, wait until connected
   whenSynced (f) {
-    if (this.isSynced === true) {
+    if (this.isSynced) {
       f()
     } else {
       this.whenSyncedListeners.push(f)
@@ -125,6 +125,7 @@ class AbstractConnector {
       })
     } else {
       this.isSynced = true
+      // call when synced listeners
       for (var f of this.whenSyncedListeners) {
         f()
       }
@@ -171,13 +172,13 @@ class AbstractConnector {
             conn.send(sender, {
               type: 'sync done'
             })
-            conn._setSyncedWith(sender)
           }, conn.syncingClientDuration)
         } else {
           conn.send(sender, {
             type: 'sync done'
           })
         }
+        conn._setSyncedWith(sender)
       })
     } else if (m.type === 'sync step 2') {
       let conn = this

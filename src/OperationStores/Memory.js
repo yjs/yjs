@@ -186,7 +186,7 @@ Y.Memory = (function () {
               if (d[2] && !n.gc) {
                 // d marks as gc'd but n does not
                 // then delete either way
-                createDeletions(user, d[0], diff, d[2])
+                createDeletions(user, d[0], Math.min(diff, d[1]), d[2])
               }
             }
             if (d[1] <= diff) {
@@ -228,7 +228,15 @@ Y.Memory = (function () {
       return op
     }
     * addOperation (op) {
-      this.os.add(op)
+      var n = this.os.add(op)
+      return function () {
+        if (n != null) {
+          n = n.next()
+          return n != null ? n.val : null
+        } else {
+          return null
+        }
+      }
     }
     * getOperation (id) {
       return this.os.find(id)
@@ -286,12 +294,14 @@ Y.Memory = (function () {
       var res = []
       for (var op of ops) {
         res.push(yield* this.makeOperationReady(startSS, op))
+        /*
         var state = startSS[op.id[0]] || 0
         if ((state === op.id[1]) || true) {
-          startSS[op.id[0]] = state + 1
+          startSS[op.id[0]] = op.id[1] + 1
         } else {
           throw new Error('Unexpected operation!')
         }
+        */
       }
       return res
     }
@@ -300,15 +310,17 @@ Y.Memory = (function () {
       // instead of ss, you could use currSS (a ss that increments when you add an operation)
       op = Y.utils.copyObject(op)
       var o = op
+
       while (o.right != null) {
         // while unknown, go to the right
-        if (o.right[1] < (ss[o.right[0]] || 0)) {
+        if (o.right[1] < (ss[o.right[0]] || 0)) { // && !Y.utils.compareIds(op.id, o.origin)
           break
         }
         o = yield* this.getOperation(o.right)
       }
-      // new right is not gc'd and known according to the ss
+      // new right is known according to the ss
       op.right = o.right
+      /*
       while (o.left != null) {
         // while unknown, go to the right
         if (o.left[1] < (ss[o.left[0]] || 0)) {
@@ -316,8 +328,9 @@ Y.Memory = (function () {
         }
         o = yield* this.getOperation(o.left)
       }
-      // new left is not gc'd and known according to the ss
+      // new left is known according to the ss
       op.left = o.left
+      */
       return op
     }
   }

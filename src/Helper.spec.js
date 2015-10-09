@@ -36,7 +36,7 @@ function wait (t) {
   return new Promise(function (resolve) {
     setTimeout(function () {
       resolve()
-    }, t * 7)
+    }, t)
   })
 }
 g.wait = wait
@@ -109,6 +109,7 @@ g.applyRandomTransactions = async(function * applyRandomTransactions (users, obj
 })
 
 g.garbageCollectAllUsers = async(function * garbageCollectAllUsers (users) {
+  return yield wait(100)// TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   for (var i in users) {
     yield users[i].db.garbageCollect()
     yield users[i].db.garbageCollect()

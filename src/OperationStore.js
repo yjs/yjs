@@ -41,6 +41,7 @@
   * addOperation(op)
     - add an operation to the database.
       This may only be called once for every op.id
+      Must return a function that returns the next operation in the database (ordered by id)
   * getOperation(id)
   * removeOperation(id)
     - remove an operation from the database. This is called when an operation
@@ -105,9 +106,9 @@ class AbstractTransaction {
     for (var i = 0; i < ops.length; i++) {
       var op = ops[i]
       yield* this.store.tryExecute.call(this, op)
-      send.push(Y.utils.copyObject(Y.Struct[op.struct].encode(op)))
+      send.push(Y.Struct[op.struct].encode(op))
     }
-    if (this.store.y.connector.broadcastedHB) {
+    if (!this.store.y.connector.isDisconnected()) {
       this.store.y.connector.broadcast({
         type: 'update',
         ops: send
@@ -246,7 +247,6 @@ class AbstractOperationStore {
     // wont be kept in memory.
     this.initializedTypes = {}
     this.whenUserIdSetListener = null
-    this.waitingOperations = new Y.utils.RBTree()
 
     this.gc1 = [] // first stage
     this.gc2 = [] // second stage -> after that, remove the op
@@ -441,56 +441,39 @@ class AbstractOperationStore {
   }
   /*
     Actually execute an operation, when all expected operations are available.
-    If op is not yet expected, add it to the list of waiting operations.
-
-    This will also try to execute waiting operations
-    (ops that were not expected yet), after it was applied
   */
   * tryExecute (op) {
     if (op.struct === 'Delete') {
       yield* Y.Struct.Delete.execute.call(this, op)
-    } else {
-      while (op != null) {
-        var state = yield* this.getState(op.id[0])
-        if (op.id[1] === state.clock) {
-          // either its a new operation (1. case), or it is an operation that was deleted, but is not yet in the OS
-          if (op.id[1] === state.clock) {
-            state.clock++
-            yield* this.checkDeleteStoreForState(state)
-            yield* this.setState(state)
-          }
+    } else if ((yield* this.getOperation(op.id)) == null) {
+      yield* Y.Struct[op.struct].execute.call(this, op)
+      var next = yield* this.addOperation(op)
+      yield* this.store.operationAdded(this, op, next)
 
-          yield* Y.Struct[op.struct].execute.call(this, op)
-          yield* this.addOperation(op)
-          yield* this.store.operationAdded(this, op)
-
-          // Delete if DS says this is actually deleted
-          if (this.store.ds.isDeleted(op.id)) {
-            yield* Y.Struct['Delete'].execute.call(this, {struct: 'Delete', target: op.id})
-          }
-
-          // find next operation to execute
-          op = this.store.waitingOperations.find([op.id[0], state.clock])
-          if (op != null) {
-            this.store.waitingOperations.delete([op.id[0], state.clock])
-          }
-        } else {
-          if (op.id[1] > state.clock) {
-            // has to be executed at some point later
-            this.store.waitingOperations.add(op)
-          }
-          op = null
-        }
+      // Delete if DS says this is actually deleted
+      if (this.store.ds.isDeleted(op.id)) {
+        yield* Y.Struct['Delete'].execute.call(this, {struct: 'Delete', target: op.id})
       }
     }
   }
   // called by a transaction when an operation is added
-  * operationAdded (transaction, op) {
+  * operationAdded (transaction, op, next) {
+    // increase SS
+    var o = op
+    var state = yield* transaction.getState(op.id[0])
+    while (o != null && o.id[1] === state.clock && op.id[0] === o.id[0]) {
+      // either its a new operation (1. case), or it is an operation that was deleted, but is not yet in the OS
+      state.clock++
+      yield* transaction.checkDeleteStoreForState(state)
+      o = next()
+    }
+    yield* transaction.setState(state)
+
+    // notify whenOperation listeners (by id)
     var sid = JSON.stringify(op.id)
     var l = this.listenersById[sid]
     delete this.listenersById[sid]
 
-    // notify whenOperation listeners (by id)
     if (l != null) {
       for (var key in l) {
         var listener = l[key]

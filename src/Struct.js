@@ -80,6 +80,9 @@ var Struct = {
       if (op.right != null) {
         ids.push(op.right)
       }
+      if (op.origin != null && !Y.utils.compareIds(op.left, op.origin)) {
+        ids.push(op.origin)
+      }
       // if (op.right == null && op.left == null) {
       ids.push(op.parent)
 
@@ -174,12 +177,6 @@ var Struct = {
         left = yield* this.getOperation(op.left)
         op.right = left.right
         left.right = op.id
-
-        /*/ if left exists, and it is supposed to be gc'd. Remove it from the gc
-        if (left.gc != null) {
-          this.store.removeFromGarbageCollector(left)
-        }
-        */
 
         yield* this.setOperation(left)
       } else {

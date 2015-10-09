@@ -1,4 +1,4 @@
-/* global Y */
+/* global Y, async */
 /* eslint-env browser,jasmine,console */
 
 describe('Memory', function () {
@@ -93,6 +93,21 @@ describe('Memory', function () {
         expect(this.ds.toDeleteSet()).toEqual({'16': [[1, 2, false]], '17': [[0, 1, true], [1, 3, false]]})
         yield* this.applyDeleteSet({'16': [[1, 2, false]], '17': [[0, 4, true]]})
         expect(this.ds.toDeleteSet()).toEqual({'16': [[1, 2, false]], '17': [[0, 4, true]]})
+        done()
+      })
+    }))
+    it('Debug #6', async(function * (done) {
+      var store = new Y.Memory(null, {
+        db: {
+          name: 'Memory',
+          gcTimeout: -1
+        }
+      })
+      store.requestTransaction(function * () {
+        yield* this.applyDeleteSet({'40': [[0, 3, false]]})
+        expect(this.ds.toDeleteSet()).toEqual({'40': [[0, 3, false]]})
+        yield* this.applyDeleteSet({'39': [[2, 2, false]], '40': [[0, 1, true], [1, 2, false]], '41': [[2, 1, false]]})
+        expect(this.ds.toDeleteSet()).toEqual({'39': [[2, 2, false]], '40': [[0, 1, true], [1, 2, false]], '41': [[2, 1, false]]})
         done()
       })
     }))
