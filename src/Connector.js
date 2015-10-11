@@ -30,6 +30,7 @@ class AbstractConnector {
     this.forwardToSyncingClients = opts.forwardToSyncingClients !== false
     this.debug = opts.debug === true
     this.broadcastedHB = false
+    this.syncStep2 = Promise.resolve()
   }
   reconnect () {
   }
@@ -184,27 +185,34 @@ class AbstractConnector {
       let conn = this
       var broadcastHB = !this.broadcastedHB
       this.broadcastedHB = true
-      this.y.db.requestTransaction(function * () {
-        yield* this.applyDeleteSet(m.deleteSet)
-        this.store.apply(m.os)
-      })
-      this.y.db.requestTransaction(function * () {
-        var ops = yield* this.getOperations(m.stateSet)
-        if (ops.length > 0) {
-          m = {
-            type: 'update',
-            ops: ops
-          }
-          if (!broadcastHB || true) { // TODO: consider to broadcast here..
-            conn.send(sender, m)
-          } else {
-            // broadcast only once!
-            conn.broadcast(m)
-          }
-        }
+      var db = this.y.db
+      this.syncStep2 = new Promise(function (resolve) {
+        db.requestTransaction(function * () {
+          yield* this.applyDeleteSet(m.deleteSet)
+          this.store.apply(m.os)
+          db.requestTransaction(function * () {
+            var ops = yield* this.getOperations(m.stateSet)
+            if (ops.length > 0) {
+              m = {
+                type: 'update',
+                ops: ops
+              }
+              if (!broadcastHB) { // TODO: consider to broadcast here..
+                conn.send(sender, m)
+              } else {
+                // broadcast only once!
+                conn.broadcast(m)
+              }
+            }
+            resolve()
+          })
+        })
       })
     } else if (m.type === 'sync done') {
-      this._setSyncedWith(sender)
+      var self = this
+      this.syncStep2.then(function () {
+        self._setSyncedWith(sender)
+      })
     } else if (m.type === 'update') {
       if (this.forwardToSyncingClients) {
         for (var client of this.syncingClients) {

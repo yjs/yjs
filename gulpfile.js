@@ -120,7 +120,7 @@ gulp.task('build:test', function () {
   if (!options.regenerator) {
     babelOptions.blacklist = 'regenerator'
   }
-  gulp.src('src/**/*.js')
+  return gulp.src('src/**/*.js')
     .pipe(sourcemaps.init())
     .pipe(babel(babelOptions))
     .pipe(sourcemaps.write())

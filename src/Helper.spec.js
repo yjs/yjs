@@ -18,7 +18,7 @@ g.g = g
 
 g.YConcurrency_TestingMode = true
 
-jasmine.DEFAULT_TIMEOUT_INTERVAL = 5000
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000
 
 g.describeManyTimes = function describeManyTimes (times, name, f) {
   for (var i = 0; i < times; i++) {
@@ -31,12 +31,12 @@ g.describeManyTimes = function describeManyTimes (times, name, f) {
 */
 function wait (t) {
   if (t == null) {
-    t = 5
+    t = 10
   }
   return new Promise(function (resolve) {
     setTimeout(function () {
       resolve()
-    }, t)
+    }, t * 2)
   })
 }
 g.wait = wait
@@ -110,10 +110,12 @@ g.applyRandomTransactions = async(function * applyRandomTransactions (users, obj
 
 g.garbageCollectAllUsers = async(function * garbageCollectAllUsers (users) {
   return yield wait(100)// TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  /*
   for (var i in users) {
     yield users[i].db.garbageCollect()
     yield users[i].db.garbageCollect()
   }
+  */
 })
 
 g.compareAllUsers = async(function * compareAllUsers (users) {
@@ -239,7 +241,7 @@ function async (makeGenerator) {
     try {
       return handle(generator.next())
     } catch (ex) {
-      generator.throw(ex) // TODO: check this out
+      generator.throw(ex)
       // return Promise.reject(ex)
     }
   }

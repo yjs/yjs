@@ -2,7 +2,7 @@
 /* eslint-env browser,jasmine */
 
 var numberOfYArrayTests = 10
-var repeatArrayTests = 1000
+var repeatArrayTests = 1
 
 describe('Array Type', function () {
   var y1, y2, y3, yconfig1, yconfig2, yconfig3, flushAll
