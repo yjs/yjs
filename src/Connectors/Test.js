@@ -1,4 +1,4 @@
-/* global getRandom, Y, wait */
+/* global getRandom, Y, wait, async */
 'use strict'
 
 var globalRoom = {
@@ -82,19 +82,25 @@ class Test extends Y.AbstractConnector {
       globalRoom.addUser(this)
       super.reconnect()
     }
+    return this.flushAll()
   }
   disconnect () {
     if (!this.isDisconnected()) {
       globalRoom.removeUser(this.userId)
       super.disconnect()
     }
+    return wait()
   }
   flush () {
-    var buff = globalRoom.buffers[this.userId]
-    while (buff.length > 0) {
-      var m = buff.shift()
-      this.receiveMessage(m[0], m[1])
-    }
+    var self = this
+    return async(function * () {
+      yield wait()
+      while (globalRoom.buffers[self.userId].length > 0) {
+        var m = globalRoom.buffers[self.userId].shift()
+        this.receiveMessage(m[0], m[1])
+        yield wait()
+      }
+    })
   }
   flushAll () {
     return new Promise(function (resolve) {
@@ -115,7 +121,7 @@ class Test extends Y.AbstractConnector {
       }
       // in the case that there are
       // still actions that want to be performed
-      wait(0).then(nextFlush)
+      wait().then(nextFlush)
     })
   }
   /*

@@ -33,13 +33,13 @@ class YConfig {
     return this.connector.isSynced
   }
   disconnect () {
-    this.connector.disconnect()
+    return this.connector.disconnect()
   }
   reconnect () {
-    this.connector.reconnect()
+    return this.connector.reconnect()
   }
   destroy () {
-    this.connector.disconnect()
+    this.disconnect()
     this.db.destroy()
     this.connector = null
     this.db = null

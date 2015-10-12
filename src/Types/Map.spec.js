@@ -1,4 +1,4 @@
-/* global createUsers, Y, compareAllUsers, getRandomNumber, applyRandomTransactions, async, describeManyTimes */
+/* global createUsers, Y, compareAllUsers, getRandomNumber, applyRandomTransactionsAllRejoinNoGC, applyRandomTransactionsWithGC, async, describeManyTimes */
 /* eslint-env browser,jasmine */
 
 var numberOfYMapTests = 100
@@ -201,8 +201,14 @@ describe('Map Type', function () {
       this.maps = yield Promise.all(promises)
       done()
     }))
-    it(`succeed after ${numberOfYMapTests} actions`, async(function * (done) {
-      yield applyRandomTransactions(this.users, this.maps, randomMapTransactions, numberOfYMapTests)
+    it(`succeed after ${numberOfYMapTests} actions, no GC, all users disconnecting/reconnecting`, async(function * (done) {
+      yield applyRandomTransactionsAllRejoinNoGC(this.users, this.maps, randomMapTransactions, numberOfYMapTests)
+      yield flushAll()
+      yield compareMapValues(this.maps)
+      done()
+    }))
+    it(`succeed after ${numberOfYMapTests} actions, GC, user[0] is not disconnecting`, async(function * (done) {
+      yield applyRandomTransactionsWithGC(this.users, this.maps, randomMapTransactions, numberOfYMapTests)
       yield flushAll()
       yield compareMapValues(this.maps)
       done()

@@ -156,13 +156,13 @@ class AbstractConnector {
         var currentStateSet = yield* this.getStateSet()
         yield* this.applyDeleteSet(m.deleteSet)
 
+        var ds = yield* this.getDeleteSet()
         var ops = yield* this.getOperations(m.stateSet)
-        ops = JSON.parse(JSON.stringify(ops)) // TODO: don't do something like that!!
         conn.send(sender, {
           type: 'sync step 2',
           os: ops,
           stateSet: currentStateSet,
-          deleteSet: yield* this.getDeleteSet()
+          deleteSet: ds
         })
         if (this.forwardToSyncingClients) {
           conn.syncingClients.push(sender)

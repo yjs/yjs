@@ -66,56 +66,68 @@ function getRandomNumber (n) {
 }
 g.getRandomNumber = getRandomNumber
 
-g.applyRandomTransactions = async(function * applyRandomTransactions (users, objects, transactions, numberOfTransactions) {
+function * applyTransactions (relAmount, numberOfTransactions, objects, users, transactions) {
   function randomTransaction (root) {
     var f = getRandom(transactions)
     f(root)
   }
-  function * applyTransactions (relAmount) {
-    for (var i = 0; i < numberOfTransactions * relAmount + 1; i++) {
-      var r = Math.random()
-      if (r >= 0.9) {
-        // 10% chance to flush
-        users[0].connector.flushOne() // flushes for some user.. (not necessarily 0)
-      } else if (r >= 0.1) {
-        // 80% chance to create operation
-        randomTransaction(getRandom(objects))
+  for (var i = 0; i < numberOfTransactions * relAmount + 1; i++) {
+    var r = Math.random()
+    if (r >= 0.5) {
+      // 50% chance to flush
+      users[0].connector.flushOne() // flushes for some user.. (not necessarily 0)
+    } else if (r >= 0.05) {
+      // 45% chance to create operation
+      randomTransaction(getRandom(objects))
+    } else {
+      // 5% chance to disconnect/reconnect
+      var u = getRandom(users)
+      if (u.connector.isDisconnected()) {
+        yield u.reconnect()
       } else {
-        // 10% chance to disconnect/reconnect
-        var u = getRandom(users)
-        if (u.connector.isDisconnected()) {
-          u.reconnect()
-        } else {
-          u.disconnect()
-        }
+        yield u.disconnect()
       }
-      yield wait()
     }
+    yield wait()
   }
-  yield* applyTransactions(0.5)
+}
+
+g.applyRandomTransactionsAllRejoinNoGC = async(function * applyRandomTransactions (users, objects, transactions, numberOfTransactions) {
+  yield* applyTransactions(1, numberOfTransactions, objects, users, transactions)
   yield users[0].connector.flushAll()
-  yield g.garbageCollectAllUsers(users)
   yield wait()
-  users[0].disconnect()
-  yield wait()
-  yield* applyTransactions(0.5)
-  yield users[0].connector.flushAll()
-  yield wait(50)
   for (var u in users) {
-    users[u].reconnect()
+    yield users[u].reconnect()
   }
   yield wait(100)
   yield users[0].connector.flushAll()
+  yield g.garbageCollectAllUsers(users)
+})
+
+g.applyRandomTransactionsWithGC = async(function * applyRandomTransactions (users, objects, transactions, numberOfTransactions) {
+  yield* applyTransactions(1, numberOfTransactions, objects, users.slice(1), transactions)
+  yield users[0].connector.flushAll()
+  yield g.garbageCollectAllUsers(users)
+  yield wait(100)
+  for (var u in users) {
+    // TODO: here, we enforce that two users never sync at the same time with u[0]
+    //       enforce that in the connector itself!
+    yield users[u].reconnect()
+  }
+  yield wait(100)
+  yield users[0].connector.flushAll()
+  yield wait(100)
+  yield g.garbageCollectAllUsers(users)
 })
 
 g.garbageCollectAllUsers = async(function * garbageCollectAllUsers (users) {
-  return yield wait(100)// TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  /*
+  // gc two times because of the two gc phases (really collect everything)
+  yield wait(100)
   for (var i in users) {
     yield users[i].db.garbageCollect()
     yield users[i].db.garbageCollect()
   }
-  */
+  yield wait(100)
 })
 
 g.compareAllUsers = async(function * compareAllUsers (users) {
@@ -142,7 +154,6 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
     })
   }
   yield users[0].connector.flushAll()
-  // gc two times because of the two gc phases (really collect everything)
   yield g.garbageCollectAllUsers(users)
 
   for (var uid = 0; uid < users.length; uid++) {
@@ -178,6 +189,8 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
       u.db.requestTransaction(t1)
       yield wait()
       u.db.os.iterate(null, null, function (o) {
+        o = Y.utils.copyObject(o)
+        delete o.origin
         db1.push(o)
       })
     } else {
@@ -188,6 +201,8 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
       expect(ds1).toEqual(ds2) // exported structure
       var count = 0
       u.db.os.iterate(null, null, function (o) {
+        o = Y.utils.copyObject(o)
+        delete o.origin
         expect(db1[count++]).toEqual(o)
       })
     }

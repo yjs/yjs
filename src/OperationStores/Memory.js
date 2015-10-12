@@ -4,6 +4,7 @@
 class DeleteStore extends Y.utils.RBTree {
   constructor () {
     super()
+    this.mem = []
   }
   isDeleted (id) {
     var n = this.findNodeWithUpperBound(id)
@@ -15,6 +16,7 @@ class DeleteStore extends Y.utils.RBTree {
     returns the delete node
   */
   markGarbageCollected (id) {
+    // this.mem.push(["gc", id]);
     var n = this.markDeleted(id)
     if (!n.val.gc) {
       if (n.val.id[1] < id[1]) {
@@ -23,6 +25,9 @@ class DeleteStore extends Y.utils.RBTree {
         n.val.len -= newlen
         n = this.add({id: id, len: newlen, gc: false})
       }
+      // get prev&next before adding a new operation
+      var prev = n.prev()
+      var next = n.next()
       if (id[1] < n.val.id[1] + n.val.len - 1) {
         // un-extend right
         this.add({id: [id[0], id[1] + 1], len: n.val.len - 1, gc: false})
@@ -30,8 +35,6 @@ class DeleteStore extends Y.utils.RBTree {
       }
       // set gc'd
       n.val.gc = true
-      var prev = n.prev()
-      var next = n.next()
       // can extend left?
       if (
         prev != null &&
@@ -52,7 +55,6 @@ class DeleteStore extends Y.utils.RBTree {
         super.delete(next.val.id)
       }
     }
-    return n
   }
   /*
     Mark an operation as deleted.
@@ -60,6 +62,7 @@ class DeleteStore extends Y.utils.RBTree {
     returns the delete node
   */
   markDeleted (id) {
+    // this.mem.push(["del", id]);
     var n = this.findNodeWithUpperBound(id)
     if (n != null && n.val.id[0] === id[0]) {
       if (n.val.id[1] <= id[1] && id[1] < n.val.id[1] + n.val.len) {
@@ -85,8 +88,10 @@ class DeleteStore extends Y.utils.RBTree {
     ) {
       n.val.len = n.val.len + next.val.len
       super.delete(next.val.id)
+      return this.findNode(n.val.id)
+    } else {
+      return n
     }
-    return n
   }
   /*
     A DeleteSet (ds) describes all the deleted ops in the OS

@@ -158,6 +158,15 @@ class AbstractTransaction {
       }
     }
   }
+  /*
+    Really remove an op and all its effects.
+    The complicated case here is the Insert operation:
+    * reset left
+    * reset right
+    * reset parent.start
+    * reset parent.end
+    * reset origins of all right ops
+  */
   * garbageCollectOperation (id) {
     // check to increase the state of the respective user
     var state = yield* this.getState(id[0])
@@ -185,11 +194,45 @@ class AbstractTransaction {
         yield* this.setOperation(left)
       }
       // remove gc'd op from the right op, if it exists
+      // also reset origins of right ops
       if (o.right != null) {
         var right = yield* this.getOperation(o.right)
         right.left = o.left
+        if (Y.utils.compareIds(right.origin, o.id)) { // rights origin is o
+          // find new origin of right ops
+          // origin is the first left deleted operation
+          var neworigin = o.left
+          while (neworigin != null) {
+            var neworigin_ = yield* this.getOperation(neworigin)
+            if (neworigin_.deleted) {
+              break
+            }
+            neworigin = neworigin_.left
+          }
+
+          // reset origin of right
+          right.origin = neworigin
+
+          // reset origin of all right ops (except first right - duh!),
+          // until you find origin pointer to the left of o
+          var i = right.right == null ? null : yield* this.getOperation(right.right)
+          var ids = [o.id, o.right]
+          while (i != null && ids.some(function (id) {
+            return Y.utils.compareIds(id, i.origin)
+          })) {
+            if (Y.utils.compareIds(i.origin, o.id)) {
+              // reset origin of i
+              i.origin = neworigin
+              yield* this.setOperation(i)
+            }
+            // get next i
+            i = i.right == null ? null : yield* this.getOperation(i.right)
+          }
+        } /* otherwise, rights origin is to the left of o,
+             then there is no right op (from o), that origins in o */
         yield* this.setOperation(right)
       }
+
       // remove gc'd op from parent, if it exists
       var parent = yield* this.getOperation(o.parent)
       var setParent = false // whether to save parent to the os
@@ -255,14 +298,16 @@ class AbstractOperationStore {
     function garbageCollect () {
       return new Promise((resolve) => {
         os.requestTransaction(function * () {
-          for (var i in os.gc2) {
-            var oid = os.gc2[i]
-            yield* this.garbageCollectOperation(oid)
-          }
-          os.gc2 = os.gc1
-          os.gc1 = []
-          if (os.gcTimeout > 0) {
-            os.gcInterval = setTimeout(garbageCollect, os.gcTimeout)
+          if (os.y.connector.isSynced) {
+            for (var i in os.gc2) {
+              var oid = os.gc2[i]
+              yield* this.garbageCollectOperation(oid)
+            }
+            os.gc2 = os.gc1
+            os.gc1 = []
+            if (os.gcTimeout > 0) {
+              os.gcInterval = setTimeout(garbageCollect, os.gcTimeout)
+            }
           }
           resolve()
         })

@@ -1,7 +1,7 @@
-/* global createUsers, wait, Y, compareAllUsers, getRandomNumber, applyRandomTransactions, async, garbageCollectAllUsers, describeManyTimes */
+/* global createUsers, wait, Y, compareAllUsers, getRandomNumber, applyRandomTransactionsAllRejoinNoGC, applyRandomTransactionsWithGC, async, garbageCollectAllUsers, describeManyTimes */
 /* eslint-env browser,jasmine */
 
-var numberOfYArrayTests = 10
+var numberOfYArrayTests = 100
 var repeatArrayTests = 1
 
 describe('Array Type', function () {
@@ -71,11 +71,8 @@ describe('Array Type', function () {
       l2 = yield y2.get('Array')
       l2.insert(1, [2])
       l2.insert(1, [3])
-      yield flushAll()
-      yconfig2.reconnect()
-      yconfig3.reconnect()
-      yield wait()
-      yield flushAll()
+      yield yconfig2.reconnect()
+      yield yconfig3.reconnect()
       expect(l1.toArray()).toEqual(l2.toArray())
       done()
     }))
@@ -84,15 +81,12 @@ describe('Array Type', function () {
       l1 = yield y1.set('Array', Y.Array)
       l1.insert(0, ['x', 'y'])
       yield flushAll()
-      yconfig2.disconnect()
+      yield yconfig2.disconnect()
       yield wait()
       l2 = yield y2.get('Array')
       l2.delete(1, 1)
       l1.delete(0, 2)
-      yield flushAll()
-      yconfig2.reconnect()
-      yield wait()
-      yield flushAll()
+      yield yconfig2.reconnect()
       expect(l1.toArray()).toEqual(l2.toArray())
       done()
     }))
@@ -130,7 +124,7 @@ describe('Array Type', function () {
       l1.delete(0, 3)
       l2 = yield y2.get('Array')
       yield wait()
-      yconfig2.reconnect()
+      yield yconfig2.reconnect()
       yield wait()
       l3 = yield y3.get('Array')
       yield flushAll()
@@ -148,7 +142,7 @@ describe('Array Type', function () {
       yconfig1.disconnect()
       l1.delete(0, 3)
       l2 = yield y2.get('Array')
-      yconfig1.reconnect()
+      yield yconfig1.reconnect()
       l3 = yield y3.get('Array')
       yield flushAll()
       expect(l1.toArray()).toEqual(l2.toArray())
@@ -188,7 +182,7 @@ describe('Array Type', function () {
       l1.delete(0, 3)
       l2 = yield y2.get('Array')
       yield wait()
-      yconfig1.reconnect()
+      yield yconfig1.reconnect()
       yield wait()
       l3 = yield y3.get('Array')
       yield flushAll()
@@ -238,11 +232,21 @@ describe('Array Type', function () {
       expect(this.arrays.length).toEqual(this.users.length)
       done()
     }))
-    it(`succeed after ${numberOfYArrayTests} actions`, async(function * (done) {
+    it(`succeed after ${numberOfYArrayTests} actions, no GC, all users disconnecting/reconnecting`, async(function * (done) {
       for (var u of this.users) {
         u.connector.debug = true
       }
-      yield applyRandomTransactions(this.users, this.arrays, randomArrayTransactions, numberOfYArrayTests)
+      yield applyRandomTransactionsAllRejoinNoGC(this.users, this.arrays, randomArrayTransactions, numberOfYArrayTests)
+      yield flushAll()
+      yield compareArrayValues(this.arrays)
+      yield compareAllUsers(this.users)
+      done()
+    }))
+    it(`succeed after ${numberOfYArrayTests} actions, GC, user[0] is not disconnecting`, async(function * (done) {
+      for (var u of this.users) {
+        u.connector.debug = true
+      }
+      yield applyRandomTransactionsWithGC(this.users, this.arrays, randomArrayTransactions, numberOfYArrayTests)
       yield flushAll()
       yield compareArrayValues(this.arrays)
       yield compareAllUsers(this.users)
