@@ -10,6 +10,10 @@ class DeleteStore extends Y.utils.RBTree {
     var n = this.findNodeWithUpperBound(id)
     return n !== null && n.val.id[0] === id[0] && id[1] < n.val.id[1] + n.val.len
   }
+  isGarbageCollected (id) {
+    var n = this.findNodeWithUpperBound(id)
+    return n !== null && n.val.id[0] === id[0] && id[1] < n.val.id[1] + n.val.len && n.val.gc
+  }
   /*
     Mark an operation as deleted&gc'd
 

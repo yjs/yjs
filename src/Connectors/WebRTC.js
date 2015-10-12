@@ -83,6 +83,9 @@ class WebRTC extends Y.AbstractConnector {
   broadcast (message) {
     this.swr.sendDirectlyToAll('simplewebrtc', 'yjs', message)
   }
+  isDisconnected () {
+    return false
+  }
 }
 
 Y.WebRTC = WebRTC

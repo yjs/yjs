@@ -140,6 +140,10 @@ gulp.task('dev:browser', ['build:test'], function () {
     .pipe(jasmineBrowser.server({port: options.testport}))
 })
 
+gulp.task('dev:deploy', ['build:deploy'], function () {
+  gulp.watch('src/**/*.js', ['build:deploy'])
+})
+
 gulp.task('dev', ['build:test'], function () {
   gulp.start('dev:browser')
   gulp.start('dev:node')

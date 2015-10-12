@@ -305,9 +305,9 @@ class AbstractOperationStore {
             }
             os.gc2 = os.gc1
             os.gc1 = []
-            if (os.gcTimeout > 0) {
-              os.gcInterval = setTimeout(garbageCollect, os.gcTimeout)
-            }
+          }
+          if (os.gcTimeout > 0) {
+            os.gcInterval = setTimeout(garbageCollect, os.gcTimeout)
           }
           resolve()
         })
@@ -490,7 +490,7 @@ class AbstractOperationStore {
   * tryExecute (op) {
     if (op.struct === 'Delete') {
       yield* Y.Struct.Delete.execute.call(this, op)
-    } else if ((yield* this.getOperation(op.id)) == null) {
+    } else if ((yield* this.getOperation(op.id)) == null && !this.store.ds.isGarbageCollected(op.id)) {
       yield* Y.Struct[op.struct].execute.call(this, op)
       var next = yield* this.addOperation(op)
       yield* this.store.operationAdded(this, op, next)
