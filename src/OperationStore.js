@@ -115,10 +115,26 @@ class AbstractTransaction {
       })
     }
   }
+
+  * deleteList (start) {
+    if (this.store.y.connector.isSynced) {
+      while (start != null && this.store.y.connector.isSynced) {
+        start = (yield* this.getOperation(start))
+        start.gc = true
+        yield* this.setOperation(start)
+        // TODO: will always reset the parent..
+        this.store.gc1.push(start.id)
+        start = start.right
+      }
+    } else {
+      // TODO: when not possible??? do later in (gcWhenSynced)
+    }
+  }
+
   /*
     Mark an operation as deleted, and add it to the GC, if possible.
   */
-  * deleteOperation (targetId) {
+  * deleteOperation (targetId, preventCallType) {
     var target = yield* this.getOperation(targetId)
 
     if (target == null || !target.deleted) {
@@ -129,12 +145,31 @@ class AbstractTransaction {
       if (!target.deleted) {
         // set deleted & notify type
         target.deleted = true
-        var type = this.store.initializedTypes[JSON.stringify(target.parent)]
-        if (type != null) {
-          yield* type._changed(this, {
-            struct: 'Delete',
-            target: targetId
-          })
+        if (!preventCallType) {
+          var type = this.store.initializedTypes[JSON.stringify(target.parent)]
+          if (type != null) {
+            yield* type._changed(this, {
+              struct: 'Delete',
+              target: targetId
+            })
+          }
+        }
+        // delete containing lists
+        if (target.start != null) {
+          // TODO: don't do it like this .. -.-
+          yield* this.deleteList(target.start)
+          yield* this.deleteList(target.id)
+        }
+        if (target.map != null) {
+          for (var name in target.map) {
+            yield* this.deleteList(target.map[name])
+          }
+          // TODO: here to..  (see above)
+          yield* this.deleteList(target.id)
+        }
+        if (target.opContent != null) {
+          yield* this.deleteOperation(target.opContent)
+          target.opContent = null
         }
       }
       var left = target.left != null ? yield* this.getOperation(target.left) : null
@@ -182,10 +217,12 @@ class AbstractTransaction {
     // if op exists, then clean that mess up..
     var o = yield* this.getOperation(id)
     if (o != null) {
+      /*
       if (!o.deleted) {
         yield* this.deleteOperation(id)
         o = yield* this.getOperation(id)
       }
+      */
 
       // remove gc'd op from the left op, if it exists
       if (o.left != null) {
@@ -233,23 +270,26 @@ class AbstractTransaction {
         yield* this.setOperation(right)
       }
 
-      // remove gc'd op from parent, if it exists
-      var parent = yield* this.getOperation(o.parent)
-      var setParent = false // whether to save parent to the os
-      if (Y.utils.compareIds(parent.start, o.id)) {
-        // gc'd op is the start
-        setParent = true
-        parent.start = o.right
+      if (o.parent != null) {
+        // remove gc'd op from parent, if it exists
+        var parent = yield* this.getOperation(o.parent)
+        var setParent = false // whether to save parent to the os
+        if (Y.utils.compareIds(parent.start, o.id)) {
+          // gc'd op is the start
+          setParent = true
+          parent.start = o.right
+        }
+        if (Y.utils.compareIds(parent.end, o.id)) {
+          // gc'd op is the end
+          setParent = true
+          parent.end = o.left
+        }
+        if (setParent) {
+          yield* this.setOperation(parent)
+        }
       }
-      if (Y.utils.compareIds(parent.end, o.id)) {
-        // gc'd op is the end
-        setParent = true
-        parent.end = o.left
-      }
-      if (setParent) {
-        yield* this.setOperation(parent)
-      }
-      yield* this.removeOperation(o.id) // actually remove it from the os
+      // finally remove it from the os
+      yield* this.removeOperation(o.id)
     }
   }
 }

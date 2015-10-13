@@ -1,4 +1,4 @@
-/* global Y */
+/* global Y, SimpleWebRTC */
 'use strict'
 
 class WebRTC extends Y.AbstractConnector {
@@ -11,21 +11,16 @@ class WebRTC extends Y.AbstractConnector {
     }
     options.role = 'slave'
     super(y, options)
-
-    var room = options.room
-
-    var webrtcOptions = {
+    this.webrtcOptions = {
       url: options.url || 'https://yatta.ninja:8888',
       room: options.room
     }
-
-    var swr = new SimpleWebRTC(webrtcOptions) // eslint-disable-line no-undef
+    var swr = new SimpleWebRTC(this.webrtcOptions)
     this.swr = swr
     var self = this
-
     swr.once('connectionReady', function (userId) {
       // SimpleWebRTC (swr) is initialized
-      swr.joinRoom(room)
+      swr.joinRoom(self.webrtcOptions.room)
 
       swr.once('joinedRoom', function () {
         self.setUserId(userId)
@@ -60,6 +55,14 @@ class WebRTC extends Y.AbstractConnector {
         self.userLeft(peer.id)
       })
     })
+  }
+  disconnect () {
+    this.swr.leaveRoom()
+    super.disconnect()
+  }
+  reconnect () {
+    this.swr.joinRoom(this.webrtcOptions.room)
+    super.reconnect()
   }
   send (uid, message) {
     var self = this

@@ -97,7 +97,7 @@ if (options.regenerator) {
   files.test = polyfills.concat(files.test)
 }
 
-gulp.task('build:deploy', function () {
+gulp.task('deploy', function () {
   gulp.src(files.src)
     .pipe(sourcemaps.init())
     .pipe(concat('y.js'))
@@ -120,6 +120,13 @@ gulp.task('build:test', function () {
   if (!options.regenerator) {
     babelOptions.blacklist = 'regenerator'
   }
+  gulp.src(files.src)
+    .pipe(sourcemaps.init())
+    .pipe(concat('y.js'))
+    .pipe(babel(babelOptions))
+    .pipe(sourcemaps.write())
+    .pipe(gulp.dest('.'))
+
   return gulp.src('src/**/*.js')
     .pipe(sourcemaps.init())
     .pipe(babel(babelOptions))
@@ -138,10 +145,6 @@ gulp.task('dev:browser', ['build:test'], function () {
     .pipe(watch(['build/**/*.js']))
     .pipe(jasmineBrowser.specRunner())
     .pipe(jasmineBrowser.server({port: options.testport}))
-})
-
-gulp.task('dev:deploy', ['build:deploy'], function () {
-  gulp.watch('src/**/*.js', ['build:deploy'])
 })
 
 gulp.task('dev', ['build:test'], function () {

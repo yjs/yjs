@@ -203,12 +203,11 @@ Y.Memory = (function () {
       for (var i in deletions) {
         var del = deletions[i]
         var id = [del[0], del[1]]
+        // always try to delete..
+        yield* this.deleteOperation(id)
         if (del[2]) {
           // gc
           yield* this.garbageCollectOperation(id)
-        } else {
-          // delete
-          yield* this.deleteOperation(id)
         }
       }
     }

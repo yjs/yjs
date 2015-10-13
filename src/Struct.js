@@ -194,11 +194,19 @@ var Struct = {
         yield* this.setOperation(right)
       }
 
-      // notify parent
+      // update parents .map/start/end properties
       if (op.parentSub != null) {
         if (left == null) {
           parent.map[op.parentSub] = op.id
           yield* this.setOperation(parent)
+        }
+        // is a child of a map struct.
+        // Then also make sure that only the most left element is not deleted
+        if (op.right != null) {
+          yield* this.deleteOperation(op.right, true)
+        }
+        if (op.left != null) {
+          yield* this.deleteOperation(op.id, true)
         }
       } else {
         if (right == null || left == null) {
