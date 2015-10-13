@@ -51,7 +51,11 @@ function itRootNodeIsBlack (tree) {
 
 describe('RedBlack Tree', function () {
   beforeEach(function () {
-    this.tree = new Y.utils.RBTree()
+    this.memory = new Y.Memory(null, {
+      name: 'Memory',
+      gcTimeout: -1
+    })
+    this.tree = this.memory.os
   })
   it('can add&retrieve 5 elements', function () {
     this.tree.add({val: 'four', id: [4]})
@@ -144,48 +148,57 @@ describe('RedBlack Tree', function () {
 
     itBlackHeightOfSubTreesAreEqual(tree)
 
-    it('iterating over a tree with lower bound yields the right amount of results', function () {
+    it('iterating over a tree with lower bound yields the right amount of results', function (done) {
       var lowerBound = elements[Math.floor(Math.random() * elements.length)]
       var expectedResults = elements.filter(function (e, pos) {
         return (Y.utils.smaller(lowerBound, e) || Y.utils.compareIds(e, lowerBound)) && elements.indexOf(e) === pos
       }).length
 
       var actualResults = 0
-      tree.iterate(lowerBound, null, function (val) {
-        expect(val).not.toBeUndefined()
-        actualResults++
+      this.memory.requestTransaction(function * () {
+        yield* tree.iterate(this, lowerBound, null, function * (val) {
+          expect(val).not.toBeUndefined()
+          actualResults++
+        })
+        expect(expectedResults).toEqual(actualResults)
+        done()
       })
-      expect(expectedResults).toEqual(actualResults)
     })
 
-    it('iterating over a tree without bounds yield the right amount of results', function () {
+    it('iterating over a tree without bounds yield the right amount of results', function (done) {
       var lowerBound = null
       var expectedResults = elements.filter(function (e, pos) {
         return elements.indexOf(e) === pos
       }).length
       var actualResults = 0
-      tree.iterate(lowerBound, null, function (val) {
-        expect(val).not.toBeUndefined()
-        actualResults++
+      this.memory.requestTransaction(function * () {
+        yield* tree.iterate(this, lowerBound, null, function * (val) {
+          expect(val).not.toBeUndefined()
+          actualResults++
+        })
+        expect(expectedResults).toEqual(actualResults)
+        done()
       })
-      expect(expectedResults).toEqual(actualResults)
     })
 
-    it('iterating over a tree with upper bound yields the right amount of results', function () {
+    it('iterating over a tree with upper bound yields the right amount of results', function (done) {
       var upperBound = elements[Math.floor(Math.random() * elements.length)]
       var expectedResults = elements.filter(function (e, pos) {
         return (Y.utils.smaller(e, upperBound) || Y.utils.compareIds(e, upperBound)) && elements.indexOf(e) === pos
       }).length
 
       var actualResults = 0
-      tree.iterate(null, upperBound, function (val) {
-        expect(val).not.toBeUndefined()
-        actualResults++
+      this.memory.requestTransaction(function * () {
+        yield* tree.iterate(this, null, upperBound, function * (val) {
+          expect(val).not.toBeUndefined()
+          actualResults++
+        })
+        expect(expectedResults).toEqual(actualResults)
+        done()
       })
-      expect(expectedResults).toEqual(actualResults)
     })
 
-    it('iterating over a tree with upper and lower bounds yield the right amount of results', function () {
+    it('iterating over a tree with upper and lower bounds yield the right amount of results', function (done) {
       var b1 = elements[Math.floor(Math.random() * elements.length)]
       var b2 = elements[Math.floor(Math.random() * elements.length)]
       var upperBound, lowerBound
@@ -201,11 +214,14 @@ describe('RedBlack Tree', function () {
           (Y.utils.smaller(e, upperBound) || Y.utils.compareIds(e, upperBound)) && elements.indexOf(e) === pos
       }).length
       var actualResults = 0
-      tree.iterate(lowerBound, upperBound, function (val) {
-        expect(val).not.toBeUndefined()
-        actualResults++
+      this.memory.requestTransaction(function * () {
+        yield* tree.iterate(this, lowerBound, upperBound, function * (val) {
+          expect(val).not.toBeUndefined()
+          actualResults++
+        })
+        expect(expectedResults).toEqual(actualResults)
+        done()
       })
-      expect(expectedResults).toEqual(actualResults)
     })
   })
 })

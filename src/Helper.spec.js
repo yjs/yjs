@@ -18,7 +18,7 @@ g.g = g
 
 g.YConcurrency_TestingMode = true
 
-jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 2000
 
 g.describeManyTimes = function describeManyTimes (times, name, f) {
   for (var i = 0; i < times; i++) {
@@ -36,7 +36,7 @@ function wait (t) {
   return new Promise(function (resolve) {
     setTimeout(function () {
       resolve()
-    }, t * 2)
+    }, t)
   })
 }
 g.wait = wait
@@ -141,7 +141,7 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
     s1 = yield* this.getStateSet()
     ds1 = yield* this.getDeleteSet()
     allDels1 = []
-    this.ds.iterate(null, null, function (d) {
+    yield* this.ds.iterate(this, null, null, function * (d) {
       allDels1.push(d)
     })
   }
@@ -149,7 +149,7 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
     s2 = yield* this.getStateSet()
     ds2 = yield* this.getDeleteSet()
     allDels2 = []
-    this.ds.iterate(null, null, function (d) {
+    yield* this.ds.iterate(this, null, null, function * (d) {
       allDels2.push(d)
     })
   }
@@ -158,16 +158,16 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
 
   for (var uid = 0; uid < users.length; uid++) {
     var u = users[uid]
-    // compare deleted ops against deleteStore
-    u.db.os.iterate(null, null, function (o) {
-      if (o.deleted === true) {
-        expect(u.db.ds.isDeleted(o.id)).toBeTruthy()
-      }
-    })
-    // compare deleteStore against deleted ops
     u.db.requestTransaction(function * () {
+      // compare deleted ops against deleteStore
+      yield* this.os.iterate(this, null, null, function * (o) {
+        if (o.deleted === true) {
+          expect(yield* this.isDeleted(o.id)).toBeTruthy()
+        }
+      })
+      // compare deleteStore against deleted ops
       var ds = []
-      u.db.ds.iterate(null, null, function (d) {
+      yield* this.ds.iterate(this, null, null, function * (d) {
         ds.push(d)
       })
       for (var j in ds) {
@@ -186,25 +186,30 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
     // compare allDels tree
     yield wait()
     if (s1 == null) {
-      u.db.requestTransaction(t1)
-      yield wait()
-      u.db.os.iterate(null, null, function (o) {
-        o = Y.utils.copyObject(o)
-        delete o.origin
-        db1.push(o)
+      u.db.requestTransaction(function * () {
+        yield* t1.call(this)
+        yield* this.os.iterate(this, null, null, function * (o) {
+          o = Y.utils.copyObject(o)
+          delete o.origin
+          db1.push(o)
+        })
       })
+      yield wait()
     } else {
-      u.db.requestTransaction(t2)
-      yield wait()
-      expect(s1).toEqual(s2)
-      expect(allDels1).toEqual(allDels2) // inner structure
-      expect(ds1).toEqual(ds2) // exported structure
-      var count = 0
-      u.db.os.iterate(null, null, function (o) {
-        o = Y.utils.copyObject(o)
-        delete o.origin
-        expect(db1[count++]).toEqual(o)
+      // TODO: make requestTransaction return a promise..
+      u.db.requestTransaction(function * () {
+        yield* t2.call(this)
+        expect(s1).toEqual(s2)
+        expect(allDels1).toEqual(allDels2) // inner structure
+        expect(ds1).toEqual(ds2) // exported structure
+        var count = 0
+        yield* this.os.iterate(this, null, null, function * (o) {
+          o = Y.utils.copyObject(o)
+          delete o.origin
+          expect(db1[count++]).toEqual(o)
+        })
       })
+      yield wait()
     }
   }
 })
@@ -263,15 +268,16 @@ function async (makeGenerator) {
 }
 g.async = async
 
-function logUsers (self) {
+var logUsers = async(function * logUsers (self) {
   if (self.constructor === Array) {
     self = {users: self}
   }
   console.log('User 1: ', self.users[0].connector.userId, "=============================================") // eslint-disable-line
-  self.users[0].db.logTable() // eslint-disable-line
+  yield self.users[0].db.logTable() // eslint-disable-line
   console.log('User 2: ', self.users[1].connector.userId, "=============================================") // eslint-disable-line
-  self.users[1].db.logTable() // eslint-disable-line
+  yield self.users[1].db.logTable() // eslint-disable-line
   console.log('User 3: ', self.users[2].connector.userId, "=============================================") // eslint-disable-line
-  self.users[2].db.logTable() // eslint-disable-line
-}
+  yield self.users[2].db.logTable() // eslint-disable-line
+})
+
 g.logUsers = logUsers

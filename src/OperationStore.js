@@ -25,7 +25,6 @@
         ],
         "userY": ...
       }
-  * isDeleted(id)
   * getOpsFromDeleteSet(ds) -- TODO: just call this.deleteOperation(id) here
     - get a set of deletions that need to be applied in order to get to
       achieve the state of the supplied ds
@@ -78,6 +77,9 @@
 class AbstractTransaction {
   constructor (store) {
     this.store = store
+    this.ss = store.ss
+    this.os = store.os
+    this.ds = store.ds
   }
   /*
     Get a type based on the id of its model.
@@ -138,7 +140,7 @@ class AbstractTransaction {
     var target = yield* this.getOperation(targetId)
 
     if (target == null || !target.deleted) {
-      this.ds.markDeleted(targetId)
+      yield* this.markDeleted(targetId)
     }
 
     if (target != null && target.gc == null) {
@@ -194,6 +196,87 @@ class AbstractTransaction {
     }
   }
   /*
+    Mark an operation as deleted&gc'd
+  */
+  * markGarbageCollected (id) {
+    // this.mem.push(["gc", id]);
+    var n = yield* this.markDeleted(id)
+    if (!n.val.gc) {
+      if (n.val.id[1] < id[1]) {
+        // un-extend left
+        var newlen = n.val.len - (id[1] - n.val.id[1])
+        n.val.len -= newlen
+        n = yield this.ds.add({id: id, len: newlen, gc: false})
+      }
+      // get prev&next before adding a new operation
+      var prev = n.prev()
+      var next = n.next()
+      if (id[1] < n.val.id[1] + n.val.len - 1) {
+        // un-extend right
+        yield this.ds.add({id: [id[0], id[1] + 1], len: n.val.len - 1, gc: false})
+        n.val.len = 1
+      }
+      // set gc'd
+      n.val.gc = true
+      // can extend left?
+      if (
+        prev != null &&
+        prev.val.gc &&
+        Y.utils.compareIds([prev.val.id[0], prev.val.id[1] + prev.val.len], n.val.id)
+      ) {
+        prev.val.len += n.val.len
+        yield this.ds.delete(n.val.id)
+        n = prev
+      }
+      // can extend right?
+      if (
+        next != null &&
+        next.val.gc &&
+        Y.utils.compareIds([n.val.id[0], n.val.id[1] + n.val.len], next.val.id)
+      ) {
+        n.val.len += next.val.len
+        yield this.ds.delete(next.val.id)
+      }
+    }
+  }
+  /*
+    Mark an operation as deleted.
+
+    returns the delete node
+  */
+  * markDeleted (id) {
+    // this.mem.push(["del", id]);
+    var n = yield this.ds.findNodeWithUpperBound(id)
+    if (n != null && n.val.id[0] === id[0]) {
+      if (n.val.id[1] <= id[1] && id[1] < n.val.id[1] + n.val.len) {
+        // already deleted
+        return n
+      } else if (n.val.id[1] + n.val.len === id[1] && !n.val.gc) {
+        // can extend existing deletion
+        n.val.len++
+      } else {
+        // cannot extend left
+        n = yield this.ds.add({id: id, len: 1, gc: false})
+      }
+    } else {
+      // cannot extend left
+      n = yield this.ds.add({id: id, len: 1, gc: false})
+    }
+    // can extend right?
+    var next = n.next()
+    if (
+      next !== null &&
+      Y.utils.compareIds([n.val.id[0], n.val.id[1] + n.val.len], next.val.id) &&
+      !next.val.gc
+    ) {
+      n.val.len = n.val.len + next.val.len
+      yield this.ds.delete(next.val.id)
+      return yield this.ds.findNode(n.val.id)
+    } else {
+      return n
+    }
+  }
+  /*
     Really remove an op and all its effects.
     The complicated case here is the Insert operation:
     * reset left
@@ -212,7 +295,7 @@ class AbstractTransaction {
       // then set the state
       yield* this.setState(state)
     }
-    this.ds.markGarbageCollected(id)
+    yield* this.markGarbageCollected(id)
 
     // if op exists, then clean that mess up..
     var o = yield* this.getOperation(id)
@@ -291,6 +374,248 @@ class AbstractTransaction {
       // finally remove it from the os
       yield* this.removeOperation(o.id)
     }
+  }
+  * checkDeleteStoreForState (state) {
+    var n = yield this.ds.findNodeWithUpperBound([state.user, state.clock])
+    if (n !== null && n.val.id[0] === state.user && n.val.gc) {
+      state.clock = Math.max(state.clock, n.val.id[1] + n.val.len)
+    }
+  }
+  /*
+    apply a delete set in order to get
+    the state of the supplied ds
+  */
+  * applyDeleteSet (ds) {
+    var deletions = []
+    function createDeletions (user, start, len, gc) {
+      for (var c = start; c < start + len; c++) {
+        deletions.push([user, c, gc])
+      }
+    }
+
+    for (var user in ds) {
+      var dv = ds[user]
+      var pos = 0
+      var d = dv[pos]
+      yield* this.ds.iterate(this, [user, 0], [user, Number.MAX_VALUE], function * (n) {
+        // cases:
+        // 1. d deletes something to the right of n
+        //  => go to next n (break)
+        // 2. d deletes something to the left of n
+        //  => create deletions
+        //  => reset d accordingly
+        //  *)=> if d doesn't delete anything anymore, go to next d (continue)
+        // 3. not 2) and d deletes something that also n deletes
+        //  => reset d so that it doesn't contain n's deletion
+        //  *)=> if d does not delete anything anymore, go to next d (continue)
+        while (d != null) {
+          var diff = 0 // describe the diff of length in 1) and 2)
+          if (n.id[1] + n.len <= d[0]) {
+            // 1)
+            break
+          } else if (d[0] < n.id[1]) {
+            // 2)
+            // delete maximum the len of d
+            // else delete as much as possible
+            diff = Math.min(n.id[1] - d[0], d[1])
+            createDeletions(user, d[0], diff, d[2])
+          } else {
+            // 3)
+            diff = n.id[1] + n.len - d[0] // never null (see 1)
+            if (d[2] && !n.gc) {
+              // d marks as gc'd but n does not
+              // then delete either way
+              createDeletions(user, d[0], Math.min(diff, d[1]), d[2])
+            }
+          }
+          if (d[1] <= diff) {
+            // d doesn't delete anything anymore
+            d = dv[++pos]
+          } else {
+            d[0] = d[0] + diff // reset pos
+            d[1] = d[1] - diff // reset length
+          }
+        }
+      })
+      // for the rest.. just apply it
+      for (; pos < dv.length; pos++) {
+        d = dv[pos]
+        createDeletions(user, d[0], d[1], d[2])
+      }
+    }
+    for (var i in deletions) {
+      var del = deletions[i]
+      var id = [del[0], del[1]]
+      // always try to delete..
+      yield* this.deleteOperation(id)
+      if (del[2]) {
+        // gc
+        yield* this.garbageCollectOperation(id)
+      }
+    }
+  }
+  * isGarbageCollected (id) {
+    var n = yield this.ds.findNodeWithUpperBound(id)
+    return n !== null && n.val.id[0] === id[0] && id[1] < n.val.id[1] + n.val.len && n.val.gc
+  }
+  /*
+    A DeleteSet (ds) describes all the deleted ops in the OS
+  */
+  * getDeleteSet () {
+    var ds = {}
+    yield* this.ds.iterate(this, null, null, function * (n) {
+      var user = n.id[0]
+      var counter = n.id[1]
+      var len = n.len
+      var gc = n.gc
+      var dv = ds[user]
+      if (dv === void 0) {
+        dv = []
+        ds[user] = dv
+      }
+      dv.push([counter, len, gc])
+    })
+    return ds
+  }
+  * isDeleted (id) {
+    var n = yield this.ds.findNodeWithUpperBound(id)
+    return n !== null && n.val.id[0] === id[0] && id[1] < n.val.id[1] + n.val.len
+  }
+  * setOperation (op) {
+    // TODO: you can remove this step! probs..
+    var n = yield this.os.findNode(op.id)
+    n.val = op
+    return op
+  }
+  * addOperation (op) {
+    var n = yield this.os.add(op)
+    return function () {
+      if (n != null) {
+        n = n.next()
+        return n != null ? n.val : null
+      } else {
+        return null
+      }
+    }
+  }
+  * getOperation (id) {
+    return yield this.os.find(id)
+  }
+  * removeOperation (id) {
+    yield this.os.delete(id)
+  }
+  * setState (state) {
+    this.ss[state.user] = state.clock
+  }
+  * getState (user) {
+    var clock = this.ss[user]
+    if (clock == null) {
+      clock = 0
+    }
+    return {
+      user: user,
+      clock: clock
+    }
+  }
+  * getStateVector () {
+    var stateVector = []
+    for (var user in this.ss) {
+      var clock = this.ss[user]
+      stateVector.push({
+        user: user,
+        clock: clock
+      })
+    }
+    return stateVector
+  }
+  * getStateSet () {
+    return Y.utils.copyObject(this.ss)
+  }
+  * getOperations (startSS) {
+    // TODO: use bounds here!
+    if (startSS == null) {
+      startSS = {}
+    }
+    var ops = []
+
+    var endSV = yield* this.getStateVector()
+    for (var endState of endSV) {
+      var user = endState.user
+      if (user === '_') {
+        continue
+      }
+      var startPos = startSS[user] || 0
+      var endPos = endState.clock
+
+      yield* this.os.iterate(this, [user, startPos], [user, endPos], function * (op) {
+        ops.push(op)
+      })
+    }
+    var res = []
+    for (var op of ops) {
+      res.push(yield* this.makeOperationReady(startSS, op))
+    }
+    return res
+  }
+  /*
+    Here, we make op executable for the receiving user.
+
+    Notes:
+      startSS: denotes to the SV that the remote user sent
+      currSS:  denotes to the state vector that the user should have if he
+               applies all already sent operations (increases is each step)
+
+    We face several problems:
+    * Execute op as is won't work because ops depend on each other
+     -> find a way so that they do not anymore
+    * When changing left, must not go more to the left than the origin
+    * When changing right, you have to consider that other ops may have op
+      as their origin, this means that you must not set one of these ops
+      as the new right (interdependencies of ops)
+    * can't just go to the right until you find the first known operation,
+      With currSS
+        -> interdependency of ops is a problem
+      With startSS
+        -> leads to inconsistencies when two users join at the same time.
+           Then the position depends on the order of execution -> error!
+
+      Solution:
+      -> re-create originial situation
+        -> set op.left = op.origin (which never changes)
+        -> set op.right
+             to the first operation that is known (according to startSS)
+             or to the first operation that has an origin that is not to the
+             right of op.
+        -> Enforces unique execution order -> happy user
+
+      Improvements: TODO
+        * Could set left to origin, or the first known operation
+          (startSS or currSS.. ?)
+          -> Could be necessary when I turn GC again.
+          -> Is a bad(ish) idea because it requires more computation
+  */
+  * makeOperationReady (startSS, op) {
+    op = Y.Struct[op.struct].encode(op)
+    op = Y.utils.copyObject(op)
+    var o = op
+    var ids = [op.id]
+    // search for the new op.right
+    // it is either the first known op (according to startSS)
+    // or the o that has no origin to the right of op
+    // (this is why we use the ids array)
+    while (o.right != null) {
+      var right = yield* this.getOperation(o.right)
+      if (o.right[1] < (startSS[o.right[0]] || 0) || !ids.some(function (id) {
+        return Y.utils.compareIds(id, right.origin)
+      })) {
+        break
+      }
+      ids.push(o.right)
+      o = right
+    }
+    op.right = o.right
+    op.left = op.origin
+    return op
   }
 }
 Y.AbstractTransaction = AbstractTransaction
@@ -374,14 +699,14 @@ class AbstractOperationStore {
       })
     })
   }
-  garbageCollectAfterSync () {
-    var os = this.os
-    var self = this
-    os.iterate(null, null, function (op) {
-      if (op.deleted && op.left != null) {
-        var left = os.find(op.left)
-        self.addToGarbageCollector(op, left)
-      }
+  * garbageCollectAfterSync () {
+    this.requestTransaction(function * () {
+      yield* this.os.iterate(this, null, null, function * (op) {
+        if (op.deleted && op.left != null) {
+          var left = yield this.os.find(op.left)
+          this.store.addToGarbageCollector(op, left)
+        }
+      })
     })
   }
   /*
@@ -530,13 +855,13 @@ class AbstractOperationStore {
   * tryExecute (op) {
     if (op.struct === 'Delete') {
       yield* Y.Struct.Delete.execute.call(this, op)
-    } else if ((yield* this.getOperation(op.id)) == null && !this.store.ds.isGarbageCollected(op.id)) {
+    } else if ((yield* this.getOperation(op.id)) == null && !(yield* this.isGarbageCollected(op.id))) {
       yield* Y.Struct[op.struct].execute.call(this, op)
       var next = yield* this.addOperation(op)
       yield* this.store.operationAdded(this, op, next)
 
       // Delete if DS says this is actually deleted
-      if (this.store.ds.isDeleted(op.id)) {
+      if (yield* this.isDeleted(op.id)) {
         yield* Y.Struct['Delete'].execute.call(this, {struct: 'Delete', target: op.id})
       }
     }

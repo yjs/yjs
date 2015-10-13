@@ -1,7 +1,7 @@
 /* global createUsers, Y, compareAllUsers, getRandomNumber, applyRandomTransactionsAllRejoinNoGC, applyRandomTransactionsWithGC, async, describeManyTimes */
 /* eslint-env browser,jasmine */
 
-var numberOfYMapTests = 100
+var numberOfYMapTests = 10
 var repeatMapTeasts = 1
 
 describe('Map Type', function () {

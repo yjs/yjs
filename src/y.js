@@ -43,9 +43,6 @@ class YConfig {
     this.db.destroy()
     this.connector = null
     this.db = null
-    this.transact = function () {
-      throw new Error('Remember?, you destroyed this type ;)')
-    }
   }
 }
 

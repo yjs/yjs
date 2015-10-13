@@ -186,15 +186,15 @@ class RBTree {
       }
     }
   }
-  iterate (from, to, f) {
+  * iterate (t, from, to, f) {
     var o = this.findNodeWithLowerBound(from)
     while (o !== null && (to === null || Y.utils.smaller(o.val.id, to) || Y.utils.compareIds(o.val.id, to))) {
-      f(o.val)
+      yield* f.call(t, o.val)
       o = o.next()
     }
     return true
   }
-  logTable (from, to, filter) {
+  * logTable (from, to, filter) {
     if (filter == null) {
       filter = function () {
         return true
@@ -203,7 +203,7 @@ class RBTree {
     if (from == null) { from = null }
     if (to == null) { to = null }
     var os = []
-    this.iterate(from, to, function (o) {
+    yield* this.iterate(this, from, to, function * (o) {
       if (filter(o)) {
         var o_ = {}
         for (var key in o) {
