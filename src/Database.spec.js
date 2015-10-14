@@ -156,10 +156,10 @@ for (var database of databases) {
         })
         it('debug #1', function (done) {
           store.requestTransaction(function * () {
-            yield this.os.set({id: [2]})
-            yield this.os.set({id: [0]})
+            yield this.os.put({id: [2]})
+            yield this.os.put({id: [0]})
             yield this.os.delete([2])
-            yield this.os.set({id: [1]})
+            yield this.os.put({id: [1]})
             expect(yield this.os.find([0])).not.toBeNull()
             expect(yield this.os.find([1])).not.toBeNull()
             expect(yield this.os.find([2])).toBeNull()
@@ -168,11 +168,11 @@ for (var database of databases) {
         })
         it('can add&retrieve 5 elements', function (done) {
           store.requestTransaction(function * () {
-            yield this.os.set({val: 'four', id: [4]})
-            yield this.os.set({val: 'one', id: [1]})
-            yield this.os.set({val: 'three', id: [3]})
-            yield this.os.set({val: 'two', id: [2]})
-            yield this.os.set({val: 'five', id: [5]})
+            yield this.os.put({val: 'four', id: [4]})
+            yield this.os.put({val: 'one', id: [1]})
+            yield this.os.put({val: 'three', id: [3]})
+            yield this.os.put({val: 'two', id: [2]})
+            yield this.os.put({val: 'five', id: [5]})
             expect((yield this.os.find([1])).val).toEqual('one')
             expect((yield this.os.find([2])).val).toEqual('two')
             expect((yield this.os.find([3])).val).toEqual('three')
@@ -183,11 +183,11 @@ for (var database of databases) {
         })
         it('5 elements do not exist anymore after deleting them', function (done) {
           store.requestTransaction(function * () {
-            yield this.os.set({val: 'four', id: [4]})
-            yield this.os.set({val: 'one', id: [1]})
-            yield this.os.set({val: 'three', id: [3]})
-            yield this.os.set({val: 'two', id: [2]})
-            yield this.os.set({val: 'five', id: [5]})
+            yield this.os.put({val: 'four', id: [4]})
+            yield this.os.put({val: 'one', id: [1]})
+            yield this.os.put({val: 'three', id: [3]})
+            yield this.os.put({val: 'two', id: [2]})
+            yield this.os.put({val: 'five', id: [5]})
             yield this.os.delete([4])
             expect(yield this.os.find([4])).not.toBeTruthy()
             yield this.os.delete([3])
@@ -216,7 +216,7 @@ for (var database of databases) {
                 var obj = [Math.floor(Math.random() * numberOfOSTests * 10000)]
                 if (!(yield this.os.findNode(obj))) {
                   elements.push(obj)
-                  yield this.os.set({id: obj})
+                  yield this.os.put({id: obj})
                 }
               } else if (elements.length > 0) {
                 var elemid = Math.floor(Math.random() * elements.length)

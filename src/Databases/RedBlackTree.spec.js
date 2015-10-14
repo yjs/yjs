@@ -59,15 +59,15 @@ describe('RedBlack Tree', function () {
   })
   describe('debug #2', function () {
     var tree = new Y.utils.RBTree()
-    tree.set({id: [8433]})
-    tree.set({id: [12844]})
-    tree.set({id: [1795]})
-    tree.set({id: [30302]})
-    tree.set({id: [64287]})
+    tree.put({id: [8433]})
+    tree.put({id: [12844]})
+    tree.put({id: [1795]})
+    tree.put({id: [30302]})
+    tree.put({id: [64287]})
     tree.delete([8433])
-    tree.set({id: [28996]})
+    tree.put({id: [28996]})
     tree.delete([64287])
-    tree.set({id: [22721]})
+    tree.put({id: [22721]})
 
     itRootNodeIsBlack(tree, [])
     itBlackHeightOfSubTreesAreEqual(tree, [])
@@ -82,7 +82,7 @@ describe('RedBlack Tree', function () {
         var obj = [Math.floor(Math.random() * numberOfRBTreeTests * 10000)]
         if (!tree.findNode(obj)) {
           elements.push(obj)
-          tree.set({id: obj})
+          tree.put({id: obj})
         }
       } else if (elements.length > 0) {
         var elemid = Math.floor(Math.random() * elements.length)

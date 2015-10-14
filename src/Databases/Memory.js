@@ -1,19 +1,8 @@
 /* global Y */
 'use strict'
 
-class DeleteStore extends Y.utils.RBTree {
-  constructor () {
-    super()
-    this.mem = []
-  }
-}
-
-Y.utils.DeleteStore = DeleteStore
-
 Y.Memory = (function () {
-  class Transaction extends Y.AbstractTransaction {
-  }
-  class OperationStore extends Y.AbstractOperationStore {
+  class Database extends Y.AbstractDatabase {
     constructor (y, opts) {
       super(y, opts)
       this.os = new Y.utils.RBTree()
@@ -42,7 +31,7 @@ Y.Memory = (function () {
         var transact = () => {
           var makeGen = _makeGen
           while (makeGen != null) {
-            var t = new Transaction(this)
+            var t = new Y.Transaction(this)
             var gen = makeGen.call(t)
             var res = gen.next()
             while (!res.done) {
@@ -64,7 +53,9 @@ Y.Memory = (function () {
     * destroy () {
       super.destroy()
       delete this.os
+      delete this.ss
+      delete this.ds
     }
   }
-  return OperationStore
+  return Database
 })()

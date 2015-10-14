@@ -41,11 +41,11 @@ class AbstractConnector {
     this.broadcastedHB = false
     this.syncingClients = []
     this.whenSyncedListeners = []
-    this.y.db.stopGarbageCollector()
+    return this.y.db.stopGarbageCollector()
   }
   setUserId (userId) {
     this.userId = userId
-    this.y.db.setUserId(userId)
+    return this.y.db.setUserId(userId)
   }
   onUserEvent (f) {
     this.userEventListeners.push(f)
@@ -132,7 +132,7 @@ class AbstractConnector {
       }
       this.whenSyncedListeners = []
       this.y.db.requestTransaction(function *() {
-        yield* this.store.garbageCollectAfterSync()
+        yield* this.garbageCollectAfterSync()
       })
     }
   }

@@ -55,8 +55,9 @@ class Test extends Y.AbstractConnector {
     options.role = 'master'
     options.forwardToSyncingClients = false
     super(y, options)
-    this.setUserId((userIdCounter++) + '')
-    globalRoom.addUser(this)
+    this.setUserId((userIdCounter++) + '').then(() => {
+      globalRoom.addUser(this)
+    })
     this.globalRoom = globalRoom
     this.syncingClientDuration = 0
   }

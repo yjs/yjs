@@ -3,9 +3,8 @@
 'use strict'
 
 Y.IndexedDB = (function () {
-  class Transaction extends Y.AbstractTransaction {
+  class Transaction {
     constructor (store) {
-      super(store)
       this.transaction = store.db.transaction(['OperationStore', 'StateVector'], 'readwrite')
       this.sv = this.transaction.objectStore('StateVector')
       this.os = this.transaction.objectStore('OperationStore')
@@ -83,7 +82,7 @@ Y.IndexedDB = (function () {
       return ops
     }
   }
-  class OperationStore extends Y.AbstractOperationStore {
+  class OperationStore extends Y.AbstractDatabase {
     constructor (y, opts) {
       super(y, opts)
       if (opts == null) {

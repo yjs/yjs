@@ -74,7 +74,7 @@
      - this is called only by `getOperations(startSS)`. It makes an operation
        applyable on a given SS.
 */
-class AbstractTransaction {
+class Transaction {
   constructor (store) {
     this.store = store
     this.ss = store.ss
@@ -206,14 +206,14 @@ class AbstractTransaction {
         // un-extend left
         var newlen = n.val.len - (id[1] - n.val.id[1])
         n.val.len -= newlen
-        n = yield this.ds.set({id: id, len: newlen, gc: false})
+        n = yield this.ds.put({id: id, len: newlen, gc: false})
       }
       // get prev&next before adding a new operation
       var prev = n.prev()
       var next = n.next()
       if (id[1] < n.val.id[1] + n.val.len - 1) {
         // un-extend right
-        yield this.ds.set({id: [id[0], id[1] + 1], len: n.val.len - 1, gc: false})
+        yield this.ds.put({id: [id[0], id[1] + 1], len: n.val.len - 1, gc: false})
         n.val.len = 1
       }
       // set gc'd
@@ -256,11 +256,11 @@ class AbstractTransaction {
         n.val.len++
       } else {
         // cannot extend left
-        n = yield this.ds.set({id: id, len: 1, gc: false})
+        n = yield this.ds.put({id: id, len: 1, gc: false})
       }
     } else {
       // cannot extend left
-      n = yield this.ds.set({id: id, len: 1, gc: false})
+      n = yield this.ds.put({id: id, len: 1, gc: false})
     }
     // can extend right?
     var next = n.next()
@@ -275,6 +275,19 @@ class AbstractTransaction {
     } else {
       return n
     }
+  }
+  /*
+    Call this method when the client is connected&synced with the
+    other clients (e.g. master). This will query the database for
+    operations that can be gc'd and add them to the garbage collector.
+  */
+  * garbageCollectAfterSync () {
+    yield* this.os.iterate(this, null, null, function * (op) {
+      if (op.deleted && op.left != null) {
+        var left = yield* this.getOperation(op.left)
+        this.store.addToGarbageCollector(op, left)
+      }
+    })
   }
   /*
     Really remove an op and all its effects.
@@ -482,13 +495,11 @@ class AbstractTransaction {
     return n !== null && n.val.id[0] === id[0] && id[1] < n.val.id[1] + n.val.len
   }
   * setOperation (op) {
-    // TODO: you can remove this step! probs..
-    var n = yield this.os.findNode(op.id)
-    n.val = op
+    yield this.os.put(op)
     return op
   }
   * addOperation (op) {
-    var n = yield this.os.set(op)
+    var n = yield this.os.put(op)
     return function () {
       if (n != null) {
         n = n.next()
@@ -505,10 +516,16 @@ class AbstractTransaction {
     yield this.os.delete(id)
   }
   * setState (state) {
-    this.ss.set({
+    var val = {
       id: [state.user],
       clock: state.clock
-    })
+    }
+    // TODO: find a way to skip this step.. (after implementing some dbs..)
+    if (yield this.ss.find([state.user])) {
+      yield this.ss.put(val)
+    } else {
+      yield this.ss.put(val)
+    }
   }
   * getState (user) {
     var n
@@ -625,4 +642,4 @@ class AbstractTransaction {
     return op
   }
 }
-Y.AbstractTransaction = AbstractTransaction
+Y.Transaction = Transaction

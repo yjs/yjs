@@ -13,7 +13,7 @@
   * destroy()
     - destroy the database
 */
-class AbstractOperationStore {
+class AbstractDatabase {
   constructor (y, opts) {
     this.y = y
     // E.g. this.listenersById[id] : Array<Listener>
@@ -80,16 +80,6 @@ class AbstractOperationStore {
       })
     })
   }
-  * garbageCollectAfterSync () {
-    this.requestTransaction(function * () {
-      yield* this.os.iterate(this, null, null, function * (op) {
-        if (op.deleted && op.left != null) {
-          var left = yield this.os.find(op.left)
-          this.store.addToGarbageCollector(op, left)
-        }
-      })
-    })
-  }
   /*
     Try to add to GC.
 
@@ -130,12 +120,18 @@ class AbstractOperationStore {
     this.gcInterval = null
   }
   setUserId (userId) {
-    this.userId = userId
-    this.opClock = 0
-    if (this.whenUserIdSetListener != null) {
-      this.whenUserIdSetListener()
-      this.whenUserIdSetListener = null
-    }
+    var self = this
+    return new Promise(function (resolve) {
+      self.requestTransaction(function * () {
+        self.userId = userId
+        self.opClock = (yield* this.getState(userId)).clock
+        if (self.whenUserIdSetListener != null) {
+          self.whenUserIdSetListener()
+          self.whenUserIdSetListener = null
+        }
+        resolve()
+      })
+    })
   }
   whenUserIdSet (f) {
     if (this.userId != null) {
@@ -280,4 +276,4 @@ class AbstractOperationStore {
     }
   }
 }
-Y.AbstractOperationStore = AbstractOperationStore
+Y.AbstractDatabase = AbstractDatabase

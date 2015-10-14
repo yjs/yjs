@@ -388,7 +388,7 @@ class RBTree {
       }
     }
   }
-  set (v) {
+  put (v) {
     if (v == null || v.id == null || v.id.constructor !== Array) {
       throw new Error('v is expected to have an id property which is an Array!')
     }
