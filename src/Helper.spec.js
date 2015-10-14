@@ -268,16 +268,13 @@ function async (makeGenerator) {
 }
 g.async = async
 
-var logUsers = async(function * logUsers (self) {
+function logUsers (self) {
   if (self.constructor === Array) {
     self = {users: self}
   }
-  console.log('User 1: ', self.users[0].connector.userId, "=============================================") // eslint-disable-line
-  yield self.users[0].db.logTable() // eslint-disable-line
-  console.log('User 2: ', self.users[1].connector.userId, "=============================================") // eslint-disable-line
-  yield self.users[1].db.logTable() // eslint-disable-line
-  console.log('User 3: ', self.users[2].connector.userId, "=============================================") // eslint-disable-line
-  yield self.users[2].db.logTable() // eslint-disable-line
-})
+  self.users[0].db.logTable()
+  self.users[1].db.logTable()
+  self.users[2].db.logTable()
+}
 
 g.logUsers = logUsers

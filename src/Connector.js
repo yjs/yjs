@@ -131,7 +131,9 @@ class AbstractConnector {
         f()
       }
       this.whenSyncedListeners = []
-      this.y.db.garbageCollectAfterSync()
+      this.y.db.requestTransaction(function *() {
+        yield* this.store.garbageCollectAfterSync()
+      })
     }
   }
   send (uid, message) {
