@@ -30,7 +30,7 @@ if (typeof window !== 'undefined' && false) {
           .toEqual(op)
         yield* this.removeOperation(['1', 0])
         expect(yield* this.getOperation(['1', 0]))
-          .toBeUndefined()
+          .toBeNull()
         done()
       })
     })
@@ -38,7 +38,7 @@ if (typeof window !== 'undefined' && false) {
     it('getOperation(op) returns undefined if op does not exist', function (done) {
       ob.requestTransaction(function *() {
         var op = yield* this.getOperation("plzDon'tBeThere")
-        expect(op).toBeUndefined()
+        expect(op).toBeNull()
         done()
       })
     })
@@ -64,7 +64,6 @@ if (typeof window !== 'undefined' && false) {
         yield* this.setState(s1)
         yield* this.setState(s2)
         var sv = yield* this.getStateVector()
-        expect(sv).not.toBeUndefined()
         expect(sv).toEqual([s1, s2])
         done()
       })
@@ -77,7 +76,6 @@ if (typeof window !== 'undefined' && false) {
         yield* this.setState(s1)
         yield* this.setState(s2)
         var sv = yield* this.getStateSet()
-        expect(sv).not.toBeUndefined()
         expect(sv).toEqual({
           '1': 1,
           '2': 3

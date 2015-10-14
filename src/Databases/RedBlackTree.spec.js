@@ -57,57 +57,17 @@ describe('RedBlack Tree', function () {
     })
     this.tree = this.memory.os
   })
-  it('can add&retrieve 5 elements', function () {
-    this.tree.add({val: 'four', id: [4]})
-    this.tree.add({val: 'one', id: [1]})
-    this.tree.add({val: 'three', id: [3]})
-    this.tree.add({val: 'two', id: [2]})
-    this.tree.add({val: 'five', id: [5]})
-    expect(this.tree.find([1]).val).toEqual('one')
-    expect(this.tree.find([2]).val).toEqual('two')
-    expect(this.tree.find([3]).val).toEqual('three')
-    expect(this.tree.find([4]).val).toEqual('four')
-    expect(this.tree.find([5]).val).toEqual('five')
-  })
-
-  it('5 elements do not exist anymore after deleting them', function () {
-    this.tree.add({val: 'four', id: [4]})
-    this.tree.add({val: 'one', id: [1]})
-    this.tree.add({val: 'three', id: [3]})
-    this.tree.add({val: 'two', id: [2]})
-    this.tree.add({val: 'five', id: [5]})
-    this.tree.delete([4])
-    expect(this.tree.find([4])).not.toBeTruthy()
-    this.tree.delete([3])
-    expect(this.tree.find([3])).not.toBeTruthy()
-    this.tree.delete([2])
-    expect(this.tree.find([2])).not.toBeTruthy()
-    this.tree.delete([1])
-    expect(this.tree.find([1])).not.toBeTruthy()
-    this.tree.delete([5])
-    expect(this.tree.find([5])).not.toBeTruthy()
-  })
-
-  it('debug #1', function () {
-    this.tree.add({id: [2]})
-    this.tree.add({id: [0]})
-    this.tree.delete([2])
-    this.tree.add({id: [1]})
-    expect(this.tree.find([0])).not.toBeUndefined()
-    expect(this.tree.find([1])).not.toBeUndefined()
-    expect(this.tree.find([2])).toBeUndefined()
-  })
   describe('debug #2', function () {
     var tree = new Y.utils.RBTree()
-    tree.add({id: [8433]})
-    tree.add({id: [12844]})
-    tree.add({id: [1795]})
-    tree.add({id: [30302]})
-    tree.add({id: [64287]})
+    tree.set({id: [8433]})
+    tree.set({id: [12844]})
+    tree.set({id: [1795]})
+    tree.set({id: [30302]})
+    tree.set({id: [64287]})
     tree.delete([8433])
-    tree.add({id: [28996]})
+    tree.set({id: [28996]})
     tree.delete([64287])
-    tree.add({id: [22721]})
+    tree.set({id: [22721]})
 
     itRootNodeIsBlack(tree, [])
     itBlackHeightOfSubTreesAreEqual(tree, [])
@@ -122,12 +82,14 @@ describe('RedBlack Tree', function () {
         var obj = [Math.floor(Math.random() * numberOfRBTreeTests * 10000)]
         if (!tree.findNode(obj)) {
           elements.push(obj)
-          tree.add({id: obj})
+          tree.set({id: obj})
         }
       } else if (elements.length > 0) {
         var elemid = Math.floor(Math.random() * elements.length)
         var elem = elements[elemid]
-        elements = elements.filter(function (e) {return !Y.utils.compareIds(e, elem); }); // eslint-disable-line
+        elements = elements.filter(function (e) {
+          return !Y.utils.compareIds(e, elem)
+        })
         tree.delete(elem)
       }
     }
@@ -157,7 +119,7 @@ describe('RedBlack Tree', function () {
       var actualResults = 0
       this.memory.requestTransaction(function * () {
         yield* tree.iterate(this, lowerBound, null, function * (val) {
-          expect(val).not.toBeUndefined()
+          expect(val).toBeDefined()
           actualResults++
         })
         expect(expectedResults).toEqual(actualResults)
@@ -173,7 +135,7 @@ describe('RedBlack Tree', function () {
       var actualResults = 0
       this.memory.requestTransaction(function * () {
         yield* tree.iterate(this, lowerBound, null, function * (val) {
-          expect(val).not.toBeUndefined()
+          expect(val).toBeDefined()
           actualResults++
         })
         expect(expectedResults).toEqual(actualResults)
@@ -190,7 +152,7 @@ describe('RedBlack Tree', function () {
       var actualResults = 0
       this.memory.requestTransaction(function * () {
         yield* tree.iterate(this, null, upperBound, function * (val) {
-          expect(val).not.toBeUndefined()
+          expect(val).toBeDefined()
           actualResults++
         })
         expect(expectedResults).toEqual(actualResults)
@@ -216,7 +178,7 @@ describe('RedBlack Tree', function () {
       var actualResults = 0
       this.memory.requestTransaction(function * () {
         yield* tree.iterate(this, lowerBound, upperBound, function * (val) {
-          expect(val).not.toBeUndefined()
+          expect(val).toBeDefined()
           actualResults++
         })
         expect(expectedResults).toEqual(actualResults)

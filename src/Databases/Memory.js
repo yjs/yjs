@@ -17,10 +17,10 @@ Y.Memory = (function () {
     constructor (y, opts) {
       super(y, opts)
       this.os = new Y.utils.RBTree()
-      this.ss = {}
+      this.ds = new Y.utils.RBTree()
+      this.ss = new Y.utils.RBTree()
       this.waitingTransactions = []
       this.transactionInProgress = false
-      this.ds = new DeleteStore()
     }
     logTable () {
       var self = this

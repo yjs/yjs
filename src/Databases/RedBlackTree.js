@@ -221,7 +221,8 @@ class RBTree {
     }
   }
   find (id) {
-    return this.findNode(id).val
+    var n
+    return (n = this.findNode(id)) ? n.val : null
   }
   findNode (id) {
     if (id == null || id.constructor !== Array) {
@@ -387,7 +388,7 @@ class RBTree {
       }
     }
   }
-  add (v) {
+  set (v) {
     if (v == null || v.id == null || v.id.constructor !== Array) {
       throw new Error('v is expected to have an id property which is an Array!')
     }
@@ -410,7 +411,8 @@ class RBTree {
             p = p.right
           }
         } else {
-          return null
+          p.val = node.val
+          return p
         }
       }
       this._fixInsert(node)

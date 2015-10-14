@@ -176,7 +176,7 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
           var o = yield* this.getOperation([d.id[0], d.id[1] + i])
           // gc'd or deleted
           if (d.gc) {
-            expect(o).toBeUndefined()
+            expect(o).toBeNull()
           } else {
             expect(o.deleted).toBeTruthy()
           }
