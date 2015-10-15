@@ -3,43 +3,51 @@
 'use strict'
 
 Y.IndexedDB = (function () {
+  class Store {
+    constructor (transaction, name) {
+      this.store = transaction.objectStore(name)
+    }
+    find (id) {
+      return this.store.get(id)
+    }
+    put (v) {
+      return this.store.put(v)
+    }
+    delete (id) {
+      return this.store.delete(id)
+    }
+    * findNodeWithLowerBound (start) {
+      var cursorResult = this.store.openCursor(window.IDBKeyRange.lowerBound(start))
+      var cursor
+      while ((cursor = yield cursorResult) != null) {
+        // yield* gen.call(t, cursor.value)
+        cursor.continue()
+      }
+    }
+    * iterate (t, start, end, gen) {
+      var range = null
+      if (start != null && end != null) {
+        range = window.IDBKeyRange.bound(start, end)
+      } else if (start != null) {
+        range = window.IDBKeyRange.lowerBound(start)
+      } else if (end != null) {
+        range = window.IDBKeyRange.upperBound(end)
+      }
+      var cursorResult = this.store.openCursor(range)
+      var cursor
+      while ((cursor = yield cursorResult) != null) {
+        yield* gen.call(t, cursor.value)
+        cursor.continue()
+      }
+    }
+
+  }
   class Transaction {
     constructor (store) {
-      this.transaction = store.db.transaction(['OperationStore', 'StateVector'], 'readwrite')
-      this.sv = this.transaction.objectStore('StateVector')
-      this.os = this.transaction.objectStore('OperationStore')
-      this.buffer = {}
-    }
-    * setOperation (op) {
-      yield this.os.put(op)
-      this.buffer[JSON.stringify(op.id)] = op
-      return op
-    }
-    * getOperation (id) {
-      var op = this.buffer[JSON.stringify(id)]
-      if (op == null) {
-        op = yield this.os.get(id)
-        this.buffer[JSON.stringify(id)] = op
-      }
-      return op
-    }
-    * removeOperation (id) {
-      this.buffer[JSON.stringify(id)] = null
-      return yield this.os.delete(id)
-    }
-    * setState (state) {
-      return yield this.sv.put(state)
-    }
-    * getState (user) {
-      var state
-      if ((state = yield this.sv.get(user)) != null) {
-        return state
-      } else {
-        return {
-          user: user,
-          clock: 0
-        }
-      }
+      var transaction = store.db.transaction(['OperationStore', 'StateStore', 'DeleteStore'], 'readwrite')
+      this.ss = new Store(transaction, 'StateStore')
+      this.os = new Store(transaction, 'OperationStore')
+      this.ds = new Store(transaction, 'DeleteStore')
     }
     * getStateVector () {
       var stateVector = []
@@ -155,7 +163,8 @@ Y.IndexedDB = (function () {
             var db = event.target.result
             try {
               db.createObjectStore('OperationStore', {keyPath: 'id'})
-              db.createObjectStore('StateVector', {keyPath: 'user'})
+              db.createObjectStore('DeleteStore', {keyPath: 'id'})
+              db.createObjectStore('StateStore', {keyPath: 'id'})
             } catch (e) {
               // console.log("Store already exists!")
             }
@@ -172,7 +181,19 @@ Y.IndexedDB = (function () {
         this.transactionQueue.onRequest()
       }
     }
-    * removeDatabase () {
+    transact (makeGen) {
+      var t = new Y.Transaction(this)
+      while (makeGen !== null) {
+        var gen = makeGen.call(t)
+        var res = gen.next()
+        while (!res.done) {
+          res = gen.next(res.value)
+        }
+        makeGen = this.getNextRequest()
+      }
+    }
+    // TODO: implement "free"..
+    * destroy () {
       this.db.close()
       yield window.indexedDB.deleteDatabase(this.namespace)
     }

@@ -3,7 +3,7 @@
 
 var numberOfRBTreeTests = 1000
 
-function itRedNodesDoNotHaveBlackChildren (tree) {
+function itRedNodesDoNotHaveBlackChildren () {
   it('Red nodes do not have black children', function () {
     function traverse (n) {
       if (n == null) {
@@ -20,11 +20,11 @@ function itRedNodesDoNotHaveBlackChildren (tree) {
       traverse(n.left)
       traverse(n.right)
     }
-    traverse(tree.root)
+    traverse(this.tree.root)
   })
 }
 
-function itBlackHeightOfSubTreesAreEqual (tree) {
+function itBlackHeightOfSubTreesAreEqual () {
   it('Black-height of sub-trees are equal', function () {
     function traverse (n) {
       if (n == null) {
@@ -39,76 +39,99 @@ function itBlackHeightOfSubTreesAreEqual (tree) {
         return sub1 + 1
       }
     }
-    traverse(tree.root)
+    traverse(this.tree.root)
   })
 }
 
-function itRootNodeIsBlack (tree) {
+function itRootNodeIsBlack () {
   it('root node is black', function () {
-    expect(tree.root == null || tree.root.isBlack()).toBeTruthy()
+    expect(this.tree.root == null || this.tree.root.isBlack()).toBeTruthy()
   })
 }
 
 describe('RedBlack Tree', function () {
-  beforeEach(function () {
-    this.memory = new Y.Memory(null, {
-      name: 'Memory',
-      gcTimeout: -1
-    })
-    this.tree = this.memory.os
-  })
+  var tree, memory
   describe('debug #2', function () {
-    var tree = new Y.utils.RBTree()
-    tree.put({id: [8433]})
-    tree.put({id: [12844]})
-    tree.put({id: [1795]})
-    tree.put({id: [30302]})
-    tree.put({id: [64287]})
-    tree.delete([8433])
-    tree.put({id: [28996]})
-    tree.delete([64287])
-    tree.put({id: [22721]})
+    beforeAll(function (done) {
+      this.memory = new Y.Memory(null, {
+        name: 'Memory',
+        gcTimeout: -1
+      })
+      this.tree = this.memory.os
+      tree = this.tree
+      memory = this.memory
+      memory.requestTransaction(function * () {
+        yield* tree.put({id: [8433]})
+        yield* tree.put({id: [12844]})
+        yield* tree.put({id: [1795]})
+        yield* tree.put({id: [30302]})
+        yield* tree.put({id: [64287]})
+        yield* tree.delete([8433])
+        yield* tree.put({id: [28996]})
+        yield* tree.delete([64287])
+        yield* tree.put({id: [22721]})
+        done()
+      })
+    })
 
-    itRootNodeIsBlack(tree, [])
-    itBlackHeightOfSubTreesAreEqual(tree, [])
+    itRootNodeIsBlack()
+    itBlackHeightOfSubTreesAreEqual([])
   })
 
   describe(`After adding&deleting (0.8/0.2) ${numberOfRBTreeTests} times`, function () {
     var elements = []
-    var tree = new Y.utils.RBTree()
-    for (var i = 0; i < numberOfRBTreeTests; i++) {
-      var r = Math.random()
-      if (r < 0.8) {
-        var obj = [Math.floor(Math.random() * numberOfRBTreeTests * 10000)]
-        if (!tree.findNode(obj)) {
-          elements.push(obj)
-          tree.put({id: obj})
+    beforeAll(function (done) {
+      this.memory = new Y.Memory(null, {
+        name: 'Memory',
+        gcTimeout: -1
+      })
+      this.tree = this.memory.os
+      tree = this.tree
+      memory = this.memory
+      memory.requestTransaction(function * () {
+        for (var i = 0; i < numberOfRBTreeTests; i++) {
+          var r = Math.random()
+          if (r < 0.8) {
+            var obj = [Math.floor(Math.random() * numberOfRBTreeTests * 10000)]
+            if (!tree.findNode(obj)) {
+              elements.push(obj)
+              yield* tree.put({id: obj})
+            }
+          } else if (elements.length > 0) {
+            var elemid = Math.floor(Math.random() * elements.length)
+            var elem = elements[elemid]
+            elements = elements.filter(function (e) {
+              return !Y.utils.compareIds(e, elem)
+            })
+            yield* tree.delete(elem)
+          }
         }
-      } else if (elements.length > 0) {
-        var elemid = Math.floor(Math.random() * elements.length)
-        var elem = elements[elemid]
-        elements = elements.filter(function (e) {
-          return !Y.utils.compareIds(e, elem)
-        })
-        tree.delete(elem)
-      }
-    }
-    itRootNodeIsBlack(tree)
-
-    it('can find every object', function () {
-      for (var id of elements) {
-        expect(tree.find(id).id).toEqual(id)
-      }
+        done()
+      })
     })
 
-    it('can find every object with lower bound search', function () {
-      for (var id of elements) {
-        expect(tree.findNodeWithLowerBound(id).val.id).toEqual(id)
-      }
-    })
-    itRedNodesDoNotHaveBlackChildren(tree)
+    itRootNodeIsBlack()
 
-    itBlackHeightOfSubTreesAreEqual(tree)
+    it('can find every object', function (done) {
+      memory.requestTransaction(function * () {
+        for (var id of elements) {
+          expect((yield* tree.find(id)).id).toEqual(id)
+        }
+        done()
+      })
+    })
+
+    it('can find every object with lower bound search', function (done) {
+      this.memory.requestTransaction(function * () {
+        for (var id of elements) {
+          expect((yield* tree.findNodeWithLowerBound(id)).val.id).toEqual(id)
+        }
+        done()
+      })
+    })
+    itRedNodesDoNotHaveBlackChildren()
+
+    itBlackHeightOfSubTreesAreEqual()
 
     it('iterating over a tree with lower bound yields the right amount of results', function (done) {
       var lowerBound = elements[Math.floor(Math.random() * elements.length)]

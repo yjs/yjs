@@ -275,5 +275,28 @@ class AbstractDatabase {
       yield* t._changed(transaction, Y.utils.copyObject(op))
     }
   }
+  getNextRequest () {
+    if (this.waitingTransactions.length === 0) {
+      this.transactionInProgress = false
+      return null
+    } else {
+      return this.waitingTransactions.shift()
+    }
+  }
+  requestTransaction (makeGen, callImmediately) {
+    if (!this.transactionInProgress) {
+      this.transactionInProgress = true
+      if (callImmediately) {
+        this.transact(makeGen)
+      } else {
+        var self = this
+        setTimeout(function () {
+          self.transact(makeGen)
+        }, 0)
+      }
+    } else {
+      this.waitingTransactions.push(makeGen)
+    }
+  }
 }
 Y.AbstractDatabase = AbstractDatabase

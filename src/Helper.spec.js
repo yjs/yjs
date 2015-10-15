@@ -18,7 +18,7 @@ g.g = g
 
 g.YConcurrency_TestingMode = true
 
-jasmine.DEFAULT_TIMEOUT_INTERVAL = 2000
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000
 
 g.describeManyTimes = function describeManyTimes (times, name, f) {
   for (var i = 0; i < times; i++) {
@@ -36,7 +36,7 @@ function wait (t) {
   return new Promise(function (resolve) {
     setTimeout(function () {
       resolve()
-    }, t)
+    }, t * 2)
   })
 }
 g.wait = wait

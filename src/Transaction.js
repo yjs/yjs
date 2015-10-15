@@ -75,12 +75,6 @@
        applyable on a given SS.
 */
 class Transaction {
-  constructor (store) {
-    this.store = store
-    this.ss = store.ss
-    this.os = store.os
-    this.ds = store.ds
-  }
   /*
     Get a type based on the id of its model.
     If it does not exist yes, create it.
@@ -206,14 +200,14 @@ class Transaction {
         // un-extend left
         var newlen = n.val.len - (id[1] - n.val.id[1])
         n.val.len -= newlen
-        n = yield this.ds.put({id: id, len: newlen, gc: false})
+        n = yield* this.ds.put({id: id, len: newlen, gc: false})
       }
       // get prev&next before adding a new operation
       var prev = n.prev()
       var next = n.next()
       if (id[1] < n.val.id[1] + n.val.len - 1) {
         // un-extend right
-        yield this.ds.put({id: [id[0], id[1] + 1], len: n.val.len - 1, gc: false})
+        yield* this.ds.put({id: [id[0], id[1] + 1], len: n.val.len - 1, gc: false})
         n.val.len = 1
       }
       // set gc'd
@@ -225,7 +219,7 @@ class Transaction {
         Y.utils.compareIds([prev.val.id[0], prev.val.id[1] + prev.val.len], n.val.id)
       ) {
         prev.val.len += n.val.len
-        yield this.ds.delete(n.val.id)
+        yield* this.ds.delete(n.val.id)
         n = prev
       }
       // can extend right?
@@ -235,7 +229,7 @@ class Transaction {
         Y.utils.compareIds([n.val.id[0], n.val.id[1] + n.val.len], next.val.id)
       ) {
         n.val.len += next.val.len
-        yield this.ds.delete(next.val.id)
+        yield* this.ds.delete(next.val.id)
       }
     }
   }
@@ -246,7 +240,7 @@ class Transaction {
   */
   * markDeleted (id) {
     // this.mem.push(["del", id]);
-    var n = yield this.ds.findNodeWithUpperBound(id)
+    var n = yield* this.ds.findNodeWithUpperBound(id)
     if (n != null && n.val.id[0] === id[0]) {
       if (n.val.id[1] <= id[1] && id[1] < n.val.id[1] + n.val.len) {
         // already deleted
@@ -256,11 +250,11 @@ class Transaction {
         n.val.len++
       } else {
         // cannot extend left
-        n = yield this.ds.put({id: id, len: 1, gc: false})
+        n = yield* this.ds.put({id: id, len: 1, gc: false})
       }
     } else {
       // cannot extend left
-      n = yield this.ds.put({id: id, len: 1, gc: false})
+      n = yield* this.ds.put({id: id, len: 1, gc: false})
     }
     // can extend right?
     var next = n.next()
@@ -270,8 +264,8 @@ class Transaction {
       !next.val.gc
     ) {
       n.val.len = n.val.len + next.val.len
-      yield this.ds.delete(next.val.id)
-      return yield this.ds.findNode(n.val.id)
+      yield* this.ds.delete(next.val.id)
+      return this.ds.findNode(n.val.id)
     } else {
       return n
     }
@@ -389,7 +383,7 @@ class Transaction {
     }
   }
   * checkDeleteStoreForState (state) {
-    var n = yield this.ds.findNodeWithUpperBound([state.user, state.clock])
+    var n = yield* this.ds.findNodeWithUpperBound([state.user, state.clock])
     if (n !== null && n.val.id[0] === state.user && n.val.gc) {
       state.clock = Math.max(state.clock, n.val.id[1] + n.val.len)
     }
@@ -468,7 +462,7 @@ class Transaction {
     }
   }
   * isGarbageCollected (id) {
-    var n = yield this.ds.findNodeWithUpperBound(id)
+    var n = yield* this.ds.findNodeWithUpperBound(id)
     return n !== null && n.val.id[0] === id[0] && id[1] < n.val.id[1] + n.val.len && n.val.gc
   }
   /*
@@ -491,15 +485,15 @@ class Transaction {
     return ds
   }
   * isDeleted (id) {
-    var n = yield this.ds.findNodeWithUpperBound(id)
+    var n = yield* this.ds.findNodeWithUpperBound(id)
     return n !== null && n.val.id[0] === id[0] && id[1] < n.val.id[1] + n.val.len
   }
   * setOperation (op) {
-    yield this.os.put(op)
+    yield* this.os.put(op)
     return op
   }
   * addOperation (op) {
-    var n = yield this.os.put(op)
+    var n = yield* this.os.put(op)
     return function () {
       if (n != null) {
         n = n.next()
@@ -510,10 +504,10 @@ class Transaction {
     }
   }
   * getOperation (id) {
-    return yield this.os.find(id)
+    return yield* this.os.find(id)
   }
   * removeOperation (id) {
-    yield this.os.delete(id)
+    yield* this.os.delete(id)
   }
   * setState (state) {
     var val = {
@@ -521,15 +515,15 @@ class Transaction {
       clock: state.clock
     }
     // TODO: find a way to skip this step.. (after implementing some dbs..)
-    if (yield this.ss.find([state.user])) {
-      yield this.ss.put(val)
+    if (yield* this.ss.find([state.user])) {
+      yield* this.ss.put(val)
     } else {
-      yield this.ss.put(val)
+      yield* this.ss.put(val)
     }
   }
   * getState (user) {
     var n
-    var clock = (n = this.ss.find([user])) == null ? null : n.clock
+    var clock = (n = yield* this.ss.find([user])) == null ? null : n.clock
     if (clock == null) {
       clock = 0
     }

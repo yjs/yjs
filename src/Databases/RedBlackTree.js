@@ -130,7 +130,13 @@ class RBTree {
     this.root = null
     this.length = 0
   }
-  findNodeWithLowerBound (from) {
+  * findNext (id) {
+    return yield* this.findNodeWithLowerBound([id[0], id[1] + 1])
+  }
+  * findPrev (id) {
+    return yield* this.findNodeWithUpperBound([id[0], id[1] - 1])
+  }
+  * findNodeWithLowerBound (from) {
     if (from === void 0) {
       throw new Error('You must define from!')
     }
@@ -158,7 +164,7 @@ class RBTree {
       }
     }
   }
-  findNodeWithUpperBound (to) {
+  * findNodeWithUpperBound (to) {
     if (to === void 0) {
       throw new Error('You must define from!')
     }
@@ -187,7 +193,7 @@ class RBTree {
     }
   }
   * iterate (t, from, to, f) {
-    var o = this.findNodeWithLowerBound(from)
+    var o = yield* this.findNodeWithLowerBound(from)
     while (o !== null && (to === null || Y.utils.smaller(o.val.id, to) || Y.utils.compareIds(o.val.id, to))) {
       yield* f.call(t, o.val)
       o = o.next()
@@ -220,7 +226,7 @@ class RBTree {
       console.table(os)
     }
   }
-  find (id) {
+  * find (id) {
     var n
     return (n = this.findNode(id)) ? n.val : null
   }
@@ -246,7 +252,7 @@ class RBTree {
       }
     }
   }
-  delete (id) {
+  * delete (id) {
     if (id == null || id.constructor !== Array) {
       throw new Error('id is expected to be an Array!')
     }
@@ -388,7 +394,7 @@ class RBTree {
       }
     }
   }
-  put (v) {
+  * put (v) {
     if (v == null || v.id == null || v.id.constructor !== Array) {
       throw new Error('v is expected to have an id property which is an Array!')
     }

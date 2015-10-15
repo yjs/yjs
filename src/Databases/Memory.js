@@ -2,6 +2,15 @@
 'use strict'
 
 Y.Memory = (function () {
+  class Transaction extends Y.Transaction {
+    constructor (store) {
+      super(store)
+      this.store = store
+      this.ss = store.ss
+      this.os = store.os
+      this.ds = store.ds
+    }
+  }
   class Database extends Y.AbstractDatabase {
     constructor (y, opts) {
       super(y, opts)
@@ -25,29 +34,15 @@ Y.Memory = (function () {
         }, true)
       })
     }
-    requestTransaction (_makeGen, callImmediately) {
-      if (!this.transactionInProgress) {
-        this.transactionInProgress = true
-        var transact = () => {
-          var makeGen = _makeGen
-          while (makeGen != null) {
-            var t = new Y.Transaction(this)
-            var gen = makeGen.call(t)
-            var res = gen.next()
-            while (!res.done) {
-              res = gen.next(res.value)
-            }
-            makeGen = this.waitingTransactions.shift()
-          }
-          this.transactionInProgress = false
+    transact (makeGen) {
+      var t = new Transaction(this)
+      while (makeGen !== null) {
+        var gen = makeGen.call(t)
+        var res = gen.next()
+        while (!res.done) {
+          res = gen.next(res.value)
         }
-        if (callImmediately) {
-          transact()
-        } else {
-          setTimeout(transact, 0)
-        }
-      } else {
-        this.waitingTransactions.push(_makeGen)
+        makeGen = this.getNextRequest()
       }
     }
     * destroy () {
