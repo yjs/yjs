@@ -131,10 +131,12 @@ class RBTree {
     this.length = 0
   }
   * findNext (id) {
-    return yield* this.findNodeWithLowerBound([id[0], id[1] + 1])
+    var n = yield* this.findNodeWithLowerBound([id[0], id[1] + 1])
+    return n == null ? null : n.val
   }
   * findPrev (id) {
-    return yield* this.findNodeWithUpperBound([id[0], id[1] - 1])
+    var n = yield* this.findNodeWithUpperBound([id[0], id[1] - 1])
+    return n == null ? null : n.val
   }
   * findNodeWithLowerBound (from) {
     if (from === void 0) {

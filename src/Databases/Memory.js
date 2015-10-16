@@ -22,17 +22,26 @@ Y.Memory = (function () {
     }
     logTable () {
       var self = this
-      return new Promise(function (resolve) {
-        self.requestTransaction(function * () {
-          console.log('User: ', this.store.y.connector.userId, "==============================") // eslint-disable-line
-          console.log("State Set (SS):", this.ss) // eslint-disable-line
-          console.log("Operation Store (OS):") // eslint-disable-line
-          yield* this.os.logTable() // eslint-disable-line
-          console.log("Deletion Store (DS):") //eslint-disable-line
-          yield* this.ds.logTable() // eslint-disable-line
-          resolve()
-        }, true)
-      })
+      self.requestTransaction(function * () {
+        console.log('User: ', this.store.y.connector.userId, "==============================") // eslint-disable-line
+        console.log("State Set (SS):", yield* this.getStateSet()) // eslint-disable-line
+        console.log("Operation Store (OS):") // eslint-disable-line
+        yield* this.os.logTable() // eslint-disable-line
+        console.log("Deletion Store (DS):") //eslint-disable-line
+        yield* this.ds.logTable() // eslint-disable-line
+        if (this.store.gc1.length > 0 || this.store.gc2.length > 0) {
+          console.warn('GC1|2 not empty!', this.store.gc1, this.store.gc2)
+        }
+        if (JSON.stringify(this.store.listenersById) !== '{}') {
+          console.warn('listenersById not empty!')
+        }
+        if (JSON.stringify(this.store.listenersByIdExecuteNow) !== '[]') {
+          console.warn('listenersByIdExecuteNow not empty!')
+        }
+        if (this.store.transactionInProgress) {
+          console.warn('Transaction still in progress!')
+        }
+      }, true)
     }
     transact (makeGen) {
       var t = new Transaction(this)

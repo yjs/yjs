@@ -1,7 +1,7 @@
 /* global createUsers, wait, Y, compareAllUsers, getRandomNumber, applyRandomTransactionsAllRejoinNoGC, applyRandomTransactionsWithGC, async, garbageCollectAllUsers, describeManyTimes */
 /* eslint-env browser,jasmine */
 
-var numberOfYArrayTests = 200
+var numberOfYArrayTests = 40
 var repeatArrayTests = 1
 
 describe('Array Type', function () {
@@ -187,7 +187,6 @@ describe('Array Type', function () {
       l3 = yield y3.get('Array')
       yield flushAll()
       yield garbageCollectAllUsers(this.users)
-      yconfig1.db.logTable()
       expect(l1.toArray()).toEqual(l2.toArray())
       expect(l2.toArray()).toEqual(l3.toArray())
       expect(l2.toArray()).toEqual([])

@@ -195,42 +195,47 @@ class Transaction {
   * markGarbageCollected (id) {
     // this.mem.push(["gc", id]);
     var n = yield* this.markDeleted(id)
-    if (!n.val.gc) {
-      if (n.val.id[1] < id[1]) {
+    if (!n.gc) {
+      if (n.id[1] < id[1]) {
         // un-extend left
-        var newlen = n.val.len - (id[1] - n.val.id[1])
-        n.val.len -= newlen
+        var newlen = n.len - (id[1] - n.id[1])
+        n.len -= newlen
+        yield* this.ds.put(n)
         n = yield* this.ds.put({id: id, len: newlen, gc: false})
+        n = n.val
       }
       // get prev&next before adding a new operation
-      var prev = n.prev()
-      var next = n.next()
-      if (id[1] < n.val.id[1] + n.val.len - 1) {
+      var prev = yield* this.ds.findPrev(id)
+      var next = yield* this.ds.findNext(id)
+
+      if (id[1] < n.id[1] + n.len - 1) {
         // un-extend right
-        yield* this.ds.put({id: [id[0], id[1] + 1], len: n.val.len - 1, gc: false})
-        n.val.len = 1
+        yield* this.ds.put({id: [id[0], id[1] + 1], len: n.len - 1, gc: false})
+        n.len = 1
       }
       // set gc'd
-      n.val.gc = true
+      n.gc = true
       // can extend left?
       if (
         prev != null &&
-        prev.val.gc &&
-        Y.utils.compareIds([prev.val.id[0], prev.val.id[1] + prev.val.len], n.val.id)
+        prev.gc &&
+        Y.utils.compareIds([prev.id[0], prev.id[1] + prev.len], n.id)
       ) {
-        prev.val.len += n.val.len
-        yield* this.ds.delete(n.val.id)
+        prev.len += n.len
+        yield* this.ds.delete(n.id)
         n = prev
+        // ds.put n here?
       }
       // can extend right?
       if (
         next != null &&
-        next.val.gc &&
-        Y.utils.compareIds([n.val.id[0], n.val.id[1] + n.val.len], next.val.id)
+        next.gc &&
+        Y.utils.compareIds([n.id[0], n.id[1] + n.len], next.id)
       ) {
-        n.val.len += next.val.len
-        yield* this.ds.delete(next.val.id)
+        n.len += next.len
+        yield* this.ds.delete(next.id)
       }
+      yield* this.ds.put(n)
     }
   }
   /*
@@ -241,34 +246,36 @@ class Transaction {
   * markDeleted (id) {
     // this.mem.push(["del", id]);
     var n = yield* this.ds.findNodeWithUpperBound(id)
-    if (n != null && n.val.id[0] === id[0]) {
-      if (n.val.id[1] <= id[1] && id[1] < n.val.id[1] + n.val.len) {
+    n = n == null ? n : n.val
+    if (n != null && n.id[0] === id[0]) {
+      if (n.id[1] <= id[1] && id[1] < n.id[1] + n.len) {
         // already deleted
         return n
-      } else if (n.val.id[1] + n.val.len === id[1] && !n.val.gc) {
+      } else if (n.id[1] + n.len === id[1] && !n.gc) {
         // can extend existing deletion
-        n.val.len++
+        n.len++
       } else {
         // cannot extend left
         n = yield* this.ds.put({id: id, len: 1, gc: false})
+        n = n.val
       }
     } else {
       // cannot extend left
       n = yield* this.ds.put({id: id, len: 1, gc: false})
+      n = n.val
     }
     // can extend right?
-    var next = n.next()
+    var next = yield* this.ds.findNext(n.id)
     if (
-      next !== null &&
-      Y.utils.compareIds([n.val.id[0], n.val.id[1] + n.val.len], next.val.id) &&
-      !next.val.gc
+      next != null &&
+      Y.utils.compareIds([n.id[0], n.id[1] + n.len], next.id) &&
+      !next.gc
     ) {
-      n.val.len = n.val.len + next.val.len
-      yield* this.ds.delete(next.val.id)
-      return this.ds.findNode(n.val.id)
-    } else {
-      return n
+      n.len = n.len + next.len
+      yield* this.ds.delete(next.id)
     }
+    yield* this.ds.put(n)
+    return n
   }
   /*
     Call this method when the client is connected&synced with the
