@@ -300,6 +300,7 @@ class Transaction {
     * reset origins of all right ops
   */
   * garbageCollectOperation (id) {
+    this.store.addToDebug('yield* this.garbageCollectOperation(', id, ')')
     // check to increase the state of the respective user
     var state = yield* this.getState(id[0])
     if (state.clock === id[1]) {
@@ -371,15 +372,22 @@ class Transaction {
         // remove gc'd op from parent, if it exists
         var parent = yield* this.getOperation(o.parent)
         var setParent = false // whether to save parent to the os
-        if (Y.utils.compareIds(parent.start, o.id)) {
-          // gc'd op is the start
-          setParent = true
-          parent.start = o.right
-        }
-        if (Y.utils.compareIds(parent.end, o.id)) {
-          // gc'd op is the end
-          setParent = true
-          parent.end = o.left
+        if (o.parentSub != null) {
+          if (Y.utils.compareIds(parent.map[o.parentSub], o.id)) {
+            setParent = true
+            parent.map[o.parentSub] = o.right
+          }
+        } else {
+          if (Y.utils.compareIds(parent.start, o.id)) {
+            // gc'd op is the start
+            setParent = true
+            parent.start = o.right
+          }
+          if (Y.utils.compareIds(parent.end, o.id)) {
+            // gc'd op is the end
+            setParent = true
+            parent.end = o.left
+          }
         }
         if (setParent) {
           yield* this.setOperation(parent)
@@ -570,9 +578,8 @@ class Transaction {
         continue
       }
       var startPos = startSS[user] || 0
-      var endPos = endState.clock
 
-      yield* this.os.iterate(this, [user, startPos], [user, endPos], function * (op) {
+      yield* this.os.iterate(this, [user, startPos], [user, Number.MAX_VALUE], function * (op) {
         ops.push(op)
       })
     }

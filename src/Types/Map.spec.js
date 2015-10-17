@@ -2,7 +2,7 @@
 /* eslint-env browser,jasmine */
 
 var numberOfYMapTests = 40
-var repeatMapTeasts = 1
+var repeatMapTeasts = 2
 
 describe('Map Type', function () {
   var y1, y2, y3, y4, flushAll

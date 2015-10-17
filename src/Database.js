@@ -36,7 +36,9 @@ class AbstractDatabase {
     // wont be kept in memory.
     this.initializedTypes = {}
     this.whenUserIdSetListener = null
-
+    if (typeof YConcurrency_TestingMode !== 'undefined') {
+      this.executeOrder = []
+    }
     this.gc1 = [] // first stage
     this.gc2 = [] // second stage -> after that, remove the op
     this.gcTimeout = opts.gcTimeout || 5000
@@ -63,6 +65,21 @@ class AbstractDatabase {
     if (this.gcTimeout > 0) {
       garbageCollect()
     }
+  }
+  addToDebug () {
+    if (typeof YConcurrency_TestingMode !== 'undefined') {
+      var command = Array.prototype.map.call(arguments, function (s) {
+        if (typeof s === 'string') {
+          return s
+        } else {
+          return JSON.stringify(s)
+        }
+      }).join('').replace(/"/g, "'").replace(/,/g, ', ').replace(/:/g, ': ')
+      this.executeOrder.push(command)
+    }
+  }
+  getDebugData () {
+    console.log(this.executeOrder.join('\n'))
   }
   stopGarbageCollector () {
     var self = this
@@ -230,6 +247,7 @@ class AbstractDatabase {
     Actually execute an operation, when all expected operations are available.
   */
   * tryExecute (op) {
+    this.store.addToDebug('yield* this.store.tryExecute.call(this, ', JSON.stringify(op), ')')
     if (op.struct === 'Delete') {
       yield* Y.Struct.Delete.execute.call(this, op)
     } else if ((yield* this.getOperation(op.id)) == null && !(yield* this.isGarbageCollected(op.id))) {
@@ -284,16 +302,14 @@ class AbstractDatabase {
     }
   }
   requestTransaction (makeGen, callImmediately) {
-    if (!this.transactionInProgress) {
+    if (callImmediately) {
+      this.transact(makeGen)
+    } else if (!this.transactionInProgress) {
       this.transactionInProgress = true
-      if (callImmediately) {
-        this.transact(makeGen)
-      } else {
-        var self = this
-        setTimeout(function () {
-          self.transact(makeGen)
-        }, 0)
-      }
+      var self = this
+      setTimeout(function () {
+        self.transact(makeGen)
+      }, 0)
     } else {
       this.waitingTransactions.push(makeGen)
     }
