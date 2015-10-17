@@ -17,8 +17,6 @@ Y.Memory = (function () {
       this.os = new Y.utils.RBTree()
       this.ds = new Y.utils.RBTree()
       this.ss = new Y.utils.RBTree()
-      this.waitingTransactions = []
-      this.transactionInProgress = false
     }
     logTable () {
       var self = this

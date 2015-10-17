@@ -131,14 +131,12 @@ class RBTree {
     this.length = 0
   }
   * findNext (id) {
-    var n = yield* this.findNodeWithLowerBound([id[0], id[1] + 1])
-    return n == null ? null : n.val
+    return yield* this.findWithLowerBound([id[0], id[1] + 1])
   }
   * findPrev (id) {
-    var n = yield* this.findNodeWithUpperBound([id[0], id[1] - 1])
-    return n == null ? null : n.val
+    return yield* this.findWithUpperBound([id[0], id[1] - 1])
   }
-  * findNodeWithLowerBound (from) {
+  findNodeWithLowerBound (from) {
     if (from === void 0) {
       throw new Error('You must define from!')
     }
@@ -166,7 +164,7 @@ class RBTree {
       }
     }
   }
-  * findNodeWithUpperBound (to) {
+  findNodeWithUpperBound (to) {
     if (to === void 0) {
       throw new Error('You must define from!')
     }
@@ -194,8 +192,16 @@ class RBTree {
       }
     }
   }
+  * findWithLowerBound (from) {
+    var n = this.findNodeWithLowerBound(from)
+    return n == null ? null : n.val
+  }
+  * findWithUpperBound (to) {
+    var n = this.findNodeWithUpperBound(to)
+    return n == null ? null : n.val
+  }
   * iterate (t, from, to, f) {
-    var o = yield* this.findNodeWithLowerBound(from)
+    var o = this.findNodeWithLowerBound(from)
     while (o !== null && (to === null || Y.utils.smaller(o.val.id, to) || Y.utils.compareIds(o.val.id, to))) {
       yield* f.call(t, o.val)
       o = o.next()

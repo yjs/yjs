@@ -65,6 +65,8 @@ class AbstractDatabase {
     if (this.gcTimeout > 0) {
       garbageCollect()
     }
+    this.waitingTransactions = []
+    this.transactionInProgress = false
   }
   addToDebug () {
     if (typeof YConcurrency_TestingMode !== 'undefined') {
@@ -252,8 +254,8 @@ class AbstractDatabase {
       yield* Y.Struct.Delete.execute.call(this, op)
     } else if ((yield* this.getOperation(op.id)) == null && !(yield* this.isGarbageCollected(op.id))) {
       yield* Y.Struct[op.struct].execute.call(this, op)
-      var next = yield* this.addOperation(op)
-      yield* this.store.operationAdded(this, op, next)
+      yield* this.addOperation(op)
+      yield* this.store.operationAdded(this, op)
 
       // Delete if DS says this is actually deleted
       if (yield* this.isDeleted(op.id)) {
@@ -262,7 +264,7 @@ class AbstractDatabase {
     }
   }
   // called by a transaction when an operation is added
-  * operationAdded (transaction, op, next) {
+  * operationAdded (transaction, op) {
     // increase SS
     var o = op
     var state = yield* transaction.getState(op.id[0])
@@ -270,7 +272,7 @@ class AbstractDatabase {
       // either its a new operation (1. case), or it is an operation that was deleted, but is not yet in the OS
       state.clock++
       yield* transaction.checkDeleteStoreForState(state)
-      o = next()
+      o = yield* transaction.os.findNext(o.id)
     }
     yield* transaction.setState(state)
 

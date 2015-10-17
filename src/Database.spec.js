@@ -1,6 +1,6 @@
-/* global Y, async */
+/* global Y, async, databases */
 /* eslint-env browser,jasmine,console */
-var databases = ['Memory']
+
 for (var database of databases) {
   describe(`Database (${database})`, function () {
     var store
@@ -8,7 +8,14 @@ for (var database of databases) {
       describe('Basic', function () {
         beforeEach(function () {
           store = new Y[database](null, {
-            gcTimeout: -1
+            gcTimeout: -1,
+            namespace: 'testing'
+          })
+        })
+        afterEach(function (done) {
+          store.requestTransaction(function * () {
+            yield* this.store.destroy()
+            done()
           })
         })
         it('Deleted operation is deleted', async(function * (done) {
@@ -151,7 +158,14 @@ for (var database of databases) {
       describe('Basic Tests', function () {
         beforeEach(function () {
           store = new Y[database](null, {
-            gcTimeout: -1
+            gcTimeout: -1,
+            namespace: 'testing'
+          })
+        })
+        afterEach(function (done) {
+          store.requestTransaction(function * () {
+            yield* this.store.destroy()
+            done()
           })
         })
         it('debug #1', function (done) {
@@ -160,9 +174,9 @@ for (var database of databases) {
             yield* this.os.put({id: [0]})
             yield* this.os.delete([2])
             yield* this.os.put({id: [1]})
-            expect(yield* this.os.find([0])).not.toBeNull()
-            expect(yield* this.os.find([1])).not.toBeNull()
-            expect(yield* this.os.find([2])).toBeNull()
+            expect(yield* this.os.find([0])).toBeTruthy()
+            expect(yield* this.os.find([1])).toBeTruthy()
+            expect(yield* this.os.find([2])).toBeFalsy()
             done()
           })
         })
@@ -207,14 +221,15 @@ for (var database of databases) {
         var elements = []
         beforeAll(function (done) {
           store = new Y[database](null, {
-            gcTimeout: -1
+            gcTimeout: -1,
+            namespace: 'testing'
           })
           store.requestTransaction(function * () {
             for (var i = 0; i < numberOfOSTests; i++) {
               var r = Math.random()
               if (r < 0.8) {
                 var obj = [Math.floor(Math.random() * numberOfOSTests * 10000)]
-                if (!(this.os.findNode(obj))) {
+                if (!(yield* this.os.find(obj))) {
                   elements.push(obj)
                   yield* this.os.put({id: obj})
                 }
@@ -230,6 +245,12 @@ for (var database of databases) {
             done()
           })
         })
+        afterAll(function (done) {
+          store.requestTransaction(function * () {
+            yield* this.store.destroy()
+            done()
+          })
+        })
         it('can find every object', function (done) {
           store.requestTransaction(function * () {
             for (var id of elements) {
@@ -242,8 +263,8 @@ for (var database of databases) {
         it('can find every object with lower bound search', function (done) {
           store.requestTransaction(function * () {
             for (var id of elements) {
-              var e = yield* this.os.findNodeWithLowerBound(id)
-              expect(e.val.id).toEqual(id)
+              var e = yield* this.os.findWithLowerBound(id)
+              expect(e.id).toEqual(id)
             }
             done()
           })

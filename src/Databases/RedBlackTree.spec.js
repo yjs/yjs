@@ -124,7 +124,7 @@ describe('RedBlack Tree', function () {
     it('can find every object with lower bound search', function (done) {
       this.memory.requestTransaction(function * () {
         for (var id of elements) {
-          expect((yield* tree.findNodeWithLowerBound(id)).val.id).toEqual(id)
+          expect((yield* tree.findWithLowerBound(id)).id).toEqual(id)
         }
         done()
       })

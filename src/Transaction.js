@@ -201,8 +201,8 @@ class Transaction {
         var newlen = n.len - (id[1] - n.id[1])
         n.len -= newlen
         yield* this.ds.put(n)
-        n = yield* this.ds.put({id: id, len: newlen, gc: false})
-        n = n.val
+        n = {id: id, len: newlen, gc: false}
+        yield* this.ds.put(n)
       }
       // get prev&next before adding a new operation
       var prev = yield* this.ds.findPrev(id)
@@ -245,8 +245,7 @@ class Transaction {
   */
   * markDeleted (id) {
     // this.mem.push(["del", id]);
-    var n = yield* this.ds.findNodeWithUpperBound(id)
-    n = n == null ? n : n.val
+    var n = yield* this.ds.findWithUpperBound(id)
     if (n != null && n.id[0] === id[0]) {
       if (n.id[1] <= id[1] && id[1] < n.id[1] + n.len) {
         // already deleted
@@ -256,13 +255,13 @@ class Transaction {
         n.len++
       } else {
         // cannot extend left
-        n = yield* this.ds.put({id: id, len: 1, gc: false})
-        n = n.val
+        n = {id: id, len: 1, gc: false}
+        yield* this.ds.put(n)
       }
     } else {
       // cannot extend left
-      n = yield* this.ds.put({id: id, len: 1, gc: false})
-      n = n.val
+      n = {id: id, len: 1, gc: false}
+      yield* this.ds.put(n)
     }
     // can extend right?
     var next = yield* this.ds.findNext(n.id)
@@ -398,9 +397,9 @@ class Transaction {
     }
   }
   * checkDeleteStoreForState (state) {
-    var n = yield* this.ds.findNodeWithUpperBound([state.user, state.clock])
-    if (n !== null && n.val.id[0] === state.user && n.val.gc) {
-      state.clock = Math.max(state.clock, n.val.id[1] + n.val.len)
+    var n = yield* this.ds.findWithUpperBound([state.user, state.clock])
+    if (n != null && n.id[0] === state.user && n.gc) {
+      state.clock = Math.max(state.clock, n.id[1] + n.len)
     }
   }
   /*
@@ -477,8 +476,8 @@ class Transaction {
     }
   }
   * isGarbageCollected (id) {
-    var n = yield* this.ds.findNodeWithUpperBound(id)
-    return n !== null && n.val.id[0] === id[0] && id[1] < n.val.id[1] + n.val.len && n.val.gc
+    var n = yield* this.ds.findWithUpperBound(id)
+    return n != null && n.id[0] === id[0] && id[1] < n.id[1] + n.len && n.gc
   }
   /*
     A DeleteSet (ds) describes all the deleted ops in the OS
@@ -500,23 +499,15 @@ class Transaction {
     return ds
   }
   * isDeleted (id) {
-    var n = yield* this.ds.findNodeWithUpperBound(id)
-    return n !== null && n.val.id[0] === id[0] && id[1] < n.val.id[1] + n.val.len
+    var n = yield* this.ds.findWithUpperBound(id)
+    return n != null && n.id[0] === id[0] && id[1] < n.id[1] + n.len
   }
   * setOperation (op) {
     yield* this.os.put(op)
     return op
   }
   * addOperation (op) {
-    var n = yield* this.os.put(op)
-    return function () {
-      if (n != null) {
-        n = n.next()
-        return n != null ? n.val : null
-      } else {
-        return null
-      }
-    }
+    yield* this.os.put(op)
   }
   * getOperation (id) {
     return yield* this.os.find(id)

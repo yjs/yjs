@@ -7,22 +7,26 @@ Y.IndexedDB = (function () {
     constructor (transaction, name) {
       this.store = transaction.objectStore(name)
     }
-    find (id) {
-      return this.store.get(id)
+    * find (id) {
+      return yield this.store.get(id)
     }
-    put (v) {
-      return this.store.put(v)
+    * put (v) {
+      yield this.store.put(v)
     }
-    delete (id) {
-      return this.store.delete(id)
+    * delete (id) {
+      yield this.store.delete(id)
     }
-    * findNodeWithLowerBound (start) {
-      var cursorResult = this.store.openCursor(window.IDBKeyRange.lowerBound(start))
-      var cursor
-      while ((cursor = yield cursorResult) != null) {
-        // yield* gen.call(t, cursor.value)
-        cursor.continue()
-      }
+    * findWithLowerBound (start) {
+      return yield this.store.openCursor(window.IDBKeyRange.lowerBound(start))
+    }
+    * findWithUpperBound (end) {
+      return yield this.store.openCursor(window.IDBKeyRange.upperBound(end), 'prev')
+    }
+    * findNext (id) {
+      return yield* this.findWithLowerBound([id[0], id[1] + 1])
+    }
+    * findPrev (id) {
+      return yield* this.findWithUpperBound([id[0], id[1] - 1])
     }
     * iterate (t, start, end, gen) {
       var range = null
@@ -34,60 +38,21 @@ Y.IndexedDB = (function () {
         range = window.IDBKeyRange.upperBound(end)
       }
       var cursorResult = this.store.openCursor(range)
-      var cursor
-      while ((cursor = yield cursorResult) != null) {
-        yield* gen.call(t, cursor.value)
-        cursor.continue()
+      while ((yield cursorResult) != null) {
+        yield* gen.call(t, cursorResult.result.value)
+        cursorResult.result.continue()
       }
     }
 
   }
-  class Transaction {
+  class Transaction extends Y.Transaction {
     constructor (store) {
+      super(store)
       var transaction = store.db.transaction(['OperationStore', 'StateStore', 'DeleteStore'], 'readwrite')
+      this.store = store
       this.ss = new Store(transaction, 'StateStore')
       this.os = new Store(transaction, 'OperationStore')
       this.ds = new Store(transaction, 'DeleteStore')
-    }
-    * getStateVector () {
-      var stateVector = []
-      var cursorResult = this.sv.openCursor()
-      var cursor
-      while ((cursor = yield cursorResult) != null) {
-        stateVector.push(cursor.value)
-        cursor.continue()
-      }
-      return stateVector
-    }
-    * getStateSet () {
-      var sv = yield* this.getStateVector()
-      var ss = {}
-      for (var state of sv) {
-        ss[state.user] = state.clock
-      }
-      return ss
-    }
-
-    * getOperations (startSS) {
-      if (startSS == null) {
-        startSS = {}
-      }
-      var ops = []
-
-      var endSV = yield* this.getStateVector()
-      for (var endState of endSV) {
-        var user = endState.user
-        var startPos = startSS[user] || 0
-        var endPos = endState.clock
-        var range = window.IDBKeyRange.bound([user, startPos], [user, endPos])
-        var cursorResult = this.os.openCursor(range)
-        var cursor
-        while ((cursor = yield cursorResult) != null) {
-          ops.push(cursor.value)
-          cursor.continue()
-        }
-      }
-      return ops
     }
   }
   class OperationStore extends Y.AbstractDatabase {
@@ -106,58 +71,64 @@ Y.IndexedDB = (function () {
       } else {
         this.idbVersion = 5
       }
-
-      this.transactionQueue = {
-        queue: [],
-        onRequest: null
+      var store = this
+      // initialize database!
+      this.requestTransaction(function * () {
+        store.db = yield window.indexedDB.open(opts.namespace, store.idbVersion)
+      })
+      if (opts.cleanStart) {
+        this.requestTransaction(function * () {
+          yield this.os.store.clear()
+          yield this.ds.store.clear()
+          yield this.ss.store.clear()
+        })
       }
-
+    }
+    transact (makeGen) {
+      var transaction = this.db != null ? new Transaction(this) : null
       var store = this
 
-      var tGen = (function * transactionGen () {
-        store.db = yield window.indexedDB.open(opts.namespace, store.idbVersion)
-        var transactionQueue = store.transactionQueue
+      var gen = makeGen.call(transaction)
+      handleTransactions(gen.next())
 
-        var transaction = null
-        var cont = true
-        while (cont) {
-          var request = yield transactionQueue
-          transaction = new Transaction(store)
-
-          yield* request.call(transaction, request) /*
-          while (transactionQueue.queue.length > 0) {
-            yield* transactionQueue.queue.shift().call(transaction)
-          }*/
-        }
-      })()
-
-      function handleTransactions (t) {
-        var request = t.value
-        if (t.done) {
+      function handleTransactions (result) {
+        var request = result.value
+        if (result.done) {
+          makeGen = store.getNextRequest()
+          if (makeGen != null) {
+            if (transaction == null && store.db != null) {
+              transaction = new Transaction(store)
+            }
+            gen = makeGen.call(transaction)
+            handleTransactions(gen.next())
+          } // else no transaction in progress!
           return
-        } else if (request.constructor === window.IDBRequest || request.constructor === window.IDBCursor) {
+        }
+        if (request.constructor === window.IDBRequest) {
           request.onsuccess = function () {
-            handleTransactions(tGen.next(request.result))
+            var res = request.result
+            if (res != null && res.constructor === window.IDBCursorWithValue) {
+              res = res.value
+            }
+            handleTransactions(gen.next(res))
           }
           request.onerror = function (err) {
-            tGen.throw(err)
+            gen.throw(err)
           }
-        } else if (request === store.transactionQueue) {
-          if (request.queue.length > 0) {
-            handleTransactions(tGen.next(request.queue.shift()))
-          } else {
-            request.onRequest = function () {
-              request.onRequest = null
-              handleTransactions(tGen.next(request.queue.shift()))
-            }
+        } else if (request.constructor === window.IDBCursor) {
+          request.onsuccess = function () {
+            handleTransactions(gen.next(request.result != null ? request.result.value : null))
+          }
+          request.onerror = function (err) {
+            gen.throw(err)
           }
         } else if (request.constructor === window.IDBOpenDBRequest) {
           request.onsuccess = function (event) {
             var db = event.target.result
-            handleTransactions(tGen.next(db))
+            handleTransactions(gen.next(db))
           }
           request.onerror = function () {
-            tGen.throw("Couldn't open IndexedDB database!")
+            gen.throw("Couldn't open IndexedDB database!")
           }
           request.onupgradeneeded = function (event) {
             var db = event.target.result
@@ -166,30 +137,12 @@ Y.IndexedDB = (function () {
               db.createObjectStore('DeleteStore', {keyPath: 'id'})
               db.createObjectStore('StateStore', {keyPath: 'id'})
             } catch (e) {
-              // console.log("Store already exists!")
+              console.log('Store already exists!')
             }
           }
         } else {
-          tGen.throw('You can not yield this type!')
+          gen.throw('You must not yield this type!')
         }
-      }
-      handleTransactions(tGen.next())
-    }
-    requestTransaction (makeGen) {
-      this.transactionQueue.queue.push(makeGen)
-      if (this.transactionQueue.onRequest != null) {
-        this.transactionQueue.onRequest()
-      }
-    }
-    transact (makeGen) {
-      var t = new Y.Transaction(this)
-      while (makeGen !== null) {
-        var gen = makeGen.call(t)
-        var res = gen.next()
-        while (!res.done) {
-          res = gen.next(res.value)
-        }
-        makeGen = this.getNextRequest()
       }
     }
     // TODO: implement "free"..

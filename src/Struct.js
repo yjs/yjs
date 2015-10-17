@@ -278,7 +278,7 @@ var Struct = {
     map: function * (o, f) {
       o = o.start
       var res = []
-      while (o !== null) { // TODO: change to != (at least some convention)
+      while (o != null) { // TODO: change to != (at least some convention)
         var operation = yield* this.getOperation(o)
         if (!operation.deleted) {
           res.push(f(operation))

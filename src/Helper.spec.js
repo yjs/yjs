@@ -31,7 +31,7 @@ g.describeManyTimes = function describeManyTimes (times, name, f) {
 */
 function wait (t) {
   if (t == null) {
-    t = 10
+    t = 80
   }
   return new Promise(function (resolve) {
     setTimeout(function () {
@@ -40,6 +40,11 @@ function wait (t) {
   })
 }
 g.wait = wait
+
+g.databases = ['Memory']
+if (typeof window !== 'undefined') {
+  g.databases.push('IndexedDB')
+}
 
 /*
   returns a random element of o.
@@ -177,7 +182,7 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
           var o = yield* this.getOperation([d.id[0], d.id[1] + i])
           // gc'd or deleted
           if (d.gc) {
-            expect(o).toBeNull()
+            expect(o).toBeFalsy()
           } else {
             expect(o.deleted).toBeTruthy()
           }
@@ -215,7 +220,7 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
   }
 })
 
-g.createUsers = async(function * createUsers (self, numberOfUsers) {
+g.createUsers = async(function * createUsers (self, numberOfUsers, database) {
   if (Y.utils.globalRoom.users[0] != null) {
     yield Y.utils.globalRoom.users[0].flushAll()
   }
@@ -229,7 +234,9 @@ g.createUsers = async(function * createUsers (self, numberOfUsers) {
   for (var i = 0; i < numberOfUsers; i++) {
     promises.push(Y({
       db: {
-        name: 'Memory',
+        name: database,
+        namespace: 'User ' + i,
+        cleanStart: true,
         gcTimeout: -1
       },
       connector: {
