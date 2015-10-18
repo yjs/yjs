@@ -1,7 +1,7 @@
 /* global Y, async, databases */
 /* eslint-env browser,jasmine,console */
 
-for (var database of databases) {
+for (let database of databases) {
   describe(`Database (${database})`, function () {
     var store
     describe('DeleteStore', function () {

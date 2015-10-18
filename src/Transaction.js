@@ -132,6 +132,7 @@ class Transaction {
   */
   * deleteOperation (targetId, preventCallType) {
     var target = yield* this.getOperation(targetId)
+    var callType = false
 
     if (target == null || !target.deleted) {
       yield* this.markDeleted(targetId)
@@ -139,8 +140,10 @@ class Transaction {
 
     if (target != null && target.gc == null) {
       if (!target.deleted) {
+        callType = true
         // set deleted & notify type
         target.deleted = true
+        /*
         if (!preventCallType) {
           var type = this.store.initializedTypes[JSON.stringify(target.parent)]
           if (type != null) {
@@ -150,6 +153,7 @@ class Transaction {
             })
           }
         }
+        */
         // delete containing lists
         if (target.start != null) {
           // TODO: don't do it like this .. -.-
@@ -187,6 +191,7 @@ class Transaction {
       ) {
         yield* this.setOperation(right)
       }
+      return callType
     }
   }
   /*
@@ -468,7 +473,11 @@ class Transaction {
       var del = deletions[i]
       var id = [del[0], del[1]]
       // always try to delete..
-      yield* this.deleteOperation(id)
+      var addOperation = yield* this.deleteOperation(id)
+      if (addOperation) {
+        // TODO:.. really .. here? You could prevent calling all these functions in operationAdded
+        yield* this.store.operationAdded(this, {struct: 'Delete', target: id})
+      }
       if (del[2]) {
         // gc
         yield* this.garbageCollectOperation(id)

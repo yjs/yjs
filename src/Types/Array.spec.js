@@ -4,7 +4,7 @@
 var numberOfYArrayTests = 50
 var repeatArrayTests = 2
 
-for (var database of databases) {
+for (let database of databases) {
   describe(`Array Type (DB: ${database})`, function () {
     var y1, y2, y3, yconfig1, yconfig2, yconfig3, flushAll
 

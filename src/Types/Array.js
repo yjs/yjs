@@ -37,14 +37,16 @@
             })
           } else if (op.struct === 'Delete') {
             let pos = this.idArray.indexOf(JSON.stringify(op.target))
-            this.idArray.splice(pos, 1)
-            this.valArray.splice(pos, 1)
-            userEvents.push({
-              type: 'delete',
-              object: this,
-              index: pos,
-              length: 1
-            })
+            if (pos >= 0) {
+              this.idArray.splice(pos, 1)
+              this.valArray.splice(pos, 1)
+              userEvents.push({
+                type: 'delete',
+                object: this,
+                index: pos,
+                length: 1
+              })
+            }
           } else {
             throw new Error('Unexpected struct!')
           }

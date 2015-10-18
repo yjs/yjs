@@ -83,6 +83,29 @@ Y.IndexedDB = (function () {
           yield this.ss.store.clear()
         })
       }
+      var operationsToAdd = []
+      window.addEventListener('storage', function (event) {
+        if (event.key === '__YJS__' + store.namespace) {
+          operationsToAdd.push(event.newValue)
+          if (operationsToAdd.length === 1) {
+            store.requestTransaction(function * () {
+              var add = operationsToAdd
+              operationsToAdd = []
+              for (var i in add) {
+                // don't call the localStorage event twice..
+                var op = yield* this.getOperation(JSON.parse(add[i]).id)
+                yield* this.store.operationAdded(this, op, true)
+              }
+            })
+          }
+        }
+      }, false)
+    }
+    * operationAdded (transaction, op, noAdd) {
+      yield* super.operationAdded(transaction, op)
+      if (!noAdd) {
+        window.localStorage['__YJS__' + this.namespace] = JSON.stringify(op)
+      }
     }
     transact (makeGen) {
       var transaction = this.db != null ? new Transaction(this) : null

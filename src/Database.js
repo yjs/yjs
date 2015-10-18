@@ -36,6 +36,8 @@ class AbstractDatabase {
     // wont be kept in memory.
     this.initializedTypes = {}
     this.whenUserIdSetListener = null
+    this.waitingTransactions = []
+    this.transactionInProgress = false
     if (typeof YConcurrency_TestingMode !== 'undefined') {
       this.executeOrder = []
     }
@@ -46,7 +48,7 @@ class AbstractDatabase {
     function garbageCollect () {
       return new Promise((resolve) => {
         os.requestTransaction(function * () {
-          if (os.y.connector.isSynced) {
+          if (os.y.connector != null && os.y.connector.isSynced) {
             for (var i in os.gc2) {
               var oid = os.gc2[i]
               yield* this.garbageCollectOperation(oid)
@@ -65,8 +67,6 @@ class AbstractDatabase {
     if (this.gcTimeout > 0) {
       garbageCollect()
     }
-    this.waitingTransactions = []
-    this.transactionInProgress = false
   }
   addToDebug () {
     if (typeof YConcurrency_TestingMode !== 'undefined') {
@@ -252,47 +252,68 @@ class AbstractDatabase {
     this.store.addToDebug('yield* this.store.tryExecute.call(this, ', JSON.stringify(op), ')')
     if (op.struct === 'Delete') {
       yield* Y.Struct.Delete.execute.call(this, op)
+      yield* this.store.operationAdded(this, op)
     } else if ((yield* this.getOperation(op.id)) == null && !(yield* this.isGarbageCollected(op.id))) {
       yield* Y.Struct[op.struct].execute.call(this, op)
       yield* this.addOperation(op)
       yield* this.store.operationAdded(this, op)
-
-      // Delete if DS says this is actually deleted
-      if (yield* this.isDeleted(op.id)) {
-        yield* Y.Struct['Delete'].execute.call(this, {struct: 'Delete', target: op.id})
-      }
     }
   }
   // called by a transaction when an operation is added
   * operationAdded (transaction, op) {
-    // increase SS
-    var o = op
-    var state = yield* transaction.getState(op.id[0])
-    while (o != null && o.id[1] === state.clock && op.id[0] === o.id[0]) {
-      // either its a new operation (1. case), or it is an operation that was deleted, but is not yet in the OS
-      state.clock++
-      yield* transaction.checkDeleteStoreForState(state)
-      o = yield* transaction.os.findNext(o.id)
-    }
-    yield* transaction.setState(state)
-
-    // notify whenOperation listeners (by id)
-    var sid = JSON.stringify(op.id)
-    var l = this.listenersById[sid]
-    delete this.listenersById[sid]
-
-    if (l != null) {
-      for (var key in l) {
-        var listener = l[key]
-        if (--listener.missing === 0) {
-          this.whenOperationsExist([], listener.op)
+    if (op.struct === 'Delete') {
+      var target = yield* transaction.getOperation(op.target)
+      if (target != null) {
+        var type = transaction.store.initializedTypes[JSON.stringify(target.parent)]
+        if (type != null) {
+          yield* type._changed(transaction, {
+            struct: 'Delete',
+            target: op.target
+          })
         }
       }
-    }
-    // notify parent, if it has been initialized as a custom type
-    var t = this.initializedTypes[JSON.stringify(op.parent)]
-    if (t != null && !op.deleted) {
-      yield* t._changed(transaction, Y.utils.copyObject(op))
+    } else {
+      // increase SS
+      var o = op
+      var state = yield* transaction.getState(op.id[0])
+      while (o != null && o.id[1] === state.clock && op.id[0] === o.id[0]) {
+        // either its a new operation (1. case), or it is an operation that was deleted, but is not yet in the OS
+        state.clock++
+        yield* transaction.checkDeleteStoreForState(state)
+        o = yield* transaction.os.findNext(o.id)
+      }
+      yield* transaction.setState(state)
+
+      // notify whenOperation listeners (by id)
+      var sid = JSON.stringify(op.id)
+      var l = this.listenersById[sid]
+      delete this.listenersById[sid]
+
+      if (l != null) {
+        for (var key in l) {
+          var listener = l[key]
+          if (--listener.missing === 0) {
+            this.whenOperationsExist([], listener.op)
+          }
+        }
+      }
+      var t = this.initializedTypes[JSON.stringify(op.parent)]
+      // notify parent, if it has been initialized as a custom type
+      if (t != null) {
+        yield* t._changed(transaction, Y.utils.copyObject(op))
+      }
+
+      // Delete if DS says this is actually deleted
+      if (!op.deleted && (yield* transaction.isDeleted(op.id))) {
+        var delop = {
+          struct: 'Delete',
+          target: op.id
+        }
+        yield* Y.Struct['Delete'].execute.call(transaction, delop)
+        if (t != null) {
+          yield* t._changed(transaction, delop)
+        }
+      }
     }
   }
   getNextRequest () {

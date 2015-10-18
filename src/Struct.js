@@ -36,7 +36,7 @@ var Struct = {
       return [] // [op.target]
     },
     execute: function * (op) {
-      yield* this.deleteOperation(op.target)
+      return yield* this.deleteOperation(op.target)
     }
   },
   Insert: {

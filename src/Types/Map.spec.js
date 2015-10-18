@@ -4,7 +4,7 @@
 var numberOfYMapTests = 40
 var repeatMapTeasts = 2
 
-for (var database of databases) {
+for (let database of databases) {
   describe(`Map Type (DB: ${database})`, function () {
     var y1, y2, y3, y4, flushAll
 
