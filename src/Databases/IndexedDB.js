@@ -93,7 +93,10 @@ Y.IndexedDB = (function () {
               operationsToAdd = []
               for (var i in add) {
                 // don't call the localStorage event twice..
-                var op = yield* this.getOperation(JSON.parse(add[i]).id)
+                var op = JSON.parse(add[i])
+                if (op.struct !== 'Delete') {
+                  op = yield* this.getOperation(op.id)
+                }
                 yield* this.store.operationAdded(this, op, true)
               }
             })
