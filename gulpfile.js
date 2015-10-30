@@ -52,7 +52,7 @@ var jasmine = require('gulp-jasmine')
 var jasmineBrowser = require('gulp-jasmine-browser')
 var concat = require('gulp-concat')
 var watch = require('gulp-watch')
-var $ = require('gulp-load-plugin')
+var $ = require('gulp-load-plugins')()
 
 var options = minimist(process.argv.slice(2), {
   string: ['export', 'name', 'testport', 'testfiles', 'regenerator'],
@@ -100,7 +100,7 @@ if (options.regenerator) {
 }
 
 gulp.task('deploy', function () {
-  gulp.src(files.src)
+  return gulp.src(files.src)
     .pipe(sourcemaps.init())
     .pipe(concat('y.js'))
     .pipe(babel({
@@ -112,6 +112,26 @@ gulp.task('deploy', function () {
     .pipe(sourcemaps.write('.'))
     .pipe(gulp.dest('.'))
 })
+
+gulp.task('deploy:updateSubmodule', function () {
+  return $.git.updateSubmodule({ args: '--init' })
+})
+
+gulp.task('deploy:copy', function () {
+  return gulp.src(['./y.js', './README.md', 'package.json', 'LICENSE'])
+    .pipe(gulp.dest('./dist/'))
+})
+
+gulp.task('deploy:bump', ['deploy:updateSubmodule', 'deploy:copy', 'deploy'], function () {
+  return gulp.src('package.json')
+    .pipe($.bump({type: 'patch'}))
+    .pipe(gulp.dest('.'))
+    .pipe($.git.commit('bumps package version'))
+    .pipe($.filter('package.json'))
+    .pipe($.tagVersion({cwd: './dist'}))
+})
+
+gulp.task()
 
 gulp.task('build:test', function () {
   var babelOptions = {
