@@ -52,6 +52,7 @@ var jasmine = require('gulp-jasmine')
 var jasmineBrowser = require('gulp-jasmine-browser')
 var concat = require('gulp-concat')
 var watch = require('gulp-watch')
+var $ = require('gulp-load-plugin')
 
 var options = minimist(process.argv.slice(2), {
   string: ['export', 'name', 'testport', 'testfiles', 'regenerator'],
