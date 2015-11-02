@@ -117,7 +117,7 @@ gulp.task('deploy:updateSubmodule', function () {
   return $.git.updateSubmodule({ args: '--init' })
 })
 
-gulp.task('deploy:copy', ['deploy:build'], function () {
+gulp.task('deploy:copy', function () {
   return gulp.src(['./y.js', './y.js.map', './README.md', 'package.json', 'LICENSE'])
     .pipe(gulp.dest('./dist/'))
 })
@@ -131,8 +131,8 @@ gulp.task('deploy:bump', function () {
 gulp.task('deploy:commit', function () {
   gulp.src(['./*', '!./node_modules', '!./build', '!./y.*', '!./dist'] )
     .pipe($.git.commit('bumps package version', {args: '-n'}))
-  return gulp.src('./dist/*', {cwd: './dist'})
-    .pipe($.git.commit('New release', {cwd: './dist/'}))
+  return gulp.src('./dist/*')
+    .pipe($.git.commit('New release', { maxBuffer: 20000 * 1024, args: '-n', cwd: './dist'}))
 })
 
 gulp.task('deploy:tag', function () {
@@ -140,7 +140,7 @@ gulp.task('deploy:tag', function () {
     .pipe($.tagVersion({cwd: './dist'}))
 })
 
-gulp.task('deploy', ['deploy:updateSubmodule', 'deploy:bump', 'deploy:copy', 'deploy:commit', 'deploy:tag'], function () {
+gulp.task('deploy', ['deploy:updateSubmodule', 'deploy:bump', 'deploy:build', 'deploy:copy', 'deploy:commit', 'deploy:tag'], function () {
   $.git.push('origin', 'master', function (err) {
     if (err) throw err
   })
