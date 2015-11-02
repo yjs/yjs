@@ -2,7 +2,7 @@
 'use strict'
 
 ;(function () {
-  class YTextBind extends Y.Array.class {
+  class YTextBind extends Y.Array['class'] {
     constructor (os, _model, idArray, valArray) {
       super(os, _model, idArray, valArray)
       this.textfields = []

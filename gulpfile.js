@@ -99,7 +99,7 @@ if (options.regenerator) {
   files.test = polyfills.concat(files.test)
 }
 
-gulp.task('deploy', function () {
+gulp.task('deploy:build', function () {
   return gulp.src(files.src)
     .pipe(sourcemaps.init())
     .pipe(concat('y.js'))
@@ -117,21 +117,34 @@ gulp.task('deploy:updateSubmodule', function () {
   return $.git.updateSubmodule({ args: '--init' })
 })
 
-gulp.task('deploy:copy', function () {
-  return gulp.src(['./y.js', './README.md', 'package.json', 'LICENSE'])
+gulp.task('deploy:copy', ['deploy:build'], function () {
+  return gulp.src(['./y.js', './y.js.map', './README.md', 'package.json', 'LICENSE'])
     .pipe(gulp.dest('./dist/'))
 })
 
-gulp.task('deploy:bump', ['deploy:updateSubmodule', 'deploy:copy', 'deploy'], function () {
-  return gulp.src('package.json')
+gulp.task('deploy:bump', function () {
+  return gulp.src('./package.json')
     .pipe($.bump({type: 'patch'}))
-    .pipe(gulp.dest('.'))
-    .pipe($.git.commit('bumps package version'))
-    .pipe($.filter('package.json'))
+    .pipe(gulp.dest('./'))
+})
+
+gulp.task('deploy:commit', function () {
+  return gulp.src(['./*', '!./node_modules', '!./build', '!./y.*', '!./dist'] )
+    .pipe($.git.commit('bumps package version', {args: '-n'}))
+  /* return gulp.src('./dist/*')
+    .pipe($.git.commit('New release', {cwd: './dist/'}))*/
+})
+
+gulp.task('deploy:tag', function () {
+  return gulp.src('./package.json')
     .pipe($.tagVersion({cwd: './dist'}))
 })
 
-gulp.task()
+gulp.task('deploy', ['deploy:updateSubmodule', 'deploy:bump', 'deploy:copy', 'deploy:commit', 'deploy:tag'], function () {
+  $.git.push('origin', 'master', function (err) {
+    if (err) throw err
+  })
+})
 
 gulp.task('build:test', function () {
   var babelOptions = {
