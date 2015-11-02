@@ -129,10 +129,10 @@ gulp.task('deploy:bump', function () {
 })
 
 gulp.task('deploy:commit', function () {
-  return gulp.src(['./*', '!./node_modules', '!./build', '!./y.*', '!./dist'] )
+  gulp.src(['./*', '!./node_modules', '!./build', '!./y.*', '!./dist'] )
     .pipe($.git.commit('bumps package version', {args: '-n'}))
-  /* return gulp.src('./dist/*')
-    .pipe($.git.commit('New release', {cwd: './dist/'}))*/
+  return gulp.src('./dist/*', {cwd: './dist'})
+    .pipe($.git.commit('New release', {cwd: './dist/'}))
 })
 
 gulp.task('deploy:tag', function () {
