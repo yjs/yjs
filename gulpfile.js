@@ -52,7 +52,7 @@ var jasmine = require('gulp-jasmine')
 var jasmineBrowser = require('gulp-jasmine-browser')
 var concat = require('gulp-concat')
 var watch = require('gulp-watch')
-var exec = require('child_process').exec
+var shell = require('gulp-shell')
 var $ = require('gulp-load-plugins')()
 
 var options = minimist(process.argv.slice(2), {
@@ -129,23 +129,26 @@ gulp.task('deploy:bump', function () {
     .pipe(gulp.dest('./'))
 })
 
-gulp.task('deploy:commit', function () {
-  gulp.src(['./*', '!./node_modules', '!./build', '!./y.*', '!./dist'] )
-    .pipe($.git.commit('bumps package version', {args: '-n'}))
-  return gulp.src('./dist/*')
-    .pipe($.git.commit('New release', { maxBuffer: 20000 * 1024, args: '-n', cwd: './dist'}))
-})
-
-gulp.task('deploy:tag', function () {
-  return gulp.src('./package.json')
-    .pipe($.tagVersion({cwd: './dist'}))
-})
-
-gulp.task('deploy', ['deploy:updateSubmodule', 'deploy:bump', 'deploy:build', 'deploy:copy', 'deploy:commit', 'deploy:tag'], function (cb) {
-  exec('echo yayy && echo yooo', function (err, stdout, stderr) {
-    console.log(err)
-    cb(err)
-  })
+gulp.task('deploy', ['deploy:updateSubmodule', 'deploy:bump', 'deploy:build', 'deploy:copy'], function () {
+  return gulp.src('./package.json', {read: false})
+    .pipe(shell([
+      'echo "Deploying version <%= getVersion(file.path) %>"',
+      'cd ./dist/',
+      'git add -A',
+      'git commit -am "Deploy <%= getVersion(file.path) %>" -n',
+      'git tag -a v<%= getVersion(file.path) %>',
+      'git push',
+      'git push origin --tags',
+      'cd ..',
+      'git commit -am "Release <%= getVersion(file.path) %>" -n',
+      'git push'
+    ], {
+      templateData: {
+        getVersion: function (s) {
+          return require(s).version
+        }
+      }
+    }))
 })
 
 gulp.task('build:test', function () {
