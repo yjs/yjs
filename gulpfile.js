@@ -129,17 +129,17 @@ gulp.task('deploy:bump', function () {
     .pipe(gulp.dest('./'))
 })
 
-gulp.task('deploy', ['deploy:updateSubmodule', 'deploy:bump', 'deploy:build', 'deploy:copy'], function () {
+gulp.task('deploy', ['test', 'deploy:updateSubmodule', 'deploy:bump', 'deploy:build', 'deploy:copy'], function () {
   return gulp.src('./package.json', {read: false})
     .pipe(shell([
+      'standard',
       'echo "Deploying version <%= getVersion(file.path) %>"',
-      'cd ./dist/',
-      'git add -A',
-      'git commit -am "Deploy <%= getVersion(file.path) %>" -n',
-      'git push',
-      'git tag -a v<%= getVersion(file.path) %> -m "Release <%= getVersion(file.path) %>"',
-      'git push origin --tags',
-      'cd ..',
+      'git pull',
+      'cd ./dist/ && git add -A',
+      'cd ./dist/ && git commit -am "Deploy <%= getVersion(file.path) %>" -n',
+      'cd ./dist/ && git push',
+      'cd ./dist/ && git tag -a v<%= getVersion(file.path) %> -m "Release <%= getVersion(file.path) %>"',
+      'cd ./dist/ && git push origin --tags',
       'git commit -am "Release <%= getVersion(file.path) %>" -n',
       'git push'
     ], {
