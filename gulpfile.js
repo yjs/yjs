@@ -44,15 +44,8 @@
 */
 
 var gulp = require('gulp')
-var sourcemaps = require('gulp-sourcemaps')
-var babel = require('gulp-babel')
-var uglify = require('gulp-uglify')
 var minimist = require('minimist')
-var jasmine = require('gulp-jasmine')
-var jasmineBrowser = require('gulp-jasmine-browser')
 var concat = require('gulp-concat')
-var watch = require('gulp-watch')
-var shell = require('gulp-shell')
 var $ = require('gulp-load-plugins')()
 
 var options = minimist(process.argv.slice(2), {
@@ -102,16 +95,16 @@ if (options.regenerator) {
 
 gulp.task('deploy:build', function () {
   return gulp.src(files.src)
-    .pipe(sourcemaps.init())
+    .pipe($.sourcemaps.init())
     .pipe(concat('y.js'))
-    .pipe(babel({
+    .pipe($.babel({
       loose: 'all',
       modules: 'ignore',
       experimental: true
     }))
-    .pipe(uglify())
-    .pipe(sourcemaps.write('.'))
-    .pipe(gulp.dest('.'))
+    .pipe($.uglify())
+    .pipe($.sourcemaps.write('./dist/'))
+    .pipe(gulp.dest('./dist/'))
 })
 
 gulp.task('deploy:updateSubmodule', function () {
@@ -119,19 +112,19 @@ gulp.task('deploy:updateSubmodule', function () {
 })
 
 gulp.task('deploy:copy', function () {
-  return gulp.src(['./y.js', './y.js.map', './README.md', 'package.json', 'LICENSE'])
-    .pipe(gulp.dest('./dist/'))
+  return gulp.src(['README.md'], {base: '.'})
+    .pipe(gulp.dest('dist/'))
 })
 
 gulp.task('deploy:bump', function () {
-  return gulp.src('./package.json')
+  return gulp.src(['./package.json', './dist/package.json'], {base: '.'})
     .pipe($.bump({type: 'patch'}))
     .pipe(gulp.dest('./'))
 })
 
 gulp.task('deploy', ['test', 'deploy:updateSubmodule', 'deploy:bump', 'deploy:build', 'deploy:copy'], function () {
   return gulp.src('./package.json', {read: false})
-    .pipe(shell([
+    .pipe($.shell([
       'standard',
       'echo "Deploying version <%= getVersion(file.path) %>"',
       'git pull',
@@ -161,16 +154,16 @@ gulp.task('build:test', function () {
     babelOptions.blacklist = 'regenerator'
   }
   gulp.src(files.src)
-    .pipe(sourcemaps.init())
+    .pipe($.sourcemaps.init())
     .pipe(concat('y.js'))
-    .pipe(babel(babelOptions))
-    .pipe(sourcemaps.write())
+    .pipe($.babel(babelOptions))
+    .pipe($.sourcemaps.write())
     .pipe(gulp.dest('.'))
 
   return gulp.src('src/**/*.js')
-    .pipe(sourcemaps.init())
-    .pipe(babel(babelOptions))
-    .pipe(sourcemaps.write())
+    .pipe($.sourcemaps.init())
+    .pipe($.babel(babelOptions))
+    .pipe($.sourcemaps.write())
     .pipe(gulp.dest('build'))
 })
 
@@ -182,14 +175,21 @@ gulp.task('dev:browser', ['build:test'], function () {
   gulp.watch('src/**/*.js', ['build:test'])
 
   gulp.src(files.test)
-    .pipe(watch(['build/**/*.js']))
-    .pipe(jasmineBrowser.specRunner())
-    .pipe(jasmineBrowser.server({port: options.testport}))
+    .pipe($.watch(['build/**/*.js']))
+    .pipe($.jasmineBrowser.specRunner())
+    .pipe($.jasmineBrowser.server({port: options.testport}))
 })
 
 gulp.task('dev', ['build:test'], function () {
   gulp.start('dev:browser')
   gulp.start('dev:node')
+})
+
+gulp.task('copy:dist', ['deploy:build'])
+
+gulp.task('dev:Examples', ['copy:dist'], function () {
+  gulp.watch('src/**/*.js', ['copy:dist'])
+  return $.serve('dist/Examples')()
 })
 
 gulp.task('test', ['build:test'], function () {
@@ -198,7 +198,7 @@ gulp.task('test', ['build:test'], function () {
     testfiles.concat(['src/polyfills.js'])
   }
   return gulp.src(testfiles)
-    .pipe(jasmine({
+    .pipe($.jasmine({
       verbose: true,
       includeStuckTrace: true
     }))

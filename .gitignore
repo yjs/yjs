@@ -10,3 +10,4 @@ build_test
 .validate.json
 /y.js
 /y.js.map
+/y-*
