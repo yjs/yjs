@@ -136,7 +136,7 @@ gulp.task('deploy', ['deploy:updateSubmodule', 'deploy:bump', 'deploy:build', 'd
       'cd ./dist/',
       'git add -A',
       'git commit -am "Deploy <%= getVersion(file.path) %>" -n',
-      'git tag -a v<%= getVersion(file.path) %>',
+      'git tag -a v<%= getVersion(file.path) %> -m "Release <%= getVersion(file.path) %>"',
       'git push',
       'git push origin --tags',
       'cd ..',
