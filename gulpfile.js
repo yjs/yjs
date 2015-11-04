@@ -52,6 +52,7 @@ var jasmine = require('gulp-jasmine')
 var jasmineBrowser = require('gulp-jasmine-browser')
 var concat = require('gulp-concat')
 var watch = require('gulp-watch')
+var exec = require('child_process').exec
 var $ = require('gulp-load-plugins')()
 
 var options = minimist(process.argv.slice(2), {
@@ -140,9 +141,10 @@ gulp.task('deploy:tag', function () {
     .pipe($.tagVersion({cwd: './dist'}))
 })
 
-gulp.task('deploy', ['deploy:updateSubmodule', 'deploy:bump', 'deploy:build', 'deploy:copy', 'deploy:commit', 'deploy:tag'], function () {
-  $.git.push('origin', 'master', function (err) {
-    if (err) throw err
+gulp.task('deploy', ['deploy:updateSubmodule', 'deploy:bump', 'deploy:build', 'deploy:copy', 'deploy:commit', 'deploy:tag'], function (cb) {
+  exec('echo yayy && echo yooo', function (err, stdout, stderr) {
+    console.log(err)
+    cb(err)
   })
 })
 
