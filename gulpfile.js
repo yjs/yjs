@@ -93,20 +93,6 @@ if (options.regenerator) {
   files.test = polyfills.concat(files.test)
 }
 
-gulp.task('deploy:build', function () {
-  return gulp.src(files.src)
-    .pipe($.sourcemaps.init())
-    .pipe(concat('y.js'))
-    .pipe($.babel({
-      loose: 'all',
-      modules: 'ignore',
-      experimental: true
-    }))
-    .pipe($.uglify())
-    .pipe($.sourcemaps.write('.'))
-    .pipe(gulp.dest('./dist/'))
-})
-
 gulp.task('deploy:updateSubmodule', function () {
   return $.git.updateSubmodule({ args: '--init' })
 })
@@ -122,7 +108,7 @@ gulp.task('deploy:bump', function () {
     .pipe(gulp.dest('./'))
 })
 
-gulp.task('deploy', ['test', 'deploy:updateSubmodule', 'deploy:bump', 'deploy:build', 'deploy:copy'], function () {
+gulp.task('deploy', ['test', 'deploy:updateSubmodule', 'deploy:bump', 'build:dist', 'deploy:copy'], function () {
   return gulp.src('./package.json', {read: false})
     .pipe($.shell([
       'standard',
@@ -144,6 +130,20 @@ gulp.task('deploy', ['test', 'deploy:updateSubmodule', 'deploy:bump', 'deploy:bu
     }))
 })
 
+gulp.task('build:dist', function () {
+  return gulp.src(files.src)
+    .pipe($.sourcemaps.init())
+    .pipe(concat('y.js'))
+    .pipe($.babel({
+      loose: 'all',
+      modules: 'ignore',
+      experimental: true
+    }))
+    .pipe($.uglify())
+    .pipe($.sourcemaps.write('.'))
+    .pipe(gulp.dest('./dist/'))
+})
+
 gulp.task('build:test', function () {
   var babelOptions = {
     loose: 'all',
@@ -153,13 +153,6 @@ gulp.task('build:test', function () {
   if (!options.regenerator) {
     babelOptions.blacklist = 'regenerator'
   }
-  gulp.src(files.src)
-    .pipe($.sourcemaps.init())
-    .pipe(concat('y.js'))
-    .pipe($.babel(babelOptions))
-    .pipe($.sourcemaps.write())
-    .pipe(gulp.dest('.'))
-
   return gulp.src('src/**/*.js')
     .pipe($.sourcemaps.init())
     .pipe($.babel(babelOptions))
@@ -185,7 +178,7 @@ gulp.task('dev', ['build:test'], function () {
   gulp.start('dev:node')
 })
 
-gulp.task('copy:dist', ['deploy:build'], function () {
+gulp.task('copy:dist', ['build:dist'], function () {
   return gulp.src(['./dist/y.js', './dist/y.js.map'])
     .pipe(gulp.dest('./dist/Examples/bower_components/yjs/'))
 })
