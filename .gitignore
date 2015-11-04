@@ -1,0 +1,8 @@
+node_modules
+Examples/bower_components
+.directory
+.codio
+.settings
+.jshintignore
+.jshintrc
+.validate.json
