@@ -4,5 +4,7 @@ before_install:
 node_js:
   - "0.12"
 branches:
+  except:
+    - dist
   only:
     - master
