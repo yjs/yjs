@@ -103,7 +103,7 @@ gulp.task('deploy:build', function () {
       experimental: true
     }))
     .pipe($.uglify())
-    .pipe($.sourcemaps.write('./dist/'))
+    .pipe($.sourcemaps.write('.'))
     .pipe(gulp.dest('./dist/'))
 })
 
@@ -185,9 +185,12 @@ gulp.task('dev', ['build:test'], function () {
   gulp.start('dev:node')
 })
 
-gulp.task('copy:dist', ['deploy:build'])
+gulp.task('copy:dist', ['deploy:build'], function () {
+  return gulp.src(['./dist/y.js', './dist/y.js.map'])
+    .pipe(gulp.dest('./dist/Examples/bower_components/yjs/'))
+})
 
-gulp.task('dev:Examples', ['copy:dist'], function () {
+gulp.task('dev:examples', ['copy:dist'], function () {
   gulp.watch('src/**/*.js', ['copy:dist'])
   return $.serve('dist/Examples')()
 })
