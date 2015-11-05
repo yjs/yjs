@@ -44,6 +44,8 @@
 */
 
 var gulp = require('gulp')
+var $ = require('gulp-load-plugins')()
+var runSequence = require('run-sequence').use(gulp)
 
 require('./gulpfile.helper.js')(gulp, {
   polyfills: ['./node_modules/gulp-babel/node_modules/babel-core/node_modules/regenerator/runtime.js'],
@@ -67,15 +69,45 @@ require('./gulpfile.helper.js')(gulp, {
   moduleName: 'yjs'
 })
 
-gulp.task('default', ['test'])
-
-gulp.task('copy:dist', function () {
-  return gulp.src(['../y-*/dist/*.js', '../y-*/dist/*.js.map'])
+gulp.task('dev:examples', ['updateSubmodule', 'watch:dist'], function () {
+  // watch all distfiles and copy them to bower_components
+  var distfiles = ['./dist/*.js', './dist/*.js.map', '../y-*/dist/*.js', '../y-*/dist/*.js.map']
+  gulp.src(distfiles)
+    .pipe($.watch(distfiles))
+    .pipe($.rename(function (path) {
+      var dir = path.dirname.split('/')[0]
+      console.log(JSON.stringify(path))
+      path.dirname = dir === '.' ? 'yjs' : dir
+    }))
     .pipe(gulp.dest('./dist/Examples/bower_components/'))
+
+  return $.serve('dist/Examples/')()
 })
 
-gulp.task('dev:examples', ['dist', 'copy:dist'], function () {
-  gulp.watch('src/**/*.js', ['copy:dist'])
-
-  return $.serve('dist/Examples')()
+gulp.task('default', function (cb) {
+  gulp.src('package.json')
+    .pipe($.prompt.prompt({
+      type: 'checkbox',
+      name: 'tasks',
+      message: 'Which tasks would you like to run?',
+      choices: [
+        'test                    Test this project',
+        'dev:examples            Serve the examples directory in ./dist/',
+        'dev:browser             Watch files & serve the testsuite for the browser',
+        'dev:nodejs              Watch filse & test this project with nodejs',
+        'bump                    Bump the current state of the project',
+        'publish                 Publish this project. Creates a github tag',
+        'dist                    Build the distribution files'
+      ]
+    }, function (res) {
+      var tasks = res.tasks.map(function (task) {
+        return task.split(' ')[0]
+      })
+      if (tasks.length > 0) {
+        console.info('gulp ' + tasks.join(' '))
+        runSequence(tasks, cb)
+      } else {
+        console.info('Ok, .. goodbye')
+      }
+    }))
 })

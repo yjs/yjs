@@ -1,6 +1,6 @@
 {
   "name": "yjs",
-  "version": "0.6.31",
+  "version": "0.6.32",
   "description": "A framework for real-time p2p shared editing on arbitrary complex data types",
   "main": "y.js",
   "scripts": {
@@ -53,6 +53,7 @@
     "gulp-jasmine-browser": "^0.2.3",
     "gulp-load-plugins": "^1.0.0",
     "gulp-prompt": "^0.1.2",
+    "gulp-rename": "^1.2.2",
     "gulp-serve": "^1.2.0",
     "gulp-shell": "^0.5.1",
     "gulp-sourcemaps": "^1.5.2",
