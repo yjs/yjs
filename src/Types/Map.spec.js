@@ -1,8 +1,8 @@
 /* global createUsers, Y, databases, compareAllUsers, getRandomNumber, applyRandomTransactionsAllRejoinNoGC, applyRandomTransactionsWithGC, async, describeManyTimes */
 /* eslint-env browser,jasmine */
 
-var numberOfYMapTests = 40
-var repeatMapTeasts = 2
+var numberOfYMapTests = 10
+var repeatMapTeasts = 1
 
 for (let database of databases) {
   describe(`Map Type (DB: ${database})`, function () {

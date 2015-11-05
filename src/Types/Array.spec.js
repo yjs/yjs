@@ -1,7 +1,7 @@
 /* global createUsers, databases, wait, Y, compareAllUsers, getRandomNumber, applyRandomTransactionsAllRejoinNoGC, applyRandomTransactionsWithGC, async, garbageCollectAllUsers, describeManyTimes */
 /* eslint-env browser,jasmine */
 
-var numberOfYArrayTests = 50
+var numberOfYArrayTests = 10
 var repeatArrayTests = 2
 
 for (let database of databases) {

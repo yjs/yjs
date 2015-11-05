@@ -44,160 +44,38 @@
 */
 
 var gulp = require('gulp')
-var minimist = require('minimist')
-var concat = require('gulp-concat')
-var $ = require('gulp-load-plugins')()
 
-var options = minimist(process.argv.slice(2), {
-  string: ['export', 'name', 'testport', 'testfiles', 'regenerator'],
-  default: {
-    export: 'ignore',
-    name: 'y.js',
-    testport: '8888',
-    testfiles: 'src/**/*.js',
-    regenerator: process.version < 'v0.12'
-  }
-})
-
-var polyfills = [
-  './node_modules/gulp-babel/node_modules/babel-core/node_modules/regenerator/runtime.js'
-]
-
-var concatOrder = [
-  'y.js',
-  'Connector.js',
-  'Database.js',
-  'Transaction.js',
-  'Struct.js',
-  'Utils.js',
-  'Databases/RedBlackTree.js',
-  'Databases/Memory.js',
-  'Databases/IndexedDB.js',
-  'Connectors/Test.js',
-  'Connectors/WebRTC.js',
-  'Types/Array.js',
-  'Types/Map.js',
-  'Types/TextBind.js'
-]
-
-var files = {
-  src: polyfills.concat(concatOrder.map(function (f) {
-    return 'src/' + f
-  })),
-  test: ['build/Helper.spec.js'].concat(concatOrder.map(function (f) {
-    return 'build/' + f
-  }).concat(['build/**/*.spec.js']))
-}
-
-if (options.regenerator) {
-  files.test = polyfills.concat(files.test)
-}
-
-gulp.task('deploy:updateSubmodule', function () {
-  return $.git.updateSubmodule({ args: '--init' })
-})
-
-gulp.task('deploy:copy', function () {
-  return gulp.src(['README.md'], {base: '.'})
-    .pipe(gulp.dest('dist/'))
-})
-
-gulp.task('deploy:bump', function () {
-  return gulp.src(['./package.json', './dist/package.json'], {base: '.'})
-    .pipe($.bump({type: 'patch'}))
-    .pipe(gulp.dest('./'))
-})
-
-gulp.task('deploy', ['test', 'deploy:updateSubmodule', 'deploy:bump', 'build:dist', 'deploy:copy'], function () {
-  return gulp.src('./package.json', {read: false})
-    .pipe($.shell([
-      'standard',
-      'echo "Deploying version <%= getVersion(file.path) %>"',
-      'git pull',
-      'cd ./dist/ && git add -A',
-      'cd ./dist/ && git commit -am "Deploy <%= getVersion(file.path) %>" -n',
-      'cd ./dist/ && git push',
-      'cd ./dist/ && git tag -a v<%= getVersion(file.path) %> -m "Release <%= getVersion(file.path) %>"',
-      'cd ./dist/ && git push origin --tags',
-      'git commit -am "Release <%= getVersion(file.path) %>" -n',
-      'git push'
-    ], {
-      templateData: {
-        getVersion: function (s) {
-          return require(s).version
-        }
-      }
-    }))
-})
-
-gulp.task('build:dist', function () {
-  return gulp.src(files.src)
-    .pipe($.sourcemaps.init())
-    .pipe(concat('y.js'))
-    .pipe($.babel({
-      loose: 'all',
-      modules: 'ignore',
-      experimental: true
-    }))
-    .pipe($.uglify())
-    .pipe($.sourcemaps.write('.'))
-    .pipe(gulp.dest('./dist/'))
-})
-
-gulp.task('build:test', function () {
-  var babelOptions = {
-    loose: 'all',
-    modules: 'ignore',
-    experimental: true
-  }
-  if (!options.regenerator) {
-    babelOptions.blacklist = 'regenerator'
-  }
-  return gulp.src('src/**/*.js')
-    .pipe($.sourcemaps.init())
-    .pipe($.babel(babelOptions))
-    .pipe($.sourcemaps.write())
-    .pipe(gulp.dest('build'))
-})
-
-gulp.task('dev:node', ['test'], function () {
-  gulp.watch('src/**/*.js', ['test'])
-})
-
-gulp.task('dev:browser', ['build:test'], function () {
-  gulp.watch('src/**/*.js', ['build:test'])
-
-  gulp.src(files.test)
-    .pipe($.watch(['build/**/*.js']))
-    .pipe($.jasmineBrowser.specRunner())
-    .pipe($.jasmineBrowser.server({port: options.testport}))
-})
-
-gulp.task('dev', ['build:test'], function () {
-  gulp.start('dev:browser')
-  gulp.start('dev:node')
-})
-
-gulp.task('copy:dist', ['build:dist'], function () {
-  return gulp.src(['./dist/y.js', './dist/y.js.map'])
-    .pipe(gulp.dest('./dist/Examples/bower_components/yjs/'))
-})
-
-gulp.task('dev:examples', ['copy:dist'], function () {
-  gulp.watch('src/**/*.js', ['copy:dist'])
-  return $.serve('dist/Examples')()
-})
-
-gulp.task('test', ['build:test'], function () {
-  var testfiles = files.test
-  if (typeof Promise === 'undefined') {
-    testfiles.concat(['src/polyfills.js'])
-  }
-  return gulp.src(testfiles)
-    .pipe($.jasmine({
-      verbose: true,
-      includeStuckTrace: true
-    }))
+require('./gulpfile.helper.js')(gulp, {
+  polyfills: ['./node_modules/gulp-babel/node_modules/babel-core/node_modules/regenerator/runtime.js'],
+  concatOrder: [
+    'y.js',
+    'Connector.js',
+    'Database.js',
+    'Transaction.js',
+    'Struct.js',
+    'Utils.js',
+    'Databases/RedBlackTree.js',
+    'Databases/Memory.js',
+    'Databases/IndexedDB.js',
+    'Connectors/Test.js',
+    'Connectors/WebRTC.js',
+    'Types/Array.js',
+    'Types/Map.js',
+    'Types/TextBind.js'
+  ],
+  targetName: 'y.js',
+  moduleName: 'yjs'
 })
 
 gulp.task('default', ['test'])
+
+gulp.task('copy:dist', function () {
+  return gulp.src(['../y-*/dist/*.js', '../y-*/dist/*.js.map'])
+    .pipe(gulp.dest('./dist/Examples/bower_components/'))
+})
+
+gulp.task('dev:examples', ['dist', 'copy:dist'], function () {
+  gulp.watch('src/**/*.js', ['copy:dist'])
+
+  return $.serve('dist/Examples')()
+})

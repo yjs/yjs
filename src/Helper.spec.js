@@ -31,7 +31,7 @@ g.describeManyTimes = function describeManyTimes (times, name, f) {
 */
 function wait (t) {
   if (t == null) {
-    t = 80
+    t = 5
   }
   return new Promise(function (resolve) {
     setTimeout(function () {
