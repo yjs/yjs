@@ -100,7 +100,10 @@ module.exports = function (gulp, helperOptions) {
         message: 'What type of bump would you like to do?',
         choices: ['patch', 'minor', 'major']
       }, function (res) {
-        bumptype = res.bump
+        if (res.bump.length === 0) {
+          console.info('You have to select a bump type. Now I\'m going to use "patch" as bump type..')
+        }
+        bumptype = res.bump[0]
       }))
       .pipe($.bump({type: bumptype}))
       .pipe(gulp.dest('./'))
@@ -143,7 +146,7 @@ module.exports = function (gulp, helperOptions) {
 
   gulp.task('dev:browser', ['watch:build'], function () {
     return gulp.src(files.test)
-      .pipe($.watch(['build/**/*.js']))
+      .pipe($.watch(['build/**/*']))
       .pipe($.jasmineBrowser.specRunner())
       .pipe($.jasmineBrowser.server({port: options.testport}))
   })
