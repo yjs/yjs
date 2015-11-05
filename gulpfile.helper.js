@@ -3,6 +3,7 @@ var $ = require('gulp-load-plugins')()
 var minimist = require('minimist')
 
 module.exports = function (gulp, helperOptions) {
+  var runSequence = require('run-sequence').use(gulp)
   var options = minimist(process.argv.slice(2), {
     string: ['modulename', 'export', 'name', 'testport', 'testfiles', 'regenerator'],
     default: {
@@ -105,31 +106,35 @@ module.exports = function (gulp, helperOptions) {
       .pipe(gulp.dest('./'))
   })
 
-  gulp.task('publish', ['test', 'updateSubmodule', 'bump', 'dist'], function () {
-    return gulp.src('./package.json', {read: false})
-      .pipe($.prompt.confirm({
-        message: 'Are you sure you want to publish this release?',
-        default: false
-      }))
-      .pipe($.shell([
-        'cp ./README.md ./dist/',
-        'standard',
-        'echo "Deploying version <%= getVersion(file.path) %>"',
-        'git pull',
-        'cd ./dist/ && git add -A',
-        'cd ./dist/ && git commit -am "Deploy <%= getVersion(file.path) %>" -n',
-        'cd ./dist/ && git push',
-        'cd ./dist/ && git tag -a v<%= getVersion(file.path) %> -m "Release <%= getVersion(file.path) %>"',
-        'cd ./dist/ && git push origin --tags',
-        'git commit -am "Release <%= getVersion(file.path) %>" -n',
-        'git push'
-      ], {
-        templateData: {
-          getVersion: function (s) {
-            return require(s).version
+  gulp.task('publish', function (cb) {
+    runSequence(['test', 'updateSubmodule', 'dist'], 'bump', function () {
+      return gulp.src('./package.json', {read: false})
+        .pipe($.prompt.confirm({
+          message: 'Are you sure you want to publish this release?',
+          default: false
+        }))
+        .pipe($.shell([
+          'cp ./README.md ./dist/',
+          'standard',
+          'echo "Deploying version <%= getVersion(file.path) %>"',
+          'git pull',
+          'cd ./dist/ && git add -A',
+          'cd ./dist/ && git commit -am "Deploy <%= getVersion(file.path) %>" -n',
+          'cd ./dist/ && git push',
+          'cd ./dist/ && git tag -a v<%= getVersion(file.path) %> -m "Release <%= getVersion(file.path) %>"',
+          'cd ./dist/ && git push origin --tags',
+          'git commit -am "Release <%= getVersion(file.path) %>" -n',
+          'git push',
+          'echo Finished <%= callback() %>'
+        ], {
+          templateData: {
+            getVersion: function (s) {
+              return require(s).version
+            },
+            callback: cb
           }
-        }
-      }))
+        }))
+    })
   })
 
   gulp.task('dev:node', ['test'], function () {
