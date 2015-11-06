@@ -48,8 +48,8 @@ var $ = require('gulp-load-plugins')()
 var runSequence = require('run-sequence').use(gulp)
 
 require('./gulpfile.helper.js')(gulp, {
-  polyfills: ['./node_modules/gulp-babel/node_modules/babel-core/node_modules/regenerator/runtime.js'],
-  concatOrder: [
+  polyfills: [],
+  files: [
     'y.js',
     'Connector.js',
     'Database.js',
@@ -60,7 +60,6 @@ require('./gulpfile.helper.js')(gulp, {
     'Databases/Memory.js',
     'Databases/IndexedDB.js',
     'Connectors/Test.js',
-    'Connectors/WebRTC.js',
     'Types/Array.js',
     'Types/Map.js',
     'Types/TextBind.js'
@@ -84,7 +83,7 @@ gulp.task('dev:examples', ['updateSubmodule', 'watch:dist'], function () {
   return $.serve('dist/Examples/')()
 })
 
-gulp.task('default', function (cb) {
+gulp.task('default', ['updateSubmodule'], function (cb) {
   gulp.src('package.json')
     .pipe($.prompt.prompt({
       type: 'checkbox',

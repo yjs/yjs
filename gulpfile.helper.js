@@ -5,28 +5,47 @@ var minimist = require('minimist')
 module.exports = function (gulp, helperOptions) {
   var runSequence = require('run-sequence').use(gulp)
   var options = minimist(process.argv.slice(2), {
-    string: ['modulename', 'export', 'name', 'testport', 'testfiles', 'regenerator'],
+    string: ['modulename', 'export', 'name', 'testport', 'testfiles'],
     default: {
       modulename: helperOptions.moduleName,
       targetName: helperOptions.targetName,
       export: 'ignore',
       testport: '8888',
-      testfiles: 'src/**/*.js',
-      regenerator: process.version < 'v0.12'
+      testfiles: '**/*.spec.js',
+      browserify: helperOptions.browserify != null ? helperOptions.browserify : false,
+      regenerator: true,
+      debug: false
     }
   })
-
+  if (options.regenerator === 'false') {
+    options.regenerator = false
+    // TODO: include './node_modules/gulp-babel/node_modules/babel-core/node_modules/regenerator/runtime.js'
+  }
+  var concatOrder = [
+    'y.js',
+    'Connector.js',
+    'Database.js',
+    'Transaction.js',
+    'Struct.js',
+    'Utils.js',
+    'Databases/RedBlackTree.js',
+    'Databases/Memory.js',
+    'Databases/IndexedDB.js',
+    'Connectors/Test.js',
+    'Types/Array.js',
+    'Types/Map.js',
+    'Types/TextBind.js'
+  ]
+  var yjsfiles = concatOrder.map(function (f) {
+    return '../yjs/src/' + f
+  })
   var files = {
-    src: helperOptions.polyfills.concat(helperOptions.concatOrder.map(function (f) {
+    dist: helperOptions.polyfills.concat(helperOptions.files.map(function (f) {
       return 'src/' + f
     })),
-    test: ['build/Helper.spec.js'].concat(helperOptions.concatOrder.map(function (f) {
-      return 'build/' + f
-    }).concat(['build/**/*.spec.js']))
-  }
-
-  if (options.regenerator) {
-    files.test = helperOptions.polyfills.concat(files.test)
+    test: ['../yjs/src/Helper.spec.js'].concat(yjsfiles).concat(helperOptions.files.map(function (f) {
+      return 'src/' + f
+    }).concat(['src/' + options.testfiles]))
   }
 
   var babelOptions = {
@@ -34,54 +53,64 @@ module.exports = function (gulp, helperOptions) {
     modules: 'ignore',
     experimental: true
   }
-  if (!options.regenerator) {
+  if (options.regenerator) {
+    files.test = helperOptions.polyfills.concat(files.test)
+  } else {
     babelOptions.blacklist = 'regenerator'
   }
+  // babelOptions.blacklist = 'regenerator'
+
+  gulp.task('dist', ['build:dist'], function () {
+    function createDist (pipe) {
+      return pipe
+        .pipe($.if(options.debug, $.sourcemaps.init({loadMaps: true})))
+        .pipe($.concat(options.targetName))
+        .pipe($.if(!options.debug && options.regenerator, $.uglify()))
+        .pipe($.if(options.debug, $.sourcemaps.write('.')))
+        .pipe(gulp.dest('./dist/'))
+    }
+    var pipe
+    if (options.browserify || true) {
+      var browserify = require('browserify')
+      var source = require('vinyl-source-stream')
+      var buffer = require('vinyl-buffer')
+
+      pipe = browserify({
+        entries: 'build/' + options.targetName,
+        debug: options.debug
+      }).bundle()
+        .pipe(source(options.targetName))
+        .pipe(buffer())
+    } else {
+      pipe = gulp.src('build/' + options.targetName)
+    }
+    return createDist(pipe)
+  })
 
   gulp.task('dist', function () {
-    return gulp.src(files.src)
-      .pipe($.sourcemaps.init())
+    var browserify = require('browserify')
+    var source = require('vinyl-source-stream')
+    var buffer = require('vinyl-buffer')
+
+    return browserify({
+      entries: files.dist,
+      debug: options.debug
+    }).bundle()
+      .pipe(source(options.targetName))
+      .pipe(buffer())
+      .pipe($.if(options.debug, $.sourcemaps.init({loadMaps: true})))
       .pipe($.concat(options.targetName))
-      .pipe($.babel({
-        loose: 'all',
-        modules: 'ignore',
-        experimental: true
-      }))
-      .pipe($.uglify())
-      .pipe($.sourcemaps.write('.'))
+      .pipe($.if(!options.debug && options.regenerator, $.uglify()))
+      .pipe($.if(options.debug, $.sourcemaps.write('.')))
       .pipe(gulp.dest('./dist/'))
   })
 
-  gulp.task('watch:dist', function () {
-    gulp.src(files.src)
-      .pipe($.watch(files.src))
-      .pipe($.sourcemaps.init())
-      .pipe($.concat(options.targetName))
-      .pipe($.babel({
-        loose: 'all',
-        modules: 'ignore',
-        experimental: true
-      }))
-      // .pipe($.uglify())
-      .pipe($.sourcemaps.write('.'))
-      .pipe(gulp.dest('./dist/'))
-  })
-
-  gulp.task('build', function () {
-    return gulp.src('src/**/*.js')
-      .pipe($.sourcemaps.init())
-      .pipe($.babel(babelOptions))
-      .pipe($.sourcemaps.write())
-      .pipe(gulp.dest('build'))
-  })
-
-  gulp.task('watch:build', function () {
-    gulp.src('src/**/*.js')
-      .pipe($.watch('src/**/*.js'))
-      .pipe($.sourcemaps.init())
-      .pipe($.babel(babelOptions))
-      .pipe($.sourcemaps.write())
-      .pipe(gulp.dest('build'))
+  gulp.task('watch:dist', function (cb) {
+    options.debug = true
+    runSequence('dist', function () {
+      gulp.watch(files.dist, ['dist'])
+      cb()
+    })
   })
 
   gulp.task('updateSubmodule', function () {
@@ -141,7 +170,7 @@ module.exports = function (gulp, helperOptions) {
   })
 
   gulp.task('dev:node', ['test'], function () {
-    gulp.watch('src/**/*.js', ['test'])
+    gulp.watch(files.dist, ['test'])
   })
 
   gulp.task('dev:browser', ['watch:build'], function () {
@@ -151,8 +180,9 @@ module.exports = function (gulp, helperOptions) {
       .pipe($.jasmineBrowser.server({port: options.testport}))
   })
 
-  gulp.task('test', ['build'], function () {
-    return gulp.src(files.test)
+  gulp.task('test', function () {
+    console.log(files.test)
+    return gulp.src('./dist/y.js')
       .pipe($.jasmine({
         verbose: true,
         includeStuckTrace: true

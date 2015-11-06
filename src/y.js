@@ -46,6 +46,10 @@ class YConfig {
   }
 }
 
+if (typeof window !== 'undefined') {
+  window.Y = Y
+}
+
 if (typeof YConcurrency_TestingMode !== 'undefined') {
   g.Y = Y //eslint-disable-line
   // debugger //eslint-disable-line
