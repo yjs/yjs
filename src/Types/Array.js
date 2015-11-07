@@ -1,3 +1,4 @@
+/* global Y */
 'use strict'
 
 function extend (Y) {
