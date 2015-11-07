@@ -1,5 +1,8 @@
-/* global Y, async, databases */
+/* global async, databases */
 /* eslint-env browser,jasmine,console */
+'use strict'
+
+var Y = require('./SpecHelper.js')
 
 for (let database of databases) {
   describe(`Database (${database})`, function () {

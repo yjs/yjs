@@ -1,6 +1,8 @@
-/* global createUsers, databases, wait, Y, compareAllUsers, getRandomNumber, applyRandomTransactionsAllRejoinNoGC, applyRandomTransactionsWithGC, async, garbageCollectAllUsers, describeManyTimes */
+/* global createUsers, databases, wait, compareAllUsers, getRandomNumber, applyRandomTransactionsAllRejoinNoGC, applyRandomTransactionsWithGC, async, garbageCollectAllUsers, describeManyTimes */
 /* eslint-env browser,jasmine */
+'use strict'
 
+var Y = require('../SpecHelper.js')
 var numberOfYArrayTests = 10
 var repeatArrayTests = 2
 

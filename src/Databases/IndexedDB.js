@@ -1,8 +1,6 @@
-/* global Y */
-
 'use strict'
 
-Y.IndexedDB = (function () {
+module.exports = function (Y) {
   class Store {
     constructor (transaction, name) {
       this.store = transaction.objectStore(name)
@@ -177,5 +175,5 @@ Y.IndexedDB = (function () {
       yield window.indexedDB.deleteDatabase(this.namespace)
     }
   }
-  return OperationStore
-})()
+  Y.IndexedDB = OperationStore
+}

@@ -1,7 +1,6 @@
-/* global Y */
 'use strict'
 
-;(function () {
+module.exports = function (Y) {
   class YTextBind extends Y.Array['class'] {
     constructor (os, _model, idArray, valArray) {
       super(os, _model, idArray, valArray)
@@ -287,4 +286,4 @@
       return new YTextBind(os, model.id, idArray, valArray)
     }
   })
-})()
+}

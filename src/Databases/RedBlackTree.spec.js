@@ -1,6 +1,7 @@
-/* global Y */
 /* eslint-env browser,jasmine,console */
+'use strict'
 
+var Y = require('../SpecHelper.js')
 var numberOfRBTreeTests = 1000
 
 function itRedNodesDoNotHaveBlackChildren () {

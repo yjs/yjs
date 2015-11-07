@@ -1,7 +1,6 @@
-/* global Y */
 'use strict'
 
-;(function () {
+function extend (Y) {
   class YArray {
     constructor (os, _model, idArray, valArray) {
       this.os = os
@@ -166,7 +165,7 @@
     }
   }
 
-  Y.Array = new Y.utils.CustomType({
+  Y.extend('Array', new Y.utils.CustomType({
     class: YArray,
     createType: function * YArrayCreator () {
       var modelid = this.store.getNextOpId()
@@ -188,5 +187,11 @@
       })
       return new YArray(os, model.id, idArray, valArray)
     }
-  })
-})()
+  }))
+}
+
+if (typeof Y !== 'undefined') {
+  extend(Y)
+} else {
+  module.exports = extend
+}

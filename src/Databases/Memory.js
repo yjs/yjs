@@ -1,7 +1,6 @@
-/* global Y */
 'use strict'
 
-Y.Memory = (function () {
+module.exports = function (Y) {
   class Transaction extends Y.Transaction {
     constructor (store) {
       super(store)
@@ -59,5 +58,5 @@ Y.Memory = (function () {
       delete this.ds
     }
   }
-  return Database
-})()
+  Y.Memory = Database
+}

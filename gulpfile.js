@@ -49,23 +49,15 @@ var runSequence = require('run-sequence').use(gulp)
 
 require('./gulpfile.helper.js')(gulp, {
   polyfills: [],
-  files: [
-    'y.js',
-    'Connector.js',
-    'Database.js',
-    'Transaction.js',
-    'Struct.js',
-    'Utils.js',
-    'Databases/RedBlackTree.js',
-    'Databases/Memory.js',
-    'Databases/IndexedDB.js',
-    'Connectors/Test.js',
-    'Types/Array.js',
-    'Types/Map.js',
-    'Types/TextBind.js'
-  ],
+  entry: './src/y.js',
   targetName: 'y.js',
-  moduleName: 'yjs'
+  moduleName: 'yjs',
+  specs: [
+    './src/Databases/RedBlackTree.spec.js',
+    './src/Types/Array.spec.js',
+    './src/Types/Map.spec.js',
+    './src/Database.spec.js'
+  ]
 })
 
 gulp.task('dev:examples', ['updateSubmodule', 'watch:dist'], function () {

@@ -1,7 +1,6 @@
-/* global Y */
 'use strict'
 
-;(function () {
+module.exports = function (Y) {
   class YMap {
     constructor (os, model, contents, opContents) {
       this._model = model.id
@@ -292,4 +291,4 @@
       return new YMap(os, model, contents, opContents)
     }
   })
-})()
+}

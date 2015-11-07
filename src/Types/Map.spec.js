@@ -1,6 +1,8 @@
-/* global createUsers, Y, databases, compareAllUsers, getRandomNumber, applyRandomTransactionsAllRejoinNoGC, applyRandomTransactionsWithGC, async, describeManyTimes */
+/* global createUsers, databases, compareAllUsers, getRandomNumber, applyRandomTransactionsAllRejoinNoGC, applyRandomTransactionsWithGC, async, describeManyTimes */
 /* eslint-env browser,jasmine */
+'use strict'
 
+var Y = require('../SpecHelper.js')
 var numberOfYMapTests = 10
 var repeatMapTeasts = 1
 

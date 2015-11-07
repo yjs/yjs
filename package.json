@@ -68,6 +68,7 @@
     "run-sequence": "^1.1.4",
     "standard": "^5.2.2",
     "vinyl-buffer": "^1.0.0",
-    "vinyl-source-stream": "^1.1.0"
+    "vinyl-source-stream": "^1.1.0",
+    "watchify": "^3.6.0"
   }
 }
