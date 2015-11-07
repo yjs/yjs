@@ -7,10 +7,12 @@ Y({
     namespace: 'offlineEditingDemo'
   },
   connector: {
-    name: 'WebRTC',
+    name: 'webrtc',
     room: 'offlineEditingDemo',
     debug: true
-  }
+  },
+  types: [],
+  sourceDir: '/bower_components/'
 }).then(function (yconfig) {
   // yconfig holds all the information about the shared object
   window.yconfig = yconfig
