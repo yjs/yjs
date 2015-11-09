@@ -5,15 +5,15 @@ var minimist = require('minimist')
 module.exports = function (gulp, helperOptions) {
   var runSequence = require('run-sequence').use(gulp)
   var options = minimist(process.argv.slice(2), {
-    string: ['modulename', 'export', 'name', 'testport', 'testfiles'],
+    string: ['modulename', 'export', 'name', 'port', 'testfiles'],
     default: {
       modulename: helperOptions.moduleName,
       targetName: helperOptions.targetName,
       export: 'ignore',
-      testport: '8888',
+      port: '8888',
       testfiles: '**/*.spec.js',
       browserify: helperOptions.browserify != null ? helperOptions.browserify : false,
-      regenerator: true,
+      regenerator: false,
       debug: false
     }
   })
@@ -80,7 +80,7 @@ module.exports = function (gulp, helperOptions) {
       .pipe(source('specs.js'))
       .pipe(buffer())
       .pipe($.sourcemaps.init({loadMaps: true}))
-      .pipe($.sourcemaps.write())
+      .pipe($.sourcemaps.write('.'))
       .pipe(gulp.dest('./build/'))
   })
 
@@ -88,7 +88,7 @@ module.exports = function (gulp, helperOptions) {
     gulp.watch(files.src, ['spec-build'])
     return gulp.src('./build/specs.js')
       .pipe($.jasmineBrowser.specRunner())
-      .pipe($.jasmineBrowser.server({port: options.testport}))
+      .pipe($.jasmineBrowser.server({port: options.port}))
   })
 
   gulp.task('test', function () {

@@ -6,9 +6,6 @@ require('./Database.js')(Y)
 require('./Transaction.js')(Y)
 require('./Struct.js')(Y)
 require('./Utils.js')(Y)
-require('./Databases/RedBlackTree.js')(Y)
-require('./Databases/Memory.js')(Y)
-require('./Databases/IndexedDB.js')(Y)
 require('./Connectors/Test.js')(Y)
 
 var requiringModules = {}
@@ -17,47 +14,55 @@ module.exports = Y
 
 Y.extend = function (name, value) {
   Y[name] = value
-  var resolves = requiringModules[name]
   if (requiringModules[name] != null) {
-    for (var i = 0; i < resolves.length; i++) {
-      resolves[i]()
-    }
+    requiringModules[name].resolve()
     delete requiringModules[name]
   }
 }
 
-require('./Types/Array.js')(Y)
+Y.requestModules = function (modules) {
+  var promises = []
+  for (var i = 0; i < modules.length; i++) {
+    var modulename = 'y-' + modules[i].toLowerCase()
+    if (Y[modules[i]] == null) {
+      if (requiringModules[modules[i]] == null) {
+        try {
+          require(modulename)(Y)
+        } catch (e) {
+          // module does not exist
+          if (typeof window !== 'undefined') {
+            var imported = document.createElement('script')
+            imported.src = Y.sourceDir + '/' + modulename + '/' + modulename + '.js'
+            document.head.appendChild(imported)
+            ;(function () {
+              var modname = modules[i]
+              var promise = new Promise(function (resolve) {
+                requiringModules[modname] = {
+                  resolve: resolve,
+                  promise: promise
+                }
+              })
+              promises.push(promise)
+            })()
+          } else {
+            throw e
+          }
+        }
+      } else {
+        promises.push(requiringModules[modules[i]].promise)
+      }
+    }
+  }
+  return Promise.all(promises)
+}
+
 require('./Types/Map.js')(Y)
-require('./Types/TextBind.js')(Y)
 
 function Y (opts) {
   opts.types = opts.types != null ? opts.types : []
   var modules = [opts.db.name, opts.connector.name].concat(opts.types)
-  var promises = []
-  for (var i = 0; i < modules.length; i++) {
-    if (Y[modules[i]] == null) {
-      try {
-        require(modules[i])(Y)
-      } catch (e) {
-        // module does not exist
-        if (window != null) {
-          if (requiringModules[modules[i]] == null) {
-            var imported = document.createElement('script')
-            var name = modules[i].toLowerCase()
-            imported.src = opts.sourceDir + '/y-' + name + '/y-' + name + '.js'
-            document.head.appendChild(imported)
-            requiringModules[modules[i]] = []
-          }
-          promises.push(new Promise(function (resolve) {
-            requiringModules[modules[i]].push(resolve)
-          }))
-        } else {
-          throw e
-        }
-      }
-    }
-  }
-  return Promise.all(promises).then(function () {
+  Y.sourceDir = opts.sourceDir
+  return Y.requestModules(modules).then(function () {
     return new Promise(function (resolve) {
       var yconfig = new YConfig(opts, function () {
         yconfig.db.whenUserIdSet(function () {

@@ -5,8 +5,7 @@
   "main": "y.js",
   "scripts": {
     "test": "node --harmony ./node_modules/.bin/gulp test",
-    "lint": "./node_modules/.bin/standard",
-    "build": "./node_modules/.bin/gulp build"
+    "lint": "./node_modules/.bin/standard"
   },
   "pre-commit": [
     "lint",

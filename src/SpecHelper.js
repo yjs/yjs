@@ -44,10 +44,13 @@ function wait (t) {
 }
 g.wait = wait
 
-g.databases = ['Memory']
+g.databases = ['memory']
+require('../../y-memory/src/Memory.js')(Y)
 if (typeof window !== 'undefined') {
-  g.databases.push('IndexedDB')
+  g.databases.push('indexeddb')
+  require('../../y-indexeddb/src/IndexedDB.js')(Y)
 }
+require('../../y-array/src/Array.js')
 
 /*
   returns a random element of o.

@@ -53,8 +53,6 @@ require('./gulpfile.helper.js')(gulp, {
   targetName: 'y.js',
   moduleName: 'yjs',
   specs: [
-    './src/Databases/RedBlackTree.spec.js',
-    './src/Types/Array.spec.js',
     './src/Types/Map.spec.js',
     './src/Database.spec.js'
   ]
