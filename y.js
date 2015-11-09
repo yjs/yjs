@@ -1,3 +1,2427 @@
-"use strict";function _inherits(e,t){if("function"!=typeof t&&null!==t)throw new TypeError("Super expression must either be null or a function, not "+typeof t);e.prototype=Object.create(t&&t.prototype,{constructor:{value:e,enumerable:!1,writable:!0,configurable:!0}}),t&&(Object.setPrototypeOf?Object.setPrototypeOf(e,t):e.__proto__=t)}function _classCallCheck(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}var _createClass=function(){function e(e,t){for(var r=0;r<t.length;r++){var n=t[r];n.enumerable=n.enumerable||!1,n.configurable=!0,"value"in n&&(n.writable=!0),Object.defineProperty(e,n.key,n)}}return function(t,r,n){return r&&e(t.prototype,r),n&&e(t,n),t}}();!function e(t,r,n){function i(s,o){if(!r[s]){if(!t[s]){var u="function"==typeof require&&require;if(!o&&u)return u(s,!0);if(a)return a(s,!0);var c=new Error("Cannot find module '"+s+"'");throw c.code="MODULE_NOT_FOUND",c}var l=r[s]={exports:{}};t[s][0].call(l.exports,function(e){var r=t[s][1][e];return i(r?r:e)},l,l.exports,e,t,r,n)}return r[s].exports}for(var a="function"==typeof require&&require,s=0;s<n.length;s++)i(n[s]);return i}({1:[function(e,t,r){t.exports=function(e){var t=function(){function e(t,r){if(_classCallCheck(this,e),this.y=t,null==r&&(r={}),null==r.role||"master"===r.role)this.role="master";else{if("slave"!==r.role)throw new Error("Role must be either 'master' or 'slave'!");this.role="slave"}this.role=r.role,this.connections={},this.isSynced=!1,this.userEventListeners=[],this.whenSyncedListeners=[],this.currentSyncTarget=null,this.syncingClients=[],this.forwardToSyncingClients=r.forwardToSyncingClients!==!1,this.debug=r.debug===!0,this.broadcastedHB=!1,this.syncStep2=Promise.resolve()}return e.prototype.reconnect=function(){},e.prototype.disconnect=function(){return this.connections={},this.isSynced=!1,this.currentSyncTarget=null,this.broadcastedHB=!1,this.syncingClients=[],this.whenSyncedListeners=[],this.y.db.stopGarbageCollector()},e.prototype.setUserId=function(e){return this.userId=e,this.y.db.setUserId(e)},e.prototype.onUserEvent=function(e){this.userEventListeners.push(e)},e.prototype.userLeft=function(e){delete this.connections[e],e===this.currentSyncTarget&&(this.currentSyncTarget=null,this.findNextSyncTarget()),this.syncingClients=this.syncingClients.filter(function(t){return t!==e});for(var t=this.userEventListeners,r=Array.isArray(t),n=0,t=r?t:t[Symbol.iterator]();;){var i;if(r){if(n>=t.length)break;i=t[n++]}else{if(n=t.next(),n.done)break;i=n.value}var a=i;a({action:"userLeft",user:e})}},e.prototype.userJoined=function(e,t){if(null==t)throw new Error("You must specify the role of the joined user!");if(null!=this.connections[e])throw new Error("This user already joined!");this.connections[e]={isSynced:!1,role:t};for(var r=this.userEventListeners,n=Array.isArray(r),i=0,r=n?r:r[Symbol.iterator]();;){var a;if(n){if(i>=r.length)break;a=r[i++]}else{if(i=r.next(),i.done)break;a=i.value}var s=a;s({action:"userJoined",user:e,role:t})}null==this.currentSyncTarget&&this.findNextSyncTarget()},e.prototype.whenSynced=function(e){this.isSynced?e():this.whenSyncedListeners.push(e)},e.prototype.findNextSyncTarget=function(){if(null==this.currentSyncTarget&&!this.isSynced){var e=null;for(var t in this.connections)if(!this.connections[t].isSynced){e=t;break}if(null!=e){var r=this;this.currentSyncTarget=e,this.y.db.requestTransaction(regeneratorRuntime.mark(function u(){return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return t.t0=r,t.t1=e,t.delegateYield(this.getStateSet(),"t2",3);case 3:return t.t3=t.t2,t.delegateYield(this.getDeleteSet(),"t4",5);case 5:t.t5=t.t4,t.t6={type:"sync step 1",stateSet:t.t3,deleteSet:t.t5},t.t0.send.call(t.t0,t.t1,t.t6);case 8:case"end":return t.stop()}},u,this)}))}else{this.isSynced=!0;for(var n=this.whenSyncedListeners,i=Array.isArray(n),a=0,n=i?n:n[Symbol.iterator]();;){var s;if(i){if(a>=n.length)break;s=n[a++]}else{if(a=n.next(),a.done)break;s=a.value}var o=s;o()}this.whenSyncedListeners=[],this.y.db.requestTransaction(regeneratorRuntime.mark(function c(){return regeneratorRuntime.wrap(function(e){for(;;)switch(e.prev=e.next){case 0:return e.delegateYield(this.garbageCollectAfterSync(),"t0",1);case 1:case"end":return e.stop()}},c,this)}))}}},e.prototype.send=function(e,t){this.debug&&console.log("send "+this.userId+" -> "+e+": "+t.type,m)},e.prototype.receiveMessage=function(e,t){var r=this;if(e!==this.userId)if(this.debug&&console.log("receive "+e+" -> "+this.userId+": "+t.type,JSON.parse(JSON.stringify(t))),"sync step 1"===t.type)!function(){var n=r;r.y.db.requestTransaction(regeneratorRuntime.mark(function i(){var r,a,s;return regeneratorRuntime.wrap(function(i){for(;;)switch(i.prev=i.next){case 0:return i.delegateYield(this.getStateSet(),"t0",1);case 1:return r=i.t0,i.delegateYield(this.applyDeleteSet(t.deleteSet),"t1",3);case 3:return i.delegateYield(this.getDeleteSet(),"t2",4);case 4:return a=i.t2,i.delegateYield(this.getOperations(t.stateSet),"t3",6);case 6:s=i.t3,n.send(e,{type:"sync step 2",os:s,stateSet:r,deleteSet:a}),this.forwardToSyncingClients?(n.syncingClients.push(e),setTimeout(function(){n.syncingClients=n.syncingClients.filter(function(t){return t!==e}),n.send(e,{type:"sync done"})},n.syncingClientDuration)):n.send(e,{type:"sync done"}),n._setSyncedWith(e);case 10:case"end":return i.stop()}},i,this)}))}();else if("sync step 2"===t.type){var n,i;!function(){var a=r;n=!r.broadcastedHB,r.broadcastedHB=!0,i=r.y.db,r.syncStep2=new Promise(function(r){i.requestTransaction(regeneratorRuntime.mark(function s(){return regeneratorRuntime.wrap(function(s){for(;;)switch(s.prev=s.next){case 0:return s.delegateYield(this.applyDeleteSet(t.deleteSet),"t0",1);case 1:this.store.apply(t.os),i.requestTransaction(regeneratorRuntime.mark(function o(){var i;return regeneratorRuntime.wrap(function(s){for(;;)switch(s.prev=s.next){case 0:return s.delegateYield(this.getOperations(t.stateSet),"t0",1);case 1:i=s.t0,i.length>0&&(t={type:"update",ops:i},n?a.broadcast(t):a.send(e,t)),r();case 4:case"end":return s.stop()}},o,this)}));case 3:case"end":return s.stop()}},s,this)}))})}()}else if("sync done"===t.type){var a=this;this.syncStep2.then(function(){a._setSyncedWith(e)})}else if("update"===t.type){if(this.forwardToSyncingClients)for(var s=this.syncingClients,o=Array.isArray(s),u=0,s=o?s:s[Symbol.iterator]();;){var c;if(o){if(u>=s.length)break;c=s[u++]}else{if(u=s.next(),u.done)break;c=u.value}var l=c;this.send(l,t)}this.y.db.apply(t.ops)}},e.prototype._setSyncedWith=function(e){var t=this.connections[e];null!=t&&(t.isSynced=!0),e===this.currentSyncTarget&&(this.currentSyncTarget=null,this.findNextSyncTarget())},e.prototype.parseMessageFromXml=function(e){function t(e){var t=!0;e:for(;t;){var n=e;i=a=s=i=o=u=void 0,t=!1;for(var i=n.children,a=Array.isArray(i),s=0,i=a?i:i[Symbol.iterator]();;){var o;if(a){if(s>=i.length)break;o=i[s++]}else{if(s=i.next(),s.done)break;o=s.value}var u=o;if("true"===u.getAttribute("isArray")){e=u,t=!0;continue e}return r(u)}}}function r(e){var n={};for(var i in e.attrs){var a=e.attrs[i],s=parseInt(a,10);isNaN(s)||""+s!==a?n[i]=a:n[i]=s}for(var o in e.children){var u=o.name;"true"===o.getAttribute("isArray")?n[u]=t(o):n[u]=r(o)}return n}r(e)},e.prototype.encodeMessageToXml=function(e,t){function r(e,t){for(var i in t){var a=t[i];null==i||(a.constructor===Object?r(e.c(i),a):a.constructor===Array?n(e.c(i),a):e.setAttribute(i,a))}}function n(e,t){e.setAttribute("isArray","true");for(var i=t,a=Array.isArray(i),s=0,i=a?i:i[Symbol.iterator]();;){var o;if(a){if(s>=i.length)break;o=i[s++]}else{if(s=i.next(),s.done)break;o=s.value}var u=o;u.constructor===Object?r(e.c("array-element"),u):n(e.c("array-element"),u)}}if(t.constructor===Object)r(e.c("y",{xmlns:"http://y.ninja/connector-stanza"}),t);else{if(t.constructor!==Array)throw new Error("I can't encode this json!");n(e.c("y",{xmlns:"http://y.ninja/connector-stanza"}),t)}},e}();e.AbstractConnector=t}},{}],2:[function(e,t,r){t.exports=function(e){function t(){var e=[];for(var t in r.buffers)r.buffers[t].length>0&&e.push(t);if(e.length>0){var n=getRandom(e),i=r.buffers[n].shift(),a=r.users[n];return a.receiveMessage(i[0],i[1]),!0}return!1}var r={users:{},buffers:{},removeUser:function(e){for(var t in this.users)this.users[t].userLeft(e);delete this.users[e],delete this.buffers[e]},addUser:function(e){this.users[e.userId]=e,this.buffers[e.userId]=[];for(var t in this.users)if(t!==e.userId){var r=this.users[t];r.userJoined(e.userId,"master"),e.userJoined(r.userId,"master")}}};e.utils.globalRoom=r;var n=0,i=function(e){function i(t,a){var s=this;if(_classCallCheck(this,i),void 0===a)throw new Error("Options must not be undefined!");a.role="master",a.forwardToSyncingClients=!1,e.call(this,t,a),this.setUserId(n++ +"").then(function(){r.addUser(s)}),this.globalRoom=r,this.syncingClientDuration=0}return _inherits(i,e),i.prototype.receiveMessage=function(t,r){e.prototype.receiveMessage.call(this,t,JSON.parse(JSON.stringify(r)))},i.prototype.send=function(e,t){var n=r.buffers[e];null!=n&&n.push(JSON.parse(JSON.stringify([this.userId,t])))},i.prototype.broadcast=function(e){for(var t in r.buffers)r.buffers[t].push(JSON.parse(JSON.stringify([this.userId,e])))},i.prototype.isDisconnected=function(){return null==r.users[this.userId]},i.prototype.reconnect=function(){return this.isDisconnected()&&(r.addUser(this),e.prototype.reconnect.call(this)),this.flushAll()},i.prototype.disconnect=function(){return this.isDisconnected()||(r.removeUser(this.userId),e.prototype.disconnect.call(this)),wait()},i.prototype.flush=function(){var e=this;return async(regeneratorRuntime.mark(function t(){var n;return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return t.next=2,wait();case 2:if(!(r.buffers[e.userId].length>0)){t.next=9;break}return n=r.buffers[e.userId].shift(),this.receiveMessage(n[0],n[1]),t.next=7,wait();case 7:t.next=2;break;case 9:case"end":return t.stop()}},t,this)}))},i.prototype.flushAll=function(){return new Promise(function(e){function r(){var n=t();if(n){for(;t(););wait().then(r)}else wait().then(function(){e()})}wait().then(r)})},i.prototype.flushOne=function(){t()},i}(e.AbstractConnector);e.Test=i}},{}],3:[function(e,t,r){t.exports=function(e){var t=function(){function t(e,r){function n(){return new Promise(function(e){i.requestTransaction(regeneratorRuntime.mark(function t(){var r,a;return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:if(null==i.y.connector||!i.y.connector.isSynced){t.next=10;break}t.t0=regeneratorRuntime.keys(i.gc2);case 2:if((t.t1=t.t0()).done){t.next=8;break}return r=t.t1.value,a=i.gc2[r],t.delegateYield(this.garbageCollectOperation(a),"t2",6);case 6:t.next=2;break;case 8:i.gc2=i.gc1,i.gc1=[];case 10:i.gcTimeout>0&&(i.gcInterval=setTimeout(n,i.gcTimeout)),e();case 12:case"end":return t.stop()}},t,this)}))})}_classCallCheck(this,t),this.y=e,this.listenersById={},this.listenersByIdExecuteNow=[],this.listenersByIdRequestPending=!1,this.initializedTypes={},this.whenUserIdSetListener=null,this.waitingTransactions=[],this.transactionInProgress=!1,"undefined"!=typeof YConcurrency_TestingMode&&(this.executeOrder=[]),this.gc1=[],this.gc2=[],this.gcTimeout=r.gcTimeout||5e3;var i=this;this.garbageCollect=n,this.gcTimeout>0&&n()}return t.prototype.addToDebug=function(){if("undefined"!=typeof YConcurrency_TestingMode){var e=Array.prototype.map.call(arguments,function(e){return"string"==typeof e?e:JSON.stringify(e)}).join("").replace(/"/g,"'").replace(/,/g,", ").replace(/:/g,": ");this.executeOrder.push(e)}},t.prototype.getDebugData=function(){console.log(this.executeOrder.join("\n"))},t.prototype.stopGarbageCollector=function(){var e=this;return new Promise(function(t){e.requestTransaction(regeneratorRuntime.mark(function r(){var n,i,a;return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:n=e.gc1.concat(e.gc2),e.gc1=[],e.gc2=[],r.t0=regeneratorRuntime.keys(n);case 4:if((r.t1=r.t0()).done){r.next=12;break}return i=r.t1.value,r.delegateYield(this.getOperation(n[i]),"t2",7);case 7:return a=r.t2,delete a.gc,r.delegateYield(this.setOperation(a),"t3",10);case 10:r.next=4;break;case 12:t();case 13:case"end":return r.stop()}},r,this)}))})},t.prototype.addToGarbageCollector=function(e,t){return null==e.gc&&e.deleted===!0&&this.y.connector.isSynced&&null!=t&&t.deleted===!0?(e.gc=!0,this.gc1.push(e.id),!0):!1},t.prototype.removeFromGarbageCollector=function(t){function r(r){return!e.utils.compareIds(r,t.id)}this.gc1=this.gc1.filter(r),this.gc2=this.gc2.filter(r),delete t.gc},t.prototype.destroy=function(){clearInterval(this.gcInterval),this.gcInterval=null},t.prototype.setUserId=function(e){var t=this;return new Promise(function(r){t.requestTransaction(regeneratorRuntime.mark(function n(){return regeneratorRuntime.wrap(function(n){for(;;)switch(n.prev=n.next){case 0:return t.userId=e,n.delegateYield(this.getState(e),"t0",2);case 2:t.opClock=n.t0.clock,null!=t.whenUserIdSetListener&&(t.whenUserIdSetListener(),t.whenUserIdSetListener=null),r();case 5:case"end":return n.stop()}},n,this)}))})},t.prototype.whenUserIdSet=function(e){null!=this.userId?e():this.whenUserIdSetListener=e},t.prototype.getNextOpId=function(){if(null==this.userId)throw new Error("OperationStore not yet initialized!");return[this.userId,this.opClock++]},t.prototype.apply=function(t){for(var r in t){var n=t[r],i=e.Struct[n.struct].requiredOps(n);this.whenOperationsExist(i,n)}},t.prototype.whenOperationsExist=function(e,t){if(e.length>0){var r={op:t,missing:e.length};for(var n in e){var i=e[n],a=JSON.stringify(i),s=this.listenersById[a];null==s&&(s=[],this.listenersById[a]=s),s.push(r)}}else this.listenersByIdExecuteNow.push({op:t});if(!this.listenersByIdRequestPending){this.listenersByIdRequestPending=!0;var o=this;this.requestTransaction(regeneratorRuntime.mark(function u(){var e,t,r,n,i,a,s,c;return regeneratorRuntime.wrap(function(u){for(;;)switch(u.prev=u.next){case 0:e=o.listenersByIdExecuteNow,o.listenersByIdExecuteNow=[],t=o.listenersById,o.listenersById={},o.listenersByIdRequestPending=!1,u.t0=regeneratorRuntime.keys(e);case 6:if((u.t1=u.t0()).done){u.next=12;break}return r=u.t1.value,n=e[r].op,u.delegateYield(o.tryExecute.call(this,n),"t2",10);case 10:u.next=6;break;case 12:u.t3=regeneratorRuntime.keys(t);case 13:if((u.t4=u.t3()).done){u.next=34;break}return i=u.t4.value,a=t[i],s=JSON.parse(i),u.delegateYield(this.getOperation(s),"t5",18);case 18:if(u.t6=u.t5,null!=u.t6){u.next=23;break}o.listenersById[i]=a,u.next=32;break;case 23:u.t7=regeneratorRuntime.keys(a);case 24:if((u.t8=u.t7()).done){u.next=32;break}if(r=u.t8.value,c=a[r],n=c.op,0!==--c.missing){u.next=30;break}return u.delegateYield(o.tryExecute.call(this,n),"t9",30);case 30:u.next=24;break;case 32:u.next=13;break;case 34:case"end":return u.stop()}},u,this)}))}},t.prototype.tryExecute=regeneratorRuntime.mark(function r(t){return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:if(this.store.addToDebug("yield* this.store.tryExecute.call(this, ",JSON.stringify(t),")"),"Delete"!==t.struct){r.next=6;break}return r.delegateYield(e.Struct.Delete.execute.call(this,t),"t0",3);case 3:return r.delegateYield(this.store.operationAdded(this,t),"t1",4);case 4:r.next=16;break;case 6:return r.delegateYield(this.getOperation(t.id),"t3",7);case 7:if(r.t4=r.t3,r.t2=null==r.t4,!r.t2){r.next=12;break}return r.delegateYield(this.isGarbageCollected(t.id),"t5",11);case 11:r.t2=!r.t5;case 12:if(!r.t2){r.next=16;break}return r.delegateYield(e.Struct[t.struct].execute.call(this,t),"t6",14);case 14:return r.delegateYield(this.addOperation(t),"t7",15);case 15:return r.delegateYield(this.store.operationAdded(this,t),"t8",16);case 16:case"end":return r.stop()}},r,this)}),t.prototype.operationAdded=regeneratorRuntime.mark(function n(t,r){var i,a,s,o,u,c,l,d,p,h;return regeneratorRuntime.wrap(function(n){for(;;)switch(n.prev=n.next){case 0:if("Delete"!==r.struct){n.next=9;break}return n.delegateYield(t.getOperation(r.target),"t0",2);case 2:if(i=n.t0,null==i){n.next=7;break}if(a=t.store.initializedTypes[JSON.stringify(i.parent)],null==a){n.next=7;break}return n.delegateYield(a._changed(t,{struct:"Delete",target:r.target}),"t1",7);case 7:n.next=36;break;case 9:return s=r,n.delegateYield(t.getState(r.id[0]),"t2",11);case 11:o=n.t2;case 12:if(null==s||s.id[1]!==o.clock||r.id[0]!==s.id[0]){n.next=19;break}return o.clock++,n.delegateYield(t.checkDeleteStoreForState(o),"t3",15);case 15:return n.delegateYield(t.os.findNext(s.id),"t4",16);case 16:s=n.t4,n.next=12;break;case 19:return n.delegateYield(t.setState(o),"t5",20);case 20:if(u=JSON.stringify(r.id),c=this.listenersById[u],delete this.listenersById[u],null!=c)for(l in c)d=c[l],0===--d.missing&&this.whenOperationsExist([],d.op);if(p=this.initializedTypes[JSON.stringify(r.parent)],null==p){n.next=27;break}return n.delegateYield(p._changed(t,e.utils.copyObject(r)),"t6",27);case 27:if(n.t7=!r.deleted,!n.t7){n.next=31;break}return n.delegateYield(t.isDeleted(r.id),"t8",30);case 30:n.t7=n.t8;case 31:if(!n.t7){n.next=36;break}return h={struct:"Delete",target:r.id},n.delegateYield(e.Struct.Delete.execute.call(t,h),"t9",34);case 34:if(null==p){n.next=36;break}return n.delegateYield(p._changed(t,h),"t10",36);case 36:case"end":return n.stop()}},n,this)}),t.prototype.getNextRequest=function(){return 0===this.waitingTransactions.length?(this.transactionInProgress=!1,null):this.waitingTransactions.shift()},t.prototype.requestTransaction=function(e,t){if(t)this.transact(e);else if(this.transactionInProgress)this.waitingTransactions.push(e);else{this.transactionInProgress=!0;var r=this;setTimeout(function(){r.transact(e)},0)}},t}();e.AbstractDatabase=t}},{}],4:[function(e,t,r){t.exports=function(e){var t=function(){function e(t,r){_classCallCheck(this,e),this.store=t.objectStore(r)}return e.prototype.find=regeneratorRuntime.mark(function t(e){return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return t.next=2,this.store.get(e);case 2:return t.abrupt("return",t.sent);case 3:case"end":return t.stop()}},t,this)}),e.prototype.put=regeneratorRuntime.mark(function r(e){return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return t.next=2,this.store.put(e);case 2:case"end":return t.stop()}},r,this)}),e.prototype["delete"]=regeneratorRuntime.mark(function n(e){return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return t.next=2,this.store["delete"](e);case 2:case"end":return t.stop()}},n,this)}),e.prototype.findWithLowerBound=regeneratorRuntime.mark(function i(e){return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return t.next=2,this.store.openCursor(window.IDBKeyRange.lowerBound(e));case 2:return t.abrupt("return",t.sent);case 3:case"end":return t.stop()}},i,this)}),e.prototype.findWithUpperBound=regeneratorRuntime.mark(function a(e){return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return t.next=2,this.store.openCursor(window.IDBKeyRange.upperBound(e),"prev");case 2:return t.abrupt("return",t.sent);case 3:case"end":return t.stop()}},a,this)}),e.prototype.findNext=regeneratorRuntime.mark(function s(e){return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return t.delegateYield(this.findWithLowerBound([e[0],e[1]+1]),"t0",1);case 1:return t.abrupt("return",t.t0);case 2:case"end":return t.stop()}},s,this)}),e.prototype.findPrev=regeneratorRuntime.mark(function o(e){return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return t.delegateYield(this.findWithUpperBound([e[0],e[1]-1]),"t0",1);case 1:return t.abrupt("return",t.t0);case 2:case"end":return t.stop()}},o,this)}),e.prototype.iterate=regeneratorRuntime.mark(function u(e,t,r,n){var i,a;return regeneratorRuntime.wrap(function(s){for(;;)switch(s.prev=s.next){case 0:i=null,null!=t&&null!=r?i=window.IDBKeyRange.bound(t,r):null!=t?i=window.IDBKeyRange.lowerBound(t):null!=r&&(i=window.IDBKeyRange.upperBound(r)),a=this.store.openCursor(i);case 3:return s.next=5,a;case 5:if(s.t0=s.sent,null==s.t0){s.next=11;break}return s.delegateYield(n.call(e,a.result.value),"t1",8);case 8:a.result["continue"](),s.next=3;break;case 11:case"end":return s.stop()}},u,this)}),e}(),r=function(e){function r(n){_classCallCheck(this,r),e.call(this,n);var i=n.db.transaction(["OperationStore","StateStore","DeleteStore"],"readwrite");this.store=n,this.ss=new t(i,"StateStore"),this.os=new t(i,"OperationStore"),this.ds=new t(i,"DeleteStore")}return _inherits(r,e),r}(e.Transaction),n=function(e){function t(r,n){if(_classCallCheck(this,t),e.call(this,r,n),null==n&&(n={}),null==n.namespace||"string"!=typeof n.namespace)throw new Error("IndexedDB: expect a string (opts.namespace)!");this.namespace=n.namespace,null!=n.idbVersion?this.idbVersion=n.idbVersion:this.idbVersion=5;var i=this;this.requestTransaction(regeneratorRuntime.mark(function s(){return regeneratorRuntime.wrap(function(e){for(;;)switch(e.prev=e.next){case 0:return e.next=2,window.indexedDB.open(n.namespace,i.idbVersion);case 2:i.db=e.sent;case 3:case"end":return e.stop()}},s,this)})),n.cleanStart&&this.requestTransaction(regeneratorRuntime.mark(function o(){return regeneratorRuntime.wrap(function(e){for(;;)switch(e.prev=e.next){case 0:return e.next=2,this.os.store.clear();case 2:return e.next=4,this.ds.store.clear();case 4:return e.next=6,this.ss.store.clear();case 6:case"end":return e.stop()}},o,this)}));var a=[];window.addEventListener("storage",function(e){e.key==="__YJS__"+i.namespace&&(a.push(e.newValue),1===a.length&&i.requestTransaction(regeneratorRuntime.mark(function t(){var e,r,n;return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:e=a,a=[],t.t0=regeneratorRuntime.keys(e);case 3:if((t.t1=t.t0()).done){t.next=12;break}if(r=t.t1.value,n=JSON.parse(e[r]),"Delete"===n.struct){t.next=9;break}return t.delegateYield(this.getOperation(n.id),"t2",8);case 8:n=t.t2;case 9:return t.delegateYield(this.store.operationAdded(this,n,!0),"t3",10);case 10:t.next=3;break;case 12:case"end":return t.stop()}},t,this)})))},!1)}return _inherits(t,e),t.prototype.operationAdded=regeneratorRuntime.mark(function n(t,r,i){return regeneratorRuntime.wrap(function(n){for(;;)switch(n.prev=n.next){case 0:return n.delegateYield(e.prototype.operationAdded.call(this,t,r),"t0",1);case 1:i||(window.localStorage["__YJS__"+this.namespace]=JSON.stringify(r));case 2:case"end":return n.stop()}},n,this)}),t.prototype.transact=function(e){function t(s){var o=s.value;return s.done?(e=i.getNextRequest(),void(null!=e&&(null==n&&null!=i.db&&(n=new r(i)),a=e.call(n),t(a.next())))):void(o.constructor===window.IDBRequest?(o.onsuccess=function(){var e=o.result;null!=e&&e.constructor===window.IDBCursorWithValue&&(e=e.value),t(a.next(e))},o.onerror=function(e){a["throw"](e)}):o.constructor===window.IDBCursor?(o.onsuccess=function(){t(a.next(null!=o.result?o.result.value:null))},o.onerror=function(e){a["throw"](e)}):o.constructor===window.IDBOpenDBRequest?(o.onsuccess=function(e){var r=e.target.result;t(a.next(r))},o.onerror=function(){a["throw"]("Couldn't open IndexedDB database!")},o.onupgradeneeded=function(e){var t=e.target.result;try{t.createObjectStore("OperationStore",{keyPath:"id"}),t.createObjectStore("DeleteStore",{keyPath:"id"}),t.createObjectStore("StateStore",{keyPath:"id"})}catch(r){console.log("Store already exists!")}}):a["throw"]("You must not yield this type!"))}var n=null!=this.db?new r(this):null,i=this,a=e.call(n);t(a.next())},t.prototype.destroy=regeneratorRuntime.mark(function i(){return regeneratorRuntime.wrap(function(e){for(;;)switch(e.prev=e.next){case 0:return this.db.close(),e.next=3,window.indexedDB.deleteDatabase(this.namespace);case 3:case"end":return e.stop()}},i,this)}),t}(e.AbstractDatabase);e.IndexedDB=n}},{}],5:[function(e,t,r){t.exports=function(e){var t=function(e){function t(r){_classCallCheck(this,t),e.call(this,r),this.store=r,this.ss=r.ss,this.os=r.os,this.ds=r.ds}return _inherits(t,e),t}(e.Transaction),r=function(r){function n(t,i){_classCallCheck(this,n),r.call(this,t,i),this.os=new e.utils.RBTree,this.ds=new e.utils.RBTree,this.ss=new e.utils.RBTree}return _inherits(n,r),n.prototype.logTable=function(){var e=this;e.requestTransaction(regeneratorRuntime.mark(function t(){return regeneratorRuntime.wrap(function(e){for(;;)switch(e.prev=e.next){case 0:return console.log("User: ",this.store.y.connector.userId,"=============================="),e.t0=console,e.delegateYield(this.getStateSet(),"t1",3);case 3:return e.t2=e.t1,e.t0.log.call(e.t0,"State Set (SS):",e.t2),console.log("Operation Store (OS):"),e.delegateYield(this.os.logTable(),"t3",7);case 7:return console.log("Deletion Store (DS):"),e.delegateYield(this.ds.logTable(),"t4",9);case 9:(this.store.gc1.length>0||this.store.gc2.length>0)&&console.warn("GC1|2 not empty!",this.store.gc1,this.store.gc2),"{}"!==JSON.stringify(this.store.listenersById)&&console.warn("listenersById not empty!"),"[]"!==JSON.stringify(this.store.listenersByIdExecuteNow)&&console.warn("listenersByIdExecuteNow not empty!"),this.store.transactionInProgress&&console.warn("Transaction still in progress!");case 13:case"end":return e.stop()}},t,this)}),!0)},n.prototype.transact=function(e){for(var r=new t(this);null!==e;){for(var n=e.call(r),i=n.next();!i.done;)i=n.next(i.value);e=this.getNextRequest()}},n.prototype.destroy=regeneratorRuntime.mark(function i(){return regeneratorRuntime.wrap(function(e){for(;;)switch(e.prev=e.next){case 0:r.prototype.destroy.call(this),delete this.os,delete this.ss,delete this.ds;case 4:case"end":return e.stop()}},i,this)}),n}(e.AbstractDatabase);e.Memory=r}},{}],6:[function(e,t,r){t.exports=function(e){var t=function(){function e(t){if(_classCallCheck(this,e),this.val=t,this.color=!0,this._left=null,this._right=null,this._parent=null,null===t.id)throw new Error("You must define id!")}return e.prototype.isRed=function(){return this.color},e.prototype.isBlack=function(){return!this.color},e.prototype.redden=function(){return this.color=!0,this},e.prototype.blacken=function(){return this.color=!1,this},e.prototype.rotateLeft=function(e){var t=this.parent,r=this.right,n=this.right.left;if(r.left=this,this.right=n,null===t)e.root=r,r._parent=null;else if(t.left===this)t.left=r;else{if(t.right!==this)throw new Error("The elements are wrongly connected!");t.right=r}},e.prototype.next=function(){if(null!==this.right){for(var e=this.right;null!==e.left;)e=e.left;return e}for(var t=this;null!==t.parent&&t!==t.parent.left;)t=t.parent;return t.parent},e.prototype.prev=function(){if(null!==this.left){for(var e=this.left;null!==e.right;)e=e.right;return e}for(var t=this;null!==t.parent&&t!==t.parent.right;)t=t.parent;return t.parent},e.prototype.rotateRight=function(e){var t=this.parent,r=this.left,n=this.left.right;if(r.right=this,this.left=n,null===t)e.root=r,r._parent=null;else if(t.left===this)t.left=r;else{if(t.right!==this)throw new Error("The elements are wrongly connected!");t.right=r}},e.prototype.getUncle=function(){return this.parent===this.parent.parent.left?this.parent.parent.right:this.parent.parent.left},_createClass(e,[{key:"grandparent",get:function(){return this.parent.parent}},{key:"parent",get:function(){return this._parent}},{key:"sibling",get:function(){return this===this.parent.left?this.parent.right:this.parent.left}},{key:"left",get:function(){return this._left},set:function(e){null!==e&&(e._parent=this),this._left=e}},{key:"right",get:function(){return this._right},set:function(e){null!==e&&(e._parent=this),this._right=e}}]),e}(),r=function(){function r(){_classCallCheck(this,r),this.root=null,this.length=0}return r.prototype.findNext=regeneratorRuntime.mark(function n(e){return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return t.delegateYield(this.findWithLowerBound([e[0],e[1]+1]),"t0",1);case 1:return t.abrupt("return",t.t0);case 2:case"end":return t.stop()}},n,this)}),r.prototype.findPrev=regeneratorRuntime.mark(function i(e){return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return t.delegateYield(this.findWithUpperBound([e[0],e[1]-1]),"t0",1);case 1:return t.abrupt("return",t.t0);case 2:case"end":return t.stop()}},i,this)}),r.prototype.findNodeWithLowerBound=function(t){if(void 0===t)throw new Error("You must define from!");var r=this.root;if(null===r)return null;for(;;)if(null!==t&&!e.utils.smaller(t,r.val.id)||null===r.left){if(null===t||!e.utils.smaller(r.val.id,t))return r;if(null===r.right)return r.next();r=r.right}else r=r.left},r.prototype.findNodeWithUpperBound=function(t){if(void 0===t)throw new Error("You must define from!");var r=this.root;if(null===r)return null;for(;;)if(null!==t&&!e.utils.smaller(r.val.id,t)||null===r.right){if(null===t||!e.utils.smaller(t,r.val.id))return r;if(null===r.left)return r.prev();r=r.left}else r=r.right},r.prototype.findWithLowerBound=regeneratorRuntime.mark(function a(e){var t;return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:return t=this.findNodeWithLowerBound(e),r.abrupt("return",null==t?null:t.val);case 2:case"end":return r.stop()}},a,this)}),r.prototype.findWithUpperBound=regeneratorRuntime.mark(function s(e){var t;return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:return t=this.findNodeWithUpperBound(e),r.abrupt("return",null==t?null:t.val);case 2:case"end":return r.stop()}},s,this)}),r.prototype.iterate=regeneratorRuntime.mark(function o(t,r,n,i){var a;return regeneratorRuntime.wrap(function(s){for(;;)switch(s.prev=s.next){case 0:a=this.findNodeWithLowerBound(r);case 1:if(null===a||null!==n&&!e.utils.smaller(a.val.id,n)&&!e.utils.compareIds(a.val.id,n)){s.next=6;break}return s.delegateYield(i.call(t,a.val),"t0",3);case 3:a=a.next(),s.next=1;break;case 6:return s.abrupt("return",!0);case 7:case"end":return s.stop()}},o,this)}),r.prototype.logTable=regeneratorRuntime.mark(function u(e,t,r){var n;return regeneratorRuntime.wrap(function(i){for(;;)switch(i.prev=i.next){case 0:return null==r&&(r=function(){return!0}),null==e&&(e=null),null==t&&(t=null),n=[],i.delegateYield(this.iterate(this,e,t,regeneratorRuntime.mark(function a(e){var t,i;return regeneratorRuntime.wrap(function(a){for(;;)switch(a.prev=a.next){case 0:if(r(e)){t={};for(i in e)"object"==typeof e[i]?t[i]=JSON.stringify(e[i]):t[i]=e[i];n.push(t)}case 1:case"end":return a.stop()}},a,this)})),"t0",5);case 5:null!=console.table&&console.table(n);case 6:case"end":return i.stop()}},u,this)}),r.prototype.find=regeneratorRuntime.mark(function c(e){var t;return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:return r.abrupt("return",(t=this.findNode(e))?t.val:null);case 1:case"end":return r.stop()}},c,this)}),r.prototype.findNode=function(t){if(null==t||t.constructor!==Array)throw new Error("Expect id to be an array!");var r=this.root;if(null===r)return!1;for(;;){if(null===r)return!1;if(e.utils.smaller(t,r.val.id))r=r.left;else{if(!e.utils.smaller(r.val.id,t))return r;r=r.right}}},r.prototype["delete"]=regeneratorRuntime.mark(function l(e){var r,n,i,a;return regeneratorRuntime.wrap(function(s){for(;;)switch(s.prev=s.next){case 0:if(null!=e&&e.constructor===Array){s.next=2;break}throw new Error("id is expected to be an Array!");case 2:if(r=this.findNode(e),null!=r){s.next=5;break}throw new Error("Element does not exist!");case 5:if(this.length--,null!==r.left&&null!==r.right){for(n=r.left;null!==n.right;)n=n.right;r.val=n.val,r=n}if(a=r.left||r.right,null===a?(i=!0,a=new t({id:0}),a.blacken(),r.right=a):i=!1,null!==r.parent){s.next=14;break}return i?this.root=null:(this.root=a,a.blacken(),a._parent=null),s.abrupt("return");case 14:if(r.parent.left!==r){s.next=18;break}r.parent.left=a,s.next=23;break;case 18:if(r.parent.right!==r){s.next=22;break}r.parent.right=a,s.next=23;break;case 22:throw new Error("Impossible!");case 23:if(r.isBlack()&&(a.isRed()?a.blacken():this._fixDelete(a)),
-this.root.blacken(),!i){s.next=35;break}if(a.parent.left!==a){s.next=30;break}a.parent.left=null,s.next=35;break;case 30:if(a.parent.right!==a){s.next=34;break}a.parent.right=null,s.next=35;break;case 34:throw new Error("Impossible #3");case 35:case"end":return s.stop()}},l,this)}),r.prototype._fixDelete=function(e){function t(e){return null!==e?e.isBlack():!0}function r(e){return null!==e?e.isRed():!1}if(null!==e.parent){var n=e.sibling;if(r(n)){if(e.parent.redden(),n.blacken(),e===e.parent.left)e.parent.rotateLeft(this);else{if(e!==e.parent.right)throw new Error("Impossible #2");e.parent.rotateRight(this)}n=e.sibling}e.parent.isBlack()&&n.isBlack()&&t(n.left)&&t(n.right)?(n.redden(),this._fixDelete(e.parent)):e.parent.isRed()&&n.isBlack()&&t(n.left)&&t(n.right)?(n.redden(),e.parent.blacken()):(e===e.parent.left&&n.isBlack()&&r(n.left)&&t(n.right)?(n.redden(),n.left.blacken(),n.rotateRight(this),n=e.sibling):e===e.parent.right&&n.isBlack()&&r(n.right)&&t(n.left)&&(n.redden(),n.right.blacken(),n.rotateLeft(this),n=e.sibling),n.color=e.parent.color,e.parent.blacken(),e===e.parent.left?(n.right.blacken(),e.parent.rotateLeft(this)):(n.left.blacken(),e.parent.rotateRight(this)))}},r.prototype.put=regeneratorRuntime.mark(function d(r){var n,i;return regeneratorRuntime.wrap(function(a){for(;;)switch(a.prev=a.next){case 0:if(null!=r&&null!=r.id&&r.id.constructor===Array){a.next=2;break}throw new Error("v is expected to have an id property which is an Array!");case 2:if(n=new t(r),null===this.root){a.next=31;break}i=this.root;case 5:if(!e.utils.smaller(n.val.id,i.val.id)){a.next=15;break}if(null!==i.left){a.next=12;break}return i.left=n,a.abrupt("break",28);case 12:i=i.left;case 13:a.next=26;break;case 15:if(!e.utils.smaller(i.val.id,n.val.id)){a.next=24;break}if(null!==i.right){a.next=21;break}return i.right=n,a.abrupt("break",28);case 21:i=i.right;case 22:a.next=26;break;case 24:return i.val=n.val,a.abrupt("return",i);case 26:a.next=5;break;case 28:this._fixInsert(n),a.next=32;break;case 31:this.root=n;case 32:return this.length++,this.root.blacken(),a.abrupt("return",n);case 35:case"end":return a.stop()}},d,this)}),r.prototype._fixInsert=function(e){if(null===e.parent)return void e.blacken();if(!e.parent.isBlack()){var t=e.getUncle();null!==t&&t.isRed()?(e.parent.blacken(),t.blacken(),e.grandparent.redden(),this._fixInsert(e.grandparent)):(e===e.parent.right&&e.parent===e.grandparent.left?(e.parent.rotateLeft(this),e=e.left):e===e.parent.left&&e.parent===e.grandparent.right&&(e.parent.rotateRight(this),e=e.right),e.parent.blacken(),e.grandparent.redden(),e===e.parent.left?e.grandparent.rotateRight(this):e.grandparent.rotateLeft(this))}},r}();e.utils.RBTree=r}},{}],7:[function(e,t,r){t.exports=function(e){var t={Delete:{encode:function(e){return e},requiredOps:function(e){return[]},execute:regeneratorRuntime.mark(function r(e){return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return t.delegateYield(this.deleteOperation(e.target),"t0",1);case 1:return t.abrupt("return",t.t0);case 2:case"end":return t.stop()}},r,this)})},Insert:{encode:function(e){var t={id:e.id,left:e.left,right:e.right,origin:e.origin,parent:e.parent,struct:e.struct};return null!=e.parentSub&&(t.parentSub=e.parentSub),null!=e.opContent?t.opContent=e.opContent:t.content=e.content,t},requiredOps:function(t){var r=[];return null!=t.left&&r.push(t.left),null!=t.right&&r.push(t.right),null==t.origin||e.utils.compareIds(t.left,t.origin)||r.push(t.origin),r.push(t.parent),null!=t.opContent&&r.push(t.opContent),r},getDistanceToOrigin:regeneratorRuntime.mark(function n(t){var r,i;return regeneratorRuntime.wrap(function(n){for(;;)switch(n.prev=n.next){case 0:if(null!=t.left){n.next=4;break}return n.abrupt("return",0);case 4:return r=0,n.delegateYield(this.getOperation(t.left),"t0",6);case 6:i=n.t0;case 7:if(e.utils.compareIds(t.origin,i?i.id:null)){n.next=17;break}if(r++,null!=i.left){n.next=13;break}return n.abrupt("break",17);case 13:return n.delegateYield(this.getOperation(i.left),"t1",14);case 14:i=n.t1;case 15:n.next=7;break;case 17:return n.abrupt("return",r);case 18:case"end":return n.stop()}},n,this)}),execute:regeneratorRuntime.mark(function i(r){var n,a,s,o,u,c,l,d,p;return regeneratorRuntime.wrap(function(i){for(;;)switch(i.prev=i.next){case 0:return i.delegateYield(t.Insert.getDistanceToOrigin.call(this,r),"t0",1);case 1:if(a=n=i.t0,null==r.left){i.next=14;break}return i.delegateYield(this.getOperation(r.left),"t1",4);case 4:if(s=i.t1,null!=s.right){i.next=9;break}i.t2=null,i.next=11;break;case 9:return i.delegateYield(this.getOperation(s.right),"t3",10);case 10:i.t2=i.t3;case 11:s=i.t2,i.next=25;break;case 14:return i.delegateYield(this.getOperation(r.parent),"t4",15);case 15:if(o=i.t4,c=r.parentSub?o.map[r.parentSub]:o.start,null!=c){i.next=21;break}i.t5=null,i.next=23;break;case 21:return i.delegateYield(this.getOperation(c),"t6",22);case 22:i.t5=i.t6;case 23:u=i.t5,s=u;case 25:if(null==s||e.utils.compareIds(s.id,r.right)){i.next=48;break}return i.delegateYield(t.Insert.getDistanceToOrigin.call(this,s),"t7",28);case 28:if(l=i.t7,l!==n){i.next=33;break}s.id[0]<r.id[0]&&(r.left=s.id,a=n+1),i.next=38;break;case 33:if(!(n>l)){i.next=37;break}l>=n-a&&(r.left=s.id,a=n+1),i.next=38;break;case 37:return i.abrupt("break",51);case 38:if(n++,!s.right){i.next=44;break}return i.delegateYield(this.getOperation(s.right),"t9",41);case 41:i.t8=i.t9,i.next=45;break;case 44:i.t8=null;case 45:s=i.t8,i.next=49;break;case 48:return i.abrupt("break",51);case 49:i.next=25;break;case 51:if(d=null,p=null,i.t10=o,i.t10){i.next=57;break}return i.delegateYield(this.getOperation(r.parent),"t11",56);case 56:i.t10=i.t11;case 57:if(o=i.t10,null==r.left){i.next=66;break}return i.delegateYield(this.getOperation(r.left),"t12",60);case 60:return d=i.t12,r.right=d.right,d.right=r.id,i.delegateYield(this.setOperation(d),"t13",64);case 64:i.next=67;break;case 66:r.right=r.parentSub?o.map[r.parentSub]||null:o.start;case 67:if(null==r.right){i.next=73;break}return i.delegateYield(this.getOperation(r.right),"t14",69);case 69:return p=i.t14,p.left=r.id,null!=p.gc&&this.store.removeFromGarbageCollector(p),i.delegateYield(this.setOperation(p),"t15",73);case 73:if(null==r.parentSub){i.next=83;break}if(null!=d){i.next=77;break}return o.map[r.parentSub]=r.id,i.delegateYield(this.setOperation(o),"t16",77);case 77:if(null==r.right){i.next=79;break}return i.delegateYield(this.deleteOperation(r.right,!0),"t17",79);case 79:if(null==r.left){i.next=81;break}return i.delegateYield(this.deleteOperation(r.id,!0),"t18",81);case 81:i.next=87;break;case 83:if(null!=p&&null!=d){i.next=87;break}return null==p&&(o.end=r.id),null==d&&(o.start=r.id),i.delegateYield(this.setOperation(o),"t19",87);case 87:case"end":return i.stop()}},i,this)})},List:{encode:function(e){return{struct:"List",id:e.id,type:e.type}},requiredOps:function(){return[]},execute:regeneratorRuntime.mark(function a(e){return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:e.start=null,e.end=null;case 2:case"end":return t.stop()}},a,this)}),ref:regeneratorRuntime.mark(function s(e,t){var r,n;return regeneratorRuntime.wrap(function(i){for(;;)switch(i.prev=i.next){case 0:if(null!=e.start){i.next=2;break}return i.abrupt("return",null);case 2:return r=null,i.delegateYield(this.getOperation(e.start),"t0",4);case 4:n=i.t0;case 5:if(n.deleted||(r=n,t--),!(t>=0&&null!=n.right)){i.next=12;break}return i.delegateYield(this.getOperation(n.right),"t1",9);case 9:n=i.t1,i.next=13;break;case 12:return i.abrupt("break",15);case 13:i.next=5;break;case 15:return i.abrupt("return",r);case 16:case"end":return i.stop()}},s,this)}),map:regeneratorRuntime.mark(function o(e,t){var r,n;return regeneratorRuntime.wrap(function(i){for(;;)switch(i.prev=i.next){case 0:e=e.start,r=[];case 2:if(null==e){i.next=9;break}return i.delegateYield(this.getOperation(e),"t0",4);case 4:n=i.t0,n.deleted||r.push(t(n)),e=n.right,i.next=2;break;case 9:return i.abrupt("return",r);case 10:case"end":return i.stop()}},o,this)})},Map:{encode:function(e){return{struct:"Map",type:e.type,id:e.id,map:{}}},requiredOps:function(){return[]},execute:regeneratorRuntime.mark(function u(){return regeneratorRuntime.wrap(function(e){for(;;)switch(e.prev=e.next){case 0:case"end":return e.stop()}},u,this)}),get:regeneratorRuntime.mark(function c(e,t){var r,n;return regeneratorRuntime.wrap(function(i){for(;;)switch(i.prev=i.next){case 0:if(r=e.map[t],null==r){i.next=16;break}return i.delegateYield(this.getOperation(r),"t0",3);case 3:if(n=i.t0,null!=n&&!n.deleted){i.next=8;break}i.t1=void 0,i.next=15;break;case 8:if(null!=n.opContent){i.next=12;break}i.t2=n.content,i.next=14;break;case 12:return i.delegateYield(this.getType(n.opContent),"t3",13);case 13:i.t2=i.t3;case 14:i.t1=i.t2;case 15:return i.abrupt("return",i.t1);case 16:case"end":return i.stop()}},c,this)}),"delete":regeneratorRuntime.mark(function l(e,r){var n;return regeneratorRuntime.wrap(function(i){for(;;)switch(i.prev=i.next){case 0:if(n=e.map[r]||null,null==n){i.next=3;break}return i.delegateYield(t.Delete.create.call(this,{target:n}),"t0",3);case 3:case"end":return i.stop()}},l,this)})}};e.Struct=t}},{}],8:[function(e,t,r){t.exports=function(e){var t=function(){function t(){_classCallCheck(this,t)}return t.prototype.getType=regeneratorRuntime.mark(function r(t){var n,i,a;return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:if(n=JSON.stringify(t),i=this.store.initializedTypes[n],null!=i){r.next=9;break}return r.delegateYield(this.getOperation(t),"t0",4);case 4:if(a=r.t0,null==a){r.next=9;break}return r.delegateYield(e[a.type].initType.call(this,this.store,a),"t1",7);case 7:i=r.t1,this.store.initializedTypes[n]=i;case 9:return r.abrupt("return",i);case 10:case"end":return r.stop()}},r,this)}),t.prototype.applyCreatedOperations=regeneratorRuntime.mark(function n(t){var r,i,a;return regeneratorRuntime.wrap(function(n){for(;;)switch(n.prev=n.next){case 0:r=[],i=0;case 2:if(!(i<t.length)){n.next=9;break}return a=t[i],n.delegateYield(this.store.tryExecute.call(this,a),"t0",5);case 5:r.push(e.Struct[a.struct].encode(a));case 6:i++,n.next=2;break;case 9:this.store.y.connector.isDisconnected()||this.store.y.connector.broadcast({type:"update",ops:r});case 10:case"end":return n.stop()}},n,this)}),t.prototype.deleteList=regeneratorRuntime.mark(function i(e){return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:if(!this.store.y.connector.isSynced){t.next=12;break}case 1:if(null==e||!this.store.y.connector.isSynced){t.next=10;break}return t.delegateYield(this.getOperation(e),"t0",3);case 3:return e=t.t0,e.gc=!0,t.delegateYield(this.setOperation(e),"t1",6);case 6:this.store.gc1.push(e.id),e=e.right,t.next=1;break;case 10:t.next=12;break;case 12:case"end":return t.stop()}},i,this)}),t.prototype.deleteOperation=regeneratorRuntime.mark(function a(e,t){var r,n,i,s,o;return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return t.delegateYield(this.getOperation(e),"t0",1);case 1:if(r=t.t0,n=!1,null!=r&&r.deleted){t.next=5;break}return t.delegateYield(this.markDeleted(e),"t1",5);case 5:if(null==r||null!=r.gc){t.next=42;break}if(r.deleted){t.next=23;break}if(n=!0,r.deleted=!0,null==r.start){t.next=12;break}return t.delegateYield(this.deleteList(r.start),"t2",11);case 11:return t.delegateYield(this.deleteList(r.id),"t3",12);case 12:if(null==r.map){t.next=20;break}t.t4=regeneratorRuntime.keys(r.map);case 14:if((t.t5=t.t4()).done){t.next=19;break}return i=t.t5.value,t.delegateYield(this.deleteList(r.map[i]),"t6",17);case 17:t.next=14;break;case 19:return t.delegateYield(this.deleteList(r.id),"t7",20);case 20:if(null==r.opContent){t.next=23;break}return t.delegateYield(this.deleteOperation(r.opContent),"t8",22);case 22:r.opContent=null;case 23:if(null==r.left){t.next=28;break}return t.delegateYield(this.getOperation(r.left),"t10",25);case 25:t.t9=t.t10,t.next=29;break;case 28:t.t9=null;case 29:return s=t.t9,this.store.addToGarbageCollector(r,s),t.delegateYield(this.setOperation(r),"t11",32);case 32:if(null==r.right){t.next=37;break}return t.delegateYield(this.getOperation(r.right),"t13",34);case 34:t.t12=t.t13,t.next=38;break;case 37:t.t12=null;case 38:if(o=t.t12,null==o||!this.store.addToGarbageCollector(o,r)){t.next=41;break}return t.delegateYield(this.setOperation(o),"t14",41);case 41:return t.abrupt("return",n);case 42:case"end":return t.stop()}},a,this)}),t.prototype.markGarbageCollected=regeneratorRuntime.mark(function s(t){var r,n,i,a;return regeneratorRuntime.wrap(function(s){for(;;)switch(s.prev=s.next){case 0:return s.delegateYield(this.markDeleted(t),"t0",1);case 1:if(r=s.t0,r.gc){s.next=25;break}if(!(r.id[1]<t[1])){s.next=9;break}return n=r.len-(t[1]-r.id[1]),r.len-=n,s.delegateYield(this.ds.put(r),"t1",7);case 7:return r={id:t,len:n,gc:!1},s.delegateYield(this.ds.put(r),"t2",9);case 9:return s.delegateYield(this.ds.findPrev(t),"t3",10);case 10:return i=s.t3,s.delegateYield(this.ds.findNext(t),"t4",12);case 12:if(a=s.t4,!(t[1]<r.id[1]+r.len-1)){s.next=16;break}return s.delegateYield(this.ds.put({id:[t[0],t[1]+1],len:r.len-1,gc:!1}),"t5",15);case 15:r.len=1;case 16:if(r.gc=!0,null==i||!i.gc||!e.utils.compareIds([i.id[0],i.id[1]+i.len],r.id)){s.next=21;break}return i.len+=r.len,s.delegateYield(this.ds["delete"](r.id),"t6",20);case 20:r=i;case 21:if(null==a||!a.gc||!e.utils.compareIds([r.id[0],r.id[1]+r.len],a.id)){s.next=24;break}return r.len+=a.len,s.delegateYield(this.ds["delete"](a.id),"t7",24);case 24:return s.delegateYield(this.ds.put(r),"t8",25);case 25:case"end":return s.stop()}},s,this)}),t.prototype.markDeleted=regeneratorRuntime.mark(function o(t){var r,n;return regeneratorRuntime.wrap(function(i){for(;;)switch(i.prev=i.next){case 0:return i.delegateYield(this.ds.findWithUpperBound(t),"t0",1);case 1:if(r=i.t0,null==r||r.id[0]!==t[0]){i.next=15;break}if(!(r.id[1]<=t[1]&&t[1]<r.id[1]+r.len)){i.next=7;break}return i.abrupt("return",r);case 7:if(r.id[1]+r.len!==t[1]||r.gc){i.next=11;break}r.len++,i.next=13;break;case 11:return r={id:t,len:1,gc:!1},i.delegateYield(this.ds.put(r),"t1",13);case 13:i.next=17;break;case 15:return r={id:t,len:1,gc:!1},i.delegateYield(this.ds.put(r),"t2",17);case 17:return i.delegateYield(this.ds.findNext(r.id),"t3",18);case 18:if(n=i.t3,null==n||!e.utils.compareIds([r.id[0],r.id[1]+r.len],n.id)||n.gc){i.next=22;break}return r.len=r.len+n.len,i.delegateYield(this.ds["delete"](n.id),"t4",22);case 22:return i.delegateYield(this.ds.put(r),"t5",23);case 23:return i.abrupt("return",r);case 24:case"end":return i.stop()}},o,this)}),t.prototype.garbageCollectAfterSync=regeneratorRuntime.mark(function u(){return regeneratorRuntime.wrap(function(e){for(;;)switch(e.prev=e.next){case 0:return e.delegateYield(this.os.iterate(this,null,null,regeneratorRuntime.mark(function t(e){var r;return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:if(!e.deleted||null==e.left){t.next=4;break}return t.delegateYield(this.getOperation(e.left),"t0",2);case 2:r=t.t0,this.store.addToGarbageCollector(e,r);case 4:case"end":return t.stop()}},t,this)})),"t0",1);case 1:case"end":return e.stop()}},u,this)}),t.prototype.garbageCollectOperation=regeneratorRuntime.mark(function c(t){var r,n,i,a,s,o,u,l,d,p;return regeneratorRuntime.wrap(function(c){for(;;)switch(c.prev=c.next){case 0:return this.store.addToDebug("yield* this.garbageCollectOperation(",t,")"),c.delegateYield(this.getState(t[0]),"t0",2);case 2:if(r=c.t0,r.clock!==t[1]){c.next=7;break}return r.clock++,c.delegateYield(this.checkDeleteStoreForState(r),"t1",6);case 6:return c.delegateYield(this.setState(r),"t2",7);case 7:return c.delegateYield(this.markGarbageCollected(t),"t3",8);case 8:return c.delegateYield(this.getOperation(t),"t4",9);case 9:if(n=c.t4,null==n){c.next=61;break}if(null==n.left){c.next=16;break}return c.delegateYield(this.getOperation(n.left),"t5",13);case 13:return i=c.t5,i.right=n.right,c.delegateYield(this.setOperation(i),"t6",16);case 16:if(null==n.right){c.next=53;break}return c.delegateYield(this.getOperation(n.right),"t7",18);case 18:if(a=c.t7,a.left=n.left,!e.utils.compareIds(a.origin,n.id)){c.next=52;break}s=n.left;case 22:if(null==s){c.next=30;break}return c.delegateYield(this.getOperation(s),"t8",24);case 24:if(o=c.t8,!o.deleted){c.next=27;break}return c.abrupt("break",30);case 27:s=o.left,c.next=22;break;case 30:if(a.origin=s,null!=a.right){c.next=35;break}c.t9=null,c.next=37;break;case 35:return c.delegateYield(this.getOperation(a.right),"t10",36);case 36:c.t9=c.t10;case 37:u=c.t9,l=[n.id,n.right];case 39:if(null==u||!l.some(function(t){return e.utils.compareIds(t,u.origin)})){c.next=52;break}if(!e.utils.compareIds(u.origin,n.id)){c.next=43;break}return u.origin=s,c.delegateYield(this.setOperation(u),"t11",43);case 43:if(null!=u.right){c.next=47;break}c.t12=null,c.next=49;break;case 47:return c.delegateYield(this.getOperation(u.right),"t13",48);case 48:c.t12=c.t13;case 49:u=c.t12,c.next=39;break;case 52:return c.delegateYield(this.setOperation(a),"t14",53);case 53:if(null==n.parent){c.next=60;break}return c.delegateYield(this.getOperation(n.parent),"t15",55);case 55:if(d=c.t15,p=!1,null!=n.parentSub?e.utils.compareIds(d.map[n.parentSub],n.id)&&(p=!0,d.map[n.parentSub]=n.right):(e.utils.compareIds(d.start,n.id)&&(p=!0,d.start=n.right),e.utils.compareIds(d.end,n.id)&&(p=!0,d.end=n.left)),!p){c.next=60;break}return c.delegateYield(this.setOperation(d),"t16",60);case 60:return c.delegateYield(this.removeOperation(n.id),"t17",61);case 61:case"end":return c.stop()}},c,this)}),t.prototype.checkDeleteStoreForState=regeneratorRuntime.mark(function l(e){var t;return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:return r.delegateYield(this.ds.findWithUpperBound([e.user,e.clock]),"t0",1);case 1:t=r.t0,null!=t&&t.id[0]===e.user&&t.gc&&(e.clock=Math.max(e.clock,t.id[1]+t.len));case 3:case"end":return r.stop()}},l,this)}),t.prototype.applyDeleteSet=regeneratorRuntime.mark(function d(e){var t,r,n,i,a,s,o,u,c,l;return regeneratorRuntime.wrap(function(d){for(;;)switch(d.prev=d.next){case 0:r=function(e,r,n,i){for(var a=r;r+n>a;a++)t.push([e,a,i])},t=[],d.t0=regeneratorRuntime.keys(e);case 3:if((d.t1=d.t0()).done){d.next=12;break}return n=d.t1.value,i=e[n],a=0,s=i[a],d.delegateYield(this.ds.iterate(this,[n,0],[n,Number.MAX_VALUE],regeneratorRuntime.mark(function p(e){var t;return regeneratorRuntime.wrap(function(o){for(;;)switch(o.prev=o.next){case 0:if(null==s){o.next=10;break}if(t=0,!(e.id[1]+e.len<=s[0])){o.next=6;break}return o.abrupt("break",10);case 6:s[0]<e.id[1]?(t=Math.min(e.id[1]-s[0],s[1]),r(n,s[0],t,s[2])):(t=e.id[1]+e.len-s[0],s[2]&&!e.gc&&r(n,s[0],Math.min(t,s[1]),s[2]));case 7:s[1]<=t?s=i[++a]:(s[0]=s[0]+t,s[1]=s[1]-t),o.next=0;break;case 10:case"end":return o.stop()}},p,this)})),"t2",9);case 9:for(;a<i.length;a++)s=i[a],r(n,s[0],s[1],s[2]);d.next=3;break;case 12:d.t3=regeneratorRuntime.keys(t);case 13:if((d.t4=d.t3()).done){d.next=25;break}return o=d.t4.value,u=t[o],c=[u[0],u[1]],d.delegateYield(this.deleteOperation(c),"t5",18);case 18:if(l=d.t5,!l){d.next=21;break}return d.delegateYield(this.store.operationAdded(this,{struct:"Delete",target:c}),"t6",21);case 21:if(!u[2]){d.next=23;break}return d.delegateYield(this.garbageCollectOperation(c),"t7",23);case 23:d.next=13;break;case 25:case"end":return d.stop()}},d,this)}),t.prototype.isGarbageCollected=regeneratorRuntime.mark(function p(e){var t;return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:return r.delegateYield(this.ds.findWithUpperBound(e),"t0",1);case 1:return t=r.t0,r.abrupt("return",null!=t&&t.id[0]===e[0]&&e[1]<t.id[1]+t.len&&t.gc);case 3:case"end":return r.stop()}},p,this)}),t.prototype.getDeleteSet=regeneratorRuntime.mark(function h(){var e;return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return e={},t.delegateYield(this.ds.iterate(this,null,null,regeneratorRuntime.mark(function r(t){var n,i,a,s,o;return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:n=t.id[0],i=t.id[1],a=t.len,s=t.gc,o=e[n],void 0===o&&(o=[],e[n]=o),o.push([i,a,s]);case 7:case"end":return r.stop()}},r,this)})),"t0",2);case 2:return t.abrupt("return",e);case 3:case"end":return t.stop()}},h,this)}),t.prototype.isDeleted=regeneratorRuntime.mark(function f(e){var t;return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:return r.delegateYield(this.ds.findWithUpperBound(e),"t0",1);case 1:return t=r.t0,r.abrupt("return",null!=t&&t.id[0]===e[0]&&e[1]<t.id[1]+t.len);case 3:case"end":return r.stop()}},f,this)}),t.prototype.setOperation=regeneratorRuntime.mark(function g(e){return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return t.delegateYield(this.os.put(e),"t0",1);case 1:return t.abrupt("return",e);case 2:case"end":return t.stop()}},g,this)}),t.prototype.addOperation=regeneratorRuntime.mark(function y(e){return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return t.delegateYield(this.os.put(e),"t0",1);case 1:case"end":return t.stop()}},y,this)}),t.prototype.getOperation=regeneratorRuntime.mark(function m(e){return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return t.delegateYield(this.os.find(e),"t0",1);case 1:return t.abrupt("return",t.t0);case 2:case"end":return t.stop()}},m,this)}),t.prototype.removeOperation=regeneratorRuntime.mark(function v(e){return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return t.delegateYield(this.os["delete"](e),"t0",1);case 1:case"end":return t.stop()}},v,this)}),t.prototype.setState=regeneratorRuntime.mark(function b(e){var t;return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:return t={id:[e.user],clock:e.clock},r.delegateYield(this.ss.find([e.user]),"t0",2);case 2:if(!r.t0){r.next=6;break}return r.delegateYield(this.ss.put(t),"t1",4);case 4:r.next=7;break;case 6:return r.delegateYield(this.ss.put(t),"t2",7);case 7:case"end":return r.stop()}},b,this)}),t.prototype.getState=regeneratorRuntime.mark(function w(e){var t,r;return regeneratorRuntime.wrap(function(n){for(;;)switch(n.prev=n.next){case 0:return n.delegateYield(this.ss.find([e]),"t0",1);case 1:if(n.t1=t=n.t0,null!=n.t1){n.next=6;break}n.t2=null,n.next=7;break;case 6:n.t2=t.clock;case 7:return r=n.t2,null==r&&(r=0),n.abrupt("return",{user:e,clock:r});case 10:case"end":return n.stop()}},w,this)}),t.prototype.getStateVector=regeneratorRuntime.mark(function x(){var e;return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return e=[],t.delegateYield(this.ss.iterate(this,null,null,regeneratorRuntime.mark(function r(t){return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:e.push({user:t.id[0],clock:t.clock});case 1:case"end":return r.stop()}},r,this)})),"t0",2);case 2:return t.abrupt("return",e);case 3:case"end":return t.stop()}},x,this)}),t.prototype.getStateSet=regeneratorRuntime.mark(function k(){var e;return regeneratorRuntime.wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return e={},t.delegateYield(this.ss.iterate(this,null,null,regeneratorRuntime.mark(function r(t){return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:e[t.id[0]]=t.clock;case 1:case"end":return r.stop()}},r,this)})),"t0",2);case 2:return t.abrupt("return",e);case 3:case"end":return t.stop()}},k,this)}),t.prototype.getOperations=regeneratorRuntime.mark(function R(e){var t,r,n,i,a,s,o,u,c,l,d,p,h,f,g;return regeneratorRuntime.wrap(function(y){for(;;)switch(y.prev=y.next){case 0:return null==e&&(e={}),t=[],y.delegateYield(this.getStateVector(),"t0",3);case 3:r=y.t0,n=r,i=Array.isArray(n),a=0,n=i?n:n[Symbol.iterator]();case 5:if(!i){y.next=11;break}if(!(a>=n.length)){y.next=8;break}return y.abrupt("break",23);case 8:s=n[a++],y.next=15;break;case 11:if(a=n.next(),!a.done){y.next=14;break}return y.abrupt("break",23);case 14:s=a.value;case 15:if(o=s,u=o.user,"_"!==u){y.next=19;break}return y.abrupt("continue",21);case 19:return c=e[u]||0,y.delegateYield(this.os.iterate(this,[u,c],[u,Number.MAX_VALUE],regeneratorRuntime.mark(function m(e){return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:t.push(e);case 1:case"end":return r.stop()}},m,this)})),"t1",21);case 21:y.next=5;break;case 23:l=[],d=t,p=Array.isArray(d),h=0,d=p?d:d[Symbol.iterator]();case 25:if(!p){y.next=31;break}if(!(h>=d.length)){y.next=28;break}return y.abrupt("break",42);case 28:f=d[h++],y.next=35;break;case 31:if(h=d.next(),!h.done){y.next=34;break}return y.abrupt("break",42);case 34:f=h.value;case 35:return g=f,y.t2=l,y.delegateYield(this.makeOperationReady(e,g),"t3",38);case 38:y.t4=y.t3,y.t2.push.call(y.t2,y.t4);case 40:y.next=25;break;case 42:return y.abrupt("return",l);case 43:case"end":return y.stop()}},R,this)}),t.prototype.makeOperationReady=regeneratorRuntime.mark(function S(t,r){var n,i,a;return regeneratorRuntime.wrap(function(s){for(;;)switch(s.prev=s.next){case 0:r=e.Struct[r.struct].encode(r),r=e.utils.copyObject(r),n=r,i=[r.id];case 4:if(null==n.right){s.next=13;break}return s.delegateYield(this.getOperation(n.right),"t0",6);case 6:if(a=s.t0,!(n.right[1]<(t[n.right[0]]||0))&&i.some(function(t){return e.utils.compareIds(t,a.origin)})){s.next=9;break}return s.abrupt("break",13);case 9:i.push(n.right),n=a,s.next=4;break;case 13:return r.right=n.right,r.left=r.origin,s.abrupt("return",r);case 16:case"end":return s.stop()}},S,this)}),t}();e.Transaction=t}},{}],9:[function(e,t,r){function n(e){var t=function(){function t(r,n,i,a){var s=this;_classCallCheck(this,t),this.os=r,this._model=n,this.idArray=i,this.valArray=a,this.eventHandler=new e.utils.EventHandler(function(e){var t=[];for(var r in e){var n=e[r];if("Insert"===n.struct){var i=void 0;if(null===n.left)i=0;else{var a=JSON.stringify(n.left);if(i=s.idArray.indexOf(a)+1,0>=i)throw new Error("Unexpected operation!")}s.idArray.splice(i,0,JSON.stringify(n.id)),s.valArray.splice(i,0,n.content),t.push({type:"insert",object:s,index:i,length:1})}else{if("Delete"!==n.struct)throw new Error("Unexpected struct!");var i=s.idArray.indexOf(JSON.stringify(n.target));i>=0&&(s.idArray.splice(i,1),s.valArray.splice(i,1),t.push({type:"delete",object:s,index:i,length:1}))}}s.eventHandler.callEventListeners(t)})}return t.prototype.get=function(e){if(null==e||"number"!=typeof e)throw new Error("pos must be a number!");return this.valArray[e]},t.prototype.toArray=function(){return this.valArray.slice()},t.prototype.insert=function(e,t){if("number"!=typeof e)throw new Error("pos must be a number!");if(!(t instanceof Array))throw new Error("contents must be an Array of objects!");if(0!==t.length){if(e>this.idArray.length||0>e)throw new Error("This position exceeds the range of the array!");for(var r=0===e?null:JSON.parse(this.idArray[e-1]),n=[],i=r,a=0;a<t.length;a++){var s={left:i,origin:i,parent:this._model,content:t[a],struct:"Insert",id:this.os.getNextOpId()};n.push(s),i=s.id}var o=this.eventHandler;o.awaitAndPrematurelyCall(n),this.os.requestTransaction(regeneratorRuntime.mark(function u(){var e,t;return regeneratorRuntime.wrap(function(i){for(;;)switch(i.prev=i.next){case 0:if(null==r){i.next=5;break}return i.delegateYield(this.getOperation(r),"t0",2);case 2:e=i.t0.right,i.next=7;break;case 5:return i.delegateYield(this.getOperation(n[0].parent),"t1",6);case 6:e=i.t1.start;case 7:for(t in n)n[t].right=e;return i.delegateYield(this.applyCreatedOperations(n),"t2",9);case 9:o.awaitedInserts(n.length);case 10:case"end":return i.stop()}},u,this)}))}},t.prototype["delete"]=function(e,t){if(null==t&&(t=1),"number"!=typeof t)throw new Error("pos must be a number!");if("number"!=typeof e)throw new Error("pos must be a number!");if(e+t>this.idArray.length||0>e||0>t)throw new Error("The deletion range exceeds the range of the array!");if(0!==t){for(var r=this.eventHandler,n=e>0?JSON.parse(this.idArray[e-1]):null,i=[],a=0;t>a;a++)i.push({target:JSON.parse(this.idArray[e+a]),struct:"Delete"});r.awaitAndPrematurelyCall(i),this.os.requestTransaction(regeneratorRuntime.mark(function s(){return regeneratorRuntime.wrap(function(e){for(;;)switch(e.prev=e.next){case 0:return e.delegateYield(this.applyCreatedOperations(i),"t0",1);case 1:r.awaitedDeletes(i.length,n);case 2:case"end":return e.stop()}},s,this)}))}},t.prototype.observe=function(e){this.eventHandler.addEventListener(e)},t.prototype._changed=regeneratorRuntime.mark(function r(e,t){var n,i;return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:if(t.deleted){r.next=13;break}if("Insert"!==t.struct){r.next=12;break}n=t.left;case 3:if(null==n){r.next=11;break}return r.delegateYield(e.getOperation(n),"t0",5);case 5:if(i=r.t0,i.deleted){r.next=8;break}return r.abrupt("break",11);case 8:n=i.left,r.next=3;break;case 11:t.left=n;case 12:this.eventHandler.receivedOp(t);case 13:case"end":return r.stop()}},r,this)}),_createClass(t,[{key:"length",get:function(){return this.idArray.length}}]),t}();e.extend("Array",new e.utils.CustomType({"class":t,createType:regeneratorRuntime.mark(function r(){var e,t;return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:return e=this.store.getNextOpId(),t={struct:"List",type:"Array",start:null,end:null,id:e},r.delegateYield(this.applyCreatedOperations([t]),"t0",3);case 3:return r.abrupt("return",e);case 4:case"end":return r.stop()}},r,this)}),initType:regeneratorRuntime.mark(function n(r,i){var a,s;return regeneratorRuntime.wrap(function(n){for(;;)switch(n.prev=n.next){case 0:return a=[],n.delegateYield(e.Struct.List.map.call(this,i,function(e){return a.push(e.content),JSON.stringify(e.id)}),"t0",2);case 2:return s=n.t0,n.abrupt("return",new t(r,i.id,s,a));case 4:case"end":return n.stop()}},n,this)})}))}"undefined"!=typeof Y?n(Y):t.exports=n},{}],10:[function(e,t,r){t.exports=function(e){var t=function(){function t(r,n,i,a){var s=this;_classCallCheck(this,t),this._model=n.id,this.os=r,this.map=e.utils.copyObject(n.map),this.contents=i,this.opContents=a,this.eventHandler=new e.utils.EventHandler(function(t){var r=[];for(var n in t){var i,a=t[n],o="Delete"===a.struct?a.key:a.parentSub;if(null!=s.opContents[o]?!function(){var e=s.opContents[o];i=function(){return new Promise(function(t){s.os.requestTransaction(regeneratorRuntime.mark(function r(){return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:return r.delegateYield(this.getType(e),"t0",1);case 1:r.t1=r.t0,t(r.t1);case 3:case"end":return r.stop()}},r,this)}))})}}():i=s.contents[o],"Insert"===a.struct){if(null===a.left){null!=a.opContent?(delete s.contents[o],a.deleted?delete s.opContents[o]:s.opContents[o]=a.opContent):(delete s.opContents[o],a.deleted?delete s.contents[o]:s.contents[o]=a.content),s.map[o]=a.id;var u={name:o,object:s};void 0===i?u.type="add":(u.type="update",u.oldValue=i),r.push(u)}}else{if("Delete"!==a.struct)throw new Error("Unexpected Operation!");if(e.utils.compareIds(s.map[o],a.target)){delete s.opContents[o],delete s.contents[o];var c={name:o,object:s,oldValue:i,type:"delete"};r.push(c)}}}s.eventHandler.callEventListeners(r)})}return t.prototype.get=function(e){var t=this;if(null==e)throw new Error("You must specify key!");return null==this.opContents[e]?this.contents[e]:new Promise(function(r){var n=t.opContents[e];t.os.requestTransaction(regeneratorRuntime.mark(function i(){return regeneratorRuntime.wrap(function(e){for(;;)switch(e.prev=e.next){case 0:return e.delegateYield(this.getType(n),"t0",1);case 1:e.t1=e.t0,r(e.t1);case 3:case"end":return e.stop()}},i,this)}))})},t.prototype.getPrimitive=function(t){return null==t?e.utils.copyObject(this.contents):this.contents[t]},t.prototype["delete"]=function(t){var r=this.map[t];if(null!=r){var n={target:r,struct:"Delete"},i=this.eventHandler,a=e.utils.copyObject(n);a.key=t,i.awaitAndPrematurelyCall([a]),this.os.requestTransaction(regeneratorRuntime.mark(function s(){return regeneratorRuntime.wrap(function(e){
-for(;;)switch(e.prev=e.next){case 0:return e.delegateYield(this.applyCreatedOperations([n]),"t0",1);case 1:i.awaitedDeletes(1);case 2:case"end":return e.stop()}},s,this)}))}},t.prototype.set=function(t,r){var n=this,i=this.map[t]||null,a={left:null,right:i,origin:null,parent:this._model,parentSub:t,struct:"Insert"};return new Promise(function(t){if(r instanceof e.utils.CustomType)n.os.requestTransaction(regeneratorRuntime.mark(function s(){var e,n;return regeneratorRuntime.wrap(function(i){for(;;)switch(i.prev=i.next){case 0:return i.delegateYield(r.createType.call(this),"t0",1);case 1:return e=i.t0,i.delegateYield(this.getType(e),"t1",3);case 3:return n=i.t1,a.opContent=e,a.id=this.store.getNextOpId(),i.delegateYield(this.applyCreatedOperations([a]),"t2",7);case 7:t(n);case 8:case"end":return i.stop()}},s,this)}));else{a.content=r,a.id=n.os.getNextOpId();var i=n.eventHandler;i.awaitAndPrematurelyCall([a]),n.os.requestTransaction(regeneratorRuntime.mark(function o(){return regeneratorRuntime.wrap(function(e){for(;;)switch(e.prev=e.next){case 0:return e.delegateYield(this.applyCreatedOperations([a]),"t0",1);case 1:i.awaitedInserts(1);case 2:case"end":return e.stop()}},o,this)})),t(r)}})},t.prototype.observe=function(e){this.eventHandler.addEventListener(e)},t.prototype.unobserve=function(e){this.eventHandler.removeEventListener(e)},t.prototype.observePath=function(t,r){function n(e){for(var t=0;t<e.length;t++){var n=e[t];if(n.name===a){var s=i.get(a);s instanceof Promise?s.then(r):r(s)}}}var i=this;if(t.length<1)throw new Error("Path must contain at least one element!");if(1===t.length){var a=t[0],s=i.get(a);return s instanceof Promise?s.then(r):r(s),this.observe(n),Promise.resolve(function(){i.unobserve(r)})}var o,u=function(){var n=i.get(t[0]);return!n instanceof Promise&&(n=i.set(t[0],e.Map)),n.then(function(e){return e.observePath(t.slice(1),r)}).then(function(e){return o=e,Promise.resolve()})},c=function(e){for(var r in e){var n=e[r];n.name===t[0]&&(o(),("add"===n.type||"update"===n.type)&&u())}};return i.observe(c),u().then(Promise.resolve(function(){o(),i.unobserve(c)}))},t.prototype._changed=regeneratorRuntime.mark(function r(e,t){return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:if("Delete"!==t.struct){r.next=3;break}return r.delegateYield(e.getOperation(t.target),"t0",2);case 2:t.key=r.t0.parentSub;case 3:this.eventHandler.receivedOp(t);case 4:case"end":return r.stop()}},r,this)}),t}();e.Map=new e.utils.CustomType({"class":t,createType:regeneratorRuntime.mark(function r(){var e,t;return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:return e=this.store.getNextOpId(),t={map:{},struct:"Map",type:"Map",id:e},r.delegateYield(this.applyCreatedOperations([t]),"t0",3);case 3:return r.abrupt("return",e);case 4:case"end":return r.stop()}},r,this)}),initType:regeneratorRuntime.mark(function n(e,r){var i,a,s,o,u;return regeneratorRuntime.wrap(function(n){for(;;)switch(n.prev=n.next){case 0:i={},a={},s=r.map,n.t0=regeneratorRuntime.keys(s);case 4:if((n.t1=n.t0()).done){n.next=11;break}return o=n.t1.value,n.delegateYield(this.getOperation(s[o]),"t2",7);case 7:u=n.t2,null!=u.opContent?a[o]=u.opContent:i[o]=u.content,n.next=4;break;case 11:return n.abrupt("return",new t(e,r,i,a));case 12:case"end":return n.stop()}},n,this)})})}},{}],11:[function(e,t,r){t.exports=function(e){var t=function(e){function t(r,n,i,a){_classCallCheck(this,t),e.call(this,r,n,i,a),this.textfields=[]}return _inherits(t,e),t.prototype.toString=function(){return this.valArray.join("")},t.prototype.insert=function(t,r){e.prototype.insert.call(this,t,r.split(""))},t.prototype.bind=function(e,t){t=t||window,null==t.getSelection&&(t=window);for(var r in this.textfields)if(this.textfields[r]===e)return;var n=!1,i=this;e.value=this.toString(),this.textfields.push(e);var a,s,o;null!=e.selectionStart&&null!=e.setSelectionRange?(a=function(t){var r=e.selectionStart,n=e.selectionEnd;return null!=t&&(r=t(r),n=t(n)),{left:r,right:n}},s=function(t){o(i.toString()),e.setSelectionRange(t.left,t.right)},o=function(t){e.value=t}):(a=function(r){var n={},i=t.getSelection(),a=e.textContent.length;n.left=Math.min(i.anchorOffset,a),n.right=Math.min(i.focusOffset,a),null!=r&&(n.left=r(n.left),n.right=r(n.right));var s=i.focusNode;return s===e||s===e.childNodes[0]?n.isReal=!0:n.isReal=!1,n},s=function(t){o(i.toString());var r=e.childNodes[0];if(t.isReal&&null!=r){t.left<0&&(t.left=0),t.right=Math.max(t.left,t.right),t.right>r.length&&(t.right=r.length),t.left=Math.min(t.left,t.right);var n=document.createRange();n.setStart(r,t.left),n.setEnd(r,t.right);var a=window.getSelection();a.removeAllRanges(),a.addRange(n)}},o=function(t){var r=t.replace(new RegExp("\n","g")," ").split(" ");e.innerText="";for(var n in r){var i=r[n];e.innerText+=i,n!==r.length-1&&(e.innerHTML+="&nbsp;")}}),o(this.toString()),this.observe(function(e){for(var t in e){var r=e[t];if(!n){var i,o;if("insert"===r.type){i=r.index,o=function(e){return i>=e?e:e+=1};var u=a(o);s(u)}else"delete"===r.type&&(i=r.index,o=function(e){return i>e?e:e-=1},u=a(o),s(u))}}}),e.onkeypress=function(t){if(i.is_deleted)return e.onkeypress=null,!0;n=!0;var r;if(r=13===t.keyCode?"\n":null!=t.key?32===t.charCode?" ":t.key:window.String.fromCharCode(t.keyCode),r.length>1)return!0;if(r.length>0){var o=a(),u=Math.min(o.left,o.right,i.length),c=Math.abs(o.right-o.left);i["delete"](u,c),i.insert(u,r),o.left=u+r.length,o.right=o.left,s(o)}return t.preventDefault(),n=!1,!1},e.onpaste=function(t){return i.is_deleted?(e.onpaste=null,!0):void t.preventDefault()},e.oncut=function(t){return i.is_deleted?(e.oncut=null,!0):void t.preventDefault()},e.onkeydown=function(t){if(n=!0,i.is_deleted)return e.onkeydown=null,!0;var r=a(),o=Math.min(r.left,r.right,i.toString().length),u=Math.abs(r.left-r.right);if(null!=t.keyCode&&8===t.keyCode){if(u>0)i["delete"](o,u),r.left=o,r.right=o,s(r);else if(null!=t.ctrlKey&&t.ctrlKey){var c=i.toString(),l=o,d=0;for(o>0&&(l--,d++);l>0&&" "!==c[l]&&"\n"!==c[l];)l--,d++;i["delete"](l,o-l),r.left=l,r.right=l,s(r)}else o>0&&(i["delete"](o-1,1),r.left=o-1,r.right=o-1,s(r));return t.preventDefault(),n=!1,!1}return null!=t.keyCode&&46===t.keyCode?(u>0?(i["delete"](o,u),r.left=o,r.right=o,s(r)):(i["delete"](o,1),r.left=o,r.right=o,s(r)),t.preventDefault(),n=!1,!1):(n=!1,!0)}},t}(e.Array["class"]);e.TextBind=new e.utils.CustomType({"class":t,createType:regeneratorRuntime.mark(function r(){var e,t;return regeneratorRuntime.wrap(function(r){for(;;)switch(r.prev=r.next){case 0:return e=this.store.getNextOpId(),t={start:null,end:null,struct:"List",type:"TextBind",id:e},r.delegateYield(this.applyCreatedOperations([t]),"t0",3);case 3:return r.abrupt("return",e);case 4:case"end":return r.stop()}},r,this)}),initType:regeneratorRuntime.mark(function n(r,i){var a,s;return regeneratorRuntime.wrap(function(n){for(;;)switch(n.prev=n.next){case 0:return a=[],n.delegateYield(e.Struct.List.map.call(this,i,function(e){return a.push(e.content),JSON.stringify(e.id)}),"t0",2);case 2:return s=n.t0,n.abrupt("return",new t(r,i.id,s,a));case 4:case"end":return n.stop()}},n,this)})})}},{}],12:[function(e,t,r){t.exports=function(e){function t(e){var t={};for(var r in e)t[r]=e[r];return t}function r(e,t){return e[0]<t[0]||e[0]===t[0]&&e[1]<t[1]}function n(e,t){return null==e||null==t?null==e&&null==t?!0:!1:e[0]===t[0]&&e[1]===t[1]?!0:!1}e.utils={};var i=function(){function t(e){_classCallCheck(this,t),this.waiting=[],this.awaiting=0,this.onevent=e,this.eventListeners=[]}return t.prototype.receivedOp=function(t){this.awaiting<=0?this.onevent([t]):this.waiting.push(e.utils.copyObject(t))},t.prototype.awaitAndPrematurelyCall=function(e){this.awaiting++,this.onevent(e)},t.prototype.addEventListener=function(e){this.eventListeners.push(e)},t.prototype.removeEventListener=function(e){this.eventListeners=this.eventListeners.filter(function(t){return e!==t})},t.prototype.removeAllEventListeners=function(){this.eventListeners=[]},t.prototype.callEventListeners=function(e){for(var t in this.eventListeners)try{this.eventListeners[t](e)}catch(r){console.log("User events must not throw Errors!")}},t.prototype.awaitedInserts=function(t){for(var r=this.waiting.splice(this.waiting.length-t),n=0;n<r.length;n++)for(var i=r[n],a=this.waiting.length-1;a>=0;a--){var s=this.waiting[a];e.utils.compareIds(i.left,s.id)?(s.right=i.id,i.left=s.left):e.utils.compareIds(i.right,s.id)&&(s.left=i.id,i.right=s.right)}this._tryCallEvents()},t.prototype.awaitedDeletes=function(t,r){var n=this.waiting.splice(this.waiting.length-t);for(var i in n){var a=n[i];if(null!=r)for(var s in this.waiting){var o=this.waiting[s];e.utils.compareIds(a.target,o.left)&&(a.left=r)}}this._tryCallEvents()},t.prototype._tryCallEvents=function(){if(this.awaiting--,this.awaiting<=0&&this.waiting.length>0){var e=this.waiting;this.waiting=[],this.onevent(e)}},t}();e.utils.EventHandler=i;var a=function s(e){if(_classCallCheck(this,s),null==e.createType||null==e.initType||null==e["class"])throw new Error("Custom type was not initialized correctly!");this.createType=e.createType,this.initType=e.initType,this["class"]=e["class"]};e.utils.CustomType=a,e.utils.copyObject=t,e.utils.smaller=r,e.utils.compareIds=n}},{}],13:[function(e,t,r){function n(t){t.types=null!=t.types?t.types:[];for(var r=[t.db.name,t.connector.name].concat(t.types),s=[],o=0;o<r.length;o++)if(null==n[r[o]])try{e(r[o])(n)}catch(u){if(null==window)throw u;if(null==i[r[o]]){var c=document.createElement("script"),l=r[o].toLowerCase();c.src=t.sourceDir+"/y-"+l+"/y-"+l+".js",document.head.appendChild(c),i[r[o]]=[]}s.push(new Promise(function(e){i[r[o]].push(e)}))}return Promise.all(s).then(function(){return new Promise(function(e){var r=new a(t,function(){r.db.whenUserIdSet(function(){e(r)})})})})}e("./Connector.js")(n),e("./Database.js")(n),e("./Transaction.js")(n),e("./Struct.js")(n),e("./Utils.js")(n),e("./Databases/RedBlackTree.js")(n),e("./Databases/Memory.js")(n),e("./Databases/IndexedDB.js")(n),e("./Connectors/Test.js")(n);var i={};t.exports=n,n.extend=function(e,t){n[e]=t;var r=i[e];if(null!=i[e]){for(var a=0;a<r.length;a++)r[a]();delete i[e]}},e("./Types/Array.js")(n),e("./Types/Map.js")(n),e("./Types/TextBind.js")(n);var a=function(){function e(t,r){_classCallCheck(this,e),this.db=new n[t.db.name](this,t.db),this.connector=new n[t.connector.name](this,t.connector),this.db.requestTransaction(regeneratorRuntime.mark(function i(){var e,t;return regeneratorRuntime.wrap(function(n){for(;;)switch(n.prev=n.next){case 0:return e={id:["_",0],struct:"Map",type:"Map",map:{}},n.delegateYield(this.store.tryExecute.call(this,e),"t0",2);case 2:return n.delegateYield(this.getType(e.id),"t1",3);case 3:t=n.t1,this.store.y.root=t,r();case 6:case"end":return n.stop()}},i,this)}))}return e.prototype.isConnected=function(){return this.connector.isSynced},e.prototype.disconnect=function(){return this.connector.disconnect()},e.prototype.reconnect=function(){return this.connector.reconnect()},e.prototype.destroy=function(){this.disconnect(),this.db.destroy(),this.connector=null,this.db=null},e}();"undefined"!=typeof window&&(window.Y=n)},{"./Connector.js":1,"./Connectors/Test.js":2,"./Database.js":3,"./Databases/IndexedDB.js":4,"./Databases/Memory.js":5,"./Databases/RedBlackTree.js":6,"./Struct.js":7,"./Transaction.js":8,"./Types/Array.js":9,"./Types/Map.js":10,"./Types/TextBind.js":11,"./Utils.js":12}]},{},[13]);
+(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+'use strict'
+
+module.exports = function (Y) {
+  class AbstractConnector {
+    /*
+      opts contains the following information:
+       role : String Role of this client ("master" or "slave")
+       userId : String Uniquely defines the user.
+       debug: Boolean Whether to print debug messages (optional)
+    */
+    constructor (y, opts) {
+      this.y = y
+      if (opts == null) {
+        opts = {}
+      }
+      if (opts.role == null || opts.role === 'master') {
+        this.role = 'master'
+      } else if (opts.role === 'slave') {
+        this.role = 'slave'
+      } else {
+        throw new Error("Role must be either 'master' or 'slave'!")
+      }
+      this.role = opts.role
+      this.connections = {}
+      this.isSynced = false
+      this.userEventListeners = []
+      this.whenSyncedListeners = []
+      this.currentSyncTarget = null
+      this.syncingClients = []
+      this.forwardToSyncingClients = opts.forwardToSyncingClients !== false
+      this.debug = opts.debug === true
+      this.broadcastedHB = false
+      this.syncStep2 = Promise.resolve()
+    }
+    reconnect () {
+    }
+    disconnect () {
+      this.connections = {}
+      this.isSynced = false
+      this.currentSyncTarget = null
+      this.broadcastedHB = false
+      this.syncingClients = []
+      this.whenSyncedListeners = []
+      return this.y.db.stopGarbageCollector()
+    }
+    setUserId (userId) {
+      this.userId = userId
+      return this.y.db.setUserId(userId)
+    }
+    onUserEvent (f) {
+      this.userEventListeners.push(f)
+    }
+    userLeft (user) {
+      delete this.connections[user]
+      if (user === this.currentSyncTarget) {
+        this.currentSyncTarget = null
+        this.findNextSyncTarget()
+      }
+      this.syncingClients = this.syncingClients.filter(function (cli) {
+        return cli !== user
+      })
+      for (var f of this.userEventListeners) {
+        f({
+          action: 'userLeft',
+          user: user
+        })
+      }
+    }
+    userJoined (user, role) {
+      if (role == null) {
+        throw new Error('You must specify the role of the joined user!')
+      }
+      if (this.connections[user] != null) {
+        throw new Error('This user already joined!')
+      }
+      this.connections[user] = {
+        isSynced: false,
+        role: role
+      }
+      for (var f of this.userEventListeners) {
+        f({
+          action: 'userJoined',
+          user: user,
+          role: role
+        })
+      }
+      if (this.currentSyncTarget == null) {
+        this.findNextSyncTarget()
+      }
+    }
+    // Execute a function _when_ we are connected.
+    // If not connected, wait until connected
+    whenSynced (f) {
+      if (this.isSynced) {
+        f()
+      } else {
+        this.whenSyncedListeners.push(f)
+      }
+    }
+    /*
+
+     returns false, if there is no sync target
+     true otherwise
+    */
+    findNextSyncTarget () {
+      if (this.currentSyncTarget != null || this.isSynced) {
+        return // "The current sync has not finished!"
+      }
+
+      var syncUser = null
+      for (var uid in this.connections) {
+        if (!this.connections[uid].isSynced) {
+          syncUser = uid
+          break
+        }
+      }
+      if (syncUser != null) {
+        var conn = this
+        this.currentSyncTarget = syncUser
+        this.y.db.requestTransaction(function *() {
+          conn.send(syncUser, {
+            type: 'sync step 1',
+            stateSet: yield* this.getStateSet(),
+            deleteSet: yield* this.getDeleteSet()
+          })
+        })
+      } else {
+        this.isSynced = true
+        // call when synced listeners
+        for (var f of this.whenSyncedListeners) {
+          f()
+        }
+        this.whenSyncedListeners = []
+        this.y.db.requestTransaction(function *() {
+          yield* this.garbageCollectAfterSync()
+        })
+      }
+    }
+    send (uid, message) {
+      if (this.debug) {
+        console.log(`send ${this.userId} -> ${uid}: ${message.type}`, m) // eslint-disable-line
+      }
+    }
+    /*
+      You received a raw message, and you know that it is intended for Yjs. Then call this function.
+    */
+    receiveMessage (sender, m) {
+      if (sender === this.userId) {
+        return
+      }
+      if (this.debug) {
+        console.log(`receive ${sender} -> ${this.userId}: ${m.type}`, JSON.parse(JSON.stringify(m))) // eslint-disable-line
+      }
+      if (m.type === 'sync step 1') {
+        // TODO: make transaction, stream the ops
+        let conn = this
+        this.y.db.requestTransaction(function *() {
+          var currentStateSet = yield* this.getStateSet()
+          yield* this.applyDeleteSet(m.deleteSet)
+
+          var ds = yield* this.getDeleteSet()
+          var ops = yield* this.getOperations(m.stateSet)
+          conn.send(sender, {
+            type: 'sync step 2',
+            os: ops,
+            stateSet: currentStateSet,
+            deleteSet: ds
+          })
+          if (this.forwardToSyncingClients) {
+            conn.syncingClients.push(sender)
+            setTimeout(function () {
+              conn.syncingClients = conn.syncingClients.filter(function (cli) {
+                return cli !== sender
+              })
+              conn.send(sender, {
+                type: 'sync done'
+              })
+            }, conn.syncingClientDuration)
+          } else {
+            conn.send(sender, {
+              type: 'sync done'
+            })
+          }
+          conn._setSyncedWith(sender)
+        })
+      } else if (m.type === 'sync step 2') {
+        let conn = this
+        var broadcastHB = !this.broadcastedHB
+        this.broadcastedHB = true
+        var db = this.y.db
+        this.syncStep2 = new Promise(function (resolve) {
+          db.requestTransaction(function * () {
+            yield* this.applyDeleteSet(m.deleteSet)
+            this.store.apply(m.os)
+            db.requestTransaction(function * () {
+              var ops = yield* this.getOperations(m.stateSet)
+              if (ops.length > 0) {
+                m = {
+                  type: 'update',
+                  ops: ops
+                }
+                if (!broadcastHB) { // TODO: consider to broadcast here..
+                  conn.send(sender, m)
+                } else {
+                  // broadcast only once!
+                  conn.broadcast(m)
+                }
+              }
+              resolve()
+            })
+          })
+        })
+      } else if (m.type === 'sync done') {
+        var self = this
+        this.syncStep2.then(function () {
+          self._setSyncedWith(sender)
+        })
+      } else if (m.type === 'update') {
+        if (this.forwardToSyncingClients) {
+          for (var client of this.syncingClients) {
+            this.send(client, m)
+          }
+        }
+        this.y.db.apply(m.ops)
+      }
+    }
+    _setSyncedWith (user) {
+      var conn = this.connections[user]
+      if (conn != null) {
+        conn.isSynced = true
+      }
+      if (user === this.currentSyncTarget) {
+        this.currentSyncTarget = null
+        this.findNextSyncTarget()
+      }
+    }
+    /*
+      Currently, the HB encodes operations as JSON. For the moment I want to keep it
+      that way. Maybe we support encoding in the HB as XML in the future, but for now I don't want
+      too much overhead. Y is very likely to get changed a lot in the future
+
+      Because we don't want to encode JSON as string (with character escaping, wich makes it pretty much unreadable)
+      we encode the JSON as XML.
+
+      When the HB support encoding as XML, the format should look pretty much like this.
+
+      does not support primitive values as array elements
+      expects an ltx (less than xml) object
+    */
+    parseMessageFromXml (m) {
+      function parseArray (node) {
+        for (var n of node.children) {
+          if (n.getAttribute('isArray') === 'true') {
+            return parseArray(n)
+          } else {
+            return parseObject(n)
+          }
+        }
+      }
+      function parseObject (node) {
+        var json = {}
+        for (var attrName in node.attrs) {
+          var value = node.attrs[attrName]
+          var int = parseInt(value, 10)
+          if (isNaN(int) || ('' + int) !== value) {
+            json[attrName] = value
+          } else {
+            json[attrName] = int
+          }
+        }
+        for (var n in node.children) {
+          var name = n.name
+          if (n.getAttribute('isArray') === 'true') {
+            json[name] = parseArray(n)
+          } else {
+            json[name] = parseObject(n)
+          }
+        }
+        return json
+      }
+      parseObject(m)
+    }
+    /*
+      encode message in xml
+      we use string because Strophe only accepts an "xml-string"..
+      So {a:4,b:{c:5}} will look like
+      <y a="4">
+        <b c="5"></b>
+      </y>
+      m - ltx element
+      json - Object
+    */
+    encodeMessageToXml (msg, obj) {
+      // attributes is optional
+      function encodeObject (m, json) {
+        for (var name in json) {
+          var value = json[name]
+          if (name == null) {
+            // nop
+          } else if (value.constructor === Object) {
+            encodeObject(m.c(name), value)
+          } else if (value.constructor === Array) {
+            encodeArray(m.c(name), value)
+          } else {
+            m.setAttribute(name, value)
+          }
+        }
+      }
+      function encodeArray (m, array) {
+        m.setAttribute('isArray', 'true')
+        for (var e of array) {
+          if (e.constructor === Object) {
+            encodeObject(m.c('array-element'), e)
+          } else {
+            encodeArray(m.c('array-element'), e)
+          }
+        }
+      }
+      if (obj.constructor === Object) {
+        encodeObject(msg.c('y', { xmlns: 'http://y.ninja/connector-stanza' }), obj)
+      } else if (obj.constructor === Array) {
+        encodeArray(msg.c('y', { xmlns: 'http://y.ninja/connector-stanza' }), obj)
+      } else {
+        throw new Error("I can't encode this json!")
+      }
+    }
+  }
+  Y.AbstractConnector = AbstractConnector
+}
+
+},{}],2:[function(require,module,exports){
+/* global getRandom, wait, async */
+'use strict'
+
+module.exports = function (Y) {
+  var globalRoom = {
+    users: {},
+    buffers: {},
+    removeUser: function (user) {
+      for (var i in this.users) {
+        this.users[i].userLeft(user)
+      }
+      delete this.users[user]
+      delete this.buffers[user]
+    },
+    addUser: function (connector) {
+      this.users[connector.userId] = connector
+      this.buffers[connector.userId] = []
+      for (var uname in this.users) {
+        if (uname !== connector.userId) {
+          var u = this.users[uname]
+          u.userJoined(connector.userId, 'master')
+          connector.userJoined(u.userId, 'master')
+        }
+      }
+    }
+  }
+  Y.utils.globalRoom = globalRoom
+
+  function flushOne () {
+    var bufs = []
+    for (var i in globalRoom.buffers) {
+      if (globalRoom.buffers[i].length > 0) {
+        bufs.push(i)
+      }
+    }
+    if (bufs.length > 0) {
+      var userId = getRandom(bufs)
+      var m = globalRoom.buffers[userId].shift()
+      var user = globalRoom.users[userId]
+      user.receiveMessage(m[0], m[1])
+      return true
+    } else {
+      return false
+    }
+  }
+
+  // setInterval(flushOne, 10)
+
+  var userIdCounter = 0
+
+  class Test extends Y.AbstractConnector {
+    constructor (y, options) {
+      if (options === undefined) {
+        throw new Error('Options must not be undefined!')
+      }
+      options.role = 'master'
+      options.forwardToSyncingClients = false
+      super(y, options)
+      this.setUserId((userIdCounter++) + '').then(() => {
+        globalRoom.addUser(this)
+      })
+      this.globalRoom = globalRoom
+      this.syncingClientDuration = 0
+    }
+    receiveMessage (sender, m) {
+      super.receiveMessage(sender, JSON.parse(JSON.stringify(m)))
+    }
+    send (userId, message) {
+      var buffer = globalRoom.buffers[userId]
+      if (buffer != null) {
+        buffer.push(JSON.parse(JSON.stringify([this.userId, message])))
+      }
+    }
+    broadcast (message) {
+      for (var key in globalRoom.buffers) {
+        globalRoom.buffers[key].push(JSON.parse(JSON.stringify([this.userId, message])))
+      }
+    }
+    isDisconnected () {
+      return globalRoom.users[this.userId] == null
+    }
+    reconnect () {
+      if (this.isDisconnected()) {
+        globalRoom.addUser(this)
+        super.reconnect()
+      }
+      return this.flushAll()
+    }
+    disconnect () {
+      if (!this.isDisconnected()) {
+        globalRoom.removeUser(this.userId)
+        super.disconnect()
+      }
+      return wait()
+    }
+    flush () {
+      var self = this
+      return async(function * () {
+        yield wait()
+        while (globalRoom.buffers[self.userId].length > 0) {
+          var m = globalRoom.buffers[self.userId].shift()
+          this.receiveMessage(m[0], m[1])
+          yield wait()
+        }
+      })
+    }
+    flushAll () {
+      return new Promise(function (resolve) {
+        // flushes may result in more created operations,
+        // flush until there is nothing more to flush
+        function nextFlush () {
+          var c = flushOne()
+          if (c) {
+            while (flushOne()) {
+              // nop
+            }
+            wait().then(nextFlush)
+          } else {
+            wait().then(function () {
+              resolve()
+            })
+          }
+        }
+        // in the case that there are
+        // still actions that want to be performed
+        wait().then(nextFlush)
+      })
+    }
+    /*
+      Flushes an operation for some user..
+    */
+    flushOne () {
+      flushOne()
+    }
+  }
+
+  Y.Test = Test
+}
+
+},{}],3:[function(require,module,exports){
+'use strict'
+
+module.exports = function (Y) {
+  /*
+    Partial definition of an OperationStore.
+    TODO: name it Database, operation store only holds operations.
+
+    A database definition must alse define the following methods:
+    * logTable() (optional)
+      - show relevant information information in a table
+    * requestTransaction(makeGen)
+      - request a transaction
+    * destroy()
+      - destroy the database
+  */
+  class AbstractDatabase {
+    constructor (y, opts) {
+      this.y = y
+      // E.g. this.listenersById[id] : Array<Listener>
+      this.listenersById = {}
+      // Execute the next time a transaction is requested
+      this.listenersByIdExecuteNow = []
+      // A transaction is requested
+      this.listenersByIdRequestPending = false
+      /* To make things more clear, the following naming conventions:
+         * ls : we put this.listenersById on ls
+         * l : Array<Listener>
+         * id : Id (can't use as property name)
+         * sid : String (converted from id via JSON.stringify
+                         so we can use it as a property name)
+
+        Always remember to first overwrite
+        a property before you iterate over it!
+      */
+      // TODO: Use ES7 Weak Maps. This way types that are no longer user,
+      // wont be kept in memory.
+      this.initializedTypes = {}
+      this.whenUserIdSetListener = null
+      this.waitingTransactions = []
+      this.transactionInProgress = false
+      if (typeof YConcurrency_TestingMode !== 'undefined') {
+        this.executeOrder = []
+      }
+      this.gc1 = [] // first stage
+      this.gc2 = [] // second stage -> after that, remove the op
+      this.gcTimeout = opts.gcTimeout || 5000
+      var os = this
+      function garbageCollect () {
+        return new Promise((resolve) => {
+          os.requestTransaction(function * () {
+            if (os.y.connector != null && os.y.connector.isSynced) {
+              for (var i in os.gc2) {
+                var oid = os.gc2[i]
+                yield* this.garbageCollectOperation(oid)
+              }
+              os.gc2 = os.gc1
+              os.gc1 = []
+            }
+            if (os.gcTimeout > 0) {
+              os.gcInterval = setTimeout(garbageCollect, os.gcTimeout)
+            }
+            resolve()
+          })
+        })
+      }
+      this.garbageCollect = garbageCollect
+      if (this.gcTimeout > 0) {
+        garbageCollect()
+      }
+    }
+    addToDebug () {
+      if (typeof YConcurrency_TestingMode !== 'undefined') {
+        var command = Array.prototype.map.call(arguments, function (s) {
+          if (typeof s === 'string') {
+            return s
+          } else {
+            return JSON.stringify(s)
+          }
+        }).join('').replace(/"/g, "'").replace(/,/g, ', ').replace(/:/g, ': ')
+        this.executeOrder.push(command)
+      }
+    }
+    getDebugData () {
+      console.log(this.executeOrder.join('\n'))
+    }
+    stopGarbageCollector () {
+      var self = this
+      return new Promise(function (resolve) {
+        self.requestTransaction(function * () {
+          var ungc = self.gc1.concat(self.gc2)
+          self.gc1 = []
+          self.gc2 = []
+          for (var i in ungc) {
+            var op = yield* this.getOperation(ungc[i])
+            delete op.gc
+            yield* this.setOperation(op)
+          }
+          resolve()
+        })
+      })
+    }
+    /*
+      Try to add to GC.
+
+      TODO: rename this function
+
+      Rulez:
+      * Only gc if this user is online
+      * The most left element in a list must not be gc'd.
+        => There is at least one element in the list
+
+      returns true iff op was added to GC
+    */
+    addToGarbageCollector (op, left) {
+      if (
+        op.gc == null &&
+        op.deleted === true &&
+        this.y.connector.isSynced &&
+        left != null &&
+        left.deleted === true
+      ) {
+        op.gc = true
+        this.gc1.push(op.id)
+        return true
+      } else {
+        return false
+      }
+    }
+    removeFromGarbageCollector (op) {
+      function filter (o) {
+        return !Y.utils.compareIds(o, op.id)
+      }
+      this.gc1 = this.gc1.filter(filter)
+      this.gc2 = this.gc2.filter(filter)
+      delete op.gc
+    }
+    destroy () {
+      clearInterval(this.gcInterval)
+      this.gcInterval = null
+    }
+    setUserId (userId) {
+      var self = this
+      return new Promise(function (resolve) {
+        self.requestTransaction(function * () {
+          self.userId = userId
+          self.opClock = (yield* this.getState(userId)).clock
+          if (self.whenUserIdSetListener != null) {
+            self.whenUserIdSetListener()
+            self.whenUserIdSetListener = null
+          }
+          resolve()
+        })
+      })
+    }
+    whenUserIdSet (f) {
+      if (this.userId != null) {
+        f()
+      } else {
+        this.whenUserIdSetListener = f
+      }
+    }
+    getNextOpId () {
+      if (this.userId == null) {
+        throw new Error('OperationStore not yet initialized!')
+      }
+      return [this.userId, this.opClock++]
+    }
+    /*
+      Apply a list of operations.
+
+      * get a transaction
+      * check whether all Struct.*.requiredOps are in the OS
+      * check if it is an expected op (otherwise wait for it)
+      * check if was deleted, apply a delete operation after op was applied
+    */
+    apply (ops) {
+      for (var key in ops) {
+        var o = ops[key]
+        var required = Y.Struct[o.struct].requiredOps(o)
+        this.whenOperationsExist(required, o)
+      }
+    }
+    /*
+      op is executed as soon as every operation requested is available.
+      Note that Transaction can (and should) buffer requests.
+    */
+    whenOperationsExist (ids, op) {
+      if (ids.length > 0) {
+        let listener = {
+          op: op,
+          missing: ids.length
+        }
+
+        for (let key in ids) {
+          let id = ids[key]
+          let sid = JSON.stringify(id)
+          let l = this.listenersById[sid]
+          if (l == null) {
+            l = []
+            this.listenersById[sid] = l
+          }
+          l.push(listener)
+        }
+      } else {
+        this.listenersByIdExecuteNow.push({
+          op: op
+        })
+      }
+
+      if (this.listenersByIdRequestPending) {
+        return
+      }
+
+      this.listenersByIdRequestPending = true
+      var store = this
+
+      this.requestTransaction(function * () {
+        var exeNow = store.listenersByIdExecuteNow
+        store.listenersByIdExecuteNow = []
+
+        var ls = store.listenersById
+        store.listenersById = {}
+
+        store.listenersByIdRequestPending = false
+
+        for (let key in exeNow) {
+          let o = exeNow[key].op
+          yield* store.tryExecute.call(this, o)
+        }
+
+        for (var sid in ls) {
+          var l = ls[sid]
+          var id = JSON.parse(sid)
+          if ((yield* this.getOperation(id)) == null) {
+            store.listenersById[sid] = l
+          } else {
+            for (let key in l) {
+              let listener = l[key]
+              let o = listener.op
+              if (--listener.missing === 0) {
+                yield* store.tryExecute.call(this, o)
+              }
+            }
+          }
+        }
+      })
+    }
+    /*
+      Actually execute an operation, when all expected operations are available.
+    */
+    * tryExecute (op) {
+      this.store.addToDebug('yield* this.store.tryExecute.call(this, ', JSON.stringify(op), ')')
+      if (op.struct === 'Delete') {
+        yield* Y.Struct.Delete.execute.call(this, op)
+        yield* this.store.operationAdded(this, op)
+      } else if ((yield* this.getOperation(op.id)) == null && !(yield* this.isGarbageCollected(op.id))) {
+        yield* Y.Struct[op.struct].execute.call(this, op)
+        yield* this.addOperation(op)
+        yield* this.store.operationAdded(this, op)
+      }
+    }
+    // called by a transaction when an operation is added
+    * operationAdded (transaction, op) {
+      if (op.struct === 'Delete') {
+        var target = yield* transaction.getOperation(op.target)
+        if (target != null) {
+          var type = transaction.store.initializedTypes[JSON.stringify(target.parent)]
+          if (type != null) {
+            yield* type._changed(transaction, {
+              struct: 'Delete',
+              target: op.target
+            })
+          }
+        }
+      } else {
+        // increase SS
+        var o = op
+        var state = yield* transaction.getState(op.id[0])
+        while (o != null && o.id[1] === state.clock && op.id[0] === o.id[0]) {
+          // either its a new operation (1. case), or it is an operation that was deleted, but is not yet in the OS
+          state.clock++
+          yield* transaction.checkDeleteStoreForState(state)
+          o = yield* transaction.os.findNext(o.id)
+        }
+        yield* transaction.setState(state)
+
+        // notify whenOperation listeners (by id)
+        var sid = JSON.stringify(op.id)
+        var l = this.listenersById[sid]
+        delete this.listenersById[sid]
+
+        if (l != null) {
+          for (var key in l) {
+            var listener = l[key]
+            if (--listener.missing === 0) {
+              this.whenOperationsExist([], listener.op)
+            }
+          }
+        }
+        var t = this.initializedTypes[JSON.stringify(op.parent)]
+        // notify parent, if it has been initialized as a custom type
+        if (t != null) {
+          yield* t._changed(transaction, Y.utils.copyObject(op))
+        }
+
+        // Delete if DS says this is actually deleted
+        if (!op.deleted && (yield* transaction.isDeleted(op.id))) {
+          var delop = {
+            struct: 'Delete',
+            target: op.id
+          }
+          yield* Y.Struct['Delete'].execute.call(transaction, delop)
+          if (t != null) {
+            yield* t._changed(transaction, delop)
+          }
+        }
+      }
+    }
+    getNextRequest () {
+      if (this.waitingTransactions.length === 0) {
+        this.transactionInProgress = false
+        return null
+      } else {
+        return this.waitingTransactions.shift()
+      }
+    }
+    requestTransaction (makeGen, callImmediately) {
+      if (callImmediately) {
+        this.transact(makeGen)
+      } else if (!this.transactionInProgress) {
+        this.transactionInProgress = true
+        var self = this
+        setTimeout(function () {
+          self.transact(makeGen)
+        }, 0)
+      } else {
+        this.waitingTransactions.push(makeGen)
+      }
+    }
+  }
+  Y.AbstractDatabase = AbstractDatabase
+}
+
+},{}],4:[function(require,module,exports){
+'use strict'
+
+/*
+ An operation also defines the structure of a type. This is why operation and
+ structure are used interchangeably here.
+
+ It must be of the type Object. I hope to achieve some performance
+ improvements when working on databases that support the json format.
+
+ An operation must have the following properties:
+
+ * encode
+     - Encode the structure in a readable format (preferably string- todo)
+ * decode (todo)
+     - decode structure to json
+ * execute
+     - Execute the semantics of an operation.
+ * requiredOps
+     - Operations that are required to execute this operation.
+*/
+module.exports = function (Y) {
+  var Struct = {
+    /* This is the only operation that is actually not a structure, because
+    it is not stored in the OS. This is why it _does not_ have an id
+
+    op = {
+      target: Id
+    }
+    */
+    Delete: {
+      encode: function (op) {
+        return op
+      },
+      requiredOps: function (op) {
+        return [] // [op.target]
+      },
+      execute: function * (op) {
+        return yield* this.deleteOperation(op.target)
+      }
+    },
+    Insert: {
+      /* {
+          content: any,
+          id: Id,
+          left: Id,
+          origin: Id,
+          right: Id,
+          parent: Id,
+          parentSub: string (optional), // child of Map type
+        }
+      */
+      encode: function (op) {
+        // TODO: you could not send the "left" property, then you also have to
+        // "op.left = null" in $execute or $decode
+        var e = {
+          id: op.id,
+          left: op.left,
+          right: op.right,
+          origin: op.origin,
+          parent: op.parent,
+          struct: op.struct
+        }
+        if (op.parentSub != null) {
+          e.parentSub = op.parentSub
+        }
+        if (op.opContent != null) {
+          e.opContent = op.opContent
+        } else {
+          e.content = op.content
+        }
+
+        return e
+      },
+      requiredOps: function (op) {
+        var ids = []
+        if (op.left != null) {
+          ids.push(op.left)
+        }
+        if (op.right != null) {
+          ids.push(op.right)
+        }
+        if (op.origin != null && !Y.utils.compareIds(op.left, op.origin)) {
+          ids.push(op.origin)
+        }
+        // if (op.right == null && op.left == null) {
+        ids.push(op.parent)
+
+        if (op.opContent != null) {
+          ids.push(op.opContent)
+        }
+        return ids
+      },
+      getDistanceToOrigin: function * (op) {
+        if (op.left == null) {
+          return 0
+        } else {
+          var d = 0
+          var o = yield* this.getOperation(op.left)
+          while (!Y.utils.compareIds(op.origin, (o ? o.id : null))) {
+            d++
+            if (o.left == null) {
+              break
+            } else {
+              o = yield* this.getOperation(o.left)
+            }
+          }
+          return d
+        }
+      },
+      /*
+      # $this has to find a unique position between origin and the next known character
+      # case 1: $origin equals $o.origin: the $creator parameter decides if left or right
+      #         let $OL= [o1,o2,o3,o4], whereby $this is to be inserted between o1 and o4
+      #         o2,o3 and o4 origin is 1 (the position of o2)
+      #         there is the case that $this.creator < o2.creator, but o3.creator < $this.creator
+      #         then o2 knows o3. Since on another client $OL could be [o1,o3,o4] the problem is complex
+      #         therefore $this would be always to the right of o3
+      # case 2: $origin < $o.origin
+      #         if current $this insert_position > $o origin: $this ins
+      #         else $insert_position will not change
+      #         (maybe we encounter case 1 later, then this will be to the right of $o)
+      # case 3: $origin > $o.origin
+      #         $this insert_position is to the left of $o (forever!)
+      */
+      execute: function *(op) {
+        var i // loop counter
+        var distanceToOrigin = i = yield* Struct.Insert.getDistanceToOrigin.call(this, op) // most cases: 0 (starts from 0)
+        var o
+        var parent
+        var start
+
+        // find o. o is the first conflicting operation
+        if (op.left != null) {
+          o = yield* this.getOperation(op.left)
+          o = (o.right == null) ? null : yield* this.getOperation(o.right)
+        } else { // left == null
+          parent = yield* this.getOperation(op.parent)
+          let startId = op.parentSub ? parent.map[op.parentSub] : parent.start
+          start = startId == null ? null : yield* this.getOperation(startId)
+          o = start
+        }
+
+        // handle conflicts
+        while (true) {
+          if (o != null && !Y.utils.compareIds(o.id, op.right)) {
+            var oOriginDistance = yield* Struct.Insert.getDistanceToOrigin.call(this, o)
+            if (oOriginDistance === i) {
+              // case 1
+              if (o.id[0] < op.id[0]) {
+                op.left = o.id
+                distanceToOrigin = i + 1
+              }
+            } else if (oOriginDistance < i) {
+              // case 2
+              if (i - distanceToOrigin <= oOriginDistance) {
+                op.left = o.id
+                distanceToOrigin = i + 1
+              }
+            } else {
+              break
+            }
+            i++
+            o = o.right ? yield* this.getOperation(o.right) : null
+          } else {
+            break
+          }
+        }
+
+        // reconnect..
+        var left = null
+        var right = null
+        parent = parent || (yield* this.getOperation(op.parent))
+
+        // reconnect left and set right of op
+        if (op.left != null) {
+          left = yield* this.getOperation(op.left)
+          op.right = left.right
+          left.right = op.id
+
+          yield* this.setOperation(left)
+        } else {
+          op.right = op.parentSub ? parent.map[op.parentSub] || null : parent.start
+        }
+        // reconnect right
+        if (op.right != null) {
+          right = yield* this.getOperation(op.right)
+          right.left = op.id
+
+          // if right exists, and it is supposed to be gc'd. Remove it from the gc
+          if (right.gc != null) {
+            this.store.removeFromGarbageCollector(right)
+          }
+          yield* this.setOperation(right)
+        }
+
+        // update parents .map/start/end properties
+        if (op.parentSub != null) {
+          if (left == null) {
+            parent.map[op.parentSub] = op.id
+            yield* this.setOperation(parent)
+          }
+          // is a child of a map struct.
+          // Then also make sure that only the most left element is not deleted
+          if (op.right != null) {
+            yield* this.deleteOperation(op.right, true)
+          }
+          if (op.left != null) {
+            yield* this.deleteOperation(op.id, true)
+          }
+        } else {
+          if (right == null || left == null) {
+            if (right == null) {
+              parent.end = op.id
+            }
+            if (left == null) {
+              parent.start = op.id
+            }
+            yield* this.setOperation(parent)
+          }
+        }
+      }
+    },
+    List: {
+      /*
+      {
+        start: null,
+        end: null,
+        struct: "List",
+        type: "",
+        id: this.os.getNextOpId()
+      }
+      */
+      encode: function (op) {
+        return {
+          struct: 'List',
+          id: op.id,
+          type: op.type
+        }
+      },
+      requiredOps: function () {
+        /*
+        var ids = []
+        if (op.start != null) {
+          ids.push(op.start)
+        }
+        if (op.end != null){
+          ids.push(op.end)
+        }
+        return ids
+        */
+        return []
+      },
+      execute: function * (op) {
+        op.start = null
+        op.end = null
+      },
+      ref: function * (op, pos) {
+        if (op.start == null) {
+          return null
+        }
+        var res = null
+        var o = yield* this.getOperation(op.start)
+
+        while (true) {
+          if (!o.deleted) {
+            res = o
+            pos--
+          }
+          if (pos >= 0 && o.right != null) {
+            o = (yield* this.getOperation(o.right))
+          } else {
+            break
+          }
+        }
+        return res
+      },
+      map: function * (o, f) {
+        o = o.start
+        var res = []
+        while (o != null) { // TODO: change to != (at least some convention)
+          var operation = yield* this.getOperation(o)
+          if (!operation.deleted) {
+            res.push(f(operation))
+          }
+          o = operation.right
+        }
+        return res
+      }
+    },
+    Map: {
+      /*
+        {
+          map: {},
+          struct: "Map",
+          type: "",
+          id: this.os.getNextOpId()
+        }
+      */
+      encode: function (op) {
+        return {
+          struct: 'Map',
+          type: op.type,
+          id: op.id,
+          map: {} // overwrite map!!
+        }
+      },
+      requiredOps: function () {
+        return []
+      },
+      execute: function * () {},
+      /*
+        Get a property by name
+      */
+      get: function * (op, name) {
+        var oid = op.map[name]
+        if (oid != null) {
+          var res = yield* this.getOperation(oid)
+          return (res == null || res.deleted) ? void 0 : (res.opContent == null
+            ? res.content : yield* this.getType(res.opContent))
+        }
+      },
+      /*
+        Delete a property by name
+      */
+      delete: function * (op, name) {
+        var v = op.map[name] || null
+        if (v != null) {
+          yield* Struct.Delete.create.call(this, {
+            target: v
+          })
+        }
+      }
+    }
+  }
+  Y.Struct = Struct
+}
+
+},{}],5:[function(require,module,exports){
+'use strict'
+
+/*
+  Partial definition of a transaction
+
+  A transaction provides all the the async functionality on a database.
+
+  By convention, a transaction has the following properties:
+  * ss for StateSet
+  * os for OperationStore
+  * ds for DeleteStore
+
+  A transaction must also define the following methods:
+  * checkDeleteStoreForState(state)
+    - When increasing the state of a user, an operation with an higher id
+      may already be garbage collected, and therefore it will never be received.
+      update the state to reflect this knowledge. This won't call a method to save the state!
+  * getDeleteSet(id)
+    - Get the delete set in a readable format:
+      {
+        "userX": [
+          [5,1], // starting from position 5, one operations is deleted
+          [9,4]  // starting from position 9, four operations are deleted
+        ],
+        "userY": ...
+      }
+  * getOpsFromDeleteSet(ds) -- TODO: just call this.deleteOperation(id) here
+    - get a set of deletions that need to be applied in order to get to
+      achieve the state of the supplied ds
+  * setOperation(op)
+    - write `op` to the database.
+      Note: this is allowed to return an in-memory object.
+      E.g. the Memory adapter returns the object that it has in-memory.
+      Changing values on this object will be stored directly in the database
+      without calling this function. Therefore,
+      setOperation may have no functionality in some adapters. This also has
+      implications on the way we use operations that were served from the database.
+      We try not to call copyObject, if not necessary.
+  * addOperation(op)
+    - add an operation to the database.
+      This may only be called once for every op.id
+      Must return a function that returns the next operation in the database (ordered by id)
+  * getOperation(id)
+  * removeOperation(id)
+    - remove an operation from the database. This is called when an operation
+      is garbage collected.
+  * setState(state)
+    - `state` is of the form
+      {
+        user: "1",
+        clock: 4
+      } <- meaning that we have four operations from user "1"
+           (with these id's respectively: 0, 1, 2, and 3)
+  * getState(user)
+  * getStateVector()
+    - Get the state of the OS in the form
+    [{
+      user: "userX",
+      clock: 11
+    },
+     ..
+    ]
+  * getStateSet()
+    - Get the state of the OS in the form
+    {
+      "userX": 11,
+      "userY": 22
+    }
+   * getOperations(startSS)
+     - Get the all the operations that are necessary in order to achive the
+       stateSet of this user, starting from a stateSet supplied by another user
+   * makeOperationReady(ss, op)
+     - this is called only by `getOperations(startSS)`. It makes an operation
+       applyable on a given SS.
+*/
+module.exports = function (Y) {
+  class Transaction {
+    /*
+      Get a type based on the id of its model.
+      If it does not exist yes, create it.
+      TODO: delete type from store.initializedTypes[id] when corresponding id was deleted!
+    */
+    * getType (id) {
+      var sid = JSON.stringify(id)
+      var t = this.store.initializedTypes[sid]
+      if (t == null) {
+        var op = yield* this.getOperation(id)
+        if (op != null) {
+          t = yield* Y[op.type].initType.call(this, this.store, op)
+          this.store.initializedTypes[sid] = t
+        }
+      }
+      return t
+    }
+    /*
+      Apply operations that this user created (no remote ones!)
+        * does not check for Struct.*.requiredOps()
+        * also broadcasts it through the connector
+    */
+    * applyCreatedOperations (ops) {
+      var send = []
+      for (var i = 0; i < ops.length; i++) {
+        var op = ops[i]
+        yield* this.store.tryExecute.call(this, op)
+        send.push(Y.Struct[op.struct].encode(op))
+      }
+      if (!this.store.y.connector.isDisconnected()) {
+        this.store.y.connector.broadcast({
+          type: 'update',
+          ops: send
+        })
+      }
+    }
+
+    * deleteList (start) {
+      if (this.store.y.connector.isSynced) {
+        while (start != null && this.store.y.connector.isSynced) {
+          start = (yield* this.getOperation(start))
+          start.gc = true
+          yield* this.setOperation(start)
+          // TODO: will always reset the parent..
+          this.store.gc1.push(start.id)
+          start = start.right
+        }
+      } else {
+        // TODO: when not possible??? do later in (gcWhenSynced)
+      }
+    }
+
+    /*
+      Mark an operation as deleted, and add it to the GC, if possible.
+    */
+    * deleteOperation (targetId, preventCallType) {
+      var target = yield* this.getOperation(targetId)
+      var callType = false
+
+      if (target == null || !target.deleted) {
+        yield* this.markDeleted(targetId)
+      }
+
+      if (target != null && target.gc == null) {
+        if (!target.deleted) {
+          callType = true
+          // set deleted & notify type
+          target.deleted = true
+          /*
+          if (!preventCallType) {
+            var type = this.store.initializedTypes[JSON.stringify(target.parent)]
+            if (type != null) {
+              yield* type._changed(this, {
+                struct: 'Delete',
+                target: targetId
+              })
+            }
+          }
+          */
+          // delete containing lists
+          if (target.start != null) {
+            // TODO: don't do it like this .. -.-
+            yield* this.deleteList(target.start)
+            yield* this.deleteList(target.id)
+          }
+          if (target.map != null) {
+            for (var name in target.map) {
+              yield* this.deleteList(target.map[name])
+            }
+            // TODO: here to..  (see above)
+            yield* this.deleteList(target.id)
+          }
+          if (target.opContent != null) {
+            yield* this.deleteOperation(target.opContent)
+            target.opContent = null
+          }
+        }
+        var left = target.left != null ? yield* this.getOperation(target.left) : null
+
+        this.store.addToGarbageCollector(target, left)
+
+        // set here because it was deleted and/or gc'd
+        yield* this.setOperation(target)
+
+        /*
+          Check if it is possible to add right to the gc.
+          Because this delete can't be responsible for left being gc'd,
+          we don't have to add left to the gc..
+        */
+        var right = target.right != null ? yield* this.getOperation(target.right) : null
+        if (
+          right != null &&
+          this.store.addToGarbageCollector(right, target)
+        ) {
+          yield* this.setOperation(right)
+        }
+        return callType
+      }
+    }
+    /*
+      Mark an operation as deleted&gc'd
+    */
+    * markGarbageCollected (id) {
+      // this.mem.push(["gc", id]);
+      var n = yield* this.markDeleted(id)
+      if (!n.gc) {
+        if (n.id[1] < id[1]) {
+          // un-extend left
+          var newlen = n.len - (id[1] - n.id[1])
+          n.len -= newlen
+          yield* this.ds.put(n)
+          n = {id: id, len: newlen, gc: false}
+          yield* this.ds.put(n)
+        }
+        // get prev&next before adding a new operation
+        var prev = yield* this.ds.findPrev(id)
+        var next = yield* this.ds.findNext(id)
+
+        if (id[1] < n.id[1] + n.len - 1) {
+          // un-extend right
+          yield* this.ds.put({id: [id[0], id[1] + 1], len: n.len - 1, gc: false})
+          n.len = 1
+        }
+        // set gc'd
+        n.gc = true
+        // can extend left?
+        if (
+          prev != null &&
+          prev.gc &&
+          Y.utils.compareIds([prev.id[0], prev.id[1] + prev.len], n.id)
+        ) {
+          prev.len += n.len
+          yield* this.ds.delete(n.id)
+          n = prev
+          // ds.put n here?
+        }
+        // can extend right?
+        if (
+          next != null &&
+          next.gc &&
+          Y.utils.compareIds([n.id[0], n.id[1] + n.len], next.id)
+        ) {
+          n.len += next.len
+          yield* this.ds.delete(next.id)
+        }
+        yield* this.ds.put(n)
+      }
+    }
+    /*
+      Mark an operation as deleted.
+
+      returns the delete node
+    */
+    * markDeleted (id) {
+      // this.mem.push(["del", id]);
+      var n = yield* this.ds.findWithUpperBound(id)
+      if (n != null && n.id[0] === id[0]) {
+        if (n.id[1] <= id[1] && id[1] < n.id[1] + n.len) {
+          // already deleted
+          return n
+        } else if (n.id[1] + n.len === id[1] && !n.gc) {
+          // can extend existing deletion
+          n.len++
+        } else {
+          // cannot extend left
+          n = {id: id, len: 1, gc: false}
+          yield* this.ds.put(n)
+        }
+      } else {
+        // cannot extend left
+        n = {id: id, len: 1, gc: false}
+        yield* this.ds.put(n)
+      }
+      // can extend right?
+      var next = yield* this.ds.findNext(n.id)
+      if (
+        next != null &&
+        Y.utils.compareIds([n.id[0], n.id[1] + n.len], next.id) &&
+        !next.gc
+      ) {
+        n.len = n.len + next.len
+        yield* this.ds.delete(next.id)
+      }
+      yield* this.ds.put(n)
+      return n
+    }
+    /*
+      Call this method when the client is connected&synced with the
+      other clients (e.g. master). This will query the database for
+      operations that can be gc'd and add them to the garbage collector.
+    */
+    * garbageCollectAfterSync () {
+      yield* this.os.iterate(this, null, null, function * (op) {
+        if (op.deleted && op.left != null) {
+          var left = yield* this.getOperation(op.left)
+          this.store.addToGarbageCollector(op, left)
+        }
+      })
+    }
+    /*
+      Really remove an op and all its effects.
+      The complicated case here is the Insert operation:
+      * reset left
+      * reset right
+      * reset parent.start
+      * reset parent.end
+      * reset origins of all right ops
+    */
+    * garbageCollectOperation (id) {
+      this.store.addToDebug('yield* this.garbageCollectOperation(', id, ')')
+      // check to increase the state of the respective user
+      var state = yield* this.getState(id[0])
+      if (state.clock === id[1]) {
+        state.clock++
+        // also check if more expected operations were gc'd
+        yield* this.checkDeleteStoreForState(state)
+        // then set the state
+        yield* this.setState(state)
+      }
+      yield* this.markGarbageCollected(id)
+
+      // if op exists, then clean that mess up..
+      var o = yield* this.getOperation(id)
+      if (o != null) {
+        /*
+        if (!o.deleted) {
+          yield* this.deleteOperation(id)
+          o = yield* this.getOperation(id)
+        }
+        */
+
+        // remove gc'd op from the left op, if it exists
+        if (o.left != null) {
+          var left = yield* this.getOperation(o.left)
+          left.right = o.right
+          yield* this.setOperation(left)
+        }
+        // remove gc'd op from the right op, if it exists
+        // also reset origins of right ops
+        if (o.right != null) {
+          var right = yield* this.getOperation(o.right)
+          right.left = o.left
+          if (Y.utils.compareIds(right.origin, o.id)) { // rights origin is o
+            // find new origin of right ops
+            // origin is the first left deleted operation
+            var neworigin = o.left
+            while (neworigin != null) {
+              var neworigin_ = yield* this.getOperation(neworigin)
+              if (neworigin_.deleted) {
+                break
+              }
+              neworigin = neworigin_.left
+            }
+
+            // reset origin of right
+            right.origin = neworigin
+
+            // reset origin of all right ops (except first right - duh!),
+            // until you find origin pointer to the left of o
+            var i = right.right == null ? null : yield* this.getOperation(right.right)
+            var ids = [o.id, o.right]
+            while (i != null && ids.some(function (id) {
+              return Y.utils.compareIds(id, i.origin)
+            })) {
+              if (Y.utils.compareIds(i.origin, o.id)) {
+                // reset origin of i
+                i.origin = neworigin
+                yield* this.setOperation(i)
+              }
+              // get next i
+              i = i.right == null ? null : yield* this.getOperation(i.right)
+            }
+          } /* otherwise, rights origin is to the left of o,
+               then there is no right op (from o), that origins in o */
+          yield* this.setOperation(right)
+        }
+
+        if (o.parent != null) {
+          // remove gc'd op from parent, if it exists
+          var parent = yield* this.getOperation(o.parent)
+          var setParent = false // whether to save parent to the os
+          if (o.parentSub != null) {
+            if (Y.utils.compareIds(parent.map[o.parentSub], o.id)) {
+              setParent = true
+              parent.map[o.parentSub] = o.right
+            }
+          } else {
+            if (Y.utils.compareIds(parent.start, o.id)) {
+              // gc'd op is the start
+              setParent = true
+              parent.start = o.right
+            }
+            if (Y.utils.compareIds(parent.end, o.id)) {
+              // gc'd op is the end
+              setParent = true
+              parent.end = o.left
+            }
+          }
+          if (setParent) {
+            yield* this.setOperation(parent)
+          }
+        }
+        // finally remove it from the os
+        yield* this.removeOperation(o.id)
+      }
+    }
+    * checkDeleteStoreForState (state) {
+      var n = yield* this.ds.findWithUpperBound([state.user, state.clock])
+      if (n != null && n.id[0] === state.user && n.gc) {
+        state.clock = Math.max(state.clock, n.id[1] + n.len)
+      }
+    }
+    /*
+      apply a delete set in order to get
+      the state of the supplied ds
+    */
+    * applyDeleteSet (ds) {
+      var deletions = []
+      function createDeletions (user, start, len, gc) {
+        for (var c = start; c < start + len; c++) {
+          deletions.push([user, c, gc])
+        }
+      }
+
+      for (var user in ds) {
+        var dv = ds[user]
+        var pos = 0
+        var d = dv[pos]
+        yield* this.ds.iterate(this, [user, 0], [user, Number.MAX_VALUE], function * (n) {
+          // cases:
+          // 1. d deletes something to the right of n
+          //  => go to next n (break)
+          // 2. d deletes something to the left of n
+          //  => create deletions
+          //  => reset d accordingly
+          //  *)=> if d doesn't delete anything anymore, go to next d (continue)
+          // 3. not 2) and d deletes something that also n deletes
+          //  => reset d so that it doesn't contain n's deletion
+          //  *)=> if d does not delete anything anymore, go to next d (continue)
+          while (d != null) {
+            var diff = 0 // describe the diff of length in 1) and 2)
+            if (n.id[1] + n.len <= d[0]) {
+              // 1)
+              break
+            } else if (d[0] < n.id[1]) {
+              // 2)
+              // delete maximum the len of d
+              // else delete as much as possible
+              diff = Math.min(n.id[1] - d[0], d[1])
+              createDeletions(user, d[0], diff, d[2])
+            } else {
+              // 3)
+              diff = n.id[1] + n.len - d[0] // never null (see 1)
+              if (d[2] && !n.gc) {
+                // d marks as gc'd but n does not
+                // then delete either way
+                createDeletions(user, d[0], Math.min(diff, d[1]), d[2])
+              }
+            }
+            if (d[1] <= diff) {
+              // d doesn't delete anything anymore
+              d = dv[++pos]
+            } else {
+              d[0] = d[0] + diff // reset pos
+              d[1] = d[1] - diff // reset length
+            }
+          }
+        })
+        // for the rest.. just apply it
+        for (; pos < dv.length; pos++) {
+          d = dv[pos]
+          createDeletions(user, d[0], d[1], d[2])
+        }
+      }
+      for (var i in deletions) {
+        var del = deletions[i]
+        var id = [del[0], del[1]]
+        // always try to delete..
+        var addOperation = yield* this.deleteOperation(id)
+        if (addOperation) {
+          // TODO:.. really .. here? You could prevent calling all these functions in operationAdded
+          yield* this.store.operationAdded(this, {struct: 'Delete', target: id})
+        }
+        if (del[2]) {
+          // gc
+          yield* this.garbageCollectOperation(id)
+        }
+      }
+    }
+    * isGarbageCollected (id) {
+      var n = yield* this.ds.findWithUpperBound(id)
+      return n != null && n.id[0] === id[0] && id[1] < n.id[1] + n.len && n.gc
+    }
+    /*
+      A DeleteSet (ds) describes all the deleted ops in the OS
+    */
+    * getDeleteSet () {
+      var ds = {}
+      yield* this.ds.iterate(this, null, null, function * (n) {
+        var user = n.id[0]
+        var counter = n.id[1]
+        var len = n.len
+        var gc = n.gc
+        var dv = ds[user]
+        if (dv === void 0) {
+          dv = []
+          ds[user] = dv
+        }
+        dv.push([counter, len, gc])
+      })
+      return ds
+    }
+    * isDeleted (id) {
+      var n = yield* this.ds.findWithUpperBound(id)
+      return n != null && n.id[0] === id[0] && id[1] < n.id[1] + n.len
+    }
+    * setOperation (op) {
+      yield* this.os.put(op)
+      return op
+    }
+    * addOperation (op) {
+      yield* this.os.put(op)
+    }
+    * getOperation (id) {
+      return yield* this.os.find(id)
+    }
+    * removeOperation (id) {
+      yield* this.os.delete(id)
+    }
+    * setState (state) {
+      var val = {
+        id: [state.user],
+        clock: state.clock
+      }
+      // TODO: find a way to skip this step.. (after implementing some dbs..)
+      if (yield* this.ss.find([state.user])) {
+        yield* this.ss.put(val)
+      } else {
+        yield* this.ss.put(val)
+      }
+    }
+    * getState (user) {
+      var n
+      var clock = (n = yield* this.ss.find([user])) == null ? null : n.clock
+      if (clock == null) {
+        clock = 0
+      }
+      return {
+        user: user,
+        clock: clock
+      }
+    }
+    * getStateVector () {
+      var stateVector = []
+      yield* this.ss.iterate(this, null, null, function * (n) {
+        stateVector.push({
+          user: n.id[0],
+          clock: n.clock
+        })
+      })
+      return stateVector
+    }
+    * getStateSet () {
+      var ss = {}
+      yield* this.ss.iterate(this, null, null, function * (n) {
+        ss[n.id[0]] = n.clock
+      })
+      return ss
+    }
+    * getOperations (startSS) {
+      // TODO: use bounds here!
+      if (startSS == null) {
+        startSS = {}
+      }
+      var ops = []
+
+      var endSV = yield* this.getStateVector()
+      for (var endState of endSV) {
+        var user = endState.user
+        if (user === '_') {
+          continue
+        }
+        var startPos = startSS[user] || 0
+
+        yield* this.os.iterate(this, [user, startPos], [user, Number.MAX_VALUE], function * (op) {
+          ops.push(op)
+        })
+      }
+      var res = []
+      for (var op of ops) {
+        res.push(yield* this.makeOperationReady(startSS, op))
+      }
+      return res
+    }
+    /*
+      Here, we make op executable for the receiving user.
+
+      Notes:
+        startSS: denotes to the SV that the remote user sent
+        currSS:  denotes to the state vector that the user should have if he
+                 applies all already sent operations (increases is each step)
+
+      We face several problems:
+      * Execute op as is won't work because ops depend on each other
+       -> find a way so that they do not anymore
+      * When changing left, must not go more to the left than the origin
+      * When changing right, you have to consider that other ops may have op
+        as their origin, this means that you must not set one of these ops
+        as the new right (interdependencies of ops)
+      * can't just go to the right until you find the first known operation,
+        With currSS
+          -> interdependency of ops is a problem
+        With startSS
+          -> leads to inconsistencies when two users join at the same time.
+             Then the position depends on the order of execution -> error!
+
+        Solution:
+        -> re-create originial situation
+          -> set op.left = op.origin (which never changes)
+          -> set op.right
+               to the first operation that is known (according to startSS)
+               or to the first operation that has an origin that is not to the
+               right of op.
+          -> Enforces unique execution order -> happy user
+
+        Improvements: TODO
+          * Could set left to origin, or the first known operation
+            (startSS or currSS.. ?)
+            -> Could be necessary when I turn GC again.
+            -> Is a bad(ish) idea because it requires more computation
+    */
+    * makeOperationReady (startSS, op) {
+      op = Y.Struct[op.struct].encode(op)
+      op = Y.utils.copyObject(op)
+      var o = op
+      var ids = [op.id]
+      // search for the new op.right
+      // it is either the first known op (according to startSS)
+      // or the o that has no origin to the right of op
+      // (this is why we use the ids array)
+      while (o.right != null) {
+        var right = yield* this.getOperation(o.right)
+        if (o.right[1] < (startSS[o.right[0]] || 0) || !ids.some(function (id) {
+          return Y.utils.compareIds(id, right.origin)
+        })) {
+          break
+        }
+        ids.push(o.right)
+        o = right
+      }
+      op.right = o.right
+      op.left = op.origin
+      return op
+    }
+  }
+  Y.Transaction = Transaction
+}
+
+},{}],6:[function(require,module,exports){
+'use strict'
+
+module.exports = function (Y) {
+  class YMap {
+    constructor (os, model, contents, opContents) {
+      this._model = model.id
+      this.os = os
+      this.map = Y.utils.copyObject(model.map)
+      this.contents = contents
+      this.opContents = opContents
+      this.eventHandler = new Y.utils.EventHandler(ops => {
+        var userEvents = []
+        for (var i in ops) {
+          var op = ops[i]
+          var oldValue
+          // key is the name to use to access (op)content
+          var key = op.struct === 'Delete' ? op.key : op.parentSub
+
+          // compute oldValue
+          if (this.opContents[key] != null) {
+            let prevType = this.opContents[key]
+            oldValue = () => {// eslint-disable-line
+              return new Promise((resolve) => {
+                this.os.requestTransaction(function *() {// eslint-disable-line
+                  resolve(yield* this.getType(prevType))
+                })
+              })
+            }
+          } else {
+            oldValue = this.contents[key]
+          }
+          // compute op event
+          if (op.struct === 'Insert') {
+            if (op.left === null) {
+              if (op.opContent != null) {
+                delete this.contents[key]
+                if (op.deleted) {
+                  delete this.opContents[key]
+                } else {
+                  this.opContents[key] = op.opContent
+                }
+              } else {
+                delete this.opContents[key]
+                if (op.deleted) {
+                  delete this.contents[key]
+                } else {
+                  this.contents[key] = op.content
+                }
+              }
+              this.map[key] = op.id
+              var insertEvent = {
+                name: key,
+                object: this
+              }
+              if (oldValue === undefined) {
+                insertEvent.type = 'add'
+              } else {
+                insertEvent.type = 'update'
+                insertEvent.oldValue = oldValue
+              }
+              userEvents.push(insertEvent)
+            }
+          } else if (op.struct === 'Delete') {
+            if (Y.utils.compareIds(this.map[key], op.target)) {
+              delete this.opContents[key]
+              delete this.contents[key]
+              var deleteEvent = {
+                name: key,
+                object: this,
+                oldValue: oldValue,
+                type: 'delete'
+              }
+              userEvents.push(deleteEvent)
+            }
+          } else {
+            throw new Error('Unexpected Operation!')
+          }
+        }
+        this.eventHandler.callEventListeners(userEvents)
+      })
+    }
+    get (key) {
+      // return property.
+      // if property does not exist, return null
+      // if property is a type, return a promise
+      if (key == null) {
+        throw new Error('You must specify key!')
+      }
+      if (this.opContents[key] == null) {
+        return this.contents[key]
+      } else {
+        return new Promise((resolve) => {
+          var oid = this.opContents[key]
+          this.os.requestTransaction(function *() {
+            resolve(yield* this.getType(oid))
+          })
+        })
+      }
+    }
+    /*
+      If there is a primitive (not a custom type), then return it.
+      Returns all primitive values, if propertyName is specified!
+      Note: modifying the return value could result in inconsistencies!
+        -- so make sure to copy it first!
+    */
+    getPrimitive (key) {
+      if (key == null) {
+        return Y.utils.copyObject(this.contents)
+      } else {
+        return this.contents[key]
+      }
+    }
+    delete (key) {
+      var right = this.map[key]
+      if (right != null) {
+        var del = {
+          target: right,
+          struct: 'Delete'
+        }
+        var eventHandler = this.eventHandler
+        var modDel = Y.utils.copyObject(del)
+        modDel.key = key
+        eventHandler.awaitAndPrematurelyCall([modDel])
+        this.os.requestTransaction(function *() {
+          yield* this.applyCreatedOperations([del])
+          eventHandler.awaitedDeletes(1)
+        })
+      }
+    }
+    set (key, value) {
+      // set property.
+      // if property is a type, return a promise
+      // if not, apply immediately on this type an call event
+
+      var right = this.map[key] || null
+      var insert = {
+        left: null,
+        right: right,
+        origin: null,
+        parent: this._model,
+        parentSub: key,
+        struct: 'Insert'
+      }
+      return new Promise((resolve) => {
+        if (value instanceof Y.utils.CustomType) {
+          // construct a new type
+          this.os.requestTransaction(function *() {
+            var typeid = yield* value.createType.call(this)
+            var type = yield* this.getType(typeid)
+            insert.opContent = typeid
+            insert.id = this.store.getNextOpId()
+            yield* this.applyCreatedOperations([insert])
+            resolve(type)
+          })
+        } else {
+          insert.content = value
+          insert.id = this.os.getNextOpId()
+          var eventHandler = this.eventHandler
+          eventHandler.awaitAndPrematurelyCall([insert])
+
+          this.os.requestTransaction(function *() {
+            yield* this.applyCreatedOperations([insert])
+            eventHandler.awaitedInserts(1)
+          })
+          resolve(value)
+        }
+      })
+    }
+    observe (f) {
+      this.eventHandler.addEventListener(f)
+    }
+    unobserve (f) {
+      this.eventHandler.removeEventListener(f)
+    }
+    /*
+      Observe a path.
+
+      E.g.
+      ```
+      o.set('textarea', Y.TextBind)
+      o.observePath(['textarea'], function(t){
+        // is called whenever textarea is replaced
+        t.bind(textarea)
+      })
+
+      returns a Promise that contains a function that removes the observer from the path.
+    */
+    observePath (path, f) {
+      var self = this
+      function observeProperty (events) {
+        // call f whenever path changes
+        for (var i = 0; i < events.length; i++) {
+          var event = events[i]
+          if (event.name === propertyName) {
+            // call this also for delete events!
+            var property = self.get(propertyName)
+            if (property instanceof Promise) {
+              property.then(f)
+            } else {
+              f(property)
+            }
+          }
+        }
+      }
+
+      if (path.length < 1) {
+        throw new Error('Path must contain at least one element!')
+      } else if (path.length === 1) {
+        var propertyName = path[0]
+        var property = self.get(propertyName)
+        if (property instanceof Promise) {
+          property.then(f)
+        } else {
+          f(property)
+        }
+        this.observe(observeProperty)
+        return Promise.resolve(function () {
+          self.unobserve(f)
+        })
+      } else {
+        var deleteChildObservers
+        var resetObserverPath = function () {
+          var promise = self.get(path[0])
+          if (!promise instanceof Promise) {
+            // its either not defined or a primitive value
+            promise = self.set(path[0], Y.Map)
+          }
+          return promise.then(function (map) {
+            return map.observePath(path.slice(1), f)
+          }).then(function (_deleteChildObservers) {
+            // update deleteChildObservers
+            deleteChildObservers = _deleteChildObservers
+            return Promise.resolve() // Promise does not return anything
+          })
+        }
+        var observer = function (events) {
+          for (var e in events) {
+            var event = events[e]
+            if (event.name === path[0]) {
+              deleteChildObservers()
+              if (event.type === 'add' || event.type === 'update') {
+                resetObserverPath()
+              }
+              // TODO: what about the delete events?
+            }
+          }
+        }
+        self.observe(observer)
+        return resetObserverPath().then(
+          // this promise contains a function that deletes all the child observers
+          // and how to unobserve the observe from this object
+          Promise.resolve(function () {
+            deleteChildObservers()
+            self.unobserve(observer)
+          })
+        )
+      }
+    }
+    * _changed (transaction, op) {
+      if (op.struct === 'Delete') {
+        op.key = (yield* transaction.getOperation(op.target)).parentSub
+      }
+      this.eventHandler.receivedOp(op)
+    }
+  }
+  Y.Map = new Y.utils.CustomType({
+    class: YMap,
+    createType: function * YMapCreator () {
+      var modelid = this.store.getNextOpId()
+      var model = {
+        map: {},
+        struct: 'Map',
+        type: 'Map',
+        id: modelid
+      }
+      yield* this.applyCreatedOperations([model])
+      return modelid
+    },
+    initType: function * YMapInitializer (os, model) {
+      var contents = {}
+      var opContents = {}
+      var map = model.map
+      for (var name in map) {
+        var op = yield* this.getOperation(map[name])
+        if (op.opContent != null) {
+          opContents[name] = op.opContent
+        } else {
+          contents[name] = op.content
+        }
+      }
+      return new YMap(os, model, contents, opContents)
+    }
+  })
+}
+
+},{}],7:[function(require,module,exports){
+'use strict'
+
+/*
+  EventHandler is an helper class for constructing custom types.
+
+  Why: When constructing custom types, you sometimes want your types to work
+  synchronous: E.g.
+  ``` Synchronous
+  mytype.setSomething("yay")
+  mytype.getSomething() === "yay"
+  ```
+  ``` Asynchronous
+  mytype.setSomething("yay")
+  mytype.getSomething() === undefined
+  mytype.waitForSomething().then(function(){
+    mytype.getSomething() === "yay"
+  })
+
+  The structures usually work asynchronously (you have to wait for the
+  database request to finish). EventHandler will help you to make your type
+  synchronously.
+*/
+module.exports = function (Y) {
+  Y.utils = {}
+
+  class EventHandler {
+    /*
+      onevent: is called when the structure changes.
+
+      Note: "awaiting opertations" is used to denote operations that were
+      prematurely called. Events for received operations can not be executed until
+      all prematurely called operations were executed ("waiting operations")
+    */
+    constructor (onevent) {
+      this.waiting = []
+      this.awaiting = 0
+      this.onevent = onevent
+      this.eventListeners = []
+    }
+    /*
+      Call this when a new operation arrives. It will be executed right away if
+      there are no waiting operations, that you prematurely executed
+    */
+    receivedOp (op) {
+      if (this.awaiting <= 0) {
+        this.onevent([op])
+      } else {
+        this.waiting.push(Y.utils.copyObject(op))
+      }
+    }
+    /*
+      You created some operations, and you want the `onevent` function to be
+      called right away. Received operations will not be executed untill all
+      prematurely called operations are executed
+    */
+    awaitAndPrematurelyCall (ops) {
+      this.awaiting++
+      this.onevent(ops)
+    }
+    /*
+      Basic event listener boilerplate...
+      TODO: maybe put this in a different type..
+    */
+    addEventListener (f) {
+      this.eventListeners.push(f)
+    }
+    removeEventListener (f) {
+      this.eventListeners = this.eventListeners.filter(function (g) {
+        return f !== g
+      })
+    }
+    removeAllEventListeners () {
+      this.eventListeners = []
+    }
+    callEventListeners (event) {
+      for (var i in this.eventListeners) {
+        try {
+          this.eventListeners[i](event)
+        } catch (e) {
+          console.log('User events must not throw Errors!') // eslint-disable-line
+        }
+      }
+    }
+    /*
+      Call this when you successfully awaited the execution of n Insert operations
+    */
+    awaitedInserts (n) {
+      var ops = this.waiting.splice(this.waiting.length - n)
+      for (var oid = 0; oid < ops.length; oid++) {
+        var op = ops[oid]
+        for (var i = this.waiting.length - 1; i >= 0; i--) {
+          let w = this.waiting[i]
+          if (Y.utils.compareIds(op.left, w.id)) {
+            // include the effect of op in w
+            w.right = op.id
+            // exclude the effect of w in op
+            op.left = w.left
+          } else if (Y.utils.compareIds(op.right, w.id)) {
+            // similar..
+            w.left = op.id
+            op.right = w.right
+          }
+        }
+      }
+      this._tryCallEvents()
+    }
+    /*
+      Call this when you successfully awaited the execution of n Delete operations
+    */
+    awaitedDeletes (n, newLeft) {
+      var ops = this.waiting.splice(this.waiting.length - n)
+      for (var j in ops) {
+        var del = ops[j]
+        if (newLeft != null) {
+          for (var i in this.waiting) {
+            let w = this.waiting[i]
+            // We will just care about w.left
+            if (Y.utils.compareIds(del.target, w.left)) {
+              del.left = newLeft
+            }
+          }
+        }
+      }
+      this._tryCallEvents()
+    }
+    /* (private)
+      Try to execute the events for the waiting operations
+    */
+    _tryCallEvents () {
+      this.awaiting--
+      if (this.awaiting <= 0 && this.waiting.length > 0) {
+        var events = this.waiting
+        this.waiting = []
+        this.onevent(events)
+      }
+    }
+  }
+  Y.utils.EventHandler = EventHandler
+
+  /*
+    A wrapper for the definition of a custom type.
+    Every custom type must have three properties:
+
+    * createType
+      - Defines the model of a newly created custom type and returns the type
+    * initType
+      - Given a model, creates a custom type
+    * class
+      - the constructor of the custom type (e.g. in order to inherit from a type)
+  */
+  class CustomType { // eslint-disable-line
+    constructor (def) {
+      if (def.createType == null ||
+        def.initType == null ||
+        def.class == null
+      ) {
+        throw new Error('Custom type was not initialized correctly!')
+      }
+      this.createType = def.createType
+      this.initType = def.initType
+      this.class = def.class
+    }
+  }
+  Y.utils.CustomType = CustomType
+
+  /*
+    Make a flat copy of an object
+    (just copy properties)
+  */
+  function copyObject (o) {
+    var c = {}
+    for (var key in o) {
+      c[key] = o[key]
+    }
+    return c
+  }
+  Y.utils.copyObject = copyObject
+
+  /*
+    Defines a smaller relation on Id's
+  */
+  function smaller (a, b) {
+    return a[0] < b[0] || (a[0] === b[0] && a[1] < b[1])
+  }
+  Y.utils.smaller = smaller
+
+  function compareIds (id1, id2) {
+    if (id1 == null || id2 == null) {
+      if (id1 == null && id2 == null) {
+        return true
+      }
+      return false
+    }
+    if (id1[0] === id2[0] && id1[1] === id2[1]) {
+      return true
+    } else {
+      return false
+    }
+  }
+  Y.utils.compareIds = compareIds
+}
+
+},{}],8:[function(require,module,exports){
+/* @flow */
+'use strict'
+
+require('./Connector.js')(Y)
+require('./Database.js')(Y)
+require('./Transaction.js')(Y)
+require('./Struct.js')(Y)
+require('./Utils.js')(Y)
+require('./Connectors/Test.js')(Y)
+
+var requiringModules = {}
+
+module.exports = Y
+
+Y.extend = function (name, value) {
+  Y[name] = value
+  if (requiringModules[name] != null) {
+    requiringModules[name].resolve()
+    delete requiringModules[name]
+  }
+}
+
+Y.requestModules = function (modules) {
+  var promises = []
+  for (var i = 0; i < modules.length; i++) {
+    var modulename = 'y-' + modules[i].toLowerCase()
+    if (Y[modules[i]] == null) {
+      if (requiringModules[modules[i]] == null) {
+        try {
+          require(modulename)(Y)
+        } catch (e) {
+          // module does not exist
+          if (typeof window !== 'undefined') {
+            var imported = document.createElement('script')
+            imported.src = Y.sourceDir + '/' + modulename + '/' + modulename + '.js'
+            document.head.appendChild(imported)
+            ;(function () {
+              var modname = modules[i]
+              var promise = new Promise(function (resolve) {
+                requiringModules[modname] = {
+                  resolve: resolve,
+                  promise: promise
+                }
+              })
+              promises.push(promise)
+            })()
+          } else {
+            throw e
+          }
+        }
+      } else {
+        promises.push(requiringModules[modules[i]].promise)
+      }
+    }
+  }
+  return Promise.all(promises)
+}
+
+require('./Types/Map.js')(Y)
+
+function Y (opts) {
+  opts.types = opts.types != null ? opts.types : []
+  var modules = [opts.db.name, opts.connector.name].concat(opts.types)
+  Y.sourceDir = opts.sourceDir
+  return Y.requestModules(modules).then(function () {
+    return new Promise(function (resolve) {
+      var yconfig = new YConfig(opts, function () {
+        yconfig.db.whenUserIdSet(function () {
+          resolve(yconfig)
+        })
+      })
+    })
+  })
+}
+
+class YConfig {
+  constructor (opts, callback) {
+    this.db = new Y[opts.db.name](this, opts.db)
+    this.connector = new Y[opts.connector.name](this, opts.connector)
+    this.db.requestTransaction(function * requestTransaction () {
+      // create initial Map type
+      var model = {
+        id: ['_', 0],
+        struct: 'Map',
+        type: 'Map',
+        map: {}
+      }
+      yield* this.store.tryExecute.call(this, model)
+      var root = yield* this.getType(model.id)
+      this.store.y.root = root
+      callback()
+    })
+  }
+  isConnected () {
+    return this.connector.isSynced
+  }
+  disconnect () {
+    return this.connector.disconnect()
+  }
+  reconnect () {
+    return this.connector.reconnect()
+  }
+  destroy () {
+    this.disconnect()
+    this.db.destroy()
+    this.connector = null
+    this.db = null
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.Y = Y
+}
+
+},{"./Connector.js":1,"./Connectors/Test.js":2,"./Database.js":3,"./Struct.js":4,"./Transaction.js":5,"./Types/Map.js":6,"./Utils.js":7}]},{},[8])
+
+
+//# sourceMappingURL=y.js.map

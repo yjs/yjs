@@ -3,13 +3,15 @@
 // create a shared object. This function call will return a promise!
 Y({
   db: {
-    name: 'Memory'
+    name: 'memory'
   },
   connector: {
-    name: 'WebRTC',
-    room: 'TextBindDemo',
+    name: 'webrtc',
+    room: 'offlineEditingDemo',
     debug: true
-  }
+  },
+  types: ['Array', 'Text'],
+  sourceDir: '/bower_components/'
 }).then(function (yconfig) {
   // yconfig holds all the information about the shared object
   window.yconfig = yconfig
@@ -30,8 +32,8 @@ Y({
       text.bind(contenteditable)
     }
   })
-  // create a shared TextBind
-  yconfig.root.set('text', Y.TextBind)
+  // create a shared Text
+  yconfig.root.set('text', Y.Text)
 
   // We also provide a button for disconnecting/reconnecting the shared element
   var button = document.querySelector('#button')
