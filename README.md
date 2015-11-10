@@ -7,24 +7,24 @@ Yjs is a framework for optimistic concurrency control and automatic conflict res
 
 You can create you own shared types easily. Therefore, you can take matters into your own hand by defining the meaning of the shared types and ensure that it is valid, while Yjs ensures data consistency (everyone will eventually end up with the same data). We already provide data types for
 
-| Name                                                 | Description
-| ---------------------------------------------------- | ---------------------------------------------
-y-object | Add, update, and remove properties of an object. Circular references are supported. Included in Yjs
-[y-list](https://github.com/y-js/y-list) | A shared linked list implementation. Circular references are supported
-[y-selections](https://github.com/y-js/y-selections) | Manages selections on types that use linear structures (e.g. the y-list type). You can select a range of elements and assign meaning to them.
-[y-xml](https://github.com/y-js/y-xml) | An implementation of the DOM. You can create a two way binding to Browser DOM objects
-[y-text](https://github.com/y-js/y-text) | Collaborate on text. You can create a two way binding to textareas, input elements, or HTML elements (e.g. *h1*, or *p*)
-[y-richtext](https://github.com/y-js/y-richtext) | Collaborate on rich text. You can create a two way binding to several editors
+| Name     | Description       |
+| ---------|-------------------|
+|y-object | Add, update, and remove properties of an object. Circular references are supported. Included in Yjs|
+|[y-list](https://github.com/y-js/y-list) | A shared linked list implementation. Circular references are supported|
+|[y-selections](https://github.com/y-js/y-selections) | Manages selections on types that use linear structures (e.g. the y-list type). You can select a range of elements and assign meaning to them.|
+|[y-xml](https://github.com/y-js/y-xml) | An implementation of the DOM. You can create a two way binding to Browser DOM objects|
+|[y-text](https://github.com/y-js/y-text) | Collaborate on text. You can create a two way binding to textareas, input elements, or HTML elements (e.g. *h1*, or *p*)|
+|[y-richtext](https://github.com/y-js/y-richtext) | Collaborate on rich text. You can create a two way binding to several editors|
 
 Unlike other frameworks, Yjs supports P2P message propagation and is not bound to a specific communication protocol. Therefore, Yjs is extremely scalable and can be used in a wide range of application scenarios.
 
 We support several communication protocols as so called *Connectors*. You can create your own connector too - read [this wiki page](https://github.com/y-js/yjs/wiki/Custom-Connectors). Currently, we support the following communication protocols:
 
-Name                                     | Description
----------------------------------------- | -------------------------------------------------------
-[y-xmpp](https://github.com/y-js/y-xmpp) | Propagate updates in a XMPP multi-user-chat room ([XEP-0045](http://xmpp.org/extensions/xep-0045.html))
-[y-webrtc](https://github.com/y-js/y-webrtc) | Propagate updates Browser2Browser via WebRTC
-[y-test](https://github.com/y-js/y-test) | A Connector for testing purposes. It is designed to simulate delays that happen in worst case scenarios
+|Name            | Description               |
+|----------------|-----------------------------------|
+|[y-xmpp](https://github.com/y-js/y-xmpp) | Propagate updates in a XMPP multi-user-chat room ([XEP-0045](http://xmpp.org/extensions/xep-0045.html))|
+|[y-webrtc](https://github.com/y-js/y-webrtc) | Propagate updates Browser2Browser via WebRTC|
+|[y-test](https://github.com/y-js/y-test) | A Connector for testing purposes. It is designed to simulate delays that happen in worst case scenarios|
 
 
 You can use Yjs client-, and server- side. You can get it as via npm, and bower. We even provide polymer elements for Yjs!
@@ -142,4 +142,4 @@ Yjs is licensed under the [MIT License](./LICENSE.txt).
 
 <yjs@dbis.rwth-aachen.de>
 
-[ShareJs]: https://github.com/sh                                                           
+[ShareJs]: https://github.com/share/ShareJS
