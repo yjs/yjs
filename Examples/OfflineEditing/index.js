@@ -7,7 +7,7 @@ Y({
     namespace: 'offlineEditingDemo'
   },
   connector: {
-    name: 'webrtc',
+    name: 'websockets-client',
     room: 'offlineEditingDemo',
     debug: true
   },
@@ -37,16 +37,5 @@ Y({
   var textpromise = yconfig.root.get('text')
   if (textpromise == null) {
     yconfig.root.set('text', Y.Text)
-  }
-  // We also provide a button for disconnecting/reconnecting the shared element
-  var button = document.querySelector('#button')
-  button.onclick = function () {
-    if (button.innerText === 'Disconnect') {
-      yconfig.disconnect()
-      button.innerText = 'Reconnect'
-    } else {
-      yconfig.reconnect()
-      button.innerText = 'Disconnect'
-    }
   }
 })
