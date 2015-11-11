@@ -43,6 +43,10 @@ module.exports = function (gulp, helperOptions) {
     var source = require('vinyl-source-stream')
     var buffer = require('vinyl-buffer')
 
+    gulp.src(['./README.md'])
+      .pipe($.watch('./README.md'))
+      .pipe(gulp.dest('./dist/'))
+
     return browserify({
       entries: files.dist,
       debug: options.debug
@@ -59,7 +63,7 @@ module.exports = function (gulp, helperOptions) {
   gulp.task('watch:dist', function (cb) {
     options.debug = true
     runSequence('dist', function () {
-      gulp.watch(files.src, ['dist'])
+      gulp.watch(files.src.concat('./README.md'), ['dist'])
       cb()
     })
   })
