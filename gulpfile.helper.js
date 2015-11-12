@@ -32,10 +32,10 @@ module.exports = function (gulp, helperOptions) {
     modules: 'ignore',
     experimental: true
   }
-  if (options.regenerator) {
-    files.specs = helperOptions.polyfills.concat(files.specs)
-  } else {
+  if (!options.regenerator) {
     babelOptions.blacklist = 'regenerator'
+  } else {
+    files.dist = [files.dist].concat(helperOptions.polyfills)
   }
 
   gulp.task('dist', function () {
@@ -54,7 +54,7 @@ module.exports = function (gulp, helperOptions) {
       .pipe(source(options.targetName))
       .pipe(buffer())
       .pipe($.if(options.debug, $.sourcemaps.init({loadMaps: true})))
-      .pipe($.if(!options.debug && options.regenerator, $.babel(babelOptions)))
+      .pipe($.if(true, $.babel(babelOptions)))
       .pipe($.if(!options.debug && options.regenerator, $.uglify()))
       .pipe($.if(options.debug, $.sourcemaps.write('.')))
       .pipe(gulp.dest('./dist/'))

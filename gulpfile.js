@@ -48,7 +48,7 @@ var $ = require('gulp-load-plugins')()
 var runSequence = require('run-sequence').use(gulp)
 
 require('./gulpfile.helper.js')(gulp, {
-  polyfills: [],
+  polyfills: ['node_modules/gulp-babel/node_modules/babel-core/node_modules/regenerator/runtime.js'],
   entry: './src/y.js',
   targetName: 'y.js',
   moduleName: 'yjs',
