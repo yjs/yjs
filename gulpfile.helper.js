@@ -28,14 +28,14 @@ module.exports = function (gulp, helperOptions) {
   }
 
   var babelOptions = {
-    loose: 'all',
-    modules: 'ignore',
-    experimental: true
+    presets: ['es2015'],
+    plugins: ['transform-runtime']
   }
   if (!options.regenerator) {
     babelOptions.blacklist = 'regenerator'
   } else {
-    files.dist = [files.dist].concat(helperOptions.polyfills)
+    helperOptions.polyfills.push(files.dist)
+    files.dist = helperOptions.polyfills
   }
 
   gulp.task('dist', function () {
@@ -46,11 +46,12 @@ module.exports = function (gulp, helperOptions) {
     gulp.src(['./README.md'])
       .pipe($.watch('./README.md'))
       .pipe(gulp.dest('./dist/'))
-
+    console.log(JSON.stringify(files.dist))
     return browserify({
       entries: files.dist,
       debug: options.debug
-    }).bundle()
+    }).transform("babelify", {presets: ["es2015"], plugins: ['transform-runtime']})
+      .bundle()
       .pipe(source(options.targetName))
       .pipe(buffer())
       .pipe($.if(options.debug, $.sourcemaps.init({loadMaps: true})))
