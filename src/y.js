@@ -34,16 +34,13 @@ Y.requestModules = function (modules) {
             var imported = document.createElement('script')
             imported.src = Y.sourceDir + '/' + modulename + '/' + modulename + '.js'
             document.head.appendChild(imported)
-            ;(function () {
-              var modname = modules[i]
-              var promise = new Promise(function (resolve) {
-                requiringModules[modname] = {
-                  resolve: resolve,
-                  promise: promise
-                }
-              })
-              promises.push(promise)
-            })()
+
+            let requireModule = {}
+            requiringModules[modules[i]] = requireModule
+            requireModule.promise = new Promise(function (resolve) {
+              requireModule.resolve = resolve
+            })
+            promises.push(requireModule.promise)
           } else {
             throw e
           }
