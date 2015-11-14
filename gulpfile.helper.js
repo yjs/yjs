@@ -13,13 +13,13 @@ module.exports = function (gulp, helperOptions) {
       port: '8888',
       testfiles: '**/*.spec.js',
       browserify: helperOptions.browserify != null ? helperOptions.browserify : false,
-      regenerator: false,
+      regenerator: true,
+      includeRuntime: helperOptions.includeRuntime || false,
       debug: false
     }
   })
   if (options.regenerator === 'false') {
     options.regenerator = false
-    // TODO: include './node_modules/gulp-babel/node_modules/babel-core/node_modules/regenerator/runtime.js'
   }
   var files = {
     dist: helperOptions.entry,
@@ -34,29 +34,31 @@ module.exports = function (gulp, helperOptions) {
   if (!options.regenerator) {
     babelOptions.blacklist = 'regenerator'
   } else {
-    helperOptions.polyfills.push(files.dist)
-    files.dist = helperOptions.polyfills
+
+  }
+
+  if (options.includeRuntime) {
+    files.dist = ['node_modules/regenerator/runtime.js', files.dist]
   }
 
   gulp.task('dist', function () {
     var browserify = require('browserify')
     var source = require('vinyl-source-stream')
     var buffer = require('vinyl-buffer')
-
+    var babelify = require('babelify')
     gulp.src(['./README.md'])
       .pipe($.watch('./README.md'))
       .pipe(gulp.dest('./dist/'))
     console.log(JSON.stringify(files.dist))
     return browserify({
       entries: files.dist,
-      debug: options.debug
-    }).transform("babelify", {presets: ["es2015"], plugins: ['transform-runtime']})
+      debug: true
+    }).transform(babelify, {presets: ['es2015']})
       .bundle()
       .pipe(source(options.targetName))
       .pipe(buffer())
-      .pipe($.if(options.debug, $.sourcemaps.init({loadMaps: true})))
-      .pipe($.if(true, $.babel(babelOptions)))
-      .pipe($.if(!options.debug && options.regenerator, $.uglify()))
+      .pipe($.sourcemaps.init({loadMaps: true}))
+      //.pipe($.if(!options.debug && options.regenerator, $.uglify()))
       .pipe($.if(options.debug, $.sourcemaps.write('.')))
       .pipe(gulp.dest('./dist/'))
   })

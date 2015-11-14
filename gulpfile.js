@@ -52,6 +52,7 @@ require('./gulpfile.helper.js')(gulp, {
   entry: './src/y.js',
   targetName: 'y.js',
   moduleName: 'yjs',
+  includeRuntime: true,
   specs: [
     './src/Types/Map.spec.js',
     './src/Database.spec.js'
