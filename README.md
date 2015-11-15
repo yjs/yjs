@@ -10,8 +10,8 @@ You can create you own shared types easily. Therefore, you can take matters into
 | Name     | Description       |
 |----------|-------------------|
 | map     | Add, update, and remove properties of an object. Included in Yjs|
-|[list](https://github.com/y-js/y-list) | A shared linked list implementation |
-|[selections](https://github.com/y-js/y-selections) | Manages selections on types that use linear structures (e.g. the y-list type). Select a range of elements, and assign meaning to them.|
+|[array](https://github.com/y-js/y-array) | A shared linked list implementation |
+|[selections](https://github.com/y-js/y-selections) | Manages selections on types that use linear structures (e.g. the y-array type). Select a range of elements, and assign meaning to them.|
 |[xml](https://github.com/y-js/y-xml) | An implementation of the DOM. You can create a two way binding to Browser DOM objects|
 |[text](https://github.com/y-js/y-text) | Collaborate on text. Supports two way binding to textareas, input elements, or HTML elements (e.g. *h1*, or *p*)|
 |[richtext](https://github.com/y-js/y-richtext) | Collaborate on rich text. Supports two way binding to several editors|
