@@ -3,7 +3,7 @@
 // create a shared object. This function call will return a promise!
 Y({
   db: {
-    name: 'indexeddb',
+    name: 'memory',
     namespace: 'offlineEditingDemo'
   },
   connector: {
