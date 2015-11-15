@@ -485,7 +485,7 @@ module.exports = function (Y) {
         }
       }
       if (this.store.forwardAppliedOperations) {
-        var ops = deletions.map(function(d){
+        var ops = deletions.map(function (d) {
           return {struct: 'Delete', target: [d[0], d[1]]}
         })
         this.store.y.connector.broadcast({

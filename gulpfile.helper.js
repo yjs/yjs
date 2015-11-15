@@ -58,7 +58,7 @@ module.exports = function (gulp, helperOptions) {
       .pipe(source(options.targetName))
       .pipe(buffer())
       .pipe($.sourcemaps.init({loadMaps: true}))
-      //.pipe($.if(!options.debug && options.regenerator, $.uglify()))
+      // .pipe($.if(!options.debug && options.regenerator, $.uglify()))
       .pipe($.if(options.debug, $.sourcemaps.write('.')))
       .pipe(gulp.dest('./dist/'))
   })
@@ -132,7 +132,8 @@ module.exports = function (gulp, helperOptions) {
   })
 
   gulp.task('publish', function (cb) {
-    runSequence(['test', 'updateSubmodule', 'dist'], 'bump', function () {
+    /* TODO: include 'test',*/
+    runSequence(['updateSubmodule', 'dist'], 'bump', function () {
       return gulp.src('./package.json', {read: false})
         .pipe($.prompt.confirm({
           message: 'Are you sure you want to publish this release?',
