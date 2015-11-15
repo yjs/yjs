@@ -20,6 +20,7 @@ module.exports = function (Y) {
       } else {
         throw new Error("Role must be either 'master' or 'slave'!")
       }
+      this.y.db.forwardAppliedOperations = opts.forwardAppliedOperations || false
       this.role = opts.role
       this.connections = {}
       this.isSynced = false
@@ -219,6 +220,17 @@ module.exports = function (Y) {
         if (this.forwardToSyncingClients) {
           for (var client of this.syncingClients) {
             this.send(client, m)
+          }
+        }
+        if (this.y.db.forwardAppliedOperations) {
+          var delops = m.ops.filter(function (o) {
+            return o.struct === 'Delete'
+          })
+          if (delops.length > 0) {
+            this.broadcast({
+              type: 'update',
+              ops: delops
+            })
           }
         }
         this.y.db.apply(m.ops)

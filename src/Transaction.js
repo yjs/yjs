@@ -104,7 +104,8 @@ module.exports = function (Y) {
         yield* this.store.tryExecute.call(this, op)
         send.push(Y.Struct[op.struct].encode(op))
       }
-      if (!this.store.y.connector.isDisconnected()) {
+      if (!this.store.y.connector.isDisconnected()) { // TODO: && !this.store.forwardAppliedOperations (but then i don't send delete ops)
+        // is connected, and this is not going to be send in addOperation
         this.store.y.connector.broadcast({
           type: 'update',
           ops: send
@@ -483,6 +484,15 @@ module.exports = function (Y) {
           yield* this.garbageCollectOperation(id)
         }
       }
+      if (this.store.forwardAppliedOperations) {
+        var ops = deletions.map(function(d){
+          return {struct: 'Delete', target: [d[0], d[1]]}
+        })
+        this.store.y.connector.broadcast({
+          type: 'update',
+          ops: ops
+        })
+      }
     }
     * isGarbageCollected (id) {
       var n = yield* this.ds.findWithUpperBound(id)
@@ -517,6 +527,13 @@ module.exports = function (Y) {
     }
     * addOperation (op) {
       yield* this.os.put(op)
+      if (!this.store.y.connector.isDisconnected() && this.store.forwardAppliedOperations) {
+        // is connected, and this is not going to be send in addOperation
+        this.store.y.connector.broadcast({
+          type: 'update',
+          ops: [op]
+        })
+      }
     }
     * getOperation (id) {
       return yield* this.os.find(id)

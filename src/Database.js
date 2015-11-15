@@ -16,6 +16,8 @@ module.exports = function (Y) {
   class AbstractDatabase {
     constructor (y, opts) {
       this.y = y
+      // whether to broadcast all applied operations (insert & delete hook)
+      this.forwardAppliedOperations = false
       // E.g. this.listenersById[id] : Array<Listener>
       this.listenersById = {}
       // Execute the next time a transaction is requested
