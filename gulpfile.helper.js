@@ -5,36 +5,26 @@ var minimist = require('minimist')
 module.exports = function (gulp, helperOptions) {
   var runSequence = require('run-sequence').use(gulp)
   var options = minimist(process.argv.slice(2), {
-    string: ['modulename', 'export', 'name', 'port', 'testfiles'],
+    string: ['modulename', 'export', 'name', 'port', 'testfiles', 'es6'],
     default: {
       modulename: helperOptions.moduleName,
       targetName: helperOptions.targetName,
       export: 'ignore',
       port: '8888',
       testfiles: '**/*.spec.js',
+      es6: false,
       browserify: helperOptions.browserify != null ? helperOptions.browserify : false,
-      regenerator: true,
       includeRuntime: helperOptions.includeRuntime || false,
       debug: false
     }
   })
-  if (options.regenerator === 'false') {
-    options.regenerator = false
+  if (options.es6 !== false) {
+    options.es6 = true
   }
   var files = {
     dist: helperOptions.entry,
     specs: helperOptions.specs,
     src: './src/**/*.js'
-  }
-
-  var babelOptions = {
-    presets: ['es2015'],
-    plugins: ['transform-runtime']
-  }
-  if (!options.regenerator) {
-    babelOptions.blacklist = 'regenerator'
-  } else {
-
   }
 
   if (options.includeRuntime) {
@@ -45,26 +35,35 @@ module.exports = function (gulp, helperOptions) {
     var browserify = require('browserify')
     var source = require('vinyl-source-stream')
     var buffer = require('vinyl-buffer')
-    var babelify = require('babelify')
-    gulp.src(['./README.md'])
-      .pipe($.watch('./README.md'))
-      .pipe(gulp.dest('./dist/'))
+
+    var babelOptions
+    if (options.es6 || options.debug) {
+      babelOptions = {}
+    } else {
+      babelOptions = {
+        presets: ['es2015']
+      }
+    }
+
     console.log(JSON.stringify(files.dist))
-    return browserify({
+    return (browserify({
       entries: files.dist,
       debug: true
-    }).transform(babelify, {presets: ['es2015']})
+    }).transform('babelify', babelOptions)
       .bundle()
       .pipe(source(options.targetName))
       .pipe(buffer())
       .pipe($.sourcemaps.init({loadMaps: true}))
-      // .pipe($.if(!options.debug && options.regenerator, $.uglify()))
-      .pipe($.if(options.debug, $.sourcemaps.write('.')))
-      .pipe(gulp.dest('./dist/'))
+      .pipe($.if(!options.debug && !options.es6, $.uglify()))
+      .pipe($.sourcemaps.write('.'))
+      .pipe(gulp.dest('./dist/')))
   })
 
   gulp.task('watch:dist', function (cb) {
     options.debug = true
+    gulp.src(['./README.md'])
+      .pipe($.watch('./README.md'))
+      .pipe(gulp.dest('./dist/'))
     runSequence('dist', function () {
       gulp.watch(files.src.concat('./README.md'), ['dist'])
       cb()
