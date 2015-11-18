@@ -1,4 +1,4 @@
-/* global getRandom, wait, async */
+/* global getRandom, async */
 'use strict'
 
 module.exports = function (Y) {
@@ -22,29 +22,33 @@ module.exports = function (Y) {
           connector.userJoined(u.userId, 'master')
         }
       }
+    },
+    whenTransactionsFinished: function () {
+      var ps = []
+      for (var name in this.users) {
+        ps.push(this.users[name].y.db.whenTransactionsFinished())
+      }
+      return Promise.all(ps)
+    },
+    flushOne: function flushOne () {
+      var bufs = []
+      for (var i in globalRoom.buffers) {
+        if (globalRoom.buffers[i].length > 0) {
+          bufs.push(i)
+        }
+      }
+      if (bufs.length > 0) {
+        var userId = getRandom(bufs)
+        var m = globalRoom.buffers[userId].shift()
+        var user = globalRoom.users[userId]
+        user.receiveMessage(m[0], m[1])
+        return user.y.db.whenTransactionsFinished()
+      } else {
+        return false
+      }
     }
   }
   Y.utils.globalRoom = globalRoom
-
-  function flushOne () {
-    var bufs = []
-    for (var i in globalRoom.buffers) {
-      if (globalRoom.buffers[i].length > 0) {
-        bufs.push(i)
-      }
-    }
-    if (bufs.length > 0) {
-      var userId = getRandom(bufs)
-      var m = globalRoom.buffers[userId].shift()
-      var user = globalRoom.users[userId]
-      user.receiveMessage(m[0], m[1])
-      return true
-    } else {
-      return false
-    }
-  }
-
-  // setInterval(flushOne, 10)
 
   var userIdCounter = 0
 
@@ -91,17 +95,16 @@ module.exports = function (Y) {
         globalRoom.removeUser(this.userId)
         super.disconnect()
       }
-      return wait()
+      return this.y.db.whenTransactionsFinished()
     }
     flush () {
       var self = this
       return async(function * () {
-        yield wait()
         while (globalRoom.buffers[self.userId].length > 0) {
           var m = globalRoom.buffers[self.userId].shift()
           this.receiveMessage(m[0], m[1])
-          yield wait()
         }
+        yield self.whenTransactionsFinished()
       })
     }
     flushAll () {
@@ -109,28 +112,18 @@ module.exports = function (Y) {
         // flushes may result in more created operations,
         // flush until there is nothing more to flush
         function nextFlush () {
-          var c = flushOne()
+          var c = globalRoom.flushOne()
           if (c) {
-            while (flushOne()) {
+            while (globalRoom.flushOne()) {
               // nop
             }
-            wait().then(nextFlush)
+            globalRoom.whenTransactionsFinished().then(nextFlush)
           } else {
-            wait().then(function () {
-              resolve()
-            })
+            resolve()
           }
         }
-        // in the case that there are
-        // still actions that want to be performed
-        wait().then(nextFlush)
+        globalRoom.whenTransactionsFinished().then(nextFlush)
       })
-    }
-    /*
-      Flushes an operation for some user..
-    */
-    flushOne () {
-      flushOne()
     }
   }
 

@@ -145,7 +145,7 @@ module.exports = function (gulp, helperOptions) {
           'git pull',
           'cd ./dist/ && git add -A',
           'cd ./dist/ && git commit -am "Deploy <%= getVersion(file.path) %>" -n',
-          'cd ./dist/ && git push',
+          'cd ./dist/ && git push origin HEAD:dist',
           'cd ./dist/ && git tag -a v<%= getVersion(file.path) %> -m "Release <%= getVersion(file.path) %>"',
           'cd ./dist/ && git push origin --tags',
           'git commit -am "Release <%= getVersion(file.path) %>" -n',

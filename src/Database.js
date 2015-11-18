@@ -318,9 +318,23 @@ module.exports = function (Y) {
         }
       }
     }
+    whenTransactionsFinished () {
+      if (this.transactionInProgress) {
+        if (this.transactionsFinished == null) {
+          this.transactionsFinished = Promise.defer()
+        }
+        return this.transactionsFinished.promise
+      } else {
+        return Promise.resolve()
+      }
+    }
     getNextRequest () {
       if (this.waitingTransactions.length === 0) {
         this.transactionInProgress = false
+        if (this.transactionsFinished != null) {
+          this.transactionsFinished.resolve()
+          this.transactionsFinished = null
+        }
         return null
       } else {
         return this.waitingTransactions.shift()
