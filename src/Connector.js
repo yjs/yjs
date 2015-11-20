@@ -189,26 +189,26 @@ module.exports = function (Y) {
         var broadcastHB = !this.broadcastedHB
         this.broadcastedHB = true
         var db = this.y.db
-        this.syncStep2 = new Promise(function (resolve) {
+        var defer = Promise.defer()
+        this.syncStep2 = defer.promise 
+        db.requestTransaction(function * () {
+          yield* this.applyDeleteSet(m.deleteSet)
+          this.store.apply(m.os)
           db.requestTransaction(function * () {
-            yield* this.applyDeleteSet(m.deleteSet)
-            this.store.apply(m.os)
-            db.requestTransaction(function * () {
-              var ops = yield* this.getOperations(m.stateSet)
-              if (ops.length > 0) {
-                m = {
-                  type: 'update',
-                  ops: ops
-                }
-                if (!broadcastHB) { // TODO: consider to broadcast here..
-                  conn.send(sender, m)
-                } else {
-                  // broadcast only once!
-                  conn.broadcast(m)
-                }
+            var ops = yield* this.getOperations(m.stateSet)
+            if (ops.length > 0) {
+              m = {
+                type: 'update',
+                ops: ops
               }
-              resolve()
-            })
+              if (!broadcastHB) { // TODO: consider to broadcast here..
+                conn.send(sender, m)
+              } else {
+                // broadcast only once!
+                conn.broadcast(m)
+              }
+            }
+            defer.resolve()
           })
         })
       } else if (m.type === 'sync done') {

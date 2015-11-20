@@ -3,7 +3,7 @@
 'use strict'
 
 var Y = require('../SpecHelper.js')
-var numberOfYMapTests = 10
+var numberOfYMapTests = 100
 var repeatMapTeasts = 1
 
 for (let database of databases) {
@@ -16,7 +16,7 @@ for (let database of databases) {
       y2 = this.users[1].root
       y3 = this.users[2].root
       y4 = this.users[3].root
-      flushAll = this.users[0].connector.flushAll
+      flushAll = Y.utils.globalRoom.flushAll
       done()
     }))
     afterEach(async(function * (done) {

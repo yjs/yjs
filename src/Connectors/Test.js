@@ -24,11 +24,16 @@ module.exports = function (Y) {
       }
     },
     whenTransactionsFinished: function () {
-      var ps = []
-      for (var name in this.users) {
-        ps.push(this.users[name].y.db.whenTransactionsFinished())
-      }
-      return Promise.all(ps)
+      var self = this
+      return new Promise (function (resolve) {
+        wait().then(function () {
+          var ps = []
+          for (var name in self.users) {
+            ps.push(self.users[name].y.db.whenTransactionsFinished())
+          }
+          Promise.all(ps).then(resolve)
+        })
+      })
     },
     flushOne: function flushOne () {
       var bufs = []
@@ -46,6 +51,32 @@ module.exports = function (Y) {
       } else {
         return false
       }
+    },
+    flushAll: function () {
+      return new Promise(function (resolve) {
+        // flushes may result in more created operations,
+        // flush until there is nothing more to flush
+        function nextFlush () {
+          var c = globalRoom.flushOne()
+          if (c) {
+            while (c = globalRoom.flushOne()) {
+            }
+            globalRoom.whenTransactionsFinished().then(nextFlush)              
+          } else {
+            setTimeout(function () {
+              var c = globalRoom.flushOne()
+              if (c) {
+                c.then(function () {
+                  globalRoom.whenTransactionsFinished().then(nextFlush)                  
+                })
+              } else {
+                resolve()
+              }
+            }, 10)
+          }
+        }
+        globalRoom.whenTransactionsFinished().then(nextFlush)
+      })
     }
   }
   Y.utils.globalRoom = globalRoom
@@ -88,7 +119,7 @@ module.exports = function (Y) {
         globalRoom.addUser(this)
         super.reconnect()
       }
-      return this.flushAll()
+      return Y.utils.globalRoom.flushAll()
     }
     disconnect () {
       if (!this.isDisconnected()) {
@@ -105,24 +136,6 @@ module.exports = function (Y) {
           this.receiveMessage(m[0], m[1])
         }
         yield self.whenTransactionsFinished()
-      })
-    }
-    flushAll () {
-      return new Promise(function (resolve) {
-        // flushes may result in more created operations,
-        // flush until there is nothing more to flush
-        function nextFlush () {
-          var c = globalRoom.flushOne()
-          if (c) {
-            while (globalRoom.flushOne()) {
-              // nop
-            }
-            globalRoom.whenTransactionsFinished().then(nextFlush)
-          } else {
-            resolve()
-          }
-        }
-        globalRoom.whenTransactionsFinished().then(nextFlush)
       })
     }
   }

@@ -343,14 +343,15 @@ module.exports = function (Y) {
     requestTransaction (makeGen, callImmediately) {
       if (callImmediately) {
         this.transact(makeGen)
-      } else if (!this.transactionInProgress) {
-        this.transactionInProgress = true
-        var self = this
-        setTimeout(function () {
-          self.transact(makeGen)
-        }, 0)
       } else {
         this.waitingTransactions.push(makeGen)
+        if (!this.transactionInProgress) {
+          this.transactionInProgress = true
+          var self = this
+          setTimeout(function () {
+            self.transact(self.getNextRequest())
+          }, 0)
+        }
       }
     }
   }

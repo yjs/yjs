@@ -1,4 +1,4 @@
-/* global async, databases */
+/* global async, databases, describe, beforeEach, afterEach */
 /* eslint-env browser,jasmine,console */
 'use strict'
 

@@ -24,7 +24,7 @@ g.g = g
 
 g.YConcurrency_TestingMode = true
 
-jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 8000
 
 g.describeManyTimes = function describeManyTimes (times, name, f) {
   for (var i = 0; i < times; i++) {
@@ -36,8 +36,6 @@ g.describeManyTimes = function describeManyTimes (times, name, f) {
   Wait for a specified amount of time (in ms). defaults to 5ms
 */
 function wait (t) {
-  throw new Error("waiting..")
-  console.log("waiting..", t)
   if (t == null) {
     t = 5
   }
@@ -106,24 +104,24 @@ function * applyTransactions (relAmount, numberOfTransactions, objects, users, t
 
 g.applyRandomTransactionsAllRejoinNoGC = async(function * applyRandomTransactions (users, objects, transactions, numberOfTransactions) {
   yield* applyTransactions(1, numberOfTransactions, objects, users, transactions)
-  yield users[0].connector.flushAll()
+  yield Y.utils.globalRoom.flushAll()
   for (var u in users) {
     yield users[u].reconnect()
   }
-  yield users[0].connector.flushAll()
+  yield Y.utils.globalRoom.flushAll()
   yield g.garbageCollectAllUsers(users)
 })
 
 g.applyRandomTransactionsWithGC = async(function * applyRandomTransactions (users, objects, transactions, numberOfTransactions) {
   yield* applyTransactions(1, numberOfTransactions, objects, users.slice(1), transactions)
-  yield users[0].connector.flushAll()
+  yield Y.utils.globalRoom.flushAll()
   yield g.garbageCollectAllUsers(users)
   for (var u in users) {
     // TODO: here, we enforce that two users never sync at the same time with u[0]
     //       enforce that in the connector itself!
     yield users[u].reconnect()
   }
-  yield users[0].connector.flushAll()
+  yield Y.utils.globalRoom.flushAll()
   yield g.garbageCollectAllUsers(users)
 })
 
@@ -158,8 +156,15 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
       allDels2.push(d)
     })
   }
-  yield users[0].connector.flushAll()
+  yield Y.utils.globalRoom.flushAll()
   yield g.garbageCollectAllUsers(users)
+  yield Y.utils.globalRoom.flushAll()
+  var buffer = Y.utils.globalRoom.buffers
+  for (var name in buffer) {
+    if (buffer[name].length > 0) {
+      debugger // not all ops were transmitted..
+    }
+  }
 
   for (var uid = 0; uid < users.length; uid++) {
     var u = users[uid]
@@ -219,7 +224,7 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
 
 g.createUsers = async(function * createUsers (self, numberOfUsers, database) {
   if (Y.utils.globalRoom.users[0] != null) {
-    yield Y.utils.globalRoom.users[0].flushAll()
+    yield Y.utils.globalRoom.flushAll()
   }
   // destroy old users
   for (var u in Y.utils.globalRoom.users) {
