@@ -341,8 +341,12 @@ module.exports = function (Y) {
       }
     }
     requestTransaction (makeGen, callImmediately) {
-      if (callImmediately) {
-        this.transact(makeGen)
+      if (callImmediately || true) {
+        this.waitingTransactions.push(makeGen)
+        if (!this.transactionInProgress) {
+          this.transactionInProgress = true
+          this.transact(this.getNextRequest())
+        }
       } else {
         this.waitingTransactions.push(makeGen)
         if (!this.transactionInProgress) {

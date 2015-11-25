@@ -3,7 +3,7 @@
 'use strict'
 
 var Y = require('../SpecHelper.js')
-var numberOfYMapTests = 100
+var numberOfYMapTests = 500
 var repeatMapTeasts = 1
 
 for (let database of databases) {

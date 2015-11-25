@@ -85,7 +85,9 @@ class YConfig {
       yield* this.store.tryExecute.call(this, model)
       var root = yield* this.getType(model.id)
       this.store.y.root = root
-      callback()
+      setTimeout(function () {
+        callback()
+      }, 0)
     })
   }
   isConnected () {
