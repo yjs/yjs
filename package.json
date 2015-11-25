@@ -16,6 +16,7 @@
     "ignore": [
       "build/**",
       "dist/**",
+      "declarations/**",
       "./y.js",
       "./y.js.map"
     ]

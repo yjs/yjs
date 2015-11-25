@@ -157,7 +157,6 @@ module.exports = function (Y) {
           insert.id = this.os.getNextOpId()
           var eventHandler = this.eventHandler
           eventHandler.awaitAndPrematurelyCall([insert])
-
           this.os.requestTransaction(function *() {
             yield* this.applyCreatedOperations([insert])
             eventHandler.awaitedInserts(1)
@@ -258,7 +257,8 @@ module.exports = function (Y) {
     }
     * _changed (transaction, op) {
       if (op.struct === 'Delete') {
-        op.key = (yield* transaction.getOperation(op.target)).parentSub
+        var target = yield* transaction.getOperation(op.target)
+        op.key = target.parentSub
       }
       this.eventHandler.receivedOp(op)
     }

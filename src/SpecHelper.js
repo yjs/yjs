@@ -37,12 +37,12 @@ g.describeManyTimes = function describeManyTimes (times, name, f) {
 */
 function wait (t) {
   if (t == null) {
-    t = 5
+    t = 0
   }
   return new Promise(function (resolve) {
     setTimeout(function () {
       resolve()
-    }, t * 3)
+    }, t)
   })
 }
 g.wait = wait
@@ -162,7 +162,8 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
   var buffer = Y.utils.globalRoom.buffers
   for (var name in buffer) {
     if (buffer[name].length > 0) {
-      debugger // not all ops were transmitted..
+      // not all ops were transmitted..
+      debugger // eslint-disable-line
     }
   }
 

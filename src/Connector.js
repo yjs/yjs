@@ -190,7 +190,7 @@ module.exports = function (Y) {
         this.broadcastedHB = true
         var db = this.y.db
         var defer = Promise.defer()
-        this.syncStep2 = defer.promise 
+        this.syncStep2 = defer.promise
         db.requestTransaction(function * () {
           yield* this.applyDeleteSet(m.deleteSet)
           this.store.apply(m.os)

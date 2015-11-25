@@ -1,3 +1,4 @@
+/* @flow */
 'use strict'
 
 /*
@@ -6,24 +7,32 @@
   Why: When constructing custom types, you sometimes want your types to work
   synchronous: E.g.
   ``` Synchronous
-  mytype.setSomething("yay")
-  mytype.getSomething() === "yay"
-  ```
-  ``` Asynchronous
-  mytype.setSomething("yay")
-  mytype.getSomething() === undefined
-  mytype.waitForSomething().then(function(){
+    mytype.setSomething("yay")
     mytype.getSomething() === "yay"
-  })
+  ```
+  versus
+  ``` Asynchronous
+    mytype.setSomething("yay")
+    mytype.getSomething() === undefined
+    mytype.waitForSomething().then(function(){
+      mytype.getSomething() === "yay"
+    })
+  ```
 
   The structures usually work asynchronously (you have to wait for the
   database request to finish). EventHandler will help you to make your type
-  synchronously.
+  synchronous.
 */
-module.exports = function (Y) {
+module.exports = function (Y /* : YGlobal*/) {
   Y.utils = {}
 
   class EventHandler {
+    /* ::
+    waiting: Array<Insertion | Deletion>;
+    awaiting: number;
+    onevent: Function;
+    eventListeners: Array<Function>;
+    */
     /*
       onevent: is called when the structure changes.
 
@@ -31,7 +40,7 @@ module.exports = function (Y) {
       prematurely called. Events for received operations can not be executed until
       all prematurely called operations were executed ("waiting operations")
     */
-    constructor (onevent) {
+    constructor (onevent /* : Function */) {
       this.waiting = []
       this.awaiting = 0
       this.onevent = onevent
@@ -73,7 +82,7 @@ module.exports = function (Y) {
       this.eventListeners = []
     }
     callEventListeners (event) {
-      for (var i in this.eventListeners) {
+      for (var i = 0; i < this.eventListeners.length; i++) {
         try {
           this.eventListeners[i](event)
         } catch (e) {
@@ -88,18 +97,24 @@ module.exports = function (Y) {
       var ops = this.waiting.splice(this.waiting.length - n)
       for (var oid = 0; oid < ops.length; oid++) {
         var op = ops[oid]
-        for (var i = this.waiting.length - 1; i >= 0; i--) {
-          let w = this.waiting[i]
-          if (Y.utils.compareIds(op.left, w.id)) {
-            // include the effect of op in w
-            w.right = op.id
-            // exclude the effect of w in op
-            op.left = w.left
-          } else if (Y.utils.compareIds(op.right, w.id)) {
-            // similar..
-            w.left = op.id
-            op.right = w.right
+        if (op.struct === 'Insert') {
+          for (var i = this.waiting.length - 1; i >= 0; i--) {
+            let w = this.waiting[i]
+            if (w.struct === 'Insert') {
+              if (Y.utils.compareIds(op.left, w.id)) {
+                // include the effect of op in w
+                w.right = op.id
+                // exclude the effect of w in op
+                op.left = w.left
+              } else if (Y.utils.compareIds(op.right, w.id)) {
+                // similar..
+                w.left = op.id
+                op.right = w.right
+              }
+            }
           }
+        } else {
+          throw new Error('Expected Insert Operation!')
         }
       }
       this._tryCallEvents()
@@ -109,16 +124,20 @@ module.exports = function (Y) {
     */
     awaitedDeletes (n, newLeft) {
       var ops = this.waiting.splice(this.waiting.length - n)
-      for (var j in ops) {
+      for (var j = 0; j < ops.length; j++) {
         var del = ops[j]
-        if (newLeft != null) {
-          for (var i in this.waiting) {
-            let w = this.waiting[i]
-            // We will just care about w.left
-            if (Y.utils.compareIds(del.target, w.left)) {
-              del.left = newLeft
+        if (del.struct === 'Delete') {
+          if (newLeft != null) {
+            for (var i = 0; i < this.waiting.length; i++) {
+              let w = this.waiting[i]
+              // We will just care about w.left
+              if (w.struct === 'Insert' && Y.utils.compareIds(del.target, w.left)) {
+                w.left = newLeft
+              }
             }
           }
+        } else {
+          throw new Error('Expected Delete Operation!')
         }
       }
       this._tryCallEvents()
@@ -149,6 +168,11 @@ module.exports = function (Y) {
       - the constructor of the custom type (e.g. in order to inherit from a type)
   */
   class CustomType { // eslint-disable-line
+    /* ::
+    createType: any;
+    initType: any;
+    class: Function;
+    */
     constructor (def) {
       if (def.createType == null ||
         def.initType == null ||

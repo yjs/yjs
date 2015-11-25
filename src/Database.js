@@ -1,6 +1,7 @@
+/* @flow */
 'use strict'
 
-module.exports = function (Y) {
+module.exports = function (Y /* : YGlobal */) {
   /*
     Partial definition of an OperationStore.
     TODO: name it Database, operation store only holds operations.
@@ -14,6 +15,28 @@ module.exports = function (Y) {
       - destroy the database
   */
   class AbstractDatabase {
+    /* ::
+    y: YInstance;
+    forwardAppliedOperations: boolean;
+    listenersById: Object;
+    listenersByIdExecuteNow: Array<Object>;
+    listenersByIdRequestPending: boolean;
+    initializedTypes: Object;
+    whenUserIdSetListener: ?Function;
+    waitingTransactions: Array<Transaction>;
+    transactionInProgress: boolean;
+    executeOrder: Array<Object>;
+    gc1: Array<Struct>;
+    gc2: Array<Struct>;
+    gcTimeout: number;
+    gcInterval: any;
+    garbageCollect: Function;
+    executeOrder: Array<any>; // for debugging only
+    userId: UserId;
+    opClock: number;
+    transactionsFinished: ?{promise: Promise, resolve: any};
+    transact: (x: ?Generator) => any;
+    */
     constructor (y, opts) {
       this.y = y
       // whether to broadcast all applied operations (insert & delete hook)
@@ -51,7 +74,7 @@ module.exports = function (Y) {
         return new Promise((resolve) => {
           os.requestTransaction(function * () {
             if (os.y.connector != null && os.y.connector.isSynced) {
-              for (var i in os.gc2) {
+              for (var i = 0; i < os.gc2.length; i++) {
                 var oid = os.gc2[i]
                 yield* this.garbageCollectOperation(oid)
               }
@@ -72,7 +95,7 @@ module.exports = function (Y) {
     }
     addToDebug () {
       if (typeof YConcurrency_TestingMode !== 'undefined') {
-        var command = Array.prototype.map.call(arguments, function (s) {
+        var command /* :string */ = Array.prototype.map.call(arguments, function (s) {
           if (typeof s === 'string') {
             return s
           } else {
@@ -89,10 +112,10 @@ module.exports = function (Y) {
       var self = this
       return new Promise(function (resolve) {
         self.requestTransaction(function * () {
-          var ungc = self.gc1.concat(self.gc2)
+          var ungc /* :Array<Struct> */ = self.gc1.concat(self.gc2)
           self.gc1 = []
           self.gc2 = []
-          for (var i in ungc) {
+          for (var i = 0; i < ungc.length; i++) {
             var op = yield* this.getOperation(ungc[i])
             delete op.gc
             yield* this.setOperation(op)
@@ -145,7 +168,8 @@ module.exports = function (Y) {
       return new Promise(function (resolve) {
         self.requestTransaction(function * () {
           self.userId = userId
-          self.opClock = (yield* this.getState(userId)).clock
+          var state = yield* this.getState(userId)
+          self.opClock = state.clock
           if (self.whenUserIdSetListener != null) {
             self.whenUserIdSetListener()
             self.whenUserIdSetListener = null
@@ -225,7 +249,7 @@ module.exports = function (Y) {
 
         store.listenersByIdRequestPending = false
 
-        for (let key in exeNow) {
+        for (let key = 0; key < exeNow.length; key++) {
           let o = exeNow[key].op
           yield* store.tryExecute.call(this, o)
         }
@@ -233,7 +257,8 @@ module.exports = function (Y) {
         for (var sid in ls) {
           var l = ls[sid]
           var id = JSON.parse(sid)
-          if ((yield* this.getOperation(id)) == null) {
+          var op = yield* this.getOperation(id)
+          if (op == null) {
             store.listenersById[sid] = l
           } else {
             for (let key in l) {
@@ -250,15 +275,28 @@ module.exports = function (Y) {
     /*
       Actually execute an operation, when all expected operations are available.
     */
+    /* :: // TODO: this belongs somehow to transaction
+    store: Object;
+    getOperation: any;
+    isGarbageCollected: any;
+    addOperation: any;
+    whenOperationsExist: any;
+    */
     * tryExecute (op) {
       this.store.addToDebug('yield* this.store.tryExecute.call(this, ', JSON.stringify(op), ')')
       if (op.struct === 'Delete') {
         yield* Y.Struct.Delete.execute.call(this, op)
         yield* this.store.operationAdded(this, op)
-      } else if ((yield* this.getOperation(op.id)) == null && !(yield* this.isGarbageCollected(op.id))) {
-        yield* Y.Struct[op.struct].execute.call(this, op)
-        yield* this.addOperation(op)
-        yield* this.store.operationAdded(this, op)
+      } else {
+        var defined = yield* this.getOperation(op.id)
+        if (defined == null) {
+          var isGarbageCollected = yield* this.isGarbageCollected(op.id)
+          if (!isGarbageCollected) {
+            yield* Y.Struct[op.struct].execute.call(this, op)
+            yield* this.addOperation(op)
+            yield* this.store.operationAdded(this, op)
+          }
+        }
       }
     }
     // called by a transaction when an operation is added
@@ -300,30 +338,38 @@ module.exports = function (Y) {
           }
         }
         var t = this.initializedTypes[JSON.stringify(op.parent)]
-        // notify parent, if it has been initialized as a custom type
-        if (t != null) {
-          yield* t._changed(transaction, Y.utils.copyObject(op))
-        }
 
         // Delete if DS says this is actually deleted
-        if (!op.deleted && (yield* transaction.isDeleted(op.id))) {
+        var opIsDeleted = yield* transaction.isDeleted(op.id)
+        if (!op.deleted && opIsDeleted) {
           var delop = {
             struct: 'Delete',
             target: op.id
           }
           yield* Y.Struct['Delete'].execute.call(transaction, delop)
-          if (t != null) {
-            yield* t._changed(transaction, delop)
-          }
+        }
+
+        // notify parent, if it has been initialized as a custom type
+        if (t != null) {
+          yield* t._changed(transaction, Y.utils.copyObject(op))
         }
       }
     }
     whenTransactionsFinished () {
       if (this.transactionInProgress) {
         if (this.transactionsFinished == null) {
-          this.transactionsFinished = Promise.defer()
+          var resolve
+          var promise = new Promise(function (r) {
+            resolve = r
+          })
+          this.transactionsFinished = {
+            resolve: resolve,
+            promise: promise
+          }
+          return promise
+        } else {
+          return this.transactionsFinished.promise
         }
-        return this.transactionsFinished.promise
       } else {
         return Promise.resolve()
       }
@@ -340,8 +386,8 @@ module.exports = function (Y) {
         return this.waitingTransactions.shift()
       }
     }
-    requestTransaction (makeGen, callImmediately) {
-      if (callImmediately || true) {
+    requestTransaction (makeGen/* :any */, callImmediately) {
+      if (callImmediately) {
         this.waitingTransactions.push(makeGen)
         if (!this.transactionInProgress) {
           this.transactionInProgress = true

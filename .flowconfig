@@ -1,0 +1,12 @@
+[ignore]
+.*/node_modules/.*
+.*/dist/.*
+.*/build/.*
+
+[include]
+./src/
+
+[libs]
+./declarations/
+
+[options]

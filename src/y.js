@@ -1,4 +1,3 @@
-/* @flow */
 'use strict'
 
 require('./Connector.js')(Y)
@@ -20,7 +19,8 @@ Y.extend = function (name, value) {
   }
 }
 
-Y.requestModules = function (modules) {
+Y.requestModules = requestModules
+function requestModules (modules) {
   var promises = []
   for (var i = 0; i < modules.length; i++) {
     var modulename = 'y-' + modules[i].toLowerCase()

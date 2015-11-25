@@ -24,16 +24,11 @@ module.exports = function (Y) {
       }
     },
     whenTransactionsFinished: function () {
-      var self = this
-      return new Promise (function (resolve) {
-        wait().then(function () {
-          var ps = []
-          for (var name in self.users) {
-            ps.push(self.users[name].y.db.whenTransactionsFinished())
-          }
-          Promise.all(ps).then(resolve)
-        })
-      })
+      var ps = []
+      for (var name in this.users) {
+        ps.push(this.users[name].y.db.whenTransactionsFinished())
+      }
+      return Promise.all(ps)
     },
     flushOne: function flushOne () {
       var bufs = []
@@ -59,15 +54,16 @@ module.exports = function (Y) {
         function nextFlush () {
           var c = globalRoom.flushOne()
           if (c) {
-            while (c = globalRoom.flushOne()) {
+            while (c) {
+              c = globalRoom.flushOne()
             }
-            globalRoom.whenTransactionsFinished().then(nextFlush)              
+            globalRoom.whenTransactionsFinished().then(nextFlush)
           } else {
             setTimeout(function () {
               var c = globalRoom.flushOne()
               if (c) {
                 c.then(function () {
-                  globalRoom.whenTransactionsFinished().then(nextFlush)                  
+                  globalRoom.whenTransactionsFinished().then(nextFlush)
                 })
               } else {
                 resolve()
