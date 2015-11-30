@@ -186,10 +186,13 @@ module.exports = function (Y /* :any */) {
       }
     }
     getNextOpId () {
-      if (this.userId == null) {
+      if (this._temporaryUserIdGenerator != null) {
+        return this._temporaryUserIdGenerator()
+      } else if (this.userId == null) {
         throw new Error('OperationStore not yet initialized!')
+      } else {
+        return [this.userId, this.opClock++]
       }
-      return [this.userId, this.opClock++]
     }
     /*
       Apply a list of operations.

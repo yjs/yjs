@@ -111,18 +111,14 @@ class YConfig {
     this.connector = new Y[opts.connector.name](this, opts.connector)
     this.db.requestTransaction(function * requestTransaction () {
       // create initial Map type
-      var model = {
-        id: ['_', 0],
-        struct: 'Map',
-        type: 'Map',
-        map: {}
+      this.store._temporaryUserIdGenerator = function () {
+        return ['_', 0]
       }
-      yield* this.store.tryExecute.call(this, model)
-      var root = yield* this.getType(model.id)
-      this.store.y.root = root
-      setTimeout(function () {
-        callback()
-      }, 0)
+      var typeid = yield* Y.Map.createType.call(this)
+      var type = yield* this.getType(typeid)
+      this.store.y.root = type
+      this.store._temporaryUserIdGenerator = null
+      setTimeout(callback, 0)
     })
   }
   isConnected () {
