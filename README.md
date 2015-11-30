@@ -1,5 +1,5 @@
 
-# ![Yjs](http://y-js.org/files/layout/yjs.svg)
+# ![Yjs](http://y-js.org/images/yjs.png)
 
 Yjs is a framework for optimistic concurrency control and automatic conflict resolution on shared data types. The framework implements a new OT-like concurrency algorithm and provides similar functionality as [ShareJs] and [OpenCoweb]. Yjs was designed to handle concurrent actions on arbitrary complex data types like Text, Json, and XML. We provide a tutorial and some applications for this framework on our [homepage](http://y-js.org/).
 
@@ -131,6 +131,7 @@ This is a complete rewrite of the 0.5 version of Yjs. Since Yjs 1.0 it is possib
 * The Connector definition slightly changed (I'll update the wiki)
 * The Type definitions completely changed, so you have to rewrite them (I'll rewrite the article in the wiki)
 * Support for several packaging systems
+* Flowtype
 
 
 ## Contribution

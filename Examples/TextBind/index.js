@@ -6,8 +6,8 @@ Y({
     name: 'memory'
   },
   connector: {
-    name: 'webrtc',
-    room: 'offlineEditingDemo',
+    name: 'websockets-client',
+    room: 'textEditingDem0',
     debug: true
   },
   types: ['Array', 'Text'],
