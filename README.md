@@ -131,6 +131,7 @@ This is a complete rewrite of the 0.5 version of Yjs. Since Yjs 1.0 it is possib
 * The Connector definition slightly changed (I'll update the wiki)
 * The Type definitions completely changed, so you have to rewrite them (I'll rewrite the article in the wiki)
 * Support for several packaging systems
+* Flowtype
 
 
 ## Contribution

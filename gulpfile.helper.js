@@ -1,6 +1,9 @@
 
 var $ = require('gulp-load-plugins')()
 var minimist = require('minimist')
+var browserify = require('browserify')
+var source = require('vinyl-source-stream')
+var buffer = require('vinyl-buffer')
 
 module.exports = function (gulp, helperOptions) {
   var runSequence = require('run-sequence').use(gulp)
@@ -31,21 +34,10 @@ module.exports = function (gulp, helperOptions) {
     files.dist = ['node_modules/regenerator/runtime.js', files.dist]
   }
 
-  gulp.task('dist', function () {
-    var browserify = require('browserify')
-    var source = require('vinyl-source-stream')
-    var buffer = require('vinyl-buffer')
-
-    var babelOptions
-    if (options.es6 || options.debug) {
-      babelOptions = {}
-    } else {
-      babelOptions = {
-        presets: ['es2015']
-      }
+  gulp.task('dist:es5', function () {
+    var babelOptions = {
+      presets: ['es2015']
     }
-
-    console.log(JSON.stringify(files.dist))
     return (browserify({
       entries: files.dist,
       debug: true
@@ -54,10 +46,29 @@ module.exports = function (gulp, helperOptions) {
       .pipe(source(options.targetName))
       .pipe(buffer())
       .pipe($.sourcemaps.init({loadMaps: true}))
-      .pipe($.if(!options.debug && !options.es6, $.uglify()))
+      .pipe($.uglify())
       .pipe($.sourcemaps.write('.'))
       .pipe(gulp.dest('./dist/')))
   })
+
+  gulp.task('dist:es6', function () {
+    return (browserify({
+      entries: files.dist,
+      debug: true
+    }).bundle()
+      .pipe(source(options.targetName))
+      .pipe(buffer())
+      .pipe($.sourcemaps.init({loadMaps: true}))
+      // .pipe($.uglify()) -- generators not yet supported see #448
+      .pipe($.rename({
+        extname: '.es6'
+      }))
+      .pipe($.sourcemaps.write('.'))
+
+      .pipe(gulp.dest('./dist/')))
+  })
+
+  gulp.task('dist', ['dist:es6', 'dist:es5'])
 
   gulp.task('watch:dist', function (cb) {
     options.debug = true
