@@ -1,7 +1,7 @@
 /* @flow */
 'use strict'
 
-module.exports = function (Y /* :YGlobal */) {
+module.exports = function (Y /* :any */) {
   /*
     Partial definition of an OperationStore.
     TODO: name it Database, operation store only holds operations.

@@ -1,3 +1,4 @@
+/* @flow */
 'use strict'
 
 require('./Connector.js')(Y)
@@ -55,7 +56,37 @@ function requestModules (modules) {
 
 require('./Types/Map.js')(Y)
 
-function Y (opts) {
+/* ::
+type MemoryOptions = {
+  name: 'memory'
+}
+type IndexedDBOptions = {
+  name: 'indexeddb',
+  namespace: string
+}
+type DbOptions = MemoryOptions | IndexedDBOptions
+
+type WebRTCOptions = {
+  name: 'webrtc',
+  room: string
+}
+type WebsocketsClientOptions = {
+  name: 'websockets-client',
+  room: string
+}
+type ConnectionOptions = WebRTCOptions | WebsocketsClientOptions
+
+type TypesOptions = Array<'array'|'map'|'text'>
+
+type YOptions = {
+  connector: ConnectionOptions,
+  db: DbOptions,
+  types: TypesOptions,
+  sourceDir: string
+}
+*/
+
+function Y (opts/* :YOptions */) /* :Promise<YConfig> */ {
   opts.types = opts.types != null ? opts.types : []
   var modules = [opts.db.name, opts.connector.name].concat(opts.types)
   Y.sourceDir = opts.sourceDir
@@ -71,6 +102,10 @@ function Y (opts) {
 }
 
 class YConfig {
+  /* ::
+  db: Y.AbstractDatabase;
+  connector: Y.AbstractConnector;
+  */
   constructor (opts, callback) {
     this.db = new Y[opts.db.name](this, opts.db)
     this.connector = new Y[opts.connector.name](this, opts.connector)

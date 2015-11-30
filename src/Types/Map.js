@@ -1,7 +1,16 @@
+/* @flow */
 'use strict'
 
-module.exports = function (Y) {
+module.exports = function (Y /* :any */) {
   class YMap {
+    /* ::
+    _model: Id;
+    os: Y.AbstractDatabase;
+    map: Object;
+    contents: any;
+    opContents: Object;
+    eventHandler: Function;
+    */
     constructor (os, model, contents, opContents) {
       this._model = model.id
       this.os = os
@@ -22,7 +31,8 @@ module.exports = function (Y) {
             oldValue = () => {// eslint-disable-line
               return new Promise((resolve) => {
                 this.os.requestTransaction(function *() {// eslint-disable-line
-                  resolve(yield* this.getType(prevType))
+                  var type = yield* this.getType(prevType)
+                  resolve(type)
                 })
               })
             }
@@ -48,15 +58,20 @@ module.exports = function (Y) {
                 }
               }
               this.map[key] = op.id
-              var insertEvent = {
-                name: key,
-                object: this
-              }
+              var insertEvent
               if (oldValue === undefined) {
-                insertEvent.type = 'add'
+                insertEvent = {
+                  name: key,
+                  object: this,
+                  type: 'add'
+                }
               } else {
-                insertEvent.type = 'update'
-                insertEvent.oldValue = oldValue
+                insertEvent = {
+                  name: key,
+                  object: this,
+                  oldValue: oldValue,
+                  type: 'update'
+                }
               }
               userEvents.push(insertEvent)
             }
@@ -92,7 +107,8 @@ module.exports = function (Y) {
         return new Promise((resolve) => {
           var oid = this.opContents[key]
           this.os.requestTransaction(function *() {
-            resolve(yield* this.getType(oid))
+            var type = yield* this.getType(oid)
+            resolve(type)
           })
         })
       }
@@ -133,7 +149,7 @@ module.exports = function (Y) {
       // if not, apply immediately on this type an call event
 
       var right = this.map[key] || null
-      var insert = {
+      var insert /* :any */ = {
         left: null,
         right: right,
         origin: null,
@@ -236,7 +252,9 @@ module.exports = function (Y) {
           for (var e in events) {
             var event = events[e]
             if (event.name === path[0]) {
-              deleteChildObservers()
+              if (deleteChildObservers != null) {
+                deleteChildObservers()
+              }
               if (event.type === 'add' || event.type === 'update') {
                 resetObserverPath()
               }
@@ -248,8 +266,10 @@ module.exports = function (Y) {
         return resetObserverPath().then(
           // this promise contains a function that deletes all the child observers
           // and how to unobserve the observe from this object
-          Promise.resolve(function () {
-            deleteChildObservers()
+          new Promise.resolve(function () { // eslint-disable-line
+            if (deleteChildObservers != null) {
+              deleteChildObservers()
+            }
             self.unobserve(observer)
           })
         )

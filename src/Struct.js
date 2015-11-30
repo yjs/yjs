@@ -19,7 +19,7 @@
  * requiredOps
      - Operations that are required to execute this operation.
 */
-module.exports = function (Y/* :YGlobal */) {
+module.exports = function (Y/* :any */) {
   var Struct = {
     /* This is the only operation that is actually not a structure, because
     it is not stored in the OS. This is why it _does not_ have an id

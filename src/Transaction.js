@@ -74,7 +74,7 @@
      - this is called only by `getOperations(startSS)`. It makes an operation
        applyable on a given SS.
 */
-module.exports = function (Y/* :YGlobal */) {
+module.exports = function (Y/* :any */) {
   class TransactionInterface {
     /* ::
     store: Y.AbstractDatabase;

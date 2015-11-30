@@ -23,7 +23,7 @@
   database request to finish). EventHandler will help you to make your type
   synchronous.
 */
-module.exports = function (Y /* : YGlobal*/) {
+module.exports = function (Y /* : any*/) {
   Y.utils = {}
 
   class EventHandler {

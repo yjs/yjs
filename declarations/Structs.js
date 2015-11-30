@@ -16,9 +16,9 @@ type Operation = Struct
 
 type Insertion = {
   id: Id,
-  left: Id,
-  origin: Id,
-  right: Id,
+  left: ?Id,
+  origin: ?Id,
+  right: ?Id,
   parent: Id,
   parentSub: ?Id,
   opContent: ?Id,

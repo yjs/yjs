@@ -1,7 +1,7 @@
 /* @flow */
 'use strict'
 
-module.exports = function (Y/* :YGlobal */) {
+module.exports = function (Y/* :any */) {
   class AbstractConnector {
     /* ::
     y: YConfig;
