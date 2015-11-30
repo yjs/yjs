@@ -1,3 +1,4 @@
+/* @flow */
 'use strict'
 
 /*
@@ -18,7 +19,7 @@
  * requiredOps
      - Operations that are required to execute this operation.
 */
-module.exports = function (Y) {
+module.exports = function (Y/* :YGlobal */) {
   var Struct = {
     /* This is the only operation that is actually not a structure, because
     it is not stored in the OS. This is why it _does not_ have an id
@@ -49,10 +50,10 @@ module.exports = function (Y) {
           parentSub: string (optional), // child of Map type
         }
       */
-      encode: function (op) {
+      encode: function (op/* :Insertion */) /* :Insertion */ {
         // TODO: you could not send the "left" property, then you also have to
         // "op.left = null" in $execute or $decode
-        var e = {
+        var e/* :any */ = {
           id: op.id,
           left: op.left,
           right: op.right,
@@ -160,7 +161,11 @@ module.exports = function (Y) {
               break
             }
             i++
-            o = o.right ? yield* this.getOperation(o.right) : null
+            if (o.right != null) {
+              o = yield* this.getOperation(o.right)
+            } else {
+              o = null
+            }
           } else {
             break
           }
@@ -169,7 +174,9 @@ module.exports = function (Y) {
         // reconnect..
         var left = null
         var right = null
-        parent = parent || (yield* this.getOperation(op.parent))
+        if (parent == null) {
+          parent = yield* this.getOperation(op.parent)
+        }
 
         // reconnect left and set right of op
         if (op.left != null) {
@@ -267,7 +274,7 @@ module.exports = function (Y) {
             pos--
           }
           if (pos >= 0 && o.right != null) {
-            o = (yield* this.getOperation(o.right))
+            o = yield* this.getOperation(o.right)
           } else {
             break
           }
@@ -315,19 +322,13 @@ module.exports = function (Y) {
         var oid = op.map[name]
         if (oid != null) {
           var res = yield* this.getOperation(oid)
-          return (res == null || res.deleted) ? void 0 : (res.opContent == null
-            ? res.content : yield* this.getType(res.opContent))
-        }
-      },
-      /*
-        Delete a property by name
-      */
-      delete: function * (op, name) {
-        var v = op.map[name] || null
-        if (v != null) {
-          yield* Struct.Delete.create.call(this, {
-            target: v
-          })
+          if (res == null || res.deleted) {
+            return void 0
+          } else if (res.opContent == null) {
+            return res.content
+          } else {
+            return yield* this.getType(res.opContent)
+          }
         }
       }
     }

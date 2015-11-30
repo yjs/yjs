@@ -1,10 +1,10 @@
 /* @flow */
 
 type YGlobal = {
-	utils: Object;
-	Struct: Object;
-	AbstractDatabase: any;
-	AbstractConnector: any;
+	utils: Object,
+	Struct: any,
+	AbstractDatabase: any,
+	AbstractConnector: any
 }
 
 type YConfig = {

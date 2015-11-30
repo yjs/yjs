@@ -11,7 +11,7 @@ module.exports = function (Y/* :YGlobal */) {
     userEventListeners: Array<Function>;
     whenSyncedListeners: Array<Function>;
     currentSyncTarget: ?UserId;
-    syncingClients: Array<any>;
+    syncingClients: Array<UserId>;
     forwardToSyncingClients: boolean;
     debug: boolean;
     broadcastedHB: boolean;
