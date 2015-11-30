@@ -1,3 +1,4 @@
+/* @flow */
 'use strict'
 
 /*
@@ -73,8 +74,14 @@
      - this is called only by `getOperations(startSS)`. It makes an operation
        applyable on a given SS.
 */
-module.exports = function (Y) {
-  class Transaction {
+module.exports = function (Y/* :YGlobal */) {
+  class TransactionInterface {
+    /* ::
+    store: Y.AbstractDatabase;
+    ds: Store;
+    os: Store;
+    ss: Store;
+    */
     /*
       Get a type based on the id of its model.
       If it does not exist yes, create it.
@@ -116,7 +123,7 @@ module.exports = function (Y) {
     * deleteList (start) {
       if (this.store.y.connector.isSynced) {
         while (start != null && this.store.y.connector.isSynced) {
-          start = (yield* this.getOperation(start))
+          start = yield* this.getOperation(start)
           start.gc = true
           yield* this.setOperation(start)
           // TODO: will always reset the parent..
@@ -131,7 +138,7 @@ module.exports = function (Y) {
     /*
       Mark an operation as deleted, and add it to the GC, if possible.
     */
-    * deleteOperation (targetId, preventCallType) {
+    * deleteOperation (targetId, preventCallType) /* :Generator<any, any, any> */ {
       var target = yield* this.getOperation(targetId)
       var callType = false
 
@@ -173,7 +180,12 @@ module.exports = function (Y) {
             target.opContent = null
           }
         }
-        var left = target.left != null ? yield* this.getOperation(target.left) : null
+        var left
+        if (target.left != null) {
+          left = yield* this.getOperation(target.left)
+        } else {
+          left = null
+        }
 
         this.store.addToGarbageCollector(target, left)
 
@@ -185,7 +197,12 @@ module.exports = function (Y) {
           Because this delete can't be responsible for left being gc'd,
           we don't have to add left to the gc..
         */
-        var right = target.right != null ? yield* this.getOperation(target.right) : null
+        var right
+        if (target.right != null) {
+          right = yield* this.getOperation(target.right)
+        } else {
+          right = null
+        }
         if (
           right != null &&
           this.store.addToGarbageCollector(right, target)
@@ -355,18 +372,24 @@ module.exports = function (Y) {
 
             // reset origin of all right ops (except first right - duh!),
             // until you find origin pointer to the left of o
-            var i = right.right == null ? null : yield* this.getOperation(right.right)
-            var ids = [o.id, o.right]
-            while (i != null && ids.some(function (id) {
-              return Y.utils.compareIds(id, i.origin)
-            })) {
-              if (Y.utils.compareIds(i.origin, o.id)) {
-                // reset origin of i
-                i.origin = neworigin
-                yield* this.setOperation(i)
+            if (right.right != null) {
+              var i = yield* this.getOperation(right.right)
+              var ids = [o.id, o.right]
+              while (ids.some(function (id) {
+                return Y.utils.compareIds(id, i.origin)
+              })) {
+                if (Y.utils.compareIds(i.origin, o.id)) {
+                  // reset origin of i
+                  i.origin = neworigin
+                  yield* this.setOperation(i)
+                }
+                // get next i
+                if (i.right == null) {
+                  break
+                } else {
+                  i = yield* this.getOperation(i.right)
+                }
               }
-              // get next i
-              i = i.right == null ? null : yield* this.getOperation(i.right)
             }
           } /* otherwise, rights origin is to the left of o,
                then there is no right op (from o), that origins in o */
@@ -470,7 +493,7 @@ module.exports = function (Y) {
           createDeletions(user, d[0], d[1], d[2])
         }
       }
-      for (var i in deletions) {
+      for (var i = 0; i < deletions.length; i++) {
         var del = deletions[i]
         var id = [del[0], del[1]]
         // always try to delete..
@@ -546,16 +569,11 @@ module.exports = function (Y) {
         id: [state.user],
         clock: state.clock
       }
-      // TODO: find a way to skip this step.. (after implementing some dbs..)
-      if (yield* this.ss.find([state.user])) {
-        yield* this.ss.put(val)
-      } else {
-        yield* this.ss.put(val)
-      }
+      yield* this.ss.put(val)
     }
     * getState (user) {
-      var n
-      var clock = (n = yield* this.ss.find([user])) == null ? null : n.clock
+      var n = yield* this.ss.find([user])
+      var clock = n == null ? null : n.clock
       if (clock == null) {
         clock = 0
       }
@@ -602,7 +620,8 @@ module.exports = function (Y) {
       }
       var res = []
       for (var op of ops) {
-        res.push(yield* this.makeOperationReady(startSS, op))
+        var o = yield* this.makeOperationReady(startSS, op)
+        res.push(o)
       }
       return res
     }
@@ -667,5 +686,5 @@ module.exports = function (Y) {
       return op
     }
   }
-  Y.Transaction = Transaction
+  Y.Transaction = TransactionInterface
 }
