@@ -1,7 +1,25 @@
+/* @flow */
 'use strict'
 
-module.exports = function (Y) {
+module.exports = function (Y/* :YGlobal */) {
   class AbstractConnector {
+    /* ::
+    y: YConfig;
+    role: SyncRole;
+    connections: Object;
+    isSynced: boolean;
+    userEventListeners: Array<Function>;
+    whenSyncedListeners: Array<Function>;
+    currentSyncTarget: ?UserId;
+    syncingClients: Array<any>;
+    forwardToSyncingClients: boolean;
+    debug: boolean;
+    broadcastedHB: boolean;
+    syncStep2: Promise;
+    userId: UserId;
+    send: Function;
+    broadcast: Function;
+    */
     /*
       opts contains the following information:
        role : String Role of this client ("master" or "slave")
@@ -119,10 +137,12 @@ module.exports = function (Y) {
         var conn = this
         this.currentSyncTarget = syncUser
         this.y.db.requestTransaction(function *() {
+          var stateSet = yield* this.getStateSet()
+          var deleteSet = yield* this.getDeleteSet()
           conn.send(syncUser, {
             type: 'sync step 1',
-            stateSet: yield* this.getStateSet(),
-            deleteSet: yield* this.getDeleteSet()
+            stateSet: stateSet,
+            deleteSet: deleteSet
           })
         })
       } else {
@@ -139,22 +159,23 @@ module.exports = function (Y) {
     }
     send (uid, message) {
       if (this.debug) {
-        console.log(`send ${this.userId} -> ${uid}: ${message.type}`, m) // eslint-disable-line
+        console.log(`send ${this.userId} -> ${uid}: ${message.type}`, message) // eslint-disable-line
       }
     }
     /*
       You received a raw message, and you know that it is intended for Yjs. Then call this function.
     */
-    receiveMessage (sender, m) {
+    receiveMessage (sender/* :UserId */, message/* :Message */) {
       if (sender === this.userId) {
         return
       }
       if (this.debug) {
-        console.log(`receive ${sender} -> ${this.userId}: ${m.type}`, JSON.parse(JSON.stringify(m))) // eslint-disable-line
+        console.log(`receive ${sender} -> ${this.userId}: ${message.type}`, JSON.parse(JSON.stringify(message))) // eslint-disable-line
       }
-      if (m.type === 'sync step 1') {
+      if (message.type === 'sync step 1') {
         // TODO: make transaction, stream the ops
         let conn = this
+        let m = message
         this.y.db.requestTransaction(function *() {
           var currentStateSet = yield* this.getStateSet()
           yield* this.applyDeleteSet(m.deleteSet)
@@ -176,7 +197,7 @@ module.exports = function (Y) {
               conn.send(sender, {
                 type: 'sync done'
               })
-            }, conn.syncingClientDuration)
+            }, 5000) // TODO: conn.syncingClientDuration)
           } else {
             conn.send(sender, {
               type: 'sync done'
@@ -184,46 +205,50 @@ module.exports = function (Y) {
           }
           conn._setSyncedWith(sender)
         })
-      } else if (m.type === 'sync step 2') {
+      } else if (message.type === 'sync step 2') {
         let conn = this
         var broadcastHB = !this.broadcastedHB
         this.broadcastedHB = true
         var db = this.y.db
-        var defer = Promise.defer()
+        var defer = {}
+        defer.promise = new Promise(function (resolve) {
+          defer.resolve = resolve
+        })
         this.syncStep2 = defer.promise
+        let m /* :MessageSyncStep2 */ = message
         db.requestTransaction(function * () {
           yield* this.applyDeleteSet(m.deleteSet)
           this.store.apply(m.os)
           db.requestTransaction(function * () {
             var ops = yield* this.getOperations(m.stateSet)
             if (ops.length > 0) {
-              m = {
+              var update /* :MessageUpdate */ = {
                 type: 'update',
                 ops: ops
               }
               if (!broadcastHB) { // TODO: consider to broadcast here..
-                conn.send(sender, m)
+                conn.send(sender, update)
               } else {
                 // broadcast only once!
-                conn.broadcast(m)
+                conn.broadcast(update)
               }
             }
             defer.resolve()
           })
         })
-      } else if (m.type === 'sync done') {
+      } else if (message.type === 'sync done') {
         var self = this
         this.syncStep2.then(function () {
           self._setSyncedWith(sender)
         })
-      } else if (m.type === 'update') {
+      } else if (message.type === 'update') {
         if (this.forwardToSyncingClients) {
           for (var client of this.syncingClients) {
-            this.send(client, m)
+            this.send(client, message)
           }
         }
         if (this.y.db.forwardAppliedOperations) {
-          var delops = m.ops.filter(function (o) {
+          var delops = message.ops.filter(function (o) {
             return o.struct === 'Delete'
           })
           if (delops.length > 0) {
@@ -233,7 +258,7 @@ module.exports = function (Y) {
             })
           }
         }
-        this.y.db.apply(m.ops)
+        this.y.db.apply(message.ops)
       }
     }
     _setSyncedWith (user) {
@@ -259,7 +284,7 @@ module.exports = function (Y) {
       does not support primitive values as array elements
       expects an ltx (less than xml) object
     */
-    parseMessageFromXml (m) {
+    parseMessageFromXml (m/* :any */) {
       function parseArray (node) {
         for (var n of node.children) {
           if (n.getAttribute('isArray') === 'true') {
@@ -269,7 +294,7 @@ module.exports = function (Y) {
           }
         }
       }
-      function parseObject (node) {
+      function parseObject (node/* :any */) {
         var json = {}
         for (var attrName in node.attrs) {
           var value = node.attrs[attrName]
@@ -280,7 +305,7 @@ module.exports = function (Y) {
             json[attrName] = int
           }
         }
-        for (var n in node.children) {
+        for (var n/* :any */ in node.children) {
           var name = n.name
           if (n.getAttribute('isArray') === 'true') {
             json[name] = parseArray(n)

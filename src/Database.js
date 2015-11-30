@@ -1,7 +1,7 @@
 /* @flow */
 'use strict'
 
-module.exports = function (Y /* : YGlobal */) {
+module.exports = function (Y /* :YGlobal */) {
   /*
     Partial definition of an OperationStore.
     TODO: name it Database, operation store only holds operations.
@@ -16,7 +16,7 @@ module.exports = function (Y /* : YGlobal */) {
   */
   class AbstractDatabase {
     /* ::
-    y: YInstance;
+    y: YConfig;
     forwardAppliedOperations: boolean;
     listenersById: Object;
     listenersByIdExecuteNow: Array<Object>;

@@ -2,7 +2,7 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Launch",
+			"name": "Test",
 			"type": "node",
 			"request": "launch",
 			"program": "node_modules/gulp/bin/gulp.js",

@@ -4,9 +4,10 @@ type YGlobal = {
 	utils: Object;
 	Struct: Object;
 	AbstractDatabase: any;
+	AbstractConnector: any;
 }
 
-type YInstance = {
+type YConfig = {
 	db: Object,
 	connector: Object,
 	root: Object
@@ -15,3 +16,5 @@ type YInstance = {
 declare var YConcurrency_TestingMode : boolean
 
 type Transaction<A> = Generator<any, A, any>
+
+type SyncRole = 'master' | 'slave'

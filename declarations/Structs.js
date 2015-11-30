@@ -12,6 +12,7 @@ type Struct = {
   struct: 'Insert' | 'Delete'
 }*/
 type Struct = Insertion | Deletion
+type Operation = Struct
 
 type Insertion = {
   id: Id,
@@ -24,3 +25,29 @@ type Deletion = {
   target: Id,
   struct: 'Delete'
 }
+
+
+type MessageSyncStep1 = {
+  type: 'sync step 1',
+  deleteSet: any,
+  stateSet: any
+}
+
+type MessageSyncStep2 = {
+  type: 'sync step 2',
+  os: Array<Operation>,
+  deleteSet: any,
+  stateSet: any
+}
+
+type MessageUpdate = {
+  type: 'update',
+  ops: Array<Operation>
+}
+
+type MessageSyncDone = {
+  type: 'sync done'
+}
+
+type Message = MessageSyncStep1 | MessageSyncStep2 | MessageUpdate | MessageSyncDone
+
