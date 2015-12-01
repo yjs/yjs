@@ -14,6 +14,8 @@ type YConfig = {
 	root: Object
 }
 
+type TypeName = 'array' | 'map' | 'text'
+
 declare var YConcurrency_TestingMode : boolean
 
 type Transaction<A> = Generator<any, A, any>

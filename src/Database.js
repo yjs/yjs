@@ -186,8 +186,8 @@ module.exports = function (Y /* :any */) {
       }
     }
     getNextOpId () {
-      if (this._temporaryUserIdGenerator != null) {
-        return this._temporaryUserIdGenerator()
+      if (this._nextUserId != null) {
+        return this._nextUserId
       } else if (this.userId == null) {
         throw new Error('OperationStore not yet initialized!')
       } else {
@@ -390,7 +390,7 @@ module.exports = function (Y /* :any */) {
       }
     }
     requestTransaction (makeGen/* :any */, callImmediately) {
-      if (callImmediately) {
+      if (true || callImmediately) { // TODO: decide whether this is ok or not..
         this.waitingTransactions.push(makeGen)
         if (!this.transactionInProgress) {
           this.transactionInProgress = true

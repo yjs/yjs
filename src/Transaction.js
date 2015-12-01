@@ -91,7 +91,7 @@ module.exports = function (Y/* :any */) {
       var sid = JSON.stringify(id)
       var t = this.store.initializedTypes[sid]
       if (t == null) {
-        var op = yield* this.getOperation(id)
+        var op/* :MapStruct | ListStruct */ = yield* this.getOperation(id)
         if (op != null) {
           t = yield* Y[op.type].initType.call(this, this.store, op)
           this.store.initializedTypes[sid] = t
@@ -398,7 +398,7 @@ module.exports = function (Y/* :any */) {
 
         if (o.parent != null) {
           // remove gc'd op from parent, if it exists
-          var parent = yield* this.getOperation(o.parent)
+          var parent /* MapOperation */ = yield* this.getOperation(o.parent)
           var setParent = false // whether to save parent to the os
           if (o.parentSub != null) {
             if (Y.utils.compareIds(parent.map[o.parentSub], o.id)) {
@@ -558,8 +558,23 @@ module.exports = function (Y/* :any */) {
         })
       }
     }
-    * getOperation (id) {
-      return yield* this.os.find(id)
+    * getOperation (id/* :any */)/* :Transaction<any> */ {
+      var o = yield* this.os.find(id)
+      if (o != null || id[0] != '_') {
+        return o
+      } else {
+        // need to generate this operation
+        if (this.store._nextUserId == null) {
+          var typename= id[1].split('_')[0]
+          this.store._nextUserId = id
+          yield* Y[typename].createType.call(this)
+          delete this.store._nextUserId
+          return yield* this.os.find(id)
+        } else {
+          // Can only generate one operation at a time
+          return null
+        }
+      }
     }
     * removeOperation (id) {
       yield* this.os.delete(id)

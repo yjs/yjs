@@ -59,9 +59,9 @@ require('./gulpfile.helper.js')(gulp, {
   ]
 })
 
-gulp.task('dev:examples', ['updateSubmodule', 'watch:dist'], function () {
+gulp.task('dev:examples', ['watch:dist'], function () {
   // watch all distfiles and copy them to bower_components
-  var distfiles = ['./dist/*.js', './dist/*.js.map', '../y-*/dist/*.js', '../y-*/dist/*.js.map']
+  var distfiles = ['./dist/*.{js,es6}', './dist/*.{js,es6}.map', '../y-*/dist/*.{js,es6}', '../y-*/dist/*.{js,es6}.map']
   gulp.src(distfiles)
     .pipe($.watch(distfiles))
     .pipe($.rename(function (path) {

@@ -1,7 +1,7 @@
 /* @flow */
 
 type UserId = string
-type Id = [UserId, number]
+type Id = [UserId, number|string]
 
 /*
 type Struct = {
@@ -11,6 +11,7 @@ type Struct = {
   target?: Id,
   struct: 'Insert' | 'Delete'
 }*/
+
 type Struct = Insertion | Deletion
 type Operation = Struct
 
@@ -29,6 +30,19 @@ type Insertion = {
 type Deletion = {
   target: Id,
   struct: 'Delete'
+}
+
+type MapStruct = {
+  id: Id,
+  type: TypeNames,
+  map: any
+}
+
+type ListStruct = {
+  id: Id,
+  type: TypeNames,
+  start: Id,
+  end: Id
 }
 
 

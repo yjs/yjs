@@ -3,7 +3,7 @@
 'use strict'
 
 var Y = require('../SpecHelper.js')
-var numberOfYMapTests = 500
+var numberOfYMapTests = 50
 var repeatMapTeasts = 1
 
 for (let database of databases) {
@@ -12,10 +12,10 @@ for (let database of databases) {
 
     beforeEach(async(function * (done) {
       yield createUsers(this, 5, database)
-      y1 = this.users[0].root
-      y2 = this.users[1].root
-      y3 = this.users[2].root
-      y4 = this.users[3].root
+      y1 = this.users[0].share.root
+      y2 = this.users[1].share.root
+      y3 = this.users[2].share.root
+      y4 = this.users[3].share.root
       flushAll = Y.utils.globalRoom.flushAll
       done()
     }))
@@ -30,7 +30,7 @@ for (let database of databases) {
         expect(y1.get('stuff')).toEqual('stuffy')
         yield flushAll()
         for (var key in this.users) {
-          var u = this.users[key].root
+          var u = this.users[key].share.root
           expect(u.get('stuff')).toEqual('stuffy')
         }
         done()
@@ -56,7 +56,7 @@ for (let database of databases) {
 
         yield flushAll()
         for (var key in this.users) {
-          var r = this.users[key].root
+          var r = this.users[key].share.root
           expect(r.get('stuff')).toEqual('stuffy')
         }
         done()
@@ -69,7 +69,7 @@ for (let database of databases) {
         yield flushAll()
         for (var key in this.users) {
           var u = this.users[key]
-          expect(u.root.get('stuff')).toEqual('c0')
+          expect(u.share.root.get('stuff')).toEqual('c0')
         }
         done()
       }))
@@ -82,7 +82,7 @@ for (let database of databases) {
 
         for (var key in this.users) {
           var u = this.users[key]
-          expect(u.root.get('stuff')).toBeUndefined()
+          expect(u.share.root.get('stuff')).toBeUndefined()
         }
         done()
       }))
@@ -96,7 +96,7 @@ for (let database of databases) {
 
         for (var key in this.users) {
           var u = this.users[key]
-          expect(u.root.get('stuff')).toEqual('c0')
+          expect(u.share.root.get('stuff')).toEqual('c0')
         }
         done()
       }))
@@ -116,7 +116,7 @@ for (let database of databases) {
 
         for (var key in this.users) {
           var u = this.users[key]
-          expect(u.root.get('stuff')).toBeUndefined()
+          expect(u.share.root.get('stuff')).toBeUndefined()
         }
         done()
       }))
@@ -199,7 +199,7 @@ for (let database of databases) {
 
         var promises = []
         for (var u = 0; u < this.users.length; u++) {
-          promises.push(this.users[u].root.get('Map'))
+          promises.push(this.users[u].share.root.get('Map'))
         }
         this.maps = yield Promise.all(promises)
         done()

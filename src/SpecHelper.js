@@ -85,7 +85,7 @@ function * applyTransactions (relAmount, numberOfTransactions, objects, users, t
     var r = Math.random()
     if (r >= 0.5) {
       // 50% chance to flush
-      Y.utils.globalRoom.flushOne() // flushes for some user.. (not necessarily 0)
+      yield Y.utils.globalRoom.flushOne() // flushes for some user.. (not necessarily 0)
     } else if (r >= 0.05) {
       // 45% chance to create operation
       randomTransaction(getRandom(objects))
@@ -245,6 +245,9 @@ g.createUsers = async(function * createUsers (self, numberOfUsers, database) {
       connector: {
         name: 'Test',
         debug: false
+      },
+      share: {
+        root: 'Map'
       }
     }))
   }

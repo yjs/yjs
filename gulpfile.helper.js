@@ -31,7 +31,9 @@ module.exports = function (gulp, helperOptions) {
   }
 
   if (options.includeRuntime) {
-    files.dist = ['node_modules/regenerator/runtime.js', files.dist]
+    files.distEs5 = ['node_modules/regenerator/runtime.js', files.dist]
+  } else {
+    files.distEs5 = [files.dist]
   }
 
   gulp.task('dist:es5', function () {
@@ -39,14 +41,14 @@ module.exports = function (gulp, helperOptions) {
       presets: ['es2015']
     }
     return (browserify({
-      entries: files.dist,
+      entries: files.distEs5,
       debug: true
     }).transform('babelify', babelOptions)
       .bundle()
       .pipe(source(options.targetName))
       .pipe(buffer())
       .pipe($.sourcemaps.init({loadMaps: true}))
-      .pipe($.uglify())
+      .pipe($.if(!options.debug, $.uglify()))
       .pipe($.sourcemaps.write('.'))
       .pipe(gulp.dest('./dist/')))
   })
