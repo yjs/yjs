@@ -7,9 +7,9 @@ Y({
     name: 'memory'
   },
   connector: {
-    url: 'http://127.0.0.1:1234',
     name: 'websockets-client',
     room: 'Puzzle-example2',
+    url: 'http://127.0.0.1:2345',
     debug: true
   },
   sourceDir: '/bower_components',
