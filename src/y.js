@@ -73,7 +73,7 @@ type DbOptions = MemoryOptions | IndexedDBOptions
 type WebRTCOptions = {
   name: 'webrtc',
   room: string
-} 
+}
 type WebsocketsClientOptions = {
   name: 'websockets-client',
   room: string

@@ -560,12 +560,12 @@ module.exports = function (Y/* :any */) {
     }
     * getOperation (id/* :any */)/* :Transaction<any> */ {
       var o = yield* this.os.find(id)
-      if (o != null || id[0] != '_') {
+      if (o != null || id[0] !== '_') {
         return o
       } else {
         // need to generate this operation
         if (this.store._nextUserId == null) {
-          var typename= id[1].split('_')[0]
+          var typename = id[1].split('_')[0]
           this.store._nextUserId = id
           yield* Y[typename].createType.call(this)
           delete this.store._nextUserId
