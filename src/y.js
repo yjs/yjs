@@ -58,8 +58,6 @@ function requestModules (modules) {
   return Promise.all(promises)
 }
 
-require('./Types/Map.js')(Y)
-
 /* ::
 type MemoryOptions = {
   name: 'memory'
