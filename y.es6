@@ -1824,12 +1824,12 @@ module.exports = function (Y/* :any */) {
     }
     * getOperation (id/* :any */)/* :Transaction<any> */ {
       var o = yield* this.os.find(id)
-      if (o != null || id[0] != '_') {
+      if (o != null || id[0] !== '_') {
         return o
       } else {
         // need to generate this operation
         if (this.store._nextUserId == null) {
-          var typename= id[1].split('_')[0]
+          var typename = id[1].split('_')[0]
           this.store._nextUserId = id
           yield* Y[typename].createType.call(this)
           delete this.store._nextUserId
@@ -2536,6 +2536,10 @@ Y.extend = function (name, value) {
 
 Y.requestModules = requestModules
 function requestModules (modules) {
+  // determine if this module was compiled for es5 or es6 (y.js vs. y.es6)
+  // if Insert.execute is a Function, then it isnt a generator..
+  // then load the es5(.js) files..
+  var extention = Y.Struct.Insert.execute.constructor === Function ? '.js' : '.es6'
   var promises = []
   for (var i = 0; i < modules.length; i++) {
     var modulename = 'y-' + modules[i].toLowerCase()
@@ -2547,7 +2551,6 @@ function requestModules (modules) {
           // module does not exist
           if (typeof window !== 'undefined') {
             var imported = document.createElement('script')
-            var extention = typeof regeneratorRuntime === "undefined" ? '.es6' : '.js'
             imported.src = Y.sourceDir + '/' + modulename + '/' + modulename + extention
             document.head.appendChild(imported)
 
@@ -2584,7 +2587,7 @@ type DbOptions = MemoryOptions | IndexedDBOptions
 type WebRTCOptions = {
   name: 'webrtc',
   room: string
-} 
+}
 type WebsocketsClientOptions = {
   name: 'websockets-client',
   room: string
