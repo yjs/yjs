@@ -25,30 +25,26 @@ function requestModules (modules) {
   // determine if this module was compiled for es5 or es6 (y.js vs. y.es6)
   // if Insert.execute is a Function, then it isnt a generator..
   // then load the es5(.js) files..
-  var extention = Y.Struct.Insert.execute.constructor === Function ? '.js' : '.es6'
+  var extention = typeof regeneratorRuntime !== 'undefined' ? '.js' : '.es6'
   var promises = []
   for (var i = 0; i < modules.length; i++) {
     var modulename = 'y-' + modules[i].toLowerCase()
     if (Y[modules[i]] == null) {
       if (requiringModules[modules[i]] == null) {
-        try {
-          require(modulename)(Y)
-        } catch (e) {
-          // module does not exist
-          if (typeof window !== 'undefined') {
-            var imported = document.createElement('script')
-            imported.src = Y.sourceDir + '/' + modulename + '/' + modulename + extention
-            document.head.appendChild(imported)
+        // module does not exist
+        if (typeof window !== 'undefined' && window.Y !== 'undefined') {
+          var imported = document.createElement('script')
+          imported.src = Y.sourceDir + '/' + modulename + '/' + modulename + extention
+          document.head.appendChild(imported)
 
-            let requireModule = {}
-            requiringModules[modules[i]] = requireModule
-            requireModule.promise = new Promise(function (resolve) {
-              requireModule.resolve = resolve
-            })
-            promises.push(requireModule.promise)
-          } else {
-            throw e
-          }
+          let requireModule = {}
+          requiringModules[modules[i]] = requireModule
+          requireModule.promise = new Promise(function (resolve) {
+            requireModule.resolve = resolve
+          })
+          promises.push(requireModule.promise)
+        } else {
+          require(modulename)(Y)
         }
       } else {
         promises.push(requiringModules[modules[i]].promise)
