@@ -237,6 +237,14 @@ module.exports = function (Y/* :any */) {
         id: this.os.getNextOpId()
       }
       */
+      create: function (id) {
+        return {
+          start: null,
+          end: null,
+          struct: 'List',
+          id: id
+        }
+      },
       encode: function (op) {
         return {
           struct: 'List',
@@ -303,6 +311,13 @@ module.exports = function (Y/* :any */) {
           id: this.os.getNextOpId()
         }
       */
+      create: function (id) {
+        return {
+          id: id,
+          map: {},
+          struct: 'Map'
+        }
+      },
       encode: function (op) {
         return {
           struct: 'Map',

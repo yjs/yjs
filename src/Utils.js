@@ -160,8 +160,8 @@ module.exports = function (Y /* : any*/) {
     A wrapper for the definition of a custom type.
     Every custom type must have three properties:
 
-    * createType
-      - Defines the model of a newly created custom type and returns the type
+    * struct
+      - Structname of this type
     * initType
       - Given a model, creates a custom type
     * class
@@ -169,20 +169,23 @@ module.exports = function (Y /* : any*/) {
   */
   class CustomType { // eslint-disable-line
     /* ::
-    createType: any;
+    struct: any;
     initType: any;
     class: Function;
+    name: String;
     */
     constructor (def) {
-      if (def.createType == null ||
+      if (def.struct == null ||
         def.initType == null ||
-        def.class == null
+        def.class == null ||
+        def.name == null
       ) {
         throw new Error('Custom type was not initialized correctly!')
       }
-      this.createType = def.createType
+      this.struct = def.struct
       this.initType = def.initType
       this.class = def.class
+      this.name = def.name
     }
   }
   Y.utils.CustomType = CustomType

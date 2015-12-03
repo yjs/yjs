@@ -115,7 +115,15 @@ class YConfig {
     this.db.requestTransaction(function * requestTransaction () {
       // create shared object
       for (var propertyname in opts.share) {
-        share[propertyname] = yield* this.getType(['_', opts.share[propertyname] + '_' + propertyname])
+        var typename = opts.share[propertyname]
+        var id = ['_', Y[typename].struct + '_' + propertyname]
+        var op = yield* this.getOperation(id)
+        if (op.type !== typename) {
+          // not already in the db
+          op.type = typename
+          yield* this.setOperation(op)
+        }
+        share[propertyname] = yield* this.getType(id)
       }
       setTimeout(callback, 0)
     })

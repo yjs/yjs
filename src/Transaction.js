@@ -99,6 +99,14 @@ module.exports = function (Y/* :any */) {
       }
       return t
     }
+    * createType (typedefinition) {
+      var structname = typedefinition.struct
+      var id = this.store.getNextOpId()
+      var op = Y.Struct[structname].create(id)
+      op.type = typedefinition.name
+      yield* this.applyCreatedOperations([op])
+      return yield* this.getType(id)
+    }
     /*
       Apply operations that this user created (no remote ones!)
         * does not check for Struct.*.requiredOps()
@@ -109,9 +117,11 @@ module.exports = function (Y/* :any */) {
       for (var i = 0; i < ops.length; i++) {
         var op = ops[i]
         yield* this.store.tryExecute.call(this, op)
-        send.push(Y.Struct[op.struct].encode(op))
+        if (op.id == null || op.id[0] !== '_') {
+          send.push(Y.Struct[op.struct].encode(op))
+        }
       }
-      if (!this.store.y.connector.isDisconnected()) { // TODO: && !this.store.forwardAppliedOperations (but then i don't send delete ops)
+      if (!this.store.y.connector.isDisconnected() && send.length > 0) { // TODO: && !this.store.forwardAppliedOperations (but then i don't send delete ops)
         // is connected, and this is not going to be send in addOperation
         this.store.y.connector.broadcast({
           type: 'update',
@@ -565,11 +575,12 @@ module.exports = function (Y/* :any */) {
       } else {
         // need to generate this operation
         if (this.store._nextUserId == null) {
-          var typename = id[1].split('_')[0]
-          this.store._nextUserId = id
-          yield* Y[typename].createType.call(this)
-          delete this.store._nextUserId
-          return yield* this.os.find(id)
+          var struct = id[1].split('_')[0]
+          // this.store._nextUserId = id
+          var op = Y.Struct[struct].create(id)
+          yield* this.setOperation(op)
+          // delete this.store._nextUserId
+          return op
         } else {
           // Can only generate one operation at a time
           return null
