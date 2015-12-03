@@ -1162,6 +1162,14 @@ module.exports = function (Y/* :any */) {
         id: this.os.getNextOpId()
       }
       */
+      create: function (id) {
+        return       {
+          start: null,
+          end: null,
+          struct: "List",
+          id: id
+        }
+      },
       encode: function (op) {
         return {
           struct: 'List',
@@ -1228,6 +1236,13 @@ module.exports = function (Y/* :any */) {
           id: this.os.getNextOpId()
         }
       */
+      create: function (id) {
+        return {
+          id: id,
+          map: {},
+          struct: "Map"
+        }
+      },
       encode: function (op) {
         return {
           struct: 'Map',
@@ -1363,6 +1378,14 @@ module.exports = function (Y/* :any */) {
       }
       return t
     }
+    * createType (typedefinition) {
+      var structname = typedefinition.struct
+      var id = this.store.getNextOpId()
+      var op = Y.Struct[structname].create(id)
+      op.type = typedefinition.name
+      yield* this.applyCreatedOperations.call(this, [op])
+      return yield* this.getType(id)
+    }
     /*
       Apply operations that this user created (no remote ones!)
         * does not check for Struct.*.requiredOps()
@@ -1373,9 +1396,11 @@ module.exports = function (Y/* :any */) {
       for (var i = 0; i < ops.length; i++) {
         var op = ops[i]
         yield* this.store.tryExecute.call(this, op)
-        send.push(Y.Struct[op.struct].encode(op))
+        if (op.id == null || op.id[0] !== '_') {
+          send.push(Y.Struct[op.struct].encode(op))
+        }
       }
-      if (!this.store.y.connector.isDisconnected()) { // TODO: && !this.store.forwardAppliedOperations (but then i don't send delete ops)
+      if (!this.store.y.connector.isDisconnected() && send.length > 0) { // TODO: && !this.store.forwardAppliedOperations (but then i don't send delete ops)
         // is connected, and this is not going to be send in addOperation
         this.store.y.connector.broadcast({
           type: 'update',
@@ -1829,11 +1854,12 @@ module.exports = function (Y/* :any */) {
       } else {
         // need to generate this operation
         if (this.store._nextUserId == null) {
-          var typename = id[1].split('_')[0]
-          this.store._nextUserId = id
-          yield* Y[typename].createType.call(this)
-          delete this.store._nextUserId
-          return yield* this.os.find(id)
+          var struct = id[1].split('_')[0]
+          // this.store._nextUserId = id
+          var op = Y.Struct[struct].create(id)
+          yield* this.setOperation(op)
+          // delete this.store._nextUserId
+          return op
         } else {
           // Can only generate one operation at a time
           return null
@@ -2131,8 +2157,8 @@ module.exports = function (Y /* : any*/) {
     A wrapper for the definition of a custom type.
     Every custom type must have three properties:
 
-    * createType
-      - Defines the model of a newly created custom type and returns the type
+    * struct
+      - Structname of this type
     * initType
       - Given a model, creates a custom type
     * class
@@ -2140,20 +2166,23 @@ module.exports = function (Y /* : any*/) {
   */
   class CustomType { // eslint-disable-line
     /* ::
-    createType: any;
+    struct: any;
     initType: any;
     class: Function;
+    name: String;
     */
     constructor (def) {
-      if (def.createType == null ||
+      if (def.struct == null ||
         def.initType == null ||
-        def.class == null
+        def.class == null ||
+        def.name == null
       ) {
         throw new Error('Custom type was not initialized correctly!')
       }
-      this.createType = def.createType
+      this.struct = def.struct
       this.initType = def.initType
       this.class = def.class
+      this.name = def.name
     }
   }
   Y.utils.CustomType = CustomType
@@ -2313,7 +2342,15 @@ class YConfig {
     this.db.requestTransaction(function * requestTransaction () {
       // create shared object
       for (var propertyname in opts.share) {
-        share[propertyname] = yield* this.getType(['_', opts.share[propertyname] + '_' + propertyname])
+        var typename = opts.share[propertyname]
+        var id = ['_', Y[typename].struct + '_' + propertyname]
+        var op = yield* this.getOperation(id)
+        if (op.type !== typename) {
+          // not already in the db
+          op.type = typename
+          yield* this.setOperation(op)
+        }
+        share[propertyname] = yield* this.getType(id)
       }
       setTimeout(callback, 0)
     })
