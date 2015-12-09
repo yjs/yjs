@@ -9,7 +9,7 @@ You can create you own shared types easily. Therefore, you can take matters into
 
 | Name     | Description       |
 |----------|-------------------|
-| map     | Add, update, and remove properties of an object. Included in Yjs|
+|[map](https://github.com/y-js/y-map) | Add, update, and remove properties of an object. Included in Yjs|
 |[array](https://github.com/y-js/y-array) | A shared linked list implementation |
 |[selections](https://github.com/y-js/y-selections) | Manages selections on types that use linear structures (e.g. the y-array type). Select a range of elements, and assign meaning to them.|
 |[xml](https://github.com/y-js/y-xml) | An implementation of the DOM. You can create a two way binding to Browser DOM objects|
@@ -121,7 +121,7 @@ There are some friendly people on [![Gitter](https://badges.gitter.im/Join%20Cha
 Please report _any_ issues to the [Github issue page](https://github.com/y-js/yjs/issues)! I try to fix them very soon, if possible.
 
 ## Changelog
-### 1.0
+### 1.0.0
 This is a complete rewrite of the 0.5 version of Yjs. Since Yjs 1.0 it is possible to work asynchronously on a persistent database, which enables offline support.
 * Switched to semver versioning
 * Requires a promise implementation in environment (es6 promises suffice, included in all the major browsers). Otherwise you have to include a polyfill

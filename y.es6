@@ -2238,6 +2238,7 @@ require('./Connectors/Test.js')(Y)
 var requiringModules = {}
 
 module.exports = Y
+Y.requiringModules = requiringModules
 
 Y.extend = function (name, value) {
   Y[name] = value
