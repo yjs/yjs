@@ -1,6 +1,6 @@
 {
   "name": "yjs",
-  "version": "0.6.42",
+  "version": "0.7.1",
   "description": "A framework for real-time p2p shared editing on arbitrary complex data types",
   "main": "y.js",
   "scripts": {
