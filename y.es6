@@ -1163,10 +1163,10 @@ module.exports = function (Y/* :any */) {
       }
       */
       create: function (id) {
-        return       {
+        return {
           start: null,
           end: null,
-          struct: "List",
+          struct: 'List',
           id: id
         }
       },
@@ -1240,7 +1240,7 @@ module.exports = function (Y/* :any */) {
         return {
           id: id,
           map: {},
-          struct: "Map"
+          struct: 'Map'
         }
       },
       encode: function (op) {
@@ -1383,7 +1383,7 @@ module.exports = function (Y/* :any */) {
       var id = this.store.getNextOpId()
       var op = Y.Struct[structname].create(id)
       op.type = typedefinition.name
-      yield* this.applyCreatedOperations.call(this, [op])
+      yield* this.applyCreatedOperations([op])
       return yield* this.getType(id)
     }
     /*

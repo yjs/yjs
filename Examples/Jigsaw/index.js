@@ -8,8 +8,8 @@ Y({
   },
   connector: {
     name: 'websockets-client',
-    room: 'Puzzle-example2',
-    debug: true
+    room: 'Puzzle-example2'
+    // debug: true,
     // url: 'http://127.0.0.1:2345'
   },
   sourceDir: '/bower_components',
@@ -43,7 +43,7 @@ Y({
       var mouse = d3.mouse(this.parentNode)
       var x = mouse[0] - origin.x
       var y = mouse[1] - origin.y
-      piece.set('translation', {x, y})
+      piece.set('translation', {x: x, y: y})
     })
 
   var data = [y.share.piece1, y.share.piece2, y.share.piece3, y.share.piece4]

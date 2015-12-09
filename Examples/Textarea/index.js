@@ -7,8 +7,8 @@ Y({
   },
   connector: {
     name: 'websockets-client',
-    room: 'Textarea-example',
-    debug: true
+    room: 'Textarea-example'
+    // debug: true
     // url: 'http://127.0.0.1:2345'
   },
   sourceDir: '/bower_components',
