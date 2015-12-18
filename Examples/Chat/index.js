@@ -66,7 +66,7 @@ Y({
       // This will call the observe function (see line 40)
       // and reflect the change in the DOM
       y.share.chat.push([message])
-      this.reset()
+      this.querySelector("[name=message]").value = ""
     }
     // Do not send this form!
     event.preventDefault()

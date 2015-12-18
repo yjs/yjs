@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="../bower_components/quill/dist/quill.snow.css" />
+  <style>
+    #quill {
+      border: 1px solid gray;
+      box-shadow: 0px 0px 10px gray;
+    }
+    #toolbar {
+      border-bottom: 1px solid gray;
+    }
+  </style>
+</head>
+<body>
+  <div id="quill">
+    <!-- Create the toolbar container -->
+    <div id="toolbar">
+      <button class="ql-bold">Bold</button>
+      <button class="ql-italic">Italic</button>
+    </div>
+    
+    <!-- Create the editor container -->
+    <div id="editor">
+      <div>Hello World!</div>
+      <div>Some initial <b>bold</b> text</div>
+      <div><br></div>
+    </div>
+  </div>
+  
+  <!-- Include the Quill library -->
+  <script src="../bower_components/quill/dist/quill.js"></script>
+  <script src="../bower_components/yjs/y.js"></script>
+  <script src="./index.js"></script>
+</body>
+</html>
