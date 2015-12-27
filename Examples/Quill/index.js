@@ -8,7 +8,7 @@ Y({
   },
   connector: {
     name: 'websockets-client',
-    room: 'richtext-example'
+    room: 'richtext-example17'
     // debug: true
     // url: 'http://127.0.0.1:2345'
   },
@@ -19,12 +19,14 @@ Y({
 }).then(function (y) {
   window.y = y
 
-  // bind the textarea to a shared text element
-  var quill = new Quill('#editor', {
+  // create quill element
+  window.quill = new Quill('#editor', {
     modules: {
-      'toolbar': { container: '#toolbar' }
+      'toolbar': { container: '#toolbar' },
+      'link-tooltip': true
     },
     theme: 'snow'
   })
-  y.share.richtext.bind(quill)
+  // bind quill to richtext type
+  y.share.richtext.bind(window.quill)
 })
