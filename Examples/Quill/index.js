@@ -8,16 +8,16 @@ Y({
   },
   connector: {
     name: 'websockets-client',
-    room: 'richtext-example17'
-    // debug: true
-    // url: 'http://127.0.0.1:2345'
+    room: 'richtext-example18',
+    debug: true
+    //url: 'http://127.0.0.1:1234'
   },
   sourceDir: '/bower_components',
   share: {
     richtext: 'Richtext' // y.share.richtext is of type Y.Richtext
   }
 }).then(function (y) {
-  window.y = y
+  window.yquill = y
 
   // create quill element
   window.quill = new Quill('#editor', {

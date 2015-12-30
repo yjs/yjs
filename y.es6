@@ -64,8 +64,12 @@ module.exports = function (Y/* :any */) {
       return this.y.db.stopGarbageCollector()
     }
     setUserId (userId) {
-      this.userId = userId
-      return this.y.db.setUserId(userId)
+      if (this.userId == null) {
+        this.userId = userId
+        return this.y.db.setUserId(userId)
+      } else {
+        return null
+      }
     }
     onUserEvent (f) {
       this.userEventListeners.push(f)
