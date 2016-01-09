@@ -65,7 +65,7 @@ gulp.task('dev:examples', ['watch:dist'], function () {
   gulp.src(distfiles)
     .pipe($.watch(distfiles))
     .pipe($.rename(function (path) {
-      var dir = path.dirname.split('/')[0]
+      var dir = path.dirname.split(/[\\\/]/)[0]
       console.log(JSON.stringify(path))
       path.dirname = dir === '.' ? 'yjs' : dir
     }))
