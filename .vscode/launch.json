@@ -7,7 +7,7 @@
 			"request": "launch",
 			"program": "node_modules/gulp/bin/gulp.js",
 			"stopOnEntry": false,
-			"args": ["test"],
+			"args": ["dev:examples"],
 			"cwd": ".",
 			"runtimeExecutable": null,
 			"runtimeArgs": [

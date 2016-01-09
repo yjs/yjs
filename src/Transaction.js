@@ -397,6 +397,7 @@ module.exports = function (Y/* :any */) {
                 if (i.right == null) {
                   break
                 } else {
+                  ids.push(i.id)
                   i = yield* this.getOperation(i.right)
                 }
               }

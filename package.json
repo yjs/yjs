@@ -1,8 +1,8 @@
 {
   "name": "yjs",
-  "version": "0.7.1",
+  "version": "0.7.3",
   "description": "A framework for real-time p2p shared editing on arbitrary complex data types",
-  "main": "y.js",
+  "main": "./src/y.js",
   "scripts": {
     "test": "node --harmony ./node_modules/.bin/gulp test",
     "lint": "./node_modules/.bin/standard"
