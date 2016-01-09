@@ -7,10 +7,10 @@ Y({
     name: 'memory'
   },
   connector: {
-    name: 'websockets-client',
+    name: 'webrtc',
     room: 'richtext-example18',
     debug: true
-    //url: 'http://127.0.0.1:1234'
+    //url: 'http://127.0.0.1:2345'
   },
   sourceDir: '/bower_components',
   share: {

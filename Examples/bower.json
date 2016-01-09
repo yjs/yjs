@@ -9,6 +9,7 @@
   "license": "MIT",
   "ignore": [],
   "dependencies": {
-    "yjs": "../"
+    "yjs": "../",
+    "y-webrtc": "~0.6.4"
   }
 }
