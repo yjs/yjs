@@ -121,13 +121,14 @@ module.exports = function (gulp, helperOptions) {
   gulp.task('updateSubmodule', function () {
     return gulp.src('./package.json', {read: false})
       .pipe($.shell([
-        'git submodule update --init'
+        'git submodule update --init',
+        'cd dist && git pull origin dist'
       ]))
   })
 
   gulp.task('bump', function () {
     var bumptype
-    return gulp.src(['./package.json', './dist/package.json', './dist/bower.json'], {base: '.'})
+    return gulp.src(['./package.json', './bower.json', './dist/bower.json'], {base: '.'})
       .pipe($.prompt.prompt({
         type: 'checkbox',
         name: 'bump',
@@ -145,14 +146,14 @@ module.exports = function (gulp, helperOptions) {
 
   gulp.task('publish', function (cb) {
     /* TODO: include 'test',*/
-    runSequence(['updateSubmodule', 'dist'], 'bump', function () {
+    runSequence('updateSubmodule', 'dist', 'bump', function () {
       return gulp.src('./package.json', {read: false})
         .pipe($.prompt.confirm({
           message: 'Are you sure you want to publish this release?',
           default: false
         }))
         .pipe($.shell([
-          'cp ./README.md ./dist/',
+          // 'cp README.md dist',
           'standard',
           'echo "Deploying version <%= getVersion(file.path) %>"',
           'git pull',
@@ -163,6 +164,7 @@ module.exports = function (gulp, helperOptions) {
           'cd ./dist/ && git push origin --tags',
           'git commit -am "Release <%= getVersion(file.path) %>" -n',
           'git push',
+          'npm publish',
           'echo Finished <%= callback() %>'
         ], {
           templateData: {
