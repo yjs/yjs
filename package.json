@@ -1,6 +1,6 @@
 {
   "name": "yjs",
-  "version": "0.7.6",
+  "version": "0.7.7",
   "description": "A framework for real-time p2p shared editing on arbitrary complex data types",
   "main": "./src/y.js",
   "scripts": {
@@ -71,9 +71,8 @@
     "run-sequence": "^1.1.4",
     "standard": "^5.2.2",
     "vinyl-buffer": "^1.0.0",
-    "vinyl-source-stream": "^1.1.0"
-  },
-  "dependencies": {
+    "vinyl-source-stream": "^1.1.0",
     "babel-eslint": "^5.0.0-beta6"
-  }
+  },
+  "dependencies": {}
 }
