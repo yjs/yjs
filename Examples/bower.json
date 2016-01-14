@@ -9,7 +9,15 @@
   "license": "MIT",
   "ignore": [],
   "dependencies": {
-    "yjs": "../",
-    "y-webrtc": "~0.6.4"
+    "yjs": "~0.7.6",
+    "y-array": "~0.7.5",
+    "y-map": "~0.7.2",
+    "y-memory": "~0.7.0",
+    "y-richtext": "~0.7.5",
+    "y-webrtc": "~0.7.1",
+    "y-websockets-client": "~0.7.10",
+    "y-text": "~0.7.1",
+    "y-indexeddb": "~0.7.1",
+    "quill": "~0.20.1"
   }
 }

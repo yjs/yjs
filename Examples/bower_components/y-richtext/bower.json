@@ -1,0 +1,25 @@
+{
+  "name": "y-richtext",
+  "version": "0.7.6",
+  "authors": [
+    "corentin.cadiou@linagora.com",
+    "kevin.jahns@rwth-aachen.de"
+  ],
+  "description": "Rich Text type for Yjs",
+  "keywords": [
+    "webrtc",
+    "text",
+    "edition",
+    "collaborative",
+    "rich text"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {}
+}

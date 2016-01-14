@@ -1,0 +1,37 @@
+{
+  "name": "y-text",
+  "version": "0.7.1",
+  "homepage": "http://y-js.org",
+  "authors": [
+    "Kevin Jahns <kevin.jahns@rwth-aachen.de>"
+  ],
+  "description": "Text type for Yjs",
+  "main": "./src/Text.js",
+  "keywords": [
+    "OT",
+    "collaboration",
+    "synchronization",
+    "ShareJS",
+    "Coweb",
+    "concurrency"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "node_modules",
+    "bower_components",
+    "test",
+    "extras",
+    "test"
+  ],
+  "devDependencies": {},
+  "_release": "0.7.1",
+  "_resolution": {
+    "type": "version",
+    "tag": "v0.7.1",
+    "commit": "bdb6553994226703504875431c56436704b3af57"
+  },
+  "_source": "git://github.com/y-js/y-text.git",
+  "_target": "~0.7.1",
+  "_originalSource": "y-text",
+  "_direct": true
+}

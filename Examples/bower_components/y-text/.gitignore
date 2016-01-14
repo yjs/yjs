@@ -1,0 +1,6 @@
+/node_modules/
+bower_components
+.directory
+.c9
+.codio
+.settings

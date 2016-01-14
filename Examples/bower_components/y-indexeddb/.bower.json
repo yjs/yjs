@@ -1,0 +1,37 @@
+{
+  "name": "y-indexeddb",
+  "main": "y-indexeddb.js",
+  "version": "0.7.1",
+  "homepage": "http://y-js.org",
+  "authors": [
+    "Kevin Jahns <kevin.jahns@rwth-aachen.de>"
+  ],
+  "description": "IndexedDB database adapter for Yjs",
+  "moduleType": [
+    "globals",
+    "node"
+  ],
+  "keywords": [
+    "Yjs",
+    "connector",
+    "webrtc"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "_release": "0.7.1",
+  "_resolution": {
+    "type": "version",
+    "tag": "v0.7.1",
+    "commit": "f84233467fbf2f15a0bb74f34902d33f2790b9e3"
+  },
+  "_source": "git://github.com/y-js/y-indexeddb.git",
+  "_target": "~0.7.1",
+  "_originalSource": "y-indexeddb",
+  "_direct": true
+}

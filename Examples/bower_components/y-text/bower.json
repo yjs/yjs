@@ -1,0 +1,27 @@
+{
+  "name": "y-text",
+  "version": "0.7.2",
+  "homepage": "http://y-js.org",
+  "authors": [
+    "Kevin Jahns <kevin.jahns@rwth-aachen.de>"
+  ],
+  "description": "Text type for Yjs",
+  "main": "./src/Text.js",
+  "keywords": [
+    "OT",
+    "collaboration",
+    "synchronization",
+    "ShareJS",
+    "Coweb",
+    "concurrency"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "node_modules",
+    "bower_components",
+    "test",
+    "extras",
+    "test"
+  ],
+  "devDependencies": {}
+}
