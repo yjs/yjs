@@ -626,34 +626,8 @@ module.exports = function (Y/* :any */) {
       })
       return ss
     }
-    * getOperations (startSS) {
-      // TODO: use bounds here!
-      if (startSS == null) {
-        startSS = {}
-      }
-      var ops = []
-
-      var endSV = yield* this.getStateVector()
-      for (var endState of endSV) {
-        var user = endState.user
-        if (user === '_') {
-          continue
-        }
-        var startPos = startSS[user] || 0
-
-        yield* this.os.iterate(this, [user, startPos], [user, Number.MAX_VALUE], function * (op) {
-          ops.push(op)
-        })
-      }
-      var res = []
-      for (var op of ops) {
-        var o = yield* this.makeOperationReady(startSS, op)
-        res.push(o)
-      }
-      return res
-    }
     /*
-      Here, we make op executable for the receiving user.
+      Here, we make all missing operations executable for the receiving user.
 
       Notes:
         startSS: denotes to the SV that the remote user sent
@@ -688,7 +662,92 @@ module.exports = function (Y/* :any */) {
             (startSS or currSS.. ?)
             -> Could be necessary when I turn GC again.
             -> Is a bad(ish) idea because it requires more computation
+
+      What we do:
+      * Iterate over all missing operations.
+      * When there is an operation, where the right op is known, send this op all missing ops to the left to the user
+      * I explained above what we have to do with each operation. Here is how we do it efficiently:
+        1. Go to the left until you find either op.origin, or a known operation (let o denote current operation in the iteration)
+        2. Found a known operation -> set op.left = o, and send it to the user. stop
+        3. Found o = op.origin -> set op.left = op.origin, and send it to the user. start again from 1. (set op = o)
+        4. Found some o -> set o.right = op, o.left = o.origin, send it to the user, continue
     */
+    * getOperations (startSS) {
+      // TODO: use bounds here!
+      if (startSS == null) {
+        startSS = {}
+      }
+      var send = []
+
+      var endSV = yield* this.getStateVector()
+      for (var endState of endSV) {
+        var user = endState.user
+        if (user === '_') {
+          continue
+        }
+        var startPos = startSS[user] || 0
+
+        yield* this.os.iterate(this, [user, startPos], [user, Number.MAX_VALUE], function * (op) {
+          op = Y.Struct[op.struct].encode(op)
+          if (op.struct !== 'Insert') {
+            send.push(op)
+          } else if (op.right == null || op.right[1] < (startSS[op.right[0]] || 0)) {
+            // case 1. op.right is known
+            var o = op
+            // Remember: ?
+            // -> set op.right
+            //    1. to the first operation that is known (according to startSS)
+            //    2. or to the first operation that has an origin that is not to the
+            //      right of op.
+            // For this we maintain a list of ops which origins are not found yet.
+            var missing_origins = [op]
+            var newright = op.right
+            while (true) {
+              if (o.left == null) {
+                op.left = null
+                send.push(op)
+                if (!Y.utils.compareIds(o.id, op.id)) {
+                  o = Y.Struct[op.struct].encode(o)
+                  o.right = missing_origins[missing_origins.length - 1].id
+                  send.push(o)
+                }
+                break
+              }
+              o = yield* this.getOperation(o.left)
+              // we set another o, check if we can reduce $missing_origins
+              while (missing_origins.length > 0 && Y.utils.compareIds(missing_origins[missing_origins.length - 1].origin, o.id)) {
+                missing_origins.pop()
+              }
+              if (o.id[1] < (startSS[o.id[0]] || 0)) {
+                // case 2. o is known
+                op.left = o.id
+                send.push(op)
+                break
+              } else if (Y.utils.compareIds(o.id, op.origin)) {
+                // case 3. o is op.origin
+                op.left = op.origin
+                send.push(op)
+                op = Y.Struct[op.struct].encode(o)
+                op.right = newright
+                if (missing_origins.length > 0) {
+                  console.log('This should not happen .. :( please report this')
+                }
+                missing_origins = [op]
+              } else {
+                // case 4. send o, continue to find op.origin
+                var s = Y.Struct[op.struct].encode(o)
+                s.right = missing_origins[missing_origins.length - 1].id
+                s.left = s.origin
+                send.push(s)
+                missing_origins.push(o)
+              }
+            }
+          }
+        })
+      }
+      return send
+    }
+    /* this is what we used before.. use this as a reference..
     * makeOperationReady (startSS, op) {
       op = Y.Struct[op.struct].encode(op)
       op = Y.utils.copyObject(op)
@@ -712,6 +771,7 @@ module.exports = function (Y/* :any */) {
       op.left = op.origin
       return op
     }
+    */
   }
   Y.Transaction = TransactionInterface
 }
