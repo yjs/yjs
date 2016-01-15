@@ -50,6 +50,7 @@ module.exports = function (Y/* :any */) {
       this.debug = opts.debug === true
       this.broadcastedHB = false
       this.syncStep2 = Promise.resolve()
+      this.broadcastOpBuffer = []
     }
     reconnect () {
     }
@@ -167,6 +168,31 @@ module.exports = function (Y/* :any */) {
       }
     }
     /*
+      Buffer operations, and broadcast them when ready.
+    */
+    broadcastOps (ops) {
+      var self = this
+      function broadcastOperations () {
+        if (self.broadcastOpBuffer.length > 0) {
+          self.broadcast({
+            type: 'update',
+            ops: self.broadcastOpBuffer
+          })
+          self.broadcastOpBuffer = []
+        }
+      }
+      if (this.broadcastOpBuffer.length === 0) {
+        this.broadcastOpBuffer = ops
+        if (this.y.db.transactionInProgress) {
+          this.y.db.whenTransactionsFinished().then(broadcastOperations)
+        } else {
+          setTimeout(broadcastOperations, 0)
+        }
+      } else {
+        this.broadcastOpBuffer = this.broadcastOpBuffer.concat(ops)
+      }
+    }
+    /*
       You received a raw message, and you know that it is intended for Yjs. Then call this function.
     */
     receiveMessage (sender/* :UserId */, message/* :Message */) {
@@ -226,15 +252,14 @@ module.exports = function (Y/* :any */) {
           db.requestTransaction(function * () {
             var ops = yield* this.getOperations(m.stateSet)
             if (ops.length > 0) {
-              var update /* :MessageUpdate */ = {
-                type: 'update',
-                ops: ops
-              }
               if (!broadcastHB) { // TODO: consider to broadcast here..
-                conn.send(sender, update)
+                conn.send(sender, {
+                  type: 'update',
+                  ops: ops
+                })
               } else {
                 // broadcast only once!
-                conn.broadcast(update)
+                conn.broadcastOps(ops)
               }
             }
             defer.resolve()
@@ -256,10 +281,7 @@ module.exports = function (Y/* :any */) {
             return o.struct === 'Delete'
           })
           if (delops.length > 0) {
-            this.broadcast({
-              type: 'update',
-              ops: delops
-            })
+            this.broadcastOps(delops)
           }
         }
         this.y.db.apply(message.ops)

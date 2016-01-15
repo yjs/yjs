@@ -123,10 +123,7 @@ module.exports = function (Y/* :any */) {
       }
       if (!this.store.y.connector.isDisconnected() && send.length > 0) { // TODO: && !this.store.forwardAppliedOperations (but then i don't send delete ops)
         // is connected, and this is not going to be send in addOperation
-        this.store.y.connector.broadcast({
-          type: 'update',
-          ops: send
-        })
+        this.store.y.connector.broadcastOps(send)
       }
     }
 
@@ -522,10 +519,7 @@ module.exports = function (Y/* :any */) {
         var ops = deletions.map(function (d) {
           return {struct: 'Delete', target: [d[0], d[1]]}
         })
-        this.store.y.connector.broadcast({
-          type: 'update',
-          ops: ops
-        })
+        this.store.y.connector.broadcastOps(ops)
       }
     }
     * isGarbageCollected (id) {
@@ -563,10 +557,7 @@ module.exports = function (Y/* :any */) {
       yield* this.os.put(op)
       if (!this.store.y.connector.isDisconnected() && this.store.forwardAppliedOperations && op.id[0] !== '_') {
         // is connected, and this is not going to be send in addOperation
-        this.store.y.connector.broadcast({
-          type: 'update',
-          ops: [op]
-        })
+        this.store.y.connector.broadcastOps([op])
       }
     }
     * getOperation (id/* :any */)/* :Transaction<any> */ {
