@@ -745,7 +745,7 @@ module.exports = function (Y/* :any */) {
           }
         })
       }
-      return send
+      return send.reverse()
     }
     /* this is what we used before.. use this as a reference..
     * makeOperationReady (startSS, op) {
