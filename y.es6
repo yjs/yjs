@@ -2385,8 +2385,9 @@ function Y (opts/* :YOptions */) /* :Promise<YConfig> */ {
   Y.sourceDir = opts.sourceDir
   return Y.requestModules(modules).then(function () {
     return new Promise(function (resolve) {
-      var yconfig = new YConfig(opts, function () {
-        yconfig.db.whenUserIdSet(function () {
+      var yconfig = new YConfig(opts)
+      yconfig.db.whenUserIdSet(function () {
+        yconfig.init(function () {
           resolve(yconfig)
         })
       })
@@ -2403,6 +2404,10 @@ class YConfig {
   constructor (opts, callback) {
     this.db = new Y[opts.db.name](this, opts.db)
     this.connector = new Y[opts.connector.name](this, opts.connector)
+    this.options = opts
+  }
+  init (callback) {
+    var opts = this.options
     var share = {}
     this.share = share
     this.db.requestTransaction(function * requestTransaction () {
