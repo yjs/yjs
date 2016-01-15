@@ -172,6 +172,9 @@ module.exports = function (Y/* :any */) {
       Buffer operations, and broadcast them when ready.
     */
     broadcastOps (ops) {
+      ops = ops.map(function (op) {
+        return Y.Struct[op.struct].encode(op)
+      })
       var self = this
       function broadcastOperations () {
         if (self.broadcastOpBuffer.length > 0) {
