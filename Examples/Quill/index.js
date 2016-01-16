@@ -7,7 +7,7 @@ Y({
     name: 'memory'
   },
   connector: {
-    name: 'y-websockets-client',
+    name: 'websockets-client',
     room: 'richtext-example18',
     debug: true
     //url: 'http://127.0.0.1:2345'
