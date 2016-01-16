@@ -77,6 +77,12 @@ function getRandomNumber (n) {
 }
 g.getRandomNumber = getRandomNumber
 
+function getRandomString () {
+  var tokens = 'abcdefäö' // ü\n\n\n\n\n\n\n'
+  return tokens[getRandomNumber(tokens.length - 1)]
+}
+g.getRandomString = getRandomString
+
 function * applyTransactions (relAmount, numberOfTransactions, objects, users, transactions) {
   function randomTransaction (root) {
     var f = getRandom(transactions)
