@@ -1,17 +1,16 @@
 
 # ![Yjs](http://y-js.org/images/yjs.png)
 
-Yjs is a framework for optimistic concurrency control and automatic conflict resolution on shared data types. The framework implements a new OT-like concurrency algorithm and provides similar functionality as [ShareJs] and [OpenCoweb]. Yjs was designed to handle concurrent actions on arbitrary complex data types like Text, Json, and XML. We provide a tutorial and some applications for this framework on our [homepage](http://y-js.org/).
+Yjs is a framework for optimistic concurrency control and automatic conflict resolution on shared data. The framework provides similar functionality as [ShareJs] and [OpenCoweb], but it implements a new algorithm that also support peer-to-peer communication protocols. Yjs was designed to handle concurrent actions on arbitrary data types like Text, Json, and XML. We also provide support for storing and manipulating your shared data offline. For more information and demo applications visit our [homepage](http://y-js.org/).
 
 **NOTE** This project is currently migrating. So there may exist some information that is not true anymore..
 
-You can create you own shared types easily. Therefore, you can take matters into your own hand by defining the meaning of the shared types and ensure that it is valid, while Yjs ensures data consistency (everyone will eventually end up with the same data). We already provide data types for
+You can create you own shared types easily. Therefore, you can take matters into your own hand by defining the meaning of the shared types, and ensure that it is valid, while Yjs ensures data consistency (everyone will eventually end up with the same data). We already provide data types for
 
 | Name     | Description       |
 |----------|-------------------|
 |[map](https://github.com/y-js/y-map) | Add, update, and remove properties of an object. Included in Yjs|
 |[array](https://github.com/y-js/y-array) | A shared linked list implementation |
-|[selections](https://github.com/y-js/y-selections) | Manages selections on types that use linear structures (e.g. the y-array type). Select a range of elements, and assign meaning to them.|
 |[xml](https://github.com/y-js/y-xml) | An implementation of the DOM. You can create a two way binding to Browser DOM objects|
 |[text](https://github.com/y-js/y-text) | Collaborate on text. Supports two way binding to textareas, input elements, or HTML elements (e.g. *h1*, or *p*)|
 |[richtext](https://github.com/y-js/y-richtext) | Collaborate on rich text. Supports two way binding to several editors|
@@ -24,26 +23,30 @@ We support several communication protocols as so called *Connectors*. You can cr
 |----------------|-----------------------------------|
 |[xmpp](https://github.com/y-js/y-xmpp) | Propagate updates in a XMPP multi-user-chat room ([XEP-0045](http://xmpp.org/extensions/xep-0045.html))|
 |[webrtc](https://github.com/y-js/y-webrtc) | Propagate updates Browser2Browser via WebRTC|
+|[websockets](https://github.com/y-js/y-websockets-client) | Exchange updates efficiently in the classical client-server model |
 |[test](https://github.com/y-js/y-test) | A Connector for testing purposes. It is designed to simulate delays that happen in worst case scenarios|
 
+You are not limited to use a specific database to store the shared data. We provide the following database adapters:
+
+|Name            | Description               |
+|----------------|-----------------------------------|
+|[memory](https://github.com/y-js/y-memory) | In-memory storage. |
+|[IndexedDb](https://github.com/y-js/y-indexeddb) | Offline storage for the browser |
 
 You can use Yjs client-, and server- side. You can get it as via npm, and bower. We even provide polymer elements for Yjs!
 
 The advantages over similar frameworks are support for
 * .. P2P message propagation and arbitrary communication protocols
 * .. arbitrary complex data types
-* .. offline editing: Changes are stored persistently and only relevant changes are propagated on rejoin
-* .. AnyUndo: Undo *any* action that was executed in constant time (coming..)
+* .. offline support: Changes are stored persistently and only relevant changes are propagated on rejoin
 * .. Intention Preservation: When working on Text, the intention of your changes are preserved. This is particularily important when working offline. Every type has a notion on how we define Intention Preservation on it.
 
 ## Use it!
-You can find a tutorial, and examples on the [website](http://y-js.org). Furthermore, the [github wiki](https://github.com/y-js/yjs/wiki) offers more information about how you can use Yjs in your application.
-
-Either clone this git repository, install it with [bower](http://bower.io/), or install it with [npm](https://www.npmjs.org/package/yjs).
+Install yjs and its modules with [bower](http://bower.io/), or with [npm](https://www.npmjs.org/package/yjs).
 
 ### Bower
 ```
-bower install y-js/yjs
+bower install yjs
 ```
 Then you include the libraries directly from the installation folder.
 ```
@@ -60,57 +63,29 @@ And use it like this with *npm*:
 Y = require("yjs");
 ```
 
-# Y()
-In order to create an instance of Y, you need to have a connection object (instance of a Connector). Then, you can create a shared data type like this:
+# Text editing example
 ```
-var y = new Y(connector);
+Y({
+  db: {
+    name: 'memory' // store in memory.
+    // name: 'indexeddb'
+  },
+  connector: {
+    name: 'websockets-client', // choose the websockets connector
+    // name: 'webrtc'
+    // name: 'xmpp'
+    room: 'Textarea-example-dev'
+  },
+  sourceDir: '/bower_components', // location of the y-* modules
+  share: {
+    textarea: 'Text' // y.share.textarea is of type Y.Text
+  }
+  // modules: ['Richtext', 'Array'] // optional list of modules you want to import
+}).then(function (y) {
+  // bind the textarea to a shared text element
+  y.share.textarea.bind(document.getElementById('textfield'))
+}
 ```
-
-
-# Y.Map
-Yjs includes only one type by default - the Y.Map type. It mimics the behaviour of a javascript Object. You can create, update, and remove properies on the Y.Map type. Furthermore, you can observe changes on this type as you can observe changes on Javascript Objects with [Object.observe](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/observe) - an ECMAScript 7 proposal which is likely to become accepted by the committee. Until then, we have our own implementation.
-
-
-##### Reference
-* Create
-```
-var map = y.set("new_map", Y.Map).then(function(map){
-  map // is my map type
-});
-```
-* Every instance of Y is an Y.Map
-```
-var y = new Y(options);
-```
-* .get(name)
-  * Retrieve the value of a property. If the value is a type, `.get(name)` returns a promise
-* .set(name, value)
-  * Set/update a property. `value` may be a primitive type, or a custom type definition (e.g. `Y.Map`)
-* .delete(name)
-  * Delete a property
-* .observe(observer)
-  * The `observer` is called whenever something on this object changes. Throws *add*, *update*, and *delete* events
-* .observePath(path, observer)
-  * `path` is an array of property names. `observer` is called when the property under `path` is set, deleted, or updated
-* .unobserve(f)
-  * Delete an observer
-
-# A note on intention preservation
-When users create/update/delete the same property concurrently, only one change will prevail. Changes on different properties do not conflict with each other.
-
-# A note on time complexities
-* .get(name)
-  * O(1)
-* .set(name, value)
-  * O(1)
-* .delete(name)
-  * O(1)
-* Apply a delete operation from another user
-  * O(1)
-* Apply an update operation from another user (set/update a property)
-  * Yjs does not transform against operations that do not conflict with each other.
-  * An operation conflicts with another operation if it changes the same property.
-  * Overall worst case complexety: O(|conflicts|!)
 
 # Status
 Yjs is a work in progress. Different versions of the *y-* repositories may not work together. Just drop me a line if you run into troubles.
