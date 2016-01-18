@@ -75,19 +75,21 @@ module.exports = function (Y/* :any */) {
       this.userEventListeners.push(f)
     }
     userLeft (user) {
-      delete this.connections[user]
-      if (user === this.currentSyncTarget) {
-        this.currentSyncTarget = null
-        this.findNextSyncTarget()
-      }
-      this.syncingClients = this.syncingClients.filter(function (cli) {
-        return cli !== user
-      })
-      for (var f of this.userEventListeners) {
-        f({
-          action: 'userLeft',
-          user: user
+      if (this.connections[user] != null) {
+        delete this.connections[user]
+        if (user === this.currentSyncTarget) {
+          this.currentSyncTarget = null
+          this.findNextSyncTarget()
+        }
+        this.syncingClients = this.syncingClients.filter(function (cli) {
+          return cli !== user
         })
+        for (var f of this.userEventListeners) {
+          f({
+            action: 'userLeft',
+            user: user
+          })
+        }
       }
     }
     userJoined (user, role) {
