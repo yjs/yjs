@@ -71,21 +71,32 @@ module.exports = function (Y /* :any */) {
       this.gcTimeout = opts.gcTimeout || 5000
       var os = this
       function garbageCollect () {
-        return new Promise((resolve) => {
-          os.requestTransaction(function * () {
-            if (os.y.connector != null && os.y.connector.isSynced) {
-              for (var i = 0; i < os.gc2.length; i++) {
-                var oid = os.gc2[i]
-                yield* this.garbageCollectOperation(oid)
-              }
-              os.gc2 = os.gc1
-              os.gc1 = []
-            }
+        return os.whenTransactionsFinished().then(function () {
+          if (os.gc1.length > 0 || os.gc2.length > 0) {
+            return new Promise((resolve) => {
+              os.requestTransaction(function * () {
+                if (os.y.connector != null && os.y.connector.isSynced) {
+                  for (var i = 0; i < os.gc2.length; i++) {
+                    var oid = os.gc2[i]
+                    yield* this.garbageCollectOperation(oid)
+                  }
+                  os.gc2 = os.gc1
+                  os.gc1 = []
+                }
+                // TODO: Use setInterval here instead (when garbageCollect is called several times there will be several timeouts..)
+                if (os.gcTimeout > 0) {
+                  os.gcInterval = setTimeout(garbageCollect, os.gcTimeout)
+                }
+                resolve()
+              })
+            })
+          } else {
+            // TODO: see above
             if (os.gcTimeout > 0) {
               os.gcInterval = setTimeout(garbageCollect, os.gcTimeout)
             }
-            resolve()
-          })
+            return Promise.resolve()
+          }
         })
       }
       this.garbageCollect = garbageCollect
@@ -205,8 +216,10 @@ module.exports = function (Y /* :any */) {
     apply (ops) {
       for (var key in ops) {
         var o = ops[key]
-        var required = Y.Struct[o.struct].requiredOps(o)
-        this.whenOperationsExist(required, o)
+        if (o.id == null || o.id[0] !== this.y.connector.userId) {
+          var required = Y.Struct[o.struct].requiredOps(o)
+          this.whenOperationsExist(required, o)
+        }
       }
     }
     /*
@@ -390,7 +403,7 @@ module.exports = function (Y /* :any */) {
       }
     }
     requestTransaction (makeGen/* :any */, callImmediately) {
-      if (true || callImmediately) { // TODO: decide whether this is ok or not..
+      if (false || callImmediately) { // TODO: decide whether this is ok or not..
         this.waitingTransactions.push(makeGen)
         if (!this.transactionInProgress) {
           this.transactionInProgress = true
