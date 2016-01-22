@@ -340,14 +340,7 @@ module.exports = function (Y /* : any*/) {
             }
           }
         }
-        for (i = 0; i < this.writeBuffer.length; i++) {
-          r = this.writeBuffer[i]
-          if (r.id[1] === id[1] && r.id[0] === id[0]) {
-            this.writeBuffer[i] = {
-              id: [null, null]
-            }
-          }
-        }
+        yield* this.flush()
         yield* super.delete(id)
       }
       * findWithLowerBound () {
