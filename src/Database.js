@@ -403,16 +403,12 @@ module.exports = function (Y /* :any */) {
       }
     }
     requestTransaction (makeGen/* :any */, callImmediately) {
-      if (false || callImmediately) { // TODO: decide whether this is ok or not..
-        this.waitingTransactions.push(makeGen)
-        if (!this.transactionInProgress) {
-          this.transactionInProgress = true
+      this.waitingTransactions.push(makeGen)
+      if (!this.transactionInProgress) {
+        this.transactionInProgress = true
+        if (true || callImmediately) { // TODO: decide whether this is ok or not..
           this.transact(this.getNextRequest())
-        }
-      } else {
-        this.waitingTransactions.push(makeGen)
-        if (!this.transactionInProgress) {
-          this.transactionInProgress = true
+        } else {
           var self = this
           setTimeout(function () {
             self.transact(self.getNextRequest())
