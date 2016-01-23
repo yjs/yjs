@@ -208,6 +208,7 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
         yield* this.os.iterate(this, null, null, function * (o) {
           o = Y.utils.copyObject(o)
           delete o.origin
+          delete o.originOf
           db1.push(o)
         })
       })
@@ -222,6 +223,7 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
         yield* this.os.iterate(this, null, null, function * (o) {
           o = Y.utils.copyObject(o)
           delete o.origin
+          delete o.originOf
           expect(db1[count++]).toEqual(o)
         })
       })

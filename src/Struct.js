@@ -126,6 +126,19 @@ module.exports = function (Y/* :any */) {
       execute: function *(op) {
         var i // loop counter
         var distanceToOrigin = i = yield* Struct.Insert.getDistanceToOrigin.call(this, op) // most cases: 0 (starts from 0)
+
+        if (op.origin != null) {
+          // we save in origin that op originates in it
+          // we need that later when we eventually garbage collect origin (see transaction)
+          var origin = yield* this.getOperation(op.origin)
+          if (origin.originOf == null) {
+            origin.originOf = []
+          }
+          origin.originOf.push(op.id)
+          yield* this.setOperation(origin)
+        }
+
+        // now we begin to insert op in the list of insertions..
         var o
         var parent
         var start

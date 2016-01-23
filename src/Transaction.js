@@ -362,23 +362,31 @@ module.exports = function (Y/* :any */) {
         if (o.right != null) {
           var right = yield* this.getOperation(o.right)
           right.left = o.left
-          if (Y.utils.compareIds(right.origin, o.id)) { // rights origin is o
+
+          if (Y.utils.compareIds(right.origin, id)) { // rights origin is o
             // find new origin of right ops
             // origin is the first left deleted operation
             var neworigin = o.left
+            var neworigin_ = null
             while (neworigin != null) {
-              var neworigin_ = yield* this.getOperation(neworigin)
+              neworigin_ = yield* this.getOperation(neworigin)
               if (neworigin_.deleted) {
                 break
               }
               neworigin = neworigin_.left
             }
 
+            // reset origin of all right ops (except first right - duh!),
+
+            /* ** The following code does not rely on the the originOf property **
+                  I recently added originOf to all Insert Operations (see Struct.Insert.execute),
+                  which saves which operations originate in a Insert operation.
+                  Garbage collecting without originOf is more memory efficient, but is nearly impossible for large texts, or lists!
+                  But I keep this code for now
+            ```
             // reset origin of right
             right.origin = neworigin
-
-            // reset origin of all right ops (except first right - duh!),
-            // until you find origin pointer to the left of o
+            // search until you find origin pointer to the left of o
             if (right.right != null) {
               var i = yield* this.getOperation(right.right)
               var ids = [o.id, o.right]
@@ -399,9 +407,41 @@ module.exports = function (Y/* :any */) {
                 }
               }
             }
-          } /* otherwise, rights origin is to the left of o,
-               then there is no right op (from o), that origins in o */
-          yield* this.setOperation(right)
+            ```
+            */
+            // ** Now the new implementation starts **
+            // reset neworigin of all originOf[*]
+            for (var _i in o.originOf) {
+              var originsIn = yield* this.getOperation(o.originOf[_i])
+              if (originsIn != null) {
+                originsIn.origin = neworigin
+                yield* this.setOperation(originsIn)
+              }
+            }
+            if (neworigin != null) {
+              if (neworigin_.originOf == null) {
+                neworigin_.originOf = o.originOf
+              } else {
+                neworigin_.originOf = o.originOf.concat(neworigin_.originOf)
+              }
+              yield* this.setOperation(neworigin_)
+            }
+            // we don't need to set right here, because
+            // right should be in o.originOf => it is set it the previous for loop
+          } else {
+            // we didn't need to reset the origin of right
+            // so we have to set right here
+            yield* this.setOperation(right)
+          }
+          // o may originate in another operation.
+          // Since o is deleted, we have to reset o.origin's `originOf` property
+          if (o.origin != null) {
+            var origin = yield* this.getOperation(o.origin)
+            origin.originOf = origin.originOf.filter(function (_id) {
+              return !Y.utils.compareIds(id, _id)
+            })
+            yield* this.setOperation(origin)
+          }
         }
 
         if (o.parent != null) {
