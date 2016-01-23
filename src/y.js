@@ -110,9 +110,9 @@ class YConfig {
   share: {[key: string]: any};
   */
   constructor (opts, callback) {
+    this.options = opts
     this.db = new Y[opts.db.name](this, opts.db)
     this.connector = new Y[opts.connector.name](this, opts.connector)
-    this.options = opts
   }
   init (callback) {
     var opts = this.options
@@ -131,7 +131,8 @@ class YConfig {
         }
         share[propertyname] = yield* this.getType(id)
       }
-      setTimeout(callback, 0)
+      this.store.whenTransactionsFinished()
+        .then(callback)
     })
   }
   isConnected () {

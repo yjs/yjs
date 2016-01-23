@@ -207,7 +207,7 @@ module.exports = function (Y /* : any*/) {
     Defines a smaller relation on Id's
   */
   function smaller (a, b) {
-    return a[0] < b[0] || (a[0] === b[0] && a[1] < b[1])
+    return a[0] < b[0] || (a[0] === b[0] && (a[1] < b[1] || typeof a[1] < typeof b[1]))
   }
   Y.utils.smaller = smaller
 
@@ -249,8 +249,8 @@ module.exports = function (Y /* : any*/) {
       I tried to optimize this for performance, therefore no highlevel operations.
     */
     class SmallLookupBuffer extends Store {
-      constructor (read, write) {
-        super()
+      constructor () {
+        super(...arguments)
         this.writeBuffer = createEmptyOpsArray(5)
         this.readBuffer = createEmptyOpsArray(10)
       }

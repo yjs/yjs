@@ -39,6 +39,13 @@ module.exports = function (Y /* :any */) {
     */
     constructor (y, opts) {
       this.y = y
+      var os = this
+      this.userId = null
+      var resolve
+      this.userIdPromise = new Promise(function (r) {
+        resolve = r
+      })
+      this.userIdPromise.resolve = resolve
       // whether to broadcast all applied operations (insert & delete hook)
       this.forwardAppliedOperations = false
       // E.g. this.listenersById[id] : Array<Listener>
@@ -60,16 +67,15 @@ module.exports = function (Y /* :any */) {
       // TODO: Use ES7 Weak Maps. This way types that are no longer user,
       // wont be kept in memory.
       this.initializedTypes = {}
-      this.whenUserIdSetListener = null
       this.waitingTransactions = []
       this.transactionInProgress = false
+      this.transactionIsFlushed = false
       if (typeof YConcurrency_TestingMode !== 'undefined') {
         this.executeOrder = []
       }
       this.gc1 = [] // first stage
       this.gc2 = [] // second stage -> after that, remove the op
       this.gcTimeout = opts.gcTimeout || 5000
-      var os = this
       function garbageCollect () {
         return os.whenTransactionsFinished().then(function () {
           if (os.gc1.length > 0 || os.gc2.length > 0) {
@@ -175,26 +181,20 @@ module.exports = function (Y /* :any */) {
       this.gcInterval = null
     }
     setUserId (userId) {
-      var self = this
-      return new Promise(function (resolve) {
+      if (!this.userIdPromise.inProgress) {
+        this.userIdPromise.inProgress = true
+        var self = this
         self.requestTransaction(function * () {
           self.userId = userId
           var state = yield* this.getState(userId)
           self.opClock = state.clock
-          if (self.whenUserIdSetListener != null) {
-            self.whenUserIdSetListener()
-            self.whenUserIdSetListener = null
-          }
-          resolve()
+          self.userIdPromise.resolve(userId)
         })
-      })
+      }
+      return this.userIdPromise
     }
     whenUserIdSet (f) {
-      if (this.userId != null) {
-        f()
-      } else {
-        this.whenUserIdSetListener = f
-      }
+      this.userIdPromise.then(f)
     }
     getNextOpId () {
       if (this._nextUserId != null) {
@@ -390,15 +390,26 @@ module.exports = function (Y /* :any */) {
         return Promise.resolve()
       }
     }
+    // Check if there is another transaction request.
+    // * the last transaction is always a flush :)
     getNextRequest () {
       if (this.waitingTransactions.length === 0) {
-        this.transactionInProgress = false
-        if (this.transactionsFinished != null) {
-          this.transactionsFinished.resolve()
-          this.transactionsFinished = null
+        if (this.transactionIsFlushed) {
+          this.transactionInProgress = false
+          this.transactionIsFlushed = false
+          if (this.transactionsFinished != null) {
+            this.transactionsFinished.resolve()
+            this.transactionsFinished = null
+          }
+          return null
+        } else {
+          this.transactionIsFlushed = true
+          return function * () {
+            yield* this.flush()
+          }
         }
-        return null
       } else {
+        this.transactionIsFlushed = false
         return this.waitingTransactions.shift()
       }
     }
@@ -406,7 +417,7 @@ module.exports = function (Y /* :any */) {
       this.waitingTransactions.push(makeGen)
       if (!this.transactionInProgress) {
         this.transactionInProgress = true
-        if (true || callImmediately) { // TODO: decide whether this is ok or not..
+        if (false || callImmediately) { // TODO: decide whether this is ok or not..
           this.transact(this.getNextRequest())
         } else {
           var self = this

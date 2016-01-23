@@ -94,7 +94,7 @@ module.exports = function (gulp, helperOptions) {
 
     return browserify({
       entries: files.specs,
-      debug: options.debug
+      debug: true
     }).bundle()
       .pipe(source('specs.js'))
       .pipe(buffer())

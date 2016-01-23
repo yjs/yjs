@@ -763,6 +763,11 @@ module.exports = function (Y/* :any */) {
       return op
     }
     */
+    * flush () {
+      yield* this.os.flush()
+      yield* this.ss.flush()
+      yield* this.ds.flush()
+    }
   }
   Y.Transaction = TransactionInterface
 }
