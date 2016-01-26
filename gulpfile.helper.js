@@ -98,8 +98,8 @@ module.exports = function (gulp, helperOptions) {
     }).bundle()
       .pipe(source('specs.js'))
       .pipe(buffer())
-      .pipe($.sourcemaps.init({loadMaps: true}))
-      .pipe($.sourcemaps.write('.'))
+      // .pipe($.sourcemaps.init({loadMaps: true}))
+      // .pipe($.sourcemaps.write('.'))
       .pipe(gulp.dest('./build/'))
   })
 

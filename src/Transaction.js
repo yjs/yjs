@@ -331,6 +331,7 @@ module.exports = function (Y/* :any */) {
     * garbageCollectOperation (id) {
       this.store.addToDebug('yield* this.garbageCollectOperation(', id, ')')
       // check to increase the state of the respective user
+      var o = null
       var state = yield* this.getState(id[0])
       if (state.clock === id[1]) {
         state.clock++
@@ -338,11 +339,11 @@ module.exports = function (Y/* :any */) {
         yield* this.checkDeleteStoreForState(state)
         // then set the state
         yield* this.setState(state)
-      }
-      yield* this.markGarbageCollected(id)
-
+      } else if (state.clock > id[1]) {
+        o = yield* this.getOperation(id)
+      } // else state.clock < id[1], don't clean up
+      yield* this.markGarbageCollected(id) // always mark gc'd
       // if op exists, then clean that mess up..
-      var o = yield* this.getOperation(id)
       if (o != null) {
         /*
         if (!o.deleted) {
@@ -363,7 +364,7 @@ module.exports = function (Y/* :any */) {
           var right = yield* this.getOperation(o.right)
           right.left = o.left
 
-          if (Y.utils.compareIds(right.origin, id)) { // rights origin is o
+          if (o.originOf != null && o.originOf.length > 0) {
             // find new origin of right ops
             // origin is the first left deleted operation
             var neworigin = o.left
@@ -545,10 +546,15 @@ module.exports = function (Y/* :any */) {
         var del = deletions[i]
         var id = [del[0], del[1]]
         // always try to delete..
-        var addOperation = yield* this.deleteOperation(id)
-        if (addOperation) {
-          // TODO:.. really .. here? You could prevent calling all these functions in operationAdded
-          yield* this.store.operationAdded(this, {struct: 'Delete', target: id})
+        var state = yield* this.getState(id[0])
+        if (id[1] < state.clock) {
+          var addOperation = yield* this.deleteOperation(id)
+          if (addOperation) {
+            // TODO:.. really .. here? You could prevent calling all these functions in operationAdded
+            yield* this.store.operationAdded(this, {struct: 'Delete', target: id})
+          }
+        } else {
+          yield* this.markDeleted(id)
         }
         if (del[2]) {
           // gc
