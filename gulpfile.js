@@ -54,8 +54,9 @@ require('./gulpfile.helper.js')(gulp, {
   moduleName: 'yjs',
   includeRuntime: true,
   specs: [
+    './src/Database.spec.js',
     '../y-array/src/Array.spec.js',
-    './src/Database.spec.js'
+    '../y-map/src/Map.spec.js'
   ]
 })
 

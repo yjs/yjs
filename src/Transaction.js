@@ -222,86 +222,125 @@ module.exports = function (Y/* :any */) {
     /*
       Mark an operation as deleted&gc'd
     */
-    * markGarbageCollected (id) {
+    * markGarbageCollected (id, len) {
       // this.mem.push(["gc", id]);
-      var n = yield* this.markDeleted(id)
-      if (!n.gc) {
-        if (n.id[1] < id[1]) {
-          // un-extend left
-          var newlen = n.len - (id[1] - n.id[1])
-          n.len -= newlen
-          yield* this.ds.put(n)
-          n = {id: id, len: newlen, gc: false}
-          yield* this.ds.put(n)
-        }
-        // get prev&next before adding a new operation
-        var prev = yield* this.ds.findPrev(id)
-        var next = yield* this.ds.findNext(id)
-
-        if (id[1] < n.id[1] + n.len - 1) {
-          // un-extend right
-          yield* this.ds.put({id: [id[0], id[1] + 1], len: n.len - 1, gc: false})
-          n.len = 1
-        }
-        // set gc'd
-        n.gc = true
-        // can extend left?
-        if (
-          prev != null &&
-          prev.gc &&
-          Y.utils.compareIds([prev.id[0], prev.id[1] + prev.len], n.id)
-        ) {
-          prev.len += n.len
-          yield* this.ds.delete(n.id)
-          n = prev
-          // ds.put n here?
-        }
-        // can extend right?
-        if (
-          next != null &&
-          next.gc &&
-          Y.utils.compareIds([n.id[0], n.id[1] + n.len], next.id)
-        ) {
-          n.len += next.len
-          yield* this.ds.delete(next.id)
-        }
+      var n = yield* this.markDeleted(id, len)
+      if (n.id[1] < id[1] && !n.gc) {
+        // un-extend left
+        var newlen = n.len - (id[1] - n.id[1])
+        n.len -= newlen
+        yield* this.ds.put(n)
+        n = {id: id, len: newlen, gc: false}
         yield* this.ds.put(n)
       }
+      // get prev&next before adding a new operation
+      var prev = yield* this.ds.findPrev(id)
+      var next = yield* this.ds.findNext(id)
+
+      if (id[1] < n.id[1] + n.len - len && !n.gc) {
+        // un-extend right
+        yield* this.ds.put({id: [id[0], id[1] + 1], len: n.len - 1, gc: false})
+        n.len = 1
+      }
+      // set gc'd
+      n.gc = true
+      // can extend left?
+      if (
+        prev != null &&
+        prev.gc &&
+        Y.utils.compareIds([prev.id[0], prev.id[1] + prev.len], n.id)
+      ) {
+        prev.len += n.len
+        yield* this.ds.delete(n.id)
+        n = prev
+        // ds.put n here?
+      }
+      // can extend right?
+      if (
+        next != null &&
+        next.gc &&
+        Y.utils.compareIds([n.id[0], n.id[1] + n.len], next.id)
+      ) {
+        n.len += next.len
+        yield* this.ds.delete(next.id)
+      }
+      yield* this.ds.put(n)
     }
     /*
       Mark an operation as deleted.
 
       returns the delete node
     */
-    * markDeleted (id) {
+    * markDeleted (id, length) {
+      if (length == null) {
+        length = 1
+        // debugger // TODO!!
+      }
       // this.mem.push(["del", id]);
       var n = yield* this.ds.findWithUpperBound(id)
       if (n != null && n.id[0] === id[0]) {
-        if (n.id[1] <= id[1] && id[1] < n.id[1] + n.len) {
-          // already deleted
-          return n
-        } else if (n.id[1] + n.len === id[1] && !n.gc) {
-          // can extend existing deletion
-          n.len++
+        if (n.id[1] <= id[1] && id[1] <= n.id[1] + n.len) {
+          // id is in n's range
+          var diff = id[1] + length - (n.id[1] + n.len) // overlapping right
+          if (diff > 0) {
+            // id+length overlaps n
+            if (!n.gc) {
+              n.len += diff
+            } else {
+              diff = n.id[1] + n.len - id[1] // overlapping left (id till n.end)
+              if (diff < length) {
+                // a partial deletion
+                n = {id: [id[0], id[1] + diff], len: length - diff, gc: false}
+                yield* this.ds.put(n)
+              } else {
+                // already gc'd
+                throw new Error('Cannot happen! (it dit though.. :()')
+                // return n
+              }
+            }
+          } else {
+            // no overlapping, already deleted
+            return n
+          }
         } else {
-          // cannot extend left
-          n = {id: id, len: 1, gc: false}
-          yield* this.ds.put(n)
+          // cannot extend left (there is no left!)
+          n = {id: id, len: length, gc: false}
+          yield* this.ds.put(n) // TODO: you double-put !!
         }
       } else {
         // cannot extend left
-        n = {id: id, len: 1, gc: false}
+        n = {id: id, len: length, gc: false}
         yield* this.ds.put(n)
       }
       // can extend right?
       var next = yield* this.ds.findNext(n.id)
       if (
         next != null &&
-        Y.utils.compareIds([n.id[0], n.id[1] + n.len], next.id) &&
-        !next.gc
+        n.id[0] === next.id[0] &&
+        n.id[1] + n.len >= next.id[1]
       ) {
-        n.len = n.len + next.len
-        yield* this.ds.delete(next.id)
+        diff = n.id[1] + n.len - next.id[1] // from next.start to n.end
+        if (next.gc) {
+          if (diff >= 0) {
+            n.len -= diff
+            if (diff > next.len) {
+              // need to create another deletion after $next
+              // TODO: (may not be necessary, because this case shouldn't happen!)
+              //        also this is supposed to return a deletion range. which one to choose? n or the new created deletion?
+              throw new Error('This case is not handled (on purpose!)')
+            }
+          } // else: everything is fine :)
+        } else {
+          if (diff >= 0) {
+            if (diff > next.len) {
+              // may be neccessary to extend next.next!
+              // TODO: (may not be necessary, because this case shouldn't happen!)
+              throw new Error('This case is not handled (on purpose!)')
+            }
+            n.len += next.len - diff
+            yield* this.ds.delete(next.id)
+          }
+        }
       }
       yield* this.ds.put(n)
       return n
@@ -330,19 +369,8 @@ module.exports = function (Y/* :any */) {
     */
     * garbageCollectOperation (id) {
       this.store.addToDebug('yield* this.garbageCollectOperation(', id, ')')
-      // check to increase the state of the respective user
-      var o = null
-      var state = yield* this.getState(id[0])
-      if (state.clock === id[1]) {
-        state.clock++
-        // also check if more expected operations were gc'd
-        yield* this.checkDeleteStoreForState(state)
-        // then set the state
-        yield* this.setState(state)
-      } else if (state.clock > id[1]) {
-        o = yield* this.getOperation(id)
-      } // else state.clock < id[1], don't clean up
-      yield* this.markGarbageCollected(id) // always mark gc'd
+      var o = yield* this.getOperation(id)
+      yield* this.markGarbageCollected(id, 1) // always mark gc'd
       // if op exists, then clean that mess up..
       if (o != null) {
         /*
@@ -487,9 +515,7 @@ module.exports = function (Y/* :any */) {
     * applyDeleteSet (ds) {
       var deletions = []
       function createDeletions (user, start, len, gc) {
-        for (var c = start; c < start + len; c++) {
-          deletions.push([user, c, gc])
-        }
+        deletions.push([user, start, len, gc])
       }
 
       for (var user in ds) {
@@ -544,28 +570,46 @@ module.exports = function (Y/* :any */) {
       }
       for (var i = 0; i < deletions.length; i++) {
         var del = deletions[i]
-        var id = [del[0], del[1]]
         // always try to delete..
-        var state = yield* this.getState(id[0])
-        if (id[1] < state.clock) {
-          var addOperation = yield* this.deleteOperation(id)
-          if (addOperation) {
-            // TODO:.. really .. here? You could prevent calling all these functions in operationAdded
-            yield* this.store.operationAdded(this, {struct: 'Delete', target: id})
+        var state = yield* this.getState(del[0])
+        if (del[1] < state.clock) {
+          for (let c = del[1]; c < del[1] + del[2]; c++) {
+            var id = [del[0], c]
+            var addOperation = yield* this.deleteOperation(id)
+            if (addOperation) {
+              // TODO:.. really .. here? You could prevent calling all these functions in operationAdded
+              yield* this.store.operationAdded(this, {struct: 'Delete', target: id})
+            }
+            if (del[3]) {
+              // gc
+              yield* this.garbageCollectOperation(id)
+            }
           }
         } else {
-          yield* this.markDeleted(id)
+          if (del[3]) {
+            yield* this.markGarbageCollected([del[0], del[1]], del[2])
+          } else {
+            yield* this.markDeleted([del[0], del[1]], del[2])
+          }
         }
-        if (del[2]) {
-          // gc
-          yield* this.garbageCollectOperation(id)
+        if (del[3]) {
+          // check to increase the state of the respective user
+          if (state.clock >= del[1] && state.clock < del[1] + del[2]) {
+            state.clock = del[1] + del[2]
+            // also check if more expected operations were gc'd
+            yield* this.checkDeleteStoreForState(state) // TODO: unneccessary?
+            // then set the state
+            yield* this.setState(state)
+          }
         }
       }
       if (this.store.forwardAppliedOperations) {
-        var ops = deletions.map(function (d) {
-          return {struct: 'Delete', target: [d[0], d[1]]}
-        })
-        this.store.y.connector.broadcastOps(ops)
+        for (let c = del[1]; c < del[1] + del[2]; c++) {
+          var ops = deletions.map(function (d) {
+            return {struct: 'Delete', target: [d[0], c]} // TODO: implement Delete with deletion length!
+          })
+          this.store.y.connector.broadcastOps(ops)
+        }
       }
     }
     * isGarbageCollected (id) {
