@@ -20,7 +20,7 @@
   ```
 
   The structures usually work asynchronously (you have to wait for the
-  database request to finish). EventHandler will help you to make your type
+  database request to finish). EventHandler helps you to make your type
   synchronous.
 */
 module.exports = function (Y /* : any*/) {
