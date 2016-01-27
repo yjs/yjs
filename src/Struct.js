@@ -127,7 +127,7 @@ module.exports = function (Y/* :any */) {
         var i // loop counter
         var distanceToOrigin = i = yield* Struct.Insert.getDistanceToOrigin.call(this, op) // most cases: 0 (starts from 0)
 
-        if (op.origin != null) {
+        if (op.origin != null) { // TODO: !== instead of !=
           // we save in origin that op originates in it
           // we need that later when we eventually garbage collect origin (see transaction)
           var origin = yield* this.getOperation(op.origin)
