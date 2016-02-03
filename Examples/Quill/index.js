@@ -4,13 +4,13 @@
 
 Y({
   db: {
-    name: 'memory',
-    namespace: 'richtext-example20'
+    name: 'indexeddb',
+    idbVersion: 20
   },
   connector: {
     name: 'websockets-client',
-    room: 'richtext-example20'
-    // debug: true,
+    room: 'richtext-example24',
+    debug: true
     // url: 'http://127.0.0.1:1234'
   },
   sourceDir: '/bower_components',

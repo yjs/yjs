@@ -1,11 +1,14 @@
 
 # ![Yjs](http://y-js.org/images/yjs.png)
 
-Yjs is a framework for optimistic concurrency control and automatic conflict resolution on shared data. The framework provides similar functionality as [ShareJs] and [OpenCoweb], but it implements a new algorithm that also support peer-to-peer communication protocols. Yjs was designed to handle concurrent actions on arbitrary data types like Text, Json, and XML. We also provide support for storing and manipulating your shared data offline. For more information and demo applications visit our [homepage](http://y-js.org/).
+Yjs is a framework for optimistic concurrency control and automatic conflict resolution on shared data. The framework provides similar functionality as [ShareJs] and [OpenCoweb], but supports peer-to-peer communication protocols by default. Yjs was designed to handle concurrent actions on arbitrary data like Text, Json, and XML. We also provide support for storing and manipulating your shared data offline. For more information and demo applications visit our [homepage](http://y-js.org/).
 
 **NOTE** This project is currently migrating. So there may exist some information that is not true anymore..
 
-You can create you own shared types easily. Therefore, you can take matters into your own hand by defining the meaning of the shared types, and ensure that it is valid, while Yjs ensures data consistency (everyone will eventually end up with the same data). We already provide data types for
+You can create you own shared types easily.
+Therefore, you can design the sturcture of your custom type,
+and ensure data validity, while Yjs ensures data consistency (everyone will eventually end up with the same data).
+We already provide data types for
 
 | Name     | Description       |
 |----------|-------------------|
@@ -15,9 +18,11 @@ You can create you own shared types easily. Therefore, you can take matters into
 |[text](https://github.com/y-js/y-text) | Collaborate on text. Supports two way binding to textareas, input elements, or HTML elements (e.g. *h1*, or *p*)|
 |[richtext](https://github.com/y-js/y-richtext) | Collaborate on rich text. Supports two way binding to several editors|
 
-Unlike other frameworks, Yjs supports P2P message propagation and is not bound to a specific communication protocol. Therefore, Yjs is extremely scalable and can be used in a wide range of application scenarios.
+Yjs supports P2P message propagation, and not bound to a specific communication protocol. Therefore, Yjs is extremely scalable and can be used in a wide range of application scenarios.
 
-We support several communication protocols as so called *Connectors*. You can create your own connector too - read [this wiki page](https://github.com/y-js/yjs/wiki/Custom-Connectors). Currently, we support the following communication protocols:
+We support several communication protocols as so called *Connectors*.
+You can create your own connector too - read [this wiki page](https://github.com/y-js/yjs/wiki/Custom-Connectors).
+Currently, we support the following communication protocols:
 
 |Name            | Description               |
 |----------------|-----------------------------------|

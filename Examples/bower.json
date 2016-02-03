@@ -18,6 +18,8 @@
     "y-websockets-client": "~0.7.10",
     "y-text": "~0.7.1",
     "y-indexeddb": "~0.7.1",
-    "quill": "~0.20.1"
+    "quill": "~0.20.1",
+    "ace": "~1.2.3",
+    "ace-builds": "~1.2.3"
   }
 }
