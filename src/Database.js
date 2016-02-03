@@ -365,7 +365,7 @@ module.exports = function (Y /* :any */) {
           yield* Y.Struct['Delete'].execute.call(transaction, delop)
         }
 
-        // notify parent, if it has been initialized as a custom type
+        // notify parent, if it was instanciated as a custom type
         if (t != null) {
           yield* t._changed(transaction, Y.utils.copyObject(op))
         }
