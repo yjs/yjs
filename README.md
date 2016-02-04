@@ -13,7 +13,7 @@ We already provide abstract data types for
 |[map](https://github.com/y-js/y-map) | A shared Map implementation. Maps from text to any stringify-able object |
 |[array](https://github.com/y-js/y-array) | A shared Array implementation |
 |[xml](https://github.com/y-js/y-xml) | An implementation of the DOM. You can create a two way binding to Browser DOM objects |
-|[text](https://github.com/y-js/y-text) | Collaborate on text. Supports two way binding to textareas, input elements, or HTML elements (e.g. *<h1/>*, or *<p/>*). Also supports the [Ace Editor](https://ace.c9.io) |
+|[text](https://github.com/y-js/y-text) | Collaborate on text. Supports two way binding to textareas, input elements, or HTML elements (e.g. <*h1*>, or <*p*>). Also supports the [Ace Editor](https://ace.c9.io) |
 |[richtext](https://github.com/y-js/y-richtext) | Collaborate on rich text. Supports two way binding to the [Quill Rich Text Editor](http://quilljs.com/)|
 
 Yjs supports P2P message propagation, and is not bound to a specific communication protocol. Therefore, Yjs is extremely scalable and can be used in a wide range of application scenarios.
