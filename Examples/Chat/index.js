@@ -9,15 +9,13 @@ Y({
   connector: {
     name: 'websockets-client',
     room: 'chat-example'
-    // debug: true,
-    // url: 'http://127.0.0.1:2345'
   },
   sourceDir: '/bower_components',
   share: {
     chat: 'Array'
   }
 }).then(function (y) {
-  window.y = y
+  window.yChat = y
   // This functions inserts a message at the specified position in the DOM
   function appendMessage(message, position) { 
     var p = document.createElement('p')

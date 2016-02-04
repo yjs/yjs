@@ -8,9 +8,7 @@ Y({
   },
   connector: {
     name: 'websockets-client',
-    room: 'Puzzle-example2'
-    // debug: true,
-    // url: 'http://127.0.0.1:2345'
+    room: 'Puzzle-example'
   },
   sourceDir: '/bower_components',
   share: {
@@ -20,6 +18,7 @@ Y({
     piece4: 'Map'
   }
 }).then(function (y) {
+  window.yJigsaw = y
   var origin // mouse start position - translation of piece  
   var drag = d3.behavior.drag()
     .on('dragstart', function (params) {

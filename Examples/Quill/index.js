@@ -4,12 +4,11 @@
 
 Y({
   db: {
-    name: 'indexeddb',
-    idbVersion: 20
+    name: 'memory'
   },
   connector: {
     name: 'websockets-client',
-    room: 'richtext-example24',
+    room: 'richtext-example',
     debug: true
     // url: 'http://127.0.0.1:1234'
   },
@@ -18,7 +17,7 @@ Y({
     richtext: 'Richtext' // y.share.richtext is of type Y.Richtext
   }
 }).then(function (y) {
-  window.yquill = y
+  window.yQuill = y
 
   // create quill element
   window.quill = new Quill('#editor', {

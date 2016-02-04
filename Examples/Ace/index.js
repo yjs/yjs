@@ -7,7 +7,7 @@ Y({
   },
   connector: {
     name: 'websockets-client',
-    room: 'ace-example-dev'
+    room: 'ace-example'
     // debug: true
     // url: 'http://127.0.0.1:2345'
   },
@@ -16,7 +16,7 @@ Y({
     ace: 'Text' // y.share.textarea is of type Y.Text
   }
 }).then(function (y) {
-  window.y = y
+  window.yAce = y
 
   // bind the textarea to a shared text element
   var editor = ace.edit('editor')
