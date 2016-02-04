@@ -274,8 +274,6 @@ module.exports = function (Y/* :any */) {
     * markDeleted (id, length) {
       if (length == null) {
         length = 1
-        debugger // TODO!!
-        throw new Error("dtrnd")
       }
       // this.mem.push(["del", id]);
       var n = yield* this.ds.findWithUpperBound(id)
