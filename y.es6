@@ -907,7 +907,7 @@ module.exports = function (Y /* :any */) {
           yield* Y.Struct['Delete'].execute.call(transaction, delop)
         }
 
-        // notify parent, if it has been initialized as a custom type
+        // notify parent, if it was instanciated as a custom type
         if (t != null) {
           yield* t._changed(transaction, Y.utils.copyObject(op))
         }
@@ -1103,7 +1103,7 @@ module.exports = function (Y/* :any */) {
         var i // loop counter
         var distanceToOrigin = i = yield* Struct.Insert.getDistanceToOrigin.call(this, op) // most cases: 0 (starts from 0)
 
-        if (op.origin != null) {
+        if (op.origin != null) { // TODO: !== instead of !=
           // we save in origin that op originates in it
           // we need that later when we eventually garbage collect origin (see transaction)
           var origin = yield* this.getOperation(op.origin)
@@ -1493,7 +1493,7 @@ module.exports = function (Y/* :any */) {
       var callType = false
 
       if (target == null || !target.deleted) {
-        yield* this.markDeleted(targetId)
+        yield* this.markDeleted(targetId, 1)
       }
 
       if (target != null && target.gc == null) {
@@ -1617,7 +1617,6 @@ module.exports = function (Y/* :any */) {
     * markDeleted (id, length) {
       if (length == null) {
         length = 1
-        // debugger // TODO!!
       }
       // this.mem.push(["del", id]);
       var n = yield* this.ds.findWithUpperBound(id)
