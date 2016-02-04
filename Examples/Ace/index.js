@@ -7,7 +7,8 @@ Y({
   },
   connector: {
     name: 'websockets-client',
-    room: 'ace-example'
+    room: 'ace-example',
+    url: 'localhost:1234'
   },
   sourceDir: '/bower_components',
   share: {
@@ -18,7 +19,7 @@ Y({
 
   // bind the textarea to a shared text element
   var editor = ace.edit('ace')
-  editor.setTheme('ace/theme/chrome')
+  editor.setTheme('/bower_components/ace-builds/src-min/chrome')
   editor.getSession().setMode('ace/mode/javascript')
 
   y.share.ace.bindAce(editor)
