@@ -601,12 +601,11 @@ module.exports = function (Y/* :any */) {
             yield* this.setState(state)
           }
         }
-      }
-      if (this.store.forwardAppliedOperations) {
-        for (let c = del[1]; c < del[1] + del[2]; c++) {
-          var ops = deletions.map(function (d) {
-            return {struct: 'Delete', target: [d[0], c]} // TODO: implement Delete with deletion length!
-          })
+        if (this.store.forwardAppliedOperations) {
+          var ops = []
+          for (let c = del[1]; c < del[1] + del[2]; c++) {
+            ops.push({struct: 'Delete', target: [d[0], c]}) // TODO: implement Delete with deletion length!
+          }
           this.store.y.connector.broadcastOps(ops)
         }
       }
