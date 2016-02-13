@@ -1,49 +1,55 @@
 
 # ![Yjs](http://y-js.org/images/yjs.png)
 
-Yjs is a framework for optimistic concurrency control and automatic conflict resolution on shared data types. The framework implements a new OT-like concurrency algorithm and provides similar functionality as [ShareJs] and [OpenCoweb]. Yjs was designed to handle concurrent actions on arbitrary complex data types like Text, Json, and XML. We provide a tutorial and some applications for this framework on our [homepage](http://y-js.org/).
+Yjs is a framework for optimistic concurrency control and automatic conflict resolution on shared data. The framework provides similar functionality as [ShareJs] and [OpenCoweb], but supports peer-to-peer communication protocols by default. Yjs was designed to handle concurrent actions on arbitrary data like Text, Json, and XML. We also provide support for storing and manipulating your shared data offline. For more information and demo applications visit our [homepage](http://y-js.org/).
 
-**NOTE** This project is currently migrating. So there may exist some information that is not true anymore..
-
-You can create you own shared types easily. Therefore, you can take matters into your own hand by defining the meaning of the shared types and ensure that it is valid, while Yjs ensures data consistency (everyone will eventually end up with the same data). We already provide data types for
+You can create you own shared types easily.
+Therefore, you can design the sturcture of your custom type,
+and ensure data validity, while Yjs ensures data consistency (everyone will eventually end up with the same data).
+We already provide abstract data types for
 
 | Name     | Description       |
 |----------|-------------------|
-| map     | Add, update, and remove properties of an object. Included in Yjs|
-|[array](https://github.com/y-js/y-array) | A shared linked list implementation |
-|[selections](https://github.com/y-js/y-selections) | Manages selections on types that use linear structures (e.g. the y-array type). Select a range of elements, and assign meaning to them.|
-|[xml](https://github.com/y-js/y-xml) | An implementation of the DOM. You can create a two way binding to Browser DOM objects|
-|[text](https://github.com/y-js/y-text) | Collaborate on text. Supports two way binding to textareas, input elements, or HTML elements (e.g. *h1*, or *p*)|
-|[richtext](https://github.com/y-js/y-richtext) | Collaborate on rich text. Supports two way binding to several editors|
+|[map](https://github.com/y-js/y-map) | A shared Map implementation. Maps from text to any stringify-able object |
+|[array](https://github.com/y-js/y-array) | A shared Array implementation |
+|[xml](https://github.com/y-js/y-xml) | An implementation of the DOM. You can create a two way binding to Browser DOM objects |
+|[text](https://github.com/y-js/y-text) | Collaborate on text. Supports two way binding to textareas, input elements, or HTML elements (e.g. <*h1*>, or <*p*>). Also supports the [Ace Editor](https://ace.c9.io) |
+|[richtext](https://github.com/y-js/y-richtext) | Collaborate on rich text. Supports two way binding to the [Quill Rich Text Editor](http://quilljs.com/)|
 
-Unlike other frameworks, Yjs supports P2P message propagation and is not bound to a specific communication protocol. Therefore, Yjs is extremely scalable and can be used in a wide range of application scenarios.
+Yjs supports P2P message propagation, and is not bound to a specific communication protocol. Therefore, Yjs is extremely scalable and can be used in a wide range of application scenarios.
 
-We support several communication protocols as so called *Connectors*. You can create your own connector too - read [this wiki page](https://github.com/y-js/yjs/wiki/Custom-Connectors). Currently, we support the following communication protocols:
+We support several communication protocols as so called *Connectors*.
+You can create your own connector too - read [this wiki page](https://github.com/y-js/yjs/wiki/Custom-Connectors).
+Currently, we support the following communication protocols:
 
 |Name            | Description               |
 |----------------|-----------------------------------|
 |[xmpp](https://github.com/y-js/y-xmpp) | Propagate updates in a XMPP multi-user-chat room ([XEP-0045](http://xmpp.org/extensions/xep-0045.html))|
 |[webrtc](https://github.com/y-js/y-webrtc) | Propagate updates Browser2Browser via WebRTC|
+|[websockets](https://github.com/y-js/y-websockets-client) | Exchange updates efficiently in the classical client-server model |
 |[test](https://github.com/y-js/y-test) | A Connector for testing purposes. It is designed to simulate delays that happen in worst case scenarios|
 
+You are not limited to use a specific database to store the shared data. We provide the following database adapters:
+
+|Name            | Description               |
+|----------------|-----------------------------------|
+|[memory](https://github.com/y-js/y-memory) | In-memory storage. |
+|[indexeddb](https://github.com/y-js/y-indexeddb) | Offline storage for the browser |
 
 You can use Yjs client-, and server- side. You can get it as via npm, and bower. We even provide polymer elements for Yjs!
 
 The advantages over similar frameworks are support for
 * .. P2P message propagation and arbitrary communication protocols
-* .. arbitrary complex data types
-* .. offline editing: Changes are stored persistently and only relevant changes are propagated on rejoin
-* .. AnyUndo: Undo *any* action that was executed in constant time (coming..)
+* .. share any type of data. The types provide a convenient interface
+* .. offline support: Changes are stored persistently and only relevant changes are propagated on rejoin
 * .. Intention Preservation: When working on Text, the intention of your changes are preserved. This is particularily important when working offline. Every type has a notion on how we define Intention Preservation on it.
 
 ## Use it!
-You can find a tutorial, and examples on the [website](http://y-js.org). Furthermore, the [github wiki](https://github.com/y-js/yjs/wiki) offers more information about how you can use Yjs in your application.
-
-Either clone this git repository, install it with [bower](http://bower.io/), or install it with [npm](https://www.npmjs.org/package/yjs).
+Install yjs and its modules with [bower](http://bower.io/), or with [npm](https://www.npmjs.org/package/yjs).
 
 ### Bower
 ```
-bower install y-js/yjs
+bower install yjs
 ```
 Then you include the libraries directly from the installation folder.
 ```
@@ -60,57 +66,108 @@ And use it like this with *npm*:
 Y = require("yjs");
 ```
 
-# Y()
-In order to create an instance of Y, you need to have a connection object (instance of a Connector). Then, you can create a shared data type like this:
+# Text editing example
 ```
-var y = new Y(connector);
+Y({
+  db: {
+    name: 'memory' // store in memory.
+    // name: 'indexeddb'
+  },
+  connector: {
+    name: 'websockets-client', // choose the websockets connector
+    // name: 'webrtc'
+    // name: 'xmpp'
+    room: 'Textarea-example-dev'
+  },
+  sourceDir: '/bower_components', // location of the y-* modules
+  share: {
+    textarea: 'Text' // y.share.textarea is of type Y.Text
+  }
+  // types: ['Richtext', 'Array'] // optional list of types you want to import
+}).then(function (y) {
+  // bind the textarea to a shared text element
+  y.share.textarea.bind(document.getElementById('textfield'))
+}
 ```
 
+# Api
 
-# Y.Map
-Yjs includes only one type by default - the Y.Map type. It mimics the behaviour of a javascript Object. You can create, update, and remove properies on the Y.Map type. Furthermore, you can observe changes on this type as you can observe changes on Javascript Objects with [Object.observe](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/observe) - an ECMAScript 7 proposal which is likely to become accepted by the committee. Until then, we have our own implementation.
-
-
-##### Reference
-* Create
+### Y(options)
+* options.db
+  * Will be forwarded to the database adapter. Specify the database adaper on `options.db.name`.
+  * Have a look at the used database adapter repository to see all available options.
+* options.connector
+  * Will be forwarded to the connector adapter. Specify the connector adaper on `options.connector.name`.
+  * All our connectors implement a `room` property. Clients that specify the same room share the same data.
+  * All of our connectors specify an `url` property that defines the connection endpoint of the used connector.
+    * All of our connectors also have a default connection endpoint that you can use for development. 
+  * Have a look at the used connector repository to see all available options.
+* options.sourceDir
+  * Path where all y-* modules are stored.
+  * Defaults to `/bower_components`
+  * Not required when running on `nodejs` / `iojs`
+  * When using browserify you can specify all used modules like this:
 ```
-var map = y.set("new_map", Y.Map).then(function(map){
-  map // is my map type
-});
-```
-* Every instance of Y is an Y.Map
-```
-var y = new Y(options);
-```
-* .get(name)
-  * Retrieve the value of a property. If the value is a type, `.get(name)` returns a promise
-* .set(name, value)
-  * Set/update a property. `value` may be a primitive type, or a custom type definition (e.g. `Y.Map`)
-* .delete(name)
-  * Delete a property
-* .observe(observer)
-  * The `observer` is called whenever something on this object changes. Throws *add*, *update*, and *delete* events
-* .observePath(path, observer)
-  * `path` is an array of property names. `observer` is called when the property under `path` is set, deleted, or updated
-* .unobserve(f)
-  * Delete an observer
+var Y = require('yjs')
+// you need to require the db, connector, and *all* types you use! 
+require('y-memory')(Y)
+require('y-webrtc')(Y)
+require('y-map')(Y)
+// ..
+``` 
+* options.share
+  * Specify on `options.share[arbitraryName]` types that are shared among all users.
+  * E.g. Specify `options.share[arbitraryName] = 'Array'` to require y-array and create an Y.Array type on `y.share[arbitraryName]`.
+  * If userA doesn't specify `options.share[arbitraryName]`, it won't be available for userA.
+  * If userB specifies `options.share[arbitraryName]`, it still won't be available for userA. But all the updates are send from userB to userA.
+  * In contrast to Y.Map, types on `y.share.*` cannot be overwritten or deleted. Instead, they are merged among all users. This feature is only available on `y.share.*`
+  * Weird behavior: It is supported that two users specify different types with the same property name.
+     E.g. userA specifies `options.share.x = 'Array'`, and userB specifies `options.share.x = 'Text'`. But they'll only share data if they specified the same type with the same property name
+* options.type
+  * Array of modules that Yjs needs to require, before instantiating a shared type.
+  * By default Yjs requires the specified database adapter, the specified connector, and all modules that are used in `options.share.*`
+  * Put all types here that you intend to use, but are not used in y.share.*
 
-# A note on intention preservation
-When users create/update/delete the same property concurrently, only one change will prevail. Changes on different properties do not conflict with each other.
+### Instantiated Y object (y)
+`Y(options)` returns a promise that is fulfilled when..
 
-# A note on time complexities
-* .get(name)
-  * O(1)
-* .set(name, value)
-  * O(1)
-* .delete(name)
-  * O(1)
-* Apply a delete operation from another user
-  * O(1)
-* Apply an update operation from another user (set/update a property)
-  * Yjs does not transform against operations that do not conflict with each other.
-  * An operation conflicts with another operation if it changes the same property.
-  * Overall worst case complexety: O(|conflicts|!)
+* All modules are loaded
+  * The specified database adapter is loaded
+  * The specified connector is loaded
+  * All types are included
+* The connector is initialized, and a unique user id is set (received from the server)
+  * Note: When using y-indexeddb, a retrieved user id is stored on `localStorage`
+
+The promise returns an instance of Y. We denote it with a lower case `y`.
+
+* y.share.*
+  * Instances of the types you specified on options.share.*
+  * y.share.* can only be defined once when you instantiate Y!
+* y.connector is an instance of Y.AbstractConnector
+* y.connector.onUserEvent(function (event) {..})
+  * Observe user events (event.action is either 'userLeft' or 'userJoined')
+* y.connector.whenSynced(listener)
+  * `listener` is executed when y synced with at least one user.
+  * `listener` is not called when no other user is in the same room.
+  * y-websockets-client aways waits to sync with the server
+* y.connector.disconnect()
+  * Force to disconnect this instance from the other instances
+* y.connector.reconnect()
+  * Try to reconnect to the other instances (needs to be supported by the connector)
+  * Not supported by y-xmpp 
+* y.destroy()
+  * Destroy this object.
+  * Destroys all types (they will throw weird errors if you still use them)
+  * Disconnects from the other instances (via connector)
+  * Removes all data from the database
+* y.db.stopGarbageCollector()
+  * Stop the garbage collector. Call y.db.garbageCollect() to continue garbage collection
+* y.db.gcTimeout :: Number (defaults to 50000 ms)
+  * Time interval between two garbage collect cycles
+  * It is required that all instances exchanged all messages after two garbage collect cycles (after 100000 ms per default)
+* y.db.userId :: String
+  * The used user id for this client. **Never overwrite this**
+
 
 # Status
 Yjs is a work in progress. Different versions of the *y-* repositories may not work together. Just drop me a line if you run into troubles.
@@ -144,3 +201,4 @@ Yjs is licensed under the [MIT License](./LICENSE.txt).
 
 [ShareJs]: https://github.com/share/ShareJS
 [OpenCoweb]: https://github.com/opencoweb/coweb/wiki
+

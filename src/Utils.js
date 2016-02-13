@@ -20,7 +20,7 @@
   ```
 
   The structures usually work asynchronously (you have to wait for the
-  database request to finish). EventHandler will help you to make your type
+  database request to finish). EventHandler helps you to make your type
   synchronous.
 */
 module.exports = function (Y /* : any*/) {
@@ -207,7 +207,7 @@ module.exports = function (Y /* : any*/) {
     Defines a smaller relation on Id's
   */
   function smaller (a, b) {
-    return a[0] < b[0] || (a[0] === b[0] && a[1] < b[1])
+    return a[0] < b[0] || (a[0] === b[0] && (a[1] < b[1] || typeof a[1] < typeof b[1]))
   }
   Y.utils.smaller = smaller
 
@@ -225,4 +225,157 @@ module.exports = function (Y /* : any*/) {
     }
   }
   Y.utils.compareIds = compareIds
+
+  function createEmptyOpsArray (n) {
+    var a = new Array(n)
+    for (var i = 0; i < a.length; i++) {
+      a[i] = {
+        id: [null, null]
+      }
+    }
+    return a
+  }
+
+  function createSmallLookupBuffer (Store) {
+    /*
+      This buffer implements a very small buffer that temporarily stores operations
+      after they are read / before they are written.
+      The buffer basically implements FIFO. Often requested lookups will be re-queued every time they are looked up / written.
+
+      It can speed up lookups on Operation Stores and State Stores. But it does not require notable use of memory or processing power.
+
+      Good for os and ss, bot not for ds (because it often uses methods that require a flush)
+
+      I tried to optimize this for performance, therefore no highlevel operations.
+    */
+    class SmallLookupBuffer extends Store {
+      constructor () {
+        super(...arguments)
+        this.writeBuffer = createEmptyOpsArray(5)
+        this.readBuffer = createEmptyOpsArray(10)
+      }
+      * find (id) {
+        var i, r
+        for (i = this.readBuffer.length - 1; i >= 0; i--) {
+          r = this.readBuffer[i]
+          // we don't have to use compareids, because id is always defined!
+          if (r.id[1] === id[1] && r.id[0] === id[0]) {
+            // found r
+            // move r to the end of readBuffer
+            for (; i < this.readBuffer.length - 1; i++) {
+              this.readBuffer[i] = this.readBuffer[i + 1]
+            }
+            this.readBuffer[this.readBuffer.length - 1] = r
+            return r
+          }
+        }
+        var o
+        for (i = this.writeBuffer.length - 1; i >= 0; i--) {
+          r = this.writeBuffer[i]
+          if (r.id[1] === id[1] && r.id[0] === id[0]) {
+            o = r
+            break
+          }
+        }
+        if (i < 0) {
+          // did not reach break in last loop
+          // read id and put it to the end of readBuffer
+          o = yield* super.find(id)
+        }
+        if (o != null) {
+          for (i = 0; i < this.readBuffer.length - 1; i++) {
+            this.readBuffer[i] = this.readBuffer[i + 1]
+          }
+          this.readBuffer[this.readBuffer.length - 1] = o
+        }
+        return o
+      }
+      * put (o) {
+        var id = o.id
+        var i, r // helper variables
+        for (i = this.writeBuffer.length - 1; i >= 0; i--) {
+          r = this.writeBuffer[i]
+          if (r.id[1] === id[1] && r.id[0] === id[0]) {
+            // is already in buffer
+            // forget r, and move o to the end of writeBuffer
+            for (; i < this.writeBuffer.length - 1; i++) {
+              this.writeBuffer[i] = this.writeBuffer[i + 1]
+            }
+            this.writeBuffer[this.writeBuffer.length - 1] = o
+            break
+          }
+        }
+        if (i < 0) {
+          // did not reach break in last loop
+          // write writeBuffer[0]
+          var write = this.writeBuffer[0]
+          if (write.id[0] !== null) {
+            yield* super.put(write)
+          }
+          // put o to the end of writeBuffer
+          for (i = 0; i < this.writeBuffer.length - 1; i++) {
+            this.writeBuffer[i] = this.writeBuffer[i + 1]
+          }
+          this.writeBuffer[this.writeBuffer.length - 1] = o
+        }
+        // check readBuffer for every occurence of o.id, overwrite if found
+        // whether found or not, we'll append o to the readbuffer
+        for (i = 0; i < this.readBuffer.length - 1; i++) {
+          r = this.readBuffer[i + 1]
+          if (r.id[1] === id[1] && r.id[0] === id[0]) {
+            this.readBuffer[i] = o
+          } else {
+            this.readBuffer[i] = r
+          }
+        }
+        this.readBuffer[this.readBuffer.length - 1] = o
+      }
+      * delete (id) {
+        var i, r
+        for (i = 0; i < this.readBuffer.length; i++) {
+          r = this.readBuffer[i]
+          if (r.id[1] === id[1] && r.id[0] === id[0]) {
+            this.readBuffer[i] = {
+              id: [null, null]
+            }
+          }
+        }
+        yield* this.flush()
+        yield* super.delete(id)
+      }
+      * findWithLowerBound () {
+        yield* this.flush()
+        return yield* super.findWithLowerBound.apply(this, arguments)
+      }
+      * findWithUpperBound () {
+        yield* this.flush()
+        return yield* super.findWithUpperBound.apply(this, arguments)
+      }
+      * findNext () {
+        yield* this.flush()
+        return yield* super.findNext.apply(this, arguments)
+      }
+      * findPrev () {
+        yield* this.flush()
+        return yield* super.findPrev.apply(this, arguments)
+      }
+      * iterate () {
+        yield* this.flush()
+        yield* super.iterate.apply(this, arguments)
+      }
+      * flush () {
+        for (var i = 0; i < this.writeBuffer.length; i++) {
+          var write = this.writeBuffer[i]
+          if (write.id[0] !== null) {
+            yield* super.put(write)
+            this.writeBuffer[i] = {
+              id: [null, null]
+            }
+          }
+        }
+      }
+    }
+    return SmallLookupBuffer
+  }
+  Y.utils.createSmallLookupBuffer = createSmallLookupBuffer
 }

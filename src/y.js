@@ -11,6 +11,7 @@ require('./Connectors/Test.js')(Y)
 var requiringModules = {}
 
 module.exports = Y
+Y.requiringModules = requiringModules
 
 Y.extend = function (name, value) {
   Y[name] = value
@@ -92,8 +93,9 @@ function Y (opts/* :YOptions */) /* :Promise<YConfig> */ {
   Y.sourceDir = opts.sourceDir
   return Y.requestModules(modules).then(function () {
     return new Promise(function (resolve) {
-      var yconfig = new YConfig(opts, function () {
-        yconfig.db.whenUserIdSet(function () {
+      var yconfig = new YConfig(opts)
+      yconfig.db.whenUserIdSet(function () {
+        yconfig.init(function () {
           resolve(yconfig)
         })
       })
@@ -108,8 +110,12 @@ class YConfig {
   share: {[key: string]: any};
   */
   constructor (opts, callback) {
+    this.options = opts
     this.db = new Y[opts.db.name](this, opts.db)
     this.connector = new Y[opts.connector.name](this, opts.connector)
+  }
+  init (callback) {
+    var opts = this.options
     var share = {}
     this.share = share
     this.db.requestTransaction(function * requestTransaction () {
@@ -125,7 +131,8 @@ class YConfig {
         }
         share[propertyname] = yield* this.getType(id)
       }
-      setTimeout(callback, 0)
+      this.store.whenTransactionsFinished()
+        .then(callback)
     })
   }
   isConnected () {

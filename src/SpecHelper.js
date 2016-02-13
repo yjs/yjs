@@ -25,7 +25,7 @@ g.g = g
 
 g.YConcurrency_TestingMode = true
 
-jasmine.DEFAULT_TIMEOUT_INTERVAL = 8000
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000
 
 g.describeManyTimes = function describeManyTimes (times, name, f) {
   for (var i = 0; i < times; i++) {
@@ -76,6 +76,12 @@ function getRandomNumber (n) {
   return Math.floor(Math.random() * n)
 }
 g.getRandomNumber = getRandomNumber
+
+function getRandomString () {
+  var tokens = 'abcdefäö' // ü\n\n\n\n\n\n\n'
+  return tokens[getRandomNumber(tokens.length - 1)]
+}
+g.getRandomString = getRandomString
 
 function * applyTransactions (relAmount, numberOfTransactions, objects, users, transactions) {
   function randomTransaction (root) {
@@ -202,6 +208,7 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
         yield* this.os.iterate(this, null, null, function * (o) {
           o = Y.utils.copyObject(o)
           delete o.origin
+          delete o.originOf
           db1.push(o)
         })
       })
@@ -216,6 +223,7 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
         yield* this.os.iterate(this, null, null, function * (o) {
           o = Y.utils.copyObject(o)
           delete o.origin
+          delete o.originOf
           expect(db1[count++]).toEqual(o)
         })
       })

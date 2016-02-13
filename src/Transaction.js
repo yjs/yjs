@@ -123,10 +123,7 @@ module.exports = function (Y/* :any */) {
       }
       if (!this.store.y.connector.isDisconnected() && send.length > 0) { // TODO: && !this.store.forwardAppliedOperations (but then i don't send delete ops)
         // is connected, and this is not going to be send in addOperation
-        this.store.y.connector.broadcast({
-          type: 'update',
-          ops: send
-        })
+        this.store.y.connector.broadcastOps(send)
       }
     }
 
@@ -153,7 +150,7 @@ module.exports = function (Y/* :any */) {
       var callType = false
 
       if (target == null || !target.deleted) {
-        yield* this.markDeleted(targetId)
+        yield* this.markDeleted(targetId, 1)
       }
 
       if (target != null && target.gc == null) {
@@ -225,86 +222,124 @@ module.exports = function (Y/* :any */) {
     /*
       Mark an operation as deleted&gc'd
     */
-    * markGarbageCollected (id) {
+    * markGarbageCollected (id, len) {
       // this.mem.push(["gc", id]);
-      var n = yield* this.markDeleted(id)
-      if (!n.gc) {
-        if (n.id[1] < id[1]) {
-          // un-extend left
-          var newlen = n.len - (id[1] - n.id[1])
-          n.len -= newlen
-          yield* this.ds.put(n)
-          n = {id: id, len: newlen, gc: false}
-          yield* this.ds.put(n)
-        }
-        // get prev&next before adding a new operation
-        var prev = yield* this.ds.findPrev(id)
-        var next = yield* this.ds.findNext(id)
-
-        if (id[1] < n.id[1] + n.len - 1) {
-          // un-extend right
-          yield* this.ds.put({id: [id[0], id[1] + 1], len: n.len - 1, gc: false})
-          n.len = 1
-        }
-        // set gc'd
-        n.gc = true
-        // can extend left?
-        if (
-          prev != null &&
-          prev.gc &&
-          Y.utils.compareIds([prev.id[0], prev.id[1] + prev.len], n.id)
-        ) {
-          prev.len += n.len
-          yield* this.ds.delete(n.id)
-          n = prev
-          // ds.put n here?
-        }
-        // can extend right?
-        if (
-          next != null &&
-          next.gc &&
-          Y.utils.compareIds([n.id[0], n.id[1] + n.len], next.id)
-        ) {
-          n.len += next.len
-          yield* this.ds.delete(next.id)
-        }
+      var n = yield* this.markDeleted(id, len)
+      if (n.id[1] < id[1] && !n.gc) {
+        // un-extend left
+        var newlen = n.len - (id[1] - n.id[1])
+        n.len -= newlen
+        yield* this.ds.put(n)
+        n = {id: id, len: newlen, gc: false}
         yield* this.ds.put(n)
       }
+      // get prev&next before adding a new operation
+      var prev = yield* this.ds.findPrev(id)
+      var next = yield* this.ds.findNext(id)
+
+      if (id[1] < n.id[1] + n.len - len && !n.gc) {
+        // un-extend right
+        yield* this.ds.put({id: [id[0], id[1] + 1], len: n.len - 1, gc: false})
+        n.len = 1
+      }
+      // set gc'd
+      n.gc = true
+      // can extend left?
+      if (
+        prev != null &&
+        prev.gc &&
+        Y.utils.compareIds([prev.id[0], prev.id[1] + prev.len], n.id)
+      ) {
+        prev.len += n.len
+        yield* this.ds.delete(n.id)
+        n = prev
+        // ds.put n here?
+      }
+      // can extend right?
+      if (
+        next != null &&
+        next.gc &&
+        Y.utils.compareIds([n.id[0], n.id[1] + n.len], next.id)
+      ) {
+        n.len += next.len
+        yield* this.ds.delete(next.id)
+      }
+      yield* this.ds.put(n)
     }
     /*
       Mark an operation as deleted.
 
       returns the delete node
     */
-    * markDeleted (id) {
+    * markDeleted (id, length) {
+      if (length == null) {
+        length = 1
+      }
       // this.mem.push(["del", id]);
       var n = yield* this.ds.findWithUpperBound(id)
       if (n != null && n.id[0] === id[0]) {
-        if (n.id[1] <= id[1] && id[1] < n.id[1] + n.len) {
-          // already deleted
-          return n
-        } else if (n.id[1] + n.len === id[1] && !n.gc) {
-          // can extend existing deletion
-          n.len++
+        if (n.id[1] <= id[1] && id[1] <= n.id[1] + n.len) {
+          // id is in n's range
+          var diff = id[1] + length - (n.id[1] + n.len) // overlapping right
+          if (diff > 0) {
+            // id+length overlaps n
+            if (!n.gc) {
+              n.len += diff
+            } else {
+              diff = n.id[1] + n.len - id[1] // overlapping left (id till n.end)
+              if (diff < length) {
+                // a partial deletion
+                n = {id: [id[0], id[1] + diff], len: length - diff, gc: false}
+                yield* this.ds.put(n)
+              } else {
+                // already gc'd
+                throw new Error('Cannot happen! (it dit though.. :()')
+                // return n
+              }
+            }
+          } else {
+            // no overlapping, already deleted
+            return n
+          }
         } else {
-          // cannot extend left
-          n = {id: id, len: 1, gc: false}
-          yield* this.ds.put(n)
+          // cannot extend left (there is no left!)
+          n = {id: id, len: length, gc: false}
+          yield* this.ds.put(n) // TODO: you double-put !!
         }
       } else {
         // cannot extend left
-        n = {id: id, len: 1, gc: false}
+        n = {id: id, len: length, gc: false}
         yield* this.ds.put(n)
       }
       // can extend right?
       var next = yield* this.ds.findNext(n.id)
       if (
         next != null &&
-        Y.utils.compareIds([n.id[0], n.id[1] + n.len], next.id) &&
-        !next.gc
+        n.id[0] === next.id[0] &&
+        n.id[1] + n.len >= next.id[1]
       ) {
-        n.len = n.len + next.len
-        yield* this.ds.delete(next.id)
+        diff = n.id[1] + n.len - next.id[1] // from next.start to n.end
+        if (next.gc) {
+          if (diff >= 0) {
+            n.len -= diff
+            if (diff > next.len) {
+              // need to create another deletion after $next
+              // TODO: (may not be necessary, because this case shouldn't happen!)
+              //        also this is supposed to return a deletion range. which one to choose? n or the new created deletion?
+              throw new Error('This case is not handled (on purpose!)')
+            }
+          } // else: everything is fine :)
+        } else {
+          if (diff >= 0) {
+            if (diff > next.len) {
+              // may be neccessary to extend next.next!
+              // TODO: (may not be necessary, because this case shouldn't happen!)
+              throw new Error('This case is not handled (on purpose!)')
+            }
+            n.len += next.len - diff
+            yield* this.ds.delete(next.id)
+          }
+        }
       }
       yield* this.ds.put(n)
       return n
@@ -333,19 +368,9 @@ module.exports = function (Y/* :any */) {
     */
     * garbageCollectOperation (id) {
       this.store.addToDebug('yield* this.garbageCollectOperation(', id, ')')
-      // check to increase the state of the respective user
-      var state = yield* this.getState(id[0])
-      if (state.clock === id[1]) {
-        state.clock++
-        // also check if more expected operations were gc'd
-        yield* this.checkDeleteStoreForState(state)
-        // then set the state
-        yield* this.setState(state)
-      }
-      yield* this.markGarbageCollected(id)
-
-      // if op exists, then clean that mess up..
       var o = yield* this.getOperation(id)
+      yield* this.markGarbageCollected(id, 1) // always mark gc'd
+      // if op exists, then clean that mess up..
       if (o != null) {
         /*
         if (!o.deleted) {
@@ -365,23 +390,31 @@ module.exports = function (Y/* :any */) {
         if (o.right != null) {
           var right = yield* this.getOperation(o.right)
           right.left = o.left
-          if (Y.utils.compareIds(right.origin, o.id)) { // rights origin is o
+
+          if (o.originOf != null && o.originOf.length > 0) {
             // find new origin of right ops
             // origin is the first left deleted operation
             var neworigin = o.left
+            var neworigin_ = null
             while (neworigin != null) {
-              var neworigin_ = yield* this.getOperation(neworigin)
+              neworigin_ = yield* this.getOperation(neworigin)
               if (neworigin_.deleted) {
                 break
               }
               neworigin = neworigin_.left
             }
 
+            // reset origin of all right ops (except first right - duh!),
+
+            /* ** The following code does not rely on the the originOf property **
+                  I recently added originOf to all Insert Operations (see Struct.Insert.execute),
+                  which saves which operations originate in a Insert operation.
+                  Garbage collecting without originOf is more memory efficient, but is nearly impossible for large texts, or lists!
+                  But I keep this code for now
+            ```
             // reset origin of right
             right.origin = neworigin
-
-            // reset origin of all right ops (except first right - duh!),
-            // until you find origin pointer to the left of o
+            // search until you find origin pointer to the left of o
             if (right.right != null) {
               var i = yield* this.getOperation(right.right)
               var ids = [o.id, o.right]
@@ -397,13 +430,46 @@ module.exports = function (Y/* :any */) {
                 if (i.right == null) {
                   break
                 } else {
+                  ids.push(i.id)
                   i = yield* this.getOperation(i.right)
                 }
               }
             }
-          } /* otherwise, rights origin is to the left of o,
-               then there is no right op (from o), that origins in o */
-          yield* this.setOperation(right)
+            ```
+            */
+            // ** Now the new implementation starts **
+            // reset neworigin of all originOf[*]
+            for (var _i in o.originOf) {
+              var originsIn = yield* this.getOperation(o.originOf[_i])
+              if (originsIn != null) {
+                originsIn.origin = neworigin
+                yield* this.setOperation(originsIn)
+              }
+            }
+            if (neworigin != null) {
+              if (neworigin_.originOf == null) {
+                neworigin_.originOf = o.originOf
+              } else {
+                neworigin_.originOf = o.originOf.concat(neworigin_.originOf)
+              }
+              yield* this.setOperation(neworigin_)
+            }
+            // we don't need to set right here, because
+            // right should be in o.originOf => it is set it the previous for loop
+          } else {
+            // we didn't need to reset the origin of right
+            // so we have to set right here
+            yield* this.setOperation(right)
+          }
+          // o may originate in another operation.
+          // Since o is deleted, we have to reset o.origin's `originOf` property
+          if (o.origin != null) {
+            var origin = yield* this.getOperation(o.origin)
+            origin.originOf = origin.originOf.filter(function (_id) {
+              return !Y.utils.compareIds(id, _id)
+            })
+            yield* this.setOperation(origin)
+          }
         }
 
         if (o.parent != null) {
@@ -448,9 +514,7 @@ module.exports = function (Y/* :any */) {
     * applyDeleteSet (ds) {
       var deletions = []
       function createDeletions (user, start, len, gc) {
-        for (var c = start; c < start + len; c++) {
-          deletions.push([user, c, gc])
-        }
+        deletions.push([user, start, len, gc])
       }
 
       for (var user in ds) {
@@ -505,26 +569,45 @@ module.exports = function (Y/* :any */) {
       }
       for (var i = 0; i < deletions.length; i++) {
         var del = deletions[i]
-        var id = [del[0], del[1]]
         // always try to delete..
-        var addOperation = yield* this.deleteOperation(id)
-        if (addOperation) {
-          // TODO:.. really .. here? You could prevent calling all these functions in operationAdded
-          yield* this.store.operationAdded(this, {struct: 'Delete', target: id})
+        var state = yield* this.getState(del[0])
+        if (del[1] < state.clock) {
+          for (let c = del[1]; c < del[1] + del[2]; c++) {
+            var id = [del[0], c]
+            var addOperation = yield* this.deleteOperation(id)
+            if (addOperation) {
+              // TODO:.. really .. here? You could prevent calling all these functions in operationAdded
+              yield* this.store.operationAdded(this, {struct: 'Delete', target: id})
+            }
+            if (del[3]) {
+              // gc
+              yield* this.garbageCollectOperation(id)
+            }
+          }
+        } else {
+          if (del[3]) {
+            yield* this.markGarbageCollected([del[0], del[1]], del[2])
+          } else {
+            yield* this.markDeleted([del[0], del[1]], del[2])
+          }
         }
-        if (del[2]) {
-          // gc
-          yield* this.garbageCollectOperation(id)
+        if (del[3]) {
+          // check to increase the state of the respective user
+          if (state.clock >= del[1] && state.clock < del[1] + del[2]) {
+            state.clock = del[1] + del[2]
+            // also check if more expected operations were gc'd
+            yield* this.checkDeleteStoreForState(state) // TODO: unneccessary?
+            // then set the state
+            yield* this.setState(state)
+          }
         }
-      }
-      if (this.store.forwardAppliedOperations) {
-        var ops = deletions.map(function (d) {
-          return {struct: 'Delete', target: [d[0], d[1]]}
-        })
-        this.store.y.connector.broadcast({
-          type: 'update',
-          ops: ops
-        })
+        if (this.store.forwardAppliedOperations) {
+          var ops = []
+          for (let c = del[1]; c < del[1] + del[2]; c++) {
+            ops.push({struct: 'Delete', target: [d[0], c]}) // TODO: implement Delete with deletion length!
+          }
+          this.store.y.connector.broadcastOps(ops)
+        }
       }
     }
     * isGarbageCollected (id) {
@@ -562,10 +645,7 @@ module.exports = function (Y/* :any */) {
       yield* this.os.put(op)
       if (!this.store.y.connector.isDisconnected() && this.store.forwardAppliedOperations && op.id[0] !== '_') {
         // is connected, and this is not going to be send in addOperation
-        this.store.y.connector.broadcast({
-          type: 'update',
-          ops: [op]
-        })
+        this.store.y.connector.broadcastOps([op])
       }
     }
     * getOperation (id/* :any */)/* :Transaction<any> */ {
@@ -625,34 +705,8 @@ module.exports = function (Y/* :any */) {
       })
       return ss
     }
-    * getOperations (startSS) {
-      // TODO: use bounds here!
-      if (startSS == null) {
-        startSS = {}
-      }
-      var ops = []
-
-      var endSV = yield* this.getStateVector()
-      for (var endState of endSV) {
-        var user = endState.user
-        if (user === '_') {
-          continue
-        }
-        var startPos = startSS[user] || 0
-
-        yield* this.os.iterate(this, [user, startPos], [user, Number.MAX_VALUE], function * (op) {
-          ops.push(op)
-        })
-      }
-      var res = []
-      for (var op of ops) {
-        var o = yield* this.makeOperationReady(startSS, op)
-        res.push(o)
-      }
-      return res
-    }
     /*
-      Here, we make op executable for the receiving user.
+      Here, we make all missing operations executable for the receiving user.
 
       Notes:
         startSS: denotes to the SV that the remote user sent
@@ -687,7 +741,92 @@ module.exports = function (Y/* :any */) {
             (startSS or currSS.. ?)
             -> Could be necessary when I turn GC again.
             -> Is a bad(ish) idea because it requires more computation
+
+      What we do:
+      * Iterate over all missing operations.
+      * When there is an operation, where the right op is known, send this op all missing ops to the left to the user
+      * I explained above what we have to do with each operation. Here is how we do it efficiently:
+        1. Go to the left until you find either op.origin, or a known operation (let o denote current operation in the iteration)
+        2. Found a known operation -> set op.left = o, and send it to the user. stop
+        3. Found o = op.origin -> set op.left = op.origin, and send it to the user. start again from 1. (set op = o)
+        4. Found some o -> set o.right = op, o.left = o.origin, send it to the user, continue
     */
+    * getOperations (startSS) {
+      // TODO: use bounds here!
+      if (startSS == null) {
+        startSS = {}
+      }
+      var send = []
+
+      var endSV = yield* this.getStateVector()
+      for (var endState of endSV) {
+        var user = endState.user
+        if (user === '_') {
+          continue
+        }
+        var startPos = startSS[user] || 0
+
+        yield* this.os.iterate(this, [user, startPos], [user, Number.MAX_VALUE], function * (op) {
+          op = Y.Struct[op.struct].encode(op)
+          if (op.struct !== 'Insert') {
+            send.push(op)
+          } else if (op.right == null || op.right[1] < (startSS[op.right[0]] || 0)) {
+            // case 1. op.right is known
+            var o = op
+            // Remember: ?
+            // -> set op.right
+            //    1. to the first operation that is known (according to startSS)
+            //    2. or to the first operation that has an origin that is not to the
+            //      right of op.
+            // For this we maintain a list of ops which origins are not found yet.
+            var missing_origins = [op]
+            var newright = op.right
+            while (true) {
+              if (o.left == null) {
+                op.left = null
+                send.push(op)
+                if (!Y.utils.compareIds(o.id, op.id)) {
+                  o = Y.Struct[op.struct].encode(o)
+                  o.right = missing_origins[missing_origins.length - 1].id
+                  send.push(o)
+                }
+                break
+              }
+              o = yield* this.getOperation(o.left)
+              // we set another o, check if we can reduce $missing_origins
+              while (missing_origins.length > 0 && Y.utils.compareIds(missing_origins[missing_origins.length - 1].origin, o.id)) {
+                missing_origins.pop()
+              }
+              if (o.id[1] < (startSS[o.id[0]] || 0)) {
+                // case 2. o is known
+                op.left = o.id
+                send.push(op)
+                break
+              } else if (Y.utils.compareIds(o.id, op.origin)) {
+                // case 3. o is op.origin
+                op.left = op.origin
+                send.push(op)
+                op = Y.Struct[op.struct].encode(o)
+                op.right = newright
+                if (missing_origins.length > 0) {
+                  console.log('This should not happen .. :( please report this')
+                }
+                missing_origins = [op]
+              } else {
+                // case 4. send o, continue to find op.origin
+                var s = Y.Struct[op.struct].encode(o)
+                s.right = missing_origins[missing_origins.length - 1].id
+                s.left = s.origin
+                send.push(s)
+                missing_origins.push(o)
+              }
+            }
+          }
+        })
+      }
+      return send.reverse()
+    }
+    /* this is what we used before.. use this as a reference..
     * makeOperationReady (startSS, op) {
       op = Y.Struct[op.struct].encode(op)
       op = Y.utils.copyObject(op)
@@ -710,6 +849,12 @@ module.exports = function (Y/* :any */) {
       op.right = o.right
       op.left = op.origin
       return op
+    }
+    */
+    * flush () {
+      yield* this.os.flush()
+      yield* this.ss.flush()
+      yield* this.ds.flush()
     }
   }
   Y.Transaction = TransactionInterface
