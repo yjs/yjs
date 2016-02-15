@@ -756,8 +756,8 @@ module.exports = function (Y /* :any */) {
       * check if was deleted, apply a delete operation after op was applied
     */
     apply (ops) {
-      for (var key in ops) {
-        var o = ops[key]
+      for (var i = 0; i < ops.length; i++) {
+        var o = ops[i]
         if (o.id == null || o.id[0] !== this.y.connector.userId) {
           var required = Y.Struct[o.struct].requiredOps(o)
           this.whenOperationsExist(required, o)
