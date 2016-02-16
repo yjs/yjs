@@ -718,9 +718,17 @@ module.exports = function (Y /* :any */) {
       this.gc2 = this.gc2.filter(filter)
       delete op.gc
     }
-    destroy () {
+    * destroy () {
       clearInterval(this.gcInterval)
       this.gcInterval = null
+      for (var key in this.initializedTypes) {
+        var type = this.initializedTypes[key]
+        if (type._destroy != null) {
+          type._destroy()
+        } else {
+          console.error('The type you included does not provide destroy functionality, it will remain in memory (updating your packages will help).')
+        }
+      }
     }
     setUserId (userId) {
       if (!this.userIdPromise.inProgress) {
@@ -2252,6 +2260,12 @@ module.exports = function (Y /* : any*/) {
       this.onevent = onevent
       this.eventListeners = []
     }
+    destroy () {
+      this.waiting = null
+      this.awaiting = null
+      this.onevent = null
+      this.eventListeners = null
+    }
     /*
       Call this when a new operation arrives. It will be executed right away if
       there are no waiting operations, that you prematurely executed
@@ -2697,6 +2711,7 @@ class YConfig {
   db: Y.AbstractDatabase;
   connector: Y.AbstractConnector;
   share: {[key: string]: any};
+  options: Object;
   */
   constructor (opts, callback) {
     this.options = opts
@@ -2734,10 +2749,17 @@ class YConfig {
     return this.connector.reconnect()
   }
   destroy () {
-    this.disconnect()
-    this.db.destroy()
-    this.connector = null
-    this.db = null
+    if (this.connector.destroy != null) {
+      this.connector.destroy()
+    } else {
+      this.connector.disconnect()
+    }
+    var self = this
+    this.db.requestTransaction(function * () {
+      yield* self.db.destroy()
+      self.connector = null
+      self.db = null
+    })
   }
 }
 
