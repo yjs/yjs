@@ -179,7 +179,7 @@ module.exports = function (Y /* :any */) {
     * destroy () {
       clearInterval(this.gcInterval)
       this.gcInterval = null
-      for(var key in this.initializedTypes) {
+      for (var key in this.initializedTypes) {
         var type = this.initializedTypes[key]
         if (type._destroy != null) {
           type._destroy()
