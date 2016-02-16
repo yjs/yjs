@@ -176,9 +176,17 @@ module.exports = function (Y /* :any */) {
       this.gc2 = this.gc2.filter(filter)
       delete op.gc
     }
-    destroy () {
+    * destroy () {
       clearInterval(this.gcInterval)
       this.gcInterval = null
+      for(var key in this.initializedTypes) {
+        var type = this.initializedTypes[key]
+        if (type._destroy != null) {
+          type._destroy()
+        } else {
+          console.error('The type you included does not provide destroy functionality, it will remain in memory (updating your packages will help).')
+        }
+      }
     }
     setUserId (userId) {
       if (!this.userIdPromise.inProgress) {

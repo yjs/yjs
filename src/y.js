@@ -108,6 +108,7 @@ class YConfig {
   db: Y.AbstractDatabase;
   connector: Y.AbstractConnector;
   share: {[key: string]: any};
+  options: Object;
   */
   constructor (opts, callback) {
     this.options = opts
@@ -145,10 +146,17 @@ class YConfig {
     return this.connector.reconnect()
   }
   destroy () {
-    this.disconnect()
-    this.db.destroy()
-    this.connector = null
-    this.db = null
+    if (this.connector.destroy != null) {
+      this.connector.destroy()
+    } else {
+      this.connector.disconnect()
+    }
+    var self = this
+    this.db.requestTransaction(function * () {
+      yield* self.db.destroy()
+      self.connector = null
+      self.db = null
+    })
   }
 }
 

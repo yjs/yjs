@@ -46,6 +46,12 @@ module.exports = function (Y /* : any*/) {
       this.onevent = onevent
       this.eventListeners = []
     }
+    destroy () {
+      this.waiting = null
+      this.awaiting = null
+      this.onevent = null
+      this.eventListeners = null
+    }
     /*
       Call this when a new operation arrives. It will be executed right away if
       there are no waiting operations, that you prematurely executed
