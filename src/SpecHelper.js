@@ -25,7 +25,7 @@ g.g = g
 
 g.YConcurrency_TestingMode = true
 
-jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000
 
 g.describeManyTimes = function describeManyTimes (times, name, f) {
   for (var i = 0; i < times; i++) {
@@ -83,7 +83,7 @@ function getRandomString () {
 }
 g.getRandomString = getRandomString
 
-function * applyTransactions (relAmount, numberOfTransactions, objects, users, transactions) {
+function * applyTransactions (relAmount, numberOfTransactions, objects, users, transactions, noReconnect) {
   function randomTransaction (root) {
     var f = getRandom(transactions)
     f(root)
@@ -93,7 +93,7 @@ function * applyTransactions (relAmount, numberOfTransactions, objects, users, t
     if (r >= 0.5) {
       // 50% chance to flush
       yield Y.utils.globalRoom.flushOne() // flushes for some user.. (not necessarily 0)
-    } else if (r >= 0.05) {
+    } else if (noReconnect || r >= 0.05) {
       // 45% chance to create operation
       randomTransaction(getRandom(objects))
       yield Y.utils.globalRoom.whenTransactionsFinished()
@@ -108,6 +108,11 @@ function * applyTransactions (relAmount, numberOfTransactions, objects, users, t
     }
   }
 }
+
+g.applyRandomTransactionsNoGCNoDisconnect = async(function * applyRandomTransactions (users, objects, transactions, numberOfTransactions) {
+  yield* applyTransactions(1, numberOfTransactions, objects, users, transactions, true)
+  yield Y.utils.globalRoom.flushAll()
+})
 
 g.applyRandomTransactionsAllRejoinNoGC = async(function * applyRandomTransactions (users, objects, transactions, numberOfTransactions) {
   yield* applyTransactions(1, numberOfTransactions, objects, users, transactions)
