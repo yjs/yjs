@@ -783,8 +783,8 @@ module.exports = function (Y /* :any */) {
           missing: ids.length
         }
 
-        for (let key in ids) {
-          let id = ids[key]
+        for (let i = 0; i < ids.length; i++) {
+          let id = ids[i]
           let sid = JSON.stringify(id)
           let l = this.listenersById[sid]
           if (l == null) {
@@ -827,8 +827,8 @@ module.exports = function (Y /* :any */) {
           if (op == null) {
             store.listenersById[sid] = l
           } else {
-            for (let key in l) {
-              let listener = l[key]
+            for (let i = 0; i < l.length; i++) {
+              let listener = l[i]
               let o = listener.op
               if (--listener.missing === 0) {
                 yield* store.tryExecute.call(this, o)
