@@ -49,7 +49,7 @@ Install yjs and its modules with [bower](http://bower.io/), or with [npm](https:
 
 ### Bower
 ```
-bower install yjs
+bower install yjs --save
 ```
 Then you include the libraries directly from the installation folder.
 ```
