@@ -144,7 +144,7 @@ module.exports = function (gulp, helperOptions) {
       .pipe(gulp.dest('./'))
   })
 
-  gulp.task('publish_commits', function (cb) {
+  gulp.task('publish_commits', function () {
     return gulp.src('./package.json')
         .pipe($.prompt.confirm({
           message: 'Are you sure you want to publish this release?',
@@ -163,19 +163,18 @@ module.exports = function (gulp, helperOptions) {
           'git commit -am "Release <%= getVersion(file.path) %>" -n',
           'git push',
           'npm publish',
-          'echo Finished <%= callback() %>'
+          'echo Finished'
         ], {
           templateData: {
             getVersion: function () {
               return JSON.parse(String.fromCharCode.apply(null, this.file._contents)).version
-            },
-            callback: cb
+            }
           }
         }))
   })
 
   gulp.task('publish', function (cb) {
     /* TODO: include 'test',*/
-    return runSequence('updateSubmodule', 'bump', 'dist', 'publish_commits', cb)
+    runSequence('updateSubmodule', 'bump', 'dist', 'publish_commits', cb)
   })
 }
