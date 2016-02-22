@@ -145,7 +145,7 @@ module.exports = function (gulp, helperOptions) {
   })
 
   gulp.task('publish_commits', function (cb) {
-    gulp.src('./package.json')
+    return gulp.src('./package.json')
         .pipe($.prompt.confirm({
           message: 'Are you sure you want to publish this release?',
           default: false
@@ -176,6 +176,6 @@ module.exports = function (gulp, helperOptions) {
 
   gulp.task('publish', function (cb) {
     /* TODO: include 'test',*/
-    runSequence('updateSubmodule', 'bump', 'dist', 'publish_commits', cb)
+    return runSequence('updateSubmodule', 'bump', 'dist', 'publish_commits', cb)
   })
 }
