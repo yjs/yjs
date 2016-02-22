@@ -144,16 +144,14 @@ module.exports = function (gulp, helperOptions) {
       .pipe(gulp.dest('./'))
   })
 
-  gulp.task('publish', function (cb) {
-    /* TODO: include 'test',*/
-    runSequence('updateSubmodule', 'dist', 'bump', function () {
-      return gulp.src('./package.json', {read: false})
+  gulp.task('publish_commits', function (cb) {
+    return gulp.src('./package.json', {read: false})
         .pipe($.prompt.confirm({
           message: 'Are you sure you want to publish this release?',
           default: false
         }))
         .pipe($.shell([
-          // 'cp README.md dist',
+          'cp README.md dist',
           'standard',
           'echo "Deploying version <%= getVersion(file.path) %>"',
           'git pull',
@@ -174,6 +172,10 @@ module.exports = function (gulp, helperOptions) {
             callback: cb
           }
         }))
-    })
+  })
+
+  gulp.task('publish', function (cb) {
+    /* TODO: include 'test',*/
+    runSequence('updateSubmodule', 'bump', 'dist', 'publish_commits', cb)
   })
 }
