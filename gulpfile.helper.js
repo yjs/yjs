@@ -145,7 +145,7 @@ module.exports = function (gulp, helperOptions) {
   })
 
   gulp.task('publish_commits', function (cb) {
-    return gulp.src('./package.json', {read: false})
+    gulp.src('./package.json')
         .pipe($.prompt.confirm({
           message: 'Are you sure you want to publish this release?',
           default: false
@@ -166,8 +166,8 @@ module.exports = function (gulp, helperOptions) {
           'echo Finished <%= callback() %>'
         ], {
           templateData: {
-            getVersion: function (s) {
-              return require(s).version
+            getVersion: function () {
+              return JSON.parse(String.fromCharCode.apply(null, this.file._contents)).version
             },
             callback: cb
           }
