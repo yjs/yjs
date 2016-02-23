@@ -51,6 +51,7 @@ module.exports = function (Y/* :any */) {
       this.broadcastedHB = false
       this.syncStep2 = Promise.resolve()
       this.broadcastOpBuffer = []
+      this.protocolVersion = 8
     }
     reconnect () {
     }
@@ -206,6 +207,18 @@ module.exports = function (Y/* :any */) {
       }
       if (this.debug) {
         console.log(`receive ${sender} -> ${this.userId}: ${message.type}`, JSON.parse(JSON.stringify(message))) // eslint-disable-line
+      }
+      if (message.protocolVersion != null && message.protocolVersion !== this.protocolVersion) {
+        console.error(
+          `You tried to sync with a yjs instance that has a different protocol version
+          (You: ${this.protocolVersion}, Client: ${message.protocolVersion}).
+          The sync was stopped. You need to upgrade your dependencies (especially Yjs & the Connector)!
+          `)
+        this.send(sender, {
+          type: 'sync stop',
+          protocolVersion: this.protocolVersion
+        })
+        return
       }
       if (message.type === 'sync step 1') {
         // TODO: make transaction, stream the ops
