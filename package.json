@@ -1,6 +1,6 @@
 {
   "name": "yjs",
-  "version": "0.8.28",
+  "version": "9.0.0",
   "description": "A framework for real-time p2p shared editing on arbitrary complex data types",
   "main": "./src/y.js",
   "scripts": {
@@ -28,11 +28,11 @@
   "keywords": [
     "OT",
     "Operational Transformation",
-    "collaboration",
-    "synchronization",
+    "Collaboration",
+    "Synchronization",
     "ShareJs",
     "OpenCoweb",
-    "concurrency"
+    "Concurrency"
   ],
   "author": "Kevin Jahns",
   "email": "kevin.jahns@rwth-aachen.de",

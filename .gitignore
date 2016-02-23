@@ -12,3 +12,4 @@ build_test
 /y.js.map
 /y-*
 .vscode
+.jsconfig.json
