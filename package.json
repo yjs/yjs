@@ -26,12 +26,12 @@
     "url": "https://github.com/y-js/yjs.git"
   },
   "keywords": [
+    "Yjs",
     "OT",
-    "Operational Transformation",
     "Collaboration",
     "Synchronization",
-    "ShareJs",
-    "OpenCoweb",
+    "ShareJS",
+    "Coweb",
     "Concurrency"
   ],
   "author": "Kevin Jahns",
