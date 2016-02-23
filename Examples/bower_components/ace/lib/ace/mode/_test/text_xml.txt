@@ -1,7 +1,0 @@
-<Juhu>//Juhu Kinners</Kinners>
-test: two tags in the same lines should be in separate tokens"
-<Juhu><Kinners>
-test: multiline attributes"
-<copy set="{
-}" undo="{
-}"/>

@@ -1,8 +1,0 @@
-<!--- hello world --->
-
-<cfset <!--- x <!--- y --->  z ---> welcome="Hello World!">
-<!-- x <!--- y --->  z -->
-<cfoutput>#welcome#</cfoutput>
-<cfscript>
-    Dateformat(now())
-</cfscript>
