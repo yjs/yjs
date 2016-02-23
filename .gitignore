@@ -1,8 +1,0 @@
-node_modules
-bower_components
-.directory
-.codio
-.settings
-.jshintignore
-.jshintrc
-.validate.json

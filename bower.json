@@ -8,12 +8,14 @@
   "description": "A Framework for shared editing on any data",
   "main": "./y.js",
   "keywords": [
+    "Yjs",
     "OT",
     "Collaboration",
     "Synchronization",
-    "Sharejs",
+    "ShareJS",
     "Coweb",
     "Concurrency"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "ignore": []
 }

@@ -1,0 +1,35 @@
+{
+  "name": "quill",
+  "version": "0.20.1",
+  "homepage": "http://quilljs.com",
+  "authors": [
+    "Jason Chen <jhchen7@gmail.com>"
+  ],
+  "contributors": [
+    "Byron Milligan <byronner@gmail.com>",
+    "Keegan Poppen <keegan.poppen@gmail.com>"
+  ],
+  "description": "Cross browser rich text editor",
+  "main": "dist/quill.js",
+  "license": "BSD",
+  "ignore": [
+    "**/.*",
+    "config",
+    "examples",
+    "src",
+    "test",
+    "Gruntfile.coffee",
+    "index.js",
+    "package.json"
+  ],
+  "_release": "0.20.1",
+  "_resolution": {
+    "type": "version",
+    "tag": "v0.20.1",
+    "commit": "07b7f54dfe8997e1c8fe180be6f0817693215c48"
+  },
+  "_source": "git://github.com/quilljs/quill.git",
+  "_target": "~0.20.1",
+  "_originalSource": "quill",
+  "_direct": true
+}

@@ -1,0 +1,28 @@
+{
+  "name": "yjs",
+  "version": "0.7.6",
+  "homepage": "y-js.org",
+  "authors": [
+    "Kevin Jahns <kevin.jahns@rwth-aachen.de>"
+  ],
+  "description": "A Framework that enables Real-Time collaboration on arbitrary data structures.",
+  "main": "y.js",
+  "keywords": [
+    "OT",
+    "collaboration",
+    "synchronization",
+    "sharejs",
+    "coweb",
+    "concurrency"
+  ],
+  "license": "MIT",
+  "_release": "0.7.6",
+  "_resolution": {
+    "type": "version",
+    "tag": "v0.7.6",
+    "commit": "eee80e1755379a2f39e9d0ed780bf29975256575"
+  },
+  "_source": "git://github.com/y-js/yjs.git",
+  "_target": "~0.7.6",
+  "_originalSource": "yjs"
+}

@@ -1,0 +1,15 @@
+{
+  "name": "yjs-examples",
+  "version": "0.0",
+  "homepage": "y-js.org",
+  "authors": [
+    "Kevin Jahns <kevin.jahns@rwth-aachen.de>"
+  ],
+  "description": "Examples for yjs",
+  "license": "MIT",
+  "ignore": [],
+  "dependencies": {
+    "yjs": "../",
+    "y-webrtc": "~0.6.4"
+  }
+}

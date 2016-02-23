@@ -1,0 +1,37 @@
+{
+  "name": "y-memory",
+  "main": "y-memory.js",
+  "version": "0.7.0",
+  "homepage": "http://y-js.org",
+  "authors": [
+    "Kevin Jahns <kevin.jahns@rwth-aachen.de>"
+  ],
+  "description": "In-Memory database adapter for Yjs",
+  "moduleType": [
+    "globals",
+    "node"
+  ],
+  "keywords": [
+    "Yjs",
+    "connector",
+    "webrtc"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "_release": "0.7.0",
+  "_resolution": {
+    "type": "version",
+    "tag": "v0.7.0",
+    "commit": "04c97da664d857328524e8a873e4f40cc066125d"
+  },
+  "_source": "git://github.com/y-js/y-memory.git",
+  "_target": "~0.7.0",
+  "_originalSource": "y-memory",
+  "_direct": true
+}
