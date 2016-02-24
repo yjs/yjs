@@ -168,18 +168,20 @@ The promise returns an instance of Y. We denote it with a lower case `y`.
 * y.db.userId :: String
   * The used user id for this client. **Never overwrite this**
 
-
-# Status
-Yjs is a work in progress. Different versions of the *y-* repositories may not work together. Just drop me a line if you run into troubles.
-
 ## Get help
 There are some friendly people on [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/y-js/yjs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) who may help you with your problem, and answer your questions.
 
 Please report _any_ issues to the [Github issue page](https://github.com/y-js/yjs/issues)! I try to fix them very soon, if possible.
+If you want to see an issue fixed, please subscribe to the thread (or remind me via gitter).
+
 
 ## Changelog
-### 1.0.0
-This is a complete rewrite of the 0.5 version of Yjs. Since Yjs 1.0 it is possible to work asynchronously on a persistent database, which enables offline support.
+
+### 9.0.0
+There were several rolling updates from 0.6 to 0.8. We'll now follow the semver versioning scheme. This is all what this jump from 0.8 to 9.0 is about.
+
+### 0.6.0
+This is a complete rewrite of the 0.5 version of Yjs. Since Yjs 0.6.0 it is possible to work asynchronously on a persistent database, which enables offline support.
 * Switched to semver versioning
 * Requires a promise implementation in environment (es6 promises suffice, included in all the major browsers). Otherwise you have to include a polyfill
 * Y.Object has been renamed to Y.Map
