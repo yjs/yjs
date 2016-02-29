@@ -99,9 +99,9 @@ module.exports = function (Y/* :any */) {
       }
       return t
     }
-    * createType (typedefinition) {
+    * createType (typedefinition, id) {
       var structname = typedefinition.struct
-      var id = this.store.getNextOpId()
+      id = id || this.store.getNextOpId()
       var op = Y.Struct[structname].create(id)
       op.type = typedefinition.name
       yield* this.applyCreatedOperations([op])
@@ -653,14 +653,20 @@ module.exports = function (Y/* :any */) {
       if (o != null || id[0] !== '_') {
         return o
       } else {
-        // need to generate this operation
-        if (this.store._nextUserId == null) {
-          var struct = id[1].split('_')[0]
-          // this.store._nextUserId = id
-          var op = Y.Struct[struct].create(id)
-          yield* this.setOperation(op)
-          // delete this.store._nextUserId
-          return op
+        // generate this operation?
+        if (typeof id[1] === 'string') {
+          var comp = id[1].split('_')
+          if (comp.length > 1) {
+            var struct = comp[0]
+            var op = Y.Struct[struct].create(id)
+            yield* this.setOperation(op)
+            return op
+          } else {
+            // won't be called. but just in case..
+            console.error('Unexpected case. How can this happen?')
+            debugger // eslint-disable-line
+            return null
+          }
         } else {
           // Can only generate one operation at a time
           return null

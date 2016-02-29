@@ -64,7 +64,7 @@ module.exports = function (Y/* :any */) {
         if (op.parentSub != null) {
           e.parentSub = op.parentSub
         }
-        if (op.opContent != null) {
+        if (op.hasOwnProperty('opContent')) {
           e.opContent = op.opContent
         } else {
           e.content = op.content

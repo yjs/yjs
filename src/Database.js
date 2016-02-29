@@ -205,9 +205,7 @@ module.exports = function (Y /* :any */) {
       this.userIdPromise.then(f)
     }
     getNextOpId () {
-      if (this._nextUserId != null) {
-        return this._nextUserId
-      } else if (this.userId == null) {
+      if (this.userId == null) {
         throw new Error('OperationStore not yet initialized!')
       } else {
         return [this.userId, this.opClock++]
