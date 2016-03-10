@@ -224,6 +224,9 @@ module.exports = function (Y /* :any */) {
         var o = ops[i]
         if (o.id == null || o.id[0] !== this.y.connector.userId) {
           var required = Y.Struct[o.struct].requiredOps(o)
+          if (o.requires != null) {
+            required = required.concat(o.requires)
+          }
           this.whenOperationsExist(required, o)
         }
       }
@@ -372,7 +375,7 @@ module.exports = function (Y /* :any */) {
         }
 
         // notify parent, if it was instanciated as a custom type
-        if (t != null) {
+        if (t != null && opIsDeleted) {
           yield* t._changed(transaction, Y.utils.copyObject(op))
         }
       }

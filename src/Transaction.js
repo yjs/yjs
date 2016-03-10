@@ -87,25 +87,28 @@ module.exports = function (Y/* :any */) {
       If it does not exist yes, create it.
       TODO: delete type from store.initializedTypes[id] when corresponding id was deleted!
     */
-    * getType (id) {
+    * getType (id, args) {
       var sid = JSON.stringify(id)
       var t = this.store.initializedTypes[sid]
       if (t == null) {
         var op/* :MapStruct | ListStruct */ = yield* this.getOperation(id)
         if (op != null) {
-          t = yield* Y[op.type].initType.call(this, this.store, op)
+          t = yield* Y[op.type].typeDefinition.initType.call(this, this.store, op, args)
           this.store.initializedTypes[sid] = t
         }
       }
       return t
     }
     * createType (typedefinition, id) {
-      var structname = typedefinition.struct
+      var structname = typedefinition[0].struct
       id = id || this.store.getNextOpId()
       var op = Y.Struct[structname].create(id)
-      op.type = typedefinition.name
+      op.type = typedefinition[0].name
+      if (typedefinition[0].appendAdditionalInfo != null) {
+        yield* typedefinition[0].appendAdditionalInfo.call(this, op, typedefinition[1])
+      }
       yield* this.applyCreatedOperations([op])
-      return yield* this.getType(id)
+      return yield* this.getType(id, typedefinition[1])
     }
     /*
       Apply operations that this user created (no remote ones!)
@@ -117,7 +120,7 @@ module.exports = function (Y/* :any */) {
       for (var i = 0; i < ops.length; i++) {
         var op = ops[i]
         yield* this.store.tryExecute.call(this, op)
-        if (op.id == null || op.id[0] !== '_') {
+        if (op.id == null || typeof op.id[1] !== 'string') {
           send.push(Y.Struct[op.struct].encode(op))
         }
       }
@@ -643,7 +646,7 @@ module.exports = function (Y/* :any */) {
     }
     * addOperation (op) {
       yield* this.os.put(op)
-      if (!this.store.y.connector.isDisconnected() && this.store.forwardAppliedOperations && op.id[0] !== '_') {
+      if (!this.store.y.connector.isDisconnected() && this.store.forwardAppliedOperations && typeof op.id[1] !== 'string') {
         // is connected, and this is not going to be send in addOperation
         this.store.y.connector.broadcastOps([op])
       }
@@ -653,12 +656,13 @@ module.exports = function (Y/* :any */) {
       if (o != null || id[0] !== '_') {
         return o
       } else {
-        // generate this operation?
+      /*  // generate this operation?
         if (typeof id[1] === 'string') {
           var comp = id[1].split('_')
-          if (comp.length > 1) {
+          if (comp.length > 2 || id[0] === '_') {
             var struct = comp[0]
             var op = Y.Struct[struct].create(id)
+            op.type = comp[1]
             yield* this.setOperation(op)
             return op
           } else {
@@ -668,9 +672,8 @@ module.exports = function (Y/* :any */) {
             return null
           }
         } else {
-          // Can only generate one operation at a time
-          return null
-        }
+        */
+        return null
       }
     }
     * removeOperation (id) {

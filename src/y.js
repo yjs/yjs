@@ -14,7 +14,11 @@ module.exports = Y
 Y.requiringModules = requiringModules
 
 Y.extend = function (name, value) {
-  Y[name] = value
+  if (value instanceof Y.utils.CustomType) {
+    Y[name] = value.parseArguments
+  } else {
+    Y[name] = value
+  }
   if (requiringModules[name] != null) {
     requiringModules[name].resolve()
     delete requiringModules[name]
@@ -29,9 +33,10 @@ function requestModules (modules) {
   var extention = typeof regeneratorRuntime !== 'undefined' ? '.js' : '.es6'
   var promises = []
   for (var i = 0; i < modules.length; i++) {
-    var modulename = 'y-' + modules[i].toLowerCase()
-    if (Y[modules[i]] == null) {
-      if (requiringModules[modules[i]] == null) {
+    var module = modules[i].split('(')[0]
+    var modulename = 'y-' + module.toLowerCase()
+    if (Y[module] == null) {
+      if (requiringModules[module] == null) {
         // module does not exist
         if (typeof window !== 'undefined' && window.Y !== 'undefined') {
           var imported = document.createElement('script')
@@ -39,7 +44,7 @@ function requestModules (modules) {
           document.head.appendChild(imported)
 
           let requireModule = {}
-          requiringModules[modules[i]] = requireModule
+          requiringModules[module] = requireModule
           requireModule.promise = new Promise(function (resolve) {
             requireModule.resolve = resolve
           })
@@ -130,15 +135,19 @@ class YConfig {
     this.db.requestTransaction(function * requestTransaction () {
       // create shared object
       for (var propertyname in opts.share) {
-        var typename = opts.share[propertyname]
-        var id = ['_', Y[typename].struct + '_' + propertyname]
-        var op = yield* this.getOperation(id)
-        if (op.type !== typename) {
-          // not already in the db
-          op.type = typename
-          yield* this.setOperation(op)
+        var typeConstructor = opts.share[propertyname].split('(')
+        var typeName = typeConstructor.splice(0, 1)
+        var args = []
+        if (typeConstructor.length === 1) {
+          try {
+            args = JSON.parse('[' + typeConstructor[0].split(')')[0] + ']')
+          } catch (e) {
+            throw new Error('Was not able to parse type definition! (share.' + propertyname + ')')
+          }
         }
-        share[propertyname] = yield* this.getType(id)
+        var id = ['_', propertyname + '_' + typeConstructor]
+        var type = Y[typeName]
+        share[propertyname] = yield* this.createType(type.apply(type.typeDefinition, args), id)
       }
       this.store.whenTransactionsFinished()
         .then(callback)

@@ -91,7 +91,6 @@ module.exports = function (gulp, helperOptions) {
     var browserify = require('browserify')
     var source = require('vinyl-source-stream')
     var buffer = require('vinyl-buffer')
-
     return browserify({
       entries: files.specs,
       debug: true

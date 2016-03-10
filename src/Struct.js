@@ -259,11 +259,18 @@ module.exports = function (Y/* :any */) {
         }
       },
       encode: function (op) {
-        return {
+        var e = {
           struct: 'List',
           id: op.id,
           type: op.type
         }
+        if (op.requires != null) {
+          e.requires = op.requires
+        }
+        if (op.info != null) {
+          e.info = op.info
+        }
+        return e
       },
       requiredOps: function () {
         /*
@@ -332,12 +339,19 @@ module.exports = function (Y/* :any */) {
         }
       },
       encode: function (op) {
-        return {
+        var e = {
           struct: 'Map',
           type: op.type,
           id: op.id,
           map: {} // overwrite map!!
         }
+        if (op.requires != null) {
+          e.requires = op.requires
+        }
+        if (op.info != null) {
+          e.info = op.info
+        }
+        return e
       },
       requiredOps: function () {
         return []

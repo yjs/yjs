@@ -26,7 +26,40 @@
 module.exports = function (Y /* : any*/) {
   Y.utils = {}
 
-  class EventHandler {
+  class EventListenerHandler {
+    constructor () {
+      this.eventListeners = []
+    }
+    destroy () {
+      this.eventListeners = null
+    }
+     /*
+      Basic event listener boilerplate...
+    */
+    addEventListener (f) {
+      this.eventListeners.push(f)
+    }
+    removeEventListener (f) {
+      this.eventListeners = this.eventListeners.filter(function (g) {
+        return f !== g
+      })
+    }
+    removeAllEventListeners () {
+      this.eventListeners = []
+    }
+    callEventListeners (event) {
+      for (var i = 0; i < this.eventListeners.length; i++) {
+        try {
+          this.eventListeners[i](event)
+        } catch (e) {
+          console.error('User events must not throw Errors!')
+        }
+      }
+    }
+  }
+  Y.utils.EventListenerHandler = EventListenerHandler
+
+  class EventHandler extends EventListenerHandler {
     /* ::
     waiting: Array<Insertion | Deletion>;
     awaiting: number;
@@ -41,16 +74,16 @@ module.exports = function (Y /* : any*/) {
       all prematurely called operations were executed ("waiting operations")
     */
     constructor (onevent /* : Function */) {
+      super()
       this.waiting = []
       this.awaiting = 0
       this.onevent = onevent
-      this.eventListeners = []
     }
     destroy () {
+      super.destroy()
       this.waiting = null
       this.awaiting = null
       this.onevent = null
-      this.eventListeners = null
     }
     /*
       Call this when a new operation arrives. It will be executed right away if
@@ -71,30 +104,6 @@ module.exports = function (Y /* : any*/) {
     awaitAndPrematurelyCall (ops) {
       this.awaiting++
       this.onevent(ops)
-    }
-    /*
-      Basic event listener boilerplate...
-      TODO: maybe put this in a different type..
-    */
-    addEventListener (f) {
-      this.eventListeners.push(f)
-    }
-    removeEventListener (f) {
-      this.eventListeners = this.eventListeners.filter(function (g) {
-        return f !== g
-      })
-    }
-    removeAllEventListeners () {
-      this.eventListeners = []
-    }
-    callEventListeners (event) {
-      for (var i = 0; i < this.eventListeners.length; i++) {
-        try {
-          this.eventListeners[i](event)
-        } catch (e) {
-          console.log('User events must not throw Errors!') // eslint-disable-line
-        }
-      }
     }
     /*
       Call this when you successfully awaited the execution of n Insert operations
@@ -192,9 +201,25 @@ module.exports = function (Y /* : any*/) {
       this.initType = def.initType
       this.class = def.class
       this.name = def.name
+      if (def.appendAdditionalInfo != null) {
+        this.appendAdditionalInfo = def.appendAdditionalInfo
+      }
+      this.parseArguments = (def.parseArguments || function () {
+        return [this]
+      }).bind(this)
+      this.parseArguments.typeDefinition = this
     }
   }
   Y.utils.CustomType = CustomType
+
+  Y.utils.isTypeDefinition = function isTypeDefinition (v) {
+    if (v != null) {
+      if (v instanceof Y.utils.CustomType) return [v]
+      else if (v.constructor === Array && v[0] instanceof Y.utils.CustomType) return v
+      else if (v instanceof Function && v.typeDefinition instanceof Y.utils.CustomType) return [v.typeDefinition]
+    }
+    return false
+  }
 
   /*
     Make a flat copy of an object

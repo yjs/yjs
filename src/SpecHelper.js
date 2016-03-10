@@ -25,7 +25,7 @@ g.g = g
 
 g.YConcurrency_TestingMode = true
 
-jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 5000
 
 g.describeManyTimes = function describeManyTimes (times, name, f) {
   for (var i = 0; i < times; i++) {
@@ -221,15 +221,18 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
       // TODO: make requestTransaction return a promise..
       u.db.requestTransaction(function * () {
         yield* t2.call(this)
-        expect(s1).toEqual(s2)
-        expect(allDels1).toEqual(allDels2) // inner structure
-        expect(ds1).toEqual(ds2) // exported structure
-        var count = 0
+        var db2 = []
         yield* this.os.iterate(this, null, null, function * (o) {
           o = Y.utils.copyObject(o)
           delete o.origin
           delete o.originOf
-          expect(db1[count++]).toEqual(o)
+          db2.push(o)
+        })
+        expect(s1).toEqual(s2)
+        expect(allDels1).toEqual(allDels2) // inner structure
+        expect(ds1).toEqual(ds2) // exported structure
+        db2.forEach((o, i) => {
+          expect(db1[i]).toEqual(o)
         })
       })
     }
@@ -237,7 +240,7 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
   }
 })
 
-g.createUsers = async(function * createUsers (self, numberOfUsers, database) {
+g.createUsers = async(function * createUsers (self, numberOfUsers, database, initType) {
   if (Y.utils.globalRoom.users[0] != null) {
     yield Y.utils.globalRoom.flushAll()
   }
@@ -246,6 +249,7 @@ g.createUsers = async(function * createUsers (self, numberOfUsers, database) {
     Y.utils.globalRoom.users[u].y.destroy()
   }
   self.users = null
+  yield wait()
 
   var promises = []
   for (var i = 0; i < numberOfUsers; i++) {
@@ -261,7 +265,7 @@ g.createUsers = async(function * createUsers (self, numberOfUsers, database) {
         debug: false
       },
       share: {
-        root: 'Map'
+        root: initType || 'Map'
       }
     }))
   }
