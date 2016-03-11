@@ -375,7 +375,7 @@ module.exports = function (Y /* :any */) {
         }
 
         // notify parent, if it was instanciated as a custom type
-        if (t != null && opIsDeleted) {
+        if (t != null && !opIsDeleted) {
           yield* t._changed(transaction, Y.utils.copyObject(op))
         }
       }
