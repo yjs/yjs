@@ -760,9 +760,7 @@ module.exports = function (Y /* :any */) {
       this.userIdPromise.then(f)
     }
     getNextOpId () {
-      if (this._nextUserId != null) {
-        return this._nextUserId
-      } else if (this.userId == null) {
+      if (this.userId == null) {
         throw new Error('OperationStore not yet initialized!')
       } else {
         return [this.userId, this.opClock++]
@@ -781,6 +779,9 @@ module.exports = function (Y /* :any */) {
         var o = ops[i]
         if (o.id == null || o.id[0] !== this.y.connector.userId) {
           var required = Y.Struct[o.struct].requiredOps(o)
+          if (o.requires != null) {
+            required = required.concat(o.requires)
+          }
           this.whenOperationsExist(required, o)
         }
       }
@@ -929,7 +930,7 @@ module.exports = function (Y /* :any */) {
         }
 
         // notify parent, if it was instanciated as a custom type
-        if (t != null) {
+        if (t != null && !opIsDeleted) {
           yield* t._changed(transaction, Y.utils.copyObject(op))
         }
       }
@@ -1061,7 +1062,7 @@ module.exports = function (Y/* :any */) {
         if (op.parentSub != null) {
           e.parentSub = op.parentSub
         }
-        if (op.opContent != null) {
+        if (op.hasOwnProperty('opContent')) {
           e.opContent = op.opContent
         } else {
           e.content = op.content
@@ -1256,11 +1257,18 @@ module.exports = function (Y/* :any */) {
         }
       },
       encode: function (op) {
-        return {
+        var e = {
           struct: 'List',
           id: op.id,
           type: op.type
         }
+        if (op.requires != null) {
+          e.requires = op.requires
+        }
+        if (op.info != null) {
+          e.info = op.info
+        }
+        return e
       },
       requiredOps: function () {
         /*
@@ -1329,12 +1337,19 @@ module.exports = function (Y/* :any */) {
         }
       },
       encode: function (op) {
-        return {
+        var e = {
           struct: 'Map',
           type: op.type,
           id: op.id,
           map: {} // overwrite map!!
         }
+        if (op.requires != null) {
+          e.requires = op.requires
+        }
+        if (op.info != null) {
+          e.info = op.info
+        }
+        return e
       },
       requiredOps: function () {
         return []
@@ -1451,26 +1466,52 @@ module.exports = function (Y/* :any */) {
       If it does not exist yes, create it.
       TODO: delete type from store.initializedTypes[id] when corresponding id was deleted!
     */
-    * getType (id) {
+    * getType (id, args) {
       var sid = JSON.stringify(id)
       var t = this.store.initializedTypes[sid]
       if (t == null) {
         var op/* :MapStruct | ListStruct */ = yield* this.getOperation(id)
         if (op != null) {
-          t = yield* Y[op.type].initType.call(this, this.store, op)
+          t = yield* Y[op.type].typeDefinition.initType.call(this, this.store, op, args)
           this.store.initializedTypes[sid] = t
         }
       }
       return t
     }
-    * createType (typedefinition) {
-      var structname = typedefinition.struct
-      var id = this.store.getNextOpId()
-      var op = Y.Struct[structname].create(id)
-      op.type = typedefinition.name
-      yield* this.applyCreatedOperations([op])
-      return yield* this.getType(id)
+    * createType (typedefinition, id) {
+      var structname = typedefinition[0].struct
+      id = id || this.store.getNextOpId()
+      var op
+      if (id[0] === '_') {
+        op = yield* this.getOperation(id)
+      } else {
+        op = Y.Struct[structname].create(id)
+        op.type = typedefinition[0].name
+      }
+      if (typedefinition[0].appendAdditionalInfo != null) {
+        yield* typedefinition[0].appendAdditionalInfo.call(this, op, typedefinition[1])
+      }
+      if (op[0] === '_') {
+        yield* this.setOperation(op)
+      } else {
+        yield* this.applyCreatedOperations([op])
+      }
+      return yield* this.getType(id, typedefinition[1])
     }
+    /* createType (typedefinition, id) {
+      var structname = typedefinition[0].struct
+      id = id || this.store.getNextOpId()
+      var op = Y.Struct[structname].create(id)
+      op.type = typedefinition[0].name
+      if (typedefinition[0].appendAdditionalInfo != null) {
+        yield* typedefinition[0].appendAdditionalInfo.call(this, op, typedefinition[1])
+      }
+      // yield* this.applyCreatedOperations([op])
+      yield* Y.Struct[op.struct].execute.call(this, op)
+      yield* this.addOperation(op)
+      yield* this.store.operationAdded(this, op)
+      return yield* this.getType(id, typedefinition[1])
+    }*/
     /*
       Apply operations that this user created (no remote ones!)
         * does not check for Struct.*.requiredOps()
@@ -1481,7 +1522,7 @@ module.exports = function (Y/* :any */) {
       for (var i = 0; i < ops.length; i++) {
         var op = ops[i]
         yield* this.store.tryExecute.call(this, op)
-        if (op.id == null || op.id[0] !== '_') {
+        if (op.id == null || typeof op.id[1] !== 'string') {
           send.push(Y.Struct[op.struct].encode(op))
         }
       }
@@ -1517,7 +1558,7 @@ module.exports = function (Y/* :any */) {
         yield* this.markDeleted(targetId, 1)
       }
 
-      if (target != null && target.gc == null) {
+      if (target != null) {
         if (!target.deleted) {
           callType = true
           // set deleted & notify type
@@ -1548,7 +1589,7 @@ module.exports = function (Y/* :any */) {
           }
           if (target.opContent != null) {
             yield* this.deleteOperation(target.opContent)
-            target.opContent = null
+            // target.opContent = null
           }
         }
         var left
@@ -1835,10 +1876,12 @@ module.exports = function (Y/* :any */) {
             yield* this.setOperation(origin)
           }
         }
-
-        if (o.parent != null) {
-          // remove gc'd op from parent, if it exists
-          var parent /* MapOperation */ = yield* this.getOperation(o.parent)
+        var parent
+        if (o.parent != null){ 
+          parent = yield* this.getOperation(o.parent)
+        }
+        // remove gc'd op from parent, if it exists
+        if (parent != null) {
           var setParent = false // whether to save parent to the os
           if (o.parentSub != null) {
             if (Y.utils.compareIds(parent.map[o.parentSub], o.id)) {
@@ -2007,7 +2050,7 @@ module.exports = function (Y/* :any */) {
     }
     * addOperation (op) {
       yield* this.os.put(op)
-      if (!this.store.y.connector.isDisconnected() && this.store.forwardAppliedOperations && op.id[0] !== '_') {
+      if (!this.store.y.connector.isDisconnected() && this.store.forwardAppliedOperations && typeof op.id[1] !== 'string') {
         // is connected, and this is not going to be send in addOperation
         this.store.y.connector.broadcastOps([op])
       }
@@ -2017,18 +2060,21 @@ module.exports = function (Y/* :any */) {
       if (o != null || id[0] !== '_') {
         return o
       } else {
-        // need to generate this operation
-        if (this.store._nextUserId == null) {
-          var struct = id[1].split('_')[0]
-          // this.store._nextUserId = id
+        // generate this operation?
+        var comp = id[1].split('_')
+        if (comp.length > 1) {
+          var struct = comp[0]
           var op = Y.Struct[struct].create(id)
+          op.type = comp[1]
           yield* this.setOperation(op)
-          // delete this.store._nextUserId
           return op
         } else {
-          // Can only generate one operation at a time
+          // won't be called. but just in case..
+          console.error('Unexpected case. How can this happen?')
+          debugger // eslint-disable-line
           return null
         }
+        return null
       }
     }
     * removeOperation (id) {
@@ -2253,7 +2299,40 @@ module.exports = function (Y/* :any */) {
 module.exports = function (Y /* : any*/) {
   Y.utils = {}
 
-  class EventHandler {
+  class EventListenerHandler {
+    constructor () {
+      this.eventListeners = []
+    }
+    destroy () {
+      this.eventListeners = null
+    }
+     /*
+      Basic event listener boilerplate...
+    */
+    addEventListener (f) {
+      this.eventListeners.push(f)
+    }
+    removeEventListener (f) {
+      this.eventListeners = this.eventListeners.filter(function (g) {
+        return f !== g
+      })
+    }
+    removeAllEventListeners () {
+      this.eventListeners = []
+    }
+    callEventListeners (event) {
+      for (var i = 0; i < this.eventListeners.length; i++) {
+        try {
+          this.eventListeners[i](event)
+        } catch (e) {
+          console.error('User events must not throw Errors!')
+        }
+      }
+    }
+  }
+  Y.utils.EventListenerHandler = EventListenerHandler
+
+  class EventHandler extends EventListenerHandler {
     /* ::
     waiting: Array<Insertion | Deletion>;
     awaiting: number;
@@ -2268,16 +2347,16 @@ module.exports = function (Y /* : any*/) {
       all prematurely called operations were executed ("waiting operations")
     */
     constructor (onevent /* : Function */) {
+      super()
       this.waiting = []
       this.awaiting = 0
       this.onevent = onevent
-      this.eventListeners = []
     }
     destroy () {
+      super.destroy()
       this.waiting = null
       this.awaiting = null
       this.onevent = null
-      this.eventListeners = null
     }
     /*
       Call this when a new operation arrives. It will be executed right away if
@@ -2298,30 +2377,6 @@ module.exports = function (Y /* : any*/) {
     awaitAndPrematurelyCall (ops) {
       this.awaiting++
       this.onevent(ops)
-    }
-    /*
-      Basic event listener boilerplate...
-      TODO: maybe put this in a different type..
-    */
-    addEventListener (f) {
-      this.eventListeners.push(f)
-    }
-    removeEventListener (f) {
-      this.eventListeners = this.eventListeners.filter(function (g) {
-        return f !== g
-      })
-    }
-    removeAllEventListeners () {
-      this.eventListeners = []
-    }
-    callEventListeners (event) {
-      for (var i = 0; i < this.eventListeners.length; i++) {
-        try {
-          this.eventListeners[i](event)
-        } catch (e) {
-          console.log('User events must not throw Errors!') // eslint-disable-line
-        }
-      }
     }
     /*
       Call this when you successfully awaited the execution of n Insert operations
@@ -2419,9 +2474,25 @@ module.exports = function (Y /* : any*/) {
       this.initType = def.initType
       this.class = def.class
       this.name = def.name
+      if (def.appendAdditionalInfo != null) {
+        this.appendAdditionalInfo = def.appendAdditionalInfo
+      }
+      this.parseArguments = (def.parseArguments || function () {
+        return [this]
+      }).bind(this)
+      this.parseArguments.typeDefinition = this
     }
   }
   Y.utils.CustomType = CustomType
+
+  Y.utils.isTypeDefinition = function isTypeDefinition (v) {
+    if (v != null) {
+      if (v instanceof Y.utils.CustomType) return [v]
+      else if (v.constructor === Array && v[0] instanceof Y.utils.CustomType) return v
+      else if (v instanceof Function && v.typeDefinition instanceof Y.utils.CustomType) return [v.typeDefinition]
+    }
+    return false
+  }
 
   /*
     Make a flat copy of an object
@@ -2630,7 +2701,11 @@ module.exports = Y
 Y.requiringModules = requiringModules
 
 Y.extend = function (name, value) {
-  Y[name] = value
+  if (value instanceof Y.utils.CustomType) {
+    Y[name] = value.parseArguments
+  } else {
+    Y[name] = value
+  }
   if (requiringModules[name] != null) {
     requiringModules[name].resolve()
     delete requiringModules[name]
@@ -2645,9 +2720,10 @@ function requestModules (modules) {
   var extention = typeof regeneratorRuntime !== 'undefined' ? '.js' : '.es6'
   var promises = []
   for (var i = 0; i < modules.length; i++) {
-    var modulename = 'y-' + modules[i].toLowerCase()
-    if (Y[modules[i]] == null) {
-      if (requiringModules[modules[i]] == null) {
+    var module = modules[i].split('(')[0]
+    var modulename = 'y-' + module.toLowerCase()
+    if (Y[module] == null) {
+      if (requiringModules[module] == null) {
         // module does not exist
         if (typeof window !== 'undefined' && window.Y !== 'undefined') {
           var imported = document.createElement('script')
@@ -2655,7 +2731,7 @@ function requestModules (modules) {
           document.head.appendChild(imported)
 
           let requireModule = {}
-          requiringModules[modules[i]] = requireModule
+          requiringModules[module] = requireModule
           requireModule.promise = new Promise(function (resolve) {
             requireModule.resolve = resolve
           })
@@ -2746,15 +2822,20 @@ class YConfig {
     this.db.requestTransaction(function * requestTransaction () {
       // create shared object
       for (var propertyname in opts.share) {
-        var typename = opts.share[propertyname]
-        var id = ['_', Y[typename].struct + '_' + propertyname]
-        var op = yield* this.getOperation(id)
-        if (op.type !== typename) {
-          // not already in the db
-          op.type = typename
-          yield* this.setOperation(op)
+        var typeConstructor = opts.share[propertyname].split('(')
+        var typeName = typeConstructor.splice(0, 1)
+        var args = []
+        if (typeConstructor.length === 1) {
+          try {
+            args = JSON.parse('[' + typeConstructor[0].split(')')[0] + ']')
+          } catch (e) {
+            throw new Error('Was not able to parse type definition! (share.' + propertyname + ')')
+          }
         }
-        share[propertyname] = yield* this.getType(id)
+        var type = Y[typeName]
+        var typedef = type.typeDefinition
+        var id = ['_', typedef.struct + '_' + typeName + '_' + propertyname + '_' + typeConstructor]
+        share[propertyname] = yield* this.createType(type.apply(typedef, args), id)
       }
       this.store.whenTransactionsFinished()
         .then(callback)
