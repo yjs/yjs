@@ -145,9 +145,10 @@ class YConfig {
             throw new Error('Was not able to parse type definition! (share.' + propertyname + ')')
           }
         }
-        var id = ['_', propertyname + '_' + typeConstructor]
         var type = Y[typeName]
-        share[propertyname] = yield* this.createType(type.apply(type.typeDefinition, args), id)
+        var typedef = type.typeDefinition
+        var id = ['_', typedef.struct + '_' + typeName + '_' + propertyname + '_' + typeConstructor]
+        share[propertyname] = yield* this.createType(type.apply(typedef, args), id)
       }
       this.store.whenTransactionsFinished()
         .then(callback)

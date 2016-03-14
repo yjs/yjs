@@ -91,10 +91,12 @@ module.exports = function (gulp, helperOptions) {
     var browserify = require('browserify')
     var source = require('vinyl-source-stream')
     var buffer = require('vinyl-buffer')
+
     return browserify({
-      entries: files.specs,
+      entries: files.specs, // .concat(files.distEs5),
       debug: true
-    }).bundle()
+    })// .transform('babelify', { presets: ['es2015'] })
+      .bundle()
       .pipe(source('specs.js'))
       .pipe(buffer())
       // .pipe($.sourcemaps.init({loadMaps: true}))

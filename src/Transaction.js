@@ -102,14 +102,37 @@ module.exports = function (Y/* :any */) {
     * createType (typedefinition, id) {
       var structname = typedefinition[0].struct
       id = id || this.store.getNextOpId()
+      var op
+      if (id[0] === '_') {
+        op = yield* this.getOperation(id)
+      } else {
+        op = Y.Struct[structname].create(id)
+        op.type = typedefinition[0].name
+      }
+      if (typedefinition[0].appendAdditionalInfo != null) {
+        yield* typedefinition[0].appendAdditionalInfo.call(this, op, typedefinition[1])
+      }
+      if (op[0] === '_') {
+        yield* this.setOperation(op)
+      } else {
+        yield* this.applyCreatedOperations([op])
+      }
+      return yield* this.getType(id, typedefinition[1])
+    }
+    /* createType (typedefinition, id) {
+      var structname = typedefinition[0].struct
+      id = id || this.store.getNextOpId()
       var op = Y.Struct[structname].create(id)
       op.type = typedefinition[0].name
       if (typedefinition[0].appendAdditionalInfo != null) {
         yield* typedefinition[0].appendAdditionalInfo.call(this, op, typedefinition[1])
       }
-      yield* this.applyCreatedOperations([op])
+      // yield* this.applyCreatedOperations([op])
+      yield* Y.Struct[op.struct].execute.call(this, op)
+      yield* this.addOperation(op)
+      yield* this.store.operationAdded(this, op)
       return yield* this.getType(id, typedefinition[1])
-    }
+    }*/
     /*
       Apply operations that this user created (no remote ones!)
         * does not check for Struct.*.requiredOps()
@@ -156,7 +179,7 @@ module.exports = function (Y/* :any */) {
         yield* this.markDeleted(targetId, 1)
       }
 
-      if (target != null && target.gc == null) {
+      if (target != null) {
         if (!target.deleted) {
           callType = true
           // set deleted & notify type
@@ -187,7 +210,7 @@ module.exports = function (Y/* :any */) {
           }
           if (target.opContent != null) {
             yield* this.deleteOperation(target.opContent)
-            target.opContent = null
+            // target.opContent = null
           }
         }
         var left
@@ -474,10 +497,12 @@ module.exports = function (Y/* :any */) {
             yield* this.setOperation(origin)
           }
         }
-
-        if (o.parent != null) {
-          // remove gc'd op from parent, if it exists
-          var parent /* MapOperation */ = yield* this.getOperation(o.parent)
+        var parent
+        if (o.parent != null){ 
+          parent = yield* this.getOperation(o.parent)
+        }
+        // remove gc'd op from parent, if it exists
+        if (parent != null) {
           var setParent = false // whether to save parent to the os
           if (o.parentSub != null) {
             if (Y.utils.compareIds(parent.map[o.parentSub], o.id)) {
@@ -656,23 +681,20 @@ module.exports = function (Y/* :any */) {
       if (o != null || id[0] !== '_') {
         return o
       } else {
-      /*  // generate this operation?
-        if (typeof id[1] === 'string') {
-          var comp = id[1].split('_')
-          if (comp.length > 2 || id[0] === '_') {
-            var struct = comp[0]
-            var op = Y.Struct[struct].create(id)
-            op.type = comp[1]
-            yield* this.setOperation(op)
-            return op
-          } else {
-            // won't be called. but just in case..
-            console.error('Unexpected case. How can this happen?')
-            debugger // eslint-disable-line
-            return null
-          }
+        // generate this operation?
+        var comp = id[1].split('_')
+        if (comp.length > 1) {
+          var struct = comp[0]
+          var op = Y.Struct[struct].create(id)
+          op.type = comp[1]
+          yield* this.setOperation(op)
+          return op
         } else {
-        */
+          // won't be called. but just in case..
+          console.error('Unexpected case. How can this happen?')
+          debugger // eslint-disable-line
+          return null
+        }
         return null
       }
     }
