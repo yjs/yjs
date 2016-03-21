@@ -154,17 +154,32 @@ module.exports = function (Y/* :any */) {
     }
 
     * deleteList (start) {
-      if (this.store.y.connector.isSynced) {
-        while (start != null && this.store.y.connector.isSynced) {
-          start = yield* this.getOperation(start)
+      while (start != null) {
+        start = yield* this.getOperation(start)
+        if (start.gc) {
+          break
+        } else {
           start.gc = true
+          start.deleted = true
           yield* this.setOperation(start)
-          // TODO: will always reset the parent..
-          this.store.gc1.push(start.id)
+          yield* this.markDeleted(start.id, 1)
+          if (start.opContent != null) {
+            yield* this.deleteOperation(start.opContent)
+            /*
+            yield* this.deleteOperation(start.opContent)
+            var opContent = yield* this.getOperation(start.opContent)
+            opContent.gc = true
+            yield* this.setOperation(opContent)
+            if (this.store.y.connector.isSynced) {            
+              this.store.gc1.push(opContent.id)
+            }
+            */
+          }
+          if (this.store.y.connector.isSynced){
+            this.store.gc1.push(start.id)
+          }
           start = start.right
         }
-      } else {
-        // TODO: when not possible??? do later in (gcWhenSynced)
       }
     }
 
@@ -199,18 +214,23 @@ module.exports = function (Y/* :any */) {
           if (target.start != null) {
             // TODO: don't do it like this .. -.-
             yield* this.deleteList(target.start)
-            yield* this.deleteList(target.id)
+            // yield* this.deleteList(target.id) -- do not gc itself because this may still get referenced
           }
           if (target.map != null) {
             for (var name in target.map) {
               yield* this.deleteList(target.map[name])
             }
             // TODO: here to..  (see above)
-            yield* this.deleteList(target.id)
+            // yield* this.deleteList(target.id) -- see above
           }
           if (target.opContent != null) {
             yield* this.deleteOperation(target.opContent)
             // target.opContent = null
+          }
+          if (target.requires != null) {
+            for (var i = 0; i < target.requires.length; i++) {
+              yield* this.deleteOperation(target.requires[i])
+            }
           }
         }
         var left
@@ -377,9 +397,40 @@ module.exports = function (Y/* :any */) {
     */
     * garbageCollectAfterSync () {
       yield* this.os.iterate(this, null, null, function * (op) {
-        if (op.deleted && op.left != null) {
-          var left = yield* this.getOperation(op.left)
-          this.store.addToGarbageCollector(op, left)
+        if (op.gc) {
+          this.store.gc1.push(op.id)
+        } else {
+          if (op.parent != null) {
+            var parentDeleted = yield* this.isDeleted(op.parent)
+            if (parentDeleted) {
+              op.gc = true
+              if (!op.deleted) {
+                yield* this.markDeleted(op.id, 1)
+                op.deleted = true
+                if (op.opContent != null) {
+                  yield* this.deleteOperation(op.opContent)
+                  /*
+                  var opContent = yield* this.getOperation(op.opContent)
+                  opContent.gc = true
+                  yield* this.setOperation(opContent)
+                  this.store.gc1.push(opContent.id)
+                  */
+                }
+                if (op.requires != null) {
+                  for (var i = 0; i < op.requires.length; i++) {
+                    yield* this.deleteOperation(op.requires[i])
+                  }
+                }
+              }
+              yield* this.setOperation(op)
+              this.store.gc1.push(op.id)
+              return
+            }
+          } 
+          if (op.deleted && op.left != null) {
+            var left = yield* this.getOperation(op.left)
+            this.store.addToGarbageCollector(op, left)
+          }
         }
       })
     }
@@ -404,6 +455,29 @@ module.exports = function (Y/* :any */) {
           o = yield* this.getOperation(id)
         }
         */
+        
+        var deps = []
+        if (o.opContent != null) {
+          deps.push(o.opContent)
+        }
+        if (o.requires != null) {
+          deps = deps.concat(o.requires)
+        }
+        for (var i = 0; i < deps.length; i++) {
+          var dep = yield* this.getOperation(deps[i])
+          if (dep != null) {
+            if (!dep.deleted) {
+              yield* this.deleteOperation(dep.id)
+              dep = yield* this.getOperation(dep.id)
+            }
+            dep.gc = true
+            yield* this.setOperation(dep)
+            this.store.gc1.push(dep.id)
+          } else {
+            yield* this.markGarbageCollected(deps[i], 1)
+            yield* this.updateState(deps[i][0]) // TODO: unneccessary?
+          }
+        }
 
         // remove gc'd op from the left op, if it exists
         if (o.left != null) {
@@ -534,6 +608,18 @@ module.exports = function (Y/* :any */) {
       if (n != null && n.id[0] === state.user && n.gc) {
         state.clock = Math.max(state.clock, n.id[1] + n.len)
       }
+    }
+    * updateState (user) {
+      var state = yield* this.getState(user)
+      yield* this.checkDeleteStoreForState(state)
+      var o = yield* this.getOperation([user, state.clock])
+      while (o != null && o.id[1] === state.clock && user === o.id[0]) {
+        // either its a new operation (1. case), or it is an operation that was deleted, but is not yet in the OS
+        state.clock++
+        yield* this.checkDeleteStoreForState(state)
+        o = yield* this.os.findNext(o.id)
+      }
+      yield* this.setState(state)
     }
     /*
       apply a delete set in order to get

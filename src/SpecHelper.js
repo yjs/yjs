@@ -139,9 +139,9 @@ g.applyRandomTransactionsWithGC = async(function * applyRandomTransactions (user
 
 g.garbageCollectAllUsers = async(function * garbageCollectAllUsers (users) {
   // gc two times because of the two gc phases (really collect everything)
+  yield wait(100)
   for (var i in users) {
-    yield users[i].db.garbageCollect()
-    yield users[i].db.garbageCollect()
+    yield users[i].db.emptyGarbageCollector()
   }
 })
 

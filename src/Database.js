@@ -110,6 +110,18 @@ module.exports = function (Y /* :any */) {
         garbageCollect()
       }
     }
+    emptyGarbageCollector () {
+      return new Promise (resolve => {
+        var check = () => {
+          if (this.gc1.length > 0 || this.gc2.length > 0) {
+            this.garbageCollect().then(check)
+          } else {
+            resolve()
+          }
+        }
+        setTimeout(check, 0)
+      })
+    }
     addToDebug () {
       if (typeof YConcurrency_TestingMode !== 'undefined') {
         var command /* :string */ = Array.prototype.map.call(arguments, function (s) {
@@ -339,15 +351,7 @@ module.exports = function (Y /* :any */) {
         }
       } else {
         // increase SS
-        var o = op
-        var state = yield* transaction.getState(op.id[0])
-        while (o != null && o.id[1] === state.clock && op.id[0] === o.id[0]) {
-          // either its a new operation (1. case), or it is an operation that was deleted, but is not yet in the OS
-          state.clock++
-          yield* transaction.checkDeleteStoreForState(state)
-          o = yield* transaction.os.findNext(o.id)
-        }
-        yield* transaction.setState(state)
+        yield* transaction.updateState(op.id[0])
 
         // notify whenOperation listeners (by id)
         var sid = JSON.stringify(op.id)
@@ -364,6 +368,15 @@ module.exports = function (Y /* :any */) {
         }
         var t = this.initializedTypes[JSON.stringify(op.parent)]
 
+        // if parent is deleted, mark as gc'd and return
+        if (op.parent != null) {
+          var parentIsDeleted = yield* transaction.isDeleted(op.parent)
+          if (parentIsDeleted) {
+            yield* transaction.deleteList(op.id)
+            return
+          }
+        }
+
         // Delete if DS says this is actually deleted
         var opIsDeleted = yield* transaction.isDeleted(op.id)
         if (!op.deleted && opIsDeleted) {
@@ -375,8 +388,13 @@ module.exports = function (Y /* :any */) {
         }
 
         // notify parent, if it was instanciated as a custom type
-        if (t != null && !opIsDeleted) {
-          yield* t._changed(transaction, Y.utils.copyObject(op))
+        if (t != null) {
+          let o = Y.utils.copyObject(op)
+          if (opIsDeleted && !o.deleted) {
+            // op did not reflect the created delete op (happens when not using y-memory)
+            o.deleted = true
+          }
+          yield* t._changed(transaction, o)
         }
       }
     }
