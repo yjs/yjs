@@ -20,8 +20,6 @@ module.exports = function (Y/* :any */) {
     userId: UserId;
     send: Function;
     broadcast: Function;
-    broadcastOpBuffer: Array<Operation>;
-    protocolVersion: number;
     */
     /*
       opts contains the following information:
@@ -54,7 +52,7 @@ module.exports = function (Y/* :any */) {
       this.broadcastedHB = false
       this.syncStep2 = Promise.resolve()
       this.broadcastOpBuffer = []
-      this.protocolVersion = 10
+      this.protocolVersion = 8
     }
     reconnect () {
     }
@@ -153,8 +151,7 @@ module.exports = function (Y/* :any */) {
           conn.send(syncUser, {
             type: 'sync step 1',
             stateSet: stateSet,
-            deleteSet: deleteSet,
-            protocolVersion: conn.protocolVersion
+            deleteSet: deleteSet
           })
         })
       } else {
@@ -238,8 +235,7 @@ module.exports = function (Y/* :any */) {
             type: 'sync step 2',
             os: ops,
             stateSet: currentStateSet,
-            deleteSet: ds,
-            protocolVersion: this.protocolVersion
+            deleteSet: ds
           })
           if (this.forwardToSyncingClients) {
             conn.syncingClients.push(sender)
@@ -669,18 +665,6 @@ module.exports = function (Y /* :any */) {
         garbageCollect()
       }
     }
-    emptyGarbageCollector () {
-      return new Promise(resolve => {
-        var check = () => {
-          if (this.gc1.length > 0 || this.gc2.length > 0) {
-            this.garbageCollect().then(check)
-          } else {
-            resolve()
-          }
-        }
-        setTimeout(check, 0)
-      })
-    }
     addToDebug () {
       if (typeof YConcurrency_TestingMode !== 'undefined') {
         var command /* :string */ = Array.prototype.map.call(arguments, function (s) {
@@ -910,7 +894,15 @@ module.exports = function (Y /* :any */) {
         }
       } else {
         // increase SS
-        yield* transaction.updateState(op.id[0])
+        var o = op
+        var state = yield* transaction.getState(op.id[0])
+        while (o != null && o.id[1] === state.clock && op.id[0] === o.id[0]) {
+          // either its a new operation (1. case), or it is an operation that was deleted, but is not yet in the OS
+          state.clock++
+          yield* transaction.checkDeleteStoreForState(state)
+          o = yield* transaction.os.findNext(o.id)
+        }
+        yield* transaction.setState(state)
 
         // notify whenOperation listeners (by id)
         var sid = JSON.stringify(op.id)
@@ -927,15 +919,6 @@ module.exports = function (Y /* :any */) {
         }
         var t = this.initializedTypes[JSON.stringify(op.parent)]
 
-        // if parent is deleted, mark as gc'd and return
-        if (op.parent != null) {
-          var parentIsDeleted = yield* transaction.isDeleted(op.parent)
-          if (parentIsDeleted) {
-            yield* transaction.deleteList(op.id)
-            return
-          }
-        }
-
         // Delete if DS says this is actually deleted
         var opIsDeleted = yield* transaction.isDeleted(op.id)
         if (!op.deleted && opIsDeleted) {
@@ -947,13 +930,8 @@ module.exports = function (Y /* :any */) {
         }
 
         // notify parent, if it was instanciated as a custom type
-        if (t != null) {
-          let o = Y.utils.copyObject(op)
-          if (opIsDeleted && !o.deleted) {
-            // op did not reflect the created delete op (happens when not using y-memory)
-            o.deleted = true
-          }
-          yield* t._changed(transaction, o)
+        if (t != null && !opIsDeleted) {
+          yield* t._changed(transaction, Y.utils.copyObject(op))
         }
       }
     }
@@ -1555,21 +1533,17 @@ module.exports = function (Y/* :any */) {
     }
 
     * deleteList (start) {
-      while (start != null) {
-        start = yield* this.getOperation(start)
-        if (!start.gc) {
+      if (this.store.y.connector.isSynced) {
+        while (start != null && this.store.y.connector.isSynced) {
+          start = yield* this.getOperation(start)
           start.gc = true
-          start.deleted = true
           yield* this.setOperation(start)
-          yield* this.markDeleted(start.id, 1)
-          if (start.opContent != null) {
-            yield* this.deleteOperation(start.opContent)
-          }
-          if (this.store.y.connector.isSynced) {
-            this.store.gc1.push(start.id)
-          }
+          // TODO: will always reset the parent..
+          this.store.gc1.push(start.id)
+          start = start.right
         }
-        start = start.right
+      } else {
+        // TODO: when not possible??? do later in (gcWhenSynced)
       }
     }
 
@@ -1604,23 +1578,18 @@ module.exports = function (Y/* :any */) {
           if (target.start != null) {
             // TODO: don't do it like this .. -.-
             yield* this.deleteList(target.start)
-            // yield* this.deleteList(target.id) -- do not gc itself because this may still get referenced
+            yield* this.deleteList(target.id)
           }
           if (target.map != null) {
             for (var name in target.map) {
               yield* this.deleteList(target.map[name])
             }
             // TODO: here to..  (see above)
-            // yield* this.deleteList(target.id) -- see above
+            yield* this.deleteList(target.id)
           }
           if (target.opContent != null) {
             yield* this.deleteOperation(target.opContent)
             // target.opContent = null
-          }
-          if (target.requires != null) {
-            for (var i = 0; i < target.requires.length; i++) {
-              yield* this.deleteOperation(target.requires[i])
-            }
           }
         }
         var left
@@ -1787,40 +1756,9 @@ module.exports = function (Y/* :any */) {
     */
     * garbageCollectAfterSync () {
       yield* this.os.iterate(this, null, null, function * (op) {
-        if (op.gc) {
-          this.store.gc1.push(op.id)
-        } else {
-          if (op.parent != null) {
-            var parentDeleted = yield* this.isDeleted(op.parent)
-            if (parentDeleted) {
-              op.gc = true
-              if (!op.deleted) {
-                yield* this.markDeleted(op.id, 1)
-                op.deleted = true
-                if (op.opContent != null) {
-                  yield* this.deleteOperation(op.opContent)
-                  /*
-                  var opContent = yield* this.getOperation(op.opContent)
-                  opContent.gc = true
-                  yield* this.setOperation(opContent)
-                  this.store.gc1.push(opContent.id)
-                  */
-                }
-                if (op.requires != null) {
-                  for (var i = 0; i < op.requires.length; i++) {
-                    yield* this.deleteOperation(op.requires[i])
-                  }
-                }
-              }
-              yield* this.setOperation(op)
-              this.store.gc1.push(op.id)
-              return
-            }
-          }
-          if (op.deleted && op.left != null) {
-            var left = yield* this.getOperation(op.left)
-            this.store.addToGarbageCollector(op, left)
-          }
+        if (op.deleted && op.left != null) {
+          var left = yield* this.getOperation(op.left)
+          this.store.addToGarbageCollector(op, left)
         }
       })
     }
@@ -1845,29 +1783,6 @@ module.exports = function (Y/* :any */) {
           o = yield* this.getOperation(id)
         }
         */
-
-        var deps = []
-        if (o.opContent != null) {
-          deps.push(o.opContent)
-        }
-        if (o.requires != null) {
-          deps = deps.concat(o.requires)
-        }
-        for (var i = 0; i < deps.length; i++) {
-          var dep = yield* this.getOperation(deps[i])
-          if (dep != null) {
-            if (!dep.deleted) {
-              yield* this.deleteOperation(dep.id)
-              dep = yield* this.getOperation(dep.id)
-            }
-            dep.gc = true
-            yield* this.setOperation(dep)
-            this.store.gc1.push(dep.id)
-          } else {
-            yield* this.markGarbageCollected(deps[i], 1)
-            yield* this.updateState(deps[i][0]) // TODO: unneccessary?
-          }
-        }
 
         // remove gc'd op from the left op, if it exists
         if (o.left != null) {
@@ -1951,18 +1866,18 @@ module.exports = function (Y/* :any */) {
             // so we have to set right here
             yield* this.setOperation(right)
           }
-        }
-        // o may originate in another operation.
-        // Since o is deleted, we have to reset o.origin's `originOf` property
-        if (o.origin != null) {
-          var origin = yield* this.getOperation(o.origin)
-          origin.originOf = origin.originOf.filter(function (_id) {
-            return !Y.utils.compareIds(id, _id)
-          })
-          yield* this.setOperation(origin)
+          // o may originate in another operation.
+          // Since o is deleted, we have to reset o.origin's `originOf` property
+          if (o.origin != null) {
+            var origin = yield* this.getOperation(o.origin)
+            origin.originOf = origin.originOf.filter(function (_id) {
+              return !Y.utils.compareIds(id, _id)
+            })
+            yield* this.setOperation(origin)
+          }
         }
         var parent
-        if (o.parent != null) {
+        if (o.parent != null){ 
           parent = yield* this.getOperation(o.parent)
         }
         // remove gc'd op from parent, if it exists
@@ -1998,18 +1913,6 @@ module.exports = function (Y/* :any */) {
       if (n != null && n.id[0] === state.user && n.gc) {
         state.clock = Math.max(state.clock, n.id[1] + n.len)
       }
-    }
-    * updateState (user) {
-      var state = yield* this.getState(user)
-      yield* this.checkDeleteStoreForState(state)
-      var o = yield* this.getOperation([user, state.clock])
-      while (o != null && o.id[1] === state.clock && user === o.id[0]) {
-        // either its a new operation (1. case), or it is an operation that was deleted, but is not yet in the OS
-        state.clock++
-        yield* this.checkDeleteStoreForState(state)
-        o = yield* this.os.findNext(o.id)
-      }
-      yield* this.setState(state)
     }
     /*
       apply a delete set in order to get

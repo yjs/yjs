@@ -177,16 +177,8 @@ If you want to see an issue fixed, please subscribe to the thread (or remind me 
 
 ## Changelog
 
-### 10.0.0
-
-* Support for more complex types (a type can be a composition of several types)
-* Fixes several memory leaks
-
 ### 9.0.0
-There were several rolling updates from 0.6 to 0.8. We consider Yjs stable since a long time, 
-and intend to continue stable releases. From this release forward y-* modules will implement peer-dependencies for npm, and dependencies for bower.
-Furthermore, incompatible yjs instances will now throw errors when syncing - this feature was influenced by #48. The versioning jump was influenced by react (see [here](https://facebook.github.io/react/blog/2016/02/19/new-versioning-scheme.html))
-
+There were several rolling updates from 0.6 to 0.8. We'll now follow the semver versioning scheme. This is all what this jump from 0.8 to 9.0 is about.
 
 ### 0.6.0
 This is a complete rewrite of the 0.5 version of Yjs. Since Yjs 0.6.0 it is possible to work asynchronously on a persistent database, which enables offline support.
