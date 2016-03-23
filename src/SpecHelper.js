@@ -182,6 +182,10 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
   for (var uid = 0; uid < users.length; uid++) {
     var u = users[uid]
     u.db.requestTransaction(function * () {
+      var sv = yield* this.getStateVector()
+      for (var s of sv) {
+        yield* this.updateState(s.user)
+      }
       // compare deleted ops against deleteStore
       yield* this.os.iterate(this, null, null, function * (o) {
         if (o.deleted === true) {

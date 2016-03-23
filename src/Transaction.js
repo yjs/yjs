@@ -156,30 +156,19 @@ module.exports = function (Y/* :any */) {
     * deleteList (start) {
       while (start != null) {
         start = yield* this.getOperation(start)
-        if (start.gc) {
-          break
-        } else {
+        if (!start.gc) {
           start.gc = true
           start.deleted = true
           yield* this.setOperation(start)
           yield* this.markDeleted(start.id, 1)
           if (start.opContent != null) {
             yield* this.deleteOperation(start.opContent)
-            /*
-            yield* this.deleteOperation(start.opContent)
-            var opContent = yield* this.getOperation(start.opContent)
-            opContent.gc = true
-            yield* this.setOperation(opContent)
-            if (this.store.y.connector.isSynced) {            
-              this.store.gc1.push(opContent.id)
-            }
-            */
           }
           if (this.store.y.connector.isSynced){
             this.store.gc1.push(start.id)
           }
-          start = start.right
         }
+        start = start.right
       }
     }
 
@@ -561,15 +550,15 @@ module.exports = function (Y/* :any */) {
             // so we have to set right here
             yield* this.setOperation(right)
           }
-          // o may originate in another operation.
-          // Since o is deleted, we have to reset o.origin's `originOf` property
-          if (o.origin != null) {
-            var origin = yield* this.getOperation(o.origin)
-            origin.originOf = origin.originOf.filter(function (_id) {
-              return !Y.utils.compareIds(id, _id)
-            })
-            yield* this.setOperation(origin)
-          }
+        }
+        // o may originate in another operation.
+        // Since o is deleted, we have to reset o.origin's `originOf` property
+        if (o.origin != null) {
+          var origin = yield* this.getOperation(o.origin)
+          origin.originOf = origin.originOf.filter(function (_id) {
+            return !Y.utils.compareIds(id, _id)
+          })
+          yield* this.setOperation(origin)
         }
         var parent
         if (o.parent != null){ 
