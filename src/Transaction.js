@@ -164,7 +164,7 @@ module.exports = function (Y/* :any */) {
           if (start.opContent != null) {
             yield* this.deleteOperation(start.opContent)
           }
-          if (this.store.y.connector.isSynced){
+          if (this.store.y.connector.isSynced) {
             this.store.gc1.push(start.id)
           }
         }
@@ -415,7 +415,7 @@ module.exports = function (Y/* :any */) {
               this.store.gc1.push(op.id)
               return
             }
-          } 
+          }
           if (op.deleted && op.left != null) {
             var left = yield* this.getOperation(op.left)
             this.store.addToGarbageCollector(op, left)
@@ -444,7 +444,7 @@ module.exports = function (Y/* :any */) {
           o = yield* this.getOperation(id)
         }
         */
-        
+
         var deps = []
         if (o.opContent != null) {
           deps.push(o.opContent)
@@ -561,7 +561,7 @@ module.exports = function (Y/* :any */) {
           yield* this.setOperation(origin)
         }
         var parent
-        if (o.parent != null){ 
+        if (o.parent != null) {
           parent = yield* this.getOperation(o.parent)
         }
         // remove gc'd op from parent, if it exists

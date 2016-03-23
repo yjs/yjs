@@ -111,7 +111,7 @@ module.exports = function (Y /* :any */) {
       }
     }
     emptyGarbageCollector () {
-      return new Promise (resolve => {
+      return new Promise(resolve => {
         var check = () => {
           if (this.gc1.length > 0 || this.gc2.length > 0) {
             this.garbageCollect().then(check)
