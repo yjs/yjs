@@ -8,8 +8,7 @@ Y({
   },
   connector: {
     name: 'websockets-client',
-    room: 'richtext-example',
-    debug: true
+    room: 'richtext-example'
     // url: 'http://127.0.0.1:1234'
   },
   sourceDir: '/bower_components',
