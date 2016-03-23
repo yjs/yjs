@@ -19,6 +19,8 @@ module.exports = function (Y/* :any */) {
     userId: UserId;
     send: Function;
     broadcast: Function;
+    broadcastOpBuffer: Array<Operation>;
+    protocolVersion: number;
     */
     /*
       opts contains the following information:
@@ -51,7 +53,7 @@ module.exports = function (Y/* :any */) {
       this.broadcastedHB = false
       this.syncStep2 = Promise.resolve()
       this.broadcastOpBuffer = []
-      this.protocolVersion = 8
+      this.protocolVersion = 10
     }
     reconnect () {
     }
@@ -150,7 +152,8 @@ module.exports = function (Y/* :any */) {
           conn.send(syncUser, {
             type: 'sync step 1',
             stateSet: stateSet,
-            deleteSet: deleteSet
+            deleteSet: deleteSet,
+            protocolVersion: conn.protocolVersion
           })
         })
       } else {
@@ -234,7 +237,8 @@ module.exports = function (Y/* :any */) {
             type: 'sync step 2',
             os: ops,
             stateSet: currentStateSet,
-            deleteSet: ds
+            deleteSet: ds,
+            protocolVersion: this.protocolVersion
           })
           if (this.forwardToSyncingClients) {
             conn.syncingClients.push(sender)

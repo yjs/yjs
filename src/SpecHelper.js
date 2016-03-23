@@ -139,9 +139,9 @@ g.applyRandomTransactionsWithGC = async(function * applyRandomTransactions (user
 
 g.garbageCollectAllUsers = async(function * garbageCollectAllUsers (users) {
   // gc two times because of the two gc phases (really collect everything)
+  yield wait(100)
   for (var i in users) {
-    yield users[i].db.garbageCollect()
-    yield users[i].db.garbageCollect()
+    yield users[i].db.emptyGarbageCollector()
   }
 })
 
@@ -182,6 +182,10 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
   for (var uid = 0; uid < users.length; uid++) {
     var u = users[uid]
     u.db.requestTransaction(function * () {
+      var sv = yield* this.getStateVector()
+      for (var s of sv) {
+        yield* this.updateState(s.user)
+      }
       // compare deleted ops against deleteStore
       yield* this.os.iterate(this, null, null, function * (o) {
         if (o.deleted === true) {
