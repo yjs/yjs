@@ -1,10 +1,14 @@
 
 # ![Yjs](http://y-js.org/images/yjs.png)
 
-Yjs is a framework for optimistic concurrency control and automatic conflict resolution on shared data. The framework provides similar functionality as [ShareJs] and [OpenCoweb], but supports peer-to-peer communication protocols by default. Yjs was designed to handle concurrent actions on arbitrary data like Text, Json, and XML. We also provide support for storing and manipulating your shared data offline. For more information and demo applications visit our [homepage](http://y-js.org/).
+Yjs is a framework for optimistic concurrency control and automatic conflict resolution on shared data.
+The framework provides similar functionality as [ShareJs] and [OpenCoweb], but supports peer-to-peer
+communication protocols by default. Yjs was designed to handle concurrent actions on arbitrary data
+like Text, Json, and XML. We also provide support for storing and manipulating your shared data offline.
+For more information and demo applications visit our [homepage](http://y-js.org/).
 
 You can create you own shared types easily.
-Therefore, you can design the sturcture of your custom type,
+Therefore, you can design the structure of your custom type,
 and ensure data validity, while Yjs ensures data consistency (everyone will eventually end up with the same data).
 We already provide abstract data types for
 
@@ -35,8 +39,6 @@ You are not limited to use a specific database to store the shared data. We prov
 |----------------|-----------------------------------|
 |[memory](https://github.com/y-js/y-memory) | In-memory storage. |
 |[indexeddb](https://github.com/y-js/y-indexeddb) | Offline storage for the browser |
-
-You can use Yjs client-, and server- side. You can get it as via npm, and bower. We even provide polymer elements for Yjs!
 
 The advantages over similar frameworks are support for
 * .. P2P message propagation and arbitrary communication protocols
