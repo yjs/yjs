@@ -41,7 +41,8 @@ module.exports = function (Y/* :any */) {
     },
     Insert: {
       /* {
-          content: any,
+          content: [any],
+          opContent: Id,
           id: Id,
           left: Id,
           origin: Id,
@@ -96,13 +97,13 @@ module.exports = function (Y/* :any */) {
           return 0
         } else {
           var d = 0
-          var o = yield* this.getOperation(op.left)
+          var o = yield* this.getInsertion(op.left)
           while (!Y.utils.compareIds(op.origin, (o ? o.id : null))) {
             d++
             if (o.left == null) {
               break
             } else {
-              o = yield* this.getOperation(o.left)
+              o = yield* this.getInsertion(o.left)
             }
           }
           return d
@@ -130,7 +131,7 @@ module.exports = function (Y/* :any */) {
         if (op.origin != null) { // TODO: !== instead of !=
           // we save in origin that op originates in it
           // we need that later when we eventually garbage collect origin (see transaction)
-          var origin = yield* this.getOperation(op.origin)
+          var origin = yield* this.getInsertionCleanEnd(op.origin)
           if (origin.originOf == null) {
             origin.originOf = []
           }
@@ -145,8 +146,8 @@ module.exports = function (Y/* :any */) {
 
         // find o. o is the first conflicting operation
         if (op.left != null) {
-          o = yield* this.getOperation(op.left)
-          o = (o.right == null) ? null : yield* this.getOperation(o.right)
+          o = yield* this.getInsertionCleanEnd(op.left)
+          o = (o.right == null) ? null : yield* this.getInsertionCleanStart(o.right)
         } else { // left == null
           parent = yield* this.getOperation(op.parent)
           let startId = op.parentSub ? parent.map[op.parentSub] : parent.start
@@ -175,7 +176,7 @@ module.exports = function (Y/* :any */) {
             }
             i++
             if (o.right != null) {
-              o = yield* this.getOperation(o.right)
+              o = yield* this.getInsertionCleanStart(o.right)
             } else {
               o = null
             }
@@ -194,15 +195,24 @@ module.exports = function (Y/* :any */) {
         // reconnect left and set right of op
         if (op.left != null) {
           left = yield* this.getOperation(op.left)
-          op.right = left.right
-          left.right = op.id
+          if (false && op.content != null && left.content != null && left.id[0] === op.id[0] && left.id[1] + left.content.length === op.id[1] && left.originOf == null && left.deleted !== true && left.gc !== true) {
+            // extend left
+            left.content = left.content.concat(op.content)
+            op = left
+          } else {
+            // link left
+            op.right = left.right
+            left.right = op.id
 
-          yield* this.setOperation(left)
+            yield* this.setOperation(left)
+          }
         } else {
+          // set op.right from parent, if necessary
           op.right = op.parentSub ? parent.map[op.parentSub] || null : parent.start
         }
         // reconnect right
         if (op.right != null) {
+          // TODO: wanna connect right too?
           right = yield* this.getOperation(op.right)
           right.left = op.id
 
@@ -367,7 +377,7 @@ module.exports = function (Y/* :any */) {
           if (res == null || res.deleted) {
             return void 0
           } else if (res.opContent == null) {
-            return res.content
+            return res.content[0]
           } else {
             return yield* this.getType(res.opContent)
           }

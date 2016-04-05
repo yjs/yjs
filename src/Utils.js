@@ -249,11 +249,14 @@ module.exports = function (Y /* : any*/) {
       }
       return false
     }
-    if (id1[0] === id2[0] && id1[1] === id2[1]) {
-      return true
-    } else {
-      return false
+    if (id1[0] === id2[0]) {
+      var add1 = id1.length > 2 ? id1[2] : 0
+      var add2 = id2.length > 2 ? id2[2] : 0
+      if (id1[1] + add1 === id2[1] + add2) {
+        return true
+      }
     }
+    return false
   }
   Y.utils.compareIds = compareIds
 
@@ -374,13 +377,23 @@ module.exports = function (Y /* : any*/) {
         yield* this.flush()
         yield* super.delete(id)
       }
-      * findWithLowerBound () {
-        yield* this.flush()
-        return yield* super.findWithLowerBound.apply(this, arguments)
+      * findWithLowerBound (id) {
+        var o = yield* this.find(id)
+        if (o != null) {
+          return o
+        } else {
+          yield* this.flush()
+          return yield* super.findWithLowerBound.apply(this, arguments)
+        }
       }
-      * findWithUpperBound () {
-        yield* this.flush()
-        return yield* super.findWithUpperBound.apply(this, arguments)
+      * findWithUpperBound (id) {
+        var o = yield* this.find(id)
+        if (o != null) {
+          return o
+        } else {
+          yield* this.flush()
+          return yield* super.findWithUpperBound.apply(this, arguments)
+        }
       }
       * findNext () {
         yield* this.flush()

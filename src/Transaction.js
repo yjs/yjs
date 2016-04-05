@@ -176,7 +176,7 @@ module.exports = function (Y/* :any */) {
       Mark an operation as deleted, and add it to the GC, if possible.
     */
     * deleteOperation (targetId, preventCallType) /* :Generator<any, any, any> */ {
-      var target = yield* this.getOperation(targetId)
+      var target = yield* this.getInsertionCleanStartEnd(targetId)
       var callType = false
 
       if (target == null || !target.deleted) {
@@ -751,11 +751,75 @@ module.exports = function (Y/* :any */) {
         this.store.y.connector.broadcastOps([op])
       }
     }
-    * getOperation (id/* :any */)/* :Transaction<any> */ {
-      var o = yield* this.os.find(id)
-      if (o != null || id[0] !== '_') {
-        return o
+    * getInsertion (id) {
+      var ins = yield* this.os.findWithUpperBound(id)
+      var len = ins.content != null ? ins.content.length : 1 // in case of opContent
+      if (ins != null && id[0] === ins.id[0] && id[1] < ins.id[1] + len) {
+        return ins
       } else {
+        return null
+      }
+    }
+    * getInsertionCleanStartEnd (id) {
+      yield* this.getInsertionCleanStart(id)
+      yield* this.getInsertionCleanEnd(id)
+    }
+    // Return an insertion such that id is the first element of content
+    // This function manipulates an operation, if necessary
+    * getInsertionCleanStart (id) {
+      var ins = yield* this.getInsertion(id)
+      if (ins != null) {
+        if (ins.id[1] === id[1]) {
+          return ins
+        } else {
+          var left = Y.utils.copyObject(ins)
+          ins.content = left.content.splice(ins.id[1] - id[1])
+          ins.id = id
+          ins.origin = left.id
+          left.originOf = [ins.id]
+          left.right = ins.id
+          ins.left = left.id
+          debugger // check
+          yield* this.setOperation(left)
+          yield* this.setOperation(ins)
+          return ins
+        }
+      } else {
+        return null
+      }
+    }
+    // Return an insertion such that id is the last element of content
+    // This function manipulates an operation, if necessary
+    * getInsertionCleanEnd (id) {
+      var ins = yield* this.getInsertion(id)
+      if (ins != null) {
+        if (ins.content == null || (ins.id[1] + ins.content.length - 1 === id[1])) {
+          return ins
+        } else {
+          var right = Y.utils.copyObject(ins)
+          right.content = ins.content.splice(-(ins.id[1] + ins.content.length - 1 - id[1])) // cut off remainder
+          right.id = [id[0], id[1] + 1]
+          right.origin = ins.id
+          ins.originOf = [right.id]
+          ins.right = right.id
+          right.left = ins.id
+          debugger // check
+          yield* this.setOperation(right)
+          yield* this.setOperation(ins)
+          return ins
+        }
+      } else {
+        return null
+      }
+    }
+    * getOperation (id/* :any */)/* :Transaction<any> */ {
+      if (id.length > 2) {
+        id = [id[0], id[1]]
+      }
+      var o = yield* this.os.find(id)
+      if (id[0] !== '_' || o != null) {
+        return o
+      } else { // type is string
         // generate this operation?
         var comp = id[1].split('_')
         if (comp.length > 1) {
@@ -770,7 +834,6 @@ module.exports = function (Y/* :any */) {
           debugger // eslint-disable-line
           return null
         }
-        return null
       }
     }
     * removeOperation (id) {
