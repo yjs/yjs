@@ -101,7 +101,7 @@ module.exports = function (Y/* :any */) {
     }
     * createType (typedefinition, id) {
       var structname = typedefinition[0].struct
-      id = id || this.store.getNextOpId()
+      id = id || this.store.getNextOpId(1)
       var op
       if (id[0] === '_') {
         op = yield* this.getOperation(id)
@@ -121,7 +121,7 @@ module.exports = function (Y/* :any */) {
     }
     /* createType (typedefinition, id) {
       var structname = typedefinition[0].struct
-      id = id || this.store.getNextOpId()
+      id = id || this.store.getNextOpId(1)
       var op = Y.Struct[structname].create(id)
       op.type = typedefinition[0].name
       if (typedefinition[0].appendAdditionalInfo != null) {
@@ -224,7 +224,7 @@ module.exports = function (Y/* :any */) {
         }
         var left
         if (target.left != null) {
-          left = yield* this.getOperation(target.left)
+          left = yield* this.getInsertion(target.left)
         } else {
           left = null
         }
@@ -417,7 +417,7 @@ module.exports = function (Y/* :any */) {
             }
           }
           if (op.deleted && op.left != null) {
-            var left = yield* this.getOperation(op.left)
+            var left = yield* this.getInsertion(op.left)
             this.store.addToGarbageCollector(op, left)
           }
         }
@@ -434,7 +434,7 @@ module.exports = function (Y/* :any */) {
     */
     * garbageCollectOperation (id) {
       this.store.addToDebug('yield* this.garbageCollectOperation(', id, ')')
-      var o = yield* this.getOperation(id)
+      var o = yield* this.getInsertionCleanStartEnd(id)
       yield* this.markGarbageCollected(id, 1) // always mark gc'd
       // if op exists, then clean that mess up..
       if (o != null) {
@@ -470,7 +470,7 @@ module.exports = function (Y/* :any */) {
 
         // remove gc'd op from the left op, if it exists
         if (o.left != null) {
-          var left = yield* this.getOperation(o.left)
+          var left = yield* this.getInsertion(o.left)
           left.right = o.right
           yield* this.setOperation(left)
         }
@@ -486,7 +486,7 @@ module.exports = function (Y/* :any */) {
             var neworigin = o.left
             var neworigin_ = null
             while (neworigin != null) {
-              neworigin_ = yield* this.getOperation(neworigin)
+              neworigin_ = yield* this.getInsertion(neworigin)
               if (neworigin_.deleted) {
                 break
               }
@@ -554,7 +554,7 @@ module.exports = function (Y/* :any */) {
         // o may originate in another operation.
         // Since o is deleted, we have to reset o.origin's `originOf` property
         if (o.origin != null) {
-          var origin = yield* this.getOperation(o.origin)
+          var origin = yield* this.getInsertion(o.origin)
           origin.originOf = origin.originOf.filter(function (_id) {
             return !Y.utils.compareIds(id, _id)
           })
@@ -604,7 +604,7 @@ module.exports = function (Y/* :any */) {
       var o = yield* this.getOperation([user, state.clock])
       while (o != null && o.id[1] === state.clock && user === o.id[0]) {
         // either its a new operation (1. case), or it is an operation that was deleted, but is not yet in the OS
-        state.clock++
+        state.clock += o.content == null ? 1 : o.content.length
         yield* this.checkDeleteStoreForState(state)
         o = yield* this.os.findNext(o.id)
       }
@@ -762,7 +762,7 @@ module.exports = function (Y/* :any */) {
     }
     * getInsertionCleanStartEnd (id) {
       yield* this.getInsertionCleanStart(id)
-      yield* this.getInsertionCleanEnd(id)
+      return yield* this.getInsertionCleanEnd(id)
     }
     // Return an insertion such that id is the first element of content
     // This function manipulates an operation, if necessary
@@ -775,11 +775,12 @@ module.exports = function (Y/* :any */) {
           var left = Y.utils.copyObject(ins)
           ins.content = left.content.splice(ins.id[1] - id[1])
           ins.id = id
-          ins.origin = left.id
+          var leftLid = Y.utils.getLastId(left)
+          ins.origin = leftLid
           left.originOf = [ins.id]
           left.right = ins.id
-          ins.left = left.id
-          debugger // check
+          ins.left = leftLid
+          // debugger // check
           yield* this.setOperation(left)
           yield* this.setOperation(ins)
           return ins
@@ -799,11 +800,12 @@ module.exports = function (Y/* :any */) {
           var right = Y.utils.copyObject(ins)
           right.content = ins.content.splice(-(ins.id[1] + ins.content.length - 1 - id[1])) // cut off remainder
           right.id = [id[0], id[1] + 1]
-          right.origin = ins.id
+          var insLid = Y.utils.getLastId(ins)
+          right.origin = insLid
           ins.originOf = [right.id]
           ins.right = right.id
-          right.left = ins.id
-          debugger // check
+          right.left = insLid
+          // debugger // check
           yield* this.setOperation(right)
           yield* this.setOperation(ins)
           return ins
@@ -961,17 +963,17 @@ module.exports = function (Y/* :any */) {
                 }
                 break
               }
-              o = yield* this.getOperation(o.left)
+              o = yield* this.getInsertion(o.left)
               // we set another o, check if we can reduce $missing_origins
               while (missing_origins.length > 0 && Y.utils.compareIds(missing_origins[missing_origins.length - 1].origin, o.id)) {
                 missing_origins.pop()
               }
               if (o.id[1] < (startSS[o.id[0]] || 0)) {
                 // case 2. o is known
-                op.left = o.id
+                op.left = Y.utils.getLastId(o)
                 send.push(op)
                 break
-              } else if (Y.utils.compareIds(o.id, op.origin)) {
+              } else if (Y.utils.matchesId(o, op.origin)) {
                 // case 3. o is op.origin
                 op.left = op.origin
                 send.push(op)

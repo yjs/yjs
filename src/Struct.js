@@ -93,21 +93,17 @@ module.exports = function (Y/* :any */) {
         return ids
       },
       getDistanceToOrigin: function * (op) {
-        if (op.left == null) {
-          return 0
-        } else {
-          var d = 0
-          var o = yield* this.getInsertion(op.left)
-          while (!Y.utils.compareIds(op.origin, (o ? o.id : null))) {
-            d++
-            if (o.left == null) {
-              break
-            } else {
-              o = yield* this.getInsertion(o.left)
-            }
+        var d = 0
+        var o = op
+        while (!Y.utils.matchesId(o, op.origin)) {
+          d++
+          if (o.left == null) {
+            break
+          } else {
+            o = yield* this.getInsertion(o.left)
           }
-          return d
         }
+        return d
       },
       /*
       # $this has to find a unique position between origin and the next known character
@@ -162,14 +158,14 @@ module.exports = function (Y/* :any */) {
             if (oOriginDistance === i) {
               // case 1
               if (o.id[0] < op.id[0]) {
-                op.left = o.id
-                distanceToOrigin = i + 1
+                op.left = Y.utils.getLastId(o)
+                distanceToOrigin = i + 1 // just ignore o.content.length, doesn't make a difference
               }
             } else if (oOriginDistance < i) {
               // case 2
               if (i - distanceToOrigin <= oOriginDistance) {
-                op.left = o.id
-                distanceToOrigin = i + 1
+                op.left = Y.utils.getLastId(o)
+                distanceToOrigin = i + 1 // just ignore o.content.length, doesn't make a difference
               }
             } else {
               break
@@ -194,7 +190,8 @@ module.exports = function (Y/* :any */) {
 
         // reconnect left and set right of op
         if (op.left != null) {
-          left = yield* this.getOperation(op.left)
+          left = yield* this.getInsertion(op.left)
+          // TODO: remove false
           if (false && op.content != null && left.content != null && left.id[0] === op.id[0] && left.id[1] + left.content.length === op.id[1] && left.originOf == null && left.deleted !== true && left.gc !== true) {
             // extend left
             left.content = left.content.concat(op.content)
@@ -214,7 +211,7 @@ module.exports = function (Y/* :any */) {
         if (op.right != null) {
           // TODO: wanna connect right too?
           right = yield* this.getOperation(op.right)
-          right.left = op.id
+          right.left = Y.utils.getLastId(op)
 
           // if right exists, and it is supposed to be gc'd. Remove it from the gc
           if (right.gc != null) {
@@ -257,7 +254,7 @@ module.exports = function (Y/* :any */) {
         end: null,
         struct: "List",
         type: "",
-        id: this.os.getNextOpId()
+        id: this.os.getNextOpId(1)
       }
       */
       create: function (id) {
@@ -338,7 +335,7 @@ module.exports = function (Y/* :any */) {
           map: {},
           struct: "Map",
           type: "",
-          id: this.os.getNextOpId()
+          id: this.os.getNextOpId(1)
         }
       */
       create: function (id) {

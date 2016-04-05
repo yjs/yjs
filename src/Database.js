@@ -216,11 +216,15 @@ module.exports = function (Y /* :any */) {
     whenUserIdSet (f) {
       this.userIdPromise.then(f)
     }
-    getNextOpId () {
-      if (this.userId == null) {
+    getNextOpId (numberOfIds) {
+      if (numberOfIds == null) {
+        throw new Error('getNextOpId expects the number of created ids to create!')
+      } else if (this.userId == null) {
         throw new Error('OperationStore not yet initialized!')
       } else {
-        return [this.userId, this.opClock++]
+        var id = [this.userId, this.opClock]
+        this.opClock += numberOfIds
+        return id
       }
     }
     /*
@@ -294,7 +298,7 @@ module.exports = function (Y /* :any */) {
         for (var sid in ls) {
           var l = ls[sid]
           var id = JSON.parse(sid)
-          var op = yield* this.getOperation(id)
+          var op = yield* this.getInsertion(id)
           if (op == null) {
             store.listenersById[sid] = l
           } else {

@@ -244,21 +244,36 @@ module.exports = function (Y /* : any*/) {
 
   function compareIds (id1, id2) {
     if (id1 == null || id2 == null) {
-      if (id1 == null && id2 == null) {
-        return true
-      }
-      return false
-    }
-    if (id1[0] === id2[0]) {
-      var add1 = id1.length > 2 ? id1[2] : 0
-      var add2 = id2.length > 2 ? id2[2] : 0
-      if (id1[1] + add1 === id2[1] + add2) {
-        return true
-      }
-    }
-    return false
+      return id1 === id2
+    } else {
+      return id1[0] === id2[0] && id1[1] === id2[1]
+    } 
   }
   Y.utils.compareIds = compareIds
+
+  function matchesId (op, id) {
+    if (id == null || op == null) {
+      return id === op
+    } else {
+      if (id[0] === op.id[0]) {
+        if (op.content == null) {
+          return id[1] === op.id[1]
+        } else {
+          return id[1] >= op.id[1] && id[1] < op.id[1] + op.content.length
+        }
+      }
+    }
+  }
+  Y.utils.matchesId = matchesId
+  
+  function getLastId (op) {
+    if (op.content == null || op.content.length === 1) {
+      return op.id
+    } else {
+      return [op.id[0], op.id[1] + op.content.length - 1]
+    }
+  }
+  Y.utils.getLastId = getLastId
 
   function createEmptyOpsArray (n) {
     var a = new Array(n)
@@ -288,7 +303,7 @@ module.exports = function (Y /* : any*/) {
         this.writeBuffer = createEmptyOpsArray(5)
         this.readBuffer = createEmptyOpsArray(10)
       }
-      * find (id) {
+      * find (id, noSuperCall) {
         var i, r
         for (i = this.readBuffer.length - 1; i >= 0; i--) {
           r = this.readBuffer[i]
@@ -311,7 +326,7 @@ module.exports = function (Y /* : any*/) {
             break
           }
         }
-        if (i < 0) {
+        if (i < 0 && noSuperCall === undefined) {
           // did not reach break in last loop
           // read id and put it to the end of readBuffer
           o = yield* super.find(id)
@@ -378,7 +393,7 @@ module.exports = function (Y /* : any*/) {
         yield* super.delete(id)
       }
       * findWithLowerBound (id) {
-        var o = yield* this.find(id)
+        var o = yield* this.find(id, true)
         if (o != null) {
           return o
         } else {
@@ -387,7 +402,7 @@ module.exports = function (Y /* : any*/) {
         }
       }
       * findWithUpperBound (id) {
-        var o = yield* this.find(id)
+        var o = yield* this.find(id, true)
         if (o != null) {
           return o
         } else {
