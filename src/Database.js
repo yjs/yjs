@@ -381,24 +381,25 @@ module.exports = function (Y /* :any */) {
           }
         }
 
-        // Delete if DS says this is actually deleted
-        var opIsDeleted = yield* transaction.isDeleted(op.id)
-        if (!op.deleted && opIsDeleted) {
-          var delop = {
-            struct: 'Delete',
-            target: op.id
-          }
-          yield* Y.Struct['Delete'].execute.call(transaction, delop)
-        }
-
         // notify parent, if it was instanciated as a custom type
         if (t != null) {
           let o = Y.utils.copyObject(op)
-          if (opIsDeleted && !o.deleted) {
-            // op did not reflect the created delete op (happens when not using y-memory)
-            o.deleted = true
-          }
           yield* t._changed(transaction, o)
+        }
+        // Delete if DS says this is actually deleted
+        var len = op.content != null ? op.content.length : 1
+        for (var i = 0; i < len; i++) {
+          var id = [op.id[0], op.id[1] + i]
+          if (!op.deleted) {
+            var opIsDeleted = yield* transaction.isDeleted(id)
+            if (opIsDeleted) {
+              var delop = {
+                struct: 'Delete',
+                target: id
+              }
+              yield* this.tryExecute.call(transaction, delop)
+            }
+          }
         }
       }
     }
