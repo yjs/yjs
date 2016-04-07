@@ -68,7 +68,7 @@ module.exports = function (Y/* :any */) {
         if (op.hasOwnProperty('opContent')) {
           e.opContent = op.opContent
         } else {
-          e.content = op.content
+          e.content = op.content.slice()
         }
 
         return e
@@ -93,17 +93,21 @@ module.exports = function (Y/* :any */) {
         return ids
       },
       getDistanceToOrigin: function * (op) {
-        var d = 0
-        var o = op
-        while (!Y.utils.matchesId(o, op.origin)) {
-          d++
-          if (o.left == null) {
-            break
-          } else {
-            o = yield* this.getInsertion(o.left)
+        if (op.left == null) {
+          return 0
+        } else {
+          var d = 0
+          var o = yield* this.getInsertion(op.left)
+          while (!Y.utils.matchesId(o, op.origin)) {
+            d++
+            if (o.left == null) {
+              break
+            } else {
+              o = yield* this.getInsertion(o.left)
+            }
           }
+          return d
         }
-        return d
       },
       /*
       # $this has to find a unique position between origin and the next known character

@@ -146,8 +146,10 @@ module.exports = function (Y /* :any */) {
           self.gc2 = []
           for (var i = 0; i < ungc.length; i++) {
             var op = yield* this.getOperation(ungc[i])
-            delete op.gc
-            yield* this.setOperation(op)
+            if (op != null) {
+              delete op.gc
+              yield* this.setOperation(op)
+            }
           }
           resolve()
         })
@@ -386,11 +388,11 @@ module.exports = function (Y /* :any */) {
           let o = Y.utils.copyObject(op)
           yield* t._changed(transaction, o)
         }
-        // Delete if DS says this is actually deleted
-        var len = op.content != null ? op.content.length : 1
-        for (var i = 0; i < len; i++) {
-          var id = [op.id[0], op.id[1] + i]
-          if (!op.deleted) {
+        if (!op.deleted) {
+          // Delete if DS says this is actually deleted
+          var len = op.content != null ? op.content.length : 1
+          for (var i = 0; i < len; i++) {
+            var id = [op.id[0], op.id[1] + i]
             var opIsDeleted = yield* transaction.isDeleted(id)
             if (opIsDeleted) {
               var delop = {

@@ -160,12 +160,20 @@ module.exports = function (Y/* :any */) {
           start.gc = true
           start.deleted = true
           yield* this.setOperation(start)
-          yield* this.markDeleted(start.id, 1)
+          var delLength = start.content != null ? start.content.length : 1
+          yield* this.markDeleted(start.id, delLength)
           if (start.opContent != null) {
             yield* this.deleteOperation(start.opContent)
           }
           if (this.store.y.connector.isSynced) {
             this.store.gc1.push(start.id)
+            for (var i = 0; i < delLength; i++) {
+              if (i === 0) {
+                this.store.gc1.push(start.id)
+              } else {
+                this.store.gc1.push([start.id[0], start.id[1] + i])
+              }
+            }
           }
         }
         start = start.right
@@ -386,15 +394,22 @@ module.exports = function (Y/* :any */) {
     */
     * garbageCollectAfterSync () {
       yield* this.os.iterate(this, null, null, function * (op) {
+        var opLength = op.content != null ? op.content.length : 1
         if (op.gc) {
-          this.store.gc1.push(op.id)
+          for (var i = 0; i < opLength; i++) {
+            if (i === 0) {
+              this.store.gc1.push(op.id)
+            } else {
+              this.store.gc1.push([op.id[0], op.id[1] + i])
+            }
+          }
         } else {
           if (op.parent != null) {
             var parentDeleted = yield* this.isDeleted(op.parent)
             if (parentDeleted) {
               op.gc = true
               if (!op.deleted) {
-                yield* this.markDeleted(op.id, 1)
+                yield* this.markDeleted(op.id, delLength)
                 op.deleted = true
                 if (op.opContent != null) {
                   yield* this.deleteOperation(op.opContent)
@@ -412,7 +427,13 @@ module.exports = function (Y/* :any */) {
                 }
               }
               yield* this.setOperation(op)
-              this.store.gc1.push(op.id)
+              for (var i = 0; i < opLength; i++) {
+                if (i === 0) {
+                  this.store.gc1.push(op.id)
+                } else {
+                  this.store.gc1.push([op.id[0], op.id[1] + i])
+                }
+              }
               return
             }
           }
@@ -753,11 +774,15 @@ module.exports = function (Y/* :any */) {
     }
     * getInsertion (id) {
       var ins = yield* this.os.findWithUpperBound(id)
-      var len = ins.content != null ? ins.content.length : 1 // in case of opContent
-      if (ins != null && id[0] === ins.id[0] && id[1] < ins.id[1] + len) {
-        return ins
-      } else {
+      if (ins == null) {
         return null
+      } else {
+        var len = ins.content != null ? ins.content.length : 1 // in case of opContent
+        if (id[0] === ins.id[0] && id[1] < ins.id[1] + len) {
+          return ins
+        } else {
+          return null
+        }
       }
     }
     * getInsertionCleanStartEnd (id) {
@@ -815,9 +840,6 @@ module.exports = function (Y/* :any */) {
       }
     }
     * getOperation (id/* :any */)/* :Transaction<any> */ {
-      if (id.length > 2) {
-        id = [id[0], id[1]]
-      }
       var o = yield* this.os.find(id)
       if (id[0] !== '_' || o != null) {
         return o

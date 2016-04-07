@@ -25,7 +25,7 @@ g.g = g
 
 g.YConcurrency_TestingMode = true
 
-jasmine.DEFAULT_TIMEOUT_INTERVAL = 2000
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 50000
 
 g.describeManyTimes = function describeManyTimes (times, name, f) {
   for (var i = 0; i < times; i++) {
@@ -200,7 +200,7 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
       for (var j in ds) {
         var d = ds[j]
         for (var i = 0; i < d.len; i++) {
-          var o = yield* this.getOperation([d.id[0], d.id[1] + i])
+          var o = yield* this.getInsertion([d.id[0], d.id[1] + i])
           // gc'd or deleted
           if (d.gc) {
             expect(o).toBeFalsy()

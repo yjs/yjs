@@ -4,7 +4,7 @@
 module.exports = function (Y) {
   var globalRoom = {
     users: {},
-    buffers: {},
+    buffers: {}, // TODO: reimplement this idea. This does not cover all cases!! Here, you have a queue which is unrealistic (i.e. think about multiple incoming connections)
     removeUser: function (user) {
       for (var i in this.users) {
         this.users[i].userLeft(user)
