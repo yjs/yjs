@@ -409,7 +409,7 @@ module.exports = function (Y/* :any */) {
             if (parentDeleted) {
               op.gc = true
               if (!op.deleted) {
-                yield* this.markDeleted(op.id, delLength)
+                yield* this.markDeleted(op.id, opLength)
                 op.deleted = true
                 if (op.opContent != null) {
                   yield* this.deleteOperation(op.opContent)

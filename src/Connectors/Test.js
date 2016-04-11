@@ -14,7 +14,7 @@ module.exports = function (Y) {
     },
     addUser: function (connector) {
       this.users[connector.userId] = connector
-      this.buffers[connector.userId] = []
+      this.buffers[connector.userId] = {}
       for (var uname in this.users) {
         if (uname !== connector.userId) {
           var u = this.users[uname]
@@ -32,14 +32,27 @@ module.exports = function (Y) {
     },
     flushOne: function flushOne () {
       var bufs = []
-      for (var i in globalRoom.buffers) {
-        if (globalRoom.buffers[i].length > 0) {
-          bufs.push(i)
+      for (var receiver in globalRoom.buffers) {
+        let buff = globalRoom.buffers[receiver]
+        var push = false
+        for (let sender in buff) {
+          if (buff[sender].length > 0) {
+            push = true
+            break
+          }
+        }
+        if (push) {
+          bufs.push(receiver)
         }
       }
       if (bufs.length > 0) {
         var userId = getRandom(bufs)
-        var m = globalRoom.buffers[userId].shift()
+        let buff = globalRoom.buffers[userId]
+        let sender = getRandom(Object.keys(buff))
+        var m = buff[sender].shift()
+        if (buff[sender].length === 0) {
+          delete buff[sender]
+        }
         var user = globalRoom.users[userId]
         user.receiveMessage(m[0], m[1])
         return user.y.db.whenTransactionsFinished()
@@ -99,12 +112,19 @@ module.exports = function (Y) {
     send (userId, message) {
       var buffer = globalRoom.buffers[userId]
       if (buffer != null) {
-        buffer.push(JSON.parse(JSON.stringify([this.userId, message])))
+        if (buffer[this.userId] == null) {
+          buffer[this.userId] = []
+        }
+        buffer[this.userId].push(JSON.parse(JSON.stringify([this.userId, message])))
       }
     }
     broadcast (message) {
       for (var key in globalRoom.buffers) {
-        globalRoom.buffers[key].push(JSON.parse(JSON.stringify([this.userId, message])))
+        var buff = globalRoom.buffers[key]
+        if (buff[this.userId] == null) {
+          buff[this.userId] = []
+        }
+        buff[this.userId].push(JSON.parse(JSON.stringify([this.userId, message])))
       }
     }
     isDisconnected () {
@@ -127,8 +147,13 @@ module.exports = function (Y) {
     flush () {
       var self = this
       return async(function * () {
-        while (globalRoom.buffers[self.userId].length > 0) {
-          var m = globalRoom.buffers[self.userId].shift()
+        var buff = globalRoom.buffers[self.userId]
+        while (Object.keys(buff).length > 0) {
+          var sender = getRandom(Object.keys(buff))
+          var m = buff[sender].shift()
+          if (buff[sender].length === 0) {
+            delete buff[sender]
+          }
           this.receiveMessage(m[0], m[1])
         }
         yield self.whenTransactionsFinished()

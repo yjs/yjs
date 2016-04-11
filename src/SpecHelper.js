@@ -60,11 +60,7 @@ function getRandom (o) {
   if (o instanceof Array) {
     return o[Math.floor(Math.random() * o.length)]
   } else if (o.constructor === Object) {
-    var ks = []
-    for (var key in o) {
-      ks.push(key)
-    }
-    return o[getRandom(ks)]
+    return o[getRandom(Object.keys(o))]
   }
 }
 g.getRandom = getRandom
@@ -79,7 +75,7 @@ g.getRandomNumber = getRandomNumber
 
 function getRandomString () {
   var tokens = 'abcdefäö' // ü\n\n\n\n\n\n\n'
-  return tokens[getRandomNumber(tokens.length - 1)]
+  return tokens[getRandomNumber(tokens.length)]
 }
 g.getRandomString = getRandomString
 
