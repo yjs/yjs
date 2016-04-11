@@ -599,7 +599,7 @@ module.exports = function (Y/* :any */) {
               setParent = true
               parent.start = o.right
             }
-            if (Y.utils.compareIds(parent.end, o.id)) {
+            if (Y.utils.matchesId(o, parent.end)) {
               // gc'd op is the end
               setParent = true
               parent.end = o.left
@@ -987,7 +987,7 @@ module.exports = function (Y/* :any */) {
               }
               o = yield* this.getInsertion(o.left)
               // we set another o, check if we can reduce $missing_origins
-              while (missing_origins.length > 0 && Y.utils.compareIds(missing_origins[missing_origins.length - 1].origin, o.id)) {
+              while (missing_origins.length > 0 && Y.utils.matchesId(o, missing_origins[missing_origins.length - 1].origin)) {
                 missing_origins.pop()
               }
               if (o.id[1] < (startSS[o.id[0]] || 0)) {

@@ -241,7 +241,7 @@ module.exports = function (Y/* :any */) {
         } else {
           if (right == null || left == null) {
             if (right == null) {
-              parent.end = op.id
+              parent.end = Y.utils.getLastId(op)
             }
             if (left == null) {
               parent.start = op.id
