@@ -362,25 +362,40 @@ module.exports = function (Y/* :any */) {
         n.id[1] + n.len >= next.id[1]
       ) {
         diff = n.id[1] + n.len - next.id[1] // from next.start to n.end
-        if (next.gc) {
-          if (diff >= 0) {
+        while (diff >= 0) {
+          // n overlaps with next
+          if (next.gc) {
+            // gc is stronger, so reduce length of n
             n.len -= diff
-            if (diff > next.len) {
-              // need to create another deletion after $next
-              // TODO: (may not be necessary, because this case shouldn't happen!)
-              //        also this is supposed to return a deletion range. which one to choose? n or the new created deletion?
-              throw new Error('This case is not handled (on purpose!)')
+            if (diff >= next.len) {
+              // delete the missing range after next 
+              diff = diff - next.len // missing range after next
+              if (diff > 0) {
+                yield* this.ds.put(n) // unneccessary? TODO!
+                yield* this.markDeleted([next.id[0], next.id[1] + next.len], diff)
+              }
             }
-          } // else: everything is fine :)
-        } else {
-          if (diff >= 0) {
-            if (diff > next.len) {
-              // may be neccessary to extend next.next!
-              // TODO: (may not be necessary, because this case shouldn't happen!)
-              throw new Error('This case is not handled (on purpose!)')
+            break
+          } else {
+            // we can extend n with next
+            if (diff >= next.len) {
+              // n is even longer than next
+              // get next.next, and try to extend it
+              var _next = yield* this.ds.findNext(next.id)
+              yield* this.ds.delete(next.id)
+              if (_next == null || n.id[0] !== next.id[0]) {
+                break
+              } else {
+                next = _next
+                diff = n.id[1] + n.len - next.id[1] // from next.start to n.end
+                // continue!
+              }
+            } else {
+              // n just partially overlaps with next. extend n, delete next, and break this loop
+              n.len += next.len - diff
+              yield* this.ds.delete(next.id)
+              break
             }
-            n.len += next.len - diff
-            yield* this.ds.delete(next.id)
           }
         }
       }
@@ -591,7 +606,11 @@ module.exports = function (Y/* :any */) {
           if (o.parentSub != null) {
             if (Y.utils.compareIds(parent.map[o.parentSub], o.id)) {
               setParent = true
-              parent.map[o.parentSub] = o.right
+              if (o.right != null) {
+                parent.map[o.parentSub] = o.right
+              } else {
+                delete parent.map[o.parentSub]
+              }
             }
           } else {
             if (Y.utils.compareIds(parent.start, o.id)) {
@@ -798,7 +817,7 @@ module.exports = function (Y/* :any */) {
           return ins
         } else {
           var left = Y.utils.copyObject(ins)
-          ins.content = left.content.splice(ins.id[1] - id[1])
+          ins.content = left.content.splice(id[1] - ins.id[1])
           ins.id = id
           var leftLid = Y.utils.getLastId(left)
           ins.origin = leftLid
@@ -823,7 +842,7 @@ module.exports = function (Y/* :any */) {
           return ins
         } else {
           var right = Y.utils.copyObject(ins)
-          right.content = ins.content.splice(-(ins.id[1] + ins.content.length - 1 - id[1])) // cut off remainder
+          right.content = ins.content.splice(id[1] - ins.id[1] + 1) // cut off remainder
           right.id = [id[0], id[1] + 1]
           var insLid = Y.utils.getLastId(ins)
           right.origin = insLid
