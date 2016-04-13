@@ -378,12 +378,12 @@ module.exports = function (Y/* :any */) {
             break
           } else {
             // we can extend n with next
-            if (diff >= next.len) {
+            if (diff > next.len) {
               // n is even longer than next
               // get next.next, and try to extend it
               var _next = yield* this.ds.findNext(next.id)
               yield* this.ds.delete(next.id)
-              if (_next == null || n.id[0] !== next.id[0]) {
+              if (_next == null || n.id[0] !== _next.id[0]) {
                 break
               } else {
                 next = _next

@@ -300,7 +300,12 @@ module.exports = function (Y /* :any */) {
         for (var sid in ls) {
           var l = ls[sid]
           var id = JSON.parse(sid)
-          var op = yield* this.getInsertion(id)
+          var op
+          if (typeof id[1] === 'string') {
+            op = yield* this.getOperation(id)
+          } else {
+            op = yield* this.getInsertion(id)
+          }
           if (op == null) {
             store.listenersById[sid] = l
           } else {
@@ -338,6 +343,28 @@ module.exports = function (Y /* :any */) {
             yield* Y.Struct[op.struct].execute.call(this, op)
             yield* this.addOperation(op)
             yield* this.store.operationAdded(this, op)
+
+            // if insertion, try to combine with left
+            if (op.left != null &&
+                op.content != null &&
+                op.left[0] === op.id[0] &&
+                Y.utils.compareIds(op.left, op.origin)
+            ) {
+              var left = yield* this.getInsertion(op.left)
+              if (left.content != null &&
+                  left.id[1] + left.content.length === op.id[1] &&
+                  left.originOf.length === 1 &&
+                  !left.gc && !left.deleted &&
+                  !op.gc && !op.deleted
+              ) {
+                // combine!
+                left.originOf = op.originOf
+                left.content = left.content.concat(op.content)
+                left.right = op.right
+                yield* this.os.delete(op.id)
+                yield* this.setOperation(left)
+              }
+            }
           }
         }
       }
