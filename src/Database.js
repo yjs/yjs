@@ -334,7 +334,8 @@ module.exports = function (Y /* :any */) {
       this.store.addToDebug('yield* this.store.tryExecute.call(this, ', JSON.stringify(op), ')')
       if (op.struct === 'Delete') {
         yield* Y.Struct.Delete.execute.call(this, op)
-        yield* this.store.operationAdded(this, op)
+        // the following is now called in Transaction.deleteOperation!
+        // yield* this.store.operationAdded(this, op)
       } else {
         var defined = yield* this.getOperation(op.id)
         if (defined == null) {
@@ -372,6 +373,7 @@ module.exports = function (Y /* :any */) {
     // called by a transaction when an operation is added
     * operationAdded (transaction, op) {
       if (op.struct === 'Delete') {
+        throw new Error('this section shouldnt be entered anymore!')
         var target = yield* transaction.getOperation(op.target)
         if (target != null) {
           var type = transaction.store.initializedTypes[JSON.stringify(target.parent)]

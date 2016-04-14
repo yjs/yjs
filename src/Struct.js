@@ -36,7 +36,7 @@ module.exports = function (Y/* :any */) {
         return [] // [op.target]
       },
       execute: function * (op) {
-        return yield* this.deleteOperation(op.target)
+        return yield* this.deleteOperation(op.target, op.length || 1)
       }
     },
     Insert: {

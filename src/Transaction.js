@@ -183,83 +183,102 @@ module.exports = function (Y/* :any */) {
     /*
       Mark an operation as deleted, and add it to the GC, if possible.
     */
-    * deleteOperation (targetId, preventCallType) /* :Generator<any, any, any> */ {
-      var target = yield* this.getInsertionCleanStartEnd(targetId)
-      var callType = false
-
-      if (target == null || !target.deleted) {
-        yield* this.markDeleted(targetId, 1)
+    * deleteOperation (targetId, length) /* :Generator<any, any, any> */ {
+      if (length == null) {
+        length = 1
       }
-
-      if (target != null) {
-        if (!target.deleted) {
-          callType = true
-          // set deleted & notify type
-          target.deleted = true
+      yield* this.markDeleted(targetId, length)
+      while (length > 0) {
+        var callType = false
+        var target = yield* this.os.findWithUpperBound([targetId[0], targetId[1] + length - 1])
+        var targetLength = target != null && target.content != null ? target.content.length : 1
+        if (target == null || target.id[0] !== targetId[0] || target.id[1] + targetLength <= targetId[1]) {
+          // does not exist or is not in the range of the deletion
+          target = null
+          length = 0
+        } else {
+          // does exist, check if it is too long
+          if (target.id[1] < targetId[1]) {
+            // starts to the left of the deletion range
+            target = yield* this.getInsertionCleanStart(targetId)
+            targetLength = target.content.length // must have content property!
+          }
+          if (target.id[1] + targetLength > targetId[1] + length) {
+            // ends to the right of the deletion range
+            target = yield* this.getInsertionCleanEnd([targetId[0], targetId[1] + length - 1])
+            targetLength = target.content.length
+          }
+          length = target.id[1] - targetId[1]
+        }
+  
+        if (target != null) {
+          if (!target.deleted) {
+            callType = true
+            // set deleted & notify type
+            target.deleted = true
+            // delete containing lists
+            if (target.start != null) {
+              // TODO: don't do it like this .. -.-
+              yield* this.deleteList(target.start)
+              // yield* this.deleteList(target.id) -- do not gc itself because this may still get referenced
+            }
+            if (target.map != null) {
+              for (var name in target.map) {
+                yield* this.deleteList(target.map[name])
+              }
+              // TODO: here to..  (see above)
+              // yield* this.deleteList(target.id) -- see above
+            }
+            if (target.opContent != null) {
+              yield* this.deleteOperation(target.opContent)
+              // target.opContent = null
+            }
+            if (target.requires != null) {
+              for (var i = 0; i < target.requires.length; i++) {
+                yield* this.deleteOperation(target.requires[i])
+              }
+            }
+          }
+          var left
+          if (target.left != null) {
+            left = yield* this.getInsertion(target.left)
+          } else {
+            left = null
+          }
+  
+          this.store.addToGarbageCollector(target, left)
+  
+          // set here because it was deleted and/or gc'd
+          yield* this.setOperation(target)
+  
           /*
-          if (!preventCallType) {
+            Check if it is possible to add right to the gc.
+            Because this delete can't be responsible for left being gc'd,
+            we don't have to add left to the gc..
+          */
+          var right
+          if (target.right != null) {
+            right = yield* this.getOperation(target.right)
+          } else {
+            right = null
+          }
+          if (
+            right != null &&
+            this.store.addToGarbageCollector(right, target)
+          ) {
+            yield* this.setOperation(right)
+          }
+          if (callType) {
             var type = this.store.initializedTypes[JSON.stringify(target.parent)]
             if (type != null) {
               yield* type._changed(this, {
                 struct: 'Delete',
-                target: targetId
+                target: target.id,
+                length: targetLength
               })
             }
           }
-          */
-          // delete containing lists
-          if (target.start != null) {
-            // TODO: don't do it like this .. -.-
-            yield* this.deleteList(target.start)
-            // yield* this.deleteList(target.id) -- do not gc itself because this may still get referenced
-          }
-          if (target.map != null) {
-            for (var name in target.map) {
-              yield* this.deleteList(target.map[name])
-            }
-            // TODO: here to..  (see above)
-            // yield* this.deleteList(target.id) -- see above
-          }
-          if (target.opContent != null) {
-            yield* this.deleteOperation(target.opContent)
-            // target.opContent = null
-          }
-          if (target.requires != null) {
-            for (var i = 0; i < target.requires.length; i++) {
-              yield* this.deleteOperation(target.requires[i])
-            }
-          }
         }
-        var left
-        if (target.left != null) {
-          left = yield* this.getInsertion(target.left)
-        } else {
-          left = null
-        }
-
-        this.store.addToGarbageCollector(target, left)
-
-        // set here because it was deleted and/or gc'd
-        yield* this.setOperation(target)
-
-        /*
-          Check if it is possible to add right to the gc.
-          Because this delete can't be responsible for left being gc'd,
-          we don't have to add left to the gc..
-        */
-        var right
-        if (target.right != null) {
-          right = yield* this.getOperation(target.right)
-        } else {
-          right = null
-        }
-        if (
-          right != null &&
-          this.store.addToGarbageCollector(right, target)
-        ) {
-          yield* this.setOperation(right)
-        }
-        return callType
       }
     }
     /*
@@ -470,8 +489,8 @@ module.exports = function (Y/* :any */) {
     */
     * garbageCollectOperation (id) {
       this.store.addToDebug('yield* this.garbageCollectOperation(', id, ')')
-      var o = yield* this.getInsertionCleanStartEnd(id)
-      yield* this.markGarbageCollected(id, 1) // always mark gc'd
+      var o = yield* this.getInsertion(id)  // TODO! like this? or rather cleanstartend
+      yield* this.markGarbageCollected(id, (o != null && o.content != null) ? o.content.lengh : 1) // always mark gc'd
       // if op exists, then clean that mess up..
       if (o != null) {
         /*
@@ -717,11 +736,7 @@ module.exports = function (Y/* :any */) {
         if (del[1] < state.clock) {
           for (let c = del[1]; c < del[1] + del[2]; c++) {
             var id = [del[0], c]
-            var addOperation = yield* this.deleteOperation(id)
-            if (addOperation) {
-              // TODO:.. really .. here? You could prevent calling all these functions in operationAdded
-              yield* this.store.operationAdded(this, {struct: 'Delete', target: id})
-            }
+            yield* this.deleteOperation(id)
             if (del[3]) {
               // gc
               yield* this.garbageCollectOperation(id)
