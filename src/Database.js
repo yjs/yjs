@@ -167,20 +167,28 @@ module.exports = function (Y /* :any */) {
 
       returns true iff op was added to GC
     */
-    addToGarbageCollector (op, left) {
+    * addToGarbageCollector (op, left) {
       if (
         op.gc == null &&
-        op.deleted === true &&
-        this.y.connector.isSynced &&
-        left != null &&
-        left.deleted === true
+        op.deleted === true
       ) {
-        op.gc = true
-        this.gc1.push(op.id)
-        return true
-      } else {
-        return false
+        var gc = false
+        if (left != null && left.deleted === true) {
+          gc = true
+        } else if (op.content != null && op.content.length > 1) {
+          op = yield* this.getInsertionCleanStart([op.id[0], op.id[1] + 1])
+          gc = true
+        }
+        if (gc) {
+          op.gc = true
+          yield* this.setOperation(op)
+          if (this.store.y.connector.isSynced) {
+            this.store.gc1.push(op.id)
+          }
+          return true
+        }
       }
+      return false
     }
     removeFromGarbageCollector (op) {
       function filter (o) {

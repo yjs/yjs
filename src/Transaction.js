@@ -167,13 +167,6 @@ module.exports = function (Y/* :any */) {
           }
           if (this.store.y.connector.isSynced) {
             this.store.gc1.push(start.id)
-            for (var i = 0; i < delLength; i++) {
-              if (i === 0) {
-                this.store.gc1.push(start.id)
-              } else {
-                this.store.gc1.push([start.id[0], start.id[1] + i])
-              }
-            }
           }
         }
         start = start.right
@@ -248,8 +241,6 @@ module.exports = function (Y/* :any */) {
             left = null
           }
   
-          this.store.addToGarbageCollector(target, left)
-  
           // set here because it was deleted and/or gc'd
           yield* this.setOperation(target)
   
@@ -264,12 +255,6 @@ module.exports = function (Y/* :any */) {
           } else {
             right = null
           }
-          if (
-            right != null &&
-            this.store.addToGarbageCollector(right, target)
-          ) {
-            yield* this.setOperation(right)
-          }
           if (callType) {
             var type = this.store.initializedTypes[JSON.stringify(target.parent)]
             if (type != null) {
@@ -280,6 +265,11 @@ module.exports = function (Y/* :any */) {
               })
             }
           }
+          // need to gc in the end!
+          yield* this.store.addToGarbageCollector.call(this, target, left)
+          if (right != null) {
+            yield* this.store.addToGarbageCollector.call(this, right, target)
+          }
         }
       }
     }
@@ -288,6 +278,7 @@ module.exports = function (Y/* :any */) {
     */
     * markGarbageCollected (id, len) {
       // this.mem.push(["gc", id]);
+      this.store.addToDebug('yield* this.markGarbageCollected(', id, len, ')')
       var n = yield* this.markDeleted(id, len)
       if (n.id[1] < id[1] && !n.gc) {
         // un-extend left
@@ -432,13 +423,7 @@ module.exports = function (Y/* :any */) {
       yield* this.os.iterate(this, null, null, function * (op) {
         var opLength = op.content != null ? op.content.length : 1
         if (op.gc) {
-          for (var i = 0; i < opLength; i++) {
-            if (i === 0) {
-              this.store.gc1.push(op.id)
-            } else {
-              this.store.gc1.push([op.id[0], op.id[1] + i])
-            }
-          }
+          this.store.gc1.push(op.id)
         } else {
           if (op.parent != null) {
             var parentDeleted = yield* this.isDeleted(op.parent)
@@ -463,19 +448,16 @@ module.exports = function (Y/* :any */) {
                 }
               }
               yield* this.setOperation(op)
-              for (var i = 0; i < opLength; i++) {
-                if (i === 0) {
-                  this.store.gc1.push(op.id)
-                } else {
-                  this.store.gc1.push([op.id[0], op.id[1] + i])
-                }
-              }
+              this.store.gc1.push(op.id)
               return
             }
           }
-          if (op.deleted && op.left != null) {
-            var left = yield* this.getInsertion(op.left)
-            this.store.addToGarbageCollector(op, left)
+          if (op.deleted) {
+            var left = null
+            if (op.left != null) {
+              left = yield* this.getInsertion(op.left)
+            }
+            yield* this.store.addToGarbageCollector.call(this, op, left)
           }
         }
       })
@@ -491,17 +473,10 @@ module.exports = function (Y/* :any */) {
     */
     * garbageCollectOperation (id) {
       this.store.addToDebug('yield* this.garbageCollectOperation(', id, ')')
-      var o = yield* this.getOperation(id)  // TODO! like this? or rather cleanstartend
-      yield* this.markGarbageCollected(id, (o != null && o.content != null) ? o.content.lengh : 1) // always mark gc'd
+      var o = yield* this.getOperation(id)
+      yield* this.markGarbageCollected(id, (o != null && o.content != null) ? o.content.length : 1) // always mark gc'd
       // if op exists, then clean that mess up..
       if (o != null) {
-        /*
-        if (!o.deleted) {
-          yield* this.deleteOperation(id)
-          o = yield* this.getOperation(id)
-        }
-        */
-
         var deps = []
         if (o.opContent != null) {
           deps.push(o.opContent)
@@ -736,12 +711,29 @@ module.exports = function (Y/* :any */) {
         // always try to delete..
         var state = yield* this.getState(del[0])
         if (del[1] < state.clock) {
-          for (let c = del[1]; c < del[1] + del[2]; c++) {
-            var id = [del[0], c]
-            yield* this.deleteOperation(id)
-            if (del[3]) {
-              // gc
-              yield* this.garbageCollectOperation(id)
+          yield* this.deleteOperation([del[0], del[1]], del[2])
+          if (del[3]) {
+            // gc..
+            yield* this.markGarbageCollected([del[0], del[1]], del[2]) // always mark gc'd
+            // remove operation..
+            var counter = del[1] + del[2]
+            while (counter >= del[1]) {
+              var o = yield* this.os.findWithUpperBound([del[0], counter - 1])
+              var oLen = o.content != null ? o.content.length : 1
+              if (o.id[0] !== del[0] || del[1] < o.id[1] + oLen) {
+                // not in range
+                break
+              }
+              if (o.id[1] + oLen > del[1] + del[2]) {
+                // overlaps right
+                o = yield* this.getInsertionCleanEnd([del[0], del[1] + del[2] - 1])
+              }
+              if (o.id[1] < del[1]) {
+                // overlaps left
+                o = yield* this.getInsertionCleanStart([del[0], del[1]])
+              }
+              yield* this.garbageCollectOperation(o.id)
+              counter = o.id[1]
             }
           }
         } else {
@@ -844,6 +836,9 @@ module.exports = function (Y/* :any */) {
           // debugger // check
           yield* this.setOperation(left)
           yield* this.setOperation(ins)
+          if (left.gc) {
+            this.store.gc1.push(ins.id)
+          }
           return ins
         }
       } else {
@@ -869,6 +864,9 @@ module.exports = function (Y/* :any */) {
           // debugger // check
           yield* this.setOperation(right)
           yield* this.setOperation(ins)
+          if (ins.gc) {
+            this.store.gc1.push(right.id)
+          }
           return ins
         }
       } else {

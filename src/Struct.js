@@ -233,10 +233,10 @@ module.exports = function (Y/* :any */) {
           // is a child of a map struct.
           // Then also make sure that only the most left element is not deleted
           if (op.right != null) {
-            yield* this.deleteOperation(op.right, true)
+            yield* this.deleteOperation(op.right, 1)
           }
           if (op.left != null) {
-            yield* this.deleteOperation(op.id, true)
+            yield* this.deleteOperation(op.id, 1)
           }
         } else {
           if (right == null || left == null) {
