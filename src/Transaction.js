@@ -198,15 +198,17 @@ module.exports = function (Y/* :any */) {
           length = 0
         } else {
           // does exist, check if it is too long
-          if (target.id[1] < targetId[1]) {
-            // starts to the left of the deletion range
-            target = yield* this.getInsertionCleanStart(targetId)
-            targetLength = target.content.length // must have content property!
-          }
-          if (target.id[1] + targetLength > targetId[1] + length) {
-            // ends to the right of the deletion range
-            target = yield* this.getInsertionCleanEnd([targetId[0], targetId[1] + length - 1])
-            targetLength = target.content.length
+          if (!target.deleted) {
+            if (target.id[1] < targetId[1]) {
+              // starts to the left of the deletion range
+              target = yield* this.getInsertionCleanStart(targetId)
+              targetLength = target.content.length // must have content property!
+            }
+            if (target.id[1] + targetLength > targetId[1] + length) {
+              // ends to the right of the deletion range
+              target = yield* this.getInsertionCleanEnd([targetId[0], targetId[1] + length - 1])
+              targetLength = target.content.length
+            }
           }
           length = target.id[1] - targetId[1]
         }
@@ -489,7 +491,7 @@ module.exports = function (Y/* :any */) {
     */
     * garbageCollectOperation (id) {
       this.store.addToDebug('yield* this.garbageCollectOperation(', id, ')')
-      var o = yield* this.getInsertion(id)  // TODO! like this? or rather cleanstartend
+      var o = yield* this.getOperation(id)  // TODO! like this? or rather cleanstartend
       yield* this.markGarbageCollected(id, (o != null && o.content != null) ? o.content.lengh : 1) // always mark gc'd
       // if op exists, then clean that mess up..
       if (o != null) {
