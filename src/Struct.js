@@ -195,7 +195,7 @@ module.exports = function (Y/* :any */) {
         // reconnect left and set right of op
         if (op.left != null) {
           left = yield* this.getInsertion(op.left)
-          // TODO: remove false
+          // TODO: remove false!!
           if (false && op.content != null && left.content != null && left.id[0] === op.id[0] && left.id[1] + left.content.length === op.id[1] && left.originOf == null && left.deleted !== true && left.gc !== true) {
             // extend left
             left.content = left.content.concat(op.content)

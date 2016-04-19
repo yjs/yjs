@@ -367,7 +367,11 @@ module.exports = function (Y /* :any */) {
                   !op.gc && !op.deleted
               ) {
                 // combine!
-                left.originOf = op.originOf
+                if (op.originOf != null){
+                  left.originOf = op.originOf
+                } else {
+                  delete left.originOf
+                }
                 left.content = left.content.concat(op.content)
                 left.right = op.right
                 yield* this.os.delete(op.id)

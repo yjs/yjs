@@ -278,7 +278,7 @@ module.exports = function (Y/* :any */) {
     */
     * markGarbageCollected (id, len) {
       // this.mem.push(["gc", id]);
-      this.store.addToDebug('yield* this.markGarbageCollected(', id, len, ')')
+      this.store.addToDebug('yield* this.markGarbageCollected(', id, ', ', len, ')')
       var n = yield* this.markDeleted(id, len)
       if (n.id[1] < id[1] && !n.gc) {
         // un-extend left
@@ -292,10 +292,10 @@ module.exports = function (Y/* :any */) {
       var prev = yield* this.ds.findPrev(id)
       var next = yield* this.ds.findNext(id)
 
-      if (id[1] < n.id[1] + n.len - len && !n.gc) {
+      if (id[1] + len < n.id[1] + n.len && !n.gc) {
         // un-extend right
-        yield* this.ds.put({id: [id[0], id[1] + 1], len: n.len - 1, gc: false})
-        n.len = 1
+        yield* this.ds.put({id: [id[0], id[1] + len], len: n.len - len, gc: false})
+        n.len = len
       }
       // set gc'd
       n.gc = true
@@ -637,12 +637,14 @@ module.exports = function (Y/* :any */) {
     * updateState (user) {
       var state = yield* this.getState(user)
       yield* this.checkDeleteStoreForState(state)
-      var o = yield* this.getOperation([user, state.clock])
-      while (o != null && o.id[1] === state.clock && user === o.id[0]) {
+      var o = yield* this.getInsertion([user, state.clock])
+      var oLength = (o != null && o.content != null) ? o.content.length : 1
+      while (o != null && user === o.id[0] && o.id[1] <= state.clock && o.id[1] + oLength > state.clock) {
         // either its a new operation (1. case), or it is an operation that was deleted, but is not yet in the OS
-        state.clock += o.content == null ? 1 : o.content.length
+        state.clock += oLength
         yield* this.checkDeleteStoreForState(state)
         o = yield* this.os.findNext(o.id)
+        oLength = (o != null && o.content != null) ? o.content.length : 1
       }
       yield* this.setState(state)
     }
@@ -992,7 +994,12 @@ module.exports = function (Y/* :any */) {
           continue
         }
         var startPos = startSS[user] || 0
-
+        if (startPos > 0) {
+          var firstMissing = yield* this.getInsertion([user, startPos])
+          if (firstMissing != null) {
+            // TODO: Send missing depending on content! Also try to recognize this on the receiving end!
+          }
+        }
         yield* this.os.iterate(this, [user, startPos], [user, Number.MAX_VALUE], function * (op) {
           op = Y.Struct[op.struct].encode(op)
           if (op.struct !== 'Insert') {
