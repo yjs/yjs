@@ -350,9 +350,8 @@ module.exports = function (Y /* :any */) {
         while (defined != null && defined.content != null) {
           // check if this op has a longer content in the case it is defined
           if (defined.content.length < op.content.length) {
-            var diff = op.content.length - defined.content.length
-            op.content.splice(0, diff)
-            op.id = [op.id[0], op.id[1] + diff]
+            op.content.splice(0, defined.content.length)
+            op.id = [op.id[0], op.id[1] + defined.content.length]
             op.left = defined.id
             op.origin = defined.id
             defined = yield* this.getOperation(op.id)
