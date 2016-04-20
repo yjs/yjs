@@ -342,10 +342,24 @@ module.exports = function (Y /* :any */) {
       this.store.addToDebug('yield* this.store.tryExecute.call(this, ', JSON.stringify(op), ')')
       if (op.struct === 'Delete') {
         yield* Y.Struct.Delete.execute.call(this, op)
-        // the following is now called in Transaction.deleteOperation!
+        // this is now called in Transaction.deleteOperation!
         // yield* this.store.operationAdded(this, op)
       } else {
+        // check if this op was defined
         var defined = yield* this.getOperation(op.id)
+        while (defined != null && defined.content != null) {
+          // check if this op has a longer content in the case it is defined
+          if (defined.content.length < op.content.length) {
+            var diff = op.content.length - defined.content.length
+            op.content.splice(0, diff)
+            op.id = [op.id[0], op.id[1] + diff]
+            op.left = defined.id
+            op.origin = defined.id
+            defined = yield* this.getOperation(op.id)
+          } else {
+            break
+          }
+        }
         if (defined == null) {
           var isGarbageCollected = yield* this.isGarbageCollected(op.id)
           if (!isGarbageCollected) {

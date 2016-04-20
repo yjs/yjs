@@ -434,12 +434,6 @@ module.exports = function (Y/* :any */) {
                 op.deleted = true
                 if (op.opContent != null) {
                   yield* this.deleteOperation(op.opContent)
-                  /*
-                  var opContent = yield* this.getOperation(op.opContent)
-                  opContent.gc = true
-                  yield* this.setOperation(opContent)
-                  this.store.gc1.push(opContent.id)
-                  */
                 }
                 if (op.requires != null) {
                   for (var i = 0; i < op.requires.length; i++) {
@@ -995,9 +989,12 @@ module.exports = function (Y/* :any */) {
         }
         var startPos = startSS[user] || 0
         if (startPos > 0) {
+          // There is a change that [user, startPos] is in a composed Insertion (with a smaller counter)
+          // find out if that is the case
           var firstMissing = yield* this.getInsertion([user, startPos])
           if (firstMissing != null) {
-            // TODO: Send missing depending on content! Also try to recognize this on the receiving end!
+            // update startPos
+            startPos = firstMissing.id[1]
           }
         }
         yield* this.os.iterate(this, [user, startPos], [user, Number.MAX_VALUE], function * (op) {
