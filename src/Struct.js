@@ -124,10 +124,13 @@ module.exports = function (Y/* :any */) {
       # case 3: $origin > $o.origin
       #         $this insert_position is to the left of $o (forever!)
       */
-      execute: function *(op) {
+      execute: function * (op) {
         var i // loop counter
-        var distanceToOrigin = i = yield* Struct.Insert.getDistanceToOrigin.call(this, op) // most cases: 0 (starts from 0)
-
+        
+        // during this function some ops may get split into two pieces (e.g. with getInsertionCleanEnd)
+        // We try to merge them later, if possible
+        var tryToRemergeLater = []
+        
         if (op.origin != null) { // TODO: !== instead of !=
           // we save in origin that op originates in it
           // we need that later when we eventually garbage collect origin (see transaction)
@@ -137,7 +140,11 @@ module.exports = function (Y/* :any */) {
           }
           origin.originOf.push(op.id)
           yield* this.setOperation(origin)
+          if (origin.right != null) {
+            tryToRemergeLater.push(origin.right)
+          }
         }
+        var distanceToOrigin = i = yield* Struct.Insert.getDistanceToOrigin.call(this, op) // most cases: 0 (starts from 0)
 
         // now we begin to insert op in the list of insertions..
         var o
@@ -147,14 +154,24 @@ module.exports = function (Y/* :any */) {
         // find o. o is the first conflicting operation
         if (op.left != null) {
           o = yield* this.getInsertionCleanEnd(op.left)
-          o = (o.right == null) ? null : yield* this.getInsertionCleanStart(o.right)
+          if (!Y.utils.compareIds(op.left, op.origin) && o.right != null) {
+            // only if not added previously
+            tryToRemergeLater.push(o.right)
+          }
+          o = (o.right == null) ? null : yield* this.getOperation(o.right)
         } else { // left == null
           parent = yield* this.getOperation(op.parent)
           let startId = op.parentSub ? parent.map[op.parentSub] : parent.start
           start = startId == null ? null : yield* this.getOperation(startId)
           o = start
         }
-
+        
+        // make sure to split op.right if necessary (also add to tryCombineWithLeft)
+        if (op.right != null) {
+          tryToRemergeLater.push(op.right)
+          yield* this.getInsertionCleanStart(op.right)
+        }
+        
         // handle conflicts
         while (true) {
           if (o != null && !Y.utils.compareIds(o.id, op.right)) {
@@ -176,7 +193,7 @@ module.exports = function (Y/* :any */) {
             }
             i++
             if (o.right != null) {
-              o = yield* this.getInsertionCleanStart(o.right)
+              o = yield* this.getInsertion(o.right)
             } else {
               o = null
             }
@@ -248,6 +265,12 @@ module.exports = function (Y/* :any */) {
             }
             yield* this.setOperation(parent)
           }
+        }
+        
+        // try to merge original op.left and op.origin
+        for (var i = 0; i < tryToRemergeLater.length; i++) {
+          var m = yield* this.getOperation(tryToRemergeLater[i])
+          yield* this.tryCombineWithLeft(m)
         }
       }
     },

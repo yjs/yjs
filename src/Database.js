@@ -367,30 +367,7 @@ module.exports = function (Y /* :any */) {
             yield* this.store.operationAdded(this, op)
 
             // if insertion, try to combine with left
-            if (op.left != null &&
-                op.content != null &&
-                op.left[0] === op.id[0] &&
-                Y.utils.compareIds(op.left, op.origin)
-            ) {
-              var left = yield* this.getInsertion(op.left)
-              if (left.content != null &&
-                  left.id[1] + left.content.length === op.id[1] &&
-                  left.originOf.length === 1 &&
-                  !left.gc && !left.deleted &&
-                  !op.gc && !op.deleted
-              ) {
-                // combine!
-                if (op.originOf != null){
-                  left.originOf = op.originOf
-                } else {
-                  delete left.originOf
-                }
-                left.content = left.content.concat(op.content)
-                left.right = op.right
-                yield* this.os.delete(op.id)
-                yield* this.setOperation(left)
-              }
-            }
+            yield* this.tryCombineWithLeft(op)
           }
         }
       }

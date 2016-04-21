@@ -421,38 +421,37 @@ module.exports = function (Y/* :any */) {
     */
     * garbageCollectAfterSync () {
       yield* this.os.iterate(this, null, null, function * (op) {
-        var opLength = op.content != null ? op.content.length : 1
         if (op.gc) {
-          this.store.gc1.push(op.id)
-        } else {
-          if (op.parent != null) {
-            var parentDeleted = yield* this.isDeleted(op.parent)
-            if (parentDeleted) {
-              op.gc = true
-              if (!op.deleted) {
-                yield* this.markDeleted(op.id, opLength)
-                op.deleted = true
-                if (op.opContent != null) {
-                  yield* this.deleteOperation(op.opContent)
-                }
-                if (op.requires != null) {
-                  for (var i = 0; i < op.requires.length; i++) {
-                    yield* this.deleteOperation(op.requires[i])
-                  }
+          delete op.gc
+          yield* this.setOperation(op)
+        }
+        if (op.parent != null) {
+          var parentDeleted = yield* this.isDeleted(op.parent)
+          if (parentDeleted) {
+            op.gc = true
+            if (!op.deleted) {
+              yield* this.markDeleted(op.id, op.content != null ? op.content.length : 1)
+              op.deleted = true
+              if (op.opContent != null) {
+                yield* this.deleteOperation(op.opContent)
+              }
+              if (op.requires != null) {
+                for (var i = 0; i < op.requires.length; i++) {
+                  yield* this.deleteOperation(op.requires[i])
                 }
               }
-              yield* this.setOperation(op)
-              this.store.gc1.push(op.id)
-              return
             }
+            yield* this.setOperation(op)
+            this.store.gc1.push(op.id)
+            return
           }
-          if (op.deleted) {
-            var left = null
-            if (op.left != null) {
-              left = yield* this.getInsertion(op.left)
-            }
-            yield* this.store.addToGarbageCollector.call(this, op, left)
+        }
+        if (op.deleted) {
+          var left = null
+          if (op.left != null) {
+            left = yield* this.getInsertion(op.left)
           }
+          yield* this.store.addToGarbageCollector.call(this, op, left)
         }
       })
     }
@@ -715,8 +714,11 @@ module.exports = function (Y/* :any */) {
             var counter = del[1] + del[2]
             while (counter >= del[1]) {
               var o = yield* this.os.findWithUpperBound([del[0], counter - 1])
+              if (o == null) {
+                break
+              }
               var oLen = o.content != null ? o.content.length : 1
-              if (o.id[0] !== del[0] || del[1] < o.id[1] + oLen) {
+              if (o.id[0] !== del[0] || o.id[1] + oLen <= del[1]) {
                 // not in range
                 break
               }
@@ -728,8 +730,8 @@ module.exports = function (Y/* :any */) {
                 // overlaps left
                 o = yield* this.getInsertionCleanStart([del[0], del[1]])
               }
-              yield* this.garbageCollectOperation(o.id)
               counter = o.id[1]
+              yield* this.garbageCollectOperation(o.id)
             }
           }
         } else {
@@ -794,6 +796,35 @@ module.exports = function (Y/* :any */) {
       if (!this.store.y.connector.isDisconnected() && this.store.forwardAppliedOperations && typeof op.id[1] !== 'string') {
         // is connected, and this is not going to be send in addOperation
         this.store.y.connector.broadcastOps([op])
+      }
+    }
+    // if insertion, try to combine with left insertion (if both have content property)
+    * tryCombineWithLeft (op) {
+      if (
+        op != null &&
+        op.left != null &&
+        op.content != null &&
+        op.left[0] === op.id[0] &&
+        Y.utils.compareIds(op.left, op.origin)
+      ) {
+        var left = yield* this.getInsertion(op.left)
+        if (left.content != null &&
+            left.id[1] + left.content.length === op.id[1] &&
+            left.originOf.length === 1 &&
+            !left.gc && !left.deleted &&
+            !op.gc && !op.deleted
+        ) {
+          // combine!
+          if (op.originOf != null){
+            left.originOf = op.originOf
+          } else {
+            delete left.originOf
+          }
+          left.content = left.content.concat(op.content)
+          left.right = op.right
+          yield* this.os.delete(op.id)
+          yield* this.setOperation(left)
+        }
       }
     }
     * getInsertion (id) {
