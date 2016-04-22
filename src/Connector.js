@@ -143,8 +143,8 @@ module.exports = function (Y/* :any */) {
           break
         }
       }
+      var conn = this
       if (syncUser != null) {
-        var conn = this
         this.currentSyncTarget = syncUser
         this.y.db.requestTransaction(function *() {
           var stateSet = yield* this.getStateSet()
@@ -157,14 +157,15 @@ module.exports = function (Y/* :any */) {
           })
         })
       } else {
-        this.isSynced = true
-        // call when synced listeners
-        for (var f of this.whenSyncedListeners) {
-          f()
-        }
-        this.whenSyncedListeners = []
         this.y.db.requestTransaction(function *() {
+          // it is crucial that isSynced is set at the time garbageCollectAfterSync is called
+          conn.isSynced = true
           yield* this.garbageCollectAfterSync()
+          // call whensynced listeners
+          for (var f of conn.whenSyncedListeners) {
+            f()
+          }
+          conn.whenSyncedListeners = []
         })
       }
     }

@@ -123,7 +123,6 @@ g.applyRandomTransactionsAllRejoinNoGC = async(function * applyRandomTransaction
 g.applyRandomTransactionsWithGC = async(function * applyRandomTransactions (users, objects, transactions, numberOfTransactions) {
   yield* applyTransactions(1, numberOfTransactions, objects, users.slice(1), transactions)
   yield Y.utils.globalRoom.flushAll()
-  yield g.garbageCollectAllUsers(users)
   for (var u in users) {
     // TODO: here, we enforce that two users never sync at the same time with u[0]
     //       enforce that in the connector itself!

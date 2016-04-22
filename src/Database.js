@@ -75,10 +75,14 @@ module.exports = function (Y /* :any */) {
       }
       this.gc1 = [] // first stage
       this.gc2 = [] // second stage -> after that, remove the op
-      this.gcTimeout = opts.gcTimeout || 50000
+      this.gcTimeout = !opts.gcTimeout ? 50000 : opts.gcTimeoutś
       function garbageCollect () {
         return os.whenTransactionsFinished().then(function () {
           if (os.gc1.length > 0 || os.gc2.length > 0) {
+            if (!os.y.isConnected()) {
+              debugger
+              console.log('gc should be empty when disconnected!')
+            }
             return new Promise((resolve) => {
               os.requestTransaction(function * () {
                 if (os.y.connector != null && os.y.connector.isSynced) {
@@ -346,15 +350,16 @@ module.exports = function (Y /* :any */) {
         // yield* this.store.operationAdded(this, op)
       } else {
         // check if this op was defined
-        var defined = yield* this.getOperation(op.id)
+        var defined = yield* this.getInsertion(op.id)
         while (defined != null && defined.content != null) {
           // check if this op has a longer content in the case it is defined
-          if (defined.content.length < op.content.length) {
-            op.content.splice(0, defined.content.length)
-            op.id = [op.id[0], op.id[1] + defined.content.length]
-            op.left = defined.id
-            op.origin = defined.id
-            defined = yield* this.getOperation(op.id)
+          if (defined.id[1] + defined.content.length < op.id[1] + op.content.length) {
+            var overlapSize = defined.content.length - (op.id[1] - defined.id[1])
+            op.content.splice(0, overlapSize)
+            op.id = [op.id[0], op.id[1] + overlapSize]
+            op.left = Y.utils.getLastId(defined)
+            op.origin = op.left
+            defined = yield* this.getOperation(op.id) // getOperation suffices here
           } else {
             break
           }

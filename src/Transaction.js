@@ -205,7 +205,7 @@ module.exports = function (Y/* :any */) {
           }
           length = target.id[1] - targetId[1]
         }
-  
+
         if (target != null) {
           if (!target.deleted) {
             callType = true
@@ -240,10 +240,10 @@ module.exports = function (Y/* :any */) {
           } else {
             left = null
           }
-  
+
           // set here because it was deleted and/or gc'd
           yield* this.setOperation(target)
-  
+
           /*
             Check if it is possible to add right to the gc.
             Because this delete can't be responsible for left being gc'd,
@@ -380,7 +380,7 @@ module.exports = function (Y/* :any */) {
             // gc is stronger, so reduce length of n
             n.len -= diff
             if (diff >= next.len) {
-              // delete the missing range after next 
+              // delete the missing range after next
               diff = diff - next.len // missing range after next
               if (diff > 0) {
                 yield* this.ds.put(n) // unneccessary? TODO!
@@ -420,6 +420,9 @@ module.exports = function (Y/* :any */) {
       operations that can be gc'd and add them to the garbage collector.
     */
     * garbageCollectAfterSync () {
+      if (this.store.gc1.length > 0 || this.store.gc2.length > 0) {
+        console.warn('gc should be empty after sync')
+      }
       yield* this.os.iterate(this, null, null, function * (op) {
         if (op.gc) {
           delete op.gc
@@ -469,7 +472,9 @@ module.exports = function (Y/* :any */) {
       var o = yield* this.getOperation(id)
       yield* this.markGarbageCollected(id, (o != null && o.content != null) ? o.content.length : 1) // always mark gc'd
       // if op exists, then clean that mess up..
-      if (o != null) {
+      if (o == null) {
+        yield* this.updateState(id[0])
+      } else if (o != null) {
         var deps = []
         if (o.opContent != null) {
           deps.push(o.opContent)
@@ -647,9 +652,6 @@ module.exports = function (Y/* :any */) {
     */
     * applyDeleteSet (ds) {
       var deletions = []
-      function createDeletions (user, start, len, gc) {
-        deletions.push([user, start, len, gc])
-      }
 
       for (var user in ds) {
         var dv = ds[user]
@@ -676,14 +678,14 @@ module.exports = function (Y/* :any */) {
               // delete maximum the len of d
               // else delete as much as possible
               diff = Math.min(n.id[1] - d[0], d[1])
-              createDeletions(user, d[0], diff, d[2])
+              deletions.push([user, d[0], diff, d[2]])
             } else {
               // 3)
               diff = n.id[1] + n.len - d[0] // never null (see 1)
               if (d[2] && !n.gc) {
                 // d marks as gc'd but n does not
                 // then delete either way
-                createDeletions(user, d[0], Math.min(diff, d[1]), d[2])
+                deletions.push([user, d[0], Math.min(diff, d[1]), d[2]])
               }
             }
             if (d[1] <= diff) {
@@ -698,57 +700,38 @@ module.exports = function (Y/* :any */) {
         // for the rest.. just apply it
         for (; pos < dv.length; pos++) {
           d = dv[pos]
-          createDeletions(user, d[0], d[1], d[2])
+          deletions.push([user, d[0], d[1], d[2]])
         }
       }
       for (var i = 0; i < deletions.length; i++) {
         var del = deletions[i]
         // always try to delete..
-        var state = yield* this.getState(del[0])
-        if (del[1] < state.clock) {
-          yield* this.deleteOperation([del[0], del[1]], del[2])
-          if (del[3]) {
-            // gc..
-            yield* this.markGarbageCollected([del[0], del[1]], del[2]) // always mark gc'd
-            // remove operation..
-            var counter = del[1] + del[2]
-            while (counter >= del[1]) {
-              var o = yield* this.os.findWithUpperBound([del[0], counter - 1])
-              if (o == null) {
-                break
-              }
-              var oLen = o.content != null ? o.content.length : 1
-              if (o.id[0] !== del[0] || o.id[1] + oLen <= del[1]) {
-                // not in range
-                break
-              }
-              if (o.id[1] + oLen > del[1] + del[2]) {
-                // overlaps right
-                o = yield* this.getInsertionCleanEnd([del[0], del[1] + del[2] - 1])
-              }
-              if (o.id[1] < del[1]) {
-                // overlaps left
-                o = yield* this.getInsertionCleanStart([del[0], del[1]])
-              }
-              counter = o.id[1]
-              yield* this.garbageCollectOperation(o.id)
-            }
-          }
-        } else {
-          if (del[3]) {
-            yield* this.markGarbageCollected([del[0], del[1]], del[2])
-          } else {
-            yield* this.markDeleted([del[0], del[1]], del[2])
-          }
-        }
+        yield* this.deleteOperation([del[0], del[1]], del[2])
         if (del[3]) {
-          // check to increase the state of the respective user
-          if (state.clock >= del[1] && state.clock < del[1] + del[2]) {
-            state.clock = del[1] + del[2]
-            // also check if more expected operations were gc'd
-            yield* this.checkDeleteStoreForState(state) // TODO: unneccessary?
-            // then set the state
-            yield* this.setState(state)
+          // gc..
+          yield* this.markGarbageCollected([del[0], del[1]], del[2]) // always mark gc'd
+          // remove operation..
+          var counter = del[1] + del[2]
+          while (counter >= del[1]) {
+            var o = yield* this.os.findWithUpperBound([del[0], counter - 1])
+            if (o == null) {
+              break
+            }
+            var oLen = o.content != null ? o.content.length : 1
+            if (o.id[0] !== del[0] || o.id[1] + oLen <= del[1]) {
+              // not in range
+              break
+            }
+            if (o.id[1] + oLen > del[1] + del[2]) {
+              // overlaps right
+              o = yield* this.getInsertionCleanEnd([del[0], del[1] + del[2] - 1])
+            }
+            if (o.id[1] < del[1]) {
+              // overlaps left
+              o = yield* this.getInsertionCleanStart([del[0], del[1]])
+            }
+            counter = o.id[1]
+            yield* this.garbageCollectOperation(o.id)
           }
         }
         if (this.store.forwardAppliedOperations) {
