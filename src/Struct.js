@@ -126,11 +126,11 @@ module.exports = function (Y/* :any */) {
       */
       execute: function * (op) {
         var i // loop counter
-        
+
         // during this function some ops may get split into two pieces (e.g. with getInsertionCleanEnd)
         // We try to merge them later, if possible
         var tryToRemergeLater = []
-        
+
         if (op.origin != null) { // TODO: !== instead of !=
           // we save in origin that op originates in it
           // we need that later when we eventually garbage collect origin (see transaction)
@@ -165,13 +165,13 @@ module.exports = function (Y/* :any */) {
           start = startId == null ? null : yield* this.getOperation(startId)
           o = start
         }
-        
+
         // make sure to split op.right if necessary (also add to tryCombineWithLeft)
         if (op.right != null) {
           tryToRemergeLater.push(op.right)
           yield* this.getInsertionCleanStart(op.right)
         }
-        
+
         // handle conflicts
         while (true) {
           if (o != null && !Y.utils.compareIds(o.id, op.right)) {
@@ -212,18 +212,11 @@ module.exports = function (Y/* :any */) {
         // reconnect left and set right of op
         if (op.left != null) {
           left = yield* this.getInsertion(op.left)
-          // TODO: remove false!!
-          if (false && op.content != null && left.content != null && left.id[0] === op.id[0] && left.id[1] + left.content.length === op.id[1] && left.originOf == null && left.deleted !== true && left.gc !== true) {
-            // extend left
-            left.content = left.content.concat(op.content)
-            op = left
-          } else {
-            // link left
-            op.right = left.right
-            left.right = op.id
+          // link left
+          op.right = left.right
+          left.right = op.id
 
-            yield* this.setOperation(left)
-          }
+          yield* this.setOperation(left)
         } else {
           // set op.right from parent, if necessary
           op.right = op.parentSub ? parent.map[op.parentSub] || null : parent.start
@@ -266,9 +259,9 @@ module.exports = function (Y/* :any */) {
             yield* this.setOperation(parent)
           }
         }
-        
+
         // try to merge original op.left and op.origin
-        for (var i = 0; i < tryToRemergeLater.length; i++) {
+        for (let i = 0; i < tryToRemergeLater.length; i++) {
           var m = yield* this.getOperation(tryToRemergeLater[i])
           yield* this.tryCombineWithLeft(m)
         }

@@ -736,9 +736,7 @@ module.exports = function (Y/* :any */) {
         }
         if (this.store.forwardAppliedOperations) {
           var ops = []
-          for (let c = del[1]; c < del[1] + del[2]; c++) {
-            ops.push({struct: 'Delete', target: [d[0], c]}) // TODO: implement Delete with deletion length!
-          }
+          ops.push({struct: 'Delete', target: [d[0], d[1]], length: del[2]})
           this.store.y.connector.broadcastOps(ops)
         }
       }
@@ -798,7 +796,7 @@ module.exports = function (Y/* :any */) {
             !op.gc && !op.deleted
         ) {
           // combine!
-          if (op.originOf != null){
+          if (op.originOf != null) {
             left.originOf = op.originOf
           } else {
             delete left.originOf

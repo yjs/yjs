@@ -247,7 +247,7 @@ module.exports = function (Y /* : any*/) {
       return id1 === id2
     } else {
       return id1[0] === id2[0] && id1[1] === id2[1]
-    } 
+    }
   }
   Y.utils.compareIds = compareIds
 
@@ -265,7 +265,7 @@ module.exports = function (Y /* : any*/) {
     }
   }
   Y.utils.matchesId = matchesId
-  
+
   function getLastId (op) {
     if (op.content == null || op.content.length === 1) {
       return op.id
@@ -298,8 +298,9 @@ module.exports = function (Y /* : any*/) {
       I tried to optimize this for performance, therefore no highlevel operations.
     */
     class SmallLookupBuffer extends Store {
-      constructor () {
-        super(...arguments)
+      constructor (arg) {
+        // super(...arguments) -- do this when this is supported by stable nodejs
+        super(arg)
         this.writeBuffer = createEmptyOpsArray(5)
         this.readBuffer = createEmptyOpsArray(10)
       }

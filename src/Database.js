@@ -80,8 +80,7 @@ module.exports = function (Y /* :any */) {
         return os.whenTransactionsFinished().then(function () {
           if (os.gc1.length > 0 || os.gc2.length > 0) {
             if (!os.y.isConnected()) {
-              debugger
-              console.log('gc should be empty when disconnected!')
+              console.warn('gc should be empty when disconnected!')
             }
             return new Promise((resolve) => {
               os.requestTransaction(function * () {
@@ -379,68 +378,54 @@ module.exports = function (Y /* :any */) {
     }
     // called by a transaction when an operation is added
     * operationAdded (transaction, op) {
-      if (op.struct === 'Delete') {
-        throw new Error('this section shouldnt be entered anymore!')
-        var target = yield* transaction.getOperation(op.target)
-        if (target != null) {
-          var type = transaction.store.initializedTypes[JSON.stringify(target.parent)]
-          if (type != null) {
-            yield* type._changed(transaction, {
+      // increase SS
+      yield* transaction.updateState(op.id[0])
+
+      var opLen = op.content != null ? op.content.length : 1
+      for (let i = 0; i < opLen; i++) {
+        // notify whenOperation listeners (by id)
+        var sid = JSON.stringify([op.id[0], op.id[1] + i])
+        var l = this.listenersById[sid]
+        delete this.listenersById[sid]
+
+        if (l != null) {
+          for (var key in l) {
+            var listener = l[key]
+            if (--listener.missing === 0) {
+              this.whenOperationsExist([], listener.op)
+            }
+          }
+        }
+      }
+      var t = this.initializedTypes[JSON.stringify(op.parent)]
+
+      // if parent is deleted, mark as gc'd and return
+      if (op.parent != null) {
+        var parentIsDeleted = yield* transaction.isDeleted(op.parent)
+        if (parentIsDeleted) {
+          yield* transaction.deleteList(op.id)
+          return
+        }
+      }
+
+      // notify parent, if it was instanciated as a custom type
+      if (t != null) {
+        let o = Y.utils.copyObject(op)
+        yield* t._changed(transaction, o)
+      }
+      if (!op.deleted) {
+        // Delete if DS says this is actually deleted
+        var len = op.content != null ? op.content.length : 1
+        var startId = op.id // You must not use op.id in the following loop, because op will change when deleted
+        for (let i = 0; i < len; i++) {
+          var id = [startId[0], startId[1] + i]
+          var opIsDeleted = yield* transaction.isDeleted(id)
+          if (opIsDeleted) {
+            var delop = {
               struct: 'Delete',
-              target: op.target
-            })
-          }
-        }
-      } else {
-        // increase SS
-        yield* transaction.updateState(op.id[0])
-
-        var opLen = op.content != null ? op.content.length : 1
-        for (var i = 0; i < opLen; i++) {
-          // notify whenOperation listeners (by id)
-          var sid = JSON.stringify([op.id[0], op.id[1] + i])
-          var l = this.listenersById[sid]
-          delete this.listenersById[sid]
-  
-          if (l != null) {
-            for (var key in l) {
-              var listener = l[key]
-              if (--listener.missing === 0) {
-                this.whenOperationsExist([], listener.op)
-              }
+              target: id
             }
-          }
-        }
-        var t = this.initializedTypes[JSON.stringify(op.parent)]
-
-        // if parent is deleted, mark as gc'd and return
-        if (op.parent != null) {
-          var parentIsDeleted = yield* transaction.isDeleted(op.parent)
-          if (parentIsDeleted) {
-            yield* transaction.deleteList(op.id)
-            return
-          }
-        }
-
-        // notify parent, if it was instanciated as a custom type
-        if (t != null) {
-          let o = Y.utils.copyObject(op)
-          yield* t._changed(transaction, o)
-        }
-        if (!op.deleted) {
-          // Delete if DS says this is actually deleted
-          var len = op.content != null ? op.content.length : 1
-          var startId = op.id // You must not use op.id in the following loop, because op will change when deleted
-          for (var i = 0; i < len; i++) {
-            var id = [startId[0], startId[1] + i]
-            var opIsDeleted = yield* transaction.isDeleted(id)
-            if (opIsDeleted) {
-              var delop = {
-                struct: 'Delete',
-                target: id
-              }
-              yield* this.tryExecute.call(transaction, delop)
-            }
+            yield* this.tryExecute.call(transaction, delop)
           }
         }
       }

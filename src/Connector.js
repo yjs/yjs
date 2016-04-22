@@ -225,7 +225,6 @@ module.exports = function (Y/* :any */) {
         return
       }
       if (message.type === 'sync step 1') {
-        // TODO: make transaction, stream the ops
         let conn = this
         let m = message
         this.y.db.requestTransaction(function *() {
