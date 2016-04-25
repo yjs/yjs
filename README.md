@@ -179,6 +179,14 @@ If you want to see an issue fixed, please subscribe to the thread (or remind me 
 
 ## Changelog
 
+### 11.0.0
+
+* **All types now return a single event instead of list of events**
+  * Insert events contain a list of values
+* Improved performance for large insertions & deletions
+* Several bugfixes (offline editing related)
+* Native support for node 4 (see #49)
+
 ### 10.0.0
 
 * Support for more complex types (a type can be a composition of several types)

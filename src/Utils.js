@@ -91,9 +91,9 @@ module.exports = function (Y /* : any*/) {
     */
     receivedOp (op) {
       if (this.awaiting <= 0) {
-        this.onevent([op])
+        this.onevent(op)
       } else {
-        this.waiting.push(Y.utils.copyObject(op))
+        this.waiting.push(op)
       }
     }
     /*
@@ -102,8 +102,8 @@ module.exports = function (Y /* : any*/) {
       prematurely called operations are executed
     */
     awaitAndPrematurelyCall (ops) {
-      this.awaiting++
-      this.onevent(ops)
+      this.awaiting += ops.length
+      ops.forEach(this.onevent)
     }
     /*
       Call this when you successfully awaited the execution of n Insert operations
@@ -132,7 +132,7 @@ module.exports = function (Y /* : any*/) {
           throw new Error('Expected Insert Operation!')
         }
       }
-      this._tryCallEvents()
+      this._tryCallEvents(n)
     }
     /*
       Call this when you successfully awaited the execution of n Delete operations
@@ -155,17 +155,17 @@ module.exports = function (Y /* : any*/) {
           throw new Error('Expected Delete Operation!')
         }
       }
-      this._tryCallEvents()
+      this._tryCallEvents(n)
     }
     /* (private)
       Try to execute the events for the waiting operations
     */
-    _tryCallEvents () {
-      this.awaiting--
-      if (this.awaiting <= 0 && this.waiting.length > 0) {
-        var events = this.waiting
+    _tryCallEvents (n) {
+      this.awaiting -= n
+      if (this.awaiting === 0 && this.waiting.length > 0) {
+        var ops = this.waiting
         this.waiting = []
-        this.onevent(events)
+        ops.forEach(this.onevent)
       }
     }
   }

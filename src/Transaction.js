@@ -174,7 +174,7 @@ module.exports = function (Y/* :any */) {
     /*
       Mark an operation as deleted, and add it to the GC, if possible.
     */
-    * deleteOperation (targetId, length) /* :Generator<any, any, any> */ {
+    * deleteOperation (targetId, length, preventCallType) /* :Generator<any, any, any> */ {
       if (length == null) {
         length = 1
       }
@@ -253,7 +253,7 @@ module.exports = function (Y/* :any */) {
           } else {
             right = null
           }
-          if (callType) {
+          if (callType && !preventCallType) {
             var type = this.store.initializedTypes[JSON.stringify(target.parent)]
             if (type != null) {
               yield* type._changed(this, {
