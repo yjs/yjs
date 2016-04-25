@@ -113,6 +113,11 @@ module.exports = function (Y /* :any */) {
         garbageCollect()
       }
     }
+    queueGarbageCollector (id) {
+      if (this.y.isConnected()) {
+        this.gc1.push(id)
+      }
+    }
     emptyGarbageCollector () {
       return new Promise(resolve => {
         var check = () => {
@@ -185,9 +190,7 @@ module.exports = function (Y /* :any */) {
         if (gc) {
           op.gc = true
           yield* this.setOperation(op)
-          if (this.store.y.connector.isSynced) {
-            this.store.gc1.push(op.id)
-          }
+          this.store.queueGarbageCollector(op.id)
           return true
         }
       }

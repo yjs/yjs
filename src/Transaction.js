@@ -165,9 +165,7 @@ module.exports = function (Y/* :any */) {
           if (start.opContent != null) {
             yield* this.deleteOperation(start.opContent)
           }
-          if (this.store.y.connector.isSynced) {
-            this.store.gc1.push(start.id)
-          }
+          this.store.queueGarbageCollector(start.id)
         }
         start = start.right
       }
@@ -320,6 +318,7 @@ module.exports = function (Y/* :any */) {
         yield* this.ds.delete(next.id)
       }
       yield* this.ds.put(n)
+      yield* this.updateState(n.id[0])
     }
     /*
       Mark an operation as deleted.
@@ -445,7 +444,7 @@ module.exports = function (Y/* :any */) {
               }
             }
             yield* this.setOperation(op)
-            this.store.gc1.push(op.id)
+            this.store.gc1.push(op.id) // this is ok becaues its shortly before sync (otherwise use queueGarbageCollector!)
             return
           }
         }
@@ -472,9 +471,7 @@ module.exports = function (Y/* :any */) {
       var o = yield* this.getOperation(id)
       yield* this.markGarbageCollected(id, (o != null && o.content != null) ? o.content.length : 1) // always mark gc'd
       // if op exists, then clean that mess up..
-      if (o == null) {
-        yield* this.updateState(id[0])
-      } else if (o != null) {
+      if (o != null) {
         var deps = []
         if (o.opContent != null) {
           deps.push(o.opContent)
@@ -491,10 +488,9 @@ module.exports = function (Y/* :any */) {
             }
             dep.gc = true
             yield* this.setOperation(dep)
-            this.store.gc1.push(dep.id)
+            this.store.queueGarbageCollector(dep.id)
           } else {
             yield* this.markGarbageCollected(deps[i], 1)
-            yield* this.updateState(deps[i][0]) // TODO: unneccessary?
           }
         }
 
@@ -845,7 +841,7 @@ module.exports = function (Y/* :any */) {
           yield* this.setOperation(left)
           yield* this.setOperation(ins)
           if (left.gc) {
-            this.store.gc1.push(ins.id)
+            this.store.queueGarbageCollector(ins.id)
           }
           return ins
         }
@@ -873,7 +869,7 @@ module.exports = function (Y/* :any */) {
           yield* this.setOperation(right)
           yield* this.setOperation(ins)
           if (ins.gc) {
-            this.store.gc1.push(right.id)
+            this.store.queueGarbageCollector(right.id)
           }
           return ins
         }

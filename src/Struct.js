@@ -229,6 +229,9 @@ module.exports = function (Y/* :any */) {
 
           // if right exists, and it is supposed to be gc'd. Remove it from the gc
           if (right.gc != null) {
+            if (right.content != null && right.content.length > 1) {
+              right = yield* this.getInsertionCleanEnd(right.id)
+            }
             this.store.removeFromGarbageCollector(right)
           }
           yield* this.setOperation(right)
