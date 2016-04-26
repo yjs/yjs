@@ -115,8 +115,8 @@ module.exports = function (Y /* : any*/) {
         if (op.struct === 'Insert') {
           for (var i = this.waiting.length - 1; i >= 0; i--) {
             let w = this.waiting[i]
-            // TODO: do I handle split operations correctly here? Super unlikely, but yeah.. 
-            // Also: can this case happen? Can op be inserted in the middle of a larger op that is in $waiting? 
+            // TODO: do I handle split operations correctly here? Super unlikely, but yeah..
+            // Also: can this case happen? Can op be inserted in the middle of a larger op that is in $waiting?
             if (w.struct === 'Insert') {
               if (Y.utils.matchesId(w, op.left)) {
                 // include the effect of op in w
