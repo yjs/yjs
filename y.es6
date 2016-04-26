@@ -144,8 +144,8 @@ module.exports = function (Y/* :any */) {
           break
         }
       }
+      var conn = this
       if (syncUser != null) {
-        var conn = this
         this.currentSyncTarget = syncUser
         this.y.db.requestTransaction(function *() {
           var stateSet = yield* this.getStateSet()
@@ -158,14 +158,15 @@ module.exports = function (Y/* :any */) {
           })
         })
       } else {
-        this.isSynced = true
-        // call when synced listeners
-        for (var f of this.whenSyncedListeners) {
-          f()
-        }
-        this.whenSyncedListeners = []
         this.y.db.requestTransaction(function *() {
+          // it is crucial that isSynced is set at the time garbageCollectAfterSync is called
+          conn.isSynced = true
           yield* this.garbageCollectAfterSync()
+          // call whensynced listeners
+          for (var f of conn.whenSyncedListeners) {
+            f()
+          }
+          conn.whenSyncedListeners = []
         })
       }
     }
@@ -225,7 +226,6 @@ module.exports = function (Y/* :any */) {
         return
       }
       if (message.type === 'sync step 1') {
-        // TODO: make transaction, stream the ops
         let conn = this
         let m = message
         this.y.db.requestTransaction(function *() {
@@ -421,7 +421,7 @@ module.exports = function (Y/* :any */) {
 module.exports = function (Y) {
   var globalRoom = {
     users: {},
-    buffers: {},
+    buffers: {}, // TODO: reimplement this idea. This does not cover all cases!! Here, you have a queue which is unrealistic (i.e. think about multiple incoming connections)
     removeUser: function (user) {
       for (var i in this.users) {
         this.users[i].userLeft(user)
@@ -431,7 +431,7 @@ module.exports = function (Y) {
     },
     addUser: function (connector) {
       this.users[connector.userId] = connector
-      this.buffers[connector.userId] = []
+      this.buffers[connector.userId] = {}
       for (var uname in this.users) {
         if (uname !== connector.userId) {
           var u = this.users[uname]
@@ -449,14 +449,27 @@ module.exports = function (Y) {
     },
     flushOne: function flushOne () {
       var bufs = []
-      for (var i in globalRoom.buffers) {
-        if (globalRoom.buffers[i].length > 0) {
-          bufs.push(i)
+      for (var receiver in globalRoom.buffers) {
+        let buff = globalRoom.buffers[receiver]
+        var push = false
+        for (let sender in buff) {
+          if (buff[sender].length > 0) {
+            push = true
+            break
+          }
+        }
+        if (push) {
+          bufs.push(receiver)
         }
       }
       if (bufs.length > 0) {
         var userId = getRandom(bufs)
-        var m = globalRoom.buffers[userId].shift()
+        let buff = globalRoom.buffers[userId]
+        let sender = getRandom(Object.keys(buff))
+        var m = buff[sender].shift()
+        if (buff[sender].length === 0) {
+          delete buff[sender]
+        }
         var user = globalRoom.users[userId]
         user.receiveMessage(m[0], m[1])
         return user.y.db.whenTransactionsFinished()
@@ -516,12 +529,19 @@ module.exports = function (Y) {
     send (userId, message) {
       var buffer = globalRoom.buffers[userId]
       if (buffer != null) {
-        buffer.push(JSON.parse(JSON.stringify([this.userId, message])))
+        if (buffer[this.userId] == null) {
+          buffer[this.userId] = []
+        }
+        buffer[this.userId].push(JSON.parse(JSON.stringify([this.userId, message])))
       }
     }
     broadcast (message) {
       for (var key in globalRoom.buffers) {
-        globalRoom.buffers[key].push(JSON.parse(JSON.stringify([this.userId, message])))
+        var buff = globalRoom.buffers[key]
+        if (buff[this.userId] == null) {
+          buff[this.userId] = []
+        }
+        buff[this.userId].push(JSON.parse(JSON.stringify([this.userId, message])))
       }
     }
     isDisconnected () {
@@ -544,8 +564,13 @@ module.exports = function (Y) {
     flush () {
       var self = this
       return async(function * () {
-        while (globalRoom.buffers[self.userId].length > 0) {
-          var m = globalRoom.buffers[self.userId].shift()
+        var buff = globalRoom.buffers[self.userId]
+        while (Object.keys(buff).length > 0) {
+          var sender = getRandom(Object.keys(buff))
+          var m = buff[sender].shift()
+          if (buff[sender].length === 0) {
+            delete buff[sender]
+          }
           this.receiveMessage(m[0], m[1])
         }
         yield self.whenTransactionsFinished()
@@ -634,10 +659,13 @@ module.exports = function (Y /* :any */) {
       }
       this.gc1 = [] // first stage
       this.gc2 = [] // second stage -> after that, remove the op
-      this.gcTimeout = opts.gcTimeout || 50000
+      this.gcTimeout = !opts.gcTimeout ? 50000 : opts.gcTimeoutś
       function garbageCollect () {
         return os.whenTransactionsFinished().then(function () {
           if (os.gc1.length > 0 || os.gc2.length > 0) {
+            if (!os.y.isConnected()) {
+              console.warn('gc should be empty when disconnected!')
+            }
             return new Promise((resolve) => {
               os.requestTransaction(function * () {
                 if (os.y.connector != null && os.y.connector.isSynced) {
@@ -667,6 +695,11 @@ module.exports = function (Y /* :any */) {
       this.garbageCollect = garbageCollect
       if (this.gcTimeout > 0) {
         garbageCollect()
+      }
+    }
+    queueGarbageCollector (id) {
+      if (this.y.isConnected()) {
+        this.gc1.push(id)
       }
     }
     emptyGarbageCollector () {
@@ -705,8 +738,10 @@ module.exports = function (Y /* :any */) {
           self.gc2 = []
           for (var i = 0; i < ungc.length; i++) {
             var op = yield* this.getOperation(ungc[i])
-            delete op.gc
-            yield* this.setOperation(op)
+            if (op != null) {
+              delete op.gc
+              yield* this.setOperation(op)
+            }
           }
           resolve()
         })
@@ -724,20 +759,26 @@ module.exports = function (Y /* :any */) {
 
       returns true iff op was added to GC
     */
-    addToGarbageCollector (op, left) {
+    * addToGarbageCollector (op, left) {
       if (
         op.gc == null &&
-        op.deleted === true &&
-        this.y.connector.isSynced &&
-        left != null &&
-        left.deleted === true
+        op.deleted === true
       ) {
-        op.gc = true
-        this.gc1.push(op.id)
-        return true
-      } else {
-        return false
+        var gc = false
+        if (left != null && left.deleted === true) {
+          gc = true
+        } else if (op.content != null && op.content.length > 1) {
+          op = yield* this.getInsertionCleanStart([op.id[0], op.id[1] + 1])
+          gc = true
+        }
+        if (gc) {
+          op.gc = true
+          yield* this.setOperation(op)
+          this.store.queueGarbageCollector(op.id)
+          return true
+        }
       }
+      return false
     }
     removeFromGarbageCollector (op) {
       function filter (o) {
@@ -775,11 +816,15 @@ module.exports = function (Y /* :any */) {
     whenUserIdSet (f) {
       this.userIdPromise.then(f)
     }
-    getNextOpId () {
-      if (this.userId == null) {
+    getNextOpId (numberOfIds) {
+      if (numberOfIds == null) {
+        throw new Error('getNextOpId expects the number of created ids to create!')
+      } else if (this.userId == null) {
         throw new Error('OperationStore not yet initialized!')
       } else {
-        return [this.userId, this.opClock++]
+        var id = [this.userId, this.opClock]
+        this.opClock += numberOfIds
+        return id
       }
     }
     /*
@@ -853,7 +898,12 @@ module.exports = function (Y /* :any */) {
         for (var sid in ls) {
           var l = ls[sid]
           var id = JSON.parse(sid)
-          var op = yield* this.getOperation(id)
+          var op
+          if (typeof id[1] === 'string') {
+            op = yield* this.getOperation(id)
+          } else {
+            op = yield* this.getInsertion(id)
+          }
           if (op == null) {
             store.listenersById[sid] = l
           } else {
@@ -882,38 +932,46 @@ module.exports = function (Y /* :any */) {
       this.store.addToDebug('yield* this.store.tryExecute.call(this, ', JSON.stringify(op), ')')
       if (op.struct === 'Delete') {
         yield* Y.Struct.Delete.execute.call(this, op)
-        yield* this.store.operationAdded(this, op)
+        // this is now called in Transaction.deleteOperation!
+        // yield* this.store.operationAdded(this, op)
       } else {
-        var defined = yield* this.getOperation(op.id)
+        // check if this op was defined
+        var defined = yield* this.getInsertion(op.id)
+        while (defined != null && defined.content != null) {
+          // check if this op has a longer content in the case it is defined
+          if (defined.id[1] + defined.content.length < op.id[1] + op.content.length) {
+            var overlapSize = defined.content.length - (op.id[1] - defined.id[1])
+            op.content.splice(0, overlapSize)
+            op.id = [op.id[0], op.id[1] + overlapSize]
+            op.left = Y.utils.getLastId(defined)
+            op.origin = op.left
+            defined = yield* this.getOperation(op.id) // getOperation suffices here
+          } else {
+            break
+          }
+        }
         if (defined == null) {
           var isGarbageCollected = yield* this.isGarbageCollected(op.id)
           if (!isGarbageCollected) {
             yield* Y.Struct[op.struct].execute.call(this, op)
             yield* this.addOperation(op)
             yield* this.store.operationAdded(this, op)
+
+            // if insertion, try to combine with left
+            yield* this.tryCombineWithLeft(op)
           }
         }
       }
     }
     // called by a transaction when an operation is added
     * operationAdded (transaction, op) {
-      if (op.struct === 'Delete') {
-        var target = yield* transaction.getOperation(op.target)
-        if (target != null) {
-          var type = transaction.store.initializedTypes[JSON.stringify(target.parent)]
-          if (type != null) {
-            yield* type._changed(transaction, {
-              struct: 'Delete',
-              target: op.target
-            })
-          }
-        }
-      } else {
-        // increase SS
-        yield* transaction.updateState(op.id[0])
+      // increase SS
+      yield* transaction.updateState(op.id[0])
 
+      var opLen = op.content != null ? op.content.length : 1
+      for (let i = 0; i < opLen; i++) {
         // notify whenOperation listeners (by id)
-        var sid = JSON.stringify(op.id)
+        var sid = JSON.stringify([op.id[0], op.id[1] + i])
         var l = this.listenersById[sid]
         delete this.listenersById[sid]
 
@@ -925,35 +983,37 @@ module.exports = function (Y /* :any */) {
             }
           }
         }
-        var t = this.initializedTypes[JSON.stringify(op.parent)]
+      }
+      var t = this.initializedTypes[JSON.stringify(op.parent)]
 
-        // if parent is deleted, mark as gc'd and return
-        if (op.parent != null) {
-          var parentIsDeleted = yield* transaction.isDeleted(op.parent)
-          if (parentIsDeleted) {
-            yield* transaction.deleteList(op.id)
-            return
-          }
+      // if parent is deleted, mark as gc'd and return
+      if (op.parent != null) {
+        var parentIsDeleted = yield* transaction.isDeleted(op.parent)
+        if (parentIsDeleted) {
+          yield* transaction.deleteList(op.id)
+          return
         }
+      }
 
+      // notify parent, if it was instanciated as a custom type
+      if (t != null) {
+        let o = Y.utils.copyObject(op)
+        yield* t._changed(transaction, o)
+      }
+      if (!op.deleted) {
         // Delete if DS says this is actually deleted
-        var opIsDeleted = yield* transaction.isDeleted(op.id)
-        if (!op.deleted && opIsDeleted) {
-          var delop = {
-            struct: 'Delete',
-            target: op.id
+        var len = op.content != null ? op.content.length : 1
+        var startId = op.id // You must not use op.id in the following loop, because op will change when deleted
+        for (let i = 0; i < len; i++) {
+          var id = [startId[0], startId[1] + i]
+          var opIsDeleted = yield* transaction.isDeleted(id)
+          if (opIsDeleted) {
+            var delop = {
+              struct: 'Delete',
+              target: id
+            }
+            yield* this.tryExecute.call(transaction, delop)
           }
-          yield* Y.Struct['Delete'].execute.call(transaction, delop)
-        }
-
-        // notify parent, if it was instanciated as a custom type
-        if (t != null) {
-          let o = Y.utils.copyObject(op)
-          if (opIsDeleted && !o.deleted) {
-            // op did not reflect the created delete op (happens when not using y-memory)
-            o.deleted = true
-          }
-          yield* t._changed(transaction, o)
         }
       }
     }
@@ -1056,12 +1116,13 @@ module.exports = function (Y/* :any */) {
         return [] // [op.target]
       },
       execute: function * (op) {
-        return yield* this.deleteOperation(op.target)
+        return yield* this.deleteOperation(op.target, op.length || 1)
       }
     },
     Insert: {
       /* {
-          content: any,
+          content: [any],
+          opContent: Id,
           id: Id,
           left: Id,
           origin: Id,
@@ -1087,7 +1148,7 @@ module.exports = function (Y/* :any */) {
         if (op.hasOwnProperty('opContent')) {
           e.opContent = op.opContent
         } else {
-          e.content = op.content
+          e.content = op.content.slice()
         }
 
         return e
@@ -1116,13 +1177,13 @@ module.exports = function (Y/* :any */) {
           return 0
         } else {
           var d = 0
-          var o = yield* this.getOperation(op.left)
-          while (!Y.utils.compareIds(op.origin, (o ? o.id : null))) {
+          var o = yield* this.getInsertion(op.left)
+          while (!Y.utils.matchesId(o, op.origin)) {
             d++
             if (o.left == null) {
               break
             } else {
-              o = yield* this.getOperation(o.left)
+              o = yield* this.getInsertion(o.left)
             }
           }
           return d
@@ -1143,20 +1204,27 @@ module.exports = function (Y/* :any */) {
       # case 3: $origin > $o.origin
       #         $this insert_position is to the left of $o (forever!)
       */
-      execute: function *(op) {
+      execute: function * (op) {
         var i // loop counter
-        var distanceToOrigin = i = yield* Struct.Insert.getDistanceToOrigin.call(this, op) // most cases: 0 (starts from 0)
+
+        // during this function some ops may get split into two pieces (e.g. with getInsertionCleanEnd)
+        // We try to merge them later, if possible
+        var tryToRemergeLater = []
 
         if (op.origin != null) { // TODO: !== instead of !=
           // we save in origin that op originates in it
           // we need that later when we eventually garbage collect origin (see transaction)
-          var origin = yield* this.getOperation(op.origin)
+          var origin = yield* this.getInsertionCleanEnd(op.origin)
           if (origin.originOf == null) {
             origin.originOf = []
           }
           origin.originOf.push(op.id)
           yield* this.setOperation(origin)
+          if (origin.right != null) {
+            tryToRemergeLater.push(origin.right)
+          }
         }
+        var distanceToOrigin = i = yield* Struct.Insert.getDistanceToOrigin.call(this, op) // most cases: 0 (starts from 0)
 
         // now we begin to insert op in the list of insertions..
         var o
@@ -1165,13 +1233,23 @@ module.exports = function (Y/* :any */) {
 
         // find o. o is the first conflicting operation
         if (op.left != null) {
-          o = yield* this.getOperation(op.left)
+          o = yield* this.getInsertionCleanEnd(op.left)
+          if (!Y.utils.compareIds(op.left, op.origin) && o.right != null) {
+            // only if not added previously
+            tryToRemergeLater.push(o.right)
+          }
           o = (o.right == null) ? null : yield* this.getOperation(o.right)
         } else { // left == null
           parent = yield* this.getOperation(op.parent)
           let startId = op.parentSub ? parent.map[op.parentSub] : parent.start
           start = startId == null ? null : yield* this.getOperation(startId)
           o = start
+        }
+
+        // make sure to split op.right if necessary (also add to tryCombineWithLeft)
+        if (op.right != null) {
+          tryToRemergeLater.push(op.right)
+          yield* this.getInsertionCleanStart(op.right)
         }
 
         // handle conflicts
@@ -1181,21 +1259,21 @@ module.exports = function (Y/* :any */) {
             if (oOriginDistance === i) {
               // case 1
               if (o.id[0] < op.id[0]) {
-                op.left = o.id
-                distanceToOrigin = i + 1
+                op.left = Y.utils.getLastId(o)
+                distanceToOrigin = i + 1 // just ignore o.content.length, doesn't make a difference
               }
             } else if (oOriginDistance < i) {
               // case 2
               if (i - distanceToOrigin <= oOriginDistance) {
-                op.left = o.id
-                distanceToOrigin = i + 1
+                op.left = Y.utils.getLastId(o)
+                distanceToOrigin = i + 1 // just ignore o.content.length, doesn't make a difference
               }
             } else {
               break
             }
             i++
             if (o.right != null) {
-              o = yield* this.getOperation(o.right)
+              o = yield* this.getInsertion(o.right)
             } else {
               o = null
             }
@@ -1213,21 +1291,27 @@ module.exports = function (Y/* :any */) {
 
         // reconnect left and set right of op
         if (op.left != null) {
-          left = yield* this.getOperation(op.left)
+          left = yield* this.getInsertion(op.left)
+          // link left
           op.right = left.right
           left.right = op.id
 
           yield* this.setOperation(left)
         } else {
+          // set op.right from parent, if necessary
           op.right = op.parentSub ? parent.map[op.parentSub] || null : parent.start
         }
         // reconnect right
         if (op.right != null) {
+          // TODO: wanna connect right too?
           right = yield* this.getOperation(op.right)
-          right.left = op.id
+          right.left = Y.utils.getLastId(op)
 
           // if right exists, and it is supposed to be gc'd. Remove it from the gc
           if (right.gc != null) {
+            if (right.content != null && right.content.length > 1) {
+              right = yield* this.getInsertionCleanEnd(right.id)
+            }
             this.store.removeFromGarbageCollector(right)
           }
           yield* this.setOperation(right)
@@ -1241,22 +1325,29 @@ module.exports = function (Y/* :any */) {
           }
           // is a child of a map struct.
           // Then also make sure that only the most left element is not deleted
+          // We do not call the type in this case (this is what the third parameter is for)
           if (op.right != null) {
-            yield* this.deleteOperation(op.right, true)
+            yield* this.deleteOperation(op.right, 1, true)
           }
           if (op.left != null) {
-            yield* this.deleteOperation(op.id, true)
+            yield* this.deleteOperation(op.id, 1, true)
           }
         } else {
           if (right == null || left == null) {
             if (right == null) {
-              parent.end = op.id
+              parent.end = Y.utils.getLastId(op)
             }
             if (left == null) {
               parent.start = op.id
             }
             yield* this.setOperation(parent)
           }
+        }
+
+        // try to merge original op.left and op.origin
+        for (let i = 0; i < tryToRemergeLater.length; i++) {
+          var m = yield* this.getOperation(tryToRemergeLater[i])
+          yield* this.tryCombineWithLeft(m)
         }
       }
     },
@@ -1267,7 +1358,7 @@ module.exports = function (Y/* :any */) {
         end: null,
         struct: "List",
         type: "",
-        id: this.os.getNextOpId()
+        id: this.os.getNextOpId(1)
       }
       */
       create: function (id) {
@@ -1348,7 +1439,7 @@ module.exports = function (Y/* :any */) {
           map: {},
           struct: "Map",
           type: "",
-          id: this.os.getNextOpId()
+          id: this.os.getNextOpId(1)
         }
       */
       create: function (id) {
@@ -1387,7 +1478,7 @@ module.exports = function (Y/* :any */) {
           if (res == null || res.deleted) {
             return void 0
           } else if (res.opContent == null) {
-            return res.content
+            return res.content[0]
           } else {
             return yield* this.getType(res.opContent)
           }
@@ -1502,7 +1593,7 @@ module.exports = function (Y/* :any */) {
     }
     * createType (typedefinition, id) {
       var structname = typedefinition[0].struct
-      id = id || this.store.getNextOpId()
+      id = id || this.store.getNextOpId(1)
       var op
       if (id[0] === '_') {
         op = yield* this.getOperation(id)
@@ -1522,7 +1613,7 @@ module.exports = function (Y/* :any */) {
     }
     /* createType (typedefinition, id) {
       var structname = typedefinition[0].struct
-      id = id || this.store.getNextOpId()
+      id = id || this.store.getNextOpId(1)
       var op = Y.Struct[structname].create(id)
       op.type = typedefinition[0].name
       if (typedefinition[0].appendAdditionalInfo != null) {
@@ -1561,13 +1652,12 @@ module.exports = function (Y/* :any */) {
           start.gc = true
           start.deleted = true
           yield* this.setOperation(start)
-          yield* this.markDeleted(start.id, 1)
+          var delLength = start.content != null ? start.content.length : 1
+          yield* this.markDeleted(start.id, delLength)
           if (start.opContent != null) {
             yield* this.deleteOperation(start.opContent)
           }
-          if (this.store.y.connector.isSynced) {
-            this.store.gc1.push(start.id)
-          }
+          this.store.queueGarbageCollector(start.id)
         }
         start = start.right
       }
@@ -1576,83 +1666,101 @@ module.exports = function (Y/* :any */) {
     /*
       Mark an operation as deleted, and add it to the GC, if possible.
     */
-    * deleteOperation (targetId, preventCallType) /* :Generator<any, any, any> */ {
-      var target = yield* this.getOperation(targetId)
-      var callType = false
-
-      if (target == null || !target.deleted) {
-        yield* this.markDeleted(targetId, 1)
+    * deleteOperation (targetId, length, preventCallType) /* :Generator<any, any, any> */ {
+      if (length == null) {
+        length = 1
       }
+      yield* this.markDeleted(targetId, length)
+      while (length > 0) {
+        var callType = false
+        var target = yield* this.os.findWithUpperBound([targetId[0], targetId[1] + length - 1])
+        var targetLength = target != null && target.content != null ? target.content.length : 1
+        if (target == null || target.id[0] !== targetId[0] || target.id[1] + targetLength <= targetId[1]) {
+          // does not exist or is not in the range of the deletion
+          target = null
+          length = 0
+        } else {
+          // does exist, check if it is too long
+          if (!target.deleted) {
+            if (target.id[1] < targetId[1]) {
+              // starts to the left of the deletion range
+              target = yield* this.getInsertionCleanStart(targetId)
+              targetLength = target.content.length // must have content property!
+            }
+            if (target.id[1] + targetLength > targetId[1] + length) {
+              // ends to the right of the deletion range
+              target = yield* this.getInsertionCleanEnd([targetId[0], targetId[1] + length - 1])
+              targetLength = target.content.length
+            }
+          }
+          length = target.id[1] - targetId[1]
+        }
 
-      if (target != null) {
-        if (!target.deleted) {
-          callType = true
-          // set deleted & notify type
-          target.deleted = true
+        if (target != null) {
+          if (!target.deleted) {
+            callType = true
+            // set deleted & notify type
+            target.deleted = true
+            // delete containing lists
+            if (target.start != null) {
+              // TODO: don't do it like this .. -.-
+              yield* this.deleteList(target.start)
+              // yield* this.deleteList(target.id) -- do not gc itself because this may still get referenced
+            }
+            if (target.map != null) {
+              for (var name in target.map) {
+                yield* this.deleteList(target.map[name])
+              }
+              // TODO: here to..  (see above)
+              // yield* this.deleteList(target.id) -- see above
+            }
+            if (target.opContent != null) {
+              yield* this.deleteOperation(target.opContent)
+              // target.opContent = null
+            }
+            if (target.requires != null) {
+              for (var i = 0; i < target.requires.length; i++) {
+                yield* this.deleteOperation(target.requires[i])
+              }
+            }
+          }
+          var left
+          if (target.left != null) {
+            left = yield* this.getInsertion(target.left)
+          } else {
+            left = null
+          }
+
+          // set here because it was deleted and/or gc'd
+          yield* this.setOperation(target)
+
           /*
-          if (!preventCallType) {
+            Check if it is possible to add right to the gc.
+            Because this delete can't be responsible for left being gc'd,
+            we don't have to add left to the gc..
+          */
+          var right
+          if (target.right != null) {
+            right = yield* this.getOperation(target.right)
+          } else {
+            right = null
+          }
+          if (callType && !preventCallType) {
             var type = this.store.initializedTypes[JSON.stringify(target.parent)]
             if (type != null) {
               yield* type._changed(this, {
                 struct: 'Delete',
-                target: targetId
+                target: target.id,
+                length: targetLength
               })
             }
           }
-          */
-          // delete containing lists
-          if (target.start != null) {
-            // TODO: don't do it like this .. -.-
-            yield* this.deleteList(target.start)
-            // yield* this.deleteList(target.id) -- do not gc itself because this may still get referenced
-          }
-          if (target.map != null) {
-            for (var name in target.map) {
-              yield* this.deleteList(target.map[name])
-            }
-            // TODO: here to..  (see above)
-            // yield* this.deleteList(target.id) -- see above
-          }
-          if (target.opContent != null) {
-            yield* this.deleteOperation(target.opContent)
-            // target.opContent = null
-          }
-          if (target.requires != null) {
-            for (var i = 0; i < target.requires.length; i++) {
-              yield* this.deleteOperation(target.requires[i])
-            }
+          // need to gc in the end!
+          yield* this.store.addToGarbageCollector.call(this, target, left)
+          if (right != null) {
+            yield* this.store.addToGarbageCollector.call(this, right, target)
           }
         }
-        var left
-        if (target.left != null) {
-          left = yield* this.getOperation(target.left)
-        } else {
-          left = null
-        }
-
-        this.store.addToGarbageCollector(target, left)
-
-        // set here because it was deleted and/or gc'd
-        yield* this.setOperation(target)
-
-        /*
-          Check if it is possible to add right to the gc.
-          Because this delete can't be responsible for left being gc'd,
-          we don't have to add left to the gc..
-        */
-        var right
-        if (target.right != null) {
-          right = yield* this.getOperation(target.right)
-        } else {
-          right = null
-        }
-        if (
-          right != null &&
-          this.store.addToGarbageCollector(right, target)
-        ) {
-          yield* this.setOperation(right)
-        }
-        return callType
       }
     }
     /*
@@ -1660,6 +1768,7 @@ module.exports = function (Y/* :any */) {
     */
     * markGarbageCollected (id, len) {
       // this.mem.push(["gc", id]);
+      this.store.addToDebug('yield* this.markGarbageCollected(', id, ', ', len, ')')
       var n = yield* this.markDeleted(id, len)
       if (n.id[1] < id[1] && !n.gc) {
         // un-extend left
@@ -1673,10 +1782,10 @@ module.exports = function (Y/* :any */) {
       var prev = yield* this.ds.findPrev(id)
       var next = yield* this.ds.findNext(id)
 
-      if (id[1] < n.id[1] + n.len - len && !n.gc) {
+      if (id[1] + len < n.id[1] + n.len && !n.gc) {
         // un-extend right
-        yield* this.ds.put({id: [id[0], id[1] + 1], len: n.len - 1, gc: false})
-        n.len = 1
+        yield* this.ds.put({id: [id[0], id[1] + len], len: n.len - len, gc: false})
+        n.len = len
       }
       // set gc'd
       n.gc = true
@@ -1701,6 +1810,7 @@ module.exports = function (Y/* :any */) {
         yield* this.ds.delete(next.id)
       }
       yield* this.ds.put(n)
+      yield* this.updateState(n.id[0])
     }
     /*
       Mark an operation as deleted.
@@ -1755,25 +1865,40 @@ module.exports = function (Y/* :any */) {
         n.id[1] + n.len >= next.id[1]
       ) {
         diff = n.id[1] + n.len - next.id[1] // from next.start to n.end
-        if (next.gc) {
-          if (diff >= 0) {
+        while (diff >= 0) {
+          // n overlaps with next
+          if (next.gc) {
+            // gc is stronger, so reduce length of n
             n.len -= diff
-            if (diff > next.len) {
-              // need to create another deletion after $next
-              // TODO: (may not be necessary, because this case shouldn't happen!)
-              //        also this is supposed to return a deletion range. which one to choose? n or the new created deletion?
-              throw new Error('This case is not handled (on purpose!)')
+            if (diff >= next.len) {
+              // delete the missing range after next
+              diff = diff - next.len // missing range after next
+              if (diff > 0) {
+                yield* this.ds.put(n) // unneccessary? TODO!
+                yield* this.markDeleted([next.id[0], next.id[1] + next.len], diff)
+              }
             }
-          } // else: everything is fine :)
-        } else {
-          if (diff >= 0) {
+            break
+          } else {
+            // we can extend n with next
             if (diff > next.len) {
-              // may be neccessary to extend next.next!
-              // TODO: (may not be necessary, because this case shouldn't happen!)
-              throw new Error('This case is not handled (on purpose!)')
+              // n is even longer than next
+              // get next.next, and try to extend it
+              var _next = yield* this.ds.findNext(next.id)
+              yield* this.ds.delete(next.id)
+              if (_next == null || n.id[0] !== _next.id[0]) {
+                break
+              } else {
+                next = _next
+                diff = n.id[1] + n.len - next.id[1] // from next.start to n.end
+                // continue!
+              }
+            } else {
+              // n just partially overlaps with next. extend n, delete next, and break this loop
+              n.len += next.len - diff
+              yield* this.ds.delete(next.id)
+              break
             }
-            n.len += next.len - diff
-            yield* this.ds.delete(next.id)
           }
         }
       }
@@ -1786,41 +1911,41 @@ module.exports = function (Y/* :any */) {
       operations that can be gc'd and add them to the garbage collector.
     */
     * garbageCollectAfterSync () {
+      if (this.store.gc1.length > 0 || this.store.gc2.length > 0) {
+        console.warn('gc should be empty after sync')
+      }
       yield* this.os.iterate(this, null, null, function * (op) {
         if (op.gc) {
-          this.store.gc1.push(op.id)
-        } else {
-          if (op.parent != null) {
-            var parentDeleted = yield* this.isDeleted(op.parent)
-            if (parentDeleted) {
-              op.gc = true
-              if (!op.deleted) {
-                yield* this.markDeleted(op.id, 1)
-                op.deleted = true
-                if (op.opContent != null) {
-                  yield* this.deleteOperation(op.opContent)
-                  /*
-                  var opContent = yield* this.getOperation(op.opContent)
-                  opContent.gc = true
-                  yield* this.setOperation(opContent)
-                  this.store.gc1.push(opContent.id)
-                  */
-                }
-                if (op.requires != null) {
-                  for (var i = 0; i < op.requires.length; i++) {
-                    yield* this.deleteOperation(op.requires[i])
-                  }
+          delete op.gc
+          yield* this.setOperation(op)
+        }
+        if (op.parent != null) {
+          var parentDeleted = yield* this.isDeleted(op.parent)
+          if (parentDeleted) {
+            op.gc = true
+            if (!op.deleted) {
+              yield* this.markDeleted(op.id, op.content != null ? op.content.length : 1)
+              op.deleted = true
+              if (op.opContent != null) {
+                yield* this.deleteOperation(op.opContent)
+              }
+              if (op.requires != null) {
+                for (var i = 0; i < op.requires.length; i++) {
+                  yield* this.deleteOperation(op.requires[i])
                 }
               }
-              yield* this.setOperation(op)
-              this.store.gc1.push(op.id)
-              return
             }
+            yield* this.setOperation(op)
+            this.store.gc1.push(op.id) // this is ok becaues its shortly before sync (otherwise use queueGarbageCollector!)
+            return
           }
-          if (op.deleted && op.left != null) {
-            var left = yield* this.getOperation(op.left)
-            this.store.addToGarbageCollector(op, left)
+        }
+        if (op.deleted) {
+          var left = null
+          if (op.left != null) {
+            left = yield* this.getInsertion(op.left)
           }
+          yield* this.store.addToGarbageCollector.call(this, op, left)
         }
       })
     }
@@ -1836,16 +1961,9 @@ module.exports = function (Y/* :any */) {
     * garbageCollectOperation (id) {
       this.store.addToDebug('yield* this.garbageCollectOperation(', id, ')')
       var o = yield* this.getOperation(id)
-      yield* this.markGarbageCollected(id, 1) // always mark gc'd
+      yield* this.markGarbageCollected(id, (o != null && o.content != null) ? o.content.length : 1) // always mark gc'd
       // if op exists, then clean that mess up..
       if (o != null) {
-        /*
-        if (!o.deleted) {
-          yield* this.deleteOperation(id)
-          o = yield* this.getOperation(id)
-        }
-        */
-
         var deps = []
         if (o.opContent != null) {
           deps.push(o.opContent)
@@ -1862,16 +1980,15 @@ module.exports = function (Y/* :any */) {
             }
             dep.gc = true
             yield* this.setOperation(dep)
-            this.store.gc1.push(dep.id)
+            this.store.queueGarbageCollector(dep.id)
           } else {
             yield* this.markGarbageCollected(deps[i], 1)
-            yield* this.updateState(deps[i][0]) // TODO: unneccessary?
           }
         }
 
         // remove gc'd op from the left op, if it exists
         if (o.left != null) {
-          var left = yield* this.getOperation(o.left)
+          var left = yield* this.getInsertion(o.left)
           left.right = o.right
           yield* this.setOperation(left)
         }
@@ -1887,7 +2004,7 @@ module.exports = function (Y/* :any */) {
             var neworigin = o.left
             var neworigin_ = null
             while (neworigin != null) {
-              neworigin_ = yield* this.getOperation(neworigin)
+              neworigin_ = yield* this.getInsertion(neworigin)
               if (neworigin_.deleted) {
                 break
               }
@@ -1955,7 +2072,7 @@ module.exports = function (Y/* :any */) {
         // o may originate in another operation.
         // Since o is deleted, we have to reset o.origin's `originOf` property
         if (o.origin != null) {
-          var origin = yield* this.getOperation(o.origin)
+          var origin = yield* this.getInsertion(o.origin)
           origin.originOf = origin.originOf.filter(function (_id) {
             return !Y.utils.compareIds(id, _id)
           })
@@ -1971,7 +2088,11 @@ module.exports = function (Y/* :any */) {
           if (o.parentSub != null) {
             if (Y.utils.compareIds(parent.map[o.parentSub], o.id)) {
               setParent = true
-              parent.map[o.parentSub] = o.right
+              if (o.right != null) {
+                parent.map[o.parentSub] = o.right
+              } else {
+                delete parent.map[o.parentSub]
+              }
             }
           } else {
             if (Y.utils.compareIds(parent.start, o.id)) {
@@ -1979,7 +2100,7 @@ module.exports = function (Y/* :any */) {
               setParent = true
               parent.start = o.right
             }
-            if (Y.utils.compareIds(parent.end, o.id)) {
+            if (Y.utils.matchesId(o, parent.end)) {
               // gc'd op is the end
               setParent = true
               parent.end = o.left
@@ -2002,12 +2123,14 @@ module.exports = function (Y/* :any */) {
     * updateState (user) {
       var state = yield* this.getState(user)
       yield* this.checkDeleteStoreForState(state)
-      var o = yield* this.getOperation([user, state.clock])
-      while (o != null && o.id[1] === state.clock && user === o.id[0]) {
+      var o = yield* this.getInsertion([user, state.clock])
+      var oLength = (o != null && o.content != null) ? o.content.length : 1
+      while (o != null && user === o.id[0] && o.id[1] <= state.clock && o.id[1] + oLength > state.clock) {
         // either its a new operation (1. case), or it is an operation that was deleted, but is not yet in the OS
-        state.clock++
+        state.clock += oLength
         yield* this.checkDeleteStoreForState(state)
         o = yield* this.os.findNext(o.id)
+        oLength = (o != null && o.content != null) ? o.content.length : 1
       }
       yield* this.setState(state)
     }
@@ -2017,9 +2140,6 @@ module.exports = function (Y/* :any */) {
     */
     * applyDeleteSet (ds) {
       var deletions = []
-      function createDeletions (user, start, len, gc) {
-        deletions.push([user, start, len, gc])
-      }
 
       for (var user in ds) {
         var dv = ds[user]
@@ -2046,14 +2166,14 @@ module.exports = function (Y/* :any */) {
               // delete maximum the len of d
               // else delete as much as possible
               diff = Math.min(n.id[1] - d[0], d[1])
-              createDeletions(user, d[0], diff, d[2])
+              deletions.push([user, d[0], diff, d[2]])
             } else {
               // 3)
               diff = n.id[1] + n.len - d[0] // never null (see 1)
               if (d[2] && !n.gc) {
                 // d marks as gc'd but n does not
                 // then delete either way
-                createDeletions(user, d[0], Math.min(diff, d[1]), d[2])
+                deletions.push([user, d[0], Math.min(diff, d[1]), d[2]])
               }
             }
             if (d[1] <= diff) {
@@ -2068,48 +2188,43 @@ module.exports = function (Y/* :any */) {
         // for the rest.. just apply it
         for (; pos < dv.length; pos++) {
           d = dv[pos]
-          createDeletions(user, d[0], d[1], d[2])
+          deletions.push([user, d[0], d[1], d[2]])
         }
       }
       for (var i = 0; i < deletions.length; i++) {
         var del = deletions[i]
         // always try to delete..
-        var state = yield* this.getState(del[0])
-        if (del[1] < state.clock) {
-          for (let c = del[1]; c < del[1] + del[2]; c++) {
-            var id = [del[0], c]
-            var addOperation = yield* this.deleteOperation(id)
-            if (addOperation) {
-              // TODO:.. really .. here? You could prevent calling all these functions in operationAdded
-              yield* this.store.operationAdded(this, {struct: 'Delete', target: id})
-            }
-            if (del[3]) {
-              // gc
-              yield* this.garbageCollectOperation(id)
-            }
-          }
-        } else {
-          if (del[3]) {
-            yield* this.markGarbageCollected([del[0], del[1]], del[2])
-          } else {
-            yield* this.markDeleted([del[0], del[1]], del[2])
-          }
-        }
+        yield* this.deleteOperation([del[0], del[1]], del[2])
         if (del[3]) {
-          // check to increase the state of the respective user
-          if (state.clock >= del[1] && state.clock < del[1] + del[2]) {
-            state.clock = del[1] + del[2]
-            // also check if more expected operations were gc'd
-            yield* this.checkDeleteStoreForState(state) // TODO: unneccessary?
-            // then set the state
-            yield* this.setState(state)
+          // gc..
+          yield* this.markGarbageCollected([del[0], del[1]], del[2]) // always mark gc'd
+          // remove operation..
+          var counter = del[1] + del[2]
+          while (counter >= del[1]) {
+            var o = yield* this.os.findWithUpperBound([del[0], counter - 1])
+            if (o == null) {
+              break
+            }
+            var oLen = o.content != null ? o.content.length : 1
+            if (o.id[0] !== del[0] || o.id[1] + oLen <= del[1]) {
+              // not in range
+              break
+            }
+            if (o.id[1] + oLen > del[1] + del[2]) {
+              // overlaps right
+              o = yield* this.getInsertionCleanEnd([del[0], del[1] + del[2] - 1])
+            }
+            if (o.id[1] < del[1]) {
+              // overlaps left
+              o = yield* this.getInsertionCleanStart([del[0], del[1]])
+            }
+            counter = o.id[1]
+            yield* this.garbageCollectOperation(o.id)
           }
         }
         if (this.store.forwardAppliedOperations) {
           var ops = []
-          for (let c = del[1]; c < del[1] + del[2]; c++) {
-            ops.push({struct: 'Delete', target: [d[0], c]}) // TODO: implement Delete with deletion length!
-          }
+          ops.push({struct: 'Delete', target: [d[0], d[1]], length: del[2]})
           this.store.y.connector.broadcastOps(ops)
         }
       }
@@ -2152,11 +2267,113 @@ module.exports = function (Y/* :any */) {
         this.store.y.connector.broadcastOps([op])
       }
     }
+    // if insertion, try to combine with left insertion (if both have content property)
+    * tryCombineWithLeft (op) {
+      if (
+        op != null &&
+        op.left != null &&
+        op.content != null &&
+        op.left[0] === op.id[0] &&
+        Y.utils.compareIds(op.left, op.origin)
+      ) {
+        var left = yield* this.getInsertion(op.left)
+        if (left.content != null &&
+            left.id[1] + left.content.length === op.id[1] &&
+            left.originOf.length === 1 &&
+            !left.gc && !left.deleted &&
+            !op.gc && !op.deleted
+        ) {
+          // combine!
+          if (op.originOf != null) {
+            left.originOf = op.originOf
+          } else {
+            delete left.originOf
+          }
+          left.content = left.content.concat(op.content)
+          left.right = op.right
+          yield* this.os.delete(op.id)
+          yield* this.setOperation(left)
+        }
+      }
+    }
+    * getInsertion (id) {
+      var ins = yield* this.os.findWithUpperBound(id)
+      if (ins == null) {
+        return null
+      } else {
+        var len = ins.content != null ? ins.content.length : 1 // in case of opContent
+        if (id[0] === ins.id[0] && id[1] < ins.id[1] + len) {
+          return ins
+        } else {
+          return null
+        }
+      }
+    }
+    * getInsertionCleanStartEnd (id) {
+      yield* this.getInsertionCleanStart(id)
+      return yield* this.getInsertionCleanEnd(id)
+    }
+    // Return an insertion such that id is the first element of content
+    // This function manipulates an operation, if necessary
+    * getInsertionCleanStart (id) {
+      var ins = yield* this.getInsertion(id)
+      if (ins != null) {
+        if (ins.id[1] === id[1]) {
+          return ins
+        } else {
+          var left = Y.utils.copyObject(ins)
+          ins.content = left.content.splice(id[1] - ins.id[1])
+          ins.id = id
+          var leftLid = Y.utils.getLastId(left)
+          ins.origin = leftLid
+          left.originOf = [ins.id]
+          left.right = ins.id
+          ins.left = leftLid
+          // debugger // check
+          yield* this.setOperation(left)
+          yield* this.setOperation(ins)
+          if (left.gc) {
+            this.store.queueGarbageCollector(ins.id)
+          }
+          return ins
+        }
+      } else {
+        return null
+      }
+    }
+    // Return an insertion such that id is the last element of content
+    // This function manipulates an operation, if necessary
+    * getInsertionCleanEnd (id) {
+      var ins = yield* this.getInsertion(id)
+      if (ins != null) {
+        if (ins.content == null || (ins.id[1] + ins.content.length - 1 === id[1])) {
+          return ins
+        } else {
+          var right = Y.utils.copyObject(ins)
+          right.content = ins.content.splice(id[1] - ins.id[1] + 1) // cut off remainder
+          right.id = [id[0], id[1] + 1]
+          var insLid = Y.utils.getLastId(ins)
+          right.origin = insLid
+          ins.originOf = [right.id]
+          ins.right = right.id
+          right.left = insLid
+          // debugger // check
+          yield* this.setOperation(right)
+          yield* this.setOperation(ins)
+          if (ins.gc) {
+            this.store.queueGarbageCollector(right.id)
+          }
+          return ins
+        }
+      } else {
+        return null
+      }
+    }
     * getOperation (id/* :any */)/* :Transaction<any> */ {
       var o = yield* this.os.find(id)
-      if (o != null || id[0] !== '_') {
+      if (id[0] !== '_' || o != null) {
         return o
-      } else {
+      } else { // type is string
         // generate this operation?
         var comp = id[1].split('_')
         if (comp.length > 1) {
@@ -2171,7 +2388,6 @@ module.exports = function (Y/* :any */) {
           debugger // eslint-disable-line
           return null
         }
-        return null
       }
     }
     * removeOperation (id) {
@@ -2272,7 +2488,15 @@ module.exports = function (Y/* :any */) {
           continue
         }
         var startPos = startSS[user] || 0
-
+        if (startPos > 0) {
+          // There is a change that [user, startPos] is in a composed Insertion (with a smaller counter)
+          // find out if that is the case
+          var firstMissing = yield* this.getInsertion([user, startPos])
+          if (firstMissing != null) {
+            // update startPos
+            startPos = firstMissing.id[1]
+          }
+        }
         yield* this.os.iterate(this, [user, startPos], [user, Number.MAX_VALUE], function * (op) {
           op = Y.Struct[op.struct].encode(op)
           if (op.struct !== 'Insert') {
@@ -2299,17 +2523,17 @@ module.exports = function (Y/* :any */) {
                 }
                 break
               }
-              o = yield* this.getOperation(o.left)
+              o = yield* this.getInsertion(o.left)
               // we set another o, check if we can reduce $missing_origins
-              while (missing_origins.length > 0 && Y.utils.compareIds(missing_origins[missing_origins.length - 1].origin, o.id)) {
+              while (missing_origins.length > 0 && Y.utils.matchesId(o, missing_origins[missing_origins.length - 1].origin)) {
                 missing_origins.pop()
               }
               if (o.id[1] < (startSS[o.id[0]] || 0)) {
                 // case 2. o is known
-                op.left = o.id
+                op.left = Y.utils.getLastId(o)
                 send.push(op)
                 break
-              } else if (Y.utils.compareIds(o.id, op.origin)) {
+              } else if (Y.utils.matchesId(o, op.origin)) {
                 // case 3. o is op.origin
                 op.left = op.origin
                 send.push(op)
@@ -2461,9 +2685,9 @@ module.exports = function (Y /* : any*/) {
     */
     receivedOp (op) {
       if (this.awaiting <= 0) {
-        this.onevent([op])
+        this.onevent(op)
       } else {
-        this.waiting.push(Y.utils.copyObject(op))
+        this.waiting.push(op)
       }
     }
     /*
@@ -2472,8 +2696,8 @@ module.exports = function (Y /* : any*/) {
       prematurely called operations are executed
     */
     awaitAndPrematurelyCall (ops) {
-      this.awaiting++
-      this.onevent(ops)
+      this.awaiting += ops.length
+      ops.forEach(this.onevent)
     }
     /*
       Call this when you successfully awaited the execution of n Insert operations
@@ -2502,7 +2726,7 @@ module.exports = function (Y /* : any*/) {
           throw new Error('Expected Insert Operation!')
         }
       }
-      this._tryCallEvents()
+      this._tryCallEvents(n)
     }
     /*
       Call this when you successfully awaited the execution of n Delete operations
@@ -2525,17 +2749,17 @@ module.exports = function (Y /* : any*/) {
           throw new Error('Expected Delete Operation!')
         }
       }
-      this._tryCallEvents()
+      this._tryCallEvents(n)
     }
     /* (private)
       Try to execute the events for the waiting operations
     */
-    _tryCallEvents () {
-      this.awaiting--
-      if (this.awaiting <= 0 && this.waiting.length > 0) {
-        var events = this.waiting
+    _tryCallEvents (n) {
+      this.awaiting -= n
+      if (this.awaiting === 0 && this.waiting.length > 0) {
+        var ops = this.waiting
         this.waiting = []
-        this.onevent(events)
+        ops.forEach(this.onevent)
       }
     }
   }
@@ -2614,18 +2838,36 @@ module.exports = function (Y /* : any*/) {
 
   function compareIds (id1, id2) {
     if (id1 == null || id2 == null) {
-      if (id1 == null && id2 == null) {
-        return true
-      }
-      return false
-    }
-    if (id1[0] === id2[0] && id1[1] === id2[1]) {
-      return true
+      return id1 === id2
     } else {
-      return false
+      return id1[0] === id2[0] && id1[1] === id2[1]
     }
   }
   Y.utils.compareIds = compareIds
+
+  function matchesId (op, id) {
+    if (id == null || op == null) {
+      return id === op
+    } else {
+      if (id[0] === op.id[0]) {
+        if (op.content == null) {
+          return id[1] === op.id[1]
+        } else {
+          return id[1] >= op.id[1] && id[1] < op.id[1] + op.content.length
+        }
+      }
+    }
+  }
+  Y.utils.matchesId = matchesId
+
+  function getLastId (op) {
+    if (op.content == null || op.content.length === 1) {
+      return op.id
+    } else {
+      return [op.id[0], op.id[1] + op.content.length - 1]
+    }
+  }
+  Y.utils.getLastId = getLastId
 
   function createEmptyOpsArray (n) {
     var a = new Array(n)
@@ -2650,12 +2892,13 @@ module.exports = function (Y /* : any*/) {
       I tried to optimize this for performance, therefore no highlevel operations.
     */
     class SmallLookupBuffer extends Store {
-      constructor () {
-        super(...arguments)
+      constructor (arg) {
+        // super(...arguments) -- do this when this is supported by stable nodejs
+        super(arg)
         this.writeBuffer = createEmptyOpsArray(5)
         this.readBuffer = createEmptyOpsArray(10)
       }
-      * find (id) {
+      * find (id, noSuperCall) {
         var i, r
         for (i = this.readBuffer.length - 1; i >= 0; i--) {
           r = this.readBuffer[i]
@@ -2678,7 +2921,7 @@ module.exports = function (Y /* : any*/) {
             break
           }
         }
-        if (i < 0) {
+        if (i < 0 && noSuperCall === undefined) {
           // did not reach break in last loop
           // read id and put it to the end of readBuffer
           o = yield* super.find(id)
@@ -2744,13 +2987,23 @@ module.exports = function (Y /* : any*/) {
         yield* this.flush()
         yield* super.delete(id)
       }
-      * findWithLowerBound () {
-        yield* this.flush()
-        return yield* super.findWithLowerBound.apply(this, arguments)
+      * findWithLowerBound (id) {
+        var o = yield* this.find(id, true)
+        if (o != null) {
+          return o
+        } else {
+          yield* this.flush()
+          return yield* super.findWithLowerBound.apply(this, arguments)
+        }
       }
-      * findWithUpperBound () {
-        yield* this.flush()
-        return yield* super.findWithUpperBound.apply(this, arguments)
+      * findWithUpperBound (id) {
+        var o = yield* this.find(id, true)
+        if (o != null) {
+          return o
+        } else {
+          yield* this.flush()
+          return yield* super.findWithUpperBound.apply(this, arguments)
+        }
       }
       * findNext () {
         yield* this.flush()

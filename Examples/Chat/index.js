@@ -38,12 +38,14 @@ Y({
   cleanupChat()
   
   // whenever content changes, make sure to reflect the changes in the DOM
-  y.share.chat.observe(function (events) {
-    for (var i = 0; i < events.length; i++) {
-      if (events[i].type === 'insert') {
-        appendMessage(events[i].value, events[i].index)
-      } else if (events[i].type === 'delete') {
-        chat.children[events[i].index].remove()
+  y.share.chat.observe(function (event) {
+    if (event.type === 'insert') {
+      for (var i = 0; i < event.length; i++) {
+        appendMessage(event.values[i], event.index + i)
+      }
+    } else if (event.type === 'delete') {
+      for (var i = 0; i < event.length; i++) {
+        chat.children[event.index].remove()
       }
     }
     // concurrent insertions may result in a history > 7, so cleanup here
