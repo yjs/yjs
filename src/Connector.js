@@ -53,7 +53,7 @@ module.exports = function (Y/* :any */) {
       this.broadcastedHB = false
       this.syncStep2 = Promise.resolve()
       this.broadcastOpBuffer = []
-      this.protocolVersion = 10
+      this.protocolVersion = 11
     }
     reconnect () {
     }
