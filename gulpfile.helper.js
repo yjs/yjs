@@ -127,9 +127,8 @@ module.exports = function (gulp, helperOptions) {
       ]))
   })
 
-  gulp.task('bump', function () {
-    var bumptype
-    return gulp.src(['./package.json', './bower.json', './dist/bower.json'], {base: '.'})
+  gulp.task('bump', function (cb) {
+    gulp.src(['./package.json', './bower.json', './dist/bower.json'], {base: '.'})
       .pipe($.prompt.prompt({
         type: 'checkbox',
         name: 'bump',
@@ -139,9 +138,29 @@ module.exports = function (gulp, helperOptions) {
         if (res.bump.length === 0) {
           console.info('You have to select a bump type. Now I\'m going to use "patch" as bump type..')
         }
-        bumptype = res.bump[0]
+        var bumptype = res.bump[0]
+        if (bumptype === 'major') {
+          runSequence('bump_major', cb)
+        } else if (bumptype === 'minor') {
+          runSequence('bump_minor', cb)
+        } else {
+          runSequence('bump_patch', cb)
+        }
       }))
-      .pipe($.bump({type: bumptype}))
+  })
+  gulp.task('bump_patch', function () {
+    return gulp.src(['./package.json', './bower.json', './dist/bower.json'], {base: '.'})
+      .pipe($.bump({type: 'patch'}))
+      .pipe(gulp.dest('./'))
+  })
+  gulp.task('bump_minor', function () {
+    return gulp.src(['./package.json', './bower.json', './dist/bower.json'], {base: '.'})
+      .pipe($.bump({type: 'minor'}))
+      .pipe(gulp.dest('./'))
+  })
+  gulp.task('bump_major', function () {
+    return gulp.src(['./package.json', './bower.json', './dist/bower.json'], {base: '.'})
+      .pipe($.bump({type: 'major'}))
       .pipe(gulp.dest('./'))
   })
 
