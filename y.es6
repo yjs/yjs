@@ -2717,9 +2717,9 @@ module.exports = function (Y /* : any*/) {
                 w.right = op.id
                 // exclude the effect of w in op
                 op.left = w.left
-              } else if (Y.utils.matchesId(w, op.right)) {
+              } else if (Y.utils.compareIds(w.id, op.right)) {
                 // similar..
-                w.left = op.id
+                w.left = Y.utils.getLastId(op)
                 op.right = w.right
               }
             }
