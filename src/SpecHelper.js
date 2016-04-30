@@ -275,6 +275,7 @@ g.createUsers = async(function * createUsers (self, numberOfUsers, database, ini
     }))
   }
   self.users = yield Promise.all(promises)
+  self.types = self.users.map(function (u) { return u.share.root })
   return self.users
 })
 

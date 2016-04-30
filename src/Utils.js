@@ -300,9 +300,9 @@ module.exports = function (Y /* : any*/) {
       I tried to optimize this for performance, therefore no highlevel operations.
     */
     class SmallLookupBuffer extends Store {
-      constructor (arg) {
+      constructor (arg1, arg2) {
         // super(...arguments) -- do this when this is supported by stable nodejs
-        super(arg)
+        super(arg1, arg2)
         this.writeBuffer = createEmptyOpsArray(5)
         this.readBuffer = createEmptyOpsArray(10)
       }
