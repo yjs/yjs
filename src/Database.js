@@ -75,7 +75,7 @@ module.exports = function (Y /* :any */) {
       }
       this.gc1 = [] // first stage
       this.gc2 = [] // second stage -> after that, remove the op
-      this.gcTimeout = !opts.gcTimeout ? 50000 : opts.gcTimeoutś
+      this.gcTimeout = !opts.gcTimeout ? 50000 : opts.gcTimeouts
       function garbageCollect () {
         return os.whenTransactionsFinished().then(function () {
           if (os.gc1.length > 0 || os.gc2.length > 0) {
