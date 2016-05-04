@@ -81,7 +81,7 @@ module.exports = function (Y) {
               } else {
                 resolve()
               }
-            }, 10)
+            }, 0)
           }
         }
         globalRoom.whenTransactionsFinished().then(nextFlush)

@@ -139,8 +139,7 @@ g.applyRandomTransactionsWithGC = async(function * applyRandomTransactions (user
 })
 
 g.garbageCollectAllUsers = async(function * garbageCollectAllUsers (users) {
-  // gc two times because of the two gc phases (really collect everything)
-  yield wait(100)
+  yield Y.utils.globalRoom.flushAll()
   for (var i in users) {
     yield users[i].db.emptyGarbageCollector()
   }
@@ -254,7 +253,6 @@ g.createUsers = async(function * createUsers (self, numberOfUsers, database, ini
     Y.utils.globalRoom.users[u].y.destroy()
   }
   self.users = null
-  yield wait()
 
   var promises = []
   for (var i = 0; i < numberOfUsers; i++) {
