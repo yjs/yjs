@@ -102,9 +102,41 @@ module.exports = function (Y /* : any*/) {
       prematurely called operations are executed
     */
     awaitAndPrematurelyCall (ops) {
-      this.awaiting += ops.length
-      ops.forEach(this.onevent)
+      this.awaiting++
+      ops.map(Y.utils.copyOperation).forEach(this.onevent)
     }
+    * awaitedOps (transaction, n) {
+      // remove awaited ops
+      this.waiting.splice(this.waiting.length - n)
+      // update all waiting ops
+      for (let i = 0; i < this.waiting.length; i++) {
+        var o = this.waiting[i]
+        if (o.struct === 'Insert') {
+          var _o = yield* transaction.getInsertion(o.id)
+          if (!Y.utils.compareIds(_o.id, o.id)) {
+            // o got extended
+            o.left = [o.id[0], o.id[1] - 1]
+          } else if (_o.left == null) {
+            o.left = null
+          } else {
+            // find next undeleted op
+            var left = yield* transaction.getInsertion(_o.left)
+            while (left.deleted != null) {
+              if (left.left != null) {
+                left = yield* transaction.getInsertion(left.left)
+              } else {
+                left = null
+                break
+              }
+            }
+            o.left = left != null ? Y.utils.getLastId(left) : null
+          }
+        }
+      }
+      this._tryCallEvents()
+    }
+    // TODO: Remove awaitedInserts and awaitedDeletes in favor of awaitedOps, as they are deprecated and do not always work
+    // Do this in one of the coming releases that are breaking anyway
     /*
       Call this when you successfully awaited the execution of n Insert operations
     */
@@ -162,12 +194,42 @@ module.exports = function (Y /* : any*/) {
     /* (private)
       Try to execute the events for the waiting operations
     */
-    _tryCallEvents (n) {
-      this.awaiting -= n
+    _tryCallEvents () {
+      function notSoSmartSort (array) {
+        var result = []
+        while (array.length > 0) {
+          for (var i = 0; i < array.length; i++) {
+            var independent = true
+            for (var j = 0; j < array.length; j++) {
+              if (Y.utils.matchesId(array[j], array[i].left)) {
+                // array[i] depends on array[j]
+                independent = false
+                break
+              }
+            }
+            if (independent) {
+              result.push(array.splice(i, 1)[0])
+              i--
+            }
+          }
+        }
+        return result
+      }
+      if (this.awaiting > 0) this.awaiting--
       if (this.awaiting === 0 && this.waiting.length > 0) {
-        var ops = this.waiting
+        var ins = []
+        var dels = []
+        this.waiting.forEach(function (o) {
+          if (o.struct === 'Delete') {
+            dels.push(o)
+          } else {
+            ins.push(o)
+          }
+        })
+        ins = notSoSmartSort(ins)
+        ins.forEach(this.onevent)
+        dels.forEach(this.onevent)
         this.waiting = []
-        ops.forEach(this.onevent)
       }
     }
   }
@@ -237,12 +299,31 @@ module.exports = function (Y /* : any*/) {
   Y.utils.copyObject = copyObject
 
   /*
+    Copy an operation, so that it can be manipulated.
+    Note: You must not change subproperties (except o.content)!
+  */
+  function copyOperation (o) {
+    o = copyObject(o)
+    if (o.content != null) {
+      o.content = o.content.map(function (c) { return c })
+    }
+    return o
+  }
+
+  Y.utils.copyOperation = copyOperation
+
+  /*
     Defines a smaller relation on Id's
   */
   function smaller (a, b) {
     return a[0] < b[0] || (a[0] === b[0] && (a[1] < b[1] || typeof a[1] < typeof b[1]))
   }
   Y.utils.smaller = smaller
+
+  function inDeletionRange (del, ins) {
+    return del.target[0] === ins[0] && del.target[1] <= ins[1] && ins[1] < del.target[1] + (del.length || 1)
+  }
+  Y.utils.inDeletionRange = inDeletionRange
 
   function compareIds (id1, id2) {
     if (id1 == null || id2 == null) {

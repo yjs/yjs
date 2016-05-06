@@ -1068,7 +1068,7 @@ module.exports = function (Y/* :any */) {
     /* this is what we used before.. use this as a reference..
     * makeOperationReady (startSS, op) {
       op = Y.Struct[op.struct].encode(op)
-      op = Y.utils.copyObject(op)
+      op = Y.utils.copyObject(op) -- use copyoperation instead now!
       var o = op
       var ids = [op.id]
       // search for the new op.right

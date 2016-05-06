@@ -86,10 +86,6 @@ function getRandomString () {
 g.getRandomString = getRandomString
 
 function * applyTransactions (relAmount, numberOfTransactions, objects, users, transactions, noReconnect) {
-  function randomTransaction (root) {
-    var f = getRandom(transactions)
-    f(root)
-  }
   for (var i = 0; i < numberOfTransactions * relAmount + 1; i++) {
     var r = Math.random()
     if (r >= 0.5) {
@@ -97,44 +93,76 @@ function * applyTransactions (relAmount, numberOfTransactions, objects, users, t
       yield Y.utils.globalRoom.flushOne() // flushes for some user.. (not necessarily 0)
     } else if (noReconnect || r >= 0.05) {
       // 45% chance to create operation
-      randomTransaction(getRandom(objects))
+      var done = getRandom(transactions)(getRandom(objects))
+      if (done != null) {
+        yield done
+      } else {
+        yield wait()
+      }
       yield Y.utils.globalRoom.whenTransactionsFinished()
     } else {
       // 5% chance to disconnect/reconnect
       var u = getRandom(users)
+      yield Promise.all(objects.map(fixAwaitingInType))
       if (u.connector.isDisconnected()) {
         yield u.reconnect()
       } else {
         yield u.disconnect()
       }
+      yield Promise.all(objects.map(fixAwaitingInType))
     }
   }
 }
 
+function fixAwaitingInType (type) {
+  return new Promise(function (resolve) {
+    type.os.whenTransactionsFinished().then(function () {
+      // _debuggingAwaiting artificially increases the awaiting property. We need to make sure that we only do that once / reverse the effect once
+      type.os.requestTransaction(function * () {
+        if (type.eventHandler.awaiting > 0 && type.eventHandler._debuggingAwaiting === true) {
+          type.eventHandler._debuggingAwaiting = false
+          yield* type.eventHandler.awaitedOps(this, 0)
+        }
+        wait(50).then(type.os.whenTransactionsFinished()).then(wait(50)).then(resolve)
+      })
+    })
+  })
+}
+g.fixAwaitingInType = fixAwaitingInType
+
 g.applyRandomTransactionsNoGCNoDisconnect = async(function * applyRandomTransactions (users, objects, transactions, numberOfTransactions) {
   yield* applyTransactions(1, numberOfTransactions, objects, users, transactions, true)
   yield Y.utils.globalRoom.flushAll()
+  yield Promise.all(objects.map(fixAwaitingInType))
 })
 
 g.applyRandomTransactionsAllRejoinNoGC = async(function * applyRandomTransactions (users, objects, transactions, numberOfTransactions) {
   yield* applyTransactions(1, numberOfTransactions, objects, users, transactions)
+  yield Promise.all(objects.map(fixAwaitingInType))
   yield Y.utils.globalRoom.flushAll()
+  yield Promise.all(objects.map(fixAwaitingInType))
   for (var u in users) {
+    yield Promise.all(objects.map(fixAwaitingInType))
     yield users[u].reconnect()
+    yield Promise.all(objects.map(fixAwaitingInType))
   }
+  yield Promise.all(objects.map(fixAwaitingInType))
   yield Y.utils.globalRoom.flushAll()
+  yield Promise.all(objects.map(fixAwaitingInType))
   yield g.garbageCollectAllUsers(users)
 })
 
 g.applyRandomTransactionsWithGC = async(function * applyRandomTransactions (users, objects, transactions, numberOfTransactions) {
   yield* applyTransactions(1, numberOfTransactions, objects, users.slice(1), transactions)
   yield Y.utils.globalRoom.flushAll()
+  yield Promise.all(objects.map(fixAwaitingInType))
   for (var u in users) {
     // TODO: here, we enforce that two users never sync at the same time with u[0]
     //       enforce that in the connector itself!
     yield users[u].reconnect()
   }
   yield Y.utils.globalRoom.flushAll()
+  yield Promise.all(objects.map(fixAwaitingInType))
   yield g.garbageCollectAllUsers(users)
 })
 
@@ -222,7 +250,6 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
         })
       })
     } else {
-      // TODO: make requestTransaction return a promise..
       u.db.requestTransaction(function * () {
         yield* t2.call(this)
         var db2 = []
