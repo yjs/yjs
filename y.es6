@@ -498,7 +498,7 @@ module.exports = function (Y) {
               } else {
                 resolve()
               }
-            }, 10)
+            }, 0)
           }
         }
         globalRoom.whenTransactionsFinished().then(nextFlush)
@@ -659,7 +659,7 @@ module.exports = function (Y /* :any */) {
       }
       this.gc1 = [] // first stage
       this.gc2 = [] // second stage -> after that, remove the op
-      this.gcTimeout = !opts.gcTimeout ? 50000 : opts.gcTimeoutś
+      this.gcTimeout = !opts.gcTimeout ? 50000 : opts.gcTimeouts
       function garbageCollect () {
         return os.whenTransactionsFinished().then(function () {
           if (os.gc1.length > 0 || os.gc2.length > 0) {
@@ -997,7 +997,7 @@ module.exports = function (Y /* :any */) {
 
       // notify parent, if it was instanciated as a custom type
       if (t != null) {
-        let o = Y.utils.copyObject(op)
+        let o = Y.utils.copyOperation(op)
         yield* t._changed(transaction, o)
       }
       if (!op.deleted) {
@@ -1063,14 +1063,9 @@ module.exports = function (Y /* :any */) {
       this.waitingTransactions.push(makeGen)
       if (!this.transactionInProgress) {
         this.transactionInProgress = true
-        if (false || callImmediately) { // TODO: decide whether this is ok or not..
+        setTimeout(() => {
           this.transact(this.getNextRequest())
-        } else {
-          var self = this
-          setTimeout(function () {
-            self.transact(self.getNextRequest())
-          }, 0)
-        }
+        }, 0)
       }
     }
   }
@@ -2560,7 +2555,7 @@ module.exports = function (Y/* :any */) {
     /* this is what we used before.. use this as a reference..
     * makeOperationReady (startSS, op) {
       op = Y.Struct[op.struct].encode(op)
-      op = Y.utils.copyObject(op)
+      op = Y.utils.copyObject(op) -- use copyoperation instead now!
       var o = op
       var ids = [op.id]
       // search for the new op.right
@@ -2696,9 +2691,90 @@ module.exports = function (Y /* : any*/) {
       prematurely called operations are executed
     */
     awaitAndPrematurelyCall (ops) {
-      this.awaiting += ops.length
-      ops.forEach(this.onevent)
+      this.awaiting++
+      ops.map(Y.utils.copyOperation).forEach(this.onevent)
     }
+    * awaitOps (transaction, f, args) {
+      function notSoSmartSort (array) {
+        // this function sorts insertions in a executable order
+        var result = []
+        while (array.length > 0) {
+          for (var i = 0; i < array.length; i++) {
+            var independent = true
+            for (var j = 0; j < array.length; j++) {
+              if (Y.utils.matchesId(array[j], array[i].left)) {
+                // array[i] depends on array[j]
+                independent = false
+                break
+              }
+            }
+            if (independent) {
+              result.push(array.splice(i, 1)[0])
+              i--
+            }
+          }
+        }
+        return result
+      }
+      var before = this.waiting.length
+      // somehow create new operations
+      yield* f.apply(transaction, args)
+      // remove all appended ops / awaited ops
+      this.waiting.splice(before)
+      if (this.awaiting > 0) this.awaiting--
+      // if there are no awaited ops anymore, we can update all waiting ops, and send execute them (if there are still no awaited ops)
+      if (this.awaiting === 0 && this.waiting.length > 0) {
+        // update all waiting ops
+        for (let i = 0; i < this.waiting.length; i++) {
+          var o = this.waiting[i]
+          if (o.struct === 'Insert') {
+            var _o = yield* transaction.getInsertion(o.id)
+            if (!Y.utils.compareIds(_o.id, o.id)) {
+              // o got extended
+              o.left = [o.id[0], o.id[1] - 1]
+            } else if (_o.left == null) {
+              o.left = null
+            } else {
+              // find next undeleted op
+              var left = yield* transaction.getInsertion(_o.left)
+              while (left.deleted != null) {
+                if (left.left != null) {
+                  left = yield* transaction.getInsertion(left.left)
+                } else {
+                  left = null
+                  break
+                }
+              }
+              o.left = left != null ? Y.utils.getLastId(left) : null
+            }
+          }
+        }
+        // the previous stuff was async, so we have to check again!
+        // We also pull changes from the bindings, if there exists such a method, this could increase awaiting too
+        if (this._pullChanges != null) {
+          this._pullChanges()
+        }
+        if (this.awaiting === 0) {
+          // sort by type, execute inserts first
+          var ins = []
+          var dels = []
+          this.waiting.forEach(function (o) {
+            if (o.struct === 'Delete') {
+              dels.push(o)
+            } else {
+              ins.push(o)
+            }
+          })
+          // put in executable order
+          ins = notSoSmartSort(ins)
+          ins.forEach(this.onevent)
+          dels.forEach(this.onevent)
+          this.waiting = []
+        }
+      }
+    }
+    // TODO: Remove awaitedInserts and awaitedDeletes in favor of awaitedOps, as they are deprecated and do not always work
+    // Do this in one of the coming releases that are breaking anyway
     /*
       Call this when you successfully awaited the execution of n Insert operations
     */
@@ -2756,12 +2832,42 @@ module.exports = function (Y /* : any*/) {
     /* (private)
       Try to execute the events for the waiting operations
     */
-    _tryCallEvents (n) {
-      this.awaiting -= n
+    _tryCallEvents () {
+      function notSoSmartSort (array) {
+        var result = []
+        while (array.length > 0) {
+          for (var i = 0; i < array.length; i++) {
+            var independent = true
+            for (var j = 0; j < array.length; j++) {
+              if (Y.utils.matchesId(array[j], array[i].left)) {
+                // array[i] depends on array[j]
+                independent = false
+                break
+              }
+            }
+            if (independent) {
+              result.push(array.splice(i, 1)[0])
+              i--
+            }
+          }
+        }
+        return result
+      }
+      if (this.awaiting > 0) this.awaiting--
       if (this.awaiting === 0 && this.waiting.length > 0) {
-        var ops = this.waiting
+        var ins = []
+        var dels = []
+        this.waiting.forEach(function (o) {
+          if (o.struct === 'Delete') {
+            dels.push(o)
+          } else {
+            ins.push(o)
+          }
+        })
+        ins = notSoSmartSort(ins)
+        ins.forEach(this.onevent)
+        dels.forEach(this.onevent)
         this.waiting = []
-        ops.forEach(this.onevent)
       }
     }
   }
@@ -2831,12 +2937,31 @@ module.exports = function (Y /* : any*/) {
   Y.utils.copyObject = copyObject
 
   /*
+    Copy an operation, so that it can be manipulated.
+    Note: You must not change subproperties (except o.content)!
+  */
+  function copyOperation (o) {
+    o = copyObject(o)
+    if (o.content != null) {
+      o.content = o.content.map(function (c) { return c })
+    }
+    return o
+  }
+
+  Y.utils.copyOperation = copyOperation
+
+  /*
     Defines a smaller relation on Id's
   */
   function smaller (a, b) {
     return a[0] < b[0] || (a[0] === b[0] && (a[1] < b[1] || typeof a[1] < typeof b[1]))
   }
   Y.utils.smaller = smaller
+
+  function inDeletionRange (del, ins) {
+    return del.target[0] === ins[0] && del.target[1] <= ins[1] && ins[1] < del.target[1] + (del.length || 1)
+  }
+  Y.utils.inDeletionRange = inDeletionRange
 
   function compareIds (id1, id2) {
     if (id1 == null || id2 == null) {
