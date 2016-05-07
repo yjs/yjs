@@ -88,8 +88,21 @@ g.getRandomString = getRandomString
 function * applyTransactions (relAmount, numberOfTransactions, objects, users, transactions, noReconnect) {
   for (var i = 0; i < numberOfTransactions * relAmount + 1; i++) {
     var r = Math.random()
-    if (r >= 0.5) {
-      // 50% chance to flush
+    if (r > 0.9) {
+      // 10% chance of toggling concurrent user interactions.
+      // There will be an artificial delay until ops can be executed by the type,
+      // therefore, operations of the database will be (pre)transformed until user operations arrive 
+      yield (function simulateConcurrentUserInteractions (type) {
+        if (type.eventHandler.awaiting === 0 && type.eventHandler._debuggingAwaiting !== true) {
+          type.eventHandler.awaiting = 1
+          type.eventHandler._debuggingAwaiting = true
+        } else {
+        // fixAwaitingInType will handle _debuggingAwaiting
+          return fixAwaitingInType(type)
+        }
+      })(getRandom(objects))
+    } else if (r >= 0.5) {
+      // 40% chance to flush
       yield Y.utils.globalRoom.flushOne() // flushes for some user.. (not necessarily 0)
     } else if (noReconnect || r >= 0.05) {
       // 45% chance to create operation
@@ -121,7 +134,7 @@ function fixAwaitingInType (type) {
       type.os.requestTransaction(function * () {
         if (type.eventHandler.awaiting > 0 && type.eventHandler._debuggingAwaiting === true) {
           type.eventHandler._debuggingAwaiting = false
-          yield* type.eventHandler.awaitedOps(this, 0)
+          yield* type.eventHandler.awaitOps(this, function * () { /* mock function */ })
         }
         wait(50).then(type.os.whenTransactionsFinished()).then(wait(50)).then(resolve)
       })

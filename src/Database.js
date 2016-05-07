@@ -479,14 +479,9 @@ module.exports = function (Y /* :any */) {
       this.waitingTransactions.push(makeGen)
       if (!this.transactionInProgress) {
         this.transactionInProgress = true
-        if (false || callImmediately) { // TODO: decide whether this is ok or not..
+        setTimeout(() => {
           this.transact(this.getNextRequest())
-        } else {
-          var self = this
-          setTimeout(function () {
-            self.transact(self.getNextRequest())
-          }, 0)
-        }
+        }, 0)
       }
     }
   }

@@ -105,35 +105,84 @@ module.exports = function (Y /* : any*/) {
       this.awaiting++
       ops.map(Y.utils.copyOperation).forEach(this.onevent)
     }
-    * awaitedOps (transaction, n) {
-      // remove awaited ops
-      this.waiting.splice(this.waiting.length - n)
-      // update all waiting ops
-      for (let i = 0; i < this.waiting.length; i++) {
-        var o = this.waiting[i]
-        if (o.struct === 'Insert') {
-          var _o = yield* transaction.getInsertion(o.id)
-          if (!Y.utils.compareIds(_o.id, o.id)) {
-            // o got extended
-            o.left = [o.id[0], o.id[1] - 1]
-          } else if (_o.left == null) {
-            o.left = null
-          } else {
-            // find next undeleted op
-            var left = yield* transaction.getInsertion(_o.left)
-            while (left.deleted != null) {
-              if (left.left != null) {
-                left = yield* transaction.getInsertion(left.left)
-              } else {
-                left = null
+    * awaitOps (transaction, f, args) {
+      function notSoSmartSort (array) {
+        // this function sorts insertions in a executable order
+        var result = []
+        while (array.length > 0) {
+          for (var i = 0; i < array.length; i++) {
+            var independent = true
+            for (var j = 0; j < array.length; j++) {
+              if (Y.utils.matchesId(array[j], array[i].left)) {
+                // array[i] depends on array[j]
+                independent = false
                 break
               }
             }
-            o.left = left != null ? Y.utils.getLastId(left) : null
+            if (independent) {
+              result.push(array.splice(i, 1)[0])
+              i--
+            }
           }
         }
+        return result
       }
-      this._tryCallEvents()
+      var before = this.waiting.length
+      // somehow create new operations
+      yield* f.apply(transaction, args)
+      // remove all appended ops / awaited ops
+      this.waiting.splice(before)
+      if (this.awaiting > 0) this.awaiting--
+      // if there are no awaited ops anymore, we can update all waiting ops, and send execute them (if there are still no awaited ops)
+      if (this.awaiting === 0 && this.waiting.length > 0) {
+        // update all waiting ops
+        for (let i = 0; i < this.waiting.length; i++) {
+          var o = this.waiting[i]
+          if (o.struct === 'Insert') {
+            var _o = yield* transaction.getInsertion(o.id)
+            if (!Y.utils.compareIds(_o.id, o.id)) {
+              // o got extended
+              o.left = [o.id[0], o.id[1] - 1]
+            } else if (_o.left == null) {
+              o.left = null
+            } else {
+              // find next undeleted op
+              var left = yield* transaction.getInsertion(_o.left)
+              while (left.deleted != null) {
+                if (left.left != null) {
+                  left = yield* transaction.getInsertion(left.left)
+                } else {
+                  left = null
+                  break
+                }
+              }
+              o.left = left != null ? Y.utils.getLastId(left) : null
+            }
+          }
+        }
+        // the previous stuff was async, so we have to check again!
+        // We also pull changes from the bindings, if there exists such a method, this could increase awaiting too
+        if (this._pullChanges != null) {
+          this._pullChanges()
+        }
+        if (this.awaiting === 0) {
+          // sort by type, execute inserts first
+          var ins = []
+          var dels = []
+          this.waiting.forEach(function (o) {
+            if (o.struct === 'Delete') {
+              dels.push(o)
+            } else {
+              ins.push(o)
+            }
+          })
+          // put in executable order
+          ins = notSoSmartSort(ins)
+          ins.forEach(this.onevent)
+          dels.forEach(this.onevent)
+          this.waiting = []
+        }
+      }
     }
     // TODO: Remove awaitedInserts and awaitedDeletes in favor of awaitedOps, as they are deprecated and do not always work
     // Do this in one of the coming releases that are breaking anyway
