@@ -91,7 +91,7 @@ function * applyTransactions (relAmount, numberOfTransactions, objects, users, t
     if (r > 0.9) {
       // 10% chance of toggling concurrent user interactions.
       // There will be an artificial delay until ops can be executed by the type,
-      // therefore, operations of the database will be (pre)transformed until user operations arrive 
+      // therefore, operations of the database will be (pre)transformed until user operations arrive
       yield (function simulateConcurrentUserInteractions (type) {
         if (type.eventHandler.awaiting === 0 && type.eventHandler._debuggingAwaiting !== true) {
           type.eventHandler.awaiting = 1
