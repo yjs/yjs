@@ -254,14 +254,11 @@ module.exports = function (Y/* :any */) {
             right = null
           }
           if (callType && !preventCallType) {
-            var type = this.store.initializedTypes[JSON.stringify(target.parent)]
-            if (type != null) {
-              yield* type._changed(this, {
-                struct: 'Delete',
-                target: target.id,
-                length: targetLength
-              })
-            }
+            yield* this.store.operationAdded(this, {
+              struct: 'Delete',
+              target: target.id,
+              length: targetLength
+            })
           }
           // need to gc in the end!
           yield* this.store.addToGarbageCollector.call(this, target, left)
