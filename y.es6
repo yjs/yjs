@@ -3228,6 +3228,7 @@ function requestModules (modules) {
           })
           promises.push(requireModule.promise)
         } else {
+          console.info('YJS: Please do not depend on automatic requiring of modules anymore! Extend modules as follows `require(\'y-modulename\')(Y)`')
           require(modulename)(Y)
         }
       } else {
@@ -3274,23 +3275,25 @@ function Y (opts/* :YOptions */) /* :Promise<YConfig> */ {
     modules.push(opts.share[name])
   }
   Y.sourceDir = opts.sourceDir
-  return Y.requestModules(modules).then(function () {
-    return new Promise(function (resolve, reject) {
-      if (opts == null) reject('An options object is expected! ')
-      else if (opts.connector == null) reject('You must specify a connector! (missing connector property)')
-      else if (opts.connector.name == null) reject('You must specify connector name! (missing connector.name property)')
-      else if (opts.db == null) reject('You must specify a database! (missing db property)')
-      else if (opts.connector.name == null) reject('You must specify db name! (missing db.name property)')
-      else if (opts.share == null) reject('You must specify a set of shared types!')
-      else {
-        var yconfig = new YConfig(opts)
-        yconfig.db.whenUserIdSet(function () {
-          yconfig.init(function () {
-            resolve(yconfig)
+  return new Promise(function (resolve, reject) {
+    setTimeout(function () {
+      Y.requestModules(modules).then(function () {
+        if (opts == null) reject('An options object is expected! ')
+        else if (opts.connector == null) reject('You must specify a connector! (missing connector property)')
+        else if (opts.connector.name == null) reject('You must specify connector name! (missing connector.name property)')
+        else if (opts.db == null) reject('You must specify a database! (missing db property)')
+        else if (opts.connector.name == null) reject('You must specify db name! (missing db.name property)')
+        else if (opts.share == null) reject('You must specify a set of shared types!')
+        else {
+          var yconfig = new YConfig(opts)
+          yconfig.db.whenUserIdSet(function () {
+            yconfig.init(function () {
+              resolve(yconfig)
+            })
           })
-        })
-      }
-    })
+        }
+      }).catch(reject)
+    }, 0)
   })
 }
 
