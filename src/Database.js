@@ -367,12 +367,16 @@ module.exports = function (Y /* :any */) {
           }
         }
         if (defined == null) {
-          var isGarbageCollected = yield* this.isGarbageCollected(op.id)
+          var opid = op.id
+          var isGarbageCollected = yield* this.isGarbageCollected(opid)
           if (!isGarbageCollected) {
             yield* Y.Struct[op.struct].execute.call(this, op)
             yield* this.addOperation(op)
             yield* this.store.operationAdded(this, op)
-
+            if (!Y.utils.compareIds(opid, op.id)) {
+              // operationAdded changed op
+              op = yield* this.getOperation(opid)
+            }
             // if insertion, try to combine with left
             yield* this.tryCombineWithLeft(op)
           }

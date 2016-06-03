@@ -74,7 +74,7 @@ function getRandomNumber (n) {
 g.getRandomNumber = getRandomNumber
 
 function getRandomString () {
-  var chars = 'abcdefäö'
+  var chars = 'abcdefghijklmnopqrstuvwxyzäüöABCDEFGHIJKLMNOPQRSTUVWXYZÄÜÖ'
   var char = chars[getRandomNumber(chars.length)] // ü\n\n\n\n\n\n\n'
   var length = getRandomNumber(7)
   var string = ''
