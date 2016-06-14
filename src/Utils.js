@@ -92,6 +92,152 @@ module.exports = function (Y /* : any*/) {
     receivedOp (op) {
       if (this.awaiting <= 0) {
         this.onevent(op)
+      } else if (op.struct === 'Delete') {
+        var self = this
+        function checkDelete (d) {
+          if (d.length == null) {
+            throw new Error('This shouldn\'t happen! d.length must be defined!')
+          }
+          // we check if o deletes something in self.waiting
+          // if so, we remove the deleted operation
+          for (var w = 0; w < self.waiting.length; w++) {
+            var i = self.waiting[w]
+            if (i.struct === 'Insert' && i.id[0] === d.target[0]) {
+              var iLength = i.hasOwnProperty('content') ? i.content.length : 1
+              var dStart = d.target[1]
+              var dEnd = d.target[1] + (d.length || 1)
+              var iStart = i.id[1]
+              var iEnd = i.id[1] + iLength
+              // Check if they don't overlap
+              if (iEnd <= dStart || dEnd <= iStart) {
+                // no overlapping
+                continue
+              }
+              // we check all overlapping cases. All cases:
+              /*
+                1)  iiiii
+                      ddddd
+                    --> modify i and d
+                2)  iiiiiii
+                      ddddd
+                    --> modify i, remove d
+                3)  iiiiiii
+                      ddd
+                    --> remove d, modify i, and create another i (for the right hand side)
+                4)  iiiii
+                    ddddddd
+                    --> remove i, modify d
+                5)  iiiiiii
+                    ddddddd
+                    --> remove both i and d (**)
+                6)  iiiiiii
+                    ddddd
+                    --> modify i, remove d
+                7)    iii
+                    ddddddd
+                    --> remove i, create and apply two d with checkDelete(d) (**)
+                8)    iiiii
+                    ddddddd
+                    --> remove i, modify d (**)
+                9)    iiiii
+                    ddddd
+                    --> modify i and d
+                (**) (also check if i contains content or type)
+              */
+              // TODO: I left some debugger statements, because I want to debug all cases once in production. REMEMBER END TODO
+              if (iStart < dStart) {
+                if (dStart < iEnd) {
+                  if (iEnd < dEnd) {
+                    // Case 1
+                    debugger
+                    // remove the right part of i's content
+                    i.content.splice(dStart - iStart)
+                    // remove the start of d's deletion
+                    d.length = dEnd - iEnd
+                    d.target = [d.target[0], iEnd]
+                    continue
+                  } else if (iEnd === dEnd) {
+                    // Case 2
+                    i.content.splice(dStart - iStart)
+                    // remove d, we do that by simply ending this function
+                    return
+                  } else { // (dEnd < iEnd)
+                    // Case 3
+                    var newI = {
+                      id: [i.id[0], dEnd],
+                      content: i.content.slice(dEnd - iStart),
+                      struct: 'Insert'
+                    }
+                    self.waiting.push(newI)
+                    i.content.splice(dStart - iStart)
+                    return
+                  }
+                }
+              } else if (dStart === iStart) {
+                if (iEnd < dEnd) {
+                  // Case 4
+                  debugger
+                  d.length = dEnd - iEnd
+                  d.target = [d.target[0], iEnd]
+                  i.content = []
+                  continue
+                } else if (iEnd === dEnd) {
+                  // Case 5
+                  self.waiting.splice(w, 1)
+                  return
+                } else { // (dEnd < iEnd)
+                  // Case 6
+                  i.content = i.content.slice(dEnd - iStart)
+                  i.id = [i.id[0], dEnd]
+                  return
+                }
+              } else { // (dStart < iStart)
+                /*
+                7)    iii
+                    ddddddd
+                    --> remove i, create and apply two d with checkDelete(d) (**)
+                8)    iiiii
+                    ddddddd
+                    --> remove i, modify d (**)
+                9)    iiiii
+                    ddddd
+                    --> modify i and d
+                */
+                if (iEnd < dEnd) {
+                  // Case 7
+                  debugger
+                  self.waiting.splice(w, 1)
+                  checkDelete({
+                    target: [d.target[0], dStart],
+                    length: iStart - dStart,
+                    struct: 'Delete'
+                  })
+                  checkDelete({
+                    target: [d.target[0], iEnd],
+                    length: iEnd - dEnd,
+                    struct: 'Delete'
+                  })
+                  return
+                } else if (iEnd === dEnd) {
+                  // Case 8
+                  debugger
+                  self.waiting.splice(w, 1)
+                  return
+                } else { // dEnd < iEnd
+                  // Case 9
+                  debugger
+                  d.length = iStart - dStart
+                  i.content.splice(dEnd - iStart)
+                  i.id = [i.id[0], dEnd]
+                  continue
+                }
+              }
+            }
+          }
+          // finished with remaining operations
+          self.waiting.push(d)
+        }
+        checkDelete(op)
       } else {
         this.waiting.push(op)
       }

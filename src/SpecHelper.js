@@ -97,7 +97,7 @@ function * applyTransactions (relAmount, numberOfTransactions, objects, users, t
           type.eventHandler.awaiting = 1
           type.eventHandler._debuggingAwaiting = true
         } else {
-        // fixAwaitingInType will handle _debuggingAwaiting
+          // fixAwaitingInType will handle _debuggingAwaiting
           return fixAwaitingInType(type)
         }
       })(getRandom(objects))
