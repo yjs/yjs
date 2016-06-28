@@ -149,7 +149,6 @@ module.exports = function (Y /* : any*/) {
                 if (dStart < iEnd) {
                   if (iEnd < dEnd) {
                     // Case 1
-                    debugger
                     // remove the right part of i's content
                     i.content.splice(dStart - iStart)
                     // remove the start of d's deletion
@@ -176,7 +175,6 @@ module.exports = function (Y /* : any*/) {
               } else if (dStart === iStart) {
                 if (iEnd < dEnd) {
                   // Case 4
-                  debugger
                   d.length = dEnd - iEnd
                   d.target = [d.target[0], iEnd]
                   i.content = []
@@ -192,44 +190,47 @@ module.exports = function (Y /* : any*/) {
                   return
                 }
               } else { // (dStart < iStart)
-                /*
-                7)    iii
-                    ddddddd
-                    --> remove i, create and apply two d with checkDelete(d) (**)
-                8)    iiiii
-                    ddddddd
-                    --> remove i, modify d (**)
-                9)    iiiii
-                    ddddd
-                    --> modify i and d
-                */
-                if (iEnd < dEnd) {
-                  // Case 7
-                  debugger
-                  self.waiting.splice(w, 1)
-                  checkDelete({
-                    target: [d.target[0], dStart],
-                    length: iStart - dStart,
-                    struct: 'Delete'
-                  })
-                  checkDelete({
-                    target: [d.target[0], iEnd],
-                    length: iEnd - dEnd,
-                    struct: 'Delete'
-                  })
-                  return
-                } else if (iEnd === dEnd) {
-                  // Case 8
-                  debugger
-                  self.waiting.splice(w, 1)
-                  return
-                } else { // dEnd < iEnd
-                  // Case 9
-                  debugger
-                  d.length = iStart - dStart
-                  i.content.splice(dEnd - iStart)
-                  i.id = [i.id[0], dEnd]
-                  continue
+                if (iStart < dEnd) {
+                  // they overlap
+                  /*
+                  7)    iii
+                      ddddddd
+                      --> remove i, create and apply two d with checkDelete(d) (**)
+                  8)    iiiii
+                      ddddddd
+                      --> remove i, modify d (**)
+                  9)    iiiii
+                      ddddd
+                      --> modify i and d
+                  */
+                  if (iEnd < dEnd) {
+                    // Case 7
+                    debugger
+                    self.waiting.splice(w, 1)
+                    checkDelete({
+                      target: [d.target[0], dStart],
+                      length: iStart - dStart,
+                      struct: 'Delete'
+                    })
+                    checkDelete({
+                      target: [d.target[0], iEnd],
+                      length: iEnd - dEnd,
+                      struct: 'Delete'
+                    })
+                    return
+                  } else if (iEnd === dEnd) {
+                    // Case 8
+                    self.waiting.splice(w, 1)
+                    w--
+                    d.length -= iLength
+                    continue
+                  } else { // dEnd < iEnd
+                    // Case 9
+                    d.length = iStart - dStart
+                    i.content.splice(0, dEnd - iStart)
+                    i.id = [i.id[0], dEnd]
+                    continue
+                  }
                 }
               }
             }

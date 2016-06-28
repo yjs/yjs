@@ -88,7 +88,7 @@ g.getRandomString = getRandomString
 function * applyTransactions (relAmount, numberOfTransactions, objects, users, transactions, noReconnect) {
   for (var i = 0; i < numberOfTransactions * relAmount + 1; i++) {
     var r = Math.random()
-    if (r > 0.9) {
+    if (r > 0.95) {
       // 10% chance of toggling concurrent user interactions.
       // There will be an artificial delay until ops can be executed by the type,
       // therefore, operations of the database will be (pre)transformed until user operations arrive
