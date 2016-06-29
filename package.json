@@ -42,6 +42,7 @@
   },
   "homepage": "http://y-js.org",
   "devDependencies": {
+    "babel-eslint": "^5.0.0-beta6",
     "babel-plugin-transform-runtime": "^6.1.18",
     "babel-preset-es2015": "^6.1.18",
     "babelify": "^7.2.0",
@@ -69,10 +70,10 @@
     "pre-commit": "^1.1.1",
     "regenerator": "^0.8.42",
     "run-sequence": "^1.1.4",
+    "seedrandom": "^2.4.2",
     "standard": "^5.2.2",
     "vinyl-buffer": "^1.0.0",
-    "vinyl-source-stream": "^1.1.0",
-    "babel-eslint": "^5.0.0-beta6"
+    "vinyl-source-stream": "^1.1.0"
   },
   "dependencies": {}
 }

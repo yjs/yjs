@@ -23,6 +23,29 @@ if (typeof global !== 'undefined') {
 }
 g.g = g
 
+// Helper methods for the random number generator
+Math.seedrandom = require('seedrandom')
+
+g.generateRandomSeed = function generateRandomSeed() {
+  var seed
+  if (window.location.hash.length > 1) {
+    seed = window.location.hash.slice(1) // first character is the hash!
+    console.warn('Using random seed that was specified in the url!')
+  } else {
+    seed = JSON.stringify(Math.random())
+  }
+  console.info('Using random seed: ' + seed)
+  setRandomSeed(seed)
+
+}
+
+g.setRandomSeed = function setRandomSeed(seed) {
+  Math.seedrandom.currentSeed = seed
+  Math.seedrandom(Math.seedrandom.currentSeed, { global: true })
+}
+
+g.generateRandomSeed()
+
 g.YConcurrency_TestingMode = true
 
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 200000
@@ -86,6 +109,7 @@ function getRandomString () {
 g.getRandomString = getRandomString
 
 function * applyTransactions (relAmount, numberOfTransactions, objects, users, transactions, noReconnect) {
+  g.generateRandomSeed() // create a new seed, so we can re-create the behavior
   for (var i = 0; i < numberOfTransactions * relAmount + 1; i++) {
     var r = Math.random()
     if (r > 0.95) {
