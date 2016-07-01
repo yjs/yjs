@@ -323,11 +323,27 @@ module.exports = function (Y /* : any*/) {
               ins.push(o)
             }
           })
+          this.waiting = []
           // put in executable order
           ins = notSoSmartSort(ins)
-          ins.forEach(this.onevent)
-          dels.forEach(this.onevent)
-          this.waiting = []
+          // this.onevent can trigger the creation of another operation
+          // -> check if this.awaiting increased & stop computation if it does
+          for (var i = 0; i < ins.length; i++) {
+            if (this.awaiting === 0) {
+              this.onevent(ins[i])
+            } else {
+              this.waiting = this.waiting.concat(ins.slice(i))
+              break
+            }
+          }
+          for (var i = 0; i < dels.length; i++) {
+            if (this.awaiting === 0) {
+              this.onevent(dels[i])
+            } else {
+              this.waiting = this.waiting.concat(dels.slice(i))
+              break
+            }
+          }
         }
       }
     }
