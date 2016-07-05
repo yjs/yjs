@@ -7,8 +7,8 @@ Y({
     name: 'memory'
   },
   connector: {
-    name: 'websockets-client',
-    room: 'richtext-example'
+    name: 'webrtc',
+    room: 'richtext-example-quill-beta'
   },
   sourceDir: '/bower_components',
   share: {
@@ -18,13 +18,22 @@ Y({
   window.yQuill = y
 
   // create quill element
-  window.quill = new Quill('#editor', {
+  window.quill = new Quill('#quill', {
     modules: {
-      'toolbar': { container: '#toolbar' },
-      'link-tooltip': true
+      formula: true,
+      syntax: true,
+      toolbar: [
+        [{ size: ['small', false, 'large', 'huge'] }],
+        ['bold', 'italic', 'underline'],
+        [{ color: [] }, { background: [] }],    // Snow theme fills in values
+        [{ script: 'sub' }, { script: 'super' }],
+        ['link', 'image'],
+        ['link', 'code-block'],
+        [{list: 'ordered' }]
+      ]
     },
     theme: 'snow'
-  })
+  });
   // bind quill to richtext type
   y.share.richtext.bind(window.quill)
 })

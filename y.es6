@@ -951,12 +951,16 @@ module.exports = function (Y /* :any */) {
           }
         }
         if (defined == null) {
-          var isGarbageCollected = yield* this.isGarbageCollected(op.id)
+          var opid = op.id
+          var isGarbageCollected = yield* this.isGarbageCollected(opid)
           if (!isGarbageCollected) {
             yield* Y.Struct[op.struct].execute.call(this, op)
             yield* this.addOperation(op)
             yield* this.store.operationAdded(this, op)
-
+            if (!Y.utils.compareIds(opid, op.id)) {
+              // operationAdded changed op
+              op = yield* this.getOperation(opid)
+            }
             // if insertion, try to combine with left
             yield* this.tryCombineWithLeft(op)
           }
@@ -2695,6 +2699,153 @@ module.exports = function (Y /* : any*/) {
     receivedOp (op) {
       if (this.awaiting <= 0) {
         this.onevent(op)
+      } else if (op.struct === 'Delete') {
+        var self = this
+        function checkDelete (d) {
+          if (d.length == null) {
+            throw new Error('This shouldn\'t happen! d.length must be defined!')
+          }
+          // we check if o deletes something in self.waiting
+          // if so, we remove the deleted operation
+          for (var w = 0; w < self.waiting.length; w++) {
+            var i = self.waiting[w]
+            if (i.struct === 'Insert' && i.id[0] === d.target[0]) {
+              var iLength = i.hasOwnProperty('content') ? i.content.length : 1
+              var dStart = d.target[1]
+              var dEnd = d.target[1] + (d.length || 1)
+              var iStart = i.id[1]
+              var iEnd = i.id[1] + iLength
+              // Check if they don't overlap
+              if (iEnd <= dStart || dEnd <= iStart) {
+                // no overlapping
+                continue
+              }
+              // we check all overlapping cases. All cases:
+              /*
+                1)  iiiii
+                      ddddd
+                    --> modify i and d
+                2)  iiiiiii
+                      ddddd
+                    --> modify i, remove d
+                3)  iiiiiii
+                      ddd
+                    --> remove d, modify i, and create another i (for the right hand side)
+                4)  iiiii
+                    ddddddd
+                    --> remove i, modify d
+                5)  iiiiiii
+                    ddddddd
+                    --> remove both i and d (**)
+                6)  iiiiiii
+                    ddddd
+                    --> modify i, remove d
+                7)    iii
+                    ddddddd
+                    --> remove i, create and apply two d with checkDelete(d) (**)
+                8)    iiiii
+                    ddddddd
+                    --> remove i, modify d (**)
+                9)    iiiii
+                    ddddd
+                    --> modify i and d
+                (**) (also check if i contains content or type)
+              */
+              // TODO: I left some debugger statements, because I want to debug all cases once in production. REMEMBER END TODO
+              if (iStart < dStart) {
+                if (dStart < iEnd) {
+                  if (iEnd < dEnd) {
+                    // Case 1
+                    // remove the right part of i's content
+                    i.content.splice(dStart - iStart)
+                    // remove the start of d's deletion
+                    d.length = dEnd - iEnd
+                    d.target = [d.target[0], iEnd]
+                    continue
+                  } else if (iEnd === dEnd) {
+                    // Case 2
+                    i.content.splice(dStart - iStart)
+                    // remove d, we do that by simply ending this function
+                    return
+                  } else { // (dEnd < iEnd)
+                    // Case 3
+                    var newI = {
+                      id: [i.id[0], dEnd],
+                      content: i.content.slice(dEnd - iStart),
+                      struct: 'Insert'
+                    }
+                    self.waiting.push(newI)
+                    i.content.splice(dStart - iStart)
+                    return
+                  }
+                }
+              } else if (dStart === iStart) {
+                if (iEnd < dEnd) {
+                  // Case 4
+                  d.length = dEnd - iEnd
+                  d.target = [d.target[0], iEnd]
+                  i.content = []
+                  continue
+                } else if (iEnd === dEnd) {
+                  // Case 5
+                  self.waiting.splice(w, 1)
+                  return
+                } else { // (dEnd < iEnd)
+                  // Case 6
+                  i.content = i.content.slice(dEnd - iStart)
+                  i.id = [i.id[0], dEnd]
+                  return
+                }
+              } else { // (dStart < iStart)
+                if (iStart < dEnd) {
+                  // they overlap
+                  /*
+                  7)    iii
+                      ddddddd
+                      --> remove i, create and apply two d with checkDelete(d) (**)
+                  8)    iiiii
+                      ddddddd
+                      --> remove i, modify d (**)
+                  9)    iiiii
+                      ddddd
+                      --> modify i and d
+                  */
+                  if (iEnd < dEnd) {
+                    // Case 7
+                    debugger
+                    self.waiting.splice(w, 1)
+                    checkDelete({
+                      target: [d.target[0], dStart],
+                      length: iStart - dStart,
+                      struct: 'Delete'
+                    })
+                    checkDelete({
+                      target: [d.target[0], iEnd],
+                      length: iEnd - dEnd,
+                      struct: 'Delete'
+                    })
+                    return
+                  } else if (iEnd === dEnd) {
+                    // Case 8
+                    self.waiting.splice(w, 1)
+                    w--
+                    d.length -= iLength
+                    continue
+                  } else { // dEnd < iEnd
+                    // Case 9
+                    d.length = iStart - dStart
+                    i.content.splice(0, dEnd - iStart)
+                    i.id = [i.id[0], dEnd]
+                    continue
+                  }
+                }
+              }
+            }
+          }
+          // finished with remaining operations
+          self.waiting.push(d)
+        }
+        checkDelete(op)
       } else {
         this.waiting.push(op)
       }
@@ -2779,11 +2930,27 @@ module.exports = function (Y /* : any*/) {
               ins.push(o)
             }
           })
+          this.waiting = []
           // put in executable order
           ins = notSoSmartSort(ins)
-          ins.forEach(this.onevent)
-          dels.forEach(this.onevent)
-          this.waiting = []
+          // this.onevent can trigger the creation of another operation
+          // -> check if this.awaiting increased & stop computation if it does
+          for (var i = 0; i < ins.length; i++) {
+            if (this.awaiting === 0) {
+              this.onevent(ins[i])
+            } else {
+              this.waiting = this.waiting.concat(ins.slice(i))
+              break
+            }
+          }
+          for (var i = 0; i < dels.length; i++) {
+            if (this.awaiting === 0) {
+              this.onevent(dels[i])
+            } else {
+              this.waiting = this.waiting.concat(dels.slice(i))
+              break
+            }
+          }
         }
       }
     }
