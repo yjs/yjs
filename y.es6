@@ -421,7 +421,7 @@ module.exports = function (Y/* :any */) {
 module.exports = function (Y) {
   var globalRoom = {
     users: {},
-    buffers: {}, // TODO: reimplement this idea. This does not cover all cases!! Here, you have a queue which is unrealistic (i.e. think about multiple incoming connections)
+    buffers: {},
     removeUser: function (user) {
       for (var i in this.users) {
         this.users[i].userLeft(user)
@@ -2010,6 +2010,7 @@ module.exports = function (Y/* :any */) {
         if (o.right != null) {
           var right = yield* this.getOperation(o.right)
           right.left = o.left
+          yield* this.setOperation(right)
 
           if (o.originOf != null && o.originOf.length > 0) {
             // find new origin of right ops
@@ -2076,10 +2077,6 @@ module.exports = function (Y/* :any */) {
             }
             // we don't need to set right here, because
             // right should be in o.originOf => it is set it the previous for loop
-          } else {
-            // we didn't need to reset the origin of right
-            // so we have to set right here
-            yield* this.setOperation(right)
           }
         }
         // o may originate in another operation.
@@ -2701,7 +2698,7 @@ module.exports = function (Y /* : any*/) {
         this.onevent(op)
       } else if (op.struct === 'Delete') {
         var self = this
-        function checkDelete (d) {
+        var checkDelete = function checkDelete (d) {
           if (d.length == null) {
             throw new Error('This shouldn\'t happen! d.length must be defined!')
           }
@@ -2812,7 +2809,7 @@ module.exports = function (Y /* : any*/) {
                   */
                   if (iEnd < dEnd) {
                     // Case 7
-                    debugger
+                    // debugger // TODO: You did not test this case yet!!!! (add the debugger here)
                     self.waiting.splice(w, 1)
                     checkDelete({
                       target: [d.target[0], dStart],
@@ -2943,7 +2940,7 @@ module.exports = function (Y /* : any*/) {
               break
             }
           }
-          for (var i = 0; i < dels.length; i++) {
+          for (i = 0; i < dels.length; i++) {
             if (this.awaiting === 0) {
               this.onevent(dels[i])
             } else {
