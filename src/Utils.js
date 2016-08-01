@@ -94,7 +94,7 @@ module.exports = function (Y /* : any*/) {
         this.onevent(op)
       } else if (op.struct === 'Delete') {
         var self = this
-        function checkDelete (d) {
+        var checkDelete = function checkDelete (d) {
           if (d.length == null) {
             throw new Error('This shouldn\'t happen! d.length must be defined!')
           }
@@ -205,7 +205,7 @@ module.exports = function (Y /* : any*/) {
                   */
                   if (iEnd < dEnd) {
                     // Case 7
-                    debugger
+                    // debugger // TODO: You did not test this case yet!!!! (add the debugger here)
                     self.waiting.splice(w, 1)
                     checkDelete({
                       target: [d.target[0], dStart],
@@ -336,7 +336,7 @@ module.exports = function (Y /* : any*/) {
               break
             }
           }
-          for (var i = 0; i < dels.length; i++) {
+          for (i = 0; i < dels.length; i++) {
             if (this.awaiting === 0) {
               this.onevent(dels[i])
             } else {

@@ -27,20 +27,19 @@ g.g = g
 // Helper methods for the random number generator
 Math.seedrandom = require('seedrandom')
 
-g.generateRandomSeed = function generateRandomSeed() {
+g.generateRandomSeed = function generateRandomSeed () {
   var seed
-  if (typeof window != 'undefined' && window.location.hash.length > 1) {
+  if (typeof window !== 'undefined' && window.location.hash.length > 1) {
     seed = window.location.hash.slice(1) // first character is the hash!
     console.warn('Using random seed that was specified in the url!')
   } else {
     seed = JSON.stringify(Math.random())
   }
   console.info('Using random seed: ' + seed)
-  setRandomSeed(seed)
-
+  g.setRandomSeed(seed)
 }
 
-g.setRandomSeed = function setRandomSeed(seed) {
+g.setRandomSeed = function setRandomSeed (seed) {
   Math.seedrandom.currentSeed = seed
   Math.seedrandom(Math.seedrandom.currentSeed, { global: true })
 }

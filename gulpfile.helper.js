@@ -48,8 +48,8 @@ module.exports = function (gulp, helperOptions) {
       .pipe(source(options.targetName))
       .pipe(buffer())
       .pipe($.sourcemaps.init({loadMaps: true}))
-      .pipe($.if(!options.debug, $.uglify().on('error', function(e) {
-        console.log('\x07',e.message, JSON.stringify(e)); return this.end()
+      .pipe($.if(!options.debug, $.uglify().on('error', function (e) {
+        console.log('\x07', e.message, JSON.stringify(e)); return this.end()
       })))
       .pipe($.sourcemaps.write('.'))
       .pipe(gulp.dest('./dist/')))
