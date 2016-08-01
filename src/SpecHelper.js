@@ -11,6 +11,7 @@ require('../../y-memory/src/Memory.js')(Y)
 require('../../y-array/src/Array.js')(Y)
 require('../../y-map/src/Map.js')(Y)
 require('../../y-indexeddb/src/IndexedDB.js')(Y)
+require('../../y-leveldb/src/LevelDB.js')(Y)
 module.exports = Y
 
 var g
@@ -28,7 +29,7 @@ Math.seedrandom = require('seedrandom')
 
 g.generateRandomSeed = function generateRandomSeed() {
   var seed
-  if (window.location.hash.length > 1) {
+  if (typeof window != 'undefined' && window.location.hash.length > 1) {
     seed = window.location.hash.slice(1) // first character is the hash!
     console.warn('Using random seed that was specified in the url!')
   } else {
@@ -74,6 +75,8 @@ g.wait = wait
 g.databases = ['memory']
 if (typeof window !== 'undefined') {
   g.databases.push('indexeddb')
+} else {
+  g.databases.push('leveldb')
 }
 /*
   returns a random element of o.

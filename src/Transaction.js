@@ -502,6 +502,7 @@ module.exports = function (Y/* :any */) {
         if (o.right != null) {
           var right = yield* this.getOperation(o.right)
           right.left = o.left
+          yield* this.setOperation(right)
 
           if (o.originOf != null && o.originOf.length > 0) {
             // find new origin of right ops
@@ -568,10 +569,6 @@ module.exports = function (Y/* :any */) {
             }
             // we don't need to set right here, because
             // right should be in o.originOf => it is set it the previous for loop
-          } else {
-            // we didn't need to reset the origin of right
-            // so we have to set right here
-            yield* this.setOperation(right)
           }
         }
         // o may originate in another operation.
