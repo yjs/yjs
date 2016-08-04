@@ -954,13 +954,12 @@ module.exports = function (Y /* :any */) {
           var opid = op.id
           var isGarbageCollected = yield* this.isGarbageCollected(opid)
           if (!isGarbageCollected) {
+            // TODO: reduce number of get / put calls for op ..
             yield* Y.Struct[op.struct].execute.call(this, op)
             yield* this.addOperation(op)
             yield* this.store.operationAdded(this, op)
-            if (!Y.utils.compareIds(opid, op.id)) {
-              // operationAdded changed op
-              op = yield* this.getOperation(opid)
-            }
+            // operationAdded can change op..
+            op = yield* this.getOperation(opid)
             // if insertion, try to combine with left
             yield* this.tryCombineWithLeft(op)
           }
@@ -1024,6 +1023,7 @@ module.exports = function (Y /* :any */) {
           // Delete if DS says this is actually deleted
           var len = op.content != null ? op.content.length : 1
           var startId = op.id // You must not use op.id in the following loop, because op will change when deleted
+            // TODO: !! console.log('TODO: change this before commiting')
           for (let i = 0; i < len; i++) {
             var id = [startId[0], startId[1] + i]
             var opIsDeleted = yield* transaction.isDeleted(id)
