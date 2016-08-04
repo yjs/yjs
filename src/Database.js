@@ -439,7 +439,7 @@ module.exports = function (Y /* :any */) {
           // Delete if DS says this is actually deleted
           var len = op.content != null ? op.content.length : 1
           var startId = op.id // You must not use op.id in the following loop, because op will change when deleted
-            // TODO: !! console.log('TODO: change this before commiting')      
+            // TODO: !! console.log('TODO: change this before commiting')
           for (let i = 0; i < len; i++) {
             var id = [startId[0], startId[1] + i]
             var opIsDeleted = yield* transaction.isDeleted(id)
