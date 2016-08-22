@@ -997,6 +997,7 @@ module.exports = function (Y/* :any */) {
           if (firstMissing != null) {
             // update startPos
             startPos = firstMissing.id[1]
+            startSS[user] = startPos
           }
         }
         yield* this.os.iterate(this, [user, startPos], [user, Number.MAX_VALUE], function * (op) {
