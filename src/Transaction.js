@@ -83,57 +83,6 @@ module.exports = function (Y/* :any */) {
     ss: Store;
     */
     /*
-      Get a type based on the id of its model.
-      If it does not exist yes, create it.
-      TODO: delete type from store.initializedTypes[id] when corresponding id was deleted!
-    */
-    * getType (id, args) {
-      var sid = JSON.stringify(id)
-      var t = this.store.initializedTypes[sid]
-      if (t == null) {
-        var op/* :MapStruct | ListStruct */ = yield* this.getOperation(id)
-        if (op != null) {
-          t = yield* Y[op.type].typeDefinition.initType.call(this, this.store, op, args)
-          this.store.initializedTypes[sid] = t
-        }
-      }
-      return t
-    }
-    * createType (typedefinition, id) {
-      var structname = typedefinition[0].struct
-      id = id || this.store.getNextOpId(1)
-      var op
-      if (id[0] === '_') {
-        op = yield* this.getOperation(id)
-      } else {
-        op = Y.Struct[structname].create(id)
-        op.type = typedefinition[0].name
-      }
-      if (typedefinition[0].appendAdditionalInfo != null) {
-        yield* typedefinition[0].appendAdditionalInfo.call(this, op, typedefinition[1])
-      }
-      if (op[0] === '_') {
-        yield* this.setOperation(op)
-      } else {
-        yield* this.applyCreatedOperations([op])
-      }
-      return yield* this.getType(id, typedefinition[1])
-    }
-    /* createType (typedefinition, id) {
-      var structname = typedefinition[0].struct
-      id = id || this.store.getNextOpId(1)
-      var op = Y.Struct[structname].create(id)
-      op.type = typedefinition[0].name
-      if (typedefinition[0].appendAdditionalInfo != null) {
-        yield* typedefinition[0].appendAdditionalInfo.call(this, op, typedefinition[1])
-      }
-      // yield* this.applyCreatedOperations([op])
-      yield* Y.Struct[op.struct].execute.call(this, op)
-      yield* this.addOperation(op)
-      yield* this.store.operationAdded(this, op)
-      return yield* this.getType(id, typedefinition[1])
-    }*/
-    /*
       Apply operations that this user created (no remote ones!)
         * does not check for Struct.*.requiredOps()
         * also broadcasts it through the connector

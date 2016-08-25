@@ -151,7 +151,7 @@ class YConfig {
         var type = Y[typeName]
         var typedef = type.typeDefinition
         var id = ['_', typedef.struct + '_' + typeName + '_' + propertyname + '_' + typeConstructor]
-        share[propertyname] = yield* this.createType(type.apply(typedef, args), id)
+        share[propertyname] = this.store.createType(type.apply(typedef, args), id)
       }
       this.store.whenTransactionsFinished()
         .then(callback)

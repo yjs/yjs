@@ -505,6 +505,46 @@ module.exports = function (Y /* :any */) {
         }, 0)
       }
     }
+    /*
+      Get a type based on the id of its model.
+      If it does not exist yes, create it.
+      TODO: delete type from store.initializedTypes[id] when corresponding id was deleted!
+    */
+    * getType (id, args) {
+      var sid = JSON.stringify(id)
+      var t = this.store.initializedTypes[sid]
+      if (t == null) {
+        var op/* :MapStruct | ListStruct */ = yield* this.getOperation(id)
+        if (op != null) {
+          t = yield* Y[op.type].typeDefinition.initType.call(this, this.store, op, args)
+          this.store.initializedTypes[sid] = t
+        }
+      }
+      return t
+    }
+    createType (typedefinition, id) {
+      var structname = typedefinition[0].struct
+      id = id || this.getNextOpId(1)
+      var op = Y.Struct[structname].create(id)
+      op.type = typedefinition[0].name
+      
+      /* TODO: implement for y-xml support
+      if (typedefinition[0].appendAdditionalInfo != null) {
+        yield* typedefinition[0].appendAdditionalInfo.call(this, op, typedefinition[1])
+      }
+      */
+      this.requestTransaction(function * () {
+        if (op[0] === '_') {
+          yield* this.setOperation(op)
+        } else {
+          yield* this.applyCreatedOperations([op])
+        }
+      })
+      var t = Y[op.type].typeDefinition.createNewType(this, op)
+      this.initializedTypes[JSON.stringify(op.id)] = t
+      return t
+      //return yield* this.getType(id, typedefinition[1])
+    }
   }
   Y.AbstractDatabase = AbstractDatabase
 }

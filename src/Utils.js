@@ -238,7 +238,13 @@ module.exports = function (Y /* : any*/) {
           // finished with remaining operations
           self.waiting.push(d)
         }
-        checkDelete(op)
+        if (op.key == null) {
+          // deletes in list
+          checkDelete(op)
+        } else {
+          // deletes in map
+          this.waiting.push(op)
+        }
       } else {
         this.waiting.push(op)
       }
@@ -287,7 +293,11 @@ module.exports = function (Y /* : any*/) {
           var o = this.waiting[i]
           if (o.struct === 'Insert') {
             var _o = yield* transaction.getInsertion(o.id)
-            if (!Y.utils.compareIds(_o.id, o.id)) {
+            if (_o.parentSub != null && _o.left != null) {
+              // if o is an insertion of a map struc (parentSub is defined), then it shouldn't be necessary to compute left
+              this.waiting.splice(i,1)
+              i-- // update index
+            } else if (!Y.utils.compareIds(_o.id, o.id)) {
               // o got extended
               o.left = [o.id[0], o.id[1] - 1]
             } else if (_o.left == null) {
@@ -469,12 +479,14 @@ module.exports = function (Y /* : any*/) {
       if (def.struct == null ||
         def.initType == null ||
         def.class == null ||
-        def.name == null
+        def.name == null ||
+        def.createNewType == null
       ) {
         throw new Error('Custom type was not initialized correctly!')
       }
       this.struct = def.struct
       this.initType = def.initType
+      this.createNewType = def.createNewType
       this.class = def.class
       this.name = def.name
       if (def.appendAdditionalInfo != null) {
