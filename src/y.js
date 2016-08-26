@@ -14,7 +14,7 @@ module.exports = Y
 Y.requiringModules = requiringModules
 
 Y.extend = function (name, value) {
-  if (value instanceof Y.utils.CustomType) {
+  if (value instanceof Y.utils.CustomTypeDefinition) {
     Y[name] = value.parseArguments
   } else {
     Y[name] = value

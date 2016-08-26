@@ -506,11 +506,16 @@ module.exports = function (Y /* :any */) {
       }
     }
     /*
-      Get a type based on the id of its model.
-      If it does not exist yes, create it.
-      TODO: delete type from store.initializedTypes[id] when corresponding id was deleted!
+      Get a created/initialized type.
     */
-    * getType (id, args) {
+    getType (id) {
+      return this.initializedTypes[JSON.stringify(id)]
+    }
+    /*
+      Init type. This is called when a remote operation is retrieved, and transformed to a type
+      TODO: delete type from store.initializedTypes[id] when corresponding id was deleted! 
+    */
+    * initType (id, args) {
       var sid = JSON.stringify(id)
       var t = this.store.initializedTypes[sid]
       if (t == null) {
@@ -522,6 +527,9 @@ module.exports = function (Y /* :any */) {
       }
       return t
     }
+    /*
+     Create type. This is called when the local user creates a type (which is a synchronous action)
+    */
     createType (typedefinition, id) {
       var structname = typedefinition[0].struct
       id = id || this.getNextOpId(1)
@@ -534,16 +542,15 @@ module.exports = function (Y /* :any */) {
       }
       */
       this.requestTransaction(function * () {
-        if (op[0] === '_') {
+        if (op.id[0] === '_') {
           yield* this.setOperation(op)
         } else {
           yield* this.applyCreatedOperations([op])
         }
       })
-      var t = Y[op.type].typeDefinition.createNewType(this, op)
+      var t = Y[op.type].typeDefinition.createType(this, op, typedefinition[1])
       this.initializedTypes[JSON.stringify(op.id)] = t
       return t
-      //return yield* this.getType(id, typedefinition[1])
     }
   }
   Y.AbstractDatabase = AbstractDatabase

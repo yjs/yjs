@@ -458,6 +458,14 @@ module.exports = function (Y /* : any*/) {
   Y.utils.EventHandler = EventHandler
 
   /*
+    Default class of custom types!
+  */
+  class CustomType {
+
+  }
+  Y.utils.CustomType = CustomType
+
+  /*
     A wrapper for the definition of a custom type.
     Every custom type must have three properties:
 
@@ -468,7 +476,7 @@ module.exports = function (Y /* : any*/) {
     * class
       - the constructor of the custom type (e.g. in order to inherit from a type)
   */
-  class CustomType { // eslint-disable-line
+  class CustomTypeDefinition { // eslint-disable-line
     /* ::
     struct: any;
     initType: any;
@@ -480,13 +488,13 @@ module.exports = function (Y /* : any*/) {
         def.initType == null ||
         def.class == null ||
         def.name == null ||
-        def.createNewType == null
+        def.createType == null
       ) {
         throw new Error('Custom type was not initialized correctly!')
       }
       this.struct = def.struct
       this.initType = def.initType
-      this.createNewType = def.createNewType
+      this.createType = def.createType
       this.class = def.class
       this.name = def.name
       if (def.appendAdditionalInfo != null) {
@@ -498,13 +506,13 @@ module.exports = function (Y /* : any*/) {
       this.parseArguments.typeDefinition = this
     }
   }
-  Y.utils.CustomType = CustomType
+  Y.utils.CustomTypeDefinition = CustomTypeDefinition
 
   Y.utils.isTypeDefinition = function isTypeDefinition (v) {
     if (v != null) {
-      if (v instanceof Y.utils.CustomType) return [v]
-      else if (v.constructor === Array && v[0] instanceof Y.utils.CustomType) return v
-      else if (v instanceof Function && v.typeDefinition instanceof Y.utils.CustomType) return [v.typeDefinition]
+      if (v instanceof Y.utils.CustomTypeDefinition) return [v]
+      else if (v.constructor === Array && v[0] instanceof Y.utils.CustomTypeDefinition) return v
+      else if (v instanceof Function && v.typeDefinition instanceof Y.utils.CustomTypeDefinition) return [v.typeDefinition]
     }
     return false
   }
