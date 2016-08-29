@@ -19,7 +19,7 @@
     "y-text": "latest",
     "y-indexeddb": "latest",
     "y-xml": "latest",
-    "quill": "^1.0.0-rc.0",
+    "quill": "^1.0.0-rc.2",
     "ace": "~1.2.3",
     "ace-builds": "~1.2.3",
     "jquery": "~2.2.2",

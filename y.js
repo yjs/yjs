@@ -2596,6 +2596,110 @@ module.exports = function (Y /* :any */) {
           }, 0);
         }
       }
+      /*
+        Get a created/initialized type.
+      */
+
+    }, {
+      key: 'getType',
+      value: function getType(id) {
+        return this.initializedTypes[JSON.stringify(id)];
+      }
+      /*
+        Init type. This is called when a remote operation is retrieved, and transformed to a type
+        TODO: delete type from store.initializedTypes[id] when corresponding id was deleted! 
+      */
+
+    }, {
+      key: 'initType',
+      value: regeneratorRuntime.mark(function initType(id, args) {
+        var sid, t, op;
+        return regeneratorRuntime.wrap(function initType$(_context10) {
+          while (1) {
+            switch (_context10.prev = _context10.next) {
+              case 0:
+                sid = JSON.stringify(id);
+                t = this.store.initializedTypes[sid];
+
+                if (!(t == null)) {
+                  _context10.next = 9;
+                  break;
+                }
+
+                return _context10.delegateYield(this.getOperation(id), 't0', 4);
+
+              case 4:
+                op /* :MapStruct | ListStruct */ = _context10.t0;
+
+                if (!(op != null)) {
+                  _context10.next = 9;
+                  break;
+                }
+
+                return _context10.delegateYield(Y[op.type].typeDefinition.initType.call(this, this.store, op, args), 't1', 7);
+
+              case 7:
+                t = _context10.t1;
+
+                this.store.initializedTypes[sid] = t;
+
+              case 9:
+                return _context10.abrupt('return', t);
+
+              case 10:
+              case 'end':
+                return _context10.stop();
+            }
+          }
+        }, initType, this);
+      })
+      /*
+       Create type. This is called when the local user creates a type (which is a synchronous action)
+      */
+
+    }, {
+      key: 'createType',
+      value: function createType(typedefinition, id) {
+        var structname = typedefinition[0].struct;
+        id = id || this.getNextOpId(1);
+        var op = Y.Struct[structname].create(id);
+        op.type = typedefinition[0].name;
+
+        /* TODO: implement for y-xml support
+        if (typedefinition[0].appendAdditionalInfo != null) {
+          yield* typedefinition[0].appendAdditionalInfo.call(this, op, typedefinition[1])
+        }
+        */
+        this.requestTransaction(regeneratorRuntime.mark(function _callee6() {
+          return regeneratorRuntime.wrap(function _callee6$(_context11) {
+            while (1) {
+              switch (_context11.prev = _context11.next) {
+                case 0:
+                  if (!(op.id[0] === '_')) {
+                    _context11.next = 4;
+                    break;
+                  }
+
+                  return _context11.delegateYield(this.setOperation(op), 't0', 2);
+
+                case 2:
+                  _context11.next = 5;
+                  break;
+
+                case 4:
+                  return _context11.delegateYield(this.applyCreatedOperations([op]), 't1', 5);
+
+                case 5:
+                case 'end':
+                  return _context11.stop();
+              }
+            }
+          }, _callee6, this);
+        }));
+        var t = Y[op.type].typeDefinition.createType(this, op, typedefinition[1]);
+        this.initializedTypes[JSON.stringify(op.id)] = t;
+        return t;
+      }
     }]);
 
     return AbstractDatabase;
@@ -3468,7 +3572,7 @@ module.exports = function (Y /* :any */) {
     }
 
     _createClass(TransactionInterface, [{
-      key: 'getType',
+      key: 'applyCreatedOperations',
 
       /* ::
       store: Y.AbstractDatabase;
@@ -3477,154 +3581,27 @@ module.exports = function (Y /* :any */) {
       ss: Store;
       */
       /*
-        Get a type based on the id of its model.
-        If it does not exist yes, create it.
-        TODO: delete type from store.initializedTypes[id] when corresponding id was deleted!
-      */
-      value: regeneratorRuntime.mark(function getType(id, args) {
-        var sid, t, op;
-        return regeneratorRuntime.wrap(function getType$(_context) {
-          while (1) {
-            switch (_context.prev = _context.next) {
-              case 0:
-                sid = JSON.stringify(id);
-                t = this.store.initializedTypes[sid];
-
-                if (!(t == null)) {
-                  _context.next = 9;
-                  break;
-                }
-
-                return _context.delegateYield(this.getOperation(id), 't0', 4);
-
-              case 4:
-                op /* :MapStruct | ListStruct */ = _context.t0;
-
-                if (!(op != null)) {
-                  _context.next = 9;
-                  break;
-                }
-
-                return _context.delegateYield(Y[op.type].typeDefinition.initType.call(this, this.store, op, args), 't1', 7);
-
-              case 7:
-                t = _context.t1;
-
-                this.store.initializedTypes[sid] = t;
-
-              case 9:
-                return _context.abrupt('return', t);
-
-              case 10:
-              case 'end':
-                return _context.stop();
-            }
-          }
-        }, getType, this);
-      })
-    }, {
-      key: 'createType',
-      value: regeneratorRuntime.mark(function createType(typedefinition, id) {
-        var structname, op;
-        return regeneratorRuntime.wrap(function createType$(_context2) {
-          while (1) {
-            switch (_context2.prev = _context2.next) {
-              case 0:
-                structname = typedefinition[0].struct;
-
-                id = id || this.store.getNextOpId(1);
-
-                if (!(id[0] === '_')) {
-                  _context2.next = 7;
-                  break;
-                }
-
-                return _context2.delegateYield(this.getOperation(id), 't0', 4);
-
-              case 4:
-                op = _context2.t0;
-                _context2.next = 9;
-                break;
-
-              case 7:
-                op = Y.Struct[structname].create(id);
-                op.type = typedefinition[0].name;
-
-              case 9:
-                if (!(typedefinition[0].appendAdditionalInfo != null)) {
-                  _context2.next = 11;
-                  break;
-                }
-
-                return _context2.delegateYield(typedefinition[0].appendAdditionalInfo.call(this, op, typedefinition[1]), 't1', 11);
-
-              case 11:
-                if (!(op[0] === '_')) {
-                  _context2.next = 15;
-                  break;
-                }
-
-                return _context2.delegateYield(this.setOperation(op), 't2', 13);
-
-              case 13:
-                _context2.next = 16;
-                break;
-
-              case 15:
-                return _context2.delegateYield(this.applyCreatedOperations([op]), 't3', 16);
-
-              case 16:
-                return _context2.delegateYield(this.getType(id, typedefinition[1]), 't4', 17);
-
-              case 17:
-                return _context2.abrupt('return', _context2.t4);
-
-              case 18:
-              case 'end':
-                return _context2.stop();
-            }
-          }
-        }, createType, this);
-      })
-      /* createType (typedefinition, id) {
-        var structname = typedefinition[0].struct
-        id = id || this.store.getNextOpId(1)
-        var op = Y.Struct[structname].create(id)
-        op.type = typedefinition[0].name
-        if (typedefinition[0].appendAdditionalInfo != null) {
-          yield* typedefinition[0].appendAdditionalInfo.call(this, op, typedefinition[1])
-        }
-        // yield* this.applyCreatedOperations([op])
-        yield* Y.Struct[op.struct].execute.call(this, op)
-        yield* this.addOperation(op)
-        yield* this.store.operationAdded(this, op)
-        return yield* this.getType(id, typedefinition[1])
-      }*/
-      /*
         Apply operations that this user created (no remote ones!)
           * does not check for Struct.*.requiredOps()
           * also broadcasts it through the connector
       */
-
-    }, {
-      key: 'applyCreatedOperations',
       value: regeneratorRuntime.mark(function applyCreatedOperations(ops) {
         var send, i, op;
-        return regeneratorRuntime.wrap(function applyCreatedOperations$(_context3) {
+        return regeneratorRuntime.wrap(function applyCreatedOperations$(_context) {
           while (1) {
-            switch (_context3.prev = _context3.next) {
+            switch (_context.prev = _context.next) {
               case 0:
                 send = [];
                 i = 0;
 
               case 2:
                 if (!(i < ops.length)) {
-                  _context3.next = 9;
+                  _context.next = 9;
                   break;
                 }
 
                 op = ops[i];
-                return _context3.delegateYield(this.store.tryExecute.call(this, op), 't0', 5);
+                return _context.delegateYield(this.store.tryExecute.call(this, op), 't0', 5);
 
               case 5:
                 if (op.id == null || typeof op.id[1] !== 'string') {
@@ -3633,7 +3610,7 @@ module.exports = function (Y /* :any */) {
 
               case 6:
                 i++;
-                _context3.next = 2;
+                _context.next = 2;
                 break;
 
               case 9:
@@ -3645,7 +3622,7 @@ module.exports = function (Y /* :any */) {
 
               case 10:
               case 'end':
-                return _context3.stop();
+                return _context.stop();
             }
           }
         }, applyCreatedOperations, this);
@@ -3654,52 +3631,52 @@ module.exports = function (Y /* :any */) {
       key: 'deleteList',
       value: regeneratorRuntime.mark(function deleteList(start) {
         var delLength;
-        return regeneratorRuntime.wrap(function deleteList$(_context4) {
+        return regeneratorRuntime.wrap(function deleteList$(_context2) {
           while (1) {
-            switch (_context4.prev = _context4.next) {
+            switch (_context2.prev = _context2.next) {
               case 0:
                 if (!(start != null)) {
-                  _context4.next = 15;
+                  _context2.next = 15;
                   break;
                 }
 
-                return _context4.delegateYield(this.getOperation(start), 't0', 2);
+                return _context2.delegateYield(this.getOperation(start), 't0', 2);
 
               case 2:
-                start = _context4.t0;
+                start = _context2.t0;
 
                 if (start.gc) {
-                  _context4.next = 12;
+                  _context2.next = 12;
                   break;
                 }
 
                 start.gc = true;
                 start.deleted = true;
-                return _context4.delegateYield(this.setOperation(start), 't1', 7);
+                return _context2.delegateYield(this.setOperation(start), 't1', 7);
 
               case 7:
                 delLength = start.content != null ? start.content.length : 1;
-                return _context4.delegateYield(this.markDeleted(start.id, delLength), 't2', 9);
+                return _context2.delegateYield(this.markDeleted(start.id, delLength), 't2', 9);
 
               case 9:
                 if (!(start.opContent != null)) {
-                  _context4.next = 11;
+                  _context2.next = 11;
                   break;
                 }
 
-                return _context4.delegateYield(this.deleteOperation(start.opContent), 't3', 11);
+                return _context2.delegateYield(this.deleteOperation(start.opContent), 't3', 11);
 
               case 11:
                 this.store.queueGarbageCollector(start.id);
 
               case 12:
                 start = start.right;
-                _context4.next = 0;
+                _context2.next = 0;
                 break;
 
               case 15:
               case 'end':
-                return _context4.stop();
+                return _context2.stop();
             }
           }
         }, deleteList, this);
@@ -3713,67 +3690,67 @@ module.exports = function (Y /* :any */) {
       key: 'deleteOperation',
       value: regeneratorRuntime.mark(function deleteOperation(targetId, length, preventCallType) {
         var callType, target, targetLength, name, i, left, right;
-        return regeneratorRuntime.wrap(function deleteOperation$(_context5) {
+        return regeneratorRuntime.wrap(function deleteOperation$(_context3) {
           while (1) {
-            switch (_context5.prev = _context5.next) {
+            switch (_context3.prev = _context3.next) {
               case 0:
                 if (length == null) {
                   length = 1;
                 }
-                return _context5.delegateYield(this.markDeleted(targetId, length), 't0', 2);
+                return _context3.delegateYield(this.markDeleted(targetId, length), 't0', 2);
 
               case 2:
                 if (!(length > 0)) {
-                  _context5.next = 64;
+                  _context3.next = 64;
                   break;
                 }
 
                 callType = false;
-                return _context5.delegateYield(this.os.findWithUpperBound([targetId[0], targetId[1] + length - 1]), 't1', 5);
+                return _context3.delegateYield(this.os.findWithUpperBound([targetId[0], targetId[1] + length - 1]), 't1', 5);
 
               case 5:
-                target = _context5.t1;
+                target = _context3.t1;
                 targetLength = target != null && target.content != null ? target.content.length : 1;
 
                 if (!(target == null || target.id[0] !== targetId[0] || target.id[1] + targetLength <= targetId[1])) {
-                  _context5.next = 12;
+                  _context3.next = 12;
                   break;
                 }
 
                 // does not exist or is not in the range of the deletion
                 target = null;
                 length = 0;
-                _context5.next = 22;
+                _context3.next = 22;
                 break;
 
               case 12:
                 if (target.deleted) {
-                  _context5.next = 21;
+                  _context3.next = 21;
                   break;
                 }
 
                 if (!(target.id[1] < targetId[1])) {
-                  _context5.next = 17;
+                  _context3.next = 17;
                   break;
                 }
 
-                return _context5.delegateYield(this.getInsertionCleanStart(targetId), 't2', 15);
+                return _context3.delegateYield(this.getInsertionCleanStart(targetId), 't2', 15);
 
               case 15:
-                target = _context5.t2;
+                target = _context3.t2;
 
                 targetLength = target.content.length; // must have content property!
 
               case 17:
                 if (!(target.id[1] + targetLength > targetId[1] + length)) {
-                  _context5.next = 21;
+                  _context3.next = 21;
                   break;
                 }
 
-                return _context5.delegateYield(this.getInsertionCleanEnd([targetId[0], targetId[1] + length - 1]), 't3', 19);
+                return _context3.delegateYield(this.getInsertionCleanEnd([targetId[0], targetId[1] + length - 1]), 't3', 19);
 
               case 19:
-                target = _context5.t3;
+                target = _context3.t3;
 
                 targetLength = target.content.length;
 
@@ -3782,12 +3759,12 @@ module.exports = function (Y /* :any */) {
 
               case 22:
                 if (!(target != null)) {
-                  _context5.next = 62;
+                  _context3.next = 62;
                   break;
                 }
 
                 if (target.deleted) {
-                  _context5.next = 44;
+                  _context3.next = 44;
                   break;
                 }
 
@@ -3797,44 +3774,44 @@ module.exports = function (Y /* :any */) {
                 // delete containing lists
 
                 if (!(target.start != null)) {
-                  _context5.next = 28;
+                  _context3.next = 28;
                   break;
                 }
 
-                return _context5.delegateYield(this.deleteList(target.start), 't4', 28);
+                return _context3.delegateYield(this.deleteList(target.start), 't4', 28);
 
               case 28:
                 if (!(target.map != null)) {
-                  _context5.next = 35;
+                  _context3.next = 35;
                   break;
                 }
 
-                _context5.t5 = regeneratorRuntime.keys(target.map);
+                _context3.t5 = regeneratorRuntime.keys(target.map);
 
               case 30:
-                if ((_context5.t6 = _context5.t5()).done) {
-                  _context5.next = 35;
+                if ((_context3.t6 = _context3.t5()).done) {
+                  _context3.next = 35;
                   break;
                 }
 
-                name = _context5.t6.value;
-                return _context5.delegateYield(this.deleteList(target.map[name]), 't7', 33);
+                name = _context3.t6.value;
+                return _context3.delegateYield(this.deleteList(target.map[name]), 't7', 33);
 
               case 33:
-                _context5.next = 30;
+                _context3.next = 30;
                 break;
 
               case 35:
                 if (!(target.opContent != null)) {
-                  _context5.next = 37;
+                  _context3.next = 37;
                   break;
                 }
 
-                return _context5.delegateYield(this.deleteOperation(target.opContent), 't8', 37);
+                return _context3.delegateYield(this.deleteOperation(target.opContent), 't8', 37);
 
               case 37:
                 if (!(target.requires != null)) {
-                  _context5.next = 44;
+                  _context3.next = 44;
                   break;
                 }
 
@@ -3842,47 +3819,47 @@ module.exports = function (Y /* :any */) {
 
               case 39:
                 if (!(i < target.requires.length)) {
-                  _context5.next = 44;
+                  _context3.next = 44;
                   break;
                 }
 
-                return _context5.delegateYield(this.deleteOperation(target.requires[i]), 't9', 41);
+                return _context3.delegateYield(this.deleteOperation(target.requires[i]), 't9', 41);
 
               case 41:
                 i++;
-                _context5.next = 39;
+                _context3.next = 39;
                 break;
 
               case 44:
                 if (!(target.left != null)) {
-                  _context5.next = 49;
+                  _context3.next = 49;
                   break;
                 }
 
-                return _context5.delegateYield(this.getInsertion(target.left), 't10', 46);
+                return _context3.delegateYield(this.getInsertion(target.left), 't10', 46);
 
               case 46:
-                left = _context5.t10;
-                _context5.next = 50;
+                left = _context3.t10;
+                _context3.next = 50;
                 break;
 
               case 49:
                 left = null;
 
               case 50:
-                return _context5.delegateYield(this.setOperation(target), 't11', 51);
+                return _context3.delegateYield(this.setOperation(target), 't11', 51);
 
               case 51:
                 if (!(target.right != null)) {
-                  _context5.next = 56;
+                  _context3.next = 56;
                   break;
                 }
 
-                return _context5.delegateYield(this.getOperation(target.right), 't12', 53);
+                return _context3.delegateYield(this.getOperation(target.right), 't12', 53);
 
               case 53:
-                right = _context5.t12;
-                _context5.next = 57;
+                right = _context3.t12;
+                _context3.next = 57;
                 break;
 
               case 56:
@@ -3890,34 +3867,34 @@ module.exports = function (Y /* :any */) {
 
               case 57:
                 if (!(callType && !preventCallType)) {
-                  _context5.next = 59;
+                  _context3.next = 59;
                   break;
                 }
 
-                return _context5.delegateYield(this.store.operationAdded(this, {
+                return _context3.delegateYield(this.store.operationAdded(this, {
                   struct: 'Delete',
                   target: target.id,
                   length: targetLength
                 }), 't13', 59);
 
               case 59:
-                return _context5.delegateYield(this.store.addToGarbageCollector.call(this, target, left), 't14', 60);
+                return _context3.delegateYield(this.store.addToGarbageCollector.call(this, target, left), 't14', 60);
 
               case 60:
                 if (!(right != null)) {
-                  _context5.next = 62;
+                  _context3.next = 62;
                   break;
                 }
 
-                return _context5.delegateYield(this.store.addToGarbageCollector.call(this, right, target), 't15', 62);
+                return _context3.delegateYield(this.store.addToGarbageCollector.call(this, right, target), 't15', 62);
 
               case 62:
-                _context5.next = 2;
+                _context3.next = 2;
                 break;
 
               case 64:
               case 'end':
-                return _context5.stop();
+                return _context3.stop();
             }
           }
         }, deleteOperation, this);
@@ -3930,19 +3907,19 @@ module.exports = function (Y /* :any */) {
       key: 'markGarbageCollected',
       value: regeneratorRuntime.mark(function markGarbageCollected(id, len) {
         var n, newlen, prev, next;
-        return regeneratorRuntime.wrap(function markGarbageCollected$(_context6) {
+        return regeneratorRuntime.wrap(function markGarbageCollected$(_context4) {
           while (1) {
-            switch (_context6.prev = _context6.next) {
+            switch (_context4.prev = _context4.next) {
               case 0:
                 // this.mem.push(["gc", id]);
                 this.store.addToDebug('yield* this.markGarbageCollected(', id, ', ', len, ')');
-                return _context6.delegateYield(this.markDeleted(id, len), 't0', 2);
+                return _context4.delegateYield(this.markDeleted(id, len), 't0', 2);
 
               case 2:
-                n = _context6.t0;
+                n = _context4.t0;
 
                 if (!(n.id[1] < id[1] && !n.gc)) {
-                  _context6.next = 9;
+                  _context4.next = 9;
                   break;
                 }
 
@@ -3950,28 +3927,28 @@ module.exports = function (Y /* :any */) {
                 newlen = n.len - (id[1] - n.id[1]);
 
                 n.len -= newlen;
-                return _context6.delegateYield(this.ds.put(n), 't1', 7);
+                return _context4.delegateYield(this.ds.put(n), 't1', 7);
 
               case 7:
                 n = { id: id, len: newlen, gc: false };
-                return _context6.delegateYield(this.ds.put(n), 't2', 9);
+                return _context4.delegateYield(this.ds.put(n), 't2', 9);
 
               case 9:
-                return _context6.delegateYield(this.ds.findPrev(id), 't3', 10);
+                return _context4.delegateYield(this.ds.findPrev(id), 't3', 10);
 
               case 10:
-                prev = _context6.t3;
-                return _context6.delegateYield(this.ds.findNext(id), 't4', 12);
+                prev = _context4.t3;
+                return _context4.delegateYield(this.ds.findNext(id), 't4', 12);
 
               case 12:
-                next = _context6.t4;
+                next = _context4.t4;
 
                 if (!(id[1] + len < n.id[1] + n.len && !n.gc)) {
-                  _context6.next = 16;
+                  _context4.next = 16;
                   break;
                 }
 
-                return _context6.delegateYield(this.ds.put({ id: [id[0], id[1] + len], len: n.len - len, gc: false }), 't5', 15);
+                return _context4.delegateYield(this.ds.put({ id: [id[0], id[1] + len], len: n.len - len, gc: false }), 't5', 15);
 
               case 15:
                 n.len = len;
@@ -3982,12 +3959,12 @@ module.exports = function (Y /* :any */) {
                 // can extend left?
 
                 if (!(prev != null && prev.gc && Y.utils.compareIds([prev.id[0], prev.id[1] + prev.len], n.id))) {
-                  _context6.next = 21;
+                  _context4.next = 21;
                   break;
                 }
 
                 prev.len += n.len;
-                return _context6.delegateYield(this.ds.delete(n.id), 't6', 20);
+                return _context4.delegateYield(this.ds.delete(n.id), 't6', 20);
 
               case 20:
                 n = prev;
@@ -3995,22 +3972,22 @@ module.exports = function (Y /* :any */) {
 
               case 21:
                 if (!(next != null && next.gc && Y.utils.compareIds([n.id[0], n.id[1] + n.len], next.id))) {
-                  _context6.next = 24;
+                  _context4.next = 24;
                   break;
                 }
 
                 n.len += next.len;
-                return _context6.delegateYield(this.ds.delete(next.id), 't7', 24);
+                return _context4.delegateYield(this.ds.delete(next.id), 't7', 24);
 
               case 24:
-                return _context6.delegateYield(this.ds.put(n), 't8', 25);
+                return _context4.delegateYield(this.ds.put(n), 't8', 25);
 
               case 25:
-                return _context6.delegateYield(this.updateState(n.id[0]), 't9', 26);
+                return _context4.delegateYield(this.updateState(n.id[0]), 't9', 26);
 
               case 26:
               case 'end':
-                return _context6.stop();
+                return _context4.stop();
             }
           }
         }, markGarbageCollected, this);
@@ -4025,26 +4002,26 @@ module.exports = function (Y /* :any */) {
       value: regeneratorRuntime.mark(function markDeleted(id, length) {
         var n, diff, next, _next;
 
-        return regeneratorRuntime.wrap(function markDeleted$(_context7) {
+        return regeneratorRuntime.wrap(function markDeleted$(_context5) {
           while (1) {
-            switch (_context7.prev = _context7.next) {
+            switch (_context5.prev = _context5.next) {
               case 0:
                 if (length == null) {
                   length = 1;
                 }
                 // this.mem.push(["del", id]);
-                return _context7.delegateYield(this.ds.findWithUpperBound(id), 't0', 2);
+                return _context5.delegateYield(this.ds.findWithUpperBound(id), 't0', 2);
 
               case 2:
-                n = _context7.t0;
+                n = _context5.t0;
 
                 if (!(n != null && n.id[0] === id[0])) {
-                  _context7.next = 27;
+                  _context5.next = 27;
                   break;
                 }
 
                 if (!(n.id[1] <= id[1] && id[1] <= n.id[1] + n.len)) {
-                  _context7.next = 23;
+                  _context5.next = 23;
                   break;
                 }
 
@@ -4052,71 +4029,71 @@ module.exports = function (Y /* :any */) {
                 diff = id[1] + length - (n.id[1] + n.len); // overlapping right
 
                 if (!(diff > 0)) {
-                  _context7.next = 20;
+                  _context5.next = 20;
                   break;
                 }
 
                 if (n.gc) {
-                  _context7.next = 11;
+                  _context5.next = 11;
                   break;
                 }
 
                 n.len += diff;
-                _context7.next = 18;
+                _context5.next = 18;
                 break;
 
               case 11:
                 diff = n.id[1] + n.len - id[1]; // overlapping left (id till n.end)
 
                 if (!(diff < length)) {
-                  _context7.next = 17;
+                  _context5.next = 17;
                   break;
                 }
 
                 // a partial deletion
                 n = { id: [id[0], id[1] + diff], len: length - diff, gc: false };
-                return _context7.delegateYield(this.ds.put(n), 't1', 15);
+                return _context5.delegateYield(this.ds.put(n), 't1', 15);
 
               case 15:
-                _context7.next = 18;
+                _context5.next = 18;
                 break;
 
               case 17:
                 throw new Error('Cannot happen! (it dit though.. :()');
 
               case 18:
-                _context7.next = 21;
+                _context5.next = 21;
                 break;
 
               case 20:
-                return _context7.abrupt('return', n);
+                return _context5.abrupt('return', n);
 
               case 21:
-                _context7.next = 25;
+                _context5.next = 25;
                 break;
 
               case 23:
                 // cannot extend left (there is no left!)
                 n = { id: id, len: length, gc: false };
-                return _context7.delegateYield(this.ds.put(n), 't2', 25);
+                return _context5.delegateYield(this.ds.put(n), 't2', 25);
 
               case 25:
-                _context7.next = 29;
+                _context5.next = 29;
                 break;
 
               case 27:
                 // cannot extend left
                 n = { id: id, len: length, gc: false };
-                return _context7.delegateYield(this.ds.put(n), 't3', 29);
+                return _context5.delegateYield(this.ds.put(n), 't3', 29);
 
               case 29:
-                return _context7.delegateYield(this.ds.findNext(n.id), 't4', 30);
+                return _context5.delegateYield(this.ds.findNext(n.id), 't4', 30);
 
               case 30:
-                next = _context7.t4;
+                next = _context5.t4;
 
                 if (!(next != null && n.id[0] === next.id[0] && n.id[1] + n.len >= next.id[1])) {
-                  _context7.next = 61;
+                  _context5.next = 61;
                   break;
                 }
 
@@ -4124,12 +4101,12 @@ module.exports = function (Y /* :any */) {
 
               case 33:
                 if (!(diff >= 0)) {
-                  _context7.next = 61;
+                  _context5.next = 61;
                   break;
                 }
 
                 if (!next.gc) {
-                  _context7.next = 44;
+                  _context5.next = 44;
                   break;
                 }
 
@@ -4137,7 +4114,7 @@ module.exports = function (Y /* :any */) {
                 n.len -= diff;
 
                 if (!(diff >= next.len)) {
-                  _context7.next = 41;
+                  _context5.next = 41;
                   break;
                 }
 
@@ -4145,37 +4122,37 @@ module.exports = function (Y /* :any */) {
                 diff = diff - next.len; // missing range after next
 
                 if (!(diff > 0)) {
-                  _context7.next = 41;
+                  _context5.next = 41;
                   break;
                 }
 
-                return _context7.delegateYield(this.ds.put(n), 't5', 40);
+                return _context5.delegateYield(this.ds.put(n), 't5', 40);
 
               case 40:
-                return _context7.delegateYield(this.markDeleted([next.id[0], next.id[1] + next.len], diff), 't6', 41);
+                return _context5.delegateYield(this.markDeleted([next.id[0], next.id[1] + next.len], diff), 't6', 41);
 
               case 41:
-                return _context7.abrupt('break', 61);
+                return _context5.abrupt('break', 61);
 
               case 44:
                 if (!(diff > next.len)) {
-                  _context7.next = 56;
+                  _context5.next = 56;
                   break;
                 }
 
-                return _context7.delegateYield(this.ds.findNext(next.id), 't7', 46);
+                return _context5.delegateYield(this.ds.findNext(next.id), 't7', 46);
 
               case 46:
-                _next = _context7.t7;
-                return _context7.delegateYield(this.ds.delete(next.id), 't8', 48);
+                _next = _context5.t7;
+                return _context5.delegateYield(this.ds.delete(next.id), 't8', 48);
 
               case 48:
                 if (!(_next == null || n.id[0] !== _next.id[0])) {
-                  _context7.next = 52;
+                  _context5.next = 52;
                   break;
                 }
 
-                return _context7.abrupt('break', 61);
+                return _context5.abrupt('break', 61);
 
               case 52:
                 next = _next;
@@ -4183,30 +4160,30 @@ module.exports = function (Y /* :any */) {
                 // continue!
 
               case 54:
-                _context7.next = 59;
+                _context5.next = 59;
                 break;
 
               case 56:
                 // n just partially overlaps with next. extend n, delete next, and break this loop
                 n.len += next.len - diff;
-                return _context7.delegateYield(this.ds.delete(next.id), 't9', 58);
+                return _context5.delegateYield(this.ds.delete(next.id), 't9', 58);
 
               case 58:
-                return _context7.abrupt('break', 61);
+                return _context5.abrupt('break', 61);
 
               case 59:
-                _context7.next = 33;
+                _context5.next = 33;
                 break;
 
               case 61:
-                return _context7.delegateYield(this.ds.put(n), 't10', 62);
+                return _context5.delegateYield(this.ds.put(n), 't10', 62);
 
               case 62:
-                return _context7.abrupt('return', n);
+                return _context5.abrupt('return', n);
 
               case 63:
               case 'end':
-                return _context7.stop();
+                return _context5.stop();
             }
           }
         }, markDeleted, this);
@@ -4220,65 +4197,65 @@ module.exports = function (Y /* :any */) {
     }, {
       key: 'garbageCollectAfterSync',
       value: regeneratorRuntime.mark(function garbageCollectAfterSync() {
-        return regeneratorRuntime.wrap(function garbageCollectAfterSync$(_context9) {
+        return regeneratorRuntime.wrap(function garbageCollectAfterSync$(_context7) {
           while (1) {
-            switch (_context9.prev = _context9.next) {
+            switch (_context7.prev = _context7.next) {
               case 0:
                 if (this.store.gc1.length > 0 || this.store.gc2.length > 0) {
                   console.warn('gc should be empty after sync');
                 }
-                return _context9.delegateYield(this.os.iterate(this, null, null, regeneratorRuntime.mark(function _callee(op) {
+                return _context7.delegateYield(this.os.iterate(this, null, null, regeneratorRuntime.mark(function _callee(op) {
                   var parentDeleted, i, left;
-                  return regeneratorRuntime.wrap(function _callee$(_context8) {
+                  return regeneratorRuntime.wrap(function _callee$(_context6) {
                     while (1) {
-                      switch (_context8.prev = _context8.next) {
+                      switch (_context6.prev = _context6.next) {
                         case 0:
                           if (!op.gc) {
-                            _context8.next = 3;
+                            _context6.next = 3;
                             break;
                           }
 
                           delete op.gc;
-                          return _context8.delegateYield(this.setOperation(op), 't0', 3);
+                          return _context6.delegateYield(this.setOperation(op), 't0', 3);
 
                         case 3:
                           if (!(op.parent != null)) {
-                            _context8.next = 23;
+                            _context6.next = 23;
                             break;
                           }
 
-                          return _context8.delegateYield(this.isDeleted(op.parent), 't1', 5);
+                          return _context6.delegateYield(this.isDeleted(op.parent), 't1', 5);
 
                         case 5:
-                          parentDeleted = _context8.t1;
+                          parentDeleted = _context6.t1;
 
                           if (!parentDeleted) {
-                            _context8.next = 23;
+                            _context6.next = 23;
                             break;
                           }
 
                           op.gc = true;
 
                           if (op.deleted) {
-                            _context8.next = 20;
+                            _context6.next = 20;
                             break;
                           }
 
-                          return _context8.delegateYield(this.markDeleted(op.id, op.content != null ? op.content.length : 1), 't2', 10);
+                          return _context6.delegateYield(this.markDeleted(op.id, op.content != null ? op.content.length : 1), 't2', 10);
 
                         case 10:
                           op.deleted = true;
 
                           if (!(op.opContent != null)) {
-                            _context8.next = 13;
+                            _context6.next = 13;
                             break;
                           }
 
-                          return _context8.delegateYield(this.deleteOperation(op.opContent), 't3', 13);
+                          return _context6.delegateYield(this.deleteOperation(op.opContent), 't3', 13);
 
                         case 13:
                           if (!(op.requires != null)) {
-                            _context8.next = 20;
+                            _context6.next = 20;
                             break;
                           }
 
@@ -4286,48 +4263,48 @@ module.exports = function (Y /* :any */) {
 
                         case 15:
                           if (!(i < op.requires.length)) {
-                            _context8.next = 20;
+                            _context6.next = 20;
                             break;
                           }
 
-                          return _context8.delegateYield(this.deleteOperation(op.requires[i]), 't4', 17);
+                          return _context6.delegateYield(this.deleteOperation(op.requires[i]), 't4', 17);
 
                         case 17:
                           i++;
-                          _context8.next = 15;
+                          _context6.next = 15;
                           break;
 
                         case 20:
-                          return _context8.delegateYield(this.setOperation(op), 't5', 21);
+                          return _context6.delegateYield(this.setOperation(op), 't5', 21);
 
                         case 21:
                           this.store.gc1.push(op.id); // this is ok becaues its shortly before sync (otherwise use queueGarbageCollector!)
-                          return _context8.abrupt('return');
+                          return _context6.abrupt('return');
 
                         case 23:
                           if (!op.deleted) {
-                            _context8.next = 29;
+                            _context6.next = 29;
                             break;
                           }
 
                           left = null;
 
                           if (!(op.left != null)) {
-                            _context8.next = 28;
+                            _context6.next = 28;
                             break;
                           }
 
-                          return _context8.delegateYield(this.getInsertion(op.left), 't6', 27);
+                          return _context6.delegateYield(this.getInsertion(op.left), 't6', 27);
 
                         case 27:
-                          left = _context8.t6;
+                          left = _context6.t6;
 
                         case 28:
-                          return _context8.delegateYield(this.store.addToGarbageCollector.call(this, op, left), 't7', 29);
+                          return _context6.delegateYield(this.store.addToGarbageCollector.call(this, op, left), 't7', 29);
 
                         case 29:
                         case 'end':
-                          return _context8.stop();
+                          return _context6.stop();
                       }
                     }
                   }, _callee, this);
@@ -4335,7 +4312,7 @@ module.exports = function (Y /* :any */) {
 
               case 2:
               case 'end':
-                return _context9.stop();
+                return _context7.stop();
             }
           }
         }, garbageCollectAfterSync, this);
@@ -4355,20 +4332,20 @@ module.exports = function (Y /* :any */) {
       value: regeneratorRuntime.mark(function garbageCollectOperation(id) {
         var o, deps, i, dep, left, right, neworigin, neworigin_, _i, originsIn, origin, parent, setParent;
 
-        return regeneratorRuntime.wrap(function garbageCollectOperation$(_context10) {
+        return regeneratorRuntime.wrap(function garbageCollectOperation$(_context8) {
           while (1) {
-            switch (_context10.prev = _context10.next) {
+            switch (_context8.prev = _context8.next) {
               case 0:
                 this.store.addToDebug('yield* this.garbageCollectOperation(', id, ')');
-                return _context10.delegateYield(this.getOperation(id), 't0', 2);
+                return _context8.delegateYield(this.getOperation(id), 't0', 2);
 
               case 2:
-                o = _context10.t0;
-                return _context10.delegateYield(this.markGarbageCollected(id, o != null && o.content != null ? o.content.length : 1), 't1', 4);
+                o = _context8.t0;
+                return _context8.delegateYield(this.markGarbageCollected(id, o != null && o.content != null ? o.content.length : 1), 't1', 4);
 
               case 4:
                 if (!(o != null)) {
-                  _context10.next = 74;
+                  _context8.next = 74;
                   break;
                 }
 
@@ -4384,81 +4361,81 @@ module.exports = function (Y /* :any */) {
 
               case 9:
                 if (!(i < deps.length)) {
-                  _context10.next = 26;
+                  _context8.next = 26;
                   break;
                 }
 
-                return _context10.delegateYield(this.getOperation(deps[i]), 't2', 11);
+                return _context8.delegateYield(this.getOperation(deps[i]), 't2', 11);
 
               case 11:
-                dep = _context10.t2;
+                dep = _context8.t2;
 
                 if (!(dep != null)) {
-                  _context10.next = 22;
+                  _context8.next = 22;
                   break;
                 }
 
                 if (dep.deleted) {
-                  _context10.next = 17;
+                  _context8.next = 17;
                   break;
                 }
 
-                return _context10.delegateYield(this.deleteOperation(dep.id), 't3', 15);
+                return _context8.delegateYield(this.deleteOperation(dep.id), 't3', 15);
 
               case 15:
-                return _context10.delegateYield(this.getOperation(dep.id), 't4', 16);
+                return _context8.delegateYield(this.getOperation(dep.id), 't4', 16);
 
               case 16:
-                dep = _context10.t4;
+                dep = _context8.t4;
 
               case 17:
                 dep.gc = true;
-                return _context10.delegateYield(this.setOperation(dep), 't5', 19);
+                return _context8.delegateYield(this.setOperation(dep), 't5', 19);
 
               case 19:
                 this.store.queueGarbageCollector(dep.id);
-                _context10.next = 23;
+                _context8.next = 23;
                 break;
 
               case 22:
-                return _context10.delegateYield(this.markGarbageCollected(deps[i], 1), 't6', 23);
+                return _context8.delegateYield(this.markGarbageCollected(deps[i], 1), 't6', 23);
 
               case 23:
                 i++;
-                _context10.next = 9;
+                _context8.next = 9;
                 break;
 
               case 26:
                 if (!(o.left != null)) {
-                  _context10.next = 31;
+                  _context8.next = 31;
                   break;
                 }
 
-                return _context10.delegateYield(this.getInsertion(o.left), 't7', 28);
+                return _context8.delegateYield(this.getInsertion(o.left), 't7', 28);
 
               case 28:
-                left = _context10.t7;
+                left = _context8.t7;
 
                 left.right = o.right;
-                return _context10.delegateYield(this.setOperation(left), 't8', 31);
+                return _context8.delegateYield(this.setOperation(left), 't8', 31);
 
               case 31:
                 if (!(o.right != null)) {
-                  _context10.next = 60;
+                  _context8.next = 60;
                   break;
                 }
 
-                return _context10.delegateYield(this.getOperation(o.right), 't9', 33);
+                return _context8.delegateYield(this.getOperation(o.right), 't9', 33);
 
               case 33:
-                right = _context10.t9;
+                right = _context8.t9;
 
                 right.left = o.left;
-                return _context10.delegateYield(this.setOperation(right), 't10', 36);
+                return _context8.delegateYield(this.setOperation(right), 't10', 36);
 
               case 36:
                 if (!(o.originOf != null && o.originOf.length > 0)) {
-                  _context10.next = 60;
+                  _context8.next = 60;
                   break;
                 }
 
@@ -4469,57 +4446,57 @@ module.exports = function (Y /* :any */) {
 
               case 39:
                 if (!(neworigin != null)) {
-                  _context10.next = 47;
+                  _context8.next = 47;
                   break;
                 }
 
-                return _context10.delegateYield(this.getInsertion(neworigin), 't11', 41);
+                return _context8.delegateYield(this.getInsertion(neworigin), 't11', 41);
 
               case 41:
-                neworigin_ = _context10.t11;
+                neworigin_ = _context8.t11;
 
                 if (!neworigin_.deleted) {
-                  _context10.next = 44;
+                  _context8.next = 44;
                   break;
                 }
 
-                return _context10.abrupt('break', 47);
+                return _context8.abrupt('break', 47);
 
               case 44:
                 neworigin = neworigin_.left;
-                _context10.next = 39;
+                _context8.next = 39;
                 break;
 
               case 47:
-                _context10.t12 = regeneratorRuntime.keys(o.originOf);
+                _context8.t12 = regeneratorRuntime.keys(o.originOf);
 
               case 48:
-                if ((_context10.t13 = _context10.t12()).done) {
-                  _context10.next = 57;
+                if ((_context8.t13 = _context8.t12()).done) {
+                  _context8.next = 57;
                   break;
                 }
 
-                _i = _context10.t13.value;
-                return _context10.delegateYield(this.getOperation(o.originOf[_i]), 't14', 51);
+                _i = _context8.t13.value;
+                return _context8.delegateYield(this.getOperation(o.originOf[_i]), 't14', 51);
 
               case 51:
-                originsIn = _context10.t14;
+                originsIn = _context8.t14;
 
                 if (!(originsIn != null)) {
-                  _context10.next = 55;
+                  _context8.next = 55;
                   break;
                 }
 
                 originsIn.origin = neworigin;
-                return _context10.delegateYield(this.setOperation(originsIn), 't15', 55);
+                return _context8.delegateYield(this.setOperation(originsIn), 't15', 55);
 
               case 55:
-                _context10.next = 48;
+                _context8.next = 48;
                 break;
 
               case 57:
                 if (!(neworigin != null)) {
-                  _context10.next = 60;
+                  _context8.next = 60;
                   break;
                 }
 
@@ -4528,38 +4505,38 @@ module.exports = function (Y /* :any */) {
                 } else {
                   neworigin_.originOf = o.originOf.concat(neworigin_.originOf);
                 }
-                return _context10.delegateYield(this.setOperation(neworigin_), 't16', 60);
+                return _context8.delegateYield(this.setOperation(neworigin_), 't16', 60);
 
               case 60:
                 if (!(o.origin != null)) {
-                  _context10.next = 65;
+                  _context8.next = 65;
                   break;
                 }
 
-                return _context10.delegateYield(this.getInsertion(o.origin), 't17', 62);
+                return _context8.delegateYield(this.getInsertion(o.origin), 't17', 62);
 
               case 62:
-                origin = _context10.t17;
+                origin = _context8.t17;
 
                 origin.originOf = origin.originOf.filter(function (_id) {
                   return !Y.utils.compareIds(id, _id);
                 });
-                return _context10.delegateYield(this.setOperation(origin), 't18', 65);
+                return _context8.delegateYield(this.setOperation(origin), 't18', 65);
 
               case 65:
                 if (!(o.parent != null)) {
-                  _context10.next = 68;
+                  _context8.next = 68;
                   break;
                 }
 
-                return _context10.delegateYield(this.getOperation(o.parent), 't19', 67);
+                return _context8.delegateYield(this.getOperation(o.parent), 't19', 67);
 
               case 67:
-                parent = _context10.t19;
+                parent = _context8.t19;
 
               case 68:
                 if (!(parent != null)) {
-                  _context10.next = 73;
+                  _context8.next = 73;
                   break;
                 }
 
@@ -4588,18 +4565,18 @@ module.exports = function (Y /* :any */) {
                 }
 
                 if (!setParent) {
-                  _context10.next = 73;
+                  _context8.next = 73;
                   break;
                 }
 
-                return _context10.delegateYield(this.setOperation(parent), 't20', 73);
+                return _context8.delegateYield(this.setOperation(parent), 't20', 73);
 
               case 73:
-                return _context10.delegateYield(this.removeOperation(o.id), 't21', 74);
+                return _context8.delegateYield(this.removeOperation(o.id), 't21', 74);
 
               case 74:
               case 'end':
-                return _context10.stop();
+                return _context8.stop();
             }
           }
         }, garbageCollectOperation, this);
@@ -4608,14 +4585,14 @@ module.exports = function (Y /* :any */) {
       key: 'checkDeleteStoreForState',
       value: regeneratorRuntime.mark(function checkDeleteStoreForState(state) {
         var n;
-        return regeneratorRuntime.wrap(function checkDeleteStoreForState$(_context11) {
+        return regeneratorRuntime.wrap(function checkDeleteStoreForState$(_context9) {
           while (1) {
-            switch (_context11.prev = _context11.next) {
+            switch (_context9.prev = _context9.next) {
               case 0:
-                return _context11.delegateYield(this.ds.findWithUpperBound([state.user, state.clock]), 't0', 1);
+                return _context9.delegateYield(this.ds.findWithUpperBound([state.user, state.clock]), 't0', 1);
 
               case 1:
-                n = _context11.t0;
+                n = _context9.t0;
 
                 if (n != null && n.id[0] === state.user && n.gc) {
                   state.clock = Math.max(state.clock, n.id[1] + n.len);
@@ -4623,7 +4600,7 @@ module.exports = function (Y /* :any */) {
 
               case 3:
               case 'end':
-                return _context11.stop();
+                return _context9.stop();
             }
           }
         }, checkDeleteStoreForState, this);
@@ -4632,49 +4609,49 @@ module.exports = function (Y /* :any */) {
       key: 'updateState',
       value: regeneratorRuntime.mark(function updateState(user) {
         var state, o, oLength;
-        return regeneratorRuntime.wrap(function updateState$(_context12) {
+        return regeneratorRuntime.wrap(function updateState$(_context10) {
           while (1) {
-            switch (_context12.prev = _context12.next) {
+            switch (_context10.prev = _context10.next) {
               case 0:
-                return _context12.delegateYield(this.getState(user), 't0', 1);
+                return _context10.delegateYield(this.getState(user), 't0', 1);
 
               case 1:
-                state = _context12.t0;
-                return _context12.delegateYield(this.checkDeleteStoreForState(state), 't1', 3);
+                state = _context10.t0;
+                return _context10.delegateYield(this.checkDeleteStoreForState(state), 't1', 3);
 
               case 3:
-                return _context12.delegateYield(this.getInsertion([user, state.clock]), 't2', 4);
+                return _context10.delegateYield(this.getInsertion([user, state.clock]), 't2', 4);
 
               case 4:
-                o = _context12.t2;
+                o = _context10.t2;
                 oLength = o != null && o.content != null ? o.content.length : 1;
 
               case 6:
                 if (!(o != null && user === o.id[0] && o.id[1] <= state.clock && o.id[1] + oLength > state.clock)) {
-                  _context12.next = 14;
+                  _context10.next = 14;
                   break;
                 }
 
                 // either its a new operation (1. case), or it is an operation that was deleted, but is not yet in the OS
                 state.clock += oLength;
-                return _context12.delegateYield(this.checkDeleteStoreForState(state), 't3', 9);
+                return _context10.delegateYield(this.checkDeleteStoreForState(state), 't3', 9);
 
               case 9:
-                return _context12.delegateYield(this.os.findNext(o.id), 't4', 10);
+                return _context10.delegateYield(this.os.findNext(o.id), 't4', 10);
 
               case 10:
-                o = _context12.t4;
+                o = _context10.t4;
 
                 oLength = o != null && o.content != null ? o.content.length : 1;
-                _context12.next = 6;
+                _context10.next = 6;
                 break;
 
               case 14:
-                return _context12.delegateYield(this.setState(state), 't5', 15);
+                return _context10.delegateYield(this.setState(state), 't5', 15);
 
               case 15:
               case 'end':
-                return _context12.stop();
+                return _context10.stop();
             }
           }
         }, updateState, this);
@@ -4688,42 +4665,42 @@ module.exports = function (Y /* :any */) {
       key: 'applyDeleteSet',
       value: regeneratorRuntime.mark(function applyDeleteSet(ds) {
         var deletions, user, dv, pos, d, i, del, counter, o, oLen, ops;
-        return regeneratorRuntime.wrap(function applyDeleteSet$(_context14) {
+        return regeneratorRuntime.wrap(function applyDeleteSet$(_context12) {
           while (1) {
-            switch (_context14.prev = _context14.next) {
+            switch (_context12.prev = _context12.next) {
               case 0:
                 deletions = [];
-                _context14.t0 = regeneratorRuntime.keys(ds);
+                _context12.t0 = regeneratorRuntime.keys(ds);
 
               case 2:
-                if ((_context14.t1 = _context14.t0()).done) {
-                  _context14.next = 11;
+                if ((_context12.t1 = _context12.t0()).done) {
+                  _context12.next = 11;
                   break;
                 }
 
-                user = _context14.t1.value;
+                user = _context12.t1.value;
                 dv = ds[user];
                 pos = 0;
                 d = dv[pos];
-                return _context14.delegateYield(this.ds.iterate(this, [user, 0], [user, Number.MAX_VALUE], regeneratorRuntime.mark(function _callee2(n) {
+                return _context12.delegateYield(this.ds.iterate(this, [user, 0], [user, Number.MAX_VALUE], regeneratorRuntime.mark(function _callee2(n) {
                   var diff;
-                  return regeneratorRuntime.wrap(function _callee2$(_context13) {
+                  return regeneratorRuntime.wrap(function _callee2$(_context11) {
                     while (1) {
-                      switch (_context13.prev = _context13.next) {
+                      switch (_context11.prev = _context11.next) {
                         case 0:
                           if (!(d != null)) {
-                            _context13.next = 10;
+                            _context11.next = 10;
                             break;
                           }
 
                           diff = 0; // describe the diff of length in 1) and 2)
 
                           if (!(n.id[1] + n.len <= d[0])) {
-                            _context13.next = 6;
+                            _context11.next = 6;
                             break;
                           }
 
-                          return _context13.abrupt('break', 10);
+                          return _context11.abrupt('break', 10);
 
                         case 6:
                           if (d[0] < n.id[1]) {
@@ -4750,12 +4727,12 @@ module.exports = function (Y /* :any */) {
                             d[0] = d[0] + diff; // reset pos
                             d[1] = d[1] - diff; // reset length
                           }
-                          _context13.next = 0;
+                          _context11.next = 0;
                           break;
 
                         case 10:
                         case 'end':
-                          return _context13.stop();
+                          return _context11.stop();
                       }
                     }
                   }, _callee2, this);
@@ -4767,7 +4744,7 @@ module.exports = function (Y /* :any */) {
                   d = dv[pos];
                   deletions.push([user, d[0], d[1], d[2]]);
                 }
-                _context14.next = 2;
+                _context12.next = 2;
                 break;
 
               case 11:
@@ -4775,22 +4752,22 @@ module.exports = function (Y /* :any */) {
 
               case 12:
                 if (!(i < deletions.length)) {
-                  _context14.next = 40;
+                  _context12.next = 40;
                   break;
                 }
 
                 del = deletions[i];
                 // always try to delete..
 
-                return _context14.delegateYield(this.deleteOperation([del[0], del[1]], del[2]), 't3', 15);
+                return _context12.delegateYield(this.deleteOperation([del[0], del[1]], del[2]), 't3', 15);
 
               case 15:
                 if (!del[3]) {
-                  _context14.next = 36;
+                  _context12.next = 36;
                   break;
                 }
 
-                return _context14.delegateYield(this.markGarbageCollected([del[0], del[1]], del[2]), 't4', 17);
+                return _context12.delegateYield(this.markGarbageCollected([del[0], del[1]], del[2]), 't4', 17);
 
               case 17:
                 // always mark gc'd
@@ -4799,60 +4776,60 @@ module.exports = function (Y /* :any */) {
 
               case 18:
                 if (!(counter >= del[1])) {
-                  _context14.next = 36;
+                  _context12.next = 36;
                   break;
                 }
 
-                return _context14.delegateYield(this.os.findWithUpperBound([del[0], counter - 1]), 't5', 20);
+                return _context12.delegateYield(this.os.findWithUpperBound([del[0], counter - 1]), 't5', 20);
 
               case 20:
-                o = _context14.t5;
+                o = _context12.t5;
 
                 if (!(o == null)) {
-                  _context14.next = 23;
+                  _context12.next = 23;
                   break;
                 }
 
-                return _context14.abrupt('break', 36);
+                return _context12.abrupt('break', 36);
 
               case 23:
                 oLen = o.content != null ? o.content.length : 1;
 
                 if (!(o.id[0] !== del[0] || o.id[1] + oLen <= del[1])) {
-                  _context14.next = 26;
+                  _context12.next = 26;
                   break;
                 }
 
-                return _context14.abrupt('break', 36);
+                return _context12.abrupt('break', 36);
 
               case 26:
                 if (!(o.id[1] + oLen > del[1] + del[2])) {
-                  _context14.next = 29;
+                  _context12.next = 29;
                   break;
                 }
 
-                return _context14.delegateYield(this.getInsertionCleanEnd([del[0], del[1] + del[2] - 1]), 't6', 28);
+                return _context12.delegateYield(this.getInsertionCleanEnd([del[0], del[1] + del[2] - 1]), 't6', 28);
 
               case 28:
-                o = _context14.t6;
+                o = _context12.t6;
 
               case 29:
                 if (!(o.id[1] < del[1])) {
-                  _context14.next = 32;
+                  _context12.next = 32;
                   break;
                 }
 
-                return _context14.delegateYield(this.getInsertionCleanStart([del[0], del[1]]), 't7', 31);
+                return _context12.delegateYield(this.getInsertionCleanStart([del[0], del[1]]), 't7', 31);
 
               case 31:
-                o = _context14.t7;
+                o = _context12.t7;
 
               case 32:
                 counter = o.id[1];
-                return _context14.delegateYield(this.garbageCollectOperation(o.id), 't8', 34);
+                return _context12.delegateYield(this.garbageCollectOperation(o.id), 't8', 34);
 
               case 34:
-                _context14.next = 18;
+                _context12.next = 18;
                 break;
 
               case 36:
@@ -4865,12 +4842,12 @@ module.exports = function (Y /* :any */) {
 
               case 37:
                 i++;
-                _context14.next = 12;
+                _context12.next = 12;
                 break;
 
               case 40:
               case 'end':
-                return _context14.stop();
+                return _context12.stop();
             }
           }
         }, applyDeleteSet, this);
@@ -4879,19 +4856,19 @@ module.exports = function (Y /* :any */) {
       key: 'isGarbageCollected',
       value: regeneratorRuntime.mark(function isGarbageCollected(id) {
         var n;
-        return regeneratorRuntime.wrap(function isGarbageCollected$(_context15) {
+        return regeneratorRuntime.wrap(function isGarbageCollected$(_context13) {
           while (1) {
-            switch (_context15.prev = _context15.next) {
+            switch (_context13.prev = _context13.next) {
               case 0:
-                return _context15.delegateYield(this.ds.findWithUpperBound(id), 't0', 1);
+                return _context13.delegateYield(this.ds.findWithUpperBound(id), 't0', 1);
 
               case 1:
-                n = _context15.t0;
-                return _context15.abrupt('return', n != null && n.id[0] === id[0] && id[1] < n.id[1] + n.len && n.gc);
+                n = _context13.t0;
+                return _context13.abrupt('return', n != null && n.id[0] === id[0] && id[1] < n.id[1] + n.len && n.gc);
 
               case 3:
               case 'end':
-                return _context15.stop();
+                return _context13.stop();
             }
           }
         }, isGarbageCollected, this);
@@ -4904,16 +4881,16 @@ module.exports = function (Y /* :any */) {
       key: 'getDeleteSet',
       value: regeneratorRuntime.mark(function getDeleteSet() {
         var ds;
-        return regeneratorRuntime.wrap(function getDeleteSet$(_context17) {
+        return regeneratorRuntime.wrap(function getDeleteSet$(_context15) {
           while (1) {
-            switch (_context17.prev = _context17.next) {
+            switch (_context15.prev = _context15.next) {
               case 0:
                 ds = {};
-                return _context17.delegateYield(this.ds.iterate(this, null, null, regeneratorRuntime.mark(function _callee3(n) {
+                return _context15.delegateYield(this.ds.iterate(this, null, null, regeneratorRuntime.mark(function _callee3(n) {
                   var user, counter, len, gc, dv;
-                  return regeneratorRuntime.wrap(function _callee3$(_context16) {
+                  return regeneratorRuntime.wrap(function _callee3$(_context14) {
                     while (1) {
-                      switch (_context16.prev = _context16.next) {
+                      switch (_context14.prev = _context14.next) {
                         case 0:
                           user = n.id[0];
                           counter = n.id[1];
@@ -4929,18 +4906,18 @@ module.exports = function (Y /* :any */) {
 
                         case 7:
                         case 'end':
-                          return _context16.stop();
+                          return _context14.stop();
                       }
                     }
                   }, _callee3, this);
                 })), 't0', 2);
 
               case 2:
-                return _context17.abrupt('return', ds);
+                return _context15.abrupt('return', ds);
 
               case 3:
               case 'end':
-                return _context17.stop();
+                return _context15.stop();
             }
           }
         }, getDeleteSet, this);
@@ -4949,19 +4926,19 @@ module.exports = function (Y /* :any */) {
       key: 'isDeleted',
       value: regeneratorRuntime.mark(function isDeleted(id) {
         var n;
-        return regeneratorRuntime.wrap(function isDeleted$(_context18) {
+        return regeneratorRuntime.wrap(function isDeleted$(_context16) {
           while (1) {
-            switch (_context18.prev = _context18.next) {
+            switch (_context16.prev = _context16.next) {
               case 0:
-                return _context18.delegateYield(this.ds.findWithUpperBound(id), 't0', 1);
+                return _context16.delegateYield(this.ds.findWithUpperBound(id), 't0', 1);
 
               case 1:
-                n = _context18.t0;
-                return _context18.abrupt('return', n != null && n.id[0] === id[0] && id[1] < n.id[1] + n.len);
+                n = _context16.t0;
+                return _context16.abrupt('return', n != null && n.id[0] === id[0] && id[1] < n.id[1] + n.len);
 
               case 3:
               case 'end':
-                return _context18.stop();
+                return _context16.stop();
             }
           }
         }, isDeleted, this);
@@ -4969,18 +4946,18 @@ module.exports = function (Y /* :any */) {
     }, {
       key: 'setOperation',
       value: regeneratorRuntime.mark(function setOperation(op) {
-        return regeneratorRuntime.wrap(function setOperation$(_context19) {
+        return regeneratorRuntime.wrap(function setOperation$(_context17) {
           while (1) {
-            switch (_context19.prev = _context19.next) {
+            switch (_context17.prev = _context17.next) {
               case 0:
-                return _context19.delegateYield(this.os.put(op), 't0', 1);
+                return _context17.delegateYield(this.os.put(op), 't0', 1);
 
               case 1:
-                return _context19.abrupt('return', op);
+                return _context17.abrupt('return', op);
 
               case 2:
               case 'end':
-                return _context19.stop();
+                return _context17.stop();
             }
           }
         }, setOperation, this);
@@ -4988,11 +4965,11 @@ module.exports = function (Y /* :any */) {
     }, {
       key: 'addOperation',
       value: regeneratorRuntime.mark(function addOperation(op) {
-        return regeneratorRuntime.wrap(function addOperation$(_context20) {
+        return regeneratorRuntime.wrap(function addOperation$(_context18) {
           while (1) {
-            switch (_context20.prev = _context20.next) {
+            switch (_context18.prev = _context18.next) {
               case 0:
-                return _context20.delegateYield(this.os.put(op), 't0', 1);
+                return _context18.delegateYield(this.os.put(op), 't0', 1);
 
               case 1:
                 if (!this.store.y.connector.isDisconnected() && this.store.forwardAppliedOperations && typeof op.id[1] !== 'string') {
@@ -5002,7 +4979,7 @@ module.exports = function (Y /* :any */) {
 
               case 2:
               case 'end':
-                return _context20.stop();
+                return _context18.stop();
             }
           }
         }, addOperation, this);
@@ -5013,22 +4990,22 @@ module.exports = function (Y /* :any */) {
       key: 'tryCombineWithLeft',
       value: regeneratorRuntime.mark(function tryCombineWithLeft(op) {
         var left;
-        return regeneratorRuntime.wrap(function tryCombineWithLeft$(_context21) {
+        return regeneratorRuntime.wrap(function tryCombineWithLeft$(_context19) {
           while (1) {
-            switch (_context21.prev = _context21.next) {
+            switch (_context19.prev = _context19.next) {
               case 0:
                 if (!(op != null && op.left != null && op.content != null && op.left[0] === op.id[0] && Y.utils.compareIds(op.left, op.origin))) {
-                  _context21.next = 9;
+                  _context19.next = 9;
                   break;
                 }
 
-                return _context21.delegateYield(this.getInsertion(op.left), 't0', 2);
+                return _context19.delegateYield(this.getInsertion(op.left), 't0', 2);
 
               case 2:
-                left = _context21.t0;
+                left = _context19.t0;
 
                 if (!(left.content != null && left.id[1] + left.content.length === op.id[1] && left.originOf.length === 1 && !left.gc && !left.deleted && !op.gc && !op.deleted)) {
-                  _context21.next = 9;
+                  _context19.next = 9;
                   break;
                 }
 
@@ -5040,14 +5017,14 @@ module.exports = function (Y /* :any */) {
                 }
                 left.content = left.content.concat(op.content);
                 left.right = op.right;
-                return _context21.delegateYield(this.os.delete(op.id), 't1', 8);
+                return _context19.delegateYield(this.os.delete(op.id), 't1', 8);
 
               case 8:
-                return _context21.delegateYield(this.setOperation(left), 't2', 9);
+                return _context19.delegateYield(this.setOperation(left), 't2', 9);
 
               case 9:
               case 'end':
-                return _context21.stop();
+                return _context19.stop();
             }
           }
         }, tryCombineWithLeft, this);
@@ -5056,38 +5033,38 @@ module.exports = function (Y /* :any */) {
       key: 'getInsertion',
       value: regeneratorRuntime.mark(function getInsertion(id) {
         var ins, len;
-        return regeneratorRuntime.wrap(function getInsertion$(_context22) {
+        return regeneratorRuntime.wrap(function getInsertion$(_context20) {
           while (1) {
-            switch (_context22.prev = _context22.next) {
+            switch (_context20.prev = _context20.next) {
               case 0:
-                return _context22.delegateYield(this.os.findWithUpperBound(id), 't0', 1);
+                return _context20.delegateYield(this.os.findWithUpperBound(id), 't0', 1);
 
               case 1:
-                ins = _context22.t0;
+                ins = _context20.t0;
 
                 if (!(ins == null)) {
-                  _context22.next = 6;
+                  _context20.next = 6;
                   break;
                 }
 
-                return _context22.abrupt('return', null);
+                return _context20.abrupt('return', null);
 
               case 6:
                 len = ins.content != null ? ins.content.length : 1; // in case of opContent
 
                 if (!(id[0] === ins.id[0] && id[1] < ins.id[1] + len)) {
-                  _context22.next = 11;
+                  _context20.next = 11;
                   break;
                 }
 
-                return _context22.abrupt('return', ins);
+                return _context20.abrupt('return', ins);
 
               case 11:
-                return _context22.abrupt('return', null);
+                return _context20.abrupt('return', null);
 
               case 12:
               case 'end':
-                return _context22.stop();
+                return _context20.stop();
             }
           }
         }, getInsertion, this);
@@ -5095,21 +5072,21 @@ module.exports = function (Y /* :any */) {
     }, {
       key: 'getInsertionCleanStartEnd',
       value: regeneratorRuntime.mark(function getInsertionCleanStartEnd(id) {
-        return regeneratorRuntime.wrap(function getInsertionCleanStartEnd$(_context23) {
+        return regeneratorRuntime.wrap(function getInsertionCleanStartEnd$(_context21) {
           while (1) {
-            switch (_context23.prev = _context23.next) {
+            switch (_context21.prev = _context21.next) {
               case 0:
-                return _context23.delegateYield(this.getInsertionCleanStart(id), 't0', 1);
+                return _context21.delegateYield(this.getInsertionCleanStart(id), 't0', 1);
 
               case 1:
-                return _context23.delegateYield(this.getInsertionCleanEnd(id), 't1', 2);
+                return _context21.delegateYield(this.getInsertionCleanEnd(id), 't1', 2);
 
               case 2:
-                return _context23.abrupt('return', _context23.t1);
+                return _context21.abrupt('return', _context21.t1);
 
               case 3:
               case 'end':
-                return _context23.stop();
+                return _context21.stop();
             }
           }
         }, getInsertionCleanStartEnd, this);
@@ -5121,26 +5098,26 @@ module.exports = function (Y /* :any */) {
       key: 'getInsertionCleanStart',
       value: regeneratorRuntime.mark(function getInsertionCleanStart(id) {
         var ins, left, leftLid;
-        return regeneratorRuntime.wrap(function getInsertionCleanStart$(_context24) {
+        return regeneratorRuntime.wrap(function getInsertionCleanStart$(_context22) {
           while (1) {
-            switch (_context24.prev = _context24.next) {
+            switch (_context22.prev = _context22.next) {
               case 0:
-                return _context24.delegateYield(this.getInsertion(id), 't0', 1);
+                return _context22.delegateYield(this.getInsertion(id), 't0', 1);
 
               case 1:
-                ins = _context24.t0;
+                ins = _context22.t0;
 
                 if (!(ins != null)) {
-                  _context24.next = 21;
+                  _context22.next = 21;
                   break;
                 }
 
                 if (!(ins.id[1] === id[1])) {
-                  _context24.next = 7;
+                  _context22.next = 7;
                   break;
                 }
 
-                return _context24.abrupt('return', ins);
+                return _context22.abrupt('return', ins);
 
               case 7:
                 left = Y.utils.copyObject(ins);
@@ -5154,27 +5131,27 @@ module.exports = function (Y /* :any */) {
                 left.right = ins.id;
                 ins.left = leftLid;
                 // debugger // check
-                return _context24.delegateYield(this.setOperation(left), 't1', 16);
+                return _context22.delegateYield(this.setOperation(left), 't1', 16);
 
               case 16:
-                return _context24.delegateYield(this.setOperation(ins), 't2', 17);
+                return _context22.delegateYield(this.setOperation(ins), 't2', 17);
 
               case 17:
                 if (left.gc) {
                   this.store.queueGarbageCollector(ins.id);
                 }
-                return _context24.abrupt('return', ins);
+                return _context22.abrupt('return', ins);
 
               case 19:
-                _context24.next = 22;
+                _context22.next = 22;
                 break;
 
               case 21:
-                return _context24.abrupt('return', null);
+                return _context22.abrupt('return', null);
 
               case 22:
               case 'end':
-                return _context24.stop();
+                return _context22.stop();
             }
           }
         }, getInsertionCleanStart, this);
@@ -5186,26 +5163,26 @@ module.exports = function (Y /* :any */) {
       key: 'getInsertionCleanEnd',
       value: regeneratorRuntime.mark(function getInsertionCleanEnd(id) {
         var ins, right, insLid;
-        return regeneratorRuntime.wrap(function getInsertionCleanEnd$(_context25) {
+        return regeneratorRuntime.wrap(function getInsertionCleanEnd$(_context23) {
           while (1) {
-            switch (_context25.prev = _context25.next) {
+            switch (_context23.prev = _context23.next) {
               case 0:
-                return _context25.delegateYield(this.getInsertion(id), 't0', 1);
+                return _context23.delegateYield(this.getInsertion(id), 't0', 1);
 
               case 1:
-                ins = _context25.t0;
+                ins = _context23.t0;
 
                 if (!(ins != null)) {
-                  _context25.next = 21;
+                  _context23.next = 21;
                   break;
                 }
 
                 if (!(ins.content == null || ins.id[1] + ins.content.length - 1 === id[1])) {
-                  _context25.next = 7;
+                  _context23.next = 7;
                   break;
                 }
 
-                return _context25.abrupt('return', ins);
+                return _context23.abrupt('return', ins);
 
               case 7:
                 right = Y.utils.copyObject(ins);
@@ -5219,27 +5196,27 @@ module.exports = function (Y /* :any */) {
                 ins.right = right.id;
                 right.left = insLid;
                 // debugger // check
-                return _context25.delegateYield(this.setOperation(right), 't1', 16);
+                return _context23.delegateYield(this.setOperation(right), 't1', 16);
 
               case 16:
-                return _context25.delegateYield(this.setOperation(ins), 't2', 17);
+                return _context23.delegateYield(this.setOperation(ins), 't2', 17);
 
               case 17:
                 if (ins.gc) {
                   this.store.queueGarbageCollector(right.id);
                 }
-                return _context25.abrupt('return', ins);
+                return _context23.abrupt('return', ins);
 
               case 19:
-                _context25.next = 22;
+                _context23.next = 22;
                 break;
 
               case 21:
-                return _context25.abrupt('return', null);
+                return _context23.abrupt('return', null);
 
               case 22:
               case 'end':
-                return _context25.stop();
+                return _context23.stop();
             }
           }
         }, getInsertionCleanEnd, this);
@@ -5248,21 +5225,21 @@ module.exports = function (Y /* :any */) {
       key: 'getOperation',
       value: regeneratorRuntime.mark(function getOperation(id /* :any */) {
         var o, comp, struct, op;
-        return regeneratorRuntime.wrap(function getOperation$(_context26) {
+        return regeneratorRuntime.wrap(function getOperation$(_context24) {
           while (1) {
-            switch (_context26.prev = _context26.next) {
+            switch (_context24.prev = _context24.next) {
               case 0:
-                return _context26.delegateYield(this.os.find(id), 't0', 1);
+                return _context24.delegateYield(this.os.find(id), 't0', 1);
 
               case 1:
-                o = _context26.t0;
+                o = _context24.t0;
 
                 if (!(id[0] !== '_' || o != null)) {
-                  _context26.next = 6;
+                  _context24.next = 6;
                   break;
                 }
 
-                return _context26.abrupt('return', o);
+                return _context24.abrupt('return', o);
 
               case 6:
                 // type is string
@@ -5270,7 +5247,7 @@ module.exports = function (Y /* :any */) {
                 comp = id[1].split('_');
 
                 if (!(comp.length > 1)) {
-                  _context26.next = 15;
+                  _context24.next = 15;
                   break;
                 }
 
@@ -5278,20 +5255,20 @@ module.exports = function (Y /* :any */) {
                 op = Y.Struct[struct].create(id);
 
                 op.type = comp[1];
-                return _context26.delegateYield(this.setOperation(op), 't1', 12);
+                return _context24.delegateYield(this.setOperation(op), 't1', 12);
 
               case 12:
-                return _context26.abrupt('return', op);
+                return _context24.abrupt('return', op);
 
               case 15:
                 // won't be called. but just in case..
                 console.error('Unexpected case. How can this happen?');
                 debugger; // eslint-disable-line
-                return _context26.abrupt('return', null);
+                return _context24.abrupt('return', null);
 
               case 18:
               case 'end':
-                return _context26.stop();
+                return _context24.stop();
             }
           }
         }, getOperation, this);
@@ -5299,15 +5276,15 @@ module.exports = function (Y /* :any */) {
     }, {
       key: 'removeOperation',
       value: regeneratorRuntime.mark(function removeOperation(id) {
-        return regeneratorRuntime.wrap(function removeOperation$(_context27) {
+        return regeneratorRuntime.wrap(function removeOperation$(_context25) {
           while (1) {
-            switch (_context27.prev = _context27.next) {
+            switch (_context25.prev = _context25.next) {
               case 0:
-                return _context27.delegateYield(this.os.delete(id), 't0', 1);
+                return _context25.delegateYield(this.os.delete(id), 't0', 1);
 
               case 1:
               case 'end':
-                return _context27.stop();
+                return _context25.stop();
             }
           }
         }, removeOperation, this);
@@ -5316,19 +5293,19 @@ module.exports = function (Y /* :any */) {
       key: 'setState',
       value: regeneratorRuntime.mark(function setState(state) {
         var val;
-        return regeneratorRuntime.wrap(function setState$(_context28) {
+        return regeneratorRuntime.wrap(function setState$(_context26) {
           while (1) {
-            switch (_context28.prev = _context28.next) {
+            switch (_context26.prev = _context26.next) {
               case 0:
                 val = {
                   id: [state.user],
                   clock: state.clock
                 };
-                return _context28.delegateYield(this.ss.put(val), 't0', 2);
+                return _context26.delegateYield(this.ss.put(val), 't0', 2);
 
               case 2:
               case 'end':
-                return _context28.stop();
+                return _context26.stop();
             }
           }
         }, setState, this);
@@ -5337,27 +5314,27 @@ module.exports = function (Y /* :any */) {
       key: 'getState',
       value: regeneratorRuntime.mark(function getState(user) {
         var n, clock;
-        return regeneratorRuntime.wrap(function getState$(_context29) {
+        return regeneratorRuntime.wrap(function getState$(_context27) {
           while (1) {
-            switch (_context29.prev = _context29.next) {
+            switch (_context27.prev = _context27.next) {
               case 0:
-                return _context29.delegateYield(this.ss.find([user]), 't0', 1);
+                return _context27.delegateYield(this.ss.find([user]), 't0', 1);
 
               case 1:
-                n = _context29.t0;
+                n = _context27.t0;
                 clock = n == null ? null : n.clock;
 
                 if (clock == null) {
                   clock = 0;
                 }
-                return _context29.abrupt('return', {
+                return _context27.abrupt('return', {
                   user: user,
                   clock: clock
                 });
 
               case 5:
               case 'end':
-                return _context29.stop();
+                return _context27.stop();
             }
           }
         }, getState, this);
@@ -5366,15 +5343,15 @@ module.exports = function (Y /* :any */) {
       key: 'getStateVector',
       value: regeneratorRuntime.mark(function getStateVector() {
         var stateVector;
-        return regeneratorRuntime.wrap(function getStateVector$(_context31) {
+        return regeneratorRuntime.wrap(function getStateVector$(_context29) {
           while (1) {
-            switch (_context31.prev = _context31.next) {
+            switch (_context29.prev = _context29.next) {
               case 0:
                 stateVector = [];
-                return _context31.delegateYield(this.ss.iterate(this, null, null, regeneratorRuntime.mark(function _callee4(n) {
-                  return regeneratorRuntime.wrap(function _callee4$(_context30) {
+                return _context29.delegateYield(this.ss.iterate(this, null, null, regeneratorRuntime.mark(function _callee4(n) {
+                  return regeneratorRuntime.wrap(function _callee4$(_context28) {
                     while (1) {
-                      switch (_context30.prev = _context30.next) {
+                      switch (_context28.prev = _context28.next) {
                         case 0:
                           stateVector.push({
                             user: n.id[0],
@@ -5383,18 +5360,18 @@ module.exports = function (Y /* :any */) {
 
                         case 1:
                         case 'end':
-                          return _context30.stop();
+                          return _context28.stop();
                       }
                     }
                   }, _callee4, this);
                 })), 't0', 2);
 
               case 2:
-                return _context31.abrupt('return', stateVector);
+                return _context29.abrupt('return', stateVector);
 
               case 3:
               case 'end':
-                return _context31.stop();
+                return _context29.stop();
             }
           }
         }, getStateVector, this);
@@ -5403,32 +5380,32 @@ module.exports = function (Y /* :any */) {
       key: 'getStateSet',
       value: regeneratorRuntime.mark(function getStateSet() {
         var ss;
-        return regeneratorRuntime.wrap(function getStateSet$(_context33) {
+        return regeneratorRuntime.wrap(function getStateSet$(_context31) {
           while (1) {
-            switch (_context33.prev = _context33.next) {
+            switch (_context31.prev = _context31.next) {
               case 0:
                 ss = {};
-                return _context33.delegateYield(this.ss.iterate(this, null, null, regeneratorRuntime.mark(function _callee5(n) {
-                  return regeneratorRuntime.wrap(function _callee5$(_context32) {
+                return _context31.delegateYield(this.ss.iterate(this, null, null, regeneratorRuntime.mark(function _callee5(n) {
+                  return regeneratorRuntime.wrap(function _callee5$(_context30) {
                     while (1) {
-                      switch (_context32.prev = _context32.next) {
+                      switch (_context30.prev = _context30.next) {
                         case 0:
                           ss[n.id[0]] = n.clock;
 
                         case 1:
                         case 'end':
-                          return _context32.stop();
+                          return _context30.stop();
                       }
                     }
                   }, _callee5, this);
                 })), 't0', 2);
 
               case 2:
-                return _context33.abrupt('return', ss);
+                return _context31.abrupt('return', ss);
 
               case 3:
               case 'end':
-                return _context33.stop();
+                return _context31.stop();
             }
           }
         }, getStateSet, this);
@@ -5480,28 +5457,28 @@ module.exports = function (Y /* :any */) {
       value: regeneratorRuntime.mark(function getOperations(startSS) {
         var send, endSV, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, endState, user, startPos, firstMissing;
 
-        return regeneratorRuntime.wrap(function getOperations$(_context35) {
+        return regeneratorRuntime.wrap(function getOperations$(_context33) {
           while (1) {
-            switch (_context35.prev = _context35.next) {
+            switch (_context33.prev = _context33.next) {
               case 0:
                 // TODO: use bounds here!
                 if (startSS == null) {
                   startSS = {};
                 }
                 send = [];
-                return _context35.delegateYield(this.getStateVector(), 't0', 3);
+                return _context33.delegateYield(this.getStateVector(), 't0', 3);
 
               case 3:
-                endSV = _context35.t0;
+                endSV = _context33.t0;
                 _iteratorNormalCompletion = true;
                 _didIteratorError = false;
                 _iteratorError = undefined;
-                _context35.prev = 7;
+                _context33.prev = 7;
                 _iterator = endSV[Symbol.iterator]();
 
               case 9:
                 if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
-                  _context35.next = 23;
+                  _context33.next = 23;
                   break;
                 }
 
@@ -5509,24 +5486,24 @@ module.exports = function (Y /* :any */) {
                 user = endState.user;
 
                 if (!(user === '_')) {
-                  _context35.next = 14;
+                  _context33.next = 14;
                   break;
                 }
 
-                return _context35.abrupt('continue', 20);
+                return _context33.abrupt('continue', 20);
 
               case 14:
                 startPos = startSS[user] || 0;
 
                 if (!(startPos > 0)) {
-                  _context35.next = 19;
+                  _context33.next = 19;
                   break;
                 }
 
-                return _context35.delegateYield(this.getInsertion([user, startPos]), 't1', 17);
+                return _context33.delegateYield(this.getInsertion([user, startPos]), 't1', 17);
 
               case 17:
-                firstMissing = _context35.t1;
+                firstMissing = _context33.t1;
 
                 if (firstMissing != null) {
                   // update startPos
@@ -5535,26 +5512,26 @@ module.exports = function (Y /* :any */) {
                 }
 
               case 19:
-                return _context35.delegateYield(this.os.iterate(this, [user, startPos], [user, Number.MAX_VALUE], regeneratorRuntime.mark(function _callee6(op) {
+                return _context33.delegateYield(this.os.iterate(this, [user, startPos], [user, Number.MAX_VALUE], regeneratorRuntime.mark(function _callee6(op) {
                   var o, missing_origins, newright, s;
-                  return regeneratorRuntime.wrap(function _callee6$(_context34) {
+                  return regeneratorRuntime.wrap(function _callee6$(_context32) {
                     while (1) {
-                      switch (_context34.prev = _context34.next) {
+                      switch (_context32.prev = _context32.next) {
                         case 0:
                           op = Y.Struct[op.struct].encode(op);
 
                           if (!(op.struct !== 'Insert')) {
-                            _context34.next = 5;
+                            _context32.next = 5;
                             break;
                           }
 
                           send.push(op);
-                          _context34.next = 27;
+                          _context32.next = 27;
                           break;
 
                         case 5:
                           if (!(op.right == null || op.right[1] < (startSS[op.right[0]] || 0))) {
-                            _context34.next = 27;
+                            _context32.next = 27;
                             break;
                           }
 
@@ -5572,12 +5549,12 @@ module.exports = function (Y /* :any */) {
 
                         case 9:
                           if (!true) {
-                            _context34.next = 27;
+                            _context32.next = 27;
                             break;
                           }
 
                           if (!(o.left == null)) {
-                            _context34.next = 15;
+                            _context32.next = 15;
                             break;
                           }
 
@@ -5588,13 +5565,13 @@ module.exports = function (Y /* :any */) {
                             o.right = missing_origins[missing_origins.length - 1].id;
                             send.push(o);
                           }
-                          return _context34.abrupt('break', 27);
+                          return _context32.abrupt('break', 27);
 
                         case 15:
-                          return _context34.delegateYield(this.getInsertion(o.left), 't0', 16);
+                          return _context32.delegateYield(this.getInsertion(o.left), 't0', 16);
 
                         case 16:
-                          o = _context34.t0;
+                          o = _context32.t0;
 
                           // we set another o, check if we can reduce $missing_origins
                           while (missing_origins.length > 0 && Y.utils.matchesId(o, missing_origins[missing_origins.length - 1].origin)) {
@@ -5602,14 +5579,14 @@ module.exports = function (Y /* :any */) {
                           }
 
                           if (!(o.id[1] < (startSS[o.id[0]] || 0))) {
-                            _context34.next = 24;
+                            _context32.next = 24;
                             break;
                           }
 
                           // case 2. o is known
                           op.left = Y.utils.getLastId(o);
                           send.push(op);
-                          return _context34.abrupt('break', 27);
+                          return _context32.abrupt('break', 27);
 
                         case 24:
                           if (Y.utils.matchesId(o, op.origin)) {
@@ -5633,12 +5610,12 @@ module.exports = function (Y /* :any */) {
                           }
 
                         case 25:
-                          _context34.next = 9;
+                          _context32.next = 9;
                           break;
 
                         case 27:
                         case 'end':
-                          return _context34.stop();
+                          return _context32.stop();
                       }
                     }
                   }, _callee6, this);
@@ -5646,49 +5623,49 @@ module.exports = function (Y /* :any */) {
 
               case 20:
                 _iteratorNormalCompletion = true;
-                _context35.next = 9;
+                _context33.next = 9;
                 break;
 
               case 23:
-                _context35.next = 29;
+                _context33.next = 29;
                 break;
 
               case 25:
-                _context35.prev = 25;
-                _context35.t3 = _context35['catch'](7);
+                _context33.prev = 25;
+                _context33.t3 = _context33['catch'](7);
                 _didIteratorError = true;
-                _iteratorError = _context35.t3;
+                _iteratorError = _context33.t3;
 
               case 29:
-                _context35.prev = 29;
-                _context35.prev = 30;
+                _context33.prev = 29;
+                _context33.prev = 30;
 
                 if (!_iteratorNormalCompletion && _iterator.return) {
                   _iterator.return();
                 }
 
               case 32:
-                _context35.prev = 32;
+                _context33.prev = 32;
 
                 if (!_didIteratorError) {
-                  _context35.next = 35;
+                  _context33.next = 35;
                   break;
                 }
 
                 throw _iteratorError;
 
               case 35:
-                return _context35.finish(32);
+                return _context33.finish(32);
 
               case 36:
-                return _context35.finish(29);
+                return _context33.finish(29);
 
               case 37:
-                return _context35.abrupt('return', send.reverse());
+                return _context33.abrupt('return', send.reverse());
 
               case 38:
               case 'end':
-                return _context35.stop();
+                return _context33.stop();
             }
           }
         }, getOperations, this, [[7, 25, 29, 37], [30,, 32, 36]]);
@@ -5722,21 +5699,21 @@ module.exports = function (Y /* :any */) {
     }, {
       key: 'flush',
       value: regeneratorRuntime.mark(function flush() {
-        return regeneratorRuntime.wrap(function flush$(_context36) {
+        return regeneratorRuntime.wrap(function flush$(_context34) {
           while (1) {
-            switch (_context36.prev = _context36.next) {
+            switch (_context34.prev = _context34.next) {
               case 0:
-                return _context36.delegateYield(this.os.flush(), 't0', 1);
+                return _context34.delegateYield(this.os.flush(), 't0', 1);
 
               case 1:
-                return _context36.delegateYield(this.ss.flush(), 't1', 2);
+                return _context34.delegateYield(this.ss.flush(), 't1', 2);
 
               case 2:
-                return _context36.delegateYield(this.ds.flush(), 't2', 3);
+                return _context34.delegateYield(this.ds.flush(), 't2', 3);
 
               case 3:
               case 'end':
-                return _context36.stop();
+                return _context34.stop();
             }
           }
         }, flush, this);
@@ -6036,7 +6013,13 @@ module.exports = function (Y /* : any*/) {
             // finished with remaining operations
             self.waiting.push(d);
           };
-          checkDelete(op);
+          if (op.key == null) {
+            // deletes in list
+            checkDelete(op);
+          } else {
+            // deletes in map
+            this.waiting.push(op);
+          }
         } else {
           this.waiting.push(op);
         }
@@ -6096,7 +6079,7 @@ module.exports = function (Y /* : any*/) {
                 // if there are no awaited ops anymore, we can update all waiting ops, and send execute them (if there are still no awaited ops)
 
                 if (!(this.awaiting === 0 && this.waiting.length > 0)) {
-                  _context.next = 65;
+                  _context.next = 70;
                   break;
                 }
 
@@ -6104,14 +6087,14 @@ module.exports = function (Y /* : any*/) {
 
               case 7:
                 if (!(_i < this.waiting.length)) {
-                  _context.next = 36;
+                  _context.next = 41;
                   break;
                 }
 
                 o = this.waiting[_i];
 
                 if (!(o.struct === 'Insert')) {
-                  _context.next = 33;
+                  _context.next = 38;
                   break;
                 }
 
@@ -6120,67 +6103,79 @@ module.exports = function (Y /* : any*/) {
               case 11:
                 _o = _context.t1;
 
+                if (!(_o.parentSub != null && _o.left != null)) {
+                  _context.next = 17;
+                  break;
+                }
+
+                // if o is an insertion of a map struc (parentSub is defined), then it shouldn't be necessary to compute left
+                this.waiting.splice(_i, 1);
+                _i--; // update index
+                _context.next = 38;
+                break;
+
+              case 17:
                 if (Y.utils.compareIds(_o.id, o.id)) {
-                  _context.next = 16;
+                  _context.next = 21;
                   break;
                 }
 
                 // o got extended
                 o.left = [o.id[0], o.id[1] - 1];
-                _context.next = 33;
+                _context.next = 38;
                 break;
 
-              case 16:
+              case 21:
                 if (!(_o.left == null)) {
-                  _context.next = 20;
+                  _context.next = 25;
                   break;
                 }
 
                 o.left = null;
-                _context.next = 33;
+                _context.next = 38;
                 break;
 
-              case 20:
-                return _context.delegateYield(transaction.getInsertion(_o.left), 't2', 21);
+              case 25:
+                return _context.delegateYield(transaction.getInsertion(_o.left), 't2', 26);
 
-              case 21:
+              case 26:
                 left = _context.t2;
 
-              case 22:
+              case 27:
                 if (!(left.deleted != null)) {
-                  _context.next = 32;
+                  _context.next = 37;
                   break;
                 }
 
                 if (!(left.left != null)) {
-                  _context.next = 28;
+                  _context.next = 33;
                   break;
                 }
 
-                return _context.delegateYield(transaction.getInsertion(left.left), 't3', 25);
-
-              case 25:
-                left = _context.t3;
-                _context.next = 30;
-                break;
-
-              case 28:
-                left = null;
-                return _context.abrupt('break', 32);
+                return _context.delegateYield(transaction.getInsertion(left.left), 't3', 30);
 
               case 30:
-                _context.next = 22;
+                left = _context.t3;
+                _context.next = 35;
                 break;
 
-              case 32:
+              case 33:
+                left = null;
+                return _context.abrupt('break', 37);
+
+              case 35:
+                _context.next = 27;
+                break;
+
+              case 37:
                 o.left = left != null ? Y.utils.getLastId(left) : null;
 
-              case 33:
+              case 38:
                 _i++;
                 _context.next = 7;
                 break;
 
-              case 36:
+              case 41:
                 // the previous stuff was async, so we have to check again!
                 // We also pull changes from the bindings, if there exists such a method, this could increase awaiting too
                 if (this._pullChanges != null) {
@@ -6188,7 +6183,7 @@ module.exports = function (Y /* : any*/) {
                 }
 
                 if (!(this.awaiting === 0)) {
-                  _context.next = 65;
+                  _context.next = 70;
                   break;
                 }
 
@@ -6210,58 +6205,58 @@ module.exports = function (Y /* : any*/) {
                 // -> check if this.awaiting increased & stop computation if it does
                 i = 0;
 
-              case 44:
+              case 49:
                 if (!(i < ins.length)) {
+                  _context.next = 59;
+                  break;
+                }
+
+                if (!(this.awaiting === 0)) {
                   _context.next = 54;
                   break;
                 }
 
-                if (!(this.awaiting === 0)) {
-                  _context.next = 49;
-                  break;
-                }
-
                 this.onevent(ins[i]);
-                _context.next = 51;
-                break;
-
-              case 49:
-                this.waiting = this.waiting.concat(ins.slice(i));
-                return _context.abrupt('break', 54);
-
-              case 51:
-                i++;
-                _context.next = 44;
+                _context.next = 56;
                 break;
 
               case 54:
+                this.waiting = this.waiting.concat(ins.slice(i));
+                return _context.abrupt('break', 59);
+
+              case 56:
+                i++;
+                _context.next = 49;
+                break;
+
+              case 59:
                 i = 0;
 
-              case 55:
+              case 60:
                 if (!(i < dels.length)) {
+                  _context.next = 70;
+                  break;
+                }
+
+                if (!(this.awaiting === 0)) {
                   _context.next = 65;
                   break;
                 }
 
-                if (!(this.awaiting === 0)) {
-                  _context.next = 60;
-                  break;
-                }
-
                 this.onevent(dels[i]);
-                _context.next = 62;
-                break;
-
-              case 60:
-                this.waiting = this.waiting.concat(dels.slice(i));
-                return _context.abrupt('break', 65);
-
-              case 62:
-                i++;
-                _context.next = 55;
+                _context.next = 67;
                 break;
 
               case 65:
+                this.waiting = this.waiting.concat(dels.slice(i));
+                return _context.abrupt('break', 70);
+
+              case 67:
+                i++;
+                _context.next = 60;
+                break;
+
+              case 70:
               case 'end':
                 return _context.stop();
             }
@@ -6382,6 +6377,16 @@ module.exports = function (Y /* : any*/) {
   Y.utils.EventHandler = EventHandler;
 
   /*
+    Default class of custom types!
+  */
+
+  var CustomType = function CustomType() {
+    _classCallCheck(this, CustomType);
+  };
+
+  Y.utils.CustomType = CustomType;
+
+  /*
     A wrapper for the definition of a custom type.
     Every custom type must have three properties:
      * struct
@@ -6392,21 +6397,22 @@ module.exports = function (Y /* : any*/) {
       - the constructor of the custom type (e.g. in order to inherit from a type)
   */
 
-  var CustomType = // eslint-disable-line
+  var CustomTypeDefinition = // eslint-disable-line
   /* ::
   struct: any;
   initType: any;
   class: Function;
   name: String;
   */
-  function CustomType(def) {
-    _classCallCheck(this, CustomType);
+  function CustomTypeDefinition(def) {
+    _classCallCheck(this, CustomTypeDefinition);
 
-    if (def.struct == null || def.initType == null || def.class == null || def.name == null) {
+    if (def.struct == null || def.initType == null || def.class == null || def.name == null || def.createType == null) {
       throw new Error('Custom type was not initialized correctly!');
     }
     this.struct = def.struct;
     this.initType = def.initType;
+    this.createType = def.createType;
     this.class = def.class;
     this.name = def.name;
     if (def.appendAdditionalInfo != null) {
@@ -6418,11 +6424,11 @@ module.exports = function (Y /* : any*/) {
     this.parseArguments.typeDefinition = this;
   };
 
-  Y.utils.CustomType = CustomType;
+  Y.utils.CustomTypeDefinition = CustomTypeDefinition;
 
   Y.utils.isTypeDefinition = function isTypeDefinition(v) {
     if (v != null) {
-      if (v instanceof Y.utils.CustomType) return [v];else if (v.constructor === Array && v[0] instanceof Y.utils.CustomType) return v;else if (v instanceof Function && v.typeDefinition instanceof Y.utils.CustomType) return [v.typeDefinition];
+      if (v instanceof Y.utils.CustomTypeDefinition) return [v];else if (v.constructor === Array && v[0] instanceof Y.utils.CustomTypeDefinition) return v;else if (v instanceof Function && v.typeDefinition instanceof Y.utils.CustomTypeDefinition) return [v.typeDefinition];
     }
     return false;
   };
@@ -6946,7 +6952,7 @@ module.exports = Y;
 Y.requiringModules = requiringModules;
 
 Y.extend = function (name, value) {
-  if (value instanceof Y.utils.CustomType) {
+  if (value instanceof Y.utils.CustomTypeDefinition) {
     Y[name] = value.parseArguments;
   } else {
     Y[name] = value;
@@ -7081,7 +7087,7 @@ var YConfig = function () {
 
               case 1:
                 if ((_context.t1 = _context.t0()).done) {
-                  _context.next = 21;
+                  _context.next = 20;
                   break;
                 }
 
@@ -7110,17 +7116,15 @@ var YConfig = function () {
                 type = Y[typeName];
                 typedef = type.typeDefinition;
                 id = ['_', typedef.struct + '_' + typeName + '_' + propertyname + '_' + typeConstructor];
-                return _context.delegateYield(this.createType(type.apply(typedef, args), id), 't3', 18);
 
-              case 18:
-                share[propertyname] = _context.t3;
+                share[propertyname] = this.store.createType(type.apply(typedef, args), id);
                 _context.next = 1;
                 break;
 
-              case 21:
+              case 20:
                 this.store.whenTransactionsFinished().then(callback);
 
-              case 22:
+              case 21:
               case 'end':
                 return _context.stop();
             }

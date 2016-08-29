@@ -1089,6 +1089,53 @@ module.exports = function (Y /* :any */) {
         }, 0)
       }
     }
+    /*
+      Get a created/initialized type.
+    */
+    getType (id) {
+      return this.initializedTypes[JSON.stringify(id)]
+    }
+    /*
+      Init type. This is called when a remote operation is retrieved, and transformed to a type
+      TODO: delete type from store.initializedTypes[id] when corresponding id was deleted! 
+    */
+    * initType (id, args) {
+      var sid = JSON.stringify(id)
+      var t = this.store.initializedTypes[sid]
+      if (t == null) {
+        var op/* :MapStruct | ListStruct */ = yield* this.getOperation(id)
+        if (op != null) {
+          t = yield* Y[op.type].typeDefinition.initType.call(this, this.store, op, args)
+          this.store.initializedTypes[sid] = t
+        }
+      }
+      return t
+    }
+    /*
+     Create type. This is called when the local user creates a type (which is a synchronous action)
+    */
+    createType (typedefinition, id) {
+      var structname = typedefinition[0].struct
+      id = id || this.getNextOpId(1)
+      var op = Y.Struct[structname].create(id)
+      op.type = typedefinition[0].name
+      
+      /* TODO: implement for y-xml support
+      if (typedefinition[0].appendAdditionalInfo != null) {
+        yield* typedefinition[0].appendAdditionalInfo.call(this, op, typedefinition[1])
+      }
+      */
+      this.requestTransaction(function * () {
+        if (op.id[0] === '_') {
+          yield* this.setOperation(op)
+        } else {
+          yield* this.applyCreatedOperations([op])
+        }
+      })
+      var t = Y[op.type].typeDefinition.createType(this, op, typedefinition[1])
+      this.initializedTypes[JSON.stringify(op.id)] = t
+      return t
+    }
   }
   Y.AbstractDatabase = AbstractDatabase
 }
@@ -1590,57 +1637,6 @@ module.exports = function (Y/* :any */) {
     os: Store;
     ss: Store;
     */
-    /*
-      Get a type based on the id of its model.
-      If it does not exist yes, create it.
-      TODO: delete type from store.initializedTypes[id] when corresponding id was deleted!
-    */
-    * getType (id, args) {
-      var sid = JSON.stringify(id)
-      var t = this.store.initializedTypes[sid]
-      if (t == null) {
-        var op/* :MapStruct | ListStruct */ = yield* this.getOperation(id)
-        if (op != null) {
-          t = yield* Y[op.type].typeDefinition.initType.call(this, this.store, op, args)
-          this.store.initializedTypes[sid] = t
-        }
-      }
-      return t
-    }
-    * createType (typedefinition, id) {
-      var structname = typedefinition[0].struct
-      id = id || this.store.getNextOpId(1)
-      var op
-      if (id[0] === '_') {
-        op = yield* this.getOperation(id)
-      } else {
-        op = Y.Struct[structname].create(id)
-        op.type = typedefinition[0].name
-      }
-      if (typedefinition[0].appendAdditionalInfo != null) {
-        yield* typedefinition[0].appendAdditionalInfo.call(this, op, typedefinition[1])
-      }
-      if (op[0] === '_') {
-        yield* this.setOperation(op)
-      } else {
-        yield* this.applyCreatedOperations([op])
-      }
-      return yield* this.getType(id, typedefinition[1])
-    }
-    /* createType (typedefinition, id) {
-      var structname = typedefinition[0].struct
-      id = id || this.store.getNextOpId(1)
-      var op = Y.Struct[structname].create(id)
-      op.type = typedefinition[0].name
-      if (typedefinition[0].appendAdditionalInfo != null) {
-        yield* typedefinition[0].appendAdditionalInfo.call(this, op, typedefinition[1])
-      }
-      // yield* this.applyCreatedOperations([op])
-      yield* Y.Struct[op.struct].execute.call(this, op)
-      yield* this.addOperation(op)
-      yield* this.store.operationAdded(this, op)
-      return yield* this.getType(id, typedefinition[1])
-    }*/
     /*
       Apply operations that this user created (no remote ones!)
         * does not check for Struct.*.requiredOps()
@@ -2843,7 +2839,13 @@ module.exports = function (Y /* : any*/) {
           // finished with remaining operations
           self.waiting.push(d)
         }
-        checkDelete(op)
+        if (op.key == null) {
+          // deletes in list
+          checkDelete(op)
+        } else {
+          // deletes in map
+          this.waiting.push(op)
+        }
       } else {
         this.waiting.push(op)
       }
@@ -2892,7 +2894,11 @@ module.exports = function (Y /* : any*/) {
           var o = this.waiting[i]
           if (o.struct === 'Insert') {
             var _o = yield* transaction.getInsertion(o.id)
-            if (!Y.utils.compareIds(_o.id, o.id)) {
+            if (_o.parentSub != null && _o.left != null) {
+              // if o is an insertion of a map struc (parentSub is defined), then it shouldn't be necessary to compute left
+              this.waiting.splice(i,1)
+              i-- // update index
+            } else if (!Y.utils.compareIds(_o.id, o.id)) {
               // o got extended
               o.left = [o.id[0], o.id[1] - 1]
             } else if (_o.left == null) {
@@ -3053,6 +3059,14 @@ module.exports = function (Y /* : any*/) {
   Y.utils.EventHandler = EventHandler
 
   /*
+    Default class of custom types!
+  */
+  class CustomType {
+
+  }
+  Y.utils.CustomType = CustomType
+
+  /*
     A wrapper for the definition of a custom type.
     Every custom type must have three properties:
 
@@ -3063,7 +3077,7 @@ module.exports = function (Y /* : any*/) {
     * class
       - the constructor of the custom type (e.g. in order to inherit from a type)
   */
-  class CustomType { // eslint-disable-line
+  class CustomTypeDefinition { // eslint-disable-line
     /* ::
     struct: any;
     initType: any;
@@ -3074,12 +3088,14 @@ module.exports = function (Y /* : any*/) {
       if (def.struct == null ||
         def.initType == null ||
         def.class == null ||
-        def.name == null
+        def.name == null ||
+        def.createType == null
       ) {
         throw new Error('Custom type was not initialized correctly!')
       }
       this.struct = def.struct
       this.initType = def.initType
+      this.createType = def.createType
       this.class = def.class
       this.name = def.name
       if (def.appendAdditionalInfo != null) {
@@ -3091,13 +3107,13 @@ module.exports = function (Y /* : any*/) {
       this.parseArguments.typeDefinition = this
     }
   }
-  Y.utils.CustomType = CustomType
+  Y.utils.CustomTypeDefinition = CustomTypeDefinition
 
   Y.utils.isTypeDefinition = function isTypeDefinition (v) {
     if (v != null) {
-      if (v instanceof Y.utils.CustomType) return [v]
-      else if (v.constructor === Array && v[0] instanceof Y.utils.CustomType) return v
-      else if (v instanceof Function && v.typeDefinition instanceof Y.utils.CustomType) return [v.typeDefinition]
+      if (v instanceof Y.utils.CustomTypeDefinition) return [v]
+      else if (v.constructor === Array && v[0] instanceof Y.utils.CustomTypeDefinition) return v
+      else if (v instanceof Function && v.typeDefinition instanceof Y.utils.CustomTypeDefinition) return [v.typeDefinition]
     }
     return false
   }
@@ -3357,7 +3373,7 @@ module.exports = Y
 Y.requiringModules = requiringModules
 
 Y.extend = function (name, value) {
-  if (value instanceof Y.utils.CustomType) {
+  if (value instanceof Y.utils.CustomTypeDefinition) {
     Y[name] = value.parseArguments
   } else {
     Y[name] = value
@@ -3494,7 +3510,7 @@ class YConfig {
         var type = Y[typeName]
         var typedef = type.typeDefinition
         var id = ['_', typedef.struct + '_' + typeName + '_' + propertyname + '_' + typeConstructor]
-        share[propertyname] = yield* this.createType(type.apply(typedef, args), id)
+        share[propertyname] = this.store.createType(type.apply(typedef, args), id)
       }
       this.store.whenTransactionsFinished()
         .then(callback)
