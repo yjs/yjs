@@ -186,6 +186,7 @@ Please report _any_ issues to the [Github issue page](https://github.com/y-js/yj
   * `y.share.map.get('map type') // => returns a Y.Map instead of a promise`
   * The event property `oldValues` also contains a list of types/values (without wrapper)
   * Support for the [y-leveldb](https://github.com/y-js/y-leveldb) database adapter
+  * [y-richtext](https://github.com/y-js/y-richtext) supports Quill@1.0.0-rc.2
 
 ### 11.0.0
 
