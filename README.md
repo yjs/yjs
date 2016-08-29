@@ -39,6 +39,7 @@ You are not limited to use a specific database to store the shared data. We prov
 |----------------|-----------------------------------|
 |[memory](https://github.com/y-js/y-memory) | In-memory storage. |
 |[indexeddb](https://github.com/y-js/y-indexeddb) | Offline storage for the browser |
+|[leveldb](https://github.com/y-js/y-leveldb) | Persistent storage for node apps |
 
 The advantages over similar frameworks are support for
 * .. P2P message propagation and arbitrary communication protocols
@@ -46,26 +47,28 @@ The advantages over similar frameworks are support for
 * .. offline support: Changes are stored persistently and only relevant changes are propagated on rejoin
 * .. Intention Preservation: When working on Text, the intention of your changes are preserved. This is particularily important when working offline. Every type has a notion on how we define Intention Preservation on it.
 
-## Use it!
-Install yjs and its modules with [bower](http://bower.io/), or with [npm](https://www.npmjs.org/package/yjs).
+## Use it! 
+Install Yjs, and its modules with [bower](http://bower.io/), or [npm](https://www.npmjs.org/package/yjs).  
 
 ### Bower
 ```
-bower install yjs --save
+bower install --save yjs y-array % add all y-* modules you want to use
 ```
-Then you include the libraries directly from the installation folder.
+You only need to include the `y.js` file. Yjs is able to automatically require missing modules.  
 ```
 <script src="./bower_components/yjs/y.js"></script>
 ```
 
 ### Npm
 ```
-npm install yjs --save
+npm install --save yjs % add all y-* modules you want to use
 ```
 
-And use it like this with *npm*:
+When using npm, you also need to import all modules you want to use.
 ```
-Y = require("yjs");
+Y = require('yjs')
+require('y-array')(Y) // add the y-array type to Yjs
+// require('y-websockets-client')(Y) // do the same for all modules you want to use
 ```
 
 # Text editing example
@@ -74,6 +77,7 @@ Y({
   db: {
     name: 'memory' // store in memory.
     // name: 'indexeddb'
+    // name: 'leveldb'
   },
   connector: {
     name: 'websockets-client', // choose the websockets connector
@@ -81,11 +85,11 @@ Y({
     // name: 'xmpp'
     room: 'Textarea-example-dev'
   },
-  sourceDir: '/bower_components', // location of the y-* modules
+  sourceDir: '/bower_components', // location of the y-* modules (bower only)
   share: {
     textarea: 'Text' // y.share.textarea is of type Y.Text
   }
-  // types: ['Richtext', 'Array'] // optional list of types you want to import
+  // types: ['Richtext', 'Array'] // optional list of types you want to import (bower only)
 }).then(function (y) {
   // bind the textarea to a shared text element
   y.share.textarea.bind(document.getElementById('textfield'))
@@ -174,14 +178,18 @@ The promise returns an instance of Y. We denote it with a lower case `y`.
 There are some friendly people on [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/y-js/yjs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) who may help you with your problem, and answer your questions.
 
 Please report _any_ issues to the [Github issue page](https://github.com/y-js/yjs/issues)! I try to fix them very soon, if possible.
-If you want to see an issue fixed, please subscribe to the thread (or remind me via gitter).
-
 
 ## Changelog
 
+### 12.0.0
+* **Types work are synchronous and never return a promise (except explicitly stated)**
+  * `y.share.map.get('map type') // => returns a Y.Map instead of a promise`
+  * The event property `oldValues` also contains a list of types/values (without wrapper)
+  * Support for the [y-leveldb](https://github.com/y-js/y-leveldb) database adapter
+
 ### 11.0.0
 
-* **All types now return a single event instead of list of events**
+* **All types return a single event instead of list of events**
   * Insert events contain a list of values
 * Improved performance for large insertions & deletions
 * Several bugfixes (offline editing related)
@@ -195,7 +203,7 @@ If you want to see an issue fixed, please subscribe to the thread (or remind me 
 ### 9.0.0
 There were several rolling updates from 0.6 to 0.8. We consider Yjs stable since a long time, 
 and intend to continue stable releases. From this release forward y-* modules will implement peer-dependencies for npm, and dependencies for bower.
-Furthermore, incompatible yjs instances will now throw errors when syncing - this feature was influenced by #48. The versioning jump was influenced by react (see [here](https://facebook.github.io/react/blog/2016/02/19/new-versioning-scheme.html))
+Furthermore, incompatible yjs instances throw errors now when syncing - this feature was influenced by #48. The versioning jump was influenced by react (see [here](https://facebook.github.io/react/blog/2016/02/19/new-versioning-scheme.html))
 
 
 ### 0.6.0
