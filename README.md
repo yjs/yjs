@@ -66,29 +66,47 @@ require('y-array')(Y) // add the y-array type to Yjs
 ```
 
 # Text editing example
+Install dependencies
 ```
-Y({
-  db: {
-    name: 'memory' // store in memory.
-    // name: 'indexeddb'
-    // name: 'leveldb'
-  },
-  connector: {
-    name: 'websockets-client', // choose the websockets connector
-    // name: 'webrtc'
-    // name: 'xmpp'
-    room: 'Textarea-example-dev'
-  },
-  sourceDir: '/bower_components', // location of the y-* modules (bower only)
-  share: {
-    textarea: 'Text' // y.share.textarea is of type Y.Text
-  }
-  // types: ['Richtext', 'Array'] // optional list of types you want to import (bower only)
-}).then(function (y) {
-  // bind the textarea to a shared text element
-  y.share.textarea.bind(document.getElementById('textfield'))
-}
+bower i yjs y-memory y-webrtc y-array y-text
 ```
+
+Here is a simple example of a shared textarea
+```
+  <!DOCTYPE html>
+  <html>
+    <body>
+      <script src="./bower_components/yjs/y.js"></script>
+      <script>
+        Y({
+          db: {
+            name: 'memory' // use memory database adapter.
+            // name: 'indexeddb'
+            // name: 'leveldb'
+          },
+          connector: {
+            name: 'webrtc', // use webrtc connector
+            // name: 'websockets-client'
+            // name: 'xmpp'
+            room: 'my-room' // clients connecting to the same room share data 
+          },
+          sourceDir: '/bower_components', // location of the y-* modules (browser only)
+          share: {
+            textarea: 'Text' // y.share.textarea is of type y-text
+          }
+        }).then(function (y) {
+          // The Yjs instance `y` is available
+          // y.share.* contains the shared types
+  
+          // Bind the textarea to y.share.textarea
+          y.share.textarea.bind(document.querySelector('textarea'))
+        }
+      </script>
+      <textarea></textarea>
+    </body>
+  </html>
+```
+
 ## Get help
 There are some friendly people on [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/y-js/yjs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) who are eager to help, and answer questions.
 
@@ -121,10 +139,10 @@ require('y-map')(Y)
 ``` 
 * options.share
   * Specify on `options.share[arbitraryName]` types that are shared among all users.
-  * E.g. Specify `options.share[arbitraryName] = 'Array'` to require y-array and create an Y.Array type on `y.share[arbitraryName]`.
+  * E.g. Specify `options.share[arbitraryName] = 'Array'` to require y-array and create an y-array type on `y.share[arbitraryName]`.
   * If userA doesn't specify `options.share[arbitraryName]`, it won't be available for userA.
   * If userB specifies `options.share[arbitraryName]`, it still won't be available for userA. But all the updates are send from userB to userA.
-  * In contrast to Y.Map, types on `y.share.*` cannot be overwritten or deleted. Instead, they are merged among all users. This feature is only available on `y.share.*`
+  * In contrast to y-map, types on `y.share.*` cannot be overwritten or deleted. Instead, they are merged among all users. This feature is only available on `y.share.*`
   * Weird behavior: It is supported that two users specify different types with the same property name.
      E.g. userA specifies `options.share.x = 'Array'`, and userB specifies `options.share.x = 'Text'`. But they only share data if they specified the same type with the same property name
 * options.type (browser only)
@@ -176,7 +194,7 @@ The promise returns an instance of Y. We denote it with a lower case `y`.
 
 ### 12.0.0
 * **Types are synchronous and never return a promise (except explicitly stated)**
-  * `y.share.map.get('map type') // => returns a Y.Map instead of a promise`
+  * `y.share.map.get('map type') // => returns a y-map instead of a promise`
   * The event property `oldValues`, and `values` contain a list of values (without wrapper)
 * Support for the [y-leveldb](https://github.com/y-js/y-leveldb) database adapter
 * [y-richtext](https://github.com/y-js/y-richtext) supports Quill@1.0.0-rc.2
