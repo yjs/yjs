@@ -107,12 +107,12 @@ Here is a simple example of a shared textarea
   </html>
 ```
 
-## Get help
-There are some friendly people on [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/y-js/yjs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) who are eager to help, and answer questions.
+## Get Help & Give Help
+There are some friendly people on [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/y-js/yjs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) who are eager to help, and answer questions. Please join!
 
-Please report _any_ issues to the [Github issue page](https://github.com/y-js/yjs/issues)! I try to fix them very soon, if possible.
+Report _any_ issues to the [Github issue page](https://github.com/y-js/yjs/issues)! I try to fix them very soon, if possible.
 
-# Api
+# API
 
 ### Y(options)
 * options.db
