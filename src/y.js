@@ -140,6 +140,9 @@ class YConfig {
       for (var propertyname in opts.share) {
         var typeConstructor = opts.share[propertyname].split('(')
         var typeName = typeConstructor.splice(0, 1)
+        var type = Y[typeName]
+        var typedef = type.typeDefinition
+        var id = ['_', typedef.struct + '_' + typeName + '_' + propertyname + '_' + typeConstructor]
         var args = []
         if (typeConstructor.length === 1) {
           try {
@@ -147,11 +150,13 @@ class YConfig {
           } catch (e) {
             throw new Error('Was not able to parse type definition! (share.' + propertyname + ')')
           }
+          if (type.typeDefinition.parseArguments == null) {
+            throw new Error(typeName + ' does not expect arguments!')
+          } else {
+            args = typedef.parseArguments(args[0])[1]
+          }
         }
-        var type = Y[typeName]
-        var typedef = type.typeDefinition
-        var id = ['_', typedef.struct + '_' + typeName + '_' + propertyname + '_' + typeConstructor]
-        share[propertyname] = this.store.createType(type.apply(typedef, args), id)
+        share[propertyname] = yield* this.store.initType.call(this, id, args)
       }
       this.store.whenTransactionsFinished()
         .then(callback)
