@@ -58,11 +58,17 @@ You only need to include the `y.js` file. Yjs is able to automatically require m
 npm install --save yjs % add all y-* modules you want to use
 ```
 
-When using npm, you also need to import all modules you want to use.
+If you don't include via script tag, you have to explicitly include all modules! (Same goes for other module systems)
 ```
-Y = require('yjs')
+var Y = require('yjs')
 require('y-array')(Y) // add the y-array type to Yjs
-// require('y-websockets-client')(Y) // do the same for all modules you want to use
+require('y-websockets-client')(Y)
+require('y-memory')(Y)
+require('y-array')(Y)
+require('y-map')(Y)
+require('y-text')(Y)
+// ..
+// do the same for all modules you want to use
 ```
 
 # Text editing example
