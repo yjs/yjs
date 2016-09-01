@@ -513,7 +513,7 @@ module.exports = function (Y /* :any */) {
     }
     /*
       Init type. This is called when a remote operation is retrieved, and transformed to a type
-      TODO: delete type from store.initializedTypes[id] when corresponding id was deleted! 
+      TODO: delete type from store.initializedTypes[id] when corresponding id was deleted!
     */
     * initType (id, args) {
       var sid = JSON.stringify(id)
@@ -535,12 +535,7 @@ module.exports = function (Y /* :any */) {
       id = id || this.getNextOpId(1)
       var op = Y.Struct[structname].create(id)
       op.type = typedefinition[0].name
-      
-      /* TODO: implement for y-xml support
-      if (typedefinition[0].appendAdditionalInfo != null) {
-        yield* typedefinition[0].appendAdditionalInfo.call(this, op, typedefinition[1])
-      }
-      */
+
       this.requestTransaction(function * () {
         if (op.id[0] === '_') {
           yield* this.setOperation(op)

@@ -122,7 +122,7 @@ function * applyTransactions (relAmount, numberOfTransactions, objects, users, t
       // therefore, operations of the database will be (pre)transformed until user operations arrive
       yield (function simulateConcurrentUserInteractions (type) {
         if (!(type instanceof Y.utils.CustomType) && type.y instanceof Y.utils.CustomType) {
-          // usually we expect type to be a custom type. But in YXml we share an object {y: YXml, dom: Dom} instead 
+          // usually we expect type to be a custom type. But in YXml we share an object {y: YXml, dom: Dom} instead
           type = type.y
         }
         if (type.eventHandler.awaiting === 0 && type.eventHandler._debuggingAwaiting !== true) {
@@ -161,7 +161,7 @@ function * applyTransactions (relAmount, numberOfTransactions, objects, users, t
 
 function fixAwaitingInType (type) {
   if (!(type instanceof Y.utils.CustomType) && type.y instanceof Y.utils.CustomType) {
-    // usually we expect type to be a custom type. But in YXml we share an object {y: YXml, dom: Dom} instead 
+    // usually we expect type to be a custom type. But in YXml we share an object {y: YXml, dom: Dom} instead
     type = type.y
   }
   return new Promise(function (resolve) {

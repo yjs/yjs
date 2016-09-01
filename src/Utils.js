@@ -295,7 +295,7 @@ module.exports = function (Y /* : any*/) {
             var _o = yield* transaction.getInsertion(o.id)
             if (_o.parentSub != null && _o.left != null) {
               // if o is an insertion of a map struc (parentSub is defined), then it shouldn't be necessary to compute left
-              this.waiting.splice(i,1)
+              this.waiting.splice(i, 1)
               i-- // update index
             } else if (!Y.utils.compareIds(_o.id, o.id)) {
               // o got extended
