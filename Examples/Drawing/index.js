@@ -43,9 +43,7 @@ Y({
   // call drawLine every time an array is appended
   y.share.drawing.observe(function (event) {
     if (event.type === 'insert') {
-      event.values().then(function (values) {
-        values.forEach(drawLine)
-      })
+      event.values.forEach(drawLine)
     } else {
       // just remove all elements (thats what we do anyway)
       svg.selectAll('path').remove()
@@ -53,7 +51,7 @@ Y({
   })
   // draw all existing content
   for (var i = 0; i < drawing.length; i++) {
-    drawing.get(i).then(drawLine)
+    drawLine(drawing.get(i))
   }
 
   // clear canvas on request
@@ -64,9 +62,7 @@ Y({
   var sharedLine = null
   function dragstart () {
     drawing.insert(drawing.length, [Y.Array])
-    drawing.get(drawing.length - 1).then(function (array) {
-      sharedLine = array
-    })
+    sharedLine = drawing.get(drawing.length - 1)
   }
 
   // After one dragged event is recognized, we ignore them for 33ms.

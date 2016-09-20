@@ -2607,7 +2607,7 @@ module.exports = function (Y /* :any */) {
       }
       /*
         Init type. This is called when a remote operation is retrieved, and transformed to a type
-        TODO: delete type from store.initializedTypes[id] when corresponding id was deleted! 
+        TODO: delete type from store.initializedTypes[id] when corresponding id was deleted!
       */
 
     }, {
@@ -2665,11 +2665,6 @@ module.exports = function (Y /* :any */) {
         var op = Y.Struct[structname].create(id);
         op.type = typedefinition[0].name;
 
-        /* TODO: implement for y-xml support
-        if (typedefinition[0].appendAdditionalInfo != null) {
-          yield* typedefinition[0].appendAdditionalInfo.call(this, op, typedefinition[1])
-        }
-        */
         this.requestTransaction(regeneratorRuntime.mark(function _callee6() {
           return regeneratorRuntime.wrap(function _callee6$(_context11) {
             while (1) {
@@ -7078,7 +7073,7 @@ var YConfig = function () {
       var share = {};
       this.share = share;
       this.db.requestTransaction(regeneratorRuntime.mark(function requestTransaction() {
-        var propertyname, typeConstructor, typeName, args, type, typedef, id;
+        var propertyname, typeConstructor, typeName, type, typedef, id, args;
         return regeneratorRuntime.wrap(function requestTransaction$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
@@ -7087,49 +7082,62 @@ var YConfig = function () {
 
               case 1:
                 if ((_context.t1 = _context.t0()).done) {
-                  _context.next = 20;
+                  _context.next = 26;
                   break;
                 }
 
                 propertyname = _context.t1.value;
                 typeConstructor = opts.share[propertyname].split('(');
                 typeName = typeConstructor.splice(0, 1);
-                args = [];
-
-                if (!(typeConstructor.length === 1)) {
-                  _context.next = 14;
-                  break;
-                }
-
-                _context.prev = 7;
-
-                args = JSON.parse('[' + typeConstructor[0].split(')')[0] + ']');
-                _context.next = 14;
-                break;
-
-              case 11:
-                _context.prev = 11;
-                _context.t2 = _context['catch'](7);
-                throw new Error('Was not able to parse type definition! (share.' + propertyname + ')');
-
-              case 14:
                 type = Y[typeName];
                 typedef = type.typeDefinition;
                 id = ['_', typedef.struct + '_' + typeName + '_' + propertyname + '_' + typeConstructor];
+                args = [];
 
-                share[propertyname] = this.store.createType(type.apply(typedef, args), id);
+                if (!(typeConstructor.length === 1)) {
+                  _context.next = 22;
+                  break;
+                }
+
+                _context.prev = 10;
+
+                args = JSON.parse('[' + typeConstructor[0].split(')')[0] + ']');
+                _context.next = 17;
+                break;
+
+              case 14:
+                _context.prev = 14;
+                _context.t2 = _context['catch'](10);
+                throw new Error('Was not able to parse type definition! (share.' + propertyname + ')');
+
+              case 17:
+                if (!(type.typeDefinition.parseArguments == null)) {
+                  _context.next = 21;
+                  break;
+                }
+
+                throw new Error(typeName + ' does not expect arguments!');
+
+              case 21:
+                args = typedef.parseArguments(args[0])[1];
+
+              case 22:
+                return _context.delegateYield(this.store.initType.call(this, id, args), 't3', 23);
+
+              case 23:
+                share[propertyname] = _context.t3;
                 _context.next = 1;
                 break;
 
-              case 20:
+              case 26:
                 this.store.whenTransactionsFinished().then(callback);
 
-              case 21:
+              case 27:
               case 'end':
                 return _context.stop();
             }
           }
-        }, requestTransaction, this, [[7, 11]]);
+        }, requestTransaction, this, [[10, 14]]);
       }));
     }
   }, {

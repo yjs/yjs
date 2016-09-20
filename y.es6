@@ -1097,7 +1097,7 @@ module.exports = function (Y /* :any */) {
     }
     /*
       Init type. This is called when a remote operation is retrieved, and transformed to a type
-      TODO: delete type from store.initializedTypes[id] when corresponding id was deleted! 
+      TODO: delete type from store.initializedTypes[id] when corresponding id was deleted!
     */
     * initType (id, args) {
       var sid = JSON.stringify(id)
@@ -1119,12 +1119,7 @@ module.exports = function (Y /* :any */) {
       id = id || this.getNextOpId(1)
       var op = Y.Struct[structname].create(id)
       op.type = typedefinition[0].name
-      
-      /* TODO: implement for y-xml support
-      if (typedefinition[0].appendAdditionalInfo != null) {
-        yield* typedefinition[0].appendAdditionalInfo.call(this, op, typedefinition[1])
-      }
-      */
+
       this.requestTransaction(function * () {
         if (op.id[0] === '_') {
           yield* this.setOperation(op)
@@ -2896,7 +2891,7 @@ module.exports = function (Y /* : any*/) {
             var _o = yield* transaction.getInsertion(o.id)
             if (_o.parentSub != null && _o.left != null) {
               // if o is an insertion of a map struc (parentSub is defined), then it shouldn't be necessary to compute left
-              this.waiting.splice(i,1)
+              this.waiting.splice(i, 1)
               i-- // update index
             } else if (!Y.utils.compareIds(_o.id, o.id)) {
               // o got extended
@@ -3499,6 +3494,9 @@ class YConfig {
       for (var propertyname in opts.share) {
         var typeConstructor = opts.share[propertyname].split('(')
         var typeName = typeConstructor.splice(0, 1)
+        var type = Y[typeName]
+        var typedef = type.typeDefinition
+        var id = ['_', typedef.struct + '_' + typeName + '_' + propertyname + '_' + typeConstructor]
         var args = []
         if (typeConstructor.length === 1) {
           try {
@@ -3506,11 +3504,13 @@ class YConfig {
           } catch (e) {
             throw new Error('Was not able to parse type definition! (share.' + propertyname + ')')
           }
+          if (type.typeDefinition.parseArguments == null) {
+            throw new Error(typeName + ' does not expect arguments!')
+          } else {
+            args = typedef.parseArguments(args[0])[1]
+          }
         }
-        var type = Y[typeName]
-        var typedef = type.typeDefinition
-        var id = ['_', typedef.struct + '_' + typeName + '_' + propertyname + '_' + typeConstructor]
-        share[propertyname] = this.store.createType(type.apply(typedef, args), id)
+        share[propertyname] = yield* this.store.initType.call(this, id, args)
       }
       this.store.whenTransactionsFinished()
         .then(callback)

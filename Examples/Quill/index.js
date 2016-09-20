@@ -7,8 +7,8 @@ Y({
     name: 'memory'
   },
   connector: {
-    name: 'webrtc',
-    room: 'richtext-example-quill-beta'
+    name: 'websockets-client',
+    room: 'richtext-example-quill-1.0'
   },
   sourceDir: '/bower_components',
   share: {

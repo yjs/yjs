@@ -16,8 +16,6 @@ Y({
 }).then(function (y) {
   window.yXml = y
   // bind xml type to a dom, and put it in body
-  y.share.xml.getDom().then(function (dom) {
-    window.sharedDom = dom
-    document.body.appendChild(dom)
-  })
+  window.sharedDom = y.share.xml.getDom()
+  document.body.appendChild(window.sharedDom)
 })
