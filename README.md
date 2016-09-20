@@ -204,6 +204,7 @@ The promise returns an instance of Y. We denote it with a lower case `y`.
   * The event property `oldValues`, and `values` contain a list of values (without wrapper)
 * Support for the [y-leveldb](https://github.com/y-js/y-leveldb) database adapter
 * [y-richtext](https://github.com/y-js/y-richtext) supports Quill@1.0.0-rc.2
+* Only the types are affected by this release. You have to upgrade y-array@10.0.0, y-map@10.0.0, y-richtext@9.0.0, and y-xml@10.0.0
 
 ### 11.0.0
 
