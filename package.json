@@ -72,7 +72,7 @@
     "seedrandom": "^2.4.2",
     "standard": "^5.2.2",
     "vinyl-buffer": "^1.0.0",
-    "vinyl-source-stream": "^1.1.0"
+    "vinyl-source-stream": "^1.1.0",
     "gulp-uglify": "^2.0.0"
   }
 }
