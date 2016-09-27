@@ -66,6 +66,16 @@ module.exports = function (Y/* :any */) {
       this.whenSyncedListeners = []
       return this.y.db.stopGarbageCollector()
     }
+    repair () {
+      console.info('Repairing the state of Yjs. This can happen if messages get lost, and Yjs detects that something is wrong. If this happens often, please report an issue here: https://github.com/y-js/yjs/issues')
+      for (var name in this.connections) {
+        this.connections[name].isSynced = false
+      }
+      this.isSynced = false
+      this.currentSyncTarget = null
+      this.broadcastedHB = false
+      this.findNextSyncTarget()
+    }
     setUserId (userId) {
       if (this.userId == null) {
         this.userId = userId
