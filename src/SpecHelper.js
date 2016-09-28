@@ -329,7 +329,8 @@ g.createUsers = async(function * createUsers (self, numberOfUsers, database, ini
         name: database,
         namespace: 'User ' + i,
         cleanStart: true,
-        gcTimeout: -1
+        gcTimeout: -1,
+        repairCheckInterval: -1
       },
       connector: {
         name: 'Test',
