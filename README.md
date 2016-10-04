@@ -242,7 +242,7 @@ This is a complete rewrite of the 0.5 version of Yjs. Since Yjs 0.6.0 it is poss
 I created this framework during my bachelor thesis at the chair of computer science 5 [(i5)](http://dbis.rwth-aachen.de/cms), RWTH University. Since December 2014 I'm working on Yjs as a part of my student worker job at the i5.
 
 ## License
-Yjs is licensed under the [MIT License](./LICENSE.txt).
+Yjs is licensed under the [MIT License](./LICENSE).
 
 <yjs@dbis.rwth-aachen.de>
 

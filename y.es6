@@ -2273,7 +2273,7 @@ module.exports = function (Y/* :any */) {
         }
         if (this.store.forwardAppliedOperations) {
           var ops = []
-          ops.push({struct: 'Delete', target: [d[0], d[1]], length: del[2]})
+          ops.push({struct: 'Delete', target: [del[0], del[1]], length: del[2]})
           this.store.y.connector.broadcastOps(ops)
         }
       }
@@ -3428,7 +3428,8 @@ Y.extend = function (name, value) {
 }
 
 Y.requestModules = requestModules
-function requestModules (modules) {
+function requestModules (modules, sourceDir) {
+  sourceDir = sourceDir || '/bower_components'
   // determine if this module was compiled for es5 or es6 (y.js vs. y.es6)
   // if Insert.execute is a Function, then it isnt a generator..
   // then load the es5(.js) files..
@@ -3442,7 +3443,7 @@ function requestModules (modules) {
         // module does not exist
         if (typeof window !== 'undefined' && window.Y !== 'undefined') {
           var imported = document.createElement('script')
-          imported.src = Y.sourceDir + '/' + modulename + '/' + modulename + extention
+          imported.src = sourceDir + '/' + modulename + '/' + modulename + extention
           document.head.appendChild(imported)
 
           let requireModule = {}
@@ -3498,10 +3499,9 @@ function Y (opts/* :YOptions */) /* :Promise<YConfig> */ {
   for (var name in opts.share) {
     modules.push(opts.share[name])
   }
-  Y.sourceDir = opts.sourceDir
   return new Promise(function (resolve, reject) {
     setTimeout(function () {
-      Y.requestModules(modules).then(function () {
+      Y.requestModules(modules, opts.sourceDir).then(function () {
         if (opts == null) reject('An options object is expected! ')
         else if (opts.connector == null) reject('You must specify a connector! (missing connector property)')
         else if (opts.connector.name == null) reject('You must specify connector name! (missing connector.name property)')
