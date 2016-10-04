@@ -675,7 +675,7 @@ module.exports = function (Y/* :any */) {
         }
         if (this.store.forwardAppliedOperations) {
           var ops = []
-          ops.push({struct: 'Delete', target: [d[0], d[1]], length: del[2]})
+          ops.push({struct: 'Delete', target: [del[0], del[1]], length: del[2]})
           this.store.y.connector.broadcastOps(ops)
         }
       }
