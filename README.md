@@ -71,6 +71,19 @@ require('y-text')(Y)
 // do the same for all modules you want to use
 ```
 
+### ES6 Syntax
+```
+import Y from 'yjs'
+import yArray from 'y-array'
+import yWebsocketsClient from 'y-webrtc'
+import yMemory from 'y-memory'
+import yArray from 'y-array'
+import yMap from 'y-map'
+import yText from 'y-text'
+// ..
+Y.extend(yArray, yWebsocketsClient, yMemory, yArray, yMap, yText /*, .. */)
+```
+
 # Text editing example
 Install dependencies
 ```
