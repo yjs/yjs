@@ -3416,14 +3416,25 @@ module.exports = Y
 Y.requiringModules = requiringModules
 
 Y.extend = function (name, value) {
-  if (value instanceof Y.utils.CustomTypeDefinition) {
-    Y[name] = value.parseArguments
+  if (arguments.length === 2 && typeof name === 'string') {
+    if (value instanceof Y.utils.CustomTypeDefinition) {
+      Y[name] = value.parseArguments
+    } else {
+      Y[name] = value
+    }
+    if (requiringModules[name] != null) {
+      requiringModules[name].resolve()
+      delete requiringModules[name]
+    }
   } else {
-    Y[name] = value
-  }
-  if (requiringModules[name] != null) {
-    requiringModules[name].resolve()
-    delete requiringModules[name]
+    for (var i = 0; i < arguments.length; i++) {
+      var f = arguments[i]
+      if (typeof f === 'function') {
+        f(Y)
+      } else {
+        throw new Error('Expected function!')
+      }
+    }
   }
 }
 
