@@ -3439,8 +3439,8 @@ Y.extend = function (name, value) {
 }
 
 Y.requestModules = requestModules
-function requestModules (modules, sourceDir) {
-  sourceDir = sourceDir || '/bower_components'
+function requestModules (modules) {
+  var sourceDir = Y.sourceDir || '/bower_components'
   // determine if this module was compiled for es5 or es6 (y.js vs. y.es6)
   // if Insert.execute is a Function, then it isnt a generator..
   // then load the es5(.js) files..
@@ -3505,6 +3505,9 @@ type YOptions = {
 */
 
 function Y (opts/* :YOptions */) /* :Promise<YConfig> */ {
+  if (opts.sourceDir != null) {
+    Y.sourceDir = opts.sourceDir
+  }
   opts.types = opts.types != null ? opts.types : []
   var modules = [opts.db.name, opts.connector.name].concat(opts.types)
   for (var name in opts.share) {
@@ -3512,7 +3515,7 @@ function Y (opts/* :YOptions */) /* :Promise<YConfig> */ {
   }
   return new Promise(function (resolve, reject) {
     setTimeout(function () {
-      Y.requestModules(modules, opts.sourceDir).then(function () {
+      Y.requestModules(modules).then(function () {
         if (opts == null) reject('An options object is expected! ')
         else if (opts.connector == null) reject('You must specify a connector! (missing connector property)')
         else if (opts.connector.name == null) reject('You must specify connector name! (missing connector.name property)')
