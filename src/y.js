@@ -112,24 +112,28 @@ function Y (opts/* :YOptions */) /* :Promise<YConfig> */ {
     modules.push(opts.share[name])
   }
   return new Promise(function (resolve, reject) {
-    setTimeout(function () {
-      Y.requestModules(modules).then(function () {
-        if (opts == null) reject('An options object is expected! ')
-        else if (opts.connector == null) reject('You must specify a connector! (missing connector property)')
-        else if (opts.connector.name == null) reject('You must specify connector name! (missing connector.name property)')
-        else if (opts.db == null) reject('You must specify a database! (missing db property)')
-        else if (opts.connector.name == null) reject('You must specify db name! (missing db.name property)')
-        else if (opts.share == null) reject('You must specify a set of shared types!')
-        else {
+    if (opts == null) reject('An options object is expected! ')
+    else if (opts.connector == null) reject('You must specify a connector! (missing connector property)')
+    else if (opts.connector.name == null) reject('You must specify connector name! (missing connector.name property)')
+    else if (opts.db == null) reject('You must specify a database! (missing db property)')
+    else if (opts.connector.name == null) reject('You must specify db name! (missing db.name property)')
+    else if (opts.share == null) reject('You must specify a set of shared types!')
+    else {
+      opts = Y.utils.copyObject(opts)
+      opts.connector = Y.utils.copyObject(opts.connector)
+      opts.db = Y.utils.copyObject(opts.db)
+      opts.share = Y.utils.copyObject(opts.share)
+      setTimeout(function () {
+        Y.requestModules(modules).then(function () {
           var yconfig = new YConfig(opts)
           yconfig.db.whenUserIdSet(function () {
             yconfig.init(function () {
               resolve(yconfig)
             })
           })
-        }
-      }).catch(reject)
-    }, 0)
+        }).catch(reject)
+      }, 0)
+    }
   })
 }
 
