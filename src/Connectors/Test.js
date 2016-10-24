@@ -24,11 +24,21 @@ module.exports = function (Y) {
       }
     },
     whenTransactionsFinished: function () {
-      var ps = []
-      for (var name in this.users) {
-        ps.push(this.users[name].y.db.whenTransactionsFinished())
-      }
-      return Promise.all(ps)
+      var self = this
+      return new Promise (function (resolve, reject) {
+        // The connector first has to send the messages to the db.
+        // Wait for the checkAuth-function to resolve
+        // The test lib only has a simple checkAuth function: `() => Promise.resolve()`
+        // Just add a function to the event-queue, in order to wait for the event.
+        // TODO: this may be buggy in test applications (but it isn't be for real-life apps)
+        setTimeout(function () {
+          var ps = []
+          for (var name in self.users) {
+            ps.push(self.users[name].y.db.whenTransactionsFinished())
+          }
+          Promise.all(ps).then(resolve, reject)
+        }, 0)
+      })
     },
     flushOne: function flushOne () {
       var bufs = []
@@ -54,8 +64,9 @@ module.exports = function (Y) {
           delete buff[sender]
         }
         var user = globalRoom.users[userId]
-        user.receiveMessage(m[0], m[1])
-        return user.y.db.whenTransactionsFinished()
+        return user.receiveMessage(m[0], m[1]).then(function () {
+          return user.y.db.whenTransactionsFinished() 
+        }, function () {})
       } else {
         return false
       }
@@ -72,16 +83,14 @@ module.exports = function (Y) {
             }
             globalRoom.whenTransactionsFinished().then(nextFlush)
           } else {
-            setTimeout(function () {
-              var c = globalRoom.flushOne()
-              if (c) {
-                c.then(function () {
-                  globalRoom.whenTransactionsFinished().then(nextFlush)
-                })
-              } else {
-                resolve()
-              }
-            }, 0)
+            var c = globalRoom.flushOne()
+            if (c) {
+              c.then(function () {
+                globalRoom.whenTransactionsFinished().then(nextFlush)
+              })
+            } else {
+              resolve()
+            }
           }
         }
         globalRoom.whenTransactionsFinished().then(nextFlush)
@@ -107,7 +116,7 @@ module.exports = function (Y) {
       this.syncingClientDuration = 0
     }
     receiveMessage (sender, m) {
-      super.receiveMessage(sender, JSON.parse(JSON.stringify(m)))
+      return super.receiveMessage(sender, JSON.parse(JSON.stringify(m)))
     }
     send (userId, message) {
       var buffer = globalRoom.buffers[userId]
@@ -154,7 +163,7 @@ module.exports = function (Y) {
           if (buff[sender].length === 0) {
             delete buff[sender]
           }
-          this.receiveMessage(m[0], m[1])
+          yield this.receiveMessage(m[0], m[1])
         }
         yield self.whenTransactionsFinished()
       })

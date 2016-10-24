@@ -1,6 +1,9 @@
 /* @flow */
 'use strict'
 
+function canRead (auth) { return auth === 'read' || auth === 'write' }
+function canWrite (auth) { return auth === 'write' }
+
 module.exports = function (Y/* :any */) {
   class AbstractConnector {
     /* ::
@@ -54,6 +57,8 @@ module.exports = function (Y/* :any */) {
       this.syncStep2 = Promise.resolve()
       this.broadcastOpBuffer = []
       this.protocolVersion = 11
+      this.authInfo = opts.auth || null
+      this.checkAuth = opts.checkAuth || function () { return Promise.resolve('write') } // default is everyone has write access
     }
     reconnect () {
     }
@@ -86,6 +91,9 @@ module.exports = function (Y/* :any */) {
     }
     onUserEvent (f) {
       this.userEventListeners.push(f)
+    }
+    removeUserEventListener (f) {
+      this.userEventListeners = this.userEventListeners.filter(g => { f !== g })
     }
     userLeft (user) {
       if (this.connections[user] != null) {
@@ -163,7 +171,8 @@ module.exports = function (Y/* :any */) {
             type: 'sync step 1',
             stateSet: stateSet,
             deleteSet: deleteSet,
-            protocolVersion: conn.protocolVersion
+            protocolVersion: conn.protocolVersion,
+            auth: conn.authInfo
           })
         })
       } else {
@@ -217,7 +226,7 @@ module.exports = function (Y/* :any */) {
     */
     receiveMessage (sender/* :UserId */, message/* :Message */) {
       if (sender === this.userId) {
-        return
+        return Promise.resolve()
       }
       if (this.debug) {
         console.log(`receive ${sender} -> ${this.userId}: ${message.type}`, JSON.parse(JSON.stringify(message))) // eslint-disable-line
@@ -232,91 +241,118 @@ module.exports = function (Y/* :any */) {
           type: 'sync stop',
           protocolVersion: this.protocolVersion
         })
-        return
+        return Promise.reject('Incompatible protocol version')
       }
-      if (message.type === 'sync step 1') {
-        let conn = this
-        let m = message
-        this.y.db.requestTransaction(function *() {
-          var currentStateSet = yield* this.getStateSet()
-          yield* this.applyDeleteSet(m.deleteSet)
-
-          var ds = yield* this.getDeleteSet()
-          var ops = yield* this.getOperations(m.stateSet)
-          conn.send(sender, {
-            type: 'sync step 2',
-            os: ops,
-            stateSet: currentStateSet,
-            deleteSet: ds,
-            protocolVersion: this.protocolVersion
-          })
-          if (this.forwardToSyncingClients) {
-            conn.syncingClients.push(sender)
-            setTimeout(function () {
-              conn.syncingClients = conn.syncingClients.filter(function (cli) {
-                return cli !== sender
-              })
-              conn.send(sender, {
-                type: 'sync done'
-              })
-            }, 5000) // TODO: conn.syncingClientDuration)
-          } else {
-            conn.send(sender, {
-              type: 'sync done'
+      if (message.auth != null && this.connections[sender] != null) {
+        // authenticate using auth in message
+        var auth = this.checkAuth(message.auth, this.y)
+        this.connections[sender].auth = auth
+        auth.then(auth => {
+          for (var f of this.userEventListeners) {
+            f({
+              action: 'userAuthenticated',
+              user: sender,
+              auth: auth
             })
           }
-          conn._setSyncedWith(sender)
         })
-      } else if (message.type === 'sync step 2') {
-        let conn = this
-        var broadcastHB = !this.broadcastedHB
-        this.broadcastedHB = true
-        var db = this.y.db
-        var defer = {}
-        defer.promise = new Promise(function (resolve) {
-          defer.resolve = resolve
-        })
-        this.syncStep2 = defer.promise
-        let m /* :MessageSyncStep2 */ = message
-        db.requestTransaction(function * () {
-          yield* this.applyDeleteSet(m.deleteSet)
-          this.store.apply(m.os)
-          db.requestTransaction(function * () {
-            var ops = yield* this.getOperations(m.stateSet)
-            if (ops.length > 0) {
-              if (!broadcastHB) { // TODO: consider to broadcast here..
-                conn.send(sender, {
-                  type: 'update',
-                  ops: ops
-                })
+      } else if (this.connections[sender] != null && this.connections[sender].auth == null) {
+        // authenticate without otherwise
+        this.connections[sender].auth = this.checkAuth(null, this.y)
+      }
+      if (this.connections[sender] != null && this.connections[sender].auth != null) {
+        return this.connections[sender].auth.then((auth) => {
+          if (message.type === 'sync step 1' && canRead(auth)) {
+            let conn = this
+            let m = message
+
+            this.y.db.requestTransaction(function *() {
+              var currentStateSet = yield* this.getStateSet()
+              if (canWrite(auth)) {
+                yield* this.applyDeleteSet(m.deleteSet)
+              }
+
+              var ds = yield* this.getDeleteSet()
+              var ops = yield* this.getOperations(m.stateSet)
+              conn.send(sender, {
+                type: 'sync step 2',
+                os: ops,
+                stateSet: currentStateSet,
+                deleteSet: ds,
+                protocolVersion: this.protocolVersion,
+                auth: this.authInfo
+              })
+              if (this.forwardToSyncingClients) {
+                conn.syncingClients.push(sender)
+                setTimeout(function () {
+                  conn.syncingClients = conn.syncingClients.filter(function (cli) {
+                    return cli !== sender
+                  })
+                  conn.send(sender, {
+                    type: 'sync done'
+                  })
+                }, 5000) // TODO: conn.syncingClientDuration)
               } else {
-                // broadcast only once!
-                conn.broadcastOps(ops)
+                conn.send(sender, {
+                  type: 'sync done'
+                })
+              }
+              conn._setSyncedWith(sender)
+            })
+          } else if (message.type === 'sync step 2' && canWrite(auth)) {
+            let conn = this
+            var broadcastHB = !this.broadcastedHB
+            this.broadcastedHB = true
+            var db = this.y.db
+            var defer = {}
+            defer.promise = new Promise(function (resolve) {
+              defer.resolve = resolve
+            })
+            this.syncStep2 = defer.promise
+            let m /* :MessageSyncStep2 */ = message
+            db.requestTransaction(function * () {
+              yield* this.applyDeleteSet(m.deleteSet)
+              this.store.apply(m.os)
+              db.requestTransaction(function * () {
+                var ops = yield* this.getOperations(m.stateSet)
+                if (ops.length > 0) {
+                  if (!broadcastHB) { // TODO: consider to broadcast here..
+                    conn.send(sender, {
+                      type: 'update',
+                      ops: ops
+                    })
+                  } else {
+                    // broadcast only once!
+                    conn.broadcastOps(ops)
+                  }
+                }
+                defer.resolve()
+              })
+            })
+          } else if (message.type === 'sync done') {
+            var self = this
+            this.syncStep2.then(function () {
+              self._setSyncedWith(sender)
+            })
+          } else if (message.type === 'update' && canWrite(auth)) {
+            if (this.forwardToSyncingClients) {
+              for (var client of this.syncingClients) {
+                this.send(client, message)
               }
             }
-            defer.resolve()
-          })
-        })
-      } else if (message.type === 'sync done') {
-        var self = this
-        this.syncStep2.then(function () {
-          self._setSyncedWith(sender)
-        })
-      } else if (message.type === 'update') {
-        if (this.forwardToSyncingClients) {
-          for (var client of this.syncingClients) {
-            this.send(client, message)
+            if (this.y.db.forwardAppliedOperations) {
+              var delops = message.ops.filter(function (o) {
+                return o.struct === 'Delete'
+              })
+              if (delops.length > 0) {
+                this.broadcastOps(delops)
+              }
+            }
+            this.y.db.apply(message.ops)
           }
-        }
-        if (this.y.db.forwardAppliedOperations) {
-          var delops = message.ops.filter(function (o) {
-            return o.struct === 'Delete'
-          })
-          if (delops.length > 0) {
-            this.broadcastOps(delops)
-          }
-        }
-        this.y.db.apply(message.ops)
+        })
+      } else {
+        return Promise.reject('Unable to deliver message')
       }
     }
     _setSyncedWith (user) {
