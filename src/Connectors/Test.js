@@ -25,7 +25,7 @@ module.exports = function (Y) {
     },
     whenTransactionsFinished: function () {
       var self = this
-      return new Promise (function (resolve, reject) {
+      return new Promise(function (resolve, reject) {
         // The connector first has to send the messages to the db.
         // Wait for the checkAuth-function to resolve
         // The test lib only has a simple checkAuth function: `() => Promise.resolve()`
@@ -65,7 +65,7 @@ module.exports = function (Y) {
         }
         var user = globalRoom.users[userId]
         return user.receiveMessage(m[0], m[1]).then(function () {
-          return user.y.db.whenTransactionsFinished() 
+          return user.y.db.whenTransactionsFinished()
         }, function () {})
       } else {
         return false
@@ -83,7 +83,7 @@ module.exports = function (Y) {
             }
             globalRoom.whenTransactionsFinished().then(nextFlush)
           } else {
-            var c = globalRoom.flushOne()
+            c = globalRoom.flushOne()
             if (c) {
               c.then(function () {
                 globalRoom.whenTransactionsFinished().then(nextFlush)
