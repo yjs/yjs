@@ -239,10 +239,7 @@ module.exports = function (Y /* :any */) {
       this.gc2 = this.gc2.filter(filter)
       delete op.gc
     }
-    * destroy () {
-      clearInterval(this.gcInterval)
-      this.gcInterval = null
-      this.stopRepairCheck()
+    destroyTypes () {
       for (var key in this.initializedTypes) {
         var type = this.initializedTypes[key]
         if (type._destroy != null) {
@@ -251,6 +248,11 @@ module.exports = function (Y /* :any */) {
           console.error('The type you included does not provide destroy functionality, it will remain in memory (updating your packages will help).')
         }
       }
+    }
+    * destroy () {
+      clearInterval(this.gcInterval)
+      this.gcInterval = null
+      this.stopRepairCheck()
     }
     setUserId (userId) {
       if (!this.userIdPromise.inProgress) {
@@ -434,8 +436,7 @@ module.exports = function (Y /* :any */) {
      */
     * operationAdded (transaction, op) {
       if (op.struct === 'Delete') {
-        var target = yield* transaction.getInsertion(op.target)
-        var type = this.initializedTypes[JSON.stringify(target.parent)]
+        var type = this.initializedTypes[JSON.stringify(op.targetParent)]
         if (type != null) {
           yield* type._changed(transaction, op)
         }
@@ -503,10 +504,8 @@ module.exports = function (Y /* :any */) {
             resolve: resolve,
             promise: promise
           }
-          return promise
-        } else {
-          return this.transactionsFinished.promise
         }
+        return this.transactionsFinished.promise
       } else {
         return Promise.resolve()
       }

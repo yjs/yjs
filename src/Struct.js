@@ -30,7 +30,11 @@ module.exports = function (Y/* :any */) {
     */
     Delete: {
       encode: function (op) {
-        return op
+        return {
+          target: op.target,
+          length: op.length || 0,
+          struct: 'Delete'
+        }
       },
       requiredOps: function (op) {
         return [] // [op.target]

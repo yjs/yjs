@@ -190,16 +190,30 @@ class YConfig {
     return this.connector.reconnect()
   }
   destroy () {
+    var self = this
+    return this.close().then(function () {
+      if (self.db.deleteDB != null) {
+        return self.db.deleteDB()
+      } else {
+        return Promise.resolve()
+      }
+    })
+  }
+  close () {
+    var self = this
+    this.share = null
     if (this.connector.destroy != null) {
       this.connector.destroy()
     } else {
       this.connector.disconnect()
     }
-    var self = this
-    this.db.requestTransaction(function * () {
-      yield* self.db.destroy()
-      self.connector = null
-      self.db = null
+    return this.db.whenTransactionsFinished(function () {
+      this.db.destroyTypes()
+      // make sure to wait for all transactions before destroying the db
+      this.db.requestTransaction(function * () {
+        yield* self.db.destroy()
+      })
+      return this.db.whenTransactionsFinished()
     })
   }
 }

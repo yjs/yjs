@@ -206,7 +206,8 @@ module.exports = function (Y/* :any */) {
             yield* this.store.operationAdded(this, {
               struct: 'Delete',
               target: target.id,
-              length: targetLength
+              length: targetLength,
+              targetParent: target.parent
             })
           }
           // need to gc in the end!
