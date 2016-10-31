@@ -38,7 +38,12 @@ Y.extend = function (name, value) {
 
 Y.requestModules = requestModules
 function requestModules (modules) {
-  var sourceDir = Y.sourceDir || '/bower_components'
+  var sourceDir
+  if (Y.sourceDir === null) {
+    sourceDir = null
+  } else {
+    sourceDir = Y.sourceDir || '/bower_components'
+  }
   // determine if this module was compiled for es5 or es6 (y.js vs. y.es6)
   // if Insert.execute is a Function, then it isnt a generator..
   // then load the es5(.js) files..
@@ -51,10 +56,11 @@ function requestModules (modules) {
       if (requiringModules[module] == null) {
         // module does not exist
         if (typeof window !== 'undefined' && window.Y !== 'undefined') {
-          var imported = document.createElement('script')
-          imported.src = sourceDir + '/' + modulename + '/' + modulename + extention
-          document.head.appendChild(imported)
-
+          if (sourceDir != null) {
+            var imported = document.createElement('script')
+            imported.src = sourceDir + '/' + modulename + '/' + modulename + extention
+            document.head.appendChild(imported)
+          }
           let requireModule = {}
           requiringModules[module] = requireModule
           requireModule.promise = new Promise(function (resolve) {
@@ -103,7 +109,7 @@ type YOptions = {
 */
 
 function Y (opts/* :YOptions */) /* :Promise<YConfig> */ {
-  if (opts.sourceDir != null) {
+  if (opts.hasOwnProperty('sourceDir')) {
     Y.sourceDir = opts.sourceDir
   }
   opts.types = opts.types != null ? opts.types : []
