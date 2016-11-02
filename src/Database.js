@@ -149,7 +149,7 @@ module.exports = function (Y /* :any */) {
       clearInterval(this.repairCheckIntervalHandler)
     }
     queueGarbageCollector (id) {
-      if (this.y.isConnected()) {
+      if (this.y.isConnected() && this.gcTimeout > 0) {
         this.gc1.push(id)
       }
     }
@@ -204,7 +204,7 @@ module.exports = function (Y /* :any */) {
       TODO: rename this function
 
       Rulez:
-      * Only gc if this user is online
+      * Only gc if this user is online & gcTimeout > 0
       * The most left element in a list must not be gc'd.
         => There is at least one element in the list
 
@@ -213,7 +213,9 @@ module.exports = function (Y /* :any */) {
     * addToGarbageCollector (op, left) {
       if (
         op.gc == null &&
-        op.deleted === true
+        op.deleted === true &&
+        this.store.gcTimeout > 0 &&
+        this.y.isConnected()
       ) {
         var gc = false
         if (left != null && left.deleted === true) {
