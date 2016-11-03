@@ -150,7 +150,10 @@ module.exports = function (Y/* :any */) {
      true otherwise
     */
     findNextSyncTarget () {
-      if (this.currentSyncTarget != null || this.isSynced) {
+      if (this.y == null) {
+        debugger
+      }
+      if (this.currentSyncTarget != null) {
         return // "The current sync has not finished!"
       }
 

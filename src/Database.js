@@ -75,12 +75,18 @@ module.exports = function (Y /* :any */) {
       }
       this.gc1 = [] // first stage
       this.gc2 = [] // second stage -> after that, remove the op
-      this.gcTimeout = !opts.gcTimeout ? 50000 : opts.gcTimeouts
+      this.gc = opts.gc == null || opts.gc
+      if (this.gc) {
+        this.gcTimeout = !opts.gcTimeout ? 50000 : opts.gcTimeout
+      } else {
+        this.gcTimeout = -1
+      }
+
       function garbageCollect () {
         return os.whenTransactionsFinished().then(function () {
           if (os.gc1.length > 0 || os.gc2.length > 0) {
-            if (!os.y.isConnected()) {
-              console.warn('gc should be empty when disconnected!')
+            if (!os.y.isSynced) {
+              console.warn('gc should be empty when not synced!')
             }
             return new Promise((resolve) => {
               os.requestTransaction(function * () {
@@ -149,7 +155,7 @@ module.exports = function (Y /* :any */) {
       clearInterval(this.repairCheckIntervalHandler)
     }
     queueGarbageCollector (id) {
-      if (this.y.isConnected() && this.gcTimeout > 0) {
+      if (this.y.isSynced && this.gc) {
         this.gc1.push(id)
       }
     }
@@ -204,7 +210,7 @@ module.exports = function (Y /* :any */) {
       TODO: rename this function
 
       Rulez:
-      * Only gc if this user is online & gcTimeout > 0
+      * Only gc if this user is online & gc turned on
       * The most left element in a list must not be gc'd.
         => There is at least one element in the list
 
@@ -214,8 +220,8 @@ module.exports = function (Y /* :any */) {
       if (
         op.gc == null &&
         op.deleted === true &&
-        this.store.gcTimeout > 0 &&
-        this.y.isConnected()
+        this.store.gc &&
+        this.store.y.isSynced
       ) {
         var gc = false
         if (left != null && left.deleted === true) {
