@@ -144,11 +144,6 @@ module.exports = function (Y/* :any */) {
         this.whenSyncedListeners.push(f)
       }
     }
-    /*
-
-     returns false, if there is no sync target
-     true otherwise
-    */
     findNextSyncTarget () {
       if (this.y == null) {
         debugger
@@ -179,16 +174,20 @@ module.exports = function (Y/* :any */) {
           })
         })
       } else {
-        this.y.db.requestTransaction(function *() {
-          // it is crucial that isSynced is set at the time garbageCollectAfterSync is called
-          conn.isSynced = true
-          yield* this.garbageCollectAfterSync()
-          // call whensynced listeners
-          for (var f of conn.whenSyncedListeners) {
-            f()
-          }
-          conn.whenSyncedListeners = []
-        })
+        if (!conn.isSynced) {
+          this.y.db.requestTransaction(function *() {
+            if (!conn.isSynced) {
+              // it is crucial that isSynced is set at the time garbageCollectAfterSync is called
+              conn.isSynced = true
+              yield* this.garbageCollectAfterSync()
+              // call whensynced listeners
+              for (var f of conn.whenSyncedListeners) {
+                f()
+              }
+              conn.whenSyncedListeners = []
+            }
+          })
+        }
       }
     }
     send (uid, message) {

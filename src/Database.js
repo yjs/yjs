@@ -85,7 +85,7 @@ module.exports = function (Y /* :any */) {
       function garbageCollect () {
         return os.whenTransactionsFinished().then(function () {
           if (os.gc1.length > 0 || os.gc2.length > 0) {
-            if (!os.y.isSynced) {
+            if (!os.y.connector.isSynced) {
               console.warn('gc should be empty when not synced!')
             }
             return new Promise((resolve) => {
@@ -155,7 +155,7 @@ module.exports = function (Y /* :any */) {
       clearInterval(this.repairCheckIntervalHandler)
     }
     queueGarbageCollector (id) {
-      if (this.y.isSynced && this.gc) {
+      if (this.y.connector.isSynced && this.gc) {
         this.gc1.push(id)
       }
     }
@@ -221,7 +221,7 @@ module.exports = function (Y /* :any */) {
         op.gc == null &&
         op.deleted === true &&
         this.store.gc &&
-        this.store.y.isSynced
+        this.store.y.connector.isSynced
       ) {
         var gc = false
         if (left != null && left.deleted === true) {
