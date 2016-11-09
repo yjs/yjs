@@ -198,14 +198,20 @@ The promise returns an instance of Y. We denote it with a lower case `y`.
   * Force to disconnect this instance from the other instances
 * y.connector.reconnect()
   * Try to reconnect to the other instances (needs to be supported by the connector)
-  * Not supported by y-xmpp 
-* y.destroy()
+  * Not supported by y-xmpp
+* y.close()
   * Destroy this object.
   * Destroys all types (they will throw weird errors if you still use them)
   * Disconnects from the other instances (via connector)
+  * Returns a promise
+* y.destroy()
+  * calls y.close()
   * Removes all data from the database
+  * Returns a promise
 * y.db.stopGarbageCollector()
   * Stop the garbage collector. Call y.db.garbageCollect() to continue garbage collection
+* y.db.gc :: Boolean
+  * Whether gc is turned on
 * y.db.gcTimeout :: Number (defaults to 50000 ms)
   * Time interval between two garbage collect cycles
   * It is required that all instances exchanged all messages after two garbage collect cycles (after 100000 ms per default)
