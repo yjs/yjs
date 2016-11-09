@@ -145,9 +145,6 @@ module.exports = function (Y/* :any */) {
       }
     }
     findNextSyncTarget () {
-      if (this.y == null) {
-        debugger
-      }
       if (this.currentSyncTarget != null) {
         return // "The current sync has not finished!"
       }
