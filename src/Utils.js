@@ -82,7 +82,6 @@ module.exports = function (Y /* : any*/) {
     destroy () {
       super.destroy()
       this.waiting = null
-      this.awaiting = null
       this.onevent = null
     }
     /*
