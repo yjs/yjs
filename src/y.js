@@ -154,6 +154,7 @@ class YConfig {
     this.options = opts
     this.db = new Y[opts.db.name](this, opts.db)
     this.connector = new Y[opts.connector.name](this, opts.connector)
+    this.connected = true
   }
   init (callback) {
     var opts = this.options
@@ -190,10 +191,20 @@ class YConfig {
     return this.connector.isSynced
   }
   disconnect () {
-    return this.connector.disconnect()
+    if (this.connected) {
+      this.connected = false
+      return this.connector.disconnect()
+    } else {
+      return Promise.resolve()
+    }
   }
   reconnect () {
-    return this.connector.reconnect()
+    if (!this.connected) {
+      this.connected = true
+      return this.connector.reconnect()
+    } else {
+      return Promise.resolve()
+    }
   }
   destroy () {
     var self = this
