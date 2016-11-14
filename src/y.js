@@ -123,7 +123,6 @@ function Y (opts/* :YOptions */) /* :Promise<YConfig> */ {
     else if (opts.connector.name == null) reject('You must specify connector name! (missing connector.name property)')
     else if (opts.db == null) reject('You must specify a database! (missing db property)')
     else if (opts.connector.name == null) reject('You must specify db name! (missing db.name property)')
-    else if (opts.share == null) reject('You must specify a set of shared types!')
     else {
       opts = Y.utils.copyObject(opts)
       opts.connector = Y.utils.copyObject(opts.connector)
