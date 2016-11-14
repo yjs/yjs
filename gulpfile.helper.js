@@ -10,7 +10,7 @@ module.exports = function (gulp, helperOptions) {
   var options = minimist(process.argv.slice(2), {
     string: ['modulename', 'export', 'name', 'port', 'testfiles', 'es6'],
     default: {
-      modulename: helperOptions.moduleName,
+      moduleName: helperOptions.moduleName,
       targetName: helperOptions.targetName,
       export: 'ignore',
       port: '8888',
@@ -51,7 +51,8 @@ module.exports = function (gulp, helperOptions) {
     }
     return (browserify({
       entries: files.distEs5,
-      debug: true
+      debug: true,
+      standalone: options.moduleName
     }).transform('babelify', babelOptions)
       .bundle()
       .pipe(source(options.targetName))
@@ -68,7 +69,8 @@ module.exports = function (gulp, helperOptions) {
   gulp.task('dist:es6', function () {
     return (browserify({
       entries: files.dist,
-      debug: true
+      debug: true,
+      standalone: options.moduleName
     }).bundle()
       .pipe(source(options.targetName))
       .pipe(buffer())

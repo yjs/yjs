@@ -51,7 +51,7 @@ require('./gulpfile.helper.js')(gulp, {
   polyfills: [],
   entry: './src/y.js',
   targetName: 'y.js',
-  moduleName: 'yjs',
+  moduleName: 'Y',
   includeRuntime: true,
   specs: [
     './src/Database.spec.js',

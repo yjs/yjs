@@ -234,7 +234,3 @@ class YConfig {
     })
   }
 }
-
-if (typeof window !== 'undefined') {
-  window.Y = Y
-}
