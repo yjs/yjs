@@ -36,6 +36,15 @@ module.exports = function (gulp, helperOptions) {
     files.distEs5 = [files.dist]
   }
 
+  var header = require('gulp-header')
+  var banner = ['/**',
+    ' * <%= pkg.name %> - <%= pkg.description %>',
+    ' * @version v<%= pkg.version %>',
+    ' * @link <%= pkg.homepage %>',
+    ' * @license <%= pkg.license %>',
+    ' */',
+    ''].join('\n')
+
   gulp.task('dist:es5', function () {
     var babelOptions = {
       presets: ['es2015']
@@ -51,6 +60,7 @@ module.exports = function (gulp, helperOptions) {
       .pipe($.if(!options.debug, $.uglify().on('error', function (e) {
         console.log('\x07', e.message, JSON.stringify(e)); return this.end()
       })))
+      .pipe(header(banner, { pkg : require('./package.json') } ))
       .pipe($.sourcemaps.write('.'))
       .pipe(gulp.dest('./dist/')))
   })
@@ -67,8 +77,8 @@ module.exports = function (gulp, helperOptions) {
       .pipe($.rename({
         extname: '.es6'
       }))
+      .pipe(header(banner, { pkg : require('./package.json') } ))
       .pipe($.sourcemaps.write('.'))
-
       .pipe(gulp.dest('./dist/')))
   })
 
