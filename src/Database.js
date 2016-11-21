@@ -188,6 +188,8 @@ module.exports = function (Y /* :any */) {
     }
     stopGarbageCollector () {
       var self = this
+      this.gc = false
+      this.gcTimeout = -1
       return new Promise(function (resolve) {
         self.requestTransaction(function * () {
           var ungc /* :Array<Struct> */ = self.gc1.concat(self.gc2)

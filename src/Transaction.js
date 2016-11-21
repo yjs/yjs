@@ -369,6 +369,9 @@ module.exports = function (Y/* :any */) {
       if (this.store.gc1.length > 0 || this.store.gc2.length > 0) {
         console.warn('gc should be empty after sync')
       }
+      if (!this.store.gc) {
+        return
+      }
       yield* this.os.iterate(this, null, null, function * (op) {
         if (op.gc) {
           delete op.gc

@@ -60,6 +60,15 @@ module.exports = function (Y/* :any */) {
       this.authInfo = opts.auth || null
       this.checkAuth = opts.checkAuth || function () { return Promise.resolve('write') } // default is everyone has write access
     }
+    resetAuth (auth) {
+      if (this.authInfo !== auth) {
+        this.authInfo = auth
+        this.broadcast({
+          type: 'auth',
+          auth: this.authInfo
+        })
+      }
+    }
     reconnect () {
     }
     disconnect () {
@@ -296,7 +305,6 @@ module.exports = function (Y/* :any */) {
                   type: 'sync done'
                 })
               }
-              conn._setSyncedWith(sender)
             })
           } else if (message.type === 'sync step 2' && canWrite(auth)) {
             let conn = this
