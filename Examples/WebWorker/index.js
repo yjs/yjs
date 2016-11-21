@@ -1,26 +1,14 @@
 /* global Y, Quill */
 
-var connector, serviceworker
-
-// register yjs service worker
-if ('serviceWorker' in navigator) {
-  // service worker is supported by the browser
-  connector = 'serviceworker'
-  serviceworker = navigator.serviceWorker.register('../bower_components/y-serviceworker/yjs-service-worker.js')
-} else {
-  // use websockets for browsers that do not support service browser
-  connector = 'websockets-client'
-}
-
 // initialize a shared object. This function call returns a promise!
 Y({
   db: {
     name: 'memory'
   },
   connector: {
-    name: connector,
-    serviceworker: serviceworker,
-    room: 'ServiceWorkerExample2'
+    name: 'webworker',
+    url: '../bower_components/y-webworker/yjs-webworker.js',
+    room: 'WebWorkerExample2'
   },
   sourceDir: '/bower_components',
   share: {

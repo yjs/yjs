@@ -1,4 +1,10 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+/**
+ * yjs - A framework for real-time p2p shared editing on any data
+ * @version v12.1.2
+ * @link http://y-js.org
+ * @license MIT
+ */
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Y = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /* @flow */
 'use strict'
 
@@ -60,6 +66,15 @@ module.exports = function (Y/* :any */) {
       this.protocolVersion = 11
       this.authInfo = opts.auth || null
       this.checkAuth = opts.checkAuth || function () { return Promise.resolve('write') } // default is everyone has write access
+    }
+    resetAuth (auth) {
+      if (this.authInfo !== auth) {
+        this.authInfo = auth
+        this.broadcast({
+          type: 'auth',
+          auth: this.authInfo
+        })
+      }
     }
     reconnect () {
     }
@@ -297,7 +312,6 @@ module.exports = function (Y/* :any */) {
                   type: 'sync done'
                 })
               }
-              conn._setSyncedWith(sender)
             })
           } else if (message.type === 'sync step 2' && canWrite(auth)) {
             let conn = this
@@ -826,6 +840,8 @@ module.exports = function (Y /* :any */) {
     }
     stopGarbageCollector () {
       var self = this
+      this.gc = false
+      this.gcTimeout = -1
       return new Promise(function (resolve) {
         self.requestTransaction(function * () {
           var ungc /* :Array<Struct> */ = self.gc1.concat(self.gc2)
@@ -2021,6 +2037,9 @@ module.exports = function (Y/* :any */) {
     * garbageCollectAfterSync () {
       if (this.store.gc1.length > 0 || this.store.gc2.length > 0) {
         console.warn('gc should be empty after sync')
+      }
+      if (!this.store.gc) {
+        return
       }
       yield* this.os.iterate(this, null, null, function * (op) {
         if (op.gc) {
@@ -3580,7 +3599,6 @@ function Y (opts/* :YOptions */) /* :Promise<YConfig> */ {
     else if (opts.connector.name == null) reject('You must specify connector name! (missing connector.name property)')
     else if (opts.db == null) reject('You must specify a database! (missing db property)')
     else if (opts.connector.name == null) reject('You must specify db name! (missing db.name property)')
-    else if (opts.share == null) reject('You must specify a set of shared types!')
     else {
       opts = Y.utils.copyObject(opts)
       opts.connector = Y.utils.copyObject(opts.connector)
@@ -3691,10 +3709,6 @@ class YConfig {
     })
   }
 }
-
-if (typeof window !== 'undefined') {
-  window.Y = Y
-}
-
-},{"./Connector.js":1,"./Connectors/Test.js":2,"./Database.js":3,"./Struct.js":4,"./Transaction.js":5,"./Utils.js":6}]},{},[7])
+},{"./Connector.js":1,"./Connectors/Test.js":2,"./Database.js":3,"./Struct.js":4,"./Transaction.js":5,"./Utils.js":6}]},{},[7])(7)
+});
 
