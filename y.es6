@@ -3709,6 +3709,7 @@ class YConfig {
     })
   }
 }
+
 },{"./Connector.js":1,"./Connectors/Test.js":2,"./Database.js":3,"./Struct.js":4,"./Transaction.js":5,"./Utils.js":6}]},{},[7])(7)
 });
 
