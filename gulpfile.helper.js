@@ -61,7 +61,7 @@ module.exports = function (gulp, helperOptions) {
       .pipe($.if(!options.debug, $.uglify().on('error', function (e) {
         console.log('\x07', e.message, JSON.stringify(e)); return this.end()
       })))
-      .pipe(header(banner, { pkg : require('./package.json') } ))
+      .pipe(header(banner, { pkg: require('./package.json') }))
       .pipe($.sourcemaps.write('.'))
       .pipe(gulp.dest('./dist/')))
   })
@@ -79,7 +79,7 @@ module.exports = function (gulp, helperOptions) {
       .pipe($.rename({
         extname: '.es6'
       }))
-      .pipe(header(banner, { pkg : require('./package.json') } ))
+      .pipe(header(banner, { pkg: require('./package.json') }))
       .pipe($.sourcemaps.write('.'))
       .pipe(gulp.dest('./dist/')))
   })
