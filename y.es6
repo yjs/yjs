@@ -1,6 +1,6 @@
 /**
  * yjs - A framework for real-time p2p shared editing on any data
- * @version v12.1.2
+ * @version v12.1.3
  * @link http://y-js.org
  * @license MIT
  */
@@ -1522,7 +1522,7 @@ module.exports = function (Y/* :any */) {
         }
 
         // try to merge original op.left and op.origin
-        for (let i = 0; i < tryToRemergeLater.length; i++) {
+        for (i = 0; i < tryToRemergeLater.length; i++) {
           var m = yield* this.getOperation(tryToRemergeLater[i])
           yield* this.tryCombineWithLeft(m)
         }

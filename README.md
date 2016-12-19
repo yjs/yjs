@@ -41,6 +41,12 @@ Connectors, Databases, and Types are available as modules that extend Yjs. Here 
 |[text](https://github.com/y-js/y-text) | Collaborate on text. Supports two way binding to the [Ace Editor](https://ace.c9.io), textareas, input elements, and HTML elements (e.g. <*h1*>, or <*p*>) |
 |[richtext](https://github.com/y-js/y-richtext) | Collaborate on rich text. Supports two way binding to the [Quill Rich Text Editor](http://quilljs.com/)|
 
+##### Other
+
+| Name      | Description       |
+|-----------|-------------------|
+|[y-element](http://y-js.org/y-element/) | Yjs Polymer Element |
+
 ## Use it! 
 Install Yjs, and its modules with [bower](http://bower.io/), or [npm](https://www.npmjs.org/package/yjs).
 
