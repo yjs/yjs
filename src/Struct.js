@@ -269,7 +269,7 @@ module.exports = function (Y/* :any */) {
         }
 
         // try to merge original op.left and op.origin
-        for (let i = 0; i < tryToRemergeLater.length; i++) {
+        for (i = 0; i < tryToRemergeLater.length; i++) {
           var m = yield* this.getOperation(tryToRemergeLater[i])
           yield* this.tryCombineWithLeft(m)
         }
