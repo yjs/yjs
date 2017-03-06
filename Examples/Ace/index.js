@@ -17,7 +17,7 @@ Y({
   window.yAce = y
 
   // bind the textarea to a shared text element
-  var editor = ace.edit('ace')
+  var editor = ace.edit('aceContainer')
   editor.setTheme('ace/theme/chrome')
   editor.getSession().setMode('ace/mode/javascript')
 

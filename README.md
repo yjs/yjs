@@ -7,7 +7,7 @@ For additional information, demos, and tutorials visit [y-js.org](http://y-js.or
 
 ### Extensions
 Yjs only knows how to resolve conflicts on shared data. You have to choose a ..
-* *Connector* - a communication protocol that propagates changes to the clients 
+* *Connector* - a communication protocol that propagates changes to the clients
 * *Database* - a database to store your changes
 * one or more *Types* - that represent the shared data
 
@@ -47,7 +47,7 @@ Connectors, Databases, and Types are available as modules that extend Yjs. Here 
 |-----------|-------------------|
 |[y-element](http://y-js.org/y-element/) | Yjs Polymer Element |
 
-## Use it! 
+## Use it!
 Install Yjs, and its modules with [bower](http://bower.io/), or [npm](https://www.npmjs.org/package/yjs).
 
 ### Bower
@@ -113,7 +113,7 @@ Here is a simple example of a shared textarea
             name: 'webrtc', // use webrtc connector
             // name: 'websockets-client'
             // name: 'xmpp'
-            room: 'my-room' // clients connecting to the same room share data 
+            room: 'my-room' // clients connecting to the same room share data
           },
           sourceDir: '/bower_components', // location of the y-* modules (browser only)
           share: {
@@ -122,7 +122,7 @@ Here is a simple example of a shared textarea
         }).then(function (y) {
           // The Yjs instance `y` is available
           // y.share.* contains the shared types
-  
+
           // Bind `y.share.textarea` to `<textarea/>`
           y.share.textarea.bind(document.querySelector('textarea'))
         })
@@ -142,7 +142,7 @@ Report _any_ issues to the [Github issue page](https://github.com/y-js/yjs/issue
 ### Y(options)
 * Y.extend(module1, module2, ..)
   * Add extensions to Y
-  * `Y.extend(require('y-webrtc'))` has the same semantics as `require('y-webrtc')(Y)` 
+  * `Y.extend(require('y-webrtc'))` has the same semantics as `require('y-webrtc')(Y)`
 * options.db
   * Will be forwarded to the database adapter. Specify the database adaper on `options.db.name`.
   * Have a look at the used database adapter repository to see all available options.
@@ -150,7 +150,8 @@ Report _any_ issues to the [Github issue page](https://github.com/y-js/yjs/issue
   * Will be forwarded to the connector adapter. Specify the connector adaper on `options.connector.name`.
   * All our connectors implement a `room` property. Clients that specify the same room share the same data.
   * All of our connectors specify an `url` property that defines the connection endpoint of the used connector.
-    * All of our connectors also have a default connection endpoint that you can use for development. 
+    * All of our connectors also have a default connection endpoint that you can use for development.
+  * Set `options.connector.generateUserId = true` in order to genenerate a userid, instead of receiving one from the server. This way the `Y(..)` is immediately going to be resolved, without waiting for any confirmation from the server. Use with caution.
   * Have a look at the used connector repository to see all available options.
 * options.sourceDir (browser only)
   * Path where all y-* modules are stored
@@ -159,12 +160,12 @@ Report _any_ issues to the [Github issue page](https://github.com/y-js/yjs/issue
   * When using nodejs you need to manually extend Yjs:
 ```
 var Y = require('yjs')
-// you have to require a db, connector, and *all* types you use! 
+// you have to require a db, connector, and *all* types you use!
 require('y-memory')(Y)
 require('y-webrtc')(Y)
 require('y-map')(Y)
 // ..
-``` 
+```
 * options.share
   * Specify on `options.share[arbitraryName]` types that are shared among all users.
   * E.g. Specify `options.share[arbitraryName] = 'Array'` to require y-array and create an y-array type on `y.share[arbitraryName]`.
@@ -248,7 +249,7 @@ The promise returns an instance of Y. We denote it with a lower case `y`.
 * Fixes several memory leaks
 
 ### 9.0.0
-There were several rolling updates from 0.6 to 0.8. We consider Yjs stable since a long time, 
+There were several rolling updates from 0.6 to 0.8. We consider Yjs stable since a long time,
 and intend to continue stable releases. From this release forward y-* modules will implement peer-dependencies for npm, and dependencies for bower.
 Furthermore, incompatible yjs instances throw errors now when syncing - this feature was influenced by #48. The versioning jump was influenced by react (see [here](https://facebook.github.io/react/blog/2016/02/19/new-versioning-scheme.html))
 
@@ -273,4 +274,3 @@ I created this framework during my bachelor thesis at the chair of computer scie
 Yjs is licensed under the [MIT License](./LICENSE).
 
 <yjs@dbis.rwth-aachen.de>
-
