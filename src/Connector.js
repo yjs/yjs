@@ -59,6 +59,9 @@ module.exports = function (Y/* :any */) {
       this.protocolVersion = 11
       this.authInfo = opts.auth || null
       this.checkAuth = opts.checkAuth || function () { return Promise.resolve('write') } // default is everyone has write access
+      if (opts.generateUserId === true) {
+        this.setUserId(Y.utils.generateGuid())
+      }
     }
     resetAuth (auth) {
       if (this.authInfo !== auth) {

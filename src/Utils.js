@@ -752,4 +752,9 @@ module.exports = function (Y /* : any*/) {
     return SmallLookupBuffer
   }
   Y.utils.createSmallLookupBuffer = createSmallLookupBuffer
+
+  // Generates a unique id, for use as a user id.
+  // Thx to @jed for this script https://gist.github.com/jed/982883
+  function generateGuid(a){return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,generateGuid)} // eslint-disable-line
+  Y.utils.generateGuid = generateGuid
 }
