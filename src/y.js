@@ -8,6 +8,9 @@ require('./Struct.js')(Y)
 require('./Utils.js')(Y)
 require('./Connectors/Test.js')(Y)
 
+Y.debug = require('debug')
+// Y.debug.log = console.log.bind(console)
+
 var requiringModules = {}
 
 module.exports = Y

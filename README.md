@@ -225,6 +225,27 @@ The promise returns an instance of Y. We denote it with a lower case `y`.
 * y.db.userId :: String
   * The used user id for this client. **Never overwrite this**
 
+### Logging
+Yjs uses [debug](https://github.com/visionmedia/debug) for logging. The flag
+`y*` enables logging for all y-* components. You can selectively remove
+components you are not interested in: E.g. The flag `y*,-y:connector-message`
+will not log the long `y:connector-message` messages.
+
+##### Enable logging in Node.js
+```sh
+DEBUG=y* node app.js
+```
+
+Remove the colors in order to log to a file:
+```sh
+DEBUG_COLORS=0 DEBUG=y* node app.js > log
+```
+
+##### Enable logging in the browser
+```js
+localStorage.debug = 'y*'
+```
+
 ## Changelog
 
 ### 12.0.0

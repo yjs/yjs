@@ -43,6 +43,8 @@ module.exports = function (Y/* :any */) {
       } else {
         throw new Error("Role must be either 'master' or 'slave'!")
       }
+      this.log = Y.debug('y:connector')
+      this.logMessage = Y.debug('y:connector-message')
       this.y.db.forwardAppliedOperations = opts.forwardAppliedOperations || false
       this.role = opts.role
       this.connections = {}
@@ -73,8 +75,10 @@ module.exports = function (Y/* :any */) {
       }
     }
     reconnect () {
+      this.log('reconnecting..')
     }
     disconnect () {
+      this.log('discronnecting..')
       this.connections = {}
       this.isSynced = false
       this.currentSyncTarget = null
@@ -84,7 +88,7 @@ module.exports = function (Y/* :any */) {
       return this.y.db.stopGarbageCollector()
     }
     repair () {
-      console.info('Repairing the state of Yjs. This can happen if messages get lost, and Yjs detects that something is wrong. If this happens often, please report an issue here: https://github.com/y-js/yjs/issues')
+      this.log('Repairing the state of Yjs. This can happen if messages get lost, and Yjs detects that something is wrong. If this happens often, please report an issue here: https://github.com/y-js/yjs/issues')
       for (var name in this.connections) {
         this.connections[name].isSynced = false
       }
@@ -95,6 +99,7 @@ module.exports = function (Y/* :any */) {
     }
     setUserId (userId) {
       if (this.userId == null) {
+        this.log('Set userId to "%s"', userId)
         this.userId = userId
         return this.y.db.setUserId(userId)
       } else {
@@ -109,6 +114,7 @@ module.exports = function (Y/* :any */) {
     }
     userLeft (user) {
       if (this.connections[user] != null) {
+        this.log('User left: %s', user)
         delete this.connections[user]
         if (user === this.currentSyncTarget) {
           this.currentSyncTarget = null
@@ -132,6 +138,7 @@ module.exports = function (Y/* :any */) {
       if (this.connections[user] != null) {
         throw new Error('This user already joined!')
       }
+      this.log('User joined: %s', user)
       this.connections[user] = {
         isSynced: false,
         role: role
@@ -200,9 +207,12 @@ module.exports = function (Y/* :any */) {
       }
     }
     send (uid, message) {
-      if (this.debug) {
-        console.log(`send ${this.userId} -> ${uid}: ${message.type}`, message) // eslint-disable-line
-      }
+      this.log('Send \'%s\' to %s', message.type, uid)
+      this.logMessage('Message: %j', message)
+    }
+    broadcast (message) {
+      this.log('Broadcast \'%s\'', message.type)
+      this.logMessage('Message: %j', message)
     }
     /*
       Buffer operations, and broadcast them when ready.
@@ -239,11 +249,10 @@ module.exports = function (Y/* :any */) {
       if (sender === this.userId) {
         return Promise.resolve()
       }
-      if (this.debug) {
-        console.log(`receive ${sender} -> ${this.userId}: ${message.type}`, JSON.parse(JSON.stringify(message))) // eslint-disable-line
-      }
+      this.log('Receive \'%s\' from %s', message.type, sender)
+      this.logMessage('Message: %j', message)
       if (message.protocolVersion != null && message.protocolVersion !== this.protocolVersion) {
-        console.error(
+        this.log(
           `You tried to sync with a yjs instance that has a different protocol version
           (You: ${this.protocolVersion}, Client: ${message.protocolVersion}).
           The sync was stopped. You need to upgrade your dependencies (especially Yjs & the Connector)!
