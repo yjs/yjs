@@ -246,48 +246,6 @@ DEBUG_COLORS=0 DEBUG=y* node app.js > log
 localStorage.debug = 'y*'
 ```
 
-## Changelog
-
-### 12.0.0
-* **Types are synchronous and never return a promise (except explicitly stated)**
-  * `y.share.map.get('map type') // => returns a y-map instead of a promise`
-  * The event property `oldValues`, and `values` contain a list of values (without wrapper)
-* Support for the [y-leveldb](https://github.com/y-js/y-leveldb) database adapter
-* [y-richtext](https://github.com/y-js/y-richtext) supports Quill@1.0.0-rc.2
-* Only the types are affected by this release. You have to upgrade y-array@10.0.0, y-map@10.0.0, y-richtext@9.0.0, and y-xml@10.0.0
-
-### 11.0.0
-
-* **All types return a single event instead of list of events**
-  * Insert events contain a list of values
-* Improved performance for large insertions & deletions
-* Several bugfixes (offline editing related)
-* Native support for node 4 (see #49)
-
-### 10.0.0
-
-* Support for more complex types (a type can be a composition of several types)
-* Fixes several memory leaks
-
-### 9.0.0
-There were several rolling updates from 0.6 to 0.8. We consider Yjs stable since a long time,
-and intend to continue stable releases. From this release forward y-* modules will implement peer-dependencies for npm, and dependencies for bower.
-Furthermore, incompatible yjs instances throw errors now when syncing - this feature was influenced by #48. The versioning jump was influenced by react (see [here](https://facebook.github.io/react/blog/2016/02/19/new-versioning-scheme.html))
-
-
-### 0.6.0
-This is a complete rewrite of the 0.5 version of Yjs. Since Yjs 0.6.0 it is possible to work asynchronously on a persistent database, which enables offline support.
-* Switched to semver versioning
-* Requires a promise implementation in environment (es6 promises suffice, included in all the major browsers). Otherwise you have to include a polyfill
-* Y.Object has been renamed to Y.Map
-* Y.Map exchanges `.val(name [, value])` in favor of `.set(name, value)` and `.get(name)`
-* Y.Map `.get(name)` returns a promise, if the value is a custom type
-* The Connector definition slightly changed (I'll update the wiki)
-* The Type definitions completely changed, so you have to rewrite them (I'll rewrite the article in the wiki)
-* Support for several packaging systems
-* Flowtype
-
-
 ## Contribution
 I created this framework during my bachelor thesis at the chair of computer science 5 [(i5)](http://dbis.rwth-aachen.de/cms), RWTH University. Since December 2014 I'm working on Yjs as a part of my student worker job at the i5.
 
