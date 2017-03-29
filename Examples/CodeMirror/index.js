@@ -7,11 +7,11 @@ Y({
   },
   connector: {
     name: 'websockets-client',
-    room: 'ace-example'
+    room: 'codemirror-example'
   },
   sourceDir: '/bower_components',
   share: {
-    codemirror: 'Text' // y.share.textarea is of type Y.Text
+    codemirror: 'Text' // y.share.codemirror is of type Y.Text
   }
 }).then(function (y) {
   window.yCodeMirror = y
@@ -20,6 +20,5 @@ Y({
     mode: 'javascript',
     lineNumbers: true
   })
-  window.codemirror = editor
   y.share.codemirror.bindCodeMirror(editor)
 })
