@@ -9,7 +9,6 @@ require('./Utils.js')(Y)
 require('./Connectors/Test.js')(Y)
 
 Y.debug = require('debug')
-// Y.debug.log = console.log.bind(console)
 
 var requiringModules = {}
 
