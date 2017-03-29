@@ -1,6 +1,6 @@
 /**
  * yjs - A framework for real-time p2p shared editing on any data
- * @version v12.1.5
+ * @version v12.1.6
  * @link http://y-js.org
  * @license MIT
  */
@@ -3998,7 +3998,6 @@ require('./Utils.js')(Y)
 require('./Connectors/Test.js')(Y)
 
 Y.debug = require('debug')
-// Y.debug.log = console.log.bind(console)
 
 var requiringModules = {}
 
