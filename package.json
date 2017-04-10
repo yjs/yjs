@@ -75,5 +75,8 @@
     "standard": "^5.2.2",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0"
+  },
+  "dependencies": {
+    "debug": "^2.6.3"
   }
 }
