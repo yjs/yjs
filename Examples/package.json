@@ -1,0 +1,10 @@
+{
+  "name": "examples",
+  "version": "1.0.0",
+  "description": "",
+  "author": "Kevin Jahns",
+  "license": "MIT",
+  "dependencies": {
+    "monaco-editor": "^0.8.3"
+  }
+}
