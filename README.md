@@ -40,7 +40,7 @@ is a list of the modules we know of:
 |[map](https://github.com/y-js/y-map) | A shared Map implementation. Maps from text to any stringify-able object |
 |[array](https://github.com/y-js/y-array) | A shared Array implementation |
 |[xml](https://github.com/y-js/y-xml) | An implementation of the DOM. You can create a two way binding to Browser DOM objects |
-|[text](https://github.com/y-js/y-text) | Collaborate on text. Supports two way binding to the [Ace Editor](https://ace.c9.io), [CodeMirror](https://codemirror.net/), textareas, input elements, and HTML elements (e.g. <*h1*>, or <*p*>) |
+|[text](https://github.com/y-js/y-text) | Collaborate on text. Supports two way binding to the [Ace Editor](https://ace.c9.io), [CodeMirror](https://codemirror.net/), [Monaco](https://github.com/Microsoft/monaco-editor), textareas, input elements, and HTML elements (e.g. <*h1*>, or <*p*>) |
 |[richtext](https://github.com/y-js/y-richtext) | Collaborate on rich text. Supports two way binding to the [Quill Rich Text Editor](http://quilljs.com/)|
 
 ##### Other
