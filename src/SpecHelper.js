@@ -228,6 +228,20 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
   var allDels1, allDels2 // all deletions
   var db1 = [] // operation store of user1
 
+  yield Y.utils.globalRoom.flushAll()
+  yield g.garbageCollectAllUsers(users)
+  yield Y.utils.globalRoom.flushAll()
+
+  // disconnect, then reconnect all users
+  // We do this to make sure that the gc is updated by everyone
+  for (var i = 0; i < users.length; i++) {
+    yield users[i].disconnect()
+    yield wait()
+    yield users[i].reconnect()
+  }
+  yield wait()
+  yield Y.utils.globalRoom.flushAll()
+
   // t1 and t2 basically do the same. They define t[1,2], ds[1,2], and allDels[1,2]
   function * t1 () {
     s1 = yield* this.getStateSet()
@@ -245,9 +259,7 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
       allDels2.push(d)
     })
   }
-  yield Y.utils.globalRoom.flushAll()
-  yield g.garbageCollectAllUsers(users)
-  yield Y.utils.globalRoom.flushAll()
+
   var buffer = Y.utils.globalRoom.buffers
   for (var name in buffer) {
     if (buffer[name].length > 0) {
@@ -338,6 +350,7 @@ g.createUsers = async(function * createUsers (self, numberOfUsers, database, ini
         namespace: 'User ' + i,
         cleanStart: true,
         gcTimeout: -1,
+        gc: true,
         repairCheckInterval: -1
       },
       connector: {

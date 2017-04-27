@@ -76,6 +76,7 @@ module.exports = function (Y/* :any */) {
     }
     reconnect () {
       this.log('reconnecting..')
+      this.y.db.startGarbageCollector()
     }
     disconnect () {
       this.log('discronnecting..')

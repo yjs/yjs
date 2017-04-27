@@ -39,6 +39,7 @@ module.exports = function (Y /* :any */) {
     */
     constructor (y, opts) {
       this.y = y
+      this.dbOpts = opts
       var os = this
       this.userId = null
       var resolve
@@ -75,12 +76,6 @@ module.exports = function (Y /* :any */) {
       }
       this.gc1 = [] // first stage
       this.gc2 = [] // second stage -> after that, remove the op
-      this.gc = opts.gc == null || opts.gc
-      if (this.gc) {
-        this.gcTimeout = !opts.gcTimeout ? 50000 : opts.gcTimeout
-      } else {
-        this.gcTimeout = -1
-      }
 
       function garbageCollect () {
         return os.whenTransactionsFinished().then(function () {
@@ -115,12 +110,22 @@ module.exports = function (Y /* :any */) {
         })
       }
       this.garbageCollect = garbageCollect
-      if (this.gcTimeout > 0) {
-        garbageCollect()
-      }
+      this.startGarbageCollector()
+      
       this.repairCheckInterval = !opts.repairCheckInterval ? 6000 : opts.repairCheckInterval
       this.opsReceivedTimestamp = new Date()
       this.startRepairCheck()
+    }
+    startGarbageCollector () {
+      this.gc = this.dbOpts.gc == null || this.dbOpts.gc
+      if (this.gc) {
+        this.gcTimeout = !this.dbOpts.gcTimeout ? 50000 : this.dbOpts.gcTimeout
+      } else {
+        this.gcTimeout = -1
+      }
+      if (this.gcTimeout > 0) {
+        this.garbageCollect()
+      }
     }
     startRepairCheck () {
       var os = this

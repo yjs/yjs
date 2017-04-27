@@ -147,11 +147,15 @@ module.exports = function (Y) {
       return Y.utils.globalRoom.flushAll()
     }
     disconnect () {
+      var waitForMe = Promise.resolve()
       if (!this.isDisconnected()) {
         globalRoom.removeUser(this.userId)
-        super.disconnect()
+        waitForMe = super.disconnect()
       }
-      return this.y.db.whenTransactionsFinished()
+      var self = this
+      return waitForMe.then(function () {
+        return self.y.db.whenTransactionsFinished()
+      })
     }
     flush () {
       var self = this
