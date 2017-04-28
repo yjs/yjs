@@ -37,7 +37,7 @@ module.exports = function (Y) {
             ps.push(self.users[name].y.db.whenTransactionsFinished())
           }
           Promise.all(ps).then(resolve, reject)
-        }, 0)
+        }, 10)
       })
     },
     flushOne: function flushOne () {
