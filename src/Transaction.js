@@ -1022,7 +1022,7 @@ module.exports = function (Y/* :any */) {
       var ops = []
       yield* this.os.iterate(this, null, null, function * (op) {
         if (op.id[0] !== '_') {
-          ops.push(Y.Struct[op.struct].encode(op))
+          ops.push(op)
         }
       })
       return {
