@@ -338,7 +338,7 @@ function enable(namespaces) {
   exports.names = [];
   exports.skips = [];
 
-  var split = (namespaces || '').split(/[\s,]+/);
+  var split = (typeof namespaces === 'string' ? namespaces : '').split(/[\s,]+/);
   var len = split.length;
 
   for (var i = 0; i < len; i++) {
@@ -417,7 +417,7 @@ var y = d * 365.25
  *  - `long` verbose formatting [false]
  *
  * @param {String|Number} val
- * @param {Object} options
+ * @param {Object} [options]
  * @throws {Error} throw an error if val is not a non-empty string or a number
  * @return {String|Number}
  * @api public
@@ -720,6 +720,10 @@ process.off = noop;
 process.removeListener = noop;
 process.removeAllListeners = noop;
 process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
 
 process.binding = function (name) {
     throw new Error('process.binding is not supported');
@@ -751,7 +755,6 @@ module.exports = function (Y/* :any */) {
     syncingClients: Array<UserId>;
     forwardToSyncingClients: boolean;
     debug: boolean;
-    broadcastedHB: boolean;
     syncStep2: Promise;
     userId: UserId;
     send: Function;
@@ -770,6 +773,11 @@ module.exports = function (Y/* :any */) {
       if (opts == null) {
         opts = {}
       }
+      // Prefer to receive untransformed operations. This does only work if
+      // this client receives operations from only one other client.
+      // In particular, this does not work with y-webrtc.
+      // It will work with y-websockets-client
+      this.preferUntransformed = opts.preferUntransformed || false
       if (opts.role == null || opts.role === 'master') {
         this.role = 'master'
       } else if (opts.role === 'slave') {
@@ -789,7 +797,6 @@ module.exports = function (Y/* :any */) {
       this.syncingClients = []
       this.forwardToSyncingClients = opts.forwardToSyncingClients !== false
       this.debug = opts.debug === true
-      this.broadcastedHB = false
       this.syncStep2 = Promise.resolve()
       this.broadcastOpBuffer = []
       this.protocolVersion = 11
@@ -810,13 +817,13 @@ module.exports = function (Y/* :any */) {
     }
     reconnect () {
       this.log('reconnecting..')
+      this.y.db.startGarbageCollector()
     }
     disconnect () {
       this.log('discronnecting..')
       this.connections = {}
       this.isSynced = false
       this.currentSyncTarget = null
-      this.broadcastedHB = false
       this.syncingClients = []
       this.whenSyncedListeners = []
       return this.y.db.stopGarbageCollector()
@@ -828,7 +835,6 @@ module.exports = function (Y/* :any */) {
       }
       this.isSynced = false
       this.currentSyncTarget = null
-      this.broadcastedHB = false
       this.findNextSyncTarget()
     }
     setUserId (userId) {
@@ -915,13 +921,17 @@ module.exports = function (Y/* :any */) {
         this.y.db.requestTransaction(function *() {
           var stateSet = yield* this.getStateSet()
           var deleteSet = yield* this.getDeleteSet()
-          conn.send(syncUser, {
+          var answer = {
             type: 'sync step 1',
             stateSet: stateSet,
             deleteSet: deleteSet,
             protocolVersion: conn.protocolVersion,
             auth: conn.authInfo
-          })
+          }
+          if (conn.preferUntransformed && Object.keys(stateSet).length === 0) {
+            answer.preferUntransformed = true
+          }
+          conn.send(syncUser, answer)
         })
       } else {
         if (!conn.isSynced) {
@@ -1027,15 +1037,19 @@ module.exports = function (Y/* :any */) {
               }
 
               var ds = yield* this.getDeleteSet()
-              var ops = yield* this.getOperations(m.stateSet)
-              conn.send(sender, {
+              var answer = {
                 type: 'sync step 2',
-                os: ops,
                 stateSet: currentStateSet,
                 deleteSet: ds,
                 protocolVersion: this.protocolVersion,
                 auth: this.authInfo
-              })
+              }
+              if (message.preferUntransformed === true && Object.keys(m.stateSet).length === 0) {
+                answer.osUntransformed = yield* this.getOperationsUntransformed()
+              } else {
+                answer.os = yield* this.getOperations(m.stateSet)
+              }
+              conn.send(sender, answer)
               if (this.forwardToSyncingClients) {
                 conn.syncingClients.push(sender)
                 setTimeout(function () {
@@ -1053,9 +1067,6 @@ module.exports = function (Y/* :any */) {
               }
             })
           } else if (message.type === 'sync step 2' && canWrite(auth)) {
-            let conn = this
-            var broadcastHB = !this.broadcastedHB
-            this.broadcastedHB = true
             var db = this.y.db
             var defer = {}
             defer.promise = new Promise(function (resolve) {
@@ -1065,7 +1076,15 @@ module.exports = function (Y/* :any */) {
             let m /* :MessageSyncStep2 */ = message
             db.requestTransaction(function * () {
               yield* this.applyDeleteSet(m.deleteSet)
-              this.store.apply(m.os)
+              if (m.osUntransformed != null) {
+                yield* this.applyOperationsUntransformed(m.osUntransformed, m.stateSet)
+              } else {
+                this.store.apply(m.os)
+              }
+              /*
+               * This just sends the complete hb after some time
+               * Mostly for debugging..
+               *
               db.requestTransaction(function * () {
                 var ops = yield* this.getOperations(m.stateSet)
                 if (ops.length > 0) {
@@ -1079,8 +1098,9 @@ module.exports = function (Y/* :any */) {
                     conn.broadcastOps(ops)
                   }
                 }
-                defer.resolve()
               })
+              */
+              defer.resolve()
             })
           } else if (message.type === 'sync done') {
             var self = this
@@ -1252,7 +1272,7 @@ module.exports = function (Y) {
             ps.push(self.users[name].y.db.whenTransactionsFinished())
           }
           Promise.all(ps).then(resolve, reject)
-        }, 0)
+        }, 10)
       })
     },
     flushOne: function flushOne () {
@@ -1362,11 +1382,15 @@ module.exports = function (Y) {
       return Y.utils.globalRoom.flushAll()
     }
     disconnect () {
+      var waitForMe = Promise.resolve()
       if (!this.isDisconnected()) {
         globalRoom.removeUser(this.userId)
-        super.disconnect()
+        waitForMe = super.disconnect()
       }
-      return this.y.db.whenTransactionsFinished()
+      var self = this
+      return waitForMe.then(function () {
+        return self.y.db.whenTransactionsFinished()
+      })
     }
     flush () {
       var self = this
@@ -1430,6 +1454,7 @@ module.exports = function (Y /* :any */) {
     */
     constructor (y, opts) {
       this.y = y
+      this.dbOpts = opts
       var os = this
       this.userId = null
       var resolve
@@ -1466,12 +1491,6 @@ module.exports = function (Y /* :any */) {
       }
       this.gc1 = [] // first stage
       this.gc2 = [] // second stage -> after that, remove the op
-      this.gc = opts.gc == null || opts.gc
-      if (this.gc) {
-        this.gcTimeout = !opts.gcTimeout ? 50000 : opts.gcTimeout
-      } else {
-        this.gcTimeout = -1
-      }
 
       function garbageCollect () {
         return os.whenTransactionsFinished().then(function () {
@@ -1506,12 +1525,22 @@ module.exports = function (Y /* :any */) {
         })
       }
       this.garbageCollect = garbageCollect
-      if (this.gcTimeout > 0) {
-        garbageCollect()
-      }
+      this.startGarbageCollector()
+
       this.repairCheckInterval = !opts.repairCheckInterval ? 6000 : opts.repairCheckInterval
       this.opsReceivedTimestamp = new Date()
       this.startRepairCheck()
+    }
+    startGarbageCollector () {
+      this.gc = this.dbOpts.gc == null || this.dbOpts.gc
+      if (this.gc) {
+        this.gcTimeout = !this.dbOpts.gcTimeout ? 50000 : this.dbOpts.gcTimeout
+      } else {
+        this.gcTimeout = -1
+      }
+      if (this.gcTimeout > 0) {
+        this.garbageCollect()
+      }
     }
     startRepairCheck () {
       var os = this
@@ -3420,6 +3449,56 @@ module.exports = function (Y/* :any */) {
         })
       }
       return send.reverse()
+    }
+    /*
+     * Get the plain untransformed operations from the database.
+     * You can apply these operations using .applyOperationsUntransformed(ops)
+     *
+     */
+    * getOperationsUntransformed () {
+      var ops = []
+      yield* this.os.iterate(this, null, null, function * (op) {
+        if (op.id[0] !== '_') {
+          ops.push(Y.Struct[op.struct].encode(op))
+        }
+      })
+      return {
+        untransformed: ops
+      }
+    }
+    * applyOperationsUntransformed (m, stateSet) {
+      var ops = m.untransformed
+      for (var i = 0; i < ops.length; i++) {
+        var op = ops[i]
+        // create, and modify parent, if it is created implicitly
+        if (op.parent != null && op.parent[0] === '_') {
+          if (op.struct === 'Insert') {
+            // update parents .map/start/end properties
+            if (op.parentSub != null && op.left == null) {
+              // op is child of Map
+              let parent = yield* this.getOperation(op.parent)
+              parent.map[op.parentSub] = op.id
+              yield* this.setOperation(parent)
+            } else if (op.right == null || op.left == null) {
+              let parent = yield* this.getOperation(op.parent)
+              if (op.right == null) {
+                parent.end = Y.utils.getLastId(op)
+              }
+              if (op.left == null) {
+                parent.start = op.id
+              }
+              yield* this.setOperation(parent)
+            }
+          }
+        }
+        yield* this.os.put(op)
+      }
+      for (var user in stateSet) {
+        yield* this.ss.put({
+          id: [user],
+          clock: stateSet[user]
+        })
+      }
     }
     /* this is what we used before.. use this as a reference..
     * makeOperationReady (startSS, op) {

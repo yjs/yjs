@@ -170,6 +170,11 @@ soon, if possible.
     immediately going to be resolved, without waiting for any confirmation from
     the server. Use with caution.
   * Have a look at the used connector repository to see all available options.
+  * *Only if you know what you are doing:* Set
+    `options.connector.preferUntransformed = true` in order receive the shared
+    data untransformed. This is very efficient as the database content is simply
+    copied to this client. This does only work if this client receives content
+    from only one client.
 * options.sourceDir (browser only)
   * Path where all y-* modules are stored
   * Defaults to `/bower_components`
