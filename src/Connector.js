@@ -17,7 +17,6 @@ module.exports = function (Y/* :any */) {
     syncingClients: Array<UserId>;
     forwardToSyncingClients: boolean;
     debug: boolean;
-    broadcastedHB: boolean;
     syncStep2: Promise;
     userId: UserId;
     send: Function;
@@ -36,6 +35,11 @@ module.exports = function (Y/* :any */) {
       if (opts == null) {
         opts = {}
       }
+      // Prefer to receive untransformed operations. This does only work if
+      // this client receives operations from only one other client.
+      // In particular, this does not work with y-webrtc.
+      // It will work with y-websockets-client
+      this.preferUntransformed = opts.preferUntransformed || false
       if (opts.role == null || opts.role === 'master') {
         this.role = 'master'
       } else if (opts.role === 'slave') {
@@ -55,7 +59,6 @@ module.exports = function (Y/* :any */) {
       this.syncingClients = []
       this.forwardToSyncingClients = opts.forwardToSyncingClients !== false
       this.debug = opts.debug === true
-      this.broadcastedHB = false
       this.syncStep2 = Promise.resolve()
       this.broadcastOpBuffer = []
       this.protocolVersion = 11
@@ -83,7 +86,6 @@ module.exports = function (Y/* :any */) {
       this.connections = {}
       this.isSynced = false
       this.currentSyncTarget = null
-      this.broadcastedHB = false
       this.syncingClients = []
       this.whenSyncedListeners = []
       return this.y.db.stopGarbageCollector()
@@ -95,7 +97,6 @@ module.exports = function (Y/* :any */) {
       }
       this.isSynced = false
       this.currentSyncTarget = null
-      this.broadcastedHB = false
       this.findNextSyncTarget()
     }
     setUserId (userId) {
@@ -182,13 +183,17 @@ module.exports = function (Y/* :any */) {
         this.y.db.requestTransaction(function *() {
           var stateSet = yield* this.getStateSet()
           var deleteSet = yield* this.getDeleteSet()
-          conn.send(syncUser, {
+          var answer = {
             type: 'sync step 1',
             stateSet: stateSet,
             deleteSet: deleteSet,
             protocolVersion: conn.protocolVersion,
             auth: conn.authInfo
-          })
+          }
+          if (conn.preferUntransformed && Object.keys(stateSet).length === 0) {
+            answer.preferUntransformed = true
+          }
+          conn.send(syncUser, answer)
         })
       } else {
         if (!conn.isSynced) {
@@ -294,15 +299,19 @@ module.exports = function (Y/* :any */) {
               }
 
               var ds = yield* this.getDeleteSet()
-              var ops = yield* this.getOperations(m.stateSet)
-              conn.send(sender, {
+              var answer = {
                 type: 'sync step 2',
-                os: ops,
                 stateSet: currentStateSet,
                 deleteSet: ds,
                 protocolVersion: this.protocolVersion,
                 auth: this.authInfo
-              })
+              }
+              if (message.preferUntransformed === true && Object.keys(m.stateSet).length === 0) {
+                answer.osUntransformed = yield* this.getOperationsUntransformed()
+              } else {
+                answer.os = yield* this.getOperations(m.stateSet)
+              }
+              conn.send(sender, answer)
               if (this.forwardToSyncingClients) {
                 conn.syncingClients.push(sender)
                 setTimeout(function () {
@@ -321,8 +330,6 @@ module.exports = function (Y/* :any */) {
             })
           } else if (message.type === 'sync step 2' && canWrite(auth)) {
             let conn = this
-            var broadcastHB = !this.broadcastedHB
-            this.broadcastedHB = true
             var db = this.y.db
             var defer = {}
             defer.promise = new Promise(function (resolve) {
@@ -332,7 +339,15 @@ module.exports = function (Y/* :any */) {
             let m /* :MessageSyncStep2 */ = message
             db.requestTransaction(function * () {
               yield* this.applyDeleteSet(m.deleteSet)
-              this.store.apply(m.os)
+              if (m.osUntransformed != null) {
+                yield* this.applyOperationsUntransformed(m.osUntransformed, m.stateSet)
+              } else {
+                this.store.apply(m.os)
+              }
+              /*
+               * This just sends the complete hb after some time
+               * Mostly for debugging..
+               *
               db.requestTransaction(function * () {
                 var ops = yield* this.getOperations(m.stateSet)
                 if (ops.length > 0) {
@@ -346,8 +361,9 @@ module.exports = function (Y/* :any */) {
                     conn.broadcastOps(ops)
                   }
                 }
-                defer.resolve()
               })
+              */
+              defer.resolve()
             })
           } else if (message.type === 'sync done') {
             var self = this

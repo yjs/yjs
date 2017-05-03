@@ -1013,6 +1013,56 @@ module.exports = function (Y/* :any */) {
       }
       return send.reverse()
     }
+    /*
+     * Get the plain untransformed operations from the database.
+     * You can apply these operations using .applyOperationsUntransformed(ops)
+     *
+     */
+    * getOperationsUntransformed () {
+      var ops = []
+      yield* this.os.iterate(this, null, null, function * (op) {
+        if (op.id[0] !== '_') {
+          ops.push(Y.Struct[op.struct].encode(op))
+        }
+      })
+      return {
+        untransformed: ops
+      }
+    }
+    * applyOperationsUntransformed (m, stateSet) {
+      var ops = m.untransformed
+      for (var i = 0; i < ops.length; i++) {
+        var op = ops[i]
+        // create, and modify parent, if it is created implicitly
+        if (op.parent != null && op.parent[0] === '_') {
+          if (op.struct === 'Insert') {
+            // update parents .map/start/end properties
+            if (op.parentSub != null && op.left == null) {
+              // op is child of Map
+              let parent = yield* this.getOperation(op.parent)
+              parent.map[op.parentSub] = op.id
+              yield* this.setOperation(parent)
+            } else if (op.right == null || op.left == null) {
+              let parent = yield* this.getOperation(op.parent)
+              if (op.right == null) {
+                parent.end = Y.utils.getLastId(op)
+              }
+              if (op.left == null) {
+                parent.start = op.id
+              }
+              yield* this.setOperation(parent)
+            }
+          }
+        }
+        yield* this.os.put(op)
+      }
+      for (var user in stateSet) {
+        yield* this.ss.put({
+          id: [user],
+          clock: stateSet[user]
+        })
+      }
+    }
     /* this is what we used before.. use this as a reference..
     * makeOperationReady (startSS, op) {
       op = Y.Struct[op.struct].encode(op)

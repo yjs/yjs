@@ -111,7 +111,7 @@ module.exports = function (Y /* :any */) {
       }
       this.garbageCollect = garbageCollect
       this.startGarbageCollector()
-      
+  
       this.repairCheckInterval = !opts.repairCheckInterval ? 6000 : opts.repairCheckInterval
       this.opsReceivedTimestamp = new Date()
       this.startRepairCheck()
