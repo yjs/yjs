@@ -1,6 +1,6 @@
 /**
  * yjs - A framework for real-time p2p shared editing on any data
- * @version v12.1.7
+ * @version v12.2.0
  * @link http://y-js.org
  * @license MIT
  */
@@ -3459,7 +3459,7 @@ module.exports = function (Y/* :any */) {
       var ops = []
       yield* this.os.iterate(this, null, null, function * (op) {
         if (op.id[0] !== '_') {
-          ops.push(Y.Struct[op.struct].encode(op))
+          ops.push(op)
         }
       })
       return {
