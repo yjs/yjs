@@ -329,7 +329,6 @@ module.exports = function (Y/* :any */) {
               }
             })
           } else if (message.type === 'sync step 2' && canWrite(auth)) {
-            let conn = this
             var db = this.y.db
             var defer = {}
             defer.promise = new Promise(function (resolve) {
