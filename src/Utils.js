@@ -26,6 +26,20 @@
 module.exports = function (Y /* : any*/) {
   Y.utils = {}
 
+  Y.utils.bubbleEvent = function (type, event) {
+    type.eventHandler.callEventListeners(event)
+    event.path = []
+    while (type != null && type._deepEventHandler != null) {
+      type._deepEventHandler.callEventListeners(event)
+      if (type._parent != null && type._parentSub != null) {
+        event.path = [type._parentSub].concat(event.path)
+        type = type.os.getType(type._parent)
+      } else {
+        type = null
+      }
+    }
+  }
+
   class EventListenerHandler {
     constructor () {
       this.eventListeners = []
@@ -50,7 +64,11 @@ module.exports = function (Y /* : any*/) {
     callEventListeners (event) {
       for (var i = 0; i < this.eventListeners.length; i++) {
         try {
-          this.eventListeners[i](event)
+          var _event = {}
+          for (var name in event) {
+            _event[name] = event[name]
+          }
+          this.eventListeners[i](_event)
         } catch (e) {
           console.error('Your observer threw an error. This error was caught so that Yjs still can ensure data consistency! In order to debug this error you have to check "Pause On Caught Exceptions"', e)
         }
