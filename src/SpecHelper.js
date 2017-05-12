@@ -11,9 +11,7 @@ require('../../y-memory/src/Memory.js')(Y)
 require('../../y-array/src/Array.js')(Y)
 require('../../y-map/src/Map.js')(Y)
 require('../../y-indexeddb/src/IndexedDB.js')(Y)
-if (typeof window === 'undefined') {
-  require('../../y-leveldb/src/LevelDB.js')(Y)
-}
+
 module.exports = Y
 
 var g

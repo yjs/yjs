@@ -79,7 +79,7 @@ module.exports = function (Y/* :any */) {
     }
     reconnect () {
       this.log('reconnecting..')
-      this.y.db.startGarbageCollector()
+      return this.y.db.startGarbageCollector()
     }
     disconnect () {
       this.log('discronnecting..')
@@ -88,7 +88,8 @@ module.exports = function (Y/* :any */) {
       this.currentSyncTarget = null
       this.syncingClients = []
       this.whenSyncedListeners = []
-      return this.y.db.stopGarbageCollector()
+      this.y.db.stopGarbageCollector()
+      return this.y.db.whenTransactionsFinished()
     }
     repair () {
       this.log('Repairing the state of Yjs. This can happen if messages get lost, and Yjs detects that something is wrong. If this happens often, please report an issue here: https://github.com/y-js/yjs/issues')
