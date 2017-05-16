@@ -1,7 +1,7 @@
 /* @flow */
 'use strict'
 
-module.exports = function (Y /* :any */) {
+export default function extendDatabase (Y /* :any */) {
   /*
     Partial definition of an OperationStore.
     TODO: name it Database, operation store only holds operations.
@@ -42,11 +42,11 @@ module.exports = function (Y /* :any */) {
       this.dbOpts = opts
       var os = this
       this.userId = null
-      var resolve
-      this.userIdPromise = new Promise(function (r) {
-        resolve = r
+      var resolve_
+      this.userIdPromise = new Promise(function (resolve) {
+        resolve_ = resolve
       })
-      this.userIdPromise.resolve = resolve
+      this.userIdPromise.resolve = resolve_
       // whether to broadcast all applied operations (insert & delete hook)
       this.forwardAppliedOperations = false
       // E.g. this.listenersById[id] : Array<Listener>
@@ -71,7 +71,7 @@ module.exports = function (Y /* :any */) {
       this.waitingTransactions = []
       this.transactionInProgress = false
       this.transactionIsFlushed = false
-      if (typeof YConcurrency_TestingMode !== 'undefined') {
+      if (typeof YConcurrencyTestingMode !== 'undefined') {
         this.executeOrder = []
       }
       this.gc1 = [] // first stage
@@ -88,7 +88,7 @@ module.exports = function (Y /* :any */) {
                 if (os.y.connector != null && os.y.connector.isSynced) {
                   for (var i = 0; i < os.gc2.length; i++) {
                     var oid = os.gc2[i]
-                    yield* this.garbageCollectOperation(oid)
+                    yield * this.garbageCollectOperation(oid)
                   }
                   os.gc2 = os.gc1
                   os.gc1 = []
@@ -177,7 +177,7 @@ module.exports = function (Y /* :any */) {
       })
     }
     addToDebug () {
-      if (typeof YConcurrency_TestingMode !== 'undefined') {
+      if (typeof YConcurrencyTestingMode !== 'undefined') {
         var command /* :string */ = Array.prototype.map.call(arguments, function (s) {
           if (typeof s === 'string') {
             return s
@@ -201,10 +201,10 @@ module.exports = function (Y /* :any */) {
           self.gc1 = []
           self.gc2 = []
           for (var i = 0; i < ungc.length; i++) {
-            var op = yield* this.getOperation(ungc[i])
+            var op = yield * this.getOperation(ungc[i])
             if (op != null) {
               delete op.gc
-              yield* this.setOperation(op)
+              yield * this.setOperation(op)
             }
           }
           resolve()
@@ -234,12 +234,12 @@ module.exports = function (Y /* :any */) {
         if (left != null && left.deleted === true) {
           gc = true
         } else if (op.content != null && op.content.length > 1) {
-          op = yield* this.getInsertionCleanStart([op.id[0], op.id[1] + 1])
+          op = yield * this.getInsertionCleanStart([op.id[0], op.id[1] + 1])
           gc = true
         }
         if (gc) {
           op.gc = true
-          yield* this.setOperation(op)
+          yield * this.setOperation(op)
           this.store.queueGarbageCollector(op.id)
           return true
         }
@@ -275,7 +275,7 @@ module.exports = function (Y /* :any */) {
         var self = this
         self.requestTransaction(function * () {
           self.userId = userId
-          var state = yield* this.getState(userId)
+          var state = yield * this.getState(userId)
           self.opClock = state.clock
           self.userIdPromise.resolve(userId)
         })
@@ -363,7 +363,7 @@ module.exports = function (Y /* :any */) {
 
         for (let key = 0; key < exeNow.length; key++) {
           let o = exeNow[key].op
-          yield* store.tryExecute.call(this, o)
+          yield * store.tryExecute.call(this, o)
         }
 
         for (var sid in ls) {
@@ -371,9 +371,9 @@ module.exports = function (Y /* :any */) {
           var id = JSON.parse(sid)
           var op
           if (typeof id[1] === 'string') {
-            op = yield* this.getOperation(id)
+            op = yield * this.getOperation(id)
           } else {
-            op = yield* this.getInsertion(id)
+            op = yield * this.getInsertion(id)
           }
           if (op == null) {
             store.listenersById[sid] = l
@@ -382,7 +382,7 @@ module.exports = function (Y /* :any */) {
               let listener = l[i]
               let o = listener.op
               if (--listener.missing === 0) {
-                yield* store.tryExecute.call(this, o)
+                yield * store.tryExecute.call(this, o)
               }
             }
           }
@@ -402,12 +402,12 @@ module.exports = function (Y /* :any */) {
     * tryExecute (op) {
       this.store.addToDebug('yield* this.store.tryExecute.call(this, ', JSON.stringify(op), ')')
       if (op.struct === 'Delete') {
-        yield* Y.Struct.Delete.execute.call(this, op)
+        yield * Y.Struct.Delete.execute.call(this, op)
         // this is now called in Transaction.deleteOperation!
         // yield* this.store.operationAdded(this, op)
       } else {
         // check if this op was defined
-        var defined = yield* this.getInsertion(op.id)
+        var defined = yield * this.getInsertion(op.id)
         while (defined != null && defined.content != null) {
           // check if this op has a longer content in the case it is defined
           if (defined.id[1] + defined.content.length < op.id[1] + op.content.length) {
@@ -416,23 +416,23 @@ module.exports = function (Y /* :any */) {
             op.id = [op.id[0], op.id[1] + overlapSize]
             op.left = Y.utils.getLastId(defined)
             op.origin = op.left
-            defined = yield* this.getOperation(op.id) // getOperation suffices here
+            defined = yield * this.getOperation(op.id) // getOperation suffices here
           } else {
             break
           }
         }
         if (defined == null) {
           var opid = op.id
-          var isGarbageCollected = yield* this.isGarbageCollected(opid)
+          var isGarbageCollected = yield * this.isGarbageCollected(opid)
           if (!isGarbageCollected) {
             // TODO: reduce number of get / put calls for op ..
-            yield* Y.Struct[op.struct].execute.call(this, op)
-            yield* this.addOperation(op)
-            yield* this.store.operationAdded(this, op)
+            yield * Y.Struct[op.struct].execute.call(this, op)
+            yield * this.addOperation(op)
+            yield * this.store.operationAdded(this, op)
             // operationAdded can change op..
-            op = yield* this.getOperation(opid)
+            op = yield * this.getOperation(opid)
             // if insertion, try to combine with left
-            yield* this.tryCombineWithLeft(op)
+            yield * this.tryCombineWithLeft(op)
           }
         }
       }
@@ -453,11 +453,11 @@ module.exports = function (Y /* :any */) {
       if (op.struct === 'Delete') {
         var type = this.initializedTypes[JSON.stringify(op.targetParent)]
         if (type != null) {
-          yield* type._changed(transaction, op)
+          yield * type._changed(transaction, op)
         }
       } else {
         // increase SS
-        yield* transaction.updateState(op.id[0])
+        yield * transaction.updateState(op.id[0])
         var opLen = op.content != null ? op.content.length : 1
         for (let i = 0; i < opLen; i++) {
           // notify whenOperation listeners (by id)
@@ -477,9 +477,9 @@ module.exports = function (Y /* :any */) {
 
         // if parent is deleted, mark as gc'd and return
         if (op.parent != null) {
-          var parentIsDeleted = yield* transaction.isDeleted(op.parent)
+          var parentIsDeleted = yield * transaction.isDeleted(op.parent)
           if (parentIsDeleted) {
-            yield* transaction.deleteList(op.id)
+            yield * transaction.deleteList(op.id)
             return
           }
         }
@@ -487,7 +487,7 @@ module.exports = function (Y /* :any */) {
         // notify parent, if it was instanciated as a custom type
         if (t != null) {
           let o = Y.utils.copyOperation(op)
-          yield* t._changed(transaction, o)
+          yield * t._changed(transaction, o)
         }
         if (!op.deleted) {
           // Delete if DS says this is actually deleted
@@ -496,13 +496,13 @@ module.exports = function (Y /* :any */) {
             // TODO: !! console.log('TODO: change this before commiting')
           for (let i = 0; i < len; i++) {
             var id = [startId[0], startId[1] + i]
-            var opIsDeleted = yield* transaction.isDeleted(id)
+            var opIsDeleted = yield * transaction.isDeleted(id)
             if (opIsDeleted) {
               var delop = {
                 struct: 'Delete',
                 target: id
               }
-              yield* this.tryExecute.call(transaction, delop)
+              yield * this.tryExecute.call(transaction, delop)
             }
           }
         }
@@ -511,12 +511,12 @@ module.exports = function (Y /* :any */) {
     whenTransactionsFinished () {
       if (this.transactionInProgress) {
         if (this.transactionsFinished == null) {
-          var resolve
-          var promise = new Promise(function (r) {
-            resolve = r
+          var resolve_
+          var promise = new Promise(function (resolve) {
+            resolve_ = resolve
           })
           this.transactionsFinished = {
-            resolve: resolve,
+            resolve: resolve_,
             promise: promise
           }
         }
@@ -540,7 +540,7 @@ module.exports = function (Y /* :any */) {
         } else {
           this.transactionIsFlushed = true
           return function * () {
-            yield* this.flush()
+            yield * this.flush()
           }
         }
       } else {
@@ -571,9 +571,9 @@ module.exports = function (Y /* :any */) {
       var sid = JSON.stringify(id)
       var t = this.store.initializedTypes[sid]
       if (t == null) {
-        var op/* :MapStruct | ListStruct */ = yield* this.getOperation(id)
+        var op/* :MapStruct | ListStruct */ = yield * this.getOperation(id)
         if (op != null) {
-          t = yield* Y[op.type].typeDefinition.initType.call(this, this.store, op, args)
+          t = yield * Y[op.type].typeDefinition.initType.call(this, this.store, op, args)
           this.store.initializedTypes[sid] = t
         }
       }
@@ -590,9 +590,9 @@ module.exports = function (Y /* :any */) {
 
       this.requestTransaction(function * () {
         if (op.id[0] === '_') {
-          yield* this.setOperation(op)
+          yield * this.setOperation(op)
         } else {
-          yield* this.applyCreatedOperations([op])
+          yield * this.applyCreatedOperations([op])
         }
       })
       var t = Y[op.type].typeDefinition.createType(this, op, typedefinition[1])

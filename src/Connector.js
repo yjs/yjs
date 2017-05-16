@@ -4,7 +4,7 @@
 function canRead (auth) { return auth === 'read' || auth === 'write' }
 function canWrite (auth) { return auth === 'write' }
 
-module.exports = function (Y/* :any */) {
+export default function extendConnector (Y/* :any */) {
   class AbstractConnector {
     /* ::
     y: YConfig;
@@ -113,7 +113,7 @@ module.exports = function (Y/* :any */) {
       this.userEventListeners.push(f)
     }
     removeUserEventListener (f) {
-      this.userEventListeners = this.userEventListeners.filter(g => { f !== g })
+      this.userEventListeners = this.userEventListeners.filter(g => f !== g)
     }
     userLeft (user) {
       if (this.connections[user] != null) {
@@ -181,9 +181,9 @@ module.exports = function (Y/* :any */) {
       var conn = this
       if (syncUser != null) {
         this.currentSyncTarget = syncUser
-        this.y.db.requestTransaction(function *() {
-          var stateSet = yield* this.getStateSet()
-          var deleteSet = yield* this.getDeleteSet()
+        this.y.db.requestTransaction(function * () {
+          var stateSet = yield * this.getStateSet()
+          var deleteSet = yield * this.getDeleteSet()
           var answer = {
             type: 'sync step 1',
             stateSet: stateSet,
@@ -198,11 +198,11 @@ module.exports = function (Y/* :any */) {
         })
       } else {
         if (!conn.isSynced) {
-          this.y.db.requestTransaction(function *() {
+          this.y.db.requestTransaction(function * () {
             if (!conn.isSynced) {
               // it is crucial that isSynced is set at the time garbageCollectAfterSync is called
               conn.isSynced = true
-              yield* this.garbageCollectAfterSync()
+              yield * this.garbageCollectAfterSync()
               // call whensynced listeners
               for (var f of conn.whenSyncedListeners) {
                 f()
@@ -268,7 +268,7 @@ module.exports = function (Y/* :any */) {
           type: 'sync stop',
           protocolVersion: this.protocolVersion
         })
-        return Promise.reject('Incompatible protocol version')
+        return Promise.reject(new Error('Incompatible protocol version'))
       }
       if (message.auth != null && this.connections[sender] != null) {
         // authenticate using auth in message
@@ -293,13 +293,13 @@ module.exports = function (Y/* :any */) {
             let conn = this
             let m = message
 
-            this.y.db.requestTransaction(function *() {
-              var currentStateSet = yield* this.getStateSet()
+            this.y.db.requestTransaction(function * () {
+              var currentStateSet = yield * this.getStateSet()
               if (canWrite(auth)) {
-                yield* this.applyDeleteSet(m.deleteSet)
+                yield * this.applyDeleteSet(m.deleteSet)
               }
 
-              var ds = yield* this.getDeleteSet()
+              var ds = yield * this.getDeleteSet()
               var answer = {
                 type: 'sync step 2',
                 stateSet: currentStateSet,
@@ -308,9 +308,9 @@ module.exports = function (Y/* :any */) {
                 auth: this.authInfo
               }
               if (message.preferUntransformed === true && Object.keys(m.stateSet).length === 0) {
-                answer.osUntransformed = yield* this.getOperationsUntransformed()
+                answer.osUntransformed = yield * this.getOperationsUntransformed()
               } else {
-                answer.os = yield* this.getOperations(m.stateSet)
+                answer.os = yield * this.getOperations(m.stateSet)
               }
               conn.send(sender, answer)
               if (this.forwardToSyncingClients) {
@@ -338,9 +338,9 @@ module.exports = function (Y/* :any */) {
             this.syncStep2 = defer.promise
             let m /* :MessageSyncStep2 */ = message
             db.requestTransaction(function * () {
-              yield* this.applyDeleteSet(m.deleteSet)
+              yield * this.applyDeleteSet(m.deleteSet)
               if (m.osUntransformed != null) {
-                yield* this.applyOperationsUntransformed(m.osUntransformed, m.stateSet)
+                yield * this.applyOperationsUntransformed(m.osUntransformed, m.stateSet)
               } else {
                 this.store.apply(m.os)
               }
@@ -388,7 +388,7 @@ module.exports = function (Y/* :any */) {
           }
         })
       } else {
-        return Promise.reject('Unable to deliver message')
+        return Promise.reject(new Error('Unable to deliver message'))
       }
     }
     _setSyncedWith (user) {

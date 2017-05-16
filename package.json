@@ -4,19 +4,15 @@
   "description": "A framework for real-time p2p shared editing on any data",
   "main": "./src/y.js",
   "scripts": {
-    "test": "node --harmony ./node_modules/.bin/gulp test",
-    "lint": "./node_modules/.bin/standard"
+    "lint": "standard",
+    "dist": "rollup -c rollup.dist.js"
   },
   "pre-commit": [
     "lint",
     "test"
   ],
   "standard": {
-    "parser": "babel-eslint",
     "ignore": [
-      "build/**",
-      "dist/**",
-      "declarations/**",
       "./y.js",
       "./y.js.map"
     ]
@@ -42,41 +38,22 @@
   },
   "homepage": "http://y-js.org",
   "devDependencies": {
-    "babel-eslint": "^5.0.0-beta6",
-    "babel-plugin-transform-runtime": "^6.1.18",
-    "babel-preset-es2015": "^6.1.18",
-    "babelify": "^7.2.0",
-    "browserify": "^12.0.1",
-    "eslint": "^1.10.2",
-    "gulp": "^3.9.0",
-    "gulp-bump": "^1.0.0",
-    "gulp-concat": "^2.6.0",
-    "gulp-filter": "^3.0.1",
-    "gulp-git": "^1.6.0",
-    "gulp-header": "^1.8.8",
-    "gulp-if": "^2.0.0",
-    "gulp-jasmine": "^2.0.1",
-    "gulp-jasmine-browser": "^0.2.3",
-    "gulp-load-plugins": "^1.0.0",
-    "gulp-prompt": "^0.1.2",
-    "gulp-rename": "^1.2.2",
-    "gulp-serve": "^1.2.0",
-    "gulp-shell": "^0.5.1",
-    "gulp-sourcemaps": "^1.5.2",
-    "gulp-tag-version": "^1.3.0",
-    "gulp-uglify": "^2.0.0",
-    "gulp-util": "^3.0.6",
-    "gulp-watch": "^4.3.5",
-    "minimist": "^1.2.0",
-    "pre-commit": "^1.1.1",
-    "regenerator": "^0.8.42",
-    "run-sequence": "^1.1.4",
-    "seedrandom": "^2.4.2",
-    "standard": "^5.2.2",
-    "vinyl-buffer": "^1.0.0",
-    "vinyl-source-stream": "^1.1.0"
+    "babel-cli": "^6.24.1",
+    "babel-plugin-external-helpers": "^6.22.0",
+    "babel-plugin-transform-regenerator": "^6.24.1",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "rollup-plugin-babel": "^2.7.1",
+    "rollup-plugin-commonjs": "^8.0.2",
+    "rollup-plugin-multi-entry": "^2.0.1",
+    "rollup-plugin-node-resolve": "^3.0.0",
+    "rollup-plugin-uglify": "^1.0.2",
+    "rollup-regenerator-runtime": "^6.23.1",
+    "rollup-watch": "^3.2.2",
+    "standard": "^10.0.2"
   },
   "dependencies": {
-    "debug": "^2.6.3"
+    "babel-plugin-external-helpers": "^6.22.0",
+    "babel-preset-latest": "^6.24.1",
+    "debug": "^2.6.6"
   }
 }

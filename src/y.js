@@ -1,18 +1,20 @@
-/* @flow */
-'use strict'
+import debug from 'debug'
+import extendConnector from './Connector.js'
+import extendDatabase from './Database.js'
+import extendTransaction from './Transaction.js'
+import extendStruct from './Struct.js'
+import extendUtils from './Utils.js'
 
-require('./Connector.js')(Y)
-require('./Database.js')(Y)
-require('./Transaction.js')(Y)
-require('./Struct.js')(Y)
-require('./Utils.js')(Y)
-require('./Connectors/Test.js')(Y)
+extendConnector(Y)
+extendDatabase(Y)
+extendTransaction(Y)
+extendStruct(Y)
+extendUtils(Y)
 
-Y.debug = require('debug')
+Y.debug = debug
 
 var requiringModules = {}
 
-module.exports = Y
 Y.requiringModules = requiringModules
 
 Y.extend = function (name, value) {
@@ -110,7 +112,7 @@ type YOptions = {
 }
 */
 
-function Y (opts/* :YOptions */) /* :Promise<YConfig> */ {
+export default function Y (opts/* :YOptions */) /* :Promise<YConfig> */ {
   if (opts.hasOwnProperty('sourceDir')) {
     Y.sourceDir = opts.sourceDir
   }
@@ -120,11 +122,11 @@ function Y (opts/* :YOptions */) /* :Promise<YConfig> */ {
     modules.push(opts.share[name])
   }
   return new Promise(function (resolve, reject) {
-    if (opts == null) reject('An options object is expected! ')
-    else if (opts.connector == null) reject('You must specify a connector! (missing connector property)')
-    else if (opts.connector.name == null) reject('You must specify connector name! (missing connector.name property)')
-    else if (opts.db == null) reject('You must specify a database! (missing db property)')
-    else if (opts.connector.name == null) reject('You must specify db name! (missing db.name property)')
+    if (opts == null) reject(new Error('An options object is expected!'))
+    else if (opts.connector == null) reject(new Error('You must specify a connector! (missing connector property)'))
+    else if (opts.connector.name == null) reject(new Error('You must specify connector name! (missing connector.name property)'))
+    else if (opts.db == null) reject(new Error('You must specify a database! (missing db property)'))
+    else if (opts.connector.name == null) reject(new Error('You must specify db name! (missing db.name property)'))
     else {
       opts = Y.utils.copyObject(opts)
       opts.connector = Y.utils.copyObject(opts.connector)
@@ -182,7 +184,7 @@ class YConfig {
             args = typedef.parseArguments(args[0])[1]
           }
         }
-        share[propertyname] = yield* this.store.initType.call(this, id, args)
+        share[propertyname] = yield * this.store.initType.call(this, id, args)
       }
       this.store.whenTransactionsFinished()
         .then(callback)
@@ -229,7 +231,7 @@ class YConfig {
       this.db.destroyTypes()
       // make sure to wait for all transactions before destroying the db
       this.db.requestTransaction(function * () {
-        yield* self.db.destroy()
+        yield * self.db.destroy()
       })
       return this.db.whenTransactionsFinished()
     })

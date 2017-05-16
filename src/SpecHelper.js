@@ -46,7 +46,7 @@ g.setRandomSeed = function setRandomSeed (seed) {
 
 g.generateRandomSeed()
 
-g.YConcurrency_TestingMode = true
+g.YConcurrencyTestingMode = true
 
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 200000
 
@@ -168,7 +168,7 @@ function fixAwaitingInType (type) {
       type.os.requestTransaction(function * () {
         if (type.eventHandler.awaiting > 0 && type.eventHandler._debuggingAwaiting === true) {
           type.eventHandler._debuggingAwaiting = false
-          yield* type.eventHandler.awaitOps(this, function * () { /* mock function */ })
+          yield * type.eventHandler.awaitOps(this, function * () { /* mock function */ })
         }
         wait(50).then(type.os.whenTransactionsFinished()).then(wait(50)).then(resolve)
       })
@@ -178,13 +178,13 @@ function fixAwaitingInType (type) {
 g.fixAwaitingInType = fixAwaitingInType
 
 g.applyRandomTransactionsNoGCNoDisconnect = async(function * applyRandomTransactions (users, objects, transactions, numberOfTransactions) {
-  yield* applyTransactions(1, numberOfTransactions, objects, users, transactions, true)
+  yield * applyTransactions(1, numberOfTransactions, objects, users, transactions, true)
   yield Y.utils.globalRoom.flushAll()
   yield Promise.all(objects.map(fixAwaitingInType))
 })
 
 g.applyRandomTransactionsAllRejoinNoGC = async(function * applyRandomTransactions (users, objects, transactions, numberOfTransactions) {
-  yield* applyTransactions(1, numberOfTransactions, objects, users, transactions)
+  yield * applyTransactions(1, numberOfTransactions, objects, users, transactions)
   yield Promise.all(objects.map(fixAwaitingInType))
   yield Y.utils.globalRoom.flushAll()
   yield Promise.all(objects.map(fixAwaitingInType))
@@ -200,7 +200,7 @@ g.applyRandomTransactionsAllRejoinNoGC = async(function * applyRandomTransaction
 })
 
 g.applyRandomTransactionsWithGC = async(function * applyRandomTransactions (users, objects, transactions, numberOfTransactions) {
-  yield* applyTransactions(1, numberOfTransactions, objects, users.slice(1), transactions)
+  yield * applyTransactions(1, numberOfTransactions, objects, users.slice(1), transactions)
   yield Y.utils.globalRoom.flushAll()
   yield Promise.all(objects.map(fixAwaitingInType))
   for (var u in users) {
@@ -242,18 +242,18 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
 
   // t1 and t2 basically do the same. They define t[1,2], ds[1,2], and allDels[1,2]
   function * t1 () {
-    s1 = yield* this.getStateSet()
-    ds1 = yield* this.getDeleteSet()
+    s1 = yield * this.getStateSet()
+    ds1 = yield * this.getDeleteSet()
     allDels1 = []
-    yield* this.ds.iterate(this, null, null, function * (d) {
+    yield * this.ds.iterate(this, null, null, function * (d) {
       allDels1.push(d)
     })
   }
   function * t2 () {
-    s2 = yield* this.getStateSet()
-    ds2 = yield* this.getDeleteSet()
+    s2 = yield * this.getStateSet()
+    ds2 = yield * this.getDeleteSet()
     allDels2 = []
-    yield* this.ds.iterate(this, null, null, function * (d) {
+    yield * this.ds.iterate(this, null, null, function * (d) {
       allDels2.push(d)
     })
   }
@@ -269,25 +269,25 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
   for (var uid = 0; uid < users.length; uid++) {
     var u = users[uid]
     u.db.requestTransaction(function * () {
-      var sv = yield* this.getStateVector()
+      var sv = yield * this.getStateVector()
       for (var s of sv) {
-        yield* this.updateState(s.user)
+        yield * this.updateState(s.user)
       }
       // compare deleted ops against deleteStore
-      yield* this.os.iterate(this, null, null, function * (o) {
+      yield * this.os.iterate(this, null, null, function * (o) {
         if (o.deleted === true) {
-          expect(yield* this.isDeleted(o.id)).toBeTruthy()
+          expect(yield * this.isDeleted(o.id)).toBeTruthy()
         }
       })
       // compare deleteStore against deleted ops
       var ds = []
-      yield* this.ds.iterate(this, null, null, function * (d) {
+      yield * this.ds.iterate(this, null, null, function * (d) {
         ds.push(d)
       })
       for (var j in ds) {
         var d = ds[j]
         for (var i = 0; i < d.len; i++) {
-          var o = yield* this.getInsertion([d.id[0], d.id[1] + i])
+          var o = yield * this.getInsertion([d.id[0], d.id[1] + i])
           // gc'd or deleted
           if (d.gc) {
             expect(o).toBeFalsy()
@@ -300,8 +300,8 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
     // compare allDels tree
     if (s1 == null) {
       u.db.requestTransaction(function * () {
-        yield* t1.call(this)
-        yield* this.os.iterate(this, null, null, function * (o) {
+        yield * t1.call(this)
+        yield * this.os.iterate(this, null, null, function * (o) {
           o = Y.utils.copyObject(o)
           delete o.origin
           delete o.originOf
@@ -310,9 +310,9 @@ g.compareAllUsers = async(function * compareAllUsers (users) {
       })
     } else {
       u.db.requestTransaction(function * () {
-        yield* t2.call(this)
+        yield * t2.call(this)
         var db2 = []
-        yield* this.os.iterate(this, null, null, function * (o) {
+        yield * this.os.iterate(this, null, null, function * (o) {
           o = Y.utils.copyObject(o)
           delete o.origin
           delete o.originOf

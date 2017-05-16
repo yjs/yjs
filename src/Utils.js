@@ -1,6 +1,3 @@
-/* @flow */
-'use strict'
-
 /*
   EventHandler is an helper class for constructing custom types.
 
@@ -23,7 +20,8 @@
   database request to finish). EventHandler helps you to make your type
   synchronous.
 */
-module.exports = function (Y /* : any*/) {
+
+export default function Utils (Y) {
   Y.utils = {}
 
   Y.utils.bubbleEvent = function (type, event) {
@@ -299,7 +297,7 @@ module.exports = function (Y /* : any*/) {
       }
       var before = this.waiting.length
       // somehow create new operations
-      yield* f.apply(transaction, args)
+      yield * f.apply(transaction, args)
       // remove all appended ops / awaited ops
       this.waiting.splice(before)
       if (this.awaiting > 0) this.awaiting--
@@ -309,7 +307,7 @@ module.exports = function (Y /* : any*/) {
         for (let i = 0; i < this.waiting.length; i++) {
           var o = this.waiting[i]
           if (o.struct === 'Insert') {
-            var _o = yield* transaction.getInsertion(o.id)
+            var _o = yield * transaction.getInsertion(o.id)
             if (_o.parentSub != null && _o.left != null) {
               // if o is an insertion of a map struc (parentSub is defined), then it shouldn't be necessary to compute left
               this.waiting.splice(i, 1)
@@ -321,10 +319,10 @@ module.exports = function (Y /* : any*/) {
               o.left = null
             } else {
               // find next undeleted op
-              var left = yield* transaction.getInsertion(_o.left)
+              var left = yield * transaction.getInsertion(_o.left)
               while (left.deleted != null) {
                 if (left.left != null) {
-                  left = yield* transaction.getInsertion(left.left)
+                  left = yield * transaction.getInsertion(left.left)
                 } else {
                   left = null
                   break
@@ -662,7 +660,7 @@ module.exports = function (Y /* : any*/) {
         if (i < 0 && noSuperCall === undefined) {
           // did not reach break in last loop
           // read id and put it to the end of readBuffer
-          o = yield* super.find(id)
+          o = yield * super.find(id)
         }
         if (o != null) {
           for (i = 0; i < this.readBuffer.length - 1; i++) {
@@ -692,7 +690,7 @@ module.exports = function (Y /* : any*/) {
           // write writeBuffer[0]
           var write = this.writeBuffer[0]
           if (write.id[0] !== null) {
-            yield* super.put(write)
+            yield * super.put(write)
           }
           // put o to the end of writeBuffer
           for (i = 0; i < this.writeBuffer.length - 1; i++) {
@@ -722,44 +720,44 @@ module.exports = function (Y /* : any*/) {
             }
           }
         }
-        yield* this.flush()
-        yield* super.delete(id)
+        yield * this.flush()
+        yield * super.delete(id)
       }
       * findWithLowerBound (id) {
-        var o = yield* this.find(id, true)
+        var o = yield * this.find(id, true)
         if (o != null) {
           return o
         } else {
-          yield* this.flush()
-          return yield* super.findWithLowerBound.apply(this, arguments)
+          yield * this.flush()
+          return yield * super.findWithLowerBound.apply(this, arguments)
         }
       }
       * findWithUpperBound (id) {
-        var o = yield* this.find(id, true)
+        var o = yield * this.find(id, true)
         if (o != null) {
           return o
         } else {
-          yield* this.flush()
-          return yield* super.findWithUpperBound.apply(this, arguments)
+          yield * this.flush()
+          return yield * super.findWithUpperBound.apply(this, arguments)
         }
       }
       * findNext () {
-        yield* this.flush()
-        return yield* super.findNext.apply(this, arguments)
+        yield * this.flush()
+        return yield * super.findNext.apply(this, arguments)
       }
       * findPrev () {
-        yield* this.flush()
-        return yield* super.findPrev.apply(this, arguments)
+        yield * this.flush()
+        return yield * super.findPrev.apply(this, arguments)
       }
       * iterate () {
-        yield* this.flush()
-        yield* super.iterate.apply(this, arguments)
+        yield * this.flush()
+        yield * super.iterate.apply(this, arguments)
       }
       * flush () {
         for (var i = 0; i < this.writeBuffer.length; i++) {
           var write = this.writeBuffer[i]
           if (write.id[0] !== null) {
-            yield* super.put(write)
+            yield * super.put(write)
             this.writeBuffer[i] = {
               id: [null, null]
             }
