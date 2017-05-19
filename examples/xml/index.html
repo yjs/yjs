@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+</head>
+  <script src="../bower_components/yjs/y.js"></script>
+  <script src="../bower_components/jquery/dist/jquery.min.js"></script>
+  <script src="./index.js"></script>
+</head>
+<body>
+  <h1> Shared DOM Example </h1>
+  <p> Use native DOM function or jQuery to manipulate the shared DOM (window.sharedDom). </p>
+  <div class="command">
+    <button type="button">Execute</button>
+    <input type="text" value='$(sharedDom).append("<h3>Appended headline</h3>")' size="40"/>
+  </div>
+  <div class="command">
+    <button type="button">Execute</button>
+    <input type="text" value='$(sharedDom).attr("align","right")' size="40"/>
+  </div>
+  <div class="command">
+    <button type="button">Execute</button>
+    <input type="text" value='$(sharedDom).attr("style","color:blue;")' size="40"/>
+  </div>
+
+  <script>
+    var commands = document.querySelectorAll(".command");
+    Array.prototype.forEach.call(document.querySelectorAll('.command'), function (command) {
+      var execute = function(){
+        eval(command.querySelector("input").value);
+      }
+      command.querySelector("button").onclick = execute
+      $(command.querySelector("input")).keyup(function (e) {
+        if (e.keyCode == 13) {
+          execute()
+        }
+      })
+    })
+  </script>
+</body>
+</html>

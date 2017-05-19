@@ -7,7 +7,7 @@ var pkg = require('./package.json')
 
 export default {
   entry: 'src/y.js',
-  moduleName: 'yjs',
+  moduleName: 'Y',
   format: 'umd',
   plugins: [
     nodeResolve({

@@ -5,7 +5,8 @@
   "main": "./src/y.js",
   "scripts": {
     "lint": "standard",
-    "dist": "rollup -c rollup.dist.js"
+    "dist": "rollup -c rollup.dist.js",
+    "serve": "concurrently 'serve examples' 'rollup -wc rollup.dist.js -o examples/bower_components/yjs/y.js'"
   },
   "pre-commit": [
     "lint",
@@ -42,8 +43,10 @@
     "babel-plugin-external-helpers": "^6.22.0",
     "babel-plugin-transform-regenerator": "^6.24.1",
     "babel-plugin-transform-runtime": "^6.23.0",
+    "concurrently": "^3.4.0",
     "rollup-plugin-babel": "^2.7.1",
     "rollup-plugin-commonjs": "^8.0.2",
+    "rollup-plugin-inject": "^2.0.0",
     "rollup-plugin-multi-entry": "^2.0.1",
     "rollup-plugin-node-resolve": "^3.0.0",
     "rollup-plugin-uglify": "^1.0.2",
