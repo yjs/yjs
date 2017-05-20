@@ -240,11 +240,7 @@ export default function extendConnector (Y/* :any */) {
       }
       if (this.broadcastOpBuffer.length === 0) {
         this.broadcastOpBuffer = ops
-        if (this.y.db.transactionInProgress) {
-          this.y.db.whenTransactionsFinished().then(broadcastOperations)
-        } else {
-          setTimeout(broadcastOperations, 0)
-        }
+        this.y.db.whenTransactionsFinished().then(broadcastOperations)
       } else {
         this.broadcastOpBuffer = this.broadcastOpBuffer.concat(ops)
       }
@@ -365,6 +361,7 @@ export default function extendConnector (Y/* :any */) {
               */
               defer.resolve()
             })
+            return this.syncStep2
           } else if (message.type === 'sync done') {
             var self = this
             this.syncStep2.then(function () {

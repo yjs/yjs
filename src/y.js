@@ -132,16 +132,14 @@ export default function Y (opts/* :YOptions */) /* :Promise<YConfig> */ {
       opts.connector = Y.utils.copyObject(opts.connector)
       opts.db = Y.utils.copyObject(opts.db)
       opts.share = Y.utils.copyObject(opts.share)
-      setTimeout(function () {
-        Y.requestModules(modules).then(function () {
-          var yconfig = new YConfig(opts)
-          yconfig.db.whenUserIdSet(function () {
-            yconfig.init(function () {
-              resolve(yconfig)
-            })
+      Y.requestModules(modules).then(function () {
+        var yconfig = new YConfig(opts)
+        yconfig.db.whenUserIdSet(function () {
+          yconfig.init(function () {
+            resolve(yconfig)
           })
-        }).catch(reject)
-      }, 0)
+        })
+      }).catch(reject)
     }
   })
 }
