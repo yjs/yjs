@@ -55,6 +55,9 @@ export async function compareUsers (t, users) {
       t.compare(data[i].ss, data[i + 1].ss, 'ss')
     }, `Compare user${i} with user${i + 1}`)
   }
+  await Promise.all(users.map(async (u) => {
+    await u.close()
+  }))
 }
 
 export async function initArrays (t, opts) {

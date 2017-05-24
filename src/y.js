@@ -225,13 +225,13 @@ class YConfig {
     } else {
       this.connector.disconnect()
     }
-    return this.db.whenTransactionsFinished(function () {
-      this.db.destroyTypes()
+    return this.db.whenTransactionsFinished().then(function () {
+      self.db.destroyTypes()
       // make sure to wait for all transactions before destroying the db
-      this.db.requestTransaction(function * () {
+      self.db.requestTransaction(function * () {
         yield * self.db.destroy()
       })
-      return this.db.whenTransactionsFinished()
+      return self.db.whenTransactionsFinished()
     })
   }
 }

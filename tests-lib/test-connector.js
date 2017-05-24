@@ -1,5 +1,4 @@
 /* global Y */
-import { wait } from './helper.js'
 
 var rooms = {}
 
