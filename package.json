@@ -40,6 +40,7 @@
   "homepage": "http://y-js.org",
   "devDependencies": {
     "babel-cli": "^6.24.1",
+    "babel-preset-latest": "^6.24.1",
     "babel-plugin-external-helpers": "^6.22.0",
     "babel-plugin-transform-regenerator": "^6.24.1",
     "babel-plugin-transform-runtime": "^6.23.0",
@@ -56,8 +57,6 @@
     "standard": "^10.0.2"
   },
   "dependencies": {
-    "babel-plugin-external-helpers": "^6.22.0",
-    "babel-preset-latest": "^6.24.1",
-    "debug": "^2.6.6"
+    "debug": "^2.6.8"
   }
 }
