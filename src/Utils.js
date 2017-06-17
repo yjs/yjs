@@ -31,9 +31,13 @@ module.exports = function (Y /* : any*/) {
     event.path = []
     while (type != null && type._deepEventHandler != null) {
       type._deepEventHandler.callEventListeners(event)
-      if (type._parent != null && type._parentSub != null) {
-        event.path = [type._parentSub].concat(event.path)
-        type = type.os.getType(type._parent)
+      var parent = null
+      if (type._parent != null) {
+        parent = type.os.getType(type._parent)
+      }
+      if (parent != null && parent._getPathToChild != null) {
+        event.path = [parent._getPathToChild(type._model)].concat(event.path)
+        type = parent
       } else {
         type = null
       }
@@ -478,7 +482,20 @@ module.exports = function (Y /* : any*/) {
     Default class of custom types!
   */
   class CustomType {
-
+    getPath () {
+      var parent = null
+      if (this._parent != null) {
+        parent = this.os.getType(this._parent)
+      }
+      if (parent != null && parent._getPathToChild != null) {
+        var firstKey = parent._getPathToChild(this._model)
+        var parentKeys = parent.getPath()
+        parentKeys.push(firstKey)
+        return parentKeys
+      } else {
+        return []
+      }
+    }
   }
   Y.utils.CustomType = CustomType
 
