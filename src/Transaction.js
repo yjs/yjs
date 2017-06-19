@@ -996,6 +996,7 @@ export default function extendTransaction (Y) {
                 op = Y.Struct[op.struct].encode(o)
                 op.right = newright
                 if (missingOrigins.length > 0) {
+                  debugger
                   console.log('This should not happen .. :( please report this')
                 }
                 missingOrigins = [op]

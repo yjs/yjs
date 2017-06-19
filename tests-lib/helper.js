@@ -12,23 +12,34 @@ export let Y = _Y
 
 Y.extend(yMemory, yArray, yMap, yTest)
 
-export async function garbageCollectAllUsers (t, users) {
+export async function garbageCollectUsers (t, users) {
   await flushAll(t, users)
   await Promise.all(users.map(u => u.db.emptyGarbageCollector()))
 }
 
 export async function compareUsers (t, users) {
-  var unsynced = users.filter(u => !u.connector.isSynced)
-  unsynced.forEach(u => u.reconnect())
+  // disconnect all except user 0
+  await Promise.all(users.slice(1).map(async u =>
+    u.disconnect()
+  ))
+  if (users[0].connector.testRoom == null) {
+    await wait(100)
+  }
+  // reconnect all
+  await Promise.all(users.map(u => u.reconnect()))
   if (users[0].connector.testRoom != null) {
     // flush for sync if test-connector
-    await users[0].connector.testRoom.flushAll(users)
   }
-  await Promise.all(unsynced.map(u => {
-    return new Promise(function (resolve) {
+  if (users[0].connector.testRoom == null) {
+    await wait(100)
+  }
+  await users[0].connector.testRoom.flushAll(users)
+  await Promise.all(users.map(u =>
+    new Promise(function (resolve) {
       u.connector.whenSynced(resolve)
     })
-  }))
+  ))
+
   await flushAll(t, users)
   // types must be equal before garbage collect
   var userTypeContents = users.map(u => u.share.array._content.map(c => c.val || JSON.stringify(c.type)))
@@ -37,9 +48,10 @@ export async function compareUsers (t, users) {
     await u.db.garbageCollect()
     await u.db.garbageCollect()
     u.db.requestTransaction(function * () {
-      data.os = yield * this.getOperationsUntransformed()
-      data.os = data.os.untransformed.map((op) => {
-        return Y.Struct[op.struct].encode(op)
+      var os = yield * this.getOperationsUntransformed()
+      data.os = os.untransformed.map((op) => {
+        op = Y.Struct[op.struct].encode(op)
+        delete op.origin
       })
       data.ds = yield * this.getDeleteSet()
       data.ss = yield * this.getStateSet()

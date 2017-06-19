@@ -333,6 +333,7 @@ export default function extendConnector (Y/* :any */) {
             })
             this.syncStep2 = defer.promise
             let m /* :MessageSyncStep2 */ = message
+            // apply operations first
             db.requestTransaction(function * () {
               yield * this.applyDeleteSet(m.deleteSet)
               if (m.osUntransformed != null) {
@@ -340,27 +341,15 @@ export default function extendConnector (Y/* :any */) {
               } else {
                 this.store.apply(m.os)
               }
-              /*
-               * This just sends the complete hb after some time
-               * Mostly for debugging..
-               *
-              db.requestTransaction(function * () {
-                var ops = yield* this.getOperations(m.stateSet)
-                if (ops.length > 0) {
-                  if (!broadcastHB) { // TODO: consider to broadcast here..
-                    conn.send(sender, {
-                      type: 'update',
-                      ops: ops
-                    })
-                  } else {
-                    // broadcast only once!
-                    conn.broadcastOps(ops)
-                  }
-                }
-              })
-              */
               defer.resolve()
             })
+            /* then apply ds
+            db.whenTransactionsFinished().then(() => {
+              db.requestTransaction(function * () {
+                yield * this.applyDeleteSet(m.deleteSet)
+              })
+              defer.resolve()
+            })*/
             return this.syncStep2
           } else if (message.type === 'sync done') {
             var self = this
