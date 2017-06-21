@@ -49,9 +49,12 @@ export async function compareUsers (t, users) {
     await u.db.garbageCollect()
     u.db.requestTransaction(function * () {
       var os = yield * this.getOperationsUntransformed()
-      data.os = os.untransformed.map((op) => {
+      data.os = {}
+      os.untransformed.forEach((op) => {
         op = Y.Struct[op.struct].encode(op)
         delete op.origin
+        data.os[JSON.stringify(op.id)] = op
+        return op
       })
       data.ds = yield * this.getDeleteSet()
       data.ss = yield * this.getStateSet()
