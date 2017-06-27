@@ -202,7 +202,8 @@ export default function extendConnector (Y/* :any */) {
             if (!conn.isSynced) {
               // it is crucial that isSynced is set at the time garbageCollectAfterSync is called
               conn.isSynced = true
-              yield * this.garbageCollectAfterSync()
+              // It is safer to remove this!
+              // TODO: remove: yield * this.garbageCollectAfterSync()
               // call whensynced listeners
               for (var f of conn.whenSyncedListeners) {
                 f()
@@ -343,7 +344,8 @@ export default function extendConnector (Y/* :any */) {
               }
               defer.resolve()
             })
-            /* then apply ds
+            /*
+            then apply ds
             db.whenTransactionsFinished().then(() => {
               db.requestTransaction(function * () {
                 yield * this.applyDeleteSet(m.deleteSet)

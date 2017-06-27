@@ -17,7 +17,25 @@ export async function garbageCollectUsers (t, users) {
   await Promise.all(users.map(u => u.db.emptyGarbageCollector()))
 }
 
+/*
+ * 1. reconnect and flush all
+ * 2. user 0 gc
+ * 3. get type content
+ * 4. disconnect & reconnect all (so gc is propagated)
+ * 5. compare os, ds, ss
+ */
 export async function compareUsers (t, users) {
+  await Promise.all(users.map(u => u.reconnect()))
+  if (users[0].connector.testRoom == null) {
+    await wait(100)
+  }
+  await flushAll(t, users)
+
+  await users[0].db.garbageCollect()
+  await users[0].db.garbageCollect()
+
+  var userTypeContents = users.map(u => u.share.array._content.map(c => c.val || JSON.stringify(c.type)))
+
   // disconnect all except user 0
   await Promise.all(users.slice(1).map(async u =>
     u.disconnect()
@@ -27,9 +45,6 @@ export async function compareUsers (t, users) {
   }
   // reconnect all
   await Promise.all(users.map(u => u.reconnect()))
-  if (users[0].connector.testRoom != null) {
-    // flush for sync if test-connector
-  }
   if (users[0].connector.testRoom == null) {
     await wait(100)
   }
@@ -40,13 +55,8 @@ export async function compareUsers (t, users) {
     })
   ))
 
-  await flushAll(t, users)
-  // types must be equal before garbage collect
-  var userTypeContents = users.map(u => u.share.array._content.map(c => c.val || JSON.stringify(c.type)))
   var data = await Promise.all(users.map(async (u) => {
     var data = {}
-    await u.db.garbageCollect()
-    await u.db.garbageCollect()
     u.db.requestTransaction(function * () {
       var os = yield * this.getOperationsUntransformed()
       data.os = {}
@@ -85,7 +95,7 @@ export async function initArrays (t, opts) {
   for (let i = 0; i < opts.users; i++) {
     let y = await Y({
       connector: connector,
-      db: opts.db,
+      db: Object.assign({ gc: i === 0 }, opts.db), // Only one instance can gc!
       share: share
     })
     result.users.push(y)
@@ -108,7 +118,7 @@ export async function initArrays (t, opts) {
 }
 
 export async function flushAll (t, users) {
-  users = users.filter(u => u.connector.isSynced)
+  // users = users.filter(u => u.connector.isSynced)
   if (users.length === 0) {
     return
   }

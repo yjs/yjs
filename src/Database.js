@@ -39,6 +39,7 @@ export default function extendDatabase (Y /* :any */) {
     */
     constructor (y, opts) {
       this.y = y
+      opts.gc = opts.gc === true
       this.dbOpts = opts
       var os = this
       this.userId = null
@@ -121,7 +122,7 @@ export default function extendDatabase (Y /* :any */) {
       this.startRepairCheck()
     }
     startGarbageCollector () {
-      this.gc = this.dbOpts.gc == null || this.dbOpts.gc
+      this.gc = this.dbOpts.gc
       if (this.gc) {
         this.gcTimeout = !this.dbOpts.gcTimeout ? 50000 : this.dbOpts.gcTimeout
       } else {
