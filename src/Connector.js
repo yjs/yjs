@@ -59,7 +59,6 @@ export default function extendConnector (Y/* :any */) {
       this.syncingClients = []
       this.forwardToSyncingClients = opts.forwardToSyncingClients !== false
       this.debug = opts.debug === true
-      this.syncStep2 = Promise.resolve()
       this.broadcastOpBuffer = []
       this.protocolVersion = 11
       this.authInfo = opts.auth || null
@@ -146,6 +145,9 @@ export default function extendConnector (Y/* :any */) {
         isSynced: false,
         role: role
       }
+      let defer = {}
+      defer.promise = new Promise(function (resolve) { defer.resolve = resolve })
+      this.connections[user].syncStep2 = defer
       for (var f of this.userEventListeners) {
         f({
           action: 'userJoined',
@@ -187,7 +189,7 @@ export default function extendConnector (Y/* :any */) {
           var answer = {
             type: 'sync step 1',
             stateSet: stateSet,
-            deleteSet: deleteSet,
+            // deleteSet: deleteSet,
             protocolVersion: conn.protocolVersion,
             auth: conn.authInfo
           }
@@ -289,51 +291,59 @@ export default function extendConnector (Y/* :any */) {
           if (message.type === 'sync step 1' && canRead(auth)) {
             let conn = this
             let m = message
+            let wait // wait for sync step 2 to complete
+            if (this.role === 'slave') {
+              wait = Promise.all(Object.keys(this.connections)
+                .map(uid => this.connections[uid])
+                .filter(conn => conn.role === 'master')
+                .map(conn => conn.syncStep2.promise)
+              )
+            } else {
+              wait = Promise.resolve()
+            }
+            wait.then(() => {
+              this.y.db.requestTransaction(function * () {
+                var currentStateSet = yield * this.getStateSet()
+                // TODO: remove
+                // if (canWrite(auth)) {
+                //  yield * this.applyDeleteSet(m.deleteSet)
+                // }
 
-            this.y.db.requestTransaction(function * () {
-              var currentStateSet = yield * this.getStateSet()
-              if (canWrite(auth)) {
-                yield * this.applyDeleteSet(m.deleteSet)
-              }
-
-              var ds = yield * this.getDeleteSet()
-              var answer = {
-                type: 'sync step 2',
-                stateSet: currentStateSet,
-                deleteSet: ds,
-                protocolVersion: this.protocolVersion,
-                auth: this.authInfo
-              }
-              if (message.preferUntransformed === true && Object.keys(m.stateSet).length === 0) {
-                answer.osUntransformed = yield * this.getOperationsUntransformed()
-              } else {
-                answer.os = yield * this.getOperations(m.stateSet)
-              }
-              conn.send(sender, answer)
-              if (this.forwardToSyncingClients) {
-                conn.syncingClients.push(sender)
-                setTimeout(function () {
-                  conn.syncingClients = conn.syncingClients.filter(function (cli) {
-                    return cli !== sender
-                  })
+                var ds = yield * this.getDeleteSet()
+                var answer = {
+                  type: 'sync step 2',
+                  stateSet: currentStateSet,
+                  deleteSet: ds,
+                  protocolVersion: this.protocolVersion,
+                  auth: this.authInfo
+                }
+                if (message.preferUntransformed === true && Object.keys(m.stateSet).length === 0) {
+                  answer.osUntransformed = yield * this.getOperationsUntransformed()
+                } else {
+                  answer.os = yield * this.getOperations(m.stateSet)
+                }
+                conn.send(sender, answer)
+                if (this.forwardToSyncingClients) {
+                  conn.syncingClients.push(sender)
+                  setTimeout(function () {
+                    conn.syncingClients = conn.syncingClients.filter(function (cli) {
+                      return cli !== sender
+                    })
+                    conn.send(sender, {
+                      type: 'sync done'
+                    })
+                  }, 5000) // TODO: conn.syncingClientDuration)
+                } else {
                   conn.send(sender, {
                     type: 'sync done'
                   })
-                }, 5000) // TODO: conn.syncingClientDuration)
-              } else {
-                conn.send(sender, {
-                  type: 'sync done'
-                })
-              }
+                }
+              })
             })
           } else if (message.type === 'sync step 2' && canWrite(auth)) {
             var db = this.y.db
-            var defer = {}
-            defer.promise = new Promise(function (resolve) {
-              defer.resolve = resolve
-            })
-            this.syncStep2 = defer.promise
-            let m /* :MessageSyncStep2 */ = message
+            let defer = this.connections[sender].syncStep2
+            let m = message
             // apply operations first
             db.requestTransaction(function * () {
               yield * this.applyDeleteSet(m.deleteSet)
@@ -344,18 +354,17 @@ export default function extendConnector (Y/* :any */) {
               }
               defer.resolve()
             })
-            /*
-            then apply ds
+            /*/ then apply ds
             db.whenTransactionsFinished().then(() => {
               db.requestTransaction(function * () {
                 yield * this.applyDeleteSet(m.deleteSet)
               })
               defer.resolve()
             })*/
-            return this.syncStep2
+            return defer.promise
           } else if (message.type === 'sync done') {
             var self = this
-            this.syncStep2.then(function () {
+            this.connections[sender].syncStep2.promise.then(function () {
               self._setSyncedWith(sender)
             })
           } else if (message.type === 'update' && canWrite(auth)) {

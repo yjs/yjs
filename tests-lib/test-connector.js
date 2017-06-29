@@ -1,4 +1,5 @@
 /* global Y */
+import { wait } from './helper.js'
 
 var rooms = {}
 
@@ -13,8 +14,8 @@ export class TestRoom {
       connector.setUserId('' + (this.nextUserId++))
     }
     Object.keys(this.users).forEach(uid => {
-      this.users[uid].userJoined(connector.userId, 'master')
-      connector.userJoined(uid, 'master')
+      this.users[uid].userJoined(connector.userId, connector.role)
+      connector.userJoined(uid, this.users[uid].role)
     })
     this.users[connector.userId] = connector
   }
@@ -43,6 +44,7 @@ export class TestRoom {
       users = allUserIds.map(id => this.users[id].y)
     }
     while (flushing) {
+      await wait(10)
       let res = await Promise.all(allUserIds.map(id => this.users[id]._flushAll(users)))
       flushing = res.some(status => status === 'flushing')
     }
@@ -65,7 +67,6 @@ export default function extendTestConnector (Y) {
       if (options.room == null) {
         throw new Error('You must define a room name!')
       }
-      options.role = 'slave'
       super(y, options)
       this.options = options
       this.room = options.room

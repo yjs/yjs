@@ -93,9 +93,19 @@ export async function initArrays (t, opts) {
   var chance = opts.chance || new Chance(t.getSeed() * 1000000000)
   var connector = Object.assign({ room: 'debugging_' + t.name, testContext: t, chance }, opts.connector)
   for (let i = 0; i < opts.users; i++) {
+    let dbOpts
+    let connOpts
+    if (i === 0) {
+      // Only one instance can gc!
+      dbOpts = Object.assign({ gc: true }, opts.db)
+      connOpts = Object.assign({ role: 'master' }, connector)
+    } else {
+      dbOpts = Object.assign({ gc: false }, opts.db)
+      connOpts = Object.assign({ role: 'slave' }, connector)
+    }
     let y = await Y({
-      connector: connector,
-      db: Object.assign({ gc: i === 0 }, opts.db), // Only one instance can gc!
+      connector: connOpts,
+      db: dbOpts,
       share: share
     })
     result.users.push(y)
