@@ -124,7 +124,7 @@ export default function extendDatabase (Y /* :any */) {
     startGarbageCollector () {
       this.gc = this.dbOpts.gc
       if (this.gc) {
-        this.gcTimeout = !this.dbOpts.gcTimeout ? 50000 : this.dbOpts.gcTimeout
+        this.gcTimeout = !this.dbOpts.gcTimeout ? 100000 : this.dbOpts.gcTimeout
       } else {
         this.gcTimeout = -1
       }

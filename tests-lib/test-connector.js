@@ -15,7 +15,7 @@ export class TestRoom {
     }
     Object.keys(this.users).forEach(uid => {
       let user = this.users[uid]
-      if (user.role === 'master') {
+      if (user.role === 'master' || connector.role === 'master') {
         this.users[uid].userJoined(connector.userId, connector.role)
         connector.userJoined(uid, this.users[uid].role)
       }
@@ -70,13 +70,13 @@ export default function extendTestConnector (Y) {
       if (options.room == null) {
         throw new Error('You must define a room name!')
       }
+      options.forwardAppliedOperations = options.role === 'master'
       super(y, options)
       this.options = options
       this.room = options.room
       this.chance = options.chance
       this.testRoom = getTestRoom(this.room)
       this.testRoom.join(this)
-      this.forwardAppliedOperations = this.role === 'master'
     }
     disconnect () {
       this.testRoom.leave(this)
