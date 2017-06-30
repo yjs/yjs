@@ -14,8 +14,11 @@ export class TestRoom {
       connector.setUserId('' + (this.nextUserId++))
     }
     Object.keys(this.users).forEach(uid => {
-      this.users[uid].userJoined(connector.userId, connector.role)
-      connector.userJoined(uid, this.users[uid].role)
+      let user = this.users[uid]
+      if (user.role === 'master') {
+        this.users[uid].userJoined(connector.userId, connector.role)
+        connector.userJoined(uid, this.users[uid].role)
+      }
     })
     this.users[connector.userId] = connector
   }
@@ -73,6 +76,7 @@ export default function extendTestConnector (Y) {
       this.chance = options.chance
       this.testRoom = getTestRoom(this.room)
       this.testRoom.join(this)
+      this.forwardAppliedOperations = this.role === 'master'
     }
     disconnect () {
       this.testRoom.leave(this)
@@ -128,13 +132,14 @@ export default function extendTestConnector (Y) {
       var finished = []
       for (let i = 0; i < flushUsers.length; i++) {
         let userId = flushUsers[i].connector.userId
-        if (userId === this.userId) continue
-        let buffer = this.connections[userId].buffer
-        if (buffer != null) {
-          var messages = buffer.splice(0)
-          for (let j = 0; j < messages.length; j++) {
-            let p = super.receiveMessage(userId, messages[j])
-            finished.push(p)
+        if (userId !== this.userId && this.connections[userId] != null) {
+          let buffer = this.connections[userId].buffer
+          if (buffer != null) {
+            var messages = buffer.splice(0)
+            for (let j = 0; j < messages.length; j++) {
+              let p = super.receiveMessage(userId, messages[j])
+              finished.push(p)
+            }
           }
         }
       }
