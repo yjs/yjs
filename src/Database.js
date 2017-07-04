@@ -81,10 +81,6 @@ export default function extendDatabase (Y /* :any */) {
       function garbageCollect () {
         return os.whenTransactionsFinished().then(function () {
           if (os.gcTimeout > 0 && (os.gc1.length > 0 || os.gc2.length > 0)) {
-            // debug
-            if (os.y.connector.isSynced === false) {
-              debugger
-            }
             if (!os.y.connector.isSynced) {
               console.warn('gc should be empty when not synced!')
             }

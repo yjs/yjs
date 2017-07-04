@@ -366,6 +366,7 @@ export default function extendTransaction (Y) {
       operations that can be gc'd and add them to the garbage collector.
     */
     * garbageCollectAfterSync () {
+      // debugger
       if (this.store.gc1.length > 0 || this.store.gc2.length > 0) {
         console.warn('gc should be empty after sync')
       }
@@ -459,16 +460,8 @@ export default function extendTransaction (Y) {
 
           if (o.originOf != null && o.originOf.length > 0) {
             // find new origin of right ops
-            // origin is the first left deleted operation
+            // origin is the first left operation
             var neworigin = o.left
-            var neworigin_ = null
-            while (neworigin != null) {
-              neworigin_ = yield * this.getInsertion(neworigin)
-              if (neworigin_.deleted) {
-                break
-              }
-              neworigin = neworigin_.left
-            }
 
             // reset origin of all right ops (except first right - duh!),
 
@@ -513,6 +506,7 @@ export default function extendTransaction (Y) {
               }
             }
             if (neworigin != null) {
+              var neworigin_ = yield * this.getInsertion(neworigin)
               if (neworigin_.originOf == null) {
                 neworigin_.originOf = o.originOf
               } else {
@@ -937,21 +931,28 @@ export default function extendTransaction (Y) {
       var send = []
 
       var endSV = yield * this.getStateVector()
-      for (var endState of endSV) {
-        var user = endState.user
+      for (let endState of endSV) {
+        let user = endState.user
         if (user === '_') {
           continue
         }
-        var startPos = startSS[user] || 0
+        let startPos = startSS[user] || 0
         if (startPos > 0) {
           // There is a change that [user, startPos] is in a composed Insertion (with a smaller counter)
           // find out if that is the case
-          var firstMissing = yield * this.getInsertion([user, startPos])
+          let firstMissing = yield * this.getInsertion([user, startPos])
           if (firstMissing != null) {
             // update startPos
             startPos = firstMissing.id[1]
-            startSS[user] = startPos
           }
+        }
+        startSS[user] = startPos
+      }
+      for (let endState of endSV) {
+        let user = endState.user
+        let startPos = startSS[user]
+        if (user === '_') {
+          continue
         }
         yield * this.os.iterate(this, [user, startPos], [user, Number.MAX_VALUE], function * (op) {
           op = Y.Struct[op.struct].encode(op)
@@ -959,7 +960,9 @@ export default function extendTransaction (Y) {
             send.push(op)
           } else if (op.right == null || op.right[1] < (startSS[op.right[0]] || 0)) {
             // case 1. op.right is known
-            var o = op
+            // this case is only reached if op.right is known.
+            // => this is not called for op.left, as op.right is unknown
+            let o = op
             // Remember: ?
             // -> set op.right
             //    1. to the first operation that is known (according to startSS)
@@ -972,11 +975,14 @@ export default function extendTransaction (Y) {
               if (o.left == null) {
                 op.left = null
                 send.push(op)
-                if (!Y.utils.compareIds(o.id, op.id)) {
+                /* not necessary, as o is already sent..
+                if (!Y.utils.compareIds(o.id, op.id) && o.id[1] >= (startSS[o.id[0]] || 0)) {
+                  // o is not op && o is unknown
                   o = Y.Struct[op.struct].encode(o)
                   o.right = missingOrigins[missingOrigins.length - 1].id
                   send.push(o)
                 }
+                */
                 break
               }
               o = yield * this.getInsertion(o.left)
@@ -1011,6 +1017,11 @@ export default function extendTransaction (Y) {
             }
           }
         })
+      }
+      if (send.some(o => send.filter(p => Y.utils.compareIds(o.id, p.id)).length > 1)) {
+        console.warn('getOperations os contains duplicates')
+        console.warn(send.map(o => send.filter(p => Y.utils.compareIds(o.id, p.id)).length))
+        debugger
       }
       return send.reverse()
     }

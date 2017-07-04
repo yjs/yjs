@@ -185,7 +185,7 @@ export default function extendConnector (Y/* :any */) {
         this.currentSyncTarget = syncUser
         this.y.db.requestTransaction(function * () {
           var stateSet = yield * this.getStateSet()
-          var deleteSet = yield * this.getDeleteSet()
+          // var deleteSet = yield * this.getDeleteSet()
           var answer = {
             type: 'sync step 1',
             stateSet: stateSet,
@@ -346,21 +346,21 @@ export default function extendConnector (Y/* :any */) {
             let m = message
             // apply operations first
             db.requestTransaction(function * () {
-              yield * this.applyDeleteSet(m.deleteSet)
+              // yield * this.applyDeleteSet(m.deleteSet)
               if (m.osUntransformed != null) {
                 yield * this.applyOperationsUntransformed(m.osUntransformed, m.stateSet)
               } else {
                 this.store.apply(m.os)
               }
-              defer.resolve()
+              // defer.resolve()
             })
-            /*/ then apply ds
+            // then apply ds
             db.whenTransactionsFinished().then(() => {
               db.requestTransaction(function * () {
                 yield * this.applyDeleteSet(m.deleteSet)
               })
               defer.resolve()
-            })*/
+            })
             return defer.promise
           } else if (message.type === 'sync done') {
             var self = this

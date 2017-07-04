@@ -30,11 +30,13 @@ export async function compareUsers (t, users) {
     await wait(100)
   }
   await flushAll(t, users)
-
-  await users[0].db.garbageCollect()
-  await users[0].db.garbageCollect()
+  await wait()
+  await flushAll(t, users)
 
   var userTypeContents = users.map(u => u.share.array._content.map(c => c.val || JSON.stringify(c.type)))
+
+  await users[0].db.garbageCollect()
+  await users[0].db.garbageCollect()
 
   // disconnect all except user 0
   await Promise.all(users.slice(1).map(async u =>

@@ -610,6 +610,7 @@ export default function Utils (Y) {
         }
       }
     }
+    return false
   }
   Y.utils.matchesId = matchesId
 
