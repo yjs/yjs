@@ -56,18 +56,29 @@ export async function compareUsers (t, users) {
       u.connector.whenSynced(resolve)
     })
   ))
-
+  let filterDeletedOps = users.every(u => u.db.gc === false)
   var data = await Promise.all(users.map(async (u) => {
     var data = {}
     u.db.requestTransaction(function * () {
       var os = yield * this.getOperationsUntransformed()
       data.os = {}
-      os.untransformed.forEach((op) => {
+      for (let i = 0; i < os.untransformed.length; i++) {
+        let op = os.untransformed[i]
         op = Y.Struct[op.struct].encode(op)
         delete op.origin
-        data.os[JSON.stringify(op.id)] = op
-        return op
-      })
+        /*
+          If gc = false, it is necessary to filter deleted ops
+          as they might have been split up differently..
+         */
+        if (filterDeletedOps) {
+          let opIsDeleted = yield * this.isDeleted(op.id)
+          if (!opIsDeleted) {
+            data.os[JSON.stringify(op.id)] = op
+          }
+        } else {
+          data.os[JSON.stringify(op.id)] = op
+        }
+      }
       data.ds = yield * this.getDeleteSet()
       data.ss = yield * this.getStateSet()
     })
