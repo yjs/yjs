@@ -63,7 +63,7 @@ export default function extendConnector (Y/* :any */) {
       this.protocolVersion = 11
       this.authInfo = opts.auth || null
       this.checkAuth = opts.checkAuth || function () { return Promise.resolve('write') } // default is everyone has write access
-      if (opts.generateUserId === true) {
+      if (opts.generateUserId !== false) {
         this.setUserId(Y.utils.generateGuid())
       }
     }
