@@ -833,10 +833,10 @@ export default function extendTransaction (Y) {
           yield * this.setOperation(op)
           return op
         } else {
-          // won't be called. but just in case..
-          console.error('Unexpected case. How can this happen?')
-          debugger // eslint-disable-line
-          return null
+          throw new Error(
+            'Unexpected case. Operation cannot be generated correctly!' +
+            'Incompatible Yjs version?'
+          )
         }
       }
     }
@@ -1003,8 +1003,10 @@ export default function extendTransaction (Y) {
                 op = Y.Struct[op.struct].encode(o)
                 op.right = newright
                 if (missingOrigins.length > 0) {
-                  debugger
-                  console.log('This should not happen .. :( please report this')
+                  throw new Error(
+                    'Reached inconsistent OS state.' +
+                    'Operations are not correctly connected.'
+                  )
                 }
                 missingOrigins = [op]
               } else {
@@ -1018,11 +1020,6 @@ export default function extendTransaction (Y) {
             }
           }
         })
-      }
-      if (send.some(o => send.filter(p => Y.utils.compareIds(o.id, p.id)).length > 1)) {
-        console.warn('getOperations os contains duplicates')
-        console.warn(send.map(o => send.filter(p => Y.utils.compareIds(o.id, p.id)).length))
-        debugger
       }
       return send.reverse()
     }
