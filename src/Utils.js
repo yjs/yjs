@@ -72,7 +72,12 @@ export default function Utils (Y) {
           }
           this.eventListeners[i](_event)
         } catch (e) {
-          console.error('Your observer threw an error. This error was caught so that Yjs still can ensure data consistency! In order to debug this error you have to check "Pause On Caught Exceptions"', e)
+          /*
+            Your observer threw an error. This error was caught so that Yjs
+            can ensure data consistency! In order to debug this error you
+            have to check "Pause On Caught Exceptions" in developer tools.
+          */
+          console.error(e)
         }
       }
     }

@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "standard",
     "dist": "rollup -c rollup.dist.js",
-    "serve": "concurrently 'serve examples' 'rollup -wc rollup.dist.js -o examples/bower_components/yjs/y.js'"
+    "serve": "concurrently 'serve ..' 'rollup -wc rollup.dist.js -o examples/bower_components/yjs/y.js'"
   },
   "pre-commit": [
     "lint",
