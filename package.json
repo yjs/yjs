@@ -6,16 +6,17 @@
   "scripts": {
     "lint": "standard",
     "dist": "rollup -c rollup.dist.js",
-    "serve": "concurrently 'serve ..' 'rollup -wc rollup.dist.js -o examples/bower_components/yjs/y.js'"
+    "serve": "concurrently 'serve ..' 'rollup -wc rollup.dist.js -o examples/bower_components/yjs/y.js'",
+    "postversion": "npm run lint && npm run dist",
+    "postpublish": "tag-dist-files --overwrite-existing-tag"
   },
-  "pre-commit": [
-    "lint",
-    "test"
+  "files": [
+    "y.*"
   ],
   "standard": {
     "ignore": [
-      "./y.js",
-      "./y.js.map"
+      "/y.js",
+      "/y.js.map"
     ]
   },
   "repository": {
@@ -40,10 +41,10 @@
   "homepage": "http://y-js.org",
   "devDependencies": {
     "babel-cli": "^6.24.1",
-    "babel-preset-latest": "^6.24.1",
     "babel-plugin-external-helpers": "^6.22.0",
     "babel-plugin-transform-regenerator": "^6.24.1",
     "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-preset-latest": "^6.24.1",
     "chance": "^1.0.9",
     "concurrently": "^3.4.0",
     "rollup-plugin-babel": "^2.7.1",
@@ -54,7 +55,8 @@
     "rollup-plugin-uglify": "^1.0.2",
     "rollup-regenerator-runtime": "^6.23.1",
     "rollup-watch": "^3.2.2",
-    "standard": "^10.0.2"
+    "standard": "^10.0.2",
+    "tag-dist-files": "^0.1.6"
   },
   "dependencies": {
     "debug": "^2.6.8"

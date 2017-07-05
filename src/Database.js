@@ -401,11 +401,11 @@ export default function extendDatabase (Y /* :any */) {
     whenOperationsExist: any;
     */
     * tryExecute (op) {
-      this.store.addToDebug('yield* this.store.tryExecute.call(this, ', JSON.stringify(op), ')')
+      this.store.addToDebug('yield * this.store.tryExecute.call(this, ', JSON.stringify(op), ')')
       if (op.struct === 'Delete') {
         yield * Y.Struct.Delete.execute.call(this, op)
         // this is now called in Transaction.deleteOperation!
-        // yield* this.store.operationAdded(this, op)
+        // yield * this.store.operationAdded(this, op)
       } else {
         // check if this op was defined
         var defined = yield * this.getInsertion(op.id)

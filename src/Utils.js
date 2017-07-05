@@ -42,6 +42,32 @@ export default function Utils (Y) {
     }
   }
 
+  class NamedEventHandler {
+    constructor () {
+      this._eventListener = {}
+    }
+    on (name, f) {
+      if (this._eventListener[name] == null) {
+        this._eventListener[name] = []
+      }
+      this._eventListener[name].push(f)
+    }
+    off (name, f) {
+      if (name == null || f == null) {
+        throw new Error('You must specify event name and function!')
+      }
+      let listener = this._eventListener[name] || []
+      this._eventListener[name] = listener.filter(e => e !== f)
+    }
+    emit (name, value) {
+      (this._eventListener[name] || []).forEach(l => l(value))
+    }
+    destroy () {
+      this._eventListener = null
+    }
+  }
+  Y.utils.NamedEventHandler = NamedEventHandler
+
   class EventListenerHandler {
     constructor () {
       this.eventListeners = []

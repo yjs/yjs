@@ -144,7 +144,7 @@ export default function Y (opts/* :YOptions */) /* :Promise<YConfig> */ {
   })
 }
 
-class YConfig {
+class YConfig extends Y.utils.NamedEventHandler {
   /* ::
   db: Y.AbstractDatabase;
   connector: Y.AbstractConnector;
@@ -152,6 +152,7 @@ class YConfig {
   options: Object;
   */
   constructor (opts, callback) {
+    super()
     this.options = opts
     this.db = new Y[opts.db.name](this, opts.db)
     this.connector = new Y[opts.connector.name](this, opts.connector)
@@ -215,6 +216,9 @@ class YConfig {
       } else {
         return Promise.resolve()
       }
+    }).then(() => {
+      // remove existing event listener
+      super.destroy()
     })
   }
   close () {

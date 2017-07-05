@@ -162,14 +162,14 @@ export default function extendTransaction (Y) {
             if (target.start != null) {
               // TODO: don't do it like this .. -.-
               yield * this.deleteList(target.start)
-              // yield* this.deleteList(target.id) -- do not gc itself because this may still get referenced
+              // yield * this.deleteList(target.id) -- do not gc itself because this may still get referenced
             }
             if (target.map != null) {
               for (var name in target.map) {
                 yield * this.deleteList(target.map[name])
               }
               // TODO: here to..  (see above)
-              // yield* this.deleteList(target.id) -- see above
+              // yield * this.deleteList(target.id) -- see above
             }
             if (target.opContent != null) {
               yield * this.deleteOperation(target.opContent)
@@ -223,7 +223,7 @@ export default function extendTransaction (Y) {
     */
     * markGarbageCollected (id, len) {
       // this.mem.push(["gc", id]);
-      this.store.addToDebug('yield* this.markGarbageCollected(', id, ', ', len, ')')
+      this.store.addToDebug('yield * this.markGarbageCollected(', id, ', ', len, ')')
       var n = yield * this.markDeleted(id, len)
       if (n.id[1] < id[1] && !n.gc) {
         // un-extend left
@@ -294,8 +294,9 @@ export default function extendTransaction (Y) {
                 yield * this.ds.put(n)
               } else {
                 // already gc'd
-                throw new Error('Cannot happen! (it dit though.. :()')
-                // return n
+                throw new Error(
+                  'DS reached an inconsistent state. Please report this issue!'
+                )
               }
             }
           } else {
@@ -418,7 +419,7 @@ export default function extendTransaction (Y) {
       * reset origins of all right ops
     */
     * garbageCollectOperation (id) {
-      this.store.addToDebug('yield* this.garbageCollectOperation(', id, ')')
+      this.store.addToDebug('yield * this.garbageCollectOperation(', id, ')')
       var o = yield * this.getOperation(id)
       yield * this.markGarbageCollected(id, (o != null && o.content != null) ? o.content.length : 1) // always mark gc'd
       // if op exists, then clean that mess up..
@@ -475,7 +476,7 @@ export default function extendTransaction (Y) {
             right.origin = neworigin
             // search until you find origin pointer to the left of o
             if (right.right != null) {
-              var i = yield* this.getOperation(right.right)
+              var i = yield * this.getOperation(right.right)
               var ids = [o.id, o.right]
               while (ids.some(function (id) {
                 return Y.utils.compareIds(id, i.origin)
@@ -483,14 +484,14 @@ export default function extendTransaction (Y) {
                 if (Y.utils.compareIds(i.origin, o.id)) {
                   // reset origin of i
                   i.origin = neworigin
-                  yield* this.setOperation(i)
+                  yield * this.setOperation(i)
                 }
                 // get next i
                 if (i.right == null) {
                   break
                 } else {
                   ids.push(i.id)
-                  i = yield* this.getOperation(i.right)
+                  i = yield * this.getOperation(i.right)
                 }
               }
             }
@@ -1086,7 +1087,7 @@ export default function extendTransaction (Y) {
       // or the o that has no origin to the right of op
       // (this is why we use the ids array)
       while (o.right != null) {
-        var right = yield* this.getOperation(o.right)
+        var right = yield * this.getOperation(o.right)
         if (o.right[1] < (startSS[o.right[0]] || 0) || !ids.some(function (id) {
           return Y.utils.compareIds(id, right.origin)
         })) {
