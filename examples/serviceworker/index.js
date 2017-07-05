@@ -1,13 +1,13 @@
 /* global Y, Quill */
 
 // register yjs service worker
-if('serviceWorker' in navigator){
+if ('serviceWorker' in navigator) {
   // Register service worker
   // it is important to copy yjs-sw-template to the root directory!
-  navigator.serviceWorker.register('./yjs-sw-template.js').then(function(reg){
-    console.log("Yjs service worker registration succeeded. Scope is " + reg.scope);
-  }).catch(function(err){
-    console.error("Yjs service worker registration failed with error " + err);
+  navigator.serviceWorker.register('./yjs-sw-template.js').then(function (reg) {
+    console.log('Yjs service worker registration succeeded. Scope is ' + reg.scope)
+  }).catch(function (err) {
+    console.error('Yjs service worker registration failed with error ' + err)
   })
 }
 
@@ -39,7 +39,7 @@ Y({
         [{ script: 'sub' }, { script: 'super' }],
         ['link', 'image'],
         ['link', 'code-block'],
-        [{list: 'ordered' }]
+        [{ list: 'ordered' }]
       ]
     },
     theme: 'snow'

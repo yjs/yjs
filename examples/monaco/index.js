@@ -1,8 +1,8 @@
-/* global Y */
+/* global Y, monaco */
 
-require.config({ paths: { 'vs': '../node_modules/monaco-editor/min/vs' }})
-require(['vs/editor/editor.main'], function() {
+require.config({ paths: { 'vs': '../node_modules/monaco-editor/min/vs' } })
 
+require(['vs/editor/editor.main'], function () {
   // Initialize a shared object. This function call returns a promise!
   Y({
     db: {
@@ -28,4 +28,3 @@ require(['vs/editor/editor.main'], function() {
     y.share.monaco.bindMonaco(editor)
   })
 })
-

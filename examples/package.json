@@ -6,5 +6,11 @@
   "license": "MIT",
   "dependencies": {
     "monaco-editor": "^0.8.3"
+  },
+  "devDependencies": {
+    "standard": "^10.0.2"
+  },
+  "standard": {
+    "ignore": ["bower_components"]
   }
 }

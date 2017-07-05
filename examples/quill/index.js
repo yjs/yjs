@@ -29,11 +29,11 @@ Y({
         [{ script: 'sub' }, { script: 'super' }],
         ['link', 'image'],
         ['link', 'code-block'],
-        [{list: 'ordered' }]
+        [{ list: 'ordered' }]
       ]
     },
     theme: 'snow'
-  });
+  })
   // bind quill to richtext type
   y.share.richtext.bind(window.quill)
 })

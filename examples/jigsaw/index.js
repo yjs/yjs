@@ -19,11 +19,16 @@ Y({
   }
 }).then(function (y) {
   window.yJigsaw = y
-  var origin // mouse start position - translation of piece  
+  var origin // mouse start position - translation of piece
   var drag = d3.behavior.drag()
     .on('dragstart', function (params) {
       // get the translation of the element
-      var translation = d3.select(this).attr('transform').slice(10,-1).split(',').map(Number)
+      var translation = d3
+        .select(this)
+        .attr('transform')
+        .slice(10, -1)
+        .split(',')
+        .map(Number)
       // mouse coordinates
       var mouse = d3.mouse(this.parentNode)
       origin = {
@@ -31,11 +36,11 @@ Y({
         y: mouse[1] - translation[1]
       }
     })
-    .on("drag", function(){
+    .on('drag', function () {
       var mouse = d3.mouse(this.parentNode)
       var x = mouse[0] - origin.x // =^= mouse - mouse at dragstart + translation at dragstart
       var y = mouse[1] - origin.y
-      d3.select(this).attr("transform", "translate(" + x + "," + y + ")")
+      d3.select(this).attr('transform', 'translate(' + x + ',' + y + ')')
     })
     .on('dragend', function (piece, i) {
       // save the current translation of the puzzle piece
@@ -46,23 +51,23 @@ Y({
     })
 
   var data = [y.share.piece1, y.share.piece2, y.share.piece3, y.share.piece4]
-  var pieces = d3.select(document.querySelector("#puzzle-example")).selectAll("path").data(data)
+  var pieces = d3.select(document.querySelector('#puzzle-example')).selectAll('path').data(data)
 
   pieces
     .classed('draggable', true)
-    .attr("transform", function (piece) {
+    .attr('transform', function (piece) {
       var translation = piece.get('translation') || {x: 0, y: 0}
-      return "translate(" + translation.x + "," + translation.y + ")"
+      return 'translate(' + translation.x + ',' + translation.y + ')'
     }).call(drag)
 
-  data.forEach(function(piece){
+  data.forEach(function (piece) {
     piece.observe(function () {
       // whenever a property of a piece changes, update the translation of the pieces
       pieces
         .transition()
-        .attr("transform", function (piece) {
+        .attr('transform', function (piece) {
           var translation = piece.get('translation') || {x: 0, y: 0}
-          return "translate(" + translation.x + "," + translation.y + ")"
+          return 'translate(' + translation.x + ',' + translation.y + ')'
         })
     })
   })
