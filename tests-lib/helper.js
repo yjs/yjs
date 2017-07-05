@@ -1,7 +1,7 @@
 
 import _Y from '../../yjs/src/y.js'
 
-import yMemory from '../../y-memory/src/Memory.js'
+import yMemory from '../../y-memory/src/y-memory.js'
 import yArray from '../../y-array/src/y-array.js'
 import yMap from '../../y-map/src/Map.js'
 import yTest from './test-connector.js'
