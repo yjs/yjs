@@ -2,7 +2,7 @@
   "name": "yjs",
   "version": "13.0.0-2",
   "description": "A framework for real-time p2p shared editing on any data",
-  "main": "./src/y.js",
+  "main": "./y.js",
   "scripts": {
     "test": "npm run lint",
     "lint": "standard",
