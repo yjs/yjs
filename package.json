@@ -2,12 +2,13 @@
   "name": "yjs",
   "version": "13.0.0-3",
   "description": "A framework for real-time p2p shared editing on any data",
-  "main": "./y.js",
+  "main": "./y.node.js",
+  "browser": "./y.js",
+  "module": "./src/y.js",
   "scripts": {
     "test": "npm run lint",
     "lint": "standard",
-    "dist": "rollup -c rollup.dist.js",
-    "serve": "concurrently 'serve ..' 'rollup -wc rollup.dist.js -o examples/bower_components/yjs/y.js'",
+    "dist": "rollup -c rollup.browser.js; rollup -c rollup.node.js",
     "postversion": "npm run dist",
     "postpublish": "tag-dist-files --overwrite-existing-tag"
   },
