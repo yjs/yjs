@@ -14,8 +14,6 @@ export default function extendConnector (Y/* :any */) {
     userEventListeners: Array<Function>;
     whenSyncedListeners: Array<Function>;
     currentSyncTarget: ?UserId;
-    syncingClients: Array<UserId>;
-    forwardToSyncingClients: boolean;
     debug: boolean;
     syncStep2: Promise;
     userId: UserId;
@@ -56,8 +54,6 @@ export default function extendConnector (Y/* :any */) {
       this.userEventListeners = []
       this.whenSyncedListeners = []
       this.currentSyncTarget = null
-      this.syncingClients = []
-      this.forwardToSyncingClients = opts.forwardToSyncingClients !== false
       this.debug = opts.debug === true
       this.broadcastOpBuffer = []
       this.protocolVersion = 11
@@ -85,7 +81,6 @@ export default function extendConnector (Y/* :any */) {
       this.connections = new Map()
       this.isSynced = false
       this.currentSyncTarget = null
-      this.syncingClients = []
       this.whenSyncedListeners = []
       this.y.db.stopGarbageCollector()
       return this.y.db.whenTransactionsFinished()
@@ -125,9 +120,6 @@ export default function extendConnector (Y/* :any */) {
           this.currentSyncTarget = null
           this.findNextSyncTarget()
         }
-        this.syncingClients = this.syncingClients.filter(function (cli) {
-          return cli !== user
-        })
         for (var f of this.userEventListeners) {
           f({
             action: 'userLeft',
@@ -325,21 +317,6 @@ export default function extendConnector (Y/* :any */) {
                   answer.os = yield * this.getOperations(m.stateSet)
                 }
                 conn.send(sender, answer)
-                if (false && conn.forwardToSyncingClients) { // still need this? was previously disabled. TODO: remove forward syncingClients
-                  conn.syncingClients.push(sender)
-                  setTimeout(function () {
-                    conn.syncingClients = conn.syncingClients.filter(function (cli) {
-                      return cli !== sender
-                    })
-                    conn.send(sender, {
-                      type: 'sync done'
-                    })
-                  }, 5000) // TODO: conn.syncingClientDuration)
-                } else {
-                  conn.send(sender, {
-                    type: 'sync done'
-                  })
-                }
               })
             })
           } else if (message.type === 'sync step 2' && canWrite(auth)) {
@@ -363,18 +340,12 @@ export default function extendConnector (Y/* :any */) {
               })
               defer.resolve()
             })
-            return defer.promise
-          } else if (message.type === 'sync done') {
             var self = this
             this.connections.get(sender).syncStep2.promise.then(function () {
               self._setSyncedWith(sender)
             })
+            return defer.promise
           } else if (message.type === 'update' && canWrite(auth)) {
-            if (this.forwardToSyncingClients) {
-              for (var client of this.syncingClients) {
-                this.send(client, message)
-              }
-            }
             if (this.y.db.forwardAppliedOperations) {
               var delops = message.ops.filter(function (o) {
                 return o.struct === 'Delete'
