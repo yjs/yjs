@@ -7,12 +7,13 @@ Y({
   },
   connector: {
     name: 'websockets-client',
-    room: 'Textarea-example'
-    // url: '127.0.0.1:1234'
+    room: 'Textarea-example',
+    url: 'http://127.0.0.1:1234'
   },
   sourceDir: '/bower_components',
   share: {
-    textarea: 'Text' // y.share.textarea is of type Y.Text
+    textarea: 'Text', // y.share.textarea is of type Y.Text
+    test: 'Array'
   }
 }).then(function (y) {
   window.yTextarea = y

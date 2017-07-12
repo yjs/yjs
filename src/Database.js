@@ -590,7 +590,7 @@ export default function extendDatabase (Y /* :any */) {
       op.type = typedefinition[0].name
 
       this.requestTransaction(function * () {
-        if (op.id[0] === '_') {
+        if (op.id[0] === -1) {
           yield * this.setOperation(op)
         } else {
           yield * this.applyCreatedOperations([op])

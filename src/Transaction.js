@@ -593,6 +593,7 @@ export default function extendTransaction (Y) {
 
       for (var user in ds) {
         var dv = ds[user]
+        user = Number.parseInt(user, 10)
         var pos = 0
         var d = dv[pos]
         yield * this.ds.iterate(this, [user, 0], [user, Number.MAX_VALUE], function * (n) {
@@ -821,11 +822,11 @@ export default function extendTransaction (Y) {
     }
     * getOperation (id/* :any */)/* :Transaction<any> */ {
       var o = yield * this.os.find(id)
-      if (id[0] !== '_' || o != null) {
+      if (id[0] !== -1 || o != null) {
         return o
       } else { // type is string
         // generate this operation?
-        var comp = id[1].split('_')
+        var comp = id[1].split(-1)
         if (comp.length > 1) {
           var struct = comp[0]
           var op = Y.Struct[struct].create(id)
@@ -934,7 +935,7 @@ export default function extendTransaction (Y) {
       var endSV = yield * this.getStateVector()
       for (let endState of endSV) {
         let user = endState.user
-        if (user === '_') {
+        if (user === -1) {
           continue
         }
         let startPos = startSS[user] || 0
@@ -952,7 +953,7 @@ export default function extendTransaction (Y) {
       for (let endState of endSV) {
         let user = endState.user
         let startPos = startSS[user]
-        if (user === '_') {
+        if (user === -1) {
           continue
         }
         yield * this.os.iterate(this, [user, startPos], [user, Number.MAX_VALUE], function * (op) {
@@ -1031,7 +1032,7 @@ export default function extendTransaction (Y) {
     * getOperationsUntransformed () {
       var ops = []
       yield * this.os.iterate(this, null, null, function * (op) {
-        if (op.id[0] !== '_') {
+        if (op.id[0] !== -1) {
           ops.push(op)
         }
       })
@@ -1044,7 +1045,7 @@ export default function extendTransaction (Y) {
       for (var i = 0; i < ops.length; i++) {
         var op = ops[i]
         // create, and modify parent, if it is created implicitly
-        if (op.parent != null && op.parent[0] === '_') {
+        if (op.parent != null && op.parent[0] === -1) {
           if (op.struct === 'Insert') {
             // update parents .map/start/end properties
             if (op.parentSub != null && op.left == null) {

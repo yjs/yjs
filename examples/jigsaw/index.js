@@ -10,7 +10,6 @@ Y({
     name: 'websockets-client',
     room: 'Puzzle-example'
   },
-  sourceDir: '/bower_components',
   share: {
     piece1: 'Map',
     piece2: 'Map',

@@ -6,49 +6,48 @@ var rooms = {}
 export class TestRoom {
   constructor (roomname) {
     this.room = roomname
-    this.users = {}
+    this.users = new Map()
     this.nextUserId = 0
   }
   join (connector) {
     if (connector.userId == null) {
-      connector.setUserId('' + (this.nextUserId++))
+      connector.setUserId(this.nextUserId++)
     }
-    Object.keys(this.users).forEach(uid => {
-      let user = this.users[uid]
+    this.users.forEach((user, uid) => {
       if (user.role === 'master' || connector.role === 'master') {
-        this.users[uid].userJoined(connector.userId, connector.role)
-        connector.userJoined(uid, this.users[uid].role)
+        this.users.get(uid).userJoined(connector.userId, connector.role)
+        connector.userJoined(uid, this.users.get(uid).role)
       }
     })
-    this.users[connector.userId] = connector
+    this.users.set(connector.userId, connector)
   }
   leave (connector) {
-    delete this.users[connector.userId]
-    Object.keys(this.users).forEach(uid => {
-      this.users[uid].userLeft(connector.userId)
+    this.users.delete(connector.userId)
+    this.users.forEach(user => {
+      user.userLeft(connector.userId)
     })
   }
   send (sender, receiver, m) {
     m = JSON.parse(JSON.stringify(m))
-    var user = this.users[receiver]
+    var user = this.users.get(receiver)
     if (user != null) {
       user.receiveMessage(sender, m)
     }
   }
   broadcast (sender, m) {
-    Object.keys(this.users).forEach(receiver => {
+    this.users.forEach((user, receiver) => {
       this.send(sender, receiver, m)
     })
   }
   async flushAll (users) {
     let flushing = true
-    let allUserIds = Object.keys(this.users)
+    let allUserIds = Array.from(this.users.keys())
     if (users == null) {
-      users = allUserIds.map(id => this.users[id].y)
+      users = allUserIds.map(id => this.users.get(id).y)
     }
     while (flushing) {
       await wait(10)
-      let res = await Promise.all(allUserIds.map(id => this.users[id]._flushAll(users)))
+      let res = await Promise.all(allUserIds.map(id => this.users.get(id)._flushAll(users)))
       flushing = res.some(status => status === 'flushing')
     }
   }
@@ -109,10 +108,10 @@ export default function extendTestConnector (Y) {
       })
     }
     receiveMessage (sender, m) {
-      if (this.userId !== sender && this.connections[sender] != null) {
-        var buffer = this.connections[sender].buffer
+      if (this.userId !== sender && this.connections.has(sender)) {
+        var buffer = this.connections.get(sender).buffer
         if (buffer == null) {
-          buffer = this.connections[sender].buffer = []
+          buffer = this.connections.get(sender).buffer = []
         }
         buffer.push(m)
         if (this.chance.bool({likelihood: 30})) {
@@ -127,13 +126,13 @@ export default function extendTestConnector (Y) {
     async _flushAll (flushUsers) {
       if (flushUsers.some(u => u.connector.userId === this.userId)) {
         // this one needs to sync with every other user
-        flushUsers = Object.keys(this.connections).map(id => this.testRoom.users[id].y)
+        flushUsers = Array.from(this.connections.keys()).map(uid => this.testRoom.users.get(uid).y)
       }
       var finished = []
       for (let i = 0; i < flushUsers.length; i++) {
         let userId = flushUsers[i].connector.userId
-        if (userId !== this.userId && this.connections[userId] != null) {
-          let buffer = this.connections[userId].buffer
+        if (userId !== this.userId && this.connections.has(userId)) {
+          let buffer = this.connections.get(userId).buffer
           if (buffer != null) {
             var messages = buffer.splice(0)
             for (let j = 0; j < messages.length; j++) {

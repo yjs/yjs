@@ -51,7 +51,7 @@ export default function extendConnector (Y/* :any */) {
       this.logMessage = Y.debug('y:connector-message')
       this.y.db.forwardAppliedOperations = opts.forwardAppliedOperations || false
       this.role = opts.role
-      this.connections = {}
+      this.connections = new Map()
       this.isSynced = false
       this.userEventListeners = []
       this.whenSyncedListeners = []
@@ -64,7 +64,7 @@ export default function extendConnector (Y/* :any */) {
       this.authInfo = opts.auth || null
       this.checkAuth = opts.checkAuth || function () { return Promise.resolve('write') } // default is everyone has write access
       if (opts.generateUserId !== false) {
-        this.setUserId(Y.utils.generateGuid())
+        this.setUserId(Y.utils.generateUserId())
       }
     }
     resetAuth (auth) {
@@ -82,7 +82,7 @@ export default function extendConnector (Y/* :any */) {
     }
     disconnect () {
       this.log('discronnecting..')
-      this.connections = {}
+      this.connections = new Map()
       this.isSynced = false
       this.currentSyncTarget = null
       this.syncingClients = []
@@ -92,15 +92,18 @@ export default function extendConnector (Y/* :any */) {
     }
     repair () {
       this.log('Repairing the state of Yjs. This can happen if messages get lost, and Yjs detects that something is wrong. If this happens often, please report an issue here: https://github.com/y-js/yjs/issues')
-      for (var name in this.connections) {
-        this.connections[name].isSynced = false
-      }
+      this.connections.forEach(user => { user.isSynced = false })
       this.isSynced = false
       this.currentSyncTarget = null
       this.findNextSyncTarget()
     }
     setUserId (userId) {
       if (this.userId == null) {
+        if (!Number.isInteger(userId)) {
+          let err = new Error('UserId must be an integer!')
+          this.y.emit('error', err)
+          throw err
+        }
         this.log('Set userId to "%s"', userId)
         this.userId = userId
         return this.y.db.setUserId(userId)
@@ -115,9 +118,9 @@ export default function extendConnector (Y/* :any */) {
       this.userEventListeners = this.userEventListeners.filter(g => f !== g)
     }
     userLeft (user) {
-      if (this.connections[user] != null) {
-        this.log('User left: %s', user)
-        delete this.connections[user]
+      if (this.connections.has(user)) {
+        this.log('%s: User left %s', this.userId, user)
+        this.connections.delete(user)
         if (user === this.currentSyncTarget) {
           this.currentSyncTarget = null
           this.findNextSyncTarget()
@@ -137,17 +140,17 @@ export default function extendConnector (Y/* :any */) {
       if (role == null) {
         throw new Error('You must specify the role of the joined user!')
       }
-      if (this.connections[user] != null) {
+      if (this.connections.has(user)) {
         throw new Error('This user already joined!')
       }
-      this.log('User joined: %s', user)
-      this.connections[user] = {
+      this.log('%s: User joined %s', this.userId, user)
+      this.connections.set(user, {
         isSynced: false,
         role: role
-      }
+      })
       let defer = {}
       defer.promise = new Promise(function (resolve) { defer.resolve = resolve })
-      this.connections[user].syncStep2 = defer
+      this.connections.get(user).syncStep2 = defer
       for (var f of this.userEventListeners) {
         f({
           action: 'userJoined',
@@ -174,8 +177,8 @@ export default function extendConnector (Y/* :any */) {
       }
 
       var syncUser = null
-      for (var uid in this.connections) {
-        if (!this.connections[uid].isSynced) {
+      for (var [uid, user] of this.connections) {
+        if (!user.isSynced) {
           syncUser = uid
           break
         }
@@ -217,11 +220,11 @@ export default function extendConnector (Y/* :any */) {
       }
     }
     send (uid, message) {
-      this.log('Send \'%s\' to %s', message.type, uid)
+      this.log('%s: Send \'%s\' to %s', this.userId, message.type, uid)
       this.logMessage('Message: %j', message)
     }
     broadcast (message) {
-      this.log('Broadcast \'%s\'', message.type)
+      this.log('%s: Broadcast \'%s\'', this.userId, message.type)
       this.logMessage('Message: %j', message)
     }
     /*
@@ -255,10 +258,10 @@ export default function extendConnector (Y/* :any */) {
       if (sender === this.userId) {
         return Promise.resolve()
       }
-      this.log('Receive \'%s\' from %s', message.type, sender)
+      this.log('%s: Receive \'%s\' from %s', this.userId, message.type, sender)
       this.logMessage('Message: %j', message)
       if (message.protocolVersion != null && message.protocolVersion !== this.protocolVersion) {
-        this.log(
+        console.warn(
           `You tried to sync with a yjs instance that has a different protocol version
           (You: ${this.protocolVersion}, Client: ${message.protocolVersion}).
           The sync was stopped. You need to upgrade your dependencies (especially Yjs & the Connector)!
@@ -269,10 +272,10 @@ export default function extendConnector (Y/* :any */) {
         })
         return Promise.reject(new Error('Incompatible protocol version'))
       }
-      if (message.auth != null && this.connections[sender] != null) {
+      if (message.auth != null && this.connections.has(sender)) {
         // authenticate using auth in message
         var auth = this.checkAuth(message.auth, this.y)
-        this.connections[sender].auth = auth
+        this.connections.get(sender).auth = auth
         auth.then(auth => {
           for (var f of this.userEventListeners) {
             f({
@@ -282,19 +285,18 @@ export default function extendConnector (Y/* :any */) {
             })
           }
         })
-      } else if (this.connections[sender] != null && this.connections[sender].auth == null) {
+      } else if (this.connections.has(sender) && this.connections.get(sender).auth == null) {
         // authenticate without otherwise
-        this.connections[sender].auth = this.checkAuth(null, this.y)
+        this.connections.get(sender).auth = this.checkAuth(null, this.y)
       }
-      if (this.connections[sender] != null && this.connections[sender].auth != null) {
-        return this.connections[sender].auth.then((auth) => {
+      if (this.connections.has(sender) && this.connections.get(sender).auth != null) {
+        return this.connections.get(sender).auth.then(auth => {
           if (message.type === 'sync step 1' && canRead(auth)) {
             let conn = this
             let m = message
             let wait // wait for sync step 2 to complete
             if (this.role === 'slave') {
-              wait = Promise.all(Object.keys(this.connections)
-                .map(uid => this.connections[uid])
+              wait = Promise.all(Array.from(this.connections.values())
                 .filter(conn => conn.role === 'master')
                 .map(conn => conn.syncStep2.promise)
               )
@@ -314,8 +316,8 @@ export default function extendConnector (Y/* :any */) {
                   type: 'sync step 2',
                   stateSet: currentStateSet,
                   deleteSet: ds,
-                  protocolVersion: this.protocolVersion,
-                  auth: this.authInfo
+                  protocolVersion: conn.protocolVersion,
+                  auth: conn.authInfo
                 }
                 if (message.preferUntransformed === true && Object.keys(m.stateSet).length === 0) {
                   answer.osUntransformed = yield * this.getOperationsUntransformed()
@@ -323,7 +325,7 @@ export default function extendConnector (Y/* :any */) {
                   answer.os = yield * this.getOperations(m.stateSet)
                 }
                 conn.send(sender, answer)
-                if (this.forwardToSyncingClients) {
+                if (false && conn.forwardToSyncingClients) { // still need this? was previously disabled. TODO: remove forward syncingClients
                   conn.syncingClients.push(sender)
                   setTimeout(function () {
                     conn.syncingClients = conn.syncingClients.filter(function (cli) {
@@ -342,7 +344,7 @@ export default function extendConnector (Y/* :any */) {
             })
           } else if (message.type === 'sync step 2' && canWrite(auth)) {
             var db = this.y.db
-            let defer = this.connections[sender].syncStep2
+            let defer = this.connections.get(sender).syncStep2
             let m = message
             // apply operations first
             db.requestTransaction(function * () {
@@ -364,7 +366,7 @@ export default function extendConnector (Y/* :any */) {
             return defer.promise
           } else if (message.type === 'sync done') {
             var self = this
-            this.connections[sender].syncStep2.promise.then(function () {
+            this.connections.get(sender).syncStep2.promise.then(function () {
               self._setSyncedWith(sender)
             })
           } else if (message.type === 'update' && canWrite(auth)) {
@@ -389,7 +391,7 @@ export default function extendConnector (Y/* :any */) {
       }
     }
     _setSyncedWith (user) {
-      var conn = this.connections[user]
+      var conn = this.connections.get(user)
       if (conn != null) {
         conn.isSynced = true
       }

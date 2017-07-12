@@ -104,7 +104,7 @@ export async function initArrays (t, opts) {
   }
   var share = Object.assign({ flushHelper: 'Map', array: 'Array' }, opts.share)
   var chance = opts.chance || new Chance(t.getSeed() * 1000000000)
-  var connector = Object.assign({ room: 'debugging_' + t.name, testContext: t, chance }, opts.connector)
+  var connector = Object.assign({ room: 'debugging_' + t.name, generateUserId: false, testContext: t, chance }, opts.connector)
   for (let i = 0; i < opts.users; i++) {
     let dbOpts
     let connOpts
