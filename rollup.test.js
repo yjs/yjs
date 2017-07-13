@@ -3,8 +3,8 @@ import commonjs from 'rollup-plugin-commonjs'
 import multiEntry from 'rollup-plugin-multi-entry'
 
 export default {
-  entry: 'tests/*.js',
-  moduleName: 'y-array-tests',
+  entry: 'test/*',
+  moduleName: 'y-tests',
   format: 'umd',
   plugins: [
     nodeResolve({
@@ -15,6 +15,6 @@ export default {
     commonjs(),
     multiEntry()
   ],
-  dest: 'y-array.test.js',
+  dest: 'y.test.js',
   sourceMap: true
 }

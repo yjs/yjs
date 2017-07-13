@@ -1,5 +1,7 @@
-/* @flow */
-'use strict'
+const CDELETE = 0
+const CINSERT = 1
+const CLIST = 2
+const CMAP = 3
 
 /*
  An operation also defines the structure of a type. This is why operation and
@@ -33,6 +35,19 @@ export default function extendStruct (Y) {
         return {
           target: op.target,
           length: op.length || 0,
+          struct: 'Delete'
+        }
+      },
+      binaryEncode: function (encoder, op) {
+        encoder.writeUint8(CDELETE)
+        encoder.writeOpID(op.target)
+        encoder.writeVarUint(op.length || 0)
+      },
+      binaryDecode: function (decoder) {
+        decoder.skip8()
+        return {
+          target: decoder.readOpID(),
+          length: decoder.readVarUint(),
           struct: 'Delete'
         }
       },
@@ -76,6 +91,91 @@ export default function extendStruct (Y) {
         }
 
         return e
+      },
+      binaryEncode: function (encoder, op) {
+        encoder.writeUint8(CINSERT)
+        // compute info property
+        let contentIsText = op.content != null && op.content.every(c => typeof c === 'string' && c.length === 1)
+        let originIsLeft = Y.utils.compareIds(op.left, op.origin)
+        let info =
+          (op.parentSub != null ? 1 : 0) |
+          (op.opContent != null ? 2 : 0) |
+          (contentIsText ? 4 : 0) |
+          (originIsLeft ? 8 : 0) |
+          (op.left != null ? 16 : 0) |
+          (op.right != null ? 32 : 0) |
+          (op.origin != null ? 64 : 0)
+        encoder.writeUint8(info)
+        encoder.writeOpID(op.id)
+        encoder.writeOpID(op.parent)
+        if (info & 16) {
+          encoder.writeOpID(op.left)
+        }
+        if (info & 32) {
+          encoder.writeOpID(op.right)
+        }
+        if (!originIsLeft && info & 64) {
+          encoder.writeOpID(op.origin)
+        }
+        if (info & 1) {
+          // write parentSub
+          encoder.writeVarString(op.parentSub)
+        }
+        if (info & 2) {
+          // write opContent
+          encoder.writeOpID(op.opContent)
+        } else if (info & 4) {
+          // write text
+          encoder.writeVarString(op.content.join(''))
+        } else {
+          // convert to JSON and write
+          encoder.writeVarString(JSON.stringify(op.content))
+        }
+      },
+      binaryDecode: function (decoder) {
+        let op = {
+          struct: 'Insert'
+        }
+        decoder.skip8()
+        // get info property
+        let info = decoder.readUint8()
+
+        op.id = decoder.readOpID()
+        op.parent = decoder.readOpID()
+        if (info & 16) {
+          op.left = decoder.readOpID()
+        } else {
+          op.left = null
+        }
+        if (info & 32) {
+          op.right = decoder.readOpID()
+        } else {
+          op.right = null
+        }
+        if (info & 8) {
+          // origin is left
+          op.origin = op.left
+        } else if (info & 64) {
+          op.origin = decoder.readOpID()
+        } else {
+          op.origin = null
+        }
+        if (info & 1) {
+          // has parentSub
+          op.parentSub = decoder.readVarString()
+        }
+        if (info & 2) {
+          // has opContent
+          op.opContent = decoder.readOpID()
+        } else if (info & 4) {
+          // has pure text content
+          op.content = decoder.readVarString().split('')
+        } else {
+          // has mixed content
+          let s = decoder.readVarString()
+          op.content = JSON.parse(s)
+        }
+        return op
       },
       requiredOps: function (op) {
         var ids = []
@@ -300,12 +400,34 @@ export default function extendStruct (Y) {
           type: op.type
         }
         if (op.requires != null) {
+          debugger // TODO: this is used. adapt binarEncode/Decode!!
+          console.warn('Note to myself: this is used. adapt binarEncode/Decode!!')
           e.requires = op.requires
         }
         if (op.info != null) {
           e.info = op.info
         }
         return e
+      },
+      binaryEncode: function (encoder, op) {
+        encoder.writeUint8(CLIST)
+        encoder.writeOpID(op.id)
+        encoder.writeVarString(op.type)
+        let info = op.info != null ? JSON.stringify(op.info) : ''
+        encoder.writeVarString(info)
+      },
+      binaryDecode: function (decoder) {
+        decoder.skip8()
+        let op = {
+          id: decoder.readOpID(),
+          type: decoder.readVarString(),
+          struct: 'List'
+        }
+        let info = decoder.readVarString()
+        if (info.length > 0) {
+          op.info = JSON.parse(info)
+        }
+        return op
       },
       requiredOps: function () {
         /*
@@ -381,12 +503,35 @@ export default function extendStruct (Y) {
           map: {} // overwrite map!!
         }
         if (op.requires != null) {
-          e.requires = op.requires
+          e.requires = op.require
+          // TODO: !!
+          console.warn('requires is used! see same note above for List')
         }
         if (op.info != null) {
           e.info = op.info
         }
         return e
+      },
+      binaryEncode: function (encoder, op) {
+        encoder.writeUint8(CMAP)
+        encoder.writeOpID(op.id)
+        encoder.writeVarString(op.type)
+        let info = op.info != null ? JSON.stringify(op.info) : ''
+        encoder.writeVarString(info)
+      },
+      binaryDecode: function (decoder) {
+        decoder.skip8()
+        let op = {
+          id: decoder.readOpID(),
+          type: decoder.readVarString(),
+          struct: 'Map',
+          map: {}
+        }
+        let info = decoder.readVarString()
+        if (info.length > 0) {
+          op.info = JSON.parse(info)
+        }
+        return op
       },
       requiredOps: function () {
         return []

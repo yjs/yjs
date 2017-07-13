@@ -7,6 +7,7 @@
   "module": "./src/y.js",
   "scripts": {
     "test": "npm run lint",
+    "debug": "concurrently 'rollup -wc rollup.test.js' 'cutest-serve y.test.js -o'",
     "lint": "standard",
     "dist": "rollup -c rollup.browser.js; rollup -c rollup.node.js",
     "postversion": "npm run dist",
@@ -49,6 +50,7 @@
     "babel-preset-latest": "^6.24.1",
     "chance": "^1.0.9",
     "concurrently": "^3.4.0",
+    "cutest": "^0.1.9",
     "rollup-plugin-babel": "^2.7.1",
     "rollup-plugin-commonjs": "^8.0.2",
     "rollup-plugin-inject": "^2.0.0",
@@ -61,6 +63,7 @@
     "tag-dist-files": "^0.1.6"
   },
   "dependencies": {
-    "debug": "^2.6.8"
+    "debug": "^2.6.8",
+    "utf-8": "^1.0.0"
   }
 }
