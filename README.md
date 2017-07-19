@@ -55,23 +55,23 @@ Install Yjs, and its modules with [bower](http://bower.io/), or
 [npm](https://www.npmjs.org/package/yjs).
 
 ### Bower
-```
+```sh
 bower install --save yjs y-array % add all y-* modules you want to use
 ```
 You only need to include the `y.js` file. Yjs is able to automatically require
 missing modules.  
-```
+```html
 <script src="./bower_components/yjs/y.js"></script>
 ```
 
 ### Npm
-```
+```sh
 npm install --save yjs % add all y-* modules you want to use
 ```
 
 If you don't include via script tag, you have to explicitly include all modules!
 (Same goes for other module systems)
-```
+```js
 var Y = require('yjs')
 require('y-array')(Y) // add the y-array type to Yjs
 require('y-websockets-client')(Y)
@@ -84,7 +84,7 @@ require('y-text')(Y)
 ```
 
 ### ES6 Syntax
-```
+```js
 import Y from 'yjs'
 import yArray from 'y-array'
 import yWebsocketsClient from 'y-webrtc'
@@ -98,7 +98,7 @@ Y.extend(yArray, yWebsocketsClient, yMemory, yArray, yMap, yText /*, .. */)
 
 # Text editing example
 Install dependencies
-```
+```sh
 bower i yjs y-memory y-webrtc y-array y-text
 ```
 
@@ -166,6 +166,25 @@ soon, if possible.
     endpoint of the used connector.
     * All of our connectors also have a default connection endpoint that you can
       use for development.
+  * We provide basic authentification for all connectors. The value of
+    `options.connector.auth` (this can be a passphase) is sent to all connected
+    Yjs instances. `options.connector.checkAuth` may grant read or write access
+    depending on the `auth` information.
+    Example: A client specifies `options.connector.auth = 'superSecretPassword`.
+    A server specifies
+    ```js
+    options.connector.checkAuth = function (auth, yjsInstance, sender) {
+      return new Promise(function (resolve, reject){
+        if (auth === 'superSecretPassword') {
+          resolve('write') // grant read-write access
+        } else if (auth === 'different password') {
+          resolve('read') // grant read-only access
+        } else {
+          reject('wrong password!') // reject connection
+        }
+      })
+    }
+    ```
   * Set `options.connector.generateUserId = true` in order to genenerate a
     userid, instead of receiving one from the server. This way the `Y(..)` is
     immediately going to be resolved, without waiting for any confirmation from
@@ -181,7 +200,7 @@ soon, if possible.
   * Defaults to `/bower_components`
   * Not required when running on `nodejs` / `iojs`
   * When using nodejs you need to manually extend Yjs:
-```
+```js
 var Y = require('yjs')
 // you have to require a db, connector, and *all* types you use!
 require('y-memory')(Y)
