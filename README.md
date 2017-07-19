@@ -22,6 +22,7 @@ is a list of the modules we know of:
 |[webrtc](https://github.com/y-js/y-webrtc) | Propagate updates Browser2Browser via WebRTC|
 |[websockets](https://github.com/y-js/y-websockets-client) | Set up [a central server](https://github.com/y-js/y-websockets-client), and connect to it via websockets |
 |[xmpp](https://github.com/y-js/y-xmpp) | Propagate updates in a XMPP multi-user-chat room ([XEP-0045](http://xmpp.org/extensions/xep-0045.html))|
+|[ipfs](https://github.com/ipfs-labs/y-ipfs-connector) | Connector for the [Interplanetary File System](https://ipfs.io/)!|
 |[test](https://github.com/y-js/y-test) | A Connector for testing purposes. It is designed to simulate delays that happen in worst case scenarios|
 
 ##### Database adapters
