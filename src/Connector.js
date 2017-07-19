@@ -1,6 +1,3 @@
-/* @flow */
-'use strict'
-
 function canRead (auth) { return auth === 'read' || auth === 'write' }
 function canWrite (auth) { return auth === 'write' }
 
@@ -272,7 +269,7 @@ module.exports = function (Y/* :any */) {
       }
       if (message.auth != null && this.connections[sender] != null) {
         // authenticate using auth in message
-        var auth = this.checkAuth(message.auth, this.y)
+        var auth = this.checkAuth(message.auth, this.y, sender)
         this.connections[sender].auth = auth
         auth.then(auth => {
           for (var f of this.userEventListeners) {
@@ -285,7 +282,7 @@ module.exports = function (Y/* :any */) {
         })
       } else if (this.connections[sender] != null && this.connections[sender].auth == null) {
         // authenticate without otherwise
-        this.connections[sender].auth = this.checkAuth(null, this.y)
+        this.connections[sender].auth = this.checkAuth(null, this.y, sender)
       }
       if (this.connections[sender] != null && this.connections[sender].auth != null) {
         return this.connections[sender].auth.then((auth) => {
