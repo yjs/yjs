@@ -1,5 +1,3 @@
-/* @flow */
-'use strict'
 
 function canRead (auth) { return auth === 'read' || auth === 'write' }
 function canWrite (auth) { return auth === 'write' }

@@ -96,7 +96,7 @@ export default function extendTransaction (Y) {
           send.push(Y.Struct[op.struct].encode(op))
         }
       }
-      if (this.store.y.connector.isSynced && send.length > 0) { // TODO: && !this.store.forwardAppliedOperations (but then i don't send delete ops)
+      if (send.length > 0) { // TODO: && !this.store.forwardAppliedOperations (but then i don't send delete ops)
         // is connected, and this is not going to be send in addOperation
         this.store.y.connector.broadcastOps(send)
       }
@@ -712,7 +712,7 @@ export default function extendTransaction (Y) {
     }
     * addOperation (op) {
       yield * this.os.put(op)
-      if (this.store.y.connector.isSynced && this.store.forwardAppliedOperations && typeof op.id[1] !== 'string') {
+      if (this.store.forwardAppliedOperations && typeof op.id[1] !== 'string') {
         // is connected, and this is not going to be send in addOperation
         this.store.y.connector.broadcastOps([op])
       }
