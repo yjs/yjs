@@ -269,17 +269,20 @@ export default function extendConnector (Y/* :any */) {
         })
         return Promise.reject(new Error('Incompatible protocol version'))
       }
-      if (message.type === 'sync step 1' && this.connections[sender] != null && this.connections[sender].auth == null) {
+      if ((message.type === 'sync step 1' || message.type === 'sync step 2') && this.connections[sender] != null && this.connections[sender].auth == null) {
         // authenticate using auth in message
         var auth = this.checkAuth(message.auth, this.y)
         this.connections[sender].auth = auth
         auth.then(auth => {
           // in case operations were received before sender was received
           // we apply the messages after authentication
-          this.connections[sender].waitingMessages.forEach(msg => {
-            this.receiveMessage(sender, msg)
+          this.connections[sender].syncStep2.promise.then(() => {
+            // we do it after sync step 1
+            this.connections[sender].waitingMessages.forEach(msg => {
+              this.receiveMessage(sender, msg)
+            })
+            this.connections[sender].waitingMessages = null
           })
-          this.connections[sender].waitingMessages = null
           for (var f of this.userEventListeners) {
             f({
               action: 'userAuthenticated',
@@ -389,7 +392,7 @@ export default function extendConnector (Y/* :any */) {
         })
       } else if (this.connections[sender] != null) {
         // wait for authentication
-        let senderConn = this.connection[sender]
+        let senderConn = this.connections[sender]
         senderConn.waitingMessages = senderConn.waitingMessages || []
         senderConn.waitingMessages.push(message)
       } else {
