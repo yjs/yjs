@@ -141,7 +141,9 @@ export default function extendConnector (Y/* :any */) {
       this.log('User joined: %s', user)
       this.connections[user] = {
         isSynced: false,
-        role: role
+        role: role,
+        waitingMessages: [],
+        auth: null
       }
       let defer = {}
       defer.promise = new Promise(function (resolve) { defer.resolve = resolve })
@@ -267,11 +269,17 @@ export default function extendConnector (Y/* :any */) {
         })
         return Promise.reject(new Error('Incompatible protocol version'))
       }
-      if (message.auth != null && this.connections[sender] != null) {
+      if (message.type === 'sync step 1' && this.connections[sender] != null && this.connections[sender].auth == null) {
         // authenticate using auth in message
         var auth = this.checkAuth(message.auth, this.y)
         this.connections[sender].auth = auth
         auth.then(auth => {
+          // in case operations were received before sender was received
+          // we apply the messages after authentication
+          this.connections[sender].waitingMessages.forEach(msg => {
+            this.receiveMessage(sender, msg)
+          })
+          this.connections[sender].waitingMessages = null
           for (var f of this.userEventListeners) {
             f({
               action: 'userAuthenticated',
@@ -280,9 +288,6 @@ export default function extendConnector (Y/* :any */) {
             })
           }
         })
-      } else if (this.connections[sender] != null && this.connections[sender].auth == null) {
-        // authenticate without otherwise
-        this.connections[sender].auth = this.checkAuth(null, this.y)
       }
       if (this.connections[sender] != null && this.connections[sender].auth != null) {
         return this.connections[sender].auth.then((auth) => {
@@ -382,8 +387,13 @@ export default function extendConnector (Y/* :any */) {
             this.y.db.apply(message.ops)
           }
         })
+      } else if (this.connections[sender] != null) {
+        // wait for authentication
+        let senderConn = this.connection[sender]
+        senderConn.waitingMessages = senderConn.waitingMessages || []
+        senderConn.waitingMessages.push(message)
       } else {
-        return Promise.reject(new Error('Unable to deliver message'))
+        return Promise.reject(new Error('Unknown user - Unable to deliver message'))
       }
     }
     _setSyncedWith (user) {
