@@ -1,5 +1,3 @@
-/* @flow */
-'use strict'
 
 /*
   Partial definition of a transaction
@@ -96,7 +94,7 @@ export default function extendTransaction (Y) {
           send.push(Y.Struct[op.struct].encode(op))
         }
       }
-      if (this.store.y.connector.isSynced && send.length > 0) { // TODO: && !this.store.forwardAppliedOperations (but then i don't send delete ops)
+      if (send.length > 0) { // TODO: && !this.store.forwardAppliedOperations (but then i don't send delete ops)
         // is connected, and this is not going to be send in addOperation
         this.store.y.connector.broadcastOps(send)
       }
@@ -588,12 +586,20 @@ export default function extendTransaction (Y) {
       apply a delete set in order to get
       the state of the supplied ds
     */
-    * applyDeleteSet (ds) {
+    * applyDeleteSet (decoder) {
       var deletions = []
 
-      for (var user in ds) {
-        var dv = ds[user]
-        user = Number.parseInt(user, 10)
+      let dsLength = decoder.readUint32()
+      for (let i = 0; i < dsLength; i++) {
+        let user = decoder.readVarUint()
+        let dv = []
+        let dvLength = decoder.readVarUint()
+        for (let j = 0; j < dvLength; j++) {
+          let from = decoder.readVarUint()
+          let len = decoder.readVarUint()
+          let gc = decoder.readUint8() === 1
+          dv.push([from, len, gc])
+        }
         var pos = 0
         var d = dv[pos]
         yield * this.ds.iterate(this, [user, 0], [user, Number.MAX_VALUE], function * (n) {
@@ -687,21 +693,34 @@ export default function extendTransaction (Y) {
     /*
       A DeleteSet (ds) describes all the deleted ops in the OS
     */
-    * getDeleteSet () {
-      var ds = {}
+    * writeDeleteSet (encoder) {
+      var ds = new Map()
       yield * this.ds.iterate(this, null, null, function * (n) {
         var user = n.id[0]
         var counter = n.id[1]
         var len = n.len
         var gc = n.gc
-        var dv = ds[user]
+        var dv = ds.get(user)
         if (dv === void 0) {
           dv = []
-          ds[user] = dv
+          ds.set(user, dv)
         }
         dv.push([counter, len, gc])
       })
-      return ds
+      let keys = Array.from(ds.keys())
+      encoder.writeUint32(keys.length)
+      for (var i = 0; i < keys.length; i++) {
+        let user = keys[i]
+        let deletions = ds.get(user)
+        encoder.writeVarUint(user)
+        encoder.writeVarUint(deletions.length)
+        for (var j = 0; j < deletions.length; j++) {
+          let del = deletions[j]
+          encoder.writeVarUint(del[0])
+          encoder.writeVarUint(del[1])
+          encoder.writeUint8(del[2] ? 1 : 0)
+        }
+      }
     }
     * isDeleted (id) {
       var n = yield * this.ds.findWithUpperBound(id)
@@ -713,7 +732,8 @@ export default function extendTransaction (Y) {
     }
     * addOperation (op) {
       yield * this.os.put(op)
-      if (this.store.y.connector.isSynced && this.store.forwardAppliedOperations && typeof op.id[1] !== 'string') {
+      // case op is created by this user, op is already broadcasted in applyCreatedOperations
+      if (op.id[0] !== this.store.userId && this.store.forwardAppliedOperations && typeof op.id[1] !== 'string') {
         // is connected, and this is not going to be send in addOperation
         this.store.y.connector.broadcastOps([op])
       }
@@ -822,11 +842,11 @@ export default function extendTransaction (Y) {
     }
     * getOperation (id/* :any */)/* :Transaction<any> */ {
       var o = yield * this.os.find(id)
-      if (id[0] !== -1 || o != null) {
+      if (id[0] !== 0xFFFFFF || o != null) {
         return o
       } else { // type is string
         // generate this operation?
-        var comp = id[1].split(-1)
+        var comp = id[1].split('_')
         if (comp.length > 1) {
           var struct = comp[0]
           var op = Y.Struct[struct].create(id)
@@ -879,6 +899,18 @@ export default function extendTransaction (Y) {
       })
       return ss
     }
+    * writeStateSet (encoder) {
+      let lenPosition = encoder.pos
+      let len = 0
+      encoder.writeUint32(0)
+      yield * this.ss.iterate(this, null, null, function * (n) {
+        encoder.writeVarUint(n.id[0])
+        encoder.writeVarUint(n.clock)
+        len++
+      })
+      encoder.setUint32(lenPosition, len)
+      return len === 0
+    }
     /*
       Here, we make all missing operations executable for the receiving user.
 
@@ -928,17 +960,17 @@ export default function extendTransaction (Y) {
     * getOperations (startSS) {
       // TODO: use bounds here!
       if (startSS == null) {
-        startSS = {}
+        startSS = new Map()
       }
       var send = []
 
       var endSV = yield * this.getStateVector()
       for (let endState of endSV) {
         let user = endState.user
-        if (user === -1) {
+        if (user === 0xFFFFFF) {
           continue
         }
-        let startPos = startSS[user] || 0
+        let startPos = startSS.get(user) || 0
         if (startPos > 0) {
           // There is a change that [user, startPos] is in a composed Insertion (with a smaller counter)
           // find out if that is the case
@@ -948,19 +980,19 @@ export default function extendTransaction (Y) {
             startPos = firstMissing.id[1]
           }
         }
-        startSS[user] = startPos
+        startSS.set(user, startPos)
       }
       for (let endState of endSV) {
         let user = endState.user
-        let startPos = startSS[user]
-        if (user === -1) {
+        let startPos = startSS.get(user)
+        if (user === 0xFFFFFF) {
           continue
         }
         yield * this.os.iterate(this, [user, startPos], [user, Number.MAX_VALUE], function * (op) {
           op = Y.Struct[op.struct].encode(op)
           if (op.struct !== 'Insert') {
             send.push(op)
-          } else if (op.right == null || op.right[1] < (startSS[op.right[0]] || 0)) {
+          } else if (op.right == null || op.right[1] < (startSS.get(op.right[0]) || 0)) {
             // case 1. op.right is known
             // this case is only reached if op.right is known.
             // => this is not called for op.left, as op.right is unknown
@@ -978,7 +1010,7 @@ export default function extendTransaction (Y) {
                 op.left = null
                 send.push(op)
                 /* not necessary, as o is already sent..
-                if (!Y.utils.compareIds(o.id, op.id) && o.id[1] >= (startSS[o.id[0]] || 0)) {
+                if (!Y.utils.compareIds(o.id, op.id) && o.id[1] >= (startSS.get(o.id[0]) || 0)) {
                   // o is not op && o is unknown
                   o = Y.Struct[op.struct].encode(o)
                   o.right = missingOrigins[missingOrigins.length - 1].id
@@ -992,7 +1024,7 @@ export default function extendTransaction (Y) {
               while (missingOrigins.length > 0 && Y.utils.matchesId(o, missingOrigins[missingOrigins.length - 1].origin)) {
                 missingOrigins.pop()
               }
-              if (o.id[1] < (startSS[o.id[0]] || 0)) {
+              if (o.id[1] < (startSS.get(o.id[0]) || 0)) {
                 // case 2. o is known
                 op.left = Y.utils.getLastId(o)
                 send.push(op)
@@ -1024,28 +1056,48 @@ export default function extendTransaction (Y) {
       }
       return send.reverse()
     }
+
+    * writeOperations (encoder, decoder) {
+      let ss = new Map()
+      let ssLength = decoder.readUint32()
+      for (let i = 0; i < ssLength; i++) {
+        let user = decoder.readUint32()
+        let clock = decoder.readUint32()
+        ss.set(user, clock)
+      }
+      let ops = yield * this.getOperations(ss)
+      encoder.writeUint32(ops.length)
+      for (let i = 0; i < ops.length; i++) {
+        let op = ops[i]
+        Y.Struct[op.struct].binaryEncode(encoder, Y.Struct[op.struct].encode(op))
+      }
+    }
     /*
      * Get the plain untransformed operations from the database.
      * You can apply these operations using .applyOperationsUntransformed(ops)
      *
      */
-    * getOperationsUntransformed () {
-      var ops = []
+    * writeOperationsUntransformed (encoder) {
+      let lenPosition = encoder.pos
+      let len = 0
+      encoder.writeUint32(0) // placeholder
       yield * this.os.iterate(this, null, null, function * (op) {
-        if (op.id[0] !== -1) {
-          ops.push(op)
+        if (op.id[0] !== 0xFFFFFF) {
+          len++
+          Y.Struct[op.struct].binaryEncode(encoder, Y.Struct[op.struct].encode(op))
         }
       })
-      return {
-        untransformed: ops
-      }
+      encoder.setUint32(lenPosition, len)
+      yield * this.writeStateSet(encoder)
     }
-    * applyOperationsUntransformed (m, stateSet) {
-      var ops = m.untransformed
-      for (var i = 0; i < ops.length; i++) {
-        var op = ops[i]
-        // create, and modify parent, if it is created implicitly
-        if (op.parent != null && op.parent[0] === -1) {
+    * applyOperationsUntransformed (decoder) {
+      let len = decoder.readUint32()
+      for (let i = 0; i < len; i++) {
+        let op = decoder.readOperation()
+        yield * this.os.put(op)
+      }
+      yield * this.os.iterate(this, null, null, function * (op) {
+        if (op.parent != null && op.parent[0] === 0xFFFFFF) {
           if (op.struct === 'Insert') {
             // update parents .map/start/end properties
             if (op.parentSub != null && op.left == null) {
@@ -1065,12 +1117,14 @@ export default function extendTransaction (Y) {
             }
           }
         }
-        yield * this.os.put(op)
-      }
-      for (var user in stateSet) {
+      })
+      let stateSetLength = decoder.readUint32()
+      for (let i = 0; i < stateSetLength; i++) {
+        let user = decoder.readVarUint()
+        let clock = decoder.readVarUint()
         yield * this.ss.put({
           id: [user],
-          clock: stateSet[user]
+          clock: clock
         })
       }
     }

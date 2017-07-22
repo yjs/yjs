@@ -12,6 +12,33 @@ export let Y = _Y
 
 Y.extend(yMemory, yArray, yMap, yTest)
 
+function * getStateSet () {
+  var ss = {}
+  yield * this.ss.iterate(this, null, null, function * (n) {
+    var user = n.id[0]
+    var clock = n.clock
+    ss[user] = clock
+  })
+  return ss
+}
+
+function * getDeleteSet () {
+  var ds = {}
+  yield * this.ds.iterate(this, null, null, function * (n) {
+    var user = n.id[0]
+    var counter = n.id[1]
+    var len = n.len
+    var gc = n.gc
+    var dv = ds[user]
+    if (dv === void 0) {
+      dv = []
+      ds[user] = dv
+    }
+    dv.push([counter, len, gc])
+  })
+  return ds
+}
+
 export async function garbageCollectUsers (t, users) {
   await flushAll(t, users)
   await Promise.all(users.map(u => u.db.emptyGarbageCollector()))
@@ -60,10 +87,14 @@ export async function compareUsers (t, users) {
   var data = await Promise.all(users.map(async (u) => {
     var data = {}
     u.db.requestTransaction(function * () {
-      var os = yield * this.getOperationsUntransformed()
+      let ops = []
+      yield * this.os.iterate(this, null, null, function * (op) {
+        ops.push(Y.Struct[op.struct].encode(op))
+      })
+
       data.os = {}
-      for (let i = 0; i < os.untransformed.length; i++) {
-        let op = os.untransformed[i]
+      for (let i = 0; i < ops.length; i++) {
+        let op = ops[i]
         op = Y.Struct[op.struct].encode(op)
         delete op.origin
         /*
@@ -79,8 +110,8 @@ export async function compareUsers (t, users) {
           data.os[JSON.stringify(op.id)] = op
         }
       }
-      data.ds = yield * this.getDeleteSet()
-      data.ss = yield * this.getStateSet()
+      data.ds = yield * getDeleteSet.apply(this)
+      data.ss = yield * getStateSet.apply(this)
     })
     await u.db.whenTransactionsFinished()
     return data

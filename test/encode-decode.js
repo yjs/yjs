@@ -1,16 +1,15 @@
 import { test } from 'cutest'
 import Chance from 'chance'
 import Y from '../src/y.js'
-import { BinaryLength, BinaryEncoder, BinaryDecoder } from '../src/Encoding.js'
+import { BinaryEncoder, BinaryDecoder } from '../src/Encoding.js'
+import { applyRandomTests } from '../../y-array/test/testGeneration.js'
 
 function testEncoding (t, write, read, val) {
-  let binLength = new BinaryLength()
-  write(binLength, val)
-  let encoder = new BinaryEncoder(binLength)
+  let encoder = new BinaryEncoder()
   write(encoder, val)
-  let reader = new BinaryDecoder(encoder.dataview)
+  let reader = new BinaryDecoder(encoder.createBuffer())
   let result = read(reader)
-  t.log(`string encode: ${JSON.stringify(val).length} bytes / binary encode: ${encoder.dataview.buffer.byteLength} bytes`)
+  t.log(`string encode: ${JSON.stringify(val).length} bytes / binary encode: ${encoder.data.length} bytes`)
   t.compare(val, result, 'Compare results')
 }
 
@@ -219,3 +218,4 @@ test('encode/decode Map operations', async function binMap (t) {
     info: 400
   })
 })
+

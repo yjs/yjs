@@ -1,90 +1,104 @@
 import utf8 from 'utf-8'
 
 const bits7 = 0b1111111
-
-export class BinaryLength {
-  constructor () {
-    this.length = 0
-  }
-  writeUint8 (num) {
-    this.length++
-  }
-  writeVarUint (num) {
-    while (num >= 0b10000000) {
-      this.length++
-      num >>= 7
-    }
-    this.length++
-  }
-  writeVarString (str) {
-    let len = utf8.setBytesFromString(str).length
-    this.writeVarUint(len)
-    this.length += len
-  }
-  writeOpID (id) {
-    this.writeVarUint(id[0])
-    this.writeVarUint(id[1])
-  }
-}
+const bits8 = 0b11111111
 
 export class BinaryEncoder {
-  constructor (binaryLength) {
-    this.dataview = new DataView(new ArrayBuffer(binaryLength.length))
-    this.pos = 0
+  constructor () {
+    this.data = []
+  }
+  get pos () {
+    return this.data.length
+  }
+  createBuffer () {
+    return Uint8Array.from(this.data).buffer
   }
   writeUint8 (num) {
-    this.dataview.setUint8(this.pos++, num)
+    this.data.push(num & bits8)
+  }
+  setUint8 (pos, num) {
+    this.data[pos] = num & bits8
+  }
+  writeUint16 (num) {
+    this.data.push(num & bits8, (num >> 8) & bits8)
+  }
+  setUint16 (pos, num) {
+    this.data[pos] = num & bits8
+    this.data[pos + 1] = (num >> 8) & bits8
+  }
+  writeUint32 (num) {
+    for (let i = 0; i < 4; i++) {
+      this.data.push(num & bits8)
+      num >>= 8
+    }
+  }
+  setUint32 (pos, num) {
+    for (let i = 0; i < 4; i++) {
+      this.data[pos + i] = num & bits8
+      num >>= 8
+    }
   }
   writeVarUint (num) {
     while (num >= 0b10000000) {
-      this.dataview.setUint8(this.pos++, 0b10000000 | (bits7 & num))
+      this.data.push(0b10000000 | (bits7 & num))
       num >>= 7
     }
-    this.dataview.setUint8(this.pos++, bits7 & num)
+    this.data.push(bits7 & num)
   }
   writeVarString (str) {
     let bytes = utf8.setBytesFromString(str)
     let len = bytes.length
     this.writeVarUint(len)
     for (let i = 0; i < len; i++) {
-      this.dataview.setUint8(this.pos++, bytes[i])
+      this.data.push(bytes[i])
     }
   }
   writeOpID (id) {
-    this.writeVarUint(id[0])
-    this.writeVarUint(id[1])
+    let user = id[0]
+    this.writeVarUint(user)
+    if (user !== 0xFFFFFF) {
+      this.writeVarUint(id[1])
+    } else {
+      this.writeVarString(id[1])
+    }
   }
 }
 
 export class BinaryDecoder {
-  constructor (dataview) {
-    this.dataview = dataview
+  constructor (buffer) {
+    this.uint8arr = new Uint8Array(buffer)
     this.pos = 0
   }
   skip8 () {
     this.pos++
   }
-  skip16 () {
-    this.pos += 2
-  }
-  skip32 () {
-    this.pos += 4
-  }
-  skipVar () {
-    while (this.dataview.getUint8(this.pos++) >= 1 << 7) { }
-  }
   readUint8 () {
-    return this.dataview.getUint8(this.pos++)
+    return this.uint8arr[this.pos++]
+  }
+  readUint32 () {
+    let uint =
+      this.uint8arr[this.pos] +
+      (this.uint8arr[this.pos + 1] << 8) +
+      (this.uint8arr[this.pos + 2] << 16) +
+      (this.uint8arr[this.pos + 3] << 24)
+    this.pos += 4
+    return uint
+  }
+  peekUint8 () {
+    return this.uint8arr[this.pos]
   }
   readVarUint () {
     let num = 0
     let len = 0
     while (true) {
-      let r = this.dataview.getUint8(this.pos++)
+      let r = this.uint8arr[this.pos++]
       num = num | ((r & bits7) << len)
       len += 7
       if (r < 1 << 7) {
         return num
+      }
+      if (len > 35) {
+        throw new Error('Integer out of range!')
       }
     }
   }
@@ -92,11 +106,22 @@ export class BinaryDecoder {
     let len = this.readVarUint()
     let bytes = new Array(len)
     for (let i = 0; i < len; i++) {
-      bytes[i] = this.dataview.getUint8(this.pos++)
+      bytes[i] = this.uint8arr[this.pos++]
     }
     return utf8.getStringFromBytes(bytes)
   }
+  peekVarString () {
+    let pos = this.pos
+    let s = this.readVarString()
+    this.pos = pos
+    return s
+  }
   readOpID () {
-    return [this.readVarUint(), this.readVarUint()]
+    let user = this.readVarUint()
+    if (user !== 0xFFFFFF) {
+      return [user, this.readVarUint()]
+    } else {
+      return [user, this.readVarString()]
+    }
   }
 }

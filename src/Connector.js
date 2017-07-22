@@ -1,32 +1,11 @@
-/* @flow */
-'use strict'
-
-function canRead (auth) { return auth === 'read' || auth === 'write' }
-function canWrite (auth) { return auth === 'write' }
+import { BinaryEncoder, BinaryDecoder } from './Encoding.js'
+import { computeMessageSyncStep1, computeMessageSyncStep2, computeMessageUpdate } from './MessageHandler.js'
 
 export default function extendConnector (Y/* :any */) {
   class AbstractConnector {
-    /* ::
-    y: YConfig;
-    role: SyncRole;
-    connections: Object;
-    isSynced: boolean;
-    userEventListeners: Array<Function>;
-    whenSyncedListeners: Array<Function>;
-    currentSyncTarget: ?UserId;
-    debug: boolean;
-    syncStep2: Promise;
-    userId: UserId;
-    send: Function;
-    broadcast: Function;
-    broadcastOpBuffer: Array<Operation>;
-    protocolVersion: number;
-    */
     /*
       opts contains the following information:
        role : String Role of this client ("master" or "slave")
-       userId : String Uniquely defines the user.
-       debug: Boolean Whether to print debug messages (optional)
     */
     constructor (y, opts) {
       this.y = y
@@ -61,15 +40,6 @@ export default function extendConnector (Y/* :any */) {
       this.checkAuth = opts.checkAuth || function () { return Promise.resolve('write') } // default is everyone has write access
       if (opts.generateUserId !== false) {
         this.setUserId(Y.utils.generateUserId())
-      }
-    }
-    resetAuth (auth) {
-      if (this.authInfo !== auth) {
-        this.authInfo = auth
-        this.broadcast({
-          type: 'auth',
-          auth: this.authInfo
-        })
       }
     }
     reconnect () {
@@ -137,8 +107,10 @@ export default function extendConnector (Y/* :any */) {
       }
       this.log('%s: User joined %s', this.userId, user)
       this.connections.set(user, {
+        uid: user,
         isSynced: false,
-        role: role
+        role: role,
+        processAfterAuth: []
       })
       let defer = {}
       defer.promise = new Promise(function (resolve) { defer.resolve = resolve })
@@ -179,19 +151,14 @@ export default function extendConnector (Y/* :any */) {
       if (syncUser != null) {
         this.currentSyncTarget = syncUser
         this.y.db.requestTransaction(function * () {
-          var stateSet = yield * this.getStateSet()
-          // var deleteSet = yield * this.getDeleteSet()
-          var answer = {
-            type: 'sync step 1',
-            stateSet: stateSet,
-            // deleteSet: deleteSet,
-            protocolVersion: conn.protocolVersion,
-            auth: conn.authInfo
-          }
-          if (conn.preferUntransformed && Object.keys(stateSet).length === 0) {
-            answer.preferUntransformed = true
-          }
-          conn.send(syncUser, answer)
+          let encoder = new BinaryEncoder()
+          encoder.writeVarString('sync step 1')
+          encoder.writeVarString(conn.authInfo || '')
+          encoder.writeVarUint(conn.protocolVersion)
+          let preferUntransformed = conn.preferUntransformed && this.os.length === 0 // TODO: length may not be defined
+          encoder.writeUint8(preferUntransformed ? 1 : 0)
+          yield * this.writeStateSet(encoder)
+          conn.send(syncUser, encoder.createBuffer())
         })
       } else {
         if (!conn.isSynced) {
@@ -211,13 +178,13 @@ export default function extendConnector (Y/* :any */) {
         }
       }
     }
-    send (uid, message) {
-      this.log('%s: Send \'%s\' to %s', this.userId, message.type, uid)
-      this.logMessage('Message: %j', message)
+    send (uid, buffer) {
+      this.log('%s: Send \'%y\' to %s', this.userId, buffer, uid)
+      this.logMessage('Message: %Y', buffer)
     }
-    broadcast (message) {
-      this.log('%s: Broadcast \'%s\'', this.userId, message.type)
-      this.logMessage('Message: %j', message)
+    broadcast (buffer) {
+      this.log('%s: Broadcast \'%y\'', this.userId, buffer)
+      this.logMessage('Message: %Y', buffer)
     }
     /*
       Buffer operations, and broadcast them when ready.
@@ -229,11 +196,17 @@ export default function extendConnector (Y/* :any */) {
       var self = this
       function broadcastOperations () {
         if (self.broadcastOpBuffer.length > 0) {
-          self.broadcast({
-            type: 'update',
-            ops: self.broadcastOpBuffer
-          })
+          let encoder = new BinaryEncoder()
+          encoder.writeVarString('update')
+          let ops = self.broadcastOpBuffer
           self.broadcastOpBuffer = []
+          let length = ops.length
+          encoder.writeUint32(length)
+          for (var i = 0; i < length; i++) {
+            let op = ops[i]
+            Y.Struct[op.struct].binaryEncode(encoder, op)
+          }
+          self.broadcast(encoder.createBuffer())
         }
       }
       if (this.broadcastOpBuffer.length === 0) {
@@ -246,119 +219,60 @@ export default function extendConnector (Y/* :any */) {
     /*
       You received a raw message, and you know that it is intended for Yjs. Then call this function.
     */
-    receiveMessage (sender/* :UserId */, message/* :Message */) {
+    async receiveMessage (sender, buffer) {
       if (sender === this.userId) {
-        return Promise.resolve()
+        return
       }
-      this.log('%s: Receive \'%s\' from %s', this.userId, message.type, sender)
-      this.logMessage('Message: %j', message)
-      if (message.protocolVersion != null && message.protocolVersion !== this.protocolVersion) {
-        console.warn(
-          `You tried to sync with a yjs instance that has a different protocol version
-          (You: ${this.protocolVersion}, Client: ${message.protocolVersion}).
-          The sync was stopped. You need to upgrade your dependencies (especially Yjs & the Connector)!
-          `)
-        this.send(sender, {
-          type: 'sync stop',
-          protocolVersion: this.protocolVersion
-        })
-        return Promise.reject(new Error('Incompatible protocol version'))
-      }
-      if (message.auth != null && this.connections.has(sender)) {
-        // authenticate using auth in message
-        var auth = this.checkAuth(message.auth, this.y)
-        this.connections.get(sender).auth = auth
-        auth.then(auth => {
-          for (var f of this.userEventListeners) {
-            f({
-              action: 'userAuthenticated',
-              user: sender,
-              auth: auth
-            })
-          }
-        })
-      } else if (this.connections.has(sender) && this.connections.get(sender).auth == null) {
-        // authenticate without otherwise
-        this.connections.get(sender).auth = this.checkAuth(null, this.y)
-      }
-      if (this.connections.has(sender) && this.connections.get(sender).auth != null) {
-        return this.connections.get(sender).auth.then(auth => {
-          if (message.type === 'sync step 1' && canRead(auth)) {
-            let conn = this
-            let m = message
-            let wait // wait for sync step 2 to complete
-            if (this.role === 'slave') {
-              wait = Promise.all(Array.from(this.connections.values())
-                .filter(conn => conn.role === 'master')
-                .map(conn => conn.syncStep2.promise)
-              )
-            } else {
-              wait = Promise.resolve()
-            }
-            wait.then(() => {
-              this.y.db.requestTransaction(function * () {
-                var currentStateSet = yield * this.getStateSet()
-                // TODO: remove
-                // if (canWrite(auth)) {
-                //  yield * this.applyDeleteSet(m.deleteSet)
-                // }
+      let decoder = new BinaryDecoder(buffer)
+      let encoder = new BinaryEncoder()
+      let messageType = decoder.readVarString()
+      let senderConn = this.connections.get(sender)
 
-                var ds = yield * this.getDeleteSet()
-                var answer = {
-                  type: 'sync step 2',
-                  stateSet: currentStateSet,
-                  deleteSet: ds,
-                  protocolVersion: conn.protocolVersion,
-                  auth: conn.authInfo
-                }
-                if (message.preferUntransformed === true && Object.keys(m.stateSet).length === 0) {
-                  answer.osUntransformed = yield * this.getOperationsUntransformed()
-                } else {
-                  answer.os = yield * this.getOperations(m.stateSet)
-                }
-                conn.send(sender, answer)
-              })
-            })
-          } else if (message.type === 'sync step 2' && canWrite(auth)) {
-            var db = this.y.db
-            let defer = this.connections.get(sender).syncStep2
-            let m = message
-            // apply operations first
-            db.requestTransaction(function * () {
-              // yield * this.applyDeleteSet(m.deleteSet)
-              if (m.osUntransformed != null) {
-                yield * this.applyOperationsUntransformed(m.osUntransformed, m.stateSet)
-              } else {
-                this.store.apply(m.os)
-              }
-              // defer.resolve()
-            })
-            // then apply ds
-            db.whenTransactionsFinished().then(() => {
-              db.requestTransaction(function * () {
-                yield * this.applyDeleteSet(m.deleteSet)
-              })
-              defer.resolve()
-            })
-            var self = this
-            this.connections.get(sender).syncStep2.promise.then(function () {
-              self._setSyncedWith(sender)
-            })
-            return defer.promise
-          } else if (message.type === 'update' && canWrite(auth)) {
-            if (this.y.db.forwardAppliedOperations) {
-              var delops = message.ops.filter(function (o) {
-                return o.struct === 'Delete'
-              })
-              if (delops.length > 0) {
-                this.broadcastOps(delops)
-              }
+      if (senderConn == null) {
+        throw new Error('Received message from unknown peer!')
+      }
+
+      if (messageType === 'sync step 1' || messageType === 'sync step 2') {
+        let auth = decoder.readVarUint()
+        if (senderConn.auth == null) {
+          // check auth
+          let authPermissions = await this.checkAuth(auth, this.y, sender)
+          senderConn.auth = authPermissions
+          this.y.emit('userAuthenticated', {
+            user: senderConn.uid,
+            auth: authPermissions
+          })
+          senderConn.syncStep2.promise.then(() => {
+            if (senderConn.processAfterAuth == null) {
+              return
             }
-            this.y.db.apply(message.ops)
-          }
-        })
+            for (let i = 0; i < senderConn.processAfterAuth.length; i++) {
+              let m = senderConn.processAfterAuth[i]
+              this.receiveMessage(m[0], m[1])
+            }
+            senderConn.processAfterAuth = null
+          })
+        }
+      }
+
+      if (senderConn.auth == null) {
+        senderConn.processAfterAuth.push([sender, buffer])
+        return
+      }
+
+      this.log('%s: Receive \'%s\' from %s', this.userId, messageType, sender)
+      this.logMessage('Message: %Y', buffer)
+
+      if (messageType === 'sync step 1' && (senderConn.auth === 'write' || senderConn.auth === 'read')) {
+        // cannot wait for sync step 1 to finish, because we may wait for sync step 2 in sync step 1 (->lock)
+        computeMessageSyncStep1(decoder, encoder, this, senderConn, sender)
+        return this.y.db.whenTransactionsFinished()
+      } else if (messageType === 'sync step 2' && senderConn.auth === 'write') {
+        return computeMessageSyncStep2(decoder, encoder, this, senderConn, sender)
+      } else if (messageType === 'update' && senderConn.auth === 'write') {
+        return computeMessageUpdate(decoder, encoder, this, senderConn, sender)
       } else {
-        return Promise.reject(new Error('Unable to deliver message'))
+        console.error('Unable to receive message')
       }
     }
     _setSyncedWith (user) {

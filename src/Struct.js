@@ -23,6 +23,20 @@ const CMAP = 3
 */
 export default function extendStruct (Y) {
   var Struct = {
+    binaryDecodeOperation: function (decoder) {
+      let code = decoder.peekUint8()
+      if (code === CDELETE) {
+        return Y.Struct.Delete.binaryDecode(decoder)
+      } else if (code === CINSERT) {
+        return Y.Struct.Insert.binaryDecode(decoder)
+      } else if (code === CLIST) {
+        return Y.Struct.List.binaryDecode(decoder)
+      } else if (code === CMAP) {
+        return Y.Struct.Map.binaryDecode(decoder)
+      } else {
+        throw new Error('Unable to decode operation!')
+      }
+    },
     /* This is the only operation that is actually not a structure, because
     it is not stored in the OS. This is why it _does not_ have an id
 

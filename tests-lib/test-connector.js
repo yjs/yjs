@@ -1,5 +1,6 @@
 /* global Y */
 import { wait } from './helper.js'
+import { formatYjsMessage } from '../src/MessageHandler.js'
 
 var rooms = {}
 
@@ -28,7 +29,6 @@ export class TestRoom {
     })
   }
   send (sender, receiver, m) {
-    m = JSON.parse(JSON.stringify(m))
     var user = this.users.get(receiver)
     if (user != null) {
       user.receiveMessage(sender, m)
@@ -81,14 +81,25 @@ export default function extendTestConnector (Y) {
       this.testRoom.leave(this)
       return super.disconnect()
     }
+    logBufferParsed () {
+      console.log(' === Logging buffer of user ' + this.userId + ' === ')
+      for (let [user, conn] of this.connections) {
+        console.log(` ${user}:`)
+        for (let i = 0; i < conn.buffer.length; i++) {
+          console.log(formatYjsMessage(conn.buffer[i]))
+        }
+      }
+    }
     reconnect () {
       this.testRoom.join(this)
       return super.reconnect()
     }
     send (uid, message) {
+      super.send(uid, message)
       this.testRoom.send(this.userId, uid, message)
     }
     broadcast (message) {
+      super.broadcast(message)
       this.testRoom.broadcast(this.userId, message)
     }
     async whenSynced (f) {

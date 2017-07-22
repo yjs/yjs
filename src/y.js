@@ -1,9 +1,10 @@
-import debug from 'debug'
 import extendConnector from './Connector.js'
 import extendDatabase from './Database.js'
 import extendTransaction from './Transaction.js'
 import extendStruct from './Struct.js'
 import extendUtils from './Utils.js'
+import debug from 'debug'
+import { formatYjsMessage, formatYjsMessageType } from './MessageHandler.js'
 
 extendConnector(Y)
 extendDatabase(Y)
@@ -12,6 +13,8 @@ extendStruct(Y)
 extendUtils(Y)
 
 Y.debug = debug
+debug.formatters.Y = formatYjsMessage
+debug.formatters.y = formatYjsMessageType
 
 var requiringModules = {}
 
@@ -169,7 +172,7 @@ class YConfig extends Y.utils.NamedEventHandler {
         var typeName = typeConstructor.splice(0, 1)
         var type = Y[typeName]
         var typedef = type.typeDefinition
-        var id = [-1, typedef.struct + -1 + typeName + -1 + propertyname + -1 + typeConstructor]
+        var id = [0xFFFFFF, typedef.struct + '_' + typeName + '_' + propertyname + '_' + typeConstructor]
         var args = []
         if (typeConstructor.length === 1) {
           try {

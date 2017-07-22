@@ -306,10 +306,12 @@ export default function extendDatabase (Y /* :any */) {
       * check if it is an expected op (otherwise wait for it)
       * check if was deleted, apply a delete operation after op was applied
     */
-    apply (ops) {
+    applyOperations (decoder) {
       this.opsReceivedTimestamp = new Date()
-      for (var i = 0; i < ops.length; i++) {
-        var o = ops[i]
+      let length = decoder.readUint32()
+
+      for (var i = 0; i < length; i++) {
+        let o = Y.Struct.binaryDecodeOperation(decoder)
         if (o.id == null || o.id[0] !== this.y.connector.userId) {
           var required = Y.Struct[o.struct].requiredOps(o)
           if (o.requires != null) {
@@ -590,7 +592,7 @@ export default function extendDatabase (Y /* :any */) {
       op.type = typedefinition[0].name
 
       this.requestTransaction(function * () {
-        if (op.id[0] === -1) {
+        if (op.id[0] === 0xFFFFFF) {
           yield * this.setOperation(op)
         } else {
           yield * this.applyCreatedOperations([op])
