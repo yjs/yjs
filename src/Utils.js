@@ -821,9 +821,18 @@ export default function Utils (Y) {
   Y.utils.createSmallLookupBuffer = createSmallLookupBuffer
 
   function generateUserId () {
-    let arr = new Uint32Array(1)
-    crypto.getRandomValues(arr)
-    return arr[0]
+    if (crypto.getRandomValue != null) {
+      // browser
+      let arr = new Uint32Array(1)
+      crypto.getRandomValues(arr)
+      return arr[0]
+    } else if (crypto.randomBytes != null) {
+      // node
+      let buf = crypto.randomBytes(4)
+      return new Uint32Array(buf.buffer)[0]
+    } else {
+      Math.ceil(Math.random() * 0xFFFFFFFF)
+    }
   }
   Y.utils.generateUserId = generateUserId
 }
