@@ -4,6 +4,7 @@ import { BinaryDecoder } from './Encoding.js'
 
 export function formatYjsMessage (buffer) {
   let decoder = new BinaryDecoder(buffer)
+  decoder.readVarString() // read roomname
   let type = decoder.readVarString()
   let strBuilder = []
   strBuilder.push('\n === ' + type + ' ===\n')
@@ -108,7 +109,7 @@ export function logSS (decoder, strBuilder) {
   for (let i = 0; i < len; i++) {
     let user = decoder.readVarUint()
     let clock = decoder.readVarUint()
-    strBuilder.push(`     - ${user}: ${clock}`)
+    strBuilder.push(`     ${user}: ${clock}\n`)
   }
 }
 

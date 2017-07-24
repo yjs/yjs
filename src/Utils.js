@@ -1,4 +1,5 @@
-/* global crypto */
+
+import { BinaryDecoder, BinaryEncoder } from './Encoding.js'
 
 /*
   EventHandler is an helper class for constructing custom types.
@@ -24,7 +25,10 @@
 */
 
 export default function Utils (Y) {
-  Y.utils = {}
+  Y.utils = {
+    BinaryDecoder: BinaryDecoder,
+    BinaryEncoder: BinaryEncoder
+  }
 
   Y.utils.bubbleEvent = function (type, event) {
     type.eventHandler.callEventListeners(event)
@@ -821,17 +825,17 @@ export default function Utils (Y) {
   Y.utils.createSmallLookupBuffer = createSmallLookupBuffer
 
   function generateUserId () {
-    if (crypto.getRandomValue != null) {
+    if (typeof crypto !== 'undefined' && crypto.getRandomValue != null) {
       // browser
       let arr = new Uint32Array(1)
       crypto.getRandomValues(arr)
       return arr[0]
-    } else if (crypto.randomBytes != null) {
+    } else if (typeof crypto !== 'undefined' && crypto.randomBytes != null) {
       // node
       let buf = crypto.randomBytes(4)
       return new Uint32Array(buf.buffer)[0]
     } else {
-      Math.ceil(Math.random() * 0xFFFFFFFF)
+      return Math.ceil(Math.random() * 0xFFFFFFFF)
     }
   }
   Y.utils.generateUserId = generateUserId

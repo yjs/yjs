@@ -1061,8 +1061,8 @@ export default function extendTransaction (Y) {
       let ss = new Map()
       let ssLength = decoder.readUint32()
       for (let i = 0; i < ssLength; i++) {
-        let user = decoder.readUint32()
-        let clock = decoder.readUint32()
+        let user = decoder.readVarUint()
+        let clock = decoder.readVarUint()
         ss.set(user, clock)
       }
       let ops = yield * this.getOperations(ss)
@@ -1093,7 +1093,7 @@ export default function extendTransaction (Y) {
     * applyOperationsUntransformed (decoder) {
       let len = decoder.readUint32()
       for (let i = 0; i < len; i++) {
-        let op = decoder.readOperation()
+        let op = Y.Struct.binaryDecodeOperation(decoder)
         yield * this.os.put(op)
       }
       yield * this.os.iterate(this, null, null, function * (op) {

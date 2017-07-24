@@ -12,6 +12,7 @@ export default function extendConnector (Y/* :any */) {
       if (opts == null) {
         opts = {}
       }
+      this.opts = opts
       // Prefer to receive untransformed operations. This does only work if
       // this client receives operations from only one other client.
       // In particular, this does not work with y-webrtc.
@@ -152,6 +153,7 @@ export default function extendConnector (Y/* :any */) {
         this.currentSyncTarget = syncUser
         this.y.db.requestTransaction(function * () {
           let encoder = new BinaryEncoder()
+          encoder.writeVarString(conn.opts.room || '')
           encoder.writeVarString('sync step 1')
           encoder.writeVarString(conn.authInfo || '')
           encoder.writeVarUint(conn.protocolVersion)
@@ -197,6 +199,7 @@ export default function extendConnector (Y/* :any */) {
       function broadcastOperations () {
         if (self.broadcastOpBuffer.length > 0) {
           let encoder = new BinaryEncoder()
+          encoder.writeVarString(self.opts.room)
           encoder.writeVarString('update')
           let ops = self.broadcastOpBuffer
           self.broadcastOpBuffer = []
@@ -225,6 +228,8 @@ export default function extendConnector (Y/* :any */) {
       }
       let decoder = new BinaryDecoder(buffer)
       let encoder = new BinaryEncoder()
+      let roomname = decoder.readVarString() // read room name
+      encoder.writeVarString(roomname)
       let messageType = decoder.readVarString()
       let senderConn = this.connections.get(sender)
 
