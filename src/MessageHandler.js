@@ -22,6 +22,7 @@ export function formatYjsMessage (buffer) {
 
 export function formatYjsMessageType (buffer) {
   let decoder = new BinaryDecoder(buffer)
+  decoder.readVarString() // roomname
   return decoder.readVarString()
 }
 

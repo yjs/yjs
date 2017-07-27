@@ -233,6 +233,9 @@ export default function extendConnector (Y/* :any */) {
       let messageType = decoder.readVarString()
       let senderConn = this.connections.get(sender)
 
+      this.log('%s: Receive \'%s\' from %s', this.userId, messageType, sender)
+      this.logMessage('Message: %Y', buffer)
+
       if (senderConn == null) {
         throw new Error('Received message from unknown peer!')
       }
@@ -264,9 +267,6 @@ export default function extendConnector (Y/* :any */) {
         senderConn.processAfterAuth.push([sender, buffer])
         return
       }
-
-      this.log('%s: Receive \'%s\' from %s', this.userId, messageType, sender)
-      this.logMessage('Message: %Y', buffer)
 
       if (messageType === 'sync step 1' && (senderConn.auth === 'write' || senderConn.auth === 'read')) {
         // cannot wait for sync step 1 to finish, because we may wait for sync step 2 in sync step 1 (->lock)
