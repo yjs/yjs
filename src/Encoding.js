@@ -20,28 +20,28 @@ export class BinaryEncoder {
     this.data[pos] = num & bits8
   }
   writeUint16 (num) {
-    this.data.push(num & bits8, (num >> 8) & bits8)
+    this.data.push(num & bits8, (num >>> 8) & bits8)
   }
   setUint16 (pos, num) {
     this.data[pos] = num & bits8
-    this.data[pos + 1] = (num >> 8) & bits8
+    this.data[pos + 1] = (num >>> 8) & bits8
   }
   writeUint32 (num) {
     for (let i = 0; i < 4; i++) {
       this.data.push(num & bits8)
-      num >>= 8
+      num >>>= 8
     }
   }
   setUint32 (pos, num) {
     for (let i = 0; i < 4; i++) {
       this.data[pos + i] = num & bits8
-      num >>= 8
+      num >>>= 8
     }
   }
   writeVarUint (num) {
     while (num >= 0b10000000) {
       this.data.push(0b10000000 | (bits7 & num))
-      num >>= 7
+      num >>>= 7
     }
     this.data.push(bits7 & num)
   }
@@ -95,7 +95,7 @@ export class BinaryDecoder {
       num = num | ((r & bits7) << len)
       len += 7
       if (r < 1 << 7) {
-        return num
+        return num >>> 0 // return unsigned number!
       }
       if (len > 35) {
         throw new Error('Integer out of range!')
