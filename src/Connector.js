@@ -181,10 +181,16 @@ export default function extendConnector (Y/* :any */) {
       }
     }
     send (uid, buffer) {
+      if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
+        throw new Error('Expected Message to be an ArrayBuffer or Uint8Array - please don\'t use this method to send custom messages')
+      }
       this.log('%s: Send \'%y\' to %s', this.userId, buffer, uid)
       this.logMessage('Message: %Y', buffer)
     }
     broadcast (buffer) {
+      if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
+        throw new Error('Expected Message to be an ArrayBuffer or Uint8Array - please don\'t use this method to send custom messages')
+      }
       this.log('%s: Broadcast \'%y\'', this.userId, buffer)
       this.logMessage('Message: %Y', buffer)
     }
@@ -223,6 +229,9 @@ export default function extendConnector (Y/* :any */) {
       You received a raw message, and you know that it is intended for Yjs. Then call this function.
     */
     async receiveMessage (sender, buffer) {
+      if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
+        throw new Error('Expected Message to be an ArrayBuffer or Uint8Array!')
+      }
       if (sender === this.userId) {
         return
       }

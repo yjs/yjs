@@ -227,4 +227,3 @@ test('encode/decode Map operations', async function binMap (t) {
     info: 400
   })
 })
-

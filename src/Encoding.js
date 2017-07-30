@@ -66,7 +66,13 @@ export class BinaryEncoder {
 
 export class BinaryDecoder {
   constructor (buffer) {
-    this.uint8arr = new Uint8Array(buffer)
+    if (buffer instanceof ArrayBuffer) {
+      this.uint8arr = new Uint8Array(buffer)
+    } else if (buffer instanceof Uint8Array) {
+      this.uint8arr = buffer
+    } else {
+      throw new Error('Expected an ArrayBuffer or Uint8Array!')
+    }
     this.pos = 0
   }
   skip8 () {
