@@ -96,9 +96,8 @@ export async function computeMessageSyncStep1 (decoder, encoder, conn, senderCon
   conn.y.db.requestTransaction(function * () {
     encoder.writeVarString('sync step 2')
     encoder.writeVarString(conn.authInfo || '')
-    let emptyStateSet = this.ds.length === 0 // TODO: length may not always be available
 
-    if (preferUntransformed && emptyStateSet) {
+    if (preferUntransformed) {
       encoder.writeUint8(1)
       yield * this.writeOperationsUntransformed(encoder)
     } else {
