@@ -8,7 +8,8 @@ Y({
   },
   connector: {
     name: 'websockets-client',
-    room: 'Puzzle-example'
+    room: 'Puzzle-example',
+    url: 'http://localhost:1234'
   },
   share: {
     piece1: 'Map',

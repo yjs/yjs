@@ -1097,7 +1097,7 @@ export default function extendTransaction (Y) {
         yield * this.os.put(op)
       }
       yield * this.os.iterate(this, null, null, function * (op) {
-        if (op.parent != null && op.parent[0] === 0xFFFFFF) {
+        if (op.parent != null) {
           if (op.struct === 'Insert') {
             // update parents .map/start/end properties
             if (op.parentSub != null && op.left == null) {

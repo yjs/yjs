@@ -7,8 +7,8 @@ Y({
   },
   connector: {
     name: 'websockets-client',
-    room: 'drawing-example'
-    // url: 'localhost:1234'
+    room: 'drawing-example',
+    url: 'localhost:1234'
   },
   sourceDir: '/bower_components',
   share: {
