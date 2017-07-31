@@ -1,6 +1,6 @@
 
 import Y from './y.js'
-import { BinaryDecoder } from './Encoding.js'
+import { BinaryDecoder, BinaryEncoder } from './Encoding.js'
 
 export function formatYjsMessage (buffer) {
   let decoder = new BinaryDecoder(buffer)
@@ -52,6 +52,20 @@ export async function computeMessageUpdate (decoder, encoder, conn) {
   conn.y.db.applyOperations(decoder)
 }
 
+export function sendSyncStep1 (conn, syncUser) {
+  conn.y.db.requestTransaction(function * () {
+    let encoder = new BinaryEncoder()
+    encoder.writeVarString(conn.opts.room || '')
+    encoder.writeVarString('sync step 1')
+    encoder.writeVarString(conn.authInfo || '')
+    encoder.writeVarUint(conn.protocolVersion)
+    let preferUntransformed = conn.preferUntransformed && this.os.length === 0 // TODO: length may not be defined
+    encoder.writeUint8(preferUntransformed ? 1 : 0)
+    yield * this.writeStateSet(encoder)
+    conn.send(syncUser, encoder.createBuffer())
+  })
+}
+
 export function logMessageSyncStep1 (decoder, strBuilder) {
   let auth = decoder.readVarString()
   let protocolVersion = decoder.readVarUint()
@@ -78,13 +92,7 @@ export async function computeMessageSyncStep1 (decoder, encoder, conn, senderCon
     conn.y.destroy()
   }
 
-  if (conn.role === 'slave') {
-    // wait for sync step 2 to complete
-    await Promise.all(Array.from(conn.connections.values())
-      .filter(conn => conn.role === 'master')
-      .map(conn => conn.syncStep2.promise)
-    )
-  }
+  // send sync step 2
   conn.y.db.requestTransaction(function * () {
     encoder.writeVarString('sync step 2')
     encoder.writeVarString(conn.authInfo || '')
@@ -100,7 +108,11 @@ export async function computeMessageSyncStep1 (decoder, encoder, conn, senderCon
 
     yield * this.writeDeleteSet(encoder)
     conn.send(senderConn.uid, encoder.createBuffer())
+    senderConn.receivedSyncStep2 = true
   })
+  if (conn.role === 'slave') {
+    sendSyncStep1(conn, sender)
+  }
   await conn.y.db.whenTransactionsFinished()
 }
 

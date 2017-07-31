@@ -1,5 +1,5 @@
 import { BinaryEncoder, BinaryDecoder } from './Encoding.js'
-import { computeMessageSyncStep1, computeMessageSyncStep2, computeMessageUpdate } from './MessageHandler.js'
+import { sendSyncStep1, computeMessageSyncStep1, computeMessageSyncStep2, computeMessageUpdate } from './MessageHandler.js'
 
 export default function extendConnector (Y/* :any */) {
   class AbstractConnector {
@@ -111,7 +111,8 @@ export default function extendConnector (Y/* :any */) {
         uid: user,
         isSynced: false,
         role: role,
-        processAfterAuth: []
+        processAfterAuth: [],
+        receivedSyncStep2: false
       })
       let defer = {}
       defer.promise = new Promise(function (resolve) { defer.resolve = resolve })
@@ -137,8 +138,8 @@ export default function extendConnector (Y/* :any */) {
       }
     }
     findNextSyncTarget () {
-      if (this.currentSyncTarget != null) {
-        return // "The current sync has not finished!"
+      if (this.currentSyncTarget != null || this.role === 'slave') {
+        return // "The current sync has not finished or this is controlled by a master!"
       }
 
       var syncUser = null
@@ -151,17 +152,7 @@ export default function extendConnector (Y/* :any */) {
       var conn = this
       if (syncUser != null) {
         this.currentSyncTarget = syncUser
-        this.y.db.requestTransaction(function * () {
-          let encoder = new BinaryEncoder()
-          encoder.writeVarString(conn.opts.room || '')
-          encoder.writeVarString('sync step 1')
-          encoder.writeVarString(conn.authInfo || '')
-          encoder.writeVarUint(conn.protocolVersion)
-          let preferUntransformed = conn.preferUntransformed && this.os.length === 0 // TODO: length may not be defined
-          encoder.writeUint8(preferUntransformed ? 1 : 0)
-          yield * this.writeStateSet(encoder)
-          conn.send(syncUser, encoder.createBuffer())
-        })
+        sendSyncStep1(this, syncUser)
       } else {
         if (!conn.isSynced) {
           this.y.db.requestTransaction(function * () {
