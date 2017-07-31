@@ -175,7 +175,6 @@ export async function computeMessageSyncStep2 (decoder, encoder, conn, senderCon
     }
   })
   // then apply ds
-  await db.whenTransactionsFinished()
   db.requestTransaction(function * () {
     yield * this.applyDeleteSet(decoder)
   })
