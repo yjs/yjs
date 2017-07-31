@@ -112,6 +112,7 @@ export default function extendConnector (Y/* :any */) {
         isSynced: false,
         role: role,
         processAfterAuth: [],
+        auth: null,
         receivedSyncStep2: false
       })
       let defer = {}
