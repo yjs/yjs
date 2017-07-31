@@ -1,3 +1,4 @@
+/* globals crypto */
 
 import { BinaryDecoder, BinaryEncoder } from './Encoding.js'
 

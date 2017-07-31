@@ -413,11 +413,6 @@ export default function extendStruct (Y) {
           id: op.id,
           type: op.type
         }
-        if (op.requires != null) {
-          debugger // TODO: this is used. adapt binarEncode/Decode!!
-          console.warn('Note to myself: this is used. adapt binarEncode/Decode!!')
-          e.requires = op.requires
-        }
         if (op.info != null) {
           e.info = op.info
         }
