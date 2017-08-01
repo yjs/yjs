@@ -220,7 +220,7 @@ export default function extendConnector (Y/* :any */) {
     /*
       You received a raw message, and you know that it is intended for Yjs. Then call this function.
     */
-    async receiveMessage (sender, buffer) {
+    receiveMessage (sender, buffer) {
       if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
         throw new Error('Expected Message to be an ArrayBuffer or Uint8Array!')
       }
@@ -244,29 +244,27 @@ export default function extendConnector (Y/* :any */) {
       if (messageType === 'sync step 1' || messageType === 'sync step 2') {
         let auth = decoder.readVarUint()
         if (senderConn.auth == null) {
+          senderConn.processAfterAuth.push([sender, buffer])
+
           // check auth
-          let authPermissions = await this.checkAuth(auth, this.y, sender)
-          senderConn.auth = authPermissions
-          this.y.emit('userAuthenticated', {
-            user: senderConn.uid,
-            auth: authPermissions
-          })
-          senderConn.syncStep2.promise.then(() => {
+          return this.checkAuth(auth, this.y, sender).then(authPermissions => {
+            senderConn.auth = authPermissions
+            this.y.emit('userAuthenticated', {
+              user: senderConn.uid,
+              auth: authPermissions
+            })
+            return senderConn.syncStep2.promise
+          }).then(() => {
             if (senderConn.processAfterAuth == null) {
-              return
+              return Promise.resolve()
             }
-            for (let i = 0; i < senderConn.processAfterAuth.length; i++) {
-              let m = senderConn.processAfterAuth[i]
-              this.receiveMessage(m[0], m[1])
-            }
+            let messages = senderConn.processAfterAuth
             senderConn.processAfterAuth = null
+            return Promise.all(messages.map(m =>
+              this.receiveMessage(m[0], m[1])
+            ))
           })
         }
-      }
-
-      if (senderConn.auth == null) {
-        senderConn.processAfterAuth.push([sender, buffer])
-        return
       }
 
       if (messageType === 'sync step 1' && (senderConn.auth === 'write' || senderConn.auth === 'read')) {
@@ -278,7 +276,7 @@ export default function extendConnector (Y/* :any */) {
       } else if (messageType === 'update' && senderConn.auth === 'write') {
         return computeMessageUpdate(decoder, encoder, this, senderConn, sender)
       } else {
-        console.error('Unable to receive message')
+        Promise.reject('Unable to receive message')
       }
     }
     _setSyncedWith (user) {

@@ -8,7 +8,8 @@ Y({
   },
   connector: {
     name: 'websockets-client',
-    room: 'richtext-example-quill-1.0-test'
+    room: 'richtext-example-quill-1.0-test',
+    url: 'http://localhost:1234'
   },
   sourceDir: '/bower_components',
   share: {

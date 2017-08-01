@@ -26,14 +26,14 @@ export function formatYjsMessageType (buffer) {
   return decoder.readVarString()
 }
 
-export async function logMessageUpdate (decoder, strBuilder) {
+export function logMessageUpdate (decoder, strBuilder) {
   let len = decoder.readUint32()
   for (let i = 0; i < len; i++) {
     strBuilder.push(JSON.stringify(Y.Struct.binaryDecodeOperation(decoder)) + '\n')
   }
 }
 
-export async function computeMessageUpdate (decoder, encoder, conn) {
+export function computeMessageUpdate (decoder, encoder, conn) {
   if (conn.y.db.forwardAppliedOperations) {
     let messagePosition = decoder.pos
     let len = decoder.readUint32()
@@ -78,7 +78,7 @@ export function logMessageSyncStep1 (decoder, strBuilder) {
   logSS(decoder, strBuilder)
 }
 
-export async function computeMessageSyncStep1 (decoder, encoder, conn, senderConn, sender) {
+export function computeMessageSyncStep1 (decoder, encoder, conn, senderConn, sender) {
   let protocolVersion = decoder.readVarUint()
   let preferUntransformed = decoder.readUint8() === 1
 
@@ -112,7 +112,7 @@ export async function computeMessageSyncStep1 (decoder, encoder, conn, senderCon
   if (conn.role === 'slave') {
     sendSyncStep1(conn, sender)
   }
-  await conn.y.db.whenTransactionsFinished()
+  return conn.y.db.whenTransactionsFinished()
 }
 
 export function logSS (decoder, strBuilder) {
@@ -161,7 +161,7 @@ export function logMessageSyncStep2 (decoder, strBuilder) {
   logDS(decoder, strBuilder)
 }
 
-export async function computeMessageSyncStep2 (decoder, encoder, conn, senderConn, sender) {
+export function computeMessageSyncStep2 (decoder, encoder, conn, senderConn, sender) {
   var db = conn.y.db
   let defer = senderConn.syncStep2
 
@@ -178,7 +178,8 @@ export async function computeMessageSyncStep2 (decoder, encoder, conn, senderCon
   db.requestTransaction(function * () {
     yield * this.applyDeleteSet(decoder)
   })
-  await db.whenTransactionsFinished()
-  conn._setSyncedWith(sender)
-  defer.resolve()
+  return db.whenTransactionsFinished().then(() => {
+    conn._setSyncedWith(sender)
+    defer.resolve()
+  })
 }
