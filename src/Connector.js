@@ -222,10 +222,10 @@ export default function extendConnector (Y/* :any */) {
     */
     receiveMessage (sender, buffer) {
       if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
-        throw new Error('Expected Message to be an ArrayBuffer or Uint8Array!')
+        return Promise.reject(new Error('Expected Message to be an ArrayBuffer or Uint8Array!'))
       }
       if (sender === this.userId) {
-        return
+        return Promise.resolve()
       }
       let decoder = new BinaryDecoder(buffer)
       let encoder = new BinaryEncoder()
@@ -266,6 +266,10 @@ export default function extendConnector (Y/* :any */) {
           })
         }
       }
+      if (senderConn.auth == null) {
+        senderConn.processAfterAuth.push([sender, buffer])
+        return Promise.resolve()
+      }
 
       if (messageType === 'sync step 1' && (senderConn.auth === 'write' || senderConn.auth === 'read')) {
         // cannot wait for sync step 1 to finish, because we may wait for sync step 2 in sync step 1 (->lock)
@@ -276,7 +280,7 @@ export default function extendConnector (Y/* :any */) {
       } else if (messageType === 'update' && senderConn.auth === 'write') {
         return computeMessageUpdate(decoder, encoder, this, senderConn, sender)
       } else {
-        Promise.reject(new Error('Unable to receive message'))
+        return Promise.reject(new Error('Unable to receive message'))
       }
     }
     _setSyncedWith (user) {
