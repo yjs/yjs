@@ -276,7 +276,7 @@ export default function extendConnector (Y/* :any */) {
       } else if (messageType === 'update' && senderConn.auth === 'write') {
         return computeMessageUpdate(decoder, encoder, this, senderConn, sender)
       } else {
-        Promise.reject('Unable to receive message')
+        Promise.reject(new Error('Unable to receive message'))
       }
     }
     _setSyncedWith (user) {
