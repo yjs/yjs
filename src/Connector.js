@@ -156,21 +156,23 @@ export default function extendConnector (Y/* :any */) {
         sendSyncStep1(this, syncUser)
       } else {
         if (!conn.isSynced) {
-          this.y.db.requestTransaction(function * () {
-            if (!conn.isSynced) {
-              // it is crucial that isSynced is set at the time garbageCollectAfterSync is called
-              conn.isSynced = true
-              // It is safer to remove this!
-              // TODO: remove: yield * this.garbageCollectAfterSync()
-              // call whensynced listeners
-              for (var f of conn.whenSyncedListeners) {
-                f()
-              }
-              conn.whenSyncedListeners = []
-            }
-          })
+          conn._fireIsSyncedListeners()
         }
       }
+    }
+    _fireIsSyncedListeners () {
+      this.y.db.whenTransactionsFinished().then(() => {
+        if (!this.isSynced) {
+          this.isSynced = true
+          // It is safer to remove this!
+          // TODO: remove: yield * this.garbageCollectAfterSync()
+          // call whensynced listeners
+          for (var f of this.whenSyncedListeners) {
+            f()
+          }
+          this.whenSyncedListeners = []
+        }
+      })
     }
     send (uid, buffer) {
       if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
@@ -244,33 +246,32 @@ export default function extendConnector (Y/* :any */) {
       if (messageType === 'sync step 1' || messageType === 'sync step 2') {
         let auth = decoder.readVarUint()
         if (senderConn.auth == null) {
-          senderConn.processAfterAuth.push([sender, buffer])
-
+          senderConn.processAfterAuth.push([messageType, senderConn, decoder, encoder, sender])
           // check auth
           return this.checkAuth(auth, this.y, sender).then(authPermissions => {
-            senderConn.auth = authPermissions
-            this.y.emit('userAuthenticated', {
-              user: senderConn.uid,
-              auth: authPermissions
-            })
-            return senderConn.syncStep2.promise
-          }).then(() => {
-            if (senderConn.processAfterAuth == null) {
-              return Promise.resolve()
+            if (senderConn.auth == null) {
+              senderConn.auth = authPermissions
+              this.y.emit('userAuthenticated', {
+                user: senderConn.uid,
+                auth: authPermissions
+              })
             }
             let messages = senderConn.processAfterAuth
-            senderConn.processAfterAuth = null
-            return Promise.all(messages.map(m =>
-              this.receiveMessage(m[0], m[1])
-            ))
+            senderConn.processAfterAuth = []
+
+            return messages.reduce((p, m) =>
+              p.then(() => this.computeMessage(m[0], m[1], m[2], m[3], m[4]))
+            , Promise.resolve())
           })
         }
       }
-      if (senderConn.auth == null) {
-        senderConn.processAfterAuth.push([sender, buffer])
-        return Promise.resolve()
+      if (senderConn.auth != null) {
+        return this.computeMessage(messageType, senderConn, decoder, encoder, sender)
+      } else {
+        senderConn.processAfterAuth.push([messageType, senderConn, decoder, encoder, sender])
       }
-
+    }
+    computeMessage (messageType, senderConn, decoder, encoder, sender) {
       if (messageType === 'sync step 1' && (senderConn.auth === 'write' || senderConn.auth === 'read')) {
         // cannot wait for sync step 1 to finish, because we may wait for sync step 2 in sync step 1 (->lock)
         computeMessageSyncStep1(decoder, encoder, this, senderConn, sender)
@@ -291,6 +292,9 @@ export default function extendConnector (Y/* :any */) {
       if (user === this.currentSyncTarget) {
         this.currentSyncTarget = null
         this.findNextSyncTarget()
+      }
+      if (this.role === 'slave' && conn.role === 'master') {
+        this._fireIsSyncedListeners()
       }
     }
     /*
