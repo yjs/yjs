@@ -1,6 +1,6 @@
 /**
  * yjs - A framework for real-time p2p shared editing on any data
- * @version v12.3.1
+ * @version v12.3.2
  * @link http://y-js.org
  * @license MIT
  */
@@ -777,7 +777,6 @@ module.exports = function (Y/* :any */) {
       // this client receives operations from only one other client.
       // In particular, this does not work with y-webrtc.
       // It will work with y-websockets-client
-      this.preferUntransformed = opts.preferUntransformed || false
       if (opts.role == null || opts.role === 'master') {
         this.role = 'master'
       } else if (opts.role === 'slave') {
@@ -929,9 +928,6 @@ module.exports = function (Y/* :any */) {
             protocolVersion: conn.protocolVersion,
             auth: conn.authInfo
           }
-          if (conn.preferUntransformed && Object.keys(stateSet).length === 0) {
-            answer.preferUntransformed = true
-          }
           conn.send(syncUser, answer)
         })
       } else {
@@ -1045,11 +1041,7 @@ module.exports = function (Y/* :any */) {
                 protocolVersion: this.protocolVersion,
                 auth: this.authInfo
               }
-              if (message.preferUntransformed === true && Object.keys(m.stateSet).length === 0) {
-                answer.osUntransformed = yield* this.getOperationsUntransformed()
-              } else {
-                answer.os = yield* this.getOperations(m.stateSet)
-              }
+              answer.os = yield* this.getOperations(m.stateSet)
               conn.send(sender, answer)
               if (this.forwardToSyncingClients) {
                 conn.syncingClients.push(sender)
@@ -2534,7 +2526,7 @@ module.exports = function (Y/* :any */) {
           send.push(Y.Struct[op.struct].encode(op))
         }
       }
-      if (this.store.y.connector.isSynced && send.length > 0) { // TODO: && !this.store.forwardAppliedOperations (but then i don't send delete ops)
+      if (send.length > 0) { // TODO: && !this.store.forwardAppliedOperations (but then i don't send delete ops)
         // is connected, and this is not going to be send in addOperation
         this.store.y.connector.broadcastOps(send)
       }
@@ -3155,7 +3147,7 @@ module.exports = function (Y/* :any */) {
     }
     * addOperation (op) {
       yield* this.os.put(op)
-      if (this.store.y.connector.isSynced && this.store.forwardAppliedOperations && typeof op.id[1] !== 'string') {
+      if (this.store.forwardAppliedOperations && typeof op.id[1] !== 'string') {
         // is connected, and this is not going to be send in addOperation
         this.store.y.connector.broadcastOps([op])
       }
