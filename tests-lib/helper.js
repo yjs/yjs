@@ -141,7 +141,7 @@ export async function initArrays (t, opts) {
     let connOpts
     if (i === 0) {
       // Only one instance can gc!
-      dbOpts = Object.assign({ gc: true }, opts.db)
+      dbOpts = Object.assign({ gc: false }, opts.db)
       connOpts = Object.assign({ role: 'master' }, connector)
     } else {
       dbOpts = Object.assign({ gc: false }, opts.db)
