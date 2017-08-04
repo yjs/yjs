@@ -36,7 +36,6 @@ module.exports = function (Y/* :any */) {
       // this client receives operations from only one other client.
       // In particular, this does not work with y-webrtc.
       // It will work with y-websockets-client
-      this.preferUntransformed = opts.preferUntransformed || false
       if (opts.role == null || opts.role === 'master') {
         this.role = 'master'
       } else if (opts.role === 'slave') {
@@ -188,9 +187,6 @@ module.exports = function (Y/* :any */) {
             protocolVersion: conn.protocolVersion,
             auth: conn.authInfo
           }
-          if (conn.preferUntransformed && Object.keys(stateSet).length === 0) {
-            answer.preferUntransformed = true
-          }
           conn.send(syncUser, answer)
         })
       } else {
@@ -304,11 +300,7 @@ module.exports = function (Y/* :any */) {
                 protocolVersion: this.protocolVersion,
                 auth: this.authInfo
               }
-              if (message.preferUntransformed === true && Object.keys(m.stateSet).length === 0) {
-                answer.osUntransformed = yield* this.getOperationsUntransformed()
-              } else {
-                answer.os = yield* this.getOperations(m.stateSet)
-              }
+              answer.os = yield* this.getOperations(m.stateSet)
               conn.send(sender, answer)
               if (this.forwardToSyncingClients) {
                 conn.syncingClients.push(sender)
