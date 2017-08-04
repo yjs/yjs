@@ -92,27 +92,30 @@ export function computeMessageSyncStep1 (decoder, encoder, conn, senderConn, sen
     conn.y.destroy()
   }
 
-  // send sync step 2
-  conn.y.db.requestTransaction(function * () {
-    encoder.writeVarString('sync step 2')
-    encoder.writeVarString(conn.authInfo || '')
+  return conn.y.db.whenTransactionsFinished().then(() => {
+    // send sync step 2
+    conn.y.db.requestTransaction(function * () {
+      encoder.writeVarString('sync step 2')
+      encoder.writeVarString(conn.authInfo || '')
 
-    if (preferUntransformed) {
-      encoder.writeUint8(1)
-      yield * this.writeOperationsUntransformed(encoder)
-    } else {
-      encoder.writeUint8(0)
-      yield * this.writeOperations(encoder, decoder)
-    }
+      if (preferUntransformed) {
+        encoder.writeUint8(1)
+        yield * this.writeOperationsUntransformed(encoder)
+      } else {
+        encoder.writeUint8(0)
+        yield * this.writeOperations(encoder, decoder)
+      }
 
-    yield * this.writeDeleteSet(encoder)
-    conn.send(senderConn.uid, encoder.createBuffer())
-    senderConn.receivedSyncStep2 = true
+      yield * this.writeDeleteSet(encoder)
+      conn.send(senderConn.uid, encoder.createBuffer())
+      senderConn.receivedSyncStep2 = true
+    })
+    return conn.y.db.whenTransactionsFinished().then(() => {
+      if (conn.role === 'slave') {
+        sendSyncStep1(conn, sender)
+      }
+    })
   })
-  if (conn.role === 'slave') {
-    sendSyncStep1(conn, sender)
-  }
-  return conn.y.db.whenTransactionsFinished()
 }
 
 export function logSS (decoder, strBuilder) {
