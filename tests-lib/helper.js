@@ -12,6 +12,9 @@ export let Y = _Y
 
 Y.extend(yMemory, yArray, yMap, yTest)
 
+export var database = { name: 'memory' }
+export var connector = { name: 'test', url: 'http://localhost:1234' }
+
 function * getStateSet () {
   var ss = {}
   yield * this.ss.iterate(this, null, null, function * (n) {
@@ -60,7 +63,16 @@ export async function compareUsers (t, users) {
   await wait()
   await flushAll(t, users)
 
-  var userTypeContents = users.map(u => u.share.array._content.map(c => c.val || JSON.stringify(c.type)))
+  var userArrayValues = users.map(u => u.share.array._content.map(c => c.val || JSON.stringify(c.type)))
+  function valueToComparable (v) {
+    if (v != null && v._model != null) {
+      return v._model
+    } else {
+      return v || null
+    }
+  }
+  var userMapOneValues = users.map(u => u.share.map.get('one')).map(valueToComparable)
+  var userMapTwoValues = users.map(u => u.share.map.get('two')).map(valueToComparable)
 
   await users[0].db.garbageCollect()
   await users[0].db.garbageCollect()
@@ -118,7 +130,9 @@ export async function compareUsers (t, users) {
   }))
   for (var i = 0; i < data.length - 1; i++) {
     await t.asyncGroup(async () => {
-      t.compare(userTypeContents[i], userTypeContents[i + 1], 'types')
+      t.compare(userArrayValues[i], userArrayValues[i + 1], 'array types')
+      t.compare(userMapOneValues[i], userMapOneValues[i + 1], 'map types (propery "one")')
+      t.compare(userMapTwoValues[i], userMapTwoValues[i + 1], 'map types (propery "two")')
       t.compare(data[i].os, data[i + 1].os, 'os')
       t.compare(data[i].ds, data[i + 1].ds, 'ds')
       t.compare(data[i].ss, data[i + 1].ss, 'ss')
@@ -135,17 +149,17 @@ export async function initArrays (t, opts) {
   }
   var share = Object.assign({ flushHelper: 'Map', array: 'Array', map: 'Map' }, opts.share)
   var chance = opts.chance || new Chance(t.getSeed() * 1000000000)
-  var connector = Object.assign({ room: 'debugging_' + t.name, generateUserId: false, testContext: t, chance }, opts.connector)
+  var conn = Object.assign({ room: 'debugging_' + t.name, generateUserId: false, testContext: t, chance }, connector)
   for (let i = 0; i < opts.users; i++) {
     let dbOpts
     let connOpts
     if (i === 0) {
       // Only one instance can gc!
-      dbOpts = Object.assign({ gc: false }, opts.db)
-      connOpts = Object.assign({ role: 'master' }, connector)
+      dbOpts = Object.assign({ gc: false }, database)
+      connOpts = Object.assign({ role: 'master' }, conn)
     } else {
-      dbOpts = Object.assign({ gc: false }, opts.db)
-      connOpts = Object.assign({ role: 'slave' }, connector)
+      dbOpts = Object.assign({ gc: false }, database)
+      connOpts = Object.assign({ role: 'slave' }, conn)
     }
     let y = await Y({
       connector: connOpts,
@@ -219,4 +233,49 @@ export function wait (t) {
   return new Promise(function (resolve) {
     setTimeout(resolve, t != null ? t : 100)
   })
+}
+
+export async function applyRandomTests (t, mods, iterations) {
+  const chance = new Chance(t.getSeed() * 1000000000)
+  var initInformation = await initArrays(t, { users: 5, chance: chance })
+  let { users } = initInformation
+  for (var i = 0; i < iterations; i++) {
+    if (chance.bool({likelihood: 10})) {
+      // 10% chance to disconnect/reconnect a user
+      // we make sure that the first users always is connected
+      let user = chance.pickone(users.slice(1))
+      if (user.connector.isSynced) {
+        if (users.filter(u => u.connector.isSynced).length > 1) {
+          // make sure that at least one user remains in the room
+          await user.disconnect()
+          if (users[0].connector.testRoom == null) {
+            await wait(100)
+          }
+        }
+      } else {
+        await user.reconnect()
+        if (users[0].connector.testRoom == null) {
+          await wait(100)
+        }
+        await new Promise(function (resolve) {
+          user.connector.whenSynced(resolve)
+        })
+      }
+    } else if (chance.bool({likelihood: 5})) {
+      // 20%*!prev chance to flush all & garbagecollect
+      // TODO: We do not gc all users as this does not work yet
+      // await garbageCollectUsers(t, users)
+      await flushAll(t, users)
+      await users[0].db.emptyGarbageCollector()
+      await flushAll(t, users)
+    } else if (chance.bool({likelihood: 10})) {
+      // 20%*!prev chance to flush some operations
+      await flushSome(t, users)
+    }
+    let user = chance.pickone(users)
+    var test = chance.pickone(mods)
+    test(t, user, chance)
+  }
+  await compareUsers(t, users)
+  return initInformation
 }
