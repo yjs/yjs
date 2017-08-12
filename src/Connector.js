@@ -210,7 +210,8 @@ export default function extendConnector (Y/* :any */) {
     /*
       You received a raw message, and you know that it is intended for Yjs. Then call this function.
     */
-    receiveMessage (sender, buffer) {
+    receiveMessage (sender, buffer, skipAuth) {
+      skipAuth = skipAuth || false
       if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
         return Promise.reject(new Error('Expected Message to be an ArrayBuffer or Uint8Array!'))
       }
@@ -227,7 +228,7 @@ export default function extendConnector (Y/* :any */) {
       this.log('%s: Receive \'%s\' from %s', this.userId, messageType, sender)
       this.logMessage('Message: %Y', buffer)
 
-      if (senderConn == null) {
+      if (senderConn == null && !skipAuth) {
         throw new Error('Received message from unknown peer!')
       }
 
@@ -253,21 +254,21 @@ export default function extendConnector (Y/* :any */) {
           })
         }
       }
-      if (senderConn.auth != null) {
-        return this.computeMessage(messageType, senderConn, decoder, encoder, sender)
+      if (skipAuth || senderConn.auth != null) {
+        return this.computeMessage(messageType, senderConn, decoder, encoder, sender, skipAuth)
       } else {
-        senderConn.processAfterAuth.push([messageType, senderConn, decoder, encoder, sender])
+        senderConn.processAfterAuth.push([messageType, senderConn, decoder, encoder, sender, false])
       }
     }
 
-    computeMessage (messageType, senderConn, decoder, encoder, sender) {
+    computeMessage (messageType, senderConn, decoder, encoder, sender, skipAuth) {
       if (messageType === 'sync step 1' && (senderConn.auth === 'write' || senderConn.auth === 'read')) {
         // cannot wait for sync step 1 to finish, because we may wait for sync step 2 in sync step 1 (->lock)
         computeMessageSyncStep1(decoder, encoder, this, senderConn, sender)
         return this.y.db.whenTransactionsFinished()
       } else if (messageType === 'sync step 2' && senderConn.auth === 'write') {
         return computeMessageSyncStep2(decoder, encoder, this, senderConn, sender)
-      } else if (messageType === 'update' && senderConn.auth === 'write') {
+      } else if (messageType === 'update' && (skipAuth || senderConn.auth === 'write')) {
         return computeMessageUpdate(decoder, encoder, this, senderConn, sender)
       } else {
         return Promise.reject(new Error('Unable to receive message'))

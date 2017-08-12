@@ -34,7 +34,7 @@ export function logMessageUpdate (decoder, strBuilder) {
 }
 
 export function computeMessageUpdate (decoder, encoder, conn) {
-  if (conn.y.db.forwardAppliedOperations) {
+  if (conn.y.db.forwardAppliedOperations || conn.y.persistence != null) {
     let messagePosition = decoder.pos
     let len = decoder.readUint32()
     let delops = []
@@ -45,7 +45,12 @@ export function computeMessageUpdate (decoder, encoder, conn) {
       }
     }
     if (delops.length > 0) {
-      conn.broadcastOps(delops)
+      if (conn.y.db.forwardAppliedOperations) {
+        conn.broadcastOps(delops)
+      }
+      if (conn.y.persistence) {
+        conn.y.persistence.saveOperations(delops)
+      }
     }
     decoder.pos = messagePosition
   }

@@ -7,37 +7,46 @@ export class BinaryEncoder {
   constructor () {
     this.data = []
   }
+
   get pos () {
     return this.data.length
   }
+
   createBuffer () {
     return Uint8Array.from(this.data).buffer
   }
+
   writeUint8 (num) {
     this.data.push(num & bits8)
   }
+
   setUint8 (pos, num) {
     this.data[pos] = num & bits8
   }
+
   writeUint16 (num) {
     this.data.push(num & bits8, (num >>> 8) & bits8)
   }
+
   setUint16 (pos, num) {
     this.data[pos] = num & bits8
     this.data[pos + 1] = (num >>> 8) & bits8
   }
+
   writeUint32 (num) {
     for (let i = 0; i < 4; i++) {
       this.data.push(num & bits8)
       num >>>= 8
     }
   }
+
   setUint32 (pos, num) {
     for (let i = 0; i < 4; i++) {
       this.data[pos + i] = num & bits8
       num >>>= 8
     }
   }
+
   writeVarUint (num) {
     while (num >= 0b10000000) {
       this.data.push(0b10000000 | (bits7 & num))
@@ -45,6 +54,7 @@ export class BinaryEncoder {
     }
     this.data.push(bits7 & num)
   }
+
   writeVarString (str) {
     let bytes = utf8.setBytesFromString(str)
     let len = bytes.length
@@ -53,6 +63,7 @@ export class BinaryEncoder {
       this.data.push(bytes[i])
     }
   }
+
   writeOpID (id) {
     let user = id[0]
     this.writeVarUint(user)
@@ -68,19 +79,22 @@ export class BinaryDecoder {
   constructor (buffer) {
     if (buffer instanceof ArrayBuffer) {
       this.uint8arr = new Uint8Array(buffer)
-    } else if (buffer instanceof Uint8Array) {
+    } else if (buffer instanceof Uint8Array || (typeof Buffer !== 'undefined' && buffer instanceof Buffer)) {
       this.uint8arr = buffer
     } else {
       throw new Error('Expected an ArrayBuffer or Uint8Array!')
     }
     this.pos = 0
   }
+
   skip8 () {
     this.pos++
   }
+
   readUint8 () {
     return this.uint8arr[this.pos++]
   }
+
   readUint32 () {
     let uint =
       this.uint8arr[this.pos] +
@@ -90,9 +104,11 @@ export class BinaryDecoder {
     this.pos += 4
     return uint
   }
+
   peekUint8 () {
     return this.uint8arr[this.pos]
   }
+
   readVarUint () {
     let num = 0
     let len = 0
@@ -108,6 +124,7 @@ export class BinaryDecoder {
       }
     }
   }
+
   readVarString () {
     let len = this.readVarUint()
     let bytes = new Array(len)
@@ -116,12 +133,14 @@ export class BinaryDecoder {
     }
     return utf8.getStringFromBytes(bytes)
   }
+
   peekVarString () {
     let pos = this.pos
     let s = this.readVarString()
     this.pos = pos
     return s
   }
+
   readOpID () {
     let user = this.readVarUint()
     if (user !== 0xFFFFFF) {

@@ -1,5 +1,9 @@
 /* global Y */
 
+// eslint-disable-next-line
+let search = new URLSearchParams(location.search)
+let url = search.get('url')
+
 // initialize a shared object. This function call returns a promise!
 Y({
   db: {
@@ -8,7 +12,7 @@ Y({
   connector: {
     name: 'websockets-client',
     room: 'Textarea-example',
-    url: 'http://127.0.0.1:1234'
+    url: url || 'http://127.0.0.1:1234'
   },
   sourceDir: '/bower_components',
   share: {

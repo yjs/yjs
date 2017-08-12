@@ -1,3 +1,4 @@
+import { BinaryEncoder, BinaryDecoder } from './Encoding.js'
 
 /*
   Partial definition of a transaction
@@ -97,6 +98,9 @@ export default function extendTransaction (Y) {
       if (send.length > 0) { // TODO: && !this.store.forwardAppliedOperations (but then i don't send delete ops)
         // is connected, and this is not going to be send in addOperation
         this.store.y.connector.broadcastOps(send)
+        if (this.store.y.persistence != null) {
+          this.store.y.persistence.saveOperations(send)
+        }
       }
     }
 
@@ -679,10 +683,15 @@ export default function extendTransaction (Y) {
             yield * this.garbageCollectOperation(o.id)
           }
         }
-        if (this.store.forwardAppliedOperations) {
+        if (this.store.forwardAppliedOperations || this.store.y.persistence != null) {
           var ops = []
           ops.push({struct: 'Delete', target: [del[0], del[1]], length: del[2]})
-          this.store.y.connector.broadcastOps(ops)
+          if (this.store.forwardAppliedOperations) {
+            this.store.y.connector.broadcastOps(ops)
+          }
+          if (this.store.y.persistence != null) {
+            this.store.y.persistence.saveOperations(ops)
+          }
         }
       }
     }
@@ -733,9 +742,14 @@ export default function extendTransaction (Y) {
     * addOperation (op) {
       yield * this.os.put(op)
       // case op is created by this user, op is already broadcasted in applyCreatedOperations
-      if (op.id[0] !== this.store.userId && this.store.forwardAppliedOperations && typeof op.id[1] !== 'string') {
-        // is connected, and this is not going to be send in addOperation
-        this.store.y.connector.broadcastOps([op])
+      if (op.id[0] !== this.store.userId && typeof op.id[1] !== 'string') {
+        if (this.store.forwardAppliedOperations) {
+          // is connected, and this is not going to be send in addOperation
+          this.store.y.connector.broadcastOps([op])
+        }
+        if (this.store.y.persistence != null) {
+          this.store.y.persistence.saveOperations([op])
+        }
       }
     }
     // if insertion, try to combine with left insertion (if both have content property)
@@ -1072,6 +1086,20 @@ export default function extendTransaction (Y) {
         Y.Struct[op.struct].binaryEncode(encoder, Y.Struct[op.struct].encode(op))
       }
     }
+
+    * toBinary () {
+      let encoder = new BinaryEncoder()
+      yield * this.writeOperationsUntransformed(encoder)
+      yield * this.writeDeleteSet(encoder)
+      return encoder.createBuffer()
+    }
+
+    * fromBinary (buffer) {
+      let decoder = new BinaryDecoder(buffer)
+      yield * this.applyOperationsUntransformed(decoder)
+      yield * this.applyDeleteSet(decoder)
+    }
+
     /*
      * Get the plain untransformed operations from the database.
      * You can apply these operations using .applyOperationsUntransformed(ops)

@@ -1,4 +1,5 @@
 import extendConnector from './Connector.js'
+import extendPersistence from './Persistence.js'
 import extendDatabase from './Database.js'
 import extendTransaction from './Transaction.js'
 import extendStruct from './Struct.js'
@@ -7,6 +8,7 @@ import debug from 'debug'
 import { formatYjsMessage, formatYjsMessageType } from './MessageHandler.js'
 
 extendConnector(Y)
+extendPersistence(Y)
 extendDatabase(Y)
 extendTransaction(Y)
 extendStruct(Y)
@@ -159,6 +161,11 @@ class YConfig extends Y.utils.NamedEventHandler {
     this.options = opts
     this.db = new Y[opts.db.name](this, opts.db)
     this.connector = new Y[opts.connector.name](this, opts.connector)
+    if (opts.persistence != null) {
+      this.persistence = new Y[opts.persistence.name](this, opts.persistence)
+    } else {
+      this.persistence = null
+    }
     this.connected = true
   }
   init (callback) {
@@ -188,9 +195,15 @@ class YConfig extends Y.utils.NamedEventHandler {
         }
         share[propertyname] = yield * this.store.initType.call(this, id, args)
       }
-      this.store.whenTransactionsFinished()
-        .then(callback)
     })
+    if (this.persistence != null) {
+      this.persistence.retrieveContent()
+        .then(() => this.db.whenTransactionsFinished())
+        .then(callback)
+    } else {
+      this.db.whenTransactionsFinished()
+        .then(callback)
+    }
   }
   isConnected () {
     return this.connector.isSynced
