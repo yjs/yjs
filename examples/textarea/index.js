@@ -2,7 +2,6 @@
 
 // eslint-disable-next-line
 let search = new URLSearchParams(location.search)
-let url = search.get('url')
 
 // initialize a shared object. This function call returns a promise!
 Y({
