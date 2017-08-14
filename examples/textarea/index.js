@@ -12,17 +12,20 @@ Y({
   connector: {
     name: 'websockets-client',
     room: 'Textarea-example',
-    url: url || 'http://127.0.0.1:1234'
+    url: 'https://yjs-v13.herokuapp.com/'
   },
   sourceDir: '/bower_components',
   share: {
     textarea: 'Text', // y.share.textarea is of type Y.Text
     test: 'Array'
-  }
+  },
+  timeout: 5000 // reject if no connection was established within 5 seconds
 }).then(function (y) {
   window.yTextarea = y
 
   // bind the textarea to a shared text element
   y.share.textarea.bind(document.getElementById('textfield'))
   // thats it..
+}).catch(() => {
+  console.log('Something went wrong while creating the instance..')
 })
