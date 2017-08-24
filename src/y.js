@@ -139,10 +139,20 @@ export default function Y (opts/* :YOptions */) /* :Promise<YConfig> */ {
       opts.share = Y.utils.copyObject(opts.share)
       Y.requestModules(modules).then(function () {
         var yconfig = new YConfig(opts)
+        let resolved = false
+        if (opts.timeout != null && opts.timeout >= 0) {
+          setTimeout(function () {
+            if (!resolved) {
+              reject(new Error('Yjs init timeout'))
+              yconfig.destroy()
+            }
+          }, opts.timeout)
+        }
         yconfig.db.whenUserIdSet(function () {
           yconfig.init(function () {
+            resolved = true
             resolve(yconfig)
-          })
+          }, reject)
         })
       }).catch(reject)
     }
