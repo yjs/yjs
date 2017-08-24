@@ -2,6 +2,10 @@
   "name": "examples",
   "version": "0.0.0",
   "description": "",
+  "scripts": {
+    "dist": "rollup -c",
+    "watch": "rollup -cw"
+  },
   "author": "Kevin Jahns",
   "license": "MIT",
   "dependencies": {

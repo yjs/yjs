@@ -176,23 +176,15 @@ class YConfig extends Y.utils.NamedEventHandler {
       // create shared object
       for (var propertyname in opts.share) {
         var typeConstructor = opts.share[propertyname].split('(')
+        let typeArgs = ''
+        if (typeConstructor.length === 2) {
+          typeArgs = typeConstructor[1].split(')')[0] || ''
+        }
         var typeName = typeConstructor.splice(0, 1)
         var type = Y[typeName]
         var typedef = type.typeDefinition
-        var id = [0xFFFFFF, typedef.struct + '_' + typeName + '_' + propertyname + '_' + typeConstructor]
-        var args = []
-        if (typeConstructor.length === 1) {
-          try {
-            args = JSON.parse('[' + typeConstructor[0].split(')')[0] + ']')
-          } catch (e) {
-            throw new Error('Was not able to parse type definition! (share.' + propertyname + ')')
-          }
-          if (type.typeDefinition.parseArguments == null) {
-            throw new Error(typeName + ' does not expect arguments!')
-          } else {
-            args = typedef.parseArguments(args[0])[1]
-          }
-        }
+        var id = [0xFFFFFF, typedef.struct + '_' + typeName + '_' + propertyname + '_' + typeArgs]
+        let args = Y.utils.parseTypeDefinition(type, typeArgs)
         share[propertyname] = yield * this.store.initType.call(this, id, args)
       }
     })

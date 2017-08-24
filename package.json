@@ -10,6 +10,7 @@
     "debug": "concurrently 'rollup -wc rollup.test.js' 'cutest-serve y.test.js -o'",
     "lint": "standard",
     "dist": "rollup -c rollup.browser.js; rollup -c rollup.node.js",
+    "watch": "concurrently 'rollup -wc rollup.browser.js' 'rollup -wc rollup.node.js'",
     "postversion": "npm run dist",
     "postpublish": "tag-dist-files --overwrite-existing-tag"
   },

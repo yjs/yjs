@@ -163,30 +163,6 @@ test('encode/decode List operations', async function binList (t) {
     id: [100, 33],
     type: 'Array'
   })
-
-  t.log('info is an object')
-  testEncoding(t, writeList, readList, {
-    struct: 'List',
-    id: [100, 33],
-    type: 'Array',
-    info: { prop: 'yay' }
-  })
-
-  t.log('info is a string')
-  testEncoding(t, writeList, readList, {
-    struct: 'List',
-    id: [100, 33],
-    type: 'Array',
-    info: 'hi'
-  })
-
-  t.log('info is a number')
-  testEncoding(t, writeList, readList, {
-    struct: 'List',
-    id: [100, 33],
-    type: 'Array',
-    info: 400
-  })
 })
 
 const writeMap = Y.Struct.Map.binaryEncode
@@ -198,32 +174,5 @@ test('encode/decode Map operations', async function binMap (t) {
     id: [100, 33],
     type: 'Map',
     map: {}
-  })
-
-  t.log('info is an object')
-  testEncoding(t, writeMap, readMap, {
-    struct: 'Map',
-    id: [100, 33],
-    type: 'Map',
-    info: { prop: 'yay' },
-    map: {}
-  })
-
-  t.log('info is a string')
-  testEncoding(t, writeMap, readMap, {
-    struct: 'Map',
-    id: [100, 33],
-    type: 'Map',
-    map: {},
-    info: 'hi'
-  })
-
-  t.log('info is a number')
-  testEncoding(t, writeMap, readMap, {
-    struct: 'Map',
-    id: [100, 33],
-    type: 'Map',
-    map: {},
-    info: 400
   })
 })

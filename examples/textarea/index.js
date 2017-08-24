@@ -12,12 +12,12 @@ Y({
   connector: {
     name: 'websockets-client',
     room: 'Textarea-example',
-    url: url || 'http://127.0.0.1:1234'
+    // url: '//localhost:1234',
+    url: 'https://yjs-v13.herokuapp.com/',
+    // options: { transports: ['websocket'], upgrade: false }
   },
-  sourceDir: '/bower_components',
   share: {
-    textarea: 'Text', // y.share.textarea is of type Y.Text
-    test: 'Array'
+    textarea: 'Text'
   }
 }).then(function (y) {
   window.yTextarea = y

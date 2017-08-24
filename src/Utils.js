@@ -840,4 +840,17 @@ export default function Utils (Y) {
     }
   }
   Y.utils.generateUserId = generateUserId
+
+  Y.utils.parseTypeDefinition = function parseTypeDefinition (type, typeArgs) {
+    var args = []
+    try {
+      args = JSON.parse('[' + typeArgs + ']')
+    } catch (e) {
+      throw new Error('Was not able to parse type definition!')
+    }
+    if (type.typeDefinition.parseArguments != null) {
+      args = type.typeDefinition.parseArguments(args[0])[1]
+    }
+    return args
+  }
 }

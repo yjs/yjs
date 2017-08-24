@@ -588,7 +588,7 @@ export default function extendDatabase (Y /* :any */) {
     createType (typedefinition, id) {
       var structname = typedefinition[0].struct
       id = id || this.getNextOpId(1)
-      var op = Y.Struct[structname].create(id)
+      var op = Y.Struct[structname].create(id, typedefinition[1])
       op.type = typedefinition[0].name
 
       this.requestTransaction(function * () {

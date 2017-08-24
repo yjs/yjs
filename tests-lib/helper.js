@@ -3,14 +3,16 @@ import _Y from '../../yjs/src/y.js'
 
 import yMemory from '../../y-memory/src/y-memory.js'
 import yArray from '../../y-array/src/y-array.js'
+import yText from '../../y-text/src/Text.js'
 import yMap from '../../y-map/src/Map.js'
+import yXml from '../../y-xml/src/y-xml.js'
 import yTest from './test-connector.js'
 
 import Chance from 'chance'
 
 export let Y = _Y
 
-Y.extend(yMemory, yArray, yMap, yTest)
+Y.extend(yMemory, yArray, yText, yMap, yTest, yXml)
 
 export var database = { name: 'memory' }
 export var connector = { name: 'test', url: 'http://localhost:1234' }
@@ -47,6 +49,31 @@ export async function garbageCollectUsers (t, users) {
   await Promise.all(users.map(u => u.db.emptyGarbageCollector()))
 }
 
+export function attrsToObject (attrs) {
+  let obj = {}
+  for (var i = 0; i < attrs.length; i++) {
+    let attr = attrs[i]
+    obj[attr.name] = attr.value
+  }
+  return obj
+}
+
+export function domToJson (dom) {
+  if (dom.nodeType === document.TEXT_NODE) {
+    return dom.textContent
+  } else if (dom.nodeType === document.ELEMENT_NODE) {
+    let attributes = attrsToObject(dom.attributes)
+    let children = Array.from(dom.childNodes.values()).map(domToJson)
+    return {
+      name: dom.nodeName,
+      children: children,
+      attributes: attributes
+    }
+  } else {
+    throw new Error('Unsupported node type')
+  }
+}
+
 /*
  * 1. reconnect and flush all
  * 2. user 0 gc
@@ -73,6 +100,7 @@ export async function compareUsers (t, users) {
   }
   var userMapOneValues = users.map(u => u.share.map.get('one')).map(valueToComparable)
   var userMapTwoValues = users.map(u => u.share.map.get('two')).map(valueToComparable)
+  var userXmlValues = users.map(u => u.share.xml.getDom()).map(domToJson)
 
   await users[0].db.garbageCollect()
   await users[0].db.garbageCollect()
@@ -133,6 +161,7 @@ export async function compareUsers (t, users) {
       t.compare(userArrayValues[i], userArrayValues[i + 1], 'array types')
       t.compare(userMapOneValues[i], userMapOneValues[i + 1], 'map types (propery "one")')
       t.compare(userMapTwoValues[i], userMapTwoValues[i + 1], 'map types (propery "two")')
+      t.compare(userXmlValues[i], userXmlValues[i + 1], 'xml types')
       t.compare(data[i].os, data[i + 1].os, 'os')
       t.compare(data[i].ds, data[i + 1].ds, 'ds')
       t.compare(data[i].ss, data[i + 1].ss, 'ss')
@@ -147,7 +176,7 @@ export async function initArrays (t, opts) {
   var result = {
     users: []
   }
-  var share = Object.assign({ flushHelper: 'Map', array: 'Array', map: 'Map' }, opts.share)
+  var share = Object.assign({ flushHelper: 'Map', array: 'Array', map: 'Map', xml: 'Xml("div")' }, opts.share)
   var chance = opts.chance || new Chance(t.getSeed() * 1000000000)
   var conn = Object.assign({ room: 'debugging_' + t.name, generateUserId: false, testContext: t, chance }, connector)
   for (let i = 0; i < opts.users; i++) {

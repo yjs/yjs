@@ -863,7 +863,12 @@ export default function extendTransaction (Y) {
         var comp = id[1].split('_')
         if (comp.length > 1) {
           var struct = comp[0]
-          var op = Y.Struct[struct].create(id)
+          let type = Y[comp[1]]
+          let args = null
+          if (type != null) {
+            args = Y.utils.parseTypeDefinition(type, comp[3])
+          }
+          var op = Y.Struct[struct].create(id, args)
           op.type = comp[1]
           yield * this.setOperation(op)
           return op
