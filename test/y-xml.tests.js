@@ -1,5 +1,5 @@
-import { wait, initArrays, compareUsers, Y, flushAll, garbageCollectUsers, applyRandomTests } from '../../yjs/tests-lib/helper.js'
-import { test, proxyConsole } from 'cutest'
+import { wait, initArrays, compareUsers, Y, flushAll, applyRandomTests } from '../../yjs/tests-lib/helper.js'
+import { test } from 'cutest'
 
 test('set property', async function xml0 (t) {
   var { users, xml0, xml1 } = await initArrays(t, { users: 2 })
