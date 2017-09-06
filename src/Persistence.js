@@ -8,9 +8,11 @@ export default function extendPersistence (Y) {
       this.saveOperationsBuffer = []
       this.log = Y.debug('y:persistence')
     }
+
     saveToMessageQueue (binary) {
       this.log('Room %s: Save message to message queue', this.y.options.connector.room)
     }
+
     saveOperations (ops) {
       ops = ops.map(function (op) {
         return Y.Struct[op.struct].encode(op)
@@ -39,5 +41,6 @@ export default function extendPersistence (Y) {
       }
     }
   }
+
   Y.AbstractPersistence = AbstractPersistence
 }

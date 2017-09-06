@@ -4,7 +4,7 @@ import _Y from '../../yjs/src/y.js'
 import yMemory from '../../y-memory/src/y-memory.js'
 import yArray from '../../y-array/src/y-array.js'
 import yText from '../../y-text/src/Text.js'
-import yMap from '../../y-map/src/Map.js'
+import yMap from '../../y-map/src/y-map.js'
 import yXml from '../../y-xml/src/y-xml.js'
 import yTest from './test-connector.js'
 
@@ -17,9 +17,9 @@ Y.extend(yMemory, yArray, yText, yMap, yTest, yXml)
 export var database = { name: 'memory' }
 export var connector = { name: 'test', url: 'http://localhost:1234' }
 
-function * getStateSet () {
+function getStateSet () {
   var ss = {}
-  yield * this.ss.iterate(this, null, null, function * (n) {
+  this.ss.iterate(this, null, null, function (n) {
     var user = n.id[0]
     var clock = n.clock
     ss[user] = clock
@@ -27,9 +27,9 @@ function * getStateSet () {
   return ss
 }
 
-function * getDeleteSet () {
+function getDeleteSet () {
   var ds = {}
-  yield * this.ds.iterate(this, null, null, function * (n) {
+  this.ds.iterate(this, null, null, function (n) {
     var user = n.id[0]
     var counter = n.id[1]
     var len = n.len
@@ -126,9 +126,9 @@ export async function compareUsers (t, users) {
   let filterDeletedOps = users.every(u => u.db.gc === false)
   var data = await Promise.all(users.map(async (u) => {
     var data = {}
-    u.db.requestTransaction(function * () {
+    u.db.requestTransaction(function () {
       let ops = []
-      yield * this.os.iterate(this, null, null, function * (op) {
+      this.os.iterate(this, null, null, function (op) {
         ops.push(Y.Struct[op.struct].encode(op))
       })
 
@@ -142,7 +142,7 @@ export async function compareUsers (t, users) {
           as they might have been split up differently..
          */
         if (filterDeletedOps) {
-          let opIsDeleted = yield * this.isDeleted(op.id)
+          let opIsDeleted = this.isDeleted(op.id)
           if (!opIsDeleted) {
             data.os[JSON.stringify(op.id)] = op
           }
@@ -150,8 +150,8 @@ export async function compareUsers (t, users) {
           data.os[JSON.stringify(op.id)] = op
         }
       }
-      data.ds = yield * getDeleteSet.apply(this)
-      data.ss = yield * getStateSet.apply(this)
+      data.ds = getDeleteSet.apply(this)
+      data.ss = getStateSet.apply(this)
     })
     await u.db.whenTransactionsFinished()
     return data

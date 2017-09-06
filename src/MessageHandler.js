@@ -58,7 +58,7 @@ export function computeMessageUpdate (decoder, encoder, conn) {
 }
 
 export function sendSyncStep1 (conn, syncUser) {
-  conn.y.db.requestTransaction(function * () {
+  conn.y.db.requestTransaction(function () {
     let encoder = new BinaryEncoder()
     encoder.writeVarString(conn.opts.room || '')
     encoder.writeVarString('sync step 1')
@@ -66,7 +66,7 @@ export function sendSyncStep1 (conn, syncUser) {
     encoder.writeVarUint(conn.protocolVersion)
     let preferUntransformed = conn.preferUntransformed && this.os.length === 0 // TODO: length may not be defined
     encoder.writeUint8(preferUntransformed ? 1 : 0)
-    yield * this.writeStateSet(encoder)
+    this.writeStateSet(encoder)
     conn.send(syncUser, encoder.createBuffer())
   })
 }
@@ -99,19 +99,19 @@ export function computeMessageSyncStep1 (decoder, encoder, conn, senderConn, sen
 
   return conn.y.db.whenTransactionsFinished().then(() => {
     // send sync step 2
-    conn.y.db.requestTransaction(function * () {
+    conn.y.db.requestTransaction(function () {
       encoder.writeVarString('sync step 2')
       encoder.writeVarString(conn.authInfo || '')
 
       if (preferUntransformed) {
         encoder.writeUint8(1)
-        yield * this.writeOperationsUntransformed(encoder)
+        this.writeOperationsUntransformed(encoder)
       } else {
         encoder.writeUint8(0)
-        yield * this.writeOperations(encoder, decoder)
+        this.writeOperations(encoder, decoder)
       }
 
-      yield * this.writeDeleteSet(encoder)
+      this.writeDeleteSet(encoder)
       conn.send(senderConn.uid, encoder.createBuffer())
       senderConn.receivedSyncStep2 = true
     })
@@ -174,17 +174,17 @@ export function computeMessageSyncStep2 (decoder, encoder, conn, senderConn, sen
   let defer = senderConn.syncStep2
 
   // apply operations first
-  db.requestTransaction(function * () {
+  db.requestTransaction(function () {
     let osUntransformed = decoder.readUint8()
     if (osUntransformed === 1) {
-      yield * this.applyOperationsUntransformed(decoder)
+      this.applyOperationsUntransformed(decoder)
     } else {
       this.store.applyOperations(decoder)
     }
   })
   // then apply ds
-  db.requestTransaction(function * () {
-    yield * this.applyDeleteSet(decoder)
+  db.requestTransaction(function () {
+    this.applyDeleteSet(decoder)
   })
   return db.whenTransactionsFinished().then(() => {
     conn._setSyncedWith(sender)

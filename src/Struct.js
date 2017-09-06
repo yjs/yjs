@@ -73,8 +73,8 @@ export default function extendStruct (Y) {
     requiredOps: function (op) {
       return [] // [op.target]
     },
-    execute: function * (op) {
-      return yield * this.deleteOperation(op.target, op.length || 1)
+    execute: function (op) {
+      return this.deleteOperation(op.target, op.length || 1)
     }
   }
 
@@ -216,18 +216,18 @@ export default function extendStruct (Y) {
       }
       return ids
     },
-    getDistanceToOrigin: function * (op) {
+    getDistanceToOrigin: function (op) {
       if (op.left == null) {
         return 0
       } else {
         var d = 0
-        var o = yield * this.getInsertion(op.left)
+        var o = this.getInsertion(op.left)
         while (!Y.utils.matchesId(o, op.origin)) {
           d++
           if (o.left == null) {
             break
           } else {
-            o = yield * this.getInsertion(o.left)
+            o = this.getInsertion(o.left)
           }
         }
         return d
@@ -248,7 +248,7 @@ export default function extendStruct (Y) {
     # case 3: $origin > $o.origin
     #         $this insert_position is to the left of $o (forever!)
     */
-    execute: function * (op) {
+    execute: function (op) {
       var i // loop counter
 
       // during this function some ops may get split into two pieces (e.g. with getInsertionCleanEnd)
@@ -258,17 +258,17 @@ export default function extendStruct (Y) {
       if (op.origin != null) { // TODO: !== instead of !=
         // we save in origin that op originates in it
         // we need that later when we eventually garbage collect origin (see transaction)
-        var origin = yield * this.getInsertionCleanEnd(op.origin)
+        var origin = this.getInsertionCleanEnd(op.origin)
         if (origin.originOf == null) {
           origin.originOf = []
         }
         origin.originOf.push(op.id)
-        yield * this.setOperation(origin)
+        this.setOperation(origin)
         if (origin.right != null) {
           tryToRemergeLater.push(origin.right)
         }
       }
-      var distanceToOrigin = i = yield * Struct.Insert.getDistanceToOrigin.call(this, op) // most cases: 0 (starts from 0)
+      var distanceToOrigin = i = Struct.Insert.getDistanceToOrigin.call(this, op) // most cases: 0 (starts from 0)
 
       // now we begin to insert op in the list of insertions..
       var o
@@ -277,29 +277,29 @@ export default function extendStruct (Y) {
 
       // find o. o is the first conflicting operation
       if (op.left != null) {
-        o = yield * this.getInsertionCleanEnd(op.left)
+        o = this.getInsertionCleanEnd(op.left)
         if (!Y.utils.compareIds(op.left, op.origin) && o.right != null) {
           // only if not added previously
           tryToRemergeLater.push(o.right)
         }
-        o = (o.right == null) ? null : yield * this.getOperation(o.right)
+        o = (o.right == null) ? null : this.getOperation(o.right)
       } else { // left == null
-        parent = yield * this.getOperation(op.parent)
+        parent = this.getOperation(op.parent)
         let startId = op.parentSub ? parent.map[op.parentSub] : parent.start
-        start = startId == null ? null : yield * this.getOperation(startId)
+        start = startId == null ? null : this.getOperation(startId)
         o = start
       }
 
       // make sure to split op.right if necessary (also add to tryCombineWithLeft)
       if (op.right != null) {
         tryToRemergeLater.push(op.right)
-        yield * this.getInsertionCleanStart(op.right)
+        this.getInsertionCleanStart(op.right)
       }
 
       // handle conflicts
       while (true) {
         if (o != null && !Y.utils.compareIds(o.id, op.right)) {
-          var oOriginDistance = yield * Struct.Insert.getDistanceToOrigin.call(this, o)
+          var oOriginDistance = Struct.Insert.getDistanceToOrigin.call(this, o)
           if (oOriginDistance === i) {
             // case 1
             if (o.id[0] < op.id[0]) {
@@ -317,7 +317,7 @@ export default function extendStruct (Y) {
           }
           i++
           if (o.right != null) {
-            o = yield * this.getInsertion(o.right)
+            o = this.getInsertion(o.right)
           } else {
             o = null
           }
@@ -330,17 +330,17 @@ export default function extendStruct (Y) {
       var left = null
       var right = null
       if (parent == null) {
-        parent = yield * this.getOperation(op.parent)
+        parent = this.getOperation(op.parent)
       }
 
       // reconnect left and set right of op
       if (op.left != null) {
-        left = yield * this.getInsertion(op.left)
+        left = this.getInsertion(op.left)
         // link left
         op.right = left.right
         left.right = op.id
 
-        yield * this.setOperation(left)
+        this.setOperation(left)
       } else {
         // set op.right from parent, if necessary
         op.right = op.parentSub ? parent.map[op.parentSub] || null : parent.start
@@ -348,33 +348,33 @@ export default function extendStruct (Y) {
       // reconnect right
       if (op.right != null) {
         // TODO: wanna connect right too?
-        right = yield * this.getOperation(op.right)
+        right = this.getOperation(op.right)
         right.left = Y.utils.getLastId(op)
 
         // if right exists, and it is supposed to be gc'd. Remove it from the gc
         if (right.gc != null) {
           if (right.content != null && right.content.length > 1) {
-            right = yield * this.getInsertionCleanEnd(right.id)
+            right = this.getInsertionCleanEnd(right.id)
           }
           this.store.removeFromGarbageCollector(right)
         }
-        yield * this.setOperation(right)
+        this.setOperation(right)
       }
 
       // update parents .map/start/end properties
       if (op.parentSub != null) {
         if (left == null) {
           parent.map[op.parentSub] = op.id
-          yield * this.setOperation(parent)
+          this.setOperation(parent)
         }
         // is a child of a map struct.
         // Then also make sure that only the most left element is not deleted
         // We do not call the type in this case (this is what the third parameter is for)
         if (op.right != null) {
-          yield * this.deleteOperation(op.right, 1, true)
+          this.deleteOperation(op.right, 1, true)
         }
         if (op.left != null) {
-          yield * this.deleteOperation(op.id, 1, true)
+          this.deleteOperation(op.id, 1, true)
         }
       } else {
         if (right == null || left == null) {
@@ -384,14 +384,14 @@ export default function extendStruct (Y) {
           if (left == null) {
             parent.start = op.id
           }
-          yield * this.setOperation(parent)
+          this.setOperation(parent)
         }
       }
 
       // try to merge original op.left and op.origin
       for (i = 0; i < tryToRemergeLater.length; i++) {
-        var m = yield * this.getOperation(tryToRemergeLater[i])
-        yield * this.tryCombineWithLeft(m)
+        var m = this.getOperation(tryToRemergeLater[i])
+        this.tryCombineWithLeft(m)
       }
     }
   }
@@ -451,16 +451,16 @@ export default function extendStruct (Y) {
       */
       return []
     },
-    execute: function * (op) {
+    execute: function (op) {
       op.start = null
       op.end = null
     },
-    ref: function * (op, pos) {
+    ref: function (op, pos) {
       if (op.start == null) {
         return null
       }
       var res = null
-      var o = yield * this.getOperation(op.start)
+      var o = this.getOperation(op.start)
 
       while (true) {
         if (!o.deleted) {
@@ -468,18 +468,18 @@ export default function extendStruct (Y) {
           pos--
         }
         if (pos >= 0 && o.right != null) {
-          o = yield * this.getOperation(o.right)
+          o = this.getOperation(o.right)
         } else {
           break
         }
       }
       return res
     },
-    map: function * (o, f) {
+    map: function (o, f) {
       o = o.start
       var res = []
       while (o != null) { // TODO: change to != (at least some convention)
-        var operation = yield * this.getOperation(o)
+        var operation = this.getOperation(o)
         if (!operation.deleted) {
           res.push(f(operation))
         }
@@ -532,23 +532,23 @@ export default function extendStruct (Y) {
     requiredOps: function () {
       return []
     },
-    execute: function * (op) {
+    execute: function (op) {
       op.start = null
       op.end = null
     },
     /*
       Get a property by name
     */
-    get: function * (op, name) {
+    get: function (op, name) {
       var oid = op.map[name]
       if (oid != null) {
-        var res = yield * this.getOperation(oid)
+        var res = this.getOperation(oid)
         if (res == null || res.deleted) {
           return void 0
         } else if (res.opContent == null) {
           return res.content[0]
         } else {
-          return yield * this.getType(res.opContent)
+          return this.getType(res.opContent)
         }
       }
     }
@@ -608,7 +608,7 @@ export default function extendStruct (Y) {
     requiredOps: function () {
       return []
     },
-    execute: function * () {},
+    execute: function () {},
     ref: Struct.List.ref,
     map: Struct.List.map,
     /*

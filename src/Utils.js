@@ -315,7 +315,7 @@ export default function Utils (Y) {
       this.awaiting++
       ops.map(Y.utils.copyOperation).forEach(this.onevent)
     }
-    * awaitOps (transaction, f, args) {
+    awaitOps (transaction, f, args) {
       function notSoSmartSort (array) {
         // this function sorts insertions in a executable order
         var result = []
@@ -339,7 +339,7 @@ export default function Utils (Y) {
       }
       var before = this.waiting.length
       // somehow create new operations
-      yield * f.apply(transaction, args)
+      f.apply(transaction, args)
       // remove all appended ops / awaited ops
       this.waiting.splice(before)
       if (this.awaiting > 0) this.awaiting--
@@ -349,7 +349,7 @@ export default function Utils (Y) {
         for (let i = 0; i < this.waiting.length; i++) {
           var o = this.waiting[i]
           if (o.struct === 'Insert') {
-            var _o = yield * transaction.getInsertion(o.id)
+            var _o = transaction.getInsertion(o.id)
             if (_o.parentSub != null && _o.left != null) {
               // if o is an insertion of a map struc (parentSub is defined), then it shouldn't be necessary to compute left
               this.waiting.splice(i, 1)
@@ -361,10 +361,10 @@ export default function Utils (Y) {
               o.left = null
             } else {
               // find next undeleted op
-              var left = yield * transaction.getInsertion(_o.left)
+              var left = transaction.getInsertion(_o.left)
               while (left.deleted != null) {
                 if (left.left != null) {
-                  left = yield * transaction.getInsertion(left.left)
+                  left = transaction.getInsertion(left.left)
                 } else {
                   left = null
                   break
@@ -690,7 +690,7 @@ export default function Utils (Y) {
         this.writeBuffer = createEmptyOpsArray(5)
         this.readBuffer = createEmptyOpsArray(10)
       }
-      * find (id, noSuperCall) {
+      find (id, noSuperCall) {
         var i, r
         for (i = this.readBuffer.length - 1; i >= 0; i--) {
           r = this.readBuffer[i]
@@ -716,7 +716,7 @@ export default function Utils (Y) {
         if (i < 0 && noSuperCall === undefined) {
           // did not reach break in last loop
           // read id and put it to the end of readBuffer
-          o = yield * super.find(id)
+          o = super.find(id)
         }
         if (o != null) {
           for (i = 0; i < this.readBuffer.length - 1; i++) {
@@ -726,7 +726,7 @@ export default function Utils (Y) {
         }
         return o
       }
-      * put (o) {
+      put (o) {
         var id = o.id
         var i, r // helper variables
         for (i = this.writeBuffer.length - 1; i >= 0; i--) {
@@ -746,7 +746,7 @@ export default function Utils (Y) {
           // write writeBuffer[0]
           var write = this.writeBuffer[0]
           if (write.id[0] !== null) {
-            yield * super.put(write)
+            super.put(write)
           }
           // put o to the end of writeBuffer
           for (i = 0; i < this.writeBuffer.length - 1; i++) {
@@ -766,7 +766,7 @@ export default function Utils (Y) {
         }
         this.readBuffer[this.readBuffer.length - 1] = o
       }
-      * delete (id) {
+      delete (id) {
         var i, r
         for (i = 0; i < this.readBuffer.length; i++) {
           r = this.readBuffer[i]
@@ -776,44 +776,44 @@ export default function Utils (Y) {
             }
           }
         }
-        yield * this.flush()
-        yield * super.delete(id)
+        this.flush()
+        super.delete(id)
       }
-      * findWithLowerBound (id) {
-        var o = yield * this.find(id, true)
+      findWithLowerBound (id) {
+        var o = this.find(id, true)
         if (o != null) {
           return o
         } else {
-          yield * this.flush()
-          return yield * super.findWithLowerBound.apply(this, arguments)
+          this.flush()
+          return super.findWithLowerBound.apply(this, arguments)
         }
       }
-      * findWithUpperBound (id) {
-        var o = yield * this.find(id, true)
+      findWithUpperBound (id) {
+        var o = this.find(id, true)
         if (o != null) {
           return o
         } else {
-          yield * this.flush()
-          return yield * super.findWithUpperBound.apply(this, arguments)
+          this.flush()
+          return super.findWithUpperBound.apply(this, arguments)
         }
       }
-      * findNext () {
-        yield * this.flush()
-        return yield * super.findNext.apply(this, arguments)
+      findNext () {
+        this.flush()
+        return super.findNext.apply(this, arguments)
       }
-      * findPrev () {
-        yield * this.flush()
-        return yield * super.findPrev.apply(this, arguments)
+      findPrev () {
+        this.flush()
+        return super.findPrev.apply(this, arguments)
       }
-      * iterate () {
-        yield * this.flush()
-        yield * super.iterate.apply(this, arguments)
+      iterate () {
+        this.flush()
+        super.iterate.apply(this, arguments)
       }
-      * flush () {
+      flush () {
         for (var i = 0; i < this.writeBuffer.length; i++) {
           var write = this.writeBuffer[i]
           if (write.id[0] !== null) {
-            yield * super.put(write)
+            super.put(write)
             this.writeBuffer[i] = {
               id: [null, null]
             }

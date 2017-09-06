@@ -161,7 +161,9 @@ test('encode/decode List operations', async function binList (t) {
   testEncoding(t, writeList, readList, {
     struct: 'List',
     id: [100, 33],
-    type: 'Array'
+    type: 'Array',
+    start: null,
+    end: null
   })
 })
 

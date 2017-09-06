@@ -105,6 +105,7 @@ export default function extendConnector (Y/* :any */) {
         }
       }
     }
+
     userJoined (user, role, auth) {
       if (role == null) {
         throw new Error('You must specify the role of the joined user!')
@@ -133,6 +134,7 @@ export default function extendConnector (Y/* :any */) {
       }
       this._syncWithUser(user)
     }
+
     // Execute a function _when_ we are connected.
     // If not connected, wait until connected
     whenSynced (f) {
@@ -142,18 +144,20 @@ export default function extendConnector (Y/* :any */) {
         this.whenSyncedListeners.push(f)
       }
     }
+
     _syncWithUser (userid) {
       if (this.role === 'slave') {
         return // "The current sync has not finished or this is controlled by a master!"
       }
       sendSyncStep1(this, userid)
     }
+
     _fireIsSyncedListeners () {
       this.y.db.whenTransactionsFinished().then(() => {
         if (!this.isSynced) {
           this.isSynced = true
           // It is safer to remove this!
-          // TODO: remove: yield * this.garbageCollectAfterSync()
+          // TODO: remove: this.garbageCollectAfterSync()
           // call whensynced listeners
           for (var f of this.whenSyncedListeners) {
             f()
@@ -162,6 +166,7 @@ export default function extendConnector (Y/* :any */) {
         }
       })
     }
+
     send (uid, buffer) {
       if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
         throw new Error('Expected Message to be an ArrayBuffer or Uint8Array - please don\'t use this method to send custom messages')
@@ -169,6 +174,7 @@ export default function extendConnector (Y/* :any */) {
       this.log('%s: Send \'%y\' to %s', this.userId, buffer, uid)
       this.logMessage('Message: %Y', buffer)
     }
+
     broadcast (buffer) {
       if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
         throw new Error('Expected Message to be an ArrayBuffer or Uint8Array - please don\'t use this method to send custom messages')
@@ -176,6 +182,7 @@ export default function extendConnector (Y/* :any */) {
       this.log('%s: Broadcast \'%y\'', this.userId, buffer)
       this.logMessage('Message: %Y', buffer)
     }
+
     /*
       Buffer operations, and broadcast them when ready.
     */
@@ -207,6 +214,7 @@ export default function extendConnector (Y/* :any */) {
         this.broadcastOpBuffer = this.broadcastOpBuffer.concat(ops)
       }
     }
+
     /*
       You received a raw message, and you know that it is intended for Yjs. Then call this function.
     */
@@ -224,14 +232,11 @@ export default function extendConnector (Y/* :any */) {
       encoder.writeVarString(roomname)
       let messageType = decoder.readVarString()
       let senderConn = this.connections.get(sender)
-
       this.log('%s: Receive \'%s\' from %s', this.userId, messageType, sender)
       this.logMessage('Message: %Y', buffer)
-
       if (senderConn == null && !skipAuth) {
         throw new Error('Received message from unknown peer!')
       }
-
       if (messageType === 'sync step 1' || messageType === 'sync step 2') {
         let auth = decoder.readVarUint()
         if (senderConn.auth == null) {
@@ -282,97 +287,6 @@ export default function extendConnector (Y/* :any */) {
       let conns = Array.from(this.connections.values())
       if (conns.length > 0 && conns.every(u => u.isSynced)) {
         this._fireIsSyncedListeners()
-      }
-    }
-
-    /*
-      Currently, the HB encodes operations as JSON. For the moment I want to keep it
-      that way. Maybe we support encoding in the HB as XML in the future, but for now I don't want
-      too much overhead. Y is very likely to get changed a lot in the future
-
-      Because we don't want to encode JSON as string (with character escaping, wich makes it pretty much unreadable)
-      we encode the JSON as XML.
-
-      When the HB support encoding as XML, the format should look pretty much like this.
-
-      does not support primitive values as array elements
-      expects an ltx (less than xml) object
-    */
-    parseMessageFromXml (m/* :any */) {
-      function parseArray (node) {
-        for (var n of node.children) {
-          if (n.getAttribute('isArray') === 'true') {
-            return parseArray(n)
-          } else {
-            return parseObject(n)
-          }
-        }
-      }
-      function parseObject (node/* :any */) {
-        var json = {}
-        for (var attrName in node.attrs) {
-          var value = node.attrs[attrName]
-          var int = parseInt(value, 10)
-          if (isNaN(int) || ('' + int) !== value) {
-            json[attrName] = value
-          } else {
-            json[attrName] = int
-          }
-        }
-        for (var n/* :any */ in node.children) {
-          var name = n.name
-          if (n.getAttribute('isArray') === 'true') {
-            json[name] = parseArray(n)
-          } else {
-            json[name] = parseObject(n)
-          }
-        }
-        return json
-      }
-      parseObject(m)
-    }
-    /*
-      encode message in xml
-      we use string because Strophe only accepts an "xml-string"..
-      So {a:4,b:{c:5}} will look like
-      <y a="4">
-        <b c="5"></b>
-      </y>
-      m - ltx element
-      json - Object
-    */
-    encodeMessageToXml (msg, obj) {
-      // attributes is optional
-      function encodeObject (m, json) {
-        for (var name in json) {
-          var value = json[name]
-          if (name == null) {
-            // nop
-          } else if (value.constructor === Object) {
-            encodeObject(m.c(name), value)
-          } else if (value.constructor === Array) {
-            encodeArray(m.c(name), value)
-          } else {
-            m.setAttribute(name, value)
-          }
-        }
-      }
-      function encodeArray (m, array) {
-        m.setAttribute('isArray', 'true')
-        for (var e of array) {
-          if (e.constructor === Object) {
-            encodeObject(m.c('array-element'), e)
-          } else {
-            encodeArray(m.c('array-element'), e)
-          }
-        }
-      }
-      if (obj.constructor === Object) {
-        encodeObject(msg.c('y', { xmlns: 'http://y.ninja/connector-stanza' }), obj)
-      } else if (obj.constructor === Array) {
-        encodeArray(msg.c('y', { xmlns: 'http://y.ninja/connector-stanza' }), obj)
-      } else {
-        throw new Error("I can't encode this json!")
       }
     }
   }

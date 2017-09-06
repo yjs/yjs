@@ -85,11 +85,11 @@ export default function extendDatabase (Y /* :any */) {
               console.warn('gc should be empty when not synced!')
             }
             return new Promise((resolve) => {
-              os.requestTransaction(function * () {
+              os.requestTransaction(function () {
                 if (os.y.connector != null && os.y.connector.isSynced) {
                   for (var i = 0; i < os.gc2.length; i++) {
                     var oid = os.gc2[i]
-                    yield * this.garbageCollectOperation(oid)
+                    this.garbageCollectOperation(oid)
                   }
                   os.gc2 = os.gc1
                   os.gc1 = []
@@ -197,15 +197,15 @@ export default function extendDatabase (Y /* :any */) {
       this.gc = false
       this.gcTimeout = -1
       return new Promise(function (resolve) {
-        self.requestTransaction(function * () {
+        self.requestTransaction(function () {
           var ungc /* :Array<Struct> */ = self.gc1.concat(self.gc2)
           self.gc1 = []
           self.gc2 = []
           for (var i = 0; i < ungc.length; i++) {
-            var op = yield * this.getOperation(ungc[i])
+            var op = this.getOperation(ungc[i])
             if (op != null) {
               delete op.gc
-              yield * this.setOperation(op)
+              this.setOperation(op)
             }
           }
           resolve()
@@ -224,7 +224,7 @@ export default function extendDatabase (Y /* :any */) {
 
       returns true iff op was added to GC
     */
-    * addToGarbageCollector (op, left) {
+    addToGarbageCollector (op, left) {
       if (
         op.gc == null &&
         op.deleted === true &&
@@ -235,12 +235,12 @@ export default function extendDatabase (Y /* :any */) {
         if (left != null && left.deleted === true) {
           gc = true
         } else if (op.content != null && op.content.length > 1) {
-          op = yield * this.getInsertionCleanStart([op.id[0], op.id[1] + 1])
+          op = this.getInsertionCleanStart([op.id[0], op.id[1] + 1])
           gc = true
         }
         if (gc) {
           op.gc = true
-          yield * this.setOperation(op)
+          this.setOperation(op)
           this.store.queueGarbageCollector(op.id)
           return true
         }
@@ -265,7 +265,7 @@ export default function extendDatabase (Y /* :any */) {
         }
       }
     }
-    * destroy () {
+    destroy () {
       clearTimeout(this.gcInterval)
       this.gcInterval = null
       this.stopRepairCheck()
@@ -274,9 +274,9 @@ export default function extendDatabase (Y /* :any */) {
       if (!this.userIdPromise.inProgress) {
         this.userIdPromise.inProgress = true
         var self = this
-        self.requestTransaction(function * () {
+        self.requestTransaction(function () {
           self.userId = userId
-          var state = yield * this.getState(userId)
+          var state = this.getState(userId)
           self.opClock = state.clock
           self.userIdPromise.resolve(userId)
         })
@@ -355,7 +355,7 @@ export default function extendDatabase (Y /* :any */) {
       this.listenersByIdRequestPending = true
       var store = this
 
-      this.requestTransaction(function * () {
+      this.requestTransaction(function () {
         var exeNow = store.listenersByIdExecuteNow
         store.listenersByIdExecuteNow = []
 
@@ -366,7 +366,7 @@ export default function extendDatabase (Y /* :any */) {
 
         for (let key = 0; key < exeNow.length; key++) {
           let o = exeNow[key].op
-          yield * store.tryExecute.call(this, o)
+          store.tryExecute.call(this, o)
         }
 
         for (var sid in ls) {
@@ -374,9 +374,9 @@ export default function extendDatabase (Y /* :any */) {
           var id = JSON.parse(sid)
           var op
           if (typeof id[1] === 'string') {
-            op = yield * this.getOperation(id)
+            op = this.getOperation(id)
           } else {
-            op = yield * this.getInsertion(id)
+            op = this.getInsertion(id)
           }
           if (op == null) {
             store.listenersById[sid] = l
@@ -385,7 +385,7 @@ export default function extendDatabase (Y /* :any */) {
               let listener = l[i]
               let o = listener.op
               if (--listener.missing === 0) {
-                yield * store.tryExecute.call(this, o)
+                store.tryExecute.call(this, o)
               }
             }
           }
@@ -402,15 +402,15 @@ export default function extendDatabase (Y /* :any */) {
     addOperation: any;
     whenOperationsExist: any;
     */
-    * tryExecute (op) {
-      this.store.addToDebug('yield * this.store.tryExecute.call(this, ', JSON.stringify(op), ')')
+    tryExecute (op) {
+      this.store.addToDebug('this.store.tryExecute.call(this, ', JSON.stringify(op), ')')
       if (op.struct === 'Delete') {
-        yield * Y.Struct.Delete.execute.call(this, op)
+        Y.Struct.Delete.execute.call(this, op)
         // this is now called in Transaction.deleteOperation!
-        // yield * this.store.operationAdded(this, op)
+        // this.store.operationAdded(this, op)
       } else {
         // check if this op was defined
-        var defined = yield * this.getInsertion(op.id)
+        var defined = this.getInsertion(op.id)
         while (defined != null && defined.content != null) {
           // check if this op has a longer content in the case it is defined
           if (defined.id[1] + defined.content.length < op.id[1] + op.content.length) {
@@ -419,23 +419,23 @@ export default function extendDatabase (Y /* :any */) {
             op.id = [op.id[0], op.id[1] + overlapSize]
             op.left = Y.utils.getLastId(defined)
             op.origin = op.left
-            defined = yield * this.getOperation(op.id) // getOperation suffices here
+            defined = this.getOperation(op.id) // getOperation suffices here
           } else {
             break
           }
         }
         if (defined == null) {
           var opid = op.id
-          var isGarbageCollected = yield * this.isGarbageCollected(opid)
+          var isGarbageCollected = this.isGarbageCollected(opid)
           if (!isGarbageCollected) {
             // TODO: reduce number of get / put calls for op ..
-            yield * Y.Struct[op.struct].execute.call(this, op)
-            yield * this.addOperation(op)
-            yield * this.store.operationAdded(this, op)
+            Y.Struct[op.struct].execute.call(this, op)
+            this.addOperation(op)
+            this.store.operationAdded(this, op)
             // operationAdded can change op..
-            op = yield * this.getOperation(opid)
+            op = this.getOperation(opid)
             // if insertion, try to combine with left
-            yield * this.tryCombineWithLeft(op)
+            this.tryCombineWithLeft(op)
           }
         }
       }
@@ -452,15 +452,15 @@ export default function extendDatabase (Y /* :any */) {
      * Always:
      *   * Call type
      */
-    * operationAdded (transaction, op) {
+   operationAdded (transaction, op) {
       if (op.struct === 'Delete') {
         var type = this.initializedTypes[JSON.stringify(op.targetParent)]
         if (type != null) {
-          yield * type._changed(transaction, op)
+          type._changed(transaction, op)
         }
       } else {
         // increase SS
-        yield * transaction.updateState(op.id[0])
+        transaction.updateState(op.id[0])
         var opLen = op.content != null ? op.content.length : 1
         for (let i = 0; i < opLen; i++) {
           // notify whenOperation listeners (by id)
@@ -480,9 +480,9 @@ export default function extendDatabase (Y /* :any */) {
 
         // if parent is deleted, mark as gc'd and return
         if (op.parent != null) {
-          var parentIsDeleted = yield * transaction.isDeleted(op.parent)
+          var parentIsDeleted = transaction.isDeleted(op.parent)
           if (parentIsDeleted) {
-            yield * transaction.deleteList(op.id)
+            transaction.deleteList(op.id)
             return
           }
         }
@@ -490,7 +490,7 @@ export default function extendDatabase (Y /* :any */) {
         // notify parent, if it was instanciated as a custom type
         if (t != null) {
           let o = Y.utils.copyOperation(op)
-          yield * t._changed(transaction, o)
+          t._changed(transaction, o)
         }
         if (!op.deleted) {
           // Delete if DS says this is actually deleted
@@ -499,13 +499,13 @@ export default function extendDatabase (Y /* :any */) {
             // TODO: !! console.log('TODO: change this before commiting')
           for (let i = 0; i < len; i++) {
             var id = [startId[0], startId[1] + i]
-            var opIsDeleted = yield * transaction.isDeleted(id)
+            var opIsDeleted = transaction.isDeleted(id)
             if (opIsDeleted) {
               var delop = {
                 struct: 'Delete',
                 target: id
               }
-              yield * this.tryExecute.call(transaction, delop)
+              this.tryExecute.call(transaction, delop)
             }
           }
         }
@@ -528,6 +528,7 @@ export default function extendDatabase (Y /* :any */) {
         return Promise.resolve()
       }
     }
+
     // Check if there is another transaction request.
     // * the last transaction is always a flush :)
     getNextRequest () {
@@ -542,8 +543,8 @@ export default function extendDatabase (Y /* :any */) {
           return null
         } else {
           this.transactionIsFlushed = true
-          return function * () {
-            yield * this.flush()
+          return function () {
+            this.flush()
           }
         }
       } else {
@@ -570,13 +571,13 @@ export default function extendDatabase (Y /* :any */) {
       Init type. This is called when a remote operation is retrieved, and transformed to a type
       TODO: delete type from store.initializedTypes[id] when corresponding id was deleted!
     */
-    * initType (id, args) {
+    initType (id, args) {
       var sid = JSON.stringify(id)
       var t = this.store.initializedTypes[sid]
       if (t == null) {
-        var op/* :MapStruct | ListStruct */ = yield * this.getOperation(id)
+        var op/* :MapStruct | ListStruct */ = this.getOperation(id)
         if (op != null) {
-          t = yield * Y[op.type].typeDefinition.initType.call(this, this.store, op, args)
+          t = Y[op.type].typeDefinition.initType.call(this, this.store, op, args)
           this.store.initializedTypes[sid] = t
         }
       }
@@ -591,11 +592,11 @@ export default function extendDatabase (Y /* :any */) {
       var op = Y.Struct[structname].create(id, typedefinition[1])
       op.type = typedefinition[0].name
 
-      this.requestTransaction(function * () {
+      this.requestTransaction(function () {
         if (op.id[0] === 0xFFFFFF) {
-          yield * this.setOperation(op)
+          this.setOperation(op)
         } else {
-          yield * this.applyCreatedOperations([op])
+          this.applyCreatedOperations([op])
         }
       })
       var t = Y[op.type].typeDefinition.createType(this, op, typedefinition[1])

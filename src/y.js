@@ -4,6 +4,7 @@ import extendDatabase from './Database.js'
 import extendTransaction from './Transaction.js'
 import extendStruct from './Struct.js'
 import extendUtils from './Utils.js'
+import extendMemory from './y-memory.js'
 import debug from 'debug'
 import { formatYjsMessage, formatYjsMessageType } from './MessageHandler.js'
 
@@ -13,6 +14,7 @@ extendDatabase(Y)
 extendTransaction(Y)
 extendStruct(Y)
 extendUtils(Y)
+extendMemory(Y)
 
 Y.debug = debug
 debug.formatters.Y = formatYjsMessage
@@ -182,7 +184,7 @@ class YConfig extends Y.utils.NamedEventHandler {
     var opts = this.options
     var share = {}
     this.share = share
-    this.db.requestTransaction(function * requestTransaction () {
+    this.db.requestTransaction(function requestTransaction () {
       // create shared object
       for (var propertyname in opts.share) {
         var typeConstructor = opts.share[propertyname].split('(')
@@ -195,7 +197,7 @@ class YConfig extends Y.utils.NamedEventHandler {
         var typedef = type.typeDefinition
         var id = [0xFFFFFF, typedef.struct + '_' + typeName + '_' + propertyname + '_' + typeArgs]
         let args = Y.utils.parseTypeDefinition(type, typeArgs)
-        share[propertyname] = yield * this.store.initType.call(this, id, args)
+        share[propertyname] = this.store.initType.call(this, id, args)
       }
     })
     if (this.persistence != null) {
@@ -250,8 +252,8 @@ class YConfig extends Y.utils.NamedEventHandler {
     return this.db.whenTransactionsFinished().then(function () {
       self.db.destroyTypes()
       // make sure to wait for all transactions before destroying the db
-      self.db.requestTransaction(function * () {
-        yield * self.db.destroy()
+      self.db.requestTransaction(function () {
+        self.db.destroy()
       })
       return self.db.whenTransactionsFinished()
     })

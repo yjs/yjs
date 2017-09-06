@@ -1,4 +1,3 @@
-import inject from 'rollup-plugin-inject'
 import babel from 'rollup-plugin-babel'
 import uglify from 'rollup-plugin-uglify'
 import nodeResolve from 'rollup-plugin-node-resolve'
@@ -16,12 +15,7 @@ export default {
       browser: true
     }),
     commonjs(),
-    babel({
-      runtimeHelpers: true
-    }),
-    inject({
-      regeneratorRuntime: 'regenerator-runtime'
-    }),
+    babel(),
     uglify({
       output: {
         comments: function (node, comment) {
