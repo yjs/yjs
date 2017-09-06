@@ -1,7 +1,6 @@
 
 import _Y from '../../yjs/src/y.js'
 
-import yMemory from '../../y-memory/src/y-memory.js'
 import yArray from '../../y-array/src/y-array.js'
 import yText from '../../y-text/src/Text.js'
 import yMap from '../../y-map/src/y-map.js'
@@ -12,7 +11,7 @@ import Chance from 'chance'
 
 export let Y = _Y
 
-Y.extend(yMemory, yArray, yText, yMap, yTest, yXml)
+Y.extend(yArray, yText, yMap, yTest, yXml)
 
 export var database = { name: 'memory' }
 export var connector = { name: 'test', url: 'http://localhost:1234' }
