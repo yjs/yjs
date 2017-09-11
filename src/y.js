@@ -150,6 +150,9 @@ export default function Y (opts/* :YOptions */) /* :Promise<YConfig> */ {
             }
           }, opts.timeout)
         }
+        if (yconfig.persistence != null) {
+          yconfig.persistence.retrieveContent()
+        }
         yconfig.db.whenUserIdSet(function () {
           yconfig.init(function () {
             resolved = true
@@ -200,14 +203,8 @@ class YConfig extends Y.utils.NamedEventHandler {
         share[propertyname] = this.store.initType.call(this, id, args)
       }
     })
-    if (this.persistence != null) {
-      this.persistence.retrieveContent()
-        .then(() => this.db.whenTransactionsFinished())
-        .then(callback)
-    } else {
-      this.db.whenTransactionsFinished()
-        .then(callback)
-    }
+    this.db.whenTransactionsFinished()
+      .then(callback)
   }
   isConnected () {
     return this.connector.isSynced
