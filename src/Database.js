@@ -452,7 +452,7 @@ export default function extendDatabase (Y /* :any */) {
      * Always:
      *   * Call type
      */
-   operationAdded (transaction, op) {
+    operationAdded (transaction, op) {
       if (op.struct === 'Delete') {
         var type = this.initializedTypes[JSON.stringify(op.targetParent)]
         if (type != null) {
@@ -511,6 +511,7 @@ export default function extendDatabase (Y /* :any */) {
         }
       }
     }
+
     whenTransactionsFinished () {
       if (this.transactionInProgress) {
         if (this.transactionsFinished == null) {
