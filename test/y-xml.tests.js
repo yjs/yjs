@@ -209,6 +209,21 @@ test('Receive a bunch of elements (with disconnect)', async function xml12 (t) {
   await compareUsers(t, users)
 })
 
+test('move element to a different position', async function xml13 (t) {
+  var { users, xml0, xml1 } = await initArrays(t, { users: 3 })
+  let dom0 = xml0.getDom()
+  let dom1 = xml1.getDom()
+  dom0.append(document.createElement('div'))
+  dom0.append(document.createElement('h1'))
+  await flushAll(t, users)
+  dom1.insertBefore(dom1.childNodes[0], null)
+  t.assert(dom1.childNodes[0].nodeName === 'H1', 'div was deleted (user 0)')
+  t.assert(dom1.childNodes[1].nodeName === 'DIV', 'div was moved to the correct position (user 0)')
+  t.assert(dom1.childNodes[0].nodeName === 'H1', 'div was deleted (user 1)')
+  t.assert(dom1.childNodes[1].nodeName === 'DIV', 'div was moved to the correct position (user 1)')
+  await compareUsers(t, users)
+})
+
 // TODO: move elements
 var xmlTransactions = [
   function attributeChange (t, user, chance) {
