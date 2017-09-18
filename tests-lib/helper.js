@@ -2,7 +2,7 @@
 import _Y from '../../yjs/src/y.js'
 
 import yArray from '../../y-array/src/y-array.js'
-import yText from '../../y-text/src/Text.js'
+import yText from '../../y-text/src/y-text.js'
 import yMap from '../../y-map/src/y-map.js'
 import yXml from '../../y-xml/src/y-xml.js'
 import yTest from './test-connector.js'
@@ -48,11 +48,17 @@ export async function garbageCollectUsers (t, users) {
   await Promise.all(users.map(u => u.db.emptyGarbageCollector()))
 }
 
-export function attrsToObject (attrs) {
+export function attrsObject (dom) {
+  let keys = []
+  let yxml = dom.__yxml
+  for (let i = 0; i < dom.attributes.length; i++) {
+    keys.push(dom.attributes[i].name)
+  }
+  keys = yxml._domFilter(dom, keys)
   let obj = {}
-  for (var i = 0; i < attrs.length; i++) {
-    let attr = attrs[i]
-    obj[attr.name] = attr.value
+  for (let i = 0; i < keys.length; i++) {
+    let key = keys[i]
+    obj[key] = dom.getAttribute(key)
   }
   return obj
 }
@@ -61,8 +67,10 @@ export function domToJson (dom) {
   if (dom.nodeType === document.TEXT_NODE) {
     return dom.textContent
   } else if (dom.nodeType === document.ELEMENT_NODE) {
-    let attributes = attrsToObject(dom.attributes)
-    let children = Array.from(dom.childNodes.values()).map(domToJson)
+    let attributes = attrsObject(dom, dom.__yxml)
+    let children = Array.from(dom.childNodes.values())
+      .filter(d => d.__yxml !== false)
+      .map(domToJson)
     return {
       name: dom.nodeName,
       children: children,
@@ -198,6 +206,13 @@ export async function initArrays (t, opts) {
     for (let name in share) {
       result[name + i] = y.share[name]
     }
+    y.share.xml.setDomFilter(function (d, attrs) {
+      if (d.nodeName === 'HIDDEN') {
+        return null
+      } else {
+        return attrs.filter(a => a !== 'hidden')
+      }
+    })
   }
   result.array0.delete(0, result.array0.length)
   if (result.users[0].connector.testRoom != null) {

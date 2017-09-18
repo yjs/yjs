@@ -1,8 +1,5 @@
 /* global Y */
 
-// eslint-disable-next-line
-let search = new URLSearchParams(location.search)
-
 // initialize a shared object. This function call returns a promise!
 Y({
   db: {
@@ -10,10 +7,9 @@ Y({
   },
   connector: {
     name: 'websockets-client',
-    room: 'Textarea-example',
+    room: 'Textarea-example2',
     // url: '//localhost:1234',
     url: 'https://yjs-v13.herokuapp.com/'
-    // options: { transports: ['websocket'], upgrade: false }
   },
   share: {
     textarea: 'Text'
@@ -24,7 +20,4 @@ Y({
 
   // bind the textarea to a shared text element
   y.share.textarea.bind(document.getElementById('textfield'))
-  // thats it..
-}).catch(() => {
-  console.log('Something went wrong while creating the instance..')
 })

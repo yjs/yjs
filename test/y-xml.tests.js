@@ -224,15 +224,60 @@ test('move element to a different position', async function xml13 (t) {
   await compareUsers(t, users)
 })
 
+test('filter node', async function xml14 (t) {
+  var { users, xml0, xml1 } = await initArrays(t, { users: 3 })
+  let dom0 = xml0.getDom()
+  let dom1 = xml1.getDom()
+  let domFilter = (node, attrs) => {
+    if (node.nodeName === 'H1') {
+      return null
+    } else {
+      return attrs
+    }
+  }
+  xml0.setDomFilter(domFilter)
+  xml1.setDomFilter(domFilter)
+  dom0.append(document.createElement('div'))
+  dom0.append(document.createElement('h1'))
+  await flushAll(t, users)
+  t.assert(dom1.childNodes.length === 1, 'Only one node was not transmitted')
+  t.assert(dom1.childNodes[0].nodeName === 'DIV', 'div node was transmitted')
+  await compareUsers(t, users)
+})
+
+test('filter attribute', async function xml15 (t) {
+  var { users, xml0, xml1 } = await initArrays(t, { users: 3 })
+  let dom0 = xml0.getDom()
+  let dom1 = xml1.getDom()
+  let domFilter = (node, attrs) => {
+    return attrs.filter(name => name !== 'hidden')
+  }
+  xml0.setDomFilter(domFilter)
+  xml1.setDomFilter(domFilter)
+  dom0.setAttribute('hidden', 'true')
+  await flushAll(t, users)
+  t.assert(dom0.getAttribute('hidden') === 'true', 'User 0 still has the attribute')
+  t.assert(dom1.getAttribute('hidden') == null, 'User 1 did not receive update')
+  await compareUsers(t, users)
+})
+
 // TODO: move elements
 var xmlTransactions = [
   function attributeChange (t, user, chance) {
     user.share.xml.getDom().setAttribute(chance.word(), chance.word())
   },
+  function attributeChangeHidden (t, user, chance) {
+    user.share.xml.getDom().setAttribute('hidden', chance.word())
+  },
   function insertText (t, user, chance) {
     let dom = user.share.xml.getDom()
     var succ = dom.children.length > 0 ? chance.pickone(dom.children) : null
     dom.insertBefore(document.createTextNode(chance.word()), succ)
+  },
+  function insertHiddenDom (t, user, chance) {
+    let dom = user.share.xml.getDom()
+    var succ = dom.children.length > 0 ? chance.pickone(dom.children) : null
+    dom.insertBefore(document.createElement('hidden'), succ)
   },
   function insertDom (t, user, chance) {
     let dom = user.share.xml.getDom()
@@ -274,30 +319,30 @@ var xmlTransactions = [
   }
 ]
 
-test('y-xml: Random tests (10)', async function randomXml10 (t) {
+test('y-xml: Random tests (10)', async function xmlRandom10 (t) {
   await applyRandomTests(t, xmlTransactions, 10)
 })
 
-test('y-xml: Random tests (42)', async function randomXml42 (t) {
+test('y-xml: Random tests (42)', async function xmlRandom42 (t) {
   await applyRandomTests(t, xmlTransactions, 42)
 })
 
-test('y-xml: Random tests (43)', async function randomXml43 (t) {
+test('y-xml: Random tests (43)', async function xmlRandom43 (t) {
   await applyRandomTests(t, xmlTransactions, 43)
 })
 
-test('y-xml: Random tests (44)', async function randomXml44 (t) {
+test('y-xml: Random tests (44)', async function xmlRandom44 (t) {
   await applyRandomTests(t, xmlTransactions, 44)
 })
 
-test('y-xml: Random tests (45)', async function randomXml45 (t) {
+test('y-xml: Random tests (45)', async function xmlRandom45 (t) {
   await applyRandomTests(t, xmlTransactions, 45)
 })
 
-test('y-xml: Random tests (46)', async function randomXml46 (t) {
+test('y-xml: Random tests (46)', async function xmlRandom46 (t) {
   await applyRandomTests(t, xmlTransactions, 46)
 })
 
-test('y-xml: Random tests (47)', async function randomXml47 (t) {
+test('y-xml: Random tests (47)', async function xmlRandom47 (t) {
   await applyRandomTests(t, xmlTransactions, 47)
 })
