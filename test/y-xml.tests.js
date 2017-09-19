@@ -255,9 +255,13 @@ test('filter attribute', async function xml15 (t) {
   xml0.setDomFilter(domFilter)
   xml1.setDomFilter(domFilter)
   dom0.setAttribute('hidden', 'true')
+  dom0.setAttribute('style', 'height: 30px')
+  dom0.setAttribute('data-me', '77')
   await flushAll(t, users)
   t.assert(dom0.getAttribute('hidden') === 'true', 'User 0 still has the attribute')
   t.assert(dom1.getAttribute('hidden') == null, 'User 1 did not receive update')
+  t.assert(dom1.getAttribute('style') === 'height: 30px', 'User 1 received style update')
+  t.assert(dom1.getAttribute('data-me') === '77', 'User 1 received data update')
   await compareUsers(t, users)
 })
 
