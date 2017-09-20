@@ -67,7 +67,11 @@ export default function Utils (Y) {
       this._eventListener[name] = listener.filter(e => e !== f)
     }
     emit (name, value) {
-      (this._eventListener[name] || []).forEach(l => l(value))
+      let listener = this._eventListener[name] || []
+      if (name === 'error' && listener.length === 0) {
+        console.error(value)
+      }
+      listener.forEach(l => l(value))
     }
     destroy () {
       this._eventListener = null

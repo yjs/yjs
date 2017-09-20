@@ -1,4 +1,3 @@
-
 import extendRBTree from './RedBlackTree'
 
 export default function extend (Y) {
@@ -48,9 +47,13 @@ export default function extend (Y) {
     }
     transact (makeGen) {
       const t = new Transaction(this)
-      while (makeGen != null) {
-        makeGen.call(t)
-        makeGen = this.getNextRequest()
+      try {
+        while (makeGen != null) {
+          makeGen.call(t)
+          makeGen = this.getNextRequest()
+        }
+      } catch (e) {
+        this.y.emit('error', e)
       }
     }
     destroy () {
