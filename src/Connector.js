@@ -42,6 +42,11 @@ export default function extendConnector (Y/* :any */) {
       if (opts.generateUserId !== false) {
         this.setUserId(Y.utils.generateUserId())
       }
+      if (opts.maxBufferLength == null) {
+        this.maxBufferLength = -1
+      } else {
+        this.maxBufferLength = opts.maxBufferLength
+      }
     }
 
     reconnect () {
@@ -197,14 +202,19 @@ export default function extendConnector (Y/* :any */) {
           encoder.writeVarString(self.opts.room)
           encoder.writeVarString('update')
           let ops = self.broadcastOpBuffer
-          self.broadcastOpBuffer = []
           let length = ops.length
-          encoder.writeUint32(length)
-          for (var i = 0; i < length; i++) {
+          let encoderPosLen = encoder.pos
+          encoder.writeUint32(0)
+          for (var i = 0; i < length && (self.maxBufferLength < 0 || encoder.length < self.maxBufferLength); i++) {
             let op = ops[i]
             Y.Struct[op.struct].binaryEncode(encoder, op)
           }
+          encoder.setUint32(encoderPosLen, i)
+          self.broadcastOpBuffer = ops.slice(i)
           self.broadcast(encoder.createBuffer())
+          if (i !== length) {
+            setTimeout(broadcastOperations, 100)
+          }
         }
       }
       if (this.broadcastOpBuffer.length === 0) {

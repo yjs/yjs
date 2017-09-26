@@ -8,6 +8,10 @@ export class BinaryEncoder {
     this.data = []
   }
 
+  get length () {
+    return this.data.length
+  }
+
   get pos () {
     return this.data.length
   }
