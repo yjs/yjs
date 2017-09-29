@@ -7,8 +7,7 @@ Y({
   },
   connector: {
     name: 'websockets-client',
-    // url: 'http://127.0.0.1:1234',
-    url: 'http://192.168.178.81:1234',
+    url: 'http://127.0.0.1:1234',
     room: 'html-editor-example6'
   },
   share: {

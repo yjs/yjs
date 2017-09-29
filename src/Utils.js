@@ -49,6 +49,51 @@ export default function Utils (Y) {
     }
   }
 
+  Y.utils.getRelativePosition = function (type, offset) {
+    if (type == null) {
+      return null
+    } else {
+      if (type._content.length <= offset) {
+        return ['endof', type._model[0], type._model[1]]
+      } else {
+        return type._content[offset].id
+      }
+    }
+  }
+
+  Y.utils.fromRelativePosition = function (y, id) {
+    var offset = 0
+    var op
+    if (id[0] === 'endof') {
+      id = y.db.os.find(id.slice(1)).end
+      op = y.db.os.findNodeWithUpperBound(id).val
+      if (!op.deleted) {
+        offset = op.content != null ? op.content.length : 1
+      }
+    } else {
+      op = y.db.os.findNodeWithUpperBound(id).val
+      if (!op.deleted) {
+        offset = id[1] - op.id[1]
+      }
+    }
+
+    var type = y.db.getType(op.parent)
+    if (type == null || y.db.os.find(op.parent).deleted) {
+      return null
+    }
+
+    while (op.left != null) {
+      op = y.db.os.findNodeWithUpperBound(op.left).val
+      if (!op.deleted) {
+        offset += op.content != null ? op.content.length : 1
+      }
+    }
+    return {
+      type: type,
+      offset: offset
+    }
+  }
+
   class NamedEventHandler {
     constructor () {
       this._eventListener = {}
