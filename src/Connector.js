@@ -213,7 +213,7 @@ export default function extendConnector (Y/* :any */) {
           self.broadcastOpBuffer = ops.slice(i)
           self.broadcast(encoder.createBuffer())
           if (i !== length) {
-            setTimeout(broadcastOperations, 100)
+            self.whenRemoteResponsive().then(broadcastOperations)
           }
         }
       }
@@ -223,6 +223,20 @@ export default function extendConnector (Y/* :any */) {
       } else {
         this.broadcastOpBuffer = this.broadcastOpBuffer.concat(ops)
       }
+    }
+
+    /*
+     * Somehow check the responsiveness of the remote clients/server
+     * Default behavior:
+     *   Wait 100ms before broadcasting the next batch of operations
+     *
+     * Only used when maxBufferLength is set
+     *
+     */
+    whenRemoteResponsive () {
+      return new Promise(function (resolve) {
+        setTimeout(resolve, 100)
+      })
     }
 
     /*
