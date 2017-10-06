@@ -902,4 +902,34 @@ export default function Utils (Y) {
     }
     return args
   }
+
+  Y.utils.writeObjectToYMap = function writeObjectToYMap (object, type) {
+    for (var key in object) {
+      var val = object[key]
+      if (Array.isArray(val)) {
+        type.set(key, Y.Array)
+        Y.utils.writeArrayToYArray(val, type.get(key))
+      } else if (typeof val === 'object') {
+        type.set(key, Y.Map)
+        Y.utils.writeObjectToYMap(val, type.get(key))
+      } else {
+        type.set(key, val)
+      }
+    }
+  }
+
+  Y.utils.writeArrayToYArray = function writeArrayToYArray (array, type) {
+    for (var i = array.length - 1; i >= 0; i--) {
+      var val = array[i]
+      if (Array.isArray(val)) {
+        type.insert(0, [Y.Array])
+        Y.utils.writeArrayToYArray(val, type.get(0))
+      } else if (typeof val === 'object') {
+        type.insert(0, [Y.Map])
+        Y.utils.writeObjectToYMap(val, type.get(0))
+      } else {
+        type.insert(0, [val])
+      }
+    }
+  }
 }
