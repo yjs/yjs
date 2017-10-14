@@ -1,5 +1,5 @@
-import Type from '../Struct/Type'
-import ItemJSON from '../Struct/ItemJSON'
+import Type from '../Struct/Type.js'
+import ItemJSON from '../Struct/ItemJSON.js'
 
 export default class YArray extends Type {
   forEach (f) {

@@ -1,4 +1,4 @@
-import BinaryEncoder from './Util/Binary/Encoder.js'
+import BinaryEncoder from '../Binary/Encoder.js'
 
 export function stringifySyncStep1 (decoder, strBuilder) {
   let auth = decoder.readVarString()

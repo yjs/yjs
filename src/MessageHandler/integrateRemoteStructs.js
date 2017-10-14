@@ -1,5 +1,5 @@
-import { getStruct } from '../Util/StructReferences'
-import BinaryDecoder from '../Util/Binary/Decoder'
+import { getStruct } from '../Util/StructReferences.js'
+import BinaryDecoder from '../Binary/Decoder.js'
 
 class MissingEntry {
   constructor (decoder, missing, struct) {
@@ -39,7 +39,7 @@ function _integrateRemoteStructHelper (y, struct) {
   }
 }
 
-export default function integrateRemoteStructs (decoder, encoder, y) {
+export function integrateRemoteStructs (decoder, encoder, y) {
   while (decoder.length !== decoder.pos) {
     let decoderPos = decoder.pos
     let reference = decoder.readVarUint()

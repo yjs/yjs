@@ -1,4 +1,3 @@
-import StructManager from '../Util/StructManager'
 
 export default class Item {
   constructor () {

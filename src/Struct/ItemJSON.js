@@ -1,4 +1,4 @@
-import Item from './Item'
+import Item from './Item.js'
 
 export default class ItemJSON extends Item {
   constructor () {

@@ -1,7 +1,7 @@
 
-import StructManager from './StructManager'
+import { getReference } from './structReferences.js'
 
-export class ID {
+export default class ID {
   constructor (user, clock) {
     this.user = user
     this.clock = clock
@@ -14,19 +14,5 @@ export class ID {
   }
   lessThan (id) {
     return this.user < id.user || (this.user === id.user && this.clock < id.clock)
-  }
-}
-
-export class RootID {
-  constructor (name, typeConstructor) {
-    this.user = -1
-    this.name = name
-    this.type = StructManager.getReference(typeConstructor)
-  }
-  equals (id) {
-    return id !== null && id.user === this.user && id.name === this.name && id.type === this.type
-  }
-  lessThan (id) {
-    return this.user < id.user || (this.user === id.user && (this.name < id.name || (this.name === id.name && this.type < id.type)))
   }
 }

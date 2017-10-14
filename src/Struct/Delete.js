@@ -1,4 +1,4 @@
-import StructManager from '../Util/StructManager'
+import StructManager from '../Util/StructManager.js'
 
 export default class Delete {
   constructor () {

@@ -64,7 +64,6 @@
     "tag-dist-files": "^0.1.6"
   },
   "dependencies": {
-    "debug": "^2.6.8",
-    "utf-8": "^1.0.0"
+    "debug": "^2.6.8"
   }
 }

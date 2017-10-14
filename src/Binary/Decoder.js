@@ -1,4 +1,4 @@
-import utf8 from 'utf-8'
+import '../../node_modules/utf8/utf8.js'
 
 export default class BinaryDecoder {
   constructor (buffer) {
@@ -11,25 +11,36 @@ export default class BinaryDecoder {
     }
     this.pos = 0
   }
-
+  /**
+   * Clone this decoder instance
+   * Optionally set a new position parameter
+   */
   clone (newPos = this.pos) {
     let decoder = new BinaryDecoder(this.uint8arr)
     decoder.pos = newPos
     return decoder
   }
-
+  /**
+   * Number of bytes
+   */
   get length () {
     return this.uint8arr.length
   }
-
+  /**
+   * Skip one byte, jump to the next position
+   */
   skip8 () {
     this.pos++
   }
-
+  /**
+   * Read one byte as unsigned integer
+   */
   readUint8 () {
     return this.uint8arr[this.pos++]
   }
-
+  /**
+   * Read 4 bytes as unsigned integer
+   */
   readUint32 () {
     let uint =
       this.uint8arr[this.pos] +
@@ -39,11 +50,20 @@ export default class BinaryDecoder {
     this.pos += 4
     return uint
   }
-
+  /**
+   * Look ahead without incrementing position
+   * to the next byte and read it as unsigned integer
+   */
   peekUint8 () {
     return this.uint8arr[this.pos]
   }
-
+  /**
+   * Read unsigned integer (32bit) with variable length
+   * 1/8th of the storage is used as encoding overhead
+   *  - numbers < 2^7 is stored in one byte
+   *  - numbers < 2^14 is stored in two bytes
+   *  ..
+   */
   readVarUint () {
     let num = 0
     let len = 0
@@ -59,7 +79,10 @@ export default class BinaryDecoder {
       }
     }
   }
-
+  /**
+   * Read string of variable length
+   * - varUint is used to store the length of the string
+   */
   readVarString () {
     let len = this.readVarUint()
     let bytes = new Array(len)
@@ -68,20 +91,26 @@ export default class BinaryDecoder {
     }
     return utf8.getStringFromBytes(bytes)
   }
-
+  /**
+   *  Look ahead and read varString without incrementing position
+   */
   peekVarString () {
     let pos = this.pos
     let s = this.readVarString()
     this.pos = pos
     return s
   }
-
-  readOpID () {
+  /**
+   * Read ID
+   * - If first varUint read is 0xFFFFFF a RootID is returned
+   * - Otherwise an ID is returned
+   */
+  readID () {
     let user = this.readVarUint()
-    if (user !== 0xFFFFFF) {
-      return [user, this.readVarUint()]
-    } else {
-      return [user, this.readVarString()]
+    if (user === 0xFFFFFF) {
+      // read property name and type id
+      return new RootID(this.readVarString(), this.readVarUint())
     }
+    return new ID(user, this.readVarUint())
   }
 }

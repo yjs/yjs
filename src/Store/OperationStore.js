@@ -1,11 +1,8 @@
-import Tree from '../Util/Tree'
-import RootID from '../Util/ID'
-import { getStruct } from '../Util/structReferences'
+import Tree from '../Util/Tree.js'
+import RootID from '../Util/ID.js'
+import { getStruct } from '../Util/structReferences.js'
 
 export default class OperationStore extends Tree {
-  constructor () {
-
-  }
   get (id) {
     let struct = this.find(id)
     if (struct === null && id instanceof RootID) {
@@ -27,7 +24,7 @@ export default class OperationStore extends Tree {
     } else {
       return null
     }
-    
+
   }
   // Return an insertion such that id is the first element of content
   // This function manipulates an operation, if necessary

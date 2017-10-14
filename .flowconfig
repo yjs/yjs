@@ -5,6 +5,8 @@
 
 [include]
 ./src/
+./tests-lib/
+./test/
 
 [libs]
 ./declarations/

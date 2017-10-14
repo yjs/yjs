@@ -1,5 +1,5 @@
 
-import { getStruct } from '../Util/StructReferences'
+import { getStruct } from '../Util/StructReferences.js'
 
 export function stringifyUpdate (decoder, strBuilder) {
   while (decoder.length !== decoder.pos) {
@@ -16,4 +16,4 @@ export function stringifyUpdate (decoder, strBuilder) {
   }
 }
 
-export { integrateRemoteStructs as readUpdate } from './integrateRemoteStructs'
+export { integrateRemoteStructs as readUpdate } from './integrateRemoteStructs.js'

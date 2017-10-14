@@ -1,6 +1,6 @@
-import Type from '../Struct/Type'
-import Item from '../Struct/Item'
-import ItemJSON from '../Struct/ItemJSON'
+import Type from '../Struct/Type.js'
+import Item from '../Struct/Item.js'
+import ItemJSON from '../Struct/ItemJSON.js'
 
 export default class YMap extends Type {
   set (key, value) {

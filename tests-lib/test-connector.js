@@ -1,6 +1,6 @@
 /* global Y */
-import { wait } from './helper.js'
-import { formatYjsMessage } from '../src/MessageHandler.js'
+import { wait } from './helper'
+import { messageToString, messageToRoomname } from '../src/MessageHandler/messageToString'
 
 var rooms = {}
 

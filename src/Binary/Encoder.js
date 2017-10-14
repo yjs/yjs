@@ -1,4 +1,4 @@
-import utf8 from 'utf-8'
+import '../../node_modules/utf8/utf8.js'
 
 const bits7 = 0b1111111
 const bits8 = 0b11111111

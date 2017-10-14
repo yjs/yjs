@@ -1,7 +1,7 @@
-import BinaryDecoder from '../Utily/Binary/Decoder'
-import { stringifyUpdate } from './update'
-import { stringifySyncStep1 } from './syncStep1'
-import { stringifySyncStep2 } from './syncStep2'
+import BinaryDecoder from '../Binary/Decoder.js'
+import { stringifyUpdate } from './update.js'
+import { stringifySyncStep1 } from './syncStep1.js'
+import { stringifySyncStep2 } from './syncStep2.js'
 
 export function messageToString (buffer) {
   let decoder = new BinaryDecoder(buffer)

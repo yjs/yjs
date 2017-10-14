@@ -1,4 +1,4 @@
-import { BinaryEncoder } from './Encoding.js'
+import BinaryEncoder from './Binary/Encoder.js'
 
 export default function extendPersistence (Y) {
   class AbstractPersistence {

@@ -1,4 +1,4 @@
-import ID from '../Util/ID'
+import ID from '../Util/ID.js'
 
 export default class StateStore {
   constructor (y) {

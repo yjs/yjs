@@ -1,4 +1,4 @@
-import { wait, initArrays, compareUsers, Y, flushAll, garbageCollectUsers, applyRandomTests } from '../tests-lib/helper.js'
+import { wait, initArrays, compareUsers, Y, flushAll, applyRandomTests } from '../tests-lib/helper.js'
 import { test, proxyConsole } from 'cutest'
 
 proxyConsole()
@@ -38,7 +38,6 @@ test('concurrent insert (handle three conflicts)', async function array2 (t) {
   array0.insert(0, [0])
   array1.insert(0, [1])
   array2.insert(0, [2])
-
   await compareUsers(t, users)
 })
 
@@ -213,7 +212,6 @@ test('garbage collector', async function gc1 (t) {
   await wait()
   await users[0].reconnect()
   await flushAll(t, users)
-  await garbageCollectUsers(t, users)
   await compareUsers(t, users)
 })
 

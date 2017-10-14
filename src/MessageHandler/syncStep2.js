@@ -1,6 +1,6 @@
-import integrateRemoteStructs from './integrateRemoteStructs'
+import { integrateRemoteStructs } from './integrateRemoteStructs.js'
 import { stringifyUpdate } from './update.js'
-import ID from '../Util/ID'
+import ID from '../Util/ID.js'
 
 export function stringifySyncStep2 (decoder, strBuilder) {
   strBuilder.push('     - auth: ' + decoder.readVarString() + '\n')

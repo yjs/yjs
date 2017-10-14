@@ -1,20 +1,25 @@
 
-import debug from 'debug'
+// import debug from 'debug'
+export function debug (namespace) {
+  return function log (message) {
+    console.log(namespace, message)
+  }
+}
 
-import DeleteStore from './Store/DeleteStore'
-import OperationStore from './Store/OperationStore'
-import StateStore from './Store/StateStore'
-import generateUserID from './Function/generateUserID'
-import { RootID } from './Util/ID.js'
+import DeleteStore from './Store/DeleteStore.js'
+import OperationStore from './Store/OperationStore.js'
+import StateStore from './Store/StateStore.js'
+import { generateUserID } from './Util/generateUserID.js'
+import RootID from './Util/RootID.js'
 
-import { formatYjsMessage, formatYjsMessageType } from './MessageHandler'
+import { messageToString, messageToRoomname } from './MessageHandler/messageToString.js'
 
-import Connector from './Connector'
-import Persistence from './Persistence'
-import YArray from './Type/YArray'
-import YMap from './Type/YMap'
-import YText from './Type/YText'
-import YXml from './Type/YXml'
+import Connector from './Connector.js'
+import Persistence from './Persistence.js'
+import YArray from './Type/YArray.js'
+import YMap from './Type/YMap.js'
+import YText from './Type/YText.js'
+import YXml from './Type/YXml.js'
 
 export default class Y {
   constructor (opts) {
@@ -97,5 +102,5 @@ Y.Text = YText
 Y.Xml = YXml
 
 Y.debug = debug
-debug.formatters.Y = formatYjsMessage
-debug.formatters.y = formatYjsMessageType
+debug.formatters.Y = messageToString
+debug.formatters.y = messageToRoomname

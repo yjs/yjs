@@ -1,7 +1,9 @@
-import { test } from 'cutest'
-import Chance from 'chance'
+import { test } from '../node_modules/cutest/cutest.js'
+import '../node_modules/chance/chance.js'
 import Y from '../src/y.js'
-import { BinaryEncoder, BinaryDecoder } from '../src/Encoding.js'
+import BinaryEncoder from '../src/Binary/Encoder.js'
+import BinaryDecoder from '../src/Binary/Decoder.js'
+import { generateUserID } from '../src/Util/generateUserID.js'
 
 function testEncoding (t, write, read, val) {
   let encoder = new BinaryEncoder()
@@ -42,7 +44,7 @@ test('varUint random', async function varUintRandom (t) {
 
 test('varUint random user id', async function varUintRandomUserId (t) {
   t.getSeed() // enforces that this test is repeated
-  testEncoding(t, writeVarUint, readVarUint, Y.utils.generateUserId())
+  testEncoding(t, writeVarUint, readVarUint, generateUserID())
 })
 
 const writeVarString = (encoder, val) => encoder.writeVarString(val)
@@ -58,123 +60,4 @@ test('varString', async function varString (t) {
 test('varString random', async function varStringRandom (t) {
   const chance = new Chance(t.getSeed() * 1000000000)
   testEncoding(t, writeVarString, readVarString, chance.string())
-})
-
-const writeDelete = Y.Struct.Delete.binaryEncode
-const readDelete = Y.Struct.Delete.binaryDecode
-
-test('encode/decode Delete operation', async function binDelete (t) {
-  let op = {
-    target: [10, 3000],
-    length: 40000,
-    struct: 'Delete'
-  }
-  testEncoding(t, writeDelete, readDelete, op)
-})
-
-const writeInsert = Y.Struct.Insert.binaryEncode
-const readInsert = Y.Struct.Insert.binaryDecode
-
-test('encode/decode Insert operations', async function binInsert (t) {
-  testEncoding(t, writeInsert, readInsert, {
-    id: [1, 2],
-    right: [5, 6],
-    left: [3, 4],
-    origin: [7, 8],
-    parent: [9, 10],
-    struct: 'Insert',
-    content: ['a']
-  })
-
-  t.log('left === origin')
-  testEncoding(t, writeInsert, readInsert, {
-    id: [1, 2],
-    right: [5, 6],
-    left: [3, 4],
-    origin: [3, 4],
-    parent: [9, 10],
-    struct: 'Insert',
-    content: ['a']
-  })
-
-  t.log('parentsub')
-  testEncoding(t, writeInsert, readInsert, {
-    id: [1, 2],
-    right: [5, 6],
-    left: [3, 4],
-    origin: [3, 4],
-    parent: [9, 10],
-    parentSub: 'sub',
-    struct: 'Insert',
-    content: ['a']
-  })
-
-  t.log('opContent')
-  testEncoding(t, writeInsert, readInsert, {
-    id: [1, 2],
-    right: [5, 6],
-    left: [3, 4],
-    origin: [3, 4],
-    parent: [9, 10],
-    struct: 'Insert',
-    opContent: [1000, 10000]
-  })
-
-  t.log('mixed content')
-  testEncoding(t, writeInsert, readInsert, {
-    id: [1, 2],
-    right: [5, 6],
-    left: [3, 4],
-    origin: [3, 4],
-    parent: [9, 10],
-    struct: 'Insert',
-    content: ['a', 1]
-  })
-
-  t.log('origin is null')
-  testEncoding(t, writeInsert, readInsert, {
-    id: [1, 2],
-    right: [5, 6],
-    left: [3, 4],
-    origin: null,
-    parent: [9, 10],
-    struct: 'Insert',
-    content: ['a']
-  })
-
-  t.log('left = origin = right = null')
-  testEncoding(t, writeInsert, readInsert, {
-    id: [1, 2],
-    right: null,
-    left: null,
-    origin: null,
-    parent: [9, 10],
-    struct: 'Insert',
-    content: ['a']
-  })
-})
-
-const writeList = Y.Struct.List.binaryEncode
-const readList = Y.Struct.List.binaryDecode
-
-test('encode/decode List operations', async function binList (t) {
-  testEncoding(t, writeList, readList, {
-    struct: 'List',
-    id: [100, 33],
-    type: 'Array',
-    start: null,
-    end: null
-  })
-})
-
-const writeMap = Y.Struct.Map.binaryEncode
-const readMap = Y.Struct.Map.binaryDecode
-
-test('encode/decode Map operations', async function binMap (t) {
-  testEncoding(t, writeMap, readMap, {
-    struct: 'Map',
-    id: [100, 33],
-    type: 'Map',
-    map: {}
-  })
 })

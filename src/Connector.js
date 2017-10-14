@@ -1,10 +1,11 @@
-import { BinaryEncoder, BinaryDecoder } from './Encoding.js'
+import BinaryEncoder from './Binary/Encoder.js'
+import BinaryDecoder from './Binary/Decoder.js'
 
-import { sendSyncStep1, readSyncStep1 } from './MessageHandler/syncStep1'
-import { readSyncStep2 } from './MessageHandler/syncStep2'
+import { sendSyncStep1, readSyncStep1 } from './MessageHandler/syncStep1.js'
+import { readSyncStep2 } from './MessageHandler/syncStep2.js'
 import { readUpdate } from './MessageHandler/update.js'
 
-import debug from 'debug'
+import { debug } from './Y.js'
 
 export default class AbstractConnector {
   constructor (y, opts) {

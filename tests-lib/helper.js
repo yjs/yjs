@@ -1,34 +1,25 @@
 
 import _Y from '../../yjs/src/y.js'
-
-import yArray from '../../y-array/src/y-array.js'
-import yText from '../../y-text/src/y-text.js'
-import yMap from '../../y-map/src/y-map.js'
-import yXml from '../../y-xml/src/y-xml.js'
 import yTest from './test-connector.js'
 
 import Chance from 'chance'
 
 export let Y = _Y
 
-Y.extend(yArray, yText, yMap, yTest, yXml)
-
 export var database = { name: 'memory' }
 export var connector = { name: 'test', url: 'http://localhost:1234' }
 
-function getStateSet () {
-  var ss = {}
-  this.ss.iterate(this, null, null, function (n) {
-    var user = n.id[0]
-    var clock = n.clock
+function getStateSet (y) {
+  let ss = {}
+  for (let [user, clock] of y.ss.state) {
     ss[user] = clock
-  })
+  }
   return ss
 }
 
-function getDeleteSet () {
+function getDeleteSet (y) {
   var ds = {}
-  this.ds.iterate(this, null, null, function (n) {
+  y.ds.iterate(this, null, null, function (n) {
     var user = n.id[0]
     var counter = n.id[1]
     var len = n.len
@@ -41,11 +32,6 @@ function getDeleteSet () {
     dv.push([counter, len, gc])
   })
   return ds
-}
-
-export async function garbageCollectUsers (t, users) {
-  await flushAll(t, users)
-  await Promise.all(users.map(u => u.db.emptyGarbageCollector()))
 }
 
 export function attrsObject (dom) {
@@ -67,7 +53,7 @@ export function domToJson (dom) {
   if (dom.nodeType === document.TEXT_NODE) {
     return dom.textContent
   } else if (dom.nodeType === document.ELEMENT_NODE) {
-    let attributes = attrsObject(dom, dom.__yxml)
+    let attributes = attrsObject(dom)
     let children = Array.from(dom.childNodes.values())
       .filter(d => d.__yxml !== false)
       .map(domToJson)
@@ -97,20 +83,9 @@ export async function compareUsers (t, users) {
   await wait()
   await flushAll(t, users)
 
-  var userArrayValues = users.map(u => u.share.array._content.map(c => c.val || JSON.stringify(c.type)))
-  function valueToComparable (v) {
-    if (v != null && v._model != null) {
-      return v._model
-    } else {
-      return v || null
-    }
-  }
-  var userMapOneValues = users.map(u => u.share.map.get('one')).map(valueToComparable)
-  var userMapTwoValues = users.map(u => u.share.map.get('two')).map(valueToComparable)
-  var userXmlValues = users.map(u => u.share.xml.getDom()).map(domToJson)
-
-  await users[0].db.garbageCollect()
-  await users[0].db.garbageCollect()
+  var userArrayValues = users.map(u => u.get('array', Y.Array).toJSON())
+  var userMapValues = users.map(u => u.get('map', Y.Map).toJSON())
+  var userXmlValues = users.map(u => u.get('xml', Y.Xml).getDom().toString())
 
   // disconnect all except user 0
   await Promise.all(users.slice(1).map(async u =>
@@ -130,39 +105,30 @@ export async function compareUsers (t, users) {
       u.connector.whenSynced(resolve)
     })
   ))
-  let filterDeletedOps = users.every(u => u.db.gc === false)
-  var data = await Promise.all(users.map(async (u) => {
+  var data = users.forEach(u => {
     var data = {}
-    u.db.requestTransaction(function () {
-      let ops = []
-      this.os.iterate(this, null, null, function (op) {
-        ops.push(Y.Struct[op.struct].encode(op))
-      })
-
-      data.os = {}
-      for (let i = 0; i < ops.length; i++) {
-        let op = ops[i]
-        op = Y.Struct[op.struct].encode(op)
-        delete op.origin
-        /*
-          If gc = false, it is necessary to filter deleted ops
-          as they might have been split up differently..
-         */
-        if (filterDeletedOps) {
-          let opIsDeleted = this.isDeleted(op.id)
-          if (!opIsDeleted) {
-            data.os[JSON.stringify(op.id)] = op
-          }
-        } else {
-          data.os[JSON.stringify(op.id)] = op
-        }
+    let ops = []
+    y.os.iterate(null, null, function (op) {
+      if (!op._deleted) {
+        ops.push({
+          left: op._left,
+          right: op._right,
+          deleted: op._deleted
+        })
       }
-      data.ds = getDeleteSet.apply(this)
-      data.ss = getStateSet.apply(this)
     })
-    await u.db.whenTransactionsFinished()
+
+    data.os = {}
+    for (let i = 0; i < ops.length; i++) {
+      let op = ops[i]
+      op = Y.Struct[op.struct].encode(op)
+      delete op.origin
+      data.os[JSON.stringify(op.id)] = op
+    }
+    data.ds = getDeleteSet.apply(this)
+    data.ss = getStateSet.apply(this)
     return data
-  }))
+  })
   for (var i = 0; i < data.length - 1; i++) {
     await t.asyncGroup(async () => {
       t.compare(userArrayValues[i], userArrayValues[i + 1], 'array types')
@@ -174,39 +140,27 @@ export async function compareUsers (t, users) {
       t.compare(data[i].ss, data[i + 1].ss, 'ss')
     }, `Compare user${i} with user${i + 1}`)
   }
-  await Promise.all(users.map(async (u) => {
-    await u.close()
-  }))
+  users.map(u => u.close())
 }
 
 export async function initArrays (t, opts) {
   var result = {
     users: []
   }
-  var share = Object.assign({ flushHelper: 'Map', array: 'Array', map: 'Map', xml: 'XmlElement("div")' }, opts.share)
   var chance = opts.chance || new Chance(t.getSeed() * 1000000000)
   var conn = Object.assign({ room: 'debugging_' + t.name, generateUserId: false, testContext: t, chance }, connector)
   for (let i = 0; i < opts.users; i++) {
-    let dbOpts
     let connOpts
     if (i === 0) {
-      // Only one instance can gc!
-      dbOpts = Object.assign({ gc: false }, database)
       connOpts = Object.assign({ role: 'master' }, conn)
     } else {
-      dbOpts = Object.assign({ gc: false }, database)
       connOpts = Object.assign({ role: 'slave' }, conn)
     }
-    let y = await Y({
-      connector: connOpts,
-      db: dbOpts,
-      share: share
+    let y = new Y({
+      connector: connOpts
     })
     result.users.push(y)
-    for (let name in share) {
-      result[name + i] = y.share[name]
-    }
-    y.share.xml.setDomFilter(function (d, attrs) {
+    y.get('xml', Y.Xml).setDomFilter(function (d, attrs) {
       if (d.nodeName === 'HIDDEN') {
         return null
       } else {
@@ -241,7 +195,7 @@ export async function flushAll (t, users) {
     // flush for any connector
     await Promise.all(users.map(u => { return u.db.whenTransactionsFinished() }))
 
-    var flushCounter = users[0].share.flushHelper.get('0') || 0
+    var flushCounter = users[0].get('flushHelper', Y.Map).get('0') || 0
     flushCounter++
     await Promise.all(users.map(async (u, i) => {
       // wait for all users to set the flush counter to the same value
@@ -249,7 +203,7 @@ export async function flushAll (t, users) {
         function observer () {
           var allUsersReceivedUpdate = true
           for (var i = 0; i < users.length; i++) {
-            if (u.share.flushHelper.get(i + '') !== flushCounter) {
+            if (u.get('flushHelper', Y.Map).get(i + '') !== flushCounter) {
               allUsersReceivedUpdate = false
               break
             }
@@ -258,8 +212,8 @@ export async function flushAll (t, users) {
             resolve()
           }
         }
-        u.share.flushHelper.observe(observer)
-        u.share.flushHelper.set(i + '', flushCounter)
+        u.get('flushHelper', Y.Map).observe(observer)
+        u.get('flushHelper').set(i + '', flushCounter)
       })
     }))
   }

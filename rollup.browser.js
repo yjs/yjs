@@ -5,7 +5,7 @@ import commonjs from 'rollup-plugin-commonjs'
 var pkg = require('./package.json')
 
 export default {
-  entry: 'src/y.js',
+  entry: 'src/Y.js',
   moduleName: 'Y',
   format: 'umd',
   plugins: [

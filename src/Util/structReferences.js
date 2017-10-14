@@ -1,10 +1,10 @@
-import YArray from '../Type/YArray'
-import YMap from '../Type/YMap'
-import YText from '../Type/YText'
-import YXml from '../Type/YXml'
+import YArray from '../Type/YArray.js'
+import YMap from '../Type/YMap.js'
+import YText from '../Type/YText.js'
+import YXml from '../Type/YXml.js'
 
-import ItemJSON from '../Struct/ItemJSON'
-import ItemString from '../Struct/ItemString'
+import ItemJSON from '../Struct/ItemJSON.js'
+import ItemString from '../Struct/ItemString.js'
 
 const structs = new Map()
 const references = new Map()
