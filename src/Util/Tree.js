@@ -232,11 +232,11 @@ export default class Tree {
   findNode (id) {
     var o = this.root
     if (o === null) {
-      return false
+      return null
     } else {
       while (true) {
         if (o === null) {
-          return false
+          return null
         }
         if (id.lessThan(o.val.id)) {
           o = o.left
@@ -249,9 +249,6 @@ export default class Tree {
     }
   }
   delete (id) {
-    if (id == null || id.constructor !== Array) {
-      throw new Error('id is expected to be an Array!')
-    }
     var d = this.findNode(id)
     if (d == null) {
       // throw new Error('Element does not exist!')

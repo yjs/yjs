@@ -65,7 +65,7 @@ export function readDeleteSet (y, decoder) {
     }
     var pos = 0
     var d = dv[pos]
-    y.ds.iterate(this, [user, 0], [user, Number.MAX_VALUE], function (n) {
+    y.ds.iterate([user, 0], [user, Number.MAX_VALUE], function (n) {
       // cases:
       // 1. d deletes something to the right of n
       //  => go to next n (break)

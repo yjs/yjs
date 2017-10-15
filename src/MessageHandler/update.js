@@ -1,5 +1,5 @@
 
-import { getStruct } from '../Util/StructReferences.js'
+import { getStruct } from '../Util/structReferences.js'
 
 export function stringifyUpdate (decoder, strBuilder) {
   while (decoder.length !== decoder.pos) {

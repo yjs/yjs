@@ -1,4 +1,4 @@
-import { getStruct } from '../Util/StructReferences.js'
+import { getStruct } from '../Util/structReferences.js'
 import BinaryDecoder from '../Binary/Decoder.js'
 
 class MissingEntry {

@@ -1,11 +1,3 @@
-
-// import debug from 'debug'
-export function debug (namespace) {
-  return function log (message) {
-    console.log(namespace, message)
-  }
-}
-
 import DeleteStore from './Store/DeleteStore.js'
 import OperationStore from './Store/OperationStore.js'
 import StateStore from './Store/StateStore.js'
@@ -20,6 +12,8 @@ import YArray from './Type/YArray.js'
 import YMap from './Type/YMap.js'
 import YText from './Type/YText.js'
 import YXml from './Type/YXml.js'
+
+import debug from 'debug'
 
 export default class Y {
   constructor (opts) {
@@ -100,6 +94,8 @@ Y.Array = YArray
 Y.Map = YMap
 Y.Text = YText
 Y.Xml = YXml
+
+export { default as debug } from 'debug'
 
 Y.debug = debug
 debug.formatters.Y = messageToString

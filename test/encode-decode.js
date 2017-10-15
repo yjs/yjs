@@ -1,9 +1,9 @@
-import { test } from '../node_modules/cutest/cutest.js'
+import { test } from '../node_modules/cutest/cutest.mjs'
 import '../node_modules/chance/chance.js'
-import Y from '../src/y.js'
 import BinaryEncoder from '../src/Binary/Encoder.js'
 import BinaryDecoder from '../src/Binary/Decoder.js'
 import { generateUserID } from '../src/Util/generateUserID.js'
+import Chance from 'chance'
 
 function testEncoding (t, write, read, val) {
   let encoder = new BinaryEncoder()

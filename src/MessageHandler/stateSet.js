@@ -14,7 +14,7 @@ export function writeStateSet (encoder) {
   let lenPosition = encoder.pos
   let len = 0
   encoder.writeUint32(0)
-  this.ss.iterate(this, null, null, function (n) {
+  this.ss.iterate(null, null, function (n) {
     encoder.writeVarUint(n.id[0])
     encoder.writeVarUint(n.clock)
     len++

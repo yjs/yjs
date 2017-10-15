@@ -1,13 +1,15 @@
 
-import _Y from '../../yjs/src/y.js'
+import _Y from '../src/Y.js'
 import yTest from './test-connector.js'
 
 import Chance from 'chance'
 
-export let Y = _Y
+export const Y = _Y
 
-export var database = { name: 'memory' }
-export var connector = { name: 'test', url: 'http://localhost:1234' }
+Y.extend(yTest)
+
+export const database = { name: 'memory' }
+export const connector = { name: 'test', url: 'http://localhost:1234' }
 
 function getStateSet (y) {
   let ss = {}
@@ -19,7 +21,7 @@ function getStateSet (y) {
 
 function getDeleteSet (y) {
   var ds = {}
-  y.ds.iterate(this, null, null, function (n) {
+  y.ds.iterate(null, null, function (n) {
     var user = n.id[0]
     var counter = n.id[1]
     var len = n.len
@@ -108,7 +110,7 @@ export async function compareUsers (t, users) {
   var data = users.forEach(u => {
     var data = {}
     let ops = []
-    y.os.iterate(null, null, function (op) {
+    u.os.iterate(null, null, function (op) {
       if (!op._deleted) {
         ops.push({
           left: op._left,
@@ -132,8 +134,7 @@ export async function compareUsers (t, users) {
   for (var i = 0; i < data.length - 1; i++) {
     await t.asyncGroup(async () => {
       t.compare(userArrayValues[i], userArrayValues[i + 1], 'array types')
-      t.compare(userMapOneValues[i], userMapOneValues[i + 1], 'map types (propery "one")')
-      t.compare(userMapTwoValues[i], userMapTwoValues[i + 1], 'map types (propery "two")')
+      t.compare(userMapValues[i], userMapValues[i + 1], 'map types')
       t.compare(userXmlValues[i], userXmlValues[i + 1], 'xml types')
       t.compare(data[i].os, data[i + 1].os, 'os')
       t.compare(data[i].ds, data[i + 1].ds, 'ds')

@@ -1,4 +1,4 @@
-import '../../node_modules/utf8/utf8.js'
+import utf8 from 'utf-8'
 
 export default class BinaryDecoder {
   constructor (buffer) {
