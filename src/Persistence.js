@@ -35,7 +35,6 @@ export default function extendPersistence (Y) {
       }
       if (this.saveOperationsBuffer.length === 0) {
         this.saveOperationsBuffer = ops
-        this.y.db.whenTransactionsFinished().then(saveOperations)
       } else {
         this.saveOperationsBuffer = this.saveOperationsBuffer.concat(ops)
       }

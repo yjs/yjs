@@ -41,7 +41,6 @@ export default class AbstractConnector {
 
   reconnect () {
     this.log('reconnecting..')
-    return this.y.db.startGarbageCollector()
   }
 
   disconnect () {
@@ -63,7 +62,7 @@ export default class AbstractConnector {
 
   userLeft (user) {
     if (this.connections.has(user)) {
-      this.log('%s: User left %s', this.userId, user)
+      this.log('%s: User left %s', this.y.userID, user)
       this.connections.delete(user)
       // check if isSynced event can be sent now
       this._setSyncedWith(null)
@@ -83,7 +82,7 @@ export default class AbstractConnector {
     if (this.connections.has(user)) {
       throw new Error('This user already joined!')
     }
-    this.log('%s: User joined %s', this.userId, user)
+    this.log('%s: User joined %s', this.y.userID, user)
     this.connections.set(user, {
       uid: user,
       isSynced: false,
@@ -115,33 +114,32 @@ export default class AbstractConnector {
     }
   }
 
-  _syncWithUser (userid) {
+  _syncWithUser (userID) {
     if (this.role === 'slave') {
       return // "The current sync has not finished or this is controlled by a master!"
     }
-    sendSyncStep1(this, userid)
+    sendSyncStep1(this, userID)
   }
 
   _fireIsSyncedListeners () {
-    new Promise().then(() => {
+    setTimeout(() => {
       if (!this.isSynced) {
         this.isSynced = true
         // It is safer to remove this!
-        // TODO: remove: this.garbageCollectAfterSync()
         // call whensynced listeners
         for (var f of this.whenSyncedListeners) {
           f()
         }
         this.whenSyncedListeners = []
       }
-    })
+    }, 0)
   }
 
   send (uid, buffer) {
     if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
       throw new Error('Expected Message to be an ArrayBuffer or Uint8Array - don\'t use this method to send custom messages')
     }
-    this.log('%s: Send \'%y\' to %s', this.userId, buffer, uid)
+    this.log('%s: Send \'%y\' to %s', this.y.userID, buffer, uid)
     this.logMessage('Message: %Y', buffer)
   }
 
@@ -149,7 +147,7 @@ export default class AbstractConnector {
     if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
       throw new Error('Expected Message to be an ArrayBuffer or Uint8Array - don\'t use this method to send custom messages')
     }
-    this.log('%s: Broadcast \'%y\'', this.userId, buffer)
+    this.log('%s: Broadcast \'%y\'', this.y.userID, buffer)
     this.logMessage('Message: %Y', buffer)
   }
 
@@ -157,7 +155,11 @@ export default class AbstractConnector {
     Buffer operations, and broadcast them when ready.
   */
   broadcastStruct (struct) {
-    let firstContent = this.broadcastBuffer.length === 0
+    const firstContent = this.broadcastBuffer.length === 0
+    if (firstContent) {
+      this.broadcastBuffer.writeVarString(this.y.room)
+      this.broadcastBuffer.writeVarString('update')
+    }
     struct._toBinary(this.broadcastBuffer)
     if (this.maxBufferLength > 0 && this.broadcastBuffer.length > this.maxBufferLength) {
       // it is necessary to send the buffer now
@@ -172,7 +174,7 @@ export default class AbstractConnector {
       // (or buffer exceeds maxBufferLength)
       setTimeout(() => {
         if (this.broadcastBuffer.length > 0) {
-          this.broadcast(this.broadcastBuffer)
+          this.broadcast(this.broadcastBuffer.createBuffer())
           this.broadcastBuffer = new BinaryEncoder()
         }
       })
@@ -201,7 +203,7 @@ export default class AbstractConnector {
     if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
       return Promise.reject(new Error('Expected Message to be an ArrayBuffer or Uint8Array!'))
     }
-    if (sender === this.userId) {
+    if (sender === this.y.userID) {
       return Promise.resolve()
     }
     let decoder = new BinaryDecoder(buffer)
@@ -210,7 +212,7 @@ export default class AbstractConnector {
     encoder.writeVarString(roomname)
     let messageType = decoder.readVarString()
     let senderConn = this.connections.get(sender)
-    this.log('%s: Receive \'%s\' from %s', this.userId, messageType, sender)
+    this.log('%s: Receive \'%s\' from %s', this.y.userID, messageType, sender)
     this.logMessage('Message: %Y', buffer)
     if (senderConn == null && !skipAuth) {
       throw new Error('Received message from unknown peer!')
@@ -247,7 +249,7 @@ export default class AbstractConnector {
   computeMessage (messageType, senderConn, decoder, encoder, sender, skipAuth) {
     if (messageType === 'sync step 1' && (senderConn.auth === 'write' || senderConn.auth === 'read')) {
       // cannot wait for sync step 1 to finish, because we may wait for sync step 2 in sync step 1 (->lock)
-      readSyncStep1()(decoder, encoder, this.y, senderConn, sender)
+      readSyncStep1(decoder, encoder, this.y, senderConn, sender)
     } else if (messageType === 'sync step 2' && senderConn.auth === 'write') {
       readSyncStep2(decoder, encoder, this.y, senderConn, sender)
     } else if (messageType === 'update' && (skipAuth || senderConn.auth === 'write')) {

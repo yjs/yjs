@@ -1,6 +1,4 @@
 
-import { getReference } from './structReferences.js'
-
 export default class ID {
   constructor (user, clock) {
     this.user = user

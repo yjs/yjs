@@ -1,4 +1,7 @@
 import BinaryEncoder from '../Binary/Encoder.js'
+import { readStateSet, writeStateSet } from './stateSet.js'
+import { writeDeleteSet } from './deleteSet.js'
+import ID from '../Util/ID.js'
 
 export function stringifySyncStep1 (decoder, strBuilder) {
   let auth = decoder.readVarString()
@@ -17,14 +20,22 @@ export function stringifySyncStep1 (decoder, strBuilder) {
   }
 }
 
-export function sendSyncStep1 (y, syncUser) {
+export function sendSyncStep1 (connector, syncUser) {
   let encoder = new BinaryEncoder()
-  encoder.writeVarString(y.room)
+  encoder.writeVarString(connector.y.room)
   encoder.writeVarString('sync step 1')
-  encoder.writeVarString(y.connector.authInfo || '')
-  encoder.writeVarUint(y.connector.protocolVersion)
-  y.ss.writeStateSet(encoder)
-  y.connector.send(syncUser, encoder.createBuffer())
+  encoder.writeVarString(connector.authInfo || '')
+  encoder.writeVarUint(connector.protocolVersion)
+  writeStateSet(connector.y, encoder)
+  connector.send(syncUser, encoder.createBuffer())
+}
+
+export default function writeStructs (encoder, decoder, y, ss) {
+  for (let [user, clock] of ss) {
+    y.os.iterate(new ID(user, clock), null, function (struct) {
+      struct._toBinary(encoder)
+    })
+  }
 }
 
 export function readSyncStep1 (decoder, encoder, y, senderConn, sender) {
@@ -32,22 +43,20 @@ export function readSyncStep1 (decoder, encoder, y, senderConn, sender) {
   // check protocol version
   if (protocolVersion !== y.connector.protocolVersion) {
     console.warn(
-      `You tried to sync with a yjs instance that has a different protocol version
+      `You tried to sync with a Yjs instance that has a different protocol version
       (You: ${protocolVersion}, Client: ${protocolVersion}).
-      The sync was stopped. You need to upgrade your dependencies (especially Yjs & the Connector)!
       `)
     y.destroy()
   }
-
-  // send sync step 2
+  // write sync step 2
   encoder.writeVarString('sync step 2')
   encoder.writeVarString(y.connector.authInfo || '')
-  writeDeleteSet(encoder)
-  // reads ss and writes os
-  writeOperations(encoder, decoder)
+  writeDeleteSet(y, encoder)
+  const ss = readStateSet(decoder)
+  writeStructs(encoder, decoder, y, ss)
   y.connector.send(senderConn.uid, encoder.createBuffer())
   senderConn.receivedSyncStep2 = true
   if (y.connector.role === 'slave') {
-    sendSyncStep1(y, sender)
+    sendSyncStep1(y.connector, sender)
   }
 }

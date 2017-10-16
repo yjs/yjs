@@ -5,6 +5,11 @@ export default class Type extends Item {
     super()
     this._map = new Map()
     this._start = null
+    this._y = null
+  }
+  _integrate (y) {
+    super._integrate(y)
+    this._y = y
   }
   _delete (y) {
     super._delete(y)

@@ -1,3 +1,27 @@
+import { getReference } from '../Util/structReferences.js'
+import ID from '../Util/ID.js'
+import { RootFakeUserID } from '../Util/RootID.js'
+import Delete from './Delete.js'
+
+/**
+ * Helper utility to split an Item (see _splitAt)
+ * - copy all properties from a to b
+ * - connect a to b
+ * - assigns the correct _id
+ * - save b to os
+ */
+export function splitHelper (y, a, b, diff) {
+  const aID = a._id
+  b._id = new ID(aID.user, aID.clock + diff)
+  b._origin = a
+  b._left = a
+  a._right = b
+  a._right_origin = b
+  b._parent = a._parent
+  b._parentSub = a._parentSub
+  b._deleted = a._deleted
+  y.os.put(b)
+}
 
 export default class Item {
   constructor () {
@@ -13,22 +37,30 @@ export default class Item {
   get _length () {
     return 1
   }
-  _getDistanceToOrigin () {
-    if (this.left == null) {
-      return 0
-    } else {
-      var d = 0
-      var o = this.left
-      while (o !== null && !this.origin.equals(o.id)) {
-        d++
-        o = o.left
-      }
-      return d
+  /**
+   * Splits this struct so that another struct can be inserted in-between.
+   * This must be overwritten if _length > 1
+   * Returns right part after split
+   * - diff === 0 => this
+   * - diff === length => this._right
+   * - otherwise => split _content and return right part of split
+   * (see ItemJSON/ItemString for implementation)
+   */
+  _splitAt (y, diff) {
+    if (diff === 0) {
+      return this
     }
+    return this._right
   }
-  _delete (y) {
+  _delete (y, createDelete = true) {
     this._deleted = true
     y.ds.markDeleted(this._id, this._length)
+    if (createDelete) {
+      let del = new Delete()
+      del._targetID = this._id
+      del._length = this._length
+      del._integrate(y, true)
+    }
   }
   /*
    * - Integrate the struct so that other types/structs can see it
@@ -36,8 +68,12 @@ export default class Item {
    * - Check if this is struct deleted
    */
   _integrate (y) {
-    if (this._id === null) {
+    const selfID = this._id
+    if (selfID === null) {
       this._id = y.ss.getNextID(this._length)
+    } else if (selfID.clock < y.ss.getState(selfID.user)) {
+      // already applied..
+      return []
     }
     /*
     # $this has to find a unique position between origin and the next known character
@@ -71,86 +107,145 @@ export default class Item {
     // Note that conflictingItems is a subset of itemsBeforeOrigin
     while (o !== null && o !== this._right) {
       itemsBeforeOrigin.add(o)
-      if (this.origin === o.origin) {
+      if (this._origin === o._origin) {
         // case 1
         if (o._id.user < this._id.user) {
-          this.left = o
+          this._left = o
           conflictingItems = new Set()
         }
       } else if (itemsBeforeOrigin.has(o)) {
         // case 2
         if (conflictingItems.has(o)) {
-          this.left = o
+          this._left = o
           conflictingItems = new Set()
         }
       } else {
         break
       }
-      o = o.right
+      o = o._right
     }
-    y.os.set(this)
-    y.ds.checkIfDeleted(this)
-    if (y.connector._forwardAppliedStructs || this._id.user === y.userID) {
-      y.connector.broadcastStruct(this)
+    if (this._left === null) {
+      if (this._parentSub !== null) {
+        this._parent._map.set(this._parentSub, this)
+      } else {
+        this._parent._start = this
+      }
     }
-    if (y.persistence !== null) {
-      y.persistence.saveOperations(this)
+    y.os.put(this)
+    if (this._id.user !== RootFakeUserID) {
+      if (y.connector._forwardAppliedStructs || this._id.user === y.userID) {
+        y.connector.broadcastStruct(this)
+      }
+      if (y.persistence !== null) {
+        y.persistence.saveOperations(this)
+      }
+      y.ds.applyMissingDeletesOnStruct(this)
     }
   }
-  _toBinary (y, encoder) {
-    encoder.writeUint8(StructManager.getReference(this.constructor))
-    encoder.writeOpID(this._id)
-    encoder.writeOpID(this._parent._id)
-    encoder.writeVarString(this.parentSub === null ? '' : JSON.stringify(this.parentSub))
-    encoder.writeOpID(this._left === null ? null : this._left._id)
-    encoder.writeOpID(this._right_origin === null ? null : this._right_origin._id)
-    encoder.writeOpID(this._origin === null ? null : this._origin._id)
+  _toBinary (encoder) {
+    encoder.writeUint8(getReference(this.constructor))
+    let info = 0
+    if (this._origin !== null) {
+      info += 0b1 // origin is defined
+    }
+    if (this._left !== this._origin) {
+      info += 0b10 // do not copy origin to left
+    }
+    if (this._right_origin !== null) {
+      info += 0b100
+    }
+    if (this._parentSub !== null) {
+      info += 0b1000
+    }
+    encoder.writeUint8(info)
+    encoder.writeID(this._id)
+    if (info & 0b1) {
+      encoder.writeID(this._origin._id)
+    }
+    if (info & 0b10) {
+      encoder.writeID(this._left._id)
+    }
+    if (info & 0b100) {
+      encoder.writeID(this._right_origin._id)
+    }
+    if (~info & 0b101) {
+      // neither origin nor right is defined
+      encoder.writeID(this._parent._id)
+    }
+    if (info & 0b1000) {
+      encoder.writeVarString(JSON.stringify(this._parentSub))
+    }
   }
   _fromBinary (y, decoder) {
     let missing = []
-    this._id = decoder.readOpID()
-    let parent = decoder.readOpID()
-    let parentSub = decoder.readVarString()
-    if (parentSub.length > 0) {
-      this._parentSub = JSON.parse(parentSub)
-    }
-    let left = decoder.readOpID()
-    let right = decoder.readOpId()
-    let origin = decoder.readOpID()
-    if (parent !== null && this._parent === null) {
-      let _parent = y.os.get(parent)
-      if (_parent === null) {
-        missing.push(parent)
-      } else {
-        this._parent = _parent
+    const info = decoder.readUint8()
+    this._id = decoder.readID()
+    // read origin
+    if (info & 0b1) {
+      // origin != null
+      const originID = decoder.readID()
+      if (this._origin === null) {
+        const origin = y.os.getItemCleanEnd(originID)
+        if (origin === null) {
+          missing.push(originID)
+        } else {
+          this._origin = origin
+        }
       }
     }
-    if (origin !== null && this._origin === null) {
-      let _origin = y.os.getCleanStart(origin)
-      if (_origin === null) {
-        missing.push(origin)
-      } else {
-        this._origin = _origin
+    // read left
+    if (info & 0b10) {
+      // left !== origin
+      const leftID = decoder.readID()
+      if (this._left === null) {
+        const left = y.os.getItemCleanEnd(leftID)
+        if (left === null) {
+          // use origin instead
+          this._left = this._origin
+        } else {
+          this._left = left
+        }
+      }
+    } else {
+      this._left = this._origin
+    }
+    // read right
+    if (info & 0b100) {
+      // right != null
+      const rightID = decoder.readID()
+      if (this._right_origin === null) {
+        const right = y.os.getCleanStart(rightID)
+        if (right === null) {
+          missing.push(right)
+        } else {
+          this._right = right
+          this._right_origin = right
+        }
       }
     }
-    if (left !== null && this._left === null) {
-      let _left = y.os.getCleanEnd(left)
-      if (_left === null) {
-        // use origin instead
-        this._left = this._origin
-      } else {
-        this._left = _left
+    // read parent
+    if (~info & 0b101) {
+      // neither origin nor right is defined
+      const parentID = decoder.readID()
+      if (this._parent === null) {
+        const parent = y.os.get(parentID)
+        if (parent === null) {
+          missing.push(parent)
+        } else {
+          this._parent = parent
+        }
+      }
+    } else if (this._parent === null) {
+      if (this._origin !== null) {
+        this._parent = this._origin._parent
+      } else if (this._right_origin !== null) {
+        this._parent = this._origin._parent
       }
     }
-    if (right !== null && this._right_origin === null) {
-      let _right = y.os.getCleanStart(right)
-      if (_right === null) {
-        missing.push(right)
-      } else {
-        this._right = _right
-        this._right_origin = _right
-      }
+    if (info & 0b1000) {
+      this._parentSub = decoder.readVarString()
     }
+    return missing
   }
   _logString () {
     return `left: ${this._left}, origin: ${this._origin}, right: ${this._right}, parent: ${this._parent}, parentSub: ${this._parentSub}`

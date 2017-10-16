@@ -2,20 +2,49 @@ import Type from '../Struct/Type.js'
 import ItemJSON from '../Struct/ItemJSON.js'
 
 export default class YArray extends Type {
+  toJSON () {
+    return this.map(c => {
+      if (c instanceof Type) {
+        if (c.toJSON !== null) {
+          return c.toJSON()
+        } else {
+          return c.toString()
+        }
+      }
+    })
+  }
+  map (f) {
+    const res = []
+    this.forEach((c, i) => {
+      res.push(f(c, i, this))
+    })
+    return res
+  }
   forEach (f) {
     let pos = 0
     let n = this._start
     while (n !== null) {
-      let content = n._getContent()
-      for (let i = 0; i < content.length; i++) {
-        pos++
-        let c = content[i]
-        if (!c._deleted) {
+      if (!n._deleted) {
+        const content = n._content
+        const contentLen = content.length
+        for (let i = 0; i < contentLen; i++) {
+          pos++
           f(content[i], pos, this)
         }
       }
       n = n._right
     }
+  }
+  get length () {
+    let length = 0
+    let n = this._start
+    while (n !== null) {
+      if (!n._deleted) {
+        length += n._length
+      }
+      n = n._next
+    }
+    return length
   }
   [Symbol.iterator] () {
     return {
@@ -41,15 +70,37 @@ export default class YArray extends Type {
       _count: 0
     }
   }
+  delete (pos, length = 1) {
+    let item = this._start
+    let count = 0
+    while (item !== null && length > 0) {
+      if (count < pos && pos < count + item._length) {
+        const diffDel = pos - count
+        item = item
+          ._splitAt(this._y, diffDel)
+          ._splitAt(this._y, length)
+        length -= item._length
+        item._delete(this._y)
+      }
+      if (!item._deleted) {
+        count += item._length
+      }
+      item = item._right
+    }
+    if (length > 0) {
+      throw new Error('Delete exceeds the range of the YArray')
+    }
+  }
   insert (pos, content) {
     let left = this._start
-    let right
+    let right = null
     let count = 0
-    while (left !== null && !left._deleted) {
-      if (pos < count + left._content.length) {
-        [left, right] = left._splitAt(pos - count)
+    while (left !== null) {
+      if (count <= pos && pos < count + left._content.length) {
+        right = left._splitAt(this.y, pos - count)
         break
       }
+      count += left._length
       left = left.right
     }
     if (pos > count) {
@@ -78,6 +129,9 @@ export default class YArray extends Type {
         }
         prevJsonIns._content.push(c)
       }
+    }
+    if (prevJsonIns !== null) {
+      prevJsonIns._integrate(this._y)
     }
   }
   _logString () {

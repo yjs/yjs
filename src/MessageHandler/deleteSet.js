@@ -1,4 +1,4 @@
-import deleteItemRange from 'deleteItemRange'
+import { deleteItemRange } from '../Struct/Delete.js'
 
 export function stringifyDeleteSet (y, decoder, strBuilder) {
   let dsLength = decoder.readUint32()
@@ -48,7 +48,7 @@ export function writeDeleteSet (y, encoder) {
   if (currentUser !== null) { // happens on first iteration
     encoder.setUint32(lastLenPos, currentLength)
   }
-  encoder.writeUint32(laterDSLenPus, numberOfUsers)
+  encoder.setUint32(laterDSLenPus, numberOfUsers)
 }
 
 export function readDeleteSet (y, decoder) {

@@ -3,7 +3,7 @@ import commonjs from 'rollup-plugin-commonjs'
 import multiEntry from 'rollup-plugin-multi-entry'
 
 export default {
-  entry: 'test/{encode-decode,red-black-tree}.js',
+  entry: 'test/y-array.tests.js',
   moduleName: 'y-tests',
   format: 'umd',
   plugins: [

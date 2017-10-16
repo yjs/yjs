@@ -1,4 +1,6 @@
 import utf8 from 'utf-8'
+import ID from '../Util/ID.js'
+import { default as RootID, RootFakeUserID } from '../Util/RootID.js'
 
 export default class BinaryDecoder {
   constructor (buffer) {
@@ -107,9 +109,11 @@ export default class BinaryDecoder {
    */
   readID () {
     let user = this.readVarUint()
-    if (user === 0xFFFFFF) {
+    if (user === RootFakeUserID) {
       // read property name and type id
-      return new RootID(this.readVarString(), this.readVarUint())
+      const rid = new RootID(this.readVarString(), null)
+      rid.type = this.readVarUint()
+      return rid
     }
     return new ID(user, this.readVarUint())
   }

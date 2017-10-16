@@ -1,6 +1,6 @@
 import { integrateRemoteStructs } from './integrateRemoteStructs.js'
 import { stringifyUpdate } from './update.js'
-import ID from '../Util/ID.js'
+import { readDeleteSet } from './deleteSet.js'
 
 export function stringifySyncStep2 (decoder, strBuilder) {
   strBuilder.push('     - auth: ' + decoder.readVarString() + '\n')
@@ -22,27 +22,8 @@ export function stringifySyncStep2 (decoder, strBuilder) {
   }
 }
 
-export function writeSyncStep2 () {
-  // TODO
-}
-
-export default function writeStructs (encoder, decoder, y, ss) {
-  let lenPos = encoder.pos
-  let len = 0
-  encoder.writeUint32(0)
-  for (let [user, clock] of ss) {
-    y.os.iterate(new ID(user, clock), null, function (struct) {
-      struct._toBinary(y, encoder)
-      len++
-    })
-  }
-  encoder.setUint32(lenPos, len)
-}
-
 export function readSyncStep2 (decoder, encoder, y, senderConn, sender) {
-  // apply operations first
-  applyDeleteSet(decoder)
+  readDeleteSet(y, decoder)
   integrateRemoteStructs(decoder, encoder, y)
-  // then apply ds
   y.connector._setSyncedWith(sender)
 }

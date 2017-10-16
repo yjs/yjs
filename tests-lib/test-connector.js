@@ -8,24 +8,21 @@ export class TestRoom {
   constructor (roomname) {
     this.room = roomname
     this.users = new Map()
-    this.nextUserId = 0
   }
   join (connector) {
-    if (connector.userId == null) {
-      connector.setUserId(this.nextUserId++)
-    }
-    this.users.forEach((user, uid) => {
-      if (user.role === 'master' || connector.role === 'master') {
-        this.users.get(uid).userJoined(connector.userId, connector.role)
+    const userID = connector.y.userID
+    this.users.set(userID, connector)
+    for (let [uid, user] of this.users) {
+      if (uid !== userID && (user.role === 'master' || connector.role === 'master')) {
         connector.userJoined(uid, this.users.get(uid).role)
+        this.users.get(uid).userJoined(userID, connector.role)
       }
-    })
-    this.users.set(connector.userId, connector)
+    }
   }
   leave (connector) {
-    this.users.delete(connector.userId)
+    this.users.delete(connector.y.userID)
     this.users.forEach(user => {
-      user.userLeft(connector.userId)
+      user.userLeft(connector.y.userID)
     })
   }
   send (sender, receiver, m) {
@@ -82,7 +79,7 @@ export default function extendTestConnector (Y) {
       return super.disconnect()
     }
     logBufferParsed () {
-      console.log(' === Logging buffer of user ' + this.userId + ' === ')
+      console.log(' === Logging buffer of user ' + this.y.userID + ' === ')
       for (let [user, conn] of this.connections) {
         console.log(` ${user}:`)
         for (let i = 0; i < conn.buffer.length; i++) {
@@ -96,11 +93,11 @@ export default function extendTestConnector (Y) {
     }
     send (uid, message) {
       super.send(uid, message)
-      this.testRoom.send(this.userId, uid, message)
+      this.testRoom.send(this.y.userID, uid, message)
     }
     broadcast (message) {
       super.broadcast(message)
-      this.testRoom.broadcast(this.userId, message)
+      this.testRoom.broadcast(this.y.userID, message)
     }
     async whenSynced (f) {
       var synced = false
@@ -119,7 +116,7 @@ export default function extendTestConnector (Y) {
       })
     }
     receiveMessage (sender, m) {
-      if (this.userId !== sender && this.connections.has(sender)) {
+      if (this.y.userID !== sender && this.connections.has(sender)) {
         var buffer = this.connections.get(sender).buffer
         if (buffer == null) {
           buffer = this.connections.get(sender).buffer = []
@@ -135,30 +132,30 @@ export default function extendTestConnector (Y) {
       }
     }
     async _flushAll (flushUsers) {
-      if (flushUsers.some(u => u.connector.userId === this.userId)) {
+      if (flushUsers.some(u => u.connector.y.userID === this.y.userID)) {
         // this one needs to sync with every other user
         flushUsers = Array.from(this.connections.keys()).map(uid => this.testRoom.users.get(uid).y)
       }
       var finished = []
       for (let i = 0; i < flushUsers.length; i++) {
-        let userId = flushUsers[i].connector.userId
-        if (userId !== this.userId && this.connections.has(userId)) {
-          let buffer = this.connections.get(userId).buffer
+        let userID = flushUsers[i].connector.y.userID
+        if (userID !== this.y.userID && this.connections.has(userID)) {
+          let buffer = this.connections.get(userID).buffer
           if (buffer != null) {
             var messages = buffer.splice(0)
             for (let j = 0; j < messages.length; j++) {
-              let p = super.receiveMessage(userId, messages[j])
+              let p = super.receiveMessage(userID, messages[j])
               finished.push(p)
             }
           }
         }
       }
       await Promise.all(finished)
-      await this.y.db.whenTransactionsFinished()
       return finished.length > 0 ? 'flushing' : 'done'
     }
   }
-  Y.extend('test', TestConnector)
+  // TODO: this should be moved to a separate module (dont work on Y)
+  Y.test = TestConnector
 }
 
 if (typeof Y !== 'undefined') {

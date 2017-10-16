@@ -3,6 +3,7 @@ import OperationStore from './Store/OperationStore.js'
 import StateStore from './Store/StateStore.js'
 import { generateUserID } from './Util/generateUserID.js'
 import RootID from './Util/RootID.js'
+import NamedEventHandler from './Util/NamedEventHandler.js'
 
 import { messageToString, messageToRoomname } from './MessageHandler/messageToString.js'
 
@@ -15,8 +16,10 @@ import YXml from './Type/YXml.js'
 
 import debug from 'debug'
 
-export default class Y {
+export default class Y extends NamedEventHandler {
   constructor (opts) {
+    super()
+    this._opts = opts
     this.userID = generateUserID()
     this.ds = new DeleteStore(this)
     this.os = new OperationStore(this)
@@ -30,10 +33,17 @@ export default class Y {
     }
     this.connected = true
     this._missingStructs = new Map()
-    this._readyToIntegrate = new Map()
+    this._readyToIntegrate = []
+  }
+  // fake _start for root properties (y.set('name', type))
+  get _start () {
+    return null
+  }
+  set _start (start) {
+    return null
   }
   get room () {
-    return this.connector.opts.room
+    return this._opts.connector.room
   }
   get (name, TypeConstructor) {
     let id = new RootID(name, TypeConstructor)
@@ -41,6 +51,7 @@ export default class Y {
     if (type === null) {
       type = new TypeConstructor()
       type._id = id
+      type._parent = this
       type._integrate(this)
     }
     return type
@@ -68,9 +79,6 @@ export default class Y {
     } else {
       this.connector.disconnect()
     }
-    this.os.iterate(null, null, function (struct) {
-      struct.destroy()
-    })
     this.os = null
     this.ds = null
     this.ss = null
@@ -88,7 +96,8 @@ Y.extend = function extendYjs () {
   }
 }
 
-Y.Connector = Connector
+// TODO: The following assignments should be moved to yjs-dist
+Y.AbstractConnector = Connector
 Y.Persisence = Persistence
 Y.Array = YArray
 Y.Map = YMap

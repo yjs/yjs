@@ -140,11 +140,11 @@ export default class Tree {
       return null
     } else {
       while (true) {
-        if (from === null || (from.lessThan(o.val.id) && o.left !== null)) {
+        if (from === null || (from.lessThan(o.val._id) && o.left !== null)) {
           // o is included in the bound
           // try to find an element that is closer to the bound
           o = o.left
-        } else if (from !== null && o.val.id.lessThan(from)) {
+        } else if (from !== null && o.val._id.lessThan(from)) {
           // o is not within the bound, maybe one of the right elements is..
           if (o.right !== null) {
             o = o.right
@@ -168,11 +168,11 @@ export default class Tree {
       return null
     } else {
       while (true) {
-        if ((to === null || o.val.id.lessThan(to)) && o.right !== null) {
+        if ((to === null || o.val._id.lessThan(to)) && o.right !== null) {
           // o is included in the bound
           // try to find an element that is closer to the bound
           o = o.right
-        } else if (to !== null && to.lessThan(o.val.id)) {
+        } else if (to !== null && to.lessThan(o.val._id)) {
           // o is not within the bound, maybe one of the left elements is..
           if (o.left !== null) {
             o = o.left
@@ -213,8 +213,8 @@ export default class Tree {
       o !== null &&
       (
         to === null || // eslint-disable-line no-unmodified-loop-condition
-        o.val.id.lessThan(to) ||
-        o.val.id.equals(to)
+        o.val._id.lessThan(to) ||
+        o.val._id.equals(to)
       )
     ) {
       f(o.val)
@@ -238,9 +238,9 @@ export default class Tree {
         if (o === null) {
           return null
         }
-        if (id.lessThan(o.val.id)) {
+        if (id.lessThan(o.val._id)) {
           o = o.left
-        } else if (o.val.id.lessThan(id)) {
+        } else if (o.val._id.lessThan(id)) {
           o = o.right
         } else {
           return o
@@ -393,14 +393,14 @@ export default class Tree {
     if (this.root !== null) {
       var p = this.root // p abbrev. parent
       while (true) {
-        if (node.val.id.lessThan(p.val.id)) {
+        if (node.val._id.lessThan(p.val._id)) {
           if (p.left === null) {
             p.left = node
             break
           } else {
             p = p.left
           }
-        } else if (p.val.id.lessThan(node.val.id)) {
+        } else if (p.val._id.lessThan(node.val._id)) {
           if (p.right === null) {
             p.right = node
             break

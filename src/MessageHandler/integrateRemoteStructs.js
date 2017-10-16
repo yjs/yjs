@@ -45,7 +45,7 @@ export function integrateRemoteStructs (decoder, encoder, y) {
     let reference = decoder.readVarUint()
     let Constr = getStruct(reference)
     let struct = new Constr()
-    let missing = struct._fromBinary(decoder)
+    let missing = struct._fromBinary(y, decoder)
     if (missing.length === 0) {
       while (struct != null) {
         _integrateRemoteStructHelper(y, struct)

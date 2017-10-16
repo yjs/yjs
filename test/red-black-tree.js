@@ -55,15 +55,15 @@ function checkRootNodeIsBlack (t, tree) {
 
 test('RedBlack Tree', async function redBlackTree (t) {
   let tree = new RedBlackTree()
-  tree.put({id: new ID(8433, 0)})
-  tree.put({id: new ID(12844, 0)})
-  tree.put({id: new ID(1795, 0)})
-  tree.put({id: new ID(30302, 0)})
-  tree.put({id: new ID(64287)})
+  tree.put({_id: new ID(8433, 0)})
+  tree.put({_id: new ID(12844, 0)})
+  tree.put({_id: new ID(1795, 0)})
+  tree.put({_id: new ID(30302, 0)})
+  tree.put({_id: new ID(64287)})
   tree.delete(new ID(8433, 0))
-  tree.put({id: new ID(28996)})
+  tree.put({_id: new ID(28996)})
   tree.delete(new ID(64287))
-  tree.put({id: new ID(22721)})
+  tree.put({_id: new ID(22721)})
   checkRootNodeIsBlack(t, tree)
   checkBlackHeightOfSubTreesAreEqual(t, tree)
   checkRedNodesDoNotHaveBlackChildren(t, tree)
@@ -83,7 +83,7 @@ test(`random tests (${numberOfRBTreeTests})`, async function random (t) {
           t.assert(false, 'tree and elements contain different results')
         }
         elements.push(obj)
-        tree.put({id: obj})
+        tree.put({_id: obj})
       }
     } else if (elements.length > 0) {
       // ~20% chance to delete an element
@@ -101,7 +101,7 @@ test(`random tests (${numberOfRBTreeTests})`, async function random (t) {
   let allNodesExist = true
   for (let id of elements) {
     let node = tree.find(id)
-    if (!node.id.equals(id)) {
+    if (!node._id.equals(id)) {
       allNodesExist = false
     }
   }
@@ -110,7 +110,7 @@ test(`random tests (${numberOfRBTreeTests})`, async function random (t) {
   let findAllNodesWithLowerBoundSerach = true
   for (let id of elements) {
     let node = tree.findWithLowerBound(id)
-    if (!node.id.equals(id)) {
+    if (!node._id.equals(id)) {
       findAllNodesWithLowerBoundSerach = false
     }
   }

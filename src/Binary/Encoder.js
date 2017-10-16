@@ -1,4 +1,5 @@
 import utf8 from 'utf-8'
+import { RootFakeUserID } from '../Util/RootID.js'
 
 const bits7 = 0b1111111
 const bits8 = 0b11111111
@@ -68,13 +69,14 @@ export default class BinaryEncoder {
     }
   }
 
-  writeOpID (id) {
-    let user = id[0]
+  writeID (id) {
+    const user = id.user
     this.writeVarUint(user)
-    if (user !== 0xFFFFFF) {
-      this.writeVarUint(id[1])
+    if (user !== RootFakeUserID) {
+      this.writeVarUint(id.clock)
     } else {
-      this.writeVarString(id[1])
+      this.writeVarString(id.name)
+      this.writeVarUint(id.type)
     }
   }
 }

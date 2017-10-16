@@ -11,11 +11,11 @@ test('basic spec', async function array0 (t) {
 
   let throwInvalidPosition = false
   try {
-    array0.delete(1, 0)
+    array0.delete(1, 1)
   } catch (e) {
     throwInvalidPosition = true
   }
-  t.assert(throwInvalidPosition, 'Throws when deleting zero elements with an invalid position')
+  t.assert(throwInvalidPosition, 'Throws when deleting with an invalid position')
 
   array0.insert(0, ['A'])
   array0.delete(1, 0)

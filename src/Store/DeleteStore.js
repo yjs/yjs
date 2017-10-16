@@ -17,6 +17,18 @@ export default class DeleteStore extends Tree {
     var n = this.ds.findWithUpperBound(id)
     return n != null && n.id[0] === id[0] && id[1] < n.id[1] + n.len
   }
+  applyMissingDeletesOnStruct (struct) {
+    const strID = struct._id
+    // find most right delete
+    let n = this.findWithUpperBound(new ID(strID.user, strID.clock + struct.length - 1))
+    if (n === null || n.id.user !== strID.user || n.id.clock + n.length <= strID.clock) {
+      // struct is not deleted
+      return null
+    }
+    // TODO:
+    // * iterate to the right and apply new Delete's
+    throw new Error('Not implemented!')
+  }
   /*
    * Mark an operation as deleted. returns the deleted node
    */

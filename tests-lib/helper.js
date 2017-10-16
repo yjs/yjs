@@ -87,7 +87,7 @@ export async function compareUsers (t, users) {
 
   var userArrayValues = users.map(u => u.get('array', Y.Array).toJSON())
   var userMapValues = users.map(u => u.get('map', Y.Map).toJSON())
-  var userXmlValues = users.map(u => u.get('xml', Y.Xml).getDom().toString())
+  var userXmlValues = users.map(u => u.get('xml', Y.Xml).toString())
 
   // disconnect all except user 0
   await Promise.all(users.slice(1).map(async u =>
@@ -107,28 +107,22 @@ export async function compareUsers (t, users) {
       u.connector.whenSynced(resolve)
     })
   ))
-  var data = users.forEach(u => {
+  var data = users.map(u => {
     var data = {}
     let ops = []
     u.os.iterate(null, null, function (op) {
       if (!op._deleted) {
         ops.push({
+          id: op._id,
           left: op._left,
           right: op._right,
           deleted: op._deleted
         })
       }
     })
-
-    data.os = {}
-    for (let i = 0; i < ops.length; i++) {
-      let op = ops[i]
-      op = Y.Struct[op.struct].encode(op)
-      delete op.origin
-      data.os[JSON.stringify(op.id)] = op
-    }
-    data.ds = getDeleteSet.apply(this)
-    data.ss = getStateSet.apply(this)
+    data.os = ops
+    data.ds = getDeleteSet(u)
+    data.ss = getStateSet(u)
     return data
   })
   for (var i = 0; i < data.length - 1; i++) {
@@ -141,7 +135,7 @@ export async function compareUsers (t, users) {
       t.compare(data[i].ss, data[i + 1].ss, 'ss')
     }, `Compare user${i} with user${i + 1}`)
   }
-  users.map(u => u.close())
+  users.map(u => u.destroy())
 }
 
 export async function initArrays (t, opts) {
@@ -161,6 +155,7 @@ export async function initArrays (t, opts) {
       connector: connOpts
     })
     result.users.push(y)
+    result['array' + i] = y.get('array', Y.Array)
     y.get('xml', Y.Xml).setDomFilter(function (d, attrs) {
       if (d.nodeName === 'HIDDEN') {
         return null
@@ -193,9 +188,6 @@ export async function flushAll (t, users) {
     // use flushAll method specified in Test Connector
     await users[0].connector.testRoom.flushAll(users)
   } else {
-    // flush for any connector
-    await Promise.all(users.map(u => { return u.db.whenTransactionsFinished() }))
-
     var flushCounter = users[0].get('flushHelper', Y.Map).get('0') || 0
     flushCounter++
     await Promise.all(users.map(async (u, i) => {
