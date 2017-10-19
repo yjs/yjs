@@ -1,5 +1,5 @@
 import Tree from '../Util/Tree.js'
-import RootID from '../Util/ID.js'
+import RootID from '../Util/RootID.js'
 import { getStruct } from '../Util/structReferences.js'
 
 export default class OperationStore extends Tree {
@@ -10,10 +10,12 @@ export default class OperationStore extends Tree {
   get (id) {
     let struct = this.find(id)
     if (struct === null && id instanceof RootID) {
-      let Constr = getStruct(id.type)
+      const Constr = getStruct(id.type)
+      const y = this.y
       struct = new Constr()
       struct._id = id
-      struct._parent = this.y
+      struct._parent = y
+      struct._integrate(y)
       this.put(struct)
     }
     return struct

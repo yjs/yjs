@@ -27,9 +27,9 @@ test('basic spec', async function array0 (t) {
 test('insert three elements, try re-get property', async function array1 (t) {
   var { users, array0, array1 } = await initArrays(t, { users: 2 })
   array0.insert(0, [1, 2, 3])
-  t.compare(array0.toArray(), [1, 2, 3], '.toArray() works')
+  t.compare(array0.toJSON(), [1, 2, 3], '.toJSON() works')
   await flushAll(t, users)
-  t.compare(array1.toArray(), [1, 2, 3], '.toArray() works after sync')
+  t.compare(array1.toJSON(), [1, 2, 3], '.toJSON() works after sync')
   await compareUsers(t, users)
 })
 
@@ -76,8 +76,8 @@ test('disconnect really prevents sending messages', async function array5 (t) {
   array0.insert(1, ['user0'])
   array1.insert(1, ['user1'])
   await wait(1000)
-  t.compare(array0.toArray(), ['x', 'user0', 'y'])
-  t.compare(array1.toArray(), ['x', 'user1', 'y'])
+  t.compare(array0.toJSON(), ['x', 'user0', 'y'])
+  t.compare(array1.toJSON(), ['x', 'user1', 'y'])
   await users[1].reconnect()
   await users[2].reconnect()
   await compareUsers(t, users)
@@ -225,7 +225,7 @@ test('event has correct value when setting a primitive on a YArray (same user)',
   array0.insert(0, ['stuff'])
   t.assert(event.values[0] === event.object.get(0), 'compare value with get method')
   t.assert(event.values[0] === 'stuff', 'check that value is actually present')
-  t.assert(event.values[0] === array0.toArray()[0], '.toArray works as expected')
+  t.assert(event.values[0] === array0.toJSON()[0], '.toJSON works as expected')
   await compareUsers(t, users)
 })
 
@@ -240,7 +240,7 @@ test('event has correct value when setting a primitive on a YArray (received fro
   await flushAll(t, users)
   t.assert(event.values[0] === event.object.get(0), 'compare value with get method')
   t.assert(event.values[0] === 'stuff', 'check that value is actually present')
-  t.assert(event.values[0] === array0.toArray()[0], '.toArray works as expected')
+  t.assert(event.values[0] === array0.toJSON()[0], '.toJSON works as expected')
   await compareUsers(t, users)
 })
 
@@ -254,7 +254,7 @@ test('event has correct value when setting a type on a YArray (same user)', asyn
   array0.insert(0, [Y.Array])
   t.assert(event.values[0] === event.object.get(0), 'compare value with get method')
   t.assert(event.values[0] != null, 'event.value exists')
-  t.assert(event.values[0] === array0.toArray()[0], '.toArray works as expected')
+  t.assert(event.values[0] === array0.toJSON()[0], '.toJSON works as expected')
   await compareUsers(t, users)
 })
 test('event has correct value when setting a type on a YArray (ops received from another user)', async function array14 (t) {
@@ -268,7 +268,7 @@ test('event has correct value when setting a type on a YArray (ops received from
   await flushAll(t, users)
   t.assert(event.values[0] === event.object.get(0), 'compare value with get method')
   t.assert(event.values[0] != null, 'event.value exists')
-  t.assert(event.values[0] === array0.toArray()[0], '.toArray works as expected')
+  t.assert(event.values[0] === array0.toJSON()[0], '.toJSON works as expected')
   await compareUsers(t, users)
 })
 

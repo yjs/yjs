@@ -50,7 +50,7 @@ test('events', async function xml1 (t) {
     type: 'childInserted',
     index: 0
   }
-  xml0.insert(0, [Y.XmlText('some text')])
+  xml0.insert(0, [new Y.XmlText('some text')])
   t.compare(event, expectedEvent, 'child inserted event')
   await flushAll(t, users)
   t.compare(remoteEvent, expectedEvent, 'child inserted event (remote)')
@@ -110,8 +110,8 @@ test('element insert (dom -> y)', async function xml4 (t) {
 test('element insert (y -> dom)', async function xml5 (t) {
   var { users, xml0 } = await initArrays(t, { users: 3 })
   let dom0 = xml0.getDom()
-  xml0.insert(0, [Y.XmlText('some text')])
-  xml0.insert(1, [Y.XmlElement('p')])
+  xml0.insert(0, [new Y.XmlText('some text')])
+  xml0.insert(1, [new Y.XmlElement('p')])
   t.assert(dom0.childNodes[0].textContent === 'some text', 'Retrieve Text node')
   t.assert(dom0.childNodes[1].nodeName === 'P', 'Retrieve Element node')
   await compareUsers(t, users)
@@ -132,7 +132,7 @@ test('y on insert, then delete (dom -> y)', async function xml6 (t) {
 test('y on insert, then delete (y -> dom)', async function xml7 (t) {
   var { users, xml0 } = await initArrays(t, { users: 3 })
   let dom0 = xml0.getDom()
-  xml0.insert(0, [Y.XmlElement('p')])
+  xml0.insert(0, [new Y.XmlElement('p')])
   t.assert(dom0.childNodes[0].nodeName === 'P', 'Get inserted element from dom')
   xml0.delete(0, 1)
   t.assert(dom0.childNodes.length === 0, '#childNodes is empty after delete')
@@ -142,7 +142,7 @@ test('y on insert, then delete (y -> dom)', async function xml7 (t) {
 test('delete consecutive (1) (Text)', async function xml8 (t) {
   var { users, xml0 } = await initArrays(t, { users: 3 })
   let dom0 = xml0.getDom()
-  xml0.insert(0, ['1', '2', '3'].map(Y.XmlText))
+  xml0.insert(0, [new Y.XmlText('1'), new Y.XmlText('2'), new Y.XmlText('3')])
   await wait()
   xml0.delete(1, 2)
   await wait()
@@ -155,7 +155,7 @@ test('delete consecutive (1) (Text)', async function xml8 (t) {
 test('delete consecutive (2) (Text)', async function xml9 (t) {
   var { users, xml0 } = await initArrays(t, { users: 3 })
   let dom0 = xml0.getDom()
-  xml0.insert(0, ['1', '2', '3'].map(Y.XmlText))
+  xml0.insert(0, [new Y.XmlText('1'), new Y.XmlText('2'), new Y.XmlText('3')])
   await wait()
   xml0.delete(0, 1)
   xml0.delete(1, 1)
@@ -169,7 +169,7 @@ test('delete consecutive (2) (Text)', async function xml9 (t) {
 test('delete consecutive (1) (Element)', async function xml10 (t) {
   var { users, xml0 } = await initArrays(t, { users: 3 })
   let dom0 = xml0.getDom()
-  xml0.insert(0, [Y.XmlElement('A'), Y.XmlElement('B'), Y.XmlElement('C')])
+  xml0.insert(0, [new Y.XmlElement('A'), new Y.XmlElement('B'), new Y.XmlElement('C')])
   await wait()
   xml0.delete(1, 2)
   await wait()
@@ -182,7 +182,7 @@ test('delete consecutive (1) (Element)', async function xml10 (t) {
 test('delete consecutive (2) (Element)', async function xml11 (t) {
   var { users, xml0 } = await initArrays(t, { users: 3 })
   let dom0 = xml0.getDom()
-  xml0.insert(0, [Y.XmlElement('A'), Y.XmlElement('B'), Y.XmlElement('C')])
+  xml0.insert(0, [new Y.XmlElement('A'), new Y.XmlElement('B'), new Y.XmlElement('C')])
   await wait()
   xml0.delete(0, 1)
   xml0.delete(1, 1)
@@ -198,8 +198,8 @@ test('Receive a bunch of elements (with disconnect)', async function xml12 (t) {
   let dom0 = xml0.getDom()
   let dom1 = xml1.getDom()
   users[1].disconnect()
-  xml0.insert(0, [Y.XmlElement('A'), Y.XmlElement('B'), Y.XmlElement('C')])
-  xml0.insert(0, [Y.XmlElement('X'), Y.XmlElement('Y'), Y.XmlElement('Z')])
+  xml0.insert(0, [new Y.XmlElement('A'), new Y.XmlElement('B'), new Y.XmlElement('C')])
+  xml0.insert(0, [new Y.XmlElement('X'), new Y.XmlElement('Y'), new Y.XmlElement('Z')])
   await users[1].reconnect()
   await flushAll(t, users)
   t.assert(xml0.length === 6, 'check length (y)')
@@ -267,36 +267,37 @@ test('filter attribute', async function xml15 (t) {
 
 // TODO: move elements
 var xmlTransactions = [
-  function attributeChange (t, user, chance) {
-    user.share.xml.getDom().setAttribute(chance.word(), chance.word())
+  /*function attributeChange (t, user, chance) {
+    user.get('xml', Y.XmlElement).getDom().setAttribute(chance.word(), chance.word())
   },
   function attributeChangeHidden (t, user, chance) {
-    user.share.xml.getDom().setAttribute('hidden', chance.word())
-  },
+    user.get('xml', Y.XmlElement).getDom().setAttribute('hidden', chance.word())
+  },*/
   function insertText (t, user, chance) {
-    let dom = user.share.xml.getDom()
+    let dom = user.get('xml', Y.XmlElement).getDom()
     var succ = dom.children.length > 0 ? chance.pickone(dom.children) : null
     dom.insertBefore(document.createTextNode(chance.word()), succ)
-  },
+  },/*
   function insertHiddenDom (t, user, chance) {
-    let dom = user.share.xml.getDom()
+    let dom = user.get('xml', Y.XmlElement).getDom()
     var succ = dom.children.length > 0 ? chance.pickone(dom.children) : null
     dom.insertBefore(document.createElement('hidden'), succ)
   },
+  /*
   function insertDom (t, user, chance) {
-    let dom = user.share.xml.getDom()
+    let dom = user.get('xml', Y.XmlElement).getDom()
     var succ = dom.children.length > 0 ? chance.pickone(dom.children) : null
     dom.insertBefore(document.createElement(chance.word()), succ)
   },
   function deleteChild (t, user, chance) {
-    let dom = user.share.xml.getDom()
+    let dom = user.get('xml', Y.XmlElement).getDom()
     if (dom.childNodes.length > 0) {
       var d = chance.pickone(dom.childNodes)
       d.remove()
     }
   },
   function insertTextSecondLayer (t, user, chance) {
-    let dom = user.share.xml.getDom()
+    let dom = user.get('xml', Y.XmlElement).getDom()
     if (dom.children.length > 0) {
       let dom2 = chance.pickone(dom.children)
       let succ = dom2.childNodes.length > 0 ? chance.pickone(dom2.childNodes) : null
@@ -304,7 +305,7 @@ var xmlTransactions = [
     }
   },
   function insertDomSecondLayer (t, user, chance) {
-    let dom = user.share.xml.getDom()
+    let dom = user.get('xml', Y.XmlElement).getDom()
     if (dom.children.length > 0) {
       let dom2 = chance.pickone(dom.children)
       let succ = dom2.childNodes.length > 0 ? chance.pickone(dom2.childNodes) : null
@@ -312,7 +313,7 @@ var xmlTransactions = [
     }
   },
   function deleteChildSecondLayer (t, user, chance) {
-    let dom = user.share.xml.getDom()
+    let dom = user.get('xml', Y.XmlElement).getDom()
     if (dom.children.length > 0) {
       let dom2 = chance.pickone(dom.children)
       if (dom2.childNodes.length > 0) {
@@ -320,7 +321,7 @@ var xmlTransactions = [
         d.remove()
       }
     }
-  }
+  }*/
 ]
 
 test('y-xml: Random tests (10)', async function xmlRandom10 (t) {

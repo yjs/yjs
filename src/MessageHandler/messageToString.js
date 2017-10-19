@@ -3,18 +3,18 @@ import { stringifyUpdate } from './update.js'
 import { stringifySyncStep1 } from './syncStep1.js'
 import { stringifySyncStep2 } from './syncStep2.js'
 
-export function messageToString (buffer) {
+export function messageToString (y, buffer) {
   let decoder = new BinaryDecoder(buffer)
   decoder.readVarString() // read roomname
   let type = decoder.readVarString()
   let strBuilder = []
   strBuilder.push('\n === ' + type + ' ===\n')
   if (type === 'update') {
-    stringifyUpdate(decoder, strBuilder)
+    stringifyUpdate(y, decoder, strBuilder)
   } else if (type === 'sync step 1') {
-    stringifySyncStep1(decoder, strBuilder)
+    stringifySyncStep1(y, decoder, strBuilder)
   } else if (type === 'sync step 2') {
-    stringifySyncStep2(decoder, strBuilder)
+    stringifySyncStep2(y, decoder, strBuilder)
   } else {
     strBuilder.push('-- Unknown message type - probably an encoding issue!!!')
   }

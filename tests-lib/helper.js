@@ -3,6 +3,8 @@ import _Y from '../src/Y.js'
 import yTest from './test-connector.js'
 
 import Chance from 'chance'
+import ItemJSON from '../src/Struct/ItemJSON.js'
+import ItemString from '../src/Struct/ItemString.js'
 
 export const Y = _Y
 
@@ -22,8 +24,8 @@ function getStateSet (y) {
 function getDeleteSet (y) {
   var ds = {}
   y.ds.iterate(null, null, function (n) {
-    var user = n.id[0]
-    var counter = n.id[1]
+    var user = n._id.user
+    var counter = n._id.clock
     var len = n.len
     var gc = n.gc
     var dv = ds[user]
@@ -112,12 +114,17 @@ export async function compareUsers (t, users) {
     let ops = []
     u.os.iterate(null, null, function (op) {
       if (!op._deleted) {
-        ops.push({
+        const json = {
           id: op._id,
-          left: op._left,
-          right: op._right,
+          left: op._left === null ? null : op._left._id,
+          right: op._right === null ? null : op._right._id,
+          length: op._length,
           deleted: op._deleted
-        })
+        }
+        if (op instanceof ItemJSON || op instanceof ItemString) {
+          json.content = op._content
+        }
+        ops.push(json)
       }
     })
     data.os = ops
@@ -152,10 +159,13 @@ export async function initArrays (t, opts) {
       connOpts = Object.assign({ role: 'slave' }, conn)
     }
     let y = new Y({
+      _userID: i, // evil hackery, don't try this at home
       connector: connOpts
     })
     result.users.push(y)
     result['array' + i] = y.get('array', Y.Array)
+    result['map' + i] = y.get('map', Y.Map)
+    result['xml' + i] = y.get('xml', Y.XmlElement)
     y.get('xml', Y.Xml).setDomFilter(function (d, attrs) {
       if (d.nodeName === 'HIDDEN') {
         return null

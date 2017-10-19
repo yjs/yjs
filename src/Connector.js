@@ -5,7 +5,7 @@ import { sendSyncStep1, readSyncStep1 } from './MessageHandler/syncStep1.js'
 import { readSyncStep2 } from './MessageHandler/syncStep2.js'
 import { readUpdate } from './MessageHandler/update.js'
 
-import { debug } from './Y.js'
+import debug from 'debug'
 
 export default class AbstractConnector {
   constructor (y, opts) {
@@ -251,9 +251,13 @@ export default class AbstractConnector {
       // cannot wait for sync step 1 to finish, because we may wait for sync step 2 in sync step 1 (->lock)
       readSyncStep1(decoder, encoder, this.y, senderConn, sender)
     } else if (messageType === 'sync step 2' && senderConn.auth === 'write') {
-      readSyncStep2(decoder, encoder, this.y, senderConn, sender)
+      this.y.transact(() => {
+        readSyncStep2(decoder, encoder, this.y, senderConn, sender)
+      })
     } else if (messageType === 'update' && (skipAuth || senderConn.auth === 'write')) {
-      readUpdate(decoder, encoder, this.y, senderConn, sender)
+      this.y.transact(() => {
+        readUpdate(decoder, encoder, this.y, senderConn, sender)
+      })
     } else {
       throw new Error('Unable to receive message')
     }

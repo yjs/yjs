@@ -1,9 +1,35 @@
 import { getReference } from '../Util/structReferences.js'
+import ID from '../Util/ID.js'
 
+/**
+ * Delete all items in an ID-range
+ * TODO: implement getItemCleanStartNode for better performance (only one lookup)
+ */
 export function deleteItemRange (y, user, clock, range) {
-  let items = y.os.getItems(this._target, this._length)
-  for (let i = items.length - 1; i >= 0; i--) {
-    items[i]._delete(y, false)
+  const createDelete = y.connector._forwardAppliedStructs
+  let item = y.os.getItemCleanStart(new ID(user, clock))
+  if (item !== null) {
+    if (!item._deleted) {
+      item._splitAt(y, range)
+      item._delete(y, createDelete)
+    }
+    let itemLen = item._length
+    range -= itemLen
+    clock += itemLen
+    if (range > 0) {
+      let node = y.os.findNode(new ID(user, clock))
+      while (node !== null && range > 0 && node.val._id.equals(new ID(user, clock))) {
+        const nodeVal = node.val
+        if (!nodeVal._deleted) {
+          nodeVal._splitAt(y, range)
+          nodeVal._delete(y, createDelete)
+        }
+        const nodeLen = nodeVal._length
+        range -= nodeLen
+        clock += nodeLen
+        node = node.next()
+      }
+    }
   }
 }
 
@@ -18,6 +44,7 @@ export default class Delete {
   _fromBinary (y, decoder) {
     this._targetID = decoder.readID()
     this._length = decoder.readVarUint()
+    return []
   }
   _toBinary (encoder) {
     encoder.writeUint8(getReference(this.constructor))

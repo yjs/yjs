@@ -34,6 +34,9 @@ export default class Item {
     this._parentSub = null
     this._deleted = false
   }
+  get _lastId () {
+    return new ID(this._id.user, this._id.clock + this._length - 1)
+  }
   get _length () {
     return 1
   }
@@ -61,6 +64,17 @@ export default class Item {
       del._length = this._length
       del._integrate(y, true)
     }
+    const parent = this._parent
+    if (parent !== y && !parent._deleted) {
+      y._transactionChangedTypes.set(parent, this._parentSub)
+    }
+  }
+  /**
+   * This is called right before this struct receives any children.
+   * It can be overwritten to apply pending changes before applying remote changes
+   */
+  _beforeChange () {
+    // nop
   }
   /*
    * - Integrate the struct so that other types/structs can see it
@@ -68,12 +82,26 @@ export default class Item {
    * - Check if this is struct deleted
    */
   _integrate (y) {
+    const parent = this._parent
     const selfID = this._id
+    const userState = selfID === null ? 0 : y.ss.getState(selfID.user)
     if (selfID === null) {
       this._id = y.ss.getNextID(this._length)
-    } else if (selfID.clock < y.ss.getState(selfID.user)) {
+    } else if (selfID.user === RootFakeUserID) {
+      // nop
+    } else if (selfID.clock < userState) {
       // already applied..
       return []
+    } else if (selfID.clock === userState) {
+      y.ss.setState(selfID.user, userState + this._length)
+    } else {
+      // missing content from user
+      throw new Error('Can not apply yet!')
+    }
+    if (!parent._deleted && !y._transactionChangedTypes.has(parent) && !y._transactionNewTypes.has(parent)) {
+      // this is the first time parent is updated
+      // or this types is new
+      this._parent._beforeChange()
     }
     /*
     # $this has to find a unique position between origin and the next known character
@@ -96,7 +124,7 @@ export default class Item {
     if (this._left !== null) {
       o = this._left._right
     } else if (this._parentSub !== null) {
-      o = this._parent._map.get(this._parentSub)
+      o = this._parent._map.get(this._parentSub) || null
     } else {
       o = this._parent._start
     }
@@ -124,14 +152,36 @@ export default class Item {
       }
       o = o._right
     }
+    // reconnect left/right + update parent map/start if necessary
+    const parentSub = this._parentSub
     if (this._left === null) {
-      if (this._parentSub !== null) {
-        this._parent._map.set(this._parentSub, this)
+      let right
+      if (parentSub !== null) {
+        const pmap = parent._map
+        right = pmap.get(parentSub) || null
+        pmap.set(parentSub, this)
       } else {
-        this._parent._start = this
+        right = parent._start
+        parent._start = this
+      }
+      this._right = right
+      if (right !== null) {
+        right._left = this
+      }
+    } else {
+      const left = this._left
+      const right = left._right
+      this._right = right
+      left._right = this
+      if (right !== null) {
+        right._left = this
       }
     }
     y.os.put(this)
+    if (parent !== y && !parent._deleted) {
+      y._transactionChangedTypes.set(parent, parentSub)
+    }
+
     if (this._id.user !== RootFakeUserID) {
       if (y.connector._forwardAppliedStructs || this._id.user === y.userID) {
         y.connector.broadcastStruct(this)
@@ -160,10 +210,10 @@ export default class Item {
     encoder.writeUint8(info)
     encoder.writeID(this._id)
     if (info & 0b1) {
-      encoder.writeID(this._origin._id)
+      encoder.writeID(this._origin._lastId)
     }
     if (info & 0b10) {
-      encoder.writeID(this._left._id)
+      encoder.writeID(this._left._lastId)
     }
     if (info & 0b100) {
       encoder.writeID(this._right_origin._id)
@@ -179,7 +229,8 @@ export default class Item {
   _fromBinary (y, decoder) {
     let missing = []
     const info = decoder.readUint8()
-    this._id = decoder.readID()
+    const id = decoder.readID()
+    this._id = id
     // read origin
     if (info & 0b1) {
       // origin != null
@@ -214,9 +265,9 @@ export default class Item {
       // right != null
       const rightID = decoder.readID()
       if (this._right_origin === null) {
-        const right = y.os.getCleanStart(rightID)
+        const right = y.os.getItemCleanStart(rightID)
         if (right === null) {
-          missing.push(right)
+          missing.push(rightID)
         } else {
           this._right = right
           this._right_origin = right
@@ -230,7 +281,7 @@ export default class Item {
       if (this._parent === null) {
         const parent = y.os.get(parentID)
         if (parent === null) {
-          missing.push(parent)
+          missing.push(parentID)
         } else {
           this._parent = parent
         }
@@ -239,11 +290,15 @@ export default class Item {
       if (this._origin !== null) {
         this._parent = this._origin._parent
       } else if (this._right_origin !== null) {
-        this._parent = this._origin._parent
+        this._parent = this._right_origin._parent
       }
     }
     if (info & 0b1000) {
-      this._parentSub = decoder.readVarString()
+      // TODO: maybe put this in read parent condition (you can also read parentsub from left/right)
+      this._parentSub = JSON.parse(decoder.readVarString())
+    }
+    if (y.ss.getState(id.user) < id.clock) {
+      missing.push(new ID(id.user, id.clock - 1))
     }
     return missing
   }

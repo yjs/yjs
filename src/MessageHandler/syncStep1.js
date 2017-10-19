@@ -2,8 +2,9 @@ import BinaryEncoder from '../Binary/Encoder.js'
 import { readStateSet, writeStateSet } from './stateSet.js'
 import { writeDeleteSet } from './deleteSet.js'
 import ID from '../Util/ID.js'
+import { RootFakeUserID } from '../Util/RootID.js'
 
-export function stringifySyncStep1 (decoder, strBuilder) {
+export function stringifySyncStep1 (y, decoder, strBuilder) {
   let auth = decoder.readVarString()
   let protocolVersion = decoder.readVarUint()
   strBuilder.push(`
@@ -31,10 +32,13 @@ export function sendSyncStep1 (connector, syncUser) {
 }
 
 export default function writeStructs (encoder, decoder, y, ss) {
-  for (let [user, clock] of ss) {
-    y.os.iterate(new ID(user, clock), null, function (struct) {
-      struct._toBinary(encoder)
-    })
+  for (let user of y.ss.state.keys()) {
+    let clock = ss.get(user) || 0
+    if (user !== RootFakeUserID) {
+      y.os.iterate(new ID(user, clock), new ID(user, Number.MAX_VALUE), function (struct) {
+        struct._toBinary(encoder)
+      })
+    }
   }
 }
 

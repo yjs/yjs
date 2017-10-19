@@ -136,7 +136,6 @@ export default function extendTestConnector (Y) {
         // this one needs to sync with every other user
         flushUsers = Array.from(this.connections.keys()).map(uid => this.testRoom.users.get(uid).y)
       }
-      var finished = []
       for (let i = 0; i < flushUsers.length; i++) {
         let userID = flushUsers[i].connector.y.userID
         if (userID !== this.y.userID && this.connections.has(userID)) {
@@ -144,14 +143,12 @@ export default function extendTestConnector (Y) {
           if (buffer != null) {
             var messages = buffer.splice(0)
             for (let j = 0; j < messages.length; j++) {
-              let p = super.receiveMessage(userID, messages[j])
-              finished.push(p)
+              super.receiveMessage(userID, messages[j])
             }
           }
         }
       }
-      await Promise.all(finished)
-      return finished.length > 0 ? 'flushing' : 'done'
+      return 'done'
     }
   }
   // TODO: this should be moved to a separate module (dont work on Y)

@@ -1,5 +1,6 @@
 import { getStruct } from '../Util/structReferences.js'
 import BinaryDecoder from '../Binary/Decoder.js'
+import Delete from '../Struct/Delete.js'
 
 class MissingEntry {
   constructor (decoder, missing, struct) {
@@ -16,24 +17,26 @@ class MissingEntry {
  */
 function _integrateRemoteStructHelper (y, struct) {
   struct._integrate(y)
-  let msu = y._missingStructs.get(struct._id.user)
-  if (msu != null) {
-    let len = struct._length
-    for (let i = 0; i < len; i++) {
-      if (msu.has(struct._id.clock + i)) {
-        let msuc = msu.get(struct._id.clock + i)
-        msuc.forEach(missingDef => {
-          missingDef.missing--
-          if (missingDef.missing === 0) {
-            let missing = missingDef.struct._fromBinary(y, missingDef.decoder)
-            if (missing.length > 0) {
-              console.error('Missing should be empty!')
-            } else {
-              y._readyToIntegrate.push(missingDef.struct)
+  if (!(struct instanceof Delete)) {
+    let msu = y._missingStructs.get(struct._id.user)
+    if (msu != null) {
+      let len = struct._length
+      for (let i = 0; i < len; i++) {
+        if (msu.has(struct._id.clock + i)) {
+          let msuc = msu.get(struct._id.clock + i)
+          msuc.forEach(missingDef => {
+            missingDef.missing--
+            if (missingDef.missing === 0) {
+              let missing = missingDef.struct._fromBinary(y, missingDef.decoder)
+              if (missing.length > 0) {
+                console.error('Missing should be empty!')
+              } else {
+                y._readyToIntegrate.push(missingDef.struct)
+              }
             }
-          }
-        })
-        msu.delete(struct._id.clock)
+          })
+          msu.delete(struct._id.clock)
+        }
       }
     }
   }

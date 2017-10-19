@@ -13,7 +13,8 @@ export default class ItemJSON extends Item {
     let len = decoder.readVarUint()
     this._content = new Array(len)
     for (let i = 0; i < len; i++) {
-      this._content[i] = JSON.parse(decoder.readVarString())
+      const ctnt = decoder.readVarString()
+      this._content[i] = JSON.parse(ctnt)
     }
     return missing
   }

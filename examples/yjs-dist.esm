@@ -1,12 +1,7 @@
 
-import Y from '../src/y.js'
-import yArray from '../../y-array/src/y-array.js'
-import yIndexedDB from '../../y-indexeddb/src/y-indexeddb.js'
-import yMap from '../../y-map/src/y-map.js'
-import yText from '../../y-text/src/y-text.js'
-import yXml from '../../y-xml/src/y-xml.js'
+import Y from '../src/Y.js'
 import yWebsocketsClient from '../../y-websockets-client/src/y-websockets-client.js'
 
-Y.extend(yArray, yIndexedDB, yMap, yText, yXml, yWebsocketsClient)
+Y.extend(yWebsocketsClient)
 
 export default Y

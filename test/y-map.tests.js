@@ -10,9 +10,9 @@ test('basic map tests', async function map0 (t) {
   map0.set('number', 1)
   map0.set('string', 'hello Y')
   map0.set('object', { key: { key2: 'value' } })
-  map0.set('y-map', Y.Map)
+  map0.set('y-map', new Y.Map())
   let map = map0.get('y-map')
-  map.set('y-array', Y.Array)
+  map.set('y-array', new Y.Array())
   let array = map.get('y-array')
   array.insert(0, [0])
   array.insert(0, [-1])
@@ -46,7 +46,7 @@ test('Basic get&set of Map property (converge via sync)', async function map1 (t
   await flushAll(t, users)
 
   for (let user of users) {
-    var u = user.share.map
+    var u = user.get('map', Y.Map)
     t.compare(u.get('stuff'), 'stuffy')
   }
   await compareUsers(t, users)
@@ -54,7 +54,7 @@ test('Basic get&set of Map property (converge via sync)', async function map1 (t
 
 test('Map can set custom types (Map)', async function map2 (t) {
   let { users, map0 } = await initArrays(t, { users: 2 })
-  var map = map0.set('Map', Y.Map)
+  var map = map0.set('Map', new Y.Map())
   map.set('one', 1)
   map = map0.get('Map')
   t.compare(map.get('one'), 1)
@@ -63,7 +63,7 @@ test('Map can set custom types (Map)', async function map2 (t) {
 
 test('Map can set custom types (Map) - get also returns the type', async function map3 (t) {
   let { users, map0 } = await initArrays(t, { users: 2 })
-  map0.set('Map', Y.Map)
+  map0.set('Map', new Y.Map())
   var map = map0.get('Map')
   map.set('one', 1)
   map = map0.get('Map')
@@ -73,7 +73,7 @@ test('Map can set custom types (Map) - get also returns the type', async functio
 
 test('Map can set custom types (Array)', async function map4 (t) {
   let { users, map0 } = await initArrays(t, { users: 2 })
-  var array = map0.set('Array', Y.Array)
+  var array = map0.set('Array', new Y.Array())
   array.insert(0, [1, 2, 3])
   array = map0.get('Array')
   t.compare(array.toArray(), [1, 2, 3])
@@ -88,7 +88,7 @@ test('Basic get&set of Map property (converge via update)', async function map5 
   await flushAll(t, users)
 
   for (let user of users) {
-    var u = user.share.map
+    var u = user.get('map', Y.Map)
     t.compare(u.get('stuff'), 'stuffy')
   }
   await compareUsers(t, users)
@@ -102,7 +102,7 @@ test('Basic get&set of Map property (handle conflict)', async function map6 (t) 
   await flushAll(t, users)
 
   for (let user of users) {
-    var u = user.share.map
+    var u = user.get('map', Y.Map)
     t.compare(u.get('stuff'), 'c0')
   }
   await compareUsers(t, users)
@@ -115,7 +115,7 @@ test('Basic get&set&delete of Map property (handle conflict)', async function ma
   map1.set('stuff', 'c1')
   await flushAll(t, users)
   for (let user of users) {
-    var u = user.share.map
+    var u = user.get('map', Y.Map)
     t.assert(u.get('stuff') === undefined)
   }
   await compareUsers(t, users)
@@ -129,7 +129,7 @@ test('Basic get&set of Map property (handle three conflicts)', async function ma
   map2.set('stuff', 'c3')
   await flushAll(t, users)
   for (let user of users) {
-    var u = user.share.map
+    var u = user.get('map', Y.Map)
     t.compare(u.get('stuff'), 'c0')
   }
   await compareUsers(t, users)
@@ -149,7 +149,7 @@ test('Basic get&set&delete of Map property (handle three conflicts)', async func
   map3.set('stuff', 'c3')
   await flushAll(t, users)
   for (let user of users) {
-    var u = user.share.map
+    var u = user.get('map', Y.Map)
     t.assert(u.get('stuff') === undefined)
   }
   await compareUsers(t, users)
@@ -163,7 +163,7 @@ test('observePath properties', async function map10 (t) {
       map.set('yay', 4)
     }
   })
-  map1.set('map', Y.Map)
+  map1.set('map', new Y.Map())
   await flushAll(t, users)
   map = map2.get('map')
   t.compare(map.get('yay'), 4)
@@ -172,7 +172,7 @@ test('observePath properties', async function map10 (t) {
 
 test('observe deep properties', async function map11 (t) {
   let { users, map1, map2, map3 } = await initArrays(t, { users: 4 })
-  var _map1 = map1.set('map', Y.Map)
+  var _map1 = map1.set('map', new Y.Map())
   var calls = 0
   var dmapid
   _map1.observe(function (event) {
@@ -182,10 +182,10 @@ test('observe deep properties', async function map11 (t) {
   })
   await flushAll(t, users)
   var _map3 = map3.get('map')
-  _map3.set('deepmap', Y.Map)
+  _map3.set('deepmap', new Y.Map())
   await flushAll(t, users)
   var _map2 = map2.get('map')
-  _map2.set('deepmap', Y.Map)
+  _map2.set('deepmap', new Y.Map())
   await flushAll(t, users)
   var dmap1 = _map1.get('deepmap')
   var dmap2 = _map2.get('deepmap')
@@ -205,8 +205,8 @@ test('observes using observePath', async function map12 (t) {
     pathes.push(event.path)
     calls++
   })
-  map0.set('map', Y.Map)
-  map0.get('map').set('array', Y.Array)
+  map0.set('map', new Y.Map())
+  map0.get('map').set('array', new Y.Array())
   map0.get('map').get('array').insert(0, ['content'])
   t.assert(calls === 3)
   t.compare(pathes, [[], ['map'], ['map', 'array']])
@@ -233,7 +233,7 @@ test('throws add & update & delete events (with type and primitive content)', as
     name: 'stuff'
   })
   // update, oldValue is in contents
-  map0.set('stuff', Y.Array)
+  map0.set('stuff', new Y.Array())
   compareEvent(t, event, {
     type: 'update',
     object: map0,
@@ -288,7 +288,7 @@ test('event has correct value when setting a type on a YMap (same user)', async 
   map0.observe(function (e) {
     event = e
   })
-  map0.set('stuff', Y.Map)
+  map0.set('stuff', new Y.Map())
   t.compare(event.value._model, event.object.get(event.name)._model)
   await compareUsers(t, users)
 })
@@ -300,7 +300,7 @@ test('event has correct value when setting a type on a YMap (ops received from a
   map0.observe(function (e) {
     event = e
   })
-  map1.set('stuff', Y.Map)
+  map1.set('stuff', new Y.Map())
   await flushAll(t, users)
   t.compare(event.value._model, event.object.get(event.name)._model)
   await compareUsers(t, users)
@@ -310,13 +310,13 @@ var mapTransactions = [
   function set (t, user, chance) {
     let key = chance.pickone(['one', 'two'])
     var value = chance.string()
-    user.share.map.set(key, value)
+    user.get('map', Y.Map).set(key, value)
   },
   function setType (t, user, chance) {
     let key = chance.pickone(['one', 'two'])
-    var value = chance.pickone([Y.Array, Y.Map])
-    let type = user.share.map.set(key, value)
-    if (value === Y.Array) {
+    var value = chance.pickone([new Y.Array(), new Y.Map()])
+    let type = user.get('map', Y.Map).set(key, value)
+    if (value === new Y.Array()) {
       type.insert(0, [1, 2, 3, 4])
     } else {
       type.set('deepkey', 'deepvalue')
@@ -324,7 +324,7 @@ var mapTransactions = [
   },
   function _delete (t, user, chance) {
     let key = chance.pickone(['one', 'two'])
-    user.share.map.delete(key)
+    user.get('map', Y.Map).delete(key)
   }
 ]
 

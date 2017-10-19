@@ -12,15 +12,22 @@ import Persistence from './Persistence.js'
 import YArray from './Type/YArray.js'
 import YMap from './Type/YMap.js'
 import YText from './Type/YText.js'
-import YXml from './Type/YXml.js'
+import { YXmlFragment, YXmlElement, YXmlText } from './Type/y-xml/y-xml.js'
+import BinaryDecoder from './Binary/Decoder.js'
 
 import debug from 'debug'
+
+function callTypesAfterTransaction (y) {
+  y._transactionChangedTypes.forEach(function (parentSub, type) {
+    type._callObserver(parentSub)
+  })
+}
 
 export default class Y extends NamedEventHandler {
   constructor (opts) {
     super()
     this._opts = opts
-    this.userID = generateUserID()
+    this.userID = opts._userID != null ? opts._userID : generateUserID()
     this.ds = new DeleteStore(this)
     this.os = new OperationStore(this)
     this.ss = new StateStore(this)
@@ -34,6 +41,27 @@ export default class Y extends NamedEventHandler {
     this.connected = true
     this._missingStructs = new Map()
     this._readyToIntegrate = []
+    this._transactionsInProgress = 0
+    // types added during transaction
+    this._transactionNewTypes = new Set()
+    // changed types (does not include new types)
+    this._transactionChangedTypes = new Map()
+    this.on('afterTransaction', callTypesAfterTransaction)
+  }
+  _beforeChange () {}
+  transact (f) {
+    this._transactionsInProgress++
+    try {
+      f()
+    } catch (e) {
+      console.error(e)
+    }
+    this._transactionsInProgress--
+    if (this._transactionsInProgress === 0) {
+      this.emit('afterTransaction', this)
+      this._transactionChangedTypes = new Map()
+      this._transactionNewTypes = new Set()
+    }
   }
   // fake _start for root properties (y.set('name', type))
   get _start () {
@@ -102,9 +130,13 @@ Y.Persisence = Persistence
 Y.Array = YArray
 Y.Map = YMap
 Y.Text = YText
-Y.Xml = YXml
+Y.XmlElement = YXmlElement
+Y.XmlFragment = YXmlFragment
+Y.XmlText = YXmlText
 
-export { default as debug } from 'debug'
+Y.utils = {
+  BinaryDecoder
+}
 
 Y.debug = debug
 debug.formatters.Y = messageToString

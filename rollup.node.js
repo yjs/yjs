@@ -3,9 +3,9 @@ import commonjs from 'rollup-plugin-commonjs'
 var pkg = require('./package.json')
 
 export default {
-  entry: 'src/Y.js',
+  entry: 'src/y-dist.cjs.js',
   moduleName: 'Y',
-  format: 'umd',
+  format: 'cjs',
   plugins: [
     nodeResolve({
       main: true,

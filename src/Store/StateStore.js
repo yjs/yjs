@@ -4,12 +4,12 @@ export default class StateStore {
   constructor (y) {
     this.y = y
     this.state = new Map()
-    this.currentClock = 0
   }
   getNextID (len) {
-    let id = new ID(this.y.userID, this.currentClock)
-    this.currentClock += len
-    return id
+    const user = this.y.userID
+    const state = this.getState(user)
+    this.setState(user, state + len)
+    return new ID(user, state)
   }
   updateRemoteState (struct) {
     let user = struct._id.user
@@ -26,5 +26,9 @@ export default class StateStore {
       return 0
     }
     return state
+  }
+  setState (user, state) {
+    // TODO: modify missingi structs here
+    this.state.set(user, state)
   }
 }
