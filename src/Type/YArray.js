@@ -1,9 +1,16 @@
 import Type from '../Struct/Type.js'
 import ItemJSON from '../Struct/ItemJSON.js'
 
+class YArrayEvent {
+  constructor (yarray, remote) {
+    this.target = yarray
+    this.remote = remote
+  }
+}
+
 export default class YArray extends Type {
-  _callObserver () {
-    this._eventHandler.callEventListeners({})
+  _callObserver (parentSubs, remote) {
+    this._eventHandler.callEventListeners(new YArrayEvent(this, remote))
   }
   get (i) {
     // TODO: This can be improved!
@@ -107,12 +114,13 @@ export default class YArray extends Type {
         }
         item = item._right
       }
-      if (length > 0) {
-        throw new Error('Delete exceeds the range of the YArray')
-      }
     })
+    if (length > 0) {
+      throw new Error('Delete exceeds the range of the YArray')
+    }
   }
   insertAfter (left, content) {
+    const y = this._y
     const apply = () => {
       let right
       if (left === null) {
@@ -123,10 +131,13 @@ export default class YArray extends Type {
       let prevJsonIns = null
       for (let i = 0; i < content.length; i++) {
         let c = content[i]
+        if (typeof c === 'function') {
+          c = new c() // eslint-disable-line new-cap
+        }
         if (c instanceof Type) {
           if (prevJsonIns !== null) {
-            if (this._y !== null) {
-              prevJsonIns._integrate(this._y)
+            if (y !== null) {
+              prevJsonIns._integrate(y)
             }
             left = prevJsonIns
             prevJsonIns = null
@@ -136,8 +147,8 @@ export default class YArray extends Type {
           c._right = right
           c._right_origin = right
           c._parent = this
-          if (this._y !== null) {
-            c._integrate(this._y)
+          if (y !== null) {
+            c._integrate(y)
           } else if (left === null) {
             this._start = c
           }
@@ -155,12 +166,12 @@ export default class YArray extends Type {
           prevJsonIns._content.push(c)
         }
       }
-      if (prevJsonIns !== null && this._y !== null) {
-        prevJsonIns._integrate(this._y)
+      if (prevJsonIns !== null && y !== null) {
+        prevJsonIns._integrate(y)
       }
     }
-    if (this._y !== null) {
-      this._y.transact(apply)
+    if (y !== null) {
+      y.transact(apply)
     } else {
       apply()
     }
@@ -170,13 +181,19 @@ export default class YArray extends Type {
     let left = null
     let right = this._start
     let count = 0
+    const y = this._y
     while (right !== null) {
-      if (count <= pos && pos < count + right._length) {
-        right = right._splitAt(this._y, pos - count)
+      const rightLen = right._deleted ? 0 : (right._length - 1)
+      if (count <= pos && pos <= count + rightLen) {
+        const splitDiff = pos - count
+        right = right._splitAt(y, splitDiff)
         left = right._left
+        count += splitDiff
         break
       }
-      count += right._length
+      if (!right._deleted) {
+        count += right._length
+      }
       left = right
       right = right._right
     }

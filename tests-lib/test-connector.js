@@ -1,6 +1,6 @@
 /* global Y */
 import { wait } from './helper'
-import { messageToString, messageToRoomname } from '../src/MessageHandler/messageToString'
+import { messageToString } from '../src/MessageHandler/messageToString'
 
 var rooms = {}
 
@@ -14,8 +14,8 @@ export class TestRoom {
     this.users.set(userID, connector)
     for (let [uid, user] of this.users) {
       if (uid !== userID && (user.role === 'master' || connector.role === 'master')) {
-        connector.userJoined(uid, this.users.get(uid).role)
-        this.users.get(uid).userJoined(userID, connector.role)
+        connector.userJoined(uid, user.role)
+        user.userJoined(userID, connector.role)
       }
     }
   }
@@ -38,13 +38,13 @@ export class TestRoom {
   }
   async flushAll (users) {
     let flushing = true
-    let allUserIds = Array.from(this.users.keys())
+    let allUsers = Array.from(this.users.values())
     if (users == null) {
-      users = allUserIds.map(id => this.users.get(id).y)
+      users = allUsers.map(user => user.y)
     }
     while (flushing) {
       await wait(10)
-      let res = await Promise.all(allUserIds.map(id => this.users.get(id)._flushAll(users)))
+      let res = await Promise.all(allUsers.map(user => user._flushAll(users)))
       flushing = res.some(status => status === 'flushing')
     }
   }
@@ -83,13 +83,16 @@ export default function extendTestConnector (Y) {
       for (let [user, conn] of this.connections) {
         console.log(` ${user}:`)
         for (let i = 0; i < conn.buffer.length; i++) {
-          console.log(formatYjsMessage(conn.buffer[i]))
+          console.log(messageToString(conn.buffer[i]))
         }
       }
     }
     reconnect () {
       this.testRoom.join(this)
-      return super.reconnect()
+      super.reconnect()
+      return new Promise(resolve => {
+        this.whenSynced(resolve)
+      })
     }
     send (uid, message) {
       super.send(uid, message)
@@ -116,20 +119,22 @@ export default function extendTestConnector (Y) {
       })
     }
     receiveMessage (sender, m) {
-      if (this.y.userID !== sender && this.connections.has(sender)) {
-        var buffer = this.connections.get(sender).buffer
-        if (buffer == null) {
-          buffer = this.connections.get(sender).buffer = []
+      setTimeout(() => {
+        if (this.y.userID !== sender && this.connections.has(sender)) {
+          var buffer = this.connections.get(sender).buffer
+          if (buffer == null) {
+            buffer = this.connections.get(sender).buffer = []
+          }
+          buffer.push(m)
+          if (this.chance.bool({likelihood: 30})) {
+            // flush 1/2 with 30% chance
+            var flushLength = Math.round(buffer.length / 2)
+            buffer.splice(0, flushLength).forEach(m => {
+              super.receiveMessage(sender, m)
+            })
+          }
         }
-        buffer.push(m)
-        if (this.chance.bool({likelihood: 30})) {
-          // flush 1/2 with 30% chance
-          var flushLength = Math.round(buffer.length / 2)
-          buffer.splice(0, flushLength).forEach(m => {
-            super.receiveMessage(sender, m)
-          })
-        }
-      }
+      }, 0)
     }
     async _flushAll (flushUsers) {
       if (flushUsers.some(u => u.connector.y.userID === this.y.userID)) {

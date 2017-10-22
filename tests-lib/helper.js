@@ -5,6 +5,7 @@ import yTest from './test-connector.js'
 import Chance from 'chance'
 import ItemJSON from '../src/Struct/ItemJSON.js'
 import ItemString from '../src/Struct/ItemString.js'
+import { defragmentItemContent } from '../src/Util/defragmentItemContent.js'
 
 export const Y = _Y
 
@@ -86,8 +87,12 @@ export async function compareUsers (t, users) {
   await flushAll(t, users)
   await wait()
   await flushAll(t, users)
+  await wait()
+  await flushAll(t, users)
+  await wait()
+  await flushAll(t, users)
 
-  var userArrayValues = users.map(u => u.get('array', Y.Array).toJSON())
+  var userArrayValues = users.map(u => u.get('array', Y.Array).toJSON().map(val => JSON.stringify(val)))
   var userMapValues = users.map(u => u.get('map', Y.Map).toJSON())
   var userXmlValues = users.map(u => u.get('xml', Y.Xml).toString())
 
@@ -110,22 +115,21 @@ export async function compareUsers (t, users) {
     })
   ))
   var data = users.map(u => {
+    defragmentItemContent(u)
     var data = {}
     let ops = []
     u.os.iterate(null, null, function (op) {
-      if (!op._deleted) {
-        const json = {
-          id: op._id,
-          left: op._left === null ? null : op._left._id,
-          right: op._right === null ? null : op._right._id,
-          length: op._length,
-          deleted: op._deleted
-        }
-        if (op instanceof ItemJSON || op instanceof ItemString) {
-          json.content = op._content
-        }
-        ops.push(json)
+      const json = {
+        id: op._id,
+        left: op._left === null ? null : op._left._id,
+        right: op._right === null ? null : op._right._id,
+        length: op._length,
+        deleted: op._deleted
       }
+      if (op instanceof ItemJSON || op instanceof ItemString) {
+        json.content = op._content
+      }
+      ops.push(json)
     })
     data.os = ops
     data.ds = getDeleteSet(u)
@@ -171,6 +175,13 @@ export async function initArrays (t, opts) {
         return null
       } else {
         return attrs.filter(a => a !== 'hidden')
+      }
+    })
+    y.on('afterTransaction', function () {
+      for (let missing of y._missingStructs.values()) {
+        if (Array.from(missing.values()).length > 0) {
+          console.error(new Error('Test check in "afterTransaction": missing should be empty!'))
+        }
       }
     })
   }
@@ -266,7 +277,7 @@ export async function applyRandomTests (t, mods, iterations) {
       // TODO: We do not gc all users as this does not work yet
       // await garbageCollectUsers(t, users)
       await flushAll(t, users)
-      await users[0].db.emptyGarbageCollector()
+      // await users[0].db.emptyGarbageCollector()
       await flushAll(t, users)
     } else if (chance.bool({likelihood: 10})) {
       // 20%*!prev chance to flush some operations

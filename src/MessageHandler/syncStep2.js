@@ -1,11 +1,9 @@
-import { integrateRemoteStructs } from './integrateRemoteStructs.js'
-import { stringifyUpdate } from './update.js'
+import { stringifyStructs, integrateRemoteStructs } from './integrateRemoteStructs.js'
 import { readDeleteSet } from './deleteSet.js'
 
 export function stringifySyncStep2 (y, decoder, strBuilder) {
   strBuilder.push('     - auth: ' + decoder.readVarString() + '\n')
   strBuilder.push('  == OS: \n')
-  stringifyUpdate(y, decoder, strBuilder)
   // write DS to string
   strBuilder.push('  == DS: \n')
   let len = decoder.readUint32()
@@ -20,6 +18,7 @@ export function stringifySyncStep2 (y, decoder, strBuilder) {
       strBuilder.push(`[${from}, ${to}, ${gc}]`)
     }
   }
+  stringifyStructs(y, decoder, strBuilder)
 }
 
 export function readSyncStep2 (decoder, encoder, y, senderConn, sender) {

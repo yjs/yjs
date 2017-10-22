@@ -131,13 +131,17 @@ export function reflectChangesOnDom (event) {
     yxml._mutualExclude(() => {
       // TODO: do this once before applying stuff
       // let anchorViewPosition = getAnchorViewPosition(yxml._scrollElement)
-      if (event.type === 'attributeChanged') {
-        if (event.value === undefined) {
-          dom.removeAttribute(event.name)
+
+      // update attributes
+      event.attributesChanged.forEach(attributeName => {
+        const value = yxml.getAttribute(attributeName)
+        if (value === undefined) {
+          dom.remoteAttribute(attributeName)
         } else {
-          dom.setAttribute(event.name, event.value)
+          dom.setAttribute(attributeName, value)
         }
-      } else if (event.type === 'contentChanged') {
+      })
+      if (event.childListChanged) {
         // create fragment of undeleted nodes
         const fragment = document.createDocumentFragment()
         yxml.forEach(function (t) {

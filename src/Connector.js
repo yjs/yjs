@@ -3,7 +3,7 @@ import BinaryDecoder from './Binary/Decoder.js'
 
 import { sendSyncStep1, readSyncStep1 } from './MessageHandler/syncStep1.js'
 import { readSyncStep2 } from './MessageHandler/syncStep2.js'
-import { readUpdate } from './MessageHandler/update.js'
+import { integrateRemoteStructs } from './MessageHandler/integrateRemoteStructs.js'
 
 import debug from 'debug'
 
@@ -136,19 +136,21 @@ export default class AbstractConnector {
   }
 
   send (uid, buffer) {
+    const y = this.y
     if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
       throw new Error('Expected Message to be an ArrayBuffer or Uint8Array - don\'t use this method to send custom messages')
     }
-    this.log('%s: Send \'%y\' to %s', this.y.userID, buffer, uid)
-    this.logMessage('Message: %Y', buffer)
+    this.log('%s: Send \'%y\' to %s', y.userID, buffer, uid)
+    this.logMessage('Message: %Y', [y, buffer])
   }
 
   broadcast (buffer) {
+    const y = this.y
     if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
       throw new Error('Expected Message to be an ArrayBuffer or Uint8Array - don\'t use this method to send custom messages')
     }
-    this.log('%s: Broadcast \'%y\'', this.y.userID, buffer)
-    this.logMessage('Message: %Y', buffer)
+    this.log('%s: Broadcast \'%y\'', y.userID, buffer)
+    this.logMessage('Message: %Y', [y, buffer])
   }
 
   /*
@@ -177,7 +179,7 @@ export default class AbstractConnector {
           this.broadcast(this.broadcastBuffer.createBuffer())
           this.broadcastBuffer = new BinaryEncoder()
         }
-      })
+      }, 0)
     }
   }
 
@@ -199,11 +201,13 @@ export default class AbstractConnector {
     You received a raw message, and you know that it is intended for Yjs. Then call this function.
   */
   receiveMessage (sender, buffer, skipAuth) {
+    const y = this.y
+    const userID = y.userID
     skipAuth = skipAuth || false
     if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
       return Promise.reject(new Error('Expected Message to be an ArrayBuffer or Uint8Array!'))
     }
-    if (sender === this.y.userID) {
+    if (sender === userID) {
       return Promise.resolve()
     }
     let decoder = new BinaryDecoder(buffer)
@@ -212,8 +216,8 @@ export default class AbstractConnector {
     encoder.writeVarString(roomname)
     let messageType = decoder.readVarString()
     let senderConn = this.connections.get(sender)
-    this.log('%s: Receive \'%s\' from %s', this.y.userID, messageType, sender)
-    this.logMessage('Message: %Y', buffer)
+    this.log('%s: Receive \'%s\' from %s', userID, messageType, sender)
+    this.logMessage('Message: %Y', [y, buffer])
     if (senderConn == null && !skipAuth) {
       throw new Error('Received message from unknown peer!')
     }
@@ -222,10 +226,10 @@ export default class AbstractConnector {
       if (senderConn.auth == null) {
         senderConn.processAfterAuth.push([messageType, senderConn, decoder, encoder, sender])
         // check auth
-        return this.checkAuth(auth, this.y, sender).then(authPermissions => {
+        return this.checkAuth(auth, y, sender).then(authPermissions => {
           if (senderConn.auth == null) {
             senderConn.auth = authPermissions
-            this.y.emit('userAuthenticated', {
+            y.emit('userAuthenticated', {
               user: senderConn.uid,
               auth: authPermissions
             })
@@ -250,16 +254,17 @@ export default class AbstractConnector {
     if (messageType === 'sync step 1' && (senderConn.auth === 'write' || senderConn.auth === 'read')) {
       // cannot wait for sync step 1 to finish, because we may wait for sync step 2 in sync step 1 (->lock)
       readSyncStep1(decoder, encoder, this.y, senderConn, sender)
-    } else if (messageType === 'sync step 2' && senderConn.auth === 'write') {
-      this.y.transact(() => {
-        readSyncStep2(decoder, encoder, this.y, senderConn, sender)
-      })
-    } else if (messageType === 'update' && (skipAuth || senderConn.auth === 'write')) {
-      this.y.transact(() => {
-        readUpdate(decoder, encoder, this.y, senderConn, sender)
-      })
     } else {
-      throw new Error('Unable to receive message')
+      const y = this.y
+      y.transact(function () {
+        if (messageType === 'sync step 2' && senderConn.auth === 'write') {
+          readSyncStep2(decoder, encoder, y, senderConn, sender)
+        } else if (messageType === 'update' && (skipAuth || senderConn.auth === 'write')) {
+          integrateRemoteStructs(decoder, encoder, y, senderConn, sender)
+        } else {
+          throw new Error('Unable to receive message')
+        }
+      }, true)
     }
   }
 

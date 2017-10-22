@@ -4,6 +4,7 @@ import { defaultDomFilter, applyChangesFromDom, reflectChangesOnDom } from './ut
 
 import YArray from '../YArray.js'
 import YXmlText from './YXmlText.js'
+import YXmlEvent from './YXmlEvent.js'
 
 function domToYXml (parent, doms) {
   const types = []
@@ -65,22 +66,8 @@ export default class YXmlFragment extends YArray {
       xml.setDomFilter(f)
     })
   }
-  _callObserver (parentSub) {
-    let event
-    if (parentSub !== null) {
-      event = {
-        type: 'attributeChanged',
-        name: parentSub,
-        value: this.getAttribute(parentSub),
-        target: this
-      }
-    } else {
-      event = {
-        type: 'contentChanged',
-        target: this
-      }
-    }
-    this._eventHandler.callEventListeners(event)
+  _callObserver (parentSubs, remote) {
+    this._eventHandler.callEventListeners(new YXmlEvent(this, parentSubs, remote))
   }
   toString () {
     return this.map(xml => xml.toString()).join('')

@@ -125,24 +125,15 @@ test('insert & delete events', async function array8 (t) {
   })
   array0.insert(0, [0, 1, 2])
   compareEvent(t, event, {
-    type: 'insert',
-    index: 0,
-    values: [0, 1, 2],
-    length: 3
+    remote: false
   })
   array0.delete(0)
   compareEvent(t, event, {
-    type: 'delete',
-    index: 0,
-    length: 1,
-    values: [0]
+    remote: false
   })
   array0.delete(0, 2)
   compareEvent(t, event, {
-    type: 'delete',
-    index: 0,
-    length: 2,
-    values: [1, 2]
+    remote: false
   })
   await compareUsers(t, users)
 })
@@ -155,19 +146,11 @@ test('insert & delete events for types', async function array9 (t) {
   })
   array0.insert(0, [Y.Array])
   compareEvent(t, event, {
-    type: 'insert',
-    object: array0,
-    index: 0,
-    length: 1
+    remote: false
   })
-  var type = array0.get(0)
-  t.assert(type._model != null, 'Model of type is defined')
   array0.delete(0)
   compareEvent(t, event, {
-    type: 'delete',
-    object: array0,
-    index: 0,
-    length: 1
+    remote: false
   })
   await compareUsers(t, users)
 })
@@ -180,31 +163,19 @@ test('insert & delete events for types (2)', async function array10 (t) {
   })
   array0.insert(0, ['hi', Y.Map])
   compareEvent(t, events[0], {
-    type: 'insert',
-    object: array0,
-    index: 0,
-    length: 1,
-    values: ['hi']
+    remote: false
   })
-  compareEvent(t, events[1], {
-    type: 'insert',
-    object: array0,
-    index: 1,
-    length: 1
-  })
+  t.assert(events.length === 1, 'Event is triggered exactly once for insertion of two elements')
   array0.delete(1)
-  compareEvent(t, events[2], {
-    type: 'delete',
-    object: array0,
-    index: 1,
-    length: 1
+  compareEvent(t, events[1], {
+    remote: false
   })
+  t.assert(events.length === 2, 'Event is triggered exactly once for deletion')
   await compareUsers(t, users)
 })
 
 test('garbage collector', async function gc1 (t) {
   var { users, array0 } = await initArrays(t, { users: 3 })
-
   array0.insert(0, ['x', 'y', 'z'])
   await flushAll(t, users)
   users[0].disconnect()
@@ -215,60 +186,29 @@ test('garbage collector', async function gc1 (t) {
   await compareUsers(t, users)
 })
 
-test('event has correct value when setting a primitive on a YArray (same user)', async function array11 (t) {
-  var { array0, users } = await initArrays(t, { users: 3 })
-
+test('event target is set correctly (local)', async function array11 (t) {
+  let { array0, users } = await initArrays(t, { users: 3 })
   var event
   array0.observe(function (e) {
     event = e
   })
   array0.insert(0, ['stuff'])
-  t.assert(event.values[0] === event.object.get(0), 'compare value with get method')
-  t.assert(event.values[0] === 'stuff', 'check that value is actually present')
-  t.assert(event.values[0] === array0.toJSON()[0], '.toJSON works as expected')
+  t.assert(event.target === array0, '"target" property is set correctly')
   await compareUsers(t, users)
 })
 
-test('event has correct value when setting a primitive on a YArray (received from another user)', async function array12 (t) {
-  var { users, array0, array1 } = await initArrays(t, { users: 3 })
-
+test('event target is set correctly (remote user)', async function array12 (t) {
+  let { array0, array1, users } = await initArrays(t, { users: 3 })
   var event
   array0.observe(function (e) {
     event = e
   })
   array1.insert(0, ['stuff'])
   await flushAll(t, users)
-  t.assert(event.values[0] === event.object.get(0), 'compare value with get method')
-  t.assert(event.values[0] === 'stuff', 'check that value is actually present')
-  t.assert(event.values[0] === array0.toJSON()[0], '.toJSON works as expected')
-  await compareUsers(t, users)
-})
-
-test('event has correct value when setting a type on a YArray (same user)', async function array13 (t) {
-  var { array0, users } = await initArrays(t, { users: 3 })
-
-  var event
-  array0.observe(function (e) {
-    event = e
+  compareEvent(t, event, {
+    remote: true
   })
-  array0.insert(0, [Y.Array])
-  t.assert(event.values[0] === event.object.get(0), 'compare value with get method')
-  t.assert(event.values[0] != null, 'event.value exists')
-  t.assert(event.values[0] === array0.toJSON()[0], '.toJSON works as expected')
-  await compareUsers(t, users)
-})
-test('event has correct value when setting a type on a YArray (ops received from another user)', async function array14 (t) {
-  var { users, array0, array1 } = await initArrays(t, { users: 3 })
-
-  var event
-  array0.observe(function (e) {
-    event = e
-  })
-  array1.insert(0, [Y.Array])
-  await flushAll(t, users)
-  t.assert(event.values[0] === event.object.get(0), 'compare value with get method')
-  t.assert(event.values[0] != null, 'event.value exists')
-  t.assert(event.values[0] === array0.toJSON()[0], '.toJSON works as expected')
+  t.assert(event.target === array0, '"target" property is set correctly')
   await compareUsers(t, users)
 })
 
@@ -279,55 +219,61 @@ function getUniqueNumber () {
 
 var arrayTransactions = [
   function insert (t, user, chance) {
+    const yarray = user.get('array', Y.Array)
     var uniqueNumber = getUniqueNumber()
     var content = []
     var len = chance.integer({ min: 1, max: 4 })
     for (var i = 0; i < len; i++) {
       content.push(uniqueNumber)
     }
-    var pos = chance.integer({ min: 0, max: user.share.array.length })
-    user.share.array.insert(pos, content)
+    var pos = chance.integer({ min: 0, max: yarray.length })
+    yarray.insert(pos, content)
   },
+  /*
   function insertTypeArray (t, user, chance) {
-    var pos = chance.integer({ min: 0, max: user.share.array.length })
-    user.share.array.insert(pos, [Y.Array])
-    var array2 = user.share.array.get(pos)
+    const yarray = user.get('array', Y.Array)
+    var pos = chance.integer({ min: 0, max: yarray.length })
+    yarray.insert(pos, [Y.Array])
+    var array2 = yarray.get(pos)
     array2.insert(0, [1, 2, 3, 4])
   },
   function insertTypeMap (t, user, chance) {
-    var pos = chance.integer({ min: 0, max: user.share.array.length })
-    user.share.array.insert(pos, [Y.Map])
-    var map = user.share.array.get(pos)
+    const yarray = user.get('array', Y.Array)
+    var pos = chance.integer({ min: 0, max: yarray.length })
+    yarray.insert(pos, [Y.Map])
+    var map = yarray.get(pos)
     map.set('someprop', 42)
     map.set('someprop', 43)
     map.set('someprop', 44)
   },
   function _delete (t, user, chance) {
-    var length = user.share.array._content.length
+    const yarray = user.get('array', Y.Array)
+    var length = yarray.length
     if (length > 0) {
-      var pos = chance.integer({ min: 0, max: length - 1 })
-      var delLength = chance.integer({ min: 1, max: Math.min(2, length - pos) })
-      if (user.share.array._content[pos].type != null) {
+      var somePos = chance.integer({ min: 0, max: length - 1 })
+      var delLength = chance.integer({ min: 1, max: Math.min(2, length - somePos) })
+      if (yarray instanceof Y.Array) {
         if (chance.bool()) {
-          var type = user.share.array.get(pos)
-          if (type instanceof Y.Array.typeDefinition.class) {
-            if (type._content.length > 0) {
-              pos = chance.integer({ min: 0, max: type._content.length - 1 })
-              delLength = chance.integer({ min: 0, max: Math.min(2, type._content.length - pos) })
-              type.delete(pos, delLength)
-            }
-          } else {
-            type.delete('someprop')
+          var type = yarray.get(somePos)
+          if (type.length > 0) {
+            somePos = chance.integer({ min: 0, max: type.length - 1 })
+            delLength = chance.integer({ min: 0, max: Math.min(2, type.length - somePos) })
+            type.delete(somePos, delLength)
           }
         } else {
-          user.share.array.delete(pos, delLength)
+          yarray.delete(somePos, delLength)
         }
       } else {
-        user.share.array.delete(pos, delLength)
+        yarray.delete(somePos, delLength)
       }
     }
   }
+  */
 ]
+
+test('y-array: Random tests (5)', async function randomArray5 (t) {
+  await applyRandomTests(t, arrayTransactions, 5)
+})
 
 test('y-array: Random tests (42)', async function randomArray42 (t) {
   await applyRandomTests(t, arrayTransactions, 42)

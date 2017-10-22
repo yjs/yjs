@@ -2,6 +2,7 @@ import { getReference } from '../Util/structReferences.js'
 import ID from '../Util/ID.js'
 import { RootFakeUserID } from '../Util/RootID.js'
 import Delete from './Delete.js'
+import { transactionTypeChanged } from '../Transaction.js'
 
 /**
  * Helper utility to split an Item (see _splitAt)
@@ -64,10 +65,7 @@ export default class Item {
       del._length = this._length
       del._integrate(y, true)
     }
-    const parent = this._parent
-    if (parent !== y && !parent._deleted) {
-      y._transactionChangedTypes.set(parent, this._parentSub)
-    }
+    transactionTypeChanged(y, this._parent, this._parentSub)
   }
   /**
    * This is called right before this struct receives any children.
@@ -98,7 +96,7 @@ export default class Item {
       // missing content from user
       throw new Error('Can not apply yet!')
     }
-    if (!parent._deleted && !y._transactionChangedTypes.has(parent) && !y._transactionNewTypes.has(parent)) {
+    if (!parent._deleted && !y._transaction.changedTypes.has(parent) && !y._transaction.newTypes.has(parent)) {
       // this is the first time parent is updated
       // or this types is new
       this._parent._beforeChange()
@@ -178,10 +176,7 @@ export default class Item {
       }
     }
     y.os.put(this)
-    if (parent !== y && !parent._deleted) {
-      y._transactionChangedTypes.set(parent, parentSub)
-    }
-
+    transactionTypeChanged(y, parent, parentSub)
     if (this._id.user !== RootFakeUserID) {
       if (y.connector._forwardAppliedStructs || this._id.user === y.userID) {
         y.connector.broadcastStruct(this)

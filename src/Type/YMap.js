@@ -2,11 +2,17 @@ import Type from '../Struct/Type.js'
 import Item from '../Struct/Item.js'
 import ItemJSON from '../Struct/ItemJSON.js'
 
+class YMapEvent {
+  constructor (ymap, subs, remote) {
+    this.target = ymap
+    this.keysChanged = subs
+    this.remote = remote
+  }
+}
+
 export default class YMap extends Type {
-  _callObserver (parentSub) {
-    this._eventHandler.callEventListeners({
-      name: parentSub
-    })
+  _callObserver (parentSubs, remote) {
+    this._eventHandler.callEventListeners(new YMapEvent(this, parentSubs, remote))
   }
   toJSON () {
     const map = {}
@@ -36,13 +42,21 @@ export default class YMap extends Type {
     })
   }
   set (key, value) {
-    this._y.transact(() => {
+    const y = this._y
+    y.transact(() => {
       const old = this._map.get(key) || null
       if (old !== null) {
-        old._delete(this._y)
+        if (old instanceof ItemJSON && old._content[0] === value) {
+          // Trying to overwrite with same value
+          // break here
+          return value
+        }
+        old._delete(y)
       }
       let v
-      if (value instanceof Item) {
+      if (typeof value === 'function') {
+        v = new value() // eslint-disable-line new-cap
+      } else if (value instanceof Item) {
         v = value
       } else {
         v = new ItemJSON()
@@ -52,7 +66,7 @@ export default class YMap extends Type {
       v._right_origin = old
       v._parent = this
       v._parentSub = key
-      v._integrate(this._y)
+      v._integrate(y)
     })
     return value
   }

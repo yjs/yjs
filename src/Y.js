@@ -16,12 +16,7 @@ import { YXmlFragment, YXmlElement, YXmlText } from './Type/y-xml/y-xml.js'
 import BinaryDecoder from './Binary/Decoder.js'
 
 import debug from 'debug'
-
-function callTypesAfterTransaction (y) {
-  y._transactionChangedTypes.forEach(function (parentSub, type) {
-    type._callObserver(parentSub)
-  })
-}
+import Transaction from './Transaction.js'
 
 export default class Y extends NamedEventHandler {
   constructor (opts) {
@@ -42,25 +37,27 @@ export default class Y extends NamedEventHandler {
     this._missingStructs = new Map()
     this._readyToIntegrate = []
     this._transactionsInProgress = 0
-    // types added during transaction
-    this._transactionNewTypes = new Set()
-    // changed types (does not include new types)
-    this._transactionChangedTypes = new Map()
-    this.on('afterTransaction', callTypesAfterTransaction)
+    this._transaction = null
   }
   _beforeChange () {}
-  transact (f) {
-    this._transactionsInProgress++
+  transact (f, remote = false) {
+    let initialCall = this._transaction === null
+    if (initialCall) {
+      this._transaction = new Transaction(this)
+    }
     try {
       f()
     } catch (e) {
       console.error(e)
     }
-    this._transactionsInProgress--
-    if (this._transactionsInProgress === 0) {
+    if (initialCall) {
+      // emit change events on changed types
+      this._transaction.changedTypes.forEach(function (subs, type) {
+        type._callObserver(subs, remote)
+      })
+      this._transaction = null
+      // when all changes & events are processed, emit afterTransaction event
       this.emit('afterTransaction', this)
-      this._transactionChangedTypes = new Map()
-      this._transactionNewTypes = new Set()
     }
   }
   // fake _start for root properties (y.set('name', type))

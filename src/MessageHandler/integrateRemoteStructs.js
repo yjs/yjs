@@ -28,9 +28,7 @@ function _integrateRemoteStructHelper (y, struct) {
             missingDef.missing--
             if (missingDef.missing === 0) {
               let missing = missingDef.struct._fromBinary(y, missingDef.decoder)
-              if (missing.length > 0) {
-                console.error('Missing should be empty!')
-              } else {
+              if (missing.length === 0) {
                 y._readyToIntegrate.push(missingDef.struct)
               }
             }
@@ -39,6 +37,21 @@ function _integrateRemoteStructHelper (y, struct) {
         }
       }
     }
+  }
+}
+
+export function stringifyStructs (y, decoder, strBuilder) {
+  while (decoder.length !== decoder.pos) {
+    let reference = decoder.readVarUint()
+    let Constr = getStruct(reference)
+    let struct = new Constr()
+    let missing = struct._fromBinary(y, decoder)
+    let logMessage = struct._logString()
+    if (missing.length > 0) {
+      logMessage += missing.map(id => `ID (user: ${id.user}, clock: ${id.clock})`).join(', ')
+    }
+    logMessage += '\n'
+    strBuilder.push(logMessage)
   }
 }
 

@@ -29,7 +29,7 @@ export default class Type extends Item {
     this._eventHandler.removeEventListener(f)
   }
   _integrate (y) {
-    y._transactionNewTypes.add(this)
+    y._transaction.newTypes.add(this)
     super._integrate(y)
     this._y = y
     // when integrating children we must make sure to
@@ -48,7 +48,7 @@ export default class Type extends Item {
   }
   _delete (y, createDelete) {
     super._delete(y, createDelete)
-    y._transactionChangedTypes.delete(this)
+    y._transaction.changedTypes.delete(this)
     // delete map types
     for (let value of this._map.values()) {
       if (value instanceof Item && !value._deleted) {

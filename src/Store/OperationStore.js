@@ -15,7 +15,9 @@ export default class OperationStore extends Tree {
       struct = new Constr()
       struct._id = id
       struct._parent = y
-      struct._integrate(y)
+      y.transact(() => {
+        struct._integrate(y)
+      })
       this.put(struct)
     }
     return struct
