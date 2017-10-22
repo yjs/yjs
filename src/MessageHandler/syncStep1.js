@@ -7,18 +7,17 @@ import { RootFakeUserID } from '../Util/RootID.js'
 export function stringifySyncStep1 (y, decoder, strBuilder) {
   let auth = decoder.readVarString()
   let protocolVersion = decoder.readVarUint()
-  strBuilder.push(`
-  - auth: "${auth}"
-  - protocolVersion: ${protocolVersion}
-`)
+  strBuilder.push(`  - auth: "${auth}"`)
+  strBuilder.push(`  - protocolVersion: ${protocolVersion}`)
   // write SS
-  strBuilder.push('  == SS: \n')
+  let ssBuilder = []
   let len = decoder.readUint32()
   for (let i = 0; i < len; i++) {
     let user = decoder.readVarUint()
     let clock = decoder.readVarUint()
-    strBuilder.push(`     ${user}: ${clock}\n`)
+    ssBuilder.push(`(${user}:${clock})`)
   }
+  strBuilder.push('  == SS: ' + ssBuilder.join(','))
 }
 
 export function sendSyncStep1 (connector, syncUser) {

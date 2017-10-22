@@ -1,5 +1,6 @@
 import Type from '../Struct/Type.js'
 import ItemJSON from '../Struct/ItemJSON.js'
+import { logID } from '../MessageHandler/messageToString.js'
 
 class YArrayEvent {
   constructor (yarray, remote) {
@@ -203,7 +204,6 @@ export default class YArray extends Type {
     this.insertAfter(left, content)
   }
   _logString () {
-    let s = super._logString()
-    return 'YArray: ' + s
+    return `YArray(id:${logID(this._id)},start:${logID(this._start)},left:${logID(this._left)},origin:${logID(this._origin)},right:${logID(this._right)},parent:${logID(this._parent)},parentSub:${logID(this._parentSub)})`
   }
 }

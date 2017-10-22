@@ -297,7 +297,4 @@ export default class Item {
     }
     return missing
   }
-  _logString () {
-    return `left: ${this._left}, origin: ${this._origin}, right: ${this._right}, parent: ${this._parent}, parentSub: ${this._parentSub}`
-  }
 }

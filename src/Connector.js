@@ -140,8 +140,8 @@ export default class AbstractConnector {
     if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
       throw new Error('Expected Message to be an ArrayBuffer or Uint8Array - don\'t use this method to send custom messages')
     }
-    this.log('%s: Send \'%y\' to %s', y.userID, buffer, uid)
-    this.logMessage('Message: %Y', [y, buffer])
+    this.log('User%s to User%s: Send \'%y\'', y.userID, uid, buffer)
+    this.logMessage('User%s to User%s: Send %Y', y.userID, uid, [y, buffer])
   }
 
   broadcast (buffer) {
@@ -149,8 +149,8 @@ export default class AbstractConnector {
     if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
       throw new Error('Expected Message to be an ArrayBuffer or Uint8Array - don\'t use this method to send custom messages')
     }
-    this.log('%s: Broadcast \'%y\'', y.userID, buffer)
-    this.logMessage('Message: %Y', [y, buffer])
+    this.log('User%s: Broadcast \'%y\'', y.userID, buffer)
+    this.logMessage('User%s: Broadcast: %Y', y.userID, [y, buffer])
   }
 
   /*
@@ -216,8 +216,8 @@ export default class AbstractConnector {
     encoder.writeVarString(roomname)
     let messageType = decoder.readVarString()
     let senderConn = this.connections.get(sender)
-    this.log('%s: Receive \'%s\' from %s', userID, messageType, sender)
-    this.logMessage('Message: %Y', [y, buffer])
+    this.log('User%s from User%s: Receive \'%s\'', userID, sender, messageType)
+    this.logMessage('User%s from User%s: Receive %Y', userID, sender, [y, buffer])
     if (senderConn == null && !skipAuth) {
       throw new Error('Received message from unknown peer!')
     }

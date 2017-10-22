@@ -1,6 +1,7 @@
 import Type from '../Struct/Type.js'
 import Item from '../Struct/Item.js'
 import ItemJSON from '../Struct/ItemJSON.js'
+import { logID } from '../MessageHandler/messageToString.js'
 
 class YMapEvent {
   constructor (ymap, subs, remote) {
@@ -82,7 +83,6 @@ export default class YMap extends Type {
     }
   }
   _logString () {
-    let s = super._logString()
-    return 'YMap: ' + s
+    return `YMap(id:${logID(this._id)},mapSize:${this._map.size},left:${logID(this._left)},origin:${logID(this._origin)},right:${logID(this._right)},parent:${logID(this._parent)},parentSub:${logID(this._parentSub)})`
   }
 }

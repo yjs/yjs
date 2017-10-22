@@ -1,5 +1,6 @@
 import ItemString from '../Struct/ItemString.js'
 import YArray from './YArray.js'
+import { logID } from '../MessageHandler/messageToString.js'
 
 export default class YText extends YArray {
   constructor (string) {
@@ -49,5 +50,8 @@ export default class YText extends YArray {
       item._content = text
       item._integrate(this._y)
     })
+  }
+  _logString () {
+    return `YText(id:${logID(this._id)},start:${logID(this._start)},left:${logID(this._left)},origin:${logID(this._origin)},right:${logID(this._right)},parent:${logID(this._parent)},parentSub:${logID(this._parentSub)})`
   }
 }

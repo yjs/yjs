@@ -1,6 +1,7 @@
 import { getStruct } from '../Util/structReferences.js'
 import BinaryDecoder from '../Binary/Decoder.js'
 import Delete from '../Struct/Delete.js'
+import { logID } from './messageToString.js'
 
 class MissingEntry {
   constructor (decoder, missing, struct) {
@@ -17,7 +18,7 @@ class MissingEntry {
  */
 function _integrateRemoteStructHelper (y, struct) {
   struct._integrate(y)
-  if (!(struct instanceof Delete)) {
+  if (struct.constructor !== Delete) {
     let msu = y._missingStructs.get(struct._id.user)
     if (msu != null) {
       let len = struct._length
@@ -46,11 +47,10 @@ export function stringifyStructs (y, decoder, strBuilder) {
     let Constr = getStruct(reference)
     let struct = new Constr()
     let missing = struct._fromBinary(y, decoder)
-    let logMessage = struct._logString()
+    let logMessage = '  ' + struct._logString()
     if (missing.length > 0) {
-      logMessage += missing.map(id => `ID (user: ${id.user}, clock: ${id.clock})`).join(', ')
+      logMessage += ' .. missing: ' + missing.map(logID).join(', ')
     }
-    logMessage += '\n'
     strBuilder.push(logMessage)
   }
 }

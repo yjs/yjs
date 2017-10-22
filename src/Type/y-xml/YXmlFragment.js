@@ -5,6 +5,7 @@ import { defaultDomFilter, applyChangesFromDom, reflectChangesOnDom } from './ut
 import YArray from '../YArray.js'
 import YXmlText from './YXmlText.js'
 import YXmlEvent from './YXmlEvent.js'
+import { logID } from '../../MessageHandler/messageToString.js'
 
 function domToYXml (parent, doms) {
   const types = []
@@ -150,5 +151,8 @@ export default class YXmlFragment extends YArray {
     if (this._domObserver != null) {
       this._domObserverListener(this._domObserver.takeRecords())
     }
+  }
+  _logString () {
+    return `YXml(id:${logID(this._id)},parent:${logID(this._parent)},parentSub:${this._parentSub})`
   }
 }

@@ -1,4 +1,5 @@
 import { splitHelper, default as Item } from './Item.js'
+import { logID } from '../MessageHandler/messageToString.js'
 
 export default class ItemString extends Item {
   constructor () {
@@ -18,8 +19,7 @@ export default class ItemString extends Item {
     encoder.writeVarString(this._content)
   }
   _logString () {
-    let s = super._logString()
-    return 'ItemString: ' + s
+    return `ItemJSON(id:${logID(this._id)},content:${JSON.stringify(this._content)},left:${logID(this._left)},origin:${logID(this._origin)},right:${logID(this._right)},parent:${logID(this._parent)},parentSub:${logID(this._parentSub)})`
   }
   _splitAt (y, diff) {
     if (diff === 0) {

@@ -5,6 +5,15 @@ export default class StateStore {
     this.y = y
     this.state = new Map()
   }
+  logTable () {
+    const entries = []
+    for (let [user, state] of this.state) {
+      entries.push({
+        user, state
+      })
+    }
+    console.table(entries)
+  }
   getNextID (len) {
     const user = this.y.userID
     const state = this.getState(user)

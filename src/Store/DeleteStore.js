@@ -13,6 +13,18 @@ class DSNode {
 }
 
 export default class DeleteStore extends Tree {
+  logTable () {
+    const deletes = []
+    this.iterate(null, null, function (n) {
+      deletes.push({
+        user: n._id.user,
+        clock: n._id.clock,
+        len: n.len,
+        gc: n.gc
+      })
+    })
+    console.table(deletes)
+  }
   isDeleted (id) {
     var n = this.findWithUpperBound(id)
     return n !== null && n._id.user === id.user && id.clock < n._id.clock + n.len
