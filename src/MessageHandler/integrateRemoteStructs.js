@@ -19,22 +19,27 @@ class MissingEntry {
 function _integrateRemoteStructHelper (y, struct) {
   struct._integrate(y)
   if (struct.constructor !== Delete) {
-    let msu = y._missingStructs.get(struct._id.user)
+    const id = struct._id
+    let msu = y._missingStructs.get(id.user)
     if (msu != null) {
-      let len = struct._length
-      for (let i = 0; i < len; i++) {
-        if (msu.has(struct._id.clock + i)) {
-          let msuc = msu.get(struct._id.clock + i)
-          msuc.forEach(missingDef => {
+      let clock = id.clock
+      const finalClock = clock + struct._length
+      for (;clock < finalClock; clock++) {
+        const missingStructs = msu.get(clock)
+        if (missingStructs !== undefined) {
+          missingStructs.forEach(missingDef => {
             missingDef.missing--
             if (missingDef.missing === 0) {
-              let missing = missingDef.struct._fromBinary(y, missingDef.decoder)
+              const decoder = missingDef.decoder
+              let oldPos = decoder.pos
+              let missing = missingDef.struct._fromBinary(y, decoder)
+              decoder.pos = oldPos
               if (missing.length === 0) {
                 y._readyToIntegrate.push(missingDef.struct)
               }
             }
           })
-          msu.delete(struct._id.clock)
+          msu.delete(clock)
         }
       }
     }
@@ -57,10 +62,10 @@ export function stringifyStructs (y, decoder, strBuilder) {
 
 export function integrateRemoteStructs (decoder, encoder, y) {
   while (decoder.length !== decoder.pos) {
-    let decoderPos = decoder.pos
     let reference = decoder.readVarUint()
     let Constr = getStruct(reference)
     let struct = new Constr()
+    let decoderPos = decoder.pos
     let missing = struct._fromBinary(y, decoder)
     if (missing.length === 0) {
       while (struct != null) {

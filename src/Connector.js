@@ -88,6 +88,7 @@ export default class AbstractConnector {
       isSynced: false,
       role: role,
       processAfterAuth: [],
+      processAfterSync: [],
       auth: auth || null,
       receivedSyncStep2: false
     })
@@ -122,17 +123,15 @@ export default class AbstractConnector {
   }
 
   _fireIsSyncedListeners () {
-    setTimeout(() => {
-      if (!this.isSynced) {
-        this.isSynced = true
-        // It is safer to remove this!
-        // call whensynced listeners
-        for (var f of this.whenSyncedListeners) {
-          f()
-        }
-        this.whenSyncedListeners = []
+    if (!this.isSynced) {
+      this.isSynced = true
+      // It is safer to remove this!
+      // call whensynced listeners
+      for (var f of this.whenSyncedListeners) {
+        f()
       }
-    }, 0)
+      this.whenSyncedListeners = []
+    }
   }
 
   send (uid, buffer) {
@@ -237,16 +236,16 @@ export default class AbstractConnector {
           let messages = senderConn.processAfterAuth
           senderConn.processAfterAuth = []
 
-          return messages.reduce((p, m) =>
-            p.then(() => this.computeMessage(m[0], m[1], m[2], m[3], m[4]))
-          , Promise.resolve())
+          messages.forEach(m =>
+            this.computeMessage(m[0], m[1], m[2], m[3], m[4])
+          )
         })
       }
     }
-    if (skipAuth || senderConn.auth != null) {
-      return this.computeMessage(messageType, senderConn, decoder, encoder, sender, skipAuth)
+    if ((skipAuth || senderConn.auth != null) && (messageType !== 'update' || senderConn.isSynced)) {
+      this.computeMessage(messageType, senderConn, decoder, encoder, sender, skipAuth)
     } else {
-      senderConn.processAfterAuth.push([messageType, senderConn, decoder, encoder, sender, false])
+      senderConn.processAfterSync.push([messageType, senderConn, decoder, encoder, sender, false])
     }
   }
 
@@ -270,9 +269,15 @@ export default class AbstractConnector {
 
   _setSyncedWith (user) {
     if (user != null) {
-      this.connections.get(user).isSynced = true
+      const userConn = this.connections.get(user)
+      userConn.isSynced = true
+      const messages = userConn.processAfterSync
+      userConn.processAfterSync = []
+      messages.forEach(m => {
+        this.computeMessage(m[0], m[1], m[2], m[3], m[4])
+      })
     }
-    let conns = Array.from(this.connections.values())
+    const conns = Array.from(this.connections.values())
     if (conns.length > 0 && conns.every(u => u.isSynced)) {
       this._fireIsSyncedListeners()
     }

@@ -248,6 +248,8 @@ export function wait (t) {
 
 export async function applyRandomTests (t, mods, iterations) {
   const chance = new Chance(t.getSeed() * 1000000000)
+    // TODO: remove
+    console.info('seed: ' + t._seed)
   var initInformation = await initArrays(t, { users: 5, chance: chance })
   let { users } = initInformation
   for (var i = 0; i < iterations; i++) {

@@ -16,11 +16,27 @@ export function splitHelper (y, a, b, diff) {
   b._id = new ID(aID.user, aID.clock + diff)
   b._origin = a
   b._left = a
+  b._right = a._right
+  if (b._right !== null) {
+    b._right._left = b
+  }
+  b._right_origin = a._right_origin
+  // do not set a._right_origin, as this will lead to problems when syncing
   a._right = b
-  a._right_origin = b
   b._parent = a._parent
   b._parentSub = a._parentSub
   b._deleted = a._deleted
+  // now search all relevant items to the right and update origin
+  // if origin is not it foundOrigins, we don't have to search any longer
+  let foundOrigins = new Set()
+  foundOrigins.add(a)
+  let o = b._right
+  while (o !== null && foundOrigins.has(o._origin)) {
+    if (o._origin === a) {
+      o._origin = b
+    }
+    o = o._right
+  }
   y.os.put(b)
 }
 
@@ -133,21 +149,25 @@ export default class Item {
     // Note that conflictingItems is a subset of itemsBeforeOrigin
     while (o !== null && o !== this._right) {
       itemsBeforeOrigin.add(o)
+      conflictingItems.add(o)
       if (this._origin === o._origin) {
         // case 1
         if (o._id.user < this._id.user) {
           this._left = o
-          conflictingItems = new Set()
+          conflictingItems.clear()
         }
-      } else if (itemsBeforeOrigin.has(o)) {
+      } else if (itemsBeforeOrigin.has(o._origin)) {
         // case 2
-        if (conflictingItems.has(o)) {
+        if (!conflictingItems.has(o._origin)) {
           this._left = o
-          conflictingItems = new Set()
+          conflictingItems.clear()
         }
       } else {
         break
       }
+      // TODO: try to use right_origin instead.
+      // Then you could basically omit conflictingItems!
+      // Note: you probably can't use right_origin in every case.. only when setting _left
       o = o._right
     }
     // reconnect left/right + update parent map/start if necessary
@@ -193,9 +213,12 @@ export default class Item {
     if (this._origin !== null) {
       info += 0b1 // origin is defined
     }
+    // TODO: remove
+    /* no longer send _left
     if (this._left !== this._origin) {
       info += 0b10 // do not copy origin to left
     }
+    */
     if (this._right_origin !== null) {
       info += 0b100
     }
@@ -236,24 +259,9 @@ export default class Item {
           missing.push(originID)
         } else {
           this._origin = origin
-        }
-      }
-    }
-    // read left
-    if (info & 0b10) {
-      // left !== origin
-      const leftID = decoder.readID()
-      if (this._left === null) {
-        const left = y.os.getItemCleanEnd(leftID)
-        if (left === null) {
-          // use origin instead
           this._left = this._origin
-        } else {
-          this._left = left
         }
       }
-    } else {
-      this._left = this._origin
     }
     // read right
     if (info & 0b100) {

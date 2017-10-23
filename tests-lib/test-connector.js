@@ -119,22 +119,20 @@ export default function extendTestConnector (Y) {
       })
     }
     receiveMessage (sender, m) {
-      setTimeout(() => {
-        if (this.y.userID !== sender && this.connections.has(sender)) {
-          var buffer = this.connections.get(sender).buffer
-          if (buffer == null) {
-            buffer = this.connections.get(sender).buffer = []
-          }
-          buffer.push(m)
-          if (this.chance.bool({likelihood: 30})) {
-            // flush 1/2 with 30% chance
-            var flushLength = Math.round(buffer.length / 2)
-            buffer.splice(0, flushLength).forEach(m => {
-              super.receiveMessage(sender, m)
-            })
-          }
+      if (this.y.userID !== sender && this.connections.has(sender)) {
+        var buffer = this.connections.get(sender).buffer
+        if (buffer == null) {
+          buffer = this.connections.get(sender).buffer = []
         }
-      }, 0)
+        buffer.push(m)
+        if (this.chance.bool({likelihood: 30})) {
+          // flush 1/2 with 30% chance
+          var flushLength = Math.round(buffer.length / 2)
+          buffer.splice(0, flushLength).forEach(m => {
+            super.receiveMessage(sender, m)
+          })
+        }
+      }
     }
     async _flushAll (flushUsers) {
       if (flushUsers.some(u => u.connector.y.userID === this.y.userID)) {

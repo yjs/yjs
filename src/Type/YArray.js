@@ -204,6 +204,8 @@ export default class YArray extends Type {
     this.insertAfter(left, content)
   }
   _logString () {
-    return `YArray(id:${logID(this._id)},start:${logID(this._start)},left:${logID(this._left)},origin:${logID(this._origin)},right:${logID(this._right)},parent:${logID(this._parent)},parentSub:${logID(this._parentSub)})`
+    const left = this._left !== null ? this._left._lastId : null
+    const origin = this._origin !== null ? this._origin._lastId : null
+    return `YArray(id:${logID(this._id)},start:${logID(this._start)},left:${logID(left)},origin:${logID(origin)},right:${logID(this._right)},parent:${logID(this._parent)},parentSub:${logID(this._parentSub)})`
   }
 }

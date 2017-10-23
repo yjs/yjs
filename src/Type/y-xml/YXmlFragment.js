@@ -153,6 +153,8 @@ export default class YXmlFragment extends YArray {
     }
   }
   _logString () {
-    return `YXml(id:${logID(this._id)},parent:${logID(this._parent)},parentSub:${this._parentSub})`
+    const left = this._left !== null ? this._left._lastId : null
+    const origin = this._origin !== null ? this._origin._lastId : null
+    return `YXml(id:${logID(this._id)},left:${logID(left)},origin:${logID(origin)},right:${this._right},parent:${logID(this._parent)},parentSub:${this._parentSub})`
   }
 }
