@@ -35,6 +35,7 @@ export function splitHelper (y, a, b, diff) {
     if (o._origin === a) {
       o._origin = b
     }
+    foundOrigins.add(o)
     o = o._right
   }
   y.os.put(b)

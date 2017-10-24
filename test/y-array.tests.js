@@ -272,7 +272,7 @@ var arrayTransactions = [
 ]
 
 test('y-array: Random tests (5)', async function randomArray5 (t) {
-  await applyRandomTests(t, arrayTransactions, 12)
+  await applyRandomTests(t, arrayTransactions, 30)
 })
 
 test('y-array: Random tests (42)', async function randomArray42 (t) {
