@@ -2,7 +2,6 @@ import { wait, initArrays, compareUsers, Y, flushAll, applyRandomTests } from '.
 import { test, proxyConsole } from 'cutest'
 
 proxyConsole()
-
 test('basic spec', async function array0 (t) {
   let { users, array0 } = await initArrays(t, { users: 2 })
 
@@ -229,7 +228,6 @@ var arrayTransactions = [
     var pos = chance.integer({ min: 0, max: yarray.length })
     yarray.insert(pos, content)
   },
-  /*
   function insertTypeArray (t, user, chance) {
     const yarray = user.get('array', Y.Array)
     var pos = chance.integer({ min: 0, max: yarray.length })
@@ -268,11 +266,10 @@ var arrayTransactions = [
       }
     }
   }
-  */
 ]
 
-test('y-array: Random tests (5)', async function randomArray5 (t) {
-  await applyRandomTests(t, arrayTransactions, 30)
+test('y-array: Random tests (20)', async function randomArray20 (t) {
+  await applyRandomTests(t, arrayTransactions, 20)
 })
 
 test('y-array: Random tests (42)', async function randomArray42 (t) {
@@ -299,7 +296,6 @@ test('y-array: Random tests (47)', async function randomArray47 (t) {
   await applyRandomTests(t, arrayTransactions, 47)
 })
 
-/*
 test('y-array: Random tests (200)', async function randomArray200 (t) {
   await applyRandomTests(t, arrayTransactions, 200)
 })
@@ -315,4 +311,11 @@ test('y-array: Random tests (400)', async function randomArray400 (t) {
 test('y-array: Random tests (500)', async function randomArray500 (t) {
   await applyRandomTests(t, arrayTransactions, 500)
 })
-*/
+
+test('y-array: Random tests (1000)', async function randomArray1000 (t) {
+  await applyRandomTests(t, arrayTransactions, 1000)
+})
+
+test('y-array: Random tests (2000)', async function randomArray2000 (t) {
+  await applyRandomTests(t, arrayTransactions, 2000)
+})

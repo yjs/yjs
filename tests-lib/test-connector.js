@@ -14,8 +14,15 @@ export class TestRoom {
     this.users.set(userID, connector)
     for (let [uid, user] of this.users) {
       if (uid !== userID && (user.role === 'master' || connector.role === 'master')) {
-        connector.userJoined(uid, user.role)
-        user.userJoined(userID, connector.role)
+        // The order is important because there is no timeout in send/receiveMessage
+        // (the user that receives a sync step must already now about the sender)
+        if (user.role === 'master') {
+          connector.userJoined(uid, user.role)
+          user.userJoined(userID, connector.role)
+        } else if (connector.role === 'master') {
+          user.userJoined(userID, connector.role)
+          connector.userJoined(uid, user.role)
+        }
       }
     }
   }

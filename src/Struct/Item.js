@@ -231,9 +231,12 @@ export default class Item {
     if (info & 0b1) {
       encoder.writeID(this._origin._lastId)
     }
+    // TODO: remove
+    /* see above
     if (info & 0b10) {
       encoder.writeID(this._left._lastId)
     }
+    */
     if (info & 0b100) {
       encoder.writeID(this._right_origin._id)
     }
@@ -254,34 +257,33 @@ export default class Item {
     if (info & 0b1) {
       // origin != null
       const originID = decoder.readID()
-      if (this._origin === null) {
-        const origin = y.os.getItemCleanEnd(originID)
-        if (origin === null) {
-          missing.push(originID)
-        } else {
-          this._origin = origin
-          this._left = this._origin
-        }
+      // we have to query for left again because it might have been split/merged..
+      const origin = y.os.getItemCleanEnd(originID)
+      if (origin === null) {
+        missing.push(originID)
+      } else {
+        this._origin = origin
+        this._left = this._origin
       }
     }
     // read right
     if (info & 0b100) {
       // right != null
       const rightID = decoder.readID()
-      if (this._right_origin === null) {
-        const right = y.os.getItemCleanStart(rightID)
-        if (right === null) {
-          missing.push(rightID)
-        } else {
-          this._right = right
-          this._right_origin = right
-        }
+      // we have to query for right again because it might have been split/merged..
+      const right = y.os.getItemCleanStart(rightID)
+      if (right === null) {
+        missing.push(rightID)
+      } else {
+        this._right = right
+        this._right_origin = right
       }
     }
     // read parent
     if (~info & 0b101) {
       // neither origin nor right is defined
       const parentID = decoder.readID()
+      // parent does not change, so we don't have to search for it again
       if (this._parent === null) {
         const parent = y.os.get(parentID)
         if (parent === null) {
