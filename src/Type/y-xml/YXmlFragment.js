@@ -115,28 +115,30 @@ export default class YXmlFragment extends YArray {
   _bindToDom (dom) {
     this._domObserverListener = mutations => {
       this._mutualExclude(() => {
-        let diffChildren = false
-        mutations.forEach(mutation => {
-          if (mutation.type === 'attributes') {
-            let name = mutation.attributeName
-            // check if filter accepts attribute
-            if (this._domFilter(this._dom, [name]).length > 0) {
-              var val = mutation.target.getAttribute(name)
-              if (this.getAttribute(name) !== val) {
-                if (val == null) {
-                  this.removeAttribute(name)
-                } else {
-                  this.setAttribute(name, val)
+        this._y.transact(() => {
+          let diffChildren = false
+          mutations.forEach(mutation => {
+            if (mutation.type === 'attributes') {
+              let name = mutation.attributeName
+              // check if filter accepts attribute
+              if (this._domFilter(this._dom, [name]).length > 0) {
+                var val = mutation.target.getAttribute(name)
+                if (this.getAttribute(name) !== val) {
+                  if (val == null) {
+                    this.removeAttribute(name)
+                  } else {
+                    this.setAttribute(name, val)
+                  }
                 }
               }
+            } else if (mutation.type === 'childList') {
+              diffChildren = true
             }
-          } else if (mutation.type === 'childList') {
-            diffChildren = true
+          })
+          if (diffChildren) {
+            applyChangesFromDom(this)
           }
         })
-        if (diffChildren) {
-          applyChangesFromDom(this)
-        }
       })
     }
     this._domObserver = new MutationObserver(this._domObserverListener)

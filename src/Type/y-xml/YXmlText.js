@@ -20,9 +20,13 @@ export default class YXmlText extends YText {
   constructor (arg1) {
     let dom = null
     let initialText = null
-    if (arg1 != null && arg1.nodeType === document.TEXT_NODE) {
-      dom = arg1
-      initialText = dom.nodeValue
+    if (arg1 != null) {
+      if (arg1.nodeType === document.TEXT_NODE) {
+        dom = arg1
+        initialText = dom.nodeValue
+      } else if (typeof arg1 === 'string') {
+        initialText = arg1
+      }
     }
     super(initialText)
     this._dom = null

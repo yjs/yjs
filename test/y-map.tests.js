@@ -155,6 +155,7 @@ test('Basic get&set&delete of Map property (handle three conflicts)', async func
   await compareUsers(t, users)
 })
 
+/* TODO reimplement observePath
 test('observePath properties', async function map10 (t) {
   let { users, map0, map1, map2 } = await initArrays(t, { users: 3 })
   let map
@@ -169,7 +170,9 @@ test('observePath properties', async function map10 (t) {
   t.compare(map.get('yay'), 4)
   await compareUsers(t, users)
 })
+*/
 
+/* TODO: reimplement observeDeep
 test('observe deep properties', async function map11 (t) {
   let { users, map1, map2, map3 } = await initArrays(t, { users: 4 })
   var _map1 = map1.set('map', new Y.Map())
@@ -178,7 +181,7 @@ test('observe deep properties', async function map11 (t) {
   _map1.observe(function (event) {
     calls++
     t.compare(event.name, 'deepmap')
-    dmapid = event.object.opContents.deepmap
+    dmapid = event.target.opContents.deepmap
   })
   await flushAll(t, users)
   var _map3 = map3.get('map')
@@ -197,7 +200,7 @@ test('observe deep properties', async function map11 (t) {
   await compareUsers(t, users)
 })
 
-test('observes using observePath', async function map12 (t) {
+test('observes using observeDeep', async function map12 (t) {
   let { users, map0 } = await initArrays(t, { users: 2 })
   var pathes = []
   var calls = 0
@@ -212,7 +215,9 @@ test('observes using observePath', async function map12 (t) {
   t.compare(pathes, [[], ['map'], ['map', 'array']])
   await compareUsers(t, users)
 })
+*/
 
+/* TODO: Test events in Y.Map
 function compareEvent (t, is, should) {
   for (var key in should) {
     t.assert(should[key] === is[key])
@@ -255,7 +260,9 @@ test('throws add & update & delete events (with type and primitive content)', as
   })
   await compareUsers(t, users)
 })
+*/
 
+/* reimplement event.value somehow (probably with ss vector)
 test('event has correct value when setting a primitive on a YMap (same user)', async function map14 (t) {
   let { users, map0 } = await initArrays(t, { users: 3 })
   var event
@@ -264,7 +271,7 @@ test('event has correct value when setting a primitive on a YMap (same user)', a
     event = e
   })
   map0.set('stuff', 2)
-  t.compare(event.value, event.object.get(event.name))
+  t.compare(event.value, event.target.get(event.name))
   await compareUsers(t, users)
 })
 
@@ -277,34 +284,10 @@ test('event has correct value when setting a primitive on a YMap (received from 
   })
   map1.set('stuff', 2)
   await flushAll(t, users)
-  t.compare(event.value, event.object.get(event.name))
+  t.compare(event.value, event.target.get(event.name))
   await compareUsers(t, users)
 })
-
-test('event has correct value when setting a type on a YMap (same user)', async function map16 (t) {
-  let { users, map0 } = await initArrays(t, { users: 3 })
-  var event
-  await flushAll(t, users)
-  map0.observe(function (e) {
-    event = e
-  })
-  map0.set('stuff', new Y.Map())
-  t.compare(event.value._model, event.object.get(event.name)._model)
-  await compareUsers(t, users)
-})
-
-test('event has correct value when setting a type on a YMap (ops received from another user)', async function map17 (t) {
-  let { users, map0, map1 } = await initArrays(t, { users: 3 })
-  var event
-  await flushAll(t, users)
-  map0.observe(function (e) {
-    event = e
-  })
-  map1.set('stuff', new Y.Map())
-  await flushAll(t, users)
-  t.compare(event.value._model, event.object.get(event.name)._model)
-  await compareUsers(t, users)
-})
+*/
 
 var mapTransactions = [
   function set (t, user, chance) {
@@ -314,9 +297,9 @@ var mapTransactions = [
   },
   function setType (t, user, chance) {
     let key = chance.pickone(['one', 'two'])
-    var value = chance.pickone([new Y.Array(), new Y.Map()])
-    let type = user.get('map', Y.Map).set(key, value)
-    if (value === new Y.Array()) {
+    var type = chance.pickone([new Y.Array(), new Y.Map()])
+    user.get('map', Y.Map).set(key, type)
+    if (type instanceof Y.Array) {
       type.insert(0, [1, 2, 3, 4])
     } else {
       type.set('deepkey', 'deepvalue')
@@ -352,7 +335,6 @@ test('y-map: Random tests (47)', async function randomMap47 (t) {
   await applyRandomTests(t, mapTransactions, 47)
 })
 
-/*
 test('y-map: Random tests (200)', async function randomMap200 (t) {
   await applyRandomTests(t, mapTransactions, 200)
 })
@@ -361,11 +343,14 @@ test('y-map: Random tests (300)', async function randomMap300 (t) {
   await applyRandomTests(t, mapTransactions, 300)
 })
 
-test('y-map: Random tests (400)', async function randomMap400 (t) {
-  await applyRandomTests(t, mapTransactions, 400)
-})
-
 test('y-map: Random tests (500)', async function randomMap500 (t) {
   await applyRandomTests(t, mapTransactions, 500)
 })
-*/
+
+test('y-map: Random tests (1000)', async function randomMap1000 (t) {
+  await applyRandomTests(t, mapTransactions, 1000)
+})
+
+test('y-map: Random tests (1800)', async function randomMap1800 (t) {
+  await applyRandomTests(t, mapTransactions, 1800)
+})

@@ -136,7 +136,7 @@ export function reflectChangesOnDom (event) {
       event.attributesChanged.forEach(attributeName => {
         const value = yxml.getAttribute(attributeName)
         if (value === undefined) {
-          dom.remoteAttribute(attributeName)
+          dom.removeAttribute(attributeName)
         } else {
           dom.setAttribute(attributeName, value)
         }
