@@ -228,7 +228,7 @@ var arrayTransactions = [
     var pos = chance.integer({ min: 0, max: yarray.length })
     yarray.insert(pos, content)
   },
-  /*function insertTypeArray (t, user, chance) {
+  function insertTypeArray (t, user, chance) {
     const yarray = user.get('array', Y.Array)
     var pos = chance.integer({ min: 0, max: yarray.length })
     yarray.insert(pos, [Y.Array])
@@ -243,7 +243,7 @@ var arrayTransactions = [
     map.set('someprop', 42)
     map.set('someprop', 43)
     map.set('someprop', 44)
-  },*/
+  },
   function _delete (t, user, chance) {
     const yarray = user.get('array', Y.Array)
     var length = yarray.length

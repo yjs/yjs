@@ -3,6 +3,8 @@ import { readDeleteSet } from './deleteSet.js'
 
 export function stringifySyncStep2 (y, decoder, strBuilder) {
   strBuilder.push('     - auth: ' + decoder.readVarString())
+  strBuilder.push('  == OS:')
+  stringifyStructs(y, decoder, strBuilder)
   // write DS to string
   strBuilder.push('  == DS:')
   let len = decoder.readUint32()
@@ -17,12 +19,10 @@ export function stringifySyncStep2 (y, decoder, strBuilder) {
       strBuilder.push(`[${from}, ${to}, ${gc}]`)
     }
   }
-  strBuilder.push('  == OS:')
-  stringifyStructs(y, decoder, strBuilder)
 }
 
 export function readSyncStep2 (decoder, encoder, y, senderConn, sender) {
-  readDeleteSet(y, decoder)
   integrateRemoteStructs(decoder, encoder, y)
+  readDeleteSet(y, decoder)
   y.connector._setSyncedWith(sender)
 }

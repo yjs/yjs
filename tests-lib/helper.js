@@ -103,7 +103,7 @@ export async function compareUsers (t, users) {
     u.os.iterate(null, null, function (op) {
       const json = {
         id: op._id,
-        left: op._left === null ? null : op._left._id,
+        left: op._left === null ? null : op._left._lastId,
         right: op._right === null ? null : op._right._id,
         length: op._length,
         deleted: op._deleted

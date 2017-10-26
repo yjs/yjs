@@ -297,8 +297,6 @@ export default class Item {
         this._parent = this._origin._parent
       } else if (this._right_origin !== null) {
         this._parent = this._right_origin._parent
-      } else if (missing.length === 0) {
-        debugger
       }
     }
     if (info & 0b1000) {

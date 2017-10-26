@@ -29,6 +29,7 @@ export default class AbstractConnector {
     this.currentSyncTarget = null
     this.debug = opts.debug === true
     this.broadcastBuffer = new BinaryEncoder()
+    this.broadcastBufferSize = 0
     this.protocolVersion = 11
     this.authInfo = opts.auth || null
     this.checkAuth = opts.checkAuth || function () { return Promise.resolve('write') } // default is everyone has write access
@@ -160,22 +161,29 @@ export default class AbstractConnector {
     if (firstContent) {
       this.broadcastBuffer.writeVarString(this.y.room)
       this.broadcastBuffer.writeVarString('update')
+      this.broadcastBufferSize = 0
+      this.broadcastBufferSizePos = this.broadcastBuffer.pos
+      this.broadcastBuffer.writeUint32(0)
     }
+    this.broadcastBufferSize++
     struct._toBinary(this.broadcastBuffer)
     if (this.maxBufferLength > 0 && this.broadcastBuffer.length > this.maxBufferLength) {
       // it is necessary to send the buffer now
       // cache the buffer and check if server is responsive
-      let buffer = this.broadcastBuffer
+      const buffer = this.broadcastBuffer
+      buffer.setUint32(this.broadcastBufferSizePos, this.broadcastBufferSize)
       this.broadcastBuffer = new BinaryEncoder()
       this.whenRemoteResponsive().then(() => {
-        this.broadcast(buffer)
+        this.broadcast(buffer.createBuffer)
       })
     } else if (firstContent) {
       // send the buffer when all transactions are finished
       // (or buffer exceeds maxBufferLength)
       setTimeout(() => {
         if (this.broadcastBuffer.length > 0) {
-          this.broadcast(this.broadcastBuffer.createBuffer())
+          const buffer = this.broadcastBuffer
+          buffer.setUint32(this.broadcastBufferSizePos, this.broadcastBufferSize)
+          this.broadcast(buffer.createBuffer())
           this.broadcastBuffer = new BinaryEncoder()
         }
       }, 0)

@@ -47,7 +47,8 @@ function _integrateRemoteStructHelper (y, struct) {
 }
 
 export function stringifyStructs (y, decoder, strBuilder) {
-  while (decoder.length !== decoder.pos) {
+  const len = decoder.readUint32()
+  for (let i = 0; i < len; i++) {
     let reference = decoder.readVarUint()
     let Constr = getStruct(reference)
     let struct = new Constr()
@@ -61,7 +62,8 @@ export function stringifyStructs (y, decoder, strBuilder) {
 }
 
 export function integrateRemoteStructs (decoder, encoder, y) {
-  while (decoder.length !== decoder.pos) {
+  const len = decoder.readUint32()
+  for (let i = 0; i < len; i++) {
     let reference = decoder.readVarUint()
     let Constr = getStruct(reference)
     let struct = new Constr()

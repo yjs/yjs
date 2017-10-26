@@ -1,5 +1,6 @@
 import { getReference } from '../Util/structReferences.js'
 import ID from '../Util/ID.js'
+import { logID } from '../MessageHandler/messageToString.js'
 
 /**
  * Delete all items in an ID-range
@@ -42,6 +43,8 @@ export default class Delete {
     this._length = null
   }
   _fromBinary (y, decoder) {
+    // TODO: set target, and add it to missing if not found
+    // There is an edge case in p2p networks!
     this._targetID = decoder.readID()
     this._length = decoder.readVarUint()
     return []
@@ -71,6 +74,6 @@ export default class Delete {
     }
   }
   _logString () {
-    return `Delete - target: ${this._target}, len: ${this._length}`
+    return `Delete - target: ${logID(this._targetID)}, len: ${this._length}`
   }
 }

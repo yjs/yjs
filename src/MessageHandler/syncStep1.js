@@ -31,14 +31,19 @@ export function sendSyncStep1 (connector, syncUser) {
 }
 
 export default function writeStructs (encoder, decoder, y, ss) {
+  const lenPos = encoder.pos
+  encoder.writeUint32(0)
+  let len = 0
   for (let user of y.ss.state.keys()) {
     let clock = ss.get(user) || 0
     if (user !== RootFakeUserID) {
       y.os.iterate(new ID(user, clock), new ID(user, Number.MAX_VALUE), function (struct) {
         struct._toBinary(encoder)
+        len++
       })
     }
   }
+  encoder.setUint32(lenPos, len)
 }
 
 export function readSyncStep1 (decoder, encoder, y, senderConn, sender) {
@@ -54,9 +59,9 @@ export function readSyncStep1 (decoder, encoder, y, senderConn, sender) {
   // write sync step 2
   encoder.writeVarString('sync step 2')
   encoder.writeVarString(y.connector.authInfo || '')
-  writeDeleteSet(y, encoder)
   const ss = readStateSet(decoder)
   writeStructs(encoder, decoder, y, ss)
+  writeDeleteSet(y, encoder)
   y.connector.send(senderConn.uid, encoder.createBuffer())
   senderConn.receivedSyncStep2 = true
   if (y.connector.role === 'slave') {
