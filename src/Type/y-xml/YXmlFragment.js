@@ -73,6 +73,10 @@ export default class YXmlFragment extends YArray {
   toString () {
     return this.map(xml => xml.toString()).join('')
   }
+  _delete (y, createDelete) {
+    this._unbindFromDom()
+    super._delete(y, createDelete)
+  }
   _unbindFromDom () {
     if (this._domObserver != null) {
       this._domObserver.disconnect()
