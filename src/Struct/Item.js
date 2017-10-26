@@ -240,7 +240,7 @@ export default class Item {
     if (info & 0b100) {
       encoder.writeID(this._right_origin._id)
     }
-    if (~info & 0b101) {
+    if ((info & 0b101) === 0) {
       // neither origin nor right is defined
       encoder.writeID(this._parent._id)
     }
@@ -280,7 +280,7 @@ export default class Item {
       }
     }
     // read parent
-    if (~info & 0b101) {
+    if ((info & 0b101) === 0) {
       // neither origin nor right is defined
       const parentID = decoder.readID()
       // parent does not change, so we don't have to search for it again
@@ -297,6 +297,8 @@ export default class Item {
         this._parent = this._origin._parent
       } else if (this._right_origin !== null) {
         this._parent = this._right_origin._parent
+      } else if (missing.length === 0) {
+        debugger
       }
     }
     if (info & 0b1000) {

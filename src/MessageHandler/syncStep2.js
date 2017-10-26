@@ -9,7 +9,7 @@ export function stringifySyncStep2 (y, decoder, strBuilder) {
   for (let i = 0; i < len; i++) {
     let user = decoder.readVarUint()
     strBuilder.push(`    User: ${user}: `)
-    let len2 = decoder.readVarUint()
+    let len2 = decoder.readUint32()
     for (let j = 0; j < len2; j++) {
       let from = decoder.readVarUint()
       let to = decoder.readVarUint()

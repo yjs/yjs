@@ -273,7 +273,7 @@ export default class Tree {
     var child = d.left || d.right
     if (child === null) {
       isFakeChild = true
-      child = new N({id: 0})
+      child = new N(null)
       child.blacken()
       d.right = child
     } else {

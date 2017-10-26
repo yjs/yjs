@@ -96,24 +96,6 @@ export async function compareUsers (t, users) {
   var userMapValues = users.map(u => u.get('map', Y.Map).toJSON())
   var userXmlValues = users.map(u => u.get('xml', Y.Xml).toString())
 
-  // disconnect all except user 0
-  await Promise.all(users.slice(1).map(async u =>
-    u.disconnect()
-  ))
-  if (users[0].connector.testRoom == null) {
-    await wait(100)
-  }
-  // reconnect all
-  await Promise.all(users.map(u => u.reconnect()))
-  if (users[0].connector.testRoom == null) {
-    await wait(100)
-  }
-  await users[0].connector.testRoom.flushAll(users)
-  await Promise.all(users.map(u =>
-    new Promise(function (resolve) {
-      u.connector.whenSynced(resolve)
-    })
-  ))
   var data = users.map(u => {
     defragmentItemContent(u)
     var data = {}

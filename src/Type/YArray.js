@@ -103,15 +103,17 @@ export default class YArray extends Type {
       let item = this._start
       let count = 0
       while (item !== null && length > 0) {
-        if (count <= pos && pos < count + item._length) {
-          const diffDel = pos - count
-          item = item._splitAt(this._y, diffDel)
-          item._splitAt(this._y, length)
-          length -= item._length
-          item._delete(this._y)
-        }
         if (!item._deleted) {
-          count += item._length
+          if (count <= pos && pos < count + item._length) {
+            const diffDel = pos - count
+            item = item._splitAt(this._y, diffDel)
+            item._splitAt(this._y, length)
+            length -= item._length
+            item._delete(this._y)
+            count += diffDel
+          } else {
+            count += item._length
+          }
         }
         item = item._right
       }

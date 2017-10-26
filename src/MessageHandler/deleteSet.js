@@ -70,6 +70,7 @@ export function readDeleteSet (y, decoder) {
     if (dvLength > 0) {
       let pos = 0
       let d = dv[pos]
+      let deletions = []
       y.ds.iterate(new ID(user, 0), new ID(user, Number.MAX_VALUE), function (n) {
         // cases:
         // 1. d deletes something to the right of n
@@ -91,16 +92,16 @@ export function readDeleteSet (y, decoder) {
             // delete maximum the len of d
             // else delete as much as possible
             diff = Math.min(n._id.clock - d[0], d[1])
-            deleteItemRange(y, user, d[0], diff)
-            // deletions.push([user, d[0], diff, d[2]])
+            // deleteItemRange(y, user, d[0], diff)
+            deletions.push([user, d[0], diff])
           } else {
             // 3)
             diff = n._id.clock + n.len - d[0] // never null (see 1)
             if (d[2] && !n.gc) {
               // d marks as gc'd but n does not
               // then delete either way
-              deleteItemRange(y, user, d[0], Math.min(diff, d[1]))
-              // deletions.push([user, d[0], Math.min(diff, d[1]), d[2]])
+              // deleteItemRange(y, user, d[0], Math.min(diff, d[1]))
+              deletions.push([user, d[0], Math.min(diff, d[1])])
             }
           }
           if (d[1] <= diff) {
@@ -112,6 +113,12 @@ export function readDeleteSet (y, decoder) {
           }
         }
       })
+      // TODO: It would be more performant to apply the deletes in the above loop
+      // Adapt the Tree implementation to support delete while iterating
+      for (let i = deletions.length - 1; i >= 0; i--) {
+        const del = deletions[i]
+        deleteItemRange(y, del[0], del[1], del[2])
+      }
       // for the rest.. just apply it
       for (; pos < dv.length; pos++) {
         d = dv[pos]

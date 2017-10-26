@@ -228,7 +228,7 @@ var arrayTransactions = [
     var pos = chance.integer({ min: 0, max: yarray.length })
     yarray.insert(pos, content)
   },
-  function insertTypeArray (t, user, chance) {
+  /*function insertTypeArray (t, user, chance) {
     const yarray = user.get('array', Y.Array)
     var pos = chance.integer({ min: 0, max: yarray.length })
     yarray.insert(pos, [Y.Array])
@@ -243,7 +243,7 @@ var arrayTransactions = [
     map.set('someprop', 42)
     map.set('someprop', 43)
     map.set('someprop', 44)
-  },
+  },*/
   function _delete (t, user, chance) {
     const yarray = user.get('array', Y.Array)
     var length = yarray.length
@@ -296,19 +296,19 @@ test('y-array: Random tests (47)', async function randomArray47 (t) {
   await applyRandomTests(t, arrayTransactions, 47)
 })
 
-test('y-array: Random tests (200)', async function randomArray200 (t) {
+test('y-array: Random tests (300)', async function randomArray300 (t) {
   await applyRandomTests(t, arrayTransactions, 200)
 })
 
-test('y-array: Random tests (300)', async function randomArray300 (t) {
+test('y-array: Random tests (500)', async function randomArray500 (t) {
   await applyRandomTests(t, arrayTransactions, 300)
 })
 
-test('y-array: Random tests (400)', async function randomArray400 (t) {
+test('y-array: Random tests (600)', async function randomArray600 (t) {
   await applyRandomTests(t, arrayTransactions, 400)
 })
 
-test('y-array: Random tests (500)', async function randomArray500 (t) {
+test('y-array: Random tests (700)', async function randomArray700 (t) {
   await applyRandomTests(t, arrayTransactions, 500)
 })
 
@@ -316,6 +316,6 @@ test('y-array: Random tests (1000)', async function randomArray1000 (t) {
   await applyRandomTests(t, arrayTransactions, 1000)
 })
 
-test('y-array: Random tests (2000)', async function randomArray2000 (t) {
+test('y-array: Random tests (1800)', async function randomArray1800 (t) {
   await applyRandomTests(t, arrayTransactions, 2000)
 })
