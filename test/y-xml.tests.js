@@ -352,3 +352,19 @@ test('y-xml: Random tests (46)', async function xmlRandom46 (t) {
 test('y-xml: Random tests (47)', async function xmlRandom47 (t) {
   await applyRandomTests(t, xmlTransactions, 47)
 })
+
+test('y-xml: Random tests (100)', async function xmlRandom100 (t) {
+  await applyRandomTests(t, xmlTransactions, 100)
+})
+
+test('y-xml: Random tests (200)', async function xmlRandom200 (t) {
+  await applyRandomTests(t, xmlTransactions, 200)
+})
+
+test('y-xml: Random tests (500)', async function xmlRandom500 (t) {
+  await applyRandomTests(t, xmlTransactions, 500)
+})
+
+test('y-xml: Random tests (1000)', async function xmlRandom1000 (t) {
+  await applyRandomTests(t, xmlTransactions, 1000)
+})

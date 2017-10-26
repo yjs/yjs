@@ -80,7 +80,9 @@ export default class YXmlElement extends YXmlFragment {
       keys.push(key)
     }
     keys.sort()
-    for (let key in keys) {
+    const keysLen = keys.length
+    for (let i = 0; i < keysLen; i++) {
+      const key = keys[i]
       stringBuilder.push(key + '="' + attrs[key] + '"')
     }
     const nodeName = this.nodeName.toLocaleLowerCase()

@@ -196,6 +196,9 @@ export default class Item {
         right._left = this
       }
     }
+    if (parent._deleted) {
+      this._delete(y, false)
+    }
     y.os.put(this)
     transactionTypeChanged(y, parent, parentSub)
     if (this._id.user !== RootFakeUserID) {
@@ -205,7 +208,6 @@ export default class Item {
       if (y.persistence !== null) {
         y.persistence.saveOperations(this)
       }
-      y.ds.applyMissingDeletesOnStruct(this)
     }
   }
   _toBinary (encoder) {

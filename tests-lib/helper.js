@@ -106,7 +106,8 @@ export async function compareUsers (t, users) {
         left: op._left === null ? null : op._left._lastId,
         right: op._right === null ? null : op._right._id,
         length: op._length,
-        deleted: op._deleted
+        deleted: op._deleted,
+        parent: op._parent._id
       }
       if (op instanceof ItemJSON || op instanceof ItemString) {
         json.content = op._content

@@ -39,15 +39,20 @@ export function deleteItemRange (y, user, clock, range) {
  */
 export default class Delete {
   constructor () {
-    this._targetID = null
+    this._target = null
     this._length = null
   }
   _fromBinary (y, decoder) {
     // TODO: set target, and add it to missing if not found
     // There is an edge case in p2p networks!
-    this._targetID = decoder.readID()
+    const targetID = decoder.readID()
+    this._targetID = targetID
     this._length = decoder.readVarUint()
-    return []
+    if (y.os.getItem(targetID) === null) {
+      return [targetID]
+    } else {
+      return []
+    }
   }
   _toBinary (encoder) {
     encoder.writeUint8(getReference(this.constructor))
