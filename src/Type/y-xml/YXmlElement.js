@@ -67,10 +67,20 @@ export default class YXmlElement extends YXmlFragment {
     }
     super._integrate(y)
   }
+  /**
+   * Returns the string representation of the XML document.
+   * The attributes are ordered by attribute-name, so you can easily use this
+   * method to compare YXmlElements
+   */
   toString () {
     const attrs = this.getAttributes()
     const stringBuilder = []
+    const keys = []
     for (let key in attrs) {
+      keys.push(key)
+    }
+    keys.sort()
+    for (let key in keys) {
       stringBuilder.push(key + '="' + attrs[key] + '"')
     }
     const nodeName = this.nodeName.toLocaleLowerCase()

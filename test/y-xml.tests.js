@@ -10,6 +10,7 @@ test('set property', async function xml0 (t) {
   await compareUsers(t, users)
 })
 
+/* TODO: Test YXml events!
 test('events', async function xml1 (t) {
   var { users, xml0, xml1 } = await initArrays(t, { users: 2 })
   var event
@@ -65,6 +66,7 @@ test('events', async function xml1 (t) {
   t.compare(remoteEvent, expectedEvent, 'child deleted event (remote)')
   await compareUsers(t, users)
 })
+*/
 
 test('attribute modifications (y -> dom)', async function xml2 (t) {
   var { users, xml0 } = await initArrays(t, { users: 3 })
@@ -267,23 +269,22 @@ test('filter attribute', async function xml15 (t) {
 
 // TODO: move elements
 var xmlTransactions = [
-  /*function attributeChange (t, user, chance) {
+  function attributeChange (t, user, chance) {
     user.get('xml', Y.XmlElement).getDom().setAttribute(chance.word(), chance.word())
   },
   function attributeChangeHidden (t, user, chance) {
     user.get('xml', Y.XmlElement).getDom().setAttribute('hidden', chance.word())
-  },*/
+  },
   function insertText (t, user, chance) {
     let dom = user.get('xml', Y.XmlElement).getDom()
     var succ = dom.children.length > 0 ? chance.pickone(dom.children) : null
     dom.insertBefore(document.createTextNode(chance.word()), succ)
-  },/*
+  },
   function insertHiddenDom (t, user, chance) {
     let dom = user.get('xml', Y.XmlElement).getDom()
     var succ = dom.children.length > 0 ? chance.pickone(dom.children) : null
     dom.insertBefore(document.createElement('hidden'), succ)
   },
-  /*
   function insertDom (t, user, chance) {
     let dom = user.get('xml', Y.XmlElement).getDom()
     var succ = dom.children.length > 0 ? chance.pickone(dom.children) : null
@@ -321,7 +322,7 @@ var xmlTransactions = [
         d.remove()
       }
     }
-  }*/
+  }
 ]
 
 test('y-xml: Random tests (10)', async function xmlRandom10 (t) {

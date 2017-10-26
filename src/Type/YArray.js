@@ -178,7 +178,6 @@ export default class YArray extends Type {
     } else {
       apply()
     }
-    return content
   }
   insert (pos, content) {
     let left = null

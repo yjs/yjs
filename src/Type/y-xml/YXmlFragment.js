@@ -85,12 +85,13 @@ export default class YXmlFragment extends YArray {
   }
   insertDomElementsAfter (prev, doms) {
     const types = domToYXml(this, doms)
-    return this.insertAfter(prev, types)
+    this.insertAfter(prev, types)
+    return types
   }
   insertDomElements (pos, doms) {
     const types = domToYXml(this, doms)
     this.insert(pos, types)
-    return types.length
+    return types
   }
   bindToDom (dom) {
     if (this._dom != null) {

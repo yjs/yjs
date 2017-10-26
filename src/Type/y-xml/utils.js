@@ -61,6 +61,15 @@ function iterateUntilUndeleted (item) {
   return item
 }
 
+function _insertNodeHelper (yxml, prevExpectedNode, child) {
+  let insertedNodes = yxml.insertDomElementsAfter(prevExpectedNode, [child])
+  if (insertedNodes.length > 0) {
+    return insertedNodes[0]
+  } else {
+    return prevExpectedNode
+  }
+}
+
 /*
  * 1. Check if any of the nodes was deleted
  * 2. Iterate over the children.
@@ -107,7 +116,7 @@ export function applyChangesFromDom (yxml) {
           } else {
             childYXml._delete(y)
           }
-          prevExpectedNode = yxml.insertDomElementsAfter(prevExpectedNode, [child])[0]
+          prevExpectedNode = _insertNodeHelper(yxml, prevExpectedNode, child)
         } else {
           prevExpectedNode = expectedNode
           expectedNode = iterateUntilUndeleted(expectedNode._right)
@@ -115,11 +124,11 @@ export function applyChangesFromDom (yxml) {
         // if this is the expected node id, just continue
       } else {
         // 2.2 fill _conten with child nodes
-        prevExpectedNode = yxml.insertDomElementsAfter(prevExpectedNode, [child])[0]
+        prevExpectedNode = _insertNodeHelper(yxml, prevExpectedNode, child)
       }
     } else {
       // 2.1 A new node was found
-      prevExpectedNode = yxml.insertDomElementsAfter(prevExpectedNode, [child])[0]
+      prevExpectedNode = _insertNodeHelper(yxml, prevExpectedNode, child)
     }
   }
 }
