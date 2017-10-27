@@ -24,14 +24,16 @@ export default class YText extends YArray {
     return strBuilder.join('')
   }
   insert (pos, text) {
-    this._y.transact(() => {
+    this._transact(y => {
       let left = null
       let right = this._start
       let count = 0
       while (right !== null) {
         if (count <= pos && pos < count + right._length) {
+          const splitDiff = pos - count
           right = right._splitAt(this._y, pos - count)
           left = right._left
+          count += splitDiff
           break
         }
         count += right._length
@@ -48,7 +50,13 @@ export default class YText extends YArray {
       item._right_origin = right
       item._parent = this
       item._content = text
-      item._integrate(this._y)
+      if (y !== null) {
+        item._integrate(this._y)
+      } else if (left === null) {
+        this._start = item
+      } else {
+        left._right = item
+      }
     })
   }
   _logString () {

@@ -123,8 +123,7 @@ export default class YArray extends Type {
     }
   }
   insertAfter (left, content) {
-    const y = this._y
-    const apply = () => {
+    this._transact(y => {
       let right
       if (left === null) {
         right = this._start
@@ -154,6 +153,8 @@ export default class YArray extends Type {
             c._integrate(y)
           } else if (left === null) {
             this._start = c
+          } else {
+            left._right = c
           }
           left = c
         } else {
@@ -172,12 +173,7 @@ export default class YArray extends Type {
       if (prevJsonIns !== null && y !== null) {
         prevJsonIns._integrate(y)
       }
-    }
-    if (y !== null) {
-      y.transact(apply)
-    } else {
-      apply()
-    }
+    })
   }
   insert (pos, content) {
     let left = null

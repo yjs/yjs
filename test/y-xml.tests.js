@@ -267,6 +267,26 @@ test('filter attribute', async function xml15 (t) {
   await compareUsers(t, users)
 })
 
+test('deep element insert', async function xml16 (t) {
+  var { users, xml0, xml1 } = await initArrays(t, { users: 3 })
+  let dom0 = xml0.getDom()
+  let dom1 = xml1.getDom()
+  let deepElement = document.createElement('p')
+  let boldElement = document.createElement('b')
+  let attrElement = document.createElement('img')
+  attrElement.setAttribute('src', 'http:localhost:8080/nowhere')
+  boldElement.append(document.createTextNode('hi'))
+  deepElement.append(boldElement)
+  deepElement.append(attrElement)
+  dom0.append(deepElement)
+  console.log(dom0.outerHTML)
+  let str0 = dom0.outerHTML
+  await flushAll(t, users)
+  let str1 = dom1.outerHTML
+  t.compare(str0, str1, 'Dom string representation matches')
+  await compareUsers(t, users)
+})
+
 // TODO: move elements
 var xmlTransactions = [
   function attributeChange (t, user, chance) {

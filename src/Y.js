@@ -46,7 +46,7 @@ export default class Y extends NamedEventHandler {
       this._transaction = new Transaction(this)
     }
     try {
-      f()
+      f(this)
     } catch (e) {
       console.error(e)
     }

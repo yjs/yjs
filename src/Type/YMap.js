@@ -35,16 +35,15 @@ export default class YMap extends Type {
     return map
   }
   delete (key) {
-    this._y.transact(() => {
+    this._transact((y) => {
       let c = this._map.get(key)
-      if (c !== undefined) {
-        c._delete(this._y)
+      if (y !== null && c !== undefined) {
+        c._delete(y)
       }
     })
   }
   set (key, value) {
-    const y = this._y
-    y.transact(() => {
+    this._transact(y => {
       const old = this._map.get(key) || null
       if (old !== null) {
         if (old instanceof ItemJSON && old._content[0] === value) {
@@ -52,7 +51,9 @@ export default class YMap extends Type {
           // break here
           return value
         }
-        old._delete(y)
+        if (y !== null) {
+          old._delete(y)
+        }
       }
       let v
       if (typeof value === 'function') {
@@ -67,7 +68,11 @@ export default class YMap extends Type {
       v._right_origin = old
       v._parent = this
       v._parentSub = key
-      v._integrate(y)
+      if (y !== null) {
+        v._integrate(y)
+      } else {
+        this._map.set(key, v)
+      }
     })
     return value
   }

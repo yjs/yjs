@@ -22,6 +22,14 @@ export default class Type extends Item {
     this._y = null
     this._eventHandler = new EventHandler()
   }
+  _transact (f) {
+    const y = this._y
+    if (y !== null) {
+      y.transact(f)
+    } else {
+      f(y)
+    }
+  }
   observe (f) {
     this._eventHandler.addEventListener(f)
   }
@@ -41,8 +49,9 @@ export default class Type extends Item {
     }
     // integrate map children
     const map = this._map
-    for (let [key, t] of map) {
-      map.delete(key)
+    this._map = new Map()
+    for (let t of map.values()) {
+      // TODO make sure that right elements are deleted!
       integrateChildren(y, t)
     }
   }
