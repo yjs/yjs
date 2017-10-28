@@ -41,7 +41,7 @@ function getDeleteSet (y) {
 
 export function attrsObject (dom) {
   let keys = []
-  let yxml = dom.__yxml
+  let yxml = dom._yxml
   for (let i = 0; i < dom.attributes.length; i++) {
     keys.push(dom.attributes[i].name)
   }
@@ -60,7 +60,7 @@ export function domToJson (dom) {
   } else if (dom.nodeType === document.ELEMENT_NODE) {
     let attributes = attrsObject(dom)
     let children = Array.from(dom.childNodes.values())
-      .filter(d => d.__yxml !== false)
+      .filter(d => d._yxml !== false)
       .map(domToJson)
     return {
       name: dom.nodeName,

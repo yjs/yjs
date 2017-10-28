@@ -36,13 +36,13 @@ export default class Y extends NamedEventHandler {
     this.connected = true
     this._missingStructs = new Map()
     this._readyToIntegrate = []
-    this._transactionsInProgress = 0
     this._transaction = null
   }
   _beforeChange () {}
   transact (f, remote = false) {
     let initialCall = this._transaction === null
     if (initialCall) {
+      this.emit('beforeTransaction', this, remote)
       this._transaction = new Transaction(this)
     }
     try {
@@ -55,9 +55,9 @@ export default class Y extends NamedEventHandler {
       this._transaction.changedTypes.forEach(function (subs, type) {
         type._callObserver(subs, remote)
       })
-      this._transaction = null
       // when all changes & events are processed, emit afterTransaction event
-      this.emit('afterTransaction', this)
+      this.emit('afterTransaction', this, remote)
+      this._transaction = null
     }
   }
   // fake _start for root properties (y.set('name', type))

@@ -10,8 +10,8 @@ import { logID } from '../../MessageHandler/messageToString.js'
 function domToYXml (parent, doms) {
   const types = []
   doms.forEach(d => {
-    if (d.__yxml != null && d.__yxml !== false) {
-      d.__yxml._unbindFromDom()
+    if (d._yxml != null && d._yxml !== false) {
+      d._yxml._unbindFromDom()
     }
     if (parent._domFilter(d, []) !== null) {
       let type
@@ -25,7 +25,7 @@ function domToYXml (parent, doms) {
       type.enableSmartScrolling(parent._scrollElement)
       types.push(type)
     } else {
-      d.__yxml = false
+      d._yxml = false
     }
   })
   return types
@@ -83,7 +83,7 @@ export default class YXmlFragment extends YArray {
       this._domObserver = null
     }
     if (this._dom != null) {
-      this._dom.__yxml = null
+      this._dom._yxml = null
       this._dom = null
     }
   }
@@ -97,12 +97,15 @@ export default class YXmlFragment extends YArray {
     this.insert(pos, types)
     return types
   }
+  getDom () {
+    return this._dom
+  }
   bindToDom (dom) {
     if (this._dom != null) {
       this._unbindFromDom()
     }
-    if (dom.__yxml != null) {
-      dom.__yxml._unbindFromDom()
+    if (dom._yxml != null) {
+      dom._yxml._unbindFromDom()
     }
     if (MutationObserver == null) {
       throw new Error('Not able to bind to a DOM element, because MutationObserver is not available!')
@@ -112,7 +115,7 @@ export default class YXmlFragment extends YArray {
       dom.insertBefore(t.getDom(), null)
     })
     this._dom = dom
-    dom.__yxml = this
+    dom._yxml = this
     this._bindToDom(dom)
   }
   // binds to a dom element

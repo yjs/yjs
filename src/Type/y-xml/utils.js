@@ -73,7 +73,7 @@ function _insertNodeHelper (yxml, prevExpectedNode, child) {
 /*
  * 1. Check if any of the nodes was deleted
  * 2. Iterate over the children.
- *    2.1 If a node exists without __yxml property, insert a new node
+ *    2.1 If a node exists without _yxml property, insert a new node
  *    2.2 If _contents.length < dom.childNodes.length, fill the
  *        rest of _content with childNodes
  *    2.3 If a node was moved, delete it and
@@ -85,7 +85,7 @@ export function applyChangesFromDom (yxml) {
   const y = yxml._y
   let knownChildren =
     new Set(
-      Array.prototype.map.call(yxml._dom.childNodes, child => child.__yxml)
+      Array.prototype.map.call(yxml._dom.childNodes, child => child._yxml)
       .filter(id => id !== undefined)
     )
   // 1. Check if any of the nodes was deleted
@@ -101,7 +101,7 @@ export function applyChangesFromDom (yxml) {
   let expectedNode = iterateUntilUndeleted(yxml._start)
   for (let domCnt = 0; domCnt < len; domCnt++) {
     const child = childNodes[domCnt]
-    const childYXml = child.__yxml
+    const childYXml = child._yxml
     if (childYXml != null) {
       if (childYXml === false) {
         // should be ignored or is going to be deleted
@@ -112,7 +112,7 @@ export function applyChangesFromDom (yxml) {
           // 2.3 Not expected node
           if (childYXml._parent !== this) {
             // element is going to be deleted by its previous parent
-            child.__yxml = null
+            child._yxml = null
           } else {
             childYXml._delete(y)
           }

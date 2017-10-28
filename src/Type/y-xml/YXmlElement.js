@@ -26,10 +26,10 @@ export default class YXmlElement extends YXmlFragment {
   _setDom (dom) {
     if (this._dom != null) {
       throw new Error('Only call this method if you know what you are doing ;)')
-    } else if (dom.__yxml != null) { // TODO do i need to check this? - no.. but for dev purps..
+    } else if (dom._yxml != null) { // TODO do i need to check this? - no.. but for dev purps..
       throw new Error('Already bound to an YXml type')
     } else {
-      dom.__yxml = this
+      dom._yxml = this
       // tag is already set in constructor
       // set attributes
       let attrNames = []
@@ -112,7 +112,7 @@ export default class YXmlElement extends YXmlFragment {
     let dom = this._dom
     if (dom == null) {
       dom = document.createElement(this.nodeName)
-      dom.__yxml = this
+      dom._yxml = this
       let attrs = this.getAttributes()
       for (let key in attrs) {
         dom.setAttribute(key, attrs[key])

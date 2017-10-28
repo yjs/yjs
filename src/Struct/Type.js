@@ -1,5 +1,6 @@
 import Item from './Item.js'
 import EventHandler from '../Util/EventHandler.js'
+import ID from '../Util/ID.js'
 
 // restructure children as if they were inserted one after another
 function integrateChildren (y, start) {
@@ -12,6 +13,21 @@ function integrateChildren (y, start) {
     start._integrate(y)
     start = right
   } while (right !== null)
+}
+
+export function getListItemIDByPosition (type, i) {
+  let pos = 0
+  let n = type._start
+  while (n !== null) {
+    if (!n._deleted) {
+      if (pos <= i && i < pos + n._length) {
+        const id = n._id
+        return new ID(id.user, id.clock + i - pos)
+      }
+      pos++
+    }
+    n = n._right
+  }
 }
 
 export default class Type extends Item {

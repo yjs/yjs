@@ -13,9 +13,17 @@ export default class YArray extends Type {
   _callObserver (parentSubs, remote) {
     this._eventHandler.callEventListeners(new YArrayEvent(this, remote))
   }
-  get (i) {
-    // TODO: This can be improved!
-    return this.toArray()[i]
+  get (pos) {
+    let n = this._start
+    while (n !== null) {
+      if (!n._deleted) {
+        if (pos < n._length) {
+          return n._content[n._length - pos]
+        }
+        pos -= n._length
+      }
+      n = n._right
+    }
   }
   toArray () {
     return this.map(c => c)

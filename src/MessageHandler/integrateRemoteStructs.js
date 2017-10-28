@@ -1,6 +1,5 @@
 import { getStruct } from '../Util/structReferences.js'
 import BinaryDecoder from '../Binary/Decoder.js'
-import Delete from '../Struct/Delete.js'
 import { logID } from './messageToString.js'
 
 class MissingEntry {
@@ -17,9 +16,14 @@ class MissingEntry {
  * integrate.
  */
 function _integrateRemoteStructHelper (y, struct) {
-  struct._integrate(y)
-  if (struct.constructor !== Delete) {
-    const id = struct._id
+  const id = struct._id
+  if (id === undefined) {
+    struct._integrate(y)
+  } else {
+    if (y.ss.getState(id.user) > id.clock) {
+      return
+    }
+    struct._integrate(y)
     let msu = y._missingStructs.get(id.user)
     if (msu != null) {
       let clock = id.clock

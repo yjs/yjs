@@ -1,20 +1,9 @@
-/* global getSelection, MutationObserver */
+/* global MutationObserver */
 
 import diff from 'fast-diff'
 import YText from '../YText.js'
 import { getAnchorViewPosition, fixScrollPosition, getBoundingClientRect } from './utils.js'
-
-function fixPosition (event, pos) {
-  if (event.index <= pos) {
-    if (event.type === 'delete') {
-      return pos - Math.min(pos - event.index, event.length)
-    } else {
-      return pos + 1
-    }
-  } else {
-    return pos
-  }
-}
+import { beforeTransactionSelectionFixer, afterTransactionSelectionFixer } from './selection.js'
 
 export default class YXmlText extends YText {
   constructor (arg1) {
@@ -53,25 +42,6 @@ export default class YXmlText extends YText {
       if (this._dom != null) {
         const dom = this._dom
         this._mutualExclude(() => {
-          let selection = null
-          let shouldUpdateSelection = false
-          let anchorNode = null
-          let anchorOffset = null
-          let focusNode = null
-          let focusOffset = null
-          if (typeof getSelection !== 'undefined') {
-            selection = getSelection()
-            if (selection.anchorNode === dom) {
-              anchorNode = selection.anchorNode
-              anchorOffset = fixPosition(event, selection.anchorOffset)
-              shouldUpdateSelection = true
-            }
-            if (selection.focusNode === dom) {
-              focusNode = selection.focusNode
-              focusOffset = fixPosition(event, selection.focusOffset)
-              shouldUpdateSelection = true
-            }
-          }
           let anchorViewPosition = getAnchorViewPosition(this._scrollElement)
           let anchorViewFix
           if (anchorViewPosition !== null && (anchorViewPosition.anchor !== null || getBoundingClientRect(this._dom).top <= 0)) {
@@ -81,18 +51,14 @@ export default class YXmlText extends YText {
           }
           dom.nodeValue = this.toString()
           fixScrollPosition(this._scrollElement, anchorViewFix)
-
-          if (shouldUpdateSelection) {
-            selection.setBaseAndExtent(
-              anchorNode || selection.anchorNode,
-              anchorOffset || selection.anchorOffset,
-              focusNode || selection.focusNode,
-              focusOffset || selection.focusOffset
-            )
-          }
         })
       }
     })
+  }
+  _integrate (y) {
+    super._integrate(y)
+    y.on('beforeTransaction', beforeTransactionSelectionFixer)
+    y.on('afterTransaction', afterTransactionSelectionFixer)
   }
   setDomFilter () {}
   enableSmartScrolling (scrollElement) {
@@ -102,12 +68,12 @@ export default class YXmlText extends YText {
     if (this._dom != null) {
       this._unbindFromDom()
     }
-    if (dom.__yxml != null) {
-      dom.__yxml._unbindFromDom()
+    if (dom._yxml != null) {
+      dom._yxml._unbindFromDom()
     }
     // set marker
     this._dom = dom
-    dom.__yxml = this
+    dom._yxml = this
     if (typeof MutationObserver === 'undefined') {
       return
     }
@@ -154,7 +120,7 @@ export default class YXmlText extends YText {
       this._domObserver = null
     }
     if (this._dom != null) {
-      this._dom.__yxml = null
+      this._dom._yxml = null
       this._dom = null
     }
   }

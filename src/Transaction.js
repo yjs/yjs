@@ -11,7 +11,7 @@ export default class Transaction {
 }
 
 export function transactionTypeChanged (y, type, sub) {
-  if (type !== y && !type._deleted) {
+  if (type !== y && !type._deleted && !y._transaction.newTypes.has(type)) {
     const changedTypes = y._transaction.changedTypes
     let subs = changedTypes.get(type)
     if (subs === undefined) {
