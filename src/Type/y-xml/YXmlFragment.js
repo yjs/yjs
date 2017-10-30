@@ -1,11 +1,13 @@
 /* global MutationObserver */
 
 import { defaultDomFilter, applyChangesFromDom, reflectChangesOnDom } from './utils.js'
+import { beforeTransactionSelectionFixer, afterTransactionSelectionFixer } from './selection.js'
 
 import YArray from '../YArray.js'
 import YXmlText from './YXmlText.js'
 import YXmlEvent from './YXmlEvent.js'
 import { logID } from '../../MessageHandler/messageToString.js'
+import diff from 'fast-diff'
 
 function domToYXml (parent, doms) {
   const types = []
@@ -52,8 +54,6 @@ export default class YXmlFragment extends YArray {
         token = true
       }
     }
-    // Apply Y.Xml events to dom
-    this.observe(reflectChangesOnDom)
   }
   enableSmartScrolling (scrollElement) {
     this._scrollElement = scrollElement
@@ -68,7 +68,7 @@ export default class YXmlFragment extends YArray {
     })
   }
   _callObserver (parentSubs, remote) {
-    this._eventHandler.callEventListeners(new YXmlEvent(this, parentSubs, remote))
+    this._callEventHandler(new YXmlEvent(this, parentSubs, remote))
   }
   toString () {
     return this.map(xml => xml.toString()).join('')
@@ -111,56 +111,90 @@ export default class YXmlFragment extends YArray {
       throw new Error('Not able to bind to a DOM element, because MutationObserver is not available!')
     }
     dom.innerHTML = ''
+    this._dom = dom
+    dom._yxml = this
     this.forEach(t => {
       dom.insertBefore(t.getDom(), null)
     })
-    this._dom = dom
-    dom._yxml = this
     this._bindToDom(dom)
   }
   // binds to a dom element
   // Only call if dom and YXml are isomorph
   _bindToDom (dom) {
+    if (this._parent === null || this._parent._dom != null || typeof MutationObserver === 'undefined') {
+      // only bind if parent did not already bind
+      return
+    }
+    this._y.on('beforeTransaction', () => {
+      this._domObserverListener(this._domObserver.takeRecords())
+    })
+    this._y.on('beforeTransaction', beforeTransactionSelectionFixer)
+    this._y.on('afterTransaction', afterTransactionSelectionFixer)
+    // Apply Y.Xml events to dom
+    this.observeDeep(reflectChangesOnDom.bind(this))
+    // Apply Dom changes on Y.Xml
     this._domObserverListener = mutations => {
       this._mutualExclude(() => {
         this._y.transact(() => {
-          let diffChildren = false
+          let diffChildren = new Set()
           mutations.forEach(mutation => {
-            if (mutation.type === 'attributes') {
-              let name = mutation.attributeName
-              // check if filter accepts attribute
-              if (this._domFilter(this._dom, [name]).length > 0) {
-                var val = mutation.target.getAttribute(name)
-                if (this.getAttribute(name) !== val) {
-                  if (val == null) {
-                    this.removeAttribute(name)
-                  } else {
-                    this.setAttribute(name, val)
+            const dom = mutation.target
+            const yxml = dom._yxml
+            if (yxml == null) {
+              // dom element is filtered
+              return
+            }
+            switch (mutation.type) {
+              case 'characterData':
+                var diffs = diff(yxml.toString(), dom.nodeValue)
+                var pos = 0
+                for (var i = 0; i < diffs.length; i++) {
+                  var d = diffs[i]
+                  if (d[0] === 0) { // EQUAL
+                    pos += d[1].length
+                  } else if (d[0] === -1) { // DELETE
+                    yxml.delete(pos, d[1].length)
+                  } else { // INSERT
+                    yxml.insert(pos, d[1])
+                    pos += d[1].length
                   }
                 }
-              }
-            } else if (mutation.type === 'childList') {
-              diffChildren = true
+                break
+              case 'attributes':
+                let name = mutation.attributeName
+                // check if filter accepts attribute
+                if (this._domFilter(dom, [name]).length > 0) {
+                  var val = dom.getAttribute(name)
+                  if (yxml.getAttribute(name) !== val) {
+                    if (val == null) {
+                      yxml.removeAttribute(name)
+                    } else {
+                      yxml.setAttribute(name, val)
+                    }
+                  }
+                }
+                break
+              case 'childList':
+                diffChildren.add(mutation.target)
+                break
             }
           })
-          if (diffChildren) {
-            applyChangesFromDom(this)
+          for (let dom of diffChildren) {
+            if (dom._yxml != null) {
+              applyChangesFromDom(dom)
+            }
           }
         })
       })
     }
     this._domObserver = new MutationObserver(this._domObserverListener)
-    const observeOptions = { childList: true }
-    if (this instanceof YXmlFragment._YXmlElement) {
-      observeOptions.attributes = true
-    }
-    this._domObserver.observe(dom, observeOptions)
+    this._domObserver.observe(dom, {
+      childList: true,
+      attributes: true,
+      characterData: true,
+      subtree: true
+    })
     return dom
-  }
-  _beforeChange () {
-    if (this._domObserver != null) {
-      this._domObserverListener(this._domObserver.takeRecords())
-    }
   }
   _logString () {
     const left = this._left !== null ? this._left._lastId : null

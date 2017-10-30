@@ -5,8 +5,10 @@ export default class Transaction {
     // types added during transaction
     this.newTypes = new Set()
     // changed types (does not include new types)
-    // maps from type to parentSubs (item.parentSub = null for array elements)
+    // maps from type to parentSubs (item._parentSub = null for array elements)
     this.changedTypes = new Map()
+    this.deletedStructs = new Set()
+    this.beforeState = new Map()
   }
 }
 

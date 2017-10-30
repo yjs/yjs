@@ -1,3 +1,4 @@
+import YXmlText from './YXmlText.js'
 
 export function defaultDomFilter (node, attributes) {
   return attributes
@@ -81,11 +82,12 @@ function _insertNodeHelper (yxml, prevExpectedNode, child) {
  *       You can detect that a node was moved because expectedId
  *       !== actualId in the list
  */
-export function applyChangesFromDom (yxml) {
+export function applyChangesFromDom (dom) {
+  const yxml = dom._yxml
   const y = yxml._y
   let knownChildren =
     new Set(
-      Array.prototype.map.call(yxml._dom.childNodes, child => child._yxml)
+      Array.prototype.map.call(dom.childNodes, child => child._yxml)
       .filter(id => id !== undefined)
     )
   // 1. Check if any of the nodes was deleted
@@ -95,7 +97,7 @@ export function applyChangesFromDom (yxml) {
     }
   })
   // 2. iterate
-  let childNodes = yxml._dom.childNodes
+  let childNodes = dom.childNodes
   let len = childNodes.length
   let prevExpectedNode = null
   let expectedNode = iterateUntilUndeleted(yxml._start)
@@ -137,33 +139,36 @@ export function reflectChangesOnDom (event) {
   const yxml = event.target
   const dom = yxml._dom
   if (dom != null) {
-    yxml._mutualExclude(() => {
+    this._mutualExclude(() => {
       // TODO: do this once before applying stuff
       // let anchorViewPosition = getAnchorViewPosition(yxml._scrollElement)
-
-      // update attributes
-      event.attributesChanged.forEach(attributeName => {
-        const value = yxml.getAttribute(attributeName)
-        if (value === undefined) {
-          dom.removeAttribute(attributeName)
-        } else {
-          dom.setAttribute(attributeName, value)
-        }
-      })
-      if (event.childListChanged) {
-        // create fragment of undeleted nodes
-        const fragment = document.createDocumentFragment()
-        yxml.forEach(function (t) {
-          fragment.append(t.getDom())
+      if (yxml.constructor === YXmlText) {
+        yxml._dom.nodeValue = yxml.toString()
+      } else {
+        // update attributes
+        event.attributesChanged.forEach(attributeName => {
+          const value = yxml.getAttribute(attributeName)
+          if (value === undefined) {
+            dom.removeAttribute(attributeName)
+          } else {
+            dom.setAttribute(attributeName, value)
+          }
         })
-        // remove remainding nodes
-        let lastChild = dom.lastChild
-        while (lastChild !== null) {
-          dom.removeChild(lastChild)
-          lastChild = dom.lastChild
+        if (event.childListChanged) {
+          // create fragment of undeleted nodes
+          const fragment = document.createDocumentFragment()
+          yxml.forEach(function (t) {
+            fragment.append(t.getDom())
+          })
+          // remove remainding nodes
+          let lastChild = dom.lastChild
+          while (lastChild !== null) {
+            dom.removeChild(lastChild)
+            lastChild = dom.lastChild
+          }
+          // insert fragment of undeleted nodes
+          dom.append(fragment)
         }
-        // insert fragment of undeleted nodes
-        dom.append(fragment)
       }
       /* TODO: smartscrolling
       .. else if (event.type === 'childInserted' || event.type === 'insert') {

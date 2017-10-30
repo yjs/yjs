@@ -4,6 +4,7 @@ import StateStore from './Store/StateStore.js'
 import { generateUserID } from './Util/generateUserID.js'
 import RootID from './Util/RootID.js'
 import NamedEventHandler from './Util/NamedEventHandler.js'
+import UndoManager from './Util/UndoManager.js'
 
 import { messageToString, messageToRoomname } from './MessageHandler/messageToString.js'
 
@@ -132,7 +133,8 @@ Y.XmlFragment = YXmlFragment
 Y.XmlText = YXmlText
 
 Y.utils = {
-  BinaryDecoder
+  BinaryDecoder,
+  UndoManager
 }
 
 Y.debug = debug

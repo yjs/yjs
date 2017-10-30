@@ -10,8 +10,23 @@ let y = new Y({
   }
 })
 window.yXml = y
+window.yXmlType = y.get('xml', Y.XmlFragment)
 window.onload = function () {
   console.log('start!')
   // Bind children of XmlFragment to the document.body
-  y.get('xml', Y.XmlFragment).bindToDom(document.body)
+  window.yXmlType.bindToDom(document.body)
+}
+window.undoManager = new Y.utils.UndoManager(window.yXmlType)
+
+document.onkeydown = function interceptUndoRedo (e) {
+  if (e.keyCode === 90 && e.ctrlKey) {
+    if (!e.shiftKey) {
+      console.info('Undo!')
+      window.undoManager.undo()
+    } else {
+      console.info('Redo!')
+      window.undoManager.redo()
+    }
+    e.preventDefault()
+  }
 }

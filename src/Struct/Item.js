@@ -52,6 +52,19 @@ export default class Item {
     this._parentSub = null
     this._deleted = false
   }
+  /**
+   * Copy the effect of struct
+   */
+  _copy () {
+    let struct = new this.constructor()
+    struct._origin = this._left
+    struct._left = this._left
+    struct._right = this
+    struct._right_origin = this
+    struct._parent = this._parent
+    struct._parentSub = this._parentSub
+    return struct
+  }
   get _lastId () {
     return new ID(this._id.user, this._id.clock + this._length - 1)
   }
@@ -83,6 +96,7 @@ export default class Item {
       del._integrate(y, true)
     }
     transactionTypeChanged(y, this._parent, this._parentSub)
+    y._transaction.deletedStructs.add(this)
   }
   /**
    * This is called right before this struct receives any children.

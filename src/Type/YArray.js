@@ -11,7 +11,7 @@ class YArrayEvent {
 
 export default class YArray extends Type {
   _callObserver (parentSubs, remote) {
-    this._eventHandler.callEventListeners(new YArrayEvent(this, remote))
+    this._callEventHandler(new YArrayEvent(this, remote))
   }
   get (pos) {
     let n = this._start

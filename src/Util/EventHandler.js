@@ -20,7 +20,8 @@ export default class EventHandler {
   callEventListeners (event) {
     for (var i = 0; i < this.eventListeners.length; i++) {
       try {
-        this.eventListeners[i](event)
+        const f = this.eventListeners[i]
+        f(event)
       } catch (e) {
         /*
           Your observer threw an error. This error was caught so that Yjs

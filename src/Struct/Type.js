@@ -37,6 +37,48 @@ export default class Type extends Item {
     this._start = null
     this._y = null
     this._eventHandler = new EventHandler()
+    this._deepEventHandler = new EventHandler()
+  }
+  _callEventHandler (event) {
+    this._eventHandler.callEventListeners(event)
+    let type = this
+    while (type !== this._y) {
+      type._deepEventHandler.callEventListeners(event)
+      type = type._parent
+    }
+  }
+  _copy (undeleteChildren) {
+    let copy = super._copy()
+    let map = new Map()
+    copy._map = map
+    for (let [key, value] of this._map) {
+      if (undeleteChildren.has(value) || !value.deleted) {
+        let _item = value._copy(undeleteChildren)
+        _item._parent = copy
+        map.set(key, value._copy(undeleteChildren))
+      }
+    }
+    let prevUndeleted = null
+    copy._start = null
+    let item = this._start
+    while (item !== null) {
+      if (undeleteChildren.has(item) || !item.deleted) {
+        let _item = item._copy(undeleteChildren)
+        _item._left = prevUndeleted
+        _item._origin = prevUndeleted
+        _item._right = null
+        _item._right_origin = null
+        _item._parent = copy
+        if (prevUndeleted === null) {
+          copy._start = _item
+        } else {
+          prevUndeleted._right = _item
+        }
+        prevUndeleted = _item
+      }
+      item = item._right
+    }
+    return copy
   }
   _transact (f) {
     const y = this._y
@@ -49,8 +91,14 @@ export default class Type extends Item {
   observe (f) {
     this._eventHandler.addEventListener(f)
   }
+  observeDeep (f) {
+    this._deepEventHandler.addEventListener(f)
+  }
   unobserve (f) {
     this._eventHandler.removeEventListener(f)
+  }
+  unobserveDeep (f) {
+    this._deepEventHandler.removeEventListener(f)
   }
   _integrate (y) {
     y._transaction.newTypes.add(this)

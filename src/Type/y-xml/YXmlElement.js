@@ -1,5 +1,3 @@
-/* global MutationObserver */
-
 // import diff from 'fast-diff'
 import { defaultDomFilter } from './utils.js'
 
@@ -23,12 +21,18 @@ export default class YXmlElement extends YXmlFragment {
       this._domFilter = arg2
     }
   }
+  _copy (undeleteChildren) {
+    let struct = super._copy(undeleteChildren)
+    struct.nodeName = this.nodeName
+    return struct
+  }
   _setDom (dom) {
     if (this._dom != null) {
       throw new Error('Only call this method if you know what you are doing ;)')
     } else if (dom._yxml != null) { // TODO do i need to check this? - no.. but for dev purps..
       throw new Error('Already bound to an YXml type')
     } else {
+      this._dom = dom
       dom._yxml = this
       // tag is already set in constructor
       // set attributes
@@ -43,9 +47,7 @@ export default class YXmlElement extends YXmlFragment {
         this.setAttribute(attrName, attrValue)
       }
       this.insertDomElements(0, Array.prototype.slice.call(dom.childNodes))
-      if (MutationObserver != null) {
-        this._dom = this._bindToDom(dom)
-      }
+      this._bindToDom(dom)
       return dom
     }
   }
@@ -112,6 +114,7 @@ export default class YXmlElement extends YXmlFragment {
     let dom = this._dom
     if (dom == null) {
       dom = document.createElement(this.nodeName)
+      this._dom = dom
       dom._yxml = this
       let attrs = this.getAttributes()
       for (let key in attrs) {
@@ -120,9 +123,7 @@ export default class YXmlElement extends YXmlFragment {
       this.forEach(yxml => {
         dom.appendChild(yxml.getDom())
       })
-      if (MutationObserver !== null) {
-        this._dom = this._bindToDom(dom)
-      }
+      this._bindToDom(dom)
     }
     return dom
   }

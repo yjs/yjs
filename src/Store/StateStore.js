@@ -38,6 +38,10 @@ export default class StateStore {
   }
   setState (user, state) {
     // TODO: modify missingi structs here
+    const beforeState = this.y._transaction.beforeState
+    if (!beforeState.has(user)) {
+      beforeState.set(user, this.getState(user))
+    }
     this.state.set(user, state)
   }
 }

@@ -6,6 +6,11 @@ export default class ItemString extends Item {
     super()
     this._content = null
   }
+  _copy () {
+    let struct = super._copy()
+    struct._content = this._content
+    return struct
+  }
   get _length () {
     return this._content.length
   }
