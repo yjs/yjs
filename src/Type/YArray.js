@@ -1,10 +1,11 @@
 import Type from '../Struct/Type.js'
 import ItemJSON from '../Struct/ItemJSON.js'
 import { logID } from '../MessageHandler/messageToString.js'
+import YEvent from '../Util/YEvent.js'
 
-class YArrayEvent {
+class YArrayEvent extends YEvent {
   constructor (yarray, remote) {
-    this.target = yarray
+    super(yarray)
     this.remote = remote
   }
 }

@@ -2,10 +2,11 @@ import Type from '../Struct/Type.js'
 import Item from '../Struct/Item.js'
 import ItemJSON from '../Struct/ItemJSON.js'
 import { logID } from '../MessageHandler/messageToString.js'
+import YEvent from '../Util/YEvent.js'
 
-class YMapEvent {
+class YMapEvent extends YEvent {
   constructor (ymap, subs, remote) {
-    this.target = ymap
+    super(ymap)
     this.keysChanged = subs
     this.remote = remote
   }

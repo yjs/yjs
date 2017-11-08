@@ -1,7 +1,8 @@
+import YEvent from '../../Util/YEvent.js'
 
-export default class YXmlEvent {
+export default class YXmlEvent extends YEvent {
   constructor (target, subs, remote) {
-    this.target = target
+    super(target)
     this.childListChanged = false
     this.attributesChanged = new Set()
     this.remote = remote
