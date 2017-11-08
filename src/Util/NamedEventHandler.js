@@ -2,13 +2,24 @@ export default class NamedEventHandler {
   constructor () {
     this._eventListener = new Map()
   }
-  on (name, f) {
-    let fSet = this._eventListener.get(name)
-    if (fSet === undefined) {
-      fSet = new Set()
-      this._eventListener.set(name, fSet)
+  _getListener (name) {
+    let listeners = this._eventListener.get(name)
+    if (listeners === undefined) {
+      listeners = {
+        once: new Set(),
+        on: new Set()
+      }
+      this._eventListener.set(name, listeners)
     }
-    fSet.add(f)
+    return listeners
+  }
+  once (name, f) {
+    let listeners = this._getListener(name)
+    listeners.once.add(f)
+  }
+  on (name, f) {
+    let listeners = this._getListener(name)
+    listeners.on.add(f)
   }
   off (name, f) {
     if (name == null || f == null) {
@@ -22,7 +33,9 @@ export default class NamedEventHandler {
   emit (name, ...args) {
     const listener = this._eventListener.get(name)
     if (listener !== undefined) {
-      listener.forEach(f => f.apply(null, args))
+      listener.on.forEach(f => f.apply(null, args))
+      listener.once.forEach(f => f.apply(null, args))
+      listener.once = new Set()
     } else if (name === 'error') {
       console.error(args[0])
     }

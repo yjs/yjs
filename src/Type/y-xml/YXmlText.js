@@ -5,7 +5,7 @@ export default class YXmlText extends YText {
     let dom = null
     let initialText = null
     if (arg1 != null) {
-      if (arg1.nodeType === document.TEXT_NODE) {
+      if (arg1.nodeType != null && arg1.nodeType === arg1.TEXT_NODE) {
         dom = arg1
         initialText = dom.nodeValue
       } else if (typeof arg1 === 'string') {

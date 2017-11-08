@@ -34,6 +34,9 @@ export default class YMap extends Type {
     }
     return map
   }
+  keys () {
+    return this._map.keys()
+  }
   delete (key) {
     this._transact((y) => {
       let c = this._map.get(key)
@@ -58,6 +61,7 @@ export default class YMap extends Type {
       let v
       if (typeof value === 'function') {
         v = new value() // eslint-disable-line new-cap
+        value = v
       } else if (value instanceof Item) {
         v = value
       } else {

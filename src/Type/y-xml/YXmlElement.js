@@ -11,7 +11,7 @@ export default class YXmlElement extends YXmlFragment {
     this._scrollElement = null
     if (typeof arg1 === 'string') {
       this.nodeName = arg1.toUpperCase()
-    } else if (arg1 != null && arg1.nodeType != null && arg1.nodeType === document.ELEMENT_NODE) {
+    } else if (arg1 != null && arg1.nodeType != null && arg1.nodeType === arg1.ELEMENT_NODE) {
       this.nodeName = arg1.nodeName
       this._setDom(arg1)
     } else {

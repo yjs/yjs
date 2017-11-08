@@ -24,6 +24,7 @@ export default class Y extends NamedEventHandler {
     super()
     this._opts = opts
     this.userID = opts._userID != null ? opts._userID : generateUserID()
+    this.share = {}
     this.ds = new DeleteStore(this)
     this.os = new OperationStore(this)
     this.ss = new StateStore(this)
@@ -71,7 +72,7 @@ export default class Y extends NamedEventHandler {
   get room () {
     return this._opts.connector.room
   }
-  get (name, TypeConstructor) {
+  define (name, TypeConstructor) {
     let id = new RootID(name, TypeConstructor)
     let type = this.os.get(id)
     if (type === null) {
@@ -79,8 +80,17 @@ export default class Y extends NamedEventHandler {
       type._id = id
       type._parent = this
       type._integrate(this)
+      if (this.share[name] !== undefined) {
+        throw new Error('Type is already defined with a different constructor!')
+      }
+    }
+    if (this.share[name] === undefined) {
+      this.share[name] = type
     }
     return type
+  }
+  get (name) {
+    return this.share[name]
   }
   disconnect () {
     if (this.connected) {
@@ -108,6 +118,13 @@ export default class Y extends NamedEventHandler {
     this.os = null
     this.ds = null
     this.ss = null
+  }
+  whenSynced () {
+    return new Promise(resolve => {
+      this.once('synced', () => {
+        resolve()
+      })
+    })
   }
 }
 

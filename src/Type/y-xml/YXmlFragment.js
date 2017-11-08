@@ -17,9 +17,9 @@ function domToYXml (parent, doms) {
     }
     if (parent._domFilter(d, []) !== null) {
       let type
-      if (d.nodeType === document.TEXT_NODE) {
+      if (d.nodeType === d.TEXT_NODE) {
         type = new YXmlText(d)
-      } else if (d.nodeType === document.ELEMENT_NODE) {
+      } else if (d.nodeType === d.ELEMENT_NODE) {
         type = new YXmlFragment._YXmlElement(d, parent._domFilter)
       } else {
         throw new Error('Unsupported node!')
