@@ -21,7 +21,7 @@ if (typeof getSelection !== 'undefined') {
     }
     const focusNode = browserSelection.focusNode
     if (focusNode !== null && focusNode._yxml != null) {
-      const yxml = anchorNode._yxml
+      const yxml = focusNode._yxml
       relativeSelection.to = getRelativePosition(yxml, browserSelection.focusOffset)
       relativeSelection.toY = yxml._y
     }
