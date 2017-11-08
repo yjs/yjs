@@ -17,6 +17,9 @@ export default {
     commonjs(),
     babel(),
     uglify({
+      mangle: {
+        except: ['YMap', 'Y', 'YArray', 'YText', 'YXmlFragment', 'YXmlElement', 'YXmlEvent', 'YXmlText', 'YEvent', 'YArrayEvent', 'YMapEvent', 'Type', 'Delete', 'ItemJSON', 'ItemString', 'Item']
+      },
       output: {
         comments: function (node, comment) {
           var text = comment.value
