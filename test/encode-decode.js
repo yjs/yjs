@@ -1,5 +1,4 @@
 import { test } from '../node_modules/cutest/cutest.mjs'
-import '../node_modules/chance/chance.js'
 import BinaryEncoder from '../src/Binary/Encoder.js'
 import BinaryDecoder from '../src/Binary/Decoder.js'
 import { generateUserID } from '../src/Util/generateUserID.js'

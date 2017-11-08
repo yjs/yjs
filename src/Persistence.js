@@ -1,4 +1,4 @@
-import BinaryEncoder from './Binary/Encoder.js'
+// import BinaryEncoder from './Binary/Encoder.js'
 
 export default function extendPersistence (Y) {
   class AbstractPersistence {
@@ -17,6 +17,7 @@ export default function extendPersistence (Y) {
       ops = ops.map(function (op) {
         return Y.Struct[op.struct].encode(op)
       })
+      /*
       const saveOperations = () => {
         if (this.saveOperationsBuffer.length > 0) {
           let encoder = new BinaryEncoder()
@@ -33,6 +34,7 @@ export default function extendPersistence (Y) {
           this.saveToMessageQueue(encoder.createBuffer())
         }
       }
+      */
       if (this.saveOperationsBuffer.length === 0) {
         this.saveOperationsBuffer = ops
       } else {
