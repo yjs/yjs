@@ -3,7 +3,7 @@ import RootID from './RootID.js'
 
 export function getRelativePosition (type, offset) {
   if (offset === 0) {
-    return ['startof', type._id.user, type._id.clock || null, type._id.type || null]
+    return ['startof', type._id.user, type._id.clock || null, type._id.name || null, type._id.type || null]
   } else {
     let t = type._start
     while (t !== null) {
@@ -28,7 +28,7 @@ export function fromRelativePosition (y, rpos) {
     if (rpos[3] === null) {
       id = new ID(rpos[1], rpos[2])
     } else {
-      id = new RootID(rpos[1], rpos[3])
+      id = new RootID(rpos[3], rpos[4])
     }
     return {
       type: y.os.get(id),

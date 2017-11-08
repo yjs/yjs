@@ -175,7 +175,7 @@ export default class AbstractConnector {
       buffer.setUint32(this.broadcastBufferSizePos, this.broadcastBufferSize)
       this.broadcastBuffer = new BinaryEncoder()
       this.whenRemoteResponsive().then(() => {
-        this.broadcast(buffer.createBuffer)
+        this.broadcast(buffer.createBuffer())
       })
     } else if (firstContent) {
       // send the buffer when all transactions are finished
