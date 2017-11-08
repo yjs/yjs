@@ -110,10 +110,11 @@ export default class YXmlElement extends YXmlFragment {
     }
     return obj
   }
-  getDom () {
+  getDom (_document) {
+    _document = _document || document
     let dom = this._dom
     if (dom == null) {
-      dom = document.createElement(this.nodeName)
+      dom = _document.createElement(this.nodeName)
       this._dom = dom
       dom._yxml = this
       let attrs = this.getAttributes()
@@ -121,7 +122,7 @@ export default class YXmlElement extends YXmlFragment {
         dom.setAttribute(key, attrs[key])
       }
       this.forEach(yxml => {
-        dom.appendChild(yxml.getDom())
+        dom.appendChild(yxml.getDom(_document))
       })
       this._bindToDom(dom)
     }

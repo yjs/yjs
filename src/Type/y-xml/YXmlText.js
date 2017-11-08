@@ -67,9 +67,10 @@ export default class YXmlText extends YText {
     this._dom = dom
     dom._yxml = this
   }
-  getDom () {
+  getDom (_document) {
+    _document = _document || document
     if (this._dom === null) {
-      const dom = document.createTextNode(this.toString())
+      const dom = _document.createTextNode(this.toString())
       this._setDom(dom)
       return dom
     }
