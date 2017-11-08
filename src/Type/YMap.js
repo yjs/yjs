@@ -98,6 +98,14 @@ export default class YMap extends Type {
       return v._content[v._content.length - 1]
     }
   }
+  has (key) {
+    let v = this._map.get(key)
+    if (v === undefined || v._deleted) {
+      return false
+    } else {
+      return true
+    }
+  }
   _logString () {
     const left = this._left !== null ? this._left._lastId : null
     const origin = this._origin !== null ? this._origin._lastId : null

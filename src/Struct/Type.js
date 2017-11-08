@@ -40,10 +40,16 @@ export default class Type extends Item {
     this._deepEventHandler = new EventHandler()
   }
   _callEventHandler (event) {
+    const changedParentTypes = this._y._transaction.changedParentTypes
     this._eventHandler.callEventListeners(event)
     let type = this
     while (type !== this._y) {
-      type._deepEventHandler.callEventListeners(event)
+      let events = changedParentTypes.get(type)
+      if (events === undefined) {
+        events = []
+        changedParentTypes.set(type, events)
+      }
+      events.push(event)
       type = type._parent
     }
   }

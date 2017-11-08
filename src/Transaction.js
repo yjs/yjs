@@ -9,6 +9,7 @@ export default class Transaction {
     this.changedTypes = new Map()
     this.deletedStructs = new Set()
     this.beforeState = new Map()
+    this.changedParentTypes = new Map()
   }
 }
 

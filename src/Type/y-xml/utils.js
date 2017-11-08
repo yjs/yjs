@@ -135,90 +135,92 @@ export function applyChangesFromDom (dom) {
   }
 }
 
-export function reflectChangesOnDom (event) {
-  const yxml = event.target
-  const dom = yxml._dom
-  if (dom != null) {
-    this._mutualExclude(() => {
-      // TODO: do this once before applying stuff
-      // let anchorViewPosition = getAnchorViewPosition(yxml._scrollElement)
-      if (yxml.constructor === YXmlText) {
-        yxml._dom.nodeValue = yxml.toString()
-      } else {
-        // update attributes
-        event.attributesChanged.forEach(attributeName => {
-          const value = yxml.getAttribute(attributeName)
-          if (value === undefined) {
-            dom.removeAttribute(attributeName)
-          } else {
-            dom.setAttribute(attributeName, value)
-          }
-        })
-        if (event.childListChanged) {
-          // create fragment of undeleted nodes
-          const fragment = document.createDocumentFragment()
-          yxml.forEach(function (t) {
-            fragment.append(t.getDom())
+export function reflectChangesOnDom (events) {
+  this._mutualExclude(() => {
+    events.forEach(event => {
+      const yxml = event.target
+      const dom = yxml._dom
+      if (dom != null) {
+        // TODO: do this once before applying stuff
+        // let anchorViewPosition = getAnchorViewPosition(yxml._scrollElement)
+        if (yxml.constructor === YXmlText) {
+          yxml._dom.nodeValue = yxml.toString()
+        } else {
+          // update attributes
+          event.attributesChanged.forEach(attributeName => {
+            const value = yxml.getAttribute(attributeName)
+            if (value === undefined) {
+              dom.removeAttribute(attributeName)
+            } else {
+              dom.setAttribute(attributeName, value)
+            }
           })
-          // remove remainding nodes
-          let lastChild = dom.lastChild
-          while (lastChild !== null) {
-            dom.removeChild(lastChild)
-            lastChild = dom.lastChild
+          if (event.childListChanged) {
+            // create fragment of undeleted nodes
+            const fragment = document.createDocumentFragment()
+            yxml.forEach(function (t) {
+              fragment.append(t.getDom())
+            })
+            // remove remainding nodes
+            let lastChild = dom.lastChild
+            while (lastChild !== null) {
+              dom.removeChild(lastChild)
+              lastChild = dom.lastChild
+            }
+            // insert fragment of undeleted nodes
+            dom.append(fragment)
           }
-          // insert fragment of undeleted nodes
-          dom.append(fragment)
         }
-      }
-      /* TODO: smartscrolling
-      .. else if (event.type === 'childInserted' || event.type === 'insert') {
-        let nodes = event.values
-        for (let i = nodes.length - 1; i >= 0; i--) {
-          let node = nodes[i]
-          node.setDomFilter(yxml._domFilter)
-          node.enableSmartScrolling(yxml._scrollElement)
-          let dom = node.getDom()
-          let fixPosition = null
-          let nextDom = null
-          if (yxml._content.length > event.index + i + 1) {
-            nextDom = yxml.get(event.index + i + 1).getDom()
-          }
-          yxml._dom.insertBefore(dom, nextDom)
-          if (anchorViewPosition === null) {
-            // nop
-          } else if (anchorViewPosition.anchor !== null) {
-            // no scrolling when current selection
-            if (!dom.contains(anchorViewPosition.anchor) && !anchorViewPosition.anchor.contains(dom)) {
+        /* TODO: smartscrolling
+        .. else if (event.type === 'childInserted' || event.type === 'insert') {
+          let nodes = event.values
+          for (let i = nodes.length - 1; i >= 0; i--) {
+            let node = nodes[i]
+            node.setDomFilter(yxml._domFilter)
+            node.enableSmartScrolling(yxml._scrollElement)
+            let dom = node.getDom()
+            let fixPosition = null
+            let nextDom = null
+            if (yxml._content.length > event.index + i + 1) {
+              nextDom = yxml.get(event.index + i + 1).getDom()
+            }
+            yxml._dom.insertBefore(dom, nextDom)
+            if (anchorViewPosition === null) {
+              // nop
+            } else if (anchorViewPosition.anchor !== null) {
+              // no scrolling when current selection
+              if (!dom.contains(anchorViewPosition.anchor) && !anchorViewPosition.anchor.contains(dom)) {
+                fixPosition = anchorViewPosition
+              }
+            } else if (getBoundingClientRect(dom).top <= 0) {
+              // adjust scrolling if modified element is out of view,
+              // there is no anchor element, and the browser did not adjust scrollTop (this is checked later)
               fixPosition = anchorViewPosition
             }
-          } else if (getBoundingClientRect(dom).top <= 0) {
-            // adjust scrolling if modified element is out of view,
-            // there is no anchor element, and the browser did not adjust scrollTop (this is checked later)
-            fixPosition = anchorViewPosition
+            fixScrollPosition(yxml._scrollElement, fixPosition)
           }
-          fixScrollPosition(yxml._scrollElement, fixPosition)
-        }
-      } else if (event.type === 'childRemoved' || event.type === 'delete') {
-        for (let i = event.values.length - 1; i >= 0; i--) {
-          let dom = event.values[i]._dom
-          let fixPosition = null
-          if (anchorViewPosition === null) {
-            // nop
-          } else if (anchorViewPosition.anchor !== null) {
-            // no scrolling when current selection
-            if (!dom.contains(anchorViewPosition.anchor) && !anchorViewPosition.anchor.contains(dom)) {
+        } else if (event.type === 'childRemoved' || event.type === 'delete') {
+          for (let i = event.values.length - 1; i >= 0; i--) {
+            let dom = event.values[i]._dom
+            let fixPosition = null
+            if (anchorViewPosition === null) {
+              // nop
+            } else if (anchorViewPosition.anchor !== null) {
+              // no scrolling when current selection
+              if (!dom.contains(anchorViewPosition.anchor) && !anchorViewPosition.anchor.contains(dom)) {
+                fixPosition = anchorViewPosition
+              }
+            } else if (getBoundingClientRect(dom).top <= 0) {
+              // adjust scrolling if modified element is out of view,
+              // there is no anchor element, and the browser did not adjust scrollTop (this is checked later)
               fixPosition = anchorViewPosition
             }
-          } else if (getBoundingClientRect(dom).top <= 0) {
-            // adjust scrolling if modified element is out of view,
-            // there is no anchor element, and the browser did not adjust scrollTop (this is checked later)
-            fixPosition = anchorViewPosition
+            dom.remove()
+            fixScrollPosition(yxml._scrollElement, fixPosition)
           }
-          dom.remove()
-          fixScrollPosition(yxml._scrollElement, fixPosition)
         }
+        */
       }
-      */
     })
-  }
+  })
 }

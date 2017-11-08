@@ -55,7 +55,19 @@ export default class Y extends NamedEventHandler {
     if (initialCall) {
       // emit change events on changed types
       this._transaction.changedTypes.forEach(function (subs, type) {
-        type._callObserver(subs, remote)
+        if (!type._deleted) {
+          type._callObserver(subs, remote)
+        }
+      })
+      this._transaction.changedParentTypes.forEach(function (events, type) {
+        if (!type._deleted) {
+          events = events.filter(event =>
+            !event.target._deleted
+          )
+          // we don't have to check for events.length
+          // because there is no way events is empty..
+          type._deepEventHandler.callEventListeners(events)
+        }
       })
       // when all changes & events are processed, emit afterTransaction event
       this.emit('afterTransaction', this, remote)
