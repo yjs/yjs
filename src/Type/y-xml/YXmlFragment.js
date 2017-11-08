@@ -33,6 +33,54 @@ function domToYXml (parent, doms) {
   return types
 }
 
+class YXmlTreeWalker {
+  constructor (root, f) {
+    this._filter = f || (() => true)
+    this._root = root
+    this._currentNode = root
+    this._firstCall = true
+  }
+  [Symbol.iterator] () {
+    return this
+  }
+  next () {
+    let n = this._currentNode
+    if (this._firstCall) {
+      this._firstCall = false
+      if (!n._deleted && this._filter(n)) {
+        return { value: n, done: false }
+      }
+    }
+    do {
+      if (!n._deleted && n.constructor === YXmlFragment._YXmlElement && n._start !== null) {
+        // walk down in the tree
+        n = n._start
+      } else {
+        // walk right or up in the tree
+        while (n !== this._root) {
+          if (n._right !== null) {
+            n = n._right
+            break
+          }
+          n = n._parent
+        }
+        if (n === this._root) {
+          n = null
+        }
+      }
+      if (n === this._root) {
+        break
+      }
+    } while (n !== null && (n._deleted || !this._filter(n)))
+    this._currentNode = n
+    if (n === null) {
+      return { done: true }
+    } else {
+      return { value: n, done: false }
+    }
+  }
+}
+
 export default class YXmlFragment extends YArray {
   constructor () {
     super()
@@ -54,6 +102,33 @@ export default class YXmlFragment extends YArray {
         token = true
       }
     }
+  }
+  createTreeWalker (filter) {
+    return new YXmlTreeWalker(this, filter)
+  }
+  /**
+   * Retrieve first element that matches *query*
+   * Similar to DOM's querySelector, but only accepts a subset of its queries
+   *
+   * Query support:
+   *   - tagname
+   * TODO:
+   *   - id
+   *   - attribute
+   */
+  querySelector (query) {
+    query = query.toUpperCase()
+    const iterator = new YXmlTreeWalker(this, element => element.nodeName === query)
+    const next = iterator.next()
+    if (next.done) {
+      return null
+    } else {
+      return next.value
+    }
+  }
+  querySelectorAll (query) {
+    query = query.toUpperCase()
+    return Array.from(new YXmlTreeWalker(this, element => element.nodeName === query))
   }
   enableSmartScrolling (scrollElement) {
     this._scrollElement = scrollElement

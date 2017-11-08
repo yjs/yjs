@@ -287,6 +287,22 @@ test('deep element insert', async function xml16 (t) {
   await compareUsers(t, users)
 })
 
+test('treeWalker', async function xml17 (t) {
+  var { users, xml0 } = await initArrays(t, { users: 3 })
+  let paragraph1 = new Y.XmlElement('p')
+  let paragraph2 = new Y.XmlElement('p')
+  let text1 = new Y.Text('init')
+  let text2 = new Y.Text('text')
+  paragraph1.insert(0, [text1, text2])
+  xml0.insert(0, [paragraph1, paragraph2, new Y.XmlElement('img')])
+  let allParagraphs = xml0.querySelectorAll('p')
+  t.assert(allParagraphs.length === 2, 'found exactly two paragraphs')
+  t.assert(allParagraphs[0] === paragraph1, 'querySelectorAll found paragraph1')
+  t.assert(allParagraphs[1] === paragraph2, 'querySelectorAll found paragraph2')
+  t.assert(xml0.querySelector('p') === paragraph1, 'querySelector found paragraph1')
+  await compareUsers(t, users)
+})
+
 // TODO: move elements
 var xmlTransactions = [
   function attributeChange (t, user, chance) {

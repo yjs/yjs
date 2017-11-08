@@ -10,7 +10,7 @@ let y = new Y({
   }
 })
 window.yXml = y
-window.yXmlType = y.get('xml', Y.XmlFragment)
+window.yXmlType = y.define('xml', Y.XmlFragment)
 window.onload = function () {
   console.log('start!')
   // Bind children of XmlFragment to the document.body

@@ -10,7 +10,7 @@ var y = new Y({
 
 window.yChat = y
 
-let chatprotocol = y.get('chatprotocol', Y.Array)
+let chatprotocol = y.define('chatprotocol', Y.Array)
 
 let chatcontainer = document.querySelector('#chat')
 

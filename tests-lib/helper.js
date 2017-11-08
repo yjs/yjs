@@ -150,9 +150,9 @@ export async function initArrays (t, opts) {
       connector: connOpts
     })
     result.users.push(y)
-    result['array' + i] = y.get('array', Y.Array)
-    result['map' + i] = y.get('map', Y.Map)
-    result['xml' + i] = y.get('xml', Y.XmlElement)
+    result['array' + i] = y.define('array', Y.Array)
+    result['map' + i] = y.define('map', Y.Map)
+    result['xml' + i] = y.define('xml', Y.XmlElement)
     y.get('xml', Y.Xml).setDomFilter(function (d, attrs) {
       if (d.nodeName === 'HIDDEN') {
         return null
