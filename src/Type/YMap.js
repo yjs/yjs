@@ -36,7 +36,13 @@ export default class YMap extends Type {
     return map
   }
   keys () {
-    return Array.from(this._map.keys()).filter(x => !x._deleted)
+    let keys = []
+    for (let [key, value] of this._map) {
+      if (!value._deleted) {
+        keys.push(key)
+      }
+    }
+    return keys
   }
   delete (key) {
     this._transact((y) => {

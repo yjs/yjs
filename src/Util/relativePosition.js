@@ -1,8 +1,9 @@
-import ID from './ID'
+import ID from './ID.js'
+import RootID from './RootID.js'
 
 export function getRelativePosition (type, offset) {
   if (offset === 0) {
-    return ['startof', type._id.user, type._id.clock]
+    return ['startof', type._id.user, type._id.clock || null, type._id.type || null]
   } else {
     let t = type._start
     while (t !== null) {
@@ -23,8 +24,14 @@ export function getRelativePosition (type, offset) {
 
 export function fromRelativePosition (y, rpos) {
   if (rpos[0] === 'startof') {
+    let id
+    if (rpos[3] === null) {
+      id = new ID(rpos[1], rpos[2])
+    } else {
+      id = new RootID(rpos[1], rpos[3])
+    }
     return {
-      type: y.os.get(new ID(rpos[1], rpos[2])),
+      type: y.os.get(id),
       offset: 0
     }
   } else {
