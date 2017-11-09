@@ -16,7 +16,9 @@ window.onload = function () {
   // Bind children of XmlFragment to the document.body
   window.yXmlType.bindToDom(document.body)
 }
-window.undoManager = new Y.utils.UndoManager(window.yXmlType)
+window.undoManager = new Y.utils.UndoManager(window.yXmlType, {
+  captureTimeout: 1000
+})
 
 document.onkeydown = function interceptUndoRedo (e) {
   if (e.keyCode === 90 && e.ctrlKey) {

@@ -61,9 +61,14 @@ export default class Y extends NamedEventHandler {
       })
       this._transaction.changedParentTypes.forEach(function (events, type) {
         if (!type._deleted) {
-          events = events.filter(event =>
-            !event.target._deleted
-          )
+          events = events
+            .filter(event =>
+              !event.target._deleted
+            )
+          events
+            .forEach(event => {
+              event.currentTarget = type
+            })
           // we don't have to check for events.length
           // because there is no way events is empty..
           type._deepEventHandler.callEventListeners(events)

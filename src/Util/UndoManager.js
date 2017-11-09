@@ -2,6 +2,7 @@ import ID from './ID.js'
 
 class ReverseOperation {
   constructor (y) {
+    this.created = new Date()
     const beforeState = y._transaction.beforeState
     this.toState = new ID(y.userID, y.ss.getState(y.userID) - 1)
     if (beforeState.has(y.userID)) {
@@ -24,7 +25,9 @@ function isStructInScope (y, struct, scope) {
 }
 
 export default class UndoManager {
-  constructor (scope) {
+  constructor (scope, options = {}) {
+    this.options = options
+    options.captureTimeout = options.captureTimeout || 0
     this._undoBuffer = []
     this._redoBuffer = []
     this._scope = scope
@@ -36,7 +39,15 @@ export default class UndoManager {
       if (!remote && (y._transaction.beforeState.has(y.userID) || y._transaction.deletedStructs.size > 0)) {
         let reverseOperation = new ReverseOperation(y)
         if (!this._undoing) {
-          this._undoBuffer.push(reverseOperation)
+          let lastUndoOp = this._undoBuffer.length > 0 ? this._undoBuffer[this._undoBuffer.length - 1] : null
+          if (lastUndoOp !== null && lastUndoOp.created - reverseOperation.created <= options.captureTimeout) {
+            console.log('appending', lastUndoOp, reverseOperation)
+            lastUndoOp.created = reverseOperation.created
+            lastUndoOp.toState = reverseOperation.toState
+            reverseOperation.deletedStructs.forEach(lastUndoOp.deletedStructs.add, lastUndoOp.deletedStructs)
+          } else {
+            this._undoBuffer.push(reverseOperation)
+          }
           if (!this._redoing) {
             this._redoBuffer = []
           }
@@ -47,6 +58,7 @@ export default class UndoManager {
     })
   }
   undo () {
+    console.log('undoing')
     this._undoing = true
     this._applyReverseOperation(this._undoBuffer)
     this._undoing = false

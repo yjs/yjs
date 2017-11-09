@@ -39,6 +39,32 @@ export default class Type extends Item {
     this._eventHandler = new EventHandler()
     this._deepEventHandler = new EventHandler()
   }
+  getPathTo (type) {
+    if (type === this) {
+      return []
+    }
+    const path = []
+    const y = this._y
+    while (type._parent !== this && this._parent !== y) {
+      let parent = type._parent
+      if (type._parentSub !== null) {
+        path.push(type._parentSub)
+      } else {
+        // parent is array-ish
+        for (let [i, child] of parent) {
+          if (child === type) {
+            path.push(i)
+            break
+          }
+        }
+      }
+      type = parent
+    }
+    if (this._parent !== this) {
+      throw new Error('The type is not a child of this node')
+    }
+    return path
+  }
   _callEventHandler (event) {
     const changedParentTypes = this._y._transaction.changedParentTypes
     this._eventHandler.callEventListeners(event)
