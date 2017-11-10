@@ -76,7 +76,6 @@ export default class UndoManager {
         if (!this._undoing) {
           let lastUndoOp = this._undoBuffer.length > 0 ? this._undoBuffer[this._undoBuffer.length - 1] : null
           if (lastUndoOp !== null && reverseOperation.created - lastUndoOp.created <= options.captureTimeout) {
-            console.log('appending', lastUndoOp, reverseOperation)
             lastUndoOp.created = reverseOperation.created
             lastUndoOp.toState = reverseOperation.toState
             reverseOperation.deletedStructs.forEach(lastUndoOp.deletedStructs.add, lastUndoOp.deletedStructs)
@@ -93,7 +92,6 @@ export default class UndoManager {
     })
   }
   undo () {
-    console.log('undoing')
     this._undoing = true
     const performedUndo = applyReverseOperation(this.y, this._scope, this._undoBuffer)
     this._undoing = false

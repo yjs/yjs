@@ -172,17 +172,21 @@ test('observePath properties', async function map10 (t) {
 })
 */
 
-/* TODO: reimplement observeDeep
 test('observe deep properties', async function map11 (t) {
   let { users, map1, map2, map3 } = await initArrays(t, { users: 4 })
   var _map1 = map1.set('map', new Y.Map())
   var calls = 0
   var dmapid
-  _map1.observe(function (event) {
-    calls++
-    t.compare(event.name, 'deepmap')
-    dmapid = event.target.opContents.deepmap
+  map1.observeDeep(function (events) {
+    events.forEach(event => {
+      calls++
+      t.assert(event.keysChanged.has('deepmap'))
+      t.assert(event.path.length === 1)
+      t.assert(event.path[0] === 'map')
+      dmapid = event.target.get('deepmap')._id
+    })
   })
+  await flushAll(t, users)
   await flushAll(t, users)
   var _map3 = map3.get('map')
   _map3.set('deepmap', new Y.Map())
@@ -190,13 +194,14 @@ test('observe deep properties', async function map11 (t) {
   var _map2 = map2.get('map')
   _map2.set('deepmap', new Y.Map())
   await flushAll(t, users)
+  await flushAll(t, users)
   var dmap1 = _map1.get('deepmap')
   var dmap2 = _map2.get('deepmap')
   var dmap3 = _map3.get('deepmap')
   t.assert(calls > 0)
-  t.compare(dmap1._model, dmap2._model)
-  t.compare(dmap1._model, dmap3._model)
-  t.compare(dmap1._model, dmapid)
+  t.assert(dmap1._id.equals(dmap2._id))
+  t.assert(dmap1._id.equals(dmap3._id))
+  t.assert(dmap1._id.equals(dmapid))
   await compareUsers(t, users)
 })
 
@@ -204,8 +209,10 @@ test('observes using observeDeep', async function map12 (t) {
   let { users, map0 } = await initArrays(t, { users: 2 })
   var pathes = []
   var calls = 0
-  map0.observeDeep(function (event) {
-    pathes.push(event.path)
+  map0.observeDeep(function (events) {
+    events.forEach(event => {
+      pathes.push(event.path)
+    })
     calls++
   })
   map0.set('map', new Y.Map())
@@ -215,7 +222,6 @@ test('observes using observeDeep', async function map12 (t) {
   t.compare(pathes, [[], ['map'], ['map', 'array']])
   await compareUsers(t, users)
 })
-*/
 
 /* TODO: Test events in Y.Map
 function compareEvent (t, is, should) {

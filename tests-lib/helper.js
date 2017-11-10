@@ -187,7 +187,7 @@ export async function flushAll (t, users) {
   if (users.length === 0) {
     return
   }
-  await wait(0)
+  await wait(10)
   if (users[0].connector.testRoom != null) {
     // use flushAll method specified in Test Connector
     await users[0].connector.testRoom.flushAll(users)

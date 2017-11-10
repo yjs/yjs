@@ -1,5 +1,6 @@
 import Type from '../Struct/Type.js'
 import ItemJSON from '../Struct/ItemJSON.js'
+import ItemString from '../Struct/ItemString.js'
 import { logID } from '../MessageHandler/messageToString.js'
 import YEvent from '../Util/YEvent.js'
 
@@ -19,7 +20,11 @@ export default class YArray extends Type {
     while (n !== null) {
       if (!n._deleted) {
         if (pos < n._length) {
-          return n._content[n._length - pos]
+          if (n.constructor === ItemJSON || n.constructor === ItemString) {
+            return n._content[pos]
+          } else {
+            return n
+          }
         }
         pos -= n._length
       }

@@ -255,7 +255,7 @@ export default class YXmlFragment extends YArray {
             }
           })
           for (let dom of diffChildren) {
-            if (dom._yxml != null) {
+            if (dom._yxml != null && dom._yxml !== false) {
               applyChangesFromDom(dom)
             }
           }
