@@ -17,11 +17,12 @@ window.onload = function () {
   window.yXmlType.bindToDom(document.body)
 }
 window.undoManager = new Y.utils.UndoManager(window.yXmlType, {
-  captureTimeout: 1000
+  captureTimeout: 0
 })
 
 document.onkeydown = function interceptUndoRedo (e) {
-  if (e.keyCode === 90 && e.ctrlKey) {
+  if (e.keyCode === 90 && e.metaKey) {
+    console.log('uidtaren')
     if (!e.shiftKey) {
       console.info('Undo!')
       window.undoManager.undo()

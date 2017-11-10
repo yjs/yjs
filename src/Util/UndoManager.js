@@ -24,10 +24,45 @@ function isStructInScope (y, struct, scope) {
   return false
 }
 
+function applyReverseOperation (y, scope, reverseBuffer) {
+  let performedUndo = false
+  y.transact(() => {
+    while (!performedUndo && reverseBuffer.length > 0) {
+      let undoOp = reverseBuffer.pop()
+      // make sure that it is possible to iterate {from}-{to}
+      y.os.getItemCleanStart(undoOp.fromState)
+      y.os.getItemCleanEnd(undoOp.toState)
+      y.os.iterate(undoOp.fromState, undoOp.toState, op => {
+        if (!op._deleted && isStructInScope(y, op, scope)) {
+          performedUndo = true
+          op._delete(y)
+        }
+      })
+      for (let op of undoOp.deletedStructs) {
+        if (
+          isStructInScope(y, op, scope) &&
+          op._parent !== y &&
+          !op._parent._deleted &&
+          (
+            op._parent._id.user !== y.userID ||
+            op._parent._id.clock < undoOp.fromState.clock ||
+            op._parent._id.clock > undoOp.fromState.clock
+          )
+        ) {
+          performedUndo = true
+          op = op._copy(undoOp.deletedStructs)
+          op._integrate(y)
+        }
+      }
+    }
+  })
+  return performedUndo
+}
+
 export default class UndoManager {
   constructor (scope, options = {}) {
     this.options = options
-    options.captureTimeout = options.captureTimeout || 0
+    options.captureTimeout = options.captureTimeout == null ? 500 : options.captureTimeout
     this._undoBuffer = []
     this._redoBuffer = []
     this._scope = scope
@@ -36,11 +71,11 @@ export default class UndoManager {
     const y = scope._y
     this.y = y
     y.on('afterTransaction', (y, remote) => {
-      if (!remote && (y._transaction.beforeState.has(y.userID) || y._transaction.deletedStructs.size > 0)) {
+      if (!remote && y._transaction.changedParentTypes.has(scope)) {
         let reverseOperation = new ReverseOperation(y)
         if (!this._undoing) {
           let lastUndoOp = this._undoBuffer.length > 0 ? this._undoBuffer[this._undoBuffer.length - 1] : null
-          if (lastUndoOp !== null && lastUndoOp.created - reverseOperation.created <= options.captureTimeout) {
+          if (lastUndoOp !== null && reverseOperation.created - lastUndoOp.created <= options.captureTimeout) {
             console.log('appending', lastUndoOp, reverseOperation)
             lastUndoOp.created = reverseOperation.created
             lastUndoOp.toState = reverseOperation.toState
@@ -60,45 +95,14 @@ export default class UndoManager {
   undo () {
     console.log('undoing')
     this._undoing = true
-    this._applyReverseOperation(this._undoBuffer)
+    const performedUndo = applyReverseOperation(this.y, this._scope, this._undoBuffer)
     this._undoing = false
+    return performedUndo
   }
   redo () {
     this._redoing = true
-    this._applyReverseOperation(this._redoBuffer)
+    const performedRedo = applyReverseOperation(this.y, this._scope, this._redoBuffer)
     this._redoing = false
-  }
-  _applyReverseOperation (reverseBuffer) {
-    this.y.transact(() => {
-      let performedUndo = false
-      while (!performedUndo && reverseBuffer.length > 0) {
-        let undoOp = reverseBuffer.pop()
-        // make sure that it is possible to iterate {from}-{to}
-        this.y.os.getItemCleanStart(undoOp.fromState)
-        this.y.os.getItemCleanEnd(undoOp.toState)
-        this.y.os.iterate(undoOp.fromState, undoOp.toState, op => {
-          if (!op._deleted && isStructInScope(this.y, op, this._scope)) {
-            performedUndo = true
-            op._delete(this.y)
-          }
-        })
-        for (let op of undoOp.deletedStructs) {
-          if (
-            isStructInScope(this.y, op, this._scope) &&
-            op._parent !== this.y &&
-            !op._parent._deleted &&
-            (
-              op._parent._id.user !== this.y.userID ||
-              op._parent._id.clock < undoOp.fromState.clock ||
-              op._parent._id.clock > undoOp.fromState.clock
-            )
-          ) {
-            performedUndo = true
-            op = op._copy(undoOp.deletedStructs)
-            op._integrate(this.y)
-          }
-        }
-      }
-    })
+    return performedRedo
   }
 }
