@@ -41,6 +41,8 @@ test('basic map tests', async function map0 (t) {
 test('Basic get&set of Map property (converge via sync)', async function map1 (t) {
   let { users, map0 } = await initArrays(t, { users: 2 })
   map0.set('stuff', 'stuffy')
+  map0.set('undefined', undefined)
+  map0.set('null', null)
   t.compare(map0.get('stuff'), 'stuffy')
 
   await flushAll(t, users)
@@ -48,6 +50,8 @@ test('Basic get&set of Map property (converge via sync)', async function map1 (t
   for (let user of users) {
     var u = user.get('map', Y.Map)
     t.compare(u.get('stuff'), 'stuffy')
+    t.assert(u.get('undefined') === undefined, 'undefined')
+    t.compare(u.get('null'), null, 'null')
   }
   await compareUsers(t, users)
 })

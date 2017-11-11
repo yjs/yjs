@@ -136,6 +136,26 @@ export function applyChangesFromDom (dom) {
 }
 
 export function reflectChangesOnDom (events) {
+  // Make sure that no filtered attributes are applied to the structure
+  // if they were, delete them
+  events.forEach(event => {
+    const target = event.target
+    const keys = this._domFilter(target.nodeName, Array.from(event.keysChanged))
+    if (keys === null) {
+      target._delete()
+    } else {
+      const removeKeys = new Set() // is a copy of event.keysChanged
+      event.keysChanged.forEach(key => { removeKeys.add(key) })
+      keys.forEach(key => {
+        // remove all accepted keys from removeKeys
+        removeKeys.delete(key)
+      })
+      // remove the filtered attribute
+      removeKeys.forEach(key => {
+        target.removeAttribute(key)
+      })
+    }
+  })
   this._mutualExclude(() => {
     events.forEach(event => {
       const yxml = event.target

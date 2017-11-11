@@ -20,7 +20,13 @@ export default class ItemJSON extends Item {
     this._content = new Array(len)
     for (let i = 0; i < len; i++) {
       const ctnt = decoder.readVarString()
-      this._content[i] = JSON.parse(ctnt)
+      let parsed
+      if (ctnt === 'undefined') {
+        parsed = undefined
+      } else {
+        parsed = JSON.parse(ctnt)
+      }
+      this._content[i] = parsed
     }
     return missing
   }
@@ -29,7 +35,14 @@ export default class ItemJSON extends Item {
     let len = this._content.length
     encoder.writeVarUint(len)
     for (let i = 0; i < len; i++) {
-      encoder.writeVarString(JSON.stringify(this._content[i]))
+      let encoded
+      let content = this._content[i]
+      if (content === undefined) {
+        encoded = 'undefined'
+      } else {
+        encoded = JSON.stringify(content)
+      }
+      encoder.writeVarString(encoded)
     }
   }
   _logString () {
