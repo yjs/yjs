@@ -5,9 +5,13 @@ import commonjs from 'rollup-plugin-commonjs'
 var pkg = require('./package.json')
 
 export default {
-  entry: 'src/Y.js',
-  moduleName: 'Y',
-  format: 'umd',
+  input: 'src/Y.js',
+  name: 'Y',
+  sourcemap: true,
+  output: {
+    file: 'y.js',
+    format: 'umd'
+  },
   plugins: [
     nodeResolve({
       main: true,
@@ -32,8 +36,6 @@ export default {
       }
     })
   ],
-  dest: 'y.js',
-  sourceMap: true,
   banner: `
 /**
  * ${pkg.name} - ${pkg.description}

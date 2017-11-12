@@ -1,16 +1,16 @@
 import ID from './ID.js'
 
 class ReverseOperation {
-  constructor (y) {
+  constructor (y, transaction) {
     this.created = new Date()
-    const beforeState = y._transaction.beforeState
+    const beforeState = transaction.beforeState
     this.toState = new ID(y.userID, y.ss.getState(y.userID) - 1)
     if (beforeState.has(y.userID)) {
       this.fromState = new ID(y.userID, beforeState.get(y.userID))
     } else {
       this.fromState = this.toState
     }
-    this.deletedStructs = y._transaction.deletedStructs
+    this.deletedStructs = transaction.deletedStructs
   }
 }
 
@@ -70,9 +70,9 @@ export default class UndoManager {
     this._redoing = false
     const y = scope._y
     this.y = y
-    y.on('afterTransaction', (y, remote) => {
-      if (!remote && y._transaction.changedParentTypes.has(scope)) {
-        let reverseOperation = new ReverseOperation(y)
+    y.on('afterTransaction', (y, transaction, remote) => {
+      if (!remote && transaction.changedParentTypes.has(scope)) {
+        let reverseOperation = new ReverseOperation(y, transaction)
         if (!this._undoing) {
           let lastUndoOp = this._undoBuffer.length > 0 ? this._undoBuffer[this._undoBuffer.length - 1] : null
           if (lastUndoOp !== null && reverseOperation.created - lastUndoOp.created <= options.captureTimeout) {

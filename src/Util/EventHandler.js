@@ -17,7 +17,7 @@ export default class EventHandler {
   removeAllEventListeners () {
     this.eventListeners = []
   }
-  callEventListeners (event) {
+  callEventListeners (transaction, event) {
     for (var i = 0; i < this.eventListeners.length; i++) {
       try {
         const f = this.eventListeners[i]

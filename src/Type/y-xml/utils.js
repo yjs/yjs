@@ -138,8 +138,13 @@ export function applyChangesFromDom (dom) {
 export function reflectChangesOnDom (events) {
   // Make sure that no filtered attributes are applied to the structure
   // if they were, delete them
+  /*
   events.forEach(event => {
     const target = event.target
+    if (event.attributesChanged === undefined) {
+      // event.target is Y.XmlText
+      return
+    }
     const keys = this._domFilter(target.nodeName, Array.from(event.attributesChanged))
     if (keys === null) {
       target._delete()
@@ -156,6 +161,7 @@ export function reflectChangesOnDom (events) {
       })
     }
   })
+  */
   this._mutualExclude(() => {
     events.forEach(event => {
       const yxml = event.target

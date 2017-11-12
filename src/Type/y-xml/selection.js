@@ -7,7 +7,7 @@ let relativeSelection = null
 
 export let beforeTransactionSelectionFixer
 if (typeof getSelection !== 'undefined') {
-  beforeTransactionSelectionFixer = function _beforeTransactionSelectionFixer (y, remote) {
+  beforeTransactionSelectionFixer = function _beforeTransactionSelectionFixer (y, transaction, remote) {
     if (!remote) {
       return
     }
@@ -30,7 +30,7 @@ if (typeof getSelection !== 'undefined') {
   beforeTransactionSelectionFixer = function _fakeBeforeTransactionSelectionFixer () {}
 }
 
-export function afterTransactionSelectionFixer (y, remote) {
+export function afterTransactionSelectionFixer (y, transaction, remote) {
   if (relativeSelection === null || !remote) {
     return
   }

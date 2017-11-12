@@ -3,9 +3,13 @@ import commonjs from 'rollup-plugin-commonjs'
 import multiEntry from 'rollup-plugin-multi-entry'
 
 export default {
-  entry: 'test/y-xml.tests.js',
-  moduleName: 'y-tests',
-  format: 'umd',
+  input: 'test/y-xml.tests.js',
+  name: 'y-tests',
+  sourcemap: true,
+  output: {
+    file: 'y.test.js',
+    format: 'umd'
+  },
   plugins: [
     nodeResolve({
       main: true,
@@ -14,7 +18,5 @@ export default {
     }),
     commonjs(),
     multiEntry()
-  ],
-  dest: 'y.test.js',
-  sourceMap: true
+  ]
 }

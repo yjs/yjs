@@ -65,9 +65,9 @@ export default class Type extends Item {
     }
     return path
   }
-  _callEventHandler (event) {
-    const changedParentTypes = this._y._transaction.changedParentTypes
-    this._eventHandler.callEventListeners(event)
+  _callEventHandler (transaction, event) {
+    const changedParentTypes = transaction.changedParentTypes
+    this._eventHandler.callEventListeners(transaction, event)
     let type = this
     while (type !== this._y) {
       let events = changedParentTypes.get(type)

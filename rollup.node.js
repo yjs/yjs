@@ -3,9 +3,13 @@ import commonjs from 'rollup-plugin-commonjs'
 var pkg = require('./package.json')
 
 export default {
-  entry: 'src/y-dist.cjs.js',
-  moduleName: 'Y',
-  format: 'cjs',
+  input: 'src/y-dist.cjs.js',
+  nameame: 'Y',
+  sourcemap: true,
+  output: {
+    file: 'y.node.js',
+    format: 'cjs'
+  },
   plugins: [
     nodeResolve({
       main: true,
@@ -14,8 +18,6 @@ export default {
     }),
     commonjs()
   ],
-  dest: 'y.node.js',
-  sourceMap: true,
   banner: `
 /**
  * ${pkg.name} - ${pkg.description}

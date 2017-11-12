@@ -1,4 +1,15 @@
-/* global Y */
+/* global Y, HTMLElement, customElements */
+
+class MagicTable extends HTMLElement {
+  constructor () {
+    super()
+    var shadow = this.attachShadow({mode: 'open'})
+    setTimeout(() => {
+      shadow.append(this.childNodes[0])
+    }, 1000)
+  }
+}
+customElements.define('magic-table', MagicTable)
 
 // initialize a shared object. This function call returns a promise!
 let y = new Y({
@@ -17,17 +28,14 @@ window.onload = function () {
   window.yXmlType.bindToDom(document.body)
 }
 window.undoManager = new Y.utils.UndoManager(window.yXmlType, {
-  captureTimeout: 0
+  captureTimeout: 500
 })
 
 document.onkeydown = function interceptUndoRedo (e) {
   if (e.keyCode === 90 && e.metaKey) {
-    console.log('uidtaren')
     if (!e.shiftKey) {
-      console.info('Undo!')
       window.undoManager.undo()
     } else {
-      console.info('Redo!')
       window.undoManager.redo()
     }
     e.preventDefault()

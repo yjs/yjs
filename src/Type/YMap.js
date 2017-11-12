@@ -13,8 +13,8 @@ class YMapEvent extends YEvent {
 }
 
 export default class YMap extends Type {
-  _callObserver (parentSubs, remote) {
-    this._callEventHandler(new YMapEvent(this, parentSubs, remote))
+  _callObserver (transaction, parentSubs, remote) {
+    this._callEventHandler(transaction, new YMapEvent(this, parentSubs, remote))
   }
   toJSON () {
     const map = {}

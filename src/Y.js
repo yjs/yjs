@@ -15,6 +15,7 @@ import YMap from './Type/YMap.js'
 import YText from './Type/YText.js'
 import { YXmlFragment, YXmlElement, YXmlText } from './Type/y-xml/y-xml.js'
 import BinaryDecoder from './Binary/Decoder.js'
+import { getRelativePosition, fromRelativePosition } from './Util/relativePosition.js'
 
 import debug from 'debug'
 import Transaction from './Transaction.js'
@@ -44,8 +45,8 @@ export default class Y extends NamedEventHandler {
   transact (f, remote = false) {
     let initialCall = this._transaction === null
     if (initialCall) {
-      this.emit('beforeTransaction', this, remote)
       this._transaction = new Transaction(this)
+      this.emit('beforeTransaction', this, this._transaction, remote)
     }
     try {
       f(this)
@@ -53,13 +54,15 @@ export default class Y extends NamedEventHandler {
       console.error(e)
     }
     if (initialCall) {
+      const transaction = this._transaction
+      this._transaction = null
       // emit change events on changed types
-      this._transaction.changedTypes.forEach(function (subs, type) {
+      transaction.changedTypes.forEach(function (subs, type) {
         if (!type._deleted) {
-          type._callObserver(subs, remote)
+          type._callObserver(transaction, subs, remote)
         }
       })
-      this._transaction.changedParentTypes.forEach(function (events, type) {
+      transaction.changedParentTypes.forEach(function (events, type) {
         if (!type._deleted) {
           events = events
             .filter(event =>
@@ -71,12 +74,11 @@ export default class Y extends NamedEventHandler {
             })
           // we don't have to check for events.length
           // because there is no way events is empty..
-          type._deepEventHandler.callEventListeners(events)
+          type._deepEventHandler.callEventListeners(transaction, events)
         }
       })
       // when all changes & events are processed, emit afterTransaction event
-      this.emit('afterTransaction', this, remote)
-      this._transaction = null
+      this.emit('afterTransaction', this, transaction, remote)
     }
   }
   // fake _start for root properties (y.set('name', type))
@@ -168,7 +170,9 @@ Y.XmlText = YXmlText
 
 Y.utils = {
   BinaryDecoder,
-  UndoManager
+  UndoManager,
+  getRelativePosition,
+  fromRelativePosition
 }
 
 Y.debug = debug

@@ -142,8 +142,8 @@ export default class YXmlFragment extends YArray {
       xml.setDomFilter(f)
     })
   }
-  _callObserver (parentSubs, remote) {
-    this._callEventHandler(new YXmlEvent(this, parentSubs, remote))
+  _callObserver (transaction, parentSubs, remote) {
+    this._callEventHandler(transaction, new YXmlEvent(this, parentSubs, remote))
   }
   toString () {
     return this.map(xml => xml.toString()).join('')
