@@ -135,7 +135,7 @@ export function applyChangesFromDom (dom) {
   }
 }
 
-export function reflectChangesOnDom (events) {
+export function reflectChangesOnDom (events, _document) {
   // Make sure that no filtered attributes are applied to the structure
   // if they were, delete them
   /*
@@ -183,9 +183,9 @@ export function reflectChangesOnDom (events) {
           })
           if (event.childListChanged) {
             // create fragment of undeleted nodes
-            const fragment = document.createDocumentFragment()
+            const fragment = _document.createDocumentFragment()
             yxml.forEach(function (t) {
-              fragment.append(t.getDom())
+              fragment.appendChild(t.getDom(_document))
             })
             // remove remainding nodes
             let lastChild = dom.lastChild
@@ -194,7 +194,7 @@ export function reflectChangesOnDom (events) {
               lastChild = dom.lastChild
             }
             // insert fragment of undeleted nodes
-            dom.append(fragment)
+            dom.appendChild(fragment)
           }
         }
         /* TODO: smartscrolling

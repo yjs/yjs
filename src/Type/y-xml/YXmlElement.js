@@ -5,7 +5,7 @@ import YMap from '../YMap.js'
 import YXmlFragment from './YXmlFragment.js'
 
 export default class YXmlElement extends YXmlFragment {
-  constructor (arg1, arg2) {
+  constructor (arg1, arg2, _document) {
     super()
     this.nodeName = null
     this._scrollElement = null
@@ -13,7 +13,7 @@ export default class YXmlElement extends YXmlFragment {
       this.nodeName = arg1.toUpperCase()
     } else if (arg1 != null && arg1.nodeType != null && arg1.nodeType === arg1.ELEMENT_NODE) {
       this.nodeName = arg1.nodeName
-      this._setDom(arg1)
+      this._setDom(arg1, _document)
     } else {
       this.nodeName = 'UNDEFINED'
     }
@@ -26,14 +26,12 @@ export default class YXmlElement extends YXmlFragment {
     struct.nodeName = this.nodeName
     return struct
   }
-  _setDom (dom) {
+  _setDom (dom, _document) {
     if (this._dom != null) {
       throw new Error('Only call this method if you know what you are doing ;)')
     } else if (dom._yxml != null) { // TODO do i need to check this? - no.. but for dev purps..
       throw new Error('Already bound to an YXml type')
     } else {
-      this._dom = dom
-      dom._yxml = this
       // tag is already set in constructor
       // set attributes
       let attrNames = []
@@ -46,8 +44,8 @@ export default class YXmlElement extends YXmlFragment {
         let attrValue = dom.getAttribute(attrName)
         this.setAttribute(attrName, attrValue)
       }
-      this.insertDomElements(0, Array.prototype.slice.call(dom.childNodes))
-      this._bindToDom(dom)
+      this.insertDomElements(0, Array.prototype.slice.call(dom.childNodes), _document)
+      this._bindToDom(dom, _document)
       return dom
     }
   }
@@ -115,7 +113,6 @@ export default class YXmlElement extends YXmlFragment {
     let dom = this._dom
     if (dom == null) {
       dom = _document.createElement(this.nodeName)
-      this._dom = dom
       dom._yxml = this
       let attrs = this.getAttributes()
       for (let key in attrs) {
@@ -124,7 +121,7 @@ export default class YXmlElement extends YXmlFragment {
       this.forEach(yxml => {
         dom.appendChild(yxml.getDom(_document))
       })
-      this._bindToDom(dom)
+      this._bindToDom(dom, _document)
     }
     return dom
   }

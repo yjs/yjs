@@ -153,7 +153,7 @@ export async function initArrays (t, opts) {
     result['array' + i] = y.define('array', Y.Array)
     result['map' + i] = y.define('map', Y.Map)
     result['xml' + i] = y.define('xml', Y.XmlElement)
-    y.get('xml', Y.Xml).setDomFilter(function (d, attrs) {
+    y.get('xml').setDomFilter(function (d, attrs) {
       if (d.nodeName === 'HIDDEN') {
         return null
       } else {
