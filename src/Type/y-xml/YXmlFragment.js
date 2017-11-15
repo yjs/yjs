@@ -242,7 +242,7 @@ export default class YXmlFragment extends YArray {
                 case 'attributes':
                   let name = mutation.attributeName
                   // check if filter accepts attribute
-                  if (this._domFilter(dom, [name]).length > 0 && this.constructor !== YXmlFragment) {
+                  if (this._domFilter(dom, [name]).length > 0 && yxml.constructor !== YXmlFragment) {
                     var val = dom.getAttribute(name)
                     if (yxml.getAttribute(name) !== val) {
                       if (val == null) {
