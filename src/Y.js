@@ -54,6 +54,7 @@ export default class Y extends NamedEventHandler {
       console.error(e)
     }
     if (initialCall) {
+      this.emit('beforeObserverCalls', this, this._transaction, remote)
       const transaction = this._transaction
       this._transaction = null
       // emit change events on changed types
@@ -94,17 +95,10 @@ export default class Y extends NamedEventHandler {
   define (name, TypeConstructor) {
     let id = new RootID(name, TypeConstructor)
     let type = this.os.get(id)
-    if (type === null) {
-      type = new TypeConstructor()
-      type._id = id
-      type._parent = this
-      type._integrate(this)
-      if (this.share[name] !== undefined) {
-        throw new Error('Type is already defined with a different constructor!')
-      }
-    }
     if (this.share[name] === undefined) {
       this.share[name] = type
+    } else if (this.share[name] !== type) {
+      throw new Error('Type is already defined with a different constructor')
     }
     return type
   }

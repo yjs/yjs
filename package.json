@@ -15,7 +15,8 @@
     "postpublish": "tag-dist-files --overwrite-existing-tag"
   },
   "files": [
-    "y.*"
+    "y.*",
+    "src/*"
   ],
   "standard": {
     "ignore": [

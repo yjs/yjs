@@ -230,8 +230,8 @@ test('filter node', async function xml14 (t) {
   var { users, xml0, xml1 } = await initArrays(t, { users: 3 })
   let dom0 = xml0.getDom()
   let dom1 = xml1.getDom()
-  let domFilter = (node, attrs) => {
-    if (node.nodeName === 'H1') {
+  let domFilter = (nodeName, attrs) => {
+    if (nodeName === 'H1') {
       return null
     } else {
       return attrs
@@ -251,8 +251,9 @@ test('filter attribute', async function xml15 (t) {
   var { users, xml0, xml1 } = await initArrays(t, { users: 3 })
   let dom0 = xml0.getDom()
   let dom1 = xml1.getDom()
-  let domFilter = (node, attrs) => {
-    return attrs.filter(name => name !== 'hidden')
+  let domFilter = (nodeName, attrs) => {
+    attrs.delete('hidden')
+    return attrs
   }
   xml0.setDomFilter(domFilter)
   xml1.setDomFilter(domFilter)
@@ -300,6 +301,51 @@ test('treeWalker', async function xml17 (t) {
   t.assert(allParagraphs[0] === paragraph1, 'querySelectorAll found paragraph1')
   t.assert(allParagraphs[1] === paragraph2, 'querySelectorAll found paragraph2')
   t.assert(xml0.querySelector('p') === paragraph1, 'querySelector found paragraph1')
+  await compareUsers(t, users)
+})
+
+/**
+ * The expected behavior is that changes on your own dom (e.g. malicious attributes) persist.
+ * Yjs should just ignore them, never propagate those attributes.
+ * Incoming changes that contain malicious attributes should be deleted.
+ */
+test('Filtering remote changes', async function xmlFilteringRemote (t) {
+  var { users, xml0, xml1 } = await initArrays(t, { users: 3 })
+  xml0.setDomFilter(function (nodeName, attributes) {
+    attributes.delete('malicious')
+    if (nodeName === 'HIDEME') {
+      return null
+    } else if (attributes.has('isHidden')) {
+      return null
+    } else {
+      return attributes
+    }
+  })
+  // make sure that dom filters are active
+  // TODO: do not rely on .getDom for domFilters
+  xml0.getDom()
+  xml1.getDom()
+  let paragraph = new Y.XmlElement('p')
+  let hideMe = new Y.XmlElement('hideMe')
+  let span = new Y.XmlElement('span')
+  span.setAttribute('malicious', 'alert("give me money")')
+  let tag = new Y.XmlElement('tag')
+  tag.setAttribute('isHidden', 'true')
+  paragraph.insert(0, [hideMe, span, tag])
+  xml0.insert(0, [paragraph])
+  let tag2 = new Y.XmlElement('tag')
+  tag2.setAttribute('isHidden', 'true')
+  paragraph.insert(0, [tag2])
+  await flushAll(t, users)
+  // check dom
+  paragraph.getDom().setAttribute('malicious', 'true')
+  span.getDom().setAttribute('malicious', 'true')
+  console.log(xml0.toString())
+  // check incoming attributes
+  xml1.get(0).get(0).setAttribute('malicious', 'true')
+  xml1.insert(0, [new Y.XmlElement('hideMe')])
+  await flushAll(t, users)
+
   await compareUsers(t, users)
 })
 

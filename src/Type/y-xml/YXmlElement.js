@@ -34,16 +34,15 @@ export default class YXmlElement extends YXmlFragment {
     } else {
       // tag is already set in constructor
       // set attributes
-      let attrNames = []
+      let attributes = new Map()
       for (let i = 0; i < dom.attributes.length; i++) {
-        attrNames.push(dom.attributes[i].name)
+        let attr = dom.attributes[i]
+        attributes.set(attr.name, attr.value)
       }
-      attrNames = this._domFilter(dom, attrNames)
-      for (let i = 0; i < attrNames.length; i++) {
-        let attrName = attrNames[i]
-        let attrValue = dom.getAttribute(attrName)
-        this.setAttribute(attrName, attrValue)
-      }
+      attributes = this._domFilter(dom, attributes)
+      attributes.forEach((value, name) => {
+        this.setAttribute(name, value)
+      })
       this.insertDomElements(0, Array.prototype.slice.call(dom.childNodes), _document)
       this._bindToDom(dom, _document)
       return dom
@@ -104,7 +103,9 @@ export default class YXmlElement extends YXmlFragment {
   getAttributes () {
     const obj = {}
     for (let [key, value] of this._map) {
-      obj[key] = value._content[0]
+      if (!value._deleted) {
+        obj[key] = value._content[0]
+      }
     }
     return obj
   }

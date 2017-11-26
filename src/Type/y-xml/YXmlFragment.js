@@ -15,7 +15,7 @@ function domToYXml (parent, doms, _document) {
     if (d._yxml != null && d._yxml !== false) {
       d._yxml._unbindFromDom()
     }
-    if (parent._domFilter(d, []) !== null) {
+    if (parent._domFilter(d.nodeName, new Map()) !== null) {
       let type
       if (d.nodeType === d.TEXT_NODE) {
         type = new YXmlText(d)
@@ -203,6 +203,52 @@ export default class YXmlFragment extends YArray {
     }
     this._y.on('beforeTransaction', beforeTransactionSelectionFixer)
     this._y.on('afterTransaction', afterTransactionSelectionFixer)
+    const applyFilter = (type) => {
+      if (type._deleted) {
+        return
+      }
+      // check if type is a child of this
+      let isChild = false
+      let p = type
+      while (p !== this._y) {
+        if (p === this) {
+          isChild = true
+          break
+        }
+        p = p._parent
+      }
+      if (!isChild) {
+        return
+      }
+      // filter attributes
+      let attributes = new Map()
+      if (type.getAttributes !== undefined) {
+        let attrs = type.getAttributes()
+        for (let key in attrs) {
+          attributes.set(key, attrs[key])
+        }
+      }
+      let result = this._domFilter(type.nodeName, new Map(attributes))
+      if (result === null) {
+        type._delete(this._y)
+      } else {
+        attributes.forEach((value, key) => {
+          if (!result.has(key)) {
+            type.removeAttribute(key)
+          }
+        })
+      }
+    }
+    this._y.on('beforeObserverCalls', function (y, transaction) {
+      // apply dom filter to new and changed types
+      transaction.changedTypes.forEach(function (subs, type) {
+        if (subs.size > 1 || !subs.has(null)) {
+          // only apply changes on attributes
+          applyFilter(type)
+        }
+      })
+      transaction.newTypes.forEach(applyFilter)
+    })
     // Apply Y.Xml events to dom
     this.observeDeep(events => {
       reflectChangesOnDom.call(this, events, _document)
@@ -240,10 +286,15 @@ export default class YXmlFragment extends YArray {
                   }
                   break
                 case 'attributes':
+                  if (yxml.constructor === YXmlFragment) {
+                    break
+                  }
                   let name = mutation.attributeName
+                  let val = dom.getAttribute(name)
                   // check if filter accepts attribute
-                  if (this._domFilter(dom, [name]).length > 0 && yxml.constructor !== YXmlFragment) {
-                    var val = dom.getAttribute(name)
+                  let attributes = new Map()
+                  attributes.set(name, val)
+                  if (this._domFilter(dom.nodeName, attributes).size > 0 && yxml.constructor !== YXmlFragment) {
                     if (yxml.getAttribute(name) !== val) {
                       if (val == null) {
                         yxml.removeAttribute(name)
