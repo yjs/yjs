@@ -46,17 +46,25 @@ export function afterTransactionSelectionFixer (y, transaction, remote) {
   if (from !== null) {
     let sel = fromRelativePosition(fromY, from)
     if (sel !== null) {
-      shouldUpdate = true
-      anchorNode = sel.type.getDom()
-      anchorOffset = sel.offset
+      let node = sel.type.getDom()
+      let offset = sel.offset
+      if (node !== anchorNode || offset !== anchorOffset) {
+        anchorNode = node
+        anchorOffset = offset
+        shouldUpdate = true
+      }
     }
   }
   if (to !== null) {
     let sel = fromRelativePosition(toY, to)
     if (sel !== null) {
-      focusNode = sel.type.getDom()
-      focusOffset = sel.offset
-      shouldUpdate = true
+      let node = sel.type.getDom()
+      let offset = sel.offset
+      if (node !== focusNode || offset !== focusOffset) {
+        focusNode = node
+        focusOffset = offset
+        shouldUpdate = true
+      }
     }
   }
   if (shouldUpdate) {
