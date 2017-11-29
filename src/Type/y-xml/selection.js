@@ -68,6 +68,7 @@ export function afterTransactionSelectionFixer (y, transaction, remote) {
     }
   }
   if (shouldUpdate) {
+    console.info('updating selection!!')
     browserSelection.setBaseAndExtent(
       anchorNode,
       anchorOffset,

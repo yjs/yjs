@@ -7,13 +7,13 @@ export function getRelativePosition (type, offset) {
   } else {
     let t = type._start
     while (t !== null) {
-      if (t._length >= offset) {
-        return [t._id.user, t._id.clock + offset - 1]
-      }
-      if (t._right === null) {
-        return [t._id.user, t._id.clock + t._length - 1]
-      }
-      if (!t._deleted) {
+      if (t._deleted === false) {
+        if (t._length >= offset) {
+          return [t._id.user, t._id.clock + offset - 1]
+        }
+        if (t._right === null) {
+          return [t._id.user, t._id.clock + t._length - 1]
+        }
         offset -= t._length
       }
       t = t._right
