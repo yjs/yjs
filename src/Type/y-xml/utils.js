@@ -1,4 +1,4 @@
-import YXmlText from './YXmlText.js'
+import { YXmlText, YXmlHook } from './y-xml.js'
 
 export function defaultDomFilter (node, attributes) {
   return attributes
@@ -84,6 +84,9 @@ function _insertNodeHelper (yxml, prevExpectedNode, child) {
  */
 export function applyChangesFromDom (dom) {
   const yxml = dom._yxml
+  if (yxml.constructor === YXmlHook) {
+    return
+  }
   const y = yxml._y
   let knownChildren =
     new Set(
@@ -181,7 +184,15 @@ export function reflectChangesOnDom (events, _document) {
               dom.setAttribute(attributeName, value)
             }
           })
-          if (event.childListChanged) {
+          /**
+           * TODO: instead of chard-checking the types, it would be best to
+           *       specify the type's features. E.g.
+           *         - _yxmlHasAttributes
+           *         - _yxmlHasChildren
+           *       Furthermore, the features shouldn't be encoded in the types,
+           *       only in the attributes (above)
+           */
+          if (event.childListChanged && yxml.constructor !== YXmlHook) {
             // create fragment of undeleted nodes
             const fragment = _document.createDocumentFragment()
             yxml.forEach(function (t) {

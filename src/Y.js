@@ -13,9 +13,10 @@ import Persistence from './Persistence.js'
 import YArray from './Type/YArray.js'
 import YMap from './Type/YMap.js'
 import YText from './Type/YText.js'
-import { YXmlFragment, YXmlElement, YXmlText } from './Type/y-xml/y-xml.js'
+import { YXmlFragment, YXmlElement, YXmlText, YXmlHook } from './Type/y-xml/y-xml.js'
 import BinaryDecoder from './Binary/Decoder.js'
 import { getRelativePosition, fromRelativePosition } from './Util/relativePosition.js'
+import { addStruct as addType } from './Util/structReferences.js'
 
 import debug from 'debug'
 import Transaction from './Transaction.js'
@@ -161,12 +162,14 @@ Y.Text = YText
 Y.XmlElement = YXmlElement
 Y.XmlFragment = YXmlFragment
 Y.XmlText = YXmlText
+Y.XmlHook = YXmlHook
 
 Y.utils = {
   BinaryDecoder,
   UndoManager,
   getRelativePosition,
-  fromRelativePosition
+  fromRelativePosition,
+  addType
 }
 
 Y.debug = debug

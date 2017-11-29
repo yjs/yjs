@@ -2,7 +2,7 @@
 import { defaultDomFilter } from './utils.js'
 
 import YMap from '../YMap.js'
-import YXmlFragment from './YXmlFragment.js'
+import { YXmlFragment } from './y-xml.js'
 
 export default class YXmlElement extends YXmlFragment {
   constructor (arg1, arg2, _document) {
@@ -61,7 +61,7 @@ export default class YXmlElement extends YXmlFragment {
     if (this.nodeName === null) {
       throw new Error('nodeName must be defined!')
     }
-    if (this._domFilter === defaultDomFilter && this._parent instanceof YXmlFragment) {
+    if (this._domFilter === defaultDomFilter && this._parent._domFilter !== undefined) {
       this._domFilter = this._parent._domFilter
     }
     super._integrate(y)

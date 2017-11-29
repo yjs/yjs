@@ -22,7 +22,7 @@ export default {
     babel(),
     uglify({
       mangle: {
-        except: ['YMap', 'Y', 'YArray', 'YText', 'YXmlFragment', 'YXmlElement', 'YXmlEvent', 'YXmlText', 'YEvent', 'YArrayEvent', 'YMapEvent', 'Type', 'Delete', 'ItemJSON', 'ItemString', 'Item']
+        except: ['YMap', 'Y', 'YArray', 'YText', 'YXmlHook', 'YXmlFragment', 'YXmlElement', 'YXmlEvent', 'YXmlText', 'YEvent', 'YArrayEvent', 'YMapEvent', 'Type', 'Delete', 'ItemJSON', 'ItemString', 'Item']
       },
       output: {
         comments: function (node, comment) {

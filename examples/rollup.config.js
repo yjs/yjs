@@ -4,10 +4,12 @@ import commonjs from 'rollup-plugin-commonjs'
 var pkg = require('./package.json')
 
 export default {
-  entry: 'yjs-dist.esm',
-  dest: 'yjs-dist.js',
-  moduleName: 'Y',
-  format: 'umd',
+  input: 'yjs-dist.esm',
+  name: 'Y',
+  output: {
+    file: 'yjs-dist.js',
+    format: 'umd'
+  },
   plugins: [
     nodeResolve({
       main: true,
@@ -16,7 +18,7 @@ export default {
     }),
     commonjs()
   ],
-  sourceMap: true,
+  sourcemap: true,
   banner: `
 /**
  * ${pkg.name} - ${pkg.description}

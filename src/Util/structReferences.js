@@ -1,9 +1,7 @@
 import YArray from '../Type/YArray.js'
 import YMap from '../Type/YMap.js'
 import YText from '../Type/YText.js'
-import YXmlFragment from '../Type/y-xml/YXmlFragment.js'
-import YXmlElement from '../Type/y-xml/YXmlElement.js'
-import YXmlText from '../Type/y-xml/YXmlText.js'
+import { YXmlFragment, YXmlElement, YXmlText, YXmlHook } from '../Type/y-xml/y-xml.js'
 
 import Delete from '../Struct/Delete.js'
 import ItemJSON from '../Struct/ItemJSON.js'
@@ -12,7 +10,7 @@ import ItemString from '../Struct/ItemString.js'
 const structs = new Map()
 const references = new Map()
 
-function addStruct (reference, structConstructor) {
+export function addStruct (reference, structConstructor) {
   structs.set(reference, structConstructor)
   references.set(structConstructor, reference)
 }
@@ -35,3 +33,4 @@ addStruct(5, YText)
 addStruct(6, YXmlFragment)
 addStruct(7, YXmlElement)
 addStruct(8, YXmlText)
+addStruct(9, YXmlHook)

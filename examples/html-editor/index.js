@@ -1,15 +1,68 @@
 /* global Y, HTMLElement, customElements */
 
+window.onload = function () {
+  window.yXmlType.bindToDom(document.body)
+  let mt = document.createElement('magic-table')
+  mt.innerHTML = '<table><tr><th>Amount</th></tr><tr><td>1</td></tr><tr><td>1</td></tr></table>'
+  document.body.append(mt)
+}
+
 class MagicTable extends HTMLElement {
   constructor () {
     super()
-    var shadow = this.attachShadow({mode: 'open'})
-    setTimeout(() => {
-      shadow.append(this.childNodes[0])
-    }, 1000)
+    this.createShadowRoot()
+  }
+  get _yjsHook () {
+    return 'magic-table'
+  }
+  showTable () {
+    this.shadowRoot.innerHTML = ''
+    this.shadowRoot.append(document.createElement('content'))
+  }
+  showDiagram () {
+    let dataPoints = []
+    this.querySelectorAll('td').forEach(td => {
+      let number = Number(td.textContent)
+      dataPoints.push({
+        x: (dataPoints.length + 1)*10,
+        y: number,
+        label: '<magic-table> content'
+      })
+    })
+    this.shadowRoot.innerHTML = ''
+		var chart = new CanvasJS.Chart(this.shadowRoot,
+		{
+			title:{
+				text: "Bar chart"
+			},
+
+			data: [
+			{
+				type: "bar",
+
+				dataPoints: dataPoints
+			}
+			]
+		});
+
+		chart.render();
+
+    //this.shadowRoot.innerHTML = '<p>dtrn</p>'
   }
 }
 customElements.define('magic-table', MagicTable)
+
+Y.XmlHook.addHook('magic-table', {
+  fillType: function (dom, type) {
+    type.set('table', new Y.XmlElement(dom.querySelector('table')))
+  },
+  createDom: function (type) {
+    const table = type.get('table').getDom()
+    const dom = document.createElement('magic-table')
+    dom.insertBefore(table, null)
+    return dom
+  }
+})
 
 // initialize a shared object. This function call returns a promise!
 let y = new Y({
@@ -22,11 +75,6 @@ let y = new Y({
 })
 window.yXml = y
 window.yXmlType = y.define('xml', Y.XmlFragment)
-window.onload = function () {
-  console.log('start!')
-  // Bind children of XmlFragment to the document.body
-  window.yXmlType.bindToDom(document.body)
-}
 window.undoManager = new Y.utils.UndoManager(window.yXmlType, {
   captureTimeout: 500
 })

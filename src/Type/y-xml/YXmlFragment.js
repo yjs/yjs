@@ -4,8 +4,8 @@ import { defaultDomFilter, applyChangesFromDom, reflectChangesOnDom } from './ut
 import { beforeTransactionSelectionFixer, afterTransactionSelectionFixer } from './selection.js'
 
 import YArray from '../YArray.js'
-import YXmlText from './YXmlText.js'
 import YXmlEvent from './YXmlEvent.js'
+import { YXmlText, YXmlHook } from './y-xml'
 import { logID } from '../../MessageHandler/messageToString.js'
 import diff from 'fast-diff'
 
@@ -17,14 +17,17 @@ function domToYXml (parent, doms, _document) {
     }
     if (parent._domFilter(d.nodeName, new Map()) !== null) {
       let type
-      if (d.nodeType === d.TEXT_NODE) {
+      const hookName = d._yjsHook
+      if (hookName !== undefined) {
+        type = new YXmlHook(hookName, d)
+      } else if (d.nodeType === d.TEXT_NODE) {
         type = new YXmlText(d)
       } else if (d.nodeType === d.ELEMENT_NODE) {
         type = new YXmlFragment._YXmlElement(d, parent._domFilter, _document)
       } else {
         throw new Error('Unsupported node!')
       }
-      type.enableSmartScrolling(parent._scrollElement)
+      // type.enableSmartScrolling(parent._scrollElement)
       types.push(type)
     } else {
       d._yxml = false
