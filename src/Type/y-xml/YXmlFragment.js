@@ -268,7 +268,7 @@ export default class YXmlFragment extends YArray {
             mutations.forEach(mutation => {
               const dom = mutation.target
               const yxml = dom._yxml
-              if (yxml == null) {
+              if (yxml == null || yxml.constructor === YXmlHook) {
                 // dom element is filtered
                 return
               }

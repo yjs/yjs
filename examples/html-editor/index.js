@@ -1,4 +1,4 @@
-/* global Y, HTMLElement, customElements */
+/* global Y, HTMLElement, customElements, CanvasJS */
 
 window.onload = function () {
   window.yXmlType.bindToDom(document.body)
@@ -24,30 +24,29 @@ class MagicTable extends HTMLElement {
     this.querySelectorAll('td').forEach(td => {
       let number = Number(td.textContent)
       dataPoints.push({
-        x: (dataPoints.length + 1)*10,
+        x: (dataPoints.length + 1) * 10,
         y: number,
         label: '<magic-table> content'
       })
     })
     this.shadowRoot.innerHTML = ''
-		var chart = new CanvasJS.Chart(this.shadowRoot,
-		{
-			title:{
-				text: "Bar chart"
-			},
+    var chart = new CanvasJS.Chart(this.shadowRoot,
+      {
+        title: {
+          text: 'Bar chart'
+        },
+        data: [
+          {
+            type: 'bar',
 
-			data: [
-			{
-				type: "bar",
+            dataPoints: dataPoints
+          }
+        ]
+      })
 
-				dataPoints: dataPoints
-			}
-			]
-		});
+    chart.render()
 
-		chart.render();
-
-    //this.shadowRoot.innerHTML = '<p>dtrn</p>'
+    // this.shadowRoot.innerHTML = '<p>dtrn</p>'
   }
 }
 customElements.define('magic-table', MagicTable)
