@@ -29,14 +29,17 @@ export default class YText extends YArray {
       let right = this._start
       let count = 0
       while (right !== null) {
-        if (count <= pos && pos < count + right._length) {
+        const rightLen = right._deleted ? 0 : (right._length - 1)
+        if (count <= pos && pos <= count + rightLen) {
           const splitDiff = pos - count
-          right = right._splitAt(this._y, pos - count)
+          right = right._splitAt(this._y, splitDiff)
           left = right._left
           count += splitDiff
           break
         }
-        count += right._length
+        if (!right._deleted) {
+          count += right._length
+        }
         left = right
         right = right._right
       }
