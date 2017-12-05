@@ -17,7 +17,7 @@ function domToYXml (parent, doms, _document) {
     }
     if (parent._domFilter(d.nodeName, new Map()) !== null) {
       let type
-      const hookName = d._yjsHook
+      const hookName = d._yjsHook || (d.dataset != null ? d.dataset.yjsHook : undefined)
       if (hookName !== undefined) {
         type = new YXmlHook(hookName, d)
       } else if (d.nodeType === d.TEXT_NODE) {
