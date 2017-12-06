@@ -193,19 +193,27 @@ export function reflectChangesOnDom (events, _document) {
            *       only in the attributes (above)
            */
           if (event.childListChanged && yxml.constructor !== YXmlHook) {
-            // create fragment of undeleted nodes
-            const fragment = _document.createDocumentFragment()
+            let currentChild = dom.firstChild
             yxml.forEach(function (t) {
-              fragment.appendChild(t.getDom(_document))
+              let expectedChild = t.getDom(_document)
+              if (expectedChild.parentNode === dom) {
+                // is already attached to the dom. Look for it
+                while (currentChild !== expectedChild) {
+                  let del = currentChild
+                  currentChild = currentChild.nextSibling
+                  dom.removeChild(del)
+                }
+                currentChild = currentChild.nextSibling
+              } else {
+                // this dom is not yet attached to dom
+                dom.insertBefore(expectedChild, currentChild)
+              }
             })
-            // remove remainding nodes
-            let lastChild = dom.lastChild
-            while (lastChild !== null) {
-              dom.removeChild(lastChild)
-              lastChild = dom.lastChild
+            while (currentChild !== null) {
+              let tmp = currentChild.nextSibling
+              dom.removeChild(currentChild)
+              currentChild = tmp
             }
-            // insert fragment of undeleted nodes
-            dom.appendChild(fragment)
           }
         }
         /* TODO: smartscrolling
