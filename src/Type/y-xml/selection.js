@@ -76,7 +76,4 @@ export function afterTransactionSelectionFixer (y, transaction, remote) {
       focusOffset
     )
   }
-  // delete, so the objects can be gc'd
-  relativeSelection = null
-  browserSelection = null
 }

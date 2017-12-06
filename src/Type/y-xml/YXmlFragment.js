@@ -254,7 +254,9 @@ export default class YXmlFragment extends YArray {
     })
     // Apply Y.Xml events to dom
     this.observeDeep(events => {
-      reflectChangesOnDom.call(this, events, _document)
+      this._mutualExclude(() => {
+        reflectChangesOnDom.call(this, events, _document)
+      })
     })
     // Apply Dom changes on Y.Xml
     if (typeof MutationObserver !== 'undefined') {
