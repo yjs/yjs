@@ -5,15 +5,38 @@ import { logID } from '../MessageHandler/messageToString.js'
 import YEvent from '../Util/YEvent.js'
 
 class YArrayEvent extends YEvent {
-  constructor (yarray, remote) {
+  constructor (yarray, remote, transaction) {
     super(yarray)
     this.remote = remote
+    this._transaction = transaction
+  }
+  get addedElements () {
+    const target = this.target
+    const transaction = this._transaction
+    const addedElements = new Set()
+    transaction.newTypes.forEach(function (type) {
+      if (type._parent === target && !transaction.deletedStructs.has(type)) {
+        addedElements.add(type)
+      }
+    })
+    return addedElements
+  }
+  get removedElements () {
+    const target = this.target
+    const transaction = this._transaction
+    const removedElements = new Set()
+    transaction.deletedStructs.forEach(function (struct) {
+      if (struct._parent === target && !transaction.newTypes.has(struct)) {
+        removedElements.add(struct)
+      }
+    })
+    return removedElements
   }
 }
 
 export default class YArray extends Type {
   _callObserver (transaction, parentSubs, remote) {
-    this._callEventHandler(transaction, new YArrayEvent(this, remote))
+    this._callEventHandler(transaction, new YArrayEvent(this, remote, transaction))
   }
   get (pos) {
     let n = this._start
@@ -213,6 +236,17 @@ export default class YArray extends Type {
       throw new Error('Position exceeds array range!')
     }
     this.insertAfter(left, content)
+  }
+  push (content) {
+    let n = this._start
+    let lastUndeleted = null
+    while (n !== null) {
+      if (!n._deleted) {
+        lastUndeleted = n
+      }
+      n = n._right
+    }
+    this.insertAfter(lastUndeleted, content)
   }
   _logString () {
     const left = this._left !== null ? this._left._lastId : null

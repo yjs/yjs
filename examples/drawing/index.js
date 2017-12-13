@@ -10,11 +10,11 @@ let y = new Y({
 })
 
 window.yDrawing = y
-var drawing = y.share.drawing
+var drawing = y.define('drawing', Y.Array)
 var renderPath = d3.svg.line()
   .x(function (d) { return d[0] })
   .y(function (d) { return d[1] })
-  .interpolate('basis')
+  .interpolate('basic')
 
 var svg = d3.select('#drawingCanvas')
   .call(d3.behavior.drag()
@@ -33,14 +33,13 @@ function drawLine (yarray) {
   })
 }
 // call drawLine every time an array is appended
-y.share.drawing.observe(function (event) {
-  event.changedKeys.forEach(function (key) {
-    let path = y.share.drawing.get(key)
-    if (path === undefined) {
-      svg.selectAll('path').remove()
-    } else {
-      drawLine(path)
-    }
+drawing.observe(function (event) {
+  event.removedElements.forEach(function () {
+    // if one is deleted, all will be deleted!!
+    svg.selectAll('path').remove()
+  })
+  event.addedElements.forEach(function (path) {
+    drawLine(path)
   })
 })
 // draw all existing content
@@ -65,7 +64,7 @@ function drag () {
   if (sharedLine != null && ignoreDrag == null) {
     ignoreDrag = window.setTimeout(function () {
       ignoreDrag = null
-    }, 33)
+    }, 10)
     sharedLine.push([d3.mouse(this)])
   }
 }
