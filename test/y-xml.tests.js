@@ -280,7 +280,6 @@ test('deep element insert', async function xml16 (t) {
   deepElement.append(boldElement)
   deepElement.append(attrElement)
   dom0.append(deepElement)
-  console.log(dom0.outerHTML)
   let str0 = dom0.outerHTML
   await flushAll(t, users)
   let str1 = dom1.outerHTML
@@ -340,7 +339,6 @@ test('Filtering remote changes', async function xmlFilteringRemote (t) {
   // check dom
   paragraph.getDom().setAttribute('malicious', 'true')
   span.getDom().setAttribute('malicious', 'true')
-  console.log(xml0.toString())
   // check incoming attributes
   xml1.get(0).get(0).setAttribute('malicious', 'true')
   xml1.insert(0, [new Y.XmlElement('hideMe')])
