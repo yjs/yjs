@@ -55,7 +55,7 @@ class YXmlTreeWalker {
       }
     }
     do {
-      if (!n._deleted && n.constructor === YXmlFragment._YXmlElement && n._start !== null) {
+      if (!n._deleted && (n.constructor === YXmlFragment._YXmlElement || n.constructor === YXmlFragment) && n._start !== null) {
         // walk down in the tree
         n = n._start
       } else {
