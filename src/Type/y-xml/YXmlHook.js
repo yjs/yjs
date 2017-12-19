@@ -24,6 +24,11 @@ export default class YXmlHook extends YMap {
     }
     return this._dom
   }
+  _unbindFromDom () {
+    this._dom._yxml = null
+    this._yxml = null
+    // TODO: cleanup hook?
+  }
   _fromBinary (y, decoder) {
     const missing = super._fromBinary(y, decoder)
     this.hookName = decoder.readVarString()

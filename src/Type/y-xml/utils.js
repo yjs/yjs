@@ -174,7 +174,7 @@ export function reflectChangesOnDom (events, _document) {
         // let anchorViewPosition = getAnchorViewPosition(yxml._scrollElement)
         if (yxml.constructor === YXmlText) {
           yxml._dom.nodeValue = yxml.toString()
-        } else {
+        } else if (event.attributesChanged !== undefined) {
           // update attributes
           event.attributesChanged.forEach(attributeName => {
             const value = yxml.getAttribute(attributeName)

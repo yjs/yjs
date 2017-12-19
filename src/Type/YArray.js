@@ -207,8 +207,12 @@ export default class YArray extends Type {
           prevJsonIns._content.push(c)
         }
       }
-      if (prevJsonIns !== null && y !== null) {
-        prevJsonIns._integrate(y)
+      if (prevJsonIns !== null) {
+        if (y !== null) {
+          prevJsonIns._integrate(y)
+        } else if (prevJsonIns._left === null) {
+          this._start = prevJsonIns
+        }
       }
     })
   }
