@@ -3,7 +3,7 @@ import commonjs from 'rollup-plugin-commonjs'
 import multiEntry from 'rollup-plugin-multi-entry'
 
 export default {
-  input: 'test/*.tests.js',
+  input: 'test/y-xml.tests.js',
   name: 'y-tests',
   sourcemap: true,
   output: {
@@ -11,12 +11,12 @@ export default {
     format: 'umd'
   },
   plugins: [
+    multiEntry(),
     nodeResolve({
       main: true,
       module: true,
       browser: true
     }),
-    commonjs(),
-    multiEntry()
+    commonjs()
   ]
 }

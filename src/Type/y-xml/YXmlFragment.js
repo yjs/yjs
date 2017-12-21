@@ -143,6 +143,23 @@ export default class YXmlFragment extends YArray {
   }
   setDomFilter (f) {
     this._domFilter = f
+    let attributes = new Map()
+    if (this.getAttributes !== undefined) {
+      let attrs = this.getAttributes()
+      for (let key in attrs) {
+        attributes.set(key, attrs[key])
+      }
+    }
+    let result = this._domFilter(this.nodeName, new Map(attributes))
+    if (result === null) {
+      this._delete(this._y)
+    } else {
+      attributes.forEach((value, key) => {
+        if (!result.has(key)) {
+          this.removeAttribute(key)
+        }
+      })
+    }
     this.forEach(xml => {
       xml.setDomFilter(f)
     })
