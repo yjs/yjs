@@ -1,4 +1,3 @@
-import utf8 from 'utf-8'
 import { RootFakeUserID } from '../Util/RootID.js'
 
 const bits7 = 0b1111111
@@ -62,7 +61,8 @@ export default class BinaryEncoder {
   }
 
   writeVarString (str) {
-    let bytes = utf8.setBytesFromString(str)
+    let encodedString = unescape(encodeURIComponent(str))
+    let bytes = encodedString.split('').map(c => c.codePointAt())
     let len = bytes.length
     this.writeVarUint(len)
     for (let i = 0; i < len; i++) {

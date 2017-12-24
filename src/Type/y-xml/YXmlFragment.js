@@ -7,7 +7,7 @@ import YArray from '../YArray.js'
 import YXmlEvent from './YXmlEvent.js'
 import { YXmlText, YXmlHook } from './y-xml'
 import { logID } from '../../MessageHandler/messageToString.js'
-import diff from 'fast-diff'
+import diff from '../../Util/simpleDiff.js'
 
 function domToYXml (parent, doms, _document) {
   const types = []
@@ -291,19 +291,9 @@ export default class YXmlFragment extends YArray {
               }
               switch (mutation.type) {
                 case 'characterData':
-                  var diffs = diff(yxml.toString(), dom.nodeValue)
-                  var pos = 0
-                  for (var i = 0; i < diffs.length; i++) {
-                    var d = diffs[i]
-                    if (d[0] === 0) { // EQUAL
-                      pos += d[1].length
-                    } else if (d[0] === -1) { // DELETE
-                      yxml.delete(pos, d[1].length)
-                    } else { // INSERT
-                      yxml.insert(pos, d[1])
-                      pos += d[1].length
-                    }
-                  }
+                  var change = diff(yxml.toString(), dom.nodeValue)
+                  yxml.delete(change.pos, change.remove)
+                  yxml.insert(change.pos, change.insert)
                   break
                 case 'attributes':
                   if (yxml.constructor === YXmlFragment) {

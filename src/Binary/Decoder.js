@@ -1,4 +1,3 @@
-import utf8 from 'utf-8'
 import ID from '../Util/ID.js'
 import { default as RootID, RootFakeUserID } from '../Util/RootID.js'
 
@@ -91,7 +90,8 @@ export default class BinaryDecoder {
     for (let i = 0; i < len; i++) {
       bytes[i] = this.uint8arr[this.pos++]
     }
-    return utf8.getStringFromBytes(bytes)
+    let encodedString = String.fromCodePoint(...bytes)
+    return decodeURIComponent(escape(encodedString))
   }
   /**
    *  Look ahead and read varString without incrementing position

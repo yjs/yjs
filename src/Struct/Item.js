@@ -216,11 +216,11 @@ export default class Item {
     y.os.put(this)
     transactionTypeChanged(y, parent, parentSub)
     if (this._id.user !== RootFakeUserID) {
-      if (y.connector._forwardAppliedStructs || this._id.user === y.userID) {
+      if (y.connector !== null && (y.connector._forwardAppliedStructs || this._id.user === y.userID)) {
         y.connector.broadcastStruct(this)
       }
       if (y.persistence !== null) {
-        y.persistence.saveOperations(this)
+        y.persistence.saveStruct(y, this)
       }
     }
   }

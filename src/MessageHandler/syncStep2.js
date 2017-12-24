@@ -22,7 +22,7 @@ export function stringifySyncStep2 (y, decoder, strBuilder) {
 }
 
 export function readSyncStep2 (decoder, encoder, y, senderConn, sender) {
-  integrateRemoteStructs(decoder, encoder, y)
+  integrateRemoteStructs(y, decoder)
   readDeleteSet(y, decoder)
   y.connector._setSyncedWith(sender)
 }

@@ -30,7 +30,7 @@ export function sendSyncStep1 (connector, syncUser) {
   connector.send(syncUser, encoder.createBuffer())
 }
 
-export default function writeStructs (encoder, decoder, y, ss) {
+export function writeStructs (y, encoder, ss) {
   const lenPos = encoder.pos
   encoder.writeUint32(0)
   let len = 0
@@ -60,7 +60,7 @@ export function readSyncStep1 (decoder, encoder, y, senderConn, sender) {
   encoder.writeVarString('sync step 2')
   encoder.writeVarString(y.connector.authInfo || '')
   const ss = readStateSet(decoder)
-  writeStructs(encoder, decoder, y, ss)
+  writeStructs(y, encoder, ss)
   writeDeleteSet(y, encoder)
   y.connector.send(senderConn.uid, encoder.createBuffer())
   senderConn.receivedSyncStep2 = true

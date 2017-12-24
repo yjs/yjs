@@ -22,7 +22,7 @@ import debug from 'debug'
 import Transaction from './Transaction.js'
 
 export default class Y extends NamedEventHandler {
-  constructor (opts) {
+  constructor (opts, persistence) {
     super()
     this._opts = opts
     this.userID = opts._userID != null ? opts._userID : generateUserID()
@@ -30,17 +30,22 @@ export default class Y extends NamedEventHandler {
     this.ds = new DeleteStore(this)
     this.os = new OperationStore(this)
     this.ss = new StateStore(this)
-    this.connector = new Y[opts.connector.name](this, opts.connector)
-    if (opts.persistence != null) {
-      this.persistence = new Y[opts.persistence.name](this, opts.persistence)
-      this.persistence.retrieveContent()
-    } else {
-      this.persistence = null
-    }
-    this.connected = true
     this._missingStructs = new Map()
     this._readyToIntegrate = []
     this._transaction = null
+    this.connector = null
+    this.connected = false
+    let initConnection = () => {
+      this.connector = new Y[opts.connector.name](this, opts.connector)
+      this.connected = true
+    }
+    if (persistence !== undefined) {
+      this.persistence = persistence
+      persistence._init(this).then(initConnection)
+    } else {
+      this.persistence = null
+      initConnection()
+    }
   }
   _beforeChange () {}
   transact (f, remote = false) {
@@ -123,11 +128,16 @@ export default class Y extends NamedEventHandler {
     }
   }
   destroy () {
+    super.destroy()
     this.share = null
     if (this.connector.destroy != null) {
       this.connector.destroy()
     } else {
       this.connector.disconnect()
+    }
+    if (this.persistence !== null) {
+      this.persistence.deinit(this)
+      this.persistence = null
     }
     this.os = null
     this.ds = null

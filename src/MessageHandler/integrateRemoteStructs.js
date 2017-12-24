@@ -65,7 +65,7 @@ export function stringifyStructs (y, decoder, strBuilder) {
   }
 }
 
-export function integrateRemoteStructs (decoder, encoder, y) {
+export function integrateRemoteStructs (y, decoder) {
   const len = decoder.readUint32()
   for (let i = 0; i < len; i++) {
     let reference = decoder.readVarUint()

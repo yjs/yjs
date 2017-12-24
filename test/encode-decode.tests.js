@@ -54,6 +54,9 @@ test('varString', async function varString (t) {
   testEncoding(t, writeVarString, readVarString, 'test!')
   testEncoding(t, writeVarString, readVarString, '☺☺☺')
   testEncoding(t, writeVarString, readVarString, '1234')
+  testEncoding(t, writeVarString, readVarString, '쾟')
+  testEncoding(t, writeVarString, readVarString, '龟') // surrogate length 3
+  testEncoding(t, writeVarString, readVarString, '😝') // surrogate length 4
 })
 
 test('varString random', async function varStringRandom (t) {

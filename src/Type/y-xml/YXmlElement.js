@@ -1,4 +1,3 @@
-// import diff from 'fast-diff'
 import { defaultDomFilter } from './utils.js'
 
 import YMap from '../YMap.js'

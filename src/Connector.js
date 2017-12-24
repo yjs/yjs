@@ -268,7 +268,7 @@ export default class AbstractConnector {
         if (messageType === 'sync step 2' && senderConn.auth === 'write') {
           readSyncStep2(decoder, encoder, y, senderConn, sender)
         } else if (messageType === 'update' && (skipAuth || senderConn.auth === 'write')) {
-          integrateRemoteStructs(decoder, encoder, y, senderConn, sender)
+          integrateRemoteStructs(y, decoder)
         } else {
           throw new Error('Unable to receive message')
         }

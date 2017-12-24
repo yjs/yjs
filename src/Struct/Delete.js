@@ -7,7 +7,7 @@ import { logID } from '../MessageHandler/messageToString.js'
  * TODO: implement getItemCleanStartNode for better performance (only one lookup)
  */
 export function deleteItemRange (y, user, clock, range) {
-  const createDelete = y.connector._forwardAppliedStructs
+  const createDelete = y.connector !== null && y.connector._forwardAppliedStructs
   let item = y.os.getItemCleanStart(new ID(user, clock))
   if (item !== null) {
     if (!item._deleted) {
@@ -70,12 +70,12 @@ export default class Delete {
       // from remote
       const id = this._targetID
       deleteItemRange(y, id.user, id.clock, this._length)
-    } else {
+    } else if (y.connector !== null) {
       // from local
       y.connector.broadcastStruct(this)
     }
     if (y.persistence !== null) {
-      y.persistence.saveOperations(this)
+      y.persistence.saveStruct(y, this)
     }
   }
   _logString () {
