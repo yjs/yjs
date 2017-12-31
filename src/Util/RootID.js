@@ -12,6 +12,10 @@ export default class RootID {
     return id !== null && id.user === this.user && id.name === this.name && id.type === this.type
   }
   lessThan (id) {
-    return this.user < id.user || (this.user === id.user && (this.name < id.name || (this.name === id.name && this.type < id.type)))
+    if (id.constructor === RootID) {
+      return this.user < id.user || (this.user === id.user && (this.name < id.name || (this.name === id.name && this.type < id.type)))
+    } else {
+      return true
+    }
   }
 }

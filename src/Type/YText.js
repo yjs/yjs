@@ -24,6 +24,9 @@ export default class YText extends YArray {
     return strBuilder.join('')
   }
   insert (pos, text) {
+    if (text.length <= 0) {
+      return
+    }
     this._transact(y => {
       let left = null
       let right = this._start
