@@ -47,6 +47,11 @@ export default class YXmlElement extends YXmlFragment {
       return dom
     }
   }
+  _bindToDom (dom, _document) {
+    _document = _document || document
+    this._dom = dom
+    dom._yxml = this
+  }
   _fromBinary (y, decoder) {
     const missing = super._fromBinary(y, decoder)
     this.nodeName = decoder.readVarString()

@@ -56,7 +56,7 @@ export default class YMap extends Type {
     this._transact(y => {
       const old = this._map.get(key) || null
       if (old !== null) {
-        if (old instanceof ItemJSON && old._content[0] === value) {
+        if (old.constructor === ItemJSON && !old._deleted && old._content[0] === value) {
           // Trying to overwrite with same value
           // break here
           return value

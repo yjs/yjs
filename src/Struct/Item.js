@@ -87,16 +87,18 @@ export default class Item {
     return this._right
   }
   _delete (y, createDelete = true) {
-    this._deleted = true
-    y.ds.markDeleted(this._id, this._length)
-    if (createDelete) {
-      let del = new Delete()
-      del._targetID = this._id
-      del._length = this._length
-      del._integrate(y, true)
+    if (!this._deleted) {
+      this._deleted = true
+      y.ds.markDeleted(this._id, this._length)
+      if (createDelete) {
+        let del = new Delete()
+        del._targetID = this._id
+        del._length = this._length
+        del._integrate(y, true)
+      }
+      transactionTypeChanged(y, this._parent, this._parentSub)
+      y._transaction.deletedStructs.add(this)
     }
-    transactionTypeChanged(y, this._parent, this._parentSub)
-    y._transaction.deletedStructs.add(this)
   }
   /**
    * This is called right before this struct receives any children.

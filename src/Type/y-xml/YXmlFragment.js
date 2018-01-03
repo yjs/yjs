@@ -101,9 +101,11 @@ export default class YXmlFragment extends YArray {
         } catch (e) {
           console.error(e)
         }
+        /*
         if (this._domObserver !== null) {
           this._domObserver.takeRecords()
         }
+        */
         token = true
       }
     }
@@ -216,9 +218,7 @@ export default class YXmlFragment extends YArray {
     _document = _document || document
     this._dom = dom
     dom._yxml = this
-    // TODO: refine this..
-    if ((this.constructor !== YXmlFragment && this._parent !== this._y) || this._parent === null) {
-      // TODO: only top level YXmlFragment can bind. Also allow YXmlElements..
+    if (this._parent === null) {
       return
     }
     this._y.on('beforeTransaction', beforeTransactionSelectionFixer)
@@ -320,6 +320,9 @@ export default class YXmlFragment extends YArray {
               }
             })
             for (let dom of diffChildren) {
+              if (dom.yOnChildrenChanged !== undefined) {
+                dom.yOnChildrenChanged()
+              }
               if (dom._yxml != null && dom._yxml !== false) {
                 applyChangesFromDom(dom)
               }
