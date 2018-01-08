@@ -24,11 +24,11 @@ export default class AbstractPersistence {
       cnf = getFreshCnf()
       this.ys.set(y, cnf)
       this.init(y)
-      y.on('afterTransaction', () => {
+      y.on('afterTransaction', (y, transaction) => {
         let cnf = this.ys.get(y)
         if (cnf.len > 0) {
           cnf.buffer.setUint32(0, cnf.len)
-          this.saveUpdate(y, cnf.buffer.createBuffer())
+          this.saveUpdate(y, cnf.buffer.createBuffer(), transaction)
           let _cnf = getFreshCnf()
           for (let key in _cnf) {
             cnf[key] = _cnf[key]
@@ -66,12 +66,12 @@ export default class AbstractPersistence {
     y.transact(function () {
       if (model != null) {
         fromBinary(y, new BinaryDecoder(new Uint8Array(model)))
-        y.loaded = true
+        y._setContentReady()
       }
       if (updates != null) {
         for (let i = 0; i < updates.length; i++) {
           integrateRemoteStructs(y, new BinaryDecoder(new Uint8Array(updates[i])))
-          y.loaded = true
+          y._setContentReady()
         }
       }
     })

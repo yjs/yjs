@@ -132,7 +132,7 @@ export default class AbstractConnector {
         f()
       }
       this.whenSyncedListeners = []
-      this.y.loaded = true
+      this.y._setContentReady()
       this.y.emit('synced')
     }
   }

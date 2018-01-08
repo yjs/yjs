@@ -21,12 +21,10 @@ import { addStruct as addType } from './Util/structReferences.js'
 import debug from 'debug'
 import Transaction from './Transaction.js'
 
-import YIndexedDB from '../../y-indexeddb/src/y-indexeddb.js'
-
 export default class Y extends NamedEventHandler {
   constructor (opts, persistence) {
     super()
-    this._loaded = false
+    this._contentReady = false
     this._opts = opts
     this.userID = opts._userID != null ? opts._userID : generateUserID()
     this.share = {}
@@ -41,8 +39,9 @@ export default class Y extends NamedEventHandler {
     let initConnection = () => {
       this.connector = new Y[opts.connector.name](this, opts.connector)
       this.connected = true
+      this.emit('connectorReady')
     }
-    if (persistence !== undefined) {
+    if (persistence != null) {
       this.persistence = persistence
       persistence._init(this).then(initConnection)
     } else {
@@ -50,13 +49,10 @@ export default class Y extends NamedEventHandler {
       initConnection()
     }
   }
-  get loaded () {
-    return this._loaded
-  }
-  set loaded (val) {
-    if (this._loaded === false && val) {
-      this._loaded = true
-      this.emit('loaded')
+  _setContentReady () {
+    if (!this._contentReady) {
+      this._contentReady = true
+      this.emit('content')
     }
   }
   _beforeChange () {}
@@ -177,7 +173,7 @@ Y.extend = function extendYjs () {
 
 // TODO: The following assignments should be moved to yjs-dist
 Y.AbstractConnector = Connector
-Y.Persisence = Persistence
+Y.AbstractPersistence = Persistence
 Y.Array = YArray
 Y.Map = YMap
 Y.Text = YText
