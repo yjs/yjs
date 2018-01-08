@@ -66,10 +66,12 @@ export default class AbstractPersistence {
     y.transact(function () {
       if (model != null) {
         fromBinary(y, new BinaryDecoder(new Uint8Array(model)))
+        y.loaded = true
       }
       if (updates != null) {
         for (let i = 0; i < updates.length; i++) {
           integrateRemoteStructs(y, new BinaryDecoder(new Uint8Array(updates[i])))
+          y.loaded = true
         }
       }
     })

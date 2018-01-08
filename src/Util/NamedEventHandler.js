@@ -27,7 +27,8 @@ export default class NamedEventHandler {
     }
     const listener = this._eventListener.get(name)
     if (listener !== undefined) {
-      listener.remove(f)
+      listener.on.delete(f)
+      listener.once.delete(f)
     }
   }
   emit (name, ...args) {

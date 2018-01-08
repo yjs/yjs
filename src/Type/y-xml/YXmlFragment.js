@@ -185,6 +185,9 @@ export default class YXmlFragment extends YArray {
       this._dom._yxml = null
       this._dom = null
     }
+    if (this._beforeTransactionHandler !== undefined) {
+      this._y.off('beforeTransaction', this._beforeTransactionHandler)
+    }
   }
   insertDomElementsAfter (prev, doms, _document) {
     const types = domToYXml(this, doms, _document)
@@ -275,9 +278,10 @@ export default class YXmlFragment extends YArray {
     })
     // Apply Dom changes on Y.Xml
     if (typeof MutationObserver !== 'undefined') {
-      this._y.on('beforeTransaction', () => {
+      this._beforeTransactionHandler = () => {
         this._domObserverListener(this._domObserver.takeRecords())
-      })
+      }
+      this._y.on('beforeTransaction', this._beforeTransactionHandler)
       this._domObserverListener = mutations => {
         this._mutualExclude(() => {
           this._y.transact(() => {
