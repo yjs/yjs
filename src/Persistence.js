@@ -2,6 +2,7 @@ import BinaryEncoder from './Binary/Encoder.js'
 import BinaryDecoder from './Binary/Decoder.js'
 import { toBinary, fromBinary } from './MessageHandler/binaryEncode.js'
 import { integrateRemoteStructs } from './MessageHandler/integrateRemoteStructs.js'
+import { createMutualExclude } from './Util/mutualExclude.js'
 
 function getFreshCnf () {
   let buffer = new BinaryEncoder()
@@ -16,6 +17,7 @@ export default class AbstractPersistence {
   constructor (opts) {
     this.opts = opts
     this.ys = new Map()
+    this.mutualExclude = createMutualExclude()
   }
 
   _init (y) {
@@ -45,6 +47,10 @@ export default class AbstractPersistence {
     this.ys.delete(y)
   }
 
+  destroy () {
+    this.ys = null
+  }
+
   /* overwrite */
   saveUpdate (buffer) {
   }
@@ -56,24 +62,28 @@ export default class AbstractPersistence {
   saveStruct (y, struct) {
     let cnf = this.ys.get(y)
     if (cnf !== undefined) {
-      struct._toBinary(cnf.buffer)
-      cnf.len++
+      this.mutualExclude(function () {
+        struct._toBinary(cnf.buffer)
+        cnf.len++
+      })
     }
   }
 
   /* overwrite */
   retrieve (y, model, updates) {
-    y.transact(function () {
-      if (model != null) {
-        fromBinary(y, new BinaryDecoder(new Uint8Array(model)))
-        y._setContentReady()
-      }
-      if (updates != null) {
-        for (let i = 0; i < updates.length; i++) {
-          integrateRemoteStructs(y, new BinaryDecoder(new Uint8Array(updates[i])))
+    this.mutualExclude(function () {
+      y.transact(function () {
+        if (model != null) {
+          fromBinary(y, new BinaryDecoder(new Uint8Array(model)))
           y._setContentReady()
         }
-      }
+        if (updates != null) {
+          for (let i = 0; i < updates.length; i++) {
+            integrateRemoteStructs(y, new BinaryDecoder(new Uint8Array(updates[i])))
+            y._setContentReady()
+          }
+        }
+      })
     })
   }
   /* overwrite */

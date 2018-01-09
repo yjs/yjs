@@ -22,11 +22,15 @@ import debug from 'debug'
 import Transaction from './Transaction.js'
 
 export default class Y extends NamedEventHandler {
-  constructor (opts, persistence) {
+  constructor (room, opts, persistence) {
     super()
+    this.room = room
+    if (opts != null) {
+      opts.connector.room = room
+    }
     this._contentReady = false
     this._opts = opts
-    this.userID = opts._userID != null ? opts._userID : generateUserID()
+    this.userID = generateUserID()
     this.share = {}
     this.ds = new DeleteStore(this)
     this.os = new OperationStore(this)
@@ -37,9 +41,11 @@ export default class Y extends NamedEventHandler {
     this.connector = null
     this.connected = false
     let initConnection = () => {
-      this.connector = new Y[opts.connector.name](this, opts.connector)
-      this.connected = true
-      this.emit('connectorReady')
+      if (opts != null) {
+        this.connector = new Y[opts.connector.name](this, opts.connector)
+        this.connected = true
+        this.emit('connectorReady')
+      }
     }
     if (persistence != null) {
       this.persistence = persistence
@@ -103,9 +109,6 @@ export default class Y extends NamedEventHandler {
   set _start (start) {
     return null
   }
-  get room () {
-    return this._opts.connector.room
-  }
   define (name, TypeConstructor) {
     let id = new RootID(name, TypeConstructor)
     let type = this.os.get(id)
@@ -138,10 +141,12 @@ export default class Y extends NamedEventHandler {
   destroy () {
     super.destroy()
     this.share = null
-    if (this.connector.destroy != null) {
-      this.connector.destroy()
-    } else {
-      this.connector.disconnect()
+    if (this.connector != null) {
+      if (this.connector.destroy != null) {
+        this.connector.destroy()
+      } else {
+        this.connector.disconnect()
+      }
     }
     if (this.persistence !== null) {
       this.persistence.deinit(this)

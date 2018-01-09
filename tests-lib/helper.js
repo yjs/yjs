@@ -145,7 +145,7 @@ export async function initArrays (t, opts) {
     } else {
       connOpts = Object.assign({ role: 'slave' }, conn)
     }
-    let y = new Y({
+    let y = new Y(connOpts.room, {
       _userID: i, // evil hackery, don't try this at home
       connector: connOpts
     })
