@@ -25,24 +25,26 @@ export default class AbstractPersistence {
     if (cnf === undefined) {
       cnf = getFreshCnf()
       this.ys.set(y, cnf)
-      this.init(y)
-      y.on('afterTransaction', (y, transaction) => {
-        let cnf = this.ys.get(y)
-        if (cnf.len > 0) {
-          cnf.buffer.setUint32(0, cnf.len)
-          this.saveUpdate(y, cnf.buffer.createBuffer(), transaction)
-          let _cnf = getFreshCnf()
-          for (let key in _cnf) {
-            cnf[key] = _cnf[key]
+      return this.init(y).then(() => {
+        y.on('afterTransaction', (y, transaction) => {
+          let cnf = this.ys.get(y)
+          if (cnf.len > 0) {
+            cnf.buffer.setUint32(0, cnf.len)
+            this.saveUpdate(y, cnf.buffer.createBuffer(), transaction)
+            let _cnf = getFreshCnf()
+            for (let key in _cnf) {
+              cnf[key] = _cnf[key]
+            }
           }
-        }
+        })
+        return this.retrieve(y)
+      }).then(function () {
+        return Promise.resolve(cnf)
       })
-    }
-    return this.retrieve(y).then(function () {
+    } else {
       return Promise.resolve(cnf)
-    })
+    }
   }
-
   deinit (y) {
     this.ys.delete(y)
   }

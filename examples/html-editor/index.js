@@ -4,14 +4,14 @@ window.onload = function () {
   window.yXmlType.bindToDom(document.body)
 }
 
-let persistence = null //  new Y.IndexedDBPersistence()
+const persistence = new Y.IndexedDB()
 
 // initialize a shared object. This function call returns a promise!
-let y = new Y({
+let y = new Y('htmleditor', {
   connector: {
     name: 'websockets-client',
     url: 'http://127.0.0.1:1234',
-    room: 'x'
+    room: 'html-editor'
     // maxBufferLength: 100
   }
 }, persistence)

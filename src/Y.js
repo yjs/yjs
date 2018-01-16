@@ -5,6 +5,7 @@ import { generateUserID } from './Util/generateUserID.js'
 import RootID from './Util/RootID.js'
 import NamedEventHandler from './Util/NamedEventHandler.js'
 import UndoManager from './Util/UndoManager.js'
+import { integrateRemoteStructs } from './MessageHandler/integrateRemoteStructs.js'
 
 import { messageToString, messageToRoomname } from './MessageHandler/messageToString.js'
 
@@ -192,7 +193,8 @@ Y.utils = {
   UndoManager,
   getRelativePosition,
   fromRelativePosition,
-  addType
+  addType,
+  integrateRemoteStructs
 }
 
 Y.debug = debug
