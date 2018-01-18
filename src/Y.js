@@ -62,6 +62,15 @@ export default class Y extends NamedEventHandler {
       this.emit('content')
     }
   }
+  whenContentReady () {
+    if (this._contentReady) {
+      return Promise.resolve()
+    } else {
+      return new Promise(resolve => {
+        this.once('content', resolve)
+      })
+    }
+  }
   _beforeChange () {}
   transact (f, remote = false) {
     let initialCall = this._transaction === null

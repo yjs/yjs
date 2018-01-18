@@ -1,6 +1,7 @@
 export default class NamedEventHandler {
   constructor () {
     this._eventListener = new Map()
+    this._stateListener = new Map()
   }
   _getListener (name) {
     let listeners = this._eventListener.get(name)
@@ -21,6 +22,20 @@ export default class NamedEventHandler {
     let listeners = this._getListener(name)
     listeners.on.add(f)
   }
+  _initStateListener (name) {
+    let state = this._stateListener.get(name)
+    if (state === undefined) {
+      state = {}
+      state.promise = new Promise(function (resolve) {
+        state.resolve = resolve
+      })
+      this._stateListener.set(name, state)
+    }
+    return state
+  }
+  when (name) {
+    return this._initStateListener(name).promise
+  }
   off (name, f) {
     if (name == null || f == null) {
       throw new Error('You must specify event name and function!')
@@ -32,6 +47,7 @@ export default class NamedEventHandler {
     }
   }
   emit (name, ...args) {
+    this._initStateListener(name).resolve()
     const listener = this._eventListener.get(name)
     if (listener !== undefined) {
       listener.on.forEach(f => f.apply(null, args))

@@ -47,10 +47,31 @@ export default class AbstractPersistence {
   }
   deinit (y) {
     this.ys.delete(y)
+    y.persistence = null
   }
 
   destroy () {
     this.ys = null
+  }
+
+  /**
+   * Remove all persisted data that belongs to a room.
+   * Automatically destroys all Yjs all Yjs instances that persist to
+   * the room. If `destroyYjsInstances = false` the persistence functionality
+   * will be removed from the Yjs instances.
+   *
+   * ** Must be overwritten! **
+   */
+  removePersistedData (room, destroyYjsInstances = true) {
+    this.ys.forEach((cnf, y) => {
+      if (y.room === room) {
+        if (destroyYjsInstances) {
+          y.destroy()
+        } else {
+          this.deinit(y)
+        }
+      }
+    })
   }
 
   /* overwrite */
@@ -77,17 +98,17 @@ export default class AbstractPersistence {
       y.transact(function () {
         if (model != null) {
           fromBinary(y, new BinaryDecoder(new Uint8Array(model)))
-          y._setContentReady()
         }
         if (updates != null) {
           for (let i = 0; i < updates.length; i++) {
             integrateRemoteStructs(y, new BinaryDecoder(new Uint8Array(updates[i])))
-            y._setContentReady()
           }
         }
       })
+      y.emit('persistenceReady')
     })
   }
+
   /* overwrite */
   persist (y) {
     return toBinary(y).createBuffer()
