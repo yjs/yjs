@@ -133,7 +133,6 @@ export default class Type extends Item {
     this._deepEventHandler.removeEventListener(f)
   }
   _integrate (y) {
-    y._transaction.newTypes.add(this)
     super._integrate(y)
     this._y = y
     // when integrating children we must make sure to

@@ -7,12 +7,13 @@ const connector = {
     room: 'codemirror-example'
   }
 }
-// initialize a shared object. This function call returns a promise!
-const y = Y('codemirror-example', connector, persistence)
+
+const y = new Y('codemirror-example', connector, persistence)
 window.yCodeMirror = y
 
 var editor = CodeMirror(document.querySelector('#codeMirrorContainer'), {
   mode: 'javascript',
   lineNumbers: true
 })
-y.share.codemirror.bindCodeMirror(editor)
+
+y.define('codemirror', Y.Text).bindCodeMirror(editor)

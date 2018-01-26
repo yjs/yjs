@@ -1,23 +1,17 @@
 /* global Y */
 
-// initialize a shared object. This function call returns a promise!
-Y({
-  db: {
-    name: 'memory'
-  },
+let y = new Y('textarea-example', {
   connector: {
     name: 'websockets-client',
-    room: 'Textarea-example2',
-    // url: '//localhost:1234',
-    url: 'https://yjs-v13.herokuapp.com/'
-  },
-  share: {
-    textarea: 'Text'
-  },
-  timeout: 5000 // reject if no connection was established within 5 seconds
-}).then(function (y) {
-  window.yTextarea = y
-
-  // bind the textarea to a shared text element
-  y.share.textarea.bind(document.getElementById('textfield'))
+    url: 'http://127.0.0.1:1234'
+  }
 })
+
+window.yTextarea = y
+
+// bind the textarea to a shared text element
+let type = y.define('textarea', Y.Text)
+let textarea = document.getElementById('textfield')
+let binding = new Y.TextareaBinding(type, textarea)
+
+// binding.destroy()

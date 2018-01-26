@@ -1,11 +1,9 @@
 /* globals Y, d3 */
 
-let y = new Y({
+let y = new Y('drawing-example', {
   connector: {
     name: 'websockets-client',
-    url: 'http://127.0.0.1:1234',
-    room: 'drawing-example'
-    // maxBufferLength: 100
+    url: 'http://127.0.0.1:1234'
   }
 })
 

@@ -9,17 +9,21 @@ class YArrayEvent extends YEvent {
     super(yarray)
     this.remote = remote
     this._transaction = transaction
+    this._addedElements = null
   }
   get addedElements () {
-    const target = this.target
-    const transaction = this._transaction
-    const addedElements = new Set()
-    transaction.newTypes.forEach(function (type) {
-      if (type._parent === target && !transaction.deletedStructs.has(type)) {
-        addedElements.add(type)
-      }
-    })
-    return addedElements
+    if (this._addedElements === null) {
+      const target = this.target
+      const transaction = this._transaction
+      const addedElements = new Set()
+      transaction.newTypes.forEach(function (type) {
+        if (type._parent === target && !transaction.deletedStructs.has(type)) {
+          addedElements.add(type)
+        }
+      })
+      this._addedElements = addedElements
+    }
+    return this._addedElements
   }
   get removedElements () {
     const target = this.target

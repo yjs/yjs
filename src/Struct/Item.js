@@ -113,9 +113,11 @@ export default class Item {
    * - Check if this is struct deleted
    */
   _integrate (y) {
+    y._transaction.newTypes.add(this)
     const parent = this._parent
     const selfID = this._id
-    const userState = selfID === null ? 0 : y.ss.getState(selfID.user)
+    const user = selfID === null ? y.userID : selfID.user
+    const userState = y.ss.getState(user)
     if (selfID === null) {
       this._id = y.ss.getNextID(this._length)
     } else if (selfID.user === RootFakeUserID) {

@@ -1,10 +1,9 @@
 /* global Y */
 
-// initialize a shared object. This function call returns a promise!
-var y = new Y({
+let y = new Y('chat-example', {
   connector: {
     name: 'websockets-client',
-    room: 'chat-example'
+    url: 'http://127.0.0.1:1234'
   }
 })
 
@@ -23,6 +22,7 @@ function appendMessage (message, position) {
   p.appendChild(document.createTextNode(message.message))
   chatcontainer.insertBefore(p, chatcontainer.children[position] || null)
 }
+
 // This function makes sure that only 7 messages exist in the chat history.
 // The rest is deleted
 function cleanupChat () {
@@ -30,23 +30,17 @@ function cleanupChat () {
     chatprotocol.delete(0, chatprotocol.length - 7)
   }
 }
+cleanupChat()
+
 // Insert the initial content
 chatprotocol.toArray().forEach(appendMessage)
-cleanupChat()
 
 // whenever content changes, make sure to reflect the changes in the DOM
 chatprotocol.observe(function (event) {
-  if (event.type === 'insert') {
-    for (let i = 0; i < event.length; i++) {
-      appendMessage(event.values[i], event.index + i)
-    }
-  } else if (event.type === 'delete') {
-    for (let i = 0; i < event.length; i++) {
-      chatcontainer.children[event.index].remove()
-    }
-  }
   // concurrent insertions may result in a history > 7, so cleanup here
   cleanupChat()
+  chatcontainer.innerHTML = ''
+  chatprotocol.toArray().forEach(appendMessage)
 })
 document.querySelector('#chatform').onsubmit = function (event) {
   // the form is submitted

@@ -107,15 +107,13 @@ Y.XmlHook.addHook('magic-drawing', {
   }
 })
 
-// initialize a shared object. This function call returns a promise!
-let y = new Y({
+let y = new Y('html-editor-drawing-hook-example', {
   connector: {
     name: 'websockets-client',
-    url: 'http://127.0.0.1:1234',
-    room: 'html-editor-example6'
-    // maxBufferLength: 100
+    url: 'http://127.0.0.1:1234'
   }
 })
+
 window.yXml = y
 window.yXmlType = y.define('xml', Y.XmlFragment)
 window.undoManager = new Y.utils.UndoManager(window.yXmlType, {
