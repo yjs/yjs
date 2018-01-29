@@ -22,6 +22,8 @@ import { addStruct as addType } from './Util/structReferences.js'
 import debug from 'debug'
 import Transaction from './Transaction.js'
 
+import TextareaBinding from './Binding/TextareaBinding.js'
+
 export default class Y extends NamedEventHandler {
   constructor (room, opts, persistence) {
     super()
@@ -196,6 +198,8 @@ Y.XmlElement = YXmlElement
 Y.XmlFragment = YXmlFragment
 Y.XmlText = YXmlText
 Y.XmlHook = YXmlHook
+
+Y.TextareaBinding = TextareaBinding
 
 Y.utils = {
   BinaryDecoder,

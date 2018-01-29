@@ -11,7 +11,5 @@ window.yTextarea = y
 
 // bind the textarea to a shared text element
 let type = y.define('textarea', Y.Text)
-let textarea = document.getElementById('textfield')
+let textarea = document.querySelector('textarea')
 let binding = new Y.TextareaBinding(type, textarea)
-
-// binding.destroy()
