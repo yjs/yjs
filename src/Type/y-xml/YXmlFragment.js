@@ -152,18 +152,20 @@ export default class YXmlFragment extends YArray {
         attributes.set(key, attrs[key])
       }
     }
-    let result = this._domFilter(this.nodeName, new Map(attributes))
-    if (result === null) {
-      this._delete(this._y)
-    } else {
-      attributes.forEach((value, key) => {
-        if (!result.has(key)) {
-          this.removeAttribute(key)
-        }
+    this._y.transact(() => {
+      let result = this._domFilter(this.nodeName, new Map(attributes))
+      if (result === null) {
+        this._delete(this._y)
+      } else {
+        attributes.forEach((value, key) => {
+          if (!result.has(key)) {
+            this.removeAttribute(key)
+          }
+        })
+      }
+      this.forEach(xml => {
+        xml.setDomFilter(f)
       })
-    }
-    this.forEach(xml => {
-      xml.setDomFilter(f)
     })
   }
   _callObserver (transaction, parentSubs, remote) {

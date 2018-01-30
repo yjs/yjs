@@ -50,7 +50,7 @@ function applyReverseOperation (y, scope, reverseBuffer) {
           )
         ) {
           performedUndo = true
-          op = op._copy(undoOp.deletedStructs)
+          op = op._copy(undoOp.deletedStructs, true)
           op._integrate(y)
         }
       }

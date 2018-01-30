@@ -55,14 +55,16 @@ export default class Item {
   /**
    * Copy the effect of struct
    */
-  _copy () {
+  _copy (undeleteChildren, copyPosition) {
     let struct = new this.constructor()
-    struct._origin = this._left
-    struct._left = this._left
-    struct._right = this
-    struct._right_origin = this
-    struct._parent = this._parent
-    struct._parentSub = this._parentSub
+    if (copyPosition) {
+      struct._origin = this._left
+      struct._left = this._left
+      struct._right = this
+      struct._right_origin = this
+      struct._parent = this._parent
+      struct._parentSub = this._parentSub
+    }
     return struct
   }
   get _lastId () {

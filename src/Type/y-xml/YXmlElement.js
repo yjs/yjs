@@ -20,8 +20,8 @@ export default class YXmlElement extends YXmlFragment {
       this._domFilter = arg2
     }
   }
-  _copy (undeleteChildren) {
-    let struct = super._copy(undeleteChildren)
+  _copy (undeleteChildren, copyPosition) {
+    let struct = super._copy(undeleteChildren, copyPosition)
     struct.nodeName = this.nodeName
     return struct
   }
