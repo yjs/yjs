@@ -24,6 +24,8 @@ import Transaction from './Transaction.js'
 
 import TextareaBinding from './Binding/TextareaBinding.js'
 
+import { toBinary, fromBinary } from './MessageHandler/binaryEncode.js'
+
 export default class Y extends NamedEventHandler {
   constructor (room, opts, persistence) {
     super()
@@ -207,7 +209,9 @@ Y.utils = {
   getRelativePosition,
   fromRelativePosition,
   addType,
-  integrateRemoteStructs
+  integrateRemoteStructs,
+  toBinary,
+  fromBinary
 }
 
 Y.debug = debug
