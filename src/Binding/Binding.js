@@ -1,7 +1,6 @@
 
 import { createMutualExclude } from '../Util/mutualExclude.js'
 
-
 export default class Binding {
   constructor (type, target) {
     this.type = type

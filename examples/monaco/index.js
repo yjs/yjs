@@ -9,7 +9,6 @@ let y = new Y('monaco-example', {
   }
 })
 
-
 require(['vs/editor/editor.main'], function () {
   window.yMonaco = y
 
