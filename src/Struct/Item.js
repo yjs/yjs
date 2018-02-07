@@ -92,11 +92,15 @@ export default class Item {
     if (!this._deleted) {
       this._deleted = true
       y.ds.markDeleted(this._id, this._length)
+      let del = new Delete()
+      del._targetID = this._id
+      del._length = this._length
       if (createDelete) {
-        let del = new Delete()
-        del._targetID = this._id
-        del._length = this._length
+        // broadcast and persists Delete
         del._integrate(y, true)
+      } else if (y.persistence !== null) {
+        // only persist Delete
+        y.persistence.saveStruct(y, del)
       }
       transactionTypeChanged(y, this._parent, this._parentSub)
       y._transaction.deletedStructs.add(this)
