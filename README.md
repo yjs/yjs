@@ -64,6 +64,19 @@ missing modules.
 <script src="./bower_components/yjs/y.js"></script>
 ```
 
+### CDN
+```
+<script src="https://cdn.jsdelivr.net/npm/yjs@12/src/y.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/y-array@10/dist/y-array.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/y-websockets-client@8/dist/y-websockets-client.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/y-memory@8/dist/y-memory.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/y-array@10/dist/y-array.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/y-map@10/dist/y-map.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/y-text@9/dist/y-text.js"></script>
+// ..
+// do the same for all modules you want to use
+```
+
 ### Npm
 ```
 npm install --save yjs % add all y-* modules you want to use
