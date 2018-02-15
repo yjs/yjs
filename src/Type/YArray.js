@@ -45,7 +45,7 @@ export default class YArray extends Type {
   get (pos) {
     let n = this._start
     while (n !== null) {
-      if (!n._deleted) {
+      if (!n._deleted && n._countable) {
         if (pos < n._length) {
           if (n.constructor === ItemJSON || n.constructor === ItemString) {
             return n._content[pos]
@@ -84,7 +84,7 @@ export default class YArray extends Type {
     let pos = 0
     let n = this._start
     while (n !== null) {
-      if (!n._deleted) {
+      if (!n._deleted && n._countable) {
         if (n instanceof Type) {
           f(n, pos++, this)
         } else {
@@ -103,7 +103,7 @@ export default class YArray extends Type {
     let length = 0
     let n = this._start
     while (n !== null) {
-      if (!n._deleted) {
+      if (!n._deleted && n._countable) {
         length += n._length
       }
       n = n._right
@@ -144,7 +144,7 @@ export default class YArray extends Type {
       let item = this._start
       let count = 0
       while (item !== null && length > 0) {
-        if (!item._deleted) {
+        if (!item._deleted && item._countable) {
           if (count <= pos && pos < count + item._length) {
             const diffDel = pos - count
             item = item._splitAt(this._y, diffDel)

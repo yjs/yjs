@@ -74,6 +74,13 @@ export default class Item {
     return 1
   }
   /**
+   * Some elements are not supposed to be addressable. For example, an
+   * ItemFormat should not be retrievable via yarray.get(pos)
+   */
+  get _countable () {
+    return true
+  }
+  /**
    * Splits this struct so that another struct can be inserted in-between.
    * This must be overwritten if _length > 1
    * Returns right part after split
