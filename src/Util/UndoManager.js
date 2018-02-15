@@ -51,8 +51,8 @@ function applyReverseOperation (y, scope, reverseBuffer) {
           (
             op._id.user !== y.userID ||
             undoOp.fromState === null ||
-            op._id.clock < undoOp.fromState ||
-            op._id.clock > undoOp.toState
+            op._id.clock < undoOp.fromState.clock ||
+            op._id.clock > undoOp.toState.clock
           )
         ) {
           performedUndo = true
