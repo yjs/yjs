@@ -32,12 +32,10 @@ function applyReverseOperation (y, scope, reverseBuffer) {
       let undoOp = reverseBuffer.pop()
       // make sure that it is possible to iterate {from}-{to}
       if (undoOp.fromState !== null) {
-        let start = y.os.getItemCleanStart(undoOp.fromState)
+        y.os.getItemCleanStart(undoOp.fromState)
         y.os.getItemCleanEnd(undoOp.toState)
-        console.log(start)
         y.os.iterate(undoOp.fromState, undoOp.toState, op => {
-          debugger
-          if (op._deleted && op._redone !== null) {
+          while (op._deleted && op._redone !== null) {
             op = op._redone
           }
           if (op._deleted === false && isStructInScope(y, op, scope)) {
@@ -49,7 +47,13 @@ function applyReverseOperation (y, scope, reverseBuffer) {
       for (let op of undoOp.deletedStructs) {
         if (
           isStructInScope(y, op, scope) &&
-          op._parent !== y
+          op._parent !== y &&
+          (
+            op._id.user !== y.userID ||
+            undoOp.fromState === null ||
+            op._id.clock < undoOp.fromState ||
+            op._id.clock > undoOp.toState
+          )
         ) {
           performedUndo = true
           op._redo(y)
@@ -78,7 +82,12 @@ export default class UndoManager {
           let lastUndoOp = this._undoBuffer.length > 0 ? this._undoBuffer[this._undoBuffer.length - 1] : null
           if (lastUndoOp !== null && reverseOperation.created - lastUndoOp.created <= options.captureTimeout) {
             lastUndoOp.created = reverseOperation.created
-            lastUndoOp.toState = reverseOperation.toState
+            if (reverseOperation.toState !== null) {
+              lastUndoOp.toState = reverseOperation.toState
+              if (lastUndoOp.fromState === null) {
+                lastUndoOp.fromState = reverseOperation.fromState
+              }
+            }
             reverseOperation.deletedStructs.forEach(lastUndoOp.deletedStructs.add, lastUndoOp.deletedStructs)
           } else {
             this._undoBuffer.push(reverseOperation)
