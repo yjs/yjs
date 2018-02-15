@@ -6,8 +6,8 @@ export default class ItemString extends Item {
     super()
     this._content = null
   }
-  _copy (undeleteChildren, copyPosition) {
-    let struct = super._copy(undeleteChildren, copyPosition)
+  _copy () {
+    let struct = super._copy()
     struct._content = this._content
     return struct
   }

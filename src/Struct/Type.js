@@ -79,40 +79,6 @@ export default class Type extends Item {
       type = type._parent
     }
   }
-  _copy (undeleteChildren, copyPosition) {
-    let copy = super._copy(undeleteChildren, copyPosition)
-    let map = new Map()
-    copy._map = map
-    for (let [key, value] of this._map) {
-      if (undeleteChildren.has(value) || !value.deleted) {
-        let _item = value._copy(undeleteChildren, false)
-        _item._parent = copy
-        _item._parentSub = key
-        map.set(key, _item)
-      }
-    }
-    let prevUndeleted = null
-    copy._start = null
-    let item = this._start
-    while (item !== null) {
-      if (undeleteChildren.has(item) || !item.deleted) {
-        let _item = item._copy(undeleteChildren, false)
-        _item._left = prevUndeleted
-        _item._origin = prevUndeleted
-        _item._right = null
-        _item._right_origin = null
-        _item._parent = copy
-        if (prevUndeleted === null) {
-          copy._start = _item
-        } else {
-          prevUndeleted._right = _item
-        }
-        prevUndeleted = _item
-      }
-      item = item._right
-    }
-    return copy
-  }
   _transact (f) {
     const y = this._y
     if (y !== null) {
