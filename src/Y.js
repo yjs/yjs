@@ -23,6 +23,7 @@ import debug from 'debug'
 import Transaction from './Transaction.js'
 
 import TextareaBinding from './Binding/TextareaBinding.js'
+import QuillBinding from './Binding/QuillBinding.js'
 
 import { toBinary, fromBinary } from './MessageHandler/binaryEncode.js'
 
@@ -202,6 +203,7 @@ Y.XmlText = YXmlText
 Y.XmlHook = YXmlHook
 
 Y.TextareaBinding = TextareaBinding
+Y.QuillBinding = QuillBinding
 
 Y.utils = {
   BinaryDecoder,

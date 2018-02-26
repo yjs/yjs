@@ -1,32 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!-- quill does not include dist files! We are using the hosted version instead -->
-  <!--link rel="stylesheet" href="../bower_components/quill/dist/quill.snow.css" /-->
-  <link href="https://cdn.quilljs.com/1.0.4/quill.snow.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.2.0/styles/monokai-sublime.min.css" rel="stylesheet">
-  <style>
-    #quill-container {
-      border: 1px solid gray;
-      box-shadow: 0px 0px 10px gray;
-    }
-  </style>
+  <!-- Main Quill library -->
+  <script src="https://cdn.quilljs.com/1.3.5/quill.js"></script>
+  <!-- Theme included stylesheets -->
+  <link href="https://cdn.quilljs.com/1.3.5/quill.snow.css" rel="stylesheet">
+  <script src="../../y.js"></script>
+  <script src='../../../y-websockets-client/y-websockets-client.js'></script>
 </head>
 <body>
   <div id="quill-container">
     <div id="quill">
     </div>
   </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.js" type="text/javascript"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.2.0/highlight.min.js" type="text/javascript"></script>
-  <script src="https://cdn.quilljs.com/1.0.4/quill.js"></script>
-  <!-- quill does not include dist files! We are using the hosted version instead (see above)
-  <script src="../bower_components/quill/dist/quill.js"></script>
-  -->
-  <script src="../../y.js"></script>
-  <script src='../../../y-websockets-client/y-websockets-client.js'></script>
   <script src="./index.js"></script>
 </body>
 </html>

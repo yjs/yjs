@@ -6,6 +6,7 @@ import Chance from 'chance'
 import ItemJSON from '../src/Struct/ItemJSON.js'
 import ItemString from '../src/Struct/ItemString.js'
 import { defragmentItemContent } from '../src/Util/defragmentItemContent.js'
+import Quill from 'quill'
 
 export const Y = _Y
 
@@ -92,9 +93,14 @@ export async function compareUsers (t, users) {
   await wait()
   await flushAll(t, users)
 
-  var userArrayValues = users.map(u => u.get('array', Y.Array).toJSON().map(val => JSON.stringify(val)))
-  var userMapValues = users.map(u => u.get('map', Y.Map).toJSON())
-  var userXmlValues = users.map(u => u.get('xml', Y.Xml).toString())
+  var userArrayValues = users.map(u => u.define('array', Y.Array).toJSON().map(val => JSON.stringify(val)))
+  var userMapValues = users.map(u => u.define('map', Y.Map).toJSON())
+  var userXmlValues = users.map(u => u.define('xml', Y.Xml).toString())
+  var userTextValues = users.map(u => u.define('text', Y.Text).toDelta())
+  var userQuillValues = users.map(u => {
+    u.quill.update('yjs') // get latest changes
+    return u.quill.getContents().ops
+  })
 
   var data = users.map(u => {
     defragmentItemContent(u)
@@ -124,6 +130,8 @@ export async function compareUsers (t, users) {
       t.compare(userArrayValues[i], userArrayValues[i + 1], 'array types')
       t.compare(userMapValues[i], userMapValues[i + 1], 'map types')
       t.compare(userXmlValues[i], userXmlValues[i + 1], 'xml types')
+      t.compare(userTextValues[i], userTextValues[i + 1], 'text types')
+      t.compare(userQuillValues[i], userQuillValues[i + 1], 'quill delta content')
       t.compare(data[i].os, data[i + 1].os, 'os')
       t.compare(data[i].ds, data[i + 1].ds, 'ds')
       t.compare(data[i].ss, data[i + 1].ss, 'ss')
@@ -153,6 +161,13 @@ export async function initArrays (t, opts) {
     result['array' + i] = y.define('array', Y.Array)
     result['map' + i] = y.define('map', Y.Map)
     result['xml' + i] = y.define('xml', Y.XmlElement)
+    const textType = y.define('text', Y.Text)
+    result['text' + i] = textType
+    const quill = new Quill(document.createElement('div'))
+    const quillBinding = new Y.QuillBinding(textType, quill)
+    result['quill' + i] = quill
+    result['quillBinding' + i] = quillBinding
+    y.quill = quill // put quill on the y object (so we can use it later)
     y.get('xml').setDomFilter(function (nodeName, attrs) {
       if (nodeName === 'HIDDEN') {
         return null

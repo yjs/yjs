@@ -20,7 +20,7 @@ export default {
     }),
     commonjs(),
     babel(),
-    uglify({
+    /*uglify({
       mangle: {
         except: ['YMap', 'Y', 'YArray', 'YText', 'YXmlHook', 'YXmlFragment', 'YXmlElement', 'YXmlEvent', 'YXmlText', 'YEvent', 'YArrayEvent', 'YMapEvent', 'Type', 'Delete', 'ItemJSON', 'ItemString', 'Item']
       },
@@ -34,7 +34,7 @@ export default {
           }
         }
       }
-    })
+    })*/
   ],
   banner: `
 /**

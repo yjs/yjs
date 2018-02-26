@@ -6,6 +6,8 @@ import { YXmlFragment, YXmlElement, YXmlText, YXmlHook } from '../Type/y-xml/y-x
 import Delete from '../Struct/Delete.js'
 import ItemJSON from '../Struct/ItemJSON.js'
 import ItemString from '../Struct/ItemString.js'
+import ItemFormat from '../Struct/ItemFormat.js'
+import ItemEmbed from '../Struct/ItemEmbed.js'
 
 const structs = new Map()
 const references = new Map()
@@ -23,8 +25,11 @@ export function getReference (typeConstructor) {
   return references.get(typeConstructor)
 }
 
+// TODO: reorder (Item* should have low numbers)
 addStruct(0, ItemJSON)
 addStruct(1, ItemString)
+addStruct(10, ItemFormat)
+addStruct(11, ItemEmbed)
 addStruct(2, Delete)
 
 addStruct(3, YArray)

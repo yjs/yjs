@@ -90,7 +90,7 @@ export default class BinaryDecoder {
     for (let i = 0; i < len; i++) {
       bytes[i] = this.uint8arr[this.pos++]
     }
-    let encodedString = String.fromCodePoint(...bytes)
+    let encodedString = bytes.map(b => String.fromCodePoint(b)).join('')
     return decodeURIComponent(escape(encodedString))
   }
   /**

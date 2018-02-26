@@ -4,12 +4,13 @@ import ItemString from '../Struct/ItemString.js'
 import { logID } from '../MessageHandler/messageToString.js'
 import YEvent from '../Util/YEvent.js'
 
-class YArrayEvent extends YEvent {
+export class YArrayEvent extends YEvent {
   constructor (yarray, remote, transaction) {
     super(yarray)
     this.remote = remote
     this._transaction = transaction
     this._addedElements = null
+    this._removedElements = null
   }
   get addedElements () {
     if (this._addedElements === null) {
@@ -26,15 +27,18 @@ class YArrayEvent extends YEvent {
     return this._addedElements
   }
   get removedElements () {
-    const target = this.target
-    const transaction = this._transaction
-    const removedElements = new Set()
-    transaction.deletedStructs.forEach(function (struct) {
-      if (struct._parent === target && !transaction.newTypes.has(struct)) {
-        removedElements.add(struct)
-      }
-    })
-    return removedElements
+    if (this._removedElements === null) {
+      const target = this.target
+      const transaction = this._transaction
+      const removedElements = new Set()
+      transaction.deletedStructs.forEach(function (struct) {
+        if (struct._parent === target && !transaction.newTypes.has(struct)) {
+          removedElements.add(struct)
+        }
+      })
+      this._removedElements = removedElements
+    }
+    return this._removedElements
   }
 }
 

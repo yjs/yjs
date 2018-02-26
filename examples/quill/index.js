@@ -1,40 +1,33 @@
 /* global Y, Quill */
 
-// initialize a shared object. This function call returns a promise!
-
-Y({
-  db: {
-    name: 'memory'
-  },
+let y = new Y('htmleditor10', {
   connector: {
     name: 'websockets-client',
-    room: 'richtext-example-quill-1.0-test',
-    url: 'http://localhost:1234'
-  },
-  sourceDir: '/bower_components',
-  share: {
-    richtext: 'Richtext' // y.share.richtext is of type Y.Richtext
+    url: 'http://127.0.0.1:1234'
   }
-}).then(function (y) {
-  window.yQuill = y
-
-  // create quill element
-  window.quill = new Quill('#quill', {
-    modules: {
-      formula: true,
-      syntax: true,
-      toolbar: [
-        [{ size: ['small', false, 'large', 'huge'] }],
-        ['bold', 'italic', 'underline'],
-        [{ color: [] }, { background: [] }],    // Snow theme fills in values
-        [{ script: 'sub' }, { script: 'super' }],
-        ['link', 'image'],
-        ['link', 'code-block'],
-        [{ list: 'ordered' }]
-      ]
-    },
-    theme: 'snow'
-  })
-  // bind quill to richtext type
-  y.share.richtext.bind(window.quill)
 })
+
+let quill = new Quill('#quill-container', {
+  modules: {
+    toolbar: [
+      [{ header: [1, 2, false] }],
+      ['bold', 'italic', 'underline'],
+      ['image', 'code-block'],
+      [{ color: [] }, { background: [] }],    // Snow theme fills in values
+      [{ script: 'sub' }, { script: 'super' }],
+      ['link', 'image'],
+      ['link', 'code-block'],
+      [{ list: 'ordered' }, { list: 'bullet' }]
+    ]
+  },
+  placeholder: 'Compose an epic...',
+  theme: 'snow'  // or 'bubble'
+})
+
+let yText = y.define('quill', Y.Text)
+
+let quillBinding = new Y.QuillBinding(yText, quill)
+window.quillBinding = quillBinding
+window.yText = yText
+window.y = y
+window.quill = quill
