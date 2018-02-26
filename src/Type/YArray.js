@@ -225,29 +225,31 @@ export default class YArray extends Type {
     })
   }
   insert (pos, content) {
-    let left = null
-    let right = this._start
-    let count = 0
-    const y = this._y
-    while (right !== null) {
-      const rightLen = right._deleted ? 0 : (right._length - 1)
-      if (count <= pos && pos <= count + rightLen) {
-        const splitDiff = pos - count
-        right = right._splitAt(y, splitDiff)
-        left = right._left
-        count += splitDiff
-        break
+    this._transact(() => {
+      let left = null
+      let right = this._start
+      let count = 0
+      const y = this._y
+      while (right !== null) {
+        const rightLen = right._deleted ? 0 : (right._length - 1)
+        if (count <= pos && pos <= count + rightLen) {
+          const splitDiff = pos - count
+          right = right._splitAt(y, splitDiff)
+          left = right._left
+          count += splitDiff
+          break
+        }
+        if (!right._deleted) {
+          count += right._length
+        }
+        left = right
+        right = right._right
       }
-      if (!right._deleted) {
-        count += right._length
+      if (pos > count) {
+        throw new Error('Position exceeds array range!')
       }
-      left = right
-      right = right._right
-    }
-    if (pos > count) {
-      throw new Error('Position exceeds array range!')
-    }
-    this.insertAfter(left, content)
+      this.insertAfter(left, content)
+    })
   }
   push (content) {
     let n = this._start
