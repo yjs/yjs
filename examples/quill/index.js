@@ -1,6 +1,6 @@
 /* global Y, Quill */
 
-let y = new Y('htmleditor10', {
+let y = new Y('quill-cursors-0', {
   connector: {
     name: 'websockets-client',
     url: 'http://127.0.0.1:1234'
