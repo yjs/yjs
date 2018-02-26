@@ -18,7 +18,7 @@ window.undoManager = new Y.utils.UndoManager(window.yXmlType, {
 })
 
 document.onkeydown = function interceptUndoRedo (e) {
-  if (e.keyCode === 90 && e.metaKey) {
+  if (e.keyCode === 90 && (e.metaKey || e.ctrlKey)) {
     if (!e.shiftKey) {
       window.undoManager.undo()
     } else {

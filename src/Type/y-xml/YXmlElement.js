@@ -20,8 +20,8 @@ export default class YXmlElement extends YXmlFragment {
       this._domFilter = arg2
     }
   }
-  _copy (undeleteChildren, copyPosition) {
-    let struct = super._copy(undeleteChildren, copyPosition)
+  _copy () {
+    let struct = super._copy()
     struct.nodeName = this.nodeName
     return struct
   }
@@ -36,7 +36,8 @@ export default class YXmlElement extends YXmlFragment {
       let attributes = new Map()
       for (let i = 0; i < dom.attributes.length; i++) {
         let attr = dom.attributes[i]
-        attributes.set(attr.name, attr.value)
+        // get attribute via getAttribute for custom element support (some write something different in attr.value)
+        attributes.set(attr.name, dom.getAttribute(attr.name))
       }
       attributes = this._domFilter(dom, attributes)
       attributes.forEach((value, name) => {

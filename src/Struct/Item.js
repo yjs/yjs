@@ -56,22 +56,56 @@ export default class Item {
     this._parent = null
     this._parentSub = null
     this._deleted = false
+    this._redone = null
   }
   /**
-   * Copy the effect of struct
+   * Create a operation with the same effect (without position effect)
    */
-  _copy (undeleteChildren, copyPosition) {
-    let struct = new this.constructor()
-    if (copyPosition) {
-      struct._origin = this._left
-      struct._left = this._left
-      struct._right = this
-      struct._right_origin = this
-      struct._parent = this._parent
-      struct._parentSub = this._parentSub
+  _copy () {
+    return new this.constructor()
+  }
+  /**
+   * Redo the effect of this operation.
+   */
+  _redo (y) {
+    if (this._redone !== null) {
+      return this._redone
     }
+    let struct = this._copy()
+    let left = this._left
+    let right = this
+    let parent = this._parent
+    // make sure that parent is redone
+    if (parent._deleted === true && parent._redone === null) {
+      parent._redo(y)
+    }
+    if (parent._redone !== null) {
+      parent = parent._redone
+      // find next cloned items
+      while (left !== null && left._redone === null) {
+        left = left._left
+      }
+      if (left !== null) {
+        left = left._redone
+      }
+      while (right !== null && right._redone === null) {
+        right = right._right
+      }
+      if (right !== null) {
+        right = right._redone
+      }
+    }
+    struct._origin = left
+    struct._left = left
+    struct._right = right
+    struct._right_origin = right
+    struct._parent = parent
+    struct._parentSub = this._parentSub
+    struct._integrate(y)
+    this._redone = struct
     return struct
   }
+
   get _lastId () {
     return new ID(this._id.user, this._id.clock + this._length - 1)
   }
@@ -104,11 +138,15 @@ export default class Item {
     if (!this._deleted) {
       this._deleted = true
       y.ds.markDeleted(this._id, this._length)
+      let del = new Delete()
+      del._targetID = this._id
+      del._length = this._length
       if (createDelete) {
-        let del = new Delete()
-        del._targetID = this._id
-        del._length = this._length
+        // broadcast and persists Delete
         del._integrate(y, true)
+      } else if (y.persistence !== null) {
+        // only persist Delete
+        y.persistence.saveStruct(y, del)
       }
       transactionTypeChanged(y, this._parent, this._parentSub)
       y._transaction.deletedStructs.add(this)

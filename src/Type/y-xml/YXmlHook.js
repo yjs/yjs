@@ -14,8 +14,8 @@ export default class YXmlHook extends YMap {
       getHook(hookName).fillType(dom, this)
     }
   }
-  _copy (undeleteChildren, copyPosition) {
-    const struct = super._copy(undeleteChildren, copyPosition)
+  _copy () {
+    const struct = super._copy()
     struct.hookName = this.hookName
     return struct
   }

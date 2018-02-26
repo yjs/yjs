@@ -4,8 +4,10 @@ import { readDeleteSet, writeDeleteSet } from './deleteSet.js'
 import BinaryEncoder from '../Binary/Encoder.js'
 
 export function fromBinary (y, decoder) {
-  integrateRemoteStructs(y, decoder)
-  readDeleteSet(y, decoder)
+  y.transact(function () {
+    integrateRemoteStructs(y, decoder)
+    readDeleteSet(y, decoder)
+  })
 }
 
 export function toBinary (y) {
