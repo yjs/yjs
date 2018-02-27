@@ -31,7 +31,7 @@ export default class QuillBinding extends Binding {
   destroy () {
     // Remove everything that is handled by this class
     this.type.unobserve(this._typeObserver)
-    this.target.unobserve(this._quillObserver)
+    this.target.off('text-change', this._quillObserver)
     super.destroy()
   }
 }
