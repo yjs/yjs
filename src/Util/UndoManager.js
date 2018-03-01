@@ -73,6 +73,7 @@ export default class UndoManager {
     this._scope = scope
     this._undoing = false
     this._redoing = false
+    this._lastTransactionWasUndo = false
     const y = scope._y
     this.y = y
     y.on('afterTransaction', (y, transaction, remote) => {
@@ -80,7 +81,12 @@ export default class UndoManager {
         let reverseOperation = new ReverseOperation(y, transaction)
         if (!this._undoing) {
           let lastUndoOp = this._undoBuffer.length > 0 ? this._undoBuffer[this._undoBuffer.length - 1] : null
-          if (lastUndoOp !== null && reverseOperation.created - lastUndoOp.created <= options.captureTimeout) {
+          if (
+            this._redoing === false &&
+            this._lastTransactionWasUndo === false &&
+            lastUndoOp !== null &&
+            reverseOperation.created - lastUndoOp.created <= options.captureTimeout
+          ) {
             lastUndoOp.created = reverseOperation.created
             if (reverseOperation.toState !== null) {
               lastUndoOp.toState = reverseOperation.toState
@@ -90,12 +96,14 @@ export default class UndoManager {
             }
             reverseOperation.deletedStructs.forEach(lastUndoOp.deletedStructs.add, lastUndoOp.deletedStructs)
           } else {
+            this._lastTransactionWasUndo = false
             this._undoBuffer.push(reverseOperation)
           }
           if (!this._redoing) {
             this._redoBuffer = []
           }
         } else {
+          this._lastTransactionWasUndo = true
           this._redoBuffer.push(reverseOperation)
         }
       }
