@@ -77,17 +77,18 @@ export default class Item {
     if (parent._redone !== null) {
       parent = parent._redone
       // find next cloned items
-      while (left !== null && left._redone === null) {
+      while (left !== null) {
+        if (left._redone !== null && left._redone._parent === parent) {
+          left = left._redone
+          break
+        }
         left = left._left
       }
-      if (left !== null) {
-        left = left._redone
-      }
-      while (right !== null && right._redone === null) {
+      while (right !== null) {
+        if (right._redone !== null && right._redone._parent === parent) {
+          right = right._redone
+        }
         right = right._right
-      }
-      if (right !== null) {
-        right = right._redone
       }
     }
     struct._origin = left

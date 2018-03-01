@@ -77,7 +77,6 @@ export default class YXmlText extends YText {
     return this._dom
   }
   _delete (y, createDelete) {
-    console.log('deleting text type..', this._id)
     this._unbindFromDom()
     super._delete(y, createDelete)
   }
