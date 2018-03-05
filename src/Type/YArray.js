@@ -4,6 +4,13 @@ import ItemString from '../Struct/ItemString.js'
 import { logID } from '../MessageHandler/messageToString.js'
 import YEvent from '../Util/YEvent.js'
 
+/**
+ * Event that describes the changes on a YArray
+ *
+ * @param {YArray} yarray The changed type
+ * @param {Boolean} remote Whether the changed was caused by a remote peer
+ * @param {Transaction} transaction The transaction object
+ */
 export class YArrayEvent extends YEvent {
   constructor (yarray, remote, transaction) {
     super(yarray)
@@ -12,6 +19,12 @@ export class YArrayEvent extends YEvent {
     this._addedElements = null
     this._removedElements = null
   }
+
+  /**
+   * Child elements that were added in this transaction.
+   *
+   * @return {Set}
+   */
   get addedElements () {
     if (this._addedElements === null) {
       const target = this.target
@@ -26,6 +39,12 @@ export class YArrayEvent extends YEvent {
     }
     return this._addedElements
   }
+
+  /**
+   * Child elements that were removed in this transaction.
+   *
+   * @return {Set}
+   */
   get removedElements () {
     if (this._removedElements === null) {
       const target = this.target
@@ -42,29 +61,54 @@ export class YArrayEvent extends YEvent {
   }
 }
 
+/**
+ * A shared Array implementation.
+ */
 export default class YArray extends Type {
+  /**
+   * @private
+   * Creates YArray Event and calls observers.
+   */
   _callObserver (transaction, parentSubs, remote) {
     this._callEventHandler(transaction, new YArrayEvent(this, remote, transaction))
   }
-  get (pos) {
+
+  /**
+   * Returns the i-th element from a YArray.
+   *
+   * @param {Integer} index The index of the element to return from the YArray
+   */
+  get (index) {
     let n = this._start
     while (n !== null) {
       if (!n._deleted && n._countable) {
-        if (pos < n._length) {
+        if (index < n._length) {
           if (n.constructor === ItemJSON || n.constructor === ItemString) {
-            return n._content[pos]
+            return n._content[index]
           } else {
             return n
           }
         }
-        pos -= n._length
+        index -= n._length
       }
       n = n._right
     }
   }
+
+  /**
+   * Transforms this YArray to a JavaScript Array.
+   *
+   * @return {Array}
+   */
   toArray () {
     return this.map(c => c)
   }
+
+  /**
+   * Transforms this Shared Type to a JSON object.
+   *
+   * @return {Array}
+   */
   toJSON () {
     return this.map(c => {
       if (c instanceof Type) {
@@ -77,6 +121,15 @@ export default class YArray extends Type {
       return c
     })
   }
+
+  /**
+   * Returns an Array with the result of calling a provided function on every
+   * element of this YArray.
+   *
+   * @param {Function} f Function that produces an element of the new Array
+   * @return {Array} A new array with each element being the result of the
+   *                 callback function
+   */
   map (f) {
     const res = []
     this.forEach((c, i) => {
@@ -84,25 +137,35 @@ export default class YArray extends Type {
     })
     return res
   }
+
+  /**
+   * Executes a provided function on once on overy element of this YArray.
+   *
+   * @param {Function} f A function to execute on every element of this YArray.
+   */
   forEach (f) {
-    let pos = 0
+    let index = 0
     let n = this._start
     while (n !== null) {
       if (!n._deleted && n._countable) {
         if (n instanceof Type) {
-          f(n, pos++, this)
+          f(n, index++, this)
         } else {
           const content = n._content
           const contentLen = content.length
           for (let i = 0; i < contentLen; i++) {
-            pos++
-            f(content[i], pos, this)
+            index++
+            f(content[i], index, this)
           }
         }
       }
       n = n._right
     }
   }
+
+  /**
+   * Computes the length of this YArray.
+   */
   get length () {
     let length = 0
     let n = this._start
@@ -114,6 +177,7 @@ export default class YArray extends Type {
     }
     return length
   }
+
   [Symbol.iterator] () {
     return {
       next: function () {
@@ -143,14 +207,21 @@ export default class YArray extends Type {
       _count: 0
     }
   }
-  delete (pos, length = 1) {
+
+  /**
+   * Deletes elements starting from an index.
+   *
+   * @param {Integer} index Index at which to start deleting elements
+   * @param {Integer} length The number of elements to remove. Defaults to 1.
+   */
+  delete (index, length = 1) {
     this._y.transact(() => {
       let item = this._start
       let count = 0
       while (item !== null && length > 0) {
         if (!item._deleted && item._countable) {
-          if (count <= pos && pos < count + item._length) {
-            const diffDel = pos - count
+          if (count <= index && index < count + item._length) {
+            const diffDel = index - count
             item = item._splitAt(this._y, diffDel)
             item._splitAt(this._y, length)
             length -= item._length
@@ -167,6 +238,14 @@ export default class YArray extends Type {
       throw new Error('Delete exceeds the range of the YArray')
     }
   }
+
+  /**
+   * @private
+   * Inserts content after an element container.
+   *
+   * @param {Item} left The element container to use as a reference.
+   * @param {Array} content The Array of content to insert (see {@see insert})
+   */
   insertAfter (left, content) {
     this._transact(y => {
       let right
@@ -224,7 +303,24 @@ export default class YArray extends Type {
       }
     })
   }
-  insert (pos, content) {
+
+  /**
+   * Inserts new content at an index.
+   *
+   * Important: This function expects an array of content. Not just a content
+   * object. The reason for this "weirdness" is that inserting several elements
+   * is very efficient when it is done as a single operation.
+   *
+   * @example
+   *  // Insert character 'a' at position 0
+   *  yarray.insert(0, ['a'])
+   *  // Insert numbers 1, 2 at position 1
+   *  yarray.insert(2, [1, 2])
+   *
+   * @param {Integer} index The index to insert content at.
+   * @param {Array} content The array of content
+   */
+  insert (index, content) {
     this._transact(() => {
       let left = null
       let right = this._start
@@ -232,8 +328,8 @@ export default class YArray extends Type {
       const y = this._y
       while (right !== null) {
         const rightLen = right._deleted ? 0 : (right._length - 1)
-        if (count <= pos && pos <= count + rightLen) {
-          const splitDiff = pos - count
+        if (count <= index && index <= count + rightLen) {
+          const splitDiff = index - count
           right = right._splitAt(y, splitDiff)
           left = right._left
           count += splitDiff
@@ -245,12 +341,18 @@ export default class YArray extends Type {
         left = right
         right = right._right
       }
-      if (pos > count) {
-        throw new Error('Position exceeds array range!')
+      if (index > count) {
+        throw new Error('Index exceeds array range!')
       }
       this.insertAfter(left, content)
     })
   }
+
+  /**
+   * Appends content to this YArray.
+   *
+   * @param {Array} content Array of content to append.
+   */
   push (content) {
     let n = this._start
     let lastUndeleted = null
@@ -262,6 +364,12 @@ export default class YArray extends Type {
     }
     this.insertAfter(lastUndeleted, content)
   }
+
+  /**
+   * @private
+   * Transform this YArray to a readable format.
+   * Useful for logging as all Items implement this method.
+   */
   _logString () {
     const left = this._left !== null ? this._left._lastId : null
     const origin = this._origin !== null ? this._origin._lastId : null

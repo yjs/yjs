@@ -27,9 +27,32 @@ import QuillBinding from './Binding/QuillBinding.js'
 
 import { toBinary, fromBinary } from './MessageHandler/binaryEncode.js'
 
+/**
+ * Anything that can be encoded with `JSON.stringify` and can be decoded with
+ * `JSON.parse`.
+ *
+ * The following property should hold:
+ * `JSON.parse(JSON.stringify(key))===key`
+ *
+ * At the moment the only safe values are number and string.
+ *
+ * @typedef {(number|string)} encodable
+ */
+
+/**
+ * A Yjs instance handles the state of shared data.
+ *
+ * @param {string} room Users in the same room share the same content
+ * @param {Object} opts Connector definition
+ * @param {AbstractPersistence} persistence Persistence adapter instance
+ */
 export default class Y extends NamedEventHandler {
   constructor (room, opts, persistence) {
     super()
+    /**
+     * The room name that this Yjs instance connects to.
+     * @type {String}
+     */
     this.room = room
     if (opts != null) {
       opts.connector.room = room
@@ -37,6 +60,7 @@ export default class Y extends NamedEventHandler {
     this._contentReady = false
     this._opts = opts
     this.userID = generateUserID()
+    // TODO: This should be a Map so we can use encodables as keys
     this.share = {}
     this.ds = new DeleteStore(this)
     this.os = new OperationStore(this)
@@ -44,6 +68,10 @@ export default class Y extends NamedEventHandler {
     this._missingStructs = new Map()
     this._readyToIntegrate = []
     this._transaction = null
+    /**
+     * The {@link AbstractConnector}.that is used by this Yjs instance.
+     * @type {AbstractConnector}
+     */
     this.connector = null
     this.connected = false
     let initConnection = () => {
@@ -53,11 +81,15 @@ export default class Y extends NamedEventHandler {
         this.emit('connectorReady')
       }
     }
+    /**
+     * The {@link AbstractPersistence} that is used by this Yjs instance.
+     * @type {AbstractPersistence}
+     */
+    this.persistence = null
     if (persistence != null) {
       this.persistence = persistence
       persistence._init(this).then(initConnection)
     } else {
-      this.persistence = null
       initConnection()
     }
   }
@@ -77,6 +109,14 @@ export default class Y extends NamedEventHandler {
     }
   }
   _beforeChange () {}
+  /**
+   * Changes that happen inside of a transaction are bundled. This means that
+   * the observer fires _after_ the transaction is finished and that all changes
+   * that happened inside of the transaction are sent as one message to the
+   * other peers.
+   *
+   * @param {Function} f The function that should be executed as a transaction
+   */
   transact (f, remote = false) {
     let initialCall = this._transaction === null
     if (initialCall) {
@@ -117,13 +157,55 @@ export default class Y extends NamedEventHandler {
       this.emit('afterTransaction', this, transaction, remote)
     }
   }
-  // fake _start for root properties (y.set('name', type))
+
+  /**
+   * @private
+   * Fake _start for root properties (y.set('name', type))
+   */
   get _start () {
     return null
   }
+
+  /**
+   * @private
+   * Fake _start for root properties (y.set('name', type))
+   */
   set _start (start) {
     return null
   }
+
+  /**
+   * Define a shared data type.
+   *
+   * Multiple calls of `y.define(name, TypeConstructor)` yield the same result
+   * and do not overwrite each other. I.e.
+   * `y.define(name, type) === y.define(name, type)`
+   *
+   * After this method is called, the type is also available on `y.share[name]`.
+   *
+   * *Best Practices:*
+   * Either define all types right after the Yjs instance is created or always
+   * use `y.define(..)` when accessing a type.
+   *
+   * @example
+   *   // Option 1
+   *   const y = new Y(..)
+   *   y.define('myArray', YArray)
+   *   y.define('myMap', YMap)
+   *   // .. when accessing the type use y.share[name]
+   *   y.share.myArray.insert(..)
+   *   y.share.myMap.set(..)
+   *
+   *   // Option2
+   *   const y = new Y(..)
+   *   // .. when accessing the type use `y.define(..)`
+   *   y.define('myArray', YArray).insert(..)
+   *   y.define('myMap', YMap).set(..)
+   *
+   * @param {String} name
+   * @param {YType Constructor} TypeConstructor The constructor of the type definition
+   * @returns {YType} The created type
+   */
   define (name, TypeConstructor) {
     let id = new RootID(name, TypeConstructor)
     let type = this.os.get(id)
@@ -134,9 +216,23 @@ export default class Y extends NamedEventHandler {
     }
     return type
   }
+
+  /**
+   * Get a defined type. The type must be defined locally. First define the
+   * type with {@link define}.
+   *
+   * This returns the same value as `y.share[name]`
+   *
+   * @param {String} name The typename
+   */
   get (name) {
     return this.share[name]
   }
+
+  /**
+   * Disconnect this Yjs Instance from the network. The connector will
+   * unsubscribe from the room and document updates are not shared anymore.
+   */
   disconnect () {
     if (this.connected) {
       this.connected = false
@@ -145,6 +241,10 @@ export default class Y extends NamedEventHandler {
       return Promise.resolve()
     }
   }
+
+  /**
+   * If disconnected, tell the connector to reconnect to the room.
+   */
   reconnect () {
     if (!this.connected) {
       this.connected = true
@@ -153,6 +253,11 @@ export default class Y extends NamedEventHandler {
       return Promise.resolve()
     }
   }
+
+  /**
+   * Disconnect from the room, and destroy all traces of this Yjs instance.
+   * Persisted data will remain until removed by the persistence adapter.
+   */
   destroy () {
     super.destroy()
     this.share = null
@@ -171,7 +276,9 @@ export default class Y extends NamedEventHandler {
     this.ds = null
     this.ss = null
   }
+
   whenSynced () {
+    // TODO: remove this method
     return new Promise(resolve => {
       this.once('synced', () => {
         resolve()

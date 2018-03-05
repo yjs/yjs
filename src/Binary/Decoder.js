@@ -1,7 +1,13 @@
 import ID from '../Util/ID.js'
 import { default as RootID, RootFakeUserID } from '../Util/RootID.js'
 
+/**
+ * A BinaryDecoder handles the decoding of an ArrayBuffer
+ */
 export default class BinaryDecoder {
+  /**
+   * @param {Uint8Array|Buffer} buffer The binary data that this instance decodes
+   */
   constructor (buffer) {
     if (buffer instanceof ArrayBuffer) {
       this.uint8arr = new Uint8Array(buffer)
@@ -12,6 +18,7 @@ export default class BinaryDecoder {
     }
     this.pos = 0
   }
+
   /**
    * Clone this decoder instance
    * Optionally set a new position parameter
@@ -21,26 +28,32 @@ export default class BinaryDecoder {
     decoder.pos = newPos
     return decoder
   }
+
   /**
    * Number of bytes
    */
   get length () {
     return this.uint8arr.length
   }
+
   /**
    * Skip one byte, jump to the next position
    */
   skip8 () {
     this.pos++
   }
+
   /**
    * Read one byte as unsigned integer
    */
   readUint8 () {
     return this.uint8arr[this.pos++]
   }
+
   /**
    * Read 4 bytes as unsigned integer
+   *
+   * @return number An unsigned integer
    */
   readUint32 () {
     let uint =
@@ -51,19 +64,24 @@ export default class BinaryDecoder {
     this.pos += 4
     return uint
   }
+
   /**
    * Look ahead without incrementing position
    * to the next byte and read it as unsigned integer
+   *
+   * @return number An unsigned integer
    */
   peekUint8 () {
     return this.uint8arr[this.pos]
   }
+
   /**
    * Read unsigned integer (32bit) with variable length
    * 1/8th of the storage is used as encoding overhead
-   *  - numbers < 2^7 is stored in one byte
-   *  - numbers < 2^14 is stored in two bytes
-   *  ..
+   *  * numbers < 2^7 is stored in one byte
+   *  * numbers < 2^14 is stored in two bytes
+   *
+   * @return number An unsigned integer
    */
   readVarUint () {
     let num = 0
@@ -80,9 +98,12 @@ export default class BinaryDecoder {
       }
     }
   }
+
   /**
    * Read string of variable length
-   * - varUint is used to store the length of the string
+   * * varUint is used to store the length of the string
+   *
+   * @return string
    */
   readVarString () {
     let len = this.readVarUint()
@@ -94,7 +115,7 @@ export default class BinaryDecoder {
     return decodeURIComponent(escape(encodedString))
   }
   /**
-   *  Look ahead and read varString without incrementing position
+   * Look ahead and read varString without incrementing position
    */
   peekVarString () {
     let pos = this.pos
@@ -104,8 +125,10 @@ export default class BinaryDecoder {
   }
   /**
    * Read ID
-   * - If first varUint read is 0xFFFFFF a RootID is returned
-   * - Otherwise an ID is returned
+   * * If first varUint read is 0xFFFFFF a RootID is returned
+   * * Otherwise an ID is returned
+   *
+   * @return ID
    */
   readID () {
     let user = this.readVarUint()

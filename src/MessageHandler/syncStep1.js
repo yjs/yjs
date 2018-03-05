@@ -30,6 +30,11 @@ export function sendSyncStep1 (connector, syncUser) {
   connector.send(syncUser, encoder.createBuffer())
 }
 
+/**
+ * @private
+ * Write all Items that are not not included in ss to
+ * the encoder object.
+ */
 export function writeStructs (y, encoder, ss) {
   const lenPos = encoder.pos
   encoder.writeUint32(0)

@@ -8,7 +8,9 @@
   "scripts": {
     "test": "npm run lint",
     "debug": "concurrently 'rollup -wc rollup.test.js' 'cutest-serve y.test.js -o'",
-    "lint": "standard",
+    "lint": "standard && documentation lint src/**",
+    "docs": "documentation build src/** -f html -o docs",
+    "serve-docs": "documentation serve src/**",
     "dist": "rollup -c rollup.browser.js; rollup -c rollup.node.js",
     "watch": "concurrently 'rollup -wc rollup.browser.js' 'rollup -wc rollup.node.js'",
     "postversion": "npm run dist",
@@ -64,7 +66,9 @@
     "rollup-regenerator-runtime": "^6.23.1",
     "rollup-watch": "^3.2.2",
     "standard": "^10.0.2",
-    "tag-dist-files": "^0.1.6"
+    "tag-dist-files": "^0.1.6",
+    "esdoc": "^1.0.4",
+    "esdoc-standard-plugin": "^1.0.0"
   },
   "dependencies": {
     "debug": "^2.6.8"

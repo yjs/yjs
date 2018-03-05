@@ -13,6 +13,10 @@ function getFreshCnf () {
   }
 }
 
+/**
+ * @private
+ * Abstract persistence class.
+ */
 export default class AbstractPersistence {
   constructor (opts) {
     this.opts = opts

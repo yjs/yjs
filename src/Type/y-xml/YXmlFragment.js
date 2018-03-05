@@ -36,6 +36,24 @@ function domToYXml (parent, doms, _document) {
   return types
 }
 
+/**
+ * Define the elements to which a set of CSS queries apply.
+ * {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors|CSS_Selectors}
+ *
+ * @example
+ *   query = '.classSelector'
+ *   query = 'nodeSelector'
+ *   query = '#idSelector'
+ *
+ * @typedef {string} CSS_Selector
+ */
+
+/**
+ * Represents a subset of the nodes of a YXmlElement / YXmlFragment and a
+ * position within them.
+ *
+ * Can be created with {@link YXmlFragment#createTreeWalker}
+ */
 class YXmlTreeWalker {
   constructor (root, f) {
     this._filter = f || (() => true)
@@ -46,6 +64,11 @@ class YXmlTreeWalker {
   [Symbol.iterator] () {
     return this
   }
+  /**
+   * Get the next node.
+   *
+   * @return {YXmlElement} The next node.
+   */
   next () {
     let n = this._currentNode
     if (this._firstCall) {
@@ -84,6 +107,11 @@ class YXmlTreeWalker {
   }
 }
 
+/**
+ * Represents a list of {@link YXmlElement}.
+ * A YxmlFragment does not have a nodeName and it does not have attributes.
+ * Therefore it also must not be added as a childElement.
+ */
 export default class YXmlFragment extends YArray {
   constructor () {
     super()
@@ -110,18 +138,31 @@ export default class YXmlFragment extends YArray {
       }
     }
   }
+
+  /**
+   * Create a subtree of childNodes.
+   *
+   * @param {Function} filter Function that is called on each child element and
+   *                          returns a Boolean indicating whether the child
+   *                          is to be included in the subtree.
+   * @return {TreeWalker} A subtree and a position within it.
+   */
   createTreeWalker (filter) {
     return new YXmlTreeWalker(this, filter)
   }
+
   /**
-   * Retrieve first element that matches *query*
-   * Similar to DOM's querySelector, but only accepts a subset of its queries
+   * Returns the first YXmlElement that matches the query.
+   * Similar to DOM's {@link querySelector}.
    *
    * Query support:
    *   - tagname
    * TODO:
    *   - id
    *   - attribute
+   *
+   * @param {CSS_Selector} query The query on the children.
+   * @return {?YXmlElement} The first element that matches the query or null.
    */
   querySelector (query) {
     query = query.toUpperCase()
@@ -133,16 +174,52 @@ export default class YXmlFragment extends YArray {
       return next.value
     }
   }
+
+  /**
+   * Returns all YXmlElements that match the query.
+   * Similar to Dom's {@link querySelectorAll}.
+   *
+   * TODO: Does not yet support all queries. Currently only query by tagName.
+   *
+   * @param {CSS_Selector} query The query on the children
+   * @return {Array<YXmlElement>} The elements that match this query.
+   */
   querySelectorAll (query) {
     query = query.toUpperCase()
     return Array.from(new YXmlTreeWalker(this, element => element.nodeName === query))
   }
+
+  /**
+   * Enables the smart scrolling functionality for a Dom Binding.
+   * This is useful when YXml is bound to a shared editor. When activated,
+   * the viewport will be changed to accommodate remote changes.
+   *
+   * @TODO: Disabled for now.
+   *
+   * @param {Element} scrollElement The node that is
+   */
   enableSmartScrolling (scrollElement) {
     this._scrollElement = scrollElement
     this.forEach(xml => {
       xml.enableSmartScrolling(scrollElement)
     })
   }
+
+  /**
+   * Dom filter function.
+   *
+   * @callback domFilter
+   * @param {string} nodeName The nodeName of the element
+   * @param {Map} attributes The map of attributes.
+   * @return {boolean} Whether to include the Dom node in the YXmlElement.
+   */
+
+  /**
+   * Filter out Dom elements.
+   *
+   * @param {domFilter} f The filtering function that decides whether to include
+   *                      a Dom node.
+   */
   setDomFilter (f) {
     this._domFilter = f
     let attributes = new Map()
@@ -168,16 +245,41 @@ export default class YXmlFragment extends YArray {
       })
     })
   }
+
+  /**
+   * @private
+   * Creates YArray Event and calls observers.
+   */
   _callObserver (transaction, parentSubs, remote) {
     this._callEventHandler(transaction, new YXmlEvent(this, parentSubs, remote))
   }
+
+  /**
+   * Get the string representation of all the children of this YXmlFragment.
+   *
+   * @return {string} The string representation of all children.
+   */
   toString () {
     return this.map(xml => xml.toString()).join('')
   }
+
+  /**
+   * @private
+   * Unbind from Dom and mark this Item as deleted.
+   *
+   * @param {Y} y The Yjs instance
+   * @param {boolean} createDelete Whether to propagate a message that this
+   *                               Type was deleted.
+   */
   _delete (y, createDelete) {
     this._unbindFromDom()
     super._delete(y, createDelete)
   }
+
+  /**
+   * @private
+   * Unbind this YXmlFragment from the Dom.
+   */
   _unbindFromDom () {
     if (this._domObserver != null) {
       this._domObserver.disconnect()
@@ -191,19 +293,53 @@ export default class YXmlFragment extends YArray {
       this._y.off('beforeTransaction', this._beforeTransactionHandler)
     }
   }
+
+  /**
+   * Insert Dom Elements after one of the children of this YXmlFragment.
+   * The Dom elements will be bound to a new YXmlElement and inserted at the
+   * specified position.
+   *
+   * @param {YXmlElement|null} prev The reference node. New YxmlElements are
+   *                           inserted after this node. Set null to insert at
+   *                           the beginning.
+   * @param {Array<Element>} doms The Dom elements to insert.
+   * @return {Array<YXmlElement>} The YxmlElements that are inserted.
+   */
   insertDomElementsAfter (prev, doms, _document) {
     const types = domToYXml(this, doms, _document)
     this.insertAfter(prev, types)
     return types
   }
-  insertDomElements (pos, doms, _document) {
+
+  /**
+   * Insert Dom Elements at a specified index.
+   * The Dom elements will be bound to a new YXmlElement and inserted at the
+   * specified position.
+   *
+   * @param {Integer} index The position to insert elements at.
+   * @param {Array<Element>} doms The Dom elements to insert.
+   * @return {Array<YXmlElement>} The YxmlElements that are inserted.
+   */
+  insertDomElements (index, doms, _document) {
     const types = domToYXml(this, doms, _document)
-    this.insert(pos, types)
+    this.insert(index, types)
     return types
   }
+
+  /**
+   * Get the Dom representation of this YXml type..
+   */
   getDom () {
     return this._dom
   }
+
+  /**
+   * Bind this YXmlFragment and all its children to a Dom Element.
+   * The content of the Dom Element are replaced with the Dom representation of
+   * the children of this YXml Type.
+   *
+   * @param {Element} dom The Dom Element that should be bound to this Type.
+   */
   bindToDom (dom, _document) {
     if (this._dom != null) {
       this._unbindFromDom()
@@ -217,8 +353,12 @@ export default class YXmlFragment extends YArray {
     })
     this._bindToDom(dom, _document)
   }
-  // binds to a dom element
-  // Only call if dom and YXml are isomorph
+
+  /**
+   * @private
+   * Binds to a dom element.
+   * Only call if dom and YXml are isomorph
+   */
   _bindToDom (dom, _document) {
     _document = _document || document
     this._dom = dom
@@ -346,6 +486,12 @@ export default class YXmlFragment extends YArray {
     }
     return dom
   }
+
+  /**
+   * @private
+   * Transform this YXml Type to a readable format.
+   * Useful for logging as all Items implement this method.
+   */
   _logString () {
     const left = this._left !== null ? this._left._lastId : null
     const origin = this._origin !== null ? this._origin._lastId : null

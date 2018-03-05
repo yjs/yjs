@@ -1,5 +1,11 @@
 import YText from '../YText.js'
 
+/**
+ * Represents text in a Dom Element. In the future this type will also handle
+ * simple formatting information like bold and italic.
+ *
+ * @param {String} arg1 Initial value.
+ */
 export default class YXmlText extends YText {
   constructor (arg1) {
     let dom = null
@@ -56,6 +62,15 @@ export default class YXmlText extends YText {
   enableSmartScrolling (scrollElement) {
     this._scrollElement = scrollElement
   }
+
+  /**
+   * @private
+   * Set Dom element / Text Node that represents the same content as this
+   * YXmlElement.
+   *
+   * @param {Element} dom The Dom Element / Text Node that is set to be
+   *                      equivalent to this Type.
+   */
   _setDom (dom) {
     if (this._dom != null) {
       this._unbindFromDom()
@@ -67,6 +82,10 @@ export default class YXmlText extends YText {
     this._dom = dom
     dom._yxml = this
   }
+
+  /**
+   * Returns the Dom representation of this YXmlText.
+   */
   getDom (_document) {
     _document = _document || document
     if (this._dom === null) {
@@ -76,10 +95,24 @@ export default class YXmlText extends YText {
     }
     return this._dom
   }
+
+  /**
+   * @private
+   * Mark this Item as deleted.
+   *
+   * @param {Y} y The Yjs instance
+   * @param {boolean} createDelete Whether to propagate a message that this
+   *                               Type was deleted.
+   */
   _delete (y, createDelete) {
     this._unbindFromDom()
     super._delete(y, createDelete)
   }
+
+  /**
+   * @private
+   * Unbind this YXmlText from the Dom.
+   */
   _unbindFromDom () {
     if (this._domObserver != null) {
       this._domObserver.disconnect()

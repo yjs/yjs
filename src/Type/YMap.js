@@ -4,7 +4,14 @@ import ItemJSON from '../Struct/ItemJSON.js'
 import { logID } from '../MessageHandler/messageToString.js'
 import YEvent from '../Util/YEvent.js'
 
-class YMapEvent extends YEvent {
+/**
+ * Event that describes the changes on a YMap.
+ *
+ * @param {YMap} ymap The YArray that changed.
+ * @param {Set<any>} subs The keys that changed.
+ * @param {boolean} remote Whether the change was created by a remote peer.
+ */
+export class YMapEvent extends YEvent {
   constructor (ymap, subs, remote) {
     super(ymap)
     this.keysChanged = subs
@@ -12,10 +19,23 @@ class YMapEvent extends YEvent {
   }
 }
 
+/**
+ * A shared Map implementation.
+ */
 export default class YMap extends Type {
+  /**
+   * @private
+   * Creates YMap Event and calls observers.
+   */
   _callObserver (transaction, parentSubs, remote) {
     this._callEventHandler(transaction, new YMapEvent(this, parentSubs, remote))
   }
+
+  /**
+   * Transforms this Shared Type to a JSON object.
+   *
+   * @return {Object}
+   */
   toJSON () {
     const map = {}
     for (let [key, item] of this._map) {
@@ -35,7 +55,14 @@ export default class YMap extends Type {
     }
     return map
   }
+
+  /**
+   * Returns the keys for each element in the YMap Type.
+   *
+   * @return {Array}
+   */
   keys () {
+    // TODO: Should return either Iterator or Set!
     let keys = []
     for (let [key, value] of this._map) {
       if (!value._deleted) {
@@ -44,6 +71,12 @@ export default class YMap extends Type {
     }
     return keys
   }
+
+  /**
+   * Remove a specified element from this YMap.
+   *
+   * @param {encodable} key The key of the element to remove.
+   */
   delete (key) {
     this._transact((y) => {
       let c = this._map.get(key)
@@ -52,11 +85,22 @@ export default class YMap extends Type {
       }
     })
   }
+
+  /**
+   * Adds or updates an element with a specified key and value.
+   *
+   * @param {encodable} key The key of the element to add to this YMap.
+   * @param {encodable | YType} value The value of the element to add to this
+   *                                  YMap.
+   */
   set (key, value) {
     this._transact(y => {
       const old = this._map.get(key) || null
       if (old !== null) {
-        if (old.constructor === ItemJSON && !old._deleted && old._content[0] === value) {
+        if (
+          old.constructor === ItemJSON &&
+          !old._deleted && old._content[0] === value
+        ) {
           // Trying to overwrite with same value
           // break here
           return value
@@ -87,6 +131,12 @@ export default class YMap extends Type {
     })
     return value
   }
+
+  /**
+   * Returns a specified element from this YMap.
+   *
+   * @param {encodable} key The key of the element to return.
+   */
   get (key) {
     let v = this._map.get(key)
     if (v === undefined || v._deleted) {
@@ -98,6 +148,12 @@ export default class YMap extends Type {
       return v._content[v._content.length - 1]
     }
   }
+
+  /**
+   * Returns a boolean indicating whether the specified key exists or not.
+   *
+   * @param {encodable} key The key to test.
+   */
   has (key) {
     let v = this._map.get(key)
     if (v === undefined || v._deleted) {
@@ -106,6 +162,12 @@ export default class YMap extends Type {
       return true
     }
   }
+
+  /**
+   * @private
+   * Transform this YMap to a readable format.
+   * Useful for logging as all Items implement this method.
+   */
   _logString () {
     const left = this._left !== null ? this._left._lastId : null
     const origin = this._origin !== null ? this._origin._lastId : null

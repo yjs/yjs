@@ -3,6 +3,16 @@ import { defaultDomFilter } from './utils.js'
 import YMap from '../YMap.js'
 import { YXmlFragment } from './y-xml.js'
 
+/**
+ * An YXmlElement imitates the behavior of a
+ * {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}.
+ *
+ * * An YXmlElement has attributes (key value pairs)
+ * * An YXmlElement has childElements that must inherit from YXmlElement
+ *
+ * @param {String} arg1 Node name
+ * @param {Function} arg2 Dom filter
+ */
 export default class YXmlElement extends YXmlFragment {
   constructor (arg1, arg2, _document) {
     super()
@@ -20,11 +30,21 @@ export default class YXmlElement extends YXmlFragment {
       this._domFilter = arg2
     }
   }
+
+  /**
+   * @private
+   * Creates an Item with the same effect as this Item (without position effect)
+   */
   _copy () {
     let struct = super._copy()
     struct.nodeName = this.nodeName
     return struct
   }
+
+  /**
+   * @private
+   * Copies children and attributes from a dom node to this YXmlElement.
+   */
   _setDom (dom, _document) {
     if (this._dom != null) {
       throw new Error('Only call this method if you know what you are doing ;)')
@@ -48,20 +68,61 @@ export default class YXmlElement extends YXmlFragment {
       return dom
     }
   }
+
+  /**
+   * @private
+   * Bind a dom to to this YXmlElement. This means that the DOM changes when the
+   * YXmlElement is modified and that this YXmlElement changes when the DOM is
+   * modified.
+   *
+   * Currently only works in YXmlFragment.
+   */
   _bindToDom (dom, _document) {
     _document = _document || document
     this._dom = dom
     dom._yxml = this
   }
+
+  /**
+   * @private
+   * Read the next Item in a Decoder and fill this Item with the read data.
+   *
+   * This is called when data is received from a remote peer.
+   *
+   * @param {Y} y The Yjs instance that this Item belongs to.
+   * @param {BinaryDecoder} decoder The decoder object to read data from.
+   */
   _fromBinary (y, decoder) {
     const missing = super._fromBinary(y, decoder)
     this.nodeName = decoder.readVarString()
     return missing
   }
+
+  /**
+   * @private
+   * Transform the properties of this type to binary and write it to an
+   * BinaryEncoder.
+   *
+   * This is called when this Item is sent to a remote peer.
+   *
+   * @param {BinaryEncoder} encoder The encoder to write data to.
+   */
   _toBinary (encoder) {
     super._toBinary(encoder)
     encoder.writeVarString(this.nodeName)
   }
+
+  /**
+   * @private
+   * Integrates this Item into the shared structure.
+   *
+   * This method actually applies the change to the Yjs instance. In case of
+   * Item it connects _left and _right to this Item and calls the
+   * {@link Item#beforeChange} method.
+   *
+   * * Checks for nodeName
+   * * Sets domFilter
+   */
   _integrate (y) {
     if (this.nodeName === null) {
       throw new Error('nodeName must be defined!')
@@ -71,8 +132,9 @@ export default class YXmlElement extends YXmlFragment {
     }
     super._integrate(y)
   }
+
   /**
-   * Returns the string representation of the XML document.
+   * Returns the string representation of this YXmlElement.
    * The attributes are ordered by attribute-name, so you can easily use this
    * method to compare YXmlElements
    */
@@ -93,18 +155,42 @@ export default class YXmlElement extends YXmlFragment {
     const attrsString = stringBuilder.length > 0 ? ' ' + stringBuilder.join(' ') : ''
     return `<${nodeName}${attrsString}>${super.toString()}</${nodeName}>`
   }
+
+  /**
+   * Removes an attribute from this YXmlElement.
+   *
+   * @param {String} attributeName The attribute name that is to be removed.
+   */
   removeAttribute () {
     return YMap.prototype.delete.apply(this, arguments)
   }
 
+  /**
+   * Sets or updates an attribute.
+   *
+   * @param {String} attributeName The attribute name that is to be set.
+   * @param {String} attributeValue The attribute value that is to be set.
+   */
   setAttribute () {
     return YMap.prototype.set.apply(this, arguments)
   }
 
+  /**
+   * Returns an attribute value that belongs to the attribute name.
+   *
+   * @param {String} attributeName The attribute name that identifies the
+   *                               queried value.
+   * @return {String} The queried attribute value
+   */
   getAttribute () {
     return YMap.prototype.get.apply(this, arguments)
   }
 
+  /**
+   * Returns all attribute name/value pairs in a JSON Object.
+   *
+   * @return {Object} A JSON Object that describes the attributes.
+   */
   getAttributes () {
     const obj = {}
     for (let [key, value] of this._map) {
@@ -114,6 +200,12 @@ export default class YXmlElement extends YXmlFragment {
     }
     return obj
   }
+
+  /**
+   * Creates a Dom Element that mirrors this YXmlElement.
+   *
+   * @return {Element} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
+   */
   getDom (_document) {
     _document = _document || document
     let dom = this._dom

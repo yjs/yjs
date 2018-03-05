@@ -1,22 +1,56 @@
 
+/**
+ * General event handler implementation.
+ */
 export default class EventHandler {
   constructor () {
     this.eventListeners = []
   }
+
+  /**
+   * To prevent memory leaks, call this method when the eventListeners won't be
+   * used anymore.
+   */
   destroy () {
     this.eventListeners = null
   }
+
+  /**
+   * Adds an event listener that is called when
+   * {@link EventHandler#callEventListeners} is called.
+   *
+   * @param {Function} f The event handler.
+   */
   addEventListener (f) {
     this.eventListeners.push(f)
   }
+
+  /**
+   * Removes an event listener.
+   *
+   * @param {Function} f The event handler that was added with
+   *                     {@link EventHandler#addEventListener}
+   */
   removeEventListener (f) {
     this.eventListeners = this.eventListeners.filter(function (g) {
       return f !== g
     })
   }
+
+  /**
+   * Removes all event listeners.
+   */
   removeAllEventListeners () {
     this.eventListeners = []
   }
+
+  /**
+   * Call all event listeners that were added via
+   * {@link EventHandler#addEventListener}.
+   *
+   * @param {Transaction} transaction The transaction object // TODO: do we need this?
+   * @param {YEvent} event An event object that describes the change on a type.
+   */
   callEventListeners (transaction, event) {
     for (var i = 0; i < this.eventListeners.length; i++) {
       try {

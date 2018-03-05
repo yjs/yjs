@@ -46,11 +46,11 @@ function findNextPosition (currentAttributes, parent, left, right, count) {
   return [left, right, currentAttributes]
 }
 
-function findPosition (parent, pos) {
+function findPosition (parent, index) {
   let currentAttributes = new Map()
   let left = null
   let right = parent._start
-  return findNextPosition(currentAttributes, parent, left, right, pos)
+  return findNextPosition(currentAttributes, parent, left, right, index)
 }
 
 // negate applied formats
@@ -212,11 +212,50 @@ function deleteText (y, length, parent, left, right, currentAttributes) {
   return [left, right]
 }
 
+// TODO: In the quill delta representation we should also use the format {ops:[..]}
+/**
+ * The Quill Delta format represents changes on a text document with
+ * formatting information. For mor information visit {@link https://quilljs.com/docs/delta/|Quill Delta}
+ *
+ * @example
+ *   {
+ *     ops: [
+ *       { insert: 'Gandalf', attributes: { bold: true } },
+ *       { insert: ' the ' },
+ *       { insert: 'Grey', attributes: { color: '#cccccc' } }
+ *     ]
+ *   }
+ *
+ * @typedef {Array<Object>} Delta
+ */
+
+ /**
+  * Attributes that can be assigned to a selection of text.
+  *
+  * @example
+  *   {
+  *     bold: true,
+  *     font-size: '40px'
+  *   }
+  *
+  * @typedef {Object} TextAttributes
+  */
+
+/**
+ * Event that describes the changes on a YText type.
+ */
 class YTextEvent extends YArrayEvent {
   constructor (ytext, remote, transaction) {
     super(ytext, remote, transaction)
     this._delta = null
   }
+
+  /**
+   * Compute the changes in the delta format.
+   *
+   * @return {Delta} A {@link https://quilljs.com/docs/delta/|Quill Delta}) that
+   *                 represents the changes on the document.
+   */
   get delta () {
     if (this._delta === null) {
       const y = this.target._y
@@ -378,6 +417,15 @@ class YTextEvent extends YArrayEvent {
   }
 }
 
+/**
+ * Type that represents text with formatting information.
+ *
+ * This type replaces y-richtext as this implementation is able to handle
+ * block formats (format information on a paragraph), embeds (complex elements
+ * like pictures and videos), and text formats (**bold**, *italic*).
+ *
+ * @param {String} string The initial value of the YText.
+ */
 export default class YText extends YArray {
   constructor (string) {
     super()
@@ -388,9 +436,18 @@ export default class YText extends YArray {
       this._start = start
     }
   }
+
+  /**
+   * @private
+   * Creates YMap Event and calls observers.
+   */
   _callObserver (transaction, parentSubs, remote) {
     this._callEventHandler(transaction, new YTextEvent(this, remote, transaction))
   }
+
+  /**
+   * Returns the unformatted string representation of this YText type.
+   */
   toString () {
     let str = ''
     let n = this._start
@@ -402,6 +459,12 @@ export default class YText extends YArray {
     }
     return str
   }
+
+  /**
+   * Apply a {@link Delta} on this shared YText type.
+   *
+   * @param {Delta} delta The changes to apply on this element.
+   */
   applyDelta (delta) {
     this._transact(y => {
       let left = null
@@ -419,8 +482,11 @@ export default class YText extends YArray {
       }
     })
   }
+
   /**
-   * As defined by Quilljs - https://quilljs.com/docs/delta/
+   * Returns the Delta representation of this YText type.
+   *
+   * @return {Delta} The Delta representation of this type.
    */
   toDelta () {
     let ops = []
@@ -461,42 +527,84 @@ export default class YText extends YArray {
     packStr()
     return ops
   }
-  insert (pos, text, attributes = {}) {
+
+  /**
+   * Insert text at a given index.
+   *
+   * @param {Integer} index The index at which to start inserting.
+   * @param {String} text The text to insert at the specified position.
+   * @param {TextAttributes} attributes Optionally define some formatting
+   *                                    information to apply on the inserted
+   *                                    Text.
+   */
+  insert (index, text, attributes = {}) {
     if (text.length <= 0) {
       return
     }
     this._transact(y => {
-      let [left, right, currentAttributes] = findPosition(this, pos)
+      let [left, right, currentAttributes] = findPosition(this, index)
       insertText(y, text, this, left, right, currentAttributes, attributes)
     })
   }
-  insertEmbed (pos, embed, attributes = {}) {
+
+  /**
+   * Inserts an embed at a index.
+   *
+   * @param {Integer} index The index to insert the embed at.
+   * @param {Object} embed The Object that represents the embed.
+   * @param {TextAttributes} attributes Attribute information to apply on the
+   *                                    embed
+   *
+   */
+  insertEmbed (index, embed, attributes = {}) {
     if (embed.constructor !== Object) {
       throw new Error('Embed must be an Object')
     }
     this._transact(y => {
-      let [left, right, currentAttributes] = findPosition(this, pos)
+      let [left, right, currentAttributes] = findPosition(this, index)
       insertText(y, embed, this, left, right, currentAttributes, attributes)
     })
   }
-  delete (pos, length) {
+
+  /**
+   * Deletes text starting from an index.
+   *
+   * @param {Integer} index Index at which to start deleting.
+   * @param {Integer} length The number of characters to remove. Defaults to 1.
+   */
+  delete (index, length) {
     if (length === 0) {
       return
     }
     this._transact(y => {
-      let [left, right, currentAttributes] = findPosition(this, pos)
+      let [left, right, currentAttributes] = findPosition(this, index)
       deleteText(y, length, this, left, right, currentAttributes)
     })
   }
-  format (pos, length, attributes) {
+
+  /**
+   * Assigns properties to a range of text.
+   *
+   * @param {Integer} index The position where to start formatting.
+   * @param {Integer} length The amount of characters to assign properties to.
+   * @param {TextAttributes} attributes Attribute information to apply on the
+   *                                    text.
+   */
+  format (index, length, attributes) {
     this._transact(y => {
-      let [left, right, currentAttributes] = findPosition(this, pos)
+      let [left, right, currentAttributes] = findPosition(this, index)
       if (right === null) {
         return
       }
       formatText(y, length, this, left, right, currentAttributes, attributes)
     })
   }
+
+  /**
+   * @private
+   * Transform this YText to a readable format.
+   * Useful for logging as all Items implement this method.
+   */
   _logString () {
     const left = this._left !== null ? this._left._lastId : null
     const origin = this._origin !== null ? this._origin._lastId : null

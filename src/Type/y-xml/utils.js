@@ -184,8 +184,8 @@ export function reflectChangesOnDom (events, _document) {
               dom.setAttribute(attributeName, value)
             }
           })
-          /**
-           * TODO: instead of chard-checking the types, it would be best to
+          /*
+           * TODO: instead of hard-checking the types, it would be best to
            *       specify the type's features. E.g.
            *         - _yxmlHasAttributes
            *         - _yxmlHasChildren

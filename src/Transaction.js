@@ -1,4 +1,12 @@
 
+/**
+ * Changes that are created within a transaction are bundled and sent as one
+ * message to the remote peers. This implies that the changes are applied
+ * in one flush and at most one {@link YEvent} per type is created.
+ *
+ * It is best to bundle as many changes in a single Transaction as possible.
+ * This way only few changes need to be computed
+ */
 export default class Transaction {
   constructor (y) {
     this.y = y

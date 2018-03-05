@@ -11,6 +11,7 @@ class MissingEntry {
 }
 
 /**
+ * @private
  * Integrate remote struct
  * When a remote struct is integrated, other structs might be ready to ready to
  * integrate.

@@ -24,6 +24,17 @@ function domObserver () {
   })
 }
 
+/**
+ * A binding that binds a YText to a dom textarea.
+ *
+ * This binding will automatically be destroyed when it's parent is deleted
+ *
+ * @example
+ *   const textare = document.createElement('textarea')
+ *   const type = y.define('textarea', Y.Text)
+ *   const binding = new Y.QuillBinding(textarea, type)
+ *
+ */
 export default class TextareaBinding extends Binding {
   constructor (textType, domTextarea) {
     // Binding handles textType as this.type and domTextarea as this.target

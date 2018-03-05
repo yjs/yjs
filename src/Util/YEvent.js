@@ -1,9 +1,27 @@
 
+/**
+ * YEvent describes the changes on a YType.
+ */
 export default class YEvent {
+  /**
+   * @param {YType} target The changed type.
+   */
   constructor (target) {
     this.target = target
     this.currentTarget = target
   }
+
+  /**
+   * Computes the path from `y` to the changed type.
+   *
+   * The following property holds:
+   * @example
+   *   let type = y
+   *   event.path.forEach(function (dir) {
+   *     type = type.get(dir)
+   *   })
+   *   type === event.target // => true
+   */
   get path () {
     const path = []
     let type = this.target

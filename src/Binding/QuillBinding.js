@@ -1,4 +1,3 @@
-
 import Binding from './Binding.js'
 
 function typeObserver (event) {
@@ -16,17 +15,29 @@ function quillObserver (delta) {
   })
 }
 
+/**
+ * A Binding that binds a YText type to a Quill editor
+ *
+ * @example
+ *   const quill = new Quill(document.createElement('div'))
+ *   const type = y.define('quill', Y.Text)
+ *   const binding = new Y.QuillBinding(quill, type)
+ */
 export default class QuillBinding extends Binding {
-  constructor (textType, quillInstance) {
-    // Binding handles textType as this.type and quillInstance as this.target
-    super(textType, quillInstance)
+  /**
+   * @param {YText} textType
+   * @param {Quill} quill
+   */
+  constructor (textType, quill) {
+    // Binding handles textType as this.type and quill as this.target
+    super(textType, quill)
     // set initial value
-    quillInstance.setContents(textType.toDelta(), 'yjs')
+    quill.setContents(textType.toDelta(), 'yjs')
     // Observers are handled by this class
     this._typeObserver = typeObserver.bind(this)
     this._quillObserver = quillObserver.bind(this)
     textType.observe(this._typeObserver)
-    quillInstance.on('text-change', this._quillObserver)
+    quill.on('text-change', this._quillObserver)
   }
   destroy () {
     // Remove everything that is handled by this class

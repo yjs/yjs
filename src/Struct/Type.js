@@ -30,6 +30,9 @@ export function getListItemIDByPosition (type, i) {
   }
 }
 
+/**
+ * Abstract Yjs Type class
+ */
 export default class Type extends Item {
   constructor () {
     super()
@@ -39,6 +42,20 @@ export default class Type extends Item {
     this._eventHandler = new EventHandler()
     this._deepEventHandler = new EventHandler()
   }
+
+  /**
+   * Compute the path from this type to the specified target.
+   *
+   * @example
+   *   It should be accessible via `this.get(result[0]).get(result[1])..``
+   *   const path = type.getPathTo(child)
+   *   // assuming `type instanceof YArray`
+   *   console.log(path) // might look like => [2, 'key1']
+   *   child === type.get(path[0]).get(path[1])
+   *
+   * @param {YType} type Type target
+   * @return {Array<string>} Path to the target
+   */
   getPathTo (type) {
     if (type === this) {
       return []
@@ -65,6 +82,12 @@ export default class Type extends Item {
     }
     return path
   }
+
+  /**
+   * @private
+   * Call event listeners with an event. This will also add an event to all
+   * parents (for `.observeDeep` handlers).
+   */
   _callEventHandler (transaction, event) {
     const changedParentTypes = transaction.changedParentTypes
     this._eventHandler.callEventListeners(transaction, event)
@@ -79,6 +102,14 @@ export default class Type extends Item {
       type = type._parent
     }
   }
+
+  /**
+   * @private
+   * Helper method to transact if the y instance is available.
+   *
+   * TODO: Currently event handlers are not thrown when a type is not registered
+   *       with a Yjs instance.
+   */
   _transact (f) {
     const y = this._y
     if (y !== null) {
@@ -87,18 +118,53 @@ export default class Type extends Item {
       f(y)
     }
   }
+
+  /**
+   * Observe all events that are created on this type.
+   *
+   * @param {Function} f Observer function
+   */
   observe (f) {
     this._eventHandler.addEventListener(f)
   }
+
+  /**
+   * Observe all events that are created by this type and its children.
+   *
+   * @param {Function} f Observer function
+   */
   observeDeep (f) {
     this._deepEventHandler.addEventListener(f)
   }
+
+  /**
+   * Unregister an observer function.
+   *
+   * @param {Function} f Observer function
+   */
   unobserve (f) {
     this._eventHandler.removeEventListener(f)
   }
+
+  /**
+   * Unregister an observer function.
+   *
+   * @param {Function} f Observer function
+   */
   unobserveDeep (f) {
     this._deepEventHandler.removeEventListener(f)
   }
+
+  /**
+   * @private
+   * Integrate this type into the Yjs instance.
+   *
+   * * Save this struct in the os
+   * * This type is sent to other client
+   * * Observer functions are fired
+   *
+   * @param {Y} y The Yjs instance
+   */
   _integrate (y) {
     super._integrate(y)
     this._y = y
@@ -117,6 +183,15 @@ export default class Type extends Item {
       integrateChildren(y, t)
     }
   }
+
+  /**
+   * @private
+   * Mark this Item as deleted.
+   *
+   * @param {Y} y The Yjs instance
+   * @param {boolean} createDelete Whether to propagate a message that this
+   *                               Type was deleted.
+   */
   _delete (y, createDelete) {
     super._delete(y, createDelete)
     y._transaction.changedTypes.delete(this)
