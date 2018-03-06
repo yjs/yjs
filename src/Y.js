@@ -2,30 +2,15 @@ import DeleteStore from './Store/DeleteStore.js'
 import OperationStore from './Store/OperationStore.js'
 import StateStore from './Store/StateStore.js'
 import { generateUserID } from './Util/generateUserID.js'
-import RootID from './Util/RootID.js'
+import RootID from './Util/ID/RootID.js.js'
 import NamedEventHandler from './Util/NamedEventHandler.js'
-import UndoManager from './Util/UndoManager.js'
-import { integrateRemoteStructs } from './MessageHandler/integrateRemoteStructs.js'
-
-import { messageToString, messageToRoomname } from './MessageHandler/messageToString.js'
-
-import Connector from './Connector.js'
-import Persistence from './Persistence.js'
-import YArray from './Type/YArray.js'
-import YMap from './Type/YMap.js'
-import YText from './Type/YText.js'
-import { YXmlFragment, YXmlElement, YXmlText, YXmlHook } from './Type/y-xml/y-xml.js'
-import BinaryDecoder from './Binary/Decoder.js'
-import { getRelativePosition, fromRelativePosition } from './Util/relativePosition.js'
-import { addStruct as addType } from './Util/structReferences.js'
-
-import debug from 'debug'
 import Transaction from './Transaction.js'
 
-import TextareaBinding from './Binding/TextareaBinding.js'
-import QuillBinding from './Binding/QuillBinding.js'
-
-import { toBinary, fromBinary } from './MessageHandler/binaryEncode.js'
+/**
+ * A positive natural number including zero: 0, 1, 2, ..
+ *
+ * @typedef {number} NaturalNumber
+ */
 
 /**
  * Anything that can be encoded with `JSON.stringify` and can be decoded with
@@ -116,6 +101,9 @@ export default class Y extends NamedEventHandler {
    * other peers.
    *
    * @param {Function} f The function that should be executed as a transaction
+   * @param {?Boolean} remote Optional. Whether this transaction is initiated by
+   *                          a remote peer. This should not be set manually!
+   *                          Defaults to false.
    */
   transact (f, remote = false) {
     let initialCall = this._transaction === null
@@ -276,15 +264,6 @@ export default class Y extends NamedEventHandler {
     this.ds = null
     this.ss = null
   }
-
-  whenSynced () {
-    // TODO: remove this method
-    return new Promise(resolve => {
-      this.once('synced', () => {
-        resolve()
-      })
-    })
-  }
 }
 
 Y.extend = function extendYjs () {
@@ -297,32 +276,3 @@ Y.extend = function extendYjs () {
     }
   }
 }
-
-// TODO: The following assignments should be moved to yjs-dist
-Y.AbstractConnector = Connector
-Y.AbstractPersistence = Persistence
-Y.Array = YArray
-Y.Map = YMap
-Y.Text = YText
-Y.XmlElement = YXmlElement
-Y.XmlFragment = YXmlFragment
-Y.XmlText = YXmlText
-Y.XmlHook = YXmlHook
-
-Y.TextareaBinding = TextareaBinding
-Y.QuillBinding = QuillBinding
-
-Y.utils = {
-  BinaryDecoder,
-  UndoManager,
-  getRelativePosition,
-  fromRelativePosition,
-  addType,
-  integrateRemoteStructs,
-  toBinary,
-  fromBinary
-}
-
-Y.debug = debug
-debug.formatters.Y = messageToString
-debug.formatters.y = messageToRoomname

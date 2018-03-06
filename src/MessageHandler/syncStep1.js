@@ -1,8 +1,8 @@
-import BinaryEncoder from '../Binary/Encoder.js'
+import BinaryEncoder from '../Util/Binary/Encoder.js'
 import { readStateSet, writeStateSet } from './stateSet.js'
 import { writeDeleteSet } from './deleteSet.js'
-import ID from '../Util/ID.js'
-import { RootFakeUserID } from '../Util/RootID.js'
+import ID from '../Util/ID/ID.js.js'
+import { RootFakeUserID } from '../Util/ID/RootID.js.js'
 
 export function stringifySyncStep1 (y, decoder, strBuilder) {
   let auth = decoder.readVarString()

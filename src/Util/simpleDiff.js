@@ -1,4 +1,32 @@
 
+/**
+ * A SimpleDiff describes a change on a String.
+ *
+ * @example
+ * console.log(a) // the old value
+ * console.log(b) // the updated value
+ * // Apply changes of diff (pseudocode)
+ * a.remove(diff.pos, diff.remove) // Remove `diff.remove` characters
+ * a.insert(diff.pos, diff.insert) // Insert `diff.insert`
+ * a === b // values match
+ *
+ * @typedef {Object} SimpleDiff
+ * @property {NaturalNumber} pos The index where changes were applied
+ * @property {NaturalNumber} delete The number of characters to delete starting
+ *                                  at `index`.
+ * @property {String} insert The new text to insert at `index` after applying
+ *                           `delete`
+ */
+
+/**
+ * Create a diff between two strings. This diff implementation is intentionally
+ * not very smart.
+ *
+ * @public
+ * @param {String} a The old version of the string
+ * @param {String} b The updated version of the string
+ * @return {SimpleDiff} The diff description.
+ */
 export default function simpleDiff (a, b) {
   let left = 0 // number of same characters counting from left
   let right = 0 // number of same characters counting from right
@@ -12,7 +40,7 @@ export default function simpleDiff (a, b) {
     }
   }
   return {
-    pos: left,
+    pos: left, // TODO: rename to index (also in type above)
     remove: a.length - left - right,
     insert: b.slice(left, b.length - right)
   }

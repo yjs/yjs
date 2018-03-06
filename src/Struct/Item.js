@@ -1,6 +1,6 @@
 import { getReference } from '../Util/structReferences.js'
-import ID from '../Util/ID.js'
-import { RootFakeUserID } from '../Util/RootID.js'
+import ID from '../Util/ID/ID.js.js'
+import { RootFakeUserID } from '../Util/ID/RootID.js.js'
 import Delete from './Delete.js'
 import { transactionTypeChanged } from '../Transaction.js'
 

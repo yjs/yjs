@@ -1,6 +1,6 @@
 import Item from './Item.js'
 import EventHandler from '../Util/EventHandler.js'
-import ID from '../Util/ID.js'
+import ID from '../Util/ID/ID.js.js'
 
 // restructure children as if they were inserted one after another
 function integrateChildren (y, start) {
@@ -47,11 +47,11 @@ export default class Type extends Item {
    * Compute the path from this type to the specified target.
    *
    * @example
-   *   It should be accessible via `this.get(result[0]).get(result[1])..``
-   *   const path = type.getPathTo(child)
-   *   // assuming `type instanceof YArray`
-   *   console.log(path) // might look like => [2, 'key1']
-   *   child === type.get(path[0]).get(path[1])
+   * It should be accessible via `this.get(result[0]).get(result[1])..`
+   * const path = type.getPathTo(child)
+   * // assuming `type instanceof YArray`
+   * console.log(path) // might look like => [2, 'key1']
+   * child === type.get(path[0]).get(path[1])
    *
    * @param {YType} type Type target
    * @return {Array<string>} Path to the target

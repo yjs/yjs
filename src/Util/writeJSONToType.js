@@ -1,6 +1,6 @@
 
-import YMap from '../Type/YMap'
-import YArray from '../Type/YArray'
+import YMap from '../Types/YMap'
+import YArray from '../Types/YArray'
 
 export function writeObjectToYMap (object, type) {
   for (var key in object) {

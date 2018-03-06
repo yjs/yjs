@@ -1,5 +1,5 @@
 import { getStruct } from '../Util/structReferences.js'
-import BinaryDecoder from '../Binary/Decoder.js'
+import BinaryDecoder from '../Util/Binary/Decoder.js'
 import { logID } from './messageToString.js'
 
 class MissingEntry {

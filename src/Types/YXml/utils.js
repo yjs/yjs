@@ -1,4 +1,4 @@
-import { YXmlText, YXmlHook } from './y-xml.js'
+import { YXmlText, YXmlHook } from './YXml.js'
 
 export function defaultDomFilter (node, attributes) {
   return attributes

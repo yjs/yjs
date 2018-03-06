@@ -1,5 +1,5 @@
 import { getReference } from '../Util/structReferences.js'
-import ID from '../Util/ID.js'
+import ID from '../Util/ID/ID.js.js'
 import { logID } from '../MessageHandler/messageToString.js'
 
 /**

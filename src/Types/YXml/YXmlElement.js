@@ -1,7 +1,7 @@
 import { defaultDomFilter } from './utils.js'
 
 import YMap from '../YMap.js'
-import { YXmlFragment } from './y-xml.js'
+import { YXmlFragment } from './YXml.js'
 
 /**
  * An YXmlElement imitates the behavior of a
@@ -161,8 +161,8 @@ export default class YXmlElement extends YXmlFragment {
    *
    * @param {String} attributeName The attribute name that is to be removed.
    */
-  removeAttribute () {
-    return YMap.prototype.delete.apply(this, arguments)
+  removeAttribute (attributeName) {
+    return YMap.prototype.delete.call(this, attributeName)
   }
 
   /**
@@ -171,8 +171,8 @@ export default class YXmlElement extends YXmlFragment {
    * @param {String} attributeName The attribute name that is to be set.
    * @param {String} attributeValue The attribute value that is to be set.
    */
-  setAttribute () {
-    return YMap.prototype.set.apply(this, arguments)
+  setAttribute (attributeName, attributeValue) {
+    return YMap.prototype.set.call(this, attributeName, attributeValue)
   }
 
   /**
@@ -182,8 +182,8 @@ export default class YXmlElement extends YXmlFragment {
    *                               queried value.
    * @return {String} The queried attribute value
    */
-  getAttribute () {
-    return YMap.prototype.get.apply(this, arguments)
+  getAttribute (attributeName) {
+    return YMap.prototype.get.call(this, attributeName)
   }
 
   /**

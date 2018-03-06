@@ -2,7 +2,7 @@
 import { writeStructs } from './syncStep1.js'
 import { integrateRemoteStructs } from './integrateRemoteStructs.js'
 import { readDeleteSet, writeDeleteSet } from './deleteSet.js'
-import BinaryEncoder from '../Binary/Encoder.js'
+import BinaryEncoder from '../Util/Binary/Encoder.js'
 
 /**
  * Read the Decoder and fill the Yjs instance with data in the decoder.

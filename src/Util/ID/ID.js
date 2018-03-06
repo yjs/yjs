@@ -1,7 +1,7 @@
 
 export default class ID {
   constructor (user, clock) {
-    this.user = user
+    this.user = user // TODO: rename to client
     this.clock = clock
   }
   clone () {

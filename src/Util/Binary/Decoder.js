@@ -1,17 +1,23 @@
-import ID from '../Util/ID.js'
-import { default as RootID, RootFakeUserID } from '../Util/RootID.js'
+import ID from '../Util/ID/ID.js.js'
+import { default as RootID, RootFakeUserID } from '../Util/ID/RootID.js.js'
 
 /**
- * A BinaryDecoder handles the decoding of an ArrayBuffer
+ * A BinaryDecoder handles the decoding of an ArrayBuffer.
  */
 export default class BinaryDecoder {
   /**
-   * @param {Uint8Array|Buffer} buffer The binary data that this instance decodes
+   * @param {Uint8Array|Buffer} buffer The binary data that this instance
+   *                                   decodes.
    */
   constructor (buffer) {
     if (buffer instanceof ArrayBuffer) {
       this.uint8arr = new Uint8Array(buffer)
-    } else if (buffer instanceof Uint8Array || (typeof Buffer !== 'undefined' && buffer instanceof Buffer)) {
+    } else if (
+      buffer instanceof Uint8Array ||
+      (
+        typeof Buffer !== 'undefined' && buffer instanceof Buffer
+      )
+    ) {
       this.uint8arr = buffer
     } else {
       throw new Error('Expected an ArrayBuffer or Uint8Array!')
@@ -20,8 +26,8 @@ export default class BinaryDecoder {
   }
 
   /**
-   * Clone this decoder instance
-   * Optionally set a new position parameter
+   * Clone this decoder instance.
+   * Optionally set a new position parameter.
    */
   clone (newPos = this.pos) {
     let decoder = new BinaryDecoder(this.uint8arr)
@@ -30,30 +36,30 @@ export default class BinaryDecoder {
   }
 
   /**
-   * Number of bytes
+   * Number of bytes.
    */
   get length () {
     return this.uint8arr.length
   }
 
   /**
-   * Skip one byte, jump to the next position
+   * Skip one byte, jump to the next position.
    */
   skip8 () {
     this.pos++
   }
 
   /**
-   * Read one byte as unsigned integer
+   * Read one byte as unsigned integer.
    */
   readUint8 () {
     return this.uint8arr[this.pos++]
   }
 
   /**
-   * Read 4 bytes as unsigned integer
+   * Read 4 bytes as unsigned integer.
    *
-   * @return number An unsigned integer
+   * @return {number} An unsigned integer.
    */
   readUint32 () {
     let uint =
@@ -66,22 +72,22 @@ export default class BinaryDecoder {
   }
 
   /**
-   * Look ahead without incrementing position
-   * to the next byte and read it as unsigned integer
+   * Look ahead without incrementing position.
+   * to the next byte and read it as unsigned integer.
    *
-   * @return number An unsigned integer
+   * @return {number} An unsigned integer.
    */
   peekUint8 () {
     return this.uint8arr[this.pos]
   }
 
   /**
-   * Read unsigned integer (32bit) with variable length
-   * 1/8th of the storage is used as encoding overhead
-   *  * numbers < 2^7 is stored in one byte
-   *  * numbers < 2^14 is stored in two bytes
+   * Read unsigned integer (32bit) with variable length.
+   * 1/8th of the storage is used as encoding overhead.
+   *  * numbers < 2^7 is stored in one byte.
+   *  * numbers < 2^14 is stored in two bytes.
    *
-   * @return number An unsigned integer
+   * @return {number} An unsigned integer.
    */
   readVarUint () {
     let num = 0
@@ -103,7 +109,7 @@ export default class BinaryDecoder {
    * Read string of variable length
    * * varUint is used to store the length of the string
    *
-   * @return string
+   * @return {String} The read String.
    */
   readVarString () {
     let len = this.readVarUint()
@@ -114,6 +120,7 @@ export default class BinaryDecoder {
     let encodedString = bytes.map(b => String.fromCodePoint(b)).join('')
     return decodeURIComponent(escape(encodedString))
   }
+
   /**
    * Look ahead and read varString without incrementing position
    */
@@ -123,10 +130,11 @@ export default class BinaryDecoder {
     this.pos = pos
     return s
   }
+
   /**
-   * Read ID
-   * * If first varUint read is 0xFFFFFF a RootID is returned
-   * * Otherwise an ID is returned
+   * Read ID.
+   * * If first varUint read is 0xFFFFFF a RootID is returned.
+   * * Otherwise an ID is returned.
    *
    * @return ID
    */

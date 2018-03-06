@@ -1,6 +1,6 @@
 import { test } from '../node_modules/cutest/cutest.mjs'
-import BinaryEncoder from '../src/Binary/Encoder.js'
-import BinaryDecoder from '../src/Binary/Decoder.js'
+import BinaryEncoder from '../src/Util/Binary/Encoder.js'
+import BinaryDecoder from '../src/Util/Binary/Decoder.js'
 import { generateUserID } from '../src/Util/generateUserID.js'
 import Chance from 'chance'
 

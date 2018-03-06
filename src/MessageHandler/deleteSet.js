@@ -1,5 +1,5 @@
 import { deleteItemRange } from '../Struct/Delete.js'
-import ID from '../Util/ID.js'
+import ID from '../Util/ID/ID.js.js'
 
 export function stringifyDeleteSet (y, decoder, strBuilder) {
   let dsLength = decoder.readUint32()

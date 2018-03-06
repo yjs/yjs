@@ -1,5 +1,5 @@
 import Tree from '../Util/Tree.js'
-import ID from '../Util/ID.js'
+import ID from '../Util/ID/ID.js.js'
 
 class DSNode {
   constructor (id, len, gc) {

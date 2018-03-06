@@ -1,5 +1,5 @@
-import BinaryEncoder from './Binary/Encoder.js'
-import BinaryDecoder from './Binary/Decoder.js'
+import BinaryEncoder from './Util/Binary/Encoder.js'
+import BinaryDecoder from './Util/Binary/Decoder.js'
 
 import { sendSyncStep1, readSyncStep1 } from './MessageHandler/syncStep1.js'
 import { readSyncStep2 } from './MessageHandler/syncStep2.js'

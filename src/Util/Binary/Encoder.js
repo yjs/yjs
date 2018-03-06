@@ -1,10 +1,10 @@
-import { RootFakeUserID } from '../Util/RootID.js'
+import { RootFakeUserID } from '../Util/ID/RootID.js.js'
 
 const bits7 = 0b1111111
 const bits8 = 0b11111111
 
 /**
- * A BinaryEncoder handles the encoding to an ArrayBuffer
+ * A BinaryEncoder handles the encoding to an ArrayBuffer.
  */
 export default class BinaryEncoder {
   constructor () {
@@ -13,7 +13,7 @@ export default class BinaryEncoder {
   }
 
   /**
-   * The current length of the encoded data
+   * The current length of the encoded data.
    */
   get length () {
     return this.data.length
@@ -27,46 +27,46 @@ export default class BinaryEncoder {
   }
 
   /**
-   * Create an ArrayBuffer
+   * Create an ArrayBuffer.
    *
-   * @return {Uint8Array}
+   * @return {Uint8Array} A Uint8Array that represents the written data.
    */
   createBuffer () {
     return Uint8Array.from(this.data).buffer
   }
 
   /**
-   * Write one byte as an unsigned integer
+   * Write one byte as an unsigned integer.
    *
-   * @param {number} num The number that is to be encoded
+   * @param {number} num The number that is to be encoded.
    */
   writeUint8 (num) {
     this.data.push(num & bits8)
   }
 
   /**
-   * Write one byte as an unsigned Integer at a specific location
+   * Write one byte as an unsigned Integer at a specific location.
    *
-   * @param {number} pos The location where the data will be written
-   * @param {number} num The number that is to
+   * @param {number} pos The location where the data will be written.
+   * @param {number} num The number that is to be encoded.
    */
   setUint8 (pos, num) {
     this.data[pos] = num & bits8
   }
 
   /**
-   * Write two bytes as an unsigned integer
+   * Write two bytes as an unsigned integer.
    *
-   * @param {number} pos The number that is to be encoded
+   * @param {number} num The number that is to be encoded.
    */
   writeUint16 (num) {
     this.data.push(num & bits8, (num >>> 8) & bits8)
   }
   /**
-   * Write two bytes as an unsigned integer at a specific location
+   * Write two bytes as an unsigned integer at a specific location.
    *
-   * @param {number} pos The location where the data will be written
-   * @param {number} num The number that is to
+   * @param {number} pos The location where the data will be written.
+   * @param {number} num The number that is to be encoded.
    */
   setUint16 (pos, num) {
     this.data[pos] = num & bits8
@@ -76,7 +76,7 @@ export default class BinaryEncoder {
   /**
    * Write two bytes as an unsigned integer
    *
-   * @param {number} pos The number that is to be encoded
+   * @param {number} num The number that is to be encoded.
    */
   writeUint32 (num) {
     for (let i = 0; i < 4; i++) {
@@ -86,10 +86,10 @@ export default class BinaryEncoder {
   }
 
   /**
-   * Write two bytes as an unsigned integer at a specific location
+   * Write two bytes as an unsigned integer at a specific location.
    *
-   * @param {number} pos The location where the data will be written
-   * @param {number} num The number that is to
+   * @param {number} pos The location where the data will be written.
+   * @param {number} num The number that is to be encoded.
    */
   setUint32 (pos, num) {
     for (let i = 0; i < 4; i++) {
@@ -99,9 +99,9 @@ export default class BinaryEncoder {
   }
 
   /**
-   * Write a variable length unsigned integer
+   * Write a variable length unsigned integer.
    *
-   * @param {number} pos The number that is to be encoded
+   * @param {number} num The number that is to be encoded.
    */
   writeVarUint (num) {
     while (num >= 0b10000000) {
@@ -114,7 +114,7 @@ export default class BinaryEncoder {
   /**
    * Write a variable length string.
    *
-   * @param {number} pos The number that is to be encoded
+   * @param {String} str The string that is to be encoded.
    */
   writeVarString (str) {
     let encodedString = unescape(encodeURIComponent(str))
@@ -127,9 +127,9 @@ export default class BinaryEncoder {
   }
 
   /**
-   * Write an ID at the current position
+   * Write an ID at the current position.
    *
-   * @param {ID} id
+   * @param {ID} id The ID that is to be written.
    */
   writeID (id) {
     const user = id.user

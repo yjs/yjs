@@ -5,7 +5,7 @@ import { beforeTransactionSelectionFixer, afterTransactionSelectionFixer } from 
 
 import YArray from '../YArray.js'
 import YXmlEvent from './YXmlEvent.js'
-import { YXmlText, YXmlHook } from './y-xml'
+import { YXmlText, YXmlHook } from './YXml.js'
 import { logID } from '../../MessageHandler/messageToString.js'
 import diff from '../../Util/simpleDiff.js'
 
@@ -303,6 +303,7 @@ export default class YXmlFragment extends YArray {
    *                           inserted after this node. Set null to insert at
    *                           the beginning.
    * @param {Array<Element>} doms The Dom elements to insert.
+   * @param {?Document} _document Optional. Provide the global document object.
    * @return {Array<YXmlElement>} The YxmlElements that are inserted.
    */
   insertDomElementsAfter (prev, doms, _document) {
@@ -318,6 +319,7 @@ export default class YXmlFragment extends YArray {
    *
    * @param {Integer} index The position to insert elements at.
    * @param {Array<Element>} doms The Dom elements to insert.
+   * @param {?Document} _document Optional. Provide the global document object.
    * @return {Array<YXmlElement>} The YxmlElements that are inserted.
    */
   insertDomElements (index, doms, _document) {
@@ -339,6 +341,7 @@ export default class YXmlFragment extends YArray {
    * the children of this YXml Type.
    *
    * @param {Element} dom The Dom Element that should be bound to this Type.
+   * @param {?Document} _document Optional. Provide the global document object.
    */
   bindToDom (dom, _document) {
     if (this._dom != null) {

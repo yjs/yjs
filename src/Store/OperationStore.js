@@ -1,5 +1,5 @@
 import Tree from '../Util/Tree.js'
-import RootID from '../Util/RootID.js'
+import RootID from '../Util/ID/RootID.js.js'
 import { getStruct } from '../Util/structReferences.js'
 import { logID } from '../MessageHandler/messageToString.js'
 
