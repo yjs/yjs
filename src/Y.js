@@ -2,7 +2,7 @@ import DeleteStore from './Store/DeleteStore.js'
 import OperationStore from './Store/OperationStore.js'
 import StateStore from './Store/StateStore.js'
 import { generateUserID } from './Util/generateUserID.js'
-import RootID from './Util/ID/RootID.js.js'
+import RootID from './Util/ID/RootID.js'
 import NamedEventHandler from './Util/NamedEventHandler.js'
 import Transaction from './Transaction.js'
 

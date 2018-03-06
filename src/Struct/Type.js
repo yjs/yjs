@@ -1,6 +1,6 @@
 import Item from './Item.js'
 import EventHandler from '../Util/EventHandler.js'
-import ID from '../Util/ID/ID.js.js'
+import ID from '../Util/ID/ID.js'
 
 // restructure children as if they were inserted one after another
 function integrateChildren (y, start) {

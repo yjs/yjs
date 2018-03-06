@@ -1,5 +1,5 @@
-import ID from '../Util/ID/ID.js.js'
-import { default as RootID, RootFakeUserID } from '../Util/ID/RootID.js.js'
+import ID from '../ID/ID.js'
+import { default as RootID, RootFakeUserID } from '../ID/RootID.js'
 
 /**
  * A BinaryDecoder handles the decoding of an ArrayBuffer.

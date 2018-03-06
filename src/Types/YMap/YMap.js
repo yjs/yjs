@@ -1,8 +1,8 @@
-import Type from '../Struct/Type.js'
-import Item from '../Struct/Item.js'
-import ItemJSON from '../Struct/ItemJSON.js'
-import { logID } from '../MessageHandler/messageToString.js'
-import YEvent from '../Util/YEvent.js'
+import Type from '../../Struct/Type.js'
+import Item from '../../Struct/Item.js'
+import ItemJSON from '../../Struct/ItemJSON.js'
+import { logID } from '../../MessageHandler/messageToString.js'
+import YEvent from '../../Util/YEvent.js'
 
 /**
  * Event that describes the changes on a YMap.

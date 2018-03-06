@@ -1,4 +1,4 @@
-import YText from '../YText.js'
+import YText from '../YText/YText.js'
 
 /**
  * Represents text in a Dom Element. In the future this type will also handle

@@ -1,5 +1,5 @@
-import ID from './ID.js'
-import RootID from './RootID.js'
+import ID from './ID/ID.js'
+import RootID from './ID/RootID.js'
 
 /**
  * A relative position that is based on the Yjs model. In contrast to an

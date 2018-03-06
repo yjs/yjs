@@ -2,8 +2,8 @@ import BinaryDecoder from '../Util/Binary/Decoder.js'
 import { stringifyStructs } from './integrateRemoteStructs.js'
 import { stringifySyncStep1 } from './syncStep1.js'
 import { stringifySyncStep2 } from './syncStep2.js'
-import ID from '../Util/ID/ID.js.js'
-import RootID from '../Util/ID/RootID.js.js'
+import ID from '../Util/ID/ID.js'
+import RootID from '../Util/ID/RootID.js'
 import Y from '../Y.js'
 
 export function messageToString ([y, buffer]) {

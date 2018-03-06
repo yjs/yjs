@@ -1,5 +1,5 @@
 
-import ID from '../Util/ID/ID.js.js'
+import ID from '../Util/ID/ID.js'
 import ItemJSON from '../Struct/ItemJSON.js'
 import ItemString from '../Struct/ItemString.js'
 

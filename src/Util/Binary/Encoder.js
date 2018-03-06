@@ -1,4 +1,4 @@
-import { RootFakeUserID } from '../Util/ID/RootID.js.js'
+import { RootFakeUserID } from '../ID/RootID.js'
 
 const bits7 = 0b1111111
 const bits8 = 0b11111111

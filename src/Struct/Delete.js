@@ -1,5 +1,5 @@
-import { getReference } from '../Util/structReferences.js'
-import ID from '../Util/ID/ID.js.js'
+import { getStructReference } from '../Util/structReferences.js'
+import ID from '../Util/ID/ID.js'
 import { logID } from '../MessageHandler/messageToString.js'
 
 /**
@@ -79,7 +79,7 @@ export default class Delete {
    * @param {BinaryEncoder} encoder The encoder to write data to.
    */
   _toBinary (encoder) {
-    encoder.writeUint8(getReference(this.constructor))
+    encoder.writeUint8(getStructReference(this.constructor))
     encoder.writeID(this._targetID)
     encoder.writeVarUint(this._length)
   }

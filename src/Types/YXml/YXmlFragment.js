@@ -3,7 +3,7 @@
 import { defaultDomFilter, applyChangesFromDom, reflectChangesOnDom } from './utils.js'
 import { beforeTransactionSelectionFixer, afterTransactionSelectionFixer } from './selection.js'
 
-import YArray from '../YArray.js'
+import YArray from '../YArray/YArray.js'
 import YXmlEvent from './YXmlEvent.js'
 import { YXmlText, YXmlHook } from './YXml.js'
 import { logID } from '../../MessageHandler/messageToString.js'

@@ -1,4 +1,4 @@
-import ID from './ID.js'
+import ID from './ID/ID.js'
 
 class ReverseOperation {
   constructor (y, transaction) {

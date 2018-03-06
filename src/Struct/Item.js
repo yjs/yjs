@@ -1,6 +1,6 @@
-import { getReference } from '../Util/structReferences.js'
-import ID from '../Util/ID/ID.js.js'
-import { RootFakeUserID } from '../Util/ID/RootID.js.js'
+import { getStructReference } from '../Util/structReferences.js'
+import ID from '../Util/ID/ID.js'
+import { RootFakeUserID } from '../Util/ID/RootID.js'
 import Delete from './Delete.js'
 import { transactionTypeChanged } from '../Transaction.js'
 
@@ -336,7 +336,7 @@ export default class Item {
    * @param {BinaryEncoder} encoder The encoder to write data to.
    */
   _toBinary (encoder) {
-    encoder.writeUint8(getReference(this.constructor))
+    encoder.writeUint8(getStructReference(this.constructor))
     let info = 0
     if (this._origin !== null) {
       info += 0b1 // origin is defined

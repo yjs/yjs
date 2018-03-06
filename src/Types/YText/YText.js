@@ -1,8 +1,8 @@
-import ItemString from '../Struct/ItemString.js'
-import ItemEmbed from '../Struct/ItemEmbed.js'
-import ItemFormat from '../Struct/ItemFormat.js'
-import { logID } from '../MessageHandler/messageToString.js'
-import { YArrayEvent, default as YArray } from './YArray.js'
+import ItemString from '../../Struct/ItemString.js'
+import ItemEmbed from '../../Struct/ItemEmbed.js'
+import ItemFormat from '../../Struct/ItemFormat.js'
+import { logID } from '../../MessageHandler/messageToString.js'
+import { YArrayEvent, default as YArray } from '../YArray/YArray.js'
 
 function integrateItem (item, parent, y, left, right) {
   item._origin = left

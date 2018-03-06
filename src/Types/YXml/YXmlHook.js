@@ -1,4 +1,4 @@
-import YMap from '../YMap.js'
+import YMap from '../YMap/YMap.js'
 import { getHook, addHook } from './hooks.js'
 
 /**

@@ -1,6 +1,6 @@
 import { defaultDomFilter } from './utils.js'
 
-import YMap from '../YMap.js'
+import YMap from '../YMap/YMap.js'
 import { YXmlFragment } from './YXml.js'
 
 /**
