@@ -371,42 +371,7 @@ export default class YXmlFragment extends YArray {
     }
     this._y.on('beforeTransaction', beforeTransactionSelectionFixer)
     this._y.on('afterTransaction', afterTransactionSelectionFixer)
-    const applyFilter = (type) => {
-      if (type._deleted) {
-        return
-      }
-      // check if type is a child of this
-      let isChild = false
-      let p = type
-      while (p !== this._y) {
-        if (p === this) {
-          isChild = true
-          break
-        }
-        p = p._parent
-      }
-      if (!isChild) {
-        return
-      }
-      // filter attributes
-      let attributes = new Map()
-      if (type.getAttributes !== undefined) {
-        let attrs = type.getAttributes()
-        for (let key in attrs) {
-          attributes.set(key, attrs[key])
-        }
-      }
-      let result = this._domFilter(type.nodeName, new Map(attributes))
-      if (result === null) {
-        type._delete(this._y)
-      } else {
-        attributes.forEach((value, key) => {
-          if (!result.has(key)) {
-            type.removeAttribute(key)
-          }
-        })
-      }
-    }
+
     this._y.on('beforeObserverCalls', function (y, transaction) {
       // apply dom filter to new and changed types
       transaction.changedTypes.forEach(function (subs, type) {
@@ -417,76 +382,6 @@ export default class YXmlFragment extends YArray {
       })
       transaction.newTypes.forEach(applyFilter)
     })
-    // Apply Y.Xml events to dom
-    this.observeDeep(events => {
-      reflectChangesOnDom.call(this, events, _document)
-    })
-    // Apply Dom changes on Y.Xml
-    if (typeof MutationObserver !== 'undefined') {
-      this._beforeTransactionHandler = () => {
-        this._domObserverListener(this._domObserver.takeRecords())
-      }
-      this._y.on('beforeTransaction', this._beforeTransactionHandler)
-      this._domObserverListener = mutations => {
-        this._mutualExclude(() => {
-          this._y.transact(() => {
-            let diffChildren = new Set()
-            mutations.forEach(mutation => {
-              const dom = mutation.target
-              const yxml = dom._yxml
-              if (yxml == null || yxml.constructor === YXmlHook) {
-                // dom element is filtered
-                return
-              }
-              switch (mutation.type) {
-                case 'characterData':
-                  var change = diff(yxml.toString(), dom.nodeValue)
-                  yxml.delete(change.pos, change.remove)
-                  yxml.insert(change.pos, change.insert)
-                  break
-                case 'attributes':
-                  if (yxml.constructor === YXmlFragment) {
-                    break
-                  }
-                  let name = mutation.attributeName
-                  let val = dom.getAttribute(name)
-                  // check if filter accepts attribute
-                  let attributes = new Map()
-                  attributes.set(name, val)
-                  if (this._domFilter(dom.nodeName, attributes).size > 0 && yxml.constructor !== YXmlFragment) {
-                    if (yxml.getAttribute(name) !== val) {
-                      if (val == null) {
-                        yxml.removeAttribute(name)
-                      } else {
-                        yxml.setAttribute(name, val)
-                      }
-                    }
-                  }
-                  break
-                case 'childList':
-                  diffChildren.add(mutation.target)
-                  break
-              }
-            })
-            for (let dom of diffChildren) {
-              if (dom.yOnChildrenChanged !== undefined) {
-                dom.yOnChildrenChanged()
-              }
-              if (dom._yxml != null && dom._yxml !== false) {
-                applyChangesFromDom(dom)
-              }
-            }
-          })
-        })
-      }
-      this._domObserver = new MutationObserver(this._domObserverListener)
-      this._domObserver.observe(dom, {
-        childList: true,
-        attributes: true,
-        characterData: true,
-        subtree: true
-      })
-    }
     return dom
   }
 

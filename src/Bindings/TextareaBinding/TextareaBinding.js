@@ -27,12 +27,12 @@ function domObserver () {
 /**
  * A binding that binds a YText to a dom textarea.
  *
- * This binding will automatically be destroyed when it's parent is deleted
+ * This binding is automatically destroyed when its parent is deleted.
  *
  * @example
  *   const textare = document.createElement('textarea')
  *   const type = y.define('textarea', Y.Text)
- *   const binding = new Y.QuillBinding(textarea, type)
+ *   const binding = new Y.QuillBinding(type, textarea)
  *
  */
 export default class TextareaBinding extends Binding {
