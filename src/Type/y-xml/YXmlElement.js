@@ -8,6 +8,9 @@ export default class YXmlElement extends YXmlFragment {
     super()
     this.nodeName = null
     this._scrollElement = null
+    if (typeof arg2 === 'function') {
+      this._domFilter = arg2
+    }
     if (typeof arg1 === 'string') {
       this.nodeName = arg1.toUpperCase()
     } else if (arg1 != null && arg1.nodeType != null && arg1.nodeType === arg1.ELEMENT_NODE) {
@@ -15,9 +18,6 @@ export default class YXmlElement extends YXmlFragment {
       this._setDom(arg1, _document)
     } else {
       this.nodeName = 'UNDEFINED'
-    }
-    if (typeof arg2 === 'function') {
-      this._domFilter = arg2
     }
   }
   _copy () {
@@ -39,7 +39,7 @@ export default class YXmlElement extends YXmlFragment {
         // get attribute via getAttribute for custom element support (some write something different in attr.value)
         attributes.set(attr.name, dom.getAttribute(attr.name))
       }
-      attributes = this._domFilter(dom, attributes)
+      attributes = this._domFilter(dom.nodeName, attributes)
       attributes.forEach((value, name) => {
         this.setAttribute(name, value)
       })
