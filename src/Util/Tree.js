@@ -1,4 +1,17 @@
 
+function rotate (tree, parent, newParent, n) {
+  if (parent === null) {
+    tree.root = newParent
+    newParent._parent = null
+  } else if (parent.left === n) {
+    parent.left = newParent
+  } else if (parent.right === n) {
+    parent.right = newParent
+  } else {
+    throw new Error('The elements are wrongly connected!')
+  }
+}
+
 class N {
   // A created node is always red!
   constructor (val) {
@@ -41,21 +54,12 @@ class N {
     this._right = n
   }
   rotateLeft (tree) {
-    var parent = this.parent
-    var newParent = this.right
-    var newRight = this.right.left
+    const parent = this.parent
+    const newParent = this.right
+    const newRight = this.right.left
     newParent.left = this
     this.right = newRight
-    if (parent === null) {
-      tree.root = newParent
-      newParent._parent = null
-    } else if (parent.left === this) {
-      parent.left = newParent
-    } else if (parent.right === this) {
-      parent.right = newParent
-    } else {
-      throw new Error('The elements are wrongly connected!')
-    }
+    rotate(tree, parent, newParent, this)
   }
   next () {
     if (this.right !== null) {
@@ -90,21 +94,12 @@ class N {
     }
   }
   rotateRight (tree) {
-    var parent = this.parent
-    var newParent = this.left
-    var newLeft = this.left.right
+    const parent = this.parent
+    const newParent = this.left
+    const newLeft = this.left.right
     newParent.right = this
     this.left = newLeft
-    if (parent === null) {
-      tree.root = newParent
-      newParent._parent = null
-    } else if (parent.left === this) {
-      parent.left = newParent
-    } else if (parent.right === this) {
-      parent.right = newParent
-    } else {
-      throw new Error('The elements are wrongly connected!')
-    }
+    rotate(tree, parent, newParent, this)
   }
   getUncle () {
     // we can assume that grandparent exists when this is called!

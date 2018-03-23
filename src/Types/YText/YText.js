@@ -109,14 +109,8 @@ function minimizeAttributeChanges (left, right, currentAttributes, attributes) {
   return [left, right]
 }
 
-function insertText (y, text, parent, left, right, currentAttributes, attributes) {
-  for (let [key] of currentAttributes) {
-    if (attributes.hasOwnProperty(key) === false) {
-      attributes[key] = null
-    }
-  }
-  [left, right] = minimizeAttributeChanges(left, right, currentAttributes, attributes)
-  let negatedAttributes = new Map()
+function insertAttributes (y, parent, left, right, attributes, currentAttributes) {
+  const negatedAttributes = new Map()
   // insert format-start items
   for (let key in attributes) {
     const val = attributes[key]
@@ -131,6 +125,17 @@ function insertText (y, text, parent, left, right, currentAttributes, attributes
       left = format
     }
   }
+  return negatedAttributes
+}
+
+function insertText (y, text, parent, left, right, currentAttributes, attributes) {
+  for (let [key] of currentAttributes) {
+    if (attributes.hasOwnProperty(key) === false) {
+      attributes[key] = null
+    }
+  }
+  [left, right] = minimizeAttributeChanges(left, right, currentAttributes, attributes)
+  const negatedAttributes = insertAttributes(y, parent, left, right, attributes, currentAttributes)
   // insert content
   let item
   if (text.constructor === String) {
@@ -147,21 +152,7 @@ function insertText (y, text, parent, left, right, currentAttributes, attributes
 
 function formatText (y, length, parent, left, right, currentAttributes, attributes) {
   [left, right] = minimizeAttributeChanges(left, right, currentAttributes, attributes)
-  let negatedAttributes = new Map()
-  // insert format-start items
-  for (let key in attributes) {
-    const val = attributes[key]
-    const currentVal = currentAttributes.get(key)
-    if (currentVal !== val) {
-      // save negated attribute (set null if currentVal undefined)
-      negatedAttributes.set(key, currentVal || null)
-      let format = new ItemFormat()
-      format.key = key
-      format.value = val
-      integrateItem(format, parent, y, left, right)
-      left = format
-    }
-  }
+  const negatedAttributes = insertAttributes(y, parent, left, right, attributes, currentAttributes)
   // iterate until first non-format or null is found
   // delete all formats with attributes[format.key] != null
   while (length > 0 && right !== null) {
