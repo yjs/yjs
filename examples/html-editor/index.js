@@ -1,7 +1,7 @@
 /* global Y */
 
 window.onload = function () {
-  window.yXmlType.bindToDom(document.body)
+  window.domBinding = new Y.DomBinding(window.yXmlType, document.body)
 }
 
 let y = new Y('htmleditor', {

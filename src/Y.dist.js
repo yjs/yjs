@@ -14,8 +14,9 @@ import { YXmlFragment, YXmlElement, YXmlText, YXmlHook } from './Types/YXml/YXml
 import BinaryDecoder from './Util/Binary/Decoder.js'
 import { getRelativePosition, fromRelativePosition } from './Util/relativePosition.js'
 import { registerStruct } from './Util/structReferences.js'
-import TextareaBinding from './Bindings/TextareaBinding.js'
-import QuillBinding from './Bindings/QuillBinding.js'
+import TextareaBinding from './Bindings/TextareaBinding/TextareaBinding.js'
+import QuillBinding from './Bindings/QuillBinding/QuillBinding.js'
+import DomBinding from './Bindings/DomBinding/DomBinding.js'
 import { toBinary, fromBinary } from './MessageHandler/binaryEncode.js'
 
 import debug from 'debug'
@@ -33,6 +34,7 @@ Y.XmlHook = YXmlHook
 
 Y.TextareaBinding = TextareaBinding
 Y.QuillBinding = QuillBinding
+Y.DomBinding = DomBinding
 
 Y.utils = {
   BinaryDecoder,

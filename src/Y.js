@@ -6,6 +6,8 @@ import RootID from './Util/ID/RootID.js'
 import NamedEventHandler from './Util/NamedEventHandler.js'
 import Transaction from './Transaction.js'
 
+export { default as DomBinding } from './Bindings/DomBinding/DomBinding.js'
+
 /**
  * A positive natural number including zero: 0, 1, 2, ..
  *
@@ -44,7 +46,11 @@ export default class Y extends NamedEventHandler {
     }
     this._contentReady = false
     this._opts = opts
-    this.userID = generateUserID()
+    if (typeof opts.userID !== 'number') {
+      this.userID = generateUserID()
+    } else {
+      this.userID = opts.userID
+    }
     // TODO: This should be a Map so we can use encodables as keys
     this.share = {}
     this.ds = new DeleteStore(this)
@@ -77,6 +83,8 @@ export default class Y extends NamedEventHandler {
     } else {
       initConnection()
     }
+    // for compatibility with isParentOf
+    this._parent = null
   }
   _setContentReady () {
     if (!this._contentReady) {

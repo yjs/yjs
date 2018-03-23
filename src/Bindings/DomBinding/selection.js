@@ -7,30 +7,30 @@ let relativeSelection = null
 
 export let beforeTransactionSelectionFixer
 if (typeof getSelection !== 'undefined') {
-  beforeTransactionSelectionFixer = function _beforeTransactionSelectionFixer (y, transaction, remote) {
+  beforeTransactionSelectionFixer = function _beforeTransactionSelectionFixer (y, domBinding, transaction, remote) {
     if (!remote) {
       return
     }
     relativeSelection = { from: null, to: null, fromY: null, toY: null }
     browserSelection = getSelection()
     const anchorNode = browserSelection.anchorNode
-    if (anchorNode !== null && anchorNode._yxml != null) {
-      const yxml = anchorNode._yxml
-      relativeSelection.from = getRelativePosition(yxml, browserSelection.anchorOffset)
-      relativeSelection.fromY = yxml._y
+    const anchorNodeType = domBinding.domToType.get(anchorNode)
+    if (anchorNode !== null && anchorNodeType !== undefined) {
+      relativeSelection.from = getRelativePosition(anchorNodeType, browserSelection.anchorOffset)
+      relativeSelection.fromY = anchorNodeType._y
     }
     const focusNode = browserSelection.focusNode
-    if (focusNode !== null && focusNode._yxml != null) {
-      const yxml = focusNode._yxml
-      relativeSelection.to = getRelativePosition(yxml, browserSelection.focusOffset)
-      relativeSelection.toY = yxml._y
+    const focusNodeType = domBinding.domToType.get(focusNode)
+    if (focusNode !== null && focusNodeType !== undefined) {
+      relativeSelection.to = getRelativePosition(focusNodeType, browserSelection.focusOffset)
+      relativeSelection.toY = focusNodeType._y
     }
   }
 } else {
   beforeTransactionSelectionFixer = function _fakeBeforeTransactionSelectionFixer () {}
 }
 
-export function afterTransactionSelectionFixer (y, transaction, remote) {
+export function afterTransactionSelectionFixer (y, domBinding, transaction, remote) {
   if (relativeSelection === null || !remote) {
     return
   }
@@ -46,7 +46,7 @@ export function afterTransactionSelectionFixer (y, transaction, remote) {
   if (from !== null) {
     let sel = fromRelativePosition(fromY, from)
     if (sel !== null) {
-      let node = sel.type.getDom()
+      let node = domBinding.typeToDom.get(sel.type)
       let offset = sel.offset
       if (node !== anchorNode || offset !== anchorOffset) {
         anchorNode = node
@@ -58,7 +58,7 @@ export function afterTransactionSelectionFixer (y, transaction, remote) {
   if (to !== null) {
     let sel = fromRelativePosition(toY, to)
     if (sel !== null) {
-      let node = sel.type.getDom()
+      let node = domBinding.typeToDom.get(sel.type)
       let offset = sel.offset
       if (node !== focusNode || offset !== focusOffset) {
         focusNode = node

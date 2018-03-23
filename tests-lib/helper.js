@@ -1,6 +1,7 @@
 
-import _Y from '../src/Y.js'
-import yTest from './test-connector.js'
+import _Y from '../src/Y.dist.js'
+import { DomBinding } from '../src/Y.js'
+import TestConnector from './test-connector.js'
 
 import Chance from 'chance'
 import ItemJSON from '../src/Struct/ItemJSON.js'
@@ -10,10 +11,10 @@ import Quill from 'quill'
 
 export const Y = _Y
 
-Y.extend(yTest)
-
 export const database = { name: 'memory' }
 export const connector = { name: 'test', url: 'http://localhost:1234' }
+
+Y.test = TestConnector
 
 function getStateSet (y) {
   let ss = {}
@@ -40,6 +41,7 @@ function getDeleteSet (y) {
   return ds
 }
 
+// TODO: remove?
 export function attrsObject (dom) {
   let keys = []
   let yxml = dom._yxml
@@ -55,6 +57,7 @@ export function attrsObject (dom) {
   return obj
 }
 
+// TODO: remove?
 export function domToJson (dom) {
   if (dom.nodeType === document.TEXT_NODE) {
     return dom.textContent
@@ -140,6 +143,14 @@ export async function compareUsers (t, users) {
   users.map(u => u.destroy())
 }
 
+function domFilter (nodeName, attrs) {
+  if (nodeName === 'HIDDEN') {
+    return null
+  }
+  attrs.delete('hidden')
+  return attrs
+}
+
 export async function initArrays (t, opts) {
   var result = {
     users: []
@@ -154,27 +165,25 @@ export async function initArrays (t, opts) {
       connOpts = Object.assign({ role: 'slave' }, conn)
     }
     let y = new Y(connOpts.room, {
-      _userID: i, // evil hackery, don't try this at home
+      userID: i, // evil hackery, don't try this at home
       connector: connOpts
     })
     result.users.push(y)
     result['array' + i] = y.define('array', Y.Array)
     result['map' + i] = y.define('map', Y.Map)
-    result['xml' + i] = y.define('xml', Y.XmlElement)
+    const yxml = y.define('xml', Y.XmlElement)
+    result['xml' + i] = yxml
+    const dom = document.createElement('my-dom')
+    const domBinding = new DomBinding(yxml, dom, { domFilter })
+    result['domBinding' + i] = domBinding
+    result['dom' + i] = dom
     const textType = y.define('text', Y.Text)
     result['text' + i] = textType
     const quill = new Quill(document.createElement('div'))
-    const quillBinding = new Y.QuillBinding(textType, quill)
+    result['quillBinding' + i] = new Y.QuillBinding(textType, quill)
     result['quill' + i] = quill
-    result['quillBinding' + i] = quillBinding
     y.quill = quill // put quill on the y object (so we can use it later)
-    y.get('xml').setDomFilter(function (nodeName, attrs) {
-      if (nodeName === 'HIDDEN') {
-        return null
-      }
-      attrs.delete('hidden')
-      return attrs
-    })
+    y.dom = dom
     y.on('afterTransaction', function () {
       for (let missing of y._missingStructs.values()) {
         if (Array.from(missing.values()).length > 0) {

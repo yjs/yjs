@@ -302,6 +302,7 @@ export default class YArray extends Type {
         }
       }
     })
+    return content
   }
 
   /**

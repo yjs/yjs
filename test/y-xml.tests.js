@@ -3,14 +3,13 @@ import { test } from 'cutest'
 
 test('set property', async function xml0 (t) {
   var { users, xml0, xml1 } = await initArrays(t, { users: 2 })
-  xml0.setAttribute('height', 10)
-  t.assert(xml0.getAttribute('height') === 10, 'Simple set+get works')
+  xml0.setAttribute('height', '10')
+  t.assert(xml0.getAttribute('height') === '10', 'Simple set+get works')
   await flushAll(t, users)
-  t.assert(xml1.getAttribute('height') === 10, 'Simple set+get works (remote)')
+  t.assert(xml1.getAttribute('height') === '10', 'Simple set+get works (remote)')
   await compareUsers(t, users)
 })
 
-/* TODO: Test YXml events!
 test('events', async function xml1 (t) {
   var { users, xml0, xml1 } = await initArrays(t, { users: 2 })
   var event
@@ -29,48 +28,28 @@ test('events', async function xml1 (t) {
     remoteEvent = e
   })
   xml0.setAttribute('key', 'value')
-  expectedEvent = {
-    type: 'attributeChanged',
-    value: 'value',
-    name: 'key'
-  }
-  t.compare(event, expectedEvent, 'attribute changed event')
+  t.assert(event.attributesChanged.has('key'), 'YXmlEvent.attributesChanged on updated key')
   await flushAll(t, users)
-  t.compare(remoteEvent, expectedEvent, 'attribute changed event (remote)')
+  t.assert(event.attributesChanged.has('key'), 'YXmlEvent.attributesChanged on updated key (remote)')
   // check attributeRemoved
   xml0.removeAttribute('key')
-  expectedEvent = {
-    type: 'attributeRemoved',
-    name: 'key'
-  }
-  t.compare(event, expectedEvent, 'attribute deleted event')
+  t.assert(event.attributesChanged.has('key'), 'YXmlEvent.attributesChanged on removed attribute')
   await flushAll(t, users)
-  t.compare(remoteEvent, expectedEvent, 'attribute deleted event (remote)')
-  // test childInserted event
-  expectedEvent = {
-    type: 'childInserted',
-    index: 0
-  }
+  t.assert(event.attributesChanged.has('key'), 'YXmlEvent.attributesChanged on removed attribute (remote)')
   xml0.insert(0, [new Y.XmlText('some text')])
-  t.compare(event, expectedEvent, 'child inserted event')
+  t.assert(event.childListChanged, 'YXmlEvent.childListChanged on inserted element')
   await flushAll(t, users)
-  t.compare(remoteEvent, expectedEvent, 'child inserted event (remote)')
+  t.assert(event.childListChanged, 'YXmlEvent.childListChanged on inserted element (remote)')
   // test childRemoved
   xml0.delete(0)
-  expectedEvent = {
-    type: 'childRemoved',
-    index: 0
-  }
-  t.compare(event, expectedEvent, 'child deleted event')
+  t.assert(event.childListChanged, 'YXmlEvent.childListChanged on deleted element')
   await flushAll(t, users)
-  t.compare(remoteEvent, expectedEvent, 'child deleted event (remote)')
+  t.assert(event.childListChanged, 'YXmlEvent.childListChanged on deleted element (remote)')
   await compareUsers(t, users)
 })
-*/
 
 test('attribute modifications (y -> dom)', async function xml2 (t) {
-  var { users, xml0 } = await initArrays(t, { users: 3 })
-  let dom0 = xml0.getDom()
+  var { users, xml0, dom0 } = await initArrays(t, { users: 3 })
   xml0.setAttribute('height', '100px')
   await wait()
   t.assert(dom0.getAttribute('height') === '100px', 'setAttribute')
@@ -84,8 +63,7 @@ test('attribute modifications (y -> dom)', async function xml2 (t) {
 })
 
 test('attribute modifications (dom -> y)', async function xml3 (t) {
-  var { users, xml0 } = await initArrays(t, { users: 3 })
-  let dom0 = xml0.getDom()
+  var { users, xml0, dom0 } = await initArrays(t, { users: 3 })
   dom0.setAttribute('height', '100px')
   await wait()
   t.assert(xml0.getAttribute('height') === '100px', 'setAttribute')
@@ -99,8 +77,7 @@ test('attribute modifications (dom -> y)', async function xml3 (t) {
 })
 
 test('element insert (dom -> y)', async function xml4 (t) {
-  var { users, xml0 } = await initArrays(t, { users: 3 })
-  let dom0 = xml0.getDom()
+  var { users, xml0, dom0 } = await initArrays(t, { users: 3 })
   dom0.insertBefore(document.createTextNode('some text'), null)
   dom0.insertBefore(document.createElement('p'), null)
   await wait()
@@ -110,8 +87,7 @@ test('element insert (dom -> y)', async function xml4 (t) {
 })
 
 test('element insert (y -> dom)', async function xml5 (t) {
-  var { users, xml0 } = await initArrays(t, { users: 3 })
-  let dom0 = xml0.getDom()
+  var { users, xml0, dom0 } = await initArrays(t, { users: 3 })
   xml0.insert(0, [new Y.XmlText('some text')])
   xml0.insert(1, [new Y.XmlElement('p')])
   t.assert(dom0.childNodes[0].textContent === 'some text', 'Retrieve Text node')
@@ -120,8 +96,7 @@ test('element insert (y -> dom)', async function xml5 (t) {
 })
 
 test('y on insert, then delete (dom -> y)', async function xml6 (t) {
-  var { users, xml0 } = await initArrays(t, { users: 3 })
-  let dom0 = xml0.getDom()
+  var { users, xml0, dom0 } = await initArrays(t, { users: 3 })
   dom0.insertBefore(document.createElement('p'), null)
   await wait()
   t.assert(xml0.length === 1, 'one node present')
@@ -132,8 +107,7 @@ test('y on insert, then delete (dom -> y)', async function xml6 (t) {
 })
 
 test('y on insert, then delete (y -> dom)', async function xml7 (t) {
-  var { users, xml0 } = await initArrays(t, { users: 3 })
-  let dom0 = xml0.getDom()
+  var { users, xml0, dom0 } = await initArrays(t, { users: 3 })
   xml0.insert(0, [new Y.XmlElement('p')])
   t.assert(dom0.childNodes[0].nodeName === 'P', 'Get inserted element from dom')
   xml0.delete(0, 1)
@@ -142,8 +116,7 @@ test('y on insert, then delete (y -> dom)', async function xml7 (t) {
 })
 
 test('delete consecutive (1) (Text)', async function xml8 (t) {
-  var { users, xml0 } = await initArrays(t, { users: 3 })
-  let dom0 = xml0.getDom()
+  var { users, xml0, dom0 } = await initArrays(t, { users: 3 })
   xml0.insert(0, [new Y.XmlText('1'), new Y.XmlText('2'), new Y.XmlText('3')])
   await wait()
   xml0.delete(1, 2)
@@ -155,8 +128,7 @@ test('delete consecutive (1) (Text)', async function xml8 (t) {
 })
 
 test('delete consecutive (2) (Text)', async function xml9 (t) {
-  var { users, xml0 } = await initArrays(t, { users: 3 })
-  let dom0 = xml0.getDom()
+  var { users, xml0, dom0 } = await initArrays(t, { users: 3 })
   xml0.insert(0, [new Y.XmlText('1'), new Y.XmlText('2'), new Y.XmlText('3')])
   await wait()
   xml0.delete(0, 1)
@@ -169,8 +141,7 @@ test('delete consecutive (2) (Text)', async function xml9 (t) {
 })
 
 test('delete consecutive (1) (Element)', async function xml10 (t) {
-  var { users, xml0 } = await initArrays(t, { users: 3 })
-  let dom0 = xml0.getDom()
+  var { users, xml0, dom0 } = await initArrays(t, { users: 3 })
   xml0.insert(0, [new Y.XmlElement('A'), new Y.XmlElement('B'), new Y.XmlElement('C')])
   await wait()
   xml0.delete(1, 2)
@@ -182,8 +153,7 @@ test('delete consecutive (1) (Element)', async function xml10 (t) {
 })
 
 test('delete consecutive (2) (Element)', async function xml11 (t) {
-  var { users, xml0 } = await initArrays(t, { users: 3 })
-  let dom0 = xml0.getDom()
+  var { users, xml0, dom0 } = await initArrays(t, { users: 3 })
   xml0.insert(0, [new Y.XmlElement('A'), new Y.XmlElement('B'), new Y.XmlElement('C')])
   await wait()
   xml0.delete(0, 1)
@@ -196,9 +166,7 @@ test('delete consecutive (2) (Element)', async function xml11 (t) {
 })
 
 test('Receive a bunch of elements (with disconnect)', async function xml12 (t) {
-  var { users, xml0, xml1 } = await initArrays(t, { users: 3 })
-  let dom0 = xml0.getDom()
-  let dom1 = xml1.getDom()
+  var { users, xml0, xml1, dom0, dom1 } = await initArrays(t, { users: 3 })
   users[1].disconnect()
   xml0.insert(0, [new Y.XmlElement('A'), new Y.XmlElement('B'), new Y.XmlElement('C')])
   xml0.insert(0, [new Y.XmlElement('X'), new Y.XmlElement('Y'), new Y.XmlElement('Z')])
@@ -212,9 +180,7 @@ test('Receive a bunch of elements (with disconnect)', async function xml12 (t) {
 })
 
 test('move element to a different position', async function xml13 (t) {
-  var { users, xml0, xml1 } = await initArrays(t, { users: 3 })
-  let dom0 = xml0.getDom()
-  let dom1 = xml1.getDom()
+  var { users, xml0, xml1, dom0, dom1 } = await initArrays(t, { users: 3 })
   dom0.append(document.createElement('div'))
   dom0.append(document.createElement('h1'))
   await flushAll(t, users)
@@ -227,9 +193,7 @@ test('move element to a different position', async function xml13 (t) {
 })
 
 test('filter node', async function xml14 (t) {
-  var { users, xml0, xml1 } = await initArrays(t, { users: 3 })
-  let dom0 = xml0.getDom()
-  let dom1 = xml1.getDom()
+  var { users, xml0, xml1, dom0, dom1, domBinding0, domBinding1 } = await initArrays(t, { users: 3 })
   let domFilter = (nodeName, attrs) => {
     if (nodeName === 'H1') {
       return null
@@ -237,8 +201,8 @@ test('filter node', async function xml14 (t) {
       return attrs
     }
   }
-  xml0.setDomFilter(domFilter)
-  xml1.setDomFilter(domFilter)
+  domBinding0.setFilter(domFilter)
+  domBinding1.setFilter(domFilter)
   dom0.append(document.createElement('div'))
   dom0.append(document.createElement('h1'))
   await flushAll(t, users)
@@ -248,15 +212,13 @@ test('filter node', async function xml14 (t) {
 })
 
 test('filter attribute', async function xml15 (t) {
-  var { users, xml0, xml1 } = await initArrays(t, { users: 3 })
-  let dom0 = xml0.getDom()
-  let dom1 = xml1.getDom()
+  var { users, xml0, xml1, dom0, dom1, domBinding0, domBinding1 } = await initArrays(t, { users: 3 })
   let domFilter = (nodeName, attrs) => {
     attrs.delete('hidden')
     return attrs
   }
-  xml0.setDomFilter(domFilter)
-  xml1.setDomFilter(domFilter)
+  domBinding0.setFilter(domFilter)
+  domBinding1.setFilter(domFilter)
   dom0.setAttribute('hidden', 'true')
   dom0.setAttribute('style', 'height: 30px')
   dom0.setAttribute('data-me', '77')
@@ -269,9 +231,7 @@ test('filter attribute', async function xml15 (t) {
 })
 
 test('deep element insert', async function xml16 (t) {
-  var { users, xml0, xml1 } = await initArrays(t, { users: 3 })
-  let dom0 = xml0.getDom()
-  let dom1 = xml1.getDom()
+  var { users, xml0, xml1, dom0, dom1 } = await initArrays(t, { users: 3 })
   let deepElement = document.createElement('p')
   let boldElement = document.createElement('b')
   let attrElement = document.createElement('img')
@@ -291,8 +251,8 @@ test('treeWalker', async function xml17 (t) {
   var { users, xml0 } = await initArrays(t, { users: 3 })
   let paragraph1 = new Y.XmlElement('p')
   let paragraph2 = new Y.XmlElement('p')
-  let text1 = new Y.Text('init')
-  let text2 = new Y.Text('text')
+  let text1 = new Y.XmlText('init')
+  let text2 = new Y.XmlText('text')
   paragraph1.insert(0, [text1, text2])
   xml0.insert(0, [paragraph1, paragraph2, new Y.XmlElement('img')])
   let allParagraphs = xml0.querySelectorAll('p')
@@ -309,8 +269,8 @@ test('treeWalker', async function xml17 (t) {
  * Incoming changes that contain malicious attributes should be deleted.
  */
 test('Filtering remote changes', async function xmlFilteringRemote (t) {
-  var { users, xml0, xml1 } = await initArrays(t, { users: 3 })
-  xml0.setDomFilter(function (nodeName, attributes) {
+  var { users, xml0, xml1, domBinding0 } = await initArrays(t, { users: 3 })
+  domBinding0.setFilter(function (nodeName, attributes) {
     attributes.delete('malicious')
     if (nodeName === 'HIDEME') {
       return null
@@ -320,10 +280,6 @@ test('Filtering remote changes', async function xmlFilteringRemote (t) {
       return attributes
     }
   })
-  // make sure that dom filters are active
-  // TODO: do not rely on .getDom for domFilters
-  xml0.getDom()
-  xml1.getDom()
   let paragraph = new Y.XmlElement('p')
   let hideMe = new Y.XmlElement('hideMe')
   let span = new Y.XmlElement('span')
@@ -337,8 +293,8 @@ test('Filtering remote changes', async function xmlFilteringRemote (t) {
   paragraph.insert(0, [tag2])
   await flushAll(t, users)
   // check dom
-  paragraph.getDom().setAttribute('malicious', 'true')
-  span.getDom().setAttribute('malicious', 'true')
+  domBinding0.typeToDom.get(paragraph).setAttribute('malicious', 'true')
+  domBinding0.typeToDom.get(span).setAttribute('malicious', 'true')
   // check incoming attributes
   xml1.get(0).get(0).setAttribute('malicious', 'true')
   xml1.insert(0, [new Y.XmlElement('hideMe')])
@@ -350,35 +306,35 @@ test('Filtering remote changes', async function xmlFilteringRemote (t) {
 // TODO: move elements
 var xmlTransactions = [
   function attributeChange (t, user, chance) {
-    user.get('xml', Y.XmlElement).getDom().setAttribute(chance.word(), chance.word())
+    user.dom.setAttribute(chance.word(), chance.word())
   },
   function attributeChangeHidden (t, user, chance) {
-    user.get('xml', Y.XmlElement).getDom().setAttribute('hidden', chance.word())
+    user.dom.setAttribute('hidden', chance.word())
   },
   function insertText (t, user, chance) {
-    let dom = user.get('xml', Y.XmlElement).getDom()
+    let dom = user.dom
     var succ = dom.children.length > 0 ? chance.pickone(dom.children) : null
     dom.insertBefore(document.createTextNode(chance.word()), succ)
   },
   function insertHiddenDom (t, user, chance) {
-    let dom = user.get('xml', Y.XmlElement).getDom()
+    let dom = user.dom
     var succ = dom.children.length > 0 ? chance.pickone(dom.children) : null
     dom.insertBefore(document.createElement('hidden'), succ)
   },
   function insertDom (t, user, chance) {
-    let dom = user.get('xml', Y.XmlElement).getDom()
+    let dom = user.dom
     var succ = dom.children.length > 0 ? chance.pickone(dom.children) : null
     dom.insertBefore(document.createElement(chance.word()), succ)
   },
   function deleteChild (t, user, chance) {
-    let dom = user.get('xml', Y.XmlElement).getDom()
+    let dom = user.dom
     if (dom.childNodes.length > 0) {
       var d = chance.pickone(dom.childNodes)
       d.remove()
     }
   },
   function insertTextSecondLayer (t, user, chance) {
-    let dom = user.get('xml', Y.XmlElement).getDom()
+    let dom = user.dom
     if (dom.children.length > 0) {
       let dom2 = chance.pickone(dom.children)
       let succ = dom2.childNodes.length > 0 ? chance.pickone(dom2.childNodes) : null
@@ -386,7 +342,7 @@ var xmlTransactions = [
     }
   },
   function insertDomSecondLayer (t, user, chance) {
-    let dom = user.get('xml', Y.XmlElement).getDom()
+    let dom = user.dom
     if (dom.children.length > 0) {
       let dom2 = chance.pickone(dom.children)
       let succ = dom2.childNodes.length > 0 ? chance.pickone(dom2.childNodes) : null
@@ -394,7 +350,7 @@ var xmlTransactions = [
     }
   },
   function deleteChildSecondLayer (t, user, chance) {
-    let dom = user.get('xml', Y.XmlElement).getDom()
+    let dom = user.dom
     if (dom.children.length > 0) {
       let dom2 = chance.pickone(dom.children)
       if (dom2.childNodes.length > 0) {

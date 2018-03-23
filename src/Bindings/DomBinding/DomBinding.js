@@ -1,109 +1,15 @@
 /* global MutationObserver */
 
-import Binding from './Binding.js'
-import diff from '../Util/simpleDiff.js'
-import YXmlFragment from '../../Type/YXml/YXmlFragment.js'
-import YXmlHook from '../../Type/YXml/YXmlHook.js'
-
-
-function defaultFilter (nodeName, attrs) {
-  return attrs
-}
-
-function applyFilter (target, filter, type) {
-  if (type._deleted) {
-    return
-  }
-  // check if type is a child of this
-  let isChild = false
-  let p = type
-  while (p !== undefined) {
-    if (p === target) {
-      isChild = true
-      break
-    }
-    p = p._parent
-  }
-  if (!isChild) {
-    return
-  }
-  // filter attributes
-  const attributes = new Map()
-  if (type.getAttributes !== undefined) {
-    let attrs = type.getAttributes()
-    for (let key in attrs) {
-      attributes.set(key, attrs[key])
-    }
-  }
-  let result = filter(type.nodeName, new Map(attributes))
-  if (result === null) {
-    type._delete(this._y)
-  } else {
-    attributes.forEach((value, key) => {
-      if (!result.has(key)) {
-        type.removeAttribute(key)
-      }
-    })
-  }
-}
-
-function typeObserver (events) {
-  this._mutualExclude(() => {
-    reflectChangesOnDom.call(this, events)
-  })
-}
-
-function domObserver (mutations) {
-  this._mutualExclude(() => {
-    this._y.transact(() => {
-      let diffChildren = new Set()
-      mutations.forEach(mutation => {
-        const dom = mutation.target
-        const yxml = this.domToYXml.get(dom._yxml)
-        if (yxml == null || yxml.constructor === YXmlHook) {
-          // dom element is filtered
-          return
-        }
-        switch (mutation.type) {
-          case 'characterData':
-            var change = diff(yxml.toString(), dom.nodeValue)
-            yxml.delete(change.pos, change.remove)
-            yxml.insert(change.pos, change.insert)
-            break
-          case 'attributes':
-            if (yxml.constructor === YXmlFragment) {
-              break
-            }
-            let name = mutation.attributeName
-            let val = dom.getAttribute(name)
-            // check if filter accepts attribute
-            let attributes = new Map()
-            attributes.set(name, val)
-            if (this.filter(dom.nodeName, attributes).size > 0 && yxml.constructor !== YXmlFragment) {
-              if (yxml.getAttribute(name) !== val) {
-                if (val == null) {
-                  yxml.removeAttribute(name)
-                } else {
-                  yxml.setAttribute(name, val)
-                }
-              }
-            }
-            break
-          case 'childList':
-            diffChildren.add(mutation.target)
-            break
-        }
-      })
-      for (let dom of diffChildren) {
-        if (dom.yOnChildrenChanged !== undefined) {
-          dom.yOnChildrenChanged()
-        }
-        const yxml = this.domToType.get(dom)
-        applyChangesFromDom(dom, yxml)
-      }
-    })
-  })
-}
+import Binding from '../Binding.js'
+import diff from '../../Util/simpleDiff.js'
+import YXmlFragment from '../../Types/YXml/YXmlFragment.js'
+import YXmlHook from '../../Types/YXml/YXmlHook.js'
+import { removeDomChildrenUntilElementFound, createAssociation } from './util.js'
+import { beforeTransactionSelectionFixer, afterTransactionSelectionFixer } from './selection.js'
+import { defaultFilter, applyFilterOnType } from './filter.js'
+import typeObserver from './typeObserver.js'
+import domObserver from './domObserver.js'
+import { removeAssociation } from './util.js'
 
 /**
  * A binding that binds the children of a YXmlFragment to a DOM element.
@@ -122,7 +28,7 @@ export default class DomBinding extends Binding {
    *                            truth.
    * @param {Element} target The bind target. Mirrors the target.
    */
-  constructor (type, target, opts) {
+  constructor (type, target, opts = {}) {
     // Binding handles textType as this.type and domTextarea as this.target
     super(type, target)
     this.domToType = new Map()
@@ -134,20 +40,73 @@ export default class DomBinding extends Binding {
       target.insertBefore(child.toDom(this.domToType, this.typeToDom), null)
     }
     this._typeObserver = typeObserver.bind(this)
-    this._domObserver = domObserver.bind(this)
-    type.observe(this._typeObserver)
-    this._domObserver = domObserver.bind(this)
-    this._mutationObserver = new MutationObserver(this._domObserver())
+    this._domObserver = (mutations) => {
+      domObserver.call(this, mutations, opts._document)
+    }
+    type.observeDeep(this._typeObserver)
+    this._mutationObserver = new MutationObserver(this._domObserver)
     this._mutationObserver.observe(target, {
       childList: true,
       attributes: true,
       characterData: true,
       subtree: true
     })
-    this._beforeTransactionHandler = () => {
-      this._domObserverListener(this._domObserver.takeRecords())
+    const y = type._y
+    // Force flush dom changes before Type changes are applied (they might
+    // modify the dom)
+    this._beforeTransactionHandler = (y, transaction, remote) => {
+      this._domObserver(this._mutationObserver.takeRecords())
+      beforeTransactionSelectionFixer(y, this, transaction, remote)
     }
-    this._y.on('beforeTransaction', this._beforeTransactionHandler)
+    y.on('beforeTransaction', this._beforeTransactionHandler)
+    this._afterTransactionHandler = (y, transaction, remote) => {
+      afterTransactionSelectionFixer(y, this, transaction, remote)
+      // remove associations
+      // TODO: this could be done more efficiently
+      // e.g. Always delete using the following approach, or removeAssociation
+      // in dom/type-observer..
+      transaction.deletedStructs.forEach(type => {
+        const dom = this.typeToDom.get(type)
+        if (dom !== undefined) {
+          removeAssociation(this, dom, type)
+        }
+      })
+    }
+    y.on('afterTransaction', this._afterTransactionHandler)
+    // Before calling observers, apply dom filter to all changed and new types.
+    this._beforeObserverCallsHandler = (y, transaction) => {
+      // Apply dom filter to new and changed types
+      transaction.changedTypes.forEach((subs, type) => {
+        // Only check attributes. New types are filtered below.
+        if ((subs.size > 1 || (subs.size === 1 && subs.has(null) === false))) {
+          applyFilterOnType(y, this, type)
+        }
+      })
+      transaction.newTypes.forEach(type => {
+        applyFilterOnType(y, this, type)
+      })
+    }
+    y.on('beforeObserverCalls', this._beforeObserverCallsHandler)
+    createAssociation(this, target, type)
+  }
+
+  /**
+   * Enables the smart scrolling functionality for a Dom Binding.
+   * This is useful when YXml is bound to a shared editor. When activated,
+   * the viewport will be changed to accommodate remote changes.
+   *
+   * @param {Element} scrollElement The node that is
+   */
+  enableSmartScrolling (scrollElement) {
+    // @TODO: implement smart scrolling
+  }
+
+  /**
+   * NOTE: currently does not apply filter to existing elements!
+   */
+  setFilter (filter) {
+    this.filter = filter
+    // TODO: apply filter to all elements
   }
 
   /**
@@ -158,7 +117,11 @@ export default class DomBinding extends Binding {
     this.typeToDom = null
     this.type.unobserve(this._typeObserver)
     this._mutationObserver.disconnect()
-    this.type._y.off('beforeTransaction', this._beforeTransactionHandler)
+    const y = this.type._y
+    y.off('beforeTransaction', this._beforeTransactionHandler)
+    y.off('beforeObserverCalls', this._beforeObserverCallsHandler)
+    y.off('afterObserverCalls', this._afterObserverCallsHandler)
+    y.off('afterTransaction', this._afterTransactionHandler)
     super.destroy()
   }
 }

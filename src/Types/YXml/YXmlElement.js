@@ -1,7 +1,6 @@
-import { defaultDomFilter } from './utils.js'
-
 import YMap from '../YMap/YMap.js'
 import { YXmlFragment } from './YXml.js'
+import { createAssociation } from '../../Bindings/DomBinding/util.js'
 
 /**
  * An YXmlElement imitates the behavior of a
@@ -10,25 +9,12 @@ import { YXmlFragment } from './YXml.js'
  * * An YXmlElement has attributes (key value pairs)
  * * An YXmlElement has childElements that must inherit from YXmlElement
  *
- * @param {String} arg1 Node name
- * @param {Function} arg2 Dom filter
+ * @param {String} nodeName Node name
  */
 export default class YXmlElement extends YXmlFragment {
-  constructor (arg1, arg2, _document) {
+  constructor (nodeName = 'UNDEFINED') {
     super()
-    this.nodeName = null
-    this._scrollElement = null
-    if (typeof arg1 === 'string') {
-      this.nodeName = arg1.toUpperCase()
-    } else if (arg1 != null && arg1.nodeType != null && arg1.nodeType === arg1.ELEMENT_NODE) {
-      this.nodeName = arg1.nodeName
-      this._setDom(arg1, _document)
-    } else {
-      this.nodeName = 'UNDEFINED'
-    }
-    if (typeof arg2 === 'function') {
-      this._domFilter = arg2
-    }
+    this.nodeName = nodeName.toUpperCase()
   }
 
   /**
@@ -39,48 +25,6 @@ export default class YXmlElement extends YXmlFragment {
     let struct = super._copy()
     struct.nodeName = this.nodeName
     return struct
-  }
-
-  /**
-   * @private
-   * Copies children and attributes from a dom node to this YXmlElement.
-   */
-  _setDom (dom, _document) {
-    if (this._dom != null) {
-      throw new Error('Only call this method if you know what you are doing ;)')
-    } else if (dom._yxml != null) { // TODO do i need to check this? - no.. but for dev purps..
-      throw new Error('Already bound to an YXml type')
-    } else {
-      // tag is already set in constructor
-      // set attributes
-      let attributes = new Map()
-      for (let i = 0; i < dom.attributes.length; i++) {
-        let attr = dom.attributes[i]
-        // get attribute via getAttribute for custom element support (some write something different in attr.value)
-        attributes.set(attr.name, dom.getAttribute(attr.name))
-      }
-      attributes = this._domFilter(dom, attributes)
-      attributes.forEach((value, name) => {
-        this.setAttribute(name, value)
-      })
-      this.insertDomElements(0, Array.prototype.slice.call(dom.childNodes), _document)
-      this._bindToDom(dom, _document)
-      return dom
-    }
-  }
-
-  /**
-   * @private
-   * Bind a dom to to this YXmlElement. This means that the DOM changes when the
-   * YXmlElement is modified and that this YXmlElement changes when the DOM is
-   * modified.
-   *
-   * Currently only works in YXmlFragment.
-   */
-  _bindToDom (dom, _document) {
-    _document = _document || document
-    this._dom = dom
-    dom._yxml = this
   }
 
   /**
@@ -126,9 +70,6 @@ export default class YXmlElement extends YXmlFragment {
   _integrate (y) {
     if (this.nodeName === null) {
       throw new Error('nodeName must be defined!')
-    }
-    if (this._domFilter === defaultDomFilter && this._parent._domFilter !== undefined) {
-      this._domFilter = this._parent._domFilter
     }
     super._integrate(y)
   }
@@ -206,21 +147,16 @@ export default class YXmlElement extends YXmlFragment {
    *
    * @return {Element} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
    */
-  getDom (_document) {
-    _document = _document || document
-    let dom = this._dom
-    if (dom == null) {
-      dom = _document.createElement(this.nodeName)
-      dom._yxml = this
-      let attrs = this.getAttributes()
-      for (let key in attrs) {
-        dom.setAttribute(key, attrs[key])
-      }
-      this.forEach(yxml => {
-        dom.appendChild(yxml.getDom(_document))
-      })
-      this._bindToDom(dom, _document)
+  toDom (_document = document, binding) {
+    const dom = _document.createElement(this.nodeName)
+    let attrs = this.getAttributes()
+    for (let key in attrs) {
+      dom.setAttribute(key, attrs[key])
     }
+    this.forEach(yxml => {
+      dom.appendChild(yxml.toDom(_document, binding))
+    })
+    createAssociation(binding, dom, this)
     return dom
   }
 }

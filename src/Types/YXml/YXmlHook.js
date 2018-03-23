@@ -7,16 +7,12 @@ import { getHook, addHook } from './hooks.js'
  * @param {String} hookName nodeName of the Dom Node.
  */
 export default class YXmlHook extends YMap {
-  constructor (hookName, dom) {
+  constructor (hookName) {
     super()
-    this._dom = null
     this.hookName = null
     if (hookName !== undefined) {
       this.hookName = hookName
-      this._dom = dom
       dom._yjsHook = hookName
-      dom._yxml = this
-      getHook(hookName).fillType(dom, this)
     }
   }
 
@@ -31,27 +27,14 @@ export default class YXmlHook extends YMap {
   }
 
   /**
-   * Returns the Dom representation of this YXmlHook.
+   * Creates a DOM element that represents this YXmlHook.
+   *
+   * @return Element The DOM representation of this Type.
    */
-  getDom (_document) {
-    _document = _document || document
-    if (this._dom === null) {
-      const dom = getHook(this.hookName).createDom(this)
-      this._dom = dom
-      dom._yxml = this
-      dom._yjsHook = this.hookName
-    }
-    return this._dom
-  }
-
-  /**
-   * @private
-   * Removes the Dom binding.
-   */
-  _unbindFromDom () {
-    this._dom._yxml = null
-    this._yxml = null
-    // TODO: cleanup hook?
+  toDom (_document = document) {
+    const dom = getHook(this.hookName).createDom(this)
+    dom._yjsHook = this.hookName
+    return dom
   }
 
   /**
@@ -98,12 +81,6 @@ export default class YXmlHook extends YMap {
       throw new Error('hookName must be defined!')
     }
     super._integrate(y)
-  }
-  setDomFilter () {
-    // TODO: implement new modfilter method!
-  }
-  enableSmartScrolling () {
-    // TODO: implement new smartscrolling method!
   }
 }
 YXmlHook.addHook = addHook
