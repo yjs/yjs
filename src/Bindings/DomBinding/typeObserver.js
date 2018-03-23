@@ -3,6 +3,9 @@ import YXmlText from '../../Types/YXml/YXmlText.js'
 import YXmlHook from '../../Types/YXml/YXmlHook.js'
 import { removeDomChildrenUntilElementFound } from './util.js'
 
+/**
+ * @private
+ */
 export default function typeObserver (events, _document) {
   this._mutualExclude(() => {
     events.forEach(event => {

@@ -7,7 +7,15 @@ export default class YEvent {
    * @param {YType} target The changed type.
    */
   constructor (target) {
+    /**
+     * The type on which this event was created on.
+     * @type {YType}
+     */
     this.target = target
+    /**
+     * The current target on which the observe callback is called.
+     * @type {YType}
+     */
     this.currentTarget = target
   }
 

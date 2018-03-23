@@ -1,4 +1,5 @@
 import ID from './ID/ID.js'
+import isParentOf from './isParentOf.js'
 
 class ReverseOperation {
   constructor (y, transaction) {
@@ -15,16 +16,6 @@ class ReverseOperation {
   }
 }
 
-function isStructInScope (y, struct, scope) {
-  while (struct !== y) {
-    if (struct === scope) {
-      return true
-    }
-    struct = struct._parent
-  }
-  return false
-}
-
 function applyReverseOperation (y, scope, reverseBuffer) {
   let performedUndo = false
   y.transact(() => {
@@ -38,7 +29,7 @@ function applyReverseOperation (y, scope, reverseBuffer) {
           while (op._deleted && op._redone !== null) {
             op = op._redone
           }
-          if (op._deleted === false && isStructInScope(y, op, scope)) {
+          if (op._deleted === false && isParentOf(scope, op)) {
             performedUndo = true
             op._delete(y)
           }
@@ -46,7 +37,7 @@ function applyReverseOperation (y, scope, reverseBuffer) {
       }
       for (let op of undoOp.deletedStructs) {
         if (
-          isStructInScope(y, op, scope) &&
+          isParentOf(scope, op) &&
           op._parent !== y &&
           (
             op._id.user !== y.userID ||

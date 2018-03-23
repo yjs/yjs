@@ -1,6 +1,6 @@
 /* global crypto */
 
-export function generateUserID () {
+export function generateRandomUint32 () {
   if (typeof crypto !== 'undefined' && crypto.getRandomValue != null) {
     // browser
     let arr = new Uint32Array(1)

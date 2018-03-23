@@ -1,10 +1,27 @@
 import isParentOf from '../../Util/isParentOf.js'
 
+/**
+ * Default filter method (does nothing).
+ *
+ * @param {String} nodeName The nodeName of the element
+ * @param {Map} attrs Map of key-value pairs that are attributes of the node.
+ * @return {Map | null} The allowed attributes or null, if the element should be
+ *                      filtered.
+ */
 export function defaultFilter (nodeName, attrs) {
+  // TODO: implement basic filter that filters out dangerous properties!
   return attrs
 }
 
-
+/**
+ * Applies a filter on a type.
+ *
+ * @param {Y} y The Yjs instance.
+ * @param {DomBinding} binding The DOM binding instance that has the dom filter.
+ * @param {YXmlElement | YXmlFragment } type The type to apply the filter to.
+ *
+ * @private
+ */
 export function applyFilterOnType (y, binding, type) {
   if (isParentOf(binding.type, type)) {
     const nodeName = type.nodeName

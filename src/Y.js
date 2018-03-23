@@ -1,18 +1,12 @@
 import DeleteStore from './Store/DeleteStore.js'
 import OperationStore from './Store/OperationStore.js'
 import StateStore from './Store/StateStore.js'
-import { generateUserID } from './Util/generateUserID.js'
+import { generateRandomUint32 } from './Util/generateRandomUint32.js'
 import RootID from './Util/ID/RootID.js'
 import NamedEventHandler from './Util/NamedEventHandler.js'
 import Transaction from './Transaction.js'
 
 export { default as DomBinding } from './Bindings/DomBinding/DomBinding.js'
-
-/**
- * A positive natural number including zero: 0, 1, 2, ..
- *
- * @typedef {number} NaturalNumber
- */
 
 /**
  * Anything that can be encoded with `JSON.stringify` and can be decoded with
@@ -47,7 +41,7 @@ export default class Y extends NamedEventHandler {
     this._contentReady = false
     this._opts = opts
     if (typeof opts.userID !== 'number') {
-      this.userID = generateUserID()
+      this.userID = generateRandomUint32()
     } else {
       this.userID = opts.userID
     }

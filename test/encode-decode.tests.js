@@ -1,7 +1,7 @@
 import { test } from '../node_modules/cutest/cutest.mjs'
 import BinaryEncoder from '../src/Util/Binary/Encoder.js'
 import BinaryDecoder from '../src/Util/Binary/Decoder.js'
-import { generateUserID } from '../src/Util/generateUserID.js'
+import { generateRandomUint32 } from '../src/Util/generateRandomUint32.js'
 import Chance from 'chance'
 
 function testEncoding (t, write, read, val) {
@@ -43,7 +43,7 @@ test('varUint random', async function varUintRandom (t) {
 
 test('varUint random user id', async function varUintRandomUserId (t) {
   t.getSeed() // enforces that this test is repeated
-  testEncoding(t, writeVarUint, readVarUint, generateUserID())
+  testEncoding(t, writeVarUint, readVarUint, generateRandomUint32())
 })
 
 const writeVarString = (encoder, val) => encoder.writeVarString(val)

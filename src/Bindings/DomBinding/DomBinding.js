@@ -17,9 +17,9 @@ import { removeAssociation } from './util.js'
  * This binding is automatically destroyed when its parent is deleted.
  *
  * @example
- *   const div = document.createElement('div')
- *   const type = y.define('xml', Y.XmlFragment)
- *   const binding = new Y.QuillBinding(type, div)
+ * const div = document.createElement('div')
+ * const type = y.define('xml', Y.XmlFragment)
+ * const binding = new Y.QuillBinding(type, div)
  *
  */
 export default class DomBinding extends Binding {
@@ -27,12 +27,28 @@ export default class DomBinding extends Binding {
    * @param {YXmlFragment} type The bind source. This is the ultimate source of
    *                            truth.
    * @param {Element} target The bind target. Mirrors the target.
+   * @param {Object} [opts] Optional configurations
+
+   * @param {FilterFunction} [opts.filter=defaultFilter] The filter function to use.
    */
   constructor (type, target, opts = {}) {
     // Binding handles textType as this.type and domTextarea as this.target
     super(type, target)
+    /**
+     * Maps each DOM element to the type that it is associated with.
+     * @type {Map}
+     */
     this.domToType = new Map()
+    /**
+     * Maps each YXml type to the DOM element that it is associated with.
+     * @type {Map}
+     */
     this.typeToDom = new Map()
+    /**
+     * Defines which DOM attributes and elements to filter out.
+     * Also filters remote changes.
+     * @type {FilterFunction}
+     */
     this.filter = opts.filter || defaultFilter
     // set initial value
     target.innerHTML = ''
@@ -103,6 +119,7 @@ export default class DomBinding extends Binding {
 
   /**
    * NOTE: currently does not apply filter to existing elements!
+   * @param {FilterFunction} filter The filter function to use from now on.
    */
   setFilter (filter) {
     this.filter = filter
@@ -110,7 +127,7 @@ export default class DomBinding extends Binding {
   }
 
   /**
-   * Remove all properties that are handled by this class
+   * Remove all properties that are handled by this class.
    */
   destroy () {
     this.domToType = null
@@ -125,3 +142,11 @@ export default class DomBinding extends Binding {
     super.destroy()
   }
 }
+
+  /**
+   * A filter defines which elements and attributes to share.
+   * Return null if the node should be filtered. Otherwise return the Map of
+   * accepted attributes.
+   *
+   * @typedef {function(nodeName: String, attrs: Map): Map|null} FilterFunction
+   */

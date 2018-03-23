@@ -14,7 +14,6 @@ function getFreshCnf () {
 }
 
 /**
- * @private
  * Abstract persistence class.
  */
 export default class AbstractPersistence {

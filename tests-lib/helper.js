@@ -156,7 +156,7 @@ export async function initArrays (t, opts) {
     users: []
   }
   var chance = opts.chance || new Chance(t.getSeed() * 1000000000)
-  var conn = Object.assign({ room: 'debugging_' + t.name, generateUserId: false, testContext: t, chance }, connector)
+  var conn = Object.assign({ room: 'debugging_' + t.name, testContext: t, chance }, connector)
   for (let i = 0; i < opts.users; i++) {
     let connOpts
     if (i === 0) {

@@ -5,6 +5,9 @@ import { getRelativePosition, fromRelativePosition } from '../../Util/relativePo
 let browserSelection = null
 let relativeSelection = null
 
+/**
+ * @private
+ */
 export let beforeTransactionSelectionFixer
 if (typeof getSelection !== 'undefined') {
   beforeTransactionSelectionFixer = function _beforeTransactionSelectionFixer (y, domBinding, transaction, remote) {
@@ -30,6 +33,9 @@ if (typeof getSelection !== 'undefined') {
   beforeTransactionSelectionFixer = function _fakeBeforeTransactionSelectionFixer () {}
 }
 
+/**
+ * @private
+ */
 export function afterTransactionSelectionFixer (y, domBinding, transaction, remote) {
   if (relativeSelection === null || !remote) {
     return

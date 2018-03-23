@@ -467,5 +467,4 @@ export default class Tree {
       }
     }
   }
-  flush () {}
 }

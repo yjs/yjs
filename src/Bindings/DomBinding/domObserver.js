@@ -7,7 +7,7 @@ import {
 import diff from '../../Util/simpleDiff.js'
 import YXmlFragment from '../../Types/YXml/YXmlFragment.js'
 
-/*
+/**
  * 1. Check if any of the nodes was deleted
  * 2. Iterate over the children.
  *    2.1 If a node exists that is not yet bound to a type, insert a new node
@@ -17,6 +17,7 @@ import YXmlFragment from '../../Types/YXml/YXmlFragment.js'
  *       recreate a new yxml element that is bound to that node.
  *       You can detect that a node was moved because expectedId
  *       !== actualId in the list
+ * @private
  */
 function applyChangesFromDom (binding, dom, yxml, _document) {
   if (yxml == null || yxml === false || yxml.constructor === YXmlHook) {
@@ -79,6 +80,9 @@ function applyChangesFromDom (binding, dom, yxml, _document) {
   }
 }
 
+/**
+ * @private
+ */
 export default function domObserver (mutations, _document) {
   this._mutualExclude(() => {
     this.type._y.transact(() => {

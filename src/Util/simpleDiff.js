@@ -11,16 +11,16 @@
  * a === b // values match
  *
  * @typedef {Object} SimpleDiff
- * @property {NaturalNumber} pos The index where changes were applied
- * @property {NaturalNumber} delete The number of characters to delete starting
+ * @property {Number} pos The index where changes were applied
+ * @property {Number} delete The number of characters to delete starting
  *                                  at `index`.
  * @property {String} insert The new text to insert at `index` after applying
  *                           `delete`
  */
 
 /**
- * Create a diff between two strings. This diff implementation is intentionally
- * not very smart.
+ * Create a diff between two strings. This diff implementation is highly
+ * efficient, but not very sophisticated.
  *
  * @public
  * @param {String} a The old version of the string

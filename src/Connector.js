@@ -7,6 +7,8 @@ import { integrateRemoteStructs } from './MessageHandler/integrateRemoteStructs.
 
 import debug from 'debug'
 
+// TODO: rename Connector
+
 export default class AbstractConnector {
   constructor (y, opts) {
     this.y = y

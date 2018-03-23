@@ -1,6 +1,8 @@
 import ID from './ID/ID.js'
 import RootID from './ID/RootID.js'
 
+// TODO: Implement function to describe ranges
+
 /**
  * A relative position that is based on the Yjs model. In contrast to an
  * absolute position (position by index), the relative position can be

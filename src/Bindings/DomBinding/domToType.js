@@ -5,7 +5,11 @@ import { createAssociation } from './util.js'
 /**
  * Creates a Yjs type (YXml) based on the contents of a DOM Element.
  *
- * @param {Element|TextNode}
+ * @param {Element|TextNode} element The DOM Element
+ * @param {?Document} _document Optional. Provide the global document object.
+ * @param {?DomBinding} binding This property should only be set if the type
+ *                              is going to be bound with the dom-binding.
+ * @return {YXmlElement | YXmlText}
  */
 export default function domToType (element, _document = document, binding) {
   let type

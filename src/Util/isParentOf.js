@@ -5,6 +5,8 @@
  * @param {Type} parent
  * @param {Type} child
  * @return {Boolean} Whether `parent` is a parent of `child`.
+ *
+ * @public
  */
 export default function isParentOf (parent, child) {
   child = child._parent

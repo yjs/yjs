@@ -9,6 +9,7 @@ const bits8 = 0b11111111
 export default class BinaryEncoder {
   constructor () {
     // TODO: implement chained Uint8Array buffers instead of Array buffer
+    // TODO: Rewrite all methods as functions!
     this.data = []
   }
 
