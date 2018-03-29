@@ -62,22 +62,22 @@ export default class Type extends Item {
     }
     const path = []
     const y = this._y
-    while (type._parent !== this && this._parent !== y) {
+    while (type !== this && type !== y) {
       let parent = type._parent
       if (type._parentSub !== null) {
-        path.push(type._parentSub)
+        path.unshift(type._parentSub)
       } else {
         // parent is array-ish
         for (let [i, child] of parent) {
           if (child === type) {
-            path.push(i)
+            path.unshift(i)
             break
           }
         }
       }
       type = parent
     }
-    if (this._parent !== this) {
+    if (type !== this) {
       throw new Error('The type is not a child of this node')
     }
     return path

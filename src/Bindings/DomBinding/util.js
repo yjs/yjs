@@ -69,7 +69,6 @@ export function insertNodeHelper (yxml, prevExpectedNode, child, _document, bind
   }
 }
 
-
 /**
  * Remove children until `elem` is found.
  *

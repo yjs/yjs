@@ -1,5 +1,5 @@
 import { default as Item } from './Item.js'
-import { logID } from '../MessageHandler/messageToString.js'
+import { logItemHelper } from '../MessageHandler/messageToString.js'
 
 export default class ItemEmbed extends Item {
   constructor () {
@@ -23,9 +23,13 @@ export default class ItemEmbed extends Item {
     super._toBinary(encoder)
     encoder.writeVarString(JSON.stringify(this.embed))
   }
+  /**
+   * Transform this YXml Type to a readable format.
+   * Useful for logging as all Items and Delete implement this method.
+   *
+   * @private
+   */
   _logString () {
-    const left = this._left !== null ? this._left._lastId : null
-    const origin = this._origin !== null ? this._origin._lastId : null
-    return `ItemEmbed(id:${logID(this._id)},embed:${JSON.stringify(this.embed)},left:${logID(left)},origin:${logID(origin)},right:${logID(this._right)},parent:${logID(this._parent)},parentSub:${this._parentSub})`
+    return logItemHelper('ItemEmbed', this, `embed:${JSON.stringify(this.embed)}`)
   }
 }

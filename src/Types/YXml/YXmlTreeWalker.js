@@ -17,6 +17,8 @@ import YXmlFragment from './YXmlFragment.js'
  * position within them.
  *
  * Can be created with {@link YXmlFragment#createTreeWalker}
+ *
+ * @public
  */
 export default class YXmlTreeWalker {
   constructor (root, f) {
@@ -32,6 +34,8 @@ export default class YXmlTreeWalker {
    * Get the next node.
    *
    * @return {YXmlElement} The next node.
+   *
+   * @public
    */
   next () {
     let n = this._currentNode

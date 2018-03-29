@@ -14,7 +14,6 @@ test('events', async function xml1 (t) {
   var { users, xml0, xml1 } = await initArrays(t, { users: 2 })
   var event
   var remoteEvent
-  let expectedEvent
   xml0.observe(function (e) {
     delete e._content
     delete e.nodes
@@ -30,21 +29,21 @@ test('events', async function xml1 (t) {
   xml0.setAttribute('key', 'value')
   t.assert(event.attributesChanged.has('key'), 'YXmlEvent.attributesChanged on updated key')
   await flushAll(t, users)
-  t.assert(event.attributesChanged.has('key'), 'YXmlEvent.attributesChanged on updated key (remote)')
+  t.assert(remoteEvent.attributesChanged.has('key'), 'YXmlEvent.attributesChanged on updated key (remote)')
   // check attributeRemoved
   xml0.removeAttribute('key')
   t.assert(event.attributesChanged.has('key'), 'YXmlEvent.attributesChanged on removed attribute')
   await flushAll(t, users)
-  t.assert(event.attributesChanged.has('key'), 'YXmlEvent.attributesChanged on removed attribute (remote)')
+  t.assert(remoteEvent.attributesChanged.has('key'), 'YXmlEvent.attributesChanged on removed attribute (remote)')
   xml0.insert(0, [new Y.XmlText('some text')])
   t.assert(event.childListChanged, 'YXmlEvent.childListChanged on inserted element')
   await flushAll(t, users)
-  t.assert(event.childListChanged, 'YXmlEvent.childListChanged on inserted element (remote)')
+  t.assert(remoteEvent.childListChanged, 'YXmlEvent.childListChanged on inserted element (remote)')
   // test childRemoved
   xml0.delete(0)
   t.assert(event.childListChanged, 'YXmlEvent.childListChanged on deleted element')
   await flushAll(t, users)
-  t.assert(event.childListChanged, 'YXmlEvent.childListChanged on deleted element (remote)')
+  t.assert(remoteEvent.childListChanged, 'YXmlEvent.childListChanged on deleted element (remote)')
   await compareUsers(t, users)
 })
 
@@ -180,7 +179,7 @@ test('Receive a bunch of elements (with disconnect)', async function xml12 (t) {
 })
 
 test('move element to a different position', async function xml13 (t) {
-  var { users, xml0, xml1, dom0, dom1 } = await initArrays(t, { users: 3 })
+  var { users, dom0, dom1 } = await initArrays(t, { users: 3 })
   dom0.append(document.createElement('div'))
   dom0.append(document.createElement('h1'))
   await flushAll(t, users)
@@ -193,7 +192,7 @@ test('move element to a different position', async function xml13 (t) {
 })
 
 test('filter node', async function xml14 (t) {
-  var { users, xml0, xml1, dom0, dom1, domBinding0, domBinding1 } = await initArrays(t, { users: 3 })
+  var { users, dom0, dom1, domBinding0, domBinding1 } = await initArrays(t, { users: 3 })
   let domFilter = (nodeName, attrs) => {
     if (nodeName === 'H1') {
       return null
@@ -212,7 +211,7 @@ test('filter node', async function xml14 (t) {
 })
 
 test('filter attribute', async function xml15 (t) {
-  var { users, xml0, xml1, dom0, dom1, domBinding0, domBinding1 } = await initArrays(t, { users: 3 })
+  var { users, dom0, dom1, domBinding0, domBinding1 } = await initArrays(t, { users: 3 })
   let domFilter = (nodeName, attrs) => {
     attrs.delete('hidden')
     return attrs
@@ -231,7 +230,7 @@ test('filter attribute', async function xml15 (t) {
 })
 
 test('deep element insert', async function xml16 (t) {
-  var { users, xml0, xml1, dom0, dom1 } = await initArrays(t, { users: 3 })
+  var { users, dom0, dom1 } = await initArrays(t, { users: 3 })
   let deepElement = document.createElement('p')
   let boldElement = document.createElement('b')
   let attrElement = document.createElement('img')

@@ -111,9 +111,10 @@ export default class Delete {
   }
 
   /**
+   * Transform this YXml Type to a readable format.
+   * Useful for logging as all Items and Delete implement this method.
+   *
    * @private
-   * Transform this Delete to a readable format.
-   * Useful for logging as all Items implement this method.
    */
   _logString () {
     return `Delete - target: ${logID(this._targetID)}, len: ${this._length}`

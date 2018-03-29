@@ -8,11 +8,18 @@ import { createAssociation } from '../../Bindings/DomBinding/util.js'
  * @param {String} arg1 Initial value.
  */
 export default class YXmlText extends YText {
-
   /**
-   * Creates a TextNode with the same textual content.
+   * Creates a Dom Element that mirrors this YXmlText.
    *
-   * @return TextNode
+   * @param {Document} [_document=document] The document object (you must define
+   *                                        this when calling this method in
+   *                                        nodejs)
+   * @param {DomBinding} [binding] You should not set this property. This is
+   *                               used if DomBinding wants to create a
+   *                               association to the created DOM type.
+   * @return {Element} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
+   *
+   * @public
    */
   toDom (_document = document, binding) {
     const dom = _document.createTextNode(this.toString())
@@ -21,12 +28,13 @@ export default class YXmlText extends YText {
   }
 
   /**
-   * @private
    * Mark this Item as deleted.
    *
    * @param {Y} y The Yjs instance
    * @param {boolean} createDelete Whether to propagate a message that this
    *                               Type was deleted.
+   *
+   * @private
    */
   _delete (y, createDelete) {
     super._delete(y, createDelete)

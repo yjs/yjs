@@ -46,3 +46,20 @@ export function logID (id) {
     throw new Error('This is not a valid ID!')
   }
 }
+
+/**
+ * Helper utility to convert an item to a readable format.
+ *
+ * @param {String} name The name of the item class (YText, ItemString, ..).
+ * @param {Item} item The item instance.
+ * @param {String} [append] Additional information to append to the returned
+ *                          string.
+ * @return {String} A readable string that represents the item object.
+ *
+ * @private
+ */
+export function logItemHelper (name, item, append) {
+  const left = item._left !== null ? item._left._lastId : null
+  const origin = item._origin !== null ? item._origin._lastId : null
+  return `${name}(id:${logID(item._id)},start:${logID(item._start)},left:${logID(left)},origin:${logID(origin)},right:${logID(item._right)},parent:${logID(item._parent)},parentSub:${item._parentSub}${append !== undefined ? ' - ' + append : ''})`
+}

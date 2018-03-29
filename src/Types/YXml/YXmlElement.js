@@ -43,13 +43,14 @@ export default class YXmlElement extends YXmlFragment {
   }
 
   /**
-   * @private
    * Transform the properties of this type to binary and write it to an
    * BinaryEncoder.
    *
    * This is called when this Item is sent to a remote peer.
    *
    * @param {BinaryEncoder} encoder The encoder to write data to.
+   *
+   * @private
    */
   _toBinary (encoder) {
     super._toBinary(encoder)
@@ -57,7 +58,6 @@ export default class YXmlElement extends YXmlFragment {
   }
 
   /**
-   * @private
    * Integrates this Item into the shared structure.
    *
    * This method actually applies the change to the Yjs instance. In case of
@@ -66,6 +66,10 @@ export default class YXmlElement extends YXmlFragment {
    *
    * * Checks for nodeName
    * * Sets domFilter
+   *
+   * @param {Y} y The Yjs instance
+   *
+   * @private
    */
   _integrate (y) {
     if (this.nodeName === null) {
@@ -78,6 +82,10 @@ export default class YXmlElement extends YXmlFragment {
    * Returns the string representation of this YXmlElement.
    * The attributes are ordered by attribute-name, so you can easily use this
    * method to compare YXmlElements
+   *
+   * @return {String} The string representation of this type.
+   *
+   * @public
    */
   toString () {
     const attrs = this.getAttributes()
@@ -101,6 +109,8 @@ export default class YXmlElement extends YXmlFragment {
    * Removes an attribute from this YXmlElement.
    *
    * @param {String} attributeName The attribute name that is to be removed.
+   *
+   * @public
    */
   removeAttribute (attributeName) {
     return YMap.prototype.delete.call(this, attributeName)
@@ -111,6 +121,8 @@ export default class YXmlElement extends YXmlFragment {
    *
    * @param {String} attributeName The attribute name that is to be set.
    * @param {String} attributeValue The attribute value that is to be set.
+   *
+   * @public
    */
   setAttribute (attributeName, attributeValue) {
     return YMap.prototype.set.call(this, attributeName, attributeValue)
@@ -121,7 +133,9 @@ export default class YXmlElement extends YXmlFragment {
    *
    * @param {String} attributeName The attribute name that identifies the
    *                               queried value.
-   * @return {String} The queried attribute value
+   * @return {String} The queried attribute value.
+   *
+   * @public
    */
   getAttribute (attributeName) {
     return YMap.prototype.get.call(this, attributeName)
@@ -131,6 +145,8 @@ export default class YXmlElement extends YXmlFragment {
    * Returns all attribute name/value pairs in a JSON Object.
    *
    * @return {Object} A JSON Object that describes the attributes.
+   *
+   * @public
    */
   getAttributes () {
     const obj = {}
@@ -141,11 +157,19 @@ export default class YXmlElement extends YXmlFragment {
     }
     return obj
   }
-
+  // TODO: outsource the binding property.
   /**
    * Creates a Dom Element that mirrors this YXmlElement.
    *
+   * @param {Document} [_document=document] The document object (you must define
+   *                                        this when calling this method in
+   *                                        nodejs)
+   * @param {DomBinding} [binding] You should not set this property. This is
+   *                               used if DomBinding wants to create a
+   *                               association to the created DOM type.
    * @return {Element} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
+   *
+   * @public
    */
   toDom (_document = document, binding) {
     const dom = _document.createElement(this.nodeName)

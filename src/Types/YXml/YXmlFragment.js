@@ -1,13 +1,18 @@
-/* global MutationObserver */
-
 import { createAssociation } from '../../Bindings/DomBinding/util.js'
 import YXmlTreeWalker from './YXmlTreeWalker.js'
 
 import YArray from '../YArray/YArray.js'
 import YXmlEvent from './YXmlEvent.js'
-import { YXmlText, YXmlHook } from './YXml.js'
-import { logID } from '../../MessageHandler/messageToString.js'
-import diff from '../../Util/simpleDiff.js'
+import { logItemHelper } from '../../MessageHandler/messageToString.js'
+
+/**
+ * Dom filter function.
+ *
+ * @callback domFilter
+ * @param {string} nodeName The nodeName of the element
+ * @param {Map} attributes The map of attributes.
+ * @return {boolean} Whether to include the Dom node in the YXmlElement.
+ */
 
 /**
  * Define the elements to which a set of CSS queries apply.
@@ -21,20 +26,31 @@ import diff from '../../Util/simpleDiff.js'
  * @typedef {string} CSS_Selector
  */
 
-
 /**
- * Represents a list of {@link YXmlElement}.
- * A YxmlFragment does not have a nodeName and it does not have attributes.
- * Therefore it also must not be added as a childElement.
+ * Represents a list of {@link YXmlElement}.and {@link YXmlText} types.
+ * A YxmlFragment is similar to a {@link YXmlElement}, but it does not have a
+ * nodeName and it does not have attributes. Though it can be bound to a DOM
+ * element - in this case the attributes and the nodeName are not shared.
+ *
+ * @public
  */
 export default class YXmlFragment extends YArray {
   /**
    * Create a subtree of childNodes.
    *
+   * @example
+   * const walker = elem.createTreeWalker(dom => dom.nodeName === 'div')
+   * for (let node in walker) {
+   *   // `node` is a div node
+   *   nop(node)
+   * }
+   *
    * @param {Function} filter Function that is called on each child element and
    *                          returns a Boolean indicating whether the child
    *                          is to be included in the subtree.
    * @return {TreeWalker} A subtree and a position within it.
+   *
+   * @public
    */
   createTreeWalker (filter) {
     return new YXmlTreeWalker(this, filter)
@@ -52,6 +68,8 @@ export default class YXmlFragment extends YArray {
    *
    * @param {CSS_Selector} query The query on the children.
    * @return {?YXmlElement} The first element that matches the query or null.
+   *
+   * @public
    */
   querySelector (query) {
     query = query.toUpperCase()
@@ -72,6 +90,8 @@ export default class YXmlFragment extends YArray {
    *
    * @param {CSS_Selector} query The query on the children
    * @return {Array<YXmlElement>} The elements that match this query.
+   *
+   * @public
    */
   querySelectorAll (query) {
     query = query.toUpperCase()
@@ -79,17 +99,9 @@ export default class YXmlFragment extends YArray {
   }
 
   /**
-   * Dom filter function.
-   *
-   * @callback domFilter
-   * @param {string} nodeName The nodeName of the element
-   * @param {Map} attributes The map of attributes.
-   * @return {boolean} Whether to include the Dom node in the YXmlElement.
-   */
-
-  /**
-   * @private
    * Creates YArray Event and calls observers.
+   *
+   * @private
    */
   _callObserver (transaction, parentSubs, remote) {
     this._callEventHandler(transaction, new YXmlEvent(this, parentSubs, remote, transaction))
@@ -111,13 +123,25 @@ export default class YXmlFragment extends YArray {
    * @param {Y} y The Yjs instance
    * @param {boolean} createDelete Whether to propagate a message that this
    *                               Type was deleted.
+   *
+   * @private
    */
   _delete (y, createDelete) {
     super._delete(y, createDelete)
   }
 
   /**
-   * @return {DocumentFragment} The dom representation of this
+   * Creates a Dom Element that mirrors this YXmlElement.
+   *
+   * @param {Document} [_document=document] The document object (you must define
+   *                                        this when calling this method in
+   *                                        nodejs)
+   * @param {DomBinding} [binding] You should not set this property. This is
+   *                               used if DomBinding wants to create a
+   *                               association to the created DOM type.
+   * @return {Element} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
+   *
+   * @public
    */
   toDom (_document = document, binding) {
     const fragment = _document.createDocumentFragment()
@@ -128,13 +152,12 @@ export default class YXmlFragment extends YArray {
     return fragment
   }
   /**
-   * @private
    * Transform this YXml Type to a readable format.
-   * Useful for logging as all Items implement this method.
+   * Useful for logging as all Items and Delete implement this method.
+   *
+   * @private
    */
   _logString () {
-    const left = this._left !== null ? this._left._lastId : null
-    const origin = this._origin !== null ? this._origin._lastId : null
-    return `YXml(id:${logID(this._id)},left:${logID(left)},origin:${logID(origin)},right:${this._right},parent:${logID(this._parent)},parentSub:${this._parentSub})`
+    return logItemHelper('YXml', this)
   }
 }

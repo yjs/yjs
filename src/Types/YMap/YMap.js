@@ -1,7 +1,7 @@
 import Type from '../../Struct/Type.js'
 import Item from '../../Struct/Item.js'
 import ItemJSON from '../../Struct/ItemJSON.js'
-import { logID } from '../../MessageHandler/messageToString.js'
+import { logItemHelper } from '../../MessageHandler/messageToString.js'
 import YEvent from '../../Util/YEvent.js'
 
 /**
@@ -164,13 +164,12 @@ export default class YMap extends Type {
   }
 
   /**
+   * Transform this YXml Type to a readable format.
+   * Useful for logging as all Items and Delete implement this method.
+   *
    * @private
-   * Transform this YMap to a readable format.
-   * Useful for logging as all Items implement this method.
    */
   _logString () {
-    const left = this._left !== null ? this._left._lastId : null
-    const origin = this._origin !== null ? this._origin._lastId : null
-    return `YMap(id:${logID(this._id)},mapSize:${this._map.size},left:${logID(left)},origin:${logID(origin)},right:${logID(this._right)},parent:${logID(this._parent)},parentSub:${this._parentSub})`
+    return logItemHelper('YMap', this, `mapSize:${this._map.size}`)
   }
 }

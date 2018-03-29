@@ -1,15 +1,11 @@
 /* global MutationObserver */
 
 import Binding from '../Binding.js'
-import diff from '../../Util/simpleDiff.js'
-import YXmlFragment from '../../Types/YXml/YXmlFragment.js'
-import YXmlHook from '../../Types/YXml/YXmlHook.js'
-import { removeDomChildrenUntilElementFound, createAssociation } from './util.js'
+import { createAssociation, removeAssociation } from './util.js'
 import { beforeTransactionSelectionFixer, afterTransactionSelectionFixer } from './selection.js'
 import { defaultFilter, applyFilterOnType } from './filter.js'
 import typeObserver from './typeObserver.js'
 import domObserver from './domObserver.js'
-import { removeAssociation } from './util.js'
 
 /**
  * A binding that binds the children of a YXmlFragment to a DOM element.

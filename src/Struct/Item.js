@@ -48,33 +48,76 @@ export function splitHelper (y, a, b, diff) {
 }
 
 /**
- * @private
  * Abstract class that represents any content.
  */
 export default class Item {
   constructor () {
+    /**
+     * The uniqe identifier of this type.
+     * @type {ID}
+     */
     this._id = null
+    /**
+     * The item that was originally to the left of this item.
+     * @type {Item}
+     */
     this._origin = null
+    /**
+     * The item that is currently to the left of this item.
+     * @type {Item}
+     */
     this._left = null
+    /**
+     * The item that is currently to the right of this item.
+     * @type {Item}
+     */
     this._right = null
+    /**
+     * The item that was originally to the right of this item.
+     * @type {Item}
+     */
     this._right_origin = null
+    /**
+     * The parent type.
+     * @type {Y|YType}
+     */
     this._parent = null
+    /**
+     * If the parent refers to this item with some kind of key (e.g. YMap, the
+     * key is specified here. The key is then used to refer to the list in which
+     * to insert this item. If `parentSub = null` type._start is the list in
+     * which to insert to. Otherwise it is `parent._start`.
+     * @type {String}
+     */
     this._parentSub = null
+    /**
+     * Whether this item was deleted or not.
+     * @type {Boolean}
+     */
     this._deleted = false
+    /**
+     * If this type's effect is reundone this type refers to the type that undid
+     * this operation.
+     * @type {Item}
+     */
     this._redone = null
   }
 
   /**
-   * @private
    * Creates an Item with the same effect as this Item (without position effect)
+   *
+   * @private
    */
   _copy () {
     return new this.constructor()
   }
 
   /**
-   * @private
    * Redoes the effect of this operation.
+   *
+   * @param {Y} y The Yjs instance.
+   *
+   * @private
    */
   _redo (y) {
     if (this._redone !== null) {
@@ -117,35 +160,37 @@ export default class Item {
   }
 
   /**
-   * @private
    * Computes the last content address of this Item.
+   *
+   * @private
    */
   get _lastId () {
     return new ID(this._id.user, this._id.clock + this._length - 1)
   }
 
   /**
-   * @private
    * Computes the length of this Item.
+   *
+   * @private
    */
   get _length () {
     return 1
   }
 
   /**
-   * @private
    * Should return false if this Item is some kind of meta information
    * (e.g. format information).
    *
    * * Whether this Item should be addressable via `yarray.get(i)`
    * * Whether this Item should be counted when computing yarray.length
+   *
+   * @private
    */
   get _countable () {
     return true
   }
 
   /**
-   * @private
    * Splits this Item so that another Items can be inserted in-between.
    * This must be overwritten if _length > 1
    * Returns right part after split
@@ -153,6 +198,8 @@ export default class Item {
    * * diff === length => this._right
    * * otherwise => split _content and return right part of split
    * (see {@link ItemJSON}/{@link ItemString} for implementation)
+   *
+   * @private
    */
   _splitAt (y, diff) {
     if (diff === 0) {
@@ -162,12 +209,13 @@ export default class Item {
   }
 
   /**
-   * @private
    * Mark this Item as deleted.
    *
    * @param {Y} y The Yjs instance
    * @param {boolean} createDelete Whether to propagate a message that this
    *                               Type was deleted.
+   *
+   * @private
    */
   _delete (y, createDelete = true) {
     if (!this._deleted) {
@@ -189,16 +237,16 @@ export default class Item {
   }
 
   /**
-   * @private
    * This is called right before this Item receives any children.
    * It can be overwritten to apply pending changes before applying remote changes
+   *
+   * @private
    */
   _beforeChange () {
     // nop
   }
 
   /**
-   * @private
    * Integrates this Item into the shared structure.
    *
    * This method actually applies the change to the Yjs instance. In case of
@@ -208,6 +256,8 @@ export default class Item {
    * * Integrate the struct so that other types/structs can see it
    * * Add this struct to y.os
    * * Check if this is struct deleted
+   *
+   * @private
    */
   _integrate (y) {
     y._transaction.newTypes.add(this)
@@ -328,13 +378,14 @@ export default class Item {
   }
 
   /**
-   * @private
    * Transform the properties of this type to binary and write it to an
    * BinaryEncoder.
    *
    * This is called when this Item is sent to a remote peer.
    *
    * @param {BinaryEncoder} encoder The encoder to write data to.
+   *
+   * @private
    */
   _toBinary (encoder) {
     encoder.writeUint8(getStructReference(this.constructor))
@@ -378,13 +429,14 @@ export default class Item {
   }
 
   /**
-   * @private
    * Read the next Item in a Decoder and fill this Item with the read data.
    *
    * This is called when data is received from a remote peer.
    *
    * @param {Y} y The Yjs instance that this Item belongs to.
    * @param {BinaryDecoder} decoder The decoder object to read data from.
+   *
+   * @private
    */
   _fromBinary (y, decoder) {
     let missing = []

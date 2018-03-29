@@ -1,7 +1,7 @@
 import Type from '../../Struct/Type.js'
 import ItemJSON from '../../Struct/ItemJSON.js'
 import ItemString from '../../Struct/ItemString.js'
-import { logID } from '../../MessageHandler/messageToString.js'
+import { logID, logItemHelper } from '../../MessageHandler/messageToString.js'
 import YEvent from '../../Util/YEvent.js'
 
 /**
@@ -367,13 +367,12 @@ export default class YArray extends Type {
   }
 
   /**
+   * Transform this YXml Type to a readable format.
+   * Useful for logging as all Items and Delete implement this method.
+   *
    * @private
-   * Transform this YArray to a readable format.
-   * Useful for logging as all Items implement this method.
    */
   _logString () {
-    const left = this._left !== null ? this._left._lastId : null
-    const origin = this._origin !== null ? this._origin._lastId : null
-    return `YArray(id:${logID(this._id)},start:${logID(this._start)},left:${logID(left)},origin:${logID(origin)},right:${logID(this._right)},parent:${logID(this._parent)},parentSub:${this._parentSub})`
+    return logItemHelper('YArray', this, `start:${logID(this._start)}"`)
   }
 }

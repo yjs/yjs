@@ -1,4 +1,3 @@
-/* global Y */
 import { wait } from './helper'
 import { messageToString } from '../src/MessageHandler/messageToString'
 import AbstractConnector from '../src/Connector.js'

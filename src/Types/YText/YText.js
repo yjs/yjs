@@ -1,9 +1,12 @@
 import ItemString from '../../Struct/ItemString.js'
 import ItemEmbed from '../../Struct/ItemEmbed.js'
 import ItemFormat from '../../Struct/ItemFormat.js'
-import { logID } from '../../MessageHandler/messageToString.js'
+import { logItemHelper } from '../../MessageHandler/messageToString.js'
 import { YArrayEvent, default as YArray } from '../YArray/YArray.js'
 
+/**
+ * @private
+ */
 function integrateItem (item, parent, y, left, right) {
   item._origin = left
   item._left = left
@@ -19,6 +22,9 @@ function integrateItem (item, parent, y, left, right) {
   }
 }
 
+/**
+ * @private
+ */
 function findNextPosition (currentAttributes, parent, left, right, count) {
   while (right !== null && count > 0) {
     switch (right.constructor) {
@@ -46,6 +52,9 @@ function findNextPosition (currentAttributes, parent, left, right, count) {
   return [left, right, currentAttributes]
 }
 
+/**
+ * @private
+ */
 function findPosition (parent, index) {
   let currentAttributes = new Map()
   let left = null
@@ -53,7 +62,11 @@ function findPosition (parent, index) {
   return findNextPosition(currentAttributes, parent, left, right, index)
 }
 
-// negate applied formats
+/**
+ * Negate applied formats
+ *
+ * @private
+ */
 function insertNegatedAttributes (y, parent, left, right, negatedAttributes) {
   // check if we really need to remove attributes
   while (
@@ -80,6 +93,9 @@ function insertNegatedAttributes (y, parent, left, right, negatedAttributes) {
   return [left, right]
 }
 
+/**
+ * @private
+ */
 function updateCurrentAttributes (currentAttributes, item) {
   const value = item.value
   const key = item.key
@@ -90,6 +106,9 @@ function updateCurrentAttributes (currentAttributes, item) {
   }
 }
 
+/**
+ * @private
+ */
 function minimizeAttributeChanges (left, right, currentAttributes, attributes) {
   // go right while attributes[right.key] === right.value (or right is deleted)
   while (true) {
@@ -109,6 +128,9 @@ function minimizeAttributeChanges (left, right, currentAttributes, attributes) {
   return [left, right]
 }
 
+/**
+ * @private
+ */
 function insertAttributes (y, parent, left, right, attributes, currentAttributes) {
   const negatedAttributes = new Map()
   // insert format-start items
@@ -125,9 +147,12 @@ function insertAttributes (y, parent, left, right, attributes, currentAttributes
       left = format
     }
   }
-  return negatedAttributes
+  return [left, right, negatedAttributes]
 }
 
+/**
+ * @private
+ */
 function insertText (y, text, parent, left, right, currentAttributes, attributes) {
   for (let [key] of currentAttributes) {
     if (attributes.hasOwnProperty(key) === false) {
@@ -135,7 +160,8 @@ function insertText (y, text, parent, left, right, currentAttributes, attributes
     }
   }
   [left, right] = minimizeAttributeChanges(left, right, currentAttributes, attributes)
-  const negatedAttributes = insertAttributes(y, parent, left, right, attributes, currentAttributes)
+  let negatedAttributes
+  [left, right, negatedAttributes] = insertAttributes(y, parent, left, right, attributes, currentAttributes)
   // insert content
   let item
   if (text.constructor === String) {
@@ -150,9 +176,13 @@ function insertText (y, text, parent, left, right, currentAttributes, attributes
   return insertNegatedAttributes(y, parent, left, right, negatedAttributes)
 }
 
+/**
+ * @private
+ */
 function formatText (y, length, parent, left, right, currentAttributes, attributes) {
   [left, right] = minimizeAttributeChanges(left, right, currentAttributes, attributes)
-  const negatedAttributes = insertAttributes(y, parent, left, right, attributes, currentAttributes)
+  let negatedAttributes
+  [left, right, negatedAttributes] = insertAttributes(y, parent, left, right, attributes, currentAttributes)
   // iterate until first non-format or null is found
   // delete all formats with attributes[format.key] != null
   while (length > 0 && right !== null) {
@@ -182,6 +212,9 @@ function formatText (y, length, parent, left, right, currentAttributes, attribut
   return insertNegatedAttributes(y, parent, left, right, negatedAttributes)
 }
 
+/**
+ * @private
+ */
 function deleteText (y, length, parent, left, right, currentAttributes) {
   while (length > 0 && right !== null) {
     if (right._deleted === false) {
@@ -234,18 +267,23 @@ function deleteText (y, length, parent, left, right, currentAttributes) {
 
 /**
  * Event that describes the changes on a YText type.
+ *
+ * @private
  */
 class YTextEvent extends YArrayEvent {
   constructor (ytext, remote, transaction) {
     super(ytext, remote, transaction)
     this._delta = null
   }
-
+  // TODO: Should put this in a separate function. toDelta shouldn't be included
+  //       in every Yjs distribution
   /**
    * Compute the changes in the delta format.
    *
    * @return {Delta} A {@link https://quilljs.com/docs/delta/|Quill Delta}) that
    *                 represents the changes on the document.
+   *
+   * @public
    */
   get delta () {
     if (this._delta === null) {
@@ -438,6 +476,8 @@ export default class YText extends YArray {
 
   /**
    * Returns the unformatted string representation of this YText type.
+   *
+   * @public
    */
   toString () {
     let str = ''
@@ -455,6 +495,8 @@ export default class YText extends YArray {
    * Apply a {@link Delta} on this shared YText type.
    *
    * @param {Delta} delta The changes to apply on this element.
+   *
+   * @public
    */
   applyDelta (delta) {
     this._transact(y => {
@@ -478,6 +520,8 @@ export default class YText extends YArray {
    * Returns the Delta representation of this YText type.
    *
    * @return {Delta} The Delta representation of this type.
+   *
+   * @public
    */
   toDelta () {
     let ops = []
@@ -527,6 +571,8 @@ export default class YText extends YArray {
    * @param {TextAttributes} attributes Optionally define some formatting
    *                                    information to apply on the inserted
    *                                    Text.
+   *
+   * @public
    */
   insert (index, text, attributes = {}) {
     if (text.length <= 0) {
@@ -546,6 +592,7 @@ export default class YText extends YArray {
    * @param {TextAttributes} attributes Attribute information to apply on the
    *                                    embed
    *
+   * @public
    */
   insertEmbed (index, embed, attributes = {}) {
     if (embed.constructor !== Object) {
@@ -562,6 +609,8 @@ export default class YText extends YArray {
    *
    * @param {Integer} index Index at which to start deleting.
    * @param {Integer} length The number of characters to remove. Defaults to 1.
+   *
+   * @public
    */
   delete (index, length) {
     if (length === 0) {
@@ -580,6 +629,8 @@ export default class YText extends YArray {
    * @param {Integer} length The amount of characters to assign properties to.
    * @param {TextAttributes} attributes Attribute information to apply on the
    *                                    text.
+   *
+   * @public
    */
   format (index, length, attributes) {
     this._transact(y => {
@@ -590,15 +641,14 @@ export default class YText extends YArray {
       formatText(y, length, this, left, right, currentAttributes, attributes)
     })
   }
-
+  // TODO: De-duplicate code. The following code is in every type.
   /**
-   * @private
    * Transform this YText to a readable format.
    * Useful for logging as all Items implement this method.
+   *
+   * @private
    */
   _logString () {
-    const left = this._left !== null ? this._left._lastId : null
-    const origin = this._origin !== null ? this._origin._lastId : null
-    return `YText(id:${logID(this._id)},start:${logID(this._start)},left:${logID(left)},origin:${logID(origin)},right:${logID(this._right)},parent:${logID(this._parent)},parentSub:${this._parentSub})`
+    return logItemHelper('YText', this)
   }
 }
