@@ -36,7 +36,7 @@ export default class YXmlText extends YText {
    *
    * @private
    */
-  _delete (y, createDelete) {
-    super._delete(y, createDelete)
+  _delete (y, createDelete, gcChildren) {
+    super._delete(y, createDelete, gcChildren)
   }
 }

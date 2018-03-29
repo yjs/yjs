@@ -30,6 +30,14 @@ export function getListItemIDByPosition (type, i) {
   }
 }
 
+function gcChildren (y, item) {
+  while (item !== null) {
+    item._delete(y, false, true)
+    item._gc(y)
+    item = item._right
+  }
+}
+
 /**
  * Abstract Yjs Type class
  */
@@ -184,6 +192,20 @@ export default class Type extends Item {
     }
   }
 
+  _gcChildren (y) {
+    gcChildren(y, this._start)
+    this._start = null
+    this._map.forEach(item => {
+      gcChildren(y, item)
+    })
+    this._map = new Map()
+  }
+
+  _gc (y) {
+    this._gcChildren(y)
+    super._gc(y)
+  }
+
   /**
    * @private
    * Mark this Item as deleted.
@@ -192,22 +214,25 @@ export default class Type extends Item {
    * @param {boolean} createDelete Whether to propagate a message that this
    *                               Type was deleted.
    */
-  _delete (y, createDelete) {
-    super._delete(y, createDelete)
+  _delete (y, createDelete, gcChildren = true) {
+    super._delete(y, createDelete, gcChildren)
     y._transaction.changedTypes.delete(this)
     // delete map types
     for (let value of this._map.values()) {
       if (value instanceof Item && !value._deleted) {
-        value._delete(y, false)
+        value._delete(y, false, gcChildren)
       }
     }
     // delete array types
     let t = this._start
     while (t !== null) {
       if (!t._deleted) {
-        t._delete(y, false)
+        t._delete(y, false, gcChildren)
       }
       t = t._right
+    }
+    if (gcChildren) {
+      this._gcChildren(y)
     }
   }
 }

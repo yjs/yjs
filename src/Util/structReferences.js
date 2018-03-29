@@ -8,6 +8,7 @@ import ItemJSON from '../Struct/ItemJSON.js'
 import ItemString from '../Struct/ItemString.js'
 import ItemFormat from '../Struct/ItemFormat.js'
 import ItemEmbed from '../Struct/ItemEmbed.js'
+import GC from '../Struct/GC.js'
 
 const structs = new Map()
 const references = new Map()
@@ -54,3 +55,5 @@ registerStruct(6, YXmlFragment)
 registerStruct(7, YXmlElement)
 registerStruct(8, YXmlText)
 registerStruct(9, YXmlHook)
+
+registerStruct(12, GC)

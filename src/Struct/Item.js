@@ -3,6 +3,7 @@ import ID from '../Util/ID/ID.js'
 import { RootFakeUserID } from '../Util/ID/RootID.js'
 import Delete from './Delete.js'
 import { transactionTypeChanged } from '../Transaction.js'
+import GC from './GC.js'
 
 /**
  * @private
@@ -220,7 +221,7 @@ export default class Item {
   _delete (y, createDelete = true) {
     if (!this._deleted) {
       this._deleted = true
-      y.ds.markDeleted(this._id, this._length)
+      y.ds.mark(this._id, this._length, false)
       let del = new Delete()
       del._targetID = this._id
       del._length = this._length
@@ -233,6 +234,32 @@ export default class Item {
       }
       transactionTypeChanged(y, this._parent, this._parentSub)
       y._transaction.deletedStructs.add(this)
+    }
+  }
+
+  _gcChildren (y) {}
+  
+  _gc (y) {
+    y.ds.mark(this._id, this._length, true)
+    const gc = new GC()
+    gc._id = this._id
+    gc._length = this._length
+    y.os.delete(this._id)
+    let n = y.os.put(gc)
+    const prev = n.prev().val
+    if (prev !== null && prev.constructor === GC && prev._id.user === n.val._id.user && prev._id.clock + prev._length === n.val._id.clock) {
+      // TODO: do merging for all items!
+      prev._length += n.val._length
+      y.os.delete(n.val._id)
+      n = prev
+    }
+    if (n.val) {
+      n = n.val
+    }
+    const next = y.os.findNext(n._id)
+    if (next !== null && next.constructor === GC && next._id.user === n._id.user && next._id.clock === n._id.clock + n._length) {
+      n._length += next._length
+      y.os.delete(n._id)
     }
   }
 

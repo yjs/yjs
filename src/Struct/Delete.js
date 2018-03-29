@@ -13,18 +13,18 @@ export function deleteItemRange (y, user, clock, range) {
   if (item !== null) {
     if (!item._deleted) {
       item._splitAt(y, range)
-      item._delete(y, createDelete)
+      item._delete(y, createDelete, true)
     }
     let itemLen = item._length
     range -= itemLen
     clock += itemLen
     if (range > 0) {
       let node = y.os.findNode(new ID(user, clock))
-      while (node !== null && range > 0 && node.val._id.equals(new ID(user, clock))) {
+      while (node !== null && node.val !== null && range > 0 && node.val._id.equals(new ID(user, clock))) {
         const nodeVal = node.val
         if (!nodeVal._deleted) {
           nodeVal._splitAt(y, range)
-          nodeVal._delete(y, createDelete)
+          nodeVal._delete(y, createDelete, true)
         }
         const nodeLen = nodeVal._length
         range -= nodeLen
