@@ -53,6 +53,7 @@
     "chance": "^1.0.9",
     "concurrently": "^3.4.0",
     "cutest": "^0.1.9",
+    "rollup": "^0.57.1",
     "rollup-plugin-babel": "^2.7.1",
     "rollup-plugin-commonjs": "^8.0.2",
     "rollup-plugin-inject": "^2.0.0",
