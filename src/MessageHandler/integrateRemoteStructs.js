@@ -1,6 +1,7 @@
 import { getStruct } from '../Util/structReferences.js'
 import BinaryDecoder from '../Util/Binary/Decoder.js'
 import { logID } from './messageToString.js'
+import GC from '../Struct/GC.js';
 
 class MissingEntry {
   constructor (decoder, missing, struct) {
@@ -24,7 +25,14 @@ function _integrateRemoteStructHelper (y, struct) {
     if (y.ss.getState(id.user) > id.clock) {
       return
     }
-    struct._integrate(y)
+    if (struct.constructor === GC || (struct._parent.constructor !== GC && struct._parent._deleted === false)) {
+      // Is either a GC or Item with an undeleted parent
+      // save to integrate
+      struct._integrate(y)
+    } else {
+      // Is an Item. parent was deleted.
+      struct._gc(y)
+    }
     let msu = y._missingStructs.get(id.user)
     if (msu != null) {
       let clock = id.clock

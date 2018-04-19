@@ -8,6 +8,7 @@ import ItemJSON from '../src/Struct/ItemJSON.js'
 import ItemString from '../src/Struct/ItemString.js'
 import { defragmentItemContent } from '../src/Util/defragmentItemContent.js'
 import Quill from 'quill'
+import GC from '../src/Struct/GC.js';
 
 export const Y = _Y
 
@@ -110,13 +111,22 @@ export async function compareUsers (t, users) {
     var data = {}
     let ops = []
     u.os.iterate(null, null, function (op) {
-      const json = {
-        id: op._id,
-        left: op._left === null ? null : op._left._lastId,
-        right: op._right === null ? null : op._right._id,
-        length: op._length,
-        deleted: op._deleted,
-        parent: op._parent._id
+      let json
+      if (op.constructor === GC) {
+        json = {
+          type: 'GC',
+          id: op._id,
+          length: op._length
+        }
+      } else {
+        json = {
+          id: op._id,
+          left: op._left === null ? null : op._left._lastId,
+          right: op._right === null ? null : op._right._id,
+          length: op._length,
+          deleted: op._deleted,
+          parent: op._parent._id
+        }
       }
       if (op instanceof ItemJSON || op instanceof ItemString) {
         json.content = op._content
@@ -186,7 +196,7 @@ export async function initArrays (t, opts) {
     y.dom = dom
     y.on('afterTransaction', function () {
       for (let missing of y._missingStructs.values()) {
-        if (Array.from(missing.values()).length > 0) {
+        if (missing.size > 0) {
           console.error(new Error('Test check in "afterTransaction": missing should be empty!'))
         }
       }

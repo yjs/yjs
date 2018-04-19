@@ -2,6 +2,7 @@ import Tree from '../Util/Tree.js'
 import RootID from '../Util/ID/RootID.js'
 import { getStruct } from '../Util/structReferences.js'
 import { logID } from '../MessageHandler/messageToString.js'
+import GC from '../Struct/GC.js'
 
 export default class OperationStore extends Tree {
   constructor (y) {
@@ -11,17 +12,25 @@ export default class OperationStore extends Tree {
   logTable () {
     const items = []
     this.iterate(null, null, function (item) {
-      items.push({
-        id: logID(item),
-        origin: logID(item._origin === null ? null : item._origin._lastId),
-        left: logID(item._left === null ? null : item._left._lastId),
-        right: logID(item._right),
-        right_origin: logID(item._right_origin),
-        parent: logID(item._parent),
-        parentSub: item._parentSub,
-        deleted: item._deleted,
-        content: JSON.stringify(item._content)
-      })
+      if (item.constructor === GC) {
+        items.push({
+          id: logID(item),
+          content: item._length,
+          deleted: 'GC'
+        })
+      } else {
+        items.push({
+          id: logID(item),
+          origin: logID(item._origin === null ? null : item._origin._lastId),
+          left: logID(item._left === null ? null : item._left._lastId),
+          right: logID(item._right),
+          right_origin: logID(item._right_origin),
+          parent: logID(item._parent),
+          parentSub: item._parentSub,
+          deleted: item._deleted,
+          content: JSON.stringify(item._content)
+        })
+      }
     })
     console.table(items)
   }

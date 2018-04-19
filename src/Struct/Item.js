@@ -240,27 +240,11 @@ export default class Item {
   _gcChildren (y) {}
   
   _gc (y) {
-    y.ds.mark(this._id, this._length, true)
     const gc = new GC()
     gc._id = this._id
     gc._length = this._length
     y.os.delete(this._id)
-    let n = y.os.put(gc)
-    const prev = n.prev().val
-    if (prev !== null && prev.constructor === GC && prev._id.user === n.val._id.user && prev._id.clock + prev._length === n.val._id.clock) {
-      // TODO: do merging for all items!
-      prev._length += n.val._length
-      y.os.delete(n.val._id)
-      n = prev
-    }
-    if (n.val) {
-      n = n.val
-    }
-    const next = y.os.findNext(n._id)
-    if (next !== null && next.constructor === GC && next._id.user === n._id.user && next._id.clock === n._id.clock + n._length) {
-      n._length += next._length
-      y.os.delete(n._id)
-    }
+    gc._integrate(y)
   }
 
   /**
@@ -511,9 +495,19 @@ export default class Item {
       }
     } else if (this._parent === null) {
       if (this._origin !== null) {
-        this._parent = this._origin._parent
+        if (this._origin.constructor === GC) {
+          // if origin is a gc, set parent also gc'd
+          this._parent = this._origin
+        } else {
+          this._parent = this._origin._parent
+        }
       } else if (this._right_origin !== null) {
-        this._parent = this._right_origin._parent
+        // if origin is a gc, set parent also gc'd
+        if (this._right_origin.constructor === GC) {
+          this._parent = this._right_origin
+        } else {
+          this._parent = this._right_origin._parent
+        }
       }
     }
     if (info & 0b1000) {

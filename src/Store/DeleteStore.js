@@ -52,7 +52,7 @@ export default class DeleteStore extends Tree {
     if (rightD !== null && rightD._id.user === id.user) {
       if (rightD._id.clock < id.clock + length && id.clock <= rightD._id.clock && id.clock + length < rightD._id.clock + rightD.len) { // we only consider the case where we resize the node
         const d = id.clock + length - rightD._id.clock
-        rightD._id.clock += d
+        rightD._id = new ID(rightD._id.user, rightD._id.clock + d)
         rightD.len -= d
       }
     }
