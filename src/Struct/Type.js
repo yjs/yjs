@@ -214,7 +214,10 @@ export default class Type extends Item {
    * @param {boolean} createDelete Whether to propagate a message that this
    *                               Type was deleted.
    */
-  _delete (y, createDelete, gcChildren = true) {
+  _delete (y, createDelete, gcChildren) {
+    if (gcChildren === undefined) {
+      gcChildren = y._hasUndoManager === false
+    }
     super._delete(y, createDelete, gcChildren)
     y._transaction.changedTypes.delete(this)
     // delete map types

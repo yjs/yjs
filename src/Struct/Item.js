@@ -1,6 +1,6 @@
 import { getStructReference } from '../Util/structReferences.js'
 import ID from '../Util/ID/ID.js'
-import { RootFakeUserID } from '../Util/ID/RootID.js'
+import { default as RootID, RootFakeUserID } from '../Util/ID/RootID.js'
 import Delete from './Delete.js'
 import { transactionTypeChanged } from '../Transaction.js'
 import GC from './GC.js'
@@ -486,7 +486,12 @@ export default class Item {
       const parentID = decoder.readID()
       // parent does not change, so we don't have to search for it again
       if (this._parent === null) {
-        const parent = y.os.get(parentID)
+        let parent
+        if (parentID.constructor === RootID) {
+          parent = y.os.get(parentID)
+        } else {
+          parent = y.os.getItem(parentID)
+        }
         if (parent === null) {
           missing.push(parentID)
         } else {

@@ -79,6 +79,7 @@ export default class Y extends NamedEventHandler {
     }
     // for compatibility with isParentOf
     this._parent = null
+    this._hasUndoManager = false
   }
   _setContentReady () {
     if (!this._contentReady) {

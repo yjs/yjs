@@ -36,7 +36,6 @@ export default class GC {
       n._length += next._length
       y.os.delete(next._id)
     }
-
     if (id.user !== RootFakeUserID) {
       if (y.connector !== null && (y.connector._forwardAppliedStructs || id.user === y.userID)) {
         y.connector.broadcastStruct(this)
@@ -84,5 +83,12 @@ export default class GC {
 
   _splitAt () {
     return this
+  }
+
+  _clonePartial (diff) {
+    const gc = new GC()
+    gc._id = new ID(this._id.user, this._id.clock + diff)
+    gc._length = this._length - diff
+    return gc
   }
 }

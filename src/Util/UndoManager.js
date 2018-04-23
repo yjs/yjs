@@ -75,6 +75,7 @@ export default class UndoManager {
     this._lastTransactionWasUndo = false
     const y = scope._y
     this.y = y
+    y._hasUndoManager = true
     y.on('afterTransaction', (y, transaction, remote) => {
       if (!remote && transaction.changedParentTypes.has(scope)) {
         let reverseOperation = new ReverseOperation(y, transaction)

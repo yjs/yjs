@@ -7,7 +7,7 @@ import { logID } from '../MessageHandler/messageToString.js'
  * Delete all items in an ID-range
  * TODO: implement getItemCleanStartNode for better performance (only one lookup)
  */
-export function deleteItemRange (y, user, clock, range) {
+export function deleteItemRange (y, user, clock, range, gcChildren) {
   const createDelete = y.connector !== null && y.connector._forwardAppliedStructs
   let item = y.os.getItemCleanStart(new ID(user, clock))
   if (item !== null) {
@@ -24,7 +24,7 @@ export function deleteItemRange (y, user, clock, range) {
         const nodeVal = node.val
         if (!nodeVal._deleted) {
           nodeVal._splitAt(y, range)
-          nodeVal._delete(y, createDelete, true)
+          nodeVal._delete(y, createDelete, gcChildren)
         }
         const nodeLen = nodeVal._length
         range -= nodeLen
@@ -100,7 +100,7 @@ export default class Delete {
     if (!locallyCreated) {
       // from remote
       const id = this._targetID
-      deleteItemRange(y, id.user, id.clock, this._length)
+      deleteItemRange(y, id.user, id.clock, this._length, false)
     } else if (y.connector !== null) {
       // from local
       y.connector.broadcastStruct(this)

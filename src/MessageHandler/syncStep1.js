@@ -42,7 +42,15 @@ export function writeStructs (y, encoder, ss) {
   for (let user of y.ss.state.keys()) {
     let clock = ss.get(user) || 0
     if (user !== RootFakeUserID) {
-      y.os.iterate(new ID(user, clock), new ID(user, Number.MAX_VALUE), function (struct) {
+      const minBound = new ID(user, clock)
+      const overlappingLeft = y.os.findPrev(minBound)
+      const rightID = overlappingLeft === null ? null : overlappingLeft._id
+      if (rightID !== null && rightID.user === user && rightID.clock + overlappingLeft._length > clock) {
+        const struct = overlappingLeft._clonePartial(clock - rightID.clock)
+        struct._toBinary(encoder)
+        len++
+      }
+      y.os.iterate(minBound, new ID(user, Number.MAX_VALUE), function (struct) {
         struct._toBinary(encoder)
         len++
       })

@@ -92,7 +92,7 @@ export function readDeleteSet (y, decoder) {
             // delete maximum the len of d
             // else delete as much as possible
             diff = Math.min(n._id.clock - d[0], d[1])
-            // deleteItemRange(y, user, d[0], diff)
+            // deleteItemRange(y, user, d[0], diff, true)
             deletions.push([user, d[0], diff])
           } else {
             // 3)
@@ -100,7 +100,7 @@ export function readDeleteSet (y, decoder) {
             if (d[2] && !n.gc) {
               // d marks as gc'd but n does not
               // then delete either way
-              // deleteItemRange(y, user, d[0], Math.min(diff, d[1]))
+              // deleteItemRange(y, user, d[0], Math.min(diff, d[1]), true)
               deletions.push([user, d[0], Math.min(diff, d[1])])
             }
           }
@@ -117,12 +117,12 @@ export function readDeleteSet (y, decoder) {
       // Adapt the Tree implementation to support delete while iterating
       for (let i = deletions.length - 1; i >= 0; i--) {
         const del = deletions[i]
-        deleteItemRange(y, del[0], del[1], del[2])
+        deleteItemRange(y, del[0], del[1], del[2], true)
       }
       // for the rest.. just apply it
       for (; pos < dv.length; pos++) {
         d = dv[pos]
-        deleteItemRange(y, user, d[0], d[1])
+        deleteItemRange(y, user, d[0], d[1], true)
         // deletions.push([user, d[0], d[1], d[2]])
       }
     }
