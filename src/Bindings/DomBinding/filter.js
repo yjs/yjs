@@ -14,6 +14,18 @@ export function defaultFilter (nodeName, attrs) {
 }
 
 /**
+ * 
+ */
+export function filterDomAttributes (dom, filter) {
+  const attrs = new Map()
+  for (let i = dom.attributes.length - 1; i >= 0; i--) {
+    const attr = dom.attributes[i]
+    attrs.set(attr.name, attr.value)
+  }
+  return filter(dom.nodeName, attrs)
+}
+
+/**
  * Applies a filter on a type.
  *
  * @param {Y} y The Yjs instance.

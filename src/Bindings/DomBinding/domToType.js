@@ -1,6 +1,7 @@
 
 import { YXmlText, YXmlElement, YXmlHook } from '../../Types/YXml/YXml.js'
 import { createAssociation } from './util.js'
+import { filterDomAttributes } from './filter.js'
 
 /**
  * Creates a Yjs type (YXml) based on the contents of a DOM Element.
@@ -17,6 +18,7 @@ export default function domToType (element, _document = document, binding) {
     case _document.ELEMENT_NODE:
       let hookName = element.dataset.yjsHook
       let hook
+      // configure `hookName !== undefined` if element is a hook.
       if (hookName !== undefined) {
         hook = binding.opts.hooks[hookName]
         if (hook === undefined) {
@@ -26,15 +28,26 @@ export default function domToType (element, _document = document, binding) {
         }
       }
       if (hookName === undefined) {
-        type = new YXmlElement(element.nodeName)
-        const attrs = element.attributes
-        for (let i = attrs.length - 1; i >= 0; i--) {
-          const attr = attrs[i]
-          type.setAttribute(attr.name, attr.value)
+        // Not a hook
+        const attrs = filterDomAttributes(element, binding.filter)
+        if (attrs === null) {
+          type = false
+        } else {
+          type = new YXmlElement(element.nodeName)
+          attrs.forEach((val, key) => {
+            type.setAttribute(key, val)
+          })
+          const children = []
+          for (let elem of element.childNodes) {
+            const type = domToType(elem, _document, binding)
+            if (type !== false) {
+              children.push(type)
+            }
+          }
+          type.insert(0, children)
         }
-        const children = Array.from(element.childNodes).map(e => domToType(e, _document, binding))
-        type.insert(0, children)
       } else {
+        // Is a hook
         type = new YXmlHook(hookName)
         hook.fillType(element, type)
       }

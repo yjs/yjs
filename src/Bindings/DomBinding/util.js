@@ -54,7 +54,14 @@ export function createAssociation (domBinding, dom, type) {
  * @private
  */
 export function insertDomElementsAfter (type, prev, doms, _document, binding) {
-  return type.insertAfter(prev, doms.map(dom => domToType(dom, _document, binding)))
+  const types = []
+  for (let dom of doms) {
+    const t = domToType(dom, _document, binding)
+    if (t !== false) {
+      types.push(t)
+    }
+  }
+  return type.insertAfter(prev, types)
 }
 
 /**
