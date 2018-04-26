@@ -30,6 +30,9 @@ export default class DomBinding extends Binding {
   constructor (type, target, opts = {}) {
     // Binding handles textType as this.type and domTextarea as this.target
     super(type, target)
+    this.opts = opts
+    opts.document = opts.document || document
+    opts.hooks = opts.hooks || {}
     /**
      * Maps each DOM element to the type that it is associated with.
      * @type {Map}
@@ -49,11 +52,11 @@ export default class DomBinding extends Binding {
     // set initial value
     target.innerHTML = ''
     for (let child of type) {
-      target.insertBefore(child.toDom(this.domToType, this.typeToDom), null)
+      target.insertBefore(child.toDom(opts.document, opts.hooks, this), null)
     }
     this._typeObserver = typeObserver.bind(this)
     this._domObserver = (mutations) => {
-      domObserver.call(this, mutations, opts._document)
+      domObserver.call(this, mutations, opts.document)
     }
     type.observeDeep(this._typeObserver)
     this._mutationObserver = new MutationObserver(this._domObserver)

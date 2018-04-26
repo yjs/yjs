@@ -1,5 +1,4 @@
 import YMap from '../YMap/YMap.js'
-import { getHook, addHook } from './hooks.js'
 
 /**
  * You can manage binding to a custom type with YXmlHook.
@@ -35,16 +34,24 @@ export default class YXmlHook extends YMap {
    * @param {Document} [_document=document] The document object (you must define
    *                                        this when calling this method in
    *                                        nodejs)
+   * @param {Object<key:hookDefinition>} [hooks] Optional property to customize how hooks
+   *                                             are presented in the DOM
    * @param {DomBinding} [binding] You should not set this property. This is
    *                               used if DomBinding wants to create a
-   *                               association to the created DOM type.
+   *                               association to the created DOM type
    * @return {Element} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
    *
    * @public
    */
-  toDom (_document = document) {
-    const dom = getHook(this.hookName).createDom(this)
-    dom._yjsHook = this.hookName
+  toDom (_document = document, hooks = {}, binding) {
+    const hook = hooks[this.hookName]
+    let dom
+    if (hook !== undefined) {
+      dom = hook.createDom(this)
+    } else {
+      dom = document.createElement(this.hookName)
+    }
+    dom.dataset.yjsHook = this.hookName
     return dom
   }
 
@@ -97,4 +104,3 @@ export default class YXmlHook extends YMap {
     super._integrate(y)
   }
 }
-YXmlHook.addHook = addHook

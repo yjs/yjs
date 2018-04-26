@@ -1,7 +1,20 @@
 /* global Y, d3 */
 
+const hooks = {
+  "magic-drawing": {
+    fillType: function (dom, type) {
+      initDrawingBindings(type, dom)
+    },
+    createDom: function (type) {
+      const dom = document.createElement('magic-drawing')
+      initDrawingBindings(type, dom)
+      return dom
+    }
+  }
+}
+
 window.onload = function () {
-  window.yXmlType.bindToDom(document.body)
+  window.domBinding = new Y.DomBinding(window.yXmlType, document.body, { hooks })
 }
 
 window.addMagicDrawing = function addMagicDrawing () {
@@ -95,17 +108,6 @@ function initDrawingBindings (type, dom) {
     ignoreDrag = null
   }
 }
-
-Y.XmlHook.addHook('magic-drawing', {
-  fillType: function (dom, type) {
-    initDrawingBindings(type, dom)
-  },
-  createDom: function (type) {
-    const dom = document.createElement('magic-drawing')
-    initDrawingBindings(type, dom)
-    return dom
-  }
-})
 
 let y = new Y('html-editor-drawing-hook-example', {
   connector: {

@@ -6,7 +6,7 @@ import { removeDomChildrenUntilElementFound } from './util.js'
 /**
  * @private
  */
-export default function typeObserver (events, _document) {
+export default function typeObserver (events) {
   this._mutualExclude(() => {
     events.forEach(event => {
       const yxml = event.target
@@ -37,11 +37,10 @@ export default function typeObserver (events, _document) {
             let currentChild = dom.firstChild
             yxml.forEach(childType => {
               const childNode = this.typeToDom.get(childType)
-              const binding = this
               switch (childNode) {
                 case undefined:
                   // Does not exist. Create it.
-                  const node = childType.toDom(_document, binding)
+                  const node = childType.toDom(this.opts.document, this.opts.hooks, this)
                   dom.insertBefore(node, currentChild)
                   break
                 case false:

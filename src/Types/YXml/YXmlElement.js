@@ -164,6 +164,8 @@ export default class YXmlElement extends YXmlFragment {
    * @param {Document} [_document=document] The document object (you must define
    *                                        this when calling this method in
    *                                        nodejs)
+   * @param {Object<key:hookDefinition>} [hooks={}] Optional property to customize how hooks
+   *                                             are presented in the DOM
    * @param {DomBinding} [binding] You should not set this property. This is
    *                               used if DomBinding wants to create a
    *                               association to the created DOM type.
@@ -171,14 +173,14 @@ export default class YXmlElement extends YXmlFragment {
    *
    * @public
    */
-  toDom (_document = document, binding) {
+  toDom (_document = document, hooks = {}, binding) {
     const dom = _document.createElement(this.nodeName)
     let attrs = this.getAttributes()
     for (let key in attrs) {
       dom.setAttribute(key, attrs[key])
     }
     this.forEach(yxml => {
-      dom.appendChild(yxml.toDom(_document, binding))
+      dom.appendChild(yxml.toDom(_document, hooks, binding))
     })
     createAssociation(binding, dom, this)
     return dom
