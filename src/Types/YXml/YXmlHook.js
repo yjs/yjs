@@ -1,4 +1,5 @@
 import YMap from '../YMap/YMap.js'
+import { createAssociation } from '../../Bindings/DomBinding/util.js'
 
 /**
  * You can manage binding to a custom type with YXmlHook.
@@ -52,6 +53,7 @@ export default class YXmlHook extends YMap {
       dom = document.createElement(this.hookName)
     }
     dom.dataset.yjsHook = this.hookName
+    createAssociation(binding, dom, this)
     return dom
   }
 
