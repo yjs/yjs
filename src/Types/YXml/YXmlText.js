@@ -35,6 +35,8 @@ export default class YXmlText extends YText {
    * @param {Y} y The Yjs instance
    * @param {boolean} createDelete Whether to propagate a message that this
    *                               Type was deleted.
+   * @param {boolean} [gcChildren=y._hasUndoManager===false] Whether to garbage
+   *                                         collect the children of this type.
    *
    * @private
    */

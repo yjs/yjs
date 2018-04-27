@@ -8,7 +8,7 @@ import ItemJSON from '../src/Struct/ItemJSON.js'
 import ItemString from '../src/Struct/ItemString.js'
 import { defragmentItemContent } from '../src/Util/defragmentItemContent.js'
 import Quill from 'quill'
-import GC from '../src/Struct/GC.js';
+import GC from '../src/Struct/GC.js'
 
 export const Y = _Y
 
@@ -40,41 +40,6 @@ function getDeleteSet (y) {
     dv.push([counter, len, gc])
   })
   return ds
-}
-
-// TODO: remove?
-export function attrsObject (dom) {
-  let keys = []
-  let yxml = dom._yxml
-  for (let i = 0; i < dom.attributes.length; i++) {
-    keys.push(dom.attributes[i].name)
-  }
-  keys = yxml._domFilter(dom, keys)
-  let obj = {}
-  for (let i = 0; i < keys.length; i++) {
-    let key = keys[i]
-    obj[key] = dom.getAttribute(key)
-  }
-  return obj
-}
-
-// TODO: remove?
-export function domToJson (dom) {
-  if (dom.nodeType === document.TEXT_NODE) {
-    return dom.textContent
-  } else if (dom.nodeType === document.ELEMENT_NODE) {
-    let attributes = attrsObject(dom)
-    let children = Array.from(dom.childNodes.values())
-      .filter(d => d._yxml !== false)
-      .map(domToJson)
-    return {
-      name: dom.nodeName,
-      children: children,
-      attributes: attributes
-    }
-  } else {
-    throw new Error('Unsupported node type')
-  }
 }
 
 /*

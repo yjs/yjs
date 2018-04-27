@@ -20,6 +20,8 @@ import DomBinding from './Bindings/DomBinding/DomBinding.js'
 import { toBinary, fromBinary } from './MessageHandler/binaryEncode.js'
 
 import debug from 'debug'
+import domToType from './Bindings/DomBinding/domToType.js'
+import { domsToTypes, switchAssociation } from './Bindings/DomBinding/util.js'
 
 // TODO: The following assignments should be moved to yjs-dist
 Y.AbstractConnector = Connector
@@ -35,6 +37,10 @@ Y.XmlHook = YXmlHook
 Y.TextareaBinding = TextareaBinding
 Y.QuillBinding = QuillBinding
 Y.DomBinding = DomBinding
+
+DomBinding.domToType = domToType
+DomBinding.domsToTypes = domsToTypes
+DomBinding.switchAssociation = switchAssociation
 
 Y.utils = {
   BinaryDecoder,

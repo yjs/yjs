@@ -17,7 +17,10 @@ export function iterateUntilUndeleted (item) {
  * Removes an association (the information that a DOM element belongs to a
  * type).
  *
- * @private
+ * @param {DomBinding} domBinding The binding object
+ * @param {Element} dom The dom that is to be associated with type
+ * @param {YXmlElement|YXmlHook} type The type that is to be associated with dom
+ *
  */
 export function removeAssociation (domBinding, dom, type) {
   domBinding.domToType.delete(dom)
@@ -28,12 +31,33 @@ export function removeAssociation (domBinding, dom, type) {
  * Creates an association (the information that a DOM element belongs to a
  * type).
  *
- * @private
+ * @param {DomBinding} domBinding The binding object
+ * @param {Element} dom The dom that is to be associated with type
+ * @param {YXmlElement|YXmlHook} type The type that is to be associated with dom
+ *
  */
 export function createAssociation (domBinding, dom, type) {
   if (domBinding !== undefined) {
     domBinding.domToType.set(dom, type)
     domBinding.typeToDom.set(type, dom)
+  }
+}
+
+/**
+ * If oldDom is associated with a type, associate newDom with the type and
+ * forget about oldDom. If oldDom is not associated with any type, nothing happens.
+ *
+ * @param {DomBinding} domBinding The binding object
+ * @param {Element} oldDom The existing dom
+ * @param {Element} newDom The new dom object
+ */
+export function switchAssociation (domBinding, oldDom, newDom) {
+  if (domBinding !== undefined) {
+    const type = domBinding.domToType.get(oldDom)
+    if (type !== undefined) {
+      removeAssociation(domBinding, oldDom, type)
+      createAssociation(domBinding, newDom, type)
+    }
   }
 }
 
@@ -54,14 +78,19 @@ export function createAssociation (domBinding, dom, type) {
  * @private
  */
 export function insertDomElementsAfter (type, prev, doms, _document, binding) {
+  const types = domsToTypes(doms, _document, binding.opts.hooks, binding.filter, binding)
+  return type.insertAfter(prev, types)
+}
+
+export function domsToTypes (doms, _document, hooks, filter, binding) {
   const types = []
   for (let dom of doms) {
-    const t = domToType(dom, _document, binding)
+    const t = domToType(dom, _document, hooks, filter, binding)
     if (t !== false) {
       types.push(t)
     }
   }
-  return type.insertAfter(prev, types)
+  return types
 }
 
 /**

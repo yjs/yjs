@@ -198,7 +198,7 @@ export default class YArray extends Type {
           content = this._item._content[this._itemElement++]
         }
         return {
-          value: [this._count, content],
+          value: content,
           done: false
         }
       },

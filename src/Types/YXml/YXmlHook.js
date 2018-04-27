@@ -52,7 +52,7 @@ export default class YXmlHook extends YMap {
     } else {
       dom = document.createElement(this.hookName)
     }
-    dom.dataset.yjsHook = this.hookName
+    dom.setAttribute('data-yjs-hook', this.hookName)
     createAssociation(binding, dom, this)
     return dom
   }

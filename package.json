@@ -19,7 +19,8 @@
   "files": [
     "y.*",
     "src/*",
-    ".esdoc.json"
+    ".esdoc.json",
+    "docs/*"
   ],
   "standard": {
     "ignore": [

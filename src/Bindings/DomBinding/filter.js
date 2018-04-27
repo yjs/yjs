@@ -14,7 +14,7 @@ export function defaultFilter (nodeName, attrs) {
 }
 
 /**
- * 
+ *
  */
 export function filterDomAttributes (dom, filter) {
   const attrs = new Map()

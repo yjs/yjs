@@ -213,6 +213,8 @@ export default class Type extends Item {
    * @param {Y} y The Yjs instance
    * @param {boolean} createDelete Whether to propagate a message that this
    *                               Type was deleted.
+   * @param {boolean} [gcChildren=y._hasUndoManager===false] Whether to garbage
+   *                                         collect the children of this type.
    */
   _delete (y, createDelete, gcChildren) {
     if (gcChildren === undefined) {

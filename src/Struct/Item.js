@@ -238,7 +238,7 @@ export default class Item {
   }
 
   _gcChildren (y) {}
-  
+
   _gc (y) {
     const gc = new GC()
     gc._id = this._id

@@ -1,5 +1,6 @@
 import ID from './ID/ID.js'
 import RootID from './ID/RootID.js'
+import GC from '../Struct/GC.js'
 
 // TODO: Implement function to describe ranges
 
@@ -76,6 +77,9 @@ export function fromRelativePosition (y, rpos) {
       id = new RootID(rpos[3], rpos[4])
     }
     const type = y.os.get(id)
+    if (type === null || type.constructor === GC) {
+      return null
+    }
     return {
       type,
       offset: type.length
@@ -84,7 +88,7 @@ export function fromRelativePosition (y, rpos) {
     let offset = 0
     let struct = y.os.findNodeWithUpperBound(new ID(rpos[0], rpos[1])).val
     const parent = struct._parent
-    if (parent._deleted) {
+    if (struct.constructor === GC || parent._deleted) {
       return null
     }
     if (!struct._deleted) {

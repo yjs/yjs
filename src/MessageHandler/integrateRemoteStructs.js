@@ -1,7 +1,7 @@
 import { getStruct } from '../Util/structReferences.js'
 import BinaryDecoder from '../Util/Binary/Decoder.js'
 import { logID } from './messageToString.js'
-import GC from '../Struct/GC.js';
+import GC from '../Struct/GC.js'
 
 class MissingEntry {
   constructor (decoder, missing, struct) {

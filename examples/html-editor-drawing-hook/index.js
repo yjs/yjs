@@ -1,7 +1,7 @@
 /* global Y, d3 */
 
 const hooks = {
-  "magic-drawing": {
+  'magic-drawing': {
     fillType: function (dom, type) {
       initDrawingBindings(type, dom)
     },
@@ -19,7 +19,7 @@ window.onload = function () {
 
 window.addMagicDrawing = function addMagicDrawing () {
   let mt = document.createElement('magic-drawing')
-  mt.dataset.yjsHook = 'magic-drawing'
+  mt.setAttribute('data-yjs-hook', 'magic-drawing')
   document.body.append(mt)
 }
 
@@ -30,7 +30,7 @@ var renderPath = d3.svg.line()
 
 function initDrawingBindings (type, dom) {
   dom.contentEditable = 'false'
-  dom.dataset.yjsHook = 'magic-drawing'
+  dom.setAttribute('data-yjs-hook', 'magic-drawing')
   var drawing = type.get('drawing')
   if (drawing === undefined) {
     drawing = type.set('drawing', new Y.Array())

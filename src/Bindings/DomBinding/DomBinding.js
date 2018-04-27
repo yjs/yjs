@@ -51,9 +51,9 @@ export default class DomBinding extends Binding {
     this.filter = opts.filter || defaultFilter
     // set initial value
     target.innerHTML = ''
-    for (let child of type) {
+    type.forEach(child => {
       target.insertBefore(child.toDom(opts.document, opts.hooks, this), null)
-    }
+    })
     this._typeObserver = typeObserver.bind(this)
     this._domObserver = (mutations) => {
       domObserver.call(this, mutations, opts.document)

@@ -1,5 +1,4 @@
 import { test } from '../node_modules/cutest/cutest.mjs'
-import simpleDiff from '../src/Util/simpleDiff.js'
 import Chance from 'chance'
 import DeleteStore from '../src/Store/DeleteStore.js'
 import ID from '../src/Util/ID/ID.js'
