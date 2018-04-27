@@ -1,0 +1,134 @@
+.github-markdown .manual-toc {
+  padding-left: 0;
+}
+
+.manual-index .manual-cards {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.manual-index .manual-card-wrap {
+  width: 280px;
+  padding: 10px 20px 10px 0;
+  box-sizing: border-box;
+}
+
+.manual-index .manual-card-wrap > h1 {
+  margin: 0;
+  font-size: 1em;
+  font-weight: 600;
+  padding: 0.2em 0 0.2em 0.5em;
+  border-radius: 0.1em 0.1em 0 0;
+  border: none;
+}
+
+.manual-index .manual-card-wrap > h1 span {
+  color: #555;
+}
+
+.manual-index .manual-card {
+  height: 200px;
+  overflow: hidden;
+  border: solid 1px rgba(230, 230, 230, 0.84);
+  border-radius: 0 0 0.1em 0.1em;
+  padding: 8px;
+  position: relative;
+}
+
+.manual-index .manual-card > div {
+  transform: scale(0.4);
+  transform-origin: 0 0;
+  width: 250%;
+}
+
+.manual-index .manual-card > a {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(210, 210, 210, 0.1);
+}
+
+.manual-index .manual-card > a:hover {
+  background: none;
+}
+
+.manual-index .manual-badge {
+  margin: 0;
+}
+
+.manual-index .manual-user-index {
+  margin-bottom: 1em;
+  border-bottom: solid 1px #ddd;
+}
+
+.manual-root .navigation {
+  padding-left: 4px;
+  margin-top: 4px;
+}
+
+.navigation .manual-toc-root > div {
+  padding-left: 0.25em;
+  padding-right: 0.75em;
+}
+
+.github-markdown .manual-toc-title a {
+  color: inherit;
+}
+
+.manual-breadcrumb-list {
+  font-size: 0.8em;
+  margin-bottom: 1em;
+}
+
+.manual-toc-title a:hover {
+  color: #039BE5;
+}
+
+.manual-toc li {
+  margin: 0.75em 0;
+  list-style-type: none;
+}
+
+.navigation .manual-toc [class^="indent-h"] a {
+  color: #666;
+}
+
+.navigation .manual-toc .indent-h1 a {
+  color: #555;
+  font-weight: 600;
+  display: block;
+}
+
+.manual-toc .indent-h1 {
+  display: block;
+  margin: 0.4em 0 0 0.25em;
+  padding: 0.2em 0 0.2em 0.5em;
+  border-radius: 0.1em;
+}
+
+.manual-root .navigation .manual-toc li:not(.indent-h1) {
+  margin-top: 0.5em;
+}
+
+.manual-toc .indent-h2 {
+  display: none;
+  margin-left: 1.5em;
+}
+.manual-toc .indent-h3 {
+  display: none;
+  margin-left: 2.5em;
+}
+.manual-toc .indent-h4 {
+  display: none;
+  margin-left: 3.5em;
+}
+.manual-toc .indent-h5 {
+  display: none;
+  margin-left: 4.5em;
+}
+
+.manual-nav li {
+  margin: 0.75em 0;
+}

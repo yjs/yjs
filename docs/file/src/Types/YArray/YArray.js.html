@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../../../">
+  <title data-ice="title">src/Types/YArray/YArray.js | yjs</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  <script src="script/manual.js"></script>
+<meta name="description" content="A framework for real-time p2p shared editing on any data"><meta property="twitter:card" content="summary"><meta property="twitter:title" content="yjs"><meta property="twitter:description" content="A framework for real-time p2p shared editing on any data"></head>
+<body class="layout-container" data-ice="rootContainer">
+
+<header>
+  <a href="./">Home</a>
+  
+  <a href="identifiers.html">Reference</a>
+  <a href="source.html">Source</a>
+  
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+<a style="position:relative; top:3px;" href="https://github.com/y-js/yjs.git"><img width="20px" src="./image/github.png"></a></header>
+
+<nav class="navigation" data-ice="nav"><div>
+  <ul>
+    
+  <li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Connector.js~AbstractConnector.html">AbstractConnector</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Persistence.js~AbstractPersistence.html">AbstractPersistence</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Transaction.js~Transaction.html">Transaction</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Y.js~Y.html">Y</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-encodable">encodable</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings">Bindings</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/Binding.js~Binding.html">Binding</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings-dombinding">Bindings/DomBinding</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/DomBinding/DomBinding.js~DomBinding.html">DomBinding</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-domToType">domToType</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-defaultFilter">defaultFilter</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-filterDomAttributes">filterDomAttributes</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-createAssociation">createAssociation</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-domsToTypes">domsToTypes</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-removeAssociation">removeAssociation</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-switchAssociation">switchAssociation</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-FilterFunction">FilterFunction</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings-quillbinding">Bindings/QuillBinding</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/QuillBinding/QuillBinding.js~QuillBinding.html">QuillBinding</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings-textareabinding">Bindings/TextareaBinding</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/TextareaBinding/TextareaBinding.js~TextareaBinding.html">TextareaBinding</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#messagehandler">MessageHandler</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-fromBinary">fromBinary</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-toBinary">toBinary</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readDeleteSet">readDeleteSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifyDeleteSet">stringifyDeleteSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-writeDeleteSet">writeDeleteSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-integrateRemoteStructs">integrateRemoteStructs</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifyStructs">stringifyStructs</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-logID">logID</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-messageToRoomname">messageToRoomname</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-messageToString">messageToString</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readStateSet">readStateSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-writeStateSet">writeStateSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readSyncStep1">readSyncStep1</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-sendSyncStep1">sendSyncStep1</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifySyncStep1">stringifySyncStep1</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readSyncStep2">readSyncStep2</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifySyncStep2">stringifySyncStep2</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#store">Store</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Store/DeleteStore.js~DeleteStore.html">DeleteStore</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Store/OperationStore.js~OperationStore.html">OperationStore</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Store/StateStore.js~StateStore.html">StateStore</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#struct">Struct</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/GC.js~GC.html">GC</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/Item.js~Item.html">Item</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemEmbed.js~ItemEmbed.html">ItemEmbed</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemFormat.js~ItemFormat.html">ItemFormat</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemJSON.js~ItemJSON.html">ItemJSON</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemString.js~ItemString.html">ItemString</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/Type.js~Type.html">Type</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-getListItemIDByPosition">getListItemIDByPosition</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-yarray">Types/YArray</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YArray/YArray.js~YArray.html">YArray</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YArray/YArray.js~YArrayEvent.html">YArrayEvent</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-ymap">Types/YMap</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YMap/YMap.js~YMap.html">YMap</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YMap/YMap.js~YMapEvent.html">YMapEvent</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-ytext">Types/YText</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YText/YText.js~YText.html">YText</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-Delta">Delta</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-TextAttributes">TextAttributes</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-yxml">Types/YXml</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlElement.js~YXmlElement.html">YXmlElement</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlFragment.js~YXmlFragment.html">YXmlFragment</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlHook.js~YXmlHook.html">YXmlHook</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlText.js~YXmlText.html">YXmlText</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlTreeWalker.js~YXmlTreeWalker.html">YXmlTreeWalker</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-CSS_Selector">CSS_Selector</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-CSS_Selector">CSS_Selector</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#util">Util</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/EventHandler.js~EventHandler.html">EventHandler</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/NamedEventHandler.js~NamedEventHandler.html">NamedEventHandler</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/Tree.js~Tree.html">Tree</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/UndoManager.js~UndoManager.html">UndoManager</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/YEvent.js~YEvent.html">YEvent</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-defragmentItemContent">defragmentItemContent</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-generateRandomUint32">generateRandomUint32</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-isParentOf">isParentOf</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-createMutualExclude">createMutualExclude</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-fromRelativePosition">fromRelativePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-getRelativePosition">getRelativePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-simpleDiff">simpleDiff</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-registerStruct">registerStruct</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-AbsolutePosition">AbsolutePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-RelativePosition">RelativePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-SimpleDiff">SimpleDiff</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#util-binary">Util/Binary</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/Binary/Decoder.js~BinaryDecoder.html">BinaryDecoder</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/Binary/Encoder.js~BinaryEncoder.html">BinaryEncoder</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#util-id">Util/ID</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/ID/ID.js~ID.html">ID</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/ID/RootID.js~RootID.html">RootID</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-RootFakeUserID">RootFakeUserID</a></span></span></li>
+</ul>
+</div>
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">src/Types/YArray/YArray.js</h1>
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">import Type from &apos;../../Struct/Type.js&apos;
+import ItemJSON from &apos;../../Struct/ItemJSON.js&apos;
+import ItemString from &apos;../../Struct/ItemString.js&apos;
+import { logID, logItemHelper } from &apos;../../MessageHandler/messageToString.js&apos;
+import YEvent from &apos;../../Util/YEvent.js&apos;
+
+/**
+ * Event that describes the changes on a YArray
+ *
+ * @param {YArray} yarray The changed type
+ * @param {Boolean} remote Whether the changed was caused by a remote peer
+ * @param {Transaction} transaction The transaction object
+ */
+export class YArrayEvent extends YEvent {
+  constructor (yarray, remote, transaction) {
+    super(yarray)
+    this.remote = remote
+    this._transaction = transaction
+    this._addedElements = null
+    this._removedElements = null
+  }
+
+  /**
+   * Child elements that were added in this transaction.
+   *
+   * @return {Set}
+   */
+  get addedElements () {
+    if (this._addedElements === null) {
+      const target = this.target
+      const transaction = this._transaction
+      const addedElements = new Set()
+      transaction.newTypes.forEach(function (type) {
+        if (type._parent === target &amp;&amp; !transaction.deletedStructs.has(type)) {
+          addedElements.add(type)
+        }
+      })
+      this._addedElements = addedElements
+    }
+    return this._addedElements
+  }
+
+  /**
+   * Child elements that were removed in this transaction.
+   *
+   * @return {Set}
+   */
+  get removedElements () {
+    if (this._removedElements === null) {
+      const target = this.target
+      const transaction = this._transaction
+      const removedElements = new Set()
+      transaction.deletedStructs.forEach(function (struct) {
+        if (struct._parent === target &amp;&amp; !transaction.newTypes.has(struct)) {
+          removedElements.add(struct)
+        }
+      })
+      this._removedElements = removedElements
+    }
+    return this._removedElements
+  }
+}
+
+/**
+ * A shared Array implementation.
+ */
+export default class YArray extends Type {
+  /**
+   * @private
+   * Creates YArray Event and calls observers.
+   */
+  _callObserver (transaction, parentSubs, remote) {
+    this._callEventHandler(transaction, new YArrayEvent(this, remote, transaction))
+  }
+
+  /**
+   * Returns the i-th element from a YArray.
+   *
+   * @param {Integer} index The index of the element to return from the YArray
+   */
+  get (index) {
+    let n = this._start
+    while (n !== null) {
+      if (!n._deleted &amp;&amp; n._countable) {
+        if (index &lt; n._length) {
+          if (n.constructor === ItemJSON || n.constructor === ItemString) {
+            return n._content[index]
+          } else {
+            return n
+          }
+        }
+        index -= n._length
+      }
+      n = n._right
+    }
+  }
+
+  /**
+   * Transforms this YArray to a JavaScript Array.
+   *
+   * @return {Array}
+   */
+  toArray () {
+    return this.map(c =&gt; c)
+  }
+
+  /**
+   * Transforms this Shared Type to a JSON object.
+   *
+   * @return {Array}
+   */
+  toJSON () {
+    return this.map(c =&gt; {
+      if (c instanceof Type) {
+        if (c.toJSON !== null) {
+          return c.toJSON()
+        } else {
+          return c.toString()
+        }
+      }
+      return c
+    })
+  }
+
+  /**
+   * Returns an Array with the result of calling a provided function on every
+   * element of this YArray.
+   *
+   * @param {Function} f Function that produces an element of the new Array
+   * @return {Array} A new array with each element being the result of the
+   *                 callback function
+   */
+  map (f) {
+    const res = []
+    this.forEach((c, i) =&gt; {
+      res.push(f(c, i, this))
+    })
+    return res
+  }
+
+  /**
+   * Executes a provided function on once on overy element of this YArray.
+   *
+   * @param {Function} f A function to execute on every element of this YArray.
+   */
+  forEach (f) {
+    let index = 0
+    let n = this._start
+    while (n !== null) {
+      if (!n._deleted &amp;&amp; n._countable) {
+        if (n instanceof Type) {
+          f(n, index++, this)
+        } else {
+          const content = n._content
+          const contentLen = content.length
+          for (let i = 0; i &lt; contentLen; i++) {
+            index++
+            f(content[i], index, this)
+          }
+        }
+      }
+      n = n._right
+    }
+  }
+
+  /**
+   * Computes the length of this YArray.
+   */
+  get length () {
+    let length = 0
+    let n = this._start
+    while (n !== null) {
+      if (!n._deleted &amp;&amp; n._countable) {
+        length += n._length
+      }
+      n = n._right
+    }
+    return length
+  }
+
+  [Symbol.iterator] () {
+    return {
+      next: function () {
+        while (this._item !== null &amp;&amp; (this._item._deleted || this._item._length &lt;= this._itemElement)) {
+          // item is deleted or itemElement does not exist (is deleted)
+          this._item = this._item._right
+          this._itemElement = 0
+        }
+        if (this._item === null) {
+          return {
+            done: true
+          }
+        }
+        let content
+        if (this._item instanceof Type) {
+          content = this._item
+        } else {
+          content = this._item._content[this._itemElement++]
+        }
+        return {
+          value: content,
+          done: false
+        }
+      },
+      _item: this._start,
+      _itemElement: 0,
+      _count: 0
+    }
+  }
+
+  /**
+   * Deletes elements starting from an index.
+   *
+   * @param {Integer} index Index at which to start deleting elements
+   * @param {Integer} length The number of elements to remove. Defaults to 1.
+   */
+  delete (index, length = 1) {
+    this._y.transact(() =&gt; {
+      let item = this._start
+      let count = 0
+      while (item !== null &amp;&amp; length &gt; 0) {
+        if (!item._deleted &amp;&amp; item._countable) {
+          if (count &lt;= index &amp;&amp; index &lt; count + item._length) {
+            const diffDel = index - count
+            item = item._splitAt(this._y, diffDel)
+            item._splitAt(this._y, length)
+            length -= item._length
+            item._delete(this._y)
+            count += diffDel
+          } else {
+            count += item._length
+          }
+        }
+        item = item._right
+      }
+    })
+    if (length &gt; 0) {
+      throw new Error(&apos;Delete exceeds the range of the YArray&apos;)
+    }
+  }
+
+  /**
+   * @private
+   * Inserts content after an element container.
+   *
+   * @param {Item} left The element container to use as a reference.
+   * @param {Array} content The Array of content to insert (see {@see insert})
+   */
+  insertAfter (left, content) {
+    this._transact(y =&gt; {
+      let right
+      if (left === null) {
+        right = this._start
+      } else {
+        right = left._right
+      }
+      let prevJsonIns = null
+      for (let i = 0; i &lt; content.length; i++) {
+        let c = content[i]
+        if (typeof c === &apos;function&apos;) {
+          c = new c() // eslint-disable-line new-cap
+        }
+        if (c instanceof Type) {
+          if (prevJsonIns !== null) {
+            if (y !== null) {
+              prevJsonIns._integrate(y)
+            }
+            left = prevJsonIns
+            prevJsonIns = null
+          }
+          c._origin = left
+          c._left = left
+          c._right = right
+          c._right_origin = right
+          c._parent = this
+          if (y !== null) {
+            c._integrate(y)
+          } else if (left === null) {
+            this._start = c
+          } else {
+            left._right = c
+          }
+          left = c
+        } else {
+          if (prevJsonIns === null) {
+            prevJsonIns = new ItemJSON()
+            prevJsonIns._origin = left
+            prevJsonIns._left = left
+            prevJsonIns._right = right
+            prevJsonIns._right_origin = right
+            prevJsonIns._parent = this
+            prevJsonIns._content = []
+          }
+          prevJsonIns._content.push(c)
+        }
+      }
+      if (prevJsonIns !== null) {
+        if (y !== null) {
+          prevJsonIns._integrate(y)
+        } else if (prevJsonIns._left === null) {
+          this._start = prevJsonIns
+        }
+      }
+    })
+    return content
+  }
+
+  /**
+   * Inserts new content at an index.
+   *
+   * Important: This function expects an array of content. Not just a content
+   * object. The reason for this &quot;weirdness&quot; is that inserting several elements
+   * is very efficient when it is done as a single operation.
+   *
+   * @example
+   *  // Insert character &apos;a&apos; at position 0
+   *  yarray.insert(0, [&apos;a&apos;])
+   *  // Insert numbers 1, 2 at position 1
+   *  yarray.insert(2, [1, 2])
+   *
+   * @param {Integer} index The index to insert content at.
+   * @param {Array} content The array of content
+   */
+  insert (index, content) {
+    this._transact(() =&gt; {
+      let left = null
+      let right = this._start
+      let count = 0
+      const y = this._y
+      while (right !== null) {
+        const rightLen = right._deleted ? 0 : (right._length - 1)
+        if (count &lt;= index &amp;&amp; index &lt;= count + rightLen) {
+          const splitDiff = index - count
+          right = right._splitAt(y, splitDiff)
+          left = right._left
+          count += splitDiff
+          break
+        }
+        if (!right._deleted) {
+          count += right._length
+        }
+        left = right
+        right = right._right
+      }
+      if (index &gt; count) {
+        throw new Error(&apos;Index exceeds array range!&apos;)
+      }
+      this.insertAfter(left, content)
+    })
+  }
+
+  /**
+   * Appends content to this YArray.
+   *
+   * @param {Array} content Array of content to append.
+   */
+  push (content) {
+    let n = this._start
+    let lastUndeleted = null
+    while (n !== null) {
+      if (!n._deleted) {
+        lastUndeleted = n
+      }
+      n = n._right
+    }
+    this.insertAfter(lastUndeleted, content)
+  }
+
+  /**
+   * Transform this YXml Type to a readable format.
+   * Useful for logging as all Items and Delete implement this method.
+   *
+   * @private
+   */
+  _logString () {
+    return logItemHelper(&apos;YArray&apos;, this, `start:${logID(this._start)}&quot;`)
+  }
+}
+</code></pre>
+
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(1.0.4)</span><img src="./image/esdoc-logo-mini-black.png"></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>

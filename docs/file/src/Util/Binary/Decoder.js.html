@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../../../">
+  <title data-ice="title">src/Util/Binary/Decoder.js | yjs</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  <script src="script/manual.js"></script>
+<meta name="description" content="A framework for real-time p2p shared editing on any data"><meta property="twitter:card" content="summary"><meta property="twitter:title" content="yjs"><meta property="twitter:description" content="A framework for real-time p2p shared editing on any data"></head>
+<body class="layout-container" data-ice="rootContainer">
+
+<header>
+  <a href="./">Home</a>
+  
+  <a href="identifiers.html">Reference</a>
+  <a href="source.html">Source</a>
+  
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+<a style="position:relative; top:3px;" href="https://github.com/y-js/yjs.git"><img width="20px" src="./image/github.png"></a></header>
+
+<nav class="navigation" data-ice="nav"><div>
+  <ul>
+    
+  <li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Connector.js~AbstractConnector.html">AbstractConnector</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Persistence.js~AbstractPersistence.html">AbstractPersistence</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Transaction.js~Transaction.html">Transaction</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Y.js~Y.html">Y</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-encodable">encodable</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings">Bindings</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/Binding.js~Binding.html">Binding</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings-dombinding">Bindings/DomBinding</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/DomBinding/DomBinding.js~DomBinding.html">DomBinding</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-domToType">domToType</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-defaultFilter">defaultFilter</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-filterDomAttributes">filterDomAttributes</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-createAssociation">createAssociation</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-domsToTypes">domsToTypes</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-removeAssociation">removeAssociation</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-switchAssociation">switchAssociation</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-FilterFunction">FilterFunction</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings-quillbinding">Bindings/QuillBinding</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/QuillBinding/QuillBinding.js~QuillBinding.html">QuillBinding</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings-textareabinding">Bindings/TextareaBinding</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/TextareaBinding/TextareaBinding.js~TextareaBinding.html">TextareaBinding</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#messagehandler">MessageHandler</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-fromBinary">fromBinary</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-toBinary">toBinary</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readDeleteSet">readDeleteSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifyDeleteSet">stringifyDeleteSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-writeDeleteSet">writeDeleteSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-integrateRemoteStructs">integrateRemoteStructs</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifyStructs">stringifyStructs</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-logID">logID</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-messageToRoomname">messageToRoomname</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-messageToString">messageToString</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readStateSet">readStateSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-writeStateSet">writeStateSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readSyncStep1">readSyncStep1</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-sendSyncStep1">sendSyncStep1</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifySyncStep1">stringifySyncStep1</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readSyncStep2">readSyncStep2</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifySyncStep2">stringifySyncStep2</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#store">Store</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Store/DeleteStore.js~DeleteStore.html">DeleteStore</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Store/OperationStore.js~OperationStore.html">OperationStore</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Store/StateStore.js~StateStore.html">StateStore</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#struct">Struct</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/GC.js~GC.html">GC</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/Item.js~Item.html">Item</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemEmbed.js~ItemEmbed.html">ItemEmbed</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemFormat.js~ItemFormat.html">ItemFormat</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemJSON.js~ItemJSON.html">ItemJSON</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemString.js~ItemString.html">ItemString</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/Type.js~Type.html">Type</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-getListItemIDByPosition">getListItemIDByPosition</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-yarray">Types/YArray</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YArray/YArray.js~YArray.html">YArray</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YArray/YArray.js~YArrayEvent.html">YArrayEvent</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-ymap">Types/YMap</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YMap/YMap.js~YMap.html">YMap</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YMap/YMap.js~YMapEvent.html">YMapEvent</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-ytext">Types/YText</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YText/YText.js~YText.html">YText</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-Delta">Delta</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-TextAttributes">TextAttributes</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-yxml">Types/YXml</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlElement.js~YXmlElement.html">YXmlElement</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlFragment.js~YXmlFragment.html">YXmlFragment</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlHook.js~YXmlHook.html">YXmlHook</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlText.js~YXmlText.html">YXmlText</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlTreeWalker.js~YXmlTreeWalker.html">YXmlTreeWalker</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-CSS_Selector">CSS_Selector</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-CSS_Selector">CSS_Selector</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#util">Util</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/EventHandler.js~EventHandler.html">EventHandler</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/NamedEventHandler.js~NamedEventHandler.html">NamedEventHandler</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/Tree.js~Tree.html">Tree</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/UndoManager.js~UndoManager.html">UndoManager</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/YEvent.js~YEvent.html">YEvent</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-defragmentItemContent">defragmentItemContent</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-generateRandomUint32">generateRandomUint32</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-isParentOf">isParentOf</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-createMutualExclude">createMutualExclude</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-fromRelativePosition">fromRelativePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-getRelativePosition">getRelativePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-simpleDiff">simpleDiff</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-registerStruct">registerStruct</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-AbsolutePosition">AbsolutePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-RelativePosition">RelativePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-SimpleDiff">SimpleDiff</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#util-binary">Util/Binary</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/Binary/Decoder.js~BinaryDecoder.html">BinaryDecoder</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/Binary/Encoder.js~BinaryEncoder.html">BinaryEncoder</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#util-id">Util/ID</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/ID/ID.js~ID.html">ID</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/ID/RootID.js~RootID.html">RootID</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-RootFakeUserID">RootFakeUserID</a></span></span></li>
+</ul>
+</div>
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">src/Util/Binary/Decoder.js</h1>
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">import ID from &apos;../ID/ID.js&apos;
+import { default as RootID, RootFakeUserID } from &apos;../ID/RootID.js&apos;
+
+/**
+ * A BinaryDecoder handles the decoding of an ArrayBuffer.
+ */
+export default class BinaryDecoder {
+  /**
+   * @param {Uint8Array|Buffer} buffer The binary data that this instance
+   *                                   decodes.
+   */
+  constructor (buffer) {
+    if (buffer instanceof ArrayBuffer) {
+      this.uint8arr = new Uint8Array(buffer)
+    } else if (
+      buffer instanceof Uint8Array ||
+      (
+        typeof Buffer !== &apos;undefined&apos; &amp;&amp; buffer instanceof Buffer
+      )
+    ) {
+      this.uint8arr = buffer
+    } else {
+      throw new Error(&apos;Expected an ArrayBuffer or Uint8Array!&apos;)
+    }
+    this.pos = 0
+  }
+
+  /**
+   * Clone this decoder instance.
+   * Optionally set a new position parameter.
+   */
+  clone (newPos = this.pos) {
+    let decoder = new BinaryDecoder(this.uint8arr)
+    decoder.pos = newPos
+    return decoder
+  }
+
+  /**
+   * Number of bytes.
+   */
+  get length () {
+    return this.uint8arr.length
+  }
+
+  /**
+   * Skip one byte, jump to the next position.
+   */
+  skip8 () {
+    this.pos++
+  }
+
+  /**
+   * Read one byte as unsigned integer.
+   */
+  readUint8 () {
+    return this.uint8arr[this.pos++]
+  }
+
+  /**
+   * Read 4 bytes as unsigned integer.
+   *
+   * @return {number} An unsigned integer.
+   */
+  readUint32 () {
+    let uint =
+      this.uint8arr[this.pos] +
+      (this.uint8arr[this.pos + 1] &lt;&lt; 8) +
+      (this.uint8arr[this.pos + 2] &lt;&lt; 16) +
+      (this.uint8arr[this.pos + 3] &lt;&lt; 24)
+    this.pos += 4
+    return uint
+  }
+
+  /**
+   * Look ahead without incrementing position.
+   * to the next byte and read it as unsigned integer.
+   *
+   * @return {number} An unsigned integer.
+   */
+  peekUint8 () {
+    return this.uint8arr[this.pos]
+  }
+
+  /**
+   * Read unsigned integer (32bit) with variable length.
+   * 1/8th of the storage is used as encoding overhead.
+   *  * numbers &lt; 2^7 is stored in one byte.
+   *  * numbers &lt; 2^14 is stored in two bytes.
+   *
+   * @return {number} An unsigned integer.
+   */
+  readVarUint () {
+    let num = 0
+    let len = 0
+    while (true) {
+      let r = this.uint8arr[this.pos++]
+      num = num | ((r &amp; 0b1111111) &lt;&lt; len)
+      len += 7
+      if (r &lt; 1 &lt;&lt; 7) {
+        return num &gt;&gt;&gt; 0 // return unsigned number!
+      }
+      if (len &gt; 35) {
+        throw new Error(&apos;Integer out of range!&apos;)
+      }
+    }
+  }
+
+  /**
+   * Read string of variable length
+   * * varUint is used to store the length of the string
+   *
+   * @return {String} The read String.
+   */
+  readVarString () {
+    let len = this.readVarUint()
+    let bytes = new Array(len)
+    for (let i = 0; i &lt; len; i++) {
+      bytes[i] = this.uint8arr[this.pos++]
+    }
+    let encodedString = bytes.map(b =&gt; String.fromCodePoint(b)).join(&apos;&apos;)
+    return decodeURIComponent(escape(encodedString))
+  }
+
+  /**
+   * Look ahead and read varString without incrementing position
+   */
+  peekVarString () {
+    let pos = this.pos
+    let s = this.readVarString()
+    this.pos = pos
+    return s
+  }
+
+  /**
+   * Read ID.
+   * * If first varUint read is 0xFFFFFF a RootID is returned.
+   * * Otherwise an ID is returned.
+   *
+   * @return ID
+   */
+  readID () {
+    let user = this.readVarUint()
+    if (user === RootFakeUserID) {
+      // read property name and type id
+      const rid = new RootID(this.readVarString(), null)
+      rid.type = this.readVarUint()
+      return rid
+    }
+    return new ID(user, this.readVarUint())
+  }
+}
+</code></pre>
+
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(1.0.4)</span><img src="./image/esdoc-logo-mini-black.png"></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>

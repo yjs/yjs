@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../">
+  <title data-ice="title">src/Connector.js | yjs</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  <script src="script/manual.js"></script>
+<meta name="description" content="A framework for real-time p2p shared editing on any data"><meta property="twitter:card" content="summary"><meta property="twitter:title" content="yjs"><meta property="twitter:description" content="A framework for real-time p2p shared editing on any data"></head>
+<body class="layout-container" data-ice="rootContainer">
+
+<header>
+  <a href="./">Home</a>
+  
+  <a href="identifiers.html">Reference</a>
+  <a href="source.html">Source</a>
+  
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+<a style="position:relative; top:3px;" href="https://github.com/y-js/yjs.git"><img width="20px" src="./image/github.png"></a></header>
+
+<nav class="navigation" data-ice="nav"><div>
+  <ul>
+    
+  <li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Connector.js~AbstractConnector.html">AbstractConnector</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Persistence.js~AbstractPersistence.html">AbstractPersistence</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Transaction.js~Transaction.html">Transaction</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Y.js~Y.html">Y</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-encodable">encodable</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings">Bindings</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/Binding.js~Binding.html">Binding</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings-dombinding">Bindings/DomBinding</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/DomBinding/DomBinding.js~DomBinding.html">DomBinding</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-domToType">domToType</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-defaultFilter">defaultFilter</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-filterDomAttributes">filterDomAttributes</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-createAssociation">createAssociation</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-domsToTypes">domsToTypes</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-removeAssociation">removeAssociation</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-switchAssociation">switchAssociation</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-FilterFunction">FilterFunction</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings-quillbinding">Bindings/QuillBinding</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/QuillBinding/QuillBinding.js~QuillBinding.html">QuillBinding</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings-textareabinding">Bindings/TextareaBinding</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/TextareaBinding/TextareaBinding.js~TextareaBinding.html">TextareaBinding</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#messagehandler">MessageHandler</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-fromBinary">fromBinary</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-toBinary">toBinary</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readDeleteSet">readDeleteSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifyDeleteSet">stringifyDeleteSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-writeDeleteSet">writeDeleteSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-integrateRemoteStructs">integrateRemoteStructs</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifyStructs">stringifyStructs</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-logID">logID</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-messageToRoomname">messageToRoomname</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-messageToString">messageToString</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readStateSet">readStateSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-writeStateSet">writeStateSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readSyncStep1">readSyncStep1</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-sendSyncStep1">sendSyncStep1</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifySyncStep1">stringifySyncStep1</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readSyncStep2">readSyncStep2</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifySyncStep2">stringifySyncStep2</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#store">Store</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Store/DeleteStore.js~DeleteStore.html">DeleteStore</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Store/OperationStore.js~OperationStore.html">OperationStore</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Store/StateStore.js~StateStore.html">StateStore</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#struct">Struct</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/GC.js~GC.html">GC</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/Item.js~Item.html">Item</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemEmbed.js~ItemEmbed.html">ItemEmbed</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemFormat.js~ItemFormat.html">ItemFormat</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemJSON.js~ItemJSON.html">ItemJSON</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemString.js~ItemString.html">ItemString</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/Type.js~Type.html">Type</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-getListItemIDByPosition">getListItemIDByPosition</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-yarray">Types/YArray</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YArray/YArray.js~YArray.html">YArray</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YArray/YArray.js~YArrayEvent.html">YArrayEvent</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-ymap">Types/YMap</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YMap/YMap.js~YMap.html">YMap</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YMap/YMap.js~YMapEvent.html">YMapEvent</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-ytext">Types/YText</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YText/YText.js~YText.html">YText</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-Delta">Delta</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-TextAttributes">TextAttributes</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-yxml">Types/YXml</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlElement.js~YXmlElement.html">YXmlElement</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlFragment.js~YXmlFragment.html">YXmlFragment</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlHook.js~YXmlHook.html">YXmlHook</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlText.js~YXmlText.html">YXmlText</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlTreeWalker.js~YXmlTreeWalker.html">YXmlTreeWalker</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-CSS_Selector">CSS_Selector</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-CSS_Selector">CSS_Selector</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#util">Util</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/EventHandler.js~EventHandler.html">EventHandler</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/NamedEventHandler.js~NamedEventHandler.html">NamedEventHandler</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/Tree.js~Tree.html">Tree</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/UndoManager.js~UndoManager.html">UndoManager</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/YEvent.js~YEvent.html">YEvent</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-defragmentItemContent">defragmentItemContent</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-generateRandomUint32">generateRandomUint32</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-isParentOf">isParentOf</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-createMutualExclude">createMutualExclude</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-fromRelativePosition">fromRelativePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-getRelativePosition">getRelativePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-simpleDiff">simpleDiff</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-registerStruct">registerStruct</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-AbsolutePosition">AbsolutePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-RelativePosition">RelativePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-SimpleDiff">SimpleDiff</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#util-binary">Util/Binary</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/Binary/Decoder.js~BinaryDecoder.html">BinaryDecoder</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/Binary/Encoder.js~BinaryEncoder.html">BinaryEncoder</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#util-id">Util/ID</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/ID/ID.js~ID.html">ID</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/ID/RootID.js~RootID.html">RootID</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-RootFakeUserID">RootFakeUserID</a></span></span></li>
+</ul>
+</div>
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">src/Connector.js</h1>
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">import BinaryEncoder from &apos;./Util/Binary/Encoder.js&apos;
+import BinaryDecoder from &apos;./Util/Binary/Decoder.js&apos;
+
+import { sendSyncStep1, readSyncStep1 } from &apos;./MessageHandler/syncStep1.js&apos;
+import { readSyncStep2 } from &apos;./MessageHandler/syncStep2.js&apos;
+import { integrateRemoteStructs } from &apos;./MessageHandler/integrateRemoteStructs.js&apos;
+
+import debug from &apos;debug&apos;
+
+// TODO: rename Connector
+
+export default class AbstractConnector {
+  constructor (y, opts) {
+    this.y = y
+    this.opts = opts
+    if (opts.role == null || opts.role === &apos;master&apos;) {
+      this.role = &apos;master&apos;
+    } else if (opts.role === &apos;slave&apos;) {
+      this.role = &apos;slave&apos;
+    } else {
+      throw new Error(&quot;Role must be either &apos;master&apos; or &apos;slave&apos;!&quot;)
+    }
+    this.log = debug(&apos;y:connector&apos;)
+    this.logMessage = debug(&apos;y:connector-message&apos;)
+    this._forwardAppliedStructs = opts.forwardAppliedOperations || false // TODO: rename
+    this.role = opts.role
+    this.connections = new Map()
+    this.isSynced = false
+    this.userEventListeners = []
+    this.whenSyncedListeners = []
+    this.currentSyncTarget = null
+    this.debug = opts.debug === true
+    this.broadcastBuffer = new BinaryEncoder()
+    this.broadcastBufferSize = 0
+    this.protocolVersion = 11
+    this.authInfo = opts.auth || null
+    this.checkAuth = opts.checkAuth || function () { return Promise.resolve(&apos;write&apos;) } // default is everyone has write access
+    if (opts.maxBufferLength == null) {
+      this.maxBufferLength = -1
+    } else {
+      this.maxBufferLength = opts.maxBufferLength
+    }
+  }
+
+  reconnect () {
+    this.log(&apos;reconnecting..&apos;)
+  }
+
+  disconnect () {
+    this.log(&apos;discronnecting..&apos;)
+    this.connections = new Map()
+    this.isSynced = false
+    this.currentSyncTarget = null
+    this.whenSyncedListeners = []
+    return Promise.resolve()
+  }
+
+  onUserEvent (f) {
+    this.userEventListeners.push(f)
+  }
+
+  removeUserEventListener (f) {
+    this.userEventListeners = this.userEventListeners.filter(g =&gt; f !== g)
+  }
+
+  userLeft (user) {
+    if (this.connections.has(user)) {
+      this.log(&apos;%s: User left %s&apos;, this.y.userID, user)
+      this.connections.delete(user)
+      // check if isSynced event can be sent now
+      this._setSyncedWith(null)
+      for (var f of this.userEventListeners) {
+        f({
+          action: &apos;userLeft&apos;,
+          user: user
+        })
+      }
+    }
+  }
+
+  userJoined (user, role, auth) {
+    if (role == null) {
+      throw new Error(&apos;You must specify the role of the joined user!&apos;)
+    }
+    if (this.connections.has(user)) {
+      throw new Error(&apos;This user already joined!&apos;)
+    }
+    this.log(&apos;%s: User joined %s&apos;, this.y.userID, user)
+    this.connections.set(user, {
+      uid: user,
+      isSynced: false,
+      role: role,
+      processAfterAuth: [],
+      processAfterSync: [],
+      auth: auth || null,
+      receivedSyncStep2: false
+    })
+    let defer = {}
+    defer.promise = new Promise(function (resolve) { defer.resolve = resolve })
+    this.connections.get(user).syncStep2 = defer
+    for (var f of this.userEventListeners) {
+      f({
+        action: &apos;userJoined&apos;,
+        user: user,
+        role: role
+      })
+    }
+    this._syncWithUser(user)
+  }
+
+  // Execute a function _when_ we are connected.
+  // If not connected, wait until connected
+  whenSynced (f) {
+    if (this.isSynced) {
+      f()
+    } else {
+      this.whenSyncedListeners.push(f)
+    }
+  }
+
+  _syncWithUser (userID) {
+    if (this.role === &apos;slave&apos;) {
+      return // &quot;The current sync has not finished or this is controlled by a master!&quot;
+    }
+    sendSyncStep1(this, userID)
+  }
+
+  _fireIsSyncedListeners () {
+    if (!this.isSynced) {
+      this.isSynced = true
+      // It is safer to remove this!
+      // call whensynced listeners
+      for (var f of this.whenSyncedListeners) {
+        f()
+      }
+      this.whenSyncedListeners = []
+      this.y._setContentReady()
+      this.y.emit(&apos;synced&apos;)
+    }
+  }
+
+  send (uid, buffer) {
+    const y = this.y
+    if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
+      throw new Error(&apos;Expected Message to be an ArrayBuffer or Uint8Array - don\&apos;t use this method to send custom messages&apos;)
+    }
+    this.log(&apos;User%s to User%s: Send \&apos;%y\&apos;&apos;, y.userID, uid, buffer)
+    this.logMessage(&apos;User%s to User%s: Send %Y&apos;, y.userID, uid, [y, buffer])
+  }
+
+  broadcast (buffer) {
+    const y = this.y
+    if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
+      throw new Error(&apos;Expected Message to be an ArrayBuffer or Uint8Array - don\&apos;t use this method to send custom messages&apos;)
+    }
+    this.log(&apos;User%s: Broadcast \&apos;%y\&apos;&apos;, y.userID, buffer)
+    this.logMessage(&apos;User%s: Broadcast: %Y&apos;, y.userID, [y, buffer])
+  }
+
+  /*
+    Buffer operations, and broadcast them when ready.
+  */
+  broadcastStruct (struct) {
+    const firstContent = this.broadcastBuffer.length === 0
+    if (firstContent) {
+      this.broadcastBuffer.writeVarString(this.y.room)
+      this.broadcastBuffer.writeVarString(&apos;update&apos;)
+      this.broadcastBufferSize = 0
+      this.broadcastBufferSizePos = this.broadcastBuffer.pos
+      this.broadcastBuffer.writeUint32(0)
+    }
+    this.broadcastBufferSize++
+    struct._toBinary(this.broadcastBuffer)
+    if (this.maxBufferLength &gt; 0 &amp;&amp; this.broadcastBuffer.length &gt; this.maxBufferLength) {
+      // it is necessary to send the buffer now
+      // cache the buffer and check if server is responsive
+      const buffer = this.broadcastBuffer
+      buffer.setUint32(this.broadcastBufferSizePos, this.broadcastBufferSize)
+      this.broadcastBuffer = new BinaryEncoder()
+      this.whenRemoteResponsive().then(() =&gt; {
+        this.broadcast(buffer.createBuffer())
+      })
+    } else if (firstContent) {
+      // send the buffer when all transactions are finished
+      // (or buffer exceeds maxBufferLength)
+      setTimeout(() =&gt; {
+        if (this.broadcastBuffer.length &gt; 0) {
+          const buffer = this.broadcastBuffer
+          buffer.setUint32(this.broadcastBufferSizePos, this.broadcastBufferSize)
+          this.broadcast(buffer.createBuffer())
+          this.broadcastBuffer = new BinaryEncoder()
+        }
+      }, 0)
+    }
+  }
+
+  /*
+   * Somehow check the responsiveness of the remote clients/server
+   * Default behavior:
+   *   Wait 100ms before broadcasting the next batch of operations
+   *
+   * Only used when maxBufferLength is set
+   *
+   */
+  whenRemoteResponsive () {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, 100)
+    })
+  }
+
+  /*
+    You received a raw message, and you know that it is intended for Yjs. Then call this function.
+  */
+  receiveMessage (sender, buffer, skipAuth) {
+    const y = this.y
+    const userID = y.userID
+    skipAuth = skipAuth || false
+    if (!(buffer instanceof ArrayBuffer || buffer instanceof Uint8Array)) {
+      return Promise.reject(new Error(&apos;Expected Message to be an ArrayBuffer or Uint8Array!&apos;))
+    }
+    if (sender === userID) {
+      return Promise.resolve()
+    }
+    let decoder = new BinaryDecoder(buffer)
+    let encoder = new BinaryEncoder()
+    let roomname = decoder.readVarString() // read room name
+    encoder.writeVarString(roomname)
+    let messageType = decoder.readVarString()
+    let senderConn = this.connections.get(sender)
+    this.log(&apos;User%s from User%s: Receive \&apos;%s\&apos;&apos;, userID, sender, messageType)
+    this.logMessage(&apos;User%s from User%s: Receive %Y&apos;, userID, sender, [y, buffer])
+    if (senderConn == null &amp;&amp; !skipAuth) {
+      throw new Error(&apos;Received message from unknown peer!&apos;)
+    }
+    if (messageType === &apos;sync step 1&apos; || messageType === &apos;sync step 2&apos;) {
+      let auth = decoder.readVarUint()
+      if (senderConn.auth == null) {
+        senderConn.processAfterAuth.push([messageType, senderConn, decoder, encoder, sender])
+        // check auth
+        return this.checkAuth(auth, y, sender).then(authPermissions =&gt; {
+          if (senderConn.auth == null) {
+            senderConn.auth = authPermissions
+            y.emit(&apos;userAuthenticated&apos;, {
+              user: senderConn.uid,
+              auth: authPermissions
+            })
+          }
+          let messages = senderConn.processAfterAuth
+          senderConn.processAfterAuth = []
+
+          messages.forEach(m =&gt;
+            this.computeMessage(m[0], m[1], m[2], m[3], m[4])
+          )
+        })
+      }
+    }
+    if ((skipAuth || senderConn.auth != null) &amp;&amp; (messageType !== &apos;update&apos; || senderConn.isSynced)) {
+      this.computeMessage(messageType, senderConn, decoder, encoder, sender, skipAuth)
+    } else {
+      senderConn.processAfterSync.push([messageType, senderConn, decoder, encoder, sender, false])
+    }
+  }
+
+  computeMessage (messageType, senderConn, decoder, encoder, sender, skipAuth) {
+    if (messageType === &apos;sync step 1&apos; &amp;&amp; (senderConn.auth === &apos;write&apos; || senderConn.auth === &apos;read&apos;)) {
+      // cannot wait for sync step 1 to finish, because we may wait for sync step 2 in sync step 1 (-&gt;lock)
+      readSyncStep1(decoder, encoder, this.y, senderConn, sender)
+    } else {
+      const y = this.y
+      y.transact(function () {
+        if (messageType === &apos;sync step 2&apos; &amp;&amp; senderConn.auth === &apos;write&apos;) {
+          readSyncStep2(decoder, encoder, y, senderConn, sender)
+        } else if (messageType === &apos;update&apos; &amp;&amp; (skipAuth || senderConn.auth === &apos;write&apos;)) {
+          integrateRemoteStructs(y, decoder)
+        } else {
+          throw new Error(&apos;Unable to receive message&apos;)
+        }
+      }, true)
+    }
+  }
+
+  _setSyncedWith (user) {
+    if (user != null) {
+      const userConn = this.connections.get(user)
+      userConn.isSynced = true
+      const messages = userConn.processAfterSync
+      userConn.processAfterSync = []
+      messages.forEach(m =&gt; {
+        this.computeMessage(m[0], m[1], m[2], m[3], m[4])
+      })
+    }
+    const conns = Array.from(this.connections.values())
+    if (conns.length &gt; 0 &amp;&amp; conns.every(u =&gt; u.isSynced)) {
+      this._fireIsSyncedListeners()
+    }
+  }
+}
+</code></pre>
+
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(1.0.4)</span><img src="./image/esdoc-logo-mini-black.png"></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>

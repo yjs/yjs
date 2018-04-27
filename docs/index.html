@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl">
+  <title data-ice="title">Home | yjs</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  <script src="script/manual.js"></script>
+<meta name="description" content="A framework for real-time p2p shared editing on any data"><meta property="twitter:card" content="summary"><meta property="twitter:title" content="yjs"><meta property="twitter:description" content="A framework for real-time p2p shared editing on any data"></head>
+<body class="layout-container" data-ice="rootContainer">
+
+<header>
+  <a href="./">Home</a>
+  
+  <a href="identifiers.html">Reference</a>
+  <a href="source.html">Source</a>
+  
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+<a style="position:relative; top:3px;" href="https://github.com/y-js/yjs.git"><img width="20px" src="./image/github.png"></a></header>
+
+<nav class="navigation" data-ice="nav"><div>
+  <ul>
+    
+  <li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Connector.js~AbstractConnector.html">AbstractConnector</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Persistence.js~AbstractPersistence.html">AbstractPersistence</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Transaction.js~Transaction.html">Transaction</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Y.js~Y.html">Y</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-encodable">encodable</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings">Bindings</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/Binding.js~Binding.html">Binding</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings-dombinding">Bindings/DomBinding</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/DomBinding/DomBinding.js~DomBinding.html">DomBinding</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-domToType">domToType</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-defaultFilter">defaultFilter</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-filterDomAttributes">filterDomAttributes</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-createAssociation">createAssociation</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-domsToTypes">domsToTypes</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-removeAssociation">removeAssociation</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-switchAssociation">switchAssociation</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-FilterFunction">FilterFunction</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings-quillbinding">Bindings/QuillBinding</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/QuillBinding/QuillBinding.js~QuillBinding.html">QuillBinding</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings-textareabinding">Bindings/TextareaBinding</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/TextareaBinding/TextareaBinding.js~TextareaBinding.html">TextareaBinding</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#messagehandler">MessageHandler</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-fromBinary">fromBinary</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-toBinary">toBinary</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readDeleteSet">readDeleteSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifyDeleteSet">stringifyDeleteSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-writeDeleteSet">writeDeleteSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-integrateRemoteStructs">integrateRemoteStructs</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifyStructs">stringifyStructs</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-logID">logID</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-messageToRoomname">messageToRoomname</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-messageToString">messageToString</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readStateSet">readStateSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-writeStateSet">writeStateSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readSyncStep1">readSyncStep1</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-sendSyncStep1">sendSyncStep1</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifySyncStep1">stringifySyncStep1</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readSyncStep2">readSyncStep2</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifySyncStep2">stringifySyncStep2</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#store">Store</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Store/DeleteStore.js~DeleteStore.html">DeleteStore</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Store/OperationStore.js~OperationStore.html">OperationStore</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Store/StateStore.js~StateStore.html">StateStore</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#struct">Struct</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/GC.js~GC.html">GC</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/Item.js~Item.html">Item</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemEmbed.js~ItemEmbed.html">ItemEmbed</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemFormat.js~ItemFormat.html">ItemFormat</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemJSON.js~ItemJSON.html">ItemJSON</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemString.js~ItemString.html">ItemString</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/Type.js~Type.html">Type</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-getListItemIDByPosition">getListItemIDByPosition</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-yarray">Types/YArray</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YArray/YArray.js~YArray.html">YArray</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YArray/YArray.js~YArrayEvent.html">YArrayEvent</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-ymap">Types/YMap</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YMap/YMap.js~YMap.html">YMap</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YMap/YMap.js~YMapEvent.html">YMapEvent</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-ytext">Types/YText</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YText/YText.js~YText.html">YText</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-Delta">Delta</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-TextAttributes">TextAttributes</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-yxml">Types/YXml</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlElement.js~YXmlElement.html">YXmlElement</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlFragment.js~YXmlFragment.html">YXmlFragment</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlHook.js~YXmlHook.html">YXmlHook</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlText.js~YXmlText.html">YXmlText</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlTreeWalker.js~YXmlTreeWalker.html">YXmlTreeWalker</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-CSS_Selector">CSS_Selector</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-CSS_Selector">CSS_Selector</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#util">Util</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/EventHandler.js~EventHandler.html">EventHandler</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/NamedEventHandler.js~NamedEventHandler.html">NamedEventHandler</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/Tree.js~Tree.html">Tree</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/UndoManager.js~UndoManager.html">UndoManager</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/YEvent.js~YEvent.html">YEvent</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-defragmentItemContent">defragmentItemContent</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-generateRandomUint32">generateRandomUint32</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-isParentOf">isParentOf</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-createMutualExclude">createMutualExclude</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-fromRelativePosition">fromRelativePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-getRelativePosition">getRelativePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-simpleDiff">simpleDiff</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-registerStruct">registerStruct</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-AbsolutePosition">AbsolutePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-RelativePosition">RelativePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-SimpleDiff">SimpleDiff</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#util-binary">Util/Binary</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/Binary/Decoder.js~BinaryDecoder.html">BinaryDecoder</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/Binary/Encoder.js~BinaryEncoder.html">BinaryEncoder</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#util-id">Util/ID</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/ID/ID.js~ID.html">ID</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/ID/RootID.js~RootID.html">RootID</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-RootFakeUserID">RootFakeUserID</a></span></span></li>
+</ul>
+</div>
+</nav>
+
+<div class="content" data-ice="content"><div data-ice="index" class="github-markdown"><h1 id="-img-src--http---y-js-org-images-yjs-png--alt--yjs--"><img src="http://y-js.org/images/yjs.png" alt="Yjs"></h1><p>Yjs is a framework for offline-first p2p shared editing on structured data like
+text, richtext, json, or XML. It is fairly easy to get started, as Yjs hides
+most of the complexity of concurrent editing. For additional information, demos,
+and tutorials visit <a href="http://y-js.org/">y-js.org</a>.</p>
+<h3 id="extensions">Extensions</h3><p>Yjs only knows how to resolve conflicts on shared data. You have to choose a ..</p>
+<ul>
+<li><em>Connector</em> - a communication protocol that propagates changes to the clients</li>
+<li><em>Database</em> - a database to store your changes</li>
+<li>one or more <em>Types</em> - that represent the shared data</li>
+</ul>
+<p>Connectors, Databases, and Types are available as modules that extend Yjs. Here
+is a list of the modules we know of:</p>
+<h5 id="connectors">Connectors</h5><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/y-js/y-webrtc">webrtc</a></td>
+<td>Propagate updates Browser2Browser via WebRTC</td>
+</tr>
+<tr>
+<td><a href="https://github.com/y-js/y-websockets-client">websockets</a></td>
+<td>Set up <a href="https://github.com/y-js/y-websockets-client">a central server</a>, and connect to it via websockets</td>
+</tr>
+<tr>
+<td><a href="https://github.com/y-js/y-xmpp">xmpp</a></td>
+<td>Propagate updates in a XMPP multi-user-chat room (<a href="http://xmpp.org/extensions/xep-0045.html">XEP-0045</a>)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/ipfs-labs/y-ipfs-connector">ipfs</a></td>
+<td>Connector for the <a href="https://ipfs.io/">Interplanetary File System</a>!</td>
+</tr>
+<tr>
+<td><a href="https://github.com/y-js/y-test">test</a></td>
+<td>A Connector for testing purposes. It is designed to simulate delays that happen in worst case scenarios</td>
+</tr>
+</tbody>
+</table>
+<h5 id="database-adapters">Database adapters</h5><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/y-js/y-memory">memory</a></td>
+<td>In-memory storage.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/y-js/y-indexeddb">indexeddb</a></td>
+<td>Offline storage for the browser</td>
+</tr>
+<tr>
+<td><a href="https://github.com/y-js/y-leveldb">leveldb</a></td>
+<td>Persistent storage for node apps</td>
+</tr>
+</tbody>
+</table>
+<h5 id="types">Types</h5><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/y-js/y-map">map</a></td>
+<td>A shared Map implementation. Maps from text to any stringify-able object</td>
+</tr>
+<tr>
+<td><a href="https://github.com/y-js/y-array">array</a></td>
+<td>A shared Array implementation</td>
+</tr>
+<tr>
+<td><a href="https://github.com/y-js/y-xml">xml</a></td>
+<td>An implementation of the DOM. You can create a two way binding to Browser DOM objects</td>
+</tr>
+<tr>
+<td><a href="https://github.com/y-js/y-text">text</a></td>
+<td>Collaborate on text. Supports two way binding to the <a href="https://ace.c9.io">Ace Editor</a>, <a href="https://codemirror.net/">CodeMirror</a>, <a href="https://github.com/Microsoft/monaco-editor">Monaco</a>, textareas, input elements, and HTML elements (e.g. &lt;<em>h1</em>&gt;, or &lt;<em>p</em>&gt;)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/y-js/y-richtext">richtext</a></td>
+<td>Collaborate on rich text. Supports two way binding to the <a href="http://quilljs.com/">Quill Rich Text Editor</a></td>
+</tr>
+</tbody>
+</table>
+<h5 id="other">Other</h5><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="http://y-js.org/y-element/">y-element</a></td>
+<td>Yjs Polymer Element</td>
+</tr>
+</tbody>
+</table>
+<h2 id="use-it-">Use it!</h2><p>Install Yjs, and its modules with <a href="http://bower.io/">bower</a>, or
+<a href="https://www.npmjs.org/package/yjs">npm</a>.</p>
+<h3 id="bower">Bower</h3><pre><code><code class="source-code prettyprint">bower install --save yjs y-array % add all y-* modules you want to use</code>
+</code></pre><p>You only need to include the <code>y.js</code> file. Yjs is able to automatically require
+missing modules.  </p>
+<pre><code><code class="source-code prettyprint">&lt;script src=&quot;./bower_components/yjs/y.js&quot;&gt;&lt;/script&gt;</code>
+</code></pre><h3 id="cdn">CDN</h3><pre><code><code class="source-code prettyprint">&lt;script src=&quot;https://cdn.jsdelivr.net/npm/yjs@12/src/y.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://cdn.jsdelivr.net/npm/y-array@10/dist/y-array.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://cdn.jsdelivr.net/npm/y-websockets-client@8/dist/y-websockets-client.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://cdn.jsdelivr.net/npm/y-memory@8/dist/y-memory.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://cdn.jsdelivr.net/npm/y-array@10/dist/y-array.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://cdn.jsdelivr.net/npm/y-map@10/dist/y-map.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://cdn.jsdelivr.net/npm/y-text@9/dist/y-text.js&quot;&gt;&lt;/script&gt;
+// ..
+// do the same for all modules you want to use</code>
+</code></pre><h3 id="npm">Npm</h3><pre><code><code class="source-code prettyprint">npm install --save yjs % add all y-* modules you want to use</code>
+</code></pre><p>If you don&apos;t include via script tag, you have to explicitly include all modules!
+(Same goes for other module systems)</p>
+<pre><code><code class="source-code prettyprint">var Y = require(&apos;yjs&apos;)
+require(&apos;y-array&apos;)(Y) // add the y-array type to Yjs
+require(&apos;y-websockets-client&apos;)(Y)
+require(&apos;y-memory&apos;)(Y)
+require(&apos;y-array&apos;)(Y)
+require(&apos;y-map&apos;)(Y)
+require(&apos;y-text&apos;)(Y)
+// ..
+// do the same for all modules you want to use</code>
+</code></pre><h3 id="es6-syntax">ES6 Syntax</h3><pre><code><code class="source-code prettyprint">import Y from &apos;yjs&apos;
+import yArray from &apos;y-array&apos;
+import yWebsocketsClient from &apos;y-webrtc&apos;
+import yMemory from &apos;y-memory&apos;
+import yArray from &apos;y-array&apos;
+import yMap from &apos;y-map&apos;
+import yText from &apos;y-text&apos;
+// ..
+Y.extend(yArray, yWebsocketsClient, yMemory, yArray, yMap, yText /*, .. */)</code>
+</code></pre><h1 id="text-editing-example">Text editing example</h1><p>Install dependencies</p>
+<pre><code><code class="source-code prettyprint">bower i yjs y-memory y-webrtc y-array y-text</code>
+</code></pre><p>Here is a simple example of a shared textarea</p>
+<pre><code class="lang-HTML"><code class="source-code prettyprint">  &lt;!DOCTYPE html&gt;
+  &lt;html&gt;
+    &lt;body&gt;
+      &lt;script src=&quot;./bower_components/yjs/y.js&quot;&gt;&lt;/script&gt;
+      &lt;!-- Yjs automatically includes all missing dependencies (browser only) --&gt;
+      &lt;script&gt;
+        Y({
+          db: {
+            name: &apos;memory&apos; // use memory database adapter.
+            // name: &apos;indexeddb&apos; // use indexeddb database adapter instead for offline apps
+          },
+          connector: {
+            name: &apos;webrtc&apos;, // use webrtc connector
+            // name: &apos;websockets-client&apos;
+            // name: &apos;xmpp&apos;
+            room: &apos;my-room&apos; // clients connecting to the same room share data
+          },
+          sourceDir: &apos;/bower_components&apos;, // location of the y-* modules (browser only)
+          share: {
+            textarea: &apos;Text&apos; // y.share.textarea is of type y-text
+          }
+        }).then(function (y) {
+          // The Yjs instance `y` is available
+          // y.share.* contains the shared types
+
+          // Bind `y.share.textarea` to `&lt;textarea/&gt;`
+          y.share.textarea.bind(document.querySelector(&apos;textarea&apos;))
+        })
+      &lt;/script&gt;
+      &lt;textarea&gt;&lt;/textarea&gt;
+    &lt;/body&gt;
+  &lt;/html&gt;</code>
+</code></pre>
+<h2 id="get-help--amp--give-help">Get Help &amp; Give Help</h2><p>There are some friendly people on <a href="https://gitter.im/y-js/yjs?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge"><img src="https://badges.gitter.im/Join%20Chat.svg" alt="Gitter"></a> who are eager to help, and answer questions. Please join!</p>
+<p>Report <em>any</em> issues to the
+<a href="https://github.com/y-js/yjs/issues">Github issue page</a>! I try to fix them very
+soon, if possible.</p>
+<h1 id="api">API</h1><h3 id="y-options-">Y(options)</h3><ul>
+<li>Y.extend(module1, module2, ..)<ul>
+<li>Add extensions to Y</li>
+<li><code>Y.extend(require(&apos;y-webrtc&apos;))</code> has the same semantics as
+<code>require(&apos;y-webrtc&apos;)(Y)</code></li>
+</ul>
+</li>
+<li>options.db<ul>
+<li>Will be forwarded to the database adapter. Specify the database adaper on
+<code>options.db.name</code>.</li>
+<li>Have a look at the used database adapter repository to see all available
+options.</li>
+</ul>
+</li>
+<li>options.connector<ul>
+<li>Will be forwarded to the connector adapter. Specify the connector adaper on
+<code>options.connector.name</code>.</li>
+<li>All our connectors implement a <code>room</code> property. Clients that specify the
+same room share the same data.</li>
+<li>All of our connectors specify an <code>url</code> property that defines the connection
+endpoint of the used connector.<ul>
+<li>All of our connectors also have a default connection endpoint that you can
+use for development.</li>
+</ul>
+</li>
+<li>Set <code>options.connector.generateUserId = true</code> in order to genenerate a
+userid, instead of receiving one from the server. This way the <code>Y(..)</code> is
+immediately going to be resolved, without waiting for any confirmation from
+the server. Use with caution.</li>
+<li>Have a look at the used connector repository to see all available options.</li>
+<li><em>Only if you know what you are doing:</em> Set
+<code>options.connector.preferUntransformed = true</code> in order receive the shared
+data untransformed. This is very efficient as the database content is simply
+copied to this client. This does only work if this client receives content
+from only one client.</li>
+</ul>
+</li>
+<li>options.sourceDir (browser only)<ul>
+<li>Path where all y-* modules are stored</li>
+<li>Defaults to <code>/bower_components</code></li>
+<li>Not required when running on <code>nodejs</code> / <code>iojs</code></li>
+<li>When using nodejs you need to manually extend Yjs:<pre><code><code class="source-code prettyprint">var Y = require(&apos;yjs&apos;)
+// you have to require a db, connector, and *all* types you use!
+require(&apos;y-memory&apos;)(Y)
+require(&apos;y-webrtc&apos;)(Y)
+require(&apos;y-map&apos;)(Y)
+// ..</code>
+</code></pre></li>
+</ul>
+</li>
+<li>options.share<ul>
+<li>Specify on <code>options.share[arbitraryName]</code> types that are shared among all
+users.</li>
+<li>E.g. Specify <code>options.share[arbitraryName] = &apos;Array&apos;</code> to require y-array and
+create an y-array type on <code>y.share[arbitraryName]</code>.</li>
+<li>If userA doesn&apos;t specify <code>options.share[arbitraryName]</code>, it won&apos;t be
+available for userA.</li>
+<li>If userB specifies <code>options.share[arbitraryName]</code>, it still won&apos;t be
+available for userA. But all the updates are send from userB to userA.</li>
+<li>In contrast to y-map, types on <code>y.share.*</code> cannot be overwritten or deleted.
+Instead, they are merged among all users. This feature is only available on
+<code>y.share.*</code></li>
+<li>Weird behavior: It is supported that two users specify different types with
+the same property name.
+ E.g. userA specifies <code>options.share.x = &apos;Array&apos;</code>, and userB specifies
+ <code>options.share.x = &apos;Text&apos;</code>. But they only share data if they specified the
+ same type with the same property name</li>
+</ul>
+</li>
+<li>options.type (browser only)<ul>
+<li>Array of modules that Yjs needs to require, before instantiating a shared
+type.</li>
+<li>By default Yjs requires the specified database adapter, the specified
+connector, and all modules that are used in <code>options.share.*</code></li>
+<li>Put all types here that you intend to use, but are not used in y.share.*</li>
+</ul>
+</li>
+</ul>
+<h3 id="instantiated-y-object--y-">Instantiated Y object (y)</h3><p><code>Y(options)</code> returns a promise that is fulfilled when..</p>
+<ul>
+<li>All modules are loaded<ul>
+<li>The specified database adapter is loaded</li>
+<li>The specified connector is loaded</li>
+<li>All types are included</li>
+</ul>
+</li>
+<li>The connector is initialized, and a unique user id is set (received from the
+server)<ul>
+<li>Note: When using y-indexeddb, a retrieved user id is stored on <code>localStorage</code></li>
+</ul>
+</li>
+</ul>
+<p>The promise returns an instance of Y. We denote it with a lower case <code>y</code>.</p>
+<ul>
+<li>y.share.*<ul>
+<li>Instances of the types you specified on options.share.*</li>
+<li>y.share.* can only be defined once when you instantiate Y!</li>
+</ul>
+</li>
+<li>y.connector is an instance of Y.AbstractConnector</li>
+<li>y.connector.onUserEvent(function (event) {..})<ul>
+<li>Observe user events (event.action is either &apos;userLeft&apos; or &apos;userJoined&apos;)</li>
+</ul>
+</li>
+<li>y.connector.whenSynced(listener)<ul>
+<li><code>listener</code> is executed when y synced with at least one user.</li>
+<li><code>listener</code> is not called when no other user is in the same room.</li>
+<li>y-websockets-client aways waits to sync with the server</li>
+</ul>
+</li>
+<li>y.connector.disconnect()<ul>
+<li>Force to disconnect this instance from the other instances</li>
+</ul>
+</li>
+<li>y.connector.reconnect()<ul>
+<li>Try to reconnect to the other instances (needs to be supported by the
+connector)</li>
+<li>Not supported by y-xmpp</li>
+</ul>
+</li>
+<li>y.close()<ul>
+<li>Destroy this object.</li>
+<li>Destroys all types (they will throw weird errors if you still use them)</li>
+<li>Disconnects from the other instances (via connector)</li>
+<li>Returns a promise</li>
+</ul>
+</li>
+<li>y.destroy()<ul>
+<li>calls y.close()</li>
+<li>Removes all data from the database</li>
+<li>Returns a promise</li>
+</ul>
+</li>
+<li>y.db.stopGarbageCollector()<ul>
+<li>Stop the garbage collector. Call y.db.garbageCollect() to continue garbage
+collection</li>
+</ul>
+</li>
+<li>y.db.gc :: Boolean<ul>
+<li>Whether gc is turned on</li>
+</ul>
+</li>
+<li>y.db.gcTimeout :: Number (defaults to 50000 ms)<ul>
+<li>Time interval between two garbage collect cycles</li>
+<li>It is required that all instances exchanged all messages after two garbage
+collect cycles (after 100000 ms per default)</li>
+</ul>
+</li>
+<li>y.db.userId :: String<ul>
+<li>The used user id for this client. <strong>Never overwrite this</strong></li>
+</ul>
+</li>
+</ul>
+<h3 id="logging">Logging</h3><p>Yjs uses <a href="https://github.com/visionmedia/debug">debug</a> for logging. The flag
+<code>y*</code> enables logging for all y-<em> components. You can selectively remove
+components you are not interested in: E.g. The flag `y</em>,-y:connector-message<code>will not log the long</code>y:connector-message` messages.</p>
+<h5 id="enable-logging-in-node-js">Enable logging in Node.js</h5><pre><code class="lang-sh"><code class="source-code prettyprint">DEBUG=y* node app.js</code>
+</code></pre>
+<p>Remove the colors in order to log to a file:</p>
+<pre><code class="lang-sh"><code class="source-code prettyprint">DEBUG_COLORS=0 DEBUG=y* node app.js &gt; log</code>
+</code></pre>
+<h5 id="enable-logging-in-the-browser">Enable logging in the browser</h5><pre><code class="lang-js"><code class="source-code prettyprint">localStorage.debug = &apos;y*&apos;</code>
+</code></pre>
+<h2 id="contribution">Contribution</h2><p>I created this framework during my bachelor thesis at the chair of computer
+science 5 <a href="http://dbis.rwth-aachen.de/cms">(i5)</a>, RWTH University. Since
+December 2014 I&apos;m working on Yjs as a part of my student worker job at the i5.</p>
+<h2 id="license">License</h2><p>Yjs is licensed under the <a href="./LICENSE">MIT License</a>.</p>
+<p><a href="mailto:yjs@dbis.rwth-aachen.de">yjs@dbis.rwth-aachen.de</a></p>
+</div>
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(1.0.4)</span><img src="./image/esdoc-logo-mini-black.png"></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>

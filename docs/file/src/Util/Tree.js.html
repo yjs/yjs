@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../../">
+  <title data-ice="title">src/Util/Tree.js | yjs</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  <script src="script/manual.js"></script>
+<meta name="description" content="A framework for real-time p2p shared editing on any data"><meta property="twitter:card" content="summary"><meta property="twitter:title" content="yjs"><meta property="twitter:description" content="A framework for real-time p2p shared editing on any data"></head>
+<body class="layout-container" data-ice="rootContainer">
+
+<header>
+  <a href="./">Home</a>
+  
+  <a href="identifiers.html">Reference</a>
+  <a href="source.html">Source</a>
+  
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+<a style="position:relative; top:3px;" href="https://github.com/y-js/yjs.git"><img width="20px" src="./image/github.png"></a></header>
+
+<nav class="navigation" data-ice="nav"><div>
+  <ul>
+    
+  <li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Connector.js~AbstractConnector.html">AbstractConnector</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Persistence.js~AbstractPersistence.html">AbstractPersistence</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Transaction.js~Transaction.html">Transaction</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Y.js~Y.html">Y</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-encodable">encodable</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings">Bindings</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/Binding.js~Binding.html">Binding</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings-dombinding">Bindings/DomBinding</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/DomBinding/DomBinding.js~DomBinding.html">DomBinding</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-domToType">domToType</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-defaultFilter">defaultFilter</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-filterDomAttributes">filterDomAttributes</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-createAssociation">createAssociation</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-domsToTypes">domsToTypes</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-removeAssociation">removeAssociation</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-switchAssociation">switchAssociation</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-FilterFunction">FilterFunction</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings-quillbinding">Bindings/QuillBinding</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/QuillBinding/QuillBinding.js~QuillBinding.html">QuillBinding</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#bindings-textareabinding">Bindings/TextareaBinding</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Bindings/TextareaBinding/TextareaBinding.js~TextareaBinding.html">TextareaBinding</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#messagehandler">MessageHandler</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-fromBinary">fromBinary</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-toBinary">toBinary</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readDeleteSet">readDeleteSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifyDeleteSet">stringifyDeleteSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-writeDeleteSet">writeDeleteSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-integrateRemoteStructs">integrateRemoteStructs</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifyStructs">stringifyStructs</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-logID">logID</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-messageToRoomname">messageToRoomname</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-messageToString">messageToString</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readStateSet">readStateSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-writeStateSet">writeStateSet</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readSyncStep1">readSyncStep1</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-sendSyncStep1">sendSyncStep1</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifySyncStep1">stringifySyncStep1</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-readSyncStep2">readSyncStep2</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-stringifySyncStep2">stringifySyncStep2</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#store">Store</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Store/DeleteStore.js~DeleteStore.html">DeleteStore</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Store/OperationStore.js~OperationStore.html">OperationStore</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Store/StateStore.js~StateStore.html">StateStore</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#struct">Struct</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/GC.js~GC.html">GC</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/Item.js~Item.html">Item</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemEmbed.js~ItemEmbed.html">ItemEmbed</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemFormat.js~ItemFormat.html">ItemFormat</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemJSON.js~ItemJSON.html">ItemJSON</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/ItemString.js~ItemString.html">ItemString</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Struct/Type.js~Type.html">Type</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-getListItemIDByPosition">getListItemIDByPosition</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-yarray">Types/YArray</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YArray/YArray.js~YArray.html">YArray</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YArray/YArray.js~YArrayEvent.html">YArrayEvent</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-ymap">Types/YMap</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YMap/YMap.js~YMap.html">YMap</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YMap/YMap.js~YMapEvent.html">YMapEvent</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-ytext">Types/YText</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YText/YText.js~YText.html">YText</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-Delta">Delta</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-TextAttributes">TextAttributes</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#types-yxml">Types/YXml</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlElement.js~YXmlElement.html">YXmlElement</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlFragment.js~YXmlFragment.html">YXmlFragment</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlHook.js~YXmlHook.html">YXmlHook</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlText.js~YXmlText.html">YXmlText</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Types/YXml/YXmlTreeWalker.js~YXmlTreeWalker.html">YXmlTreeWalker</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-CSS_Selector">CSS_Selector</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-CSS_Selector">CSS_Selector</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#util">Util</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/EventHandler.js~EventHandler.html">EventHandler</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/NamedEventHandler.js~NamedEventHandler.html">NamedEventHandler</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/Tree.js~Tree.html">Tree</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/UndoManager.js~UndoManager.html">UndoManager</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/YEvent.js~YEvent.html">YEvent</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-defragmentItemContent">defragmentItemContent</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-generateRandomUint32">generateRandomUint32</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-isParentOf">isParentOf</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-createMutualExclude">createMutualExclude</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-fromRelativePosition">fromRelativePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-getRelativePosition">getRelativePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-simpleDiff">simpleDiff</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-registerStruct">registerStruct</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-AbsolutePosition">AbsolutePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-RelativePosition">RelativePosition</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-typedef">T</span><span data-ice="name"><span><a href="typedef/index.html#static-typedef-SimpleDiff">SimpleDiff</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#util-binary">Util/Binary</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/Binary/Decoder.js~BinaryDecoder.html">BinaryDecoder</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/Binary/Encoder.js~BinaryEncoder.html">BinaryEncoder</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#util-id">Util/ID</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/ID/ID.js~ID.html">ID</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/Util/ID/RootID.js~RootID.html">RootID</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-RootFakeUserID">RootFakeUserID</a></span></span></li>
+</ul>
+</div>
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">src/Util/Tree.js</h1>
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">
+function rotate (tree, parent, newParent, n) {
+  if (parent === null) {
+    tree.root = newParent
+    newParent._parent = null
+  } else if (parent.left === n) {
+    parent.left = newParent
+  } else if (parent.right === n) {
+    parent.right = newParent
+  } else {
+    throw new Error(&apos;The elements are wrongly connected!&apos;)
+  }
+}
+
+class N {
+  // A created node is always red!
+  constructor (val) {
+    this.val = val
+    this.color = true
+    this._left = null
+    this._right = null
+    this._parent = null
+  }
+  isRed () { return this.color }
+  isBlack () { return !this.color }
+  redden () { this.color = true; return this }
+  blacken () { this.color = false; return this }
+  get grandparent () {
+    return this.parent.parent
+  }
+  get parent () {
+    return this._parent
+  }
+  get sibling () {
+    return (this === this.parent.left)
+      ? this.parent.right : this.parent.left
+  }
+  get left () {
+    return this._left
+  }
+  get right () {
+    return this._right
+  }
+  set left (n) {
+    if (n !== null) {
+      n._parent = this
+    }
+    this._left = n
+  }
+  set right (n) {
+    if (n !== null) {
+      n._parent = this
+    }
+    this._right = n
+  }
+  rotateLeft (tree) {
+    const parent = this.parent
+    const newParent = this.right
+    const newRight = this.right.left
+    newParent.left = this
+    this.right = newRight
+    rotate(tree, parent, newParent, this)
+  }
+  next () {
+    if (this.right !== null) {
+      // search the most left node in the right tree
+      var o = this.right
+      while (o.left !== null) {
+        o = o.left
+      }
+      return o
+    } else {
+      var p = this
+      while (p.parent !== null &amp;&amp; p !== p.parent.left) {
+        p = p.parent
+      }
+      return p.parent
+    }
+  }
+  prev () {
+    if (this.left !== null) {
+      // search the most right node in the left tree
+      var o = this.left
+      while (o.right !== null) {
+        o = o.right
+      }
+      return o
+    } else {
+      var p = this
+      while (p.parent !== null &amp;&amp; p !== p.parent.right) {
+        p = p.parent
+      }
+      return p.parent
+    }
+  }
+  rotateRight (tree) {
+    const parent = this.parent
+    const newParent = this.left
+    const newLeft = this.left.right
+    newParent.right = this
+    this.left = newLeft
+    rotate(tree, parent, newParent, this)
+  }
+  getUncle () {
+    // we can assume that grandparent exists when this is called!
+    if (this.parent === this.parent.parent.left) {
+      return this.parent.parent.right
+    } else {
+      return this.parent.parent.left
+    }
+  }
+}
+
+/*
+ * This is a Red Black Tree implementation
+ */
+export default class Tree {
+  constructor () {
+    this.root = null
+    this.length = 0
+  }
+  findNext (id) {
+    var nextID = id.clone()
+    nextID.clock += 1
+    return this.findWithLowerBound(nextID)
+  }
+  findPrev (id) {
+    let prevID = id.clone()
+    prevID.clock -= 1
+    return this.findWithUpperBound(prevID)
+  }
+  findNodeWithLowerBound (from) {
+    var o = this.root
+    if (o === null) {
+      return null
+    } else {
+      while (true) {
+        if (from === null || (from.lessThan(o.val._id) &amp;&amp; o.left !== null)) {
+          // o is included in the bound
+          // try to find an element that is closer to the bound
+          o = o.left
+        } else if (from !== null &amp;&amp; o.val._id.lessThan(from)) {
+          // o is not within the bound, maybe one of the right elements is..
+          if (o.right !== null) {
+            o = o.right
+          } else {
+            // there is no right element. Search for the next bigger element,
+            // this should be within the bounds
+            return o.next()
+          }
+        } else {
+          return o
+        }
+      }
+    }
+  }
+  findNodeWithUpperBound (to) {
+    if (to === void 0) {
+      throw new Error(&apos;You must define from!&apos;)
+    }
+    var o = this.root
+    if (o === null) {
+      return null
+    } else {
+      while (true) {
+        if ((to === null || o.val._id.lessThan(to)) &amp;&amp; o.right !== null) {
+          // o is included in the bound
+          // try to find an element that is closer to the bound
+          o = o.right
+        } else if (to !== null &amp;&amp; to.lessThan(o.val._id)) {
+          // o is not within the bound, maybe one of the left elements is..
+          if (o.left !== null) {
+            o = o.left
+          } else {
+            // there is no left element. Search for the prev smaller element,
+            // this should be within the bounds
+            return o.prev()
+          }
+        } else {
+          return o
+        }
+      }
+    }
+  }
+  findSmallestNode () {
+    var o = this.root
+    while (o != null &amp;&amp; o.left != null) {
+      o = o.left
+    }
+    return o
+  }
+  findWithLowerBound (from) {
+    var n = this.findNodeWithLowerBound(from)
+    return n == null ? null : n.val
+  }
+  findWithUpperBound (to) {
+    var n = this.findNodeWithUpperBound(to)
+    return n == null ? null : n.val
+  }
+  iterate (from, to, f) {
+    var o
+    if (from === null) {
+      o = this.findSmallestNode()
+    } else {
+      o = this.findNodeWithLowerBound(from)
+    }
+    while (
+      o !== null &amp;&amp;
+      (
+        to === null || // eslint-disable-line no-unmodified-loop-condition
+        o.val._id.lessThan(to) ||
+        o.val._id.equals(to)
+      )
+    ) {
+      f(o.val)
+      o = o.next()
+    }
+  }
+  find (id) {
+    let n = this.findNode(id)
+    if (n !== null) {
+      return n.val
+    } else {
+      return null
+    }
+  }
+  findNode (id) {
+    var o = this.root
+    if (o === null) {
+      return null
+    } else {
+      while (true) {
+        if (o === null) {
+          return null
+        }
+        if (id.lessThan(o.val._id)) {
+          o = o.left
+        } else if (o.val._id.lessThan(id)) {
+          o = o.right
+        } else {
+          return o
+        }
+      }
+    }
+  }
+  delete (id) {
+    var d = this.findNode(id)
+    if (d == null) {
+      // throw new Error(&apos;Element does not exist!&apos;)
+      return
+    }
+    this.length--
+    if (d.left !== null &amp;&amp; d.right !== null) {
+      // switch d with the greates element in the left subtree.
+      // o should have at most one child.
+      var o = d.left
+      // find
+      while (o.right !== null) {
+        o = o.right
+      }
+      // switch
+      d.val = o.val
+      d = o
+    }
+    // d has at most one child
+    // let n be the node that replaces d
+    var isFakeChild
+    var child = d.left || d.right
+    if (child === null) {
+      isFakeChild = true
+      child = new N(null)
+      child.blacken()
+      d.right = child
+    } else {
+      isFakeChild = false
+    }
+
+    if (d.parent === null) {
+      if (!isFakeChild) {
+        this.root = child
+        child.blacken()
+        child._parent = null
+      } else {
+        this.root = null
+      }
+      return
+    } else if (d.parent.left === d) {
+      d.parent.left = child
+    } else if (d.parent.right === d) {
+      d.parent.right = child
+    } else {
+      throw new Error(&apos;Impossible!&apos;)
+    }
+    if (d.isBlack()) {
+      if (child.isRed()) {
+        child.blacken()
+      } else {
+        this._fixDelete(child)
+      }
+    }
+    this.root.blacken()
+    if (isFakeChild) {
+      if (child.parent.left === child) {
+        child.parent.left = null
+      } else if (child.parent.right === child) {
+        child.parent.right = null
+      } else {
+        throw new Error(&apos;Impossible #3&apos;)
+      }
+    }
+  }
+  _fixDelete (n) {
+    function isBlack (node) {
+      return node !== null ? node.isBlack() : true
+    }
+    function isRed (node) {
+      return node !== null ? node.isRed() : false
+    }
+    if (n.parent === null) {
+      // this can only be called after the first iteration of fixDelete.
+      return
+    }
+    // d was already replaced by the child
+    // d is not the root
+    // d and child are black
+    var sibling = n.sibling
+    if (isRed(sibling)) {
+      // make sibling the grandfather
+      n.parent.redden()
+      sibling.blacken()
+      if (n === n.parent.left) {
+        n.parent.rotateLeft(this)
+      } else if (n === n.parent.right) {
+        n.parent.rotateRight(this)
+      } else {
+        throw new Error(&apos;Impossible #2&apos;)
+      }
+      sibling = n.sibling
+    }
+    // parent, sibling, and children of n are black
+    if (n.parent.isBlack() &amp;&amp;
+      sibling.isBlack() &amp;&amp;
+      isBlack(sibling.left) &amp;&amp;
+      isBlack(sibling.right)
+    ) {
+      sibling.redden()
+      this._fixDelete(n.parent)
+    } else if (n.parent.isRed() &amp;&amp;
+      sibling.isBlack() &amp;&amp;
+      isBlack(sibling.left) &amp;&amp;
+      isBlack(sibling.right)
+    ) {
+      sibling.redden()
+      n.parent.blacken()
+    } else {
+      if (n === n.parent.left &amp;&amp;
+        sibling.isBlack() &amp;&amp;
+        isRed(sibling.left) &amp;&amp;
+        isBlack(sibling.right)
+      ) {
+        sibling.redden()
+        sibling.left.blacken()
+        sibling.rotateRight(this)
+        sibling = n.sibling
+      } else if (n === n.parent.right &amp;&amp;
+        sibling.isBlack() &amp;&amp;
+        isRed(sibling.right) &amp;&amp;
+        isBlack(sibling.left)
+      ) {
+        sibling.redden()
+        sibling.right.blacken()
+        sibling.rotateLeft(this)
+        sibling = n.sibling
+      }
+      sibling.color = n.parent.color
+      n.parent.blacken()
+      if (n === n.parent.left) {
+        sibling.right.blacken()
+        n.parent.rotateLeft(this)
+      } else {
+        sibling.left.blacken()
+        n.parent.rotateRight(this)
+      }
+    }
+  }
+  put (v) {
+    var node = new N(v)
+    if (this.root !== null) {
+      var p = this.root // p abbrev. parent
+      while (true) {
+        if (node.val._id.lessThan(p.val._id)) {
+          if (p.left === null) {
+            p.left = node
+            break
+          } else {
+            p = p.left
+          }
+        } else if (p.val._id.lessThan(node.val._id)) {
+          if (p.right === null) {
+            p.right = node
+            break
+          } else {
+            p = p.right
+          }
+        } else {
+          p.val = node.val
+          return p
+        }
+      }
+      this._fixInsert(node)
+    } else {
+      this.root = node
+    }
+    this.length++
+    this.root.blacken()
+    return node
+  }
+  _fixInsert (n) {
+    if (n.parent === null) {
+      n.blacken()
+      return
+    } else if (n.parent.isBlack()) {
+      return
+    }
+    var uncle = n.getUncle()
+    if (uncle !== null &amp;&amp; uncle.isRed()) {
+      // Note: parent: red, uncle: red
+      n.parent.blacken()
+      uncle.blacken()
+      n.grandparent.redden()
+      this._fixInsert(n.grandparent)
+    } else {
+      // Note: parent: red, uncle: black or null
+      // Now we transform the tree in such a way that
+      // either of these holds:
+      //   1) grandparent.left.isRed
+      //     and grandparent.left.left.isRed
+      //   2) grandparent.right.isRed
+      //     and grandparent.right.right.isRed
+      if (n === n.parent.right &amp;&amp; n.parent === n.grandparent.left) {
+        n.parent.rotateLeft(this)
+        // Since we rotated and want to use the previous
+        // cases, we need to set n in such a way that
+        // n.parent.isRed again
+        n = n.left
+      } else if (n === n.parent.left &amp;&amp; n.parent === n.grandparent.right) {
+        n.parent.rotateRight(this)
+        // see above
+        n = n.right
+      }
+      // Case 1) or 2) hold from here on.
+      // Now traverse grandparent, make parent a black node
+      // on the highest level which holds two red nodes.
+      n.parent.blacken()
+      n.grandparent.redden()
+      if (n === n.parent.left) {
+        // Case 1
+        n.grandparent.rotateRight(this)
+      } else {
+        // Case 2
+        n.grandparent.rotateLeft(this)
+      }
+    }
+  }
+}
+</code></pre>
+
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(1.0.4)</span><img src="./image/esdoc-logo-mini-black.png"></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>

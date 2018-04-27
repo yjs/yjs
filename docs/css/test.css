@@ -1,0 +1,58 @@
+table.test-summary thead {
+  background: #fafafa;
+}
+
+table.test-summary thead .test-description {
+  width: 50%;
+}
+
+table.test-summary {
+  width: 100%;
+  margin: 10px 0;
+  border-spacing: 0;
+  border: 0;
+  border-collapse: collapse;
+}
+
+table.test-summary thead .test-count {
+  width: 3em;
+}
+
+table.test-summary tbody tr:hover {
+  background-color: #eee;
+}
+
+table.test-summary td {
+  border: solid 1px #ddd;
+  padding: 4px 10px;
+  vertical-align: top;
+}
+
+table.test-summary td p {
+  margin: 0;
+}
+
+table.test-summary tr.test-interface .toggle {
+  display: inline-block;
+  float: left;
+  margin-right: 4px;
+  cursor: pointer;
+  font-size: 0.8em;
+  padding-top: 0.25em;
+}
+
+table.test-summary tr.test-interface .toggle.opened:before {
+  content: '▼';
+}
+
+table.test-summary tr.test-interface .toggle.closed:before {
+  content: '▶';
+}
+
+table.test-summary .test-target > span {
+  display: block;
+  margin-top: 4px;
+}
+table.test-summary .test-target > span:first-child {
+  margin-top: 0;
+}

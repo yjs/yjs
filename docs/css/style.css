@@ -1,0 +1,608 @@
+@import url(https://fonts.googleapis.com/css?family=Roboto:400,300,700);
+@import url(https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400italic,600,700);
+@import url(./manual.css);
+@import url(./source.css);
+@import url(./test.css);
+@import url(./identifiers.css);
+@import url(./github.css);
+@import url(./search.css);
+
+* {
+  margin: 0;
+  padding: 0;
+  text-decoration: none;
+}
+
+html
+{
+  font-family: 'Source Sans Pro', 'Roboto', sans-serif;
+  overflow: auto;
+  /*font-size: 14px;*/
+  /*color: #4d4e53;*/
+  /*color: rgba(0, 0, 0, .68);*/
+  color: #555;
+  background-color: #fff;
+}
+
+a {
+  /*color: #0095dd;*/
+  /*color:rgb(37, 138, 175);*/
+  color: #039BE5;
+}
+
+code a:hover {
+  text-decoration: underline;
+}
+
+ul, ol {
+  padding-left: 20px;
+}
+
+ul li {
+  list-style: disc;
+  margin: 4px 0;
+}
+
+ol li {
+  margin: 4px 0;
+}
+
+h1 {
+  margin-bottom: 10px;
+  font-size: 34px;
+  font-weight: 300;
+  border-bottom: solid 1px #ddd;
+}
+
+h2 {
+  margin-top: 24px;
+  margin-bottom: 10px;
+  font-size: 20px;
+  border-bottom: solid 1px #ddd;
+  font-weight: 300;
+}
+
+h3 {
+  position: relative;
+  font-size: 16px;
+  margin-bottom: 12px;
+  padding: 4px;
+  font-weight: 300;
+}
+
+details {
+  cursor: pointer;
+}
+
+del {
+  text-decoration: line-through;
+}
+
+p {
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+}
+
+pre > code {
+  display: block;
+}
+
+pre.prettyprint, pre > code {
+  padding: 4px;
+  margin: 1em 0;
+  background-color: #f5f5f5;
+  border-radius: 3px;
+}
+
+pre.prettyprint > code {
+  margin: 0;
+}
+
+p > code,
+li > code {
+  padding: 0.2em 0.5em;
+  margin: 0;
+  font-size: 85%;
+  background-color: rgba(0,0,0,0.04);
+  border-radius: 3px;
+}
+
+.code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-size: 13px;
+}
+
+.import-path pre.prettyprint,
+.import-path pre.prettyprint code {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: white;
+}
+
+.layout-container {
+  /*display: flex;*/
+  /*flex-direction: row;*/
+  /*justify-content: flex-start;*/
+  /*align-items: stretch;*/
+}
+
+.layout-container > header {
+  display: flex;
+  height: 40px;
+  line-height: 40px;
+  font-size: 16px;
+  padding: 0 10px;
+  margin: 0;
+  position: fixed;
+  width: 100%;
+  z-index: 1;
+  background-color: #fafafa;
+  top: 0;
+  border-bottom: solid 1px #ddd;
+}
+.layout-container > header > a{
+  margin: 0 5px;
+  color: #444;
+}
+
+.layout-container > header > a.repo-url-github {
+  font-size: 0;
+  display: inline-block;
+  width: 20px;
+  height: 38px;
+  background: url("../image/github.png") no-repeat center;
+  background-size: 20px;
+  vertical-align: top;
+}
+
+.navigation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  width: 250px;
+  height: 100%;
+  padding-top: 40px;
+  padding-left: 15px;
+  padding-bottom: 2em;
+  margin-top:1em;
+  overflow-x: scroll;
+  box-shadow: rgba(255, 255, 255, 1) -1px 0 0 inset;
+  border-right: 1px solid #ddd;
+}
+
+.navigation ul {
+  padding: 0;
+}
+
+.navigation li {
+  list-style: none;
+  margin: 4px 0;
+  white-space: nowrap;
+}
+
+.navigation li a {
+  color: #666;
+}
+
+.navigation .nav-dir-path {
+  display: block;
+  margin-top: 0.7em;
+  margin-bottom: 0.25em;
+  font-weight: 600;
+}
+
+.kind-class,
+.kind-interface,
+.kind-function,
+.kind-typedef,
+.kind-variable,
+.kind-external {
+  margin-left: 0.75em;
+  width: 1.2em;
+  height: 1.2em;
+  display: inline-block;
+  text-align: center;
+  border-radius: 0.2em;
+  margin-right: 0.2em;
+  font-weight: bold;
+  line-height: 1.2em;
+}
+
+.kind-class {
+  color: #009800;
+  background-color: #bfe5bf;
+}
+
+.kind-interface {
+  color: #fbca04;
+  background-color: #fef2c0;
+}
+
+.kind-function {
+  color: #6b0090;
+  background-color: #d6bdde;
+}
+
+.kind-variable {
+  color: #eb6420;
+  background-color: #fad8c7;
+}
+
+.kind-typedef {
+  color: #db001e;
+  background-color: #edbec3;
+}
+
+.kind-external {
+  color: #0738c3;
+  background-color: #bbcbea;
+}
+
+.summary span[class^="kind-"] {
+  margin-left: 0;
+}
+
+h1 .version,
+h1 .url a {
+  font-size: 14px;
+  color: #aaa;
+}
+
+.content {
+  margin-top: 40px;
+  margin-left: 250px;
+  padding: 10px 50px 10px 20px;
+}
+
+.header-notice {
+  font-size: 14px;
+  color: #aaa;
+  margin: 0;
+}
+
+.expression-extends .prettyprint {
+  margin-left: 10px;
+  background: white;
+}
+
+.extends-chain {
+  border-bottom: 1px solid#ddd;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.extends-chain span:nth-of-type(1) {
+  padding-left: 10px;
+}
+
+.extends-chain > div {
+  margin: 5px 0;
+}
+
+.description table {
+  font-size: 14px;
+  border-spacing: 0;
+  border: 0;
+  border-collapse: collapse;
+}
+
+.description thead {
+  background: #999;
+  color: white;
+}
+
+.description table td,
+.description table th {
+  border: solid 1px #ddd;
+  padding: 4px;
+  font-weight: normal;
+}
+
+.flat-list ul {
+  padding-left: 0;
+}
+
+.flat-list li {
+  display: inline;
+  list-style: none;
+}
+
+table.summary {
+  width: 100%;
+  margin: 10px 0;
+  border-spacing: 0;
+  border: 0;
+  border-collapse: collapse;
+}
+
+table.summary thead {
+  background: #fafafa;
+}
+
+table.summary td {
+  border: solid 1px #ddd;
+  padding: 4px 10px;
+}
+
+table.summary tbody td:nth-child(1) {
+  text-align: right;
+  white-space: nowrap;
+  min-width: 64px;
+  vertical-align: top;
+}
+
+table.summary tbody td:nth-child(2) {
+  width: 100%;
+  border-right: none;
+}
+
+table.summary tbody td:nth-child(3) {
+  white-space: nowrap;
+  border-left: none;
+  vertical-align: top;
+}
+
+table.summary td > div:nth-of-type(2) {
+  padding-top: 4px;
+  padding-left: 15px;
+}
+
+table.summary td p {
+  margin-bottom: 0;
+}
+
+.inherited-summary thead td {
+  padding-left: 2px;
+}
+
+.inherited-summary thead a {
+  color: white;
+}
+
+.inherited-summary .summary tbody {
+  display: none;
+}
+
+.inherited-summary .summary .toggle {
+  padding: 0 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.inherited-summary .summary .toggle.closed:before {
+  content: "▶";
+}
+.inherited-summary .summary .toggle.opened:before {
+  content: "▼";
+}
+
+.member, .method {
+  margin-bottom: 24px;
+}
+
+table.params {
+  width: 100%;
+  margin: 10px 0;
+  border-spacing: 0;
+  border: 0;
+  border-collapse: collapse;
+}
+
+table.params thead {
+  background: #eee;
+  color: #aaa;
+}
+
+table.params td {
+  padding: 4px;
+  border: solid 1px #ddd;
+}
+
+table.params td p {
+  margin: 0;
+}
+
+.content .detail > * {
+  margin: 15px 0;
+}
+
+.content .detail > h3 {
+  color: black;
+  background-color: #f0f0f0;
+}
+
+.content .detail > div {
+  margin-left: 10px;
+}
+
+.content .detail > .import-path {
+  margin-top: -8px;
+}
+
+.content .detail + .detail {
+  margin-top: 30px;
+}
+
+.content .detail .throw td:first-child {
+  padding-right: 10px;
+}
+
+.content .detail h4 + :not(pre) {
+  padding-left: 0;
+  margin-left: 10px;
+}
+
+.content .detail h4 + ul li {
+  list-style: none;
+}
+
+.return-param * {
+  display: inline;
+}
+
+.argument-params {
+  margin-bottom: 20px;
+}
+
+.return-type {
+  padding-right: 10px;
+  font-weight: normal;
+}
+
+.return-desc {
+  margin-left: 10px;
+  margin-top: 4px;
+}
+
+.return-desc p {
+  margin: 0;
+}
+
+.deprecated, .experimental, .instance-docs {
+  border-left: solid 5px orange;
+  padding-left: 4px;
+  margin: 4px 0;
+}
+
+tr.listen p,
+tr.throw p,
+tr.emit p{
+  margin-bottom: 10px;
+}
+
+.version, .since {
+  color: #aaa;
+}
+
+h3 .right-info {
+  position: absolute;
+  right: 4px;
+  font-size: 14px;
+}
+
+.version + .since:before {
+  content: '| ';
+}
+
+.see {
+  margin-top: 10px;
+}
+
+.see h4 {
+  margin: 4px 0;
+}
+
+.content .detail h4 + .example-doc {
+  margin: 6px 0;
+}
+
+.example-caption {
+  position: relative;
+  bottom: -1px;
+  display: inline-block;
+  padding: 4px;
+  font-style: italic;
+  background-color: #f5f5f5;
+  font-weight: bold;
+  border-radius: 3px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.example-caption + pre.source-code {
+  margin-top: 0;
+  border-top-left-radius: 0;
+}
+
+footer, .file-footer {
+  text-align: right;
+  font-style: italic;
+  font-weight: 100;
+  font-size: 13px;
+  margin-right: 50px;
+  margin-left: 270px;
+  border-top: 1px solid #ddd;
+  padding-top: 30px;
+  margin-top: 20px;
+  padding-bottom: 10px;
+}
+
+footer img {
+  width: 24px;
+  vertical-align: middle;
+  padding-left: 4px;
+  position: relative;
+  top: -3px;
+  opacity: 0.6;
+}
+
+pre.source-code {
+  padding: 4px;
+}
+
+pre.raw-source-code > code {
+  padding: 0;
+  margin: 0;
+  font-size: 12px;
+  background: #fff;
+  border: solid 1px #ddd;
+  line-height: 1.5;
+}
+
+pre.raw-source-code > code > ol {
+  counter-reset:number;
+  list-style:none;
+  margin:0;
+  padding:0;
+  overflow: hidden;
+}
+
+pre.raw-source-code > code > ol li:before {
+  counter-increment: number;
+  content: counter(number);
+  display: inline-block;
+  min-width: 3em;
+  color: #aaa;
+  text-align: right;
+  padding-right: 1em;
+}
+
+pre.source-code.line-number {
+  padding: 0;
+}
+
+pre.source-code ol {
+  background: #eee;
+  padding-left: 40px;
+}
+
+pre.source-code li {
+  background: white;
+  padding-left: 4px;
+  list-style: decimal;
+  margin: 0;
+}
+
+pre.source-code.line-number li.active {
+  background: rgb(255, 255, 150) !important;
+}
+
+pre.source-code.line-number li.error-line {
+  background: #ffb8bf;
+}
+
+.inner-link-active {
+  /*background: rgb(255, 255, 150) !important;*/
+  background: #039BE5 !important;
+  color: #fff !important;
+  padding-left: 0.1em !important;
+}
+
+.inner-link-active a {
+  color: inherit;
+}
