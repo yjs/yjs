@@ -1,11 +1,13 @@
-import BinaryEncoder from './Binary/Encoder.js'
-import BinaryDecoder from './Binary/Decoder.js'
+import BinaryEncoder from './Util/Binary/Encoder.js'
+import BinaryDecoder from './Util/Binary/Decoder.js'
 
 import { sendSyncStep1, readSyncStep1 } from './MessageHandler/syncStep1.js'
 import { readSyncStep2 } from './MessageHandler/syncStep2.js'
 import { integrateRemoteStructs } from './MessageHandler/integrateRemoteStructs.js'
 
 import debug from 'debug'
+
+// TODO: rename Connector
 
 export default class AbstractConnector {
   constructor (y, opts) {

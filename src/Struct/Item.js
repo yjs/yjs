@@ -1,15 +1,17 @@
-import { getReference } from '../Util/structReferences.js'
-import ID from '../Util/ID.js'
-import { RootFakeUserID } from '../Util/RootID.js'
+import { getStructReference } from '../Util/structReferences.js'
+import ID from '../Util/ID/ID.js'
+import { default as RootID, RootFakeUserID } from '../Util/ID/RootID.js'
 import Delete from './Delete.js'
 import { transactionTypeChanged } from '../Transaction.js'
+import GC from './GC.js'
 
 /**
- * Helper utility to split an Item (see _splitAt)
- * - copy all properties from a to b
- * - connect a to b
+ * @private
+ * Helper utility to split an Item (see {@link Item#_splitAt})
+ * - copies all properties from a to b
+ * - connects a to b
  * - assigns the correct _id
- * - save b to os
+ * - saves b to os
  */
 export function splitHelper (y, a, b, diff) {
   const aID = a._id
@@ -39,28 +41,84 @@ export function splitHelper (y, a, b, diff) {
     o = o._right
   }
   y.os.put(b)
+  if (y._transaction.newTypes.has(a)) {
+    y._transaction.newTypes.add(b)
+  } else if (y._transaction.deletedStructs.has(a)) {
+    y._transaction.deletedStructs.add(b)
+  }
 }
 
+/**
+ * Abstract class that represents any content.
+ */
 export default class Item {
   constructor () {
+    /**
+     * The uniqe identifier of this type.
+     * @type {ID}
+     */
     this._id = null
+    /**
+     * The item that was originally to the left of this item.
+     * @type {Item}
+     */
     this._origin = null
+    /**
+     * The item that is currently to the left of this item.
+     * @type {Item}
+     */
     this._left = null
+    /**
+     * The item that is currently to the right of this item.
+     * @type {Item}
+     */
     this._right = null
+    /**
+     * The item that was originally to the right of this item.
+     * @type {Item}
+     */
     this._right_origin = null
+    /**
+     * The parent type.
+     * @type {Y|YType}
+     */
     this._parent = null
+    /**
+     * If the parent refers to this item with some kind of key (e.g. YMap, the
+     * key is specified here. The key is then used to refer to the list in which
+     * to insert this item. If `parentSub = null` type._start is the list in
+     * which to insert to. Otherwise it is `parent._start`.
+     * @type {String}
+     */
     this._parentSub = null
+    /**
+     * Whether this item was deleted or not.
+     * @type {Boolean}
+     */
     this._deleted = false
+    /**
+     * If this type's effect is reundone this type refers to the type that undid
+     * this operation.
+     * @type {Item}
+     */
     this._redone = null
   }
+
   /**
-   * Create a operation with the same effect (without position effect)
+   * Creates an Item with the same effect as this Item (without position effect)
+   *
+   * @private
    */
   _copy () {
     return new this.constructor()
   }
+
   /**
-   * Redo the effect of this operation.
+   * Redoes the effect of this operation.
+   *
+   * @param {Y} y The Yjs instance.
+   *
+   * @private
    */
   _redo (y) {
     if (this._redone !== null) {
@@ -102,20 +160,47 @@ export default class Item {
     return struct
   }
 
+  /**
+   * Computes the last content address of this Item.
+   *
+   * @private
+   */
   get _lastId () {
     return new ID(this._id.user, this._id.clock + this._length - 1)
   }
+
+  /**
+   * Computes the length of this Item.
+   *
+   * @private
+   */
   get _length () {
     return 1
   }
+
   /**
-   * Splits this struct so that another struct can be inserted in-between.
+   * Should return false if this Item is some kind of meta information
+   * (e.g. format information).
+   *
+   * * Whether this Item should be addressable via `yarray.get(i)`
+   * * Whether this Item should be counted when computing yarray.length
+   *
+   * @private
+   */
+  get _countable () {
+    return true
+  }
+
+  /**
+   * Splits this Item so that another Items can be inserted in-between.
    * This must be overwritten if _length > 1
    * Returns right part after split
-   * - diff === 0 => this
-   * - diff === length => this._right
-   * - otherwise => split _content and return right part of split
-   * (see ItemJSON/ItemString for implementation)
+   * * diff === 0 => this
+   * * diff === length => this._right
+   * * otherwise => split _content and return right part of split
+   * (see {@link ItemJSON}/{@link ItemString} for implementation)
+   *
+   * @private
    */
   _splitAt (y, diff) {
     if (diff === 0) {
@@ -123,10 +208,20 @@ export default class Item {
     }
     return this._right
   }
+
+  /**
+   * Mark this Item as deleted.
+   *
+   * @param {Y} y The Yjs instance
+   * @param {boolean} createDelete Whether to propagate a message that this
+   *                               Type was deleted.
+   *
+   * @private
+   */
   _delete (y, createDelete = true) {
     if (!this._deleted) {
       this._deleted = true
-      y.ds.markDeleted(this._id, this._length)
+      y.ds.mark(this._id, this._length, false)
       let del = new Delete()
       del._targetID = this._id
       del._length = this._length
@@ -141,17 +236,39 @@ export default class Item {
       y._transaction.deletedStructs.add(this)
     }
   }
+
+  _gcChildren (y) {}
+
+  _gc (y) {
+    const gc = new GC()
+    gc._id = this._id
+    gc._length = this._length
+    y.os.delete(this._id)
+    gc._integrate(y)
+  }
+
   /**
-   * This is called right before this struct receives any children.
+   * This is called right before this Item receives any children.
    * It can be overwritten to apply pending changes before applying remote changes
+   *
+   * @private
    */
   _beforeChange () {
     // nop
   }
-  /*
-   * - Integrate the struct so that other types/structs can see it
-   * - Add this struct to y.os
-   * - Check if this is struct deleted
+
+  /**
+   * Integrates this Item into the shared structure.
+   *
+   * This method actually applies the change to the Yjs instance. In case of
+   * Item it connects _left and _right to this Item and calls the
+   * {@link Item#beforeChange} method.
+   *
+   * * Integrate the struct so that other types/structs can see it
+   * * Add this struct to y.os
+   * * Check if this is struct deleted
+   *
+   * @private
    */
   _integrate (y) {
     y._transaction.newTypes.add(this)
@@ -177,6 +294,7 @@ export default class Item {
       // or this types is new
       this._parent._beforeChange()
     }
+
     /*
     # $this has to find a unique position between origin and the next known character
     # case 1: $origin equals $o.origin: the $creator parameter decides if left or right
@@ -269,8 +387,19 @@ export default class Item {
       }
     }
   }
+
+  /**
+   * Transform the properties of this type to binary and write it to an
+   * BinaryEncoder.
+   *
+   * This is called when this Item is sent to a remote peer.
+   *
+   * @param {BinaryEncoder} encoder The encoder to write data to.
+   *
+   * @private
+   */
   _toBinary (encoder) {
-    encoder.writeUint8(getReference(this.constructor))
+    encoder.writeUint8(getStructReference(this.constructor))
     let info = 0
     if (this._origin !== null) {
       info += 0b1 // origin is defined
@@ -309,6 +438,17 @@ export default class Item {
       encoder.writeVarString(JSON.stringify(this._parentSub))
     }
   }
+
+  /**
+   * Read the next Item in a Decoder and fill this Item with the read data.
+   *
+   * This is called when data is received from a remote peer.
+   *
+   * @param {Y} y The Yjs instance that this Item belongs to.
+   * @param {BinaryDecoder} decoder The decoder object to read data from.
+   *
+   * @private
+   */
   _fromBinary (y, decoder) {
     let missing = []
     const info = decoder.readUint8()
@@ -346,7 +486,12 @@ export default class Item {
       const parentID = decoder.readID()
       // parent does not change, so we don't have to search for it again
       if (this._parent === null) {
-        const parent = y.os.get(parentID)
+        let parent
+        if (parentID.constructor === RootID) {
+          parent = y.os.get(parentID)
+        } else {
+          parent = y.os.getItem(parentID)
+        }
         if (parent === null) {
           missing.push(parentID)
         } else {
@@ -355,9 +500,19 @@ export default class Item {
       }
     } else if (this._parent === null) {
       if (this._origin !== null) {
-        this._parent = this._origin._parent
+        if (this._origin.constructor === GC) {
+          // if origin is a gc, set parent also gc'd
+          this._parent = this._origin
+        } else {
+          this._parent = this._origin._parent
+        }
       } else if (this._right_origin !== null) {
-        this._parent = this._right_origin._parent
+        // if origin is a gc, set parent also gc'd
+        if (this._right_origin.constructor === GC) {
+          this._parent = this._right_origin
+        } else {
+          this._parent = this._right_origin._parent
+        }
       }
     }
     if (info & 0b1000) {

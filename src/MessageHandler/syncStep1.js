@@ -1,8 +1,8 @@
-import BinaryEncoder from '../Binary/Encoder.js'
+import BinaryEncoder from '../Util/Binary/Encoder.js'
 import { readStateSet, writeStateSet } from './stateSet.js'
 import { writeDeleteSet } from './deleteSet.js'
-import ID from '../Util/ID.js'
-import { RootFakeUserID } from '../Util/RootID.js'
+import ID from '../Util/ID/ID.js'
+import { RootFakeUserID } from '../Util/ID/RootID.js'
 
 export function stringifySyncStep1 (y, decoder, strBuilder) {
   let auth = decoder.readVarString()
@@ -30,6 +30,11 @@ export function sendSyncStep1 (connector, syncUser) {
   connector.send(syncUser, encoder.createBuffer())
 }
 
+/**
+ * @private
+ * Write all Items that are not not included in ss to
+ * the encoder object.
+ */
 export function writeStructs (y, encoder, ss) {
   const lenPos = encoder.pos
   encoder.writeUint32(0)
@@ -37,7 +42,15 @@ export function writeStructs (y, encoder, ss) {
   for (let user of y.ss.state.keys()) {
     let clock = ss.get(user) || 0
     if (user !== RootFakeUserID) {
-      y.os.iterate(new ID(user, clock), new ID(user, Number.MAX_VALUE), function (struct) {
+      const minBound = new ID(user, clock)
+      const overlappingLeft = y.os.findPrev(minBound)
+      const rightID = overlappingLeft === null ? null : overlappingLeft._id
+      if (rightID !== null && rightID.user === user && rightID.clock + overlappingLeft._length > clock) {
+        const struct = overlappingLeft._clonePartial(clock - rightID.clock)
+        struct._toBinary(encoder)
+        len++
+      }
+      y.os.iterate(minBound, new ID(user, Number.MAX_VALUE), function (struct) {
         struct._toBinary(encoder)
         len++
       })

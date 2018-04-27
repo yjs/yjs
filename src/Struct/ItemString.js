@@ -1,5 +1,5 @@
 import { splitHelper, default as Item } from './Item.js'
-import { logID } from '../MessageHandler/messageToString.js'
+import { logItemHelper } from '../MessageHandler/messageToString.js'
 
 export default class ItemString extends Item {
   constructor () {
@@ -23,10 +23,14 @@ export default class ItemString extends Item {
     super._toBinary(encoder)
     encoder.writeVarString(this._content)
   }
+  /**
+   * Transform this YXml Type to a readable format.
+   * Useful for logging as all Items and Delete implement this method.
+   *
+   * @private
+   */
   _logString () {
-    const left = this._left !== null ? this._left._lastId : null
-    const origin = this._origin !== null ? this._origin._lastId : null
-    return `ItemJSON(id:${logID(this._id)},content:${JSON.stringify(this._content)},left:${logID(left)},origin:${logID(origin)},right:${logID(this._right)},parent:${logID(this._parent)},parentSub:${this._parentSub})`
+    return logItemHelper('ItemString', this, `content:"${this._content}"`)
   }
   _splitAt (y, diff) {
     if (diff === 0) {

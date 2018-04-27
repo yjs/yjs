@@ -1,4 +1,5 @@
-import ID from './ID.js'
+import ID from './ID/ID.js'
+import isParentOf from './isParentOf.js'
 
 class ReverseOperation {
   constructor (y, transaction) {
@@ -15,16 +16,6 @@ class ReverseOperation {
   }
 }
 
-function isStructInScope (y, struct, scope) {
-  while (struct !== y) {
-    if (struct === scope) {
-      return true
-    }
-    struct = struct._parent
-  }
-  return false
-}
-
 function applyReverseOperation (y, scope, reverseBuffer) {
   let performedUndo = false
   y.transact(() => {
@@ -38,7 +29,7 @@ function applyReverseOperation (y, scope, reverseBuffer) {
           while (op._deleted && op._redone !== null) {
             op = op._redone
           }
-          if (op._deleted === false && isStructInScope(y, op, scope)) {
+          if (op._deleted === false && isParentOf(scope, op)) {
             performedUndo = true
             op._delete(y)
           }
@@ -46,7 +37,7 @@ function applyReverseOperation (y, scope, reverseBuffer) {
       }
       for (let op of undoOp.deletedStructs) {
         if (
-          isStructInScope(y, op, scope) &&
+          isParentOf(scope, op) &&
           op._parent !== y &&
           (
             op._id.user !== y.userID ||
@@ -64,7 +55,15 @@ function applyReverseOperation (y, scope, reverseBuffer) {
   return performedUndo
 }
 
+/**
+ * Saves a history of locally applied operations. The UndoManager handles the
+ * undoing and redoing of locally created changes.
+ */
 export default class UndoManager {
+  /**
+   * @param {YType} scope The scope on which to listen for changes.
+   * @param {Object} options Optionally provided configuration.
+   */
   constructor (scope, options = {}) {
     this.options = options
     options.captureTimeout = options.captureTimeout == null ? 500 : options.captureTimeout
@@ -76,6 +75,7 @@ export default class UndoManager {
     this._lastTransactionWasUndo = false
     const y = scope._y
     this.y = y
+    y._hasUndoManager = true
     y.on('afterTransaction', (y, transaction, remote) => {
       if (!remote && transaction.changedParentTypes.has(scope)) {
         let reverseOperation = new ReverseOperation(y, transaction)
@@ -109,12 +109,20 @@ export default class UndoManager {
       }
     })
   }
+
+  /**
+   * Undo the last locally created change.
+   */
   undo () {
     this._undoing = true
     const performedUndo = applyReverseOperation(this.y, this._scope, this._undoBuffer)
     this._undoing = false
     return performedUndo
   }
+
+  /**
+   * Redo the last locally created change.
+   */
   redo () {
     this._redoing = true
     const performedRedo = applyReverseOperation(this.y, this._scope, this._redoBuffer)

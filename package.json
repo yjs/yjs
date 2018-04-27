@@ -9,6 +9,8 @@
     "test": "npm run lint",
     "debug": "concurrently 'rollup -wc rollup.test.js' 'cutest-serve y.test.js -o'",
     "lint": "standard",
+    "docs": "esdoc",
+    "serve-docs": "npm run docs && serve ./docs/",
     "dist": "rollup -c rollup.browser.js; rollup -c rollup.node.js",
     "watch": "concurrently 'rollup -wc rollup.browser.js' 'rollup -wc rollup.node.js'",
     "postversion": "npm run dist",
@@ -16,7 +18,9 @@
   },
   "files": [
     "y.*",
-    "src/*"
+    "src/*",
+    ".esdoc.json",
+    "docs/*"
   ],
   "standard": {
     "ignore": [
@@ -53,6 +57,10 @@
     "chance": "^1.0.9",
     "concurrently": "^3.4.0",
     "cutest": "^0.1.9",
+    "esdoc": "^1.0.4",
+    "esdoc-standard-plugin": "^1.0.0",
+    "quill": "^1.3.5",
+    "quill-cursors": "^1.0.2",
     "rollup-plugin-babel": "^2.7.1",
     "rollup-plugin-commonjs": "^8.0.2",
     "rollup-plugin-inject": "^2.0.0",

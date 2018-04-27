@@ -6,13 +6,6 @@ text, richtext, json, or XML. It is fairly easy to get started, as Yjs hides
 most of the complexity of concurrent editing. For additional information, demos,
 and tutorials visit [y-js.org](http://y-js.org/).
 
->**If you ever felt like giving back - now is the time! Me and a group of friends have organized a fundraiser to bring heathy food to unprivileged children in Vegas. Good food is often hard to come by. Thus some children don’t eat vegetables on a regular basis. We are offering free daily meals with fresh produce and we are going to build a self-sustainable garden at an elementary school to educate children how to live healthy. https://urbanseedfoundation.networkforgood.com/projects/48182-kevin-jahns-s-fundraiser**
->
-> Your support on my funding page would mean the world to me :raised_hands:
->
-> Also check the description in the link above: If we get to 2500$, I'm going to publish a premium Yjs documentation for the upcoming v13 release! There are also some other goals. The fundraising campaign ends very soon!
-
-
 ### Extensions
 Yjs only knows how to resolve conflicts on shared data. You have to choose a ..
 * *Connector* - a communication protocol that propagates changes to the clients

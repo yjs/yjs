@@ -1,5 +1,5 @@
 import RedBlackTree from '../src/Util/Tree.js'
-import ID from '../src/Util/ID.js'
+import ID from '../src/Util/ID/ID.js'
 import Chance from 'chance'
 import { test, proxyConsole } from 'cutest'
 

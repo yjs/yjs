@@ -1,5 +1,6 @@
+
 import Tree from '../Util/Tree.js'
-import ID from '../Util/ID.js'
+import ID from '../Util/ID/ID.js'
 
 class DSNode {
   constructor (id, len, gc) {
@@ -29,97 +30,61 @@ export default class DeleteStore extends Tree {
     var n = this.findWithUpperBound(id)
     return n !== null && n._id.user === id.user && id.clock < n._id.clock + n.len
   }
-  /*
-   * Mark an operation as deleted. returns the deleted node
-   */
+  mark (id, length, gc) {
+    if (length === 0) return
+    // Step 1. Unmark range
+    const leftD = this.findWithUpperBound(new ID(id.user, id.clock - 1))
+    // Resize left DSNode if necessary
+    if (leftD !== null && leftD._id.user === id.user) {
+      if (leftD._id.clock < id.clock && id.clock < leftD._id.clock + leftD.len) {
+        // node is overlapping. need to resize
+        if (id.clock + length < leftD._id.clock + leftD.len) {
+          // overlaps new mark range and some more
+          // create another DSNode to the right of new mark
+          this.put(new DSNode(new ID(id.user, id.clock + length), leftD._id.clock + leftD.len - id.clock - length, leftD.gc))
+        }
+        // resize left DSNode
+        leftD.len = id.clock - leftD._id.clock
+      } // Otherwise there is no overlapping
+    }
+    // Resize right DSNode if necessary
+    const upper = new ID(id.user, id.clock + length - 1)
+    const rightD = this.findWithUpperBound(upper)
+    if (rightD !== null && rightD._id.user === id.user) {
+      if (rightD._id.clock < id.clock + length && id.clock <= rightD._id.clock && id.clock + length < rightD._id.clock + rightD.len) { // we only consider the case where we resize the node
+        const d = id.clock + length - rightD._id.clock
+        rightD._id = new ID(rightD._id.user, rightD._id.clock + d)
+        rightD.len -= d
+      }
+    }
+    // Now we only have to delete all inner marks
+    const deleteNodeIds = []
+    this.iterate(id, upper, m => {
+      deleteNodeIds.push(m._id)
+    })
+    for (let i = deleteNodeIds.length - 1; i >= 0; i--) {
+      this.delete(deleteNodeIds[i])
+    }
+    let newMark = new DSNode(id, length, gc)
+    // Step 2. Check if we can extend left or right
+    if (leftD !== null && leftD._id.user === id.user && leftD._id.clock + leftD.len === id.clock && leftD.gc === gc) {
+      // We can extend left
+      leftD.len += length
+      newMark = leftD
+    }
+    const rightNext = this.find(new ID(id.user, id.clock + length))
+    if (rightNext !== null && rightNext._id.user === id.user && id.clock + length === rightNext._id.clock && gc === rightNext.gc) {
+      // We can merge newMark and rightNext
+      newMark.len += rightNext.len
+      this.delete(rightNext._id)
+    }
+    if (leftD !== newMark) {
+      // only put if we didn't extend left
+      this.put(newMark)
+    }
+  }
+  // TODO: exchange markDeleted for mark()
   markDeleted (id, length) {
-    if (length == null) {
-      throw new Error('length must be defined')
-    }
-    var n = this.findWithUpperBound(id)
-    if (n != null && n._id.user === id.user) {
-      if (n._id.clock <= id.clock && id.clock <= n._id.clock + n.len) {
-        // id is in n's range
-        var diff = id.clock + length - (n._id.clock + n.len) // overlapping right
-        if (diff > 0) {
-          // id+length overlaps n
-          if (!n.gc) {
-            n.len += diff
-          } else {
-            diff = n._id.clock + n.len - id.clock // overlapping left (id till n.end)
-            if (diff < length) {
-              // a partial deletion
-              let nId = id.clone()
-              nId.clock += diff
-              n = new DSNode(nId, length - diff, false)
-              this.put(n)
-            } else {
-              // already gc'd
-              throw new Error(
-                'DS reached an inconsistent state. Please report this issue!'
-              )
-            }
-          }
-        } else {
-          // no overlapping, already deleted
-          return n
-        }
-      } else {
-        // cannot extend left (there is no left!)
-        n = new DSNode(id, length, false)
-        this.put(n) // TODO: you double-put !!
-      }
-    } else {
-      // cannot extend left
-      n = new DSNode(id, length, false)
-      this.put(n)
-    }
-    // can extend right?
-    var next = this.findNext(n._id)
-    if (
-      next != null &&
-      n._id.user === next._id.user &&
-      n._id.clock + n.len >= next._id.clock
-    ) {
-      diff = n._id.clock + n.len - next._id.clock // from next.start to n.end
-      while (diff >= 0) {
-        // n overlaps with next
-        if (next.gc) {
-          // gc is stronger, so reduce length of n
-          n.len -= diff
-          if (diff >= next.len) {
-            // delete the missing range after next
-            diff = diff - next.len // missing range after next
-            if (diff > 0) {
-              this.put(n) // unneccessary? TODO!
-              this.markDeleted(new ID(next._id.user, next._id.clock + next.len), diff)
-            }
-          }
-          break
-        } else {
-          // we can extend n with next
-          if (diff > next.len) {
-            // n is even longer than next
-            // get next.next, and try to extend it
-            var _next = this.findNext(next._id)
-            this.delete(next._id)
-            if (_next == null || n._id.user !== _next._id.user) {
-              break
-            } else {
-              next = _next
-              diff = n._id.clock + n.len - next._id.clock // from next.start to n.end
-              // continue!
-            }
-          } else {
-            // n just partially overlaps with next. extend n, delete next, and break this loop
-            n.len += next.len - diff
-            this.delete(next._id)
-            break
-          }
-        }
-      }
-    }
-    this.put(n)
-    return n
+    this.mark(id, length, false)
   }
 }

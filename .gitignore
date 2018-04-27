@@ -1,4 +1,5 @@
 node_modules
 bower_components
+docs
 /y.*
 /examples/yjs-dist.js*

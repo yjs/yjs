@@ -1,5 +1,5 @@
-import BinaryEncoder from './Binary/Encoder.js'
-import BinaryDecoder from './Binary/Decoder.js'
+import BinaryEncoder from './Util/Binary/Encoder.js'
+import BinaryDecoder from './Util/Binary/Decoder.js'
 import { toBinary, fromBinary } from './MessageHandler/binaryEncode.js'
 import { integrateRemoteStructs } from './MessageHandler/integrateRemoteStructs.js'
 import { createMutualExclude } from './Util/mutualExclude.js'
@@ -13,6 +13,9 @@ function getFreshCnf () {
   }
 }
 
+/**
+ * Abstract persistence class.
+ */
 export default class AbstractPersistence {
   constructor (opts) {
     this.opts = opts

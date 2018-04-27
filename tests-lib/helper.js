@@ -1,18 +1,21 @@
 
-import _Y from '../src/Y.js'
-import yTest from './test-connector.js'
+import _Y from '../src/Y.dist.js'
+import { DomBinding } from '../src/Y.js'
+import TestConnector from './test-connector.js'
 
 import Chance from 'chance'
 import ItemJSON from '../src/Struct/ItemJSON.js'
 import ItemString from '../src/Struct/ItemString.js'
 import { defragmentItemContent } from '../src/Util/defragmentItemContent.js'
+import Quill from 'quill'
+import GC from '../src/Struct/GC.js'
 
 export const Y = _Y
 
-Y.extend(yTest)
-
 export const database = { name: 'memory' }
 export const connector = { name: 'test', url: 'http://localhost:1234' }
+
+Y.test = TestConnector
 
 function getStateSet (y) {
   let ss = {}
@@ -39,39 +42,6 @@ function getDeleteSet (y) {
   return ds
 }
 
-export function attrsObject (dom) {
-  let keys = []
-  let yxml = dom._yxml
-  for (let i = 0; i < dom.attributes.length; i++) {
-    keys.push(dom.attributes[i].name)
-  }
-  keys = yxml._domFilter(dom, keys)
-  let obj = {}
-  for (let i = 0; i < keys.length; i++) {
-    let key = keys[i]
-    obj[key] = dom.getAttribute(key)
-  }
-  return obj
-}
-
-export function domToJson (dom) {
-  if (dom.nodeType === document.TEXT_NODE) {
-    return dom.textContent
-  } else if (dom.nodeType === document.ELEMENT_NODE) {
-    let attributes = attrsObject(dom)
-    let children = Array.from(dom.childNodes.values())
-      .filter(d => d._yxml !== false)
-      .map(domToJson)
-    return {
-      name: dom.nodeName,
-      children: children,
-      attributes: attributes
-    }
-  } else {
-    throw new Error('Unsupported node type')
-  }
-}
-
 /*
  * 1. reconnect and flush all
  * 2. user 0 gc
@@ -92,22 +62,36 @@ export async function compareUsers (t, users) {
   await wait()
   await flushAll(t, users)
 
-  var userArrayValues = users.map(u => u.get('array', Y.Array).toJSON().map(val => JSON.stringify(val)))
-  var userMapValues = users.map(u => u.get('map', Y.Map).toJSON())
-  var userXmlValues = users.map(u => u.get('xml', Y.Xml).toString())
+  var userArrayValues = users.map(u => u.define('array', Y.Array).toJSON().map(val => JSON.stringify(val)))
+  var userMapValues = users.map(u => u.define('map', Y.Map).toJSON())
+  var userXmlValues = users.map(u => u.define('xml', Y.Xml).toString())
+  var userTextValues = users.map(u => u.define('text', Y.Text).toDelta())
+  var userQuillValues = users.map(u => {
+    u.quill.update('yjs') // get latest changes
+    return u.quill.getContents().ops
+  })
 
   var data = users.map(u => {
     defragmentItemContent(u)
     var data = {}
     let ops = []
     u.os.iterate(null, null, function (op) {
-      const json = {
-        id: op._id,
-        left: op._left === null ? null : op._left._lastId,
-        right: op._right === null ? null : op._right._id,
-        length: op._length,
-        deleted: op._deleted,
-        parent: op._parent._id
+      let json
+      if (op.constructor === GC) {
+        json = {
+          type: 'GC',
+          id: op._id,
+          length: op._length
+        }
+      } else {
+        json = {
+          id: op._id,
+          left: op._left === null ? null : op._left._lastId,
+          right: op._right === null ? null : op._right._id,
+          length: op._length,
+          deleted: op._deleted,
+          parent: op._parent._id
+        }
       }
       if (op instanceof ItemJSON || op instanceof ItemString) {
         json.content = op._content
@@ -124,6 +108,8 @@ export async function compareUsers (t, users) {
       t.compare(userArrayValues[i], userArrayValues[i + 1], 'array types')
       t.compare(userMapValues[i], userMapValues[i + 1], 'map types')
       t.compare(userXmlValues[i], userXmlValues[i + 1], 'xml types')
+      t.compare(userTextValues[i], userTextValues[i + 1], 'text types')
+      t.compare(userQuillValues[i], userQuillValues[i + 1], 'quill delta content')
       t.compare(data[i].os, data[i + 1].os, 'os')
       t.compare(data[i].ds, data[i + 1].ds, 'ds')
       t.compare(data[i].ss, data[i + 1].ss, 'ss')
@@ -132,12 +118,20 @@ export async function compareUsers (t, users) {
   users.map(u => u.destroy())
 }
 
+function domFilter (nodeName, attrs) {
+  if (nodeName === 'HIDDEN') {
+    return null
+  }
+  attrs.delete('hidden')
+  return attrs
+}
+
 export async function initArrays (t, opts) {
   var result = {
     users: []
   }
   var chance = opts.chance || new Chance(t.getSeed() * 1000000000)
-  var conn = Object.assign({ room: 'debugging_' + t.name, generateUserId: false, testContext: t, chance }, connector)
+  var conn = Object.assign({ room: 'debugging_' + t.name, testContext: t, chance }, connector)
   for (let i = 0; i < opts.users; i++) {
     let connOpts
     if (i === 0) {
@@ -146,23 +140,28 @@ export async function initArrays (t, opts) {
       connOpts = Object.assign({ role: 'slave' }, conn)
     }
     let y = new Y(connOpts.room, {
-      _userID: i, // evil hackery, don't try this at home
+      userID: i, // evil hackery, don't try this at home
       connector: connOpts
     })
     result.users.push(y)
     result['array' + i] = y.define('array', Y.Array)
     result['map' + i] = y.define('map', Y.Map)
-    result['xml' + i] = y.define('xml', Y.XmlElement)
-    y.get('xml').setDomFilter(function (nodeName, attrs) {
-      if (nodeName === 'HIDDEN') {
-        return null
-      }
-      attrs.delete('hidden')
-      return attrs
-    })
+    const yxml = y.define('xml', Y.XmlElement)
+    result['xml' + i] = yxml
+    const dom = document.createElement('my-dom')
+    const domBinding = new DomBinding(yxml, dom, { domFilter })
+    result['domBinding' + i] = domBinding
+    result['dom' + i] = dom
+    const textType = y.define('text', Y.Text)
+    result['text' + i] = textType
+    const quill = new Quill(document.createElement('div'))
+    result['quillBinding' + i] = new Y.QuillBinding(textType, quill)
+    result['quill' + i] = quill
+    y.quill = quill // put quill on the y object (so we can use it later)
+    y.dom = dom
     y.on('afterTransaction', function () {
       for (let missing of y._missingStructs.values()) {
-        if (Array.from(missing.values()).length > 0) {
+        if (missing.size > 0) {
           console.error(new Error('Test check in "afterTransaction": missing should be empty!'))
         }
       }
