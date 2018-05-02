@@ -217,8 +217,8 @@ export default class Type extends Item {
    *                                         collect the children of this type.
    */
   _delete (y, createDelete, gcChildren) {
-    if (gcChildren === undefined) {
-      gcChildren = y._hasUndoManager === false
+    if (gcChildren === undefined || !y.gcEnabled) {
+      gcChildren = y._hasUndoManager === false && y.gcEnabled
     }
     super._delete(y, createDelete, gcChildren)
     y._transaction.changedTypes.delete(this)

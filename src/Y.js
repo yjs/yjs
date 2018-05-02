@@ -28,8 +28,9 @@ export { default as DomBinding } from './Bindings/DomBinding/DomBinding.js'
  * @param {AbstractPersistence} persistence Persistence adapter instance
  */
 export default class Y extends NamedEventHandler {
-  constructor (room, opts, persistence) {
+  constructor (room, opts, persistence, conf = {}) {
     super()
+    this.gcEnabled = conf.gc || false
     /**
      * The room name that this Yjs instance connects to.
      * @type {String}
