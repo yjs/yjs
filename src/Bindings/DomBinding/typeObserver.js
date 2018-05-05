@@ -8,7 +8,7 @@ function findScrollReference (scrollingElement) {
   if (scrollingElement !== null) {
     let anchor = getSelection().anchorNode
     if (anchor == null) {
-      let children = scrollingElement.children
+      let children = scrollingElement.children // only iterate through non-text nodes
       for (let i = 0; i < children.length; i++) {
         const elem = children[i]
         const rect = elem.getBoundingClientRect()

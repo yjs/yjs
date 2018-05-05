@@ -60,8 +60,8 @@ function applyChangesFromDom (binding, dom, yxml, _document) {
             removeAssociation(binding, childNode, childType)
           } else {
             // child was moved to a different position.
-            childType._delete(y)
             removeAssociation(binding, childNode, childType)
+            childType._delete(y)
           }
           prevExpectedType = insertNodeHelper(yxml, prevExpectedType, childNode, _document, binding)
         } else {
@@ -92,6 +92,18 @@ export default function domObserver (mutations, _document) {
         const yxml = this.domToType.get(dom)
         if (yxml === false || yxml === undefined || yxml.constructor === YXmlHook) {
           // dom element is filtered
+          if (yxml === undefined) { // In case yxml is undefined, we double check if we forgot to bind the dom
+            console.error('Yjs DomBinding: Reconstructing DomBinding, please report how to reproduce this.')
+            let parent
+            let yParent
+            do {
+              parent = dom.parentNode
+              yParent = this.domToType.get(parent)
+            } while (yParent === undefined)
+            if (yParent !== false && yParent !== undefined && yParent.constructor !== YXmlHook) {
+              diffChildren.add(parent)
+            }
+          }
           return
         }
         switch (mutation.type) {
