@@ -1,7 +1,7 @@
 /* global Y */
 
 window.onload = function () {
-  window.domBinding = new Y.DomBinding(window.yXmlType, document.body)
+  window.domBinding = new Y.DomBinding(window.yXmlType, document.body, { scrollingElement: document.scrollingElement })
 }
 
 let y = new Y('htmleditor', {

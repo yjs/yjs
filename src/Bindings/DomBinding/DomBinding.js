@@ -33,6 +33,7 @@ export default class DomBinding extends Binding {
     this.opts = opts
     opts.document = opts.document || document
     opts.hooks = opts.hooks || {}
+    this.scrollingElement = opts.scrollingElement || null
     /**
      * Maps each DOM element to the type that it is associated with.
      * @type {Map}
@@ -103,17 +104,6 @@ export default class DomBinding extends Binding {
     }
     y.on('beforeObserverCalls', this._beforeObserverCallsHandler)
     createAssociation(this, target, type)
-  }
-
-  /**
-   * Enables the smart scrolling functionality for a Dom Binding.
-   * This is useful when YXml is bound to a shared editor. When activated,
-   * the viewport will be changed to accommodate remote changes.
-   *
-   * @param {Element} scrollElement The node that is
-   */
-  enableSmartScrolling (scrollElement) {
-    // @TODO: implement smart scrolling
   }
 
   /**

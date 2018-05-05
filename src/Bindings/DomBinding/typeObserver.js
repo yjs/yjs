@@ -1,13 +1,49 @@
+/* global getSelection */
 
 import YXmlText from '../../Types/YXml/YXmlText.js'
 import YXmlHook from '../../Types/YXml/YXmlHook.js'
 import { removeDomChildrenUntilElementFound } from './util.js'
+
+function findScrollReference (scrollingElement) {
+  if (scrollingElement !== null) {
+    let anchor = getSelection().anchorNode
+    if (anchor == null) {
+      let children = scrollingElement.children
+      for (let i = 0; i < children.length; i++) {
+        const elem = children[i]
+        const rect = elem.getBoundingClientRect()
+        if (rect.top >= 0) {
+          return { elem, top: rect.top }
+        }
+      }
+    } else {
+      if (anchor.nodeType === document.TEXT_NODE) {
+        anchor = anchor.parentElement
+      }
+      const top = anchor.getBoundingClientRect().top
+      return { elem: anchor, top: top }
+    }
+  }
+  return null
+}
+
+function fixScroll (scrollingElement, ref) {
+  if (ref !== null) {
+    const { elem, top } = ref
+    const currentTop = elem.getBoundingClientRect().top
+    const newScroll = scrollingElement.scrollTop + currentTop - top
+    if (newScroll >= 0) {
+      scrollingElement.scrollTop = newScroll
+    }
+  }
+}
 
 /**
  * @private
  */
 export default function typeObserver (events) {
   this._mutualExclude(() => {
+    const scrollRef = findScrollReference(this.scrollingElement)
     events.forEach(event => {
       const yxml = event.target
       const dom = this.typeToDom.get(yxml)
@@ -59,5 +95,6 @@ export default function typeObserver (events) {
         }
       }
     })
+    fixScroll(this.scrollingElement, scrollRef)
   })
 }

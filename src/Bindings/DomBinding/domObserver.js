@@ -125,9 +125,6 @@ export default function domObserver (mutations, _document) {
         }
       })
       for (let dom of diffChildren) {
-        if (dom.yOnChildrenChanged !== undefined) {
-          dom.yOnChildrenChanged()
-        }
         const yxml = this.domToType.get(dom)
         applyChangesFromDom(this, dom, yxml, _document)
       }
