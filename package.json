@@ -71,8 +71,5 @@
     "rollup-watch": "^3.2.2",
     "standard": "^10.0.2",
     "tag-dist-files": "^0.1.6"
-  },
-  "dependencies": {
-    "debug": "^2.6.8"
   }
 }
