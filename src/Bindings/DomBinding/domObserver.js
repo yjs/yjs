@@ -90,20 +90,19 @@ export default function domObserver (mutations, _document) {
       mutations.forEach(mutation => {
         const dom = mutation.target
         const yxml = this.domToType.get(dom)
-        if (yxml === false || yxml === undefined || yxml.constructor === YXmlHook) {
-          // dom element is filtered
-          if (yxml === undefined) { // In case yxml is undefined, we double check if we forgot to bind the dom
-            console.error('Yjs DomBinding: Reconstructing DomBinding, please report how to reproduce this.')
-            let parent
-            let yParent
-            do {
-              parent = dom.parentNode
-              yParent = this.domToType.get(parent)
-            } while (yParent === undefined)
-            if (yParent !== false && yParent !== undefined && yParent.constructor !== YXmlHook) {
-              diffChildren.add(parent)
-            }
+        if (yxml === undefined) { // In case yxml is undefined, we double check if we forgot to bind the dom
+          let parent
+          let yParent
+          do {
+            parent = dom.parentNode
+            yParent = this.domToType.get(parent)
+          } while (yParent === undefined && parent !== null)
+          if (yParent !== false && yParent !== undefined && yParent.constructor !== YXmlHook) {
+            diffChildren.add(parent)
           }
+          return
+        } else if (yxml === false || yxml.constructor === YXmlHook) {
+          // dom element is filtered / a dom hook
           return
         }
         switch (mutation.type) {
