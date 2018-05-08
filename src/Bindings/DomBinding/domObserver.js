@@ -91,10 +91,10 @@ export default function domObserver (mutations, _document) {
         const dom = mutation.target
         const yxml = this.domToType.get(dom)
         if (yxml === undefined) { // In case yxml is undefined, we double check if we forgot to bind the dom
-          let parent
+          let parent = dom
           let yParent
           do {
-            parent = dom.parentNode
+            parent = parent.parentNode
             yParent = this.domToType.get(parent)
           } while (yParent === undefined && parent !== null)
           if (yParent !== false && yParent !== undefined && yParent.constructor !== YXmlHook) {
