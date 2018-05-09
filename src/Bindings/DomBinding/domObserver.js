@@ -94,7 +94,7 @@ export default function domObserver (mutations, _document) {
           let parent = dom
           let yParent
           do {
-            parent = parent.parentNode
+            parent = parent.parentElement
             yParent = this.domToType.get(parent)
           } while (yParent === undefined && parent !== null)
           if (yParent !== false && yParent !== undefined && yParent.constructor !== YXmlHook) {
