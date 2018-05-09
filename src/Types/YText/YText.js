@@ -155,7 +155,7 @@ function insertAttributes (y, parent, left, right, attributes, currentAttributes
  */
 function insertText (y, text, parent, left, right, currentAttributes, attributes) {
   for (let [key] of currentAttributes) {
-    if (attributes.hasOwnProperty(key) === false) {
+    if (attributes[key] === undefined) {
       attributes[key] = null
     }
   }
@@ -189,8 +189,9 @@ function formatText (y, length, parent, left, right, currentAttributes, attribut
     if (right._deleted === false) {
       switch (right.constructor) {
         case ItemFormat:
-          if (attributes.hasOwnProperty(right.key)) {
-            if (attributes[right.key] === right.value) {
+          const attr = attributes[right.key]
+          if (attr !== undefined) {
+            if (attr === right.value) {
               negatedAttributes.delete(right.key)
             } else {
               negatedAttributes.set(right.key, right.value)
@@ -405,8 +406,9 @@ class YTextEvent extends YArrayEvent {
                 }
               } else if (item._deleted === false) {
                 oldAttributes.set(item.key, item.value)
-                if (attributes.hasOwnProperty(item.key)) {
-                  if (attributes[item.key] !== item.value) {
+                const attr = attributes[item.key]
+                if (attr !== undefined) {
+                  if (attr !== item.value) {
                     if (action === 'retain') {
                       addOp()
                     }
@@ -433,7 +435,7 @@ class YTextEvent extends YArrayEvent {
         addOp()
         while (this._delta.length > 0) {
           let lastOp = this._delta[this._delta.length - 1]
-          if (lastOp.hasOwnProperty('retain') && !lastOp.hasOwnProperty('attributes')) {
+          if (lastOp.retain !== undefined && lastOp.attributes === undefined) {
             // retain delta's if they don't assign attributes
             this._delta.pop()
           } else {
@@ -505,11 +507,11 @@ export default class YText extends YArray {
       const currentAttributes = new Map()
       for (let i = 0; i < delta.length; i++) {
         let op = delta[i]
-        if (op.hasOwnProperty('insert')) {
+        if (op.insert !== undefined) {
           ;[left, right] = insertText(y, op.insert, this, left, right, currentAttributes, op.attributes || {})
-        } else if (op.hasOwnProperty('retain')) {
+        } else if (op.retain !== undefined) {
           ;[left, right] = formatText(y, op.retain, this, left, right, currentAttributes, op.attributes || {})
-        } else if (op.hasOwnProperty('delete')) {
+        } else if (op.delete !== undefined) {
           ;[left, right] = deleteText(y, op.delete, this, left, right, currentAttributes)
         }
       }

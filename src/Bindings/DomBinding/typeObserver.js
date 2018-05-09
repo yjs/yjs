@@ -14,7 +14,6 @@ export default function typeObserver (events) {
       if (dom !== undefined && dom !== false) {
         if (yxml.constructor === YXmlText) {
           dom.nodeValue = yxml.toString()
-          // TODO: use hasOwnProperty instead of === undefined check
         } else if (event.attributesChanged !== undefined) {
           // update attributes
           event.attributesChanged.forEach(attributeName => {
