@@ -1,6 +1,6 @@
 {
   "name": "yjs",
-  "version": "13.0.0-56",
+  "version": "13.0.0-60",
   "description": "A framework for real-time p2p shared editing on any data",
   "main": "./y.node.js",
   "browser": "./y.js",
@@ -71,8 +71,5 @@
     "rollup-watch": "^3.2.2",
     "standard": "^10.0.2",
     "tag-dist-files": "^0.1.6"
-  },
-  "dependencies": {
-    "debug": "^2.6.8"
   }
 }

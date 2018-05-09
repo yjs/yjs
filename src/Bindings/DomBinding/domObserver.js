@@ -60,8 +60,8 @@ function applyChangesFromDom (binding, dom, yxml, _document) {
             removeAssociation(binding, childNode, childType)
           } else {
             // child was moved to a different position.
-            childType._delete(y)
             removeAssociation(binding, childNode, childType)
+            childType._delete(y)
           }
           prevExpectedType = insertNodeHelper(yxml, prevExpectedType, childNode, _document, binding)
         } else {
@@ -90,8 +90,19 @@ export default function domObserver (mutations, _document) {
       mutations.forEach(mutation => {
         const dom = mutation.target
         const yxml = this.domToType.get(dom)
-        if (yxml === false || yxml === undefined || yxml.constructor === YXmlHook) {
-          // dom element is filtered
+        if (yxml === undefined) { // In case yxml is undefined, we double check if we forgot to bind the dom
+          let parent = dom
+          let yParent
+          do {
+            parent = parent.parentElement
+            yParent = this.domToType.get(parent)
+          } while (yParent === undefined && parent !== null)
+          if (yParent !== false && yParent !== undefined && yParent.constructor !== YXmlHook) {
+            diffChildren.add(parent)
+          }
+          return
+        } else if (yxml === false || yxml.constructor === YXmlHook) {
+          // dom element is filtered / a dom hook
           return
         }
         switch (mutation.type) {
@@ -125,9 +136,6 @@ export default function domObserver (mutations, _document) {
         }
       })
       for (let dom of diffChildren) {
-        if (dom.yOnChildrenChanged !== undefined) {
-          dom.yOnChildrenChanged()
-        }
         const yxml = this.domToType.get(dom)
         applyChangesFromDom(this, dom, yxml, _document)
       }

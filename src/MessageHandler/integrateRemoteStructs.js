@@ -25,7 +25,7 @@ function _integrateRemoteStructHelper (y, struct) {
     if (y.ss.getState(id.user) > id.clock) {
       return
     }
-    if (struct.constructor === GC || (struct._parent.constructor !== GC && struct._parent._deleted === false)) {
+    if (!y.gcEnabled || struct.constructor === GC || (struct._parent.constructor !== GC && struct._parent._deleted === false)) {
       // Is either a GC or Item with an undeleted parent
       // save to integrate
       struct._integrate(y)
