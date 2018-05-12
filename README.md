@@ -70,7 +70,6 @@ missing modules.
 <script src="https://cdn.jsdelivr.net/npm/y-array@10/dist/y-array.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/y-websockets-client@8/dist/y-websockets-client.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/y-memory@8/dist/y-memory.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/y-array@10/dist/y-array.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/y-map@10/dist/y-map.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/y-text@9/dist/y-text.js"></script>
 // ..
@@ -89,7 +88,6 @@ var Y = require('yjs')
 require('y-array')(Y) // add the y-array type to Yjs
 require('y-websockets-client')(Y)
 require('y-memory')(Y)
-require('y-array')(Y)
 require('y-map')(Y)
 require('y-text')(Y)
 // ..
@@ -102,7 +100,6 @@ import Y from 'yjs'
 import yArray from 'y-array'
 import yWebsocketsClient from 'y-webrtc'
 import yMemory from 'y-memory'
-import yArray from 'y-array'
 import yMap from 'y-map'
 import yText from 'y-text'
 // ..
