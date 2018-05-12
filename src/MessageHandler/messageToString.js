@@ -61,5 +61,5 @@ export function logID (id) {
 export function logItemHelper (name, item, append) {
   const left = item._left !== null ? item._left._lastId : null
   const origin = item._origin !== null ? item._origin._lastId : null
-  return `${name}(id:${logID(item._id)},start:${logID(item._start)},left:${logID(left)},origin:${logID(origin)},right:${logID(item._right)},parent:${logID(item._parent)},parentSub:${item._parentSub}${append !== undefined ? ' - ' + append : ''})`
+  return `${name}(id:${logID(item._id)},left:${logID(left)},origin:${logID(origin)},right:${logID(item._right)},parent:${logID(item._parent)},parentSub:${item._parentSub}${append !== undefined ? ' - ' + append : ''})`
 }
