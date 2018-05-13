@@ -1,5 +1,7 @@
 
-import { YXmlText, YXmlElement, YXmlHook } from '../../Types/YXml/YXml.js'
+import YXmlText from '../../Types/YXml/YXmlText.js'
+import YXmlHook from '../../Types/YXml/YXmlHook.js'
+import YXmlElement from '../../Types/YXml/YXmlElement.js'
 import { createAssociation, domsToTypes } from './util.js'
 import { filterDomAttributes, defaultFilter } from './filter.js'
 

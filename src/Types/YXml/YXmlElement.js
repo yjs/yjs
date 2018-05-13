@@ -1,5 +1,5 @@
 import YMap from '../YMap/YMap.js'
-import { YXmlFragment } from './YXml.js'
+import YXmlFragment from './YXmlFragment.js'
 import { createAssociation } from '../../Bindings/DomBinding/util.js'
 
 /**
@@ -186,3 +186,5 @@ export default class YXmlElement extends YXmlFragment {
     return dom
   }
 }
+
+YXmlFragment._YXmlElement = YXmlElement

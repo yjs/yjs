@@ -1,7 +1,10 @@
 import YArray from '../Types/YArray/YArray.js'
 import YMap from '../Types/YMap/YMap.js'
 import YText from '../Types/YText/YText.js'
-import { YXmlFragment, YXmlElement, YXmlText, YXmlHook } from '../Types/YXml/YXml.js'
+import YXmlText from '../Types/YXml/YXmlText.js'
+import YXmlHook from '../Types/YXml/YXmlHook.js'
+import YXmlFragment from '../Types/YXml/YXmlFragment.js'
+import YXmlElement from '../Types/YXml/YXmlElement.js'
 
 import Delete from '../Struct/Delete.js'
 import ItemJSON from '../Struct/ItemJSON.js'
