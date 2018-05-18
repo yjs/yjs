@@ -121,12 +121,11 @@ export default class DomBinding extends Binding {
   destroy () {
     this.domToType = null
     this.typeToDom = null
-    this.type.unobserve(this._typeObserver)
+    this.type.unobserveDeep(this._typeObserver)
     this._mutationObserver.disconnect()
     const y = this.type._y
     y.off('beforeTransaction', this._beforeTransactionHandler)
     y.off('beforeObserverCalls', this._beforeObserverCallsHandler)
-    y.off('afterObserverCalls', this._afterObserverCallsHandler)
     y.off('afterTransaction', this._afterTransactionHandler)
     super.destroy()
   }
