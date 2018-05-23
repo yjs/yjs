@@ -5,7 +5,7 @@ import commonjs from 'rollup-plugin-commonjs'
 var pkg = require('./package.json')
 
 export default {
-  input: 'src/Y.dist.js',
+  input: 'src/Y.dist.mjs',
   name: 'Y',
   sourcemap: true,
   output: {

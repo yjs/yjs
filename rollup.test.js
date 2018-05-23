@@ -3,7 +3,7 @@ import commonjs from 'rollup-plugin-commonjs'
 import multiEntry from 'rollup-plugin-multi-entry'
 
 export default {
-  input: 'test/index.js',
+  input: 'test/index.mjs',
   name: 'y-tests',
   sourcemap: true,
   output: {
