@@ -14,7 +14,8 @@
     "dist": "rollup -c rollup.browser.js; rollup -c rollup.node.js",
     "watch": "concurrently 'rollup -wc rollup.browser.js' 'rollup -wc rollup.node.js'",
     "postversion": "npm run dist",
-    "postpublish": "tag-dist-files --overwrite-existing-tag"
+    "postpublish": "tag-dist-files --overwrite-existing-tag",
+    "demos": "concurrently 'node --experimental-modules src/Connectors/WebsocketsConnector/server.mjs' 'http-server'"
   },
   "files": [
     "y.*",

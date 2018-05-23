@@ -9,7 +9,7 @@ function testEncoding (t, write, read, val) {
   write(encoder, val)
   let reader = new BinaryDecoder(encoder.createBuffer())
   let result = read(reader)
-  t.log(`string encode: ${JSON.stringify(val).length} bytes / binary encode: ${encoder.data.length} bytes`)
+  t.log(`string encode: ${JSON.stringify(val).length} bytes / binary encode: ${encoder.length} bytes`)
   t.compare(val, result, 'Compare results')
 }
 
