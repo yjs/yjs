@@ -3,10 +3,10 @@ import YWebsocketsConnector from '../../src/Connectors/WebsocketsConnector/Webso
 import Y from '../../src/Y.mjs'
 import DomBinding from '../../src/Bindings/DomBinding/DomBinding.mjs'
 import UndoManager from '../../src/Util/UndoManager.mjs'
-import XmlFragment from '../../src/Types/YXml/YXmlFragment.mjs'
+import YXmlFragment from '../../src/Types/YXml/YXmlFragment.mjs'
 
 const connector = new YWebsocketsConnector()
-const y = new Y('html-editor')
+const y = new Y('html-editor', null, null, { gc: true })
 connector.connectY('html-editor', y)
 
 window.onload = function () {
@@ -14,7 +14,7 @@ window.onload = function () {
 }
 
 window.y = y
-window.yXmlType = y.define('xml', XmlFragment)
+window.yXmlType = y.define('xml', YXmlFragment)
 window.undoManager = new UndoManager(window.yXmlType, {
   captureTimeout: 500
 })

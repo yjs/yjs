@@ -48,7 +48,7 @@ const wsConnector = {
   getRoom: function getRoom (roomName) {
     let room = rooms.get(roomName)
     if (room === undefined) {
-      const y = new Y(roomName)
+      const y = new Y(roomName, null, null, { gc: true })
       y.on('afterTransaction', (y, transaction) => {
         if (transaction.encodedStructsLen > 0) {
           const encoder = new BinaryEncoder()
