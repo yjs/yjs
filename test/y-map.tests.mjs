@@ -104,6 +104,7 @@ test('Basic get&set of Map property (handle conflict)', async function map6 (t) 
   map1.set('stuff', 'c1')
 
   await flushAll(t, users)
+  await flushAll(t, users)
 
   for (let user of users) {
     var u = user.get('map', Y.Map)
@@ -118,6 +119,7 @@ test('Basic get&set&delete of Map property (handle conflict)', async function ma
   map0.delete('stuff')
   map1.set('stuff', 'c1')
   await flushAll(t, users)
+  await flushAll(t, users)
   for (let user of users) {
     var u = user.get('map', Y.Map)
     t.assert(u.get('stuff') === undefined)
@@ -131,6 +133,7 @@ test('Basic get&set of Map property (handle three conflicts)', async function ma
   map1.set('stuff', 'c1')
   map1.set('stuff', 'c2')
   map2.set('stuff', 'c3')
+  await flushAll(t, users)
   await flushAll(t, users)
   for (let user of users) {
     var u = user.get('map', Y.Map)
@@ -151,6 +154,7 @@ test('Basic get&set&delete of Map property (handle three conflicts)', async func
   map1.set('stuff', 'c1')
   map2.set('stuff', 'c2')
   map3.set('stuff', 'c3')
+  await flushAll(t, users)
   await flushAll(t, users)
   for (let user of users) {
     var u = user.get('map', Y.Map)
