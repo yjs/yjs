@@ -1,7 +1,7 @@
 import BinaryEncoder from '../../Util/Binary/Encoder.mjs'
 /* global WebSocket */
 import NamedEventHandler from '../../Util/NamedEventHandler.mjs'
-import decodeMessage, { messageSS, messageSubscribe, messageStructs, messageGetSS } from './decodeMessage.mjs'
+import decodeMessage, { messageSS, messageSubscribe, messageStructs } from './decodeMessage.mjs'
 import { createMutualExclude } from '../../Util/mutualExclude.mjs'
 
 export const STATE_CONNECTING = 0
@@ -61,7 +61,6 @@ export default class WebsocketsConnector extends NamedEventHandler {
     const encoder = new BinaryEncoder()
     for (const [roomName, room] of this._rooms) {
       const y = room.y
-      messageGetSS(roomName, y, encoder)
       messageSS(roomName, y, encoder)
       messageSubscribe(roomName, y, encoder)
     }
@@ -69,7 +68,7 @@ export default class WebsocketsConnector extends NamedEventHandler {
   }
 
   send (encoder) {
-    if (encoder.length > 0) {
+    if (encoder.length > 0 && this._socket.readyState === WebSocket.OPEN) {
       this._socket.send(encoder.createBuffer())
     }
   }

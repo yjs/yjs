@@ -117,12 +117,16 @@ export default class BinaryDecoder {
    */
   readVarString () {
     let len = this.readVarUint()
-    let bytes = new Array(len)
+    let encodedString = ''
+    //let bytes = new Array(len)
     for (let i = 0; i < len; i++) {
-      bytes[i] = this.uint8arr[this.pos++]
+      //bytes[i] = this.uint8arr[this.pos++]
+      // encodedString += String.fromCodePoint(this.uint8arr[this.pos++])
+      encodedString += String(this.uint8arr[this.pos++])
     }
-    let encodedString = bytes.map(b => String.fromCodePoint(b)).join('')
-    return decodeURIComponent(escape(encodedString))
+    //let encodedString = String.fromCodePoint.apply(null, bytes)
+    //return decodeURIComponent(escape(encodedString))
+    return encodedString
   }
 
   /**

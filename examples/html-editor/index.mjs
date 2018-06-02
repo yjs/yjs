@@ -7,7 +7,8 @@ import YXmlFragment from '../../src/Types/YXml/YXmlFragment.mjs'
 
 const connector = new YWebsocketsConnector()
 const y = new Y('html-editor', null, null, { gc: true })
-connector.connectY('html-editor', y)
+connector.connectY('html-editor2', y)
+window.connector = connector
 
 window.onload = function () {
   window.domBinding = new DomBinding(window.yXmlType, document.body, { scrollingElement: document.scrollingElement })

@@ -6,6 +6,7 @@
   "browser": "./y.js",
   "module": "./src/y.js",
   "scripts": {
+    "start": "node --experimental-modules src/Connectors/WebsocketsConnector/server.mjs",
     "test": "npm run lint",
     "debug": "concurrently 'rollup -wc rollup.test.js' 'cutest-serve y.test.js -o'",
     "lint": "standard src/**/*.mjs test/**/*.mjs tests-lib/**/*.mjs",
@@ -16,6 +17,11 @@
     "postversion": "npm run dist",
     "postpublish": "tag-dist-files --overwrite-existing-tag",
     "demos": "concurrently 'node --experimental-modules src/Connectors/WebsocketsConnector/server.mjs' 'http-server'"
+  },
+  "now": {
+    "engines": {
+      "node": "10.x.x"
+    }
   },
   "files": [
     "y.*",
@@ -73,7 +79,9 @@
     "rollup-regenerator-runtime": "^6.23.1",
     "rollup-watch": "^3.2.2",
     "standard": "^11.0.1",
-    "tag-dist-files": "^0.1.6",
+    "tag-dist-files": "^0.1.6"
+  },
+  "dependencies": {
     "uws": "^10.148.0"
   }
 }

@@ -1,4 +1,3 @@
-
 // TODO: rename mutex
 
 /**
@@ -19,7 +18,7 @@
  */
 export function createMutualExclude () {
   var token = true
-  return function mutualExclude (f) {
+  return function mutualExclude (f, g) {
     if (token) {
       token = false
       try {
@@ -28,6 +27,8 @@ export function createMutualExclude () {
         console.error(e)
       }
       token = true
+    } else if (g !== undefined) {
+      g()
     }
   }
 }

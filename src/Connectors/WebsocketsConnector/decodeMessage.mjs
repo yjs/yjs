@@ -57,7 +57,7 @@ export function messageStructs (roomName, y, encoder, structsBinaryEncoder) {
  * @param {*} message The binary encoded message
  * @param {*} ws The connection object
  */
-export default function decodeMessage (connector, message, ws) {
+export default function decodeMessage (connector, message, ws, isServer = false) {
   const decoder = new BinaryDecoder(message)
   const encoder = new BinaryEncoder()
   while (decoder.hasContent()) {
@@ -77,13 +77,25 @@ export default function decodeMessage (connector, message, ws) {
         messageSS(roomName, y, encoder)
         break
       case CONTENT_SUBSCRIBE:
-        room.connections.add(ws)
+        connector.subscribe(roomName, ws)
         break
       case CONTENT_SS:
         // received state set
         // reply with missing content
         const ss = readStateSet(decoder)
-        messageStructsDSS(roomName, y, encoder, ss)
+        const sendStructsDSS = () => {
+          const encoder = new BinaryEncoder()
+          messageStructsDSS(roomName, y, encoder, ss)
+          if (isServer) {
+            messageSS(roomName, y, encoder)
+          }
+          connector.send(encoder, ws)
+        }
+        if (room.persistenceLoaded !== undefined) {
+          room.persistenceLoaded.then(sendStructsDSS)
+        } else {
+          sendStructsDSS()
+        }
         break
       case CONTENT_STRUCTS_DSS:
         connector._mutualExclude(() => {
