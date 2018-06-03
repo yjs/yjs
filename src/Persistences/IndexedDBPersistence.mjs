@@ -79,9 +79,6 @@ function saveUpdate (room, updateBuffer) {
       }
     })
     return updatePut
-  } else {
-    room.createdStructs.push(update)
-    return room.dbPromise
   }
 }
 
@@ -109,8 +106,7 @@ export default class IndexedDBPersistence {
       dbPromise: null,
       channel: null,
       mutex: createMutualExclude(),
-      y,
-      createdStructs: [] // document updates before db created
+      y
     }
     if (typeof BroadcastChannel !== 'undefined') {
       room.channel = new BroadcastChannel('__yjs__' + room)
@@ -134,9 +130,7 @@ export default class IndexedDBPersistence {
             room.channel.postMessage(updateBuffer)
           }
           if (transaction.encodedStructsLen > 0) {
-            if (room.db === null) {
-              room.createdStructs.push(updateBuffer)
-            } else {
+            if (room.db !== null) {
               saveUpdate(room, updateBuffer)
             }
           }
@@ -148,19 +142,19 @@ export default class IndexedDBPersistence {
         room.db = db
         const t = room.db.transaction(['updates'], 'readwrite')
         const updatesStore = t.objectStore('updates')
-        return rtop(updatesStore.getAll()).then(updates => {
-          // apply all previous updates before deleting them
-          room.mutex(() => {
-            y.transact(() => {
-              updates.forEach(update => {
-                decodePersisted(y, new BinaryDecoder(update))
-              })
-            }, true)
-          })
-          return Promise.all(room.createdStructs.map(update => {
-            return saveUpdate(room, update)
-          })).then(() => {
-            room.createdStructs = []
+        // write current state as update
+        const encoder = new BinaryEncoder()
+        encodeStructsDS(y, encoder)
+        return rtop(updatesStore.put(encoder.createBuffer())).then(() => {
+          // read persisted state
+          return rtop(updatesStore.getAll()).then(updates => {
+            room.mutex(() => {
+              y.transact(() => {
+                updates.forEach(update => {
+                  decodePersisted(y, new BinaryDecoder(update))
+                })
+              }, true)
+            })
           })
         })
       })
