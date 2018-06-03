@@ -4,10 +4,8 @@ import NamedEventHandler from '../../Util/NamedEventHandler.mjs'
 import decodeMessage, { messageSS, messageSubscribe, messageStructs } from './decodeMessage.mjs'
 import { createMutualExclude } from '../../Util/mutualExclude.mjs'
 
-export const STATE_CONNECTING = 0
-export const STATE_SYNCING = 1
-export const STATE_SYNCED = 2
-export const STATE_DISCONNECTED = 3
+export const STATE_DISCONNECTED = 0 
+export const STATE_CONNECTED = 1
 
 export default class WebsocketsConnector extends NamedEventHandler {
   constructor (url = 'ws://localhost:1234') {
@@ -44,20 +42,27 @@ export default class WebsocketsConnector extends NamedEventHandler {
         }
       })
     })
+    if (this._state === STATE_CONNECTED) {
+      const encoder = new BinaryEncoder()
+      messageSS(roomName, y, encoder)
+      messageSubscribe(roomName, y, encoder)
+      this.send(encoder)
+    }
   }
 
   _setState (state) {
-    this.emit('stateChanged', {
-      state
-    })
     this._state = state
+    this.emit('stateChanged', {
+      state: this.state
+    })
   }
 
   get state () {
-    return this._state
+    return this._state === STATE_DISCONNECTED ? 'disconnected' : 'connected'
   }
 
   _onOpen () {
+    this._setState(STATE_CONNECTED)
     const encoder = new BinaryEncoder()
     for (const [roomName, room] of this._rooms) {
       const y = room.y
@@ -74,6 +79,7 @@ export default class WebsocketsConnector extends NamedEventHandler {
   }
 
   _onClose () {
+    this._setState(STATE_DISCONNECTED)
     this._socket = null
     if (this._connectToServer) {
       setTimeout(() => {

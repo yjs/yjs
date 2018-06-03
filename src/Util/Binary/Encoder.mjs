@@ -167,12 +167,11 @@ export default class BinaryEncoder {
    * @param {String} str The string that is to be encoded.
    */
   writeVarString (str) {
-    let encodedString = unescape(encodeURIComponent(str))
-    let bytes = encodedString.split('').map(c => c.codePointAt())
-    let len = bytes.length
+    const encodedString = unescape(encodeURIComponent(str))
+    const len = encodedString.length
     this.writeVarUint(len)
     for (let i = 0; i < len; i++) {
-      this.write(bytes[i])
+      this.write(encodedString.codePointAt(i))
     }
   }
 

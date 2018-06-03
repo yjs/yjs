@@ -29,7 +29,7 @@ export function encodeStructsDS (y, encoder) {
 }
 
 /**
- *Feed the Yjs instance with the persisted state
+ * Feed the Yjs instance with the persisted state
  * @param {Yjs} y A Yjs instance.
  * @param {BinaryDecoder} decoder A Decoder instance that holds the file content.
  */
@@ -39,17 +39,13 @@ export function decodePersisted (y, decoder) {
       const contentType = decoder.readVarUint()
       switch (contentType) {
         case PERSIST_UPDATE:
-          y.transact(() => {
-            integrateRemoteStructs(y, decoder)
-          })
+          integrateRemoteStructs(y, decoder)
           break
         case PERSIST_STRUCTS_DS:
-          y.transact(() => {
-            integrateRemoteStructs(y, decoder)
-            readDeleteSet(y, decoder)
-          })
+          integrateRemoteStructs(y, decoder)
+          readDeleteSet(y, decoder)
           break
       }
     }
-  })
+  }, true)
 }

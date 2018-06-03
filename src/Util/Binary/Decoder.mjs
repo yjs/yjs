@@ -113,20 +113,36 @@ export default class BinaryDecoder {
    * Read string of variable length
    * * varUint is used to store the length of the string
    *
+   * Transforming utf8 to a string is pretty expensive. The code performs 10x better
+   * when String.fromCodePoint is fed with all characters as arguments.
+   * But most environments have a maximum number of arguments per functions.
+   * For effiency reasons we apply a maximum of 10000 characters at once.
+   * 
    * @return {String} The read String.
    */
   readVarString () {
-    let len = this.readVarUint()
+    let remainingLen = this.readVarUint()
     let encodedString = ''
+    let i = 0
+    while (remainingLen > 0) {
+      const nextLen = Math.min(remainingLen, 10000)
+      const bytes = new Array(nextLen)
+      for (let i = 0; i < nextLen; i++) {
+        bytes[i] = this.uint8arr[this.pos++]
+      }
+      encodedString += String.fromCodePoint.apply(null, bytes)
+      remainingLen -= nextLen
+    }
+    /*
     //let bytes = new Array(len)
     for (let i = 0; i < len; i++) {
       //bytes[i] = this.uint8arr[this.pos++]
-      // encodedString += String.fromCodePoint(this.uint8arr[this.pos++])
-      encodedString += String(this.uint8arr[this.pos++])
+      encodedString += String.fromCodePoint(this.uint8arr[this.pos++])
+      // encodedString += String(this.uint8arr[this.pos++])
     }
+    */
     //let encodedString = String.fromCodePoint.apply(null, bytes)
-    //return decodeURIComponent(escape(encodedString))
-    return encodedString
+    return decodeURIComponent(escape(encodedString))
   }
 
   /**

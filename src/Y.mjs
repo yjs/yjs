@@ -246,6 +246,7 @@ export default class Y extends NamedEventHandler {
    * Persisted data will remain until removed by the persistence adapter.
    */
   destroy () {
+    this.emit('destroyed', true)
     super.destroy()
     this.share = null
     if (this.connector != null) {
