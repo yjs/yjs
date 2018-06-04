@@ -8,34 +8,52 @@ import YIndexdDBPersistence from '../../src/Persistences/IndexedDBPersistence.mj
 
 const connector = new YWebsocketsConnector()
 const persistence = new YIndexdDBPersistence()
-const y = new Y('html-editor', null, null, { gc: true })
-persistence.connectY('html-editor', y).then(() => {
-  // connect after persisted content was applied to y
-  // If we don't wait for persistence, the other peer will send all data, waisting
-  // network bandwidth..
-  connector.connectY('html-editor', y)
-})
+
+const roomInput = document.querySelector('#room')
+
+let currentRoomName = null
+let y = null
+let domBinding = null
+
+function setRoomName (roomName) {
+  if (currentRoomName !== roomName) {
+    console.log(`change room: "${roomName}"`)
+    roomInput.value = roomName
+    currentRoomName = roomName
+    location.hash = '#' + roomName
+    if (y !== null) {
+      domBinding.destroy()
+    }
+
+    const room = connector._rooms.get(roomName)
+    if (room !== undefined) {
+      y = room.y
+    } else {
+      y = new Y(roomName, null, null, { gc: true })
+      persistence.connectY(roomName, y).then(() => {
+        // connect after persisted content was applied to y
+        // If we don't wait for persistence, the other peer will send all data, waisting
+        // network bandwidth..
+        connector.connectY(roomName, y)
+      })
+    }
+
+    window.y = y
+    window.yXmlType = y.define('xml', YXmlFragment)
+
+    domBinding = new DomBinding(window.yXmlType, document.querySelector('#content'), { scrollingElement: document.scrollingElement })
+  }
+}
+
+connector.syncPersistence(persistence)
 
 window.connector = connector
 window.persistence = persistence
 
 window.onload = function () {
-  window.domBinding = new DomBinding(window.yXmlType, document.body, { scrollingElement: document.scrollingElement })
-}
-
-window.y = y
-window.yXmlType = y.define('xml', YXmlFragment)
-window.undoManager = new UndoManager(window.yXmlType, {
-  captureTimeout: 500
-})
-
-document.onkeydown = function interceptUndoRedo (e) {
-  if (e.keyCode === 90 && (e.metaKey || e.ctrlKey)) {
-    if (!e.shiftKey) {
-      window.undoManager.undo()
-    } else {
-      window.undoManager.redo()
-    }
-    e.preventDefault()
-  }
+  setRoomName((location.hash || '#default').slice(1))
+  roomInput.addEventListener('input', e => {
+    const roomName = e.target.value
+    setRoomName(roomName)
+  })
 }

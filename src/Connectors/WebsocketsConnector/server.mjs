@@ -28,6 +28,7 @@ const wss = new WebsocketsServer({
  * Set of room names that are scheduled to be sweeped (destroyed because they don't have a connection anymore)
  */
 const scheduledSweeps = new Set()
+/* TODO: enable sweeping
 setInterval(function sweepRoomes () {
   scheduledSweeps.forEach(roomName => {
     const room = rooms.get(roomName)
@@ -43,7 +44,7 @@ setInterval(function sweepRoomes () {
     }
   })
   scheduledSweeps.clear()
-}, 5000)
+}, 5000) */ 
 
 const wsConnector = {
   send: (encoder, ws) => {
@@ -66,6 +67,13 @@ const wsConnector = {
     if (room === undefined) {
       const y = new Y(roomName, null, null, { gc: true })
       const persistenceLoaded = persistence.readState(roomName, y)
+      room = {
+        name: roomName,
+        connections: new Set(),
+        y,
+        persistenceLoaded,
+        localUpdateCounter: 1
+      }
       y.on('afterTransaction', (y, transaction) => {
         if (transaction.encodedStructsLen > 0) {
           // save to persistence
@@ -73,7 +81,7 @@ const wsConnector = {
           // forward update to clients
           persistence._mutex(() => { // do not broadcast if persistence.readState is called
             const encoder = new BinaryEncoder()
-            messageStructs(roomName, y, encoder, transaction.encodedStructs)
+            messageStructs(roomName, y, encoder, transaction.encodedStructs, ++room.localUpdateCounter)
             const message = encoder.createBuffer()
             // when changed, broakcast update to all connections
             room.connections.forEach(conn => {
@@ -82,12 +90,6 @@ const wsConnector = {
           })
         }
       })
-      room = {
-        name: roomName,
-        connections: new Set(),
-        y,
-        persistenceLoaded
-      }
       rooms.set(roomName, room)
     }
     return room
@@ -97,7 +99,7 @@ const wsConnector = {
 wss.on('connection', (ws) => {
   ws.on('message', function onWSMessage (message) {
     if (message.byteLength > 0) {
-      const reply = decodeMessage(wsConnector, message, ws, true)
+      const reply = decodeMessage(wsConnector, message, ws, true, persistence)
       if (reply.length > 0) {
         ws.send(reply.createBuffer(), null, null, true)
       }

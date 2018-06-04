@@ -46,6 +46,18 @@ export default class BinaryDecoder {
     return this.uint8arr.length
   }
 
+
+  /**
+   * Read `len` bytes as an ArrayBuffer.
+   */
+  readArrayBuffer (len) {
+    const arrayBuffer = new Uint8Array(len)
+    const view = new Uint8Array(this.uint8arr.buffer, this.pos, len)
+    arrayBuffer.set(view)
+    this.pos += len
+    return arrayBuffer.buffer
+  }
+
   /**
    * Skip one byte, jump to the next position.
    */

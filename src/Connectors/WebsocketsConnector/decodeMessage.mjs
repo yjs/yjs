@@ -18,9 +18,6 @@ export function messageSubscribe (roomName, y, encoder) {
 }
 
 const CONTENT_SS = 0
-/**
- * Message the current state set. The other side must respond with CONTENT_STRUCTS_DSS
- */
 export function messageSS (roomName, y, encoder) {
   encoder.writeVarString(roomName)
   encoder.writeVarUint(CONTENT_SS)
@@ -28,18 +25,31 @@ export function messageSS (roomName, y, encoder) {
 }
 
 const CONTENT_STRUCTS_DSS = 2
-export function messageStructsDSS (roomName, y, encoder, ss) {
+export function messageStructsDSS (roomName, y, encoder, ss, updateCounter) {
   encoder.writeVarString(roomName)
   encoder.writeVarUint(CONTENT_STRUCTS_DSS)
-  writeStructs(y, encoder, ss)
-  writeDeleteSet(y, encoder)
+  encoder.writeVarUint(updateCounter)
+  const structsDS = new BinaryEncoder()
+  writeStructs(y, structsDS, ss)
+  writeDeleteSet(y, structsDS)
+  encoder.writeVarUint(structsDS.length)
+  encoder.writeBinaryEncoder(structsDS)
 }
 
 const CONTENT_STRUCTS = 5
-export function messageStructs (roomName, y, encoder, structsBinaryEncoder) {
+export function messageStructs (roomName, y, encoder, structsBinaryEncoder, updateCounter) {
   encoder.writeVarString(roomName)
   encoder.writeVarUint(CONTENT_STRUCTS)
+  encoder.writeVarUint(updateCounter)
+  encoder.writeVarUint(structsBinaryEncoder.length)
   encoder.writeBinaryEncoder(structsBinaryEncoder)
+}
+
+const CONTENT_CHECK_COUNTER = 6
+export function messageCheckUpdateCounter (roomName, encoder, updateCounter = 0) {
+  encoder.writeVarString(roomName)
+  encoder.writeVarUint(CONTENT_CHECK_COUNTER)
+  encoder.writeVarUint(updateCounter)
 }
 
 /**
@@ -57,7 +67,7 @@ export function messageStructs (roomName, y, encoder, structsBinaryEncoder) {
  * @param {*} message The binary encoded message
  * @param {*} ws The connection object
  */
-export default function decodeMessage (connector, message, ws, isServer = false) {
+export default function decodeMessage (connector, message, ws, isServer = false, persistence) {
   const decoder = new BinaryDecoder(message)
   const encoder = new BinaryEncoder()
   while (decoder.hasContent()) {
@@ -66,15 +76,38 @@ export default function decodeMessage (connector, message, ws, isServer = false)
     const room = connector.getRoom(roomName)
     const y = room.y
     switch (contentType) {
+      case CONTENT_CHECK_COUNTER:
+        const updateCounter = decoder.readVarUint()
+        if (room.localUpdateCounter !== updateCounter) {
+          messageGetSS(roomName, y, encoder)
+        }
+        connector.subscribe(roomName, ws)
+        break
       case CONTENT_STRUCTS:
+        console.log(`${roomName}: received update`)
         connector._mutualExclude(() => {
-          y.transact(() => {
-            integrateRemoteStructs(y, decoder)
-          }, true)
+          const remoteUpdateCounter = decoder.readVarUint()
+          persistence.setRemoteUpdateCounter(roomName, remoteUpdateCounter)
+          const messageLen = decoder.readVarUint()
+          if (y === null) {
+            persistence._persistStructs(roomName, decoder.readArrayBuffer(messageLen))
+          } else {
+            y.transact(() => {
+              integrateRemoteStructs(y, decoder)
+            }, true)
+          }
         })
         break
       case CONTENT_GET_SS:
-        messageSS(roomName, y, encoder)
+        if (y !== null) {
+          messageSS(roomName, y, encoder)
+        } else {
+          persistence._createYInstance(roomName).then(y => {
+            const encoder = new BinaryEncoder()
+            messageSS(roomName, y, encoder)
+            connector.send(encoder, ws)
+          })
+        }
         break
       case CONTENT_SUBSCRIBE:
         connector.subscribe(roomName, ws)
@@ -84,12 +117,14 @@ export default function decodeMessage (connector, message, ws, isServer = false)
         // reply with missing content
         const ss = readStateSet(decoder)
         const sendStructsDSS = () => {
-          const encoder = new BinaryEncoder()
-          messageStructsDSS(roomName, y, encoder, ss)
-          if (isServer) {
-            messageSS(roomName, y, encoder)
+          if (y !== null) { // TODO: how to sync local content?
+            const encoder = new BinaryEncoder()
+            messageStructsDSS(roomName, y, encoder, ss, room.localUpdateCounter) // room.localUpdateHandler in case it changes
+            if (isServer) {
+              messageSS(roomName, y, encoder)
+            }
+            connector.send(encoder, ws)
           }
-          connector.send(encoder, ws)
         }
         if (room.persistenceLoaded !== undefined) {
           room.persistenceLoaded.then(sendStructsDSS)
@@ -98,11 +133,19 @@ export default function decodeMessage (connector, message, ws, isServer = false)
         }
         break
       case CONTENT_STRUCTS_DSS:
+        console.log(`${roomName}: synced`)
         connector._mutualExclude(() => {
-          y.transact(() => {
-            integrateRemoteStructs(y, decoder)
-            readDeleteSet(y, decoder)
-          }, true)
+          const remoteUpdateCounter = decoder.readVarUint()
+          persistence.setRemoteUpdateCounter(roomName, remoteUpdateCounter)
+          const messageLen = decoder.readVarUint()
+          if (y === null) {
+            persistence._persistStructsDS(roomName, decoder.readArrayBuffer(messageLen))
+          } else {
+            y.transact(() => {
+              integrateRemoteStructs(y, decoder)
+              readDeleteSet(y, decoder)
+            }, true)
+          }
         })
         break
       default:

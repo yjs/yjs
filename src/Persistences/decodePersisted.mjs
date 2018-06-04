@@ -2,7 +2,7 @@ import { integrateRemoteStructs } from '../MessageHandler/integrateRemoteStructs
 import { writeStructs } from '../MessageHandler/syncStep1.mjs'
 import { writeDeleteSet, readDeleteSet } from '../MessageHandler/deleteSet.mjs'
 
-const PERSIST_UPDATE = 0
+export const PERSIST_UPDATE = 0
 /**
  * Write an update to an encoder.
  *
@@ -14,7 +14,7 @@ export function encodeUpdate (y, updateEncoder, encoder) {
   encoder.writeBinaryEncoder(updateEncoder)
 }
 
-const PERSIST_STRUCTS_DS = 1
+export const PERSIST_STRUCTS_DS = 1
 
 /**
  * Write the current Yjs data model to an encoder.

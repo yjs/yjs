@@ -181,9 +181,13 @@ export default class BinaryEncoder {
    * @param encoder The BinaryEncoder to be written.
    */
   writeBinaryEncoder (encoder) {
+    this.writeArrayBuffer(encoder.createBuffer())
+  }
+
+  writeArrayBuffer (arrayBuffer) {
     const prevBufferLen = this._currentBuffer.length
     this._data.push(new Uint8Array(this._currentBuffer.buffer, 0, this._currentPos))
-    this._data.push(new Uint8Array(encoder.createBuffer()))
+    this._data.push(new Uint8Array(arrayBuffer))
     this._currentBuffer = new Uint8Array(prevBufferLen)
     this._currentPos = 0
   }

@@ -5,6 +5,8 @@ import { createMutualExclude } from '../Util/mutualExclude.mjs'
 import { decodePersisted, encodeStructsDS, encodeUpdate } from './decodePersisted.mjs'
 import BinaryDecoder from '../Util/Binary/Decoder.mjs'
 import BinaryEncoder from '../Util/Binary/Encoder.mjs'
+import { PERSIST_STRUCTS_DS } from './decodePersisted.mjs';
+import { PERSIST_UPDATE } from './decodePersisted.mjs';
 /*
  * Request to Promise transformer
  */
@@ -82,21 +84,110 @@ function saveUpdate (room, updateBuffer) {
   }
 }
 
+function registerRoomInPersistence (documentsDB, roomName) {
+  return documentsDB.then(
+    db => Promise.all([
+      db,
+      rtop(db.transaction(['documents'], 'readonly').objectStore('documents').get(roomName))
+    ])
+  ).then(
+    ([db, doc]) => {
+      if (doc === undefined) {
+        return rtop(db.transaction(['documents'], 'readwrite').objectStore('documents').add({ roomName, serverUpdateCounter: 0 }))
+      }
+    }
+  )
+}
+
 const PREFERRED_TRIM_SIZE = 400
 
 export default class IndexedDBPersistence {
   constructor () {
     this._rooms = new Map()
+    this._documentsDB = new Promise(function (resolve, reject) {
+      let request = indexedDB.open('_yjs_documents')
+      request.onupgradeneeded = function (event) {
+        const db = event.target.result
+        if (db.objectStoreNames.contains('documents')) {
+          db.deleteObjectStore('documents')
+        }
+        db.createObjectStore('documents', { keyPath: "roomName" })
+      }
+      request.onerror = function (event) {
+        reject(new Error(event.target.error))
+      }
+      request.onblocked = function () {
+        location.reload()
+      }
+      request.onsuccess = function (event) {
+        const db = event.target.result
+        db.onversionchange = function () { db.close() }
+        resolve(db)
+      }
+    })
     addEventListener('unload', () => {
+      // close everything when page unloads
       this._rooms.forEach(room => {
         if (room.db !== null) {
           room.db.close()
         } else {
-          room._db.then(db => db.close())
+          room.dbPromise.then(db => db.close())
         }
       })
+      this._documentsDB.then(db => db.close())
     })
   }
+  getAllDocuments () {
+    return this._documentsDB.then(
+      db => rtop(db.transaction(['documents'], 'readonly').objectStore('documents').getAll())
+    )
+  }
+  setRemoteUpdateCounter (roomName, remoteUpdateCounter) {
+    this._documentsDB.then(
+      db => rtop(db.transaction(['documents'], 'readwrite').objectStore('documents').put({ roomName, remoteUpdateCounter }))
+    )
+  }
+
+  _createYInstance (roomName) {
+    const room = this._rooms.get(roomName)
+    if (room !== undefined) {
+      return room.y
+    }
+    const y = new Y()
+    return openDB(roomName).then(
+      db => rtop(db.transaction(['updates'], 'readonly').objectStore('updates').getAll())
+    ).then(
+      updates =>
+        y.transact(() => {
+          updates.forEach(update => {
+            decodePersisted(y, new BinaryDecoder(update))
+          })
+        }, true)
+    ).then(() => Promise.resolve(y))
+  }
+
+  _persistStructsDS (roomName, structsDS) {
+    const encoder = new BinaryEncoder()
+    encoder.writeVarUint(PERSIST_STRUCTS_DS)
+    encoder.writeArrayBuffer(structsDS)
+    return openDB(roomName).then(db => {
+      const t = db.transaction(['updates'], 'readwrite')
+      const updatesStore = t.objectStore('updates')
+      return rtop(updatesStore.put(encoder.createBuffer()))
+    })
+  }
+
+  _persistStructs (roomName, structs) {
+    const encoder = new BinaryEncoder()
+    encoder.writeVarUint(PERSIST_UPDATE)
+    encoder.writeArrayBuffer(structs)
+    return openDB(roomName).then(db => {
+      const t = db.transaction(['updates'], 'readwrite')
+      const updatesStore = t.objectStore('updates')
+      return rtop(updatesStore.put(encoder.createBuffer()))
+    })
+  }
+
   connectY (roomName, y) {
     if (this._rooms.has(roomName)) {
       throw new Error('A Y instance is already bound to this room!')
@@ -109,7 +200,7 @@ export default class IndexedDBPersistence {
       y
     }
     if (typeof BroadcastChannel !== 'undefined') {
-      room.channel = new BroadcastChannel('__yjs__' + room)
+      room.channel = new BroadcastChannel('__yjs__' + roomName)
       room.channel.addEventListener('message', e => {
         room.mutex(function () {
           decodePersisted(y, new BinaryDecoder(e.data))
@@ -137,6 +228,15 @@ export default class IndexedDBPersistence {
         }
       })
     })
+    // register document in documentsDB
+    this._documentsDB.then(
+      db => 
+        rtop(db.transaction(['documents'], 'readonly').objectStore('documents').get(roomName))
+          .then(
+            doc => doc === undefined && rtop(db.transaction(['documents'], 'readwrite').objectStore('documents').add({ roomName, serverUpdateCounter: -1 }))
+          )
+    )
+    // open room db and read existing data
     return room.dbPromise = openDB(roomName)
       .then(db => {
         room.db = db

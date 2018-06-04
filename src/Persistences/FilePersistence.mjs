@@ -6,6 +6,7 @@ import { createMutualExclude } from '../Util/mutualExclude.mjs'
 import { encodeUpdate, encodeStructsDS, decodePersisted } from './decodePersisted.mjs'
 
 function createFilePath (persistence, roomName) {
+  // TODO: filename checking!
   return path.join(persistence.dir, roomName)
 }
 
@@ -13,6 +14,10 @@ export default class FilePersistence {
   constructor (dir) {
     this.dir = dir
     this._mutex = createMutualExclude()
+  }
+  setRemoteUpdateCounter (roomName, remoteUpdateCounter) {
+    // TODO: implement
+    // nop
   }
   saveUpdate (room, y, encodedStructs) {
     return new Promise((resolve, reject) => {
