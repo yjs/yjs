@@ -4,6 +4,8 @@ import Y from '../../src/Y.mjs'
 import DomBinding from '../../src/Bindings/DomBinding/DomBinding.mjs'
 import UndoManager from '../../src/Util/UndoManager.mjs'
 import YXmlFragment from '../../src/Types/YXml/YXmlFragment.mjs'
+import YXmlText from '../../src/Types/YXml/YXmlText.mjs'
+import YXmlElement from '../../src/Types/YXml/YXmlElement.mjs'
 import YIndexdDBPersistence from '../../src/Persistences/IndexedDBPersistence.mjs'
 
 const connector = new YWebsocketsConnector()
@@ -36,6 +38,7 @@ function setRoomName (roomName) {
         // network bandwidth..
         connector.connectY(roomName, y)
       })
+      window.y = y
     }
 
     window.y = y
@@ -43,6 +46,21 @@ function setRoomName (roomName) {
 
     domBinding = new DomBinding(window.yXmlType, document.querySelector('#content'), { scrollingElement: document.scrollingElement })
   }
+}
+window.setRoomName = setRoomName
+
+window.createRooms = function (i = 0) {
+  setInterval(function () {
+    setRoomName(i + '')
+    i++
+    const nodes = []
+    for (let j = 0; j < 100; j++) {
+      const node = new YXmlElement('p')
+      node.insert(0, [new YXmlText(`This is the ${i}th paragraph of room ${i}`)])
+      nodes.push(node)
+    }
+    y.share.xml.insert(0, nodes)
+  }, 100)
 }
 
 connector.syncPersistence(persistence)
