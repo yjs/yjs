@@ -120,7 +120,7 @@ export default class Item {
    *
    * @private
    */
-  _redo (y) {
+  _redo (y, redoitems) {
     if (this._redone !== null) {
       return this._redone
     }
@@ -130,7 +130,10 @@ export default class Item {
     let parent = this._parent
     // make sure that parent is redone
     if (parent._deleted === true && parent._redone === null) {
-      parent._redo(y)
+      // try to undo parent if it will be undone anyway
+      if (!redoitems.has(parent) || !parent._redo(y, redoitems)) {
+        return false
+      }
     }
     if (parent._redone !== null) {
       parent = parent._redone
@@ -157,7 +160,7 @@ export default class Item {
     struct._parentSub = this._parentSub
     struct._integrate(y)
     this._redone = struct
-    return struct
+    return true
   }
 
   /**

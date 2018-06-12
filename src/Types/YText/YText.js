@@ -254,7 +254,7 @@ function deleteText (y, length, parent, left, right, currentAttributes) {
  * @typedef {Array<Object>} Delta
  */
 
- /**
+/**
   * Attributes that can be assigned to a selection of text.
   *
   * @example

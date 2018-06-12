@@ -1,8 +1,9 @@
-/* global MutationObserver */
+/* global MutationObserver, getSelection */
 
+import { fromRelativePosition } from '../../Util/relativePosition.js'
 import Binding from '../Binding.js'
 import { createAssociation, removeAssociation } from './util.js'
-import { beforeTransactionSelectionFixer, afterTransactionSelectionFixer } from './selection.js'
+import { beforeTransactionSelectionFixer, afterTransactionSelectionFixer, getCurrentRelativeSelection } from './selection.js'
 import { defaultFilter, applyFilterOnType } from './filter.js'
 import typeObserver from './typeObserver.js'
 import domObserver from './domObserver.js'
@@ -67,16 +68,25 @@ export default class DomBinding extends Binding {
       characterData: true,
       subtree: true
     })
+    this._currentSel = null
+    document.addEventListener('selectionchange', () => {
+      this._currentSel = getCurrentRelativeSelection(this)
+    })
     const y = type._y
+    this.y = y
     // Force flush dom changes before Type changes are applied (they might
     // modify the dom)
     this._beforeTransactionHandler = (y, transaction, remote) => {
       this._domObserver(this._mutationObserver.takeRecords())
-      beforeTransactionSelectionFixer(y, this, transaction, remote)
+      this._mutualExclude(() => {
+        beforeTransactionSelectionFixer(this, remote)
+      })
     }
     y.on('beforeTransaction', this._beforeTransactionHandler)
     this._afterTransactionHandler = (y, transaction, remote) => {
-      afterTransactionSelectionFixer(y, this, transaction, remote)
+      this._mutualExclude(() => {
+        afterTransactionSelectionFixer(this, remote)
+      })
       // remove associations
       // TODO: this could be done more efficiently
       // e.g. Always delete using the following approach, or removeAssociation
@@ -115,6 +125,67 @@ export default class DomBinding extends Binding {
     // TODO: apply filter to all elements
   }
 
+  _getUndoStackInfo () {
+    return this.getSelection()
+  }
+
+  _restoreUndoStackInfo (info) {
+    this.restoreSelection(info)
+  }
+
+  getSelection () {
+    return this._currentSel
+  }
+
+  restoreSelection (selection) {
+    if (selection !== null) {
+      const { to, from } = selection
+      let shouldUpdate = false
+      /**
+       * There is little information on the difference between anchor/focus and base/extent.
+       * MDN doesn't even mention base/extent anymore.. though you still have to call
+       * setBaseAndExtent to change the selection..
+       * I can observe that base/extend refer to notes higher up in the xml hierachy.
+       * Espesially for undo/redo this is preferred. If this becomes a problem in the future,
+       * we should probably go back to anchor/focus.
+       */
+      const browserSelection = getSelection()
+      let { baseNode, baseOffset, extentNode, extentOffset } = browserSelection
+      if (from !== null) {
+        let sel = fromRelativePosition(this.y, from)
+        if (sel !== null) {
+          let node = this.typeToDom.get(sel.type)
+          let offset = sel.offset
+          if (node !== baseNode || offset !== baseOffset) {
+            baseNode = node
+            baseOffset = offset
+            shouldUpdate = true
+          }
+        }
+      }
+      if (to !== null) {
+        let sel = fromRelativePosition(this.y, to)
+        if (sel !== null) {
+          let node = this.typeToDom.get(sel.type)
+          let offset = sel.offset
+          if (node !== extentNode || offset !== extentOffset) {
+            extentNode = node
+            extentOffset = offset
+            shouldUpdate = true
+          }
+        }
+      }
+      if (shouldUpdate) {
+        browserSelection.setBaseAndExtent(
+          baseNode,
+          baseOffset,
+          extentNode,
+          extentOffset
+        )
+      }
+    }
+  }
+
   /**
    * Remove all properties that are handled by this class.
    */
@@ -130,11 +201,10 @@ export default class DomBinding extends Binding {
     super.destroy()
   }
 }
-
-  /**
-   * A filter defines which elements and attributes to share.
-   * Return null if the node should be filtered. Otherwise return the Map of
-   * accepted attributes.
-   *
-   * @typedef {function(nodeName: String, attrs: Map): Map|null} FilterFunction
-   */
+/**
+ * A filter defines which elements and attributes to share.
+ * Return null if the node should be filtered. Otherwise return the Map of
+ * accepted attributes.
+ *
+ * @typedef {function(nodeName: String, attrs: Map): Map|null} FilterFunction
+ */

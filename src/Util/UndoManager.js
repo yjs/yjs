@@ -2,7 +2,7 @@ import ID from './ID/ID.js'
 import isParentOf from './isParentOf.js'
 
 class ReverseOperation {
-  constructor (y, transaction) {
+  constructor (y, transaction, bindingInfos) {
     this.created = new Date()
     const beforeState = transaction.beforeState
     if (beforeState.has(y.userID)) {
@@ -12,15 +12,26 @@ class ReverseOperation {
       this.toState = null
       this.fromState = null
     }
-    this.deletedStructs = transaction.deletedStructs
+    this.deletedStructs = new Set()
+    transaction.deletedStructs.forEach(struct => {
+      this.deletedStructs.add({
+        from: struct._id,
+        len: struct._length
+      })
+    })
+    /**
+     * Maps from binding to binding information (e.g. cursor information)
+     */
+    this.bindingInfos = bindingInfos
   }
 }
 
 function applyReverseOperation (y, scope, reverseBuffer) {
   let performedUndo = false
+  let undoOp
   y.transact(() => {
     while (!performedUndo && reverseBuffer.length > 0) {
-      let undoOp = reverseBuffer.pop()
+      undoOp = reverseBuffer.pop()
       // make sure that it is possible to iterate {from}-{to}
       if (undoOp.fromState !== null) {
         y.os.getItemCleanStart(undoOp.fromState)
@@ -35,23 +46,39 @@ function applyReverseOperation (y, scope, reverseBuffer) {
           }
         })
       }
-      for (let op of undoOp.deletedStructs) {
-        if (
-          isParentOf(scope, op) &&
-          op._parent !== y &&
-          (
-            op._id.user !== y.userID ||
-            undoOp.fromState === null ||
-            op._id.clock < undoOp.fromState.clock ||
-            op._id.clock > undoOp.toState.clock
-          )
-        ) {
-          performedUndo = true
-          op._redo(y)
-        }
+      const redoitems = new Set()
+      for (let del of undoOp.deletedStructs) {
+        const fromState = del.from
+        const toState = new ID(fromState.user, fromState.clock + del.len - 1)
+        y.os.getItemCleanStart(fromState)
+        y.os.getItemCleanEnd(toState)
+        y.os.iterate(fromState, toState, op => {
+          if (
+            isParentOf(scope, op) &&
+            op._parent !== y &&
+            (
+              op._id.user !== y.userID ||
+              undoOp.fromState === null ||
+              op._id.clock < undoOp.fromState.clock ||
+              op._id.clock > undoOp.toState.clock
+            )
+          ) {
+            redoitems.add(op)
+          }
+        })
       }
+      redoitems.forEach(op => {
+        const opUndone = op._redo(y, redoitems)
+        performedUndo = performedUndo || opUndone
+      })
     }
   })
+  if (performedUndo) {
+    // should be performed after the undo transaction
+    undoOp.bindingInfos.forEach((info, binding) => {
+      binding._restoreUndoStackInfo(info)
+    })
+  }
   return performedUndo
 }
 
@@ -66,6 +93,7 @@ export default class UndoManager {
    */
   constructor (scope, options = {}) {
     this.options = options
+    this._bindings = new Set(options.bindings)
     options.captureTimeout = options.captureTimeout == null ? 500 : options.captureTimeout
     this._undoBuffer = []
     this._redoBuffer = []
@@ -76,16 +104,28 @@ export default class UndoManager {
     const y = scope._y
     this.y = y
     y._hasUndoManager = true
+    let bindingInfos
+    y.on('beforeTransaction', (y, transaction, remote) => {
+      if (!remote) {
+        // Store binding information before transaction is executed
+        // By restoring the binding information, we can make sure that the state
+        // before the transaction can be recovered
+        bindingInfos = new Map()
+        this._bindings.forEach(binding => {
+          bindingInfos.set(binding, binding._getUndoStackInfo())
+        })
+      }
+    })
     y.on('afterTransaction', (y, transaction, remote) => {
       if (!remote && transaction.changedParentTypes.has(scope)) {
-        let reverseOperation = new ReverseOperation(y, transaction)
+        let reverseOperation = new ReverseOperation(y, transaction, bindingInfos)
         if (!this._undoing) {
           let lastUndoOp = this._undoBuffer.length > 0 ? this._undoBuffer[this._undoBuffer.length - 1] : null
           if (
             this._redoing === false &&
             this._lastTransactionWasUndo === false &&
             lastUndoOp !== null &&
-            reverseOperation.created - lastUndoOp.created <= options.captureTimeout
+            (options.captureTimeout < 0 || reverseOperation.created - lastUndoOp.created <= options.captureTimeout)
           ) {
             lastUndoOp.created = reverseOperation.created
             if (reverseOperation.toState !== null) {
@@ -108,6 +148,13 @@ export default class UndoManager {
         }
       }
     })
+  }
+
+  /**
+   * Enforce that the next change is created as a separate item in the undo stack
+   */
+  flushChanges () {
+    this._lastTransactionWasUndo = true
   }
 
   /**

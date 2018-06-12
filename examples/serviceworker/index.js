@@ -35,7 +35,7 @@ Y({
       toolbar: [
         [{ size: ['small', false, 'large', 'huge'] }],
         ['bold', 'italic', 'underline'],
-        [{ color: [] }, { background: [] }],    // Snow theme fills in values
+        [{ color: [] }, { background: [] }], // Snow theme fills in values
         [{ script: 'sub' }, { script: 'super' }],
         ['link', 'image'],
         ['link', 'code-block'],

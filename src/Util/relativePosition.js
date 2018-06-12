@@ -76,7 +76,10 @@ export function fromRelativePosition (y, rpos) {
     } else {
       id = new RootID(rpos[3], rpos[4])
     }
-    const type = y.os.get(id)
+    let type = y.os.get(id)
+    while (type._redone !== null) {
+      type = type._redone
+    }
     if (type === null || type.constructor === GC) {
       return null
     }
@@ -87,12 +90,16 @@ export function fromRelativePosition (y, rpos) {
   } else {
     let offset = 0
     let struct = y.os.findNodeWithUpperBound(new ID(rpos[0], rpos[1])).val
+    const diff = rpos[1] - struct._id.clock
+    while (struct._redone !== null) {
+      struct = struct._redone
+    }
     const parent = struct._parent
     if (struct.constructor === GC || parent._deleted) {
       return null
     }
     if (!struct._deleted) {
-      offset = rpos[1] - struct._id.clock
+      offset = diff
     }
     struct = struct._left
     while (struct !== null) {

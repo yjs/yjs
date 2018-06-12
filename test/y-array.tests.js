@@ -111,7 +111,7 @@ function compareEvent (t, is, should) {
     t.assert(
       should[key] === is[key] ||
       JSON.stringify(should[key]) === JSON.stringify(is[key])
-    , 'event works as expected'
+      , 'event works as expected'
     )
   }
 }

@@ -13,7 +13,7 @@ let quill = new Quill('#quill-container', {
       [{ header: [1, 2, false] }],
       ['bold', 'italic', 'underline'],
       ['image', 'code-block'],
-      [{ color: [] }, { background: [] }],    // Snow theme fills in values
+      [{ color: [] }, { background: [] }], // Snow theme fills in values
       [{ script: 'sub' }, { script: 'super' }],
       ['link', 'image'],
       ['link', 'code-block'],
@@ -21,7 +21,7 @@ let quill = new Quill('#quill-container', {
     ]
   },
   placeholder: 'Compose an epic...',
-  theme: 'snow'  // or 'bubble'
+  theme: 'snow' // or 'bubble'
 })
 
 let yText = y.define('quill', Y.Text)
