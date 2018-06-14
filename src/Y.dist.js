@@ -20,6 +20,7 @@ import { registerStruct } from './Util/structReferences.js'
 import TextareaBinding from './Bindings/TextareaBinding/TextareaBinding.js'
 import QuillBinding from './Bindings/QuillBinding/QuillBinding.js'
 import DomBinding from './Bindings/DomBinding/DomBinding.js'
+import CodeMirrorBinding from './Bindings/CodeMirrorBinding/CodeMirrorBinding.js'
 import { toBinary, fromBinary } from './MessageHandler/binaryEncode.js'
 
 import debug from 'debug'
@@ -40,6 +41,7 @@ Y.XmlHook = YXmlHook
 Y.TextareaBinding = TextareaBinding
 Y.QuillBinding = QuillBinding
 Y.DomBinding = DomBinding
+Y.CodeMirrorBinding = CodeMirrorBinding
 
 DomBinding.domToType = domToType
 DomBinding.domsToTypes = domsToTypes
