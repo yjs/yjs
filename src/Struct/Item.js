@@ -87,7 +87,7 @@ export default class Item {
      * If the parent refers to this item with some kind of key (e.g. YMap, the
      * key is specified here. The key is then used to refer to the list in which
      * to insert this item. If `parentSub = null` type._start is the list in
-     * which to insert to. Otherwise it is `parent._start`.
+     * which to insert to. Otherwise it is `parent._map`.
      * @type {String}
      */
     this._parentSub = null
@@ -125,8 +125,17 @@ export default class Item {
       return this._redone
     }
     let struct = this._copy()
-    let left = this._left
-    let right = this
+    let left, right
+    if (this._parentSub === null) {
+      // Is an array item. Insert at the old position
+      left = this._left
+      right = this
+    } else {
+      // Is a map item. Insert at the start
+      left = null
+      right = this._parent._map.get(this._parentSub)
+      right._delete(y)
+    }
     let parent = this._parent
     // make sure that parent is redone
     if (parent._deleted === true && parent._redone === null) {
