@@ -140,7 +140,6 @@ export default class DomBinding extends Binding {
   restoreSelection (selection) {
     if (selection !== null) {
       const { to, from } = selection
-      let shouldUpdate = false
       /**
        * There is little information on the difference between anchor/focus and base/extent.
        * MDN doesn't even mention base/extent anymore.. though you still have to call
@@ -159,7 +158,6 @@ export default class DomBinding extends Binding {
           if (node !== baseNode || offset !== baseOffset) {
             baseNode = node
             baseOffset = offset
-            shouldUpdate = true
           }
         }
       }
@@ -171,18 +169,15 @@ export default class DomBinding extends Binding {
           if (node !== extentNode || offset !== extentOffset) {
             extentNode = node
             extentOffset = offset
-            shouldUpdate = true
           }
         }
       }
-      if (shouldUpdate) {
-        browserSelection.setBaseAndExtent(
-          baseNode,
-          baseOffset,
-          extentNode,
-          extentOffset
-        )
-      }
+      browserSelection.setBaseAndExtent(
+        baseNode,
+        baseOffset,
+        extentNode,
+        extentOffset
+      )
     }
   }
 
