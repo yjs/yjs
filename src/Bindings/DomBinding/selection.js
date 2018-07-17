@@ -19,17 +19,17 @@ function _getCurrentRelativeSelection (domBinding) {
 
 export const getCurrentRelativeSelection = typeof getSelection !== 'undefined' ? _getCurrentRelativeSelection : () => null
 
-export function beforeTransactionSelectionFixer (domBinding, remote) {
-  if (remote) {
-    relativeSelection = getCurrentRelativeSelection(domBinding)
-  }
+export function beforeTransactionSelectionFixer (domBinding) {
+  relativeSelection = getCurrentRelativeSelection(domBinding)
 }
 
 /**
+ * Reset the browser range after every transaction.
+ * This prevents any collapsing issues with the local selection.
  * @private
  */
-export function afterTransactionSelectionFixer (domBinding, remote) {
-  if (relativeSelection !== null && remote) {
+export function afterTransactionSelectionFixer (domBinding) {
+  if (relativeSelection !== null) {
     domBinding.restoreSelection(relativeSelection)
   }
 }
