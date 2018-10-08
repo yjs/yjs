@@ -28,7 +28,7 @@ export { default as DomBinding } from './Bindings/DomBinding/DomBinding.js'
  * @param {AbstractPersistence} persistence Persistence adapter instance
  */
 export default class Y extends NamedEventHandler {
-  constructor (room, opts, persistence, conf = {}) {
+  constructor (room, connector, persistence, conf = {}) {
     super()
     this.gcEnabled = conf.gc || false
     /**
@@ -36,6 +36,7 @@ export default class Y extends NamedEventHandler {
      * @type {String}
      */
     this.room = room
+<<<<<<< HEAD:src/Y.js
     if (opts != null && opts.connector != null) {
       opts.connector.room = room
     }
@@ -46,6 +47,10 @@ export default class Y extends NamedEventHandler {
     } else {
       this.userID = opts.userID
     }
+=======
+    this._contentReady = false
+    this.userID = generateRandomUint32()
+>>>>>>> experimental-connectors:src/Y.mjs
     // TODO: This should be a Map so we can use encodables as keys
     this.share = {}
     this.ds = new DeleteStore(this)
@@ -61,10 +66,13 @@ export default class Y extends NamedEventHandler {
     this.connector = null
     this.connected = false
     let initConnection = () => {
-      if (opts != null) {
-        this.connector = new Y[opts.connector.name](this, opts.connector)
-        this.connected = true
-        this.emit('connectorReady')
+      if (connector != null) {
+        if (connector.constructor === Object) {
+          connector.connector.room = room
+          this.connector = new Y[connector.connector.name](this, connector.connector)
+          this.connected = true
+          this.emit('connectorReady')
+        }
       }
     }
     /**
@@ -251,6 +259,7 @@ export default class Y extends NamedEventHandler {
    * Persisted data will remain until removed by the persistence adapter.
    */
   destroy () {
+    this.emit('destroyed', true)
     super.destroy()
     this.share = null
     if (this.connector != null) {

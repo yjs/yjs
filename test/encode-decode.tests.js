@@ -1,4 +1,4 @@
-import { test } from '../node_modules/cutest/cutest.mjs'
+import { test } from '../node_modules/cutest/cutest.js'
 import BinaryEncoder from '../src/Util/Binary/Encoder.js'
 import BinaryDecoder from '../src/Util/Binary/Decoder.js'
 import { generateRandomUint32 } from '../src/Util/generateRandomUint32.js'
@@ -9,7 +9,7 @@ function testEncoding (t, write, read, val) {
   write(encoder, val)
   let reader = new BinaryDecoder(encoder.createBuffer())
   let result = read(reader)
-  t.log(`string encode: ${JSON.stringify(val).length} bytes / binary encode: ${encoder.data.length} bytes`)
+  t.log(`string encode: ${JSON.stringify(val).length} bytes / binary encode: ${encoder.length} bytes`)
   t.compare(val, result, 'Compare results')
 }
 

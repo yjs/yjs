@@ -1,3 +1,4 @@
+import BinaryEncoder from './Util/Binary/Encoder.js'
 
 /**
  * A transaction is created for every change on the Yjs model. It is possible
@@ -58,7 +59,19 @@ export default class Transaction {
      * @type {Map<YType,Array<YEvent>>}
      */
     this.changedParentTypes = new Map()
+    this.encodedStructsLen = 0
+    this._encodedStructs = new BinaryEncoder()
+    this._encodedStructs.writeUint32(0)
   }
+  get encodedStructs () {
+    this._encodedStructs.setUint32(0, this.encodedStructsLen)
+    return this._encodedStructs
+  }
+}
+
+export function writeStructToTransaction (transaction, struct) {
+  transaction.encodedStructsLen++
+  struct._toBinary(transaction._encodedStructs)
 }
 
 /**

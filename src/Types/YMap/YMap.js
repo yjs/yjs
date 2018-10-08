@@ -1,5 +1,5 @@
-import Type from '../../Struct/Type.js'
 import Item from '../../Struct/Item.js'
+import Type from '../../Struct/Type.js'
 import ItemJSON from '../../Struct/ItemJSON.js'
 import { logItemHelper } from '../../MessageHandler/messageToString.js'
 import YEvent from '../../Util/YEvent.js'

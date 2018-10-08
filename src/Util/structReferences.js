@@ -1,3 +1,10 @@
+import Delete from '../Struct/Delete.js'
+import ItemJSON from '../Struct/ItemJSON.js'
+import ItemString from '../Struct/ItemString.js'
+import ItemFormat from '../Struct/ItemFormat.js'
+import ItemEmbed from '../Struct/ItemEmbed.js'
+import GC from '../Struct/GC.js'
+
 import YArray from '../Types/YArray/YArray.js'
 import YMap from '../Types/YMap/YMap.js'
 import YText from '../Types/YText/YText.js'
@@ -5,13 +12,6 @@ import YXmlText from '../Types/YXml/YXmlText.js'
 import YXmlHook from '../Types/YXml/YXmlHook.js'
 import YXmlFragment from '../Types/YXml/YXmlFragment.js'
 import YXmlElement from '../Types/YXml/YXmlElement.js'
-
-import Delete from '../Struct/Delete.js'
-import ItemJSON from '../Struct/ItemJSON.js'
-import ItemString from '../Struct/ItemString.js'
-import ItemFormat from '../Struct/ItemFormat.js'
-import ItemEmbed from '../Struct/ItemEmbed.js'
-import GC from '../Struct/GC.js'
 
 const structs = new Map()
 const references = new Map()

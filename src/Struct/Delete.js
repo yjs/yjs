@@ -1,6 +1,7 @@
 import { getStructReference } from '../Util/structReferences.js'
 import ID from '../Util/ID/ID.js'
 import { logID } from '../MessageHandler/messageToString.js'
+import { writeStructToTransaction } from '../Transaction.js'
 
 /**
  * @private
@@ -108,6 +109,7 @@ export default class Delete {
     if (y.persistence !== null) {
       y.persistence.saveStruct(y, this)
     }
+    writeStructToTransaction(y._transaction, this)
   }
 
   /**

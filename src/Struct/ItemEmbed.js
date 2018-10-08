@@ -1,4 +1,4 @@
-import { default as Item } from './Item.js'
+import Item from './Item.js'
 import { logItemHelper } from '../MessageHandler/messageToString.js'
 
 export default class ItemEmbed extends Item {

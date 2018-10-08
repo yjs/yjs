@@ -1,4 +1,4 @@
-import { test } from '../node_modules/cutest/cutest.mjs'
+import { test } from '../node_modules/cutest/cutest.js'
 import simpleDiff from '../src/Util/simpleDiff.js'
 import Chance from 'chance'
 

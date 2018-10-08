@@ -1,4 +1,4 @@
-import { splitHelper, default as Item } from './Item.js'
+import Item, { splitHelper } from './Item.js'
 import { logItemHelper } from '../MessageHandler/messageToString.js'
 
 export default class ItemJSON extends Item {

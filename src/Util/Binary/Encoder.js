@@ -10,30 +10,78 @@ export default class BinaryEncoder {
   constructor () {
     // TODO: implement chained Uint8Array buffers instead of Array buffer
     // TODO: Rewrite all methods as functions!
-    this.data = []
+    this._currentPos = 0
+    this._currentBuffer = new Uint8Array(1000)
+    this._data = []
   }
 
   /**
    * The current length of the encoded data.
    */
   get length () {
-    return this.data.length
+    let len = 0
+    for (let i = 0; i < this._data.length; i++) {
+      len += this._data[i].length
+    }
+    len += this._currentPos
+    return len
   }
 
   /**
    * The current write pointer (the same as {@link length}).
    */
   get pos () {
-    return this.data.length
+    return this.length
   }
 
   /**
-   * Create an ArrayBuffer.
+   * Transform to ArrayBuffer.
    *
-   * @return {Uint8Array} A Uint8Array that represents the written data.
+   * @return {ArrayBuffer} The created ArrayBuffer.
    */
   createBuffer () {
-    return Uint8Array.from(this.data).buffer
+    const len = this.length
+    const uint8array = new Uint8Array(len)
+    let curPos = 0
+    for (let i = 0; i < this._data.length; i++) {
+      let d = this._data[i]
+      uint8array.set(d, curPos)
+      curPos += d.length
+    }
+    uint8array.set(new Uint8Array(this._currentBuffer.buffer, 0, this._currentPos), curPos)
+    return uint8array.buffer
+  }
+
+  /**
+   * Write one byte to the encoder.
+   *
+   * @param {number} num The byte that is to be encoded.
+   */
+  write (num) {
+    if (this._currentPos === this._currentBuffer.length) {
+      this._data.push(this._currentBuffer)
+      this._currentBuffer = new Uint8Array(this._currentBuffer.length * 2)
+      this._currentPos = 0
+    }
+    this._currentBuffer[this._currentPos++] = num
+  }
+
+  set (pos, num) {
+    let buffer = null
+    // iterate all buffers and adjust position
+    for (let i = 0; i < this._data.length && buffer === null; i++) {
+      const b = this._data[i]
+      if (pos < b.length) {
+        buffer = b // found buffer
+      } else {
+        pos -= b.length
+      }
+    }
+    if (buffer === null) {
+      // use current buffer
+      buffer = this._currentBuffer
+    }
+    buffer[pos] = num
   }
 
   /**
@@ -42,7 +90,7 @@ export default class BinaryEncoder {
    * @param {number} num The number that is to be encoded.
    */
   writeUint8 (num) {
-    this.data.push(num & bits8)
+    this.write(num & bits8)
   }
 
   /**
@@ -52,7 +100,7 @@ export default class BinaryEncoder {
    * @param {number} num The number that is to be encoded.
    */
   setUint8 (pos, num) {
-    this.data[pos] = num & bits8
+    this.set(pos, num & bits8)
   }
 
   /**
@@ -61,7 +109,8 @@ export default class BinaryEncoder {
    * @param {number} num The number that is to be encoded.
    */
   writeUint16 (num) {
-    this.data.push(num & bits8, (num >>> 8) & bits8)
+    this.write(num & bits8)
+    this.write((num >>> 8) & bits8)
   }
   /**
    * Write two bytes as an unsigned integer at a specific location.
@@ -70,8 +119,8 @@ export default class BinaryEncoder {
    * @param {number} num The number that is to be encoded.
    */
   setUint16 (pos, num) {
-    this.data[pos] = num & bits8
-    this.data[pos + 1] = (num >>> 8) & bits8
+    this.set(pos, num & bits8)
+    this.set(pos + 1, (num >>> 8) & bits8)
   }
 
   /**
@@ -81,7 +130,7 @@ export default class BinaryEncoder {
    */
   writeUint32 (num) {
     for (let i = 0; i < 4; i++) {
-      this.data.push(num & bits8)
+      this.write(num & bits8)
       num >>>= 8
     }
   }
@@ -94,7 +143,7 @@ export default class BinaryEncoder {
    */
   setUint32 (pos, num) {
     for (let i = 0; i < 4; i++) {
-      this.data[pos + i] = num & bits8
+      this.set(pos + i, num & bits8)
       num >>>= 8
     }
   }
@@ -106,10 +155,10 @@ export default class BinaryEncoder {
    */
   writeVarUint (num) {
     while (num >= 0b10000000) {
-      this.data.push(0b10000000 | (bits7 & num))
+      this.write(0b10000000 | (bits7 & num))
       num >>>= 7
     }
-    this.data.push(bits7 & num)
+    this.write(bits7 & num)
   }
 
   /**
@@ -118,13 +167,29 @@ export default class BinaryEncoder {
    * @param {String} str The string that is to be encoded.
    */
   writeVarString (str) {
-    let encodedString = unescape(encodeURIComponent(str))
-    let bytes = encodedString.split('').map(c => c.codePointAt())
-    let len = bytes.length
+    const encodedString = unescape(encodeURIComponent(str))
+    const len = encodedString.length
     this.writeVarUint(len)
     for (let i = 0; i < len; i++) {
-      this.data.push(bytes[i])
+      this.write(encodedString.codePointAt(i))
     }
+  }
+
+  /**
+   * Write the content of another binary encoder.
+   *
+   * @param encoder The BinaryEncoder to be written.
+   */
+  writeBinaryEncoder (encoder) {
+    this.writeArrayBuffer(encoder.createBuffer())
+  }
+
+  writeArrayBuffer (arrayBuffer) {
+    const prevBufferLen = this._currentBuffer.length
+    this._data.push(new Uint8Array(this._currentBuffer.buffer, 0, this._currentPos))
+    this._data.push(new Uint8Array(arrayBuffer))
+    this._currentBuffer = new Uint8Array(prevBufferLen)
+    this._currentPos = 0
   }
 
   /**

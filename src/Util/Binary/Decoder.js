@@ -25,6 +25,10 @@ export default class BinaryDecoder {
     this.pos = 0
   }
 
+  hasContent () {
+    return this.pos !== this.uint8arr.length
+  }
+
   /**
    * Clone this decoder instance.
    * Optionally set a new position parameter.
@@ -40,6 +44,18 @@ export default class BinaryDecoder {
    */
   get length () {
     return this.uint8arr.length
+  }
+
+
+  /**
+   * Read `len` bytes as an ArrayBuffer.
+   */
+  readArrayBuffer (len) {
+    const arrayBuffer = new Uint8Array(len)
+    const view = new Uint8Array(this.uint8arr.buffer, this.pos, len)
+    arrayBuffer.set(view)
+    this.pos += len
+    return arrayBuffer.buffer
   }
 
   /**
@@ -109,15 +125,35 @@ export default class BinaryDecoder {
    * Read string of variable length
    * * varUint is used to store the length of the string
    *
+   * Transforming utf8 to a string is pretty expensive. The code performs 10x better
+   * when String.fromCodePoint is fed with all characters as arguments.
+   * But most environments have a maximum number of arguments per functions.
+   * For effiency reasons we apply a maximum of 10000 characters at once.
+   * 
    * @return {String} The read String.
    */
   readVarString () {
-    let len = this.readVarUint()
-    let bytes = new Array(len)
-    for (let i = 0; i < len; i++) {
-      bytes[i] = this.uint8arr[this.pos++]
+    let remainingLen = this.readVarUint()
+    let encodedString = ''
+    let i = 0
+    while (remainingLen > 0) {
+      const nextLen = Math.min(remainingLen, 10000)
+      const bytes = new Array(nextLen)
+      for (let i = 0; i < nextLen; i++) {
+        bytes[i] = this.uint8arr[this.pos++]
+      }
+      encodedString += String.fromCodePoint.apply(null, bytes)
+      remainingLen -= nextLen
     }
-    let encodedString = bytes.map(b => String.fromCodePoint(b)).join('')
+    /*
+    //let bytes = new Array(len)
+    for (let i = 0; i < len; i++) {
+      //bytes[i] = this.uint8arr[this.pos++]
+      encodedString += String.fromCodePoint(this.uint8arr[this.pos++])
+      // encodedString += String(this.uint8arr[this.pos++])
+    }
+    */
+    //let encodedString = String.fromCodePoint.apply(null, bytes)
     return decodeURIComponent(escape(encodedString))
   }
 

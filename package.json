@@ -6,15 +6,22 @@
   "browser": "./y.js",
   "module": "./src/y.js",
   "scripts": {
+    "start": "node --experimental-modules src/Connectors/WebsocketsConnector/server.js",
     "test": "npm run lint",
     "debug": "concurrently 'rollup -wc rollup.test.js' 'cutest-serve y.test.js -o'",
-    "lint": "standard",
+    "lint": "standard src/**/*.mjs test/**/*.mjs tests-lib/**/*.js",
     "docs": "esdoc",
     "serve-docs": "npm run docs && serve ./docs/",
     "dist": "rollup -c rollup.browser.js; rollup -c rollup.node.js",
     "watch": "concurrently 'rollup -wc rollup.browser.js' 'rollup -wc rollup.node.js'",
     "postversion": "npm run dist",
-    "postpublish": "tag-dist-files --overwrite-existing-tag"
+    "postpublish": "tag-dist-files --overwrite-existing-tag",
+    "demos": "concurrently 'node --experimental-modules src/Connectors/WebsocketsConnector/server.js' 'http-server'"
+  },
+  "now": {
+    "engines": {
+      "node": "10.x.x"
+    }
   },
   "files": [
     "y.*",
@@ -55,6 +62,7 @@
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-latest": "^6.24.1",
     "chance": "^1.0.9",
+    "codemirror": "^5.37.0",
     "concurrently": "^3.4.0",
     "cutest": "^0.1.9",
     "esdoc": "^1.0.4",
@@ -70,7 +78,10 @@
     "rollup-plugin-uglify": "^1.0.2",
     "rollup-regenerator-runtime": "^6.23.1",
     "rollup-watch": "^3.2.2",
-    "standard": "^10.0.2",
+    "standard": "^11.0.1",
     "tag-dist-files": "^0.1.6"
+  },
+  "dependencies": {
+    "uws": "^10.148.0"
   }
 }

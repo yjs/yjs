@@ -3,8 +3,6 @@ import Y from './Y.js'
 import UndoManager from './Util/UndoManager.js'
 import { integrateRemoteStructs } from './MessageHandler/integrateRemoteStructs.js'
 
-import { messageToString, messageToRoomname } from './MessageHandler/messageToString.js'
-
 import Connector from './Connector.js'
 import Persistence from './Persistence.js'
 import YArray from './Types/YArray/YArray.js'

@@ -1,5 +1,5 @@
-import { wait } from './helper'
-import { messageToString } from '../src/MessageHandler/messageToString'
+import { wait } from './helper.js'
+import { messageToString } from '../src/MessageHandler/messageToString.js'
 import AbstractConnector from '../src/Connector.js'
 
 var rooms = {}
