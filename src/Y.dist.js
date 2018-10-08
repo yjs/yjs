@@ -22,7 +22,6 @@ import QuillBinding from './Bindings/QuillBinding/QuillBinding.js'
 import DomBinding from './Bindings/DomBinding/DomBinding.js'
 import { toBinary, fromBinary } from './MessageHandler/binaryEncode.js'
 
-import debug from 'debug'
 import domToType from './Bindings/DomBinding/domToType.js'
 import { domsToTypes, switchAssociation } from './Bindings/DomBinding/util.js'
 
@@ -56,7 +55,4 @@ Y.utils = {
   fromBinary
 }
 
-Y.debug = debug
-debug.formatters.Y = messageToString
-debug.formatters.y = messageToRoomname
 export default Y

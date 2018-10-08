@@ -36,12 +36,12 @@ export default class Y extends NamedEventHandler {
      * @type {String}
      */
     this.room = room
-    if (opts != null) {
+    if (opts != null && opts.connector != null) {
       opts.connector.room = room
     }
     this._contentReady = false
     this._opts = opts
-    if (typeof opts.userID !== 'number') {
+    if (opts == null || typeof opts.userID !== 'number') {
       this.userID = generateRandomUint32()
     } else {
       this.userID = opts.userID
