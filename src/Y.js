@@ -36,21 +36,8 @@ export default class Y extends NamedEventHandler {
      * @type {String}
      */
     this.room = room
-<<<<<<< HEAD:src/Y.js
-    if (opts != null && opts.connector != null) {
-      opts.connector.room = room
-    }
-    this._contentReady = false
-    this._opts = opts
-    if (opts == null || typeof opts.userID !== 'number') {
-      this.userID = generateRandomUint32()
-    } else {
-      this.userID = opts.userID
-    }
-=======
     this._contentReady = false
     this.userID = generateRandomUint32()
->>>>>>> experimental-connectors:src/Y.mjs
     // TODO: This should be a Map so we can use encodables as keys
     this.share = {}
     this.ds = new DeleteStore(this)

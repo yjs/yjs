@@ -107,3 +107,35 @@ export function integrateRemoteStructs (y, decoder) {
     }
   }
 }
+
+// TODO: use this above / refactor
+export function integrateRemoteStruct (y, decoder) {
+  let reference = decoder.readVarUint()
+  let Constr = getStruct(reference)
+  let struct = new Constr()
+  let decoderPos = decoder.pos
+  let missing = struct._fromBinary(y, decoder)
+  if (missing.length === 0) {
+    while (struct != null) {
+      _integrateRemoteStructHelper(y, struct)
+      struct = y._readyToIntegrate.shift()
+    }
+  } else {
+    let _decoder = new BinaryDecoder(decoder.uint8arr)
+    _decoder.pos = decoderPos
+    let missingEntry = new MissingEntry(_decoder, missing, struct)
+    let missingStructs = y._missingStructs
+    for (let i = missing.length - 1; i >= 0; i--) {
+      let m = missing[i]
+      if (!missingStructs.has(m.user)) {
+        missingStructs.set(m.user, new Map())
+      }
+      let msu = missingStructs.get(m.user)
+      if (!msu.has(m.clock)) {
+        msu.set(m.clock, [])
+      }
+      let mArray = msu = msu.get(m.clock)
+      mArray.push(missingEntry)
+    }
+  }
+}

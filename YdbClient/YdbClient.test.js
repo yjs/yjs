@@ -1,7 +1,7 @@
 /* eslint-env browser */
 
 import * as test from './test.js'
-import * as ydbClient from './ydb-client.js'
+import * as ydbClient from './YdbClient.js'
 import * as globals from './globals.js'
 import * as idbactions from './idbactions.js'
 import * as logging from './logging.js'

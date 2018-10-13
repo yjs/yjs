@@ -7,6 +7,9 @@ import * as encoding from './encoding.js'
 import * as logging from './logging.js'
 import * as idb from './idb.js'
 import Y from '../src/Y.js'
+import BinaryDecoder from '../src/Util/Binary/Decoder.js'
+import { integrateRemoteStruct } from '../src/MessageHandler/integrateRemoteStructs.js'
+import { createMutualExclude } from '../src/Util/mutualExclude.js'
 
 export class YdbClient {
   constructor (url, db) {
@@ -24,9 +27,20 @@ export class YdbClient {
    */
   getY (roomname) {
     const y = new Y(roomname)
-    y.on('afterTransaction', function () {
-      debugger
-    })
+    const mutex = createMutualExclude()
+    y.on('afterTransaction', (y, transaction) => mutex(() => {
+      if (transaction.encodedStructsLen > 0) {
+        update(this, roomname, transaction.encodedStructs.createBuffer())
+      }
+    }))
+    subscribe(this, roomname, update => mutex(() => {
+      y.transact(() => {
+        const decoder = new BinaryDecoder(update)
+        while (decoder.hasContent()) {
+          integrateRemoteStruct(y, decoder)
+        }
+      }, true)
+    }))
     return y
   }
 }
@@ -111,7 +125,7 @@ export const update = (ydb, room, update) => {
   const t = idbactions.createTransaction(ydb.db)
   logging.log(`Write Unconfirmed Update. room "${room}", ${JSON.stringify(update)}`)
   return idbactions.writeClientUnconfirmed(t, room, update).then(clientConf => {
-    logging.log(`Send Unconfirmed Update. connected ${ydb.connected} room "${room}", clientConf ${clientConf}, ${logging.arrayBufferToString(update)}`)
+    logging.log(`Send Unconfirmed Update. connected ${ydb.connected} room "${room}", clientConf ${clientConf}`)
     send(ydb, message.createUpdate(room, update, clientConf))
   })
 }
@@ -130,6 +144,22 @@ export const subscribe = (ydb, room, f) => {
       // TODO: maybe set prelim meta value so we don't sub twice
       send(ydb, message.createSub([{ room, offset: 0 }]))
       idbactions.writeUnconfirmedSubscription(t, room)
+    }
+  })
+}
+
+export const subscribeRooms = (ydb, rooms) => {
+  const t = idbactions.createTransaction(ydb.db)
+  const subs = []
+  return globals.pall(rooms.map(room => idbactions.getRoomMeta(t, room).then(meta => {
+    if (meta === undefined) {
+      subs.push(room)
+      return idbactions.writeUnconfirmedSubscription(t, room)
+    }
+  }))).then(() => {
+    // write all sub messages when all unconfirmed subs are writted to idb
+    if (subs.length > 0) {
+      send(ydb, message.createSub(rooms.map(room => ({room, offset: 0}))))
     }
   })
 }

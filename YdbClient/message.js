@@ -25,7 +25,7 @@ export const readMessage = (ydb, message) => {
         const offset = decoding.readVarUint(decoder)
         const room = decoding.readVarString(decoder)
         const update = decoding.readPayload(decoder)
-        logging.log(`Received Update. room "${room}", offset ${offset}, ${logging.arrayBufferToString(update)}`)
+        logging.log(`Received Update. room "${room}", offset ${offset}`)
         idbactions.writeHostUnconfirmed(t, room, offset, update)
         bc.publish(room, update)
         break
@@ -36,7 +36,7 @@ export const readMessage = (ydb, message) => {
           const room = decoding.readVarString(decoder)
           const offset = decoding.readVarUint(decoder)
           const roomsid = decoding.readVarUint(decoder) // TODO: SID
-          logging.log(`Received Sub Conf. room "${room}", offset ${offset}, roomsid ${roomsid}`)
+          // logging.log(`Received Sub Conf. room "${room}", offset ${offset}, roomsid ${roomsid}`)
           idbactions.confirmSubscription(t, room, roomsid, offset)
         }
         break

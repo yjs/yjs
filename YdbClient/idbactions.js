@@ -186,7 +186,7 @@ export const writeHostUnconfirmedByClient = (t, clientConf, offset) => idb.get(g
  * @param {ArrayBuffer} update
  * @return {Promise}
  */
-export const writeHostUnconfirmed = (t, room, offset, update) => idb.add(getStoreHU(t), update, encodeHUKey(room, offset))
+export const writeHostUnconfirmed = (t, room, offset, update) => idb.put(getStoreHU(t), update, encodeHUKey(room, offset))
 
 /**
  * The host confirms that it persisted updates up until (including) offset. updates may be moved from HU to Co.
@@ -199,9 +199,11 @@ export const writeConfirmedByHost = (t, room, offset) => {
   const co = getStoreCo(t)
   return globals.pall([idb.get(co, getCoDataKey(room)), idb.get(co, getCoMetaKey(room))]).then(async arr => {
     const data = arr[0]
-    const meta = arr[1]
-    const metaSessionId = decodeMetaValue(meta).roomsid
+    const meta = decodeMetaValue(arr[1])
     const dataEncoder = encoding.createEncoder()
+    if (meta.offset >= offset) {
+      return // nothing to do
+    }
     encoding.writeArrayBuffer(dataEncoder, data)
     const hu = getStoreHU(t)
     const huKeyRange = idb.createIDBKeyRangeBound(encodeHUKey(room, 0), encodeHUKey(room, offset), false, false)
@@ -210,9 +212,9 @@ export const writeConfirmedByHost = (t, room, offset) => {
       if (key.room === room && key.offset <= offset) {
         encoding.writeArrayBuffer(dataEncoder, value)
       }
-    }).then(() =>
-      globals.pall([idb.put(co, encodeMetaValue(metaSessionId, offset), getCoMetaKey(room)), idb.put(co, encoding.toBuffer(dataEncoder), getCoDataKey(room)), idb.del(hu, huKeyRange)])
-    )
+    }).then(() => {
+      globals.pall([idb.put(co, encodeMetaValue(meta.roomsid, offset), getCoMetaKey(room)), idb.put(co, encoding.toBuffer(dataEncoder), getCoDataKey(room)), idb.del(hu, huKeyRange)])
+    })
   })
 }
 
@@ -290,10 +292,23 @@ const encodeMetaValue = (roomsid, offset) => {
  * @param {number} offset
  * @return {Promise<void>}
  */
-export const confirmSubscription = (t, room, roomsessionid, offset) => globals.pall([
-  idb.put(getStoreCo(t), encodeMetaValue(roomsessionid, offset), getCoMetaKey(room)),
-  idb.put(getStoreCo(t), globals.createArrayBufferFromArray([]), getCoDataKey(room))
-]).then(() => idb.del(getStoreUS(t), room))
+export const confirmSubscription = (t, room, roomsessionid, offset) => idb.get(getStoreCo(t), getCoMetaKey(room)).then(metaval => {
+  if (metaval === undefined) {
+    return globals.pall([
+      idb.put(getStoreCo(t), encodeMetaValue(roomsessionid, offset), getCoMetaKey(room)),
+      idb.put(getStoreCo(t), globals.createArrayBufferFromArray([]), getCoDataKey(room))
+    ]).then(() => idb.del(getStoreUS(t), room))
+  }
+  const meta = decodeMetaValue(metaval)
+  if (meta.roomsid !== roomsessionid) {
+    // TODO: upload all unconfirmed updates
+    // or do a Yjs sync with server
+  } else if (meta.roomsid < offset) {
+    return writeConfirmedByHost(t, room, offset)
+  } else {
+    // nothing needs to happen
+  }
+})
 
 export const writeUnconfirmedSubscription = (t, room) => idb.put(getStoreUS(t), true, room)
 

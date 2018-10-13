@@ -1,4 +1,4 @@
-import { createYdbClient } from '../../ydb/index.js'
+import { createYdbClient } from '../../YdbClient/index.js'
 import Y from '../../src/Y.dist.js'
 
 createYdbClient('ws://localhost:8899/ws').then(ydbclient => {

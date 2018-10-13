@@ -60,18 +60,13 @@ export default class Transaction {
      */
     this.changedParentTypes = new Map()
     this.encodedStructsLen = 0
-    this._encodedStructs = new BinaryEncoder()
-    this._encodedStructs.writeUint32(0)
-  }
-  get encodedStructs () {
-    this._encodedStructs.setUint32(0, this.encodedStructsLen)
-    return this._encodedStructs
+    this.encodedStructs = new BinaryEncoder()
   }
 }
 
 export function writeStructToTransaction (transaction, struct) {
   transaction.encodedStructsLen++
-  struct._toBinary(transaction._encodedStructs)
+  struct._toBinary(transaction.encodedStructs)
 }
 
 /**

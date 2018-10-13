@@ -1,4 +1,4 @@
-import * as ydbclient from './ydb-client.js'
+import * as ydbclient from './YdbClient.js'
 
 /**
  * @param {string} url

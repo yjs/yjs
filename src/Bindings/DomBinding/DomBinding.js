@@ -69,9 +69,10 @@ export default class DomBinding extends Binding {
       subtree: true
     })
     this._currentSel = null
-    document.addEventListener('selectionchange', () => {
+    this._selectionchange = () => {
       this._currentSel = getCurrentRelativeSelection(this)
-    })
+    }
+    document.addEventListener('selectionchange', this._selectionchange)
     const y = type._y
     this.y = y
     // Force flush dom changes before Type changes are applied (they might
@@ -193,6 +194,7 @@ export default class DomBinding extends Binding {
     y.off('beforeTransaction', this._beforeTransactionHandler)
     y.off('beforeObserverCalls', this._beforeObserverCallsHandler)
     y.off('afterTransaction', this._afterTransactionHandler)
+    document.removeEventListener('selectionchange', this._selectionchange)
     super.destroy()
   }
 }
