@@ -12,7 +12,7 @@ idbactions.deleteDB().then(() => idbactions.openDB()).then(db => {
     await idbactions.writeConfirmedByHost(t, testname, 4)
     const metas = await idbactions.getRoomMetas(t)
     const roommeta = metas.find(meta => meta.room === testname)
-    if (roommeta == null || roommeta.offset !== 4 || roommeta.roomsid !== 42) {
+    if (roommeta == null || roommeta.offset !== 4 || roommeta.rsid !== 42) {
       throw globals.error()
     }
     const data = await idbactions.getRoomData(t, testname)

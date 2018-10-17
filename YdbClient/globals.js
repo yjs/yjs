@@ -22,6 +22,10 @@ export const createUint8ArrayFromArrayBuffer = arraybuffer => new Uint8Array_(ar
 export const createArrayFromArrayBuffer = arraybuffer => Array.from(createUint8ArrayFromArrayBuffer(arraybuffer))
 
 export const createPromise = f => new Promise(f)
+
+export const createMap = () => new Map()
+export const createSet = () => new Set()
+
 /**
  * `Promise.all` wait for all promises in the array to resolve and return the result
  * @param {Array<Promise<any>>} arrp

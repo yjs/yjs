@@ -11,13 +11,48 @@ import BinaryDecoder from '../src/Util/Binary/Decoder.js'
 import { integrateRemoteStruct } from '../src/MessageHandler/integrateRemoteStructs.js'
 import { createMutualExclude } from '../src/Util/mutualExclude.js'
 
-export class YdbClient {
+import * as NamedEventHandler from './NamedEventHandler.js'
+
+/**
+ * @typedef RoomState
+ * @type {Object}
+ * @property {number} rsid room session id, -1 if unknown (created locally)
+ * @property {number} offset By server, -1 if unknown
+ * @property {number} cOffset current offset by client
+ */
+
+/**
+ * @typedef SyncState
+ * @type {Object}
+ * @property {boolean} upsynced True if all local updates have been sent to the server and the server confirmed that it received the update
+ * @property {boolean} downsynced True if the current session subscribed to the room, the server confirmed the subscription, and the initial data was received
+ * @property {boolean} persisted True if the server confirmed that it persisted all published data
+ */
+
+/**
+ *
+ */
+export class YdbClient extends NamedEventHandler.Class {
   constructor (url, db) {
+    super()
     this.url = url
     this.ws = new WebSocket(url)
-    this.rooms = new Map()
+    this.rooms = globals.createMap()
     this.db = db
     this.connected = false
+    /**
+     * Set of room states. We try to keep it up in sync with idb, but this may fail due to concurrency with other windows.
+     * TODO: implement tests for this
+     * @type Map<string, RoomState>
+     */
+    this.roomStates = globals.createMap()
+    /**
+     * Meta information about unconfirmed updates created by this client.
+     * Maps from confid to roomname
+     * @type Map<number, string>
+     */
+    this.clientUnconfirmedStates = globals.createMap()
+    bc.subscribeYdbEvents(this)
     initWS(this, this.ws)
   }
   /**
@@ -43,6 +78,15 @@ export class YdbClient {
     }))
     return y
   }
+  getRoomState (roomname) {
+    return bc.computeRoomState(this, bc.getUnconfirmedRooms(this), roomname)
+  }
+  getRoomStates () {
+    const unconfirmedRooms = bc.getUnconfirmedRooms(this)
+    const states = globals.createMap()
+    this.roomStates.forEach((rstate, roomname) => states.set(roomname, bc.computeRoomState(this, unconfirmedRooms, roomname)))
+    return states
+  }
 }
 
 /**
@@ -61,21 +105,26 @@ const initWS = (ydb, ws) => {
   ws.onopen = () => {
     const t = idbactions.createTransaction(ydb.db)
     globals.pall([idbactions.getRoomMetas(t), idbactions.getUnconfirmedSubscriptions(t), idbactions.getUnconfirmedUpdates(t)]).then(([metas, us, unconfirmedUpdates]) => {
-      const subs = []
+      let subs = []
       metas.forEach(meta => {
         subs.push({
           room: meta.room,
-          offset: meta.offset
+          offset: meta.offset,
+          rsid: meta.rsid
         })
       })
       us.forEach(room => {
         subs.push({
-          room, offset: 0
+          room, offset: 0, rsid: 0
         })
       })
+      subs = subs.filter(subdev => !ydb.roomStates.has(subdev.room)) // filter already subbed rooms
       ydb.connected = true
       const encoder = encoding.createEncoder()
-      encoding.writeArrayBuffer(encoder, message.createSub(subs))
+      if (subs.length > 0) {
+        encoding.writeArrayBuffer(encoder, message.createSub(subs))
+        bc._broadcastYdbSyncingRoomsToServer(subs.map(subdev => subdev.room))
+      }
       encoding.writeArrayBuffer(encoder, unconfirmedUpdates)
       send(ydb, encoding.toBuffer(encoder))
     })
@@ -113,7 +162,7 @@ export const clear = (dbNamespace = 'ydb') => idb.deleteDB(dbNamespace)
  * @param {YdbClient} ydb
  * @param {ArrayBuffer} m
  */
-export const send = (ydb, m) => ydb.connected && ydb.ws.send(m)
+export const send = (ydb, m) => ydb.connected && m.byteLength !== 0 && ydb.ws.send(m)
 
 /**
  * @param {YdbClient} ydb
@@ -121,45 +170,45 @@ export const send = (ydb, m) => ydb.connected && ydb.ws.send(m)
  * @param {ArrayBuffer} update
  */
 export const update = (ydb, room, update) => {
-  bc.publish(room, update)
+  bc.publishRoomData(room, update)
   const t = idbactions.createTransaction(ydb.db)
   logging.log(`Write Unconfirmed Update. room "${room}", ${JSON.stringify(update)}`)
   return idbactions.writeClientUnconfirmed(t, room, update).then(clientConf => {
     logging.log(`Send Unconfirmed Update. connected ${ydb.connected} room "${room}", clientConf ${clientConf}`)
+    bc._broadcastYdbCUConfCreated(clientConf, room)
     send(ydb, message.createUpdate(room, update, clientConf))
   })
 }
 
 export const subscribe = (ydb, room, f) => {
-  bc.subscribe(room, f)
+  bc.subscribeRoomData(room, f)
   const t = idbactions.createTransaction(ydb.db)
+  if (!ydb.roomStates.has(room)) {
+    subscribeRooms(ydb, [room])
+  }
   idbactions.getRoomData(t, room).then(data => {
     if (data.byteLength > 0) {
       f(data)
-    }
-  })
-  idbactions.getRoomMeta(t, room).then(meta => {
-    if (meta === undefined) {
-      logging.log(`Send Subscribe. room "${room}", offset ${0}`)
-      // TODO: maybe set prelim meta value so we don't sub twice
-      send(ydb, message.createSub([{ room, offset: 0 }]))
-      idbactions.writeUnconfirmedSubscription(t, room)
     }
   })
 }
 
 export const subscribeRooms = (ydb, rooms) => {
   const t = idbactions.createTransaction(ydb.db)
-  const subs = []
+  let subs = []
+  // TODO: try not to do too many single calls. Implement getRoomMetas(t, rooms) or retrieve all metas once and store them on ydb
+  // TODO: find out performance of getRoomMetas with all metas
   return globals.pall(rooms.map(room => idbactions.getRoomMeta(t, room).then(meta => {
     if (meta === undefined) {
       subs.push(room)
       return idbactions.writeUnconfirmedSubscription(t, room)
     }
   }))).then(() => {
+    subs = subs.filter(room => !ydb.roomStates.has(room))
     // write all sub messages when all unconfirmed subs are writted to idb
     if (subs.length > 0) {
-      send(ydb, message.createSub(rooms.map(room => ({room, offset: 0}))))
+      send(ydb, message.createSub(subs.map(room => ({room, offset: 0, rsid: 0}))))
+      bc._broadcastYdbSyncingRoomsToServer(subs)
     }
   })
 }

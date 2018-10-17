@@ -49,6 +49,8 @@ function _integrateRemoteStructHelper (y, struct) {
               decoder.pos = oldPos
               if (missing.length === 0) {
                 y._readyToIntegrate.push(missingDef.struct)
+              } else {
+                // TODO: throw error here
               }
             }
           })

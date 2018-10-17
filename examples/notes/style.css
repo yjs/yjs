@@ -19,16 +19,21 @@
     cursor: pointer;
 }
 
-.sidebar a {
-    padding: 6px 8px 6px 16px;
-    text-decoration: none;
-    font-size: 13px;
-    color: #818181;
-    display: block;
+.notelist > a {
+  padding: 6px 8px 6px 16px;
+  text-decoration: none;
+  font-size: 13px;
+  color: #818181;
+  display: block;
 }
 
-.sidebar a.selected {
-    border-style: outset;
+.notelist > a.selected {
+  border-style: outset;
+}
+
+.notelist > a > div {
+  position: relative;
+  display: inline;
 }
 
 /* When you mouse over the navigation links, change their color */
@@ -54,4 +59,42 @@
 
 [contenteditable]:focus {
     outline: 0px solid transparent;
+}
+
+.persisted::before { 
+  content: "✔";
+  color: green;
+  position: absolute;
+  right: -14px;
+  top: 0px;
+}
+
+.upsynced::before {
+  content: "↑";
+  color: green;
+  position: absolute;
+  right: -14px;
+  top: 0px;
+}
+
+.noupsynced::before {
+  content: "↑";
+  color: red;
+  position: absolute;
+  right: -14px;
+  top: 0px;
+}
+.downsynced::after {
+  content: "↓";
+  color: green;
+  position: absolute;
+  right: -22px;
+  top: 0px;
+}
+.nodownsynced::after {
+  content: "↓";
+  color: red;
+  position: absolute;
+  right: -22px;
+  top: 0px;
 }

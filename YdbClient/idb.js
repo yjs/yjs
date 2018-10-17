@@ -97,6 +97,21 @@ export const getAllKeys = (store, range) =>
   rtop(store.getAllKeys(range))
 
 /**
+ * @typedef KeyValuePair
+ * @type {Object}
+ * @property {any} k key
+ * @property {any} v Value
+ */
+
+/**
+ * @param {IDBObjectStore} store
+ * @param {IDBKeyRange} [range]
+ * @return {Promise<Array<KeyValuePair>>}
+ */
+export const getAllKeysValues = (store, range) =>
+  globals.pall([getAllKeys(store, range), getAll(store, range)]).then(([ks, vs]) => ks.map((k, i) => ({ k, v: vs[i] })))
+
+/**
  * Iterate on keys and values
  * @param {IDBObjectStore} store
  * @param {IDBKeyRange?} keyrange

@@ -7,7 +7,7 @@ const bits8 = 0b11111111
 /**
  * A BinaryEncoder handles the encoding to an ArrayBuffer.
  */
-class Encoder {
+export class Encoder {
   constructor () {
     this.cpos = 0
     this.cbuf = globals.createUint8ArrayFromLen(1000)

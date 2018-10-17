@@ -13,6 +13,7 @@ const uuidv4 = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c =
 createYdbClient('ws://localhost:8899/ws').then(ydbclient => {
   const y = ydbclient.getY('notelist')
   let ynotelist = y.define('notelist', Y.Array)
+  window.ynotelist = ynotelist
   const domNoteList = document.querySelector('.notelist')
 
   // utils
@@ -63,24 +64,67 @@ createYdbClient('ws://localhost:8899/ws').then(ydbclient => {
   addEventListener(window, 'hashchange', updateEditor)
   updateEditor()
 
+  const styleSyncedState = (div, noteSyncedState) => {
+    let classes = []
+    if (noteSyncedState.persisted) {
+      classes.push('persisted')
+    } else {
+      if (noteSyncedState.upsynced) {
+        classes.push('upsynced')
+      } else {
+        classes.push('noupsynced')
+      }
+      if (noteSyncedState.downsynced) {
+        classes.push('downsynced')
+      } else {
+        classes.push('nodownsynced')
+      }
+    }
+    div.setAttribute('class', classes.join(' '))
+  }
+
+  ydbclient.on('syncstate', event => event.updated.forEach((state, room) => {
+    const a = document.querySelector(`[href="#${room}"]`)
+    if (a !== null) {
+      styleSyncedState(a.firstChild, state)
+    }
+  }))
+
   // render note list
-  const renderNoteList = addedElements => {
+  const renderNoteList = (elementList, insertRef = domNoteList.firstChild) => {
     const fragment = document.createDocumentFragment()
-    addedElements.forEach(note => {
+    const addNow = elementList.splice(0, 100)
+    addNow.forEach(note => {
       const a = document.createElement('a')
+      const div = document.createElement('div')
+      a.insertBefore(div, null)
       a.setAttribute('href', '#' + note.guid)
-      a.innerText = note.title
+      div.innerText = note.title
+      styleSyncedState(div, ydbclient.getRoomState(note.guid))
       fragment.insertBefore(a, null)
     })
-    domNoteList.insertBefore(fragment, domNoteList.firstChild)
+    if (domBinding == null) {
+      updateEditor()
+    }
+    domNoteList.insertBefore(fragment, insertRef)
+    if (elementList.length > 0) {
+      setTimeout(() => renderNoteList(elementList, insertRef), 100)
+    }
   }
-  renderNoteList(ynotelist.toArray())
-  ydb.subscribeRooms(ydbclient, ynotelist.map(note => note.guid))
+  {
+    const notelist = ynotelist.toArray()
+    if (notelist.length > 0) {
+      renderNoteList(notelist)
+      ydb.subscribeRooms(ydbclient, notelist.map(note => note.guid))
+    }
+  }
   ynotelist.observe(event => {
     const addedNotes = []
     event.addedElements.forEach(itemJson => itemJson._content.forEach(json => addedNotes.push(json)))
-    // const arr = ynotelist.toArray().filter(note => event.addedElements.has(note))
-    renderNoteList(addedNotes.reverse())
+    renderNoteList(addedNotes.slice().reverse()) // renderNoteList modifies addedNotes, so first make a copy of it
+    setTimeout(() => {
+      ydb.subscribeRooms(ydbclient, addedNotes.map(note => note.guid))
+    }, 200)
     if (domBinding === null) {
       updateEditor()
     }
