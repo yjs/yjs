@@ -213,7 +213,7 @@ export const writeConfirmedByHost = (t, room, offset) => {
         encoding.writeArrayBuffer(dataEncoder, value)
       }
     }).then(() => {
-      globals.pall([idb.put(co, encodeMetaValue(meta.roomsid, offset), getCoMetaKey(room)), idb.put(co, encoding.toBuffer(dataEncoder), getCoDataKey(room)), idb.del(hu, huKeyRange)])
+      globals.pall([idb.put(co, encodeMetaValue(meta.rsid, offset), getCoMetaKey(room)), idb.put(co, encoding.toBuffer(dataEncoder), getCoDataKey(room)), idb.del(hu, huKeyRange)])
     })
   })
 }
@@ -222,7 +222,7 @@ export const writeConfirmedByHost = (t, room, offset) => {
  * @typedef RoomMeta
  * @type {Object}
  * @property {string} room
- * @property {number} roomsid Room session id
+ * @property {number} rsid Room session id
  * @property {number} offset Received offsets (including offsets that are not yet confirmed)
  */
 
@@ -233,22 +233,48 @@ export const writeConfirmedByHost = (t, room, offset) => {
  * @return {Promise<Array<RoomMeta>>}
  */
 export const getRoomMetas = t => {
-  const hu = getStoreHU(t)
-  const result = []
+  // const result = []
+  const storeCo = getStoreCo(t)
+  const coQuery = idb.createIDBKeyRangeLowerBound('meta:', false)
+  return globals.pall([idb.getAll(storeCo, coQuery), idb.getAllKeys(storeCo, coQuery)]).then(([metaValues, metaKeys]) => globals.pall(metaValues.map((metavalue, i) => {
+    const room = metaKeys[i].slice(5)
+    const { rsid, offset } = decodeMetaValue(metavalue)
+    return {
+      room,
+      rsid,
+      offset: offset
+    }
+  })))
+  /*
   return idb.iterate(getStoreCo(t), idb.createIDBKeyRangeLowerBound('meta:', false), (metavalue, metakey) =>
     idb.getAllKeys(hu, idb.createIDBKeyRangeBound(encodeHUKey(metakey.slice(5), 0), encodeHUKey(metakey.slice(5), 2 ** 32), false, false)).then(keys => {
-      const { roomsid, offset } = decodeMetaValue(metavalue)
+      const { rsid, offset } = decodeMetaValue(metavalue)
       result.push({
         room: metakey.slice(5),
-        roomsid,
+        rsid,
         offset: keys.reduce((cur, key) => globals.max(decodeHUKey(key).offset, cur), offset)
       })
     })
   ).then(() => globals.presolve(result))
+  */
 }
 
 export const getRoomMeta = (t, room) =>
   idb.get(getStoreCo(t), getCoMetaKey(room))
+
+/**
+ * Get all data from idb, excluding unconfirmed updates.
+ * TODO: include updates in CU
+ * @param {IDBTransaction} t
+ * @param {string} room
+ * @return {Promise<ArrayBuffer>}
+ */
+export const getRoomDataWithoutCU = (t, room) => globals.pall([idb.get(getStoreCo(t), 'data:' + room), idb.getAll(getStoreHU(t), idb.createIDBKeyRangeBound(encodeHUKey(room, 0), encodeHUKey(room, 2 ** 32), false, false))]).then(([data, updates]) => {
+  const encoder = encoding.createEncoder()
+  encoding.writeArrayBuffer(encoder, data || new Uint8Array(0))
+  updates.forEach(update => encoding.writeArrayBuffer(encoder, update))
+  return encoding.toBuffer(encoder)
+})
 
 /**
  * Get all data from idb, including unconfirmed updates.
@@ -257,57 +283,100 @@ export const getRoomMeta = (t, room) =>
  * @param {string} room
  * @return {Promise<ArrayBuffer>}
  */
-export const getRoomData = (t, room) => globals.pall([idb.get(getStoreCo(t), 'data:' + room), idb.getAll(getStoreHU(t), idb.createIDBKeyRangeBound(encodeHUKey(room, 0), encodeHUKey(room, 2 ** 32), false, false))]).then(([data, updates]) => {
+export const getRoomData = (t, room) => globals.pall([idb.get(getStoreCo(t), 'data:' + room), idb.getAll(getStoreHU(t), idb.createIDBKeyRangeBound(encodeHUKey(room, 0), encodeHUKey(room, 2 ** 32), false, false)), idb.getAll(getStoreCU(t))]).then(([data, updates, cuUpdates]) => {
   const encoder = encoding.createEncoder()
   encoding.writeArrayBuffer(encoder, data || new Uint8Array(0))
   updates.forEach(update => encoding.writeArrayBuffer(encoder, update))
+  cuUpdates.forEach(roomAndUpdate => {
+    const decoder = decoding.createDecoder(roomAndUpdate)
+    if (decoding.readVarString(decoder) === room) {
+      encoding.writeArrayBuffer(encoder, decoding.readTail(decoder))
+    }
+  })
   return encoding.toBuffer(encoder)
 })
 
 const decodeMetaValue = buffer => {
   const decoder = decoding.createDecoder(buffer)
-  const roomsid = decoding.readVarUint(decoder)
+  const rsid = decoding.readVarUint(decoder)
   const offset = decoding.readVarUint(decoder)
   return {
-    roomsid, offset
+    rsid, offset
   }
 }
 /**
- * @param {number} roomsid room session id
+ * @param {number} rsid room session id
  * @param {number} offset
  * @return {ArrayBuffer}
  */
-const encodeMetaValue = (roomsid, offset) => {
+const encodeMetaValue = (rsid, offset) => {
   const encoder = encoding.createEncoder()
-  encoding.writeVarUint(encoder, roomsid)
+  encoding.writeVarUint(encoder, rsid)
   encoding.writeVarUint(encoder, offset)
   return encoding.toBuffer(encoder)
 }
 
+const writeInitialCoEntry = (t, room, roomsessionid, offset) => globals.pall([
+  idb.put(getStoreCo(t), encodeMetaValue(roomsessionid, offset), getCoMetaKey(room)),
+  idb.put(getStoreCo(t), globals.createArrayBufferFromArray([]), getCoDataKey(room))
+])
+
+const _confirmSub = (t, metaval, sub) => {
+  if (metaval === undefined) {
+    return writeInitialCoEntry(t, sub.room, sub.rsid, sub.offset).then(() => idb.del(getStoreUS(t), sub.room)).then(() => null)
+  }
+  const meta = decodeMetaValue(metaval)
+  if (meta.rsid !== sub.rsid) {
+    // TODO: Yjs sync with server here
+    // get all room data (without CU) and save it as a client update. Then remove all data
+    return getRoomDataWithoutCU(t, sub.room)
+      .then(roomdata =>
+        writeClientUnconfirmed(t, sub.room, roomdata)
+          .then(clientConf => message.createUpdate(sub.room, roomdata, clientConf))
+          .then(update =>
+            writeInitialCoEntry(t, sub.room, sub.rsid, sub.offset).then(() => update)
+          )
+      )
+  } else if (meta.offset < sub.offset) {
+    return writeConfirmedByHost(t, sub.room, sub.offset).then(() => null)
+  } else {
+    // nothing needs to happen
+    return null
+  }
+}
+
+/**
+ * @typedef Sub
+ * @type {Object}
+ * @property {string} room room name
+ * @property {number} rsid room session id
+ * @property {number} offset
+ */
+
 /**
  * Set the initial room data. Overwrites initial data if there is any!
  * @param {IDBTransaction} t
- * @param {string} room
- * @param {number} roomsessionid
- * @param {number} offset
- * @return {Promise<void>}
+ * @param {Sub} sub
+ * @return {Promise<ArrayBuffer?>} Message to send to server
  */
-export const confirmSubscription = (t, room, roomsessionid, offset) => idb.get(getStoreCo(t), getCoMetaKey(room)).then(metaval => {
-  if (metaval === undefined) {
-    return globals.pall([
-      idb.put(getStoreCo(t), encodeMetaValue(roomsessionid, offset), getCoMetaKey(room)),
-      idb.put(getStoreCo(t), globals.createArrayBufferFromArray([]), getCoDataKey(room))
-    ]).then(() => idb.del(getStoreUS(t), room))
+export const confirmSubscription = (t, sub) => idb.get(getStoreCo(t), getCoMetaKey(sub.room)).then(metaval => _confirmSub(t, metaval, sub))
+
+export const confirmSubscriptions = (t, subs) => idb.getAllKeysValues(getStoreCo(t), idb.createIDBKeyRangeLowerBound('meta:', false)).then(kvs => {
+  const ps = []
+  const subMap = new Map()
+  subs.forEach(sub => subMap.set(sub.room, sub))
+  for (let i = 0, len = kvs.length; i < len; i++) {
+    const kv = kvs[i]
+    const kvroom = kv.k.slice(5)
+    const exSub = subMap.get(kvroom)
+    if (exSub !== undefined) {
+      subMap.delete(kvroom)
+      ps.push(_confirmSub(t, kv.v, exSub))
+    }
   }
-  const meta = decodeMetaValue(metaval)
-  if (meta.roomsid !== roomsessionid) {
-    // TODO: upload all unconfirmed updates
-    // or do a Yjs sync with server
-  } else if (meta.roomsid < offset) {
-    return writeConfirmedByHost(t, room, offset)
-  } else {
-    // nothing needs to happen
-  }
+  // all remaining elements in subMap do not exist yet in Co.
+  subMap.forEach(nonexSub => ps.push(_confirmSub(t, undefined, nonexSub)))
+  return ps
 })
 
 export const writeUnconfirmedSubscription = (t, room) => idb.put(getStoreUS(t), true, room)

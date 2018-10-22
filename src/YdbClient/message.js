@@ -27,25 +27,35 @@ export const readMessage = (ydb, message) => {
         const update = decoding.readPayload(decoder)
         logging.log(`Received Update. room "${room}", offset ${offset}`)
         idbactions.writeHostUnconfirmed(t, room, offset, update)
-        bc.publish(room, update)
+        bc.publishRoomData(room, update)
+        bc._broadcastYdbRemoteOffsetReceived([{ room, offset }])
         break
       }
       case MESSAGE_SUB_CONF: {
         const nSubs = decoding.readVarUint(decoder)
+        const subs = []
         for (let i = 0; i < nSubs; i++) {
           const room = decoding.readVarString(decoder)
           const offset = decoding.readVarUint(decoder)
-          const roomsid = decoding.readVarUint(decoder) // TODO: SID
-          // logging.log(`Received Sub Conf. room "${room}", offset ${offset}, roomsid ${roomsid}`)
-          idbactions.confirmSubscription(t, room, roomsid, offset)
+          const rsid = decoding.readVarUint(decoder)
+          subs.push({
+            room, offset, rsid
+          })
+        }
+        bc._broadcastYdbSyncFromServer(subs)
+        if (nSubs < 500) {
+          subs.map(sub => idbactions.confirmSubscription(t, sub))
+        } else {
+          idbactions.confirmSubscriptions(t, subs)
         }
         break
       }
-      case MESSAGE_CONFIRMATION: {
+      case MESSAGE_CONFIRMATION: { // TODO: duplicate with MESSAGE_CONFIRMED_BY_HOST!
         const room = decoding.readVarString(decoder)
         const offset = decoding.readVarUint(decoder)
         logging.log(`Received Confirmation. room "${room}", offset ${offset}`)
         idbactions.writeConfirmedByHost(t, room, offset)
+        bc._broadcastYdbRemoteOffsetConfirmed([{ room, offset }])
         break
       }
       case MESSAGE_HOST_UNCONFIRMED_BY_CLIENT: {
@@ -53,6 +63,7 @@ export const readMessage = (ydb, message) => {
         const offset = decoding.readVarUint(decoder)
         logging.log(`Received HostUnconfirmedByClient. clientConf "${clientConf}", offset ${offset}`)
         idbactions.writeHostUnconfirmedByClient(t, clientConf, offset)
+        bc._broadcastYdbCUConfConfirmed(clientConf, offset)
         break
       }
       case MESSAGE_CONFIRMED_BY_HOST: {
@@ -60,6 +71,7 @@ export const readMessage = (ydb, message) => {
         const offset = decoding.readVarUint(decoder)
         logging.log(`Received Confirmation By Host. room "${room}", offset ${offset}`)
         idbactions.writeConfirmedByHost(t, room, offset)
+        bc._broadcastYdbRemoteOffsetConfirmed([{ room, offset }])
         break
       }
       default:
@@ -88,6 +100,7 @@ export const createUpdate = (room, update, clientConf) => {
  * @type {Object}
  * @property {string} room
  * @property {number} offset
+ * @property {number} rsid
  */
 
 /**
@@ -101,6 +114,7 @@ export const createSub = rooms => {
   for (let i = 0; i < rooms.length; i++) {
     encoding.writeVarString(encoder, rooms[i].room)
     encoding.writeVarUint(encoder, rooms[i].offset)
+    encoding.writeVarUint(encoder, rooms[i].rsid)
   }
   return encoding.toBuffer(encoder)
 }
