@@ -1,4 +1,4 @@
-import Tree from '../Util/Tree.js'
+import Tree from '../../lib/Tree.js'
 import RootID from '../Util/ID/RootID.js'
 import { getStruct } from '../Util/structReferences.js'
 import { logID } from '../MessageHandler/messageToString.js'

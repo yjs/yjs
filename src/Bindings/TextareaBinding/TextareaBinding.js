@@ -1,6 +1,6 @@
 
 import Binding from '../Binding.js'
-import simpleDiff from '../../Util/simpleDiff.js'
+import simpleDiff from '../../../lib/simpleDiff.js'
 import { getRelativePosition, fromRelativePosition } from '../../Util/relativePosition.js'
 
 function typeObserver () {

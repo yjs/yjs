@@ -1,5 +1,5 @@
 import { test } from '../node_modules/cutest/cutest.js'
-import simpleDiff from '../src/Util/simpleDiff.js'
+import simpleDiff from '../lib/simpleDiff.js'
 import Chance from 'chance'
 
 function runDiffTest (t, a, b, expected) {

@@ -1,5 +1,5 @@
 
-import { createMutualExclude } from '../Util/mutualExclude.js'
+import { createMutualExclude } from '../../lib/mutualExclude.js'
 
 /**
  * Abstract class for bindings.

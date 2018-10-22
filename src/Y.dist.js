@@ -1,7 +1,7 @@
 
-import Y from './Y.js'
-import UndoManager from './Util/UndoManager.js'
-import { integrateRemoteStructs } from './MessageHandler/integrateRemoteStructs.js'
+export { default as Y } from './Y.js'
+export { default as UndoManager } from './Util/UndoManager.js'
+export { integrateRemoteStructs } from './MessageHandler/integrateRemoteStructs.js'
 
 import Connector from './Connector.js'
 import Persistence from './Persistence.js'
@@ -52,5 +52,3 @@ Y.utils = {
   toBinary,
   fromBinary
 }
-
-export default Y

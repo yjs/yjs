@@ -3,8 +3,8 @@ import OperationStore from './Store/OperationStore.js'
 import StateStore from './Store/StateStore.js'
 import { generateRandomUint32 } from './Util/generateRandomUint32.js'
 import RootID from './Util/ID/RootID.js'
-import NamedEventHandler from './Util/NamedEventHandler.js'
-import Transaction from './Transaction.js'
+import NamedEventHandler from '../lib/NamedEventHandler.js'
+import Transaction from './Util/Transaction.js'
 
 export { default as DomBinding } from './Bindings/DomBinding/DomBinding.js'
 

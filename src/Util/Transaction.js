@@ -1,4 +1,4 @@
-import BinaryEncoder from './Util/Binary/Encoder.js'
+import BinaryEncoder from './Binary/Encoder.js'
 
 /**
  * A transaction is created for every change on the Yjs model. It is possible

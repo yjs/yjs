@@ -1,7 +1,7 @@
 import { getStructReference } from '../Util/structReferences.js'
 import ID from '../Util/ID/ID.js'
 import { logID } from '../MessageHandler/messageToString.js'
-import { writeStructToTransaction } from '../Transaction.js'
+import { writeStructToTransaction } from '../Util/Transaction.js'
 
 /**
  * @private

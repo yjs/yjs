@@ -2,7 +2,7 @@ import { getStructReference } from '../Util/structReferences.js'
 import ID from '../Util/ID/ID.js'
 import { default as RootID, RootFakeUserID } from '../Util/ID/RootID.js'
 import Delete from './Delete.js'
-import { transactionTypeChanged, writeStructToTransaction } from '../Transaction.js'
+import { transactionTypeChanged, writeStructToTransaction } from '../Util/Transaction.js'
 import GC from './GC.js'
 
 /**

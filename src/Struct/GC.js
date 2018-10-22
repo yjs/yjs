@@ -1,7 +1,7 @@
 import { getStructReference } from '../Util/structReferences.js'
 import { RootFakeUserID } from '../Util/ID/RootID.js'
 import ID from '../Util/ID/ID.js'
-import { writeStructToTransaction } from '../Transaction.js'
+import { writeStructToTransaction } from '../Util/Transaction.js'
 
 // TODO should have the same base class as Item
 export default class GC {

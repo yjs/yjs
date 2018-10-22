@@ -4,7 +4,7 @@ import {
   iterateUntilUndeleted,
   removeAssociation,
   insertNodeHelper } from './util.js'
-import diff from '../../Util/simpleDiff.js'
+import diff from '../../../lib/simpleDiff.js'
 import YXmlFragment from '../../Types/YXml/YXmlFragment.js'
 
 /**
