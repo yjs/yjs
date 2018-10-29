@@ -1,3 +1,4 @@
+/* eslint-env browser */
 /* global getSelection */
 
 import YXmlText from '../../Types/YXml/YXmlText.js'
@@ -17,11 +18,17 @@ function findScrollReference (scrollingElement) {
         }
       }
     } else {
-      if (anchor.nodeType === document.TEXT_NODE) {
-        anchor = anchor.parentElement
+      /**
+       * @type {Element}
+       */
+      let elem = anchor.parentElement
+      if (anchor instanceof Element) {
+        elem = anchor
       }
-      const top = anchor.getBoundingClientRect().top
-      return { elem: anchor, top: top }
+      return {
+        elem,
+        top: elem.getBoundingClientRect().top
+      }
     }
   }
   return null

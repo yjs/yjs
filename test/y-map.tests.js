@@ -1,10 +1,12 @@
-import { initArrays, compareUsers, Y, flushAll, applyRandomTests } from '../tests-lib/helper.js'
+import { initArrays, compareUsers, applyRandomTests } from '../tests-lib/helper.js'
+import * as Y from '../src/index.js'
 import { test, proxyConsole } from 'cutest'
+import * as random from '../lib/random/random.js'
 
 proxyConsole()
 
 test('basic map tests', async function map0 (t) {
-  let { users, map0, map1, map2 } = await initArrays(t, { users: 3 })
+  let { testConnector, users, map0, map1, map2 } = await initArrays(t, { users: 3 })
   users[2].disconnect()
 
   map0.set('number', 1)
@@ -22,8 +24,8 @@ test('basic map tests', async function map0 (t) {
   t.compare(map0.get('object'), { key: { key2: 'value' } }, 'client 0 computed the change (object)')
   t.assert(map0.get('y-map').get('y-array').get(0) === -1, 'client 0 computed the change (type)')
 
-  await users[2].reconnect()
-  await flushAll(t, users)
+  await users[2].connect()
+  testConnector.flushAllMessages()
 
   t.assert(map1.get('number') === 1, 'client 1 received the update (number)')
   t.assert(map1.get('string') === 'hello Y', 'client 1 received the update (string)')
@@ -39,13 +41,13 @@ test('basic map tests', async function map0 (t) {
 })
 
 test('Basic get&set of Map property (converge via sync)', async function map1 (t) {
-  let { users, map0 } = await initArrays(t, { users: 2 })
+  let { testConnector, users, map0 } = await initArrays(t, { users: 2 })
   map0.set('stuff', 'stuffy')
   map0.set('undefined', undefined)
   map0.set('null', null)
   t.compare(map0.get('stuff'), 'stuffy')
 
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
 
   for (let user of users) {
     var u = user.get('map', Y.Map)
@@ -85,11 +87,11 @@ test('Map can set custom types (Array)', async function map4 (t) {
 })
 
 test('Basic get&set of Map property (converge via update)', async function map5 (t) {
-  let { users, map0 } = await initArrays(t, { users: 2 })
+  let { testConnector, users, map0 } = await initArrays(t, { users: 2 })
   map0.set('stuff', 'stuffy')
   t.compare(map0.get('stuff'), 'stuffy')
 
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
 
   for (let user of users) {
     var u = user.get('map', Y.Map)
@@ -99,12 +101,11 @@ test('Basic get&set of Map property (converge via update)', async function map5 
 })
 
 test('Basic get&set of Map property (handle conflict)', async function map6 (t) {
-  let { users, map0, map1 } = await initArrays(t, { users: 3 })
+  let { testConnector, users, map0, map1 } = await initArrays(t, { users: 3 })
   map0.set('stuff', 'c0')
   map1.set('stuff', 'c1')
 
-  await flushAll(t, users)
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
 
   for (let user of users) {
     var u = user.get('map', Y.Map)
@@ -114,12 +115,11 @@ test('Basic get&set of Map property (handle conflict)', async function map6 (t) 
 })
 
 test('Basic get&set&delete of Map property (handle conflict)', async function map7 (t) {
-  let { users, map0, map1 } = await initArrays(t, { users: 3 })
+  let { testConnector, users, map0, map1 } = await initArrays(t, { users: 3 })
   map0.set('stuff', 'c0')
   map0.delete('stuff')
   map1.set('stuff', 'c1')
-  await flushAll(t, users)
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   for (let user of users) {
     var u = user.get('map', Y.Map)
     t.assert(u.get('stuff') === undefined)
@@ -128,13 +128,12 @@ test('Basic get&set&delete of Map property (handle conflict)', async function ma
 })
 
 test('Basic get&set of Map property (handle three conflicts)', async function map8 (t) {
-  let { users, map0, map1, map2 } = await initArrays(t, { users: 3 })
+  let { testConnector, users, map0, map1, map2 } = await initArrays(t, { users: 3 })
   map0.set('stuff', 'c0')
   map1.set('stuff', 'c1')
   map1.set('stuff', 'c2')
   map2.set('stuff', 'c3')
-  await flushAll(t, users)
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   for (let user of users) {
     var u = user.get('map', Y.Map)
     t.compare(u.get('stuff'), 'c0')
@@ -143,19 +142,18 @@ test('Basic get&set of Map property (handle three conflicts)', async function ma
 })
 
 test('Basic get&set&delete of Map property (handle three conflicts)', async function map9 (t) {
-  let { users, map0, map1, map2, map3 } = await initArrays(t, { users: 4 })
+  let { testConnector, users, map0, map1, map2, map3 } = await initArrays(t, { users: 4 })
   map0.set('stuff', 'c0')
   map1.set('stuff', 'c1')
   map1.set('stuff', 'c2')
   map2.set('stuff', 'c3')
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   map0.set('stuff', 'deleteme')
   map0.delete('stuff')
   map1.set('stuff', 'c1')
   map2.set('stuff', 'c2')
   map3.set('stuff', 'c3')
-  await flushAll(t, users)
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   for (let user of users) {
     var u = user.get('map', Y.Map)
     t.assert(u.get('stuff') === undefined)
@@ -173,7 +171,7 @@ test('observePath properties', async function map10 (t) {
     }
   })
   map1.set('map', new Y.Map())
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   map = map2.get('map')
   t.compare(map.get('yay'), 4)
   await compareUsers(t, users)
@@ -181,7 +179,7 @@ test('observePath properties', async function map10 (t) {
 */
 
 test('observe deep properties', async function map11 (t) {
-  let { users, map1, map2, map3 } = await initArrays(t, { users: 4 })
+  let { testConnector, users, map1, map2, map3 } = await initArrays(t, { users: 4 })
   var _map1 = map1.set('map', new Y.Map())
   var calls = 0
   var dmapid
@@ -194,15 +192,13 @@ test('observe deep properties', async function map11 (t) {
       dmapid = event.target.get('deepmap')._id
     })
   })
-  await flushAll(t, users)
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   var _map3 = map3.get('map')
   _map3.set('deepmap', new Y.Map())
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   var _map2 = map2.get('map')
   _map2.set('deepmap', new Y.Map())
-  await flushAll(t, users)
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   var dmap1 = _map1.get('deepmap')
   var dmap2 = _map2.get('deepmap')
   var dmap3 = _map3.get('deepmap')
@@ -304,14 +300,14 @@ test('event has correct value when setting a primitive on a YMap (received from 
 */
 
 var mapTransactions = [
-  function set (t, user, chance) {
-    let key = chance.pickone(['one', 'two'])
-    var value = chance.string()
+  function set (t, user, prng) {
+    let key = random.oneOf(prng, ['one', 'two'])
+    var value = random.utf16String(prng)
     user.get('map', Y.Map).set(key, value)
   },
-  function setType (t, user, chance) {
-    let key = chance.pickone(['one', 'two'])
-    var type = chance.pickone([new Y.Array(), new Y.Map()])
+  function setType (t, user, prng) {
+    let key = random.oneOf(prng, ['one', 'two'])
+    var type = random.oneOf(prng, [new Y.Array(), new Y.Map()])
     user.get('map', Y.Map).set(key, type)
     if (type instanceof Y.Array) {
       type.insert(0, [1, 2, 3, 4])
@@ -319,8 +315,8 @@ var mapTransactions = [
       type.set('deepkey', 'deepvalue')
     }
   },
-  function _delete (t, user, chance) {
-    let key = chance.pickone(['one', 'two'])
+  function _delete (t, user, prng) {
+    let key = random.oneOf(prng, ['one', 'two'])
     user.get('map', Y.Map).delete(key)
   }
 ]

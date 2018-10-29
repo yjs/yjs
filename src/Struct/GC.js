@@ -1,11 +1,15 @@
 import { getStructReference } from '../Util/structReferences.js'
-import { RootFakeUserID } from '../Util/ID/RootID.js'
-import ID from '../Util/ID/ID.js'
+import * as ID from '../Util/ID.js'
 import { writeStructToTransaction } from '../Util/Transaction.js'
+import * as decoding from '../../lib/decoding.js'
+import * as encoding from '../../lib/encoding.js'
 
 // TODO should have the same base class as Item
 export default class GC {
   constructor () {
+    /**
+     * @type {ID.ID}
+     */
     this._id = null
     this._length = 0
   }
@@ -37,13 +41,7 @@ export default class GC {
       n._length += next._length
       y.os.delete(next._id)
     }
-    if (id.user !== RootFakeUserID) {
-      if (y.connector !== null && (y.connector._forwardAppliedStructs || id.user === y.userID)) {
-        y.connector.broadcastStruct(this)
-      }
-      if (y.persistence !== null) {
-        y.persistence.saveStruct(y, this)
-      }
+    if (id.user !== ID.RootFakeUserID) {
       writeStructToTransaction(y._transaction, this)
     }
   }
@@ -54,13 +52,13 @@ export default class GC {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @param {BinaryEncoder} encoder The encoder to write data to.
+   * @param {encoding.Encoder} encoder The encoder to write data to.
    * @private
    */
   _toBinary (encoder) {
-    encoder.writeUint8(getStructReference(this.constructor))
-    encoder.writeID(this._id)
-    encoder.writeVarUint(this._length)
+    encoding.writeUint8(encoder, getStructReference(this.constructor))
+    this._id.encode(encoder)
+    encoding.writeVarUint(encoder, this._length)
   }
 
   /**
@@ -68,17 +66,20 @@ export default class GC {
    *
    * This is called when data is received from a remote peer.
    *
-   * @param {Y} y The Yjs instance that this Item belongs to.
-   * @param {BinaryDecoder} decoder The decoder object to read data from.
+   * @param {import('../Y.js').default} y The Yjs instance that this Item belongs to.
+   * @param {decoding.Decoder} decoder The decoder object to read data from.
    * @private
    */
   _fromBinary (y, decoder) {
-    const id = decoder.readID()
+    /**
+     * @type {any}
+     */
+    const id = ID.decode(decoder)
     this._id = id
-    this._length = decoder.readVarUint()
+    this._length = decoding.readVarUint(decoder)
     const missing = []
     if (y.ss.getState(id.user) < id.clock) {
-      missing.push(new ID(id.user, id.clock - 1))
+      missing.push(ID.createID(id.user, id.clock - 1))
     }
     return missing
   }
@@ -89,7 +90,7 @@ export default class GC {
 
   _clonePartial (diff) {
     const gc = new GC()
-    gc._id = new ID(this._id.user, this._id.clock + diff)
+    gc._id = ID.createID(this._id.user, this._id.clock + diff)
     gc._length = this._length - diff
     return gc
   }

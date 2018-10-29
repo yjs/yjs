@@ -1,6 +1,11 @@
 import Item from './Item.js'
 import EventHandler from '../Util/EventHandler.js'
-import ID from '../Util/ID/ID.js'
+import { createID } from '../Util/ID.js'
+import YEvent from '../Util/YEvent.js'
+
+/**
+ * @typedef {import("../Y.js").default} Y
+ */
 
 // restructure children as if they were inserted one after another
 function integrateChildren (y, start) {
@@ -22,7 +27,7 @@ export function getListItemIDByPosition (type, i) {
     if (!n._deleted) {
       if (pos <= i && i < pos + n._length) {
         const id = n._id
-        return new ID(id.user, id.clock + i - pos)
+        return createID(id.user, id.clock + i - pos)
       }
       pos++
     }
@@ -61,7 +66,7 @@ export default class Type extends Item {
    * console.log(path) // might look like => [2, 'key1']
    * child === type.get(path[0]).get(path[1])
    *
-   * @param {YType} type Type target
+   * @param {Type | Y | any} type Type target
    * @return {Array<string>} Path to the target
    */
   getPathTo (type) {
@@ -93,12 +98,23 @@ export default class Type extends Item {
 
   /**
    * @private
+   * Creates YArray Event and calls observers.
+   */
+  _callObserver (transaction, parentSubs, remote) {
+    this._callEventHandler(transaction, new YEvent(this))
+  }
+
+  /**
+   * @private
    * Call event listeners with an event. This will also add an event to all
    * parents (for `.observeDeep` handlers).
    */
   _callEventHandler (transaction, event) {
     const changedParentTypes = transaction.changedParentTypes
     this._eventHandler.callEventListeners(transaction, event)
+    /**
+     * @type {any}
+     */
     let type = this
     while (type !== this._y) {
       let events = changedParentTypes.get(type)
@@ -183,7 +199,7 @@ export default class Type extends Item {
       this._start = null
       integrateChildren(y, start)
     }
-    // integrate map children
+    // integrate map children_integrate
     const map = this._map
     this._map = new Map()
     for (let t of map.values()) {
@@ -207,13 +223,19 @@ export default class Type extends Item {
   }
 
   /**
+   * @abstract
+   * @return {Object | Array | number | string}
+   */
+  toJSON () {}
+
+  /**
    * @private
    * Mark this Item as deleted.
    *
    * @param {Y} y The Yjs instance
    * @param {boolean} createDelete Whether to propagate a message that this
    *                               Type was deleted.
-   * @param {boolean} [gcChildren=y._hasUndoManager===false] Whether to garbage
+   * @param {boolean} [gcChildren=(y._hasUndoManager===false)] Whether to garbage
    *                                         collect the children of this type.
    */
   _delete (y, createDelete, gcChildren) {

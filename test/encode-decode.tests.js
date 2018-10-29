@@ -1,15 +1,15 @@
-import { test } from '../node_modules/cutest/cutest.js'
-import BinaryEncoder from '../src/Util/Binary/Encoder.js'
-import BinaryDecoder from '../src/Util/Binary/Decoder.js'
+import { test } from '../node_modules/cutest/cutest.mjs'
 import { generateRandomUint32 } from '../src/Util/generateRandomUint32.js'
-import Chance from 'chance'
+import * as encoding from '../lib/encoding.js'
+import * as decoding from '../lib/decoding.js'
+import * as random from '../lib/random/random.js'
 
 function testEncoding (t, write, read, val) {
-  let encoder = new BinaryEncoder()
+  let encoder = encoding.createEncoder()
   write(encoder, val)
-  let reader = new BinaryDecoder(encoder.createBuffer())
+  let reader = decoding.createDecoder(encoding.toBuffer(encoder))
   let result = read(reader)
-  t.log(`string encode: ${JSON.stringify(val).length} bytes / binary encode: ${encoder.length} bytes`)
+  t.log(`string encode: ${JSON.stringify(val).length} bytes / binary encode: ${encoding.length(encoder)} bytes`)
   t.compare(val, result, 'Compare results')
 }
 
@@ -37,8 +37,8 @@ test('varUint of 2839012934', async function varUint2839012934 (t) {
 })
 
 test('varUint random', async function varUintRandom (t) {
-  const chance = new Chance(t.getSeed() * Math.pow(Number.MAX_SAFE_INTEGER))
-  testEncoding(t, writeVarUint, readVarUint, chance.integer({min: 0, max: (1 << 28) - 1}))
+  const prng = random.createPRNG(t.getSeed() * Math.pow(Number.MAX_SAFE_INTEGER, 2))
+  testEncoding(t, writeVarUint, readVarUint, random.int32(prng, 0, (1 << 28) - 1))
 })
 
 test('varUint random user id', async function varUintRandomUserId (t) {
@@ -60,6 +60,6 @@ test('varString', async function varString (t) {
 })
 
 test('varString random', async function varStringRandom (t) {
-  const chance = new Chance(t.getSeed() * 1000000000)
-  testEncoding(t, writeVarString, readVarString, chance.string())
+  const prng = random.createPRNG(t.getSeed() * 10000000)
+  testEncoding(t, writeVarString, readVarString, random.utf16String(prng))
 })

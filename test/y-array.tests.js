@@ -1,5 +1,7 @@
-import { wait, initArrays, compareUsers, Y, flushAll, applyRandomTests } from '../tests-lib/helper.js'
+import { initArrays, compareUsers, applyRandomTests } from '../tests-lib/helper.js'
+import * as Y from '../src/index.js'
 import { test, proxyConsole } from 'cutest'
+import * as random from '../lib/random/random.js'
 
 proxyConsole()
 test('basic spec', async function array0 (t) {
@@ -24,10 +26,10 @@ test('basic spec', async function array0 (t) {
 })
 
 test('insert three elements, try re-get property', async function array1 (t) {
-  var { users, array0, array1 } = await initArrays(t, { users: 2 })
+  var { testConnector, users, array0, array1 } = initArrays(t, { users: 2 })
   array0.insert(0, [1, 2, 3])
   t.compare(array0.toJSON(), [1, 2, 3], '.toJSON() works')
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   t.compare(array1.toJSON(), [1, 2, 3], '.toJSON() works after sync')
   await compareUsers(t, users)
 })
@@ -41,9 +43,9 @@ test('concurrent insert (handle three conflicts)', async function array2 (t) {
 })
 
 test('concurrent insert&delete (handle three conflicts)', async function array3 (t) {
-  var { users, array0, array1, array2 } = await initArrays(t, { users: 3 })
+  var { testConnector, users, array0, array1, array2 } = await initArrays(t, { users: 3 })
   array0.insert(0, ['x', 'y', 'z'])
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   array0.insert(1, [0])
   array1.delete(0)
   array1.delete(1, 1)
@@ -53,56 +55,52 @@ test('concurrent insert&delete (handle three conflicts)', async function array3 
 })
 
 test('insertions work in late sync', async function array4 (t) {
-  var { users, array0, array1, array2 } = await initArrays(t, { users: 3 })
+  var { testConnector, users, array0, array1, array2 } = await initArrays(t, { users: 3 })
   array0.insert(0, ['x', 'y'])
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   users[1].disconnect()
   users[2].disconnect()
   array0.insert(1, ['user0'])
   array1.insert(1, ['user1'])
   array2.insert(1, ['user2'])
-  await users[1].reconnect()
-  await users[2].reconnect()
+  await users[1].connect()
+  await users[2].connect()
   await compareUsers(t, users)
 })
 
 test('disconnect really prevents sending messages', async function array5 (t) {
-  var { users, array0, array1 } = await initArrays(t, { users: 3 })
+  var { testConnector, users, array0, array1 } = await initArrays(t, { users: 3 })
   array0.insert(0, ['x', 'y'])
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   users[1].disconnect()
   users[2].disconnect()
   array0.insert(1, ['user0'])
   array1.insert(1, ['user1'])
-  await wait(1000)
   t.compare(array0.toJSON(), ['x', 'user0', 'y'])
   t.compare(array1.toJSON(), ['x', 'user1', 'y'])
-  await users[1].reconnect()
-  await users[2].reconnect()
+  await users[1].connect()
+  await users[2].connect()
   await compareUsers(t, users)
 })
 
 test('deletions in late sync', async function array6 (t) {
-  var { users, array0, array1 } = await initArrays(t, { users: 2 })
+  var { testConnector, users, array0, array1 } = await initArrays(t, { users: 2 })
   array0.insert(0, ['x', 'y'])
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   await users[1].disconnect()
   array1.delete(1, 1)
   array0.delete(0, 2)
-  await wait()
-  await users[1].reconnect()
+  await users[1].connect()
   await compareUsers(t, users)
 })
 
 test('insert, then marge delete on sync', async function array7 (t) {
-  var { users, array0, array1 } = await initArrays(t, { users: 2 })
+  var { testConnector, users, array0, array1 } = await initArrays(t, { users: 2 })
   array0.insert(0, ['x', 'y', 'z'])
-  await flushAll(t, users)
-  await wait()
-  await users[0].disconnect()
+  testConnector.flushAllMessages()
+  users[0].disconnect()
   array1.delete(0, 3)
-  await wait()
-  await users[0].reconnect()
+  users[0].connect()
   await compareUsers(t, users)
 })
 
@@ -174,14 +172,13 @@ test('insert & delete events for types (2)', async function array10 (t) {
 })
 
 test('garbage collector', async function gc1 (t) {
-  var { users, array0 } = await initArrays(t, { users: 3 })
+  var { testConnector, users, array0 } = await initArrays(t, { users: 3 })
   array0.insert(0, ['x', 'y', 'z'])
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   users[0].disconnect()
   array0.delete(0, 3)
-  await wait()
-  await users[0].reconnect()
-  await flushAll(t, users)
+  await users[0].connect()
+  testConnector.flushAllMessages()
   await compareUsers(t, users)
 })
 
@@ -197,13 +194,13 @@ test('event target is set correctly (local)', async function array11 (t) {
 })
 
 test('event target is set correctly (remote user)', async function array12 (t) {
-  let { array0, array1, users } = await initArrays(t, { users: 3 })
+  let { testConnector, array0, array1, users } = await initArrays(t, { users: 3 })
   var event
   array0.observe(function (e) {
     event = e
   })
   array1.insert(0, ['stuff'])
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   compareEvent(t, event, {
     remote: true
   })
@@ -217,45 +214,45 @@ function getUniqueNumber () {
 }
 
 var arrayTransactions = [
-  function insert (t, user, chance) {
+  function insert (t, user, prng) {
     const yarray = user.get('array', Y.Array)
     var uniqueNumber = getUniqueNumber()
     var content = []
-    var len = chance.integer({ min: 1, max: 4 })
+    var len = random.int32(prng, 1, 4)
     for (var i = 0; i < len; i++) {
       content.push(uniqueNumber)
     }
-    var pos = chance.integer({ min: 0, max: yarray.length })
+    var pos = random.int32(prng, 0, yarray.length)
     yarray.insert(pos, content)
   },
-  function insertTypeArray (t, user, chance) {
+  function insertTypeArray (t, user, prng) {
     const yarray = user.get('array', Y.Array)
-    var pos = chance.integer({ min: 0, max: yarray.length })
+    var pos = random.int32(prng, 0, yarray.length)
     yarray.insert(pos, [Y.Array])
     var array2 = yarray.get(pos)
     array2.insert(0, [1, 2, 3, 4])
   },
-  function insertTypeMap (t, user, chance) {
+  function insertTypeMap (t, user, prng) {
     const yarray = user.get('array', Y.Array)
-    var pos = chance.integer({ min: 0, max: yarray.length })
+    var pos = random.int32(prng, 0, yarray.length)
     yarray.insert(pos, [Y.Map])
     var map = yarray.get(pos)
     map.set('someprop', 42)
     map.set('someprop', 43)
     map.set('someprop', 44)
   },
-  function _delete (t, user, chance) {
+  function _delete (t, user, prng) {
     const yarray = user.get('array', Y.Array)
     var length = yarray.length
     if (length > 0) {
-      var somePos = chance.integer({ min: 0, max: length - 1 })
-      var delLength = chance.integer({ min: 1, max: Math.min(2, length - somePos) })
+      var somePos = random.int32(prng, 0, length - 1)
+      var delLength = random.int32(prng, 1, Math.min(2, length - somePos))
       if (yarray instanceof Y.Array) {
-        if (chance.bool()) {
+        if (random.bool(prng)) {
           var type = yarray.get(somePos)
           if (type.length > 0) {
-            somePos = chance.integer({ min: 0, max: type.length - 1 })
-            delLength = chance.integer({ min: 0, max: Math.min(2, type.length - somePos) })
+            somePos = random.int32(prng, 0, type.length - 1)
+            delLength = random.int32(prng, 0, Math.min(2, type.length - somePos))
             type.delete(somePos, delLength)
           }
         } else {

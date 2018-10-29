@@ -1,9 +1,15 @@
 import { getStructReference } from '../Util/structReferences.js'
-import ID from '../Util/ID/ID.js'
-import { default as RootID, RootFakeUserID } from '../Util/ID/RootID.js'
+import * as ID from '../Util/ID.js'
 import Delete from './Delete.js'
 import { transactionTypeChanged, writeStructToTransaction } from '../Util/Transaction.js'
 import GC from './GC.js'
+import * as encoding from '../../lib/encoding.js'
+import * as decoding from '../../lib/decoding.js'
+import Y from '../Y.js'
+
+/**
+ * @typedef {import('./Type.js').default} YType
+ */
 
 /**
  * @private
@@ -15,7 +21,7 @@ import GC from './GC.js'
  */
 export function splitHelper (y, a, b, diff) {
   const aID = a._id
-  b._id = new ID(aID.user, aID.clock + diff)
+  b._id = ID.createID(aID.user, aID.clock + diff)
   b._origin = a
   b._left = a
   b._right = a._right
@@ -55,7 +61,7 @@ export default class Item {
   constructor () {
     /**
      * The uniqe identifier of this type.
-     * @type {ID}
+     * @type {ID.ID | ID.RootID}
      */
     this._id = null
     /**
@@ -99,7 +105,7 @@ export default class Item {
     /**
      * If this type's effect is reundone this type refers to the type that undid
      * this operation.
-     * @type {Item}
+     * @type {YType}
      */
     this._redone = null
   }
@@ -110,7 +116,8 @@ export default class Item {
    * @private
    */
   _copy () {
-    return new this.constructor()
+    const C = this.constructor
+    return C()
   }
 
   /**
@@ -123,6 +130,9 @@ export default class Item {
   _redo (y, redoitems) {
     if (this._redone !== null) {
       return this._redone
+    }
+    if (this._parent instanceof Y) {
+      return
     }
     let struct = this._copy()
     let left, right
@@ -146,7 +156,7 @@ export default class Item {
     }
     if (parent._redone !== null) {
       parent = parent._redone
-      // find next cloned items
+      // find next cloned_redo items
       while (left !== null) {
         if (left._redone !== null && left._redone._parent === parent) {
           left = left._redone
@@ -178,7 +188,11 @@ export default class Item {
    * @private
    */
   get _lastId () {
-    return new ID(this._id.user, this._id.clock + this._length - 1)
+    /**
+     * @type {any}
+     */
+    const id = this._id
+    return ID.createID(id.user, id.clock + this._length - 1)
   }
 
   /**
@@ -227,10 +241,11 @@ export default class Item {
    * @param {Y} y The Yjs instance
    * @param {boolean} createDelete Whether to propagate a message that this
    *                               Type was deleted.
+   * @param {boolean} gcChildren
    *
    * @private
    */
-  _delete (y, createDelete = true) {
+  _delete (y, createDelete = true, gcChildren) {
     if (!this._deleted) {
       this._deleted = true
       y.ds.mark(this._id, this._length, false)
@@ -240,9 +255,6 @@ export default class Item {
       if (createDelete) {
         // broadcast and persists Delete
         del._integrate(y, true)
-      } else if (y.persistence !== null) {
-        // only persist Delete
-        y.persistence.saveStruct(y, del)
       }
       transactionTypeChanged(y, this._parent, this._parentSub)
       y._transaction.deletedStructs.add(this)
@@ -280,21 +292,30 @@ export default class Item {
    * * Add this struct to y.os
    * * Check if this is struct deleted
    *
+   * @param {Y} y
+   *
    * @private
    */
   _integrate (y) {
     y._transaction.newTypes.add(this)
+    /**
+     * @type {any}
+     */
     const parent = this._parent
+    /**
+     * @type {any}
+     */
     const selfID = this._id
     const user = selfID === null ? y.userID : selfID.user
     const userState = y.ss.getState(user)
     if (selfID === null) {
       this._id = y.ss.getNextID(this._length)
-    } else if (selfID.user === RootFakeUserID) {
-      // nop
+    } else if (selfID.user === ID.RootFakeUserID) {
+      // is parent
+      return
     } else if (selfID.clock < userState) {
       // already applied..
-      return []
+      return
     } else if (selfID.clock === userState) {
       y.ss.setState(selfID.user, userState + this._length)
     } else {
@@ -304,7 +325,7 @@ export default class Item {
     if (!parent._deleted && !y._transaction.changedTypes.has(parent) && !y._transaction.newTypes.has(parent)) {
       // this is the first time parent is updated
       // or this types is new
-      this._parent._beforeChange()
+      parent._beforeChange()
     }
 
     /*
@@ -328,9 +349,9 @@ export default class Item {
     if (this._left !== null) {
       o = this._left._right
     } else if (this._parentSub !== null) {
-      o = this._parent._map.get(this._parentSub) || null
+      o = parent._map.get(this._parentSub) || null
     } else {
-      o = this._parent._start
+      o = parent._start
     }
     let conflictingItems = new Set()
     let itemsBeforeOrigin = new Set()
@@ -386,17 +407,11 @@ export default class Item {
       }
     }
     if (parent._deleted) {
-      this._delete(y, false)
+      this._delete(y, false, true)
     }
     y.os.put(this)
     transactionTypeChanged(y, parent, parentSub)
-    if (this._id.user !== RootFakeUserID) {
-      if (y.connector !== null && (y.connector._forwardAppliedStructs || this._id.user === y.userID)) {
-        y.connector.broadcastStruct(this)
-      }
-      if (y.persistence !== null) {
-        y.persistence.saveStruct(y, this)
-      }
+    if (this._id.user !== ID.RootFakeUserID) {
       writeStructToTransaction(y._transaction, this)
     }
   }
@@ -407,12 +422,12 @@ export default class Item {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @param {BinaryEncoder} encoder The encoder to write data to.
+   * @param {encoding.Encoder} encoder The encoder to write data to.
    *
    * @private
    */
   _toBinary (encoder) {
-    encoder.writeUint8(getStructReference(this.constructor))
+    encoding.writeUint8(encoder, getStructReference(this.constructor))
     let info = 0
     if (this._origin !== null) {
       info += 0b1 // origin is defined
@@ -429,10 +444,10 @@ export default class Item {
     if (this._parentSub !== null) {
       info += 0b1000
     }
-    encoder.writeUint8(info)
-    encoder.writeID(this._id)
+    encoding.writeUint8(encoder, info)
+    this._id.encode(encoder)
     if (info & 0b1) {
-      encoder.writeID(this._origin._lastId)
+      this._origin._lastId.encode(encoder)
     }
     // TODO: remove
     /* see above
@@ -441,14 +456,14 @@ export default class Item {
     }
     */
     if (info & 0b100) {
-      encoder.writeID(this._right_origin._id)
+      this._right_origin._id.encode(encoder)
     }
     if ((info & 0b101) === 0) {
       // neither origin nor right is defined
-      encoder.writeID(this._parent._id)
+      this._parent._id.encode(encoder)
     }
     if (info & 0b1000) {
-      encoder.writeVarString(JSON.stringify(this._parentSub))
+      encoding.writeVarString(encoder, JSON.stringify(this._parentSub))
     }
   }
 
@@ -458,19 +473,19 @@ export default class Item {
    * This is called when data is received from a remote peer.
    *
    * @param {Y} y The Yjs instance that this Item belongs to.
-   * @param {BinaryDecoder} decoder The decoder object to read data from.
+   * @param {decoding.Decoder} decoder The decoder object to read data from.
    *
    * @private
    */
   _fromBinary (y, decoder) {
     let missing = []
-    const info = decoder.readUint8()
-    const id = decoder.readID()
+    const info = decoding.readUint8(decoder)
+    const id = ID.decode(decoder)
     this._id = id
     // read origin
     if (info & 0b1) {
       // origin != null
-      const originID = decoder.readID()
+      const originID = ID.decode(decoder)
       // we have to query for left again because it might have been split/merged..
       const origin = y.os.getItemCleanEnd(originID)
       if (origin === null) {
@@ -483,7 +498,7 @@ export default class Item {
     // read right
     if (info & 0b100) {
       // right != null
-      const rightID = decoder.readID()
+      const rightID = ID.decode(decoder)
       // we have to query for right again because it might have been split/merged..
       const right = y.os.getItemCleanStart(rightID)
       if (right === null) {
@@ -496,11 +511,11 @@ export default class Item {
     // read parent
     if ((info & 0b101) === 0) {
       // neither origin nor right is defined
-      const parentID = decoder.readID()
+      const parentID = ID.decode(decoder)
       // parent does not change, so we don't have to search for it again
       if (this._parent === null) {
         let parent
-        if (parentID.constructor === RootID) {
+        if (parentID.constructor === ID.RootID) {
           parent = y.os.get(parentID)
         } else {
           parent = y.os.getItem(parentID)
@@ -513,27 +528,17 @@ export default class Item {
       }
     } else if (this._parent === null) {
       if (this._origin !== null) {
-        if (this._origin.constructor === GC) {
-          // if origin is a gc, set parent also gc'd
-          this._parent = this._origin
-        } else {
-          this._parent = this._origin._parent
-        }
+        this._parent = this._origin._parent
       } else if (this._right_origin !== null) {
-        // if origin is a gc, set parent also gc'd
-        if (this._right_origin.constructor === GC) {
-          this._parent = this._right_origin
-        } else {
-          this._parent = this._right_origin._parent
-        }
+        this._parent = this._right_origin._parent
       }
     }
     if (info & 0b1000) {
       // TODO: maybe put this in read parent condition (you can also read parentsub from left/right)
-      this._parentSub = JSON.parse(decoder.readVarString())
+      this._parentSub = JSON.parse(decoding.readVarString(decoder))
     }
-    if (y.ss.getState(id.user) < id.clock) {
-      missing.push(new ID(id.user, id.clock - 1))
+    if (id instanceof ID.ID && y.ss.getState(id.user) < id.clock) {
+      missing.push(ID.createID(id.user, id.clock - 1))
     }
     return missing
   }

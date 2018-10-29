@@ -33,7 +33,7 @@ export default class YXmlTreeWalker {
   /**
    * Get the next node.
    *
-   * @return {YXmlElement} The next node.
+   * @return {import('./YXmlElement.js').default} The next node.
    *
    * @public
    */

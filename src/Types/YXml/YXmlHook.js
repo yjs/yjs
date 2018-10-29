@@ -1,5 +1,12 @@
 import YMap from '../YMap/YMap.js'
 import { createAssociation } from '../../Bindings/DomBinding/util.js'
+import * as encoding from '../../../lib/encoding.js'
+import * as decoding from '../../../lib/decoding.js'
+
+/**
+ * @typedef {import('../../Bindings/DomBinding/DomBinding.js').default} DomBinding
+ * @typedef {import('../../Y.js').default} Y
+ */
 
 /**
  * You can manage binding to a custom type with YXmlHook.
@@ -35,7 +42,7 @@ export default class YXmlHook extends YMap {
    * @param {Document} [_document=document] The document object (you must define
    *                                        this when calling this method in
    *                                        nodejs)
-   * @param {Object<key:hookDefinition>} [hooks] Optional property to customize how hooks
+   * @param {Object.<string, any>} [hooks] Optional property to customize how hooks
    *                                             are presented in the DOM
    * @param {DomBinding} [binding] You should not set this property. This is
    *                               used if DomBinding wants to create a
@@ -63,13 +70,13 @@ export default class YXmlHook extends YMap {
    * This is called when data is received from a remote peer.
    *
    * @param {Y} y The Yjs instance that this Item belongs to.
-   * @param {BinaryDecoder} decoder The decoder object to read data from.
+   * @param {decoding.Decoder} decoder The decoder object to read data from.
    *
    * @private
    */
   _fromBinary (y, decoder) {
     const missing = super._fromBinary(y, decoder)
-    this.hookName = decoder.readVarString()
+    this.hookName = decoding.readVarString(decoder)
     return missing
   }
 
@@ -79,13 +86,13 @@ export default class YXmlHook extends YMap {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @param {BinaryEncoder} encoder The encoder to write data to.
+   * @param {encoding.Encoder} encoder The encoder to write data to.
    *
    * @private
    */
   _toBinary (encoder) {
     super._toBinary(encoder)
-    encoder.writeVarString(this.hookName)
+    encoding.writeVarString(encoder, this.hookName)
   }
 
   /**

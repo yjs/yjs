@@ -1,6 +1,6 @@
 
 import Tree from '../../lib/Tree.js'
-import ID from '../Util/ID/ID.js'
+import * as ID from '../Util/ID.js'
 
 class DSNode {
   constructor (id, len, gc) {
@@ -33,7 +33,7 @@ export default class DeleteStore extends Tree {
   mark (id, length, gc) {
     if (length === 0) return
     // Step 1. Unmark range
-    const leftD = this.findWithUpperBound(new ID(id.user, id.clock - 1))
+    const leftD = this.findWithUpperBound(ID.createID(id.user, id.clock - 1))
     // Resize left DSNode if necessary
     if (leftD !== null && leftD._id.user === id.user) {
       if (leftD._id.clock < id.clock && id.clock < leftD._id.clock + leftD.len) {
@@ -41,19 +41,19 @@ export default class DeleteStore extends Tree {
         if (id.clock + length < leftD._id.clock + leftD.len) {
           // overlaps new mark range and some more
           // create another DSNode to the right of new mark
-          this.put(new DSNode(new ID(id.user, id.clock + length), leftD._id.clock + leftD.len - id.clock - length, leftD.gc))
+          this.put(new DSNode(ID.createID(id.user, id.clock + length), leftD._id.clock + leftD.len - id.clock - length, leftD.gc))
         }
         // resize left DSNode
         leftD.len = id.clock - leftD._id.clock
       } // Otherwise there is no overlapping
     }
     // Resize right DSNode if necessary
-    const upper = new ID(id.user, id.clock + length - 1)
+    const upper = ID.createID(id.user, id.clock + length - 1)
     const rightD = this.findWithUpperBound(upper)
     if (rightD !== null && rightD._id.user === id.user) {
       if (rightD._id.clock < id.clock + length && id.clock <= rightD._id.clock && id.clock + length < rightD._id.clock + rightD.len) { // we only consider the case where we resize the node
         const d = id.clock + length - rightD._id.clock
-        rightD._id = new ID(rightD._id.user, rightD._id.clock + d)
+        rightD._id = ID.createID(rightD._id.user, rightD._id.clock + d)
         rightD.len -= d
       }
     }
@@ -72,7 +72,7 @@ export default class DeleteStore extends Tree {
       leftD.len += length
       newMark = leftD
     }
-    const rightNext = this.find(new ID(id.user, id.clock + length))
+    const rightNext = this.find(ID.createID(id.user, id.clock + length))
     if (rightNext !== null && rightNext._id.user === id.user && id.clock + length === rightNext._id.clock && gc === rightNext.gc) {
       // We can merge newMark and rightNext
       newMark.len += rightNext.len

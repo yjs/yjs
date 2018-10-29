@@ -1,3 +1,8 @@
+/**
+ * @typedef {import("../Y.js").default} Y
+ * @typedef {import("../Struct/Type.js").default} YType
+ * @typedef {import("../Struct/Item.js").default} Item
+ */
 
 /**
  * YEvent describes the changes on a YType.

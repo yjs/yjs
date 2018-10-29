@@ -1,4 +1,8 @@
-import ID from '../Util/ID/ID.js'
+import * as ID from '../Util/ID.js'
+
+/**
+ * @typedef {Map<number, number>} StateSet
+ */
 
 export default class StateStore {
   constructor (y) {
@@ -18,14 +22,14 @@ export default class StateStore {
     const user = this.y.userID
     const state = this.getState(user)
     this.setState(user, state + len)
-    return new ID(user, state)
+    return ID.createID(user, state)
   }
   updateRemoteState (struct) {
     let user = struct._id.user
     let userState = this.state.get(user)
     while (struct !== null && struct._id.clock === userState) {
       userState += struct._length
-      struct = this.y.os.get(new ID(user, userState))
+      struct = this.y.os.get(ID.createID(user, userState))
     }
     this.state.set(user, userState)
   }

@@ -1,5 +1,11 @@
 import Item, { splitHelper } from './Item.js'
-import { logItemHelper } from '../MessageHandler/messageToString.js'
+import { logItemHelper } from '../message.js'
+import * as encoding from '../../lib/encoding.js'
+import * as decoding from '../../lib/decoding.js'
+
+/**
+ * @typedef {import('../index.js').Y} Y
+ */
 
 export default class ItemString extends Item {
   constructor () {
@@ -14,14 +20,21 @@ export default class ItemString extends Item {
   get _length () {
     return this._content.length
   }
+  /**
+   * @param {Y} y
+   * @param {decoding.Decoder} decoder
+   */
   _fromBinary (y, decoder) {
     let missing = super._fromBinary(y, decoder)
-    this._content = decoder.readVarString()
+    this._content = decoding.readVarString(decoder)
     return missing
   }
+  /**
+   * @param {encoding.Encoder} encoder
+   */
   _toBinary (encoder) {
     super._toBinary(encoder)
-    encoder.writeVarString(this._content)
+    encoding.writeVarString(encoder, this._content)
   }
   /**
    * Transform this YXml Type to a readable format.

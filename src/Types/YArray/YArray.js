@@ -1,8 +1,14 @@
 import Type from '../../Struct/Type.js'
 import ItemJSON from '../../Struct/ItemJSON.js'
 import ItemString from '../../Struct/ItemString.js'
-import { logID, logItemHelper } from '../../MessageHandler/messageToString.js'
+import { stringifyItemID, logItemHelper } from '../../message.js'
 import YEvent from '../../Util/YEvent.js'
+
+/**
+ * @typedef {import('../../Struct/Item.js').default} Item
+ * @typedef {import('../../Util/Transaction.js').default} Transaction
+ * @typedef {import('../../Y.js').default} Y
+ */
 
 /**
  * Event that describes the changes on a YArray
@@ -76,7 +82,7 @@ export default class YArray extends Type {
   /**
    * Returns the i-th element from a YArray.
    *
-   * @param {Integer} index The index of the element to return from the YArray
+   * @param {number} index The index of the element to return from the YArray
    */
   get (index) {
     let n = this._start
@@ -112,11 +118,7 @@ export default class YArray extends Type {
   toJSON () {
     return this.map(c => {
       if (c instanceof Type) {
-        if (c.toJSON !== null) {
-          return c.toJSON()
-        } else {
-          return c.toString()
-        }
+        return c.toJSON()
       }
       return c
     })
@@ -211,8 +213,8 @@ export default class YArray extends Type {
   /**
    * Deletes elements starting from an index.
    *
-   * @param {Integer} index Index at which to start deleting elements
-   * @param {Integer} length The number of elements to remove. Defaults to 1.
+   * @param {number} index Index at which to start deleting elements
+   * @param {number} length The number of elements to remove. Defaults to 1.
    */
   delete (index, length = 1) {
     this._y.transact(() => {
@@ -318,7 +320,7 @@ export default class YArray extends Type {
    *  // Insert numbers 1, 2 at position 1
    *  yarray.insert(2, [1, 2])
    *
-   * @param {Integer} index The index to insert content at.
+   * @param {number} index The index to insert content at.
    * @param {Array} content The array of content
    */
   insert (index, content) {
@@ -373,6 +375,6 @@ export default class YArray extends Type {
    * @private
    */
   _logString () {
-    return logItemHelper('YArray', this, `start:${logID(this._start)}"`)
+    return logItemHelper('YArray', this, `start:${stringifyItemID(this._start)}"`)
   }
 }

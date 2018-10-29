@@ -17,7 +17,7 @@ function _getCurrentRelativeSelection (domBinding) {
   return null
 }
 
-export const getCurrentRelativeSelection = typeof getSelection !== 'undefined' ? _getCurrentRelativeSelection : () => null
+export const getCurrentRelativeSelection = typeof getSelection !== 'undefined' ? _getCurrentRelativeSelection : domBinding => null
 
 export function beforeTransactionSelectionFixer (domBinding) {
   relativeSelection = getCurrentRelativeSelection(domBinding)

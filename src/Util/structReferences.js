@@ -1,18 +1,3 @@
-import Delete from '../Struct/Delete.js'
-import ItemJSON from '../Struct/ItemJSON.js'
-import ItemString from '../Struct/ItemString.js'
-import ItemFormat from '../Struct/ItemFormat.js'
-import ItemEmbed from '../Struct/ItemEmbed.js'
-import GC from '../Struct/GC.js'
-
-import YArray from '../Types/YArray/YArray.js'
-import YMap from '../Types/YMap/YMap.js'
-import YText from '../Types/YText/YText.js'
-import YXmlText from '../Types/YXml/YXmlText.js'
-import YXmlHook from '../Types/YXml/YXmlHook.js'
-import YXmlFragment from '../Types/YXml/YXmlFragment.js'
-import YXmlElement from '../Types/YXml/YXmlElement.js'
-
 const structs = new Map()
 const references = new Map()
 
@@ -21,7 +6,7 @@ const references = new Map()
  * reference on all clients!
  *
  * @param {Number} reference
- * @param {class} structConstructor
+ * @param {Function} structConstructor
  *
  * @public
  */
@@ -43,20 +28,3 @@ export function getStruct (reference) {
 export function getStructReference (typeConstructor) {
   return references.get(typeConstructor)
 }
-
-// TODO: reorder (Item* should have low numbers)
-registerStruct(0, ItemJSON)
-registerStruct(1, ItemString)
-registerStruct(10, ItemFormat)
-registerStruct(11, ItemEmbed)
-registerStruct(2, Delete)
-
-registerStruct(3, YArray)
-registerStruct(4, YMap)
-registerStruct(5, YText)
-registerStruct(6, YXmlFragment)
-registerStruct(7, YXmlElement)
-registerStruct(8, YXmlText)
-registerStruct(9, YXmlHook)
-
-registerStruct(12, GC)

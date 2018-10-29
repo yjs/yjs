@@ -1,6 +1,6 @@
-import { test } from '../node_modules/cutest/cutest.js'
+import { test } from '../node_modules/cutest/cutest.mjs'
 import simpleDiff from '../lib/simpleDiff.js'
-import Chance from 'chance'
+import * as random from '../lib/random/random.js'
 
 function runDiffTest (t, a, b, expected) {
   let result = simpleDiff(a, b)
@@ -19,9 +19,9 @@ test('diff tests', async function diff1 (t) {
 })
 
 test('random diff tests', async function randomDiff (t) {
-  const chance = new Chance(t.getSeed() * 1000000000)
-  let a = chance.word()
-  let b = chance.word()
+  const gen = random.createPRNG(t.getSeed() * 1000000000)
+  let a = random.word(gen)
+  let b = random.word(gen)
   let change = simpleDiff(a, b)
   let arr = Array.from(a)
   arr.splice(change.pos, change.remove, ...Array.from(change.insert))

@@ -9,6 +9,10 @@ import typeObserver from './typeObserver.js'
 import domObserver from './domObserver.js'
 
 /**
+ * @typedef {import('./filter.js').DomFilter} DomFilter
+ */
+
+/**
  * A binding that binds the children of a YXmlFragment to a DOM element.
  *
  * This binding is automatically destroyed when its parent is deleted.
@@ -26,7 +30,7 @@ export default class DomBinding extends Binding {
    * @param {Element} target The bind target. Mirrors the target.
    * @param {Object} [opts] Optional configurations
 
-   * @param {FilterFunction} [opts.filter=defaultFilter] The filter function to use.
+   * @param {DomFilter} [opts.filter=defaultFilter] The filter function to use.
    */
   constructor (type, target, opts = {}) {
     // Binding handles textType as this.type and domTextarea as this.target
@@ -48,7 +52,7 @@ export default class DomBinding extends Binding {
     /**
      * Defines which DOM attributes and elements to filter out.
      * Also filters remote changes.
-     * @type {FilterFunction}
+     * @type {DomFilter}
      */
     this.filter = opts.filter || defaultFilter
     // set initial value
@@ -57,7 +61,7 @@ export default class DomBinding extends Binding {
       target.insertBefore(child.toDom(opts.document, opts.hooks, this), null)
     })
     this._typeObserver = typeObserver.bind(this)
-    this._domObserver = (mutations) => {
+    this._domObserver = mutations => {
       domObserver.call(this, mutations, opts.document)
     }
     type.observeDeep(this._typeObserver)
@@ -119,7 +123,7 @@ export default class DomBinding extends Binding {
 
   /**
    * NOTE: currently does not apply filter to existing elements!
-   * @param {FilterFunction} filter The filter function to use from now on.
+   * @param {DomFilter} filter The filter function to use from now on.
    */
   setFilter (filter) {
     this.filter = filter

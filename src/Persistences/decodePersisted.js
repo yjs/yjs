@@ -39,10 +39,10 @@ export function decodePersisted (y, decoder) {
       const contentType = decoder.readVarUint()
       switch (contentType) {
         case PERSIST_UPDATE:
-          integrateRemoteStructs(y, decoder)
+          integrateRemoteStructs(decoder, y)
           break
         case PERSIST_STRUCTS_DS:
-          integrateRemoteStructs(y, decoder)
+          integrateRemoteStructs(decoder, y)
           readDeleteSet(y, decoder)
           break
       }

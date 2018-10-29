@@ -29,10 +29,10 @@
  *   - A client may update a room when the room is in either US or Co
  */
 
-import * as encoding from './encoding.js'
-import * as decoding from './decoding.js'
-import * as idb from './idb.js'
-import * as globals from './globals.js'
+import * as encoding from '../../lib/encoding.js'
+import * as decoding from '../../lib/decoding.js'
+import * as idb from '../../lib/idb.js'
+import * as globals from '../../lib/globals.js'
 import * as message from './message.js'
 
 /**

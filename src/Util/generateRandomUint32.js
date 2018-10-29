@@ -1,7 +1,7 @@
 /* global crypto */
 
 export function generateRandomUint32 () {
-  if (typeof crypto !== 'undefined' && crypto.getRandomValue != null) {
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues != null) {
     // browser
     let arr = new Uint32Array(1)
     crypto.getRandomValues(arr)

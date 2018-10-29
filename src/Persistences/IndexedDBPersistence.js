@@ -1,12 +1,10 @@
 /* global indexedDB, location, BroadcastChannel */
 
 import Y from '../Y.js'
-import { createMutualExclude } from '../Util/mutualExclude.js'
-import { decodePersisted, encodeStructsDS, encodeUpdate } from './decodePersisted.js'
-import BinaryDecoder from '../Util/Binary/Decoder.js'
-import BinaryEncoder from '../Util/Binary/Encoder.js'
-import { PERSIST_STRUCTS_DS } from './decodePersisted.js';
-import { PERSIST_UPDATE } from './decodePersisted.js';
+import { createMutualExclude } from '../../lib/mutualExclude.js'
+import { decodePersisted, encodeStructsDS, encodeUpdate, PERSIST_STRUCTS_DS, PERSIST_UPDATE } from './decodePersisted.js'
+import * as decoding from '../../lib/decoding.js'
+import * as encoding from '../../lib/encoding.js'
 /*
  * Request to Promise transformer
  */

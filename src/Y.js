@@ -2,11 +2,17 @@ import DeleteStore from './Store/DeleteStore.js'
 import OperationStore from './Store/OperationStore.js'
 import StateStore from './Store/StateStore.js'
 import { generateRandomUint32 } from './Util/generateRandomUint32.js'
-import RootID from './Util/ID/RootID.js'
+import { createRootID } from './Util/ID.js'
 import NamedEventHandler from '../lib/NamedEventHandler.js'
 import Transaction from './Util/Transaction.js'
+import * as encoding from '../lib/encoding.js'
+import * as message from './message.js'
+import { integrateRemoteStructs } from './Util/integrateRemoteStructs.js'
 
-export { default as DomBinding } from './Bindings/DomBinding/DomBinding.js'
+/**
+ * @typedef {import('./Struct/Type.js').default} YType
+ * @typedef {import('../lib/decoding.js').Decoder} Decoder
+ */
 
 /**
  * Anything that can be encoded with `JSON.stringify` and can be decoded with
@@ -17,18 +23,17 @@ export { default as DomBinding } from './Bindings/DomBinding/DomBinding.js'
  *
  * At the moment the only safe values are number and string.
  *
- * @typedef {(number|string)} encodable
+ * @typedef {(number|string|Object)} encodable
  */
 
 /**
  * A Yjs instance handles the state of shared data.
  *
  * @param {string} room Users in the same room share the same content
- * @param {Object} opts Connector definition
- * @param {AbstractPersistence} persistence Persistence adapter instance
+ * @param {Object} conf configuration
  */
 export default class Y extends NamedEventHandler {
-  constructor (room, connector, persistence, conf = {}) {
+  constructor (room, conf = {}) {
     super()
     this.gcEnabled = conf.gc || false
     /**
@@ -39,60 +44,46 @@ export default class Y extends NamedEventHandler {
     this._contentReady = false
     this.userID = generateRandomUint32()
     // TODO: This should be a Map so we can use encodables as keys
-    this.share = {}
-    this.ds = new DeleteStore(this)
+    this._map = new Map()
+    this.ds = new DeleteStore()
     this.os = new OperationStore(this)
     this.ss = new StateStore(this)
     this._missingStructs = new Map()
     this._readyToIntegrate = []
     this._transaction = null
-    /**
-     * The {@link AbstractConnector}.that is used by this Yjs instance.
-     * @type {AbstractConnector}
-     */
-    this.connector = null
     this.connected = false
-    let initConnection = () => {
-      if (connector != null) {
-        if (connector.constructor === Object) {
-          connector.connector.room = room
-          this.connector = new Y[connector.connector.name](this, connector.connector)
-          this.connected = true
-          this.emit('connectorReady')
-        }
-      }
-    }
-    /**
-     * The {@link AbstractPersistence} that is used by this Yjs instance.
-     * @type {AbstractPersistence}
-     */
-    this.persistence = null
-    if (persistence != null) {
-      this.persistence = persistence
-      persistence._init(this).then(initConnection)
-    } else {
-      initConnection()
-    }
     // for compatibility with isParentOf
     this._parent = null
     this._hasUndoManager = false
+    this._deleted = false // for compatiblity of having this as a parent for types
+    this._id = null
   }
-  _setContentReady () {
-    if (!this._contentReady) {
-      this._contentReady = true
-      this.emit('content')
-    }
+
+  /**
+   * Read the Decoder and fill the Yjs instance with data in the decoder.
+   *
+   * @param {Decoder} decoder The BinaryDecoder to read from.
+   */
+  importModel (decoder) {
+    this.transact(function () {
+      integrateRemoteStructs(decoder, this)
+      message.readDeleteSet(decoder, this)
+    })
   }
-  whenContentReady () {
-    if (this._contentReady) {
-      return Promise.resolve()
-    } else {
-      return new Promise(resolve => {
-        this.once('content', resolve)
-      })
-    }
+
+  /**
+   * Encode the Yjs model to ArrayBuffer
+   *
+   * @return {ArrayBuffer} The Yjs model as ArrayBuffer
+   */
+  exportModel () {
+    const encoder = encoding.createEncoder()
+    message.writeStructs(encoder, this, new Map())
+    message.writeDeleteSet(encoder, this)
+    return encoding.toBuffer(encoder)
   }
   _beforeChange () {}
+  _callObserver (transaction, subs, remote) {}
   /**
    * Changes that happen inside of a transaction are bundled. This means that
    * the observer fires _after_ the transaction is finished and that all changes
@@ -157,9 +148,7 @@ export default class Y extends NamedEventHandler {
    * @private
    * Fake _start for root properties (y.set('name', type))
    */
-  set _start (start) {
-    return null
-  }
+  set _start (start) {}
 
   /**
    * Define a shared data type.
@@ -168,7 +157,7 @@ export default class Y extends NamedEventHandler {
    * and do not overwrite each other. I.e.
    * `y.define(name, type) === y.define(name, type)`
    *
-   * After this method is called, the type is also available on `y.share[name]`.
+   * After this method is called, the type is also available on `y._map.get(name)`.
    *
    * *Best Practices:*
    * Either define all types right after the Yjs instance is created or always
@@ -179,7 +168,7 @@ export default class Y extends NamedEventHandler {
    *   const y = new Y(..)
    *   y.define('myArray', YArray)
    *   y.define('myMap', YMap)
-   *   // .. when accessing the type use y.share[name]
+   *   // .. when accessing the type use y._map.get(name)
    *   y.share.myArray.insert(..)
    *   y.share.myMap.set(..)
    *
@@ -190,15 +179,15 @@ export default class Y extends NamedEventHandler {
    *   y.define('myMap', YMap).set(..)
    *
    * @param {String} name
-   * @param {YType Constructor} TypeConstructor The constructor of the type definition
-   * @returns {YType} The created type
+   * @param {Function} TypeConstructor The constructor of the type definition
+   * @returns {YType} The created type. Constructed with TypeConstructor
    */
   define (name, TypeConstructor) {
-    let id = new RootID(name, TypeConstructor)
+    let id = createRootID(name, TypeConstructor)
     let type = this.os.get(id)
-    if (this.share[name] === undefined) {
-      this.share[name] = type
-    } else if (this.share[name] !== type) {
+    if (this._map.get(name) === undefined) {
+      this._map.set(name, type)
+    } else if (this._map.get(name) !== type) {
       throw new Error('Type is already defined with a different constructor')
     }
     return type
@@ -213,66 +202,18 @@ export default class Y extends NamedEventHandler {
    * @param {String} name The typename
    */
   get (name) {
-    return this.share[name]
-  }
-
-  /**
-   * Disconnect this Yjs Instance from the network. The connector will
-   * unsubscribe from the room and document updates are not shared anymore.
-   */
-  disconnect () {
-    if (this.connected) {
-      this.connected = false
-      return this.connector.disconnect()
-    } else {
-      return Promise.resolve()
-    }
-  }
-
-  /**
-   * If disconnected, tell the connector to reconnect to the room.
-   */
-  reconnect () {
-    if (!this.connected) {
-      this.connected = true
-      return this.connector.reconnect()
-    } else {
-      return Promise.resolve()
-    }
+    return this._map.get(name)
   }
 
   /**
    * Disconnect from the room, and destroy all traces of this Yjs instance.
-   * Persisted data will remain until removed by the persistence adapter.
    */
   destroy () {
     this.emit('destroyed', true)
     super.destroy()
-    this.share = null
-    if (this.connector != null) {
-      if (this.connector.destroy != null) {
-        this.connector.destroy()
-      } else {
-        this.connector.disconnect()
-      }
-    }
-    if (this.persistence !== null) {
-      this.persistence.deinit(this)
-      this.persistence = null
-    }
+    this._map = null
     this.os = null
     this.ds = null
     this.ss = null
-  }
-}
-
-Y.extend = function extendYjs () {
-  for (var i = 0; i < arguments.length; i++) {
-    var f = arguments[i]
-    if (typeof f === 'function') {
-      f(Y)
-    } else {
-      throw new Error('Expected a function!')
-    }
   }
 }

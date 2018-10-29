@@ -1,5 +1,11 @@
 import Item, { splitHelper } from './Item.js'
-import { logItemHelper } from '../MessageHandler/messageToString.js'
+import { logItemHelper } from '../message.js'
+import * as encoding from '../../lib/encoding.js'
+import * as decoding from '../../lib/decoding.js'
+
+/**
+ * @typedef {import('../index.js').Y} Y
+ */
 
 export default class ItemJSON extends Item {
   constructor () {
@@ -14,12 +20,16 @@ export default class ItemJSON extends Item {
   get _length () {
     return this._content.length
   }
+  /**
+   * @param {Y} y
+   * @param {decoding.Decoder} decoder
+   */
   _fromBinary (y, decoder) {
     let missing = super._fromBinary(y, decoder)
-    let len = decoder.readVarUint()
+    let len = decoding.readVarUint(decoder)
     this._content = new Array(len)
     for (let i = 0; i < len; i++) {
-      const ctnt = decoder.readVarString()
+      const ctnt = decoding.readVarString(decoder)
       let parsed
       if (ctnt === 'undefined') {
         parsed = undefined
@@ -30,10 +40,13 @@ export default class ItemJSON extends Item {
     }
     return missing
   }
+  /**
+   * @param {encoding.Encoder} encoder
+   */
   _toBinary (encoder) {
     super._toBinary(encoder)
     let len = this._content.length
-    encoder.writeVarUint(len)
+    encoding.writeVarUint(encoder, len)
     for (let i = 0; i < len; i++) {
       let encoded
       let content = this._content[i]
@@ -42,7 +55,7 @@ export default class ItemJSON extends Item {
       } else {
         encoded = JSON.stringify(content)
       }
-      encoder.writeVarString(encoded)
+      encoding.writeVarString(encoder, encoded)
     }
   }
   /**

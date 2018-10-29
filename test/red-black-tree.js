@@ -1,7 +1,7 @@
 import RedBlackTree from '../lib/Tree.js'
-import ID from '../src/Util/ID/ID.js'
-import Chance from 'chance'
-import { test, proxyConsole } from 'cutest'
+import * as ID from '../src/Util/ID.js'
+import { test, proxyConsole } from '../node_modules/cutest/cutest.mjs'
+import * as random from '../lib/random/random.js'
 
 proxyConsole()
 
@@ -55,28 +55,28 @@ function checkRootNodeIsBlack (t, tree) {
 
 test('RedBlack Tree', async function redBlackTree (t) {
   let tree = new RedBlackTree()
-  tree.put({_id: new ID(8433, 0)})
-  tree.put({_id: new ID(12844, 0)})
-  tree.put({_id: new ID(1795, 0)})
-  tree.put({_id: new ID(30302, 0)})
-  tree.put({_id: new ID(64287)})
-  tree.delete(new ID(8433, 0))
-  tree.put({_id: new ID(28996)})
-  tree.delete(new ID(64287))
-  tree.put({_id: new ID(22721)})
+  tree.put({_id: ID.createID(8433, 0)})
+  tree.put({_id: ID.createID(12844, 0)})
+  tree.put({_id: ID.createID(1795, 0)})
+  tree.put({_id: ID.createID(30302, 0)})
+  tree.put({_id: ID.createID(64287)})
+  tree.delete(ID.createID(8433, 0))
+  tree.put({_id: ID.createID(28996)})
+  tree.delete(ID.createID(64287))
+  tree.put({_id: ID.createID(22721)})
   checkRootNodeIsBlack(t, tree)
   checkBlackHeightOfSubTreesAreEqual(t, tree)
   checkRedNodesDoNotHaveBlackChildren(t, tree)
 })
 
-test(`random tests (${numberOfRBTreeTests})`, async function random (t) {
-  let chance = new Chance(t.getSeed() * 1000000000)
+test(`random tests (${numberOfRBTreeTests})`, async function randomRBTree (t) {
+  let prng = random.createPRNG(t.getSeed() * 1000000000)
   let tree = new RedBlackTree()
   let elements = []
   for (var i = 0; i < numberOfRBTreeTests; i++) {
-    if (chance.bool({likelihood: 80})) {
+    if (random.int32(prng, 0, 100) < 80) {
       // 80% chance to insert an element
-      let obj = new ID(chance.integer({min: 0, max: numberOfRBTreeTests}), chance.integer({min: 0, max: 1}))
+      let obj = ID.createID(random.int32(prng, 0, numberOfRBTreeTests), random.int32(prng, 0, 1))
       let nodeExists = tree.find(obj)
       if (nodeExists === null) {
         if (elements.some(e => e.equals(obj))) {
@@ -87,7 +87,7 @@ test(`random tests (${numberOfRBTreeTests})`, async function random (t) {
       }
     } else if (elements.length > 0) {
       // ~20% chance to delete an element
-      var elem = chance.pickone(elements)
+      var elem = random.oneOf(prng, elements)
       elements = elements.filter(function (e) {
         return !e.equals(elem)
       })
@@ -119,7 +119,7 @@ test(`random tests (${numberOfRBTreeTests})`, async function random (t) {
     'Find every object with lower bound search'
   )
   // TEST iteration (with lower bound search)
-  let lowerBound = chance.pickone(elements)
+  let lowerBound = random.oneOf(prng, elements)
   let expectedResults = elements.filter((e, pos) =>
     (lowerBound.lessThan(e) || e.equals(lowerBound)) &&
     elements.indexOf(e) === pos
@@ -151,7 +151,7 @@ test(`random tests (${numberOfRBTreeTests})`, async function random (t) {
     'iterating over a tree without bounds yields the right amount of results'
   )
 
-  let upperBound = chance.pickone(elements)
+  let upperBound = random.oneOf(prng, elements)
   expectedResults = elements.filter((e, pos) =>
     (e.lessThan(upperBound) || e.equals(upperBound)) &&
     elements.indexOf(e) === pos
@@ -168,8 +168,8 @@ test(`random tests (${numberOfRBTreeTests})`, async function random (t) {
     'iterating over a tree with upper bound yields the right amount of results'
   )
 
-  upperBound = chance.pickone(elements)
-  lowerBound = chance.pickone(elements)
+  upperBound = random.oneOf(prng, elements)
+  lowerBound = random.oneOf(prng, elements)
   if (upperBound.lessThan(lowerBound)) {
     [lowerBound, upperBound] = [upperBound, lowerBound]
   }

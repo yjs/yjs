@@ -1,5 +1,4 @@
-import ID from './ID/ID.js'
-import RootID from './ID/RootID.js'
+import * as ID from './ID.js'
 import GC from '../Struct/GC.js'
 
 // TODO: Implement function to describe ranges
@@ -72,9 +71,9 @@ export function fromRelativePosition (y, rpos) {
   if (rpos[0] === 'endof') {
     let id
     if (rpos[3] === null) {
-      id = new ID(rpos[1], rpos[2])
+      id = ID.createID(rpos[1], rpos[2])
     } else {
-      id = new RootID(rpos[3], rpos[4])
+      id = ID.createRootID(rpos[3], rpos[4])
     }
     let type = y.os.get(id)
     while (type._redone !== null) {
@@ -89,7 +88,7 @@ export function fromRelativePosition (y, rpos) {
     }
   } else {
     let offset = 0
-    let struct = y.os.findNodeWithUpperBound(new ID(rpos[0], rpos[1])).val
+    let struct = y.os.findNodeWithUpperBound(ID.createID(rpos[0], rpos[1])).val
     const diff = rpos[1] - struct._id.clock
     while (struct._redone !== null) {
       struct = struct._redone

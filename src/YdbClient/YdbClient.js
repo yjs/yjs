@@ -1,15 +1,15 @@
 /* eslint-env browser */
 import * as idbactions from './idbactions.js'
-import * as globals from './globals.js'
+import * as globals from '../../lib/globals.js'
 import * as message from './message.js'
 import * as bc from './broadcastchannel.js'
-import * as encoding from './encoding.js'
-import * as logging from './logging.js'
-import * as idb from './idb.js'
-import Y from '../src/Y.js'
-import BinaryDecoder from '../src/Util/Binary/Decoder.js'
-import { integrateRemoteStruct } from '../src/MessageHandler/integrateRemoteStructs.js'
-import { createMutualExclude } from '../src/Util/mutualExclude.js'
+import * as encoding from '../../lib/encoding.js'
+import * as logging from '../../lib/logging.js'
+import * as idb from '../../lib/idb.js'
+import * as decoding from '../../lib/decoding.js'
+import Y from '../Y.js'
+import { integrateRemoteStruct } from '../MessageHandler/integrateRemoteStructs.js'
+import { createMutualExclude } from '../../lib/mutualExclude.js'
 
 import * as NamedEventHandler from './NamedEventHandler.js'
 
@@ -70,8 +70,8 @@ export class YdbClient extends NamedEventHandler.Class {
     }))
     subscribe(this, roomname, update => mutex(() => {
       y.transact(() => {
-        const decoder = new BinaryDecoder(update)
-        while (decoder.hasContent()) {
+        const decoder = decoding.createDecoder(update)
+        while (decoding.hasContent(decoder)) {
           integrateRemoteStruct(y, decoder)
         }
       }, true)

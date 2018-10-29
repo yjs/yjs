@@ -1,8 +1,13 @@
 import Item from '../../Struct/Item.js'
 import Type from '../../Struct/Type.js'
 import ItemJSON from '../../Struct/ItemJSON.js'
-import { logItemHelper } from '../../MessageHandler/messageToString.js'
+import { logItemHelper } from '../../message.js'
 import YEvent from '../../Util/YEvent.js'
+
+/**
+ * @typedef {import('../../Y.js').encodable} encodable
+ * @typedef {import('../../Struct/Type.js')} YType
+ */
 
 /**
  * Event that describes the changes on a YMap.

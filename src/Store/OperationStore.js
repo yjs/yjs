@@ -1,7 +1,7 @@
 import Tree from '../../lib/Tree.js'
-import RootID from '../Util/ID/RootID.js'
+import * as ID from '../Util/ID.js'
 import { getStruct } from '../Util/structReferences.js'
-import { logID } from '../MessageHandler/messageToString.js'
+import { stringifyID, stringifyItemID } from '../message.js'
 import GC from '../Struct/GC.js'
 
 export default class OperationStore extends Tree {
@@ -14,18 +14,18 @@ export default class OperationStore extends Tree {
     this.iterate(null, null, function (item) {
       if (item.constructor === GC) {
         items.push({
-          id: logID(item),
+          id: stringifyItemID(item),
           content: item._length,
           deleted: 'GC'
         })
       } else {
         items.push({
-          id: logID(item),
-          origin: logID(item._origin === null ? null : item._origin._lastId),
-          left: logID(item._left === null ? null : item._left._lastId),
-          right: logID(item._right),
-          right_origin: logID(item._right_origin),
-          parent: logID(item._parent),
+          id: stringifyItemID(item),
+          origin: item._origin === null ? '()' : stringifyID(item._origin._lastId),
+          left: item._left === null ? '()' : stringifyID(item._left._lastId),
+          right: stringifyItemID(item._right),
+          right_origin: stringifyItemID(item._right_origin),
+          parent: stringifyItemID(item._parent),
           parentSub: item._parentSub,
           deleted: item._deleted,
           content: JSON.stringify(item._content)
@@ -36,7 +36,7 @@ export default class OperationStore extends Tree {
   }
   get (id) {
     let struct = this.find(id)
-    if (struct === null && id instanceof RootID) {
+    if (struct === null && id instanceof ID.RootID) {
       const Constr = getStruct(id.type)
       const y = this.y
       struct = new Constr()

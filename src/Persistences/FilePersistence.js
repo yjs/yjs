@@ -1,8 +1,8 @@
 import fs from 'fs'
 import path from 'path'
-import BinaryDecoder from '../Util/Binary/Decoder.js'
-import BinaryEncoder from '../Util/Binary/Encoder.js'
-import { createMutualExclude } from '../Util/mutualExclude.js'
+import * as encoding from '../../lib/encoding.js'
+import * as decoding from '../../lib/decoding.js'
+import { createMutualExclude } from '../../lib/mutualExclude.js'
 import { encodeUpdate, encodeStructsDS, decodePersisted } from './decodePersisted.js'
 
 function createFilePath (persistence, roomName) {
@@ -23,9 +23,9 @@ export default class FilePersistence {
     return new Promise((resolve, reject) => {
       this._mutex(() => {
         const filePath = createFilePath(this, room)
-        const updateMessage = new BinaryEncoder()
+        const updateMessage = encoding.createEncoder()
         encodeUpdate(y, encodedStructs, updateMessage)
-        fs.appendFile(filePath, Buffer.from(updateMessage.createBuffer()), (err) => {
+        fs.appendFile(filePath, Buffer.from(encoding.toBuffer(updateMessage)), (err) => {
           if (err !== null) {
             reject(err)
           } else {
@@ -37,10 +37,10 @@ export default class FilePersistence {
   }
   saveState (roomName, y) {
     return new Promise((resolve, reject) => {
-      const encoder = new BinaryEncoder()
+      const encoder = encoding.createEncoder()
       encodeStructsDS(y, encoder)
       const filePath = createFilePath(this, roomName)
-      fs.writeFile(filePath, Buffer.from(encoder.createBuffer()), (err) => {
+      fs.writeFile(filePath, Buffer.from(encoding.toBuffer(encoder)), (err) => {
         if (err !== null) {
           reject(err)
         } else {
@@ -61,7 +61,7 @@ export default class FilePersistence {
           this._mutex(() => {
             console.info(`unpacking data (${data.length})`)
             console.time('unpacking')
-            decodePersisted(y, new BinaryDecoder(data))
+            decodePersisted(y, decoding.createDecoder(data.buffer))
             console.timeEnd('unpacking')
           })
           resolve()

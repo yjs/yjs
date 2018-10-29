@@ -1,4 +1,4 @@
-import { initArrays, compareUsers, flushAll } from '../tests-lib/helper.js'
+import { initArrays, compareUsers } from '../tests-lib/helper.js'
 import { test, proxyConsole } from 'cutest'
 
 proxyConsole()
@@ -64,23 +64,23 @@ test('basic format', async function text1 (t) {
 })
 
 test('quill issue 1', async function quill1 (t) {
-  let { users, quill0 } = await initArrays(t, { users: 2 })
+  let { testConnector, users, quill0 } = await initArrays(t, { users: 2 })
   quill0.insertText(0, 'x')
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   quill0.insertText(1, '\n', 'list', 'ordered')
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   quill0.insertText(1, '\n', 'list', 'ordered')
   await compareUsers(t, users)
 })
 
 test('quill issue 2', async function quill2 (t) {
-  let { users, quill0, text0 } = await initArrays(t, { users: 2 })
+  let { testConnector, users, quill0, text0 } = await initArrays(t, { users: 2 })
   let delta
   text0.observe(function (event) {
     delta = event.delta
   })
   quill0.insertText(0, 'abc', 'bold', true)
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   quill0.insertText(1, 'x')
   quill0.update()
   t.compare(delta, [{ retain: 1 }, { insert: 'x', attributes: { bold: true } }])

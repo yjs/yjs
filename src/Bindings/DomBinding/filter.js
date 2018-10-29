@@ -1,6 +1,13 @@
 import isParentOf from '../../Util/isParentOf.js'
 
 /**
+ * @callback DomFilter
+ * @param {string} nodeName
+ * @param {Map<string, string>} attrs
+ * @return {Map | null}
+ */
+
+/**
  * Default filter method (does nothing).
  *
  * @param {String} nodeName The nodeName of the element

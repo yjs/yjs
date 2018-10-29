@@ -1,7 +1,11 @@
 import { getStruct } from '../Util/structReferences.js'
-import BinaryDecoder from '../Util/Binary/Decoder.js'
-import { logID } from './messageToString.js'
+import * as decoding from '../../lib/decoding.js'
 import GC from '../Struct/GC.js'
+
+/**
+ * @typedef {import('../index').Y} Y
+ * @typedef {import('../Struct/Item.js').default} YItem
+ */
 
 class MissingEntry {
   constructor (decoder, missing, struct) {
@@ -16,6 +20,8 @@ class MissingEntry {
  * Integrate remote struct
  * When a remote struct is integrated, other structs might be ready to ready to
  * integrate.
+ * @param {Y} y
+ * @param {YItem} struct
  */
 function _integrateRemoteStructHelper (y, struct) {
   const id = struct._id
@@ -57,29 +63,21 @@ function _integrateRemoteStructHelper (y, struct) {
           msu.delete(clock)
         }
       }
+      if (msu.size === 0) {
+        y._missingStructs.delete(id.user)
+      }
     }
   }
 }
 
-export function stringifyStructs (y, decoder, strBuilder) {
-  const len = decoder.readUint32()
+/**
+ * @param {decoding.Decoder} decoder
+ * @param {Y} y
+ */
+export function integrateRemoteStructs (decoder, y) {
+  const len = decoding.readUint32(decoder)
   for (let i = 0; i < len; i++) {
-    let reference = decoder.readVarUint()
-    let Constr = getStruct(reference)
-    let struct = new Constr()
-    let missing = struct._fromBinary(y, decoder)
-    let logMessage = '  ' + struct._logString()
-    if (missing.length > 0) {
-      logMessage += ' .. missing: ' + missing.map(logID).join(', ')
-    }
-    strBuilder.push(logMessage)
-  }
-}
-
-export function integrateRemoteStructs (y, decoder) {
-  const len = decoder.readUint32()
-  for (let i = 0; i < len; i++) {
-    let reference = decoder.readVarUint()
+    let reference = decoding.readVarUint(decoder)
     let Constr = getStruct(reference)
     let struct = new Constr()
     let decoderPos = decoder.pos
@@ -90,7 +88,7 @@ export function integrateRemoteStructs (y, decoder) {
         struct = y._readyToIntegrate.shift()
       }
     } else {
-      let _decoder = new BinaryDecoder(decoder.uint8arr)
+      let _decoder = decoding.createDecoder(decoder.arr.buffer)
       _decoder.pos = decoderPos
       let missingEntry = new MissingEntry(_decoder, missing, struct)
       let missingStructs = y._missingStructs
@@ -111,8 +109,12 @@ export function integrateRemoteStructs (y, decoder) {
 }
 
 // TODO: use this above / refactor
-export function integrateRemoteStruct (y, decoder) {
-  let reference = decoder.readVarUint()
+/**
+ * @param {decoding.Decoder} decoder
+ * @param {Y} y
+ */
+export function integrateRemoteStruct (decoder, y) {
+  let reference = decoding.readVarUint(decoder)
   let Constr = getStruct(reference)
   let struct = new Constr()
   let decoderPos = decoder.pos
@@ -123,7 +125,7 @@ export function integrateRemoteStruct (y, decoder) {
       struct = y._readyToIntegrate.shift()
     }
   } else {
-    let _decoder = new BinaryDecoder(decoder.uint8arr)
+    let _decoder = decoding.createDecoder(decoder.arr.buffer)
     _decoder.pos = decoderPos
     let missingEntry = new MissingEntry(_decoder, missing, struct)
     let missingStructs = y._missingStructs

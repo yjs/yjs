@@ -1,5 +1,5 @@
 
-import { createMutualExclude } from '../../lib/mutualExclude.js'
+import { createMutex } from '../../lib/mutex.js'
 
 /**
  * Abstract class for bindings.
@@ -35,7 +35,7 @@ export default class Binding {
     /**
      * @private
      */
-    this._mutualExclude = createMutualExclude()
+    this._mutualExclude = createMutex()
   }
   /**
    * Remove all data observers (both from the type and the target).

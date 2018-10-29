@@ -1,7 +1,7 @@
 import ItemEmbed from '../../Struct/ItemEmbed.js'
 import ItemString from '../../Struct/ItemString.js'
 import ItemFormat from '../../Struct/ItemFormat.js'
-import { logItemHelper } from '../../MessageHandler/messageToString.js'
+import { logItemHelper } from '../../message.js'
 import { YArrayEvent, default as YArray } from '../YArray/YArray.js'
 
 /**
@@ -304,6 +304,9 @@ class YTextEvent extends YArrayEvent {
         let deleteLen = 0
         const addOp = function addOp () {
           if (action !== null) {
+            /**
+             * @type {any}
+             */
             let op
             switch (action) {
               case 'delete':
@@ -483,6 +486,9 @@ export default class YText extends YArray {
    */
   toString () {
     let str = ''
+    /**
+     * @type {any}
+     */
     let n = this._start
     while (n !== null) {
       if (!n._deleted && n._countable) {
@@ -529,6 +535,9 @@ export default class YText extends YArray {
     let ops = []
     let currentAttributes = new Map()
     let str = ''
+    /**
+     * @type {any}
+     */
     let n = this._start
     function packStr () {
       if (str.length > 0) {
@@ -568,12 +577,11 @@ export default class YText extends YArray {
   /**
    * Insert text at a given index.
    *
-   * @param {Integer} index The index at which to start inserting.
+   * @param {number} index The index at which to start inserting.
    * @param {String} text The text to insert at the specified position.
    * @param {TextAttributes} attributes Optionally define some formatting
    *                                    information to apply on the inserted
    *                                    Text.
-   *
    * @public
    */
   insert (index, text, attributes = {}) {
@@ -589,7 +597,7 @@ export default class YText extends YArray {
   /**
    * Inserts an embed at a index.
    *
-   * @param {Integer} index The index to insert the embed at.
+   * @param {number} index The index to insert the embed at.
    * @param {Object} embed The Object that represents the embed.
    * @param {TextAttributes} attributes Attribute information to apply on the
    *                                    embed
@@ -609,8 +617,8 @@ export default class YText extends YArray {
   /**
    * Deletes text starting from an index.
    *
-   * @param {Integer} index Index at which to start deleting.
-   * @param {Integer} length The number of characters to remove. Defaults to 1.
+   * @param {number} index Index at which to start deleting.
+   * @param {number} length The number of characters to remove. Defaults to 1.
    *
    * @public
    */
@@ -627,8 +635,8 @@ export default class YText extends YArray {
   /**
    * Assigns properties to a range of text.
    *
-   * @param {Integer} index The position where to start formatting.
-   * @param {Integer} length The amount of characters to assign properties to.
+   * @param {number} index The position where to start formatting.
+   * @param {number} length The amount of characters to assign properties to.
    * @param {TextAttributes} attributes Attribute information to apply on the
    *                                    text.
    *

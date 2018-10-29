@@ -1,5 +1,11 @@
 import Item from './Item.js'
-import { logItemHelper } from '../MessageHandler/messageToString.js'
+import { logItemHelper } from '../message.js'
+import * as encoding from '../../lib/encoding.js'
+import * as decoding from '../../lib/decoding.js'
+
+/**
+ * @typedef {import('../index.js').Y} Y
+ */
 
 export default class ItemEmbed extends Item {
   constructor () {
@@ -7,21 +13,28 @@ export default class ItemEmbed extends Item {
     this.embed = null
   }
   _copy (undeleteChildren, copyPosition) {
-    let struct = super._copy(undeleteChildren, copyPosition)
+    let struct = super._copy()
     struct.embed = this.embed
     return struct
   }
   get _length () {
     return 1
   }
+  /**
+   * @param {Y} y
+   * @param {decoding.Decoder} decoder
+   */
   _fromBinary (y, decoder) {
     const missing = super._fromBinary(y, decoder)
-    this.embed = JSON.parse(decoder.readVarString())
+    this.embed = JSON.parse(decoding.readVarString(decoder))
     return missing
   }
+  /**
+   * @param {encoding.Encoder} encoder
+   */
   _toBinary (encoder) {
     super._toBinary(encoder)
-    encoder.writeVarString(JSON.stringify(this.embed))
+    encoding.writeVarString(encoder, JSON.stringify(this.embed))
   }
   /**
    * Transform this YXml Type to a readable format.

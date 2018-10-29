@@ -1,6 +1,11 @@
 import YEvent from '../../Util/YEvent.js'
 
 /**
+ * @typedef {import('../../Struct/Type.js').default} YType
+ * @typedef {import('../../Util/Transaction.js').default} Transaction
+ */
+
+/**
  * An Event that describes changes on a YXml Element or Yxml Fragment
  *
  * @protected

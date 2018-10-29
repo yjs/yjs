@@ -1,4 +1,4 @@
-import ID from './ID/ID.js'
+import * as ID from './ID.js'
 import isParentOf from './isParentOf.js'
 
 class ReverseOperation {
@@ -6,8 +6,8 @@ class ReverseOperation {
     this.created = new Date()
     const beforeState = transaction.beforeState
     if (beforeState.has(y.userID)) {
-      this.toState = new ID(y.userID, y.ss.getState(y.userID) - 1)
-      this.fromState = new ID(y.userID, beforeState.get(y.userID))
+      this.toState = ID.createID(y.userID, y.ss.getState(y.userID) - 1)
+      this.fromState = ID.createID(y.userID, beforeState.get(y.userID))
     } else {
       this.toState = null
       this.fromState = null
@@ -28,7 +28,7 @@ class ReverseOperation {
 
 function applyReverseOperation (y, scope, reverseBuffer) {
   let performedUndo = false
-  let undoOp
+  let undoOp = null
   y.transact(() => {
     while (!performedUndo && reverseBuffer.length > 0) {
       undoOp = reverseBuffer.pop()
@@ -49,7 +49,7 @@ function applyReverseOperation (y, scope, reverseBuffer) {
       const redoitems = new Set()
       for (let del of undoOp.deletedStructs) {
         const fromState = del.from
-        const toState = new ID(fromState.user, fromState.clock + del.len - 1)
+        const toState = ID.createID(fromState.user, fromState.clock + del.len - 1)
         y.os.getItemCleanStart(fromState)
         y.os.getItemCleanEnd(toState)
         y.os.iterate(fromState, toState, op => {
@@ -73,7 +73,7 @@ function applyReverseOperation (y, scope, reverseBuffer) {
       })
     }
   })
-  if (performedUndo) {
+  if (performedUndo && undoOp !== null) {
     // should be performed after the undo transaction
     undoOp.bindingInfos.forEach((info, binding) => {
       binding._restoreUndoStackInfo(info)

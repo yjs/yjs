@@ -1,5 +1,5 @@
 
-import ID from '../Util/ID/ID.js'
+import * as ID from '../Util/ID.js'
 import ItemJSON from '../Struct/ItemJSON.js'
 import ItemString from '../Struct/ItemString.js'
 
@@ -32,7 +32,7 @@ export function defragmentItemContent (y) {
       a.constructor === b.constructor &&
       a._deleted === b._deleted &&
       a._right === b &&
-      (new ID(a._id.user, a._id.clock + a._length)).equals(b._id)
+      (ID.createID(a._id.user, a._id.clock + a._length)).equals(b._id)
     ) {
       a._right = b._right
       if (a instanceof ItemJSON) {

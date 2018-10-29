@@ -2,6 +2,13 @@
 import domToType from './domToType.js'
 
 /**
+ * @typedef {import('../../Types/YXml/YXmlText.js').default} YXmlText
+ * @typedef {import('../../Types/YXml/YXmlElement.js').default} YXmlElement
+ * @typedef {import('../../Types/YXml/YXmlHook.js').default} YXmlHook
+ * @typedef {import('./DomBinding.js').default} DomBinding
+ */
+
+/**
  * Iterates items until an undeleted item is found.
  *
  * @private
@@ -32,8 +39,8 @@ export function removeAssociation (domBinding, dom, type) {
  * type).
  *
  * @param {DomBinding} domBinding The binding object
- * @param {Element} dom The dom that is to be associated with type
- * @param {YXmlElement|YXmlHook} type The type that is to be associated with dom
+ * @param {DocumentFragment|Element|Text} dom The dom that is to be associated with type
+ * @param {YXmlElement|YXmlHook|YXmlText} type The type that is to be associated with dom
  *
  */
 export function createAssociation (domBinding, dom, type) {

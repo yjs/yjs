@@ -1,4 +1,10 @@
-import BinaryEncoder from './Binary/Encoder.js'
+import * as encoding from '../../lib/encoding.js'
+/**
+ * @typedef {import("../Y.js").default} Y
+ * @typedef {import("../Struct/Type.js").default} YType
+ * @typedef {import("../Struct/Item.js").default} Item
+ * @typedef {import("./YEvent.js").default} YEvent
+ */
 
 /**
  * A transaction is created for every change on the Yjs model. It is possible
@@ -26,7 +32,7 @@ import BinaryEncoder from './Binary/Encoder.js'
 export default class Transaction {
   constructor (y) {
     /**
-     * @type {Y} The Yjs instance.
+     * @type {import("../Y.js")} The Yjs instance.
      */
     this.y = y
     /**
@@ -38,7 +44,7 @@ export default class Transaction {
      * All types that were directly modified (property added or child
      * inserted/deleted). New types are not included in this Set.
      * Maps from type to parentSubs (`item._parentSub = null` for YArray)
-     * @type {Set<YType,String>}
+     * @type {Map<YType|Y,String>}
      */
     this.changedTypes = new Map()
     // TODO: rename deletedTypes
@@ -60,7 +66,7 @@ export default class Transaction {
      */
     this.changedParentTypes = new Map()
     this.encodedStructsLen = 0
-    this.encodedStructs = new BinaryEncoder()
+    this.encodedStructs = encoding.createEncoder()
   }
 }
 

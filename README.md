@@ -248,7 +248,7 @@ The promise returns an instance of Y. We denote it with a lower case `y`.
   * y-websockets-client aways waits to sync with the server
 * y.connector.disconnect()
   * Force to disconnect this instance from the other instances
-* y.connector.reconnect()
+* y.connector.connect()
   * Try to reconnect to the other instances (needs to be supported by the
     connector)
   * Not supported by y-xmpp

@@ -3,7 +3,13 @@ import YXmlTreeWalker from './YXmlTreeWalker.js'
 
 import YArray from '../YArray/YArray.js'
 import YXmlEvent from './YXmlEvent.js'
-import { logItemHelper } from '../../MessageHandler/messageToString.js'
+import { logItemHelper } from '../../message.js'
+
+/**
+ * @typedef {import('./YXmlElement.js').default} YXmlElement
+ * @typedef {import('../../Bindings/DomBinding/DomBinding.js').default} DomBinding
+ * @typedef {import('../../Y.js').default} Y
+ */
 
 /**
  * Dom filter function.
@@ -48,7 +54,7 @@ export default class YXmlFragment extends YArray {
    * @param {Function} filter Function that is called on each child element and
    *                          returns a Boolean indicating whether the child
    *                          is to be included in the subtree.
-   * @return {TreeWalker} A subtree and a position within it.
+   * @return {YXmlTreeWalker} A subtree and a position within it.
    *
    * @public
    */
@@ -67,7 +73,7 @@ export default class YXmlFragment extends YArray {
    *   - attribute
    *
    * @param {CSS_Selector} query The query on the children.
-   * @return {?YXmlElement} The first element that matches the query or null.
+   * @return {?import('./YXmlElement.js')} The first element that matches the query or null.
    *
    * @public
    */
@@ -117,28 +123,12 @@ export default class YXmlFragment extends YArray {
   }
 
   /**
-   * @private
-   * Unbind from Dom and mark this Item as deleted.
-   *
-   * @param {Y} y The Yjs instance
-   * @param {boolean} createDelete Whether to propagate a message that this
-   *                               Type was deleted.
-   * @param {boolean} [gcChildren=y._hasUndoManager===false] Whether to garbage
-   *                                         collect the children of this type.
-   *
-   * @private
-   */
-  _delete (y, createDelete, gcChildren) {
-    super._delete(y, createDelete, gcChildren)
-  }
-
-  /**
    * Creates a Dom Element that mirrors this YXmlElement.
    *
    * @param {Document} [_document=document] The document object (you must define
    *                                        this when calling this method in
    *                                        nodejs)
-   * @param {Object<key:hookDefinition>} [hooks={}] Optional property to customize how hooks
+   * @param {Object.<string, any>} [hooks={}] Optional property to customize how hooks
    *                                             are presented in the DOM
    * @param {DomBinding} [binding] You should not set this property. This is
    *                               used if DomBinding wants to create a

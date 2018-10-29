@@ -1,5 +1,11 @@
 import Item from './Item.js'
-import { logItemHelper } from '../MessageHandler/messageToString.js'
+import { logItemHelper } from '../message.js'
+import * as encoding from '../../lib/encoding.js'
+import * as decoding from '../../lib/decoding.js'
+
+/**
+ * @typedef {import('../index.js').Y} Y
+ */
 
 export default class ItemFormat extends Item {
   constructor () {
@@ -8,7 +14,7 @@ export default class ItemFormat extends Item {
     this.value = null
   }
   _copy (undeleteChildren, copyPosition) {
-    let struct = super._copy(undeleteChildren, copyPosition)
+    let struct = super._copy()
     struct.key = this.key
     struct.value = this.value
     return struct
@@ -19,16 +25,23 @@ export default class ItemFormat extends Item {
   get _countable () {
     return false
   }
+  /**
+   * @param {Y} y
+   * @param {decoding.Decoder} decoder
+   */
   _fromBinary (y, decoder) {
     const missing = super._fromBinary(y, decoder)
-    this.key = decoder.readVarString()
-    this.value = JSON.parse(decoder.readVarString())
+    this.key = decoding.readVarString(decoder)
+    this.value = JSON.parse(decoding.readVarString(decoder))
     return missing
   }
+  /**
+   * @param {encoding.Encoder} encoder
+   */
   _toBinary (encoder) {
     super._toBinary(encoder)
-    encoder.writeVarString(this.key)
-    encoder.writeVarString(JSON.stringify(this.value))
+    encoding.writeVarString(encoder, this.key)
+    encoding.writeVarString(encoder, JSON.stringify(this.value))
   }
   /**
    * Transform this YXml Type to a readable format.

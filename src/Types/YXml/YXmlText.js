@@ -2,6 +2,11 @@ import YText from '../YText/YText.js'
 import { createAssociation } from '../../Bindings/DomBinding/util.js'
 
 /**
+ * @typedef {import('../../Bindings/DomBinding/DomBinding.js').default} DomBinding
+ * @typedef {import('../../index.js').Y} Y
+ */
+
+/**
  * Represents text in a Dom Element. In the future this type will also handle
  * simple formatting information like bold and italic.
  *
@@ -14,12 +19,12 @@ export default class YXmlText extends YText {
    * @param {Document} [_document=document] The document object (you must define
    *                                        this when calling this method in
    *                                        nodejs)
-   * @param {Object<key:hookDefinition>} [hooks] Optional property to customize how hooks
+   * @param {Object<string, any>} [hooks] Optional property to customize how hooks
    *                                             are presented in the DOM
    * @param {DomBinding} [binding] You should not set this property. This is
    *                               used if DomBinding wants to create a
    *                               association to the created DOM type.
-   * @return {Element} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
+   * @return {Text} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
    *
    * @public
    */
