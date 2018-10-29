@@ -1,28 +1,18 @@
-import nodeResolve from 'rollup-plugin-node-resolve'
-import commonjs from 'rollup-plugin-commonjs'
-var pkg = require('./package.json')
+const pkg = require('./package.json')
 
 export default {
-  input: 'src/Y.dist.js',
-  nameame: 'Y',
-  sourcemap: true,
+  input: 'src/index.js',
   output: {
-    file: 'y.node.js',
-    format: 'cjs'
-  },
-  plugins: [
-    nodeResolve({
-      main: true,
-      module: true,
-      browser: true
-    }),
-    commonjs()
-  ],
-  banner: `
+    name: 'Y',
+    file: 'build/node/index.js',
+    format: 'cjs',
+    sourcemap: true,
+    banner: `
 /**
  * ${pkg.name} - ${pkg.description}
  * @version v${pkg.version}
  * @license ${pkg.license}
  */
 `
+  }
 }

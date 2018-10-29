@@ -69,5 +69,8 @@
     "rollup-regenerator-runtime": "^6.23.1",
     "rollup-watch": "^3.2.2",
     "standard": "^11.0.1"
+  },
+  "dependencies": {
+    "ws": "^6.1.0"
   }
 }

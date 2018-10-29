@@ -36,6 +36,10 @@ export { default as DomBinding } from './Bindings/DomBinding/DomBinding.js'
 
 export { default as domToType } from './Bindings/DomBinding/domToType.js'
 export { domsToTypes, switchAssociation } from './Bindings/DomBinding/util.js'
+export * from './message.js'
+export * from '../lib/encoding.js'
+export * from '../lib/decoding.js'
+export * from '../lib/mutex.js'
 
 // TODO: reorder (Item* should have low numbers)
 registerStruct(0, ItemJSON)

@@ -5,3 +5,4 @@ docs
 /examples/yjs-dist.js*
 .vscode
 .yjsPersisted
+build
