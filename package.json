@@ -1,6 +1,6 @@
 {
   "name": "yjs",
-  "version": "13.0.0-66",
+  "version": "13.0.0-67",
   "description": "A framework for real-time p2p shared editing on any data",
   "main": "./y.node.js",
   "browser": "./y.js",
