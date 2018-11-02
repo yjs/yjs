@@ -5,11 +5,11 @@ import commonjs from 'rollup-plugin-commonjs'
 var pkg = require('./package.json')
 
 export default {
-  input: 'src/Y.dist.js',
+  input: 'src/index.js',
   name: 'Y',
   sourcemap: true,
   output: {
-    file: 'y.js',
+    file: 'build/umd/index.js',
     format: 'umd'
   },
   plugins: [
@@ -20,21 +20,6 @@ export default {
     }),
     commonjs(),
     babel(),
-    uglify({
-      mangle: {
-        except: ['YMap', 'Y', 'YArray', 'YText', 'YXmlHook', 'YXmlFragment', 'YXmlElement', 'YXmlEvent', 'YXmlText', 'YEvent', 'YArrayEvent', 'YMapEvent', 'Type', 'Delete', 'ItemJSON', 'ItemString', 'Item']
-      },
-      output: {
-        comments: function (node, comment) {
-          var text = comment.value
-          var type = comment.type
-          if (type === 'comment2') {
-            // multiline comment
-            return /@license/i.test(text)
-          }
-        }
-      }
-    })
   ],
   banner: `
 /**

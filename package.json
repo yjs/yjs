@@ -2,8 +2,7 @@
   "name": "yjs",
   "version": "13.0.0-67",
   "description": "A framework for real-time p2p shared editing on any data",
-  "main": "./y.node.js",
-  "browser": "./y.js",
+  "main": "./build/node/index.js",
   "module": "./src/index.js",
   "scripts": {
     "test": "npm run lint",
@@ -16,10 +15,10 @@
     "postversion": "npm run dist"
   },
   "files": [
-    "y.*",
     "src/*",
     ".esdoc.json",
-    "docs/*"
+    "docs/*",
+    "build/*"
   ],
   "standard": {
     "ignore": [
