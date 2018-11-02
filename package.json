@@ -18,7 +18,8 @@
     "src/*",
     ".esdoc.json",
     "docs/*",
-    "build/*"
+    "build/*",
+    "lib/*"
   ],
   "standard": {
     "ignore": [
