@@ -31,7 +31,6 @@ export default class ProsemirrorBinding {
     const updatedProps = {
       dispatchTransaction: function (tr) {
         // TODO: remove
-        const time = performance.now()
         const newState = prosemirror.state.apply(tr)
         mux(() => {
           updateYFragment(yDomFragment, newState, mapping)
@@ -41,11 +40,9 @@ export default class ProsemirrorBinding {
         } else {
           prosemirror.updateState(newState)
         }
-        console.info('time for Yjs update: ', performance.now() - time)
       }
     }
     prosemirror.setProps(updatedProps)
-    
     yDomFragment.observeDeep(events => {
       if (events.length === 0) {
         return
