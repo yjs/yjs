@@ -1,8 +1,8 @@
 import YText from '../YText/YText.js'
-import { createAssociation } from '../../Bindings/DomBinding/util.js'
+import { createAssociation } from '../../../bindings/DomBinding/util.js'
 
 /**
- * @typedef {import('../../Bindings/DomBinding/DomBinding.js').default} DomBinding
+ * @typedef {import('../../../bindings/DomBinding/DomBinding.js').default} DomBinding
  * @typedef {import('../../index.js').Y} Y
  */
 

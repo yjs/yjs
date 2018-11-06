@@ -1,10 +1,10 @@
 import YMap from '../YMap/YMap.js'
-import { createAssociation } from '../../Bindings/DomBinding/util.js'
+import { createAssociation } from '../../../bindings/DomBinding/util.js'
 import * as encoding from '../../../lib/encoding.js'
 import * as decoding from '../../../lib/decoding.js'
 
 /**
- * @typedef {import('../../Bindings/DomBinding/DomBinding.js').default} DomBinding
+ * @typedef {import('../../../bindings/DomBinding/DomBinding.js').default} DomBinding
  * @typedef {import('../../Y.js').default} Y
  */
 

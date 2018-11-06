@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <script type="module" src="./index.dist.js"></script>
+      <link rel=stylesheet href="https://prosemirror.net/css/editor.css">
+      <style>
+        placeholder {
+          display: inline;
+          border: 1px solid #ccc;
+          color: #ccc;
+        }
+        placeholder:after {
+          content: "☁";
+          font-size: 200%;
+          line-height: 0.1;
+          font-weight: bold;
+        }
+        .ProseMirror img { max-width: 100px }
+      </style>
+  </head>
+<body>
+  ​<div id="editor" style="margin-bottom: 23px"></div>
+  <div style="display: none" id="content">
+    <h3>Hello User</h3>
+    <p>type something ...</p>
+  </div>
+  <div>Insert image: <input type=file id=image-upload></div>
+</body>
+</html>

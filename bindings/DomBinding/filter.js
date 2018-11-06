@@ -1,4 +1,4 @@
-import isParentOf from '../../Util/isParentOf.js'
+import isParentOf from '../../src/Util/isParentOf.js'
 
 /**
  * @callback DomFilter

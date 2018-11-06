@@ -1,6 +1,6 @@
 import YMap from '../YMap/YMap.js'
 import YXmlFragment from './YXmlFragment.js'
-import { createAssociation } from '../../Bindings/DomBinding/util.js'
+import { createAssociation } from '../../../bindings/DomBinding/util.js'
 import * as encoding from '../../../lib/encoding.js'
 import * as decoding from '../../../lib/decoding.js'
 
@@ -82,6 +82,10 @@ export default class YXmlElement extends YXmlFragment {
     super._integrate(y)
   }
 
+  toString () {
+    return this.toDomString()
+  }
+
   /**
    * Returns the string representation of this YXmlElement.
    * The attributes are ordered by attribute-name, so you can easily use this
@@ -91,7 +95,7 @@ export default class YXmlElement extends YXmlFragment {
    *
    * @public
    */
-  toString () {
+  toDomString () {
     const attrs = this.getAttributes()
     const stringBuilder = []
     const keys = []
@@ -106,7 +110,7 @@ export default class YXmlElement extends YXmlFragment {
     }
     const nodeName = this.nodeName.toLocaleLowerCase()
     const attrsString = stringBuilder.length > 0 ? ' ' + stringBuilder.join(' ') : ''
-    return `<${nodeName}${attrsString}>${super.toString()}</${nodeName}>`
+    return `<${nodeName}${attrsString}>${super.toDomString()}</${nodeName}>`
   }
 
   /**
@@ -170,7 +174,7 @@ export default class YXmlElement extends YXmlFragment {
    *                                        nodejs)
    * @param {Object<string, any>} [hooks={}] Optional property to customize how hooks
    *                                             are presented in the DOM
-   * @param {import('../../Bindings/DomBinding/DomBinding.js').default} [binding] You should not set this property. This is
+   * @param {import('../../../bindings/DomBinding/DomBinding.js').default} [binding] You should not set this property. This is
    *                               used if DomBinding wants to create a
    *                               association to the created DOM type.
    * @return {Element} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}

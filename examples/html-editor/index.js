@@ -1,7 +1,7 @@
 
 import YWebsocketsConnector from '../../src/Connectors/WebsocketsConnector/WebsocketsConnector.js'
 import Y from '../../src/Y.js'
-import DomBinding from '../../src/Bindings/DomBinding/DomBinding.js'
+import DomBinding from '../../bindings/DomBinding/DomBinding.js'
 import UndoManager from '../../src/Util/UndoManager.js'
 import YXmlFragment from '../../src/Types/YXml/YXmlFragment.js'
 import YXmlText from '../../src/Types/YXml/YXmlText.js'

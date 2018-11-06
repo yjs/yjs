@@ -1,6 +1,6 @@
 /* globals getSelection */
 
-import { getRelativePosition } from '../../Util/relativePosition.js'
+import { getRelativePosition } from '../../src/Util/relativePosition.js'
 
 let relativeSelection = null
 

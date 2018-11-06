@@ -1,7 +1,7 @@
 /* eslint-env browser */
-import YXmlText from '../../Types/YXml/YXmlText.js'
-import YXmlHook from '../../Types/YXml/YXmlHook.js'
-import YXmlElement from '../../Types/YXml/YXmlElement.js'
+import YXmlText from '../../src/Types/YXml/YXmlText.js'
+import YXmlHook from '../../src/Types/YXml/YXmlHook.js'
+import YXmlElement from '../../src/Types/YXml/YXmlElement.js'
 import { createAssociation, domsToTypes } from './util.js'
 import { filterDomAttributes, defaultFilter } from './filter.js'
 

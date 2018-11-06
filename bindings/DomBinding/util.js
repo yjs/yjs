@@ -2,9 +2,9 @@
 import domToType from './domToType.js'
 
 /**
- * @typedef {import('../../Types/YXml/YXmlText.js').default} YXmlText
- * @typedef {import('../../Types/YXml/YXmlElement.js').default} YXmlElement
- * @typedef {import('../../Types/YXml/YXmlHook.js').default} YXmlHook
+ * @typedef {import('../../src/Types/YXml/YXmlText.js').default} YXmlText
+ * @typedef {import('../../src/Types/YXml/YXmlElement.js').default} YXmlElement
+ * @typedef {import('../../src/Types/YXml/YXmlHook.js').default} YXmlHook
  * @typedef {import('./DomBinding.js').default} DomBinding
  */
 

@@ -1,8 +1,8 @@
 /* eslint-env browser */
 /* global getSelection */
 
-import YXmlText from '../../Types/YXml/YXmlText.js'
-import YXmlHook from '../../Types/YXml/YXmlHook.js'
+import YXmlText from '../../src/Types/YXml/YXmlText.js'
+import YXmlHook from '../../src/Types/YXml/YXmlHook.js'
 import { removeDomChildrenUntilElementFound } from './util.js'
 
 function findScrollReference (scrollingElement) {

@@ -30,12 +30,6 @@ export { default as XmlElement } from './Types/YXml/YXmlElement.js'
 
 export { getRelativePosition, fromRelativePosition } from './Util/relativePosition.js'
 export { registerStruct as registerType } from './Util/structReferences.js'
-export { default as TextareaBinding } from './Bindings/TextareaBinding/TextareaBinding.js'
-export { default as QuillBinding } from './Bindings/QuillBinding/QuillBinding.js'
-export { default as DomBinding } from './Bindings/DomBinding/DomBinding.js'
-
-export { default as domToType } from './Bindings/DomBinding/domToType.js'
-export { domsToTypes, switchAssociation } from './Bindings/DomBinding/util.js'
 export * from './message.js'
 export * from '../lib/encoding.js'
 export * from '../lib/decoding.js'

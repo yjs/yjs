@@ -1,4 +1,4 @@
-import { createAssociation } from '../../Bindings/DomBinding/util.js'
+import { createAssociation } from '../../../bindings/DomBinding/util.js'
 import YXmlTreeWalker from './YXmlTreeWalker.js'
 
 import YArray from '../YArray/YArray.js'
@@ -7,7 +7,7 @@ import { logItemHelper } from '../../message.js'
 
 /**
  * @typedef {import('./YXmlElement.js').default} YXmlElement
- * @typedef {import('../../Bindings/DomBinding/DomBinding.js').default} DomBinding
+ * @typedef {import('../../../bindings/DomBinding/DomBinding.js').default} DomBinding
  * @typedef {import('../../Y.js').default} Y
  */
 
@@ -113,13 +113,17 @@ export default class YXmlFragment extends YArray {
     this._callEventHandler(transaction, new YXmlEvent(this, parentSubs, remote, transaction))
   }
 
+  toString () {
+    return this.toDomString()
+  }
+
   /**
    * Get the string representation of all the children of this YXmlFragment.
    *
    * @return {string} The string representation of all children.
    */
-  toString () {
-    return this.map(xml => xml.toString()).join('')
+  toDomString () {
+    return this.map(xml => xml.toDomString()).join('')
   }
 
   /**

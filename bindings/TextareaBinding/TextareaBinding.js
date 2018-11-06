@@ -1,7 +1,7 @@
 
 import Binding from '../Binding.js'
-import simpleDiff from '../../../lib/simpleDiff.js'
-import { getRelativePosition, fromRelativePosition } from '../../Util/relativePosition.js'
+import simpleDiff from '../../lib/simpleDiff.js'
+import { getRelativePosition, fromRelativePosition } from '../../src/Util/relativePosition.js'
 
 function typeObserver () {
   this._mutualExclude(() => {

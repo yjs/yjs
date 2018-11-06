@@ -3,7 +3,7 @@
 import { createYdbClient } from '../../YdbClient/index.js'
 import Y from '../../src/Y.dist.js'
 import * as ydb from '../../YdbClient/YdbClient.js'
-import DomBinding from '../../src/Bindings/DomBinding/DomBinding.js'
+import DomBinding from '../../bindings/DomBinding/DomBinding.js'
 
 const uuidv4 = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
   const r = Math.random() * 16 | 0
