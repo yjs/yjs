@@ -2,6 +2,8 @@ import BindMapping from '../BindMapping.js'
 import * as PModel from 'prosemirror-model'
 import * as Y from '../../src/index.js'
 import { createMutex } from '../../lib/mutex.js'
+import { Plugin, PluginKey } from 'prosemirror-state'
+import { Decoration, DecorationSet } from 'prosemirror-view'
 
 /**
  * @typedef {import('prosemirror-view').EditorView} EditorView
@@ -9,64 +11,146 @@ import { createMutex } from '../../lib/mutex.js'
  * @typedef {BindMapping<Y.Text | Y.XmlElement, PModel.Node>} ProsemirrorMapping
  */
 
-export default class ProsemirrorBinding {
-  /**
-   * @param {Y.XmlFragment} yDomFragment The bind source
-   * @param {EditorView} prosemirror The target binding
-   */
-  constructor (yDomFragment, prosemirror) {
-    this.type = yDomFragment
-    this.prosemirror = prosemirror
-    const mux = createMutex()
-    this.mux = mux
-    /**
-     * @type {ProsemirrorMapping}
-     */
-    const mapping = new BindMapping()
-    this.mapping = mapping
-    const oldDispatch = prosemirror.props.dispatchTransaction || null
-    /**
-     * @type {any}
-     */
-    const updatedProps = {
-      dispatchTransaction: function (tr) {
-        // TODO: remove
-        const newState = prosemirror.state.apply(tr)
-        mux(() => {
-          updateYFragment(yDomFragment, newState, mapping)
-        })
-        if (oldDispatch !== null) {
-          oldDispatch.call(this, tr)
-        } else {
-          prosemirror.updateState(newState)
+export const prosemirrorPluginKey = new PluginKey('yjs')
+
+/**
+ * This plugin listens to changes in prosemirror view and keeps yXmlState and view in sync.
+ *
+ * This plugin also keeps references to the type and the shared document so other plugins can access it.
+ * @param {Y.XmlFragment} yXmlFragment
+ */
+export const prosemirrorPlugin = yXmlFragment => {
+  const pluginState = {
+    type: yXmlFragment,
+    y: yXmlFragment._y,
+    binding: null
+  }
+  const plugin = new Plugin({
+    key: prosemirrorPluginKey,
+    state: {
+      init: (initargs, state) => {
+        return pluginState
+      },
+      apply: (tr, pluginState) => {
+        return pluginState
+      }
+    },
+    view: view => {
+      const binding = new ProsemirrorBinding(yXmlFragment, view)
+      pluginState.binding = binding
+      return {
+        update: () => {
+          binding._prosemirrorChanged()
+        },
+        destroy: () => {
+          binding.destroy()
         }
       }
     }
-    prosemirror.setProps(updatedProps)
-    yDomFragment.observeDeep(events => {
-      if (events.length === 0) {
-        return
-      }
-      mux(() => {
-        events.forEach(event => {
-          // recompute node for each parent
-          // except main node, compute main node in the end
-          let target = event.target
-          if (target !== yDomFragment) {
-            do {
-              if (target.constructor === Y.XmlElement) {
-                createNodeFromYElement(target, prosemirror.state.schema, mapping)
-              }
-              target = target._parent
-            } while (target._parent !== yDomFragment)
-          }
-        })
-        const fragmentContent = yDomFragment.toArray().map(t => createNodeIfNotExists(t, prosemirror.state.schema, mapping))
-        const tr = prosemirror.state.tr.replace(0, prosemirror.state.doc.content.size, new PModel.Slice(new PModel.Fragment(fragmentContent), 0, 0))
-        const newState = prosemirror.updateState(prosemirror.state.apply(tr))
-        console.log('state updated', newState, tr)
+  })
+  return plugin
+}
+
+export const cursorPluginKey = new PluginKey('yjs-cursor')
+
+export const cursorPlugin = new Plugin({
+  key: cursorPluginKey,
+  props: {
+    decorations: state => {
+      const y = prosemirrorPluginKey.getState(state).y
+      const awareness = y.getAwarenessInfo()
+      const decorations = []
+      awareness.forEach((state, userID) => {
+        if (state.cursor != null) {
+          const username = `User: ${userID}`
+          decorations.push(Decoration.widget(state.cursor.from, () => {
+            const cursor = document.createElement('span')
+            cursor.classList.add('ProseMirror-yjs-cursor')
+            const user = document.createElement('div')
+            user.insertBefore(document.createTextNode(username), null)
+            cursor.insertBefore(user, null)
+            return cursor
+          }, { key: username }))
+          decorations.push(Decoration.inline(state.cursor.from, state.cursor.to, { style: 'background-color: #ffa50070' }))
+        }
       })
+      return DecorationSet.create(state.doc, decorations)
+    }
+  },
+  view: view => {
+    const y = prosemirrorPluginKey.getState(view.state).y
+    const awarenessListener = () => {
+      console.log(y.getAwarenessInfo())
+      view.updateState(view.state)
+    }
+    y.on('awareness', awarenessListener)
+    return {
+      update: () => {
+        const y = prosemirrorPluginKey.getState(view.state).y
+        const from = view.state.selection.from
+        const to = view.state.selection.to
+        const current = y.getLocalAwarenessInfo()
+        if (current.cursor == null || current.cursor.to !== to || current.cursor.from !== from) {
+          y.setAwarenessField('cursor', {
+            from, to
+          })
+        }
+      },
+      destroy: () => {
+        const y = prosemirrorPluginKey.getState(view.state).y
+        y.setAwarenessField('cursor', null)
+        y.off('awareness', awarenessListener)
+      }
+    }
+  }
+})
+
+export default class ProsemirrorBinding {
+  /**
+   * @param {Y.XmlFragment} yXmlFragment The bind source
+   * @param {EditorView} prosemirrorView The target binding
+   */
+  constructor (yXmlFragment, prosemirrorView) {
+    this.type = yXmlFragment
+    this.prosemirrorView = prosemirrorView
+    this.mux = createMutex()
+    /**
+     * @type {ProsemirrorMapping}
+     */
+    this.mapping = new BindMapping()
+    this._observeFunction = this._typeChanged.bind(this)
+    yXmlFragment.observeDeep(this._observeFunction)
+  }
+  _typeChanged (events) {
+    if (events.length === 0) {
+      return
+    }
+    this.mux(() => {
+      events.forEach(event => {
+        // recompute node for each parent
+        // except main node, compute main node in the end
+        let target = event.target
+        if (target !== this.type) {
+          do {
+            if (target.constructor === Y.XmlElement) {
+              createNodeFromYElement(target, this.prosemirrorView.state.schema, this.mapping)
+            }
+            target = target._parent
+          } while (target._parent !== this.type)
+        }
+      })
+      const fragmentContent = this.type.toArray().map(t => createNodeIfNotExists(t, this.prosemirrorView.state.schema, this.mapping))
+      const tr = this.prosemirrorView.state.tr.replace(0, this.prosemirrorView.state.doc.content.size, new PModel.Slice(new PModel.Fragment(fragmentContent), 0, 0))
+      this.prosemirrorView.updateState(this.prosemirrorView.state.apply(tr))
     })
+  }
+  _prosemirrorChanged () {
+    this.mux(() => {
+      updateYFragment(this.type, this.prosemirrorView.state, this.mapping)
+    })
+  }
+  destroy () {
+    this.type.unobserveDeep(this._observeFunction)
   }
 }
 

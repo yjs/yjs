@@ -1,6 +1,6 @@
 import { getStructReference } from '../Util/structReferences.js'
 import * as ID from '../Util/ID.js'
-import { stringifyID } from '../message.js'
+import { stringifyID } from '../protocols/syncProtocol.js'
 import { writeStructToTransaction } from '../Util/Transaction.js'
 import * as decoding from '../../lib/decoding.js'
 import * as encoding from '../../lib/encoding.js'

@@ -1,7 +1,7 @@
 import Tree from '../../lib/Tree.js'
 import * as ID from '../Util/ID.js'
 import { getStruct } from '../Util/structReferences.js'
-import { stringifyID, stringifyItemID } from '../message.js'
+import { stringifyID, stringifyItemID } from '../protocols/syncProtocol.js'
 import GC from '../Struct/GC.js'
 
 export default class OperationStore extends Tree {

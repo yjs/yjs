@@ -6,7 +6,7 @@ import { createRootID } from './Util/ID.js'
 import NamedEventHandler from '../lib/NamedEventHandler.js'
 import Transaction from './Util/Transaction.js'
 import * as encoding from '../lib/encoding.js'
-import * as message from './message.js'
+import * as message from './protocols/syncProtocol.js'
 import { integrateRemoteStructs } from './Util/integrateRemoteStructs.js'
 
 /**

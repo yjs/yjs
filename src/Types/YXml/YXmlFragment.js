@@ -3,7 +3,7 @@ import YXmlTreeWalker from './YXmlTreeWalker.js'
 
 import YArray from '../YArray/YArray.js'
 import YXmlEvent from './YXmlEvent.js'
-import { logItemHelper } from '../../message.js'
+import { logItemHelper } from '../../protocols/syncProtocol.js'
 
 /**
  * @typedef {import('./YXmlElement.js').default} YXmlElement

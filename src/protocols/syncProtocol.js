@@ -1,17 +1,17 @@
 
-import * as encoding from '../lib/encoding.js'
-import * as decoding from '../lib/decoding.js'
-import * as ID from './Util/ID.js'
-import { getStruct } from './Util/structReferences.js'
-import { deleteItemRange } from './Struct/Delete.js'
-import { integrateRemoteStruct } from './Util/integrateRemoteStructs.js'
-import Item from './Struct/Item.js'
+import * as encoding from '../../lib/encoding.js'
+import * as decoding from '../../lib/decoding.js'
+import * as ID from '../Util/ID.js'
+import { getStruct } from '../Util/structReferences.js'
+import { deleteItemRange } from '../Struct/Delete.js'
+import { integrateRemoteStruct } from '../Util/integrateRemoteStructs.js'
+import Item from '../Struct/Item.js'
 
 /**
- * @typedef {import('./Store/StateStore.js').default} StateStore
- * @typedef {import('./Y.js').default} Y
- * @typedef {import('./Struct/Item.js').default} Item
- * @typedef {import('./Store/StateStore.js').StateSet} StateSet
+ * @typedef {import('../Store/StateStore.js').default} StateStore
+ * @typedef {import('../Y.js').default} Y
+ * @typedef {import('../Struct/Item.js').default} Item
+ * @typedef {import('../Store/StateStore.js').StateSet} StateSet
  */
 
 /**
@@ -439,7 +439,7 @@ export const readUpdate = readStructs
  * @param {Y} y
  * @return {string} The message converted to string
  */
-export const stringifyMessage = (decoder, y) => {
+export const stringifySyncMessage = (decoder, y) => {
   const messageType = decoding.readVarUint(decoder)
   let stringifiedMessage
   let stringifiedMessageType
@@ -468,7 +468,7 @@ export const stringifyMessage = (decoder, y) => {
  * @param {encoding.Encoder} encoder The reply message. Will not be sent if empty.
  * @param {Y} y
  */
-export const readMessage = (decoder, encoder, y) => {
+export const readSyncMessage = (decoder, encoder, y) => {
   const messageType = decoding.readVarUint(decoder)
   switch (messageType) {
     case messageYjsSyncStep1:

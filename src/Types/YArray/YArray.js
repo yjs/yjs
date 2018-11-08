@@ -1,7 +1,7 @@
 import Type from '../../Struct/Type.js'
 import ItemJSON from '../../Struct/ItemJSON.js'
 import ItemString from '../../Struct/ItemString.js'
-import { stringifyItemID, logItemHelper } from '../../message.js'
+import { stringifyItemID, logItemHelper } from '../../protocols/syncProtocol.js'
 import YEvent from '../../Util/YEvent.js'
 
 /**

@@ -1,5 +1,5 @@
 import Item from './Item.js'
-import { logItemHelper } from '../message.js'
+import { logItemHelper } from '../protocols/syncProtocol.js'
 import * as encoding from '../../lib/encoding.js'
 import * as decoding from '../../lib/decoding.js'
 

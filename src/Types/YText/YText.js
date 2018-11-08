@@ -1,7 +1,7 @@
 import ItemEmbed from '../../Struct/ItemEmbed.js'
 import ItemString from '../../Struct/ItemString.js'
 import ItemFormat from '../../Struct/ItemFormat.js'
-import { logItemHelper } from '../../message.js'
+import { logItemHelper } from '../../protocols/syncProtocol.js'
 import { YArrayEvent, default as YArray } from '../YArray/YArray.js'
 
 /**
