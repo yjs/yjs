@@ -19,8 +19,13 @@
     ".esdoc.json",
     "docs/*",
     "build/*",
-    "lib/*"
+    "lib/*",
+    "provider/*",
+    "bindings/*"
   ],
+  "bin": {
+    "y-websockets": "provider/websocket/server.js"
+  },
   "standard": {
     "ignore": [
       "/y.js",
