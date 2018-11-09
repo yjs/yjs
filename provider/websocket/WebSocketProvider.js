@@ -86,7 +86,7 @@ class WebsocketsSharedDocument extends Y.Y {
     if (field !== null) {
       this._localAwarenessState[field] = value
     }
-    if (this.ws !== null) {
+    if (this.wsconnected) {
       const encoder = Y.createEncoder()
       Y.writeVarUint(encoder, messageAwareness)
       Y.writeUsersStateChange(encoder, [{ userID: this.userID, state: this._localAwarenessState }])

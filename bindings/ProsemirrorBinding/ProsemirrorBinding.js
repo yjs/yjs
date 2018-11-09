@@ -80,7 +80,6 @@ export const cursorPlugin = new Plugin({
   view: view => {
     const y = prosemirrorPluginKey.getState(view.state).y
     const awarenessListener = () => {
-      console.log(y.getAwarenessInfo())
       view.updateState(view.state)
     }
     y.on('awareness', awarenessListener)
@@ -267,5 +266,4 @@ const updateYFragment = (yDomFragment, state, mapping) => {
     yDomFragment.delete(left, yChildCnt - left - right)
     yDomFragment.insert(left, state.doc.content.content.slice(left, pChildCnt - right).map(node => createTypeFromNode(node, mapping)))
   })
-  console.log(yDomFragment.toDomString())
 }
