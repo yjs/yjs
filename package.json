@@ -1,6 +1,6 @@
 {
   "name": "yjs",
-  "version": "13.0.0-69",
+  "version": "13.0.0-70",
   "description": "A framework for real-time p2p shared editing on any data",
   "main": "./build/node/index.js",
   "module": "./src/index.js",
