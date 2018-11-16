@@ -65,6 +65,7 @@ test('insertions work in late sync', async function array4 (t) {
   array2.insert(1, ['user2'])
   await users[1].connect()
   await users[2].connect()
+  testConnector.flushAllMessages()
   await compareUsers(t, users)
 })
 
@@ -215,7 +216,7 @@ function getUniqueNumber () {
 
 var arrayTransactions = [
   function insert (t, user, prng) {
-    const yarray = user.get('array', Y.Array)
+    const yarray = user.define('array', Y.Array)
     var uniqueNumber = getUniqueNumber()
     var content = []
     var len = random.int32(prng, 1, 4)
@@ -226,14 +227,14 @@ var arrayTransactions = [
     yarray.insert(pos, content)
   },
   function insertTypeArray (t, user, prng) {
-    const yarray = user.get('array', Y.Array)
+    const yarray = user.define('array', Y.Array)
     var pos = random.int32(prng, 0, yarray.length)
     yarray.insert(pos, [Y.Array])
     var array2 = yarray.get(pos)
     array2.insert(0, [1, 2, 3, 4])
   },
   function insertTypeMap (t, user, prng) {
-    const yarray = user.get('array', Y.Array)
+    const yarray = user.define('array', Y.Array)
     var pos = random.int32(prng, 0, yarray.length)
     yarray.insert(pos, [Y.Map])
     var map = yarray.get(pos)
@@ -242,7 +243,7 @@ var arrayTransactions = [
     map.set('someprop', 44)
   },
   function _delete (t, user, prng) {
-    const yarray = user.get('array', Y.Array)
+    const yarray = user.define('array', Y.Array)
     var length = yarray.length
     if (length > 0) {
       var somePos = random.int32(prng, 0, length - 1)

@@ -1,6 +1,6 @@
 /* global MutationObserver, getSelection */
 
-import { fromRelativePosition } from '../../Util/relativePosition.js'
+import { fromRelativePosition } from '../../src/Util/relativePosition.js'
 import Binding from '../Binding.js'
 import { createAssociation, removeAssociation } from './util.js'
 import { beforeTransactionSelectionFixer, afterTransactionSelectionFixer, getCurrentRelativeSelection } from './selection.js'
@@ -121,8 +121,15 @@ export default class DomBinding extends Binding {
     createAssociation(this, target, type)
   }
 
+  flushDomChanges () {
+    this._domObserver(this._mutationObserver.takeRecords())
+  }
+
   /**
-   * NOTE: currently does not apply filter to existing elements!
+   * NOTE:
+   * * does not apply filter to existing elements!
+   * * only guarantees that changes are filtered locally. Remote sites may see different content.
+   *
    * @param {DomFilter} filter The filter function to use from now on.
    */
   setFilter (filter) {

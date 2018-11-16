@@ -13,8 +13,8 @@ function testEncoding (t, write, read, val) {
   t.compare(val, result, 'Compare results')
 }
 
-const writeVarUint = (encoder, val) => encoder.writeVarUint(val)
-const readVarUint = decoder => decoder.readVarUint()
+const writeVarUint = (encoder, val) => encoding.writeVarUint(encoder, val)
+const readVarUint = decoder => decoding.readVarUint(decoder)
 
 test('varUint 1 byte', async function varUint1 (t) {
   testEncoding(t, writeVarUint, readVarUint, 42)
@@ -46,8 +46,8 @@ test('varUint random user id', async function varUintRandomUserId (t) {
   testEncoding(t, writeVarUint, readVarUint, generateRandomUint32())
 })
 
-const writeVarString = (encoder, val) => encoder.writeVarString(val)
-const readVarString = decoder => decoder.readVarString()
+const writeVarString = (encoder, val) => encoding.writeVarString(encoder, val)
+const readVarString = decoder => decoding.readVarString(decoder)
 
 test('varString', async function varString (t) {
   testEncoding(t, writeVarString, readVarString, 'hello')

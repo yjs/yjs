@@ -6,10 +6,12 @@ import { defragmentItemContent } from '../src/Util/defragmentItemContent.js'
 import Quill from 'quill'
 import GC from '../src/Struct/GC.js'
 import * as random from '../lib/random/random.js'
-import * as message from '../src/message.js'
+import * as syncProtocol from '../src/protocols/syncProtocol.js'
 import * as encoding from '../lib/encoding.js'
 import * as decoding from '../lib/decoding.js'
 import { createMutex } from '../lib/mutex.js'
+import QuillBinding from '../bindings/QuillBinding/QuillBinding.js'
+import DomBinding from '../bindings/DomBinding/DomBinding.js'
 
 export * from '../src/index.js'
 
@@ -21,7 +23,7 @@ const afterTransaction = (y, transaction) => {
   y.mMux(() => {
     if (transaction.encodedStructsLen > 0) {
       const encoder = encoding.createEncoder()
-      message.writeUpdate(encoder, transaction.encodedStructsLen, transaction.encodedStructs)
+      syncProtocol.writeUpdate(encoder, transaction.encodedStructsLen, transaction.encodedStructs)
       broadcastMessage(y, encoding.toBuffer(encoder))
     }
   })
@@ -31,8 +33,9 @@ export class TestYInstance extends Y.Y {
   /**
    * @param {TestConnector} testConnector
    */
-  constructor (testConnector) {
+  constructor (testConnector, clientID) {
     super()
+    this.userID = clientID // overwriting clientID
     /**
      * @type {TestConnector}
      */
@@ -64,17 +67,19 @@ export class TestYInstance extends Y.Y {
    */
   connect () {
     if (!this.tc.onlineConns.has(this)) {
+      this.tc.onlineConns.add(this)
       const encoder = encoding.createEncoder()
-      message.writeSyncStep1(encoder, this)
+      syncProtocol.writeSyncStep1(encoder, this)
       // publish SyncStep1
       broadcastMessage(this, encoding.toBuffer(encoder))
       this.tc.onlineConns.forEach(remoteYInstance => {
-        // remote instance sends instance to this instance
-        const encoder = encoding.createEncoder()
-        message.writeSyncStep1(encoder, remoteYInstance)
-        this._receive(encoding.toBuffer(encoder), remoteYInstance)
+        if (remoteYInstance !== this) {
+          // remote instance sends instance to this instance
+          const encoder = encoding.createEncoder()
+          syncProtocol.writeSyncStep1(encoder, remoteYInstance)
+          this._receive(encoding.toBuffer(encoder), remoteYInstance)
+        }
       })
-      this.tc.onlineConns.add(this)
     }
   }
   /**
@@ -117,9 +122,10 @@ export class TestConnector {
   }
   /**
    * Create a new Y instance and add it to the list of connections
+   * @param {number} clientID
    */
-  createY () {
-    return new TestYInstance(this)
+  createY (clientID) {
+    return new TestYInstance(this, clientID)
   }
   /**
    * Choose random connection and flush a random message from a random sender.
@@ -139,8 +145,9 @@ export class TestConnector {
       }
       const encoder = encoding.createEncoder()
       receiver.mMux(() => {
+        console.log('receive (' + sender.userID + '->' + receiver.userID + '):\n', syncProtocol.stringifySyncMessage(decoding.createDecoder(m), receiver))
         // do not publish data created when this function is executed (could be ss2 or update message)
-        message.readMessage(decoding.createDecoder(m), encoder, receiver)
+        syncProtocol.readSyncMessage(decoding.createDecoder(m), encoder, receiver)
       })
       if (encoding.length(encoder) > 0) {
         // send reply message
@@ -202,12 +209,15 @@ export class TestConnector {
  * @param {TestYInstance} y // publish message created by `y` to all other online clients
  * @param {ArrayBuffer} m
  */
-const broadcastMessage = (y, m) =>
-  y.tc.onlineConns.forEach(remoteYInstance => {
-    if (remoteYInstance !== y) {
-      remoteYInstance._receive(m, y)
-    }
-  })
+const broadcastMessage = (y, m) => {
+  if (y.tc.onlineConns.has(y)) {
+    y.tc.onlineConns.forEach(remoteYInstance => {
+      if (remoteYInstance !== y) {
+        remoteYInstance._receive(m, y)
+      }
+    })
+  }
+}
 
 /**
  * Convert DS to a proper DeleteSet of Map.
@@ -295,7 +305,7 @@ export function compareUsers (t, users) {
     data.os = ops
     data.ds = getDeleteSet(u)
     const ss = {}
-    u.ss.state.forEach((user, clock) => {
+    u.ss.state.forEach((clock, user) => {
       ss[user] = clock
     })
     data.ss = ss
@@ -347,20 +357,20 @@ export function initArrays (t, opts) {
   const testConnector = new TestConnector(prng)
   result.testConnector = testConnector
   for (let i = 0; i < opts.users; i++) {
-    let y = testConnector.createY()
+    let y = testConnector.createY(i)
     result.users.push(y)
     result['array' + i] = y.define('array', Y.Array)
     result['map' + i] = y.define('map', Y.Map)
     const yxml = y.define('xml', Y.XmlElement)
     result['xml' + i] = yxml
     const dom = document.createElement('my-dom')
-    const domBinding = new Y.DomBinding(yxml, dom, { filter })
+    const domBinding = new DomBinding(yxml, dom, { filter })
     result['domBinding' + i] = domBinding
     result['dom' + i] = dom
     const textType = y.define('text', Y.Text)
     result['text' + i] = textType
     const quill = new Quill(document.createElement('div'))
-    result['quillBinding' + i] = new Y.QuillBinding(textType, quill)
+    result['quillBinding' + i] = new QuillBinding(textType, quill)
     result['quill' + i] = quill
     y.quill = quill // put quill on the y object (so we can use it later)
     y.dom = dom

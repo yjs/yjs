@@ -1,5 +1,5 @@
 
-import { createMutex } from '../../lib/mutex.js'
+import { createMutex } from '../lib/mutex.js'
 
 /**
  * Abstract class for bindings.

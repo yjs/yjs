@@ -54,7 +54,7 @@ export const stringifyDeleteSet = (decoder) => {
   const dsLength = decoding.readUint32(decoder)
   for (let i = 0; i < dsLength; i++) {
     str += ' -' + decoding.readVarUint(decoder) + ':\n' // decodes user
-    const dvLength = decoding.readVarUint(decoder)
+    const dvLength = decoding.readUint32(decoder)
     for (let j = 0; j < dvLength; j++) {
       str += `clock: ${decoding.readVarUint(decoder)}, length: ${decoding.readVarUint(decoder)}, gc: ${decoding.readUint8(decoder) === 1}\n`
     }
@@ -192,8 +192,8 @@ export const readDeleteSet = (decoder, y) => {
  */
 export const stringifyStateSet = decoder => {
   let s = 'State Set: '
-  readStateSet(decoder).forEach((user, userState) => {
-    s += `(${user}: ${userState}), `
+  readStateSet(decoder).forEach((clock, user) => {
+    s += `(${user}: ${clock}), `
   })
   return s
 }
@@ -209,7 +209,7 @@ export const writeStateSet = (encoder, y) => {
   // write as fixed-size number to stay consistent with the other encode functions.
   // => anytime we write the number of objects that follow, encode as fixed-size number.
   encoding.writeUint32(encoder, state.size)
-  state.forEach((user, clock) => {
+  state.forEach((clock, user) => {
     encoding.writeVarUint(encoder, user)
     encoding.writeVarUint(encoder, clock)
   })
@@ -317,7 +317,9 @@ export const writeStructs = (encoder, y, ss) => {
       const overlappingLeft = y.os.findPrev(minBound)
       const rightID = overlappingLeft === null ? null : overlappingLeft._id
       if (rightID !== null && rightID.user === user && rightID.clock + overlappingLeft._length > clock) {
-        const struct = overlappingLeft._clonePartial(clock - rightID.clock)
+        // TODO: only write partial content (only missing content)
+        // const struct = overlappingLeft._clonePartial(clock - rightID.clock)
+        const struct = overlappingLeft
         struct._toBinary(encoder)
         len++
       }

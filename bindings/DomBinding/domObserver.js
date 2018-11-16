@@ -1,11 +1,11 @@
 
-import YXmlHook from '../../Types/YXml/YXmlHook.js'
+import YXmlHook from '../../src/Types/YXml/YXmlHook.js'
 import {
   iterateUntilUndeleted,
   removeAssociation,
   insertNodeHelper } from './util.js'
-import diff from '../../../lib/simpleDiff.js'
-import YXmlFragment from '../../Types/YXml/YXmlFragment.js'
+import diff from '../../lib/simpleDiff.js'
+import YXmlFragment from '../../src/Types/YXml/YXmlFragment.js'
 
 /**
  * 1. Check if any of the nodes was deleted

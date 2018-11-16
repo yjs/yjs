@@ -50,7 +50,7 @@ test('Basic get&set of Map property (converge via sync)', async function map1 (t
   testConnector.flushAllMessages()
 
   for (let user of users) {
-    var u = user.get('map', Y.Map)
+    var u = user.define('map', Y.Map)
     t.compare(u.get('stuff'), 'stuffy')
     t.assert(u.get('undefined') === undefined, 'undefined')
     t.compare(u.get('null'), null, 'null')
@@ -94,7 +94,7 @@ test('Basic get&set of Map property (converge via update)', async function map5 
   testConnector.flushAllMessages()
 
   for (let user of users) {
-    var u = user.get('map', Y.Map)
+    var u = user.define('map', Y.Map)
     t.compare(u.get('stuff'), 'stuffy')
   }
   await compareUsers(t, users)
@@ -108,7 +108,7 @@ test('Basic get&set of Map property (handle conflict)', async function map6 (t) 
   testConnector.flushAllMessages()
 
   for (let user of users) {
-    var u = user.get('map', Y.Map)
+    var u = user.define('map', Y.Map)
     t.compare(u.get('stuff'), 'c0')
   }
   await compareUsers(t, users)
@@ -121,7 +121,7 @@ test('Basic get&set&delete of Map property (handle conflict)', async function ma
   map1.set('stuff', 'c1')
   testConnector.flushAllMessages()
   for (let user of users) {
-    var u = user.get('map', Y.Map)
+    var u = user.define('map', Y.Map)
     t.assert(u.get('stuff') === undefined)
   }
   await compareUsers(t, users)
@@ -135,7 +135,7 @@ test('Basic get&set of Map property (handle three conflicts)', async function ma
   map2.set('stuff', 'c3')
   testConnector.flushAllMessages()
   for (let user of users) {
-    var u = user.get('map', Y.Map)
+    var u = user.define('map', Y.Map)
     t.compare(u.get('stuff'), 'c0')
   }
   await compareUsers(t, users)
@@ -155,7 +155,7 @@ test('Basic get&set&delete of Map property (handle three conflicts)', async func
   map3.set('stuff', 'c3')
   testConnector.flushAllMessages()
   for (let user of users) {
-    var u = user.get('map', Y.Map)
+    var u = user.define('map', Y.Map)
     t.assert(u.get('stuff') === undefined)
   }
   await compareUsers(t, users)
@@ -303,12 +303,12 @@ var mapTransactions = [
   function set (t, user, prng) {
     let key = random.oneOf(prng, ['one', 'two'])
     var value = random.utf16String(prng)
-    user.get('map', Y.Map).set(key, value)
+    user.define('map', Y.Map).set(key, value)
   },
   function setType (t, user, prng) {
     let key = random.oneOf(prng, ['one', 'two'])
     var type = random.oneOf(prng, [new Y.Array(), new Y.Map()])
-    user.get('map', Y.Map).set(key, type)
+    user.define('map', Y.Map).set(key, type)
     if (type instanceof Y.Array) {
       type.insert(0, [1, 2, 3, 4])
     } else {
@@ -317,7 +317,7 @@ var mapTransactions = [
   },
   function _delete (t, user, prng) {
     let key = random.oneOf(prng, ['one', 'two'])
-    user.get('map', Y.Map).delete(key)
+    user.define('map', Y.Map).delete(key)
   }
 ]
 

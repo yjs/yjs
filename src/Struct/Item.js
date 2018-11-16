@@ -47,10 +47,12 @@ export function splitHelper (y, a, b, diff) {
     o = o._right
   }
   y.os.put(b)
-  if (y._transaction.newTypes.has(a)) {
-    y._transaction.newTypes.add(b)
-  } else if (y._transaction.deletedStructs.has(a)) {
-    y._transaction.deletedStructs.add(b)
+  if (y._transaction !== null) {
+    if (y._transaction.newTypes.has(a)) {
+      y._transaction.newTypes.add(b)
+    } else if (y._transaction.deletedStructs.has(a)) {
+      y._transaction.deletedStructs.add(b)
+    }
   }
 }
 
@@ -117,7 +119,7 @@ export default class Item {
    */
   _copy () {
     const C = this.constructor
-    return C()
+    return new C()
   }
 
   /**
