@@ -66,7 +66,7 @@ missing modules.
 
 ### CDN
 ```
-<script src="https://cdn.jsdelivr.net/npm/yjs@12/src/y.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/yjs@12/dist/y.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/y-array@10/dist/y-array.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/y-websockets-client@8/dist/y-websockets-client.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/y-memory@8/dist/y-memory.js"></script>
