@@ -1,5 +1,5 @@
 
-# ![Yjs](http://y-js.org/images/yjs.png)
+# ![Yjs](https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png)
 
 Yjs is a framework for offline-first p2p shared editing on structured data like
 text, richtext, json, or XML. It is fairly easy to get started, as Yjs hides
