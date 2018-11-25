@@ -10,7 +10,7 @@
     "watch": "rollup -wc",
     "debug": "concurrently 'rollup -wc' 'cutest-serve build/y.test.js -o'",
     "lint": "standard **/*.js",
-    "docs": "rm -rf docs && jsdoc --configure .jsdoc.json --verbose --readme ./README.md --package ./package.json",
+    "docs": "ls -al && rm -rf docs; ! jsdoc --configure ./.jsdoc.json --verbose --readme ./README.md --package ./package.json",
     "serve-docs": "npm run docs && serve ./docs/",
     "postversion": "npm run build"
   },
@@ -65,7 +65,6 @@
     "esdoc": "^1.1.0",
     "esdoc-standard-plugin": "^1.0.0",
     "jsdoc": "^3.5.5",
-    "jsdoc-template": "git@github.com:braintree/jsdoc-template.git#3.3.0",
     "prosemirror-example-setup": "^1.0.1",
     "prosemirror-schema-basic": "^1.0.0",
     "prosemirror-state": "^1.2.2",

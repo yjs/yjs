@@ -5,9 +5,8 @@
     "dictionaries": ["jsdoc"]
   },
   "source": {
-    "include": ["types", "utils/UndoManager.js", "utils/Y.js", "provider", "bindings"],
-    "includePattern": ".js$",
-    "excludePattern": "(node_modules/|docs|build|examples)"
+    "include": ["./types", "./utils/UndoManager.js", "./utils/Y.js", "./provider", "./bindings"],
+    "includePattern": ".js$"
   },
   "plugins": [
     "plugins/markdown"
