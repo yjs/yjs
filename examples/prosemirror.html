@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Yjs Prosemirror Example</title>
+    <link rel=stylesheet href="https://prosemirror.net/css/editor.css">
+    <style>
+      placeholder {
+        display: inline;
+        border: 1px solid #ccc;
+        color: #ccc;
+      }
+      placeholder:after {
+        content: "☁";
+        font-size: 200%;
+        line-height: 0.1;
+        font-weight: bold;
+      }
+      .ProseMirror img { max-width: 100px }
+      .ProseMirror-yjs-cursor {
+        position: absolute;
+        border-left: black;
+        border-left-style: solid;
+        border-left-width: 2px;
+        border-color: orange;
+        height: 1em;
+      }
+      .ProseMirror-yjs-cursor > div {
+        position: relative;
+        top: -1.05em;
+        font-size: 13px;
+        background-color: rgb(250, 129, 0);
+        font-family: serif;
+        font-style: normal;
+        font-weight: normal;
+        line-height: normal;
+        user-select: none;
+        color: white;
+        padding-left: 2px;
+        padding-right: 2px;
+      }
+    </style>
+</head>
+<body>
+  <div class="code-html">
+  
+    <div id="editor" style="margin-bottom: 23px"></div>
+    <div style="display: none" id="content">
+      <h3>Hello User</h3>
+      <p>type here ...</p>
+    </div>
+  </div>
+  <script class="code-js" src="./build/prosemirror.js">
+import * as Y from 'yjs'
+import { prosemirrorPlugin, cursorPlugin } from 'yjs/bindings/prosemirror.js'
+import { WebsocketProvider } from 'yjs/provider/websocket.js'
+
+import { EditorState } from 'prosemirror-state'
+import { EditorView } from 'prosemirror-view'
+import { DOMParser } from 'prosemirror-model'
+import { schema } from 'prosemirror-schema-basic'
+import { exampleSetup } from 'prosemirror-example-setup'
+
+const provider = new WebsocketProvider('ws://localhost:1234/')
+const ydocument = provider.get('prosemirror')
+const type = ydocument.define('prosemirror', Y.XmlFragment)
+
+window.prosemirrorView = new EditorView(document.querySelector('#editor'), {
+  state: EditorState.create({
+    doc: DOMParser.fromSchema(schema).parse(document.querySelector('#content')),
+    plugins: exampleSetup({schema}).concat([prosemirrorPlugin(type), cursorPlugin])
+  })
+})
+  </script>
+</body>
+</html>

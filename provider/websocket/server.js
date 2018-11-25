@@ -1,4 +1,8 @@
-const Y = require('../../build/node/index.js')
+/**
+ * @module provider/websocket
+ */
+
+const Y = require('../../build/yjs.umd.js')
 const WebSocket = require('ws')
 const wss = new WebSocket.Server({ port: 1234 })
 const docs = new Map()

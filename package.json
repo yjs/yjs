@@ -2,17 +2,17 @@
   "name": "yjs",
   "version": "13.0.0-72",
   "description": "A framework for real-time p2p shared editing on any data",
-  "main": "./build/node/index.js",
-  "module": "./src/index.js",
+  "main": "./build/yjs.js",
+  "module": "./index.js",
   "scripts": {
     "test": "npm run lint",
-    "debug": "concurrently 'rollup -wc rollup.test.js' 'cutest-serve y.test.js -o'",
-    "lint": "standard src/**/*.js test/**/*.js tests-lib/**/*.js",
-    "docs": "esdoc",
+    "build": "rollup -c",
+    "watch": "rollup -wc",
+    "debug": "concurrently 'rollup -wc' 'cutest-serve build/y.test.js -o'",
+    "lint": "standard **/*.js",
+    "docs": "rm -rf docs && jsdoc --configure .jsdoc.json --verbose --readme ./README.md --package ./package.json",
     "serve-docs": "npm run docs && serve ./docs/",
-    "dist": "rollup -c rollup.browser.js; rollup -c rollup.node.js",
-    "watch": "concurrently 'rollup -wc rollup.browser.js' 'rollup -wc rollup.node.js'",
-    "postversion": "npm run dist"
+    "postversion": "npm run build"
   },
   "files": [
     "src/*",
@@ -28,8 +28,10 @@
   },
   "standard": {
     "ignore": [
-      "/y.js",
-      "/y.js.map"
+      "/build",
+      "/node_modules",
+      "/rollup.test.js",
+      "/rollup.test.js"
     ]
   },
   "repository": {
@@ -62,6 +64,8 @@
     "cutest": "^0.1.9",
     "esdoc": "^1.1.0",
     "esdoc-standard-plugin": "^1.0.0",
+    "jsdoc": "^3.5.5",
+    "jsdoc-template": "git@github.com:braintree/jsdoc-template.git#3.3.0",
     "prosemirror-example-setup": "^1.0.1",
     "prosemirror-schema-basic": "^1.0.0",
     "prosemirror-state": "^1.2.2",
@@ -74,10 +78,12 @@
     "rollup-plugin-inject": "^2.2.0",
     "rollup-plugin-multi-entry": "^2.0.2",
     "rollup-plugin-node-resolve": "^3.4.0",
-    "rollup-plugin-uglify": "^1.0.2",
+    "rollup-plugin-uglify": "^6.0.0",
+    "rollup-plugin-uglify-es": "0.0.1",
     "rollup-regenerator-runtime": "^6.23.1",
     "rollup-watch": "^3.2.2",
-    "standard": "^11.0.1"
+    "standard": "^11.0.1",
+    "tui-jsdoc-template": "^1.2.2"
   },
   "dependencies": {
     "ws": "^6.1.0"

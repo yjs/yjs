@@ -1,0 +1,51 @@
+{
+  "sourceType": "module",
+  "tags": {
+    "allowUnknownTags": true,
+    "dictionaries": ["jsdoc"]
+  },
+  "source": {
+    "include": ["types", "utils/UndoManager.js", "utils/Y.js", "provider", "bindings"],
+    "includePattern": ".js$",
+    "excludePattern": "(node_modules/|docs|build|examples)"
+  },
+  "plugins": [
+    "plugins/markdown"
+  ],
+  "templates": {
+    "referenceTitle": "Yjs",
+    "disableSort": false,
+    "useCollapsibles": true,
+    "collapse": true,
+    "resources": {
+      "y-js.org": "y-js.org"
+    },
+    "logo": {
+      "url": "http://y-js.org/images/yjs.png",
+      "width": "162px",
+      "height": "162px",
+      "link": "/"
+    },
+    "tabNames": {
+      "api": "API",
+      "tutorials": "Examples"
+    },
+    "footerText": "Shared Editing",
+    "css": [
+      "./style.css"
+    ],
+    "default": {
+      "staticFiles": {
+          "include": ["examples/"]
+      }
+    }
+  },
+  "opts": {
+    "destination": "./docs/",
+    "encoding": "utf8",
+    "private": false,
+    "recurse": true,
+    "template": "./node_modules/tui-jsdoc-template",
+    "tutorials": "./examples"
+  }
+}

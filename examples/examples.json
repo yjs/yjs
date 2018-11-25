@@ -1,0 +1,11 @@
+{
+  "prosemirror": {
+    "title": "Prosemirror Binding"
+  },
+  "textarea": {
+    "title": "Textarea Binding"
+  },
+  "quill": {
+    "title": "Quill Binding"
+  }
+}

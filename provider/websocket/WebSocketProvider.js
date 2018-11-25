@@ -1,7 +1,11 @@
+/**
+ * @module provider/websocket
+ */
+
 /* eslint-env browser */
 
-import * as Y from '../../src/index.js'
-export * from '../../src/index.js'
+import * as Y from '../../index.js'
+export * from '../../index.js'
 
 const messageSync = 0
 const messageAwareness = 1
@@ -95,7 +99,7 @@ class WebsocketsSharedDocument extends Y.Y {
   }
 }
 
-export default class WebsocketProvider {
+export class WebsocketProvider {
   constructor (url) {
     // ensure that url is always ends with /
     while (url[url.length - 1] === '/') {

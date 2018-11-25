@@ -1,6 +1,7 @@
 {
-  "source": "./src",
+  "source": ".",
   "destination": "./docs",
+  "excludes": ["build", "node_modules", "tests-lib", "test"],
   "plugins": [{
     "name": "esdoc-standard-plugin",
     "option": {
