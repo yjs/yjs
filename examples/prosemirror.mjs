@@ -8,7 +8,7 @@ import { DOMParser } from 'prosemirror-model'
 import { schema } from 'prosemirror-schema-basic'
 import { exampleSetup } from 'prosemirror-example-setup'
 
-const provider = new WebsocketProvider('ws://localhost:1234/')
+const provider = new WebsocketProvider('wss://yjs-v13-72-p02p39swv.now.sh')
 const ydocument = provider.get('prosemirror')
 const type = ydocument.define('prosemirror', Y.XmlFragment)
 

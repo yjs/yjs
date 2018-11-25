@@ -5,7 +5,9 @@
 import * as Y from '../../index.mjs'
 import WebSocket from 'ws'
 
-const wss = new WebSocket.Server({ port: 1234 })
+const port = process.env.PORT || 1234
+
+const wss = new WebSocket.Server({ port })
 const docs = new Map()
 
 const messageSync = 0
@@ -104,3 +106,5 @@ const setupConnection = (conn, req) => {
 }
 
 wss.on('connection', setupConnection)
+
+console.log('running on port', port)

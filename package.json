@@ -13,7 +13,8 @@
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.md --package ./package.json || true",
     "serve-docs": "npm run docs && serve ./docs/",
     "postversion": "npm run build",
-    "websocket-server": "node --experimental-modules ./provider/websocket/server.mjs"
+    "websocket-server": "node --experimental-modules ./provider/websocket/server.mjs",
+    "now-start": "npm run websocket-server"
   },
   "files": [
     "bindings/*",
