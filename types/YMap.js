@@ -10,12 +10,13 @@ import { YEvent } from '../utils/YEvent.js'
 
 /**
  * Event that describes the changes on a YMap.
- *
- * @param {YMap} ymap The YArray that changed.
- * @param {Set<any>} subs The keys that changed.
- * @param {boolean} remote Whether the change was created by a remote peer.
  */
 export class YMapEvent extends YEvent {
+  /**
+   * @param {YMap} ymap The YArray that changed.
+   * @param {Set<any>} subs The keys that changed.
+   * @param {boolean} remote Whether the change was created by a remote peer.
+   */
   constructor (ymap, subs, remote) {
     super(ymap)
     this.keysChanged = subs

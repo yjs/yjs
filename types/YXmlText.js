@@ -10,8 +10,6 @@ import { DomBinding } from '../bindings/dom/DomBinding.js' // eslint-disable-lin
 /**
  * Represents text in a Dom Element. In the future this type will also handle
  * simple formatting information like bold and italic.
- *
- * @param {String} arg1 Initial value.
  */
 export class YXmlText extends YText {
   /**

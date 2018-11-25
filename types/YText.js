@@ -461,10 +461,11 @@ class YTextEvent extends YArrayEvent {
  * This type replaces y-richtext as this implementation is able to handle
  * block formats (format information on a paragraph), embeds (complex elements
  * like pictures and videos), and text formats (**bold**, *italic*).
- *
- * @param {String} string The initial value of the YText.
  */
 export class YText extends YArray {
+  /**
+   * @param {String} string The initial value of the YText.
+   */
   constructor (string) {
     super()
     if (typeof string === 'string') {

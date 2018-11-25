@@ -12,12 +12,13 @@ import { Item } from '../structs/Item.js' // eslint-disable-line
 
 /**
  * Event that describes the changes on a YArray
- *
- * @param {YArray} yarray The changed type
- * @param {Boolean} remote Whether the changed was caused by a remote peer
- * @param {Transaction} transaction The transaction object
  */
 export class YArrayEvent extends YEvent {
+  /**
+   * @param {YArray} yarray The changed type
+   * @param {Boolean} remote Whether the changed was caused by a remote peer
+   * @param {Transaction} transaction The transaction object
+   */
   constructor (yarray, remote, transaction) {
     super(yarray)
     this.remote = remote

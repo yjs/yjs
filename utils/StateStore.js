@@ -8,6 +8,9 @@ import * as ID from '../utils/ID.js'
  * @typedef {Map<number, number>} StateSet
  */
 
+/**
+ * @private
+ */
 export class StateStore {
   constructor (y) {
     this.y = y

@@ -10,13 +10,14 @@
     "watch": "rollup -wc",
     "debug": "concurrently 'rollup -wc' 'cutest-serve build/y.test.js -o'",
     "lint": "standard **/*.js",
-    "docs": "ls -al && rm -rf docs; ! jsdoc --configure ./.jsdoc.json --verbose --readme ./README.md --package ./package.json",
+    "docs": "rm -rf docs; ! jsdoc --configure ./.jsdoc.json --verbose --readme ./README.md --package ./package.json",
     "serve-docs": "npm run docs && serve ./docs/",
     "postversion": "npm run build"
   },
   "files": [
     "src/*",
     ".esdoc.json",
+    ".jsdoc.json",
     "docs/*",
     "build/*",
     "lib/*",

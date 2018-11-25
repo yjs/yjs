@@ -25,11 +25,12 @@ import { Decoder } from '../lib/decoding.js' // eslint-disable-line
 
 /**
  * A Yjs instance handles the state of shared data.
- *
- * @param {string} room Users in the same room share the same content
- * @param {Object} conf configuration
  */
 export class Y extends NamedEventHandler {
+  /**
+   * @param {string} room Users in the same room share the same content
+   * @param {Object} conf configuration
+   */
   constructor (room, conf = {}) {
     super()
     this.gcEnabled = conf.gc || false
