@@ -1,29 +1,43 @@
 {
   "name": "yjs",
   "version": "13.0.0-72",
-  "description": "A framework for real-time p2p shared editing on any data",
-  "main": "./build/yjs.js",
-  "module": "./index.js",
+  "description": "A ",
+  "module": "./index.mjs'",
+  "sideEffects": false,
   "scripts": {
     "test": "npm run lint",
-    "build": "rollup -c",
+    "build": "rm -rf build && rollup -c",
     "watch": "rollup -wc",
     "debug": "concurrently 'rollup -wc' 'cutest-serve build/y.test.js -o'",
     "lint": "standard **/*.js",
-    "docs": "rm -rf docs; ! jsdoc --configure ./.jsdoc.json --verbose --readme ./README.md --package ./package.json",
+    "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.md --package ./package.json || true",
     "serve-docs": "npm run docs && serve ./docs/",
-    "postversion": "npm run build"
+    "postversion": "npm run build",
+    "websocket-server": "node --experimental-modules ./provider/websocket/server.mjs"
   },
   "files": [
-    "src/*",
-    ".esdoc.json",
-    ".jsdoc.json",
+    "bindings/*",
     "docs/*",
-    "build/*",
+    "examples/*",
     "lib/*",
+    "persistences/*",
+    "protocols/*",
     "provider/*",
-    "bindings/*"
+    "bindings/*",
+    "structs/*",
+    "tests/*",
+    "types/*",
+    "utils/*",
+    "index.js",
+    "README.md",
+    "LICENSE"
   ],
+  "dictionaries": {
+    "doc": "docs",
+    "example": "examples",
+    "test": "tests",
+    "lib": "./"
+  },
   "bin": {
     "y-websockets": "provider/websocket/server.js"
   },
@@ -40,13 +54,7 @@
     "url": "https://github.com/y-js/yjs.git"
   },
   "keywords": [
-    "Yjs",
-    "OT",
-    "Collaboration",
-    "Synchronization",
-    "ShareJS",
-    "Coweb",
-    "Concurrency"
+    "crdt"
   ],
   "author": "Kevin Jahns",
   "email": "kevin.jahns@rwth-aachen.de",

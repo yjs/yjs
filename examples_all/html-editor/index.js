@@ -1,12 +1,12 @@
 
-import YWebsocketsConnector from '../../src/Connectors/WebsocketsConnector/WebsocketsConnector.js'
-import Y from '../../src/Y.js'
-import DomBinding from '../../bindings/DomBinding/DomBinding.js'
-import UndoManager from '../../src/Util/UndoManager.js'
-import YXmlFragment from '../../src/Types/YXml/YXmlFragment.js'
-import YXmlText from '../../src/Types/YXml/YXmlText.js'
-import YXmlElement from '../../src/Types/YXml/YXmlElement.js'
-import YIndexdDBPersistence from '../../src/Persistences/IndexedDBPersistence.js'
+import YWebsocketsConnector from '../../src/Connectors/WebsocketsConnector/WebsocketsConnector.mjs'
+import Y from '../../src/Y.mjs'
+import DomBinding from '../../bindings/DomBinding/DomBinding.mjs'
+import UndoManager from '../../src/Util/UndoManager.mjs'
+import YXmlFragment from '../../src/Types/YXml/YXmlFragment.mjs'
+import YXmlText from '../../src/Types/YXml/YXmlText.mjs'
+import YXmlElement from '../../src/Types/YXml/YXmlElement.mjs'
+import YIndexdDBPersistence from '../../src/Persistences/IndexedDBPersistence.mjs'
 
 const connector = new YWebsocketsConnector()
 const persistence = new YIndexdDBPersistence()

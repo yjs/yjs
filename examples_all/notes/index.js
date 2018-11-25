@@ -1,9 +1,9 @@
 /* eslint-env browser */
 
-import { createYdbClient } from '../../YdbClient/index.js'
-import Y from '../../src/Y.dist.js'
-import * as ydb from '../../YdbClient/YdbClient.js'
-import DomBinding from '../../bindings/DomBinding/DomBinding.js'
+import { createYdbClient } from '../../YdbClient/index.mjs'
+import Y from '../../src/Y.dist.mjs'
+import * as ydb from '../../YdbClient/YdbClient.mjs'
+import DomBinding from '../../bindings/DomBinding/DomBinding.mjs'
 
 const uuidv4 = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
   const r = Math.random() * 16 | 0

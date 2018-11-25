@@ -2,7 +2,7 @@ node_modules
 bower_components
 docs
 /y.*
-/examples/*/index.dist.*
+/examples_all/*/index.dist.*
 .vscode
 .yjsPersisted
 build

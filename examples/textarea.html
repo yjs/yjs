@@ -46,15 +46,13 @@
     <textarea style="width:80%;" rows=40 autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
   </div>
   <script class="code-js" src="./build/textarea.js">
-import * as Y from '../index.js'
-import { TextareaBinding } from '../bindings/textarea.js'
-import { WebsocketProvider } from '../provider/websocket.js'
+import * as Y from 'yjs'
 
-const provider = new WebsocketProvider('ws://localhost:1234/')
+const provider = new Y.WebsocketProvider('ws://localhost:1234/')
 const ydocument = provider.get('textarea')
 const type = ydocument.define('textarea', Y.Text)
 const textarea = document.querySelector('textarea')
-const binding = new TextareaBinding(type, textarea)
+const binding = new Y.TextareaBinding(type, textarea)
 
 window.textareaExample = {
   provider, ydocument, type, textarea, binding

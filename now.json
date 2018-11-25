@@ -1,0 +1,7 @@
+{
+  "name": "yjs-v13-72",
+  "engines": {
+    "node": "10.13.0"
+  },
+  "start": "npm run ws-server"
+}
