@@ -1,6 +1,6 @@
 {
   "name": "yjs",
-  "version": "13.0.0-72",
+  "version": "13.0.0-73",
   "description": "A ",
   "module": "./index.mjs'",
   "sideEffects": false,
