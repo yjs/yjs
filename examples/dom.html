@@ -10,8 +10,12 @@
     </style>
 </head>
 <body>
+  <p>This example shows how to bind a YXmlFragment type to an arbitrary DOM element. We set the DOM element to contenteditable so it basically behaves like a very powerful rich-text editor.</p>
+  <p>The content of this editor is shared with every client who visits this domain.</p>
+  <hr>
   <div class="code-html">
-    <div id="content" contenteditable=""></div>
+
+<div id="content" contenteditable=""></div>
   </div>
   <script class="code-js" src="./build/dom.js">
     import * as Y from 'yjs/index.mjs'

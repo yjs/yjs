@@ -1,16 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Yjs Prosemirror Example</title>
-    <link rel=stylesheet href="https://prosemirror.net/css/editor.css">
-</head>
+    <title>Yjs Quill Example</title>
+    <link rel="stylesheet" href="https://cdn.quilljs.com/1.3.6/quill.snow.css">
+  </head>
 <body>
-  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <p>This example shows how to bind a YText type to <a href="https://quilljs.com">Quill</a> editor.</p>
+  <p>The content of this editor is shared with every client who visits this domain.</p>
   <div class="code-html">
-    <div id="quill-container">
-      <div id="quill">
-      </div>
-    </div>
+<div id="quill-container">
+  <div id="quill">
+  </div>
+</div>
   </div>
   <script class="code-js" src="./build/quill.js">
 import * as Y from 'yjs'
