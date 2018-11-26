@@ -4,10 +4,17 @@
 
 import * as Y from '../../index.mjs'
 import WebSocket from 'ws'
+import http from 'http'
 
 const port = process.env.PORT || 1234
 
-const wss = new WebSocket.Server({ port })
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' })
+  res.end('okay')
+})
+
+const wss = new WebSocket.Server({ noServer: true })
+
 const docs = new Map()
 
 const messageSync = 0
@@ -106,5 +113,14 @@ const setupConnection = (conn, req) => {
 }
 
 wss.on('connection', setupConnection)
+
+server.on('upgrade', (request, socket, head) => {
+  // You may check auth of request here..
+  wss.handleUpgrade(request, socket, head, ws => {
+    wss.emit('connection', ws, request)
+  })
+})
+
+server.listen(port)
 
 console.log('running on port', port)
