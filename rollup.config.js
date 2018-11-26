@@ -52,6 +52,7 @@ export default [{
     sourcemap: true
   },
   plugins: [
+    babel(),
     uglify()
   ]
 }, {

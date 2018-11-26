@@ -2,7 +2,7 @@ import * as Y from '../index.mjs'
 import { WebsocketProvider } from '../provider/websocket.mjs'
 import { TextareaBinding } from '../bindings/textarea.mjs'
 
-const provider = new WebsocketProvider('wss://yjs-v13-72-p02p39swv.now.sh')
+const provider = new WebsocketProvider('ws://35.246.255.92:1234')
 const ydocument = provider.get('textarea')
 const type = ydocument.define('textarea', Y.Text)
 const textarea = document.querySelector('textarea')
