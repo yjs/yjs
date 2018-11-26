@@ -12,9 +12,11 @@ const provider = new WebsocketProvider('wss://api.yjs.website')
 const ydocument = provider.get('prosemirror')
 const type = ydocument.define('prosemirror', Y.XmlFragment)
 
-window.prosemirrorView = new EditorView(document.querySelector('#editor'), {
+const prosemirrorView = new EditorView(document.querySelector('#editor'), {
   state: EditorState.create({
     doc: DOMParser.fromSchema(schema).parse(document.querySelector('#content')),
     plugins: exampleSetup({schema}).concat([prosemirrorPlugin(type), cursorPlugin])
   })
 })
+
+window.example = { provider, ydocument, type, prosemirrorView }

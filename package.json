@@ -10,7 +10,7 @@
     "watch": "rollup -wc",
     "debug": "concurrently 'rollup -wc' 'cutest-serve build/y.test.js -o'",
     "lint": "standard **/*.js",
-    "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.md --package ./package.json || true",
+    "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.v13.md --package ./package.json || true",
     "serve-docs": "npm run docs && serve ./docs/",
     "postversion": "npm run build",
     "websocket-server": "node --experimental-modules ./provider/websocket/server.mjs",

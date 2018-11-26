@@ -24,6 +24,6 @@ footer {
 }
 
 .main section article.readme h1:first-child::before {
-  content: "The Shared Editing Library";
+  content: "Yjs";
   font-size: 2em;
 }

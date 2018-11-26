@@ -44,6 +44,18 @@ export default [{
     uglify()
   ]
 }, {
+  input: './examples/dom.mjs',
+  output: {
+    name: 'dom',
+    file: 'examples/build/dom.js',
+    format: 'iife',
+    sourcemap: true
+  },
+  plugins: [
+    babel(),
+    uglify()
+  ]
+}, {
   input: './examples/textarea.mjs',
   output: {
     name: 'textarea',
