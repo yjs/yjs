@@ -4,7 +4,7 @@ import { QuillBinding } from '../bindings/quill.mjs'
 
 import Quill from 'quill'
 
-const provider = new WebsocketProvider('ws://35.246.255.92:1234')
+const provider = new WebsocketProvider('wss://api.yjs.website')
 const ydocument = provider.get('quill')
 const ytext = ydocument.define('quill', Y.Text)
 
