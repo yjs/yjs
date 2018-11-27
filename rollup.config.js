@@ -4,7 +4,7 @@ import babel from 'rollup-plugin-babel'
 import uglify from 'rollup-plugin-uglify-es'
 
 export default [{
-  input: './index.mjs',
+  input: './index.js',
   output: [{
     name: 'Y',
     file: 'build/yjs.js',
@@ -12,9 +12,9 @@ export default [{
     sourcemap: true
   }]
 }, {
-  input: 'tests/index.mjs',
+  input: 'tests/index.js',
   output: {
-    file: 'build/y.test.mjs',
+    file: 'build/y.test.js',
     format: 'iife',
     name: 'ytests',
     sourcemap: true
@@ -27,7 +27,7 @@ export default [{
     commonjs()
   ]
 }, {
-  input: './examples/prosemirror.mjs',
+  input: './examples/prosemirror.js',
   output: {
     name: 'prosemirror',
     file: 'examples/build/prosemirror.js',
@@ -44,7 +44,7 @@ export default [{
     uglify()
   ]
 }, {
-  input: './examples/dom.mjs',
+  input: './examples/dom.js',
   output: {
     name: 'dom',
     file: 'examples/build/dom.js',
@@ -56,7 +56,7 @@ export default [{
     uglify()
   ]
 }, {
-  input: './examples/textarea.mjs',
+  input: './examples/textarea.js',
   output: {
     name: 'textarea',
     file: 'examples/build/textarea.js',
@@ -68,7 +68,7 @@ export default [{
     uglify()
   ]
 }, {
-  input: './examples/quill.mjs',
+  input: './examples/quill.js',
   output: {
     name: 'textarea',
     file: 'examples/build/quill.js',

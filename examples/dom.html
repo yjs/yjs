@@ -18,9 +18,9 @@
 <div id="content" contenteditable=""></div>
   </div>
   <script class="code-js" src="./build/dom.js">
-    import * as Y from 'yjs/index.mjs'
-    import { WebsocketProvider } from 'yjs/provider/websocket.mjs'
-    import { DomBinding } from 'yjs/bindings/dom.mjs'
+    import * as Y from 'yjs/index.js'
+    import { WebsocketProvider } from 'yjs/provider/websocket.js'
+    import { DomBinding } from 'yjs/bindings/dom.js'
 
     const provider = new WebsocketProvider('wss://api.yjs.website')
     const ydocument = provider.get('dom')

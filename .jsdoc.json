@@ -5,7 +5,7 @@
     "dictionaries": ["jsdoc"]
   },
   "source": {
-    "include": ["./types", "./utils/UndoManager.mjs", "./utils/Y.mjs", "./provider", "./bindings"],
+    "include": ["./types", "./utils/UndoManager.js", "./utils/Y.js", "./provider", "./bindings"],
     "includePattern": ".js$"
   },
   "plugins": [

@@ -2,7 +2,8 @@
   "name": "yjs",
   "version": "13.0.0-73",
   "description": "A ",
-  "module": "./index.mjs'",
+  "main": "./build/yjs.js",
+  "module": "./index.js'",
   "sideEffects": false,
   "scripts": {
     "test": "npm run lint",
@@ -13,7 +14,7 @@
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.v13.md --package ./package.json || true",
     "serve-docs": "npm run docs && serve ./docs/",
     "postversion": "npm run build",
-    "websocket-server": "node --experimental-modules ./provider/websocket/server.mjs",
+    "websocket-server": "node ./provider/websocket/server.js",
     "now-start": "npm run websocket-server"
   },
   "files": [

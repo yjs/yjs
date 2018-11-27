@@ -12,8 +12,8 @@
   </div>
   <script class="code-js" src="./build/textarea.js">
 import * as Y from 'yjs'
-import { WebsocketProvider } from 'yjs/provider/websocket.mjs'
-import { TextareaBinding } from 'yjs/bindings/textarea.mjs'
+import { WebsocketProvider } from 'yjs/provider/websocket.js'
+import { TextareaBinding } from 'yjs/bindings/textarea.js'
 
 const provider = new WebsocketProvider('wss://api.yjs.website')
 const ydocument = provider.get('textarea')
