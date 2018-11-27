@@ -2,9 +2,11 @@ import * as Y from '../index.js'
 import { WebsocketProvider } from '../provider/websocket.js'
 import { QuillBinding } from '../bindings/quill.js'
 
+import * as conf from './exampleConfig.js'
+
 import Quill from 'quill'
 
-const provider = new WebsocketProvider('wss://api.yjs.website')
+const provider = new WebsocketProvider(conf.serverAddress)
 const ydocument = provider.get('quill')
 const ytext = ydocument.define('quill', Y.Text)
 
