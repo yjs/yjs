@@ -10,6 +10,7 @@ import * as globals from '../../lib/globals.js'
 import * as NamedEventHandler from './NamedEventHandler.js'
 
 const bc = new BroadcastChannel('ydb-client')
+
 /**
  * @type {Map<string, Set<Function>>}
  */

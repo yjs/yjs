@@ -5,32 +5,42 @@
 /* eslint-env browser */
 
 import * as Y from '../../index.js'
-export * from '../../index.js'
+import * as bc from '../../lib/broadcastchannel.js'
 
 const messageSync = 0
 const messageAwareness = 1
 
 const reconnectTimeout = 100
 
+/**
+ * @param {WebsocketsSharedDocument} doc
+ * @param {ArrayBuffer} buf
+ * @return {Y.Encoder}
+ */
+const readMessage = (doc, buf) => {
+  const decoder = Y.createDecoder(buf)
+  const encoder = Y.createEncoder()
+  const messageType = Y.readVarUint(decoder)
+  switch (messageType) {
+    case messageSync:
+      Y.writeVarUint(encoder, messageSync)
+      doc.mux(() =>
+        Y.readSyncMessage(decoder, encoder, doc)
+      )
+      break
+    case messageAwareness:
+      Y.readAwarenessMessage(decoder, doc)
+      break
+  }
+  return encoder
+}
+
 const setupWS = (doc, url) => {
   const websocket = new WebSocket(url)
   websocket.binaryType = 'arraybuffer'
   doc.ws = websocket
   websocket.onmessage = event => {
-    const decoder = Y.createDecoder(event.data)
-    const encoder = Y.createEncoder()
-    const messageType = Y.readVarUint(decoder)
-    switch (messageType) {
-      case messageSync:
-        Y.writeVarUint(encoder, messageSync)
-        doc.mux(() =>
-          Y.readSyncMessage(decoder, encoder, doc)
-        )
-        break
-      case messageAwareness:
-        Y.readAwarenessMessage(decoder, doc)
-        break
-    }
+    const encoder = readMessage(doc, event.data)
     if (Y.length(encoder) > 1) {
       websocket.send(Y.toBuffer(encoder))
     }
@@ -59,12 +69,16 @@ const setupWS = (doc, url) => {
 }
 
 const broadcastUpdate = (y, transaction) => {
-  if (y.wsconnected && transaction.encodedStructsLen > 0) {
+  if (transaction.encodedStructsLen > 0) {
     y.mux(() => {
       const encoder = Y.createEncoder()
       Y.writeVarUint(encoder, messageSync)
       Y.writeUpdate(encoder, transaction.encodedStructsLen, transaction.encodedStructs)
-      y.ws.send(Y.toBuffer(encoder))
+      const buf = Y.toBuffer(encoder)
+      if (y.wsconnected) {
+        y.ws.send(buf)
+      }
+      bc.publish(y.url, buf)
     })
   }
 }
@@ -72,6 +86,7 @@ const broadcastUpdate = (y, transaction) => {
 class WebsocketsSharedDocument extends Y.Y {
   constructor (url) {
     super()
+    this.url = url
     this.wsconnected = false
     this.mux = Y.createMutex()
     this.ws = null
@@ -79,6 +94,22 @@ class WebsocketsSharedDocument extends Y.Y {
     this.awareness = new Map()
     setupWS(this, url)
     this.on('afterTransaction', broadcastUpdate)
+    this._bcSubscriber = data => {
+      const encoder = readMessage(this, data)
+      if (Y.length(encoder) > 1) {
+        this.mux(() => {
+          bc.publish(url, Y.toBuffer(encoder))
+        })
+      }
+    }
+    bc.subscribe(url, this._bcSubscriber)
+    // send sync step1 to bc
+    this.mux(() => {
+      const encoder = Y.createEncoder()
+      Y.writeVarUint(encoder, messageSync)
+      Y.writeSyncStep1(encoder, this)
+      bc.publish(url, Y.toBuffer(encoder))
+    })
   }
   getLocalAwarenessInfo () {
     return this._localAwarenessState
@@ -94,7 +125,8 @@ class WebsocketsSharedDocument extends Y.Y {
       const encoder = Y.createEncoder()
       Y.writeVarUint(encoder, messageAwareness)
       Y.writeUsersStateChange(encoder, [{ userID: this.userID, state: this._localAwarenessState }])
-      this.ws.send(Y.toBuffer(encoder))
+      const buf = Y.toBuffer(encoder)
+      this.ws.send(buf)
     }
   }
 }
