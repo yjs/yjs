@@ -313,9 +313,11 @@ export const compareUsers = (t, users) => {
   })
   for (var i = 0; i < data.length - 1; i++) {
     t.group(() => {
+      t.compare(userArrayValues[i].length, users[i].get('array').length, 'array length correctly computed')
       t.compare(userArrayValues[i], userArrayValues[i + 1], 'array types')
       t.compare(userMapValues[i], userMapValues[i + 1], 'map types')
       t.compare(userXmlValues[i], userXmlValues[i + 1], 'xml types')
+      t.compare(userTextValues[i].map(a => a.insert).join('').length, users[i].get('text').length, 'text length correctly computed')
       t.compare(userTextValues[i], userTextValues[i + 1], 'text types')
       t.compare(userQuillValues[i], userQuillValues[i + 1], 'quill delta content')
       t.compare(data[i].os, data[i + 1].os, 'os')

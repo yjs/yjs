@@ -251,16 +251,22 @@ export class Item {
    */
   _delete (y, createDelete = true, gcChildren) {
     if (!this._deleted) {
+      const parent = this._parent
+      const len = this._length
+      // adjust the length of parent
+      if (parent.length !== undefined && this._countable) {
+        parent.length -= len
+      }
       this._deleted = true
       y.ds.mark(this._id, this._length, false)
       let del = new Delete()
       del._targetID = this._id
-      del._length = this._length
+      del._length = len
       if (createDelete) {
         // broadcast and persists Delete
         del._integrate(y, true)
       }
-      transactionTypeChanged(y, this._parent, this._parentSub)
+      transactionTypeChanged(y, parent, this._parentSub)
       y._transaction.deletedStructs.add(this)
     }
   }
@@ -409,6 +415,10 @@ export class Item {
       if (right !== null) {
         right._left = this
       }
+    }
+    // adjust the length of parent
+    if (parent.length !== undefined && this._countable) {
+      parent.length += this._length
     }
     if (parent._deleted) {
       this._delete(y, false, true)

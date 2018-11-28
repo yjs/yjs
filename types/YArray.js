@@ -72,6 +72,10 @@ export class YArrayEvent extends YEvent {
  * A shared Array implementation.
  */
 export class YArray extends Type {
+  constructor () {
+    super()
+    this.length = 0
+  }
   /**
    * Creates YArray Event and calls observers.
    *
@@ -165,21 +169,6 @@ export class YArray extends Type {
       }
       n = n._right
     }
-  }
-
-  /**
-   * Computes the length of this YArray.
-   */
-  get length () {
-    let length = 0
-    let n = this._start
-    while (n !== null) {
-      if (!n._deleted && n._countable) {
-        length += n._length
-      }
-      n = n._right
-    }
-    return length
   }
 
   [Symbol.iterator] () {
