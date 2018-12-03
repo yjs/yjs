@@ -262,7 +262,7 @@ export const getRoomMetas = t => {
       result.push({
         room: metakey.slice(5),
         rsid,
-        offset: keys.reduce((cur, key) => globals.max(decodeHUKey(key).offset, cur), offset)
+        offset: keys.reduce((cur, key) => math.max(decodeHUKey(key).offset, cur), offset)
       })
     })
   ).then(() => globals.presolve(result))

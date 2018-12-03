@@ -7,9 +7,9 @@
   "sideEffects": false,
   "scripts": {
     "test": "npm run lint",
-    "build": "rm -rf build examples/build && rollup -c",
+    "build": "rm -rf build examples/build && PRODUCTION=1 rollup -c",
     "watch": "rollup -wc",
-    "debug": "concurrently 'rollup -wc' 'cutest-serve build/y.test.js -o'",
+    "debug": "concurrently 'npm run watch' 'cutest-serve build/y.test.js -o'",
     "lint": "standard **/*.js",
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.v13.md --package ./package.json || true",
     "serve-docs": "npm run docs && serve ./docs/",

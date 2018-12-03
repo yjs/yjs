@@ -46,7 +46,7 @@ export const getRelativePosition = (type, offset) => {
   // TODO: rename to createRelativePosition
   let t = type._start
   while (t !== null) {
-    if (t._deleted === false) {
+    if (!t._deleted && t._countable) {
       if (t._length > offset) {
         return [t._id.user, t._id.clock + offset]
       }
@@ -60,7 +60,7 @@ export const getRelativePosition = (type, offset) => {
 /**
  * @typedef {Object} AbsolutePosition The result of {@link fromRelativePosition}
  * @property {YType} type The type on which to apply the absolute position.
- * @property {Integer} offset The absolute offset.r
+ * @property {number} offset The absolute offset.r
  */
 
 /**
@@ -72,6 +72,9 @@ export const getRelativePosition = (type, offset) => {
  *                            (type + offset).
  */
 export const fromRelativePosition = (y, rpos) => {
+  if (rpos === null) {
+    return null
+  }
   if (rpos[0] === 'endof') {
     let id
     if (rpos[3] === null) {
@@ -80,6 +83,9 @@ export const fromRelativePosition = (y, rpos) => {
       id = ID.createRootID(rpos[3], rpos[4])
     }
     let type = y.os.get(id)
+    if (type === null) {
+      return null
+    }
     while (type._redone !== null) {
       type = type._redone
     }
@@ -93,6 +99,9 @@ export const fromRelativePosition = (y, rpos) => {
   } else {
     let offset = 0
     let struct = y.os.findNodeWithUpperBound(ID.createID(rpos[0], rpos[1])).val
+    if (struct === null || struct._id.user === ID.RootFakeUserID) {
+      return null // TODO: support fake ids?
+    }
     const diff = rpos[1] - struct._id.clock
     while (struct._redone !== null) {
       struct = struct._redone
@@ -101,12 +110,12 @@ export const fromRelativePosition = (y, rpos) => {
     if (struct.constructor === GC || parent._deleted) {
       return null
     }
-    if (!struct._deleted) {
+    if (!struct._deleted && struct._countable) {
       offset = diff
     }
     struct = struct._left
     while (struct !== null) {
-      if (!struct._deleted) {
+      if (!struct._deleted && struct._countable) {
         offset += struct._length
       }
       struct = struct._left
@@ -117,3 +126,5 @@ export const fromRelativePosition = (y, rpos) => {
     }
   }
 }
+
+export const equal = (posa, posb) => posa === posb || (posa !== null && posb !== null && posa.length === posb.length && posa.every((v, i) => v === posb[i]))

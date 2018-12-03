@@ -28,17 +28,11 @@ import { Decoder } from '../lib/decoding.js' // eslint-disable-line
  */
 export class Y extends NamedEventHandler {
   /**
-   * @param {string} room Users in the same room share the same content
-   * @param {Object} conf configuration
+   * @param {Object} [conf] configuration
    */
-  constructor (room, conf = {}) {
+  constructor (conf = {}) {
     super()
     this.gcEnabled = conf.gc || false
-    /**
-     * The room name that this Yjs instance connects to.
-     * @type {String}
-     */
-    this.room = room
     this._contentReady = false
     this.userID = generateRandomUint32()
     // TODO: This should be a Map so we can use encodables as keys

@@ -114,6 +114,30 @@ export class Item {
   }
 
   /**
+   * Returns the next non-deleted item
+   * @private
+   */
+  get _next () {
+    let n = this._right
+    while (n !== null && n._deleted) {
+      n = n._right
+    }
+    return n
+  }
+
+  /**
+   * Returns the previous non-deleted item
+   * @private
+   */
+  get _prev () {
+    let n = this._left
+    while (n !== null && n._deleted) {
+      n = n._left
+    }
+    return n
+  }
+
+  /**
    * Creates an Item with the same effect as this Item (without position effect)
    *
    * @private
@@ -127,7 +151,7 @@ export class Item {
    * Redoes the effect of this operation.
    *
    * @param {Y} y The Yjs instance.
-   * @param {Array<Item>} redoitems
+   * @param {Set<Item>} redoitems
    *
    * @private
    */

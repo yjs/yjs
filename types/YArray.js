@@ -95,10 +95,12 @@ export class YArray extends Type {
     while (n !== null) {
       if (!n._deleted && n._countable) {
         if (index < n._length) {
-          if (n.constructor === ItemJSON || n.constructor === ItemString) {
-            return n._content[index]
-          } else {
-            return n
+          switch (n.constructor) {
+            case ItemJSON:
+            case ItemString:
+              return n._content[index]
+            default:
+              return n
           }
         }
         index -= n._length

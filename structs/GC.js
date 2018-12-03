@@ -19,6 +19,10 @@ export class GC {
     this._length = 0
   }
 
+  get _redone () {
+    return null
+  }
+
   get _deleted () {
     return true
   }

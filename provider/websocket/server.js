@@ -32,7 +32,7 @@ const afterTransaction = (doc, transaction) => {
 
 class WSSharedDoc extends Y.Y {
   constructor () {
-    super()
+    super({ gc: true })
     this.mux = Y.createMutex()
     /**
      * Maps from conn to set of controlled user ids. Delete all user ids from awareness when this conn is closed

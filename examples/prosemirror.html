@@ -16,6 +16,13 @@
         font-weight: bold;
       }
       .ProseMirror img { max-width: 100px }
+      /* this is a rough fix for the first cursor position when the first paragraph is empty */
+      .ProseMirror > .ProseMirror-yjs-cursor:first-child {
+        margin-top: 16px;
+      }
+      .ProseMirror p:first-child, .ProseMirror h1:first-child, .ProseMirror h2:first-child, .ProseMirror h3:first-child, .ProseMirror h4:first-child, .ProseMirror h5:first-child, .ProseMirror h6:first-child {
+        margin-top: 16px
+      }
       .ProseMirror-yjs-cursor {
         position: absolute;
         border-left: black;

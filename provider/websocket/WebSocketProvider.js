@@ -10,7 +10,7 @@ import * as bc from '../../lib/broadcastchannel.js'
 const messageSync = 0
 const messageAwareness = 1
 
-const reconnectTimeout = 100
+const reconnectTimeout = 3000
 
 /**
  * @param {WebsocketsSharedDocument} doc

@@ -3,6 +3,9 @@ import commonjs from 'rollup-plugin-commonjs'
 import babel from 'rollup-plugin-babel'
 import uglify from 'rollup-plugin-uglify-es'
 
+// set this to [] to disable obfuscation
+const minificationPlugins = process.env.PRODUCTION ? [babel(), uglify()] : []
+
 export default [{
   input: './index.js',
   output: [{
@@ -39,10 +42,8 @@ export default [{
       sourcemap: true,
       module: true
     }),
-    commonjs(),
-    babel(),
-    uglify()
-  ]
+    commonjs()
+  ].concat(minificationPlugins)
 }, {
   input: './examples/dom.js',
   output: {
@@ -51,10 +52,7 @@ export default [{
     format: 'iife',
     sourcemap: true
   },
-  plugins: [
-    babel(),
-    uglify()
-  ]
+  plugins: minificationPlugins
 }, {
   input: './examples/textarea.js',
   output: {
@@ -63,10 +61,7 @@ export default [{
     format: 'iife',
     sourcemap: true
   },
-  plugins: [
-    babel(),
-    uglify()
-  ]
+  plugins: minificationPlugins
 }, {
   input: './examples/quill.js',
   output: {
@@ -80,8 +75,6 @@ export default [{
       sourcemap: true,
       module: true
     }),
-    commonjs(),
-    babel(),
-    uglify()
-  ]
+    commonjs()
+  ].concat(minificationPlugins)
 }]

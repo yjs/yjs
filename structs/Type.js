@@ -58,6 +58,17 @@ export class Type extends Item {
   }
 
   /**
+   * The first non-deleted item
+   */
+  get _first () {
+    let n = this._start
+    while (n !== null && n._deleted) {
+      n = n._right
+    }
+    return n
+  }
+
+  /**
    * Compute the path from this type to the specified target.
    *
    * @example

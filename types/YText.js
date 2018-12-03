@@ -485,6 +485,10 @@ export class YText extends YArray {
     this._callEventHandler(transaction, new YTextEvent(this, remote, transaction))
   }
 
+  toDom () {
+    return document.createTextNode(this.toString())
+  }
+
   /**
    * Returns the unformatted string representation of this YText type.
    *

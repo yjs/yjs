@@ -49,14 +49,14 @@ export class EventHandler {
    * Call all event listeners that were added via
    * {@link EventHandler#addEventListener}.
    *
-   * @param {Transaction} transaction The transaction object // TODO: do we need this?
+   * @param {Transaction} transaction The transaction object
    * @param {YEvent} event An event object that describes the change on a type.
    */
   callEventListeners (transaction, event) {
     for (var i = 0; i < this.eventListeners.length; i++) {
       try {
         const f = this.eventListeners[i]
-        f(event)
+        f(event, transaction)
       } catch (e) {
         /*
           Your observer threw an error. This error was caught so that Yjs
