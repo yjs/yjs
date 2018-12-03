@@ -441,7 +441,7 @@ export class Item {
       }
     }
     // adjust the length of parent
-    if (parent.length !== undefined && this._countable) {
+    if (parentSub === null && parent.length !== undefined && this._countable) {
       parent.length += this._length
     }
     if (parent._deleted) {
