@@ -1,4 +1,5 @@
 
+import './structs/Item.js'
 import { Delete } from './structs/Delete.js'
 import { ItemJSON } from './structs/ItemJSON.js'
 import { ItemString } from './structs/ItemString.js'
@@ -15,6 +16,14 @@ import { YXmlElement, YXmlFragment } from './types/YXmlElement.js'
 
 import { registerStruct } from './utils/structReferences.js'
 
+import * as decoding from './lib/decoding.js'
+import * as encoding from './lib/encoding.js'
+import * as awarenessProtocol from './protocols/awareness.js'
+import * as syncProtocol from './protocols/sync.js'
+import * as authProtocol from './protocols/auth.js'
+
+export { decoding, encoding, awarenessProtocol, syncProtocol, authProtocol }
+
 export { Y } from './utils/Y.js'
 export { UndoManager } from './utils/UndoManager.js'
 export { Transaction } from './utils/Transaction.js'
@@ -28,10 +37,6 @@ export { YXmlElement as XmlElement, YXmlFragment as XmlFragment } from './types/
 
 export { getRelativePosition, fromRelativePosition } from './utils/relativePosition.js'
 export { registerStruct } from './utils/structReferences.js'
-export * from './protocols/syncProtocol.js'
-export * from './protocols/awarenessProtocol.js'
-export * from './lib/encoding.js'
-export * from './lib/decoding.js'
 export * from './lib/mutex.js'
 
 registerStruct(0, GC)

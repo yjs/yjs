@@ -94,7 +94,13 @@ export const cursorPlugin = new Plugin({
       const decorations = []
       awareness.forEach((aw, userID) => {
         if (aw.cursor != null) {
-          const username = `User: ${userID}`
+          let user = aw.user || {}
+          if (user.color == null) {
+            user.color = '#ffa50070'
+          }
+          if (user.name == null) {
+            user.name = `User: ${userID}`
+          }
           let anchor = relativePositionToAbsolutePosition(ystate.type, aw.cursor.anchor || null, ystate.binding.mapping)
           let head = relativePositionToAbsolutePosition(ystate.type, aw.cursor.head || null, ystate.binding.mapping)
           if (anchor !== null && head !== null) {
@@ -104,14 +110,16 @@ export const cursorPlugin = new Plugin({
             decorations.push(Decoration.widget(head, () => {
               const cursor = document.createElement('span')
               cursor.classList.add('ProseMirror-yjs-cursor')
-              const user = document.createElement('div')
-              user.insertBefore(document.createTextNode(username), null)
-              cursor.insertBefore(user, null)
+              cursor.setAttribute('style', `border-color: ${user.color}`)
+              const userDiv = document.createElement('div')
+              userDiv.setAttribute('style', `background-color: ${user.color}`)
+              userDiv.insertBefore(document.createTextNode(user.name), null)
+              cursor.insertBefore(userDiv, null)
               return cursor
-            }, { key: username }))
+            }, { key: userID + '' }))
             const from = math.min(anchor, head)
             const to = math.max(anchor, head)
-            decorations.push(Decoration.inline(from, to, { style: 'background-color: #ffa50070' }))
+            decorations.push(Decoration.inline(from, to, { style: `background-color: ${user.color}` }))
           }
         }
       })
@@ -429,7 +437,10 @@ export const createTypeFromNode = (node, mapping) => {
   } else {
     type = new YXmlElement(node.type.name)
     for (let key in node.attrs) {
-      type.setAttribute(key, node.attrs[key])
+      const val = node.attrs[key]
+      if (val !== null) {
+        type.setAttribute(key, val)
+      }
     }
     const ins = []
     for (let i = 0; i < node.childCount; i++) {
@@ -441,15 +452,25 @@ export const createTypeFromNode = (node, mapping) => {
   return type
 }
 
+const equalAttrs = (pattrs, yattrs) => {
+  const keys = Object.keys(pattrs).filter(key => pattrs[key] === null)
+  let eq = keys.length === Object.keys(yattrs).filter(key => yattrs[key] === null).length
+  for (let i = 0; i < keys.length && eq; i++) {
+    const key = keys[i]
+    eq = pattrs[key] === yattrs[key]
+  }
+  return eq
+}
+
 const equalYTextPText = (ytext, ptext) => {
   const d = ytext.toDelta()[0]
-  return d.insert === ptext.text && object.keys(d.attributes || {}).length === ptext.marks.length && ptext.marks.every(mark => object.equalFlat(d.attributes[mark.type.name], mark.attrs))
+  return d.insert === ptext.text && object.keys(d.attributes || {}).length === ptext.marks.length && ptext.marks.every(mark => equalAttrs(d.attributes[mark.type.name], mark.attrs))
 }
 
 const equalYTypePNode = (ytype, pnode) =>
   ytype.constructor === YText
     ? equalYTextPText(ytype, pnode)
-    : (matchNodeName(ytype, pnode) && ytype.length === pnode.childCount && object.equalFlat(ytype.getAttributes(), pnode.attrs) && ytype.toArray().every((ychild, i) => equalYTypePNode(ychild, pnode.child(i))))
+    : (matchNodeName(ytype, pnode) && ytype.length === pnode.childCount && equalAttrs(ytype.getAttributes(), pnode.attrs) && ytype.toArray().every((ychild, i) => equalYTypePNode(ychild, pnode.child(i))))
 
 const computeChildEqualityFactor = (ytype, pnode, mapping) => {
   const yChildren = ytype.toArray()
@@ -497,13 +518,19 @@ const updateYFragment = (yDomFragment, pContent, mapping) => {
   // update attributes
   if (yDomFragment instanceof YXmlElement) {
     const yDomAttrs = yDomFragment.getAttributes()
-    for (let key in pContent.attrs) {
-      if (yDomAttrs[key] !== pContent.attrs[key]) {
-        yDomFragment.setAttribute(key, pContent.attrs[key])
+    const pAttrs = pContent.attrs
+    for (let key in pAttrs) {
+      if (pAttrs[key] !== null) {
+        if (yDomAttrs[key] !== pAttrs[key]) {
+          yDomFragment.setAttribute(key, pAttrs[key])
+        }
+      } else {
+        yDomFragment.removeAttribute(key)
       }
     }
+    // remove all keys that are no longer in pAttrs
     for (let key in yDomAttrs) {
-      if (yDomAttrs[key] === undefined) {
+      if (pAttrs[key] === undefined) {
         yDomFragment.removeAttribute(key)
       }
     }

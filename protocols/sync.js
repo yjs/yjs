@@ -10,6 +10,7 @@ import { deleteItemRange } from '../utils/structManipulation.js'
 import { integrateRemoteStruct } from '../utils/integrateRemoteStructs.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line
 import { Item } from '../structs/Item.js'
+import * as stringify from '../utils/structStringify.js'
 
 /**
  * @typedef {Map<number, number>} StateSet
@@ -40,9 +41,9 @@ import { Item } from '../structs/Item.js'
  * stringify[messageType] stringifies a message definition (messageType is already read from the bufffer)
  */
 
-const messageYjsSyncStep1 = 0
-const messageYjsSyncStep2 = 1
-const messageYjsUpdate = 2
+export const messageYjsSyncStep1 = 0
+export const messageYjsSyncStep2 = 1
+export const messageYjsUpdate = 2
 
 /**
  * Stringifies a message-encoded Delete Set.
@@ -235,50 +236,6 @@ export const readStateSet = decoder => {
 }
 
 /**
- * Stringify an item id.
- *
- * @param {ID.ID | ID.RootID} id
- * @return {string}
- */
-export const stringifyID = id => id instanceof ID.ID ? `(${id.user},${id.clock})` : `(${id.name},${id.type})`
-
-/**
- * Stringify an item as ID. HHere, an item could also be a Yjs instance (e.g. item._parent).
- *
- * @param {Item | Y | null} item
- * @return {string}
- */
-export const stringifyItemID = item => {
-  let result
-  if (item === null) {
-    result = '()'
-  } else if (item instanceof Item) {
-    result = stringifyID(item._id)
-  } else {
-    // must be a Yjs instance
-    // Don't include Y in this module, so we prevent circular dependencies.
-    result = 'y'
-  }
-  return result
-}
-
-/**
- * Helper utility to convert an item to a readable format.
- *
- * @param {String} name The name of the item class (YText, ItemString, ..).
- * @param {Item} item The item instance.
- * @param {String} [append] Additional information to append to the returned
- *                          string.
- * @return {String} A readable string that represents the item object.
- *
- */
-export const logItemHelper = (name, item, append) => {
-  const left = item._left !== null ? stringifyID(item._left._lastId) : '()'
-  const origin = item._origin !== null ? stringifyID(item._origin._lastId) : '()'
-  return `${name}(id:${stringifyItemID(item)},left:${left},origin:${origin},right:${stringifyItemID(item._right)},parent:${stringifyItemID(item._parent)},parentSub:${item._parentSub}${append !== undefined ? ' - ' + append : ''})`
-}
-
-/**
  * @param {decoding.Decoder} decoder
  * @param {Y} y
  * @return {string}
@@ -293,7 +250,7 @@ export const stringifyStructs = (decoder, y) => {
     let missing = struct._fromBinary(y, decoder)
     let logMessage = '  ' + struct._logString()
     if (missing.length > 0) {
-      logMessage += ' .. missing: ' + missing.map(stringifyItemID).join(', ')
+      logMessage += ' .. missing: ' + missing.map(stringify.stringifyItemID).join(', ')
     }
     str += logMessage + '\n'
   }
@@ -410,10 +367,9 @@ export const stringifySyncStep2 = (decoder, y) => {
  * Read and apply Structs and then DeleteSet to a y instance.
  *
  * @param {decoding.Decoder} decoder
- * @param {encoding.Encoder} encoder
  * @param {Y} y
  */
-export const readSyncStep2 = (decoder, encoder, y) => {
+export const readSyncStep2 = (decoder, y) => {
   readStructs(decoder, y)
   readDeleteSet(decoder, y)
 }
@@ -480,7 +436,7 @@ export const readSyncMessage = (decoder, encoder, y) => {
       readSyncStep1(decoder, encoder, y)
       break
     case messageYjsSyncStep2:
-      y.transact(() => readSyncStep2(decoder, encoder, y), true)
+      y.transact(() => readSyncStep2(decoder, y), true)
       break
     case messageYjsUpdate:
       y.transact(() => readUpdate(decoder, y), true)

@@ -5,7 +5,7 @@
 import { ItemEmbed } from '../structs/ItemEmbed.js'
 import { ItemString } from '../structs/ItemString.js'
 import { ItemFormat } from '../structs/ItemFormat.js'
-import { logItemHelper } from '../protocols/syncProtocol.js'
+import * as stringify from '../utils/structStringify.js'
 import { YArrayEvent, YArray } from './YArray.js'
 
 /**
@@ -702,6 +702,6 @@ export class YText extends YArray {
    * @private
    */
   _logString () {
-    return logItemHelper('YText', this)
+    return stringify.logItemHelper('YText', this)
   }
 }

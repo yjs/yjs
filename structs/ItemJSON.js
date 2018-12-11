@@ -3,7 +3,7 @@
  */
 
 import { Item, splitHelper } from './Item.js'
-import { logItemHelper } from '../protocols/syncProtocol.js'
+import * as stringify from '../utils/structStringify.js'
 import * as encoding from '../lib/encoding.js'
 import * as decoding from '../lib/decoding.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line
@@ -19,7 +19,8 @@ export class ItemJSON extends Item {
     return struct
   }
   get _length () {
-    return this._content.length
+    const c = this._content
+    return c !== null ? c.length : 0
   }
   /**
    * @param {Y} y
@@ -46,11 +47,11 @@ export class ItemJSON extends Item {
    */
   _toBinary (encoder) {
     super._toBinary(encoder)
-    let len = this._content.length
+    const len = this._length
     encoding.writeVarUint(encoder, len)
     for (let i = 0; i < len; i++) {
       let encoded
-      let content = this._content[i]
+      const content = this._content[i]
       if (content === undefined) {
         encoded = 'undefined'
       } else {
@@ -66,7 +67,7 @@ export class ItemJSON extends Item {
    * @private
    */
   _logString () {
-    return logItemHelper('ItemJSON', this, `content:${JSON.stringify(this._content)}`)
+    return stringify.logItemHelper('ItemJSON', this, `content:${JSON.stringify(this._content)}`)
   }
   _splitAt (y, diff) {
     if (diff === 0) {

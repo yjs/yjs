@@ -4,8 +4,8 @@
 
 import * as encoding from '../lib/encoding.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line
-import { Type } from '../structs/Type.js' // eslint-disable-line
 import { Item } from '../structs/Item.js' // eslint-disable-line
+import { Type } from '../structs/Type.js' // eslint-disable-line
 import { YEvent } from './YEvent.js' // eslint-disable-line
 /**
  * A transaction is created for every change on the Yjs model. It is possible
@@ -68,26 +68,5 @@ export class Transaction {
     this.changedParentTypes = new Map()
     this.encodedStructsLen = 0
     this.encodedStructs = encoding.createEncoder()
-  }
-}
-
-export const writeStructToTransaction = (transaction, struct) => {
-  transaction.encodedStructsLen++
-  struct._toBinary(transaction.encodedStructs)
-}
-
-/**
- * @private
- */
-export const transactionTypeChanged = (y, type, sub) => {
-  if (type !== y && !type._deleted && !y._transaction.newTypes.has(type)) {
-    const changedTypes = y._transaction.changedTypes
-    let subs = changedTypes.get(type)
-    if (subs === undefined) {
-      // create if it doesn't exist yet
-      subs = new Set()
-      changedTypes.set(type, subs)
-    }
-    subs.add(sub)
   }
 }

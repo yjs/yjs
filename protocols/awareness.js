@@ -11,7 +11,7 @@ const messageUsersStateChanged = 0
 /**
  * @typedef {Object} UserStateUpdate
  * @property {number} UserStateUpdate.userID
- * @property {Object} state
+ * @property {Object} UserStateUpdate.state
  */
 
 /**
@@ -92,12 +92,21 @@ export const readAwarenessMessage = (decoder, y) => {
 }
 
 /**
+ * @typedef {Object} UserState
+ * @property {number} UserState.userID
+ * @property {any} UserState.state
+ */
+
+/**
  * @param {decoding.Decoder} decoder
  * @param {encoding.Encoder} encoder
+ * @return {Array<UserState>} Array of state updates
  */
 export const forwardAwarenessMessage = (decoder, encoder) => {
+  let s = []
   switch (decoding.readVarUint(decoder)) {
     case messageUsersStateChanged:
-      return forwardUsersStateChange(decoder, encoder)
+      s = forwardUsersStateChange(decoder, encoder)
   }
+  return s
 }

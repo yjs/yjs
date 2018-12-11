@@ -11,7 +11,7 @@ import { DomBinding } from '../bindings/dom/DomBinding.js' // eslint-disable-lin
 import { YXmlTreeWalker } from './YXmlTreeWalker.js'
 import { YArray } from './YArray.js'
 import { YXmlEvent } from './YXmlEvent.js'
-import { logItemHelper } from '../protocols/syncProtocol.js'
+import * as stringify from '../utils/structStringify.js'
 
 /**
  * Dom filter function.
@@ -164,7 +164,7 @@ export class YXmlFragment extends YArray {
    * @private
    */
   _logString () {
-    return logItemHelper('YXml', this)
+    return stringify.logItemHelper('YXml', this)
   }
 }
 

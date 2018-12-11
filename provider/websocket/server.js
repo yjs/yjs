@@ -19,13 +19,14 @@ const docs = new Map()
 
 const messageSync = 0
 const messageAwareness = 1
+const messageAuth = 2
 
 const afterTransaction = (doc, transaction) => {
   if (transaction.encodedStructsLen > 0) {
-    const encoder = Y.createEncoder()
-    Y.writeVarUint(encoder, messageSync)
-    Y.writeUpdate(encoder, transaction.encodedStructsLen, transaction.encodedStructs)
-    const message = Y.toBuffer(encoder)
+    const encoder = Y.encoding.createEncoder()
+    Y.encoding.writeVarUint(encoder, messageSync)
+    Y.syncProtocol.writeUpdate(encoder, transaction.encodedStructsLen, transaction.encodedStructs)
+    const message = Y.encoding.toBuffer(encoder)
     doc.conns.forEach((_, conn) => conn.send(message))
   }
 }
@@ -45,25 +46,25 @@ class WSSharedDoc extends Y.Y {
 }
 
 const messageListener = (conn, doc, message) => {
-  const encoder = Y.createEncoder()
-  const decoder = Y.createDecoder(message)
-  const messageType = Y.readVarUint(decoder)
+  const encoder = Y.encoding.createEncoder()
+  const decoder = Y.decoding.createDecoder(message)
+  const messageType = Y.decoding.readVarUint(decoder)
   switch (messageType) {
     case messageSync:
-      Y.writeVarUint(encoder, messageSync)
-      Y.readSyncMessage(decoder, encoder, doc)
-      if (Y.length(encoder) > 1) {
-        conn.send(Y.toBuffer(encoder))
+      Y.encoding.writeVarUint(encoder, messageSync)
+      Y.syncProtocol.readSyncMessage(decoder, encoder, doc)
+      if (Y.encoding.length(encoder) > 1) {
+        conn.send(Y.encoding.toBuffer(encoder))
       }
       break
     case messageAwareness: {
-      Y.writeVarUint(encoder, messageAwareness)
-      const updates = Y.forwardAwarenessMessage(decoder, encoder)
+      Y.encoding.writeVarUint(encoder, messageAwareness)
+      const updates = Y.awarenessProtocol.forwardAwarenessMessage(decoder, encoder)
       updates.forEach(update => {
         doc.awareness.set(update.userID, update.state)
         doc.conns.get(conn).add(update.userID)
       })
-      const buff = Y.toBuffer(encoder)
+      const buff = Y.encoding.toBuffer(encoder)
       doc.conns.forEach((_, c) => {
         c.send(buff)
       })
@@ -86,29 +87,29 @@ const setupConnection = (conn, req) => {
   conn.on('close', () => {
     const controlledIds = doc.conns.get(conn)
     doc.conns.delete(conn)
-    const encoder = Y.createEncoder()
-    Y.writeVarUint(encoder, messageAwareness)
-    Y.writeUsersStateChange(encoder, Array.from(controlledIds).map(userID => {
+    const encoder = Y.encoding.createEncoder()
+    Y.encoding.writeVarUint(encoder, messageAwareness)
+    Y.awarenessProtocol.writeUsersStateChange(encoder, Array.from(controlledIds).map(userID => {
       doc.awareness.delete(userID)
       return { userID, state: null }
     }))
-    const buf = Y.toBuffer(encoder)
+    const buf = Y.encoding.toBuffer(encoder)
     doc.conns.forEach((_, conn) => conn.send(buf))
   })
   // send sync step 1
-  const encoder = Y.createEncoder()
-  Y.writeVarUint(encoder, messageSync)
-  Y.writeSyncStep1(encoder, doc)
-  conn.send(Y.toBuffer(encoder))
+  const encoder = Y.encoding.createEncoder()
+  Y.encoding.writeVarUint(encoder, messageSync)
+  Y.syncProtocol.writeSyncStep1(encoder, doc)
+  conn.send(Y.encoding.toBuffer(encoder))
   if (doc.awareness.size > 0) {
-    const encoder = Y.createEncoder()
+    const encoder = Y.encoding.createEncoder()
     const userStates = []
     doc.awareness.forEach((state, userID) => {
       userStates.push({ state, userID })
     })
-    Y.writeVarUint(encoder, messageAwareness)
-    Y.writeUsersStateChange(encoder, userStates)
-    conn.send(Y.toBuffer(encoder))
+    Y.encoding.writeVarUint(encoder, messageAwareness)
+    Y.awarenessProtocol.writeUsersStateChange(encoder, userStates)
+    conn.send(Y.encoding.toBuffer(encoder))
   }
 }
 

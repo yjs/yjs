@@ -5,12 +5,27 @@
 import { getStructReference } from '../utils/structReferences.js'
 import * as ID from '../utils/ID.js'
 import { Delete } from './Delete.js'
-import { transactionTypeChanged, writeStructToTransaction } from '../utils/Transaction.js'
+import { writeStructToTransaction } from '../utils/structEncoding.js'
 import { GC } from './GC.js'
 import * as encoding from '../lib/encoding.js'
 import * as decoding from '../lib/decoding.js'
-import { Y } from '../utils/Y.js'
-import { Type } from './Type.js' // eslint-disable-line
+// import { Type } from './Type.js' // eslint-disable-line
+
+/**
+ * @private
+ */
+export const transactionTypeChanged = (y, type, sub) => {
+  if (type !== y && !type._deleted && !y._transaction.newTypes.has(type)) {
+    const changedTypes = y._transaction.changedTypes
+    let subs = changedTypes.get(type)
+    if (subs === undefined) {
+      // create if it doesn't exist yet
+      subs = new Set()
+      changedTypes.set(type, subs)
+    }
+    subs.add(sub)
+  }
+}
 
 /**
  * @private
@@ -159,7 +174,7 @@ export class Item {
     if (this._redone !== null) {
       return this._redone
     }
-    if (this._parent instanceof Y) {
+    if (!(this._parent instanceof Item)) {
       return
     }
     let struct = this._copy()

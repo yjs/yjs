@@ -3,7 +3,7 @@
  */
 
 import { Item } from './Item.js'
-import { logItemHelper } from '../protocols/syncProtocol.js'
+import * as stringify from '../utils/structStringify.js'
 import * as encoding from '../lib/encoding.js'
 import * as decoding from '../lib/decoding.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line
@@ -51,6 +51,6 @@ export class ItemFormat extends Item {
    * @private
    */
   _logString () {
-    return logItemHelper('ItemFormat', this, `key:${JSON.stringify(this.key)},value:${JSON.stringify(this.value)}`)
+    return stringify.logItemHelper('ItemFormat', this, `key:${JSON.stringify(this.key)},value:${JSON.stringify(this.value)}`)
   }
 }

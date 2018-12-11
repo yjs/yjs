@@ -5,7 +5,7 @@
 import { Item } from '../structs/Item.js'
 import { Type } from '../structs/Type.js'
 import { ItemJSON } from '../structs/ItemJSON.js'
-import { logItemHelper } from '../protocols/syncProtocol.js'
+import * as stringify from '../utils/structStringify.js'
 import { YEvent } from '../utils/YEvent.js'
 
 /**
@@ -175,6 +175,6 @@ export class YMap extends Type {
    * @private
    */
   _logString () {
-    return logItemHelper('YMap', this, `mapSize:${this._map.size}`)
+    return stringify.logItemHelper('YMap', this, `mapSize:${this._map.size}`)
   }
 }

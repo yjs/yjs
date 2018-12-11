@@ -3,7 +3,7 @@
  */
 
 import { Item, splitHelper } from './Item.js'
-import { logItemHelper } from '../protocols/syncProtocol.js'
+import * as stringify from '../utils/structStringify.js'
 import * as encoding from '../lib/encoding.js'
 import * as decoding from '../lib/decoding.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line
@@ -44,7 +44,7 @@ export class ItemString extends Item {
    * @private
    */
   _logString () {
-    return logItemHelper('ItemString', this, `content:"${this._content}"`)
+    return stringify.logItemHelper('ItemString', this, `content:"${this._content}"`)
   }
   _splitAt (y, diff) {
     if (diff === 0) {

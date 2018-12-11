@@ -9,10 +9,13 @@ Until [this](https://github.com/Microsoft/TypeScript/issues/7546) is fixed, the 
 
 ```json
 {
-  "checkJs": true,
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    ..
+  },
   "include": [
     "./node_modules/yjs/"
   ]
-  ..
 }
 ```

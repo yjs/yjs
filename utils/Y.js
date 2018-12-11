@@ -6,7 +6,7 @@ import { createRootID } from './ID.js'
 import { NamedEventHandler } from '../lib/NamedEventHandler.js'
 import { Transaction } from './Transaction.js'
 import * as encoding from '../lib/encoding.js'
-import * as message from '../protocols/syncProtocol.js'
+import * as message from '../protocols/sync.js'
 import { integrateRemoteStructs } from './integrateRemoteStructs.js'
 import { Type } from '../structs/Type.js' // eslint-disable-line
 import { Decoder } from '../lib/decoding.js' // eslint-disable-line

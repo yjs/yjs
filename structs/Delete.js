@@ -4,13 +4,13 @@
 
 import { getStructReference } from '../utils/structReferences.js'
 import * as ID from '../utils/ID.js'
-import { stringifyID } from '../protocols/syncProtocol.js'
-import { writeStructToTransaction } from '../utils/Transaction.js'
+import { writeStructToTransaction } from '../utils/structEncoding.js'
 import * as decoding from '../lib/decoding.js'
 import * as encoding from '../lib/encoding.js'
-import { Item } from './Item.js' // eslint-disable-line
-import { Y } from '../utils/Y.js' // eslint-disable-line
+// import { Item } from './Item.js' // eslint-disable-line
+// import { Y } from '../utils/Y.js' // eslint-disable-line
 import { deleteItemRange } from '../utils/structManipulation.js'
+import * as stringify from '../utils/structStringify.js'
 
 /**
  * @private
@@ -99,6 +99,6 @@ export class Delete {
    * @private
    */
   _logString () {
-    return `Delete - target: ${stringifyID(this._targetID)}, len: ${this._length}`
+    return `Delete - target: ${stringify.stringifyID(this._targetID)}, len: ${this._length}`
   }
 }

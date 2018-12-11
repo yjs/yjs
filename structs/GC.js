@@ -4,10 +4,10 @@
 
 import { getStructReference } from '../utils/structReferences.js'
 import * as ID from '../utils/ID.js'
-import { writeStructToTransaction } from '../utils/Transaction.js'
+import { writeStructToTransaction } from '../utils/structEncoding.js'
 import * as decoding from '../lib/decoding.js'
 import * as encoding from '../lib/encoding.js'
-import { Y } from '../utils/Y.js' // eslint-disable-line
+// import { Y } from '../utils/Y.js' // eslint-disable-line
 
 // TODO should have the same base class as Item
 export class GC {
