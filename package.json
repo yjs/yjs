@@ -18,6 +18,7 @@
     "now-start": "npm run websocket-server"
   },
   "files": [
+    "build/*",
     "bindings/*",
     "docs/*",
     "examples/*",

@@ -104,8 +104,8 @@ class WebsocketsSharedDocument extends Y.Y {
     setupWS(this, url)
     this.on('afterTransaction', broadcastUpdate)
     this._bcSubscriber = data => {
+      const encoder = readMessage(this, data) // already muxed
       this.mux(() => {
-        const encoder = readMessage(this, data)
         if (Y.encoding.length(encoder) > 1) {
             bc.publish(url, Y.encoding.toBuffer(encoder))
         }
