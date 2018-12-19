@@ -28,12 +28,12 @@ export const transactionTypeChanged = (y, type, sub) => {
 }
 
 /**
- * @private
  * Helper utility to split an Item (see {@link Item#_splitAt})
  * - copies all properties from a to b
  * - connects a to b
  * - assigns the correct _id
  * - saves b to os
+ * @private
  */
 export const splitHelper = (y, a, b, diff) => {
   const aID = a._id

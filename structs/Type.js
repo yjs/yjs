@@ -109,17 +109,17 @@ export class Type extends Item {
   }
 
   /**
-   * @private
    * Creates YArray Event and calls observers.
+   * @private
    */
   _callObserver (transaction, parentSubs, remote) {
     this._callEventHandler(transaction, new YEvent(this))
   }
 
   /**
-   * @private
    * Call event listeners with an event. This will also add an event to all
    * parents (for `.observeDeep` handlers).
+   * @private
    */
   _callEventHandler (transaction, event) {
     const changedParentTypes = transaction.changedParentTypes
@@ -140,11 +140,11 @@ export class Type extends Item {
   }
 
   /**
-   * @private
    * Helper method to transact if the y instance is available.
    *
    * TODO: Currently event handlers are not thrown when a type is not registered
    *       with a Yjs instance.
+   * @private
    */
   _transact (f) {
     const y = this._y
@@ -192,7 +192,6 @@ export class Type extends Item {
   }
 
   /**
-   * @private
    * Integrate this type into the Yjs instance.
    *
    * * Save this struct in the os
@@ -200,6 +199,7 @@ export class Type extends Item {
    * * Observer functions are fired
    *
    * @param {Y} y The Yjs instance
+   * @private
    */
   _integrate (y) {
     super._integrate(y)
@@ -241,7 +241,6 @@ export class Type extends Item {
   toJSON () {}
 
   /**
-   * @private
    * Mark this Item as deleted.
    *
    * @param {Y} y The Yjs instance
@@ -249,6 +248,7 @@ export class Type extends Item {
    *                               Type was deleted.
    * @param {boolean} [gcChildren=(y._hasUndoManager===false)] Whether to garbage
    *                                         collect the children of this type.
+   * @private
    */
   _delete (y, createDelete, gcChildren) {
     if (gcChildren === undefined || !y.gcEnabled) {

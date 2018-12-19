@@ -42,7 +42,7 @@
     "lib": "./"
   },
   "bin": {
-    "y-websockets": "provider/websocket/server.js"
+    "y-websocket-server": "provider/websocket/server.js"
   },
   "standard": {
     "ignore": [
@@ -98,7 +98,7 @@
     "standard": "^11.0.1",
     "tui-jsdoc-template": "^1.2.2"
   },
-  "dependencies": {
+  "optionalDependencies": {
     "ws": "^6.1.0"
   }
 }
