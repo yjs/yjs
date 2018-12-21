@@ -58,8 +58,10 @@
   <!-- The actual source file for the following code is found in ./prosemirror.js. Run `npm run watch` to compile the files -->
   <script class="code-js" src="./build/prosemirror.js">
 import * as Y from 'yjs'
-import { WebsocketProvider } from '../provider/websocket.js'
-import { prosemirrorPlugin, cursorPlugin } from '../bindings/prosemirror'
+import { WebsocketProvider } from 'yjs/provider/websocket.js'
+import { prosemirrorPlugin, cursorPlugin } from 'yjs/bindings/prosemirror'
+
+import * as conf from './exampleConfig.js'
 
 import { EditorState } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
@@ -67,7 +69,7 @@ import { DOMParser } from 'prosemirror-model'
 import { schema } from 'prosemirror-schema-basic'
 import { exampleSetup } from 'prosemirror-example-setup'
 
-const provider = new WebsocketProvider('wss://api.yjs.website')
+const provider = new WebsocketProvider(conf.serverAddress)
 const ydocument = provider.get('prosemirror')
 const type = ydocument.define('prosemirror', Y.XmlFragment)
 

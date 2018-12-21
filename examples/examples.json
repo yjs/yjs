@@ -1,6 +1,9 @@
 {
+  "codemirror": {
+    "title": "CodeMirror Binding"
+  },
   "prosemirror": {
-    "title": "Prosemirror Binding"
+    "title": "ProseMirror Binding"
   },
   "textarea": {
     "title": "Textarea Binding"

@@ -30,6 +30,21 @@ export default [{
     commonjs()
   ]
 }, {
+  input: './examples/codemirror.js',
+  output: {
+    name: 'codemirror',
+    file: 'examples/build/codemirror.js',
+    format: 'iife',
+    sourcemap: true
+  },
+  plugins: [
+    nodeResolve({
+      sourcemap: true,
+      module: true
+    }),
+    commonjs()
+  ].concat(minificationPlugins)
+}, {
   input: './examples/prosemirror.js',
   output: {
     name: 'prosemirror',

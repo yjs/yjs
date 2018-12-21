@@ -96,7 +96,7 @@ export const cursorPlugin = new Plugin({
         if (aw.cursor != null) {
           let user = aw.user || {}
           if (user.color == null) {
-            user.color = '#ffa50070'
+            user.color = '#ffa500'
           }
           if (user.name == null) {
             user.name = `User: ${userID}`
@@ -119,7 +119,7 @@ export const cursorPlugin = new Plugin({
             }, { key: userID + '' }))
             const from = math.min(anchor, head)
             const to = math.max(anchor, head)
-            decorations.push(Decoration.inline(from, to, { style: `background-color: ${user.color}` }))
+            decorations.push(Decoration.inline(from, to, { style: `background-color: ${user.color}70` }))
           }
         }
       })

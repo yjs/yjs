@@ -144,6 +144,16 @@ class WebsocketsSharedDocument extends Y.Y {
   }
 }
 
+/**
+ * Websocket Provider for Yjs. Creates a single websocket connection to each document.
+ * The document name is attached to the provided url. I.e. the following example
+ * creates a websocket connection to http://localhost:1234/my-document-name
+ *
+ * @example
+ *   import { WebsocketProvider } from 'yjs/provider/websocket/client.js'
+ *   const provider = new WebsocketProvider('http://localhost:1234')
+ *   const ydocument = provider.get('my-document-name')
+ */
 export class WebsocketProvider {
   constructor (url) {
     // ensure that url is always ends with /

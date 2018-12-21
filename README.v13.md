@@ -13,7 +13,7 @@ Yjs is a CRDT implementatation that exposes its internal structure as actual dat
 |---|:-:|---|
 | [ProseMirror](https://prosemirror.net/) | ✔ | [link](https://yjs.website/tutorial-prosemirror.html) |
 | [Quill](https://quilljs.com/) |  | [link](https://yjs.website/tutorial-quill.html) |
-| [CodeMirror](https://codemirror.net/) | | [link]() |
+| [CodeMirror](https://codemirror.net/) | ✔ | [link](https://yjs.website/tutorial-codemirror.html) |
 | [Ace](https://ace.c9.io/) | | [link]() |
 | [Monaco](https://microsoft.github.io/monaco-editor/) | | [link]() |
 
@@ -177,11 +177,11 @@ sharedDocument.on('status', event => {
 
 #### Scaling
 
-In this model, there is a central server that handles the content. You need to make sure that all connections to the same document are handled by the same websocket server.
+These are mere suggestions how you could scale your server environment.
 
-I recommend to implement a custom websocket proxy that routes server requests to the correct websocket server.
+**Option 1:** Websocket servers communicate with each other via a PubSub server. A room is represented by a PubSub channel. The downside of this approach is that the same shared document may be handled by many servers. But the upside is that this approach is fault tolerant, does not have a single point of failure, and is perfectly fit for route balancing.
 
-One way to find "the correct websocket server" is to implement a consistent hashing algorithm that maps each document to a unique server. When the hashing function changes, the websocket connections must be re-routed.
+**Option 2:** Sharding with *consistent hashing*. Each document is handled by a unique server. This patterns requires an entity, like etcd, that performs regular health checks and manages servers. Based on the list of available servers (which is managed by etcd) a proxy calculates which server is responsible for each requested document. The disadvantage of this approach is that it is that load distribution may not be fair. Still, this approach may be the preferred solution if you want to store the shared document in a database - e.g. for indexing.
 
 ### Ydb Provider
 

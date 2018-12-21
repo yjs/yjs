@@ -1,7 +1,7 @@
 
 import * as encoding from '../lib/encoding.js'
 import * as decoding from '../lib/decoding.js'
-import { Y } from '../utils/Y.js';
+import { Y } from '../utils/Y.js' // eslint-disable-line
 
 export const messagePermissionDenied = 0
 
@@ -21,10 +21,10 @@ export const writePermissionDenied = (encoder, reason) => {
  */
 
 /**
- * 
- * @param {decoding.Decoder} decoder 
- * @param {Y} y 
- * @param {PermissionDeniedHandler} permissionDeniedHandler 
+ *
+ * @param {decoding.Decoder} decoder
+ * @param {Y} y
+ * @param {PermissionDeniedHandler} permissionDeniedHandler
  */
 export const readAuthMessage = (decoder, y, permissionDeniedHandler) => {
   switch (decoding.readVarUint(decoder)) {

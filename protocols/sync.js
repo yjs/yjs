@@ -9,7 +9,6 @@ import { getStruct } from '../utils/structReferences.js'
 import { deleteItemRange } from '../utils/structManipulation.js'
 import { integrateRemoteStruct } from '../utils/integrateRemoteStructs.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line
-import { Item } from '../structs/Item.js'
 import * as stringify from '../utils/structStringify.js'
 
 /**

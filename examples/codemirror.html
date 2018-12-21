@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Yjs CodeMirror Example</title>
+    <link rel=stylesheet href="https://codemirror.net/lib/codemirror.css">
+    <style>
+      #container {
+        border: grey;
+        border-style: solid;
+        border-width: thin;
+      }
+    </style>
+  </head>
+<body>
+  <p>This example shows how to bind a YText type to <a href="https://codemirror.net/">CodeMirror</a> editor.</p>
+  <p>The content of this editor is shared with every client who visits this domain.</p>
+  <div class="code-html">
+<style>
+.remote-caret {
+  position: absolute;
+  border-left: black;
+  border-left-style: solid;
+  border-left-width: 2px;
+  height: 1em;
+}
+.remote-caret > div {
+  position: relative;
+  top: -1.05em;
+  font-size: 13px;
+  background-color: rgb(250, 129, 0);
+  font-family: serif;
+  font-style: normal;
+  font-weight: normal;
+  line-height: normal;
+  user-select: none;
+  color: white;
+  padding-left: 2px;
+  padding-right: 2px;
+}
+</style>
+<div id="container"></div>
+  </div>
+  <!-- The actual source file for the following code is found in ./codemirror.js. Run `npm run watch` to compile the files -->
+  <script class="code-js" src="./build/codemirror.js">
+import * as Y from 'yjs'
+import { WebsocketProvider } from 'yjs/provider/websocket.js'
+import { CodeMirrorBinding } from 'yjs/bindings/codemirror.js'
+
+import * as conf from './exampleConfig.js'
+
+import CodeMirror from 'codemirror'
+import 'codemirror/mode/javascript/javascript.js'
+
+const provider = new WebsocketProvider(conf.serverAddress)
+const ydocument = provider.get('codemirror')
+const ytext = ydocument.define('codemirror', Y.Text)
+
+const editor = new CodeMirror(document.querySelector('#container'), {
+    mode: 'javascript',
+    lineNumbers: true
+})
+
+const binding = new CodeMirrorBinding(ytext, editor)
+
+window.codemirrorExample = {
+  binding, editor, ytext, ydocument
+}
+  </script>
+</body>
+</html>

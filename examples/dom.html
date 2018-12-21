@@ -22,8 +22,9 @@
     import * as Y from 'yjs/index.js'
     import { WebsocketProvider } from 'yjs/provider/websocket.js'
     import { DomBinding } from 'yjs/bindings/dom.js'
+    import * as conf from './exampleConfig.js'
 
-    const provider = new WebsocketProvider('wss://api.yjs.website')
+    const provider = new WebsocketProvider(conf.serverAddress)
     const ydocument = provider.get('dom')
     const type = ydocument.define('xml', Y.XmlFragment)
     const binding = new DomBinding(type, document.querySelector('#content'), { scrollingElement: document.scrollingElement })

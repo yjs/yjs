@@ -29,7 +29,6 @@ export const stringifyItemID = item => {
   return result
 }
 
-
 /**
  * Helper utility to convert an item to a readable format.
  *

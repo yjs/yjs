@@ -1,7 +1,6 @@
 import * as Y from '../index.js'
 import { WebsocketProvider } from '../provider/websocket.js'
 import { DomBinding } from '../bindings/dom.js'
-
 import * as conf from './exampleConfig.js'
 
 const provider = new WebsocketProvider(conf.serverAddress)

@@ -100,5 +100,8 @@
   },
   "optionalDependencies": {
     "ws": "^6.1.0"
+  },
+  "dependencies": {
+    "codemirror": "^5.42.0"
   }
 }
