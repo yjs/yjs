@@ -105,6 +105,7 @@ class WebsocketsSharedDocument extends Y.Y {
     this.ws = null
     this._localAwarenessState = {}
     this.awareness = new Map()
+    this.awarenessClock = new Map()
     setupWS(this, url)
     this.on('afterTransaction', broadcastUpdate)
     this._bcSubscriber = data => {
@@ -135,9 +136,11 @@ class WebsocketsSharedDocument extends Y.Y {
       this._localAwarenessState[field] = value
     }
     if (this.wsconnected) {
+      const clock = (this.awarenessClock.get(this.userID) || 0) + 1
+      this.awarenessClock.set(this.userID, clock)
       const encoder = Y.encoding.createEncoder()
       Y.encoding.writeVarUint(encoder, messageAwareness)
-      Y.awarenessProtocol.writeUsersStateChange(encoder, [{ userID: this.userID, state: this._localAwarenessState }])
+      Y.awarenessProtocol.writeUsersStateChange(encoder, [{ userID: this.userID, state: this._localAwarenessState, clock }])
       const buf = Y.encoding.toBuffer(encoder)
       this.ws.send(buf)
     }

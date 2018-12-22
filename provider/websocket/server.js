@@ -14,7 +14,7 @@ const port = process.env.PORT || 1234
 
 const persistenceDir = process.env.YPERSISTENCE
 let persistence = null
-if (typeof persistenceDir) {
+if (typeof persistenceDir === 'string') {
   const LevelDbPersistence = require('../../persistence/leveldb.js').LevelDbPersistence
   persistence = new LevelDbPersistence(persistenceDir)
 }
@@ -52,6 +52,7 @@ class WSSharedDoc extends Y.Y {
      */
     this.conns = new Map()
     this.awareness = new Map()
+    this.awarenessClock = new Map()
     this.on('afterTransaction', afterTransaction)
   }
 }
@@ -73,6 +74,7 @@ const messageListener = (conn, doc, message) => {
       const updates = Y.awarenessProtocol.forwardAwarenessMessage(decoder, encoder)
       updates.forEach(update => {
         doc.awareness.set(update.userID, update.state)
+        doc.awarenessClock.set(update.userID, update.clock)
         doc.conns.get(conn).add(update.userID)
       })
       const buff = Y.encoding.toBuffer(encoder)
@@ -105,8 +107,10 @@ const setupConnection = (conn, req) => {
     const encoder = Y.encoding.createEncoder()
     Y.encoding.writeVarUint(encoder, messageAwareness)
     Y.awarenessProtocol.writeUsersStateChange(encoder, Array.from(controlledIds).map(userID => {
+      const clock = (doc.awarenessClock.get(userID) || 0) + 1
       doc.awareness.delete(userID)
-      return { userID, state: null }
+      doc.awarenessClock.delete(userID)
+      return { userID, state: null, clock }
     }))
     const buf = Y.encoding.toBuffer(encoder)
     doc.conns.forEach((_, conn) => conn.send(buf))
@@ -127,7 +131,7 @@ const setupConnection = (conn, req) => {
     const encoder = Y.encoding.createEncoder()
     const userStates = []
     doc.awareness.forEach((state, userID) => {
-      userStates.push({ state, userID })
+      userStates.push({ state, userID, clock: (doc.awarenessClock.get(userID) || 0) })
     })
     Y.encoding.writeVarUint(encoder, messageAwareness)
     Y.awarenessProtocol.writeUsersStateChange(encoder, userStates)
