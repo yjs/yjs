@@ -332,20 +332,25 @@ export const writeSyncStep1 = (encoder, y) => {
 }
 
 /**
+ * @param {encoding.Encoder} encoder
+ * @param {Y} y
+ * @param {Map<number, number>} ss
+ */
+export const writeSyncStep2 = (encoder, y, ss) => {
+  encoding.writeVarUint(encoder, messageYjsSyncStep2)
+  writeStructs(encoder, y, ss)
+  writeDeleteSet(encoder, y)
+}
+
+/**
  * Read SyncStep1 message and reply with SyncStep2.
  *
  * @param {decoding.Decoder} decoder The reply to the received message
  * @param {encoding.Encoder} encoder The received message
  * @param {Y} y
  */
-export const readSyncStep1 = (decoder, encoder, y) => {
-  // read sync step 1 message
-  const ss = readStateSet(decoder)
-  // write sync step 2
-  encoding.writeVarUint(encoder, messageYjsSyncStep2)
-  writeStructs(encoder, y, ss)
-  writeDeleteSet(encoder, y)
-}
+export const readSyncStep1 = (decoder, encoder, y) =>
+  writeSyncStep2(encoder, y, readStateSet(decoder))
 
 /**
  * @param {decoding.Decoder} decoder

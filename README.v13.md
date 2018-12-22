@@ -159,6 +159,16 @@ The Websocket Provider is a solid choice if you want a central source that handl
 PORT=1234 node ./node_modules/yjs/provider/websocket/server.js
 ```
 
+**Websocket Server with Persistence**
+
+Persist document updates in a LevelDB database.
+
+See [LevelDB Persistence](#LevelDB Persistence) for more info.
+
+```sh
+PORT=1234 YPERSISTENCE=./dbDir node ./node_modules/yjs/provider/websocket/server.js
+```
+
 ##### Client Code:
 
 ```js

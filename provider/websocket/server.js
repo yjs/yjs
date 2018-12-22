@@ -12,6 +12,13 @@ const http = require('http')
 
 const port = process.env.PORT || 1234
 
+const persistenceDir = process.env.YPERSISTENCE
+let persistence = null
+if (typeof persistenceDir) {
+  const LevelDbPersistence = require('../../persistence/leveldb.js').LevelDbPersistence
+  persistence = new LevelDbPersistence(persistenceDir)
+}
+
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' })
   res.end('okay')
@@ -80,10 +87,14 @@ const messageListener = (conn, doc, message) => {
 const setupConnection = (conn, req) => {
   conn.binaryType = 'arraybuffer'
   // get doc, create if it does not exist yet
-  let doc = docs.get(req.url.slice(1))
+  const docName = req.url.slice(1)
+  let doc = docs.get(docName)
   if (doc === undefined) {
     doc = new WSSharedDoc()
-    docs.set(req.url.slice(1), doc)
+    if (persistence !== null) {
+      persistence.bindState(docName, doc)
+    }
+    docs.set(docName, doc)
   }
   doc.conns.set(conn, new Set())
   // listen and reply to events
@@ -99,6 +110,13 @@ const setupConnection = (conn, req) => {
     }))
     const buf = Y.encoding.toBuffer(encoder)
     doc.conns.forEach((_, conn) => conn.send(buf))
+    if (doc.conns.size === 0 && persistence !== null) {
+      // if persisted, we store state and destroy ydocument
+      persistence.writeState(docName, doc).then(() => {
+        doc.destroy()
+      })
+      docs.delete(docName)
+    }
   })
   // send sync step 1
   const encoder = Y.encoding.createEncoder()
