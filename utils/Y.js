@@ -1,4 +1,4 @@
-import { DeleteStore } from './DeleteStore.js'
+import { DeleteStore, readDeleteStore, writeDeleteStore } from './DeleteStore.js'
 import { OperationStore } from './OperationStore.js'
 import { StateStore } from './StateStore.js'
 import { generateRandomUint32 } from './generateRandomUint32.js'
@@ -59,7 +59,7 @@ export class Y extends NamedEventHandler {
   importModel (decoder) {
     this.transact(() => {
       integrateRemoteStructs(decoder, this)
-      message.readDeleteSet(decoder, this)
+      readDeleteStore(decoder, this)
     })
   }
 
@@ -71,7 +71,7 @@ export class Y extends NamedEventHandler {
   exportModel () {
     const encoder = encoding.createEncoder()
     message.writeStructs(encoder, this, new Map())
-    message.writeDeleteSet(encoder, this)
+    writeDeleteStore(encoder, this.ds)
     return encoding.toBuffer(encoder)
   }
   _beforeChange () {}
@@ -174,7 +174,7 @@ export class Y extends NamedEventHandler {
    *
    * @param {String} name
    * @param {Function} TypeConstructor The constructor of the type definition
-   * @returns {Type} The created type. Constructed with TypeConstructor
+   * @returns {any} The created type. Constructed with TypeConstructor
    */
   define (name, TypeConstructor) {
     let id = createRootID(name, TypeConstructor)
@@ -194,6 +194,7 @@ export class Y extends NamedEventHandler {
    * This returns the same value as `y.share[name]`
    *
    * @param {String} name The typename
+   * @return {any}
    */
   get (name) {
     return this._map.get(name)

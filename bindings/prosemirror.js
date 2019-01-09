@@ -31,35 +31,55 @@ export const prosemirrorPluginKey = new PluginKey('yjs')
  * @return {Plugin} Returns a prosemirror plugin that binds to this type
  */
 export const prosemirrorPlugin = yXmlFragment => {
-  const pluginState = {
-    type: yXmlFragment,
-    y: yXmlFragment._y,
-    binding: null
-  }
   let changedInitialContent = false
   const plugin = new Plugin({
     key: prosemirrorPluginKey,
     state: {
       init: (initargs, state) => {
-        return pluginState
+        return {
+          type: yXmlFragment,
+          y: yXmlFragment._y,
+          binding: null,
+          snapshot: null
+        }
       },
       apply: (tr, pluginState) => {
-        // update Yjs state when apply is called. We need to do this here to compute the correct cursor decorations with the cursor plugin
-        if (pluginState.binding !== null && (changedInitialContent || tr.doc.content.size > 4)) {
-          changedInitialContent = true
-          pluginState.binding._prosemirrorChanged(tr.doc)
+        const change = tr.getMeta(prosemirrorPluginKey)
+        if (change !== undefined) {
+          pluginState = Object.assign({}, pluginState)
+          for (let key in change) {
+            pluginState[key] = change[key]
+          }
+        }
+        if (pluginState.binding !== null) {
+          if (change !== undefined && change.snapshot !== undefined) {
+            // snapshot changed, rerender next
+            setTimeout(() => {
+              pluginState.binding._renderSnapshot(change.snapshot)
+            }, 0)
+          } else if (pluginState.snapshot == null) {
+            // only apply if no snapshot active
+            // update Yjs state when apply is called. We need to do this here to compute the correct cursor decorations with the cursor plugin
+            if (changedInitialContent || tr.doc.content.size > 4) {
+              changedInitialContent = true
+              pluginState.binding._prosemirrorChanged(tr.doc)
+            }
+          }
         }
         return pluginState
       }
     },
     view: view => {
       const binding = new ProsemirrorBinding(yXmlFragment, view)
-      pluginState.binding = binding
+      view.dispatch(view.state.tr.setMeta(prosemirrorPluginKey, { binding }))
       return {
         update: () => {
-          if (changedInitialContent || view.state.doc.content.size > 4) {
-            changedInitialContent = true
-            binding._prosemirrorChanged(view.state.doc)
+          const pluginState = plugin.getState(view.state)
+          if (pluginState.snapshot == null) {
+            if (changedInitialContent || view.state.doc.content.size > 4) {
+              changedInitialContent = true
+              binding._prosemirrorChanged(view.state.doc)
+            }
           }
         },
         destroy: () => {
@@ -301,8 +321,18 @@ export class ProsemirrorBinding {
     })
     yXmlFragment.observeDeep(this._observeFunction)
   }
+  _renderSnapshot (snapshot) {
+    // clear mapping because we are going to rerender
+    this.mapping = new Map()
+    this.mux(() => {
+      const fragmentContent = this.type.toArray(snapshot).map(t => createNodeFromYElement(t, this.prosemirrorView.state.schema, new Map(), snapshot)).filter(n => n !== null)
+      const tr = this.prosemirrorView.state.tr.replace(0, this.prosemirrorView.state.doc.content.size, new PModel.Slice(new PModel.Fragment(fragmentContent), 0, 0))
+      this.prosemirrorView.dispatch(tr)
+    })
+  }
   _typeChanged (events, transaction) {
-    if (events.length === 0) {
+    if (events.length === 0 || prosemirrorPluginKey.getState(this.prosemirrorView.state).snapshot != null) {
+      // drop out if snapshot is active
       return
     }
     console.info('new types:', transaction.newTypes.size, 'deleted types:', transaction.deletedStructs.size, transaction.newTypes, transaction.deletedStructs)
@@ -321,7 +351,7 @@ export class ProsemirrorBinding {
           tr.setSelection(TextSelection.create(tr.doc, anchor, head))
         }
       }
-      this.prosemirrorView.updateState(this.prosemirrorView.state.apply(tr))
+      this.prosemirrorView.dispatch(tr)
     })
   }
   _prosemirrorChanged (doc) {
@@ -335,16 +365,17 @@ export class ProsemirrorBinding {
 }
 
 /**
- * @privateMapping
+ * @private
  * @param {YXmlElement} el
  * @param {PModel.Schema} schema
  * @param {ProsemirrorMapping} mapping
+ * @param {HistorySnapshot} [snapshot]
  * @return {PModel.Node}
  */
-export const createNodeIfNotExists = (el, schema, mapping) => {
+export const createNodeIfNotExists = (el, schema, mapping, snapshot) => {
   const node = mapping.get(el)
   if (node === undefined) {
-    return createNodeFromYElement(el, schema, mapping)
+    return createNodeFromYElement(el, schema, mapping, snapshot)
   }
   return node
 }
@@ -354,18 +385,19 @@ export const createNodeIfNotExists = (el, schema, mapping) => {
  * @param {YXmlElement} el
  * @param {PModel.Schema} schema
  * @param {ProsemirrorMapping} mapping
+ * @param {import('../protocols/history.js').HistorySnapshot} snapshot
  * @return {PModel.Node | null} Returns node if node could be created. Otherwise it deletes the yjs type and returns null
  */
-export const createNodeFromYElement = (el, schema, mapping) => {
+export const createNodeFromYElement = (el, schema, mapping, snapshot) => {
   const children = []
-  el.toArray().forEach(type => {
+  el.toArray(snapshot).forEach(type => {
     if (type.constructor === YXmlElement) {
-      const n = createNodeIfNotExists(type, schema, mapping)
+      const n = createNodeIfNotExists(type, schema, mapping, snapshot)
       if (n !== null) {
         children.push(n)
       }
     } else {
-      const ns = createTextNodesFromYText(type, schema, mapping)
+      const ns = createTextNodesFromYText(type, schema, mapping, snapshot)
       if (ns !== null) {
         ns.forEach(textchild => {
           if (textchild !== null) {
@@ -377,7 +409,7 @@ export const createNodeFromYElement = (el, schema, mapping) => {
   })
   let node
   try {
-    node = schema.node(el.nodeName.toLowerCase(), el.getAttributes(), children)
+    node = schema.node(el.nodeName.toLowerCase(), el.getAttributes(snapshot), children)
   } catch (e) {
     // an error occured while creating the node. This is probably a result because of a concurrent action.
     // delete the node and do not push to children
@@ -395,11 +427,12 @@ export const createNodeFromYElement = (el, schema, mapping) => {
  * @param {YText} text
  * @param {PModel.Schema} schema
  * @param {ProsemirrorMapping} mapping
+ * @param {HistorySnapshot} [snapshot] 
  * @return {Array<PModel.Node>}
  */
-export const createTextNodesFromYText = (text, schema, mapping) => {
+export const createTextNodesFromYText = (text, schema, mapping, snapshot) => {
   const nodes = []
-  const deltas = text.toDelta()
+  const deltas = text.toDelta(snapshot)
   try {
     for (let i = 0; i < deltas.length; i++) {
       const delta = deltas[i]

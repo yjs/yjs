@@ -7,6 +7,8 @@ import { Type } from '../structs/Type.js'
 import { ItemJSON } from '../structs/ItemJSON.js'
 import * as stringify from '../utils/structStringify.js'
 import { YEvent } from '../utils/YEvent.js'
+import { ItemBinary } from '../structs/ItemBinary.js'
+import { isVisible } from '../utils/snapshot.js';
 
 /**
  * Event that describes the changes on a YMap.
@@ -53,6 +55,8 @@ export class YMap extends Type {
           } else {
             res = item.toString()
           }
+        } else if (item.constructor === ItemBinary) {
+          res = item._content
         } else {
           res = item._content[0]
         }
@@ -65,14 +69,23 @@ export class YMap extends Type {
   /**
    * Returns the keys for each element in the YMap Type.
    *
+   * @param {import('../protocols/history.js').HistorySnapshot} [snapshot]
    * @return {Array}
    */
-  keys () {
+  keys (snapshot) {
     // TODO: Should return either Iterator or Set!
     let keys = []
-    for (let [key, value] of this._map) {
-      if (!value._deleted) {
-        keys.push(key)
+    if (snapshot === undefined) {
+      for (let [key, value] of this._map) {
+        if (value._deleted) {
+          keys.push(key)
+        }
+      }
+    } else {
+      for (let key in this._map) {
+        if (this.has(key, snapshot)) {
+          keys.push(key)
+        }
       }
     }
     return keys
@@ -96,7 +109,7 @@ export class YMap extends Type {
    * Adds or updates an element with a specified key and value.
    *
    * @param {string} key The key of the element to add to this YMap
-   * @param {Object | string | number | Type} value The value of the element to add
+   * @param {Object | string | number | Type | ArrayBuffer } value The value of the element to add
    */
   set (key, value) {
     this._transact(y => {
@@ -120,6 +133,9 @@ export class YMap extends Type {
         value = v
       } else if (value instanceof Item) {
         v = value
+      } else if (value.constructor === ArrayBuffer) {
+        v = new ItemBinary()
+        v._content = value
       } else {
         v = new ItemJSON()
         v._content = [value]
@@ -141,16 +157,27 @@ export class YMap extends Type {
    * Returns a specified element from this YMap.
    *
    * @param {string} key The key of the element to return.
+   * @param {import('../protocols/history.js').HistorySnapshot} [snapshot]
    */
-  get (key) {
+  get (key, snapshot) {
     let v = this._map.get(key)
-    if (v === undefined || v._deleted) {
+    if (v === undefined) {
       return undefined
     }
-    if (v instanceof Type) {
-      return v
-    } else {
-      return v._content[v._content.length - 1]
+    if (snapshot !== undefined) {
+      // iterate until found element that exists
+      while (!snapshot.sm.has(v._id.user) || v._id.clock >= snapshot.sm.get(v._id.user)) {
+        v = v._right
+      }
+    }
+    if (isVisible(v, snapshot)) {
+      if (v instanceof Type) {
+        return v
+      } else if (v.constructor === ItemBinary) {
+        return v._content
+      } else {
+        return v._content[v._content.length - 1]
+      }
     }
   }
 
@@ -158,14 +185,20 @@ export class YMap extends Type {
    * Returns a boolean indicating whether the specified key exists or not.
    *
    * @param {string} key The key to test.
+   * @param {import('../protocols/history.js').HistorySnapshot} [snapshot]
    */
-  has (key) {
+  has (key, snapshot) {
     let v = this._map.get(key)
-    if (v === undefined || v._deleted) {
+    if (v === undefined) {
       return false
-    } else {
-      return true
     }
+    if (snapshot !== undefined) {
+      // iterate until found element that exists
+      while (!snapshot.sm.has(v._id.user) || v._id.clock >= snapshot.sm.get(v._id.user)) {
+        v = v._right
+      }
+    }
+    return isVisible(v, snapshot)
   }
 
   /**

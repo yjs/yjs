@@ -9,6 +9,8 @@ import * as stringify from '../utils/structStringify.js'
 import { YEvent } from '../utils/YEvent.js'
 import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
 import { Item } from '../structs/Item.js' // eslint-disable-line
+import { ItemBinary } from '../structs/ItemBinary.js'
+import { isVisible } from '../utils/snapshot.js'
 
 /**
  * Event that describes the changes on a YArray
@@ -89,6 +91,7 @@ export class YArray extends Type {
    * Returns the i-th element from a YArray.
    *
    * @param {number} index The index of the element to return from the YArray
+   * @return {any}
    */
   get (index) {
     let n = this._start
@@ -112,10 +115,11 @@ export class YArray extends Type {
   /**
    * Transforms this YArray to a JavaScript Array.
    *
+   * @param {Object} [snapshot]
    * @return {Array}
    */
-  toArray () {
-    return this.map(c => c)
+  toArray (snapshot) {
+    return this.map(c => c, snapshot)
   }
 
   /**
@@ -137,14 +141,15 @@ export class YArray extends Type {
    * element of this YArray.
    *
    * @param {Function} f Function that produces an element of the new Array
+   * @param {import('../protocols/history.js').HistorySnapshot} [snapshot]
    * @return {Array} A new array with each element being the result of the
    *                 callback function
    */
-  map (f) {
+  map (f, snapshot) {
     const res = []
     this.forEach((c, i) => {
       res.push(f(c, i, this))
-    })
+    }, snapshot)
     return res
   }
 
@@ -152,14 +157,17 @@ export class YArray extends Type {
    * Executes a provided function on once on overy element of this YArray.
    *
    * @param {Function} f A function to execute on every element of this YArray.
+   * @param {import('../protocols/history.js').HistorySnapshot} [snapshot]
    */
-  forEach (f) {
+  forEach (f, snapshot) {
     let index = 0
     let n = this._start
     while (n !== null) {
-      if (!n._deleted && n._countable) {
+      if (isVisible(n, snapshot) && n._countable) {
         if (n instanceof Type) {
           f(n, index++, this)
+        } else if (n.constructor === ItemBinary) {
+          f(n._content, index++, this)
         } else {
           const content = n._content
           const contentLen = content.length
@@ -239,7 +247,7 @@ export class YArray extends Type {
    *
    * @private
    * @param {Item} left The element container to use as a reference.
-   * @param {Array} content The Array of content to insert (see {@see insert})
+   * @param {Array<number|string|Object|ArrayBuffer>} content The Array of content to insert (see {@see insert})
    */
   insertAfter (left, content) {
     this._transact(y => {
@@ -276,6 +284,29 @@ export class YArray extends Type {
             left._right = c
           }
           left = c
+        } else if (c.constructor === ArrayBuffer) {
+          if (prevJsonIns !== null) {
+            if (y !== null) {
+              prevJsonIns._integrate(y)
+            }
+            left = prevJsonIns
+            prevJsonIns = null
+          }
+          const itemBinary = new ItemBinary()
+          itemBinary._origin = left
+          itemBinary._left = left
+          itemBinary._right = right
+          itemBinary._right_origin = right
+          itemBinary._parent = this
+          itemBinary._content = c
+          if (y !== null) {
+            itemBinary._integrate(y)
+          } else if (left === null) {
+            this._start = itemBinary
+          } else {
+            left._right = itemBinary
+          }
+          left = itemBinary
         } else {
           if (prevJsonIns === null) {
             prevJsonIns = new ItemJSON()
@@ -294,6 +325,8 @@ export class YArray extends Type {
           prevJsonIns._integrate(y)
         } else if (prevJsonIns._left === null) {
           this._start = prevJsonIns
+        } else {
+          left._right = prevJsonIns
         }
       }
     })
@@ -314,7 +347,7 @@ export class YArray extends Type {
    *  yarray.insert(2, [1, 2])
    *
    * @param {number} index The index to insert content at.
-   * @param {Array} content The array of content
+   * @param {Array<number|string|ArrayBuffer|Type>} content The array of content
    */
   insert (index, content) {
     this._transact(() => {
@@ -347,7 +380,7 @@ export class YArray extends Type {
   /**
    * Appends content to this YArray.
    *
-   * @param {Array} content Array of content to append.
+   * @param {Array<number|string|ArrayBuffer|Type>} content Array of content to append.
    */
   push (content) {
     let n = this._start

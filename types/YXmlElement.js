@@ -300,26 +300,34 @@ export class YXmlElement extends YXmlFragment {
    *
    * @param {String} attributeName The attribute name that identifies the
    *                               queried value.
+   * @param {import('../protocols/history.js').HistorySnapshot} [snapshot]
    * @return {String} The queried attribute value.
    *
    * @public
    */
-  getAttribute (attributeName) {
-    return YMap.prototype.get.call(this, attributeName)
+  getAttribute (attributeName, snapshot) {
+    return YMap.prototype.get.call(this, attributeName, snapshot)
   }
 
   /**
    * Returns all attribute name/value pairs in a JSON Object.
    *
+   * @param {import('../protocols/history.js').HistorySnapshot} [snapshot]
    * @return {Object} A JSON Object that describes the attributes.
    *
    * @public
    */
-  getAttributes () {
+  getAttributes (snapshot) {
     const obj = {}
-    for (let [key, value] of this._map) {
-      if (!value._deleted) {
-        obj[key] = value._content[0]
+    if (snapshot === undefined) {
+      for (let [key, value] of this._map) {
+        if (!value._deleted) {
+          obj[key] = value._content[0]
+        }
+      }
+    } else {
+      for (let key in this._map) {
+        return YMap.prototype.get.call(this, key, snapshot)
       }
     }
     return obj

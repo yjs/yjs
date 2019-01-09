@@ -10,9 +10,11 @@ import { deleteItemRange } from '../utils/structManipulation.js'
 import { integrateRemoteStruct } from '../utils/integrateRemoteStructs.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line
 import * as stringify from '../utils/structStringify.js'
+import { readStateMap, writeStateMap } from '../utils/StateStore.js'
+import { writeDeleteStore, readDeleteStore, stringifyDeleteStore } from '../utils/DeleteStore.js'
 
 /**
- * @typedef {Map<number, number>} StateSet
+ * @typedef {Map<number, number>} StateMap
  */
 
 /**
@@ -45,196 +47,6 @@ export const messageYjsSyncStep2 = 1
 export const messageYjsUpdate = 2
 
 /**
- * Stringifies a message-encoded Delete Set.
- *
- * @param {decoding.Decoder} decoder
- * @return {string}
- */
-export const stringifyDeleteSet = (decoder) => {
-  let str = ''
-  const dsLength = decoding.readUint32(decoder)
-  for (let i = 0; i < dsLength; i++) {
-    str += ' -' + decoding.readVarUint(decoder) + ':\n' // decodes user
-    const dvLength = decoding.readUint32(decoder)
-    for (let j = 0; j < dvLength; j++) {
-      str += `clock: ${decoding.readVarUint(decoder)}, length: ${decoding.readVarUint(decoder)}, gc: ${decoding.readUint8(decoder) === 1}\n`
-    }
-  }
-  return str
-}
-
-/**
- * Write the DeleteSet of a shared document to an Encoder.
- *
- * @param {encoding.Encoder} encoder
- * @param {Y} y
- */
-export const writeDeleteSet = (encoder, y) => {
-  let currentUser = null
-  let currentLength
-  let lastLenPos
-  let numberOfUsers = 0
-  const laterDSLenPus = encoding.length(encoder)
-  encoding.writeUint32(encoder, 0)
-  y.ds.iterate(null, null, n => {
-    const user = n._id.user
-    const clock = n._id.clock
-    const len = n.len
-    const gc = n.gc
-    if (currentUser !== user) {
-      numberOfUsers++
-      // a new user was foundimport { StateSet } from '../Store/StateStore.js' // eslint-disable-line
-
-      if (currentUser !== null) { // happens on first iteration
-        encoding.setUint32(encoder, lastLenPos, currentLength)
-      }
-      currentUser = user
-      encoding.writeVarUint(encoder, user)
-      // pseudo-fill pos
-      lastLenPos = encoding.length(encoder)
-      encoding.writeUint32(encoder, 0)
-      currentLength = 0
-    }
-    encoding.writeVarUint(encoder, clock)
-    encoding.writeVarUint(encoder, len)
-    encoding.writeUint8(encoder, gc ? 1 : 0)
-    currentLength++
-  })
-  if (currentUser !== null) { // happens on first iteration
-    encoding.setUint32(encoder, lastLenPos, currentLength)
-  }
-  encoding.setUint32(encoder, laterDSLenPus, numberOfUsers)
-}
-
-/**
- * Read delete set from Decoder and apply it to a shared document.
- *
- * @param {decoding.Decoder} decoder
- * @param {Y} y
- */
-export const readDeleteSet = (decoder, y) => {
-  const dsLength = decoding.readUint32(decoder)
-  for (let i = 0; i < dsLength; i++) {
-    const user = decoding.readVarUint(decoder)
-    const dv = []
-    const dvLength = decoding.readUint32(decoder)
-    for (let j = 0; j < dvLength; j++) {
-      const from = decoding.readVarUint(decoder)
-      const len = decoding.readVarUint(decoder)
-      const gc = decoding.readUint8(decoder) === 1
-      dv.push({from, len, gc})
-    }
-    if (dvLength > 0) {
-      const deletions = []
-      let pos = 0
-      let d = dv[pos]
-      y.ds.iterate(ID.createID(user, 0), ID.createID(user, Number.MAX_VALUE), n => {
-        // cases:
-        // 1. d deletes something to the right of n
-        //  => go to next n (break)
-        // 2. d deletes something to the left of n
-        //  => create deletions
-        //  => reset d accordingly
-        //  *)=> if d doesn't delete anything anymore, go to next d (continue)
-        // 3. not 2) and d deletes something that also n deletes
-        //  => reset d so that it doesn't contain n's deletion
-        //  *)=> if d does not delete anything anymore, go to next d (continue)
-        while (d != null) {
-          var diff = 0 // describe the diff of length in 1) and 2)
-          if (n._id.clock + n.len <= d.from) {
-            // 1)
-            break
-          } else if (d.from < n._id.clock) {
-            // 2)
-            // delete maximum the len of d
-            // else delete as much as possible
-            diff = Math.min(n._id.clock - d.from, d.len)
-            // deleteItemRange(y, user, d.from, diff, true)
-            deletions.push([user, d.from, diff])
-          } else {
-            // 3)
-            diff = n._id.clock + n.len - d.from // never null (see 1)
-            if (d.gc && !n.gc) {
-              // d marks as gc'd but n does not
-              // then delete either way
-              // deleteItemRange(y, user, d.from, Math.min(diff, d.len), true)
-              deletions.push([user, d.from, Math.min(diff, d.len)])
-            }
-          }
-          if (d.len <= diff) {
-            // d doesn't delete anything anymore
-            d = dv[++pos]
-          } else {
-            d.from = d.from + diff // reset pos
-            d.len = d.len - diff // reset length
-          }
-        }
-      })
-      // TODO: It would be more performant to apply the deletes in the above loop
-      // Adapt the Tree implementation to support delete while iterating
-      for (let i = deletions.length - 1; i >= 0; i--) {
-        const del = deletions[i]
-        deleteItemRange(y, del[0], del[1], del[2], true)
-      }
-      // for the rest.. just apply it
-      for (; pos < dv.length; pos++) {
-        d = dv[pos]
-        deleteItemRange(y, user, d.from, d.len, true)
-        // deletions.push([user, d.from, d.len, d.gc)
-      }
-    }
-  }
-}
-
-/**
- * Read a StateSet from Decoder and return it as string.
- *
- * @param {decoding.Decoder} decoder
- * @return {string}
- */
-export const stringifyStateSet = decoder => {
-  let s = 'State Set: '
-  readStateSet(decoder).forEach((clock, user) => {
-    s += `(${user}: ${clock}), `
-  })
-  return s
-}
-
-/**
- * Write StateSet to Encoder
- *
- * @param {encoding.Encoder} encoder
- * @param {Y} y
- */
-export const writeStateSet = (encoder, y) => {
-  const state = y.ss.state
-  // write as fixed-size number to stay consistent with the other encode functions.
-  // => anytime we write the number of objects that follow, encode as fixed-size number.
-  encoding.writeUint32(encoder, state.size)
-  state.forEach((clock, user) => {
-    encoding.writeVarUint(encoder, user)
-    encoding.writeVarUint(encoder, clock)
-  })
-}
-
-/**
- * Read StateSet from Decoder and return as Map
- *
- * @param {decoding.Decoder} decoder
- * @return {StateSet}
- */
-export const readStateSet = decoder => {
-  const ss = new Map()
-  const ssLength = decoding.readUint32(decoder)
-  for (let i = 0; i < ssLength; i++) {
-    const user = decoding.readVarUint(decoder)
-    const clock = decoding.readVarUint(decoder)
-    ss.set(user, clock)
-  }
-  return ss
-}
-
-/**
  * @param {decoding.Decoder} decoder
  * @param {Y} y
  * @return {string}
@@ -262,7 +74,7 @@ export const stringifyStructs = (decoder, y) => {
  *
  * @param {encoding.Encoder} encoder
  * @param {Y} y
- * @param {StateSet} ss State Set received from a remote client. Maps from client id to number of created operations by client id.
+ * @param {StateMap} ss State Set received from a remote client. Maps from client id to number of created operations by client id.
  */
 export const writeStructs = (encoder, y, ss) => {
   const lenPos = encoding.length(encoder)
@@ -328,7 +140,7 @@ export const stringifySyncStep1 = (decoder) => {
  */
 export const writeSyncStep1 = (encoder, y) => {
   encoding.writeVarUint(encoder, messageYjsSyncStep1)
-  writeStateSet(encoder, y)
+  writeStateMap(encoder, y.ss.state)
 }
 
 /**
@@ -339,7 +151,7 @@ export const writeSyncStep1 = (encoder, y) => {
 export const writeSyncStep2 = (encoder, y, ss) => {
   encoding.writeVarUint(encoder, messageYjsSyncStep2)
   writeStructs(encoder, y, ss)
-  writeDeleteSet(encoder, y)
+  writeDeleteStore(encoder, y.ds)
 }
 
 /**
@@ -350,7 +162,7 @@ export const writeSyncStep2 = (encoder, y, ss) => {
  * @param {Y} y
  */
 export const readSyncStep1 = (decoder, encoder, y) =>
-  writeSyncStep2(encoder, y, readStateSet(decoder))
+  writeSyncStep2(encoder, y, readStateMap(decoder))
 
 /**
  * @param {decoding.Decoder} decoder
@@ -363,19 +175,19 @@ export const stringifySyncStep2 = (decoder, y) => {
   str += stringifyStructs(decoder, y)
   // write DS to string
   str += ' + Delete Set:\n'
-  str += stringifyDeleteSet(decoder)
+  str += stringifyDeleteStore(decoder)
   return str
 }
 
 /**
- * Read and apply Structs and then DeleteSet to a y instance.
+ * Read and apply Structs and then DeleteStore to a y instance.
  *
  * @param {decoding.Decoder} decoder
  * @param {Y} y
  */
 export const readSyncStep2 = (decoder, y) => {
   readStructs(decoder, y)
-  readDeleteSet(decoder, y)
+  readDeleteStore(decoder, y)
 }
 
 /**

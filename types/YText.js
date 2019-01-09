@@ -7,6 +7,7 @@ import { ItemString } from '../structs/ItemString.js'
 import { ItemFormat } from '../structs/ItemFormat.js'
 import * as stringify from '../utils/structStringify.js'
 import { YArrayEvent, YArray } from './YArray.js'
+import { isVisible } from '../utils/snapshot.js'
 
 /**
  * @private
@@ -570,11 +571,12 @@ export class YText extends YArray {
   /**
    * Returns the Delta representation of this YText type.
    *
+   * @param {import('../protocols/history.js').HistorySnapshot} [snapshot]
    * @return {Delta} The Delta representation of this type.
    *
    * @public
    */
-  toDelta () {
+  toDelta (snapshot) {
     let ops = []
     let currentAttributes = new Map()
     let str = ''
@@ -600,7 +602,7 @@ export class YText extends YArray {
       }
     }
     while (n !== null) {
-      if (!n._deleted) {
+      if (isVisible(n, snapshot)) {
         switch (n.constructor) {
           case ItemString:
             str += n._content
