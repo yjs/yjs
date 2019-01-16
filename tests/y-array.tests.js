@@ -209,6 +209,22 @@ test('event target is set correctly (remote user)', async function array12 (t) {
   await compareUsers(t, users)
 })
 
+test('should correctly iterate an array containing types', async function iterate1 (t) {
+  const y = new Y.Y()
+  const arr = y.define('arr', Y.Array)
+  const numItems = 10
+  for(let i = 0; i < numItems; i++) {
+    const map = new Y.Map()
+    map.set('value', i)
+    arr.push([map])
+  }
+  let cnt = 0
+  for(let item of arr) {
+    t.assert(item.get('value') === cnt++, 'value is correct')
+  }
+  y.destroy()
+})
+
 var _uniqueNumber = 0
 function getUniqueNumber () {
   return _uniqueNumber++

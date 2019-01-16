@@ -189,6 +189,7 @@ export class YArray extends Type {
         let content
         if (this._item instanceof Type) {
           content = this._item
+          this._item = this._item._right
         } else {
           content = this._item._content[this._itemElement++]
         }
