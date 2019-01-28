@@ -9,7 +9,7 @@ const mux = Y.createMutex()
 
 /*
  * Improves the uniqueness of timestamps.
- * We gamble with the fact that users won't create more than 10000 changes on a single document 
+ * We gamble with the fact that users won't create more than 10000 changes on a single document
  * within one millisecond (also assuming clock works correctly).
  */
 let timestampIterator = 0
@@ -22,13 +22,13 @@ const getNextTimestamp = () => {
 }
 
 /**
- * @param {string} docName 
+ * @param {string} docName
  * @return {string}
  */
 const generateEntryKey = docName => `${docName}#${getNextTimestamp()}`
 
 /**
- * 
+ *
  * @param {any} db
  * @param {string} docName
  * @param {Uint8Array | ArrayBuffer} buf
@@ -44,21 +44,21 @@ const readEntry = (arr, ydocument) => mux(() =>
 )
 
 /**
- * @param {any} db 
- * @param {string} docName 
- * @param {Y.Y} ydocument 
+ * @param {any} db
+ * @param {string} docName
+ * @param {Y.Y} ydocument
  */
-const loadFromPersistence = (db, docName, ydocument) => new Promise((resolve, reject)=>
+const loadFromPersistence = (db, docName, ydocument) => new Promise((resolve, reject) =>
   db.createReadStream({
     gte: `${docName}#`,
     lte: `${docName}#Z`,
     keys: false,
     values: true
   })
-  .on('data', data => readEntry(data, ydocument))
-  .on('error', reject)
-  .on('end', resolve)
-  .on('close', resolve)
+    .on('data', data => readEntry(data, ydocument))
+    .on('error', reject)
+    .on('end', resolve)
+    .on('close', resolve)
 )
 
 const persistState = (db, docName, ydocument) => {
@@ -68,9 +68,9 @@ const persistState = (db, docName, ydocument) => {
   const entryPromise = db.put(entryKey, Y.encoding.toBuffer(encoder))
   const delOps = []
   return new Promise((resolve, reject) => db.createKeyStream({
-      gte: `${docName}#`,
-      lt: entryKey,
-    })
+    gte: `${docName}#`,
+    lt: entryKey
+  })
     .on('data', key => delOps.push({ type: 'del', key }))
     .on('error', reject)
     .on('end', resolve)
@@ -92,7 +92,7 @@ exports.LevelDbPersistence = class LevelDbPersistence {
    * Retrieve all data from LevelDB and automatically persist all document updates to leveldb.
    *
    * @param {string} docName
-   * @param {Y.Y} ydocument 
+   * @param {Y.Y} ydocument
    */
   bindState (docName, ydocument) {
     // write all updates received from other clients
@@ -116,8 +116,8 @@ exports.LevelDbPersistence = class LevelDbPersistence {
    * Write current state to persistence layer. Deletes all entries that were made before.
    * Call this method at any time - the recommended time to call this method is before the ydocument is destroyed.
    *
-   * @param {string} docName 
-   * @param {Y.Y} ydocument 
+   * @param {string} docName
+   * @param {Y.Y} ydocument
    */
   writeState (docName, ydocument) {
     return persistState(this.db, docName, ydocument)

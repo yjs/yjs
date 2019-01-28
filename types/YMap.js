@@ -8,7 +8,7 @@ import { ItemJSON } from '../structs/ItemJSON.js'
 import * as stringify from '../utils/structStringify.js'
 import { YEvent } from '../utils/YEvent.js'
 import { ItemBinary } from '../structs/ItemBinary.js'
-import { isVisible } from '../utils/snapshot.js';
+import { isVisible } from '../utils/snapshot.js'
 
 /**
  * Event that describes the changes on a YMap.
@@ -82,11 +82,11 @@ export class YMap extends Type {
         }
       }
     } else {
-      for (let key in this._map) {
-        if (this.has(key, snapshot)) {
+      this._map.forEach((_, key) => {
+        if (YMap.prototype.has.call(this, key, snapshot)) {
           keys.push(key)
         }
-      }
+      })
     }
     return keys
   }

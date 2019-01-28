@@ -12,6 +12,8 @@ const http = require('http')
 
 const port = process.env.PORT || 1234
 
+// disable gc when using snapshots!
+const gcEnabled = process.env.GC !== 'false' && process.env.GC !== '0'
 const persistenceDir = process.env.YPERSISTENCE
 let persistence = null
 if (typeof persistenceDir === 'string') {
@@ -44,7 +46,7 @@ const afterTransaction = (doc, transaction) => {
 
 class WSSharedDoc extends Y.Y {
   constructor () {
-    super({ gc: true })
+    super({ gc: gcEnabled })
     this.mux = Y.createMutex()
     /**
      * Maps from conn to set of controlled user ids. Delete all user ids from awareness when this conn is closed

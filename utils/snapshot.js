@@ -1,7 +1,6 @@
 
-
 /**
- * 
+ *
  * @param {Item} item
  * @param {import("../protocols/history").HistorySnapshot} [snapshot]
  */

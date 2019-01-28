@@ -97,8 +97,8 @@ const broadcastUpdate = (y, transaction) => {
 }
 
 class WebsocketsSharedDocument extends Y.Y {
-  constructor (url) {
-    super()
+  constructor (url, opts) {
+    super(opts)
     this.url = url
     this.wsconnected = false
     this.mux = Y.createMutex()
@@ -112,7 +112,7 @@ class WebsocketsSharedDocument extends Y.Y {
       const encoder = readMessage(this, data) // already muxed
       this.mux(() => {
         if (Y.encoding.length(encoder) > 1) {
-            bc.publish(url, Y.encoding.toBuffer(encoder))
+          bc.publish(url, Y.encoding.toBuffer(encoder))
         }
       })
     }
@@ -173,10 +173,10 @@ export class WebsocketProvider {
    * @param {string} name
    * @return {WebsocketsSharedDocument}
    */
-  get (name) {
+  get (name, opts) {
     let doc = this.docs.get(name)
     if (doc === undefined) {
-      doc = new WebsocketsSharedDocument(this.url + name)
+      doc = new WebsocketsSharedDocument(this.url + name, opts)
     }
     return doc
   }

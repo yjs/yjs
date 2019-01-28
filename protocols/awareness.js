@@ -40,24 +40,22 @@ export const readUsersStateChange = (decoder, y) => {
     const userID = decoding.readVarUint(decoder)
     const clock = decoding.readVarUint(decoder)
     const state = JSON.parse(decoding.readVarString(decoder))
-    if (userID !== y.userID) {
-      const uClock = y.awarenessClock.get(userID) || 0
-      y.awarenessClock.set(userID, clock)
-      if (state === null) {
-        // only write if clock increases. cannot overwrite
-        if (y.awareness.has(userID) && uClock < clock) {
-          y.awareness.delete(userID)
-          removed.push(userID)
-        }
-      } else if (uClock <= clock) { // allow to overwrite (e.g. when client was on, then offline)
-        if (y.awareness.has(userID)) {
-          updated.push(userID)
-        } else {
-          added.push(userID)
-        }
-        y.awareness.set(userID, state)
-        y.awarenessClock.set(userID, clock)
+    const uClock = y.awarenessClock.get(userID) || 0
+    y.awarenessClock.set(userID, clock)
+    if (state === null) {
+      // only write if clock increases. cannot overwrite
+      if (y.awareness.has(userID) && uClock < clock) {
+        y.awareness.delete(userID)
+        removed.push(userID)
       }
+    } else if (uClock <= clock) { // allow to overwrite (e.g. when client was on, then offline)
+      if (y.awareness.has(userID)) {
+        updated.push(userID)
+      } else {
+        added.push(userID)
+      }
+      y.awareness.set(userID, state)
+      y.awarenessClock.set(userID, clock)
     }
   }
   if (added.length > 0 || updated.length > 0 || removed.length > 0) {

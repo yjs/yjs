@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>Yjs Prosemirror Example</title>
-    <link rel=stylesheet href="https://prosemirror.net/css/editor.css">
+    <link rel=stylesheet href="./prosemirror.css">
     <style>
       placeholder {
         display: inline;
@@ -30,6 +30,7 @@
         border-left-width: 2px;
         border-color: orange;
         height: 1em;
+        word-break: normal;
       }
       .ProseMirror-yjs-cursor > div {
         position: relative;
@@ -44,6 +45,36 @@
         color: white;
         padding-left: 2px;
         padding-right: 2px;
+      }
+      [ychange_state] {
+        position: relative;
+      }
+      [ychange_state]:hover::before {
+        content: attr(ychange_user);
+        background-color: #fa8100;
+        position: absolute;
+        top: -14px;
+        right: 0;
+        font-size: 12px;
+        padding: 0 2px;
+        border-radius: 3px 3px 0 0;
+        color: #fdfdfe;
+        user-select: none;
+        word-break: normal;
+      }
+      *[ychange_state='added'] {
+        background-color: #fa810069;
+      }
+      ychange[ychange_state='removed'] {
+        color: rgb(250, 129, 0);
+        text-decoration: line-through;
+      }
+      *:not(ychange)[ychange_state='removed'] {
+        background-color: #ff9494c9;
+        text-decoration: line-through;
+      }
+      img[ychange_state='removed'] {
+        padding: 2px;
       }
     </style>
 </head>

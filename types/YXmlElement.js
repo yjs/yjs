@@ -326,9 +326,9 @@ export class YXmlElement extends YXmlFragment {
         }
       }
     } else {
-      for (let key in this._map) {
-        return YMap.prototype.get.call(this, key, snapshot)
-      }
+      YMap.prototype.keys.call(this, snapshot).forEach(key => {
+        obj[key] = YMap.prototype.get.call(this, key, snapshot)
+      })
     }
     return obj
   }

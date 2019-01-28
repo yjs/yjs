@@ -92,7 +92,6 @@ export class DeleteStore extends Tree {
   }
 }
 
-
 /**
  * Stringifies a message-encoded Delete Set.
  *

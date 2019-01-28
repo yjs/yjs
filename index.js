@@ -55,4 +55,3 @@ registerStruct(10, YXmlText)
 registerStruct(11, YXmlHook)
 registerStruct(12, ItemEmbed)
 registerStruct(13, ItemBinary)
-

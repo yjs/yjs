@@ -572,11 +572,12 @@ export class YText extends YArray {
    * Returns the Delta representation of this YText type.
    *
    * @param {import('../protocols/history.js').HistorySnapshot} [snapshot]
+   * @param {import('../protocols/history.js').HistorySnapshot} [prevSnapshot]
    * @return {Delta} The Delta representation of this type.
    *
    * @public
    */
-  toDelta (snapshot) {
+  toDelta (snapshot, prevSnapshot) {
     let ops = []
     let currentAttributes = new Map()
     let str = ''
@@ -602,9 +603,24 @@ export class YText extends YArray {
       }
     }
     while (n !== null) {
-      if (isVisible(n, snapshot)) {
+      if (isVisible(n, snapshot) || (prevSnapshot !== undefined && isVisible(n, prevSnapshot))) {
         switch (n.constructor) {
           case ItemString:
+            const cur = currentAttributes.get('ychange')
+            if (snapshot !== undefined && !isVisible(n, snapshot)) {
+              if (cur === undefined || cur.user !== n._id.user || cur.state !== 'removed') {
+                packStr()
+                currentAttributes.set('ychange', { user: n._id.user, state: 'removed' })
+              }
+            } else if (prevSnapshot !== undefined && !isVisible(n, prevSnapshot)) {
+              if (cur === undefined || cur.user !== n._id.user || cur.state !== 'added') {
+                packStr()
+                currentAttributes.set('ychange', { user: n._id.user, state: 'added' })
+              }
+            } else if (cur !== undefined) {
+              packStr()
+              currentAttributes.delete('ychange')
+            }
             str += n._content
             break
           case ItemFormat:
