@@ -1,6 +1,6 @@
 {
   "name": "yjs",
-  "version": "13.0.0-77",
+  "version": "13.0.0-78",
   "description": "A ",
   "main": "./build/yjs.js",
   "module": "./index.js'",
