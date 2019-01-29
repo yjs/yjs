@@ -61,15 +61,24 @@ const setupWS = (doc, url) => {
   websocket.onclose = () => {
     doc.ws = null
     doc.wsconnected = false
+    // update awareness (all users left)
+    const removed = []
+    doc.getAwarenessInfo().forEach((_, userid) => {
+      removed.push(userid)
+    })
+    doc.awareness = new Map()
+    doc.emit('awareness', {
+      added: [], updated: [], removed
+    })
     doc.emit('status', {
-      status: 'connected'
+      status: 'disconnected'
     })
     setTimeout(setupWS, reconnectTimeout, doc, url)
   }
   websocket.onopen = () => {
     doc.wsconnected = true
     doc.emit('status', {
-      status: 'disconnected'
+      status: 'connected'
     })
     // always send sync step 1 when connected
     const encoder = Y.encoding.createEncoder()
