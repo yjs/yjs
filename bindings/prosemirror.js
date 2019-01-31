@@ -45,7 +45,8 @@ export const prosemirrorPlugin = yXmlFragment => {
           type: yXmlFragment,
           y: yXmlFragment._y,
           binding: null,
-          snapshot: null
+          snapshot: null,
+          isChangeOrigin: false
         }
       },
       apply: (tr, pluginState) => {
@@ -56,6 +57,8 @@ export const prosemirrorPlugin = yXmlFragment => {
             pluginState[key] = change[key]
           }
         }
+        // always set isChangeOrigin. If undefined, this is not change origin.
+        pluginState.isChangeOrigin = change !== undefined && !!change.isChangeOrigin
         if (pluginState.binding !== null) {
           if (change !== undefined && change.snapshot !== undefined) {
             // snapshot changed, rerender next
@@ -376,15 +379,16 @@ export class ProsemirrorBinding {
       transaction.changedTypes.forEach(delStruct)
       transaction.changedParentTypes.forEach(delStruct)
       const fragmentContent = this.type.toArray().map(t => createNodeIfNotExists(t, this.prosemirrorView.state.schema, this.mapping)).filter(n => n !== null)
-      const tr = this.prosemirrorView.state.tr.replace(0, this.prosemirrorView.state.doc.content.size, new PModel.Slice(new PModel.Fragment(fragmentContent), 0, 0))
+      let tr = this.prosemirrorView.state.tr.replace(0, this.prosemirrorView.state.doc.content.size, new PModel.Slice(new PModel.Fragment(fragmentContent), 0, 0))
       const relSel = this._relSelection
       if (relSel !== null && relSel.anchor !== null && relSel.head !== null) {
         const anchor = relativePositionToAbsolutePosition(this.type, relSel.anchor, this.mapping)
         const head = relativePositionToAbsolutePosition(this.type, relSel.head, this.mapping)
         if (anchor !== null && head !== null) {
-          tr.setSelection(TextSelection.create(tr.doc, anchor, head))
+          tr = tr.setSelection(TextSelection.create(tr.doc, anchor, head))
         }
       }
+      tr = tr.setMeta(prosemirrorPluginKey, { isChangeOrigin: true })
       this.prosemirrorView.dispatch(tr)
     })
   }
