@@ -1,11 +1,11 @@
 
-import {Plugin} from 'prosemirror-state'
+import { Plugin } from 'prosemirror-state'
 import crel from 'crel'
-import * as Y from '../index.js'
-import { prosemirrorPluginKey } from '../bindings/prosemirror.js'
-import * as encoding from '../lib/encoding.js'
-import * as decoding from '../lib/decoding.js'
-import * as historyProtocol from '../protocols/history.js'
+import * as Y from '../src/index.js'
+import { prosemirrorPluginKey } from 'y-prosemirror'
+import * as encoding from 'funlib/encoding.js'
+import * as decoding from 'funlib/decoding.js'
+import * as historyProtocol from 'y-protocols/history.js'
 
 const niceColors = ['#3cb44b', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#008080', '#9a6324', '#800000', '#808000', '#000075', '#808080']
 

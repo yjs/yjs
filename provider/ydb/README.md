@@ -1,1 +1,0 @@
-* Host should discard message when confNumber is older than expected

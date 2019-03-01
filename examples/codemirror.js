@@ -1,6 +1,6 @@
-import * as Y from '../index.js'
-import { WebsocketProvider } from '../provider/websocket.js'
-import { CodeMirrorBinding } from '../bindings/codemirror.js'
+import * as Y from 'yjs'
+import { WebsocketProvider } from 'y-websocket'
+import { CodeMirrorBinding } from 'y-codemirror'
 
 import * as conf from './exampleConfig.js'
 

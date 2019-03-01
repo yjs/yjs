@@ -1,6 +1,6 @@
-import * as Y from '../index.js'
-import { WebsocketProvider } from '../provider/websocket.js'
-import { TextareaBinding } from '../bindings/textarea.js'
+import * as Y from 'yjs'
+import { WebsocketProvider } from 'y-websocket'
+import { TextareaBinding } from 'y-textarea'
 
 import * as conf from './exampleConfig.js'
 

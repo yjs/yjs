@@ -1,6 +1,6 @@
-import * as Y from '../index.js'
-import { WebsocketProvider } from '../provider/websocket.js'
-import { QuillBinding } from '../bindings/quill.js'
+import * as Y from '../src/index.js'
+import { WebsocketProvider } from 'y-websocket'
+import { QuillBinding } from 'y-quill'
 
 import * as conf from './exampleConfig.js'
 

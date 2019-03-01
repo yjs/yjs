@@ -1,7 +1,5 @@
 import { initArrays, compareUsers } from './helper.js'
-import { test, proxyConsole } from 'cutest'
-
-proxyConsole()
+import { test } from 'cutest'
 
 test('basic insert delete', async function text0 (t) {
   let { users, text0 } = await initArrays(t, { users: 2 })
@@ -47,7 +45,7 @@ test('basic format', async function text1 (t) {
   t.assert(text0.toString() === 'b', 'Basic delete works (position 1)')
   t.compare(text0.toDelta(), [{ insert: 'b', attributes: { bold: true } }])
   t.compare(delta, [{ retain: 1 }, { delete: 1 }])
-  text0.insert(0, 'z', {bold: true})
+  text0.insert(0, 'z', { bold: true })
   t.assert(text0.toString() === 'zb')
   t.compare(text0.toDelta(), [{ insert: 'zb', attributes: { bold: true } }])
   t.compare(delta, [{ insert: 'z', attributes: { bold: true } }])

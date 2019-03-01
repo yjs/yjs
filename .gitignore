@@ -1,8 +1,4 @@
 node_modules
-bower_components
-docs
-/y.*
-/examples_all/*/index.dist.*
+dist
 .vscode
-.yjsPersisted
-build
+./docs

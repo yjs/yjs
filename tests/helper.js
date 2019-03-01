@@ -1,19 +1,19 @@
 
-import * as Y from '../index.js'
-import { ItemJSON } from '../structs/ItemJSON.js'
-import { ItemString } from '../structs/ItemString.js'
-import { defragmentItemContent } from '../utils/defragmentItemContent.js'
+import * as Y from '../src/index.js'
+import { ItemJSON } from '../src/structs/ItemJSON.js'
+import { ItemString } from '../src/structs/ItemString.js'
+import { defragmentItemContent } from '../src/utils/defragmentItemContent.js'
 import Quill from 'quill'
-import { GC } from '../structs/GC.js'
-import * as random from '../lib/prng/prng.js'
-import * as syncProtocol from '../protocols/sync.js'
-import * as encoding from '../lib/encoding.js'
-import * as decoding from '../lib/decoding.js'
-import { createMutex } from '../lib/mutex.js'
-import { QuillBinding } from '../bindings/quill.js'
-import { DomBinding } from '../bindings/dom/DomBinding.js'
+import { GC } from '../src/structs/GC.js'
+import * as random from 'funlib/prng.js'
+import * as syncProtocol from 'y-protocols/sync.js'
+import * as encoding from 'funlib/encoding.js'
+import * as decoding from 'funlib/decoding.js'
+import { createMutex } from 'funlib/mutex.js'
+import { QuillBinding } from 'y-quill'
+import { DomBinding } from 'y-dom'
 
-export * from '../index.js'
+export * from '../src/index.js'
 
 /**
  * @param {TestYInstance} y

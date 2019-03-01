@@ -1,7 +1,7 @@
 import { initArrays, compareUsers, applyRandomTests } from './helper.js'
-import * as Y from '../index.js'
+import * as Y from '../src/index.js'
 import { test, proxyConsole } from 'cutest'
-import * as random from '../lib/prng/prng.js'
+import * as random from 'funlib/prng/prng.js'
 
 proxyConsole()
 test('basic spec', async function array0 (t) {
@@ -213,13 +213,13 @@ test('should correctly iterate an array containing types', async function iterat
   const y = new Y.Y()
   const arr = y.define('arr', Y.Array)
   const numItems = 10
-  for(let i = 0; i < numItems; i++) {
+  for (let i = 0; i < numItems; i++) {
     const map = new Y.Map()
     map.set('value', i)
     arr.push([map])
   }
   let cnt = 0
-  for(let item of arr) {
+  for (let item of arr) {
     t.assert(item.get('value') === cnt++, 'value is correct')
   }
   y.destroy()
