@@ -6,14 +6,14 @@
   "module": "./dist/yjs.mjs'",
   "sideEffects": false,
   "scripts": {
-    "test": "npm run lint",
-    "dist": "rm -rf build examples/build && PRODUCTION=1 rollup -c",
+    "test": "npm run lint && npm run dist && node ./dist/tests.js",
+    "dist": "rm -rf dist examples/build && PRODUCTION=1 rollup -c",
     "watch": "rollup -wc",
-    "debug": "concurrently 'npm run watch' 'cutest-serve build/y.test.js -o'",
+    "debug": "concurrently 'npm run watch' 'cutest-serve dist/tests.js -o'",
     "lint": "standard",
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.v13.md --package ./package.json || true",
     "serve-docs": "npm run docs && serve ./docs/",
-    "postversion": "npm run build",
+    "postversion": "npm run dist",
     "websocket-server": "node ./provider/websocket/server.js",
     "now-start": "npm run websocket-server"
   },
