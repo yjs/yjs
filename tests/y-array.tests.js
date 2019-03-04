@@ -1,15 +1,11 @@
-import { initArrays, compareUsers, applyRandomTests } from './helper.js'
+import { init, compare } from './testHelper.js'
 import * as Y from '../src/index.js'
-import { test, proxyConsole } from 'cutest'
-import * as random from 'funlib/prng/prng.js'
+import * as t from 'funlib/testing.js'
 
-proxyConsole()
-test('basic spec', async function array0 (t) {
-  let { users, array0 } = await initArrays(t, { users: 2 })
-
+export const testDeleteInsert = tc => {
+  let { users, array0 } = init(tc, { users: 2 })
   array0.delete(0, 0)
   t.assert(true, 'Does not throw when deleting zero elements with position 0')
-
   let throwInvalidPosition = false
   try {
     array0.delete(1, 1)
@@ -17,13 +13,13 @@ test('basic spec', async function array0 (t) {
     throwInvalidPosition = true
   }
   t.assert(throwInvalidPosition, 'Throws when deleting with an invalid position')
-
   array0.insert(0, ['A'])
   array0.delete(1, 0)
   t.assert(true, 'Does not throw when deleting zero elements with valid position 1')
+  compare(users)
+}
 
-  await compareUsers(t, users)
-})
+/*
 
 test('insert three elements, try re-get property', async function array1 (t) {
   var { testConnector, users, array0, array1 } = initArrays(t, { users: 2 })
@@ -333,3 +329,4 @@ test('y-array: Random tests (1000)', async function randomArray1000 (t) {
 test('y-array: Random tests (1800)', async function randomArray1800 (t) {
   await applyRandomTests(t, arrayTransactions, 2000)
 })
+*/

@@ -21,7 +21,7 @@ export { YXmlElement as XmlElement, YXmlFragment as XmlFragment } from './types/
 
 export { getRelativePosition, fromRelativePosition, equal as equalRelativePosition } from './utils/relativePosition.js'
 
-export { ID, createID, RootFakeUserID } from './utils/ID.js'
+export { ID, createID, RootFakeUserID, RootID } from './utils/ID.js'
 export { DeleteStore, DSNode } from './utils/DeleteStore.js'
 export { deleteItemRange } from './utils/structManipulation.js'
 export { integrateRemoteStruct, integrateRemoteStructs } from './utils/integrateRemoteStructs.js'

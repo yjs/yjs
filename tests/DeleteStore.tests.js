@@ -51,37 +51,36 @@ export const testDeleteStore = tc => {
   t.compareArrays(dsToArray(ds), [null, 1, 1, 1, 1, 1])
   ds.mark(ID.createID(0, 0), 3, false)
   t.compareArrays(dsToArray(ds), [0, 0, 0, 1, 1, 1])
+}
 
-  t.describe('Random tests')
+export const testRepeatDeleteStoreTests = tc => {
   const gen = tc.prng
-  for (let i = 0; i < tc.repititions; i++) {
-    const ds = new DeleteStore()
-    const dsArray = []
-    for (let i = 0; i < 200; i++) {
-      const pos = prng.int32(gen, 0, 10)
-      const len = prng.int32(gen, 0, 4)
-      const gc = prng.bool(gen)
-      ds.mark(ID.createID(0, pos), len, gc)
-      for (let j = 0; j < len; j++) {
-        dsArray[pos + j] = gc ? 1 : 0
-      }
+  const ds = new DeleteStore()
+  const dsArray = []
+  for (let i = 0; i < 200; i++) {
+    const pos = prng.int32(gen, 0, 10)
+    const len = prng.int32(gen, 0, 4)
+    const gc = prng.bool(gen)
+    ds.mark(ID.createID(0, pos), len, gc)
+    for (let j = 0; j < len; j++) {
+      dsArray[pos + j] = gc ? 1 : 0
     }
-    // fill empty fields
-    for (let i = 0; i < dsArray.length; i++) {
-      if (dsArray[i] !== 0 && dsArray[i] !== 1) {
-        dsArray[i] = null
-      }
-    }
-    t.compareArrays(dsToArray(ds), dsArray, 'Expected DS result')
-    let size = 0
-    let lastEl = null
-    for (let i = 0; i < dsArray.length; i++) {
-      let el = dsArray[i]
-      if (lastEl !== el && el !== null) {
-        size++
-      }
-      lastEl = el
-    }
-    t.assert(size === ds.length, 'DS sizes match')
   }
+  // fill empty fields
+  for (let i = 0; i < dsArray.length; i++) {
+    if (dsArray[i] !== 0 && dsArray[i] !== 1) {
+      dsArray[i] = null
+    }
+  }
+  t.compareArrays(dsToArray(ds), dsArray, 'Expected DS result')
+  let size = 0
+  let lastEl = null
+  for (let i = 0; i < dsArray.length; i++) {
+    let el = dsArray[i]
+    if (lastEl !== el && el !== null) {
+      size++
+    }
+    lastEl = el
+  }
+  t.assert(size === ds.length, 'DS sizes match')
 }
