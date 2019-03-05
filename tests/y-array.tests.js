@@ -1,57 +1,51 @@
-import { init, compare } from './testHelper.js'
+import { init, compare, applyRandomTests } from './testHelper.js'
 import * as Y from '../src/index.js'
 import * as t from 'funlib/testing.js'
+import * as prng from 'funlib/prng.js'
 
 export const testDeleteInsert = tc => {
-  let { users, array0 } = init(tc, { users: 2 })
+  const { users, array0 } = init(tc, { users: 2 })
   array0.delete(0, 0)
   t.assert(true, 'Does not throw when deleting zero elements with position 0')
-  let throwInvalidPosition = false
-  try {
+  t.fails(() => {
     array0.delete(1, 1)
-  } catch (e) {
-    throwInvalidPosition = true
-  }
-  t.assert(throwInvalidPosition, 'Throws when deleting with an invalid position')
+  }, 'Throws when deleting with an invalid position')
   array0.insert(0, ['A'])
   array0.delete(1, 0)
   t.assert(true, 'Does not throw when deleting zero elements with valid position 1')
   compare(users)
 }
 
-/*
-
-test('insert three elements, try re-get property', async function array1 (t) {
-  var { testConnector, users, array0, array1 } = initArrays(t, { users: 2 })
+export const testInsertThreeElementsTryRegetProperty = tc => {
+  const { testConnector, users, array0, array1 } = init(tc, { users: 2 })
   array0.insert(0, [1, 2, 3])
   t.compare(array0.toJSON(), [1, 2, 3], '.toJSON() works')
   testConnector.flushAllMessages()
   t.compare(array1.toJSON(), [1, 2, 3], '.toJSON() works after sync')
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('concurrent insert (handle three conflicts)', async function array2 (t) {
-  var { users, array0, array1, array2 } = await initArrays(t, { users: 3 })
+export const testConcurrentInsertWithThreeConflicts = tc => {
+  var { users, array0, array1, array2 } = init(tc, { users: 3 })
   array0.insert(0, [0])
   array1.insert(0, [1])
   array2.insert(0, [2])
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('concurrent insert&delete (handle three conflicts)', async function array3 (t) {
-  var { testConnector, users, array0, array1, array2 } = await initArrays(t, { users: 3 })
+export const testConcurrentInsertDeleteWithThreeConflicts = tc => {
+  const { testConnector, users, array0, array1, array2 } = init(tc, { users: 3 })
   array0.insert(0, ['x', 'y', 'z'])
   testConnector.flushAllMessages()
   array0.insert(1, [0])
   array1.delete(0)
   array1.delete(1, 1)
   array2.insert(1, [2])
+  compare(users)
+}
 
-  await compareUsers(t, users)
-})
-
-test('insertions work in late sync', async function array4 (t) {
-  var { testConnector, users, array0, array1, array2 } = await initArrays(t, { users: 3 })
+export const testInsertionsInLateSync = tc => {
+  const { testConnector, users, array0, array1, array2 } = init(tc, { users: 3 })
   array0.insert(0, ['x', 'y'])
   testConnector.flushAllMessages()
   users[1].disconnect()
@@ -59,14 +53,14 @@ test('insertions work in late sync', async function array4 (t) {
   array0.insert(1, ['user0'])
   array1.insert(1, ['user1'])
   array2.insert(1, ['user2'])
-  await users[1].connect()
-  await users[2].connect()
+  users[1].connect()
+  users[2].connect()
   testConnector.flushAllMessages()
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('disconnect really prevents sending messages', async function array5 (t) {
-  var { testConnector, users, array0, array1 } = await initArrays(t, { users: 3 })
+export const testDisconnectReallyPreventsSendingMessages = tc => {
+  var { testConnector, users, array0, array1 } = init(tc, { users: 3 })
   array0.insert(0, ['x', 'y'])
   testConnector.flushAllMessages()
   users[1].disconnect()
@@ -75,33 +69,33 @@ test('disconnect really prevents sending messages', async function array5 (t) {
   array1.insert(1, ['user1'])
   t.compare(array0.toJSON(), ['x', 'user0', 'y'])
   t.compare(array1.toJSON(), ['x', 'user1', 'y'])
-  await users[1].connect()
-  await users[2].connect()
-  await compareUsers(t, users)
-})
+  users[1].connect()
+  users[2].connect()
+  compare(users)
+}
 
-test('deletions in late sync', async function array6 (t) {
-  var { testConnector, users, array0, array1 } = await initArrays(t, { users: 2 })
+export const testDeletionsInLateSync = tc => {
+  const { testConnector, users, array0, array1 } = init(tc, { users: 2 })
   array0.insert(0, ['x', 'y'])
   testConnector.flushAllMessages()
-  await users[1].disconnect()
+  users[1].disconnect()
   array1.delete(1, 1)
   array0.delete(0, 2)
-  await users[1].connect()
-  await compareUsers(t, users)
-})
+  users[1].connect()
+  compare(users)
+}
 
-test('insert, then marge delete on sync', async function array7 (t) {
-  var { testConnector, users, array0, array1 } = await initArrays(t, { users: 2 })
+export const testInsertThenMergeDeleteOnSync = tc => {
+  const { testConnector, users, array0, array1 } = init(tc, { users: 2 })
   array0.insert(0, ['x', 'y', 'z'])
   testConnector.flushAllMessages()
   users[0].disconnect()
   array1.delete(0, 3)
   users[0].connect()
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-function compareEvent (t, is, should) {
+const compareEvent = (is, should) => {
   for (var key in should) {
     t.assert(
       should[key] === is[key] ||
@@ -111,101 +105,107 @@ function compareEvent (t, is, should) {
   }
 }
 
-test('insert & delete events', async function array8 (t) {
-  var { array0, users } = await initArrays(t, { users: 2 })
-  var event
+export const testInsertAndDeleteEvents = tc => {
+  const { array0, users } = init(tc, { users: 2 })
+  let event
   array0.observe(e => {
     event = e
   })
   array0.insert(0, [0, 1, 2])
-  compareEvent(t, event, {
+  compareEvent(event, {
     remote: false
   })
   array0.delete(0)
-  compareEvent(t, event, {
+  compareEvent(event, {
     remote: false
   })
   array0.delete(0, 2)
-  compareEvent(t, event, {
+  compareEvent(event, {
     remote: false
   })
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('insert & delete events for types', async function array9 (t) {
-  var { array0, users } = await initArrays(t, { users: 2 })
-  var event
+export const testInsertAndDeleteEventsForTypes = tc => {
+  const { array0, users } = init(tc, { users: 2 })
+  let event
   array0.observe(e => {
     event = e
   })
   array0.insert(0, [Y.Array])
-  compareEvent(t, event, {
+  compareEvent(event, {
     remote: false
   })
   array0.delete(0)
-  compareEvent(t, event, {
+  compareEvent(event, {
     remote: false
   })
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('insert & delete events for types (2)', async function array10 (t) {
-  var { array0, users } = await initArrays(t, { users: 2 })
-  var events = []
+export const testInsertAndDeleteEventsForTypes2 = tc => {
+  const { array0, users } = init(tc, { users: 2 })
+  let events = []
   array0.observe(e => {
     events.push(e)
   })
   array0.insert(0, ['hi', Y.Map])
-  compareEvent(t, events[0], {
+  compareEvent(events[0], {
     remote: false
   })
   t.assert(events.length === 1, 'Event is triggered exactly once for insertion of two elements')
   array0.delete(1)
-  compareEvent(t, events[1], {
+  compareEvent(events[1], {
     remote: false
   })
   t.assert(events.length === 2, 'Event is triggered exactly once for deletion')
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('garbage collector', async function gc1 (t) {
-  var { testConnector, users, array0 } = await initArrays(t, { users: 3 })
+export const testGarbageCollector = tc => {
+  const { testConnector, users, array0 } = init(tc, { users: 3 })
   array0.insert(0, ['x', 'y', 'z'])
   testConnector.flushAllMessages()
   users[0].disconnect()
   array0.delete(0, 3)
-  await users[0].connect()
+  users[0].connect()
   testConnector.flushAllMessages()
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('event target is set correctly (local)', async function array11 (t) {
-  let { array0, users } = await initArrays(t, { users: 3 })
-  var event
+export const testEventTargetIsSetCorrectlyOnLocal = tc => {
+  const { array0, users } = init(tc, { users: 3 })
+  /**
+   * @type {any}
+   */
+  let event
   array0.observe(e => {
     event = e
   })
   array0.insert(0, ['stuff'])
   t.assert(event.target === array0, '"target" property is set correctly')
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('event target is set correctly (remote user)', async function array12 (t) {
-  let { testConnector, array0, array1, users } = await initArrays(t, { users: 3 })
-  var event
+export const testEventTargetIsSetCorrectlyOnRemote = tc => {
+  const { testConnector, array0, array1, users } = init(tc, { users: 3 })
+  /**
+   * @type {any}
+   */
+  let event
   array0.observe(e => {
     event = e
   })
   array1.insert(0, ['stuff'])
   testConnector.flushAllMessages()
-  compareEvent(t, event, {
+  compareEvent(event, {
     remote: true
   })
   t.assert(event.target === array0, '"target" property is set correctly')
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('should correctly iterate an array containing types', async function iterate1 (t) {
+export const testIteratingArrayContainingTypes = tc => {
   const y = new Y.Y()
   const arr = y.define('arr', Y.Array)
   const numItems = 10
@@ -219,53 +219,51 @@ test('should correctly iterate an array containing types', async function iterat
     t.assert(item.get('value') === cnt++, 'value is correct')
   }
   y.destroy()
-})
-
-var _uniqueNumber = 0
-function getUniqueNumber () {
-  return _uniqueNumber++
 }
 
-var arrayTransactions = [
-  function insert (t, user, prng) {
+let _uniqueNumber = 0
+const getUniqueNumber = () => _uniqueNumber++
+
+let arrayTransactions = [
+  function insert (t, user, gen) {
     const yarray = user.define('array', Y.Array)
     var uniqueNumber = getUniqueNumber()
     var content = []
-    var len = random.int32(prng, 1, 4)
+    var len = prng.int32(gen, 1, 4)
     for (var i = 0; i < len; i++) {
       content.push(uniqueNumber)
     }
-    var pos = random.int32(prng, 0, yarray.length)
+    var pos = prng.int32(gen, 0, yarray.length)
     yarray.insert(pos, content)
   },
-  function insertTypeArray (t, user, prng) {
+  function insertTypeArray (t, user, gen) {
     const yarray = user.define('array', Y.Array)
-    var pos = random.int32(prng, 0, yarray.length)
+    var pos = prng.int32(gen, 0, yarray.length)
     yarray.insert(pos, [Y.Array])
     var array2 = yarray.get(pos)
     array2.insert(0, [1, 2, 3, 4])
   },
-  function insertTypeMap (t, user, prng) {
+  function insertTypeMap (t, user, gen) {
     const yarray = user.define('array', Y.Array)
-    var pos = random.int32(prng, 0, yarray.length)
+    var pos = prng.int32(gen, 0, yarray.length)
     yarray.insert(pos, [Y.Map])
     var map = yarray.get(pos)
     map.set('someprop', 42)
     map.set('someprop', 43)
     map.set('someprop', 44)
   },
-  function _delete (t, user, prng) {
+  function _delete (t, user, gen) {
     const yarray = user.define('array', Y.Array)
     var length = yarray.length
     if (length > 0) {
-      var somePos = random.int32(prng, 0, length - 1)
-      var delLength = random.int32(prng, 1, Math.min(2, length - somePos))
+      var somePos = prng.int32(gen, 0, length - 1)
+      var delLength = prng.int32(gen, 1, Math.min(2, length - somePos))
       if (yarray instanceof Y.Array) {
-        if (random.bool(prng)) {
+        if (prng.bool(gen)) {
           var type = yarray.get(somePos)
           if (type.length > 0) {
-            somePos = random.int32(prng, 0, type.length - 1)
-            delLength = random.int32(prng, 0, Math.min(2, type.length - somePos))
+            somePos = prng.int32(gen, 0, type.length - 1)
+            delLength = prng.int32(gen, 0, Math.min(2, type.length - somePos))
             type.delete(somePos, delLength)
           }
         } else {
@@ -277,6 +275,10 @@ var arrayTransactions = [
     }
   }
 ]
+
+export const testRepeatGeneratingYarrayTests20 = tc => applyRandomTests(tc, arrayTransactions, 20)
+
+/*
 
 test('y-array: Random tests (20)', async function randomArray20 (t) {
   await applyRandomTests(t, arrayTransactions, 20)

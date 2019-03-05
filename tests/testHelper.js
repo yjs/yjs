@@ -7,7 +7,6 @@ import * as decoding from 'funlib/decoding.js'
 import * as syncProtocol from 'y-protocols/sync.js'
 import { defragmentItemContent } from '../src/utils/defragmentItemContent.js'
 
-
 /**
  * @param {TestYInstance} y
  * @param {Y.Transaction} transaction
@@ -245,7 +244,7 @@ export const init = (tc, { users = 5 } = {}) => {
  */
 const getDeleteSet = y => {
   /**
-   * @type {Object<number, Array<[number, number, boolean]>}
+   * @type {Object<number, Array<[number, number, boolean]>>}
    */
   var ds = {}
   y.ds.iterate(null, null, n => {
@@ -348,4 +347,34 @@ export const compare = users => {
     }
   })
   users.map(u => u.destroy())
+}
+
+export const applyRandomTests = (tc, mods, iterations) => {
+  const gen = tc.prng
+  const result = init({ users: 5, prng: gen })
+  const { testConnector, users } = result
+  for (var i = 0; i < iterations; i++) {
+    if (prng.int32(gen, 0, 100) <= 2) {
+      // 2% chance to disconnect/reconnect a random user
+      if (prng.bool(gen)) {
+        testConnector.disconnectRandom()
+      } else {
+        testConnector.reconnectRandom()
+      }
+    } else if (prng.int32(gen, 0, 100) <= 1) {
+      // 1% chance to flush all & garbagecollect
+      // TODO: We do not gc all users as this does not work yet
+      // await garbageCollectUsers(t, users)
+      testConnector.flushAllMessages()
+      // await users[0].db.emptyGarbageCollector() // TODO: reintroduce GC tests!
+    } else if (prng.int32(gen, 0, 100) <= 50) {
+      // 50% chance to flush a random message
+      testConnector.flushRandomMessage()
+    }
+    let user = prng.oneOf(gen, users)
+    var test = prng.oneOf(gen, mods)
+    test(t, user, gen)
+  }
+  compare(users)
+  return result
 }
