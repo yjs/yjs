@@ -276,59 +276,54 @@ let arrayTransactions = [
   }
 ]
 
-export const testRepeatGeneratingYarrayTests20 = tc => applyRandomTests(tc, arrayTransactions, 20)
+export const testRepeatGeneratingYarrayTests20 = tc => {
+  applyRandomTests(tc, arrayTransactions, 20)
+}
 
-/*
+export const testRepeatGeneratingYarrayTests40 = tc => {
+  applyRandomTests(tc, arrayTransactions, 40)
+}
 
-test('y-array: Random tests (20)', async function randomArray20 (t) {
-  await applyRandomTests(t, arrayTransactions, 20)
-})
+export const testRepeatGeneratingYarrayTests42 = tc => {
+  applyRandomTests(tc, arrayTransactions, 42)
+}
 
-test('y-array: Random tests (42)', async function randomArray42 (t) {
-  await applyRandomTests(t, arrayTransactions, 42)
-})
+export const testRepeatGeneratingYarrayTests43 = tc => {
+  applyRandomTests(tc, arrayTransactions, 43)
+}
 
-test('y-array: Random tests (43)', async function randomArray43 (t) {
-  await applyRandomTests(t, arrayTransactions, 43)
-})
+export const testRepeatGeneratingYarrayTests44 = tc => {
+  applyRandomTests(tc, arrayTransactions, 44)
+}
 
-test('y-array: Random tests (44)', async function randomArray44 (t) {
-  await applyRandomTests(t, arrayTransactions, 44)
-})
+export const testRepeatGeneratingYarrayTests45 = tc => {
+  applyRandomTests(tc, arrayTransactions, 45)
+}
 
-test('y-array: Random tests (45)', async function randomArray45 (t) {
-  await applyRandomTests(t, arrayTransactions, 45)
-})
+export const testRepeatGeneratingYarrayTests46 = tc => {
+  applyRandomTests(tc, arrayTransactions, 46)
+}
 
-test('y-array: Random tests (46)', async function randomArray46 (t) {
-  await applyRandomTests(t, arrayTransactions, 46)
-})
+export const testRepeatGeneratingYarrayTests300 = tc => {
+  applyRandomTests(tc, arrayTransactions, 300)
+}
 
-test('y-array: Random tests (47)', async function randomArray47 (t) {
-  await applyRandomTests(t, arrayTransactions, 47)
-})
+export const testRepeatGeneratingYarrayTests400 = tc => {
+  applyRandomTests(tc, arrayTransactions, 400)
+}
 
-test('y-array: Random tests (300)', async function randomArray300 (t) {
-  await applyRandomTests(t, arrayTransactions, 200)
-})
+export const testRepeatGeneratingYarrayTests500 = tc => {
+  applyRandomTests(tc, arrayTransactions, 500)
+}
 
-test('y-array: Random tests (500)', async function randomArray500 (t) {
-  await applyRandomTests(t, arrayTransactions, 300)
-})
+export const testRepeatGeneratingYarrayTests600 = tc => {
+  applyRandomTests(tc, arrayTransactions, 600)
+}
 
-test('y-array: Random tests (600)', async function randomArray600 (t) {
-  await applyRandomTests(t, arrayTransactions, 400)
-})
+export const testRepeatGeneratingYarrayTests1000 = tc => {
+  applyRandomTests(tc, arrayTransactions, 1000)
+}
 
-test('y-array: Random tests (700)', async function randomArray700 (t) {
-  await applyRandomTests(t, arrayTransactions, 500)
-})
-
-test('y-array: Random tests (1000)', async function randomArray1000 (t) {
-  await applyRandomTests(t, arrayTransactions, 1000)
-})
-
-test('y-array: Random tests (1800)', async function randomArray1800 (t) {
-  await applyRandomTests(t, arrayTransactions, 2000)
-})
-*/
+export const testRepeatGeneratingYarrayTests1800 = tc => {
+  applyRandomTests(tc, arrayTransactions, 1800)
+}

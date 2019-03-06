@@ -108,7 +108,7 @@ export class TestYInstance extends Y.Y {
 /**
  * Keeps track of TestYInstances.
  *
- * The TestYInstances add/remove themselves from the list of connections maintained in this object.
+ * The TestYInstances add/remove themselves from the list of connections maiained in this object.
  * I think it makes sense. Deal with it.
  */
 export class TestConnector {
@@ -330,7 +330,7 @@ export const compare = users => {
     return data
   })
   for (var i = 0; i < data.length - 1; i++) {
-    t.describe(`Comparing user${i} with user${i + 1}`)
+    // t.describe(`Comparing user${i} with user${i + 1}`)
     t.compare(userArrayValues[i].length, users[i].get('array').length, 'array length correctly computed')
     t.compare(userArrayValues[i], userArrayValues[i + 1], 'array types')
     t.compare(userMapValues[i], userMapValues[i + 1], 'map types')

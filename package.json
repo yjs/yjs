@@ -9,13 +9,13 @@
     "test": "npm run lint && npm run dist && node ./dist/tests.js",
     "dist": "rm -rf dist examples/build && PRODUCTION=1 rollup -c",
     "watch": "rollup -wc",
-    "debug": "concurrently 'npm run watch' 'cutest-serve dist/tests.js -o'",
     "lint": "standard",
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.v13.md --package ./package.json || true",
     "serve-docs": "npm run docs && serve ./docs/",
     "postversion": "npm run dist",
-    "websocket-server": "node ./provider/websocket/server.js",
-    "now-start": "npm run websocket-server"
+    "debug": "concurrently 'live-server --port=3443 --entry-file=test.html' 'npm run watch'",
+    "trace-deopt": "clear && rollup -c  && node --trace-deopt dist/test.js",
+    "trace-opt": "clear && rollup -c  && node --trace-opt dist/test.js"
   },
   "files": [
     "dist/*",
@@ -65,6 +65,7 @@
     "esdoc-standard-plugin": "^1.0.0",
     "esm": "^3.2.6",
     "jsdoc": "^3.5.5",
+    "live-server": "^1.2.1",
     "prosemirror-example-setup": "^1.0.1",
     "prosemirror-schema-basic": "^1.0.0",
     "prosemirror-state": "^1.2.2",
