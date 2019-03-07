@@ -154,7 +154,7 @@ export class TestConnector {
       }
       const encoder = encoding.createEncoder()
       receiver.mMux(() => {
-        console.log('receive (' + sender.userID + '->' + receiver.userID + '):\n', syncProtocol.stringifySyncMessage(decoding.createDecoder(m), receiver))
+        // console.log('receive (' + sender.userID + '->' + receiver.userID + '):\n', syncProtocol.stringifySyncMessage(decoding.createDecoder(m), receiver))
         // do not publish data created when this function is executed (could be ss2 or update message)
         syncProtocol.readSyncMessage(decoding.createDecoder(m), encoder, receiver)
       })

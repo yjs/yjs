@@ -327,3 +327,7 @@ export const testRepeatGeneratingYarrayTests1000 = tc => {
 export const testRepeatGeneratingYarrayTests1800 = tc => {
   applyRandomTests(tc, arrayTransactions, 1800)
 }
+
+export const testRepeatGeneratingYarrayTests10000 = tc => {
+  applyRandomTests(tc, arrayTransactions, 10000)
+}

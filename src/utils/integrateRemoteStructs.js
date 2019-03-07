@@ -5,7 +5,6 @@
 import { getStruct } from 'y-protocols/sync.js'
 import * as decoding from 'funlib/decoding.js'
 import { GC } from '../structs/GC.js'
-import { Delete } from '../structs/Delete.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line
 import { Item } from '../structs/Item.js' // eslint-disable-line
 
@@ -51,18 +50,7 @@ function _integrateRemoteStructHelper (y, struct) {
           missingStructs.forEach(missingDef => {
             missingDef.missing--
             if (missingDef.missing === 0) {
-              const decoder = missingDef.decoder
-              let oldPos = decoder.pos
-              let missing = missingDef.struct._fromBinary(y, decoder)
-              decoder.pos = oldPos
-              if (missing.length === 0) {
-                y._readyToIntegrate.push(missingDef.struct)
-                // TODO: sorting should be optimized
-                // Sorting because deletes may change the origin of ops
-                y._readyToIntegrate.sort((a, b) => a.constructor === b.constructor ? 0 : (a.constructor === Delete ? 1 : -1))
-              } else {
-                // TODO: throw error here
-              }
+              y._readyToIntegrate.push(missingDef)
             }
           })
           msu.delete(clock)
@@ -88,10 +76,21 @@ export const integrateRemoteStructs = (decoder, y) => {
     let decoderPos = decoder.pos
     let missing = struct._fromBinary(y, decoder)
     if (missing.length === 0) {
-      y._readyToIntegrate.sort((a, b) => a.constructor === b.constructor ? 0 : (a.constructor === Delete ? 1 : -1))
-      while (struct != null) {
+      while (struct !== null) {
         _integrateRemoteStructHelper(y, struct)
-        struct = y._readyToIntegrate.shift()
+        struct = null
+        if (y._readyToIntegrate.length > 0) {
+          const missingDef = y._readyToIntegrate.shift()
+          const decoder = missingDef.decoder
+          let oldPos = decoder.pos
+          let missing = missingDef.struct._fromBinary(y, decoder)
+          decoder.pos = oldPos
+          if (missing.length === 0) {
+            struct = missingDef.struct
+          } else {
+            throw new Error('Missing should be empty')
+          }
+        }
       }
     } else {
       let _decoder = decoding.createDecoder(decoder.arr.buffer)
@@ -126,10 +125,21 @@ export const integrateRemoteStruct = (decoder, y) => {
   let decoderPos = decoder.pos
   let missing = struct._fromBinary(y, decoder)
   if (missing.length === 0) {
-    y._readyToIntegrate.sort((a, b) => a.constructor === b.constructor ? 0 : (a.constructor === Delete ? 1 : -1))
     while (struct != null) {
       _integrateRemoteStructHelper(y, struct)
-      struct = y._readyToIntegrate.shift()
+      struct = null
+      if (y._readyToIntegrate.length > 0) {
+        const missingDef = y._readyToIntegrate.shift()
+        const decoder = missingDef.decoder
+        let oldPos = decoder.pos
+        let missing = missingDef.struct._fromBinary(y, decoder)
+        decoder.pos = oldPos
+        if (missing.length === 0) {
+          struct = missingDef.struct
+        } else {
+          throw new Error('Missing should be empty')
+        }
+      }
     }
   } else {
     let _decoder = decoding.createDecoder(decoder.arr.buffer)
