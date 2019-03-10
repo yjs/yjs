@@ -308,6 +308,8 @@ export const testRepeatGeneratingYarrayTests300 = tc => {
   applyRandomTests(tc, arrayTransactions, 300)
 }
 
+/* TODO: implement something like difficutly in lib0
+
 export const testRepeatGeneratingYarrayTests400 = tc => {
   applyRandomTests(tc, arrayTransactions, 400)
 }
@@ -331,3 +333,4 @@ export const testRepeatGeneratingYarrayTests1800 = tc => {
 export const testRepeatGeneratingYarrayTests10000 = tc => {
   applyRandomTests(tc, arrayTransactions, 10000)
 }
+*/

@@ -1,21 +1,18 @@
-import { initArrays, compareUsers, applyRandomTests } from './helper.js'
+import { init, compare } from './testHelper.js'
 import * as Y from '../src/index.js'
-import { test, proxyConsole } from 'cutest'
-import * as random from 'lib0/prng/prng.js'
+import * as t from 'lib0/testing.js'
 
-proxyConsole()
-
-test('basic map tests', async function map0 (t) {
-  let { testConnector, users, map0, map1, map2 } = await initArrays(t, { users: 3 })
+export const testBasicMapTests = tc => {
+  const { testConnector, users, map0, map1, map2 } = init(tc, { users: 3 })
   users[2].disconnect()
 
   map0.set('number', 1)
   map0.set('string', 'hello Y')
   map0.set('object', { key: { key2: 'value' } })
   map0.set('y-map', new Y.Map())
-  let map = map0.get('y-map')
+  const map = map0.get('y-map')
   map.set('y-array', new Y.Array())
-  let array = map.get('y-array')
+  const array = map.get('y-array')
   array.insert(0, [0])
   array.insert(0, [-1])
 
@@ -24,7 +21,7 @@ test('basic map tests', async function map0 (t) {
   t.compare(map0.get('object'), { key: { key2: 'value' } }, 'client 0 computed the change (object)')
   t.assert(map0.get('y-map').get('y-array').get(0) === -1, 'client 0 computed the change (type)')
 
-  await users[2].connect()
+  users[2].connect()
   testConnector.flushAllMessages()
 
   t.assert(map1.get('number') === 1, 'client 1 received the update (number)')
@@ -37,11 +34,11 @@ test('basic map tests', async function map0 (t) {
   t.assert(map2.get('string') === 'hello Y', 'client 2 received the update (string) - was disconnected')
   t.compare(map2.get('object'), { key: { key2: 'value' } }, 'client 2 received the update (object) - was disconnected')
   t.assert(map2.get('y-map').get('y-array').get(0) === -1, 'client 2 received the update (type) - was disconnected')
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('Basic get&set of Map property (converge via sync)', async function map1 (t) {
-  let { testConnector, users, map0 } = await initArrays(t, { users: 2 })
+export const testGetAndSetOfMapProperty = tc => {
+  const { testConnector, users, map0 } = init(tc, { users: 2 })
   map0.set('stuff', 'stuffy')
   map0.set('undefined', undefined)
   map0.set('null', null)
@@ -50,32 +47,32 @@ test('Basic get&set of Map property (converge via sync)', async function map1 (t
   testConnector.flushAllMessages()
 
   for (let user of users) {
-    var u = user.define('map', Y.Map)
+    const u = user.define('map', Y.Map)
     t.compare(u.get('stuff'), 'stuffy')
     t.assert(u.get('undefined') === undefined, 'undefined')
     t.compare(u.get('null'), null, 'null')
   }
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('Map can set custom types (Map)', async function map2 (t) {
-  let { users, map0 } = await initArrays(t, { users: 2 })
-  var map = map0.set('Map', new Y.Map())
+export const testYmapSetsYmap = tc => {
+  const { users, map0 } = init(tc, { users: 2 })
+  const map = map0.set('Map', new Y.Map())
+  t.assert(map0.get('Map') === map)
   map.set('one', 1)
-  map = map0.get('Map')
   t.compare(map.get('one'), 1)
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('Map can set custom types (Map) - get also returns the type', async function map3 (t) {
-  let { users, map0 } = await initArrays(t, { users: 2 })
-  map0.set('Map', new Y.Map())
-  var map = map0.get('Map')
-  map.set('one', 1)
-  map = map0.get('Map')
-  t.compare(map.get('one'), 1)
-  await compareUsers(t, users)
-})
+export const testYmapSetsYarray = tc => {
+  const { users, map0 } = init(tc, { users: 2 })
+  const array = map0.set('Array', new Y.Array())
+  array.insert(0, [1, 2, 3])
+  t.compare(map0.toJSON(), { Array: [1, 2, 3] })
+  compare(users)
+}
+
+/*
 
 test('Map can set custom types (Array)', async function map4 (t) {
   let { users, map0 } = await initArrays(t, { users: 2 })
@@ -176,7 +173,6 @@ test('observePath properties', async function map10 (t) {
   t.compare(map.get('yay'), 4)
   await compareUsers(t, users)
 })
-*/
 
 test('observe deep properties', async function map11 (t) {
   let { testConnector, users, map1, map2, map3 } = await initArrays(t, { users: 4 })
@@ -227,7 +223,7 @@ test('observes using observeDeep', async function map12 (t) {
   await compareUsers(t, users)
 })
 
-/* TODO: Test events in Y.Map
+ TODO: Test events in Y.Map
 function compareEvent (t, is, should) {
   for (var key in should) {
     t.assert(should[key] === is[key])
@@ -297,7 +293,6 @@ test('event has correct value when setting a primitive on a YMap (received from 
   t.compare(event.value, event.target.get(event.name))
   await compareUsers(t, users)
 })
-*/
 
 var mapTransactions = [
   function set (t, user, prng) {
@@ -364,3 +359,4 @@ test('y-map: Random tests (1000)', async function randomMap1000 (t) {
 test('y-map: Random tests (1800)', async function randomMap1800 (t) {
   await applyRandomTests(t, mapTransactions, 1800)
 })
+*/

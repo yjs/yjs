@@ -133,7 +133,7 @@ export class YMap extends Type {
         value = v
       } else if (value instanceof Item) {
         v = value
-      } else if (value.constructor === ArrayBuffer) {
+      } else if (value != null && value.constructor === ArrayBuffer) {
         v = new ItemBinary()
         v._content = value
       } else {

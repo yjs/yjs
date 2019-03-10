@@ -214,6 +214,10 @@ export class TestConnector {
   }
 }
 
+/**
+ * @param {t.TestCase} tc
+ * @param {{users?:number}} conf
+ */
 export const init = (tc, { users = 5 } = {}) => {
   /**
    * @type {Object<string,any>}
