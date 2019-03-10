@@ -1,18 +1,18 @@
 import { init, compare, applyRandomTests } from './testHelper.js'
 import * as Y from '../src/index.js'
-import * as t from 'funlib/testing.js'
-import * as prng from 'funlib/prng.js'
+import * as t from 'lib0/testing.js'
+import * as prng from 'lib0/prng.js'
 
 export const testDeleteInsert = tc => {
   const { users, array0 } = init(tc, { users: 2 })
   array0.delete(0, 0)
-  t.assert(true, 'Does not throw when deleting zero elements with position 0')
+  t.describe('Does not throw when deleting zero elements with position 0')
   t.fails(() => {
     array0.delete(1, 1)
-  }, 'Throws when deleting with an invalid position')
+  })
   array0.insert(0, ['A'])
   array0.delete(1, 0)
-  t.assert(true, 'Does not throw when deleting zero elements with valid position 1')
+  t.describe('Does not throw when deleting zero elements with valid position 1')
   compare(users)
 }
 
@@ -229,23 +229,23 @@ let arrayTransactions = [
     const yarray = user.define('array', Y.Array)
     var uniqueNumber = getUniqueNumber()
     var content = []
-    var len = prng.int32(gen, 1, 4)
+    var len = prng.int31(gen, 1, 4)
     for (var i = 0; i < len; i++) {
       content.push(uniqueNumber)
     }
-    var pos = prng.int32(gen, 0, yarray.length)
+    var pos = prng.int31(gen, 0, yarray.length)
     yarray.insert(pos, content)
   },
   function insertTypeArray (t, user, gen) {
     const yarray = user.define('array', Y.Array)
-    var pos = prng.int32(gen, 0, yarray.length)
+    var pos = prng.int31(gen, 0, yarray.length)
     yarray.insert(pos, [Y.Array])
     var array2 = yarray.get(pos)
     array2.insert(0, [1, 2, 3, 4])
   },
   function insertTypeMap (t, user, gen) {
     const yarray = user.define('array', Y.Array)
-    var pos = prng.int32(gen, 0, yarray.length)
+    var pos = prng.int31(gen, 0, yarray.length)
     yarray.insert(pos, [Y.Map])
     var map = yarray.get(pos)
     map.set('someprop', 42)
@@ -256,14 +256,14 @@ let arrayTransactions = [
     const yarray = user.define('array', Y.Array)
     var length = yarray.length
     if (length > 0) {
-      var somePos = prng.int32(gen, 0, length - 1)
-      var delLength = prng.int32(gen, 1, Math.min(2, length - somePos))
+      var somePos = prng.int31(gen, 0, length - 1)
+      var delLength = prng.int31(gen, 1, Math.min(2, length - somePos))
       if (yarray instanceof Y.Array) {
         if (prng.bool(gen)) {
           var type = yarray.get(somePos)
           if (type.length > 0) {
-            somePos = prng.int32(gen, 0, type.length - 1)
-            delLength = prng.int32(gen, 0, Math.min(2, type.length - somePos))
+            somePos = prng.int31(gen, 0, type.length - 1)
+            delLength = prng.int31(gen, 0, Math.min(2, type.length - somePos))
             type.delete(somePos, delLength)
           }
         } else {

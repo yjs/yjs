@@ -4,8 +4,8 @@
 
 import { Item, splitHelper } from './Item.js'
 import * as stringify from 'y-protocols/utils/structStringify.js'
-import * as encoding from 'funlib/encoding.js'
-import * as decoding from 'funlib/decoding.js'
+import * as encoding from 'lib0/encoding.js'
+import * as decoding from 'lib0/decoding.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line
 
 export class ItemString extends Item {

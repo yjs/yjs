@@ -1,9 +1,9 @@
 import * as Y from '../src/index.js'
-import * as t from 'funlib/testing.js'
-import * as prng from 'funlib/prng.js'
-import { createMutex } from 'funlib/mutex.js'
-import * as encoding from 'funlib/encoding.js'
-import * as decoding from 'funlib/decoding.js'
+import * as t from 'lib0/testing.js'
+import * as prng from 'lib0/prng.js'
+import { createMutex } from 'lib0/mutex.js'
+import * as encoding from 'lib0/encoding.js'
+import * as decoding from 'lib0/decoding.js'
 import * as syncProtocol from 'y-protocols/sync.js'
 import { defragmentItemContent } from '../src/utils/defragmentItemContent.js'
 
@@ -331,21 +331,19 @@ export const compare = users => {
   })
   for (var i = 0; i < data.length - 1; i++) {
     // t.describe(`Comparing user${i} with user${i + 1}`)
-    t.compare(userArrayValues[i].length, users[i].get('array').length, 'array length correctly computed')
-    t.compare(userArrayValues[i], userArrayValues[i + 1], 'array types')
-    t.compare(userMapValues[i], userMapValues[i + 1], 'map types')
-    t.compare(userXmlValues[i], userXmlValues[i + 1], 'xml types')
-    t.compare(userTextValues[i].map(a => a.insert).join('').length, users[i].get('text').length, 'text length correctly computed')
-    t.compare(userTextValues[i], userTextValues[i + 1], 'text types')
-    t.compare(data[i].os, data[i + 1].os, 'os', customOSCompare)
-    t.compare(data[i].ds, data[i + 1].ds, 'ds', customOSCompare)
-    t.compare(data[i].ss, data[i + 1].ss, 'ss', customOSCompare)
+    t.compare(userArrayValues[i].length, users[i].get('array').length)
+    t.compare(userArrayValues[i], userArrayValues[i + 1])
+    t.compare(userMapValues[i], userMapValues[i + 1])
+    t.compare(userXmlValues[i], userXmlValues[i + 1])
+    t.compare(userTextValues[i].map(a => a.insert).join('').length, users[i].get('text').length)
+    t.compare(userTextValues[i], userTextValues[i + 1])
+    t.compare(data[i].os, data[i + 1].os, null, customOSCompare)
+    t.compare(data[i].ds, data[i + 1].ds, null, customOSCompare)
+    t.compare(data[i].ss, data[i + 1].ss, null, customOSCompare)
   }
-  users.forEach(user => {
-    if (user._missingStructs.size !== 0) {
-      t.fail('missing structs should be empty!')
-    }
-  })
+  users.forEach(user =>
+    t.assert(user._missingStructs.size === 0)
+  )
   users.map(u => u.destroy())
 }
 
@@ -354,20 +352,20 @@ export const applyRandomTests = (tc, mods, iterations) => {
   const result = init({ users: 5, prng: gen })
   const { testConnector, users } = result
   for (var i = 0; i < iterations; i++) {
-    if (prng.int32(gen, 0, 100) <= 2) {
+    if (prng.int31(gen, 0, 100) <= 2) {
       // 2% chance to disconnect/reconnect a random user
       if (prng.bool(gen)) {
         testConnector.disconnectRandom()
       } else {
         testConnector.reconnectRandom()
       }
-    } else if (prng.int32(gen, 0, 100) <= 1) {
+    } else if (prng.int31(gen, 0, 100) <= 1) {
       // 1% chance to flush all & garbagecollect
       // TODO: We do not gc all users as this does not work yet
       // await garbageCollectUsers(t, users)
       testConnector.flushAllMessages()
       // await users[0].db.emptyGarbageCollector() // TODO: reintroduce GC tests!
-    } else if (prng.int32(gen, 0, 100) <= 50) {
+    } else if (prng.int31(gen, 0, 100) <= 50) {
       // 50% chance to flush a random message
       testConnector.flushRandomMessage()
     }

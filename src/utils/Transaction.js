@@ -2,7 +2,7 @@
  * @module utils
  */
 
-import * as encoding from 'funlib/encoding.js'
+import * as encoding from 'lib0/encoding.js'
 
 /**
  * A transaction is created for every change on the Yjs model. It is possible

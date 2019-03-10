@@ -56,7 +56,7 @@ export default [{
     sourcemap: true,
     paths: path => {
       if (/^funlib\//.test(path)) {
-        return `funlib/dist${path.slice(6)}`
+        return `lib0/dist${path.slice(6)}`
       }
       return path
     }

@@ -1,5 +1,5 @@
-import * as prng from 'funlib/prng.js'
-import * as t from 'funlib/testing.js'
+import * as prng from 'lib0/prng.js'
+import * as t from 'lib0/testing.js'
 import { DeleteStore } from '../src/utils/DeleteStore.js'
 import * as ID from '../src/utils/ID.js'
 
@@ -58,8 +58,8 @@ export const testRepeatDeleteStoreTests = tc => {
   const ds = new DeleteStore()
   const dsArray = []
   for (let i = 0; i < 200; i++) {
-    const pos = prng.int32(gen, 0, 10)
-    const len = prng.int32(gen, 0, 4)
+    const pos = prng.int31(gen, 0, 10)
+    const len = prng.int31(gen, 0, 4)
     const gc = prng.bool(gen)
     ds.mark(ID.createID(0, pos), len, gc)
     for (let j = 0; j < len; j++) {
@@ -72,7 +72,7 @@ export const testRepeatDeleteStoreTests = tc => {
       dsArray[i] = null
     }
   }
-  t.compareArrays(dsToArray(ds), dsArray, 'Expected DS result')
+  t.compareArrays(dsToArray(ds), dsArray)
   let size = 0
   let lastEl = null
   for (let i = 0; i < dsArray.length; i++) {
@@ -82,5 +82,5 @@ export const testRepeatDeleteStoreTests = tc => {
     }
     lastEl = el
   }
-  t.assert(size === ds.length, 'DS sizes match')
+  t.assert(size === ds.length)
 }

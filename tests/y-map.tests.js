@@ -1,7 +1,7 @@
 import { initArrays, compareUsers, applyRandomTests } from './helper.js'
 import * as Y from '../src/index.js'
 import { test, proxyConsole } from 'cutest'
-import * as random from 'funlib/prng/prng.js'
+import * as random from 'lib0/prng/prng.js'
 
 proxyConsole()
 

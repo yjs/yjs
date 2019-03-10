@@ -7,8 +7,8 @@ import * as ID from '../utils/ID.js'
 import { Delete } from './Delete.js'
 import { writeStructToTransaction } from '../utils/structEncoding.js'
 import { GC } from './GC.js'
-import * as encoding from 'funlib/encoding.js'
-import * as decoding from 'funlib/decoding.js'
+import * as encoding from 'lib0/encoding.js'
+import * as decoding from 'lib0/decoding.js'
 
 /**
  * @private

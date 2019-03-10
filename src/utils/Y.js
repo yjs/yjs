@@ -1,9 +1,9 @@
 import { DeleteStore } from './DeleteStore.js'
 import { OperationStore } from './OperationStore.js'
 import { StateStore } from './StateStore.js'
-import * as random from 'funlib/random.js'
+import * as random from 'lib0/random.js'
 import { createRootID } from './ID.js'
-import { Observable } from 'funlib/observable.js'
+import { Observable } from 'lib0/observable.js'
 import { Transaction } from './Transaction.js'
 
 /**

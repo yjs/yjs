@@ -3,7 +3,7 @@
  */
 
 import { getStruct } from 'y-protocols/sync.js'
-import * as decoding from 'funlib/decoding.js'
+import * as decoding from 'lib0/decoding.js'
 import { GC } from '../structs/GC.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line
 import { Item } from '../structs/Item.js' // eslint-disable-line

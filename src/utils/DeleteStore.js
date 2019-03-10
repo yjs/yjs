@@ -2,7 +2,7 @@
  * @module utils
  */
 
-import { Tree } from 'funlib/tree.js'
+import { Tree } from 'lib0/tree.js'
 import * as ID from './ID.js'
 
 export class DSNode {
