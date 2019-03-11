@@ -145,21 +145,6 @@ export const testGetAndSetAndDeleteOfMapPropertyWithThreeConflicts = tc => {
   compare(users)
 }
 
-export const testObservepathProperties = tc => {
-  const { users, map0, map1, map2, testConnector } = init(tc, { users: 3 })
-  let map
-  map0.observePath(['map'], map => {
-    if (map != null) {
-      map.set('yay', 4)
-    }
-  })
-  map1.set('map', new Y.Map())
-  testConnector.flushAllMessages()
-  map = map2.get('map')
-  t.compare(map.get('yay'), 4)
-  compare(users)
-}
-
 export const testObserveDeepProperties = tc => {
   const { testConnector, users, map1, map2, map3 } = init(tc, { users: 4 })
   const _map1 = map1.set('map', new Y.Map())
@@ -212,7 +197,11 @@ export const testObserversUsingObservedeep = tc => {
 // TODO: Test events in Y.Map
 const compareEvent = (t, is, should) => {
   for (var key in should) {
-    t.assert(should[key] === is[key])
+    if (should[key].constructor === Set) {
+      t.compare(Array.from(should[key]), Array.from(is[key]))
+    } else {
+      t.assert(should[key] === is[key])
+    }
   }
 }
 
@@ -224,30 +213,22 @@ export const testThrowsAddAndUpdateAndDeleteEvents = tc => {
   })
   map0.set('stuff', 4)
   compareEvent(t, event, {
-    type: 'add',
-    object: map0,
-    name: 'stuff'
+    target: map0,
+    keysChanged: new Set(['stuff'])
   })
   // update, oldValue is in contents
   map0.set('stuff', new Y.Array())
   compareEvent(t, event, {
-    type: 'update',
-    object: map0,
-    name: 'stuff',
-    oldValue: 4
+    target: map0,
+    keysChanged: new Set(['stuff'])
   })
-  let replacedArray = map0.get('stuff')
   // update, oldValue is in opContents
   map0.set('stuff', 5)
-  let array = event.oldValue
-  t.compare(array._model, replacedArray._model)
   // delete
   map0.delete('stuff')
   compareEvent(t, event, {
-    type: 'delete',
-    name: 'stuff',
-    object: map0,
-    oldValue: 5
+    keysChanged: new Set(['stuff']),
+    target: map0
   })
   compare(users)
 }
