@@ -197,11 +197,7 @@ export const testObserversUsingObservedeep = tc => {
 // TODO: Test events in Y.Map
 const compareEvent = (t, is, should) => {
   for (var key in should) {
-    if (should[key].constructor === Set) {
-      t.compare(Array.from(should[key]), Array.from(is[key]))
-    } else {
-      t.assert(should[key] === is[key])
-    }
+    t.compare(should[key], is[key])
   }
 }
 
