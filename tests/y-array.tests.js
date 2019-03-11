@@ -224,8 +224,8 @@ export const testIteratingArrayContainingTypes = tc => {
 let _uniqueNumber = 0
 const getUniqueNumber = () => _uniqueNumber++
 
-let arrayTransactions = [
-  function insert (t, user, gen) {
+const arrayTransactions = [
+  function insert (tc, user, gen) {
     const yarray = user.define('array', Y.Array)
     var uniqueNumber = getUniqueNumber()
     var content = []
@@ -236,14 +236,14 @@ let arrayTransactions = [
     var pos = prng.int31(gen, 0, yarray.length)
     yarray.insert(pos, content)
   },
-  function insertTypeArray (t, user, gen) {
+  function insertTypeArray (tc, user, gen) {
     const yarray = user.define('array', Y.Array)
     var pos = prng.int31(gen, 0, yarray.length)
     yarray.insert(pos, [Y.Array])
     var array2 = yarray.get(pos)
     array2.insert(0, [1, 2, 3, 4])
   },
-  function insertTypeMap (t, user, gen) {
+  function insertTypeMap (tc, user, gen) {
     const yarray = user.define('array', Y.Array)
     var pos = prng.int31(gen, 0, yarray.length)
     yarray.insert(pos, [Y.Map])
@@ -252,7 +252,7 @@ let arrayTransactions = [
     map.set('someprop', 43)
     map.set('someprop', 44)
   },
-  function _delete (t, user, gen) {
+  function _delete (tc, user, gen) {
     const yarray = user.define('array', Y.Array)
     var length = yarray.length
     if (length > 0) {

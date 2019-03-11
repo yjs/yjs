@@ -1,6 +1,7 @@
-import { init, compare } from './testHelper.js'
+import { init, compare, applyRandomTests } from './testHelper.js'
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing.js'
+import * as prng from 'lib0/prng.js'
 
 export const testBasicMapTests = tc => {
   const { testConnector, users, map0, map1, map2 } = init(tc, { users: 3 })
@@ -67,52 +68,38 @@ export const testYmapSetsYmap = tc => {
 export const testYmapSetsYarray = tc => {
   const { users, map0 } = init(tc, { users: 2 })
   const array = map0.set('Array', new Y.Array())
+  t.assert(array === map0.get('Array'))
   array.insert(0, [1, 2, 3])
   t.compare(map0.toJSON(), { Array: [1, 2, 3] })
   compare(users)
 }
 
-/*
-
-test('Map can set custom types (Array)', async function map4 (t) {
-  let { users, map0 } = await initArrays(t, { users: 2 })
-  var array = map0.set('Array', new Y.Array())
-  array.insert(0, [1, 2, 3])
-  array = map0.get('Array')
-  t.compare(array.toArray(), [1, 2, 3])
-  await compareUsers(t, users)
-})
-
-test('Basic get&set of Map property (converge via update)', async function map5 (t) {
-  let { testConnector, users, map0 } = await initArrays(t, { users: 2 })
+export const testGetAndSetOfMapPropertySyncs = tc => {
+  const { testConnector, users, map0 } = init(tc, { users: 2 })
   map0.set('stuff', 'stuffy')
   t.compare(map0.get('stuff'), 'stuffy')
-
   testConnector.flushAllMessages()
-
   for (let user of users) {
     var u = user.define('map', Y.Map)
     t.compare(u.get('stuff'), 'stuffy')
   }
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('Basic get&set of Map property (handle conflict)', async function map6 (t) {
-  let { testConnector, users, map0, map1 } = await initArrays(t, { users: 3 })
+export const testGetAndSetOfMapPropertyWithConflict = tc => {
+  const { testConnector, users, map0, map1 } = init(tc, { users: 3 })
   map0.set('stuff', 'c0')
   map1.set('stuff', 'c1')
-
   testConnector.flushAllMessages()
-
   for (let user of users) {
     var u = user.define('map', Y.Map)
     t.compare(u.get('stuff'), 'c0')
   }
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('Basic get&set&delete of Map property (handle conflict)', async function map7 (t) {
-  let { testConnector, users, map0, map1 } = await initArrays(t, { users: 3 })
+export const testGetAndSetAndDeleteOfMapProperty = tc => {
+  const { testConnector, users, map0, map1 } = init(tc, { users: 3 })
   map0.set('stuff', 'c0')
   map0.delete('stuff')
   map1.set('stuff', 'c1')
@@ -121,11 +108,11 @@ test('Basic get&set&delete of Map property (handle conflict)', async function ma
     var u = user.define('map', Y.Map)
     t.assert(u.get('stuff') === undefined)
   }
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('Basic get&set of Map property (handle three conflicts)', async function map8 (t) {
-  let { testConnector, users, map0, map1, map2 } = await initArrays(t, { users: 3 })
+export const testGetAndSetOfMapPropertyWithThreeConflicts = tc => {
+  const { testConnector, users, map0, map1, map2 } = init(tc, { users: 3 })
   map0.set('stuff', 'c0')
   map1.set('stuff', 'c1')
   map1.set('stuff', 'c2')
@@ -135,11 +122,11 @@ test('Basic get&set of Map property (handle three conflicts)', async function ma
     var u = user.define('map', Y.Map)
     t.compare(u.get('stuff'), 'c0')
   }
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('Basic get&set&delete of Map property (handle three conflicts)', async function map9 (t) {
-  let { testConnector, users, map0, map1, map2, map3 } = await initArrays(t, { users: 4 })
+export const testGetAndSetAndDeleteOfMapPropertyWithThreeConflicts = tc => {
+  const { testConnector, users, map0, map1, map2, map3 } = init(tc, { users: 4 })
   map0.set('stuff', 'c0')
   map1.set('stuff', 'c1')
   map1.set('stuff', 'c2')
@@ -155,12 +142,11 @@ test('Basic get&set&delete of Map property (handle three conflicts)', async func
     var u = user.define('map', Y.Map)
     t.assert(u.get('stuff') === undefined)
   }
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-/* TODO reimplement observePath
-test('observePath properties', async function map10 (t) {
-  let { users, map0, map1, map2 } = await initArrays(t, { users: 3 })
+export const testObservepathProperties = tc => {
+  const { users, map0, map1, map2, testConnector } = init(tc, { users: 3 })
   let map
   map0.observePath(['map'], map => {
     if (map != null) {
@@ -171,14 +157,14 @@ test('observePath properties', async function map10 (t) {
   testConnector.flushAllMessages()
   map = map2.get('map')
   t.compare(map.get('yay'), 4)
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('observe deep properties', async function map11 (t) {
-  let { testConnector, users, map1, map2, map3 } = await initArrays(t, { users: 4 })
-  var _map1 = map1.set('map', new Y.Map())
-  var calls = 0
-  var dmapid
+export const testObserveDeepProperties = tc => {
+  const { testConnector, users, map1, map2, map3 } = init(tc, { users: 4 })
+  const _map1 = map1.set('map', new Y.Map())
+  let calls = 0
+  let dmapid
   map1.observeDeep(events => {
     events.forEach(event => {
       calls++
@@ -189,26 +175,26 @@ test('observe deep properties', async function map11 (t) {
     })
   })
   testConnector.flushAllMessages()
-  var _map3 = map3.get('map')
+  const _map3 = map3.get('map')
   _map3.set('deepmap', new Y.Map())
   testConnector.flushAllMessages()
-  var _map2 = map2.get('map')
+  const _map2 = map2.get('map')
   _map2.set('deepmap', new Y.Map())
   testConnector.flushAllMessages()
-  var dmap1 = _map1.get('deepmap')
-  var dmap2 = _map2.get('deepmap')
-  var dmap3 = _map3.get('deepmap')
+  const dmap1 = _map1.get('deepmap')
+  const dmap2 = _map2.get('deepmap')
+  const dmap3 = _map3.get('deepmap')
   t.assert(calls > 0)
   t.assert(dmap1._id.equals(dmap2._id))
   t.assert(dmap1._id.equals(dmap3._id))
   t.assert(dmap1._id.equals(dmapid))
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('observes using observeDeep', async function map12 (t) {
-  let { users, map0 } = await initArrays(t, { users: 2 })
-  var pathes = []
-  var calls = 0
+export const testObserversUsingObservedeep = tc => {
+  const { users, map0 } = init(tc, { users: 2 })
+  const pathes = []
+  let calls = 0
   map0.observeDeep(events => {
     events.forEach(event => {
       pathes.push(event.path)
@@ -220,20 +206,19 @@ test('observes using observeDeep', async function map12 (t) {
   map0.get('map').get('array').insert(0, ['content'])
   t.assert(calls === 3)
   t.compare(pathes, [[], ['map'], ['map', 'array']])
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
- TODO: Test events in Y.Map
-function compareEvent (t, is, should) {
+// TODO: Test events in Y.Map
+const compareEvent = (t, is, should) => {
   for (var key in should) {
     t.assert(should[key] === is[key])
   }
 }
 
-test('throws add & update & delete events (with type and primitive content)', async function map13 (t) {
-  let { users, map0 } = await initArrays(t, { users: 2 })
-  var event
-  await flushAll(t, users)
+export const testThrowsAddAndUpdateAndDeleteEvents = tc => {
+  const { users, map0 } = init(tc, { users: 2 })
+  let event
   map0.observe(e => {
     event = e // just put it on event, should be thrown synchronously anyway
   })
@@ -251,10 +236,10 @@ test('throws add & update & delete events (with type and primitive content)', as
     name: 'stuff',
     oldValue: 4
   })
-  var replacedArray = map0.get('stuff')
+  let replacedArray = map0.get('stuff')
   // update, oldValue is in opContents
   map0.set('stuff', 5)
-  var array = event.oldValue
+  let array = event.oldValue
   t.compare(array._model, replacedArray._model)
   // delete
   map0.delete('stuff')
@@ -264,45 +249,41 @@ test('throws add & update & delete events (with type and primitive content)', as
     object: map0,
     oldValue: 5
   })
-  await compareUsers(t, users)
-})
-*/
+  compare(users)
+}
 
-/* reimplement event.value somehow (probably with ss vector)
-test('event has correct value when setting a primitive on a YMap (same user)', async function map14 (t) {
-  let { users, map0 } = await initArrays(t, { users: 3 })
-  var event
-  await flushAll(t, users)
+export const testYmapEventHasCorrectValueWhenSettingAPrimitive = tc => {
+  const { users, map0 } = init(tc, { users: 3 })
+  let event
   map0.observe(e => {
     event = e
   })
   map0.set('stuff', 2)
   t.compare(event.value, event.target.get(event.name))
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-test('event has correct value when setting a primitive on a YMap (received from another user)', async function map15 (t) {
-  let { users, map0, map1 } = await initArrays(t, { users: 3 })
-  var event
-  await flushAll(t, users)
+export const testYmapEventHasCorrectValueWhenSettingAPrimitiveFromOtherUser = tc => {
+  const { users, map0, map1, testConnector } = init(tc, { users: 3 })
+  let event
   map0.observe(e => {
     event = e
   })
   map1.set('stuff', 2)
-  await flushAll(t, users)
+  testConnector.flushAllMessages()
   t.compare(event.value, event.target.get(event.name))
-  await compareUsers(t, users)
-})
+  compare(users)
+}
 
-var mapTransactions = [
-  function set (t, user, prng) {
-    let key = random.oneOf(prng, ['one', 'two'])
-    var value = random.utf16String(prng)
+const mapTransactions = [
+  function set (tc, user, gen) {
+    let key = prng.oneOf(gen, ['one', 'two'])
+    var value = prng.utf16String(gen)
     user.define('map', Y.Map).set(key, value)
   },
-  function setType (t, user, prng) {
-    let key = random.oneOf(prng, ['one', 'two'])
-    var type = random.oneOf(prng, [new Y.Array(), new Y.Map()])
+  function setType (tc, user, gen) {
+    let key = prng.oneOf(gen, ['one', 'two'])
+    var type = prng.oneOf(gen, [new Y.Array(), new Y.Map()])
     user.define('map', Y.Map).set(key, type)
     if (type instanceof Y.Array) {
       type.insert(0, [1, 2, 3, 4])
@@ -310,53 +291,67 @@ var mapTransactions = [
       type.set('deepkey', 'deepvalue')
     }
   },
-  function _delete (t, user, prng) {
-    let key = random.oneOf(prng, ['one', 'two'])
+  function _delete (tc, user, gen) {
+    let key = prng.oneOf(gen, ['one', 'two'])
     user.define('map', Y.Map).delete(key)
   }
 ]
 
-test('y-map: Random tests (42)', async function randomMap42 (t) {
-  await applyRandomTests(t, mapTransactions, 42)
-})
+export const testRepeatGeneratingYmapTests20 = tc => {
+  applyRandomTests(tc, mapTransactions, 20)
+}
 
-test('y-map: Random tests (43)', async function randomMap43 (t) {
-  await applyRandomTests(t, mapTransactions, 43)
-})
+export const testRepeatGeneratingYmapTests40 = tc => {
+  applyRandomTests(tc, mapTransactions, 40)
+}
 
-test('y-map: Random tests (44)', async function randomMap44 (t) {
-  await applyRandomTests(t, mapTransactions, 44)
-})
+export const testRepeatGeneratingYmapTests42 = tc => {
+  applyRandomTests(tc, mapTransactions, 42)
+}
 
-test('y-map: Random tests (45)', async function randomMap45 (t) {
-  await applyRandomTests(t, mapTransactions, 45)
-})
+export const testRepeatGeneratingYmapTests43 = tc => {
+  applyRandomTests(tc, mapTransactions, 43)
+}
 
-test('y-map: Random tests (46)', async function randomMap46 (t) {
-  await applyRandomTests(t, mapTransactions, 46)
-})
+export const testRepeatGeneratingYmapTests44 = tc => {
+  applyRandomTests(tc, mapTransactions, 44)
+}
 
-test('y-map: Random tests (47)', async function randomMap47 (t) {
-  await applyRandomTests(t, mapTransactions, 47)
-})
+export const testRepeatGeneratingYmapTests45 = tc => {
+  applyRandomTests(tc, mapTransactions, 45)
+}
 
-test('y-map: Random tests (200)', async function randomMap200 (t) {
-  await applyRandomTests(t, mapTransactions, 200)
-})
+export const testRepeatGeneratingYmapTests46 = tc => {
+  applyRandomTests(tc, mapTransactions, 46)
+}
 
-test('y-map: Random tests (300)', async function randomMap300 (t) {
-  await applyRandomTests(t, mapTransactions, 300)
-})
+export const testRepeatGeneratingYmapTests300 = tc => {
+  applyRandomTests(tc, mapTransactions, 300)
+}
 
-test('y-map: Random tests (500)', async function randomMap500 (t) {
-  await applyRandomTests(t, mapTransactions, 500)
-})
+/* TODO: implement something like difficutly in lib0
 
-test('y-map: Random tests (1000)', async function randomMap1000 (t) {
-  await applyRandomTests(t, mapTransactions, 1000)
-})
+export const testRepeatGeneratingYmapTests400 = tc => {
+  applyRandomTests(tc, mapTransactions, 400)
+}
 
-test('y-map: Random tests (1800)', async function randomMap1800 (t) {
-  await applyRandomTests(t, mapTransactions, 1800)
-})
+export const testRepeatGeneratingYmapTests500 = tc => {
+  applyRandomTests(tc, mapTransactions, 500)
+}
+
+export const testRepeatGeneratingYmapTests600 = tc => {
+  applyRandomTests(tc, mapTransactions, 600)
+}
+
+export const testRepeatGeneratingYmapTests1000 = tc => {
+  applyRandomTests(tc, mapTransactions, 1000)
+}
+
+export const testRepeatGeneratingYmapTests1800 = tc => {
+  applyRandomTests(tc, mapTransactions, 1800)
+}
+
+export const testRepeatGeneratingYmapTests10000 = tc => {
+  applyRandomTests(tc, mapTransactions, 10000)
+}
 */
