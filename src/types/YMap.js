@@ -5,7 +5,7 @@
 import { Item } from '../structs/Item.js'
 import { Type } from '../structs/Type.js'
 import { ItemJSON } from '../structs/ItemJSON.js'
-import * as stringify from 'y-protocols/utils/structStringify.js'
+import * as stringify from '../utils/structStringify.js'
 import { YEvent } from '../utils/YEvent.js'
 import { ItemBinary } from '../structs/ItemBinary.js'
 import { isVisible } from '../utils/snapshot.js'

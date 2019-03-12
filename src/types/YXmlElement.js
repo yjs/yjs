@@ -8,7 +8,7 @@ import * as decoding from 'lib0/decoding.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line
 import { YArray } from './YArray.js'
 import { YXmlEvent } from './YXmlEvent.js'
-import * as stringify from 'y-protocols/utils/structStringify.js'
+import * as stringify from '../utils/structStringify.js'
 
 /**
  * Define the elements to which a set of CSS queries apply.

@@ -2,7 +2,7 @@
  * @module utils
  */
 
-import { getStructReference } from 'y-protocols/sync.js'
+import { getStructReference } from '../utils/structReferences.js'
 import * as decoding from 'lib0/decoding.js'
 import * as encoding from 'lib0/encoding.js'
 
@@ -38,10 +38,14 @@ export const createID = (user, clock) => new ID(user, clock)
 export const RootFakeUserID = 0xFFFFFF
 
 export class RootID {
+  /**
+   * @param {string} name
+   * @param {Function?} typeConstructor
+   */
   constructor (name, typeConstructor) {
     this.user = RootFakeUserID
     this.name = name
-    this.type = getStructReference(typeConstructor)
+    this.type = typeConstructor === null ? null : getStructReference(typeConstructor)
   }
   equals (id) {
     return id !== null && id.user === this.user && id.name === this.name && id.type === this.type
@@ -70,7 +74,7 @@ export class RootID {
  *   y.define('name', Y.Array) // name, and typeConstructor
  *
  * @param {string} name
- * @param {Function} typeConstructor must be defined in structReferences
+ * @param {Function?} typeConstructor must be defined in structReferences
  */
 export const createRootID = (name, typeConstructor) => new RootID(name, typeConstructor)
 

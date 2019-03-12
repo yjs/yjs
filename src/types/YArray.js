@@ -5,7 +5,7 @@
 import { Type } from '../structs/Type.js'
 import { ItemJSON } from '../structs/ItemJSON.js'
 import { ItemString } from '../structs/ItemString.js'
-import * as stringify from 'y-protocols/utils/structStringify.js'
+import * as stringify from '../utils/structStringify.js'
 import { YEvent } from '../utils/YEvent.js'
 import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
 import { Item } from '../structs/Item.js' // eslint-disable-line

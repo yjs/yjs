@@ -2,7 +2,7 @@
  * @module utils
  */
 
-import { getStruct } from 'y-protocols/sync.js'
+import { getStruct } from '../utils/structReferences.js'
 import * as decoding from 'lib0/decoding.js'
 import { GC } from '../structs/GC.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line

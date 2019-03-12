@@ -15,8 +15,8 @@ const customModules = new Set([
  * @type {Set<any>}
  */
 const customLibModules = new Set([
-  // 'funlib',
-  // 'y-protocols'
+  'lib0',
+  'y-protocols'
 ])
 const debugResolve = {
   resolveId (importee) {

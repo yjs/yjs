@@ -2,7 +2,7 @@
  * @module structs
  */
 
-import { getStructReference } from 'y-protocols/sync.js'
+import { getStructReference } from '../utils/structReferences.js'
 import * as ID from '../utils/ID.js'
 import { Delete } from './Delete.js'
 import { writeStructToTransaction } from '../utils/structEncoding.js'

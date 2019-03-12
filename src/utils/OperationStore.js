@@ -4,9 +4,9 @@
 
 import { Tree } from 'lib0/tree.js'
 import * as ID from '../utils/ID.js'
-import { getStruct } from 'y-protocols/sync.js'
+import { getStruct } from './structReferences.js'
 import { GC } from '../structs/GC.js'
-import * as stringify from 'y-protocols/utils/structStringify.js'
+import * as stringify from './structStringify.js'
 
 export class OperationStore extends Tree {
   constructor (y) {

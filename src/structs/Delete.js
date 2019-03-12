@@ -2,7 +2,7 @@
  * @module structs
  */
 
-import { getStructReference } from 'y-protocols/sync.js'
+import { getStructReference } from '../utils/structReferences.js'
 import * as ID from '../utils/ID.js'
 import { writeStructToTransaction } from '../utils/structEncoding.js'
 import * as decoding from 'lib0/decoding.js'
@@ -10,7 +10,7 @@ import * as encoding from 'lib0/encoding.js'
 // import { Item } from './Item.js' // eslint-disable-line
 // import { Y } from '../utils/Y.js' // eslint-disable-line
 import { deleteItemRange } from '../utils/structManipulation.js'
-import * as stringify from 'y-protocols/utils/structStringify.js'
+import * as stringify from '../utils/structStringify.js'
 
 /**
  * @private
