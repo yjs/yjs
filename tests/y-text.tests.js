@@ -1,8 +1,8 @@
-import { initArrays, compareUsers } from './helper.js'
-import { test } from 'cutest'
+import { init, compare } from './testHelper.js'
+import * as t from 'lib0/testing.js'
 
-test('basic insert delete', async function text0 (t) {
-  let { users, text0 } = await initArrays(t, { users: 2 })
+export const testBasicInsertAndDelete = tc => {
+  const { users, text0 } = init(tc, { users: 2 })
   let delta
 
   text0.observe(event => {
@@ -23,12 +23,11 @@ test('basic insert delete', async function text0 (t) {
   text0.delete(1, 1)
   t.assert(text0.toString() === 'b', 'Basic delete works (position 1)')
   t.compare(delta, [{ retain: 1 }, { delete: 1 }])
+  compare(users)
+}
 
-  await compareUsers(t, users)
-})
-
-test('basic format', async function text1 (t) {
-  let { users, text0 } = await initArrays(t, { users: 2 })
+export const testBasicFormat = tc => {
+  const { users, text0 } = init(tc, { users: 2 })
   let delta
   text0.observe(event => {
     delta = event.delta
@@ -58,43 +57,5 @@ test('basic format', async function text1 (t) {
   t.assert(text0.toString() === 'yzb')
   t.compare(text0.toDelta(), [{ insert: 'yz' }, { insert: 'b', attributes: { bold: true } }])
   t.compare(delta, [{ retain: 1 }, { retain: 1, attributes: { bold: null } }])
-  await compareUsers(t, users)
-})
-
-test('quill issue 1', async function quill1 (t) {
-  let { testConnector, users, quill0 } = await initArrays(t, { users: 2 })
-  quill0.insertText(0, 'x')
-  testConnector.flushAllMessages()
-  quill0.insertText(1, '\n', 'list', 'ordered')
-  testConnector.flushAllMessages()
-  quill0.insertText(1, '\n', 'list', 'ordered')
-  await compareUsers(t, users)
-})
-
-test('quill issue 2', async function quill2 (t) {
-  let { testConnector, users, quill0, text0 } = await initArrays(t, { users: 2 })
-  let delta
-  text0.observe(event => {
-    delta = event.delta
-  })
-  quill0.insertText(0, 'abc', 'bold', true)
-  testConnector.flushAllMessages()
-  quill0.insertText(1, 'x')
-  quill0.update()
-  t.compare(delta, [{ retain: 1 }, { insert: 'x', attributes: { bold: true } }])
-  await compareUsers(t, users)
-})
-
-test('quill issue 3', async function quill3 (t) {
-  let { users, quill0, text0 } = await initArrays(t, { users: 2 })
-  quill0.insertText(0, 'a')
-  quill0.insertText(1, '\n\n', 'list', 'ordered')
-  quill0.insertText(2, 'b')
-  t.compare(text0.toDelta(), [
-    { insert: 'a' },
-    { insert: '\n', attributes: { list: 'ordered' } },
-    { insert: 'b' },
-    { insert: '\n', attributes: { list: 'ordered' } }
-  ])
-  await compareUsers(t, users)
-})
+  compare(users)
+}

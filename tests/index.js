@@ -5,8 +5,9 @@ import * as log from 'lib0/logging.js'
 import * as deleteStore from './DeleteStore.tests.js'
 import * as array from './y-array.tests.js'
 import * as map from './y-map.tests.js'
+import * as text from './y-text.tests.js'
 
 if (isBrowser) {
   log.createVConsole(document.body)
 }
-runTests({ deleteStore, map, array })
+runTests({ deleteStore, map, array, text })
