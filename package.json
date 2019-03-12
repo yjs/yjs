@@ -53,18 +53,10 @@
   },
   "homepage": "http://y-js.org",
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-plugin-external-helpers": "^6.22.0",
-    "babel-plugin-transform-regenerator": "^6.26.0",
-    "babel-plugin-transform-runtime": "^6.23.0",
-    "babel-preset-latest": "^6.24.1",
     "codemirror": "^5.42.0",
     "concurrently": "^3.6.1",
-    "crel": "^3.1.0",
-    "cutest": "^0.1.9",
     "esdoc": "^1.1.0",
     "esdoc-standard-plugin": "^1.0.0",
-    "esm": "^3.2.6",
     "jsdoc": "^3.5.5",
     "live-server": "^1.2.1",
     "prosemirror-example-setup": "^1.0.1",
@@ -78,10 +70,10 @@
     "rollup-plugin-commonjs": "^9.2.0",
     "rollup-plugin-node-resolve": "^4.0.0",
     "rollup-plugin-terser": "^4.0.4",
-    "rollup-plugin-uglify-es": "0.0.1",
-    "rollup-watch": "^4.3.1",
     "standard": "^11.0.1",
     "tui-jsdoc-template": "^1.2.2"
   },
-  "dependencies": {}
+  "dependencies": {
+    "lib0": "0.0.0"
+  }
 }
