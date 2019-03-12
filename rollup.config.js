@@ -11,6 +11,9 @@ const customModules = new Set([
   'y-dom',
   'y-prosemirror'
 ])
+/**
+ * @type {Set<any>}
+ */
 const customLibModules = new Set([
   // 'funlib',
   // 'y-protocols'
