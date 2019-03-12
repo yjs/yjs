@@ -131,7 +131,7 @@ Here is a simple example of a shared textarea
             // name: 'xmpp'
             room: 'my-room' // clients connecting to the same room share data
           },
-          sourceDir: '/bower_components', // location of the y-* modules (browser only)
+          sourceDir: './bower_components', // location of the y-* modules (browser only)
           share: {
             textarea: 'Text' // y.share.textarea is of type y-text
           }
