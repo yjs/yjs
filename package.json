@@ -6,14 +6,14 @@
   "module": "./dist/yjs.mjs'",
   "sideEffects": false,
   "scripts": {
-    "test": "npm run lint && npm run dist && node ./dist/tests.js --repitition-time 50",
+    "test": "npm run lint && npm run dist &&",
     "test-exhaustive": "npm run lint && npm run dist && node ./dist/tests.js --repitition-time 10000",
     "dist": "rm -rf dist examples/build && rollup -c",
     "watch": "rollup -wc",
-    "lint": "standard",
+    "lint": "standard && tsc",
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.v13.md --package ./package.json || true",
     "serve-docs": "npm run docs && serve ./docs/",
-    "postversion": "PRODUCTION=1 npm run dist",
+    "postversion": "npm run lint && PRODUCTION=1 npm run dist && node ./dist/tests.js --repitition-time 1000",
     "debug": "concurrently 'live-server --port=3443 --entry-file=test.html' 'npm run watch'",
     "trace-deopt": "clear && rollup -c  && node --trace-deopt dist/test.js",
     "trace-opt": "clear && rollup -c  && node --trace-opt dist/test.js"
@@ -52,6 +52,9 @@
     "url": "https://github.com/y-js/yjs/issues"
   },
   "homepage": "http://y-js.org",
+  "dependencies": {
+    "lib0": "0.0.0"
+  },
   "devDependencies": {
     "codemirror": "^5.42.0",
     "concurrently": "^3.6.1",
@@ -71,9 +74,7 @@
     "rollup-plugin-node-resolve": "^4.0.0",
     "rollup-plugin-terser": "^4.0.4",
     "standard": "^11.0.1",
-    "tui-jsdoc-template": "^1.2.2"
-  },
-  "dependencies": {
-    "lib0": "0.0.0"
+    "tui-jsdoc-template": "^1.2.2",
+    "typescript": "^3.3.3333"
   }
 }
