@@ -6,7 +6,7 @@
   "module": "./dist/yjs.mjs'",
   "sideEffects": false,
   "scripts": {
-    "test": "npm run lint && npm run dist &&",
+    "test": "npm run dist && node ./dist/tests.js --repitition-time 50",
     "test-exhaustive": "npm run lint && npm run dist && node ./dist/tests.js --repitition-time 10000",
     "dist": "rm -rf dist examples/build && rollup -c",
     "watch": "rollup -wc",

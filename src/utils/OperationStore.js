@@ -6,7 +6,7 @@ import { Tree } from 'lib0/tree.js'
 import * as ID from '../utils/ID.js'
 import { getStruct } from './structReferences.js'
 import { GC } from '../structs/GC.js'
-import * as stringify from './structStringify.js'
+import * as Item from '../structs/Item.js'
 
 export class OperationStore extends Tree {
   constructor (y) {
@@ -18,18 +18,18 @@ export class OperationStore extends Tree {
     this.iterate(null, null, item => {
       if (item.constructor === GC) {
         items.push({
-          id: stringify.stringifyItemID(item),
+          id: Item.stringifyItemID(item),
           content: item._length,
           deleted: 'GC'
         })
       } else {
         items.push({
-          id: stringify.stringifyItemID(item),
-          origin: item._origin === null ? '()' : stringify.stringifyID(item._origin._lastId),
-          left: item._left === null ? '()' : stringify.stringifyID(item._left._lastId),
-          right: stringify.stringifyItemID(item._right),
-          right_origin: stringify.stringifyItemID(item._right_origin),
-          parent: stringify.stringifyItemID(item._parent),
+          id: Item.stringifyItemID(item),
+          origin: item._origin === null ? '()' : Item.stringifyID(item._origin._lastId),
+          left: item._left === null ? '()' : Item.stringifyID(item._left._lastId),
+          right: Item.stringifyItemID(item._right),
+          right_origin: Item.stringifyItemID(item._right_origin),
+          parent: Item.stringifyItemID(item._parent),
           parentSub: item._parentSub,
           deleted: item._deleted,
           content: JSON.stringify(item._content)

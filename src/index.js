@@ -3,7 +3,7 @@ export { Y } from './utils/Y.js'
 export { UndoManager } from './utils/UndoManager.js'
 export { Transaction } from './utils/Transaction.js'
 
-export { Item } from './structs/Item.js'
+export { Item, stringifyItemID } from './structs/Item.js'
 export { Delete } from './structs/Delete.js'
 export { ItemJSON } from './structs/ItemJSON.js'
 export { ItemString } from './structs/ItemString.js'
@@ -26,7 +26,5 @@ export { DeleteStore, DSNode } from './utils/DeleteStore.js'
 export { deleteItemRange } from './utils/structManipulation.js'
 export { integrateRemoteStructs } from './utils/integrateRemoteStructs.js'
 export { isParentOf } from './utils/isParentOf.js'
-
-export { stringifyItemID } from './utils/structStringify.js'
 
 export * from './utils/structReferences.js'

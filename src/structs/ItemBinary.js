@@ -4,8 +4,7 @@
 
 // TODO: ItemBinary should be able to merge with right (similar to other items). Or the other items (ItemJSON) should not be able to merge - extra byte + consistency
 
-import { Item } from './Item.js'
-import * as stringify from '../utils/structStringify.js'
+import { Item, logItemHelper } from './Item.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line
@@ -43,6 +42,6 @@ export class ItemBinary extends Item {
    * @private
    */
   _logString () {
-    return stringify.logItemHelper('ItemBinary', this)
+    return logItemHelper('ItemBinary', this)
   }
 }

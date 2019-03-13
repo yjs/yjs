@@ -2,8 +2,7 @@
  * @module structs
  */
 
-import { Item } from './Item.js'
-import * as stringify from '../utils/structStringify.js'
+import { Item, logItemHelper } from './Item.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line

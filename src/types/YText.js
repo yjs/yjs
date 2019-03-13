@@ -2,10 +2,10 @@
  * @module types
  */
 
+import { logItemHelper } from '../structs/Item.js'
 import { ItemEmbed } from '../structs/ItemEmbed.js'
 import { ItemString } from '../structs/ItemString.js'
 import { ItemFormat } from '../structs/ItemFormat.js'
-import * as stringify from '../utils/structStringify.js'
 import { YArrayEvent, YArray } from './YArray.js'
 import { isVisible } from '../utils/snapshot.js'
 
@@ -720,6 +720,6 @@ export class YText extends YArray {
    * @private
    */
   _logString () {
-    return stringify.logItemHelper('YText', this)
+    return logItemHelper('YText', this)
   }
 }

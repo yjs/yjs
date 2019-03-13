@@ -2,8 +2,7 @@
  * @module structs
  */
 
-import { Item, splitHelper } from './Item.js'
-import * as stringify from '../utils/structStringify.js'
+import { Item, splitHelper, logItemHelper } from './Item.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line
@@ -67,7 +66,7 @@ export class ItemJSON extends Item {
    * @private
    */
   _logString () {
-    return stringify.logItemHelper('ItemJSON', this, `content:${JSON.stringify(this._content)}`)
+    return logItemHelper('ItemJSON', this, `content:${JSON.stringify(this._content)}`)
   }
   _splitAt (y, diff) {
     if (diff === 0) {

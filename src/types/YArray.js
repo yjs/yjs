@@ -5,10 +5,9 @@
 import { Type } from '../structs/Type.js'
 import { ItemJSON } from '../structs/ItemJSON.js'
 import { ItemString } from '../structs/ItemString.js'
-import * as stringify from '../utils/structStringify.js'
 import { YEvent } from '../utils/YEvent.js'
 import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
-import { Item } from '../structs/Item.js' // eslint-disable-line
+import { Item, stringifyItemID, logItemHelper } from '../structs/Item.js' // eslint-disable-line
 import { ItemBinary } from '../structs/ItemBinary.js'
 import { isVisible } from '../utils/snapshot.js'
 
@@ -402,6 +401,6 @@ export class YArray extends Type {
    * @private
    */
   _logString () {
-    return stringify.logItemHelper('YArray', this, `start:${stringify.stringifyItemID(this._start)}"`)
+    return logItemHelper('YArray', this, `start:${stringifyItemID(this._start)}"`)
   }
 }
