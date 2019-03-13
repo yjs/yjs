@@ -24,7 +24,7 @@ export { getRelativePosition, fromRelativePosition, equal as equalRelativePositi
 export { ID, createID, RootFakeUserID, RootID } from './utils/ID.js'
 export { DeleteStore, DSNode } from './utils/DeleteStore.js'
 export { deleteItemRange } from './utils/structManipulation.js'
-export { integrateRemoteStruct, integrateRemoteStructs } from './utils/integrateRemoteStructs.js'
+export { integrateRemoteStructs } from './utils/integrateRemoteStructs.js'
 export { isParentOf } from './utils/isParentOf.js'
 
 export { stringifyItemID } from './utils/structStringify.js'

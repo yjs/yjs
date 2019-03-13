@@ -33,7 +33,6 @@ const debugResolve = {
   }
 }
 
-// set this to [] to disable obfuscation
 const minificationPlugins = process.env.PRODUCTION ? [terser({
   module: true,
   compress: {
@@ -46,13 +45,12 @@ const minificationPlugins = process.env.PRODUCTION ? [terser({
   },
   mangle: {
     toplevel: true
-    // properties: true
   }
 })] : []
 
 export default [{
   input: './src/index.js',
-  output: {
+  output: [{
     name: 'Y',
     file: 'dist/yjs.js',
     format: 'cjs',
@@ -63,17 +61,13 @@ export default [{
       }
       return path
     }
-  },
-  plugins: minificationPlugins
-}, {
-  input: './src/index.js',
-  output: {
+  }, {
     name: 'Y',
     file: 'dist/yjs.mjs',
     format: 'esm',
     sourcemap: true
-  },
-  plugins: minificationPlugins
+  }],
+  external: id => /^lib0\//.test(id)
 }, {
   input: './tests/index.js',
   output: {
@@ -91,24 +85,7 @@ export default [{
     }),
     commonjs()
   ]
-},
-
-/* {
-  input: 'tests/index.js',
-  output: {
-    file: 'dist/y.test.js',
-    format: 'iife',
-    name: 'ytests',
-    sourcemap: true
-  },
-  plugins: [
-    nodeResolve({
-      main: true,
-      module: true
-    }),
-    commonjs()
-  ]
-}, */{
+}, {
   input: ['./examples/codemirror.js', './examples/textarea.js', './examples/quill.js', './examples/dom.js', './examples/prosemirror.js'], // fs.readdirSync('./examples').filter(file => /(?<!\.(test|config))\.js$/.test(file)).map(file => './examples/' + file),
   output: {
     dir: 'examples/build',

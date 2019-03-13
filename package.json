@@ -8,12 +8,12 @@
   "scripts": {
     "test": "npm run lint && npm run dist && node ./dist/tests.js --repitition-time 50",
     "test-exhaustive": "npm run lint && npm run dist && node ./dist/tests.js --repitition-time 10000",
-    "dist": "rm -rf dist examples/build && PRODUCTION=1 rollup -c",
+    "dist": "rm -rf dist examples/build && rollup -c",
     "watch": "rollup -wc",
     "lint": "standard",
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.v13.md --package ./package.json || true",
     "serve-docs": "npm run docs && serve ./docs/",
-    "postversion": "npm run dist",
+    "postversion": "PRODUCTION=1 npm run dist",
     "debug": "concurrently 'live-server --port=3443 --entry-file=test.html' 'npm run watch'",
     "trace-deopt": "clear && rollup -c  && node --trace-deopt dist/test.js",
     "trace-opt": "clear && rollup -c  && node --trace-opt dist/test.js"

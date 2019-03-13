@@ -23,13 +23,9 @@ export const registerStruct = (reference, structConstructor) => {
 /**
  * @private
  */
-export const getStruct = (reference) => {
-  return structs.get(reference)
-}
+export const getStruct = structs.get.bind(structs) // reference => structs.get(reference)
 
 /**
  * @private
  */
-export const getStructReference = (typeConstructor) => {
-  return references.get(typeConstructor)
-}
+export const getStructReference = references.get.bind(references) // typeConstructor => references.get(typeConstructor)

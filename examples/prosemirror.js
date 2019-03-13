@@ -1,4 +1,4 @@
-import * as Y from '../src/index.js'
+import * as Y from 'yjs'
 import { WebsocketProvider } from 'y-websocket'
 import { prosemirrorPlugin, cursorPlugin } from 'y-prosemirror'
 
