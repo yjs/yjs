@@ -7,8 +7,9 @@ import * as array from './y-array.tests.js'
 import * as map from './y-map.tests.js'
 import * as text from './y-text.tests.js'
 import * as xml from './y-xml.tests.js'
+import * as perf from './perf.js'
 
 if (isBrowser) {
   log.createVConsole(document.body)
 }
-runTests({ deleteStore, map, array, text, xml })
+runTests({ deleteStore, map, array, text, xml, perf })

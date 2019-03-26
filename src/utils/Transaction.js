@@ -3,6 +3,13 @@
  */
 
 import * as encoding from 'lib0/encoding.js'
+import { AbstractType } from '../types/AbstractType.js' // eslint-disable-line
+import { AbstractItem } from '../structs/AbstractItem.js' // eslint-disable-line
+import { Y } from './Y.js' // eslint-disable-line
+import { YEvent } from './YEvent.js' // eslint-disable-line
+import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
+import { getState } from './StructStore.js'
+import { createID } from './ID.js' // eslint-disable-line
 
 /**
  * A transaction is created for every change on the Yjs model. It is possible
@@ -28,29 +35,24 @@ import * as encoding from 'lib0/encoding.js'
  *
  */
 export class Transaction {
+  /**
+   * @param {Y} y
+   */
   constructor (y) {
     /**
      * @type {Y} The Yjs instance.
      */
     this.y = y
     /**
-     * All new types that are added during a transaction.
-     * @type {Set<Item>}
+     * All new items that are added during a transaction.
+     * @type {Set<AbstractItem>}
      */
-    this.newTypes = new Set()
+    this.added = new Set()
     /**
-     * All types that were directly modified (property added or child
-     * inserted/deleted). New types are not included in this Set.
-     * Maps from type to parentSubs (`item._parentSub = null` for YArray)
-     * @type {Map<Type|Y,String>}
+     * Set of all deleted items
+     * @type {Set<AbstractItem>}
      */
-    this.changedTypes = new Map()
-    // TODO: rename deletedTypes
-    /**
-     * Set of all deleted Types and Structs.
-     * @type {Set<Item>}
-     */
-    this.deletedStructs = new Set()
+    this.deleted = new Set()
     /**
      * Saves the old state set of the Yjs instance. If a state was modified,
      * the original value is saved here.
@@ -58,12 +60,27 @@ export class Transaction {
      */
     this.beforeState = new Map()
     /**
+     * All types that were directly modified (property added or child
+     * inserted/deleted). New types are not included in this Set.
+     * Maps from type to parentSubs (`item._parentSub = null` for YArray)
+     * @type {Map<ItemType,Set<String|null>>}
+     */
+    this.changed = new Map()
+    /**
      * Stores the events for the types that observe also child elements.
      * It is mainly used by `observeDeep`.
-     * @type {Map<Type,Array<YEvent>>}
+     * @type {Map<ItemType,Array<YEvent>>}
      */
     this.changedParentTypes = new Map()
     this.encodedStructsLen = 0
     this.encodedStructs = encoding.createEncoder()
   }
+}
+
+/**
+ * @param {Transaction} transaction
+ */
+export const nextID = transaction => {
+  const y = transaction.y
+  return createID(y.clientID, getState(y.store, y.clientID))
 }

@@ -126,7 +126,7 @@ export class UndoManager {
             this._redoing === false &&
             this._lastTransactionWasUndo === false &&
             lastUndoOp !== null &&
-            (options.captureTimeout < 0 || reverseOperation.created - lastUndoOp.created <= options.captureTimeout)
+            ((options.captureTimeout < 0) || (reverseOperation.created.getTime() - lastUndoOp.created.getTime()) <= options.captureTimeout)
           ) {
             lastUndoOp.created = reverseOperation.created
             if (reverseOperation.toState !== null) {

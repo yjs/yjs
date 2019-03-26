@@ -2,81 +2,109 @@
  * @module structs
  */
 
-import { Item, splitHelper, logItemHelper } from './Item.js'
+import { AbstractItem, logItemHelper, AbstractItemRef, splitItem } from './AbstractItem.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line
+import { ID } from '../utils/ID.js' // eslint-disable-line
+import { ItemType } from './ItemType.js' // eslint-disable-line
+import { getItemCleanEnd, getItemCleanStart, getItemType } from '../utils/StructStore.js'
+import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
 
-export class ItemJSON extends Item {
-  constructor () {
-    super()
-    this._content = null
-  }
-  _copy () {
-    let struct = super._copy()
-    struct._content = this._content
-    return struct
-  }
-  get _length () {
-    const c = this._content
-    return c !== null ? c.length : 0
-  }
+export const structJSONRefNumber = 5
+
+export class ItemJSON extends AbstractItem {
   /**
-   * @param {Y} y
-   * @param {decoding.Decoder} decoder
+   * @param {ID} id
+   * @param {AbstractItem | null} left
+   * @param {AbstractItem | null} right
+   * @param {ItemType | null} parent
+   * @param {string | null} parentSub
+   * @param {Array<any>} content
    */
-  _fromBinary (y, decoder) {
-    let missing = super._fromBinary(y, decoder)
-    let len = decoding.readVarUint(decoder)
-    this._content = new Array(len)
-    for (let i = 0; i < len; i++) {
-      const ctnt = decoding.readVarString(decoder)
-      let parsed
-      if (ctnt === 'undefined') {
-        parsed = undefined
-      } else {
-        parsed = JSON.parse(ctnt)
-      }
-      this._content[i] = parsed
-    }
-    return missing
+  constructor (id, left, right, parent, parentSub, content) {
+    super(id, left, right, parent, parentSub)
+    this.content = content
   }
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {ID} id
+   * @param {AbstractItem | null} left
+   * @param {AbstractItem | null} right
+   * @param {ItemType | null} parent
+   * @param {string | null} parentSub
    */
-  _toBinary (encoder) {
-    super._toBinary(encoder)
-    const len = this._length
-    encoding.writeVarUint(encoder, len)
-    for (let i = 0; i < len; i++) {
-      let encoded
-      const content = this._content[i]
-      if (content === undefined) {
-        encoded = 'undefined'
-      } else {
-        encoded = JSON.stringify(content)
-      }
-      encoding.writeVarString(encoder, encoded)
-    }
+  copy (id, left, right, parent, parentSub) {
+    return new ItemJSON(id, left, right, parent, parentSub, this.content)
   }
   /**
-   * Transform this YXml Type to a readable format.
+   * Transform this Type to a readable format.
    * Useful for logging as all Items and Delete implement this method.
    *
    * @private
    */
-  _logString () {
-    return logItemHelper('ItemJSON', this, `content:${JSON.stringify(this._content)}`)
+  logString () {
+    return logItemHelper('ItemJSON', this, `content:${JSON.stringify(this.content)}`)
   }
-  _splitAt (y, diff) {
-    if (diff === 0) {
-      return this
-    } else if (diff >= this._length) {
-      return this._right
+  get length () {
+    return this.content.length
+  }
+  /**
+   * @param {number} diff
+   */
+  splitAt (diff) {
+    /**
+     * @type {ItemJSON}
+     */
+    const right = splitItem(this, diff)
+    right.content = this.content.splice(diff)
+    return right
+  }
+  /**
+   * @param {encoding.Encoder} encoder
+   */
+  write (encoder) {
+    super.write(encoder, structJSONRefNumber)
+    const len = this.content.length
+    encoding.writeVarUint(encoder, len)
+    for (let i = 0; i < len; i++) {
+      const c = this.content[i]
+      encoding.writeVarString(encoder, c === undefined ? 'undefined' : JSON.stringify(c))
     }
-    let item = new ItemJSON()
-    item._content = this._content.splice(diff)
-    splitHelper(y, this, item, diff)
-    return item
+  }
+}
+
+export class ItemJSONRef extends AbstractItemRef {
+  /**
+   * @param {decoding.Decoder} decoder
+   * @param {number} info
+   */
+  constructor (decoder, info) {
+    super(decoder, info)
+    const len = decoding.readVarUint(decoder)
+    const cs = []
+    for (let i = 0; i < len; i++) {
+      const c = decoding.readVarString(decoder)
+      if (c === 'undefined') {
+        cs.push(undefined)
+      } else {
+        cs.push(JSON.parse(c))
+      }
+    }
+    this.content = cs
+  }
+  /**
+   * @param {Transaction} transaction
+   * @return {ItemJSON}
+   */
+  toStruct (transaction) {
+    const store = transaction.y.store
+    return new ItemJSON(
+      this.id,
+      this.left === null ? null : getItemCleanEnd(store, transaction, this.left),
+      this.right === null ? null : getItemCleanStart(store, transaction, this.right),
+      this.parent === null ? null : getItemType(store, this.parent),
+      this.parentSub,
+      this.content
+    )
   }
 }

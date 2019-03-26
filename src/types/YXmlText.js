@@ -48,3 +48,5 @@ export class YXmlText extends YText {
     super._delete(y, createDelete, gcChildren)
   }
 }
+
+export const readYXmlText = decoder => new YXmlText()

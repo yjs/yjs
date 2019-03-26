@@ -1,10 +1,14 @@
-import { DeleteStore } from './DeleteStore.js'
+import { DeleteStore } from './DeleteSet.js/index.js' // TODO: remove
 import { OperationStore } from './OperationStore.js'
 import { StateStore } from './StateStore.js'
+import { StructStore } from './StructStore.js'
 import * as random from 'lib0/random.js'
-import { createRootID } from './ID.js'
+import * as map from 'lib0/map.js'
 import { Observable } from 'lib0/observable.js'
 import { Transaction } from './Transaction.js'
+import { AbstractStruct, AbstractRef } from '../structs/AbstractStruct.js' // eslint-disable-line
+import { AbstractType } from '../types/AbstractType.js'
+import { YArray } from '../types/YArray.js'
 
 /**
  * Anything that can be encoded with `JSON.stringify` and can be decoded with
@@ -28,25 +32,33 @@ export class Y extends Observable {
   constructor (conf = {}) {
     super()
     this.gcEnabled = conf.gc || false
-    this._contentReady = false
-    this.userID = random.uint32()
-    // TODO: This should be a Map so we can use encodables as keys
-    this._map = new Map()
-    this.ds = new DeleteStore()
-    this.os = new OperationStore(this)
-    this.ss = new StateStore(this)
+    this.clientID = random.uint32()
+    this.share = new Map()
+    this.store = new StructStore()
+    /**
+     * @type {Map<number, Map<number, AbstractRef>>}
+     */
     this._missingStructs = new Map()
+    /**
+     * @type {Array<AbstractStruct>}
+     */
     this._readyToIntegrate = []
+    /**
+     * @type {Transaction | null}
+     */
     this._transaction = null
-    this.connected = false
-    // for compatibility with isParentOf
-    this._parent = null
     this._hasUndoManager = false
-    this._deleted = false // for compatiblity of having this as a parent for types
-    this._id = null
   }
-  _beforeChange () {}
-  _callObserver (transaction, subs, remote) {}
+  /**
+   * @type {Transaction}
+   */
+  get transaction () {
+    const t = this._transaction
+    if (t === null) {
+      throw new Error('All changes must happen inside a transaction')
+    }
+    return t
+  }
   /**
    * Changes that happen inside of a transaction are bundled. This means that
    * the observer fires _after_ the transaction is finished and that all changes
@@ -59,8 +71,9 @@ export class Y extends Observable {
    *                          Defaults to false.
    */
   transact (f, remote = false) {
-    let initialCall = this._transaction === null
-    if (initialCall) {
+    let initialCall = false
+    if (this._transaction === null) {
+      initialCall = true
       this._transaction = new Transaction(this)
       this.emit('beforeTransaction', [this, this._transaction, remote])
     }
@@ -74,9 +87,9 @@ export class Y extends Observable {
       const transaction = this._transaction
       this._transaction = null
       // emit change events on changed types
-      transaction.changedTypes.forEach((subs, type) => {
-        if (!type._deleted) {
-          type._callObserver(transaction, subs, remote)
+      transaction.changed.forEach((subs, itemtype) => {
+        if (!itemtype._deleted) {
+          itemtype.type._callObserver(transaction, subs, remote)
         }
       })
       transaction.changedParentTypes.forEach((events, type) => {
@@ -91,86 +104,57 @@ export class Y extends Observable {
             })
           // we don't have to check for events.length
           // because there is no way events is empty..
-          type._deepEventHandler.callEventListeners(transaction, events)
+          type.type._deepEventHandler.callEventListeners(transaction, events)
         }
       })
       // when all changes & events are processed, emit afterTransaction event
       this.emit('afterTransaction', [this, transaction, remote])
     }
   }
-
-  /**
-   * Fake _start for root properties (y.set('name', type))
-   *
-   * @private
-   */
-  get _start () {
-    return null
-  }
-
-  /**
-   * Fake _start for root properties (y.set('name', type))
-   *
-   * @private
-   */
-  set _start (start) {}
-
   /**
    * Define a shared data type.
    *
-   * Multiple calls of `y.define(name, TypeConstructor)` yield the same result
+   * Multiple calls of `y.get(name, TypeConstructor)` yield the same result
    * and do not overwrite each other. I.e.
-   * `y.define(name, type) === y.define(name, type)`
+   * `y.define(name, Y.Array) === y.define(name, Y.Array)`
    *
-   * After this method is called, the type is also available on `y._map.get(name)`.
+   * After this method is called, the type is also available on `y.share.get(name)`.
    *
    * *Best Practices:*
-   * Either define all types right after the Yjs instance is created or always
-   * use `y.define(..)` when accessing a type.
+   * Define all types right after the Yjs instance is created and store them in a separate object.
+   * Also use the typed methods `getText(name)`, `getArray(name)`, ..
    *
    * @example
-   *   // Option 1
    *   const y = new Y(..)
-   *   y.define('myArray', YArray)
-   *   y.define('myMap', YMap)
-   *   // .. when accessing the type use y._map.get(name)
-   *   y.share.myArray.insert(..)
-   *   y.share.myMap.set(..)
+   *   const appState = {
+   *     document: y.getText('document')
+   *     comments: y.getArray('comments')
+   *   }
    *
-   *   // Option2
-   *   const y = new Y(..)
-   *   // .. when accessing the type use `y.define(..)`
-   *   y.define('myArray', YArray).insert(..)
-   *   y.define('myMap', YMap).set(..)
+   * @TODO: implement getText, getArray, ..
    *
-   * @param {String} name
+   * @param {string} name
    * @param {Function} TypeConstructor The constructor of the type definition
-   * @returns {any} The created type. Constructed with TypeConstructor
+   * @return {AbstractType} The created type. Constructed with TypeConstructor
    */
-  define (name, TypeConstructor) {
-    let id = createRootID(name, TypeConstructor)
-    let type = this.os.get(id)
-    if (this._map.get(name) === undefined) {
-      this._map.set(name, type)
-    } else if (this._map.get(name) !== type) {
-      throw new Error('Type is already defined with a different constructor')
+  get (name, TypeConstructor = AbstractType) {
+    // @ts-ignore
+    const type = map.setTfUndefined(this.share, name, () => new TypeConstructor())
+    const Constr = type.constructor
+    if (Constr !== TypeConstructor) {
+      if (Constr === AbstractType) {
+        const t = new Constr()
+        t._map = type._map
+        t._start = type._start
+        t._length = type._length
+        this.share.set(name, t)
+        return t
+      } else {
+        throw new Error(`Type with the name ${name} has already been defined with a different constructor`)
+      }
     }
     return type
   }
-
-  /**
-   * Get a defined type. The type must be defined locally. First define the
-   * type with {@link define}.
-   *
-   * This returns the same value as `y.share[name]`
-   *
-   * @param {String} name The typename
-   * @return {any}
-   */
-  get (name) {
-    return this._map.get(name)
-  }
-
   /**
    * Disconnect from the room, and destroy all traces of this Yjs instance.
    */

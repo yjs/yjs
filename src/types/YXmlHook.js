@@ -114,3 +114,5 @@ export class YXmlHook extends YMap {
     super._integrate(y)
   }
 }
+
+export const readYXmlHook = decoder => new YXmlHook()

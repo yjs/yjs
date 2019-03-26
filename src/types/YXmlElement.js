@@ -2,7 +2,7 @@
  * @module types
  */
 
-import { logItemHelper } from '../structs/Item.js'
+import { logItemHelper } from '../structs/AbstractItem.js/index.js'
 import { YMap } from './YMap.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
@@ -433,3 +433,6 @@ export class YXmlElement extends YXmlFragment {
     return dom
   }
 }
+
+export const readYXmlElement = decoder => new YXmlElement(decoding.readVarString(decoder))
+export const readYXmlFragment = decoder => new YXmlFragment()

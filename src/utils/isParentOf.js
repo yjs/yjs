@@ -3,7 +3,7 @@
  */
 
 import { Y } from '../utils/Y.js' // eslint-disable-line
-import { Type } from '../structs/Type.js' // eslint-disable-line
+import { Type } from '../types/AbstractType.js/index.js.js.js.js' // eslint-disable-line
 
 /**
  * Check if `parent` is a parent of `child`.

@@ -4,7 +4,7 @@
 
 import { YEvent } from '../utils/YEvent.js'
 
-import { Type } from '../structs/Type.js' // eslint-disable-line
+import { Type } from './AbstractType.js/index.js.js.js.js' // eslint-disable-line
 import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
 
 /**

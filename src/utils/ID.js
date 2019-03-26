@@ -2,81 +2,72 @@
  * @module utils
  */
 
-import { getStructReference } from '../utils/structReferences.js'
 import * as decoding from 'lib0/decoding.js'
 import * as encoding from 'lib0/encoding.js'
 
 export class ID {
-  constructor (user, clock) {
-    this.user = user // TODO: rename to client
+  /**
+   * @param {number} client client id
+   * @param {number} clock unique per client id, continuous number
+   */
+  constructor (client, clock) {
+    /**
+     * @type {number} Client id
+     */
+    this.client = client
+    /**
+     * @type {number} unique per client id, continuous number
+     */
     this.clock = clock
   }
+  /**
+   * @return {ID}
+   */
   clone () {
-    return new ID(this.user, this.clock)
+    return new ID(this.client, this.clock)
   }
+  /**
+   * @param {ID} id
+   * @return {boolean}
+   */
   equals (id) {
-    return id !== null && id.user === this.user && id.clock === this.clock
+    return id !== null && id.client === this.client && id.clock === this.clock
   }
+  /**
+   * @param {ID} id
+   * @return {boolean}
+   */
   lessThan (id) {
     if (id.constructor === ID) {
-      return this.user < id.user || (this.user === id.user && this.clock < id.clock)
+      return this.client < id.client || (this.client === id.client && this.clock < id.clock)
     } else {
       return false
     }
   }
-  /**
-   * @param {encoding.Encoder} encoder
-   */
-  encode (encoder) {
-    encoding.writeVarUint(encoder, this.user)
-    encoding.writeVarUint(encoder, this.clock)
-  }
-}
-
-export const createID = (user, clock) => new ID(user, clock)
-
-export const RootFakeUserID = 0xFFFFFF
-
-export class RootID {
-  /**
-   * @param {string} name
-   * @param {Function?} typeConstructor
-   */
-  constructor (name, typeConstructor) {
-    this.user = RootFakeUserID
-    this.name = name
-    this.type = typeConstructor === null ? null : getStructReference(typeConstructor)
-  }
-  equals (id) {
-    return id !== null && id.user === this.user && id.name === this.name && id.type === this.type
-  }
-  lessThan (id) {
-    if (id.constructor === RootID) {
-      return this.user < id.user || (this.user === id.user && (this.name < id.name || (this.name === id.name && this.type < id.type)))
-    } else {
-      return true
-    }
-  }
-  /**
-   * @param {encoding.Encoder} encoder
-   */
-  encode (encoder) {
-    encoding.writeVarUint(encoder, this.user)
-    encoding.writeVarString(encoder, this.name)
-    encoding.writeVarUint(encoder, this.type)
-  }
 }
 
 /**
- * Create a new root id.
- *
- * @example
- *   y.define('name', Y.Array) // name, and typeConstructor
- *
- * @param {string} name
- * @param {Function?} typeConstructor must be defined in structReferences
+ * @param {number} client
+ * @param {number} clock
  */
-export const createRootID = (name, typeConstructor) => new RootID(name, typeConstructor)
+export const createID = (client, clock) => new ID(client, clock)
+
+const isNullID = 0xFFFFFF
+
+/**
+ * @param {encoding.Encoder} encoder
+ * @param {ID} id
+ */
+export const writeID = (encoder, id) => {
+  encoding.writeVarUint(encoder, id.client)
+  encoding.writeVarUint(encoder, id.clock)
+}
+
+/**
+ * @param {encoding.Encoder} encoder
+ */
+export const writeNullID = (encoder) =>
+  encoding.writeVarUint(encoder, isNullID)
 
 /**
  * Read ID.
@@ -84,15 +75,9 @@ export const createRootID = (name, typeConstructor) => new RootID(name, typeCons
  * * Otherwise an ID is returned
  *
  * @param {decoding.Decoder} decoder
- * @return {ID|RootID}
+ * @return {ID | null}
  */
-export const decode = decoder => {
-  const user = decoding.readVarUint(decoder)
-  if (user === RootFakeUserID) {
-    // read property name and type id
-    const rid = createRootID(decoding.readVarString(decoder), null)
-    rid.type = decoding.readVarUint(decoder)
-    return rid
-  }
-  return createID(user, decoding.readVarUint(decoder))
+export const readID = decoder => {
+  const client = decoding.readVarUint(decoder)
+  return client === isNullID ? null : createID(client, decoding.readVarUint(decoder))
 }

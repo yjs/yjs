@@ -4,9 +4,9 @@
 
 import { getStruct } from '../utils/structReferences.js'
 import * as decoding from 'lib0/decoding.js'
-import { GC } from '../structs/GC.js'
+import { GC } from '../structs/GC.js/index.js.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line
-import { Item } from '../structs/Item.js' // eslint-disable-line
+import { Item } from '../structs/AbstractItem.js/index.js' // eslint-disable-line
 
 class MissingEntry {
   constructor (decoder, missing, struct) {

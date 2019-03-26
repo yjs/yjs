@@ -2,7 +2,7 @@
  * @module types
  */
 
-import { logItemHelper } from '../structs/Item.js'
+import { logItemHelper } from '../structs/AbstractItem.js/index.js'
 import { ItemEmbed } from '../structs/ItemEmbed.js'
 import { ItemString } from '../structs/ItemString.js'
 import { ItemFormat } from '../structs/ItemFormat.js'
@@ -723,3 +723,5 @@ export class YText extends YArray {
     return logItemHelper('YText', this)
   }
 }
+
+export const readYText = decoder => new YText()

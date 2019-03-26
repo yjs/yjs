@@ -1,106 +1,69 @@
 /**
  * @module structs
  */
-
-import { getStructReference } from '../utils/structReferences.js'
-import * as ID from '../utils/ID.js'
-import { writeStructToTransaction } from '../utils/structEncoding.js'
+import { AbstractRef, AbstractStruct } from './AbstractStruct.js'
+import { ID, readID, createID, writeID } from '../utils/ID.js' // eslint-disable-line
 import * as decoding from 'lib0/decoding.js'
 import * as encoding from 'lib0/encoding.js'
-// import { Y } from '../utils/Y.js' // eslint-disable-line
+
+export const structGCRefNumber = 0
 
 // TODO should have the same base class as Item
-export class GC {
-  constructor () {
+export class GC extends AbstractStruct {
+  /**
+   * @param {ID} id
+   * @param {number} length
+   */
+  constructor (id, length) {
+    super(id)
     /**
-     * @type {ID.ID}
+     * @type {number}
      */
-    this._id = null
-    this._length = 0
-  }
-
-  get _redone () {
-    return null
-  }
-
-  get _deleted () {
-    return true
-  }
-
-  _integrate (y) {
-    const id = this._id
-    const userState = y.ss.getState(id.user)
-    if (id.clock === userState) {
-      y.ss.setState(id.user, id.clock + this._length)
-    }
-    y.ds.mark(this._id, this._length, true)
-    let n = y.os.put(this)
-    const prev = n.prev().val
-    if (prev !== null && prev.constructor === GC && prev._id.user === n.val._id.user && prev._id.clock + prev._length === n.val._id.clock) {
-      // TODO: do merging for all items!
-      prev._length += n.val._length
-      y.os.delete(n.val._id)
-      n = prev
-    }
-    if (n.val) {
-      n = n.val
-    }
-    const next = y.os.findNext(n._id)
-    if (next !== null && next.constructor === GC && next._id.user === n._id.user && next._id.clock === n._id.clock + n._length) {
-      n._length += next._length
-      y.os.delete(next._id)
-    }
-    if (id.user !== ID.RootFakeUserID) {
-      writeStructToTransaction(y._transaction, this)
-    }
+    this.length = length
   }
 
   /**
-   * Transform the properties of this type to binary and write it to an
-   * BinaryEncoder.
-   *
-   * This is called when this Item is sent to a remote peer.
-   *
-   * @param {encoding.Encoder} encoder The encoder to write data to.
-   * @private
+   * @param {encoding.Encoder} encoder
    */
-  _toBinary (encoder) {
-    encoding.writeUint8(encoder, getStructReference(this.constructor))
-    this._id.encode(encoder)
-    encoding.writeVarUint(encoder, this._length)
+  write (encoder) {
+    encoding.writeUint8(encoder, structGCRefNumber)
+    writeID(encoder, this.id)
+    encoding.writeVarUint(encoder, this.length)
   }
+}
 
+export class GCRef extends AbstractRef {
   /**
-   * Read the next Item in a Decoder and fill this Item with the read data.
-   *
-   * This is called when data is received from a remote peer.
-   *
-   * @param {Y} y The Yjs instance that this Item belongs to.
-   * @param {decoding.Decoder} decoder The decoder object to read data from.
-   * @private
+   * @param {decoding.Decoder} decoder
+   * @param {number} info
    */
-  _fromBinary (y, decoder) {
-    /**
-     * @type {any}
-     */
-    const id = ID.decode(decoder)
-    this._id = id
-    this._length = decoding.readVarUint(decoder)
-    const missing = []
-    if (y.ss.getState(id.user) < id.clock) {
-      missing.push(ID.createID(id.user, id.clock - 1))
+  constructor (decoder, info) {
+    super()
+    const id = readID(decoder)
+    if (id === null) {
+      throw new Error('expected id')
     }
-    return missing
+    /**
+     * @type {ID}
+     */
+    this.id = id
+    /**
+     * @type {number}
+     */
+    this.length = decoding.readVarUint(decoder)
   }
-
-  _splitAt () {
-    return this
+  missing () {
+    return [
+      createID(this.id.client, this.id.clock - 1)
+    ]
   }
-
-  _clonePartial (diff) {
-    const gc = new GC()
-    gc._id = ID.createID(this._id.user, this._id.clock + diff)
-    gc._length = this._length - diff
-    return gc
+  /**
+   * @return {GC}
+   */
+  toStruct () {
+    return new GC(
+      this.id,
+      this.length
+    )
   }
 }

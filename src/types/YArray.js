@@ -2,14 +2,14 @@
  * @module types
  */
 
-import { Type } from '../structs/Type.js'
+import { AbstractType } from './AbstractType.js'
 import { ItemJSON } from '../structs/ItemJSON.js'
 import { ItemString } from '../structs/ItemString.js'
+import { ItemBinary } from '../structs/ItemBinary.js'
+import { stringifyItemID, logItemHelper } from '../structs/AbstractItem.js' // eslint-disable-line
 import { YEvent } from '../utils/YEvent.js'
 import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
-import { Item, stringifyItemID, logItemHelper } from '../structs/Item.js' // eslint-disable-line
-import { ItemBinary } from '../structs/ItemBinary.js'
-import { isVisible } from '../utils/snapshot.js'
+import { isVisible, HistorySnapshot } from '../utils/snapshot.js' // eslint-disable-line
 
 /**
  * Event that describes the changes on a YArray
@@ -38,8 +38,8 @@ export class YArrayEvent extends YEvent {
       const target = this.target
       const transaction = this._transaction
       const addedElements = new Set()
-      transaction.newTypes.forEach(type => {
-        if (type._parent === target && !transaction.deletedStructs.has(type)) {
+      transaction.added.forEach(type => {
+        if (type._parent === target && !transaction.deleted.has(type)) {
           addedElements.add(type)
         }
       })
@@ -58,8 +58,8 @@ export class YArrayEvent extends YEvent {
       const target = this.target
       const transaction = this._transaction
       const removedElements = new Set()
-      transaction.deletedStructs.forEach(struct => {
-        if (struct._parent === target && !transaction.newTypes.has(struct)) {
+      transaction.deleted.forEach(struct => {
+        if (struct._parent === target && !transaction.added.has(struct)) {
           removedElements.add(struct)
         }
       })
@@ -72,7 +72,7 @@ export class YArrayEvent extends YEvent {
 /**
  * A shared Array implementation.
  */
-export class YArray extends Type {
+export class YArray extends AbstractType {
   constructor () {
     super()
     this.length = 0
@@ -128,7 +128,7 @@ export class YArray extends Type {
    */
   toJSON () {
     return this.map(c => {
-      if (c instanceof Type) {
+      if (c instanceof AbstractType) {
         return c.toJSON()
       }
       return c
@@ -140,7 +140,7 @@ export class YArray extends Type {
    * element of this YArray.
    *
    * @param {Function} f Function that produces an element of the new Array
-   * @param {import('../protocols/history.js').HistorySnapshot} [snapshot]
+   * @param {HistorySnapshot} [snapshot]
    * @return {Array} A new array with each element being the result of the
    *                 callback function
    */
@@ -156,7 +156,7 @@ export class YArray extends Type {
    * Executes a provided function on once on overy element of this YArray.
    *
    * @param {Function} f A function to execute on every element of this YArray.
-   * @param {import('../protocols/history.js').HistorySnapshot} [snapshot]
+   * @param {HistorySnapshot} [snapshot]
    */
   forEach (f, snapshot) {
     let index = 0
@@ -404,3 +404,5 @@ export class YArray extends Type {
     return logItemHelper('YArray', this, `start:${stringifyItemID(this._start)}"`)
   }
 }
+
+export const readYArray = decoder => new YArray()

@@ -2,12 +2,11 @@
  * @module types
  */
 
-import { Item, logItemHelper } from '../structs/Item.js'
-import { Type } from '../structs/Type.js'
+import { AbstractType } from './AbstractType.js'
 import { ItemJSON } from '../structs/ItemJSON.js'
 import { YEvent } from '../utils/YEvent.js'
 import { ItemBinary } from '../structs/ItemBinary.js'
-import { isVisible } from '../utils/snapshot.js'
+import { HistorySnapshot, isVisible } from '../utils/snapshot.js' // eslint-disable-line
 
 /**
  * Event that describes the changes on a YMap.
@@ -28,7 +27,7 @@ export class YMapEvent extends YEvent {
 /**
  * A shared Map implementation.
  */
-export class YMap extends Type {
+export class YMap extends AbstractType {
   /**
    * Creates YMap Event and calls observers.
    *
@@ -68,7 +67,7 @@ export class YMap extends Type {
   /**
    * Returns the keys for each element in the YMap Type.
    *
-   * @param {import('../protocols/history.js').HistorySnapshot} [snapshot]
+   * @param {HistorySnapshot} [snapshot]
    * @return {Array}
    */
   keys (snapshot) {
@@ -156,7 +155,7 @@ export class YMap extends Type {
    * Returns a specified element from this YMap.
    *
    * @param {string} key The key of the element to return.
-   * @param {import('../protocols/history.js').HistorySnapshot} [snapshot]
+   * @param {HistorySnapshot} [snapshot]
    */
   get (key, snapshot) {
     let v = this._map.get(key)
@@ -184,7 +183,7 @@ export class YMap extends Type {
    * Returns a boolean indicating whether the specified key exists or not.
    *
    * @param {string} key The key to test.
-   * @param {import('../protocols/history.js').HistorySnapshot} [snapshot]
+   * @param {HistorySnapshot} [snapshot]
    */
   has (key, snapshot) {
     let v = this._map.get(key)
@@ -210,3 +209,5 @@ export class YMap extends Type {
     return logItemHelper('YMap', this, `mapSize:${this._map.size}`)
   }
 }
+
+export const readYMap = decoder => new YMap()

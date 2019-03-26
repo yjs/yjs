@@ -10,10 +10,8 @@ import * as decoding from 'lib0/decoding.js'
 import { ID } from '../utils/ID.js' // eslint-disable-line
 import { ItemType } from './ItemType.js' // eslint-disable-line
 import { Y } from '../utils/Y.js' // eslint-disable-line
-import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
-import { getItemCleanEnd, getItemCleanStart, getItemType } from '../utils/StructStore.js'
 
-export const structBinaryRefNumber = 1
+export const structDeletedRefNumber = 2
 
 export class ItemBinary extends AbstractItem {
   /**
@@ -51,12 +49,12 @@ export class ItemBinary extends AbstractItem {
    * @param {encoding.Encoder} encoder
    */
   write (encoder) {
-    super.write(encoder, structBinaryRefNumber)
+    super.write(encoder, structDeletedRefNumber)
     encoding.writePayload(encoder, this.content)
   }
 }
 
-export class ItemBinaryRef extends AbstractItemRef {
+export class ItemDeletedRef extends AbstractItemRef {
   /**
    * @param {decoding.Decoder} decoder
    * @param {number} info
@@ -69,16 +67,15 @@ export class ItemBinaryRef extends AbstractItemRef {
     this.content = decoding.readPayload(decoder)
   }
   /**
-   * @param {Transaction} transaction
+   * @param {Y} y
    * @return {ItemBinary}
    */
-  toStruct (transaction) {
-    const store = transaction.y.store
+  toStruct (y) {
     return new ItemBinary(
       this.id,
-      this.left === null ? null : getItemCleanEnd(store, transaction, this.left),
-      this.right === null ? null : getItemCleanStart(store, transaction, this.right),
-      this.parent === null ? null : getItemType(store, this.parent),
+      this.left === null ? null : y.os.getItemCleanEnd(this.left),
+      this.right === null ? null : y.os.getItemCleanStart(this.right),
+      this.parent === null ? null : y.os.getItem(this.parent),
       this.parentSub,
       this.content
     )
