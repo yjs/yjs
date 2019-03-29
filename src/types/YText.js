@@ -2,7 +2,6 @@
  * @module types
  */
 
-import { logItemHelper } from '../structs/AbstractItem.js/index.js'
 import { ItemEmbed } from '../structs/ItemEmbed.js'
 import { ItemString } from '../structs/ItemString.js'
 import { ItemFormat } from '../structs/ItemFormat.js'

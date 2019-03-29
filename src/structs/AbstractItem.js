@@ -51,7 +51,7 @@ export const splitItem = (transaction, leftItem, diff) => {
     foundOrigins.add(o)
     o = o.right
   }
-  const right = leftItem.splitAt(diff)
+  const right = leftItem.splitAt(transaction, diff)
   if (transaction.added.has(leftItem)) {
     transaction.added.add(right)
   } else if (transaction.deleted.has(leftItem)) {

@@ -1,7 +1,6 @@
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import { AbstractStruct, AbstractRef } from '../structs/AbstractStruct.js'
-import { ID, createID, writeID, writeNullID } from './ID.js'
 import * as binary from 'lib0/binary.js'
 import { Transaction } from './Transaction.js'
 import { findIndex } from './StructStore.js'

@@ -2,11 +2,10 @@
  * @module types
  */
 
-import { AbstractType, typeMapDelete } from './AbstractType.js'
-import { ItemJSON } from '../structs/ItemJSON.js'
+import { AbstractType, typeMapDelete, typeMapSet, typeMapGet, typeMapHas } from './AbstractType.js'
 import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
 import { YEvent } from '../utils/YEvent.js'
-import { ItemBinary } from '../structs/ItemBinary.js'
+import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
 
 class YMapIterator {
@@ -159,94 +158,39 @@ export class YMap extends AbstractType {
    * @param {Object | string | number | AbstractType | ArrayBuffer } value The value of the element to add
    */
   set (key, value) {
-    this._transact(y => {
-      const old = this._map.get(key) || null
-      if (old !== null) {
-        if (
-          old.constructor === ItemJSON &&
-          !old._deleted && old._content[0] === value
-        ) {
-          // Trying to overwrite with same value
-          // break here
-          return value
-        }
-        if (y !== null) {
-          old._delete(y)
-        }
-      }
-      let v
-      if (typeof value === 'function') {
-        v = new value() // eslint-disable-line new-cap
-        value = v
-      } else if (value instanceof Item) {
-        v = value
-      } else if (value != null && value.constructor === ArrayBuffer) {
-        v = new ItemBinary()
-        v._content = value
-      } else {
-        v = new ItemJSON()
-        v._content = [value]
-      }
-      v._right = old
-      v._right_origin = old
-      v._parent = this
-      v._parentSub = key
-      if (y !== null) {
-        v._integrate(y)
-      } else {
-        this._map.set(key, v)
-      }
-    })
+    if (this._y !== null) {
+      this._y.transact(transaction => {
+        typeMapSet(transaction, this, key, value)
+      })
+    } else {
+      // @ts-ignore
+      this._prelimContent.set(key, value)
+    }
     return value
   }
 
   /**
    * Returns a specified element from this YMap.
    *
-   * @param {string} key The key of the element to return.
-   * @param {HistorySnapshot} [snapshot]
+   * @param {string} key
+   * @return {Object<string,any>|number|Array<any>|string|ArrayBuffer|AbstractType|undefined}
    */
-  get (key, snapshot) {
-    let v = this._map.get(key)
-    if (v === undefined) {
-      return undefined
-    }
-    if (snapshot !== undefined) {
-      // iterate until found element that exists
-      while (!snapshot.sm.has(v._id.user) || v._id.clock >= snapshot.sm.get(v._id.user)) {
-        v = v._right
-      }
-    }
-    if (isVisible(v, snapshot)) {
-      if (v instanceof Type) {
-        return v
-      } else if (v.constructor === ItemBinary) {
-        return v._content
-      } else {
-        return v._content[v._content.length - 1]
-      }
-    }
+  get (key) {
+    return typeMapGet(this, key)
   }
 
   /**
    * Returns a boolean indicating whether the specified key exists or not.
    *
    * @param {string} key The key to test.
-   * @param {HistorySnapshot} [snapshot]
+   * @return {boolean}
    */
-  has (key, snapshot) {
-    let v = this._map.get(key)
-    if (v === undefined) {
-      return false
-    }
-    if (snapshot !== undefined) {
-      // iterate until found element that exists
-      while (!snapshot.sm.has(v._id.user) || v._id.clock >= snapshot.sm.get(v._id.user)) {
-        v = v._right
-      }
-    }
-    return isVisible(v, snapshot)
+  has (key) {
+    return typeMapHas(this, key)
   }
 }
 
+/**
+ * @param {decoding.Decoder} decoder
+ */
 export const readYMap = decoder => new YMap()

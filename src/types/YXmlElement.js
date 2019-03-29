@@ -3,7 +3,6 @@
  */
 
 import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
-import { logItemHelper } from '../structs/AbstractItem.js'
 import { YMap } from './YMap.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'

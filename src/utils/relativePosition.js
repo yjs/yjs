@@ -3,7 +3,7 @@
  */
 
 import * as ID from './ID.js'
-import { GC } from '../structs/GC.js/index.js.js'
+import { GC } from '../structs/GC.js'
 
 // TODO: Implement function to describe ranges
 
