@@ -7,25 +7,7 @@ import { ItemEmbed } from '../structs/ItemEmbed.js'
 import { ItemString } from '../structs/ItemString.js'
 import { ItemFormat } from '../structs/ItemFormat.js'
 import { YArrayEvent, YArray } from './YArray.js'
-import { isVisible } from '../utils/snapshot.js'
-
-/**
- * @private
- */
-const integrateItem = (item, parent, y, left, right) => {
-  item._origin = left
-  item._left = left
-  item._right = right
-  item._right_origin = right
-  item._parent = parent
-  if (y !== null) {
-    item._integrate(y)
-  } else if (left === null) {
-    parent._start = item
-  } else {
-    left._right = item
-  }
-}
+import { isVisible } from '../utils/Snapshot.js'
 
 /**
  * @private
@@ -478,12 +460,14 @@ export class YText extends YArray {
   }
 
   /**
-   * Creates YMap Event and calls observers.
-   *
+   * Creates YTextEvent and calls observers.
    * @private
+   *
+   * @param {Transaction} transaction
+   * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
-  _callObserver (transaction, parentSubs, remote) {
-    this._callEventHandler(transaction, new YTextEvent(this, remote, transaction))
+  _callObserver (transaction, parentSubs) {
+    this._callEventHandler(transaction, new YTextEvent(this, transaction))
   }
 
   toDom () {

@@ -15,7 +15,7 @@ import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
 export class YXmlEvent extends YEvent {
   /**
    * @param {Type} target The target on which the event is created.
-   * @param {Set} subs The set of changed attributes. `null` is included if the
+   * @param {Set<string|null>} subs The set of changed attributes. `null` is included if the
    *                   child list changed.
    * @param {Boolean} remote Whether this change was created by a remote peer.
    * @param {Transaction} transaction The transaction instance with wich the
@@ -35,7 +35,7 @@ export class YXmlEvent extends YEvent {
     this.childListChanged = false
     /**
      * Set of all changed attributes.
-     * @type {Set}
+     * @type {Set<string|null>}
      */
     this.attributesChanged = new Set()
     /**

@@ -2,63 +2,29 @@
  * @module structs
  */
 
-import { readID, createID, writeID, writeNullID, ID, createNextID } from '../utils/ID.js' // eslint-disable-line
-import { Delete } from '../Delete.js'
-import { writeStructToTransaction } from '../utils/structEncoding.js'
+import { readID, createID, writeID, writeNullID, ID } from '../utils/ID.js' // eslint-disable-line
 import { GC } from './GC.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import { ItemType } from './ItemType.js' // eslint-disable-line
-import { AbstractType } from '../types/AbstractType.js'
+import { AbstractType } from '../types/AbstractType.js' // eslint-disable-line
 import { Y } from '../utils/Y.js' // eslint-disable-line
-import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
+import { Transaction, nextID } from '../utils/Transaction.js' // eslint-disable-line
 import * as maplib from 'lib0/map.js'
 import * as set from 'lib0/set.js'
 import * as binary from 'lib0/binary.js'
 import { AbstractRef, AbstractStruct } from './AbstractStruct.js' // eslint-disable-line
 import * as error from 'lib0/error.js'
-
-/**
- * Stringify an item id.
- *
- * @param { ID } id
- * @return {string}
- */
-export const stringifyID = id => `(${id.client},${id.clock})`
-
-/**
- * Stringify an item as ID. HHere, an item could also be a Yjs instance (e.g. item._parent).
- *
- * @param {AbstractItem | null} item
- * @return {string}
- */
-export const stringifyItemID = item =>
-  item === null ? '()' : (item.id != null ? stringifyID(item.id) : 'y')
-
-/**
- * Helper utility to convert an item to a readable format.
- *
- * @param {String} name The name of the item class (YText, ItemString, ..).
- * @param {AbstractItem} item The item instance.
- * @param {String} [append] Additional information to append to the returned
- *                          string.
- * @return {String} A readable string that represents the item object.
- *
- */
-export const logItemHelper = (name, item, append) => {
-  const left = item.left !== null ? stringifyID(item.left.lastId) : '()'
-  const origin = item.origin !== null ? stringifyID(item.origin.lastId) : '()'
-  return `${name}(id:${stringifyItemID(item)},left:${left},origin:${origin},right:${stringifyItemID(item.right)},parent:${stringifyItemID(item.parent)},parentSub:${item.parentSub}${append !== undefined ? ' - ' + append : ''})`
-}
+import { replaceStruct, addStruct } from '../utils/StructStore.js'
 
 /**
  * Split leftItem into two items
+ * @param {Transaction} transaction
  * @param {AbstractItem} leftItem
- * @param {Y} y
  * @param {number} diff
- * @return {any}
+ * @return {AbstractItem}
  */
-export const splitItem = (leftItem, diff) => {
+export const splitItem = (transaction, leftItem, diff) => {
   const id = leftItem.id
   // create rightItem
   const rightItem = leftItem.copy(createID(id.client, id.clock + diff), leftItem, leftItem.rightOrigin, leftItem.parent, leftItem.parentSub)
@@ -85,6 +51,13 @@ export const splitItem = (leftItem, diff) => {
     foundOrigins.add(o)
     o = o.right
   }
+  const right = leftItem.splitAt(diff)
+  if (transaction.added.has(leftItem)) {
+    transaction.added.add(right)
+  } else if (transaction.deleted.has(leftItem)) {
+    transaction.deleted.add(right)
+  }
+  return rightItem
 }
 
 /**
@@ -106,7 +79,7 @@ export class AbstractItem extends AbstractStruct {
       parent = right.parent
       parentSub = right.parentSub
     } else if (parent === null) {
-      error.throwUnexpectedCase()
+      throw error.unexpectedCase()
     }
     super(id)
     /**
@@ -163,7 +136,6 @@ export class AbstractItem extends AbstractStruct {
    * @param {Transaction} transaction
    */
   integrate (transaction) {
-    const y = transaction.y
     const id = this.id
     const parent = this.parent
     const parentSub = this.parentSub
@@ -171,12 +143,6 @@ export class AbstractItem extends AbstractStruct {
     const left = this.left
     const right = this.right
     // integrate
-    const parentType = parent !== null ? parent.type : maplib.setTfUndefined(y.share, parentSub, () => new AbstractType())
-    if (y.ss.getState(id.client) !== id.clock) {
-      throw new Error('Expected other operation')
-    }
-    y.ss.setState(id.client, id.clock + length)
-    transaction.added.add(this)
     /*
     # $this has to find a unique position between origin and the next known character
     # case 1: $origin equals $o.origin: the $creator parameter decides if left or right
@@ -200,10 +166,10 @@ export class AbstractItem extends AbstractStruct {
     // set o to the first conflicting item
     if (left !== null) {
       o = left.right
-    } else if (this.parentSub !== null) {
-      o = parentType._map.get(parentSub) || null
+    } else if (parentSub !== null) {
+      o = parent._map.get(parentSub) || null
     } else {
-      o = parentType._start
+      o = parent._start
     }
     const conflictingItems = new Set()
     const itemsBeforeOrigin = new Set()
@@ -244,31 +210,31 @@ export class AbstractItem extends AbstractStruct {
     } else {
       let r
       if (parentSub !== null) {
-        const pmap = parentType._map
+        const pmap = parent._map
         r = pmap.get(parentSub) || null
         pmap.set(parentSub, this)
       } else {
-        r = parentType._start
-        parentType._start = this
+        r = parent._start
+        parent._start = this
       }
       this.right = r
       if (r !== null) {
-        r._left = this
+        r.left = this
       }
     }
     // adjust the length of parent
     if (parentSub === null && this.countable) {
-      parentType._length += length
+      parent._length += length
     }
-    if (parent !== null && parent.deleted) {
+    addStruct(transaction.y.store, this)
+    if (parent !== null) {
+      maplib.setIfUndefined(transaction.changed, parent, set.create).add(parentSub)
+    }
+    transaction.added.add(this)
+    // @ts-ignore
+    if (parent._item.deleted) {
       this.delete(transaction, false, true)
     }
-    y.os.put(this)
-    if (parent !== null) {
-      maplib.setTfUndefined(transaction.changed, parent, set.create).add(parentSub)
-    }
-
-    writeStructToTransaction(y._transaction, this)
   }
 
   /**
@@ -277,7 +243,7 @@ export class AbstractItem extends AbstractStruct {
    */
   get next () {
     let n = this.right
-    while (n !== null && n._deleted) {
+    while (n !== null && n.deleted) {
       n = n.right
     }
     return n
@@ -289,7 +255,7 @@ export class AbstractItem extends AbstractStruct {
    */
   get prev () {
     let n = this.left
-    while (n !== null && n._deleted) {
+    while (n !== null && n.deleted) {
       n = n.left
     }
     return n
@@ -301,7 +267,7 @@ export class AbstractItem extends AbstractStruct {
    * @param {ID} id
    * @param {AbstractItem|null} left
    * @param {AbstractItem|null} right
-   * @param {ItemType|null} parent
+   * @param {AbstractType} parent
    * @param {string|null} parentSub
    * @return {AbstractItem}
    */
@@ -312,12 +278,12 @@ export class AbstractItem extends AbstractStruct {
   /**
    * Redoes the effect of this operation.
    *
-   * @param {Y} y The Yjs instance.
+   * @param {Transaction} transaction The Yjs instance.
    * @param {Set<AbstractItem>} redoitems
    *
    * @private
    */
-  redo (y, redoitems) {
+  redo (transaction, redoitems) {
     if (this.redone !== null) {
       return this.redone
     }
@@ -337,12 +303,11 @@ export class AbstractItem extends AbstractStruct {
       // Is a map item. Insert at the start
       left = null
       right = parent.type._map.get(this.parentSub)
-      right._delete(y)
     }
     // make sure that parent is redone
     if (parent._deleted === true && parent.redone === null) {
       // try to undo parent if it will be undone anyway
-      if (!redoitems.has(parent) || !parent.redo(y, redoitems)) {
+      if (!redoitems.has(parent) || !parent.redo(transaction, redoitems)) {
         return false
       }
     }
@@ -365,7 +330,8 @@ export class AbstractItem extends AbstractStruct {
         right = right._right
       }
     }
-    this.redone = this.copy(createNextID(y), left, right, parent, this.parentSub)
+    this.redone = this.copy(nextID(transaction), left, right, parent, this.parentSub)
+    this.redone.integrate(transaction)
     return true
   }
 
@@ -401,6 +367,8 @@ export class AbstractItem extends AbstractStruct {
   }
 
   /**
+   * Do not call directly. Always split via StructStore!
+   *
    * Splits this Item so that another Item can be inserted in-between.
    * This must be overwritten if _length > 1
    * Returns right part after split
@@ -411,10 +379,11 @@ export class AbstractItem extends AbstractStruct {
    *
    * This method should only be cally by StructStore.
    *
+   * @param {Transaction} transaction
    * @param {number} diff
    * @return {AbstractItem}
    */
-  splitAt (diff) {
+  splitAt (transaction, diff) {
     throw new Error('unimplemented')
   }
 
@@ -430,32 +399,13 @@ export class AbstractItem extends AbstractStruct {
    */
   delete (transaction, createDelete = true, gcChildren) {
     if (!this.deleted) {
-      const y = transaction.y
       const parent = this.parent
-      const len = this.length
       // adjust the length of parent
       if (this.countable && this.parentSub === null) {
-        if (parent !== null) {
-          // parent is y
-          y.get(this.)
-
-        } else {
-          transaction.y.get(this.parentSub)
-        }
+        parent._length -= this.length
       }
-      if (parent.length !== undefined && this.countable) {
-        parent.length -= len
-      }
-      this._deleted = true
-      y.ds.mark(this.id, this.length, false)
-      let del = new Delete(this.id, len)
-      if (createDelete) {
-        // broadcast and persists Delete
-        del.integrate(y, true)
-      }
-      if (parent !== null) {
-        maplib.setTfUndefined(transaction.changed, parent, set.create).add(this.parentSub)
-      }
+      this.deleted = true
+      maplib.setIfUndefined(transaction.changed, parent, set.create).add(this.parentSub)
       transaction.deleted.add(this)
     }
   }
@@ -469,13 +419,14 @@ export class AbstractItem extends AbstractStruct {
    * @param {Y} y
    */
   gc (y) {
-    if (this.id !== null) {
-      y.os.replace(this, new GC(this.id, this.length))
-    }
+    replaceStruct(y.store, this, new GC(this.id, this.length))
   }
 
+  /**
+   * @return {Array<any>}
+   */
   getContent () {
-    throw new Error('Must implement') // TODO: create function in lib0
+    throw error.methodUnimplemented()
   }
 
   /**
@@ -502,11 +453,28 @@ export class AbstractItem extends AbstractStruct {
       writeID(encoder, this.rightOrigin.id)
     }
     if (this.origin === null && this.rightOrigin === null) {
-      if (this.parent === null) {
+      const parent = this.parent
+      if (parent._item === null) {
+        // parent type on y._map
+        // find the correct key
+        // @ts-ignore we know that y exists
+        const map = parent._y.share
+        let ykey = null
+        for (const [key, type] of map) {
+          if (type === parent) {
+            ykey = key
+            break
+          }
+        }
+        if (ykey === null) {
+          throw error.unexpectedCase()
+        }
         writeNullID(encoder)
+        encoding.writeVarString(encoder, ykey)
       } else {
         // neither origin nor right is defined
-        writeID(encoder, this.parent.id)
+        // @ts-ignore _item is defined because parent is integrated
+        writeID(encoder, parent._item.id)
       }
       if (this.parentSub !== null) {
         encoding.writeVarString(encoder, this.parentSub)
@@ -524,7 +492,7 @@ export class AbstractItemRef extends AbstractRef {
     super()
     const id = readID(decoder)
     if (id === null) {
-      throw new Error('id must not be null')
+      throw error.unexpectedCase()
     }
     /**
      * The uniqe identifier of this type.
@@ -547,6 +515,13 @@ export class AbstractItemRef extends AbstractRef {
      * @type {ID | null}
      */
     this.parent = canCopyParentInfo ? readID(decoder) : null
+    /**
+     * If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
+     * and we read the next string as parentYKey.
+     * It indicates how we store/retrieve parent from `y.share`
+     * @type {string|null}
+     */
+    this.parentYKey = canCopyParentInfo && this.parent === null ? decoding.readVarString(decoder) : null
     /**
      * If the parent refers to this item with some kind of key (e.g. YMap, the
      * key is specified here. The key is then used to refer to the list in which

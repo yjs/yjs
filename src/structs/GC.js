@@ -22,6 +22,10 @@ export class GC extends AbstractStruct {
     this.length = length
   }
 
+  get deleted () {
+    return true
+  }
+
   /**
    * @param {encoding.Encoder} encoder
    */

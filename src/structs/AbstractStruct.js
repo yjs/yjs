@@ -1,6 +1,8 @@
 import { Y } from '../utils/Y.js' // eslint-disable-line
-import { ID } from '../utils/ID.js' // eslint-disable-line
+import { ID, createID } from '../utils/ID.js' // eslint-disable-line
 import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
+import * as encoding from 'lib0/encoding.js' // eslint-disable-line
+import * as error from 'lib0/error.js'
 
 // eslint-disable-next-line
 export class AbstractStruct {
@@ -19,7 +21,15 @@ export class AbstractStruct {
    * @type {number}
    */
   get length () {
-    throw new Error('unimplemented')
+    throw error.methodUnimplemented()
+  }
+  /**
+   * @param {encoding.Encoder} encoder The encoder to write data to.
+   * @param {number} encodingRef
+   * @private
+   */
+  write (encoder, encodingRef) {
+    throw error.methodUnimplemented()
   }
 }
 
@@ -34,5 +44,7 @@ export class AbstractRef {
    * @param {Transaction} transaction
    * @return {AbstractStruct}
    */
-  toStruct (transaction) { throw new Error('Must be defined') }
+  toStruct (transaction) {
+    throw error.methodUnimplemented()
+  }
 }

@@ -2,7 +2,8 @@
  * @module structs
  */
 
-import { AbstractItem, logItemHelper, AbstractItemRef, splitItem } from './AbstractItem.js'
+import { AbstractType } from '../types/AbstractType.js' // eslint-disable-line
+import { AbstractItem, AbstractItemRef, splitItem } from './AbstractItem.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line
@@ -18,7 +19,7 @@ export class ItemJSON extends AbstractItem {
    * @param {ID} id
    * @param {AbstractItem | null} left
    * @param {AbstractItem | null} right
-   * @param {ItemType | null} parent
+   * @param {AbstractType} parent
    * @param {string | null} parentSub
    * @param {Array<any>} content
    */
@@ -30,32 +31,28 @@ export class ItemJSON extends AbstractItem {
    * @param {ID} id
    * @param {AbstractItem | null} left
    * @param {AbstractItem | null} right
-   * @param {ItemType | null} parent
+   * @param {AbstractType} parent
    * @param {string | null} parentSub
    */
   copy (id, left, right, parent, parentSub) {
     return new ItemJSON(id, left, right, parent, parentSub, this.content)
   }
-  /**
-   * Transform this Type to a readable format.
-   * Useful for logging as all Items and Delete implement this method.
-   *
-   * @private
-   */
-  logString () {
-    return logItemHelper('ItemJSON', this, `content:${JSON.stringify(this.content)}`)
-  }
   get length () {
     return this.content.length
   }
+  getContent () {
+    return this.content
+  }
   /**
+   * @param {Transaction} transaction
    * @param {number} diff
    */
-  splitAt (diff) {
+  splitAt (transaction, diff) {
     /**
      * @type {ItemJSON}
      */
-    const right = splitItem(this, diff)
+    // @ts-ignore
+    const right = splitItem(transaction, this, diff)
     right.content = this.content.splice(diff)
     return right
   }
@@ -97,12 +94,14 @@ export class ItemJSONRef extends AbstractItemRef {
    * @return {ItemJSON}
    */
   toStruct (transaction) {
-    const store = transaction.y.store
+    const y = transaction.y
+    const store = y.store
     return new ItemJSON(
       this.id,
       this.left === null ? null : getItemCleanEnd(store, transaction, this.left),
       this.right === null ? null : getItemCleanStart(store, transaction, this.right),
-      this.parent === null ? null : getItemType(store, this.parent),
+      // @ts-ignore
+      this.parent === null ? y.get(this.parentYKey) : getItemType(store, this.parent),
       this.parentSub,
       this.content
     )

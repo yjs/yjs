@@ -33,6 +33,19 @@ export const getStates = store =>
 
 /**
  * @param {StructStore} store
+ * @param {number} client
+ */
+export const getState = (store, client) => {
+  const structs = store.clients.get(client)
+  if (structs === undefined) {
+    return 0
+  }
+  const lastStruct = structs[structs.length - 1]
+  return lastStruct.id.clock + lastStruct.length
+}
+
+/**
+ * @param {StructStore} store
  */
 export const integretyCheck = store => {
   store.clients.forEach(structs => {
@@ -51,7 +64,7 @@ export const integretyCheck = store => {
  * @param {AbstractStruct} struct
  */
 export const addStruct = (store, struct) => {
-  map.setTfUndefined(store.clients, struct.id.client, () => []).push(struct)
+  map.setIfUndefined(store.clients, struct.id.client, () => []).push(struct)
 }
 
 /**
@@ -108,21 +121,6 @@ const find = (store, id) => {
 export const getItemType = (store, id) => find(store, id)
 
 /**
- * @param {Transaction} transaction
- * @param {AbstractItem} struct
- * @param {number} diff
- */
-const splitStruct = (transaction, struct, diff) => {
-  const right = struct.splitAt(diff)
-  if (transaction.added.has(struct)) {
-    transaction.added.add(right)
-  } else if (transaction.deleted.has(struct)) {
-    transaction.deleted.add(right)
-  }
-  return right
-}
-
-/**
  * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
  * @param {StructStore} store
  * @param {Transaction} transaction
@@ -139,10 +137,11 @@ export const getItemCleanStart = (store, transaction, id) => {
   const structs = store.clients.get(id.client)
   const index = findIndex(structs, id.clock)
   /**
-   * @type {any}
+   * @type {AbstractItem}
    */
   let struct = structs[index]
   if (struct.id.clock < id.clock) {
+    struct.splitAt()
     struct = splitStruct(transaction, struct, id.clock - struct.id.clock)
     structs.splice(index, 0, struct)
   }
@@ -213,11 +212,11 @@ export const getItemRange = (store, transaction, client, clock, len) => {
  * @param {AbstractStruct} struct
  * @param {AbstractStruct} newStruct
  */
-export const replace = (store, struct, newStruct) => {
+export const replaceStruct = (store, struct, newStruct) => {
   /**
    * @type {Array<AbstractStruct>}
    */
   // @ts-ignore
   const structs = store.clients.get(struct.id.client)
-  structs[findIndex(structs, struct.id)] = newStruct
+  structs[findIndex(structs, struct.id.clock)] = newStruct
 }

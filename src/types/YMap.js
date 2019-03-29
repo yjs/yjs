@@ -2,11 +2,37 @@
  * @module types
  */
 
-import { AbstractType } from './AbstractType.js'
+import { AbstractType, typeMapDelete } from './AbstractType.js'
 import { ItemJSON } from '../structs/ItemJSON.js'
+import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
 import { YEvent } from '../utils/YEvent.js'
 import { ItemBinary } from '../structs/ItemBinary.js'
-import { HistorySnapshot, isVisible } from '../utils/snapshot.js' // eslint-disable-line
+import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
+
+class YMapIterator {
+  /**
+   * @param {Array<any>} vals
+   */
+  constructor (vals) {
+    this.vals = vals
+    this.i = 0
+  }
+  [Symbol.iterator] () {
+    return this
+  }
+  next () {
+    let value
+    let done = true
+    if (this.i < this.vals.length) {
+      value = this.vals[this.i]
+      done = false
+    }
+    return {
+      value,
+      done
+    }
+  }
+}
 
 /**
  * Event that describes the changes on a YMap.
@@ -15,12 +41,10 @@ export class YMapEvent extends YEvent {
   /**
    * @param {YMap} ymap The YArray that changed.
    * @param {Set<any>} subs The keys that changed.
-   * @param {boolean} remote Whether the change was created by a remote peer.
    */
-  constructor (ymap, subs, remote) {
+  constructor (ymap, subs) {
     super(ymap)
     this.keysChanged = subs
-    this.remote = remote
   }
 }
 
@@ -28,37 +52,56 @@ export class YMapEvent extends YEvent {
  * A shared Map implementation.
  */
 export class YMap extends AbstractType {
+  constructor () {
+    super()
+    /**
+     * @type {Map<string,any>?}
+     */
+    this._prelimContent = new Map()
+  }
   /**
-   * Creates YMap Event and calls observers.
+   * Integrate this type into the Yjs instance.
    *
+   * * Save this struct in the os
+   * * This type is sent to other client
+   * * Observer functions are fired
+   *
+   * @param {Transaction} transaction The Yjs instance
+   * @param {ItemType} item
    * @private
    */
-  _callObserver (transaction, parentSubs, remote) {
-    this._callEventHandler(transaction, new YMapEvent(this, parentSubs, remote))
+  _integrate (transaction, item) {
+    super._integrate(transaction, item)
+    // @ts-ignore
+    for (let [key, value] of this._prelimContent) {
+      this.set(key, value)
+    }
+    this._prelimContent = null
+  }
+  /**
+   * Creates YMapEvent and calls observers.
+   * @private
+   *
+   * @param {Transaction} transaction
+   * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
+   */
+  _callObserver (transaction, parentSubs) {
+    this._callEventHandler(transaction, new YMapEvent(this, parentSubs))
   }
 
   /**
    * Transforms this Shared Type to a JSON object.
    *
-   * @return {Object}
+   * @return {Object<string,number|string|Object|Array|ArrayBuffer>}
    */
   toJSON () {
+    /**
+     * @type {Object<string,number|string|Object|Array|ArrayBuffer>}
+     */
     const map = {}
     for (let [key, item] of this._map) {
-      if (!item._deleted) {
-        let res
-        if (item instanceof Type) {
-          if (item.toJSON !== undefined) {
-            res = item.toJSON()
-          } else {
-            res = item.toString()
-          }
-        } else if (item.constructor === ItemBinary) {
-          res = item._content
-        } else {
-          res = item._content[0]
-        }
-        map[key] = res
+      if (!item.deleted) {
+        map[key] = item.getContent()[0]
       }
     }
     return map
@@ -67,26 +110,30 @@ export class YMap extends AbstractType {
   /**
    * Returns the keys for each element in the YMap Type.
    *
-   * @param {HistorySnapshot} [snapshot]
-   * @return {Array}
+   * @return {YMapIterator}
    */
-  keys (snapshot) {
-    // TODO: Should return either Iterator or Set!
-    let keys = []
-    if (snapshot === undefined) {
-      for (let [key, value] of this._map) {
-        if (value._deleted) {
-          keys.push(key)
-        }
+  keys () {
+    const keys = []
+    for (let [key, value] of this._map) {
+      if (value.deleted) {
+        keys.push(key)
       }
-    } else {
-      this._map.forEach((_, key) => {
-        if (YMap.prototype.has.call(this, key, snapshot)) {
-          keys.push(key)
-        }
-      })
     }
-    return keys
+    return new YMapIterator(keys)
+  }
+
+  entries () {
+    const entries = []
+    for (let [key, value] of this._map) {
+      if (value.deleted) {
+        entries.push([key, value.getContent()[0]])
+      }
+    }
+    return new YMapIterator(entries)
+  }
+
+  [Symbol.iterator] () {
+    return this.entries()
   }
 
   /**
@@ -95,19 +142,21 @@ export class YMap extends AbstractType {
    * @param {string} key The key of the element to remove.
    */
   delete (key) {
-    this._transact((y) => {
-      let c = this._map.get(key)
-      if (y !== null && c !== undefined) {
-        c._delete(y)
-      }
-    })
+    if (this._y !== null) {
+      this._y.transact(transaction => {
+        typeMapDelete(transaction, this, key)
+      })
+    } else {
+      // @ts-ignore
+      this._prelimContent.delete(key)
+    }
   }
 
   /**
    * Adds or updates an element with a specified key and value.
    *
    * @param {string} key The key of the element to add to this YMap
-   * @param {Object | string | number | Type | ArrayBuffer } value The value of the element to add
+   * @param {Object | string | number | AbstractType | ArrayBuffer } value The value of the element to add
    */
   set (key, value) {
     this._transact(y => {
@@ -197,16 +246,6 @@ export class YMap extends AbstractType {
       }
     }
     return isVisible(v, snapshot)
-  }
-
-  /**
-   * Transform this YXml Type to a readable format.
-   * Useful for logging as all Items and Delete implement this method.
-   *
-   * @private
-   */
-  _logString () {
-    return logItemHelper('YMap', this, `mapSize:${this._map.size}`)
   }
 }
 

@@ -4,53 +4,45 @@
 
 // TODO: ItemBinary should be able to merge with right (similar to other items). Or the other items (ItemJSON) should not be able to merge - extra byte + consistency
 
-import { AbstractItem, logItemHelper, AbstractItemRef } from './AbstractItem.js'
+import { AbstractItem, AbstractItemRef } from './AbstractItem.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import { ID } from '../utils/ID.js' // eslint-disable-line
 import { ItemType } from './ItemType.js' // eslint-disable-line
 import { Y } from '../utils/Y.js' // eslint-disable-line
+import { getItemCleanEnd, getItemCleanStart, getItemType } from '../utils/StructStore.js'
 
 export const structDeletedRefNumber = 2
 
-export class ItemBinary extends AbstractItem {
+export class ItemDeleted extends AbstractItem {
   /**
    * @param {ID} id
    * @param {AbstractItem | null} left
    * @param {AbstractItem | null} right
-   * @param {ItemType | null} parent
+   * @param {AbstractType} parent
    * @param {string | null} parentSub
-   * @param {ArrayBuffer} content
+   * @param {number} length
    */
-  constructor (id, left, right, parent, parentSub, content) {
+  constructor (id, left, right, parent, parentSub, length) {
     super(id, left, right, parent, parentSub)
-    this.content = content
+    this.length = length
   }
   /**
    * @param {ID} id
    * @param {AbstractItem | null} left
    * @param {AbstractItem | null} right
-   * @param {ItemType | null} parent
+   * @param {AbstractType} parent
    * @param {string | null} parentSub
    */
   copy (id, left, right, parent, parentSub) {
-    return new ItemBinary(id, left, right, parent, parentSub, this.content)
-  }
-  /**
-   * Transform this Type to a readable format.
-   * Useful for logging as all Items and Delete implement this method.
-   *
-   * @private
-   */
-  logString () {
-    return logItemHelper('ItemBinary', this)
+    return new ItemDeleted(id, left, right, parent, parentSub, this.length)
   }
   /**
    * @param {encoding.Encoder} encoder
    */
   write (encoder) {
     super.write(encoder, structDeletedRefNumber)
-    encoding.writePayload(encoder, this.content)
+    encoding.writeVarUint(encoder, this.length)
   }
 }
 
@@ -62,22 +54,25 @@ export class ItemDeletedRef extends AbstractItemRef {
   constructor (decoder, info) {
     super(decoder, info)
     /**
-     * @type {ArrayBuffer}
+     * @type {number}
      */
-    this.content = decoding.readPayload(decoder)
+    this.length = decoding.readVarUint(decoder)
   }
   /**
-   * @param {Y} y
-   * @return {ItemBinary}
+   * @param {Transaction} transaction
+   * @return {ItemDeleted}
    */
-  toStruct (y) {
-    return new ItemBinary(
+  toStruct (transaction) {
+    const y = transaction.y
+    const store = y.store
+    return new ItemDeleted(
       this.id,
-      this.left === null ? null : y.os.getItemCleanEnd(this.left),
-      this.right === null ? null : y.os.getItemCleanStart(this.right),
-      this.parent === null ? null : y.os.getItem(this.parent),
+      this.left === null ? null : getItemCleanEnd(store, transaction, this.left),
+      this.right === null ? null : getItemCleanStart(store, transaction, this.right),
+      // @ts-ignore
+      this.parent === null ? y.get(this.parentYKey) : getItemType(store, this.parent).type,
       this.parentSub,
-      this.content
+      this.length
     )
   }
 }

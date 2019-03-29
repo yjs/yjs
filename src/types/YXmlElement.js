@@ -2,7 +2,8 @@
  * @module types
  */
 
-import { logItemHelper } from '../structs/AbstractItem.js/index.js'
+import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
+import { logItemHelper } from '../structs/AbstractItem.js'
 import { YMap } from './YMap.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
@@ -23,6 +24,15 @@ import { YXmlEvent } from './YXmlEvent.js'
  */
 
 /**
+ * Dom filter function.
+ *
+ * @callback domFilter
+ * @param {string} nodeName The nodeName of the element
+ * @param {Map} attributes The map of attributes.
+ * @return {boolean} Whether to include the Dom node in the YXmlElement.
+ */
+
+/**
  * Represents a subset of the nodes of a YXmlElement / YXmlFragment and a
  * position within them.
  *
@@ -31,9 +41,16 @@ import { YXmlEvent } from './YXmlEvent.js'
  * @public
  */
 export class YXmlTreeWalker {
+  /**
+   * @param {YXmlFragment | YXmlElement} root
+   * @param {function} f
+   */
   constructor (root, f) {
     this._filter = f || (() => true)
     this._root = root
+    /**
+     * @type {YXmlFragment | YXmlElement}
+     */
     this._currentNode = root
     this._firstCall = true
   }
@@ -84,29 +101,6 @@ export class YXmlTreeWalker {
     }
   }
 }
-
-/**
- * Dom filter function.
- *
- * @callback domFilter
- * @param {string} nodeName The nodeName of the element
- * @param {Map} attributes The map of attributes.
- * @return {boolean} Whether to include the Dom node in the YXmlElement.
- */
-
-/**
- * Define the elements to which a set of CSS queries apply.
- * {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors|CSS_Selectors}
- *
- * @example
- *   query = '.classSelector'
- *   query = 'nodeSelector'
- *   query = '#idSelector'
- *
- * @typedef {string} CSS_Selector
- *//**
- * @module types
- */
 
 /**
  * Represents a list of {@link YXmlElement}.and {@link YXmlText} types.
@@ -181,12 +175,14 @@ export class YXmlFragment extends YArray {
   }
 
   /**
-   * Creates YArray Event and calls observers.
-   *
+   * Creates YXmlEvent and calls observers.
    * @private
+   *
+   * @param {Transaction} transaction
+   * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
-  _callObserver (transaction, parentSubs, remote) {
-    this._callEventHandler(transaction, new YXmlEvent(this, parentSubs, remote, transaction))
+  _callObserver (transaction, parentSubs) {
+    this._callEventHandler(transaction, new YXmlEvent(this, parentSubs, transaction))
   }
 
   toString () {
@@ -302,13 +298,13 @@ export class YXmlElement extends YXmlFragment {
    * * Sets domFilter
    *
    * @private
-   * @param {Y} y The Yjs instance
+   * @param {Transaction} transaction The Yjs instance
    */
-  _integrate (y) {
+  _integrate (transaction) {
     if (this.nodeName === null) {
       throw new Error('nodeName must be defined!')
     }
-    super._integrate(y)
+    super._integrate(transaction)
   }
 
   toString () {

@@ -9,6 +9,12 @@ import { AbstractItem } from '../structs/AbstractItem.js' // eslint-disable-line
 import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
 import { Encoder } from 'lib0/encoding.js' // eslint-disable-line
 import { Transaction, nextID } from '../utils/Transaction.js' // eslint-disable-line
+import * as map from 'lib0/map.js'
+import { isVisible, Snapshot } from '../utils/Snapshot.js' // eslint-disable-line
+import { ItemJSON } from '../structs/ItemJSON.js'
+import { ItemBinary } from '../structs/ItemBinary.js'
+import { ID, createID } from '../utils/ID.js' // eslint-disable-line
+import { getItemCleanStart } from '../utils/StructStore.js'
 
 /**
  * Restructure children as if they were inserted one after another
@@ -118,10 +124,13 @@ export class AbstractType {
   }
 
   /**
-   * Creates YArray Event and calls observers.
+   * Creates YEvent and calls observers.
    * @private
+   *
+   * @param {Transaction} transaction
+   * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
-  _callObserver (transaction, parentSubs, remote) {
+  _callObserver (transaction, parentSubs) {
     this._callEventHandler(transaction, new YEvent(this))
   }
 
@@ -129,38 +138,23 @@ export class AbstractType {
    * Call event listeners with an event. This will also add an event to all
    * parents (for `.observeDeep` handlers).
    * @private
+   *
+   * @param {Transaction} transaction
+   * @param {any} event
    */
   _callEventHandler (transaction, event) {
     const changedParentTypes = transaction.changedParentTypes
     this._eventHandler.callEventListeners(transaction, event)
     /**
-     * @type {any}
+     * @type {AbstractType}
      */
     let type = this
-    while (type !== this._y) {
-      let events = changedParentTypes.get(type)
-      if (events === undefined) {
-        events = []
-        changedParentTypes.set(type, events)
+    while (true) {
+      map.setIfUndefined(changedParentTypes, type, () => []).push(event)
+      if (type._item === null) {
+        break
       }
-      events.push(event)
-      type = type._parent
-    }
-  }
-
-  /**
-   * Helper method to transact if the y instance is available.
-   *
-   * TODO: Currently event handlers are not thrown when a type is not registered
-   *       with a Yjs instance.
-   * @private
-   */
-  _transact (f) {
-    const y = this._y
-    if (y !== null) {
-      y.transact(f)
-    } else {
-      f(y)
+      type = type._item.parent
     }
   }
 
@@ -211,8 +205,19 @@ export class AbstractType {
  * @param {AbstractType} type
  * @return {Array<any>}
  */
-export const typeToArray = type => {
-
+export const typeArrayToArray = type => {
+  const cs = []
+  let n = type._start
+  while (n !== null) {
+    if (n.countable && !n.deleted) {
+      const c = n.getContent()
+      for (let i = 0; i < c.length; i++) {
+        cs.push(c[i])
+      }
+    }
+    n = n.right
+  }
+  return cs
 }
 
 /**
@@ -220,18 +225,176 @@ export const typeToArray = type => {
  *
  * @param {AbstractType} type
  * @param {function(any,number,AbstractType):void} f A function to execute on every element of this YArray.
- * @param {HistorySnapshot} [snapshot]
  */
-export const typeForEach = (type, f, snapshot) => {
+export const typeArrayForEach = (type, f) => {
   let index = 0
   let n = type._start
   while (n !== null) {
-    if (isVisible(n, snapshot) && n._countable) {
+    if (n.countable && !n.deleted) {
       const c = n.getContent()
       for (let i = 0; i < c.length; i++) {
         f(c[i], index++, type)
       }
     }
-    n = n._right
+    n = n.right
+  }
+}
+
+/**
+ * @param {AbstractType} type
+ */
+export const typeArrayCreateIterator = type => {
+  let n = type._start
+  /**
+   * @type {Array<any>|null}
+   */
+  let currentContent = null
+  let currentContentIndex = 0
+  return {
+    next: () => {
+      // find some content
+      if (currentContent === null) {
+        while (n !== null && n.deleted) {
+          n = n.right
+        }
+      }
+      // check if we reached the end, no need to check currentContent, because it does not exist
+      if (n === null) {
+        return {
+          done: true
+        }
+      }
+      // currentContent could exist from the last iteration
+      if (currentContent === null) {
+        // we found n, so we can set currentContent
+        currentContent = n.getContent()
+        currentContentIndex = 0
+      }
+      const value = currentContent[currentContentIndex++]
+      // check if we need to empty currentContent
+      if (currentContent.length <= currentContentIndex) {
+        currentContent = null
+      }
+      return {
+        done: false,
+        value
+      }
+    }
+  }
+}
+
+/**
+ * Executes a provided function on once on overy element of this YArray.
+ * Operates on a snapshotted state of the document.
+ *
+ * @param {AbstractType} type
+ * @param {function(any,number,AbstractType):void} f A function to execute on every element of this YArray.
+ * @param {Snapshot} snapshot
+ */
+export const typeArrayForEachSnapshot = (type, f, snapshot) => {
+  let index = 0
+  let n = type._start
+  while (n !== null) {
+    if (n.countable && isVisible(n, snapshot)) {
+      const c = n.getContent()
+      for (let i = 0; i < c.length; i++) {
+        f(c[i], index++, type)
+      }
+    }
+    n = n.right
+  }
+}
+
+/**
+ * @param {AbstractType} type
+ * @param {number} index
+ * @return {any}
+ */
+export const typeArrayGet = (type, index) => {
+  for (let n = type._start; n !== null; n = n.right) {
+    if (!n.deleted && n.countable) {
+      if (index < n.length) {
+        return n.getContent()[index]
+      }
+      index -= n.length
+    }
+  }
+}
+
+/**
+ * @param {Transaction} transaction
+ * @param {AbstractType} parent
+ * @param {AbstractItem?} referenceItem
+ * @param {Array<Object<string,any>|Array<any>|number|string|ArrayBuffer>} content
+ */
+export const typeArrayInsertGenericsAfter = (transaction, parent, referenceItem, content) => {
+  let left = referenceItem
+  const right = referenceItem === null ? parent._start : referenceItem.right
+  /**
+   * @type {Array<Object|Array|number>}
+   */
+  let jsonContent = []
+  content.forEach(c => {
+    switch (c.constructor) {
+      case Object:
+      case Array:
+      case String:
+        jsonContent.push(c)
+        break
+      default:
+        if (jsonContent.length > 0) {
+          const item = new ItemJSON(nextID(transaction), left, right, parent, null, jsonContent)
+          item.integrate(transaction)
+          jsonContent = []
+        }
+        switch (c.constructor) {
+          case ArrayBuffer:
+            // @ts-ignore c is definitely an ArrayBuffer
+            new ItemBinary(nextID(transaction), left, right, parent, null, c).integrate(transaction)
+            break
+          default:
+            if (c instanceof AbstractType) {
+              new ItemType(nextID(transaction), left, right, parent, null, c).integrate(transaction)
+            } else {
+              throw new Error('Unexpected content type in insert operation')
+            }
+        }
+    }
+  })
+}
+
+/**
+ * @param {Transaction} transaction
+ * @param {AbstractType} parent
+ * @param {number} index
+ * @param {Array<Object<string,any>|Array<any>|number|string|ArrayBuffer>} content
+ */
+export const typeArrayInsertGenerics = (transaction, parent, index, content) => {
+  if (index === 0) {
+    typeArrayInsertGenericsAfter(transaction, parent, null, content)
+  }
+  for (let n = parent._start; n !== null; n = n.right) {
+    if (!n.deleted && n.countable) {
+      if (index <= n.length) {
+        if (index < n.length) {
+          getItemCleanStart(transaction.y.store, transaction, createID(n.id.client, n.id.clock + index))
+        }
+        return typeArrayInsertGenericsAfter(transaction, parent, n, content)
+      }
+      index -= n.length
+    }
+  }
+  throw new Error('Index exceeds array range')
+}
+
+/**
+ * @param {Transaction} transaction
+ * @param {AbstractType} parent
+ * @param {string} key
+ */
+export const typeMapDelete = (transaction, parent, key) => {
+  const c = parent._map.get(key)
+  if (c !== undefined) {
+    c.delete(transaction)
   }
 }

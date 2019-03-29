@@ -2,27 +2,27 @@
  * @module types
  */
 
-import { AbstractType } from './AbstractType.js'
-import { ItemJSON } from '../structs/ItemJSON.js'
-import { ItemString } from '../structs/ItemString.js'
-import { ItemBinary } from '../structs/ItemBinary.js'
-import { stringifyItemID, logItemHelper } from '../structs/AbstractItem.js' // eslint-disable-line
+import { AbstractItem } from '../structs/AbstractItem.js' // eslint-disable-line
+import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
+import { AbstractType, typeArrayGet, typeArrayToArray, typeArrayForEach, typeArrayCreateIterator, typeArrayInsertGenerics } from './AbstractType.js'
 import { YEvent } from '../utils/YEvent.js'
 import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
-import { isVisible, HistorySnapshot } from '../utils/snapshot.js' // eslint-disable-line
+import { getItemCleanStart, getItemCleanEnd } from '../utils/StructStore.js'
+import { createID } from '../utils/ID.js'
+import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 
 /**
  * Event that describes the changes on a YArray
+ *
+ * @template T
  */
 export class YArrayEvent extends YEvent {
   /**
-   * @param {YArray} yarray The changed type
-   * @param {Boolean} remote Whether the changed was caused by a remote peer
+   * @param {YArray<T>} yarray The changed type
    * @param {Transaction} transaction The transaction object
    */
-  constructor (yarray, remote, transaction) {
+  constructor (yarray, transaction) {
     super(yarray)
-    this.remote = remote
     this._transaction = transaction
     this._addedElements = null
     this._removedElements = null
@@ -31,7 +31,7 @@ export class YArrayEvent extends YEvent {
   /**
    * Child elements that were added in this transaction.
    *
-   * @return {Set}
+   * @return {Set<AbstractItem>}
    */
   get addedElements () {
     if (this._addedElements === null) {
@@ -39,7 +39,7 @@ export class YArrayEvent extends YEvent {
       const transaction = this._transaction
       const addedElements = new Set()
       transaction.added.forEach(type => {
-        if (type._parent === target && !transaction.deleted.has(type)) {
+        if (type.parent === target && !transaction.deleted.has(type)) {
           addedElements.add(type)
         }
       })
@@ -51,7 +51,7 @@ export class YArrayEvent extends YEvent {
   /**
    * Child elements that were removed in this transaction.
    *
-   * @return {Set}
+   * @return {Set<AbstractItem>}
    */
   get removedElements () {
     if (this._removedElements === null) {
@@ -59,7 +59,7 @@ export class YArrayEvent extends YEvent {
       const transaction = this._transaction
       const removedElements = new Set()
       transaction.deleted.forEach(struct => {
-        if (struct._parent === target && !transaction.added.has(struct)) {
+        if (struct.parent === target && !transaction.added.has(struct)) {
           removedElements.add(struct)
         }
       })
@@ -71,144 +71,106 @@ export class YArrayEvent extends YEvent {
 
 /**
  * A shared Array implementation.
+ * @template T
  */
 export class YArray extends AbstractType {
   constructor () {
     super()
-    this.length = 0
+    /**
+     * @type {Array<any>?}
+     */
+    this._prelimContent = []
   }
   /**
-   * Creates YArray Event and calls observers.
+   * Integrate this type into the Yjs instance.
    *
+   * * Save this struct in the os
+   * * This type is sent to other client
+   * * Observer functions are fired
+   *
+   * @param {Transaction} transaction The Yjs instance
+   * @param {ItemType} item
    * @private
    */
-  _callObserver (transaction, parentSubs, remote) {
-    this._callEventHandler(transaction, new YArrayEvent(this, remote, transaction))
+  _integrate (transaction, item) {
+    super._integrate(transaction, item)
+    // @ts-ignore
+    this.insert(0, this._prelimContent)
+    this._prelimContent = null
+  }
+  get length () {
+    return this._prelimContent === null ? this._length : this._prelimContent.length
+  }
+  /**
+   * Creates YArrayEvent and calls observers.
+   * @private
+   *
+   * @param {Transaction} transaction
+   * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
+   */
+  _callObserver (transaction, parentSubs) {
+    this._callEventHandler(transaction, new YArrayEvent(this, transaction))
   }
 
   /**
    * Returns the i-th element from a YArray.
    *
    * @param {number} index The index of the element to return from the YArray
-   * @return {any}
+   * @return {T}
    */
   get (index) {
-    let n = this._start
-    while (n !== null) {
-      if (!n._deleted && n._countable) {
-        if (index < n._length) {
-          switch (n.constructor) {
-            case ItemJSON:
-            case ItemString:
-              return n._content[index]
-            default:
-              return n
-          }
-        }
-        index -= n._length
-      }
-      n = n._right
-    }
+    return typeArrayGet(this, index)
   }
 
   /**
    * Transforms this YArray to a JavaScript Array.
    *
-   * @param {Object} [snapshot]
-   * @return {Array}
+   * @return {Array<T>}
    */
-  toArray (snapshot) {
-    return this.map(c => c, snapshot)
+  toArray () {
+    return typeArrayToArray(this)
   }
 
   /**
    * Transforms this Shared Type to a JSON object.
    *
-   * @return {Array}
+   * @return {Array<any>}
    */
   toJSON () {
-    return this.map(c => {
-      if (c instanceof AbstractType) {
-        return c.toJSON()
-      }
-      return c
-    })
+    return this.map(c => c instanceof AbstractType ? c.toJSON() : c)
   }
 
   /**
    * Returns an Array with the result of calling a provided function on every
    * element of this YArray.
    *
-   * @param {Function} f Function that produces an element of the new Array
-   * @param {HistorySnapshot} [snapshot]
-   * @return {Array} A new array with each element being the result of the
+   * @template M
+   * @param {function(T,number,YArray<T>):M} f Function that produces an element of the new Array
+   * @return {Array<M>} A new array with each element being the result of the
    *                 callback function
    */
-  map (f, snapshot) {
-    const res = []
+  map (f) {
+    /**
+     * @type {Array<M>}
+     */
+    const result = []
     this.forEach((c, i) => {
-      res.push(f(c, i, this))
-    }, snapshot)
-    return res
+      result.push(f(c, i, this))
+    })
+    return result
   }
 
   /**
    * Executes a provided function on once on overy element of this YArray.
    *
-   * @param {Function} f A function to execute on every element of this YArray.
-   * @param {HistorySnapshot} [snapshot]
+   * @param {function(T,number):void} f A function to execute on every element of this YArray.
    */
-  forEach (f, snapshot) {
-    let index = 0
-    let n = this._start
-    while (n !== null) {
-      if (isVisible(n, snapshot) && n._countable) {
-        if (n instanceof Type) {
-          f(n, index++, this)
-        } else if (n.constructor === ItemBinary) {
-          f(n._content, index++, this)
-        } else {
-          const content = n._content
-          const contentLen = content.length
-          for (let i = 0; i < contentLen; i++) {
-            index++
-            f(content[i], index, this)
-          }
-        }
-      }
-      n = n._right
-    }
+  forEach (f) {
+    typeArrayForEach(this, f)
   }
 
   [Symbol.iterator] () {
-    return {
-      next: function () {
-        while (this._item !== null && (this._item._deleted || this._item._length <= this._itemElement)) {
-          // item is deleted or itemElement does not exist (is deleted)
-          this._item = this._item._right
-          this._itemElement = 0
-        }
-        if (this._item === null) {
-          return {
-            done: true
-          }
-        }
-        let content
-        if (this._item instanceof Type) {
-          content = this._item
-          this._item = this._item._right
-        } else {
-          content = this._item._content[this._itemElement++]
-        }
-        return {
-          value: content,
-          done: false
-        }
-      },
-      _item: this._start,
-      _itemElement: 0,
-      _count: 0
-    }
+    return typeArrayCreateIterator(this)
   }
 
   /**
@@ -218,119 +180,35 @@ export class YArray extends AbstractType {
    * @param {number} length The number of elements to remove. Defaults to 1.
    */
   delete (index, length = 1) {
-    this._y.transact(() => {
-      let item = this._start
-      let count = 0
-      while (item !== null && length > 0) {
-        if (!item._deleted && item._countable) {
-          if (count <= index && index < count + item._length) {
-            const diffDel = index - count
-            item = item._splitAt(this._y, diffDel)
-            item._splitAt(this._y, length)
-            length -= item._length
-            item._delete(this._y)
-            count += diffDel
-          } else {
-            count += item._length
+    if (this._y !== null) {
+      this._y.transact(transaction => {
+        const store = transaction.y.store
+        let item = this._start
+        let count = 0
+        while (item !== null && length > 0) {
+          if (!item.deleted && item.countable) {
+            if (count <= index && index < count + item.length) {
+              const diffDel = index - count
+              if (diffDel > 0) {
+                item = getItemCleanStart(store, transaction, createID(item.id.client, item.id.clock + diffDel))
+              }
+              if (length < item.length) {
+                getItemCleanEnd(store, transaction, createID(item.id.client, item.id.clock + length))
+              }
+              length -= item.length
+              item.delete(transaction)
+              count += diffDel
+            } else {
+              count += item.length
+            }
           }
+          item = item.right
         }
-        item = item._right
-      }
-    })
-    if (length > 0) {
-      throw new Error('Delete exceeds the range of the YArray')
+      })
+    } else {
+      // @ts-ignore _prelimContent is defined because this is not yet integrated
+      this._prelimContent.splice(index, length)
     }
-  }
-
-  /**
-   * Inserts content after an element container.
-   *
-   * @private
-   * @param {Item} left The element container to use as a reference.
-   * @param {Array<number|string|Object|ArrayBuffer>} content The Array of content to insert (see {@see insert})
-   */
-  insertAfter (left, content) {
-    this._transact(y => {
-      let right
-      if (left === null) {
-        right = this._start
-      } else {
-        right = left._right
-      }
-      let prevJsonIns = null
-      for (let i = 0; i < content.length; i++) {
-        let c = content[i]
-        if (typeof c === 'function') {
-          c = new c() // eslint-disable-line new-cap
-        }
-        if (c instanceof Type) {
-          if (prevJsonIns !== null) {
-            if (y !== null) {
-              prevJsonIns._integrate(y)
-            }
-            left = prevJsonIns
-            prevJsonIns = null
-          }
-          c._origin = left
-          c._left = left
-          c._right = right
-          c._right_origin = right
-          c._parent = this
-          if (y !== null) {
-            c._integrate(y)
-          } else if (left === null) {
-            this._start = c
-          } else {
-            left._right = c
-          }
-          left = c
-        } else if (c.constructor === ArrayBuffer) {
-          if (prevJsonIns !== null) {
-            if (y !== null) {
-              prevJsonIns._integrate(y)
-            }
-            left = prevJsonIns
-            prevJsonIns = null
-          }
-          const itemBinary = new ItemBinary()
-          itemBinary._origin = left
-          itemBinary._left = left
-          itemBinary._right = right
-          itemBinary._right_origin = right
-          itemBinary._parent = this
-          itemBinary._content = c
-          if (y !== null) {
-            itemBinary._integrate(y)
-          } else if (left === null) {
-            this._start = itemBinary
-          } else {
-            left._right = itemBinary
-          }
-          left = itemBinary
-        } else {
-          if (prevJsonIns === null) {
-            prevJsonIns = new ItemJSON()
-            prevJsonIns._origin = left
-            prevJsonIns._left = left
-            prevJsonIns._right = right
-            prevJsonIns._right_origin = right
-            prevJsonIns._parent = this
-            prevJsonIns._content = []
-          }
-          prevJsonIns._content.push(c)
-        }
-      }
-      if (prevJsonIns !== null) {
-        if (y !== null) {
-          prevJsonIns._integrate(y)
-        } else if (prevJsonIns._left === null) {
-          this._start = prevJsonIns
-        } else {
-          left._right = prevJsonIns
-        }
-      }
-    })
-    return content
   }
 
   /**
@@ -347,62 +225,30 @@ export class YArray extends AbstractType {
    *  yarray.insert(2, [1, 2])
    *
    * @param {number} index The index to insert content at.
-   * @param {Array<number|string|ArrayBuffer|Type>} content The array of content
+   * @param {Array<number|string|ArrayBuffer|AbstractType>} content The array of content
    */
   insert (index, content) {
-    this._transact(() => {
-      let left = null
-      let right = this._start
-      let count = 0
-      const y = this._y
-      while (right !== null) {
-        const rightLen = right._deleted ? 0 : (right._length - 1)
-        if (count <= index && index <= count + rightLen) {
-          const splitDiff = index - count
-          right = right._splitAt(y, splitDiff)
-          left = right._left
-          count += splitDiff
-          break
-        }
-        if (!right._deleted) {
-          count += right._length
-        }
-        left = right
-        right = right._right
-      }
-      if (index > count) {
-        throw new Error('Index exceeds array range!')
-      }
-      this.insertAfter(left, content)
-    })
+    if (this._y !== null) {
+      this._y.transact(transaction => {
+        typeArrayInsertGenerics(transaction, this, index, content)
+      })
+    } else {
+      // @ts-ignore _prelimContent is defined because this is not yet integrated
+      this._prelimContent.splice(index, 0, ...content)
+    }
   }
 
   /**
    * Appends content to this YArray.
    *
-   * @param {Array<number|string|ArrayBuffer|Type>} content Array of content to append.
+   * @param {Array<number|string|ArrayBuffer|AbstractType>} content Array of content to append.
    */
   push (content) {
-    let n = this._start
-    let lastUndeleted = null
-    while (n !== null) {
-      if (!n._deleted) {
-        lastUndeleted = n
-      }
-      n = n._right
-    }
-    this.insertAfter(lastUndeleted, content)
-  }
-
-  /**
-   * Transform this YXml Type to a readable format.
-   * Useful for logging as all Items and Delete implement this method.
-   *
-   * @private
-   */
-  _logString () {
-    return logItemHelper('YArray', this, `start:${stringifyItemID(this._start)}"`)
+    this.insert(this.length, content)
   }
 }
 
+/**
+ * @param {decoding.Decoder} decoder
+ */
 export const readYArray = decoder => new YArray()

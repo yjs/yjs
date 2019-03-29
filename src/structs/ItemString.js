@@ -1,8 +1,8 @@
 /**
  * @module structs
  */
-
-import { AbstractItem, logItemHelper, AbstractItemRef, splitItem } from './AbstractItem.js'
+import { AbstractType } from '../types/AbstractType.js' // eslint-disable-line
+import { AbstractItem, AbstractItemRef, splitItem } from './AbstractItem.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line
@@ -18,48 +18,46 @@ export class ItemString extends AbstractItem {
    * @param {ID} id
    * @param {AbstractItem | null} left
    * @param {AbstractItem | null} right
-   * @param {ItemType | null} parent
+   * @param {AbstractType} parent
    * @param {string | null} parentSub
    * @param {string} string
    */
   constructor (id, left, right, parent, parentSub, string) {
     super(id, left, right, parent, parentSub)
+    /**
+     * @type {string}
+     */
     this.string = string
   }
   /**
    * @param {ID} id
    * @param {AbstractItem | null} left
    * @param {AbstractItem | null} right
-   * @param {ItemType | null} parent
+   * @param {AbstractType} parent
    * @param {string | null} parentSub
    */
   copy (id, left, right, parent, parentSub) {
     return new ItemString(id, left, right, parent, parentSub, this.string)
   }
-  /**
-   * Transform this Type to a readable format.
-   * Useful for logging as all Items and Delete implement this method.
-   *
-   * @private
-   */
-  logString () {
-    return logItemHelper('ItemString', this, `content:"${this.string}"`)
+  getContent () {
+    return this.string.split('')
   }
   get length () {
     return this.string.length
   }
-  splitAt (y, diff) {
-    if (diff === 0) {
-      return this
-    } else if (diff >= this.string.length) {
-      return this.right
-    }
+  /**
+   * @param {Transaction} transaction
+   * @param {number} diff
+   * @return {ItemString}
+   */
+  splitAt (transaction, diff) {
     /**
      * @type {ItemString}
      */
-    const right = splitItem(this, y, diff)
+    // @ts-ignore
+    const right = splitItem(transaction, this, diff)
     right.string = this.string.slice(diff)
-    right.string = this.string.slice(0, diff)
+    this.string = this.string.slice(0, diff)
     return right
   }
   /**
@@ -88,12 +86,14 @@ export class ItemStringRef extends AbstractItemRef {
    * @return {ItemString}
    */
   toStruct (transaction) {
-    const store = transaction.y.store
+    const y = transaction.y
+    const store = y.store
     return new ItemString(
       this.id,
       this.left === null ? null : getItemCleanEnd(store, transaction, this.left),
       this.right === null ? null : getItemCleanStart(store, transaction, this.right),
-      this.parent === null ? null : getItemType(store, this.parent),
+      // @ts-ignore
+      this.parent === null ? y.get(this.parentYKey) : getItemType(store, this.parent),
       this.parentSub,
       this.string
     )

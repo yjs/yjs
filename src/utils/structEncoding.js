@@ -1,13 +1,10 @@
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
-import { getStructReference } from './structReferences.js'
+import { AbstractStruct, AbstractRef } from '../structs/AbstractStruct.js'
 import { ID, createID, writeID, writeNullID } from './ID.js'
 import * as binary from 'lib0/binary.js'
-
-export const writeStructToTransaction = (transaction, struct) => {
-  transaction.encodedStructsLen++
-  struct._toBinary(transaction.encodedStructs)
-}
+import { Transaction } from './Transaction.js'
+import { findIndex } from './StructStore.js'
 
 const structRefs = [
   ItemBinaryRef
@@ -18,7 +15,6 @@ const structRefs = [
  *
  * This is called when data is received from a remote peer.
  *
- * @param {Y} y The Yjs instance that this Item belongs to.
  * @param {decoding.Decoder} decoder The decoder object to read data from.
  * @return {AbstractRef}
  *
@@ -27,4 +23,24 @@ const structRefs = [
 export const read = decoder => {
   const info = decoding.readUint8(decoder)
   return new structRefs[binary.BITS5 & info](decoder, info)
+}
+
+/**
+ * @param {encoding.Encoder} encoder
+ * @param {Transaction} transaction
+ */
+export const writeStructsFromTransaction = (encoder, transaction) => {
+  const stateUpdates = transaction.stateUpdates
+  const y = transaction.y
+  encoding.writeVarUint(encoder, stateUpdates.size)
+  stateUpdates.forEach((clock, client) => {
+    /**
+     * @type {Array<AbstractStruct>}
+     */
+    // @ts-ignore
+    const structs = y.store.clients.get(client)
+    for (let i = findIndex(structs, clock); i < structs.length; i++) {
+      structs[i].write(encoder, 0)
+    }
+  })
 }

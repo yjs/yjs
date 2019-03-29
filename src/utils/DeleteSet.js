@@ -3,6 +3,8 @@ import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import { StructStore, getItemRange } from './StructStore.js' // eslint-disable-line
 import { Transaction } from './Transaction.js' // eslint-disable-line
+import * as error from 'lib0/error.js'
+import { ID } from './ID.js'
 
 class DeleteItem {
   /**
@@ -40,6 +42,15 @@ export class DeleteSet {
 
 /**
  * @param {DeleteSet} ds
+ * @param {ID} id
+ * @return {boolean}
+ */
+export const isDeleted = (ds, id) => {
+  
+}
+
+/**
+ * @param {DeleteSet} ds
  */
 export const sortAndMergeDeleteSet = ds => {
   ds.clients.forEach(dels => {
@@ -70,7 +81,7 @@ export const sortAndMergeDeleteSet = ds => {
 export const createDeleteSetFromTransaction = transaction => {
   const ds = new DeleteSet()
   transaction.deleted.forEach(item => {
-    map.setTfUndefined(ds.clients, item.id.client, () => []).push(new DeleteItem(item.id.clock, item.length))
+    map.setIfUndefined(ds.clients, item.id.client, () => []).push(new DeleteItem(item.id.clock, item.length))
   })
   sortAndMergeDeleteSet(ds)
   return ds

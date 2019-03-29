@@ -5,7 +5,6 @@
 import { YMap } from './YMap.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
-import { Y } from '../utils/Y.js' // eslint-disable-line
 
 /**
  * You can manage binding to a custom type with YXmlHook.
@@ -14,14 +13,11 @@ import { Y } from '../utils/Y.js' // eslint-disable-line
  */
 export class YXmlHook extends YMap {
   /**
-   * @param {String} [hookName] nodeName of the Dom Node.
+   * @param {string} hookName nodeName of the Dom Node.
    */
   constructor (hookName) {
     super()
-    this.hookName = null
-    if (hookName !== undefined) {
-      this.hookName = hookName
-    }
+    this.hookName = hookName
   }
 
   /**
@@ -30,9 +26,7 @@ export class YXmlHook extends YMap {
    * @private
    */
   _copy () {
-    const struct = super._copy()
-    struct.hookName = this.hookName
-    return struct
+    return new YXmlHook(this.hookName)
   }
 
   /**
@@ -43,7 +37,7 @@ export class YXmlHook extends YMap {
    *                                        nodejs)
    * @param {Object.<string, any>} [hooks] Optional property to customize how hooks
    *                                             are presented in the DOM
-   * @param {DomBinding} [binding] You should not set this property. This is
+   * @param {any} [binding] You should not set this property. This is
    *                               used if DomBinding wants to create a
    *                               association to the created DOM type
    * @return {Element} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
@@ -66,22 +60,6 @@ export class YXmlHook extends YMap {
   }
 
   /**
-   * Read the next Item in a Decoder and fill this Item with the read data.
-   *
-   * This is called when data is received from a remote peer.
-   *
-   * @param {Y} y The Yjs instance that this Item belongs to.
-   * @param {decoding.Decoder} decoder The decoder object to read data from.
-   *
-   * @private
-   */
-  _fromBinary (y, decoder) {
-    const missing = super._fromBinary(y, decoder)
-    this.hookName = decoding.readVarString(decoder)
-    return missing
-  }
-
-  /**
    * Transform the properties of this type to binary and write it to an
    * BinaryEncoder.
    *
@@ -91,28 +69,15 @@ export class YXmlHook extends YMap {
    *
    * @private
    */
-  _toBinary (encoder) {
-    super._toBinary(encoder)
+  _write (encoder) {
+    super._write(encoder)
     encoding.writeVarString(encoder, this.hookName)
-  }
-
-  /**
-   * Integrate this type into the Yjs instance.
-   *
-   * * Save this struct in the os
-   * * This type is sent to other client
-   * * Observer functions are fired
-   *
-   * @param {Y} y The Yjs instance
-   *
-   * @private
-   */
-  _integrate (y) {
-    if (this.hookName === null) {
-      throw new Error('hookName must be defined!')
-    }
-    super._integrate(y)
   }
 }
 
-export const readYXmlHook = decoder => new YXmlHook()
+/**
+ * @param {decoding.Decoder} decoder
+ * @return {YXmlHook}
+ */
+export const readYXmlHook = decoder =>
+  new YXmlHook(decoding.readVarString(decoder))

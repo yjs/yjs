@@ -1,6 +1,3 @@
-import { DeleteStore } from './DeleteSet.js/index.js' // TODO: remove
-import { OperationStore } from './OperationStore.js'
-import { StateStore } from './StateStore.js'
 import { StructStore } from './StructStore.js'
 import * as random from 'lib0/random.js'
 import * as map from 'lib0/map.js'
@@ -8,22 +5,10 @@ import { Observable } from 'lib0/observable.js'
 import { Transaction } from './Transaction.js'
 import { AbstractStruct, AbstractRef } from '../structs/AbstractStruct.js' // eslint-disable-line
 import { AbstractType } from '../types/AbstractType.js'
-import { YArray } from '../types/YArray.js'
-
-/**
- * Anything that can be encoded with `JSON.stringify` and can be decoded with
- * `JSON.parse`.
- *
- * The following property should hold:
- * `JSON.parse(JSON.stringify(key))===key`
- *
- * At the moment the only safe values are number and string.
- *
- * @typedef {(number|string|Object)} encodable
- */
 
 /**
  * A Yjs instance handles the state of shared data.
+ * @extends Observable<string>
  */
 export class Y extends Observable {
   /**
@@ -33,6 +18,9 @@ export class Y extends Observable {
     super()
     this.gcEnabled = conf.gc || false
     this.clientID = random.uint32()
+    /**
+     * @type {Map<string, AbstractType>}
+     */
     this.share = new Map()
     this.store = new StructStore()
     /**
@@ -65,7 +53,7 @@ export class Y extends Observable {
    * that happened inside of the transaction are sent as one message to the
    * other peers.
    *
-   * @param {Function} f The function that should be executed as a transaction
+   * @param {function(Transaction):void} f The function that should be executed as a transaction
    * @param {?Boolean} remote Optional. Whether this transaction is initiated by
    *                          a remote peer. This should not be set manually!
    *                          Defaults to false.
@@ -78,7 +66,7 @@ export class Y extends Observable {
       this.emit('beforeTransaction', [this, this._transaction, remote])
     }
     try {
-      f(this)
+      f(this._transaction)
     } catch (e) {
       console.error(e)
     }
@@ -88,7 +76,7 @@ export class Y extends Observable {
       this._transaction = null
       // emit change events on changed types
       transaction.changed.forEach((subs, itemtype) => {
-        if (!itemtype._deleted) {
+        if (!itemtype._item.deleted) {
           itemtype.type._callObserver(transaction, subs, remote)
         }
       })
