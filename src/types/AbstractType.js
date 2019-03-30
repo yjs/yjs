@@ -17,28 +17,6 @@ import { ID, createID } from '../utils/ID.js' // eslint-disable-line
 import { getItemCleanStart } from '../utils/StructStore.js'
 
 /**
- * Restructure children as if they were inserted one after another
- * @param {Transaction} transaction
- * @param {AbstractItem} start
- */
-const integrateChildren = (transaction, start) => {
-  let right
-  while (true) {
-    right = start.right
-    start.id = nextID(transaction)
-    start.right = null
-    start.rightOrigin = null
-    start.origin = start.left
-    start.integrate(transaction)
-    if (right !== null) {
-      start = right
-    } else {
-      break
-    }
-  }
-}
-
-/**
  * Abstract Yjs Type class
  */
 export class AbstractType {
@@ -81,21 +59,6 @@ export class AbstractType {
   _integrate (transaction, item) {
     this._y = transaction.y
     this._item = item
-    // when integrating children we must make sure to
-    // integrate start
-    const start = this._start
-    if (start !== null) {
-      this._start = null
-      integrateChildren(transaction, start)
-    }
-    // integrate map children_integrate
-    const map = this._map
-    this._map = new Map()
-    map.forEach(t => {
-      t.right = null
-      t.rightOrigin = null
-      integrateChildren(transaction, t)
-    })
   }
 
   /**
@@ -336,6 +299,7 @@ export const typeArrayInsertGenericsAfter = (transaction, parent, referenceItem,
   let jsonContent = []
   content.forEach(c => {
     switch (c.constructor) {
+      case Number:
       case Object:
       case Array:
       case String:
@@ -397,4 +361,65 @@ export const typeMapDelete = (transaction, parent, key) => {
   if (c !== undefined) {
     c.delete(transaction)
   }
+}
+
+/**
+ * @param {Transaction} transaction
+ * @param {AbstractType} parent
+ * @param {string} key
+ * @param {Object|number|Array<any>|string|ArrayBuffer|AbstractType} value
+ */
+export const typeMapSet = (transaction, parent, key, value) => {
+  const right = parent._map.get(key) || null
+  switch (value.constructor) {
+    case Number:
+    case Object:
+    case Array:
+    case String:
+      new ItemJSON(nextID(transaction), null, right, parent, key, [value]).integrate(transaction)
+      break
+    case ArrayBuffer:
+      new ItemBinary(nextID(transaction), null, right, parent, key, value).integrate(transaction)
+      break
+    default:
+      if (value instanceof AbstractType) {
+        new ItemType(nextID(transaction), null, right, parent, key, value).integrate(transaction)
+      } else {
+        throw new Error('Unexpected content type')
+      }
+  }
+}
+
+/**
+ * @param {AbstractType} parent
+ * @param {string} key
+ * @return {Object<string,any>|number|Array<any>|string|ArrayBuffer|AbstractType|undefined}
+ */
+export const typeMapGet = (parent, key) => {
+  const val = parent._map.get(key)
+  return val !== undefined && !val.deleted ? val.getContent()[0] : undefined
+}
+
+/**
+ * @param {AbstractType} parent
+ * @param {string} key
+ * @return {boolean}
+ */
+export const typeMapHas = (parent, key) => {
+  const val = parent._map.get(key)
+  return val !== undefined && !val.deleted
+}
+
+/**
+ * @param {AbstractType} parent
+ * @param {string} key
+ * @param {Snapshot} snapshot
+ * @return {Object<string,any>|number|Array<any>|string|ArrayBuffer|AbstractType|undefined}
+ */
+export const typeMapGetSnapshot = (parent, key, snapshot) => {
+  let v = parent._map.get(key) || null
+  while (v !== null && (!snapshot.sm.has(v.id.client) || v.id.clock >= (snapshot.sm.get(v.id.client) || 0))) {
+    v = v.right
+  }
+  return v !== null && isVisible(v, snapshot) ? v.getContent()[0] : undefined
 }

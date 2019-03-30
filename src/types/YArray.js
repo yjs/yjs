@@ -13,12 +13,10 @@ import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 
 /**
  * Event that describes the changes on a YArray
- *
- * @template T
  */
 export class YArrayEvent extends YEvent {
   /**
-   * @param {YArray<T>} yarray The changed type
+   * @param {AbstractType} yarray The changed type
    * @param {Transaction} transaction The transaction object
    */
   constructor (yarray, transaction) {

@@ -232,8 +232,12 @@ export class AbstractItem extends AbstractStruct {
     }
     transaction.added.add(this)
     // @ts-ignore
-    if (parent._item.deleted) {
-      this.delete(transaction, false, true)
+    if (parent._item.deleted || (left !== null && parentSub !== null)) {
+      // delete if parent is deleted or if this is not the current attribute value of parent
+      this.delete(transaction)
+    } else if (parentSub !== null && left === null && right !== null) {
+      // this is the current attribute value of parent. delete right
+      right.delete(transaction)
     }
   }
 
@@ -391,13 +395,10 @@ export class AbstractItem extends AbstractStruct {
    * Mark this Item as deleted.
    *
    * @param {Transaction} transaction
-   * @param {boolean} createDelete Whether to propagate a message that this
-   *                               Type was deleted.
-   * @param {boolean} [gcChildren]
    *
    * @private
    */
-  delete (transaction, createDelete = true, gcChildren) {
+  delete (transaction) {
     if (!this.deleted) {
       const parent = this.parent
       // adjust the length of parent
