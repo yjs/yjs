@@ -4,7 +4,7 @@
 
 import { YEvent } from '../utils/YEvent.js'
 
-import { Type } from './AbstractType.js' // eslint-disable-line
+import { AbstractType } from './AbstractType.js' // eslint-disable-line
 import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
 
 /**
@@ -14,7 +14,7 @@ import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
  */
 export class YXmlEvent extends YEvent {
   /**
-   * @param {Type} target The target on which the event is created.
+   * @param {AbstractType} target The target on which the event is created.
    * @param {Set<string|null>} subs The set of changed attributes. `null` is included if the
    *                   child list changed.
    * @param {Boolean} remote Whether this change was created by a remote peer.

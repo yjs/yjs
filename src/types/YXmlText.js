@@ -3,7 +3,7 @@
  */
 
 import { YText } from './YText.js'
-import { Y } from '../utils/Y.js' // eslint-disable-line
+import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 
 /**
  * Represents text in a Dom Element. In the future this type will also handle
@@ -18,7 +18,7 @@ export class YXmlText extends YText {
    *                                        nodejs)
    * @param {Object<string, any>} [hooks] Optional property to customize how hooks
    *                                             are presented in the DOM
-   * @param {DomBinding} [binding] You should not set this property. This is
+   * @param {any} [binding] You should not set this property. This is
    *                               used if DomBinding wants to create a
    *                               association to the created DOM type.
    * @return {Text} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
@@ -32,21 +32,10 @@ export class YXmlText extends YText {
     }
     return dom
   }
-
-  /**
-   * Mark this Item as deleted.
-   *
-   * @param {Y} y The Yjs instance
-   * @param {boolean} createDelete Whether to propagate a message that this
-   *                               Type was deleted.
-   * @param {boolean} [gcChildren=y._hasUndoManager===false] Whether to garbage
-   *                                         collect the children of this type.
-   *
-   * @private
-   */
-  _delete (y, createDelete, gcChildren) {
-    super._delete(y, createDelete, gcChildren)
-  }
 }
 
+/**
+ * @param {decoding.Decoder} decoder
+ * @return {YXmlText}
+ */
 export const readYXmlText = decoder => new YXmlText()

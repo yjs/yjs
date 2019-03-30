@@ -4,11 +4,9 @@
 
 import { AbstractItem } from '../structs/AbstractItem.js' // eslint-disable-line
 import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
-import { AbstractType, typeArrayGet, typeArrayToArray, typeArrayForEach, typeArrayCreateIterator, typeArrayInsertGenerics } from './AbstractType.js'
+import { AbstractType, typeArrayGet, typeArrayToArray, typeArrayForEach, typeArrayCreateIterator, typeArrayInsertGenerics, typeArrayDelete } from './AbstractType.js'
 import { YEvent } from '../utils/YEvent.js'
 import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
-import { getItemCleanStart, getItemCleanEnd } from '../utils/StructStore.js'
-import { createID } from '../utils/ID.js'
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 
 /**
@@ -180,28 +178,7 @@ export class YArray extends AbstractType {
   delete (index, length = 1) {
     if (this._y !== null) {
       this._y.transact(transaction => {
-        const store = transaction.y.store
-        let item = this._start
-        let count = 0
-        while (item !== null && length > 0) {
-          if (!item.deleted && item.countable) {
-            if (count <= index && index < count + item.length) {
-              const diffDel = index - count
-              if (diffDel > 0) {
-                item = getItemCleanStart(store, transaction, createID(item.id.client, item.id.clock + diffDel))
-              }
-              if (length < item.length) {
-                getItemCleanEnd(store, transaction, createID(item.id.client, item.id.clock + length))
-              }
-              length -= item.length
-              item.delete(transaction)
-              count += diffDel
-            } else {
-              count += item.length
-            }
-          }
-          item = item.right
-        }
+        typeArrayDelete(transaction, this, index, length)
       })
     } else {
       // @ts-ignore _prelimContent is defined because this is not yet integrated
