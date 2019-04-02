@@ -58,9 +58,10 @@ export class ItemJSON extends AbstractItem {
   }
   /**
    * @param {encoding.Encoder} encoder
+   * @param {number} offset
    */
-  write (encoder) {
-    super.write(encoder, structJSONRefNumber)
+  write (encoder, offset) {
+    super.write(encoder, offset, structJSONRefNumber)
     const len = this.content.length
     encoding.writeVarUint(encoder, len)
     for (let i = 0; i < len; i++) {
@@ -73,10 +74,11 @@ export class ItemJSON extends AbstractItem {
 export class ItemJSONRef extends AbstractItemRef {
   /**
    * @param {decoding.Decoder} decoder
+   * @param {ID} id
    * @param {number} info
    */
-  constructor (decoder, info) {
-    super(decoder, info)
+  constructor (decoder, id, info) {
+    super(decoder, id, info)
     const len = decoding.readVarUint(decoder)
     const cs = []
     for (let i = 0; i < len; i++) {

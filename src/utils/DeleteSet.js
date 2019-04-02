@@ -1,6 +1,7 @@
 import * as map from 'lib0/map.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
+import * as math from 'lib0/math.js'
 import { StructStore, getItemRange } from './StructStore.js' // eslint-disable-line
 import { Transaction } from './Transaction.js' // eslint-disable-line
 import { ID } from './ID.js' // eslint-disable-line
@@ -40,12 +41,37 @@ export class DeleteSet {
 }
 
 /**
+ * @param {Array<DeleteItem>} dis
+ * @param {number} clock
+ * @return {number|null}
+ */
+export const findIndexSS = (dis, clock) => {
+  let left = 0
+  let right = dis.length
+  while (left <= right) {
+    const midindex = math.floor((left + right) / 2)
+    const mid = dis[midindex]
+    const midclock = mid.clock
+    if (midclock <= clock) {
+      if (clock < midclock + mid.len) {
+        return midindex
+      }
+      left = midindex
+    } else {
+      right = midindex
+    }
+  }
+  return null
+}
+
+/**
  * @param {DeleteSet} ds
  * @param {ID} id
  * @return {boolean}
  */
 export const isDeleted = (ds, id) => {
-  
+  const dis = ds.clients.get(id.client)
+  return dis !== undefined && findIndexSS(dis, id.clock) !== null
 }
 
 /**
@@ -75,15 +101,12 @@ export const sortAndMergeDeleteSet = ds => {
 }
 
 /**
- * @param {Transaction} transaction
+ * @param {DeleteSet} ds
+ * @param {ID} id
+ * @param {number} length
  */
-export const createDeleteSetFromTransaction = transaction => {
-  const ds = new DeleteSet()
-  transaction.deleted.forEach(item => {
-    map.setIfUndefined(ds.clients, item.id.client, () => []).push(new DeleteItem(item.id.clock, item.length))
-  })
-  sortAndMergeDeleteSet(ds)
-  return ds
+export const addToDeleteSet = (ds, id, length) => {
+  map.setIfUndefined(ds.clients, id.client, () => []).push(new DeleteItem(id.clock, length))
 }
 
 /**

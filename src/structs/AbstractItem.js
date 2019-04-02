@@ -2,7 +2,7 @@
  * @module structs
  */
 
-import { readID, createID, writeID, writeNullID, ID } from '../utils/ID.js' // eslint-disable-line
+import { readID, createID, writeID, ID } from '../utils/ID.js' // eslint-disable-line
 import { GC } from './GC.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
@@ -16,6 +16,7 @@ import * as binary from 'lib0/binary.js'
 import { AbstractRef, AbstractStruct } from './AbstractStruct.js' // eslint-disable-line
 import * as error from 'lib0/error.js'
 import { replaceStruct, addStruct } from '../utils/StructStore.js'
+import { addToDeleteSet } from '../utils/DeleteSet.js'
 
 /**
  * Split leftItem into two items
@@ -51,13 +52,7 @@ export const splitItem = (transaction, leftItem, diff) => {
     foundOrigins.add(o)
     o = o.right
   }
-  const right = leftItem.splitAt(transaction, diff)
-  if (transaction.added.has(leftItem)) {
-    transaction.added.add(right)
-  } else if (transaction.deleted.has(leftItem)) {
-    transaction.deleted.add(right)
-  }
-  return rightItem
+  return leftItem.splitAt(transaction, diff)
 }
 
 /**
@@ -230,7 +225,6 @@ export class AbstractItem extends AbstractStruct {
     if (parent !== null) {
       maplib.setIfUndefined(transaction.changed, parent, set.create).add(parentSub)
     }
-    transaction.added.add(this)
     // @ts-ignore
     if (parent._item.deleted || (left !== null && parentSub !== null)) {
       // delete if parent is deleted or if this is not the current attribute value of parent
@@ -341,15 +335,11 @@ export class AbstractItem extends AbstractStruct {
 
   /**
    * Computes the last content address of this Item.
-   *
+   * TODO: do still need this?
    * @private
    */
   get lastId () {
-    /**
-     * @type {any}
-     */
-    const id = this.id
-    return createID(id.user, id.clock + this.length - 1)
+    return createID(this.id.client, this.id.clock + this.length - 1)
   }
 
   /**
@@ -406,8 +396,8 @@ export class AbstractItem extends AbstractStruct {
         parent._length -= this.length
       }
       this.deleted = true
+      addToDeleteSet(transaction.deleteSet, this.id, this.length)
       maplib.setIfUndefined(transaction.changed, parent, set.create).add(this.parentSub)
-      transaction.deleted.add(this)
     }
   }
 
@@ -437,18 +427,26 @@ export class AbstractItem extends AbstractStruct {
    * This is called when this Item is sent to a remote peer.
    *
    * @param {encoding.Encoder} encoder The encoder to write data to.
+   * @param {number} offset
    * @param {number} encodingRef
    * @private
    */
-  write (encoder, encodingRef) {
+  write (encoder, offset, encodingRef) {
     const info = (encodingRef & binary.BITS5) |
       ((this.origin === null) ? 0 : binary.BIT8) | // origin is defined
       ((this.rightOrigin === null) ? 0 : binary.BIT7) | // right origin is defined
       ((this.parentSub !== null) ? 0 : binary.BIT6) // parentSub is non-null
     encoding.writeUint8(encoder, info)
-    writeID(encoder, this.id)
-    if (this.origin !== null) {
-      writeID(encoder, this.origin.lastId)
+    if (offset === 0) {
+      writeID(encoder, this.id)
+      if (this.origin !== null) {
+        writeID(encoder, this.origin.lastId)
+      }
+    } else {
+      writeID(encoder, createID(this.id.client, this.id.clock + offset))
+      if (this.origin !== null) {
+        writeID(encoder, createID(this.id.client, this.id.clock + offset - 1))
+      }
     }
     if (this.rightOrigin !== null) {
       writeID(encoder, this.rightOrigin.id)
@@ -470,10 +468,10 @@ export class AbstractItem extends AbstractStruct {
         if (ykey === null) {
           throw error.unexpectedCase()
         }
-        writeNullID(encoder)
+        encoding.writeVarUint(encoder, 1) // write parentYKey
         encoding.writeVarString(encoder, ykey)
       } else {
-        // neither origin nor right is defined
+        encoding.writeVarUint(encoder, 0) // write parent id
         // @ts-ignore _item is defined because parent is integrated
         writeID(encoder, parent._item.id)
       }
@@ -487,19 +485,11 @@ export class AbstractItem extends AbstractStruct {
 export class AbstractItemRef extends AbstractRef {
   /**
    * @param {decoding.Decoder} decoder
+   * @param {ID} id
    * @param {number} info
    */
-  constructor (decoder, info) {
-    super()
-    const id = readID(decoder)
-    if (id === null) {
-      throw error.unexpectedCase()
-    }
-    /**
-     * The uniqe identifier of this type.
-     * @type {ID}
-     */
-    this.id = id
+  constructor (decoder, id, info) {
+    super(id)
     /**
      * The item that was originally to the left of this item.
      * @type {ID | null}
@@ -511,18 +501,19 @@ export class AbstractItemRef extends AbstractRef {
      */
     this.right = (info & binary.BIT7) === binary.BIT7 ? readID(decoder) : null
     const canCopyParentInfo = (info & (binary.BIT7 | binary.BIT8)) === 0
-    /**
-     * The parent type.
-     * @type {ID | null}
-     */
-    this.parent = canCopyParentInfo ? readID(decoder) : null
+    const hasParentYKey = decoding.readVarUint(decoder) === 1
     /**
      * If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
      * and we read the next string as parentYKey.
      * It indicates how we store/retrieve parent from `y.share`
      * @type {string|null}
      */
-    this.parentYKey = canCopyParentInfo && this.parent === null ? decoding.readVarString(decoder) : null
+    this.parentYKey = canCopyParentInfo && hasParentYKey ? decoding.readVarString(decoder) : null
+    /**
+     * The parent type.
+     * @type {ID | null}
+     */
+    this.parent = canCopyParentInfo && !hasParentYKey ? readID(decoder) : null
     /**
      * If the parent refers to this item with some kind of key (e.g. YMap, the
      * key is specified here. The key is then used to refer to the list in which
@@ -531,11 +522,22 @@ export class AbstractItemRef extends AbstractRef {
      * @type {String | null}
      */
     this.parentSub = canCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoding.readVarString(decoder) : null
+    const missing = this._missing
+    if (this.left !== null) {
+      missing.push(this.left)
+    }
+    if (this.right !== null) {
+      missing.push(this.right)
+    }
+    if (this.parent !== null) {
+      missing.push(this.parent)
+    }
   }
   /**
+   * @param {Transaction} transaction
    * @return {Array<ID|null>}
    */
-  getMissing () {
+  getMissing (transaction) {
     return [
       createID(this.id.client, this.id.clock - 1),
       this.left,

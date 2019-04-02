@@ -17,11 +17,10 @@ export class YXmlEvent extends YEvent {
    * @param {AbstractType} target The target on which the event is created.
    * @param {Set<string|null>} subs The set of changed attributes. `null` is included if the
    *                   child list changed.
-   * @param {Boolean} remote Whether this change was created by a remote peer.
    * @param {Transaction} transaction The transaction instance with wich the
    *                                  change was created.
    */
-  constructor (target, subs, remote, transaction) {
+  constructor (target, subs, transaction) {
     super(target)
     /**
      * The transaction instance for the computed change.
@@ -38,11 +37,6 @@ export class YXmlEvent extends YEvent {
      * @type {Set<string|null>}
      */
     this.attributesChanged = new Set()
-    /**
-     * Whether this change was created by a remote peer.
-     * @type {Boolean}
-     */
-    this.remote = remote
     subs.forEach((sub) => {
       if (sub === null) {
         this.childListChanged = true

@@ -71,20 +71,20 @@ export class Y extends Observable {
       console.error(e)
     }
     if (initialCall) {
-      this.emit('beforeObserverCalls', [this, this._transaction, remote])
       const transaction = this._transaction
       this._transaction = null
-      // emit change events on changed types
-      transaction.changed.forEach((subs, itemtype) => {
-        if (!itemtype._item.deleted) {
-          itemtype.type._callObserver(transaction, subs, remote)
-        }
-      })
-      transaction.changedParentTypes.forEach((events, type) => {
-        if (!type._deleted) {
+      // only call event listeners / observers if anything changed
+      const transactionChangedContent = transaction.changedParentTypes.size !== 0
+      if (transactionChangedContent) {
+        this.emit('beforeObserverCalls', [this, this._transaction, remote])
+        // emit change events on changed types
+        transaction.changed.forEach((subs, itemtype) => {
+          itemtype._callObserver(transaction, subs)
+        })
+        transaction.changedParentTypes.forEach((events, type) => {
           events = events
             .filter(event =>
-              !event.target._deleted
+              event.target._item === null || !event.target._item.deleted
             )
           events
             .forEach(event => {
@@ -92,11 +92,15 @@ export class Y extends Observable {
             })
           // we don't have to check for events.length
           // because there is no way events is empty..
-          type.type._deepEventHandler.callEventListeners(transaction, events)
-        }
-      })
-      // when all changes & events are processed, emit afterTransaction event
-      this.emit('afterTransaction', [this, transaction, remote])
+          type._deepEventHandler.callEventListeners(transaction, events)
+        })
+        // when all changes & events are processed, emit afterTransaction event
+        this.emit('afterTransaction', [this, transaction, remote])
+        // transaction cleanup
+        // todo: replace deleted items with ItemDeleted
+        // todo: replace items with deleted parent with ItemGC
+        // todo: on all affected store.clients props, try to merge
+      }
     }
   }
   /**
@@ -120,6 +124,7 @@ export class Y extends Observable {
    *   }
    *
    * @TODO: implement getText, getArray, ..
+   * @TODO: Decide wether to use define() or get() and then use it consistently
    *
    * @param {string} name
    * @param {Function} TypeConstructor The constructor of the type definition
@@ -127,7 +132,7 @@ export class Y extends Observable {
    */
   get (name, TypeConstructor = AbstractType) {
     // @ts-ignore
-    const type = map.setTfUndefined(this.share, name, () => new TypeConstructor())
+    const type = map.setIfUndefined(this.share, name, () => new TypeConstructor())
     const Constr = type.constructor
     if (Constr !== TypeConstructor) {
       if (Constr === AbstractType) {

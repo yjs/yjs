@@ -1,6 +1,6 @@
 
 export { Y } from './utils/Y.js'
-export { UndoManager } from './utils/UndoManager.js'
+// export { UndoManager } from './utils/UndoManager.js'
 export { Transaction } from './utils/Transaction.js'
 export { ItemJSON } from './structs/ItemJSON.js'
 export { ItemString } from './structs/ItemString.js'
@@ -16,8 +16,6 @@ export { YXmlText as XmlText } from './types/YXmlText.js'
 export { YXmlHook as XmlHook } from './types/YXmlHook.js'
 export { YXmlElement as XmlElement, YXmlFragment as XmlFragment } from './types/YXmlElement.js'
 
-export { getRelativePosition, fromRelativePosition, equal as equalRelativePosition } from './utils/relativePosition.js'
-
+export { createRelativePosition, createRelativePositionByOffset, createAbsolutePosition, compareRelativePositions, writeRelativePosition, readRelativePosition, AbsolutePosition, RelativePosition } from './utils/relativePosition.js'
 export { ID, createID } from './utils/ID.js'
-export { integrateRemoteStructs } from './utils/integrateRemoteStructs.js'
 export { isParentOf } from './utils/isParentOf.js'

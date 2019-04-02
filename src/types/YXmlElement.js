@@ -7,8 +7,12 @@ import { YMap } from './YMap.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import { Y } from '../utils/Y.js' // eslint-disable-line
-import { YArray } from './YArray.js'
 import { YXmlEvent } from './YXmlEvent.js'
+import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
+import { YXmlText } from './YXmlText.js' // eslint-disable-line
+import { YXmlHook } from './YXmlHook.js' // eslint-disable-line
+import { AbstractType, typeArrayMap, typeArrayForEach, typeMapGet, typeMapGetAll } from './AbstractType.js'
+import { Snapshot } from '../utils/Snapshot.js' // eslint-disable-line
 
 /**
  * Define the elements to which a set of CSS queries apply.
@@ -42,16 +46,16 @@ import { YXmlEvent } from './YXmlEvent.js'
 export class YXmlTreeWalker {
   /**
    * @param {YXmlFragment | YXmlElement} root
-   * @param {function} f
+   * @param {function(AbstractType):boolean} f
    */
   constructor (root, f) {
     this._filter = f || (() => true)
     this._root = root
     /**
-     * @type {YXmlFragment | YXmlElement}
+     * @type {ItemType | null}
      */
-    this._currentNode = root
-    this._firstCall = true
+    // @ts-ignore
+    this._currentNode = root._start
   }
   [Symbol.iterator] () {
     return this
@@ -59,45 +63,40 @@ export class YXmlTreeWalker {
   /**
    * Get the next node.
    *
-   * @return {YXmlElement} The next node.
+   * @return {IteratorResult<YXmlElement|YXmlText|YXmlHook>} The next node.
    *
    * @public
    */
   next () {
     let n = this._currentNode
-    if (this._firstCall) {
-      this._firstCall = false
-      if (!n._deleted && this._filter(n)) {
-        return { value: n, done: false }
-      }
+    if (n === null) {
+      // @ts-ignore return undefined if done=true (the expected result)
+      return { value: undefined, done: true }
     }
+    const nextValue = n
     do {
-      if (!n._deleted && (n.constructor === YXmlElement || n.constructor === YXmlFragment) && n._start !== null) {
+      if (!n.deleted && (n.constructor === YXmlElement || n.constructor === YXmlFragment) && n.type._start !== null) {
         // walk down in the tree
-        n = n._start
+        // @ts-ignore
+        n = n.type._start
       } else {
         // walk right or up in the tree
-        while (n !== this._root) {
-          if (n._right !== null) {
-            n = n._right
+        while (n !== null) {
+          if (n.right !== null) {
+            // @ts-ignore
+            n = n.right
             break
+          } else if (n.parent === this._root) {
+            n = null
+          } else {
+            n = n.parent._item
           }
-          n = n._parent
-        }
-        if (n === this._root) {
-          n = null
         }
       }
-      if (n === this._root) {
-        break
-      }
-    } while (n !== null && (n._deleted || !this._filter(n)))
+    } while (n !== null && (n.deleted || !this._filter(n.type)))
     this._currentNode = n
-    if (n === null) {
-      return { done: true }
-    } else {
-      return { value: n, done: false }
-    }
+    // @ts-ignore
+    return { value: nextValue.type, done: false }
   }
 }
 
@@ -109,7 +108,7 @@ export class YXmlTreeWalker {
  *
  * @public
  */
-export class YXmlFragment extends YArray {
+export class YXmlFragment extends AbstractType {
   /**
    * Create a subtree of childNodes.
    *
@@ -120,7 +119,7 @@ export class YXmlFragment extends YArray {
    *   nop(node)
    * }
    *
-   * @param {Function} filter Function that is called on each child element and
+   * @param {function(AbstractType):boolean} filter Function that is called on each child element and
    *                          returns a Boolean indicating whether the child
    *                          is to be included in the subtree.
    * @return {YXmlTreeWalker} A subtree and a position within it.
@@ -142,12 +141,13 @@ export class YXmlFragment extends YArray {
    *   - attribute
    *
    * @param {CSS_Selector} query The query on the children.
-   * @return {YXmlElement} The first element that matches the query or null.
+   * @return {YXmlElement|YXmlText|YXmlHook|null} The first element that matches the query or null.
    *
    * @public
    */
   querySelector (query) {
     query = query.toUpperCase()
+    // @ts-ignore
     const iterator = new YXmlTreeWalker(this, element => element.nodeName === query)
     const next = iterator.next()
     if (next.done) {
@@ -164,12 +164,13 @@ export class YXmlFragment extends YArray {
    * TODO: Does not yet support all queries. Currently only query by tagName.
    *
    * @param {CSS_Selector} query The query on the children
-   * @return {Array<YXmlElement>} The elements that match this query.
+   * @return {Array<YXmlElement|YXmlText|YXmlHook|null>} The elements that match this query.
    *
    * @public
    */
   querySelectorAll (query) {
     query = query.toUpperCase()
+    // @ts-ignore
     return Array.from(new YXmlTreeWalker(this, element => element.nodeName === query))
   }
 
@@ -194,7 +195,7 @@ export class YXmlFragment extends YArray {
    * @return {string} The string representation of all children.
    */
   toDomString () {
-    return this.map(xml => xml.toDomString()).join('')
+    return typeArrayMap(this, xml => xml.toDomString()).join('')
   }
 
   /**
@@ -205,10 +206,10 @@ export class YXmlFragment extends YArray {
    *                                        nodejs)
    * @param {Object<string, any>} [hooks={}] Optional property to customize how hooks
    *                                             are presented in the DOM
-   * @param {DomBinding} [binding] You should not set this property. This is
+   * @param {any} [binding] You should not set this property. This is
    *                               used if DomBinding wants to create a
    *                               association to the created DOM type.
-   * @return {DocumentFragment} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
+   * @return {Node} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
    *
    * @public
    */
@@ -217,19 +218,10 @@ export class YXmlFragment extends YArray {
     if (binding !== undefined) {
       binding._createAssociation(fragment, this)
     }
-    this.forEach(xmlType => {
+    typeArrayForEach(this, xmlType => {
       fragment.insertBefore(xmlType.toDom(_document, hooks, binding), null)
     })
     return fragment
-  }
-  /**
-   * Transform this YXml Type to a readable format.
-   * Useful for logging as all Items and Delete implement this method.
-   *
-   * @private
-   */
-  _logString () {
-    return logItemHelper('YXml', this)
   }
 }
 
@@ -249,27 +241,11 @@ export class YXmlElement extends YXmlFragment {
   /**
    * Creates an Item with the same effect as this Item (without position effect)
    *
+   * @return {YXmlElement}
    * @private
    */
   _copy () {
-    let struct = super._copy()
-    struct.nodeName = this.nodeName
-    return struct
-  }
-
-  /**
-   * Read the next Item in a Decoder and fill this Item with the read data.
-   *
-   * This is called when data is received from a remote peer.
-   *
-   * @private
-   * @param {Y} y The Yjs instance that this Item belongs to.
-   * @param {decoding.Decoder} decoder The decoder object to read data from.
-   */
-  _fromBinary (y, decoder) {
-    const missing = super._fromBinary(y, decoder)
-    this.nodeName = decoding.readVarString(decoder)
-    return missing
+    return new YXmlElement(this.nodeName)
   }
 
   /**
@@ -281,29 +257,8 @@ export class YXmlElement extends YXmlFragment {
    * @private
    * @param {encoding.Encoder} encoder The encoder to write data to.
    */
-  _toBinary (encoder) {
-    super._toBinary(encoder)
+  _write (encoder) {
     encoding.writeVarString(encoder, this.nodeName)
-  }
-
-  /**
-   * Integrates this Item into the shared structure.
-   *
-   * This method actually applies the change to the Yjs instance. In case of
-   * Item it connects _left and _right to this Item and calls the
-   * {@link Item#beforeChange} method.
-   *
-   * * Checks for nodeName
-   * * Sets domFilter
-   *
-   * @private
-   * @param {Transaction} transaction The Yjs instance
-   */
-  _integrate (transaction) {
-    if (this.nodeName === null) {
-      throw new Error('nodeName must be defined!')
-    }
-    super._integrate(transaction)
   }
 
   toString () {
@@ -365,37 +320,25 @@ export class YXmlElement extends YXmlFragment {
    *
    * @param {String} attributeName The attribute name that identifies the
    *                               queried value.
-   * @param {HistorySnapshot} [snapshot]
    * @return {String} The queried attribute value.
    *
    * @public
    */
-  getAttribute (attributeName, snapshot) {
-    return YMap.prototype.get.call(this, attributeName, snapshot)
+  getAttribute (attributeName) {
+    // @ts-ignore
+    return typeMapGet(this, attributeName)
   }
 
   /**
    * Returns all attribute name/value pairs in a JSON Object.
    *
-   * @param {HistorySnapshot} [snapshot]
+   * @param {Snapshot} [snapshot]
    * @return {Object} A JSON Object that describes the attributes.
    *
    * @public
    */
   getAttributes (snapshot) {
-    const obj = {}
-    if (snapshot === undefined) {
-      for (let [key, value] of this._map) {
-        if (!value._deleted) {
-          obj[key] = value._content[0]
-        }
-      }
-    } else {
-      YMap.prototype.keys.call(this, snapshot).forEach(key => {
-        obj[key] = YMap.prototype.get.call(this, key, snapshot)
-      })
-    }
-    return obj
+    return typeMapGetAll(this)
   }
   // TODO: outsource the binding property.
   /**
@@ -406,10 +349,10 @@ export class YXmlElement extends YXmlFragment {
    *                                        nodejs)
    * @param {Object<string, any>} [hooks={}] Optional property to customize how hooks
    *                                             are presented in the DOM
-   * @param {DomBinding} [binding] You should not set this property. This is
+   * @param {any} [binding] You should not set this property. This is
    *                               used if DomBinding wants to create a
    *                               association to the created DOM type.
-   * @return {Element} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
+   * @return {Node} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
    *
    * @public
    */
@@ -419,7 +362,7 @@ export class YXmlElement extends YXmlFragment {
     for (let key in attrs) {
       dom.setAttribute(key, attrs[key])
     }
-    this.forEach(yxml => {
+    typeArrayForEach(this, yxml => {
       dom.appendChild(yxml.toDom(_document, hooks, binding))
     })
     if (binding !== undefined) {
@@ -429,5 +372,13 @@ export class YXmlElement extends YXmlFragment {
   }
 }
 
+/**
+ * @param {decoding.Decoder} decoder
+ * @return {YXmlElement}
+ */
 export const readYXmlElement = decoder => new YXmlElement(decoding.readVarString(decoder))
+/**
+ * @param {decoding.Decoder} decoder
+ * @return {YXmlFragment}
+ */
 export const readYXmlFragment = decoder => new YXmlFragment()

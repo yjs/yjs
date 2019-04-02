@@ -5,6 +5,7 @@ import { ID } from './ID.js' // eslint-disable-line
 import { Transaction } from './Transaction.js' // eslint-disable-line
 import * as map from 'lib0/map.js'
 import * as math from 'lib0/math.js'
+import * as error from 'lib0/error.js'
 
 export class StructStore {
   constructor () {
@@ -68,13 +69,13 @@ export const addStruct = (store, struct) => {
 }
 
 /**
- * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
- * @param {Array<AbstractStruct>} structs // ordered structs without holes
+ * Perform a binary search on a sorted array
+ * @param {Array<any>} structs
  * @param {number} clock
  * @return {number}
  * @private
  */
-export const findIndex = (structs, clock) => {
+export const findIndexSS = (structs, clock) => {
   let left = 0
   let right = structs.length
   while (left <= right) {
@@ -90,7 +91,7 @@ export const findIndex = (structs, clock) => {
       right = midindex
     }
   }
-  throw new Error('ID does not exist')
+  throw error.unexpectedCase()
 }
 
 /**
@@ -101,13 +102,13 @@ export const findIndex = (structs, clock) => {
  * @return {AbstractStruct}
  * @private
  */
-const find = (store, id) => {
+export const find = (store, id) => {
   /**
    * @type {Array<AbstractStruct>}
    */
   // @ts-ignore
   const structs = store.clients.get(id.client)
-  return structs[findIndex(structs, id.clock)]
+  return structs[findIndexSS(structs, id.clock)]
 }
 
 /**
@@ -135,14 +136,13 @@ export const getItemCleanStart = (store, transaction, id) => {
    */
   // @ts-ignore
   const structs = store.clients.get(id.client)
-  const index = findIndex(structs, id.clock)
+  const index = findIndexSS(structs, id.clock)
   /**
    * @type {AbstractItem}
    */
   let struct = structs[index]
   if (struct.id.clock < id.clock) {
-    struct.splitAt()
-    struct = splitStruct(transaction, struct, id.clock - struct.id.clock)
+    struct = struct.splitAt(transaction, id.clock - struct.id.clock)
     structs.splice(index, 0, struct)
   }
   return struct
@@ -163,10 +163,10 @@ export const getItemCleanEnd = (store, transaction, id) => {
    */
   // @ts-ignore
   const structs = store.clients.get(id.client)
-  const index = findIndex(structs, id.clock)
+  const index = findIndexSS(structs, id.clock)
   const struct = structs[index]
   if (id.clock !== struct.id.clock + struct.length - 1) {
-    structs.splice(index, 0, splitStruct(transaction, struct, id.clock - struct.id.clock + 1))
+    structs.splice(index, 0, struct.splitAt(transaction, id.clock - struct.id.clock + 1))
   }
   return struct
 }
@@ -188,11 +188,11 @@ export const getItemRange = (store, transaction, client, clock, len) => {
    */
   // @ts-ignore
   const structs = store.clients.get(client)
-  let index = findIndex(structs, clock)
+  let index = findIndexSS(structs, clock)
   let struct = structs[index]
   let range = []
   if (struct.id.clock < clock) {
-    struct = splitStruct(transaction, struct, clock - struct.id.clock)
+    struct = struct.splitAt(transaction, clock - struct.id.clock)
     structs.splice(index, 0, struct)
   }
   while (struct.id.clock + struct.length <= clock + len) {
@@ -200,7 +200,7 @@ export const getItemRange = (store, transaction, client, clock, len) => {
     struct = structs[++index]
   }
   if (clock < struct.id.clock + struct.length) {
-    structs.splice(index, 0, splitStruct(transaction, struct, clock + len - struct.id.clock))
+    structs.splice(index, 0, struct.splitAt(transaction, clock + len - struct.id.clock))
     range.push(struct)
   }
   return range
@@ -218,5 +218,12 @@ export const replaceStruct = (store, struct, newStruct) => {
    */
   // @ts-ignore
   const structs = store.clients.get(struct.id.client)
-  structs[findIndex(structs, struct.id.clock)] = newStruct
+  structs[findIndexSS(structs, struct.id.clock)] = newStruct
 }
+
+/**
+ * @param {StructStore} store
+ * @param {ID} id
+ * @return {boolean}
+ */
+export const exists = (store, id) => id.clock < getState(store, id.client)

@@ -58,5 +58,6 @@
     "typeRoots": ["./src/utils/typedefs.js"],
     // "types": ["./src/utils/typedefs.js"]
   },
-  "exclude": ["./dist/**"]
+  "include": ["./src/**/*", "./tests/**/*"],
+  "exclude": ["../lib0/**/*", "node_modules"]
 }

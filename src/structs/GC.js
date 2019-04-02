@@ -28,10 +28,15 @@ export class GC extends AbstractStruct {
 
   /**
    * @param {encoding.Encoder} encoder
+   * @param {number} offset
    */
-  write (encoder) {
+  write (encoder, offset) {
     encoding.writeUint8(encoder, structGCRefNumber)
-    writeID(encoder, this.id)
+    if (offset === 0) {
+      writeID(encoder, this.id)
+    } else {
+      writeID(encoder, createID(this.id.client, this.id.clock + offset))
+    }
     encoding.writeVarUint(encoder, this.length)
   }
 }
@@ -39,14 +44,11 @@ export class GC extends AbstractStruct {
 export class GCRef extends AbstractRef {
   /**
    * @param {decoding.Decoder} decoder
+   * @param {ID} id
    * @param {number} info
    */
-  constructor (decoder, info) {
-    super()
-    const id = readID(decoder)
-    if (id === null) {
-      throw new Error('expected id')
-    }
+  constructor (decoder, id, info) {
+    super(id)
     /**
      * @type {ID}
      */

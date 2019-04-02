@@ -24,21 +24,49 @@ export class AbstractStruct {
     throw error.methodUnimplemented()
   }
   /**
+   * @type {boolean}
+   */
+  get deleted () {
+    throw error.methodUnimplemented()
+  }
+  /**
    * @param {encoding.Encoder} encoder The encoder to write data to.
+   * @param {number} offset
    * @param {number} encodingRef
    * @private
    */
-  write (encoder, encodingRef) {
+  write (encoder, offset, encodingRef) {
+    throw error.methodUnimplemented()
+  }
+  /**
+   * @param {Transaction} transaction
+   */
+  integrate (transaction) {
     throw error.methodUnimplemented()
   }
 }
 
 export class AbstractRef {
   /**
+   * @param {ID} id
+   */
+  constructor (id) {
+    /**
+     * @type {Array<ID>}
+     */
+    this._missing = []
+    /**
+     * The uniqe identifier of this type.
+     * @type {ID}
+     */
+    this.id = id
+  }
+  /**
+   * @param {Transaction} transaction
    * @return {Array<ID|null>}
    */
-  getMissing () {
-    return []
+  getMissing (transaction) {
+    return this._missing
   }
   /**
    * @param {Transaction} transaction

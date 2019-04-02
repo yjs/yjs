@@ -73,37 +73,41 @@ export class ItemType extends AbstractItem {
     return new ItemType(id, left, right, parent, parentSub, this.type._copy())
   }
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {Transaction} transaction
    */
-  write (encoder) {
-    super.write(encoder, structTypeRefNumber)
+  integrate (transaction) {
+    this.type._integrate(transaction, this)
+  }
+  /**
+   * @param {encoding.Encoder} encoder
+   * @param {number} offset
+   */
+  write (encoder, offset) {
+    super.write(encoder, offset, structTypeRefNumber)
     this.type._write(encoder)
   }
   /**
    * Mark this Item as deleted.
    *
    * @param {Transaction} transaction The Yjs instance
-   * @param {boolean} createDelete Whether to propagate a message that this
-   *                               Type was deleted.
-   * @param {boolean} [gcChildren=(y._hasUndoManager===false)] Whether to garbage
-   *                                         collect the children of this type.
    * @private
    */
-  delete (transaction, createDelete, gcChildren = transaction.y.gcEnabled) {
+  delete (transaction) {
     const y = transaction.y
-    super.delete(transaction, createDelete, gcChildren)
+    super.delete(transaction)
     transaction.changed.delete(this.type)
+    transaction.changedParentTypes.delete(this.type)
     // delete map types
     for (let value of this.type._map.values()) {
       if (!value.deleted) {
-        value.delete(transaction, false, gcChildren)
+        value.delete(transaction)
       }
     }
     // delete array types
     let t = this.type._start
     while (t !== null) {
       if (!t.deleted) {
-        t.delete(transaction, false, gcChildren)
+        t.delete(transaction)
       }
       t = t.right
     }
@@ -133,13 +137,14 @@ export class ItemType extends AbstractItem {
   }
 }
 
-export class ItemBinaryRef extends AbstractItemRef {
+export class ItemTypeRef extends AbstractItemRef {
   /**
    * @param {decoding.Decoder} decoder
+   * @param {ID} id
    * @param {number} info
    */
-  constructor (decoder, info) {
-    super(decoder, info)
+  constructor (decoder, id, info) {
+    super(decoder, id, info)
     const typeRef = decoding.readVarUint(decoder)
     /**
      * @type {AbstractType}

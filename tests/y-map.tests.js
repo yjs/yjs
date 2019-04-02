@@ -3,6 +3,9 @@ import * as Y from '../src/index.js'
 import * as t from 'lib0/testing.js'
 import * as prng from 'lib0/prng.js'
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testBasicMapTests = tc => {
   const { testConnector, users, map0, map1, map2 } = init(tc, { users: 3 })
   users[2].disconnect()
@@ -38,6 +41,9 @@ export const testBasicMapTests = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testGetAndSetOfMapProperty = tc => {
   const { testConnector, users, map0 } = init(tc, { users: 2 })
   map0.set('stuff', 'stuffy')
@@ -56,6 +62,9 @@ export const testGetAndSetOfMapProperty = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testYmapSetsYmap = tc => {
   const { users, map0 } = init(tc, { users: 2 })
   const map = map0.set('Map', new Y.Map())
@@ -65,6 +74,9 @@ export const testYmapSetsYmap = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testYmapSetsYarray = tc => {
   const { users, map0 } = init(tc, { users: 2 })
   const array = map0.set('Array', new Y.Array())
@@ -74,6 +86,9 @@ export const testYmapSetsYarray = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testGetAndSetOfMapPropertySyncs = tc => {
   const { testConnector, users, map0 } = init(tc, { users: 2 })
   map0.set('stuff', 'stuffy')
@@ -86,6 +101,9 @@ export const testGetAndSetOfMapPropertySyncs = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testGetAndSetOfMapPropertyWithConflict = tc => {
   const { testConnector, users, map0, map1 } = init(tc, { users: 3 })
   map0.set('stuff', 'c0')
@@ -98,6 +116,9 @@ export const testGetAndSetOfMapPropertyWithConflict = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testGetAndSetAndDeleteOfMapProperty = tc => {
   const { testConnector, users, map0, map1 } = init(tc, { users: 3 })
   map0.set('stuff', 'c0')
@@ -111,6 +132,9 @@ export const testGetAndSetAndDeleteOfMapProperty = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testGetAndSetOfMapPropertyWithThreeConflicts = tc => {
   const { testConnector, users, map0, map1, map2 } = init(tc, { users: 3 })
   map0.set('stuff', 'c0')
@@ -125,6 +149,9 @@ export const testGetAndSetOfMapPropertyWithThreeConflicts = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testGetAndSetAndDeleteOfMapPropertyWithThreeConflicts = tc => {
   const { testConnector, users, map0, map1, map2, map3 } = init(tc, { users: 4 })
   map0.set('stuff', 'c0')
@@ -145,6 +172,9 @@ export const testGetAndSetAndDeleteOfMapPropertyWithThreeConflicts = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testObserveDeepProperties = tc => {
   const { testConnector, users, map1, map2, map3 } = init(tc, { users: 4 })
   const _map1 = map1.set('map', new Y.Map())
@@ -176,6 +206,9 @@ export const testObserveDeepProperties = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testObserversUsingObservedeep = tc => {
   const { users, map0 } = init(tc, { users: 2 })
   const pathes = []
@@ -201,6 +234,9 @@ const compareEvent = (t, is, should) => {
   }
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testThrowsAddAndUpdateAndDeleteEvents = tc => {
   const { users, map0 } = init(tc, { users: 2 })
   let event
@@ -229,6 +265,9 @@ export const testThrowsAddAndUpdateAndDeleteEvents = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testYmapEventHasCorrectValueWhenSettingAPrimitive = tc => {
   const { users, map0 } = init(tc, { users: 3 })
   let event
@@ -240,6 +279,9 @@ export const testYmapEventHasCorrectValueWhenSettingAPrimitive = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testYmapEventHasCorrectValueWhenSettingAPrimitiveFromOtherUser = tc => {
   const { users, map0, map1, testConnector } = init(tc, { users: 3 })
   let event
@@ -274,61 +316,106 @@ const mapTransactions = [
   }
 ]
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYmapTests20 = tc => {
   applyRandomTests(tc, mapTransactions, 20)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYmapTests40 = tc => {
   applyRandomTests(tc, mapTransactions, 40)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYmapTests42 = tc => {
   applyRandomTests(tc, mapTransactions, 42)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYmapTests43 = tc => {
   applyRandomTests(tc, mapTransactions, 43)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYmapTests44 = tc => {
   applyRandomTests(tc, mapTransactions, 44)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYmapTests45 = tc => {
   applyRandomTests(tc, mapTransactions, 45)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYmapTests46 = tc => {
   applyRandomTests(tc, mapTransactions, 46)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYmapTests300 = tc => {
   applyRandomTests(tc, mapTransactions, 300)
 }
 
-/* TODO: implement something like difficutly in lib0
-
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYmapTests400 = tc => {
+  t.skip(!t.production)
   applyRandomTests(tc, mapTransactions, 400)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYmapTests500 = tc => {
+  t.skip(!t.production)
   applyRandomTests(tc, mapTransactions, 500)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYmapTests600 = tc => {
+  t.skip(!t.production)
   applyRandomTests(tc, mapTransactions, 600)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYmapTests1000 = tc => {
+  t.skip(!t.production)
   applyRandomTests(tc, mapTransactions, 1000)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYmapTests1800 = tc => {
+  t.skip(!t.production)
   applyRandomTests(tc, mapTransactions, 1800)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYmapTests10000 = tc => {
+  t.skip(!t.production)
   applyRandomTests(tc, mapTransactions, 10000)
 }
-*/

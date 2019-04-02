@@ -18,6 +18,6 @@ export class Snapshot {
  * @param {AbstractItem} item
  * @param {Snapshot} [snapshot]
  */
-export const isVisible = (item, snapshot) => snapshot === undefined ? !item._deleted : (
-  snapshot.sm.has(item.id.client) && (snapshot.sm.get(item.id.client) || 0) > item.id.clock && !isDeleted(snapshot.ds, item._id)
+export const isVisible = (item, snapshot) => snapshot === undefined ? !item.deleted : (
+  snapshot.sm.has(item.id.client) && (snapshot.sm.get(item.id.client) || 0) > item.id.clock && !isDeleted(snapshot.ds, item.id)
 )

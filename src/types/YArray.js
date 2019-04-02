@@ -4,7 +4,7 @@
 
 import { AbstractItem } from '../structs/AbstractItem.js' // eslint-disable-line
 import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
-import { AbstractType, typeArrayGet, typeArrayToArray, typeArrayForEach, typeArrayCreateIterator, typeArrayInsertGenerics, typeArrayDelete } from './AbstractType.js'
+import { AbstractType, typeArrayGet, typeArrayToArray, typeArrayForEach, typeArrayCreateIterator, typeArrayInsertGenerics, typeArrayDelete, typeArrayMap } from './AbstractType.js'
 import { YEvent } from '../utils/YEvent.js'
 import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
@@ -140,20 +140,14 @@ export class YArray extends AbstractType {
    * Returns an Array with the result of calling a provided function on every
    * element of this YArray.
    *
-   * @template M
+   * @template T,M
    * @param {function(T,number,YArray<T>):M} f Function that produces an element of the new Array
    * @return {Array<M>} A new array with each element being the result of the
    *                 callback function
    */
   map (f) {
-    /**
-     * @type {Array<M>}
-     */
-    const result = []
-    this.forEach((c, i) => {
-      result.push(f(c, i, this))
-    })
-    return result
+    // @ts-ignore
+    return typeArrayMap(this, f)
   }
 
   /**

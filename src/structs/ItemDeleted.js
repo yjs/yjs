@@ -8,9 +8,9 @@ import { AbstractItem, AbstractItemRef } from './AbstractItem.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import { ID } from '../utils/ID.js' // eslint-disable-line
-import { ItemType } from './ItemType.js' // eslint-disable-line
-import { Y } from '../utils/Y.js' // eslint-disable-line
 import { getItemCleanEnd, getItemCleanStart, getItemType } from '../utils/StructStore.js'
+import { AbstractType } from '../types/AbstractType.js' // eslint-disable-line
+import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
 
 export const structDeletedRefNumber = 2
 
@@ -39,20 +39,22 @@ export class ItemDeleted extends AbstractItem {
   }
   /**
    * @param {encoding.Encoder} encoder
+   * @param {number} offset
    */
-  write (encoder) {
-    super.write(encoder, structDeletedRefNumber)
-    encoding.writeVarUint(encoder, this.length)
+  write (encoder, offset) {
+    super.write(encoder, offset, structDeletedRefNumber)
+    encoding.writeVarUint(encoder, this.length - offset)
   }
 }
 
 export class ItemDeletedRef extends AbstractItemRef {
   /**
    * @param {decoding.Decoder} decoder
+   * @param {ID} id
    * @param {number} info
    */
-  constructor (decoder, info) {
-    super(decoder, info)
+  constructor (decoder, id, info) {
+    super(decoder, id, info)
     /**
      * @type {number}
      */

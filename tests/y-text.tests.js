@@ -1,6 +1,9 @@
 import { init, compare } from './testHelper.js'
 import * as t from 'lib0/testing.js'
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testBasicInsertAndDelete = tc => {
   const { users, text0 } = init(tc, { users: 2 })
   let delta
@@ -26,6 +29,9 @@ export const testBasicInsertAndDelete = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testBasicFormat = tc => {
   const { users, text0 } = init(tc, { users: 2 })
   let delta

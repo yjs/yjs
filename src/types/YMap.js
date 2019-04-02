@@ -2,36 +2,13 @@
  * @module types
  */
 
-import { AbstractType, typeMapDelete, typeMapSet, typeMapGet, typeMapHas } from './AbstractType.js'
+import { AbstractItem } from '../structs/AbstractItem.js' // eslint-disable-line
+import { AbstractType, typeMapDelete, typeMapSet, typeMapGet, typeMapHas, createMapIterator } from './AbstractType.js'
 import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
 import { YEvent } from '../utils/YEvent.js'
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
-
-class YMapIterator {
-  /**
-   * @param {Array<any>} vals
-   */
-  constructor (vals) {
-    this.vals = vals
-    this.i = 0
-  }
-  [Symbol.iterator] () {
-    return this
-  }
-  next () {
-    let value
-    let done = true
-    if (this.i < this.vals.length) {
-      value = this.vals[this.i]
-      done = false
-    }
-    return {
-      value,
-      done
-    }
-  }
-}
+import * as iterator from 'lib0/iterator.js'
 
 /**
  * Event that describes the changes on a YMap.
@@ -109,26 +86,18 @@ export class YMap extends AbstractType {
   /**
    * Returns the keys for each element in the YMap Type.
    *
-   * @return {YMapIterator}
+   * @return {Iterator<string>}
    */
   keys () {
-    const keys = []
-    for (let [key, value] of this._map) {
-      if (value.deleted) {
-        keys.push(key)
-      }
-    }
-    return new YMapIterator(keys)
+    return iterator.iteratorMap(createMapIterator(this._map), v => v[0])
   }
-
+  /**
+   * Returns the value for each element in the YMap Type.
+   *
+   * @return {Iterator<string|number|ArrayBuffer|Object<string,any>|Array<any>>}
+   */
   entries () {
-    const entries = []
-    for (let [key, value] of this._map) {
-      if (value.deleted) {
-        entries.push([key, value.getContent()[0]])
-      }
-    }
-    return new YMapIterator(entries)
+    return iterator.iteratorMap(createMapIterator(this._map), v => v[1].getContent()[0])
   }
 
   [Symbol.iterator] () {

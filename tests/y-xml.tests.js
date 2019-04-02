@@ -2,6 +2,9 @@ import { init, compare } from './testHelper.js'
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing.js'
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testSetProperty = tc => {
   const { testConnector, users, xml0, xml1 } = init(tc, { users: 2 })
   xml0.setAttribute('height', '10')
@@ -11,6 +14,9 @@ export const testSetProperty = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testEvents = tc => {
   const { testConnector, users, xml0, xml1 } = init(tc, { users: 2 })
   let event = { attributesChanged: new Set() }
@@ -48,6 +54,9 @@ export const testEvents = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testTreewalker = tc => {
   const { users, xml0 } = init(tc, { users: 3 })
   let paragraph1 = new Y.XmlElement('p')

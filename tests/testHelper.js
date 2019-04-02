@@ -5,7 +5,6 @@ import { createMutex } from 'lib0/mutex.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import * as syncProtocol from 'y-protocols/sync.js'
-import { defragmentItemContent } from '../src/utils/defragmentItemContent.js'
 
 /**
  * @param {TestYInstance} y
@@ -13,11 +12,9 @@ import { defragmentItemContent } from '../src/utils/defragmentItemContent.js'
  */
 const afterTransaction = (y, transaction) => {
   y.mMux(() => {
-    if (transaction.encodedStructsLen > 0) {
-      const encoder = encoding.createEncoder()
-      syncProtocol.writeUpdate(encoder, transaction.encodedStructsLen, transaction.encodedStructs)
-      broadcastMessage(y, encoding.toBuffer(encoder))
-    }
+    const encoder = encoding.createEncoder()
+    syncProtocol.writeUpdate(encoder, transaction.updateMessage)
+    broadcastMessage(y, encoding.toBuffer(encoder))
   })
 }
 
@@ -217,6 +214,7 @@ export class TestConnector {
 /**
  * @param {t.TestCase} tc
  * @param {{users?:number}} conf
+ * @return {{testConnector:TestConnector,users:Array<TestYInstance>,array0:Y.Array<any>,array1:Y.Array<any>,array2:Y.Array<any>,map0:Y.Map,map1:Y.Map,map2:Y.Map,text0:Y.Text,text1:Y.Text,text2:Y.Text,xml0:YXmlFragment,xml1:YXmlFragment,xml2:YXmlFragment}}
  */
 export const init = (tc, { users = 5 } = {}) => {
   /**
@@ -231,50 +229,27 @@ export const init = (tc, { users = 5 } = {}) => {
   for (let i = 0; i < users; i++) {
     const y = testConnector.createY(i)
     result.users.push(y)
-    result['array' + i] = y.define('array', Y.Array)
-    result['map' + i] = y.define('map', Y.Map)
-    result['xml' + i] = y.define('xml', Y.XmlElement)
-    result['text' + i] = y.define('text', Y.Text)
+    result['array' + i] = y.get('array', Y.Array)
+    result['map' + i] = y.get('map', Y.Map)
+    result['xml' + i] = y.get('xml', Y.XmlElement)
+    result['text' + i] = y.get('text', Y.Text)
   }
   testConnector.syncAll()
+  // @ts-ignore
   return result
 }
 
 /**
- * Convert DS to a proper DeleteSet of Map.
- *
- * @param {Y.Y} y
- * @return {Object<number, Array<[number, number, boolean]>>}
+ * @param {any} constructor
+ * @param {ID} a
+ * @param {ID} b
+ * @param {string} path
+ * @param {any} next
  */
-const getDeleteSet = y => {
-  /**
-   * @type {Object<number, Array<[number, number, boolean]>>}
-   */
-  var ds = {}
-  y.ds.iterate(null, null, n => {
-    var user = n._id.user
-    var counter = n._id.clock
-    var len = n.len
-    var gc = n.gc
-    var dv = ds[user]
-    if (dv === void 0) {
-      dv = []
-      ds[user] = dv
-    }
-    dv.push([counter, len, gc])
-  })
-  return ds
-}
-
 const customOSCompare = (constructor, a, b, path, next) => {
   switch (constructor) {
     case Y.ID:
-    case Y.RootID:
-      if (a.equals(b)) {
-        return true
-      } else {
-        return false
-      }
+      return compareIDs(a, b)
   }
   return next(constructor, a, b, path, next)
 }

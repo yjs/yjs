@@ -43,9 +43,10 @@ export class ItemBinary extends AbstractItem {
   }
   /**
    * @param {encoding.Encoder} encoder
+   * @param {number} offset
    */
-  write (encoder) {
-    super.write(encoder, structBinaryRefNumber)
+  write (encoder, offset) {
+    super.write(encoder, offset, structBinaryRefNumber)
     encoding.writePayload(encoder, this.content)
   }
 }
@@ -53,10 +54,11 @@ export class ItemBinary extends AbstractItem {
 export class ItemBinaryRef extends AbstractItemRef {
   /**
    * @param {decoding.Decoder} decoder
+   * @param {ID} id
    * @param {number} info
    */
-  constructor (decoder, info) {
-    super(decoder, info)
+  constructor (decoder, id, info) {
+    super(decoder, id, info)
     /**
      * @type {ArrayBuffer}
      */

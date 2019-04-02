@@ -10,7 +10,7 @@ import { YEvent } from './YEvent.js' // eslint-disable-line
 import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
 import { writeStructsFromTransaction } from './structEncoding.js'
 import { createID } from './ID.js' // eslint-disable-line
-import { createDeleteSetFromTransaction, writeDeleteSet } from './DeleteSet.js'
+import { writeDeleteSet, DeleteSet, sortAndMergeDeleteSet } from './DeleteSet.js'
 import { getState } from './StructStore.js'
 
 /**
@@ -46,15 +46,10 @@ export class Transaction {
      */
     this.y = y
     /**
-     * All new items that are added during a transaction.
-     * @type {Set<AbstractItem>}
+     * Describes the set of deleted items by ids
+     * @type {DeleteSet}
      */
-    this.added = new Set()
-    /**
-     * Set of all deleted items
-     * @type {Set<AbstractItem>}
-     */
-    this.deleted = new Set()
+    this.deleteSet = new DeleteSet()
     /**
      * If a state was modified, the original value is saved here.
      * Use `stateUpdates` to compute the original state before the transaction,
@@ -87,7 +82,8 @@ export class Transaction {
     if (this._updateMessage === null) {
       const encoder = encoding.createEncoder()
       writeStructsFromTransaction(encoder, this)
-      writeDeleteSet(encoder, createDeleteSetFromTransaction(this))
+      sortAndMergeDeleteSet(this.deleteSet)
+      writeDeleteSet(encoder, this.deleteSet)
       this._updateMessage = encoder
     }
     return this._updateMessage

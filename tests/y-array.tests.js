@@ -3,6 +3,9 @@ import * as Y from '../src/index.js'
 import * as t from 'lib0/testing.js'
 import * as prng from 'lib0/prng.js'
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testDeleteInsert = tc => {
   const { users, array0 } = init(tc, { users: 2 })
   array0.delete(0, 0)
@@ -16,6 +19,9 @@ export const testDeleteInsert = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testInsertThreeElementsTryRegetProperty = tc => {
   const { testConnector, users, array0, array1 } = init(tc, { users: 2 })
   array0.insert(0, [1, 2, 3])
@@ -25,6 +31,9 @@ export const testInsertThreeElementsTryRegetProperty = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testConcurrentInsertWithThreeConflicts = tc => {
   var { users, array0, array1, array2 } = init(tc, { users: 3 })
   array0.insert(0, [0])
@@ -33,6 +42,9 @@ export const testConcurrentInsertWithThreeConflicts = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testConcurrentInsertDeleteWithThreeConflicts = tc => {
   const { testConnector, users, array0, array1, array2 } = init(tc, { users: 3 })
   array0.insert(0, ['x', 'y', 'z'])
@@ -44,6 +56,9 @@ export const testConcurrentInsertDeleteWithThreeConflicts = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testInsertionsInLateSync = tc => {
   const { testConnector, users, array0, array1, array2 } = init(tc, { users: 3 })
   array0.insert(0, ['x', 'y'])
@@ -59,6 +74,9 @@ export const testInsertionsInLateSync = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testDisconnectReallyPreventsSendingMessages = tc => {
   var { testConnector, users, array0, array1 } = init(tc, { users: 3 })
   array0.insert(0, ['x', 'y'])
@@ -74,6 +92,9 @@ export const testDisconnectReallyPreventsSendingMessages = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testDeletionsInLateSync = tc => {
   const { testConnector, users, array0, array1 } = init(tc, { users: 2 })
   array0.insert(0, ['x', 'y'])
@@ -85,6 +106,9 @@ export const testDeletionsInLateSync = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testInsertThenMergeDeleteOnSync = tc => {
   const { testConnector, users, array0, array1 } = init(tc, { users: 2 })
   array0.insert(0, ['x', 'y', 'z'])
@@ -105,6 +129,9 @@ const compareEvent = (is, should) => {
   }
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testInsertAndDeleteEvents = tc => {
   const { array0, users } = init(tc, { users: 2 })
   let event
@@ -126,6 +153,9 @@ export const testInsertAndDeleteEvents = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testInsertAndDeleteEventsForTypes = tc => {
   const { array0, users } = init(tc, { users: 2 })
   let event
@@ -143,6 +173,9 @@ export const testInsertAndDeleteEventsForTypes = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testInsertAndDeleteEventsForTypes2 = tc => {
   const { array0, users } = init(tc, { users: 2 })
   let events = []
@@ -162,6 +195,9 @@ export const testInsertAndDeleteEventsForTypes2 = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testGarbageCollector = tc => {
   const { testConnector, users, array0 } = init(tc, { users: 3 })
   array0.insert(0, ['x', 'y', 'z'])
@@ -173,6 +209,9 @@ export const testGarbageCollector = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testEventTargetIsSetCorrectlyOnLocal = tc => {
   const { array0, users } = init(tc, { users: 3 })
   /**
@@ -187,6 +226,9 @@ export const testEventTargetIsSetCorrectlyOnLocal = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testEventTargetIsSetCorrectlyOnRemote = tc => {
   const { testConnector, array0, array1, users } = init(tc, { users: 3 })
   /**
@@ -205,6 +247,9 @@ export const testEventTargetIsSetCorrectlyOnRemote = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testIteratingArrayContainingTypes = tc => {
   const y = new Y.Y()
   const arr = y.define('arr', Y.Array)
@@ -276,61 +321,106 @@ const arrayTransactions = [
   }
 ]
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYarrayTests20 = tc => {
   applyRandomTests(tc, arrayTransactions, 20)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYarrayTests40 = tc => {
   applyRandomTests(tc, arrayTransactions, 40)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYarrayTests42 = tc => {
   applyRandomTests(tc, arrayTransactions, 42)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYarrayTests43 = tc => {
   applyRandomTests(tc, arrayTransactions, 43)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYarrayTests44 = tc => {
   applyRandomTests(tc, arrayTransactions, 44)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYarrayTests45 = tc => {
   applyRandomTests(tc, arrayTransactions, 45)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYarrayTests46 = tc => {
   applyRandomTests(tc, arrayTransactions, 46)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYarrayTests300 = tc => {
   applyRandomTests(tc, arrayTransactions, 300)
 }
 
-/* TODO: implement something like difficutly in lib0
-
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYarrayTests400 = tc => {
+  t.skip(!t.production)
   applyRandomTests(tc, arrayTransactions, 400)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYarrayTests500 = tc => {
+  t.skip(!t.production)
   applyRandomTests(tc, arrayTransactions, 500)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYarrayTests600 = tc => {
+  t.skip(!t.production)
   applyRandomTests(tc, arrayTransactions, 600)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYarrayTests1000 = tc => {
+  t.skip(!t.production)
   applyRandomTests(tc, arrayTransactions, 1000)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYarrayTests1800 = tc => {
+  t.skip(!t.production)
   applyRandomTests(tc, arrayTransactions, 1800)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYarrayTests10000 = tc => {
+  t.skip(!t.production)
   applyRandomTests(tc, arrayTransactions, 10000)
 }
-*/

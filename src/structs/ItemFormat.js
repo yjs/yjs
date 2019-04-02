@@ -44,9 +44,10 @@ export class ItemFormat extends AbstractItem {
   }
   /**
    * @param {encoding.Encoder} encoder
+   * @param {number} offset
    */
-  write (encoder) {
-    super.write(encoder, structFormatRefNumber)
+  write (encoder, offset) {
+    super.write(encoder, offset, structFormatRefNumber)
     encoding.writeVarString(encoder, this.key)
     encoding.writeVarString(encoder, JSON.stringify(this.value))
   }
@@ -55,10 +56,11 @@ export class ItemFormat extends AbstractItem {
 export class ItemFormatRef extends AbstractItemRef {
   /**
    * @param {decoding.Decoder} decoder
+   * @param {ID} id
    * @param {number} info
    */
-  constructor (decoder, info) {
-    super(decoder, info)
+  constructor (decoder, id, info) {
+    super(decoder, id, info)
     /**
      * @type {string}
      */

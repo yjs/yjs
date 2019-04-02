@@ -14,7 +14,8 @@ import { isVisible, Snapshot } from '../utils/Snapshot.js' // eslint-disable-lin
 import { ItemJSON } from '../structs/ItemJSON.js'
 import { ItemBinary } from '../structs/ItemBinary.js'
 import { ID, createID } from '../utils/ID.js' // eslint-disable-line
-import { getItemCleanStart } from '../utils/StructStore.js'
+import { getItemCleanStart, getItemCleanEnd } from '../utils/StructStore.js'
+import * as iterator from 'lib0/iterator.js'
 
 /**
  * Abstract Yjs Type class
@@ -204,6 +205,23 @@ export const typeArrayForEach = (type, f) => {
 }
 
 /**
+ * @template C,R
+ * @param {AbstractType} type
+ * @param {function(C,number,AbstractType):R} f
+ * @return {Array<R>}
+ */
+export const typeArrayMap = (type, f) => {
+  /**
+   * @type {Array<any>}
+   */
+  const result = []
+  typeArrayForEach(type, (c, i) => {
+    result.push(f(c, i, type))
+  })
+  return result
+}
+
+/**
  * @param {AbstractType} type
  */
 export const typeArrayCreateIterator = type => {
@@ -354,6 +372,37 @@ export const typeArrayInsertGenerics = (transaction, parent, index, content) => 
 /**
  * @param {Transaction} transaction
  * @param {AbstractType} parent
+ * @param {number} index
+ * @param {number} length
+ */
+export const typeArrayDelete = (transaction, parent, index, length) => {
+  let n = parent._start
+  for (; n !== null; n = n.right) {
+    if (!n.deleted && n.countable) {
+      if (index <= n.length) {
+        if (index < n.length) {
+          n = getItemCleanStart(transaction.y.store, transaction, createID(n.id.client, n.id.clock + index))
+        }
+        break
+      }
+      index -= n.length
+    }
+  }
+  while (length > 0 && n !== null) {
+    if (!n.deleted) {
+      if (length < n.length) {
+        getItemCleanEnd(transaction.y.store, transaction, createID(n.id.client, n.id.clock + length))
+      }
+      n.delete(transaction)
+      length -= n.length
+    }
+    n = n.right
+  }
+}
+
+/**
+ * @param {Transaction} transaction
+ * @param {AbstractType} parent
  * @param {string} key
  */
 export const typeMapDelete = (transaction, parent, key) => {
@@ -402,6 +451,23 @@ export const typeMapGet = (parent, key) => {
 
 /**
  * @param {AbstractType} parent
+ * @return {Object<string,Object<string,any>|number|Array<any>|string|ArrayBuffer|AbstractType|undefined>}
+ */
+export const typeMapGetAll = (parent) => {
+  /**
+   * @type {Object<string,any>}
+   */
+  let res = {}
+  for (const [key, value] of parent._map) {
+    if (!value.deleted) {
+      res[key] = value.getContent()[0]
+    }
+  }
+  return res
+}
+
+/**
+ * @param {AbstractType} parent
  * @param {string} key
  * @return {boolean}
  */
@@ -423,3 +489,9 @@ export const typeMapGetSnapshot = (parent, key, snapshot) => {
   }
   return v !== null && isVisible(v, snapshot) ? v.getContent()[0] : undefined
 }
+
+/**
+ * @param {Map<string,AbstractItem>} map
+ * @return {Iterator<[string,AbstractItem]>}
+ */
+export const createMapIterator = map => iterator.iteratorFilter(map.entries(), entry => !entry[1].deleted)

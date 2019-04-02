@@ -64,7 +64,7 @@ export default [{
   }, {
     name: 'Y',
     file: 'dist/yjs.mjs',
-    format: 'esm',
+    format: 'es',
     sourcemap: true
   }],
   external: id => /^lib0\//.test(id)
