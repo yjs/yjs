@@ -2,7 +2,6 @@
  * @module types
  */
 
-import { AbstractItem } from '../structs/AbstractItem.js' // eslint-disable-line
 import { AbstractType, typeMapDelete, typeMapSet, typeMapGet, typeMapHas, createMapIterator } from './AbstractType.js'
 import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
 import { YEvent } from '../utils/YEvent.js'
@@ -11,20 +10,23 @@ import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
 import * as iterator from 'lib0/iterator.js'
 
 /**
+ * @template T
  * Event that describes the changes on a YMap.
  */
 export class YMapEvent extends YEvent {
   /**
-   * @param {YMap} ymap The YArray that changed.
+   * @param {YMap<T>} ymap The YArray that changed.
+   * @param {Transaction} transaction
    * @param {Set<any>} subs The keys that changed.
    */
-  constructor (ymap, subs) {
-    super(ymap)
+  constructor (ymap, transaction, subs) {
+    super(ymap, transaction)
     this.keysChanged = subs
   }
 }
 
 /**
+ * @template T number|string|Object|Array|ArrayBuffer
  * A shared Map implementation.
  */
 export class YMap extends AbstractType {
@@ -62,17 +64,17 @@ export class YMap extends AbstractType {
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
   _callObserver (transaction, parentSubs) {
-    this._callEventHandler(transaction, new YMapEvent(this, parentSubs))
+    this._callEventHandler(transaction, new YMapEvent(this, transaction, parentSubs))
   }
 
   /**
    * Transforms this Shared Type to a JSON object.
    *
-   * @return {Object<string,number|string|Object|Array|ArrayBuffer>}
+   * @return {Object<string,T>}
    */
   toJSON () {
     /**
-     * @type {Object<string,number|string|Object|Array|ArrayBuffer>}
+     * @type {Object<string,T>}
      */
     const map = {}
     for (let [key, item] of this._map) {
@@ -94,7 +96,7 @@ export class YMap extends AbstractType {
   /**
    * Returns the value for each element in the YMap Type.
    *
-   * @return {Iterator<string|number|ArrayBuffer|Object<string,any>|Array<any>>}
+   * @return {Iterator<T>}
    */
   entries () {
     return iterator.iteratorMap(createMapIterator(this._map), v => v[1].getContent()[0])
@@ -124,7 +126,7 @@ export class YMap extends AbstractType {
    * Adds or updates an element with a specified key and value.
    *
    * @param {string} key The key of the element to add to this YMap
-   * @param {Object | string | number | AbstractType | ArrayBuffer } value The value of the element to add
+   * @param {T} value The value of the element to add
    */
   set (key, value) {
     if (this._y !== null) {
@@ -142,9 +144,10 @@ export class YMap extends AbstractType {
    * Returns a specified element from this YMap.
    *
    * @param {string} key
-   * @return {Object<string,any>|number|Array<any>|string|ArrayBuffer|AbstractType|undefined}
+   * @return {T|undefined}
    */
   get (key) {
+    // @ts-ignore
     return typeMapGet(this, key)
   }
 

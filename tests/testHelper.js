@@ -5,6 +5,9 @@ import { createMutex } from 'lib0/mutex.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import * as syncProtocol from 'y-protocols/sync.js'
+import { createDeleteSetFromStructStore, DeleteSet } from '../src/utils/DeleteSet.js' // eslint-disable-line
+import { getStates, StructStore } from '../src/utils/StructStore.js' // eslint-disable-line
+import { AbstractItem } from '../src/structs/AbstractItem.js' // eslint-disable-line
 
 /**
  * @param {TestYInstance} y
@@ -35,6 +38,7 @@ const broadcastMessage = (y, m) => {
 export class TestYInstance extends Y.Y {
   /**
    * @param {TestConnector} testConnector
+   * @param {number} clientID
    */
   constructor (testConnector, clientID) {
     super()
@@ -109,6 +113,9 @@ export class TestYInstance extends Y.Y {
  * I think it makes sense. Deal with it.
  */
 export class TestConnector {
+  /**
+   * @param {prng.PRNG} gen
+   */
   constructor (gen) {
     /**
      * @type {Set<TestYInstance>}
@@ -197,6 +204,9 @@ export class TestConnector {
    * @return {boolean} Whether it was possible to reconnect a random connection.
    */
   reconnectRandom () {
+    /**
+     * @type {Array<TestYInstance>}
+     */
     const reconnectable = []
     this.allConns.forEach(conn => {
       if (!this.onlineConns.has(conn)) {
@@ -214,7 +224,7 @@ export class TestConnector {
 /**
  * @param {t.TestCase} tc
  * @param {{users?:number}} conf
- * @return {{testConnector:TestConnector,users:Array<TestYInstance>,array0:Y.Array<any>,array1:Y.Array<any>,array2:Y.Array<any>,map0:Y.Map,map1:Y.Map,map2:Y.Map,text0:Y.Text,text1:Y.Text,text2:Y.Text,xml0:YXmlFragment,xml1:YXmlFragment,xml2:YXmlFragment}}
+ * @return {{testConnector:TestConnector,users:Array<TestYInstance>,array0:Y.Array<any>,array1:Y.Array<any>,array2:Y.Array<any>,map0:Y.Map,map1:Y.Map,map2:Y.Map,text0:Y.Text,text1:Y.Text,text2:Y.Text,xml0:Y.XmlFragment,xml1:Y.XmlFragment,xml2:Y.XmlFragment}}
  */
 export const init = (tc, { users = 5 } = {}) => {
   /**
@@ -240,21 +250,6 @@ export const init = (tc, { users = 5 } = {}) => {
 }
 
 /**
- * @param {any} constructor
- * @param {ID} a
- * @param {ID} b
- * @param {string} path
- * @param {any} next
- */
-const customOSCompare = (constructor, a, b, path, next) => {
-  switch (constructor) {
-    case Y.ID:
-      return compareIDs(a, b)
-  }
-  return next(constructor, a, b, path, next)
-}
-
-/**
  * 1. reconnect and flush all
  * 2. user 0 gc
  * 3. get type content
@@ -266,59 +261,22 @@ const customOSCompare = (constructor, a, b, path, next) => {
 export const compare = users => {
   users.forEach(u => u.connect())
   while (users[0].tc.flushAllMessages()) {}
-  var userArrayValues = users.map(u => u.define('array', Y.Array).toJSON().map(val => JSON.stringify(val)))
-  var userMapValues = users.map(u => u.define('map', Y.Map).toJSON())
-  var userXmlValues = users.map(u => u.define('xml', Y.XmlElement).toString())
-  var userTextValues = users.map(u => u.define('text', Y.Text).toDelta())
-  var data = users.map(u => {
-    defragmentItemContent(u)
-    var data = {}
-    let ops = []
-    u.os.iterate(null, null, op => {
-      let json
-      if (op.constructor === Y.GC) {
-        json = {
-          type: 'GC',
-          id: op._id,
-          length: op._length,
-          content: null
-        }
-      } else {
-        json = {
-          id: op._id,
-          left: op._left === null ? null : op._left._lastId,
-          right: op._right === null ? null : op._right._id,
-          length: op._length,
-          deleted: op._deleted,
-          parent: op._parent._id,
-          content: null
-        }
-      }
-      if (op instanceof Y.ItemJSON || op instanceof Y.ItemString) {
-        json.content = op._content
-      }
-      ops.push(json)
-    })
-    data.os = ops
-    data.ds = getDeleteSet(u)
-    const ss = {}
-    u.ss.state.forEach((clock, user) => {
-      ss[user] = clock
-    })
-    data.ss = ss
-    return data
-  })
-  for (var i = 0; i < data.length - 1; i++) {
-    // t.describe(`Comparing user${i} with user${i + 1}`)
-    t.compare(userArrayValues[i].length, users[i].get('array').length)
+  const userArrayValues = users.map(u => u.getArray('array').toJSON().map(val => JSON.stringify(val)))
+  const userMapValues = users.map(u => u.getMap('map').toJSON())
+  const userXmlValues = users.map(u => u.getXmlFragment('xml').toString())
+  const userTextValues = users.map(u => u.getText('text').toDelta())
+  for (var i = 0; i < users.length - 1; i++) {
+    t.describe(`Comparing user${i} with user${i + 1}`)
+    t.compare(userArrayValues[i].length, users[i].getArray('array').length)
     t.compare(userArrayValues[i], userArrayValues[i + 1])
     t.compare(userMapValues[i], userMapValues[i + 1])
     t.compare(userXmlValues[i], userXmlValues[i + 1])
-    t.compare(userTextValues[i].map(a => a.insert).join('').length, users[i].get('text').length)
+    // @ts-ignore
+    t.compare(userTextValues[i].map(a => a.insert).join('').length, users[i].getText('text').length)
     t.compare(userTextValues[i], userTextValues[i + 1])
-    t.compare(data[i].os, data[i + 1].os, null, customOSCompare)
-    t.compare(data[i].ds, data[i + 1].ds, null, customOSCompare)
-    t.compare(data[i].ss, data[i + 1].ss, null, customOSCompare)
+    t.compare(getStates(users[i].store), getStates(users[i + 1].store))
+    compareDS(createDeleteSetFromStructStore(users[i].store), createDeleteSetFromStructStore(users[i + 1].store))
+    compareStructStores(users[i].store, users[i + 1].store)
   }
   users.forEach(user =>
     t.assert(user._missingStructs.size === 0)
@@ -326,6 +284,76 @@ export const compare = users => {
   users.map(u => u.destroy())
 }
 
+/**
+ * @param {AbstractItem?} a
+ * @param {AbstractItem?} b
+ * @return {boolean}
+ */
+export const compareItemIDs = (a, b) => a === b || (a !== null && b != null && Y.compareIDs(a.id, b.id))
+
+/**
+ * @param {StructStore} ss1
+ * @param {StructStore} ss2
+ */
+export const compareStructStores = (ss1, ss2) => {
+  t.assert(ss1.clients.size === ss2.clients.size)
+  for (const [client, structs1] of ss1.clients) {
+    const structs2 = ss2.clients.get(client)
+    t.assert(structs2 !== undefined && structs1.length === structs2.length)
+    for (let i = 0; i < structs1.length; i++) {
+      const s1 = structs1[i]
+      // @ts-ignore
+      const s2 = structs2[i]
+      // checks for abstract struct
+      if (
+        s1.constructor !== s2.constructor ||
+        !Y.compareIDs(s1.id, s2.id) ||
+        s1.deleted !== s2.deleted ||
+        s1.length !== s2.length
+      ) {
+        t.fail('Structs dont match')
+      }
+      if (s1 instanceof AbstractItem) {
+        if (
+          !(s2 instanceof AbstractItem) ||
+          !compareItemIDs(s1.left, s2.left) ||
+          !compareItemIDs(s1.right, s2.right) ||
+          !compareItemIDs(s1.origin, s2.origin) ||
+          !compareItemIDs(s1.rightOrigin, s2.rightOrigin) ||
+          s1.parentSub !== s2.parentSub
+        ) {
+          t.fail('Items dont match')
+        }
+      }
+    }
+  }
+}
+
+/**
+ * @param {DeleteSet} ds1
+ * @param {DeleteSet} ds2
+ */
+export const compareDS = (ds1, ds2) => {
+  t.assert(ds1.clients.size === ds2.clients.size)
+  for (const [client, deleteItems1] of ds1.clients) {
+    const deleteItems2 = ds2.clients.get(client)
+    t.assert(deleteItems2 !== undefined && deleteItems1.length === deleteItems2.length)
+    for (let i = 0; i < deleteItems1.length; i++) {
+      const di1 = deleteItems1[i]
+      // @ts-ignore
+      const di2 = deleteItems2[i]
+      if (di1.clock !== di2.clock || di1.len !== di2.len) {
+        t.fail('DeleteSets dont match')
+      }
+    }
+  }
+}
+
+/**
+ * @param {t.TestCase} tc
+ * @param {Array<function(TestYInstance,prng.PRNG):void>} mods
+ * @param {number} iterations
+ */
 export const applyRandomTests = (tc, mods, iterations) => {
   const gen = tc.prng
   const result = init(tc, { users: 5 })
@@ -350,7 +378,7 @@ export const applyRandomTests = (tc, mods, iterations) => {
     }
     let user = prng.oneOf(gen, users)
     var test = prng.oneOf(gen, mods)
-    test(t, user, gen)
+    test(user, gen)
   }
   compare(users)
   return result

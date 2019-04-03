@@ -1,4 +1,4 @@
-import { init, compare, applyRandomTests } from './testHelper.js'
+import { init, compare, applyRandomTests, TestYInstance } from './testHelper.js' // eslint-disable-line
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing.js'
 import * as prng from 'lib0/prng.js'
@@ -119,6 +119,10 @@ export const testInsertThenMergeDeleteOnSync = tc => {
   compare(users)
 }
 
+/**
+ * @param {Object<string,any>} is
+ * @param {Object<string,any>} should
+ */
 const compareEvent = (is, should) => {
   for (var key in should) {
     t.assert(
@@ -134,7 +138,10 @@ const compareEvent = (is, should) => {
  */
 export const testInsertAndDeleteEvents = tc => {
   const { array0, users } = init(tc, { users: 2 })
-  let event
+  /**
+   * @type {Object<string,any>}
+   */
+  let event = {}
   array0.observe(e => {
     event = e
   })
@@ -158,11 +165,14 @@ export const testInsertAndDeleteEvents = tc => {
  */
 export const testInsertAndDeleteEventsForTypes = tc => {
   const { array0, users } = init(tc, { users: 2 })
-  let event
+  /**
+   * @type {Object<string,any>}
+   */
+  let event = {}
   array0.observe(e => {
     event = e
   })
-  array0.insert(0, [Y.Array])
+  array0.insert(0, [new Y.Array()])
   compareEvent(event, {
     remote: false
   })
@@ -178,11 +188,14 @@ export const testInsertAndDeleteEventsForTypes = tc => {
  */
 export const testInsertAndDeleteEventsForTypes2 = tc => {
   const { array0, users } = init(tc, { users: 2 })
+  /**
+   * @type {Array<Object<string,any>>}
+   */
   let events = []
   array0.observe(e => {
     events.push(e)
   })
-  array0.insert(0, ['hi', Y.Map])
+  array0.insert(0, ['hi', new Y.Map()])
   compareEvent(events[0], {
     remote: false
   })
@@ -252,7 +265,7 @@ export const testEventTargetIsSetCorrectlyOnRemote = tc => {
  */
 export const testIteratingArrayContainingTypes = tc => {
   const y = new Y.Y()
-  const arr = y.define('arr', Y.Array)
+  const arr = y.getArray('arr')
   const numItems = 10
   for (let i = 0; i < numItems; i++) {
     const map = new Y.Map()
@@ -269,9 +282,12 @@ export const testIteratingArrayContainingTypes = tc => {
 let _uniqueNumber = 0
 const getUniqueNumber = () => _uniqueNumber++
 
+/**
+ * @type {Array<function(TestYInstance,prng.PRNG):void>}
+ */
 const arrayTransactions = [
-  function insert (tc, user, gen) {
-    const yarray = user.define('array', Y.Array)
+  function insert (user, gen) {
+    const yarray = user.getArray('array')
     var uniqueNumber = getUniqueNumber()
     var content = []
     var len = prng.int31(gen, 1, 4)
@@ -281,38 +297,34 @@ const arrayTransactions = [
     var pos = prng.int31(gen, 0, yarray.length)
     yarray.insert(pos, content)
   },
-  function insertTypeArray (tc, user, gen) {
-    const yarray = user.define('array', Y.Array)
+  function insertTypeArray (user, gen) {
+    const yarray = user.getArray('array')
     var pos = prng.int31(gen, 0, yarray.length)
-    yarray.insert(pos, [Y.Array])
+    yarray.insert(pos, [new Y.Array()])
     var array2 = yarray.get(pos)
     array2.insert(0, [1, 2, 3, 4])
   },
-  function insertTypeMap (tc, user, gen) {
-    const yarray = user.define('array', Y.Array)
+  function insertTypeMap (user, gen) {
+    const yarray = user.getArray('array')
     var pos = prng.int31(gen, 0, yarray.length)
-    yarray.insert(pos, [Y.Map])
+    yarray.insert(pos, [new Y.Map()])
     var map = yarray.get(pos)
     map.set('someprop', 42)
     map.set('someprop', 43)
     map.set('someprop', 44)
   },
-  function _delete (tc, user, gen) {
-    const yarray = user.define('array', Y.Array)
+  function _delete (user, gen) {
+    const yarray = user.getArray('array')
     var length = yarray.length
     if (length > 0) {
       var somePos = prng.int31(gen, 0, length - 1)
       var delLength = prng.int31(gen, 1, Math.min(2, length - somePos))
-      if (yarray instanceof Y.Array) {
-        if (prng.bool(gen)) {
-          var type = yarray.get(somePos)
-          if (type.length > 0) {
-            somePos = prng.int31(gen, 0, type.length - 1)
-            delLength = prng.int31(gen, 0, Math.min(2, type.length - somePos))
-            type.delete(somePos, delLength)
-          }
-        } else {
-          yarray.delete(somePos, delLength)
+      if (prng.bool(gen)) {
+        var type = yarray.get(somePos)
+        if (type.length > 0) {
+          somePos = prng.int31(gen, 0, type.length - 1)
+          delLength = prng.int31(gen, 0, Math.min(2, type.length - somePos))
+          type.delete(somePos, delLength)
         }
       } else {
         yarray.delete(somePos, delLength)

@@ -45,7 +45,7 @@ export class DeleteSet {
  * @param {number} clock
  * @return {number|null}
  */
-export const findIndexSS = (dis, clock) => {
+export const findIndexDS = (dis, clock) => {
   let left = 0
   let right = dis.length
   while (left <= right) {
@@ -71,7 +71,7 @@ export const findIndexSS = (dis, clock) => {
  */
 export const isDeleted = (ds, id) => {
   const dis = ds.clients.get(id.client)
-  return dis !== undefined && findIndexSS(dis, id.clock) !== null
+  return dis !== undefined && findIndexDS(dis, id.clock) !== null
 }
 
 /**

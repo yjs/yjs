@@ -61,12 +61,23 @@ export class ItemString extends AbstractItem {
     return right
   }
   /**
+   * @param {ItemString} right
+   * @return {boolean}
+   */
+  mergeWith (right) {
+    if (right.origin === this && this.right === right) {
+      this.string += right.string
+      return true
+    }
+    return false
+  }
+  /**
    * @param {encoding.Encoder} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
     super.write(encoder, offset, structStringRefNumber)
-    encoding.writeVarString(encoder, this.string)
+    encoding.writeVarString(encoder, offset === 0 ? this.string : this.string.slice(offset))
   }
 }
 

@@ -25,6 +25,9 @@ export class ItemJSON extends AbstractItem {
    */
   constructor (id, left, right, parent, parentSub, content) {
     super(id, left, right, parent, parentSub)
+    /**
+     * @type {Array<any>}
+     */
     this.content = content
   }
   /**
@@ -57,14 +60,25 @@ export class ItemJSON extends AbstractItem {
     return right
   }
   /**
+   * @param {ItemJSON} right
+   * @return {boolean}
+   */
+  mergeWith (right) {
+    if (right.origin === this && this.right === right) {
+      this.content = this.content.concat(right.content)
+      return true
+    }
+    return false
+  }
+  /**
    * @param {encoding.Encoder} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
     super.write(encoder, offset, structJSONRefNumber)
     const len = this.content.length
-    encoding.writeVarUint(encoder, len)
-    for (let i = 0; i < len; i++) {
+    encoding.writeVarUint(encoder, len - offset)
+    for (let i = offset; i < len; i++) {
       const c = this.content[i]
       encoding.writeVarString(encoder, c === undefined ? 'undefined' : JSON.stringify(c))
     }

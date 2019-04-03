@@ -18,6 +18,16 @@ export class AbstractStruct {
     this.id = id
   }
   /**
+   * Merge this struct with the item to the right.
+   * This method is already assuming that `this.id.clock + this.length === this.id.clock`.
+   * Also this method does *not* remove right from StructStore!
+   * @param {AbstractStruct} right
+   * @return {boolean} wether this merged with right
+   */
+  mergeWith (right) {
+    return false
+  }
+  /**
    * @type {number}
    */
   get length () {

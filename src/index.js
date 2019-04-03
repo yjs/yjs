@@ -17,5 +17,5 @@ export { YXmlHook as XmlHook } from './types/YXmlHook.js'
 export { YXmlElement as XmlElement, YXmlFragment as XmlFragment } from './types/YXmlElement.js'
 
 export { createRelativePosition, createRelativePositionByOffset, createAbsolutePosition, compareRelativePositions, writeRelativePosition, readRelativePosition, AbsolutePosition, RelativePosition } from './utils/relativePosition.js'
-export { ID, createID } from './utils/ID.js'
+export { ID, createID, compareIDs } from './utils/ID.js'
 export { isParentOf } from './utils/isParentOf.js'

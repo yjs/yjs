@@ -18,6 +18,8 @@ import { readYXmlHook } from '../types/YXmlHook.js'
 import { readYXmlText } from '../types/YXmlText.js'
 import { getItemCleanEnd, getItemCleanStart, getItemType } from '../utils/StructStore.js'
 import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
+import { GC } from './GC.js' // eslint-disable-line
+import { ItemDeleted } from './ItemDeleted.js' // eslint-disable-line
 
 /**
  * @param {Y} y
@@ -130,10 +132,11 @@ export class ItemType extends AbstractItem {
 
   /**
    * @param {Y} y
+   * @return {ItemDeleted|GC}
    */
   gc (y) {
     this.gcChildren(y)
-    super.gc(y)
+    return super.gc(y)
   }
 }
 

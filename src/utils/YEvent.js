@@ -1,5 +1,8 @@
 import { AbstractItem } from '../structs/AbstractItem.js' // eslint-disable-line
 import { AbstractType } from '../types/AbstractType.js' // eslint-disable-line
+import { Transaction } from './Transaction.js' // eslint-disable-line
+import { AbstractStruct } from '../structs/AbstractStruct.js' // eslint-disable-line
+import { isDeleted } from './DeleteSet.js'
 
 /**
  * @module utils
@@ -11,8 +14,9 @@ import { AbstractType } from '../types/AbstractType.js' // eslint-disable-line
 export class YEvent {
   /**
    * @param {AbstractType} target The changed type.
+   * @param {Transaction} transaction
    */
-  constructor (target) {
+  constructor (target, transaction) {
     /**
      * The type on which this event was created on.
      * @type {AbstractType}
@@ -23,6 +27,11 @@ export class YEvent {
      * @type {AbstractType}
      */
     this.currentTarget = target
+    /**
+     * The transaction that triggered this event.
+     * @type {Transaction}
+     */
+    this.transaction = transaction
   }
 
   /**
@@ -39,6 +48,26 @@ export class YEvent {
   get path () {
     // @ts-ignore _item is defined because target is integrated
     return getPathTo(this.currentTarget, this.target._item)
+  }
+
+  /**
+   * Check if a struct is deleted by this event.
+   *
+   * @param {AbstractStruct} struct
+   * @return {boolean}
+   */
+  deletes (struct) {
+    return isDeleted(this.transaction.deleteSet, struct.id)
+  }
+
+  /**
+   * Check if a struct is added by this event.
+   *
+   * @param {AbstractStruct} struct
+   * @return {boolean}
+   */
+  adds (struct) {
+    return struct.id.clock > (this.transaction.stateUpdates.get(struct.id.client) || 0)
   }
 }
 

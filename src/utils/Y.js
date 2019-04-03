@@ -1,10 +1,19 @@
-import { StructStore } from './StructStore.js'
+import { StructStore, findIndexSS } from './StructStore.js'
 import * as random from 'lib0/random.js'
 import * as map from 'lib0/map.js'
 import { Observable } from 'lib0/observable.js'
 import { Transaction } from './Transaction.js'
 import { AbstractStruct, AbstractRef } from '../structs/AbstractStruct.js' // eslint-disable-line
 import { AbstractType } from '../types/AbstractType.js'
+import { AbstractItem } from '../structs/AbstractItem.js'
+import { sortAndMergeDeleteSet } from './DeleteSet.js'
+import * as math from 'lib0/math.js'
+import { GC } from '../structs/GC.js' // eslint-disable-line
+import { ItemDeleted } from '../structs/ItemDeleted.js' // eslint-disable-line
+import { YArray } from '../types/YArray.js'
+import { YText } from '../types/YText.js'
+import { YMap } from '../types/YMap.js'
+import { YXmlFragment } from '../types/YXmlElement.js'
 
 /**
  * A Yjs instance handles the state of shared data.
@@ -54,16 +63,13 @@ export class Y extends Observable {
    * other peers.
    *
    * @param {function(Transaction):void} f The function that should be executed as a transaction
-   * @param {?Boolean} remote Optional. Whether this transaction is initiated by
-   *                          a remote peer. This should not be set manually!
-   *                          Defaults to false.
    */
-  transact (f, remote = false) {
+  transact (f) {
     let initialCall = false
     if (this._transaction === null) {
       initialCall = true
       this._transaction = new Transaction(this)
-      this.emit('beforeTransaction', [this, this._transaction, remote])
+      this.emit('beforeTransaction', [this, this._transaction])
     }
     try {
       f(this._transaction)
@@ -76,7 +82,7 @@ export class Y extends Observable {
       // only call event listeners / observers if anything changed
       const transactionChangedContent = transaction.changedParentTypes.size !== 0
       if (transactionChangedContent) {
-        this.emit('beforeObserverCalls', [this, this._transaction, remote])
+        this.emit('beforeObserverCalls', [this, this._transaction])
         // emit change events on changed types
         transaction.changed.forEach((subs, itemtype) => {
           itemtype._callObserver(transaction, subs)
@@ -95,11 +101,80 @@ export class Y extends Observable {
           type._deepEventHandler.callEventListeners(transaction, events)
         })
         // when all changes & events are processed, emit afterTransaction event
-        this.emit('afterTransaction', [this, transaction, remote])
+        this.emit('afterTransaction', [this, transaction])
         // transaction cleanup
-        // todo: replace deleted items with ItemDeleted
-        // todo: replace items with deleted parent with ItemGC
-        // todo: on all affected store.clients props, try to merge
+        const store = transaction.y.store
+        const ds = transaction.deleteSet
+        // replace deleted items with ItemDeleted / GC
+        sortAndMergeDeleteSet(ds)
+        /**
+         * @type {Set<ItemDeleted|GC>}
+         */
+        const replacedItems = new Set()
+        for (const [client, deleteItems] of ds.clients) {
+          /**
+           * @type {Array<AbstractStruct>}
+           */
+          // @ts-ignore
+          const structs = store.clients.get(client)
+          for (let di = 0; di < deleteItems.length; di++) {
+            const deleteItem = deleteItems[di]
+            for (let si = findIndexSS(structs, deleteItem.clock); si < structs.length; si++) {
+              const struct = structs[si]
+              if (deleteItem.clock + deleteItem.len < struct.id.clock) {
+                break
+              }
+              if (struct.deleted && struct instanceof AbstractItem) {
+                // check if we can GC
+                replacedItems.add(struct.gc(this))
+              }
+            }
+          }
+        }
+        /**
+         * @param {Array<AbstractStruct>} structs
+         * @param {number} pos
+         */
+        const tryToMergeWithLeft = (structs, pos) => {
+          const left = structs[pos - 1]
+          const right = structs[pos]
+          if (left.deleted === right.deleted && left.constructor === right.constructor) {
+            if (left.mergeWith(right)) {
+              structs.splice(pos, 1)
+            }
+          }
+        }
+        // on all affected store.clients props, try to merge
+        for (const [client, clock] of transaction.stateUpdates) {
+          /**
+           * @type {Array<AbstractStruct>}
+           */
+          // @ts-ignore
+          const structs = store.clients.get(client)
+          // we iterate from right to left so we can safely remove entries
+          for (let i = structs.length - 1; i >= math.max(findIndexSS(structs, clock), 1); i--) {
+            tryToMergeWithLeft(structs, i)
+          }
+        }
+        // try to merge replacedItems
+        for (const replacedItem of replacedItems) {
+          const id = replacedItem.id
+          const client = id.client
+          const clock = id.clock
+          /**
+           * @type {Array<AbstractStruct>}
+           */
+          // @ts-ignore
+          const structs = store.clients.get(client)
+          const replacedStructPos = findIndexSS(structs, clock)
+          if (replacedStructPos + 1 < structs.length) {
+            tryToMergeWithLeft(structs, replacedStructPos + 1)
+          }
+          if (replacedStructPos > 0) {
+            tryToMergeWithLeft(structs, replacedStructPos)
+          }
+        }
+        this.emit('afterTransactionCleanup', [this, transaction])
       }
     }
   }
@@ -147,6 +222,39 @@ export class Y extends Observable {
       }
     }
     return type
+  }
+  /**
+   * @template T
+   * @param {string} name
+   * @return {YArray<T>}
+   */
+  getArray (name) {
+    // @ts-ignore
+    return this.get(name, YArray)
+  }
+  /**
+   * @param {string} name
+   * @return {YText}
+   */
+  getText (name) {
+    // @ts-ignore
+    return this.get(name, YText)
+  }
+  /**
+   * @param {string} name
+   * @return {YMap}
+   */
+  getMap (name) {
+    // @ts-ignore
+    return this.get(name, YMap)
+  }
+  /**
+   * @param {string} name
+   * @return {YXmlFragment}
+   */
+  getXmlFragment (name) {
+    // @ts-ignore
+    return this.get(name, YXmlFragment)
   }
   /**
    * Disconnect from the room, and destroy all traces of this Yjs instance.

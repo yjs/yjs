@@ -38,6 +38,17 @@ export class ItemDeleted extends AbstractItem {
     return new ItemDeleted(id, left, right, parent, parentSub, this.length)
   }
   /**
+   * @param {ItemDeleted} right
+   * @return {boolean}
+   */
+  mergeWith (right) {
+    if (right.origin === this && this.right === right) {
+      this.length += right.length
+      return true
+    }
+    return false
+  }
+  /**
    * @param {encoding.Encoder} encoder
    * @param {number} offset
    */

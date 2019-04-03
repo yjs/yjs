@@ -355,8 +355,6 @@ class YTextEvent extends YArrayEvent {
          * @type {Array<{delete:number|undefined,retain:number|undefined,insert:string|undefined,attributes:Object<string,any>}>}
          */
         const delta = []
-        const added = this.addedElements
-        const removed = this.removedElements
         const currentAttributes = new Map() // saves all current attributes for insert
         const oldAttributes = new Map()
         let item = this.target._start
@@ -413,19 +411,19 @@ class YTextEvent extends YArrayEvent {
         while (item !== null) {
           switch (item.constructor) {
             case ItemEmbed:
-              if (added.has(item)) {
+              if (this.adds(item)) {
                 addOp()
                 action = 'insert'
                 // @ts-ignore item is ItemFormat
                 insert = item.embed
                 addOp()
-              } else if (removed.has(item)) {
+              } else if (this.deletes(item)) {
                 if (action !== 'delete') {
                   addOp()
                   action = 'delete'
                 }
                 deleteLen += 1
-              } else if (item.deleted === false) {
+              } else if (!item.deleted) {
                 if (action !== 'retain') {
                   addOp()
                   action = 'retain'
@@ -434,20 +432,20 @@ class YTextEvent extends YArrayEvent {
               }
               break
             case ItemString:
-              if (added.has(item)) {
+              if (this.adds(item)) {
                 if (action !== 'insert') {
                   addOp()
                   action = 'insert'
                 }
                 // @ts-ignore
                 insert += item.string
-              } else if (removed.has(item)) {
+              } else if (this.deletes(item)) {
                 if (action !== 'delete') {
                   addOp()
                   action = 'delete'
                 }
                 deleteLen += item.length
-              } else if (item.deleted === false) {
+              } else if (!item.deleted) {
                 if (action !== 'retain') {
                   addOp()
                   action = 'retain'
@@ -456,7 +454,7 @@ class YTextEvent extends YArrayEvent {
               }
               break
             case ItemFormat:
-              if (added.has(item)) {
+              if (this.adds(item)) {
                 // @ts-ignore item is ItemFormat
                 const curVal = currentAttributes.get(item.key) || null
                 // @ts-ignore item is ItemFormat
@@ -475,7 +473,7 @@ class YTextEvent extends YArrayEvent {
                 } else {
                   item.delete(transaction)
                 }
-              } else if (removed.has(item)) {
+              } else if (this.deletes(item)) {
                 // @ts-ignore item is ItemFormat
                 oldAttributes.set(item.key, item.value)
                 // @ts-ignore item is ItemFormat
@@ -488,7 +486,7 @@ class YTextEvent extends YArrayEvent {
                   // @ts-ignore item is ItemFormat
                   attributes[item.key] = curVal
                 }
-              } else if (item.deleted === false) {
+              } else if (!item.deleted) {
                 // @ts-ignore item is ItemFormat
                 oldAttributes.set(item.key, item.value)
                 // @ts-ignore item is ItemFormat
@@ -512,7 +510,7 @@ class YTextEvent extends YArrayEvent {
                   }
                 }
               }
-              if (item.deleted === false) {
+              if (!item.deleted) {
                 if (action === 'insert') {
                   addOp()
                 }

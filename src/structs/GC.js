@@ -3,6 +3,7 @@
  */
 import { AbstractRef, AbstractStruct } from './AbstractStruct.js'
 import { ID, readID, createID, writeID } from '../utils/ID.js' // eslint-disable-line
+import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
 import * as decoding from 'lib0/decoding.js'
 import * as encoding from 'lib0/encoding.js'
 
@@ -23,6 +24,15 @@ export class GC extends AbstractStruct {
   }
 
   get deleted () {
+    return true
+  }
+
+  /**
+   * @param {AbstractStruct} right
+   * @return {boolean}
+   */
+  mergeWith (right) {
+    this.length += right.length
     return true
   }
 

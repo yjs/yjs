@@ -17,6 +17,7 @@ import { AbstractRef, AbstractStruct } from './AbstractStruct.js' // eslint-disa
 import * as error from 'lib0/error.js'
 import { replaceStruct, addStruct } from '../utils/StructStore.js'
 import { addToDeleteSet } from '../utils/DeleteSet.js'
+import { ItemDeleted } from './ItemDeleted.js'
 
 /**
  * Split leftItem into two items
@@ -408,9 +409,14 @@ export class AbstractItem extends AbstractStruct {
 
   /**
    * @param {Y} y
+   * @return {GC|ItemDeleted}
    */
   gc (y) {
-    replaceStruct(y.store, this, new GC(this.id, this.length))
+    const r = this.parent._item !== null && this.parent._item.deleted
+      ? new GC(this.id, this.length)
+      : new ItemDeleted(this.id, this.left, this.right, this.parent, this.parentSub, this.length)
+    replaceStruct(y.store, this, r)
+    return r
   }
 
   /**

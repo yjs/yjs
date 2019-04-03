@@ -18,50 +18,8 @@ export class YArrayEvent extends YEvent {
    * @param {Transaction} transaction The transaction object
    */
   constructor (yarray, transaction) {
-    super(yarray)
+    super(yarray, transaction)
     this._transaction = transaction
-    this._addedElements = null
-    this._removedElements = null
-  }
-
-  /**
-   * Child elements that were added in this transaction.
-   *
-   * @return {Set<AbstractItem>}
-   */
-  get addedElements () {
-    if (this._addedElements === null) {
-      const target = this.target
-      const transaction = this._transaction
-      const addedElements = new Set()
-      transaction.added.forEach(type => {
-        if (type.parent === target && !transaction.deleted.has(type)) {
-          addedElements.add(type)
-        }
-      })
-      this._addedElements = addedElements
-    }
-    return this._addedElements
-  }
-
-  /**
-   * Child elements that were removed in this transaction.
-   *
-   * @return {Set<AbstractItem>}
-   */
-  get removedElements () {
-    if (this._removedElements === null) {
-      const target = this.target
-      const transaction = this._transaction
-      const removedElements = new Set()
-      transaction.deleted.forEach(struct => {
-        if (struct.parent === target && !transaction.added.has(struct)) {
-          removedElements.add(struct)
-        }
-      })
-      this._removedElements = removedElements
-    }
-    return this._removedElements
   }
 }
 

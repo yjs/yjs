@@ -95,7 +95,7 @@ export class AbstractType {
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
   _callObserver (transaction, parentSubs) {
-    this._callEventHandler(transaction, new YEvent(this))
+    this._callEventHandler(transaction, new YEvent(this, transaction))
   }
 
   /**
@@ -125,7 +125,7 @@ export class AbstractType {
   /**
    * Observe all events that are created on this type.
    *
-   * @param {Function} f Observer function
+   * @param {function(YEvent):void} f Observer function
    */
   observe (f) {
     this._eventHandler.addEventListener(f)
@@ -223,6 +223,7 @@ export const typeArrayMap = (type, f) => {
 
 /**
  * @param {AbstractType} type
+ * @return {{next:function():{done:boolean,value:any|undefined}}}
  */
 export const typeArrayCreateIterator = type => {
   let n = type._start
@@ -242,7 +243,8 @@ export const typeArrayCreateIterator = type => {
       // check if we reached the end, no need to check currentContent, because it does not exist
       if (n === null) {
         return {
-          done: true
+          done: true,
+          value: undefined
         }
       }
       // currentContent could exist from the last iteration
