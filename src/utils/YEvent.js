@@ -13,18 +13,18 @@ import { isDeleted } from './DeleteSet.js'
  */
 export class YEvent {
   /**
-   * @param {AbstractType<any> target The changed type.
+   * @param {AbstractType<any>} target The changed type.
    * @param {Transaction} transaction
    */
   constructor (target, transaction) {
     /**
      * The type on which this event was created on.
-     * @type {AbstractType<any>
+     * @type {AbstractType<any>}
      */
     this.target = target
     /**
      * The current target on which the observe callback is called.
-     * @type {AbstractType<any>
+     * @type {AbstractType<any>}
      */
     this.currentTarget = target
     /**

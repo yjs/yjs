@@ -19,18 +19,18 @@ export const testSetProperty = tc => {
  */
 export const testEvents = tc => {
   const { testConnector, users, xml0, xml1 } = init(tc, { users: 2 })
-  let event = { attributesChanged: new Set() }
-  let remoteEvent = { attributesChanged: new Set() }
+  /**
+   * @type {any}
+   */
+  let event
+  /**
+   * @type {any}
+   */
+  let remoteEvent
   xml0.observe(e => {
-    delete e._content
-    delete e.nodes
-    delete e.values
     event = e
   })
   xml1.observe(e => {
-    delete e._content
-    delete e.nodes
-    delete e.values
     remoteEvent = e
   })
   xml0.setAttribute('key', 'value')

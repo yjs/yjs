@@ -199,9 +199,6 @@ export class Y extends Observable {
    *     comments: y.getArray('comments')
    *   }
    *
-   * @TODO: implement getText, getArray, ..
-   * @TODO: Decide wether to use define() or get() and then use it consistently
-   *
    * @param {string} name
    * @param {Function} TypeConstructor The constructor of the type definition
    * @return {AbstractType<any>} The created type. Constructed with TypeConstructor

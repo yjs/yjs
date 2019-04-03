@@ -3,15 +3,13 @@
  */
 
 import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
-import { YMap } from './YMap.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
-import { Y } from '../utils/Y.js' // eslint-disable-line
 import { YXmlEvent } from './YXmlEvent.js'
 import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
 import { YXmlText } from './YXmlText.js' // eslint-disable-line
 import { YXmlHook } from './YXmlHook.js' // eslint-disable-line
-import { AbstractType, typeArrayMap, typeArrayForEach, typeMapGet, typeMapGetAll, typeArrayInsertGenerics } from './AbstractType.js'
+import { AbstractType, typeArrayMap, typeArrayForEach, typeMapGet, typeMapGetAll, typeArrayInsertGenerics, typeArrayDelete, typeMapSet, typeMapDelete } from './AbstractType.js'
 import { Snapshot } from '../utils/Snapshot.js' // eslint-disable-line
 
 /**
@@ -237,6 +235,37 @@ export class YXmlElement extends YXmlFragment {
   constructor (nodeName = 'UNDEFINED') {
     super()
     this.nodeName = nodeName.toUpperCase()
+    /**
+     * @type {Array<any>|null}
+     */
+    this._prelimContent = []
+    /**
+     * @type {Map<string, any>|null}
+     */
+    this._prelimAttrs = new Map()
+  }
+
+  /**
+   * Integrate this type into the Yjs instance.
+   *
+   * * Save this struct in the os
+   * * This type is sent to other client
+   * * Observer functions are fired
+   *
+   * @param {Transaction} transaction The Yjs instance
+   * @param {ItemType} item
+   * @private
+   */
+  _integrate (transaction, item) {
+    super._integrate(transaction, item)
+    // @ts-ignore
+    this.insert(0, this._prelimContent)
+    this._prelimContent = null
+    // @ts-ignore
+    this._prelimAttrs.forEach((value, key) => {
+      this.setAttribute(key, value)
+    })
+    this._prelimContent = null
   }
 
   /**
@@ -301,7 +330,14 @@ export class YXmlElement extends YXmlFragment {
    * @public
    */
   removeAttribute (attributeName) {
-    return YMap.prototype.delete.call(this, attributeName)
+    if (this._y !== null) {
+      this._y.transact(transaction => {
+        typeMapDelete(transaction, this, attributeName)
+      })
+    } else {
+      // @ts-ignore
+      this._prelimAttrs.delete(attributeName)
+    }
   }
 
   /**
@@ -313,7 +349,14 @@ export class YXmlElement extends YXmlFragment {
    * @public
    */
   setAttribute (attributeName, attributeValue) {
-    return YMap.prototype.set.call(this, attributeName, attributeValue)
+    if (this._y !== null) {
+      this._y.transact(transaction => {
+        typeMapSet(transaction, this, attributeName, attributeValue)
+      })
+    } else {
+      // @ts-ignore
+      this._prelimAttrs.set(attributeName, attributeValue)
+    }
   }
 
   /**
@@ -360,6 +403,23 @@ export class YXmlElement extends YXmlFragment {
     } else {
       // @ts-ignore _prelimContent is defined because this is not yet integrated
       this._prelimContent.splice(index, 0, ...content)
+    }
+  }
+
+  /**
+   * Deletes elements starting from an index.
+   *
+   * @param {number} index Index at which to start deleting elements
+   * @param {number} [length=1] The number of elements to remove. Defaults to 1.
+   */
+  delete (index, length = 1) {
+    if (this._y !== null) {
+      this._y.transact(transaction => {
+        typeArrayDelete(transaction, this, index, length)
+      })
+    } else {
+      // @ts-ignore _prelimContent is defined because this is not yet integrated
+      this._prelimContent.splice(index, length)
     }
   }
 

@@ -19,3 +19,6 @@ export { YXmlElement as XmlElement, YXmlFragment as XmlFragment } from './types/
 export { createRelativePosition, createRelativePositionByOffset, createAbsolutePosition, compareRelativePositions, writeRelativePosition, readRelativePosition, AbsolutePosition, RelativePosition } from './utils/relativePosition.js'
 export { ID, createID, compareIDs } from './utils/ID.js'
 export { isParentOf } from './utils/isParentOf.js'
+
+export { writeStructs, writeStructsFromTransaction, readStructs } from './utils/structEncoding.js'
+export { getState, getStates, readStatesAsMap, writeStates } from './utils/StructStore.js'

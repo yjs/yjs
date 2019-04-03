@@ -6,6 +6,8 @@ import { Transaction } from './Transaction.js' // eslint-disable-line
 import * as map from 'lib0/map.js'
 import * as math from 'lib0/math.js'
 import * as error from 'lib0/error.js'
+import * as encoding from 'lib0/encoding.js'
+import * as decoding from 'lib0/decoding.js'
 
 export class StructStore {
   constructor () {
@@ -227,3 +229,36 @@ export const replaceStruct = (store, struct, newStruct) => {
  * @return {boolean}
  */
 export const exists = (store, id) => id.clock < getState(store, id.client)
+
+/**
+ * Read StateMap from Decoder and return as Map
+ *
+ * @param {decoding.Decoder} decoder
+ * @return {Map<number,number>}
+ */
+export const readStatesAsMap = decoder => {
+  const ss = new Map()
+  const ssLength = decoding.readVarUint(decoder)
+  for (let i = 0; i < ssLength; i++) {
+    const client = decoding.readVarUint(decoder)
+    const clock = decoding.readVarUint(decoder)
+    ss.set(client, clock)
+  }
+  return ss
+}
+
+/**
+ * Write StateMap to Encoder
+ *
+ * @param {encoding.Encoder} encoder
+ * @param {StructStore} store
+ */
+export const writeStates = (encoder, store) => {
+  encoding.writeVarUint(encoder, store.clients.size)
+  store.clients.forEach((structs, client) => {
+    const id = structs[structs.length - 1].id
+    encoding.writeVarUint(encoder, id.client)
+    encoding.writeVarUint(encoder, id.clock)
+  })
+  return encoder
+}
