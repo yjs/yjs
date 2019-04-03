@@ -61,13 +61,13 @@ export class Transaction {
      * All types that were directly modified (property added or child
      * inserted/deleted). New types are not included in this Set.
      * Maps from type to parentSubs (`item._parentSub = null` for YArray)
-     * @type {Map<AbstractType,Set<String|null>>}
+     * @type {Map<AbstractType<YEvent>,Set<String|null>>}
      */
     this.changed = new Map()
     /**
      * Stores the events for the types that observe also child elements.
      * It is mainly used by `observeDeep`.
-     * @type {Map<AbstractType,Array<YEvent>>}
+     * @type {Map<AbstractType<YEvent>,Array<YEvent>>}
      */
     this.changedParentTypes = new Map()
     /**

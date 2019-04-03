@@ -11,7 +11,7 @@ import { YXmlEvent } from './YXmlEvent.js'
 import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
 import { YXmlText } from './YXmlText.js' // eslint-disable-line
 import { YXmlHook } from './YXmlHook.js' // eslint-disable-line
-import { AbstractType, typeArrayMap, typeArrayForEach, typeMapGet, typeMapGetAll } from './AbstractType.js'
+import { AbstractType, typeArrayMap, typeArrayForEach, typeMapGet, typeMapGetAll, typeArrayInsertGenerics } from './AbstractType.js'
 import { Snapshot } from '../utils/Snapshot.js' // eslint-disable-line
 
 /**
@@ -46,7 +46,7 @@ import { Snapshot } from '../utils/Snapshot.js' // eslint-disable-line
 export class YXmlTreeWalker {
   /**
    * @param {YXmlFragment | YXmlElement} root
-   * @param {function(AbstractType):boolean} f
+   * @param {function(AbstractType<any>):boolean} f
    */
   constructor (root, f) {
     this._filter = f || (() => true)
@@ -107,6 +107,7 @@ export class YXmlTreeWalker {
  * element - in this case the attributes and the nodeName are not shared.
  *
  * @public
+ * @extends AbstractType<YXmlEvent>
  */
 export class YXmlFragment extends AbstractType {
   /**
@@ -119,7 +120,7 @@ export class YXmlFragment extends AbstractType {
    *   nop(node)
    * }
    *
-   * @param {function(AbstractType):boolean} filter Function that is called on each child element and
+   * @param {function(AbstractType<any>):boolean} filter Function that is called on each child element and
    *                          returns a Boolean indicating whether the child
    *                          is to be included in the subtree.
    * @return {YXmlTreeWalker} A subtree and a position within it.
@@ -340,6 +341,28 @@ export class YXmlElement extends YXmlFragment {
   getAttributes (snapshot) {
     return typeMapGetAll(this)
   }
+
+  /**
+   * Inserts new content at an index.
+   *
+   * @example
+   *  // Insert character 'a' at position 0
+   *  xml.insert(0, [new Y.XmlText('text')])
+   *
+   * @param {number} index The index to insert content at
+   * @param {Array<YXmlElement|YXmlText>} content The array of content
+   */
+  insert (index, content) {
+    if (this._y !== null) {
+      this._y.transact(transaction => {
+        typeArrayInsertGenerics(transaction, this, index, content)
+      })
+    } else {
+      // @ts-ignore _prelimContent is defined because this is not yet integrated
+      this._prelimContent.splice(index, 0, ...content)
+    }
+  }
+
   // TODO: outsource the binding property.
   /**
    * Creates a Dom Element that mirrors this YXmlElement.

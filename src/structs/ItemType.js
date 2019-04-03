@@ -35,7 +35,7 @@ const gcChildren = (y, item) => {
 export const structTypeRefNumber = 7
 
 /**
- * @type {Array<function(decoding.Decoder):AbstractType>}
+ * @type {Array<function(decoding.Decoder):AbstractType<any>>}
  */
 export const typeRefs = [
   readYArray,
@@ -52,9 +52,9 @@ export class ItemType extends AbstractItem {
    * @param {ID} id
    * @param {AbstractItem | null} left
    * @param {AbstractItem | null} right
-   * @param {AbstractType} parent
+   * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
-   * @param {AbstractType} type
+   * @param {AbstractType<any>} type
    */
   constructor (id, left, right, parent, parentSub, type) {
     super(id, left, right, parent, parentSub)
@@ -67,7 +67,7 @@ export class ItemType extends AbstractItem {
    * @param {ID} id
    * @param {AbstractItem | null} left
    * @param {AbstractItem | null} right
-   * @param {AbstractType} parent
+   * @param {AbstractType<any> parent
    * @param {string | null} parentSub
    * @return {AbstractItem} TODO, returns itemtype
    */
@@ -150,7 +150,7 @@ export class ItemTypeRef extends AbstractItemRef {
     super(decoder, id, info)
     const typeRef = decoding.readVarUint(decoder)
     /**
-     * @type {AbstractType}
+     * @type {AbstractType<any>
      */
     this.type = typeRefs[typeRef](decoder)
   }

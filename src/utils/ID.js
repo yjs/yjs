@@ -86,7 +86,7 @@ export const readID = decoder =>
  * `type` does not store any information about the `keyname`.
  * This function finds the correct `keyname` for `type` and throws otherwise.
  *
- * @param {AbstractType} type
+ * @param {AbstractType<any>} type
  * @return {string}
  */
 export const findRootTypeKey = type => {

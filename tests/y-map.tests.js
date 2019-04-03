@@ -1,4 +1,4 @@
-import { init, compare, applyRandomTests } from './testHelper.js'
+import { init, compare, applyRandomTests, TestYInstance } from './testHelper.js' // eslint-disable-line
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing.js'
 import * as prng from 'lib0/prng.js'
@@ -54,7 +54,7 @@ export const testGetAndSetOfMapProperty = tc => {
   testConnector.flushAllMessages()
 
   for (let user of users) {
-    const u = user.define('map', Y.Map)
+    const u = user.getMap('map')
     t.compare(u.get('stuff'), 'stuffy')
     t.assert(u.get('undefined') === undefined, 'undefined')
     t.compare(u.get('null'), null, 'null')
@@ -82,6 +82,7 @@ export const testYmapSetsYarray = tc => {
   const array = map0.set('Array', new Y.Array())
   t.assert(array === map0.get('Array'))
   array.insert(0, [1, 2, 3])
+  // @ts-ignore
   t.compare(map0.toJSON(), { Array: [1, 2, 3] })
   compare(users)
 }
@@ -95,7 +96,7 @@ export const testGetAndSetOfMapPropertySyncs = tc => {
   t.compare(map0.get('stuff'), 'stuffy')
   testConnector.flushAllMessages()
   for (let user of users) {
-    var u = user.define('map', Y.Map)
+    var u = user.getMap('map')
     t.compare(u.get('stuff'), 'stuffy')
   }
   compare(users)
@@ -110,7 +111,7 @@ export const testGetAndSetOfMapPropertyWithConflict = tc => {
   map1.set('stuff', 'c1')
   testConnector.flushAllMessages()
   for (let user of users) {
-    var u = user.define('map', Y.Map)
+    var u = user.getMap('map')
     t.compare(u.get('stuff'), 'c0')
   }
   compare(users)
@@ -126,7 +127,7 @@ export const testGetAndSetAndDeleteOfMapProperty = tc => {
   map1.set('stuff', 'c1')
   testConnector.flushAllMessages()
   for (let user of users) {
-    var u = user.define('map', Y.Map)
+    var u = user.getMap('map')
     t.assert(u.get('stuff') === undefined)
   }
   compare(users)
@@ -143,7 +144,7 @@ export const testGetAndSetOfMapPropertyWithThreeConflicts = tc => {
   map2.set('stuff', 'c3')
   testConnector.flushAllMessages()
   for (let user of users) {
-    var u = user.define('map', Y.Map)
+    var u = user.getMap('map')
     t.compare(u.get('stuff'), 'c0')
   }
   compare(users)
@@ -166,7 +167,7 @@ export const testGetAndSetAndDeleteOfMapPropertyWithThreeConflicts = tc => {
   map3.set('stuff', 'c3')
   testConnector.flushAllMessages()
   for (let user of users) {
-    var u = user.define('map', Y.Map)
+    var u = user.getMap('map')
     t.assert(u.get('stuff') === undefined)
   }
   compare(users)
@@ -183,9 +184,11 @@ export const testObserveDeepProperties = tc => {
   map1.observeDeep(events => {
     events.forEach(event => {
       calls++
+      // @ts-ignore
       t.assert(event.keysChanged.has('deepmap'))
       t.assert(event.path.length === 1)
       t.assert(event.path[0] === 'map')
+      // @ts-ignore
       dmapid = event.target.get('deepmap')._id
     })
   })
@@ -211,6 +214,9 @@ export const testObserveDeepProperties = tc => {
  */
 export const testObserversUsingObservedeep = tc => {
   const { users, map0 } = init(tc, { users: 2 })
+  /**
+   * @type {Array<Array<string>>}
+   */
   const pathes = []
   let calls = 0
   map0.observeDeep(events => {
@@ -228,7 +234,11 @@ export const testObserversUsingObservedeep = tc => {
 }
 
 // TODO: Test events in Y.Map
-const compareEvent = (t, is, should) => {
+/**
+ * @param {Object<string,any>} is
+ * @param {Object<string,any>} should
+ */
+const compareEvent = (is, should) => {
   for (var key in should) {
     t.compare(should[key], is[key])
   }
@@ -239,18 +249,21 @@ const compareEvent = (t, is, should) => {
  */
 export const testThrowsAddAndUpdateAndDeleteEvents = tc => {
   const { users, map0 } = init(tc, { users: 2 })
-  let event
+  /**
+   * @type {Object<string,any>}
+   */
+  let event = {}
   map0.observe(e => {
     event = e // just put it on event, should be thrown synchronously anyway
   })
   map0.set('stuff', 4)
-  compareEvent(t, event, {
+  compareEvent(event, {
     target: map0,
     keysChanged: new Set(['stuff'])
   })
   // update, oldValue is in contents
   map0.set('stuff', new Y.Array())
-  compareEvent(t, event, {
+  compareEvent(event, {
     target: map0,
     keysChanged: new Set(['stuff'])
   })
@@ -258,7 +271,7 @@ export const testThrowsAddAndUpdateAndDeleteEvents = tc => {
   map0.set('stuff', 5)
   // delete
   map0.delete('stuff')
-  compareEvent(t, event, {
+  compareEvent(event, {
     keysChanged: new Set(['stuff']),
     target: map0
   })
@@ -270,7 +283,10 @@ export const testThrowsAddAndUpdateAndDeleteEvents = tc => {
  */
 export const testYmapEventHasCorrectValueWhenSettingAPrimitive = tc => {
   const { users, map0 } = init(tc, { users: 3 })
-  let event
+  /**
+   * @type {Object<string,any>}
+   */
+  let event = {}
   map0.observe(e => {
     event = e
   })
@@ -284,7 +300,10 @@ export const testYmapEventHasCorrectValueWhenSettingAPrimitive = tc => {
  */
 export const testYmapEventHasCorrectValueWhenSettingAPrimitiveFromOtherUser = tc => {
   const { users, map0, map1, testConnector } = init(tc, { users: 3 })
-  let event
+  /**
+   * @type {Object<string,any>}
+   */
+  let event = {}
   map0.observe(e => {
     event = e
   })
@@ -294,25 +313,28 @@ export const testYmapEventHasCorrectValueWhenSettingAPrimitiveFromOtherUser = tc
   compare(users)
 }
 
+/**
+ * @type {Array<function(TestYInstance,prng.PRNG):void>}
+ */
 const mapTransactions = [
-  function set (tc, user, gen) {
+  function set (user, gen) {
     let key = prng.oneOf(gen, ['one', 'two'])
     var value = prng.utf16String(gen)
-    user.define('map', Y.Map).set(key, value)
+    user.getMap('map').set(key, value)
   },
-  function setType (tc, user, gen) {
+  function setType (user, gen) {
     let key = prng.oneOf(gen, ['one', 'two'])
     var type = prng.oneOf(gen, [new Y.Array(), new Y.Map()])
-    user.define('map', Y.Map).set(key, type)
+    user.getMap('map').set(key, type)
     if (type instanceof Y.Array) {
       type.insert(0, [1, 2, 3, 4])
     } else {
       type.set('deepkey', 'deepvalue')
     }
   },
-  function _delete (tc, user, gen) {
+  function _delete (user, gen) {
     let key = prng.oneOf(gen, ['one', 'two'])
-    user.define('map', Y.Map).delete(key)
+    user.getMap('map').delete(key)
   }
 ]
 

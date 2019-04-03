@@ -18,6 +18,7 @@ import { getItemCleanStart, getItemCleanEnd } from '../utils/StructStore.js'
 import * as iterator from 'lib0/iterator.js'
 
 /**
+ * @template EventType
  * Abstract Yjs Type class
  */
 export class AbstractType {
@@ -63,7 +64,7 @@ export class AbstractType {
   }
 
   /**
-   * @return {AbstractType}
+   * @return {AbstractType<EventType>}
    */
   _copy () {
     throw new Error('unimplemented')
@@ -110,10 +111,11 @@ export class AbstractType {
     const changedParentTypes = transaction.changedParentTypes
     this._eventHandler.callEventListeners(transaction, event)
     /**
-     * @type {AbstractType}
+     * @type {AbstractType<EventType>}
      */
     let type = this
     while (true) {
+      // @ts-ignore
       map.setIfUndefined(changedParentTypes, type, () => []).push(event)
       if (type._item === null) {
         break
@@ -125,7 +127,7 @@ export class AbstractType {
   /**
    * Observe all events that are created on this type.
    *
-   * @param {function(YEvent):void} f Observer function
+   * @param {function(EventType):void} f Observer function
    */
   observe (f) {
     this._eventHandler.addEventListener(f)
@@ -134,7 +136,7 @@ export class AbstractType {
   /**
    * Observe all events that are created by this type and its children.
    *
-   * @param {Function} f Observer function
+   * @param {function(Array<YEvent>):void} f Observer function
    */
   observeDeep (f) {
     this._deepEventHandler.addEventListener(f)
@@ -166,7 +168,7 @@ export class AbstractType {
 }
 
 /**
- * @param {AbstractType} type
+ * @param {AbstractType<any>} type
  * @return {Array<any>}
  */
 export const typeArrayToArray = type => {
@@ -187,8 +189,8 @@ export const typeArrayToArray = type => {
 /**
  * Executes a provided function on once on overy element of this YArray.
  *
- * @param {AbstractType} type
- * @param {function(any,number,AbstractType):void} f A function to execute on every element of this YArray.
+ * @param {AbstractType<any>} type
+ * @param {function(any,number,AbstractType<any>):void} f A function to execute on every element of this YArray.
  */
 export const typeArrayForEach = (type, f) => {
   let index = 0
@@ -206,8 +208,8 @@ export const typeArrayForEach = (type, f) => {
 
 /**
  * @template C,R
- * @param {AbstractType} type
- * @param {function(C,number,AbstractType):R} f
+ * @param {AbstractType<any>} type
+ * @param {function(C,number,AbstractType<any>):R} f
  * @return {Array<R>}
  */
 export const typeArrayMap = (type, f) => {
@@ -222,7 +224,7 @@ export const typeArrayMap = (type, f) => {
 }
 
 /**
- * @param {AbstractType} type
+ * @param {AbstractType<any>} type
  * @return {{next:function():{done:boolean,value:any|undefined}}}
  */
 export const typeArrayCreateIterator = type => {
@@ -270,8 +272,8 @@ export const typeArrayCreateIterator = type => {
  * Executes a provided function on once on overy element of this YArray.
  * Operates on a snapshotted state of the document.
  *
- * @param {AbstractType} type
- * @param {function(any,number,AbstractType):void} f A function to execute on every element of this YArray.
+ * @param {AbstractType<any>} type
+ * @param {function(any,number,AbstractType<any>):void} f A function to execute on every element of this YArray.
  * @param {Snapshot} snapshot
  */
 export const typeArrayForEachSnapshot = (type, f, snapshot) => {
@@ -289,7 +291,7 @@ export const typeArrayForEachSnapshot = (type, f, snapshot) => {
 }
 
 /**
- * @param {AbstractType} type
+ * @param {AbstractType<any>} type
  * @param {number} index
  * @return {any}
  */
@@ -306,7 +308,7 @@ export const typeArrayGet = (type, index) => {
 
 /**
  * @param {Transaction} transaction
- * @param {AbstractType} parent
+ * @param {AbstractType<any>} parent
  * @param {AbstractItem?} referenceItem
  * @param {Array<Object<string,any>|Array<any>|number|string|ArrayBuffer>} content
  */
@@ -349,7 +351,7 @@ export const typeArrayInsertGenericsAfter = (transaction, parent, referenceItem,
 
 /**
  * @param {Transaction} transaction
- * @param {AbstractType} parent
+ * @param {AbstractType<any>} parent
  * @param {number} index
  * @param {Array<Object<string,any>|Array<any>|number|string|ArrayBuffer>} content
  */
@@ -373,7 +375,7 @@ export const typeArrayInsertGenerics = (transaction, parent, index, content) => 
 
 /**
  * @param {Transaction} transaction
- * @param {AbstractType} parent
+ * @param {AbstractType<any>} parent
  * @param {number} index
  * @param {number} length
  */
@@ -404,7 +406,7 @@ export const typeArrayDelete = (transaction, parent, index, length) => {
 
 /**
  * @param {Transaction} transaction
- * @param {AbstractType} parent
+ * @param {AbstractType<any>} parent
  * @param {string} key
  */
 export const typeMapDelete = (transaction, parent, key) => {
@@ -416,9 +418,9 @@ export const typeMapDelete = (transaction, parent, key) => {
 
 /**
  * @param {Transaction} transaction
- * @param {AbstractType} parent
+ * @param {AbstractType<any>} parent
  * @param {string} key
- * @param {Object|number|Array<any>|string|ArrayBuffer|AbstractType} value
+ * @param {Object|number|Array<any>|string|ArrayBuffer|AbstractType<any>} value
  */
 export const typeMapSet = (transaction, parent, key, value) => {
   const right = parent._map.get(key) || null
@@ -442,9 +444,9 @@ export const typeMapSet = (transaction, parent, key, value) => {
 }
 
 /**
- * @param {AbstractType} parent
+ * @param {AbstractType<any>} parent
  * @param {string} key
- * @return {Object<string,any>|number|Array<any>|string|ArrayBuffer|AbstractType|undefined}
+ * @return {Object<string,any>|number|Array<any>|string|ArrayBuffer|AbstractType<any>|undefined}
  */
 export const typeMapGet = (parent, key) => {
   const val = parent._map.get(key)
@@ -452,8 +454,8 @@ export const typeMapGet = (parent, key) => {
 }
 
 /**
- * @param {AbstractType} parent
- * @return {Object<string,Object<string,any>|number|Array<any>|string|ArrayBuffer|AbstractType|undefined>}
+ * @param {AbstractType<any>} parent
+ * @return {Object<string,Object<string,any>|number|Array<any>|string|ArrayBuffer|AbstractType<any>|undefined>}
  */
 export const typeMapGetAll = (parent) => {
   /**
@@ -469,7 +471,7 @@ export const typeMapGetAll = (parent) => {
 }
 
 /**
- * @param {AbstractType} parent
+ * @param {AbstractType<any>} parent
  * @param {string} key
  * @return {boolean}
  */
@@ -479,10 +481,10 @@ export const typeMapHas = (parent, key) => {
 }
 
 /**
- * @param {AbstractType} parent
+ * @param {AbstractType<any>} parent
  * @param {string} key
  * @param {Snapshot} snapshot
- * @return {Object<string,any>|number|Array<any>|string|ArrayBuffer|AbstractType|undefined}
+ * @return {Object<string,any>|number|Array<any>|string|ArrayBuffer|AbstractType<any>|undefined}
  */
 export const typeMapGetSnapshot = (parent, key, snapshot) => {
   let v = parent._map.get(key) || null

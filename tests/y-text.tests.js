@@ -54,7 +54,8 @@ export const testBasicFormat = tc => {
   t.assert(text0.toString() === 'zb')
   t.compare(text0.toDelta(), [{ insert: 'zb', attributes: { bold: true } }])
   t.compare(delta, [{ insert: 'z', attributes: { bold: true } }])
-  t.assert(text0._start._right._right._right._content === 'b', 'Does not insert duplicate attribute marker')
+  // @ts-ignore
+  t.assert(text0._start.right.right.right.string === 'b', 'Does not insert duplicate attribute marker')
   text0.insert(0, 'y')
   t.assert(text0.toString() === 'yzb')
   t.compare(text0.toDelta(), [{ insert: 'y' }, { insert: 'zb', attributes: { bold: true } }])

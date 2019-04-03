@@ -28,6 +28,8 @@ export class YMapEvent extends YEvent {
 /**
  * @template T number|string|Object|Array|ArrayBuffer
  * A shared Map implementation.
+ *
+ * @extends AbstractType<YMapEvent<T>>
  */
 export class YMap extends AbstractType {
   constructor () {

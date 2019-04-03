@@ -8,8 +8,8 @@ import { AbstractType } from '../types/AbstractType.js' // eslint-disable-line
 /**
  * Check if `parent` is a parent of `child`.
  *
- * @param {AbstractType} parent
- * @param {AbstractType} child
+ * @param {AbstractType<any>} parent
+ * @param {AbstractType<any>} child
  * @return {Boolean} Whether `parent` is a parent of `child`.
  *
  * @public

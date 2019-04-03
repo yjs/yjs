@@ -14,6 +14,7 @@ import { YArray } from '../types/YArray.js'
 import { YText } from '../types/YText.js'
 import { YMap } from '../types/YMap.js'
 import { YXmlFragment } from '../types/YXmlElement.js'
+import { YEvent } from './YEvent.js' // eslint-disable-line
 
 /**
  * A Yjs instance handles the state of shared data.
@@ -28,7 +29,7 @@ export class Y extends Observable {
     this.gcEnabled = conf.gc || false
     this.clientID = random.uint32()
     /**
-     * @type {Map<string, AbstractType>}
+     * @type {Map<string, AbstractType<YEvent>>}
      */
     this.share = new Map()
     this.store = new StructStore()
@@ -203,7 +204,7 @@ export class Y extends Observable {
    *
    * @param {string} name
    * @param {Function} TypeConstructor The constructor of the type definition
-   * @return {AbstractType} The created type. Constructed with TypeConstructor
+   * @return {AbstractType<any>} The created type. Constructed with TypeConstructor
    */
   get (name, TypeConstructor = AbstractType) {
     // @ts-ignore
@@ -242,7 +243,7 @@ export class Y extends Observable {
   }
   /**
    * @param {string} name
-   * @return {YMap}
+   * @return {YMap<any>}
    */
   getMap (name) {
     // @ts-ignore

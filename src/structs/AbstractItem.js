@@ -64,7 +64,7 @@ export class AbstractItem extends AbstractStruct {
    * @param {ID} id
    * @param {AbstractItem | null} left
    * @param {AbstractItem | null} right
-   * @param {AbstractType | null} parent
+   * @param {AbstractType<any> | null} parent
    * @param {string | null} parentSub
    */
   constructor (id, left, right, parent, parentSub) {
@@ -102,7 +102,7 @@ export class AbstractItem extends AbstractStruct {
     this.rightOrigin = right
     /**
      * The parent type.
-     * @type {AbstractType}
+     * @type {AbstractType<any>}
      * @readonly
      */
     this.parent = parent
@@ -266,7 +266,7 @@ export class AbstractItem extends AbstractStruct {
    * @param {ID} id
    * @param {AbstractItem|null} left
    * @param {AbstractItem|null} right
-   * @param {AbstractType} parent
+   * @param {AbstractType<any>} parent
    * @param {string|null} parentSub
    * @return {AbstractItem}
    */

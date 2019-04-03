@@ -11,10 +11,11 @@ import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 
 /**
  * Event that describes the changes on a YArray
+ * @template T
  */
 export class YArrayEvent extends YEvent {
   /**
-   * @param {AbstractType} yarray The changed type
+   * @param {YArray<T>} yarray The changed type
    * @param {Transaction} transaction The transaction object
    */
   constructor (yarray, transaction) {
@@ -26,6 +27,7 @@ export class YArrayEvent extends YEvent {
 /**
  * A shared Array implementation.
  * @template T
+ * @extends AbstractType<YArrayEvent<T>>
  */
 export class YArray extends AbstractType {
   constructor () {
@@ -149,10 +151,10 @@ export class YArray extends AbstractType {
    *  // Insert character 'a' at position 0
    *  yarray.insert(0, ['a'])
    *  // Insert numbers 1, 2 at position 1
-   *  yarray.insert(2, [1, 2])
+   *  yarray.insert(1, [1, 2])
    *
    * @param {number} index The index to insert content at.
-   * @param {Array<number|string|ArrayBuffer|AbstractType>} content The array of content
+   * @param {Array<T>} content The array of content
    */
   insert (index, content) {
     if (this._y !== null) {
@@ -168,7 +170,7 @@ export class YArray extends AbstractType {
   /**
    * Appends content to this YArray.
    *
-   * @param {Array<number|string|ArrayBuffer|AbstractType>} content Array of content to append.
+   * @param {Array<T>} content Array of content to append.
    */
   push (content) {
     this.insert(this.length, content)

@@ -18,7 +18,7 @@ export class ItemString extends AbstractItem {
    * @param {ID} id
    * @param {AbstractItem | null} left
    * @param {AbstractItem | null} right
-   * @param {AbstractType} parent
+   * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
    * @param {string} string
    */
@@ -33,7 +33,7 @@ export class ItemString extends AbstractItem {
    * @param {ID} id
    * @param {AbstractItem | null} left
    * @param {AbstractItem | null} right
-   * @param {AbstractType} parent
+   * @param {AbstractType<any> parent
    * @param {string | null} parentSub
    */
   copy (id, left, right, parent, parentSub) {

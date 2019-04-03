@@ -5,7 +5,7 @@
 import { ItemEmbed } from '../structs/ItemEmbed.js'
 import { ItemString } from '../structs/ItemString.js'
 import { ItemFormat } from '../structs/ItemFormat.js'
-import { YArrayEvent } from './YArray.js'
+import { YEvent } from '../utils/YEvent.js'
 import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
 import { AbstractType } from './AbstractType.js'
 import { AbstractItem } from '../structs/AbstractItem.js' // eslint-disable-line
@@ -57,7 +57,7 @@ const findNextPosition = (transaction, store, currentAttributes, left, right, co
  * @private
  * @param {Transaction} transaction
  * @param {StructStore} store
- * @param {AbstractType} parent
+ * @param {AbstractType<any>} parent
  * @param {number} index
  * @return {{left:AbstractItem|null,right:AbstractItem|null,currentAttributes:Map<string,any>}}
  */
@@ -73,7 +73,7 @@ const findPosition = (transaction, store, parent, index) => {
  *
  * @private
  * @param {Transaction} transaction
- * @param {AbstractType} parent
+ * @param {AbstractType<any>} parent
  * @param {AbstractItem|null} left
  * @param {AbstractItem|null} right
  * @param {Map<string,any>} negatedAttributes
@@ -151,7 +151,7 @@ const minimizeAttributeChanges = (left, right, currentAttributes, attributes) =>
 /**
  * @private
  * @param {Transaction} transaction
- * @param {AbstractType} parent
+ * @param {AbstractType<any>} parent
  * @param {AbstractItem|null} left
  * @param {AbstractItem|null} right
  * @param {Map<string,any>} currentAttributes
@@ -177,7 +177,7 @@ const insertAttributes = (transaction, parent, left, right, currentAttributes, a
 /**
  * @private
  * @param {Transaction} transaction
- * @param {AbstractType} parent
+ * @param {AbstractType<any>} parent
  * @param {AbstractItem|null} left
  * @param {AbstractItem|null} right
  * @param {Map<string,any>} currentAttributes
@@ -206,7 +206,7 @@ const insertText = (transaction, parent, left, right, currentAttributes, text, a
 /**
  * @private
  * @param {Transaction} transaction
- * @param {AbstractType} parent
+ * @param {AbstractType<any>} parent
  * @param {AbstractItem|null} left
  * @param {AbstractItem|null} right
  * @param {Map<string,any>} currentAttributes
@@ -260,7 +260,7 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
 /**
  * @private
  * @param {Transaction} transaction
- * @param {AbstractType} parent
+ * @param {AbstractType<any>} parent
  * @param {AbstractItem|null} left
  * @param {AbstractItem|null} right
  * @param {Map<string,any>} currentAttributes
@@ -324,9 +324,9 @@ const deleteText = (transaction, parent, left, right, currentAttributes, length)
  *
  * @private
  */
-class YTextEvent extends YArrayEvent {
+class YTextEvent extends YEvent {
   /**
-   * @param {AbstractType} ytext
+   * @param {YText} ytext
    * @param {Transaction} transaction
    */
   constructor (ytext, transaction) {
@@ -544,6 +544,8 @@ class YTextEvent extends YArrayEvent {
  * This type replaces y-richtext as this implementation is able to handle
  * block formats (format information on a paragraph), embeds (complex elements
  * like pictures and videos), and text formats (**bold**, *italic*).
+ *
+ * @extends AbstractType<YTextEvent>
  */
 export class YText extends AbstractType {
   /**

@@ -224,7 +224,7 @@ export class TestConnector {
 /**
  * @param {t.TestCase} tc
  * @param {{users?:number}} conf
- * @return {{testConnector:TestConnector,users:Array<TestYInstance>,array0:Y.Array<any>,array1:Y.Array<any>,array2:Y.Array<any>,map0:Y.Map,map1:Y.Map,map2:Y.Map,text0:Y.Text,text1:Y.Text,text2:Y.Text,xml0:Y.XmlFragment,xml1:Y.XmlFragment,xml2:Y.XmlFragment}}
+ * @return {{testConnector:TestConnector,users:Array<TestYInstance>,array0:Y.Array<any>,array1:Y.Array<any>,array2:Y.Array<any>,map0:Y.Map<any>,map1:Y.Map<any>,map2:Y.Map<any>,map3:Y.Map<any>,text0:Y.Text,text1:Y.Text,text2:Y.Text,xml0:Y.XmlElement,xml1:Y.XmlElement,xml2:Y.XmlElement}}
  */
 export const init = (tc, { users = 5 } = {}) => {
   /**
