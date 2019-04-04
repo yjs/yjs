@@ -2,21 +2,26 @@
  * @module structs
  */
 
-import { Y } from '../utils/Y.js' // eslint-disable-line
-import * as eventHandler from '../utils/EventHandler.js'
-import { YEvent } from '../utils/YEvent.js' // eslint-disable-line
-import { AbstractItem } from '../structs/AbstractItem.js' // eslint-disable-line
-import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
-import { Encoder } from 'lib0/encoding.js' // eslint-disable-line
-import { Transaction, nextID } from '../utils/Transaction.js' // eslint-disable-line
+import {
+  removeEventHandlerListener,
+  callEventHandlerListeners,
+  addEventHandlerListener,
+  createEventHandler,
+  ItemType,
+  nextID,
+  isVisible,
+  ItemJSON,
+  ItemBinary,
+  createID,
+  getItemCleanStart,
+  getItemCleanEnd,
+  Y, Snapshot, Transaction, EventHandler, YEvent, AbstractItem, // eslint-disable-line
+} from '../internals.js'
+
 import * as map from 'lib0/map.js'
-import { isVisible, Snapshot } from '../utils/Snapshot.js' // eslint-disable-line
-import { ItemJSON } from '../structs/ItemJSON.js'
-import { ItemBinary } from '../structs/ItemBinary.js'
-import { ID, createID } from '../utils/ID.js' // eslint-disable-line
-import { getItemCleanStart, getItemCleanEnd } from '../utils/StructStore.js'
 import * as iterator from 'lib0/iterator.js'
 import * as error from 'lib0/error.js'
+import * as encoding from 'lib0/encoding.js' // eslint-disable-line
 
 /**
  * @template EventType
@@ -46,14 +51,14 @@ export class AbstractType {
     this._length = 0
     /**
      * Event handlers
-     * @type {eventHandler.EventHandler<EventType,Transaction>}
+     * @type {EventHandler<EventType,Transaction>}
      */
-    this._eH = eventHandler.create()
+    this._eH = createEventHandler()
     /**
      * Deep event handlers
-     * @type {eventHandler.EventHandler<Array<YEvent>,Transaction>}
+     * @type {EventHandler<Array<YEvent>,Transaction>}
      */
-    this._dEH = eventHandler.create()
+    this._dEH = createEventHandler()
   }
 
   /**
@@ -80,7 +85,7 @@ export class AbstractType {
   }
 
   /**
-   * @param {Encoder} encoder
+   * @param {encoding.Encoder} encoder
    */
   _write (encoder) {
     throw new Error('unimplemented')
@@ -119,7 +124,7 @@ export class AbstractType {
    * @param {any} event
    */
   _callEventHandler (transaction, event) {
-    eventHandler.callEventListeners(this._eH, [event, transaction])
+    callEventHandlerListeners(this._eH, [event, transaction])
     const changedParentTypes = transaction.changedParentTypes
     /**
      * @type {AbstractType<EventType>}
@@ -141,7 +146,7 @@ export class AbstractType {
    * @param {function(EventType, Transaction):void} f Observer function
    */
   observe (f) {
-    eventHandler.addEventListener(this._eH, f)
+    addEventHandlerListener(this._eH, f)
   }
 
   /**
@@ -150,7 +155,7 @@ export class AbstractType {
    * @param {function(Array<YEvent>,Transaction):void} f Observer function
    */
   observeDeep (f) {
-    eventHandler.addEventListener(this._dEH, f)
+    addEventHandlerListener(this._dEH, f)
   }
 
   /**
@@ -159,7 +164,7 @@ export class AbstractType {
    * @param {function(EventType,Transaction):void} f Observer function
    */
   unobserve (f) {
-    eventHandler.removeEventListener(this._eH, f)
+    removeEventHandlerListener(this._eH, f)
   }
 
   /**
@@ -168,7 +173,7 @@ export class AbstractType {
    * @param {function(Array<YEvent>,Transaction):void} f Observer function
    */
   unobserveDeep (f) {
-    eventHandler.removeEventListener(this._dEH, f)
+    removeEventHandlerListener(this._dEH, f)
   }
 
   /**

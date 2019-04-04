@@ -1,6 +1,8 @@
-import { Y } from '../utils/Y.js' // eslint-disable-line
-import { ID, createID } from '../utils/ID.js' // eslint-disable-line
-import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
+
+import {
+  Y, ID, Transaction // eslint-disable-line
+} from '../internals.js'
+
 import * as encoding from 'lib0/encoding.js' // eslint-disable-line
 import * as error from 'lib0/error.js'
 

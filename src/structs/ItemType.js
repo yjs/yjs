@@ -4,22 +4,24 @@
 
 // TODO: ItemBinary should be able to merge with right (similar to other items). Or the other items (ItemJSON) should not be able to merge - extra byte + consistency
 
-import { ID } from '../utils/ID.js' // eslint-disable-line
-import { Y } from '../utils/Y.js' // eslint-disable-line
-import { AbstractType } from '../types/AbstractType.js' // eslint-disable-line
-import { AbstractItem, AbstractItemRef } from './AbstractItem.js'
+import {
+  AbstractItem,
+  AbstractItemRef,
+  getItemCleanEnd,
+  getItemCleanStart,
+  getItemType,
+  readYArray,
+  readYMap,
+  readYText,
+  readYXmlElement,
+  readYXmlFragment,
+  readYXmlHook,
+  readYXmlText,
+  Y, GC, ItemDeleted, Transaction, ID, AbstractType // eslint-disable-line
+} from '../internals.js'
+
 import * as encoding from 'lib0/encoding.js' // eslint-disable-line
 import * as decoding from 'lib0/decoding.js'
-import { readYArray } from '../types/YArray.js'
-import { readYMap } from '../types/YMap.js'
-import { readYText } from '../types/YText.js'
-import { readYXmlElement, readYXmlFragment } from '../types/YXmlElement.js'
-import { readYXmlHook } from '../types/YXmlHook.js'
-import { readYXmlText } from '../types/YXmlText.js'
-import { getItemCleanEnd, getItemCleanStart, getItemType } from '../utils/StructStore.js'
-import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
-import { GC } from './GC.js' // eslint-disable-line
-import { ItemDeleted } from './ItemDeleted.js' // eslint-disable-line
 
 /**
  * @param {Y} y

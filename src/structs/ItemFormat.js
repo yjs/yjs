@@ -2,15 +2,17 @@
  * @module structs
  */
 
-import { AbstractType } from '../types/AbstractType.js' // eslint-disable-line
-import { AbstractItem, AbstractItemRef } from './AbstractItem.js'
+import {
+  AbstractItem,
+  AbstractItemRef,
+  getItemCleanEnd,
+  getItemCleanStart,
+  getItemType,
+  Transaction, ID, AbstractType // eslint-disable-line
+} from '../internals.js'
+
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
-import { Y } from '../utils/Y.js' // eslint-disable-line
-import { ID } from '../utils/ID.js' // eslint-disable-line
-import { ItemType } from './ItemType.js' // eslint-disable-line
-import { getItemCleanEnd, getItemCleanStart, getItemType } from '../utils/StructStore.js'
-import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
 
 export const structFormatRefNumber = 4
 

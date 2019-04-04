@@ -2,7 +2,8 @@
  * @module types
  */
 
-import { YText } from './YText.js'
+import { YText } from '../internals.js'
+
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 
 /**

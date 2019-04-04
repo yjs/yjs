@@ -1,20 +1,26 @@
+
+import {
+  findIndexSS,
+  exists,
+  ItemBinaryRef,
+  GCRef,
+  ItemDeletedRef,
+  ItemEmbedRef,
+  ItemFormatRef,
+  ItemJSONRef,
+  ItemStringRef,
+  ItemTypeRef,
+  writeID,
+  createID,
+  readID,
+  Transaction, AbstractStruct, AbstractRef, StructStore, ID // eslint-disable-line
+} from '../internals.js'
+
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import * as map from 'lib0/map.js'
-import { AbstractStruct, AbstractRef } from '../structs/AbstractStruct.js' // eslint-disable-line
 import * as binary from 'lib0/binary.js'
-import { Transaction } from './Transaction.js' // eslint-disable-line
-import { findIndexSS, exists, StructStore } from './StructStore.js' // eslint-disable-line
-import { writeID, createID, readID, ID } from './ID.js' // eslint-disable-line
 import * as iterator from 'lib0/iterator.js'
-import { ItemBinaryRef } from '../structs/ItemBinary.js'
-import { GCRef } from '../structs/GC.js'
-import { ItemDeletedRef } from '../structs/ItemDeleted.js'
-import { ItemEmbedRef } from '../structs/ItemEmbed.js'
-import { ItemFormatRef } from '../structs/ItemFormat.js'
-import { ItemJSONRef } from '../structs/ItemJSON.js'
-import { ItemStringRef } from '../structs/ItemString.js'
-import { ItemTypeRef } from '../structs/ItemType.js'
 
 /**
  * @typedef {Map<number, number>} StateMap

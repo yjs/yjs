@@ -2,8 +2,7 @@
  * @module utils
  */
 
-import { Y } from '../utils/Y.js' // eslint-disable-line
-import { AbstractType } from '../types/AbstractType.js' // eslint-disable-line
+import { AbstractType } from '../internals.js' // eslint-disable-line
 
 /**
  * Check if `parent` is a parent of `child`.

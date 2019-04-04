@@ -1,15 +1,20 @@
-/**
- * @module utils
- */
 
-import * as ID from './ID.js'
-import { AbstractType } from '../types/AbstractType.js' // eslint-disable-line
-import { AbstractItem } from '../structs/AbstractItem.js' // eslint-disable-line
+import {
+  find,
+  exists,
+  getItemType,
+  createID,
+  writeID,
+  readID,
+  compareIDs,
+  findRootTypeKey,
+  AbstractItem,
+  ID, StructStore, Y, AbstractType // eslint-disable-line
+} from '../internals.js'
+
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import * as error from 'lib0/error.js'
-import { find, exists, getItemType, StructStore } from './StructStore.js' // eslint-disable-line
-import { Y } from './Y.js' // eslint-disable-line
 
 /**
  * A relative position that is based on the Yjs model. In contrast to an
@@ -38,13 +43,13 @@ import { Y } from './Y.js' // eslint-disable-line
  */
 export class RelativePosition {
   /**
-   * @param {ID.ID|null} type
+   * @param {ID|null} type
    * @param {string|null} tname
-   * @param {ID.ID|null} item
+   * @param {ID|null} item
    */
   constructor (type, tname, item) {
     /**
-     * @type {ID.ID|null}
+     * @type {ID|null}
      */
     this.type = type
     /**
@@ -52,7 +57,7 @@ export class RelativePosition {
      */
     this.tname = tname
     /**
-     * @type {ID.ID | null}
+     * @type {ID | null}
      */
     this.item = item
   }
@@ -83,13 +88,13 @@ export const createAbsolutePosition = (type, offset) => new AbsolutePosition(typ
 
 /**
  * @param {AbstractType<any>} type
- * @param {ID.ID|null} item
+ * @param {ID|null} item
  */
 export const createRelativePosition = (type, item) => {
   let typeid = null
   let tname = null
   if (type._item === null) {
-    tname = ID.findRootTypeKey(type)
+    tname = findRootTypeKey(type)
   } else {
     typeid = type._item.id
   }
@@ -109,7 +114,7 @@ export const createRelativePositionByOffset = (type, offset) => {
     if (!t.deleted && t.countable) {
       if (t.length > offset) {
         // case 1: found position somewhere in the linked list
-        return createRelativePosition(type, ID.createID(t.id.client, t.id.clock + offset))
+        return createRelativePosition(type, createID(t.id.client, t.id.clock + offset))
       }
       offset -= t.length
     }
@@ -126,7 +131,7 @@ export const writeRelativePosition = (encoder, rpos) => {
   const { type, tname, item } = rpos
   if (item !== null) {
     encoding.writeVarUint(encoder, 0)
-    ID.writeID(encoder, item)
+    writeID(encoder, item)
   } else if (tname !== null) {
     // case 2: found position at the end of the list and type is stored in y.share
     encoding.writeUint8(encoder, 1)
@@ -134,7 +139,7 @@ export const writeRelativePosition = (encoder, rpos) => {
   } else if (type !== null) {
     // case 3: found position at the end of the list and type is attached to an item
     encoding.writeUint8(encoder, 2)
-    ID.writeID(encoder, type)
+    writeID(encoder, type)
   } else {
     throw error.unexpectedCase()
   }
@@ -154,7 +159,7 @@ export const readRelativePosition = (decoder, y, store) => {
   switch (decoding.readVarUint(decoder)) {
     case 0:
       // case 1: found position somewhere in the linked list
-      itemID = ID.readID(decoder)
+      itemID = readID(decoder)
       break
     case 1:
       // case 2: found position at the end of the list and type is stored in y.share
@@ -162,7 +167,7 @@ export const readRelativePosition = (decoder, y, store) => {
       break
     case 2: {
       // case 3: found position at the end of the list and type is attached to an item
-      type = ID.readID(decoder)
+      type = readID(decoder)
     }
   }
   return new RelativePosition(type, tname, itemID)
@@ -231,7 +236,7 @@ export const toRelativePosition = (apos, y) => {
     while (n !== null) {
       if (!n.deleted && n.countable) {
         if (n.length > offset) {
-          return createRelativePosition(type, ID.createID(n.id.client, n.id.clock + offset))
+          return createRelativePosition(type, createID(n.id.client, n.id.clock + offset))
         }
         offset -= n.length
       }
@@ -247,8 +252,8 @@ export const toRelativePosition = (apos, y) => {
  */
 export const compareRelativePositions = (a, b) => a === b || (
   a !== null && b !== null && (
-    (a.item !== null && b.item !== null && ID.compareIDs(a.item, b.item)) ||
+    (a.item !== null && b.item !== null && compareIDs(a.item, b.item)) ||
     (a.tname !== null && a.tname === b.tname) ||
-    (a.type !== null && b.type !== null && ID.compareIDs(a.type, b.type))
+    (a.type !== null && b.type !== null && compareIDs(a.type, b.type))
   )
 )

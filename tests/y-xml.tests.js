@@ -1,5 +1,6 @@
 import { init, compare } from './testHelper.js'
 import * as Y from '../src/index.js'
+
 import * as t from 'lib0/testing.js'
 
 /**

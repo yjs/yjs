@@ -1,8 +1,8 @@
-import { AbstractStruct } from '../structs/AbstractStruct.js' // eslint-disable-line
-import { AbstractItem } from '../structs/AbstractItem.js' // eslint-disable-line
-import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
-import { ID } from './ID.js' // eslint-disable-line
-import { Transaction } from './Transaction.js' // eslint-disable-line
+
+import {
+  Transaction, ID, ItemType, AbstractItem, AbstractStruct // eslint-disable-line
+} from '../internals.js'
+
 import * as map from 'lib0/map.js'
 import * as math from 'lib0/math.js'
 import * as error from 'lib0/error.js'

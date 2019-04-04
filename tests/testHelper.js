@@ -1,13 +1,18 @@
 import * as Y from '../src/index.js'
+
+import {
+  createDeleteSetFromStructStore,
+  getStates,
+  AbstractItem,
+  DeleteSet, StructStore // eslint-disable-line
+} from '../src/internals.js'
+
 import * as t from 'lib0/testing.js'
 import * as prng from 'lib0/prng.js'
 import { createMutex } from 'lib0/mutex.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import * as syncProtocol from 'y-protocols/sync.js'
-import { createDeleteSetFromStructStore, DeleteSet } from '../src/utils/DeleteSet.js' // eslint-disable-line
-import { getStates, StructStore } from '../src/utils/StructStore.js' // eslint-disable-line
-import { AbstractItem } from '../src/structs/AbstractItem.js' // eslint-disable-line
 
 /**
  * @param {TestYInstance} y
@@ -278,9 +283,6 @@ export const compare = users => {
     compareDS(createDeleteSetFromStructStore(users[i].store), createDeleteSetFromStructStore(users[i + 1].store))
     compareStructStores(users[i].store, users[i + 1].store)
   }
-  users.forEach(user =>
-    t.assert(user._missingStructs.size === 0)
-  )
   users.map(u => u.destroy())
 }
 

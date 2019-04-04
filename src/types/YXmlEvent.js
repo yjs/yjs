@@ -2,11 +2,10 @@
  * @module types
  */
 
-import { YEvent } from '../utils/YEvent.js'
-
-import { AbstractType } from './AbstractType.js' // eslint-disable-line
-import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
-import { YXmlElement, YXmlFragment } from './YXmlElement.js' // eslint-disable-line
+import {
+  YEvent,
+  YXmlElement, YXmlFragment, Transaction // eslint-disable-line
+} from '../internals.js'
 
 /**
  * An Event that describes changes on a YXml Element or Yxml Fragment

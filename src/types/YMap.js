@@ -2,11 +2,18 @@
  * @module types
  */
 
-import { AbstractType, typeMapDelete, typeMapSet, typeMapGet, typeMapHas, createMapIterator } from './AbstractType.js'
-import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
-import { YEvent } from '../utils/YEvent.js'
+import {
+  YEvent,
+  AbstractType,
+  typeMapDelete,
+  typeMapSet,
+  typeMapGet,
+  typeMapHas,
+  createMapIterator,
+  Transaction, ItemType, // eslint-disable-line
+} from '../internals.js'
+
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
-import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
 import * as iterator from 'lib0/iterator.js'
 
 /**

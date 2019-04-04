@@ -1,23 +1,25 @@
-/**
- * @module structs
- */
 
-import { readID, createID, writeID, ID } from '../utils/ID.js' // eslint-disable-line
-import { GC } from './GC.js'
+import {
+  readID,
+  createID,
+  writeID,
+  GC,
+  nextID,
+  AbstractRef,
+  AbstractStruct,
+  replaceStruct,
+  addStruct,
+  addToDeleteSet,
+  ItemDeleted,
+  ID, AbstractType, Y, Transaction // eslint-disable-line
+} from '../internals.js'
+
+import * as error from 'lib0/error.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
-import { ItemType } from './ItemType.js' // eslint-disable-line
-import { AbstractType } from '../types/AbstractType.js' // eslint-disable-line
-import { Y } from '../utils/Y.js' // eslint-disable-line
-import { Transaction, nextID } from '../utils/Transaction.js' // eslint-disable-line
 import * as maplib from 'lib0/map.js'
 import * as set from 'lib0/set.js'
 import * as binary from 'lib0/binary.js'
-import { AbstractRef, AbstractStruct } from './AbstractStruct.js' // eslint-disable-line
-import * as error from 'lib0/error.js'
-import { replaceStruct, addStruct } from '../utils/StructStore.js'
-import { addToDeleteSet } from '../utils/DeleteSet.js'
-import { ItemDeleted } from './ItemDeleted.js'
 
 /**
  * Split leftItem into two items

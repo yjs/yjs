@@ -1,5 +1,9 @@
-import { DeleteSet, isDeleted } from './DeleteSet'
-import { AbstractItem } from '../structs/AbstractItem.js' // eslint-disable-line
+
+import {
+  DeleteSet,
+  isDeleted,
+  AbstractItem // eslint-disable-line
+} from '../internals.js'
 
 export class Snapshot {
   /**

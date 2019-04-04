@@ -2,15 +2,22 @@
  * @module types
  */
 
-import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
+import {
+  YXmlEvent,
+  AbstractType,
+  typeArrayMap,
+  typeArrayForEach,
+  typeMapGet,
+  typeMapGetAll,
+  typeArrayInsertGenerics,
+  typeArrayDelete,
+  typeMapSet,
+  typeMapDelete,
+  Transaction, ItemType, YXmlText, YXmlHook, Snapshot // eslint-disable-line
+} from '../internals.js'
+
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
-import { YXmlEvent } from './YXmlEvent.js'
-import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
-import { YXmlText } from './YXmlText.js' // eslint-disable-line
-import { YXmlHook } from './YXmlHook.js' // eslint-disable-line
-import { AbstractType, typeArrayMap, typeArrayForEach, typeMapGet, typeMapGetAll, typeArrayInsertGenerics, typeArrayDelete, typeMapSet, typeMapDelete } from './AbstractType.js'
-import { Snapshot } from '../utils/Snapshot.js' // eslint-disable-line
 
 /**
  * Define the elements to which a set of CSS queries apply.

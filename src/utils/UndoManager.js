@@ -1,15 +1,17 @@
 // @ts-nocheck
 
-import * as ID from './ID.js'
-import { isParentOf } from './isParentOf.js'
+import {
+  isParentOf,
+  createID
+} from '../internals.js'
 
 class ReverseOperation {
   constructor (y, transaction, bindingInfos) {
     this.created = new Date()
     const beforeState = transaction.beforeState
     if (beforeState.has(y.userID)) {
-      this.toState = ID.createID(y.userID, y.ss.getState(y.userID) - 1)
-      this.fromState = ID.createID(y.userID, beforeState.get(y.userID))
+      this.toState = createID(y.userID, y.ss.getState(y.userID) - 1)
+      this.fromState = createID(y.userID, beforeState.get(y.userID))
     } else {
       this.toState = null
       this.fromState = null
@@ -51,7 +53,7 @@ function applyReverseOperation (y, scope, reverseBuffer) {
       const redoitems = new Set()
       for (let del of undoOp.deletedStructs) {
         const fromState = del.from
-        const toState = ID.createID(fromState.user, fromState.clock + del.len - 1)
+        const toState = createID(fromState.user, fromState.clock + del.len - 1)
         y.os.getItemCleanStart(fromState)
         y.os.getItemCleanEnd(toState)
         y.os.iterate(fromState, toState, op => {

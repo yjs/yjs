@@ -1,8 +1,8 @@
-import { AbstractItem } from '../structs/AbstractItem.js' // eslint-disable-line
-import { AbstractType } from '../types/AbstractType.js' // eslint-disable-line
-import { Transaction } from './Transaction.js' // eslint-disable-line
-import { AbstractStruct } from '../structs/AbstractStruct.js' // eslint-disable-line
-import { isDeleted } from './DeleteSet.js'
+
+import {
+  isDeleted,
+  AbstractItem, AbstractType, Transaction, AbstractStruct // eslint-disable-line
+} from '../internals.js'
 
 /**
  * @module utils

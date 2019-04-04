@@ -1,9 +1,14 @@
 /**
  * @module structs
  */
-import { AbstractRef, AbstractStruct } from './AbstractStruct.js'
-import { ID, readID, createID, writeID } from '../utils/ID.js' // eslint-disable-line
-import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
+import {
+  AbstractRef,
+  AbstractStruct,
+  createID,
+  writeID,
+  ID // eslint-disable-line
+} from '../internals.js'
+
 import * as decoding from 'lib0/decoding.js'
 import * as encoding from 'lib0/encoding.js'
 

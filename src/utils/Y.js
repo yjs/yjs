@@ -1,21 +1,25 @@
-import { StructStore, findIndexSS } from './StructStore.js'
+import { } from './StructStore.js'
+
+import {
+  callEventHandlerListeners,
+  sortAndMergeDeleteSet,
+  StructStore,
+  findIndexSS,
+  Transaction,
+  AbstractType,
+  AbstractItem,
+  YArray,
+  YText,
+  YMap,
+  YXmlFragment,
+  YEvent, ItemDeleted, GC, AbstractStruct // eslint-disable-line
+} from '../internals.js'
+
+import { Observable } from 'lib0/observable.js'
+import * as error from 'lib0/error.js'
 import * as random from 'lib0/random.js'
 import * as map from 'lib0/map.js'
-import { Observable } from 'lib0/observable.js'
-import { Transaction } from './Transaction.js'
-import { AbstractStruct, AbstractRef } from '../structs/AbstractStruct.js' // eslint-disable-line
-import { AbstractType } from '../types/AbstractType.js'
-import { AbstractItem } from '../structs/AbstractItem.js'
-import { sortAndMergeDeleteSet } from './DeleteSet.js'
 import * as math from 'lib0/math.js'
-import { GC } from '../structs/GC.js' // eslint-disable-line
-import { ItemDeleted } from '../structs/ItemDeleted.js' // eslint-disable-line
-import { YArray } from '../types/YArray.js'
-import { YText } from '../types/YText.js'
-import { YMap } from '../types/YMap.js'
-import { YXmlFragment } from '../types/YXmlElement.js'
-import { YEvent } from './YEvent.js' // eslint-disable-line
-import * as eventHandler from './EventHandler.js'
 
 /**
  * A Yjs instance handles the state of shared data.
@@ -35,14 +39,6 @@ export class Y extends Observable {
     this.share = new Map()
     this.store = new StructStore()
     /**
-     * @type {Map<number, Map<number, AbstractRef>>}
-     */
-    this._missingStructs = new Map()
-    /**
-     * @type {Array<AbstractStruct>}
-     */
-    this._readyToIntegrate = []
-    /**
      * @type {Transaction | null}
      */
     this._transaction = null
@@ -54,7 +50,7 @@ export class Y extends Observable {
   get transaction () {
     const t = this._transaction
     if (t === null) {
-      throw new Error('All changes must happen inside a transaction')
+      throw error.create('All changes must happen inside a transaction')
     }
     return t
   }
@@ -98,7 +94,7 @@ export class Y extends Observable {
               })
             // we don't need to check for events.length
             // because we know it has at least one element
-            eventHandler.callEventListeners(type._dEH, [events, transaction])
+            callEventHandlerListeners(type._dEH, [events, transaction])
           })
           // when all changes & events are processed, emit afterTransaction event
           this.emit('afterTransaction', [this, transaction])

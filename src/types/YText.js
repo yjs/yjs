@@ -2,17 +2,19 @@
  * @module types
  */
 
-import { ItemEmbed } from '../structs/ItemEmbed.js'
-import { ItemString } from '../structs/ItemString.js'
-import { ItemFormat } from '../structs/ItemFormat.js'
-import { YEvent } from '../utils/YEvent.js'
-import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
-import { AbstractType } from './AbstractType.js'
-import { AbstractItem } from '../structs/AbstractItem.js' // eslint-disable-line
-import { isVisible, Snapshot } from '../utils/Snapshot.js' // eslint-disable-line
-import { getItemCleanStart, StructStore } from '../utils/StructStore.js' // eslint-disable-line
-import { Transaction, nextID } from '../utils/Transaction.js' // eslint-disable-line
-import { createID } from '../utils/ID.js'
+import {
+  YEvent,
+  ItemEmbed,
+  ItemString,
+  ItemFormat,
+  AbstractType,
+  nextID,
+  createID,
+  getItemCleanStart,
+  isVisible,
+  ItemType, AbstractItem, Snapshot, StructStore, Transaction // eslint-disable-line
+} from '../internals.js'
+
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 
 /**

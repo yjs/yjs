@@ -2,11 +2,19 @@
  * @module types
  */
 
-import { AbstractItem } from '../structs/AbstractItem.js' // eslint-disable-line
-import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
-import { AbstractType, typeArrayGet, typeArrayToArray, typeArrayForEach, typeArrayCreateIterator, typeArrayInsertGenerics, typeArrayDelete, typeArrayMap } from './AbstractType.js'
-import { YEvent } from '../utils/YEvent.js'
-import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
+import {
+  YEvent,
+  AbstractType,
+  typeArrayGet,
+  typeArrayToArray,
+  typeArrayForEach,
+  typeArrayCreateIterator,
+  typeArrayInsertGenerics,
+  typeArrayDelete,
+  typeArrayMap,
+  Transaction, ItemType, // eslint-disable-line
+} from '../internals.js'
+
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 
 /**

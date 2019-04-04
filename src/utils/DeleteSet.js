@@ -1,10 +1,13 @@
+
+import {
+  getItemRange,
+  StructStore, Transaction, ID // eslint-disable-line
+} from '../internals.js'
+
+import * as math from 'lib0/math.js'
 import * as map from 'lib0/map.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
-import * as math from 'lib0/math.js'
-import { StructStore, getItemRange } from './StructStore.js' // eslint-disable-line
-import { Transaction } from './Transaction.js' // eslint-disable-line
-import { ID } from './ID.js' // eslint-disable-line
 
 class DeleteItem {
   /**

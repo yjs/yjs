@@ -1,5 +1,3 @@
-import { Transaction } from './Transaction.js' // eslint-disable-line
-import { YEvent } from './YEvent.js' // eslint-disable-line
 import * as f from 'lib0/function.js'
 
 /**
@@ -20,7 +18,7 @@ export class EventHandler {
  * @template ARG0,ARG1
  * @returns {EventHandler<ARG0,ARG1>}
  */
-export const create = () => new EventHandler()
+export const createEventHandler = () => new EventHandler()
 
 /**
  * Adds an event listener that is called when
@@ -30,7 +28,7 @@ export const create = () => new EventHandler()
  * @param {EventHandler<ARG0,ARG1>} eventHandler
  * @param {function(ARG0,ARG1):void} f The event handler.
  */
-export const addEventListener = (eventHandler, f) =>
+export const addEventHandlerListener = (eventHandler, f) =>
   eventHandler.l.push(f)
 
 /**
@@ -41,7 +39,7 @@ export const addEventListener = (eventHandler, f) =>
  * @param {function(ARG0,ARG1):void} f The event handler that was added with
  *                     {@link EventHandler#addEventListener}
  */
-export const removeEventListener = (eventHandler, f) => {
+export const removeEventHandlerListener = (eventHandler, f) => {
   eventHandler.l = eventHandler.l.filter(g => f !== g)
 }
 
@@ -50,7 +48,7 @@ export const removeEventListener = (eventHandler, f) => {
  * @template ARG0,ARG1
  * @param {EventHandler<ARG0,ARG1>} eventHandler
  */
-export const removeAllEventListeners = eventHandler => {
+export const removeAllEventHandlerListeners = eventHandler => {
   eventHandler.l.length = 0
 }
 
@@ -62,5 +60,5 @@ export const removeAllEventListeners = eventHandler => {
  * @param {EventHandler<ARG0,ARG1>} eventHandler
  * @param {[ARG0,ARG1]} args
  */
-export const callEventListeners = (eventHandler, args) =>
+export const callEventHandlerListeners = (eventHandler, args) =>
   f.callAll(eventHandler.l, args)

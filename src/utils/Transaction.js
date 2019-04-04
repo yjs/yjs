@@ -2,16 +2,17 @@
  * @module utils
  */
 
+import {
+  getState,
+  createID,
+  writeStructsFromTransaction,
+  writeDeleteSet,
+  DeleteSet,
+  sortAndMergeDeleteSet,
+  AbstractType, AbstractItem, YEvent, ItemType, Y // eslint-disable-line
+} from '../internals.js'
+
 import * as encoding from 'lib0/encoding.js'
-import { AbstractType } from '../types/AbstractType.js' // eslint-disable-line
-import { AbstractItem } from '../structs/AbstractItem.js' // eslint-disable-line
-import { Y } from './Y.js' // eslint-disable-line
-import { YEvent } from './YEvent.js' // eslint-disable-line
-import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
-import { writeStructsFromTransaction } from './structEncoding.js'
-import { createID } from './ID.js' // eslint-disable-line
-import { writeDeleteSet, DeleteSet, sortAndMergeDeleteSet } from './DeleteSet.js'
-import { getState } from './StructStore.js'
 
 /**
  * A transaction is created for every change on the Yjs model. It is possible

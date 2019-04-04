@@ -4,13 +4,17 @@
 
 // TODO: ItemBinary should be able to merge with right (similar to other items). Or the other items (ItemJSON) should not be able to merge - extra byte + consistency
 
-import { AbstractItem, AbstractItemRef } from './AbstractItem.js'
+import {
+  AbstractItem,
+  AbstractItemRef,
+  getItemCleanEnd,
+  getItemCleanStart,
+  getItemType,
+  Transaction, ID, AbstractType // eslint-disable-line
+} from '../internals.js'
+
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
-import { ID } from '../utils/ID.js' // eslint-disable-line
-import { getItemCleanEnd, getItemCleanStart, getItemType } from '../utils/StructStore.js'
-import { AbstractType } from '../types/AbstractType.js' // eslint-disable-line
-import { Transaction } from '../utils/Transaction.js' // eslint-disable-line
 
 export const structDeletedRefNumber = 2
 

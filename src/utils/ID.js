@@ -2,10 +2,11 @@
  * @module utils
  */
 
+import { AbstractType } from '../internals' // eslint-disable-line
+
 import * as decoding from 'lib0/decoding.js'
 import * as encoding from 'lib0/encoding.js'
 import * as error from 'lib0/error.js'
-import { AbstractType } from '../types/AbstractType.js' // eslint-disable-line
 
 export class ID {
   /**
