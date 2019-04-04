@@ -85,7 +85,8 @@ export default [{
     }),
     commonjs()
   ]
-}, {
+}
+/* {
   input: ['./examples/codemirror.js', './examples/textarea.js', './examples/quill.js', './examples/dom.js', './examples/prosemirror.js'], // fs.readdirSync('./examples').filter(file => /(?<!\.(test|config))\.js$/.test(file)).map(file => './examples/' + file),
   output: {
     dir: 'examples/build',
@@ -102,4 +103,4 @@ export default [{
     commonjs(),
     ...minificationPlugins
   ]
-}]
+} */]

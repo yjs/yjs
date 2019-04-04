@@ -13,7 +13,8 @@ import {
   typeArrayDelete,
   typeMapSet,
   typeMapDelete,
-  Transaction, ItemType, YXmlText, YXmlHook, Snapshot // eslint-disable-line
+  YXmlElementRefID,
+  Y, Transaction, ItemType, YXmlText, YXmlHook, Snapshot // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -259,12 +260,12 @@ export class YXmlElement extends YXmlFragment {
    * * This type is sent to other client
    * * Observer functions are fired
    *
-   * @param {Transaction} transaction The Yjs instance
+   * @param {Y} y The Yjs instance
    * @param {ItemType} item
    * @private
    */
-  _integrate (transaction, item) {
-    super._integrate(transaction, item)
+  _integrate (y, item) {
+    super._integrate(y, item)
     // @ts-ignore
     this.insert(0, this._prelimContent)
     this._prelimContent = null
@@ -283,19 +284,6 @@ export class YXmlElement extends YXmlFragment {
    */
   _copy () {
     return new YXmlElement(this.nodeName)
-  }
-
-  /**
-   * Transform the properties of this type to binary and write it to an
-   * BinaryEncoder.
-   *
-   * This is called when this Item is sent to a remote peer.
-   *
-   * @private
-   * @param {encoding.Encoder} encoder The encoder to write data to.
-   */
-  _write (encoder) {
-    encoding.writeVarString(encoder, this.nodeName)
   }
 
   toString () {
@@ -459,6 +447,20 @@ export class YXmlElement extends YXmlFragment {
       binding._createAssociation(dom, this)
     }
     return dom
+  }
+
+  /**
+   * Transform the properties of this type to binary and write it to an
+   * BinaryEncoder.
+   *
+   * This is called when this Item is sent to a remote peer.
+   *
+   * @private
+   * @param {encoding.Encoder} encoder The encoder to write data to.
+   */
+  _write (encoder) {
+    encoding.writeVarUint(encoder, YXmlElementRefID)
+    encoding.writeVarString(encoder, this.nodeName)
   }
 }
 

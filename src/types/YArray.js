@@ -12,10 +12,12 @@ import {
   typeArrayInsertGenerics,
   typeArrayDelete,
   typeArrayMap,
-  Transaction, ItemType, // eslint-disable-line
+  YArrayRefID,
+  Y, Transaction, ItemType, // eslint-disable-line
 } from '../internals.js'
 
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
+import * as encoding from 'lib0/encoding.js'
 
 /**
  * Event that describes the changes on a YArray
@@ -52,12 +54,12 @@ export class YArray extends AbstractType {
    * * This type is sent to other client
    * * Observer functions are fired
    *
-   * @param {Transaction} transaction The Yjs instance
+   * @param {Y} y The Yjs instance
    * @param {ItemType} item
    * @private
    */
-  _integrate (transaction, item) {
-    super._integrate(transaction, item)
+  _integrate (y, item) {
+    super._integrate(y, item)
     // @ts-ignore
     this.insert(0, this._prelimContent)
     this._prelimContent = null
@@ -182,6 +184,13 @@ export class YArray extends AbstractType {
    */
   push (content) {
     this.insert(this.length, content)
+  }
+
+  /**
+   * @param {encoding.Encoder} encoder
+   */
+  _write (encoder) {
+    encoding.writeVarUint(encoder, YArrayRefID)
   }
 }
 

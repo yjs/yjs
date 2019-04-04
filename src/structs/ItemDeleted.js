@@ -29,7 +29,11 @@ export class ItemDeleted extends AbstractItem {
    */
   constructor (id, left, right, parent, parentSub, length) {
     super(id, left, right, parent, parentSub)
-    this.length = length
+    this._len = length
+    this.deleted = true
+  }
+  get length () {
+    return this._len
   }
   /**
    * @param {ID} id
@@ -47,7 +51,7 @@ export class ItemDeleted extends AbstractItem {
    */
   mergeWith (right) {
     if (right.origin === this && this.right === right) {
-      this.length += right.length
+      this._len += right.length
       return true
     }
     return false
@@ -73,7 +77,10 @@ export class ItemDeletedRef extends AbstractItemRef {
     /**
      * @type {number}
      */
-    this.length = decoding.readVarUint(decoder)
+    this.len = decoding.readVarUint(decoder)
+  }
+  get length () {
+    return this.len
   }
   /**
    * @param {Transaction} transaction
@@ -89,7 +96,7 @@ export class ItemDeletedRef extends AbstractItemRef {
       // @ts-ignore
       this.parent === null ? y.get(this.parentYKey) : getItemType(store, this.parent).type,
       this.parentSub,
-      this.length
+      this.len
     )
   }
 }

@@ -88,6 +88,9 @@ export const findIndexSS = (structs, clock) => {
       if (clock < midclock + mid.length) {
         return midindex
       }
+      if (left === midindex) {
+        throw error.unexpectedCase()
+      }
       left = midindex
     } else {
       right = midindex

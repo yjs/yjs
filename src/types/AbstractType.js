@@ -68,12 +68,12 @@ export class AbstractType {
    * * This type is sent to other client
    * * Observer functions are fired
    *
-   * @param {Transaction} transaction The Yjs instance
-   * @param {ItemType} item
+   * @param {Y} y The Yjs instance
+   * @param {ItemType|null} item
    * @private
    */
-  _integrate (transaction, item) {
-    this._y = transaction.y
+  _integrate (y, item) {
+    this._y = y
     this._item = item
   }
 
@@ -87,9 +87,7 @@ export class AbstractType {
   /**
    * @param {encoding.Encoder} encoder
    */
-  _write (encoder) {
-    throw new Error('unimplemented')
-  }
+  _write (encoder) { }
 
   /**
    * The first non-deleted item
@@ -329,12 +327,19 @@ export const typeArrayGet = (type, index) => {
  * @param {Array<Object<string,any>|Array<any>|number|string|ArrayBuffer>} content
  */
 export const typeArrayInsertGenericsAfter = (transaction, parent, referenceItem, content) => {
-  let left = referenceItem
+  const left = referenceItem
   const right = referenceItem === null ? parent._start : referenceItem.right
   /**
    * @type {Array<Object|Array|number>}
    */
   let jsonContent = []
+  const packJsonContent = () => {
+    if (jsonContent.length > 0) {
+      const item = new ItemJSON(nextID(transaction), left, right, parent, null, jsonContent)
+      item.integrate(transaction)
+      jsonContent = []
+    }
+  }
   content.forEach(c => {
     switch (c.constructor) {
       case Number:
@@ -344,11 +349,7 @@ export const typeArrayInsertGenericsAfter = (transaction, parent, referenceItem,
         jsonContent.push(c)
         break
       default:
-        if (jsonContent.length > 0) {
-          const item = new ItemJSON(nextID(transaction), left, right, parent, null, jsonContent)
-          item.integrate(transaction)
-          jsonContent = []
-        }
+        packJsonContent()
         switch (c.constructor) {
           case ArrayBuffer:
             // @ts-ignore c is definitely an ArrayBuffer
@@ -363,6 +364,7 @@ export const typeArrayInsertGenericsAfter = (transaction, parent, referenceItem,
         }
     }
   })
+  packJsonContent()
 }
 
 /**
@@ -373,20 +375,22 @@ export const typeArrayInsertGenericsAfter = (transaction, parent, referenceItem,
  */
 export const typeArrayInsertGenerics = (transaction, parent, index, content) => {
   if (index === 0) {
-    typeArrayInsertGenericsAfter(transaction, parent, null, content)
+    return typeArrayInsertGenericsAfter(transaction, parent, null, content)
   }
-  for (let n = parent._start; n !== null; n = n.right) {
+  let n = parent._start
+  for (; n !== null; n = n.right) {
     if (!n.deleted && n.countable) {
       if (index <= n.length) {
         if (index < n.length) {
+          // insert in-between
           getItemCleanStart(transaction.y.store, transaction, createID(n.id.client, n.id.clock + index))
         }
-        return typeArrayInsertGenericsAfter(transaction, parent, n, content)
+        break
       }
       index -= n.length
     }
   }
-  throw new Error('Index exceeds array range')
+  return typeArrayInsertGenericsAfter(transaction, parent, n, content)
 }
 
 /**
@@ -440,6 +444,10 @@ export const typeMapDelete = (transaction, parent, key) => {
  */
 export const typeMapSet = (transaction, parent, key, value) => {
   const right = parent._map.get(key) || null
+  if (value == null) {
+    new ItemJSON(nextID(transaction), null, right, parent, key, [value]).integrate(transaction)
+    return
+  }
   switch (value.constructor) {
     case Number:
     case Object:

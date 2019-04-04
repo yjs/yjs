@@ -18,6 +18,7 @@ export class AbstractStruct {
      * @readonly
      */
     this.id = id
+    this.deleted = false
   }
   /**
    * Merge this struct with the item to the right.
@@ -33,12 +34,6 @@ export class AbstractStruct {
    * @type {number}
    */
   get length () {
-    throw error.methodUnimplemented()
-  }
-  /**
-   * @type {boolean}
-   */
-  get deleted () {
     throw error.methodUnimplemented()
   }
   /**
@@ -86,5 +81,11 @@ export class AbstractRef {
    */
   toStruct (transaction) {
     throw error.methodUnimplemented()
+  }
+  /**
+   * @type {number}
+   */
+  get length () {
+    return 1
   }
 }

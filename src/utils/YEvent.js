@@ -67,7 +67,7 @@ export class YEvent {
    * @return {boolean}
    */
   adds (struct) {
-    return struct.id.clock > (this.transaction.stateUpdates.get(struct.id.client) || 0)
+    return struct.id.clock > (this.transaction.beforeState.get(struct.id.client) || 0)
   }
 }
 

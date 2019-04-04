@@ -74,7 +74,7 @@ export class ItemEmbedRef extends AbstractItemRef {
       this.left === null ? null : getItemCleanEnd(store, transaction, this.left),
       this.right === null ? null : getItemCleanStart(store, transaction, this.right),
       // @ts-ignore
-      this.parent === null ? y.get(this.parentYKey) : getItemType(store, this.parent),
+      this.parent === null ? y.get(this.parentYKey) : getItemType(store, this.parent).type,
       this.parentSub,
       this.embed
     )

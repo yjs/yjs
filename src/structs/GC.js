@@ -25,11 +25,12 @@ export class GC extends AbstractStruct {
     /**
      * @type {number}
      */
-    this.length = length
+    this._len = length
+    this.deleted = true
   }
 
-  get deleted () {
-    return true
+  get length () {
+    return this._len
   }
 
   /**
@@ -37,7 +38,7 @@ export class GC extends AbstractStruct {
    * @return {boolean}
    */
   mergeWith (right) {
-    this.length += right.length
+    this._len += right.length
     return true
   }
 
@@ -52,7 +53,7 @@ export class GC extends AbstractStruct {
     } else {
       writeID(encoder, createID(this.id.client, this.id.clock + offset))
     }
-    encoding.writeVarUint(encoder, this.length)
+    encoding.writeVarUint(encoder, this._len)
   }
 }
 
@@ -71,7 +72,10 @@ export class GCRef extends AbstractRef {
     /**
      * @type {number}
      */
-    this.length = decoding.readVarUint(decoder)
+    this._len = decoding.readVarUint(decoder)
+  }
+  get length () {
+    return this._len
   }
   missing () {
     return [
@@ -84,7 +88,7 @@ export class GCRef extends AbstractRef {
   toStruct () {
     return new GC(
       this.id,
-      this.length
+      this._len
     )
   }
 }

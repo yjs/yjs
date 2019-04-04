@@ -10,9 +10,11 @@ import {
   typeMapGet,
   typeMapHas,
   createMapIterator,
-  Transaction, ItemType, // eslint-disable-line
+  YMapRefID,
+  Y, Transaction, ItemType, // eslint-disable-line
 } from '../internals.js'
 
+import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 import * as iterator from 'lib0/iterator.js'
 
@@ -53,12 +55,12 @@ export class YMap extends AbstractType {
    * * This type is sent to other client
    * * Observer functions are fired
    *
-   * @param {Transaction} transaction The Yjs instance
+   * @param {Y} y The Yjs instance
    * @param {ItemType} item
    * @private
    */
-  _integrate (transaction, item) {
-    super._integrate(transaction, item)
+  _integrate (y, item) {
+    super._integrate(y, item)
     // @ts-ignore
     for (let [key, value] of this._prelimContent) {
       this.set(key, value)
@@ -88,7 +90,8 @@ export class YMap extends AbstractType {
     const map = {}
     for (let [key, item] of this._map) {
       if (!item.deleted) {
-        map[key] = item.getContent()[0]
+        const v = item.getContent()[0]
+        map[key] = v instanceof AbstractType ? v.toJSON() : v
       }
     }
     return map
@@ -168,6 +171,13 @@ export class YMap extends AbstractType {
    */
   has (key) {
     return typeMapHas(this, key)
+  }
+
+  /**
+   * @param {encoding.Encoder} encoder
+   */
+  _write (encoder) {
+    encoding.writeVarUint(encoder, YMapRefID)
   }
 }
 

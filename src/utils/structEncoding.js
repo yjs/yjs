@@ -13,6 +13,8 @@ import {
   writeID,
   createID,
   readID,
+  getState,
+  getStates,
   Transaction, AbstractStruct, AbstractRef, StructStore, ID // eslint-disable-line
 } from '../internals.js'
 
@@ -51,7 +53,8 @@ const createStructReaderIterator = (decoder, structsLen, nextID) => iterator.cre
   } else {
     const info = decoding.readUint8(decoder)
     value = new structRefs[binary.BITS5 & info](decoder, nextID, info)
-    nextID = createID(nextID.client, nextID.clock)
+    nextID = createID(nextID.client, nextID.clock + value.length)
+    structsLen--
   }
   return { done, value }
 })
@@ -60,18 +63,30 @@ const createStructReaderIterator = (decoder, structsLen, nextID) => iterator.cre
  * @param {encoding.Encoder} encoder
  * @param {Transaction} transaction
  */
-export const writeStructsFromTransaction = (encoder, transaction) => writeStructs(encoder, transaction.y.store, transaction.stateUpdates)
+export const writeStructsFromTransaction = (encoder, transaction) => writeStructs(encoder, transaction.y.store, transaction.beforeState)
 
 /**
  * @param {encoding.Encoder} encoder
  * @param {StructStore} store
- * @param {StateMap} sm
+ * @param {StateMap} _sm
  */
-export const writeStructs = (encoder, store, sm) => {
+export const writeStructs = (encoder, store, _sm) => {
+  // we filter all valid _sm entries into sm
+  const sm = new Map()
+  _sm.forEach((clock, client) => {
+    if (getState(store, client) > clock) {
+      sm.set(client, clock)
+    }
+  })
+  getStates(store).forEach(({client}) => {
+    if (!_sm.has(client)) {
+      sm.set(client, 0)
+    }
+  })
   const encoderUserPosMap = map.create()
   // write # states that were updated
   encoding.writeVarUint(encoder, sm.size)
-  sm.forEach((client, clock) => {
+  sm.forEach((clock, client) => {
     // write first id
     writeID(encoder, createID(client, clock))
     encoderUserPosMap.set(client, encoding.length(encoder))
@@ -79,7 +94,7 @@ export const writeStructs = (encoder, store, sm) => {
     // We will fill out this value later *)
     encoding.writeUint32(encoder, 0)
   })
-  sm.forEach((client, clock) => {
+  sm.forEach((clock, client) => {
     const decPos = encoderUserPosMap.get(client)
     encoding.setUint32(encoder, decPos, encoding.length(encoder) - decPos)
     /**
@@ -115,8 +130,8 @@ export const readStructs = (decoder, transaction, store) => {
    * @type {Map<number,Iterator<AbstractRef>>}
    */
   const structReaders = new Map()
-  const clientStateUpdates = decoding.readVarUint(decoder)
-  for (let i = 0; i < clientStateUpdates; i++) {
+  const clientbeforeState = decoding.readVarUint(decoder)
+  for (let i = 0; i < clientbeforeState; i++) {
     const nextID = readID(decoder)
     const decoderPos = decoder.pos + decoding.readUint32(decoder)
     const structReaderDecoder = decoding.clone(decoder, decoderPos)

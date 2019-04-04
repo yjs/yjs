@@ -2,8 +2,9 @@
  * @module types
  */
 
-import { YText } from '../internals.js'
+import { YText, YXmlTextRefID } from '../internals.js'
 
+import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 
 /**
@@ -32,6 +33,12 @@ export class YXmlText extends YText {
       binding._createAssociation(dom, this)
     }
     return dom
+  }
+  /**
+   * @param {encoding.Encoder} encoder
+   */
+  _write (encoder) {
+    encoding.writeVarUint(encoder, YXmlTextRefID)
   }
 }
 

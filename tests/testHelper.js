@@ -268,7 +268,7 @@ export const compare = users => {
   while (users[0].tc.flushAllMessages()) {}
   const userArrayValues = users.map(u => u.getArray('array').toJSON().map(val => JSON.stringify(val)))
   const userMapValues = users.map(u => u.getMap('map').toJSON())
-  const userXmlValues = users.map(u => u.getXmlFragment('xml').toString())
+  const userXmlValues = users.map(u => u.get('xml', Y.XmlElement).toString())
   const userTextValues = users.map(u => u.getText('text').toDelta())
   for (var i = 0; i < users.length - 1; i++) {
     t.describe(`Comparing user${i} with user${i + 1}`)

@@ -1,4 +1,4 @@
-import { } from './StructStore.js'
+import { getStates } from './StructStore.js'
 
 import {
   callEventHandlerListeners,
@@ -75,26 +75,29 @@ export class Y extends Observable {
       if (initialCall) {
         const transaction = this._transaction
         this._transaction = null
-        // only call event listeners / observers if anything changed
+        this.emit('beforeObserverCalls', [this, this._transaction])
+        // emit change events on changed types
+        transaction.changed.forEach((subs, itemtype) => {
+          itemtype._callObserver(transaction, subs)
+        })
+        transaction.changedParentTypes.forEach((events, type) => {
+          events = events
+            .filter(event =>
+              event.target._item === null || !event.target._item.deleted
+            )
+          events
+            .forEach(event => {
+              event.currentTarget = type
+            })
+          // we don't need to check for events.length
+          // because we know it has at least one element
+          callEventHandlerListeners(type._dEH, [events, transaction])
+        })
+        // only call afterTransaction listeners if anything changed
         const transactionChangedContent = transaction.changedParentTypes.size !== 0
         if (transactionChangedContent) {
-          this.emit('beforeObserverCalls', [this, this._transaction])
-          // emit change events on changed types
-          transaction.changed.forEach((subs, itemtype) => {
-            itemtype._callObserver(transaction, subs)
-          })
-          transaction.changedParentTypes.forEach((events, type) => {
-            events = events
-              .filter(event =>
-                event.target._item === null || !event.target._item.deleted
-              )
-            events
-              .forEach(event => {
-                event.currentTarget = type
-              })
-            // we don't need to check for events.length
-            // because we know it has at least one element
-            callEventHandlerListeners(type._dEH, [events, transaction])
+          getStates(transaction.y.store).forEach(({client, clock}) => {
+            transaction.afterState.set(client, clock)
           })
           // when all changes & events are processed, emit afterTransaction event
           this.emit('afterTransaction', [this, transaction])
@@ -141,15 +144,17 @@ export class Y extends Observable {
             }
           }
           // on all affected store.clients props, try to merge
-          for (const [client, clock] of transaction.stateUpdates) {
-            /**
-             * @type {Array<AbstractStruct>}
-             */
-            // @ts-ignore
-            const structs = store.clients.get(client)
-            // we iterate from right to left so we can safely remove entries
-            for (let i = structs.length - 1; i >= math.max(findIndexSS(structs, clock), 1); i--) {
-              tryToMergeWithLeft(structs, i)
+          for (const [client, clock] of transaction.beforeState) {
+            if (transaction.afterState.get(client) !== clock) {
+              /**
+               * @type {Array<AbstractStruct>}
+               */
+              // @ts-ignore
+              const structs = store.clients.get(client)
+              // we iterate from right to left so we can safely remove entries
+              for (let i = structs.length - 1; i >= math.max(findIndexSS(structs, clock), 1); i--) {
+                tryToMergeWithLeft(structs, i)
+              }
             }
           }
           // try to merge replacedItems
@@ -200,16 +205,21 @@ export class Y extends Observable {
    * @return {AbstractType<any>} The created type. Constructed with TypeConstructor
    */
   get (name, TypeConstructor = AbstractType) {
-    // @ts-ignore
-    const type = map.setIfUndefined(this.share, name, () => new TypeConstructor())
+    const type = map.setIfUndefined(this.share, name, () => {
+      // @ts-ignore
+      const t = new TypeConstructor()
+      t._integrate(this, null)
+      return t
+    })
     const Constr = type.constructor
-    if (Constr !== TypeConstructor) {
+    if (TypeConstructor !== AbstractType && Constr !== TypeConstructor) {
       if (Constr === AbstractType) {
         const t = new Constr()
         t._map = type._map
         t._start = type._start
         t._length = type._length
         this.share.set(name, t)
+        t._integrate(this, null)
         return t
       } else {
         throw new Error(`Type with the name ${name} has already been defined with a different constructor`)

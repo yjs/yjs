@@ -2,7 +2,10 @@
  * @module types
  */
 
-import { YMap } from '../internals.js'
+import {
+  YMap,
+  YXmlHookRefID
+} from '../internals.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 
@@ -71,6 +74,7 @@ export class YXmlHook extends YMap {
    */
   _write (encoder) {
     super._write(encoder)
+    encoding.writeVarUint(encoder, YXmlHookRefID)
     encoding.writeVarString(encoder, this.hookName)
   }
 }

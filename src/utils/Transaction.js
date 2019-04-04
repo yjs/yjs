@@ -9,6 +9,7 @@ import {
   writeDeleteSet,
   DeleteSet,
   sortAndMergeDeleteSet,
+  getStates,
   AbstractType, AbstractItem, YEvent, ItemType, Y // eslint-disable-line
 } from '../internals.js'
 
@@ -52,12 +53,12 @@ export class Transaction {
      */
     this.deleteSet = new DeleteSet()
     /**
-     * If a state was modified, the original value is saved here.
-     * Use `stateUpdates` to compute the original state before the transaction,
-     * or to compute the set of inserted operations.
+     * Holds the state before the transaction started.
      * @type {Map<Number,Number>}
      */
-    this.stateUpdates = new Map()
+    this.beforeState = new Map()
+    getStates(y.store).forEach(({client, clock}) => { this.beforeState.set(client, clock) })
+    this.afterState = new Map()
     /**
      * All types that were directly modified (property added or child
      * inserted/deleted). New types are not included in this Set.

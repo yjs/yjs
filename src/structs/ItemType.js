@@ -49,6 +49,14 @@ export const typeRefs = [
   readYXmlText
 ]
 
+export const YArrayRefID = 0
+export const YMapRefID = 1
+export const YTextRefID = 2
+export const YXmlElementRefID = 3
+export const YXmlFragmentRefID = 4
+export const YXmlHookRefID = 5
+export const YXmlTextRefID = 6
+
 export class ItemType extends AbstractItem {
   /**
    * @param {ID} id
@@ -62,6 +70,7 @@ export class ItemType extends AbstractItem {
     super(id, left, right, parent, parentSub)
     this.type = type
   }
+
   getContent () {
     return [this.type]
   }
@@ -80,7 +89,8 @@ export class ItemType extends AbstractItem {
    * @param {Transaction} transaction
    */
   integrate (transaction) {
-    this.type._integrate(transaction, this)
+    this.type._integrate(transaction.y, this)
+    super.integrate(transaction)
   }
   /**
    * @param {encoding.Encoder} encoder
@@ -168,7 +178,7 @@ export class ItemTypeRef extends AbstractItemRef {
       this.left === null ? null : getItemCleanEnd(store, transaction, this.left),
       this.right === null ? null : getItemCleanStart(store, transaction, this.right),
       // @ts-ignore
-      this.parent === null ? y.get(this.parentYKey) : getItemType(store, this.parent),
+      this.parent === null ? y.get(this.parentYKey) : getItemType(store, this.parent).type,
       this.parentSub,
       this.type
     )

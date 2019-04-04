@@ -12,10 +12,12 @@ import {
   createID,
   getItemCleanStart,
   isVisible,
-  ItemType, AbstractItem, Snapshot, StructStore, Transaction // eslint-disable-line
+  YTextRefID,
+  Y, ItemType, AbstractItem, Snapshot, StructStore, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
+import * as encoding from 'lib0/encoding.js'
 
 /**
  * @private
@@ -566,11 +568,11 @@ export class YText extends AbstractType {
   }
 
   /**
-   * @param {Transaction} transaction
+   * @param {Y} y
    * @param {ItemType} item
    */
-  _integrate (transaction, item) {
-    super._integrate(transaction, item)
+  _integrate (y, item) {
+    super._integrate(y, item)
     // @ts-ignore this._prelimContent is still defined
     this.insert(0, this._prelimContent.join(''))
     this._prelimContent = null
@@ -838,6 +840,13 @@ export class YText extends AbstractType {
         formatText(transaction, this, left, right, currentAttributes, length, attributes)
       })
     }
+  }
+
+  /**
+   * @param {encoding.Encoder} encoder
+   */
+  _write (encoder) {
+    encoding.writeVarUint(encoder, YTextRefID)
   }
 }
 

@@ -11,6 +11,7 @@ import {
   addStruct,
   addToDeleteSet,
   ItemDeleted,
+  findRootTypeKey,
   ID, AbstractType, Y, Transaction // eslint-disable-line
 } from '../internals.js'
 
@@ -229,7 +230,7 @@ export class AbstractItem extends AbstractStruct {
       maplib.setIfUndefined(transaction.changed, parent, set.create).add(parentSub)
     }
     // @ts-ignore
-    if (parent._item.deleted || (left !== null && parentSub !== null)) {
+    if ((parent._item !== null && parent._item.deleted) || (left !== null && parentSub !== null)) {
       // delete if parent is deleted or if this is not the current attribute value of parent
       this.delete(transaction)
     } else if (parentSub !== null && left === null && right !== null) {
@@ -443,16 +444,12 @@ export class AbstractItem extends AbstractStruct {
     const info = (encodingRef & binary.BITS5) |
       ((this.origin === null) ? 0 : binary.BIT8) | // origin is defined
       ((this.rightOrigin === null) ? 0 : binary.BIT7) | // right origin is defined
-      ((this.parentSub !== null) ? 0 : binary.BIT6) // parentSub is non-null
+      ((this.parentSub === null) ? 0 : binary.BIT6) // parentSub is non-null
     encoding.writeUint8(encoder, info)
-    if (offset === 0) {
-      writeID(encoder, this.id)
-      if (this.origin !== null) {
+    if (this.origin !== null) {
+      if (offset === 0) {
         writeID(encoder, this.origin.lastId)
-      }
-    } else {
-      writeID(encoder, createID(this.id.client, this.id.clock + offset))
-      if (this.origin !== null) {
+      } else {
         writeID(encoder, createID(this.id.client, this.id.clock + offset - 1))
       }
     }
@@ -465,17 +462,7 @@ export class AbstractItem extends AbstractStruct {
         // parent type on y._map
         // find the correct key
         // @ts-ignore we know that y exists
-        const map = parent._y.share
-        let ykey = null
-        for (const [key, type] of map) {
-          if (type === parent) {
-            ykey = key
-            break
-          }
-        }
-        if (ykey === null) {
-          throw error.unexpectedCase()
-        }
+        const ykey = findRootTypeKey(this.parent)
         encoding.writeVarUint(encoder, 1) // write parentYKey
         encoding.writeVarString(encoder, ykey)
       } else {
@@ -509,7 +496,7 @@ export class AbstractItemRef extends AbstractRef {
      */
     this.right = (info & binary.BIT7) === binary.BIT7 ? readID(decoder) : null
     const canCopyParentInfo = (info & (binary.BIT7 | binary.BIT8)) === 0
-    const hasParentYKey = decoding.readVarUint(decoder) === 1
+    const hasParentYKey = canCopyParentInfo ? decoding.readVarUint(decoder) === 1 : false
     /**
      * If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
      * and we read the next string as parentYKey.
@@ -540,17 +527,5 @@ export class AbstractItemRef extends AbstractRef {
     if (this.parent !== null) {
       missing.push(this.parent)
     }
-  }
-  /**
-   * @param {Transaction} transaction
-   * @return {Array<ID|null>}
-   */
-  getMissing (transaction) {
-    return [
-      createID(this.id.client, this.id.clock - 1),
-      this.left,
-      this.right,
-      this.parent
-    ]
   }
 }
