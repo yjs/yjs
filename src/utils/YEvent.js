@@ -81,7 +81,7 @@ export class YEvent {
  *   console.log(path) // might look like => [2, 'key1']
  *   child === type.get(path[0]).get(path[1])
  *
- * @param {AbstractType<any> parent
+ * @param {AbstractType<any>} parent
  * @param {AbstractItem} child target
  * @return {Array<string|number>} Path to the target
  */

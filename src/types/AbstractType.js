@@ -3,8 +3,8 @@
  */
 
 import { Y } from '../utils/Y.js' // eslint-disable-line
-import { EventHandler } from '../utils/EventHandler.js'
-import { YEvent } from '../utils/YEvent.js'
+import * as eventHandler from '../utils/EventHandler.js'
+import { YEvent } from '../utils/YEvent.js' // eslint-disable-line
 import { AbstractItem } from '../structs/AbstractItem.js' // eslint-disable-line
 import { ItemType } from '../structs/ItemType.js' // eslint-disable-line
 import { Encoder } from 'lib0/encoding.js' // eslint-disable-line
@@ -16,6 +16,7 @@ import { ItemBinary } from '../structs/ItemBinary.js'
 import { ID, createID } from '../utils/ID.js' // eslint-disable-line
 import { getItemCleanStart, getItemCleanEnd } from '../utils/StructStore.js'
 import * as iterator from 'lib0/iterator.js'
+import * as error from 'lib0/error.js'
 
 /**
  * @template EventType
@@ -43,8 +44,16 @@ export class AbstractType {
      */
     this._y = null
     this._length = 0
-    this._eventHandler = new EventHandler()
-    this._deepEventHandler = new EventHandler()
+    /**
+     * Event handlers
+     * @type {eventHandler.EventHandler<EventType,Transaction>}
+     */
+    this._eH = eventHandler.create()
+    /**
+     * Deep event handlers
+     * @type {eventHandler.EventHandler<Array<YEvent>,Transaction>}
+     */
+    this._dEH = eventHandler.create()
   }
 
   /**
@@ -89,14 +98,16 @@ export class AbstractType {
   }
 
   /**
-   * Creates YEvent and calls observers.
+   * Creates YEvent and calls _callEventHandler.
+   * Must be implemented by each type.
+   * @todo Rename to _createEvent
    * @private
    *
    * @param {Transaction} transaction
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
   _callObserver (transaction, parentSubs) {
-    this._callEventHandler(transaction, new YEvent(this, transaction))
+    throw error.methodUnimplemented()
   }
 
   /**
@@ -108,8 +119,8 @@ export class AbstractType {
    * @param {any} event
    */
   _callEventHandler (transaction, event) {
+    eventHandler.callEventListeners(this._eH, [event, transaction])
     const changedParentTypes = transaction.changedParentTypes
-    this._eventHandler.callEventListeners(transaction, event)
     /**
      * @type {AbstractType<EventType>}
      */
@@ -127,37 +138,37 @@ export class AbstractType {
   /**
    * Observe all events that are created on this type.
    *
-   * @param {function(EventType):void} f Observer function
+   * @param {function(EventType, Transaction):void} f Observer function
    */
   observe (f) {
-    this._eventHandler.addEventListener(f)
+    eventHandler.addEventListener(this._eH, f)
   }
 
   /**
    * Observe all events that are created by this type and its children.
    *
-   * @param {function(Array<YEvent>):void} f Observer function
+   * @param {function(Array<YEvent>,Transaction):void} f Observer function
    */
   observeDeep (f) {
-    this._deepEventHandler.addEventListener(f)
+    eventHandler.addEventListener(this._dEH, f)
   }
 
   /**
    * Unregister an observer function.
    *
-   * @param {Function} f Observer function
+   * @param {function(EventType,Transaction):void} f Observer function
    */
   unobserve (f) {
-    this._eventHandler.removeEventListener(f)
+    eventHandler.removeEventListener(this._eH, f)
   }
 
   /**
    * Unregister an observer function.
    *
-   * @param {Function} f Observer function
+   * @param {function(Array<YEvent>,Transaction):void} f Observer function
    */
   unobserveDeep (f) {
-    this._deepEventHandler.removeEventListener(f)
+    eventHandler.removeEventListener(this._dEH, f)
   }
 
   /**

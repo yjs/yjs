@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 import * as ID from './ID.js'
 import { isParentOf } from './isParentOf.js'

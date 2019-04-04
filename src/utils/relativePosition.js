@@ -76,13 +76,13 @@ export class AbsolutePosition {
 }
 
 /**
- * @param {AbstractType<any> type
+ * @param {AbstractType<any>} type
  * @param {number} offset
  */
 export const createAbsolutePosition = (type, offset) => new AbsolutePosition(type, offset)
 
 /**
- * @param {AbstractType<any> type
+ * @param {AbstractType<any>} type
  * @param {ID.ID|null} item
  */
 export const createRelativePosition = (type, item) => {
@@ -99,7 +99,7 @@ export const createRelativePosition = (type, item) => {
 /**
  * Create a relativePosition based on a absolute position.
  *
- * @param {AbstractType<any> type The base type (e.g. YText or YArray).
+ * @param {AbstractType<any>} type The base type (e.g. YText or YArray).
  * @param {number} offset The absolute position.
  * @return {RelativePosition}
  */

@@ -9,7 +9,7 @@ import * as decoding from 'lib0/decoding.js'
 /**
  * You can manage binding to a custom type with YXmlHook.
  *
- * @public
+ * @extends {YMap<any>}
  */
 export class YXmlHook extends YMap {
   /**

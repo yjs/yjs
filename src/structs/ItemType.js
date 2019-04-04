@@ -67,7 +67,7 @@ export class ItemType extends AbstractItem {
    * @param {ID} id
    * @param {AbstractItem | null} left
    * @param {AbstractItem | null} right
-   * @param {AbstractType<any> parent
+   * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
    * @return {AbstractItem} TODO, returns itemtype
    */
@@ -150,7 +150,7 @@ export class ItemTypeRef extends AbstractItemRef {
     super(decoder, id, info)
     const typeRef = decoding.readVarUint(decoder)
     /**
-     * @type {AbstractType<any>
+     * @type {AbstractType<any>}
      */
     this.type = typeRefs[typeRef](decoder)
   }
