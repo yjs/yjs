@@ -421,6 +421,13 @@ export class AbstractItem extends AbstractStruct {
       if (r.right !== null) {
         r.right.left = r
       }
+      if (r.left === null) {
+        if (r.parentSub === null) {
+          r.parent._start = r
+        } else {
+          r.parent._map.set(r.parentSub, r)
+        }
+      }
     }
     replaceStruct(y.store, this, r)
     return r

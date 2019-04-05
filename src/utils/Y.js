@@ -12,7 +12,8 @@ import {
   YText,
   YMap,
   YXmlFragment,
-  YEvent, ItemDeleted, GC, AbstractStruct // eslint-disable-line
+  ItemDeleted,
+  YEvent, GC, AbstractStruct // eslint-disable-line
 } from '../internals.js'
 
 import { Observable } from 'lib0/observable.js'
@@ -121,7 +122,7 @@ export class Y extends Observable {
                 if (deleteItem.clock + deleteItem.len < struct.id.clock) {
                   break
                 }
-                if (struct.deleted && struct instanceof AbstractItem) {
+                if (struct.deleted && struct instanceof AbstractItem && (struct.constructor !== ItemDeleted || (struct.parent._item !== null && struct.parent._item.deleted))) {
                   // check if we can GC
                   replacedItems.add(struct.gc(this))
                 }
