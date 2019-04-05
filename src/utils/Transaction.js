@@ -56,8 +56,11 @@ export class Transaction {
      * Holds the state before the transaction started.
      * @type {Map<Number,Number>}
      */
-    this.beforeState = new Map()
-    getStates(y.store).forEach(({client, clock}) => { this.beforeState.set(client, clock) })
+    this.beforeState = getStates(y.store)
+    /**
+     * Holds the state after the transaction.
+     * @type {Map<Number,Number>}
+     */
     this.afterState = new Map()
     /**
      * All types that were directly modified (property added or child

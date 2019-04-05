@@ -139,9 +139,6 @@ export class AbstractItem extends AbstractStruct {
     const parent = this.parent
     const parentSub = this.parentSub
     const length = this.length
-    const left = this.left
-    const right = this.right
-    // integrate
     /*
     # $this has to find a unique position between origin and the next known character
     # case 1: $origin equals $o.origin: the $creator parameter decides if left or right
@@ -163,8 +160,8 @@ export class AbstractItem extends AbstractStruct {
      */
     let o
     // set o to the first conflicting item
-    if (left !== null) {
-      o = left.right
+    if (this.left !== null) {
+      o = this.left.right
     } else if (parentSub !== null) {
       o = parent._map.get(parentSub) || null
     } else {
@@ -175,7 +172,7 @@ export class AbstractItem extends AbstractStruct {
     // Let c in conflictingItems, b in itemsBeforeOrigin
     // ***{origin}bbbb{this}{c,b}{c,b}{o}***
     // Note that conflictingItems is a subset of itemsBeforeOrigin
-    while (o !== null && o !== right) {
+    while (o !== null && o !== this.right) {
       itemsBeforeOrigin.add(o)
       conflictingItems.add(o)
       if (this.origin === o.origin) {
@@ -199,10 +196,10 @@ export class AbstractItem extends AbstractStruct {
       o = o.right
     }
     // reconnect left/right + update parent map/start if necessary
-    if (left !== null) {
-      const right = left.right
+    if (this.left !== null) {
+      const right = this.left.right
       this.right = right
-      left.right = this
+      this.left.right = this
       if (right !== null) {
         right.left = this
       }
@@ -230,12 +227,12 @@ export class AbstractItem extends AbstractStruct {
       maplib.setIfUndefined(transaction.changed, parent, set.create).add(parentSub)
     }
     // @ts-ignore
-    if ((parent._item !== null && parent._item.deleted) || (left !== null && parentSub !== null)) {
+    if ((parent._item !== null && parent._item.deleted) || (this.left !== null && parentSub !== null)) {
       // delete if parent is deleted or if this is not the current attribute value of parent
       this.delete(transaction)
-    } else if (parentSub !== null && left === null && right !== null) {
+    } else if (parentSub !== null && this.left === null && this.right !== null) {
       // this is the current attribute value of parent. delete right
-      right.delete(transaction)
+      this.right.delete(transaction)
     }
   }
 
@@ -528,4 +525,13 @@ export class AbstractItemRef extends AbstractRef {
       missing.push(this.parent)
     }
   }
+}
+
+/**
+ * @param {AbstractItemRef} item
+ * @param {number} offset
+ */
+export const changeItemRefOffset = (item, offset) => {
+  item.id = createID(item.id.client, item.id.clock + offset)
+  item.left = createID(item.id.client, item.id.clock - 1)
 }

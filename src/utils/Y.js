@@ -96,9 +96,7 @@ export class Y extends Observable {
         // only call afterTransaction listeners if anything changed
         const transactionChangedContent = transaction.changedParentTypes.size !== 0
         if (transactionChangedContent) {
-          getStates(transaction.y.store).forEach(({client, clock}) => {
-            transaction.afterState.set(client, clock)
-          })
+          transaction.afterState = getStates(transaction.y.store)
           // when all changes & events are processed, emit afterTransaction event
           this.emit('afterTransaction', [this, transaction])
           // transaction cleanup
@@ -152,7 +150,8 @@ export class Y extends Observable {
               // @ts-ignore
               const structs = store.clients.get(client)
               // we iterate from right to left so we can safely remove entries
-              for (let i = structs.length - 1; i >= math.max(findIndexSS(structs, clock), 1); i--) {
+              const firstChangePos = math.max(findIndexSS(structs, clock), 1)
+              for (let i = structs.length - 1; i >= firstChangePos; i--) {
                 tryToMergeWithLeft(structs, i)
               }
             }

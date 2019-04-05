@@ -6,7 +6,8 @@ import {
   AbstractStruct,
   createID,
   writeID,
-  ID // eslint-disable-line
+  addStruct,
+  Transaction, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as decoding from 'lib0/decoding.js'
@@ -43,6 +44,13 @@ export class GC extends AbstractStruct {
   }
 
   /**
+   * @param {Transaction} transaction
+   */
+  integrate (transaction) {
+    addStruct(transaction.y.store, this)
+  }
+
+  /**
    * @param {encoding.Encoder} encoder
    * @param {number} offset
    */
@@ -66,10 +74,6 @@ export class GCRef extends AbstractRef {
   constructor (decoder, id, info) {
     super(id)
     /**
-     * @type {ID}
-     */
-    this.id = id
-    /**
      * @type {number}
      */
     this._len = decoding.readVarUint(decoder)
@@ -83,9 +87,16 @@ export class GCRef extends AbstractRef {
     ]
   }
   /**
+   * @param {Transaction} transaction
+   * @param {number} offset
    * @return {GC}
    */
-  toStruct () {
+  toStruct (transaction, offset) {
+    if (offset > 0) {
+      // @ts-ignore
+      this.id = createID(this.id.client, this.id.clock + offset)
+      this._len = this._len - offset
+    }
     return new GC(
       this.id,
       this._len

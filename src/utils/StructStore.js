@@ -19,20 +19,20 @@ export class StructStore {
 }
 
 /**
- * Return the states as an array of {client,clock} pairs.
+ * Return the states as a Map<client,clock>.
  * Note that clock refers to the next expected clock id.
  *
  * @param {StructStore} store
- * @return {Array<{client:number,clock:number}>}
+ * @return {Map<number,number>}
  */
-export const getStates = store =>
-  map.map(store.clients, (structs, client) => {
+export const getStates = store => {
+  const sm = new Map()
+  store.clients.forEach((structs, client) => {
     const struct = structs[structs.length - 1]
-    return {
-      client,
-      clock: struct.id.clock + struct.length
-    }
+    sm.set(client, struct.id.clock + struct.length)
   })
+  return sm
+}
 
 /**
  * @param {StructStore} store

@@ -8,6 +8,8 @@ import {
   getItemCleanEnd,
   getItemCleanStart,
   getItemType,
+  ItemDeleted,
+  GC,
   Transaction, ID, AbstractType // eslint-disable-line
 } from '../internals.js'
 
@@ -64,17 +66,32 @@ export class ItemEmbedRef extends AbstractItemRef {
   }
   /**
    * @param {Transaction} transaction
-   * @return {ItemEmbed}
+   * @param {number} offset
+   * @return {ItemEmbed|GC}
    */
-  toStruct (transaction) {
+  toStruct (transaction, offset) {
     const y = transaction.y
     const store = y.store
+
+    let parent
+    if (this.parent !== null) {
+      const parentItem = getItemType(store, this.parent)
+      switch (parentItem.constructor) {
+        case ItemDeleted:
+        case GC:
+          return new GC(this.id, 1)
+      }
+      parent = parentItem.type
+    } else {
+      // @ts-ignore
+      parent = y.get(this.parentYKey)
+    }
+
     return new ItemEmbed(
       this.id,
       this.left === null ? null : getItemCleanEnd(store, transaction, this.left),
       this.right === null ? null : getItemCleanStart(store, transaction, this.right),
-      // @ts-ignore
-      this.parent === null ? y.get(this.parentYKey) : getItemType(store, this.parent).type,
+      parent,
       this.parentSub,
       this.embed
     )

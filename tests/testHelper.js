@@ -243,6 +243,7 @@ export const init = (tc, { users = 5 } = {}) => {
   result.testConnector = testConnector
   for (let i = 0; i < users; i++) {
     const y = testConnector.createY(i)
+    y.clientID = i
     result.users.push(y)
     result['array' + i] = y.get('array', Y.Array)
     result['map' + i] = y.get('map', Y.Map)

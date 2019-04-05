@@ -43,19 +43,23 @@ const structRefs = [
  * @param {decoding.Decoder} decoder
  * @param {number} structsLen
  * @param {ID} nextID
+ * @param {number} localState next expected clock by nextID.client
  * @return {Iterator<AbstractRef>}
  */
-const createStructReaderIterator = (decoder, structsLen, nextID) => iterator.createIterator(() => {
+const createStructReaderIterator = (decoder, structsLen, nextID, localState) => iterator.createIterator(() => {
   let done = false
   let value
-  if (structsLen === 0) {
-    done = true
-  } else {
+  do {
+    if (structsLen === 0) {
+      done = true
+      value = undefined
+      break
+    }
     const info = decoding.readUint8(decoder)
     value = new structRefs[binary.BITS5 & info](decoder, nextID, info)
     nextID = createID(nextID.client, nextID.clock + value.length)
     structsLen--
-  }
+  } while (nextID.clock <= localState) // read until we find something new (check nextID.clock instead because it equals `clock+len`)
   return { done, value }
 })
 
@@ -78,7 +82,7 @@ export const writeStructs = (encoder, store, _sm) => {
       sm.set(client, clock)
     }
   })
-  getStates(store).forEach(({client}) => {
+  getStates(store).forEach((clock, client) => {
     if (!_sm.has(client)) {
       sm.set(client, 0)
     }
@@ -131,17 +135,18 @@ export const readStructs = (decoder, transaction, store) => {
    */
   const structReaders = new Map()
   const clientbeforeState = decoding.readVarUint(decoder)
+  /**
+   * @type {Array<AbstractRef>}
+   */
+  const stack = []
+  const localState = getStates(store)
   for (let i = 0; i < clientbeforeState; i++) {
     const nextID = readID(decoder)
     const decoderPos = decoder.pos + decoding.readUint32(decoder)
     const structReaderDecoder = decoding.clone(decoder, decoderPos)
     const numberOfStructs = decoding.readVarUint(structReaderDecoder)
-    structReaders.set(nextID.client, createStructReaderIterator(structReaderDecoder, numberOfStructs, nextID))
+    structReaders.set(nextID.client, createStructReaderIterator(structReaderDecoder, numberOfStructs, nextID, localState.get(nextID.client) || 0))
   }
-  /**
-   * @type {Array<AbstractRef>}
-   */
-  const stack = []
   for (const it of structReaders.values()) {
     // todo try for in of it
     for (let res = it.next(); !res.done; res = it.next()) {
@@ -159,7 +164,9 @@ export const readStructs = (decoder, transaction, store) => {
           ref._missing.pop()
         }
         if (m.length === 0) {
-          ref.toStruct(transaction).integrate(transaction)
+          const localClock = (localState.get(ref.id.client) || 0)
+          const offset = ref.id.clock < localClock ? localClock - ref.id.clock : 0
+          ref.toStruct(transaction, offset).integrate(transaction)
           stack.pop()
         }
       }

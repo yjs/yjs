@@ -168,17 +168,32 @@ export class ItemTypeRef extends AbstractItemRef {
   }
   /**
    * @param {Transaction} transaction
-   * @return {ItemType}
+   * @param {number} offset
+   * @return {ItemType|GC}
    */
-  toStruct (transaction) {
+  toStruct (transaction, offset) {
     const y = transaction.y
     const store = y.store
+
+    let parent
+    if (this.parent !== null) {
+      const parentItem = getItemType(store, this.parent)
+      switch (parentItem.constructor) {
+        case ItemDeleted:
+        case GC:
+          return new GC(this.id, 1)
+      }
+      parent = parentItem.type
+    } else {
+      // @ts-ignore
+      parent = y.get(this.parentYKey)
+    }
+
     return new ItemType(
       this.id,
       this.left === null ? null : getItemCleanEnd(store, transaction, this.left),
       this.right === null ? null : getItemCleanStart(store, transaction, this.right),
-      // @ts-ignore
-      this.parent === null ? y.get(this.parentYKey) : getItemType(store, this.parent).type,
+      parent,
       this.parentSub,
       this.type
     )
