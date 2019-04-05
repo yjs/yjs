@@ -10,9 +10,10 @@ import {
   getItemType,
   splitItem,
   changeItemRefOffset,
+  compareIDs,
   GC,
   ItemDeleted,
-  Transaction, ID, AbstractType // eslint-disable-line
+  StructStore, Transaction, ID, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -24,13 +25,15 @@ export class ItemJSON extends AbstractItem {
   /**
    * @param {ID} id
    * @param {AbstractItem | null} left
+   * @param {ID | null} origin
    * @param {AbstractItem | null} right
+   * @param {ID | null} rightOrigin
    * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
    * @param {Array<any>} content
    */
-  constructor (id, left, right, parent, parentSub, content) {
-    super(id, left, right, parent, parentSub)
+  constructor (id, left, origin, right, rightOrigin, parent, parentSub, content) {
+    super(id, left, origin, right, rightOrigin, parent, parentSub)
     /**
      * @type {Array<any>}
      */
@@ -39,12 +42,14 @@ export class ItemJSON extends AbstractItem {
   /**
    * @param {ID} id
    * @param {AbstractItem | null} left
+   * @param {ID | null} origin
    * @param {AbstractItem | null} right
+   * @param {ID | null} rightOrigin
    * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
    */
-  copy (id, left, right, parent, parentSub) {
-    return new ItemJSON(id, left, right, parent, parentSub, this.content)
+  copy (id, left, origin, right, rightOrigin, parent, parentSub) {
+    return new ItemJSON(id, left, origin, right, rightOrigin, parent, parentSub, this.content)
   }
   get length () {
     return this.content.length
@@ -53,15 +58,15 @@ export class ItemJSON extends AbstractItem {
     return this.content
   }
   /**
-   * @param {Transaction} transaction
+   * @param {StructStore} store
    * @param {number} diff
    */
-  splitAt (transaction, diff) {
+  splitAt (store, diff) {
     /**
      * @type {ItemJSON}
      */
     // @ts-ignore
-    const right = splitItem(transaction, this, diff)
+    const right = splitItem(this, diff)
     right.content = this.content.splice(diff)
     return right
   }
@@ -70,7 +75,7 @@ export class ItemJSON extends AbstractItem {
    * @return {boolean}
    */
   mergeWith (right) {
-    if (right.origin === this && this.right === right) {
+    if (compareIDs(right.origin, this.lastId) && this.right === right) {
       this.content = this.content.concat(right.content)
       return true
     }
@@ -144,8 +149,10 @@ export class ItemJSONRef extends AbstractItemRef {
     }
     return new ItemJSON(
       this.id,
-      this.left === null ? null : getItemCleanEnd(store, transaction, this.left),
-      this.right === null ? null : getItemCleanStart(store, transaction, this.right),
+      this.left === null ? null : getItemCleanEnd(store, this.left),
+      this.left,
+      this.right === null ? null : getItemCleanStart(store, this.right),
+      this.right,
       parent,
       this.parentSub,
       this.content

@@ -86,8 +86,8 @@ export class Transaction {
   get updateMessage () {
     if (this._updateMessage === null) {
       const encoder = encoding.createEncoder()
-      writeStructsFromTransaction(encoder, this)
       sortAndMergeDeleteSet(this.deleteSet)
+      writeStructsFromTransaction(encoder, this)
       writeDeleteSet(encoder, this.deleteSet)
       this._updateMessage = encoder
     }

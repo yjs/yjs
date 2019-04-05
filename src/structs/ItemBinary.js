@@ -24,13 +24,15 @@ export class ItemBinary extends AbstractItem {
   /**
    * @param {ID} id
    * @param {AbstractItem | null} left
+   * @param {ID | null} origin
    * @param {AbstractItem | null} right
+   * @param {ID | null} rightOrigin
    * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
    * @param {ArrayBuffer} content
    */
-  constructor (id, left, right, parent, parentSub, content) {
-    super(id, left, right, parent, parentSub)
+  constructor (id, left, origin, right, rightOrigin, parent, parentSub, content) {
+    super(id, left, origin, right, rightOrigin, parent, parentSub)
     this.content = content
   }
   getContent () {
@@ -39,12 +41,14 @@ export class ItemBinary extends AbstractItem {
   /**
    * @param {ID} id
    * @param {AbstractItem | null} left
+   * @param {ID | null} origin
    * @param {AbstractItem | null} right
+   * @param {ID | null} rightOrigin
    * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
    */
-  copy (id, left, right, parent, parentSub) {
-    return new ItemBinary(id, left, right, parent, parentSub, this.content)
+  copy (id, left, origin, right, rightOrigin, parent, parentSub) {
+    return new ItemBinary(id, left, origin, right, rightOrigin, parent, parentSub, this.content)
   }
   /**
    * @param {encoding.Encoder} encoder
@@ -94,8 +98,10 @@ export class ItemBinaryRef extends AbstractItemRef {
 
     return new ItemBinary(
       this.id,
-      this.left === null ? null : getItemCleanEnd(store, transaction, this.left),
-      this.right === null ? null : getItemCleanStart(store, transaction, this.right),
+      this.left === null ? null : getItemCleanEnd(store, this.left),
+      this.left,
+      this.right === null ? null : getItemCleanStart(store, this.right),
+      this.right,
       parent,
       this.parentSub,
       this.content

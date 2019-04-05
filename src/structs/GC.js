@@ -34,6 +34,8 @@ export class GC extends AbstractStruct {
     return this._len
   }
 
+  delete () {}
+
   /**
    * @param {AbstractStruct} right
    * @return {boolean}

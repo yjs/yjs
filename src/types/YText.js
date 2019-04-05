@@ -36,7 +36,7 @@ const findNextPosition = (transaction, store, currentAttributes, left, right, co
       case ItemString:
         if (!right.deleted) {
           if (count < right.length) {
-            right = getItemCleanStart(store, transaction, createID(right.id.client, right.id.clock + count))
+            right = getItemCleanStart(store, createID(right.id.client, right.id.clock + count))
             left = right.left
             count = 0
           } else {
@@ -102,7 +102,7 @@ const insertNegatedAttributes = (transaction, parent, left, right, negatedAttrib
     right = right.right
   }
   for (let [key, val] of negatedAttributes) {
-    left = new ItemFormat(nextID(transaction), left, right, parent, null, key, val)
+    left = new ItemFormat(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, key, val)
     left.integrate(transaction)
   }
   return {left, right}
@@ -171,7 +171,7 @@ const insertAttributes = (transaction, parent, left, right, currentAttributes, a
     if (currentVal !== val) {
       // save negated attribute (set null if currentVal undefined)
       negatedAttributes.set(key, currentVal || null)
-      left = new ItemFormat(nextID(transaction), left, right, parent, null, key, val)
+      left = new ItemFormat(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, key, val)
       left.integrate(transaction)
     }
   }
@@ -199,9 +199,9 @@ const insertText = (transaction, parent, left, right, currentAttributes, text, a
   const insertPos = insertAttributes(transaction, parent, minPos.left, minPos.right, currentAttributes, attributes)
   // insert content
   if (text.constructor === String) {
-    left = new ItemString(nextID(transaction), insertPos.left, insertPos.right, parent, null, text)
+    left = new ItemString(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, text)
   } else {
-    left = new ItemEmbed(nextID(transaction), insertPos.left, insertPos.right, parent, null, text)
+    left = new ItemEmbed(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, text)
   }
   left.integrate(transaction)
   return insertNegatedAttributes(transaction, parent, left, insertPos.right, insertPos.negatedAttributes)
@@ -249,7 +249,7 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
         case ItemEmbed:
         case ItemString:
           if (length < right.length) {
-            getItemCleanStart(transaction.y.store, transaction, createID(right.id.client, right.id.clock + length))
+            getItemCleanStart(transaction.y.store, createID(right.id.client, right.id.clock + length))
           }
           length -= right.length
           break
@@ -282,7 +282,7 @@ const deleteText = (transaction, parent, left, right, currentAttributes, length)
         case ItemEmbed:
         case ItemString:
           if (length < right.length) {
-            getItemCleanStart(transaction.y.store, transaction, createID(right.id.client, right.id.clock + length))
+            getItemCleanStart(transaction.y.store, createID(right.id.client, right.id.clock + length))
           }
           length -= right.length
           right.delete(transaction)

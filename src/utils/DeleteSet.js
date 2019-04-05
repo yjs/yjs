@@ -60,8 +60,10 @@ export const findIndexDS = (dis, clock) => {
         return midindex
       }
       left = midindex
-    } else {
+    } else if (right !== midindex) {
       right = midindex
+    } else {
+      break
     }
   }
   return null
@@ -125,14 +127,16 @@ export const createDeleteSetFromStructStore = ss => {
     const dsitems = []
     for (let i = 0; i < structs.length; i++) {
       const struct = structs[i]
-      const clock = struct.id.clock
-      let len = struct.length
-      if (i + 1 < structs.length) {
-        for (let next = structs[i + 1]; i + 1 < structs.length && next.id.clock === clock + len; i++) {
-          len += next.length
+      if (struct.deleted) {
+        const clock = struct.id.clock
+        let len = struct.length
+        if (i + 1 < structs.length) {
+          for (let next = structs[i + 1]; i + 1 < structs.length && next.id.clock === clock + len; i++) {
+            len += next.length
+          }
         }
+        dsitems.push(new DeleteItem(clock, len))
       }
-      dsitems.push(new DeleteItem(clock, len))
     }
     if (dsitems.length > 0) {
       ds.clients.set(client, dsitems)
@@ -172,7 +176,7 @@ export const readDeleteSet = (decoder, ss, transaction) => {
     for (let i = 0; i < len; i++) {
       const clock = decoding.readVarUint(decoder)
       const len = decoding.readVarUint(decoder)
-      getItemRange(ss, transaction, client, clock, len).forEach(struct => struct.delete(transaction))
+      getItemRange(ss, client, clock, len).forEach(struct => struct.delete(transaction))
     }
   }
 }

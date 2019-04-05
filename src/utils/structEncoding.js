@@ -140,12 +140,13 @@ export const readStructs = (decoder, transaction, store) => {
    */
   const stack = []
   const localState = getStates(store)
+  let lastStructReader = null
   for (let i = 0; i < clientbeforeState; i++) {
     const nextID = readID(decoder)
     const decoderPos = decoder.pos + decoding.readUint32(decoder)
-    const structReaderDecoder = decoding.clone(decoder, decoderPos)
-    const numberOfStructs = decoding.readVarUint(structReaderDecoder)
-    structReaders.set(nextID.client, createStructReaderIterator(structReaderDecoder, numberOfStructs, nextID, localState.get(nextID.client) || 0))
+    lastStructReader = decoding.clone(decoder, decoderPos)
+    const numberOfStructs = decoding.readVarUint(lastStructReader)
+    structReaders.set(nextID.client, createStructReaderIterator(lastStructReader, numberOfStructs, nextID, localState.get(nextID.client) || 0))
   }
   for (const it of structReaders.values()) {
     // todo try for in of it
@@ -171,5 +172,9 @@ export const readStructs = (decoder, transaction, store) => {
         }
       }
     }
+  }
+  // if we read some structs, this points to the end of the transaction
+  if (lastStructReader !== null) {
+    decoder.pos = lastStructReader.pos
   }
 }

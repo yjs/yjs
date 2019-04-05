@@ -50,8 +50,8 @@ export class ID {
 }
 
 /**
- * @param {ID} a
- * @param {ID} b
+ * @param {ID | null} a
+ * @param {ID | null} b
  * @return {boolean}
  */
 export const compareIDs = (a, b) => a === b || (a !== null && b !== null && a.client === b.client && a.clock === b.clock)

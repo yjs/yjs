@@ -129,13 +129,12 @@ export const getItemType = (store, id) => find(store, id)
 /**
  * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
  * @param {StructStore} store
- * @param {Transaction} transaction
  * @param {ID} id
  * @return {AbstractItem}
  *
  * @private
  */
-export const getItemCleanStart = (store, transaction, id) => {
+export const getItemCleanStart = (store, id) => {
   /**
    * @type {Array<AbstractItem>}
    */
@@ -147,7 +146,7 @@ export const getItemCleanStart = (store, transaction, id) => {
    */
   let struct = structs[index]
   if (struct.id.clock < id.clock) {
-    struct = struct.splitAt(transaction, id.clock - struct.id.clock)
+    struct = struct.splitAt(store, id.clock - struct.id.clock)
     structs.splice(index, 0, struct)
   }
   return struct
@@ -156,13 +155,12 @@ export const getItemCleanStart = (store, transaction, id) => {
 /**
  * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
  * @param {StructStore} store
- * @param {Transaction} transaction
  * @param {ID} id
  * @return {AbstractItem}
  *
  * @private
  */
-export const getItemCleanEnd = (store, transaction, id) => {
+export const getItemCleanEnd = (store, id) => {
   /**
    * @type {Array<AbstractItem>}
    */
@@ -171,7 +169,7 @@ export const getItemCleanEnd = (store, transaction, id) => {
   const index = findIndexSS(structs, id.clock)
   const struct = structs[index]
   if (id.clock !== struct.id.clock + struct.length - 1) {
-    structs.splice(index, 0, struct.splitAt(transaction, id.clock - struct.id.clock + 1))
+    structs.splice(index, 0, struct.splitAt(store, id.clock - struct.id.clock + 1))
   }
   return struct
 }
@@ -179,7 +177,6 @@ export const getItemCleanEnd = (store, transaction, id) => {
 /**
  * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
  * @param {StructStore} store
- * @param {Transaction} transaction
  * @param {number} client
  * @param {number} clock
  * @param {number} len
@@ -187,7 +184,7 @@ export const getItemCleanEnd = (store, transaction, id) => {
  *
  * @private
  */
-export const getItemRange = (store, transaction, client, clock, len) => {
+export const getItemRange = (store, client, clock, len) => {
   /**
    * @type {Array<AbstractItem>}
    */
@@ -196,17 +193,24 @@ export const getItemRange = (store, transaction, client, clock, len) => {
   let index = findIndexSS(structs, clock)
   let struct = structs[index]
   let range = []
-  if (struct.id.clock < clock) {
-    struct = struct.splitAt(transaction, clock - struct.id.clock)
-    structs.splice(index, 0, struct)
-  }
-  while (struct.id.clock + struct.length <= clock + len) {
+  if (struct.id.clock <= clock) {
+    if (struct.id.clock < clock) {
+      struct = struct.splitAt(store, clock - struct.id.clock)
+      structs.splice(index, 0, struct)
+    }
     range.push(struct)
-    struct = structs[++index]
   }
-  if (clock < struct.id.clock + struct.length) {
-    structs.splice(index, 0, struct.splitAt(transaction, clock + len - struct.id.clock))
-    range.push(struct)
+  index++
+  while (index < structs.length) {
+    struct = structs[index++]
+    if (struct.id.clock < clock + len) {
+      range.push(struct)
+    } else {
+      break
+    }
+  }
+  if (struct.id.clock < clock + len && struct.id.clock + struct.length > clock + len) {
+    structs.splice(index, 0, struct.splitAt(store, clock + len - struct.id.clock))
   }
   return range
 }

@@ -321,8 +321,8 @@ export const compareStructStores = (ss1, ss2) => {
           !(s2 instanceof AbstractItem) ||
           !compareItemIDs(s1.left, s2.left) ||
           !compareItemIDs(s1.right, s2.right) ||
-          !compareItemIDs(s1.origin, s2.origin) ||
-          !compareItemIDs(s1.rightOrigin, s2.rightOrigin) ||
+          !Y.compareIDs(s1.origin, s2.origin) ||
+          !Y.compareIDs(s1.rightOrigin, s2.rightOrigin) ||
           s1.parentSub !== s2.parentSub
         ) {
           t.fail('Items dont match')

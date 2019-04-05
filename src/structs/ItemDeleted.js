@@ -12,6 +12,7 @@ import {
   getItemType,
   changeItemRefOffset,
   GC,
+  compareIDs,
   Transaction, ID, AbstractType // eslint-disable-line
 } from '../internals.js'
 
@@ -24,13 +25,15 @@ export class ItemDeleted extends AbstractItem {
   /**
    * @param {ID} id
    * @param {AbstractItem | null} left
+   * @param {ID | null} origin
    * @param {AbstractItem | null} right
+   * @param {ID | null} rightOrigin
    * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
    * @param {number} length
    */
-  constructor (id, left, right, parent, parentSub, length) {
-    super(id, left, right, parent, parentSub)
+  constructor (id, left, origin, right, rightOrigin, parent, parentSub, length) {
+    super(id, left, origin, right, rightOrigin, parent, parentSub)
     this._len = length
     this.deleted = true
   }
@@ -40,19 +43,21 @@ export class ItemDeleted extends AbstractItem {
   /**
    * @param {ID} id
    * @param {AbstractItem | null} left
+   * @param {ID | null} origin
    * @param {AbstractItem | null} right
+   * @param {ID | null} rightOrigin
    * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
    */
-  copy (id, left, right, parent, parentSub) {
-    return new ItemDeleted(id, left, right, parent, parentSub, this.length)
+  copy (id, left, origin, right, rightOrigin, parent, parentSub) {
+    return new ItemDeleted(id, left, origin, right, rightOrigin, parent, parentSub, this.length)
   }
   /**
    * @param {ItemDeleted} right
    * @return {boolean}
    */
   mergeWith (right) {
-    if (right.origin === this && this.right === right) {
+    if (compareIDs(right.origin, this.lastId) && this.right === right) {
       this._len += right.length
       return true
     }
@@ -113,8 +118,10 @@ export class ItemDeletedRef extends AbstractItemRef {
 
     return new ItemDeleted(
       this.id,
-      this.left === null ? null : getItemCleanEnd(store, transaction, this.left),
-      this.right === null ? null : getItemCleanStart(store, transaction, this.right),
+      this.left === null ? null : getItemCleanEnd(store, this.left),
+      this.left,
+      this.right === null ? null : getItemCleanStart(store, this.right),
+      this.right,
       parent,
       this.parentSub,
       this.len

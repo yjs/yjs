@@ -22,24 +22,28 @@ export class ItemEmbed extends AbstractItem {
   /**
    * @param {ID} id
    * @param {AbstractItem | null} left
+   * @param {ID | null} origin
    * @param {AbstractItem | null} right
+   * @param {ID | null} rightOrigin
    * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
    * @param {Object} embed
    */
-  constructor (id, left, right, parent, parentSub, embed) {
-    super(id, left, right, parent, parentSub)
+  constructor (id, left, origin, right, rightOrigin, parent, parentSub, embed) {
+    super(id, left, origin, right, rightOrigin, parent, parentSub)
     this.embed = embed
   }
   /**
    * @param {ID} id
    * @param {AbstractItem | null} left
+   * @param {ID | null} origin
    * @param {AbstractItem | null} right
+   * @param {ID | null} rightOrigin
    * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
    */
-  copy (id, left, right, parent, parentSub) {
-    return new ItemEmbed(id, left, right, parent, parentSub, this.embed)
+  copy (id, left, origin, right, rightOrigin, parent, parentSub) {
+    return new ItemEmbed(id, left, origin, right, rightOrigin, parent, parentSub, this.embed)
   }
   /**
    * @param {encoding.Encoder} encoder
@@ -89,8 +93,10 @@ export class ItemEmbedRef extends AbstractItemRef {
 
     return new ItemEmbed(
       this.id,
-      this.left === null ? null : getItemCleanEnd(store, transaction, this.left),
-      this.right === null ? null : getItemCleanStart(store, transaction, this.right),
+      this.left === null ? null : getItemCleanEnd(store, this.left),
+      this.left,
+      this.right === null ? null : getItemCleanStart(store, this.right),
+      this.right,
       parent,
       this.parentSub,
       this.embed

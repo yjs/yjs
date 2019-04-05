@@ -26,5 +26,8 @@ export {
   getState,
   getStates,
   readStatesAsMap,
-  writeStates
+  writeStates,
+  readDeleteSet,
+  writeDeleteSet,
+  createDeleteSetFromStructStore
 } from './internals.js'

@@ -9,27 +9,30 @@ import {
   getItemType,
   splitItem,
   changeItemRefOffset,
+  compareIDs,
   ItemDeleted,
   GC,
-  Transaction, ID, AbstractType // eslint-disable-line
+  StructStore, Transaction, ID, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 
 export const structStringRefNumber = 6
-
+// TODO: we can probably try to omit rightOrigin. We can just use .right
 export class ItemString extends AbstractItem {
   /**
    * @param {ID} id
    * @param {AbstractItem | null} left
+   * @param {ID | null} origin
    * @param {AbstractItem | null} right
+   * @param {ID | null} rightOrigin
    * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
    * @param {string} string
    */
-  constructor (id, left, right, parent, parentSub, string) {
-    super(id, left, right, parent, parentSub)
+  constructor (id, left, origin, right, rightOrigin, parent, parentSub, string) {
+    super(id, left, origin, right, rightOrigin, parent, parentSub)
     /**
      * @type {string}
      */
@@ -38,12 +41,14 @@ export class ItemString extends AbstractItem {
   /**
    * @param {ID} id
    * @param {AbstractItem | null} left
+   * @param {ID | null} origin
    * @param {AbstractItem | null} right
+   * @param {ID | null} rightOrigin
    * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
    */
-  copy (id, left, right, parent, parentSub) {
-    return new ItemString(id, left, right, parent, parentSub, this.string)
+  copy (id, left, origin, right, rightOrigin, parent, parentSub) {
+    return new ItemString(id, left, origin, right, rightOrigin, parent, parentSub, this.string)
   }
   getContent () {
     return this.string.split('')
@@ -52,16 +57,16 @@ export class ItemString extends AbstractItem {
     return this.string.length
   }
   /**
-   * @param {Transaction} transaction
+   * @param {StructStore} store
    * @param {number} diff
    * @return {ItemString}
    */
-  splitAt (transaction, diff) {
+  splitAt (store, diff) {
     /**
      * @type {ItemString}
      */
     // @ts-ignore
-    const right = splitItem(transaction, this, diff)
+    const right = splitItem(store, this, diff)
     right.string = this.string.slice(diff)
     this.string = this.string.slice(0, diff)
     return right
@@ -71,7 +76,7 @@ export class ItemString extends AbstractItem {
    * @return {boolean}
    */
   mergeWith (right) {
-    if (right.origin === this && this.right === right) {
+    if (compareIDs(right.origin, this.lastId) && this.right === right) {
       this.string += right.string
       return true
     }
@@ -132,8 +137,10 @@ export class ItemStringRef extends AbstractItemRef {
 
     return new ItemString(
       this.id,
-      this.left === null ? null : getItemCleanEnd(store, transaction, this.left),
-      this.right === null ? null : getItemCleanStart(store, transaction, this.right),
+      this.left === null ? null : getItemCleanEnd(store, this.left),
+      this.left,
+      this.right === null ? null : getItemCleanStart(store, this.right),
+      this.right,
       parent,
       this.parentSub,
       this.string

@@ -335,7 +335,7 @@ export const typeArrayInsertGenericsAfter = (transaction, parent, referenceItem,
   let jsonContent = []
   const packJsonContent = () => {
     if (jsonContent.length > 0) {
-      const item = new ItemJSON(nextID(transaction), left, right, parent, null, jsonContent)
+      const item = new ItemJSON(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, jsonContent)
       item.integrate(transaction)
       jsonContent = []
     }
@@ -353,11 +353,11 @@ export const typeArrayInsertGenericsAfter = (transaction, parent, referenceItem,
         switch (c.constructor) {
           case ArrayBuffer:
             // @ts-ignore c is definitely an ArrayBuffer
-            new ItemBinary(nextID(transaction), left, right, parent, null, c).integrate(transaction)
+            new ItemBinary(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, c).integrate(transaction)
             break
           default:
             if (c instanceof AbstractType) {
-              new ItemType(nextID(transaction), left, right, parent, null, c).integrate(transaction)
+              new ItemType(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, c).integrate(transaction)
             } else {
               throw new Error('Unexpected content type in insert operation')
             }
@@ -383,7 +383,7 @@ export const typeArrayInsertGenerics = (transaction, parent, index, content) => 
       if (index <= n.length) {
         if (index < n.length) {
           // insert in-between
-          getItemCleanStart(transaction.y.store, transaction, createID(n.id.client, n.id.clock + index))
+          getItemCleanStart(transaction.y.store, createID(n.id.client, n.id.clock + index))
         }
         break
       }
@@ -405,7 +405,7 @@ export const typeArrayDelete = (transaction, parent, index, length) => {
     if (!n.deleted && n.countable) {
       if (index <= n.length) {
         if (index < n.length) {
-          n = getItemCleanStart(transaction.y.store, transaction, createID(n.id.client, n.id.clock + index))
+          n = getItemCleanStart(transaction.y.store, createID(n.id.client, n.id.clock + index))
         }
         break
       }
@@ -415,7 +415,7 @@ export const typeArrayDelete = (transaction, parent, index, length) => {
   while (length > 0 && n !== null) {
     if (!n.deleted) {
       if (length < n.length) {
-        getItemCleanEnd(transaction.y.store, transaction, createID(n.id.client, n.id.clock + length))
+        getItemCleanEnd(transaction.y.store, createID(n.id.client, n.id.clock + length))
       }
       n.delete(transaction)
       length -= n.length
@@ -445,7 +445,7 @@ export const typeMapDelete = (transaction, parent, key) => {
 export const typeMapSet = (transaction, parent, key, value) => {
   const right = parent._map.get(key) || null
   if (value == null) {
-    new ItemJSON(nextID(transaction), null, right, parent, key, [value]).integrate(transaction)
+    new ItemJSON(nextID(transaction), null, null, right, right === null ? null : right.id, parent, key, [value]).integrate(transaction)
     return
   }
   switch (value.constructor) {
@@ -453,14 +453,14 @@ export const typeMapSet = (transaction, parent, key, value) => {
     case Object:
     case Array:
     case String:
-      new ItemJSON(nextID(transaction), null, right, parent, key, [value]).integrate(transaction)
+      new ItemJSON(nextID(transaction), null, null, right, right === null ? null : right.id, parent, key, [value]).integrate(transaction)
       break
     case ArrayBuffer:
-      new ItemBinary(nextID(transaction), null, right, parent, key, value).integrate(transaction)
+      new ItemBinary(nextID(transaction), null, null, right, right === null ? null : right.id, parent, key, value).integrate(transaction)
       break
     default:
       if (value instanceof AbstractType) {
-        new ItemType(nextID(transaction), null, right, parent, key, value).integrate(transaction)
+        new ItemType(nextID(transaction), null, null, right, right === null ? null : right.id, parent, key, value).integrate(transaction)
       } else {
         throw new Error('Unexpected content type')
       }

@@ -22,26 +22,30 @@ export class ItemFormat extends AbstractItem {
   /**
    * @param {ID} id
    * @param {AbstractItem | null} left
+   * @param {ID | null} origin
    * @param {AbstractItem | null} right
+   * @param {ID | null} rightOrigin
    * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
    * @param {string} key
    * @param {any} value
    */
-  constructor (id, left, right, parent, parentSub, key, value) {
-    super(id, left, right, parent, parentSub)
+  constructor (id, left, origin, right, rightOrigin, parent, parentSub, key, value) {
+    super(id, left, origin, right, rightOrigin, parent, parentSub)
     this.key = key
     this.value = value
   }
   /**
    * @param {ID} id
    * @param {AbstractItem | null} left
+   * @param {ID | null} origin
    * @param {AbstractItem | null} right
+   * @param {ID | null} rightOrigin
    * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
    */
-  copy (id, left, right, parent, parentSub) {
-    return new ItemFormat(id, left, right, parent, parentSub, this.key, this.value)
+  copy (id, left, origin, right, rightOrigin, parent, parentSub) {
+    return new ItemFormat(id, left, origin, right, rightOrigin, parent, parentSub, this.key, this.value)
   }
   get countable () {
     return false
@@ -96,8 +100,10 @@ export class ItemFormatRef extends AbstractItemRef {
 
     return new ItemFormat(
       this.id,
-      this.left === null ? null : getItemCleanEnd(store, transaction, this.left),
-      this.right === null ? null : getItemCleanStart(store, transaction, this.right),
+      this.left === null ? null : getItemCleanEnd(store, this.left),
+      this.left,
+      this.right === null ? null : getItemCleanStart(store, this.right),
+      this.right,
       parent,
       this.parentSub,
       this.key,

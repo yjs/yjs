@@ -61,13 +61,15 @@ export class ItemType extends AbstractItem {
   /**
    * @param {ID} id
    * @param {AbstractItem | null} left
+   * @param {ID | null} origin
    * @param {AbstractItem | null} right
+   * @param {ID | null} rightOrigin
    * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
    * @param {AbstractType<any>} type
    */
-  constructor (id, left, right, parent, parentSub, type) {
-    super(id, left, right, parent, parentSub)
+  constructor (id, left, origin, right, rightOrigin, parent, parentSub, type) {
+    super(id, left, origin, right, rightOrigin, parent, parentSub)
     this.type = type
   }
 
@@ -77,13 +79,15 @@ export class ItemType extends AbstractItem {
   /**
    * @param {ID} id
    * @param {AbstractItem | null} left
+   * @param {ID | null} origin
    * @param {AbstractItem | null} right
+   * @param {ID | null} rightOrigin
    * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
    * @return {AbstractItem} TODO, returns itemtype
    */
-  copy (id, left, right, parent, parentSub) {
-    return new ItemType(id, left, right, parent, parentSub, this.type._copy())
+  copy (id, left, origin, right, rightOrigin, parent, parentSub) {
+    return new ItemType(id, left, origin, right, rightOrigin, parent, parentSub, this.type._copy())
   }
   /**
    * @param {Transaction} transaction
@@ -189,10 +193,13 @@ export class ItemTypeRef extends AbstractItemRef {
       parent = y.get(this.parentYKey)
     }
 
+    // TODO: we can probably only feed AbstractType with origins
     return new ItemType(
       this.id,
-      this.left === null ? null : getItemCleanEnd(store, transaction, this.left),
-      this.right === null ? null : getItemCleanStart(store, transaction, this.right),
+      this.left === null ? null : getItemCleanEnd(store, this.left),
+      this.left,
+      this.right === null ? null : getItemCleanStart(store, this.right),
+      this.right,
       parent,
       this.parentSub,
       this.type

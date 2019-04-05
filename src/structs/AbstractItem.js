@@ -12,7 +12,7 @@ import {
   addToDeleteSet,
   ItemDeleted,
   findRootTypeKey,
-  ID, AbstractType, Y, Transaction // eslint-disable-line
+  StructStore, ID, AbstractType, Y, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error.js'
@@ -24,16 +24,23 @@ import * as binary from 'lib0/binary.js'
 
 /**
  * Split leftItem into two items
- * @param {Transaction} transaction
+ * @param {StructStore} store
  * @param {AbstractItem} leftItem
  * @param {number} diff
  * @return {AbstractItem}
  */
-export const splitItem = (transaction, leftItem, diff) => {
+export const splitItem = (store, leftItem, diff) => {
   const id = leftItem.id
   // create rightItem
-  const rightItem = leftItem.copy(createID(id.client, id.clock + diff), leftItem, leftItem.rightOrigin, leftItem.parent, leftItem.parentSub)
-  rightItem.right = leftItem.right
+  const rightItem = leftItem.copy(
+    createID(id.client, id.clock + diff),
+    leftItem,
+    leftItem.lastId,
+    leftItem.right,
+    leftItem.rightOrigin,
+    leftItem.parent,
+    leftItem.parentSub
+  )
   if (leftItem.deleted) {
     rightItem.deleted = true
   }
@@ -43,20 +50,7 @@ export const splitItem = (transaction, leftItem, diff) => {
   if (rightItem.right !== null) {
     rightItem.right.left = rightItem
   }
-  // update all origins to the right
-  // search all relevant items to the right and update origin
-  // if origin is not it foundOrigins, we don't have to search any longer
-  const foundOrigins = new Set()
-  foundOrigins.add(leftItem)
-  let o = rightItem.right
-  while (o !== null && foundOrigins.has(o.origin)) {
-    if (o.origin === leftItem) {
-      o.origin = rightItem
-    }
-    foundOrigins.add(o)
-    o = o.right
-  }
-  return leftItem.splitAt(transaction, diff)
+  return rightItem
 }
 
 /**
@@ -66,11 +60,13 @@ export class AbstractItem extends AbstractStruct {
   /**
    * @param {ID} id
    * @param {AbstractItem | null} left
+   * @param {ID | null} origin
    * @param {AbstractItem | null} right
+   * @param {ID | null} rightOrigin
    * @param {AbstractType<any> | null} parent
    * @param {string | null} parentSub
    */
-  constructor (id, left, right, parent, parentSub) {
+  constructor (id, left, origin, right, rightOrigin, parent, parentSub) {
     if (left !== null) {
       parent = left.parent
       parentSub = left.parentSub
@@ -83,10 +79,10 @@ export class AbstractItem extends AbstractStruct {
     super(id)
     /**
      * The item that was originally to the left of this item.
-     * @type {AbstractItem | null}
+     * @type {ID | null}
      * @readonly
      */
-    this.origin = left
+    this.origin = origin
     /**
      * The item that is currently to the left of this item.
      * @type {AbstractItem | null}
@@ -100,9 +96,9 @@ export class AbstractItem extends AbstractStruct {
     /**
      * The item that was originally to the right of this item.
      * @readonly
-     * @type {AbstractItem | null}
+     * @type {ID | null}
      */
-    this.rightOrigin = right
+    this.rightOrigin = rightOrigin
     /**
      * The parent type.
      * @type {AbstractType<any>}
@@ -264,13 +260,15 @@ export class AbstractItem extends AbstractStruct {
    * Creates an Item with the same effect as this Item (without position effect)
    *
    * @param {ID} id
-   * @param {AbstractItem|null} left
-   * @param {AbstractItem|null} right
+   * @param {AbstractItem | null} left
+   * @param {ID | null} origin
+   * @param {AbstractItem | null} right
+   * @param {ID | null} rightOrigin
    * @param {AbstractType<any>} parent
-   * @param {string|null} parentSub
+   * @param {string | null} parentSub
    * @return {AbstractItem}
    */
-  copy (id, left, right, parent, parentSub) {
+  copy (id, left, origin, right, rightOrigin, parent, parentSub) {
     throw new Error('unimplemented')
   }
 
@@ -329,7 +327,7 @@ export class AbstractItem extends AbstractStruct {
         right = right._right
       }
     }
-    this.redone = this.copy(nextID(transaction), left, right, parent, this.parentSub)
+    this.redone = this.copy(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, this.parentSub)
     this.redone.integrate(transaction)
     return true
   }
@@ -374,11 +372,11 @@ export class AbstractItem extends AbstractStruct {
    *
    * This method should only be cally by StructStore.
    *
-   * @param {Transaction} transaction
+   * @param {StructStore} store
    * @param {number} diff
    * @return {AbstractItem}
    */
-  splitAt (transaction, diff) {
+  splitAt (store, diff) {
     throw new Error('unimplemented')
   }
 
@@ -412,9 +410,18 @@ export class AbstractItem extends AbstractStruct {
    * @return {GC|ItemDeleted}
    */
   gc (y) {
-    const r = this.parent._item !== null && this.parent._item.deleted
-      ? new GC(this.id, this.length)
-      : new ItemDeleted(this.id, this.left, this.right, this.parent, this.parentSub, this.length)
+    let r
+    if (this.parent._item !== null && this.parent._item.deleted) {
+      r = new GC(this.id, this.length)
+    } else {
+      r = new ItemDeleted(this.id, this.left, this.origin, this.right, this.rightOrigin, this.parent, this.parentSub, this.length)
+      if (r.left !== null) {
+        r.left.right = r
+      }
+      if (r.right !== null) {
+        r.right.left = r
+      }
+    }
     replaceStruct(y.store, this, r)
     return r
   }
@@ -445,13 +452,13 @@ export class AbstractItem extends AbstractStruct {
     encoding.writeUint8(encoder, info)
     if (this.origin !== null) {
       if (offset === 0) {
-        writeID(encoder, this.origin.lastId)
+        writeID(encoder, this.origin)
       } else {
         writeID(encoder, createID(this.id.client, this.id.clock + offset - 1))
       }
     }
     if (this.rightOrigin !== null) {
-      writeID(encoder, this.rightOrigin.id)
+      writeID(encoder, this.rightOrigin)
     }
     if (this.origin === null && this.rightOrigin === null) {
       const parent = this.parent
