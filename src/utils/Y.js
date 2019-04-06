@@ -95,16 +95,16 @@ export class Y extends Observable {
           callEventHandlerListeners(type._dEH, [events, transaction])
         })
         // only call afterTransaction listeners if anything changed
-        const transactionChangedContent = transaction.changedParentTypes.size !== 0
+        const transactionChangedContent = transaction.changedParentTypes.size > 0 || transaction.deleteSet.clients.size > 0
         if (transactionChangedContent) {
           transaction.afterState = getStates(transaction.y.store)
           // when all changes & events are processed, emit afterTransaction event
-          this.emit('afterTransaction', [this, transaction])
           // transaction cleanup
           const store = transaction.y.store
           const ds = transaction.deleteSet
           // replace deleted items with ItemDeleted / GC
           sortAndMergeDeleteSet(ds)
+          this.emit('afterTransaction', [this, transaction])
           /**
            * @type {Set<ItemDeleted|GC>}
            */

@@ -130,6 +130,16 @@ export const find = (store, id) => {
  *
  * @param {StructStore} store
  * @param {ID} id
+ * @return {AbstractItem}
+ */
+// @ts-ignore
+export const getItem = (store, id) => find(store, id)
+
+/**
+ * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
+ *
+ * @param {StructStore} store
+ * @param {ID} id
  * @return {ItemType}
  */
 // @ts-ignore

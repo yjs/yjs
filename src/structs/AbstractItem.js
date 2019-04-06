@@ -12,6 +12,8 @@ import {
   addToDeleteSet,
   ItemDeleted,
   findRootTypeKey,
+  compareIDs,
+  getItem,
   StructStore, ID, AbstractType, Y, Transaction // eslint-disable-line
 } from '../internals.js'
 
@@ -133,6 +135,7 @@ export class AbstractItem extends AbstractStruct {
    * @param {Transaction} transaction
    */
   integrate (transaction) {
+    const store = transaction.y.store
     const id = this.id
     const parent = this.parent
     const parentSub = this.parentSub
@@ -165,7 +168,13 @@ export class AbstractItem extends AbstractStruct {
     } else {
       o = parent._start
     }
+    /**
+     * @type {Set<AbstractItem>}
+     */
     const conflictingItems = new Set()
+    /**
+     * @type {Set<AbstractItem>}
+     */
     const itemsBeforeOrigin = new Set()
     // Let c in conflictingItems, b in itemsBeforeOrigin
     // ***{origin}bbbb{this}{c,b}{c,b}{o}***
@@ -173,22 +182,22 @@ export class AbstractItem extends AbstractStruct {
     while (o !== null && o !== this.right) {
       itemsBeforeOrigin.add(o)
       conflictingItems.add(o)
-      if (this.origin === o.origin) {
+      if (compareIDs(this.origin, o.origin)) {
         // case 1
         if (o.id.client < id.client) {
           this.left = o
           conflictingItems.clear()
-        }
-      } else if (itemsBeforeOrigin.has(o.origin)) {
+        } // TODO: verify break else?
+      } else if (o.origin !== null && itemsBeforeOrigin.has(getItem(store, o.origin))) {
         // case 2
-        if (!conflictingItems.has(o.origin)) {
+        if (o.origin === null || !conflictingItems.has(getItem(store, o.origin))) {
           this.left = o
           conflictingItems.clear()
         }
       } else {
         break
       }
-      // TODO: try to use right_origin instead.
+      // TODO: experiment with rightOrigin.
       // Then you could basically omit conflictingItems!
       // Note: you probably can't use right_origin in every case.. only when setting _left
       o = o.right
@@ -220,7 +229,7 @@ export class AbstractItem extends AbstractStruct {
     if (parentSub === null && this.countable) {
       parent._length += length
     }
-    addStruct(transaction.y.store, this)
+    addStruct(store, this)
     if (parent !== null) {
       maplib.setIfUndefined(transaction.changed, parent, set.create).add(parentSub)
     }

@@ -63,7 +63,7 @@ export class TestYInstance extends Y.Y {
     this.mMux = createMutex()
     testConnector.allConns.add(this)
     // set up observe on local model
-    this.on('afterTransaction', afterTransaction)
+    this.on('afterTransactionCleanup', afterTransaction)
     this.connect()
   }
   /**

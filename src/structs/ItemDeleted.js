@@ -14,6 +14,7 @@ import {
   GC,
   splitItem,
   compareIDs,
+  addToDeleteSet,
   StructStore, Transaction, ID, AbstractType // eslint-disable-line
 } from '../internals.js'
 
@@ -52,6 +53,13 @@ export class ItemDeleted extends AbstractItem {
    */
   copy (id, left, origin, right, rightOrigin, parent, parentSub) {
     return new ItemDeleted(id, left, origin, right, rightOrigin, parent, parentSub, this.length)
+  }
+  /**
+   * @param {Transaction} transaction
+   */
+  integrate (transaction) {
+    super.integrate(transaction)
+    addToDeleteSet(transaction.deleteSet, this.id, this.length)
   }
   /**
    * @param {StructStore} store
