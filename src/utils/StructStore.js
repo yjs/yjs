@@ -3,7 +3,6 @@ import {
   Transaction, ID, ItemType, AbstractItem, AbstractStruct // eslint-disable-line
 } from '../internals.js'
 
-import * as map from 'lib0/map.js'
 import * as math from 'lib0/math.js'
 import * as error from 'lib0/error.js'
 import * as encoding from 'lib0/encoding.js'
@@ -67,7 +66,17 @@ export const integretyCheck = store => {
  * @param {AbstractStruct} struct
  */
 export const addStruct = (store, struct) => {
-  map.setIfUndefined(store.clients, struct.id.client, () => []).push(struct)
+  let structs = store.clients.get(struct.id.client)
+  if (structs === undefined) {
+    structs = []
+    store.clients.set(struct.id.client, structs)
+  } else {
+    const lastStruct = structs[structs.length - 1]
+    if (lastStruct.id.clock + lastStruct.length !== struct.id.clock) {
+      throw error.unexpectedCase()
+    }
+  }
+  structs.push(struct)
 }
 
 /**
@@ -147,7 +156,7 @@ export const getItemCleanStart = (store, id) => {
   let struct = structs[index]
   if (struct.id.clock < id.clock) {
     struct = struct.splitAt(store, id.clock - struct.id.clock)
-    structs.splice(index, 0, struct)
+    structs.splice(index + 1, 0, struct)
   }
   return struct
 }
@@ -169,7 +178,7 @@ export const getItemCleanEnd = (store, id) => {
   const index = findIndexSS(structs, id.clock)
   const struct = structs[index]
   if (id.clock !== struct.id.clock + struct.length - 1) {
-    structs.splice(index, 0, struct.splitAt(store, id.clock - struct.id.clock + 1))
+    structs.splice(index + 1, 0, struct.splitAt(store, id.clock - struct.id.clock + 1))
   }
   return struct
 }
@@ -196,7 +205,7 @@ export const getItemRange = (store, client, clock, len) => {
   if (struct.id.clock <= clock) {
     if (struct.id.clock < clock) {
       struct = struct.splitAt(store, clock - struct.id.clock)
-      structs.splice(index, 0, struct)
+      structs.splice(index + 1, 0, struct)
     }
     range.push(struct)
   }
@@ -210,7 +219,7 @@ export const getItemRange = (store, client, clock, len) => {
     }
   }
   if (struct.id.clock < clock + len && struct.id.clock + struct.length > clock + len) {
-    structs.splice(index, 0, struct.splitAt(store, clock + len - struct.id.clock))
+    structs.splice(index + 1, 0, struct.splitAt(store, clock + len - struct.id.clock))
   }
   return range
 }

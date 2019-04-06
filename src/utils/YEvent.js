@@ -47,7 +47,7 @@ export class YEvent {
    */
   get path () {
     // @ts-ignore _item is defined because target is integrated
-    return getPathTo(this.currentTarget, this.target._item)
+    return getPathTo(this.currentTarget, this.target)
   }
 
   /**
@@ -82,21 +82,20 @@ export class YEvent {
  *   child === type.get(path[0]).get(path[1])
  *
  * @param {AbstractType<any>} parent
- * @param {AbstractItem} child target
+ * @param {AbstractType<any>} child target
  * @return {Array<string|number>} Path to the target
  */
 const getPathTo = (parent, child) => {
   const path = []
-  while (true) {
-    const cparent = child.parent
-    if (child.parentSub !== null) {
+  while (child._item !== null && child !== parent) {
+    if (child._item.parentSub !== null) {
       // parent is map-ish
-      path.unshift(child.parentSub)
+      path.unshift(child._item.parentSub)
     } else {
       // parent is array-ish
       let i = 0
-      let c = cparent._start
-      while (c !== child && c !== null) {
+      let c = child._item.parent._start
+      while (c !== child._item && c !== null) {
         if (!c.deleted) {
           i++
         }
@@ -104,10 +103,7 @@ const getPathTo = (parent, child) => {
       }
       path.unshift(i)
     }
-    if (parent === cparent) {
-      return path
-    }
-    // @ts-ignore parent._item cannot be null, because it is integrated
-    child = parent._item
+    child = child._item.parent
   }
+  return path
 }

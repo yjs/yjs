@@ -1,5 +1,9 @@
 import { init, compare, applyRandomTests, TestYInstance } from './testHelper.js' // eslint-disable-line
 
+import {
+  compareIDs
+} from '../src/internals.js'
+
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing.js'
 import * as prng from 'lib0/prng.js'
@@ -190,7 +194,7 @@ export const testObserveDeepProperties = tc => {
       t.assert(event.path.length === 1)
       t.assert(event.path[0] === 'map')
       // @ts-ignore
-      dmapid = event.target.get('deepmap')._id
+      dmapid = event.target.get('deepmap')._item.id
     })
   })
   testConnector.flushAllMessages()
@@ -204,9 +208,10 @@ export const testObserveDeepProperties = tc => {
   const dmap2 = _map2.get('deepmap')
   const dmap3 = _map3.get('deepmap')
   t.assert(calls > 0)
-  t.assert(dmap1._id.equals(dmap2._id))
-  t.assert(dmap1._id.equals(dmap3._id))
-  t.assert(dmap1._id.equals(dmapid))
+  t.assert(compareIDs(dmap1._item.id, dmap2._item.id))
+  t.assert(compareIDs(dmap1._item.id, dmap3._item.id))
+  // @ts-ignore we want the possibility of dmapid being undefined
+  t.assert(compareIDs(dmap1._item.id, dmapid))
   compare(users)
 }
 

@@ -66,7 +66,7 @@ export class ItemJSON extends AbstractItem {
      * @type {ItemJSON}
      */
     // @ts-ignore
-    const right = splitItem(this, diff)
+    const right = splitItem(store, this, diff)
     right.content = this.content.splice(diff)
     return right
   }
@@ -75,7 +75,7 @@ export class ItemJSON extends AbstractItem {
    * @return {boolean}
    */
   mergeWith (right) {
-    if (compareIDs(right.origin, this.lastId) && this.right === right) {
+    if (compareIDs(right.origin, this.lastId) && this.right === right && compareIDs(this.rightOrigin, right.rightOrigin)) {
       this.content = this.content.concat(right.content)
       return true
     }

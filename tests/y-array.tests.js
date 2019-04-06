@@ -121,43 +121,26 @@ export const testInsertThenMergeDeleteOnSync = tc => {
 }
 
 /**
- * @param {Object<string,any>} is
- * @param {Object<string,any>} should
- */
-const compareEvent = (is, should) => {
-  for (var key in should) {
-    t.assert(
-      should[key] === is[key] ||
-      JSON.stringify(should[key]) === JSON.stringify(is[key])
-      , 'event works as expected'
-    )
-  }
-}
-
-/**
  * @param {t.TestCase} tc
  */
 export const testInsertAndDeleteEvents = tc => {
   const { array0, users } = init(tc, { users: 2 })
   /**
-   * @type {Object<string,any>}
+   * @type {Object<string,any>?}
    */
-  let event = {}
+  let event = null
   array0.observe(e => {
     event = e
   })
   array0.insert(0, [0, 1, 2])
-  compareEvent(event, {
-    remote: false
-  })
+  t.assert(event !== null)
+  event = null
   array0.delete(0)
-  compareEvent(event, {
-    remote: false
-  })
+  t.assert(event !== null)
+  event = null
   array0.delete(0, 2)
-  compareEvent(event, {
-    remote: false
-  })
+  t.assert(event !== null)
+  event = null
   compare(users)
 }
 
@@ -167,20 +150,18 @@ export const testInsertAndDeleteEvents = tc => {
 export const testInsertAndDeleteEventsForTypes = tc => {
   const { array0, users } = init(tc, { users: 2 })
   /**
-   * @type {Object<string,any>}
+   * @type {Object<string,any>|null}
    */
-  let event = {}
+  let event = null
   array0.observe(e => {
     event = e
   })
   array0.insert(0, [new Y.Array()])
-  compareEvent(event, {
-    remote: false
-  })
+  t.assert(event !== null)
+  event = null
   array0.delete(0)
-  compareEvent(event, {
-    remote: false
-  })
+  t.assert(event !== null)
+  event = null
   compare(users)
 }
 
@@ -197,14 +178,8 @@ export const testInsertAndDeleteEventsForTypes2 = tc => {
     events.push(e)
   })
   array0.insert(0, ['hi', new Y.Map()])
-  compareEvent(events[0], {
-    remote: false
-  })
   t.assert(events.length === 1, 'Event is triggered exactly once for insertion of two elements')
   array0.delete(1)
-  compareEvent(events[1], {
-    remote: false
-  })
   t.assert(events.length === 2, 'Event is triggered exactly once for deletion')
   compare(users)
 }
@@ -254,9 +229,6 @@ export const testEventTargetIsSetCorrectlyOnRemote = tc => {
   })
   array1.insert(0, ['stuff'])
   testConnector.flushAllMessages()
-  compareEvent(event, {
-    remote: true
-  })
   t.assert(event.target === array0, '"target" property is set correctly')
   compare(users)
 }

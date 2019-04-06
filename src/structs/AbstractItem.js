@@ -28,6 +28,8 @@ import * as binary from 'lib0/binary.js'
  * @param {AbstractItem} leftItem
  * @param {number} diff
  * @return {AbstractItem}
+ *
+ * @todo remove store param0
  */
 export const splitItem = (store, leftItem, diff) => {
   const id = leftItem.id
@@ -35,7 +37,7 @@ export const splitItem = (store, leftItem, diff) => {
   const rightItem = leftItem.copy(
     createID(id.client, id.clock + diff),
     leftItem,
-    leftItem.lastId,
+    createID(id.client, id.clock + diff - 1),
     leftItem.right,
     leftItem.rightOrigin,
     leftItem.parent,

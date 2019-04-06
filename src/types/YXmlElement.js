@@ -52,16 +52,17 @@ import * as decoding from 'lib0/decoding.js'
 export class YXmlTreeWalker {
   /**
    * @param {YXmlFragment | YXmlElement} root
-   * @param {function(AbstractType<any>):boolean} f
+   * @param {function(AbstractType<any>):boolean} [f]
    */
-  constructor (root, f) {
-    this._filter = f || (() => true)
+  constructor (root, f = () => true) {
+    this._filter = f
     this._root = root
     /**
      * @type {ItemType | null}
      */
     // @ts-ignore
     this._currentNode = root._start
+    this._firstCall = true
   }
   [Symbol.iterator] () {
     return this
@@ -75,34 +76,36 @@ export class YXmlTreeWalker {
    */
   next () {
     let n = this._currentNode
+    if (n !== null && (!this._firstCall || n.deleted || !this._filter(n.type))) { // if first call, we check if we can use the first item
+      do {
+        if (!n.deleted && (n.type.constructor === YXmlElement || n.type.constructor === YXmlFragment) && n.type._start !== null) {
+          // walk down in the tree
+          // @ts-ignore
+          n = n.type._start
+        } else {
+          // walk right or up in the tree
+          while (n !== null) {
+            if (n.right !== null) {
+              // @ts-ignore
+              n = n.right
+              break
+            } else if (n.parent === this._root) {
+              n = null
+            } else {
+              n = n.parent._item
+            }
+          }
+        }
+      } while (n !== null && (n.deleted || !this._filter(n.type)))
+    }
+    this._firstCall = false
+    this._currentNode = n
     if (n === null) {
       // @ts-ignore return undefined if done=true (the expected result)
       return { value: undefined, done: true }
     }
-    const nextValue = n
-    do {
-      if (!n.deleted && (n.constructor === YXmlElement || n.constructor === YXmlFragment) && n.type._start !== null) {
-        // walk down in the tree
-        // @ts-ignore
-        n = n.type._start
-      } else {
-        // walk right or up in the tree
-        while (n !== null) {
-          if (n.right !== null) {
-            // @ts-ignore
-            n = n.right
-            break
-          } else if (n.parent === this._root) {
-            n = null
-          } else {
-            n = n.parent._item
-          }
-        }
-      }
-    } while (n !== null && (n.deleted || !this._filter(n.type)))
-    this._currentNode = n
     // @ts-ignore
-    return { value: nextValue.type, done: false }
+    return { value: n.type, done: false }
   }
 }
 

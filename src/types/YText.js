@@ -601,14 +601,15 @@ export class YText extends AbstractType {
   toString () {
     let str = ''
     /**
-     * @type {any}
+     * @type {AbstractItem|null}
      */
     let n = this._start
     while (n !== null) {
-      if (!n._deleted && n._countable) {
-        str += n._content
+      if (!n.deleted && n.countable && n.constructor === ItemString) {
+        // @ts-ignore
+        str += n.string
       }
-      n = n._right
+      n = n.right
     }
     return str
   }
@@ -693,8 +694,9 @@ export class YText extends AbstractType {
     const currentAttributes = new Map()
     let str = ''
     /**
-     * @type {any}
+     * @type {AbstractItem|null}
      */
+    // @ts-ignore
     let n = this._start
     function packStr () {
       if (str.length > 0) {
@@ -702,7 +704,7 @@ export class YText extends AbstractType {
         /**
          * @type {Object<string,any>}
          */
-        let attributes = {}
+        const attributes = {}
         let addAttributes = false
         for (let [key, value] of currentAttributes) {
           addAttributes = true
@@ -711,7 +713,7 @@ export class YText extends AbstractType {
         /**
          * @type {Object<string,any>}
          */
-        let op = { insert: str }
+        const op = { insert: str }
         if (addAttributes) {
           op.attributes = attributes
         }
@@ -725,28 +727,30 @@ export class YText extends AbstractType {
           case ItemString:
             const cur = currentAttributes.get('ychange')
             if (snapshot !== undefined && !isVisible(n, snapshot)) {
-              if (cur === undefined || cur.user !== n._id.user || cur.state !== 'removed') {
+              if (cur === undefined || cur.user !== n.id.client || cur.state !== 'removed') {
                 packStr()
-                currentAttributes.set('ychange', { user: n._id.user, state: 'removed' })
+                currentAttributes.set('ychange', { user: n.id.client, state: 'removed' })
               }
             } else if (prevSnapshot !== undefined && !isVisible(n, prevSnapshot)) {
-              if (cur === undefined || cur.user !== n._id.user || cur.state !== 'added') {
+              if (cur === undefined || cur.user !== n.id.client || cur.state !== 'added') {
                 packStr()
-                currentAttributes.set('ychange', { user: n._id.user, state: 'added' })
+                currentAttributes.set('ychange', { user: n.id.client, state: 'added' })
               }
             } else if (cur !== undefined) {
               packStr()
               currentAttributes.delete('ychange')
             }
-            str += n._content
+            // @ts-ignore
+            str += n.string
             break
           case ItemFormat:
             packStr()
+            // @ts-ignore
             updateCurrentAttributes(currentAttributes, n)
             break
         }
       }
-      n = n._right
+      n = n.right
     }
     packStr()
     return ops

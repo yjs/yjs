@@ -76,7 +76,7 @@ export class ItemString extends AbstractItem {
    * @return {boolean}
    */
   mergeWith (right) {
-    if (compareIDs(right.origin, this.lastId) && this.right === right) {
+    if (compareIDs(right.origin, this.lastId) && this.right === right && compareIDs(this.rightOrigin, right.rightOrigin)) {
       this.string += right.string
       return true
     }

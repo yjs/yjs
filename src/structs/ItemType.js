@@ -93,8 +93,8 @@ export class ItemType extends AbstractItem {
    * @param {Transaction} transaction
    */
   integrate (transaction) {
-    this.type._integrate(transaction.y, this)
     super.integrate(transaction)
+    this.type._integrate(transaction.y, this)
   }
   /**
    * @param {encoding.Encoder} encoder

@@ -14,7 +14,6 @@ import {
   ItemBinary,
   createID,
   getItemCleanStart,
-  getItemCleanEnd,
   Y, Snapshot, Transaction, EventHandler, YEvent, AbstractItem, // eslint-disable-line
 } from '../internals.js'
 
@@ -327,7 +326,7 @@ export const typeArrayGet = (type, index) => {
  * @param {Array<Object<string,any>|Array<any>|number|string|ArrayBuffer>} content
  */
 export const typeArrayInsertGenericsAfter = (transaction, parent, referenceItem, content) => {
-  const left = referenceItem
+  let left = referenceItem
   const right = referenceItem === null ? parent._start : referenceItem.right
   /**
    * @type {Array<Object|Array|number>}
@@ -335,8 +334,8 @@ export const typeArrayInsertGenericsAfter = (transaction, parent, referenceItem,
   let jsonContent = []
   const packJsonContent = () => {
     if (jsonContent.length > 0) {
-      const item = new ItemJSON(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, jsonContent)
-      item.integrate(transaction)
+      left = new ItemJSON(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, jsonContent)
+      left.integrate(transaction)
       jsonContent = []
     }
   }
@@ -353,11 +352,14 @@ export const typeArrayInsertGenericsAfter = (transaction, parent, referenceItem,
         switch (c.constructor) {
           case ArrayBuffer:
             // @ts-ignore c is definitely an ArrayBuffer
-            new ItemBinary(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, c).integrate(transaction)
+            left = new ItemBinary(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, c)
+            // @ts-ignore
+            left.integrate(transaction)
             break
           default:
             if (c instanceof AbstractType) {
-              new ItemType(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, c).integrate(transaction)
+              left = new ItemType(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, c)
+              left.integrate(transaction)
             } else {
               throw new Error('Unexpected content type in insert operation')
             }
@@ -401,10 +403,11 @@ export const typeArrayInsertGenerics = (transaction, parent, index, content) => 
  */
 export const typeArrayDelete = (transaction, parent, index, length) => {
   let n = parent._start
+  // compute the first item to be deleted
   for (; n !== null; n = n.right) {
     if (!n.deleted && n.countable) {
       if (index <= n.length) {
-        if (index < n.length) {
+        if (index < n.length && index > 0) {
           n = getItemCleanStart(transaction.y.store, createID(n.id.client, n.id.clock + index))
         }
         break
@@ -412,15 +415,19 @@ export const typeArrayDelete = (transaction, parent, index, length) => {
       index -= n.length
     }
   }
+  // delete all items until done
   while (length > 0 && n !== null) {
     if (!n.deleted) {
       if (length < n.length) {
-        getItemCleanEnd(transaction.y.store, createID(n.id.client, n.id.clock + length))
+        getItemCleanStart(transaction.y.store, createID(n.id.client, n.id.clock + length))
       }
       n.delete(transaction)
       length -= n.length
     }
     n = n.right
+  }
+  if (length > 0) {
+    throw error.create('array length exceeded')
   }
 }
 

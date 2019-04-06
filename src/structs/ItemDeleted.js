@@ -12,8 +12,9 @@ import {
   getItemType,
   changeItemRefOffset,
   GC,
+  splitItem,
   compareIDs,
-  Transaction, ID, AbstractType // eslint-disable-line
+  StructStore, Transaction, ID, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -53,12 +54,26 @@ export class ItemDeleted extends AbstractItem {
     return new ItemDeleted(id, left, origin, right, rightOrigin, parent, parentSub, this.length)
   }
   /**
+   * @param {StructStore} store
+   * @param {number} diff
+   */
+  splitAt (store, diff) {
+    /**
+     * @type {ItemDeleted}
+     */
+    // @ts-ignore
+    const right = splitItem(store, this, diff)
+    right._len -= diff
+    this._len = diff
+    return right
+  }
+  /**
    * @param {ItemDeleted} right
    * @return {boolean}
    */
   mergeWith (right) {
-    if (compareIDs(right.origin, this.lastId) && this.right === right) {
-      this._len += right.length
+    if (compareIDs(right.origin, this.lastId) && this.right === right && compareIDs(this.rightOrigin, right.rightOrigin)) {
+      this._len += right._len
       return true
     }
     return false
