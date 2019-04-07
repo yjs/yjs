@@ -1,6 +1,6 @@
 
 import {
-  Transaction, ID, ItemType, AbstractItem, AbstractStruct // eslint-disable-line
+  AbstractRef, ID, ItemType, AbstractItem, AbstractStruct // eslint-disable-line
 } from '../internals.js'
 
 import * as math from 'lib0/math.js'
@@ -14,6 +14,16 @@ export class StructStore {
      * @type {Map<number,Array<AbstractStruct>>}
      */
     this.clients = new Map()
+    /**
+     * Store uncompleted struct readers here
+     * @see tryResumePendingReaders
+     * @type {Set<{stack:Array<AbstractRef>,structReaders:Map<number,IterableIterator<AbstractRef>>,missing:ID}>}
+     */
+    this.pendingStructReaders = new Set()
+    /**
+     * @type {Array<decoding.Decoder>}
+     */
+    this.pendingDeleteReaders = []
   }
 }
 

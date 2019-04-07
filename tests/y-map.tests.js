@@ -221,7 +221,7 @@ export const testObserveDeepProperties = tc => {
 export const testObserversUsingObservedeep = tc => {
   const { users, map0 } = init(tc, { users: 2 })
   /**
-   * @type {Array<Array<string>>}
+   * @type {Array<Array<string|number>>}
    */
   const pathes = []
   let calls = 0
@@ -348,7 +348,7 @@ const mapTransactions = [
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYmapTests20 = tc => {
-  applyRandomTests(tc, mapTransactions, 20)
+  applyRandomTests(tc, mapTransactions, 8)
 }
 
 /**

@@ -81,14 +81,14 @@ export class TestYInstance extends Y.Y {
     if (!this.tc.onlineConns.has(this)) {
       this.tc.onlineConns.add(this)
       const encoder = encoding.createEncoder()
-      syncProtocol.writeSyncStep1(encoder, this)
+      syncProtocol.writeSyncStep1(encoder, this.store)
       // publish SyncStep1
       broadcastMessage(this, encoding.toBuffer(encoder))
       this.tc.onlineConns.forEach(remoteYInstance => {
         if (remoteYInstance !== this) {
           // remote instance sends instance to this instance
           const encoder = encoding.createEncoder()
-          syncProtocol.writeSyncStep1(encoder, remoteYInstance)
+          syncProtocol.writeSyncStep1(encoder, remoteYInstance.store)
           this._receive(encoding.toBuffer(encoder), remoteYInstance)
         }
       })
@@ -271,8 +271,11 @@ export const compare = users => {
   const userMapValues = users.map(u => u.getMap('map').toJSON())
   const userXmlValues = users.map(u => u.get('xml', Y.XmlElement).toString())
   const userTextValues = users.map(u => u.getText('text').toDelta())
-  for (var i = 0; i < users.length - 1; i++) {
-    t.describe(`Comparing user${i} with user${i + 1}`)
+  for (const u of users) {
+    t.assert(u.store.pendingDeleteReaders.length === 0)
+    t.assert(u.store.pendingStructReaders.size === 0)
+  }
+  for (let i = 0; i < users.length - 1; i++) {
     t.compare(userArrayValues[i].length, users[i].getArray('array').length)
     t.compare(userArrayValues[i], userArrayValues[i + 1])
     t.compare(userMapValues[i], userMapValues[i + 1])

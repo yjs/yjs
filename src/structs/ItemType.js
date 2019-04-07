@@ -7,9 +7,7 @@
 import {
   AbstractItem,
   AbstractItemRef,
-  getItemCleanEnd,
-  getItemCleanStart,
-  getItemType,
+  computeItemParams,
   readYArray,
   readYMap,
   readYText,
@@ -17,7 +15,7 @@ import {
   readYXmlFragment,
   readYXmlHook,
   readYXmlText,
-  Y, GC, ItemDeleted, Transaction, ID, AbstractType // eslint-disable-line
+  StructStore, Y, GC, ItemDeleted, Transaction, ID, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js' // eslint-disable-line
@@ -171,38 +169,24 @@ export class ItemTypeRef extends AbstractItemRef {
     this.type = typeRefs[typeRef](decoder)
   }
   /**
-   * @param {Transaction} transaction
+   * @param {Y} y
+   * @param {StructStore} store
    * @param {number} offset
    * @return {ItemType|GC}
    */
-  toStruct (transaction, offset) {
-    const y = transaction.y
-    const store = y.store
-
-    let parent
-    if (this.parent !== null) {
-      const parentItem = getItemType(store, this.parent)
-      switch (parentItem.constructor) {
-        case ItemDeleted:
-        case GC:
-          return new GC(this.id, 1)
-      }
-      parent = parentItem.type
-    } else {
-      // @ts-ignore
-      parent = y.get(this.parentYKey)
-    }
-
-    // TODO: we can probably only feed AbstractType with origins
-    return new ItemType(
-      this.id,
-      this.left === null ? null : getItemCleanEnd(store, this.left),
-      this.left,
-      this.right === null ? null : getItemCleanStart(store, this.right),
-      this.right,
-      parent,
-      this.parentSub,
-      this.type
-    )
+  toStruct (y, store, offset) {
+    const { left, right, parent, parentSub } = computeItemParams(y, store, this.left, this.right, this.parent, this.parentSub, this.parentYKey)
+    return parent === null
+      ? new GC(this.id, this.length)
+      : new ItemType(
+        this.id,
+        left,
+        this.left,
+        right,
+        this.right,
+        parent,
+        parentSub,
+        this.type
+      )
   }
 }

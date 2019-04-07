@@ -29,5 +29,7 @@ export {
   writeStates,
   readDeleteSet,
   writeDeleteSet,
-  createDeleteSetFromStructStore
+  createDeleteSetFromStructStore,
+  writeModel,
+  readModel
 } from './internals.js'

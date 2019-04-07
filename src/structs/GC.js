@@ -7,7 +7,7 @@ import {
   createID,
   writeID,
   addStruct,
-  Transaction, ID // eslint-disable-line
+  Y, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as decoding from 'lib0/decoding.js'
@@ -89,11 +89,12 @@ export class GCRef extends AbstractRef {
     ]
   }
   /**
-   * @param {Transaction} transaction
+   * @param {Y} y
+   * @param {StructStore} store
    * @param {number} offset
    * @return {GC}
    */
-  toStruct (transaction, offset) {
+  toStruct (y, store, offset) {
     if (offset > 0) {
       // @ts-ignore
       this.id = createID(this.id.client, this.id.clock + offset)

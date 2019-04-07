@@ -5,14 +5,11 @@
 import {
   AbstractItem,
   AbstractItemRef,
-  getItemCleanEnd,
-  getItemCleanStart,
-  getItemType,
+  computeItemParams,
   splitItem,
   changeItemRefOffset,
   GC,
-  ItemDeleted,
-  StructStore, Transaction, ID, AbstractType // eslint-disable-line
+  StructStore, Y, ID, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -122,39 +119,28 @@ export class ItemJSONRef extends AbstractItemRef {
     return this.content.length
   }
   /**
-   * @param {Transaction} transaction
+   * @param {Y} y
+   * @param {StructStore} store
    * @param {number} offset
    * @return {ItemJSON|GC}
    */
-  toStruct (transaction, offset) {
-    const y = transaction.y
-    const store = y.store
+  toStruct (y, store, offset) {
     if (offset > 0) {
       changeItemRefOffset(this, offset)
       this.content = this.content.slice(offset)
     }
-    let parent
-    if (this.parent !== null) {
-      const parentItem = getItemType(store, this.parent)
-      switch (parentItem.constructor) {
-        case ItemDeleted:
-        case GC:
-          return new GC(this.id, this.content.length)
-      }
-      parent = parentItem.type
-    } else {
-      // @ts-ignore
-      parent = y.get(this.parentYKey)
-    }
-    return new ItemJSON(
-      this.id,
-      this.left === null ? null : getItemCleanEnd(store, this.left),
-      this.left,
-      this.right === null ? null : getItemCleanStart(store, this.right),
-      this.right,
-      parent,
-      this.parentSub,
-      this.content
-    )
+    const { left, right, parent, parentSub } = computeItemParams(y, store, this.left, this.right, this.parent, this.parentSub, this.parentYKey)
+    return parent === null
+      ? new GC(this.id, this.length)
+      : new ItemJSON(
+        this.id,
+        left,
+        this.left,
+        right,
+        this.right,
+        parent,
+        parentSub,
+        this.content
+      )
   }
 }

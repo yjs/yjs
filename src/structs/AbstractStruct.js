@@ -1,6 +1,6 @@
 
 import {
-  ID, Transaction // eslint-disable-line
+  Y, StructStore, ID, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js' // eslint-disable-line
@@ -76,11 +76,12 @@ export class AbstractRef {
     return this._missing
   }
   /**
-   * @param {Transaction} transaction
+   * @param {Y} y
+   * @param {StructStore} store
    * @param {number} offset
    * @return {AbstractStruct}
    */
-  toStruct (transaction, offset) {
+  toStruct (y, store, offset) {
     throw error.methodUnimplemented()
   }
   /**

@@ -1,6 +1,8 @@
 
 import {
   findIndexSS,
+  createID,
+  getState,
   AbstractItem, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
 
@@ -163,21 +165,24 @@ export const writeDeleteSet = (encoder, ds) => {
 
 /**
  * @param {decoding.Decoder} decoder
- * @param {StructStore} store
  * @param {Transaction} transaction
+ * @param {StructStore} store
  */
-export const readDeleteSet = (decoder, store, transaction) => {
+export const readDeleteSet = (decoder, transaction, store) => {
+  const unappliedDS = new DeleteSet()
   const numClients = decoding.readVarUint(decoder)
   for (let i = 0; i < numClients; i++) {
     const client = decoding.readVarUint(decoder)
     const numberOfDeletes = decoding.readVarUint(decoder)
     const structs = store.clients.get(client) || []
-    const lastStruct = structs[structs.length - 1]
-    const state = lastStruct.id.clock + lastStruct.length
+    const state = getState(store, client)
     for (let i = 0; i < numberOfDeletes; i++) {
       const clock = decoding.readVarUint(decoder)
       const len = decoding.readVarUint(decoder)
       if (clock < state) {
+        if (state < clock + len) {
+          addToDeleteSet(unappliedDS, createID(client, state), clock + len - state)
+        }
         let index = findIndexSS(structs, clock)
         /**
          * We can ignore the case of GC and Delete structs, because we are going to skip them
@@ -206,7 +211,14 @@ export const readDeleteSet = (decoder, store, transaction) => {
             break
           }
         }
+      } else {
+        addToDeleteSet(unappliedDS, createID(client, state), len)
       }
     }
+  }
+  if (unappliedDS.clients.size > 0) {
+    const unappliedDSEncoder = encoding.createEncoder()
+    writeDeleteSet(unappliedDSEncoder, unappliedDS)
+    store.pendingDeleteReaders.push(decoding.createDecoder(encoding.toBuffer(unappliedDSEncoder)))
   }
 }

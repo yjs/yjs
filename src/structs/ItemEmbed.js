@@ -5,12 +5,9 @@
 import {
   AbstractItem,
   AbstractItemRef,
-  getItemCleanEnd,
-  getItemCleanStart,
-  getItemType,
-  ItemDeleted,
+  computeItemParams,
   GC,
-  Transaction, ID, AbstractType // eslint-disable-line
+  Y, StructStore, ID, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -69,37 +66,24 @@ export class ItemEmbedRef extends AbstractItemRef {
     this.embed = JSON.parse(decoding.readVarString(decoder))
   }
   /**
-   * @param {Transaction} transaction
+   * @param {Y} y
+   * @param {StructStore} store
    * @param {number} offset
    * @return {ItemEmbed|GC}
    */
-  toStruct (transaction, offset) {
-    const y = transaction.y
-    const store = y.store
-
-    let parent
-    if (this.parent !== null) {
-      const parentItem = getItemType(store, this.parent)
-      switch (parentItem.constructor) {
-        case ItemDeleted:
-        case GC:
-          return new GC(this.id, 1)
-      }
-      parent = parentItem.type
-    } else {
-      // @ts-ignore
-      parent = y.get(this.parentYKey)
-    }
-
-    return new ItemEmbed(
-      this.id,
-      this.left === null ? null : getItemCleanEnd(store, this.left),
-      this.left,
-      this.right === null ? null : getItemCleanStart(store, this.right),
-      this.right,
-      parent,
-      this.parentSub,
-      this.embed
-    )
+  toStruct (y, store, offset) {
+    const { left, right, parent, parentSub } = computeItemParams(y, store, this.left, this.right, this.parent, this.parentSub, this.parentYKey)
+    return parent === null
+      ? new GC(this.id, this.length)
+      : new ItemEmbed(
+        this.id,
+        left,
+        this.left,
+        right,
+        this.right,
+        parent,
+        parentSub,
+        this.embed
+      )
   }
 }

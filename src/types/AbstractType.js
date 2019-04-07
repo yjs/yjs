@@ -267,6 +267,7 @@ export const typeArrayCreateIterator = type => {
         // we found n, so we can set currentContent
         currentContent = n.getContent()
         currentContentIndex = 0
+        n = n.right // we used the content of n, now iterate to next
       }
       const value = currentContent[currentContentIndex++]
       // check if we need to empty currentContent

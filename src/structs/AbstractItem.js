@@ -14,7 +14,10 @@ import {
   findRootTypeKey,
   compareIDs,
   getItem,
-  StructStore, ID, AbstractType, Y, Transaction // eslint-disable-line
+  getItemType,
+  getItemCleanEnd,
+  getItemCleanStart,
+  YEvent, StructStore, ID, AbstractType, Y, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error.js'
@@ -67,19 +70,10 @@ export class AbstractItem extends AbstractStruct {
    * @param {ID | null} origin
    * @param {AbstractItem | null} right
    * @param {ID | null} rightOrigin
-   * @param {AbstractType<any> | null} parent
+   * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
    */
   constructor (id, left, origin, right, rightOrigin, parent, parentSub) {
-    if (left !== null) {
-      parent = left.parent
-      parentSub = left.parentSub
-    } else if (right !== null) {
-      parent = right.parent
-      parentSub = right.parentSub
-    } else if (parent === null) {
-      throw error.unexpectedCase()
-    }
     super(id)
     /**
      * The item that was originally to the left of this item.
@@ -574,4 +568,50 @@ export class AbstractItemRef extends AbstractRef {
 export const changeItemRefOffset = (item, offset) => {
   item.id = createID(item.id.client, item.id.clock + offset)
   item.left = createID(item.id.client, item.id.clock - 1)
+}
+
+/**
+ * Outsourcing some of the logic of computing the item params from a received struct.
+ * If parent === null, it is expected to gc the read struct. Otherwise apply it.
+ *
+ * @param {Y} y
+ * @param {StructStore} store
+ * @param {ID|null} leftid
+ * @param {ID|null} rightid
+ * @param {ID|null} parentid
+ * @param {string|null} parentSub
+ * @param {string|null} parentYKey
+ * @return {{left:AbstractItem?,right:AbstractItem?,parent:AbstractType<YEvent>?,parentSub:string?}}
+ */
+export const computeItemParams = (y, store, leftid, rightid, parentid, parentSub, parentYKey) => {
+  const left = leftid === null ? null : getItemCleanEnd(store, leftid)
+  const right = rightid === null ? null : getItemCleanStart(store, rightid)
+  let parent = null
+  if (parentid !== null) {
+    const parentItem = getItemType(store, parentid)
+    switch (parentItem.constructor) {
+      case ItemDeleted:
+      case GC:
+        break
+      default:
+        parent = parentItem.type
+    }
+  } else if (parentYKey !== null) {
+    parent = y.get(parentYKey)
+  } else if (left !== null) {
+    if (left.constructor !== GC) {
+      parent = left.parent
+      parentSub = left.parentSub
+    }
+  } else if (right !== null) {
+    if (right.constructor !== GC) {
+      parent = right.parent
+      parentSub = right.parentSub
+    }
+  } else {
+    throw error.unexpectedCase()
+  }
+  return {
+    left, right, parent, parentSub
+  }
 }
