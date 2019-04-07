@@ -168,6 +168,7 @@ export class AbstractItem extends AbstractStruct {
     } else {
       o = parent._start
     }
+    // TODO: use something like DeleteSet here (a tree implementation would be best)
     /**
      * @type {Set<AbstractItem>}
      */
@@ -391,6 +392,20 @@ export class AbstractItem extends AbstractStruct {
     throw new Error('unimplemented')
   }
 
+  /**
+   * @param {AbstractItem} right
+   * @return {boolean}
+   */
+  mergeWith (right) {
+    if (compareIDs(right.origin, this.lastId) && this.right === right && compareIDs(this.rightOrigin, right.rightOrigin)) {
+      this.right = right.right
+      if (right.right !== null) {
+        right.right = this
+      }
+      return true
+    }
+    return false
+  }
   /**
    * Mark this Item as deleted.
    *

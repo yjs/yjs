@@ -97,12 +97,9 @@ export const findIndexSS = (structs, clock) => {
       if (clock < midclock + mid.length) {
         return midindex
       }
-      if (left === midindex) {
-        throw error.unexpectedCase()
-      }
-      left = midindex
+      left = midindex + 1
     } else {
-      right = midindex
+      right = midindex - 1
     }
   }
   throw error.unexpectedCase()
@@ -191,47 +188,6 @@ export const getItemCleanEnd = (store, id) => {
     structs.splice(index + 1, 0, struct.splitAt(store, id.clock - struct.id.clock + 1))
   }
   return struct
-}
-
-/**
- * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
- * @param {StructStore} store
- * @param {number} client
- * @param {number} clock
- * @param {number} len
- * @return {Array<AbstractItem>}
- *
- * @private
- */
-export const getItemRange = (store, client, clock, len) => {
-  /**
-   * @type {Array<AbstractItem>}
-   */
-  // @ts-ignore
-  const structs = store.clients.get(client)
-  let index = findIndexSS(structs, clock)
-  let struct = structs[index]
-  let range = []
-  if (struct.id.clock <= clock) {
-    if (struct.id.clock < clock) {
-      struct = struct.splitAt(store, clock - struct.id.clock)
-      structs.splice(index + 1, 0, struct)
-    }
-    range.push(struct)
-  }
-  index++
-  while (index < structs.length) {
-    struct = structs[index++]
-    if (struct.id.clock < clock + len) {
-      range.push(struct)
-    } else {
-      break
-    }
-  }
-  if (struct.id.clock < clock + len && struct.id.clock + struct.length > clock + len) {
-    structs.splice(index + 1, 0, struct.splitAt(store, clock + len - struct.id.clock))
-  }
-  return range
 }
 
 /**

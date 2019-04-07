@@ -1,7 +1,7 @@
 
 import {
-  getItemRange,
-  StructStore, Transaction, ID // eslint-disable-line
+  findIndexSS,
+  AbstractItem, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as math from 'lib0/math.js'
@@ -50,7 +50,7 @@ export class DeleteSet {
  */
 export const findIndexDS = (dis, clock) => {
   let left = 0
-  let right = dis.length
+  let right = dis.length - 1
   while (left <= right) {
     const midindex = math.floor((left + right) / 2)
     const mid = dis[midindex]
@@ -59,11 +59,9 @@ export const findIndexDS = (dis, clock) => {
       if (clock < midclock + mid.len) {
         return midindex
       }
-      left = midindex
-    } else if (right !== midindex) {
-      right = midindex
+      left = midindex + 1
     } else {
-      break
+      right = midindex - 1
     }
   }
   return null
@@ -165,18 +163,50 @@ export const writeDeleteSet = (encoder, ds) => {
 
 /**
  * @param {decoding.Decoder} decoder
- * @param {StructStore} ss
+ * @param {StructStore} store
  * @param {Transaction} transaction
  */
-export const readDeleteSet = (decoder, ss, transaction) => {
+export const readDeleteSet = (decoder, store, transaction) => {
   const numClients = decoding.readVarUint(decoder)
   for (let i = 0; i < numClients; i++) {
     const client = decoding.readVarUint(decoder)
-    const len = decoding.readVarUint(decoder)
-    for (let i = 0; i < len; i++) {
+    const numberOfDeletes = decoding.readVarUint(decoder)
+    const structs = store.clients.get(client) || []
+    const lastStruct = structs[structs.length - 1]
+    const state = lastStruct.id.clock + lastStruct.length
+    for (let i = 0; i < numberOfDeletes; i++) {
       const clock = decoding.readVarUint(decoder)
       const len = decoding.readVarUint(decoder)
-      getItemRange(ss, client, clock, len).forEach(struct => struct.delete(transaction))
+      if (clock < state) {
+        let index = findIndexSS(structs, clock)
+        /**
+         * We can ignore the case of GC and Delete structs, because we are going to skip them
+         * @type {AbstractItem}
+         */
+        // @ts-ignore
+        let struct = structs[index++]
+        if (!struct.deleted) {
+          if (struct.id.clock < clock) {
+            struct = struct.splitAt(store, clock - struct.id.clock)
+            structs.splice(index, 0, struct)
+          }
+          struct.delete(transaction)
+        }
+        while (index < structs.length) {
+          // @ts-ignore
+          struct = structs[index++]
+          if (struct.id.clock < clock + len) {
+            if (!struct.deleted) {
+              if (clock + len < struct.id.clock + struct.length) {
+                structs.splice(index, 0, struct.splitAt(store, clock + len - struct.id.clock))
+              }
+              struct.delete(transaction)
+            }
+          } else {
+            break
+          }
+        }
+      }
     }
   }
 }

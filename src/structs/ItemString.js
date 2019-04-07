@@ -9,7 +9,6 @@ import {
   getItemType,
   splitItem,
   changeItemRefOffset,
-  compareIDs,
   ItemDeleted,
   GC,
   StructStore, Transaction, ID, AbstractType // eslint-disable-line
@@ -76,7 +75,7 @@ export class ItemString extends AbstractItem {
    * @return {boolean}
    */
   mergeWith (right) {
-    if (compareIDs(right.origin, this.lastId) && this.right === right && compareIDs(this.rightOrigin, right.rightOrigin)) {
+    if (super.mergeWith(right)) {
       this.string += right.string
       return true
     }

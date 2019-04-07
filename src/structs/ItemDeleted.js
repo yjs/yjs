@@ -13,7 +13,6 @@ import {
   changeItemRefOffset,
   GC,
   splitItem,
-  compareIDs,
   addToDeleteSet,
   StructStore, Transaction, ID, AbstractType // eslint-disable-line
 } from '../internals.js'
@@ -80,7 +79,7 @@ export class ItemDeleted extends AbstractItem {
    * @return {boolean}
    */
   mergeWith (right) {
-    if (compareIDs(right.origin, this.lastId) && this.right === right && compareIDs(this.rightOrigin, right.rightOrigin)) {
+    if (super.mergeWith(right)) {
       this._len += right._len
       return true
     }

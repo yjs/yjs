@@ -36,12 +36,10 @@ const findNextPosition = (transaction, store, currentAttributes, left, right, co
       case ItemString:
         if (!right.deleted) {
           if (count < right.length) {
-            right = getItemCleanStart(store, createID(right.id.client, right.id.clock + count))
-            left = right.left
-            count = 0
-          } else {
-            count -= right.length
+            // split right
+            getItemCleanStart(store, createID(right.id.client, right.id.clock + count))
           }
+          count -= right.length
         }
         break
       case ItemFormat:

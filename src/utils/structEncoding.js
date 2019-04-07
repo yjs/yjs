@@ -77,6 +77,11 @@ export const writeStructsFromTransaction = (encoder, transaction) => writeStruct
 export const writeStructs = (encoder, store, _sm) => {
   // we filter all valid _sm entries into sm
   const sm = new Map()
+  const encoderUserPosMap = map.create()
+  const startMessagePos = encoding.length(encoder)
+  // write diff to pos of end of this message
+  // we use it in readStructs to jump ahead to the end of the message
+  encoding.writeUint32(encoder, 0)
   _sm.forEach((clock, client) => {
     if (getState(store, client) > clock) {
       sm.set(client, clock)
@@ -87,7 +92,6 @@ export const writeStructs = (encoder, store, _sm) => {
       sm.set(client, 0)
     }
   })
-  const encoderUserPosMap = map.create()
   // write # states that were updated
   encoding.writeVarUint(encoder, sm.size)
   sm.forEach((clock, client) => {
@@ -95,11 +99,11 @@ export const writeStructs = (encoder, store, _sm) => {
     writeID(encoder, createID(client, clock))
     encoderUserPosMap.set(client, encoding.length(encoder))
     // write diff to pos where structs are written
-    // We will fill out this value later *)
     encoding.writeUint32(encoder, 0)
   })
   sm.forEach((clock, client) => {
     const decPos = encoderUserPosMap.get(client)
+    // fill out diff to pos where structs are written
     encoding.setUint32(encoder, decPos, encoding.length(encoder) - decPos)
     /**
      * @type {Array<AbstractStruct>}
@@ -116,6 +120,8 @@ export const writeStructs = (encoder, store, _sm) => {
       structs[i].write(encoder, 0, 0)
     }
   })
+  // fill out diff to pos of end of message
+  encoding.setUint32(encoder, startMessagePos, encoding.length(encoder) - startMessagePos)
 }
 
 /**
@@ -134,20 +140,26 @@ export const readStructs = (decoder, transaction, store) => {
    * @type {Map<number,Iterator<AbstractRef>>}
    */
   const structReaders = new Map()
+  const endOfMessagePos = decoder.pos + decoding.readUint32(decoder)
   const clientbeforeState = decoding.readVarUint(decoder)
   /**
+   * Stack of pending structs waiting for struct dependencies.
+   * Maximum length of stack is structReaders.size.
    * @type {Array<AbstractRef>}
    */
   const stack = []
   const localState = getStates(store)
-  let lastStructReader = null
   for (let i = 0; i < clientbeforeState; i++) {
     const nextID = readID(decoder)
     const decoderPos = decoder.pos + decoding.readUint32(decoder)
-    lastStructReader = decoding.clone(decoder, decoderPos)
-    const numberOfStructs = decoding.readVarUint(lastStructReader)
-    structReaders.set(nextID.client, createStructReaderIterator(lastStructReader, numberOfStructs, nextID, localState.get(nextID.client) || 0))
+    const structReaderDecoder = decoding.clone(decoder, decoderPos)
+    const numberOfStructs = decoding.readVarUint(structReaderDecoder)
+    structReaders.set(nextID.client, createStructReaderIterator(structReaderDecoder, numberOfStructs, nextID, localState.get(nextID.client) || 0))
   }
+  // Decoder is still stuck at creating struct readers.
+  // Jump ahead to end of message so that reading can continue.
+  // We will use the created struct readers for the remaining part of this workflow.
+  decoder.pos = endOfMessagePos
   for (const it of structReaders.values()) {
     // todo try for in of it
     for (let res = it.next(); !res.done; res = it.next()) {
@@ -172,9 +184,5 @@ export const readStructs = (decoder, transaction, store) => {
         }
       }
     }
-  }
-  // if we read some structs, this points to the end of the transaction
-  if (lastStructReader !== null) {
-    decoder.pos = lastStructReader.pos
   }
 }
