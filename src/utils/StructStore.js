@@ -18,7 +18,7 @@ export class StructStore {
     /**
      * Store uncompleted struct readers here
      * @see tryResumePendingReaders
-     * @type {Set<{stack:Array<AbstractRef>,structReaders:Map<number,IterableIterator<AbstractRef>>,missing:ID}>}
+     * @type {Set<{stack:Array<AbstractRef>,structReaders:Map<number,IterableIterator<AbstractRef>>,missing:ID,structReaderIterator:IterableIterator<IterableIterator<AbstractRef>>,structReaderIteratorResult:IteratorResult<IterableIterator<AbstractRef>>}>}
      */
     this.pendingStructReaders = new Set()
     /**

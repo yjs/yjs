@@ -195,6 +195,8 @@ const insertText = (transaction, parent, left, right, currentAttributes, text, a
   }
   const minPos = minimizeAttributeChanges(left, right, currentAttributes, attributes)
   const insertPos = insertAttributes(transaction, parent, minPos.left, minPos.right, currentAttributes, attributes)
+  left = insertPos.left
+  right = insertPos.right
   // insert content
   if (text.constructor === String) {
     left = new ItemString(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, text)

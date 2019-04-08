@@ -438,7 +438,16 @@ export const testRepeatGeneratingYmapTests1800 = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testRepeatGeneratingYmapTests5000 = tc => {
+  t.skip(!t.production)
+  applyRandomTests(tc, mapTransactions, 5000)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYmapTests10000 = tc => {
+  t.skip(!t.production)
   applyRandomTests(tc, mapTransactions, 10000)
 }
 

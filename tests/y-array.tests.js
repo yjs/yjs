@@ -400,8 +400,17 @@ export const testRepeatGeneratingYarrayTests1800 = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testRepeatGeneratingYarrayTests10000 = tc => {
-  applyRandomTests(tc, arrayTransactions, 10000)
+export const testRepeatGeneratingYarrayTests3000 = tc => {
+  t.skip(!t.production)
+  applyRandomTests(tc, arrayTransactions, 3000)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGeneratingYarrayTests5000 = tc => {
+  t.skip(!t.production)
+  applyRandomTests(tc, arrayTransactions, 5000)
 }
 
 /**
