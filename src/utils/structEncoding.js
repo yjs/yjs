@@ -179,13 +179,13 @@ const readStructReaders = (decoder, localState) => {
  * @param {Map<number,IterableIterator<AbstractRef>>} structReaders
  * @param {Array<AbstractRef>} stack Stack of pending structs waiting for struct dependencies.
  *                                   Maximum length of stack is structReaders.size.
+ * @param {IterableIterator<IterableIterator<AbstractRef>>} structReaderIterator
+ * @param {IteratorResult<IterableIterator<AbstractRef>>} structReaderIteratorResult
  *
  * @todo reimplement without iterators - read everything in arrays instead
  */
-const execStructReaders = (transaction, store, localState, structReaders, stack) => {
+const execStructReaders = (transaction, store, localState, structReaders, stack, structReaderIterator, structReaderIteratorResult) => {
   // iterate over all struct readers until we are done
-  const structReaderIterator = structReaders.values()
-  let structReaderIteratorResult = structReaderIterator.next()
   while (stack.length !== 0 || !structReaderIteratorResult.done) {
     if (stack.length === 0) {
       // stack is empty. We know that there there are more structReaders to be processed
@@ -208,7 +208,7 @@ const execStructReaders = (transaction, store, localState, structReaders, stack)
           if (nextRef === undefined) {
             // This update message causally depends on another update message.
             // Store current stack and readers in StructStore and resume the computation at another time
-            store.pendingStructReaders.add({ stack, structReaders, missing })
+            store.pendingStructReaders.add({ stack, structReaders, missing, structReaderIterator, structReaderIteratorResult })
             return
           }
           stack.push(nextRef)
@@ -220,6 +220,12 @@ const execStructReaders = (transaction, store, localState, structReaders, stack)
         const localClock = (localState.get(ref.id.client) || 0)
         const offset = ref.id.clock < localClock ? localClock - ref.id.clock : 0
         if (offset < ref.length) {
+          if (ref.id.clock + offset !== localClock) {
+            // A previous message from this client is missing
+            // Store current stack and readers in StructStore and resume the computation at another time
+            store.pendingStructReaders.add({ stack, structReaders, missing: createID(ref.id.client, localClock), structReaderIterator, structReaderIteratorResult })
+            return
+          }
           ref.toStruct(transaction.y, store, offset).integrate(transaction)
         }
         stack.pop()
@@ -227,7 +233,7 @@ const execStructReaders = (transaction, store, localState, structReaders, stack)
     }
   }
   if (stack.length > 0) {
-    store.pendingStructReaders.add({ stack, structReaders, missing: stack[stack.length - 1].id })
+    store.pendingStructReaders.add({ stack, structReaders, missing: stack[stack.length - 1].id, structReaderIterator, structReaderIteratorResult })
   }
 }
 
@@ -247,7 +253,7 @@ const tryResumePendingStructReaders = (transaction, store) => {
       if (exists(store, pendingReader.missing)) {
         resume = true // found at least one more reader to execute
         pendingReaders.delete(pendingReader)
-        execStructReaders(transaction, store, getStates(store), pendingReader.structReaders, pendingReader.stack)
+        execStructReaders(transaction, store, getStates(store), pendingReader.structReaders, pendingReader.stack, pendingReader.structReaderIterator, pendingReader.structReaderIteratorResult)
       }
     }
   }
@@ -279,7 +285,8 @@ export const tryResumePendingDeleteReaders = (transaction, store) => {
 export const readStructs = (decoder, transaction, store) => {
   const localState = getStates(store)
   const readers = readStructReaders(decoder, localState)
-  execStructReaders(transaction, store, localState, readers, [])
+  const structReaderIterator = readers.values()
+  execStructReaders(transaction, store, localState, readers, [], structReaderIterator, structReaderIterator.next())
   tryResumePendingStructReaders(transaction, store)
   tryResumePendingDeleteReaders(transaction, store)
 }

@@ -5,7 +5,6 @@ import {
   AbstractRef,
   AbstractStruct,
   createID,
-  writeID,
   addStruct,
   Y, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
@@ -58,12 +57,7 @@ export class GC extends AbstractStruct {
    */
   write (encoder, offset) {
     encoding.writeUint8(encoder, structGCRefNumber)
-    if (offset === 0) {
-      writeID(encoder, this.id)
-    } else {
-      writeID(encoder, createID(this.id.client, this.id.clock + offset))
-    }
-    encoding.writeVarUint(encoder, this._len)
+    encoding.writeVarUint(encoder, this._len - offset)
   }
 }
 

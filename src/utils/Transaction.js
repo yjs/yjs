@@ -10,10 +10,11 @@ import {
   DeleteSet,
   sortAndMergeDeleteSet,
   getStates,
-  AbstractType, AbstractItem, YEvent, ItemType, Y // eslint-disable-line
+  AbstractType, AbstractStruct, YEvent, Y // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
+import * as map from 'lib0/map.js'
 
 /**
  * A transaction is created for every change on the Yjs model. It is possible
@@ -79,12 +80,17 @@ export class Transaction {
      * @type {encoding.Encoder|null}
      */
     this._updateMessage = null
+    /**
+     * @type {Set<AbstractStruct>}
+     */
+    this._replacedItems = new Set()
   }
   /**
-   * @type {encoding.Encoder}
+   * @type {encoding.Encoder|null}
    */
   get updateMessage () {
-    if (this._updateMessage === null) {
+    // only create if content was added in transaction (state or ds changed)
+    if (this._updateMessage === null && (this.deleteSet.clients.size > 0 || map.any(this.afterState, (clock, client) => this.beforeState.get(client) !== clock))) {
       const encoder = encoding.createEncoder()
       sortAndMergeDeleteSet(this.deleteSet)
       writeStructsFromTransaction(encoder, this)

@@ -421,15 +421,16 @@ export class AbstractItem extends AbstractStruct {
   }
 
   /**
-   * @param {Y} y
+   * @param {Transaction} transaction
+   * @param {StructStore} store
    */
-  gcChildren (y) {}
+  gcChildren (transaction, store) { }
 
   /**
-   * @param {Y} y
-   * @return {GC|ItemDeleted}
+   * @param {Transaction} transaction
+   * @param {StructStore} store
    */
-  gc (y) {
+  gc (transaction, store) {
     let r
     if (this.parent._item !== null && this.parent._item.deleted) {
       r = new GC(this.id, this.length)
@@ -449,8 +450,8 @@ export class AbstractItem extends AbstractStruct {
         }
       }
     }
-    replaceStruct(y.store, this, r)
-    return r
+    replaceStruct(store, this, r)
+    transaction._replacedItems.add(r)
   }
 
   /**
@@ -584,6 +585,10 @@ export const changeItemRefOffset = (item, offset) => {
  */
 export const computeItemParams = (y, store, leftid, rightid, parentid, parentSub, parentYKey) => {
   const left = leftid === null ? null : getItemCleanEnd(store, leftid)
+  if (left !== null && left.constructor !== GC && left.right !== null && left.right.id.client === left.id.client && left.right.id.clock === left.id.clock + left.length) {
+    // we split a merged op, we may need to merge it again after the transaction
+    y.transaction._replacedItems.add(left)
+  }
   const right = rightid === null ? null : getItemCleanStart(store, rightid)
   let parent = null
   if (parentid !== null) {

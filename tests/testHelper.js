@@ -20,9 +20,12 @@ import * as syncProtocol from 'y-protocols/sync.js'
  */
 const afterTransaction = (y, transaction) => {
   y.mMux(() => {
-    const encoder = encoding.createEncoder()
-    syncProtocol.writeUpdate(encoder, transaction.updateMessage)
-    broadcastMessage(y, encoding.toBuffer(encoder))
+    const m = transaction.updateMessage
+    if (m !== null) {
+      const encoder = encoding.createEncoder()
+      syncProtocol.writeUpdate(encoder, m)
+      broadcastMessage(y, encoding.toBuffer(encoder))
+    }
   })
 }
 

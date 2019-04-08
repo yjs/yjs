@@ -22,12 +22,13 @@ import * as encoding from 'lib0/encoding.js' // eslint-disable-line
 import * as decoding from 'lib0/decoding.js'
 
 /**
- * @param {Y} y
+ * @param {Transaction} transaction
+ * @param {StructStore} store
  * @param {AbstractItem | null} item
  */
-const gcChildren = (y, item) => {
+const gcChildren = (transaction, store, item) => {
   while (item !== null) {
-    item.gc(y)
+    item.gc(transaction, store)
     item = item.right
   }
 }
@@ -109,7 +110,6 @@ export class ItemType extends AbstractItem {
    * @private
    */
   delete (transaction) {
-    const y = transaction.y
     super.delete(transaction)
     transaction.changed.delete(this.type)
     transaction.changedParentTypes.delete(this.type)
@@ -128,29 +128,30 @@ export class ItemType extends AbstractItem {
       t = t.right
     }
     if (gcChildren) {
-      this.gcChildren(y)
+      this.gcChildren(transaction, transaction.y.store)
     }
   }
 
   /**
-   * @param {Y} y
+   * @param {Transaction} transaction
+   * @param {StructStore} store
    */
-  gcChildren (y) {
-    gcChildren(y, this.type._start)
+  gcChildren (transaction, store) {
+    gcChildren(transaction, store, this.type._start)
     this.type._start = null
     this.type._map.forEach(item => {
-      gcChildren(y, item)
+      gcChildren(transaction, store, item)
     })
     this._map = new Map()
   }
 
   /**
-   * @param {Y} y
-   * @return {ItemDeleted|GC}
+   * @param {Transaction} transaction
+   * @param {StructStore} store
    */
-  gc (y) {
-    this.gcChildren(y)
-    return super.gc(y)
+  gc (transaction, store) {
+    super.gc(transaction, store)
+    this.gcChildren(transaction, store)
   }
 }
 

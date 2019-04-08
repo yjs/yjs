@@ -1,5 +1,6 @@
 
 import {
+  GC,
   AbstractRef, ID, ItemType, AbstractItem, AbstractStruct // eslint-disable-line
 } from '../internals.js'
 
@@ -173,7 +174,7 @@ export const getItemCleanStart = (store, id) => {
    * @type {AbstractItem}
    */
   let struct = structs[index]
-  if (struct.id.clock < id.clock) {
+  if (struct.id.clock < id.clock && struct.constructor !== GC) {
     struct = struct.splitAt(store, id.clock - struct.id.clock)
     structs.splice(index + 1, 0, struct)
   }
@@ -196,7 +197,7 @@ export const getItemCleanEnd = (store, id) => {
   const structs = store.clients.get(id.client)
   const index = findIndexSS(structs, id.clock)
   const struct = structs[index]
-  if (id.clock !== struct.id.clock + struct.length - 1) {
+  if (id.clock !== struct.id.clock + struct.length - 1 && struct.constructor !== GC) {
     structs.splice(index + 1, 0, struct.splitAt(store, id.clock - struct.id.clock + 1))
   }
   return struct

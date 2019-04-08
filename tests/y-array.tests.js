@@ -366,7 +366,6 @@ export const testRepeatGeneratingYarrayTests300 = tc => {
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests400 = tc => {
-  t.skip(!t.production)
   applyRandomTests(tc, arrayTransactions, 400)
 }
 
@@ -374,7 +373,6 @@ export const testRepeatGeneratingYarrayTests400 = tc => {
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests500 = tc => {
-  t.skip(!t.production)
   applyRandomTests(tc, arrayTransactions, 500)
 }
 
@@ -382,7 +380,6 @@ export const testRepeatGeneratingYarrayTests500 = tc => {
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests600 = tc => {
-  t.skip(!t.production)
   applyRandomTests(tc, arrayTransactions, 600)
 }
 
@@ -390,7 +387,6 @@ export const testRepeatGeneratingYarrayTests600 = tc => {
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests1000 = tc => {
-  t.skip(!t.production)
   applyRandomTests(tc, arrayTransactions, 1000)
 }
 
@@ -398,7 +394,6 @@ export const testRepeatGeneratingYarrayTests1000 = tc => {
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests1800 = tc => {
-  t.skip(!t.production)
   applyRandomTests(tc, arrayTransactions, 1800)
 }
 
@@ -406,6 +401,13 @@ export const testRepeatGeneratingYarrayTests1800 = tc => {
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests10000 = tc => {
-  t.skip(!t.production)
   applyRandomTests(tc, arrayTransactions, 10000)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGeneratingYarrayTests30000 = tc => {
+  t.skip(!t.production)
+  applyRandomTests(tc, arrayTransactions, 30000)
 }

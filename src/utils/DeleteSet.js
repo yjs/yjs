@@ -85,12 +85,13 @@ export const isDeleted = (ds, id) => {
 export const sortAndMergeDeleteSet = ds => {
   ds.clients.forEach(dels => {
     dels.sort((a, b) => a.clock - b.clock)
+    // merge items without filtering or splicing the array
     // i is the current pointer
     // j refers to the current insert position for the pointed item
-    // try to merge dels[i] with dels[i-1]
+    // try to merge dels[i] into dels[j-1] or set dels[j]=dels[i]
     let i, j
     for (i = 1, j = 1; i < dels.length; i++) {
-      const left = dels[i - 1]
+      const left = dels[j - 1]
       const right = dels[i]
       if (left.clock + left.len === right.clock) {
         left.len += right.len
@@ -131,7 +132,7 @@ export const createDeleteSetFromStructStore = ss => {
         const clock = struct.id.clock
         let len = struct.length
         if (i + 1 < structs.length) {
-          for (let next = structs[i + 1]; i + 1 < structs.length && next.id.clock === clock + len; i++) {
+          for (let next = structs[i + 1]; i + 1 < structs.length && next.id.clock === clock + len && next.deleted; next = structs[++i + 1]) {
             len += next.length
           }
         }
@@ -210,7 +211,7 @@ export const readDeleteSet = (decoder, transaction, store) => {
           }
         }
       } else {
-        addToDeleteSet(unappliedDS, createID(client, state), len)
+        addToDeleteSet(unappliedDS, createID(client, clock), len)
       }
     }
   }
