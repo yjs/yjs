@@ -221,7 +221,7 @@ export class AbstractItem extends AbstractStruct {
       }
     }
     // adjust the length of parent
-    if (parentSub === null && this.countable) {
+    if (parentSub === null && this.countable && !this.deleted) {
       parent._length += length
     }
     addStruct(store, this)
@@ -393,8 +393,8 @@ export class AbstractItem extends AbstractStruct {
   mergeWith (right) {
     if (compareIDs(right.origin, this.lastId) && this.right === right && compareIDs(this.rightOrigin, right.rightOrigin)) {
       this.right = right.right
-      if (right.right !== null) {
-        right.right = this
+      if (this.right !== null) {
+        this.right.left = this
       }
       return true
     }
@@ -472,28 +472,27 @@ export class AbstractItem extends AbstractStruct {
    * @private
    */
   write (encoder, offset, encodingRef) {
+    const origin = offset > 0 ? createID(this.id.client, this.id.clock + offset - 1) : this.origin
+    const rightOrigin = this.rightOrigin
+    const parentSub = this.parentSub
     const info = (encodingRef & binary.BITS5) |
-      ((this.origin === null) ? 0 : binary.BIT8) | // origin is defined
-      ((this.rightOrigin === null) ? 0 : binary.BIT7) | // right origin is defined
-      ((this.parentSub === null) ? 0 : binary.BIT6) // parentSub is non-null
+      (origin === null ? 0 : binary.BIT8) | // origin is defined
+      (rightOrigin === null ? 0 : binary.BIT7) | // right origin is defined
+      (parentSub === null ? 0 : binary.BIT6) // parentSub is non-null
     encoding.writeUint8(encoder, info)
-    if (this.origin !== null) {
-      if (offset === 0) {
-        writeID(encoder, this.origin)
-      } else {
-        writeID(encoder, createID(this.id.client, this.id.clock + offset - 1))
-      }
+    if (origin !== null) {
+      writeID(encoder, origin)
     }
-    if (this.rightOrigin !== null) {
-      writeID(encoder, this.rightOrigin)
+    if (rightOrigin !== null) {
+      writeID(encoder, rightOrigin)
     }
-    if (this.origin === null && this.rightOrigin === null) {
+    if (origin === null && rightOrigin === null) {
       const parent = this.parent
       if (parent._item === null) {
         // parent type on y._map
         // find the correct key
         // @ts-ignore we know that y exists
-        const ykey = findRootTypeKey(this.parent)
+        const ykey = findRootTypeKey(parent)
         encoding.writeVarUint(encoder, 1) // write parentYKey
         encoding.writeVarString(encoder, ykey)
       } else {
@@ -501,8 +500,8 @@ export class AbstractItem extends AbstractStruct {
         // @ts-ignore _item is defined because parent is integrated
         writeID(encoder, parent._item.id)
       }
-      if (this.parentSub !== null) {
-        encoding.writeVarString(encoder, this.parentSub)
+      if (parentSub !== null) {
+        encoding.writeVarString(encoder, parentSub)
       }
     }
   }

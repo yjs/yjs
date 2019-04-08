@@ -226,6 +226,9 @@ const execStructReaders = (transaction, store, localState, structReaders, stack)
       }
     }
   }
+  if (stack.length > 0) {
+    store.pendingStructReaders.add({ stack, structReaders, missing: stack[stack.length - 1].id })
+  }
 }
 
 /**

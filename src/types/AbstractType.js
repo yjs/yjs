@@ -403,6 +403,7 @@ export const typeArrayInsertGenerics = (transaction, parent, index, content) => 
  * @param {number} length
  */
 export const typeArrayDelete = (transaction, parent, index, length) => {
+  if (length === 0) { return }
   let n = parent._start
   // compute the first item to be deleted
   for (; n !== null; n = n.right) {

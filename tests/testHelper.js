@@ -322,14 +322,19 @@ export const compareStructStores = (ss1, ss2) => {
       if (s1 instanceof AbstractItem) {
         if (
           !(s2 instanceof AbstractItem) ||
-          !compareItemIDs(s1.left, s2.left) ||
+          !((s1.left === null && s2.left === null) || (s1.left !== null && s2.left !== null && Y.compareIDs(s1.left.lastId, s2.left.lastId))) ||
           !compareItemIDs(s1.right, s2.right) ||
           !Y.compareIDs(s1.origin, s2.origin) ||
           !Y.compareIDs(s1.rightOrigin, s2.rightOrigin) ||
           s1.parentSub !== s2.parentSub
         ) {
-          t.fail('Items dont match')
+          return t.fail('Items dont match')
         }
+        // make sure that items are connected correctly
+        t.assert(s1.left === null || s1.left.right === s1)
+        t.assert(s1.right === null || s1.right.left === s1)
+        t.assert(s2.left === null || s2.left.right === s2)
+        t.assert(s2.right === null || s2.right.left === s2)
       }
     }
   }

@@ -189,13 +189,11 @@ export const readDeleteSet = (decoder, transaction, store) => {
          * @type {AbstractItem}
          */
         // @ts-ignore
-        let struct = structs[index++]
-        if (!struct.deleted) {
-          if (struct.id.clock < clock) {
-            struct = struct.splitAt(store, clock - struct.id.clock)
-            structs.splice(index, 0, struct)
-          }
-          struct.delete(transaction)
+        let struct = structs[index]
+        // split the first item if necessary
+        if (!struct.deleted && struct.id.clock < clock) {
+          structs.splice(index + 1, 0, struct.splitAt(store, clock - struct.id.clock))
+          index++ // increase we now want to use the next struct
         }
         while (index < structs.length) {
           // @ts-ignore

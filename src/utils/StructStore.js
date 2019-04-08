@@ -98,7 +98,7 @@ export const addStruct = (store, struct) => {
  */
 export const findIndexSS = (structs, clock) => {
   let left = 0
-  let right = structs.length
+  let right = structs.length - 1
   while (left <= right) {
     const midindex = math.floor((left + right) / 2)
     const mid = structs[midindex]
@@ -112,6 +112,8 @@ export const findIndexSS = (structs, clock) => {
       right = midindex - 1
     }
   }
+  // Always check state before looking for a struct in StructStore
+  // Therefore the case of not finding a struct is unexpected
   throw error.unexpectedCase()
 }
 
