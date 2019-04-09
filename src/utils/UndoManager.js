@@ -2,7 +2,8 @@
 
 import {
   isParentOf,
-  createID
+  createID,
+  transact
 } from '../internals.js'
 
 class ReverseOperation {
@@ -33,7 +34,7 @@ class ReverseOperation {
 function applyReverseOperation (y, scope, reverseBuffer) {
   let performedUndo = false
   let undoOp = null
-  y.transact(() => {
+  transact(y, () => {
     while (!performedUndo && reverseBuffer.length > 0) {
       undoOp = reverseBuffer.pop()
       // make sure that it is possible to iterate {from}-{to}
@@ -107,7 +108,6 @@ export class UndoManager {
     this._lastTransactionWasUndo = false
     const y = scope._y
     this.y = y
-    y._hasUndoManager = true
     let bindingInfos
     y.on('beforeTransaction', (y, transaction, remote) => {
       if (!remote) {

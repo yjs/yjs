@@ -193,7 +193,7 @@ export const readDeleteSet = (decoder, transaction, store) => {
         let struct = structs[index]
         // split the first item if necessary
         if (!struct.deleted && struct.id.clock < clock) {
-          structs.splice(index + 1, 0, struct.splitAt(store, clock - struct.id.clock))
+          structs.splice(index + 1, 0, struct.splitAt(clock - struct.id.clock))
           index++ // increase we now want to use the next struct
         }
         while (index < structs.length) {
@@ -202,7 +202,7 @@ export const readDeleteSet = (decoder, transaction, store) => {
           if (struct.id.clock < clock + len) {
             if (!struct.deleted) {
               if (clock + len < struct.id.clock + struct.length) {
-                structs.splice(index, 0, struct.splitAt(store, clock + len - struct.id.clock))
+                structs.splice(index, 0, struct.splitAt(clock + len - struct.id.clock))
               }
               struct.delete(transaction)
             }

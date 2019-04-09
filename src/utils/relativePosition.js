@@ -61,7 +61,26 @@ export class RelativePosition {
      */
     this.item = item
   }
+  toJSON () {
+    const json = {}
+    if (this.type !== null) {
+      json.type = this.type.toJSON()
+    }
+    if (this.tname !== null) {
+      json.tname = this.tname
+    }
+    if (this.item !== null) {
+      json.item = this.item.toJSON()
+    }
+    return json
+  }
 }
+
+/**
+ * @param {Object} json
+ * @return {RelativePosition}
+ */
+export const createRelativePositionFromJSON = json => new RelativePosition(json.type == null ? null : createID(json.type.client, json.type.clock), json.tname || null, json.item == null ? null : createID(json.item.client, json.item.clock))
 
 export class AbsolutePosition {
   /**
@@ -175,11 +194,11 @@ export const readRelativePosition = (decoder, y, store) => {
 
 /**
  * @param {RelativePosition} rpos
- * @param {StructStore} store
  * @param {Y} y
  * @return {AbsolutePosition|null}
  */
-export const toAbsolutePosition = (rpos, store, y) => {
+export const toAbsolutePosition = (rpos, y) => {
+  const store = y.store
   const rightID = rpos.item
   const typeID = rpos.type
   const tname = rpos.tname
@@ -193,7 +212,7 @@ export const toAbsolutePosition = (rpos, store, y) => {
     if (!(right instanceof AbstractItem)) {
       return null
     }
-    offset = right.deleted ? 0 : rightID.clock - right.id.clock
+    offset = right.deleted || !right.countable ? 0 : rightID.clock - right.id.clock
     let n = right.left
     while (n !== null) {
       if (!n.deleted && n.countable) {
@@ -251,9 +270,8 @@ export const toRelativePosition = (apos, y) => {
  * @param {RelativePosition|null} b
  */
 export const compareRelativePositions = (a, b) => a === b || (
-  a !== null && b !== null && (
+  a !== null && b !== null && a.tname === b.tname && (
     (a.item !== null && b.item !== null && compareIDs(a.item, b.item)) ||
-    (a.tname !== null && a.tname === b.tname) ||
     (a.type !== null && b.type !== null && compareIDs(a.type, b.type))
   )
 )

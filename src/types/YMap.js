@@ -11,6 +11,8 @@ import {
   typeMapHas,
   createMapIterator,
   YMapRefID,
+  callTypeObservers,
+  transact,
   Y, Transaction, ItemType, // eslint-disable-line
 } from '../internals.js'
 
@@ -75,7 +77,7 @@ export class YMap extends AbstractType {
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
   _callObserver (transaction, parentSubs) {
-    this._callEventHandler(transaction, new YMapEvent(this, transaction, parentSubs))
+    callTypeObservers(this, transaction, new YMapEvent(this, transaction, parentSubs))
   }
 
   /**
@@ -125,7 +127,7 @@ export class YMap extends AbstractType {
    */
   delete (key) {
     if (this._y !== null) {
-      this._y.transact(transaction => {
+      transact(this._y, transaction => {
         typeMapDelete(transaction, this, key)
       })
     } else {
@@ -142,7 +144,7 @@ export class YMap extends AbstractType {
    */
   set (key, value) {
     if (this._y !== null) {
-      this._y.transact(transaction => {
+      transact(this._y, transaction => {
         typeMapSet(transaction, this, key, value)
       })
     } else {

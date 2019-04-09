@@ -14,7 +14,6 @@ import * as encoding from 'lib0/encoding.js'
 
 export const structGCRefNumber = 0
 
-// TODO should have the same base class as Item
 export class GC extends AbstractStruct {
   /**
    * @param {ID} id

@@ -381,11 +381,8 @@ export const applyRandomTests = (tc, mods, iterations) => {
         testConnector.reconnectRandom()
       }
     } else if (prng.int31(gen, 0, 100) <= 1) {
-      // 1% chance to flush all & garbagecollect
-      // TODO: We do not gc all users as this does not work yet
-      // await garbageCollectUsers(t, users)
+      // 1% chance to flush all
       testConnector.flushAllMessages()
-      // await users[0].db.emptyGarbageCollector() // TODO: reintroduce GC tests!
     } else if (prng.int31(gen, 0, 100) <= 50) {
       // 50% chance to flush a random message
       testConnector.flushRandomMessage()

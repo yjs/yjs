@@ -1,26 +1,18 @@
-import { getStates } from './StructStore.js'
-
 import {
-  callEventHandlerListeners,
-  sortAndMergeDeleteSet,
   StructStore,
-  findIndexSS,
-  Transaction,
   AbstractType,
-  AbstractItem,
   YArray,
   YText,
   YMap,
   YXmlFragment,
-  ItemDeleted,
-  YEvent, GC, AbstractStruct // eslint-disable-line
+  transact,
+  Transaction, YEvent // eslint-disable-line
 } from '../internals.js'
 
 import { Observable } from 'lib0/observable.js'
 import * as error from 'lib0/error.js'
 import * as random from 'lib0/random.js'
 import * as map from 'lib0/map.js'
-import * as math from 'lib0/math.js'
 
 /**
  * A Yjs instance handles the state of shared data.
@@ -43,7 +35,6 @@ export class Y extends Observable {
      * @type {Transaction | null}
      */
     this._transaction = null
-    this._hasUndoManager = false
   }
   /**
    * @type {Transaction}
@@ -66,115 +57,7 @@ export class Y extends Observable {
    * @todo separate this into a separate function
    */
   transact (f) {
-    let initialCall = false
-    if (this._transaction === null) {
-      initialCall = true
-      this._transaction = new Transaction(this)
-      this.emit('beforeTransaction', [this, this._transaction])
-    }
-    try {
-      f(this._transaction)
-    } finally {
-      if (initialCall) {
-        const transaction = this._transaction
-        this._transaction = null
-        this.emit('beforeObserverCalls', [this, this._transaction])
-        // emit change events on changed types
-        transaction.changed.forEach((subs, itemtype) => {
-          itemtype._callObserver(transaction, subs)
-        })
-        transaction.changedParentTypes.forEach((events, type) => {
-          events = events
-            .filter(event =>
-              event.target._item === null || !event.target._item.deleted
-            )
-          events
-            .forEach(event => {
-              event.currentTarget = type
-            })
-          // we don't need to check for events.length
-          // because we know it has at least one element
-          callEventHandlerListeners(type._dEH, [events, transaction])
-        })
-        // only call afterTransaction listeners if anything changed
-        transaction.afterState = getStates(transaction.y.store)
-        // when all changes & events are processed, emit afterTransaction event
-        // transaction cleanup
-        const store = transaction.y.store
-        const ds = transaction.deleteSet
-        // replace deleted items with ItemDeleted / GC
-        sortAndMergeDeleteSet(ds)
-        this.emit('afterTransaction', [this, transaction])
-        for (const [client, deleteItems] of ds.clients) {
-          /**
-           * @type {Array<AbstractStruct>}
-           */
-          // @ts-ignore
-          const structs = store.clients.get(client)
-          for (let di = 0; di < deleteItems.length; di++) {
-            const deleteItem = deleteItems[di]
-            for (let si = findIndexSS(structs, deleteItem.clock); si < structs.length; si++) {
-              const struct = structs[si]
-              if (deleteItem.clock + deleteItem.len < struct.id.clock) {
-                break
-              }
-              if (struct.deleted && struct instanceof AbstractItem && (struct.constructor !== ItemDeleted || (struct.parent._item !== null && struct.parent._item.deleted))) {
-                // check if we can GC
-                struct.gc(transaction, store)
-              }
-            }
-          }
-        }
-        /**
-         * @param {Array<AbstractStruct>} structs
-         * @param {number} pos
-         */
-        const tryToMergeWithLeft = (structs, pos) => {
-          const left = structs[pos - 1]
-          const right = structs[pos]
-          if (left.deleted === right.deleted && left.constructor === right.constructor) {
-            if (left.mergeWith(right)) {
-              structs.splice(pos, 1)
-            }
-          }
-        }
-        // on all affected store.clients props, try to merge
-        for (const [client, clock] of transaction.afterState) {
-          const beforeClock = transaction.beforeState.get(client) || 0
-          if (beforeClock !== clock) {
-            /**
-             * @type {Array<AbstractStruct>}
-             */
-            // @ts-ignore
-            const structs = store.clients.get(client)
-            // we iterate from right to left so we can safely remove entries
-            const firstChangePos = math.max(findIndexSS(structs, beforeClock), 1)
-            for (let i = structs.length - 1; i >= firstChangePos; i--) {
-              tryToMergeWithLeft(structs, i)
-            }
-          }
-        }
-        // try to merge replacedItems
-        for (const replacedItem of transaction._replacedItems) {
-          const id = replacedItem.id
-          const client = id.client
-          const clock = id.clock
-          /**
-           * @type {Array<AbstractStruct>}
-           */
-          // @ts-ignore
-          const structs = store.clients.get(client)
-          const replacedStructPos = findIndexSS(structs, clock)
-          if (replacedStructPos + 1 < structs.length) {
-            tryToMergeWithLeft(structs, replacedStructPos + 1)
-          }
-          if (replacedStructPos > 0) {
-            tryToMergeWithLeft(structs, replacedStructPos)
-          }
-        }
-        this.emit('afterTransactionCleanup', [this, transaction])
-      }
-    }
+    transact(this, f)
   }
   /**
    * Define a shared data type.

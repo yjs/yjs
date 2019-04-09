@@ -175,7 +175,7 @@ export const getItemCleanStart = (store, id) => {
    */
   let struct = structs[index]
   if (struct.id.clock < id.clock && struct.constructor !== GC) {
-    struct = struct.splitAt(store, id.clock - struct.id.clock)
+    struct = struct.splitAt(id.clock - struct.id.clock)
     structs.splice(index + 1, 0, struct)
   }
   return struct
@@ -198,7 +198,7 @@ export const getItemCleanEnd = (store, id) => {
   const index = findIndexSS(structs, id.clock)
   const struct = structs[index]
   if (id.clock !== struct.id.clock + struct.length - 1 && struct.constructor !== GC) {
-    structs.splice(index + 1, 0, struct.splitAt(store, id.clock - struct.id.clock + 1))
+    structs.splice(index + 1, 0, struct.splitAt(id.clock - struct.id.clock + 1))
   }
   return struct
 }

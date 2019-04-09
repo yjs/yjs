@@ -56,8 +56,8 @@ export default [{
     format: 'cjs',
     sourcemap: true,
     paths: path => {
-      if (/^funlib\//.test(path)) {
-        return `lib0/dist${path.slice(6)}`
+      if (/^lib0\//.test(path)) {
+        return `lib0/dist/${path.slice(5)}`
       }
       return path
     }
@@ -85,9 +85,8 @@ export default [{
     }),
     commonjs()
   ]
-}
-/* {
-  input: ['./examples/codemirror.js', './examples/textarea.js', './examples/quill.js', './examples/dom.js', './examples/prosemirror.js'], // fs.readdirSync('./examples').filter(file => /(?<!\.(test|config))\.js$/.test(file)).map(file => './examples/' + file),
+}, {
+  input: ['./examples/codemirror.js', './examples/textarea.js'/*, './examples/quill.js', './examples/dom.js', './examples/prosemirror.js'*/], // fs.readdirSync('./examples').filter(file => /(?<!\.(test|config))\.js$/.test(file)).map(file => './examples/' + file),
   output: {
     dir: 'examples/build',
     format: 'esm',
@@ -103,4 +102,4 @@ export default [{
     commonjs(),
     ...minificationPlugins
   ]
-} */]
+}]

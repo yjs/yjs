@@ -15,7 +15,7 @@ import {
   readYXmlFragment,
   readYXmlHook,
   readYXmlText,
-  StructStore, Y, GC, ItemDeleted, Transaction, ID, AbstractType // eslint-disable-line
+  StructStore, Y, GC, Transaction, ID, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js' // eslint-disable-line
@@ -83,7 +83,7 @@ export class ItemType extends AbstractItem {
    * @param {ID | null} rightOrigin
    * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
-   * @return {AbstractItem} TODO, returns itemtype
+   * @return {ItemType}
    */
   copy (id, left, origin, right, rightOrigin, parent, parentSub) {
     return new ItemType(id, left, origin, right, rightOrigin, parent, parentSub, this.type._copy())

@@ -9,7 +9,7 @@ import 'codemirror/mode/javascript/javascript.js'
 
 const provider = new WebsocketProvider(conf.serverAddress)
 const ydocument = provider.get('codemirror')
-const ytext = ydocument.define('codemirror', Y.Text)
+const ytext = ydocument.getText('codemirror')
 
 const editor = new CodeMirror(document.querySelector('#container'), {
   mode: 'javascript',

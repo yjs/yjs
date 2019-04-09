@@ -24,27 +24,13 @@ export class ID {
     this.clock = clock
   }
   /**
-   * @return {ID}
+   * @deprecated
+   * @todo remove and adapt relative position implementation
    */
-  clone () {
-    return new ID(this.client, this.clock)
-  }
-  /**
-   * @param {ID} id
-   * @return {boolean}
-   */
-  equals (id) {
-    return id !== null && id.client === this.client && id.clock === this.clock
-  }
-  /**
-   * @param {ID} id
-   * @return {boolean}
-   */
-  lessThan (id) {
-    if (id.constructor === ID) {
-      return this.client < id.client || (this.client === id.client && this.clock < id.clock)
-    } else {
-      return false
+  toJSON () {
+    return {
+      client: this.client,
+      clock: this.clock
     }
   }
 }

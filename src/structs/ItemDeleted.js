@@ -2,8 +2,6 @@
  * @module structs
  */
 
-// TODO: ItemBinary should be able to merge with right (similar to other items). Or the other items (ItemJSON) should not be able to merge - extra byte + consistency
-
 import {
   AbstractItem,
   AbstractItemRef,
@@ -59,15 +57,14 @@ export class ItemDeleted extends AbstractItem {
     addToDeleteSet(transaction.deleteSet, this.id, this.length)
   }
   /**
-   * @param {StructStore} store
    * @param {number} diff
    */
-  splitAt (store, diff) {
+  splitAt (diff) {
     /**
      * @type {ItemDeleted}
      */
     // @ts-ignore
-    const right = splitItem(store, this, diff)
+    const right = splitItem(this, diff)
     right._len -= diff
     this._len = diff
     return right

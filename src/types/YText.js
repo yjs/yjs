@@ -13,6 +13,8 @@ import {
   getItemCleanStart,
   isVisible,
   YTextRefID,
+  callTypeObservers,
+  transact,
   Y, ItemType, AbstractItem, Snapshot, StructStore, Transaction // eslint-disable-line
 } from '../internals.js'
 
@@ -295,7 +297,6 @@ const deleteText = (transaction, parent, left, right, currentAttributes, length)
   return { left, right }
 }
 
-// TODO: In the quill delta representation we should also use the format {ops:[..]}
 /**
  * The Quill Delta format represents changes on a text document with
  * formatting information. For mor information visit {@link https://quilljs.com/docs/delta/|Quill Delta}
@@ -354,7 +355,7 @@ class YTextEvent extends YEvent {
     if (this._delta === null) {
       const y = this.target._y
       // @ts-ignore
-      y.transact(transaction => {
+      transact(y, transaction => {
         /**
          * @type {Array<{delete:number|undefined,retain:number|undefined,insert:string|undefined,attributes:Object<string,any>}>}
          */
@@ -586,7 +587,7 @@ export class YText extends AbstractType {
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
   _callObserver (transaction, parentSubs) {
-    this._callEventHandler(transaction, new YTextEvent(this, transaction))
+    callTypeObservers(this, transaction, new YTextEvent(this, transaction))
   }
 
   toDom () {
@@ -657,7 +658,7 @@ export class YText extends AbstractType {
    */
   applyDelta (delta) {
     if (this._y !== null) {
-      this._y.transact(transaction => {
+      transact(this._y, transaction => {
         /**
          * @type {{left:AbstractItem|null,right:AbstractItem|null}}
          */
@@ -772,7 +773,7 @@ export class YText extends AbstractType {
     }
     const y = this._y
     if (y !== null) {
-      y.transact(transaction => {
+      transact(y, transaction => {
         const {left, right, currentAttributes} = findPosition(transaction, y.store, this, index)
         insertText(transaction, this, left, right, currentAttributes, text, attributes)
       })
@@ -795,7 +796,7 @@ export class YText extends AbstractType {
     }
     const y = this._y
     if (y !== null) {
-      y.transact(transaction => {
+      transact(y, transaction => {
         const { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
         insertText(transaction, this, left, right, currentAttributes, embed, attributes)
       })
@@ -816,7 +817,7 @@ export class YText extends AbstractType {
     }
     const y = this._y
     if (y !== null) {
-      y.transact(transaction => {
+      transact(y, transaction => {
         const { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
         deleteText(transaction, this, left, right, currentAttributes, length)
       })
@@ -836,7 +837,7 @@ export class YText extends AbstractType {
   format (index, length, attributes) {
     const y = this._y
     if (y !== null) {
-      y.transact(transaction => {
+      transact(y, transaction => {
         let { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
         if (right === null) {
           return

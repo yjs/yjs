@@ -13,6 +13,8 @@ import {
   typeArrayDelete,
   typeArrayMap,
   YArrayRefID,
+  callTypeObservers,
+  transact,
   Y, Transaction, ItemType, // eslint-disable-line
 } from '../internals.js'
 
@@ -75,7 +77,7 @@ export class YArray extends AbstractType {
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
   _callObserver (transaction, parentSubs) {
-    this._callEventHandler(transaction, new YArrayEvent(this, transaction))
+    callTypeObservers(this, transaction, new YArrayEvent(this, transaction))
   }
 
   /**
@@ -141,7 +143,7 @@ export class YArray extends AbstractType {
    */
   delete (index, length = 1) {
     if (this._y !== null) {
-      this._y.transact(transaction => {
+      transact(this._y, transaction => {
         typeArrayDelete(transaction, this, index, length)
       })
     } else {
@@ -168,7 +170,7 @@ export class YArray extends AbstractType {
    */
   insert (index, content) {
     if (this._y !== null) {
-      this._y.transact(transaction => {
+      transact(this._y, transaction => {
         typeArrayInsertGenerics(transaction, this, index, content)
       })
     } else {

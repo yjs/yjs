@@ -15,6 +15,8 @@ export {
   compareRelativePositions,
   writeRelativePosition,
   readRelativePosition,
+  createRelativePositionFromJSON,
+  toAbsolutePosition,
   AbsolutePosition,
   RelativePosition,
   ID,

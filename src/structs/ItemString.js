@@ -15,7 +15,7 @@ import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 
 export const structStringRefNumber = 6
-// TODO: we can probably try to omit rightOrigin. We can just use .right
+
 export class ItemString extends AbstractItem {
   /**
    * @param {ID} id
@@ -53,16 +53,15 @@ export class ItemString extends AbstractItem {
     return this.string.length
   }
   /**
-   * @param {StructStore} store
    * @param {number} diff
    * @return {ItemString}
    */
-  splitAt (store, diff) {
+  splitAt (diff) {
     /**
      * @type {ItemString}
      */
     // @ts-ignore
-    const right = splitItem(store, this, diff)
+    const right = splitItem(this, diff)
     right.string = this.string.slice(diff)
     this.string = this.string.slice(0, diff)
     return right

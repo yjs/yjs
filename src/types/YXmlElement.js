@@ -14,6 +14,8 @@ import {
   typeMapSet,
   typeMapDelete,
   YXmlElementRefID,
+  callTypeObservers,
+  transact,
   Y, Transaction, ItemType, YXmlText, YXmlHook, Snapshot // eslint-disable-line
 } from '../internals.js'
 
@@ -192,7 +194,7 @@ export class YXmlFragment extends AbstractType {
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
   _callObserver (transaction, parentSubs) {
-    this._callEventHandler(transaction, new YXmlEvent(this, parentSubs, transaction))
+    callTypeObservers(this, transaction, new YXmlEvent(this, parentSubs, transaction))
   }
 
   toString () {
@@ -329,7 +331,7 @@ export class YXmlElement extends YXmlFragment {
    */
   removeAttribute (attributeName) {
     if (this._y !== null) {
-      this._y.transact(transaction => {
+      transact(this._y, transaction => {
         typeMapDelete(transaction, this, attributeName)
       })
     } else {
@@ -348,7 +350,7 @@ export class YXmlElement extends YXmlFragment {
    */
   setAttribute (attributeName, attributeValue) {
     if (this._y !== null) {
-      this._y.transact(transaction => {
+      transact(this._y, transaction => {
         typeMapSet(transaction, this, attributeName, attributeValue)
       })
     } else {
@@ -395,7 +397,7 @@ export class YXmlElement extends YXmlFragment {
    */
   insert (index, content) {
     if (this._y !== null) {
-      this._y.transact(transaction => {
+      transact(this._y, transaction => {
         typeArrayInsertGenerics(transaction, this, index, content)
       })
     } else {
@@ -412,7 +414,7 @@ export class YXmlElement extends YXmlFragment {
    */
   delete (index, length = 1) {
     if (this._y !== null) {
-      this._y.transact(transaction => {
+      transact(this._y, transaction => {
         typeArrayDelete(transaction, this, index, length)
       })
     } else {

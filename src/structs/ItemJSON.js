@@ -54,15 +54,14 @@ export class ItemJSON extends AbstractItem {
     return this.content
   }
   /**
-   * @param {StructStore} store
    * @param {number} diff
    */
-  splitAt (store, diff) {
+  splitAt (diff) {
     /**
      * @type {ItemJSON}
      */
     // @ts-ignore
-    const right = splitItem(store, this, diff)
+    const right = splitItem(this, diff)
     right.content = this.content.splice(diff)
     return right
   }

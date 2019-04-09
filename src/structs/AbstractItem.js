@@ -29,14 +29,11 @@ import * as binary from 'lib0/binary.js'
 
 /**
  * Split leftItem into two items
- * @param {StructStore} store
  * @param {AbstractItem} leftItem
  * @param {number} diff
  * @return {AbstractItem}
- *
- * @todo remove store param0
  */
-export const splitItem = (store, leftItem, diff) => {
+export const splitItem = (leftItem, diff) => {
   const id = leftItem.id
   // create rightItem
   const rightItem = leftItem.copy(
@@ -182,7 +179,7 @@ export class AbstractItem extends AbstractStruct {
         if (o.id.client < id.client) {
           this.left = o
           conflictingItems.clear()
-        } // TODO: verify break else?
+        }
       } else if (o.origin !== null && itemsBeforeOrigin.has(getItem(store, o.origin))) {
         // case 2
         if (o.origin === null || !conflictingItems.has(getItem(store, o.origin))) {
@@ -192,9 +189,6 @@ export class AbstractItem extends AbstractStruct {
       } else {
         break
       }
-      // TODO: experiment with rightOrigin.
-      // Then you could basically omit conflictingItems!
-      // Note: you probably can't use right_origin in every case.. only when setting _left
       o = o.right
     }
     // reconnect left/right + update parent map/start if necessary
@@ -340,8 +334,6 @@ export class AbstractItem extends AbstractStruct {
 
   /**
    * Computes the last content address of this Item.
-   * TODO: do still need this?
-   * @private
    */
   get lastId () {
     return createID(this.id.client, this.id.clock + this.length - 1)
@@ -378,11 +370,10 @@ export class AbstractItem extends AbstractStruct {
    *
    * This method should only be cally by StructStore.
    *
-   * @param {StructStore} store
    * @param {number} diff
    * @return {AbstractItem}
    */
-  splitAt (store, diff) {
+  splitAt (diff) {
     throw new Error('unimplemented')
   }
 

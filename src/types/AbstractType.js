@@ -23,6 +23,29 @@ import * as error from 'lib0/error.js'
 import * as encoding from 'lib0/encoding.js' // eslint-disable-line
 
 /**
+ * Call event listeners with an event. This will also add an event to all
+ * parents (for `.observeDeep` handlers).
+ * @private
+ *
+ * @template EventType
+ * @param {AbstractType<EventType>} type
+ * @param {Transaction} transaction
+ * @param {EventType} event
+ */
+export const callTypeObservers = (type, transaction, event) => {
+  callEventHandlerListeners(type._eH, [event, transaction])
+  const changedParentTypes = transaction.changedParentTypes
+  while (true) {
+    // @ts-ignore
+    map.setIfUndefined(changedParentTypes, type, () => []).push(event)
+    if (type._item === null) {
+      break
+    }
+    type = type._item.parent
+  }
+}
+
+/**
  * @template EventType
  * Abstract Yjs Type class
  */
@@ -100,42 +123,14 @@ export class AbstractType {
   }
 
   /**
-   * Creates YEvent and calls _callEventHandler.
+   * Creates YEvent and calls all type observers.
    * Must be implemented by each type.
-   * @todo Rename to _createEvent
    * @private
    *
    * @param {Transaction} transaction
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
-  _callObserver (transaction, parentSubs) {
-    throw error.methodUnimplemented()
-  }
-
-  /**
-   * Call event listeners with an event. This will also add an event to all
-   * parents (for `.observeDeep` handlers).
-   * @private
-   *
-   * @param {Transaction} transaction
-   * @param {any} event
-   */
-  _callEventHandler (transaction, event) {
-    callEventHandlerListeners(this._eH, [event, transaction])
-    const changedParentTypes = transaction.changedParentTypes
-    /**
-     * @type {AbstractType<EventType>}
-     */
-    let type = this
-    while (true) {
-      // @ts-ignore
-      map.setIfUndefined(changedParentTypes, type, () => []).push(event)
-      if (type._item === null) {
-        break
-      }
-      type = type._item.parent
-    }
-  }
+  _callObserver (transaction, parentSubs) { /* skip if no type is specified */ }
 
   /**
    * Observe all events that are created on this type.
