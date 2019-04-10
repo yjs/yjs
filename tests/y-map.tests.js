@@ -117,7 +117,7 @@ export const testGetAndSetOfMapPropertyWithConflict = tc => {
   testConnector.flushAllMessages()
   for (let user of users) {
     var u = user.getMap('map')
-    t.compare(u.get('stuff'), 'c0')
+    t.compare(u.get('stuff'), 'c1')
   }
   compare(users)
 }
@@ -128,8 +128,8 @@ export const testGetAndSetOfMapPropertyWithConflict = tc => {
 export const testGetAndSetAndDeleteOfMapProperty = tc => {
   const { testConnector, users, map0, map1 } = init(tc, { users: 3 })
   map0.set('stuff', 'c0')
-  map0.delete('stuff')
   map1.set('stuff', 'c1')
+  map1.delete('stuff')
   testConnector.flushAllMessages()
   for (let user of users) {
     var u = user.getMap('map')
@@ -150,7 +150,7 @@ export const testGetAndSetOfMapPropertyWithThreeConflicts = tc => {
   testConnector.flushAllMessages()
   for (let user of users) {
     var u = user.getMap('map')
-    t.compare(u.get('stuff'), 'c0')
+    t.compare(u.get('stuff'), 'c3')
   }
   compare(users)
 }
@@ -166,10 +166,10 @@ export const testGetAndSetAndDeleteOfMapPropertyWithThreeConflicts = tc => {
   map2.set('stuff', 'c3')
   testConnector.flushAllMessages()
   map0.set('stuff', 'deleteme')
-  map0.delete('stuff')
   map1.set('stuff', 'c1')
   map2.set('stuff', 'c2')
   map3.set('stuff', 'c3')
+  map3.delete('stuff')
   testConnector.flushAllMessages()
   for (let user of users) {
     var u = user.getMap('map')
@@ -348,7 +348,7 @@ const mapTransactions = [
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYmapTests10 = tc => {
-  applyRandomTests(tc, mapTransactions, 10)
+  applyRandomTests(tc, mapTransactions, 4)
 }
 
 /**

@@ -21,18 +21,6 @@ import {
 import * as encoding from 'lib0/encoding.js' // eslint-disable-line
 import * as decoding from 'lib0/decoding.js'
 
-/**
- * @param {Transaction} transaction
- * @param {StructStore} store
- * @param {AbstractItem | null} item
- */
-const gcChildren = (transaction, store, item) => {
-  while (item !== null) {
-    item.gc(transaction, store)
-    item = item.right
-  }
-}
-
 export const structTypeRefNumber = 7
 
 /**
@@ -113,23 +101,7 @@ export class ItemType extends AbstractItem {
     super.delete(transaction)
     transaction.changed.delete(this.type)
     transaction.changedParentTypes.delete(this.type)
-    // delete map types
-    for (let value of this.type._map.values()) {
-      if (!value.deleted) {
-        value.delete(transaction)
-      }
-    }
-    // delete array types
-    let t = this.type._start
-    while (t !== null) {
-      if (!t.deleted) {
-        t.delete(transaction)
-      }
-      t = t.right
-    }
-    if (gcChildren) {
-      this.gcChildren(transaction, transaction.y.store)
-    }
+    this.gcChildren(transaction, transaction.y.store)
   }
 
   /**
@@ -137,10 +109,18 @@ export class ItemType extends AbstractItem {
    * @param {StructStore} store
    */
   gcChildren (transaction, store) {
-    gcChildren(transaction, store, this.type._start)
+    let item = this.type._start
+    while (item !== null) {
+      item.gc(transaction, store)
+      item = item.right
+    }
     this.type._start = null
     this.type._map.forEach(item => {
-      gcChildren(transaction, store, item)
+      while (item !== null) {
+        item.gc(transaction, store)
+        // @ts-ignore
+        item = item.left
+      }
     })
     this._map = new Map()
   }

@@ -190,6 +190,10 @@ export const transact = (y, f) => {
         if (left.deleted === right.deleted && left.constructor === right.constructor) {
           if (left.mergeWith(right)) {
             structs.splice(pos, 1)
+            if (right instanceof AbstractItem && right.parentSub !== null && right.parent._map.get(right.parentSub) === right) {
+              // @ts-ignore we already did a constructor check above
+              right.parent._map.set(right.parentSub, left)
+            }
           }
         }
       }
@@ -210,6 +214,7 @@ export const transact = (y, f) => {
         }
       }
       // try to merge replacedItems
+      // TODO: replacedItems should hold ids
       for (const replacedItem of transaction._replacedItems) {
         const id = replacedItem.id
         const client = id.client

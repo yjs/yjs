@@ -140,6 +140,9 @@ export class AbstractItem extends AbstractStruct {
       o = this.left.right
     } else if (parentSub !== null) {
       o = parent._map.get(parentSub) || null
+      while (o !== null && o.left !== null) {
+        o = o.left
+      }
     } else {
       o = parent._start
     }
@@ -180,39 +183,39 @@ export class AbstractItem extends AbstractStruct {
       const right = this.left.right
       this.right = right
       this.left.right = this
-      if (right !== null) {
-        right.left = this
-      }
     } else {
       let r
       if (parentSub !== null) {
-        const pmap = parent._map
-        r = pmap.get(parentSub) || null
-        pmap.set(parentSub, this)
+        r = parent._map.get(parentSub) || null
+        while (r !== null && r.left !== null) {
+          r = r.left
+        }
       } else {
         r = parent._start
         parent._start = this
       }
       this.right = r
-      if (r !== null) {
-        r.left = this
+    }
+    if (this.right !== null) {
+      this.right.left = this
+    } else if (parentSub !== null) {
+      // set as current parent value if right === null and this is parentSub
+      parent._map.set(parentSub, this)
+      if (this.left !== null) {
+        // this is the current attribute value of parent. delete right
+        this.left.delete(transaction)
       }
     }
-    // adjust the length of parent
+    // adjust length of parent
     if (parentSub === null && this.countable && !this.deleted) {
       parent._length += length
     }
     addStruct(store, this)
-    if (parent !== null) {
-      maplib.setIfUndefined(transaction.changed, parent, set.create).add(parentSub)
-    }
+    maplib.setIfUndefined(transaction.changed, parent, set.create).add(parentSub)
     // @ts-ignore
-    if ((parent._item !== null && parent._item.deleted) || (this.left !== null && parentSub !== null)) {
+    if ((parent._item !== null && parent._item.deleted) || (this.right !== null && parentSub !== null)) {
       // delete if parent is deleted or if this is not the current attribute value of parent
       this.delete(transaction)
-    } else if (parentSub !== null && this.left === null && this.right !== null) {
-      // this is the current attribute value of parent. delete right
-      this.right.delete(transaction)
     }
   }
 
@@ -281,9 +284,9 @@ export class AbstractItem extends AbstractStruct {
       left = this.left
       right = this
     } else {
-      // Is a map item. Insert at the start
-      left = null
-      right = parent.type._map.get(this.parentSub)
+      // Is a map item. Insert as current value
+      left = parent.type._map.get(this.parentSub)
+      right = null
     }
     // make sure that parent is redone
     if (parent._deleted === true && parent.redone === null) {
@@ -308,7 +311,7 @@ export class AbstractItem extends AbstractStruct {
         if (right.redone !== null && right.redone.parent === parent) {
           right = right.redone
         }
-        right = right._right
+        right = right.right
       }
     }
     this.redone = this.copy(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, this.parentSub)
@@ -411,18 +414,15 @@ export class AbstractItem extends AbstractStruct {
       r = new GC(this.id, this.length)
     } else {
       r = new ItemDeleted(this.id, this.left, this.origin, this.right, this.rightOrigin, this.parent, this.parentSub, this.length)
-      if (r.left !== null) {
-        r.left.right = r
-      }
       if (r.right !== null) {
         r.right.left = r
+      } else if (r.parentSub !== null) {
+        r.parent._map.set(r.parentSub, r)
       }
-      if (r.left === null) {
-        if (r.parentSub === null) {
-          r.parent._start = r
-        } else {
-          r.parent._map.set(r.parentSub, r)
-        }
+      if (r.left !== null) {
+        r.left.right = r
+      } else if (r.parentSub === null) {
+        r.parent._start = r
       }
     }
     replaceStruct(store, this, r)

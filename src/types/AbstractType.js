@@ -447,9 +447,9 @@ export const typeMapDelete = (transaction, parent, key) => {
  * @param {Object|number|Array<any>|string|ArrayBuffer|AbstractType<any>} value
  */
 export const typeMapSet = (transaction, parent, key, value) => {
-  const right = parent._map.get(key) || null
+  const left = parent._map.get(key) || null
   if (value == null) {
-    new ItemJSON(nextID(transaction), null, null, right, right === null ? null : right.id, parent, key, [value]).integrate(transaction)
+    new ItemJSON(nextID(transaction), left, left === null ? null : left.lastId, null, null, parent, key, [value]).integrate(transaction)
     return
   }
   switch (value.constructor) {
@@ -457,14 +457,14 @@ export const typeMapSet = (transaction, parent, key, value) => {
     case Object:
     case Array:
     case String:
-      new ItemJSON(nextID(transaction), null, null, right, right === null ? null : right.id, parent, key, [value]).integrate(transaction)
+      new ItemJSON(nextID(transaction), left, left === null ? null : left.lastId, null, null, parent, key, [value]).integrate(transaction)
       break
     case ArrayBuffer:
-      new ItemBinary(nextID(transaction), null, null, right, right === null ? null : right.id, parent, key, value).integrate(transaction)
+      new ItemBinary(nextID(transaction), left, left === null ? null : left.lastId, null, null, parent, key, value).integrate(transaction)
       break
     default:
       if (value instanceof AbstractType) {
-        new ItemType(nextID(transaction), null, null, right, right === null ? null : right.id, parent, key, value).integrate(transaction)
+        new ItemType(nextID(transaction), left, left === null ? null : left.lastId, null, null, parent, key, value).integrate(transaction)
       } else {
         throw new Error('Unexpected content type')
       }
@@ -492,7 +492,7 @@ export const typeMapGetAll = (parent) => {
   let res = {}
   for (const [key, value] of parent._map) {
     if (!value.deleted) {
-      res[key] = value.getContent()[0]
+      res[key] = value.getContent()[value.length - 1]
     }
   }
   return res
@@ -517,9 +517,9 @@ export const typeMapHas = (parent, key) => {
 export const typeMapGetSnapshot = (parent, key, snapshot) => {
   let v = parent._map.get(key) || null
   while (v !== null && (!snapshot.sm.has(v.id.client) || v.id.clock >= (snapshot.sm.get(v.id.client) || 0))) {
-    v = v.right
+    v = v.left
   }
-  return v !== null && isVisible(v, snapshot) ? v.getContent()[0] : undefined
+  return v !== null && isVisible(v, snapshot) ? v.getContent()[v.length - 1] : undefined
 }
 
 /**
