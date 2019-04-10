@@ -381,7 +381,7 @@ export const typeArrayInsertGenerics = (transaction, parent, index, content) => 
       if (index <= n.length) {
         if (index < n.length) {
           // insert in-between
-          getItemCleanStart(transaction.y.store, createID(n.id.client, n.id.clock + index))
+          getItemCleanStart(transaction, transaction.y.store, createID(n.id.client, n.id.clock + index))
         }
         break
       }
@@ -405,7 +405,7 @@ export const typeArrayDelete = (transaction, parent, index, length) => {
     if (!n.deleted && n.countable) {
       if (index <= n.length) {
         if (index < n.length && index > 0) {
-          n = getItemCleanStart(transaction.y.store, createID(n.id.client, n.id.clock + index))
+          n = getItemCleanStart(transaction, transaction.y.store, createID(n.id.client, n.id.clock + index))
         }
         break
       }
@@ -416,7 +416,7 @@ export const typeArrayDelete = (transaction, parent, index, length) => {
   while (length > 0 && n !== null) {
     if (!n.deleted) {
       if (length < n.length) {
-        getItemCleanStart(transaction.y.store, createID(n.id.client, n.id.clock + length))
+        getItemCleanStart(transaction, transaction.y.store, createID(n.id.client, n.id.clock + length))
       }
       n.delete(transaction)
       length -= n.length

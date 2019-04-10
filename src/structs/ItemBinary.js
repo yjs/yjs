@@ -7,7 +7,7 @@ import {
   AbstractItemRef,
   computeItemParams,
   GC,
-  StructStore, Y, AbstractType, ID, YEvent // eslint-disable-line
+  StructStore, Transaction, AbstractType, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -69,13 +69,13 @@ export class ItemBinaryRef extends AbstractItemRef {
     this.content = decoding.readPayload(decoder)
   }
   /**
-   * @param {Y} y
+   * @param {Transaction} transaction
    * @param {StructStore} store
    * @param {number} offset
    * @return {ItemBinary|GC}
    */
-  toStruct (y, store, offset) {
-    const { left, right, parent, parentSub } = computeItemParams(y, store, this.left, this.right, this.parent, this.parentSub, this.parentYKey)
+  toStruct (transaction, store, offset) {
+    const { left, right, parent, parentSub } = computeItemParams(transaction, store, this.left, this.right, this.parent, this.parentSub, this.parentYKey)
     return parent === null
       ? new GC(this.id, this.length)
       : new ItemBinary(

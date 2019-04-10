@@ -29,11 +29,12 @@ import * as binary from 'lib0/binary.js'
 
 /**
  * Split leftItem into two items
+ * @param {Transaction} transaction
  * @param {AbstractItem} leftItem
  * @param {number} diff
  * @return {AbstractItem}
  */
-export const splitItem = (leftItem, diff) => {
+export const splitItem = (transaction, leftItem, diff) => {
   const id = leftItem.id
   // create rightItem
   const rightItem = leftItem.copy(
@@ -54,6 +55,8 @@ export const splitItem = (leftItem, diff) => {
   if (rightItem.right !== null) {
     rightItem.right.left = rightItem
   }
+  // right is more specific.
+  transaction._replacedItems.add(rightItem)
   return rightItem
 }
 
@@ -357,10 +360,11 @@ export class AbstractItem extends AbstractStruct {
    *
    * This method should only be cally by StructStore.
    *
+   * @param {Transaction} transaction
    * @param {number} diff
    * @return {AbstractItem}
    */
-  splitAt (diff) {
+  splitAt (transaction, diff) {
     throw new Error('unimplemented')
   }
 
@@ -549,7 +553,7 @@ export const changeItemRefOffset = (item, offset) => {
  * Outsourcing some of the logic of computing the item params from a received struct.
  * If parent === null, it is expected to gc the read struct. Otherwise apply it.
  *
- * @param {Y} y
+ * @param {Transaction} transaction
  * @param {StructStore} store
  * @param {ID|null} leftid
  * @param {ID|null} rightid
@@ -558,13 +562,9 @@ export const changeItemRefOffset = (item, offset) => {
  * @param {string|null} parentYKey
  * @return {{left:AbstractItem?,right:AbstractItem?,parent:AbstractType<YEvent>?,parentSub:string?}}
  */
-export const computeItemParams = (y, store, leftid, rightid, parentid, parentSub, parentYKey) => {
-  const left = leftid === null ? null : getItemCleanEnd(store, leftid)
-  if (left !== null && left.constructor !== GC && left.right !== null && left.right.id.client === left.id.client && left.right.id.clock === left.id.clock + left.length) {
-    // we split a merged op, we may need to merge it again after the transaction
-    y.transaction._replacedItems.add(left)
-  }
-  const right = rightid === null ? null : getItemCleanStart(store, rightid)
+export const computeItemParams = (transaction, store, leftid, rightid, parentid, parentSub, parentYKey) => {
+  const left = leftid === null ? null : getItemCleanEnd(transaction, store, leftid)
+  const right = rightid === null ? null : getItemCleanStart(transaction, store, rightid)
   let parent = null
   if (parentid !== null) {
     const parentItem = getItemType(store, parentid)
@@ -576,7 +576,7 @@ export const computeItemParams = (y, store, leftid, rightid, parentid, parentSub
         parent = parentItem.type
     }
   } else if (parentYKey !== null) {
-    parent = y.get(parentYKey)
+    parent = transaction.y.get(parentYKey)
   } else if (left !== null) {
     if (left.constructor !== GC) {
       parent = left.parent

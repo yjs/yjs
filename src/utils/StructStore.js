@@ -2,7 +2,7 @@
 
 import {
   GC,
-  AbstractRef, ID, ItemType, AbstractItem, AbstractStruct // eslint-disable-line
+  Transaction, AbstractRef, ID, ItemType, AbstractItem, AbstractStruct // eslint-disable-line
 } from '../internals.js'
 
 import * as math from 'lib0/math.js'
@@ -167,13 +167,15 @@ export const getItemType = (store, id) => find(store, id)
 
 /**
  * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
+ *
+ * @param {Transaction} transaction
  * @param {StructStore} store
  * @param {ID} id
  * @return {AbstractItem}
  *
  * @private
  */
-export const getItemCleanStart = (store, id) => {
+export const getItemCleanStart = (transaction, store, id) => {
   /**
    * @type {Array<AbstractItem>}
    */
@@ -185,7 +187,7 @@ export const getItemCleanStart = (store, id) => {
    */
   let struct = structs[index]
   if (struct.id.clock < id.clock && struct.constructor !== GC) {
-    struct = struct.splitAt(id.clock - struct.id.clock)
+    struct = struct.splitAt(transaction, id.clock - struct.id.clock)
     structs.splice(index + 1, 0, struct)
   }
   return struct
@@ -193,13 +195,15 @@ export const getItemCleanStart = (store, id) => {
 
 /**
  * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
+ *
+ * @param {Transaction} transaction
  * @param {StructStore} store
  * @param {ID} id
  * @return {AbstractItem}
  *
  * @private
  */
-export const getItemCleanEnd = (store, id) => {
+export const getItemCleanEnd = (transaction, store, id) => {
   /**
    * @type {Array<AbstractItem>}
    */
@@ -208,7 +212,7 @@ export const getItemCleanEnd = (store, id) => {
   const index = findIndexSS(structs, id.clock)
   const struct = structs[index]
   if (id.clock !== struct.id.clock + struct.length - 1 && struct.constructor !== GC) {
-    structs.splice(index + 1, 0, struct.splitAt(id.clock - struct.id.clock + 1))
+    structs.splice(index + 1, 0, struct.splitAt(transaction, id.clock - struct.id.clock + 1))
   }
   return struct
 }

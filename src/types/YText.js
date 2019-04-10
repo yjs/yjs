@@ -39,7 +39,7 @@ const findNextPosition = (transaction, store, currentAttributes, left, right, co
         if (!right.deleted) {
           if (count < right.length) {
             // split right
-            getItemCleanStart(store, createID(right.id.client, right.id.clock + count))
+            getItemCleanStart(transaction, store, createID(right.id.client, right.id.clock + count))
           }
           count -= right.length
         }
@@ -251,7 +251,7 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
         case ItemEmbed:
         case ItemString:
           if (length < right.length) {
-            getItemCleanStart(transaction.y.store, createID(right.id.client, right.id.clock + length))
+            getItemCleanStart(transaction, transaction.y.store, createID(right.id.client, right.id.clock + length))
           }
           length -= right.length
           break
@@ -284,7 +284,7 @@ const deleteText = (transaction, parent, left, right, currentAttributes, length)
         case ItemEmbed:
         case ItemString:
           if (length < right.length) {
-            getItemCleanStart(transaction.y.store, createID(right.id.client, right.id.clock + length))
+            getItemCleanStart(transaction, transaction.y.store, createID(right.id.client, right.id.clock + length))
           }
           length -= right.length
           right.delete(transaction)

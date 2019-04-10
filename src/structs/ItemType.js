@@ -150,13 +150,13 @@ export class ItemTypeRef extends AbstractItemRef {
     this.type = typeRefs[typeRef](decoder)
   }
   /**
-   * @param {Y} y
+   * @param {Transaction} transaction
    * @param {StructStore} store
    * @param {number} offset
    * @return {ItemType|GC}
    */
-  toStruct (y, store, offset) {
-    const { left, right, parent, parentSub } = computeItemParams(y, store, this.left, this.right, this.parent, this.parentSub, this.parentYKey)
+  toStruct (transaction, store, offset) {
+    const { left, right, parent, parentSub } = computeItemParams(transaction, store, this.left, this.right, this.parent, this.parentSub, this.parentYKey)
     return parent === null
       ? new GC(this.id, this.length)
       : new ItemType(

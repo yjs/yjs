@@ -348,7 +348,7 @@ const mapTransactions = [
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYmapTests10 = tc => {
-  applyRandomTests(tc, mapTransactions, 4)
+  applyRandomTests(tc, mapTransactions, 10)
 }
 
 /**

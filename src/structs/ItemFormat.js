@@ -7,7 +7,7 @@ import {
   AbstractItemRef,
   computeItemParams,
   GC,
-  Y, StructStore, ID, AbstractType // eslint-disable-line
+  Transaction, StructStore, ID, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -73,13 +73,13 @@ export class ItemFormatRef extends AbstractItemRef {
     this.value = JSON.parse(decoding.readVarString(decoder))
   }
   /**
-   * @param {Y} y
+   * @param {Transaction} transaction
    * @param {StructStore} store
    * @param {number} offset
    * @return {ItemFormat|GC}
    */
-  toStruct (y, store, offset) {
-    const { left, right, parent, parentSub } = computeItemParams(y, store, this.left, this.right, this.parent, this.parentSub, this.parentYKey)
+  toStruct (transaction, store, offset) {
+    const { left, right, parent, parentSub } = computeItemParams(transaction, store, this.left, this.right, this.parent, this.parentSub, this.parentYKey)
     return parent === null
       ? new GC(this.id, this.length)
       : new ItemFormat(

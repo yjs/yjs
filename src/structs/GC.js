@@ -82,12 +82,12 @@ export class GCRef extends AbstractRef {
     ]
   }
   /**
-   * @param {Y} y
+   * @param {Transaction} transaction
    * @param {StructStore} store
    * @param {number} offset
    * @return {GC}
    */
-  toStruct (y, store, offset) {
+  toStruct (transaction, store, offset) {
     if (offset > 0) {
       // @ts-ignore
       this.id = createID(this.id.client, this.id.clock + offset)

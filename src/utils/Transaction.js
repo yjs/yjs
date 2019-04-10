@@ -170,7 +170,7 @@ export const transact = (y, f) => {
           const deleteItem = deleteItems[di]
           for (let si = findIndexSS(structs, deleteItem.clock); si < structs.length; si++) {
             const struct = structs[si]
-            if (deleteItem.clock + deleteItem.len < struct.id.clock) {
+            if (deleteItem.clock + deleteItem.len <= struct.id.clock) {
               break
             }
             if (struct.deleted && struct instanceof AbstractItem && (struct.constructor !== ItemDeleted || (struct.parent._item !== null && struct.parent._item.deleted))) {

@@ -76,12 +76,12 @@ export class AbstractRef {
     return this._missing
   }
   /**
-   * @param {Y} y
+   * @param {Transaction} transaction
    * @param {StructStore} store
    * @param {number} offset
    * @return {AbstractStruct}
    */
-  toStruct (y, store, offset) {
+  toStruct (transaction, store, offset) {
     throw error.methodUnimplemented()
   }
   /**

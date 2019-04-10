@@ -207,7 +207,7 @@ const resumeStructIntegration = (transaction, store) => {
     }
     if (m.length === 0) {
       if (offset < ref.length) {
-        ref.toStruct(transaction.y, store, offset).integrate(transaction)
+        ref.toStruct(transaction, store, offset).integrate(transaction)
       }
       stack.pop()
     }

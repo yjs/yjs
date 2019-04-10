@@ -57,14 +57,15 @@ export class ItemDeleted extends AbstractItem {
     addToDeleteSet(transaction.deleteSet, this.id, this.length)
   }
   /**
+   * @param {Transaction} transaction
    * @param {number} diff
    */
-  splitAt (diff) {
+  splitAt (transaction, diff) {
     /**
      * @type {ItemDeleted}
      */
     // @ts-ignore
-    const right = splitItem(this, diff)
+    const right = splitItem(transaction, this, diff)
     right._len -= diff
     this._len = diff
     return right
@@ -107,18 +108,18 @@ export class ItemDeletedRef extends AbstractItemRef {
     return this.len
   }
   /**
-   * @param {Y} y
+   * @param {Transaction} transaction
    * @param {StructStore} store
    * @param {number} offset
    * @return {ItemDeleted|GC}
    */
-  toStruct (y, store, offset) {
+  toStruct (transaction, store, offset) {
     if (offset > 0) {
       changeItemRefOffset(this, offset)
       this.len = this.len - offset
     }
 
-    const { left, right, parent, parentSub } = computeItemParams(y, store, this.left, this.right, this.parent, this.parentSub, this.parentYKey)
+    const { left, right, parent, parentSub } = computeItemParams(transaction, store, this.left, this.right, this.parent, this.parentSub, this.parentYKey)
     return parent === null
       ? new GC(this.id, this.length)
       : new ItemDeleted(

@@ -9,7 +9,7 @@ import {
   splitItem,
   changeItemRefOffset,
   GC,
-  StructStore, Y, ID, AbstractType // eslint-disable-line
+  Transaction, StructStore, Y, ID, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -54,14 +54,15 @@ export class ItemJSON extends AbstractItem {
     return this.content
   }
   /**
+   * @param {Transaction} transaction
    * @param {number} diff
    */
-  splitAt (diff) {
+  splitAt (transaction, diff) {
     /**
      * @type {ItemJSON}
      */
     // @ts-ignore
-    const right = splitItem(this, diff)
+    const right = splitItem(transaction, this, diff)
     right.content = this.content.splice(diff)
     return right
   }
@@ -118,17 +119,17 @@ export class ItemJSONRef extends AbstractItemRef {
     return this.content.length
   }
   /**
-   * @param {Y} y
+   * @param {Transaction} transaction
    * @param {StructStore} store
    * @param {number} offset
    * @return {ItemJSON|GC}
    */
-  toStruct (y, store, offset) {
+  toStruct (transaction, store, offset) {
     if (offset > 0) {
       changeItemRefOffset(this, offset)
       this.content = this.content.slice(offset)
     }
-    const { left, right, parent, parentSub } = computeItemParams(y, store, this.left, this.right, this.parent, this.parentSub, this.parentYKey)
+    const { left, right, parent, parentSub } = computeItemParams(transaction, store, this.left, this.right, this.parent, this.parentSub, this.parentYKey)
     return parent === null
       ? new GC(this.id, this.length)
       : new ItemJSON(
