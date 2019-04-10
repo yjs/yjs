@@ -2,8 +2,6 @@
  * @module structs
  */
 
-// TODO: ItemBinary should be able to merge with right (similar to other items). Or the other items (ItemJSON) should not be able to merge - extra byte + consistency
-
 import {
   AbstractItem,
   AbstractItemRef,

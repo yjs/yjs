@@ -306,8 +306,6 @@ const arrayTransactions = [
   }
 ]
 
-// TODO: http://127.0.0.1:3443/?filter=\[22/&seed=1943600076
-
 /**
  * @param {t.TestCase} tc
  */

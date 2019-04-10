@@ -14,7 +14,7 @@ import {
   callEventHandlerListeners,
   AbstractItem,
   ItemDeleted,
-  AbstractType, AbstractStruct, YEvent, Y // eslint-disable-line
+  ID, AbstractType, AbstractStruct, YEvent, Y // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -86,9 +86,9 @@ export class Transaction {
      */
     this._updateMessage = null
     /**
-     * @type {Set<AbstractStruct>}
+     * @type {Set<ID>}
      */
-    this._replacedItems = new Set()
+    this._mergeStructs = new Set()
   }
   /**
    * @type {encoding.Encoder|null}
@@ -213,12 +213,10 @@ export const transact = (y, f) => {
           }
         }
       }
-      // try to merge replacedItems
-      // TODO: replacedItems should hold ids
-      for (const replacedItem of transaction._replacedItems) {
-        const id = replacedItem.id
-        const client = id.client
-        const clock = id.clock
+      // try to merge mergeStructs
+      for (const mid of transaction._mergeStructs) {
+        const client = mid.client
+        const clock = mid.clock
         /**
          * @type {Array<AbstractStruct>}
          */

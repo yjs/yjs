@@ -56,7 +56,7 @@ export const splitItem = (transaction, leftItem, diff) => {
     rightItem.right.left = rightItem
   }
   // right is more specific.
-  transaction._replacedItems.add(rightItem)
+  transaction._mergeStructs.add(rightItem.id)
   return rightItem
 }
 
@@ -430,7 +430,7 @@ export class AbstractItem extends AbstractStruct {
       }
     }
     replaceStruct(store, this, r)
-    transaction._replacedItems.add(r)
+    transaction._mergeStructs.add(r.id)
   }
 
   /**

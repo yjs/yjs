@@ -148,7 +148,6 @@ export const readClientsStructRefs = decoder => {
  * @param {Transaction} transaction
  * @param {StructStore} store
  *
- * @todo reimplement without iterators - read everything in arrays instead
  */
 const resumeStructIntegration = (transaction, store) => {
   const stack = store.pendingStack
