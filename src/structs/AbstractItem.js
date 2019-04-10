@@ -5,7 +5,7 @@ import {
   writeID,
   GC,
   nextID,
-  AbstractRef,
+  AbstractStructRef,
   AbstractStruct,
   replaceStruct,
   addStruct,
@@ -487,7 +487,7 @@ export class AbstractItem extends AbstractStruct {
   }
 }
 
-export class AbstractItemRef extends AbstractRef {
+export class AbstractItemRef extends AbstractStructRef {
   /**
    * @param {decoding.Decoder} decoder
    * @param {ID} id

@@ -2,7 +2,7 @@
  * @module structs
  */
 import {
-  AbstractRef,
+  AbstractStructRef,
   AbstractStruct,
   createID,
   addStruct,
@@ -60,7 +60,7 @@ export class GC extends AbstractStruct {
   }
 }
 
-export class GCRef extends AbstractRef {
+export class GCRef extends AbstractStructRef {
   /**
    * @param {decoding.Decoder} decoder
    * @param {ID} id

@@ -53,7 +53,7 @@ export class AbstractStruct {
   }
 }
 
-export class AbstractRef {
+export class AbstractStructRef {
   /**
    * @param {ID} id
    */

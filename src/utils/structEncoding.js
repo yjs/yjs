@@ -18,7 +18,7 @@ import {
   readDeleteSet,
   writeDeleteSet,
   createDeleteSetFromStructStore,
-  Transaction, AbstractStruct, AbstractRef, StructStore, ID // eslint-disable-line
+  Transaction, AbstractStruct, AbstractStructRef, StructStore, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -64,11 +64,11 @@ const writeStructs = (encoder, structs, client, clock) => {
  * @param {decoding.Decoder} decoder
  * @param {number} numOfStructs
  * @param {ID} nextID
- * @return {Array<AbstractRef>}
+ * @return {Array<AbstractStructRef>}
  */
 const readStructRefs = (decoder, numOfStructs, nextID) => {
   /**
-   * @type {Array<AbstractRef>}
+   * @type {Array<AbstractStructRef>}
    */
   const refs = []
   for (let i = 0; i < numOfStructs; i++) {
@@ -109,11 +109,11 @@ export const writeClientsStructs = (encoder, store, _sm) => {
 
 /**
  * @param {decoding.Decoder} decoder The decoder object to read data from.
- * @return {Map<number,Array<AbstractRef>>}
+ * @return {Map<number,Array<AbstractStructRef>>}
  */
 export const readClientsStructRefs = decoder => {
   /**
-   * @type {Map<number,Array<AbstractRef>>}
+   * @type {Map<number,Array<AbstractStructRef>>}
    */
   const clientRefs = new Map()
   const numOfStateUpdates = decoding.readVarUint(decoder)
@@ -227,9 +227,9 @@ export const tryResumePendingDeleteReaders = (transaction, store) => {
 }
 
 /**
- * @param {Map<number,{refs:Array<AbstractRef>,i:number}>} pendingClientsStructRefs
+ * @param {Map<number,{refs:Array<AbstractStructRef>,i:number}>} pendingClientsStructRefs
  * @param {number} client
- * @param {Array<AbstractRef>} refs
+ * @param {Array<AbstractStructRef>} refs
  */
 const setPendingClientsStructRefs = (pendingClientsStructRefs, client, refs) => {
   pendingClientsStructRefs.set(client, { refs, i: 0 })
@@ -243,7 +243,7 @@ export const writeStructsFromTransaction = (encoder, transaction) => writeClient
 
 /**
  * @param {StructStore} store
- * @param {Map<number, Array<AbstractRef>>} clientsStructsRefs
+ * @param {Map<number, Array<AbstractStructRef>>} clientsStructsRefs
  */
 const mergeReadStructsIntoPendingReads = (store, clientsStructsRefs) => {
   const pendingClientsStructRefs = store.pendingClientsStructRefs

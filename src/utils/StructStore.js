@@ -1,8 +1,7 @@
-// todo rename AbstractRef to abstractStructRef
 
 import {
   GC,
-  Transaction, AbstractRef, ID, ItemType, AbstractItem, AbstractStruct // eslint-disable-line
+  Transaction, AbstractStructRef, ID, ItemType, AbstractItem, AbstractStruct // eslint-disable-line
 } from '../internals.js'
 
 import * as math from 'lib0/math.js'
@@ -22,13 +21,13 @@ export class StructStore {
      * We could shift the array of refs instead, but shift is incredible
      * slow in Chrome for arrays with more than 100k elements
      * @see tryResumePendingStructRefs
-     * @type {Map<number,{i:number,refs:Array<AbstractRef>}>}
+     * @type {Map<number,{i:number,refs:Array<AbstractStructRef>}>}
      */
     this.pendingClientsStructRefs = new Map()
     /**
      * Stack of pending structs waiting for struct dependencies
      * Maximum length of stack is structReaders.size
-     * @type {Array<AbstractRef>}
+     * @type {Array<AbstractStructRef>}
      */
     this.pendingStack = []
     /**
