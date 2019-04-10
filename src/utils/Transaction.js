@@ -115,6 +115,8 @@ export const nextID = transaction => {
 }
 
 /**
+ * Implements the functionality of `y.transact(()=>{..})`
+ *
  * @param {Y} y
  * @param {function(Transaction):void} f
  */

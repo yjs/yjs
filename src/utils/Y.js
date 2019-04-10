@@ -53,8 +53,6 @@ export class Y extends Observable {
    * other peers.
    *
    * @param {function(Transaction):void} f The function that should be executed as a transaction
-   *
-   * @todo separate this into a separate function
    */
   transact (f) {
     transact(this, f)

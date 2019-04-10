@@ -276,7 +276,8 @@ export const compare = users => {
   const userTextValues = users.map(u => u.getText('text').toDelta())
   for (const u of users) {
     t.assert(u.store.pendingDeleteReaders.length === 0)
-    t.assert(u.store.pendingStructReaders.size === 0)
+    t.assert(u.store.pendingStack.length === 0)
+    t.assert(u.store.pendingClientsStructRefs.size === 0)
   }
   for (let i = 0; i < users.length - 1; i++) {
     t.compare(userArrayValues[i].length, users[i].getArray('array').length)

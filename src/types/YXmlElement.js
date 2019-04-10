@@ -173,7 +173,7 @@ export class YXmlFragment extends AbstractType {
    * Returns all YXmlElements that match the query.
    * Similar to Dom's {@link querySelectorAll}.
    *
-   * TODO: Does not yet support all queries. Currently only query by tagName.
+   * @todo Does not yet support all queries. Currently only query by tagName.
    *
    * @param {CSS_Selector} query The query on the children
    * @return {Array<YXmlElement|YXmlText|YXmlHook|null>} The elements that match this query.

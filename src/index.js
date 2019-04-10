@@ -22,7 +22,6 @@ export {
   ID,
   createID,
   compareIDs,
-  writeStructs,
   writeStructsFromTransaction,
   readStructs,
   getState,

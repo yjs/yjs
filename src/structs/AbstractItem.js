@@ -131,22 +131,6 @@ export class AbstractItem extends AbstractStruct {
     const parent = this.parent
     const parentSub = this.parentSub
     const length = this.length
-    /*
-    # $this has to find a unique position between origin and the next known character
-    # case 1: $origin equals $o.origin: the $creator parameter decides if left or right
-    #         let $OL= [o1,o2,o3,o4], whereby $this is to be inserted between o1 and o4
-    #         o2,o3 and o4 origin is 1 (the position of o2)
-    #         there is the case that $this.creator < o2.creator, but o3.creator < $this.creator
-    #         then o2 knows o3. Since on another client $OL could be [o1,o3,o4] the problem is complex
-    #         therefore $this would be always to the right of o3
-    # case 2: $origin < $o.origin
-    #         if current $this insert_position > $o origin: $this ins
-    #         else $insert_position will not change
-    #         (maybe we encounter case 1 later, then this will be to the right of $o)
-    # case 3: $origin > $o.origin
-    #         $this insert_position is to the left of $o (forever!)
-    */
-    // handle conflicts
     /**
      * @type {AbstractItem|null}
      */

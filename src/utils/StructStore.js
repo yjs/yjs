@@ -1,3 +1,4 @@
+// todo rename AbstractRef to abstractStructRef
 
 import {
   GC,
@@ -16,11 +17,20 @@ export class StructStore {
      */
     this.clients = new Map()
     /**
-     * Store uncompleted struct readers here
-     * @see tryResumePendingReaders
-     * @type {Set<{stack:Array<AbstractRef>,structReaders:Map<number,IterableIterator<AbstractRef>>,missing:ID,structReaderIterator:IterableIterator<IterableIterator<AbstractRef>>,structReaderIteratorResult:IteratorResult<IterableIterator<AbstractRef>>}>}
+     * Store incompleted struct reads here
+     * `i` denotes to the next read operation
+     * We could shift the array of refs instead, but shift is incredible
+     * slow in Chrome for arrays with more than 100k elements
+     * @see tryResumePendingStructRefs
+     * @type {Map<number,{i:number,refs:Array<AbstractRef>}>}
      */
-    this.pendingStructReaders = new Set()
+    this.pendingClientsStructRefs = new Map()
+    /**
+     * Stack of pending structs waiting for struct dependencies
+     * Maximum length of stack is structReaders.size
+     * @type {Array<AbstractRef>}
+     */
+    this.pendingStack = []
     /**
      * @type {Array<decoding.Decoder>}
      */
