@@ -15,11 +15,13 @@ export class ID {
    */
   constructor (client, clock) {
     /**
-     * @type {number} Client id
+     * Client id
+     * @type {number}
      */
     this.client = client
     /**
-     * @type {number} unique per client id, continuous number
+     * unique per client id, continuous number
+     * @type {number}
      */
     this.clock = clock
   }

@@ -50,7 +50,8 @@ export class Transaction {
    */
   constructor (y) {
     /**
-     * @type {Y} The Yjs instance.
+     * The Yjs instance.
+     * @type {Y}
      */
     this.y = y
     /**

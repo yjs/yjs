@@ -423,7 +423,6 @@ export class YXmlElement extends YXmlFragment {
     }
   }
 
-  // TODO: outsource the binding property.
   /**
    * Creates a Dom Element that mirrors this YXmlElement.
    *

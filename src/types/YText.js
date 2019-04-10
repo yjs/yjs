@@ -341,13 +341,11 @@ class YTextEvent extends YEvent {
      */
     this._delta = null
   }
-  // TODO: Should put this in a separate function. toDelta shouldn't be included
-  //       in every Yjs distribution
   /**
    * Compute the changes in the delta format.
+   * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
    *
-   * @type {Array<{delete:number|undefined,retain:number|undefined,insert:string|undefined,attributes:Object<string,any>}>} A {@link https://quilljs.com/docs/delta/|Quill Delta}) that
-   *                 represents the changes on the document.
+   * @type {Array<{delete:number|undefined,retain:number|undefined,insert:string|undefined,attributes:Object<string,any>}>}
    *
    * @public
    */
