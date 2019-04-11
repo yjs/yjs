@@ -1,6 +1,3 @@
-/**
- * @module utils
- */
 
 import {
   getState,
@@ -43,6 +40,7 @@ import * as math from 'lib0/math.js'
  *   map.set('b', 1)
  * }) // => "change triggered"
  *
+ * @public
  */
 export class Transaction {
   /**
@@ -84,15 +82,18 @@ export class Transaction {
     this.changedParentTypes = new Map()
     /**
      * @type {encoding.Encoder|null}
+     * @private
      */
     this._updateMessage = null
     /**
      * @type {Set<ID>}
+     * @private
      */
     this._mergeStructs = new Set()
   }
   /**
    * @type {encoding.Encoder|null}
+   * @public
    */
   get updateMessage () {
     // only create if content was added in transaction (state or ds changed)
@@ -109,6 +110,9 @@ export class Transaction {
 
 /**
  * @param {Transaction} transaction
+ *
+ * @private
+ * @function
  */
 export const nextID = transaction => {
   const y = transaction.y
@@ -120,6 +124,9 @@ export const nextID = transaction => {
  *
  * @param {Y} y
  * @param {function(Transaction):void} f
+ *
+ * @private
+ * @function
  */
 export const transact = (y, f) => {
   let initialCall = false

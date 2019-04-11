@@ -1,6 +1,3 @@
-/**
- * @module types
- */
 
 import { YText, YXmlTextRefID } from '../internals.js'
 
@@ -36,6 +33,8 @@ export class YXmlText extends YText {
   }
   /**
    * @param {encoding.Encoder} encoder
+   *
+   * @private
    */
   _write (encoder) {
     encoding.writeVarUint(encoder, YXmlTextRefID)
@@ -45,5 +44,8 @@ export class YXmlText extends YText {
 /**
  * @param {decoding.Decoder} decoder
  * @return {YXmlText}
+ *
+ * @private
+ * @function
  */
 export const readYXmlText = decoder => new YXmlText()

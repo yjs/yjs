@@ -1,3 +1,6 @@
+/**
+ * @module RelativePosition
+ */
 
 import {
   find,
@@ -79,6 +82,8 @@ export class RelativePosition {
 /**
  * @param {Object} json
  * @return {RelativePosition}
+ *
+ * @function
  */
 export const createRelativePositionFromJSON = json => new RelativePosition(json.type == null ? null : createID(json.type.client, json.type.clock), json.tname || null, json.item == null ? null : createID(json.item.client, json.item.clock))
 
@@ -102,12 +107,16 @@ export class AbsolutePosition {
 /**
  * @param {AbstractType<any>} type
  * @param {number} offset
+ *
+ * @function
  */
 export const createAbsolutePosition = (type, offset) => new AbsolutePosition(type, offset)
 
 /**
  * @param {AbstractType<any>} type
  * @param {ID|null} item
+ *
+ * @function
  */
 export const createRelativePosition = (type, item) => {
   let typeid = null
@@ -126,6 +135,8 @@ export const createRelativePosition = (type, item) => {
  * @param {AbstractType<any>} type The base type (e.g. YText or YArray).
  * @param {number} offset The absolute position.
  * @return {RelativePosition}
+ *
+ * @function
  */
 export const createRelativePositionByOffset = (type, offset) => {
   let t = type._start
@@ -145,6 +156,8 @@ export const createRelativePositionByOffset = (type, offset) => {
 /**
  * @param {encoding.Encoder} encoder
  * @param {RelativePosition} rpos
+ *
+ * @function
  */
 export const writeRelativePosition = (encoder, rpos) => {
   const { type, tname, item } = rpos
@@ -170,6 +183,8 @@ export const writeRelativePosition = (encoder, rpos) => {
  * @param {Y} y
  * @param {StructStore} store
  * @return {RelativePosition|null}
+ *
+ * @function
  */
 export const readRelativePosition = (decoder, y, store) => {
   let type = null
@@ -196,6 +211,8 @@ export const readRelativePosition = (decoder, y, store) => {
  * @param {RelativePosition} rpos
  * @param {Y} y
  * @return {AbsolutePosition|null}
+ *
+ * @function
  */
 export const toAbsolutePosition = (rpos, y) => {
   const store = y.store
@@ -244,6 +261,8 @@ export const toAbsolutePosition = (rpos, y) => {
  * @param {Y} y The Yjs instance in which to query for the absolute position.
  * @return {RelativePosition} The absolute position in the Yjs model
  *                            (type + offset).
+ *
+ * @function
  */
 export const toRelativePosition = (apos, y) => {
   const type = apos.type
@@ -268,6 +287,8 @@ export const toRelativePosition = (apos, y) => {
 /**
  * @param {RelativePosition|null} a
  * @param {RelativePosition|null} b
+ *
+ * @function
  */
 export const compareRelativePositions = (a, b) => a === b || (
   a !== null && b !== null && a.tname === b.tname && (

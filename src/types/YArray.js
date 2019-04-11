@@ -1,5 +1,5 @@
 /**
- * @module types
+ * @module YArray
  */
 
 import {
@@ -40,12 +40,14 @@ export class YArrayEvent extends YEvent {
  * A shared Array implementation.
  * @template T
  * @extends AbstractType<YArrayEvent<T>>
+ * @implements {IterableIterator<T>}
  */
 export class YArray extends AbstractType {
   constructor () {
     super()
     /**
      * @type {Array<any>?}
+     * @private
      */
     this._prelimContent = []
   }
@@ -58,6 +60,7 @@ export class YArray extends AbstractType {
    *
    * @param {Y} y The Yjs instance
    * @param {ItemType} item
+   *
    * @private
    */
   _integrate (y, item) {
@@ -71,10 +74,11 @@ export class YArray extends AbstractType {
   }
   /**
    * Creates YArrayEvent and calls observers.
-   * @private
    *
    * @param {Transaction} transaction
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
+   *
+   * @private
    */
   _callObserver (transaction, parentSubs) {
     callTypeObservers(this, transaction, new YArrayEvent(this, transaction))
@@ -131,6 +135,9 @@ export class YArray extends AbstractType {
     typeArrayForEach(this, f)
   }
 
+  /**
+   * @return {IterableIterator<T>}
+   */
   [Symbol.iterator] () {
     return typeArrayCreateIterator(this)
   }
@@ -190,6 +197,7 @@ export class YArray extends AbstractType {
 
   /**
    * @param {encoding.Encoder} encoder
+   * @private
    */
   _write (encoder) {
     encoding.writeVarUint(encoder, YArrayRefID)
@@ -198,5 +206,8 @@ export class YArray extends AbstractType {
 
 /**
  * @param {decoding.Decoder} decoder
+ *
+ * @private
+ * @function
  */
 export const readYArray = decoder => new YArray()

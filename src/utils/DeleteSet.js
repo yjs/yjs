@@ -11,6 +11,9 @@ import * as map from 'lib0/map.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 
+/**
+ * @private
+ */
 class DeleteItem {
   /**
    * @param {number} clock
@@ -35,11 +38,13 @@ class DeleteItem {
  * - We do not create a DeleteSet when we send a sync message. The DeleteSet message is created directly from StructStore
  * - We read a DeleteSet as part of a sync/update message. In this case the DeleteSet is already sorted and merged.
  *
+ * @private
  */
 export class DeleteSet {
   constructor () {
     /**
      * @type {Map<number,Array<DeleteItem>>}
+     * @private
      */
     this.clients = new Map()
   }
@@ -49,6 +54,9 @@ export class DeleteSet {
  * @param {Array<DeleteItem>} dis
  * @param {number} clock
  * @return {number|null}
+ *
+ * @private
+ * @function
  */
 export const findIndexDS = (dis, clock) => {
   let left = 0
@@ -73,6 +81,9 @@ export const findIndexDS = (dis, clock) => {
  * @param {DeleteSet} ds
  * @param {ID} id
  * @return {boolean}
+ *
+ * @private
+ * @function
  */
 export const isDeleted = (ds, id) => {
   const dis = ds.clients.get(id.client)
@@ -81,6 +92,9 @@ export const isDeleted = (ds, id) => {
 
 /**
  * @param {DeleteSet} ds
+ *
+ * @private
+ * @function
  */
 export const sortAndMergeDeleteSet = ds => {
   ds.clients.forEach(dels => {
@@ -110,6 +124,9 @@ export const sortAndMergeDeleteSet = ds => {
  * @param {DeleteSet} ds
  * @param {ID} id
  * @param {number} length
+ *
+ * @private
+ * @function
  */
 export const addToDeleteSet = (ds, id, length) => {
   map.setIfUndefined(ds.clients, id.client, () => []).push(new DeleteItem(id.clock, length))
@@ -118,6 +135,9 @@ export const addToDeleteSet = (ds, id, length) => {
 /**
  * @param {StructStore} ss
  * @return {DeleteSet} Merged and sorted DeleteSet
+ *
+ * @private
+ * @function
  */
 export const createDeleteSetFromStructStore = ss => {
   const ds = new DeleteSet()
@@ -149,6 +169,9 @@ export const createDeleteSetFromStructStore = ss => {
 /**
  * @param {encoding.Encoder} encoder
  * @param {DeleteSet} ds
+ *
+ * @private
+ * @function
  */
 export const writeDeleteSet = (encoder, ds) => {
   encoding.writeVarUint(encoder, ds.clients.size)
@@ -168,6 +191,9 @@ export const writeDeleteSet = (encoder, ds) => {
  * @param {decoding.Decoder} decoder
  * @param {Transaction} transaction
  * @param {StructStore} store
+ *
+ * @private
+ * @function
  */
 export const readDeleteSet = (decoder, transaction, store) => {
   const unappliedDS = new DeleteSet()

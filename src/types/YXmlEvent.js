@@ -1,6 +1,3 @@
-/**
- * @module types
- */
 
 import {
   YEvent,
@@ -9,8 +6,6 @@ import {
 
 /**
  * An Event that describes changes on a YXml Element or Yxml Fragment
- *
- * @protected
  */
 export class YXmlEvent extends YEvent {
   /**
@@ -23,13 +18,9 @@ export class YXmlEvent extends YEvent {
   constructor (target, subs, transaction) {
     super(target, transaction)
     /**
-     * The transaction instance for the computed change.
-     * @type {Transaction}
-     */
-    this._transaction = transaction
-    /**
      * Whether the children changed.
      * @type {Boolean}
+     * @private
      */
     this.childListChanged = false
     /**

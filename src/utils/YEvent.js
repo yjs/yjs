@@ -1,12 +1,8 @@
 
 import {
   isDeleted,
-  AbstractItem, AbstractType, Transaction, AbstractStruct // eslint-disable-line
+  AbstractType, Transaction, AbstractStruct // eslint-disable-line
 } from '../internals.js'
-
-/**
- * @module utils
- */
 
 /**
  * YEvent describes the changes on a YType.
@@ -84,6 +80,9 @@ export class YEvent {
  * @param {AbstractType<any>} parent
  * @param {AbstractType<any>} child target
  * @return {Array<string|number>} Path to the target
+ *
+ * @private
+ * @function
  */
 const getPathTo = (parent, child) => {
   const path = []

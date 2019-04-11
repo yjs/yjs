@@ -6,6 +6,9 @@ import {
   transact
 } from '../internals.js'
 
+/**
+ * @private
+ */
 class ReverseOperation {
   constructor (y, transaction, bindingInfos) {
     this.created = new Date()
@@ -31,6 +34,10 @@ class ReverseOperation {
   }
 }
 
+/**
+ * @private
+ * @function
+ */
 function applyReverseOperation (y, scope, reverseBuffer) {
   let performedUndo = false
   let undoOp = null
@@ -90,6 +97,9 @@ function applyReverseOperation (y, scope, reverseBuffer) {
 /**
  * Saves a history of locally applied operations. The UndoManager handles the
  * undoing and redoing of locally created changes.
+ *
+ * @private
+ * @function
  */
 export class UndoManager {
   /**
@@ -156,6 +166,9 @@ export class UndoManager {
 
   /**
    * Enforce that the next change is created as a separate item in the undo stack
+   *
+   * @private
+   * @function
    */
   flushChanges () {
     this._lastTransactionWasUndo = true
@@ -163,6 +176,9 @@ export class UndoManager {
 
   /**
    * Undo the last locally created change.
+   *
+   * @private
+   * @function
    */
   undo () {
     this._undoing = true
@@ -173,6 +189,9 @@ export class UndoManager {
 
   /**
    * Redo the last locally created change.
+   *
+   * @private
+   * @function
    */
   redo () {
     this._redoing = true

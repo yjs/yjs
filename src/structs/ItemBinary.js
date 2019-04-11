@@ -1,6 +1,3 @@
-/**
- * @module structs
- */
 
 import {
   AbstractItem,
@@ -13,8 +10,14 @@ import {
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 
+/**
+ * @private
+ */
 export const structBinaryRefNumber = 1
 
+/**
+ * @private
+ */
 export class ItemBinary extends AbstractItem {
   /**
    * @param {ID} id
@@ -55,6 +58,9 @@ export class ItemBinary extends AbstractItem {
   }
 }
 
+/**
+ * @private
+ */
 export class ItemBinaryRef extends AbstractItemRef {
   /**
    * @param {decoding.Decoder} decoder

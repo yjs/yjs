@@ -1,3 +1,7 @@
+/**
+ * @module Y
+ */
+
 import {
   StructStore,
   AbstractType,
@@ -10,7 +14,6 @@ import {
 } from '../internals.js'
 
 import { Observable } from 'lib0/observable.js'
-import * as error from 'lib0/error.js'
 import * as random from 'lib0/random.js'
 import * as map from 'lib0/map.js'
 
@@ -20,11 +23,10 @@ import * as map from 'lib0/map.js'
  */
 export class Y extends Observable {
   /**
-   * @param {Object} [conf] configuration
+   * @param {Object|undefined} conf configuration
    */
   constructor (conf = {}) {
     super()
-    this.gcEnabled = conf.gc || false
     this.clientID = random.uint32()
     /**
      * @type {Map<string, AbstractType<YEvent>>}
@@ -33,18 +35,9 @@ export class Y extends Observable {
     this.store = new StructStore()
     /**
      * @type {Transaction | null}
+     * @private
      */
     this._transaction = null
-  }
-  /**
-   * @type {Transaction}
-   */
-  get transaction () {
-    const t = this._transaction
-    if (t === null) {
-      throw error.create('All changes must happen inside a transaction')
-    }
-    return t
   }
   /**
    * Changes that happen inside of a transaction are bundled. This means that
@@ -53,6 +46,8 @@ export class Y extends Observable {
    * other peers.
    *
    * @param {function(Transaction):void} f The function that should be executed as a transaction
+   *
+   * @public
    */
   transact (f) {
     transact(this, f)
@@ -80,6 +75,8 @@ export class Y extends Observable {
    * @param {string} name
    * @param {Function} TypeConstructor The constructor of the type definition
    * @return {AbstractType<any>} The created type. Constructed with TypeConstructor
+   *
+   * @public
    */
   get (name, TypeConstructor = AbstractType) {
     const type = map.setIfUndefined(this.share, name, () => {
@@ -108,6 +105,8 @@ export class Y extends Observable {
    * @template T
    * @param {string} name
    * @return {YArray<T>}
+   *
+   * @public
    */
   getArray (name) {
     // @ts-ignore
@@ -116,6 +115,8 @@ export class Y extends Observable {
   /**
    * @param {string} name
    * @return {YText}
+   *
+   * @public
    */
   getText (name) {
     // @ts-ignore
@@ -124,6 +125,8 @@ export class Y extends Observable {
   /**
    * @param {string} name
    * @return {YMap<any>}
+   *
+   * @public
    */
   getMap (name) {
     // @ts-ignore
@@ -132,13 +135,17 @@ export class Y extends Observable {
   /**
    * @param {string} name
    * @return {YXmlFragment}
+   *
+   * @public
    */
   getXmlFragment (name) {
     // @ts-ignore
     return this.get(name, YXmlFragment)
   }
   /**
-   * Disconnect from the room, and destroy all traces of this Yjs instance.
+   * Emit `destroy` event and unregister all event handlers.
+   *
+   * @protected
    */
   destroy () {
     this.emit('destroyed', [true])

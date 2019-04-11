@@ -1,6 +1,3 @@
-/**
- * @module structs
- */
 
 import {
   AbstractItem,
@@ -19,10 +16,14 @@ import {
 import * as encoding from 'lib0/encoding.js' // eslint-disable-line
 import * as decoding from 'lib0/decoding.js'
 
+/**
+ * @private
+ */
 export const structTypeRefNumber = 7
 
 /**
  * @type {Array<function(decoding.Decoder):AbstractType<any>>}
+ * @private
  */
 export const typeRefs = [
   readYArray,
@@ -42,6 +43,9 @@ export const YXmlFragmentRefID = 4
 export const YXmlHookRefID = 5
 export const YXmlTextRefID = 6
 
+/**
+ * @private
+ */
 export class ItemType extends AbstractItem {
   /**
    * @param {ID} id
@@ -133,6 +137,9 @@ export class ItemType extends AbstractItem {
   }
 }
 
+/**
+ * @private
+ */
 export class ItemTypeRef extends AbstractItemRef {
   /**
    * @param {decoding.Decoder} decoder

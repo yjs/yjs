@@ -1,6 +1,3 @@
-/**
- * @module utils
- */
 
 import { AbstractType } from '../internals' // eslint-disable-line
 
@@ -41,18 +38,26 @@ export class ID {
  * @param {ID | null} a
  * @param {ID | null} b
  * @return {boolean}
+ *
+ * @function
  */
 export const compareIDs = (a, b) => a === b || (a !== null && b !== null && a.client === b.client && a.clock === b.clock)
 
 /**
  * @param {number} client
  * @param {number} clock
+ *
+ * @private
+ * @function
  */
 export const createID = (client, clock) => new ID(client, clock)
 
 /**
  * @param {encoding.Encoder} encoder
  * @param {ID} id
+ *
+ * @private
+ * @function
  */
 export const writeID = (encoder, id) => {
   encoding.writeVarUint(encoder, id.client)
@@ -66,6 +71,9 @@ export const writeID = (encoder, id) => {
  *
  * @param {decoding.Decoder} decoder
  * @return {ID}
+ *
+ * @private
+ * @function
  */
 export const readID = decoder =>
   createID(decoding.readVarUint(decoder), decoding.readVarUint(decoder))
@@ -77,6 +85,9 @@ export const readID = decoder =>
  *
  * @param {AbstractType<any>} type
  * @return {string}
+ *
+ * @private
+ * @function
  */
 export const findRootTypeKey = type => {
   // @ts-ignore _y must be defined, otherwise unexpected case

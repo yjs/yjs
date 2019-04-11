@@ -1,5 +1,6 @@
+
 /**
- * @module types
+ * @module YText
  */
 
 import {
@@ -22,7 +23,6 @@ import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 import * as encoding from 'lib0/encoding.js'
 
 /**
- * @private
  * @param {Transaction} transaction
  * @param {StructStore} store
  * @param {Map<string,any>} currentAttributes
@@ -30,6 +30,9 @@ import * as encoding from 'lib0/encoding.js'
  * @param {AbstractItem|null} right
  * @param {number} count
  * @return {{left:AbstractItem|null,right:AbstractItem|null,currentAttributes:Map<string,any>}}
+ *
+ * @private
+ * @function
  */
 const findNextPosition = (transaction, store, currentAttributes, left, right, count) => {
   while (right !== null && count > 0) {
@@ -58,12 +61,14 @@ const findNextPosition = (transaction, store, currentAttributes, left, right, co
 }
 
 /**
- * @private
  * @param {Transaction} transaction
  * @param {StructStore} store
  * @param {AbstractType<any>} parent
  * @param {number} index
  * @return {{left:AbstractItem|null,right:AbstractItem|null,currentAttributes:Map<string,any>}}
+ *
+ * @private
+ * @function
  */
 const findPosition = (transaction, store, parent, index) => {
   let currentAttributes = new Map()
@@ -75,13 +80,15 @@ const findPosition = (transaction, store, parent, index) => {
 /**
  * Negate applied formats
  *
- * @private
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {AbstractItem|null} left
  * @param {AbstractItem|null} right
  * @param {Map<string,any>} negatedAttributes
  * @return {{left:AbstractItem|null,right:AbstractItem|null}}
+ *
+ * @private
+ * @function
  */
 const insertNegatedAttributes = (transaction, parent, left, right, negatedAttributes) => {
   // check if we really need to remove attributes
@@ -109,9 +116,11 @@ const insertNegatedAttributes = (transaction, parent, left, right, negatedAttrib
 }
 
 /**
- * @private
  * @param {Map<string,any>} currentAttributes
  * @param {ItemFormat} item
+ *
+ * @private
+ * @function
  */
 const updateCurrentAttributes = (currentAttributes, item) => {
   const value = item.value
@@ -124,12 +133,14 @@ const updateCurrentAttributes = (currentAttributes, item) => {
 }
 
 /**
- * @private
  * @param {AbstractItem|null} left
  * @param {AbstractItem|null} right
  * @param {Map<string,any>} currentAttributes
  * @param {Object<string,any>} attributes
  * @return {{left:AbstractItem|null,right:AbstractItem|null}}
+ *
+ * @private
+ * @function
  */
 const minimizeAttributeChanges = (left, right, currentAttributes, attributes) => {
   // go right while attributes[right.key] === right.value (or right is deleted)
@@ -153,7 +164,6 @@ const minimizeAttributeChanges = (left, right, currentAttributes, attributes) =>
 }
 
 /**
- * @private
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {AbstractItem|null} left
@@ -161,6 +171,9 @@ const minimizeAttributeChanges = (left, right, currentAttributes, attributes) =>
  * @param {Map<string,any>} currentAttributes
  * @param {Object<string,any>} attributes
  * @return {{left:AbstractItem|null,right:AbstractItem|null,negatedAttributes:Map<string,any>}}
+ *
+ * @private
+ * @function
  **/
 const insertAttributes = (transaction, parent, left, right, currentAttributes, attributes) => {
   const negatedAttributes = new Map()
@@ -179,7 +192,6 @@ const insertAttributes = (transaction, parent, left, right, currentAttributes, a
 }
 
 /**
- * @private
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {AbstractItem|null} left
@@ -188,6 +200,9 @@ const insertAttributes = (transaction, parent, left, right, currentAttributes, a
  * @param {string} text
  * @param {Object<string,any>} attributes
  * @return {{left:AbstractItem|null,right:AbstractItem|null}}
+ *
+ * @private
+ * @function
  **/
 const insertText = (transaction, parent, left, right, currentAttributes, text, attributes) => {
   for (let [key] of currentAttributes) {
@@ -210,7 +225,6 @@ const insertText = (transaction, parent, left, right, currentAttributes, text, a
 }
 
 /**
- * @private
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {AbstractItem|null} left
@@ -219,6 +233,9 @@ const insertText = (transaction, parent, left, right, currentAttributes, text, a
  * @param {number} length
  * @param {Object<string,any>} attributes
  * @return {{left:AbstractItem|null,right:AbstractItem|null}}
+ *
+ * @private
+ * @function
  */
 const formatText = (transaction, parent, left, right, currentAttributes, length, attributes) => {
   const minPos = minimizeAttributeChanges(left, right, currentAttributes, attributes)
@@ -264,7 +281,6 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
 }
 
 /**
- * @private
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {AbstractItem|null} left
@@ -272,6 +288,9 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
  * @param {Map<string,any>} currentAttributes
  * @param {number} length
  * @return {{left:AbstractItem|null,right:AbstractItem|null}}
+ *
+ * @private
+ * @function
  */
 const deleteText = (transaction, parent, left, right, currentAttributes, length) => {
   while (length > 0 && right !== null) {
@@ -326,8 +345,6 @@ const deleteText = (transaction, parent, left, right, currentAttributes, length)
 
 /**
  * Event that describes the changes on a YText type.
- *
- * @private
  */
 class YTextEvent extends YEvent {
   /**
@@ -337,6 +354,7 @@ class YTextEvent extends YEvent {
   constructor (ytext, transaction) {
     super(ytext, transaction)
     /**
+     * @private
      * @type {Array<{delete:number|undefined,retain:number|undefined,insert:string|undefined,attributes:Object<string,any>}>|null}
      */
     this._delta = null
@@ -558,6 +576,7 @@ export class YText extends AbstractType {
     super()
     /**
      * @type {Array<string>?}
+     * @private
      */
     this._prelimContent = string !== undefined ? [string] : []
   }
@@ -569,6 +588,8 @@ export class YText extends AbstractType {
   /**
    * @param {Y} y
    * @param {ItemType} item
+   *
+   * @private
    */
   _integrate (y, item) {
     super._integrate(y, item)
@@ -579,10 +600,11 @@ export class YText extends AbstractType {
 
   /**
    * Creates YTextEvent and calls observers.
-   * @private
    *
    * @param {Transaction} transaction
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
+   *
+   * @private
    */
   _callObserver (transaction, parentSubs) {
     callTypeObservers(this, transaction, new YTextEvent(this, transaction))
@@ -847,6 +869,8 @@ export class YText extends AbstractType {
 
   /**
    * @param {encoding.Encoder} encoder
+   *
+   * @private
    */
   _write (encoder) {
     encoding.writeVarUint(encoder, YTextRefID)
@@ -856,5 +880,8 @@ export class YText extends AbstractType {
 /**
  * @param {decoding.Decoder} decoder
  * @return {YText}
+ *
+ * @private
+ * @function
  */
 export const readYText = decoder => new YText()

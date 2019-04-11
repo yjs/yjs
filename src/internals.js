@@ -30,4 +30,4 @@ export * from './structs/ItemJSON.js'
 export * from './structs/ItemString.js'
 export * from './structs/ItemType.js'
 
-export * from './utils/structEncoding.js'
+export * from './utils/encoding.js'

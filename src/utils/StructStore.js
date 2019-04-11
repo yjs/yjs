@@ -13,6 +13,7 @@ export class StructStore {
   constructor () {
     /**
      * @type {Map<number,Array<AbstractStruct>>}
+     * @private
      */
     this.clients = new Map()
     /**
@@ -22,16 +23,19 @@ export class StructStore {
      * slow in Chrome for arrays with more than 100k elements
      * @see tryResumePendingStructRefs
      * @type {Map<number,{i:number,refs:Array<AbstractStructRef>}>}
+     * @private
      */
     this.pendingClientsStructRefs = new Map()
     /**
      * Stack of pending structs waiting for struct dependencies
      * Maximum length of stack is structReaders.size
      * @type {Array<AbstractStructRef>}
+     * @private
      */
     this.pendingStack = []
     /**
      * @type {Array<decoding.Decoder>}
+     * @private
      */
     this.pendingDeleteReaders = []
   }
@@ -43,6 +47,9 @@ export class StructStore {
  *
  * @param {StructStore} store
  * @return {Map<number,number>}
+ *
+ * @public
+ * @function
  */
 export const getStates = store => {
   const sm = new Map()
@@ -56,6 +63,10 @@ export const getStates = store => {
 /**
  * @param {StructStore} store
  * @param {number} client
+ * @return {number}
+ *
+ * @public
+ * @function
  */
 export const getState = (store, client) => {
   const structs = store.clients.get(client)
@@ -68,6 +79,9 @@ export const getState = (store, client) => {
 
 /**
  * @param {StructStore} store
+ *
+ * @private
+ * @function
  */
 export const integretyCheck = store => {
   store.clients.forEach(structs => {
@@ -84,6 +98,9 @@ export const integretyCheck = store => {
 /**
  * @param {StructStore} store
  * @param {AbstractStruct} struct
+ *
+ * @private
+ * @function
  */
 export const addStruct = (store, struct) => {
   let structs = store.clients.get(struct.id.client)
@@ -104,7 +121,9 @@ export const addStruct = (store, struct) => {
  * @param {Array<any>} structs
  * @param {number} clock
  * @return {number}
+ *
  * @private
+ * @function
  */
 export const findIndexSS = (structs, clock) => {
   let left = 0
@@ -133,7 +152,9 @@ export const findIndexSS = (structs, clock) => {
  * @param {StructStore} store
  * @param {ID} id
  * @return {AbstractStruct}
+ *
  * @private
+ * @function
  */
 export const find = (store, id) => {
   /**
@@ -150,6 +171,9 @@ export const find = (store, id) => {
  * @param {StructStore} store
  * @param {ID} id
  * @return {AbstractItem}
+ *
+ * @private
+ * @function
  */
 // @ts-ignore
 export const getItem = (store, id) => find(store, id)
@@ -160,6 +184,9 @@ export const getItem = (store, id) => find(store, id)
  * @param {StructStore} store
  * @param {ID} id
  * @return {ItemType}
+ *
+ * @private
+ * @function
  */
 // @ts-ignore
 export const getItemType = (store, id) => find(store, id)
@@ -173,6 +200,7 @@ export const getItemType = (store, id) => find(store, id)
  * @return {AbstractItem}
  *
  * @private
+ * @function
  */
 export const getItemCleanStart = (transaction, store, id) => {
   /**
@@ -201,6 +229,7 @@ export const getItemCleanStart = (transaction, store, id) => {
  * @return {AbstractItem}
  *
  * @private
+ * @function
  */
 export const getItemCleanEnd = (transaction, store, id) => {
   /**
@@ -221,6 +250,9 @@ export const getItemCleanEnd = (transaction, store, id) => {
  * @param {StructStore} store
  * @param {AbstractStruct} struct
  * @param {AbstractStruct} newStruct
+ *
+ * @private
+ * @function
  */
 export const replaceStruct = (store, struct, newStruct) => {
   /**
@@ -235,6 +267,9 @@ export const replaceStruct = (store, struct, newStruct) => {
  * @param {StructStore} store
  * @param {ID} id
  * @return {boolean}
+ *
+ * @private
+ * @function
  */
 export const exists = (store, id) => id.clock < getState(store, id.client)
 
@@ -243,6 +278,9 @@ export const exists = (store, id) => id.clock < getState(store, id.client)
  *
  * @param {decoding.Decoder} decoder
  * @return {Map<number,number>}
+ *
+ * @private
+ * @function
  */
 export const readStatesAsMap = decoder => {
   const ss = new Map()
@@ -260,6 +298,9 @@ export const readStatesAsMap = decoder => {
  *
  * @param {encoding.Encoder} encoder
  * @param {StructStore} store
+ *
+ * @private
+ * @function
  */
 export const writeStates = (encoder, store) => {
   encoding.writeVarUint(encoder, store.clients.size)

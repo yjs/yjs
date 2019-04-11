@@ -1,6 +1,3 @@
-/**
- * @module types
- */
 
 import {
   YMap,
@@ -20,6 +17,9 @@ export class YXmlHook extends YMap {
    */
   constructor (hookName) {
     super()
+    /**
+     * @type {string}
+     */
     this.hookName = hookName
   }
 
@@ -82,6 +82,9 @@ export class YXmlHook extends YMap {
 /**
  * @param {decoding.Decoder} decoder
  * @return {YXmlHook}
+ *
+ * @private
+ * @function
  */
 export const readYXmlHook = decoder =>
   new YXmlHook(decoding.readVarString(decoder))

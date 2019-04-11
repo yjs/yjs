@@ -1,5 +1,6 @@
+
 /**
- * @module types
+ * @module YMap
  */
 
 import {
@@ -41,12 +42,14 @@ export class YMapEvent extends YEvent {
  * A shared Map implementation.
  *
  * @extends AbstractType<YMapEvent<T>>
+ * @implements {IterableIterator}
  */
 export class YMap extends AbstractType {
   constructor () {
     super()
     /**
      * @type {Map<string,any>?}
+     * @private
      */
     this._prelimContent = new Map()
   }
@@ -59,6 +62,7 @@ export class YMap extends AbstractType {
    *
    * @param {Y} y The Yjs instance
    * @param {ItemType} item
+   *
    * @private
    */
   _integrate (y, item) {
@@ -71,10 +75,11 @@ export class YMap extends AbstractType {
   }
   /**
    * Creates YMapEvent and calls observers.
-   * @private
    *
    * @param {Transaction} transaction
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
+   *
+   * @private
    */
   _callObserver (transaction, parentSubs) {
     callTypeObservers(this, transaction, new YMapEvent(this, transaction, parentSubs))
@@ -110,12 +115,15 @@ export class YMap extends AbstractType {
   /**
    * Returns the value for each element in the YMap Type.
    *
-   * @return {Iterator<T>}
+   * @return {IterableIterator<T>}
    */
   entries () {
     return iterator.iteratorMap(createMapIterator(this._map), v => v[1].getContent()[0])
   }
 
+  /**
+   * @return {IterableIterator<T>}
+   */
   [Symbol.iterator] () {
     return this.entries()
   }
@@ -177,6 +185,8 @@ export class YMap extends AbstractType {
 
   /**
    * @param {encoding.Encoder} encoder
+   *
+   * @private
    */
   _write (encoder) {
     encoding.writeVarUint(encoder, YMapRefID)
@@ -185,5 +195,8 @@ export class YMap extends AbstractType {
 
 /**
  * @param {decoding.Decoder} decoder
+ *
+ * @private
+ * @function
  */
 export const readYMap = decoder => new YMap()

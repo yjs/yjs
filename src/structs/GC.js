@@ -1,6 +1,4 @@
-/**
- * @module structs
- */
+
 import {
   AbstractStructRef,
   AbstractStruct,
@@ -14,6 +12,9 @@ import * as encoding from 'lib0/encoding.js'
 
 export const structGCRefNumber = 0
 
+/**
+ * @private
+ */
 export class GC extends AbstractStruct {
   /**
    * @param {ID} id
@@ -60,6 +61,9 @@ export class GC extends AbstractStruct {
   }
 }
 
+/**
+ * @private
+ */
 export class GCRef extends AbstractStructRef {
   /**
    * @param {decoding.Decoder} decoder

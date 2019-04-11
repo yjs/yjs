@@ -74,9 +74,7 @@ Yjs does not hava any dependencies. Install this package with your favorite pack
 npm i yjs
 ```
 
-##### Tutorial
-
-In this *short* tutorial I will give an overview of the basic concepts in Yjs.
+##### Quickstart
 
 Yjs itself only knows how to do conflict resolution. You need to choose a provider, that handles how document updates are distributed over the network.
 
@@ -139,6 +137,8 @@ food.toJSON() // => { pancake: 10 }
 ```
 
 Now you understand how types are defined on a shared document. Next you can jump to one of the [tutorials on our website](https://yjs.website/tutorial-prosemirror.html) or continue reading about [Providers](#Providers), [Shared Types](#Shared-Types), and [Bindings](#Bindings).
+
+## API
 
 ## Providers
 

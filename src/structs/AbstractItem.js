@@ -33,6 +33,8 @@ import * as binary from 'lib0/binary.js'
  * @param {AbstractItem} leftItem
  * @param {number} diff
  * @return {AbstractItem}
+ * @function
+ * @private
  */
 export const splitItem = (transaction, leftItem, diff) => {
   const id = leftItem.id
@@ -127,6 +129,7 @@ export class AbstractItem extends AbstractStruct {
 
   /**
    * @param {Transaction} transaction
+   * @private
    */
   integrate (transaction) {
     const store = transaction.y.store
@@ -257,6 +260,8 @@ export class AbstractItem extends AbstractStruct {
    * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
    * @return {AbstractItem}
+   *
+   * @private
    */
   copy (id, left, origin, right, rightOrigin, parent, parentSub) {
     throw new Error('unimplemented')
@@ -363,6 +368,8 @@ export class AbstractItem extends AbstractStruct {
    * @param {Transaction} transaction
    * @param {number} diff
    * @return {AbstractItem}
+   *
+   * @private
    */
   splitAt (transaction, diff) {
     throw new Error('unimplemented')
@@ -371,6 +378,8 @@ export class AbstractItem extends AbstractStruct {
   /**
    * @param {AbstractItem} right
    * @return {boolean}
+   *
+   * @private
    */
   mergeWith (right) {
     if (compareIDs(right.origin, this.lastId) && this.right === right && compareIDs(this.rightOrigin, right.rightOrigin)) {
@@ -386,8 +395,6 @@ export class AbstractItem extends AbstractStruct {
    * Mark this Item as deleted.
    *
    * @param {Transaction} transaction
-   *
-   * @private
    */
   delete (transaction) {
     if (!this.deleted) {
@@ -405,12 +412,16 @@ export class AbstractItem extends AbstractStruct {
   /**
    * @param {Transaction} transaction
    * @param {StructStore} store
+   *
+   * @private
    */
   gcChildren (transaction, store) { }
 
   /**
    * @param {Transaction} transaction
    * @param {StructStore} store
+   *
+   * @private
    */
   gc (transaction, store) {
     let r
@@ -449,6 +460,7 @@ export class AbstractItem extends AbstractStruct {
    * @param {encoding.Encoder} encoder The encoder to write data to.
    * @param {number} offset
    * @param {number} encodingRef
+   *
    * @private
    */
   write (encoder, offset, encodingRef) {
@@ -487,6 +499,9 @@ export class AbstractItem extends AbstractStruct {
   }
 }
 
+/**
+ * @private
+ */
 export class AbstractItemRef extends AbstractStructRef {
   /**
    * @param {decoding.Decoder} decoder
@@ -543,6 +558,9 @@ export class AbstractItemRef extends AbstractStructRef {
 /**
  * @param {AbstractItemRef} item
  * @param {number} offset
+ *
+ * @function
+ * @private
  */
 export const changeItemRefOffset = (item, offset) => {
   item.id = createID(item.id.client, item.id.clock + offset)
@@ -561,6 +579,9 @@ export const changeItemRefOffset = (item, offset) => {
  * @param {string|null} parentSub
  * @param {string|null} parentYKey
  * @return {{left:AbstractItem?,right:AbstractItem?,parent:AbstractType<YEvent>?,parentSub:string?}}
+ *
+ * @private
+ * @function
  */
 export const computeItemParams = (transaction, store, leftid, rightid, parentid, parentSub, parentYKey) => {
   const left = leftid === null ? null : getItemCleanEnd(transaction, store, leftid)

@@ -1,6 +1,3 @@
-/**
- * @module utils
- */
 
 import { AbstractType } from '../internals.js' // eslint-disable-line
 
@@ -11,7 +8,8 @@ import { AbstractType } from '../internals.js' // eslint-disable-line
  * @param {AbstractType<any>} child
  * @return {Boolean} Whether `parent` is a parent of `child`.
  *
- * @public
+ * @private
+ * @function
  */
 export const isParentOf = (parent, child) => {
   while (child._item !== null) {

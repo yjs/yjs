@@ -1,6 +1,3 @@
-/**
- * @module structs
- */
 
 import {
   AbstractItem,
@@ -15,8 +12,14 @@ import {
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 
+/**
+ * @private
+ */
 export const structJSONRefNumber = 5
 
+/**
+ * @private
+ */
 export class ItemJSON extends AbstractItem {
   /**
    * @param {ID} id
@@ -92,6 +95,9 @@ export class ItemJSON extends AbstractItem {
   }
 }
 
+/**
+ * @private
+ */
 export class ItemJSONRef extends AbstractItemRef {
   /**
    * @param {decoding.Decoder} decoder

@@ -1,4 +1,8 @@
 
+/**
+ * @module encoding
+ */
+
 import {
   findIndexSS,
   exists,
@@ -26,9 +30,8 @@ import * as decoding from 'lib0/decoding.js'
 import * as binary from 'lib0/binary.js'
 
 /**
- * @typedef {Map<number, number>} StateMap
+ * @private
  */
-
 export const structRefs = [
   GCRef,
   ItemBinaryRef,
@@ -45,6 +48,8 @@ export const structRefs = [
  * @param {Array<AbstractStruct>} structs All structs by `client`
  * @param {number} client
  * @param {number} clock write structs starting with `ID(client,clock)`
+ *
+ * @function
  */
 const writeStructs = (encoder, structs, client, clock) => {
   // write first id
@@ -65,6 +70,9 @@ const writeStructs = (encoder, structs, client, clock) => {
  * @param {number} numOfStructs
  * @param {ID} nextID
  * @return {Array<AbstractStructRef>}
+ *
+ * @private
+ * @function
  */
 const readStructRefs = (decoder, numOfStructs, nextID) => {
   /**
@@ -83,7 +91,10 @@ const readStructRefs = (decoder, numOfStructs, nextID) => {
 /**
  * @param {encoding.Encoder} encoder
  * @param {StructStore} store
- * @param {StateMap} _sm
+ * @param {Map<number,number>} _sm
+ *
+ * @private
+ * @function
  */
 export const writeClientsStructs = (encoder, store, _sm) => {
   // we filter all valid _sm entries into sm
@@ -110,6 +121,9 @@ export const writeClientsStructs = (encoder, store, _sm) => {
 /**
  * @param {decoding.Decoder} decoder The decoder object to read data from.
  * @return {Map<number,Array<AbstractStructRef>>}
+ *
+ * @private
+ * @function
  */
 export const readClientsStructRefs = decoder => {
   /**
@@ -148,6 +162,8 @@ export const readClientsStructRefs = decoder => {
  * @param {Transaction} transaction
  * @param {StructStore} store
  *
+ * @private
+ * @function
  */
 const resumeStructIntegration = (transaction, store) => {
   const stack = store.pendingStack
@@ -216,6 +232,9 @@ const resumeStructIntegration = (transaction, store) => {
 /**
  * @param {Transaction} transaction
  * @param {StructStore} store
+ *
+ * @private
+ * @function
  */
 export const tryResumePendingDeleteReaders = (transaction, store) => {
   const pendingReaders = store.pendingDeleteReaders
@@ -226,30 +245,27 @@ export const tryResumePendingDeleteReaders = (transaction, store) => {
 }
 
 /**
- * @param {Map<number,{refs:Array<AbstractStructRef>,i:number}>} pendingClientsStructRefs
- * @param {number} client
- * @param {Array<AbstractStructRef>} refs
- */
-const setPendingClientsStructRefs = (pendingClientsStructRefs, client, refs) => {
-  pendingClientsStructRefs.set(client, { refs, i: 0 })
-}
-
-/**
  * @param {encoding.Encoder} encoder
  * @param {Transaction} transaction
+ *
+ * @private
+ * @function
  */
 export const writeStructsFromTransaction = (encoder, transaction) => writeClientsStructs(encoder, transaction.y.store, transaction.beforeState)
 
 /**
  * @param {StructStore} store
  * @param {Map<number, Array<AbstractStructRef>>} clientsStructsRefs
+ *
+ * @private
+ * @function
  */
 const mergeReadStructsIntoPendingReads = (store, clientsStructsRefs) => {
   const pendingClientsStructRefs = store.pendingClientsStructRefs
   for (const [client, structRefs] of clientsStructsRefs) {
     const pendingStructRefs = pendingClientsStructRefs.get(client)
     if (pendingStructRefs === undefined) {
-      setPendingClientsStructRefs(pendingClientsStructRefs, client, structRefs)
+      pendingClientsStructRefs.set(client, { refs: structRefs, i: 0 })
     } else {
       // merge into existing structRefs
       const merged = pendingStructRefs.i > 0 ? pendingStructRefs.refs.slice(pendingStructRefs.i) : pendingStructRefs.refs
@@ -272,6 +288,7 @@ const mergeReadStructsIntoPendingReads = (store, clientsStructsRefs) => {
  * @param {StructStore} store
  *
  * @private
+ * @function
  */
 export const readStructs = (decoder, transaction, store) => {
   const clientsStructRefs = readClientsStructRefs(decoder)
@@ -284,6 +301,8 @@ export const readStructs = (decoder, transaction, store) => {
  * @param {decoding.Decoder} decoder
  * @param {Transaction} transaction
  * @param {StructStore} store
+ *
+ * @function
  */
 export const readModel = (decoder, transaction, store) => {
   readStructs(decoder, transaction, store)
@@ -294,6 +313,8 @@ export const readModel = (decoder, transaction, store) => {
  * @param {encoding.Encoder} encoder
  * @param {StructStore} store
  * @param {Map<number,number>} [targetState] The state of the target that receives the update. Leave empty to write all known structs
+ *
+ * @function
  */
 export const writeModel = (encoder, store, targetState = new Map()) => {
   writeClientsStructs(encoder, store, targetState)

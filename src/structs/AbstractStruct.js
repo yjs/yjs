@@ -6,7 +6,9 @@ import {
 import * as encoding from 'lib0/encoding.js' // eslint-disable-line
 import * as error from 'lib0/error.js'
 
-// eslint-disable-next-line
+/**
+ * @private
+ */
 export class AbstractStruct {
   /**
    * @param {ID} id
@@ -53,6 +55,9 @@ export class AbstractStruct {
   }
 }
 
+/**
+ * @private
+ */
 export class AbstractStructRef {
   /**
    * @param {ID} id

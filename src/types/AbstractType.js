@@ -1,6 +1,3 @@
-/**
- * @module structs
- */
 
 import {
   removeEventHandlerListener,
@@ -101,6 +98,7 @@ export class AbstractType {
 
   /**
    * @return {AbstractType<EventType>}
+   * @private
    */
   _copy () {
     throw new Error('unimplemented')
@@ -108,6 +106,7 @@ export class AbstractType {
 
   /**
    * @param {encoding.Encoder} encoder
+   * @private
    */
   _write (encoder) { }
 
@@ -125,10 +124,11 @@ export class AbstractType {
   /**
    * Creates YEvent and calls all type observers.
    * Must be implemented by each type.
-   * @private
    *
    * @param {Transaction} transaction
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
+   *
+   * @private
    */
   _callObserver (transaction, parentSubs) { /* skip if no type is specified */ }
 
@@ -178,6 +178,9 @@ export class AbstractType {
 /**
  * @param {AbstractType<any>} type
  * @return {Array<any>}
+ *
+ * @private
+ * @function
  */
 export const typeArrayToArray = type => {
   const cs = []
@@ -199,6 +202,9 @@ export const typeArrayToArray = type => {
  *
  * @param {AbstractType<any>} type
  * @param {function(any,number,AbstractType<any>):void} f A function to execute on every element of this YArray.
+ *
+ * @private
+ * @function
  */
 export const typeArrayForEach = (type, f) => {
   let index = 0
@@ -219,6 +225,9 @@ export const typeArrayForEach = (type, f) => {
  * @param {AbstractType<any>} type
  * @param {function(C,number,AbstractType<any>):R} f
  * @return {Array<R>}
+ *
+ * @private
+ * @function
  */
 export const typeArrayMap = (type, f) => {
   /**
@@ -233,7 +242,10 @@ export const typeArrayMap = (type, f) => {
 
 /**
  * @param {AbstractType<any>} type
- * @return {{next:function():{done:boolean,value:any|undefined}}}
+ * @return {IterableIterator<any>}
+ *
+ * @private
+ * @function
  */
 export const typeArrayCreateIterator = type => {
   let n = type._start
@@ -243,6 +255,9 @@ export const typeArrayCreateIterator = type => {
   let currentContent = null
   let currentContentIndex = 0
   return {
+    [Symbol.iterator] () {
+      return this
+    },
     next: () => {
       // find some content
       if (currentContent === null) {
@@ -284,6 +299,9 @@ export const typeArrayCreateIterator = type => {
  * @param {AbstractType<any>} type
  * @param {function(any,number,AbstractType<any>):void} f A function to execute on every element of this YArray.
  * @param {Snapshot} snapshot
+ *
+ * @private
+ * @function
  */
 export const typeArrayForEachSnapshot = (type, f, snapshot) => {
   let index = 0
@@ -303,6 +321,9 @@ export const typeArrayForEachSnapshot = (type, f, snapshot) => {
  * @param {AbstractType<any>} type
  * @param {number} index
  * @return {any}
+ *
+ * @private
+ * @function
  */
 export const typeArrayGet = (type, index) => {
   for (let n = type._start; n !== null; n = n.right) {
@@ -320,6 +341,9 @@ export const typeArrayGet = (type, index) => {
  * @param {AbstractType<any>} parent
  * @param {AbstractItem?} referenceItem
  * @param {Array<Object<string,any>|Array<any>|number|string|ArrayBuffer>} content
+ *
+ * @private
+ * @function
  */
 export const typeArrayInsertGenericsAfter = (transaction, parent, referenceItem, content) => {
   let left = referenceItem
@@ -370,6 +394,9 @@ export const typeArrayInsertGenericsAfter = (transaction, parent, referenceItem,
  * @param {AbstractType<any>} parent
  * @param {number} index
  * @param {Array<Object<string,any>|Array<any>|number|string|ArrayBuffer>} content
+ *
+ * @private
+ * @function
  */
 export const typeArrayInsertGenerics = (transaction, parent, index, content) => {
   if (index === 0) {
@@ -396,6 +423,9 @@ export const typeArrayInsertGenerics = (transaction, parent, index, content) => 
  * @param {AbstractType<any>} parent
  * @param {number} index
  * @param {number} length
+ *
+ * @private
+ * @function
  */
 export const typeArrayDelete = (transaction, parent, index, length) => {
   if (length === 0) { return }
@@ -432,6 +462,9 @@ export const typeArrayDelete = (transaction, parent, index, length) => {
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {string} key
+ *
+ * @private
+ * @function
  */
 export const typeMapDelete = (transaction, parent, key) => {
   const c = parent._map.get(key)
@@ -445,6 +478,9 @@ export const typeMapDelete = (transaction, parent, key) => {
  * @param {AbstractType<any>} parent
  * @param {string} key
  * @param {Object|number|Array<any>|string|ArrayBuffer|AbstractType<any>} value
+ *
+ * @private
+ * @function
  */
 export const typeMapSet = (transaction, parent, key, value) => {
   const left = parent._map.get(key) || null
@@ -475,6 +511,9 @@ export const typeMapSet = (transaction, parent, key, value) => {
  * @param {AbstractType<any>} parent
  * @param {string} key
  * @return {Object<string,any>|number|Array<any>|string|ArrayBuffer|AbstractType<any>|undefined}
+ *
+ * @private
+ * @function
  */
 export const typeMapGet = (parent, key) => {
   const val = parent._map.get(key)
@@ -484,6 +523,9 @@ export const typeMapGet = (parent, key) => {
 /**
  * @param {AbstractType<any>} parent
  * @return {Object<string,Object<string,any>|number|Array<any>|string|ArrayBuffer|AbstractType<any>|undefined>}
+ *
+ * @private
+ * @function
  */
 export const typeMapGetAll = (parent) => {
   /**
@@ -502,6 +544,9 @@ export const typeMapGetAll = (parent) => {
  * @param {AbstractType<any>} parent
  * @param {string} key
  * @return {boolean}
+ *
+ * @private
+ * @function
  */
 export const typeMapHas = (parent, key) => {
   const val = parent._map.get(key)
@@ -513,6 +558,9 @@ export const typeMapHas = (parent, key) => {
  * @param {string} key
  * @param {Snapshot} snapshot
  * @return {Object<string,any>|number|Array<any>|string|ArrayBuffer|AbstractType<any>|undefined}
+ *
+ * @private
+ * @function
  */
 export const typeMapGetSnapshot = (parent, key, snapshot) => {
   let v = parent._map.get(key) || null
@@ -525,5 +573,8 @@ export const typeMapGetSnapshot = (parent, key, snapshot) => {
 /**
  * @param {Map<string,AbstractItem>} map
  * @return {Iterator<[string,AbstractItem]>}
+ *
+ * @private
+ * @function
  */
 export const createMapIterator = map => iterator.iteratorFilter(map.entries(), entry => !entry[1].deleted)

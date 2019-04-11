@@ -1,5 +1,5 @@
 /**
- * @module types
+ * @module YXml
  */
 
 import {
@@ -50,6 +50,7 @@ import * as decoding from 'lib0/decoding.js'
  * Can be created with {@link YXmlFragment#createTreeWalker}
  *
  * @public
+ * @implements {IterableIterator}
  */
 export class YXmlTreeWalker {
   /**
@@ -66,6 +67,7 @@ export class YXmlTreeWalker {
     this._currentNode = root._start
     this._firstCall = true
   }
+
   [Symbol.iterator] () {
     return this
   }
@@ -250,10 +252,12 @@ export class YXmlElement extends YXmlFragment {
     this.nodeName = nodeName.toUpperCase()
     /**
      * @type {Array<any>|null}
+     * @private
      */
     this._prelimContent = []
     /**
      * @type {Map<string, any>|null}
+     * @private
      */
     this._prelimAttrs = new Map()
   }
@@ -471,10 +475,16 @@ export class YXmlElement extends YXmlFragment {
 /**
  * @param {decoding.Decoder} decoder
  * @return {YXmlElement}
+ *
+ * @private
+ * @function
  */
 export const readYXmlElement = decoder => new YXmlElement(decoding.readVarString(decoder))
 /**
  * @param {decoding.Decoder} decoder
  * @return {YXmlFragment}
+ *
+ * @private
+ * @function
  */
 export const readYXmlFragment = decoder => new YXmlFragment()
