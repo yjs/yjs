@@ -22,6 +22,41 @@ import {
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 import * as encoding from 'lib0/encoding.js'
 
+export class ItemListPosition {
+  /**
+   * @param {AbstractItem|null} left
+   * @param {AbstractItem|null} right
+   */
+  constructor (left, right) {
+    this.left = left
+    this.right = right
+  }
+}
+
+export class ItemTextListPosition extends ItemListPosition {
+  /**
+   * @param {AbstractItem|null} left
+   * @param {AbstractItem|null} right
+   * @param {Map<string,any>} currentAttributes
+   */
+  constructor (left, right, currentAttributes) {
+    super(left, right)
+    this.currentAttributes = currentAttributes
+  }
+}
+
+export class ItemInsertionResult extends ItemListPosition {
+  /**
+   * @param {AbstractItem|null} left
+   * @param {AbstractItem|null} right
+   * @param {Map<string,any>} negatedAttributes
+   */
+  constructor (left, right, negatedAttributes) {
+    super(left, right)
+    this.negatedAttributes = negatedAttributes
+  }
+}
+
 /**
  * @param {Transaction} transaction
  * @param {StructStore} store
@@ -29,7 +64,7 @@ import * as encoding from 'lib0/encoding.js'
  * @param {AbstractItem|null} left
  * @param {AbstractItem|null} right
  * @param {number} count
- * @return {{left:AbstractItem|null,right:AbstractItem|null,currentAttributes:Map<string,any>}}
+ * @return {ItemTextListPosition}
  *
  * @private
  * @function
@@ -57,7 +92,7 @@ const findNextPosition = (transaction, store, currentAttributes, left, right, co
     left = right
     right = right.right
   }
-  return { left, right, currentAttributes }
+  return new ItemTextListPosition(left, right, currentAttributes)
 }
 
 /**
@@ -65,7 +100,7 @@ const findNextPosition = (transaction, store, currentAttributes, left, right, co
  * @param {StructStore} store
  * @param {AbstractType<any>} parent
  * @param {number} index
- * @return {{left:AbstractItem|null,right:AbstractItem|null,currentAttributes:Map<string,any>}}
+ * @return {ItemTextListPosition}
  *
  * @private
  * @function
@@ -85,7 +120,7 @@ const findPosition = (transaction, store, parent, index) => {
  * @param {AbstractItem|null} left
  * @param {AbstractItem|null} right
  * @param {Map<string,any>} negatedAttributes
- * @return {{left:AbstractItem|null,right:AbstractItem|null}}
+ * @return {ItemListPosition}
  *
  * @private
  * @function
@@ -137,7 +172,7 @@ const updateCurrentAttributes = (currentAttributes, item) => {
  * @param {AbstractItem|null} right
  * @param {Map<string,any>} currentAttributes
  * @param {Object<string,any>} attributes
- * @return {{left:AbstractItem|null,right:AbstractItem|null}}
+ * @return {ItemListPosition}
  *
  * @private
  * @function
@@ -160,7 +195,7 @@ const minimizeAttributeChanges = (left, right, currentAttributes, attributes) =>
     left = right
     right = right.right
   }
-  return { left, right }
+  return new ItemListPosition(left, right)
 }
 
 /**
@@ -170,7 +205,7 @@ const minimizeAttributeChanges = (left, right, currentAttributes, attributes) =>
  * @param {AbstractItem|null} right
  * @param {Map<string,any>} currentAttributes
  * @param {Object<string,any>} attributes
- * @return {{left:AbstractItem|null,right:AbstractItem|null,negatedAttributes:Map<string,any>}}
+ * @return {ItemInsertionResult}
  *
  * @private
  * @function
@@ -188,7 +223,7 @@ const insertAttributes = (transaction, parent, left, right, currentAttributes, a
       left.integrate(transaction)
     }
   }
-  return { left, right, negatedAttributes }
+  return new ItemInsertionResult(left, right, negatedAttributes)
 }
 
 /**
@@ -199,7 +234,7 @@ const insertAttributes = (transaction, parent, left, right, currentAttributes, a
  * @param {Map<string,any>} currentAttributes
  * @param {string} text
  * @param {Object<string,any>} attributes
- * @return {{left:AbstractItem|null,right:AbstractItem|null}}
+ * @return {ItemListPosition}
  *
  * @private
  * @function
@@ -232,7 +267,7 @@ const insertText = (transaction, parent, left, right, currentAttributes, text, a
  * @param {Map<string,any>} currentAttributes
  * @param {number} length
  * @param {Object<string,any>} attributes
- * @return {{left:AbstractItem|null,right:AbstractItem|null}}
+ * @return {ItemListPosition}
  *
  * @private
  * @function
@@ -282,17 +317,16 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
 
 /**
  * @param {Transaction} transaction
- * @param {AbstractType<any>} parent
  * @param {AbstractItem|null} left
  * @param {AbstractItem|null} right
  * @param {Map<string,any>} currentAttributes
  * @param {number} length
- * @return {{left:AbstractItem|null,right:AbstractItem|null}}
+ * @return {ItemListPosition}
  *
  * @private
  * @function
  */
-const deleteText = (transaction, parent, left, right, currentAttributes, length) => {
+const deleteText = (transaction, left, right, currentAttributes, length) => {
   while (length > 0 && right !== null) {
     if (right.deleted === false) {
       switch (right.constructor) {
@@ -344,6 +378,14 @@ const deleteText = (transaction, parent, left, right, currentAttributes, length)
   */
 
 /**
+ * @typedef {Object} DeltaItem
+ * @property {number|undefined} DeltaItem.delete
+ * @property {number|undefined} DeltaItem.retain
+ * @property {string|undefined} DeltaItem.string
+ * @property {Object<string,any>} DeltaItem.attributes
+ */
+
+/**
  * Event that describes the changes on a YText type.
  */
 class YTextEvent extends YEvent {
@@ -355,7 +397,7 @@ class YTextEvent extends YEvent {
     super(ytext, transaction)
     /**
      * @private
-     * @type {Array<{delete:number|undefined,retain:number|undefined,insert:string|undefined,attributes:Object<string,any>}>|null}
+     * @type {Array<DeltaItem>|null}
      */
     this._delta = null
   }
@@ -363,7 +405,7 @@ class YTextEvent extends YEvent {
    * Compute the changes in the delta format.
    * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
    *
-   * @type {Array<{delete:number|undefined,retain:number|undefined,insert:string|undefined,attributes:Object<string,any>}>}
+   * @type {Array<DeltaItem>}
    *
    * @public
    */
@@ -373,7 +415,7 @@ class YTextEvent extends YEvent {
       // @ts-ignore
       transact(y, transaction => {
         /**
-         * @type {Array<{delete:number|undefined,retain:number|undefined,insert:string|undefined,attributes:Object<string,any>}>}
+         * @type {Array<DeltaItem>}
          */
         const delta = []
         const currentAttributes = new Map() // saves all current attributes for insert
@@ -680,9 +722,9 @@ export class YText extends AbstractType {
     if (this._y !== null) {
       transact(this._y, transaction => {
         /**
-         * @type {{left:AbstractItem|null,right:AbstractItem|null}}
+         * @type {ItemListPosition}
          */
-        let pos = { left: null, right: this._start }
+        let pos = new ItemListPosition(null, this._start)
         const currentAttributes = new Map()
         for (let i = 0; i < delta.length; i++) {
           const op = delta[i]
@@ -691,7 +733,7 @@ export class YText extends AbstractType {
           } else if (op.retain !== undefined) {
             pos = formatText(transaction, this, pos.left, pos.right, currentAttributes, op.retain, op.attributes || {})
           } else if (op.delete !== undefined) {
-            pos = deleteText(transaction, this, pos.left, pos.right, currentAttributes, op.delete)
+            pos = deleteText(transaction, pos.left, pos.right, currentAttributes, op.delete)
           }
         }
       })
@@ -839,7 +881,7 @@ export class YText extends AbstractType {
     if (y !== null) {
       transact(y, transaction => {
         const { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
-        deleteText(transaction, this, left, right, currentAttributes, length)
+        deleteText(transaction, left, right, currentAttributes, length)
       })
     }
   }

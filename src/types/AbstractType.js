@@ -30,7 +30,7 @@ import * as encoding from 'lib0/encoding.js' // eslint-disable-line
  * @param {EventType} event
  */
 export const callTypeObservers = (type, transaction, event) => {
-  callEventHandlerListeners(type._eH, [event, transaction])
+  callEventHandlerListeners(type._eH, event, transaction)
   const changedParentTypes = transaction.changedParentTypes
   while (true) {
     // @ts-ignore
@@ -572,7 +572,7 @@ export const typeMapGetSnapshot = (parent, key, snapshot) => {
 
 /**
  * @param {Map<string,AbstractItem>} map
- * @return {Iterator<[string,AbstractItem]>}
+ * @return {IterableIterator<Array<any>>}
  *
  * @private
  * @function

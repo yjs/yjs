@@ -157,7 +157,7 @@ export const transact = (y, f) => {
           })
         // we don't need to check for events.length
         // because we know it has at least one element
-        callEventHandlerListeners(type._dEH, [events, transaction])
+        callEventHandlerListeners(type._dEH, events, transaction)
       })
       // only call afterTransaction listeners if anything changed
       transaction.afterState = getStates(transaction.y.store)

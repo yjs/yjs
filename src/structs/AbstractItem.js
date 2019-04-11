@@ -33,6 +33,7 @@ import * as binary from 'lib0/binary.js'
  * @param {AbstractItem} leftItem
  * @param {number} diff
  * @return {AbstractItem}
+ *
  * @function
  * @private
  */
@@ -567,6 +568,21 @@ export const changeItemRefOffset = (item, offset) => {
   item.left = createID(item.id.client, item.id.clock - 1)
 }
 
+export class ItemParams {
+  /**
+   * @param {AbstractItem?} left
+   * @param {AbstractItem?} right
+   * @param {AbstractType<YEvent>?} parent
+   * @param {string|null} parentSub
+   */
+  constructor (left, right, parent, parentSub) {
+    this.left = left
+    this.right = right
+    this.parent = parent
+    this.parentSub = parentSub
+  }
+}
+
 /**
  * Outsourcing some of the logic of computing the item params from a received struct.
  * If parent === null, it is expected to gc the read struct. Otherwise apply it.
@@ -578,7 +594,7 @@ export const changeItemRefOffset = (item, offset) => {
  * @param {ID|null} parentid
  * @param {string|null} parentSub
  * @param {string|null} parentYKey
- * @return {{left:AbstractItem?,right:AbstractItem?,parent:AbstractType<YEvent>?,parentSub:string?}}
+ * @return {ItemParams}
  *
  * @private
  * @function
@@ -611,7 +627,5 @@ export const computeItemParams = (transaction, store, leftid, rightid, parentid,
   } else {
     throw error.unexpectedCase()
   }
-  return {
-    left, right, parent, parentSub
-  }
+  return new ItemParams(left, right, parent, parentSub)
 }

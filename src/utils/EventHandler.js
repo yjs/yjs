@@ -72,10 +72,11 @@ export const removeAllEventHandlerListeners = eventHandler => {
  *
  * @template ARG0,ARG1
  * @param {EventHandler<ARG0,ARG1>} eventHandler
- * @param {[ARG0,ARG1]} args
+ * @param {ARG0} arg0
+ * @param {ARG1} arg1
  *
  * @private
  * @function
  */
-export const callEventHandlerListeners = (eventHandler, args) =>
-  f.callAll(eventHandler.l, args)
+export const callEventHandlerListeners = (eventHandler, arg0, arg1) =>
+  f.callAll(eventHandler.l, [arg0, arg1])
