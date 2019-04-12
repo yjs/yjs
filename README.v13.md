@@ -1,7 +1,7 @@
 # ![Yjs](https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png)
 > The shared editing library
 
-Yjs is a library for automatic conflict resolution on shared state. It implements an operation-based CRDT and exposes its internal CRDT model as shared types. Shared types are common data types like `Map` or `Array` with superpowers! - changes are automatically distributed to other peers and merged without merge conflicts.
+Yjs is a library for automatic conflict resolution on shared state. It implements an operation-based CRDT and exposes its internal CRDT model as shared types. Shared types are common data types like `Map` or `Array` with superpowers - changes are automatically distributed to other peers and merged without merge conflicts.
 
 Yjs is **network agnostic** (p2p!), supports many existing **rich text editors**, **offline editing**, **version snapshots**, **shared cursors**, and encodes update messages using **binary protocol encoding**. 
 

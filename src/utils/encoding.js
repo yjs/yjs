@@ -5,7 +5,6 @@
 
 import {
   findIndexSS,
-  exists,
   GCRef,
   ItemBinaryRef,
   ItemDeletedRef,
@@ -204,7 +203,7 @@ const resumeStructIntegration = (transaction, store) => {
     }
     while (m.length > 0) {
       const missing = m[m.length - 1]
-      if (!exists(store, missing)) {
+      if (getState(store, missing.client) <= missing.clock) {
         const client = missing.client
         // get the struct reader that has the missing struct
         const structRefs = clientsStructRefs.get(client)

@@ -1,15 +1,15 @@
 /**
- * @module RelativePosition
+ * @module Cursors
  */
 
 import {
-  find,
-  exists,
+  getItem,
   getItemType,
   createID,
   writeID,
   readID,
   compareIDs,
+  getState,
   findRootTypeKey,
   AbstractItem,
   ID, StructStore, Y, AbstractType // eslint-disable-line
@@ -20,31 +20,29 @@ import * as decoding from 'lib0/decoding.js'
 import * as error from 'lib0/error.js'
 
 /**
- * A relative position that is based on the Yjs model. In contrast to an
- * absolute position (position by index), the relative position can be
+ * A Cursor is a relative position that is based on the Yjs model. In contrast to an
+ * absolute position (position by index), the Cursor can be
  * recomputed when remote changes are received. For example:
  *
  * ```Insert(0, 'x')('a|bc') = 'xa|bc'``` Where | is the cursor position.
  *
  * A relative cursor position can be obtained with the function
- * {@link getRelativePosition} and it can be transformed to an absolute position
- * with {@link fromRelativePosition}.
  *
  * One of the properties must be defined.
  *
  * @example
- * // Current cursor position is at position 10
- * let relativePosition = getRelativePosition(yText, 10)
- * // modify yText
- * yText.insert(0, 'abc')
- * yText.delete(3, 10)
- * // Compute the cursor position
- * let absolutePosition = fromRelativePosition(y, relativePosition)
- * absolutePosition.type // => yText
- * console.log('cursor location is ' + absolutePosition.offset) // => cursor location is 3
+ *   // Current cursor position is at position 10
+ *   const relativePosition = createCursorFromOffset(yText, 10)
+ *   // modify yText
+ *   yText.insert(0, 'abc')
+ *   yText.delete(3, 10)
+ *   // Compute the cursor position
+ *   const absolutePosition = toAbsolutePosition(y, relativePosition)
+ *   absolutePosition.type === yText // => true
+ *   console.log('cursor location is ' + absolutePosition.offset) // => cursor location is 3
  *
  */
-export class RelativePosition {
+export class Cursor {
   /**
    * @param {ID|null} type
    * @param {string|null} tname
@@ -81,11 +79,11 @@ export class RelativePosition {
 
 /**
  * @param {Object} json
- * @return {RelativePosition}
+ * @return {Cursor}
  *
  * @function
  */
-export const createRelativePositionFromJSON = json => new RelativePosition(json.type == null ? null : createID(json.type.client, json.type.clock), json.tname || null, json.item == null ? null : createID(json.item.client, json.item.clock))
+export const createCursorFromJSON = json => new Cursor(json.type == null ? null : createID(json.type.client, json.type.clock), json.tname || null, json.item == null ? null : createID(json.item.client, json.item.clock))
 
 export class AbsolutePosition {
   /**
@@ -118,7 +116,7 @@ export const createAbsolutePosition = (type, offset) => new AbsolutePosition(typ
  *
  * @function
  */
-export const createRelativePosition = (type, item) => {
+export const createCursor = (type, item) => {
   let typeid = null
   let tname = null
   if (type._item === null) {
@@ -126,7 +124,7 @@ export const createRelativePosition = (type, item) => {
   } else {
     typeid = type._item.id
   }
-  return new RelativePosition(typeid, tname, item)
+  return new Cursor(typeid, tname, item)
 }
 
 /**
@@ -134,32 +132,32 @@ export const createRelativePosition = (type, item) => {
  *
  * @param {AbstractType<any>} type The base type (e.g. YText or YArray).
  * @param {number} offset The absolute position.
- * @return {RelativePosition}
+ * @return {Cursor}
  *
  * @function
  */
-export const createRelativePositionByOffset = (type, offset) => {
+export const createCursorFromTypeOffset = (type, offset) => {
   let t = type._start
   while (t !== null) {
     if (!t.deleted && t.countable) {
       if (t.length > offset) {
         // case 1: found position somewhere in the linked list
-        return createRelativePosition(type, createID(t.id.client, t.id.clock + offset))
+        return createCursor(type, createID(t.id.client, t.id.clock + offset))
       }
       offset -= t.length
     }
     t = t.right
   }
-  return createRelativePosition(type, null)
+  return createCursor(type, null)
 }
 
 /**
  * @param {encoding.Encoder} encoder
- * @param {RelativePosition} rpos
+ * @param {Cursor} rpos
  *
  * @function
  */
-export const writeRelativePosition = (encoder, rpos) => {
+export const writeCursor = (encoder, rpos) => {
   const { type, tname, item } = rpos
   if (item !== null) {
     encoding.writeVarUint(encoder, 0)
@@ -182,11 +180,11 @@ export const writeRelativePosition = (encoder, rpos) => {
  * @param {decoding.Decoder} decoder
  * @param {Y} y
  * @param {StructStore} store
- * @return {RelativePosition|null}
+ * @return {Cursor|null}
  *
  * @function
  */
-export const readRelativePosition = (decoder, y, store) => {
+export const readCursor = (decoder, y, store) => {
   let type = null
   let tname = null
   let itemID = null
@@ -204,28 +202,28 @@ export const readRelativePosition = (decoder, y, store) => {
       type = readID(decoder)
     }
   }
-  return new RelativePosition(type, tname, itemID)
+  return new Cursor(type, tname, itemID)
 }
 
 /**
- * @param {RelativePosition} rpos
+ * @param {Cursor} cursor
  * @param {Y} y
  * @return {AbsolutePosition|null}
  *
  * @function
  */
-export const toAbsolutePosition = (rpos, y) => {
+export const createAbsolutePositionFromCursor = (cursor, y) => {
   const store = y.store
-  const rightID = rpos.item
-  const typeID = rpos.type
-  const tname = rpos.tname
+  const rightID = cursor.item
+  const typeID = cursor.type
+  const tname = cursor.tname
   let type = null
   let offset = 0
   if (rightID !== null) {
-    if (!exists(store, rightID)) {
+    if (getState(store, rightID.client) <= rightID.clock) {
       return null
     }
-    const right = find(store, rightID)
+    const right = getItem(store, rightID)
     if (!(right instanceof AbstractItem)) {
       return null
     }
@@ -255,42 +253,12 @@ export const toAbsolutePosition = (rpos, y) => {
 }
 
 /**
- * Transforms an absolute to a relative position.
- *
- * @param {AbsolutePosition} apos The absolute position.
- * @param {Y} y The Yjs instance in which to query for the absolute position.
- * @return {RelativePosition} The absolute position in the Yjs model
- *                            (type + offset).
+ * @param {Cursor|null} a
+ * @param {Cursor|null} b
  *
  * @function
  */
-export const toRelativePosition = (apos, y) => {
-  const type = apos.type
-  if (type._length === apos.offset) {
-    return createRelativePosition(type, null)
-  } else {
-    let offset = apos.offset
-    let n = type._start
-    while (n !== null) {
-      if (!n.deleted && n.countable) {
-        if (n.length > offset) {
-          return createRelativePosition(type, createID(n.id.client, n.id.clock + offset))
-        }
-        offset -= n.length
-      }
-      n = n.right
-    }
-  }
-  throw error.unexpectedCase()
-}
-
-/**
- * @param {RelativePosition|null} a
- * @param {RelativePosition|null} b
- *
- * @function
- */
-export const compareRelativePositions = (a, b) => a === b || (
+export const compareCursors = (a, b) => a === b || (
   a !== null && b !== null && a.tname === b.tname && (
     (a.item !== null && b.item !== null && compareIDs(a.item, b.item)) ||
     (a.type !== null && b.type !== null && compareIDs(a.type, b.type))

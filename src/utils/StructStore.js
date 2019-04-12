@@ -264,16 +264,6 @@ export const replaceStruct = (store, struct, newStruct) => {
 }
 
 /**
- * @param {StructStore} store
- * @param {ID} id
- * @return {boolean}
- *
- * @private
- * @function
- */
-export const exists = (store, id) => id.clock < getState(store, id.client)
-
-/**
  * Read StateMap from Decoder and return as Map
  *
  * @param {decoding.Decoder} decoder
