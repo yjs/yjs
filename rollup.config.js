@@ -86,7 +86,7 @@ export default [{
     commonjs()
   ]
 }, {
-  input: ['./examples/codemirror.js', './examples/textarea.js'/*, './examples/quill.js', './examples/dom.js', './examples/prosemirror.js'*/], // fs.readdirSync('./examples').filter(file => /(?<!\.(test|config))\.js$/.test(file)).map(file => './examples/' + file),
+  input: ['./examples/codemirror.js', './examples/textarea.js'], // './examples/quill.js', './examples/dom.js', './examples/prosemirror.js'
   output: {
     dir: 'examples/build',
     format: 'esm',
