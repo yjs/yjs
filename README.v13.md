@@ -1,7 +1,9 @@
 # ![Yjs](https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png)
-> A CRDT library with a powerful abstraction of shared data
+> The shared editing library
 
-Yjs is a CRDT implementatation that exposes its internal structure as actual data types that can be manipulated and fire changes when remote or local changes happen. While Yjs can be used for all kinds of state management, we lay a special focus on shared editing.
+Yjs is a library for automatic conflict resolution on shared state. It implements an operation-based CRDT and exposes its internal CRDT model as shared types. Shared types are common data types like `Map` or `Array` with superpowers! - changes are automatically distributed to other peers and merged without merge conflicts.
+
+Yjs is **network agnostic** (p2p!), supports many existing **rich text editors**, **offline editing**, **version snapshots**, **shared cursors**, and encodes update messages using **binary protocol encoding**. 
 
 * Chat: [https://gitter.im/y-js/yjs](https://gitter.im/y-js/yjs)
 * Demos: [https://yjs.website/tutorial-prosemirror.html](https://yjs.website/tutorial-prosemirror.html)
@@ -17,13 +19,9 @@ Yjs is a CRDT implementatation that exposes its internal structure as actual dat
 | [Ace](https://ace.c9.io/) | | [link]() |
 | [Monaco](https://microsoft.github.io/monaco-editor/) | | [link]() |
 
-### Distinguishing Features
+### Network providers
 
-* **Binary Encoding:**
-* **Undo/Redo:**
-* **Types:**
-* **Offline:** Yjs is designed to support offline editing. Read [this section](#Offline) about the limitations of offline editing in Yjs. The only provider supporting full offline editing is Ydb.
-* **Network-agnostic:** Yjs ships with many providers that handle connection and distribution of updates to other peers. Yjs itself is network-agnostic and does not depend on a central source of truth that distributes updates to other peers. Check [this section](#Create-a-Custom-Provider) to find out how the sync mechanism works and how to implement your custom provider.
+### Shared Types
 
 # Table of Contents
 
