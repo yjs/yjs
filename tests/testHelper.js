@@ -15,10 +15,10 @@ import * as decoding from 'lib0/decoding.js'
 import * as syncProtocol from 'y-protocols/sync.js'
 
 /**
- * @param {TestYInstance} y
  * @param {Y.Transaction} transaction
+ * @param {TestYInstance} y
  */
-const afterTransaction = (y, transaction) => {
+const afterTransaction = (transaction, y) => {
   y.mMux(() => {
     const m = transaction.updateMessage
     if (m !== null) {
