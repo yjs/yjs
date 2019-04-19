@@ -133,7 +133,7 @@ export const transact = (y, f) => {
   if (y._transaction === null) {
     initialCall = true
     y._transaction = new Transaction(y)
-    y.emit('beforeTransaction', [y, y._transaction])
+    y.emit('beforeTransaction', [y._transaction, y])
   }
   const transaction = y._transaction
   try {
@@ -141,7 +141,7 @@ export const transact = (y, f) => {
   } finally {
     if (initialCall) {
       y._transaction = null
-      y.emit('beforeObserverCalls', [y, y._transaction])
+      y.emit('beforeObserverCalls', [transaction, y])
       // emit change events on changed types
       transaction.changed.forEach((subs, itemtype) => {
         itemtype._callObserver(transaction, subs)
@@ -167,7 +167,7 @@ export const transact = (y, f) => {
       const ds = transaction.deleteSet
       // replace deleted items with ItemDeleted / GC
       sortAndMergeDeleteSet(ds)
-      y.emit('afterTransaction', [y, transaction])
+      y.emit('afterTransaction', [transaction, y])
       for (const [client, deleteItems] of ds.clients) {
         /**
          * @type {Array<AbstractStruct>}
@@ -238,7 +238,7 @@ export const transact = (y, f) => {
           tryToMergeWithLeft(structs, replacedStructPos)
         }
       }
-      y.emit('afterTransactionCleanup', [y, transaction])
+      y.emit('afterTransactionCleanup', [transaction, y])
     }
   }
 }

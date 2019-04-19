@@ -11,15 +11,22 @@ Yjs is **network agnostic** (p2p!), supports many existing **rich text editors**
 
 ### Supported Editors:
 
-| Name &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; | Cursors |  Demo |
-|---|:-:|---|
-| [ProseMirror](https://prosemirror.net/) | ✔ | [link](https://yjs.website/tutorial-prosemirror.html) |
-| [Quill](https://quilljs.com/) |  | [link](https://yjs.website/tutorial-quill.html) |
-| [CodeMirror](https://codemirror.net/) | ✔ | [link](https://yjs.website/tutorial-codemirror.html) |
-| [Ace](https://ace.c9.io/) | | [link]() |
-| [Monaco](https://microsoft.github.io/monaco-editor/) | | [link]() |
+| Name &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; | Cursors | Binding |  Demo |
+|---|:-:|---|---|
+| [ProseMirror](https://prosemirror.net/) | ✔ | [y-prosemirror](http://github.com/y-js/y-prosemirror) | [link](https://yjs.website/tutorial-prosemirror.html) |
+| [Quill](https://quilljs.com/) |  | [y-quill](http://github.com/y-js/y-quill) | [link](https://yjs.website/tutorial-quill.html) |
+| [CodeMirror](https://codemirror.net/) | ✔ | [y-codemirror](http://github.com/y-js/y-codemirror) | [link](https://yjs.website/tutorial-codemirror.html) |
+| [Ace](https://ace.c9.io/) | | [y-ace](http://github.com/y-js/y-ace) | [link]() |
+| [Monaco](https://microsoft.github.io/monaco-editor/) | | [y-monaco](http://github.com/y-js/y-monaco) | [link]() |
 
-### Network providers
+### Providers
+
+Setting up the communication between clients, managing awareness information, and storing shared data for offline usage is quite a hassle. *Providers* manage all that for you and are a good off-the-shelf solution
+
+* [y-websockets](http://github.com/y-js/y-websockets)
+* [y-webrtc](http://github.com/y-js/y-webrtc)
+* [y-dat](http://github.com/y-js/y-dat)
+
 
 ### Shared Types
 

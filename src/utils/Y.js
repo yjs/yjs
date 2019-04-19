@@ -27,6 +27,7 @@ export class Y extends Observable {
    */
   constructor (conf = {}) {
     super()
+    // todo: change to clientId
     this.clientID = random.uint32()
     /**
      * @type {Map<string, AbstractType<YEvent>>}
@@ -150,5 +151,19 @@ export class Y extends Observable {
   destroy () {
     this.emit('destroyed', [true])
     super.destroy()
+  }
+  /**
+   * @param {string} eventName
+   * @param {function} f
+   */
+  on (eventName, f) {
+    super.on(eventName, f)
+  }
+  /**
+   * @param {string} eventName
+   * @param {function} f
+   */
+  off (eventName, f) {
+    super.off(eventName, f)
   }
 }
