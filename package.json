@@ -53,14 +53,11 @@
   },
   "homepage": "http://y-js.org",
   "dependencies": {
-    "lib0": "0.0.0"
+    "lib0": "0.0.1"
   },
   "devDependencies": {
     "codemirror": "^5.42.0",
     "concurrently": "^3.6.1",
-    "esdoc": "^1.1.0",
-    "esdoc-standard-plugin": "^1.0.0",
-    "jsdoc": "^3.5.5",
     "live-server": "^1.2.1",
     "prosemirror-example-setup": "^1.0.1",
     "prosemirror-schema-basic": "^1.0.0",
@@ -74,6 +71,7 @@
     "rollup-plugin-node-resolve": "^4.0.0",
     "rollup-plugin-terser": "^4.0.4",
     "standard": "^11.0.1",
+    "jsdoc": "^3.5.5",
     "tui-jsdoc-template": "^1.2.2",
     "typescript": "^3.3.3333"
   }

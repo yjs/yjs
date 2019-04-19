@@ -85,7 +85,7 @@ export default [{
     }),
     commonjs()
   ]
-}, {
+}, /*{
   input: ['./examples/codemirror.js', './examples/textarea.js'], // './examples/quill.js', './examples/dom.js', './examples/prosemirror.js'
   output: {
     dir: 'examples/build',
@@ -102,4 +102,4 @@ export default [{
     commonjs(),
     ...minificationPlugins
   ]
-}]
+}*/]
