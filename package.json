@@ -3,7 +3,7 @@
   "version": "13.0.0-79",
   "description": "A ",
   "main": "./dist/yjs.js",
-  "module": "./dist/yjs.mjs'",
+  "module": "./src/index.js",
   "sideEffects": false,
   "scripts": {
     "test": "npm run dist && PRODUCTION=1 node ./dist/tests.js --repitition-time 50 --production",
@@ -13,7 +13,8 @@
     "lint": "standard && tsc",
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.v13.md --package ./package.json || true",
     "serve-docs": "npm run docs && serve ./docs/",
-    "postversion": "npm run lint && PRODUCTION=1 npm run dist && node ./dist/tests.js --repitition-time 1000",
+    "preversion": "PRODUCTION=1 npm run dist && node ./dist/tests.js --repitition-time 10000",
+    "postversion": "git push && git push --tags",
     "debug": "concurrently 'live-server --port=3443 --entry-file=test.html' 'npm run watch'",
     "trace-deopt": "clear && rollup -c  && node --trace-deopt dist/test.js",
     "trace-opt": "clear && rollup -c  && node --trace-opt dist/test.js"
@@ -58,6 +59,7 @@
   "devDependencies": {
     "codemirror": "^5.42.0",
     "concurrently": "^3.6.1",
+    "jsdoc": "^3.5.5",
     "live-server": "^1.2.1",
     "prosemirror-example-setup": "^1.0.1",
     "prosemirror-schema-basic": "^1.0.0",
@@ -71,7 +73,6 @@
     "rollup-plugin-node-resolve": "^4.0.0",
     "rollup-plugin-terser": "^4.0.4",
     "standard": "^11.0.1",
-    "jsdoc": "^3.5.5",
     "tui-jsdoc-template": "^1.2.2",
     "typescript": "^3.3.3333"
   }

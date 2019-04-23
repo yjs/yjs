@@ -12,6 +12,7 @@ import {
   getState,
   findRootTypeKey,
   AbstractItem,
+  ItemType,
   ID, StructStore, Y, AbstractType // eslint-disable-line
 } from '../internals.js'
 
@@ -240,7 +241,13 @@ export const createAbsolutePositionFromCursor = (cursor, y) => {
     if (tname !== null) {
       type = y.get(tname)
     } else if (typeID !== null) {
-      type = getItemType(store, typeID).type
+      const struct = getItemType(store, typeID)
+      if (struct instanceof ItemType) {
+        type = struct.type
+      } else {
+        // struct is garbage collected
+        return null
+      }
     } else {
       throw error.unexpectedCase()
     }

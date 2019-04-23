@@ -181,9 +181,14 @@ export const transact = (y, f) => {
             if (deleteItem.clock + deleteItem.len <= struct.id.clock) {
               break
             }
-            if (struct.deleted && struct instanceof AbstractItem && (struct.constructor !== ItemDeleted || (struct.parent._item !== null && struct.parent._item.deleted))) {
-              // check if we can GC
-              struct.gc(transaction, store)
+            if (struct.deleted && struct instanceof AbstractItem) {
+              if (struct.constructor !== ItemDeleted || (struct.parent._item !== null && struct.parent._item.deleted)) {
+                // check if we can GC
+                struct.gc(transaction, store)
+              } else {
+                // otherwise only gc children (if there are any)
+                struct.gcChildren(transaction, store)
+              }
             }
           }
         }

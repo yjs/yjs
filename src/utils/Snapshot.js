@@ -1,8 +1,7 @@
 
 import {
-  DeleteSet,
   isDeleted,
-  AbstractItem // eslint-disable-line
+  DeleteSet, AbstractItem // eslint-disable-line
 } from '../internals.js'
 
 export class Snapshot {
@@ -17,7 +16,7 @@ export class Snapshot {
      * @type {DeleteSet}
      * @private
      */
-    this.ds = new DeleteSet()
+    this.ds = ds
     /**
      * State Map
      * @type {Map<number,number>}

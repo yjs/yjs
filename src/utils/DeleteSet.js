@@ -3,7 +3,7 @@ import {
   findIndexSS,
   createID,
   getState,
-  AbstractItem, StructStore, Transaction, ID // eslint-disable-line
+  AbstractStruct, AbstractItem, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as math from 'lib0/math.js'
@@ -11,9 +11,6 @@ import * as map from 'lib0/map.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 
-/**
- * @private
- */
 class DeleteItem {
   /**
    * @param {number} clock
@@ -37,8 +34,6 @@ class DeleteItem {
  *   - This DeleteSet is send to other clients
  * - We do not create a DeleteSet when we send a sync message. The DeleteSet message is created directly from StructStore
  * - We read a DeleteSet as part of a sync/update message. In this case the DeleteSet is already sorted and merged.
- *
- * @private
  */
 export class DeleteSet {
   constructor () {
@@ -49,6 +44,33 @@ export class DeleteSet {
     this.clients = new Map()
   }
 }
+
+/**
+ * Iterate over all structs that were deleted.
+ *
+ * This function expects that the deletes structs are not deleted. Hence, you can
+ * probably only use it in type observes and `afterTransaction` events. But not
+ * in `afterTransactionCleanup`.
+ *
+ * @param {DeleteSet} ds
+ * @param {StructStore} store
+ * @param {function(AbstractStruct):void} f
+ *
+ * @function
+ */
+export const iterateDeletedStructs = (ds, store, f) =>
+  ds.clients.forEach((deletes, clientid) => {
+    const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(clientid))
+    for (let i = 0; i < deletes.length; i++) {
+      const del = deletes[i]
+      let index = findIndexSS(structs, del.clock)
+      let struct
+      do {
+        struct = structs[index++]
+        f(struct)
+      } while (index < structs.length && structs[index].id.clock < del.clock + del.len)
+    }
+  })
 
 /**
  * @param {Array<DeleteItem>} dis

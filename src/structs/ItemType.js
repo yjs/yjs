@@ -103,7 +103,6 @@ export class ItemType extends AbstractItem {
     super.delete(transaction)
     transaction.changed.delete(this.type)
     transaction.changedParentTypes.delete(this.type)
-    this.gcChildren(transaction, transaction.y.store)
   }
 
   /**
@@ -132,8 +131,8 @@ export class ItemType extends AbstractItem {
    * @param {StructStore} store
    */
   gc (transaction, store) {
-    super.gc(transaction, store)
     this.gcChildren(transaction, store)
+    super.gc(transaction, store)
   }
 }
 

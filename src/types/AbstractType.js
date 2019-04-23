@@ -198,6 +198,29 @@ export const typeArrayToArray = type => {
 }
 
 /**
+ * @param {AbstractType<any>} type
+ * @param {Snapshot} snapshot
+ * @return {Array<any>}
+ *
+ * @private
+ * @function
+ */
+export const typeArrayToArraySnapshot = (type, snapshot) => {
+  const cs = []
+  let n = type._start
+  while (n !== null) {
+    if (n.countable && isVisible(n, snapshot)) {
+      const c = n.getContent()
+      for (let i = 0; i < c.length; i++) {
+        cs.push(c[i])
+      }
+    }
+    n = n.right
+  }
+  return cs
+}
+
+/**
  * Executes a provided function on once on overy element of this YArray.
  *
  * @param {AbstractType<any>} type

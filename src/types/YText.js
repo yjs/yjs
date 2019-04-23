@@ -147,7 +147,7 @@ const insertNegatedAttributes = (transaction, parent, left, right, negatedAttrib
     left = new ItemFormat(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, key, val)
     left.integrate(transaction)
   }
-  return {left, right}
+  return { left, right }
 }
 
 /**
@@ -617,10 +617,11 @@ export class YText extends AbstractType {
   constructor (string) {
     super()
     /**
-     * @type {Array<string>?}
+     * Array of pending operations on this type
+     * @type {Array<function():void>?}
      * @private
      */
-    this._prelimContent = string !== undefined ? [string] : []
+    this._pending = string !== undefined ? [() => this.insert(0, string)] : []
   }
 
   get length () {
@@ -635,9 +636,13 @@ export class YText extends AbstractType {
    */
   _integrate (y, item) {
     super._integrate(y, item)
-    // @ts-ignore this._prelimContent is still defined
-    this.insert(0, this._prelimContent.join(''))
-    this._prelimContent = null
+    try {
+      // @ts-ignore this._prelimContent is still defined
+      this._pending.forEach(f => f())
+    } catch (e) {
+      console.error(e)
+    }
+    this._pending = null
   }
 
   /**
@@ -737,6 +742,9 @@ export class YText extends AbstractType {
           }
         }
       })
+    } else {
+      // @ts-ignore
+      this._pending.push(() => this.applyDelta(delta))
     }
   }
 
@@ -836,9 +844,12 @@ export class YText extends AbstractType {
     const y = this._y
     if (y !== null) {
       transact(y, transaction => {
-        const {left, right, currentAttributes} = findPosition(transaction, y.store, this, index)
+        const { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
         insertText(transaction, this, left, right, currentAttributes, text, attributes)
       })
+    } else {
+      // @ts-ignore
+      this._pending.push(() => this.insert(index, text, attributes))
     }
   }
 
@@ -862,6 +873,9 @@ export class YText extends AbstractType {
         const { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
         insertText(transaction, this, left, right, currentAttributes, embed, attributes)
       })
+    } else {
+      // @ts-ignore
+      this._pending.push(() => this.insertEmbed(index, embed, attributes))
     }
   }
 
@@ -883,6 +897,9 @@ export class YText extends AbstractType {
         const { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
         deleteText(transaction, left, right, currentAttributes, length)
       })
+    } else {
+      // @ts-ignore
+      this._pending.push(() => this.delete(index, length))
     }
   }
 
@@ -906,6 +923,9 @@ export class YText extends AbstractType {
         }
         formatText(transaction, this, left, right, currentAttributes, length, attributes)
       })
+    } else {
+      // @ts-ignore
+      this._pending.push(() => this.format(index, length, attributes))
     }
   }
 
