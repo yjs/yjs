@@ -6,6 +6,7 @@ import {
   splitItem,
   changeItemRefOffset,
   GC,
+  mergeItemWith,
   Transaction, StructStore, Y, ID, AbstractType // eslint-disable-line
 } from '../internals.js'
 
@@ -73,7 +74,7 @@ export class ItemString extends AbstractItem {
    * @return {boolean}
    */
   mergeWith (right) {
-    if (super.mergeWith(right)) {
+    if (mergeItemWith(this, right)) {
       this.string += right.string
       return true
     }

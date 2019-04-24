@@ -28,6 +28,22 @@ import * as set from 'lib0/set.js'
 import * as binary from 'lib0/binary.js'
 
 /**
+ * @param {AbstractItem} left
+ * @param {AbstractItem} right
+ * @return {boolean} If true, right is removed from the linked list and should be discarded
+ */
+export const mergeItemWith = (left, right) => {
+  if (compareIDs(right.origin, left.lastId) && left.right === right && compareIDs(left.rightOrigin, right.rightOrigin)) {
+    left.right = right.right
+    if (left.right !== null) {
+      left.right.left = left
+    }
+    return true
+  }
+  return false
+}
+
+/**
  * Split leftItem into two items
  * @param {Transaction} transaction
  * @param {AbstractItem} leftItem
@@ -376,22 +392,6 @@ export class AbstractItem extends AbstractStruct {
     throw new Error('unimplemented')
   }
 
-  /**
-   * @param {AbstractItem} right
-   * @return {boolean}
-   *
-   * @private
-   */
-  mergeWith (right) {
-    if (compareIDs(right.origin, this.lastId) && this.right === right && compareIDs(this.rightOrigin, right.rightOrigin)) {
-      this.right = right.right
-      if (this.right !== null) {
-        this.right.left = this
-      }
-      return true
-    }
-    return false
-  }
   /**
    * Mark this Item as deleted.
    *

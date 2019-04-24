@@ -7,6 +7,7 @@ import {
   GC,
   splitItem,
   addToDeleteSet,
+  mergeItemWith,
   Y, StructStore, Transaction, ID, AbstractType // eslint-disable-line
 } from '../internals.js'
 
@@ -78,7 +79,7 @@ export class ItemDeleted extends AbstractItem {
    * @return {boolean}
    */
   mergeWith (right) {
-    if (super.mergeWith(right)) {
+    if (mergeItemWith(this, right)) {
       this._len += right._len
       return true
     }

@@ -657,10 +657,6 @@ export class YText extends AbstractType {
     callTypeObservers(this, transaction, new YTextEvent(this, transaction))
   }
 
-  toDom () {
-    return document.createTextNode(this.toString())
-  }
-
   /**
    * Returns the unformatted string representation of this YText type.
    *
@@ -680,40 +676,6 @@ export class YText extends AbstractType {
       n = n.right
     }
     return str
-  }
-
-  toDomString () {
-    // @ts-ignore
-    return this.toDelta().map(delta => {
-      const nestedNodes = []
-      for (let nodeName in delta.attributes) {
-        const attrs = []
-        for (let key in delta.attributes[nodeName]) {
-          attrs.push({ key, value: delta.attributes[nodeName][key] })
-        }
-        // sort attributes to get a unique order
-        attrs.sort((a, b) => a.key < b.key ? -1 : 1)
-        nestedNodes.push({ nodeName, attrs })
-      }
-      // sort node order to get a unique order
-      nestedNodes.sort((a, b) => a.nodeName < b.nodeName ? -1 : 1)
-      // now convert to dom string
-      let str = ''
-      for (let i = 0; i < nestedNodes.length; i++) {
-        const node = nestedNodes[i]
-        str += `<${node.nodeName}`
-        for (let j = 0; j < node.attrs.length; j++) {
-          const attr = node.attrs[i]
-          str += ` ${attr.key}="${attr.value}"`
-        }
-        str += '>'
-      }
-      str += delta.insert
-      for (let i = nestedNodes.length - 1; i >= 0; i--) {
-        str += `</${nestedNodes[i].nodeName}>`
-      }
-      return str
-    })
   }
 
   /**

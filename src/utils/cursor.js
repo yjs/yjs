@@ -241,6 +241,10 @@ export const createAbsolutePositionFromCursor = (cursor, y) => {
     if (tname !== null) {
       type = y.get(tname)
     } else if (typeID !== null) {
+      if (getState(store, typeID.client) <= typeID.clock) {
+        // type does not exist yet
+        return null
+      }
       const struct = getItemType(store, typeID)
       if (struct instanceof ItemType) {
         type = struct.type

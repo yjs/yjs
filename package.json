@@ -9,6 +9,7 @@
     "test": "npm run dist && PRODUCTION=1 node ./dist/tests.js --repitition-time 50 --production",
     "test-exhaustive": "npm run lint && npm run dist && node ./dist/tests.js --repitition-time 10000",
     "dist": "rm -rf dist examples/build && rollup -c",
+    "serve-examples": "concurrently 'npm run watch' 'serve examples'",
     "watch": "rollup -wc",
     "lint": "standard && tsc",
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.v13.md --package ./package.json || true",
