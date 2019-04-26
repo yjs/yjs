@@ -425,6 +425,7 @@ export class AbstractItem extends AbstractStruct {
    * @private
    */
   gc (transaction, store) {
+    this.delete(transaction)
     let r
     if (this.parent._item !== null && this.parent._item.deleted) {
       r = new GC(this.id, this.length)

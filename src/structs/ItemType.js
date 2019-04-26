@@ -100,9 +100,21 @@ export class ItemType extends AbstractItem {
    * @private
    */
   delete (transaction) {
-    super.delete(transaction)
-    transaction.changed.delete(this.type)
-    transaction.changedParentTypes.delete(this.type)
+    if (!this.deleted) {
+      super.delete(transaction)
+      let item = this.type._start
+      while (item !== null) {
+        if (!item.deleted) {
+          item.delete(transaction)
+        }
+        item = item.right
+      }
+      this.type._map.forEach(item => {
+        item.delete(transaction)
+      })
+      transaction.changed.delete(this.type)
+      transaction.changedParentTypes.delete(this.type)
+    }
   }
 
   /**

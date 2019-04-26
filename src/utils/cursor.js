@@ -270,8 +270,5 @@ export const createAbsolutePositionFromCursor = (cursor, y) => {
  * @function
  */
 export const compareCursors = (a, b) => a === b || (
-  a !== null && b !== null && a.tname === b.tname && (
-    (a.item !== null && b.item !== null && compareIDs(a.item, b.item)) ||
-    (a.type !== null && b.type !== null && compareIDs(a.type, b.type))
-  )
+  a !== null && b !== null && a.tname === b.tname && compareIDs(a.item, b.item) && compareIDs(a.type, b.type)
 )

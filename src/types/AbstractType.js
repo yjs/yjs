@@ -454,13 +454,10 @@ export const typeArrayDelete = (transaction, parent, index, length) => {
   if (length === 0) { return }
   let n = parent._start
   // compute the first item to be deleted
-  for (; n !== null; n = n.right) {
+  for (; n !== null && index > 0; n = n.right) {
     if (!n.deleted && n.countable) {
-      if (index <= n.length) {
-        if (index < n.length && index > 0) {
-          n = getItemCleanStart(transaction, transaction.y.store, createID(n.id.client, n.id.clock + index))
-        }
-        break
+      if (index < n.length) {
+        getItemCleanStart(transaction, transaction.y.store, createID(n.id.client, n.id.clock + index))
       }
       index -= n.length
     }

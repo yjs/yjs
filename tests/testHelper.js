@@ -230,11 +230,13 @@ export class TestConnector {
 }
 
 /**
+ * @template T
  * @param {t.TestCase} tc
  * @param {{users?:number}} conf
- * @return {{testConnector:TestConnector,users:Array<TestYInstance>,array0:Y.Array<any>,array1:Y.Array<any>,array2:Y.Array<any>,map0:Y.Map<any>,map1:Y.Map<any>,map2:Y.Map<any>,map3:Y.Map<any>,text0:Y.Text,text1:Y.Text,text2:Y.Text,xml0:Y.XmlElement,xml1:Y.XmlElement,xml2:Y.XmlElement}}
+ * @param {InitTestObjectCallback<T>} initTestObject
+ * @return {{testObjects:Array<any>,testConnector:TestConnector,users:Array<TestYInstance>,array0:Y.Array<any>,array1:Y.Array<any>,array2:Y.Array<any>,map0:Y.Map<any>,map1:Y.Map<any>,map2:Y.Map<any>,map3:Y.Map<any>,text0:Y.Text,text1:Y.Text,text2:Y.Text,xml0:Y.XmlElement,xml1:Y.XmlElement,xml2:Y.XmlElement}}
  */
-export const init = (tc, { users = 5 } = {}) => {
+export const init = (tc, { users = 5 } = {}, initTestObject) => {
   /**
    * @type {Object<string,any>}
    */
@@ -254,6 +256,7 @@ export const init = (tc, { users = 5 } = {}) => {
     result['text' + i] = y.get('text', Y.Text)
   }
   testConnector.syncAll()
+  result.testObjects = result.users.map(initTestObject)
   // @ts-ignore
   return result
 }
@@ -365,15 +368,24 @@ export const compareDS = (ds1, ds2) => {
 }
 
 /**
- * @param {t.TestCase} tc
- * @param {Array<function(TestYInstance,prng.PRNG):void>} mods
- * @param {number} iterations
+ * @template T
+ * @callback InitTestObjectCallback
+ * @param {TestYInstance} y
+ * @return {T}
  */
-export const applyRandomTests = (tc, mods, iterations) => {
+
+/**
+ * @template T
+ * @param {t.TestCase} tc
+ * @param {Array<function(TestYInstance,prng.PRNG,T):void>} mods
+ * @param {number} iterations
+ * @param {InitTestObjectCallback<T>} [initTestObject]
+ */
+export const applyRandomTests = (tc, mods, iterations, initTestObject) => {
   const gen = tc.prng
-  const result = init(tc, { users: 5 })
+  const result = init(tc, { users: 5 }, initTestObject || (() => null))
   const { testConnector, users } = result
-  for (var i = 0; i < iterations; i++) {
+  for (let i = 0; i < iterations; i++) {
     if (prng.int31(gen, 0, 100) <= 2) {
       // 2% chance to disconnect/reconnect a random user
       if (prng.bool(gen)) {
@@ -388,9 +400,9 @@ export const applyRandomTests = (tc, mods, iterations) => {
       // 50% chance to flush a random message
       testConnector.flushRandomMessage()
     }
-    let user = prng.oneOf(gen, users)
-    var test = prng.oneOf(gen, mods)
-    test(user, gen)
+    const user = prng.int31(gen, 0, users.length - 1)
+    const test = prng.oneOf(gen, mods)
+    test(users[user], gen, result.testObjects[user])
   }
   compare(users)
   return result

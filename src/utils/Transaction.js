@@ -165,9 +165,9 @@ export const transact = (y, f) => {
       // transaction cleanup
       const store = transaction.y.store
       const ds = transaction.deleteSet
-      // replace deleted items with ItemDeleted / GC
       sortAndMergeDeleteSet(ds)
       y.emit('afterTransaction', [transaction, y])
+      // replace deleted items with ItemDeleted / GC
       for (const [client, deleteItems] of ds.clients) {
         /**
          * @type {Array<AbstractStruct>}
