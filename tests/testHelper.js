@@ -233,7 +233,7 @@ export class TestConnector {
  * @template T
  * @param {t.TestCase} tc
  * @param {{users?:number}} conf
- * @param {InitTestObjectCallback<T>} initTestObject
+ * @param {InitTestObjectCallback<T>} [initTestObject]
  * @return {{testObjects:Array<any>,testConnector:TestConnector,users:Array<TestYInstance>,array0:Y.Array<any>,array1:Y.Array<any>,array2:Y.Array<any>,map0:Y.Map<any>,map1:Y.Map<any>,map2:Y.Map<any>,map3:Y.Map<any>,text0:Y.Text,text1:Y.Text,text2:Y.Text,xml0:Y.XmlElement,xml1:Y.XmlElement,xml2:Y.XmlElement}}
  */
 export const init = (tc, { users = 5 } = {}, initTestObject) => {
@@ -256,7 +256,7 @@ export const init = (tc, { users = 5 } = {}, initTestObject) => {
     result['text' + i] = y.get('text', Y.Text)
   }
   testConnector.syncAll()
-  result.testObjects = result.users.map(initTestObject)
+  result.testObjects = result.users.map(initTestObject || (() => null))
   // @ts-ignore
   return result
 }

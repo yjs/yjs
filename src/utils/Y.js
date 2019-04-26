@@ -39,6 +39,11 @@ export class Y extends Observable {
      * @private
      */
     this._transaction = null
+    /**
+     * @type {Array<Transaction>}
+     * @private
+     */
+    this._transactionCleanups = []
   }
   /**
    * Changes that happen inside of a transaction are bundled. This means that

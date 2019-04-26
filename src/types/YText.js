@@ -215,10 +215,10 @@ const insertAttributes = (transaction, parent, left, right, currentAttributes, a
   // insert format-start items
   for (let key in attributes) {
     const val = attributes[key]
-    const currentVal = currentAttributes.get(key)
+    const currentVal = currentAttributes.get(key) || null
     if (currentVal !== val) {
       // save negated attribute (set null if currentVal undefined)
-      negatedAttributes.set(key, currentVal || null)
+      negatedAttributes.set(key, currentVal)
       left = new ItemFormat(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, key, val)
       left.integrate(transaction)
     }

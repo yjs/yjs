@@ -147,6 +147,32 @@ export const testInsertAndDeleteEvents = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testNestedObserverEvents = tc => {
+  const { array0, users } = init(tc, { users: 2 })
+  /**
+   * @type {Array<number>}
+   */
+  const vals = []
+  array0.observe(e => {
+    if (array0.length === 1) {
+      // inserting, will call this observer again
+      // we expect that this observer is called after this event handler finishedn
+      array0.insert(1, [1])
+      vals.push(0)
+    } else {
+      // this should be called the second time an element is inserted (above case)
+      vals.push(1)
+    }
+  })
+  array0.insert(0, [0])
+  t.compareArrays(vals, [0, 1])
+  t.compareArrays(array0.toArray(), [0, 1])
+  compare(users)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testInsertAndDeleteEventsForTypes = tc => {
   const { array0, users } = init(tc, { users: 2 })
   /**
