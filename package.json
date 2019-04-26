@@ -55,9 +55,10 @@
   },
   "homepage": "http://y-js.org",
   "dependencies": {
-    "lib0": "0.0.1"
+    "lib0": "0.0.2"
   },
   "devDependencies": {
+    "y-protocols": "0.0.2",
     "codemirror": "^5.42.0",
     "concurrently": "^3.6.1",
     "jsdoc": "^3.5.5",

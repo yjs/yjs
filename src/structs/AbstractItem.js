@@ -421,13 +421,14 @@ export class AbstractItem extends AbstractStruct {
   /**
    * @param {Transaction} transaction
    * @param {StructStore} store
+   * @param {boolean} parentGCd
    *
    * @private
    */
-  gc (transaction, store) {
+  gc (transaction, store, parentGCd) {
     this.delete(transaction)
     let r
-    if (this.parent._item !== null && this.parent._item.deleted) {
+    if (parentGCd) {
       r = new GC(this.id, this.length)
     } else {
       r = new ItemDeleted(this.id, this.left, this.origin, this.right, this.rightOrigin, this.parent, this.parentSub, this.length)

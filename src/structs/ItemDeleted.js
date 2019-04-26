@@ -85,6 +85,19 @@ export class ItemDeleted extends AbstractItem {
     }
     return false
   }
+
+  /**
+   * @param {Transaction} transaction
+   * @param {StructStore} store
+   * @param {boolean} parentGCd
+   *
+   * @private
+   */
+  gc (transaction, store, parentGCd) {
+    if (parentGCd) {
+      super.gc(transaction, store, parentGCd)
+    }
+  }
   /**
    * @param {encoding.Encoder} encoder
    * @param {number} offset

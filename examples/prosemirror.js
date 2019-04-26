@@ -22,4 +22,15 @@ const prosemirrorView = new EditorView(document.querySelector('#editor'), {
   })
 })
 
+const connectBtn = document.querySelector('.y-connect-btn')
+connectBtn.addEventListener('click', () => {
+  if (ydocument.wsconnected) {
+    ydocument.disconnect()
+    connectBtn.textContent = 'Connect'
+  } else {
+    ydocument.connect()
+    connectBtn.textContent = 'Disconnect'
+  }
+})
+
 window.example = { provider, ydocument, type, prosemirrorView }

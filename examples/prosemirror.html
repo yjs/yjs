@@ -76,11 +76,17 @@
       img[ychange_state='removed'] {
         padding: 2px;
       }
+      .y-connect-btn {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+      }
     </style>
 </head>
 <body>
-  <p>This example shows how to bind a YXmlFragment type to a <a href="http://prosemirror.net">Prosemirror</a> editor.</p>
-  <p>The content of this editor is shared with every client who visits this domain.</p>
+  <button type="button" class="y-connect-btn">Disconnect</button>
+  <p>This example shows how to bind a YXmlFragment to a <a href="http://prosemirror.net">Prosemirror</a> editor using <a href="https://github.com/y-js/y-prosemirror">y-prosemirror</a>.</p>
+  <p>The content of this editor is shared with every client that visits this domain.</p>
   <div class="code-html">
 
 <div id="editor" style="margin-bottom: 23px"></div>

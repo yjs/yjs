@@ -19,14 +19,14 @@ import * as syncProtocol from 'y-protocols/sync.js'
  * @param {TestYInstance} y
  */
 const afterTransaction = (transaction, y) => {
-  y.mMux(() => {
+  if (transaction.origin !== y.tc) {
     const m = transaction.updateMessage
     if (m !== null) {
       const encoder = encoding.createEncoder()
       syncProtocol.writeUpdate(encoder, m)
       broadcastMessage(y, encoding.toBuffer(encoder))
     }
-  })
+  }
 }
 
 /**
@@ -59,11 +59,6 @@ export class TestYInstance extends Y.Y {
      * @type {Map<TestYInstance, Array<ArrayBuffer>>}
      */
     this.receiving = new Map()
-    /**
-     * Message mutex
-     * @type {Function}
-     */
-    this.mMux = createMutex()
     testConnector.allConns.add(this)
     // set up observe on local model
     this.on('afterTransactionCleanup', afterTransaction)
@@ -165,11 +160,9 @@ export class TestConnector {
         return this.flushRandomMessage()
       }
       const encoder = encoding.createEncoder()
-      receiver.mMux(() => {
-        // console.log('receive (' + sender.userID + '->' + receiver.userID + '):\n', syncProtocol.stringifySyncMessage(decoding.createDecoder(m), receiver))
-        // do not publish data created when this function is executed (could be ss2 or update message)
-        syncProtocol.readSyncMessage(decoding.createDecoder(m), encoder, receiver)
-      })
+      // console.log('receive (' + sender.userID + '->' + receiver.userID + '):\n', syncProtocol.stringifySyncMessage(decoding.createDecoder(m), receiver))
+      // do not publish data created when this function is executed (could be ss2 or update message)
+      syncProtocol.readSyncMessage(decoding.createDecoder(m), encoder, receiver, receiver.tc)
       if (encoding.length(encoder) > 0) {
         // send reply message
         sender._receive(encoding.toBuffer(encoder), receiver)

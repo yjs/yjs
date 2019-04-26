@@ -124,13 +124,13 @@ export class ItemType extends AbstractItem {
   gcChildren (transaction, store) {
     let item = this.type._start
     while (item !== null) {
-      item.gc(transaction, store)
+      item.gc(transaction, store, true)
       item = item.right
     }
     this.type._start = null
     this.type._map.forEach(item => {
       while (item !== null) {
-        item.gc(transaction, store)
+        item.gc(transaction, store, true)
         // @ts-ignore
         item = item.left
       }
@@ -141,10 +141,11 @@ export class ItemType extends AbstractItem {
   /**
    * @param {Transaction} transaction
    * @param {StructStore} store
+   * @param {boolean} parentGCd
    */
-  gc (transaction, store) {
+  gc (transaction, store, parentGCd) {
     this.gcChildren(transaction, store)
-    super.gc(transaction, store)
+    super.gc(transaction, store, parentGCd)
   }
 }
 

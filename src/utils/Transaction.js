@@ -10,7 +10,6 @@ import {
   findIndexSS,
   callEventHandlerListeners,
   AbstractItem,
-  ItemDeleted,
   ID, AbstractType, AbstractStruct, YEvent, Y // eslint-disable-line
 } from '../internals.js'
 
@@ -45,8 +44,9 @@ import * as math from 'lib0/math.js'
 export class Transaction {
   /**
    * @param {Y} y
+   * @param {any} origin
    */
-  constructor (y) {
+  constructor (y, origin) {
     /**
      * The Yjs instance.
      * @type {Y}
@@ -90,6 +90,10 @@ export class Transaction {
      * @private
      */
     this._mergeStructs = new Set()
+    /**
+     * @type {any}
+     */
+    this.origin = origin
   }
   /**
    * @type {encoding.Encoder|null}
@@ -124,22 +128,24 @@ export const nextID = transaction => {
  *
  * @param {Y} y
  * @param {function(Transaction):void} f
+ * @param {any} [origin]
  *
  * @private
  * @function
  */
-export const transact = (y, f) => {
+export const transact = (y, f, origin = null) => {
   const transactionCleanups = y._transactionCleanups
   let initialCall = false
   if (y._transaction === null) {
     initialCall = true
-    y._transaction = new Transaction(y)
+    y._transaction = new Transaction(y, origin)
     transactionCleanups.push(y._transaction)
     y.emit('beforeTransaction', [y._transaction, y])
   }
   try {
     f(y._transaction)
   } finally {
+    // @todo set after state here
     if (initialCall && transactionCleanups[0] === y._transaction) {
       // The first transaction ended, now process observer calls.
       // Observer call may create new transactions for which we need to call the observers and do cleanup.
@@ -185,13 +191,7 @@ export const transact = (y, f) => {
                 break
               }
               if (struct.deleted && struct instanceof AbstractItem) {
-                if (struct.constructor !== ItemDeleted || (struct.parent._item !== null && struct.parent._item.deleted)) {
-                  // check if we can GC
-                  struct.gc(transaction, store)
-                } else {
-                  // otherwise only gc children (if there are any)
-                  struct.gcChildren(transaction, store)
-                }
+                struct.gc(transaction, store, false)
               }
             }
           }

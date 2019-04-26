@@ -52,11 +52,12 @@ export class Y extends Observable {
    * other peers.
    *
    * @param {function(Transaction):void} f The function that should be executed as a transaction
+   * @param {any} [origin] Origin of who started the transaction. Will be stored on transaction.origin
    *
    * @public
    */
-  transact (f) {
-    transact(this, f)
+  transact (f, origin = null) {
+    transact(this, f, origin)
   }
   /**
    * Define a shared data type.

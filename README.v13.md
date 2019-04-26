@@ -3,7 +3,7 @@
 
 Yjs is a library for automatic conflict resolution on shared state. It implements an operation-based CRDT and exposes its internal CRDT model as shared types. Shared types are common data types like `Map` or `Array` with superpowers - changes are automatically distributed to other peers and merged without merge conflicts.
 
-Yjs is **network agnostic** (p2p!), supports many existing **rich text editors**, **offline editing**, **version snapshots**, **shared cursors**, and encodes update messages using **binary protocol encoding**. 
+Yjs is **network agnostic** (p2p!), supports many existing **rich text editors**, **offline editing**, **version snapshots**, **shared cursors**, and encodes update messages using **binary protocol encoding**.
 
 * Chat: [https://gitter.im/y-js/yjs](https://gitter.im/y-js/yjs)
 * Demos: [https://yjs.website/tutorial-prosemirror.html](https://yjs.website/tutorial-prosemirror.html)

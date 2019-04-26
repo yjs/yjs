@@ -54,9 +54,9 @@
     /* Experimental Options */
     // "experimentalDecorators": true,        /* Enables experimental support for ES7 decorators. */
     // "emitDecoratorMetadata": true,         /* Enables experimental support for emitting type metadata for decorators. */
-    "maxNodeModuleJsDepth": 5,
+    "maxNodeModuleJsDepth": 0,
     // "types": ["./src/utils/typedefs.js"]
   },
   "include": ["./src/**/*", "./tests/**/*"],
-  "exclude": ["../lib0/**/*", "node_modules"]
+  "exclude": ["../lib0/**/*", "node_modules/**/*", "dist", "dist/**/*.js"]
 }
