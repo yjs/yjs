@@ -14,7 +14,7 @@
     "lint": "standard && tsc",
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.v13.md --package ./package.json || true",
     "serve-docs": "npm run docs && serve ./docs/",
-    "preversion": "PRODUCTION=1 npm run dist && node ./dist/tests.js --repitition-time 10000",
+    "preversion": "PRODUCTION=1 npm run dist && node ./dist/tests.js --repitition-time 1000",
     "postversion": "git push && git push --tags",
     "debug": "concurrently 'live-server --port=3443 --entry-file=test.html' 'npm run watch'",
     "trace-deopt": "clear && rollup -c  && node --trace-deopt dist/test.js",

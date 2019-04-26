@@ -9,7 +9,6 @@ import {
 
 import * as t from 'lib0/testing.js'
 import * as prng from 'lib0/prng.js'
-import { createMutex } from 'lib0/mutex.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import * as syncProtocol from 'y-protocols/sync.js'

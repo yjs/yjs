@@ -76,6 +76,10 @@ export const splitItem = (transaction, leftItem, diff) => {
   }
   // right is more specific.
   transaction._mergeStructs.add(rightItem.id)
+  // update parent._map
+  if (rightItem.parentSub !== null && rightItem.right === null) {
+    rightItem.parent._map.set(rightItem.parentSub, rightItem)
+  }
   return rightItem
 }
 
@@ -426,7 +430,7 @@ export class AbstractItem extends AbstractStruct {
    * @private
    */
   gc (transaction, store, parentGCd) {
-    this.delete(transaction)
+    this.delete(transaction) // @todo: shouldn't be necessary
     let r
     if (parentGCd) {
       r = new GC(this.id, this.length)
@@ -612,7 +616,9 @@ export const computeItemParams = (transaction, store, leftid, rightid, parentid,
       case GC:
         break
       default:
-        parent = parentItem.type
+        if (!parentItem.deleted) {
+          parent = parentItem.type
+        }
     }
   } else if (parentYKey !== null) {
     parent = transaction.y.get(parentYKey)
