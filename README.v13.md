@@ -6,7 +6,7 @@ Yjs is a library for automatic conflict resolution on shared state. It implement
 Yjs is **network agnostic** (p2p!), supports many existing **rich text editors**, **offline editing**, **version snapshots**, **shared cursors**, and encodes update messages using **binary protocol encoding**.
 
 * Chat: [https://gitter.im/y-js/yjs](https://gitter.im/y-js/yjs)
-* Demos: [https://yjs.website/tutorial-prosemirror.html](https://yjs.website/tutorial-prosemirror.html)
+* Demos: [http://yjs-demos.now.sh](https://yjs.website/tutorial-prosemirror.html)
 * API Docs: [https://yjs.website/](https://yjs.website/)
 
 ### Supported Editors:
@@ -24,7 +24,7 @@ Yjs is **network agnostic** (p2p!), supports many existing **rich text editors**
 Setting up the communication between clients, managing awareness information, and storing shared data for offline usage is quite a hassle. *Providers* manage all that for you and are a good off-the-shelf solution
 
 * [y-websockets](http://github.com/y-js/y-websockets)
-* [y-webrtc](http://github.com/y-js/y-webrtc)
+* [y-mesh](http://github.com/y-js/y-mesh)
 * [y-dat](http://github.com/y-js/y-dat)
 
 
@@ -102,8 +102,8 @@ const sharedDocument = provider.get('my-favourites')
 All content created in a shared document is shared among all peers that request the same document. Now we define types on the shared document:
 
 ```js
-sharedDocument.define('movie-ratings', Y.Map)
-sharedDocument.define('favourite-food', Y.Array)
+sharedDocument.get('movie-ratings', Y.Map)
+sharedDocument.get('favourite-food', Y.Array)
 ```
 
 All clients that define `'movie-ratings'` as `Y.Map` on the shared document named `'my-favourites'` have access to the same shared type. Example:
@@ -111,8 +111,8 @@ All clients that define `'movie-ratings'` as `Y.Map` on the shared document name
 **Client 1:**
 
 ```js
-sharedDocument.define('movie-ratings', Y.Map)
-sharedDocument.define('favourite-food', Y.Array)
+sharedDocument.get('movie-ratings', Y.Map)
+sharedDocument.get('favourite-food', Y.Array)
 
 const movies = sharedDocument.get('movie-ratings')
 const food = sharedDocument.get('fovourite-food')
@@ -124,8 +124,8 @@ food.insert(0, ['burger'])
 **Client 2:**
 
 ```js
-sharedDocument.define('movie-ratings', Y.Map)
-sharedDocument.define('favourite-food', Y.Map) // <- note that this definition differs from client1
+sharedDocument.get('movie-ratings', Y.Map)
+sharedDocument.get('favourite-food', Y.Map) // <- note that this definition differs from client1
 
 const movies = sharedDocument.get('movie-ratings')
 const food = sharedDocument.get('fovourite-food')
@@ -363,8 +363,9 @@ Until [this](https://github.com/Microsoft/TypeScript/issues/7546) is fixed, the 
 
 ## License and Author
 
-Yjs and all related projects are [**MIT licensed**](./LICENSE). Some files also contain an additional copyright notice that allows you to copy and modify the code without shipping the copyright notice (e.g. `./provider/websocket/WebsocketProvider.js` and `./provider/websocket/server.js`)
+Yjs and all related projects are [**MIT licensed**](./LICENSE).
 
-Yjs is based on the research I did as a student at the RWTH i5. I am working on Yjs in my spare time. Please help me by donating or hiring me for consulting, so I can continue to work on this project.
+Yjs is based on the research I did as a student at the RWTH i5. Now I am working on Yjs in my spare time.
 
-kevin.jahns@protonmail.com
+kevin.jahns at protonmail.com
+https://www.patreon.com/dmonad

@@ -6,6 +6,8 @@ text, richtext, json, or XML. It is fairly easy to get started, as Yjs hides
 most of the complexity of concurrent editing. For additional information, demos,
 and tutorials visit [y-js.org](http://y-js.org/).
 
+:warning: Checkout the [v13 docs](./README.v13.md) for the latest advancements :warning:
+
 ### Extensions
 Yjs only knows how to resolve conflicts on shared data. You have to choose a ..
 * *Connector* - a communication protocol that propagates changes to the clients
@@ -294,12 +296,5 @@ DEBUG_COLORS=0 DEBUG=y* node app.js > log
 localStorage.debug = 'y*'
 ```
 
-## Contribution
-I created this framework during my bachelor thesis at the chair of computer
-science 5 [(i5)](http://dbis.rwth-aachen.de/cms), RWTH University. Since
-December 2014 I'm working on Yjs as a part of my student worker job at the i5.
-
 ## License
 Yjs is licensed under the [MIT License](./LICENSE).
-
-<yjs@dbis.rwth-aachen.de>

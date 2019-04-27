@@ -1,7 +1,7 @@
 {
   "name": "yjs",
   "version": "13.0.0-80",
-  "description": "A ",
+  "description": "Shared Editing Library",
   "main": "./dist/yjs.js",
   "module": "./src/index.js",
   "sideEffects": false,
@@ -22,6 +22,8 @@
   },
   "files": [
     "dist/*",
+    "src/*",
+    "tests/*",
     "examples/*",
     "docs/*",
     "README.md",
