@@ -6,7 +6,7 @@ Yjs is a library for automatic conflict resolution on shared state. It implement
 Yjs is **network agnostic** (p2p!), supports many existing **rich text editors**, **offline editing**, **version snapshots**, **shared cursors**, and encodes update messages using **binary protocol encoding**.
 
 * Chat: [https://gitter.im/y-js/yjs](https://gitter.im/y-js/yjs)
-* Demos: [http://yjs-demos.now.sh](https://yjs.website/tutorial-prosemirror.html)
+* Demos: [https://github.com/y-js/yjs-demos](https://github.com/y-js/yjs-demos)
 * API Docs: [https://yjs.website/](https://yjs.website/)
 
 ### Supported Editors:
