@@ -24,10 +24,7 @@
     "dist/*",
     "src/*",
     "tests/*",
-    "examples/*",
-    "docs/*",
-    "README.md",
-    "LICENSE"
+    "docs/*"
   ],
   "dictionaries": {
     "doc": "docs",
@@ -60,7 +57,7 @@
     "lib0": "0.0.2"
   },
   "devDependencies": {
-    "y-protocols": "0.0.2",
+    "y-protocols": "0.0.3",
     "codemirror": "^5.42.0",
     "concurrently": "^3.6.1",
     "jsdoc": "^3.5.5",
