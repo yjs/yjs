@@ -423,6 +423,8 @@ export class AbstractItem extends AbstractStruct {
   gcChildren (transaction, store) { }
 
   /**
+   * @todo remove transaction param
+   *
    * @param {Transaction} transaction
    * @param {StructStore} store
    * @param {boolean} parentGCd
@@ -430,7 +432,9 @@ export class AbstractItem extends AbstractStruct {
    * @private
    */
   gc (transaction, store, parentGCd) {
-    this.delete(transaction) // @todo: shouldn't be necessary
+    if (!this.deleted) {
+      throw error.unexpectedCase()
+    }
     let r
     if (parentGCd) {
       r = new GC(this.id, this.length)
@@ -448,7 +452,6 @@ export class AbstractItem extends AbstractStruct {
       }
     }
     replaceStruct(store, this, r)
-    transaction._mergeStructs.add(r.id)
   }
 
   /**
@@ -616,7 +619,7 @@ export const computeItemParams = (transaction, store, leftid, rightid, parentid,
       case GC:
         break
       default:
-        if (!parentItem.deleted) {
+        if (!parentItem.deleted && (left === null || left.constructor !== GC) && (right === null || right.constructor !== GC)) {
           parent = parentItem.type
         }
     }
