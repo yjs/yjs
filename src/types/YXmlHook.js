@@ -47,7 +47,7 @@ export class YXmlHook extends YMap {
    *
    * @public
    */
-  toDom (_document = document, hooks = {}, binding) {
+  toDOM (_document = document, hooks = {}, binding) {
     const hook = hooks[this.hookName]
     let dom
     if (hook !== undefined) {

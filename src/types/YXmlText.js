@@ -24,7 +24,7 @@ export class YXmlText extends YText {
    *
    * @public
    */
-  toDom (_document = document, hooks, binding) {
+  toDOM (_document = document, hooks, binding) {
     const dom = _document.createTextNode(this.toString())
     if (binding !== undefined) {
       binding._createAssociation(dom, this)
@@ -32,7 +32,7 @@ export class YXmlText extends YText {
     return dom
   }
 
-  toDomString () {
+  toString () {
     // @ts-ignore
     return this.toDelta().map(delta => {
       const nestedNodes = []
@@ -64,6 +64,10 @@ export class YXmlText extends YText {
       }
       return str
     }).join('')
+  }
+
+  toJSON () {
+    return this.toString()
   }
 
   /**

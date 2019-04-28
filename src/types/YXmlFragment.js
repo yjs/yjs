@@ -205,17 +205,17 @@ export class YXmlFragment extends AbstractType {
     callTypeObservers(this, transaction, new YXmlEvent(this, parentSubs, transaction))
   }
 
-  toString () {
-    return this.toDomString()
-  }
-
   /**
    * Get the string representation of all the children of this YXmlFragment.
    *
    * @return {string} The string representation of all children.
    */
-  toDomString () {
-    return typeArrayMap(this, xml => xml.toDomString()).join('')
+  toString () {
+    return typeArrayMap(this, xml => xml.toString()).join('')
+  }
+
+  toJSON () {
+    return this.toString()
   }
 
   /**
@@ -233,13 +233,13 @@ export class YXmlFragment extends AbstractType {
    *
    * @public
    */
-  toDom (_document = document, hooks = {}, binding) {
+  toDOM (_document = document, hooks = {}, binding) {
     const fragment = _document.createDocumentFragment()
     if (binding !== undefined) {
       binding._createAssociation(fragment, this)
     }
     typeArrayForEach(this, xmlType => {
-      fragment.insertBefore(xmlType.toDom(_document, hooks, binding), null)
+      fragment.insertBefore(xmlType.toDOM(_document, hooks, binding), null)
     })
     return fragment
   }

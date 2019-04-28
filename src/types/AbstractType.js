@@ -224,7 +224,7 @@ export const typeArrayToArraySnapshot = (type, snapshot) => {
  * Executes a provided function on once on overy element of this YArray.
  *
  * @param {AbstractType<any>} type
- * @param {function(any,number,AbstractType<any>):void} f A function to execute on every element of this YArray.
+ * @param {function(any,number,any):void} f A function to execute on every element of this YArray.
  *
  * @private
  * @function
@@ -597,4 +597,4 @@ export const typeMapGetSnapshot = (parent, key, snapshot) => {
  * @private
  * @function
  */
-export const createMapIterator = map => iterator.iteratorFilter(map.entries(), entry => !entry[1].deleted)
+export const createMapIterator = map => iterator.iteratorFilter(map.entries(), /** @param {any} entry */ entry => !entry[1].deleted)

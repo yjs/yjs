@@ -110,15 +110,25 @@ export class YMap extends AbstractType {
    * @return {Iterator<string>}
    */
   keys () {
-    return iterator.iteratorMap(createMapIterator(this._map), v => v[0])
+    return iterator.iteratorMap(createMapIterator(this._map), /** @param {any} v */ v => v[0])
   }
+
   /**
-   * Returns the value for each element in the YMap Type.
+   * Returns the keys for each element in the YMap Type.
    *
-   * @return {IterableIterator<T>}
+   * @return {Iterator<string>}
+   */
+  values () {
+    return iterator.iteratorMap(createMapIterator(this._map), /** @param {any} v */ v => v[1].getContent()[v[1].length - 1])
+  }
+
+  /**
+   * Returns an Iterator of [key, value] pairs
+   *
+   * @return {IterableIterator<any>}
    */
   entries () {
-    return iterator.iteratorMap(createMapIterator(this._map), v => v[1].getContent()[0])
+    return iterator.iteratorMap(createMapIterator(this._map), /** @param {any} v */ v => [v[0], v[1].getContent()[v[1].length - 1]])
   }
 
   /**

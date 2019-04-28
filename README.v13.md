@@ -1,7 +1,7 @@
 # ![Yjs](https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png)
 > The shared editing library
 
-Yjs is a library for automatic conflict resolution on shared state. It implements an operation-based CRDT and exposes its internal CRDT model as shared types. Shared types are common data types like `Map` or `Array` with superpowers - changes are automatically distributed to other peers and merged without merge conflicts.
+Yjs is a library for automatic conflict resolution on shared state. It implements an [operation-based CRDT](#Yjs-CRDT-Algorithm) and exposes its internal model as shared types. Shared types are common data types like `Map` or `Array` with superpowers: changes are automatically distributed to other peers and merged without merge conflicts.
 
 Yjs is **network agnostic** (p2p!), supports many existing **rich text editors**, **offline editing**, **version snapshots**, **shared cursors**, and encodes update messages using **binary protocol encoding**.
 
@@ -9,50 +9,13 @@ Yjs is **network agnostic** (p2p!), supports many existing **rich text editors**
 * Demos: [https://github.com/y-js/yjs-demos](https://github.com/y-js/yjs-demos)
 * API Docs: [https://yjs.website/](https://yjs.website/)
 
-### Supported Editors:
-
-| Name &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; | Cursors | Binding |  Demo |
-|---|:-:|---|---|
-| [ProseMirror](https://prosemirror.net/) | ✔ | [y-prosemirror](http://github.com/y-js/y-prosemirror) | [link](https://yjs.website/tutorial-prosemirror.html) |
-| [Quill](https://quilljs.com/) |  | [y-quill](http://github.com/y-js/y-quill) | [link](https://yjs.website/tutorial-quill.html) |
-| [CodeMirror](https://codemirror.net/) | ✔ | [y-codemirror](http://github.com/y-js/y-codemirror) | [link](https://yjs.website/tutorial-codemirror.html) |
-| [Ace](https://ace.c9.io/) | | [y-ace](http://github.com/y-js/y-ace) | [link]() |
-| [Monaco](https://microsoft.github.io/monaco-editor/) | | [y-monaco](http://github.com/y-js/y-monaco) | [link]() |
-
-### Providers
-
-Setting up the communication between clients, managing awareness information, and storing shared data for offline usage is quite a hassle. *Providers* manage all that for you and are a good off-the-shelf solution
-
-* [y-websockets](http://github.com/y-js/y-websockets)
-* [y-mesh](http://github.com/y-js/y-mesh)
-* [y-dat](http://github.com/y-js/y-dat)
-
-
-### Shared Types
-
 # Table of Contents
 
+* [Overview](#Overview)
+  * [Bindings](#Bindings)
+  * [Providers](#Providers)
 * [Getting Started](#Getting-Started)
-  * [Tutorial](#Short-Tutorial)
-* [Providers](#Providers)
-  * [Websocket](#Websocket)
-  * [Ydb](#Ydb)
-  * [Create a Custom Provider](#Create-a-Custom-Provider)
-* [Shared Types](#Shared-Types)
-  * [YArray](#Yarray)
-  * [YMap](#YMap)
-  * [YText](#YText)
-  * [YXmlFragment and YXmlElement](#YXmlFragment-and-YXmlElement)
-  * [Create a Custom Type](#Create-a-Custom-Type)
-* [Bindings](#Bindings)
-  * [PromeMirror](#ProseMirror)
-  * [Quill](#Quill)
-  * [CodeMirror](#CodeMirror)
-  * [Ace](#Ace)
-  * [Monaco](#Monace)
-  * [DOM](#DOM)
-  * [Textarea](#Textarea)
-  * [Create a Custom Binding](#Create-a-Custom-Binding)
+* [API](#API)
 * [Transaction](#Transaction)
 * [Offline Editing](#Offline-Editing)
 * [Awareness](#Awareness)
@@ -71,247 +34,321 @@ Setting up the communication between clients, managing awareness information, an
   * [Comparison of Yjs with other Implementations](#Comparing-Yjs-with-other-Implementations)
 * [License and Author](#License-and-Author)
 
+
+## Overview
+
+This repository contains a collection of shared types that can be observed for changes and manipulated concurrently. Network functionality and two-way-bindings are implemented in separate modules.
+
+### Bindings
+
+| Name &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; | Cursors | Binding |  Demo |
+|---|:-:|---|---|
+| [ProseMirror](https://prosemirror.net/) | ✔ | [y-prosemirror](http://github.com/y-js/y-prosemirror) | [link](https://yjs.website/tutorial-prosemirror.html) |
+| [Quill](https://quilljs.com/) |  | [y-quill](http://github.com/y-js/y-quill) | [link](https://yjs.website/tutorial-quill.html) |
+| [CodeMirror](https://codemirror.net/) | ✔ | [y-codemirror](http://github.com/y-js/y-codemirror) | [link](https://yjs.website/tutorial-codemirror.html) |
+| [Ace](https://ace.c9.io/) | | [y-ace](http://github.com/y-js/y-ace) | [link]() |
+| [Monaco](https://microsoft.github.io/monaco-editor/) | | [y-monaco](http://github.com/y-js/y-monaco) | [link]() |
+
+
+### Providers
+
+Setting up the communication between clients, managing awareness information, and storing shared data for offline usage is quite a hassle. **Providers** manage all that for you and are a good off-the-shelf solution.
+
+<dl>
+  <dt><a href="http://github.com/y-js/y-websocket">y-websocket</a></dt>
+  <dd>A module that contains a simple websocket backend and a websocket client that connects to that backend. The backend can be extended to persist updates in a leveldb database.</dd>
+  <dt><a href="http://github.com/y-js/y-mesh">y-mesh</a></dt>
+  <dd>[WIP] Creates a connected graph of webrtc connections with a high <a href="https://en.wikipedia.org/wiki/Strength_of_a_graph">strength</a>. It requires a signalling server that connects a client to the first peer. But after that the network manages itself. It is well suited for large and small networks.</dd>
+  <dt><a href="http://github.com/y-js/y-dat">y-dat</a></dt>
+  <dd>[WIP] Writes updates effinciently in the dat network using <a href="https://github.com/kappa-db/multifeed">multifeed</a>. Each client has an append-only log of CRDT local updates (hypercore). Multifeed manages and sync hypercores and y-dat listens to changes and applies them to the Yjs document.</dd>
+</dl>
+
 ## Getting Started
 
-Yjs does not hava any dependencies. Install this package with your favorite package manager, or just copy the files into your project.
+Install Yjs and a provider with your favorite package manager. In this section we are going to bind a YText to a DOM textarea.
 
 ```sh
-npm i yjs
+npm i yjs@13.0.0-80 y-websocket@1.0.0-1 y-textarea
 ```
 
-##### Quickstart
-
-Yjs itself only knows how to do conflict resolution. You need to choose a provider, that handles how document updates are distributed over the network.
-
-We will start by running a websocket server (part of the [websocket provider](#Websocket-Provider)):
+**Start the y-websocket server**
 
 ```sh
-PORT=1234 node ./node_modules/yjs/provider/websocket/server.js
+PORT=1234 node ./node_modules/y-websocket/bin/server.js
 ```
 
-The following client-side code connects to the websocket server and opens a shared document.
+**Textarea Binding Example**
 
 ```js
 import * as Y from 'yjs'
-import { WebsocketProvider } from 'yjs/provider/websocket.js'
+import { WebsocketProvider } from 'y-websocket'
+import { TextareaBinding } from 'y-textarea'
 
 const provider = new WebsocketProvider('http://localhost:1234')
 const sharedDocument = provider.get('my-favourites')
+
+// Define a shared type on the document.
+const ytext = sharedDocument.getText('my resume')
+
+// bind to a textarea
+const binding = new TextareaBinding(ytext, document.querySelector('textarea'))
 ```
 
-All content created in a shared document is shared among all peers that request the same document. Now we define types on the shared document:
-
-```js
-sharedDocument.get('movie-ratings', Y.Map)
-sharedDocument.get('favourite-food', Y.Array)
-```
-
-All clients that define `'movie-ratings'` as `Y.Map` on the shared document named `'my-favourites'` have access to the same shared type. Example:
-
-**Client 1:**
-
-```js
-sharedDocument.get('movie-ratings', Y.Map)
-sharedDocument.get('favourite-food', Y.Array)
-
-const movies = sharedDocument.get('movie-ratings')
-const food = sharedDocument.get('fovourite-food')
-
-movies.set('deadpool', 10)
-food.insert(0, ['burger'])
-```
-
-**Client 2:**
-
-```js
-sharedDocument.get('movie-ratings', Y.Map)
-sharedDocument.get('favourite-food', Y.Map) // <- note that this definition differs from client1
-
-const movies = sharedDocument.get('movie-ratings')
-const food = sharedDocument.get('fovourite-food')
-
-movies.set('yt rewind', -10)
-food.set('pancake', 10)
-
-// after some time, when client1 and client2 synced, the movie list will be merged:
-movies.toJSON() // => { 'deadpool': 10, 'yt rewind': -10 }
-
-// But since client1 and client2 defined the types differently,
-// they do not have access to each others food list.
-food.toJSON() // => { pancake: 10 }
-```
-
-Now you understand how types are defined on a shared document. Next you can jump to one of the [tutorials on our website](https://yjs.website/tutorial-prosemirror.html) or continue reading about [Providers](#Providers), [Shared Types](#Shared-Types), and [Bindings](#Bindings).
+Now you understand how types are defined on a shared document. Next you can jump to the [demo repository](https://github.com/y-js/yjs-demos) or continue reading the API docs.
 
 ## API
 
-## Providers
-
-In Yjs, a provider handles the communication channel to *authenticate*, *authorize*, and *exchange document updates*. Yjs ships with some existing providers. 
-
-### Websocket Provider
-
-The websocket provider implements a classical client server model. Clients connect to a single endpoint over websocket. The server distributes awareness information and document updates among clients.
-
-The Websocket Provider is a solid choice if you want a central source that handles authentication and authorization. Websockets also send header information and cookies, so you can use existing authentication mechanisms with this server. I recommend that you slightly adapt the server in `./provider/websocket/server.js` to your needs.
-
-* Supports cross-tab communication. When you open the same document in the same browser, changes on the document are exchanged via cross-tab communication ([Broadcast Channel](https://developer.mozilla.org/en-US/docs/Web/API/Broadcast_Channel_API) and [localStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage) as fallback).
-* Supports exange of awareness information (e.g. cursors)
-
-##### Start a Websocket Server:
-
-```sh
-PORT=1234 node ./node_modules/yjs/provider/websocket/server.js
-```
-
-**Websocket Server with Persistence**
-
-Persist document updates in a LevelDB database.
-
-See [LevelDB Persistence](#LevelDB Persistence) for more info.
-
-```sh
-PORT=1234 YPERSISTENCE=./dbDir node ./node_modules/yjs/provider/websocket/server.js
-```
-
-##### Client Code:
-
 ```js
 import * as Y from 'yjs'
-import { WebsocketProvider } from 'yjs/provider/websocket.js'
-
-const provider = new WebsocketProvider('http://localhost:1234')
-
-// open a websocket connection to http://localhost:1234/my-document-name
-const sharedDocument = provider.get('my-document-name')
-
-sharedDocument.on('status', event => {
-  console.log(event.status) // logs "connected" or "disconnected"
-})
 ```
 
-#### Scaling
+<details>
+  <summary><b>Y.Array</b></summary>
+  <br>
+  <p>
+    A shareable Array-like type that supports efficient insert/delete of elements at any position. Internally it uses a linked list of Arrays that is split when necessary.
+  </p>
+  <pre>const yarray = new Y.Array()</pre>
+  <dl>
+    <b><code>insert(index:number, content:Array&lt;object|string|number|Y.Type&gt;)</code></b>
+    <dd>
+      Insert content at <var>index</var>. Note that content is an array of elements. I.e. <code>array.insert(0, [1]</code> splices the list and inserts 1 at position 0.
+    </dd>
+    <b><code>push(Array&lt;Object|Array|string|number|Y.Type&gt;)</code></b>
+    <dd></dd>
+    <b><code>delete(index:number, length:number)</code></b>
+    <dd></dd>
+    <b><code>get(index:number)</code></b>
+    <dd></dd>
+    <b><code>length:number</code></b>
+    <dd></dd>
+    <b><code>map(function(T, number, YArray):M):Array&lt;M&gt;</code></b>
+    <dd></dd>
+    <b><code>toArray():Array&lt;Object|Array|string|number|Y.Type&gt;</code></b>
+    <dd>Copies the content of this YArray to a new Array.</dd>
+    <b><code>toJSON():Array&lt;Object|Array|string|number&gt;</code></b>
+    <dd>Copies the content of this YArray to a new Array. It transforms all child types to JSON using their <code>toJSON</code> method.</dd>
+    <b><code>[Symbol.Iterator]</code></b>
+    <dd>
+      Returns an YArray Iterator that contains the values for each index in the array.
+      <pre>for (let value of yarray) { .. }</pre>
+    </dd>
+    <b><code>observe(function(YArrayEvent, Transaction):void)</code></b>
+    <dd>
+      Adds an event listener to this type that will be called synchronously every time this type is modified. In the case this type is modified in the event listener, the event listener will be called again after the current event listener returns.
+    </dd>
+    <b><code>unobserve(function(YArrayEvent, Transaction):void)</code></b>
+    <dd>
+      Removes an <code>observe</code> event listener from this type.
+    </dd>
+    <b><code>observeDeep(function(Array&lt;YEvent&gt;, Transaction):void)</code></b>
+    <dd>
+      Adds an event listener to this type that will be called synchronously every time this type or any of its children is modified. In the case this type is modified in the event listener, the event listener will be called again after the current event listener returns. The event listener receives all Events created by itself or any of its children.
+    </dd>
+    <b><code>unobserveDeep(function(Array&lt;YEvent&gt;, Transaction):void)</code></b>
+    <dd>
+      Removes an <code>observeDeep</code> event listener from this type.
+    </dd>
+  </dl>
+</details>
+<details>
+  <summary><b>Y.Map</b></summary>
+  <br>
+  <p>
+    A shareable Map type.
+  </p>
+  <pre><code>const ymap = new Y.Map()</code></pre>
+  <dl>
+    <b><code>get(key:string):object|string|number|Y.Type</code></b>
+    <dd></dd>
+    <b><code>set(key:string, value:object|string|number|Y.Type)</code></b>
+    <dd></dd>
+    <b><code>delete(key:string)</code></b>
+    <dd></dd>
+    <b><code>has(key:string):boolean</code></b>
+    <dd></dd>
+    <b><code>get(index:number)</code></b>
+    <dd></dd>
+    <b><code>toJSON():Object&lt;string, Object|Array|string|number&gt;</code></b>
+    <dd>Copies the <code>[key,value]</code> pairs of this YMap to a new Object. It transforms all child types to JSON using their <code>toJSON</code> method.</dd>
+    <b><code>[Symbol.Iterator]</code></b>
+    <dd>
+      Returns an Iterator of <code>[key, value]</code> pairs.
+      <pre>for (let [key, value] of ymap) { .. }</pre>
+    </dd>
+    <b><code>entries()</code></b>
+    <dd>
+      Returns an Iterator of <code>[key, value]</code> pairs.
+    </dd>
+    <b><code>values()</code></b>
+    <dd>
+      Returns an Iterator of all values.
+    </dd>
+    <b><code>keys()</code></b>
+    <dd>
+      Returns an Iterator of all keys.
+    </dd>
+    <b><code>observe(function(YMapEvent, Transaction):void)</code></b>
+    <dd>
+      Adds an event listener to this type that will be called synchronously every time this type is modified. In the case this type is modified in the event listener, the event listener will be called again after the current event listener returns.
+    </dd>
+    <b><code>unobserve(function(YMapEvent, Transaction):void)</code></b>
+    <dd>
+      Removes an <code>observe</code> event listener from this type.
+    </dd>
+    <b><code>observeDeep(function(Array&lt;YEvent&gt;, Transaction):void)</code></b>
+    <dd>
+      Adds an event listener to this type that will be called synchronously every time this type or any of its children is modified. In the case this type is modified in the event listener, the event listener will be called again after the current event listener returns. The event listener receives all Events created by itself or any of its children.
+    </dd>
+    <b><code>unobserveDeep(function(Array&lt;YEvent&gt;, Transaction):void)</code></b>
+    <dd>
+      Removes an <code>observeDeep</code> event listener from this type.
+    </dd>
+  </dl>
+</details>
 
-These are mere suggestions how you could scale your server environment.
+<details>
+  <summary><b>Y.Text</b></summary>
+  <br>
+  <p>
+    A shareable type that is optimized for shared editing on text. It allows to assign properties to ranges in the text. This makes it possible to implement rich-text bindings to this type.
+  </p>
+  <p>
+    This type can also be transformed to the <a href="https://quilljs.com/docs/delta">delta format</a>. Similarly the YTextEvents compute changes as deltas.
+  </p>
+  <pre>const ytext = new Y.Text()</pre>
+  <dl>
+    <b><code>insert(index:number, content:string, [formattingAttributes:Object&lt;string,string&gt;])</code></b>
+    <dd>
+      Insert a string at <var>index</var> and assign formatting attributes to it.
+      <pre>ytext.insert(0, 'bold text', { bold: true })</pre>
+    </dd>
+    <b><code>delete(index:number, length:number)</code></b>
+    <dd></dd>
+    <b><code>format(index:number, length:number, formattingAttributes:Object&lt;string,string&gt;)</code></b>
+    <dd>Assign formatting attributes to a range in the text</dd>
+    <b><code>applyDelta(delta)</code></b>
+    <dd>See <a href="https://quilljs.com/docs/delta/">Quill Delta</a></dd>
+    <b><code>length:number</code></b>
+    <dd></dd>
+    <b><code>toString():string</code></b>
+    <dd>Transforms this type, without formatting options, into a string.</dd>
+    <b><code>toJSON():string</code></b>
+    <dd>See <code>toString</code></dd>
+    <b><code>toDelta():Delta</code></b>
+    <dd>Transforms this type to a <a href="https://quilljs.com/docs/delta/">Quill Delta</a></dd>
+    <b><code>observe(function(YTextEvent, Transaction):void)</code></b>
+    <dd>
+      Adds an event listener to this type that will be called synchronously every time this type is modified. In the case this type is modified in the event listener, the event listener will be called again after the current event listener returns.
+    </dd>
+    <b><code>unobserve(function(YTextEvent, Transaction):void)</code></b>
+    <dd>
+      Removes an <code>observe</code> event listener from this type.
+    </dd>
+    <b><code>observeDeep(function(Array&lt;YEvent&gt;, Transaction):void)</code></b>
+    <dd>
+      Adds an event listener to this type that will be called synchronously every time this type or any of its children is modified. In the case this type is modified in the event listener, the event listener will be called again after the current event listener returns. The event listener receives all Events created by itself or any of its children.
+    </dd>
+    <b><code>unobserveDeep(function(Array&lt;YEvent&gt;, Transaction):void)</code></b>
+    <dd>
+      Removes an <code>observeDeep</code> event listener from this type.
+    </dd>
+  </dl>
+</details>
 
-**Option 1:** Websocket servers communicate with each other via a PubSub server. A room is represented by a PubSub channel. The downside of this approach is that the same shared document may be handled by many servers. But the upside is that this approach is fault tolerant, does not have a single point of failure, and is perfectly fit for route balancing.
+<details>
+  <summary><b>YXmlFragment</b></summary>
+  <br>
+  <p>
+    A container that holds an Array of Y.XmlElements.
+  </p>
+  <pre><code>const yxml = new Y.XmlFragment()</code></pre>
+  <dl>
+    <b><code>insert(index:number, content:Array&lt;Y.XmlElement|Y.XmlText&gt;)</code></b>
+    <dd></dd>
+    <b><code>delete(index:number, length:number)</code></b>
+    <dd></dd>
+    <b><code>get(index:number)</code></b>
+    <dd></dd>
+    <b><code>length:number</code></b>
+    <dd></dd>
+    <b><code>toArray():Array&lt;Y.XmlElement|Y.XmlText&gt;</code></b>
+    <dd>Copies the children to a new Array.</dd>
+    <b><code>toDOM():DocumentFragment</code></b>
+    <dd>Transforms this type and all children to new DOM elements.</dd>
+    <b><code>toString():string</code></b>
+    <dd>Get the XML serialization of all descendants.</dd>
+    <b><code>toJSON():string</code></b>
+    <dd>See <code>toString</code>.</dd>
+    <b><code>observe(function(YXmlEvent, Transaction):void)</code></b>
+    <dd>
+      Adds an event listener to this type that will be called synchronously every time this type is modified. In the case this type is modified in the event listener, the event listener will be called again after the current event listener returns.
+    </dd>
+    <b><code>unobserve(function(YXmlEvent, Transaction):void)</code></b>
+    <dd>
+      Removes an <code>observe</code> event listener from this type.
+    </dd>
+    <b><code>observeDeep(function(Array&lt;YEvent&gt;, Transaction):void)</code></b>
+    <dd>
+      Adds an event listener to this type that will be called synchronously every time this type or any of its children is modified. In the case this type is modified in the event listener, the event listener will be called again after the current event listener returns. The event listener receives all Events created by itself or any of its children.
+    </dd>
+    <b><code>unobserveDeep(function(Array&lt;YEvent&gt;, Transaction):void)</code></b>
+    <dd>
+      Removes an <code>observeDeep</code> event listener from this type.
+    </dd>
+  </dl>
+</details>
 
-**Option 2:** Sharding with *consistent hashing*. Each document is handled by a unique server. This patterns requires an entity, like etcd, that performs regular health checks and manages servers. Based on the list of available servers (which is managed by etcd) a proxy calculates which server is responsible for each requested document. The disadvantage of this approach is that it is that load distribution may not be fair. Still, this approach may be the preferred solution if you want to store the shared document in a database - e.g. for indexing.
-
-### Ydb Provider
-
-TODO
-
-### Create Custom Provider
-
-A provider is only a concept. I encourage you to implement the same provider interface found above. This makes it easy to exchange communication protocols.
-
-Since providers handle the communication channel, they will necessarily interact with the [binary protocols](#Binary-Protocols). I suggest that you build upon the existing protocols. But you may also implement a custom communication protocol.
-
-Read section [Sync Protocol](#Sync-Protocol) to learn how syncing works.
-
-## Shared Types
-
-A shared type is just a normal data type like [Map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map) or [Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array). But a shared type may also be modified by a remote client. Conflicts are automatically resolved by the rules described in this section - but please note that this is only a rough overview of how conflict resolution works. Please read the [Yjs CRDT Algorithm](#Yjs-CRDT-Algorithm) section for an in-depth description of the conflict resolution approach.
-
-As explained in [Tutorial](#Tutorial), a shared type is shared among all peers when they are defined with the same name on the same shared document. I.e.
-
-```js
-sharedDocument.define('my-array', Y.Array)
-
-const myArray = sharedDocument.get('my-array')
-```
-
-You may define a shared types several times, as long as you don't change the type definition.
-
-```js
-sharedDocument.define('my-array', Y.Array)
-
-const myArray = sharedDocument.get('my-array')
-
-const alsoMyArray = sharedDocument.define('my-array', Y.Array)
-
-console.log(myArray === alsoMyArray) // => true
-```
-
-All shared types have an `type.observe(event => ..)` method that allows you to observe any changes. You may also observe all changes on a type and any of its children with the `type.observeDeep(events => ..)` method. Here, `events` is the [Set](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set) of events that were fired on type, or any of its children.
-
-All Events inherit from [YEvent](https://yjs.website/module-utils.YEvent.html).
-
-### YMap
-> Complete API docs: [https://yjs.website/module-types.ymap](https://yjs.website/module-types.ymap)
-
-The YMap type is very similar to the JavaScript [Map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map). 
-
-YMap fires [YMapEvents](https://yjs.website/module-types.YMapEvent.html).
-
-```js
-import * as Y from 'yjs'
-
-const ymap = new Y.Map()
-
-ymap.observe(event => {
-  console.log('ymap keys changed:', event.keysChanged, event.remote)
-})
-
-ymap.set('key', 'value') // => ymap keys changed: Set{ 'key' } false
-ymap.delete('key') // => ymap keys changed: Set{ 'key' }
-
-const ymap2 = new YMap()
-ymap2.set(1, 'two')
-
-ymap.set('type', ymap2) // => ymap keys changed: Set{ 'type' }
-```
-
-##### Concurrent YMap changes
-
-* Concurrent edits on different keys do not affect each other. E.g. if client1 does `ymap.set('a', 1)` and client2 does `ymap.set('b', 2)`, both clients will end up with `YMap{ a: 1, b: 2 }`
-* If client1 and client2 `set` the same property at the same time, the edit from the client with the smaller userID will prevail (`sharedDocument.userID`)
-* If client1 sets a property `ymap.set('a', 1)` and client2 deletes a property `ymap.delete('a')`, the set operation always prevails.
-
-### YArray
-> Complete API docs: [https://yjs.website/module-types.yarray](https://yjs.website/module-types.yarray)
-
-YArray fires [YArrayEvents](https://yjs.website/module-types.YMapEvent.html).
-
-
-```js
-import * as Y from 'yjs'
-
-const yarray = new Y.Array()
-
-yarray.observe(event => {
-  console.log('yarray changed:', event.addedElements, event.removedElements, event.remote)
-})
-
-// insert two elements at position 0
-yarray.insert(0, ['a', 1]) // => yarray changed: Set{Item{'a'}, Item{1}}, Set{}, false 
-console.log(yarray.toArray()) // => ['a', 1]
-yarray.delete(1, 1) // yarray changed: Set{}, Set{Item{1}}, false
-
-yarray.insert(1, new Y.Map()) // => yarray changed: Set{YMap{}}, Set{}, false
-
-// The difference between .toArray and .toJSON:
-console.log(yarray.toArray()) // => ['a', YMap{}]
-console.log(yarray.toJSON()) // => ['a', {}]
-```
-
-As you can see from the above example, primitive data is wrapped into an Item. This makes it possible to find the exact location of the change.
-
-##### Concurrent YArray changes
-
-* YArray internally represents the data as a doubly linked list. The Array `['a', YMap{}, 1]` is internally represented as `Item{'a'} <-> YMap{} <-> Item{1}`. Accordingly, the insert operation `yarray.insert(1, ['b'])` is internally transformed to `insert Item{'b'} between Item{'a'} and YMap{}`.
-* When an Item is deleted, it is only marked as deleted. Only its content is garbage collected and freed from memory.
-* Therefore, the remote operation `insert x between a and b` can still be fulfilled when item `a` or item `b` are deleted.
-* In case that two clients insert content between the same items (a concurrent insertion), the order of the insertions is decided based on the `sharedDocument.userID`.
-
-### YText
-> Complete API docs: [https://yjs.website/module-types.ytext](https://yjs.website/module-types.ytext)
-
-A YText is basically a [YArray](#YArray) that is optimized for text content. 
-
-### YXmlFragment and YXmlElement
-> Complete API docs: [https://yjs.website/module-types.yxmlfragment](https://yjs.website/module-types.yxmlfragment) and [https://yjs.website/module-types.yxmlelement](https://yjs.website/module-types.yxmlelement)
+<details>
+  <summary><b>Y.XmlElement</b></summary>
+  <br>
+  <p>
+    A shareable type that represents an XML Element. It has a <code>nodeName</code>, attributes, and a list of children. But it makes no effort to validate its content and be actually XML compliant.
+  </p>
+  <pre><code>const yxml = new Y.XmlElement()</code></pre>
+  <dl>
+    <b><code>insert(index:number, content:Array&lt;Y.XmlElement|Y.XmlText&gt;)</code></b>
+    <dd></dd>
+    <b><code>delete(index:number, length:number)</code></b>
+    <dd></dd>
+    <b><code>get(index:number)</code></b>
+    <dd></dd>
+    <b><code>length:number</code></b>
+    <dd></dd>
+    <b><code>setAttribute(attributeName:string, attributeValue:string)</code></b>
+    <dd></dd>
+    <b><code>removeAttribute(attributeName:string)</code></b>
+    <dd></dd>
+    <b><code>getAttribute(attributeName:string):string</code></b>
+    <dd></dd>
+    <b><code>getAttributes(attributeName:string):Object&lt;string,string&gt;</code></b>
+    <dd></dd>
+    <b><code>toArray():Array&lt;Y.XmlElement|Y.XmlText&gt;</code></b>
+    <dd>Copies the children to a new Array.</dd>
+    <b><code>toDOM():Element</code></b>
+    <dd>Transforms this type and all children to a new DOM element.</dd>
+    <b><code>toString():string</code></b>
+    <dd>Get the XML serialization of all descendants.</dd>
+    <b><code>toJSON():string</code></b>
+    <dd>See <code>toString</code>.</dd>
+    <b><code>observe(function(YXmlEvent, Transaction):void)</code></b>
+    <dd>
+      Adds an event listener to this type that will be called synchronously every time this type is modified. In the case this type is modified in the event listener, the event listener will be called again after the current event listener returns.
+    </dd>
+    <b><code>unobserve(function(YXmlEvent, Transaction):void)</code></b>
+    <dd>
+      Removes an <code>observe</code> event listener from this type.
+    </dd>
+    <b><code>observeDeep(function(Array&lt;YEvent&gt;, Transaction):void)</code></b>
+    <dd>
+      Adds an event listener to this type that will be called synchronously every time this type or any of its children is modified. In the case this type is modified in the event listener, the event listener will be called again after the current event listener returns. The event listener receives all Events created by itself or any of its children.
+    </dd>
+    <b><code>unobserveDeep(function(Array&lt;YEvent&gt;, Transaction):void)</code></b>
+    <dd>
+      Removes an <code>observeDeep</code> event listener from this type.
+    </dd>
+  </dl>
+</details>
 
 ### Custom Types
 
@@ -319,9 +356,7 @@ A YText is basically a [YArray](#YArray) that is optimized for text content.
 
 ## Transaction
 
-
-
-## Binary Protocols
+## Binary Encoding Protocols
 
 ### Sync Protocol
 
@@ -353,19 +388,17 @@ Until [this](https://github.com/Microsoft/TypeScript/issues/7546) is fixed, the 
   "compilerOptions": {
     "allowJs": true,
     "checkJs": true,
-    ..
   },
   "maxNodeModuleJsDepth": 5
 }
 ```
 
-## CRDT Algorithm
+## Yjs CRDT Algorithm
 
 ## License and Author
 
 Yjs and all related projects are [**MIT licensed**](./LICENSE).
 
-Yjs is based on the research I did as a student at the RWTH i5. Now I am working on Yjs in my spare time.
+Yjs is based on the research I did as a student at the [RWTH i5](http://dbis.rwth-aachen.de/). Now I am working on Yjs in my spare time.
 
-kevin.jahns at protonmail.com
-https://www.patreon.com/dmonad
+Support me on [Patreon](https://www.patreon.com/dmonad) to fund this project or hire [me](https://github.com/dmonad) for professional support.

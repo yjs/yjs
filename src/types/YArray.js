@@ -85,6 +85,59 @@ export class YArray extends AbstractType {
   }
 
   /**
+   * Inserts new content at an index.
+   *
+   * Important: This function expects an array of content. Not just a content
+   * object. The reason for this "weirdness" is that inserting several elements
+   * is very efficient when it is done as a single operation.
+   *
+   * @example
+   *  // Insert character 'a' at position 0
+   *  yarray.insert(0, ['a'])
+   *  // Insert numbers 1, 2 at position 1
+   *  yarray.insert(1, [1, 2])
+   *
+   * @param {number} index The index to insert content at.
+   * @param {Array<T>} content The array of content
+   */
+  insert (index, content) {
+    if (this._y !== null) {
+      transact(this._y, transaction => {
+        typeArrayInsertGenerics(transaction, this, index, content)
+      })
+    } else {
+      // @ts-ignore _prelimContent is defined because this is not yet integrated
+      this._prelimContent.splice(index, 0, ...content)
+    }
+  }
+
+  /**
+   * Appends content to this YArray.
+   *
+   * @param {Array<T>} content Array of content to append.
+   */
+  push (content) {
+    this.insert(this.length, content)
+  }
+
+  /**
+   * Deletes elements starting from an index.
+   *
+   * @param {number} index Index at which to start deleting elements
+   * @param {number} length The number of elements to remove. Defaults to 1.
+   */
+  delete (index, length = 1) {
+    if (this._y !== null) {
+      transact(this._y, transaction => {
+        typeArrayDelete(transaction, this, index, length)
+      })
+    } else {
+      // @ts-ignore _prelimContent is defined because this is not yet integrated
+      this._prelimContent.splice(index, length)
+    }
+  }
+
+  /**
    * Returns the i-th element from a YArray.
    *
    * @param {number} index The index of the element to return from the YArray
@@ -129,7 +182,7 @@ export class YArray extends AbstractType {
   /**
    * Executes a provided function on once on overy element of this YArray.
    *
-   * @param {function(T,number):void} f A function to execute on every element of this YArray.
+   * @param {function(T,number,YArray<T>):void} f A function to execute on every element of this YArray.
    */
   forEach (f) {
     typeArrayForEach(this, f)
@@ -140,59 +193,6 @@ export class YArray extends AbstractType {
    */
   [Symbol.iterator] () {
     return typeArrayCreateIterator(this)
-  }
-
-  /**
-   * Deletes elements starting from an index.
-   *
-   * @param {number} index Index at which to start deleting elements
-   * @param {number} length The number of elements to remove. Defaults to 1.
-   */
-  delete (index, length = 1) {
-    if (this._y !== null) {
-      transact(this._y, transaction => {
-        typeArrayDelete(transaction, this, index, length)
-      })
-    } else {
-      // @ts-ignore _prelimContent is defined because this is not yet integrated
-      this._prelimContent.splice(index, length)
-    }
-  }
-
-  /**
-   * Inserts new content at an index.
-   *
-   * Important: This function expects an array of content. Not just a content
-   * object. The reason for this "weirdness" is that inserting several elements
-   * is very efficient when it is done as a single operation.
-   *
-   * @example
-   *  // Insert character 'a' at position 0
-   *  yarray.insert(0, ['a'])
-   *  // Insert numbers 1, 2 at position 1
-   *  yarray.insert(1, [1, 2])
-   *
-   * @param {number} index The index to insert content at.
-   * @param {Array<T>} content The array of content
-   */
-  insert (index, content) {
-    if (this._y !== null) {
-      transact(this._y, transaction => {
-        typeArrayInsertGenerics(transaction, this, index, content)
-      })
-    } else {
-      // @ts-ignore _prelimContent is defined because this is not yet integrated
-      this._prelimContent.splice(index, 0, ...content)
-    }
-  }
-
-  /**
-   * Appends content to this YArray.
-   *
-   * @param {Array<T>} content Array of content to append.
-   */
-  push (content) {
-    this.insert(this.length, content)
   }
 
   /**

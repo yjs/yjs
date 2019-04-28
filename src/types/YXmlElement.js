@@ -65,20 +65,16 @@ export class YXmlElement extends YXmlFragment {
     return new YXmlElement(this.nodeName)
   }
 
-  toString () {
-    return this.toDomString()
-  }
-
   /**
-   * Returns the string representation of this YXmlElement.
+   * Returns the XML serialization of this YXmlElement.
    * The attributes are ordered by attribute-name, so you can easily use this
    * method to compare YXmlElements
    *
-   * @return {String} The string representation of this type.
+   * @return {string} The string representation of this type.
    *
    * @public
    */
-  toDomString () {
+  toString () {
     const attrs = this.getAttributes()
     const stringBuilder = []
     const keys = []
@@ -93,7 +89,7 @@ export class YXmlElement extends YXmlFragment {
     }
     const nodeName = this.nodeName.toLocaleLowerCase()
     const attrsString = stringBuilder.length > 0 ? ' ' + stringBuilder.join(' ') : ''
-    return `<${nodeName}${attrsString}>${super.toDomString()}</${nodeName}>`
+    return `<${nodeName}${attrsString}>${super.toString()}</${nodeName}>`
   }
 
   /**
@@ -174,14 +170,14 @@ export class YXmlElement extends YXmlFragment {
    *
    * @public
    */
-  toDom (_document = document, hooks = {}, binding) {
+  toDOM (_document = document, hooks = {}, binding) {
     const dom = _document.createElement(this.nodeName)
     let attrs = this.getAttributes()
     for (let key in attrs) {
       dom.setAttribute(key, attrs[key])
     }
     typeArrayForEach(this, yxml => {
-      dom.appendChild(yxml.toDom(_document, hooks, binding))
+      dom.appendChild(yxml.toDOM(_document, hooks, binding))
     })
     if (binding !== undefined) {
       binding._createAssociation(dom, this)

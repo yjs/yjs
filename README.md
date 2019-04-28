@@ -6,7 +6,7 @@ text, richtext, json, or XML. It is fairly easy to get started, as Yjs hides
 most of the complexity of concurrent editing. For additional information, demos,
 and tutorials visit [y-js.org](http://y-js.org/).
 
-:warning: Checkout the [v13 docs](./README.v13.md) for the latest advancements :warning:
+:warning: Checkout the [v13 docs](./README.v13.md) for the upcoming release :warning:
 
 ### Extensions
 Yjs only knows how to resolve conflicts on shared data. You have to choose a ..
