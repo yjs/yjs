@@ -154,6 +154,6 @@ class NoteHistoryPlugin {
     const encoder = encoding.createEncoder()
     historyProtocol.writeHistorySnapshot(encoder, y, updatedUserMap)
     encoding.writeUint32(encoder, Math.floor(Date.now() / 1000))
-    history.push([encoding.toBuffer(encoder)])
+    history.push([encoding.toUint8Array(encoder)])
   }
 }

@@ -8,7 +8,7 @@ import {
   splitItem,
   addToDeleteSet,
   mergeItemWith,
-  Y, StructStore, Transaction, ID, AbstractType // eslint-disable-line
+  StructStore, Transaction, ID, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -87,15 +87,14 @@ export class ItemDeleted extends AbstractItem {
   }
 
   /**
-   * @param {Transaction} transaction
    * @param {StructStore} store
    * @param {boolean} parentGCd
    *
    * @private
    */
-  gc (transaction, store, parentGCd) {
+  gc (store, parentGCd) {
     if (parentGCd) {
-      super.gc(transaction, store, parentGCd)
+      super.gc(store, parentGCd)
     }
   }
   /**

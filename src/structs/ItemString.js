@@ -7,7 +7,7 @@ import {
   changeItemRefOffset,
   GC,
   mergeItemWith,
-  Transaction, StructStore, Y, ID, AbstractType // eslint-disable-line
+  Transaction, StructStore, ID, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'

@@ -16,7 +16,7 @@ import {
   YTextRefID,
   callTypeObservers,
   transact,
-  Y, ItemType, AbstractItem, Snapshot, StructStore, Transaction // eslint-disable-line
+  Doc, ItemType, AbstractItem, Snapshot, StructStore, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
@@ -303,7 +303,7 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
         case ItemEmbed:
         case ItemString:
           if (length < right.length) {
-            getItemCleanStart(transaction, transaction.y.store, createID(right.id.client, right.id.clock + length))
+            getItemCleanStart(transaction, transaction.doc.store, createID(right.id.client, right.id.clock + length))
           }
           length -= right.length
           break
@@ -337,7 +337,7 @@ const deleteText = (transaction, left, right, currentAttributes, length) => {
         case ItemEmbed:
         case ItemString:
           if (length < right.length) {
-            getItemCleanStart(transaction, transaction.y.store, createID(right.id.client, right.id.clock + length))
+            getItemCleanStart(transaction, transaction.doc.store, createID(right.id.client, right.id.clock + length))
           }
           length -= right.length
           right.delete(transaction)
@@ -411,7 +411,7 @@ class YTextEvent extends YEvent {
    */
   get delta () {
     if (this._delta === null) {
-      const y = this.target._y
+      const y = this.target.doc
       // @ts-ignore
       transact(y, transaction => {
         /**
@@ -629,7 +629,7 @@ export class YText extends AbstractType {
   }
 
   /**
-   * @param {Y} y
+   * @param {Doc} y
    * @param {ItemType} item
    *
    * @private
@@ -686,8 +686,8 @@ export class YText extends AbstractType {
    * @public
    */
   applyDelta (delta) {
-    if (this._y !== null) {
-      transact(this._y, transaction => {
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
         /**
          * @type {ItemListPosition}
          */
@@ -803,7 +803,7 @@ export class YText extends AbstractType {
     if (text.length <= 0) {
       return
     }
-    const y = this._y
+    const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
         const { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
@@ -829,7 +829,7 @@ export class YText extends AbstractType {
     if (embed.constructor !== Object) {
       throw new Error('Embed must be an Object')
     }
-    const y = this._y
+    const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
         const { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
@@ -853,7 +853,7 @@ export class YText extends AbstractType {
     if (length === 0) {
       return
     }
-    const y = this._y
+    const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
         const { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
@@ -876,7 +876,7 @@ export class YText extends AbstractType {
    * @public
    */
   format (index, length, attributes) {
-    const y = this._y
+    const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
         let { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)

@@ -10,26 +10,23 @@ import {
   YMap,
   YXmlFragment,
   transact,
-  Transaction, YEvent // eslint-disable-line
+  AbstractItem, Transaction, YEvent // eslint-disable-line
 } from '../internals.js'
 
 import { Observable } from 'lib0/observable.js'
 import * as random from 'lib0/random.js'
 import * as map from 'lib0/map.js'
 
-// @todo rename to shared document
-
 /**
  * A Yjs instance handles the state of shared data.
  * @extends Observable<string>
  */
-export class Y extends Observable {
+export class Doc extends Observable {
   /**
    * @param {Object|undefined} conf configuration
    */
   constructor (conf = {}) {
     super()
-    // todo: change to clientId
     this.clientID = random.uint32()
     /**
      * @type {Map<string, AbstractType<YEvent>>}
@@ -82,7 +79,7 @@ export class Y extends Observable {
    *   }
    *
    * @param {string} name
-   * @param {Function} TypeConstructor The constructor of the type definition
+   * @param {Function} TypeConstructor The constructor of the type definition. E.g. Y.Text, Y.Array, Y.Map, ...
    * @return {AbstractType<any>} The created type. Constructed with TypeConstructor
    *
    * @public
@@ -97,9 +94,18 @@ export class Y extends Observable {
     const Constr = type.constructor
     if (TypeConstructor !== AbstractType && Constr !== TypeConstructor) {
       if (Constr === AbstractType) {
-        const t = new Constr()
+        // @ts-ignore
+        const t = new TypeConstructor()
         t._map = type._map
+        type._map.forEach(/** @param {AbstractItem?} n */ n => {
+          for (; n !== null; n = n.left) {
+            n.parent = t
+          }
+        })
         t._start = type._start
+        for (let n = t._start; n !== null; n = n.right) {
+          n.parent = t
+        }
         t._length = type._length
         this.share.set(name, t)
         t._integrate(this, null)

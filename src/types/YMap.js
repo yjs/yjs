@@ -14,7 +14,7 @@ import {
   YMapRefID,
   callTypeObservers,
   transact,
-  Y, Transaction, ItemType, // eslint-disable-line
+  Doc, Transaction, ItemType, // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -38,7 +38,7 @@ export class YMapEvent extends YEvent {
 }
 
 /**
- * @template T number|string|Object|Array|ArrayBuffer
+ * @template T number|string|Object|Array|Uint8Array
  * A shared Map implementation.
  *
  * @extends AbstractType<YMapEvent<T>>
@@ -60,7 +60,7 @@ export class YMap extends AbstractType {
    * * This type is sent to other client
    * * Observer functions are fired
    *
-   * @param {Y} y The Yjs instance
+   * @param {Doc} y The Yjs instance
    * @param {ItemType} item
    *
    * @private
@@ -144,8 +144,8 @@ export class YMap extends AbstractType {
    * @param {string} key The key of the element to remove.
    */
   delete (key) {
-    if (this._y !== null) {
-      transact(this._y, transaction => {
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
         typeMapDelete(transaction, this, key)
       })
     } else {
@@ -161,8 +161,8 @@ export class YMap extends AbstractType {
    * @param {T} value The value of the element to add
    */
   set (key, value) {
-    if (this._y !== null) {
-      transact(this._y, transaction => {
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
         typeMapSet(transaction, this, key, value)
       })
     } else {

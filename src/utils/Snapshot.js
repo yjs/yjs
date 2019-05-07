@@ -6,12 +6,10 @@ import {
 
 export class Snapshot {
   /**
-   * @param {DeleteSet} ds delete store
+   * @param {DeleteSet} ds
    * @param {Map<number,number>} sm state map
-   * @param {Map<number,string>} userMap
-   * @private
    */
-  constructor (ds, sm, userMap) {
+  constructor (ds, sm) {
     /**
      * @type {DeleteSet}
      * @private
@@ -23,13 +21,14 @@ export class Snapshot {
      * @private
      */
     this.sm = sm
-    /**
-     * @type {Map<number,string>}
-     * @private
-     */
-    this.userMap = userMap
   }
 }
+
+/**
+ * @param {DeleteSet} ds
+ * @param {Map<number,number>} sm
+ */
+export const createSnapshot = (ds, sm) => new Snapshot(ds, sm)
 
 /**
  * @param {AbstractItem} item

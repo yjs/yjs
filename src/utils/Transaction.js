@@ -6,11 +6,11 @@ import {
   writeDeleteSet,
   DeleteSet,
   sortAndMergeDeleteSet,
-  getStates,
+  getStateVector,
   findIndexSS,
   callEventHandlerListeners,
   AbstractItem,
-  ID, AbstractType, AbstractStruct, YEvent, Y // eslint-disable-line
+  ID, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -43,15 +43,15 @@ import * as math from 'lib0/math.js'
  */
 export class Transaction {
   /**
-   * @param {Y} y
+   * @param {Doc} doc
    * @param {any} origin
    */
-  constructor (y, origin) {
+  constructor (doc, origin) {
     /**
      * The Yjs instance.
-     * @type {Y}
+     * @type {Doc}
      */
-    this.y = y
+    this.doc = doc
     /**
      * Describes the set of deleted items by ids
      * @type {DeleteSet}
@@ -61,7 +61,7 @@ export class Transaction {
      * Holds the state before the transaction started.
      * @type {Map<Number,Number>}
      */
-    this.beforeState = getStates(y.store)
+    this.beforeState = getStateVector(doc.store)
     /**
      * Holds the state after the transaction.
      * @type {Map<Number,Number>}
@@ -81,11 +81,6 @@ export class Transaction {
      */
     this.changedParentTypes = new Map()
     /**
-     * @type {encoding.Encoder|null}
-     * @private
-     */
-    this._updateMessage = null
-    /**
      * @type {Set<ID>}
      * @private
      */
@@ -95,21 +90,20 @@ export class Transaction {
      */
     this.origin = origin
   }
-  /**
-   * @type {encoding.Encoder|null}
-   * @public
-   */
-  get updateMessage () {
-    // only create if content was added in transaction (state or ds changed)
-    if (this._updateMessage === null && (this.deleteSet.clients.size > 0 || map.any(this.afterState, (clock, client) => this.beforeState.get(client) !== clock))) {
-      const encoder = encoding.createEncoder()
-      sortAndMergeDeleteSet(this.deleteSet)
-      writeStructsFromTransaction(encoder, this)
-      writeDeleteSet(encoder, this.deleteSet)
-      this._updateMessage = encoder
-    }
-    return this._updateMessage
+}
+
+/**
+ * @param {Transaction} transaction
+ */
+export const computeUpdateMessageFromTransaction = transaction => {
+  if (transaction.deleteSet.clients.size === 0 && !map.any(transaction.afterState, (clock, client) => transaction.beforeState.get(client) !== clock)) {
+    return null
   }
+  const encoder = encoding.createEncoder()
+  sortAndMergeDeleteSet(transaction.deleteSet)
+  writeStructsFromTransaction(encoder, transaction)
+  writeDeleteSet(encoder, transaction.deleteSet)
+  return encoder
 }
 
 /**
@@ -119,45 +113,44 @@ export class Transaction {
  * @function
  */
 export const nextID = transaction => {
-  const y = transaction.y
+  const y = transaction.doc
   return createID(y.clientID, getState(y.store, y.clientID))
 }
 
 /**
  * Implements the functionality of `y.transact(()=>{..})`
  *
- * @param {Y} y
+ * @param {Doc} doc
  * @param {function(Transaction):void} f
  * @param {any} [origin]
  *
  * @private
  * @function
  */
-export const transact = (y, f, origin = null) => {
-  const transactionCleanups = y._transactionCleanups
+export const transact = (doc, f, origin = null) => {
+  const transactionCleanups = doc._transactionCleanups
   let initialCall = false
-  if (y._transaction === null) {
+  if (doc._transaction === null) {
     initialCall = true
-    y._transaction = new Transaction(y, origin)
-    transactionCleanups.push(y._transaction)
-    y.emit('beforeTransaction', [y._transaction, y])
+    doc._transaction = new Transaction(doc, origin)
+    transactionCleanups.push(doc._transaction)
+    doc.emit('beforeTransaction', [doc._transaction, doc])
   }
   try {
-    f(y._transaction)
+    f(doc._transaction)
   } finally {
-    // @todo set after state here
-    if (initialCall && transactionCleanups[0] === y._transaction) {
+    if (initialCall && transactionCleanups[0] === doc._transaction) {
       // The first transaction ended, now process observer calls.
       // Observer call may create new transactions for which we need to call the observers and do cleanup.
       // We don't want to nest these calls, so we execute these calls one after another
       for (let i = 0; i < transactionCleanups.length; i++) {
         const transaction = transactionCleanups[i]
-        const store = transaction.y.store
+        const store = transaction.doc.store
         const ds = transaction.deleteSet
         sortAndMergeDeleteSet(ds)
-        transaction.afterState = getStates(transaction.y.store)
-        y._transaction = null
-        y.emit('beforeObserverCalls', [transaction, y])
+        transaction.afterState = getStateVector(transaction.doc.store)
+        doc._transaction = null
+        doc.emit('beforeObserverCalls', [transaction, doc])
         // emit change events on changed types
         transaction.changed.forEach((subs, itemtype) => {
           itemtype._callObserver(transaction, subs)
@@ -175,7 +168,7 @@ export const transact = (y, f, origin = null) => {
           // because we know it has at least one element
           callEventHandlerListeners(type._dEH, events, transaction)
         })
-        y.emit('afterTransaction', [transaction, y])
+        doc.emit('afterTransaction', [transaction, doc])
         /**
          * @param {Array<AbstractStruct>} structs
          * @param {number} pos
@@ -213,7 +206,7 @@ export const transact = (y, f, origin = null) => {
                 break
               }
               if (struct.deleted && struct instanceof AbstractItem) {
-                struct.gc(transaction, store, false)
+                struct.gc(store, false)
               }
             }
           }
@@ -276,10 +269,15 @@ export const transact = (y, f, origin = null) => {
           }
         }
         // @todo Merge all the transactions into one and provide send the data as a single update message
-        // @todo implement a dedicatet event that we can use to send updates to other peer
-        y.emit('afterTransactionCleanup', [transaction, y])
+        doc.emit('afterTransactionCleanup', [transaction, doc])
+        if (doc._observers.has('update')) {
+          const updateMessage = computeUpdateMessageFromTransaction(transaction)
+          if (updateMessage !== null) {
+            doc.emit('update', [encoding.toUint8Array(updateMessage), transaction.origin, doc])
+          }
+        }
       }
-      y._transactionCleanups = []
+      doc._transactionCleanups = []
     }
   }
 }

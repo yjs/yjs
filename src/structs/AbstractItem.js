@@ -17,7 +17,7 @@ import {
   getItemType,
   getItemCleanEnd,
   getItemCleanStart,
-  YEvent, StructStore, ID, AbstractType, Y, Transaction // eslint-disable-line
+  YEvent, StructStore, ID, AbstractType, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error.js'
@@ -153,7 +153,7 @@ export class AbstractItem extends AbstractStruct {
    * @private
    */
   integrate (transaction) {
-    const store = transaction.y.store
+    const store = transaction.doc.store
     const id = this.id
     const parent = this.parent
     const parentSub = this.parentSub
@@ -415,23 +415,19 @@ export class AbstractItem extends AbstractStruct {
   }
 
   /**
-   * @param {Transaction} transaction
    * @param {StructStore} store
    *
    * @private
    */
-  gcChildren (transaction, store) { }
+  gcChildren (store) { }
 
   /**
-   * @todo remove transaction param
-   *
-   * @param {Transaction} transaction
    * @param {StructStore} store
    * @param {boolean} parentGCd
    *
    * @private
    */
-  gc (transaction, store, parentGCd) {
+  gc (store, parentGCd) {
     if (!this.deleted) {
       throw error.unexpectedCase()
     }
@@ -619,12 +615,16 @@ export const computeItemParams = (transaction, store, leftid, rightid, parentid,
       case GC:
         break
       default:
+        // Edge case: toStruct is called with an offset > 0. In this case left is defined.
+        // Depending in which order structs arrive, left may be GC'd and the parent not
+        // deleted. This is why we check if left is GC'd. Strictly we probably don't have
+        // to check if right is GC'd, but we will in case we run into future issues
         if (!parentItem.deleted && (left === null || left.constructor !== GC) && (right === null || right.constructor !== GC)) {
           parent = parentItem.type
         }
     }
   } else if (parentYKey !== null) {
-    parent = transaction.y.get(parentYKey)
+    parent = transaction.doc.get(parentYKey)
   } else if (left !== null) {
     if (left.constructor !== GC) {
       parent = left.parent

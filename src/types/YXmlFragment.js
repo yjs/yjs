@@ -6,11 +6,11 @@ import {
   YXmlEvent,
   YXmlElement,
   AbstractType,
-  typeArrayMap,
-  typeArrayForEach,
-  typeArrayInsertGenerics,
-  typeArrayDelete,
-  typeArrayToArray,
+  typeListMap,
+  typeListForEach,
+  typeListInsertGenerics,
+  typeListDelete,
+  typeListToArray,
   YXmlFragmentRefID,
   callTypeObservers,
   transact,
@@ -211,7 +211,7 @@ export class YXmlFragment extends AbstractType {
    * @return {string} The string representation of all children.
    */
   toString () {
-    return typeArrayMap(this, xml => xml.toString()).join('')
+    return typeListMap(this, xml => xml.toString()).join('')
   }
 
   toJSON () {
@@ -238,7 +238,7 @@ export class YXmlFragment extends AbstractType {
     if (binding !== undefined) {
       binding._createAssociation(fragment, this)
     }
-    typeArrayForEach(this, xmlType => {
+    typeListForEach(this, xmlType => {
       fragment.insertBefore(xmlType.toDOM(_document, hooks, binding), null)
     })
     return fragment
@@ -255,9 +255,9 @@ export class YXmlFragment extends AbstractType {
    * @param {Array<YXmlElement|YXmlText>} content The array of content
    */
   insert (index, content) {
-    if (this._y !== null) {
-      transact(this._y, transaction => {
-        typeArrayInsertGenerics(transaction, this, index, content)
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
+        typeListInsertGenerics(transaction, this, index, content)
       })
     } else {
       // @ts-ignore _prelimContent is defined because this is not yet integrated
@@ -272,9 +272,9 @@ export class YXmlFragment extends AbstractType {
    * @param {number} [length=1] The number of elements to remove. Defaults to 1.
    */
   delete (index, length = 1) {
-    if (this._y !== null) {
-      transact(this._y, transaction => {
-        typeArrayDelete(transaction, this, index, length)
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
+        typeListDelete(transaction, this, index, length)
       })
     } else {
       // @ts-ignore _prelimContent is defined because this is not yet integrated
@@ -287,7 +287,7 @@ export class YXmlFragment extends AbstractType {
    * @return {Array<YXmlElement|YXmlText|YXmlHook>}
    */
   toArray () {
-    return typeArrayToArray(this)
+    return typeListToArray(this)
   }
   /**
    * Transform the properties of this type to binary and write it to an

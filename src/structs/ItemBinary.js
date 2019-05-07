@@ -9,6 +9,7 @@ import {
 
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
+import * as buffer from 'lib0/buffer.js'
 
 /**
  * @private
@@ -27,7 +28,7 @@ export class ItemBinary extends AbstractItem {
    * @param {ID | null} rightOrigin
    * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
-   * @param {ArrayBuffer} content
+   * @param {Uint8Array} content
    */
   constructor (id, left, origin, right, rightOrigin, parent, parentSub, content) {
     super(id, left, origin, right, rightOrigin, parent, parentSub)
@@ -54,7 +55,7 @@ export class ItemBinary extends AbstractItem {
    */
   write (encoder, offset) {
     super.write(encoder, offset, structBinaryRefNumber)
-    encoding.writePayload(encoder, this.content)
+    encoding.writeVarUint8Array(encoder, this.content)
   }
 }
 
@@ -70,9 +71,9 @@ export class ItemBinaryRef extends AbstractItemRef {
   constructor (decoder, id, info) {
     super(decoder, id, info)
     /**
-     * @type {ArrayBuffer}
+     * @type {Uint8Array}
      */
-    this.content = decoding.readPayload(decoder)
+    this.content = buffer.copyUint8Array(decoding.readVarUint8Array(decoder))
   }
   /**
    * @param {Transaction} transaction

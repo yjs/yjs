@@ -48,7 +48,7 @@ export class DeleteSet {
 /**
  * Iterate over all structs that were deleted.
  *
- * This function expects that the deletes structs are not deleted. Hence, you can
+ * This function expects that the deletes structs are not merged. Hence, you can
  * probably only use it in type observes and `afterTransaction` events. But not
  * in `afterTransactionCleanup`.
  *
@@ -266,6 +266,6 @@ export const readDeleteSet = (decoder, transaction, store) => {
   if (unappliedDS.clients.size > 0) {
     const unappliedDSEncoder = encoding.createEncoder()
     writeDeleteSet(unappliedDSEncoder, unappliedDS)
-    store.pendingDeleteReaders.push(decoding.createDecoder(encoding.toBuffer(unappliedDSEncoder)))
+    store.pendingDeleteReaders.push(decoding.createDecoder(encoding.toUint8Array(unappliedDSEncoder)))
   }
 }

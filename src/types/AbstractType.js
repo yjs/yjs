@@ -11,7 +11,7 @@ import {
   ItemBinary,
   createID,
   getItemCleanStart,
-  Y, Snapshot, Transaction, EventHandler, YEvent, AbstractItem, // eslint-disable-line
+  Doc, Snapshot, Transaction, EventHandler, YEvent, AbstractItem, // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map.js'
@@ -64,9 +64,9 @@ export class AbstractType {
     this._start = null
     /**
      * @private
-     * @type {Y|null}
+     * @type {Doc|null}
      */
-    this._y = null
+    this.doc = null
     this._length = 0
     /**
      * Event handlers
@@ -87,12 +87,12 @@ export class AbstractType {
    * * This type is sent to other client
    * * Observer functions are fired
    *
-   * @param {Y} y The Yjs instance
+   * @param {Doc} y The Yjs instance
    * @param {ItemType|null} item
    * @private
    */
   _integrate (y, item) {
-    this._y = y
+    this.doc = y
     this._item = item
   }
 
@@ -182,7 +182,7 @@ export class AbstractType {
  * @private
  * @function
  */
-export const typeArrayToArray = type => {
+export const typeListToArray = type => {
   const cs = []
   let n = type._start
   while (n !== null) {
@@ -205,7 +205,7 @@ export const typeArrayToArray = type => {
  * @private
  * @function
  */
-export const typeArrayToArraySnapshot = (type, snapshot) => {
+export const typeListToArraySnapshot = (type, snapshot) => {
   const cs = []
   let n = type._start
   while (n !== null) {
@@ -229,7 +229,7 @@ export const typeArrayToArraySnapshot = (type, snapshot) => {
  * @private
  * @function
  */
-export const typeArrayForEach = (type, f) => {
+export const typeListForEach = (type, f) => {
   let index = 0
   let n = type._start
   while (n !== null) {
@@ -252,12 +252,12 @@ export const typeArrayForEach = (type, f) => {
  * @private
  * @function
  */
-export const typeArrayMap = (type, f) => {
+export const typeListMap = (type, f) => {
   /**
    * @type {Array<any>}
    */
   const result = []
-  typeArrayForEach(type, (c, i) => {
+  typeListForEach(type, (c, i) => {
     result.push(f(c, i, type))
   })
   return result
@@ -270,7 +270,7 @@ export const typeArrayMap = (type, f) => {
  * @private
  * @function
  */
-export const typeArrayCreateIterator = type => {
+export const typeListCreateIterator = type => {
   let n = type._start
   /**
    * @type {Array<any>|null}
@@ -326,7 +326,7 @@ export const typeArrayCreateIterator = type => {
  * @private
  * @function
  */
-export const typeArrayForEachSnapshot = (type, f, snapshot) => {
+export const typeListForEachSnapshot = (type, f, snapshot) => {
   let index = 0
   let n = type._start
   while (n !== null) {
@@ -348,7 +348,7 @@ export const typeArrayForEachSnapshot = (type, f, snapshot) => {
  * @private
  * @function
  */
-export const typeArrayGet = (type, index) => {
+export const typeListGet = (type, index) => {
   for (let n = type._start; n !== null; n = n.right) {
     if (!n.deleted && n.countable) {
       if (index < n.length) {
@@ -363,12 +363,12 @@ export const typeArrayGet = (type, index) => {
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {AbstractItem?} referenceItem
- * @param {Array<Object<string,any>|Array<any>|number|string|ArrayBuffer>} content
+ * @param {Array<Object<string,any>|Array<any>|number|string|Uint8Array>} content
  *
  * @private
  * @function
  */
-export const typeArrayInsertGenericsAfter = (transaction, parent, referenceItem, content) => {
+export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, content) => {
   let left = referenceItem
   const right = referenceItem === null ? parent._start : referenceItem.right
   /**
@@ -393,10 +393,9 @@ export const typeArrayInsertGenericsAfter = (transaction, parent, referenceItem,
       default:
         packJsonContent()
         switch (c.constructor) {
+          case Uint8Array:
           case ArrayBuffer:
-            // @ts-ignore c is definitely an ArrayBuffer
-            left = new ItemBinary(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, c)
-            // @ts-ignore
+            left = new ItemBinary(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new Uint8Array(/** @type {Uint8Array} */ (c)))
             left.integrate(transaction)
             break
           default:
@@ -416,14 +415,14 @@ export const typeArrayInsertGenericsAfter = (transaction, parent, referenceItem,
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {number} index
- * @param {Array<Object<string,any>|Array<any>|number|string|ArrayBuffer>} content
+ * @param {Array<Object<string,any>|Array<any>|number|string|Uint8Array>} content
  *
  * @private
  * @function
  */
-export const typeArrayInsertGenerics = (transaction, parent, index, content) => {
+export const typeListInsertGenerics = (transaction, parent, index, content) => {
   if (index === 0) {
-    return typeArrayInsertGenericsAfter(transaction, parent, null, content)
+    return typeListInsertGenericsAfter(transaction, parent, null, content)
   }
   let n = parent._start
   for (; n !== null; n = n.right) {
@@ -431,14 +430,14 @@ export const typeArrayInsertGenerics = (transaction, parent, index, content) => 
       if (index <= n.length) {
         if (index < n.length) {
           // insert in-between
-          getItemCleanStart(transaction, transaction.y.store, createID(n.id.client, n.id.clock + index))
+          getItemCleanStart(transaction, transaction.doc.store, createID(n.id.client, n.id.clock + index))
         }
         break
       }
       index -= n.length
     }
   }
-  return typeArrayInsertGenericsAfter(transaction, parent, n, content)
+  return typeListInsertGenericsAfter(transaction, parent, n, content)
 }
 
 /**
@@ -450,14 +449,14 @@ export const typeArrayInsertGenerics = (transaction, parent, index, content) => 
  * @private
  * @function
  */
-export const typeArrayDelete = (transaction, parent, index, length) => {
+export const typeListDelete = (transaction, parent, index, length) => {
   if (length === 0) { return }
   let n = parent._start
   // compute the first item to be deleted
   for (; n !== null && index > 0; n = n.right) {
     if (!n.deleted && n.countable) {
       if (index < n.length) {
-        getItemCleanStart(transaction, transaction.y.store, createID(n.id.client, n.id.clock + index))
+        getItemCleanStart(transaction, transaction.doc.store, createID(n.id.client, n.id.clock + index))
       }
       index -= n.length
     }
@@ -466,7 +465,7 @@ export const typeArrayDelete = (transaction, parent, index, length) => {
   while (length > 0 && n !== null) {
     if (!n.deleted) {
       if (length < n.length) {
-        getItemCleanStart(transaction, transaction.y.store, createID(n.id.client, n.id.clock + length))
+        getItemCleanStart(transaction, transaction.doc.store, createID(n.id.client, n.id.clock + length))
       }
       n.delete(transaction)
       length -= n.length
@@ -497,7 +496,7 @@ export const typeMapDelete = (transaction, parent, key) => {
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {string} key
- * @param {Object|number|Array<any>|string|ArrayBuffer|AbstractType<any>} value
+ * @param {Object|number|Array<any>|string|Uint8Array|AbstractType<any>} value
  *
  * @private
  * @function
@@ -515,7 +514,7 @@ export const typeMapSet = (transaction, parent, key, value) => {
     case String:
       new ItemJSON(nextID(transaction), left, left === null ? null : left.lastId, null, null, parent, key, [value]).integrate(transaction)
       break
-    case ArrayBuffer:
+    case Uint8Array:
       new ItemBinary(nextID(transaction), left, left === null ? null : left.lastId, null, null, parent, key, value).integrate(transaction)
       break
     default:
@@ -530,7 +529,7 @@ export const typeMapSet = (transaction, parent, key, value) => {
 /**
  * @param {AbstractType<any>} parent
  * @param {string} key
- * @return {Object<string,any>|number|Array<any>|string|ArrayBuffer|AbstractType<any>|undefined}
+ * @return {Object<string,any>|number|Array<any>|string|Uint8Array|AbstractType<any>|undefined}
  *
  * @private
  * @function
@@ -542,7 +541,7 @@ export const typeMapGet = (parent, key) => {
 
 /**
  * @param {AbstractType<any>} parent
- * @return {Object<string,Object<string,any>|number|Array<any>|string|ArrayBuffer|AbstractType<any>|undefined>}
+ * @return {Object<string,Object<string,any>|number|Array<any>|string|Uint8Array|AbstractType<any>|undefined>}
  *
  * @private
  * @function
@@ -577,7 +576,7 @@ export const typeMapHas = (parent, key) => {
  * @param {AbstractType<any>} parent
  * @param {string} key
  * @param {Snapshot} snapshot
- * @return {Object<string,any>|number|Array<any>|string|ArrayBuffer|AbstractType<any>|undefined}
+ * @return {Object<string,any>|number|Array<any>|string|Uint8Array|AbstractType<any>|undefined}
  *
  * @private
  * @function

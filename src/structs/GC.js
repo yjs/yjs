@@ -4,7 +4,7 @@ import {
   AbstractStruct,
   createID,
   addStruct,
-  Y, StructStore, Transaction, ID // eslint-disable-line
+  StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as decoding from 'lib0/decoding.js'
@@ -48,7 +48,7 @@ export class GC extends AbstractStruct {
    * @param {Transaction} transaction
    */
   integrate (transaction) {
-    addStruct(transaction.y.store, this)
+    addStruct(transaction.doc.store, this)
   }
 
   /**

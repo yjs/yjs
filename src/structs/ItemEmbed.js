@@ -67,7 +67,7 @@ export class ItemEmbedRef extends AbstractItemRef {
   constructor (decoder, id, info) {
     super(decoder, id, info)
     /**
-     * @type {ArrayBuffer}
+     * @type {Object}
      */
     this.embed = JSON.parse(decoding.readVarString(decoder))
   }

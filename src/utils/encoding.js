@@ -17,11 +17,11 @@ import {
   createID,
   readID,
   getState,
-  getStates,
+  getStateVector,
   readDeleteSet,
   writeDeleteSet,
   createDeleteSetFromStructStore,
-  Transaction, AbstractStruct, AbstractStructRef, StructStore, ID // eslint-disable-line
+  Doc, Transaction, AbstractStruct, AbstractStructRef, StructStore, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -104,7 +104,7 @@ export const writeClientsStructs = (encoder, store, _sm) => {
       sm.set(client, clock)
     }
   })
-  getStates(store).forEach((clock, client) => {
+  getStateVector(store).forEach((clock, client) => {
     if (!_sm.has(client)) {
       sm.set(client, 0)
     }
@@ -250,7 +250,7 @@ export const tryResumePendingDeleteReaders = (transaction, store) => {
  * @private
  * @function
  */
-export const writeStructsFromTransaction = (encoder, transaction) => writeClientsStructs(encoder, transaction.y.store, transaction.beforeState)
+export const writeStructsFromTransaction = (encoder, transaction) => writeClientsStructs(encoder, transaction.doc.store, transaction.beforeState)
 
 /**
  * @param {StructStore} store
@@ -297,25 +297,127 @@ export const readStructs = (decoder, transaction, store) => {
 }
 
 /**
+ * Read and apply a document update.
+ *
+ * This function has the same effect as `applyUpdate` but accepts an decoder.
+ *
  * @param {decoding.Decoder} decoder
- * @param {Transaction} transaction
- * @param {StructStore} store
+ * @param {Doc} ydoc
+ * @param {any} [transactionOrigin] This will be stored on `transaction.origin` and `.on('update', (update, origin))`
  *
  * @function
  */
-export const readModel = (decoder, transaction, store) => {
-  readStructs(decoder, transaction, store)
-  readDeleteSet(decoder, transaction, store)
+export const readUpdate = (decoder, ydoc, transactionOrigin) =>
+  ydoc.transact(transaction => {
+    readStructs(decoder, transaction, ydoc.store)
+    readDeleteSet(decoder, transaction, ydoc.store)
+  }, transactionOrigin)
+
+/**
+ * Apply a document update created by, for example, `y.on('update', update => ..)` or `update = encodeStateAsUpdate()`.
+ *
+ * This function has the same effect as `readUpdate` but accepts an Uint8Array instead of a Decoder.
+ *
+ * @param {Doc} ydoc
+ * @param {Uint8Array} update
+ * @param {any} [transactionOrigin] This will be stored on `transaction.origin` and `.on('update', (update, origin))`
+ *
+ * @function
+ */
+export const applyUpdate = (ydoc, update, transactionOrigin) =>
+  readUpdate(decoding.createDecoder(update), ydoc, transactionOrigin)
+
+/**
+ * Write all the document as a single update message. If you specify the state of the remote client (`targetStateVector`) it will
+ * only write the operations that are missing.
+ *
+ * @param {encoding.Encoder} encoder
+ * @param {Doc} doc
+ * @param {Map<number,number>} [targetStateVector] The state of the target that receives the update. Leave empty to write all known structs
+ *
+ * @function
+ */
+export const writeStateAsUpdate = (encoder, doc, targetStateVector = new Map()) => {
+  writeClientsStructs(encoder, doc.store, targetStateVector)
+  writeDeleteSet(encoder, createDeleteSetFromStructStore(doc.store))
 }
 
 /**
- * @param {encoding.Encoder} encoder
- * @param {StructStore} store
- * @param {Map<number,number>} [targetState] The state of the target that receives the update. Leave empty to write all known structs
+ * Write all the document as a single update message that can be applied on the remote document. If you specify the state of the remote client (`targetState`) it will
+ * only write the operations that are missing.
+ *
+ * Use `writeStateAsUpdate` instead if you are working with lib0/encoding.js#Encoder
+ *
+ * @param {Doc} doc
+ * @param {Uint8Array} [encodedTargetStateVector] The state of the target that receives the update. Leave empty to write all known structs
+ * @return {Uint8Array}
  *
  * @function
  */
-export const writeModel = (encoder, store, targetState = new Map()) => {
-  writeClientsStructs(encoder, store, targetState)
-  writeDeleteSet(encoder, createDeleteSetFromStructStore(store))
+export const encodeStateAsUpdate = (doc, encodedTargetStateVector) => {
+  const encoder = encoding.createEncoder()
+  const targetStateVector = encodedTargetStateVector == null ? new Map() : decodeStateVector(encodedTargetStateVector)
+  writeStateAsUpdate(encoder, doc, targetStateVector)
+  return encoding.toUint8Array(encoder)
+}
+
+/**
+ * Read state vector from Decoder and return as Map
+ *
+ * @param {decoding.Decoder} decoder
+ * @return {Map<number,number>} Maps `client` to the number next expected `clock` from that client.
+ *
+ * @function
+ */
+export const readStateVector = decoder => {
+  const ss = new Map()
+  const ssLength = decoding.readVarUint(decoder)
+  for (let i = 0; i < ssLength; i++) {
+    const client = decoding.readVarUint(decoder)
+    const clock = decoding.readVarUint(decoder)
+    ss.set(client, clock)
+  }
+  return ss
+}
+
+/**
+ * Read decodedState and return State as Map.
+ *
+ * @param {Uint8Array} decodedState
+ * @return {Map<number,number>} Maps `client` to the number next expected `clock` from that client.
+ *
+ * @function
+ */
+export const decodeStateVector = decodedState => readStateVector(decoding.createDecoder(decodedState))
+
+/**
+ * Write State Vector to `lib0/encoding.js#Encoder`.
+ *
+ * @param {encoding.Encoder} encoder
+ * @param {Doc} doc
+ *
+ * @function
+ */
+export const writeDocumentStateVector = (encoder, doc) => {
+  encoding.writeVarUint(encoder, doc.store.clients.size)
+  doc.store.clients.forEach((structs, client) => {
+    const id = structs[structs.length - 1].id
+    encoding.writeVarUint(encoder, id.client)
+    encoding.writeVarUint(encoder, id.clock)
+  })
+  return encoder
+}
+
+/**
+ * Encode State as Uint8Array.
+ *
+ * @param {Doc} doc
+ * @return {Uint8Array}
+ *
+ * @function
+ */
+export const encodeDocumentStateVector = doc => {
+  const encoder = encoding.createEncoder()
+  writeDocumentStateVector(encoder, doc)
+  return encoding.toUint8Array(encoder)
 }

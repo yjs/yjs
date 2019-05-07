@@ -6,9 +6,9 @@ import {
   typeMapSet,
   typeMapGet,
   typeMapGetAll,
-  typeArrayForEach,
+  typeListForEach,
   YXmlElementRefID,
-  Snapshot, Y, ItemType // eslint-disable-line
+  Snapshot, Doc, ItemType // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -39,7 +39,7 @@ export class YXmlElement extends YXmlFragment {
    * * This type is sent to other client
    * * Observer functions are fired
    *
-   * @param {Y} y The Yjs instance
+   * @param {Doc} y The Yjs instance
    * @param {ItemType} item
    * @private
    */
@@ -100,8 +100,8 @@ export class YXmlElement extends YXmlFragment {
    * @public
    */
   removeAttribute (attributeName) {
-    if (this._y !== null) {
-      transact(this._y, transaction => {
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
         typeMapDelete(transaction, this, attributeName)
       })
     } else {
@@ -119,8 +119,8 @@ export class YXmlElement extends YXmlFragment {
    * @public
    */
   setAttribute (attributeName, attributeValue) {
-    if (this._y !== null) {
-      transact(this._y, transaction => {
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
         typeMapSet(transaction, this, attributeName, attributeValue)
       })
     } else {
@@ -176,7 +176,7 @@ export class YXmlElement extends YXmlFragment {
     for (let key in attrs) {
       dom.setAttribute(key, attrs[key])
     }
-    typeArrayForEach(this, yxml => {
+    typeListForEach(this, yxml => {
       dom.appendChild(yxml.toDOM(_document, hooks, binding))
     })
     if (binding !== undefined) {

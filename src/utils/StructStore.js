@@ -6,8 +6,7 @@ import {
 
 import * as math from 'lib0/math.js'
 import * as error from 'lib0/error.js'
-import * as encoding from 'lib0/encoding.js'
-import * as decoding from 'lib0/decoding.js'
+import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 
 export class StructStore {
   constructor () {
@@ -51,7 +50,7 @@ export class StructStore {
  * @public
  * @function
  */
-export const getStates = store => {
+export const getStateVector = store => {
   const sm = new Map()
   store.clients.forEach((structs, client) => {
     const struct = structs[structs.length - 1]
@@ -261,43 +260,4 @@ export const replaceStruct = (store, struct, newStruct) => {
   // @ts-ignore
   const structs = store.clients.get(struct.id.client)
   structs[findIndexSS(structs, struct.id.clock)] = newStruct
-}
-
-/**
- * Read StateMap from Decoder and return as Map
- *
- * @param {decoding.Decoder} decoder
- * @return {Map<number,number>}
- *
- * @private
- * @function
- */
-export const readStatesAsMap = decoder => {
-  const ss = new Map()
-  const ssLength = decoding.readVarUint(decoder)
-  for (let i = 0; i < ssLength; i++) {
-    const client = decoding.readVarUint(decoder)
-    const clock = decoding.readVarUint(decoder)
-    ss.set(client, clock)
-  }
-  return ss
-}
-
-/**
- * Write StateMap to Encoder
- *
- * @param {encoding.Encoder} encoder
- * @param {StructStore} store
- *
- * @private
- * @function
- */
-export const writeStates = (encoder, store) => {
-  encoding.writeVarUint(encoder, store.clients.size)
-  store.clients.forEach((structs, client) => {
-    const id = structs[structs.length - 1].id
-    encoding.writeVarUint(encoder, id.client)
-    encoding.writeVarUint(encoder, id.clock)
-  })
-  return encoder
 }

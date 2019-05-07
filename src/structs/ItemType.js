@@ -10,7 +10,7 @@ import {
   readYXmlFragment,
   readYXmlHook,
   readYXmlText,
-  StructStore, Y, GC, Transaction, ID, AbstractType // eslint-disable-line
+  StructStore, GC, Transaction, ID, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js' // eslint-disable-line
@@ -83,7 +83,7 @@ export class ItemType extends AbstractItem {
    */
   integrate (transaction) {
     super.integrate(transaction)
-    this.type._integrate(transaction.y, this)
+    this.type._integrate(transaction.doc, this)
   }
   /**
    * @param {encoding.Encoder} encoder
@@ -129,19 +129,18 @@ export class ItemType extends AbstractItem {
   }
 
   /**
-   * @param {Transaction} transaction
    * @param {StructStore} store
    */
-  gcChildren (transaction, store) {
+  gcChildren (store) {
     let item = this.type._start
     while (item !== null) {
-      item.gc(transaction, store, true)
+      item.gc(store, true)
       item = item.right
     }
     this.type._start = null
     this.type._map.forEach(item => {
       while (item !== null) {
-        item.gc(transaction, store, true)
+        item.gc(store, true)
         // @ts-ignore
         item = item.left
       }
@@ -150,13 +149,12 @@ export class ItemType extends AbstractItem {
   }
 
   /**
-   * @param {Transaction} transaction
    * @param {StructStore} store
    * @param {boolean} parentGCd
    */
-  gc (transaction, store, parentGCd) {
-    this.gcChildren(transaction, store)
-    super.gc(transaction, store, parentGCd)
+  gc (store, parentGCd) {
+    this.gcChildren(store)
+    super.gc(store, parentGCd)
   }
 }
 

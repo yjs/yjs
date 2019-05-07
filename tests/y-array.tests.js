@@ -263,7 +263,7 @@ export const testEventTargetIsSetCorrectlyOnRemote = tc => {
  * @param {t.TestCase} tc
  */
 export const testIteratingArrayContainingTypes = tc => {
-  const y = new Y.Y()
+  const y = new Y.Doc()
   const arr = y.getArray('arr')
   const numItems = 10
   for (let i = 0; i < numItems; i++) {

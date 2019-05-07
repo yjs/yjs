@@ -5,17 +5,17 @@
 import {
   YEvent,
   AbstractType,
-  typeArrayGet,
-  typeArrayToArray,
-  typeArrayForEach,
-  typeArrayCreateIterator,
-  typeArrayInsertGenerics,
-  typeArrayDelete,
-  typeArrayMap,
+  typeListGet,
+  typeListToArray,
+  typeListForEach,
+  typeListCreateIterator,
+  typeListInsertGenerics,
+  typeListDelete,
+  typeListMap,
   YArrayRefID,
   callTypeObservers,
   transact,
-  Y, Transaction, ItemType, // eslint-disable-line
+  Doc, Transaction, ItemType, // eslint-disable-line
 } from '../internals.js'
 
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
@@ -58,7 +58,7 @@ export class YArray extends AbstractType {
    * * This type is sent to other client
    * * Observer functions are fired
    *
-   * @param {Y} y The Yjs instance
+   * @param {Doc} y The Yjs instance
    * @param {ItemType} item
    *
    * @private
@@ -101,9 +101,9 @@ export class YArray extends AbstractType {
    * @param {Array<T>} content The array of content
    */
   insert (index, content) {
-    if (this._y !== null) {
-      transact(this._y, transaction => {
-        typeArrayInsertGenerics(transaction, this, index, content)
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
+        typeListInsertGenerics(transaction, this, index, content)
       })
     } else {
       // @ts-ignore _prelimContent is defined because this is not yet integrated
@@ -127,9 +127,9 @@ export class YArray extends AbstractType {
    * @param {number} length The number of elements to remove. Defaults to 1.
    */
   delete (index, length = 1) {
-    if (this._y !== null) {
-      transact(this._y, transaction => {
-        typeArrayDelete(transaction, this, index, length)
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
+        typeListDelete(transaction, this, index, length)
       })
     } else {
       // @ts-ignore _prelimContent is defined because this is not yet integrated
@@ -144,7 +144,7 @@ export class YArray extends AbstractType {
    * @return {T}
    */
   get (index) {
-    return typeArrayGet(this, index)
+    return typeListGet(this, index)
   }
 
   /**
@@ -153,7 +153,7 @@ export class YArray extends AbstractType {
    * @return {Array<T>}
    */
   toArray () {
-    return typeArrayToArray(this)
+    return typeListToArray(this)
   }
 
   /**
@@ -176,7 +176,7 @@ export class YArray extends AbstractType {
    */
   map (f) {
     // @ts-ignore
-    return typeArrayMap(this, f)
+    return typeListMap(this, f)
   }
 
   /**
@@ -185,14 +185,14 @@ export class YArray extends AbstractType {
    * @param {function(T,number,YArray<T>):void} f A function to execute on every element of this YArray.
    */
   forEach (f) {
-    typeArrayForEach(this, f)
+    typeListForEach(this, f)
   }
 
   /**
    * @return {IterableIterator<T>}
    */
   [Symbol.iterator] () {
-    return typeArrayCreateIterator(this)
+    return typeListCreateIterator(this)
   }
 
   /**

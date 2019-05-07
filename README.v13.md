@@ -1,13 +1,13 @@
 # ![Yjs](https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png)
-> The shared editing library
+> A CRDT framework with a powerful abstraction of shared data
 
-Yjs is a library for automatic conflict resolution on shared state. It implements an [operation-based CRDT](#Yjs-CRDT-Algorithm) and exposes its internal model as shared types. Shared types are common data types like `Map` or `Array` with superpowers: changes are automatically distributed to other peers and merged without merge conflicts.
+Yjs is a [CRDT implementation](#Yjs-CRDT-Algorithm) that exposes its internal data structure as *shared types*. Shared types are common data types like `Map` or `Array` with superpowers: changes are automatically distributed to other peers and merged without merge conflicts.
 
-Yjs is **network agnostic** (p2p!), supports many existing **rich text editors**, **offline editing**, **version snapshots**, **shared cursors**, and encodes update messages using **binary protocol encoding**.
+Yjs is **network agnostic** (p2p!), supports many existing **rich text editors**, **offline editing**, **version snapshots**, **undo/redo** and **shared cursors**. It scales well with an unlimited number of users and is well suited for even large documents.
 
 * Chat: [https://gitter.im/y-js/yjs](https://gitter.im/y-js/yjs)
 * Demos: [https://github.com/y-js/yjs-demos](https://github.com/y-js/yjs-demos)
-* API Docs: [https://yjs.website/](https://yjs.website/)
+* Benchmarks: [https://github.com/dmonad/crdt-benchmarks](https://github.com/dmonad/crdt-benchmarks)
 
 # Table of Contents
 
@@ -16,18 +16,15 @@ Yjs is **network agnostic** (p2p!), supports many existing **rich text editors**
   * [Providers](#Providers)
 * [Getting Started](#Getting-Started)
 * [API](#API)
-* [Transaction](#Transaction)
-* [Offline Editing](#Offline-Editing)
-* [Awareness](#Awareness)
-* [Working with Yjs](#Working-with-Yjs)
+  * [Shared Types](#Shared-Types)
+  * [Y.Doc](#Y.Doc)
+  * [Document Updates](#Document-Updates)
+  * [Relative Positions](#Relative-Positions)
+* [Miscellaneous](#Miscellaneous)
   * [Typescript Declarations](#Typescript-Declarations)
-* [Binary Protocols](#Binary-Protocols)
-  * [Sync Protocol](#Sync-Protocols)
-  * [Awareness Protocol](#Awareness-Protocols)
-  * [Auth Protocol](#Auth-Protocol)
 * [Yjs CRDT Algorithm](#Yjs-CRDT-Algorithm)
 * [Evaluation](#Evaluation)
-  * [Existing shared editing libraries](#Exisisting-Javascript-Products)
+  * [Existing shared editing libraries](#Exisisting-Javascript-Libraries)
   * [CRDT Algorithms](#CRDT-Algorithms)
   * [Comparison of CRDT with OT](#Comparing-CRDT-with-OT)
   * [Comparison of CRDT Algorithms](#Comparing-CRDT-Algorithms)
@@ -52,7 +49,7 @@ This repository contains a collection of shared types that can be observed for c
 
 ### Providers
 
-Setting up the communication between clients, managing awareness information, and storing shared data for offline usage is quite a hassle. **Providers** manage all that for you and are a good off-the-shelf solution.
+Setting up the communication between clients, managing awareness information, and storing shared data for offline usage is quite a hassle. **Providers** manage all that for you and are the perfect starting point for your collaborative app.
 
 <dl>
   <dt><a href="http://github.com/y-js/y-websocket">y-websocket</a></dt>
@@ -60,15 +57,15 @@ Setting up the communication between clients, managing awareness information, an
   <dt><a href="http://github.com/y-js/y-mesh">y-mesh</a></dt>
   <dd>[WIP] Creates a connected graph of webrtc connections with a high <a href="https://en.wikipedia.org/wiki/Strength_of_a_graph">strength</a>. It requires a signalling server that connects a client to the first peer. But after that the network manages itself. It is well suited for large and small networks.</dd>
   <dt><a href="http://github.com/y-js/y-dat">y-dat</a></dt>
-  <dd>[WIP] Writes updates effinciently in the dat network using <a href="https://github.com/kappa-db/multifeed">multifeed</a>. Each client has an append-only log of CRDT local updates (hypercore). Multifeed manages and sync hypercores and y-dat listens to changes and applies them to the Yjs document.</dd>
+  <dd>[WIP] Write document updates effinciently to the dat network using <a href="https://github.com/kappa-db/multifeed">multifeed</a>. Each client has an append-only log of CRDT local updates (hypercore). Multifeed manages and sync hypercores and y-dat listens to changes and applies them to the Yjs document.</dd>
 </dl>
 
 ## Getting Started
 
-Install Yjs and a provider with your favorite package manager. In this section we are going to bind a YText to a DOM textarea.
+Install Yjs and a provider with your favorite package manager.
 
 ```sh
-npm i yjs@13.0.0-80 y-websocket@1.0.0-1 y-textarea
+npm i yjs@13.0.0-81 y-websocket@1.0.0-2 y-textarea
 ```
 
 **Start the y-websocket server**
@@ -77,7 +74,9 @@ npm i yjs@13.0.0-80 y-websocket@1.0.0-1 y-textarea
 PORT=1234 node ./node_modules/y-websocket/bin/server.js
 ```
 
-**Textarea Binding Example**
+**Example: Textarea Binding**
+
+This is a complete example on how to create a connection to a [y-websocket](https://github.com/y-js/y-websocket) server instance, sync the shared document to all clients in a *room*, and bind a Y.Text type to a dom textarea. All changes to the textarea are automatically shared with everyone in the same room.
 
 ```js
 import * as Y from 'yjs'
@@ -85,13 +84,37 @@ import { WebsocketProvider } from 'y-websocket'
 import { TextareaBinding } from 'y-textarea'
 
 const provider = new WebsocketProvider('http://localhost:1234')
-const sharedDocument = provider.get('my-favourites')
+const doc = provider.get('roomname')
 
 // Define a shared type on the document.
-const ytext = sharedDocument.getText('my resume')
+const ytext = doc.getText('my resume')
 
-// bind to a textarea
+// use data bindings to bind types to editors
 const binding = new TextareaBinding(ytext, document.querySelector('textarea'))
+```
+
+**Example: Observe types**
+
+```js
+const yarray = doc.getArray('my-array')
+yarray.observe(event => {
+  console.log('yarray was modified')
+})
+// every time a local or remote client modifies yarray, the observer is called
+yarray.insert(0, ['val']) // => "yarray was modified"
+```
+
+**Example: Nest types**
+
+Remember, shared types are just plain old data types. The only limitation is that a shared type must exist only once in the shared document.
+
+```js
+const ymap = doc.getMap('map')
+const foodArray = new Y.Array()
+foodArray.insert(0, ['apple', 'banana'])
+ymap.set('food', foodArray)
+ymap.get('food') === foodArray // => true
+ymap.set('fruit', foodArray) // => Error! foodArray is already defined on the shared document
 ```
 
 Now you understand how types are defined on a shared document. Next you can jump to the [demo repository](https://github.com/y-js/yjs-demos) or continue reading the API docs.
@@ -102,6 +125,8 @@ Now you understand how types are defined on a shared document. Next you can jump
 import * as Y from 'yjs'
 ```
 
+### Shared Types
+
 <details>
   <summary><b>Y.Array</b></summary>
   <br>
@@ -110,11 +135,11 @@ import * as Y from 'yjs'
   </p>
   <pre>const yarray = new Y.Array()</pre>
   <dl>
-    <b><code>insert(index:number, content:Array&lt;object|string|number|Y.Type&gt;)</code></b>
+    <b><code>insert(index:number, content:Array&lt;object|string|number|Uint8Array|Y.Type&gt;)</code></b>
     <dd>
       Insert content at <var>index</var>. Note that content is an array of elements. I.e. <code>array.insert(0, [1]</code> splices the list and inserts 1 at position 0.
     </dd>
-    <b><code>push(Array&lt;Object|Array|string|number|Y.Type&gt;)</code></b>
+    <b><code>push(Array&lt;Object|Array|string|number|Uint8Array|Y.Type&gt;)</code></b>
     <dd></dd>
     <b><code>delete(index:number, length:number)</code></b>
     <dd></dd>
@@ -124,7 +149,7 @@ import * as Y from 'yjs'
     <dd></dd>
     <b><code>map(function(T, number, YArray):M):Array&lt;M&gt;</code></b>
     <dd></dd>
-    <b><code>toArray():Array&lt;Object|Array|string|number|Y.Type&gt;</code></b>
+    <b><code>toArray():Array&lt;Object|Array|string|number|Uint8Array|Y.Type&gt;</code></b>
     <dd>Copies the content of this YArray to a new Array.</dd>
     <b><code>toJSON():Array&lt;Object|Array|string|number&gt;</code></b>
     <dd>Copies the content of this YArray to a new Array. It transforms all child types to JSON using their <code>toJSON</code> method.</dd>
@@ -159,9 +184,9 @@ import * as Y from 'yjs'
   </p>
   <pre><code>const ymap = new Y.Map()</code></pre>
   <dl>
-    <b><code>get(key:string):object|string|number|Y.Type</code></b>
+    <b><code>get(key:string):object|string|number|Uint8Array|Y.Type</code></b>
     <dd></dd>
-    <b><code>set(key:string, value:object|string|number|Y.Type)</code></b>
+    <b><code>set(key:string, value:object|string|number|Uint8Array|Y.Type)</code></b>
     <dd></dd>
     <b><code>delete(key:string)</code></b>
     <dd></dd>
@@ -350,38 +375,148 @@ import * as Y from 'yjs'
   </dl>
 </details>
 
-### Custom Types
+### Y.Doc
 
-## Bindings
+```js
+const doc = new Y.Doc()
+```
 
-## Transaction
+<dl>
+  <b><code>clientID</code></b>
+  <dd>A unique id that identifies this client. (readonly)</dd>
+  <b><code>transact(function(Transaction):void [, origin:any])</code></b>
+  <dd>Every change on the shared document happens in a transaction. Observer calls and the <code>update</code> event are called after each transaction. You should <i>bundle</i> changes into a single transaction to reduce the amount of event calls. I.e. <code>doc.transact(() => { yarray.insert(..); ymap.set(..) })</code> triggers a single change event. <br>You can specify an optional <code>origin</code> parameter that is stored on <code>transaction.origin</code> and <code>on('update', (update, origin) => ..)</code>.</dd>
+  <b><code>get(string, Y.[TypeClass]):[Type]</code></b>
+  <dd>Define a shared type.</dd>
+  <b><code>getArray(string):Y.Array</code></b>
+  <dd>Define a shared Y.Array type. Is equivalent to <code>y.get(string, Y.Array)</code>.</dd>
+  <b><code>getMap(string):Y.Map</code></b>
+  <dd>Define a shared Y.Map type. Is equivalent to <code>y.get(string, Y.Map)</code>.</dd>
+  <b><code>getXmlFragment(string):Y.XmlFragment</code></b>
+  <dd>Define a shared Y.XmlFragment type. Is equivalent to <code>y.get(string, Y.XmlFragment)</code>.</dd>
+  <b><code>on(string, function)</code></b>
+  <dd>Register an event listener on the shared type</dd>
+  <b><code>off(string, function)</code></b>
+  <dd>Unregister an event listener from the shared type</dd>
+</dl>
 
-## Binary Encoding Protocols
 
-### Sync Protocol
+#### Y.Doc Events
+<dl>
+  <b><code>on('update', function(updateMessage:Uint8Array, origin:any, Y.Doc):void)</code></b>
+  <dd>Listen to document updates. Document updates must be transmitted to all other peers. You can apply document updates in any order and multiple times.</dd>
+  <b><code>on('beforeTransaction', function(Y.Transaction, Y.Doc):void)</code></b>
+  <dd>Emitted before each transaction.</dd>
+  <b><code>on('afterTransaction', function(Y.Transaction, Y.Doc):void)</code></b>
+  <dd>Emitted after each transaction.</dd>
+</dl>
 
-Sync steps
+### Document Updates
 
-### Awareness Protocol
+Changes on the shared document are encoded into *document updates*. Document updates are *commutative* and *idempotent*. This means that they can be applied in any order and multiple times.
 
-### Auth Protocol
+**Example: Listen to update events and apply them on remote client**
+```js
+const doc1 = new Y.Doc()
+const doc2 = new Y.Doc()
 
-## Offline Editing
+doc1.on('update', update => {
+  Y.applyUpdate(doc2, update)
+})
 
-It is trivial with Yjs to persist the local state to indexeddb, so it is always available when working offline. But there are two non-trivial questions that need to answered when implementing a professional offline editing app:
+doc2.on('update', update => {
+  Y.applyUpdate(doc1, update)
+})
 
-1. How does a client sync down all rooms that were modified while offline?
-2. How does a client sync up all rooms that were modified while offline?
+// All changes are also applied to the other document
+doc1.getArray('myarray').insert(0, ['Hello doc2, you got this?'])
+doc2.getArray('myarray').get(0) // => 'Hello doc2, you got this?'
+```
 
-Assuming 5000 documents are stored on each client for offline usage. How do we sync up/down each of those documents after a client comes online? It would be inefficient to sync each of those rooms separately. The only provider that currently supports syncing many rooms efficiently is Ydb, because its database layer is optimized to sync many rooms with each client.
+Yjs internally maintains a [State Vector](#State-Vector) that denotes the next expected clock from each client. In a different interpretation it holds the number of structs created by each client. When two clients sync, you can either exchange the complete document structure or only the differences by sending the state vector to compute the differences.
 
-If you do not care about 1. and 2. you can use `/persistences/indexeddb.js` to mirror the local state to indexeddb.
+**Example: Sync two clients by exchanging the complete document structure**
 
-## Working with Yjs
+```js
+const state1 = Y.encodeStateAsUpdate(ydoc1)
+const state2 = Y.encodeStateAsUpdate(ydoc2)
+Y.applyUpdate(ydoc1, state2)
+Y.applyUpdate(ydoc2, state1)
+```
+
+**Example: Sync two clients by computing the differences**
+
+This example shows how to sync two clients with the minimal amount of exchanged data by computing only the differences using the state vector of the remote client. Syncing clients using the state vector requires another roundtrip, but can safe a lot of bandwidth.
+
+```js
+const stateVector1 = Y.encodeDocumentStateVector(ydoc1)
+const stateVector2 = Y.encodeDocumentStateVector(ydoc2)
+const diff1 = Y.encodeStateAsUpdate(ydoc1, stateVector2)
+const diff2 = Y.encodeStateAsUpdate(ydoc2, stateVector1)
+Y.applyUpdate(ydoc1, diff2)
+Y.applyUpdate(ydoc2, diff1)
+```
+
+<dl>
+  <b><code>Y.applyUpdate(Y.Doc, update:Uint8Array, [transactionOrigin:any])</code></b>
+  <dd>Apply a document update on the shared document. Optionally you can specify <code>transactionOrigin</code> that will be stored on <code>transaction.origin</code> and <code>ydoc.on('update', (update, origin) => ..)</code>.</dd>
+  <b><code>Y.encodeStateAsUpdate(Y.Doc, [encodedTargetStateVector:Uint8Array]):Uint8Array</code></b>
+  <dd>Encode the document state as a single update message that can be applied on the remote document. Optionally specify the target state vector to only write the differences to the update message.</dd>
+  <b><code>Y.encodeDocumentStateVector(Y.Doc):Uint8Array</code></b>
+  <dd>Computes the state vector and encodes it into an Uint8Array.</dd>
+</dl>
+
+### Relative Positions
+> This API is not stable yet
+
+This feature is intended for managing selections / cursors. When working with other users that manipulate the shared document, you can't trust that an index position (an integer) will stay at the intended location. A *relative position* is fixated to an element in the shared document and is not affected by remote changes. I.e. given the document `"a|c"`, the relative position is attached to `c`. When a remote user modifies the document by inserting a character before the cursor, the cursor will stay attached to the character `c`. `insert(1, 'x')("a|c") = "ax|c"`. When the *relative position* is set to the end of the document, it will stay attached to the end of the document.
+
+**Example: Transform to RelativePosition and back**
+```js
+const relPos = Y.createRelativePositionFromTypeIndex(ytext, 2)
+const pos = Y.createAbsolutePositionFromRelativePosition(relPos, doc)
+pos.type === ytext // => true
+pos.index === 2 // => true
+```
+
+**Example: Send relative position to remote client (json)**
+```js
+const relPos = Y.createRelativePositionFromTypeIndex(ytext, 2)
+const encodedRelPos = JSON.stringify(relPos)
+// send encodedRelPos to remote client..
+const parsedRelPos = JSON.parse(encodedRelPos)
+const pos = Y.createAbsolutePositionFromRelativePosition(parsedRelPos, remoteDoc)
+pos.type === remoteytext // => true
+pos.index === 2 // => true
+```
+
+**Example: Send relative position to remote client (Uint8Array)**
+```js
+const relPos = Y.createRelativePositionFromTypeIndex(ytext, 2)
+const encodedRelPos = Y.encodeRelativePosition(relPos)
+// send encodedRelPos to remote client..
+const parsedRelPos = Y.decodeRelativePosition(encodedRelPos)
+const pos = Y.createAbsolutePositionFromRelativePosition(parsedRelPos, remoteDoc)
+pos.type === remoteytext // => true
+pos.index === 2 // => true
+```
+
+<dl>
+  <b><code>Y.createRelativePositionFromTypeIndex(Uint8Array|Y.Type, number)</code></b>
+  <dd></dd>
+  <b><code>Y.createAbsolutePositionFromRelativePosition(RelativePosition, Y.Doc)</code></b>
+  <dd></dd>
+  <b><code>Y.encodeRelativePosition(RelativePosition):Uint8Array</code></b>
+  <dd></dd>
+  <b><code>Y.decodeRelativePosition(Uint8Array):RelativePosition</code></b>
+  <dd></dd>
+</dl>
+
+## Miscellaneous
 
 ### Typescript Declarations
 
-Until [this](https://github.com/Microsoft/TypeScript/issues/7546) is fixed, the only way to get type declarations is by adding Yjs to the list of checked files:
+Yjs has type descriptions. But until [this ticket](https://github.com/Microsoft/TypeScript/issues/7546) is fixed, this is how you can make use of Yjs type declarations.
 
 ```json
 {
@@ -395,10 +530,26 @@ Until [this](https://github.com/Microsoft/TypeScript/issues/7546) is fixed, the 
 
 ## Yjs CRDT Algorithm
 
+*Conflict-free replicated data types* (CRDT) for collaborative editing are an alternative approach to *operational transformation* (OT). A very simple differenciation between the two approaches is that OT attempts to transform index positions to ensure convergence (all clients end up with the same content), while CRDTs use models that usually do not involve index transformations, like linked lists. OT is currently the de-facto standard for shared editing on text. OT approaches that support shared editing without a central source of truth (a central server) require too much bookkeeping to be viable in practice. CRDTs are better suited for distributed systems, provide additional guarantees that the document can be synced with remote clients, and do not require a central source of truth / central source of failure.
+
+Yjs implements a modified version of the algorithm described in [this paper](https://www.researchgate.net/publication/310212186_Near_Real-Time_Peer-to-Peer_Shared_Editing_on_Extensible_Data_Types). I will eventually publish a paper that describes the new approach. Note: Since operations make up the document structure, we prefer the term *struct* now.
+
+CRDTs suitable for shared text editing suffer from the fact that they only grow in size. There are CRDTs that do not grow in size, but they do not have the characteristics that are benificial for shared text editing (like intention preservation). Yjs implements many improvements to the original algorithm that diminish the trade-off that the document only grows in size. We can't garbage collect deleted structs (tombstones) while ensuring a unique order of the structs. But we can 1. merge preceeding structs into a single struct to reduce the amount of meta information, 2. we can delete content from the struct if it is deleted, and 3. we can garbage collect tombstones if we don't care about the order of the structs anymore (e.g. if the parent was deleted).
+
+**Examples:**
+1. If a user inserts elements in sequence, the struct will be merged into a single struct. E.g. `array.insert(0, ['a']), array.insert(0, ['b']);` is first represented as two structs (`[{id: {client, clock: 0}, content: 'a'}, {id: {client, clock: 1}, content: 'b'}`) and then merged into a single struct: `[{id: {client, clock: 0}, content: 'ab'}]`.
+2. When a struct that contains content (e.g. `ItemString`) is deleted, the struct will be replaced with an `ItemDeleted` that does not contain content anymore.
+3. When a type is deleted, all child elements are transformed to `GC` structs. A `GC` struct only denotes the existence of a struct and that it is deleted. `GC` structs can always be merged with other `GC` structs if the id's are adjacent.
+
+Especially when working on structured content (e.g. shared editing on ProseMirror), these improvements yield very good results when [benchmarking](#Benchmarks) random document edits. In practice they show even better results, because users usually edit text in sequence, resulting in structs that can easily be merged. The benchmarks showt that even in the worst case scenario that a user edits text from right to left, Yjs achieves good performance even for huge documents.
+
+#### State Vector
+Yjs has the ability to exchange only the differences when syncing two clients. We use lamport timestamps to identify structs and to track in which order a client created them. Each struct has an `struct.id = { client: number, clock: number}` that uniquely identifies a struct. We define the next expected `clock` by each client as the *state vector*. This data structure is similar to the [version vectors](https://en.wikipedia.org/wiki/Version_vector) data structure. But we use state vectors only to describe the state of the local document, so we can compute the missing struct of the remote client. We do not use it to track causality.
+
 ## License and Author
 
 Yjs and all related projects are [**MIT licensed**](./LICENSE).
 
-Yjs is based on the research I did as a student at the [RWTH i5](http://dbis.rwth-aachen.de/). Now I am working on Yjs in my spare time.
+Yjs is based on my research as a student at the [RWTH i5](http://dbis.rwth-aachen.de/). Now I am working on Yjs in my spare time.
 
-Support me on [Patreon](https://www.patreon.com/dmonad) to fund this project or hire [me](https://github.com/dmonad) for professional support.
+Fund this project by donating on [Patreon](https://www.patreon.com/dmonad) or hiring [me](https://github.com/dmonad) for professional support.

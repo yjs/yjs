@@ -22,16 +22,6 @@ export class ID {
      */
     this.clock = clock
   }
-  /**
-   * @deprecated
-   * @todo remove and adapt relative position implementation
-   */
-  toJSON () {
-    return {
-      client: this.client,
-      clock: this.clock
-    }
-  }
 }
 
 /**
@@ -91,7 +81,7 @@ export const readID = decoder =>
  */
 export const findRootTypeKey = type => {
   // @ts-ignore _y must be defined, otherwise unexpected case
-  for (let [key, value] of type._y.share) {
+  for (let [key, value] of type.doc.share) {
     if (value === type) {
       return key
     }

@@ -116,10 +116,10 @@ export class UndoManager {
     this._undoing = false
     this._redoing = false
     this._lastTransactionWasUndo = false
-    const y = scope._y
-    this.y = y
+    const doc = scope.doc
+    this.y = doc
     let bindingInfos
-    y.on('beforeTransaction', (y, transaction, remote) => {
+    doc.on('beforeTransaction', (y, transaction, remote) => {
       if (!remote) {
         // Store binding information before transaction is executed
         // By restoring the binding information, we can make sure that the state
@@ -130,7 +130,7 @@ export class UndoManager {
         })
       }
     })
-    y.on('afterTransaction', (y, transaction, remote) => {
+    doc.on('afterTransaction', (y, transaction, remote) => {
       if (!remote && transaction.changedParentTypes.has(scope)) {
         let reverseOperation = new ReverseOperation(y, transaction, bindingInfos)
         if (!this._undoing) {
@@ -199,4 +199,5 @@ export class UndoManager {
     this._redoing = false
     return performedRedo
   }
+}
 }

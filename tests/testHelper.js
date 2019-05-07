@@ -2,9 +2,9 @@ import * as Y from '../src/index.js'
 
 import {
   createDeleteSetFromStructStore,
-  getStates,
+  getStateVector,
   AbstractItem,
-  DeleteSet, StructStore // eslint-disable-line
+  DeleteSet, StructStore, Doc // eslint-disable-line
 } from '../src/internals.js'
 
 import * as t from 'lib0/testing.js'
@@ -14,23 +14,8 @@ import * as decoding from 'lib0/decoding.js'
 import * as syncProtocol from 'y-protocols/sync.js'
 
 /**
- * @param {Y.Transaction} transaction
- * @param {TestYInstance} y
- */
-const afterTransaction = (transaction, y) => {
-  if (transaction.origin !== y.tc) {
-    const m = transaction.updateMessage
-    if (m !== null) {
-      const encoder = encoding.createEncoder()
-      syncProtocol.writeUpdate(encoder, m)
-      broadcastMessage(y, encoding.toBuffer(encoder))
-    }
-  }
-}
-
-/**
  * @param {TestYInstance} y // publish message created by `y` to all other online clients
- * @param {ArrayBuffer} m
+ * @param {Uint8Array} m
  */
 const broadcastMessage = (y, m) => {
   if (y.tc.onlineConns.has(y)) {
@@ -42,7 +27,7 @@ const broadcastMessage = (y, m) => {
   }
 }
 
-export class TestYInstance extends Y.Y {
+export class TestYInstance extends Doc {
   /**
    * @param {TestConnector} testConnector
    * @param {number} clientID
@@ -55,12 +40,18 @@ export class TestYInstance extends Y.Y {
      */
     this.tc = testConnector
     /**
-     * @type {Map<TestYInstance, Array<ArrayBuffer>>}
+     * @type {Map<TestYInstance, Array<Uint8Array>>}
      */
     this.receiving = new Map()
     testConnector.allConns.add(this)
     // set up observe on local model
-    this.on('afterTransactionCleanup', afterTransaction)
+    this.on('update', /** @param {Uint8Array} update @param {any} origin */ (update, origin) => {
+      if (origin !== testConnector) {
+        const encoder = encoding.createEncoder()
+        syncProtocol.writeUpdate(encoder, update)
+        broadcastMessage(this, encoding.toUint8Array(encoder))
+      }
+    })
     this.connect()
   }
   /**
@@ -78,15 +69,15 @@ export class TestYInstance extends Y.Y {
     if (!this.tc.onlineConns.has(this)) {
       this.tc.onlineConns.add(this)
       const encoder = encoding.createEncoder()
-      syncProtocol.writeSyncStep1(encoder, this.store)
+      syncProtocol.writeSyncStep1(encoder, this)
       // publish SyncStep1
-      broadcastMessage(this, encoding.toBuffer(encoder))
+      broadcastMessage(this, encoding.toUint8Array(encoder))
       this.tc.onlineConns.forEach(remoteYInstance => {
         if (remoteYInstance !== this) {
           // remote instance sends instance to this instance
           const encoder = encoding.createEncoder()
-          syncProtocol.writeSyncStep1(encoder, remoteYInstance.store)
-          this._receive(encoding.toBuffer(encoder), remoteYInstance)
+          syncProtocol.writeSyncStep1(encoder, remoteYInstance)
+          this._receive(encoding.toUint8Array(encoder), remoteYInstance)
         }
       })
     }
@@ -95,7 +86,7 @@ export class TestYInstance extends Y.Y {
    * Receive a message from another client. This message is only appended to the list of receiving messages.
    * TestConnector decides when this client actually reads this message.
    *
-   * @param {ArrayBuffer} message
+   * @param {Uint8Array} message
    * @param {TestYInstance} remoteClient
    */
   _receive (message, remoteClient) {
@@ -164,7 +155,7 @@ export class TestConnector {
       syncProtocol.readSyncMessage(decoding.createDecoder(m), encoder, receiver, receiver.tc)
       if (encoding.length(encoder) > 0) {
         // send reply message
-        sender._receive(encoding.toBuffer(encoder), receiver)
+        sender._receive(encoding.toUint8Array(encoder), receiver)
       }
       return true
     }
@@ -282,7 +273,7 @@ export const compare = users => {
     // @ts-ignore
     t.compare(userTextValues[i].map(a => a.insert).join('').length, users[i].getText('text').length)
     t.compare(userTextValues[i], userTextValues[i + 1])
-    t.compare(getStates(users[i].store), getStates(users[i + 1].store))
+    t.compare(getStateVector(users[i].store), getStateVector(users[i + 1].store))
     compareDS(createDeleteSetFromStructStore(users[i].store), createDeleteSetFromStructStore(users[i + 1].store))
     compareStructStores(users[i].store, users[i + 1].store)
   }
