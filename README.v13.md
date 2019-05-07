@@ -65,7 +65,7 @@ Setting up the communication between clients, managing awareness information, an
 Install Yjs and a provider with your favorite package manager.
 
 ```sh
-npm i yjs@13.0.0-81 y-websocket@1.0.0-2 y-textarea
+npm i yjs@13.0.0-82 y-websocket@1.0.0-3 y-textarea
 ```
 
 **Start the y-websocket server**
