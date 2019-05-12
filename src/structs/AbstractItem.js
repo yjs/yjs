@@ -285,7 +285,7 @@ export class AbstractItem extends AbstractStruct {
    * @private
    */
   copy (id, left, origin, right, rightOrigin, parent, parentSub) {
-    throw new Error('unimplemented')
+    throw error.methodUnimplemented()
   }
 
   /**
@@ -393,7 +393,7 @@ export class AbstractItem extends AbstractStruct {
    * @private
    */
   splitAt (transaction, diff) {
-    throw new Error('unimplemented')
+    throw error.methodUnimplemented()
   }
 
   /**

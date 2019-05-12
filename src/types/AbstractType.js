@@ -101,7 +101,7 @@ export class AbstractType {
    * @private
    */
   _copy () {
-    throw new Error('unimplemented')
+    throw error.methodUnimplemented()
   }
 
   /**

@@ -83,8 +83,10 @@ import * as Y from 'yjs'
 import { WebsocketProvider } from 'y-websocket'
 import { TextareaBinding } from 'y-textarea'
 
-const provider = new WebsocketProvider('http://localhost:1234')
-const doc = provider.get('roomname')
+const doc = Y.Doc()
+const provider = new WebsocketProvider('http://localhost:1234', 'roomname')
+// sync all document updates through the websocket connection
+provider.sync('doc')
 
 // Define a shared type on the document.
 const ytext = doc.getText('my resume')
@@ -433,7 +435,7 @@ doc1.getArray('myarray').insert(0, ['Hello doc2, you got this?'])
 doc2.getArray('myarray').get(0) // => 'Hello doc2, you got this?'
 ```
 
-Yjs internally maintains a [State Vector](#State-Vector) that denotes the next expected clock from each client. In a different interpretation it holds the number of structs created by each client. When two clients sync, you can either exchange the complete document structure or only the differences by sending the state vector to compute the differences.
+Yjs internally maintains a [state vector](#State-Vector) that denotes the next expected clock from each client. In a different interpretation it holds the number of structs created by each client. When two clients sync, you can either exchange the complete document structure or only the differences by sending the state vector to compute the differences.
 
 **Example: Sync two clients by exchanging the complete document structure**
 
