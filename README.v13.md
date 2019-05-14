@@ -451,8 +451,8 @@ Y.applyUpdate(ydoc2, state1)
 This example shows how to sync two clients with the minimal amount of exchanged data by computing only the differences using the state vector of the remote client. Syncing clients using the state vector requires another roundtrip, but can safe a lot of bandwidth.
 
 ```js
-const stateVector1 = Y.encodeDocumentStateVector(ydoc1)
-const stateVector2 = Y.encodeDocumentStateVector(ydoc2)
+const stateVector1 = Y.encodeStateVector(ydoc1)
+const stateVector2 = Y.encodeStateVector(ydoc2)
 const diff1 = Y.encodeStateAsUpdate(ydoc1, stateVector2)
 const diff2 = Y.encodeStateAsUpdate(ydoc2, stateVector1)
 Y.applyUpdate(ydoc1, diff2)
@@ -464,7 +464,7 @@ Y.applyUpdate(ydoc2, diff1)
   <dd>Apply a document update on the shared document. Optionally you can specify <code>transactionOrigin</code> that will be stored on <code>transaction.origin</code> and <code>ydoc.on('update', (update, origin) => ..)</code>.</dd>
   <b><code>Y.encodeStateAsUpdate(Y.Doc, [encodedTargetStateVector:Uint8Array]):Uint8Array</code></b>
   <dd>Encode the document state as a single update message that can be applied on the remote document. Optionally specify the target state vector to only write the differences to the update message.</dd>
-  <b><code>Y.encodeDocumentStateVector(Y.Doc):Uint8Array</code></b>
+  <b><code>Y.encodeStateVector(Y.Doc):Uint8Array</code></b>
   <dd>Computes the state vector and encodes it into an Uint8Array.</dd>
 </dl>
 
@@ -532,9 +532,9 @@ Yjs has type descriptions. But until [this ticket](https://github.com/Microsoft/
 
 ## Yjs CRDT Algorithm
 
-*Conflict-free replicated data types* (CRDT) for collaborative editing are an alternative approach to *operational transformation* (OT). A very simple differenciation between the two approaches is that OT attempts to transform index positions to ensure convergence (all clients end up with the same content), while CRDTs use models that usually do not involve index transformations, like linked lists. OT is currently the de-facto standard for shared editing on text. OT approaches that support shared editing without a central source of truth (a central server) require too much bookkeeping to be viable in practice. CRDTs are better suited for distributed systems, provide additional guarantees that the document can be synced with remote clients, and do not require a central source of truth / central source of failure.
+*Conflict-free replicated data types* (CRDT) for collaborative editing are an alternative approach to *operational transformation* (OT). A very simple differenciation between the two approaches is that OT attempts to transform index positions to ensure convergence (all clients end up with the same content), while CRDTs use mathematical models that usually do not involve index transformations, like linked lists. OT is currently the de-facto standard for shared editing on text. OT approaches that support shared editing without a central source of truth (a central server) require too much bookkeeping to be viable in practice. CRDTs are better suited for distributed systems, provide additional guarantees that the document can be synced with remote clients, and do not require a central source of truth.
 
-Yjs implements a modified version of the algorithm described in [this paper](https://www.researchgate.net/publication/310212186_Near_Real-Time_Peer-to-Peer_Shared_Editing_on_Extensible_Data_Types). I will eventually publish a paper that describes the new approach. Note: Since operations make up the document structure, we prefer the term *struct* now.
+Yjs implements a modified version of the algorithm described in [this paper](https://www.researchgate.net/publication/310212186_Near_Real-Time_Peer-to-Peer_Shared_Editing_on_Extensible_Data_Types). I will eventually publish a paper that describes why this approach works so well in practice. Note: Since operations make up the document structure, we prefer the term *struct* now.
 
 CRDTs suitable for shared text editing suffer from the fact that they only grow in size. There are CRDTs that do not grow in size, but they do not have the characteristics that are benificial for shared text editing (like intention preservation). Yjs implements many improvements to the original algorithm that diminish the trade-off that the document only grows in size. We can't garbage collect deleted structs (tombstones) while ensuring a unique order of the structs. But we can 1. merge preceeding structs into a single struct to reduce the amount of meta information, 2. we can delete content from the struct if it is deleted, and 3. we can garbage collect tombstones if we don't care about the order of the structs anymore (e.g. if the parent was deleted).
 
@@ -543,7 +543,7 @@ CRDTs suitable for shared text editing suffer from the fact that they only grow 
 2. When a struct that contains content (e.g. `ItemString`) is deleted, the struct will be replaced with an `ItemDeleted` that does not contain content anymore.
 3. When a type is deleted, all child elements are transformed to `GC` structs. A `GC` struct only denotes the existence of a struct and that it is deleted. `GC` structs can always be merged with other `GC` structs if the id's are adjacent.
 
-Especially when working on structured content (e.g. shared editing on ProseMirror), these improvements yield very good results when [benchmarking](#Benchmarks) random document edits. In practice they show even better results, because users usually edit text in sequence, resulting in structs that can easily be merged. The benchmarks showt that even in the worst case scenario that a user edits text from right to left, Yjs achieves good performance even for huge documents.
+Especially when working on structured content (e.g. shared editing on ProseMirror), these improvements yield very good results when [benchmarking](https://github.com/dmonad/crdt-benchmarks) random document edits. In practice they show even better results, because users usually edit text in sequence, resulting in structs that can easily be merged. The benchmarks show that even in the worst case scenario that a user edits text from right to left, Yjs achieves good performance even for huge documents.
 
 #### State Vector
 Yjs has the ability to exchange only the differences when syncing two clients. We use lamport timestamps to identify structs and to track in which order a client created them. Each struct has an `struct.id = { client: number, clock: number}` that uniquely identifies a struct. We define the next expected `clock` by each client as the *state vector*. This data structure is similar to the [version vectors](https://en.wikipedia.org/wiki/Version_vector) data structure. But we use state vectors only to describe the state of the local document, so we can compute the missing struct of the remote client. We do not use it to track causality.

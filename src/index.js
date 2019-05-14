@@ -42,5 +42,5 @@ export {
   iterateDeletedStructs,
   applyUpdate,
   encodeStateAsUpdate,
-  encodeDocumentStateVector
+  encodeStateVector
 } from './internals.js'

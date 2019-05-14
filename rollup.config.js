@@ -80,10 +80,9 @@ export default [{
     debugResolve,
     nodeResolve({
       sourcemap: true,
-      module: true,
-      browser: true
-    }),
-    commonjs()
+      mainFields: ['module', 'browser', 'main']
+    })
+    // commonjs()
   ]
 }, {
   input: ['./examples/textarea.js', './examples/prosemirror.js'], // './examples/quill.js', './examples/dom.js', './examples/codemirror.js'
@@ -96,8 +95,7 @@ export default [{
     debugResolve,
     nodeResolve({
       sourcemap: true,
-      module: true,
-      browser: true
+      mainFields: ['module', 'browser', 'main']
     }),
     commonjs(),
     ...minificationPlugins

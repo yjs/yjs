@@ -193,7 +193,7 @@ const resumeStructIntegration = (transaction, store) => {
           structRefs.refs[structRefs.i] = ref
           stack[stack.length - 1] = r
           // sort the set because this approach might bring the list out of order
-          structRefs.refs = structRefs.refs.slice(structRefs.i).sort((r1, r2) => r1.id.client - r2.id.client)
+          structRefs.refs = structRefs.refs.slice(structRefs.i).sort((r1, r2) => r1.id.clock - r2.id.clock)
           structRefs.i = 0
           continue
         }
@@ -416,7 +416,7 @@ export const writeDocumentStateVector = (encoder, doc) => {
  *
  * @function
  */
-export const encodeDocumentStateVector = doc => {
+export const encodeStateVector = doc => {
   const encoder = encoding.createEncoder()
   writeDocumentStateVector(encoder, doc)
   return encoding.toUint8Array(encoder)
