@@ -401,9 +401,10 @@ export const decodeStateVector = decodedState => readStateVector(decoding.create
 export const writeDocumentStateVector = (encoder, doc) => {
   encoding.writeVarUint(encoder, doc.store.clients.size)
   doc.store.clients.forEach((structs, client) => {
-    const id = structs[structs.length - 1].id
+    const struct = structs[structs.length - 1]
+    const id = struct.id
     encoding.writeVarUint(encoder, id.client)
-    encoding.writeVarUint(encoder, id.clock)
+    encoding.writeVarUint(encoder, id.clock + struct.length)
   })
   return encoder
 }

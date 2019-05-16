@@ -85,7 +85,7 @@ export default [{
     // commonjs()
   ]
 }, {
-  input: ['./examples/textarea.js', './examples/prosemirror.js'], // './examples/quill.js', './examples/dom.js', './examples/codemirror.js'
+  input: ['./examples/prosemirror.js'], // './examples/textarea.js', './examples/quill.js', './examples/dom.js', './examples/codemirror.js'
   output: {
     dir: 'examples/build',
     format: 'esm',
