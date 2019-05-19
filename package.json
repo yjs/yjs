@@ -54,7 +54,7 @@
   },
   "homepage": "http://y-js.org",
   "dependencies": {
-    "lib0": "0.0.4"
+    "lib0": "0.0.5"
   },
   "devDependencies": {
     "codemirror": "^5.46.0",
