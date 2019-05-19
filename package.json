@@ -3,7 +3,7 @@
   "version": "13.0.0-83",
   "description": "Shared Editing Library",
   "main": "./dist/yjs.js",
-  "module": "./src/index.js",
+  "module": "./dist/yjs.mjs",
   "sideEffects": false,
   "scripts": {
     "test": "npm run dist && PRODUCTION=1 node ./dist/tests.js --repitition-time 50 --production",
