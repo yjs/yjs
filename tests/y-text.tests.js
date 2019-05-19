@@ -27,6 +27,13 @@ export const testBasicInsertAndDelete = tc => {
   text0.delete(1, 1)
   t.assert(text0.toString() === 'b', 'Basic delete works (position 1)')
   t.compare(delta, [{ retain: 1 }, { delete: 1 }])
+
+  users[0].transact(() => {
+    text0.insert(0, '1')
+    text0.delete(0, 1)
+  })
+  t.compare(delta, [])
+
   compare(users)
 }
 

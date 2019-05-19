@@ -388,7 +388,7 @@ const deleteText = (transaction, left, right, currentAttributes, length) => {
 /**
  * Event that describes the changes on a YText type.
  */
-class YTextEvent extends YEvent {
+export class YTextEvent extends YEvent {
   /**
    * @param {YText} ytext
    * @param {Transaction} transaction
@@ -475,11 +475,13 @@ class YTextEvent extends YEvent {
           switch (item.constructor) {
             case ItemEmbed:
               if (this.adds(item)) {
-                addOp()
-                action = 'insert'
-                // @ts-ignore item is ItemFormat
-                insert = item.embed
-                addOp()
+                if (!this.deletes(item)) {
+                  addOp()
+                  action = 'insert'
+                  // @ts-ignore item is ItemFormat
+                  insert = item.embed
+                  addOp()
+                }
               } else if (this.deletes(item)) {
                 if (action !== 'delete') {
                   addOp()
@@ -496,12 +498,14 @@ class YTextEvent extends YEvent {
               break
             case ItemString:
               if (this.adds(item)) {
-                if (action !== 'insert') {
-                  addOp()
-                  action = 'insert'
+                if (!this.deletes(item)) {
+                  if (action !== 'insert') {
+                    addOp()
+                    action = 'insert'
+                  }
+                  // @ts-ignore
+                  insert += item.string
                 }
-                // @ts-ignore
-                insert += item.string
               } else if (this.deletes(item)) {
                 if (action !== 'delete') {
                   addOp()
@@ -518,23 +522,25 @@ class YTextEvent extends YEvent {
               break
             case ItemFormat:
               if (this.adds(item)) {
-                // @ts-ignore item is ItemFormat
-                const curVal = currentAttributes.get(item.key) || null
-                // @ts-ignore item is ItemFormat
-                if (curVal !== item.value) {
-                  if (action === 'retain') {
-                    addOp()
-                  }
+                if (!this.deletes(item)) {
                   // @ts-ignore item is ItemFormat
-                  if (item.value === (oldAttributes.get(item.key) || null)) {
+                  const curVal = currentAttributes.get(item.key) || null
+                  // @ts-ignore item is ItemFormat
+                  if (curVal !== item.value) {
+                    if (action === 'retain') {
+                      addOp()
+                    }
                     // @ts-ignore item is ItemFormat
-                    delete attributes[item.key]
+                    if (item.value === (oldAttributes.get(item.key) || null)) {
+                      // @ts-ignore item is ItemFormat
+                      delete attributes[item.key]
+                    } else {
+                      // @ts-ignore item is ItemFormat
+                      attributes[item.key] = item.value
+                    }
                   } else {
-                    // @ts-ignore item is ItemFormat
-                    attributes[item.key] = item.value
+                    item.delete(transaction)
                   }
-                } else {
-                  item.delete(transaction)
                 }
               } else if (this.deletes(item)) {
                 // @ts-ignore item is ItemFormat

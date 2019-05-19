@@ -360,7 +360,7 @@ export const compareDS = (ds1, ds2) => {
 /**
  * @template T
  * @param {t.TestCase} tc
- * @param {Array<function(TestYInstance,prng.PRNG,T):void>} mods
+ * @param {Array<function(Y.Doc,prng.PRNG,T):void>} mods
  * @param {number} iterations
  * @param {InitTestObjectCallback<T>} [initTestObject]
  */
