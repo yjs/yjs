@@ -40,11 +40,13 @@ This repository contains a collection of shared types that can be observed for c
 
 | Name &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; | Cursors | Binding |  Demo |
 |---|:-:|---|---|
-| [ProseMirror](https://prosemirror.net/) | ✔ | [y-prosemirror](http://github.com/y-js/y-prosemirror) | [link](https://yjs.website/tutorial-prosemirror.html) |
-| [Quill](https://quilljs.com/) |  | [y-quill](http://github.com/y-js/y-quill) | [link](https://yjs.website/tutorial-quill.html) |
-| [CodeMirror](https://codemirror.net/) | ✔ | [y-codemirror](http://github.com/y-js/y-codemirror) | [link](https://yjs.website/tutorial-codemirror.html) |
-| [Ace](https://ace.c9.io/) | | [y-ace](http://github.com/y-js/y-ace) | [link]() |
-| [Monaco](https://microsoft.github.io/monaco-editor/) | | [y-monaco](http://github.com/y-js/y-monaco) | [link]() |
+| [ProseMirror](https://prosemirror.net/) | ✔ | [y-prosemirror](http://github.com/y-js/y-prosemirror) | [demo](https://yjs-demos.now.sh/prosemirror/) |
+| [Quill](https://quilljs.com/) |  | [y-quill](http://github.com/y-js/y-quill) | [demo](https://yjs-demos.now.sh/quill/) |
+| [CodeMirror](https://codemirror.net/) | ✔ | [y-codemirror](http://github.com/y-js/y-codemirror) | [demo](https://yjs-demos.now.sh/codemirror/) |
+| [Monaco](https://microsoft.github.io/monaco-editor/) | ✔ | [y-monaco](http://github.com/y-js/y-monaco) | [demo](https://yjs-demos.now.sh/monaco/) |
+| [Ace](https://ace.c9.io/) | | [y-ace](http://github.com/y-js/y-ace) | [demo](https://yjs-demos.now.sh/ace/) |
+| [Textarea](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea) | | [y-textarea](http://github.com/y-js/y-textarea) | [demo](https://yjs-demos.now.sh/textarea/) |
+| [DOM](https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model) | | [y-dom](http://github.com/y-js/y-dom) | [demo](https://yjs-demos.now.sh/dom/) |
 
 
 ### Providers
