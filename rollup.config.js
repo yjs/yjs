@@ -84,20 +84,4 @@ export default [{
     })
     // commonjs()
   ]
-}, {
-  input: ['./examples/prosemirror.js'], // './examples/textarea.js', './examples/quill.js', './examples/dom.js', './examples/codemirror.js'
-  output: {
-    dir: 'examples/build',
-    format: 'esm',
-    sourcemap: true
-  },
-  plugins: [
-    debugResolve,
-    nodeResolve({
-      sourcemap: true,
-      mainFields: ['module', 'browser', 'main']
-    }),
-    commonjs(),
-    ...minificationPlugins
-  ]
 }]

@@ -8,8 +8,7 @@
   "scripts": {
     "test": "npm run dist && PRODUCTION=1 node ./dist/tests.js --repitition-time 50 --production",
     "test-exhaustive": "npm run lint && npm run dist && node ./dist/tests.js --repitition-time 10000",
-    "dist": "rm -rf dist examples/build && rollup -c",
-    "serve-examples": "concurrently 'npm run watch' 'serve examples'",
+    "dist": "rm -rf dist && rollup -c",
     "watch": "rollup -wc",
     "lint": "standard && tsc",
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.v13.md --package ./package.json || true",
@@ -28,15 +27,13 @@
   ],
   "dictionaries": {
     "doc": "docs",
-    "example": "examples",
     "test": "tests"
   },
   "standard": {
     "ignore": [
       "/dist",
       "/node_modules",
-      "/docs",
-      "/examples/build"
+      "/docs"
     ]
   },
   "repository": {
@@ -57,16 +54,9 @@
     "lib0": "0.0.5"
   },
   "devDependencies": {
-    "codemirror": "^5.46.0",
     "concurrently": "^3.6.1",
     "jsdoc": "^3.6.2",
     "live-server": "^1.2.1",
-    "prosemirror-example-setup": "^1.0.1",
-    "prosemirror-schema-basic": "^1.0.1",
-    "prosemirror-state": "^1.2.3",
-    "prosemirror-view": "^1.9.5",
-    "quill": "^1.3.6",
-    "quill-cursors": "^1.0.3",
     "rollup": "^1.11.3",
     "rollup-cli": "^1.0.9",
     "rollup-plugin-commonjs": "^9.3.4",
