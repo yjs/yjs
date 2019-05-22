@@ -72,6 +72,7 @@
     "rollup-plugin-commonjs": "^9.3.4",
     "rollup-plugin-node-resolve": "^4.2.4",
     "rollup-plugin-terser": "^4.0.4",
+    "serve": "^11.0.0",
     "standard": "^11.0.1",
     "tui-jsdoc-template": "^1.2.2",
     "typescript": "^3.4.5",
