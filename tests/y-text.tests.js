@@ -74,3 +74,16 @@ export const testBasicFormat = tc => {
   t.compare(delta, [{ retain: 1 }, { retain: 1, attributes: { bold: null } }])
   compare(users)
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testGetDeltaWithEmbeds = tc => {
+  const { users, text0 } = init(tc, { users: 1 })
+  text0.applyDelta([{
+    insert: {linebreak: "s"}
+  }])
+  t.compare(text0.toDelta(), [{
+    insert: {linebreak: "s"}
+  }])
+}
