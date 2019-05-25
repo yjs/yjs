@@ -256,7 +256,7 @@ export const init = (tc, { users = 5 } = {}, initTestObject) => {
 export const compare = users => {
   users.forEach(u => u.connect())
   while (users[0].tc.flushAllMessages()) {}
-  const userArrayValues = users.map(u => u.getArray('array').toJSON().map(val => JSON.stringify(val)))
+  const userArrayValues = users.map(u => u.getArray('array').toJSON())
   const userMapValues = users.map(u => u.getMap('map').toJSON())
   const userXmlValues = users.map(u => u.get('xml', Y.XmlElement).toString())
   const userTextValues = users.map(u => u.getText('text').toDelta())
@@ -266,7 +266,7 @@ export const compare = users => {
     t.assert(u.store.pendingClientsStructRefs.size === 0)
   }
   // Test Array iterator
-  t.compare(userArrayValues[0], Array.from(users[0].getArray('array')).map(v => JSON.stringify(v)))
+  t.compare(userArrayValues[0], Array.from(users[0].getArray('array').toJSON()))
   // Test Map iterator
   /**
    * @type {Object<string,any>}
