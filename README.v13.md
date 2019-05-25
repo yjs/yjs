@@ -139,11 +139,11 @@ import * as Y from 'yjs'
   </p>
   <pre>const yarray = new Y.Array()</pre>
   <dl>
-    <b><code>insert(index:number, content:Array&lt;object|string|number|Uint8Array|Y.Type&gt;)</code></b>
+    <b><code>insert(index:number, content:Array&lt;object|boolean|Array|string|number|Uint8Array|Y.Type&gt;)</code></b>
     <dd>
       Insert content at <var>index</var>. Note that content is an array of elements. I.e. <code>array.insert(0, [1]</code> splices the list and inserts 1 at position 0.
     </dd>
-    <b><code>push(Array&lt;Object|Array|string|number|Uint8Array|Y.Type&gt;)</code></b>
+    <b><code>push(Array&lt;Object|boolean|Array|string|number|Uint8Array|Y.Type&gt;)</code></b>
     <dd></dd>
     <b><code>delete(index:number, length:number)</code></b>
     <dd></dd>
@@ -153,9 +153,9 @@ import * as Y from 'yjs'
     <dd></dd>
     <b><code>map(function(T, number, YArray):M):Array&lt;M&gt;</code></b>
     <dd></dd>
-    <b><code>toArray():Array&lt;Object|Array|string|number|Uint8Array|Y.Type&gt;</code></b>
+    <b><code>toArray():Array&lt;object|boolean|Array|string|number|Uint8Array|Y.Type&gt;</code></b>
     <dd>Copies the content of this YArray to a new Array.</dd>
-    <b><code>toJSON():Array&lt;Object|Array|string|number&gt;</code></b>
+    <b><code>toJSON():Array&lt;Object|boolean|Array|string|number&gt;</code></b>
     <dd>Copies the content of this YArray to a new Array. It transforms all child types to JSON using their <code>toJSON</code> method.</dd>
     <b><code>[Symbol.Iterator]</code></b>
     <dd>
@@ -188,9 +188,9 @@ import * as Y from 'yjs'
   </p>
   <pre><code>const ymap = new Y.Map()</code></pre>
   <dl>
-    <b><code>get(key:string):object|string|number|Uint8Array|Y.Type</code></b>
+    <b><code>get(key:string):object|boolean|string|number|Uint8Array|Y.Type</code></b>
     <dd></dd>
-    <b><code>set(key:string, value:object|string|number|Uint8Array|Y.Type)</code></b>
+    <b><code>set(key:string, value:object|boolean|string|number|Uint8Array|Y.Type)</code></b>
     <dd></dd>
     <b><code>delete(key:string)</code></b>
     <dd></dd>
@@ -198,7 +198,7 @@ import * as Y from 'yjs'
     <dd></dd>
     <b><code>get(index:number)</code></b>
     <dd></dd>
-    <b><code>toJSON():Object&lt;string, Object|Array|string|number&gt;</code></b>
+    <b><code>toJSON():Object&lt;string, Object|boolean|Array|string|number&gt;</code></b>
     <dd>Copies the <code>[key,value]</code> pairs of this YMap to a new Object. It transforms all child types to JSON using their <code>toJSON</code> method.</dd>
     <b><code>[Symbol.Iterator]</code></b>
     <dd>

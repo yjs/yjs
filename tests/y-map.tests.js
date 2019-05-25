@@ -19,6 +19,8 @@ export const testBasicMapTests = tc => {
   map0.set('string', 'hello Y')
   map0.set('object', { key: { key2: 'value' } })
   map0.set('y-map', new Y.Map())
+  map0.set('boolean1', true)
+  map0.set('boolean0', false)
   const map = map0.get('y-map')
   map.set('y-array', new Y.Array())
   const array = map.get('y-array')
@@ -27,6 +29,8 @@ export const testBasicMapTests = tc => {
 
   t.assert(map0.get('number') === 1, 'client 0 computed the change (number)')
   t.assert(map0.get('string') === 'hello Y', 'client 0 computed the change (string)')
+  t.assert(map0.get('boolean0') === false, 'client 0 computed the change (boolean)')
+  t.assert(map0.get('boolean1') === true, 'client 0 computed the change (boolean)')
   t.compare(map0.get('object'), { key: { key2: 'value' } }, 'client 0 computed the change (object)')
   t.assert(map0.get('y-map').get('y-array').get(0) === -1, 'client 0 computed the change (type)')
 
@@ -35,12 +39,16 @@ export const testBasicMapTests = tc => {
 
   t.assert(map1.get('number') === 1, 'client 1 received the update (number)')
   t.assert(map1.get('string') === 'hello Y', 'client 1 received the update (string)')
+  t.assert(map1.get('boolean0') === false, 'client 1 computed the change (boolean)')
+  t.assert(map1.get('boolean1') === true, 'client 1 computed the change (boolean)')
   t.compare(map1.get('object'), { key: { key2: 'value' } }, 'client 1 received the update (object)')
   t.assert(map1.get('y-map').get('y-array').get(0) === -1, 'client 1 received the update (type)')
 
   // compare disconnected user
   t.assert(map2.get('number') === 1, 'client 2 received the update (number) - was disconnected')
   t.assert(map2.get('string') === 'hello Y', 'client 2 received the update (string) - was disconnected')
+  t.assert(map2.get('boolean0') === false, 'client 2 computed the change (boolean)')
+  t.assert(map2.get('boolean1') === true, 'client 2 computed the change (boolean)')
   t.compare(map2.get('object'), { key: { key2: 'value' } }, 'client 2 received the update (object) - was disconnected')
   t.assert(map2.get('y-map').get('y-array').get(0) === -1, 'client 2 received the update (type) - was disconnected')
   compare(users)

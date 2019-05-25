@@ -25,10 +25,10 @@ export const testDeleteInsert = tc => {
  */
 export const testInsertThreeElementsTryRegetProperty = tc => {
   const { testConnector, users, array0, array1 } = init(tc, { users: 2 })
-  array0.insert(0, [1, 2, 3])
-  t.compare(array0.toJSON(), [1, 2, 3], '.toJSON() works')
+  array0.insert(0, [1, true, false])
+  t.compare(array0.toJSON(), [1, true, false], '.toJSON() works')
   testConnector.flushAllMessages()
-  t.compare(array1.toJSON(), [1, 2, 3], '.toJSON() works after sync')
+  t.compare(array1.toJSON(), [1, true, false], '.toJSON() works after sync')
   compare(users)
 }
 

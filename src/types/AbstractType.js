@@ -363,7 +363,7 @@ export const typeListGet = (type, index) => {
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {AbstractItem?} referenceItem
- * @param {Array<Object<string,any>|Array<any>|number|string|Uint8Array>} content
+ * @param {Array<Object<string,any>|Array<any>|boolean|number|string|Uint8Array>} content
  *
  * @private
  * @function
@@ -386,6 +386,7 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
     switch (c.constructor) {
       case Number:
       case Object:
+      case Boolean:
       case Array:
       case String:
         jsonContent.push(c)
@@ -510,6 +511,7 @@ export const typeMapSet = (transaction, parent, key, value) => {
   switch (value.constructor) {
     case Number:
     case Object:
+    case Boolean:
     case Array:
     case String:
       new ItemJSON(nextID(transaction), left, left === null ? null : left.lastId, null, null, parent, key, [value]).integrate(transaction)

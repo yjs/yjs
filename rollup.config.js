@@ -23,12 +23,14 @@ const debugResolve = {
     if (importee === 'yjs') {
       return `${process.cwd()}/src/index.js`
     }
+    /*
     if (customModules.has(importee.split('/')[0])) {
       return `${process.cwd()}/../${importee}/src/${importee}.js`
     }
     if (customLibModules.has(importee.split('/')[0])) {
       return `${process.cwd()}/../${importee}`
     }
+    */
     return null
   }
 }
