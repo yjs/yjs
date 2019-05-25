@@ -265,6 +265,18 @@ export const compare = users => {
     t.assert(u.store.pendingStack.length === 0)
     t.assert(u.store.pendingClientsStructRefs.size === 0)
   }
+  // Test Array iterator
+  t.compare(userArrayValues[0], Array.from(users[0].getArray('array')).map(v => JSON.stringify(v)))
+  // Test Map iterator
+  /**
+   * @type {Object<string,any>}
+   */
+  const mapRes = {}
+  for (let [k, v] of users[0].getMap('map')) {
+    mapRes[k] = v instanceof Y.AbstractType ? v.toJSON() : v
+  }
+  t.compare(userMapValues[0], mapRes)
+  // Compare all users
   for (let i = 0; i < users.length - 1; i++) {
     t.compare(userArrayValues[i].length, users[i].getArray('array').length)
     t.compare(userArrayValues[i], userArrayValues[i + 1])

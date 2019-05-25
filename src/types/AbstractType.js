@@ -287,16 +287,13 @@ export const typeListCreateIterator = type => {
         while (n !== null && n.deleted) {
           n = n.right
         }
-      }
-      // check if we reached the end, no need to check currentContent, because it does not exist
-      if (n === null) {
-        return {
-          done: true,
-          value: undefined
+        // check if we reached the end, no need to check currentContent, because it does not exist
+        if (n === null) {
+          return {
+            done: true,
+            value: undefined
+          }
         }
-      }
-      // currentContent could exist from the last iteration
-      if (currentContent === null) {
         // we found n, so we can set currentContent
         currentContent = n.getContent()
         currentContentIndex = 0
