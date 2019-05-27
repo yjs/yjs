@@ -782,6 +782,13 @@ export class YText extends AbstractType {
             // @ts-ignore
             str += n.string
             break
+          case ItemEmbed:
+            packStr()
+            ops.push({
+              // @ts-ignore item is ItemFormat
+              insert: n.embed
+            })
+          break
           case ItemFormat:
             packStr()
             // @ts-ignore
