@@ -10,7 +10,7 @@ import {
   YMap,
   YXmlFragment,
   transact,
-  AbstractItem, Transaction, YEvent // eslint-disable-line
+  Item, Transaction, YEvent // eslint-disable-line
 } from '../internals.js'
 
 import { Observable } from 'lib0/observable.js'
@@ -97,7 +97,7 @@ export class Doc extends Observable {
         // @ts-ignore
         const t = new TypeConstructor()
         t._map = type._map
-        type._map.forEach(/** @param {AbstractItem?} n */ n => {
+        type._map.forEach(/** @param {Item?} n */ n => {
           for (; n !== null; n = n.left) {
             n.parent = t
           }

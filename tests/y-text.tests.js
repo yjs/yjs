@@ -63,7 +63,7 @@ export const testBasicFormat = tc => {
   t.compare(text0.toDelta(), [{ insert: 'zb', attributes: { bold: true } }])
   t.compare(delta, [{ insert: 'z', attributes: { bold: true } }])
   // @ts-ignore
-  t.assert(text0._start.right.right.right.string === 'b', 'Does not insert duplicate attribute marker')
+  t.assert(text0._start.right.right.right.content.str === 'b', 'Does not insert duplicate attribute marker')
   text0.insert(0, 'y')
   t.assert(text0.toString() === 'yzb')
   t.compare(text0.toDelta(), [{ insert: 'y' }, { insert: 'zb', attributes: { bold: true } }])
@@ -79,11 +79,11 @@ export const testBasicFormat = tc => {
  * @param {t.TestCase} tc
  */
 export const testGetDeltaWithEmbeds = tc => {
-  const { users, text0 } = init(tc, { users: 1 })
+  const { text0 } = init(tc, { users: 1 })
   text0.applyDelta([{
-    insert: {linebreak: "s"}
+    insert: {linebreak: 's'}
   }])
   t.compare(text0.toDelta(), [{
-    insert: {linebreak: "s"}
+    insert: {linebreak: 's'}
   }])
 }

@@ -15,7 +15,7 @@ import {
   YArrayRefID,
   callTypeObservers,
   transact,
-  Doc, Transaction, ItemType, // eslint-disable-line
+  Doc, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
@@ -59,14 +59,13 @@ export class YArray extends AbstractType {
    * * Observer functions are fired
    *
    * @param {Doc} y The Yjs instance
-   * @param {ItemType} item
+   * @param {Item} item
    *
    * @private
    */
   _integrate (y, item) {
     super._integrate(y, item)
-    // @ts-ignore
-    this.insert(0, this._prelimContent)
+    this.insert(0, /** @type {Array} */ (this._prelimContent))
     this._prelimContent = null
   }
   get length () {
@@ -106,8 +105,7 @@ export class YArray extends AbstractType {
         typeListInsertGenerics(transaction, this, index, content)
       })
     } else {
-      // @ts-ignore _prelimContent is defined because this is not yet integrated
-      this._prelimContent.splice(index, 0, ...content)
+      /** @type {Array} */ (this._prelimContent).splice(index, 0, ...content)
     }
   }
 
@@ -132,8 +130,7 @@ export class YArray extends AbstractType {
         typeListDelete(transaction, this, index, length)
       })
     } else {
-      // @ts-ignore _prelimContent is defined because this is not yet integrated
-      this._prelimContent.splice(index, length)
+      /** @type {Array} */ (this._prelimContent).splice(index, length)
     }
   }
 
@@ -175,8 +172,7 @@ export class YArray extends AbstractType {
    *                 callback function
    */
   map (f) {
-    // @ts-ignore
-    return typeListMap(this, f)
+    return typeListMap(this, /** @type {any} */ (f))
   }
 
   /**

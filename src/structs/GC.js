@@ -21,26 +21,18 @@ export class GC extends AbstractStruct {
    * @param {number} length
    */
   constructor (id, length) {
-    super(id)
-    /**
-     * @type {number}
-     */
-    this._len = length
+    super(id, length)
     this.deleted = true
-  }
-
-  get length () {
-    return this._len
   }
 
   delete () {}
 
   /**
-   * @param {AbstractStruct} right
+   * @param {GC} right
    * @return {boolean}
    */
   mergeWith (right) {
-    this._len += right.length
+    this.length += right.length
     return true
   }
 
@@ -57,7 +49,7 @@ export class GC extends AbstractStruct {
    */
   write (encoder, offset) {
     encoding.writeUint8(encoder, structGCRefNumber)
-    encoding.writeVarUint(encoder, this._len - offset)
+    encoding.writeVarUint(encoder, this.length - offset)
   }
 }
 
@@ -75,15 +67,7 @@ export class GCRef extends AbstractStructRef {
     /**
      * @type {number}
      */
-    this._len = decoding.readVarUint(decoder)
-  }
-  get length () {
-    return this._len
-  }
-  missing () {
-    return [
-      createID(this.id.client, this.id.clock - 1)
-    ]
+    this.length = decoding.readVarUint(decoder)
   }
   /**
    * @param {Transaction} transaction
@@ -95,11 +79,11 @@ export class GCRef extends AbstractStructRef {
     if (offset > 0) {
       // @ts-ignore
       this.id = createID(this.id.client, this.id.clock + offset)
-      this._len = this._len - offset
+      this.length -= offset
     }
     return new GC(
       this.id,
-      this._len
+      this.length
     )
   }
 }

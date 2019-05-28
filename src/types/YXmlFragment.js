@@ -14,7 +14,7 @@ import {
   YXmlFragmentRefID,
   callTypeObservers,
   transact,
-  Transaction, ItemType, YXmlText, YXmlHook, Snapshot // eslint-disable-line
+  ContentType, Transaction, Item, YXmlText, YXmlHook, Snapshot // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -59,10 +59,9 @@ export class YXmlTreeWalker {
     this._filter = f
     this._root = root
     /**
-     * @type {ItemType | null}
+     * @type {Item}
      */
-    // @ts-ignore
-    this._currentNode = root._start
+    this._currentNode = /** @type {Item} */ (root._start)
     this._firstCall = true
   }
 
@@ -77,18 +76,21 @@ export class YXmlTreeWalker {
    * @public
    */
   next () {
+    /**
+     * @type {Item|null}
+     */
     let n = this._currentNode
-    if (n !== null && (!this._firstCall || n.deleted || !this._filter(n.type))) { // if first call, we check if we can use the first item
+    let type = /** @type {ContentType} */ (n.content).type
+    if (n !== null && (!this._firstCall || n.deleted || !this._filter(type))) { // if first call, we check if we can use the first item
       do {
-        if (!n.deleted && (n.type.constructor === YXmlElement || n.type.constructor === YXmlFragment) && n.type._start !== null) {
+        type = /** @type {ContentType} */ (n.content).type
+        if (!n.deleted && (type.constructor === YXmlElement || type.constructor === YXmlFragment) && type._start !== null) {
           // walk down in the tree
-          // @ts-ignore
-          n = n.type._start
+          n = type._start
         } else {
           // walk right or up in the tree
           while (n !== null) {
             if (n.right !== null) {
-              // @ts-ignore
               n = n.right
               break
             } else if (n.parent === this._root) {
@@ -98,16 +100,15 @@ export class YXmlTreeWalker {
             }
           }
         }
-      } while (n !== null && (n.deleted || !this._filter(n.type)))
+      } while (n !== null && (n.deleted || !this._filter(/** @type {ContentType} */ (n.content).type)))
     }
     this._firstCall = false
-    this._currentNode = n
     if (n === null) {
-      // @ts-ignore return undefined if done=true (the expected result)
+      // @ts-ignore
       return { value: undefined, done: true }
     }
-    // @ts-ignore
-    return { value: n.type, done: false }
+    this._currentNode = n
+    return { value: /** @type {any} */ (n.content).type, done: false }
   }
 }
 

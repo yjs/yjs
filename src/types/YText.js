@@ -5,9 +5,6 @@
 
 import {
   YEvent,
-  ItemEmbed,
-  ItemString,
-  ItemFormat,
   AbstractType,
   nextID,
   createID,
@@ -16,7 +13,10 @@ import {
   YTextRefID,
   callTypeObservers,
   transact,
-  Doc, ItemType, AbstractItem, Snapshot, StructStore, Transaction // eslint-disable-line
+  ContentEmbed,
+  ContentFormat,
+  ContentString,
+  Doc, Item, Snapshot, StructStore, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
@@ -24,8 +24,8 @@ import * as encoding from 'lib0/encoding.js'
 
 export class ItemListPosition {
   /**
-   * @param {AbstractItem|null} left
-   * @param {AbstractItem|null} right
+   * @param {Item|null} left
+   * @param {Item|null} right
    */
   constructor (left, right) {
     this.left = left
@@ -35,8 +35,8 @@ export class ItemListPosition {
 
 export class ItemTextListPosition extends ItemListPosition {
   /**
-   * @param {AbstractItem|null} left
-   * @param {AbstractItem|null} right
+   * @param {Item|null} left
+   * @param {Item|null} right
    * @param {Map<string,any>} currentAttributes
    */
   constructor (left, right, currentAttributes) {
@@ -47,8 +47,8 @@ export class ItemTextListPosition extends ItemListPosition {
 
 export class ItemInsertionResult extends ItemListPosition {
   /**
-   * @param {AbstractItem|null} left
-   * @param {AbstractItem|null} right
+   * @param {Item|null} left
+   * @param {Item|null} right
    * @param {Map<string,any>} negatedAttributes
    */
   constructor (left, right, negatedAttributes) {
@@ -61,8 +61,8 @@ export class ItemInsertionResult extends ItemListPosition {
  * @param {Transaction} transaction
  * @param {StructStore} store
  * @param {Map<string,any>} currentAttributes
- * @param {AbstractItem|null} left
- * @param {AbstractItem|null} right
+ * @param {Item|null} left
+ * @param {Item|null} right
  * @param {number} count
  * @return {ItemTextListPosition}
  *
@@ -71,9 +71,9 @@ export class ItemInsertionResult extends ItemListPosition {
  */
 const findNextPosition = (transaction, store, currentAttributes, left, right, count) => {
   while (right !== null && count > 0) {
-    switch (right.constructor) {
-      case ItemEmbed:
-      case ItemString:
+    switch (right.content.constructor) {
+      case ContentEmbed:
+      case ContentString:
         if (!right.deleted) {
           if (count < right.length) {
             // split right
@@ -82,10 +82,9 @@ const findNextPosition = (transaction, store, currentAttributes, left, right, co
           count -= right.length
         }
         break
-      case ItemFormat:
+      case ContentFormat:
         if (!right.deleted) {
-          // @ts-ignore right is ItemFormat
-          updateCurrentAttributes(currentAttributes, right)
+          updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (right.content))
         }
         break
     }
@@ -117,8 +116,8 @@ const findPosition = (transaction, store, parent, index) => {
  *
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
- * @param {AbstractItem|null} left
- * @param {AbstractItem|null} right
+ * @param {Item|null} left
+ * @param {Item|null} right
  * @param {Map<string,any>} negatedAttributes
  * @return {ItemListPosition}
  *
@@ -130,21 +129,19 @@ const insertNegatedAttributes = (transaction, parent, left, right, negatedAttrib
   while (
     right !== null && (
       right.deleted === true || (
-        right.constructor === ItemFormat &&
-        // @ts-ignore right is ItemFormat
-        (negatedAttributes.get(right.key) === right.value)
+        right.content.constructor === ContentFormat &&
+        (negatedAttributes.get(/** @type {ContentFormat} */ (right.content).key) === /** @type {ContentFormat} */ (right.content).value)
       )
     )
   ) {
     if (!right.deleted) {
-      // @ts-ignore right is ItemFormat
-      negatedAttributes.delete(right.key)
+      negatedAttributes.delete(/** @type {ContentFormat} */ (right.content).key)
     }
     left = right
     right = right.right
   }
   for (let [key, val] of negatedAttributes) {
-    left = new ItemFormat(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, key, val)
+    left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentFormat(key, val))
     left.integrate(transaction)
   }
   return { left, right }
@@ -152,14 +149,13 @@ const insertNegatedAttributes = (transaction, parent, left, right, negatedAttrib
 
 /**
  * @param {Map<string,any>} currentAttributes
- * @param {ItemFormat} item
+ * @param {ContentFormat} format
  *
  * @private
  * @function
  */
-const updateCurrentAttributes = (currentAttributes, item) => {
-  const value = item.value
-  const key = item.key
+const updateCurrentAttributes = (currentAttributes, format) => {
+  const { key, value } = format
   if (value === null) {
     currentAttributes.delete(key)
   } else {
@@ -168,8 +164,8 @@ const updateCurrentAttributes = (currentAttributes, item) => {
 }
 
 /**
- * @param {AbstractItem|null} left
- * @param {AbstractItem|null} right
+ * @param {Item|null} left
+ * @param {Item|null} right
  * @param {Map<string,any>} currentAttributes
  * @param {Object<string,any>} attributes
  * @return {ItemListPosition}
@@ -184,11 +180,9 @@ const minimizeAttributeChanges = (left, right, currentAttributes, attributes) =>
       break
     } else if (right.deleted) {
       // continue
-    // @ts-ignore right is ItemFormat
-    } else if (right.constructor === ItemFormat && (attributes[right.key] || null) === right.value) {
+    } else if (right.content.constructor === ContentFormat && (attributes[(/** @type {ContentFormat} */ (right.content)).key] || null) === /** @type {ContentFormat} */ (right.content).value) {
       // found a format, update currentAttributes and continue
-      // @ts-ignore right is ItemFormat
-      updateCurrentAttributes(currentAttributes, right)
+      updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (right.content))
     } else {
       break
     }
@@ -201,8 +195,8 @@ const minimizeAttributeChanges = (left, right, currentAttributes, attributes) =>
 /**
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
- * @param {AbstractItem|null} left
- * @param {AbstractItem|null} right
+ * @param {Item|null} left
+ * @param {Item|null} right
  * @param {Map<string,any>} currentAttributes
  * @param {Object<string,any>} attributes
  * @return {ItemInsertionResult}
@@ -219,7 +213,7 @@ const insertAttributes = (transaction, parent, left, right, currentAttributes, a
     if (currentVal !== val) {
       // save negated attribute (set null if currentVal undefined)
       negatedAttributes.set(key, currentVal)
-      left = new ItemFormat(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, key, val)
+      left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentFormat(key, val))
       left.integrate(transaction)
     }
   }
@@ -229,8 +223,8 @@ const insertAttributes = (transaction, parent, left, right, currentAttributes, a
 /**
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
- * @param {AbstractItem|null} left
- * @param {AbstractItem|null} right
+ * @param {Item|null} left
+ * @param {Item|null} right
  * @param {Map<string,any>} currentAttributes
  * @param {string} text
  * @param {Object<string,any>} attributes
@@ -250,11 +244,8 @@ const insertText = (transaction, parent, left, right, currentAttributes, text, a
   left = insertPos.left
   right = insertPos.right
   // insert content
-  if (text.constructor === String) {
-    left = new ItemString(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, text)
-  } else {
-    left = new ItemEmbed(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, text)
-  }
+  const content = text.constructor === String ? new ContentString(text) : new ContentEmbed(text)
+  left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, content)
   left.integrate(transaction)
   return insertNegatedAttributes(transaction, parent, left, insertPos.right, insertPos.negatedAttributes)
 }
@@ -262,8 +253,8 @@ const insertText = (transaction, parent, left, right, currentAttributes, text, a
 /**
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
- * @param {AbstractItem|null} left
- * @param {AbstractItem|null} right
+ * @param {Item|null} left
+ * @param {Item|null} right
  * @param {Map<string,any>} currentAttributes
  * @param {number} length
  * @param {Object<string,any>} attributes
@@ -282,26 +273,22 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
   // delete all formats with attributes[format.key] != null
   while (length > 0 && right !== null) {
     if (right.deleted === false) {
-      switch (right.constructor) {
-        case ItemFormat:
-          // @ts-ignore right is ItemFormat
-          const attr = attributes[right.key]
+      switch (right.content.constructor) {
+        case ContentFormat:
+          const { key, value } = /** @type {ContentFormat} */ (right.content)
+          const attr = attributes[key]
           if (attr !== undefined) {
-            // @ts-ignore right is ItemFormat
-            if (attr === right.value) {
-              // @ts-ignore right is ItemFormat
-              negatedAttributes.delete(right.key)
+            if (attr === value) {
+              negatedAttributes.delete(key)
             } else {
-              // @ts-ignore right is ItemFormat
-              negatedAttributes.set(right.key, right.value)
+              negatedAttributes.set(key, value)
             }
             right.delete(transaction)
           }
-          // @ts-ignore right is ItemFormat
-          updateCurrentAttributes(currentAttributes, right)
+          updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (right.content))
           break
-        case ItemEmbed:
-        case ItemString:
+        case ContentEmbed:
+        case ContentString:
           if (length < right.length) {
             getItemCleanStart(transaction, transaction.doc.store, createID(right.id.client, right.id.clock + length))
           }
@@ -317,8 +304,8 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
 
 /**
  * @param {Transaction} transaction
- * @param {AbstractItem|null} left
- * @param {AbstractItem|null} right
+ * @param {Item|null} left
+ * @param {Item|null} right
  * @param {Map<string,any>} currentAttributes
  * @param {number} length
  * @return {ItemListPosition}
@@ -329,13 +316,12 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
 const deleteText = (transaction, left, right, currentAttributes, length) => {
   while (length > 0 && right !== null) {
     if (right.deleted === false) {
-      switch (right.constructor) {
-        case ItemFormat:
-          // @ts-ignore right is ItemFormat
-          updateCurrentAttributes(currentAttributes, right)
+      switch (right.content.constructor) {
+        case ContentFormat:
+          updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (right.content))
           break
-        case ItemEmbed:
-        case ItemString:
+        case ContentEmbed:
+        case ContentString:
           if (length < right.length) {
             getItemCleanStart(transaction, transaction.doc.store, createID(right.id.client, right.id.clock + length))
           }
@@ -411,13 +397,10 @@ export class YTextEvent extends YEvent {
    */
   get delta () {
     if (this._delta === null) {
-      const y = this.target.doc
-      // @ts-ignore
+      const y = /** @type {Doc} */ (this.target.doc)
+      this._delta = []
       transact(y, transaction => {
-        /**
-         * @type {Array<DeltaItem>}
-         */
-        const delta = []
+        const delta = /** @type {Array<DeltaItem>} */ (this._delta)
         const currentAttributes = new Map() // saves all current attributes for insert
         const oldAttributes = new Map()
         let item = this.target._start
@@ -432,7 +415,6 @@ export class YTextEvent extends YEvent {
         let insert = ''
         let retain = 0
         let deleteLen = 0
-        this._delta = delta
         const addOp = () => {
           if (action !== null) {
             /**
@@ -472,14 +454,13 @@ export class YTextEvent extends YEvent {
           }
         }
         while (item !== null) {
-          switch (item.constructor) {
-            case ItemEmbed:
+          switch (item.content.constructor) {
+            case ContentEmbed:
               if (this.adds(item)) {
                 if (!this.deletes(item)) {
                   addOp()
                   action = 'insert'
-                  // @ts-ignore item is ItemFormat
-                  insert = item.embed
+                  insert = /** @type {ContentEmbed} */ (item.content).embed
                   addOp()
                 }
               } else if (this.deletes(item)) {
@@ -496,15 +477,14 @@ export class YTextEvent extends YEvent {
                 retain += 1
               }
               break
-            case ItemString:
+            case ContentString:
               if (this.adds(item)) {
                 if (!this.deletes(item)) {
                   if (action !== 'insert') {
                     addOp()
                     action = 'insert'
                   }
-                  // @ts-ignore
-                  insert += item.string
+                  insert += /** @type {ContentString} */ (item.content).str
                 }
               } else if (this.deletes(item)) {
                 if (action !== 'delete') {
@@ -520,59 +500,45 @@ export class YTextEvent extends YEvent {
                 retain += item.length
               }
               break
-            case ItemFormat:
+            case ContentFormat:
+              const { key, value } = /** @type {ContentFormat} */ (item.content)
               if (this.adds(item)) {
                 if (!this.deletes(item)) {
-                  // @ts-ignore item is ItemFormat
-                  const curVal = currentAttributes.get(item.key) || null
-                  // @ts-ignore item is ItemFormat
-                  if (curVal !== item.value) {
+                  const curVal = currentAttributes.get(key) || null
+                  if (curVal !== value) {
                     if (action === 'retain') {
                       addOp()
                     }
-                    // @ts-ignore item is ItemFormat
-                    if (item.value === (oldAttributes.get(item.key) || null)) {
-                      // @ts-ignore item is ItemFormat
-                      delete attributes[item.key]
+                    if (value === (oldAttributes.get(key) || null)) {
+                      delete attributes[key]
                     } else {
-                      // @ts-ignore item is ItemFormat
-                      attributes[item.key] = item.value
+                      attributes[key] = value
                     }
                   } else {
                     item.delete(transaction)
                   }
                 }
               } else if (this.deletes(item)) {
-                // @ts-ignore item is ItemFormat
-                oldAttributes.set(item.key, item.value)
-                // @ts-ignore item is ItemFormat
-                const curVal = currentAttributes.get(item.key) || null
-                // @ts-ignore item is ItemFormat
-                if (curVal !== item.value) {
+                oldAttributes.set(key, value)
+                const curVal = currentAttributes.get(key) || null
+                if (curVal !== value) {
                   if (action === 'retain') {
                     addOp()
                   }
-                  // @ts-ignore item is ItemFormat
-                  attributes[item.key] = curVal
+                  attributes[key] = curVal
                 }
               } else if (!item.deleted) {
-                // @ts-ignore item is ItemFormat
-                oldAttributes.set(item.key, item.value)
-                // @ts-ignore item is ItemFormat
-                const attr = attributes[item.key]
+                oldAttributes.set(key, value)
+                const attr = attributes[key]
                 if (attr !== undefined) {
-                  // @ts-ignore item is ItemFormat
-                  if (attr !== item.value) {
+                  if (attr !== value) {
                     if (action === 'retain') {
                       addOp()
                     }
-                    // @ts-ignore item is ItemFormat
-                    if (item.value === null) {
-                      // @ts-ignore item is ItemFormat
-                      attributes[item.key] = item.value
+                    if (value === null) {
+                      attributes[key] = value
                     } else {
-                      // @ts-ignore item is ItemFormat
-                      delete attributes[item.key]
+                      delete attributes[key]
                     }
                   } else {
                     item.delete(transaction)
@@ -583,26 +549,24 @@ export class YTextEvent extends YEvent {
                 if (action === 'insert') {
                   addOp()
                 }
-                // @ts-ignore item is ItemFormat
-                updateCurrentAttributes(currentAttributes, item)
+                updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (item.content))
               }
               break
           }
           item = item.right
         }
         addOp()
-        while (this._delta.length > 0) {
-          let lastOp = this._delta[this._delta.length - 1]
+        while (delta.length > 0) {
+          let lastOp = delta[delta.length - 1]
           if (lastOp.retain !== undefined && lastOp.attributes === undefined) {
             // retain delta's if they don't assign attributes
-            this._delta.pop()
+            delta.pop()
           } else {
             break
           }
         }
       })
     }
-    // @ts-ignore _delta is defined above
     return this._delta
   }
 }
@@ -636,15 +600,14 @@ export class YText extends AbstractType {
 
   /**
    * @param {Doc} y
-   * @param {ItemType} item
+   * @param {Item} item
    *
    * @private
    */
   _integrate (y, item) {
     super._integrate(y, item)
     try {
-      // @ts-ignore this._prelimContent is still defined
-      this._pending.forEach(f => f())
+      /** @type {Array<function>} */ (this._pending).forEach(f => f())
     } catch (e) {
       console.error(e)
     }
@@ -671,13 +634,12 @@ export class YText extends AbstractType {
   toString () {
     let str = ''
     /**
-     * @type {AbstractItem|null}
+     * @type {Item|null}
      */
     let n = this._start
     while (n !== null) {
-      if (!n.deleted && n.countable && n.constructor === ItemString) {
-        // @ts-ignore
-        str += n.string
+      if (!n.deleted && n.countable && n.content.constructor === ContentString) {
+        str += /** @type {ContentString} */ (n.content).str
       }
       n = n.right
     }
@@ -711,8 +673,7 @@ export class YText extends AbstractType {
         }
       })
     } else {
-      // @ts-ignore
-      this._pending.push(() => this.applyDelta(delta))
+      /** @type {Array<function>} */ (this._pending).push(() => this.applyDelta(delta))
     }
   }
 
@@ -732,10 +693,6 @@ export class YText extends AbstractType {
     const ops = []
     const currentAttributes = new Map()
     let str = ''
-    /**
-     * @type {AbstractItem|null}
-     */
-    // @ts-ignore
     let n = this._start
     function packStr () {
       if (str.length > 0) {
@@ -762,8 +719,8 @@ export class YText extends AbstractType {
     }
     while (n !== null) {
       if (isVisible(n, snapshot) || (prevSnapshot !== undefined && isVisible(n, prevSnapshot))) {
-        switch (n.constructor) {
-          case ItemString:
+        switch (n.content.constructor) {
+          case ContentString:
             const cur = currentAttributes.get('ychange')
             if (snapshot !== undefined && !isVisible(n, snapshot)) {
               if (cur === undefined || cur.user !== n.id.client || cur.state !== 'removed') {
@@ -779,20 +736,17 @@ export class YText extends AbstractType {
               packStr()
               currentAttributes.delete('ychange')
             }
-            // @ts-ignore
-            str += n.string
+            str += /** @type {ContentString} */ (n.content).str
             break
-          case ItemEmbed:
+          case ContentEmbed:
             packStr()
             ops.push({
-              // @ts-ignore item is ItemFormat
-              insert: n.embed
+              insert: /** @type {ContentEmbed} */ (n.content).embed
             })
-          break
-          case ItemFormat:
+            break
+          case ContentFormat:
             packStr()
-            // @ts-ignore
-            updateCurrentAttributes(currentAttributes, n)
+            updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (n.content))
             break
         }
       }
@@ -823,8 +777,7 @@ export class YText extends AbstractType {
         insertText(transaction, this, left, right, currentAttributes, text, attributes)
       })
     } else {
-      // @ts-ignore
-      this._pending.push(() => this.insert(index, text, attributes))
+      /** @type {Array<function>} */ (this._pending).push(() => this.insert(index, text, attributes))
     }
   }
 
@@ -849,8 +802,7 @@ export class YText extends AbstractType {
         insertText(transaction, this, left, right, currentAttributes, embed, attributes)
       })
     } else {
-      // @ts-ignore
-      this._pending.push(() => this.insertEmbed(index, embed, attributes))
+      /** @type {Array<function>} */ (this._pending).push(() => this.insertEmbed(index, embed, attributes))
     }
   }
 
@@ -873,8 +825,7 @@ export class YText extends AbstractType {
         deleteText(transaction, left, right, currentAttributes, length)
       })
     } else {
-      // @ts-ignore
-      this._pending.push(() => this.delete(index, length))
+      /** @type {Array<function>} */ (this._pending).push(() => this.delete(index, length))
     }
   }
 
@@ -899,8 +850,7 @@ export class YText extends AbstractType {
         formatText(transaction, this, left, right, currentAttributes, length, attributes)
       })
     } else {
-      // @ts-ignore
-      this._pending.push(() => this.format(index, length, attributes))
+      /** @type {Array<function>} */ (this._pending).push(() => this.format(index, length, attributes))
     }
   }
 

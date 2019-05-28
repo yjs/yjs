@@ -1,16 +1,15 @@
 
 import {
   getItem,
-  getItemType,
   createID,
   writeID,
   readID,
   compareIDs,
   getState,
   findRootTypeKey,
-  AbstractItem,
-  ItemType,
-  ID, StructStore, Doc, AbstractType // eslint-disable-line
+  Item,
+  ContentType,
+  ID, Doc, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -224,7 +223,7 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
       return null
     }
     const right = getItem(store, rightID)
-    if (!(right instanceof AbstractItem)) {
+    if (!(right instanceof Item)) {
       return null
     }
     index = right.deleted || !right.countable ? 0 : rightID.clock - right.id.clock
@@ -244,9 +243,9 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
         // type does not exist yet
         return null
       }
-      const struct = getItemType(store, typeID)
-      if (struct instanceof ItemType) {
-        type = struct.type
+      const struct = getItem(store, typeID)
+      if (struct instanceof Item && struct.content instanceof ContentType) {
+        type = struct.content.type
       } else {
         // struct is garbage collected
         return null

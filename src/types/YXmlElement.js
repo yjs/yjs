@@ -8,7 +8,7 @@ import {
   typeMapGetAll,
   typeListForEach,
   YXmlElementRefID,
-  Snapshot, Doc, ItemType // eslint-disable-line
+  Snapshot, Doc, Item // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -40,16 +40,14 @@ export class YXmlElement extends YXmlFragment {
    * * Observer functions are fired
    *
    * @param {Doc} y The Yjs instance
-   * @param {ItemType} item
+   * @param {Item} item
    * @private
    */
   _integrate (y, item) {
     super._integrate(y, item)
-    // @ts-ignore
-    this.insert(0, this._prelimContent)
+    this.insert(0, /** @type {Array} */ (this._prelimContent))
     this._prelimContent = null
-    // @ts-ignore
-    this._prelimAttrs.forEach((value, key) => {
+    ;(/** @type {Map<string, any>} */ (this._prelimAttrs)).forEach((value, key) => {
       this.setAttribute(key, value)
     })
     this._prelimContent = null
@@ -105,8 +103,7 @@ export class YXmlElement extends YXmlFragment {
         typeMapDelete(transaction, this, attributeName)
       })
     } else {
-      // @ts-ignore
-      this._prelimAttrs.delete(attributeName)
+      /** @type {Map<string,any>} */ (this._prelimAttrs).delete(attributeName)
     }
   }
 
@@ -124,8 +121,7 @@ export class YXmlElement extends YXmlFragment {
         typeMapSet(transaction, this, attributeName, attributeValue)
       })
     } else {
-      // @ts-ignore
-      this._prelimAttrs.set(attributeName, attributeValue)
+      /** @type {Map<string, any>} */ (this._prelimAttrs).set(attributeName, attributeValue)
     }
   }
 
@@ -139,8 +135,7 @@ export class YXmlElement extends YXmlFragment {
    * @public
    */
   getAttribute (attributeName) {
-    // @ts-ignore
-    return typeMapGet(this, attributeName)
+    return /** @type {any} */ (typeMapGet(this, attributeName))
   }
 
   /**

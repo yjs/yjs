@@ -10,14 +10,19 @@ import {
   replaceStruct,
   addStruct,
   addToDeleteSet,
-  ItemDeleted,
   findRootTypeKey,
   compareIDs,
   getItem,
-  getItemType,
   getItemCleanEnd,
   getItemCleanStart,
-  YEvent, StructStore, ID, AbstractType, Transaction // eslint-disable-line
+  readContentDeleted,
+  readContentBinary,
+  readContentJSON,
+  readContentString,
+  readContentEmbed,
+  readContentFormat,
+  readContentType,
+  ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error.js'
@@ -28,27 +33,11 @@ import * as set from 'lib0/set.js'
 import * as binary from 'lib0/binary.js'
 
 /**
- * @param {AbstractItem} left
- * @param {AbstractItem} right
- * @return {boolean} If true, right is removed from the linked list and should be discarded
- */
-export const mergeItemWith = (left, right) => {
-  if (compareIDs(right.origin, left.lastId) && left.right === right && compareIDs(left.rightOrigin, right.rightOrigin)) {
-    left.right = right.right
-    if (left.right !== null) {
-      left.right.left = left
-    }
-    return true
-  }
-  return false
-}
-
-/**
  * Split leftItem into two items
  * @param {Transaction} transaction
- * @param {AbstractItem} leftItem
+ * @param {Item} leftItem
  * @param {number} diff
- * @return {AbstractItem}
+ * @return {Item}
  *
  * @function
  * @private
@@ -56,14 +45,15 @@ export const mergeItemWith = (left, right) => {
 export const splitItem = (transaction, leftItem, diff) => {
   const id = leftItem.id
   // create rightItem
-  const rightItem = leftItem.copy(
+  const rightItem = new Item(
     createID(id.client, id.clock + diff),
     leftItem,
     createID(id.client, id.clock + diff - 1),
     leftItem.right,
     leftItem.rightOrigin,
     leftItem.parent,
-    leftItem.parentSub
+    leftItem.parentSub,
+    leftItem.content.splice(diff)
   )
   if (leftItem.deleted) {
     rightItem.deleted = true
@@ -80,24 +70,26 @@ export const splitItem = (transaction, leftItem, diff) => {
   if (rightItem.parentSub !== null && rightItem.right === null) {
     rightItem.parent._map.set(rightItem.parentSub, rightItem)
   }
+  leftItem.length = diff
   return rightItem
 }
 
 /**
  * Abstract class that represents any content.
  */
-export class AbstractItem extends AbstractStruct {
+export class Item extends AbstractStruct {
   /**
    * @param {ID} id
-   * @param {AbstractItem | null} left
+   * @param {Item | null} left
    * @param {ID | null} origin
-   * @param {AbstractItem | null} right
+   * @param {Item | null} right
    * @param {ID | null} rightOrigin
    * @param {AbstractType<any>} parent
    * @param {string | null} parentSub
+   * @param {AbstractContent} content
    */
-  constructor (id, left, origin, right, rightOrigin, parent, parentSub) {
-    super(id)
+  constructor (id, left, origin, right, rightOrigin, parent, parentSub, content) {
+    super(id, content.getLength())
     /**
      * The item that was originally to the left of this item.
      * @type {ID | null}
@@ -106,12 +98,12 @@ export class AbstractItem extends AbstractStruct {
     this.origin = origin
     /**
      * The item that is currently to the left of this item.
-     * @type {AbstractItem | null}
+     * @type {Item | null}
      */
     this.left = left
     /**
      * The item that is currently to the right of this item.
-     * @type {AbstractItem | null}
+     * @type {Item | null}
      */
     this.right = right
     /**
@@ -143,9 +135,12 @@ export class AbstractItem extends AbstractStruct {
     /**
      * If this type's effect is reundone this type refers to the type that undid
      * this operation.
-     * @type {AbstractItem | null}
+     * @type {Item | null}
      */
     this.redone = null
+    this.content = content
+    this.length = content.getLength()
+    this.countable = content.isCountable()
   }
 
   /**
@@ -159,7 +154,7 @@ export class AbstractItem extends AbstractStruct {
     const parentSub = this.parentSub
     const length = this.length
     /**
-     * @type {AbstractItem|null}
+     * @type {Item|null}
      */
     let o
     // set o to the first conflicting item
@@ -175,11 +170,11 @@ export class AbstractItem extends AbstractStruct {
     }
     // TODO: use something like DeleteSet here (a tree implementation would be best)
     /**
-     * @type {Set<AbstractItem>}
+     * @type {Set<Item>}
      */
     const conflictingItems = new Set()
     /**
-     * @type {Set<AbstractItem>}
+     * @type {Set<Item>}
      */
     const itemsBeforeOrigin = new Set()
     // Let c in conflictingItems, b in itemsBeforeOrigin
@@ -238,8 +233,8 @@ export class AbstractItem extends AbstractStruct {
       parent._length += length
     }
     addStruct(store, this)
+    this.content.integrate(transaction, this)
     maplib.setIfUndefined(transaction.changed, parent, set.create).add(parentSub)
-    // @ts-ignore
     if ((parent._item !== null && parent._item.deleted) || (this.right !== null && parentSub !== null)) {
       // delete if parent is deleted or if this is not the current attribute value of parent
       this.delete(transaction)
@@ -271,28 +266,10 @@ export class AbstractItem extends AbstractStruct {
   }
 
   /**
-   * Creates an Item with the same effect as this Item (without position effect)
-   *
-   * @param {ID} id
-   * @param {AbstractItem | null} left
-   * @param {ID | null} origin
-   * @param {AbstractItem | null} right
-   * @param {ID | null} rightOrigin
-   * @param {AbstractType<any>} parent
-   * @param {string | null} parentSub
-   * @return {AbstractItem}
-   *
-   * @private
-   */
-  copy (id, left, origin, right, rightOrigin, parent, parentSub) {
-    throw error.methodUnimplemented()
-  }
-
-  /**
    * Redoes the effect of this operation.
    *
    * @param {Transaction} transaction The Yjs instance.
-   * @param {Set<AbstractItem>} redoitems
+   * @param {Set<Item>} redoitems
    *
    * @private
    */
@@ -343,7 +320,7 @@ export class AbstractItem extends AbstractStruct {
         right = right.right
       }
     }
-    this.redone = this.copy(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, this.parentSub)
+    this.redone = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, this.parentSub, this.content.copy())
     this.redone.integrate(transaction)
     return true
   }
@@ -354,46 +331,31 @@ export class AbstractItem extends AbstractStruct {
   get lastId () {
     return createID(this.id.client, this.id.clock + this.length - 1)
   }
-
   /**
-   * Computes the length of this Item.
+   * Try to merge two items
+   *
+   * @param {Item} right
+   * @return {boolean}
    */
-  get length () {
-    return 1
-  }
-
-  /**
-   * Should return false if this Item is some kind of meta information
-   * (e.g. format information).
-   *
-   * * Whether this Item should be addressable via `yarray.get(i)`
-   * * Whether this Item should be counted when computing yarray.length
-   */
-  get countable () {
-    return true
-  }
-
-  /**
-   * Do not call directly. Always split via StructStore!
-   *
-   * Splits this Item so that another Item can be inserted in-between.
-   * This must be overwritten if _length > 1
-   * Returns right part after split
-   *
-   * (see {@link ItemJSON}/{@link ItemString} for implementation)
-   *
-   * Does not integrate the struct, nor store it in struct store.
-   *
-   * This method should only be cally by StructStore.
-   *
-   * @param {Transaction} transaction
-   * @param {number} diff
-   * @return {AbstractItem}
-   *
-   * @private
-   */
-  splitAt (transaction, diff) {
-    throw error.methodUnimplemented()
+  mergeWith (right) {
+    if (
+      compareIDs(right.origin, this.lastId) &&
+      this.right === right &&
+      compareIDs(this.rightOrigin, right.rightOrigin) &&
+      this.id.client === right.id.client &&
+      this.id.clock + this.length === right.id.clock &&
+      this.deleted === right.deleted &&
+      this.content.constructor === right.content.constructor &&
+      this.content.mergeWith(right.content)
+    ) {
+      this.right = right.right
+      if (this.right !== null) {
+        this.right.left = this
+      }
+      this.length += right.length
+      return true
+    }
+    return false
   }
 
   /**
@@ -411,15 +373,9 @@ export class AbstractItem extends AbstractStruct {
       this.deleted = true
       addToDeleteSet(transaction.deleteSet, this.id, this.length)
       maplib.setIfUndefined(transaction.changed, parent, set.create).add(this.parentSub)
+      this.content.delete(transaction)
     }
   }
-
-  /**
-   * @param {StructStore} store
-   *
-   * @private
-   */
-  gcChildren (store) { }
 
   /**
    * @param {StructStore} store
@@ -431,30 +387,12 @@ export class AbstractItem extends AbstractStruct {
     if (!this.deleted) {
       throw error.unexpectedCase()
     }
-    let r
+    this.content.gc(store)
     if (parentGCd) {
-      r = new GC(this.id, this.length)
+      replaceStruct(store, this, new GC(this.id, this.length))
     } else {
-      r = new ItemDeleted(this.id, this.left, this.origin, this.right, this.rightOrigin, this.parent, this.parentSub, this.length)
-      if (r.right !== null) {
-        r.right.left = r
-      } else if (r.parentSub !== null) {
-        r.parent._map.set(r.parentSub, r)
-      }
-      if (r.left !== null) {
-        r.left.right = r
-      } else if (r.parentSub === null) {
-        r.parent._start = r
-      }
+      this.content = new ContentDeleted(this.length)
     }
-    replaceStruct(store, this, r)
-  }
-
-  /**
-   * @return {Array<any>}
-   */
-  getContent () {
-    throw error.methodUnimplemented()
   }
 
   /**
@@ -465,15 +403,14 @@ export class AbstractItem extends AbstractStruct {
    *
    * @param {encoding.Encoder} encoder The encoder to write data to.
    * @param {number} offset
-   * @param {number} encodingRef
    *
    * @private
    */
-  write (encoder, offset, encodingRef) {
+  write (encoder, offset) {
     const origin = offset > 0 ? createID(this.id.client, this.id.clock + offset - 1) : this.origin
     const rightOrigin = this.rightOrigin
     const parentSub = this.parentSub
-    const info = (encodingRef & binary.BITS5) |
+    const info = (this.content.getRef() & binary.BITS5) |
       (origin === null ? 0 : binary.BIT8) | // origin is defined
       (rightOrigin === null ? 0 : binary.BIT7) | // right origin is defined
       (parentSub === null ? 0 : binary.BIT6) // parentSub is non-null
@@ -489,26 +426,129 @@ export class AbstractItem extends AbstractStruct {
       if (parent._item === null) {
         // parent type on y._map
         // find the correct key
-        // @ts-ignore we know that y exists
         const ykey = findRootTypeKey(parent)
         encoding.writeVarUint(encoder, 1) // write parentYKey
         encoding.writeVarString(encoder, ykey)
       } else {
         encoding.writeVarUint(encoder, 0) // write parent id
-        // @ts-ignore _item is defined because parent is integrated
         writeID(encoder, parent._item.id)
       }
       if (parentSub !== null) {
         encoding.writeVarString(encoder, parentSub)
       }
     }
+    this.content.write(encoder, offset)
+  }
+}
+
+/**
+ * @param {decoding.Decoder} decoder
+ * @param {number} info
+ */
+const readItemContent = (decoder, info) => contentRefs[info & binary.BITS5](decoder)
+
+/**
+ * A lookup map for reading Item content.
+ *
+ * @type {Array<function(decoding.Decoder):AbstractContent>}
+ */
+export const contentRefs = [
+  () => { throw error.unexpectedCase() }, // GC is not ItemContent
+  readContentDeleted,
+  readContentJSON,
+  readContentBinary,
+  readContentString,
+  readContentEmbed,
+  readContentFormat,
+  readContentType
+]
+
+/**
+ * Do not implement this class!
+ */
+export class AbstractContent {
+  /**
+   * @return {number}
+   */
+  getLength () {
+    throw error.methodUnimplemented()
+  }
+  /**
+   * @return {Array<any>}
+   */
+  getContent () {
+    throw error.methodUnimplemented()
+  }
+  /**
+   * Should return false if this Item is some kind of meta information
+   * (e.g. format information).
+   *
+   * * Whether this Item should be addressable via `yarray.get(i)`
+   * * Whether this Item should be counted when computing yarray.length
+   *
+   * @return {boolean}
+   */
+  isCountable () {
+    throw error.methodUnimplemented()
+  }
+  /**
+   * @return {AbstractContent}
+   */
+  copy () {
+    throw error.methodUnimplemented()
+  }
+  /**
+   * @param {number} offset
+   * @return {AbstractContent}
+   */
+  splice (offset) {
+    throw error.methodUnimplemented()
+  }
+  /**
+   * @param {AbstractContent} right
+   * @return {boolean}
+   */
+  mergeWith (right) {
+    throw error.methodUnimplemented()
+  }
+  /**
+   * @param {Transaction} transaction
+   * @param {Item} item
+   */
+  integrate (transaction, item) {
+    throw error.methodUnimplemented()
+  }
+  /**
+   * @param {Transaction} transaction
+   */
+  delete (transaction) {
+    throw error.methodUnimplemented()
+  }
+  /**
+   * @param {StructStore} store
+   */
+  gc (store) {
+    throw error.methodUnimplemented()
+  }
+  /**
+   * @param {encoding.Encoder} encoder
+   * @param {number} offset
+   */
+  write (encoder, offset) {
+    throw error.methodUnimplemented()
+  }
+  /**
+   * @return {number}
+   */
+  getRef () {
+    throw error.methodUnimplemented()
   }
 }
 
 /**
  * @private
  */
-export class AbstractItemRef extends AbstractStructRef {
+export class ItemRef extends AbstractStructRef {
   /**
    * @param {decoding.Decoder} decoder
    * @param {ID} id
@@ -558,85 +598,69 @@ export class AbstractItemRef extends AbstractStructRef {
     if (this.parent !== null) {
       missing.push(this.parent)
     }
+    /**
+     * @type {AbstractContent}
+     */
+    this.content = readItemContent(decoder, info)
+    this.length = this.content.getLength()
   }
-}
-
-/**
- * @param {AbstractItemRef} item
- * @param {number} offset
- *
- * @function
- * @private
- */
-export const changeItemRefOffset = (item, offset) => {
-  item.id = createID(item.id.client, item.id.clock + offset)
-  item.left = createID(item.id.client, item.id.clock - 1)
-}
-
-export class ItemParams {
   /**
-   * @param {AbstractItem?} left
-   * @param {AbstractItem?} right
-   * @param {AbstractType<YEvent>?} parent
-   * @param {string|null} parentSub
+   * @param {Transaction} transaction
+   * @param {StructStore} store
+   * @param {number} offset
+   * @return {Item|GC}
    */
-  constructor (left, right, parent, parentSub) {
-    this.left = left
-    this.right = right
-    this.parent = parent
-    this.parentSub = parentSub
-  }
-}
+  toStruct (transaction, store, offset) {
+    if (offset > 0) {
+      /**
+       * @type {ID}
+       */
+      const id = this.id
+      this.id = createID(id.client, id.clock + offset)
+      this.left = createID(this.id.client, this.id.clock - 1)
+      this.content = this.content.splice(offset)
+    }
 
-/**
- * Outsourcing some of the logic of computing the item params from a received struct.
- * If parent === null, it is expected to gc the read struct. Otherwise apply it.
- *
- * @param {Transaction} transaction
- * @param {StructStore} store
- * @param {ID|null} leftid
- * @param {ID|null} rightid
- * @param {ID|null} parentid
- * @param {string|null} parentSub
- * @param {string|null} parentYKey
- * @return {ItemParams}
- *
- * @private
- * @function
- */
-export const computeItemParams = (transaction, store, leftid, rightid, parentid, parentSub, parentYKey) => {
-  const left = leftid === null ? null : getItemCleanEnd(transaction, store, leftid)
-  const right = rightid === null ? null : getItemCleanStart(transaction, store, rightid)
-  let parent = null
-  if (parentid !== null) {
-    const parentItem = getItemType(store, parentid)
-    switch (parentItem.constructor) {
-      case ItemDeleted:
-      case GC:
-        break
-      default:
-        // Edge case: toStruct is called with an offset > 0. In this case left is defined.
-        // Depending in which order structs arrive, left may be GC'd and the parent not
-        // deleted. This is why we check if left is GC'd. Strictly we probably don't have
-        // to check if right is GC'd, but we will in case we run into future issues
-        if (!parentItem.deleted && (left === null || left.constructor !== GC) && (right === null || right.constructor !== GC)) {
-          parent = parentItem.type
-        }
+    const left = this.left === null ? null : getItemCleanEnd(transaction, store, this.left)
+    const right = this.right === null ? null : getItemCleanStart(transaction, store, this.right)
+    let parent = null
+    let parentSub = this.parentSub
+    if (this.parent !== null) {
+      const parentItem = getItem(store, this.parent)
+      // Edge case: toStruct is called with an offset > 0. In this case left is defined.
+      // Depending in which order structs arrive, left may be GC'd and the parent not
+      // deleted. This is why we check if left is GC'd. Strictly we don't have
+      // to check if right is GC'd, but we will in case we run into future issues
+      if (!parentItem.deleted && (left === null || left.constructor !== GC) && (right === null || right.constructor !== GC)) {
+        parent = /** @type {ContentType} */ (parentItem.content).type
+      }
+    } else if (this.parentYKey !== null) {
+      parent = transaction.doc.get(this.parentYKey)
+    } else if (left !== null) {
+      if (left.constructor !== GC) {
+        parent = left.parent
+        parentSub = left.parentSub
+      }
+    } else if (right !== null) {
+      if (right.constructor !== GC) {
+        parent = right.parent
+        parentSub = right.parentSub
+      }
+    } else {
+      throw error.unexpectedCase()
     }
-  } else if (parentYKey !== null) {
-    parent = transaction.doc.get(parentYKey)
-  } else if (left !== null) {
-    if (left.constructor !== GC) {
-      parent = left.parent
-      parentSub = left.parentSub
-    }
-  } else if (right !== null) {
-    if (right.constructor !== GC) {
-      parent = right.parent
-      parentSub = right.parentSub
-    }
-  } else {
-    throw error.unexpectedCase()
+
+    return parent === null
+      ? new GC(this.id, this.length)
+      : new Item(
+        this.id,
+        left,
+        this.left,
+        right,
+        this.right,
+        parent,
+        parentSub,
+        this.content
+      )
   }
-  return new ItemParams(left, right, parent, parentSub)
 }

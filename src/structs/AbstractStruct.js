@@ -12,14 +12,16 @@ import * as error from 'lib0/error.js'
 export class AbstractStruct {
   /**
    * @param {ID} id
+   * @param {number} length
    */
-  constructor (id) {
+  constructor (id, length) {
     /**
      * The uniqe identifier of this struct.
      * @type {ID}
      * @readonly
      */
     this.id = id
+    this.length = length
     this.deleted = false
   }
   /**
@@ -31,12 +33,6 @@ export class AbstractStruct {
    */
   mergeWith (right) {
     return false
-  }
-  /**
-   * @type {number}
-   */
-  get length () {
-    throw error.methodUnimplemented()
   }
   /**
    * @param {encoding.Encoder} encoder The encoder to write data to.
@@ -88,11 +84,5 @@ export class AbstractStructRef {
    */
   toStruct (transaction, store, offset) {
     throw error.methodUnimplemented()
-  }
-  /**
-   * @type {number}
-   */
-  get length () {
-    return 1
   }
 }

@@ -1,7 +1,7 @@
 
 import {
   isDeleted,
-  DeleteSet, AbstractItem // eslint-disable-line
+  DeleteSet, Item // eslint-disable-line
 } from '../internals.js'
 
 export class Snapshot {
@@ -31,7 +31,7 @@ export class Snapshot {
 export const createSnapshot = (ds, sm) => new Snapshot(ds, sm)
 
 /**
- * @param {AbstractItem} item
+ * @param {Item} item
  * @param {Snapshot|undefined} snapshot
  *
  * @protected

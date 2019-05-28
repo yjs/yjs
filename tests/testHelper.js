@@ -3,8 +3,8 @@ import * as Y from '../src/index.js'
 import {
   createDeleteSetFromStructStore,
   getStateVector,
-  AbstractItem,
-  DeleteSet, StructStore, Doc // eslint-disable-line
+  Item,
+  DeleteItem, DeleteSet, StructStore, Doc // eslint-disable-line
 } from '../src/internals.js'
 
 import * as t from 'lib0/testing.js'
@@ -12,6 +12,7 @@ import * as prng from 'lib0/prng.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import * as syncProtocol from 'y-protocols/sync.js'
+export * from '../src/internals.js'
 
 /**
  * @param {TestYInstance} y // publish message created by `y` to all other online clients
@@ -240,8 +241,7 @@ export const init = (tc, { users = 5 } = {}, initTestObject) => {
   }
   testConnector.syncAll()
   result.testObjects = result.users.map(initTestObject || (() => null))
-  // @ts-ignore
-  return result
+  return /** @type {any} */ (result)
 }
 
 /**
@@ -282,8 +282,7 @@ export const compare = users => {
     t.compare(userArrayValues[i], userArrayValues[i + 1])
     t.compare(userMapValues[i], userMapValues[i + 1])
     t.compare(userXmlValues[i], userXmlValues[i + 1])
-    // @ts-ignore
-    t.compare(userTextValues[i].map(a => a.insert).join('').length, users[i].getText('text').length)
+    t.compare(userTextValues[i].map(/** @param {any} a */ a => a.insert).join('').length, users[i].getText('text').length)
     t.compare(userTextValues[i], userTextValues[i + 1])
     t.compare(getStateVector(users[i].store), getStateVector(users[i + 1].store))
     compareDS(createDeleteSetFromStructStore(users[i].store), createDeleteSetFromStructStore(users[i + 1].store))
@@ -293,8 +292,8 @@ export const compare = users => {
 }
 
 /**
- * @param {AbstractItem?} a
- * @param {AbstractItem?} b
+ * @param {Item?} a
+ * @param {Item?} b
  * @return {boolean}
  */
 export const compareItemIDs = (a, b) => a === b || (a !== null && b != null && Y.compareIDs(a.id, b.id))
@@ -306,11 +305,10 @@ export const compareItemIDs = (a, b) => a === b || (a !== null && b != null && Y
 export const compareStructStores = (ss1, ss2) => {
   t.assert(ss1.clients.size === ss2.clients.size)
   for (const [client, structs1] of ss1.clients) {
-    const structs2 = ss2.clients.get(client)
+    const structs2 = /** @type {Array<Y.AbstractStruct>} */ (ss2.clients.get(client))
     t.assert(structs2 !== undefined && structs1.length === structs2.length)
     for (let i = 0; i < structs1.length; i++) {
       const s1 = structs1[i]
-      // @ts-ignore
       const s2 = structs2[i]
       // checks for abstract struct
       if (
@@ -321,9 +319,9 @@ export const compareStructStores = (ss1, ss2) => {
       ) {
         t.fail('Structs dont match')
       }
-      if (s1 instanceof AbstractItem) {
+      if (s1 instanceof Item) {
         if (
-          !(s2 instanceof AbstractItem) ||
+          !(s2 instanceof Item) ||
           !((s1.left === null && s2.left === null) || (s1.left !== null && s2.left !== null && Y.compareIDs(s1.left.lastId, s2.left.lastId))) ||
           !compareItemIDs(s1.right, s2.right) ||
           !Y.compareIDs(s1.origin, s2.origin) ||
@@ -349,11 +347,10 @@ export const compareStructStores = (ss1, ss2) => {
 export const compareDS = (ds1, ds2) => {
   t.assert(ds1.clients.size === ds2.clients.size)
   for (const [client, deleteItems1] of ds1.clients) {
-    const deleteItems2 = ds2.clients.get(client)
+    const deleteItems2 = /** @type {Array<DeleteItem>} */ (ds2.clients.get(client))
     t.assert(deleteItems2 !== undefined && deleteItems1.length === deleteItems2.length)
     for (let i = 0; i < deleteItems1.length; i++) {
       const di1 = deleteItems1[i]
-      // @ts-ignore
       const di2 = deleteItems2[i]
       if (di1.clock !== di2.clock || di1.len !== di2.len) {
         t.fail('DeleteSets dont match')

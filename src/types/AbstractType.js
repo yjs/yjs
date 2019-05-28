@@ -4,14 +4,14 @@ import {
   callEventHandlerListeners,
   addEventHandlerListener,
   createEventHandler,
-  ItemType,
   nextID,
   isVisible,
-  ItemJSON,
-  ItemBinary,
+  ContentType,
+  ContentJSON,
+  ContentBinary,
   createID,
   getItemCleanStart,
-  Doc, Snapshot, Transaction, EventHandler, YEvent, AbstractItem, // eslint-disable-line
+  Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map.js'
@@ -49,17 +49,17 @@ export const callTypeObservers = (type, transaction, event) => {
 export class AbstractType {
   constructor () {
     /**
-     * @type {ItemType|null}
+     * @type {Item|null}
      */
     this._item = null
     /**
      * @private
-     * @type {Map<string,AbstractItem>}
+     * @type {Map<string,Item>}
      */
     this._map = new Map()
     /**
      * @private
-     * @type {AbstractItem|null}
+     * @type {Item|null}
      */
     this._start = null
     /**
@@ -88,7 +88,7 @@ export class AbstractType {
    * * Observer functions are fired
    *
    * @param {Doc} y The Yjs instance
-   * @param {ItemType|null} item
+   * @param {Item|null} item
    * @private
    */
   _integrate (y, item) {
@@ -187,7 +187,7 @@ export const typeListToArray = type => {
   let n = type._start
   while (n !== null) {
     if (n.countable && !n.deleted) {
-      const c = n.getContent()
+      const c = n.content.getContent()
       for (let i = 0; i < c.length; i++) {
         cs.push(c[i])
       }
@@ -210,7 +210,7 @@ export const typeListToArraySnapshot = (type, snapshot) => {
   let n = type._start
   while (n !== null) {
     if (n.countable && isVisible(n, snapshot)) {
-      const c = n.getContent()
+      const c = n.content.getContent()
       for (let i = 0; i < c.length; i++) {
         cs.push(c[i])
       }
@@ -234,7 +234,7 @@ export const typeListForEach = (type, f) => {
   let n = type._start
   while (n !== null) {
     if (n.countable && !n.deleted) {
-      const c = n.getContent()
+      const c = n.content.getContent()
       for (let i = 0; i < c.length; i++) {
         f(c[i], index++, type)
       }
@@ -295,7 +295,7 @@ export const typeListCreateIterator = type => {
           }
         }
         // we found n, so we can set currentContent
-        currentContent = n.getContent()
+        currentContent = n.content.getContent()
         currentContentIndex = 0
         n = n.right // we used the content of n, now iterate to next
       }
@@ -328,7 +328,7 @@ export const typeListForEachSnapshot = (type, f, snapshot) => {
   let n = type._start
   while (n !== null) {
     if (n.countable && isVisible(n, snapshot)) {
-      const c = n.getContent()
+      const c = n.content.getContent()
       for (let i = 0; i < c.length; i++) {
         f(c[i], index++, type)
       }
@@ -349,7 +349,7 @@ export const typeListGet = (type, index) => {
   for (let n = type._start; n !== null; n = n.right) {
     if (!n.deleted && n.countable) {
       if (index < n.length) {
-        return n.getContent()[index]
+        return n.content.getContent()[index]
       }
       index -= n.length
     }
@@ -359,7 +359,7 @@ export const typeListGet = (type, index) => {
 /**
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
- * @param {AbstractItem?} referenceItem
+ * @param {Item?} referenceItem
  * @param {Array<Object<string,any>|Array<any>|boolean|number|string|Uint8Array>} content
  *
  * @private
@@ -374,7 +374,7 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
   let jsonContent = []
   const packJsonContent = () => {
     if (jsonContent.length > 0) {
-      left = new ItemJSON(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, jsonContent)
+      left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentJSON(jsonContent))
       left.integrate(transaction)
       jsonContent = []
     }
@@ -393,12 +393,12 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
         switch (c.constructor) {
           case Uint8Array:
           case ArrayBuffer:
-            left = new ItemBinary(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new Uint8Array(/** @type {Uint8Array} */ (c)))
+            left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))))
             left.integrate(transaction)
             break
           default:
             if (c instanceof AbstractType) {
-              left = new ItemType(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, c)
+              left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentType(c))
               left.integrate(transaction)
             } else {
               throw new Error('Unexpected content type in insert operation')
@@ -501,28 +501,30 @@ export const typeMapDelete = (transaction, parent, key) => {
  */
 export const typeMapSet = (transaction, parent, key, value) => {
   const left = parent._map.get(key) || null
+  let content
   if (value == null) {
-    new ItemJSON(nextID(transaction), left, left === null ? null : left.lastId, null, null, parent, key, [value]).integrate(transaction)
-    return
+    content = new ContentJSON([value])
+  } else {
+    switch (value.constructor) {
+      case Number:
+      case Object:
+      case Boolean:
+      case Array:
+      case String:
+        content = new ContentJSON([value])
+        break
+      case Uint8Array:
+        content = new ContentBinary(value)
+        break
+      default:
+        if (value instanceof AbstractType) {
+          content = new ContentType(value)
+        } else {
+          throw new Error('Unexpected content type')
+        }
+    }
   }
-  switch (value.constructor) {
-    case Number:
-    case Object:
-    case Boolean:
-    case Array:
-    case String:
-      new ItemJSON(nextID(transaction), left, left === null ? null : left.lastId, null, null, parent, key, [value]).integrate(transaction)
-      break
-    case Uint8Array:
-      new ItemBinary(nextID(transaction), left, left === null ? null : left.lastId, null, null, parent, key, value).integrate(transaction)
-      break
-    default:
-      if (value instanceof AbstractType) {
-        new ItemType(nextID(transaction), left, left === null ? null : left.lastId, null, null, parent, key, value).integrate(transaction)
-      } else {
-        throw new Error('Unexpected content type')
-      }
-  }
+  new Item(nextID(transaction), left, left === null ? null : left.lastId, null, null, parent, key, content).integrate(transaction)
 }
 
 /**
@@ -535,7 +537,7 @@ export const typeMapSet = (transaction, parent, key, value) => {
  */
 export const typeMapGet = (parent, key) => {
   const val = parent._map.get(key)
-  return val !== undefined && !val.deleted ? val.getContent()[0] : undefined
+  return val !== undefined && !val.deleted ? val.content.getContent()[val.length - 1] : undefined
 }
 
 /**
@@ -552,7 +554,7 @@ export const typeMapGetAll = (parent) => {
   let res = {}
   for (const [key, value] of parent._map) {
     if (!value.deleted) {
-      res[key] = value.getContent()[value.length - 1]
+      res[key] = value.content.getContent()[value.length - 1]
     }
   }
   return res
@@ -585,11 +587,11 @@ export const typeMapGetSnapshot = (parent, key, snapshot) => {
   while (v !== null && (!snapshot.sm.has(v.id.client) || v.id.clock >= (snapshot.sm.get(v.id.client) || 0))) {
     v = v.left
   }
-  return v !== null && isVisible(v, snapshot) ? v.getContent()[v.length - 1] : undefined
+  return v !== null && isVisible(v, snapshot) ? v.content.getContent()[v.length - 1] : undefined
 }
 
 /**
- * @param {Map<string,AbstractItem>} map
+ * @param {Map<string,Item>} map
  * @return {IterableIterator<Array<any>>}
  *
  * @private

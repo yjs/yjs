@@ -14,7 +14,7 @@ import {
   YMapRefID,
   callTypeObservers,
   transact,
-  Doc, Transaction, ItemType, // eslint-disable-line
+  Doc, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -61,14 +61,13 @@ export class YMap extends AbstractType {
    * * Observer functions are fired
    *
    * @param {Doc} y The Yjs instance
-   * @param {ItemType} item
+   * @param {Item} item
    *
    * @private
    */
   _integrate (y, item) {
     super._integrate(y, item)
-    // @ts-ignore
-    for (let [key, value] of this._prelimContent) {
+    for (let [key, value] of /** @type {Map<string, any>} */ (this._prelimContent)) {
       this.set(key, value)
     }
     this._prelimContent = null
@@ -97,7 +96,7 @@ export class YMap extends AbstractType {
     const map = {}
     for (let [key, item] of this._map) {
       if (!item.deleted) {
-        const v = item.getContent()[0]
+        const v = item.content.getContent()[item.length - 1]
         map[key] = v instanceof AbstractType ? v.toJSON() : v
       }
     }
@@ -119,7 +118,7 @@ export class YMap extends AbstractType {
    * @return {Iterator<string>}
    */
   values () {
-    return iterator.iteratorMap(createMapIterator(this._map), /** @param {any} v */ v => v[1].getContent()[v[1].length - 1])
+    return iterator.iteratorMap(createMapIterator(this._map), /** @param {any} v */ v => v[1].content.getContent()[v[1].length - 1])
   }
 
   /**
@@ -128,7 +127,7 @@ export class YMap extends AbstractType {
    * @return {IterableIterator<any>}
    */
   entries () {
-    return iterator.iteratorMap(createMapIterator(this._map), /** @param {any} v */ v => [v[0], v[1].getContent()[v[1].length - 1]])
+    return iterator.iteratorMap(createMapIterator(this._map), /** @param {any} v */ v => [v[0], v[1].content.getContent()[v[1].length - 1]])
   }
 
   /**
@@ -149,8 +148,7 @@ export class YMap extends AbstractType {
         typeMapDelete(transaction, this, key)
       })
     } else {
-      // @ts-ignore
-      this._prelimContent.delete(key)
+      /** @type {Map<string, any>} */ (this._prelimContent).delete(key)
     }
   }
 
@@ -166,8 +164,7 @@ export class YMap extends AbstractType {
         typeMapSet(transaction, this, key, value)
       })
     } else {
-      // @ts-ignore
-      this._prelimContent.set(key, value)
+      /** @type {Map<string, any>} */ (this._prelimContent).set(key, value)
     }
     return value
   }
@@ -179,8 +176,7 @@ export class YMap extends AbstractType {
    * @return {T|undefined}
    */
   get (key) {
-    // @ts-ignore
-    return typeMapGet(this, key)
+    return /** @type {any} */ (typeMapGet(this, key))
   }
 
   /**

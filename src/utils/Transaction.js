@@ -9,7 +9,7 @@ import {
   getStateVector,
   findIndexSS,
   callEventHandlerListeners,
-  AbstractItem,
+  Item,
   ID, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
 } from '../internals.js'
 
@@ -179,20 +179,15 @@ export const transact = (doc, f, origin = null) => {
           if (left.deleted === right.deleted && left.constructor === right.constructor) {
             if (left.mergeWith(right)) {
               structs.splice(pos, 1)
-              if (right instanceof AbstractItem && right.parentSub !== null && right.parent._map.get(right.parentSub) === right) {
-                // @ts-ignore we already did a constructor check above
-                right.parent._map.set(right.parentSub, left)
+              if (right instanceof Item && right.parentSub !== null && right.parent._map.get(right.parentSub) === right) {
+                right.parent._map.set(right.parentSub, /** @type {Item} */ (left))
               }
             }
           }
         }
         // replace deleted items with ItemDeleted / GC
         for (const [client, deleteItems] of ds.clients) {
-          /**
-           * @type {Array<AbstractStruct>}
-           */
-          // @ts-ignore
-          const structs = store.clients.get(client)
+          const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(client))
           for (let di = deleteItems.length - 1; di >= 0; di--) {
             const deleteItem = deleteItems[di]
             const endDeleteItemClock = deleteItem.clock + deleteItem.len
@@ -205,7 +200,7 @@ export const transact = (doc, f, origin = null) => {
               if (deleteItem.clock + deleteItem.len <= struct.id.clock) {
                 break
               }
-              if (struct.deleted && struct instanceof AbstractItem) {
+              if (struct.deleted && struct instanceof Item) {
                 struct.gc(store, false)
               }
             }
@@ -214,11 +209,7 @@ export const transact = (doc, f, origin = null) => {
         // try to merge deleted / gc'd items
         // merge from right to left for better efficiecy and so we don't miss any merge targets
         for (const [client, deleteItems] of ds.clients) {
-          /**
-           * @type {Array<AbstractStruct>}
-           */
-          // @ts-ignore
-          const structs = store.clients.get(client)
+          const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(client))
           for (let di = deleteItems.length - 1; di >= 0; di--) {
             const deleteItem = deleteItems[di]
             // start with merging the item next to the last deleted item
@@ -237,11 +228,7 @@ export const transact = (doc, f, origin = null) => {
         for (const [client, clock] of transaction.afterState) {
           const beforeClock = transaction.beforeState.get(client) || 0
           if (beforeClock !== clock) {
-            /**
-             * @type {Array<AbstractStruct>}
-             */
-            // @ts-ignore
-            const structs = store.clients.get(client)
+            const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(client))
             // we iterate from right to left so we can safely remove entries
             const firstChangePos = math.max(findIndexSS(structs, beforeClock), 1)
             for (let i = structs.length - 1; i >= firstChangePos; i--) {
@@ -255,11 +242,7 @@ export const transact = (doc, f, origin = null) => {
         for (const mid of transaction._mergeStructs) {
           const client = mid.client
           const clock = mid.clock
-          /**
-           * @type {Array<AbstractStruct>}
-           */
-          // @ts-ignore
-          const structs = store.clients.get(client)
+          const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(client))
           const replacedStructPos = findIndexSS(structs, clock)
           if (replacedStructPos + 1 < structs.length) {
             tryToMergeWithLeft(structs, replacedStructPos + 1)

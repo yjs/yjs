@@ -1,18 +1,23 @@
 
 /**
  * @module encoding
+ *
+ * We use the first five bits in the info flag for determining the type of the struct.
+ *
+ * 0: GC
+ * 1: Item with Deleted content
+ * 2: Item with JSON content
+ * 3: Item with Binary content
+ * 4: Item with String content
+ * 5: Item with Embed content (for richtext content)
+ * 6: Item with Format content (a formatting marker for richtext content)
+ * 7: Item with Type
  */
 
 import {
   findIndexSS,
   GCRef,
-  ItemBinaryRef,
-  ItemDeletedRef,
-  ItemEmbedRef,
-  ItemFormatRef,
-  ItemJSONRef,
-  ItemStringRef,
-  ItemTypeRef,
+  ItemRef,
   writeID,
   createID,
   readID,
@@ -21,26 +26,12 @@ import {
   readDeleteSet,
   writeDeleteSet,
   createDeleteSetFromStructStore,
-  Doc, Transaction, AbstractStruct, AbstractStructRef, StructStore, ID // eslint-disable-line
+  Doc, Transaction, AbstractStruct, StructStore, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import * as binary from 'lib0/binary.js'
-
-/**
- * @private
- */
-export const structRefs = [
-  GCRef,
-  ItemBinaryRef,
-  ItemDeletedRef,
-  ItemEmbedRef,
-  ItemFormatRef,
-  ItemJSONRef,
-  ItemStringRef,
-  ItemTypeRef
-]
 
 /**
  * @param {encoding.Encoder} encoder
@@ -68,19 +59,19 @@ const writeStructs = (encoder, structs, client, clock) => {
  * @param {decoding.Decoder} decoder
  * @param {number} numOfStructs
  * @param {ID} nextID
- * @return {Array<AbstractStructRef>}
+ * @return {Array<GCRef|ItemRef>}
  *
  * @private
  * @function
  */
 const readStructRefs = (decoder, numOfStructs, nextID) => {
   /**
-   * @type {Array<AbstractStructRef>}
+   * @type {Array<GCRef|ItemRef>}
    */
   const refs = []
   for (let i = 0; i < numOfStructs; i++) {
     const info = decoding.readUint8(decoder)
-    const ref = new structRefs[binary.BITS5 & info](decoder, nextID, info)
+    const ref = (binary.BITS5 & info) === 0 ? new GCRef(decoder, nextID, info) : new ItemRef(decoder, nextID, info)
     nextID = createID(nextID.client, nextID.clock + ref.length)
     refs.push(ref)
   }
@@ -119,14 +110,14 @@ export const writeClientsStructs = (encoder, store, _sm) => {
 
 /**
  * @param {decoding.Decoder} decoder The decoder object to read data from.
- * @return {Map<number,Array<AbstractStructRef>>}
+ * @return {Map<number,Array<GCRef|ItemRef>>}
  *
  * @private
  * @function
  */
 export const readClientsStructRefs = decoder => {
   /**
-   * @type {Map<number,Array<AbstractStructRef>>}
+   * @type {Map<number,Array<GCRef|ItemRef>>}
    */
   const clientRefs = new Map()
   const numOfStateUpdates = decoding.readVarUint(decoder)
@@ -254,7 +245,7 @@ export const writeStructsFromTransaction = (encoder, transaction) => writeClient
 
 /**
  * @param {StructStore} store
- * @param {Map<number, Array<AbstractStructRef>>} clientsStructsRefs
+ * @param {Map<number, Array<GCRef|ItemRef>>} clientsStructsRefs
  *
  * @private
  * @function

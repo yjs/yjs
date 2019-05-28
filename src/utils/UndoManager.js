@@ -200,4 +200,3 @@ export class UndoManager {
     return performedRedo
   }
 }
-}

@@ -1,4 +1,4 @@
-import { init, compare, applyRandomTests, TestYInstance } from './testHelper.js' // eslint-disable-line
+import { init, compare, applyRandomTests, Doc } from './testHelper.js' // eslint-disable-line
 
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing.js'
@@ -282,7 +282,7 @@ let _uniqueNumber = 0
 const getUniqueNumber = () => _uniqueNumber++
 
 /**
- * @type {Array<function(TestYInstance,prng.PRNG):void>}
+ * @type {Array<function(Doc,prng.PRNG,any):void>}
  */
 const arrayTransactions = [
   function insert (user, gen) {

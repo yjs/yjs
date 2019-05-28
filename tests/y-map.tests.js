@@ -1,4 +1,4 @@
-import { init, compare, applyRandomTests, TestYInstance } from './testHelper.js' // eslint-disable-line
+import { init, compare, applyRandomTests, Doc } from './testHelper.js' // eslint-disable-line
 
 import {
   compareIDs
@@ -328,7 +328,7 @@ export const testYmapEventHasCorrectValueWhenSettingAPrimitiveFromOtherUser = tc
 }
 
 /**
- * @type {Array<function(TestYInstance,prng.PRNG):void>}
+ * @type {Array<function(Doc,prng.PRNG):void>}
  */
 const mapTransactions = [
   function set (user, gen) {

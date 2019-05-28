@@ -1,0 +1,92 @@
+
+import {
+  StructStore, Item, Transaction // eslint-disable-line
+} from '../internals.js'
+
+import * as encoding from 'lib0/encoding.js'
+import * as decoding from 'lib0/decoding.js'
+import * as error from 'lib0/error.js'
+
+/**
+ * @private
+ */
+export class ContentEmbed {
+  /**
+   * @param {Object} embed
+   */
+  constructor (embed) {
+    this.embed = embed
+  }
+  /**
+   * @return {number}
+   */
+  getLength () {
+    return 1
+  }
+  /**
+   * @return {Array<any>}
+   */
+  getContent () {
+    return [this.embed]
+  }
+  /**
+   * @return {boolean}
+   */
+  isCountable () {
+    return true
+  }
+  /**
+   * @return {ContentEmbed}
+   */
+  copy () {
+    return new ContentEmbed(this.embed)
+  }
+  /**
+   * @param {number} offset
+   * @return {ContentEmbed}
+   */
+  splice (offset) {
+    throw error.methodUnimplemented()
+  }
+  /**
+   * @param {ContentEmbed} right
+   * @return {boolean}
+   */
+  mergeWith (right) {
+    return false
+  }
+  /**
+   * @param {Transaction} transaction
+   * @param {Item} item
+   */
+  integrate (transaction, item) {}
+  /**
+   * @param {Transaction} transaction
+   */
+  delete (transaction) {}
+  /**
+   * @param {StructStore} store
+   */
+  gc (store) {}
+  /**
+   * @param {encoding.Encoder} encoder
+   * @param {number} offset
+   */
+  write (encoder, offset) {
+    encoding.writeVarString(encoder, JSON.stringify(this.embed))
+  }
+  /**
+   * @return {number}
+   */
+  getRef () {
+    return 5
+  }
+}
+
+/**
+ * @private
+ *
+ * @param {decoding.Decoder} decoder
+ * @return {ContentEmbed}
+ */
+export const readContentEmbed = decoder => new ContentEmbed(JSON.parse(decoding.readVarString(decoder)))

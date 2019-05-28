@@ -3,7 +3,8 @@ import {
   findIndexSS,
   createID,
   getState,
-  AbstractStruct, AbstractItem, StructStore, Transaction, ID // eslint-disable-line
+  splitItem,
+  Item, AbstractStruct, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as math from 'lib0/math.js'
@@ -11,7 +12,7 @@ import * as map from 'lib0/map.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 
-class DeleteItem {
+export class DeleteItem {
   /**
    * @param {number} clock
    * @param {number} len
@@ -235,13 +236,13 @@ export const readDeleteSet = (decoder, transaction, store) => {
         let index = findIndexSS(structs, clock)
         /**
          * We can ignore the case of GC and Delete structs, because we are going to skip them
-         * @type {AbstractItem}
+         * @type {Item}
          */
         // @ts-ignore
         let struct = structs[index]
         // split the first item if necessary
         if (!struct.deleted && struct.id.clock < clock) {
-          structs.splice(index + 1, 0, struct.splitAt(transaction, clock - struct.id.clock))
+          structs.splice(index + 1, 0, splitItem(transaction, struct, clock - struct.id.clock))
           index++ // increase we now want to use the next struct
         }
         while (index < structs.length) {
@@ -250,7 +251,7 @@ export const readDeleteSet = (decoder, transaction, store) => {
           if (struct.id.clock < clock + len) {
             if (!struct.deleted) {
               if (clock + len < struct.id.clock + struct.length) {
-                structs.splice(index, 0, struct.splitAt(transaction, clock + len - struct.id.clock))
+                structs.splice(index, 0, splitItem(transaction, struct, clock + len - struct.id.clock))
               }
               struct.delete(transaction)
             }

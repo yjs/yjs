@@ -1,7 +1,8 @@
 
 import {
   GC,
-  Transaction, AbstractStructRef, ID, ItemType, AbstractItem, AbstractStruct // eslint-disable-line
+  splitItem,
+  GCRef, ItemRef, Transaction, ID, Item, AbstractStruct // eslint-disable-line
 } from '../internals.js'
 
 import * as math from 'lib0/math.js'
@@ -21,14 +22,14 @@ export class StructStore {
      * We could shift the array of refs instead, but shift is incredible
      * slow in Chrome for arrays with more than 100k elements
      * @see tryResumePendingStructRefs
-     * @type {Map<number,{i:number,refs:Array<AbstractStructRef>}>}
+     * @type {Map<number,{i:number,refs:Array<GCRef|ItemRef>}>}
      * @private
      */
     this.pendingClientsStructRefs = new Map()
     /**
      * Stack of pending structs waiting for struct dependencies
      * Maximum length of stack is structReaders.size
-     * @type {Array<AbstractStructRef>}
+     * @type {Array<GCRef|ItemRef>}
      * @private
      */
     this.pendingStack = []
@@ -169,7 +170,7 @@ export const find = (store, id) => {
  *
  * @param {StructStore} store
  * @param {ID} id
- * @return {AbstractItem}
+ * @return {Item}
  *
  * @private
  * @function
@@ -180,40 +181,20 @@ export const getItem = (store, id) => find(store, id)
 /**
  * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
  *
- * @param {StructStore} store
- * @param {ID} id
- * @return {ItemType}
- *
- * @private
- * @function
- */
-// @ts-ignore
-export const getItemType = (store, id) => find(store, id)
-
-/**
- * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
- *
  * @param {Transaction} transaction
  * @param {StructStore} store
  * @param {ID} id
- * @return {AbstractItem}
+ * @return {Item}
  *
  * @private
  * @function
  */
 export const getItemCleanStart = (transaction, store, id) => {
-  /**
-   * @type {Array<AbstractItem>}
-   */
-  // @ts-ignore
-  const structs = store.clients.get(id.client)
+  const structs = /** @type {Array<Item>} */ (store.clients.get(id.client))
   const index = findIndexSS(structs, id.clock)
-  /**
-   * @type {AbstractItem}
-   */
   let struct = structs[index]
   if (struct.id.clock < id.clock && struct.constructor !== GC) {
-    struct = struct.splitAt(transaction, id.clock - struct.id.clock)
+    struct = splitItem(transaction, struct, id.clock - struct.id.clock)
     structs.splice(index + 1, 0, struct)
   }
   return struct
@@ -225,21 +206,21 @@ export const getItemCleanStart = (transaction, store, id) => {
  * @param {Transaction} transaction
  * @param {StructStore} store
  * @param {ID} id
- * @return {AbstractItem}
+ * @return {Item}
  *
  * @private
  * @function
  */
 export const getItemCleanEnd = (transaction, store, id) => {
   /**
-   * @type {Array<AbstractItem>}
+   * @type {Array<Item>}
    */
   // @ts-ignore
   const structs = store.clients.get(id.client)
   const index = findIndexSS(structs, id.clock)
   const struct = structs[index]
   if (id.clock !== struct.id.clock + struct.length - 1 && struct.constructor !== GC) {
-    structs.splice(index + 1, 0, struct.splitAt(transaction, id.clock - struct.id.clock + 1))
+    structs.splice(index + 1, 0, splitItem(transaction, struct, id.clock - struct.id.clock + 1))
   }
   return struct
 }
@@ -254,10 +235,6 @@ export const getItemCleanEnd = (transaction, store, id) => {
  * @function
  */
 export const replaceStruct = (store, struct, newStruct) => {
-  /**
-   * @type {Array<AbstractStruct>}
-   */
-  // @ts-ignore
-  const structs = store.clients.get(struct.id.client)
+  const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(struct.id.client))
   structs[findIndexSS(structs, struct.id.clock)] = newStruct
 }
