@@ -86,9 +86,7 @@ import { WebsocketProvider } from 'y-websocket'
 import { TextareaBinding } from 'y-textarea'
 
 const doc = Y.Doc()
-const provider = new WebsocketProvider('http://localhost:1234', 'roomname')
-// sync all document updates through the websocket connection
-provider.sync('doc')
+const provider = new WebsocketProvider('ws://localhost:1234', 'roomname', doc)
 
 // Define a shared type on the document.
 const ytext = doc.getText('my resume')
