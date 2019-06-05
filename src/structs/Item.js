@@ -138,6 +138,9 @@ export class Item extends AbstractStruct {
      * @type {Item | null}
      */
     this.redone = null
+    /**
+     * @type {AbstractContent}
+     */
     this.content = content
     this.length = content.getLength()
     this.countable = content.isCountable()

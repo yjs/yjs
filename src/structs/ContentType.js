@@ -44,6 +44,9 @@ export class ContentType {
    * @param {AbstractType<YEvent>} type
    */
   constructor (type) {
+    /**
+     * @type {AbstractType<any>}
+     */
     this.type = type
   }
   /**
