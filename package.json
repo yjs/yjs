@@ -10,7 +10,7 @@
     "test-exhaustive": "npm run lint && npm run dist && node ./dist/tests.js --repitition-time 10000",
     "dist": "rm -rf dist && rollup -c",
     "watch": "rollup -wc",
-    "lint": "standard && tsc",
+    "lint": "markdownlint README.v13.md && standard && tsc",
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.v13.md --package ./package.json || true",
     "serve-docs": "npm run docs && serve ./docs/",
     "preversion": "npm run lint && PRODUCTION=1 npm run dist && npm run docs && node ./dist/tests.js --repitition-time 1000",

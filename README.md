@@ -10,6 +10,7 @@ and tutorials visit [y-js.org](http://y-js.org/).
 
 ### Extensions
 Yjs only knows how to resolve conflicts on shared data. You have to choose a ..
+
 * *Connector* - a communication protocol that propagates changes to the clients
 * *Database* - a database to store your changes
 * one or more *Types* - that represent the shared data
@@ -35,7 +36,6 @@ is a list of the modules we know of:
 |[indexeddb](https://github.com/y-js/y-indexeddb) | Offline storage for the browser |
 |[leveldb](https://github.com/y-js/y-leveldb) | Persistent storage for node apps |
 
-
 ##### Types
 
 | Name     | Description       |
@@ -57,6 +57,7 @@ Install Yjs, and its modules with [bower](http://bower.io/), or
 [npm](https://www.npmjs.org/package/yjs).
 
 ### Bower
+
 ```
 bower install --save yjs y-array % add all y-* modules you want to use
 ```
@@ -67,6 +68,7 @@ missing modules.
 ```
 
 ### CDN
+
 ```
 <script src="https://cdn.jsdelivr.net/npm/yjs@12/dist/y.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/y-array@10/dist/y-array.js"></script>
@@ -79,6 +81,7 @@ missing modules.
 ```
 
 ### Npm
+
 ```
 npm install --save yjs % add all y-* modules you want to use
 ```
@@ -97,6 +100,7 @@ require('y-text')(Y)
 ```
 
 ### ES6 Syntax
+
 ```
 import Y from 'yjs'
 import yArray from 'y-array'
@@ -109,6 +113,7 @@ Y.extend(yArray, yWebsocketsClient, yMemory, yArray, yMap, yText /*, .. */)
 ```
 
 # Text editing example
+
 Install dependencies
 ```
 bower i yjs y-memory y-webrtc y-array y-text
