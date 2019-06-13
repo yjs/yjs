@@ -226,7 +226,7 @@ const insertAttributes = (transaction, parent, left, right, currentAttributes, a
  * @param {Item|null} left
  * @param {Item|null} right
  * @param {Map<string,any>} currentAttributes
- * @param {string} text
+ * @param {string|object} text
  * @param {Object<string,any>} attributes
  * @return {ItemListPosition}
  *
@@ -298,6 +298,17 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
     }
     left = right
     right = right.right
+  }
+  // Quill just assumes that the editor starts with a newline and that it always
+  // ends with a newline. We only insert that newline when a new newline is
+  // inserted - i.e when length is bigger than type.length
+  if (length > 0) {
+    let newlines = ''
+    for (; length > 0; length--) {
+      newlines += '\n'
+    }
+    left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentString(newlines))
+    left.integrate(transaction)
   }
   return insertNegatedAttributes(transaction, parent, left, right, negatedAttributes)
 }
@@ -664,7 +675,15 @@ export class YText extends AbstractType {
         for (let i = 0; i < delta.length; i++) {
           const op = delta[i]
           if (op.insert !== undefined) {
-            pos = insertText(transaction, this, pos.left, pos.right, currentAttributes, op.insert, op.attributes || {})
+            // Quill assumes that the content starts with an empty paragraph.
+            // Yjs/Y.Text assumes that it starts empty. We always hide that
+            // there is a newline at the end of the content.
+            // If we omit this step, clients will see a different number of
+            // paragraphs, but nothing bad will happen.
+            const ins = (typeof op.insert === 'string' && i === delta.length - 1 && pos.right === null && op.insert.slice(-1) === '\n') ? op.insert.slice(0, -1) : op.insert
+            if (typeof ins !== 'string' || ins.length > 0) {
+              pos = insertText(transaction, this, pos.left, pos.right, currentAttributes, ins, op.attributes || {})
+            }
           } else if (op.retain !== undefined) {
             pos = formatText(transaction, this, pos.left, pos.right, currentAttributes, op.retain, op.attributes || {})
           } else if (op.delete !== undefined) {

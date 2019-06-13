@@ -282,7 +282,7 @@ export const compare = users => {
     t.compare(userArrayValues[i], userArrayValues[i + 1])
     t.compare(userMapValues[i], userMapValues[i + 1])
     t.compare(userXmlValues[i], userXmlValues[i + 1])
-    t.compare(userTextValues[i].map(/** @param {any} a */ a => a.insert).join('').length, users[i].getText('text').length)
+    t.compare(userTextValues[i].map(/** @param {any} a */ a => typeof a.insert === 'string' ? a.insert : ' ').join('').length, users[i].getText('text').length)
     t.compare(userTextValues[i], userTextValues[i + 1])
     t.compare(getStateVector(users[i].store), getStateVector(users[i + 1].store))
     compareDS(createDeleteSetFromStructStore(users[i].store), createDeleteSetFromStructStore(users[i + 1].store))
