@@ -24,7 +24,7 @@ import * as decoding from 'lib0/decoding.js'
 export class YXmlElement extends YXmlFragment {
   constructor (nodeName = 'UNDEFINED') {
     super()
-    this.nodeName = nodeName.toUpperCase()
+    this.nodeName = nodeName
     /**
      * @type {Map<string, any>|null}
      * @private

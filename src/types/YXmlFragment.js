@@ -169,7 +169,7 @@ export class YXmlFragment extends AbstractType {
   querySelector (query) {
     query = query.toUpperCase()
     // @ts-ignore
-    const iterator = new YXmlTreeWalker(this, element => element.nodeName === query)
+    const iterator = new YXmlTreeWalker(this, element => element.nodeName && element.nodeName.toUpperCase() === query)
     const next = iterator.next()
     if (next.done) {
       return null
@@ -192,7 +192,7 @@ export class YXmlFragment extends AbstractType {
   querySelectorAll (query) {
     query = query.toUpperCase()
     // @ts-ignore
-    return Array.from(new YXmlTreeWalker(this, element => element.nodeName === query))
+    return Array.from(new YXmlTreeWalker(this, element => element.nodeName && element.nodeName.toUpperCase() === query))
   }
 
   /**
