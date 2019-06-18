@@ -624,6 +624,7 @@ export class ItemRef extends AbstractStructRef {
       this.id = createID(id.client, id.clock + offset)
       this.left = createID(this.id.client, this.id.clock - 1)
       this.content = this.content.splice(offset)
+      this.length -= offset
     }
 
     const left = this.left === null ? null : getItemCleanEnd(transaction, store, this.left)
