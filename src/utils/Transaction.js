@@ -16,6 +16,7 @@ import {
 import * as encoding from 'lib0/encoding.js'
 import * as map from 'lib0/map.js'
 import * as math from 'lib0/math.js'
+import * as set from 'lib0/set.js'
 
 /**
  * A transaction is created for every change on the Yjs model. It is possible
@@ -118,6 +119,21 @@ export const nextID = transaction => {
 }
 
 /**
+ * If `type.parent` was added in current transaction, `type` technically
+ * did not change, it was just added and we should not fire events for `type`.
+ *
+ * @param {Transaction} transaction
+ * @param {AbstractType<YEvent>} type
+ * @param {string|null} parentSub
+ */
+export const addChangedTypeToTransaction = (transaction, type, parentSub) => {
+  const item = type._item
+  if (item === null || (item.id.clock < (transaction.beforeState.get(item.id.client) || 0) && !item.deleted)) {
+    map.setIfUndefined(transaction.changed, type, set.create).add(parentSub)
+  }
+}
+
+/**
  * Implements the functionality of `y.transact(()=>{..})`
  *
  * @param {Doc} doc
@@ -153,20 +169,26 @@ export const transact = (doc, f, origin = null) => {
         doc.emit('beforeObserverCalls', [transaction, doc])
         // emit change events on changed types
         transaction.changed.forEach((subs, itemtype) => {
-          itemtype._callObserver(transaction, subs)
+          if (itemtype._item === null || !itemtype._item.deleted) {
+            itemtype._callObserver(transaction, subs)
+          }
         })
         transaction.changedParentTypes.forEach((events, type) => {
-          events = events
-            .filter(event =>
-              event.target._item === null || !event.target._item.deleted
-            )
-          events
-            .forEach(event => {
-              event.currentTarget = type
-            })
-          // we don't need to check for events.length
-          // because we know it has at least one element
-          callEventHandlerListeners(type._dEH, events, transaction)
+          // We need to think about the possibility that the user transforms the
+          // Y.Doc in the event.
+          if (type._item === null || !type._item.deleted) {
+            events = events
+              .filter(event =>
+                event.target._item === null || !event.target._item.deleted
+              )
+            events
+              .forEach(event => {
+                event.currentTarget = type
+              })
+            // We don't need to check for events.length
+            // because we know it has at least one element
+            callEventHandlerListeners(type._dEH, events, transaction)
+          }
         })
         doc.emit('afterTransaction', [transaction, doc])
         /**

@@ -22,6 +22,7 @@ import {
   readContentEmbed,
   readContentFormat,
   readContentType,
+  addChangedTypeToTransaction,
   ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction // eslint-disable-line
 } from '../internals.js'
 
@@ -237,7 +238,8 @@ export class Item extends AbstractStruct {
     }
     addStruct(store, this)
     this.content.integrate(transaction, this)
-    maplib.setIfUndefined(transaction.changed, parent, set.create).add(parentSub)
+    // add parent to transaction.changed
+    addChangedTypeToTransaction(transaction, parent, parentSub)
     if ((parent._item !== null && parent._item.deleted) || (this.right !== null && parentSub !== null)) {
       // delete if parent is deleted or if this is not the current attribute value of parent
       this.delete(transaction)

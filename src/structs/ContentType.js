@@ -120,7 +120,6 @@ export class ContentType {
       }
     })
     transaction.changed.delete(this.type)
-    transaction.changedParentTypes.delete(this.type)
   }
   /**
    * @param {StructStore} store

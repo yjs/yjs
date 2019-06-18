@@ -211,6 +211,24 @@ export const testInsertAndDeleteEventsForTypes2 = tc => {
 }
 
 /**
+ * This issue has been reported here https://github.com/y-js/yjs/issues/155
+ * @param {t.TestCase} tc
+ */
+export const testNewChildDoesNotEmitEventInTransaction = tc => {
+  const { array0, users } = init(tc, { users: 2 })
+  let fired = false
+  users[0].transact(() => {
+    const newMap = new Y.Map()
+    newMap.observe(() => {
+      fired = true
+    })
+    array0.insert(0, [newMap])
+    newMap.set('tst', 42)
+  })
+  t.assert(!fired, 'Event does not trigger')
+}
+
+/**
  * @param {t.TestCase} tc
  */
 export const testGarbageCollector = tc => {
