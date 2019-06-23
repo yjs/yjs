@@ -9,6 +9,9 @@ import * as decoding from 'lib0/decoding.js' // eslint-disable-line
  * simple formatting information like bold and italic.
  */
 export class YXmlText extends YText {
+  _copy () {
+    return new YXmlText()
+  }
   /**
    * Creates a Dom Element that mirrors this YXmlText.
    *

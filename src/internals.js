@@ -6,7 +6,7 @@ export * from './utils/RelativePosition.js'
 export * from './utils/Snapshot.js'
 export * from './utils/StructStore.js'
 export * from './utils/Transaction.js'
-// export * from './utils/UndoManager.js'
+export * from './utils/UndoManager.js'
 export * from './utils/Doc.js'
 export * from './utils/YEvent.js'
 

@@ -68,6 +68,11 @@ export class YArray extends AbstractType {
     this.insert(0, /** @type {Array} */ (this._prelimContent))
     this._prelimContent = null
   }
+
+  _copy () {
+    return new YArray()
+  }
+
   get length () {
     return this._prelimContent === null ? this._length : this._prelimContent.length
   }

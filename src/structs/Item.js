@@ -34,6 +34,21 @@ import * as set from 'lib0/set.js'
 import * as binary from 'lib0/binary.js'
 
 /**
+ * Make sure that neither item nor any of its parents is ever deleted.
+ *
+ * This property does not persist when storing it into a database or when
+ * sending it to other peers
+ *
+ * @param {Item|null} item
+ */
+export const keepItem = item => {
+  while (item !== null && !item.keep) {
+    item.keep = true
+    item = item.parent._item
+  }
+}
+
+/**
  * Split leftItem into two items
  * @param {Transaction} transaction
  * @param {Item} leftItem
@@ -59,6 +74,9 @@ export const splitItem = (transaction, leftItem, diff) => {
   if (leftItem.deleted) {
     rightItem.deleted = true
   }
+  if (leftItem.keep) {
+    rightItem.keep = true
+  }
   // update left (do not set leftItem.rightOrigin as it will lead to problems when syncing)
   leftItem.right = rightItem
   // update right
@@ -73,6 +91,106 @@ export const splitItem = (transaction, leftItem, diff) => {
   }
   leftItem.length = diff
   return rightItem
+}
+
+/**
+ * Redoes the effect of this operation.
+ *
+ * @param {Transaction} transaction The Yjs instance.
+ * @param {Item} item
+ * @param {Set<Item>} redoitems
+ *
+ * @return {Item|null}
+ *
+ * @private
+ */
+export const redoItem = (transaction, item, redoitems) => {
+  if (item.redone !== null) {
+    return item.redone
+  }
+  let parentItem = item.parent._item
+  /**
+   * @type {Item|null}
+   */
+  let left
+  /**
+   * @type {Item|null}
+   */
+  let right
+  if (item.parentSub === null) {
+    // Is an array item. Insert at the old position
+    left = item.left
+    right = item
+  } else {
+    // Is a map item. Insert as current value
+    left = item
+    while (left.right !== null) {
+      left = left.right
+      if (left.id.client !== transaction.doc.clientID) {
+        // It is not possible to redo this item because it conflicts with a
+        // change from another client
+        return null
+      }
+    }
+    if (left.right !== null) {
+      left = /** @type {Item} */ (item.parent._map.get(item.parentSub))
+    }
+    right = null
+  }
+  // make sure that parent is redone
+  if (parentItem !== null && parentItem.deleted === true && parentItem.redone === null) {
+    // try to undo parent if it will be undone anyway
+    if (!redoitems.has(parentItem) || redoItem(transaction, parentItem, redoitems) === null) {
+      return null
+    }
+  }
+  if (parentItem !== null && parentItem.redone !== null) {
+    while (parentItem.redone !== null) {
+      parentItem = parentItem.redone
+    }
+    // find next cloned_redo items
+    while (left !== null) {
+      /**
+       * @type {Item|null}
+       */
+      let leftTrace = left
+      // trace redone until parent matches
+      while (leftTrace !== null && leftTrace.parent._item !== parentItem) {
+        leftTrace = leftTrace.redone
+      }
+      if (leftTrace !== null && leftTrace.parent._item === parentItem) {
+        left = leftTrace
+        break
+      }
+      left = left.left
+    }
+    while (right !== null) {
+      /**
+       * @type {Item|null}
+       */
+      let rightTrace = right
+      // trace redone until parent matches
+      while (rightTrace !== null && rightTrace.parent._item !== parentItem) {
+        rightTrace = rightTrace.redone
+      }
+      if (rightTrace !== null && rightTrace.parent._item === parentItem) {
+        right = rightTrace
+        break
+      }
+      right = right.right
+    }
+  }
+  const redoneItem = new Item(
+    nextID(transaction),
+    left, left === null ? null : left.lastId,
+    right, right === null ? null : right.id,
+    parentItem === null ? item.parent : /** @type {ContentType} */ (parentItem.content).type,
+    item.parentSub,
+    item.content.copy()
+  )
+  item.redone = redoneItem
+  redoneItem.integrate(transaction)
+  return redoneItem
 }
 
 /**
@@ -145,6 +263,10 @@ export class Item extends AbstractStruct {
     this.content = content
     this.length = content.getLength()
     this.countable = content.isCountable()
+    /**
+     * If true, do not garbage collect this Item.
+     */
+    this.keep = false
   }
 
   /**
@@ -271,66 +393,6 @@ export class Item extends AbstractStruct {
   }
 
   /**
-   * Redoes the effect of this operation.
-   *
-   * @param {Transaction} transaction The Yjs instance.
-   * @param {Set<Item>} redoitems
-   *
-   * @private
-   */
-  redo (transaction, redoitems) {
-    if (this.redone !== null) {
-      return this.redone
-    }
-    /**
-     * @type {any}
-     */
-    let parent = this.parent
-    if (parent === null) {
-      return
-    }
-    let left, right
-    if (this.parentSub === null) {
-      // Is an array item. Insert at the old position
-      left = this.left
-      right = this
-    } else {
-      // Is a map item. Insert as current value
-      left = parent.type._map.get(this.parentSub)
-      right = null
-    }
-    // make sure that parent is redone
-    if (parent._deleted === true && parent.redone === null) {
-      // try to undo parent if it will be undone anyway
-      if (!redoitems.has(parent) || !parent.redo(transaction, redoitems)) {
-        return false
-      }
-    }
-    if (parent.redone !== null) {
-      while (parent.redone !== null) {
-        parent = parent.redone
-      }
-      // find next cloned_redo items
-      while (left !== null) {
-        if (left.redone !== null && left.redone.parent === parent) {
-          left = left.redone
-          break
-        }
-        left = left.left
-      }
-      while (right !== null) {
-        if (right.redone !== null && right.redone.parent === parent) {
-          right = right.redone
-        }
-        right = right.right
-      }
-    }
-    this.redone = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, this.parentSub, this.content.copy())
-    this.redone.integrate(transaction)
-    return true
-  }
-
-  /**
    * Computes the last content address of this Item.
    */
   get lastId () {
@@ -350,9 +412,14 @@ export class Item extends AbstractStruct {
       this.id.client === right.id.client &&
       this.id.clock + this.length === right.id.clock &&
       this.deleted === right.deleted &&
+      this.redone === null &&
+      right.redone === null &&
       this.content.constructor === right.content.constructor &&
       this.content.mergeWith(right.content)
     ) {
+      if (right.keep) {
+        this.keep = true
+      }
       this.right = right.right
       if (this.right !== null) {
         this.right.left = this

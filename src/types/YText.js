@@ -625,6 +625,10 @@ export class YText extends AbstractType {
     this._pending = null
   }
 
+  _copy () {
+    return new YText()
+  }
+
   /**
    * Creates YTextEvent and calls observers.
    *

@@ -14,7 +14,7 @@ import {
   YXmlFragmentRefID,
   callTypeObservers,
   transact,
-  ContentType, Transaction, Item, YXmlText, YXmlHook, Snapshot // eslint-disable-line
+  Doc, ContentType, Transaction, Item, YXmlText, YXmlHook, Snapshot // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -130,6 +130,27 @@ export class YXmlFragment extends AbstractType {
      */
     this._prelimContent = []
   }
+  /**
+   * Integrate this type into the Yjs instance.
+   *
+   * * Save this struct in the os
+   * * This type is sent to other client
+   * * Observer functions are fired
+   *
+   * @param {Doc} y The Yjs instance
+   * @param {Item} item
+   * @private
+   */
+  _integrate (y, item) {
+    super._integrate(y, item)
+    this.insert(0, /** @type {Array} */ (this._prelimContent))
+    this._prelimContent = null
+  }
+
+  _copy () {
+    return new YXmlFragment()
+  }
+
   /**
    * Create a subtree of childNodes.
    *

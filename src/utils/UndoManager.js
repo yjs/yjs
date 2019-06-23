@@ -1,202 +1,207 @@
-// @ts-nocheck
-
 import {
+  mergeDeleteSets,
+  iterateDeletedStructs,
+  keepItem,
+  transact,
+  redoItem,
+  iterateStructs,
   isParentOf,
-  createID,
-  transact
+  Doc, Item, GC, DeleteSet, AbstractType // eslint-disable-line
 } from '../internals.js'
 
-/**
- * @private
- */
-class ReverseOperation {
-  constructor (y, transaction, bindingInfos) {
-    this.created = new Date()
-    const beforeState = transaction.beforeState
-    if (beforeState.has(y.userID)) {
-      this.toState = createID(y.userID, y.ss.getState(y.userID) - 1)
-      this.fromState = createID(y.userID, beforeState.get(y.userID))
-    } else {
-      this.toState = null
-      this.fromState = null
-    }
-    this.deletedStructs = new Set()
-    transaction.deletedStructs.forEach(struct => {
-      this.deletedStructs.add({
-        from: struct._id,
-        len: struct._length
-      })
-    })
+import * as time from 'lib0/time.js'
+import { Observable } from 'lib0/observable'
+
+class StackItem {
+  /**
+   * @param {DeleteSet} ds
+   * @param {number} start clock start of the local client
+   * @param {number} len
+   */
+  constructor (ds, start, len) {
+    this.ds = ds
+    this.start = start
+    this.len = len
     /**
-     * Maps from binding to binding information (e.g. cursor information)
+     * Use this to save and restore metadata like selection range
      */
-    this.bindingInfos = bindingInfos
+    this.meta = new Map()
   }
 }
 
 /**
- * @private
- * @function
+ * @param {UndoManager} undoManager
+ * @param {Array<StackItem>} stack
+ * @param {string} eventType
+ * @return {StackItem?}
  */
-function applyReverseOperation (y, scope, reverseBuffer) {
-  let performedUndo = false
-  let undoOp = null
-  transact(y, () => {
-    while (!performedUndo && reverseBuffer.length > 0) {
-      undoOp = reverseBuffer.pop()
-      // make sure that it is possible to iterate {from}-{to}
-      if (undoOp.fromState !== null) {
-        y.os.getItemCleanStart(undoOp.fromState)
-        y.os.getItemCleanEnd(undoOp.toState)
-        y.os.iterate(undoOp.fromState, undoOp.toState, op => {
-          while (op._deleted && op._redone !== null) {
-            op = op._redone
-          }
-          if (op._deleted === false && isParentOf(scope, op)) {
-            performedUndo = true
-            op._delete(y)
-          }
-        })
-      }
-      const redoitems = new Set()
-      for (let del of undoOp.deletedStructs) {
-        const fromState = del.from
-        const toState = createID(fromState.user, fromState.clock + del.len - 1)
-        y.os.getItemCleanStart(fromState)
-        y.os.getItemCleanEnd(toState)
-        y.os.iterate(fromState, toState, op => {
-          if (
-            isParentOf(scope, op) &&
-            op._parent !== y &&
-            (
-              op._id.user !== y.userID ||
-              undoOp.fromState === null ||
-              op._id.clock < undoOp.fromState.clock ||
-              op._id.clock > undoOp.toState.clock
-            )
-          ) {
-            redoitems.add(op)
-          }
-        })
-      }
-      redoitems.forEach(op => {
-        const opUndone = op._redo(y, redoitems)
-        performedUndo = performedUndo || opUndone
-      })
-    }
-  })
-  if (performedUndo && undoOp !== null) {
-    // should be performed after the undo transaction
-    undoOp.bindingInfos.forEach((info, binding) => {
-      binding._restoreUndoStackInfo(info)
-    })
-  }
-  return performedUndo
-}
-
-/**
- * Saves a history of locally applied operations. The UndoManager handles the
- * undoing and redoing of locally created changes.
- *
- * @private
- * @function
- */
-export class UndoManager {
+const popStackItem = (undoManager, stack, eventType) => {
   /**
-   * @param {YType} scope The scope on which to listen for changes.
-   * @param {Object} options Optionally provided configuration.
+   * Whether a change happened
+   * @type {StackItem?}
    */
-  constructor (scope, options = {}) {
-    this.options = options
-    this._bindings = new Set(options.bindings)
-    options.captureTimeout = options.captureTimeout == null ? 500 : options.captureTimeout
-    this._undoBuffer = []
-    this._redoBuffer = []
-    this._scope = scope
-    this._undoing = false
-    this._redoing = false
-    this._lastTransactionWasUndo = false
-    const doc = scope.doc
-    this.y = doc
-    let bindingInfos
-    doc.on('beforeTransaction', (y, transaction, remote) => {
-      if (!remote) {
-        // Store binding information before transaction is executed
-        // By restoring the binding information, we can make sure that the state
-        // before the transaction can be recovered
-        bindingInfos = new Map()
-        this._bindings.forEach(binding => {
-          bindingInfos.set(binding, binding._getUndoStackInfo())
-        })
-      }
-    })
-    doc.on('afterTransaction', (y, transaction, remote) => {
-      if (!remote && transaction.changedParentTypes.has(scope)) {
-        let reverseOperation = new ReverseOperation(y, transaction, bindingInfos)
-        if (!this._undoing) {
-          let lastUndoOp = this._undoBuffer.length > 0 ? this._undoBuffer[this._undoBuffer.length - 1] : null
-          if (
-            this._redoing === false &&
-            this._lastTransactionWasUndo === false &&
-            lastUndoOp !== null &&
-            ((options.captureTimeout < 0) || (reverseOperation.created.getTime() - lastUndoOp.created.getTime()) <= options.captureTimeout)
-          ) {
-            lastUndoOp.created = reverseOperation.created
-            if (reverseOperation.toState !== null) {
-              lastUndoOp.toState = reverseOperation.toState
-              if (lastUndoOp.fromState === null) {
-                lastUndoOp.fromState = reverseOperation.fromState
-              }
-            }
-            reverseOperation.deletedStructs.forEach(lastUndoOp.deletedStructs.add, lastUndoOp.deletedStructs)
-          } else {
-            this._lastTransactionWasUndo = false
-            this._undoBuffer.push(reverseOperation)
-          }
-          if (!this._redoing) {
-            this._redoBuffer = []
-          }
-        } else {
-          this._lastTransactionWasUndo = true
-          this._redoBuffer.push(reverseOperation)
+  let result = null
+  const doc = undoManager.doc
+  const type = undoManager.type
+  transact(doc, transaction => {
+    while (stack.length > 0 && result === null) {
+      const store = doc.store
+      const stackItem = /** @type {StackItem} */ (stack.pop())
+      const itemsToRedo = new Set()
+      let performedChange = false
+      iterateDeletedStructs(transaction, stackItem.ds, store, struct => {
+        if (struct instanceof Item && isParentOf(type, struct)) {
+          itemsToRedo.add(struct)
         }
+      })
+      itemsToRedo.forEach(item => {
+        performedChange = redoItem(transaction, item, itemsToRedo) !== null || performedChange
+      })
+      const structs = /** @type {Array<GC|Item>} */ (store.clients.get(doc.clientID))
+      iterateStructs(transaction, structs, stackItem.start, stackItem.len, struct => {
+        if (!struct.deleted && isParentOf(type, /** @type {Item} */ (struct))) {
+          struct.delete(transaction)
+          performedChange = true
+        }
+      })
+      result = stackItem
+    }
+  }, undoManager)
+  if (result != null) {
+    undoManager.emit('stack-item-popped', [{ stackItem: result, type: eventType }, undoManager])
+  }
+  return result
+}
+
+/**
+ * Fires 'stack-item-added' event when a stack item was added to either the undo- or
+ * the redo-stack. You may store additional stack information via the
+ * metadata property on `event.stackItem.metadata` (it is a `Map` of metadata properties).
+ * Fires 'stack-item-popped' event when a stack item was popped from either the
+ * undo- or the redo-stack. You may restore the saved stack information from `event.stackItem.metadata`.
+ *
+ * @extends {Observable<'stack-item-added'|'stack-item-popped'>}
+ */
+export class UndoManager extends Observable {
+  /**
+   * @param {AbstractType<any>} type
+   * @param {Set<any>} [trackedTransactionOrigins=new Set([null])]
+   * @param {object} [options={captureTimeout=500}]
+   */
+  constructor (type, trackedTransactionOrigins = new Set([null]), { captureTimeout = 500 } = {}) {
+    super()
+    this.type = type
+    trackedTransactionOrigins.add(this)
+    this.trackedTransactionOrigins = trackedTransactionOrigins
+    /**
+     * @type {Array<StackItem>}
+     */
+    this.undoStack = []
+    /**
+     * @type {Array<StackItem>}
+     */
+    this.redoStack = []
+    /**
+     * Whether the client is currently undoing (calling UndoManager.undo)
+     *
+     * @type {boolean}
+     */
+    this.undoing = false
+    this.redoing = false
+    this.doc = /** @type {Doc} */ (type.doc)
+    this.lastChange = 0
+    type.observeDeep((events, transaction) => {
+      // Only track certain transactions
+      if (!this.trackedTransactionOrigins.has(transaction.origin) && (!transaction.origin || !this.trackedTransactionOrigins.has(transaction.origin.constructor))) {
+        return
       }
+      const undoing = this.undoing
+      const redoing = this.redoing
+      const stack = undoing ? this.redoStack : this.undoStack
+      if (undoing) {
+        this.stopCapturing() // next undo should not be appended to last stack item
+      } else if (!redoing) {
+        // neither undoing nor redoing: delete redoStack
+        this.redoStack = []
+      }
+      const beforeState = transaction.beforeState.get(this.doc.clientID) || 0
+      const afterState = transaction.afterState.get(this.doc.clientID) || 0
+      const now = time.getUnixTime()
+      if (now - this.lastChange < captureTimeout && stack.length > 0 && !undoing && !redoing) {
+        // append change to last stack op
+        const lastOp = stack[stack.length - 1]
+        lastOp.ds = mergeDeleteSets(lastOp.ds, transaction.deleteSet)
+        lastOp.len = afterState - lastOp.start
+      } else {
+        // create a new stack op
+        stack.push(new StackItem(transaction.deleteSet, beforeState, afterState - beforeState))
+      }
+      if (!undoing && !redoing) {
+        this.lastChange = now
+      }
+      // make sure that deleted structs are not gc'd
+      iterateDeletedStructs(transaction, transaction.deleteSet, transaction.doc.store, /** @param {Item|GC} item */ item => {
+        if (item instanceof Item && isParentOf(type, item)) {
+          keepItem(item)
+        }
+      })
+      this.emit('stack-item-added', [{ stackItem: stack[stack.length - 1], origin: transaction.origin, type: undoing ? 'redo' : 'undo' }, this])
     })
   }
 
   /**
-   * Enforce that the next change is created as a separate item in the undo stack
+   * UndoManager merges Undo-StackItem if they are created within time-gap
+   * smaller than `options.captureTimeout`. Call `um.stopCapturing()` so that the next
+   * StackItem won't be merged.
    *
-   * @private
-   * @function
+   *
+   * @example
+   *     // without stopCapturing
+   *     ytext.insert(0, 'a')
+   *     ytext.insert(1, 'b')
+   *     um.undo()
+   *     ytext.toString() // => '' (note that 'ab' was removed)
+   *     // with stopCapturing
+   *     ytext.insert(0, 'a')
+   *     um.stopCapturing()
+   *     ytext.insert(0, 'b')
+   *     um.undo()
+   *     ytext.toString() // => 'a' (note that only 'b' was removed)
+   *
    */
-  flushChanges () {
-    this._lastTransactionWasUndo = true
+  stopCapturing () {
+    this.lastChange = 0
   }
 
   /**
-   * Undo the last locally created change.
+   * Undo last changes on type.
    *
-   * @private
-   * @function
+   * @return {StackItem?} Returns StackItem if a change was applied
    */
   undo () {
-    this._undoing = true
-    const performedUndo = applyReverseOperation(this.y, this._scope, this._undoBuffer)
-    this._undoing = false
-    return performedUndo
+    this.undoing = true
+    let res
+    try {
+      res = popStackItem(this, this.undoStack, 'undo')
+    } finally {
+      this.undoing = false
+    }
+    return res
   }
 
   /**
-   * Redo the last locally created change.
+   * Redo last undo operation.
    *
-   * @private
-   * @function
+   * @return {StackItem?} Returns StackItem if a change was applied
    */
   redo () {
-    this._redoing = true
-    const performedRedo = applyReverseOperation(this.y, this._scope, this._redoBuffer)
-    this._redoing = false
-    return performedRedo
+    this.redoing = true
+    let res
+    try {
+      res = popStackItem(this, this.redoStack, 'redo')
+    } finally {
+      this.redoing = false
+    }
+    return res
   }
 }

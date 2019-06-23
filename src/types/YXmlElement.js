@@ -45,12 +45,10 @@ export class YXmlElement extends YXmlFragment {
    */
   _integrate (y, item) {
     super._integrate(y, item)
-    this.insert(0, /** @type {Array} */ (this._prelimContent))
-    this._prelimContent = null
     ;(/** @type {Map<string, any>} */ (this._prelimAttrs)).forEach((value, key) => {
       this.setAttribute(key, value)
     })
-    this._prelimContent = null
+    this._prelimAttrs = null
   }
 
   /**

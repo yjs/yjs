@@ -27,6 +27,7 @@ export class Doc extends Observable {
    */
   constructor (conf = {}) {
     super()
+    this.gc = conf.gc || true
     this.clientID = random.uint32()
     /**
      * @type {Map<string, AbstractType<YEvent>>}

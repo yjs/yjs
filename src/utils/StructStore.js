@@ -2,7 +2,7 @@
 import {
   GC,
   splitItem,
-  GCRef, ItemRef, Transaction, ID, Item, AbstractStruct // eslint-disable-line
+  GCRef, ItemRef, Transaction, ID, Item // eslint-disable-line
 } from '../internals.js'
 
 import * as math from 'lib0/math.js'
@@ -12,7 +12,7 @@ import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 export class StructStore {
   constructor () {
     /**
-     * @type {Map<number,Array<AbstractStruct>>}
+     * @type {Map<number,Array<GC|Item>>}
      * @private
      */
     this.clients = new Map()
@@ -97,7 +97,7 @@ export const integretyCheck = store => {
 
 /**
  * @param {StructStore} store
- * @param {AbstractStruct} struct
+ * @param {GC|Item} struct
  *
  * @private
  * @function
@@ -151,14 +151,14 @@ export const findIndexSS = (structs, clock) => {
  *
  * @param {StructStore} store
  * @param {ID} id
- * @return {AbstractStruct}
+ * @return {GC|Item}
  *
  * @private
  * @function
  */
 export const find = (store, id) => {
   /**
-   * @type {Array<AbstractStruct>}
+   * @type {Array<GC|Item>}
    */
   // @ts-ignore
   const structs = store.clients.get(id.client)
@@ -179,6 +179,21 @@ export const find = (store, id) => {
 export const getItem = (store, id) => find(store, id)
 
 /**
+ * @param {Transaction} transaction
+ * @param {Array<Item|GC>} structs
+ * @param {number} clock
+ */
+export const findIndexCleanStart = (transaction, structs, clock) => {
+  const index = findIndexSS(structs, clock)
+  let struct = structs[index]
+  if (struct.id.clock < clock && struct instanceof Item) {
+    structs.splice(index + 1, 0, splitItem(transaction, struct, clock - struct.id.clock))
+    return index + 1
+  }
+  return index
+}
+
+/**
  * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
  *
  * @param {Transaction} transaction
@@ -190,14 +205,8 @@ export const getItem = (store, id) => find(store, id)
  * @function
  */
 export const getItemCleanStart = (transaction, store, id) => {
-  const structs = /** @type {Array<Item>} */ (store.clients.get(id.client))
-  const index = findIndexSS(structs, id.clock)
-  let struct = structs[index]
-  if (struct.id.clock < id.clock && struct.constructor !== GC) {
-    struct = splitItem(transaction, struct, id.clock - struct.id.clock)
-    structs.splice(index + 1, 0, struct)
-  }
-  return struct
+  const structs = /** @type {Array<GC|Item>} */ (store.clients.get(id.client))
+  return /** @type {Item} */ (structs[findIndexCleanStart(transaction, structs, id.clock)])
 }
 
 /**
@@ -228,13 +237,40 @@ export const getItemCleanEnd = (transaction, store, id) => {
 /**
  * Replace `item` with `newitem` in store
  * @param {StructStore} store
- * @param {AbstractStruct} struct
- * @param {AbstractStruct} newStruct
+ * @param {GC|Item} struct
+ * @param {GC|Item} newStruct
  *
  * @private
  * @function
  */
 export const replaceStruct = (store, struct, newStruct) => {
-  const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(struct.id.client))
+  const structs = /** @type {Array<GC|Item>} */ (store.clients.get(struct.id.client))
   structs[findIndexSS(structs, struct.id.clock)] = newStruct
+}
+
+/**
+ * Iterate over a range of structs
+ *
+ * @param {Transaction} transaction
+ * @param {Array<Item|GC>} structs
+ * @param {number} clockStart Inclusive start
+ * @param {number} len
+ * @param {function(GC|Item):void} f
+ *
+ * @function
+ */
+export const iterateStructs = (transaction, structs, clockStart, len, f) => {
+  if (len === 0) {
+    return
+  }
+  const clockEnd = clockStart + len
+  let index = findIndexCleanStart(transaction, structs, clockStart)
+  let struct
+  do {
+    struct = structs[index++]
+    if (clockEnd < struct.id.clock + struct.length) {
+      findIndexCleanStart(transaction, structs, clockEnd)
+    }
+    f(struct)
+  } while (index < structs.length && structs[index].id.clock < clockEnd)
 }

@@ -207,23 +207,26 @@ export const transact = (doc, f, origin = null) => {
             }
           }
         }
-        // replace deleted items with ItemDeleted / GC
-        for (const [client, deleteItems] of ds.clients) {
-          const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(client))
-          for (let di = deleteItems.length - 1; di >= 0; di--) {
-            const deleteItem = deleteItems[di]
-            const endDeleteItemClock = deleteItem.clock + deleteItem.len
-            for (
-              let si = findIndexSS(structs, deleteItem.clock), struct = structs[si];
-              si < structs.length && struct.id.clock < endDeleteItemClock;
-              struct = structs[++si]
-            ) {
-              const struct = structs[si]
-              if (deleteItem.clock + deleteItem.len <= struct.id.clock) {
-                break
-              }
-              if (struct.deleted && struct instanceof Item) {
-                struct.gc(store, false)
+        // Replace deleted items with ItemDeleted / GC.
+        // This is where content is actually remove from the Yjs Doc.
+        if (doc.gc) {
+          for (const [client, deleteItems] of ds.clients) {
+            const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(client))
+            for (let di = deleteItems.length - 1; di >= 0; di--) {
+              const deleteItem = deleteItems[di]
+              const endDeleteItemClock = deleteItem.clock + deleteItem.len
+              for (
+                let si = findIndexSS(structs, deleteItem.clock), struct = structs[si];
+                si < structs.length && struct.id.clock < endDeleteItemClock;
+                struct = structs[++si]
+              ) {
+                const struct = structs[si]
+                if (deleteItem.clock + deleteItem.len <= struct.id.clock) {
+                  break
+                }
+                if (struct instanceof Item && struct.deleted && !struct.keep) {
+                  struct.gc(store, false)
+                }
               }
             }
           }

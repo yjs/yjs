@@ -72,6 +72,11 @@ export class YMap extends AbstractType {
     }
     this._prelimContent = null
   }
+
+  _copy () {
+    return new YMap()
+  }
+
   /**
    * Creates YMapEvent and calls observers.
    *
@@ -106,7 +111,7 @@ export class YMap extends AbstractType {
   /**
    * Returns the keys for each element in the YMap Type.
    *
-   * @return {Iterator<string>}
+   * @return {IterableIterator<string>}
    */
   keys () {
     return iterator.iteratorMap(createMapIterator(this._map), /** @param {any} v */ v => v[0])
@@ -115,7 +120,7 @@ export class YMap extends AbstractType {
   /**
    * Returns the keys for each element in the YMap Type.
    *
-   * @return {Iterator<string>}
+   * @return {IterableIterator<string>}
    */
   values () {
     return iterator.iteratorMap(createMapIterator(this._map), /** @param {any} v */ v => v[1].content.getContent()[v[1].length - 1])
@@ -128,6 +133,24 @@ export class YMap extends AbstractType {
    */
   entries () {
     return iterator.iteratorMap(createMapIterator(this._map), /** @param {any} v */ v => [v[0], v[1].content.getContent()[v[1].length - 1]])
+  }
+
+  /**
+   * Executes a provided function on once on overy key-value pair.
+   *
+   * @param {function(T,string,YMap<T>):void} f A function to execute on every element of this YArray.
+   */
+  forEach (f) {
+    /**
+     * @type {Object<string,T>}
+     */
+    const map = {}
+    for (let [key, item] of this._map) {
+      if (!item.deleted) {
+        f(item.content.getContent()[item.length - 1], key, this)
+      }
+    }
+    return map
   }
 
   /**

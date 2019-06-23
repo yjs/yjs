@@ -28,6 +28,7 @@ suited for even large documents.
   * [Y.Doc](#Y.Doc)
   * [Document Updates](#Document-Updates)
   * [Relative Positions](#Relative-Positions)
+  * [Y.UndoManager](#Y.UndoManager)
 * [Miscellaneous](#Miscellaneous)
   * [Typescript Declarations](#Typescript-Declarations)
 * [Yjs CRDT Algorithm](#Yjs-CRDT-Algorithm)
@@ -185,6 +186,8 @@ position 0.
     <dd></dd>
     <b><code>length:number</code></b>
     <dd></dd>
+    <b><code>forEach(function(index:number,value:object|boolean|Array|string|number|Uint8Array|Y.Type))</code></b>
+    <dd></dd>
     <b><code>map(function(T, number, YArray):M):Array&lt;M&gt;</code></b>
     <dd></dd>
     <b><code>toArray():Array&lt;object|boolean|Array|string|number|Uint8Array|Y.Type&gt;</code></b>
@@ -241,10 +244,14 @@ or any of its children.
     <dd></dd>
     <b><code>get(index:number)</code></b>
     <dd></dd>
-    <b><code>toJSON():Object&lt;string, Object|boolean|Array|string|number&gt;</code></b>
+    <b><code>toJSON():Object&lt;string, Object|boolean|Array|string|number|Uint8Array&gt;</code></b>
     <dd>
 Copies the <code>[key,value]</code> pairs of this YMap to a new Object.It
 transforms all child types to JSON using their <code>toJSON</code> method.
+    </dd>
+    <b><code>forEach(function(key:string,value:object|boolean|Array|string|number|Uint8Array|Y.Type))</code></b>
+    <dd>
+      Execute the provided function once for every key-value pair.
     </dd>
     <b><code>[Symbol.Iterator]</code></b>
     <dd>
@@ -636,6 +643,136 @@ pos.index === 2 // => true
   <b><code>Y.decodeRelativePosition(Uint8Array):RelativePosition</code></b>
   <dd></dd>
 </dl>
+
+### Y.UndoManager
+
+Yjs ships with an Undo/Redo manager for selective undo/redo of of changes on a
+Yjs type. The changes can be optionally scoped to transaction origins.
+
+```js
+const ytext = doc.getArray('array')
+const undoManager = new Y.UndoManager(ytext)
+
+ytext.insert(0, 'abc')
+undoManager.undo()
+ytext.toString() // => ''
+undoManager.redo()
+ytext.toString() // => 'abc'
+```
+
+<dl>
+  <b><code>constructor(type:Y.AbstractType,
+  [trackedTransactionOrigins:Set&lt;any&gt;, [{captureTimeout: number}]])</code></b>
+  <dd></dd>
+  <b><code>undo()</code></b>
+  <dd></dd>
+  <b><code>redo()</code></b>
+  <dd></dd>
+  <b><code>stopCapturing()</code></b>
+  <dd></dd>
+  <b>
+    <code>
+on('stack-item-added', { stackItem: { meta: Map&lt;any,any&gt; }, type: 'undo'
+| 'redo' })
+    </code>
+  </b>
+  <dd>
+Register an event that is called when a <code>StackItem</code> is added to the
+undo- or the redo-stack.
+  </dd>
+  <b>
+    <code>
+on('stack-item-popped', { stackItem: { meta: Map&lt;any,any&gt; }, type: 'undo'
+| 'redo' })
+    </code>  
+  </b>
+  <dd>
+Register an event that is called when a <code>StackItem</code> is popped from
+the undo- or the redo-stack.
+  </dd>
+</dl>
+
+#### Example: Stop Capturing
+
+UndoManager merges Undo-StackItems if they are created within time-gap
+smaller than `options.captureTimeout`. Call `um.stopCapturing()` so that the next
+StackItem won't be merged.
+
+```js
+// without stopCapturing
+ytext.insert(0, 'a')
+ytext.insert(1, 'b')
+um.undo()
+ytext.toString() // => '' (note that 'ab' was removed)
+// with stopCapturing
+ytext.insert(0, 'a')
+um.stopCapturing()
+ytext.insert(0, 'b')
+um.undo()
+ytext.toString() // => 'a' (note that only 'b' was removed)
+```
+
+#### Example: Specify tracked origins
+
+Every change on the shared document has an origin. If no origin was specified,
+it defaults to `null`. By specifying `trackedTransactionOrigins` you can
+selectively specify which changes should be tracked by `UndoManager`. The
+UndoManager instance is always added to `trackedTransactionOrigins`.
+
+```js
+class CustomBinding {}
+
+const ytext = doc.getArray('array')
+const undoManager = new Y.UndoManager(ytext, new Set([42, CustomBinding]))
+
+ytext.insert(0, 'abc')
+undoManager.undo()
+ytext.toString() // => 'abc' (does not track because origin `null` and not part
+                 //           of `trackedTransactionOrigins`)
+ytext.delete(0, 3) // revert change
+
+doc.transact(() => {
+  ytext.insert(0, 'abc')
+}, 42)
+undoManager.undo()
+ytext.toString() // => '' (tracked because origin is an instance of `trackedTransactionorigins`)
+
+doc.transact(() => {
+  ytext.insert(0, 'abc')
+}, 41)
+undoManager.undo()
+ytext.toString() // => '' (not tracked because 41 is not an instance of
+                 //        `trackedTransactionorigins`)
+ytext.delete(0, 3) // revert change
+
+doc.transact(() => {
+  ytext.insert(0, 'abc')
+}, new CustomBinding())
+undoManager.undo()
+ytext.toString() // => '' (tracked because origin is a `CustomBinding` and
+                 //        `CustomBinding` is in `trackedTransactionorigins`)
+```
+
+#### Example: Add additional information to the StackItems
+
+When undoing or redoing a previous action, it is often expected to restore
+additional meta information like the cursor location or the view on the
+document. You can assign meta-information to Undo-/Redo-StackItems.
+
+```js
+const ytext = doc.getArray('array')
+const undoManager = new Y.UndoManager(ytext, new Set([42, CustomBinding]))
+
+undoManager.on('stack-item-added', event => {
+  // save the current cursor location on the stack-item
+  event.stackItem.meta.set('cursor-location', getRelativeCursorLocation())
+})
+
+undoManager.on('stack-item-popped', event => {
+  // restore the current cursor location on the stack-item
+  restoreCursorLocation(event.stackItem.meta.get('cursor-location'))
+})
+```
 
 ## Miscellaneous
 

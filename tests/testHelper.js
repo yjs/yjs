@@ -266,8 +266,11 @@ export const compare = users => {
     t.assert(u.store.pendingClientsStructRefs.size === 0)
   }
   // Test Array iterator
-  t.compare(userArrayValues[0], Array.from(users[0].getArray('array').toJSON()))
+  t.compare(users[0].getArray('array').toArray(), Array.from(users[0].getArray('array')))
   // Test Map iterator
+  const ymapkeys = Array.from(users[0].getMap('map').keys())
+  t.assert(ymapkeys.length === Object.keys(userMapValues[0]).length)
+  ymapkeys.forEach(key => t.assert(userMapValues[0].hasOwnProperty(key)))
   /**
    * @type {Object<string,any>}
    */
