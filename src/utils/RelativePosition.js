@@ -1,6 +1,5 @@
 
 import {
-  getItem,
   createID,
   writeID,
   readID,
@@ -9,6 +8,7 @@ import {
   findRootTypeKey,
   Item,
   ContentType,
+  followRedone,
   ID, Doc, AbstractType // eslint-disable-line
 } from '../internals.js'
 
@@ -222,19 +222,22 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
     if (getState(store, rightID.client) <= rightID.clock) {
       return null
     }
-    const right = getItem(store, rightID)
+    const res = followRedone(store, rightID)
+    const right = res.item
     if (!(right instanceof Item)) {
       return null
     }
-    index = right.deleted || !right.countable ? 0 : rightID.clock - right.id.clock
-    let n = right.left
-    while (n !== null) {
-      if (!n.deleted && n.countable) {
-        index += n.length
-      }
-      n = n.left
-    }
     type = right.parent
+    if (type._item !== null && !type._item.deleted) {
+      index = right.deleted || !right.countable ? 0 : res.diff
+      let n = right.left
+      while (n !== null) {
+        if (!n.deleted && n.countable) {
+          index += n.length
+        }
+        n = n.left
+      }
+    }
   } else {
     if (tname !== null) {
       type = doc.get(tname)
@@ -243,9 +246,9 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
         // type does not exist yet
         return null
       }
-      const struct = getItem(store, typeID)
-      if (struct instanceof Item && struct.content instanceof ContentType) {
-        type = struct.content.type
+      const { item } = followRedone(store, typeID)
+      if (item instanceof Item && item.content instanceof ContentType) {
+        type = item.content.type
       } else {
         // struct is garbage collected
         return null
@@ -254,9 +257,6 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
       throw error.unexpectedCase()
     }
     index = type._length
-  }
-  if (type._item !== null && type._item.deleted) {
-    return null
   }
   return createAbsolutePosition(type, index)
 }

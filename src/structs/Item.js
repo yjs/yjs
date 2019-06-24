@@ -34,6 +34,31 @@ import * as set from 'lib0/set.js'
 import * as binary from 'lib0/binary.js'
 
 /**
+ * @param {StructStore} store
+ * @param {ID} id
+ * @return {{item:Item, diff:number}}
+ */
+export const followRedone = (store, id) => {
+  /**
+   * @type {ID|null}
+   */
+  let nextID = id
+  let diff = 0
+  let item
+  do {
+    if (diff > 0) {
+      nextID = createID(nextID.client, nextID.clock + diff)
+    }
+    item = getItem(store, nextID)
+    diff = nextID.clock - item.id.clock
+    nextID = item.redone
+  } while (nextID !== null)
+  return {
+    item, diff
+  }
+}
+
+/**
  * Make sure that neither item nor any of its parents is ever deleted.
  *
  * This property does not persist when storing it into a database or when
@@ -77,6 +102,9 @@ export const splitItem = (transaction, leftItem, diff) => {
   if (leftItem.keep) {
     rightItem.keep = true
   }
+  if (leftItem.redone !== null) {
+    rightItem.redone = createID(leftItem.redone.client, leftItem.redone.clock + diff)
+  }
   // update left (do not set leftItem.rightOrigin as it will lead to problems when syncing)
   leftItem.right = rightItem
   // update right
@@ -106,7 +134,7 @@ export const splitItem = (transaction, leftItem, diff) => {
  */
 export const redoItem = (transaction, item, redoitems) => {
   if (item.redone !== null) {
-    return item.redone
+    return getItemCleanStart(transaction, transaction.doc.store, item.redone)
   }
   let parentItem = item.parent._item
   /**
@@ -146,7 +174,7 @@ export const redoItem = (transaction, item, redoitems) => {
   }
   if (parentItem !== null && parentItem.redone !== null) {
     while (parentItem.redone !== null) {
-      parentItem = parentItem.redone
+      parentItem = getItemCleanStart(transaction, transaction.doc.store, parentItem.redone)
     }
     // find next cloned_redo items
     while (left !== null) {
@@ -156,7 +184,7 @@ export const redoItem = (transaction, item, redoitems) => {
       let leftTrace = left
       // trace redone until parent matches
       while (leftTrace !== null && leftTrace.parent._item !== parentItem) {
-        leftTrace = leftTrace.redone
+        leftTrace = leftTrace.redone === null ? null : getItemCleanStart(transaction, transaction.doc.store, leftTrace.redone)
       }
       if (leftTrace !== null && leftTrace.parent._item === parentItem) {
         left = leftTrace
@@ -171,7 +199,7 @@ export const redoItem = (transaction, item, redoitems) => {
       let rightTrace = right
       // trace redone until parent matches
       while (rightTrace !== null && rightTrace.parent._item !== parentItem) {
-        rightTrace = rightTrace.redone
+        rightTrace = rightTrace.redone === null ? null : getItemCleanStart(transaction, transaction.doc.store, rightTrace.redone)
       }
       if (rightTrace !== null && rightTrace.parent._item === parentItem) {
         right = rightTrace
@@ -188,7 +216,8 @@ export const redoItem = (transaction, item, redoitems) => {
     item.parentSub,
     item.content.copy()
   )
-  item.redone = redoneItem
+  item.redone = redoneItem.id
+  keepItem(redoneItem)
   redoneItem.integrate(transaction)
   return redoneItem
 }
@@ -254,7 +283,7 @@ export class Item extends AbstractStruct {
     /**
      * If this type's effect is reundone this type refers to the type that undid
      * this operation.
-     * @type {Item | null}
+     * @type {ID | null}
      */
     this.redone = null
     /**

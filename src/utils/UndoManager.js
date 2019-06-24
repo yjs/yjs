@@ -6,11 +6,14 @@ import {
   redoItem,
   iterateStructs,
   isParentOf,
+  createID,
+  followRedone,
+  getItemCleanStart,
   Doc, Item, GC, DeleteSet, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as time from 'lib0/time.js'
-import { Observable } from 'lib0/observable'
+import { Observable } from 'lib0/observable.js'
 
 class StackItem {
   /**
@@ -59,17 +62,27 @@ const popStackItem = (undoManager, stack, eventType) => {
       })
       const structs = /** @type {Array<GC|Item>} */ (store.clients.get(doc.clientID))
       iterateStructs(transaction, structs, stackItem.start, stackItem.len, struct => {
+        if (struct instanceof Item && struct.redone !== null) {
+          let { item, diff } = followRedone(store, struct.id)
+          if (diff > 0) {
+            item = getItemCleanStart(transaction, store, struct.id)
+          }
+          if (item.length > stackItem.len) {
+            getItemCleanStart(transaction, store, createID(item.id.client, item.id.clock + stackItem.len))
+          }
+          struct = item
+        }
         if (!struct.deleted && isParentOf(type, /** @type {Item} */ (struct))) {
           struct.delete(transaction)
           performedChange = true
         }
       })
       result = stackItem
+      if (result != null) {
+        undoManager.emit('stack-item-popped', [{ stackItem: result, type: eventType }, undoManager])
+      }
     }
   }, undoManager)
-  if (result != null) {
-    undoManager.emit('stack-item-popped', [{ stackItem: result, type: eventType }, undoManager])
-  }
   return result
 }
 

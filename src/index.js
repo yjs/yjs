@@ -42,5 +42,6 @@ export {
   iterateDeletedStructs,
   applyUpdate,
   encodeStateAsUpdate,
-  encodeStateVector
+  encodeStateVector,
+  UndoManager
 } from './internals.js'
