@@ -9,7 +9,7 @@ import {
   createID,
   followRedone,
   getItemCleanStart,
-  Doc, Item, GC, DeleteSet, AbstractType // eslint-disable-line
+  Transaction, Doc, Item, GC, DeleteSet, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as time from 'lib0/time.js'
@@ -45,7 +45,7 @@ const popStackItem = (undoManager, stack, eventType) => {
    */
   let result = null
   const doc = undoManager.doc
-  const type = undoManager.type
+  const scope = undoManager.scope
   transact(doc, transaction => {
     while (stack.length > 0 && result === null) {
       const store = doc.store
@@ -53,7 +53,7 @@ const popStackItem = (undoManager, stack, eventType) => {
       const itemsToRedo = new Set()
       let performedChange = false
       iterateDeletedStructs(transaction, stackItem.ds, store, struct => {
-        if (struct instanceof Item && isParentOf(type, struct)) {
+        if (struct instanceof Item && scope.some(type => isParentOf(type, struct))) {
           itemsToRedo.add(struct)
         }
       })
@@ -72,7 +72,7 @@ const popStackItem = (undoManager, stack, eventType) => {
           }
           struct = item
         }
-        if (!struct.deleted && isParentOf(type, /** @type {Item} */ (struct))) {
+        if (!struct.deleted && scope.some(type => isParentOf(type, /** @type {Item} */ (struct)))) {
           struct.delete(transaction)
           performedChange = true
         }
@@ -97,13 +97,13 @@ const popStackItem = (undoManager, stack, eventType) => {
  */
 export class UndoManager extends Observable {
   /**
-   * @param {AbstractType<any>} type
+   * @param {AbstractType<any>|Array<AbstractType<any>>} typeScope Accepts either a single type, or an array of types
    * @param {Set<any>} [trackedTransactionOrigins=new Set([null])]
    * @param {object} [options={captureTimeout=500}]
    */
-  constructor (type, trackedTransactionOrigins = new Set([null]), { captureTimeout = 500 } = {}) {
+  constructor (typeScope, trackedTransactionOrigins = new Set([null]), { captureTimeout = 500 } = {}) {
     super()
-    this.type = type
+    this.scope = typeScope instanceof Array ? typeScope : [typeScope]
     trackedTransactionOrigins.add(this)
     this.trackedTransactionOrigins = trackedTransactionOrigins
     /**
@@ -121,11 +121,11 @@ export class UndoManager extends Observable {
      */
     this.undoing = false
     this.redoing = false
-    this.doc = /** @type {Doc} */ (type.doc)
+    this.doc = /** @type {Doc} */ (this.scope[0].doc)
     this.lastChange = 0
-    type.observeDeep((events, transaction) => {
+    this.doc.on('afterTransaction', /** @param {Transaction} transaction */ transaction => {
       // Only track certain transactions
-      if (!this.trackedTransactionOrigins.has(transaction.origin) && (!transaction.origin || !this.trackedTransactionOrigins.has(transaction.origin.constructor))) {
+      if (!this.scope.some(type => transaction.changedParentTypes.has(type)) || (!this.trackedTransactionOrigins.has(transaction.origin) && (!transaction.origin || !this.trackedTransactionOrigins.has(transaction.origin.constructor)))) {
         return
       }
       const undoing = this.undoing
@@ -154,7 +154,7 @@ export class UndoManager extends Observable {
       }
       // make sure that deleted structs are not gc'd
       iterateDeletedStructs(transaction, transaction.deleteSet, transaction.doc.store, /** @param {Item|GC} item */ item => {
-        if (item instanceof Item && isParentOf(type, item)) {
+        if (item instanceof Item && this.scope.some(type => isParentOf(type, item))) {
           keepItem(item)
         }
       })

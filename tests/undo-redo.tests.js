@@ -180,3 +180,24 @@ export const testTrackClass = tc => {
   undoManager.undo()
   t.assert(text0.toString() === '')
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testTypeScope = tc => {
+  const { array0 } = init(tc, { users: 3 })
+  // only track origins that are numbers
+  const text0 = new Y.Text()
+  const text1 = new Y.Text()
+  array0.insert(0, [text0, text1])
+  const undoManager = new UndoManager(text0)
+  const undoManagerBoth = new UndoManager([text0, text1])
+  text1.insert(0, 'abc')
+  t.assert(undoManager.undoStack.length === 0)
+  t.assert(undoManagerBoth.undoStack.length === 1)
+  t.assert(text1.toString() === 'abc')
+  undoManager.undo()
+  t.assert(text1.toString() === 'abc')
+  undoManagerBoth.undo()
+  t.assert(text1.toString() === '')
+}

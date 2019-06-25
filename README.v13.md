@@ -661,9 +661,9 @@ ytext.toString() // => 'abc'
 ```
 
 <dl>
-  <b><code>constructor(type:Y.AbstractType,
+  <b><code>constructor(scope:Y.AbstractType|Array&lt;Y.AbstractType&gt;,
   [trackedTransactionOrigins:Set&lt;any&gt;, [{captureTimeout: number}]])</code></b>
-  <dd></dd>
+  <dd>Accepts either single type as scope or an array of types.</dd>
   <b><code>undo()</code></b>
   <dd></dd>
   <b><code>redo()</code></b>
