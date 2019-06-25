@@ -62,17 +62,18 @@ const popStackItem = (undoManager, stack, eventType) => {
       })
       const structs = /** @type {Array<GC|Item>} */ (store.clients.get(doc.clientID))
       iterateStructs(transaction, structs, stackItem.start, stackItem.len, struct => {
-        if (struct instanceof Item && struct.redone !== null) {
-          let { item, diff } = followRedone(store, struct.id)
-          if (diff > 0) {
-            item = getItemCleanStart(transaction, store, struct.id)
+        if (struct instanceof Item && !struct.deleted && scope.some(type => isParentOf(type, /** @type {Item} */ (struct)))) {
+          if (struct.redone !== null) {
+            let { item, diff } = followRedone(store, struct.id)
+            if (diff > 0) {
+              item = getItemCleanStart(transaction, store, createID(item.id.client, item.id.clock + diff))
+            }
+            if (item.length > stackItem.len) {
+              getItemCleanStart(transaction, store, createID(item.id.client, item.id.clock + stackItem.len))
+            }
+            struct = item
           }
-          if (item.length > stackItem.len) {
-            getItemCleanStart(transaction, store, createID(item.id.client, item.id.clock + stackItem.len))
-          }
-          struct = item
-        }
-        if (!struct.deleted && scope.some(type => isParentOf(type, /** @type {Item} */ (struct)))) {
+          keepItem(struct)
           struct.delete(transaction)
           performedChange = true
         }
