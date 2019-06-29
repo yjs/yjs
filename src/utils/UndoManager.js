@@ -102,7 +102,10 @@ export class UndoManager extends Observable {
    * @param {Set<any>} [trackedTransactionOrigins=new Set([null])]
    * @param {object} [options={captureTimeout=500}]
    */
-  constructor (typeScope, trackedTransactionOrigins = new Set([null]), { captureTimeout = 500 } = {}) {
+  constructor (typeScope, trackedTransactionOrigins = new Set([null]), { captureTimeout } = {}) {
+    if (captureTimeout == null) {
+      captureTimeout = 500
+    }
     super()
     this.scope = typeScope instanceof Array ? typeScope : [typeScope]
     trackedTransactionOrigins.add(this)
