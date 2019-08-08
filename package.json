@@ -55,7 +55,7 @@
   },
   "devDependencies": {
     "concurrently": "^3.6.1",
-    "jsdoc": "^3.6.2",
+    "jsdoc": "^3.6.3",
     "live-server": "^1.2.1",
     "rollup": "^1.11.3",
     "rollup-cli": "^1.0.9",
