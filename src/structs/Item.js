@@ -18,6 +18,7 @@ import {
   readContentDeleted,
   readContentBinary,
   readContentJSON,
+  readContentAny,
   readContentString,
   readContentEmbed,
   readContentFormat,
@@ -561,7 +562,8 @@ export const contentRefs = [
   readContentString,
   readContentEmbed,
   readContentFormat,
-  readContentType
+  readContentType,
+  readContentAny
 ]
 
 /**

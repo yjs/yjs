@@ -21,6 +21,7 @@ export {
   ContentEmbed,
   ContentFormat,
   ContentJSON,
+  ContentAny,
   ContentString,
   ContentType,
   AbstractType,
