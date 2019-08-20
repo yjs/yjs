@@ -61,6 +61,10 @@ const popStackItem = (undoManager, stack, eventType) => {
         performedChange = redoItem(transaction, item, itemsToRedo) !== null || performedChange
       })
       const structs = /** @type {Array<GC|Item>} */ (store.clients.get(doc.clientID))
+      /**
+       * @type {Array<Item>}
+       */
+      const itemsToDelete = []
       iterateStructs(transaction, structs, stackItem.start, stackItem.len, struct => {
         if (struct instanceof Item && !struct.deleted && scope.some(type => isParentOf(type, /** @type {Item} */ (struct)))) {
           if (struct.redone !== null) {
@@ -73,11 +77,18 @@ const popStackItem = (undoManager, stack, eventType) => {
             }
             struct = item
           }
-          keepItem(struct)
-          struct.delete(transaction)
-          performedChange = true
+          itemsToDelete.push(struct)
         }
       })
+      // We want to delete in reverse order so that children are deleted before
+      // parents, so we have more information available when items are filtered.
+      for (let i = itemsToDelete.length - 1; i >= 0; i--) {
+        const item = itemsToDelete[i]
+        if (undoManager.deleteFilter(item)) {
+          item.delete(transaction)
+          performedChange = true
+        }
+      }
       result = stackItem
       if (result != null) {
         undoManager.emit('stack-item-popped', [{ stackItem: result, type: eventType }, undoManager])
@@ -86,6 +97,16 @@ const popStackItem = (undoManager, stack, eventType) => {
   }, undoManager)
   return result
 }
+
+/**
+ * @typedef {Object} UndoManagerOptions
+ * @property {number} [UndoManagerOptions.captureTimeout=500]
+ * @property {function(Item):boolean} [UndoManagerOptions.deleteFilter=()=>true] Sometimes
+ * it is necessary to filter whan an Undo/Redo operation can delete. If this
+ * filter returns false, the type/item won't be deleted even it is in the
+ * undo/redo scope.
+ * @property {Set<any>} [UndoManagerOptions.trackedOrigins=new Set([null])]
+ */
 
 /**
  * Fires 'stack-item-added' event when a stack item was added to either the undo- or
@@ -99,17 +120,17 @@ const popStackItem = (undoManager, stack, eventType) => {
 export class UndoManager extends Observable {
   /**
    * @param {AbstractType<any>|Array<AbstractType<any>>} typeScope Accepts either a single type, or an array of types
-   * @param {Set<any>} [trackedTransactionOrigins=new Set([null])]
-   * @param {object} [options={captureTimeout=500}]
+   * @param {UndoManagerOptions} options
    */
-  constructor (typeScope, trackedTransactionOrigins = new Set([null]), { captureTimeout } = {}) {
+  constructor (typeScope, { captureTimeout, deleteFilter = () => true, trackedOrigins = new Set([null]) } = {}) {
     if (captureTimeout == null) {
       captureTimeout = 500
     }
     super()
     this.scope = typeScope instanceof Array ? typeScope : [typeScope]
-    trackedTransactionOrigins.add(this)
-    this.trackedTransactionOrigins = trackedTransactionOrigins
+    this.deleteFilter = deleteFilter
+    trackedOrigins.add(this)
+    this.trackedOrigins = trackedOrigins
     /**
      * @type {Array<StackItem>}
      */
@@ -129,7 +150,7 @@ export class UndoManager extends Observable {
     this.lastChange = 0
     this.doc.on('afterTransaction', /** @param {Transaction} transaction */ transaction => {
       // Only track certain transactions
-      if (!this.scope.some(type => transaction.changedParentTypes.has(type)) || (!this.trackedTransactionOrigins.has(transaction.origin) && (!transaction.origin || !this.trackedTransactionOrigins.has(transaction.origin.constructor)))) {
+      if (!this.scope.some(type => transaction.changedParentTypes.has(type)) || (!this.trackedOrigins.has(transaction.origin) && (!transaction.origin || !this.trackedOrigins.has(transaction.origin.constructor)))) {
         return
       }
       const undoing = this.undoing
