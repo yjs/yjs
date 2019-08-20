@@ -186,7 +186,7 @@ position 0.
     <dd></dd>
     <b><code>length:number</code></b>
     <dd></dd>
-    <b><code>forEach(function(index:number,value:object|boolean|Array|string|number|Uint8Array|Y.Type))</code></b>
+    <b><code>forEach(function(value:object|boolean|Array|string|number|Uint8Array|Y.Type, index:number, array: Y.Array))</code></b>
     <dd></dd>
     <b><code>map(function(T, number, YArray):M):Array&lt;M&gt;</code></b>
     <dd></dd>
