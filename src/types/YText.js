@@ -272,7 +272,7 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
   // iterate until first non-format or null is found
   // delete all formats with attributes[format.key] != null
   while (length > 0 && right !== null) {
-    if (right.deleted === false) {
+    if (!right.deleted) {
       switch (right.content.constructor) {
         case ContentFormat:
           const { key, value } = /** @type {ContentFormat} */ (right.content)
