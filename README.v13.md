@@ -1,5 +1,5 @@
 
-# ![Yjs](https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png)
+# ![Yjs](https://yjs.dev/images/logo/yjs-120x120.png)
 
 > A CRDT framework with a powerful abstraction of shared data
 
