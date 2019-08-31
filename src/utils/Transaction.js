@@ -90,6 +90,11 @@ export class Transaction {
      * @type {any}
      */
     this.origin = origin
+    /**
+     * Stores meta information on the transaction
+     * @type {Map<any,any>}
+     */
+    this.meta = new Map()
   }
 }
 

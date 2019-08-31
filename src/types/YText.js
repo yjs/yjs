@@ -16,6 +16,7 @@ import {
   ContentEmbed,
   ContentFormat,
   ContentString,
+  splitSnapshotAffectedStructs,
   Doc, Item, Snapshot, StructStore, Transaction // eslint-disable-line
 } from '../internals.js'
 
@@ -723,6 +724,7 @@ export class YText extends AbstractType {
      */
     const ops = []
     const currentAttributes = new Map()
+    const doc = /** @type {Doc} */ (this.doc)
     let str = ''
     let n = this._start
     function packStr () {
@@ -748,42 +750,54 @@ export class YText extends AbstractType {
         str = ''
       }
     }
-    while (n !== null) {
-      if (isVisible(n, snapshot) || (prevSnapshot !== undefined && isVisible(n, prevSnapshot))) {
-        switch (n.content.constructor) {
-          case ContentString:
-            const cur = currentAttributes.get('ychange')
-            if (snapshot !== undefined && !isVisible(n, snapshot)) {
-              if (cur === undefined || cur.user !== n.id.client || cur.state !== 'removed') {
-                packStr()
-                currentAttributes.set('ychange', { user: n.id.client, state: 'removed' })
-              }
-            } else if (prevSnapshot !== undefined && !isVisible(n, prevSnapshot)) {
-              if (cur === undefined || cur.user !== n.id.client || cur.state !== 'added') {
-                packStr()
-                currentAttributes.set('ychange', { user: n.id.client, state: 'added' })
-              }
-            } else if (cur !== undefined) {
-              packStr()
-              currentAttributes.delete('ychange')
-            }
-            str += /** @type {ContentString} */ (n.content).str
-            break
-          case ContentEmbed:
-            packStr()
-            ops.push({
-              insert: /** @type {ContentEmbed} */ (n.content).embed
-            })
-            break
-          case ContentFormat:
-            packStr()
-            updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (n.content))
-            break
-        }
+    // snapshots are merged again after the transaction, so we need to keep the
+    // transalive until we are done
+    transact(doc, transaction => {
+      if (snapshot) {
+        splitSnapshotAffectedStructs(transaction, snapshot)
       }
-      n = n.right
-    }
-    packStr()
+      if (prevSnapshot) {
+        splitSnapshotAffectedStructs(transaction, prevSnapshot)
+      }
+      while (n !== null) {
+        if (isVisible(n, snapshot) || (prevSnapshot !== undefined && isVisible(n, prevSnapshot))) {
+          switch (n.content.constructor) {
+            case ContentString:
+              const cur = currentAttributes.get('ychange')
+              if (snapshot !== undefined && !isVisible(n, snapshot)) {
+                if (cur === undefined || cur.user !== n.id.client || cur.state !== 'removed') {
+                  packStr()
+                  currentAttributes.set('ychange', { user: n.id.client, state: 'removed' })
+                }
+              } else if (prevSnapshot !== undefined && !isVisible(n, prevSnapshot)) {
+                if (cur === undefined || cur.user !== n.id.client || cur.state !== 'added') {
+                  packStr()
+                  currentAttributes.set('ychange', { user: n.id.client, state: 'added' })
+                }
+              } else if (cur !== undefined) {
+                packStr()
+                currentAttributes.delete('ychange')
+              }
+              str += /** @type {ContentString} */ (n.content).str
+              break
+            case ContentEmbed:
+              packStr()
+              ops.push({
+                insert: /** @type {ContentEmbed} */ (n.content).embed
+              })
+              break
+            case ContentFormat:
+              if (isVisible(n, snapshot)) {
+                packStr()
+                updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (n.content))
+              }
+              break
+          }
+        }
+        n = n.right
+      }
+      packStr()
+    }, splitSnapshotAffectedStructs)
     return ops
   }
 

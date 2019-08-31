@@ -37,6 +37,8 @@ export {
   compareIDs,
   getState,
   Snapshot,
+  createSnapshot,
+  createSnapshotFromDoc,
   findRootTypeKey,
   typeListToArraySnapshot,
   typeMapGetSnapshot,
