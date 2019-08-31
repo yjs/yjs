@@ -28,7 +28,7 @@ import * as object from 'lib0/object.js'
  * @param {any} b
  * @return {boolean}
  */
-const equalAttrs = (a, b) => a === b || (typeof a === 'object' && typeof b === 'object'  && a && b && object.equalFlat(a, b))
+const equalAttrs = (a, b) => a === b || (typeof a === 'object' && typeof b === 'object' && a && b && object.equalFlat(a, b))
 
 export class ItemListPosition {
   /**
