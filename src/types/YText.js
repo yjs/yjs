@@ -21,6 +21,14 @@ import {
 
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 import * as encoding from 'lib0/encoding.js'
+import * as object from 'lib0/object.js'
+
+/**
+ * @param {any} a
+ * @param {any} b
+ * @return {boolean}
+ */
+const equalAttrs = (a, b) => a === b || (typeof a === 'object' && typeof b === 'object'  && a && b && object.equalFlat(a, b))
 
 export class ItemListPosition {
   /**
@@ -130,7 +138,7 @@ const insertNegatedAttributes = (transaction, parent, left, right, negatedAttrib
     right !== null && (
       right.deleted === true || (
         right.content.constructor === ContentFormat &&
-        (negatedAttributes.get(/** @type {ContentFormat} */ (right.content).key) === /** @type {ContentFormat} */ (right.content).value)
+        equalAttrs(negatedAttributes.get(/** @type {ContentFormat} */ (right.content).key), /** @type {ContentFormat} */ (right.content).value)
       )
     )
   ) {
@@ -180,7 +188,7 @@ const minimizeAttributeChanges = (left, right, currentAttributes, attributes) =>
       break
     } else if (right.deleted) {
       // continue
-    } else if (right.content.constructor === ContentFormat && (attributes[(/** @type {ContentFormat} */ (right.content)).key] || null) === /** @type {ContentFormat} */ (right.content).value) {
+    } else if (right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (right.content)).key] || null, /** @type {ContentFormat} */ (right.content).value)) {
       // found a format, update currentAttributes and continue
       updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (right.content))
     } else {
@@ -210,7 +218,7 @@ const insertAttributes = (transaction, parent, left, right, currentAttributes, a
   for (let key in attributes) {
     const val = attributes[key]
     const currentVal = currentAttributes.get(key) || null
-    if (currentVal !== val) {
+    if (!equalAttrs(currentVal, val)) {
       // save negated attribute (set null if currentVal undefined)
       negatedAttributes.set(key, currentVal)
       left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentFormat(key, val))
@@ -278,7 +286,7 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
           const { key, value } = /** @type {ContentFormat} */ (right.content)
           const attr = attributes[key]
           if (attr !== undefined) {
-            if (attr === value) {
+            if (equalAttrs(attr, value)) {
               negatedAttributes.delete(key)
             } else {
               negatedAttributes.set(key, value)
@@ -516,11 +524,11 @@ export class YTextEvent extends YEvent {
               if (this.adds(item)) {
                 if (!this.deletes(item)) {
                   const curVal = currentAttributes.get(key) || null
-                  if (curVal !== value) {
+                  if (!equalAttrs(curVal, value)) {
                     if (action === 'retain') {
                       addOp()
                     }
-                    if (value === (oldAttributes.get(key) || null)) {
+                    if (equalAttrs(value, (oldAttributes.get(key) || null))) {
                       delete attributes[key]
                     } else {
                       attributes[key] = value
@@ -532,7 +540,7 @@ export class YTextEvent extends YEvent {
               } else if (this.deletes(item)) {
                 oldAttributes.set(key, value)
                 const curVal = currentAttributes.get(key) || null
-                if (curVal !== value) {
+                if (!equalAttrs(curVal, value)) {
                   if (action === 'retain') {
                     addOp()
                   }
@@ -542,7 +550,7 @@ export class YTextEvent extends YEvent {
                 oldAttributes.set(key, value)
                 const attr = attributes[key]
                 if (attr !== undefined) {
-                  if (attr !== value) {
+                  if (!equalAttrs(attr, value)) {
                     if (action === 'retain') {
                       addOp()
                     }
@@ -784,12 +792,12 @@ export class YText extends AbstractType {
    *
    * @param {number} index The index at which to start inserting.
    * @param {String} text The text to insert at the specified position.
-   * @param {TextAttributes} attributes Optionally define some formatting
+   * @param {TextAttributes} [attributes] Optionally define some formatting
    *                                    information to apply on the inserted
    *                                    Text.
    * @public
    */
-  insert (index, text, attributes = {}) {
+  insert (index, text, attributes) {
     if (text.length <= 0) {
       return
     }
@@ -797,6 +805,10 @@ export class YText extends AbstractType {
     if (y !== null) {
       transact(y, transaction => {
         const { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
+        if (!attributes) {
+          attributes = {}
+          currentAttributes.forEach((v, k) => { attributes[k] = v })
+        }
         insertText(transaction, this, left, right, currentAttributes, text, attributes)
       })
     } else {
