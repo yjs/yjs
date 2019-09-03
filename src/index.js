@@ -38,7 +38,8 @@ export {
   getState,
   Snapshot,
   createSnapshot,
-  createSnapshotFromDoc,
+  snapshot,
+  emptySnapshot,
   findRootTypeKey,
   typeListToArraySnapshot,
   typeMapGetSnapshot,
@@ -46,5 +47,9 @@ export {
   applyUpdate,
   encodeStateAsUpdate,
   encodeStateVector,
-  UndoManager
+  UndoManager,
+  decodeSnapshot,
+  encodeSnapshot,
+  isDeleted,
+  equalSnapshots
 } from './internals.js'

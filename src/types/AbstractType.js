@@ -584,7 +584,7 @@ export const typeMapHas = (parent, key) => {
  */
 export const typeMapGetSnapshot = (parent, key, snapshot) => {
   let v = parent._map.get(key) || null
-  while (v !== null && (!snapshot.sm.has(v.id.client) || v.id.clock >= (snapshot.sm.get(v.id.client) || 0))) {
+  while (v !== null && (!snapshot.sv.has(v.id.client) || v.id.clock >= (snapshot.sv.get(v.id.client) || 0))) {
     v = v.left
   }
   return v !== null && isVisible(v, snapshot) ? v.content.getContent()[v.length - 1] : undefined

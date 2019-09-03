@@ -98,7 +98,7 @@ export const testSnapshot = tc => {
   text0.applyDelta([{
     insert: 'abcd'
   }])
-  const snapshot1 = Y.createSnapshotFromDoc(doc0)
+  const snapshot1 = Y.snapshot(doc0)
   text0.applyDelta([{
     retain: 1
   }, {
@@ -106,7 +106,7 @@ export const testSnapshot = tc => {
   }, {
     delete: 1
   }])
-  const snapshot2 = Y.createSnapshotFromDoc(doc0)
+  const snapshot2 = Y.snapshot(doc0)
   text0.applyDelta([{
     retain: 2
   }, {
@@ -140,7 +140,7 @@ export const testSnapshotDeleteAfter = tc => {
   text0.applyDelta([{
     insert: 'abcd'
   }])
-  const snapshot1 = Y.createSnapshotFromDoc(doc0)
+  const snapshot1 = Y.snapshot(doc0)
   text0.applyDelta([{
     retain: 4
   }, {

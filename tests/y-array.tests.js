@@ -194,6 +194,33 @@ export const testInsertAndDeleteEventsForTypes = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testChangeEvent = tc => {
+  const { array0, users } = init(tc, { users: 2 })
+  /**
+   * @type {any}
+   */
+  let changes = null
+  array0.observe(e => {
+    changes = e.changes
+  })
+  const newArr = new Y.Array()
+  array0.insert(0, [newArr, 4, 'dtrn'])
+  t.assert(changes !== null && changes.added.size === 2 && changes.deleted.size === 0)
+  t.compare(changes.delta, [{insert: [newArr, 4, 'dtrn']}])
+  changes = null
+  array0.delete(0, 2)
+  t.assert(changes !== null && changes.added.size === 0 && changes.deleted.size === 2)
+  t.compare(changes.delta, [{ delete: 2 }])
+  changes = null
+  array0.insert(1, [0.1])
+  t.assert(changes !== null && changes.added.size === 1 && changes.deleted.size === 0)
+  t.compare(changes.delta, [{ retain: 1 }, { insert: [0.1] }])
+  compare(users)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testInsertAndDeleteEventsForTypes2 = tc => {
   const { array0, users } = init(tc, { users: 2 })
   /**

@@ -169,6 +169,8 @@ export const addToDeleteSet = (ds, id, length) => {
   map.setIfUndefined(ds.clients, id.client, () => []).push(new DeleteItem(id.clock, length))
 }
 
+export const createDeleteSet = () => new DeleteSet()
+
 /**
  * @param {StructStore} ss
  * @return {DeleteSet} Merged and sorted DeleteSet
@@ -177,7 +179,7 @@ export const addToDeleteSet = (ds, id, length) => {
  * @function
  */
 export const createDeleteSetFromStructStore = ss => {
-  const ds = new DeleteSet()
+  const ds = createDeleteSet()
   ss.clients.forEach((structs, client) => {
     /**
      * @type {Array<DeleteItem>}
@@ -226,13 +228,33 @@ export const writeDeleteSet = (encoder, ds) => {
 
 /**
  * @param {decoding.Decoder} decoder
+ * @return {DeleteSet}
+ *
+ * @private
+ * @function
+ */
+export const readDeleteSet = decoder => {
+  const ds = new DeleteSet()
+  const numClients = decoding.readVarUint(decoder)
+  for (let i = 0; i < numClients; i++) {
+    const client = decoding.readVarUint(decoder)
+    const numberOfDeletes = decoding.readVarUint(decoder)
+    for (let i = 0; i < numberOfDeletes; i++) {
+      addToDeleteSet(ds, createID(client, decoding.readVarUint(decoder)), decoding.readVarUint(decoder))
+    }
+  }
+  return ds
+}
+
+/**
+ * @param {decoding.Decoder} decoder
  * @param {Transaction} transaction
  * @param {StructStore} store
  *
  * @private
  * @function
  */
-export const readDeleteSet = (decoder, transaction, store) => {
+export const readAndApplyDeleteSet = (decoder, transaction, store) => {
   const unappliedDS = new DeleteSet()
   const numClients = decoding.readVarUint(decoder)
   for (let i = 0; i < numClients; i++) {
@@ -279,6 +301,7 @@ export const readDeleteSet = (decoder, transaction, store) => {
     }
   }
   if (unappliedDS.clients.size > 0) {
+    // TODO: no need for encoding+decoding ds anymore
     const unappliedDSEncoder = encoding.createEncoder()
     writeDeleteSet(unappliedDSEncoder, unappliedDS)
     store.pendingDeleteReaders.push(decoding.createDecoder(encoding.toUint8Array(unappliedDSEncoder)))
