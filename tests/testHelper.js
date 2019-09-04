@@ -378,7 +378,7 @@ export const compareDS = (ds1, ds2) => {
  */
 export const applyRandomTests = (tc, mods, iterations, initTestObject) => {
   const gen = tc.prng
-  const result = init(tc, { users: 5 }, initTestObject || (() => null))
+  const result = init(tc, { users: 5 }, initTestObject)
   const { testConnector, users } = result
   for (let i = 0; i < iterations; i++) {
     if (prng.int31(gen, 0, 100) <= 2) {
