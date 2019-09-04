@@ -238,7 +238,7 @@ export const testInsertAndDeleteEventsForTypes2 = tc => {
 }
 
 /**
- * This issue has been reported here https://github.com/y-js/yjs/issues/155
+ * This issue has been reported here https://github.com/yjs/yjs/issues/155
  * @param {t.TestCase} tc
  */
 export const testNewChildDoesNotEmitEventInTransaction = tc => {

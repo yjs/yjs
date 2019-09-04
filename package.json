@@ -10,8 +10,8 @@
     "test-exhaustive": "npm run lint && npm run dist && node ./dist/tests.js --repitition-time 10000",
     "dist": "rm -rf dist && rollup -c",
     "watch": "rollup -wc",
-    "lint": "markdownlint README.v13.md && standard && tsc",
-    "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.v13.md --package ./package.json || true",
+    "lint": "markdownlint README.md && standard && tsc",
+    "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.md --package ./package.json || true",
     "serve-docs": "npm run docs && serve ./docs/",
     "preversion": "npm run lint && PRODUCTION=1 npm run dist && npm run docs && node ./dist/tests.js --repitition-time 1000",
     "postversion": "git push && git push --tags",
@@ -38,20 +38,20 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/y-js/yjs.git"
+    "url": "https://github.com/yjs/yjs.git"
   },
   "keywords": [
     "crdt"
   ],
   "author": "Kevin Jahns",
-  "email": "kevin.jahns@rwth-aachen.de",
+  "email": "kevin.jahns@protonmail.com",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/y-js/yjs/issues"
+    "url": "https://github.com/yjs/yjs/issues"
   },
-  "homepage": "http://y-js.org",
+  "homepage": "https://yjs.dev",
   "dependencies": {
-    "lib0": "0.0.6"
+    "lib0": "^0.1.0"
   },
   "devDependencies": {
     "concurrently": "^3.6.1",
