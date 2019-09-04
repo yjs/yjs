@@ -38,6 +38,8 @@ export {
   getState,
   Snapshot,
   createSnapshot,
+  createDeleteSet,
+  createDeleteSetFromStructStore,
   snapshot,
   emptySnapshot,
   findRootTypeKey,
