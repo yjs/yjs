@@ -127,7 +127,7 @@ export const testSnapshot = tc => {
       delete v.attributes.ychange.user
     }
   })
-  t.compare(state2Diff, [{insert: 'a'}, {insert: 'x', attributes: {ychange: { state: 'added' }}}, {insert: 'b', attributes: {ychange: { state: 'removed' }}}, { insert: 'cd' }])
+  t.compare(state2Diff, [{insert: 'a'}, {insert: 'x', attributes: {ychange: { type: 'added' }}}, {insert: 'b', attributes: {ychange: { type: 'removed' }}}, { insert: 'cd' }])
 }
 
 /**

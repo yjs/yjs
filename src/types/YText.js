@@ -17,7 +17,7 @@ import {
   ContentFormat,
   ContentString,
   splitSnapshotAffectedStructs,
-  Doc, Item, Snapshot, StructStore, Transaction // eslint-disable-line
+  ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
@@ -68,7 +68,6 @@ export class ItemInsertionResult extends ItemListPosition {
 
 /**
  * @param {Transaction} transaction
- * @param {StructStore} store
  * @param {Map<string,any>} currentAttributes
  * @param {Item|null} left
  * @param {Item|null} right
@@ -78,7 +77,7 @@ export class ItemInsertionResult extends ItemListPosition {
  * @private
  * @function
  */
-const findNextPosition = (transaction, store, currentAttributes, left, right, count) => {
+const findNextPosition = (transaction, currentAttributes, left, right, count) => {
   while (right !== null && count > 0) {
     switch (right.content.constructor) {
       case ContentEmbed:
@@ -86,7 +85,7 @@ const findNextPosition = (transaction, store, currentAttributes, left, right, co
         if (!right.deleted) {
           if (count < right.length) {
             // split right
-            getItemCleanStart(transaction, store, createID(right.id.client, right.id.clock + count))
+            getItemCleanStart(transaction, createID(right.id.client, right.id.clock + count))
           }
           count -= right.length
         }
@@ -105,7 +104,6 @@ const findNextPosition = (transaction, store, currentAttributes, left, right, co
 
 /**
  * @param {Transaction} transaction
- * @param {StructStore} store
  * @param {AbstractType<any>} parent
  * @param {number} index
  * @return {ItemTextListPosition}
@@ -113,11 +111,11 @@ const findNextPosition = (transaction, store, currentAttributes, left, right, co
  * @private
  * @function
  */
-const findPosition = (transaction, store, parent, index) => {
+const findPosition = (transaction, parent, index) => {
   let currentAttributes = new Map()
   let left = null
   let right = parent._start
-  return findNextPosition(transaction, store, currentAttributes, left, right, index)
+  return findNextPosition(transaction, currentAttributes, left, right, index)
 }
 
 /**
@@ -299,7 +297,7 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
         case ContentEmbed:
         case ContentString:
           if (length < right.length) {
-            getItemCleanStart(transaction, transaction.doc.store, createID(right.id.client, right.id.clock + length))
+            getItemCleanStart(transaction, createID(right.id.client, right.id.clock + length))
           }
           length -= right.length
           break
@@ -343,7 +341,7 @@ const deleteText = (transaction, left, right, currentAttributes, length) => {
         case ContentEmbed:
         case ContentString:
           if (length < right.length) {
-            getItemCleanStart(transaction, transaction.doc.store, createID(right.id.client, right.id.clock + length))
+            getItemCleanStart(transaction, createID(right.id.client, right.id.clock + length))
           }
           length -= right.length
           right.delete(transaction)
@@ -714,11 +712,12 @@ export class YText extends AbstractType {
    *
    * @param {Snapshot} [snapshot]
    * @param {Snapshot} [prevSnapshot]
+   * @param {function('removed' | 'added', ID):any} [computeYChange]
    * @return {any} The Delta representation of this type.
    *
    * @public
    */
-  toDelta (snapshot, prevSnapshot) {
+  toDelta (snapshot, prevSnapshot, computeYChange) {
     /**
      * @type{Array<any>}
      */
@@ -767,12 +766,12 @@ export class YText extends AbstractType {
               if (snapshot !== undefined && !isVisible(n, snapshot)) {
                 if (cur === undefined || cur.user !== n.id.client || cur.state !== 'removed') {
                   packStr()
-                  currentAttributes.set('ychange', { user: n.id.client, state: 'removed' })
+                  currentAttributes.set('ychange', computeYChange ? computeYChange('removed', n.id) : { type: 'removed' })
                 }
               } else if (prevSnapshot !== undefined && !isVisible(n, prevSnapshot)) {
                 if (cur === undefined || cur.user !== n.id.client || cur.state !== 'added') {
                   packStr()
-                  currentAttributes.set('ychange', { user: n.id.client, state: 'added' })
+                  currentAttributes.set('ychange', computeYChange ? computeYChange('added', n.id) : { type: 'added' })
                 }
               } else if (cur !== undefined) {
                 packStr()
@@ -818,7 +817,7 @@ export class YText extends AbstractType {
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
-        const { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
+        const { left, right, currentAttributes } = findPosition(transaction, this, index)
         if (!attributes) {
           attributes = {}
           currentAttributes.forEach((v, k) => { attributes[k] = v })
@@ -847,7 +846,7 @@ export class YText extends AbstractType {
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
-        const { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
+        const { left, right, currentAttributes } = findPosition(transaction, this, index)
         insertText(transaction, this, left, right, currentAttributes, embed, attributes)
       })
     } else {
@@ -870,7 +869,7 @@ export class YText extends AbstractType {
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
-        const { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
+        const { left, right, currentAttributes } = findPosition(transaction, this, index)
         deleteText(transaction, left, right, currentAttributes, length)
       })
     } else {
@@ -892,7 +891,7 @@ export class YText extends AbstractType {
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
-        let { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
+        let { left, right, currentAttributes } = findPosition(transaction, this, index)
         if (right === null) {
           return
         }

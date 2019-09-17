@@ -131,10 +131,10 @@ export const splitSnapshotAffectedStructs = (transaction, snapshot) => {
   if (!meta.has(snapshot)) {
     snapshot.sv.forEach((clock, client) => {
       if (clock < getState(store, client)) {
-        getItemCleanStart(transaction, store, createID(client, clock))
+        getItemCleanStart(transaction, createID(client, clock))
       }
     })
-    iterateDeletedStructs(transaction, snapshot.ds, store, item => {})
+    iterateDeletedStructs(transaction, snapshot.ds, item => {})
     meta.add(snapshot)
   }
 }

@@ -26,6 +26,7 @@ import {
   readAndApplyDeleteSet,
   writeDeleteSet,
   createDeleteSetFromStructStore,
+  transact,
   Doc, Transaction, AbstractStruct, StructStore, ID // eslint-disable-line
 } from '../internals.js'
 
@@ -299,10 +300,10 @@ export const readStructs = (decoder, transaction, store) => {
  * @function
  */
 export const readUpdate = (decoder, ydoc, transactionOrigin) =>
-  ydoc.transact(transaction => {
+  transact(ydoc, transaction => {
     readStructs(decoder, transaction, ydoc.store)
     readAndApplyDeleteSet(decoder, transaction, ydoc.store)
-  }, transactionOrigin)
+  }, transactionOrigin, false)
 
 /**
  * Apply a document update created by, for example, `y.on('update', update => ..)` or `update = encodeStateAsUpdate()`.

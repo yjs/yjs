@@ -3,6 +3,7 @@ import { init, compare, applyRandomTests, Doc } from './testHelper.js' // eslint
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing.js'
 import * as prng from 'lib0/prng.js'
+import * as math from 'lib0/math.js'
 
 /**
  * @param {t.TestCase} tc
@@ -362,12 +363,12 @@ const arrayTransactions = [
     var length = yarray.length
     if (length > 0) {
       var somePos = prng.int31(gen, 0, length - 1)
-      var delLength = prng.int31(gen, 1, Math.min(2, length - somePos))
+      var delLength = prng.int31(gen, 1, math.min(2, length - somePos))
       if (prng.bool(gen)) {
         var type = yarray.get(somePos)
         if (type.length > 0) {
           somePos = prng.int31(gen, 0, type.length - 1)
-          delLength = prng.int31(gen, 0, Math.min(2, type.length - somePos))
+          delLength = prng.int31(gen, 0, math.min(2, type.length - somePos))
           type.delete(somePos, delLength)
         }
       } else {

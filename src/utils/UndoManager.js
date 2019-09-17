@@ -52,7 +52,7 @@ const popStackItem = (undoManager, stack, eventType) => {
       const stackItem = /** @type {StackItem} */ (stack.pop())
       const itemsToRedo = new Set()
       let performedChange = false
-      iterateDeletedStructs(transaction, stackItem.ds, store, struct => {
+      iterateDeletedStructs(transaction, stackItem.ds, struct => {
         if (struct instanceof Item && scope.some(type => isParentOf(type, struct))) {
           itemsToRedo.add(struct)
         }
@@ -70,10 +70,10 @@ const popStackItem = (undoManager, stack, eventType) => {
           if (struct.redone !== null) {
             let { item, diff } = followRedone(store, struct.id)
             if (diff > 0) {
-              item = getItemCleanStart(transaction, store, createID(item.id.client, item.id.clock + diff))
+              item = getItemCleanStart(transaction, createID(item.id.client, item.id.clock + diff))
             }
             if (item.length > stackItem.len) {
-              getItemCleanStart(transaction, store, createID(item.id.client, item.id.clock + stackItem.len))
+              getItemCleanStart(transaction, createID(item.id.client, item.id.clock + stackItem.len))
             }
             struct = item
           }
@@ -168,7 +168,7 @@ export class UndoManager extends Observable {
       if (now - this.lastChange < captureTimeout && stack.length > 0 && !undoing && !redoing) {
         // append change to last stack op
         const lastOp = stack[stack.length - 1]
-        lastOp.ds = mergeDeleteSets(lastOp.ds, transaction.deleteSet)
+        lastOp.ds = mergeDeleteSets([lastOp.ds, transaction.deleteSet])
         lastOp.len = afterState - lastOp.start
       } else {
         // create a new stack op
@@ -178,7 +178,7 @@ export class UndoManager extends Observable {
         this.lastChange = now
       }
       // make sure that deleted structs are not gc'd
-      iterateDeletedStructs(transaction, transaction.deleteSet, transaction.doc.store, /** @param {Item|GC} item */ item => {
+      iterateDeletedStructs(transaction, transaction.deleteSet, /** @param {Item|GC} item */ item => {
         if (item instanceof Item && this.scope.some(type => isParentOf(type, item))) {
           keepItem(item)
         }

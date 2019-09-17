@@ -46,8 +46,9 @@ export class Transaction {
   /**
    * @param {Doc} doc
    * @param {any} origin
+   * @param {boolean} local
    */
-  constructor (doc, origin) {
+  constructor (doc, origin, local) {
     /**
      * The Yjs instance.
      * @type {Doc}
@@ -95,6 +96,11 @@ export class Transaction {
      * @type {Map<any,any>}
      */
     this.meta = new Map()
+    /**
+     * Whether this change originates from this doc.
+     * @type {boolean}
+     */
+    this.local = local
   }
 }
 
@@ -143,17 +149,17 @@ export const addChangedTypeToTransaction = (transaction, type, parentSub) => {
  *
  * @param {Doc} doc
  * @param {function(Transaction):void} f
- * @param {any} [origin]
+ * @param {any} [origin=true]
  *
  * @private
  * @function
  */
-export const transact = (doc, f, origin = null) => {
+export const transact = (doc, f, origin = null, local = true) => {
   const transactionCleanups = doc._transactionCleanups
   let initialCall = false
   if (doc._transaction === null) {
     initialCall = true
-    doc._transaction = new Transaction(doc, origin)
+    doc._transaction = new Transaction(doc, origin, local)
     transactionCleanups.push(doc._transaction)
     doc.emit('beforeTransaction', [doc._transaction, doc])
   }

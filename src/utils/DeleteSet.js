@@ -8,6 +8,7 @@ import {
   Item, GC, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
 
+import * as array from 'lib0/array.js'
 import * as math from 'lib0/math.js'
 import * as map from 'lib0/map.js'
 import * as encoding from 'lib0/encoding.js'
@@ -52,14 +53,13 @@ export class DeleteSet {
  *
  * @param {Transaction} transaction
  * @param {DeleteSet} ds
- * @param {StructStore} store
  * @param {function(GC|Item):void} f
  *
  * @function
  */
-export const iterateDeletedStructs = (transaction, ds, store, f) =>
+export const iterateDeletedStructs = (transaction, ds, f) =>
   ds.clients.forEach((deletes, clientid) => {
-    const structs = /** @type {Array<GC|Item>} */ (store.clients.get(clientid))
+    const structs = /** @type {Array<GC|Item>} */ (transaction.doc.store.clients.get(clientid))
     for (let i = 0; i < deletes.length; i++) {
       const del = deletes[i]
       iterateStructs(transaction, structs, del.clock, del.len, f)
@@ -137,22 +137,27 @@ export const sortAndMergeDeleteSet = ds => {
 }
 
 /**
- * @param {DeleteSet} ds1
- * @param {DeleteSet} ds2
+ * @param {Array<DeleteSet>} dss
  * @return {DeleteSet} A fresh DeleteSet
  */
-export const mergeDeleteSets = (ds1, ds2) => {
+export const mergeDeleteSets = dss => {
   const merged = new DeleteSet()
-  // Write all keys from ds1 to merged. If ds2 has the same key, combine the sets.
-  ds1.clients.forEach((dels1, client) =>
-    merged.clients.set(client, dels1.concat(ds2.clients.get(client) || []))
-  )
-  // Write all missing keys from ds2 to merged.
-  ds2.clients.forEach((dels2, client) => {
-    if (!merged.clients.has(client)) {
-      merged.clients.set(client, dels2)
-    }
-  })
+  for (let dssI = 0; dssI < dss.length; dssI++) {
+    dss[dssI].clients.forEach((delsLeft, client) => {
+      if (!merged.clients.has(client)) {
+        // Write all missing keys from current ds and all following.
+        // If merged already contains `client` current ds has already been added.
+        /**
+         * @type {Array<DeleteItem>}
+         */
+        const dels = delsLeft.slice()
+        for (let i = dssI + 1; i < dss.length; i++) {
+          array.appendTo(dels, dss[i].clients.get(client) || [])
+        }
+        merged.clients.set(client, dels)
+      }
+    })
+  }
   sortAndMergeDeleteSet(merged)
   return merged
 }

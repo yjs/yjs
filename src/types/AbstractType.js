@@ -428,7 +428,7 @@ export const typeListInsertGenerics = (transaction, parent, index, content) => {
       if (index <= n.length) {
         if (index < n.length) {
           // insert in-between
-          getItemCleanStart(transaction, transaction.doc.store, createID(n.id.client, n.id.clock + index))
+          getItemCleanStart(transaction, createID(n.id.client, n.id.clock + index))
         }
         break
       }
@@ -454,7 +454,7 @@ export const typeListDelete = (transaction, parent, index, length) => {
   for (; n !== null && index > 0; n = n.right) {
     if (!n.deleted && n.countable) {
       if (index < n.length) {
-        getItemCleanStart(transaction, transaction.doc.store, createID(n.id.client, n.id.clock + index))
+        getItemCleanStart(transaction, createID(n.id.client, n.id.clock + index))
       }
       index -= n.length
     }
@@ -463,7 +463,7 @@ export const typeListDelete = (transaction, parent, index, length) => {
   while (length > 0 && n !== null) {
     if (!n.deleted) {
       if (length < n.length) {
-        getItemCleanStart(transaction, transaction.doc.store, createID(n.id.client, n.id.clock + length))
+        getItemCleanStart(transaction, createID(n.id.client, n.id.clock + length))
       }
       n.delete(transaction)
       length -= n.length
