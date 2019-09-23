@@ -228,7 +228,7 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
       return null
     }
     type = right.parent
-    if (type._item !== null && !type._item.deleted) {
+    if (type._item === null || !type._item.deleted) {
       index = right.deleted || !right.countable ? 0 : res.diff
       let n = right.left
       while (n !== null) {
