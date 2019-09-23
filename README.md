@@ -55,7 +55,7 @@ are implemented in separate modules.
 | Name | Cursors | Binding |  Demo |
 |---|:-:|---|---|
 | [ProseMirror](https://prosemirror.net/) &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; | ✔ | [y-prosemirror](http://github.com/yjs/y-prosemirror) | [demo](https://yjs-demos.now.sh/prosemirror/) |
-| [Quill](https://quilljs.com/) |  | [y-quill](http://github.com/yjs/y-quill) | [demo](https://yjs-demos.now.sh/quill/) |
+| [Quill](https://quilljs.com/) | ✔ | [y-quill](http://github.com/yjs/y-quill) | [demo](https://yjs-demos.now.sh/quill/) |
 | [CodeMirror](https://codemirror.net/) | ✔ | [y-codemirror](http://github.com/yjs/y-codemirror) | [demo](https://yjs-demos.now.sh/codemirror/) |
 | [Monaco](https://microsoft.github.io/monaco-editor/) | ✔ | [y-monaco](http://github.com/yjs/y-monaco) | [demo](https://yjs-demos.now.sh/monaco/) |
 | [Ace](https://ace.c9.io/) | | [y-ace](http://github.com/yjs/y-ace) | [demo](https://yjs-demos.now.sh/ace/) |
