@@ -56,6 +56,8 @@ export class YEvent {
   /**
    * Check if a struct is deleted by this event.
    *
+   * In contrast to change.deleted, this method also returns true if the struct was added and then deleted.
+   *
    * @param {AbstractStruct} struct
    * @return {boolean}
    */
@@ -65,6 +67,8 @@ export class YEvent {
 
   /**
    * Check if a struct is added by this event.
+   *
+   * In contrast to change.deleted, this method also returns true if the struct was added and then deleted.
    *
    * @param {AbstractStruct} struct
    * @return {boolean}
@@ -106,7 +110,7 @@ export class YEvent {
         }
         for (let item = target._start; item !== null; item = item.right) {
           if (item.deleted) {
-            if (this.deletes(item)) {
+            if (this.deletes(item) && !this.adds(item)) {
               if (lastOp === null || lastOp.delete === undefined) {
                 packOp()
                 lastOp = { delete: 0 }
