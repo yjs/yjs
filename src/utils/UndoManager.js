@@ -111,9 +111,9 @@ const popStackItem = (undoManager, stack, eventType) => {
 /**
  * Fires 'stack-item-added' event when a stack item was added to either the undo- or
  * the redo-stack. You may store additional stack information via the
- * metadata property on `event.stackItem.metadata` (it is a `Map` of metadata properties).
+ * metadata property on `event.stackItem.meta` (it is a `Map` of metadata properties).
  * Fires 'stack-item-popped' event when a stack item was popped from either the
- * undo- or the redo-stack. You may restore the saved stack information from `event.stackItem.metadata`.
+ * undo- or the redo-stack. You may restore the saved stack information from `event.stackItem.meta`.
  *
  * @extends {Observable<'stack-item-added'|'stack-item-popped'>}
  */
