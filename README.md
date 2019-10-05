@@ -235,7 +235,8 @@ or any of its children.
 Copies the <code>[key,value]</code> pairs of this YMap to a new Object.It
 transforms all child types to JSON using their <code>toJSON</code> method.
     </dd>
-    <b><code>forEach(function(key:string,value:object|boolean|Array|string|number|Uint8Array|Y.Type))</code></b>
+    <b><code>forEach(function(value:object|boolean|Array|string|number|Uint8Array|Y.Type,
+ key:string, map: Y.Map))</code></b>
     <dd>
       Execute the provided function once for every key-value pair.
     </dd>
@@ -343,7 +344,7 @@ or any of its children.
 </details>
 
 <details>
-  <summary><b>YXmlFragment</b></summary>
+  <summary><b>Y.XmlFragment</b></summary>
   <br>
   <p>
     A container that holds an Array of Y.XmlElements.
