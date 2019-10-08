@@ -13,6 +13,10 @@ import * as t from 'lib0/testing.js'
 export const testUndoText = tc => {
   const { testConnector, text0, text1 } = init(tc, { users: 3 })
   const undoManager = new UndoManager(text0)
+  text0.insert(0, 'test')
+  text0.delete(0, 4)
+  undoManager.undo()
+  t.assert(text0.toString() === '')
   text0.insert(0, 'abc')
   text1.insert(0, 'xyz')
   testConnector.syncAll()
@@ -65,6 +69,15 @@ export const testUndoMap = tc => {
   t.assert(map0.get('a') === 44)
   undoManager.redo()
   t.assert(map0.get('a') === 44)
+
+  // test setting value multiple times
+  map0.set('b', 'initial')
+  undoManager.stopCapturing()
+  map0.set('b', 'val1')
+  map0.set('b', 'val2')
+  undoManager.stopCapturing()
+  undoManager.undo()
+  t.assert(map0.get('b') === 'initial')
 }
 
 /**

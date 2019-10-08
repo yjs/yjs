@@ -9,6 +9,7 @@ import {
   createID,
   followRedone,
   getItemCleanStart,
+  getState,
   Transaction, Doc, Item, GC, DeleteSet, AbstractType // eslint-disable-line
 } from '../internals.js'
 
@@ -49,23 +50,39 @@ const popStackItem = (undoManager, stack, eventType) => {
   transact(doc, transaction => {
     while (stack.length > 0 && result === null) {
       const store = doc.store
+      const clientID = doc.clientID
       const stackItem = /** @type {StackItem} */ (stack.pop())
+      const stackStartClock = stackItem.start
+      const stackEndClock = stackItem.start + stackItem.len
       const itemsToRedo = new Set()
+      // @todo iterateStructs should not need the structs parameter
+      const structs = /** @type {Array<GC|Item>} */ (store.clients.get(clientID))
       let performedChange = false
+      if (stackStartClock !== stackEndClock) {
+        // make sure structs don't overlap with the range of created operations [stackItem.start, stackItem.start + stackItem.end)
+        getItemCleanStart(transaction, createID(clientID, stackStartClock))
+        if (stackEndClock < getState(doc.store, clientID)) {
+          getItemCleanStart(transaction, createID(clientID, stackEndClock))
+        }
+      }
       iterateDeletedStructs(transaction, stackItem.ds, struct => {
-        if (struct instanceof Item && scope.some(type => isParentOf(type, struct))) {
+        if (
+          struct instanceof Item &&
+          scope.some(type => isParentOf(type, struct)) &&
+          // Never redo structs in [stackItem.start, stackItem.start + stackItem.end) because they were created and deleted in the same capture interval.
+          !(struct.id.client === clientID && struct.id.clock >= stackStartClock && struct.id.clock < stackEndClock)
+        ) {
           itemsToRedo.add(struct)
         }
       })
       itemsToRedo.forEach(item => {
         performedChange = redoItem(transaction, item, itemsToRedo) !== null || performedChange
       })
-      const structs = /** @type {Array<GC|Item>} */ (store.clients.get(doc.clientID))
       /**
        * @type {Array<Item>}
        */
       const itemsToDelete = []
-      iterateStructs(transaction, structs, stackItem.start, stackItem.len, struct => {
+      iterateStructs(transaction, structs, stackStartClock, stackItem.len, struct => {
         if (struct instanceof Item && !struct.deleted && scope.some(type => isParentOf(type, /** @type {Item} */ (struct)))) {
           if (struct.redone !== null) {
             let { item, diff } = followRedone(store, struct.id)
@@ -73,7 +90,7 @@ const popStackItem = (undoManager, stack, eventType) => {
               item = getItemCleanStart(transaction, createID(item.id.client, item.id.clock + diff))
             }
             if (item.length > stackItem.len) {
-              getItemCleanStart(transaction, createID(item.id.client, item.id.clock + stackItem.len))
+              getItemCleanStart(transaction, createID(item.id.client, stackEndClock))
             }
             struct = item
           }
