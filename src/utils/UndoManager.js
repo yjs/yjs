@@ -75,15 +75,15 @@ const popStackItem = (undoManager, stack, eventType) => {
           itemsToRedo.add(struct)
         }
       })
-      itemsToRedo.forEach(item => {
-        performedChange = redoItem(transaction, item, itemsToRedo) !== null || performedChange
+      itemsToRedo.forEach(struct => {
+        performedChange = redoItem(transaction, struct, itemsToRedo) !== null || performedChange
       })
       /**
        * @type {Array<Item>}
        */
       const itemsToDelete = []
       iterateStructs(transaction, structs, stackStartClock, stackItem.len, struct => {
-        if (struct instanceof Item && !struct.deleted && scope.some(type => isParentOf(type, /** @type {Item} */ (struct)))) {
+        if (struct instanceof Item) {
           if (struct.redone !== null) {
             let { item, diff } = followRedone(store, struct.id)
             if (diff > 0) {
@@ -94,7 +94,9 @@ const popStackItem = (undoManager, stack, eventType) => {
             }
             struct = item
           }
-          itemsToDelete.push(struct)
+          if (!struct.deleted && scope.some(type => isParentOf(type, /** @type {Item} */ (struct)))) {
+            itemsToDelete.push(struct)
+          }
         }
       })
       // We want to delete in reverse order so that children are deleted before

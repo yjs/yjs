@@ -13,10 +13,23 @@ import * as t from 'lib0/testing.js'
 export const testUndoText = tc => {
   const { testConnector, text0, text1 } = init(tc, { users: 3 })
   const undoManager = new UndoManager(text0)
+
+  // items that are added & deleted in the same transaction won't be undo
   text0.insert(0, 'test')
   text0.delete(0, 4)
   undoManager.undo()
   t.assert(text0.toString() === '')
+
+  // follow redone items
+  text0.insert(0, 'a')
+  undoManager.stopCapturing()
+  text0.delete(0, 1)
+  undoManager.stopCapturing()
+  undoManager.undo()
+  t.assert(text0.toString() === 'a')
+  undoManager.undo()
+  t.assert(text0.toString() === '')
+
   text0.insert(0, 'abc')
   text1.insert(0, 'xyz')
   testConnector.syncAll()

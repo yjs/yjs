@@ -35,6 +35,8 @@ import * as set from 'lib0/set.js'
 import * as binary from 'lib0/binary.js'
 
 /**
+ * @todo This should return several items
+ *
  * @param {StructStore} store
  * @param {ID} id
  * @return {{item:Item, diff:number}}
