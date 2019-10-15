@@ -56,7 +56,7 @@ export class YXmlText extends YText {
         const node = nestedNodes[i]
         str += `<${node.nodeName}`
         for (let j = 0; j < node.attrs.length; j++) {
-          const attr = node.attrs[i]
+          const attr = node.attrs[j]
           str += ` ${attr.key}="${attr.value}"`
         }
         str += '>'
