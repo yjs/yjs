@@ -81,10 +81,10 @@ export const testBasicFormat = tc => {
 export const testGetDeltaWithEmbeds = tc => {
   const { text0 } = init(tc, { users: 1 })
   text0.applyDelta([{
-    insert: {linebreak: 's'}
+    insert: { linebreak: 's' }
   }])
   t.compare(text0.toDelta(), [{
-    insert: {linebreak: 's'}
+    insert: { linebreak: 's' }
   }])
 }
 
@@ -127,7 +127,7 @@ export const testSnapshot = tc => {
       delete v.attributes.ychange.user
     }
   })
-  t.compare(state2Diff, [{insert: 'a'}, {insert: 'x', attributes: {ychange: { type: 'added' }}}, {insert: 'b', attributes: {ychange: { type: 'removed' }}}, { insert: 'cd' }])
+  t.compare(state2Diff, [{ insert: 'a' }, { insert: 'x', attributes: { ychange: { type: 'added' } } }, { insert: 'b', attributes: { ychange: { type: 'removed' } } }, { insert: 'cd' }])
 }
 
 /**

@@ -207,7 +207,7 @@ export const testChangeEvent = tc => {
   const newArr = new Y.Array()
   array0.insert(0, [newArr, 4, 'dtrn'])
   t.assert(changes !== null && changes.added.size === 2 && changes.deleted.size === 0)
-  t.compare(changes.delta, [{insert: [newArr, 4, 'dtrn']}])
+  t.compare(changes.delta, [{ insert: [newArr, 4, 'dtrn'] }])
   changes = null
   array0.delete(0, 2)
   t.assert(changes !== null && changes.added.size === 0 && changes.deleted.size === 2)

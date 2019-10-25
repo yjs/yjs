@@ -30,7 +30,7 @@ import * as encoding from 'lib0/encoding.js' // eslint-disable-line
  * @param {EventType} event
  */
 export const callTypeObservers = (type, transaction, event) => {
-  callEventHandlerListeners(type._eH, event, transaction)
+  const changedType = type
   const changedParentTypes = transaction.changedParentTypes
   while (true) {
     // @ts-ignore
@@ -40,6 +40,7 @@ export const callTypeObservers = (type, transaction, event) => {
     }
     type = type._item.parent
   }
+  callEventHandlerListeners(changedType._eH, event, transaction)
 }
 
 /**
