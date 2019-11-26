@@ -71,7 +71,7 @@ export class Transaction {
     /**
      * All types that were directly modified (property added or child
      * inserted/deleted). New types are not included in this Set.
-     * Maps from type to parentSubs (`item._parentSub = null` for YArray)
+     * Maps from type to parentSubs (`item.parentSub = null` for YArray)
      * @type {Map<AbstractType<YEvent>,Set<String|null>>}
      */
     this.changed = new Map()
