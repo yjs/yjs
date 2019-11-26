@@ -9,6 +9,7 @@ import {
   createID,
   followRedone,
   getItemCleanStart,
+  getState,
   Transaction, Doc, Item, GC, DeleteSet, AbstractType // eslint-disable-line
 } from '../internals.js'
 
@@ -49,35 +50,64 @@ const popStackItem = (undoManager, stack, eventType) => {
   transact(doc, transaction => {
     while (stack.length > 0 && result === null) {
       const store = doc.store
+      const clientID = doc.clientID
       const stackItem = /** @type {StackItem} */ (stack.pop())
+      const stackStartClock = stackItem.start
+      const stackEndClock = stackItem.start + stackItem.len
       const itemsToRedo = new Set()
+      // @todo iterateStructs should not need the structs parameter
+      const structs = /** @type {Array<GC|Item>} */ (store.clients.get(clientID))
       let performedChange = false
-      iterateDeletedStructs(transaction, stackItem.ds, store, struct => {
-        if (struct instanceof Item && scope.some(type => isParentOf(type, struct))) {
+      if (stackStartClock !== stackEndClock) {
+        // make sure structs don't overlap with the range of created operations [stackItem.start, stackItem.start + stackItem.end)
+        getItemCleanStart(transaction, createID(clientID, stackStartClock))
+        if (stackEndClock < getState(doc.store, clientID)) {
+          getItemCleanStart(transaction, createID(clientID, stackEndClock))
+        }
+      }
+      iterateDeletedStructs(transaction, stackItem.ds, struct => {
+        if (
+          struct instanceof Item &&
+          scope.some(type => isParentOf(type, struct)) &&
+          // Never redo structs in [stackItem.start, stackItem.start + stackItem.end) because they were created and deleted in the same capture interval.
+          !(struct.id.client === clientID && struct.id.clock >= stackStartClock && struct.id.clock < stackEndClock)
+        ) {
           itemsToRedo.add(struct)
         }
       })
-      itemsToRedo.forEach(item => {
-        performedChange = redoItem(transaction, item, itemsToRedo) !== null || performedChange
+      itemsToRedo.forEach(struct => {
+        performedChange = redoItem(transaction, struct, itemsToRedo) !== null || performedChange
       })
-      const structs = /** @type {Array<GC|Item>} */ (store.clients.get(doc.clientID))
-      iterateStructs(transaction, structs, stackItem.start, stackItem.len, struct => {
-        if (struct instanceof Item && !struct.deleted && scope.some(type => isParentOf(type, /** @type {Item} */ (struct)))) {
+      /**
+       * @type {Array<Item>}
+       */
+      const itemsToDelete = []
+      iterateStructs(transaction, structs, stackStartClock, stackItem.len, struct => {
+        if (struct instanceof Item) {
           if (struct.redone !== null) {
             let { item, diff } = followRedone(store, struct.id)
             if (diff > 0) {
-              item = getItemCleanStart(transaction, store, createID(item.id.client, item.id.clock + diff))
+              item = getItemCleanStart(transaction, createID(item.id.client, item.id.clock + diff))
             }
             if (item.length > stackItem.len) {
-              getItemCleanStart(transaction, store, createID(item.id.client, item.id.clock + stackItem.len))
+              getItemCleanStart(transaction, createID(item.id.client, stackEndClock))
             }
             struct = item
           }
-          keepItem(struct)
-          struct.delete(transaction)
-          performedChange = true
+          if (!struct.deleted && scope.some(type => isParentOf(type, /** @type {Item} */ (struct)))) {
+            itemsToDelete.push(struct)
+          }
         }
       })
+      // We want to delete in reverse order so that children are deleted before
+      // parents, so we have more information available when items are filtered.
+      for (let i = itemsToDelete.length - 1; i >= 0; i--) {
+        const item = itemsToDelete[i]
+        if (undoManager.deleteFilter(item)) {
+          item.delete(transaction)
+          performedChange = true
+        }
+      }
       result = stackItem
       if (result != null) {
         undoManager.emit('stack-item-popped', [{ stackItem: result, type: eventType }, undoManager])
@@ -88,25 +118,38 @@ const popStackItem = (undoManager, stack, eventType) => {
 }
 
 /**
+ * @typedef {Object} UndoManagerOptions
+ * @property {number} [UndoManagerOptions.captureTimeout=500]
+ * @property {function(Item):boolean} [UndoManagerOptions.deleteFilter=()=>true] Sometimes
+ * it is necessary to filter whan an Undo/Redo operation can delete. If this
+ * filter returns false, the type/item won't be deleted even it is in the
+ * undo/redo scope.
+ * @property {Set<any>} [UndoManagerOptions.trackedOrigins=new Set([null])]
+ */
+
+/**
  * Fires 'stack-item-added' event when a stack item was added to either the undo- or
  * the redo-stack. You may store additional stack information via the
- * metadata property on `event.stackItem.metadata` (it is a `Map` of metadata properties).
+ * metadata property on `event.stackItem.meta` (it is a `Map` of metadata properties).
  * Fires 'stack-item-popped' event when a stack item was popped from either the
- * undo- or the redo-stack. You may restore the saved stack information from `event.stackItem.metadata`.
+ * undo- or the redo-stack. You may restore the saved stack information from `event.stackItem.meta`.
  *
  * @extends {Observable<'stack-item-added'|'stack-item-popped'>}
  */
 export class UndoManager extends Observable {
   /**
    * @param {AbstractType<any>|Array<AbstractType<any>>} typeScope Accepts either a single type, or an array of types
-   * @param {Set<any>} [trackedTransactionOrigins=new Set([null])]
-   * @param {object} [options={captureTimeout=500}]
+   * @param {UndoManagerOptions} options
    */
-  constructor (typeScope, trackedTransactionOrigins = new Set([null]), { captureTimeout = 500 } = {}) {
+  constructor (typeScope, { captureTimeout, deleteFilter = () => true, trackedOrigins = new Set([null]) } = {}) {
+    if (captureTimeout == null) {
+      captureTimeout = 500
+    }
     super()
     this.scope = typeScope instanceof Array ? typeScope : [typeScope]
-    trackedTransactionOrigins.add(this)
-    this.trackedTransactionOrigins = trackedTransactionOrigins
+    this.deleteFilter = deleteFilter
+    trackedOrigins.add(this)
+    this.trackedOrigins = trackedOrigins
     /**
      * @type {Array<StackItem>}
      */
@@ -126,7 +169,7 @@ export class UndoManager extends Observable {
     this.lastChange = 0
     this.doc.on('afterTransaction', /** @param {Transaction} transaction */ transaction => {
       // Only track certain transactions
-      if (!this.scope.some(type => transaction.changedParentTypes.has(type)) || (!this.trackedTransactionOrigins.has(transaction.origin) && (!transaction.origin || !this.trackedTransactionOrigins.has(transaction.origin.constructor)))) {
+      if (!this.scope.some(type => transaction.changedParentTypes.has(type)) || (!this.trackedOrigins.has(transaction.origin) && (!transaction.origin || !this.trackedOrigins.has(transaction.origin.constructor)))) {
         return
       }
       const undoing = this.undoing
@@ -144,7 +187,7 @@ export class UndoManager extends Observable {
       if (now - this.lastChange < captureTimeout && stack.length > 0 && !undoing && !redoing) {
         // append change to last stack op
         const lastOp = stack[stack.length - 1]
-        lastOp.ds = mergeDeleteSets(lastOp.ds, transaction.deleteSet)
+        lastOp.ds = mergeDeleteSets([lastOp.ds, transaction.deleteSet])
         lastOp.len = afterState - lastOp.start
       } else {
         // create a new stack op
@@ -154,7 +197,7 @@ export class UndoManager extends Observable {
         this.lastChange = now
       }
       // make sure that deleted structs are not gc'd
-      iterateDeletedStructs(transaction, transaction.deleteSet, transaction.doc.store, /** @param {Item|GC} item */ item => {
+      iterateDeletedStructs(transaction, transaction.deleteSet, /** @param {Item|GC} item */ item => {
         if (item instanceof Item && this.scope.some(type => isParentOf(type, item))) {
           keepItem(item)
         }

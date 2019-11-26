@@ -151,6 +151,10 @@ export class YXmlFragment extends AbstractType {
     return new YXmlFragment()
   }
 
+  get length () {
+    return this._prelimContent === null ? this._length : this._prelimContent.length
+  }
+
   /**
    * Create a subtree of childNodes.
    *

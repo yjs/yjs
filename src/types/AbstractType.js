@@ -7,7 +7,7 @@ import {
   nextID,
   isVisible,
   ContentType,
-  ContentJSON,
+  ContentAny,
   ContentBinary,
   createID,
   getItemCleanStart,
@@ -30,7 +30,7 @@ import * as encoding from 'lib0/encoding.js' // eslint-disable-line
  * @param {EventType} event
  */
 export const callTypeObservers = (type, transaction, event) => {
-  callEventHandlerListeners(type._eH, event, transaction)
+  const changedType = type
   const changedParentTypes = transaction.changedParentTypes
   while (true) {
     // @ts-ignore
@@ -40,6 +40,7 @@ export const callTypeObservers = (type, transaction, event) => {
     }
     type = type._item.parent
   }
+  callEventHandlerListeners(changedType._eH, event, transaction)
 }
 
 /**
@@ -374,7 +375,7 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
   let jsonContent = []
   const packJsonContent = () => {
     if (jsonContent.length > 0) {
-      left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentJSON(jsonContent))
+      left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentAny(jsonContent))
       left.integrate(transaction)
       jsonContent = []
     }
@@ -428,7 +429,7 @@ export const typeListInsertGenerics = (transaction, parent, index, content) => {
       if (index <= n.length) {
         if (index < n.length) {
           // insert in-between
-          getItemCleanStart(transaction, transaction.doc.store, createID(n.id.client, n.id.clock + index))
+          getItemCleanStart(transaction, createID(n.id.client, n.id.clock + index))
         }
         break
       }
@@ -454,7 +455,7 @@ export const typeListDelete = (transaction, parent, index, length) => {
   for (; n !== null && index > 0; n = n.right) {
     if (!n.deleted && n.countable) {
       if (index < n.length) {
-        getItemCleanStart(transaction, transaction.doc.store, createID(n.id.client, n.id.clock + index))
+        getItemCleanStart(transaction, createID(n.id.client, n.id.clock + index))
       }
       index -= n.length
     }
@@ -463,7 +464,7 @@ export const typeListDelete = (transaction, parent, index, length) => {
   while (length > 0 && n !== null) {
     if (!n.deleted) {
       if (length < n.length) {
-        getItemCleanStart(transaction, transaction.doc.store, createID(n.id.client, n.id.clock + length))
+        getItemCleanStart(transaction, createID(n.id.client, n.id.clock + length))
       }
       n.delete(transaction)
       length -= n.length
@@ -503,7 +504,7 @@ export const typeMapSet = (transaction, parent, key, value) => {
   const left = parent._map.get(key) || null
   let content
   if (value == null) {
-    content = new ContentJSON([value])
+    content = new ContentAny([value])
   } else {
     switch (value.constructor) {
       case Number:
@@ -511,7 +512,7 @@ export const typeMapSet = (transaction, parent, key, value) => {
       case Boolean:
       case Array:
       case String:
-        content = new ContentJSON([value])
+        content = new ContentAny([value])
         break
       case Uint8Array:
         content = new ContentBinary(value)
@@ -584,7 +585,7 @@ export const typeMapHas = (parent, key) => {
  */
 export const typeMapGetSnapshot = (parent, key, snapshot) => {
   let v = parent._map.get(key) || null
-  while (v !== null && (!snapshot.sm.has(v.id.client) || v.id.clock >= (snapshot.sm.get(v.id.client) || 0))) {
+  while (v !== null && (!snapshot.sv.has(v.id.client) || v.id.clock >= (snapshot.sv.get(v.id.client) || 0))) {
     v = v.left
   }
   return v !== null && isVisible(v, snapshot) ? v.content.getContent()[v.length - 1] : undefined

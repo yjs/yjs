@@ -23,9 +23,10 @@ import {
   readID,
   getState,
   getStateVector,
-  readDeleteSet,
+  readAndApplyDeleteSet,
   writeDeleteSet,
   createDeleteSetFromStructStore,
+  transact,
   Doc, Transaction, AbstractStruct, StructStore, ID // eslint-disable-line
 } from '../internals.js'
 
@@ -230,7 +231,7 @@ export const tryResumePendingDeleteReaders = (transaction, store) => {
   const pendingReaders = store.pendingDeleteReaders
   store.pendingDeleteReaders = []
   for (let i = 0; i < pendingReaders.length; i++) {
-    readDeleteSet(pendingReaders[i], transaction, store)
+    readAndApplyDeleteSet(pendingReaders[i], transaction, store)
   }
 }
 
@@ -299,10 +300,10 @@ export const readStructs = (decoder, transaction, store) => {
  * @function
  */
 export const readUpdate = (decoder, ydoc, transactionOrigin) =>
-  ydoc.transact(transaction => {
+  transact(ydoc, transaction => {
     readStructs(decoder, transaction, ydoc.store)
-    readDeleteSet(decoder, transaction, ydoc.store)
-  }, transactionOrigin)
+    readAndApplyDeleteSet(decoder, transaction, ydoc.store)
+  }, transactionOrigin, false)
 
 /**
  * Apply a document update created by, for example, `y.on('update', update => ..)` or `update = encodeStateAsUpdate()`.
@@ -385,20 +386,27 @@ export const decodeStateVector = decodedState => readStateVector(decoding.create
  * Write State Vector to `lib0/encoding.js#Encoder`.
  *
  * @param {encoding.Encoder} encoder
+ * @param {Map<number,number>} sv
+ * @function
+ */
+export const writeStateVector = (encoder, sv) => {
+  encoding.writeVarUint(encoder, sv.size)
+  sv.forEach((clock, client) => {
+    encoding.writeVarUint(encoder, client)
+    encoding.writeVarUint(encoder, clock)
+  })
+  return encoder
+}
+
+/**
+ * Write State Vector to `lib0/encoding.js#Encoder`.
+ *
+ * @param {encoding.Encoder} encoder
  * @param {Doc} doc
  *
  * @function
  */
-export const writeDocumentStateVector = (encoder, doc) => {
-  encoding.writeVarUint(encoder, doc.store.clients.size)
-  doc.store.clients.forEach((structs, client) => {
-    const struct = structs[structs.length - 1]
-    const id = struct.id
-    encoding.writeVarUint(encoder, id.client)
-    encoding.writeVarUint(encoder, id.clock + struct.length)
-  })
-  return encoder
-}
+export const writeDocumentStateVector = (encoder, doc) => writeStateVector(encoder, getStateVector(doc.store))
 
 /**
  * Encode State as Uint8Array.

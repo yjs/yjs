@@ -3,6 +3,7 @@ import { init, compare, applyRandomTests, Doc } from './testHelper.js' // eslint
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing.js'
 import * as prng from 'lib0/prng.js'
+import * as math from 'lib0/math.js'
 
 /**
  * @param {t.TestCase} tc
@@ -194,6 +195,33 @@ export const testInsertAndDeleteEventsForTypes = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testChangeEvent = tc => {
+  const { array0, users } = init(tc, { users: 2 })
+  /**
+   * @type {any}
+   */
+  let changes = null
+  array0.observe(e => {
+    changes = e.changes
+  })
+  const newArr = new Y.Array()
+  array0.insert(0, [newArr, 4, 'dtrn'])
+  t.assert(changes !== null && changes.added.size === 2 && changes.deleted.size === 0)
+  t.compare(changes.delta, [{ insert: [newArr, 4, 'dtrn'] }])
+  changes = null
+  array0.delete(0, 2)
+  t.assert(changes !== null && changes.added.size === 0 && changes.deleted.size === 2)
+  t.compare(changes.delta, [{ delete: 2 }])
+  changes = null
+  array0.insert(1, [0.1])
+  t.assert(changes !== null && changes.added.size === 1 && changes.deleted.size === 0)
+  t.compare(changes.delta, [{ retain: 1 }, { insert: [0.1] }])
+  compare(users)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testInsertAndDeleteEventsForTypes2 = tc => {
   const { array0, users } = init(tc, { users: 2 })
   /**
@@ -211,7 +239,7 @@ export const testInsertAndDeleteEventsForTypes2 = tc => {
 }
 
 /**
- * This issue has been reported here https://github.com/y-js/yjs/issues/155
+ * This issue has been reported here https://github.com/yjs/yjs/issues/155
  * @param {t.TestCase} tc
  */
 export const testNewChildDoesNotEmitEventInTransaction = tc => {
@@ -335,12 +363,12 @@ const arrayTransactions = [
     var length = yarray.length
     if (length > 0) {
       var somePos = prng.int31(gen, 0, length - 1)
-      var delLength = prng.int31(gen, 1, Math.min(2, length - somePos))
+      var delLength = prng.int31(gen, 1, math.min(2, length - somePos))
       if (prng.bool(gen)) {
         var type = yarray.get(somePos)
         if (type.length > 0) {
           somePos = prng.int31(gen, 0, type.length - 1)
-          delLength = prng.int31(gen, 0, Math.min(2, type.length - somePos))
+          delLength = prng.int31(gen, 0, math.min(2, type.length - somePos))
           type.delete(somePos, delLength)
         }
       } else {

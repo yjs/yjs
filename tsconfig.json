@@ -38,7 +38,10 @@
     "moduleResolution": "node",            /* Specify module resolution strategy: 'node' (Node.js) or 'classic' (TypeScript pre-1.6). */
     "baseUrl": "./",                       /* Base directory to resolve non-absolute module names. */
     "paths": {
-      "yjs": ["./src/index.js"]
+      "yjs": ["./src/index.js"],
+      "lib0/*": ["node_modules/lib0/*"],
+      "lib0/set.js": ["node_modules/lib0/set.js"],
+      "lib0/function.js": ["node_modules/lib0/function.js"]
     },                           /* A series of entries which re-map imports to lookup locations relative to the 'baseUrl'. */
     // "rootDirs": [],                        /* List of root folders whose combined content represents the structure of the project at runtime. */
     // "typeRoots": [],                       /* List of folders to include type definitions from. */

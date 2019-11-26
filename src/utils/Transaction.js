@@ -17,6 +17,7 @@ import * as encoding from 'lib0/encoding.js'
 import * as map from 'lib0/map.js'
 import * as math from 'lib0/math.js'
 import * as set from 'lib0/set.js'
+import { callAll } from 'lib0/function.js'
 
 /**
  * A transaction is created for every change on the Yjs model. It is possible
@@ -46,8 +47,9 @@ export class Transaction {
   /**
    * @param {Doc} doc
    * @param {any} origin
+   * @param {boolean} local
    */
-  constructor (doc, origin) {
+  constructor (doc, origin, local) {
     /**
      * The Yjs instance.
      * @type {Doc}
@@ -90,6 +92,16 @@ export class Transaction {
      * @type {any}
      */
     this.origin = origin
+    /**
+     * Stores meta information on the transaction
+     * @type {Map<any,any>}
+     */
+    this.meta = new Map()
+    /**
+     * Whether this change originates from this doc.
+     * @type {boolean}
+     */
+    this.local = local
   }
 }
 
@@ -134,21 +146,179 @@ export const addChangedTypeToTransaction = (transaction, type, parentSub) => {
 }
 
 /**
+ * @param {Array<Transaction>} transactionCleanups
+ * @param {number} i
+ */
+const cleanupTransactions = (transactionCleanups, i) => {
+  if (i < transactionCleanups.length) {
+    const transaction = transactionCleanups[i]
+    const doc = transaction.doc
+    const store = doc.store
+    const ds = transaction.deleteSet
+    try {
+      sortAndMergeDeleteSet(ds)
+      transaction.afterState = getStateVector(transaction.doc.store)
+      doc._transaction = null
+      doc.emit('beforeObserverCalls', [transaction, doc])
+      /**
+       * An array of event callbacks.
+       *
+       * Each callback is called even if the other ones throw errors.
+       *
+       * @type {Array<function():void>}
+       */
+      const fs = []
+      // observe events on changed types
+      transaction.changed.forEach((subs, itemtype) =>
+        fs.push(() => {
+          if (itemtype._item === null || !itemtype._item.deleted) {
+            itemtype._callObserver(transaction, subs)
+          }
+        })
+      )
+      fs.push(() => {
+        // deep observe events
+        transaction.changedParentTypes.forEach((events, type) =>
+          fs.push(() => {
+            // We need to think about the possibility that the user transforms the
+            // Y.Doc in the event.
+            if (type._item === null || !type._item.deleted) {
+              events = events
+                .filter(event =>
+                  event.target._item === null || !event.target._item.deleted
+                )
+              events
+                .forEach(event => {
+                  event.currentTarget = type
+                })
+              // We don't need to check for events.length
+              // because we know it has at least one element
+              callEventHandlerListeners(type._dEH, events, transaction)
+            }
+          })
+        )
+        fs.push(() => doc.emit('afterTransaction', [transaction, doc]))
+      })
+      callAll(fs, [])
+    } finally {
+      /**
+       * @param {Array<AbstractStruct>} structs
+       * @param {number} pos
+       */
+      const tryToMergeWithLeft = (structs, pos) => {
+        const left = structs[pos - 1]
+        const right = structs[pos]
+        if (left.deleted === right.deleted && left.constructor === right.constructor) {
+          if (left.mergeWith(right)) {
+            structs.splice(pos, 1)
+            if (right instanceof Item && right.parentSub !== null && right.parent._map.get(right.parentSub) === right) {
+              right.parent._map.set(right.parentSub, /** @type {Item} */ (left))
+            }
+          }
+        }
+      }
+      // Replace deleted items with ItemDeleted / GC.
+      // This is where content is actually remove from the Yjs Doc.
+      if (doc.gc) {
+        for (const [client, deleteItems] of ds.clients) {
+          const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(client))
+          for (let di = deleteItems.length - 1; di >= 0; di--) {
+            const deleteItem = deleteItems[di]
+            const endDeleteItemClock = deleteItem.clock + deleteItem.len
+            for (
+              let si = findIndexSS(structs, deleteItem.clock), struct = structs[si];
+              si < structs.length && struct.id.clock < endDeleteItemClock;
+              struct = structs[++si]
+            ) {
+              const struct = structs[si]
+              if (deleteItem.clock + deleteItem.len <= struct.id.clock) {
+                break
+              }
+              if (struct instanceof Item && struct.deleted && !struct.keep) {
+                struct.gc(store, false)
+              }
+            }
+          }
+        }
+      }
+      // try to merge deleted / gc'd items
+      // merge from right to left for better efficiecy and so we don't miss any merge targets
+      for (const [client, deleteItems] of ds.clients) {
+        const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(client))
+        for (let di = deleteItems.length - 1; di >= 0; di--) {
+          const deleteItem = deleteItems[di]
+          // start with merging the item next to the last deleted item
+          const mostRightIndexToCheck = math.min(structs.length - 1, 1 + findIndexSS(structs, deleteItem.clock + deleteItem.len - 1))
+          for (
+            let si = mostRightIndexToCheck, struct = structs[si];
+            si > 0 && struct.id.clock >= deleteItem.clock;
+            struct = structs[--si]
+          ) {
+            tryToMergeWithLeft(structs, si)
+          }
+        }
+      }
+
+      // on all affected store.clients props, try to merge
+      for (const [client, clock] of transaction.afterState) {
+        const beforeClock = transaction.beforeState.get(client) || 0
+        if (beforeClock !== clock) {
+          const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(client))
+          // we iterate from right to left so we can safely remove entries
+          const firstChangePos = math.max(findIndexSS(structs, beforeClock), 1)
+          for (let i = structs.length - 1; i >= firstChangePos; i--) {
+            tryToMergeWithLeft(structs, i)
+          }
+        }
+      }
+      // try to merge mergeStructs
+      // @todo: it makes more sense to transform mergeStructs to a DS, sort it, and merge from right to left
+      //        but at the moment DS does not handle duplicates
+      for (const mid of transaction._mergeStructs) {
+        const client = mid.client
+        const clock = mid.clock
+        const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(client))
+        const replacedStructPos = findIndexSS(structs, clock)
+        if (replacedStructPos + 1 < structs.length) {
+          tryToMergeWithLeft(structs, replacedStructPos + 1)
+        }
+        if (replacedStructPos > 0) {
+          tryToMergeWithLeft(structs, replacedStructPos)
+        }
+      }
+      // @todo Merge all the transactions into one and provide send the data as a single update message
+      doc.emit('afterTransactionCleanup', [transaction, doc])
+      if (doc._observers.has('update')) {
+        const updateMessage = computeUpdateMessageFromTransaction(transaction)
+        if (updateMessage !== null) {
+          doc.emit('update', [encoding.toUint8Array(updateMessage), transaction.origin, doc])
+        }
+      }
+      if (transactionCleanups.length <= i + 1) {
+        doc._transactionCleanups = []
+      } else {
+        cleanupTransactions(transactionCleanups, i + 1)
+      }
+    }
+  }
+}
+
+/**
  * Implements the functionality of `y.transact(()=>{..})`
  *
  * @param {Doc} doc
  * @param {function(Transaction):void} f
- * @param {any} [origin]
+ * @param {any} [origin=true]
  *
  * @private
  * @function
  */
-export const transact = (doc, f, origin = null) => {
+export const transact = (doc, f, origin = null, local = true) => {
   const transactionCleanups = doc._transactionCleanups
   let initialCall = false
   if (doc._transaction === null) {
     initialCall = true
-    doc._transaction = new Transaction(doc, origin)
+    doc._transaction = new Transaction(doc, origin, local)
     transactionCleanups.push(doc._transaction)
     doc.emit('beforeTransaction', [doc._transaction, doc])
   }
@@ -158,134 +328,13 @@ export const transact = (doc, f, origin = null) => {
     if (initialCall && transactionCleanups[0] === doc._transaction) {
       // The first transaction ended, now process observer calls.
       // Observer call may create new transactions for which we need to call the observers and do cleanup.
-      // We don't want to nest these calls, so we execute these calls one after another
-      for (let i = 0; i < transactionCleanups.length; i++) {
-        const transaction = transactionCleanups[i]
-        const store = transaction.doc.store
-        const ds = transaction.deleteSet
-        sortAndMergeDeleteSet(ds)
-        transaction.afterState = getStateVector(transaction.doc.store)
-        doc._transaction = null
-        doc.emit('beforeObserverCalls', [transaction, doc])
-        // emit change events on changed types
-        transaction.changed.forEach((subs, itemtype) => {
-          if (itemtype._item === null || !itemtype._item.deleted) {
-            itemtype._callObserver(transaction, subs)
-          }
-        })
-        transaction.changedParentTypes.forEach((events, type) => {
-          // We need to think about the possibility that the user transforms the
-          // Y.Doc in the event.
-          if (type._item === null || !type._item.deleted) {
-            events = events
-              .filter(event =>
-                event.target._item === null || !event.target._item.deleted
-              )
-            events
-              .forEach(event => {
-                event.currentTarget = type
-              })
-            // We don't need to check for events.length
-            // because we know it has at least one element
-            callEventHandlerListeners(type._dEH, events, transaction)
-          }
-        })
-        doc.emit('afterTransaction', [transaction, doc])
-        /**
-         * @param {Array<AbstractStruct>} structs
-         * @param {number} pos
-         */
-        const tryToMergeWithLeft = (structs, pos) => {
-          const left = structs[pos - 1]
-          const right = structs[pos]
-          if (left.deleted === right.deleted && left.constructor === right.constructor) {
-            if (left.mergeWith(right)) {
-              structs.splice(pos, 1)
-              if (right instanceof Item && right.parentSub !== null && right.parent._map.get(right.parentSub) === right) {
-                right.parent._map.set(right.parentSub, /** @type {Item} */ (left))
-              }
-            }
-          }
-        }
-        // Replace deleted items with ItemDeleted / GC.
-        // This is where content is actually remove from the Yjs Doc.
-        if (doc.gc) {
-          for (const [client, deleteItems] of ds.clients) {
-            const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(client))
-            for (let di = deleteItems.length - 1; di >= 0; di--) {
-              const deleteItem = deleteItems[di]
-              const endDeleteItemClock = deleteItem.clock + deleteItem.len
-              for (
-                let si = findIndexSS(structs, deleteItem.clock), struct = structs[si];
-                si < structs.length && struct.id.clock < endDeleteItemClock;
-                struct = structs[++si]
-              ) {
-                const struct = structs[si]
-                if (deleteItem.clock + deleteItem.len <= struct.id.clock) {
-                  break
-                }
-                if (struct instanceof Item && struct.deleted && !struct.keep) {
-                  struct.gc(store, false)
-                }
-              }
-            }
-          }
-        }
-        // try to merge deleted / gc'd items
-        // merge from right to left for better efficiecy and so we don't miss any merge targets
-        for (const [client, deleteItems] of ds.clients) {
-          const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(client))
-          for (let di = deleteItems.length - 1; di >= 0; di--) {
-            const deleteItem = deleteItems[di]
-            // start with merging the item next to the last deleted item
-            const mostRightIndexToCheck = math.min(structs.length - 1, 1 + findIndexSS(structs, deleteItem.clock + deleteItem.len - 1))
-            for (
-              let si = mostRightIndexToCheck, struct = structs[si];
-              si > 0 && struct.id.clock >= deleteItem.clock;
-              struct = structs[--si]
-            ) {
-              tryToMergeWithLeft(structs, si)
-            }
-          }
-        }
-
-        // on all affected store.clients props, try to merge
-        for (const [client, clock] of transaction.afterState) {
-          const beforeClock = transaction.beforeState.get(client) || 0
-          if (beforeClock !== clock) {
-            const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(client))
-            // we iterate from right to left so we can safely remove entries
-            const firstChangePos = math.max(findIndexSS(structs, beforeClock), 1)
-            for (let i = structs.length - 1; i >= firstChangePos; i--) {
-              tryToMergeWithLeft(structs, i)
-            }
-          }
-        }
-        // try to merge mergeStructs
-        // @todo: it makes more sense to transform mergeStructs to a DS, sort it, and merge from right to left
-        //        but at the moment DS does not handle duplicates
-        for (const mid of transaction._mergeStructs) {
-          const client = mid.client
-          const clock = mid.clock
-          const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(client))
-          const replacedStructPos = findIndexSS(structs, clock)
-          if (replacedStructPos + 1 < structs.length) {
-            tryToMergeWithLeft(structs, replacedStructPos + 1)
-          }
-          if (replacedStructPos > 0) {
-            tryToMergeWithLeft(structs, replacedStructPos)
-          }
-        }
-        // @todo Merge all the transactions into one and provide send the data as a single update message
-        doc.emit('afterTransactionCleanup', [transaction, doc])
-        if (doc._observers.has('update')) {
-          const updateMessage = computeUpdateMessageFromTransaction(transaction)
-          if (updateMessage !== null) {
-            doc.emit('update', [encoding.toUint8Array(updateMessage), transaction.origin, doc])
-          }
-        }
-      }
-      doc._transactionCleanups = []
+      // We don't want to nest these calls, so we execute these calls one after
+      // another.
+      // Also we need to ensure that all cleanups are called, even if the
+      // observes throw errors.
+      // This file is full of hacky try {} finally {} blocks to ensure that an
+      // event can throw errors and also that the cleanup is called.
+      cleanupTransactions(transactionCleanups, 0)
     }
   }
 }

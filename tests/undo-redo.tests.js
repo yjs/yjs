@@ -13,6 +13,23 @@ import * as t from 'lib0/testing.js'
 export const testUndoText = tc => {
   const { testConnector, text0, text1 } = init(tc, { users: 3 })
   const undoManager = new UndoManager(text0)
+
+  // items that are added & deleted in the same transaction won't be undo
+  text0.insert(0, 'test')
+  text0.delete(0, 4)
+  undoManager.undo()
+  t.assert(text0.toString() === '')
+
+  // follow redone items
+  text0.insert(0, 'a')
+  undoManager.stopCapturing()
+  text0.delete(0, 1)
+  undoManager.stopCapturing()
+  undoManager.undo()
+  t.assert(text0.toString() === 'a')
+  undoManager.undo()
+  t.assert(text0.toString() === '')
+
   text0.insert(0, 'abc')
   text1.insert(0, 'xyz')
   testConnector.syncAll()
@@ -65,6 +82,15 @@ export const testUndoMap = tc => {
   t.assert(map0.get('a') === 44)
   undoManager.redo()
   t.assert(map0.get('a') === 44)
+
+  // test setting value multiple times
+  map0.set('b', 'initial')
+  undoManager.stopCapturing()
+  map0.set('b', 'val1')
+  map0.set('b', 'val2')
+  undoManager.stopCapturing()
+  undoManager.undo()
+  t.assert(map0.get('b') === 'initial')
 }
 
 /**
@@ -172,7 +198,7 @@ export const testUndoEvents = tc => {
 export const testTrackClass = tc => {
   const { users, text0 } = init(tc, { users: 3 })
   // only track origins that are numbers
-  const undoManager = new UndoManager(text0, new Set([Number]))
+  const undoManager = new UndoManager(text0, { trackedOrigins: new Set([Number]) })
   users[0].transact(() => {
     text0.insert(0, 'abc')
   }, 42)
@@ -200,4 +226,23 @@ export const testTypeScope = tc => {
   t.assert(text1.toString() === 'abc')
   undoManagerBoth.undo()
   t.assert(text1.toString() === '')
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testUndoDeleteFilter = tc => {
+  /**
+   * @type {Array<Y.Map<any>>}
+   */
+  const array0 = /** @type {any} */ (init(tc, { users: 3 }).array0)
+  const undoManager = new UndoManager(array0, { deleteFilter: item => !(item instanceof Y.Item) || (item.content instanceof Y.ContentType && item.content.type._map.size === 0) })
+  const map0 = new Y.Map()
+  map0.set('hi', 1)
+  const map1 = new Y.Map()
+  array0.insert(0, [map0, map1])
+  undoManager.undo()
+  t.assert(array0.length === 1)
+  array0.get(0)
+  t.assert(Array.from(array0.get(0).keys()).length === 1)
 }

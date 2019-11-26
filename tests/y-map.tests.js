@@ -295,6 +295,104 @@ export const testThrowsAddAndUpdateAndDeleteEvents = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testChangeEvent = tc => {
+  const { map0, users } = init(tc, { users: 2 })
+  /**
+   * @type {any}
+   */
+  let changes = null
+  /**
+   * @type {any}
+   */
+  let keyChange = null
+  map0.observe(e => {
+    changes = e.changes
+  })
+  map0.set('a', 1)
+  keyChange = changes.keys.get('a')
+  t.assert(changes !== null && keyChange.action === 'add' && keyChange.oldValue === undefined)
+  map0.set('a', 2)
+  keyChange = changes.keys.get('a')
+  t.assert(changes !== null && keyChange.action === 'update' && keyChange.oldValue === 1)
+  users[0].transact(() => {
+    map0.set('a', 3)
+    map0.set('a', 4)
+  })
+  keyChange = changes.keys.get('a')
+  t.assert(changes !== null && keyChange.action === 'update' && keyChange.oldValue === 2)
+  users[0].transact(() => {
+    map0.set('b', 1)
+    map0.set('b', 2)
+  })
+  keyChange = changes.keys.get('b')
+  t.assert(changes !== null && keyChange.action === 'add' && keyChange.oldValue === undefined)
+  users[0].transact(() => {
+    map0.set('c', 1)
+    map0.delete('c')
+  })
+  t.assert(changes !== null && changes.keys.size === 0)
+  users[0].transact(() => {
+    map0.set('d', 1)
+    map0.set('d', 2)
+  })
+  keyChange = changes.keys.get('d')
+  t.assert(changes !== null && keyChange.action === 'add' && keyChange.oldValue === undefined)
+  compare(users)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testYmapEventExceptionsShouldCompleteTransaction = tc => {
+  const doc = new Y.Doc()
+  const map = doc.getMap('map')
+
+  let updateCalled = false
+  let throwingObserverCalled = false
+  let throwingDeepObserverCalled = false
+  doc.on('update', () => {
+    updateCalled = true
+  })
+
+  const throwingObserver = () => {
+    throwingObserverCalled = true
+    throw new Error('Failure')
+  }
+
+  const throwingDeepObserver = () => {
+    throwingDeepObserverCalled = true
+    throw new Error('Failure')
+  }
+
+  map.observe(throwingObserver)
+  map.observeDeep(throwingDeepObserver)
+
+  t.fails(() => {
+    map.set('y', '2')
+  })
+
+  t.assert(updateCalled)
+  t.assert(throwingObserverCalled)
+  t.assert(throwingDeepObserverCalled)
+
+  // check if it works again
+  updateCalled = false
+  throwingObserverCalled = false
+  throwingDeepObserverCalled = false
+  t.fails(() => {
+    map.set('z', '3')
+  })
+
+  t.assert(updateCalled)
+  t.assert(throwingObserverCalled)
+  t.assert(throwingDeepObserverCalled)
+
+  t.assert(map.get('z') === '3')
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testYmapEventHasCorrectValueWhenSettingAPrimitive = tc => {
   const { users, map0 } = init(tc, { users: 3 })
   /**

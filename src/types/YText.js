@@ -16,11 +16,20 @@ import {
   ContentEmbed,
   ContentFormat,
   ContentString,
-  Doc, Item, Snapshot, StructStore, Transaction // eslint-disable-line
+  splitSnapshotAffectedStructs,
+  ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 import * as encoding from 'lib0/encoding.js'
+import * as object from 'lib0/object.js'
+
+/**
+ * @param {any} a
+ * @param {any} b
+ * @return {boolean}
+ */
+const equalAttrs = (a, b) => a === b || (typeof a === 'object' && typeof b === 'object' && a && b && object.equalFlat(a, b))
 
 export class ItemListPosition {
   /**
@@ -59,7 +68,6 @@ export class ItemInsertionResult extends ItemListPosition {
 
 /**
  * @param {Transaction} transaction
- * @param {StructStore} store
  * @param {Map<string,any>} currentAttributes
  * @param {Item|null} left
  * @param {Item|null} right
@@ -69,7 +77,7 @@ export class ItemInsertionResult extends ItemListPosition {
  * @private
  * @function
  */
-const findNextPosition = (transaction, store, currentAttributes, left, right, count) => {
+const findNextPosition = (transaction, currentAttributes, left, right, count) => {
   while (right !== null && count > 0) {
     switch (right.content.constructor) {
       case ContentEmbed:
@@ -77,7 +85,7 @@ const findNextPosition = (transaction, store, currentAttributes, left, right, co
         if (!right.deleted) {
           if (count < right.length) {
             // split right
-            getItemCleanStart(transaction, store, createID(right.id.client, right.id.clock + count))
+            getItemCleanStart(transaction, createID(right.id.client, right.id.clock + count))
           }
           count -= right.length
         }
@@ -96,7 +104,6 @@ const findNextPosition = (transaction, store, currentAttributes, left, right, co
 
 /**
  * @param {Transaction} transaction
- * @param {StructStore} store
  * @param {AbstractType<any>} parent
  * @param {number} index
  * @return {ItemTextListPosition}
@@ -104,11 +111,11 @@ const findNextPosition = (transaction, store, currentAttributes, left, right, co
  * @private
  * @function
  */
-const findPosition = (transaction, store, parent, index) => {
+const findPosition = (transaction, parent, index) => {
   let currentAttributes = new Map()
   let left = null
   let right = parent._start
-  return findNextPosition(transaction, store, currentAttributes, left, right, index)
+  return findNextPosition(transaction, currentAttributes, left, right, index)
 }
 
 /**
@@ -130,7 +137,7 @@ const insertNegatedAttributes = (transaction, parent, left, right, negatedAttrib
     right !== null && (
       right.deleted === true || (
         right.content.constructor === ContentFormat &&
-        (negatedAttributes.get(/** @type {ContentFormat} */ (right.content).key) === /** @type {ContentFormat} */ (right.content).value)
+        equalAttrs(negatedAttributes.get(/** @type {ContentFormat} */ (right.content).key), /** @type {ContentFormat} */ (right.content).value)
       )
     )
   ) {
@@ -180,7 +187,7 @@ const minimizeAttributeChanges = (left, right, currentAttributes, attributes) =>
       break
     } else if (right.deleted) {
       // continue
-    } else if (right.content.constructor === ContentFormat && (attributes[(/** @type {ContentFormat} */ (right.content)).key] || null) === /** @type {ContentFormat} */ (right.content).value) {
+    } else if (right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (right.content)).key] || null, /** @type {ContentFormat} */ (right.content).value)) {
       // found a format, update currentAttributes and continue
       updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (right.content))
     } else {
@@ -210,7 +217,7 @@ const insertAttributes = (transaction, parent, left, right, currentAttributes, a
   for (let key in attributes) {
     const val = attributes[key]
     const currentVal = currentAttributes.get(key) || null
-    if (currentVal !== val) {
+    if (!equalAttrs(currentVal, val)) {
       // save negated attribute (set null if currentVal undefined)
       negatedAttributes.set(key, currentVal)
       left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentFormat(key, val))
@@ -272,13 +279,13 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
   // iterate until first non-format or null is found
   // delete all formats with attributes[format.key] != null
   while (length > 0 && right !== null) {
-    if (right.deleted === false) {
+    if (!right.deleted) {
       switch (right.content.constructor) {
         case ContentFormat:
           const { key, value } = /** @type {ContentFormat} */ (right.content)
           const attr = attributes[key]
           if (attr !== undefined) {
-            if (attr === value) {
+            if (equalAttrs(attr, value)) {
               negatedAttributes.delete(key)
             } else {
               negatedAttributes.set(key, value)
@@ -290,7 +297,7 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
         case ContentEmbed:
         case ContentString:
           if (length < right.length) {
-            getItemCleanStart(transaction, transaction.doc.store, createID(right.id.client, right.id.clock + length))
+            getItemCleanStart(transaction, createID(right.id.client, right.id.clock + length))
           }
           length -= right.length
           break
@@ -334,7 +341,7 @@ const deleteText = (transaction, left, right, currentAttributes, length) => {
         case ContentEmbed:
         case ContentString:
           if (length < right.length) {
-            getItemCleanStart(transaction, transaction.doc.store, createID(right.id.client, right.id.clock + length))
+            getItemCleanStart(transaction, createID(right.id.client, right.id.clock + length))
           }
           length -= right.length
           right.delete(transaction)
@@ -516,11 +523,11 @@ export class YTextEvent extends YEvent {
               if (this.adds(item)) {
                 if (!this.deletes(item)) {
                   const curVal = currentAttributes.get(key) || null
-                  if (curVal !== value) {
+                  if (!equalAttrs(curVal, value)) {
                     if (action === 'retain') {
                       addOp()
                     }
-                    if (value === (oldAttributes.get(key) || null)) {
+                    if (equalAttrs(value, (oldAttributes.get(key) || null))) {
                       delete attributes[key]
                     } else {
                       attributes[key] = value
@@ -532,7 +539,7 @@ export class YTextEvent extends YEvent {
               } else if (this.deletes(item)) {
                 oldAttributes.set(key, value)
                 const curVal = currentAttributes.get(key) || null
-                if (curVal !== value) {
+                if (!equalAttrs(curVal, value)) {
                   if (action === 'retain') {
                     addOp()
                   }
@@ -542,7 +549,7 @@ export class YTextEvent extends YEvent {
                 oldAttributes.set(key, value)
                 const attr = attributes[key]
                 if (attr !== undefined) {
-                  if (attr !== value) {
+                  if (!equalAttrs(attr, value)) {
                     if (action === 'retain') {
                       addOp()
                     }
@@ -705,16 +712,18 @@ export class YText extends AbstractType {
    *
    * @param {Snapshot} [snapshot]
    * @param {Snapshot} [prevSnapshot]
+   * @param {function('removed' | 'added', ID):any} [computeYChange]
    * @return {any} The Delta representation of this type.
    *
    * @public
    */
-  toDelta (snapshot, prevSnapshot) {
+  toDelta (snapshot, prevSnapshot, computeYChange) {
     /**
      * @type{Array<any>}
      */
     const ops = []
     const currentAttributes = new Map()
+    const doc = /** @type {Doc} */ (this.doc)
     let str = ''
     let n = this._start
     function packStr () {
@@ -740,42 +749,54 @@ export class YText extends AbstractType {
         str = ''
       }
     }
-    while (n !== null) {
-      if (isVisible(n, snapshot) || (prevSnapshot !== undefined && isVisible(n, prevSnapshot))) {
-        switch (n.content.constructor) {
-          case ContentString:
-            const cur = currentAttributes.get('ychange')
-            if (snapshot !== undefined && !isVisible(n, snapshot)) {
-              if (cur === undefined || cur.user !== n.id.client || cur.state !== 'removed') {
-                packStr()
-                currentAttributes.set('ychange', { user: n.id.client, state: 'removed' })
-              }
-            } else if (prevSnapshot !== undefined && !isVisible(n, prevSnapshot)) {
-              if (cur === undefined || cur.user !== n.id.client || cur.state !== 'added') {
-                packStr()
-                currentAttributes.set('ychange', { user: n.id.client, state: 'added' })
-              }
-            } else if (cur !== undefined) {
-              packStr()
-              currentAttributes.delete('ychange')
-            }
-            str += /** @type {ContentString} */ (n.content).str
-            break
-          case ContentEmbed:
-            packStr()
-            ops.push({
-              insert: /** @type {ContentEmbed} */ (n.content).embed
-            })
-            break
-          case ContentFormat:
-            packStr()
-            updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (n.content))
-            break
-        }
+    // snapshots are merged again after the transaction, so we need to keep the
+    // transalive until we are done
+    transact(doc, transaction => {
+      if (snapshot) {
+        splitSnapshotAffectedStructs(transaction, snapshot)
       }
-      n = n.right
-    }
-    packStr()
+      if (prevSnapshot) {
+        splitSnapshotAffectedStructs(transaction, prevSnapshot)
+      }
+      while (n !== null) {
+        if (isVisible(n, snapshot) || (prevSnapshot !== undefined && isVisible(n, prevSnapshot))) {
+          switch (n.content.constructor) {
+            case ContentString:
+              const cur = currentAttributes.get('ychange')
+              if (snapshot !== undefined && !isVisible(n, snapshot)) {
+                if (cur === undefined || cur.user !== n.id.client || cur.state !== 'removed') {
+                  packStr()
+                  currentAttributes.set('ychange', computeYChange ? computeYChange('removed', n.id) : { type: 'removed' })
+                }
+              } else if (prevSnapshot !== undefined && !isVisible(n, prevSnapshot)) {
+                if (cur === undefined || cur.user !== n.id.client || cur.state !== 'added') {
+                  packStr()
+                  currentAttributes.set('ychange', computeYChange ? computeYChange('added', n.id) : { type: 'added' })
+                }
+              } else if (cur !== undefined) {
+                packStr()
+                currentAttributes.delete('ychange')
+              }
+              str += /** @type {ContentString} */ (n.content).str
+              break
+            case ContentEmbed:
+              packStr()
+              ops.push({
+                insert: /** @type {ContentEmbed} */ (n.content).embed
+              })
+              break
+            case ContentFormat:
+              if (isVisible(n, snapshot)) {
+                packStr()
+                updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (n.content))
+              }
+              break
+          }
+        }
+        n = n.right
+      }
+      packStr()
+    }, splitSnapshotAffectedStructs)
     return ops
   }
 
@@ -784,19 +805,23 @@ export class YText extends AbstractType {
    *
    * @param {number} index The index at which to start inserting.
    * @param {String} text The text to insert at the specified position.
-   * @param {TextAttributes} attributes Optionally define some formatting
+   * @param {TextAttributes} [attributes] Optionally define some formatting
    *                                    information to apply on the inserted
    *                                    Text.
    * @public
    */
-  insert (index, text, attributes = {}) {
+  insert (index, text, attributes) {
     if (text.length <= 0) {
       return
     }
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
-        const { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
+        const { left, right, currentAttributes } = findPosition(transaction, this, index)
+        if (!attributes) {
+          attributes = {}
+          currentAttributes.forEach((v, k) => { attributes[k] = v })
+        }
         insertText(transaction, this, left, right, currentAttributes, text, attributes)
       })
     } else {
@@ -821,7 +846,7 @@ export class YText extends AbstractType {
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
-        const { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
+        const { left, right, currentAttributes } = findPosition(transaction, this, index)
         insertText(transaction, this, left, right, currentAttributes, embed, attributes)
       })
     } else {
@@ -844,7 +869,7 @@ export class YText extends AbstractType {
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
-        const { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
+        const { left, right, currentAttributes } = findPosition(transaction, this, index)
         deleteText(transaction, left, right, currentAttributes, length)
       })
     } else {
@@ -866,7 +891,7 @@ export class YText extends AbstractType {
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
-        let { left, right, currentAttributes } = findPosition(transaction, y.store, this, index)
+        let { left, right, currentAttributes } = findPosition(transaction, this, index)
         if (right === null) {
           return
         }

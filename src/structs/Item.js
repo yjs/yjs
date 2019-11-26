@@ -18,6 +18,7 @@ import {
   readContentDeleted,
   readContentBinary,
   readContentJSON,
+  readContentAny,
   readContentString,
   readContentEmbed,
   readContentFormat,
@@ -34,6 +35,8 @@ import * as set from 'lib0/set.js'
 import * as binary from 'lib0/binary.js'
 
 /**
+ * @todo This should return several items
+ *
  * @param {StructStore} store
  * @param {ID} id
  * @return {{item:Item, diff:number}}
@@ -134,7 +137,7 @@ export const splitItem = (transaction, leftItem, diff) => {
  */
 export const redoItem = (transaction, item, redoitems) => {
   if (item.redone !== null) {
-    return getItemCleanStart(transaction, transaction.doc.store, item.redone)
+    return getItemCleanStart(transaction, item.redone)
   }
   let parentItem = item.parent._item
   /**
@@ -174,7 +177,7 @@ export const redoItem = (transaction, item, redoitems) => {
   }
   if (parentItem !== null && parentItem.redone !== null) {
     while (parentItem.redone !== null) {
-      parentItem = getItemCleanStart(transaction, transaction.doc.store, parentItem.redone)
+      parentItem = getItemCleanStart(transaction, parentItem.redone)
     }
     // find next cloned_redo items
     while (left !== null) {
@@ -184,7 +187,7 @@ export const redoItem = (transaction, item, redoitems) => {
       let leftTrace = left
       // trace redone until parent matches
       while (leftTrace !== null && leftTrace.parent._item !== parentItem) {
-        leftTrace = leftTrace.redone === null ? null : getItemCleanStart(transaction, transaction.doc.store, leftTrace.redone)
+        leftTrace = leftTrace.redone === null ? null : getItemCleanStart(transaction, leftTrace.redone)
       }
       if (leftTrace !== null && leftTrace.parent._item === parentItem) {
         left = leftTrace
@@ -199,7 +202,7 @@ export const redoItem = (transaction, item, redoitems) => {
       let rightTrace = right
       // trace redone until parent matches
       while (rightTrace !== null && rightTrace.parent._item !== parentItem) {
-        rightTrace = rightTrace.redone === null ? null : getItemCleanStart(transaction, transaction.doc.store, rightTrace.redone)
+        rightTrace = rightTrace.redone === null ? null : getItemCleanStart(transaction, rightTrace.redone)
       }
       if (rightTrace !== null && rightTrace.parent._item === parentItem) {
         right = rightTrace
@@ -561,7 +564,8 @@ export const contentRefs = [
   readContentString,
   readContentEmbed,
   readContentFormat,
-  readContentType
+  readContentType,
+  readContentAny
 ]
 
 /**
@@ -724,7 +728,7 @@ export class ItemRef extends AbstractStructRef {
     }
 
     const left = this.left === null ? null : getItemCleanEnd(transaction, store, this.left)
-    const right = this.right === null ? null : getItemCleanStart(transaction, store, this.right)
+    const right = this.right === null ? null : getItemCleanStart(transaction, this.right)
     let parent = null
     let parentSub = this.parentSub
     if (this.parent !== null) {

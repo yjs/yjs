@@ -21,6 +21,7 @@ export {
   ContentEmbed,
   ContentFormat,
   ContentJSON,
+  ContentAny,
   ContentString,
   ContentType,
   AbstractType,
@@ -36,6 +37,11 @@ export {
   compareIDs,
   getState,
   Snapshot,
+  createSnapshot,
+  createDeleteSet,
+  createDeleteSetFromStructStore,
+  snapshot,
+  emptySnapshot,
   findRootTypeKey,
   typeListToArraySnapshot,
   typeMapGetSnapshot,
@@ -43,5 +49,10 @@ export {
   applyUpdate,
   encodeStateAsUpdate,
   encodeStateVector,
-  UndoManager
+  UndoManager,
+  decodeSnapshot,
+  encodeSnapshot,
+  isDeleted,
+  equalSnapshots,
+  PermanentUserData // @TODO experimental
 } from './internals.js'

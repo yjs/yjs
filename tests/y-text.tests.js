@@ -1,6 +1,6 @@
-import { init, compare } from './testHelper.js'
-
+import * as Y from './testHelper.js'
 import * as t from 'lib0/testing.js'
+const { init, compare } = Y
 
 /**
  * @param {t.TestCase} tc
@@ -81,9 +81,71 @@ export const testBasicFormat = tc => {
 export const testGetDeltaWithEmbeds = tc => {
   const { text0 } = init(tc, { users: 1 })
   text0.applyDelta([{
-    insert: {linebreak: 's'}
+    insert: { linebreak: 's' }
   }])
   t.compare(text0.toDelta(), [{
-    insert: {linebreak: 's'}
+    insert: { linebreak: 's' }
   }])
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testSnapshot = tc => {
+  const { text0 } = init(tc, { users: 1 })
+  const doc0 = /** @type {Y.Doc} */ (text0.doc)
+  doc0.gc = false
+  text0.applyDelta([{
+    insert: 'abcd'
+  }])
+  const snapshot1 = Y.snapshot(doc0)
+  text0.applyDelta([{
+    retain: 1
+  }, {
+    insert: 'x'
+  }, {
+    delete: 1
+  }])
+  const snapshot2 = Y.snapshot(doc0)
+  text0.applyDelta([{
+    retain: 2
+  }, {
+    delete: 3
+  }, {
+    insert: 'x'
+  }, {
+    delete: 1
+  }])
+  const state1 = text0.toDelta(snapshot1)
+  t.compare(state1, [{ insert: 'abcd' }])
+  const state2 = text0.toDelta(snapshot2)
+  t.compare(state2, [{ insert: 'axcd' }])
+  const state2Diff = text0.toDelta(snapshot2, snapshot1)
+  // @ts-ignore Remove userid info
+  state2Diff.forEach(v => {
+    if (v.attributes && v.attributes.ychange) {
+      delete v.attributes.ychange.user
+    }
+  })
+  t.compare(state2Diff, [{ insert: 'a' }, { insert: 'x', attributes: { ychange: { type: 'added' } } }, { insert: 'b', attributes: { ychange: { type: 'removed' } } }, { insert: 'cd' }])
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testSnapshotDeleteAfter = tc => {
+  const { text0 } = init(tc, { users: 1 })
+  const doc0 = /** @type {Y.Doc} */ (text0.doc)
+  doc0.gc = false
+  text0.applyDelta([{
+    insert: 'abcd'
+  }])
+  const snapshot1 = Y.snapshot(doc0)
+  text0.applyDelta([{
+    retain: 4
+  }, {
+    insert: 'e'
+  }])
+  const state1 = text0.toDelta(snapshot1)
+  t.compare(state1, [{ insert: 'abcd' }])
 }
