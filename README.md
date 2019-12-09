@@ -80,7 +80,7 @@ leveldb database.
   <dd>
 [WIP] Creates a connected graph of webrtc connections with a high
 <a href="https://en.wikipedia.org/wiki/Strength_of_a_graph">strength</a>. It
-requires a signalling server that connects a client to the first peer. But after
+requires a signaling server that connects a client to the first peer. But after
 that the network manages itself. It is well suited for large and small networks.
   </dd>
   <dt><a href="http://github.com/yjs/y-dat">y-dat</a></dt>
