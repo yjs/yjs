@@ -23,11 +23,12 @@ import * as map from 'lib0/map.js'
  */
 export class Doc extends Observable {
   /**
-   * @param {Object|undefined} conf configuration
+   * @param {Object} conf configuration
+   * @param {boolean} [conf.gc] Disable garbage collection (default: gc=true)
    */
-  constructor (conf = {}) {
+  constructor ({ gc = true } = {}) {
     super()
-    this.gc = conf.gc || true
+    this.gc = gc
     this.clientID = random.uint32()
     /**
      * @type {Map<string, AbstractType<YEvent>>}
