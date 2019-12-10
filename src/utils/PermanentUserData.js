@@ -83,33 +83,37 @@ export class PermanentUserData {
     }
     user.get('ids').push([clientid])
     users.observe(event => {
-      const userOverwrite = users.get(userDescription)
-      if (userOverwrite !== user) {
-        // user was overwritten, port all data over to the next user object
-        // @todo Experiment with Y.Sets here
-        user = userOverwrite
-        // @todo iterate over old type
-        this.clients.forEach((_userDescription, clientid) => {
-          if (userDescription === _userDescription) {
-            user.get('ids').push([clientid])
+      setTimeout(() => {
+        const userOverwrite = users.get(userDescription)
+        if (userOverwrite !== user) {
+          // user was overwritten, port all data over to the next user object
+          // @todo Experiment with Y.Sets here
+          user = userOverwrite
+          // @todo iterate over old type
+          this.clients.forEach((_userDescription, clientid) => {
+            if (userDescription === _userDescription) {
+              user.get('ids').push([clientid])
+            }
+          })
+          const encoder = encoding.createEncoder()
+          const ds = this.dss.get(userDescription)
+          if (ds) {
+            writeDeleteSet(encoder, ds)
+            user.get('ds').push([encoding.toUint8Array(encoder)])
           }
-        })
-        const encoder = encoding.createEncoder()
-        const ds = this.dss.get(userDescription)
-        if (ds) {
-          writeDeleteSet(encoder, ds)
-          user.get('ds').push([encoding.toUint8Array(encoder)])
         }
-      }
+      }, 0)
     })
     doc.on('afterTransaction', /** @param {Transaction} transaction */ transaction => {
-      const yds = user.get('ds')
-      const ds = transaction.deleteSet
-      if (transaction.local && ds.clients.size > 0) {
-        const encoder = encoding.createEncoder()
-        writeDeleteSet(encoder, ds)
-        yds.push([encoding.toUint8Array(encoder)])
-      }
+      setTimeout(() => {
+        const yds = user.get('ds')
+        const ds = transaction.deleteSet
+        if (transaction.local && ds.clients.size > 0) {
+          const encoder = encoding.createEncoder()
+          writeDeleteSet(encoder, ds)
+          yds.push([encoding.toUint8Array(encoder)])
+        }
+      })
     })
   }
   /**

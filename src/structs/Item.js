@@ -55,7 +55,7 @@ export const followRedone = (store, id) => {
     item = getItem(store, nextID)
     diff = nextID.clock - item.id.clock
     nextID = item.redone
-  } while (nextID !== null)
+  } while (nextID !== null && item instanceof Item)
   return {
     item, diff
   }
