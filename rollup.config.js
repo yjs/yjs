@@ -1,4 +1,5 @@
-import nodeResolve from 'rollup-plugin-node-resolve'
+import nodeResolve from '@rollup/plugin-node-resolve'
+import commonjs from '@rollup/plugin-commonjs'
 
 const localImports = process.env.LOCALIMPORTS
 
@@ -37,23 +38,18 @@ const debugResolve = {
 
 export default [{
   input: './src/index.js',
-  output: [{
+  output: {
     name: 'Y',
-    file: 'dist/yjs.js',
+    file: 'dist/yjs.cjs',
     format: 'cjs',
     sourcemap: true,
     paths: path => {
       if (/^lib0\//.test(path)) {
-        return `lib0/dist/${path.slice(5)}`
+        return `lib0/dist/${path.slice(5, -3)}.cjs`
       }
       return path
     }
-  }, {
-    name: 'Y',
-    file: 'dist/yjs.mjs',
-    format: 'es',
-    sourcemap: true
-  }],
+  },
   external: id => /^lib0\//.test(id)
 }, {
   input: './tests/index.js',
@@ -68,6 +64,24 @@ export default [{
     nodeResolve({
       sourcemap: true,
       mainFields: ['module', 'browser', 'main']
-    })
+    }),
+    commonjs()
   ]
+}, {
+  input: './tests/index.js',
+  output: {
+    name: 'test',
+    file: 'dist/tests.cjs',
+    format: 'cjs',
+    sourcemap: true
+  },
+  plugins: [
+    debugResolve,
+    nodeResolve({
+      sourcemap: true,
+      mainFields: ['module', 'main']
+    }),
+    commonjs()
+  ],
+  external: ['isomorphic.js']
 }]

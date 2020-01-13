@@ -17,13 +17,14 @@ suited for even large documents.
 * Discuss: [https://discuss.yjs.dev](https://discuss.yjs.dev)
 * Benchmarks:
   [https://github.com/dmonad/crdt-benchmarks](https://github.com/dmonad/crdt-benchmarks)
-* Podcast **"Yjs Deep Dive into real time collaborative editing solutions":** https://www.tag1consulting.com/blog/deep-dive-real-time-collaborative-editing-solutions-tagteamtalk-001-0
-* Podcast **"Google Docs-style editing in Gutenberg with the YJS framework":** https://publishpress.com/blog/yjs/
+* Podcast [**"Yjs Deep Dive into real time collaborative editing solutions":**](https://www.tag1consulting.com/blog/deep-dive-real-time-collaborative-editing-solutions-tagteamtalk-001-0)
+* Podcast [**"Google Docs-style editing in Gutenberg with the YJS framework":**](https://publishpress.com/blog/yjs/)
 
 :warning: This is the documentation for v13 (still in alpha). For the stable v12
 release checkout the [v12 docs](./README.v12.md) :warning:
 
-:construction_worker_woman:	If you are looking for professional support to build collaborative or distributed applications ping us at <yjs@tag1consulting.com>.
+:construction_worker_woman: If you are looking for professional support to build
+collaborative or distributed applications ping us at <yjs@tag1consulting.com>.
 
 ## Table of Contents
 
@@ -76,7 +77,11 @@ collaborative app.
 <dl>
   <dt><a href="http://github.com/yjs/y-webrtc">y-webrtc</a></dt>
   <dd>
-Propagates document updates peer-to-peer using WebRTC. The peers exchange signaling data over signaling servers. Publically available signaling servers are available. Communication over the signaling servers can be encrypted by providing a shared secret, keeping the connection information and the shared document private.
+Propagates document updates peer-to-peer using WebRTC. The peers exchange
+signaling data over signaling servers. Publically available signaling servers
+are available. Communication over the signaling servers can be encrypted by
+providing a shared secret, keeping the connection information and the shared
+document private.
   </dd>
   <dt><a href="http://github.com/yjs/y-websocket">y-websocket</a></dt>
   <dd>
