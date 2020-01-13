@@ -14,11 +14,11 @@
     "lint": "markdownlint README.md && standard && tsc",
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.md --package ./package.json || true",
     "serve-docs": "npm run docs && serve ./docs/",
-    "preversion": "npm run lint && PRODUCTION=1 npm run dist && npm run docs && node ./dist/tests.js --repitition-time 1000",
+    "preversion": "npm run lint && PRODUCTION=1 npm run dist && npm run docs && node ./dist/tests.cjs --repitition-time 1000",
     "postversion": "git push && git push --tags",
     "debug": "concurrently 'live-server --port=3443 --entry-file=test.html' 'npm run watch'",
-    "trace-deopt": "clear && rollup -c  && node --trace-deopt dist/test.js",
-    "trace-opt": "clear && rollup -c  && node --trace-opt dist/test.js"
+    "trace-deopt": "clear && rollup -c  && node --trace-deopt dist/test.cjs",
+    "trace-opt": "clear && rollup -c  && node --trace-opt dist/test.cjs"
   },
   "files": [
     "dist/*",
@@ -52,7 +52,7 @@
   },
   "homepage": "https://yjs.dev",
   "dependencies": {
-    "lib0": "^0.2.1"
+    "lib0": "^0.2.2"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^11.0.1",
