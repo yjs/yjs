@@ -65,6 +65,6 @@
     "standard": "^11.0.1",
     "tui-jsdoc-template": "^1.2.2",
     "typescript": "^3.6.2",
-    "y-protocols": "0.0.6"
+    "y-protocols": "^0.2.0"
   }
 }
