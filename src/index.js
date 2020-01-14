@@ -53,6 +53,7 @@ export {
   decodeSnapshot,
   encodeSnapshot,
   isDeleted,
+  isParentOf,
   equalSnapshots,
   PermanentUserData // @TODO experimental
 } from './internals.js'
