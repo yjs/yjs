@@ -26,7 +26,7 @@ const debugResolve = {
     }
     if (localImports) {
       if (customModules.has(importee.split('/')[0])) {
-        return `${process.cwd()}/../${importee}/src/${importee}.cjs`
+        return `${process.cwd()}/../${importee}/src/${importee}.js`
       }
       if (customLibModules.has(importee.split('/')[0])) {
         return `${process.cwd()}/../${importee}`
