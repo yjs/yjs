@@ -41,7 +41,12 @@
     "url": "https://github.com/yjs/yjs.git"
   },
   "keywords": [
-    "crdt"
+    "Yjs",
+    "CRDT",
+    "offline",
+    "shared editing",
+    "concurrency",
+    "collaboration"
   ],
   "author": "Kevin Jahns",
   "email": "kevin.jahns@protonmail.com",
