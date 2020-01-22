@@ -676,8 +676,7 @@ export class YText extends AbstractType {
   /**
    * Returns the unformatted string representation of this YText type.
    *
-   * Avoids undefined being returned when called as a nested type.
-   *
+   * @return {string}
    * @public
    */
   toJSON () {

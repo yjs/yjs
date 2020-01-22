@@ -70,6 +70,9 @@ export class YXmlText extends YText {
     }).join('')
   }
 
+  /**
+   * @return {string}
+   */
   toJSON () {
     return this.toString()
   }

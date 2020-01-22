@@ -242,6 +242,9 @@ export class YXmlFragment extends AbstractType {
     return typeListMap(this, xml => xml.toString()).join('')
   }
 
+  /**
+   * @return {string}
+   */
   toJSON () {
     return this.toString()
   }
