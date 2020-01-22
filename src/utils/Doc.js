@@ -46,6 +46,7 @@ export class Doc extends Observable {
      */
     this._transactionCleanups = []
   }
+
   /**
    * Changes that happen inside of a transaction are bundled. This means that
    * the observer fires _after_ the transaction is finished and that all changes
@@ -60,6 +61,7 @@ export class Doc extends Observable {
   transact (f, origin = null) {
     transact(this, f, origin)
   }
+
   /**
    * Define a shared data type.
    *
@@ -118,6 +120,7 @@ export class Doc extends Observable {
     }
     return type
   }
+
   /**
    * @template T
    * @param {string} name
@@ -129,6 +132,7 @@ export class Doc extends Observable {
     // @ts-ignore
     return this.get(name, YArray)
   }
+
   /**
    * @param {string} name
    * @return {YText}
@@ -139,6 +143,7 @@ export class Doc extends Observable {
     // @ts-ignore
     return this.get(name, YText)
   }
+
   /**
    * @param {string} name
    * @return {YMap<any>}
@@ -149,6 +154,7 @@ export class Doc extends Observable {
     // @ts-ignore
     return this.get(name, YMap)
   }
+
   /**
    * @param {string} name
    * @return {YXmlFragment}
@@ -159,6 +165,7 @@ export class Doc extends Observable {
     // @ts-ignore
     return this.get(name, YXmlFragment)
   }
+
   /**
    * Emit `destroy` event and unregister all event handlers.
    *
@@ -168,6 +175,7 @@ export class Doc extends Observable {
     this.emit('destroyed', [true])
     super.destroy()
   }
+
   /**
    * @param {string} eventName
    * @param {function} f
@@ -175,6 +183,7 @@ export class Doc extends Observable {
   on (eventName, f) {
     super.on(eventName, f)
   }
+
   /**
    * @param {string} eventName
    * @param {function} f

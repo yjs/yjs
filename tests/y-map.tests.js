@@ -66,7 +66,7 @@ export const testGetAndSetOfMapProperty = tc => {
 
   testConnector.flushAllMessages()
 
-  for (let user of users) {
+  for (const user of users) {
     const u = user.getMap('map')
     t.compare(u.get('stuff'), 'stuffy')
     t.assert(u.get('undefined') === undefined, 'undefined')
@@ -108,7 +108,7 @@ export const testGetAndSetOfMapPropertySyncs = tc => {
   map0.set('stuff', 'stuffy')
   t.compare(map0.get('stuff'), 'stuffy')
   testConnector.flushAllMessages()
-  for (let user of users) {
+  for (const user of users) {
     var u = user.getMap('map')
     t.compare(u.get('stuff'), 'stuffy')
   }
@@ -123,7 +123,7 @@ export const testGetAndSetOfMapPropertyWithConflict = tc => {
   map0.set('stuff', 'c0')
   map1.set('stuff', 'c1')
   testConnector.flushAllMessages()
-  for (let user of users) {
+  for (const user of users) {
     var u = user.getMap('map')
     t.compare(u.get('stuff'), 'c1')
   }
@@ -139,7 +139,7 @@ export const testGetAndSetAndDeleteOfMapProperty = tc => {
   map1.set('stuff', 'c1')
   map1.delete('stuff')
   testConnector.flushAllMessages()
-  for (let user of users) {
+  for (const user of users) {
     var u = user.getMap('map')
     t.assert(u.get('stuff') === undefined)
   }
@@ -156,7 +156,7 @@ export const testGetAndSetOfMapPropertyWithThreeConflicts = tc => {
   map1.set('stuff', 'c2')
   map2.set('stuff', 'c3')
   testConnector.flushAllMessages()
-  for (let user of users) {
+  for (const user of users) {
     var u = user.getMap('map')
     t.compare(u.get('stuff'), 'c3')
   }
@@ -179,7 +179,7 @@ export const testGetAndSetAndDeleteOfMapPropertyWithThreeConflicts = tc => {
   map3.set('stuff', 'c3')
   map3.delete('stuff')
   testConnector.flushAllMessages()
-  for (let user of users) {
+  for (const user of users) {
     var u = user.getMap('map')
     t.assert(u.get('stuff') === undefined)
   }
@@ -430,12 +430,12 @@ export const testYmapEventHasCorrectValueWhenSettingAPrimitiveFromOtherUser = tc
  */
 const mapTransactions = [
   function set (user, gen) {
-    let key = prng.oneOf(gen, ['one', 'two'])
+    const key = prng.oneOf(gen, ['one', 'two'])
     var value = prng.utf16String(gen)
     user.getMap('map').set(key, value)
   },
   function setType (user, gen) {
-    let key = prng.oneOf(gen, ['one', 'two'])
+    const key = prng.oneOf(gen, ['one', 'two'])
     var type = prng.oneOf(gen, [new Y.Array(), new Y.Map()])
     user.getMap('map').set(key, type)
     if (type instanceof Y.Array) {
@@ -445,7 +445,7 @@ const mapTransactions = [
     }
   },
   function _delete (user, gen) {
-    let key = prng.oneOf(gen, ['one', 'two'])
+    const key = prng.oneOf(gen, ['one', 'two'])
     user.getMap('map').delete(key)
   }
 ]

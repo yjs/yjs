@@ -17,30 +17,35 @@ export class ContentDeleted {
   constructor (len) {
     this.len = len
   }
+
   /**
    * @return {number}
    */
   getLength () {
     return this.len
   }
+
   /**
    * @return {Array<any>}
    */
   getContent () {
     return []
   }
+
   /**
    * @return {boolean}
    */
   isCountable () {
     return false
   }
+
   /**
    * @return {ContentDeleted}
    */
   copy () {
     return new ContentDeleted(this.len)
   }
+
   /**
    * @param {number} offset
    * @return {ContentDeleted}
@@ -50,6 +55,7 @@ export class ContentDeleted {
     this.len = offset
     return right
   }
+
   /**
    * @param {ContentDeleted} right
    * @return {boolean}
@@ -58,6 +64,7 @@ export class ContentDeleted {
     this.len += right.len
     return true
   }
+
   /**
    * @param {Transaction} transaction
    * @param {Item} item
@@ -66,6 +73,7 @@ export class ContentDeleted {
     addToDeleteSet(transaction.deleteSet, item.id, this.len)
     item.deleted = true
   }
+
   /**
    * @param {Transaction} transaction
    */
@@ -81,6 +89,7 @@ export class ContentDeleted {
   write (encoder, offset) {
     encoding.writeVarUint(encoder, this.len - offset)
   }
+
   /**
    * @return {number}
    */

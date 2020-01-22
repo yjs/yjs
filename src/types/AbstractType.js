@@ -171,7 +171,7 @@ export class AbstractType {
 
   /**
    * @abstract
-   * @return {Object | Array | number | string}
+   * @return {any}
    */
   toJSON () {}
 }
@@ -370,7 +370,7 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
   let left = referenceItem
   const right = referenceItem === null ? parent._start : referenceItem.right
   /**
-   * @type {Array<Object|Array|number>}
+   * @type {Array<Object|Array<any>|number>}
    */
   let jsonContent = []
   const packJsonContent = () => {
@@ -515,7 +515,7 @@ export const typeMapSet = (transaction, parent, key, value) => {
         content = new ContentAny([value])
         break
       case Uint8Array:
-        content = new ContentBinary(value)
+        content = new ContentBinary(/** @type {Uint8Array} */ (value))
         break
       default:
         if (value instanceof AbstractType) {
@@ -552,7 +552,7 @@ export const typeMapGetAll = (parent) => {
   /**
    * @type {Object<string,any>}
    */
-  let res = {}
+  const res = {}
   for (const [key, value] of parent._map) {
     if (!value.deleted) {
       res[key] = value.content.getContent()[value.length - 1]

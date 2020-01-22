@@ -227,7 +227,7 @@ export const testInsertAndDeleteEventsForTypes2 = tc => {
   /**
    * @type {Array<Object<string,any>>}
    */
-  let events = []
+  const events = []
   array0.observe(e => {
     events.push(e)
   })
@@ -318,7 +318,7 @@ export const testIteratingArrayContainingTypes = tc => {
     arr.push([map])
   }
   let cnt = 0
-  for (let item of arr) {
+  for (const item of arr) {
     t.assert(item.get('value') === cnt++, 'value is correct')
   }
   y.destroy()

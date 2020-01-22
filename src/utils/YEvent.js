@@ -181,7 +181,7 @@ export class YEvent {
       })
       this._changes = changes
     }
-    return changes
+    return /** @type {any} */ (changes)
   }
 }
 

@@ -430,6 +430,7 @@ export class Item extends AbstractStruct {
   get lastId () {
     return createID(this.id.client, this.id.clock + this.length - 1)
   }
+
   /**
    * Try to merge two items
    *
@@ -578,12 +579,14 @@ export class AbstractContent {
   getLength () {
     throw error.methodUnimplemented()
   }
+
   /**
    * @return {Array<any>}
    */
   getContent () {
     throw error.methodUnimplemented()
   }
+
   /**
    * Should return false if this Item is some kind of meta information
    * (e.g. format information).
@@ -596,12 +599,14 @@ export class AbstractContent {
   isCountable () {
     throw error.methodUnimplemented()
   }
+
   /**
    * @return {AbstractContent}
    */
   copy () {
     throw error.methodUnimplemented()
   }
+
   /**
    * @param {number} offset
    * @return {AbstractContent}
@@ -609,6 +614,7 @@ export class AbstractContent {
   splice (offset) {
     throw error.methodUnimplemented()
   }
+
   /**
    * @param {AbstractContent} right
    * @return {boolean}
@@ -616,6 +622,7 @@ export class AbstractContent {
   mergeWith (right) {
     throw error.methodUnimplemented()
   }
+
   /**
    * @param {Transaction} transaction
    * @param {Item} item
@@ -623,18 +630,21 @@ export class AbstractContent {
   integrate (transaction, item) {
     throw error.methodUnimplemented()
   }
+
   /**
    * @param {Transaction} transaction
    */
   delete (transaction) {
     throw error.methodUnimplemented()
   }
+
   /**
    * @param {StructStore} store
    */
   gc (store) {
     throw error.methodUnimplemented()
   }
+
   /**
    * @param {encoding.Encoder} encoder
    * @param {number} offset
@@ -642,6 +652,7 @@ export class AbstractContent {
   write (encoder, offset) {
     throw error.methodUnimplemented()
   }
+
   /**
    * @return {number}
    */
@@ -709,6 +720,7 @@ export class ItemRef extends AbstractStructRef {
     this.content = readItemContent(decoder, info)
     this.length = this.content.getLength()
   }
+
   /**
    * @param {Transaction} transaction
    * @param {StructStore} store

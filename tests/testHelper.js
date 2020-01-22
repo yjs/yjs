@@ -12,6 +12,7 @@ import * as prng from 'lib0/prng.js'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import * as syncProtocol from 'y-protocols/sync.js'
+import * as object from 'lib0/object.js'
 export * from '../src/internals.js'
 
 /**
@@ -55,6 +56,7 @@ export class TestYInstance extends Doc {
     })
     this.connect()
   }
+
   /**
    * Disconnect from TestConnector.
    */
@@ -62,6 +64,7 @@ export class TestYInstance extends Doc {
     this.receiving = new Map()
     this.tc.onlineConns.delete(this)
   }
+
   /**
    * Append yourself to the list of known Y instances in testconnector.
    * Also initiate sync with all clients.
@@ -83,6 +86,7 @@ export class TestYInstance extends Doc {
       })
     }
   }
+
   /**
    * Receive a message from another client. This message is only appended to the list of receiving messages.
    * TestConnector decides when this client actually reads this message.
@@ -124,6 +128,7 @@ export class TestConnector {
      */
     this.prng = gen
   }
+
   /**
    * Create a new Y instance and add it to the list of connections
    * @param {number} clientID
@@ -131,6 +136,7 @@ export class TestConnector {
   createY (clientID) {
     return new TestYInstance(this, clientID)
   }
+
   /**
    * Choose random connection and flush a random message from a random sender.
    *
@@ -162,6 +168,7 @@ export class TestConnector {
     }
     return false
   }
+
   /**
    * @return {boolean} True iff this function actually flushed something
    */
@@ -172,16 +179,20 @@ export class TestConnector {
     }
     return didSomething
   }
+
   reconnectAll () {
     this.allConns.forEach(conn => conn.connect())
   }
+
   disconnectAll () {
     this.allConns.forEach(conn => conn.disconnect())
   }
+
   syncAll () {
     this.reconnectAll()
     this.flushAllMessages()
   }
+
   /**
    * @return {boolean} Whether it was possible to disconnect a randon connection.
    */
@@ -192,6 +203,7 @@ export class TestConnector {
     prng.oneOf(this.prng, Array.from(this.onlineConns)).disconnect()
     return true
   }
+
   /**
    * @return {boolean} Whether it was possible to reconnect a random connection.
    */
@@ -270,12 +282,12 @@ export const compare = users => {
   // Test Map iterator
   const ymapkeys = Array.from(users[0].getMap('map').keys())
   t.assert(ymapkeys.length === Object.keys(userMapValues[0]).length)
-  ymapkeys.forEach(key => t.assert(userMapValues[0].hasOwnProperty(key)))
+  ymapkeys.forEach(key => t.assert(object.hasProperty(userMapValues[0], key)))
   /**
    * @type {Object<string,any>}
    */
   const mapRes = {}
-  for (let [k, v] of users[0].getMap('map')) {
+  for (const [k, v] of users[0].getMap('map')) {
     mapRes[k] = v instanceof Y.AbstractType ? v.toJSON() : v
   }
   t.compare(userMapValues[0], mapRes)

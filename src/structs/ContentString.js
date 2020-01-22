@@ -18,30 +18,35 @@ export class ContentString {
      */
     this.str = str
   }
+
   /**
    * @return {number}
    */
   getLength () {
     return this.str.length
   }
+
   /**
    * @return {Array<any>}
    */
   getContent () {
     return this.str.split('')
   }
+
   /**
    * @return {boolean}
    */
   isCountable () {
     return true
   }
+
   /**
    * @return {ContentString}
    */
   copy () {
     return new ContentString(this.str)
   }
+
   /**
    * @param {number} offset
    * @return {ContentString}
@@ -51,6 +56,7 @@ export class ContentString {
     this.str = this.str.slice(0, offset)
     return right
   }
+
   /**
    * @param {ContentString} right
    * @return {boolean}
@@ -59,6 +65,7 @@ export class ContentString {
     this.str += right.str
     return true
   }
+
   /**
    * @param {Transaction} transaction
    * @param {Item} item
@@ -79,6 +86,7 @@ export class ContentString {
   write (encoder, offset) {
     encoding.writeVarString(encoder, offset === 0 ? this.str : this.str.slice(offset))
   }
+
   /**
    * @return {number}
    */

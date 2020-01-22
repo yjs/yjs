@@ -185,7 +185,7 @@ export const getItem = (store, id) => find(store, id)
  */
 export const findIndexCleanStart = (transaction, structs, clock) => {
   const index = findIndexSS(structs, clock)
-  let struct = structs[index]
+  const struct = structs[index]
   if (struct.id.clock < clock && struct instanceof Item) {
     structs.splice(index + 1, 0, splitItem(transaction, struct, clock - struct.id.clock))
     return index + 1

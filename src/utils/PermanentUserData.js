@@ -67,6 +67,7 @@ export class PermanentUserData {
     // add intial data
     users.forEach(initUser)
   }
+
   /**
    * @param {Doc} doc
    * @param {number} clientid
@@ -116,6 +117,7 @@ export class PermanentUserData {
       })
     })
   }
+
   /**
    * @param {number} clientid
    * @return {any}
@@ -123,6 +125,7 @@ export class PermanentUserData {
   getUserByClientId (clientid) {
     return this.clients.get(clientid) || null
   }
+
   /**
    * @param {ID} id
    * @return {string | null}

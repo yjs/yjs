@@ -74,7 +74,7 @@ export class YXmlElement extends YXmlFragment {
     const attrs = this.getAttributes()
     const stringBuilder = []
     const keys = []
-    for (let key in attrs) {
+    for (const key in attrs) {
       keys.push(key)
     }
     keys.sort()
@@ -140,7 +140,7 @@ export class YXmlElement extends YXmlFragment {
    * Returns all attribute name/value pairs in a JSON Object.
    *
    * @param {Snapshot} [snapshot]
-   * @return {Object} A JSON Object that describes the attributes.
+   * @return {Object<string, any>} A JSON Object that describes the attributes.
    *
    * @public
    */
@@ -165,8 +165,8 @@ export class YXmlElement extends YXmlFragment {
    */
   toDOM (_document = document, hooks = {}, binding) {
     const dom = _document.createElement(this.nodeName)
-    let attrs = this.getAttributes()
-    for (let key in attrs) {
+    const attrs = this.getAttributes()
+    for (const key in attrs) {
       dom.setAttribute(key, attrs[key])
     }
     typeListForEach(this, yxml => {

@@ -68,6 +68,7 @@ export class YXmlTreeWalker {
   [Symbol.iterator] () {
     return this
   }
+
   /**
    * Get the next node.
    *
@@ -130,6 +131,7 @@ export class YXmlFragment extends AbstractType {
      */
     this._prelimContent = []
   }
+
   /**
    * Integrate this type into the Yjs instance.
    *
@@ -143,7 +145,7 @@ export class YXmlFragment extends AbstractType {
    */
   _integrate (y, item) {
     super._integrate(y, item)
-    this.insert(0, /** @type {Array} */ (this._prelimContent))
+    this.insert(0, /** @type {Array<any>} */ (this._prelimContent))
     this._prelimContent = null
   }
 
@@ -307,6 +309,7 @@ export class YXmlFragment extends AbstractType {
       this._prelimContent.splice(index, length)
     }
   }
+
   /**
    * Transforms this YArray to a JavaScript Array.
    *
@@ -315,6 +318,7 @@ export class YXmlFragment extends AbstractType {
   toArray () {
     return typeListToArray(this)
   }
+
   /**
    * Transform the properties of this type to binary and write it to an
    * BinaryEncoder.

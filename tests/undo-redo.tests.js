@@ -69,11 +69,11 @@ export const testUndoMap = tc => {
   const subType = new Y.Map()
   map0.set('a', subType)
   subType.set('x', 42)
-  t.compare(map0.toJSON(), /** @type {any} */ ({ 'a': { x: 42 } }))
+  t.compare(map0.toJSON(), /** @type {any} */ ({ a: { x: 42 } }))
   undoManager.undo()
   t.assert(map0.get('a') === 1)
   undoManager.redo()
-  t.compare(map0.toJSON(), /** @type {any} */ ({ 'a': { x: 42 } }))
+  t.compare(map0.toJSON(), /** @type {any} */ ({ a: { x: 42 } }))
   testConnector.syncAll()
   // if content is overwritten by another user, undo operations should be skipped
   map1.set('a', 44)

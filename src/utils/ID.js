@@ -81,7 +81,7 @@ export const readID = decoder =>
  */
 export const findRootTypeKey = type => {
   // @ts-ignore _y must be defined, otherwise unexpected case
-  for (let [key, value] of type.doc.share) {
+  for (const [key, value] of type.doc.share) {
     if (value === type) {
       return key
     }

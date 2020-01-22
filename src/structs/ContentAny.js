@@ -18,30 +18,35 @@ export class ContentAny {
      */
     this.arr = arr
   }
+
   /**
    * @return {number}
    */
   getLength () {
     return this.arr.length
   }
+
   /**
    * @return {Array<any>}
    */
   getContent () {
     return this.arr
   }
+
   /**
    * @return {boolean}
    */
   isCountable () {
     return true
   }
+
   /**
    * @return {ContentAny}
    */
   copy () {
     return new ContentAny(this.arr)
   }
+
   /**
    * @param {number} offset
    * @return {ContentAny}
@@ -51,6 +56,7 @@ export class ContentAny {
     this.arr = this.arr.slice(0, offset)
     return right
   }
+
   /**
    * @param {ContentAny} right
    * @return {boolean}
@@ -59,6 +65,7 @@ export class ContentAny {
     this.arr = this.arr.concat(right.arr)
     return true
   }
+
   /**
    * @param {Transaction} transaction
    * @param {Item} item
@@ -84,6 +91,7 @@ export class ContentAny {
       encoding.writeAny(encoder, c)
     }
   }
+
   /**
    * @return {number}
    */

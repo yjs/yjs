@@ -49,30 +49,35 @@ export class ContentType {
      */
     this.type = type
   }
+
   /**
    * @return {number}
    */
   getLength () {
     return 1
   }
+
   /**
    * @return {Array<any>}
    */
   getContent () {
     return [this.type]
   }
+
   /**
    * @return {boolean}
    */
   isCountable () {
     return true
   }
+
   /**
    * @return {ContentType}
    */
   copy () {
     return new ContentType(this.type._copy())
   }
+
   /**
    * @param {number} offset
    * @return {ContentType}
@@ -80,6 +85,7 @@ export class ContentType {
   splice (offset) {
     throw error.methodUnimplemented()
   }
+
   /**
    * @param {ContentType} right
    * @return {boolean}
@@ -87,6 +93,7 @@ export class ContentType {
   mergeWith (right) {
     return false
   }
+
   /**
    * @param {Transaction} transaction
    * @param {Item} item
@@ -94,6 +101,7 @@ export class ContentType {
   integrate (transaction, item) {
     this.type._integrate(transaction.doc, item)
   }
+
   /**
    * @param {Transaction} transaction
    */
@@ -121,6 +129,7 @@ export class ContentType {
     })
     transaction.changed.delete(this.type)
   }
+
   /**
    * @param {StructStore} store
    */
@@ -139,6 +148,7 @@ export class ContentType {
     })
     this.type._map = new Map()
   }
+
   /**
    * @param {encoding.Encoder} encoder
    * @param {number} offset
@@ -146,6 +156,7 @@ export class ContentType {
   write (encoder, offset) {
     this.type._write(encoder)
   }
+
   /**
    * @return {number}
    */

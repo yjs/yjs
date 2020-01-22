@@ -154,7 +154,7 @@ export const testSnapshotDeleteAfter = tc => {
  * @param {t.TestCase} tc
  */
 export const testToJson = tc => {
-  const {text0 } = init(tc, { users: 1 })
+  const { text0 } = init(tc, { users: 1 })
   text0.insert(0, 'abc', { bold: true })
   t.assert(text0.toJSON() === 'abc', 'toJSON returns the unformatted text')
 }

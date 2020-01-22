@@ -51,6 +51,7 @@ export class YArray extends AbstractType {
      */
     this._prelimContent = []
   }
+
   /**
    * Integrate this type into the Yjs instance.
    *
@@ -65,7 +66,7 @@ export class YArray extends AbstractType {
    */
   _integrate (y, item) {
     super._integrate(y, item)
-    this.insert(0, /** @type {Array} */ (this._prelimContent))
+    this.insert(0, /** @type {Array<any>} */ (this._prelimContent))
     this._prelimContent = null
   }
 
@@ -76,6 +77,7 @@ export class YArray extends AbstractType {
   get length () {
     return this._prelimContent === null ? this._length : this._prelimContent.length
   }
+
   /**
    * Creates YArrayEvent and calls observers.
    *
@@ -110,7 +112,7 @@ export class YArray extends AbstractType {
         typeListInsertGenerics(transaction, this, index, content)
       })
     } else {
-      /** @type {Array} */ (this._prelimContent).splice(index, 0, ...content)
+      /** @type {Array<any>} */ (this._prelimContent).splice(index, 0, ...content)
     }
   }
 
@@ -135,7 +137,7 @@ export class YArray extends AbstractType {
         typeListDelete(transaction, this, index, length)
       })
     } else {
-      /** @type {Array} */ (this._prelimContent).splice(index, length)
+      /** @type {Array<any>} */ (this._prelimContent).splice(index, length)
     }
   }
 

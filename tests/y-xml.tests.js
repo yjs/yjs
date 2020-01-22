@@ -60,13 +60,13 @@ export const testEvents = tc => {
  */
 export const testTreewalker = tc => {
   const { users, xml0 } = init(tc, { users: 3 })
-  let paragraph1 = new Y.XmlElement('p')
-  let paragraph2 = new Y.XmlElement('p')
-  let text1 = new Y.XmlText('init')
-  let text2 = new Y.XmlText('text')
+  const paragraph1 = new Y.XmlElement('p')
+  const paragraph2 = new Y.XmlElement('p')
+  const text1 = new Y.XmlText('init')
+  const text2 = new Y.XmlText('text')
   paragraph1.insert(0, [text1, text2])
   xml0.insert(0, [paragraph1, paragraph2, new Y.XmlElement('img')])
-  let allParagraphs = xml0.querySelectorAll('p')
+  const allParagraphs = xml0.querySelectorAll('p')
   t.assert(allParagraphs.length === 2, 'found exactly two paragraphs')
   t.assert(allParagraphs[0] === paragraph1, 'querySelectorAll found paragraph1')
   t.assert(allParagraphs[1] === paragraph2, 'querySelectorAll found paragraph2')

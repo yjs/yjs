@@ -19,30 +19,35 @@ export class ContentFormat {
     this.key = key
     this.value = value
   }
+
   /**
    * @return {number}
    */
   getLength () {
     return 1
   }
+
   /**
    * @return {Array<any>}
    */
   getContent () {
     return []
   }
+
   /**
    * @return {boolean}
    */
   isCountable () {
     return false
   }
+
   /**
    * @return {ContentFormat}
    */
   copy () {
     return new ContentFormat(this.key, this.value)
   }
+
   /**
    * @param {number} offset
    * @return {ContentFormat}
@@ -50,6 +55,7 @@ export class ContentFormat {
   splice (offset) {
     throw error.methodUnimplemented()
   }
+
   /**
    * @param {ContentFormat} right
    * @return {boolean}
@@ -57,6 +63,7 @@ export class ContentFormat {
   mergeWith (right) {
     return false
   }
+
   /**
    * @param {Transaction} transaction
    * @param {Item} item
@@ -78,6 +85,7 @@ export class ContentFormat {
     encoding.writeVarString(encoder, this.key)
     encoding.writeVarString(encoder, JSON.stringify(this.value))
   }
+
   /**
    * @return {number}
    */

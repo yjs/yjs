@@ -17,30 +17,35 @@ export class ContentBinary {
   constructor (content) {
     this.content = content
   }
+
   /**
    * @return {number}
    */
   getLength () {
     return 1
   }
+
   /**
    * @return {Array<any>}
    */
   getContent () {
     return [this.content]
   }
+
   /**
    * @return {boolean}
    */
   isCountable () {
     return true
   }
+
   /**
    * @return {ContentBinary}
    */
   copy () {
     return new ContentBinary(this.content)
   }
+
   /**
    * @param {number} offset
    * @return {ContentBinary}
@@ -48,6 +53,7 @@ export class ContentBinary {
   splice (offset) {
     throw error.methodUnimplemented()
   }
+
   /**
    * @param {ContentBinary} right
    * @return {boolean}
@@ -55,6 +61,7 @@ export class ContentBinary {
   mergeWith (right) {
     return false
   }
+
   /**
    * @param {Transaction} transaction
    * @param {Item} item
@@ -75,6 +82,7 @@ export class ContentBinary {
   write (encoder, offset) {
     encoding.writeVarUint8Array(encoder, this.content)
   }
+
   /**
    * @return {number}
    */

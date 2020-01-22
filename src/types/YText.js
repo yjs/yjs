@@ -112,10 +112,9 @@ const findNextPosition = (transaction, currentAttributes, left, right, count) =>
  * @function
  */
 const findPosition = (transaction, parent, index) => {
-  let currentAttributes = new Map()
-  let left = null
-  let right = parent._start
-  return findNextPosition(transaction, currentAttributes, left, right, index)
+  const currentAttributes = new Map()
+  const right = parent._start
+  return findNextPosition(transaction, currentAttributes, null, right, index)
 }
 
 /**
@@ -147,7 +146,7 @@ const insertNegatedAttributes = (transaction, parent, left, right, negatedAttrib
     left = right
     right = right.right
   }
-  for (let [key, val] of negatedAttributes) {
+  for (const [key, val] of negatedAttributes) {
     left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentFormat(key, val))
     left.integrate(transaction)
   }
@@ -214,7 +213,7 @@ const minimizeAttributeChanges = (left, right, currentAttributes, attributes) =>
 const insertAttributes = (transaction, parent, left, right, currentAttributes, attributes) => {
   const negatedAttributes = new Map()
   // insert format-start items
-  for (let key in attributes) {
+  for (const key in attributes) {
     const val = attributes[key]
     const currentVal = currentAttributes.get(key) || null
     if (!equalAttrs(currentVal, val)) {
@@ -241,7 +240,7 @@ const insertAttributes = (transaction, parent, left, right, currentAttributes, a
  * @function
  **/
 const insertText = (transaction, parent, left, right, currentAttributes, text, attributes) => {
-  for (let [key] of currentAttributes) {
+  for (const [key] of currentAttributes) {
     if (attributes[key] === undefined) {
       attributes[key] = null
     }
@@ -281,7 +280,7 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
   while (length > 0 && right !== null) {
     if (!right.deleted) {
       switch (right.content.constructor) {
-        case ContentFormat:
+        case ContentFormat: {
           const { key, value } = /** @type {ContentFormat} */ (right.content)
           const attr = attributes[key]
           if (attr !== undefined) {
@@ -294,6 +293,7 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
           }
           updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (right.content))
           break
+        }
         case ContentEmbed:
         case ContentString:
           if (length < right.length) {
@@ -405,6 +405,7 @@ export class YTextEvent extends YEvent {
      */
     this._delta = null
   }
+
   /**
    * Compute the changes in the delta format.
    * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
@@ -429,7 +430,10 @@ export class YTextEvent extends YEvent {
         /**
          * @type {Object<string,any>}
          */
-        let attributes = {} // counts added or removed new attributes for retain
+        const attributes = {} // counts added or removed new attributes for retain
+        /**
+         * @type {string|object}
+         */
         let insert = ''
         let retain = 0
         let deleteLen = 0
@@ -448,7 +452,7 @@ export class YTextEvent extends YEvent {
                 op = { insert }
                 if (currentAttributes.size > 0) {
                   op.attributes = {}
-                  for (let [key, value] of currentAttributes) {
+                  for (const [key, value] of currentAttributes) {
                     if (value !== null) {
                       op.attributes[key] = value
                     }
@@ -460,7 +464,7 @@ export class YTextEvent extends YEvent {
                 op = { retain }
                 if (Object.keys(attributes).length > 0) {
                   op.attributes = {}
-                  for (let key in attributes) {
+                  for (const key in attributes) {
                     op.attributes[key] = attributes[key]
                   }
                 }
@@ -518,7 +522,7 @@ export class YTextEvent extends YEvent {
                 retain += item.length
               }
               break
-            case ContentFormat:
+            case ContentFormat: {
               const { key, value } = /** @type {ContentFormat} */ (item.content)
               if (this.adds(item)) {
                 if (!this.deletes(item)) {
@@ -570,12 +574,13 @@ export class YTextEvent extends YEvent {
                 updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (item.content))
               }
               break
+            }
           }
           item = item.right
         }
         addOp()
         while (delta.length > 0) {
-          let lastOp = delta[delta.length - 1]
+          const lastOp = delta[delta.length - 1]
           if (lastOp.retain !== undefined && lastOp.attributes === undefined) {
             // retain delta's if they don't assign attributes
             delta.pop()
@@ -745,7 +750,7 @@ export class YText extends AbstractType {
          */
         const attributes = {}
         let addAttributes = false
-        for (let [key, value] of currentAttributes) {
+        for (const [key, value] of currentAttributes) {
           addAttributes = true
           attributes[key] = value
         }
@@ -772,7 +777,7 @@ export class YText extends AbstractType {
       while (n !== null) {
         if (isVisible(n, snapshot) || (prevSnapshot !== undefined && isVisible(n, prevSnapshot))) {
           switch (n.content.constructor) {
-            case ContentString:
+            case ContentString: {
               const cur = currentAttributes.get('ychange')
               if (snapshot !== undefined && !isVisible(n, snapshot)) {
                 if (cur === undefined || cur.user !== n.id.client || cur.state !== 'removed') {
@@ -790,6 +795,7 @@ export class YText extends AbstractType {
               }
               str += /** @type {ContentString} */ (n.content).str
               break
+            }
             case ContentEmbed:
               packStr()
               ops.push({
@@ -831,6 +837,7 @@ export class YText extends AbstractType {
         const { left, right, currentAttributes } = findPosition(transaction, this, index)
         if (!attributes) {
           attributes = {}
+          // @ts-ignore
           currentAttributes.forEach((v, k) => { attributes[k] = v })
         }
         insertText(transaction, this, left, right, currentAttributes, text, attributes)
@@ -902,7 +909,7 @@ export class YText extends AbstractType {
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
-        let { left, right, currentAttributes } = findPosition(transaction, this, index)
+        const { left, right, currentAttributes } = findPosition(transaction, this, index)
         if (right === null) {
           return
         }

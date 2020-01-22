@@ -17,30 +17,35 @@ export class ContentEmbed {
   constructor (embed) {
     this.embed = embed
   }
+
   /**
    * @return {number}
    */
   getLength () {
     return 1
   }
+
   /**
    * @return {Array<any>}
    */
   getContent () {
     return [this.embed]
   }
+
   /**
    * @return {boolean}
    */
   isCountable () {
     return true
   }
+
   /**
    * @return {ContentEmbed}
    */
   copy () {
     return new ContentEmbed(this.embed)
   }
+
   /**
    * @param {number} offset
    * @return {ContentEmbed}
@@ -48,6 +53,7 @@ export class ContentEmbed {
   splice (offset) {
     throw error.methodUnimplemented()
   }
+
   /**
    * @param {ContentEmbed} right
    * @return {boolean}
@@ -55,6 +61,7 @@ export class ContentEmbed {
   mergeWith (right) {
     return false
   }
+
   /**
    * @param {Transaction} transaction
    * @param {Item} item
@@ -75,6 +82,7 @@ export class ContentEmbed {
   write (encoder, offset) {
     encoding.writeVarString(encoder, JSON.stringify(this.embed))
   }
+
   /**
    * @return {number}
    */

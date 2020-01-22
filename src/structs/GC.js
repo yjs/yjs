@@ -69,6 +69,7 @@ export class GCRef extends AbstractStructRef {
      */
     this.length = decoding.readVarUint(decoder)
   }
+
   /**
    * @param {Transaction} transaction
    * @param {StructStore} store

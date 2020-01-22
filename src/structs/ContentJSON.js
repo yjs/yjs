@@ -18,30 +18,35 @@ export class ContentJSON {
      */
     this.arr = arr
   }
+
   /**
    * @return {number}
    */
   getLength () {
     return this.arr.length
   }
+
   /**
    * @return {Array<any>}
    */
   getContent () {
     return this.arr
   }
+
   /**
    * @return {boolean}
    */
   isCountable () {
     return true
   }
+
   /**
    * @return {ContentJSON}
    */
   copy () {
     return new ContentJSON(this.arr)
   }
+
   /**
    * @param {number} offset
    * @return {ContentJSON}
@@ -51,6 +56,7 @@ export class ContentJSON {
     this.arr = this.arr.slice(0, offset)
     return right
   }
+
   /**
    * @param {ContentJSON} right
    * @return {boolean}
@@ -59,6 +65,7 @@ export class ContentJSON {
     this.arr = this.arr.concat(right.arr)
     return true
   }
+
   /**
    * @param {Transaction} transaction
    * @param {Item} item
@@ -84,6 +91,7 @@ export class ContentJSON {
       encoding.writeVarString(encoder, c === undefined ? 'undefined' : JSON.stringify(c))
     }
   }
+
   /**
    * @return {number}
    */

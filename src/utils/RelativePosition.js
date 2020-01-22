@@ -63,7 +63,7 @@ export class RelativePosition {
 }
 
 /**
- * @param {Object} json
+ * @param {any} json
  * @return {RelativePosition}
  *
  * @function

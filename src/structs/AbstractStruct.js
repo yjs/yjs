@@ -24,6 +24,7 @@ export class AbstractStruct {
     this.length = length
     this.deleted = false
   }
+
   /**
    * Merge this struct with the item to the right.
    * This method is already assuming that `this.id.clock + this.length === this.id.clock`.
@@ -34,6 +35,7 @@ export class AbstractStruct {
   mergeWith (right) {
     return false
   }
+
   /**
    * @param {encoding.Encoder} encoder The encoder to write data to.
    * @param {number} offset
@@ -43,6 +45,7 @@ export class AbstractStruct {
   write (encoder, offset, encodingRef) {
     throw error.methodUnimplemented()
   }
+
   /**
    * @param {Transaction} transaction
    */
@@ -69,6 +72,7 @@ export class AbstractStructRef {
      */
     this.id = id
   }
+
   /**
    * @param {Transaction} transaction
    * @return {Array<ID|null>}
@@ -76,6 +80,7 @@ export class AbstractStructRef {
   getMissing (transaction) {
     return this._missing
   }
+
   /**
    * @param {Transaction} transaction
    * @param {StructStore} store

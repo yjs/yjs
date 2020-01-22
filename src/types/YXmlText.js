@@ -12,6 +12,7 @@ export class YXmlText extends YText {
   _copy () {
     return new YXmlText()
   }
+
   /**
    * Creates a Dom Element that mirrors this YXmlText.
    *
@@ -39,9 +40,9 @@ export class YXmlText extends YText {
     // @ts-ignore
     return this.toDelta().map(delta => {
       const nestedNodes = []
-      for (let nodeName in delta.attributes) {
+      for (const nodeName in delta.attributes) {
         const attrs = []
-        for (let key in delta.attributes[nodeName]) {
+        for (const key in delta.attributes[nodeName]) {
           attrs.push({ key, value: delta.attributes[nodeName][key] })
         }
         // sort attributes to get a unique order
