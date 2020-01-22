@@ -669,6 +669,17 @@ export class YText extends AbstractType {
   }
 
   /**
+   * Returns the unformatted string representation of this YText type.
+   *
+   * Avoids undefined being returned when called as a nested type.
+   *
+   * @public
+   */
+  toJSON () {
+    return this.toString()
+  }
+
+  /**
    * Apply a {@link Delta} on this shared YText type.
    *
    * @param {any} delta The changes to apply on this element.
