@@ -149,3 +149,12 @@ export const testSnapshotDeleteAfter = tc => {
   const state1 = text0.toDelta(snapshot1)
   t.compare(state1, [{ insert: 'abcd' }])
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testToJson = tc => {
+  const {text0 } = init(tc, { users: 1 })
+  text0.insert(0, 'abc', { bold: true })
+  t.assert(text0.toJSON() === 'abc', 'toJSON returns the unformatted text')
+}
