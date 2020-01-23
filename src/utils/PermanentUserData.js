@@ -71,10 +71,10 @@ export class PermanentUserData {
    * @param {Doc} doc
    * @param {number} clientid
    * @param {string} userDescription
-   * @param {Object} conf
+   * @param {Object} [conf]
    * @param {function(Transaction, DeleteSet):boolean} [conf.filter]
    */
-  setUserMapping (doc, clientid, userDescription, { filter = () => true }) {
+  setUserMapping (doc, clientid, userDescription, { filter = () => true } = {}) {
     const users = this.yusers
     let user = users.get(userDescription)
     if (!user) {
