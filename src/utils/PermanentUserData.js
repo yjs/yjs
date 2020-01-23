@@ -5,6 +5,7 @@ import {
   readDeleteSet,
   writeDeleteSet,
   createDeleteSet,
+  applyUpdate,
   ID, DeleteSet, YArrayEvent, Transaction, Doc // eslint-disable-line
 } from '../internals.js'
 
@@ -15,15 +16,14 @@ import { mergeDeleteSets, isDeleted } from './DeleteSet.js'
 export class PermanentUserData {
   /**
    * @param {Doc} doc
-   * @param {string} key
+   * @param {YMap<any>} [storeType]
    */
-  constructor (doc, key = 'users') {
-    const users = doc.getMap(key)
+  constructor (doc, storeType = doc.getMap('users')) {
     /**
      * @type {Map<string,DeleteSet>}
      */
     const dss = new Map()
-    this.yusers = users
+    this.yusers = storeType
     this.doc = doc
     /**
      * Maps from clientid to userDescription
@@ -59,21 +59,23 @@ export class PermanentUserData {
       ids.forEach(addClientId)
     }
     // observe users
-    users.observe(event => {
+    storeType.observe(event => {
       event.keysChanged.forEach(userDescription =>
-        initUser(users.get(userDescription), userDescription)
+        initUser(storeType.get(userDescription), userDescription)
       )
     })
     // add intial data
-    users.forEach(initUser)
+    storeType.forEach(initUser)
   }
 
   /**
    * @param {Doc} doc
    * @param {number} clientid
    * @param {string} userDescription
+   * @param {Object} conf
+   * @param {function(Transaction, DeleteSet):boolean} [conf.filter]
    */
-  setUserMapping (doc, clientid, userDescription) {
+  setUserMapping (doc, clientid, userDescription, { filter = () => true }) {
     const users = this.yusers
     let user = users.get(userDescription)
     if (!user) {
@@ -109,7 +111,7 @@ export class PermanentUserData {
       setTimeout(() => {
         const yds = user.get('ds')
         const ds = transaction.deleteSet
-        if (transaction.local && ds.clients.size > 0) {
+        if (transaction.local && ds.clients.size > 0 && filter(transaction, ds)) {
           const encoder = encoding.createEncoder()
           writeDeleteSet(encoder, ds)
           yds.push([encoding.toUint8Array(encoder)])
