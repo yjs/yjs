@@ -4,11 +4,12 @@
   "description": "Shared Editing Library",
   "main": "./dist/yjs.cjs",
   "module": "./src/index.js",
+  "types": "./dist/src/index.d.ts",
   "sideEffects": false,
   "scripts": {
     "test": "npm run dist && node ./dist/tests.cjs --repitition-time 50",
     "test-exhaustive": "npm run lint && npm run dist && node ./dist/tests.cjs --production --repitition-time 10000",
-    "dist": "rm -rf dist && rollup -c",
+    "dist": "rm -rf dist && rollup -c && tsc",
     "watch": "rollup -wc",
     "lint": "markdownlint README.md && standard && tsc",
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.md --package ./package.json || true",
