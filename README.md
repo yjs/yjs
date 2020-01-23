@@ -20,9 +20,6 @@ suited for even large documents.
 * Podcast [**"Yjs Deep Dive into real time collaborative editing solutions":**](https://www.tag1consulting.com/blog/deep-dive-real-time-collaborative-editing-solutions-tagteamtalk-001-0)
 * Podcast [**"Google Docs-style editing in Gutenberg with the YJS framework":**](https://publishpress.com/blog/yjs/)
 
-:warning: This is the documentation for v13 (still in alpha). For the stable v12
-release checkout the [v12 docs](./README.v12.md) :warning:
-
 :construction_worker_woman: If you are looking for professional support to build
 collaborative or distributed applications ping us at <yjs@tag1consulting.com>.
 
@@ -103,7 +100,7 @@ hypercores and y-dat listens to changes and applies them to the Yjs document.
 Install Yjs and a provider with your favorite package manager:
 
 ```sh
-npm i yjs@13.0.0-103 y-websocket@1.0.0-6
+npm i yjs y-websocket
 ```
 
 Start the y-websocket server:
@@ -677,7 +674,7 @@ undo- or the redo-stack.
     <code>
 on('stack-item-popped', { stackItem: { meta: Map&lt;any,any&gt; }, type: 'undo'
 | 'redo' })
-    </code>  
+    </code>
   </b>
   <dd>
 Register an event that is called when a <code>StackItem</code> is popped from
