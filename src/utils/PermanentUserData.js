@@ -5,7 +5,6 @@ import {
   readDeleteSet,
   writeDeleteSet,
   createDeleteSet,
-  applyUpdate,
   ID, DeleteSet, YArrayEvent, Transaction, Doc // eslint-disable-line
 } from '../internals.js'
 
