@@ -86,6 +86,12 @@ A module that contains a simple websocket backend and a websocket client that
 connects to that backend. The backend can be extended to persist updates in a
 leveldb database.
   </dd>
+  <dt><a href="http://github.com/yjs/y-indexeddb">y-indexeddb</a></dt>
+  <dd>
+Efficiently persists document updates to the browsers indexeddb database.
+The document is immediately available and only diffs need to be synced through the
+network provider.
+  </dd>
   <dt><a href="http://github.com/yjs/y-dat">y-dat</a></dt>
   <dd>
 [WIP] Write document updates effinciently to the dat network using
