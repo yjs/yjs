@@ -199,11 +199,30 @@ export class UndoManager extends Observable {
       // make sure that deleted structs are not gc'd
       iterateDeletedStructs(transaction, transaction.deleteSet, /** @param {Item|GC} item */ item => {
         if (item instanceof Item && this.scope.some(type => isParentOf(type, item))) {
-          keepItem(item)
+          keepItem(item, true)
         }
       })
       this.emit('stack-item-added', [{ stackItem: stack[stack.length - 1], origin: transaction.origin, type: undoing ? 'redo' : 'undo' }, this])
     })
+  }
+
+  clear () {
+    this.doc.transact(transaction => {
+      /**
+       * @param {StackItem} stackItem
+       */
+      const clearItem = stackItem => {
+        iterateDeletedStructs(transaction, stackItem.ds, item => {
+          if (item instanceof Item && this.scope.some(type => isParentOf(type, item))) {
+            keepItem(item, false)
+          }
+        })
+      }
+      this.undoStack.forEach(clearItem)
+      this.redoStack.forEach(clearItem)
+    })
+    this.undoStack = []
+    this.redoStack = []
   }
 
   /**

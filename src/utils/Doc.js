@@ -25,10 +25,12 @@ export class Doc extends Observable {
   /**
    * @param {Object} conf configuration
    * @param {boolean} [conf.gc] Disable garbage collection (default: gc=true)
+   * @param {function(Item):boolean} [conf.gcFilter] Will be called before an Item is garbage collected. Return false to keep the Item.
    */
-  constructor ({ gc = true } = {}) {
+  constructor ({ gc = true, gcFilter = () => true } = {}) {
     super()
     this.gc = gc
+    this.gcFilter = gcFilter
     this.clientID = random.uint32()
     /**
      * @type {Map<string, AbstractType<YEvent>>}

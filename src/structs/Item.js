@@ -68,10 +68,11 @@ export const followRedone = (store, id) => {
  * sending it to other peers
  *
  * @param {Item|null} item
+ * @param {boolean} keep
  */
-export const keepItem = item => {
-  while (item !== null && !item.keep) {
-    item.keep = true
+export const keepItem = (item, keep) => {
+  while (item !== null && item.keep !== keep) {
+    item.keep = keep
     item = item.parent._item
   }
 }
@@ -220,7 +221,7 @@ export const redoItem = (transaction, item, redoitems) => {
     item.content.copy()
   )
   item.redone = redoneItem.id
-  keepItem(redoneItem)
+  keepItem(redoneItem, true)
   redoneItem.integrate(transaction)
   return redoneItem
 }

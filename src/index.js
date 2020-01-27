@@ -55,5 +55,6 @@ export {
   isDeleted,
   isParentOf,
   equalSnapshots,
-  PermanentUserData // @TODO experimental
+  PermanentUserData, // @TODO experimental
+  tryGc
 } from './internals.js'
