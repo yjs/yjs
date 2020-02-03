@@ -617,6 +617,11 @@ export class YText extends AbstractType {
     this._pending = string !== undefined ? [() => this.insert(0, string)] : []
   }
 
+  /**
+   * Number of characters of this text type.
+   *
+   * @type {number}
+   */
   get length () {
     return this._length
   }
