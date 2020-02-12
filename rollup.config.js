@@ -57,13 +57,7 @@ export default [{
     name: 'Y',
     file: 'dist/yjs.mjs',
     format: 'esm',
-    sourcemap: true,
-    paths: path => {
-      if (/^lib0\//.test(path)) {
-        return `lib0/dist/${path.slice(5, -3)}.cjs`
-      }
-      return path
-    }
+    sourcemap: true
   },
   external: id => /^lib0\//.test(id)
 }, {
