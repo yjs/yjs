@@ -56,5 +56,6 @@ export {
   isParentOf,
   equalSnapshots,
   PermanentUserData, // @TODO experimental
-  tryGc
+  tryGc,
+  transact
 } from './internals.js'

@@ -3,7 +3,7 @@
   "version": "13.0.2",
   "description": "Shared Editing Library",
   "main": "./dist/yjs.cjs",
-  "module": "./src/index.js",
+  "module": "./dist/yjs.mjs",
   "types": "./dist/src/index.d.ts",
   "sideEffects": false,
   "scripts": {

@@ -338,7 +338,6 @@ const cleanupTransactions = (transactionCleanups, i) => {
  * @param {function(Transaction):void} f
  * @param {any} [origin=true]
  *
- * @private
  * @function
  */
 export const transact = (doc, f, origin = null, local = true) => {
