@@ -56,7 +56,7 @@
   },
   "homepage": "https://yjs.dev",
   "dependencies": {
-    "lib0": "^0.2.15"
+    "lib0": "^0.2.17"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^11.0.1",
