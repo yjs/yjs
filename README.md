@@ -38,12 +38,6 @@ collaborative or distributed applications ping us at <yjs@tag1consulting.com>.
 * [Miscellaneous](#Miscellaneous)
   * [Typescript Declarations](#Typescript-Declarations)
 * [Yjs CRDT Algorithm](#Yjs-CRDT-Algorithm)
-* [Evaluation](#Evaluation)
-  * [Existing shared editing libraries](#Exisisting-Javascript-Libraries)
-  * [CRDT Algorithms](#CRDT-Algorithms)
-  * [Comparison of CRDT with OT](#Comparing-CRDT-with-OT)
-  * [Comparison of CRDT Algorithms](#Comparing-CRDT-Algorithms)
-  * [Comparison of Yjs with other Implementations](#Comparing-Yjs-with-other-Implementations)
 * [License and Author](#License-and-Author)
 
 ## Overview
