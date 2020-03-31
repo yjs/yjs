@@ -158,3 +158,17 @@ export const testToJson = tc => {
   text0.insert(0, 'abc', { bold: true })
   t.assert(text0.toJSON() === 'abc', 'toJSON returns the unformatted text')
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testToDeltaEmbedAttributes = tc => {
+  const { text0 } = init(tc, { users: 1 })
+  text0.insertEmbed(0, { image: 'imageSrc.png' }, { width: 100 })
+  const [delta0] = text0.toDelta();
+  t.assert(!!delta0.attributes, 'toDelta correctly reads attributes')
+  const { text0: text1 } = init(tc, { users: 1 })
+  text1.insertEmbed(1, { image: 'imageSrc.png' })
+  const [delta1] = text1.toDelta();
+  t.assert(!delta1.hasOwnProperty('attributes'), 'toDelta does not set attributes key when no attributes are present')
+}
