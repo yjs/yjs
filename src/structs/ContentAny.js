@@ -5,9 +5,6 @@ import {
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 
-/**
- * @private
- */
 export class ContentAny {
   /**
    * @param {Array<any>} arr
@@ -101,8 +98,6 @@ export class ContentAny {
 }
 
 /**
- * @private
- *
  * @param {decoding.Decoder} decoder
  * @return {ContentAny}
  */

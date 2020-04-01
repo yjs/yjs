@@ -85,7 +85,6 @@ export class Transaction {
     this.changedParentTypes = new Map()
     /**
      * @type {Set<ID>}
-     * @private
      */
     this._mergeStructs = new Set()
     /**

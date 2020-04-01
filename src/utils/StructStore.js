@@ -13,7 +13,6 @@ export class StructStore {
   constructor () {
     /**
      * @type {Map<number,Array<GC|Item>>}
-     * @private
      */
     this.clients = new Map()
     /**
@@ -23,19 +22,16 @@ export class StructStore {
      * slow in Chrome for arrays with more than 100k elements
      * @see tryResumePendingStructRefs
      * @type {Map<number,{i:number,refs:Array<GCRef|ItemRef>}>}
-     * @private
      */
     this.pendingClientsStructRefs = new Map()
     /**
      * Stack of pending structs waiting for struct dependencies
      * Maximum length of stack is structReaders.size
      * @type {Array<GCRef|ItemRef>}
-     * @private
      */
     this.pendingStack = []
     /**
      * @type {Array<decoding.Decoder>}
-     * @private
      */
     this.pendingDeleteReaders = []
   }

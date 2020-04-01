@@ -27,7 +27,6 @@ export class YXmlElement extends YXmlFragment {
     this.nodeName = nodeName
     /**
      * @type {Map<string, any>|null}
-     * @private
      */
     this._prelimAttrs = new Map()
   }
@@ -41,7 +40,6 @@ export class YXmlElement extends YXmlFragment {
    *
    * @param {Doc} y The Yjs instance
    * @param {Item} item
-   * @private
    */
   _integrate (y, item) {
     super._integrate(y, item)
@@ -55,7 +53,6 @@ export class YXmlElement extends YXmlFragment {
    * Creates an Item with the same effect as this Item (without position effect)
    *
    * @return {YXmlElement}
-   * @private
    */
   _copy () {
     return new YXmlElement(this.nodeName)
@@ -184,7 +181,6 @@ export class YXmlElement extends YXmlFragment {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @private
    * @param {encoding.Encoder} encoder The encoder to write data to.
    */
   _write (encoder) {
@@ -197,7 +193,6 @@ export class YXmlElement extends YXmlFragment {
  * @param {decoding.Decoder} decoder
  * @return {YXmlElement}
  *
- * @private
  * @function
  */
 export const readYXmlElement = decoder => new YXmlElement(decoding.readVarString(decoder))

@@ -42,7 +42,6 @@ export class DeleteSet {
   constructor () {
     /**
      * @type {Map<number,Array<DeleteItem>>}
-     * @private
      */
     this.clients = new Map()
   }

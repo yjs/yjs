@@ -7,9 +7,6 @@ import {
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 
-/**
- * @private
- */
 export class ContentDeleted {
   /**
    * @param {number} len

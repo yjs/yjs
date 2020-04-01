@@ -39,12 +39,10 @@ export class Doc extends Observable {
     this.store = new StructStore()
     /**
      * @type {Transaction | null}
-     * @private
      */
     this._transaction = null
     /**
      * @type {Array<Transaction>}
-     * @private
      */
     this._transactionCleanups = []
   }
@@ -105,6 +103,7 @@ export class Doc extends Observable {
         t._map = type._map
         type._map.forEach(/** @param {Item?} n */ n => {
           for (; n !== null; n = n.left) {
+            // @ts-ignore
             n.parent = t
           }
         })
@@ -170,8 +169,6 @@ export class Doc extends Observable {
 
   /**
    * Emit `destroy` event and unregister all event handlers.
-   *
-   * @protected
    */
   destroy () {
     this.emit('destroyed', [true])

@@ -7,9 +7,6 @@ import * as decoding from 'lib0/decoding.js'
 import * as buffer from 'lib0/buffer.js'
 import * as error from 'lib0/error.js'
 
-/**
- * @private
- */
 export class ContentBinary {
   /**
    * @param {Uint8Array} content
@@ -92,8 +89,6 @@ export class ContentBinary {
 }
 
 /**
- * @private
- *
  * @param {decoding.Decoder} decoder
  * @return {ContentBinary}
  */

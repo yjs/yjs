@@ -304,7 +304,6 @@ export class Item extends AbstractStruct {
 
   /**
    * @param {Transaction} transaction
-   * @private
    */
   integrate (transaction) {
     const store = transaction.doc.store
@@ -403,7 +402,6 @@ export class Item extends AbstractStruct {
 
   /**
    * Returns the next non-deleted item
-   * @private
    */
   get next () {
     let n = this.right
@@ -415,7 +413,6 @@ export class Item extends AbstractStruct {
 
   /**
    * Returns the previous non-deleted item
-   * @private
    */
   get prev () {
     let n = this.left
@@ -486,8 +483,6 @@ export class Item extends AbstractStruct {
   /**
    * @param {StructStore} store
    * @param {boolean} parentGCd
-   *
-   * @private
    */
   gc (store, parentGCd) {
     if (!this.deleted) {
@@ -509,8 +504,6 @@ export class Item extends AbstractStruct {
    *
    * @param {encoding.Encoder} encoder The encoder to write data to.
    * @param {number} offset
-   *
-   * @private
    */
   write (encoder, offset) {
     const origin = offset > 0 ? createID(this.id.client, this.id.clock + offset - 1) : this.origin

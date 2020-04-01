@@ -6,9 +6,6 @@ import {
 import * as encoding from 'lib0/encoding.js' // eslint-disable-line
 import * as error from 'lib0/error.js'
 
-/**
- * @private
- */
 export class AbstractStruct {
   /**
    * @param {ID} id
@@ -40,7 +37,6 @@ export class AbstractStruct {
    * @param {encoding.Encoder} encoder The encoder to write data to.
    * @param {number} offset
    * @param {number} encodingRef
-   * @private
    */
   write (encoder, offset, encodingRef) {
     throw error.methodUnimplemented()
@@ -54,9 +50,6 @@ export class AbstractStruct {
   }
 }
 
-/**
- * @private
- */
 export class AbstractStructRef {
   /**
    * @param {ID} id

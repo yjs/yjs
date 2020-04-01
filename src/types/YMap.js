@@ -63,8 +63,6 @@ export class YMap extends AbstractType {
    *
    * @param {Doc} y The Yjs instance
    * @param {Item} item
-   *
-   * @private
    */
   _integrate (y, item) {
     super._integrate(y, item)
@@ -83,8 +81,6 @@ export class YMap extends AbstractType {
    *
    * @param {Transaction} transaction
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
-   *
-   * @private
    */
   _callObserver (transaction, parentSubs) {
     callTypeObservers(this, transaction, new YMapEvent(this, transaction, parentSubs))
@@ -215,8 +211,6 @@ export class YMap extends AbstractType {
 
   /**
    * @param {encoding.Encoder} encoder
-   *
-   * @private
    */
   _write (encoder) {
     encoding.writeVarUint(encoder, YMapRefID)

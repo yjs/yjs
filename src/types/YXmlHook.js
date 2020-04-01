@@ -25,8 +25,6 @@ export class YXmlHook extends YMap {
 
   /**
    * Creates an Item with the same effect as this Item (without position effect)
-   *
-   * @private
    */
   _copy () {
     return new YXmlHook(this.hookName)
@@ -69,8 +67,6 @@ export class YXmlHook extends YMap {
    * This is called when this Item is sent to a remote peer.
    *
    * @param {encoding.Encoder} encoder The encoder to write data to.
-   *
-   * @private
    */
   _write (encoder) {
     super._write(encoder)

@@ -250,7 +250,7 @@ const insertText = (transaction, parent, left, right, currentAttributes, text, a
   left = insertPos.left
   right = insertPos.right
   // insert content
-  const content = text.constructor === String ? new ContentString(text) : new ContentEmbed(text)
+  const content = text.constructor === String ? new ContentString(/** @type {string} */ (text)) : new ContentEmbed(text)
   left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, content)
   left.integrate(transaction)
   return insertNegatedAttributes(transaction, parent, left, insertPos.right, insertPos.negatedAttributes)
@@ -400,7 +400,6 @@ export class YTextEvent extends YEvent {
   constructor (ytext, transaction) {
     super(ytext, transaction)
     /**
-     * @private
      * @type {Array<DeltaItem>|null}
      */
     this._delta = null
@@ -612,7 +611,6 @@ export class YText extends AbstractType {
     /**
      * Array of pending operations on this type
      * @type {Array<function():void>?}
-     * @private
      */
     this._pending = string !== undefined ? [() => this.insert(0, string)] : []
   }
@@ -629,8 +627,6 @@ export class YText extends AbstractType {
   /**
    * @param {Doc} y
    * @param {Item} item
-   *
-   * @private
    */
   _integrate (y, item) {
     super._integrate(y, item)
@@ -651,8 +647,6 @@ export class YText extends AbstractType {
    *
    * @param {Transaction} transaction
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
-   *
-   * @private
    */
   _callObserver (transaction, parentSubs) {
     callTypeObservers(this, transaction, new YTextEvent(this, transaction))
@@ -938,8 +932,6 @@ export class YText extends AbstractType {
 
   /**
    * @param {encoding.Encoder} encoder
-   *
-   * @private
    */
   _write (encoder) {
     encoding.writeVarUint(encoder, YTextRefID)

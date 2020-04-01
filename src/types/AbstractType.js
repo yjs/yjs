@@ -22,7 +22,6 @@ import * as encoding from 'lib0/encoding.js' // eslint-disable-line
 /**
  * Call event listeners with an event. This will also add an event to all
  * parents (for `.observeDeep` handlers).
- * @private
  *
  * @template EventType
  * @param {AbstractType<EventType>} type
@@ -54,17 +53,14 @@ export class AbstractType {
      */
     this._item = null
     /**
-     * @private
      * @type {Map<string,Item>}
      */
     this._map = new Map()
     /**
-     * @private
      * @type {Item|null}
      */
     this._start = null
     /**
-     * @private
      * @type {Doc|null}
      */
     this.doc = null
@@ -90,7 +86,6 @@ export class AbstractType {
    *
    * @param {Doc} y The Yjs instance
    * @param {Item|null} item
-   * @private
    */
   _integrate (y, item) {
     this.doc = y
@@ -99,7 +94,6 @@ export class AbstractType {
 
   /**
    * @return {AbstractType<EventType>}
-   * @private
    */
   _copy () {
     throw error.methodUnimplemented()
@@ -107,7 +101,6 @@ export class AbstractType {
 
   /**
    * @param {encoding.Encoder} encoder
-   * @private
    */
   _write (encoder) { }
 
@@ -128,8 +121,6 @@ export class AbstractType {
    *
    * @param {Transaction} transaction
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
-   *
-   * @private
    */
   _callObserver (transaction, parentSubs) { /* skip if no type is specified */ }
 

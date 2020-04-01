@@ -39,10 +39,7 @@
     "moduleResolution": "node",            /* Specify module resolution strategy: 'node' (Node.js) or 'classic' (TypeScript pre-1.6). */
     "baseUrl": "./",                       /* Base directory to resolve non-absolute module names. */
     "paths": {
-      "yjs": ["./src/index.js"],
-      "lib0/*": ["node_modules/lib0/*"],
-      "lib0/set.js": ["node_modules/lib0/set.js"],
-      "lib0/function.js": ["node_modules/lib0/function.js"]
+      "yjs": ["./src/index.js"]
     },                           /* A series of entries which re-map imports to lookup locations relative to the 'baseUrl'. */
     // "rootDirs": [],                        /* List of root folders whose combined content represents the structure of the project at runtime. */
     // "typeRoots": [],                       /* List of folders to include type definitions from. */
@@ -60,9 +57,8 @@
     /* Experimental Options */
     // "experimentalDecorators": true,        /* Enables experimental support for ES7 decorators. */
     // "emitDecoratorMetadata": true,         /* Enables experimental support for emitting type metadata for decorators. */
-    "maxNodeModuleJsDepth": 5,
+    // "maxNodeModuleJsDepth": 0,
     // "types": ["./src/utils/typedefs.js"]
   },
-  "include": ["./src/**/*.js", "./tests/**/*.js"],
-  "exclude": ["../lib0/**/*", "node_modules/**/*", "dist", "dist/**/*.js"]
+  "include": ["./src/**/*.js", "./tests/**/*.js"]
 }

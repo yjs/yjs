@@ -79,8 +79,6 @@ export class YXmlText extends YText {
 
   /**
    * @param {encoding.Encoder} encoder
-   *
-   * @private
    */
   _write (encoder) {
     encoding.writeVarUint(encoder, YXmlTextRefID)

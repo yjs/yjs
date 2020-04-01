@@ -95,8 +95,6 @@ export class ContentFormat {
 }
 
 /**
- * @private
- *
  * @param {decoding.Decoder} decoder
  * @return {ContentFormat}
  */

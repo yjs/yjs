@@ -127,7 +127,6 @@ export class YXmlFragment extends AbstractType {
     super()
     /**
      * @type {Array<any>|null}
-     * @private
      */
     this._prelimContent = []
   }
@@ -141,7 +140,6 @@ export class YXmlFragment extends AbstractType {
    *
    * @param {Doc} y The Yjs instance
    * @param {Item} item
-   * @private
    */
   _integrate (y, item) {
     super._integrate(y, item)
@@ -224,7 +222,6 @@ export class YXmlFragment extends AbstractType {
 
   /**
    * Creates YXmlEvent and calls observers.
-   * @private
    *
    * @param {Transaction} transaction
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
@@ -328,7 +325,6 @@ export class YXmlFragment extends AbstractType {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @private
    * @param {encoding.Encoder} encoder The encoder to write data to.
    */
   _write (encoder) {

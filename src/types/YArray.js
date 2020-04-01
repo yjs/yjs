@@ -61,8 +61,6 @@ export class YArray extends AbstractType {
    *
    * @param {Doc} y The Yjs instance
    * @param {Item} item
-   *
-   * @private
    */
   _integrate (y, item) {
     super._integrate(y, item)
@@ -83,8 +81,6 @@ export class YArray extends AbstractType {
    *
    * @param {Transaction} transaction
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
-   *
-   * @private
    */
   _callObserver (transaction, parentSubs) {
     callTypeObservers(this, transaction, new YArrayEvent(this, transaction))
@@ -200,7 +196,6 @@ export class YArray extends AbstractType {
 
   /**
    * @param {encoding.Encoder} encoder
-   * @private
    */
   _write (encoder) {
     encoding.writeVarUint(encoder, YArrayRefID)
