@@ -158,3 +158,25 @@ export const testToJson = tc => {
   text0.insert(0, 'abc', { bold: true })
   t.assert(text0.toJSON() === 'abc', 'toJSON returns the unformatted text')
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testToDeltaEmbedAttributes = tc => {
+  const { text0 } = init(tc, { users: 1 })
+  text0.insert(0, 'ab', { bold: true })
+  text0.insertEmbed(1, { image: 'imageSrc.png' }, { width: 100 })
+  const delta0 = text0.toDelta()
+  t.compare(delta0, [{ insert: 'a', attributes: { bold: true } }, { insert: { image: 'imageSrc.png' }, attributes: { width: 100 } }, { insert: 'b', attributes: { bold: true } }])
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testToDeltaEmbedNoAttributes = tc => {
+  const { text0 } = init(tc, { users: 1 })
+  text0.insert(0, 'ab', { bold: true })
+  text0.insertEmbed(1, { image: 'imageSrc.png' })
+  const delta0 = text0.toDelta()
+  t.compare(delta0, [{ insert: 'a', attributes: { bold: true } }, { insert: { image: 'imageSrc.png' } }, { insert: 'b', attributes: { bold: true } }], 'toDelta does not set attributes key when no attributes are present')
+}

@@ -20,9 +20,10 @@ suited for even large documents.
 * Podcast [**"Yjs Deep Dive into real time collaborative editing solutions":**](https://www.tag1consulting.com/blog/deep-dive-real-time-collaborative-editing-solutions-tagteamtalk-001-0)
 * Podcast [**"Google Docs-style editing in Gutenberg with the YJS framework":**](https://publishpress.com/blog/yjs/)
 
-:construction_worker_woman: If you are looking for professional (paid) support to build
-collaborative or distributed applications ping us at <yjs@tag1consulting.com>. Otherwise
-you can find help on our [discussion board](https://discuss.yjs.dev).
+:construction_worker_woman: If you are looking for professional (paid) support to
+build collaborative or distributed applications ping us at
+<yjs@tag1consulting.com>. Otherwise you can find help on our
+[discussion board](https://discuss.yjs.dev).
 
 ## Table of Contents
 
