@@ -71,7 +71,6 @@ export default [{
   plugins: [
     debugResolve,
     nodeResolve({
-      sourcemap: true,
       mainFields: ['module', 'browser', 'main']
     }),
     commonjs()
@@ -87,7 +86,6 @@ export default [{
   plugins: [
     debugResolve,
     nodeResolve({
-      sourcemap: true,
       mainFields: ['module', 'main']
     }),
     commonjs()

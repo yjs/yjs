@@ -15,13 +15,14 @@ suited for even large documents.
 
 * Demos: [https://github.com/yjs/yjs-demos](https://github.com/yjs/yjs-demos)
 * Discuss: [https://discuss.yjs.dev](https://discuss.yjs.dev)
-* Benchmarks:
+* Benchmark Yjs vs. Automerge:
   [https://github.com/dmonad/crdt-benchmarks](https://github.com/dmonad/crdt-benchmarks)
 * Podcast [**"Yjs Deep Dive into real time collaborative editing solutions":**](https://www.tag1consulting.com/blog/deep-dive-real-time-collaborative-editing-solutions-tagteamtalk-001-0)
 * Podcast [**"Google Docs-style editing in Gutenberg with the YJS framework":**](https://publishpress.com/blog/yjs/)
 
-:construction_worker_woman: If you are looking for professional support to build
-collaborative or distributed applications ping us at <yjs@tag1consulting.com>.
+:construction_worker_woman: If you are looking for professional (paid) support to build
+collaborative or distributed applications ping us at <yjs@tag1consulting.com>. Otherwise
+you can find help on our [discussion board](https://discuss.yjs.dev).
 
 ## Table of Contents
 
@@ -38,12 +39,6 @@ collaborative or distributed applications ping us at <yjs@tag1consulting.com>.
 * [Miscellaneous](#Miscellaneous)
   * [Typescript Declarations](#Typescript-Declarations)
 * [Yjs CRDT Algorithm](#Yjs-CRDT-Algorithm)
-* [Evaluation](#Evaluation)
-  * [Existing shared editing libraries](#Exisisting-Javascript-Libraries)
-  * [CRDT Algorithms](#CRDT-Algorithms)
-  * [Comparison of CRDT with OT](#Comparing-CRDT-with-OT)
-  * [Comparison of CRDT Algorithms](#Comparing-CRDT-Algorithms)
-  * [Comparison of Yjs with other Implementations](#Comparing-Yjs-with-other-Implementations)
 * [License and Author](#License-and-Author)
 
 ## Overview
