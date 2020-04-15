@@ -52,13 +52,10 @@ are implemented in separate modules.
 
 | Name | Cursors | Binding |  Demo |
 |---|:-:|---|---|
-| [ProseMirror](https://prosemirror.net/) &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; | ✔ | [y-prosemirror](http://github.com/yjs/y-prosemirror) | [demo](https://yjs-demos.now.sh/prosemirror/) |
-| [Quill](https://quilljs.com/) | ✔ | [y-quill](http://github.com/yjs/y-quill) | [demo](https://yjs-demos.now.sh/quill/) |
-| [CodeMirror](https://codemirror.net/) | ✔ | [y-codemirror](http://github.com/yjs/y-codemirror) | [demo](https://yjs-demos.now.sh/codemirror/) |
-| [Monaco](https://microsoft.github.io/monaco-editor/) | ✔ | [y-monaco](http://github.com/yjs/y-monaco) | [demo](https://yjs-demos.now.sh/monaco/) |
-| [Ace](https://ace.c9.io/) | | [y-ace](http://github.com/yjs/y-ace) | [demo](https://yjs-demos.now.sh/ace/) |
-| [Textarea](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea) | | [y-textarea](http://github.com/yjs/y-textarea) | [demo](https://yjs-demos.now.sh/textarea/) |
-| [DOM](https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model) | | [y-dom](http://github.com/yjs/y-dom) | [demo](https://yjs-demos.now.sh/dom/) |
+| [ProseMirror](https://prosemirror.net/) &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; | ✔ | [y-prosemirror](http://github.com/yjs/y-prosemirror) | [demo](https://demos.yjs.dev/prosemirror/prosemirror.html) |
+| [Quill](https://quilljs.com/) | ✔ | [y-quill](http://github.com/yjs/y-quill) | [demo](https://demos.yjs.dev/quill/quill.html) |
+| [CodeMirror](https://codemirror.net/) | ✔ | [y-codemirror](http://github.com/yjs/y-codemirror) | [demo](https://demos.yjs.dev/codemirror/codemirror.html) |
+| [Monaco](https://microsoft.github.io/monaco-editor/) | ✔ | [y-monaco](http://github.com/yjs/y-monaco) | [demo](https://demos.yjs.dev/monaco/monaco.html) |
 
 ### Providers
 
