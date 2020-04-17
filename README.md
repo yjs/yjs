@@ -650,8 +650,8 @@ ytext.toString() // => 'abc'
 ```
 
 <dl>
-  <b><code>constructor(scope:Y.AbstractType|Array&lt;Y.AbstractType&gt;,
-  [[{captureTimeout:number,trackedOrigins:Set&lt;any&gt;,deleteFilter:function(item):boolean}]])</code></b>
+  <b><code>constructor(scope:Y.AbstractType|Array&lt;Y.AbstractType&gt;
+  [, {captureTimeout:number,trackedOrigins:Set&lt;any&gt;,deleteFilter:function(item):boolean}])</code></b>
   <dd>Accepts either single type as scope or an array of types.</dd>
   <b><code>undo()</code></b>
   <dd></dd>
@@ -691,28 +691,28 @@ StackItem won't be merged.
 // without stopCapturing
 ytext.insert(0, 'a')
 ytext.insert(1, 'b')
-um.undo()
+undoManager.undo()
 ytext.toString() // => '' (note that 'ab' was removed)
 // with stopCapturing
 ytext.insert(0, 'a')
-um.stopCapturing()
+undoManager.stopCapturing()
 ytext.insert(0, 'b')
-um.undo()
+undoManager.undo()
 ytext.toString() // => 'a' (note that only 'b' was removed)
 ```
 
 #### Example: Specify tracked origins
 
 Every change on the shared document has an origin. If no origin was specified,
-it defaults to `null`. By specifying `trackedTransactionOrigins` you can
+it defaults to `null`. By specifying `trackedOrigins` you can
 selectively specify which changes should be tracked by `UndoManager`. The
-UndoManager instance is always added to `trackedTransactionOrigins`.
+UndoManager instance is always added to `trackedOrigins`.
 
 ```js
 class CustomBinding {}
 
 const ytext = doc.getArray('array')
-const undoManager = new Y.UndoManager(ytext, new Set([42, CustomBinding]))
+const undoManager = new Y.UndoManager(ytext, { trackedOrigins: new Set([42, CustomBinding]) })
 
 ytext.insert(0, 'abc')
 undoManager.undo()
@@ -750,7 +750,7 @@ document. You can assign meta-information to Undo-/Redo-StackItems.
 
 ```js
 const ytext = doc.getArray('array')
-const undoManager = new Y.UndoManager(ytext, new Set([42, CustomBinding]))
+const undoManager = new Y.UndoManager(ytext, { trackedOrigins: new Set([42, CustomBinding]) })
 
 undoManager.on('stack-item-added', event => {
   // save the current cursor location on the stack-item
