@@ -463,6 +463,12 @@ const doc = new Y.Doc()
 <dl>
   <b><code>clientID</code></b>
   <dd>A unique id that identifies this client. (readonly)</dd>
+  <b><code>gc</code></b>
+  <dd>
+Whether garbage collection is enabled on this doc instance. Set `doc.gc = false`
+in order to disable gc and be able to restore old content. See https://github.com/yjs/yjs#yjs-crdt-algorithm
+for more information about gc in Yjs.
+  </dd>
   <b><code>transact(function(Transaction):void [, origin:any])</code></b>
   <dd>
 Every change on the shared document happens in a transaction. Observer calls and
@@ -712,7 +718,9 @@ UndoManager instance is always added to `trackedOrigins`.
 class CustomBinding {}
 
 const ytext = doc.getArray('array')
-const undoManager = new Y.UndoManager(ytext, { trackedOrigins: new Set([42, CustomBinding]) })
+const undoManager = new Y.UndoManager(ytext, {
+  trackedOrigins: new Set([42, CustomBinding])
+})
 
 ytext.insert(0, 'abc')
 undoManager.undo()
@@ -750,7 +758,9 @@ document. You can assign meta-information to Undo-/Redo-StackItems.
 
 ```js
 const ytext = doc.getArray('array')
-const undoManager = new Y.UndoManager(ytext, { trackedOrigins: new Set([42, CustomBinding]) })
+const undoManager = new Y.UndoManager(ytext, {
+  trackedOrigins: new Set([42, CustomBinding])
+})
 
 undoManager.on('stack-item-added', event => {
   // save the current cursor location on the stack-item
