@@ -137,6 +137,50 @@ Now you understand how types are defined on a shared document. Next you can jump
 to the [demo repository](https://github.com/yjs/yjs-demos) or continue reading
 the API docs.
 
+### Example: Using and combining providers
+
+The most common way to combine providers is probably to combine some network provider with the local indexeddb provider:
+```typescript
+import * as Y from 'yjs'
+import { WebrtcProvider } from 'y-webrtc'
+import { IndexeddbPersistence } from 'y-indexeddb'
+
+async function main() {
+  const ydoc = new Y.Doc()
+
+  // this allows you to instantly get the (cached) documents data
+  let idbP = new IndexeddbPersistence('count-demo', ydoc)
+  await idbP.whenSynced
+  
+  // this will sync between clients in the background, may be replaced by any network provider
+  let webP = new WebrtcProvider('count-demo', ydoc)
+  webP.connect()
+
+  // array of numbers which produce a sum
+  const yarray = ydoc.getArray('count')
+
+  // add 1 to the sum
+  yarray.push([1])
+
+  // observe changes of the sum
+  yarray.observe(event => {
+    // this will print updates from the network
+    console.log("new sum: " + yarray.toArray().reduce((a,b)=>(a+b)))
+  })
+
+  // print initial number (the cached one plus one)
+  let sum = yarray.toArray().reduce((a,b)=>(a+b))
+  console.log(sum)
+}
+main()
+
+```
+Example output:
+```bash
+32           # stored sum from indexeddb (with 1 already added to it)
+new sum: 38  # delayed new sum fetched from network
+```
+
 ## API
 
 ```js
