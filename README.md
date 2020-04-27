@@ -139,7 +139,8 @@ the API docs.
 
 ### Example: Using and combining providers
 
-The most common way to combine providers is probably to combine some network provider with the local indexeddb provider:
+The most common way to combine providers is probably
+to combine some network provider with the local indexeddb provider:
 
 ```js
 import * as Y from 'yjs'
@@ -153,7 +154,8 @@ async function main() {
   let idbP = new IndexeddbPersistence('count-demo', ydoc)
   await idbP.whenSynced
   
-  // this will sync between clients in the background, may be replaced by any network provider
+  // this will sync between clients in the background,
+  // may be replaced by any network provider
   let webP = new WebrtcProvider('count-demo', ydoc)
   webP.connect()
 
