@@ -140,7 +140,8 @@ the API docs.
 ### Example: Using and combining providers
 
 The most common way to combine providers is probably to combine some network provider with the local indexeddb provider:
-```typescript
+
+```js
 import * as Y from 'yjs'
 import { WebrtcProvider } from 'y-webrtc'
 import { IndexeddbPersistence } from 'y-indexeddb'
@@ -173,9 +174,10 @@ async function main() {
   console.log(sum)
 }
 main()
-
 ```
+
 Example output:
+
 ```bash
 32           # stored sum from indexeddb (with 1 already added to it)
 new sum: 38  # delayed new sum fetched from network
