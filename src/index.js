@@ -47,6 +47,7 @@ export {
   typeMapGetSnapshot,
   iterateDeletedStructs,
   applyUpdate,
+  readUpdate,
   encodeStateAsUpdate,
   encodeStateVector,
   UndoManager,

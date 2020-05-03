@@ -10,6 +10,7 @@ import {
   findIndexSS,
   callEventHandlerListeners,
   Item,
+  generateNewClientId,
   StructStore, ID, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
 } from '../internals.js'
 
@@ -17,6 +18,7 @@ import * as encoding from 'lib0/encoding.js'
 import * as map from 'lib0/map.js'
 import * as math from 'lib0/math.js'
 import * as set from 'lib0/set.js'
+import * as logging from 'lib0/logging.js'
 import { callAll } from 'lib0/function.js'
 
 /**
@@ -312,6 +314,10 @@ const cleanupTransactions = (transactionCleanups, i) => {
         if (replacedStructPos > 0) {
           tryToMergeWithLeft(structs, replacedStructPos)
         }
+      }
+      if (!transaction.local && transaction.afterState.get(doc.clientID) !== transaction.beforeState.get(doc.clientID)) {
+        doc.clientID = generateNewClientId()
+        logging.print(logging.ORANGE, logging.BOLD, '[yjs] ', logging.UNBOLD, logging.RED, 'Changed the client-id because another client seems to be using it.')
       }
       // @todo Merge all the transactions into one and provide send the data as a single update message
       doc.emit('afterTransactionCleanup', [transaction, doc])

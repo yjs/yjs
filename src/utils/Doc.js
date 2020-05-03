@@ -17,6 +17,8 @@ import { Observable } from 'lib0/observable.js'
 import * as random from 'lib0/random.js'
 import * as map from 'lib0/map.js'
 
+export const generateNewClientId = random.uint32
+
 /**
  * A Yjs instance handles the state of shared data.
  * @extends Observable<string>
@@ -31,7 +33,7 @@ export class Doc extends Observable {
     super()
     this.gc = gc
     this.gcFilter = gcFilter
-    this.clientID = random.uint32()
+    this.clientID = generateNewClientId()
     /**
      * @type {Map<string, AbstractType<YEvent>>}
      */
