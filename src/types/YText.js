@@ -14,15 +14,19 @@ import {
   callTypeObservers,
   transact,
   ContentEmbed,
+  GC,
   ContentFormat,
   ContentString,
   splitSnapshotAffectedStructs,
+  iterateDeletedStructs,
+  iterateStructs,
   ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 import * as encoding from 'lib0/encoding.js'
 import * as object from 'lib0/object.js'
+import * as map from 'lib0/map.js'
 
 /**
  * @param {any} a
@@ -321,6 +325,110 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
 }
 
 /**
+ * Call this function after string content has been deleted in order to
+ * clean up formatting Items.
+ *
+ * @param {Transaction} transaction
+ * @param {Item} start
+ * @param {Item|null} end exclusive end, automatically iterates to the next Content Item
+ * @param {Map<string,any>} startAttributes
+ * @param {Map<string,any>} endAttributes This attribute is modified!
+ * @return {number} The amount of formatting Items deleted.
+ *
+ * @function
+ */
+const cleanupFormattingGap = (transaction, start, end, startAttributes, endAttributes) => {
+  while (end && end.content.constructor !== ContentString && end.content.constructor !== ContentEmbed) {
+    if (!end.deleted && end.content.constructor === ContentFormat) {
+      updateCurrentAttributes(endAttributes, /** @type {ContentFormat} */ (end.content))
+    }
+    end = end.right
+  }
+  let cleanups = 0
+  while (start !== end) {
+    if (!start.deleted) {
+      const content = start.content
+      switch (content.constructor) {
+        case ContentFormat: {
+          const { key, value } = /** @type {ContentFormat} */ (content)
+          if ((endAttributes.get(key) || null) !== value || (startAttributes.get(key) || null) === value) {
+            // Either this format is overwritten or it is not necessary because the attribute already existed.
+            start.delete(transaction)
+            cleanups++
+          }
+          break
+        }
+      }
+    }
+    start = /** @type {Item} */ (start.right)
+  }
+  return cleanups
+}
+
+/**
+ * @param {Transaction} transaction
+ * @param {Item | null} item
+ */
+const cleanupContextlessFormattingGap = (transaction, item) => {
+  // iterate until item.right is null or content
+  while (item && item.right && (item.right.deleted || (item.right.content.constructor !== ContentString && item.right.content.constructor !== ContentEmbed))) {
+    item = item.right
+  }
+  const attrs = new Set()
+  // iterate back until a content item is found
+  while (item && (item.deleted || (item.content.constructor !== ContentString && item.content.constructor !== ContentEmbed))) {
+    if (!item.deleted && item.content.constructor === ContentFormat) {
+      const key = /** @type {ContentFormat} */ (item.content).key
+      if (attrs.has(key)) {
+        item.delete(transaction)
+      } else {
+        attrs.add(key)
+      }
+    }
+    item = item.left
+  }
+}
+
+/**
+ * This function is experimental and subject to change / be removed.
+ *
+ * Ideally, we don't need this function at all. Formatting attributes should be cleaned up
+ * automatically after each change. This function iterates twice over the complete YText type
+ * and removes unnecessary formatting attributes. This is also helpful for testing.
+ *
+ * This function won't be exported anymore as soon as there is confidence that the YText type works as intended.
+ *
+ * @param {YText} type
+ * @return {number} How many formatting attributes have been cleaned up.
+ */
+export const cleanupYTextFormatting = type => {
+  let res = 0
+  transact(/** @type {Doc} */ (type.doc), transaction => {
+    let start = /** @type {Item} */ (type._start)
+    let end = type._start
+    let startAttributes = map.create()
+    const currentAttributes = map.copy(startAttributes)
+    while (end) {
+      if (end.deleted === false) {
+        switch (end.content.constructor) {
+          case ContentFormat:
+            updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (end.content))
+            break
+          case ContentEmbed:
+          case ContentString:
+            res += cleanupFormattingGap(transaction, start, end, startAttributes, currentAttributes)
+            startAttributes = map.copy(currentAttributes)
+            start = end
+            break
+        }
+      }
+      end = end.right
+    }
+  })
+  return res
+}
+
+/**
  * @param {Transaction} transaction
  * @param {Item|null} left
  * @param {Item|null} right
@@ -332,6 +440,8 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
  * @function
  */
 const deleteText = (transaction, left, right, currentAttributes, length) => {
+  const startAttrs = map.copy(currentAttributes)
+  const start = right
   while (length > 0 && right !== null) {
     if (right.deleted === false) {
       switch (right.content.constructor) {
@@ -350,6 +460,9 @@ const deleteText = (transaction, left, right, currentAttributes, length) => {
     }
     left = right
     right = right.right
+  }
+  if (start) {
+    cleanupFormattingGap(transaction, start, right, startAttrs, map.copy(currentAttributes))
   }
   return { left, right }
 }
@@ -649,7 +762,48 @@ export class YText extends AbstractType {
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
   _callObserver (transaction, parentSubs) {
-    callTypeObservers(this, transaction, new YTextEvent(this, transaction))
+    const event = new YTextEvent(this, transaction)
+    const doc = transaction.doc
+    // If a remote change happened, we try to cleanup potential formatting duplicates.
+    if (!transaction.local) {
+      // check if another formatting item was inserted
+      let foundFormattingItem = false
+      for (const [client, afterClock] of transaction.afterState) {
+        const clock = transaction.beforeState.get(client) || 0
+        if (afterClock === clock) {
+          continue
+        }
+        iterateStructs(transaction, /** @type {Array<Item|GC>} */ (doc.store.clients.get(client)), clock, afterClock, item => {
+          // @ts-ignore
+          if (!item.deleted && item.content.constructor === ContentFormat) {
+            foundFormattingItem = true
+          }
+        })
+        if (foundFormattingItem) {
+          break
+        }
+      }
+      transact(doc, t => {
+        if (foundFormattingItem) {
+          // If a formatting item was inserted, we simply clean the whole type.
+          // We need to compute currentAttributes for the current position anyway.
+          cleanupYTextFormatting(this)
+        } else {
+          // If no formatting attribute was inserted, we can make due with contextless
+          // formatting cleanups.
+          // Contextless: it is not necessary to compute currentAttributes for the affected position.
+          iterateDeletedStructs(t, transaction.deleteSet, item => {
+            if (item instanceof GC) {
+              return
+            }
+            if (item.parent === this) {
+              cleanupContextlessFormattingGap(t, item)
+            }
+          })
+        }
+      })
+    }
+    callTypeObservers(this, transaction, event)
   }
 
   /**
@@ -916,6 +1070,9 @@ export class YText extends AbstractType {
    * @public
    */
   format (index, length, attributes) {
+    if (length === 0) {
+      return
+    }
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {

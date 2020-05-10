@@ -1,5 +1,8 @@
 import * as Y from './testHelper.js'
 import * as t from 'lib0/testing.js'
+import * as prng from 'lib0/prng.js'
+import * as math from 'lib0/math.js'
+
 const { init, compare } = Y
 
 /**
@@ -179,4 +182,190 @@ export const testToDeltaEmbedNoAttributes = tc => {
   text0.insertEmbed(1, { image: 'imageSrc.png' })
   const delta0 = text0.toDelta()
   t.compare(delta0, [{ insert: 'a', attributes: { bold: true } }, { insert: { image: 'imageSrc.png' } }, { insert: 'b', attributes: { bold: true } }], 'toDelta does not set attributes key when no attributes are present')
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testFormattingRemoved = tc => {
+  const { text0 } = init(tc, { users: 1 })
+  text0.insert(0, 'ab', { bold: true })
+  text0.delete(0, 2)
+  t.assert(Y.getTypeChildren(text0).length === 1)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testFormattingRemovedInMidText = tc => {
+  const { text0 } = init(tc, { users: 1 })
+  text0.insert(0, '1234')
+  text0.insert(2, 'ab', { bold: true })
+  text0.delete(2, 2)
+  t.assert(Y.getTypeChildren(text0).length === 3)
+}
+
+// RANDOM TESTS
+
+let charCounter = 0
+
+const marks = [
+  { bold: true },
+  { italic: true },
+  { italic: true, color: '#888' }
+]
+
+const marksChoices = [
+  undefined,
+  ...marks
+]
+
+/**
+ * @type Array<function(any,prng.PRNG):void>
+ */
+const qChanges = [
+  /**
+   * @param {Y.Doc} y
+   * @param {prng.PRNG} gen
+   */
+  (y, gen) => { // insert text
+    const ytext = y.getText('text')
+    const insertPos = prng.int32(gen, 0, ytext.toString().length)
+    const attrs = prng.oneOf(gen, marksChoices)
+    const text = charCounter++ + prng.word(gen)
+    ytext.insert(insertPos, text, attrs)
+  },
+  /**
+   * @param {Y.Doc} y
+   * @param {prng.PRNG} gen
+   */
+  (y, gen) => { // insert embed
+    const ytext = y.getText('text')
+    const insertPos = prng.int32(gen, 0, ytext.toString().length)
+    ytext.insertEmbed(insertPos, { image: 'https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png' })
+  },
+  /**
+   * @param {Y.Doc} y
+   * @param {prng.PRNG} gen
+   */
+  (y, gen) => { // delete text
+    const ytext = y.getText('text')
+    const contentLen = ytext.toString().length
+    const insertPos = prng.int32(gen, 0, contentLen)
+    const overwrite = math.min(prng.int32(gen, 0, contentLen - insertPos), 2)
+    ytext.delete(insertPos, overwrite)
+  },
+  /**
+   * @param {Y.Doc} y
+   * @param {prng.PRNG} gen
+   */
+  (y, gen) => { // format text
+    const ytext = y.getText('text')
+    const contentLen = ytext.toString().length
+    const insertPos = prng.int32(gen, 0, contentLen)
+    const overwrite = math.min(prng.int32(gen, 0, contentLen - insertPos), 2)
+    const format = prng.oneOf(gen, marks)
+    ytext.format(insertPos, overwrite, format)
+  },
+  /**
+   * @param {Y.Doc} y
+   * @param {prng.PRNG} gen
+   */
+  (y, gen) => { // insert codeblock
+    const ytext = y.getText('text')
+    const insertPos = prng.int32(gen, 0, ytext.toString().length)
+    const text = charCounter++ + prng.word(gen)
+    const ops = []
+    if (insertPos > 0) {
+      ops.push({ retain: insertPos })
+    }
+    ops.push({ insert: text }, { insert: '\n', format: { 'code-block': true } })
+    ytext.applyDelta(ops)
+  }
+]
+
+/**
+ * @param {any} result
+ */
+const checkResult = result => {
+  for (let i = 1; i < result.testObjects.length; i++) {
+    const p1 = result.users[i].getText('text').toDelta()
+    const p2 = result.users[i].getText('text').toDelta()
+    t.compare(p1, p2)
+  }
+  // Uncomment this to find formatting-cleanup issues
+  // const cleanups = Y.cleanupYTextFormatting(result.users[0].getText('text'))
+  // t.assert(cleanups === 0)
+  return result
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGenerateQuillChanges1 = tc => {
+  const { users } = checkResult(Y.applyRandomTests(tc, qChanges, 1))
+  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  t.assert(cleanups === 0)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGenerateQuillChanges2 = tc => {
+  const { users } = checkResult(Y.applyRandomTests(tc, qChanges, 2))
+  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  t.assert(cleanups === 0)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGenerateQuillChanges2Repeat = tc => {
+  for (let i = 0; i < 1000; i++) {
+    const { users } = checkResult(Y.applyRandomTests(tc, qChanges, 2))
+    const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+    t.assert(cleanups === 0)
+  }
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGenerateQuillChanges3 = tc => {
+  checkResult(Y.applyRandomTests(tc, qChanges, 3))
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGenerateQuillChanges30 = tc => {
+  checkResult(Y.applyRandomTests(tc, qChanges, 30))
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGenerateQuillChanges40 = tc => {
+  checkResult(Y.applyRandomTests(tc, qChanges, 40))
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGenerateQuillChanges70 = tc => {
+  checkResult(Y.applyRandomTests(tc, qChanges, 70))
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGenerateQuillChanges100 = tc => {
+  checkResult(Y.applyRandomTests(tc, qChanges, 100))
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGenerateQuillChanges300 = tc => {
+  checkResult(Y.applyRandomTests(tc, qChanges, 300))
 }

@@ -20,6 +20,22 @@ import * as error from 'lib0/error.js'
 import * as encoding from 'lib0/encoding.js' // eslint-disable-line
 
 /**
+ * Accumulate all (list) children of a type and return them as an Array.
+ *
+ * @param {AbstractType<any>} t
+ * @return {Array<Item>}
+ */
+export const getTypeChildren = t => {
+  let s = t._start
+  const arr = []
+  while (s) {
+    arr.push(s)
+    s = s.right
+  }
+  return arr
+}
+
+/**
  * Call event listeners with an event. This will also add an event to all
  * parents (for `.observeDeep` handlers).
  *

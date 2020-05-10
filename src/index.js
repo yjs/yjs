@@ -26,6 +26,7 @@ export {
   ContentType,
   AbstractType,
   RelativePosition,
+  getTypeChildren,
   createRelativePositionFromTypeIndex,
   createRelativePositionFromJSON,
   createAbsolutePositionFromRelativePosition,
