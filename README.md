@@ -645,7 +645,7 @@ Yjs ships with an Undo/Redo manager for selective undo/redo of of changes on a
 Yjs type. The changes can be optionally scoped to transaction origins.
 
 ```js
-const ytext = doc.getArray('array')
+const ytext = doc.getText('text')
 const undoManager = new Y.UndoManager(ytext)
 
 ytext.insert(0, 'abc')
@@ -717,7 +717,7 @@ UndoManager instance is always added to `trackedOrigins`.
 ```js
 class CustomBinding {}
 
-const ytext = doc.getArray('array')
+const ytext = doc.getText('text')
 const undoManager = new Y.UndoManager(ytext, {
   trackedOrigins: new Set([42, CustomBinding])
 })
@@ -757,7 +757,7 @@ additional meta information like the cursor location or the view on the
 document. You can assign meta-information to Undo-/Redo-StackItems.
 
 ```js
-const ytext = doc.getArray('array')
+const ytext = doc.getText('text')
 const undoManager = new Y.UndoManager(ytext, {
   trackedOrigins: new Set([42, CustomBinding])
 })
