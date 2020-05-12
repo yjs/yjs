@@ -163,6 +163,8 @@ position 0.
     </dd>
     <b><code>push(Array&lt;Object|boolean|Array|string|number|Uint8Array|Y.Type&gt;)</code></b>
     <dd></dd>
+    <b><code>unshift(Array&lt;Object|boolean|Array|string|number|Uint8Array|Y.Type&gt;)</code></b>
+    <dd></dd>
     <b><code>delete(index:number, length:number)</code></b>
     <dd></dd>
     <b><code>get(index:number)</code></b>

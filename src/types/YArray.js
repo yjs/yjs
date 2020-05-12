@@ -122,6 +122,15 @@ export class YArray extends AbstractType {
   }
 
   /**
+   * Preppends content to this YArray.
+   *
+   * @param {Array<T>} content Array of content to preppend.
+   */
+  unshift (content) {
+    this.insert(0, content)
+  }
+
+  /**
    * Deletes elements starting from an index.
    *
    * @param {number} index Index at which to start deleting elements
