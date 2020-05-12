@@ -101,6 +101,7 @@ export class YArray extends AbstractType {
    *
    * @param {number} index The index to insert content at.
    * @param {Array<T>} content The array of content
+   * @return {number} The upated YArray length
    */
   insert (index, content) {
     if (this.doc !== null) {
@@ -110,24 +111,27 @@ export class YArray extends AbstractType {
     } else {
       /** @type {Array<any>} */ (this._prelimContent).splice(index, 0, ...content)
     }
+    return this.length
   }
 
   /**
    * Appends content to this YArray.
    *
    * @param {Array<T>} content Array of content to append.
+   * @return {number} The upated YArray length
    */
   push (content) {
-    this.insert(this.length, content)
+    return this.insert(this.length, content)
   }
 
   /**
    * Preppends content to this YArray.
    *
    * @param {Array<T>} content Array of content to preppend.
+   * @return {number} The upated YArray length
    */
   unshift (content) {
-    this.insert(0, content)
+    return this.insert(0, content)
   }
 
   /**
