@@ -19,13 +19,13 @@ import { Observable } from 'lib0/observable.js'
 class StackItem {
   /**
    * @param {DeleteSet} ds
-   * @param {number} start clock start of the local client
-   * @param {number} len
+   * @param {Map<number,number>} beforeState
+   * @param {Map<number,number>} afterState
    */
-  constructor (ds, start, len) {
+  constructor (ds, beforeState, afterState) {
     this.ds = ds
-    this.start = start
-    this.len = len
+    this.beforeState = beforeState
+    this.afterState = afterState
     /**
      * Use this to save and restore metadata like selection range
      */
@@ -50,54 +50,64 @@ const popStackItem = (undoManager, stack, eventType) => {
   transact(doc, transaction => {
     while (stack.length > 0 && result === null) {
       const store = doc.store
-      const clientID = doc.clientID
       const stackItem = /** @type {StackItem} */ (stack.pop())
-      const stackStartClock = stackItem.start
-      const stackEndClock = stackItem.start + stackItem.len
+      /**
+       * @type {Set<Item>}
+       */
       const itemsToRedo = new Set()
-      // @todo iterateStructs should not need the structs parameter
-      const structs = /** @type {Array<GC|Item>} */ (store.clients.get(clientID))
+      /**
+       * @type {Array<Item>}
+       */
+      const itemsToDelete = []
       let performedChange = false
-      if (stackStartClock !== stackEndClock) {
-        // make sure structs don't overlap with the range of created operations [stackItem.start, stackItem.start + stackItem.end)
-        getItemCleanStart(transaction, createID(clientID, stackStartClock))
-        if (stackEndClock < getState(doc.store, clientID)) {
-          getItemCleanStart(transaction, createID(clientID, stackEndClock))
+      stackItem.afterState.forEach((endClock, client) => {
+        const startClock = stackItem.beforeState.get(client) || 0
+        const len = endClock - startClock
+        // @todo iterateStructs should not need the structs parameter
+        const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
+        if (startClock !== endClock) {
+          // make sure structs don't overlap with the range of created operations [stackItem.start, stackItem.start + stackItem.end)
+          // this must be executed before deleted structs are iterated.
+          getItemCleanStart(transaction, createID(client, startClock))
+          if (endClock < getState(doc.store, client)) {
+            getItemCleanStart(transaction, createID(client, endClock))
+          }
+          iterateStructs(transaction, structs, startClock, len, struct => {
+            if (struct instanceof Item) {
+              if (struct.redone !== null) {
+                let { item, diff } = followRedone(store, struct.id)
+                if (diff > 0) {
+                  item = getItemCleanStart(transaction, createID(item.id.client, item.id.clock + diff))
+                }
+                if (item.length > len) {
+                  getItemCleanStart(transaction, createID(item.id.client, endClock))
+                }
+                struct = item
+              }
+              if (!struct.deleted && scope.some(type => isParentOf(type, /** @type {Item} */ (struct)))) {
+                itemsToDelete.push(struct)
+              }
+            }
+          })
         }
-      }
+      })
       iterateDeletedStructs(transaction, stackItem.ds, struct => {
+        const id = struct.id
+        const clock = id.clock
+        const client = id.client
+        const startClock = stackItem.beforeState.get(client) || 0
+        const endClock = stackItem.afterState.get(client) || 0
         if (
           struct instanceof Item &&
           scope.some(type => isParentOf(type, struct)) &&
           // Never redo structs in [stackItem.start, stackItem.start + stackItem.end) because they were created and deleted in the same capture interval.
-          !(struct.id.client === clientID && struct.id.clock >= stackStartClock && struct.id.clock < stackEndClock)
+          !(clock >= startClock && clock < endClock)
         ) {
           itemsToRedo.add(struct)
         }
       })
       itemsToRedo.forEach(struct => {
         performedChange = redoItem(transaction, struct, itemsToRedo) !== null || performedChange
-      })
-      /**
-       * @type {Array<Item>}
-       */
-      const itemsToDelete = []
-      iterateStructs(transaction, structs, stackStartClock, stackItem.len, struct => {
-        if (struct instanceof Item) {
-          if (struct.redone !== null) {
-            let { item, diff } = followRedone(store, struct.id)
-            if (diff > 0) {
-              item = getItemCleanStart(transaction, createID(item.id.client, item.id.clock + diff))
-            }
-            if (item.length > stackItem.len) {
-              getItemCleanStart(transaction, createID(item.id.client, stackEndClock))
-            }
-            struct = item
-          }
-          if (!struct.deleted && scope.some(type => isParentOf(type, /** @type {Item} */ (struct)))) {
-            itemsToDelete.push(struct)
-          }
-        }
       })
       // We want to delete in reverse order so that children are deleted before
       // parents, so we have more information available when items are filtered.
@@ -181,17 +191,17 @@ export class UndoManager extends Observable {
         // neither undoing nor redoing: delete redoStack
         this.redoStack = []
       }
-      const beforeState = transaction.beforeState.get(this.doc.clientID) || 0
-      const afterState = transaction.afterState.get(this.doc.clientID) || 0
+      const beforeState = transaction.beforeState
+      const afterState = transaction.afterState
       const now = time.getUnixTime()
       if (now - this.lastChange < captureTimeout && stack.length > 0 && !undoing && !redoing) {
         // append change to last stack op
         const lastOp = stack[stack.length - 1]
         lastOp.ds = mergeDeleteSets([lastOp.ds, transaction.deleteSet])
-        lastOp.len = afterState - lastOp.start
+        lastOp.afterState = afterState
       } else {
         // create a new stack op
-        stack.push(new StackItem(transaction.deleteSet, beforeState, afterState - beforeState))
+        stack.push(new StackItem(transaction.deleteSet, beforeState, afterState))
       }
       if (!undoing && !redoing) {
         this.lastChange = now
