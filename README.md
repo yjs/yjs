@@ -25,7 +25,8 @@ build collaborative or distributed applications ping us at
 <yjs@tag1consulting.com>. Otherwise you can find help on our
 [discussion board](https://discuss.yjs.dev).
 
-## Who uses Yjs
+## Who is using Yjs?
+
 * [http://coronavirustechhandbook.com/](https://coronavirustechhandbook.com/) a collaborative wiki that is edited by thousands of different people to work on a rapid and sophisticated response to the coronavirus outbreak and subsequent impacts.
 * [JoeDocs](https://joedocs.com/) an open collaborative wiki.
 * [Room.sh](https://room.sh/) is a meeting application with integrated collaborative drawing, editing, and coding tools.
