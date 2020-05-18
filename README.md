@@ -221,17 +221,17 @@ necessary.
   </p>
   <pre>const yarray = new Y.Array()</pre>
   <dl>
-    <b><code>insert(index:number, content:Array&lt;object|boolean|Array|string|number|Uint8Array|Y.Type&gt;)</code></b>
+    <b><code>insert(index:number, content:Array&lt;object|boolean|Array|string|number|Uint8Array|Y.Type&gt;):Y.Array</code></b>
     <dd>
 Insert content at <var>index</var>. Note that content is an array of elements.
 I.e. <code>array.insert(0, [1])</code> splices the list and inserts 1 at
 position 0.
     </dd>
-    <b><code>push(Array&lt;Object|boolean|Array|string|number|Uint8Array|Y.Type&gt;)</code></b>
+    <b><code>push(Array&lt;Object|boolean|Array|string|number|Uint8Array|Y.Type&gt;):Y.Array</code></b>
     <dd></dd>
-    <b><code>unshift(Array&lt;Object|boolean|Array|string|number|Uint8Array|Y.Type&gt;)</code></b>
+    <b><code>unshift(Array&lt;Object|boolean|Array|string|number|Uint8Array|Y.Type&gt;):Y.Array</code></b>
     <dd></dd>
-    <b><code>delete(index:number, length:number)</code></b>
+    <b><code>delete(index:number, length:number):Y.Array</code></b>
     <dd></dd>
     <b><code>get(index:number)</code></b>
     <dd></dd>
