@@ -281,6 +281,7 @@ export class YXmlFragment extends AbstractType {
    *
    * @param {number} index The index to insert content at
    * @param {Array<YXmlElement|YXmlText>} content The array of content
+   * @return {YXmlFragment} Instance of the YXmlFragment.
    */
   insert (index, content) {
     if (this.doc !== null) {
@@ -291,6 +292,7 @@ export class YXmlFragment extends AbstractType {
       // @ts-ignore _prelimContent is defined because this is not yet integrated
       this._prelimContent.splice(index, 0, ...content)
     }
+    return this
   }
 
   /**
@@ -298,6 +300,7 @@ export class YXmlFragment extends AbstractType {
    *
    * @param {number} index Index at which to start deleting elements
    * @param {number} [length=1] The number of elements to remove. Defaults to 1.
+   * @return {YXmlFragment} Instance of the YXmlFragment.
    */
   delete (index, length = 1) {
     if (this.doc !== null) {
@@ -308,6 +311,7 @@ export class YXmlFragment extends AbstractType {
       // @ts-ignore _prelimContent is defined because this is not yet integrated
       this._prelimContent.splice(index, length)
     }
+    return this
   }
 
   /**
