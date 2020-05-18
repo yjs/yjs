@@ -367,14 +367,14 @@ YTextEvents compute changes as deltas.
   </p>
   <pre>const ytext = new Y.Text()</pre>
   <dl>
-    <b><code>insert(index:number, content:string, [formattingAttributes:Object&lt;string,string&gt;])</code></b>
+    <b><code>insert(index:number, content:string, [formattingAttributes:Object&lt;string,string&gt;]):Y.Text</code></b>
     <dd>
       Insert a string at <var>index</var> and assign formatting attributes to it.
       <pre>ytext.insert(0, 'bold text', { bold: true })</pre>
     </dd>
-    <b><code>delete(index:number, length:number)</code></b>
+    <b><code>delete(index:number, length:number):Y.Text</code></b>
     <dd></dd>
-    <b><code>format(index:number, length:number, formattingAttributes:Object&lt;string,string&gt;)</code></b>
+    <b><code>format(index:number, length:number, formattingAttributes:Object&lt;string,string&gt;):Y.Text</code></b>
     <dd>Assign formatting attributes to a range in the text</dd>
     <b><code>applyDelta(delta)</code></b>
     <dd>See <a href="https://quilljs.com/docs/delta/">Quill Delta</a></dd>
