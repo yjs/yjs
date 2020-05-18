@@ -421,9 +421,9 @@ or any of its children.
   </p>
   <pre><code>const yxml = new Y.XmlFragment()</code></pre>
   <dl>
-    <b><code>insert(index:number, content:Array&lt;Y.XmlElement|Y.XmlText&gt;)</code></b>
+    <b><code>insert(index:number, content:Array&lt;Y.XmlElement|Y.XmlText&gt;):Y.XmlFragment</code></b>
     <dd></dd>
-    <b><code>delete(index:number, length:number)</code></b>
+    <b><code>delete(index:number, length:number):Y.XmlFragment</code></b>
     <dd></dd>
     <b><code>get(index:number)</code></b>
     <dd></dd>
