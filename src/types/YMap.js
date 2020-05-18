@@ -161,6 +161,7 @@ export class YMap extends AbstractType {
    * Remove a specified element from this YMap.
    *
    * @param {string} key The key of the element to remove.
+   * @return {YMap<T>} Instance of the YMap.
    */
   delete (key) {
     if (this.doc !== null) {
@@ -170,6 +171,7 @@ export class YMap extends AbstractType {
     } else {
       /** @type {Map<string, any>} */ (this._prelimContent).delete(key)
     }
+    return this
   }
 
   /**
@@ -177,6 +179,7 @@ export class YMap extends AbstractType {
    *
    * @param {string} key The key of the element to add to this YMap
    * @param {T} value The value of the element to add
+   * @return {YMap<T>} Instance of the YMap
    */
   set (key, value) {
     if (this.doc !== null) {
@@ -186,7 +189,7 @@ export class YMap extends AbstractType {
     } else {
       /** @type {Map<string, any>} */ (this._prelimContent).set(key, value)
     }
-    return value
+    return this
   }
 
   /**
