@@ -472,17 +472,17 @@ content and be actually XML compliant.
   </p>
   <pre><code>const yxml = new Y.XmlElement()</code></pre>
   <dl>
-    <b><code>insert(index:number, content:Array&lt;Y.XmlElement|Y.XmlText&gt;)</code></b>
+    <b><code>insert(index:number, content:Array&lt;Y.XmlElement|Y.XmlText&gt;):Y.XmlElement</code></b>
     <dd></dd>
-    <b><code>delete(index:number, length:number)</code></b>
+    <b><code>delete(index:number, length:number):Y.XmlElement</code></b>
     <dd></dd>
     <b><code>get(index:number)</code></b>
     <dd></dd>
     <b><code>length:number</code></b>
     <dd></dd>
-    <b><code>setAttribute(attributeName:string, attributeValue:string)</code></b>
+    <b><code>setAttribute(attributeName:string, attributeValue:string):Y.XmlElement</code></b>
     <dd></dd>
-    <b><code>removeAttribute(attributeName:string)</code></b>
+    <b><code>removeAttribute(attributeName:string):Y.XmlElement</code></b>
     <dd></dd>
     <b><code>getAttribute(attributeName:string):string</code></b>
     <dd></dd>
