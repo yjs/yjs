@@ -27,11 +27,13 @@ build collaborative or distributed applications ping us at
 
 ## Who is using Yjs?
 
-* [http://coronavirustechhandbook.com/](https://coronavirustechhandbook.com/) a collaborative wiki that is edited by thousands of different people to work on a rapid and sophisticated response to the coronavirus outbreak and subsequent impacts.
-* [JoeDocs](https://joedocs.com/) an open collaborative wiki.
-* [Room.sh](https://room.sh/) is a meeting application with integrated collaborative drawing, editing, and coding tools.
-* [Pluxbox](https://pluxbox.com/) - Radiomanager is a web-based app to collaboratively organize radio broadcasts.
-* [Cattaz](http://cattaz.io/) is a wiki that can run custom applications in the wiki pages.
+* [Nimbus Note](https://nimbusweb.me/note.php) A note-taking app designed by Nimbus Web.
+* [Relm](http://www.relm.us/) A collaborative gameworld for teamwork and community.
+* [http://coronavirustechhandbook.com/](https://coronavirustechhandbook.com/) A collaborative wiki that is edited by thousands of different people to work on a rapid and sophisticated response to the coronavirus outbreak and subsequent impacts.
+* [JoeDocs](https://joedocs.com/) An open collaborative wiki.
+* [Room.sh](https://room.sh/) A meeting application with integrated collaborative drawing, editing, and coding tools.
+* [Pluxbox RadioManager](https://pluxbox.com/) A web-based app to collaboratively organize radio broadcasts.
+* [Cattaz](http://cattaz.io/) A wiki that can run custom applications in the wiki pages.
 
 ## Table of Contents
 
