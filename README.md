@@ -292,9 +292,9 @@ or any of its children.
   <dl>
     <b><code>get(key:string):object|boolean|string|number|Uint8Array|Y.Type</code></b>
     <dd></dd>
-    <b><code>set(key:string, value:object|boolean|string|number|Uint8Array|Y.Type)</code></b>
+    <b><code>set(key:string, value:object|boolean|string|number|Uint8Array|Y.Type):Y.Map</code></b>
     <dd></dd>
-    <b><code>delete(key:string)</code></b>
+    <b><code>delete(key:string):Y.Map</code></b>
     <dd></dd>
     <b><code>has(key:string):boolean</code></b>
     <dd></dd>
