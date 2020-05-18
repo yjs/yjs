@@ -147,6 +147,50 @@ Now you understand how types are defined on a shared document. Next you can jump
 to the [demo repository](https://github.com/yjs/yjs-demos) or continue reading
 the API docs.
 
+### Example: Using and combining providers
+
+Any Yjs providers can be combined with each other. So you can sync data over different
+network technologies.
+
+In most cases you want to use a networking provider (like y-webrtc or y-webrtc) in combination with a
+persistence provider (y-indexeddb in the browser). Persistence allows you to load the document faster and
+to sync persist data that is created while offline.
+
+For the sake of this demo we combine two different network providers with a persistence provider.
+
+```js
+import * as Y from 'yjs'
+import { WebrtcProvider } from 'y-webrtc'
+import { WebsocketProvider } from 'y-websocket'
+import { IndexeddbPersistence } from 'y-indexeddb'
+
+const ydoc = new Y.Doc()
+
+// this allows you to instantly get the (cached) documents data
+const indexeddbProvider = new IndexeddbPersistence('count-demo', ydoc)
+  idbP.whenSynced.then(() => {
+  console.log('loaded data from indexed db')
+})
+
+// Sync clients with the y-webrtc provider.
+const webrtcProvider = new WebrtcProvider('count-demo', ydoc)
+
+// Sync clients with the y-websocket provider
+const websocketProvider = new WebsocketProvider('wss://demos.yjs.dev', 'count-demo', ydoc)
+
+// array of numbers which produce a sum
+const yarray = ydoc.getArray('count')
+
+// observe changes of the sum
+yarray.observe(event => {
+  // this will print updates from the network
+  console.log("new sum: " + yarray.toArray().reduce((a,b)=>(a+b)))
+})
+
+// add 1 to the sum
+yarray.push([1]) // => "new sum: 1"
+```
+
 ## API
 
 ```js
