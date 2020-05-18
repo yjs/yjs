@@ -25,15 +25,23 @@ build collaborative or distributed applications ping us at
 <yjs@tag1consulting.com>. Otherwise you can find help on our
 [discussion board](https://discuss.yjs.dev).
 
-## Who is using Yjs?
+## Who is using Yjs
 
-* [Nimbus Note](https://nimbusweb.me/note.php) A note-taking app designed by Nimbus Web.
-* [Relm](http://www.relm.us/) A collaborative gameworld for teamwork and community.
-* [http://coronavirustechhandbook.com/](https://coronavirustechhandbook.com/) A collaborative wiki that is edited by thousands of different people to work on a rapid and sophisticated response to the coronavirus outbreak and subsequent impacts.
+* [Nimbus Note](https://nimbusweb.me/note.php) A note-taking app designed by
+  Nimbus Web.
+* [Relm](http://www.relm.us/) A collaborative gameworld for teamwork and
+  community.
+* [http://coronavirustechhandbook.com/](https://coronavirustechhandbook.com/)
+  A collaborative wiki that is edited by thousands of different people to work
+  on a rapid and sophisticated response to the coronavirus outbreak and
+  subsequent impacts.
 * [JoeDocs](https://joedocs.com/) An open collaborative wiki.
-* [Room.sh](https://room.sh/) A meeting application with integrated collaborative drawing, editing, and coding tools.
-* [Pluxbox RadioManager](https://pluxbox.com/) A web-based app to collaboratively organize radio broadcasts.
-* [Cattaz](http://cattaz.io/) A wiki that can run custom applications in the wiki pages.
+* [Room.sh](https://room.sh/) A meeting application with integrated
+  collaborative drawing, editing, and coding tools.
+* [Pluxbox RadioManager](https://pluxbox.com/) A web-based app to
+  collaboratively organize radio broadcasts.
+* [Cattaz](http://cattaz.io/) A wiki that can run custom applications in the
+  wiki pages.
 
 ## Table of Contents
 
@@ -149,14 +157,16 @@ the API docs.
 
 ### Example: Using and combining providers
 
-Any Yjs providers can be combined with each other. So you can sync data over different
-network technologies.
+Any of the Yjs providers can be combined with each other. So you can sync data
+over different network technologies.
 
-In most cases you want to use a networking provider (like y-webrtc or y-webrtc) in combination with a
-persistence provider (y-indexeddb in the browser). Persistence allows you to load the document faster and
-to sync persist data that is created while offline.
+In most cases you want to use a network provider (like y-websocket or y-webrtc)
+in combination with a persistence provider (y-indexeddb in the browser).
+Persistence allows you to load the document faster and to persist data that is
+created while offline.
 
-For the sake of this demo we combine two different network providers with a persistence provider.
+For the sake of this demo we combine two different network providers with a
+persistence provider.
 
 ```js
 import * as Y from 'yjs'
@@ -168,7 +178,7 @@ const ydoc = new Y.Doc()
 
 // this allows you to instantly get the (cached) documents data
 const indexeddbProvider = new IndexeddbPersistence('count-demo', ydoc)
-  idbP.whenSynced.then(() => {
+idbP.whenSynced.then(() => {
   console.log('loaded data from indexed db')
 })
 
@@ -176,15 +186,17 @@ const indexeddbProvider = new IndexeddbPersistence('count-demo', ydoc)
 const webrtcProvider = new WebrtcProvider('count-demo', ydoc)
 
 // Sync clients with the y-websocket provider
-const websocketProvider = new WebsocketProvider('wss://demos.yjs.dev', 'count-demo', ydoc)
+const websocketProvider = new WebsocketProvider(
+  'wss://demos.yjs.dev', 'count-demo', ydoc
+)
 
 // array of numbers which produce a sum
 const yarray = ydoc.getArray('count')
 
 // observe changes of the sum
 yarray.observe(event => {
-  // this will print updates from the network
-  console.log("new sum: " + yarray.toArray().reduce((a,b)=>(a+b)))
+  // print updates when the data changes
+  console.log('new sum: ' + yarray.toArray().reduce((a,b) => a + b))
 })
 
 // add 1 to the sum
