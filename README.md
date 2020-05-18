@@ -149,50 +149,46 @@ the API docs.
 
 ### Example: Using and combining providers
 
-The most common way to combine providers is probably
-to combine some network provider with the local indexeddb provider:
+Any Yjs providers can be combined with each other. So you can sync data over different
+network technologies.
+
+In most cases you want to use a networking provider (like y-webrtc or y-webrtc) in combination with a
+persistence provider (y-indexeddb in the browser). Persistence allows you to load the document faster and
+to sync persist data that is created while offline.
+
+For the sake of this demo we combine two different network providers with a persistence provider.
 
 ```js
 import * as Y from 'yjs'
 import { WebrtcProvider } from 'y-webrtc'
+import { WebsocketProvider } from 'y-websocket'
 import { IndexeddbPersistence } from 'y-indexeddb'
 
-async function main() {
-  const ydoc = new Y.Doc()
+const ydoc = new Y.Doc()
 
-  // this allows you to instantly get the (cached) documents data
-  let idbP = new IndexeddbPersistence('count-demo', ydoc)
-  await idbP.whenSynced
-  
-  // this will sync between clients in the background,
-  // may be replaced by any network provider
-  let webP = new WebrtcProvider('count-demo', ydoc)
-  webP.connect()
+// this allows you to instantly get the (cached) documents data
+const indexeddbProvider = new IndexeddbPersistence('count-demo', ydoc)
+  idbP.whenSynced.then(() => {
+  console.log('loaded data from indexed db')
+})
 
-  // array of numbers which produce a sum
-  const yarray = ydoc.getArray('count')
+// Sync clients with the y-webrtc provider.
+const webrtcProvider = new WebrtcProvider('count-demo', ydoc)
 
-  // add 1 to the sum
-  yarray.push([1])
+// Sync clients with the y-websocket provider
+const websocketProvider = new WebsocketProvider('wss://demos.yjs.dev', 'count-demo', ydoc)
 
-  // observe changes of the sum
-  yarray.observe(event => {
-    // this will print updates from the network
-    console.log("new sum: " + yarray.toArray().reduce((a,b)=>(a+b)))
-  })
+// array of numbers which produce a sum
+const yarray = ydoc.getArray('count')
 
-  // print initial number (the cached one plus one)
-  let sum = yarray.toArray().reduce((a,b)=>(a+b))
-  console.log(sum)
-}
-main()
-```
+// observe changes of the sum
+yarray.observe(event => {
+  // this will print updates from the network
+  console.log("new sum: " + yarray.toArray().reduce((a,b)=>(a+b)))
+})
 
-Example output:
-
-```bash
-32           # stored sum from indexeddb (with 1 already added to it)
-new sum: 38  # delayed new sum fetched from network
+// add 1 to the sum
+yarray.push([1]) // => "new sum: 1"
 ```
 
 ## API
