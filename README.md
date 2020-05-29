@@ -25,19 +25,34 @@ build collaborative or distributed applications ping us at
 <yjs@tag1consulting.com>. Otherwise you can find help on our
 [discussion board](https://discuss.yjs.dev).
 
+## Sponsors
+
+I'm currently looking for sponsors that allow me to be less dependent on contracting work. These awesome backers already fund further development of Yjs:
+
+[![Duane Johnson](https://github.com/canadaduane.png?size=60)](https://github.com/canadaduane)
+[![Joe Reeve](https://github.com/ISNIT0.png?size=60)](https://github.com/ISNIT0)
+[<img src="https://room.sh/img/icons/android-chrome-192x192.png" height="60px" />](https://room.sh/)
+[![JourneyApps
+](https://github.com/journeyapps.png?size=60)](https://github.com/journeyapps)
+[![Adam Brunnmeier](https://github.com/adabru.png?size=60)](https://github.com/adabru)
+[![Nathanael Anderson
+](https://github.com/NathanaelA.png?size=60)](https://github.com/NathanaelA)
+
+Sponsorship also comes with special perks! [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=d42f2d)](https://github.com/sponsors/dmonad)
+
 ## Who is using Yjs
 
-* [Nimbus Note](https://nimbusweb.me/note.php) A note-taking app designed by
-  Nimbus Web.
 * [Relm](http://www.relm.us/) A collaborative gameworld for teamwork and
-  community.
+  community. :star2:
+* [Room.sh](https://room.sh/) A meeting application with integrated
+  collaborative drawing, editing, and coding tools. :star:
 * [http://coronavirustechhandbook.com/](https://coronavirustechhandbook.com/)
   A collaborative wiki that is edited by thousands of different people to work
   on a rapid and sophisticated response to the coronavirus outbreak and
-  subsequent impacts.
+  subsequent impacts. :star:
+* [Nimbus Note](https://nimbusweb.me/note.php) A note-taking app designed by
+  Nimbus Web.
 * [JoeDocs](https://joedocs.com/) An open collaborative wiki.
-* [Room.sh](https://room.sh/) A meeting application with integrated
-  collaborative drawing, editing, and coding tools.
 * [Pluxbox RadioManager](https://pluxbox.com/) A web-based app to
   collaboratively organize radio broadcasts.
 * [Cattaz](http://cattaz.io/) A wiki that can run custom applications in the
