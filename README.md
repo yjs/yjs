@@ -29,6 +29,8 @@ build collaborative or distributed applications ping us at
 
 I'm currently looking for sponsors that allow me to be less dependent on contracting work. These awesome backers already fund further development of Yjs:
 
+[![Vincent Waller](https://github.com/vwall.png?size=60)](https://github.com/vwall)
+[<img src="https://user-images.githubusercontent.com/5553757/83337333-a7bcb380-a2ba-11ea-837b-e404eb35d318.png" height="60px" />](https://input.com/)
 [![Duane Johnson](https://github.com/canadaduane.png?size=60)](https://github.com/canadaduane)
 [![Joe Reeve](https://github.com/ISNIT0.png?size=60)](https://github.com/ISNIT0)
 [<img src="https://room.sh/img/icons/android-chrome-192x192.png" height="60px" />](https://room.sh/)
@@ -44,6 +46,7 @@ Sponsorship also comes with special perks! [![Become a Sponsor](https://img.shie
 
 * [Relm](http://www.relm.us/) A collaborative gameworld for teamwork and
   community. :star2:
+* [Input](https://input.com/) A collaborative note taking app. :star2:
 * [Room.sh](https://room.sh/) A meeting application with integrated
   collaborative drawing, editing, and coding tools. :star:
 * [http://coronavirustechhandbook.com/](https://coronavirustechhandbook.com/)
