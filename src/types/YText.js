@@ -853,16 +853,8 @@ export class YText extends AbstractType {
         const currentAttributes = new Map()
         for (let i = 0; i < delta.length; i++) {
           const op = delta[i]
-          if (op.insert !== undefined) {
-            // Quill assumes that the content starts with an empty paragraph.
-            // Yjs/Y.Text assumes that it starts empty. We always hide that
-            // there is a newline at the end of the content.
-            // If we omit this step, clients will see a different number of
-            // paragraphs, but nothing bad will happen.
-            const ins = (typeof op.insert === 'string' && i === delta.length - 1 && pos.right === null && op.insert.slice(-1) === '\n') ? op.insert.slice(0, -1) : op.insert
-            if (typeof ins !== 'string' || ins.length > 0) {
-              pos = insertText(transaction, this, pos.left, pos.right, currentAttributes, ins, op.attributes || {})
-            }
+          if (op.insert !== undefined && (typeof op.insert !== 'string' || op.insert.length > 0)) {
+            pos = insertText(transaction, this, pos.left, pos.right, currentAttributes, op.insert, op.attributes || {})
           } else if (op.retain !== undefined) {
             pos = formatText(transaction, this, pos.left, pos.right, currentAttributes, op.retain, op.attributes || {})
           } else if (op.delete !== undefined) {
