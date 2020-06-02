@@ -48,7 +48,7 @@ import * as decoding from 'lib0/decoding.js' // eslint-disable-line
  * Can be created with {@link YXmlFragment#createTreeWalker}
  *
  * @public
- * @implements {IterableIterator}
+ * @implements {Iterable<YXmlElement|YXmlText|YXmlElement|YXmlHook>}
  */
 export class YXmlTreeWalker {
   /**
@@ -81,10 +81,10 @@ export class YXmlTreeWalker {
      * @type {Item|null}
      */
     let n = this._currentNode
-    let type = /** @type {ContentType} */ (n.content).type
+    let type = /** @type {any} */ (n.content).type
     if (n !== null && (!this._firstCall || n.deleted || !this._filter(type))) { // if first call, we check if we can use the first item
       do {
-        type = /** @type {ContentType} */ (n.content).type
+        type = /** @type {any} */ (n.content).type
         if (!n.deleted && (type.constructor === YXmlElement || type.constructor === YXmlFragment) && type._start !== null) {
           // walk down in the tree
           n = type._start

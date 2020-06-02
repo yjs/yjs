@@ -40,7 +40,7 @@ export class YArrayEvent extends YEvent {
  * A shared Array implementation.
  * @template T
  * @extends AbstractType<YArrayEvent<T>>
- * @implements {IterableIterator<T>}
+ * @implements {Iterable<T>}
  */
 export class YArray extends AbstractType {
   constructor () {
