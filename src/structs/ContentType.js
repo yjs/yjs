@@ -7,7 +7,7 @@ import {
   readYXmlFragment,
   readYXmlHook,
   readYXmlText,
-  StructStore, Transaction, Item, YEvent, AbstractType // eslint-disable-line
+  ID, StructStore, Transaction, Item, YEvent, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js' // eslint-disable-line
@@ -115,7 +115,7 @@ export class ContentType {
         // We try to merge all deleted items after each transaction,
         // but we have no knowledge about that this needs to be merged
         // since it is not in transaction.ds. Hence we add it to transaction._mergeStructs
-        transaction._mergeStructs.add(item.id)
+        transaction._mergeStructs.push(item)
       }
       item = item.right
     }
@@ -124,7 +124,7 @@ export class ContentType {
         item.delete(transaction)
       } else {
         // same as above
-        transaction._mergeStructs.add(item.id)
+        transaction._mergeStructs.push(item)
       }
     })
     transaction.changed.delete(this.type)

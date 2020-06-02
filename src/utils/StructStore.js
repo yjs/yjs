@@ -2,7 +2,7 @@
 import {
   GC,
   splitItem,
-  GCRef, ItemRef, Transaction, ID, Item // eslint-disable-line
+  AbstractStruct, GCRef, ItemRef, Transaction, ID, Item // eslint-disable-line
 } from '../internals.js'
 
 import * as math from 'lib0/math.js'
@@ -114,7 +114,7 @@ export const addStruct = (store, struct) => {
 
 /**
  * Perform a binary search on a sorted array
- * @param {Array<any>} structs
+ * @param {Array<Item|GC>} structs
  * @param {number} clock
  * @return {number}
  *
@@ -163,16 +163,10 @@ export const find = (store, id) => {
 
 /**
  * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
- *
- * @param {StructStore} store
- * @param {ID} id
- * @return {Item}
- *
  * @private
  * @function
  */
-// @ts-ignore
-export const getItem = (store, id) => find(store, id)
+export const getItem = /** @type {function(StructStore,ID):Item} */ (find)
 
 /**
  * @param {Transaction} transaction

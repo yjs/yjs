@@ -1,10 +1,9 @@
 
 import {
   readID,
-  createID,
   writeID,
   GC,
-  nextID,
+  getState,
   AbstractStructRef,
   AbstractStruct,
   replaceStruct,
@@ -21,6 +20,7 @@ import {
   readContentAny,
   readContentString,
   readContentEmbed,
+  createID,
   readContentFormat,
   readContentType,
   addChangedTypeToTransaction,
@@ -88,12 +88,12 @@ export const keepItem = (item, keep) => {
  * @private
  */
 export const splitItem = (transaction, leftItem, diff) => {
-  const id = leftItem.id
   // create rightItem
+  const { client, clock } = leftItem.id
   const rightItem = new Item(
-    createID(id.client, id.clock + diff),
+    createID(client, clock + diff),
     leftItem,
-    createID(id.client, id.clock + diff - 1),
+    createID(client, clock + diff - 1),
     leftItem.right,
     leftItem.rightOrigin,
     leftItem.parent,
@@ -116,7 +116,7 @@ export const splitItem = (transaction, leftItem, diff) => {
     rightItem.right.left = rightItem
   }
   // right is more specific.
-  transaction._mergeStructs.add(rightItem.id)
+  transaction._mergeStructs.push(rightItem)
   // update parent._map
   if (rightItem.parentSub !== null && rightItem.right === null) {
     rightItem.parent._map.set(rightItem.parentSub, rightItem)
@@ -137,8 +137,12 @@ export const splitItem = (transaction, leftItem, diff) => {
  * @private
  */
 export const redoItem = (transaction, item, redoitems) => {
-  if (item.redone !== null) {
-    return getItemCleanStart(transaction, item.redone)
+  const doc = transaction.doc
+  const store = doc.store
+  const ownClientID = doc.clientID
+  const redone = item.redone
+  if (redone !== null) {
+    return getItemCleanStart(transaction, redone)
   }
   let parentItem = item.parent._item
   /**
@@ -158,7 +162,7 @@ export const redoItem = (transaction, item, redoitems) => {
     left = item
     while (left.right !== null) {
       left = left.right
-      if (left.id.client !== transaction.doc.clientID) {
+      if (left.id.client !== ownClientID) {
         // It is not possible to redo this item because it conflicts with a
         // change from another client
         return null
@@ -212,15 +216,17 @@ export const redoItem = (transaction, item, redoitems) => {
       right = right.right
     }
   }
+  const nextClock = getState(store, ownClientID)
+  const nextId = createID(ownClientID, nextClock)
   const redoneItem = new Item(
-    nextID(transaction),
-    left, left === null ? null : left.lastId,
-    right, right === null ? null : right.id,
+    nextId,
+    left, left && left.lastId,
+    right, right && right.id,
     parentItem === null ? item.parent : /** @type {ContentType} */ (parentItem.content).type,
     item.parentSub,
     item.content.copy()
   )
-  item.redone = redoneItem.id
+  item.redone = nextId
   keepItem(redoneItem, true)
   redoneItem.integrate(transaction)
   return redoneItem
@@ -294,12 +300,14 @@ export class Item extends AbstractStruct {
      * @type {AbstractContent}
      */
     this.content = content
-    this.length = content.getLength()
-    this.countable = content.isCountable()
     /**
      * If true, do not garbage collect this Item.
      */
     this.keep = false
+  }
+
+  get countable () {
+    return this.content.isCountable()
   }
 
   /**
@@ -307,17 +315,20 @@ export class Item extends AbstractStruct {
    */
   integrate (transaction) {
     const store = transaction.doc.store
-    const id = this.id
     const parent = this.parent
     const parentSub = this.parentSub
     const length = this.length
     /**
      * @type {Item|null}
      */
+    let left = this.left
+    /**
+     * @type {Item|null}
+     */
     let o
     // set o to the first conflicting item
-    if (this.left !== null) {
-      o = this.left.right
+    if (left !== null) {
+      o = left.right
     } else if (parentSub !== null) {
       o = parent._map.get(parentSub) || null
       while (o !== null && o.left !== null) {
@@ -343,14 +354,14 @@ export class Item extends AbstractStruct {
       conflictingItems.add(o)
       if (compareIDs(this.origin, o.origin)) {
         // case 1
-        if (o.id.client < id.client) {
-          this.left = o
+        if (o.id.client < this.id.client) {
+          left = o
           conflictingItems.clear()
         }
       } else if (o.origin !== null && itemsBeforeOrigin.has(getItem(store, o.origin))) {
         // case 2
         if (o.origin === null || !conflictingItems.has(getItem(store, o.origin))) {
-          this.left = o
+          left = o
           conflictingItems.clear()
         }
       } else {
@@ -358,11 +369,12 @@ export class Item extends AbstractStruct {
       }
       o = o.right
     }
+    this.left = left
     // reconnect left/right + update parent map/start if necessary
-    if (this.left !== null) {
-      const right = this.left.right
+    if (left !== null) {
+      const right = left.right
       this.right = right
-      this.left.right = this
+      left.right = this
     } else {
       let r
       if (parentSub !== null) {
@@ -381,9 +393,9 @@ export class Item extends AbstractStruct {
     } else if (parentSub !== null) {
       // set as current parent value if right === null and this is parentSub
       parent._map.set(parentSub, this)
-      if (this.left !== null) {
+      if (left !== null) {
         // this is the current attribute value of parent. delete right
-        this.left.delete(transaction)
+        left.delete(transaction)
       }
     }
     // adjust length of parent
@@ -522,7 +534,8 @@ export class Item extends AbstractStruct {
     }
     if (origin === null && rightOrigin === null) {
       const parent = this.parent
-      if (parent._item === null) {
+      const parentItem = parent._item
+      if (parentItem === null) {
         // parent type on y._map
         // find the correct key
         const ykey = findRootTypeKey(parent)
@@ -530,7 +543,7 @@ export class Item extends AbstractStruct {
         encoding.writeVarString(encoder, ykey)
       } else {
         encoding.writeVarUint(encoder, 0) // write parent id
-        writeID(encoder, parent._item.id)
+        writeID(encoder, parentItem.id)
       }
       if (parentSub !== null) {
         encoding.writeVarString(encoder, parentSub)
@@ -723,22 +736,18 @@ export class ItemRef extends AbstractStructRef {
    */
   toStruct (transaction, store, offset) {
     if (offset > 0) {
-      /**
-       * @type {ID}
-       */
-      const id = this.id
-      this.id = createID(id.client, id.clock + offset)
+      this.id.clock += offset
       this.left = createID(this.id.client, this.id.clock - 1)
       this.content = this.content.splice(offset)
-      this.length -= offset
     }
 
     const left = this.left === null ? null : getItemCleanEnd(transaction, store, this.left)
     const right = this.right === null ? null : getItemCleanStart(transaction, this.right)
+    const parentId = this.parent
     let parent = null
     let parentSub = this.parentSub
-    if (this.parent !== null) {
-      const parentItem = getItem(store, this.parent)
+    if (parentId !== null) {
+      const parentItem = getItem(store, parentId)
       // Edge case: toStruct is called with an offset > 0. In this case left is defined.
       // Depending in which order structs arrive, left may be GC'd and the parent not
       // deleted. This is why we check if left is GC'd. Strictly we don't have
@@ -767,9 +776,9 @@ export class ItemRef extends AbstractStructRef {
       : new Item(
         this.id,
         left,
-        this.left,
+        left && left.lastId,
         right,
-        this.right,
+        right && right.id,
         parent,
         parentSub,
         this.content

@@ -2,7 +2,6 @@
 import {
   AbstractStructRef,
   AbstractStruct,
-  createID,
   addStruct,
   StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
@@ -78,8 +77,7 @@ export class GCRef extends AbstractStructRef {
    */
   toStruct (transaction, store, offset) {
     if (offset > 0) {
-      // @ts-ignore
-      this.id = createID(this.id.client, this.id.clock + offset)
+      this.id.clock += offset
       this.length -= offset
     }
     return new GC(

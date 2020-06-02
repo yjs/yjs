@@ -1,11 +1,11 @@
 
 import {
   findIndexSS,
-  createID,
   getState,
   splitItem,
+  createID,
   iterateStructs,
-  Item, GC, StructStore, Transaction, ID // eslint-disable-line
+  Item, AbstractStruct, GC, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as array from 'lib0/array.js'

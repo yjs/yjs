@@ -12,11 +12,6 @@ export class AbstractStruct {
    * @param {number} length
    */
   constructor (id, length) {
-    /**
-     * The uniqe identifier of this struct.
-     * @type {ID}
-     * @readonly
-     */
     this.id = id
     this.length = length
     this.deleted = false
@@ -55,15 +50,11 @@ export class AbstractStructRef {
    * @param {ID} id
    */
   constructor (id) {
+    this.id = id
     /**
      * @type {Array<ID>}
      */
     this._missing = []
-    /**
-     * The uniqe identifier of this type.
-     * @type {ID}
-     */
-    this.id = id
   }
 
   /**

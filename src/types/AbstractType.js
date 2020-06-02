@@ -4,14 +4,14 @@ import {
   callEventHandlerListeners,
   addEventHandlerListener,
   createEventHandler,
-  nextID,
+  getState,
   isVisible,
   ContentType,
+  createID,
   ContentAny,
   ContentBinary,
-  createID,
   getItemCleanStart,
-  Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
+  ID, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map.js'
@@ -375,6 +375,9 @@ export const typeListGet = (type, index) => {
  */
 export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, content) => {
   let left = referenceItem
+  const doc = transaction.doc
+  const ownClientId = doc.clientID
+  const store = doc.store
   const right = referenceItem === null ? parent._start : referenceItem.right
   /**
    * @type {Array<Object|Array<any>|number>}
@@ -382,7 +385,7 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
   let jsonContent = []
   const packJsonContent = () => {
     if (jsonContent.length > 0) {
-      left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentAny(jsonContent))
+      left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentAny(jsonContent))
       left.integrate(transaction)
       jsonContent = []
     }
@@ -401,12 +404,12 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
         switch (c.constructor) {
           case Uint8Array:
           case ArrayBuffer:
-            left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))))
+            left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))))
             left.integrate(transaction)
             break
           default:
             if (c instanceof AbstractType) {
-              left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentType(c))
+              left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentType(c))
               left.integrate(transaction)
             } else {
               throw new Error('Unexpected content type in insert operation')
@@ -509,6 +512,8 @@ export const typeMapDelete = (transaction, parent, key) => {
  */
 export const typeMapSet = (transaction, parent, key, value) => {
   const left = parent._map.get(key) || null
+  const doc = transaction.doc
+  const ownClientId = doc.clientID
   let content
   if (value == null) {
     content = new ContentAny([value])
@@ -532,7 +537,7 @@ export const typeMapSet = (transaction, parent, key, value) => {
         }
     }
   }
-  new Item(nextID(transaction), left, left === null ? null : left.lastId, null, null, parent, key, content).integrate(transaction)
+  new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, null, null, parent, key, content).integrate(transaction)
 }
 
 /**

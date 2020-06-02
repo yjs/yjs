@@ -330,6 +330,7 @@ export const compareStructStores = (ss1, ss2) => {
         s1.constructor !== s2.constructor ||
         !Y.compareIDs(s1.id, s2.id) ||
         s1.deleted !== s2.deleted ||
+        // @ts-ignore
         s1.length !== s2.length
       ) {
         t.fail('Structs dont match')
