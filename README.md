@@ -399,6 +399,8 @@ YTextEvents compute changes as deltas.
     <dd>See <a href="https://quilljs.com/docs/delta/">Quill Delta</a></dd>
     <b><code>length:number</code></b>
     <dd></dd>
+    <b><code>permitEmptyParagraph(permit:boolean)</code></b>
+    <dd>Permit empty paragraph at the end of the content when applyDelta</dd>
     <b><code>toString():string</code></b>
     <dd>Transforms this type, without formatting options, into a string.</dd>
     <b><code>toJSON():string</code></b>
