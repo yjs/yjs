@@ -6,6 +6,10 @@
   "module": "./dist/yjs.mjs",
   "types": "./dist/src/index.d.ts",
   "sideEffects": false,
+  "funding": {
+    "type": "GitHub Sponsors ❤",
+    "url": "https://github.com/sponsors/dmonad"
+  },
   "scripts": {
     "test": "npm run dist && node ./dist/tests.cjs --repitition-time 50",
     "test-extensive": "npm run lint && npm run dist && node ./dist/tests.cjs --production --repitition-time 10000",
