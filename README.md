@@ -395,12 +395,14 @@ YTextEvents compute changes as deltas.
     <dd></dd>
     <b><code>format(index:number, length:number, formattingAttributes:Object&lt;string,string&gt;)</code></b>
     <dd>Assign formatting attributes to a range in the text</dd>
-    <b><code>applyDelta(delta)</code></b>
-    <dd>See <a href="https://quilljs.com/docs/delta/">Quill Delta</a></dd>
+    <b><code>applyDelta(delta, opts:Object&lt;string,any&gt;)</code></b>
+    <dd>
+        See <a href="https://quilljs.com/docs/delta/">Quill Delta</a>
+        Can set options for preventing remove ending newLines, default is true.
+        <pre>ytext.applyDelta(delta, { sanitize: false })</pre>
+    </dd>
     <b><code>length:number</code></b>
     <dd></dd>
-    <b><code>permitEmptyParagraph(permit:boolean)</code></b>
-    <dd>Permit empty paragraph at the end of the content when applyDelta</dd>
     <b><code>toString():string</code></b>
     <dd>Transforms this type, without formatting options, into a string.</dd>
     <b><code>toJSON():string</code></b>
