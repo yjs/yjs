@@ -4,13 +4,13 @@ import {
   createDeleteSetFromStructStore,
   getStateVector,
   getItemCleanStart,
-  createID,
   iterateDeletedStructs,
   writeDeleteSet,
   writeStateVector,
   readDeleteSet,
   readStateVector,
   createDeleteSet,
+  createID,
   getState,
   Transaction, Doc, DeleteSet, Item // eslint-disable-line
 } from '../internals.js'

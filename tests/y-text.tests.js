@@ -205,6 +205,23 @@ export const testFormattingRemovedInMidText = tc => {
   t.assert(Y.getTypeChildren(text0).length === 3)
 }
 
+/**
+ * @param {t.TestCase} tc
+ *
+export const testLargeFragmentedDocument = tc => {
+  const { text0, text1, testConnector } = init(tc, { users: 2 })
+  // @ts-ignore
+  text0.doc.transact(() => {
+    for (let i = 0; i < 1000000; i++) {
+      text0.insert(0, '0')
+    }
+  })
+  t.measureTime('time to apply', () => {
+    testConnector.flushAllMessages()
+  })
+}
+*/
+
 // RANDOM TESTS
 
 let charCounter = 0

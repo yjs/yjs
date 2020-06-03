@@ -6,10 +6,10 @@
 import {
   YEvent,
   AbstractType,
-  nextID,
-  createID,
   getItemCleanStart,
+  getState,
   isVisible,
+  createID,
   YTextRefID,
   callTypeObservers,
   transact,
@@ -150,8 +150,10 @@ const insertNegatedAttributes = (transaction, parent, left, right, negatedAttrib
     left = right
     right = right.right
   }
+  const doc = transaction.doc
+  const ownClientId = doc.clientID
   for (const [key, val] of negatedAttributes) {
-    left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentFormat(key, val))
+    left = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
     left.integrate(transaction)
   }
   return { left, right }
@@ -215,6 +217,8 @@ const minimizeAttributeChanges = (left, right, currentAttributes, attributes) =>
  * @function
  **/
 const insertAttributes = (transaction, parent, left, right, currentAttributes, attributes) => {
+  const doc = transaction.doc
+  const ownClientId = doc.clientID
   const negatedAttributes = new Map()
   // insert format-start items
   for (const key in attributes) {
@@ -223,7 +227,7 @@ const insertAttributes = (transaction, parent, left, right, currentAttributes, a
     if (!equalAttrs(currentVal, val)) {
       // save negated attribute (set null if currentVal undefined)
       negatedAttributes.set(key, currentVal)
-      left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentFormat(key, val))
+      left = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
       left.integrate(transaction)
     }
   }
@@ -249,13 +253,15 @@ const insertText = (transaction, parent, left, right, currentAttributes, text, a
       attributes[key] = null
     }
   }
+  const doc = transaction.doc
+  const ownClientId = doc.clientID
   const minPos = minimizeAttributeChanges(left, right, currentAttributes, attributes)
   const insertPos = insertAttributes(transaction, parent, minPos.left, minPos.right, currentAttributes, attributes)
   left = insertPos.left
   right = insertPos.right
   // insert content
   const content = text.constructor === String ? new ContentString(/** @type {string} */ (text)) : new ContentEmbed(text)
-  left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, content)
+  left = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, content)
   left.integrate(transaction)
   return insertNegatedAttributes(transaction, parent, left, insertPos.right, insertPos.negatedAttributes)
 }
@@ -274,6 +280,8 @@ const insertText = (transaction, parent, left, right, currentAttributes, text, a
  * @function
  */
 const formatText = (transaction, parent, left, right, currentAttributes, length, attributes) => {
+  const doc = transaction.doc
+  const ownClientId = doc.clientID
   const minPos = minimizeAttributeChanges(left, right, currentAttributes, attributes)
   const insertPos = insertAttributes(transaction, parent, minPos.left, minPos.right, currentAttributes, attributes)
   const negatedAttributes = insertPos.negatedAttributes
@@ -318,7 +326,7 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
     for (; length > 0; length--) {
       newlines += '\n'
     }
-    left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentString(newlines))
+    left = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentString(newlines))
     left.integrate(transaction)
   }
   return insertNegatedAttributes(transaction, parent, left, right, negatedAttributes)

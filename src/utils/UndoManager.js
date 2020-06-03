@@ -3,14 +3,14 @@ import {
   iterateDeletedStructs,
   keepItem,
   transact,
+  createID,
   redoItem,
   iterateStructs,
   isParentOf,
-  createID,
   followRedone,
   getItemCleanStart,
   getState,
-  Transaction, Doc, Item, GC, DeleteSet, AbstractType // eslint-disable-line
+  ID, Transaction, Doc, Item, GC, DeleteSet, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as time from 'lib0/time.js'
