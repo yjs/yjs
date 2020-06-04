@@ -207,9 +207,9 @@ export const testFormattingRemovedInMidText = tc => {
 
 /**
  * @param {t.TestCase} tc
- *
+ */
 export const testLargeFragmentedDocument = tc => {
-  const { text0, text1, testConnector } = init(tc, { users: 2 })
+  const { text0, testConnector } = init(tc, { users: 2 })
   // @ts-ignore
   text0.doc.transact(() => {
     for (let i = 0; i < 1000000; i++) {
@@ -220,7 +220,6 @@ export const testLargeFragmentedDocument = tc => {
     testConnector.flushAllMessages()
   })
 }
-*/
 
 // RANDOM TESTS
 

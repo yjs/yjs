@@ -438,7 +438,8 @@ export class Item extends AbstractStruct {
    * Computes the last content address of this Item.
    */
   get lastId () {
-    return createID(this.id.client, this.id.clock + this.length - 1)
+    // allocating ids is pretty costly because of the amount of ids created, so we try to reuse whenever possible
+    return this.length === 1 ? this.id : createID(this.id.client, this.id.clock + this.length - 1)
   }
 
   /**
