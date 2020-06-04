@@ -124,10 +124,15 @@ export const addStruct = (store, struct) => {
 export const findIndexSS = (structs, clock) => {
   let left = 0
   let right = structs.length - 1
+  let mid = structs[right]
+  let midclock = mid.id.clock
+  if (mid.id.clock === clock) {
+    return right
+  }
+  let midindex = math.floor((clock / (midclock + mid.length)) * right) // pivoting the search
   while (left <= right) {
-    const midindex = math.floor((left + right) / 2)
-    const mid = structs[midindex]
-    const midclock = mid.id.clock
+    mid = structs[midindex]
+    midclock = mid.id.clock
     if (midclock <= clock) {
       if (clock < midclock + mid.length) {
         return midindex
@@ -136,6 +141,7 @@ export const findIndexSS = (structs, clock) => {
     } else {
       right = midindex - 1
     }
+    midindex = math.floor((left + right) / 2)
   }
   // Always check state before looking for a struct in StructStore
   // Therefore the case of not finding a struct is unexpected

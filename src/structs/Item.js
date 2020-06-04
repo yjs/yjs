@@ -712,10 +712,12 @@ export class ItemRef extends AbstractStructRef {
      */
     this.parentSub = canCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoding.readVarString(decoder) : null
     const missing = this._missing
-    if (this.left !== null) {
+    // Only add items to missing if they don't preceed this item (indicating that it has already been added).
+    // @todo Creating missing items could be done outside this constructor
+    if (this.left !== null && this.left.client !== id.client) {
       missing.push(this.left)
     }
-    if (this.right !== null) {
+    if (this.right !== null && this.right.client !== id.client) {
       missing.push(this.right)
     }
     if (this.parent !== null) {
