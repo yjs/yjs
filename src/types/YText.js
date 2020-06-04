@@ -848,10 +848,13 @@ export class YText extends AbstractType {
    * Apply a {@link Delta} on this shared YText type.
    *
    * @param {any} delta The changes to apply on this element.
+   * @param {object}  [opts]
+   * @param {boolean} [opts.sanitize] Sanitize input delta. Removes ending newlines if set to true.
+   *
    *
    * @public
    */
-  applyDelta (delta) {
+  applyDelta (delta, { sanitize = true } = {}) {
     if (this.doc !== null) {
       transact(this.doc, transaction => {
         /**
@@ -867,7 +870,7 @@ export class YText extends AbstractType {
             // there is a newline at the end of the content.
             // If we omit this step, clients will see a different number of
             // paragraphs, but nothing bad will happen.
-            const ins = (typeof op.insert === 'string' && i === delta.length - 1 && pos.right === null && op.insert.slice(-1) === '\n') ? op.insert.slice(0, -1) : op.insert
+            const ins = (!sanitize && typeof op.insert === 'string' && i === delta.length - 1 && pos.right === null && op.insert.slice(-1) === '\n') ? op.insert.slice(0, -1) : op.insert
             if (typeof ins !== 'string' || ins.length > 0) {
               pos = insertText(transaction, this, pos.left, pos.right, currentAttributes, ins, op.attributes || {})
             }
