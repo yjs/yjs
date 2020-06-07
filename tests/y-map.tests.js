@@ -11,6 +11,33 @@ import * as prng from 'lib0/prng.js'
 /**
  * @param {t.TestCase} tc
  */
+export const testMapHavingIterableAsConstructorParamTests = tc => {
+  const { map0 } = init(tc, { users: 1 })
+
+  const m1 = new Y.Map(Object.entries({ number: 1, string: 'hello' }))
+  map0.set('m1', m1)
+  t.assert(m1.get('number') === 1)
+  t.assert(m1.get('string') === 'hello')
+
+  const m2 = new Y.Map([
+    ['object', { x: 1 }],
+    ['boolean', true]
+  ])
+  map0.set('m2', m2)
+  t.assert(m2.get('object').x === 1)
+  t.assert(m2.get('boolean') === true)
+
+  const m3 = new Y.Map([...m1, ...m2])
+  map0.set('m3', m3)
+  t.assert(m3.get('number') === 1)
+  t.assert(m3.get('string') === 'hello')
+  t.assert(m3.get('object').x === 1)
+  t.assert(m3.get('boolean') === true)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testBasicMapTests = tc => {
   const { testConnector, users, map0, map1, map2 } = init(tc, { users: 3 })
   users[2].disconnect()
