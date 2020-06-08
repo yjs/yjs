@@ -39,39 +39,9 @@ export class AbstractStruct {
 
   /**
    * @param {Transaction} transaction
-   */
-  integrate (transaction) {
-    throw error.methodUnimplemented()
-  }
-}
-
-export class AbstractStructRef {
-  /**
-   * @param {ID} id
-   */
-  constructor (id) {
-    this.id = id
-    /**
-     * @type {Array<ID>}
-     */
-    this._missing = []
-  }
-
-  /**
-   * @param {Transaction} transaction
-   * @return {Array<ID|null>}
-   */
-  getMissing (transaction) {
-    return this._missing
-  }
-
-  /**
-   * @param {Transaction} transaction
-   * @param {StructStore} store
    * @param {number} offset
-   * @return {AbstractStruct}
    */
-  toStruct (transaction, store, offset) {
+  integrate (transaction, offset) {
     throw error.methodUnimplemented()
   }
 }

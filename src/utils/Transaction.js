@@ -156,8 +156,8 @@ const tryToMergeWithLeft = (structs, pos) => {
   if (left.deleted === right.deleted && left.constructor === right.constructor) {
     if (left.mergeWith(right)) {
       structs.splice(pos, 1)
-      if (right instanceof Item && right.parentSub !== null && right.parent._map.get(right.parentSub) === right) {
-        right.parent._map.set(right.parentSub, /** @type {Item} */ (left))
+      if (right instanceof Item && right.parentSub !== null && /** @type {AbstractType<any>} */ (right.parent)._map.get(right.parentSub) === right) {
+        /** @type {AbstractType<any>} */ (right.parent)._map.set(right.parentSub, /** @type {Item} */ (left))
       }
     }
   }

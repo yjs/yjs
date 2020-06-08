@@ -211,7 +211,7 @@ const getPathTo = (parent, child) => {
     } else {
       // parent is array-ish
       let i = 0
-      let c = child._item.parent._start
+      let c = /** @type {AbstractType<any>} */ (child._item.parent)._start
       while (c !== child._item && c !== null) {
         if (!c.deleted) {
           i++
@@ -220,7 +220,7 @@ const getPathTo = (parent, child) => {
       }
       path.unshift(i)
     }
-    child = child._item.parent
+    child = /** @type {AbstractType<any>} */ (child._item.parent)
   }
   return path
 }

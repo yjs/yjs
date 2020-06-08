@@ -4,7 +4,6 @@ import {
   writeID,
   GC,
   getState,
-  AbstractStructRef,
   AbstractStruct,
   replaceStruct,
   addStruct,
@@ -24,7 +23,7 @@ import {
   readContentFormat,
   readContentType,
   addChangedTypeToTransaction,
-  ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction // eslint-disable-line
+  Doc, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error.js'
@@ -73,7 +72,7 @@ export const followRedone = (store, id) => {
 export const keepItem = (item, keep) => {
   while (item !== null && item.keep !== keep) {
     item.keep = keep
-    item = item.parent._item
+    item = /** @type {AbstractType<any>} */ (item.parent)._item
   }
 }
 
@@ -119,7 +118,7 @@ export const splitItem = (transaction, leftItem, diff) => {
   transaction._mergeStructs.push(rightItem)
   // update parent._map
   if (rightItem.parentSub !== null && rightItem.right === null) {
-    rightItem.parent._map.set(rightItem.parentSub, rightItem)
+    /** @type {AbstractType<any>} */ (rightItem.parent)._map.set(rightItem.parentSub, rightItem)
   }
   leftItem.length = diff
   return rightItem
@@ -144,7 +143,7 @@ export const redoItem = (transaction, item, redoitems) => {
   if (redone !== null) {
     return getItemCleanStart(transaction, redone)
   }
-  let parentItem = item.parent._item
+  let parentItem = /** @type {AbstractType<any>} */ (item.parent)._item
   /**
    * @type {Item|null}
    */
@@ -169,7 +168,7 @@ export const redoItem = (transaction, item, redoitems) => {
       }
     }
     if (left.right !== null) {
-      left = /** @type {Item} */ (item.parent._map.get(item.parentSub))
+      left = /** @type {Item} */ (/** @type {AbstractType<any>} */ (item.parent)._map.get(item.parentSub))
     }
     right = null
   }
@@ -191,10 +190,10 @@ export const redoItem = (transaction, item, redoitems) => {
        */
       let leftTrace = left
       // trace redone until parent matches
-      while (leftTrace !== null && leftTrace.parent._item !== parentItem) {
+      while (leftTrace !== null && /** @type {AbstractType<any>} */ (leftTrace.parent)._item !== parentItem) {
         leftTrace = leftTrace.redone === null ? null : getItemCleanStart(transaction, leftTrace.redone)
       }
-      if (leftTrace !== null && leftTrace.parent._item === parentItem) {
+      if (leftTrace !== null && /** @type {AbstractType<any>} */ (leftTrace.parent)._item === parentItem) {
         left = leftTrace
         break
       }
@@ -206,10 +205,10 @@ export const redoItem = (transaction, item, redoitems) => {
        */
       let rightTrace = right
       // trace redone until parent matches
-      while (rightTrace !== null && rightTrace.parent._item !== parentItem) {
+      while (rightTrace !== null && /** @type {AbstractType<any>} */ (rightTrace.parent)._item !== parentItem) {
         rightTrace = rightTrace.redone === null ? null : getItemCleanStart(transaction, rightTrace.redone)
       }
-      if (rightTrace !== null && rightTrace.parent._item === parentItem) {
+      if (rightTrace !== null && /** @type {AbstractType<any>} */ (rightTrace.parent)._item === parentItem) {
         right = rightTrace
         break
       }
@@ -228,7 +227,7 @@ export const redoItem = (transaction, item, redoitems) => {
   )
   item.redone = nextId
   keepItem(redoneItem, true)
-  redoneItem.integrate(transaction)
+  redoneItem.integrate(transaction, 0)
   return redoneItem
 }
 
@@ -242,7 +241,7 @@ export class Item extends AbstractStruct {
    * @param {ID | null} origin
    * @param {Item | null} right
    * @param {ID | null} rightOrigin
-   * @param {AbstractType<any>} parent
+   * @param {AbstractType<any>|ID|null} parent Is a type if integrated, is null if it is possible to copy parent from left or right, is ID before integration to search for it.
    * @param {string | null} parentSub
    * @param {AbstractContent} content
    */
@@ -251,7 +250,6 @@ export class Item extends AbstractStruct {
     /**
      * The item that was originally to the left of this item.
      * @type {ID | null}
-     * @readonly
      */
     this.origin = origin
     /**
@@ -266,14 +264,11 @@ export class Item extends AbstractStruct {
     this.right = right
     /**
      * The item that was originally to the right of this item.
-     * @readonly
      * @type {ID | null}
      */
     this.rightOrigin = rightOrigin
     /**
-     * The parent type.
-     * @type {AbstractType<any>}
-     * @readonly
+     * @type {AbstractType<any>|ID|null}
      */
     this.parent = parent
     /**
@@ -282,7 +277,6 @@ export class Item extends AbstractStruct {
      * to insert this item. If `parentSub = null` type._start is the list in
      * which to insert to. Otherwise it is `parent._map`.
      * @type {String | null}
-     * @readonly
      */
     this.parentSub = parentSub
     /**
@@ -311,104 +305,178 @@ export class Item extends AbstractStruct {
   }
 
   /**
+   * Return missing ids, or define missing items and return null.
+   *
    * @param {Transaction} transaction
+   * @param {StructStore} store
+   * @return {null | ID}
    */
-  integrate (transaction) {
+  getMissing (transaction, store) {
+    const origin = this.origin
+    const rightOrigin = this.rightOrigin
+    const parent = /** @type {ID} */ (this.parent)
+
+    if (origin && origin.clock >= getState(store, origin.client)) {
+      return this.origin
+    }
+    if (rightOrigin && rightOrigin.clock >= getState(store, rightOrigin.client)) {
+      return this.rightOrigin
+    }
+    if (parent && parent.constructor === ID && parent.clock >= getState(store, parent.client)) {
+      return parent
+    }
+
+    // We have all missing ids, now find the items
+
+    if (origin) {
+      this.left = getItemCleanEnd(transaction, store, origin)
+      this.origin = this.left.lastId
+    }
+    if (rightOrigin) {
+      this.right = getItemCleanStart(transaction, rightOrigin)
+      this.rightOrigin = this.right.id
+    }
+    if (parent && parent.constructor === ID) {
+      if (parent.clock < getState(store, parent.client)) {
+        const parentItem = getItem(store, parent)
+        if (parentItem.constructor === GC) {
+          this.parent = null
+        } else {
+          this.parent = /** @type {ContentType} */ (parentItem.content).type
+        }
+      } else {
+        return parent
+      }
+    }
+    // only set item if this shouldn't be garbage collected
+    if (!this.parent) {
+      if (this.left && this.left.constructor === Item) {
+        this.parent = this.left.parent
+        this.parentSub = this.left.parentSub
+      }
+      if (this.right && this.right.constructor === Item) {
+        this.parent = this.right.parent
+        this.parentSub = this.right.parentSub
+      }
+    }
+    return null
+  }
+
+  /**
+   * @param {Transaction} transaction
+   * @param {number} offset
+   */
+  integrate (transaction, offset) {
     const store = transaction.doc.store
-    const parent = this.parent
+    if (offset > 0) {
+      this.id.clock += offset
+      this.left = getItemCleanEnd(transaction, store, createID(this.id.client, this.id.clock - 1))
+      this.origin = this.left.lastId
+      this.content = this.content.splice(offset)
+      this.length -= offset
+    }
     const parentSub = this.parentSub
     const length = this.length
-    /**
-     * @type {Item|null}
-     */
-    let left = this.left
-    /**
-     * @type {Item|null}
-     */
-    let o
-    // set o to the first conflicting item
-    if (left !== null) {
-      o = left.right
-    } else if (parentSub !== null) {
-      o = parent._map.get(parentSub) || null
-      while (o !== null && o.left !== null) {
-        o = o.left
-      }
-    } else {
-      o = parent._start
-    }
-    // TODO: use something like DeleteSet here (a tree implementation would be best)
-    /**
-     * @type {Set<Item>}
-     */
-    const conflictingItems = new Set()
-    /**
-     * @type {Set<Item>}
-     */
-    const itemsBeforeOrigin = new Set()
-    // Let c in conflictingItems, b in itemsBeforeOrigin
-    // ***{origin}bbbb{this}{c,b}{c,b}{o}***
-    // Note that conflictingItems is a subset of itemsBeforeOrigin
-    while (o !== null && o !== this.right) {
-      itemsBeforeOrigin.add(o)
-      conflictingItems.add(o)
-      if (compareIDs(this.origin, o.origin)) {
-        // case 1
-        if (o.id.client < this.id.client) {
-          left = o
-          conflictingItems.clear()
-        }
-      } else if (o.origin !== null && itemsBeforeOrigin.has(getItem(store, o.origin))) {
-        // case 2
-        if (o.origin === null || !conflictingItems.has(getItem(store, o.origin))) {
-          left = o
-          conflictingItems.clear()
-        }
-      } else {
-        break
-      }
-      o = o.right
-    }
-    this.left = left
-    // reconnect left/right + update parent map/start if necessary
-    if (left !== null) {
-      const right = left.right
-      this.right = right
-      left.right = this
-    } else {
-      let r
-      if (parentSub !== null) {
-        r = parent._map.get(parentSub) || null
-        while (r !== null && r.left !== null) {
-          r = r.left
-        }
-      } else {
-        r = parent._start
-        parent._start = this
-      }
-      this.right = r
-    }
-    if (this.right !== null) {
-      this.right.left = this
-    } else if (parentSub !== null) {
-      // set as current parent value if right === null and this is parentSub
-      parent._map.set(parentSub, this)
+    const parent = /** @type {AbstractType<any>|null} */ (this.parent)
+
+    if (parent) {
+      /**
+       * @type {Item|null}
+       */
+      let left = this.left
+
+      /**
+       * @type {Item|null}
+       */
+      let o
+      // set o to the first conflicting item
       if (left !== null) {
-        // this is the current attribute value of parent. delete right
-        left.delete(transaction)
+        o = left.right
+      } else if (parentSub !== null) {
+        o = parent._map.get(parentSub) || null
+        while (o !== null && o.left !== null) {
+          o = o.left
+        }
+      } else {
+        o = parent._start
       }
-    }
-    // adjust length of parent
-    if (parentSub === null && this.countable && !this.deleted) {
-      parent._length += length
-    }
-    addStruct(store, this)
-    this.content.integrate(transaction, this)
-    // add parent to transaction.changed
-    addChangedTypeToTransaction(transaction, parent, parentSub)
-    if ((parent._item !== null && parent._item.deleted) || (this.right !== null && parentSub !== null)) {
-      // delete if parent is deleted or if this is not the current attribute value of parent
-      this.delete(transaction)
+      // TODO: use something like DeleteSet here (a tree implementation would be best)
+      // @todo use global set definitions
+      /**
+       * @type {Set<Item>}
+       */
+      const conflictingItems = new Set()
+      /**
+       * @type {Set<Item>}
+       */
+      const itemsBeforeOrigin = new Set()
+      // Let c in conflictingItems, b in itemsBeforeOrigin
+      // ***{origin}bbbb{this}{c,b}{c,b}{o}***
+      // Note that conflictingItems is a subset of itemsBeforeOrigin
+      while (o !== null && o !== this.right) {
+        itemsBeforeOrigin.add(o)
+        conflictingItems.add(o)
+        if (compareIDs(this.origin, o.origin)) {
+          // case 1
+          if (o.id.client < this.id.client) {
+            left = o
+            conflictingItems.clear()
+          }
+        } else if (o.origin !== null && itemsBeforeOrigin.has(getItem(store, o.origin))) {
+          // case 2
+          if (o.origin === null || !conflictingItems.has(getItem(store, o.origin))) {
+            left = o
+            conflictingItems.clear()
+          }
+        } else {
+          break
+        }
+        o = o.right
+      }
+      this.left = left
+      // reconnect left/right + update parent map/start if necessary
+      if (left !== null) {
+        const right = left.right
+        this.right = right
+        left.right = this
+      } else {
+        let r
+        if (parentSub !== null) {
+          r = parent._map.get(parentSub) || null
+          while (r !== null && r.left !== null) {
+            r = r.left
+          }
+        } else {
+          r = parent._start
+          parent._start = this
+        }
+        this.right = r
+      }
+      if (this.right !== null) {
+        this.right.left = this
+      } else if (parentSub !== null) {
+        // set as current parent value if right === null and this is parentSub
+        parent._map.set(parentSub, this)
+        if (left !== null) {
+          // this is the current attribute value of parent. delete right
+          left.delete(transaction)
+        }
+      }
+      // adjust length of parent
+      if (parentSub === null && this.countable && !this.deleted) {
+        parent._length += length
+      }
+      addStruct(store, this)
+      this.content.integrate(transaction, this)
+      // add parent to transaction.changed
+      addChangedTypeToTransaction(transaction, parent, parentSub)
+      if ((parent._item !== null && parent._item.deleted) || (this.right !== null && parentSub !== null)) {
+        // delete if parent is deleted or if this is not the current attribute value of parent
+        this.delete(transaction)
+      }
+    } else {
+      // parent is not defined. Integrate GC struct instead
+      new GC(this.id, this.length).integrate(transaction, 0)
     }
   }
 
@@ -481,7 +549,7 @@ export class Item extends AbstractStruct {
    */
   delete (transaction) {
     if (!this.deleted) {
-      const parent = this.parent
+      const parent = /** @type {AbstractType<any>} */ (this.parent)
       // adjust the length of parent
       if (this.countable && this.parentSub === null) {
         parent._length -= this.length
@@ -534,7 +602,7 @@ export class Item extends AbstractStruct {
       writeID(encoder, rightOrigin)
     }
     if (origin === null && rightOrigin === null) {
-      const parent = this.parent
+      const parent = /** @type {AbstractType<any>} */ (this.parent)
       const parentItem = parent._item
       if (parentItem === null) {
         // parent type on y._map
@@ -670,122 +738,49 @@ export class AbstractContent {
 }
 
 /**
- * @private
+ * @param {decoding.Decoder} decoder
+ * @param {ID} id
+ * @param {number} info
+ * @param {Doc} doc
  */
-export class ItemRef extends AbstractStructRef {
+export const readItem = (decoder, id, info, doc) => {
   /**
-   * @param {decoding.Decoder} decoder
-   * @param {ID} id
-   * @param {number} info
+   * The item that was originally to the left of this item.
+   * @type {ID | null}
    */
-  constructor (decoder, id, info) {
-    super(id)
-    /**
-     * The item that was originally to the left of this item.
-     * @type {ID | null}
-     */
-    this.left = (info & binary.BIT8) === binary.BIT8 ? readID(decoder) : null
-    /**
-     * The item that was originally to the right of this item.
-     * @type {ID | null}
-     */
-    this.right = (info & binary.BIT7) === binary.BIT7 ? readID(decoder) : null
-    const canCopyParentInfo = (info & (binary.BIT7 | binary.BIT8)) === 0
-    const hasParentYKey = canCopyParentInfo ? decoding.readVarUint(decoder) === 1 : false
-    /**
-     * If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
-     * and we read the next string as parentYKey.
-     * It indicates how we store/retrieve parent from `y.share`
-     * @type {string|null}
-     */
-    this.parentYKey = canCopyParentInfo && hasParentYKey ? decoding.readVarString(decoder) : null
-    /**
-     * The parent type.
-     * @type {ID | null}
-     */
-    this.parent = canCopyParentInfo && !hasParentYKey ? readID(decoder) : null
-    /**
-     * If the parent refers to this item with some kind of key (e.g. YMap, the
-     * key is specified here. The key is then used to refer to the list in which
-     * to insert this item. If `parentSub = null` type._start is the list in
-     * which to insert to. Otherwise it is `parent._map`.
-     * @type {String | null}
-     */
-    this.parentSub = canCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoding.readVarString(decoder) : null
-    const missing = this._missing
-    // Only add items to missing if they don't preceed this item (indicating that it has already been added).
-    // @todo Creating missing items could be done outside this constructor
-    if (this.left !== null && this.left.client !== id.client) {
-      missing.push(this.left)
-    }
-    if (this.right !== null && this.right.client !== id.client) {
-      missing.push(this.right)
-    }
-    if (this.parent !== null) {
-      missing.push(this.parent)
-    }
-    /**
-     * @type {AbstractContent}
-     */
-    this.content = readItemContent(decoder, info)
-    this.length = this.content.getLength()
-  }
+  const origin = (info & binary.BIT8) === binary.BIT8 ? readID(decoder) : null
+  /**
+   * The item that was originally to the right of this item.
+   * @type {ID | null}
+   */
+  const rightOrigin = (info & binary.BIT7) === binary.BIT7 ? readID(decoder) : null
+  const canCopyParentInfo = (info & (binary.BIT7 | binary.BIT8)) === 0
+  const hasParentYKey = canCopyParentInfo ? decoding.readVarUint(decoder) === 1 : false
+  /**
+   * If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
+   * and we read the next string as parentYKey.
+   * It indicates how we store/retrieve parent from `y.share`
+   * @type {string|null}
+   */
+  const parentYKey = canCopyParentInfo && hasParentYKey ? decoding.readVarString(decoder) : null
+  /**
+   * The parent type.
+   * @type {ID | AbstractType<any> | null}
+   */
+  const parent = canCopyParentInfo && !hasParentYKey ? readID(decoder) : (parentYKey ? doc.get(parentYKey) : null)
+  /**
+   * If the parent refers to this item with some kind of key (e.g. YMap, the
+   * key is specified here. The key is then used to refer to the list in which
+   * to insert this item. If `parentSub = null` type._start is the list in
+   * which to insert to. Otherwise it is `parent._map`.
+   * @type {String | null}
+   */
+  const parentSub = canCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoding.readVarString(decoder) : null
 
   /**
-   * @param {Transaction} transaction
-   * @param {StructStore} store
-   * @param {number} offset
-   * @return {Item|GC}
+   * @type {AbstractContent}
    */
-  toStruct (transaction, store, offset) {
-    if (offset > 0) {
-      this.id.clock += offset
-      this.left = createID(this.id.client, this.id.clock - 1)
-      this.content = this.content.splice(offset)
-      this.length -= offset
-    }
+  const content = readItemContent(decoder, info)
 
-    const left = this.left === null ? null : getItemCleanEnd(transaction, store, this.left)
-    const right = this.right === null ? null : getItemCleanStart(transaction, this.right)
-    const parentId = this.parent
-    let parent = null
-    let parentSub = this.parentSub
-    if (parentId !== null) {
-      const parentItem = getItem(store, parentId)
-      // Edge case: toStruct is called with an offset > 0. In this case left is defined.
-      // Depending in which order structs arrive, left may be GC'd and the parent not
-      // deleted. This is why we check if left is GC'd. Strictly we don't have
-      // to check if right is GC'd, but we will in case we run into future issues
-      if (!parentItem.deleted && (left === null || left.constructor !== GC) && (right === null || right.constructor !== GC)) {
-        parent = /** @type {ContentType} */ (parentItem.content).type
-      }
-    } else if (this.parentYKey !== null) {
-      parent = transaction.doc.get(this.parentYKey)
-    } else if (left !== null) {
-      if (left.constructor !== GC) {
-        parent = left.parent
-        parentSub = left.parentSub
-      }
-    } else if (right !== null) {
-      if (right.constructor !== GC) {
-        parent = right.parent
-        parentSub = right.parentSub
-      }
-    } else {
-      throw error.unexpectedCase()
-    }
-
-    return parent === null
-      ? new GC(this.id, this.length)
-      : new Item(
-        this.id,
-        left,
-        left && left.lastId,
-        right,
-        right && right.id,
-        parent,
-        parentSub,
-        this.content
-      )
-  }
+  return new Item(id, null, origin, null, rightOrigin, parent, parentSub, content)
 }

@@ -209,16 +209,28 @@ export const testFormattingRemovedInMidText = tc => {
  * @param {t.TestCase} tc
  */
 export const testLargeFragmentedDocument = tc => {
-  const { text0, testConnector } = init(tc, { users: 2 })
-  // @ts-ignore
-  text0.doc.transact(() => {
-    for (let i = 0; i < 1000000; i++) {
-      text0.insert(0, '0')
-    }
-  })
-  t.measureTime('time to apply', () => {
-    testConnector.flushAllMessages()
-  })
+  const itemsToInsert = 1000000
+  let update = /** @type {any} */ (null)
+  ;(() => {
+    const doc1 = new Y.Doc()
+    const text0 = doc1.getText('txt')
+    t.measureTime(`time to insert ${itemsToInsert}`, () => {
+      doc1.transact(() => {
+        for (let i = 0; i < itemsToInsert; i++) {
+          text0.insert(0, '0')
+        }
+      })
+    })
+    t.measureTime('time to encode', () => {
+      update = Y.encodeStateAsUpdate(doc1)
+    })
+  })()
+  ;(() => {
+    const doc2 = new Y.Doc()
+    t.measureTime('time to apply', () => {
+      Y.applyUpdate(doc2, update)
+    })
+  })()
 }
 
 // RANDOM TESTS

@@ -153,7 +153,7 @@ const insertNegatedAttributes = (transaction, parent, currPos, negatedAttributes
   const ownClientId = doc.clientID
   for (const [key, val] of negatedAttributes) {
     left = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
-    left.integrate(transaction)
+    left.integrate(transaction, 0)
   }
   currPos.left = left
   currPos.right = right
@@ -228,7 +228,7 @@ const insertAttributes = (transaction, parent, currPos, currentAttributes, attri
       negatedAttributes.set(key, currentVal)
       const { left, right } = currPos
       currPos.left = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
-      currPos.left.integrate(transaction)
+      currPos.left.integrate(transaction, 0)
     }
   }
   return negatedAttributes
@@ -259,7 +259,7 @@ const insertText = (transaction, parent, currPos, currentAttributes, text, attri
   const content = text.constructor === String ? new ContentString(/** @type {string} */ (text)) : new ContentEmbed(text)
   const { left, right } = currPos
   currPos.left = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, content)
-  currPos.left.integrate(transaction)
+  currPos.left.integrate(transaction, 0)
   return insertNegatedAttributes(transaction, parent, currPos, negatedAttributes)
 }
 
@@ -320,7 +320,7 @@ const formatText = (transaction, parent, currPos, currentAttributes, length, att
       newlines += '\n'
     }
     left = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentString(newlines))
-    left.integrate(transaction)
+    left.integrate(transaction, 0)
   }
   currPos.left = left
   currPos.right = right

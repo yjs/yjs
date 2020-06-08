@@ -16,7 +16,7 @@ export const isParentOf = (parent, child) => {
     if (child.parent === parent) {
       return true
     }
-    child = child.parent._item
+    child = /** @type {AbstractType<any>} */ (child.parent)._item
   }
   return false
 }

@@ -97,7 +97,7 @@ export class YXmlTreeWalker {
             } else if (n.parent === this._root) {
               n = null
             } else {
-              n = n.parent._item
+              n = /** @type {AbstractType<any>} */ (n.parent)._item
             }
           }
         }

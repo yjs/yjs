@@ -53,7 +53,7 @@ export const callTypeObservers = (type, transaction, event) => {
     if (type._item === null) {
       break
     }
-    type = type._item.parent
+    type = /** @type {AbstractType<any>} */ (type._item.parent)
   }
   callEventHandlerListeners(changedType._eH, event, transaction)
 }
@@ -386,7 +386,7 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
   const packJsonContent = () => {
     if (jsonContent.length > 0) {
       left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentAny(jsonContent))
-      left.integrate(transaction)
+      left.integrate(transaction, 0)
       jsonContent = []
     }
   }
@@ -405,12 +405,12 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
           case Uint8Array:
           case ArrayBuffer:
             left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))))
-            left.integrate(transaction)
+            left.integrate(transaction, 0)
             break
           default:
             if (c instanceof AbstractType) {
               left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentType(c))
-              left.integrate(transaction)
+              left.integrate(transaction, 0)
             } else {
               throw new Error('Unexpected content type in insert operation')
             }
@@ -537,7 +537,7 @@ export const typeMapSet = (transaction, parent, key, value) => {
         }
     }
   }
-  new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, null, null, parent, key, content).integrate(transaction)
+  new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, null, null, parent, key, content).integrate(transaction, 0)
 }
 
 /**

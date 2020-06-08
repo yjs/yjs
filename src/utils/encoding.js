@@ -16,8 +16,6 @@
 
 import {
   findIndexSS,
-  GCRef,
-  ItemRef,
   writeID,
   readID,
   getState,
@@ -27,6 +25,7 @@ import {
   writeDeleteSet,
   createDeleteSetFromStructStore,
   transact,
+  readItem,
   Doc, Transaction, GC, Item, StructStore, ID // eslint-disable-line
 } from '../internals.js'
 
@@ -80,7 +79,9 @@ export const writeClientsStructs = (encoder, store, _sm) => {
   })
   // write # states that were updated
   encoding.writeVarUint(encoder, sm.size)
-  sm.forEach((clock, client) => {
+  // Write items with higher client ids first
+  // This heavily improves the conflict algorithm.
+  Array.from(sm.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, clock]) => {
     // @ts-ignore
     writeStructs(encoder, store.clients.get(client), client, clock)
   })
@@ -88,13 +89,14 @@ export const writeClientsStructs = (encoder, store, _sm) => {
 
 /**
  * @param {decoding.Decoder} decoder The decoder object to read data from.
- * @param {Map<number,Array<GCRef|ItemRef>>} clientRefs
- * @return {Map<number,Array<GCRef|ItemRef>>}
+ * @param {Map<number,Array<GC|Item>>} clientRefs
+ * @param {Doc} doc
+ * @return {Map<number,Array<GC|Item>>}
  *
  * @private
  * @function
  */
-export const readClientsStructRefs = (decoder, clientRefs) => {
+export const readClientsStructRefs = (decoder, clientRefs, doc) => {
   const numOfStateUpdates = decoding.readVarUint(decoder)
   for (let i = 0; i < numOfStateUpdates; i++) {
     const numberOfStructs = decoding.readVarUint(decoder)
@@ -102,15 +104,16 @@ export const readClientsStructRefs = (decoder, clientRefs) => {
     const nextIdClient = nextID.client
     let nextIdClock = nextID.clock
     /**
-     * @type {Array<GCRef|ItemRef>}
+     * @type {Array<GC|Item>}
      */
     const refs = []
     clientRefs.set(nextIdClient, refs)
     for (let i = 0; i < numberOfStructs; i++) {
       const info = decoding.readUint8(decoder)
-      const ref = (binary.BITS5 & info) === 0 ? new GCRef(decoder, createID(nextIdClient, nextIdClock), info) : new ItemRef(decoder, createID(nextIdClient, nextIdClock), info)
-      refs.push(ref)
-      nextIdClock += ref.length
+      const id = createID(nextIdClient, nextIdClock)
+      const struct = (binary.BITS5 & info) === 0 ? new GC(id, decoding.readVarUint(decoder)) : readItem(decoder, id, info, doc)
+      refs.push(struct)
+      nextIdClock += struct.length
     }
   }
   return clientRefs
@@ -155,12 +158,12 @@ const resumeStructIntegration = (transaction, store) => {
       }
     }
     const ref = stack[stack.length - 1]
-    const m = ref._missing
     const refID = ref.id
     const client = refID.client
     const refClock = refID.clock
     const localClock = getState(store, client)
     const offset = refClock < localClock ? localClock - refClock : 0
+    const missing = ref.getMissing(transaction, store)
     if (refClock + offset !== localClock) {
       // A previous message from this client is missing
       // check if there is a pending structRef with a smaller clock and switch them
@@ -180,27 +183,21 @@ const resumeStructIntegration = (transaction, store) => {
       // wait until missing struct is available
       return
     }
-    while (m.length > 0) {
-      const missing = m[m.length - 1]
-      if (getState(store, missing.client) <= missing.clock) {
-        const client = missing.client
-        // get the struct reader that has the missing struct
-        const structRefs = clientsStructRefs.get(client)
-        if (structRefs === undefined) {
-          // This update message causally depends on another update message.
-          return
-        }
-        stack.push(structRefs.refs[structRefs.i++])
-        if (structRefs.i === structRefs.refs.length) {
-          clientsStructRefs.delete(client)
-        }
-        break
+    if (missing) {
+      const client = missing.client
+      // get the struct reader that has the missing struct
+      const structRefs = clientsStructRefs.get(client)
+      if (structRefs === undefined) {
+        // This update message causally depends on another update message.
+        return
       }
-      ref._missing.pop()
-    }
-    if (m.length === 0) {
+      stack.push(structRefs.refs[structRefs.i++])
+      if (structRefs.i === structRefs.refs.length) {
+        clientsStructRefs.delete(client)
+      }
+    } else {
       if (offset < ref.length) {
-        ref.toStruct(transaction, store, offset).integrate(transaction)
+        ref.integrate(transaction, offset)
       }
       stack.pop()
     }
@@ -233,7 +230,7 @@ export const writeStructsFromTransaction = (encoder, transaction) => writeClient
 
 /**
  * @param {StructStore} store
- * @param {Map<number, Array<GCRef|ItemRef>>} clientsStructsRefs
+ * @param {Map<number, Array<GC|Item>>} clientsStructsRefs
  *
  * @private
  * @function
@@ -270,7 +267,7 @@ const mergeReadStructsIntoPendingReads = (store, clientsStructsRefs) => {
  */
 export const readStructs = (decoder, transaction, store) => {
   const clientsStructRefs = new Map()
-  readClientsStructRefs(decoder, clientsStructRefs)
+  readClientsStructRefs(decoder, clientsStructRefs, transaction.doc)
   mergeReadStructsIntoPendingReads(store, clientsStructRefs)
   resumeStructIntegration(transaction, store)
   tryResumePendingDeleteReaders(transaction, store)

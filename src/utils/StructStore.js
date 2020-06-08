@@ -2,7 +2,7 @@
 import {
   GC,
   splitItem,
-  AbstractStruct, GCRef, ItemRef, Transaction, ID, Item // eslint-disable-line
+  AbstractStruct, Transaction, ID, Item // eslint-disable-line
 } from '../internals.js'
 
 import * as math from 'lib0/math.js'
@@ -21,13 +21,13 @@ export class StructStore {
      * We could shift the array of refs instead, but shift is incredible
      * slow in Chrome for arrays with more than 100k elements
      * @see tryResumePendingStructRefs
-     * @type {Map<number,{i:number,refs:Array<GCRef|ItemRef>}>}
+     * @type {Map<number,{i:number,refs:Array<GC|Item>}>}
      */
     this.pendingClientsStructRefs = new Map()
     /**
      * Stack of pending structs waiting for struct dependencies
      * Maximum length of stack is structReaders.size
-     * @type {Array<GCRef|ItemRef>}
+     * @type {Array<GC|Item>}
      */
     this.pendingStack = []
     /**
@@ -129,7 +129,10 @@ export const findIndexSS = (structs, clock) => {
   if (mid.id.clock === clock) {
     return right
   }
-  let midindex = math.floor((clock / (midclock + mid.length)) * right) // pivoting the search
+  // @todo does it even make sense to pivot the search?
+  // If a good split misses, it might actually increase the time to find the correct item.
+  // Currently, the only advantage is that search with pivoting might find the item on the first try.
+  let midindex = math.floor((clock / (midclock + mid.length - 1)) * right) // pivoting the search
   while (left <= right) {
     mid = structs[midindex]
     midclock = mid.id.clock
