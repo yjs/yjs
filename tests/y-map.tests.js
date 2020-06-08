@@ -60,6 +60,7 @@ export const testBasicMapTests = tc => {
   t.assert(map0.get('boolean1') === true, 'client 0 computed the change (boolean)')
   t.compare(map0.get('object'), { key: { key2: 'value' } }, 'client 0 computed the change (object)')
   t.assert(map0.get('y-map').get('y-array').get(0) === -1, 'client 0 computed the change (type)')
+  t.assert(map0.size === 6, 'client 0 map has correct size')
 
   users[2].connect()
   testConnector.flushAllMessages()
@@ -70,6 +71,7 @@ export const testBasicMapTests = tc => {
   t.assert(map1.get('boolean1') === true, 'client 1 computed the change (boolean)')
   t.compare(map1.get('object'), { key: { key2: 'value' } }, 'client 1 received the update (object)')
   t.assert(map1.get('y-map').get('y-array').get(0) === -1, 'client 1 received the update (type)')
+  t.assert(map1.size === 6, 'client 1 map has correct size')
 
   // compare disconnected user
   t.assert(map2.get('number') === 1, 'client 2 received the update (number) - was disconnected')
@@ -155,6 +157,20 @@ export const testGetAndSetOfMapPropertyWithConflict = tc => {
     t.compare(u.get('stuff'), 'c1')
   }
   compare(users)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testSizeAndDeleteOfMapProperty = tc => {
+  const { map0 } = init(tc, { users: 1 })
+  map0.set('stuff', 'c0')
+  map0.set('otherstuff', 'c1')
+  t.assert(map0.size === 2, `map size is ${map0.size} expected 2`)
+  map0.delete('stuff')
+  t.assert(map0.size === 1, `map size after delete is ${map0.size}, expected 1`)
+  map0.delete('otherstuff')
+  t.assert(map0.size === 0, `map size after delete is ${map0.size}, expected 0`)
 }
 
 /**
