@@ -45,13 +45,23 @@ export class YMapEvent extends YEvent {
  * @implements {Iterable<T>}
  */
 export class YMap extends AbstractType {
-  constructor () {
+  /**
+   *
+   * @param {Iterable<readonly [string, any]>=} entries - an optional iterable to initialize the YMap
+   */
+  constructor (entries) {
     super()
     /**
      * @type {Map<string,any>?}
      * @private
      */
-    this._prelimContent = new Map()
+    this._prelimContent = null
+
+    if (entries === undefined) {
+      this._prelimContent = new Map()
+    } else {
+      this._prelimContent = new Map(entries)
+    }
   }
 
   /**
