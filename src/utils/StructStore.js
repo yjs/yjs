@@ -126,7 +126,7 @@ export const findIndexSS = (structs, clock) => {
   let right = structs.length - 1
   let mid = structs[right]
   let midclock = mid.id.clock
-  if (mid.id.clock === clock) {
+  if (midclock === clock) {
     return right
   }
   // @todo does it even make sense to pivot the search?

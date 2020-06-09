@@ -290,8 +290,6 @@ export class Item extends AbstractStruct {
      */
     this.content = content
     this.info = this.content.isCountable() ? binary.BIT2 : 0
-
-    // this.keep = false
   }
 
   /**
@@ -330,50 +328,34 @@ export class Item extends AbstractStruct {
   }
 
   /**
-   * Return missing ids, or define missing items and return null.
+   * Return the creator clientID of the missing op or define missing items and return null.
    *
    * @param {Transaction} transaction
    * @param {StructStore} store
-   * @return {null | ID}
+   * @return {null | number}
    */
   getMissing (transaction, store) {
-    const origin = this.origin
-    const rightOrigin = this.rightOrigin
-    const parent = /** @type {ID} */ (this.parent)
-
-    if (origin && origin.clock >= getState(store, origin.client)) {
-      return this.origin
+    if (this.origin && this.origin.client !== this.id.client && this.origin.clock >= getState(store, this.origin.client)) {
+      return this.origin.client
     }
-    if (rightOrigin && rightOrigin.clock >= getState(store, rightOrigin.client)) {
-      return this.rightOrigin
+    if (this.rightOrigin && this.rightOrigin.client !== this.id.client && this.rightOrigin.clock >= getState(store, this.rightOrigin.client)) {
+      return this.rightOrigin.client
     }
-    if (parent && parent.constructor === ID && parent.clock >= getState(store, parent.client)) {
-      return parent
+    if (this.parent && this.parent.constructor === ID && this.id.client !== this.parent.client && this.parent.clock >= getState(store, this.parent.client)) {
+      return this.parent.client
     }
 
     // We have all missing ids, now find the items
 
-    if (origin) {
-      this.left = getItemCleanEnd(transaction, store, origin)
+    if (this.origin) {
+      this.left = getItemCleanEnd(transaction, store, this.origin)
       this.origin = this.left.lastId
     }
-    if (rightOrigin) {
-      this.right = getItemCleanStart(transaction, rightOrigin)
+    if (this.rightOrigin) {
+      this.right = getItemCleanStart(transaction, this.rightOrigin)
       this.rightOrigin = this.right.id
     }
-    if (parent && parent.constructor === ID) {
-      if (parent.clock < getState(store, parent.client)) {
-        const parentItem = getItem(store, parent)
-        if (parentItem.constructor === GC) {
-          this.parent = null
-        } else {
-          this.parent = /** @type {ContentType} */ (parentItem.content).type
-        }
-      } else {
-        return parent
-      }
-    }
-    // only set item if this shouldn't be garbage collected
+    // only set parent if this shouldn't be garbage collected
     if (!this.parent) {
       if (this.left && this.left.constructor === Item) {
         this.parent = this.left.parent
@@ -382,6 +364,13 @@ export class Item extends AbstractStruct {
       if (this.right && this.right.constructor === Item) {
         this.parent = this.right.parent
         this.parentSub = this.right.parentSub
+      }
+    } else if (this.parent.constructor === ID) {
+      const parentItem = getItem(store, this.parent)
+      if (parentItem.constructor === GC) {
+        this.parent = null
+      } else {
+        this.parent = /** @type {ContentType} */ (parentItem.content).type
       }
     }
     return null
@@ -786,24 +775,11 @@ export const readItem = (decoder, id, info, doc) => {
    * @type {string|null}
    */
   const parentYKey = canCopyParentInfo && hasParentYKey ? decoding.readVarString(decoder) : null
-  /**
-   * The parent type.
-   * @type {ID | AbstractType<any> | null}
-   */
-  const parent = canCopyParentInfo && !hasParentYKey ? readID(decoder) : (parentYKey ? doc.get(parentYKey) : null)
-  /**
-   * If the parent refers to this item with some kind of key (e.g. YMap, the
-   * key is specified here. The key is then used to refer to the list in which
-   * to insert this item. If `parentSub = null` type._start is the list in
-   * which to insert to. Otherwise it is `parent._map`.
-   * @type {String | null}
-   */
-  const parentSub = canCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoding.readVarString(decoder) : null
 
-  /**
-   * @type {AbstractContent}
-   */
-  const content = readItemContent(decoder, info)
-
-  return new Item(id, null, origin, null, rightOrigin, parent, parentSub, content)
+  return new Item(
+    id, null, origin, null, rightOrigin,
+    canCopyParentInfo && !hasParentYKey ? readID(decoder) : (parentYKey ? doc.get(parentYKey) : null), // parent
+    canCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoding.readVarString(decoder) : null, // parentSub
+    /** @type {AbstractContent} */ (readItemContent(decoder, info)) // item content
+  )
 }

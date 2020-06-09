@@ -100,20 +100,18 @@ export const readClientsStructRefs = (decoder, clientRefs, doc) => {
   const numOfStateUpdates = decoding.readVarUint(decoder)
   for (let i = 0; i < numOfStateUpdates; i++) {
     const numberOfStructs = decoding.readVarUint(decoder)
-    const nextID = readID(decoder)
-    const nextIdClient = nextID.client
-    let nextIdClock = nextID.clock
     /**
      * @type {Array<GC|Item>}
      */
     const refs = []
-    clientRefs.set(nextIdClient, refs)
+    let { client, clock } = readID(decoder)
+    let info, struct
+    clientRefs.set(client, refs)
     for (let i = 0; i < numberOfStructs; i++) {
-      const info = decoding.readUint8(decoder)
-      const id = createID(nextIdClient, nextIdClock)
-      const struct = (binary.BITS5 & info) === 0 ? new GC(id, decoding.readVarUint(decoder)) : readItem(decoder, id, info, doc)
+      info = decoding.readUint8(decoder)
+      struct = (binary.BITS5 & info) === 0 ? new GC(createID(client, clock), decoding.readVarUint(decoder)) : readItem(decoder, createID(client, clock), info, doc)
       refs.push(struct)
-      nextIdClock += struct.length
+      clock += struct.length
     }
   }
   return clientRefs
@@ -147,14 +145,21 @@ export const readClientsStructRefs = (decoder, clientRefs, doc) => {
 const resumeStructIntegration = (transaction, store) => {
   const stack = store.pendingStack
   const clientsStructRefs = store.pendingClientsStructRefs
+  // sort them so that we take the higher id first, in case of conflicts the lower id will probably not conflict with the id from the higher user.
+  const clientsStructRefsIds = Array.from(clientsStructRefs.keys()).sort((a, b) => a - b)
+  let curStructsTarget = /** @type {{i:number,refs:Array<GC|Item>}} */ (clientsStructRefs.get(clientsStructRefsIds[clientsStructRefsIds.length - 1]))
   // iterate over all struct readers until we are done
-  while (stack.length !== 0 || clientsStructRefs.size !== 0) {
+  while (stack.length !== 0 || clientsStructRefsIds.length > 0) {
     if (stack.length === 0) {
       // take any first struct from clientsStructRefs and put it on the stack
-      const [client, structRefs] = clientsStructRefs.entries().next().value
-      stack.push(structRefs.refs[structRefs.i++])
-      if (structRefs.refs.length === structRefs.i) {
-        clientsStructRefs.delete(client)
+      if (curStructsTarget.i < curStructsTarget.refs.length) {
+        stack.push(curStructsTarget.refs[curStructsTarget.i++])
+      } else {
+        clientsStructRefsIds.pop()
+        if (clientsStructRefsIds.length > 0) {
+          curStructsTarget = /** @type {{i:number,refs:Array<GC|Item>}} */ (clientsStructRefs.get(clientsStructRefsIds[clientsStructRefsIds.length - 1]))
+        }
+        continue
       }
     }
     const ref = stack[stack.length - 1]
@@ -163,12 +168,11 @@ const resumeStructIntegration = (transaction, store) => {
     const refClock = refID.clock
     const localClock = getState(store, client)
     const offset = refClock < localClock ? localClock - refClock : 0
-    const missing = ref.getMissing(transaction, store)
     if (refClock + offset !== localClock) {
       // A previous message from this client is missing
       // check if there is a pending structRef with a smaller clock and switch them
-      const structRefs = clientsStructRefs.get(client)
-      if (structRefs !== undefined) {
+      const structRefs = clientsStructRefs.get(client) || { refs: [], i: 0 }
+      if (structRefs.refs.length !== structRefs.i) {
         const r = structRefs.refs[structRefs.i]
         if (r.id.clock < refClock) {
           // put ref with smaller clock on stack instead and continue
@@ -183,18 +187,15 @@ const resumeStructIntegration = (transaction, store) => {
       // wait until missing struct is available
       return
     }
-    if (missing) {
-      const client = missing.client
+    const missing = ref.getMissing(transaction, store)
+    if (missing !== null) {
       // get the struct reader that has the missing struct
-      const structRefs = clientsStructRefs.get(client)
-      if (structRefs === undefined) {
+      const structRefs = clientsStructRefs.get(missing) || { refs: [], i: 0 }
+      if (structRefs.refs.length === structRefs.i) {
         // This update message causally depends on another update message.
         return
       }
       stack.push(structRefs.refs[structRefs.i++])
-      if (structRefs.i === structRefs.refs.length) {
-        clientsStructRefs.delete(client)
-      }
     } else {
       if (offset < ref.length) {
         ref.integrate(transaction, offset)
@@ -202,6 +203,7 @@ const resumeStructIntegration = (transaction, store) => {
       stack.pop()
     }
   }
+  store.pendingClientsStructRefs.clear()
 }
 
 /**
@@ -254,6 +256,21 @@ const mergeReadStructsIntoPendingReads = (store, clientsStructsRefs) => {
 }
 
 /**
+ * @param {Map<number,{refs:Array<GC|Item>,i:number}>} pendingClientsStructRefs
+ */
+const cleanupPendingStructs = pendingClientsStructRefs => {
+  // cleanup pendingClientsStructs if not fully finished
+  for (const [client, refs] of pendingClientsStructRefs) {
+    if (refs.i === refs.refs.length) {
+      pendingClientsStructRefs.delete(client)
+    } else {
+      refs.refs.splice(0, refs.i)
+      refs.i = 0
+    }
+  }
+}
+
+/**
  * Read the next Item in a Decoder and fill this Item with the read data.
  *
  * This is called when data is received from a remote peer.
@@ -270,6 +287,7 @@ export const readStructs = (decoder, transaction, store) => {
   readClientsStructRefs(decoder, clientsStructRefs, transaction.doc)
   mergeReadStructsIntoPendingReads(store, clientsStructRefs)
   resumeStructIntegration(transaction, store)
+  cleanupPendingStructs(store.pendingClientsStructRefs)
   tryResumePendingDeleteReaders(transaction, store)
 }
 

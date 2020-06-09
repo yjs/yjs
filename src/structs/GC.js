@@ -52,7 +52,7 @@ export class GC extends AbstractStruct {
   /**
    * @param {Transaction} transaction
    * @param {StructStore} store
-   * @return {null | ID}
+   * @return {null | number}
    */
   getMissing (transaction, store) {
     return null
