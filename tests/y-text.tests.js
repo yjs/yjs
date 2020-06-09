@@ -205,29 +205,38 @@ export const testFormattingRemovedInMidText = tc => {
   t.assert(Y.getTypeChildren(text0).length === 3)
 }
 
+const tryGc = () => {
+  if (typeof global !== 'undefined' && global.gc) {
+    global.gc()
+  }
+}
+
 /**
  * @param {t.TestCase} tc
  */
 export const testLargeFragmentedDocument = tc => {
-  const itemsToInsert = 1000000
+  const itemsToInsert = 2000000
   let update = /** @type {any} */ (null)
   ;(() => {
     const doc1 = new Y.Doc()
     const text0 = doc1.getText('txt')
-    t.measureTime(`time to insert ${itemsToInsert}`, () => {
+    tryGc()
+    t.measureTime(`time to insert ${itemsToInsert} items`, () => {
       doc1.transact(() => {
         for (let i = 0; i < itemsToInsert; i++) {
           text0.insert(0, '0')
         }
       })
     })
-    t.measureTime('time to encode', () => {
+    tryGc()
+    t.measureTime('time to encode document', () => {
       update = Y.encodeStateAsUpdate(doc1)
     })
   })()
   ;(() => {
     const doc2 = new Y.Doc()
-    t.measureTime('time to apply', () => {
+    tryGc()
+    t.measureTime(`time to apply ${itemsToInsert} updates`, () => {
       Y.applyUpdate(doc2, update)
     })
   })()

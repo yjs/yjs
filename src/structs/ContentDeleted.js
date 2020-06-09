@@ -68,7 +68,7 @@ export class ContentDeleted {
    */
   integrate (transaction, item) {
     addToDeleteSet(transaction.deleteSet, item.id, this.len)
-    item.deleted = true
+    item.markDeleted()
   }
 
   /**

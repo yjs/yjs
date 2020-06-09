@@ -100,7 +100,7 @@ export const splitItem = (transaction, leftItem, diff) => {
     leftItem.content.splice(diff)
   )
   if (leftItem.deleted) {
-    rightItem.deleted = true
+    rightItem.markDeleted()
   }
   if (leftItem.keep) {
     rightItem.keep = true
@@ -280,11 +280,6 @@ export class Item extends AbstractStruct {
      */
     this.parentSub = parentSub
     /**
-     * Whether this item was deleted or not.
-     * @type {Boolean}
-     */
-    this.deleted = false
-    /**
      * If this type's effect is reundone this type refers to the type that undid
      * this operation.
      * @type {ID | null}
@@ -294,14 +289,44 @@ export class Item extends AbstractStruct {
      * @type {AbstractContent}
      */
     this.content = content
-    /**
-     * If true, do not garbage collect this Item.
-     */
-    this.keep = false
+    this.info = this.content.isCountable() ? binary.BIT2 : 0
+
+    // this.keep = false
+  }
+
+  /**
+   * If true, do not garbage collect this Item.
+   */
+  get keep () {
+    return (this.info & binary.BIT1) > 0
+  }
+
+  set keep (doKeep) {
+    if (this.keep !== doKeep) {
+      this.info ^= binary.BIT1
+    }
   }
 
   get countable () {
-    return this.content.isCountable()
+    return (this.info & binary.BIT2) > 0
+  }
+
+  /**
+   * Whether this item was deleted or not.
+   * @type {Boolean}
+   */
+  get deleted () {
+    return (this.info & binary.BIT3) > 0
+  }
+
+  set deleted (doDelete) {
+    if (this.deleted !== doDelete) {
+      this.info ^= binary.BIT3
+    }
+  }
+
+  markDeleted () {
+    this.info |= binary.BIT3
   }
 
   /**
@@ -367,110 +392,108 @@ export class Item extends AbstractStruct {
    * @param {number} offset
    */
   integrate (transaction, offset) {
-    const store = transaction.doc.store
     if (offset > 0) {
       this.id.clock += offset
-      this.left = getItemCleanEnd(transaction, store, createID(this.id.client, this.id.clock - 1))
+      this.left = getItemCleanEnd(transaction, transaction.doc.store, createID(this.id.client, this.id.clock - 1))
       this.origin = this.left.lastId
       this.content = this.content.splice(offset)
       this.length -= offset
     }
-    const parentSub = this.parentSub
-    const length = this.length
-    const parent = /** @type {AbstractType<any>|null} */ (this.parent)
 
-    if (parent) {
-      /**
-       * @type {Item|null}
-       */
-      let left = this.left
+    if (this.parent) {
+      if ((!this.left && (!this.right || this.right.left !== null)) || (this.left && this.left.right !== this.right)) {
+        /**
+         * @type {Item|null}
+         */
+        let left = this.left
 
-      /**
-       * @type {Item|null}
-       */
-      let o
-      // set o to the first conflicting item
-      if (left !== null) {
-        o = left.right
-      } else if (parentSub !== null) {
-        o = parent._map.get(parentSub) || null
-        while (o !== null && o.left !== null) {
-          o = o.left
-        }
-      } else {
-        o = parent._start
-      }
-      // TODO: use something like DeleteSet here (a tree implementation would be best)
-      // @todo use global set definitions
-      /**
-       * @type {Set<Item>}
-       */
-      const conflictingItems = new Set()
-      /**
-       * @type {Set<Item>}
-       */
-      const itemsBeforeOrigin = new Set()
-      // Let c in conflictingItems, b in itemsBeforeOrigin
-      // ***{origin}bbbb{this}{c,b}{c,b}{o}***
-      // Note that conflictingItems is a subset of itemsBeforeOrigin
-      while (o !== null && o !== this.right) {
-        itemsBeforeOrigin.add(o)
-        conflictingItems.add(o)
-        if (compareIDs(this.origin, o.origin)) {
-          // case 1
-          if (o.id.client < this.id.client) {
-            left = o
-            conflictingItems.clear()
-          }
-        } else if (o.origin !== null && itemsBeforeOrigin.has(getItem(store, o.origin))) {
-          // case 2
-          if (o.origin === null || !conflictingItems.has(getItem(store, o.origin))) {
-            left = o
-            conflictingItems.clear()
+        /**
+         * @type {Item|null}
+         */
+        let o
+        // set o to the first conflicting item
+        if (left !== null) {
+          o = left.right
+        } else if (this.parentSub !== null) {
+          o = /** @type {AbstractType<any>} */ (this.parent)._map.get(this.parentSub) || null
+          while (o !== null && o.left !== null) {
+            o = o.left
           }
         } else {
-          break
+          o = /** @type {AbstractType<any>} */ (this.parent)._start
         }
-        o = o.right
+        // TODO: use something like DeleteSet here (a tree implementation would be best)
+        // @todo use global set definitions
+        /**
+         * @type {Set<Item>}
+         */
+        const conflictingItems = new Set()
+        /**
+         * @type {Set<Item>}
+         */
+        const itemsBeforeOrigin = new Set()
+        // Let c in conflictingItems, b in itemsBeforeOrigin
+        // ***{origin}bbbb{this}{c,b}{c,b}{o}***
+        // Note that conflictingItems is a subset of itemsBeforeOrigin
+        while (o !== null && o !== this.right) {
+          itemsBeforeOrigin.add(o)
+          conflictingItems.add(o)
+          if (compareIDs(this.origin, o.origin)) {
+            // case 1
+            if (o.id.client < this.id.client) {
+              left = o
+              conflictingItems.clear()
+            }
+          } else if (o.origin !== null && itemsBeforeOrigin.has(getItem(transaction.doc.store, o.origin))) {
+            // case 2
+            if (o.origin === null || !conflictingItems.has(getItem(transaction.doc.store, o.origin))) {
+              left = o
+              conflictingItems.clear()
+            }
+          } else {
+            break
+          }
+          o = o.right
+        }
+        this.left = left
       }
-      this.left = left
       // reconnect left/right + update parent map/start if necessary
-      if (left !== null) {
-        const right = left.right
+      if (this.left !== null) {
+        const right = this.left.right
         this.right = right
-        left.right = this
+        this.left.right = this
       } else {
         let r
-        if (parentSub !== null) {
-          r = parent._map.get(parentSub) || null
+        if (this.parentSub !== null) {
+          r = /** @type {AbstractType<any>} */ (this.parent)._map.get(this.parentSub) || null
           while (r !== null && r.left !== null) {
             r = r.left
           }
         } else {
-          r = parent._start
-          parent._start = this
+          r = /** @type {AbstractType<any>} */ (this.parent)._start
+          ;/** @type {AbstractType<any>} */ (this.parent)._start = this
         }
         this.right = r
       }
       if (this.right !== null) {
         this.right.left = this
-      } else if (parentSub !== null) {
+      } else if (this.parentSub !== null) {
         // set as current parent value if right === null and this is parentSub
-        parent._map.set(parentSub, this)
-        if (left !== null) {
+        /** @type {AbstractType<any>} */ (this.parent)._map.set(this.parentSub, this)
+        if (this.left !== null) {
           // this is the current attribute value of parent. delete right
-          left.delete(transaction)
+          this.left.delete(transaction)
         }
       }
       // adjust length of parent
-      if (parentSub === null && this.countable && !this.deleted) {
-        parent._length += length
+      if (this.parentSub === null && this.countable && !this.deleted) {
+        /** @type {AbstractType<any>} */ (this.parent)._length += this.length
       }
-      addStruct(store, this)
+      addStruct(transaction.doc.store, this)
       this.content.integrate(transaction, this)
       // add parent to transaction.changed
-      addChangedTypeToTransaction(transaction, parent, parentSub)
-      if ((parent._item !== null && parent._item.deleted) || (this.right !== null && parentSub !== null)) {
+      addChangedTypeToTransaction(transaction, /** @type {AbstractType<any>} */ (this.parent), this.parentSub)
+      if ((/** @type {AbstractType<any>} */ (this.parent)._item !== null && /** @type {AbstractType<any>} */ (this.parent)._item.deleted) || (this.right !== null && this.parentSub !== null)) {
         // delete if parent is deleted or if this is not the current attribute value of parent
         this.delete(transaction)
       }
@@ -554,7 +577,7 @@ export class Item extends AbstractStruct {
       if (this.countable && this.parentSub === null) {
         parent._length -= this.length
       }
-      this.deleted = true
+      this.markDeleted()
       addToDeleteSet(transaction.deleteSet, this.id, this.length)
       maplib.setIfUndefined(transaction.changed, parent, set.create).add(this.parentSub)
       this.content.delete(transaction)

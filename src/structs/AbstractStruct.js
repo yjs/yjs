@@ -14,7 +14,13 @@ export class AbstractStruct {
   constructor (id, length) {
     this.id = id
     this.length = length
-    this.deleted = false
+  }
+
+  /**
+   * @type {boolean}
+   */
+  get deleted () {
+    throw error.methodUnimplemented()
   }
 
   /**

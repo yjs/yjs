@@ -13,13 +13,8 @@ export const structGCRefNumber = 0
  * @private
  */
 export class GC extends AbstractStruct {
-  /**
-   * @param {ID} id
-   * @param {number} length
-   */
-  constructor (id, length) {
-    super(id, length)
-    this.deleted = true
+  get deleted () {
+    return true
   }
 
   delete () {}
