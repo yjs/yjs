@@ -155,18 +155,21 @@ export class YMap extends AbstractType {
    * Executes a provided function on once on every key-value pair.
    *
    * @param {function(T,string,YMap<T>):void} f A function to execute on every element of this YArray.
+   * @returns {Object<string,T>}
    */
   forEach (f) {
-    /**
-     * @type {Object<string,T>}
-     */
-    const map = {}
-    for (const [key, item] of this._map) {
-      if (!item.deleted) {
-        f(item.content.getContent()[item.length - 1], key, this)
+    if (this.doc !== null) {
+      for (const [key, item] of this._map) {
+        if (!item.deleted) {
+          f(item.content.getContent()[item.length - 1], key, this)
+        }
+      }
+    } else {
+      for (const [key, item] of /** @type {Map<string, any>} */ (this._prelimContent)) {
+        f(item, key, this)
       }
     }
-    return map
+    return {}
   }
 
   /**
@@ -215,7 +218,11 @@ export class YMap extends AbstractType {
    * @return {T|undefined}
    */
   get (key) {
-    return /** @type {any} */ (typeMapGet(this, key))
+    if (this.doc !== null) {
+      return /** @type {any} */ (typeMapGet(this, key))
+    } else {
+      return /** @type {Map<string, any>} */ (this._prelimContent).get(key)
+    }
   }
 
   /**
@@ -225,7 +232,11 @@ export class YMap extends AbstractType {
    * @return {boolean}
    */
   has (key) {
-    return typeMapHas(this, key)
+    if (this.doc !== null) {
+      return typeMapHas(this, key)
+    } else {
+      return /** @type {Map<string, any>} */ (this._prelimContent).has(key)
+    }
   }
 
   /**

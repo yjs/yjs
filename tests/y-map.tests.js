@@ -83,6 +83,35 @@ export const testBasicMapTests = tc => {
   compare(users)
 }
 
+export const testMapPrelimGetAndHas = () => {
+  const map = new Y.Map(Object.entries({ number: 1 }))
+  t.assert(map.get('number') === 1, 'get numbershould retrieve prelim value')
+  t.assert(map.has('number') === true, 'has number should be true for prelim value')
+}
+
+export const testMapPrelimForEach = () => {
+  const map = new Y.Map(Object.entries({
+    number: 1,
+    string: 'test',
+    map: new Y.Map(Object.entries({ boolean: true }))
+  }))
+
+  /**
+   * @type {Function[]}
+   */
+  const assertions = [
+    (/** @type {string} */ key, /** @type {number} */ value) => { t.assert(key === 'number' && value === 1, "map.forEach on prelim should have key 'number' === 1") },
+    (/** @type {string} */ key, /** @type {string} */ value) => { t.assert(key === 'string' && value === 'test', "map.forEach on prelim should have key 'string' === 'test'") },
+    (/** @type {string} */ key, /** @type {any} */ value) => { t.assert(key === 'map' && value.get('boolean') === true, "map.forEach on prelim should have key 'map' and have a 'boolean' key that is true") }
+  ]
+  let i = 0
+  map.forEach((value, key) => {
+    assertions[i](key, value)
+    i++
+  })
+  t.assert(i === 3, `forEach iterates over all 3 prelim keys (${i} iterations)`)
+}
+
 /**
  * @param {t.TestCase} tc
  */
