@@ -41,6 +41,7 @@ height="60px" />](https://input.com/)
 [![Adam Brunnmeier](https://github.com/adabru.png?size=60)](https://github.com/adabru)
 [![Nathanael Anderson](https://github.com/NathanaelA.png?size=60)](https://github.com/NathanaelA)
 [![Gremloon](https://github.com/gremloon.png?size=60)](https://github.com/gremloon)
+[![mrfambo](https://github.com/mrfambo.png?size=60)](https://github.com/mrfambo)
 
 Sponsorship also comes with special perks! [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=d42f2d)](https://github.com/sponsors/dmonad)
 
