@@ -355,6 +355,9 @@ export class Item extends AbstractStruct {
       this.right = getItemCleanStart(transaction, this.rightOrigin)
       this.rightOrigin = this.right.id
     }
+    if ((this.left && this.left.constructor === GC) || (this.right && this.right.constructor === GC)) {
+      this.parent = null
+    }
     // only set parent if this shouldn't be garbage collected
     if (!this.parent) {
       if (this.left && this.left.constructor === Item) {
@@ -432,10 +435,14 @@ export class Item extends AbstractStruct {
             if (o.id.client < this.id.client) {
               left = o
               conflictingItems.clear()
-            }
-          } else if (o.origin !== null && itemsBeforeOrigin.has(getItem(transaction.doc.store, o.origin))) {
+            } else if (compareIDs(this.rightOrigin, o.rightOrigin)) {
+              // this and o are conflicting and point to the same integration points. The id decides which item comes first.
+              // Since this is to the left of o, we can break here
+              break
+            } // else, o might be integrated before an item that this conflicts with. If so, we will find it in the next iterations
+          } else if (o.origin !== null && itemsBeforeOrigin.has(getItem(transaction.doc.store, o.origin))) { // use getItem instead of getItemCleanEnd because we don't want / need to split items.
             // case 2
-            if (o.origin === null || !conflictingItems.has(getItem(transaction.doc.store, o.origin))) {
+            if (!conflictingItems.has(getItem(transaction.doc.store, o.origin))) {
               left = o
               conflictingItems.clear()
             }
