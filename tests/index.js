@@ -5,6 +5,7 @@ import * as text from './y-text.tests.js'
 import * as xml from './y-xml.tests.js'
 import * as encoding from './encoding.tests.js'
 import * as undoredo from './undo-redo.tests.js'
+import * as compatibility from './compatibility.tests.js'
 import * as consistency from './consistency.tests.js'
 
 import { runTests } from 'lib0/testing.js'
@@ -15,7 +16,7 @@ if (isBrowser) {
   log.createVConsole(document.body)
 }
 runTests({
-  map, array, text, xml, consistency, encoding, undoredo
+  map, array, text, xml, consistency, encoding, undoredo, compatibility
 }).then(success => {
   /* istanbul ignore next */
   if (isNode) {
