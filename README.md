@@ -77,8 +77,6 @@ Sponsorship also comes with special perks! [![Become a Sponsor](https://img.shie
   * [Document Updates](#Document-Updates)
   * [Relative Positions](#Relative-Positions)
   * [Y.UndoManager](#YUndoManager)
-* [Miscellaneous](#Miscellaneous)
-  * [Typescript Declarations](#Typescript-Declarations)
 * [Yjs CRDT Algorithm](#Yjs-CRDT-Algorithm)
 * [License and Author](#License-and-Author)
 
@@ -865,24 +863,6 @@ undoManager.on('stack-item-popped', event => {
   // restore the current cursor location on the stack-item
   restoreCursorLocation(event.stackItem.meta.get('cursor-location'))
 })
-```
-
-## Miscellaneous
-
-### Typescript Declarations
-
-Yjs has type descriptions. But until [this
-ticket](https://github.com/Microsoft/TypeScript/issues/7546) is fixed, this is
-how you can make use of Yjs type declarations.
-
-```json
-{
-  "compilerOptions": {
-    "allowJs": true,
-    "checkJs": true,
-  },
-  "maxNodeModuleJsDepth": 5
-}
 ```
 
 ## Yjs CRDT Algorithm
