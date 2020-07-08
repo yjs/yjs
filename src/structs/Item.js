@@ -785,7 +785,7 @@ export const readItem = (decoder, id, info, doc) => {
 
   return new Item(
     id, null, origin, null, rightOrigin,
-    canCopyParentInfo && !hasParentYKey ? readID(decoder) : (parentYKey ? doc.get(parentYKey) : null), // parent
+    canCopyParentInfo && !hasParentYKey ? readID(decoder) : (parentYKey !== null ? doc.get(parentYKey) : null), // parent
     canCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoding.readVarString(decoder) : null, // parentSub
     /** @type {AbstractContent} */ (readItemContent(decoder, info)) // item content
   )
