@@ -11,13 +11,12 @@ import {
   ContentAny,
   ContentBinary,
   getItemCleanStart,
-  ID, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
+  AbstractUpdateEncoder, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map.js'
 import * as iterator from 'lib0/iterator.js'
 import * as error from 'lib0/error.js'
-import * as encoding from 'lib0/encoding.js' // eslint-disable-line
 
 /**
  * Accumulate all (list) children of a type and return them as an Array.
@@ -116,7 +115,7 @@ export class AbstractType {
   }
 
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    */
   _write (encoder) { }
 

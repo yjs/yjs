@@ -14,11 +14,9 @@ import {
   YMapRefID,
   callTypeObservers,
   transact,
-  Doc, Transaction, Item // eslint-disable-line
+  AbstractUpdateDecoder, AbstractUpdateEncoder, Doc, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 
-import * as encoding from 'lib0/encoding.js'
-import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 import * as iterator from 'lib0/iterator.js'
 
 /**
@@ -229,15 +227,15 @@ export class YMap extends AbstractType {
   }
 
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    */
   _write (encoder) {
-    encoding.writeVarUint(encoder, YMapRefID)
+    encoder.writeTypeRef(YMapRefID)
   }
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  *
  * @private
  * @function

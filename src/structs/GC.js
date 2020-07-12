@@ -2,10 +2,8 @@
 import {
   AbstractStruct,
   addStruct,
-  StructStore, Transaction, ID // eslint-disable-line
+  AbstractUpdateEncoder, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
-
-import * as encoding from 'lib0/encoding.js'
 
 export const structGCRefNumber = 0
 
@@ -41,12 +39,12 @@ export class GC extends AbstractStruct {
   }
 
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
-    encoding.writeUint8(encoder, structGCRefNumber)
-    encoding.writeVarUint(encoder, this.length - offset)
+    encoder.writeInfo(structGCRefNumber)
+    encoder.writeLen(this.length - offset)
   }
 
   /**

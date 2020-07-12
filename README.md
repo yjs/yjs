@@ -958,5 +958,6 @@ Yjs and all related projects are [**MIT licensed**](./LICENSE).
 Yjs is based on my research as a student at the [RWTH
 i5](http://dbis.rwth-aachen.de/). Now I am working on Yjs in my spare time.
 
-Fund this project by donating on [Patreon](https://www.patreon.com/dmonad) or
-hiring [me](https://github.com/dmonad) for professional support.
+Fund this project by donating on [GitHub Sponsors](https://github.com/sponsors/dmonad)
+or hiring [me](https://github.com/dmonad) as a contractor for your collaborative
+app.

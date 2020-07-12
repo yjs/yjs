@@ -1,6 +1,8 @@
 
 export * from './utils/DeleteSet.js'
 export * from './utils/Doc.js'
+export * from './utils/UpdateDecoder.js'
+export * from './utils/UpdateEncoder.js'
 export * from './utils/encoding.js'
 export * from './utils/EventHandler.js'
 export * from './utils/ID.js'

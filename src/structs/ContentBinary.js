@@ -1,10 +1,7 @@
 import {
-  StructStore, Item, Transaction // eslint-disable-line
+  AbstractUpdateDecoder, AbstractUpdateEncoder, StructStore, Item, Transaction // eslint-disable-line
 } from '../internals.js'
 
-import * as encoding from 'lib0/encoding.js'
-import * as decoding from 'lib0/decoding.js'
-import * as buffer from 'lib0/buffer.js'
 import * as error from 'lib0/error.js'
 
 export class ContentBinary {
@@ -73,11 +70,11 @@ export class ContentBinary {
    */
   gc (store) {}
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
-    encoding.writeVarUint8Array(encoder, this.content)
+    encoder.writeBuf(this.content)
   }
 
   /**
@@ -89,7 +86,7 @@ export class ContentBinary {
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {ContentBinary}
  */
-export const readContentBinary = decoder => new ContentBinary(buffer.copyUint8Array(decoding.readVarUint8Array(decoder)))
+export const readContentBinary = decoder => new ContentBinary(decoder.readBuf())

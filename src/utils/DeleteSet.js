@@ -3,9 +3,8 @@ import {
   findIndexSS,
   getState,
   splitItem,
-  createID,
   iterateStructs,
-  Item, AbstractStruct, GC, StructStore, Transaction, ID // eslint-disable-line
+  AbstractUpdateDecoder, AbstractDSDecoder, AbstractDSEncoder, DSDecoderV2, DSEncoderV2, Item, GC, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as array from 'lib0/array.js'
@@ -163,14 +162,15 @@ export const mergeDeleteSets = dss => {
 
 /**
  * @param {DeleteSet} ds
- * @param {ID} id
+ * @param {number} client
+ * @param {number} clock
  * @param {number} length
  *
  * @private
  * @function
  */
-export const addToDeleteSet = (ds, id, length) => {
-  map.setIfUndefined(ds.clients, id.client, () => []).push(new DeleteItem(id.clock, length))
+export const addToDeleteSet = (ds, client, clock, length) => {
+  map.setIfUndefined(ds.clients, client, () => []).push(new DeleteItem(clock, length))
 }
 
 export const createDeleteSet = () => new DeleteSet()
@@ -210,28 +210,29 @@ export const createDeleteSetFromStructStore = ss => {
 }
 
 /**
- * @param {encoding.Encoder} encoder
+ * @param {AbstractDSEncoder} encoder
  * @param {DeleteSet} ds
  *
  * @private
  * @function
  */
 export const writeDeleteSet = (encoder, ds) => {
-  encoding.writeVarUint(encoder, ds.clients.size)
+  encoding.writeVarUint(encoder.restEncoder, ds.clients.size)
   ds.clients.forEach((dsitems, client) => {
-    encoding.writeVarUint(encoder, client)
+    encoder.resetDsCurVal()
+    encoding.writeVarUint(encoder.restEncoder, client)
     const len = dsitems.length
-    encoding.writeVarUint(encoder, len)
+    encoding.writeVarUint(encoder.restEncoder, len)
     for (let i = 0; i < len; i++) {
       const item = dsitems[i]
-      encoding.writeVarUint(encoder, item.clock)
-      encoding.writeVarUint(encoder, item.len)
+      encoder.writeDsClock(item.clock)
+      encoder.writeDsLen(item.len)
     }
   })
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractDSDecoder} decoder
  * @return {DeleteSet}
  *
  * @private
@@ -239,19 +240,27 @@ export const writeDeleteSet = (encoder, ds) => {
  */
 export const readDeleteSet = decoder => {
   const ds = new DeleteSet()
-  const numClients = decoding.readVarUint(decoder)
+  const numClients = decoding.readVarUint(decoder.restDecoder)
   for (let i = 0; i < numClients; i++) {
-    const client = decoding.readVarUint(decoder)
-    const numberOfDeletes = decoding.readVarUint(decoder)
-    for (let i = 0; i < numberOfDeletes; i++) {
-      addToDeleteSet(ds, createID(client, decoding.readVarUint(decoder)), decoding.readVarUint(decoder))
+    decoder.resetDsCurVal()
+    const client = decoding.readVarUint(decoder.restDecoder)
+    const numberOfDeletes = decoding.readVarUint(decoder.restDecoder)
+    if (numberOfDeletes > 0) {
+      const dsField = map.setIfUndefined(ds.clients, client, () => [])
+      for (let i = 0; i < numberOfDeletes; i++) {
+        dsField.push(new DeleteItem(decoder.readDsClock(), decoder.readDsLen()))
+      }
     }
   }
   return ds
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @todo YDecoder also contains references to String and other Decoders. Would make sense to exchange YDecoder.toUint8Array for YDecoder.DsToUint8Array()..
+ */
+
+/**
+ * @param {AbstractDSDecoder} decoder
  * @param {Transaction} transaction
  * @param {StructStore} store
  *
@@ -260,18 +269,19 @@ export const readDeleteSet = decoder => {
  */
 export const readAndApplyDeleteSet = (decoder, transaction, store) => {
   const unappliedDS = new DeleteSet()
-  const numClients = decoding.readVarUint(decoder)
+  const numClients = decoding.readVarUint(decoder.restDecoder)
   for (let i = 0; i < numClients; i++) {
-    const client = decoding.readVarUint(decoder)
-    const numberOfDeletes = decoding.readVarUint(decoder)
+    decoder.resetDsCurVal()
+    const client = decoding.readVarUint(decoder.restDecoder)
+    const numberOfDeletes = decoding.readVarUint(decoder.restDecoder)
     const structs = store.clients.get(client) || []
     const state = getState(store, client)
     for (let i = 0; i < numberOfDeletes; i++) {
-      const clock = decoding.readVarUint(decoder)
-      const len = decoding.readVarUint(decoder)
+      const clock = decoder.readDsClock()
+      const clockEnd = clock + decoder.readDsLen()
       if (clock < state) {
-        if (state < clock + len) {
-          addToDeleteSet(unappliedDS, createID(client, state), clock + len - state)
+        if (state < clockEnd) {
+          addToDeleteSet(unappliedDS, client, state, clockEnd - state)
         }
         let index = findIndexSS(structs, clock)
         /**
@@ -288,10 +298,10 @@ export const readAndApplyDeleteSet = (decoder, transaction, store) => {
         while (index < structs.length) {
           // @ts-ignore
           struct = structs[index++]
-          if (struct.id.clock < clock + len) {
+          if (struct.id.clock < clockEnd) {
             if (!struct.deleted) {
-              if (clock + len < struct.id.clock + struct.length) {
-                structs.splice(index, 0, splitItem(transaction, struct, clock + len - struct.id.clock))
+              if (clockEnd < struct.id.clock + struct.length) {
+                structs.splice(index, 0, splitItem(transaction, struct, clockEnd - struct.id.clock))
               }
               struct.delete(transaction)
             }
@@ -300,14 +310,14 @@ export const readAndApplyDeleteSet = (decoder, transaction, store) => {
           }
         }
       } else {
-        addToDeleteSet(unappliedDS, createID(client, clock), len)
+        addToDeleteSet(unappliedDS, client, clock, clockEnd - clock)
       }
     }
   }
   if (unappliedDS.clients.size > 0) {
     // TODO: no need for encoding+decoding ds anymore
-    const unappliedDSEncoder = encoding.createEncoder()
+    const unappliedDSEncoder = new DSEncoderV2()
     writeDeleteSet(unappliedDSEncoder, unappliedDS)
-    store.pendingDeleteReaders.push(decoding.createDecoder(encoding.toUint8Array(unappliedDSEncoder)))
+    store.pendingDeleteReaders.push(new DSDecoderV2(decoding.createDecoder((unappliedDSEncoder.toUint8Array()))))
   }
 }

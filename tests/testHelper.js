@@ -394,21 +394,21 @@ export const applyRandomTests = (tc, mods, iterations, initTestObject) => {
   const result = init(tc, { users: 5 }, initTestObject)
   const { testConnector, users } = result
   for (let i = 0; i < iterations; i++) {
-    if (prng.int31(gen, 0, 100) <= 2) {
+    if (prng.int32(gen, 0, 100) <= 2) {
       // 2% chance to disconnect/reconnect a random user
       if (prng.bool(gen)) {
         testConnector.disconnectRandom()
       } else {
         testConnector.reconnectRandom()
       }
-    } else if (prng.int31(gen, 0, 100) <= 1) {
+    } else if (prng.int32(gen, 0, 100) <= 1) {
       // 1% chance to flush all
       testConnector.flushAllMessages()
-    } else if (prng.int31(gen, 0, 100) <= 50) {
+    } else if (prng.int32(gen, 0, 100) <= 50) {
       // 50% chance to flush a random message
       testConnector.flushRandomMessage()
     }
-    const user = prng.int31(gen, 0, users.length - 1)
+    const user = prng.int32(gen, 0, users.length - 1)
     const test = prng.oneOf(gen, mods)
     test(users[user], gen, result.testObjects[user])
   }

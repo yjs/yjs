@@ -1,10 +1,8 @@
 
 import {
-  StructStore, Item, Transaction // eslint-disable-line
+  AbstractUpdateDecoder, AbstractUpdateEncoder, StructStore, Item, Transaction // eslint-disable-line
 } from '../internals.js'
 
-import * as encoding from 'lib0/encoding.js'
-import * as decoding from 'lib0/decoding.js'
 import * as error from 'lib0/error.js'
 
 /**
@@ -76,11 +74,11 @@ export class ContentEmbed {
    */
   gc (store) {}
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
-    encoding.writeVarString(encoder, JSON.stringify(this.embed))
+    encoder.writeJSON(this.embed)
   }
 
   /**
@@ -94,7 +92,7 @@ export class ContentEmbed {
 /**
  * @private
  *
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {ContentEmbed}
  */
-export const readContentEmbed = decoder => new ContentEmbed(JSON.parse(decoding.readVarString(decoder)))
+export const readContentEmbed = decoder => new ContentEmbed(decoder.readJSON())

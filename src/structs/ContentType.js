@@ -7,15 +7,13 @@ import {
   readYXmlFragment,
   readYXmlHook,
   readYXmlText,
-  ID, StructStore, Transaction, Item, YEvent, AbstractType // eslint-disable-line
+  AbstractUpdateDecoder, AbstractUpdateEncoder, StructStore, Transaction, Item, YEvent, AbstractType // eslint-disable-line
 } from '../internals.js'
 
-import * as encoding from 'lib0/encoding.js' // eslint-disable-line
-import * as decoding from 'lib0/decoding.js'
 import * as error from 'lib0/error.js'
 
 /**
- * @type {Array<function(decoding.Decoder):AbstractType<any>>}
+ * @type {Array<function(AbstractUpdateDecoder):AbstractType<any>>}
  * @private
  */
 export const typeRefs = [
@@ -150,7 +148,7 @@ export class ContentType {
   }
 
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
@@ -168,7 +166,7 @@ export class ContentType {
 /**
  * @private
  *
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {ContentType}
  */
-export const readContentType = decoder => new ContentType(typeRefs[decoding.readVarUint(decoder)](decoder))
+export const readContentType = decoder => new ContentType(typeRefs[decoder.readTypeRef()](decoder))

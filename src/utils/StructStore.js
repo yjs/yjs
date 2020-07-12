@@ -2,12 +2,11 @@
 import {
   GC,
   splitItem,
-  AbstractStruct, Transaction, ID, Item // eslint-disable-line
+  Transaction, ID, Item, DSDecoderV2 // eslint-disable-line
 } from '../internals.js'
 
 import * as math from 'lib0/math.js'
 import * as error from 'lib0/error.js'
-import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 
 export class StructStore {
   constructor () {
@@ -31,7 +30,7 @@ export class StructStore {
      */
     this.pendingStack = []
     /**
-     * @type {Array<decoding.Decoder>}
+     * @type {Array<DSDecoderV2>}
      */
     this.pendingDeleteReaders = []
   }

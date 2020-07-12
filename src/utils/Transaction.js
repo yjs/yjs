@@ -11,15 +11,16 @@ import {
   Item,
   generateNewClientId,
   createID,
-  GC, StructStore, ID, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
+  AbstractUpdateEncoder, GC, StructStore, UpdateEncoderV1, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
 } from '../internals.js'
 
-import * as encoding from 'lib0/encoding.js'
 import * as map from 'lib0/map.js'
 import * as math from 'lib0/math.js'
 import * as set from 'lib0/set.js'
 import * as logging from 'lib0/logging.js'
 import { callAll } from 'lib0/function.js'
+import { DefaultUpdateEncoder } from './encoding.js'
+import { UpdateEncoderV2 } from './UpdateEncoder.js'
 
 /**
  * A transaction is created for every change on the Yjs model. It is possible
@@ -107,17 +108,18 @@ export class Transaction {
 }
 
 /**
+ * @param {AbstractUpdateEncoder} encoder
  * @param {Transaction} transaction
+ * @return {boolean} Whether data was written.
  */
-export const computeUpdateMessageFromTransaction = transaction => {
+export const writeUpdateMessageFromTransaction = (encoder, transaction) => {
   if (transaction.deleteSet.clients.size === 0 && !map.any(transaction.afterState, (clock, client) => transaction.beforeState.get(client) !== clock)) {
-    return null
+    return false
   }
-  const encoder = encoding.createEncoder()
   sortAndMergeDeleteSet(transaction.deleteSet)
   writeStructsFromTransaction(encoder, transaction)
   writeDeleteSet(encoder, transaction.deleteSet)
-  return encoder
+  return true
 }
 
 /**
@@ -322,9 +324,17 @@ const cleanupTransactions = (transactionCleanups, i) => {
       // @todo Merge all the transactions into one and provide send the data as a single update message
       doc.emit('afterTransactionCleanup', [transaction, doc])
       if (doc._observers.has('update')) {
-        const updateMessage = computeUpdateMessageFromTransaction(transaction)
-        if (updateMessage !== null) {
-          doc.emit('update', [encoding.toUint8Array(updateMessage), transaction.origin, doc])
+        const encoder = new DefaultUpdateEncoder()
+        const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
+        if (hasContent) {
+          doc.emit('update', [encoder.toUint8Array(), transaction.origin, doc])
+        }
+      }
+      if (doc._observers.has('updateV2')) {
+        const encoder = new UpdateEncoderV2()
+        const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
+        if (hasContent) {
+          doc.emit('updateV2', [encoder.toUint8Array(), transaction.origin, doc])
         }
       }
       if (transactionCleanups.length <= i + 1) {

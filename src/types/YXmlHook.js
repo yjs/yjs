@@ -1,10 +1,9 @@
 
 import {
   YMap,
-  YXmlHookRefID
+  YXmlHookRefID,
+  AbstractUpdateDecoder, AbstractUpdateEncoder // eslint-disable-line
 } from '../internals.js'
-import * as encoding from 'lib0/encoding.js'
-import * as decoding from 'lib0/decoding.js'
 
 /**
  * You can manage binding to a custom type with YXmlHook.
@@ -66,21 +65,20 @@ export class YXmlHook extends YMap {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @param {encoding.Encoder} encoder The encoder to write data to.
+   * @param {AbstractUpdateEncoder} encoder The encoder to write data to.
    */
   _write (encoder) {
-    super._write(encoder)
-    encoding.writeVarUint(encoder, YXmlHookRefID)
-    encoding.writeVarString(encoder, this.hookName)
+    encoder.writeTypeRef(YXmlHookRefID)
+    encoder.writeKey(this.hookName)
   }
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {YXmlHook}
  *
  * @private
  * @function
  */
 export const readYXmlHook = decoder =>
-  new YXmlHook(decoding.readVarString(decoder))
+  new YXmlHook(decoder.readKey())

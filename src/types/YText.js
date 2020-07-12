@@ -20,11 +20,9 @@ import {
   splitSnapshotAffectedStructs,
   iterateDeletedStructs,
   iterateStructs,
-  ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
+  AbstractUpdateDecoder, AbstractUpdateEncoder, ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
 } from '../internals.js'
 
-import * as decoding from 'lib0/decoding.js' // eslint-disable-line
-import * as encoding from 'lib0/encoding.js'
 import * as object from 'lib0/object.js'
 import * as map from 'lib0/map.js'
 
@@ -1096,15 +1094,15 @@ export class YText extends AbstractType {
   }
 
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    */
   _write (encoder) {
-    encoding.writeVarUint(encoder, YTextRefID)
+    encoder.writeTypeRef(YTextRefID)
   }
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {YText}
  *
  * @private

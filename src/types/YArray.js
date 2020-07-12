@@ -15,11 +15,8 @@ import {
   YArrayRefID,
   callTypeObservers,
   transact,
-  Doc, Transaction, Item // eslint-disable-line
+  AbstractUpdateDecoder, AbstractUpdateEncoder, Doc, Transaction, Item // eslint-disable-line
 } from '../internals.js'
-
-import * as decoding from 'lib0/decoding.js' // eslint-disable-line
-import * as encoding from 'lib0/encoding.js'
 
 /**
  * Event that describes the changes on a YArray
@@ -204,15 +201,15 @@ export class YArray extends AbstractType {
   }
 
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    */
   _write (encoder) {
-    encoding.writeVarUint(encoder, YArrayRefID)
+    encoder.writeTypeRef(YArrayRefID)
   }
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  *
  * @private
  * @function

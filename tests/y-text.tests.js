@@ -215,7 +215,7 @@ const tryGc = () => {
  * @param {t.TestCase} tc
  */
 export const testLargeFragmentedDocument = tc => {
-  const itemsToInsert = 2000000
+  const itemsToInsert = 1000000
   let update = /** @type {any} */ (null)
   ;(() => {
     const doc1 = new Y.Doc()
@@ -230,14 +230,15 @@ export const testLargeFragmentedDocument = tc => {
     })
     tryGc()
     t.measureTime('time to encode document', () => {
-      update = Y.encodeStateAsUpdate(doc1)
+      update = Y.encodeStateAsUpdateV2(doc1)
     })
+    t.describe('Document size:', update.byteLength)
   })()
   ;(() => {
     const doc2 = new Y.Doc()
     tryGc()
     t.measureTime(`time to apply ${itemsToInsert} updates`, () => {
-      Y.applyUpdate(doc2, update)
+      Y.applyUpdateV2(doc2, update)
     })
   })()
 }

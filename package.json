@@ -18,7 +18,7 @@
     "lint": "markdownlint README.md && standard && tsc",
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.md --package ./package.json || true",
     "serve-docs": "npm run docs && http-server ./docs/",
-    "preversion": "npm run lint && PRODUCTION=1 npm run dist && npm run docs && node ./dist/tests.cjs --repitition-time 1000",
+    "preversion": "npm run lint && PRODUCTION=1 npm run dist && npm run docs && node ./dist/tests.cjs --repitition-time 1000 && test -e dist/src/index.d.ts && test -e dist/yjs.cjs && test -e dist/yjs.cjs",
     "debug": "concurrently 'http-server -o test.html' 'npm run watch'",
     "trace-deopt": "clear && rollup -c  && node --trace-deopt dist/test.cjs",
     "trace-opt": "clear && rollup -c  && node --trace-opt dist/test.cjs"
@@ -60,7 +60,7 @@
   },
   "homepage": "https://yjs.dev",
   "dependencies": {
-    "lib0": "^0.2.29"
+    "lib0": "^0.2.32"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^11.1.0",
@@ -68,12 +68,12 @@
     "concurrently": "^3.6.1",
     "http-server": "^0.12.3",
     "jsdoc": "^3.6.4",
-    "markdownlint-cli": "^0.23.1",
+    "markdownlint-cli": "^0.23.2",
     "rollup": "^1.32.1",
     "rollup-cli": "^1.0.9",
     "standard": "^14.3.4",
     "tui-jsdoc-template": "^1.2.2",
-    "typescript": "^3.9.3",
+    "typescript": "^3.9.6",
     "y-protocols": "^0.2.3"
   }
 }

@@ -1,9 +1,6 @@
 import {
-  Transaction, Item, StructStore // eslint-disable-line
+  AbstractUpdateDecoder, AbstractUpdateEncoder, Transaction, Item, StructStore // eslint-disable-line
 } from '../internals.js'
-
-import * as encoding from 'lib0/encoding.js'
-import * as decoding from 'lib0/decoding.js'
 
 export class ContentAny {
   /**
@@ -77,15 +74,15 @@ export class ContentAny {
    */
   gc (store) {}
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
     const len = this.arr.length
-    encoding.writeVarUint(encoder, len - offset)
+    encoder.writeLen(len - offset)
     for (let i = offset; i < len; i++) {
       const c = this.arr[i]
-      encoding.writeAny(encoder, c)
+      encoder.writeAny(c)
     }
   }
 
@@ -98,14 +95,14 @@ export class ContentAny {
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {ContentAny}
  */
 export const readContentAny = decoder => {
-  const len = decoding.readVarUint(decoder)
+  const len = decoder.readLen()
   const cs = []
   for (let i = 0; i < len; i++) {
-    cs.push(decoding.readAny(decoder))
+    cs.push(decoder.readAny())
   }
   return new ContentAny(cs)
 }

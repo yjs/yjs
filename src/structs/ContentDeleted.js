@@ -1,11 +1,8 @@
 
 import {
   addToDeleteSet,
-  StructStore, Item, Transaction // eslint-disable-line
+  AbstractUpdateDecoder, AbstractUpdateEncoder, StructStore, Item, Transaction // eslint-disable-line
 } from '../internals.js'
-
-import * as encoding from 'lib0/encoding.js'
-import * as decoding from 'lib0/decoding.js'
 
 export class ContentDeleted {
   /**
@@ -67,7 +64,7 @@ export class ContentDeleted {
    * @param {Item} item
    */
   integrate (transaction, item) {
-    addToDeleteSet(transaction.deleteSet, item.id, this.len)
+    addToDeleteSet(transaction.deleteSet, item.id.client, item.id.clock, this.len)
     item.markDeleted()
   }
 
@@ -80,11 +77,11 @@ export class ContentDeleted {
    */
   gc (store) {}
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
-    encoding.writeVarUint(encoder, this.len - offset)
+    encoder.writeLen(this.len - offset)
   }
 
   /**
@@ -98,7 +95,7 @@ export class ContentDeleted {
 /**
  * @private
  *
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {ContentDeleted}
  */
-export const readContentDeleted = decoder => new ContentDeleted(decoding.readVarUint(decoder))
+export const readContentDeleted = decoder => new ContentDeleted(decoder.readLen())

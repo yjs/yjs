@@ -12,13 +12,13 @@ import {
   createDeleteSet,
   createID,
   getState,
-  Transaction, Doc, DeleteSet, Item // eslint-disable-line
+  AbstractDSDecoder, AbstractDSEncoder, DSEncoderV1, DSEncoderV2, DSDecoderV1, DSDecoderV2, Transaction, Doc, DeleteSet, Item // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map.js'
 import * as set from 'lib0/set.js'
-import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
+import { DefaultDSEncoder } from './encoding.js'
 
 export class Snapshot {
   /**
@@ -74,23 +74,35 @@ export const equalSnapshots = (snap1, snap2) => {
 
 /**
  * @param {Snapshot} snapshot
+ * @param {AbstractDSEncoder} [encoder]
  * @return {Uint8Array}
  */
-export const encodeSnapshot = snapshot => {
-  const encoder = encoding.createEncoder()
+export const encodeSnapshotV2 = (snapshot, encoder = new DSEncoderV2()) => {
   writeDeleteSet(encoder, snapshot.ds)
   writeStateVector(encoder, snapshot.sv)
-  return encoding.toUint8Array(encoder)
+  return encoder.toUint8Array()
+}
+
+/**
+ * @param {Snapshot} snapshot
+ * @return {Uint8Array}
+ */
+export const encodeSnapshot = snapshot => encodeSnapshotV2(snapshot, new DefaultDSEncoder())
+
+/**
+ * @param {Uint8Array} buf
+ * @param {AbstractDSDecoder} [decoder]
+ * @return {Snapshot}
+ */
+export const decodeSnapshotV2 = (buf, decoder = new DSDecoderV2(decoding.createDecoder(buf))) => {
+  return new Snapshot(readDeleteSet(decoder), readStateVector(decoder))
 }
 
 /**
  * @param {Uint8Array} buf
  * @return {Snapshot}
  */
-export const decodeSnapshot = buf => {
-  const decoder = decoding.createDecoder(buf)
-  return new Snapshot(readDeleteSet(decoder), readStateVector(decoder))
-}
+export const decodeSnapshot = buf => decodeSnapshotV2(buf, new DSDecoderV1(decoding.createDecoder(buf)))
 
 /**
  * @param {DeleteSet} ds

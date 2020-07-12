@@ -14,11 +14,8 @@ import {
   YXmlFragmentRefID,
   callTypeObservers,
   transact,
-  Doc, ContentType, Transaction, Item, YXmlText, YXmlHook, Snapshot // eslint-disable-line
+  AbstractUpdateDecoder, AbstractUpdateEncoder, Doc, ContentType, Transaction, Item, YXmlText, YXmlHook, Snapshot // eslint-disable-line
 } from '../internals.js'
-
-import * as encoding from 'lib0/encoding.js'
-import * as decoding from 'lib0/decoding.js' // eslint-disable-line
 
 /**
  * Define the elements to which a set of CSS queries apply.
@@ -325,15 +322,15 @@ export class YXmlFragment extends AbstractType {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @param {encoding.Encoder} encoder The encoder to write data to.
+   * @param {AbstractUpdateEncoder} encoder The encoder to write data to.
    */
   _write (encoder) {
-    encoding.writeVarUint(encoder, YXmlFragmentRefID)
+    encoder.writeTypeRef(YXmlFragmentRefID)
   }
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {YXmlFragment}
  *
  * @private

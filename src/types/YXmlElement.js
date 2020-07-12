@@ -8,11 +8,8 @@ import {
   typeMapGetAll,
   typeListForEach,
   YXmlElementRefID,
-  Snapshot, Doc, Item // eslint-disable-line
+  AbstractUpdateDecoder, AbstractUpdateEncoder, Snapshot, Doc, Item // eslint-disable-line
 } from '../internals.js'
-
-import * as encoding from 'lib0/encoding.js'
-import * as decoding from 'lib0/decoding.js'
 
 /**
  * An YXmlElement imitates the behavior of a
@@ -181,18 +178,18 @@ export class YXmlElement extends YXmlFragment {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @param {encoding.Encoder} encoder The encoder to write data to.
+   * @param {AbstractUpdateEncoder} encoder The encoder to write data to.
    */
   _write (encoder) {
-    encoding.writeVarUint(encoder, YXmlElementRefID)
-    encoding.writeVarString(encoder, this.nodeName)
+    encoder.writeTypeRef(YXmlElementRefID)
+    encoder.writeKey(this.nodeName)
   }
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {YXmlElement}
  *
  * @function
  */
-export const readYXmlElement = decoder => new YXmlElement(decoding.readVarString(decoder))
+export const readYXmlElement = decoder => new YXmlElement(decoder.readKey())

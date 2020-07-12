@@ -17,10 +17,13 @@
     "useCollapsibles": true,
     "collapse": true,
     "resources": {
-      "yjs.dev": "Yjs website"
+      "yjs.dev": "Website",
+      "docs.yjs.dev": "Docs",
+      "discuss.yjs.dev": "Forum",
+      "https://gitter.im/Yjs/community": "Chat"
     },
     "logo": {
-      "url": "https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png",
+      "url": "https://yjs.dev/images/logo/yjs-512x512.png",
       "width": "162px",
       "height": "162px",
       "link": "/"
@@ -35,7 +38,7 @@
     ],
     "default": {
       "staticFiles": {
-          "include": ["examples/"]
+          "include": []
       }
     }
   },
@@ -44,7 +47,6 @@
     "encoding": "utf8",
     "private": false,
     "recurse": true,
-    "template": "./node_modules/tui-jsdoc-template",
-    "tutorials": "./examples"
+    "template": "./node_modules/tui-jsdoc-template"
   }
 }

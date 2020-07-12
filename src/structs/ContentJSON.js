@@ -1,9 +1,6 @@
 import {
-  Transaction, Item, StructStore // eslint-disable-line
+  AbstractUpdateDecoder, AbstractUpdateEncoder, Transaction, Item, StructStore // eslint-disable-line
 } from '../internals.js'
-
-import * as encoding from 'lib0/encoding.js'
-import * as decoding from 'lib0/decoding.js'
 
 /**
  * @private
@@ -80,15 +77,15 @@ export class ContentJSON {
    */
   gc (store) {}
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
     const len = this.arr.length
-    encoding.writeVarUint(encoder, len - offset)
+    encoder.writeLen(len - offset)
     for (let i = offset; i < len; i++) {
       const c = this.arr[i]
-      encoding.writeVarString(encoder, c === undefined ? 'undefined' : JSON.stringify(c))
+      encoder.writeString(c === undefined ? 'undefined' : JSON.stringify(c))
     }
   }
 
@@ -103,14 +100,14 @@ export class ContentJSON {
 /**
  * @private
  *
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {ContentJSON}
  */
 export const readContentJSON = decoder => {
-  const len = decoding.readVarUint(decoder)
+  const len = decoder.readLen()
   const cs = []
   for (let i = 0; i < len; i++) {
-    const c = decoding.readVarString(decoder)
+    const c = decoder.readString()
     if (c === 'undefined') {
       cs.push(undefined)
     } else {
