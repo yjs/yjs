@@ -4,6 +4,7 @@
   "description": "Shared Editing Library",
   "main": "./dist/yjs.cjs",
   "module": "./dist/yjs.mjs",
+  "unpkg": "./dist/yjs.mjs",
   "types": "./dist/src/index.d.ts",
   "sideEffects": false,
   "funding": {
