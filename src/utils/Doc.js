@@ -126,45 +126,45 @@ export class Doc extends Observable {
 
   /**
    * @template T
-   * @param {string} name
+   * @param {string} [name]
    * @return {YArray<T>}
    *
    * @public
    */
-  getArray (name) {
+  getArray (name = '') {
     // @ts-ignore
     return this.get(name, YArray)
   }
 
   /**
-   * @param {string} name
+   * @param {string} [name]
    * @return {YText}
    *
    * @public
    */
-  getText (name) {
+  getText (name = '') {
     // @ts-ignore
     return this.get(name, YText)
   }
 
   /**
-   * @param {string} name
+   * @param {string} [name]
    * @return {YMap<any>}
    *
    * @public
    */
-  getMap (name) {
+  getMap (name = '') {
     // @ts-ignore
     return this.get(name, YMap)
   }
 
   /**
-   * @param {string} name
+   * @param {string} [name]
    * @return {YXmlFragment}
    *
    * @public
    */
-  getXmlFragment (name) {
+  getXmlFragment (name = '') {
     // @ts-ignore
     return this.get(name, YXmlFragment)
   }

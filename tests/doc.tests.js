@@ -17,3 +17,16 @@ export const testClientIdDuplicateChange = tc => {
   Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc1))
   t.assert(doc2.clientID !== doc1.clientID)
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testGetTypeEmptyId = tc => {
+  const doc1 = new Y.Doc()
+  doc1.getText('').insert(0, 'h')
+  doc1.getText().insert(1, 'i')
+  const doc2 = new Y.Doc()
+  Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc1))
+  t.assert(doc2.getText().toString() === 'hi')
+  t.assert(doc2.getText('').toString() === 'hi')
+}

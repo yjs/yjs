@@ -152,7 +152,7 @@ export const readClientsStructRefs = (decoder, clientRefs, doc) => {
 
         const struct = new Item(
           createID(client, clock), null, origin, null, rightOrigin,
-          canCopyParentInfo && !hasParentYKey ? decoder.readLeftID() : (parentYKey ? doc.get(parentYKey) : null), // parent
+          canCopyParentInfo && !hasParentYKey ? decoder.readLeftID() : (parentYKey !== null ? doc.get(parentYKey) : null), // parent
           canCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoder.readString() : null, // parentSub
           /** @type {AbstractContent} */ (readItemContent(decoder, info)) // item content
         )
