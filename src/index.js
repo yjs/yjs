@@ -12,6 +12,7 @@ export {
   YXmlEvent,
   YMapEvent,
   YArrayEvent,
+  YTextEvent,
   YEvent,
   Item,
   AbstractStruct,
