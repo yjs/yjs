@@ -67,5 +67,6 @@ export {
   equalSnapshots,
   PermanentUserData, // @TODO experimental
   tryGc,
-  transact
+  transact,
+  AbstractConnector
 } from './internals.js'
