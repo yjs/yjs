@@ -30,3 +30,30 @@ export const testGetTypeEmptyId = tc => {
   t.assert(doc2.getText().toString() === 'hi')
   t.assert(doc2.getText('').toString() === 'hi')
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testToJSON = tc => {
+  const doc = new Y.Doc()
+  t.compare(doc.toJSON(), {}, 'doc.toJSON yields empty object')
+
+  const arr = doc.getArray('array')
+  arr.push(['test1'])
+
+  const map = doc.getMap('map')
+  map.set('k1', 'v1')
+  const map2 = new Y.Map()
+  map.set('k2', map2)
+  map2.set('m2k1', 'm2v1')
+
+  t.compare(doc.toJSON(), {
+    array: ['test1'],
+    map: {
+      k1: 'v1',
+      k2: {
+        m2k1: 'm2v1'
+      }
+    }
+  }, 'doc.toJSON has array and recursive map')
+}
