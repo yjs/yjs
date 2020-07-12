@@ -60,6 +60,8 @@ export {
   encodeSnapshot,
   decodeSnapshotV2,
   encodeSnapshotV2,
+  decodeStateVector,
+  decodeStateVectorV2,
   isDeleted,
   isParentOf,
   equalSnapshots,
