@@ -290,7 +290,7 @@ export const writeStructsFromTransaction = (encoder, transaction) => writeClient
  */
 const mergeReadStructsIntoPendingReads = (store, clientsStructsRefs) => {
   const pendingClientsStructRefs = store.pendingClientsStructRefs
-  for (const [client, structRefs] of clientsStructsRefs) {
+  clientsStructsRefs.forEach((structRefs, client) => {
     const pendingStructRefs = pendingClientsStructRefs.get(client)
     if (pendingStructRefs === undefined) {
       pendingClientsStructRefs.set(client, { refs: structRefs, i: 0 })
@@ -303,7 +303,7 @@ const mergeReadStructsIntoPendingReads = (store, clientsStructsRefs) => {
       pendingStructRefs.i = 0
       pendingStructRefs.refs = merged.sort((r1, r2) => r1.id.clock - r2.id.clock)
     }
-  }
+  })
 }
 
 /**
@@ -311,14 +311,14 @@ const mergeReadStructsIntoPendingReads = (store, clientsStructsRefs) => {
  */
 const cleanupPendingStructs = pendingClientsStructRefs => {
   // cleanup pendingClientsStructs if not fully finished
-  for (const [client, refs] of pendingClientsStructRefs) {
+  pendingClientsStructRefs.forEach((refs, client) => {
     if (refs.i === refs.refs.length) {
       pendingClientsStructRefs.delete(client)
     } else {
       refs.refs.splice(0, refs.i)
       refs.i = 0
     }
-  }
+  })
 }
 
 /**

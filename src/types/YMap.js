@@ -74,9 +74,9 @@ export class YMap extends AbstractType {
    */
   _integrate (y, item) {
     super._integrate(y, item)
-    for (const [key, value] of /** @type {Map<string, any>} */ (this._prelimContent)) {
+    ;/** @type {Map<string, any>} */ (this._prelimContent).forEach((value, key) => {
       this.set(key, value)
-    }
+    })
     this._prelimContent = null
   }
 
@@ -104,12 +104,12 @@ export class YMap extends AbstractType {
      * @type {Object<string,T>}
      */
     const map = {}
-    for (const [key, item] of this._map) {
+    this._map.forEach((item, key) => {
       if (!item.deleted) {
         const v = item.content.getContent()[item.length - 1]
         map[key] = v instanceof AbstractType ? v.toJSON() : v
       }
-    }
+    })
     return map
   }
 
@@ -159,11 +159,11 @@ export class YMap extends AbstractType {
      * @type {Object<string,T>}
      */
     const map = {}
-    for (const [key, item] of this._map) {
+    this._map.forEach((item, key) => {
       if (!item.deleted) {
         f(item.content.getContent()[item.length - 1], key, this)
       }
-    }
+    })
     return map
   }
 

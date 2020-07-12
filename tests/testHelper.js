@@ -362,7 +362,7 @@ export const compareStructStores = (ss1, ss2) => {
  */
 export const compareDS = (ds1, ds2) => {
   t.assert(ds1.clients.size === ds2.clients.size)
-  for (const [client, deleteItems1] of ds1.clients) {
+  ds1.clients.forEach((deleteItems1, client) => {
     const deleteItems2 = /** @type {Array<DeleteItem>} */ (ds2.clients.get(client))
     t.assert(deleteItems2 !== undefined && deleteItems1.length === deleteItems2.length)
     for (let i = 0; i < deleteItems1.length; i++) {
@@ -372,7 +372,7 @@ export const compareDS = (ds1, ds2) => {
         t.fail('DeleteSets dont match')
       }
     }
-  }
+  })
 }
 
 /**

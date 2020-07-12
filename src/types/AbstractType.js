@@ -564,11 +564,11 @@ export const typeMapGetAll = (parent) => {
    * @type {Object<string,any>}
    */
   const res = {}
-  for (const [key, value] of parent._map) {
+  parent._map.forEach((value, key) => {
     if (!value.deleted) {
       res[key] = value.content.getContent()[value.length - 1]
     }
-  }
+  })
   return res
 }
 

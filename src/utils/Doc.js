@@ -180,9 +180,9 @@ export class Doc extends Observable {
      */
     const doc = {}
 
-    for (const [k, v] of this.share.entries()) {
-      doc[k] = v.toJSON()
-    }
+    this.share.forEach((value, key) => {
+      doc[key] = value.toJSON()
+    })
 
     return doc
   }

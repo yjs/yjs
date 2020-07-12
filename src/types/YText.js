@@ -149,10 +149,10 @@ const insertNegatedAttributes = (transaction, parent, currPos, negatedAttributes
   }
   const doc = transaction.doc
   const ownClientId = doc.clientID
-  for (const [key, val] of negatedAttributes) {
+  negatedAttributes.forEach((val, key) => {
     left = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
     left.integrate(transaction, 0)
-  }
+  })
   currPos.left = left
   currPos.right = right
 }
@@ -244,11 +244,11 @@ const insertAttributes = (transaction, parent, currPos, currentAttributes, attri
  * @function
  **/
 const insertText = (transaction, parent, currPos, currentAttributes, text, attributes) => {
-  for (const [key] of currentAttributes) {
+  currentAttributes.forEach((val, key) => {
     if (attributes[key] === undefined) {
       attributes[key] = null
     }
-  }
+  })
   const doc = transaction.doc
   const ownClientId = doc.clientID
   minimizeAttributeChanges(currPos, currentAttributes, attributes)
@@ -567,11 +567,11 @@ export class YTextEvent extends YEvent {
                 op = { insert }
                 if (currentAttributes.size > 0) {
                   op.attributes = {}
-                  for (const [key, value] of currentAttributes) {
+                  currentAttributes.forEach((value, key) => {
                     if (value !== null) {
                       op.attributes[key] = value
                     }
-                  }
+                  })
                 }
                 insert = ''
                 break
@@ -771,7 +771,7 @@ export class YText extends AbstractType {
     if (!transaction.local) {
       // check if another formatting item was inserted
       let foundFormattingItem = false
-      for (const [client, afterClock] of transaction.afterState) {
+      for (const [client, afterClock] of transaction.afterState.entries()) {
         const clock = transaction.beforeState.get(client) || 0
         if (afterClock === clock) {
           continue
@@ -908,10 +908,10 @@ export class YText extends AbstractType {
          */
         const attributes = {}
         let addAttributes = false
-        for (const [key, value] of currentAttributes) {
+        currentAttributes.forEach((value, key) => {
           addAttributes = true
           attributes[key] = value
-        }
+        })
         /**
          * @type {Object<string,any>}
          */
@@ -965,9 +965,9 @@ export class YText extends AbstractType {
               if (currentAttributes.size > 0) {
                 const attrs = /** @type {Object<string,any>} */ ({})
                 op.attributes = attrs
-                for (const [key, value] of currentAttributes) {
+                currentAttributes.forEach((value, key) => {
                   attrs[key] = value
-                }
+                })
               }
               ops.push(op)
               break

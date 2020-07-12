@@ -51,12 +51,12 @@ export const equalSnapshots = (snap1, snap2) => {
   if (sv1.size !== sv2.size || ds1.size !== ds2.size) {
     return false
   }
-  for (const [key, value] of sv1) {
+  for (const [key, value] of sv1.entries()) {
     if (sv2.get(key) !== value) {
       return false
     }
   }
-  for (const [client, dsitems1] of ds1) {
+  for (const [client, dsitems1] of ds1.entries()) {
     const dsitems2 = ds2.get(client) || []
     if (dsitems1.length !== dsitems2.length) {
       return false

@@ -11,7 +11,7 @@ import {
   Item,
   generateNewClientId,
   createID,
-  AbstractUpdateEncoder, GC, StructStore, UpdateEncoderV1, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
+  AbstractUpdateEncoder, GC, StructStore, UpdateEncoderV2, DefaultUpdateEncoder, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map.js'
@@ -19,8 +19,6 @@ import * as math from 'lib0/math.js'
 import * as set from 'lib0/set.js'
 import * as logging from 'lib0/logging.js'
 import { callAll } from 'lib0/function.js'
-import { DefaultUpdateEncoder } from './encoding.js'
-import { UpdateEncoderV2 } from './UpdateEncoder.js'
 
 /**
  * A transaction is created for every change on the Yjs model. It is possible
@@ -171,7 +169,7 @@ const tryToMergeWithLeft = (structs, pos) => {
  * @param {function(Item):boolean} gcFilter
  */
 const tryGcDeleteSet = (ds, store, gcFilter) => {
-  for (const [client, deleteItems] of ds.clients) {
+  for (const [client, deleteItems] of ds.clients.entries()) {
     const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
     for (let di = deleteItems.length - 1; di >= 0; di--) {
       const deleteItem = deleteItems[di]
@@ -200,7 +198,7 @@ const tryGcDeleteSet = (ds, store, gcFilter) => {
 const tryMergeDeleteSet = (ds, store) => {
   // try to merge deleted / gc'd items
   // merge from right to left for better efficiecy and so we don't miss any merge targets
-  for (const [client, deleteItems] of ds.clients) {
+  ds.clients.forEach((deleteItems, client) => {
     const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
     for (let di = deleteItems.length - 1; di >= 0; di--) {
       const deleteItem = deleteItems[di]
@@ -214,7 +212,7 @@ const tryMergeDeleteSet = (ds, store) => {
         tryToMergeWithLeft(structs, si)
       }
     }
-  }
+  })
 }
 
 /**
@@ -292,7 +290,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
       tryMergeDeleteSet(ds, store)
 
       // on all affected store.clients props, try to merge
-      for (const [client, clock] of transaction.afterState) {
+      transaction.afterState.forEach((clock, client) => {
         const beforeClock = transaction.beforeState.get(client) || 0
         if (beforeClock !== clock) {
           const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
@@ -302,7 +300,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
             tryToMergeWithLeft(structs, i)
           }
         }
-      }
+      })
       // try to merge mergeStructs
       // @todo: it makes more sense to transform mergeStructs to a DS, sort it, and merge from right to left
       //        but at the moment DS does not handle duplicates

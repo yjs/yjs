@@ -132,7 +132,7 @@ export class PermanentUserData {
    * @return {string | null}
    */
   getUserByDeletedId (id) {
-    for (const [userDescription, ds] of this.dss) {
+    for (const [userDescription, ds] of this.dss.entries()) {
       if (isDeleted(ds, id)) {
         return userDescription
       }
