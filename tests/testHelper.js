@@ -4,6 +4,8 @@ import {
   createDeleteSetFromStructStore,
   getStateVector,
   Item,
+  useV1Encoding,
+  useV2Encoding,
   DeleteItem, DeleteSet, StructStore, Doc // eslint-disable-line
 } from '../src/internals.js'
 
@@ -240,6 +242,13 @@ export const init = (tc, { users = 5 } = {}, initTestObject) => {
     users: []
   }
   const gen = tc.prng
+  // choose an encoding approach at random
+  if (prng.bool(gen)) {
+    useV2Encoding()
+  } else {
+    useV1Encoding()
+  }
+
   const testConnector = new TestConnector(gen)
   result.testConnector = testConnector
   for (let i = 0; i < users; i++) {
@@ -253,6 +262,7 @@ export const init = (tc, { users = 5 } = {}, initTestObject) => {
   }
   testConnector.syncAll()
   result.testObjects = result.users.map(initTestObject || (() => null))
+  useV1Encoding()
   return /** @type {any} */ (result)
 }
 

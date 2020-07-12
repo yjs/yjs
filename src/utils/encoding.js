@@ -45,6 +45,13 @@ export let DefaultDSDecoder = DSDecoderV1
 export let DefaultUpdateEncoder = UpdateEncoderV1
 export let DefaultUpdateDecoder = UpdateDecoderV1
 
+export const useV1Encoding = () => {
+  DefaultDSEncoder = DSEncoderV1
+  DefaultDSDecoder = DSDecoderV1
+  DefaultUpdateEncoder = UpdateEncoderV1
+  DefaultUpdateDecoder = UpdateDecoderV1
+}
+
 export const useV2Encoding = () => {
   DefaultDSEncoder = DSEncoderV2
   DefaultDSDecoder = DSDecoderV2
