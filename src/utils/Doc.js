@@ -170,6 +170,24 @@ export class Doc extends Observable {
   }
 
   /**
+   * Converts the entire document into a js object, recursively traversing each yjs type
+   * 
+   * @return {Object<string, any>}
+   */
+  toJSON () {
+    /**
+     * @type {Object<string, any>}
+     */
+    const doc = {}
+
+    for (const [k, v] of this.share.entries()) {
+      doc[k] = v.toJSON()
+    }
+    
+    return doc
+  }
+
+  /**
    * Emit `destroy` event and unregister all event handlers.
    */
   destroy () {
