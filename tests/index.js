@@ -1,6 +1,6 @@
 
-import * as array from './y-array.tests.js'
 import * as map from './y-map.tests.js'
+import * as array from './y-array.tests.js'
 import * as text from './y-text.tests.js'
 import * as xml from './y-xml.tests.js'
 import * as encoding from './encoding.tests.js'
@@ -16,7 +16,7 @@ if (isBrowser) {
   log.createVConsole(document.body)
 }
 runTests({
-  map, array, text, xml, doc, encoding, undoredo, compatibility
+  doc, map, array, text, xml, encoding, undoredo, compatibility
 }).then(success => {
   /* istanbul ignore next */
   if (isNode) {
