@@ -205,6 +205,40 @@ export const testFormattingRemovedInMidText = tc => {
   t.assert(Y.getTypeChildren(text0).length === 3)
 }
 
+const id = Y.createID(0, 0)
+const c = new Y.ContentString('a')
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testBestCase = tc => {
+  const N = 2000000
+  const items = new Array(N)
+  t.measureTime('time to create two million items in the best case', () => {
+    const parent = /** @type {any} */ ({})
+    let prevItem = null
+    for (let i = 0; i < N; i++) {
+      /**
+       * @type {Y.Item}
+       */
+      const n = new Y.Item(Y.createID(0, 0), null, null, null, null, null, null, c)
+      // items.push(n)
+      items[i] = n
+      n.right = prevItem
+      n.rightOrigin = prevItem ? id : null
+      n.content = c
+      n.parent = parent
+      prevItem = n
+    }
+  })
+  const newArray = new Array(N)
+  t.measureTime('time to copy two million items to new Array', () => {
+    for (let i = 0; i < N; i++) {
+      newArray[i] = items[i]
+    }
+  })
+}
+
 const tryGc = () => {
   if (typeof global !== 'undefined' && global.gc) {
     global.gc()
@@ -215,7 +249,7 @@ const tryGc = () => {
  * @param {t.TestCase} tc
  */
 export const testLargeFragmentedDocument = tc => {
-  const itemsToInsert = 1000000
+  const itemsToInsert = 2000000
   let update = /** @type {any} */ (null)
   ;(() => {
     const doc1 = new Y.Doc()

@@ -130,47 +130,68 @@ export const readClientsStructRefs = (decoder, clientRefs, doc) => {
     /**
      * @type {Array<GC|Item>}
      */
-    const refs = []
+    const refs = new Array(numberOfStructs)
     const client = decoder.readClient()
     let clock = decoding.readVarUint(decoder.restDecoder)
+    // const start = performance.now()
     clientRefs.set(client, refs)
     for (let i = 0; i < numberOfStructs; i++) {
       const info = decoder.readInfo()
       if ((binary.BITS5 & info) !== 0) {
         /**
-         * The item that was originally to the left of this item.
-         * @type {ID | null}
+         * The optimized implementation doesn't use any variables because inlining variables is faster.
+         * Below a non-optimized version is shown that implements the basic algorithm with
+         * a few comments
          */
+        const cantCopyParentInfo = (info & (binary.BIT7 | binary.BIT8)) === 0
+        // If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
+        // and we read the next string as parentYKey.
+        // It indicates how we store/retrieve parent from `y.share`
+        // @type {string|null}
+        const struct = new Item(
+          createID(client, clock),
+          null, // leftd
+          (info & binary.BIT8) === binary.BIT8 ? decoder.readLeftID() : null, // origin
+          null, // right
+          (info & binary.BIT7) === binary.BIT7 ? decoder.readRightID() : null, // right origin
+          cantCopyParentInfo ? (decoder.readParentInfo() ? doc.get(decoder.readString()) : decoder.readLeftID()) : null, // parent
+          cantCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoder.readString() : null, // parentSub
+          readItemContent(decoder, info) // item content
+        )
+        /* A non-optimized implementation of the above algorithm:
+
+        // The item that was originally to the left of this item.
         const origin = (info & binary.BIT8) === binary.BIT8 ? decoder.readLeftID() : null
-        /**
-         * The item that was originally to the right of this item.
-         * @type {ID | null}
-         */
+        // The item that was originally to the right of this item.
         const rightOrigin = (info & binary.BIT7) === binary.BIT7 ? decoder.readRightID() : null
-        const canCopyParentInfo = (info & (binary.BIT7 | binary.BIT8)) === 0
-        const hasParentYKey = canCopyParentInfo ? decoder.readParentInfo() : false
-        /**
-         * If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
-         * and we read the next string as parentYKey.
-         * It indicates how we store/retrieve parent from `y.share`
-         * @type {string|null}
-         */
-        const parentYKey = canCopyParentInfo && hasParentYKey ? decoder.readString() : null
+        const cantCopyParentInfo = (info & (binary.BIT7 | binary.BIT8)) === 0
+        const hasParentYKey = cantCopyParentInfo ? decoder.readParentInfo() : false
+        // If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
+        // and we read the next string as parentYKey.
+        // It indicates how we store/retrieve parent from `y.share`
+        // @type {string|null}
+        const parentYKey = cantCopyParentInfo && hasParentYKey ? decoder.readString() : null
 
         const struct = new Item(
-          createID(client, clock), null, origin, null, rightOrigin,
-          canCopyParentInfo && !hasParentYKey ? decoder.readLeftID() : (parentYKey !== null ? doc.get(parentYKey) : null), // parent
-          canCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoder.readString() : null, // parentSub
-          /** @type {AbstractContent} */ (readItemContent(decoder, info)) // item content
+          createID(client, clock),
+          null, // leftd
+          origin, // origin
+          null, // right
+          rightOrigin, // right origin
+          cantCopyParentInfo && !hasParentYKey ? decoder.readLeftID() : (parentYKey !== null ? doc.get(parentYKey) : null), // parent
+          cantCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoder.readString() : null, // parentSub
+          readItemContent(decoder, info) // item content
         )
-        refs.push(struct)
+        */
+        refs[i] = struct
         clock += struct.length
       } else {
         const len = decoder.readLen()
-        refs.push(new GC(createID(client, clock), len))
+        refs[i] = new GC(createID(client, clock), len)
         clock += len
       }
     }
+    // console.log('time to read: ', performance.now() - start) // @todo remove
   }
   return clientRefs
 }
@@ -221,18 +242,15 @@ const resumeStructIntegration = (transaction, store) => {
       }
     }
     const ref = stack[stack.length - 1]
-    const refID = ref.id
-    const client = refID.client
-    const refClock = refID.clock
-    const localClock = getState(store, client)
-    const offset = refClock < localClock ? localClock - refClock : 0
-    if (refClock + offset !== localClock) {
+    const localClock = getState(store, ref.id.client)
+    const offset = ref.id.clock < localClock ? localClock - ref.id.clock : 0
+    if (ref.id.clock + offset !== localClock) {
       // A previous message from this client is missing
       // check if there is a pending structRef with a smaller clock and switch them
-      const structRefs = clientsStructRefs.get(client) || { refs: [], i: 0 }
+      const structRefs = clientsStructRefs.get(ref.id.client) || { refs: [], i: 0 }
       if (structRefs.refs.length !== structRefs.i) {
         const r = structRefs.refs[structRefs.i]
-        if (r.id.clock < refClock) {
+        if (r.id.clock < ref.id.clock) {
           // put ref with smaller clock on stack instead and continue
           structRefs.refs[structRefs.i] = ref
           stack[stack.length - 1] = r
@@ -246,7 +264,12 @@ const resumeStructIntegration = (transaction, store) => {
       return
     }
     const missing = ref.getMissing(transaction, store)
-    if (missing !== null) {
+    if (missing === null) {
+      if (offset < ref.length) {
+        ref.integrate(transaction, offset)
+      }
+      stack.pop()
+    } else {
       // get the struct reader that has the missing struct
       const structRefs = clientsStructRefs.get(missing) || { refs: [], i: 0 }
       if (structRefs.refs.length === structRefs.i) {
@@ -254,11 +277,6 @@ const resumeStructIntegration = (transaction, store) => {
         return
       }
       stack.push(structRefs.refs[structRefs.i++])
-    } else {
-      if (offset < ref.length) {
-        ref.integrate(transaction, offset)
-      }
-      stack.pop()
     }
   }
   store.pendingClientsStructRefs.clear()
@@ -342,11 +360,22 @@ const cleanupPendingStructs = pendingClientsStructRefs => {
  */
 export const readStructs = (decoder, transaction, store) => {
   const clientsStructRefs = new Map()
+  let start = performance.now()
   readClientsStructRefs(decoder, clientsStructRefs, transaction.doc)
+  console.log('time to read structs: ', performance.now() - start) // @todo remove
+  start = performance.now()
   mergeReadStructsIntoPendingReads(store, clientsStructRefs)
+  console.log('time to merge: ', performance.now() - start) // @todo remove
+  start = performance.now()
   resumeStructIntegration(transaction, store)
+  console.log('time to integrate: ', performance.now() - start) // @todo remove
+  start = performance.now()
   cleanupPendingStructs(store.pendingClientsStructRefs)
+  console.log('time to cleanup: ', performance.now() - start) // @todo remove
+  start = performance.now()
   tryResumePendingDeleteReaders(transaction, store)
+  console.log('time to resume delete readers: ', performance.now() - start) // @todo remove
+  start = performance.now()
 }
 
 /**
