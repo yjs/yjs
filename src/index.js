@@ -69,5 +69,6 @@ export {
   PermanentUserData, // @TODO experimental
   tryGc,
   transact,
-  AbstractConnector
+  AbstractConnector,
+  logType
 } from './internals.js'

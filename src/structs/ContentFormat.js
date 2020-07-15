@@ -1,6 +1,6 @@
 
 import {
-  AbstractUpdateDecoder, AbstractUpdateEncoder, Item, StructStore, Transaction // eslint-disable-line
+  AbstractType, AbstractUpdateDecoder, AbstractUpdateEncoder, Item, StructStore, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error.js'
@@ -66,7 +66,11 @@ export class ContentFormat {
    * @param {Transaction} transaction
    * @param {Item} item
    */
-  integrate (transaction, item) {}
+  integrate (transaction, item) {
+    // @todo searchmarker are currently unsupported for rich text documents
+    /** @type {AbstractType<any>} */ (item.parent)._searchMarker = null
+  }
+
   /**
    * @param {Transaction} transaction
    */

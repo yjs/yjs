@@ -285,7 +285,29 @@ export class Item extends AbstractStruct {
      * @type {AbstractContent}
      */
     this.content = content
+    /**
+     * bit1: keep
+     * bit2: countable
+     * bit3: deleted
+     * bit4: mark - mark node as fast-search-marker
+     * @type {number} byte
+     */
     this.info = this.content.isCountable() ? binary.BIT2 : 0
+  }
+
+  /**
+   * This is used to mark the item as an indexed fast-search marker
+   *
+   * @type {boolean}
+   */
+  set marker (isMarked) {
+    if (((this.info & binary.BIT4) > 0) !== isMarked) {
+      this.info ^= binary.BIT4
+    }
+  }
+
+  get marker () {
+    return (this.info & binary.BIT4) > 0
   }
 
   /**

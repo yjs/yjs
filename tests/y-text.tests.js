@@ -205,6 +205,50 @@ export const testFormattingRemovedInMidText = tc => {
   t.assert(Y.getTypeChildren(text0).length === 3)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
+export const testInsertAndDeleteAtRandomPositions = tc => {
+  const N = 10000
+  const { text0 } = init(tc, { users: 1 })
+  const gen = tc.prng
+
+  // create initial content
+  // let expectedResult = init
+  text0.insert(0, prng.word(gen, N / 2, N / 2))
+
+  // apply changes
+  for (let i = 0; i < N; i++) {
+    const pos = prng.uint32(gen, 0, text0.length)
+    if (prng.bool(gen)) {
+      const len = prng.uint32(gen, 1, 5)
+      const word = prng.word(gen, 0, len)
+      text0.insert(pos, word)
+      // expectedResult = expectedResult.slice(0, pos) + word + expectedResult.slice(pos)
+    } else {
+      const len = prng.uint32(gen, 0, math.min(3, text0.length - pos))
+      text0.delete(pos, len)
+      // expectedResult = expectedResult.slice(0, pos) + expectedResult.slice(pos + len)
+    }
+  }
+  // t.compareStrings(text0.toString(), expectedResult)
+  t.describe('final length', '' + text0.length)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testAppendChars = tc => {
+  const N = 10000
+  const { text0 } = init(tc, { users: 1 })
+
+  // apply changes
+  for (let i = 0; i < N; i++) {
+    text0.insert(text0.length, 'a')
+  }
+  t.assert(text0.length === N)
+}
+
 const id = Y.createID(0, 0)
 const c = new Y.ContentString('a')
 
@@ -281,6 +325,102 @@ export const testLargeFragmentedDocument = tc => {
 
 let charCounter = 0
 
+/**
+ * Random tests for pure text operations without formatting.
+ *
+ * @type Array<function(any,prng.PRNG):void>
+ */
+const textChanges = [
+  /**
+   * @param {Y.Doc} y
+   * @param {prng.PRNG} gen
+   */
+  (y, gen) => { // insert text
+    const ytext = y.getText('text')
+    const insertPos = prng.int32(gen, 0, ytext.length)
+    const text = charCounter++ + prng.word(gen)
+    const prevText = ytext.toString()
+    ytext.insert(insertPos, text)
+    t.compareStrings(ytext.toString(), prevText.slice(0, insertPos) + text + prevText.slice(insertPos))
+  },
+  /**
+   * @param {Y.Doc} y
+   * @param {prng.PRNG} gen
+   */
+  (y, gen) => { // delete text
+    const ytext = y.getText('text')
+    const contentLen = ytext.toString().length
+    const insertPos = prng.int32(gen, 0, contentLen)
+    const overwrite = math.min(prng.int32(gen, 0, contentLen - insertPos), 2)
+    const prevText = ytext.toString()
+    ytext.delete(insertPos, overwrite)
+    t.compareStrings(ytext.toString(), prevText.slice(0, insertPos) + prevText.slice(insertPos + overwrite))
+  }
+]
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGenerateTextChanges5 = tc => {
+  const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 5))
+  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  t.assert(cleanups === 0)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGenerateTextChanges30 = tc => {
+  const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 30))
+  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  t.assert(cleanups === 0)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGenerateTextChanges40 = tc => {
+  const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 40))
+  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  t.assert(cleanups === 0)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGenerateTextChanges50 = tc => {
+  const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 50))
+  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  t.assert(cleanups === 0)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGenerateTextChanges70 = tc => {
+  const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 70))
+  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  t.assert(cleanups === 0)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGenerateTextChanges90 = tc => {
+  const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 90))
+  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  t.assert(cleanups === 0)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGenerateTextChanges300 = tc => {
+  const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 300))
+  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  t.assert(cleanups === 0)
+}
+
 const marks = [
   { bold: true },
   { italic: true },
@@ -293,6 +433,8 @@ const marksChoices = [
 ]
 
 /**
+ * Random tests for all features of y-text (formatting, embeds, ..).
+ *
  * @type Array<function(any,prng.PRNG):void>
  */
 const qChanges = [
@@ -302,7 +444,7 @@ const qChanges = [
    */
   (y, gen) => { // insert text
     const ytext = y.getText('text')
-    const insertPos = prng.int32(gen, 0, ytext.toString().length)
+    const insertPos = prng.int32(gen, 0, ytext.length)
     const attrs = prng.oneOf(gen, marksChoices)
     const text = charCounter++ + prng.word(gen)
     ytext.insert(insertPos, text, attrs)
@@ -313,7 +455,7 @@ const qChanges = [
    */
   (y, gen) => { // insert embed
     const ytext = y.getText('text')
-    const insertPos = prng.int32(gen, 0, ytext.toString().length)
+    const insertPos = prng.int32(gen, 0, ytext.length)
     ytext.insertEmbed(insertPos, { image: 'https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png' })
   },
   /**

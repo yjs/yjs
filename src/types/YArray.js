@@ -15,7 +15,7 @@ import {
   YArrayRefID,
   callTypeObservers,
   transact,
-  AbstractUpdateDecoder, AbstractUpdateEncoder, Doc, Transaction, Item // eslint-disable-line
+  ArraySearchMarker, AbstractUpdateDecoder, AbstractUpdateEncoder, Doc, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 
 /**
@@ -47,6 +47,10 @@ export class YArray extends AbstractType {
      * @private
      */
     this._prelimContent = []
+    /**
+     * @type {Array<ArraySearchMarker>}
+     */
+    this._searchMarker = []
   }
 
   /**
@@ -80,6 +84,7 @@ export class YArray extends AbstractType {
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
   _callObserver (transaction, parentSubs) {
+    super._callObserver(transaction, parentSubs)
     callTypeObservers(this, transaction, new YArrayEvent(this, transaction))
   }
 

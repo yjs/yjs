@@ -352,7 +352,10 @@ const arrayTransactions = [
       content.push(uniqueNumber)
     }
     var pos = prng.int32(gen, 0, yarray.length)
+    const oldContent = yarray.toArray()
     yarray.insert(pos, content)
+    oldContent.splice(pos, 0, ...content)
+    t.compareArrays(yarray.toArray(), oldContent) // we want to make sure that fastSearch markers insert at the correct position
   },
   function insertTypeArray (user, gen) {
     const yarray = user.getArray('array')
@@ -384,7 +387,10 @@ const arrayTransactions = [
           type.delete(somePos, delLength)
         }
       } else {
+        const oldContent = yarray.toArray()
         yarray.delete(somePos, delLength)
+        oldContent.splice(somePos, delLength)
+        t.compareArrays(yarray.toArray(), oldContent)
       }
     }
   }
@@ -393,8 +399,8 @@ const arrayTransactions = [
 /**
  * @param {t.TestCase} tc
  */
-export const testRepeatGeneratingYarrayTests4 = tc => {
-  applyRandomTests(tc, arrayTransactions, 4)
+export const testRepeatGeneratingYarrayTests6 = tc => {
+  applyRandomTests(tc, arrayTransactions, 6)
 }
 
 /**
