@@ -19,7 +19,7 @@ import * as iterator from 'lib0/iterator.js'
 import * as error from 'lib0/error.js'
 import * as math from 'lib0/math.js'
 
-const maxSearchMarker = 60
+const maxSearchMarker = 80
 
 /**
  * A unique timestamp that identifies each marker.
@@ -152,11 +152,12 @@ export const findMarker = (yarray, index) => {
   // if (marker) {
   //   if (window.lengthes == null) {
   //     window.lengthes = []
+  //     window.getLengthes = () => window.lengthes.sort((a, b) => a - b)
   //   }
   //   window.lengthes.push(marker.index - pindex)
   //   console.log('distance', marker.index - pindex, 'len', p && p.parent.length)
   // }
-  if (marker !== null && math.abs(marker.index - pindex) < 30) {
+  if (marker !== null && math.abs(marker.index - pindex) < p.parent.length / maxSearchMarker) {
     // adjust existing marker
     overwriteMarker(marker, p, pindex)
     return marker

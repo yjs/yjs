@@ -209,7 +209,7 @@ export const testFormattingRemovedInMidText = tc => {
  * @param {t.TestCase} tc
  */
 export const testInsertAndDeleteAtRandomPositions = tc => {
-  const N = 10000
+  const N = 100000
   const { text0 } = init(tc, { users: 1 })
   const gen = tc.prng
 
