@@ -11,7 +11,7 @@ import {
   ContentAny,
   ContentBinary,
   getItemCleanStart,
-  AbstractUpdateEncoder, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
+  YText, YArray, AbstractUpdateEncoder, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map.js'
@@ -157,7 +157,7 @@ export const findMarker = (yarray, index) => {
   //   window.lengthes.push(marker.index - pindex)
   //   console.log('distance', marker.index - pindex, 'len', p && p.parent.length)
   // }
-  if (marker !== null && math.abs(marker.index - pindex) < p.parent.length / maxSearchMarker) {
+  if (marker !== null && math.abs(marker.index - pindex) < /** @type {YText|YArray<any>} */ (p.parent).length / maxSearchMarker) {
     // adjust existing marker
     overwriteMarker(marker, p, pindex)
     return marker

@@ -293,7 +293,7 @@ const tryGc = () => {
  * @param {t.TestCase} tc
  */
 export const testLargeFragmentedDocument = tc => {
-  const itemsToInsert = 2000000
+  const itemsToInsert = 5000000
   let update = /** @type {any} */ (null)
   ;(() => {
     const doc1 = new Y.Doc()
