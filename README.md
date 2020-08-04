@@ -571,6 +571,8 @@ triggers a single change event. <br>You can specify an optional <code>origin</co
 parameter that is stored on <code>transaction.origin</code> and
 <code>on('update', (update, origin) => ..)</code>.
   </dd>
+  <b><code>toJSON():any</code><b>
+  <dd>Converts the entire document into a js object, recursively traversing each yjs type.</dd>
   <b><code>get(string, Y.[TypeClass]):[Type]</code></b>
   <dd>Define a shared type.</dd>
   <b><code>getArray(string):Y.Array</code></b>
