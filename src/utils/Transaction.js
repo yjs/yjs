@@ -337,6 +337,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
       }
       if (transactionCleanups.length <= i + 1) {
         doc._transactionCleanups = []
+        doc.emit('afterAllTransactions', [doc, transactionCleanups])
       } else {
         cleanupTransactions(transactionCleanups, i + 1)
       }
@@ -360,6 +361,9 @@ export const transact = (doc, f, origin = null, local = true) => {
     initialCall = true
     doc._transaction = new Transaction(doc, origin, local)
     transactionCleanups.push(doc._transaction)
+    if (transactionCleanups.length === 1) {
+      doc.emit('beforeAllTransactions', [doc])
+    }
     doc.emit('beforeTransaction', [doc._transaction, doc])
   }
   try {
