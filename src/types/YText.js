@@ -782,8 +782,7 @@ export class YText extends AbstractType {
           continue
         }
         iterateStructs(transaction, /** @type {Array<Item|GC>} */ (doc.store.clients.get(client)), clock, afterClock, item => {
-          // @ts-ignore
-          if (item.content.constructor === ContentFormat) {
+          if (!item.deleted && /** @type {Item} */ (item).content.constructor === ContentFormat) {
             foundFormattingItem = true
           }
         })
