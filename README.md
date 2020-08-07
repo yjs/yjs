@@ -572,7 +572,9 @@ parameter that is stored on <code>transaction.origin</code> and
 <code>on('update', (update, origin) => ..)</code>.
   </dd>
   <b><code>toJSON():any</code><b>
-  <dd>Converts the entire document into a js object, recursively traversing each yjs type.</dd>
+  <dd>
+Converts the entire document into a js object, recursively traversing each yjs type.
+  </dd>
   <b><code>get(string, Y.[TypeClass]):[Type]</code></b>
   <dd>Define a shared type.</dd>
   <b><code>getArray(string):Y.Array</code></b>
@@ -600,7 +602,10 @@ peers. You can apply document updates in any order and multiple times.
   <b><code>on('afterTransaction', function(Y.Transaction, Y.Doc):void)</code></b>
   <dd>Emitted after each transaction.</dd>
   <b><code>on('beforeAllTransactions', function(Y.Doc):void)</code></b>
-  <dd>Transactions can be nested (e.g. when an event within a transaction calls another transaction). Emitted before the first transaction.</dd>
+  <dd>
+Transactions can be nested (e.g. when an event within a transaction calls another
+transaction). Emitted before the first transaction.
+  </dd>
   <b><code>on('afterAllTransactions', function(Y.Doc, Array&lt;Y.Transaction&gt;):void)</code></b>
   <dd>Emitted after the last transaction is cleaned up.</dd>
 </dl>
