@@ -571,7 +571,7 @@ triggers a single change event. <br>You can specify an optional <code>origin</co
 parameter that is stored on <code>transaction.origin</code> and
 <code>on('update', (update, origin) => ..)</code>.
   </dd>
-  <b><code>toJSON():any</code><b>
+  <b><code>toJSON():any</code></b>
   <dd>
 Converts the entire document into a js object, recursively traversing each yjs type.
   </dd>
