@@ -278,37 +278,13 @@ export const readAndApplyDeleteSet = (decoder, transaction, store) => {
     const state = getState(store, client)
     for (let i = 0; i < numberOfDeletes; i++) {
       const clock = decoder.readDsClock()
-      const clockEnd = clock + decoder.readDsLen()
+      const len = decoder.readDsLen()
+      const clockEnd = clock + len
       if (clock < state) {
         if (state < clockEnd) {
           addToDeleteSet(unappliedDS, client, state, clockEnd - state)
         }
-        let index = findIndexSS(structs, clock)
-        /**
-         * We can ignore the case of GC and Delete structs, because we are going to skip them
-         * @type {Item}
-         */
-        // @ts-ignore
-        let struct = structs[index]
-        // split the first item if necessary
-        if (!struct.deleted && struct.id.clock < clock) {
-          structs.splice(index + 1, 0, splitItem(transaction, struct, clock - struct.id.clock))
-          index++ // increase we now want to use the next struct
-        }
-        while (index < structs.length) {
-          // @ts-ignore
-          struct = structs[index++]
-          if (struct.id.clock < clockEnd) {
-            if (!struct.deleted) {
-              if (clockEnd < struct.id.clock + struct.length) {
-                structs.splice(index, 0, splitItem(transaction, struct, clockEnd - struct.id.clock))
-              }
-              struct.delete(transaction)
-            }
-          } else {
-            break
-          }
-        }
+        applyDeleteItem(transaction, structs, { clock, len })
       } else {
         addToDeleteSet(unappliedDS, client, clock, clockEnd - clock)
       }
@@ -319,5 +295,45 @@ export const readAndApplyDeleteSet = (decoder, transaction, store) => {
     const unappliedDSEncoder = new DSEncoderV2()
     writeDeleteSet(unappliedDSEncoder, unappliedDS)
     store.pendingDeleteReaders.push(new DSDecoderV2(decoding.createDecoder((unappliedDSEncoder.toUint8Array()))))
+  }
+}
+
+/**
+ * Applies a DeleteItem on a document
+ *
+ * @param {Transaction} transaction
+ * @param {Array<GC|Item>} structs
+ * @param {DeleteItem} deleteItem
+ *
+ * @private
+ * @function
+ */
+export const applyDeleteItem = (transaction, structs, { clock, len }) => {
+  const clockEnd = clock + len
+  let index = findIndexSS(structs, clock)
+  /**
+   * We can ignore the case of GC and Delete structs, because we are going to skip them
+   * @type {Item}
+   */
+  // @ts-ignore
+  let struct = structs[index]
+  // split the first item if necessary
+  if (!struct.deleted && struct.id.clock < clock) {
+    structs.splice(index + 1, 0, splitItem(transaction, struct, clock - struct.id.clock))
+    index++ // increase we now want to use the next struct
+  }
+  while (index < structs.length) {
+    // @ts-ignore
+    struct = structs[index++]
+    if (struct.id.clock < clockEnd) {
+      if (!struct.deleted) {
+        if (clockEnd < struct.id.clock + struct.length) {
+          structs.splice(index, 0, splitItem(transaction, struct, clockEnd - struct.id.clock))
+        }
+        struct.delete(transaction)
+      }
+    } else {
+      break
+    }
   }
 }

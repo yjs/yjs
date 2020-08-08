@@ -3,6 +3,7 @@ import {
   isDeleted,
   createDeleteSetFromStructStore,
   getStateVector,
+  getItem,
   getItemCleanStart,
   iterateDeletedStructs,
   writeDeleteSet,
@@ -11,7 +12,11 @@ import {
   readStateVector,
   createDeleteSet,
   createID,
+  ID,
   getState,
+  findIndexCleanStart,
+  AbstractStruct,
+  applyDeleteItem,
   AbstractDSDecoder, AbstractDSEncoder, DSEncoderV1, DSEncoderV2, DSDecoderV1, DSDecoderV2, Transaction, Doc, DeleteSet, Item // eslint-disable-line
 } from '../internals.js'
 
@@ -147,4 +152,125 @@ export const splitSnapshotAffectedStructs = (transaction, snapshot) => {
     iterateDeletedStructs(transaction, snapshot.ds, item => {})
     meta.add(snapshot)
   }
+}
+
+/**
+ * @param {Doc} originDoc
+ * @param {Snapshot} snapshot
+ * @return {Doc}
+ */
+export const createDocFromSnapshot = (originDoc, snapshot) => {
+  if (originDoc.gc) {
+    // we should not try to restore a GC-ed document, because some of the restored items might have their content deleted
+    throw new Error('originDoc must not be garbage collected')
+  }
+  const { sv, ds } = snapshot
+  const needState = new Map(sv)
+
+  let len = 0
+  const tempStructs = []
+  /**
+   * State Map
+   * @type any[]
+   */
+  const itemsToIntegrate = []
+  originDoc.transact(transaction => {
+    for (let user of needState.keys()) {
+      let clock = needState.get(user) || 0
+      const userItems = originDoc.store.clients.get(user)
+      if (!userItems) {
+        continue
+      }
+
+      let lastIndex
+      const lastItem = userItems[userItems.length - 1]
+      if (clock === lastItem.id.clock + lastItem.length) {
+        lastIndex = lastItem.id.clock + lastItem.length + 1
+      } else {
+        lastIndex = findIndexCleanStart(transaction, userItems, clock)
+      }
+      for (let i = 0; i < lastIndex; i++) {
+        const item = userItems[i]
+        if (item instanceof Item) {
+          itemsToIntegrate.push({
+            id: item.id,
+            left: item.left ? item.left.id : null,
+            right: item.right ? item.right.id : null,
+            origin: item.origin ? createID(item.origin.client, item.origin.clock) : null,
+            rightOrigin: item.rightOrigin ? createID(item.rightOrigin.client, item.rightOrigin.clock) : null,
+            parent: item.parent,
+            parentSub: item.parentSub,
+            content: item.content.copy()
+          })
+        }
+      }
+    }
+  })
+
+  const newDoc = new Doc()
+
+  // copy root types
+  const sharedKeysByValue = new Map()
+  for (const [key, t] of originDoc.share) {
+    const Constructor = t.constructor
+    newDoc.get(key, Constructor)
+    sharedKeysByValue.set(t, key)
+  }
+
+  let lastId = new Map()
+  /**
+   * @param {ID} id
+   * @return {Item|null}
+   */
+  const getItemSafe = (id) => {
+    if (!lastId.has(id.client)) {
+      return null
+    }
+    if (lastId.get(id.client) < id.clock) {
+      return null
+    }
+    return getItem(newDoc.store, id)
+  }
+  newDoc.transact(transaction => {
+    for (const item of itemsToIntegrate) {
+      let parent = null
+      let left = null
+      let right = null
+      const sharedKey = sharedKeysByValue.get(item.parent)
+      if (sharedKey) {
+        parent = newDoc.get(sharedKey)
+      } else if (item.parent) {
+        parent = getItem(newDoc.store, item.parent._item.id).content.type
+      }
+      if (item.left) {
+        left = getItemSafe(item.left)
+      }
+      if (item.right) {
+        right = getItemSafe(item.right)
+      }
+      lastId.set(item.id.client, item.id.clock)
+      const newItem = new Item(
+        item.id,
+        left,
+        item.origin,
+        right,
+        item.rightOrigin,
+        parent, // not sure
+        item.parentSub,
+        item.content
+      )
+      newItem.integrate(transaction, 0)
+    }
+
+    for (const [client, deleteItems] of ds.clients) {
+      for (const deleteItem of deleteItems) {
+        const items = newDoc.store.clients.get(client)
+        if (items) {
+          applyDeleteItem(transaction, items, deleteItem)
+        }
+      }
+    }
+  })
+
+  return newDoc
 }
