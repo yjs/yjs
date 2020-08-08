@@ -501,7 +501,7 @@ const deleteText = (transaction, currPos, length) => {
  * @typedef {Object} DeltaItem
  * @property {number|undefined} DeltaItem.delete
  * @property {number|undefined} DeltaItem.retain
- * @property {string|undefined} DeltaItem.string
+ * @property {string|undefined} DeltaItem.insert
  * @property {Object<string,any>} DeltaItem.attributes
  */
 
