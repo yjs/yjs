@@ -94,6 +94,7 @@ are implemented in separate modules.
 | [Quill](https://quilljs.com/) | ✔ | [y-quill](http://github.com/yjs/y-quill) | [demo](https://demos.yjs.dev/quill/quill.html) |
 | [CodeMirror](https://codemirror.net/) | ✔ | [y-codemirror](http://github.com/yjs/y-codemirror) | [demo](https://demos.yjs.dev/codemirror/codemirror.html) |
 | [Monaco](https://microsoft.github.io/monaco-editor/) | ✔ | [y-monaco](http://github.com/yjs/y-monaco) | [demo](https://demos.yjs.dev/monaco/monaco.html) |
+| [Slate](https://github.com/ianstormtaylor/slate) | :no_entry_sign: | [slate-yjs](https://github.com/bitphinix/slate-yjs) | [demo](https://github.com/bitphinix/slate-yjs-example) |
 
 ### Providers
 
