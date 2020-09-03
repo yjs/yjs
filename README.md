@@ -892,11 +892,14 @@ do not require a central source of truth.
 
 Yjs implements a modified version of the algorithm described in [this
 paper](https://www.researchgate.net/publication/310212186_Near_Real-Time_Peer-to-Peer_Shared_Editing_on_Extensible_Data_Types).
-I will eventually publish a paper that describes why this approach works so well
-in practice. Note: Since operations make up the document structure, we prefer
-the term *struct* now.
+This [article](https://blog.kevinjahns.de/are-crdts-suitable-for-shared-editing/)
+explains a simple optimization on the CRDT model and
+gives more insight about the performance characteristics in Yjs.
+More information about the specific implementation is available in
+[INTERNALS.md](./INTERNALS.md) and in
+[this walkthrough of the Yjs codebase](https://youtu.be/0l5XgnQ6rB4).
 
-CRDTs suitable for shared text editing suffer from the fact that they only grow
+CRDTs that suitable for shared text editing suffer from the fact that they only grow
 in size. There are CRDTs that do not grow in size, but they do not have the
 characteristics that are benificial for shared text editing (like intention
 preservation). Yjs implements many improvements to the original algorithm that
