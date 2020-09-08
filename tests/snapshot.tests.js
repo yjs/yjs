@@ -1,5 +1,6 @@
 import { createDocFromSnapshot, Doc, snapshot, YMap } from '../src/internals'
 import * as t from 'lib0/testing.js'
+import { init } from './testHelper'
 
 /**
  * @param {t.TestCase} tc
@@ -91,7 +92,6 @@ export const testDeletedItemsBase = tc => {
 }
 
 
-
 /**
  * @param {t.TestCase} tc
  */
@@ -106,5 +106,50 @@ export const testDeletedItems2 = tc => {
 
   t.compare(docRestored.getArray('array').toArray(), ['item1', 'item3'])
   t.compare(doc.getArray('array').toArray(), ['item0', 'item1', 'item3'])
+}
+
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testDependentChanges = tc => {
+  const { array0, array1, testConnector } = init(tc, { users: 2 })
+
+  if (!array0.doc) {
+    throw new Error('no document 0')
+  }
+  if (!array1.doc) {
+    throw new Error('no document 1')
+  }
+
+  /**
+   * @type Doc
+   */
+  const doc0 = array0.doc
+  /**
+   * @type Doc
+   */
+  const doc1 = array1.doc
+
+  doc0.gc = false
+  doc1.gc = false
+
+  array0.insert(0, ['user1item1'])
+  testConnector.syncAll()
+  array1.insert(1, ['user2item1'])
+  testConnector.syncAll()
+
+  const snap = snapshot(array0.doc)
+
+  array0.insert(2, ['user1item2'])
+  testConnector.syncAll()
+  array1.insert(3, ['user2item2'])
+  testConnector.syncAll()
+
+  const docRestored0 = createDocFromSnapshot(array0.doc, snap)
+  t.compare(docRestored0.getArray('array').toArray(), ['user1item1', 'user2item1'])
+
+  const docRestored1 = createDocFromSnapshot(array1.doc, snap)
+  t.compare(docRestored1.getArray('array').toArray(), ['user1item1', 'user2item1'])
 }
 
