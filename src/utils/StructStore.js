@@ -124,9 +124,6 @@ export const findIndexSS = (structs, clock) => {
   let left = 0
   let right = structs.length - 1
   let mid = structs[right]
-  if (!mid) {
-    console.log('\n\nMID!', right, clock, structs.length, mid, '\n\n')
-  }
   let midclock = mid.id.clock
   if (midclock === clock) {
     return right
@@ -137,9 +134,6 @@ export const findIndexSS = (structs, clock) => {
   let midindex = math.floor((clock / (midclock + mid.length - 1)) * right) // pivoting the search
   while (left <= right) {
     mid = structs[midindex]
-    if (!mid) {
-      console.log('\n\n2', midindex, clock, '\n\n')
-    }
     midclock = mid.id.clock
     if (midclock <= clock) {
       if (clock < midclock + mid.length) {
