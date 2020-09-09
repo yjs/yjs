@@ -10,14 +10,24 @@ import {
   YMap,
   YXmlFragment,
   transact,
-  Item, Transaction, YEvent // eslint-disable-line
+  ContentDoc, Item, Transaction, YEvent // eslint-disable-line
 } from '../internals.js'
 
 import { Observable } from 'lib0/observable.js'
 import * as random from 'lib0/random.js'
 import * as map from 'lib0/map.js'
+import * as array from 'lib0/array.js'
 
 export const generateNewClientId = random.uint32
+
+/**
+ * @typedef {Object} DocOpts
+ * @property {boolean} [DocOpts.gc=true] Disable garbage collection (default: gc=true)
+ * @property {function(Item):boolean} [DocOpts.gcFilter] Will be called before an Item is garbage collected. Return false to keep the Item.
+ * @property {string} [DocOpts.guid] Define a globally unique identifier for this document
+ * @property {any} [DocOpts.meta] Any kind of meta information you want to associate with this document. If this is a subdocument, remote peers will store the meta information as well.
+ * @property {boolean} [DocOpts.autoLoad] If a subdocument, automatically load document. If this is a subdocument, remote peers will load the document as well automatically.
+ */
 
 /**
  * A Yjs instance handles the state of shared data.
@@ -25,15 +35,14 @@ export const generateNewClientId = random.uint32
  */
 export class Doc extends Observable {
   /**
-   * @param {Object} conf configuration
-   * @param {boolean} [conf.gc] Disable garbage collection (default: gc=true)
-   * @param {function(Item):boolean} [conf.gcFilter] Will be called before an Item is garbage collected. Return false to keep the Item.
+   * @param {DocOpts} [opts] configuration
    */
-  constructor ({ gc = true, gcFilter = () => true } = {}) {
+  constructor ({ guid = random.uuidv4(), gc = true, gcFilter = () => true, meta = null, autoLoad = false } = {}) {
     super()
     this.gc = gc
     this.gcFilter = gcFilter
     this.clientID = generateNewClientId()
+    this.guid = guid
     /**
      * @type {Map<string, AbstractType<YEvent>>}
      */
@@ -47,6 +56,43 @@ export class Doc extends Observable {
      * @type {Array<Transaction>}
      */
     this._transactionCleanups = []
+    /**
+     * @type {Set<Doc>}
+     */
+    this.subdocs = new Set()
+    /**
+     * If this document is a subdocument - a document integrated into another document - then _item is defined.
+     * @type {Item?}
+     */
+    this._item = null
+    this.shouldLoad = autoLoad
+    this.autoLoad = autoLoad
+    this.meta = meta
+  }
+
+  /**
+   * Notify the parent document that you request to load data into this subdocument (if it is a subdocument).
+   *
+   * `load()` might be used in the future to request any provider to load the most current data.
+   *
+   * It is safe to call `load()` multiple times.
+   */
+  load () {
+    const item = this._item
+    if (item !== null && !this.shouldLoad) {
+      transact(/** @type {any} */ (item.parent).doc, transaction => {
+        transaction.subdocsLoaded.add(this)
+      }, null, true)
+    }
+    this.shouldLoad = true
+  }
+
+  getSubdocs () {
+    return this.subdocs
+  }
+
+  getSubdocGuids () {
+    return new Set(Array.from(this.subdocs).map(doc => doc.guid))
   }
 
   /**
@@ -191,13 +237,32 @@ export class Doc extends Observable {
    * Emit `destroy` event and unregister all event handlers.
    */
   destroy () {
+    array.from(this.subdocs).forEach(subdoc => subdoc.destroy())
+    const item = this._item
+    if (item !== null) {
+      this._item = null
+      const content = /** @type {ContentDoc} */ (item.content)
+      if (item.deleted) {
+        // @ts-ignore
+        content.doc = null
+      } else {
+        content.doc = new Doc({ guid: this.guid, ...content.opts })
+        content.doc._item = item
+      }
+      transact(/** @type {any} */ (item).parent.doc, transaction => {
+        if (!item.deleted) {
+          transaction.subdocsAdded.add(content.doc)
+        }
+        transaction.subdocsRemoved.add(this)
+      }, null, true)
+    }
     this.emit('destroyed', [true])
     super.destroy()
   }
 
   /**
    * @param {string} eventName
-   * @param {function} f
+   * @param {function(...any):any} f
    */
   on (eventName, f) {
     super.on(eventName, f)

@@ -17,6 +17,7 @@ import {
   readContentAny,
   readContentString,
   readContentEmbed,
+  readContentDoc,
   createID,
   readContentFormat,
   readContentType,
@@ -672,14 +673,15 @@ export const readItemContent = (decoder, info) => contentRefs[info & binary.BITS
  */
 export const contentRefs = [
   () => { throw error.unexpectedCase() }, // GC is not ItemContent
-  readContentDeleted,
-  readContentJSON,
-  readContentBinary,
-  readContentString,
-  readContentEmbed,
-  readContentFormat,
-  readContentType,
-  readContentAny
+  readContentDeleted, // 1
+  readContentJSON, // 2
+  readContentBinary, // 3
+  readContentString, // 4
+  readContentEmbed, // 5
+  readContentFormat, // 6
+  readContentType, // 7
+  readContentAny, // 8
+  readContentDoc // 9
 ]
 
 /**

@@ -57,3 +57,70 @@ export const testToJSON = tc => {
     }
   }, 'doc.toJSON has array and recursive map')
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testSubdoc = tc => {
+  const doc = new Y.Doc()
+  doc.load() // doesn't do anything
+  {
+    /**
+     * @type {Array<any>|null}
+     */
+    let event = /** @type {any} */ (null)
+    doc.on('subdocs', subdocs => {
+      event = [Array.from(subdocs.added).map(x => x.guid), Array.from(subdocs.removed).map(x => x.guid), Array.from(subdocs.loaded).map(x => x.guid)]
+    })
+    const subdocs = doc.getMap('mysubdocs')
+    const docA = new Y.Doc({ guid: 'a' })
+    docA.load()
+    subdocs.set('a', docA)
+    t.compare(event, [['a'], [], ['a']])
+
+    event = null
+    subdocs.get('a').load()
+    t.assert(event === null)
+
+    event = null
+    subdocs.get('a').destroy()
+    t.compare(event, [['a'], ['a'], []])
+    subdocs.get('a').load()
+    t.compare(event, [[], [], ['a']])
+
+    subdocs.set('b', new Y.Doc({ guid: 'a' }))
+    t.compare(event, [['a'], [], []])
+    subdocs.get('b').load()
+    t.compare(event, [[], [], ['a']])
+
+    const docC = new Y.Doc({ guid: 'c' })
+    docC.load()
+    subdocs.set('c', docC)
+    t.compare(event, [['c'], [], ['c']])
+
+    t.compare(Array.from(doc.getSubdocGuids()), ['a', 'c'])
+  }
+
+  const doc2 = new Y.Doc()
+  {
+    t.compare(Array.from(doc2.getSubdocs()), [])
+    /**
+     * @type {Array<any>|null}
+     */
+    let event = /** @type {any} */ (null)
+    doc2.on('subdocs', subdocs => {
+      event = [Array.from(subdocs.added).map(d => d.guid), Array.from(subdocs.removed).map(d => d.guid), Array.from(subdocs.loaded).map(d => d.guid)]
+    })
+    Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc))
+    t.compare(event, [['a', 'a', 'c'], [], []])
+
+    doc2.getMap('mysubdocs').get('a').load()
+    t.compare(event, [[], [], ['a']])
+
+    t.compare(Array.from(doc2.getSubdocGuids()), ['a', 'c'])
+
+    doc2.getMap('mysubdocs').delete('a')
+    t.compare(event, [[], ['a'], []])
+    t.compare(Array.from(doc2.getSubdocGuids()), ['a', 'c'])
+  }
+}
