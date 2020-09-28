@@ -3,7 +3,6 @@ import {
   isDeleted,
   createDeleteSetFromStructStore,
   getStateVector,
-  getItem,
   getItemCleanStart,
   iterateDeletedStructs,
   writeDeleteSet,
@@ -12,22 +11,18 @@ import {
   readStateVector,
   createDeleteSet,
   createID,
-  ID,
   getState,
-  findIndexCleanStart,
-  AbstractStruct,
-  writeClientsStructs,
   findIndexSS,
-  readUpdateV2,
-  UpdateEncoderV2, UpdateDecoderV2,
-  AbstractDSDecoder, AbstractDSEncoder, DSEncoderV1, DSEncoderV2, DSDecoderV1, DSDecoderV2, Transaction, Doc, DeleteSet, Item // eslint-disable-line
+  UpdateEncoderV2,
+  DefaultDSEncoder,
+  applyUpdateV2,
+  AbstractDSDecoder, AbstractDSEncoder, DSEncoderV2, DSDecoderV1, DSDecoderV2, Transaction, Doc, DeleteSet, Item // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map.js'
 import * as set from 'lib0/set.js'
 import * as decoding from 'lib0/decoding.js'
 import * as encoding from 'lib0/encoding.js'
-import { DefaultDSEncoder } from './encoding.js'
 
 export class Snapshot {
   /**
@@ -161,59 +156,47 @@ export const splitSnapshotAffectedStructs = (transaction, snapshot) => {
 /**
  * @param {Doc} originDoc
  * @param {Snapshot} snapshot
+ * @param {Doc} [newDoc] Optionally, you may define the Yjs document that receives the data from originDoc
  * @return {Doc}
  */
-export const createDocFromSnapshot = (originDoc, snapshot) => {
+export const createDocFromSnapshot = (originDoc, snapshot, newDoc = new Doc()) => {
   if (originDoc.gc) {
     // we should not try to restore a GC-ed document, because some of the restored items might have their content deleted
     throw new Error('originDoc must not be garbage collected')
   }
   const { sv, ds } = snapshot
-  const needState = new Map(sv)
 
-  let len = 0
-  const tempStructs = []
-  /**
-   * State Map
-   * @type any[]
-   */
-  const itemsToIntegrate = []
-
-  /**
-   * @type Uint8Array
-   */
-  let updateBuffer = new Uint8Array()
+  const encoder = new UpdateEncoderV2()
   originDoc.transact(transaction => {
-    const encoder = new UpdateEncoderV2()
-
-    encoding.writeVarUint(encoder.restEncoder, sv.size)
+    let size = 0
+    sv.forEach(clock => {
+      if (clock > 0) {
+        size++
+      }
+    })
+    encoding.writeVarUint(encoder.restEncoder, size)
     // splitting the structs before writing them to the encoder
     for (const [client, clock] of sv) {
+      if (clock === 0) {
+        continue
+      }
       if (clock < getState(originDoc.store, client)) {
         getItemCleanStart(transaction, createID(client, clock))
       }
-
       const structs = originDoc.store.clients.get(client) || []
       const lastStructIndex = findIndexSS(structs, clock - 1)
       // write # encoded structs
       encoding.writeVarUint(encoder.restEncoder, lastStructIndex + 1)
       encoder.writeClient(client)
-      encoding.writeVarUint(encoder.restEncoder, structs[0].id.clock)
-      const firstStruct = structs[0]
-      firstStruct.write(encoder, 0)
-      for (let i = 1; i <= lastStructIndex; i++) {
+      // first clock written is 0
+      encoding.writeVarUint(encoder.restEncoder, 0)
+      for (let i = 0; i <= lastStructIndex; i++) {
         structs[i].write(encoder, 0)
       }
     }
-
     writeDeleteSet(encoder, ds)
-
-    updateBuffer = encoder.toUint8Array()
   })
 
-  const newDoc = new Doc()
-
-  readUpdateV2(decoding.createDecoder(updateBuffer), newDoc, 'snapshot')
-
+  applyUpdateV2(newDoc, encoder.toUint8Array(), 'snapshot')
   return newDoc
 }

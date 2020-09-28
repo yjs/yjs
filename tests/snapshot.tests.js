@@ -20,6 +20,26 @@ export const testBasicRestoreSnapshot = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testEmptyRestoreSnapshot = tc => {
+  const doc = new Doc({ gc: false })
+  const snap = snapshot(doc)
+  snap.sv.set(9999, 0)
+  doc.getArray().insert(0, ['world'])
+
+  const docRestored = createDocFromSnapshot(doc, snap)
+
+  t.compare(docRestored.getArray().toArray(), [])
+  t.compare(doc.getArray().toArray(), ['world'])
+
+  // now this snapshot reflects the latest state. It shoult still work.
+  const snap2 = snapshot(doc)
+  const docRestored2 = createDocFromSnapshot(doc, snap2)
+  t.compare(docRestored2.getArray().toArray(), ['world'])
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRestoreSnapshotWithSubType = tc => {
   const doc = new Doc({ gc: false })
   doc.getArray('array').insert(0, [new YMap()])
@@ -74,7 +94,6 @@ export const testRestoreLeftItem = tc => {
   t.compare(doc.getArray('array').toArray(), ['item0'])
 }
 
-
 /**
  * @param {t.TestCase} tc
  */
@@ -91,7 +110,6 @@ export const testDeletedItemsBase = tc => {
   t.compare(doc.getArray('array').toArray(), ['item0'])
 }
 
-
 /**
  * @param {t.TestCase} tc
  */
@@ -107,7 +125,6 @@ export const testDeletedItems2 = tc => {
   t.compare(docRestored.getArray('array').toArray(), ['item1', 'item3'])
   t.compare(doc.getArray('array').toArray(), ['item0', 'item1', 'item3'])
 }
-
 
 /**
  * @param {t.TestCase} tc
@@ -152,4 +169,3 @@ export const testDependentChanges = tc => {
   const docRestored1 = createDocFromSnapshot(array1.doc, snap)
   t.compare(docRestored1.getArray('array').toArray(), ['user1item1', 'user2item1'])
 }
-
