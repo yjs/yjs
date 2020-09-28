@@ -16,13 +16,17 @@ import {
   getState,
   findIndexCleanStart,
   AbstractStruct,
-  applyDeleteItem,
+  writeClientsStructs,
+  findIndexSS,
+  readUpdateV2,
+  UpdateEncoderV2, UpdateDecoderV2,
   AbstractDSDecoder, AbstractDSEncoder, DSEncoderV1, DSEncoderV2, DSDecoderV1, DSDecoderV2, Transaction, Doc, DeleteSet, Item // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map.js'
 import * as set from 'lib0/set.js'
 import * as decoding from 'lib0/decoding.js'
+import * as encoding from 'lib0/encoding.js'
 import { DefaultDSEncoder } from './encoding.js'
 
 export class Snapshot {
@@ -174,103 +178,42 @@ export const createDocFromSnapshot = (originDoc, snapshot) => {
    * @type any[]
    */
   const itemsToIntegrate = []
+
+  /**
+   * @type Uint8Array
+   */
+  let updateBuffer = new Uint8Array()
   originDoc.transact(transaction => {
-    for (let user of needState.keys()) {
-      let clock = needState.get(user) || 0
-      const userItems = originDoc.store.clients.get(user)
-      if (!userItems) {
-        continue
+    const encoder = new UpdateEncoderV2()
+
+    encoding.writeVarUint(encoder.restEncoder, sv.size)
+    // splitting the structs before writing them to the encoder
+    for (const [client, clock] of sv) {
+      if (clock < getState(originDoc.store, client)) {
+        getItemCleanStart(transaction, createID(client, clock))
       }
 
-      let lastIndex
-      const lastItem = userItems[userItems.length - 1]
-      if (clock === lastItem.id.clock + lastItem.length) {
-        lastIndex = lastItem.id.clock + lastItem.length + 1
-      } else {
-        lastIndex = findIndexCleanStart(transaction, userItems, clock)
-      }
-      for (let i = 0; i < lastIndex; i++) {
-        const item = userItems[i]
-        if (item instanceof Item) {
-          itemsToIntegrate.push({
-            id: item.id,
-            left: item.left ? item.left.id : null,
-            right: item.right ? item.right.id : null,
-            origin: item.origin ? createID(item.origin.client, item.origin.clock) : null,
-            rightOrigin: item.rightOrigin ? createID(item.rightOrigin.client, item.rightOrigin.clock) : null,
-            parent: item.parent,
-            parentSub: item.parentSub,
-            content: item.content.copy()
-          })
-        }
+      const structs = originDoc.store.clients.get(client) || []
+      const lastStructIndex = findIndexSS(structs, clock - 1)
+      // write # encoded structs
+      encoding.writeVarUint(encoder.restEncoder, lastStructIndex + 1)
+      encoder.writeClient(client)
+      encoding.writeVarUint(encoder.restEncoder, structs[0].id.clock)
+      const firstStruct = structs[0]
+      firstStruct.write(encoder, 0)
+      for (let i = 1; i <= lastStructIndex; i++) {
+        structs[i].write(encoder, 0)
       }
     }
+
+    writeDeleteSet(encoder, ds)
+
+    updateBuffer = encoder.toUint8Array()
   })
 
   const newDoc = new Doc()
 
-  // copy root types
-  const sharedKeysByValue = new Map()
-  for (const [key, t] of originDoc.share) {
-    const Constructor = t.constructor
-    newDoc.get(key, Constructor)
-    sharedKeysByValue.set(t, key)
-  }
-
-  let lastId = new Map()
-  /**
-   * @param {ID} id
-   * @return {Item|null}
-   */
-  const getItemSafe = (id) => {
-    if (!lastId.has(id.client)) {
-      return null
-    }
-    if (lastId.get(id.client) < id.clock) {
-      return null
-    }
-    return getItem(newDoc.store, id)
-  }
-  newDoc.transact(transaction => {
-    for (const item of itemsToIntegrate) {
-      let parent = null
-      let left = null
-      let right = null
-      const sharedKey = sharedKeysByValue.get(item.parent)
-      if (sharedKey) {
-        parent = newDoc.get(sharedKey)
-      } else if (item.parent) {
-        parent = getItem(newDoc.store, item.parent._item.id).content.type
-      }
-      if (item.left) {
-        left = getItemSafe(item.left)
-      }
-      if (item.right) {
-        right = getItemSafe(item.right)
-      }
-      lastId.set(item.id.client, item.id.clock)
-      const newItem = new Item(
-        item.id,
-        left,
-        item.origin,
-        right,
-        item.rightOrigin,
-        parent, // not sure
-        item.parentSub,
-        item.content
-      )
-      newItem.integrate(transaction, 0)
-    }
-
-    for (const [client, deleteItems] of ds.clients) {
-      for (const deleteItem of deleteItems) {
-        const items = newDoc.store.clients.get(client)
-        if (items) {
-          applyDeleteItem(transaction, items, deleteItem)
-        }
-      }
-    }
-  })
+  readUpdateV2(decoding.createDecoder(updateBuffer), newDoc, 'snapshot')
 
   return newDoc
 }
