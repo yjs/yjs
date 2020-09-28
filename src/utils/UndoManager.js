@@ -123,6 +123,12 @@ const popStackItem = (undoManager, stack, eventType) => {
         undoManager.emit('stack-item-popped', [{ stackItem: result, type: eventType }, undoManager])
       }
     }
+    transaction.changed.forEach((subProps, type) => {
+      // destroy search marker if necessary
+      if (subProps.has(null) && type._searchMarker) {
+        type._searchMarker.length = 0
+      }
+    })
   }, undoManager)
   return result
 }
@@ -151,10 +157,7 @@ export class UndoManager extends Observable {
    * @param {AbstractType<any>|Array<AbstractType<any>>} typeScope Accepts either a single type, or an array of types
    * @param {UndoManagerOptions} options
    */
-  constructor (typeScope, { captureTimeout, deleteFilter = () => true, trackedOrigins = new Set([null]) } = {}) {
-    if (captureTimeout == null) {
-      captureTimeout = 500
-    }
+  constructor (typeScope, { captureTimeout = 500, deleteFilter = () => true, trackedOrigins = new Set([null]) } = {}) {
     super()
     this.scope = typeScope instanceof Array ? typeScope : [typeScope]
     this.deleteFilter = deleteFilter

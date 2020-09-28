@@ -54,6 +54,28 @@ export const testUndoText = tc => {
 }
 
 /**
+ * Test case to fix #241
+ * @param {t.TestCase} tc
+ */
+export const testDoubleUndo = tc => {
+  const doc = new Y.Doc()
+  const text = doc.getText()
+  text.insert(0, '1221')
+
+  const manager = new Y.UndoManager(text)
+
+  text.insert(2, '3')
+  text.insert(3, '3')
+
+  manager.undo()
+  manager.undo()
+
+  text.insert(2, '3')
+
+  t.compareStrings(text.toString(), '12321')
+}
+
+/**
  * @param {t.TestCase} tc
  */
 export const testUndoMap = tc => {
