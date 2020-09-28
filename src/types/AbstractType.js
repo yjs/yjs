@@ -11,7 +11,7 @@ import {
   ContentAny,
   ContentBinary,
   getItemCleanStart,
-  YText, YArray, AbstractUpdateEncoder, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
+  ContentDoc, YText, YArray, AbstractUpdateEncoder, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map.js'
@@ -611,6 +611,10 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
             left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))))
             left.integrate(transaction, 0)
             break
+          case Doc:
+            left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentDoc(/** @type {Doc} */ (c)))
+            left.integrate(transaction, 0)
+            break
           default:
             if (c instanceof AbstractType) {
               left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentType(c))
@@ -760,6 +764,9 @@ export const typeMapSet = (transaction, parent, key, value) => {
         break
       case Uint8Array:
         content = new ContentBinary(/** @type {Uint8Array} */ (value))
+        break
+      case Doc:
+        content = new ContentDoc(/** @type {Doc} */ (value))
         break
       default:
         if (value instanceof AbstractType) {
