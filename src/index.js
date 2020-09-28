@@ -47,6 +47,7 @@ export {
   findRootTypeKey,
   typeListToArraySnapshot,
   typeMapGetSnapshot,
+  createDocFromSnapshot,
   iterateDeletedStructs,
   applyUpdate,
   applyUpdateV2,
