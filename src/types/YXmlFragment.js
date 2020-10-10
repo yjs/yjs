@@ -2,7 +2,6 @@
  * @module YXml
  */
 
-import { XmlElement } from 'yjs'
 import {
   YXmlEvent,
   YXmlElement,
@@ -222,7 +221,7 @@ export class YXmlFragment extends AbstractType {
         return true
       }
 
-      if (filters.attributes && element instanceof XmlElement) {
+      if (filters.attributes && element instanceof YXmlElement) {
         const attributes = element.getAttributes()
         const keys = Object.keys(filters.attributes)
 
