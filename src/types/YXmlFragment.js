@@ -32,9 +32,9 @@ import {
 
 /**
  * @typedef {Object} Filters
- * @property {CSS_Selector|undefined}        Filters.tagname
- * @property {ID|undefined}                  Filters.id
- * @property {Record<string, any>|undefined} Filters.attributes
+ * @property {CSS_Selector=}           Filters.tagname
+ * @property {ID=}                     Filters.id
+ * @property {Record<string, string>=} Filters.attributes
  */
 
 /**
@@ -188,8 +188,7 @@ export class YXmlFragment extends AbstractType {
    * Query support:
    *   - tagname
    *   - id
-   * TODO:
-   *   - attribute
+   *   - attributes
    *
    * @param {CSS_Selector|Filters} query The query on the children.
    * @return {YXmlElement|YXmlText|YXmlHook|null} The first element that matches the query or null.
@@ -202,11 +201,15 @@ export class YXmlFragment extends AbstractType {
      */
     let filters = {}
 
-    // Allow passing a string to query the tagname for backwards compatability
+    // Allow passing a string to query the tagname for compatability with DOM api
     if (typeof query === 'string') {
-      filters.tagname = query.toUpperCase()
+      filters.tagname = query
     } else {
       filters = query
+    }
+
+    if (filters.tagname) {
+      filters.tagname = filters.tagname.toUpperCase()
     }
 
     const iterator = new YXmlTreeWalker(this, element => {
@@ -231,7 +234,7 @@ export class YXmlFragment extends AbstractType {
         }
 
         // accounts for passing an empty object as a filter
-        if (keys.length > 1) {
+        if (keys.length > 0) {
           return true
         }
       }

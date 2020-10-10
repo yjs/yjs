@@ -64,12 +64,17 @@ export const testTreewalker = tc => {
   const paragraph2 = new Y.XmlElement('p')
   const text1 = new Y.XmlText('init')
   const text2 = new Y.XmlText('text')
+  paragraph1.setAttribute('custom', '123')
   paragraph1.insert(0, [text1, text2])
   xml0.insert(0, [paragraph1, paragraph2, new Y.XmlElement('img')])
   const allParagraphs = xml0.querySelectorAll('p')
+  const paragraph1ID = paragraph1._item ? paragraph1._item.id : undefined
   t.assert(allParagraphs.length === 2, 'found exactly two paragraphs')
   t.assert(allParagraphs[0] === paragraph1, 'querySelectorAll found paragraph1')
   t.assert(allParagraphs[1] === paragraph2, 'querySelectorAll found paragraph2')
-  t.assert(xml0.querySelector('p') === paragraph1, 'querySelector found paragraph1')
+  t.assert(xml0.querySelector('p') === paragraph1, 'querySelector found paragraph1 by string query')
+  t.assert(xml0.querySelector({ tagname: 'p' }) === paragraph1, 'querySelector found paragraph1 by tagname')
+  t.assert(xml0.querySelector({ id: paragraph1ID }) === paragraph1, 'querySelector found paragraph1 by id')
+  t.assert(xml0.querySelector({ attributes: { custom: '123' } }) === paragraph1, 'querySelector found paragraph1 by attribute')
   compare(users)
 }
