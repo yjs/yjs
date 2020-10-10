@@ -2,6 +2,7 @@
  * @module YXml
  */
 
+import { XmlElement } from 'yjs'
 import {
   YXmlEvent,
   YXmlElement,
@@ -14,7 +15,7 @@ import {
   YXmlFragmentRefID,
   callTypeObservers,
   transact,
-  AbstractUpdateDecoder, AbstractUpdateEncoder, Doc, ContentType, Transaction, Item, YXmlText, YXmlHook, Snapshot // eslint-disable-line
+  AbstractUpdateDecoder, AbstractUpdateEncoder, Doc, ID, ContentType, Transaction, Item, YXmlText, YXmlHook, Snapshot // eslint-disable-line
 } from '../internals.js'
 
 /**
@@ -27,6 +28,13 @@ import {
  *   query = '#idSelector'
  *
  * @typedef {string} CSS_Selector
+ */
+
+/**
+ * @typedef {Object} Filters
+ * @property {CSS_Selector|undefined}        Filters.tagname
+ * @property {ID|undefined}                  Filters.id
+ * @property {Record<string, any>|undefined} Filters.attributes
  */
 
 /**
@@ -98,7 +106,7 @@ export class YXmlTreeWalker {
             }
           }
         }
-      } while (n !== null && (n.deleted || !this._filter(/** @type {ContentType} */ (n.content).type)))
+      } while (n !== null && (n.deleted || !this._filter(/** @type {ContentType} */(n.content).type)))
     }
     this._firstCall = false
     if (n === null) {
@@ -140,7 +148,7 @@ export class YXmlFragment extends AbstractType {
    */
   _integrate (y, item) {
     super._integrate(y, item)
-    this.insert(0, /** @type {Array<any>} */ (this._prelimContent))
+    this.insert(0, /** @type {Array<any>} */(this._prelimContent))
     this._prelimContent = null
   }
 
@@ -179,19 +187,57 @@ export class YXmlFragment extends AbstractType {
    *
    * Query support:
    *   - tagname
-   * TODO:
    *   - id
+   * TODO:
    *   - attribute
    *
-   * @param {CSS_Selector} query The query on the children.
+   * @param {CSS_Selector|Filters} query The query on the children.
    * @return {YXmlElement|YXmlText|YXmlHook|null} The first element that matches the query or null.
    *
    * @public
    */
   querySelector (query) {
-    query = query.toUpperCase()
-    // @ts-ignore
-    const iterator = new YXmlTreeWalker(this, element => element.nodeName && element.nodeName.toUpperCase() === query)
+    /**
+     * @type {Filters}
+     */
+    let filters = {}
+
+    // Allow passing a string to query the tagname for backwards compatability
+    if (typeof query === 'string') {
+      filters.tagname = query.toUpperCase()
+    } else {
+      filters = query
+    }
+
+    const iterator = new YXmlTreeWalker(this, element => {
+      // @ts-ignore
+      if (filters.tagname && element.nodeName && element.nodeName.toUpperCase() === filters.tagname) {
+        return true
+      }
+
+      if (filters.id && element._item && element._item.id === filters.id) {
+        return true
+      }
+
+      if (filters.attributes && element instanceof XmlElement) {
+        const attributes = element.getAttributes()
+        const keys = Object.keys(filters.attributes)
+
+        // All passed attributes must match to count as a match
+        for (const key of keys) {
+          if (filters.attributes[key] !== attributes[key]) {
+            return false
+          }
+        }
+
+        // accounts for passing an empty object as a filter
+        if (keys.length > 1) {
+          return true
+        }
+      }
+
+      return false
+    })
     const next = iterator.next()
     if (next.done) {
       return null
