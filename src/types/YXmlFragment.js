@@ -195,6 +195,41 @@ export class YXmlFragment extends AbstractType {
    * @public
    */
   querySelector (query) {
+    const iterator = new YXmlTreeWalker(this, this._walkFilter(query))
+    const next = iterator.next()
+
+    if (next.done) {
+      return null
+    } else {
+      return next.value
+    }
+  }
+
+  /**
+   * Returns all YXmlElements that match the query.
+   * Similar to Dom's {@link querySelectorAll}.
+   *
+   * Query support:
+   *   - tagname
+   *   - id
+   *   - attributes
+   *
+   * @param {CSS_Selector|Filters} query The query on the children.
+   * @return {Array<YXmlElement|YXmlText|YXmlHook|null>} The elements that match this query.
+   *
+   * @public
+   */
+  querySelectorAll (query) {
+    return Array.from(new YXmlTreeWalker(this, this._walkFilter(query)))
+  }
+
+  /**
+   * Creates filter function to run against children when walking tree.
+   *
+   * @param {CSS_Selector|Filters} query The query on the children.
+   * @return {function(AbstractType<any>):boolean}
+   */
+  _walkFilter (query) {
     /**
      * @type {Filters}
      */
@@ -211,7 +246,7 @@ export class YXmlFragment extends AbstractType {
       filters.tagname = filters.tagname.toUpperCase()
     }
 
-    const iterator = new YXmlTreeWalker(this, element => {
+    return element => {
       // @ts-ignore
       if (filters.tagname && element.nodeName && element.nodeName.toUpperCase() === filters.tagname) {
         return true
@@ -239,30 +274,7 @@ export class YXmlFragment extends AbstractType {
       }
 
       return false
-    })
-    const next = iterator.next()
-    if (next.done) {
-      return null
-    } else {
-      return next.value
     }
-  }
-
-  /**
-   * Returns all YXmlElements that match the query.
-   * Similar to Dom's {@link querySelectorAll}.
-   *
-   * @todo Does not yet support all queries. Currently only query by tagName.
-   *
-   * @param {CSS_Selector} query The query on the children
-   * @return {Array<YXmlElement|YXmlText|YXmlHook|null>} The elements that match this query.
-   *
-   * @public
-   */
-  querySelectorAll (query) {
-    query = query.toUpperCase()
-    // @ts-ignore
-    return Array.from(new YXmlTreeWalker(this, element => element.nodeName && element.nodeName.toUpperCase() === query))
   }
 
   /**
