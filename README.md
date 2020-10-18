@@ -389,16 +389,21 @@ YTextEvents compute changes as deltas.
   </p>
   <pre>const ytext = new Y.Text()</pre>
   <dl>
-    <b><code>insert(index:number, content:string, [formattingAttributes:Object&lt;string,string&gt;])</code></b>
+    <b><code>insert(index:number, text:string, [attributes:TextAttributes])</code></b>
+    <dd>
+      Insert a string at <var>index</var> and assign formatting attributes to it.
+      <pre>ytext.insert(0, 'bold text', { bold: true })</pre>
+    </dd>
+    <b><code>insertEmbed(index:number, embed:Object&lt;string,string&gt;, [attributes:TextAttributes])</code></b>
     <dd>
       Insert a string at <var>index</var> and assign formatting attributes to it.
       <pre>ytext.insert(0, 'bold text', { bold: true })</pre>
     </dd>
     <b><code>delete(index:number, length:number)</code></b>
     <dd></dd>
-    <b><code>format(index:number, length:number, formattingAttributes:Object&lt;string,string&gt;)</code></b>
+    <b><code>format(index:number, length:number, attributes:TextAttributes)</code></b>
     <dd>Assign formatting attributes to a range in the text</dd>
-    <b><code>applyDelta(delta, opts:Object&lt;string,any&gt;)</code></b>
+    <b><code>applyDelta(delta: any, opts:Object&lt;string,any&gt;)</code></b>
     <dd>
         See <a href="https://quilljs.com/docs/delta/">Quill Delta</a>
         Can set options for preventing remove ending newLines, default is true.
@@ -410,7 +415,7 @@ YTextEvents compute changes as deltas.
     <dd>Transforms this type, without formatting options, into a string.</dd>
     <b><code>toJSON():string</code></b>
     <dd>See <code>toString</code></dd>
-    <b><code>toDelta():Delta</code></b>
+    <b><code>toDelta(snapshot: Snapshot, prevSnapshot: Snapshot, computeYChange:function('removed' | 'added', ID):any):any</code></b>
     <dd>
 Transforms this type to a <a href="https://quilljs.com/docs/delta/">Quill Delta</a>
     </dd>
@@ -455,7 +460,7 @@ or any of its children.
     <dd></dd>
     <b><code>length:number</code></b>
     <dd></dd>
-    <b><code>toArray():Array&lt;Y.XmlElement|Y.XmlText&gt;</code></b>
+    <b><code>toArray():Array&lt;Y.XmlElement|Y.XmlText|YXmlHook&gt;</code></b>
     <dd>Copies the children to a new Array.</dd>
     <b><code>toDOM():DocumentFragment</code></b>
     <dd>Transforms this type and all children to new DOM elements.</dd>
@@ -463,6 +468,14 @@ or any of its children.
     <dd>Get the XML serialization of all descendants.</dd>
     <b><code>toJSON():string</code></b>
     <dd>See <code>toString</code>.</dd>
+    <b><code>createTreeWalker(filter: function(AbstractType&lt;any&gt;):boolean):YXmlTreeWalker</code></b>
+    <dd>Create a subtree of childNodes.</dd>
+    <b><code>querySelector(query: CSS_Selector): YXmlElement|YXmlText|YXmlHook|null</code></b>
+    <dd>Returns the first YXmlElement that matches the query.</dd>
+    <b><code>querySelectorAll(query: CSS_Selector): Array&lt;YXmlElement|YXmlText|YXmlHook|null&gt;</code></b>
+    <dd>Returns all YXmlElements that match the query.</dd>
+    <b><code></code></b>
+    <dd></dd>
     <b><code>observe(function(YXmlEvent, Transaction):void)</code></b>
     <dd>
 Adds an event listener to this type that will be called synchronously every time
@@ -512,7 +525,7 @@ content and be actually XML compliant.
     <dd></dd>
     <b><code>getAttribute(attributeName:string):string</code></b>
     <dd></dd>
-    <b><code>getAttributes(attributeName:string):Object&lt;string,string&gt;</code></b>
+    <b><code>getAttributes(snapshot:Snapshot):Object&lt;string,string&gt;</code></b>
     <dd></dd>
     <b><code>toArray():Array&lt;Y.XmlElement|Y.XmlText&gt;</code></b>
     <dd>Copies the children to a new Array.</dd>
