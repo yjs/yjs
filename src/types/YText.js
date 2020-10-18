@@ -472,7 +472,7 @@ const deleteText = (transaction, currPos, length) => {
 
 /**
  * The Quill Delta format represents changes on a text document with
- * formatting information. For mor information visit {@link https://quilljs.com/docs/delta/|Quill Delta}
+ * formatting information. For more information visit {@link https://quilljs.com/docs/delta/|Quill Delta}
  *
  * @example
  *   {
