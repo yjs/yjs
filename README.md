@@ -396,8 +396,7 @@ YTextEvents compute changes as deltas.
     </dd>
     <b><code>insertEmbed(index:number, embed:Object&lt;string,string&gt;, [attributes:TextAttributes])</code></b>
     <dd>
-      Insert a string at <var>index</var> and assign formatting attributes to it.
-      <pre>ytext.insert(0, 'bold text', { bold: true })</pre>
+      Insert an embed at <var>index</var> and assign formatting attributes to it.
     </dd>
     <b><code>delete(index:number, length:number)</code></b>
     <dd></dd>
