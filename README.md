@@ -314,6 +314,8 @@ or any of its children.
     <dd></dd>
     <b><code>set(key:string, value:object|boolean|string|number|Uint8Array|Y.Type)</code></b>
     <dd></dd>
+    <b><code>size:number</code></b>
+    <dd>Total number of key/value pairs.</dd>
     <b><code>delete(key:string)</code></b>
     <dd></dd>
     <b><code>has(key:string):boolean</code></b>
