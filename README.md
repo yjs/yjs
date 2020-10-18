@@ -455,8 +455,6 @@ or any of its children.
     <dd></dd>
     <b><code>delete(index:number, length:number)</code></b>
     <dd></dd>
-    <b><code>get(index:number)</code></b>
-    <dd></dd>
     <b><code>length:number</code></b>
     <dd></dd>
     <b><code>toArray():Array&lt;Y.XmlElement|Y.XmlText|YXmlHook&gt;</code></b>
@@ -513,8 +511,6 @@ content and be actually XML compliant.
     <b><code>insert(index:number, content:Array&lt;Y.XmlElement|Y.XmlText&gt;)</code></b>
     <dd></dd>
     <b><code>delete(index:number, length:number)</code></b>
-    <dd></dd>
-    <b><code>get(index:number)</code></b>
     <dd></dd>
     <b><code>length:number</code></b>
     <dd></dd>
