@@ -139,4 +139,21 @@ export class PermanentUserData {
     }
     return null
   }
+
+  /**
+   * @return {Array<string>}
+   */
+  getUsers () {
+    const users = new Map()
+
+    for (const [userDescription] of this.dss.entries()) {
+      users.set(userDescription, true)
+    }
+
+    for (const client of this.clients.entries()) {
+      users.set(client[1], true)
+    }
+
+    return Array.from(users.keys())
+  }
 }

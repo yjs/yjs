@@ -60,4 +60,8 @@ export const testPermanentUserData = async tc => {
   applyUpdate(ydoc3, encodeStateAsUpdate(ydoc1))
   const pd3 = new PermanentUserData(ydoc3)
   pd3.setUserMapping(ydoc3, ydoc3.clientID, 'user a')
+
+  t.assert(pd3.getUsers().length === 2)
+  t.assert(pd3.getUsers().includes('user a'))
+  t.assert(pd3.getUsers().includes('user b'))
 }
