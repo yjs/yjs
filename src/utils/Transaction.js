@@ -284,6 +284,9 @@ const cleanupTransactions = (transactionCleanups, i) => {
                 .forEach(event => {
                   event.currentTarget = type
                 })
+              // sort events by path length so that top-level events are fired first.
+              events
+                .sort((event1, event2) => event1.path.length - event2.path.length)
               // We don't need to check for events.length
               // because we know it has at least one element
               callEventHandlerListeners(type._dEH, events, transaction)
