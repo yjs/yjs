@@ -51,7 +51,7 @@ export class PermanentUserData {
           })
         })
       })
-      this.dss.set(userDescription, mergeDeleteSets(ds.map(encodedDs => readDeleteSet(new DSDecoderV1(encodedDs)))))
+      this.dss.set(userDescription, mergeDeleteSets(ds.map(encodedDs => readDeleteSet(new DSDecoderV1(decoding.createDecoder(encodedDs))))))
       ids.observe(/** @param {YArrayEvent<any>} event */ event =>
         event.changes.added.forEach(item => item.content.getContent().forEach(addClientId))
       )
