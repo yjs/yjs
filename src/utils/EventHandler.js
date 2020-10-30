@@ -51,7 +51,12 @@ export const addEventHandlerListener = (eventHandler, f) =>
  * @function
  */
 export const removeEventHandlerListener = (eventHandler, f) => {
-  eventHandler.l = eventHandler.l.filter(g => f !== g)
+  const l = eventHandler.l
+  const len = l.length
+  eventHandler.l = l.filter(g => f !== g)
+  if (len === eventHandler.l.length) {
+    console.error('[yjs] Tried to remove event handler that doesn\'t exist.')
+  }
 }
 
 /**
