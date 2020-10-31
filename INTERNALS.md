@@ -12,7 +12,7 @@ which aren't described in the paper. The most notable is that items have an
 `originRight` as well as an `origin` property, which improves performance when
 many concurrent inserts happen after the same character.
 
-At it heart, Yjs is a list CRDT. Everything is squeezed into a list in order to
+At its heart, Yjs is a list CRDT. Everything is squeezed into a list in order to
 reuse the CRDT resolution algorithm:
 
 - Arrays are easy - they're lists of arbitrary items.
