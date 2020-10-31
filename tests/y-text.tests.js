@@ -249,6 +249,8 @@ export const testAppendChars = tc => {
   t.assert(text0.length === N)
 }
 
+const largeDocumentSize = 100000
+
 const id = Y.createID(0, 0)
 const c = new Y.ContentString('a')
 
@@ -256,7 +258,7 @@ const c = new Y.ContentString('a')
  * @param {t.TestCase} tc
  */
 export const testBestCase = tc => {
-  const N = 2000000
+  const N = largeDocumentSize
   const items = new Array(N)
   t.measureTime('time to create two million items in the best case', () => {
     const parent = /** @type {any} */ ({})
@@ -293,7 +295,7 @@ const tryGc = () => {
  * @param {t.TestCase} tc
  */
 export const testLargeFragmentedDocument = tc => {
-  const itemsToInsert = 1000000
+  const itemsToInsert = largeDocumentSize
   let update = /** @type {any} */ (null)
   ;(() => {
     const doc1 = new Y.Doc()
@@ -319,6 +321,40 @@ export const testLargeFragmentedDocument = tc => {
       Y.applyUpdateV2(doc2, update)
     })
   })()
+}
+
+/**
+ * Splitting surrogates can lead to invalid encoded documents.
+ *
+ * https://github.com/yjs/yjs/issues/248
+ *
+ * @param {t.TestCase} tc
+ */
+export const testSplitSurrogateCharacter = tc => {
+  {
+    const { users, text0 } = init(tc, { users: 2 })
+    users[1].disconnect() // disconnecting forces the user to encode the split surrogate
+    text0.insert(0, '👾') // insert surrogate character
+    // split surrogate, which should not lead to an encoding error
+    text0.insert(1, 'hi!')
+    compare(users)
+  }
+  {
+    const { users, text0 } = init(tc, { users: 2 })
+    users[1].disconnect() // disconnecting forces the user to encode the split surrogate
+    text0.insert(0, '👾👾') // insert surrogate character
+    // partially delete surrogate
+    text0.delete(1, 2)
+    compare(users)
+  }
+  {
+    const { users, text0 } = init(tc, { users: 2 })
+    users[1].disconnect() // disconnecting forces the user to encode the split surrogate
+    text0.insert(0, '👾👾') // insert surrogate character
+    // formatting will also split surrogates
+    text0.format(1, 2, { bold: true })
+    compare(users)
+  }
 }
 
 // RANDOM TESTS
