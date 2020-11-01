@@ -54,6 +54,18 @@ export class YArray extends AbstractType {
   }
 
   /**
+   * Construct a new YArray containing the specified items.
+   * @template T
+   * @param {Array<T>} items
+   * @return {YArray<T>}
+   */
+  static from(items) {
+    const a = new YArray()
+    a.push(items)
+    return a
+  }
+
+  /**
    * Integrate this type into the Yjs instance.
    *
    * * Save this struct in the os
