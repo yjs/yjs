@@ -26,8 +26,6 @@ import {
 } from '../internals.js'
 
 import * as error from 'lib0/error.js'
-import * as maplib from 'lib0/map.js'
-import * as set from 'lib0/set.js'
 import * as binary from 'lib0/binary.js'
 
 /**
@@ -594,7 +592,7 @@ export class Item extends AbstractStruct {
       }
       this.markDeleted()
       addToDeleteSet(transaction.deleteSet, this.id.client, this.id.clock, this.length)
-      maplib.setIfUndefined(transaction.changed, parent, set.create).add(this.parentSub)
+      addChangedTypeToTransaction(transaction, parent, this.parentSub)
       this.content.delete(transaction)
     }
   }
