@@ -255,6 +255,8 @@ position 0.
     <dd></dd>
     <b><code>get(index:number)</code></b>
     <dd></dd>
+    <b><code>slice(start:number, end:number):Array&lt;Object|boolean|Array|string|number|Uint8Array|Y.Type&gt;</code></b>
+    <dd>Retrieve a range of content</dd>
     <b><code>length:number</code></b>
     <dd></dd>
     <b>
@@ -320,6 +322,8 @@ or any of its children.
     <dd></dd>
     <b><code>get(index:number)</code></b>
     <dd></dd>
+    <b><code>clone():Y.Map</code></b>
+    <dd>Clone this type into a fresh Yjs type.</dd>
     <b><code>toJSON():Object&lt;string, Object|boolean|Array|string|number|Uint8Array&gt;</code></b>
     <dd>
 Copies the <code>[key,value]</code> pairs of this YMap to a new Object.It
@@ -451,8 +455,12 @@ or any of its children.
     <dd></dd>
     <b><code>get(index:number)</code></b>
     <dd></dd>
+    <b><code>slice(start:number, end:number):Array&lt;Y.XmlElement|Y.XmlText&gt;</code></b>
+    <dd>Retrieve a range of content</dd>
     <b><code>length:number</code></b>
     <dd></dd>
+    <b><code>clone():Y.XmlFragment</code></b>
+    <dd>Clone this type into a fresh Yjs type.</dd>
     <b><code>toArray():Array&lt;Y.XmlElement|Y.XmlText&gt;</code></b>
     <dd>Copies the children to a new Array.</dd>
     <b><code>toDOM():DocumentFragment</code></b>
@@ -512,6 +520,12 @@ content and be actually XML compliant.
     <dd></dd>
     <b><code>getAttributes(attributeName:string):Object&lt;string,string&gt;</code></b>
     <dd></dd>
+    <b><code>get(i:number):Y.XmlElement|Y.XmlText</code></b>
+    <dd>Retrieve the i-th element.</dd>
+    <b><code>slice(start:number, end:number):Array&lt;Y.XmlElement|Y.XmlText&gt;</code></b>
+    <dd>Retrieve a range of content</dd>
+    <b><code>clone():Y.XmlElement</code></b>
+    <dd>Clone this type into a fresh Yjs type.</dd>
     <b><code>toArray():Array&lt;Y.XmlElement|Y.XmlText&gt;</code></b>
     <dd>Copies the children to a new Array.</dd>
     <b><code>toDOM():Element</code></b>

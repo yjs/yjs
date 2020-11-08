@@ -310,6 +310,13 @@ export class AbstractType {
   }
 
   /**
+   * @return {AbstractType<EventType>}
+   */
+  clone () {
+    throw error.methodUnimplemented()
+  }
+
+  /**
    * @param {AbstractUpdateEncoder} encoder
    */
   _write (encoder) { }
@@ -379,6 +386,43 @@ export class AbstractType {
    * @return {any}
    */
   toJSON () {}
+}
+
+/**
+ * @param {AbstractType<any>} type
+ * @param {number} start
+ * @param {number} end
+ * @return {Array<any>}
+ *
+ * @private
+ * @function
+ */
+export const typeListSlice = (type, start, end) => {
+  if (start < 0) {
+    start = type._length + start
+  }
+  if (end < 0) {
+    end = type._length + end
+  }
+  let len = end - start
+  const cs = []
+  let n = type._start
+  while (n !== null && len > 0) {
+    if (n.countable && !n.deleted) {
+      const c = n.content.getContent()
+      if (c.length <= start) {
+        start -= c.length
+      } else {
+        for (let i = start; i < c.length && len > 0; i++) {
+          cs.push(c[i])
+          len--
+        }
+        start = 0
+      }
+    }
+    n = n.right
+  }
+  return cs
 }
 
 /**

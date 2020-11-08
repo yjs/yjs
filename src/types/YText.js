@@ -763,6 +763,15 @@ export class YText extends AbstractType {
   }
 
   /**
+   * @return {YText}
+   */
+  clone () {
+    const text = new YText()
+    text.applyDelta(this.toDelta())
+    return text
+  }
+
+  /**
    * Creates YTextEvent and calls observers.
    *
    * @param {Transaction} transaction

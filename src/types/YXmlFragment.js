@@ -14,6 +14,8 @@ import {
   YXmlFragmentRefID,
   callTypeObservers,
   transact,
+  typeListGet,
+  typeListSlice,
   AbstractUpdateDecoder, AbstractUpdateEncoder, Doc, ContentType, Transaction, Item, YXmlText, YXmlHook, Snapshot // eslint-disable-line
 } from '../internals.js'
 
@@ -146,6 +148,16 @@ export class YXmlFragment extends AbstractType {
 
   _copy () {
     return new YXmlFragment()
+  }
+
+  /**
+   * @return {YXmlFragment}
+   */
+  clone () {
+    const el = new YXmlFragment()
+    // @ts-ignore
+    el.insert(0, el.toArray().map(item => item instanceof AbstractType ? item.clone() : item))
+    return el
   }
 
   get length () {
@@ -314,6 +326,45 @@ export class YXmlFragment extends AbstractType {
    */
   toArray () {
     return typeListToArray(this)
+  }
+
+  /**
+   * Appends content to this YArray.
+   *
+   * @param {Array<YXmlElement|YXmlText>} content Array of content to append.
+   */
+  push (content) {
+    this.insert(this.length, content)
+  }
+
+  /**
+   * Preppends content to this YArray.
+   *
+   * @param {Array<YXmlElement|YXmlText>} content Array of content to preppend.
+   */
+  unshift (content) {
+    this.insert(0, content)
+  }
+
+  /**
+   * Returns the i-th element from a YArray.
+   *
+   * @param {number} index The index of the element to return from the YArray
+   * @return {YXmlElement|YXmlText}
+   */
+  get (index) {
+    return typeListGet(this, index)
+  }
+
+  /**
+   * Transforms this YArray to a JavaScript Array.
+   *
+   * @param {number} [start]
+   * @param {number} [end]
+   * @return {Array<YXmlElement|YXmlText>}
+   */
+  slice (start = 0, end = this.length) {
+    return typeListSlice(this, start, end)
   }
 
   /**

@@ -20,6 +20,21 @@ export const testBasicUpdate = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testSlice = tc => {
+  const doc1 = new Y.Doc()
+  const arr = doc1.getArray('array')
+  arr.insert(0, [1, 2, 3])
+  t.compareArrays(arr.slice(0), [1, 2, 3])
+  t.compareArrays(arr.slice(1), [2, 3])
+  t.compareArrays(arr.slice(0, -1), [1, 2])
+  arr.insert(0, [0])
+  t.compareArrays(arr.slice(0), [0, 1, 2, 3])
+  t.compareArrays(arr.slice(0, 2), [0, 1])
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testDeleteInsert = tc => {
   const { users, array0 } = init(tc, { users: 2 })
   array0.delete(0, 0)

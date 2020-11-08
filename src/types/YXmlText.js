@@ -15,6 +15,15 @@ export class YXmlText extends YText {
   }
 
   /**
+   * @return {YXmlText}
+   */
+  clone () {
+    const text = new YXmlText()
+    text.applyDelta(this.toDelta())
+    return text
+  }
+
+  /**
    * Creates a Dom Element that mirrors this YXmlText.
    *
    * @param {Document} [_document=document] The document object (you must define

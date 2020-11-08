@@ -8,7 +8,7 @@ import {
   typeMapGetAll,
   typeListForEach,
   YXmlElementRefID,
-  AbstractUpdateDecoder, AbstractUpdateEncoder, Snapshot, Doc, Item // eslint-disable-line
+  AbstractType, AbstractUpdateDecoder, AbstractUpdateEncoder, Snapshot, Doc, Item // eslint-disable-line
 } from '../internals.js'
 
 /**
@@ -53,6 +53,20 @@ export class YXmlElement extends YXmlFragment {
    */
   _copy () {
     return new YXmlElement(this.nodeName)
+  }
+
+  /**
+   * @return {YXmlElement}
+   */
+  clone () {
+    const el = new YXmlElement(this.nodeName)
+    const attrs = this.getAttributes()
+    for (const key in attrs) {
+      el.setAttribute(key, attrs[key])
+    }
+    // @ts-ignore
+    el.insert(0, el.toArray().map(item => item instanceof AbstractType ? item.clone() : item))
+    return el
   }
 
   /**

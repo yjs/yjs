@@ -30,6 +30,17 @@ export class YXmlHook extends YMap {
   }
 
   /**
+   * @return {YXmlHook}
+   */
+  clone () {
+    const el = new YXmlHook(this.hookName)
+    this.forEach((value, key) => {
+      el.set(key, value)
+    })
+    return el
+  }
+
+  /**
    * Creates a Dom Element that mirrors this YXmlElement.
    *
    * @param {Document} [_document=document] The document object (you must define
