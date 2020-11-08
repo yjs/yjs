@@ -60,7 +60,7 @@ export class YArray extends AbstractType {
    * @param {Array<T>} items
    * @return {YArray<T>}
    */
-  static from(items) {
+  static from (items) {
     const a = new YArray()
     a.push(items)
     return a
