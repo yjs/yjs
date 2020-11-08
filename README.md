@@ -48,12 +48,12 @@ Sponsorship also comes with special perks! [![Become a Sponsor](https://img.shie
 
 ## Who is using Yjs
 
-* [Relm](http://www.relm.us/) A collaborative gameworld for teamwork and
+* [Relm](https://www.relm.us/) A collaborative gameworld for teamwork and
   community. :star2:
 * [Input](https://input.com/) A collaborative note taking app. :star2:
 * [Room.sh](https://room.sh/) A meeting application with integrated
   collaborative drawing, editing, and coding tools. :star:
-* [http://coronavirustechhandbook.com/](https://coronavirustechhandbook.com/)
+* [https://coronavirustechhandbook.com/](https://coronavirustechhandbook.com/)
   A collaborative wiki that is edited by thousands of different people to work
   on a rapid and sophisticated response to the coronavirus outbreak and
   subsequent impacts. :star:
@@ -90,10 +90,10 @@ are implemented in separate modules.
 
 | Name | Cursors | Binding |  Demo |
 |---|:-:|---|---|
-| [ProseMirror](https://prosemirror.net/) &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; | ✔ | [y-prosemirror](http://github.com/yjs/y-prosemirror) | [demo](https://demos.yjs.dev/prosemirror/prosemirror.html) |
-| [Quill](https://quilljs.com/) | ✔ | [y-quill](http://github.com/yjs/y-quill) | [demo](https://demos.yjs.dev/quill/quill.html) |
-| [CodeMirror](https://codemirror.net/) | ✔ | [y-codemirror](http://github.com/yjs/y-codemirror) | [demo](https://demos.yjs.dev/codemirror/codemirror.html) |
-| [Monaco](https://microsoft.github.io/monaco-editor/) | ✔ | [y-monaco](http://github.com/yjs/y-monaco) | [demo](https://demos.yjs.dev/monaco/monaco.html) |
+| [ProseMirror](https://prosemirror.net/) &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; | ✔ | [y-prosemirror](https://github.com/yjs/y-prosemirror) | [demo](https://demos.yjs.dev/prosemirror/prosemirror.html) |
+| [Quill](https://quilljs.com/) | ✔ | [y-quill](https://github.com/yjs/y-quill) | [demo](https://demos.yjs.dev/quill/quill.html) |
+| [CodeMirror](https://codemirror.net/) | ✔ | [y-codemirror](https://github.com/yjs/y-codemirror) | [demo](https://demos.yjs.dev/codemirror/codemirror.html) |
+| [Monaco](https://microsoft.github.io/monaco-editor/) | ✔ | [y-monaco](https://github.com/yjs/y-monaco) | [demo](https://demos.yjs.dev/monaco/monaco.html) |
 
 ### Providers
 
@@ -103,7 +103,7 @@ manage all that for you and are the perfect starting point for your
 collaborative app.
 
 <dl>
-  <dt><a href="http://github.com/yjs/y-webrtc">y-webrtc</a></dt>
+  <dt><a href="https://github.com/yjs/y-webrtc">y-webrtc</a></dt>
   <dd>
 Propagates document updates peer-to-peer using WebRTC. The peers exchange
 signaling data over signaling servers. Publically available signaling servers
@@ -111,19 +111,19 @@ are available. Communication over the signaling servers can be encrypted by
 providing a shared secret, keeping the connection information and the shared
 document private.
   </dd>
-  <dt><a href="http://github.com/yjs/y-websocket">y-websocket</a></dt>
+  <dt><a href="https://github.com/yjs/y-websocket">y-websocket</a></dt>
   <dd>
 A module that contains a simple websocket backend and a websocket client that
 connects to that backend. The backend can be extended to persist updates in a
 leveldb database.
   </dd>
-  <dt><a href="http://github.com/yjs/y-indexeddb">y-indexeddb</a></dt>
+  <dt><a href="https://github.com/yjs/y-indexeddb">y-indexeddb</a></dt>
   <dd>
 Efficiently persists document updates to the browsers indexeddb database.
 The document is immediately available and only diffs need to be synced through the
 network provider.
   </dd>
-  <dt><a href="http://github.com/yjs/y-dat">y-dat</a></dt>
+  <dt><a href="https://github.com/yjs/y-dat">y-dat</a></dt>
   <dd>
 [WIP] Write document updates effinciently to the dat network using
 <a href="https://github.com/kappa-db/multifeed">multifeed</a>. Each client has
