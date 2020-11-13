@@ -264,6 +264,7 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
 /**
  * @param {RelativePosition|null} a
  * @param {RelativePosition|null} b
+ * @return {boolean}
  *
  * @function
  */
