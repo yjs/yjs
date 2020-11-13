@@ -73,3 +73,17 @@ export const testTreewalker = tc => {
   t.assert(xml0.querySelector('p') === paragraph1, 'querySelector found paragraph1')
   compare(users)
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testYtextAttributes = tc => {
+  const ydoc = new Y.Doc()
+  const ytext = /** @type {Y.XmlText} */ (ydoc.get('', Y.XmlText))
+  ytext.observe(event => {
+    t.compare(event.changes.keys.get('test'), { action: 'add', oldValue: undefined })
+  })
+  ytext.setAttribute('test', 42)
+  t.compare(ytext.getAttribute('test'), 42)
+  t.compare(ytext.getAttributes(), { test: 42 })
+}
