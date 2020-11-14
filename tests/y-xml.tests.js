@@ -87,3 +87,19 @@ export const testYtextAttributes = tc => {
   t.compare(ytext.getAttribute('test'), 42)
   t.compare(ytext.getAttributes(), { test: 42 })
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testSiblings = tc => {
+  const ydoc = new Y.Doc()
+  const yxml = ydoc.getXmlFragment()
+  const first = new Y.XmlText()
+  const second = new Y.XmlElement('p')
+  yxml.insert(0, [first, second])
+  t.assert(first.nextSibling === second)
+  t.assert(second.prevSibling === first)
+  t.assert(first.parent === yxml)
+  t.assert(yxml.parent === null)
+  t.assert(yxml.firstChild === first)
+}

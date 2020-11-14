@@ -131,6 +131,14 @@ export class YXmlFragment extends AbstractType {
   }
 
   /**
+   * @type {YXmlElement|YXmlText|null}
+   */
+  get firstChild () {
+    const first = this._first
+    return first ? first.content.getContent()[0] : null
+  }
+
+  /**
    * Integrate this type into the Yjs instance.
    *
    * * Save this struct in the os

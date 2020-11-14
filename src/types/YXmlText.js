@@ -2,7 +2,7 @@
 import {
   YText,
   YXmlTextRefID,
-  AbstractUpdateDecoder, AbstractUpdateEncoder // eslint-disable-line
+  ContentType, YXmlElement, AbstractUpdateDecoder, AbstractUpdateEncoder // eslint-disable-line
 } from '../internals.js'
 
 /**
@@ -10,6 +10,22 @@ import {
  * simple formatting information like bold and italic.
  */
 export class YXmlText extends YText {
+  /**
+   * @type {YXmlElement|YXmlText|null}
+   */
+  get nextSibling () {
+    const n = this._item ? this._item.next : null
+    return n ? /** @type {YXmlElement|YXmlText} */ (/** @type {ContentType} */ (n.content).type) : null
+  }
+
+  /**
+   * @type {YXmlElement|YXmlText|null}
+   */
+  get prevSibling () {
+    const n = this._item ? this._item.prev : null
+    return n ? /** @type {YXmlElement|YXmlText} */ (/** @type {ContentType} */ (n.content).type) : null
+  }
+
   _copy () {
     return new YXmlText()
   }
