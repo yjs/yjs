@@ -40,6 +40,8 @@ export class YEvent {
   /**
    * Computes the path from `y` to the changed type.
    *
+   * @todo v14 should standardize on path: Array<{parent, index}> because that is easier to work with.
+   *
    * The following property holds:
    * @example
    *   let type = y
