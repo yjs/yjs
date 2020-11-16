@@ -103,3 +103,33 @@ export const testSiblings = tc => {
   t.assert(yxml.parent === null)
   t.assert(yxml.firstChild === first)
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testInsertafter = tc => {
+  const ydoc = new Y.Doc()
+  const yxml = ydoc.getXmlFragment()
+  const first = new Y.XmlText()
+  const second = new Y.XmlElement('p')
+  const third = new Y.XmlElement('p')
+
+  const deepsecond1 = new Y.XmlElement('span')
+  const deepsecond2 = new Y.XmlText()
+  second.insertAfter(null, [deepsecond1])
+  second.insertAfter(deepsecond1, [deepsecond2])
+
+  yxml.insertAfter(null, [first, second])
+  yxml.insertAfter(second, [third])
+
+  t.assert(yxml.length === 3)
+  t.assert(second.get(0) === deepsecond1)
+  t.assert(second.get(1) === deepsecond2)
+
+  t.compareArrays(yxml.toArray(), [first, second, third])
+
+  t.fails(() => {
+    const el = new Y.XmlElement('p')
+    el.insertAfter(deepsecond1, [new Y.XmlText()])
+  })
+}
