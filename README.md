@@ -31,18 +31,18 @@ I'm currently looking for sponsors that allow me to be less dependent on
 contracting work. These awesome backers already fund further development of
 Yjs:
 
-[![Vincent Waller](https://github.com/vwall.png?size=60)](https://github.com/vwall)
-[<img src="https://user-images.githubusercontent.com/5553757/83337333-a7bcb380-a2ba-11ea-837b-e404eb35d318.png"
-height="60px" />](https://input.com/)
-[![Duane Johnson](https://github.com/canadaduane.png?size=60)](https://github.com/canadaduane)
-[![Joe Reeve](https://github.com/ISNIT0.png?size=60)](https://github.com/ISNIT0)
-[<img src="https://room.sh/img/icons/android-chrome-192x192.png" height="60px" />](https://room.sh/)
+[![Ifiok Jr.](https://github.com/ifiokjr.png?size=60)](https://github.com/ifiokjr)
+[![Burke Libbey](https://github.com/burke.png?size=60)](https://github.com/burke)
+[![Beni Cherniavsky-Paskin](https://github.com/cben.png?size=60)](https://github.com/cben)
+[![Tom Moor](https://github.com/tommoor.png?size=60)](https://github.com/tommoor)
+[![Michael Meyers](https://github.com/michaelemeyers.png?size=60)](https://github.com/michaelemeyers)
+[![Cristiano Benjamin](https://github.com/csbenjamin.png?size=60)](https://github.com/csbenjamin)
+[![Braden](https://github.com/AdventureBeard.png?size=60)](https://github.com/AdventureBeard)
+[![nimbuswebinc](https://github.com/nimbuswebinc.png?size=60)](https://github.com/nimbuswebinc)
 [![JourneyApps](https://github.com/journeyapps.png?size=60)](https://github.com/journeyapps)
 [![Adam Brunnmeier](https://github.com/adabru.png?size=60)](https://github.com/adabru)
 [![Nathanael Anderson](https://github.com/NathanaelA.png?size=60)](https://github.com/NathanaelA)
-[![Gremloon](https://github.com/gremloon.png?size=60)](https://github.com/gremloon)
-[![ifiokjr](https://github.com/ifiokjr.png?size=60)](https://github.com/ifiokjr)
-[![mrfambo](https://github.com/mrfambo.png?size=60)](https://github.com/mrfambo)
+[<img src="https://room.sh/img/icons/android-chrome-192x192.png" height="60px" />](https://room.sh/)
 
 Sponsorship also comes with special perks! [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=d42f2d)](https://github.com/sponsors/dmonad)
 
