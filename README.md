@@ -38,7 +38,7 @@ Yjs:
 [![Michael Meyers](https://github.com/michaelemeyers.png?size=60)](https://github.com/michaelemeyers)
 [![Cristiano Benjamin](https://github.com/csbenjamin.png?size=60)](https://github.com/csbenjamin)
 [![Braden](https://github.com/AdventureBeard.png?size=60)](https://github.com/AdventureBeard)
-[![nimbuswebinc](https://github.com/nimbuswebinc.png?size=60)](https://github.com/nimbuswebinc)
+[![nimbuswebinc](https://nimbusweb.me/new-style-img/note-icon.svg)](https://github.com/nimbuswebinc)
 [![JourneyApps](https://github.com/journeyapps.png?size=60)](https://github.com/journeyapps)
 [![Adam Brunnmeier](https://github.com/adabru.png?size=60)](https://github.com/adabru)
 [![Nathanael Anderson](https://github.com/NathanaelA.png?size=60)](https://github.com/NathanaelA)
