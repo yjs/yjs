@@ -31,6 +31,7 @@ I'm currently looking for sponsors that allow me to be less dependent on
 contracting work. These awesome backers already fund further development of
 Yjs:
 
+[![davidhq](https://github.com/davidhq.png?size=60)](https://github.com/davidhq)
 [![Ifiok Jr.](https://github.com/ifiokjr.png?size=60)](https://github.com/ifiokjr)
 [![Burke Libbey](https://github.com/burke.png?size=60)](https://github.com/burke)
 [![Beni Cherniavsky-Paskin](https://github.com/cben.png?size=60)](https://github.com/cben)
