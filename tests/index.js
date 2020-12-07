@@ -8,6 +8,7 @@ import * as undoredo from './undo-redo.tests.js'
 import * as compatibility from './compatibility.tests.js'
 import * as doc from './doc.tests.js'
 import * as snapshot from './snapshot.tests.js'
+import * as updates from './updates.tests.js'
 
 import { runTests } from 'lib0/testing.js'
 import { isBrowser, isNode } from 'lib0/environment.js'
@@ -17,7 +18,7 @@ if (isBrowser) {
   log.createVConsole(document.body)
 }
 runTests({
-  doc, map, array, text, xml, encoding, undoredo, compatibility, snapshot
+  doc, map, array, text, xml, encoding, undoredo, compatibility, snapshot, updates
 }).then(success => {
   /* istanbul ignore next */
   if (isNode) {

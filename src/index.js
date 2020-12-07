@@ -72,5 +72,6 @@ export {
   tryGc,
   transact,
   AbstractConnector,
-  logType
+  logType,
+  mergeUpdates
 } from './internals.js'

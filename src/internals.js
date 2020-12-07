@@ -15,6 +15,7 @@ export * from './utils/Snapshot.js'
 export * from './utils/StructStore.js'
 export * from './utils/Transaction.js'
 export * from './utils/UndoManager.js'
+export * from './utils/updates.js'
 export * from './utils/YEvent.js'
 
 export * from './types/AbstractType.js'
