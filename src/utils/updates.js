@@ -92,24 +92,31 @@ export class LazyStructReader {
 
 export class LazyStructWriter {
   /**
-   * @param {typeof UpdateEncoderV1 | typeof UpdateEncoderV2} YEncoder
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    */
-  constructor (YEncoder) {
+  constructor (encoder) {
     this.fresh = true
     this.currClient = 0
     this.startClock = 0
     this.written = 0
-    this.encoder = new YEncoder()
+    this.encoder = encoder
     /**
-     * @type {Array<{ client: number, clock: number, written: number, encoder: UpdateEncoderV1 | UpdateEncoderV2 }>}
+     * We want to write operations lazily, but also we need to know beforehand how many operations we want to write for each client.
+     *
+     * This kind of meta-information (#clients, #structs-per-client-written) is written to the restEncoder.
+     *
+     * We fragment the restEncoder and store a slice of it per-client until we know how many clients there are.
+     * When we flush (toUint8Array) we write the restEncoder using the fragments and the meta-information.
+     *
+     * @type {Array<{ written: number, restEncoder: Uint8Array }>}
      */
     this.clientStructs = []
-    this.YEncoder = YEncoder
   }
 
   flushCurr () {
     if (!this.fresh) {
-      this.clientStructs.push({ client: this.currClient, clock: this.startClock, written: this.written, encoder: this.encoder })
+      this.clientStructs.push({ written: this.written, restEncoder: encoding.toUint8Array(this.encoder.restEncoder) })
+      this.encoder.restEncoder = encoding.createEncoder()
       this.fresh = true
     }
   }
@@ -123,21 +130,28 @@ export class LazyStructWriter {
     if (!this.fresh && this.currClient !== struct.id.client) {
       this.flushCurr()
       this.currClient = struct.id.client
-      this.startClock = struct.id.clock
+      // write next client
+      this.encoder.writeClient(struct.id.client)
+      // write startClock
+      encoding.writeVarUint(this.encoder.restEncoder, struct.id.clock)
     }
     struct.write(this.encoder, offset)
     this.written++
   }
 
   toUint8Array () {
-    const encoder = new this.YEncoder()
+    this.flushCurr()
+
+    // this is a fresh encoder because we called flushCurr
+    const restEncoder = this.encoder.restEncoder
 
     /**
-     * Works similarly to `writeClientsStructs`
+     * Now we put all the fragments together.
+     * This works similarly to `writeClientsStructs`
      */
 
     // write # states that were updated - i.e. the clients
-    encoding.writeVarUint(encoder.restEncoder, this.clientStructs.length)
+    encoding.writeVarUint(restEncoder, this.clientStructs.length)
 
     for (let i = 0; i < this.clientStructs.length; i++) {
       const partStructs = this.clientStructs[i]
@@ -145,12 +159,10 @@ export class LazyStructWriter {
        * Works similarly to `writeStructs`
        */
       // write # encoded structs
-      encoding.writeVarUint(encoder.restEncoder, partStructs.written)
-      encoder.writeClient(partStructs.client)
-      encoding.writeVarUint(encoder.restEncoder, partStructs.clock)
-      // append what we have been written so far
-      encoder.append(partStructs.encoder)
+      encoding.writeVarUint(restEncoder, partStructs.written)
+      // write the rest of the fragment
+      encoding.writeUint8Array(restEncoder, partStructs.restEncoder)
     }
-    return encoder.toUint8Array()
+    return this.encoder.toUint8Array()
   }
 }
