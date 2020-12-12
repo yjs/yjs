@@ -121,8 +121,8 @@ export const sortAndMergeDeleteSet = ds => {
     for (i = 1, j = 1; i < dels.length; i++) {
       const left = dels[j - 1]
       const right = dels[i]
-      if (left.clock + left.len === right.clock) {
-        left.len += right.len
+      if (left.clock + left.len >= right.clock) {
+        left.len = math.max(left.len, right.clock + right.len - left.clock)
       } else {
         if (j < i) {
           dels[j] = right
