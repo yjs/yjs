@@ -288,6 +288,13 @@ export class AbstractType {
   }
 
   /**
+   * @return {AbstractType<any>|null}
+   */
+  get parent () {
+    return this._item ? /** @type {AbstractType<any>} */ (this._item.parent) : null
+  }
+
+  /**
    * Integrate this type into the Yjs instance.
    *
    * * Save this struct in the os

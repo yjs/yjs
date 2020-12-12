@@ -119,9 +119,6 @@ const popStackItem = (undoManager, stack, eventType) => {
         }
       }
       result = stackItem
-      if (result != null) {
-        undoManager.emit('stack-item-popped', [{ stackItem: result, type: eventType }, undoManager])
-      }
     }
     transaction.changed.forEach((subProps, type) => {
       // destroy search marker if necessary
@@ -130,6 +127,9 @@ const popStackItem = (undoManager, stack, eventType) => {
       }
     })
   }, undoManager)
+  if (result != null) {
+    undoManager.emit('stack-item-popped', [{ stackItem: result, type: eventType }, undoManager])
+  }
   return result
 }
 

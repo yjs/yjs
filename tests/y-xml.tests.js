@@ -73,3 +73,63 @@ export const testTreewalker = tc => {
   t.assert(xml0.querySelector('p') === paragraph1, 'querySelector found paragraph1')
   compare(users)
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testYtextAttributes = tc => {
+  const ydoc = new Y.Doc()
+  const ytext = /** @type {Y.XmlText} */ (ydoc.get('', Y.XmlText))
+  ytext.observe(event => {
+    t.compare(event.changes.keys.get('test'), { action: 'add', oldValue: undefined })
+  })
+  ytext.setAttribute('test', 42)
+  t.compare(ytext.getAttribute('test'), 42)
+  t.compare(ytext.getAttributes(), { test: 42 })
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testSiblings = tc => {
+  const ydoc = new Y.Doc()
+  const yxml = ydoc.getXmlFragment()
+  const first = new Y.XmlText()
+  const second = new Y.XmlElement('p')
+  yxml.insert(0, [first, second])
+  t.assert(first.nextSibling === second)
+  t.assert(second.prevSibling === first)
+  t.assert(first.parent === yxml)
+  t.assert(yxml.parent === null)
+  t.assert(yxml.firstChild === first)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testInsertafter = tc => {
+  const ydoc = new Y.Doc()
+  const yxml = ydoc.getXmlFragment()
+  const first = new Y.XmlText()
+  const second = new Y.XmlElement('p')
+  const third = new Y.XmlElement('p')
+
+  const deepsecond1 = new Y.XmlElement('span')
+  const deepsecond2 = new Y.XmlText()
+  second.insertAfter(null, [deepsecond1])
+  second.insertAfter(deepsecond1, [deepsecond2])
+
+  yxml.insertAfter(null, [first, second])
+  yxml.insertAfter(second, [third])
+
+  t.assert(yxml.length === 3)
+  t.assert(second.get(0) === deepsecond1)
+  t.assert(second.get(1) === deepsecond2)
+
+  t.compareArrays(yxml.toArray(), [first, second, third])
+
+  t.fails(() => {
+    const el = new Y.XmlElement('p')
+    el.insertAfter(deepsecond1, [new Y.XmlText()])
+  })
+}

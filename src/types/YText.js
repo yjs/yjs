@@ -21,6 +21,10 @@ import {
   iterateDeletedStructs,
   iterateStructs,
   findMarker,
+  typeMapDelete,
+  typeMapSet,
+  typeMapGet,
+  typeMapGetAll,
   updateMarkerChanges,
   ArraySearchMarker, AbstractUpdateDecoder, AbstractUpdateEncoder, ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
 } from '../internals.js'
@@ -512,13 +516,32 @@ export class YTextEvent extends YEvent {
   /**
    * @param {YText} ytext
    * @param {Transaction} transaction
+   * @param {Set<any>} subs The keys that changed
    */
-  constructor (ytext, transaction) {
+  constructor (ytext, transaction, subs) {
     super(ytext, transaction)
     /**
      * @type {Array<DeltaItem>|null}
      */
     this._delta = null
+    /**
+     * Whether the children changed.
+     * @type {Boolean}
+     * @private
+     */
+    this.childListChanged = false
+    /**
+     * Set of all changed attributes.
+     * @type {Set<string>}
+     */
+    this.keysChanged = new Set()
+    subs.forEach((sub) => {
+      if (sub === null) {
+        this.childListChanged = true
+      } else {
+        this.keysChanged.add(sub)
+      }
+    })
   }
 
   /**
@@ -779,7 +802,7 @@ export class YText extends AbstractType {
    */
   _callObserver (transaction, parentSubs) {
     super._callObserver(transaction, parentSubs)
-    const event = new YTextEvent(this, transaction)
+    const event = new YTextEvent(this, transaction, parentSubs)
     const doc = transaction.doc
     // If a remote change happened, we try to cleanup potential formatting duplicates.
     if (!transaction.local) {
@@ -1109,6 +1132,74 @@ export class YText extends AbstractType {
     } else {
       /** @type {Array<function>} */ (this._pending).push(() => this.format(index, length, attributes))
     }
+  }
+
+  /**
+   * Removes an attribute.
+   *
+   * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
+   *
+   * @param {String} attributeName The attribute name that is to be removed.
+   *
+   * @public
+   */
+  removeAttribute (attributeName) {
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
+        typeMapDelete(transaction, this, attributeName)
+      })
+    } else {
+      /** @type {Array<function>} */ (this._pending).push(() => this.removeAttribute(attributeName))
+    }
+  }
+
+  /**
+   * Sets or updates an attribute.
+   *
+   * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
+   *
+   * @param {String} attributeName The attribute name that is to be set.
+   * @param {any} attributeValue The attribute value that is to be set.
+   *
+   * @public
+   */
+  setAttribute (attributeName, attributeValue) {
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
+        typeMapSet(transaction, this, attributeName, attributeValue)
+      })
+    } else {
+      /** @type {Array<function>} */ (this._pending).push(() => this.setAttribute(attributeName, attributeValue))
+    }
+  }
+
+  /**
+   * Returns an attribute value that belongs to the attribute name.
+   *
+   * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
+   *
+   * @param {String} attributeName The attribute name that identifies the
+   *                               queried value.
+   * @return {any} The queried attribute value.
+   *
+   * @public
+   */
+  getAttribute (attributeName) {
+    return /** @type {any} */ (typeMapGet(this, attributeName))
+  }
+
+  /**
+   * Returns all attribute name/value pairs in a JSON Object.
+   *
+   * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
+   *
+   * @param {Snapshot} [snapshot]
+   * @return {Object<string, any>} A JSON Object that describes the attributes.
+   *
+   * @public
+   */
+  getAttributes (snapshot) {
+    return typeMapGetAll(this)
   }
 
   /**

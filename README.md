@@ -242,6 +242,8 @@ necessary.
   </p>
   <pre>const yarray = new Y.Array()</pre>
   <dl>
+    <b><code>parent:Y.AbstractType|null</code></b>
+    <dd></dd>
     <b><code>insert(index:number, content:Array&lt;object|boolean|Array|string|number|Uint8Array|Y.Type&gt;)</code></b>
     <dd>
 Insert content at <var>index</var>. Note that content is an array of elements.
@@ -313,6 +315,8 @@ or any of its children.
   </p>
   <pre><code>const ymap = new Y.Map()</code></pre>
   <dl>
+    <b><code>parent:Y.AbstractType|null</code></b>
+    <dd></dd>
     <b><code>get(key:string):object|boolean|string|number|Uint8Array|Y.Type</code></b>
     <dd></dd>
     <b><code>set(key:string, value:object|boolean|string|number|Uint8Array|Y.Type)</code></b>
@@ -392,6 +396,8 @@ YTextEvents compute changes as deltas.
   </p>
   <pre>const ytext = new Y.Text()</pre>
   <dl>
+    <b><code>parent:Y.AbstractType|null</code></b>
+    <dd></dd>
     <b><code>insert(index:number, content:string, [formattingAttributes:Object&lt;string,string&gt;])</code></b>
     <dd>
       Insert a string at <var>index</var> and assign formatting attributes to it.
@@ -450,6 +456,10 @@ or any of its children.
   </p>
   <pre><code>const yxml = new Y.XmlFragment()</code></pre>
   <dl>
+    <b><code>parent:Y.AbstractType|null</code></b>
+    <dd></dd>
+    <b><code>firstChild:Y.XmlElement|Y.XmlText|null</code></b>
+    <dd></dd>
     <b><code>insert(index:number, content:Array&lt;Y.XmlElement|Y.XmlText&gt;)</code></b>
     <dd></dd>
     <b><code>delete(index:number, length:number)</code></b>
@@ -505,6 +515,14 @@ content and be actually XML compliant.
   </p>
   <pre><code>const yxml = new Y.XmlElement()</code></pre>
   <dl>
+    <b><code>parent:Y.AbstractType|null</code></b>
+    <dd></dd>
+    <b><code>firstChild:Y.XmlElement|Y.XmlText|null</code></b>
+    <dd></dd>
+    <b><code>nextSibling:Y.XmlElement|Y.XmlText|null</code></b>
+    <dd></dd>
+    <b><code>prevSibling:Y.XmlElement|Y.XmlText|null</code></b>
+    <dd></dd>
     <b><code>insert(index:number, content:Array&lt;Y.XmlElement|Y.XmlText&gt;)</code></b>
     <dd></dd>
     <b><code>delete(index:number, length:number)</code></b>
