@@ -5,6 +5,9 @@ import * as encoding from 'lib0/encoding.js'
 import {
   createID,
   readItemContent,
+  readDeleteSet,
+  writeDeleteSet,
+  mergeDeleteSets,
   Item, GC, AbstractUpdateDecoder, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2 // eslint-disable-line
 } from '../internals.js'
 
@@ -20,11 +23,6 @@ function * lazyStructReaderGenerator (decoder) {
     for (let i = 0; i < numberOfStructs; i++) {
       const info = decoder.readInfo()
       if ((binary.BITS5 & info) !== 0) {
-        /**
-         * The optimized implementation doesn't use any variables because inlining variables is faster.
-         * Below a non-optimized version is shown that implements the basic algorithm with
-         * a few comments
-         */
         const cantCopyParentInfo = (info & (binary.BIT7 | binary.BIT8)) === 0
         // If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
         // and we read the next string as parentYKey.
@@ -32,7 +30,7 @@ function * lazyStructReaderGenerator (decoder) {
         // @type {string|null}
         const struct = new Item(
           createID(client, clock),
-          null, // leftd
+          null, // left
           (info & binary.BIT8) === binary.BIT8 ? decoder.readLeftID() : null, // origin
           null, // right
           (info & binary.BIT7) === binary.BIT7 ? decoder.readRightID() : null, // right origin
@@ -217,9 +215,9 @@ export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = U
   }
   finishLazyStructWriting(lazyStructEncoder)
 
-  // Read DeleteSets and merge them.
-  // Write merged deleteset.
-  // -- updateEncoder.writeDs()
+  const dss = updateDecoders.map(decoder => readDeleteSet(decoder))
+  const ds = mergeDeleteSets(dss)
+  writeDeleteSet(updateEncoder, ds)
   return updateEncoder.toUint8Array()
 }
 
