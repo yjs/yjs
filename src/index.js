@@ -45,6 +45,7 @@ export {
   snapshot,
   emptySnapshot,
   findRootTypeKey,
+  getItem,
   typeListToArraySnapshot,
   typeMapGetSnapshot,
   createDocFromSnapshot,

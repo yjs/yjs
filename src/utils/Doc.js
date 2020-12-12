@@ -257,6 +257,7 @@ export class Doc extends Observable {
       }, null, true)
     }
     this.emit('destroyed', [true])
+    this.emit('destroy', [this])
     super.destroy()
   }
 
