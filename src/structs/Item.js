@@ -639,16 +639,21 @@ export class Item extends AbstractStruct {
     }
     if (origin === null && rightOrigin === null) {
       const parent = /** @type {AbstractType<any>} */ (this.parent)
-      const parentItem = parent._item
-      if (parentItem === null) {
-        // parent type on y._map
-        // find the correct key
-        const ykey = findRootTypeKey(parent)
+      if (parent.constructor === String) { // this edge case was added by differential updates
         encoder.writeParentInfo(true) // write parentYKey
-        encoder.writeString(ykey)
+        encoder.writeString(parent)
       } else {
-        encoder.writeParentInfo(false) // write parent id
-        encoder.writeLeftID(parentItem.id)
+        const parentItem = parent._item
+        if (parentItem === null) {
+          // parent type on y._map
+          // find the correct key
+          const ykey = findRootTypeKey(parent)
+          encoder.writeParentInfo(true) // write parentYKey
+          encoder.writeString(ykey)
+        } else {
+          encoder.writeParentInfo(false) // write parent id
+          encoder.writeLeftID(parentItem.id)
+        }
       }
       if (parentSub !== null) {
         encoder.writeString(parentSub)

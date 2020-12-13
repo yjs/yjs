@@ -77,7 +77,6 @@ export class LazyStructWriter {
    * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    */
   constructor (encoder) {
-    this.fresh = true
     /**
      * We keep the last written struct around in case we want to
      * merge it with the next written struct.
@@ -107,7 +106,7 @@ export class LazyStructWriter {
  * @param {Array<Uint8Array>} updates
  * @return {Uint8Array}
  */
-export const mergeUpdates = updates => mergeUpdatesV2(updates, UpdateDecoderV1, UpdateEncoderV2)
+export const mergeUpdates = updates => mergeUpdatesV2(updates, UpdateDecoderV1, UpdateEncoderV1)
 
 /**
  * This method is intended to slice any kind of struct and retrieve the right part.
@@ -213,6 +212,10 @@ export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = U
       currWrite = { struct: next, offset: 0 }
     }
   }
+  if (currWrite !== null) {
+    writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset)
+    currWrite = null
+  }
   finishLazyStructWriting(lazyStructEncoder)
 
   const dss = updateDecoders.map(decoder => readDeleteSet(decoder))
@@ -233,10 +236,10 @@ export const diffUpdate = (update, sv) => {
  * @param {LazyStructWriter} lazyWriter
  */
 const flushLazyStructWriter = lazyWriter => {
-  if (!lazyWriter.fresh) {
+  if (lazyWriter.written > 0) {
     lazyWriter.clientStructs.push({ written: lazyWriter.written, restEncoder: encoding.toUint8Array(lazyWriter.encoder.restEncoder) })
     lazyWriter.encoder.restEncoder = encoding.createEncoder()
-    lazyWriter.fresh = true
+    lazyWriter.written = 0
   }
 }
 
@@ -247,8 +250,10 @@ const flushLazyStructWriter = lazyWriter => {
  */
 const writeStructToLazyStructWriter = (lazyWriter, struct, offset) => {
   // flush curr if we start another client
-  if (!lazyWriter.fresh && lazyWriter.currClient !== struct.id.client) {
+  if (lazyWriter.written > 0 && lazyWriter.currClient !== struct.id.client) {
     flushLazyStructWriter(lazyWriter)
+  }
+  if (lazyWriter.written === 0) {
     lazyWriter.currClient = struct.id.client
     // write next client
     lazyWriter.encoder.writeClient(struct.id.client)
