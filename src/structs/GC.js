@@ -22,6 +22,9 @@ export class GC extends AbstractStruct {
    * @return {boolean}
    */
   mergeWith (right) {
+    if (this.constructor !== right.constructor) {
+      return false
+    }
     this.length += right.length
     return true
   }

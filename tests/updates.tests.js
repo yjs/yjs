@@ -56,9 +56,15 @@ export const testMergeUpdatesWrongOrder = tc => {
     Y.mergeUpdates([updates[1], updates[3]])
   ])
 
-  ;[wrongOrder, overlapping, separated].forEach(updates => {
+  const targetState = Y.encodeStateAsUpdate(ydoc)
+  ;[wrongOrder, overlapping, separated].forEach((updates, i) => {
     const merged = new Y.Doc()
     Y.applyUpdate(merged, updates)
     t.compareArrays(merged.getArray().toArray(), array.toArray())
+    t.compare(updates, targetState)
   })
 }
+
+/**
+ * @todo be able to apply Skip structs to Yjs docs
+ */
