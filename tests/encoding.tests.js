@@ -22,7 +22,7 @@ import {
  * @param {t.TestCase} tc
  */
 export const testStructReferences = tc => {
-  t.assert(contentRefs.length === 10)
+  t.assert(contentRefs.length === 11)
   t.assert(contentRefs[1] === readContentDeleted)
   t.assert(contentRefs[2] === readContentJSON) // TODO: deprecate content json?
   t.assert(contentRefs[3] === readContentBinary)
@@ -32,6 +32,7 @@ export const testStructReferences = tc => {
   t.assert(contentRefs[7] === readContentType)
   t.assert(contentRefs[8] === readContentAny)
   t.assert(contentRefs[9] === readContentDoc)
+  // contentRefs[10] is reserved for Skip structs
 }
 
 /**
