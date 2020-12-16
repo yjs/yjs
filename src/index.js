@@ -65,6 +65,8 @@ export {
   encodeSnapshotV2,
   decodeStateVector,
   decodeStateVectorV2,
+  logUpdate,
+  logUpdateV2,
   isDeleted,
   isParentOf,
   equalSnapshots,

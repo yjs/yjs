@@ -2,6 +2,7 @@
 import * as binary from 'lib0/binary.js'
 import * as decoding from 'lib0/decoding.js'
 import * as encoding from 'lib0/encoding.js'
+import * as logging from 'lib0/logging.js'
 import {
   createID,
   readItemContent,
@@ -80,6 +81,26 @@ export class LazyStructReader {
     } while (this.curr !== null && this.curr.constructor === Skip)
     return this.curr
   }
+}
+
+/**
+ * @param {Uint8Array} update
+ *
+ */
+export const logUpdate = update => logUpdateV2(update, UpdateDecoderV1)
+
+/**
+ * @param {Uint8Array} update
+ * @param {typeof UpdateDecoderV2 | typeof UpdateDecoderV1} [YDecoder]
+ *
+ */
+export const logUpdateV2 = (update, YDecoder = UpdateDecoderV2) => {
+  const structs = []
+  const lazyDecoder = new LazyStructReader(new YDecoder(decoding.createDecoder(update)))
+  for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
+    structs.push(curr)
+  }
+  logging.print(structs)
 }
 
 export class LazyStructWriter {

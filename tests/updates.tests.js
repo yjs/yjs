@@ -57,7 +57,11 @@ export const testMergeUpdatesWrongOrder = tc => {
   ])
 
   const targetState = Y.encodeStateAsUpdate(ydoc)
+  t.info('Target State: ')
+  Y.logUpdate(targetState)
   ;[wrongOrder, overlapping, separated].forEach((updates, i) => {
+    t.info('State $' + i + ':')
+    Y.logUpdate(updates)
     const merged = new Y.Doc()
     Y.applyUpdate(merged, updates)
     t.compareArrays(merged.getArray().toArray(), array.toArray())
