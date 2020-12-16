@@ -2,15 +2,23 @@ import * as t from 'lib0/testing.js'
 import { init, compare } from './testHelper.js' // eslint-disable-line
 import * as Y from '../src/index.js'
 
+const useV2 = true
+
+const encodeStateAsUpdate = useV2 ? Y.encodeStateAsUpdateV2 : Y.encodeStateAsUpdate
+const mergeUpdates = useV2 ? Y.mergeUpdatesV2 : Y.mergeUpdates
+const applyUpdate = useV2 ? Y.applyUpdateV2 : Y.applyUpdate
+const logUpdate = useV2 ? Y.logUpdateV2 : Y.logUpdate
+const updateEventName = useV2 ? 'updateV2' : 'update'
+
 /**
  * @param {Array<Y.Doc>} users
  */
 const fromUpdates = users => {
   const updates = users.map(user =>
-    Y.encodeStateAsUpdate(user)
+    encodeStateAsUpdate(user)
   )
   const ydoc = new Y.Doc()
-  Y.applyUpdate(ydoc, Y.mergeUpdates(updates))
+  applyUpdate(ydoc, mergeUpdates(updates))
   return ydoc
 }
 
@@ -34,7 +42,7 @@ export const testMergeUpdates = tc => {
 export const testMergeUpdatesWrongOrder = tc => {
   const ydoc = new Y.Doc()
   const updates = /** @type {Array<Uint8Array>} */ ([])
-  ydoc.on('update', update => { updates.push(update) })
+  ydoc.on(updateEventName, update => { updates.push(update) })
 
   const array = ydoc.getArray()
   array.insert(0, [1])
@@ -42,31 +50,42 @@ export const testMergeUpdatesWrongOrder = tc => {
   array.insert(0, [3])
   array.insert(0, [4])
 
-  const wrongOrder = Y.mergeUpdates([
-    Y.mergeUpdates(updates.slice(2)),
-    Y.mergeUpdates(updates.slice(0, 2))
-  ])
-  const overlapping = Y.mergeUpdates([
-    Y.mergeUpdates(updates.slice(2)),
-    Y.mergeUpdates(updates.slice(1, 3)),
-    updates[0]
-  ])
-  const separated = Y.mergeUpdates([
-    Y.mergeUpdates([updates[0], updates[2]]),
-    Y.mergeUpdates([updates[1], updates[3]])
-  ])
+  const cases = []
 
-  const targetState = Y.encodeStateAsUpdate(ydoc)
+  // Case 1: Simple case, simply merge everything
+  cases.push(mergeUpdates(updates))
+
+  // Case 2: Overlapping updates
+  cases.push(mergeUpdates([
+    mergeUpdates(updates.slice(2)),
+    mergeUpdates(updates.slice(0, 2))
+  ]))
+
+  // Case 3: Overlapping updates
+  cases.push(mergeUpdates([
+    mergeUpdates(updates.slice(2)),
+    mergeUpdates(updates.slice(1, 3)),
+    updates[0]
+  ]))
+
+  // Case 4: Separated updates (containing skips)
+  cases.push(mergeUpdates([
+    mergeUpdates([updates[0], updates[2]]),
+    mergeUpdates([updates[1], updates[3]])
+  ]))
+
+  // Case 5: overlapping with many duplicates
+  cases.push(mergeUpdates(cases))
+
+  const targetState = encodeStateAsUpdate(ydoc)
   t.info('Target State: ')
-  Y.logUpdate(targetState)
-  const allcases = [wrongOrder, overlapping, separated]
-  // case 4: merging all cases above
-  allcases.push(Y.mergeUpdates(allcases))
-  allcases.forEach((updates, i) => {
-    t.info('State $' + i + ':')
-    Y.logUpdate(updates)
+  logUpdate(targetState)
+
+  cases.forEach((updates, i) => {
+    t.info('State Case $' + i + ':')
+    logUpdate(updates)
     const merged = new Y.Doc()
-    Y.applyUpdate(merged, updates)
+    applyUpdate(merged, updates)
     t.compareArrays(merged.getArray().toArray(), array.toArray())
     t.compare(updates, targetState)
   })

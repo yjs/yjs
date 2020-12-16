@@ -75,5 +75,6 @@ export {
   transact,
   AbstractConnector,
   logType,
-  mergeUpdates
+  mergeUpdates,
+  mergeUpdatesV2
 } from './internals.js'

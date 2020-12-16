@@ -173,7 +173,7 @@ const sliceStruct = (left, diff) => {
  * @return {Uint8Array}
  */
 export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = UpdateEncoderV2) => {
-  const updateDecoders = updates.map(update => new UpdateDecoderV1(decoding.createDecoder(update)))
+  const updateDecoders = updates.map(update => new YDecoder(decoding.createDecoder(update)))
   let lazyStructDecoders = updateDecoders.map(decoder => new LazyStructReader(decoder))
 
   /**
