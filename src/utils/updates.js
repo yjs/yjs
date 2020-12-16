@@ -216,40 +216,53 @@ export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = U
     // write from currDecoder until the next operation is from another client or if filler-struct
     // then we need to reorder the decoders and find the next operation to write
     const firstClient = /** @type {Item | GC} */ (currDecoder.curr).id.client
+
     if (currWrite !== null) {
-      let curr = /** @type {Item | GC} */ (currDecoder.curr)
+      let curr = /** @type {Item | GC | null} */ (currDecoder.curr)
+
+      // iterate until we find something that we haven't written already
+      // remember: first the high client-ids are written
+      while (curr !== null && curr.id.clock + curr.length <= currWrite.struct.id.clock + currWrite.struct.length && curr.id.client >= currWrite.struct.id.client) {
+        curr = currDecoder.next()
+      }
+      if (curr === null || curr.id.client !== firstClient) {
+        continue
+      }
+
       if (firstClient !== currWrite.struct.id.client) {
         writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset)
         currWrite = { struct: curr, offset: 0 }
         currDecoder.next()
-      } else if (currWrite.struct.id.clock + currWrite.struct.length < curr.id.clock) {
-        // @todo write currStruct & set currStruct = Skip(clock = currStruct.id.clock + currStruct.length, length = curr.id.clock - self.clock)
-        if (currWrite.struct.constructor === Skip) {
-          // extend existing skip
-          currWrite.struct.length = curr.id.clock + curr.length - currWrite.struct.id.clock
-        } else {
-          writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset)
-          const diff = curr.id.clock - currWrite.struct.id.clock - currWrite.struct.length
-          /**
-           * @type {Skip}
-           */
-          const struct = new Skip(createID(firstClient, currWrite.struct.id.clock + currWrite.struct.length), diff)
-          currWrite = { struct, offset: 0 }
-        }
-      } else if (currWrite.struct.id.clock + currWrite.struct.length >= curr.id.clock) {
-        const diff = currWrite.struct.id.clock + currWrite.struct.length - curr.id.clock
-        if (diff > 0) {
+      } else {
+        if (currWrite.struct.id.clock + currWrite.struct.length < curr.id.clock) {
+          // @todo write currStruct & set currStruct = Skip(clock = currStruct.id.clock + currStruct.length, length = curr.id.clock - self.clock)
           if (currWrite.struct.constructor === Skip) {
-            // prefer to slice Skip because the other struct might contain more information
-            currWrite.struct.length -= diff
+            // extend existing skip
+            currWrite.struct.length = curr.id.clock + curr.length - currWrite.struct.id.clock
           } else {
-            curr = sliceStruct(curr, diff)
+            writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset)
+            const diff = curr.id.clock - currWrite.struct.id.clock - currWrite.struct.length
+            /**
+             * @type {Skip}
+             */
+            const struct = new Skip(createID(firstClient, currWrite.struct.id.clock + currWrite.struct.length), diff)
+            currWrite = { struct, offset: 0 }
           }
-        }
-        if (!currWrite.struct.mergeWith(/** @type {any} */ (curr))) {
-          writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset)
-          currWrite = { struct: curr, offset: 0 }
-          currDecoder.next()
+        } else { // if (currWrite.struct.id.clock + currWrite.struct.length >= curr.id.clock) {
+          const diff = currWrite.struct.id.clock + currWrite.struct.length - curr.id.clock
+          if (diff > 0) {
+            if (currWrite.struct.constructor === Skip) {
+              // prefer to slice Skip because the other struct might contain more information
+              currWrite.struct.length -= diff
+            } else {
+              curr = sliceStruct(curr, diff)
+            }
+          }
+          if (!currWrite.struct.mergeWith(/** @type {any} */ (curr))) {
+            writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset)
+            currWrite = { struct: curr, offset: 0 }
+            currDecoder.next()
+          }
         }
       }
     } else {

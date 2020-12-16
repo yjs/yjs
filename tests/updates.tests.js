@@ -59,7 +59,10 @@ export const testMergeUpdatesWrongOrder = tc => {
   const targetState = Y.encodeStateAsUpdate(ydoc)
   t.info('Target State: ')
   Y.logUpdate(targetState)
-  ;[wrongOrder, overlapping, separated].forEach((updates, i) => {
+  const allcases = [wrongOrder, overlapping, separated]
+  // case 4: merging all cases above
+  allcases.push(Y.mergeUpdates(allcases))
+  allcases.forEach((updates, i) => {
     t.info('State $' + i + ':')
     Y.logUpdate(updates)
     const merged = new Y.Doc()
