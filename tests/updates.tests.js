@@ -37,19 +37,10 @@ export const testMergeUpdates = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {Y.Doc} ydoc
+ * @param {Array<Uint8Array>} updates - expecting at least 4 updates
  */
-export const testMergeUpdatesWrongOrder = tc => {
-  const ydoc = new Y.Doc()
-  const updates = /** @type {Array<Uint8Array>} */ ([])
-  ydoc.on(updateEventName, update => { updates.push(update) })
-
-  const array = ydoc.getArray()
-  array.insert(0, [1])
-  array.insert(0, [2])
-  array.insert(0, [3])
-  array.insert(0, [4])
-
+const checkUpdateCases = (ydoc, updates) => {
   const cases = []
 
   // Case 1: Simple case, simply merge everything
@@ -71,7 +62,8 @@ export const testMergeUpdatesWrongOrder = tc => {
   // Case 4: Separated updates (containing skips)
   cases.push(mergeUpdates([
     mergeUpdates([updates[0], updates[2]]),
-    mergeUpdates([updates[1], updates[3]])
+    mergeUpdates([updates[1], updates[3]]),
+    mergeUpdates(updates.slice(4))
   ]))
 
   // Case 5: overlapping with many duplicates
@@ -86,9 +78,42 @@ export const testMergeUpdatesWrongOrder = tc => {
     logUpdate(updates)
     const merged = new Y.Doc()
     applyUpdate(merged, updates)
-    t.compareArrays(merged.getArray().toArray(), array.toArray())
-    t.compare(updates, targetState)
+    t.compareArrays(merged.getArray().toArray(), ydoc.getArray().toArray())
   })
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testMergeUpdates1 = tc => {
+  const ydoc = new Y.Doc({ gc: false })
+  const updates = /** @type {Array<Uint8Array>} */ ([])
+  ydoc.on(updateEventName, update => { updates.push(update) })
+
+  const array = ydoc.getArray()
+  array.insert(0, [1])
+  array.insert(0, [2])
+  array.insert(0, [3])
+  array.insert(0, [4])
+
+  checkUpdateCases(ydoc, updates)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testMergeUpdates2 = tc => {
+  const ydoc = new Y.Doc({ gc: false })
+  const updates = /** @type {Array<Uint8Array>} */ ([])
+  ydoc.on(updateEventName, update => { updates.push(update) })
+
+  const array = ydoc.getArray()
+  array.insert(0, [1, 2])
+  array.delete(1, 1)
+  array.insert(0, [3, 4])
+  array.delete(1, 2)
+
+  checkUpdateCases(ydoc, updates)
 }
 
 /**

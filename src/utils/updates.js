@@ -96,11 +96,14 @@ export const logUpdate = update => logUpdateV2(update, UpdateDecoderV1)
  */
 export const logUpdateV2 = (update, YDecoder = UpdateDecoderV2) => {
   const structs = []
-  const lazyDecoder = new LazyStructReader(new YDecoder(decoding.createDecoder(update)))
+  const updateDecoder = new YDecoder(decoding.createDecoder(update))
+  const lazyDecoder = new LazyStructReader(updateDecoder)
   for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
     structs.push(curr)
   }
-  logging.print(structs)
+  logging.print('Structs: ', structs)
+  const ds = readDeleteSet(updateDecoder)
+  logging.print('DeleteSet: ', ds)
 }
 
 export class LazyStructWriter {
