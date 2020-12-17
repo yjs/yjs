@@ -14,7 +14,6 @@ import {
   getState,
   findIndexSS,
   UpdateEncoderV2,
-  DefaultDSEncoder,
   applyUpdateV2,
   AbstractDSDecoder, AbstractDSEncoder, DSEncoderV2, DSDecoderV1, DSDecoderV2, Transaction, Doc, DeleteSet, Item // eslint-disable-line
 } from '../internals.js'
@@ -23,6 +22,7 @@ import * as map from 'lib0/map.js'
 import * as set from 'lib0/set.js'
 import * as decoding from 'lib0/decoding.js'
 import * as encoding from 'lib0/encoding.js'
+import { DSEncoderV1 } from './UpdateEncoder.js'
 
 export class Snapshot {
   /**
@@ -91,7 +91,7 @@ export const encodeSnapshotV2 = (snapshot, encoder = new DSEncoderV2()) => {
  * @param {Snapshot} snapshot
  * @return {Uint8Array}
  */
-export const encodeSnapshot = snapshot => encodeSnapshotV2(snapshot, new DefaultDSEncoder())
+export const encodeSnapshot = snapshot => encodeSnapshotV2(snapshot, new DSEncoderV1())
 
 /**
  * @param {Uint8Array} buf

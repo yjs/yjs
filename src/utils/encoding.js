@@ -41,25 +41,6 @@ import * as decoding from 'lib0/decoding.js'
 import * as binary from 'lib0/binary.js'
 import * as map from 'lib0/map.js'
 
-export let DefaultDSEncoder = DSEncoderV1
-export let DefaultDSDecoder = DSDecoderV1
-export let DefaultUpdateEncoder = UpdateEncoderV1
-export let DefaultUpdateDecoder = UpdateDecoderV1
-
-export const useV1Encoding = () => {
-  DefaultDSEncoder = DSEncoderV1
-  DefaultDSDecoder = DSDecoderV1
-  DefaultUpdateEncoder = UpdateEncoderV1
-  DefaultUpdateDecoder = UpdateDecoderV1
-}
-
-export const useV2Encoding = () => {
-  DefaultDSEncoder = DSEncoderV2
-  DefaultDSDecoder = DSDecoderV2
-  DefaultUpdateEncoder = UpdateEncoderV2
-  DefaultUpdateDecoder = UpdateDecoderV2
-}
-
 /**
  * @param {AbstractUpdateEncoder} encoder
  * @param {Array<GC|Item>} structs All structs by `client`
@@ -445,7 +426,7 @@ export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = n
  *
  * @function
  */
-export const readUpdate = (decoder, ydoc, transactionOrigin) => readUpdateV2(decoder, ydoc, transactionOrigin, new DefaultUpdateDecoder(decoder))
+export const readUpdate = (decoder, ydoc, transactionOrigin) => readUpdateV2(decoder, ydoc, transactionOrigin, new UpdateDecoderV1(decoder))
 
 /**
  * Apply a document update created by, for example, `y.on('update', update => ..)` or `update = encodeStateAsUpdate()`.
@@ -475,7 +456,7 @@ export const applyUpdateV2 = (ydoc, update, transactionOrigin, YDecoder = Update
  *
  * @function
  */
-export const applyUpdate = (ydoc, update, transactionOrigin) => applyUpdateV2(ydoc, update, transactionOrigin, DefaultUpdateDecoder)
+export const applyUpdate = (ydoc, update, transactionOrigin) => applyUpdateV2(ydoc, update, transactionOrigin, UpdateDecoderV1)
 
 /**
  * Write all the document as a single update message. If you specify the state of the remote client (`targetStateVector`) it will
@@ -523,7 +504,7 @@ export const encodeStateAsUpdateV2 = (doc, encodedTargetStateVector, encoder = n
  *
  * @function
  */
-export const encodeStateAsUpdate = (doc, encodedTargetStateVector) => encodeStateAsUpdateV2(doc, encodedTargetStateVector, new DefaultUpdateEncoder())
+export const encodeStateAsUpdate = (doc, encodedTargetStateVector) => encodeStateAsUpdateV2(doc, encodedTargetStateVector, new UpdateEncoderV1())
 
 /**
  * Read state vector from Decoder and return as Map
@@ -562,7 +543,7 @@ export const decodeStateVectorV2 = decodedState => readStateVector(new DSDecoder
  *
  * @function
  */
-export const decodeStateVector = decodedState => readStateVector(new DefaultDSDecoder(decoding.createDecoder(decodedState)))
+export const decodeStateVector = decodedState => readStateVector(new DSDecoderV1(decoding.createDecoder(decodedState)))
 
 /**
  * @param {AbstractDSEncoder} encoder
@@ -608,4 +589,4 @@ export const encodeStateVectorV2 = (doc, encoder = new DSEncoderV2()) => {
  *
  * @function
  */
-export const encodeStateVector = doc => encodeStateVectorV2(doc, new DefaultDSEncoder())
+export const encodeStateVector = doc => encodeStateVectorV2(doc, new DSEncoderV1())

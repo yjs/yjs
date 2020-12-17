@@ -11,7 +11,7 @@ import {
   Item,
   generateNewClientId,
   createID,
-  AbstractUpdateEncoder, GC, StructStore, UpdateEncoderV2, DefaultUpdateEncoder, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
+  AbstractUpdateEncoder, GC, StructStore, UpdateEncoderV2, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map.js'
@@ -19,6 +19,7 @@ import * as math from 'lib0/math.js'
 import * as set from 'lib0/set.js'
 import * as logging from 'lib0/logging.js'
 import { callAll } from 'lib0/function.js'
+import { UpdateEncoderV1 } from './UpdateEncoder.js'
 
 /**
  * A transaction is created for every change on the Yjs model. It is possible
@@ -337,7 +338,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
       // @todo Merge all the transactions into one and provide send the data as a single update message
       doc.emit('afterTransactionCleanup', [transaction, doc])
       if (doc._observers.has('update')) {
-        const encoder = new DefaultUpdateEncoder()
+        const encoder = new UpdateEncoderV1()
         const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
         if (hasContent) {
           doc.emit('update', [encoder.toUint8Array(), transaction.origin, doc])

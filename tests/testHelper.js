@@ -27,6 +27,33 @@ const broadcastMessage = (y, m) => {
   }
 }
 
+let useV2 = false
+
+export let encodeStateAsUpdate = Y.encodeStateAsUpdate
+export let mergeUpdates = Y.mergeUpdates
+export let applyUpdate = Y.applyUpdate
+export let logUpdate = Y.logUpdate
+export let updateEventName = 'update'
+
+const setEncoders = () => {
+  encodeStateAsUpdate = useV2 ? Y.encodeStateAsUpdateV2 : Y.encodeStateAsUpdate
+  mergeUpdates = useV2 ? Y.mergeUpdatesV2 : Y.mergeUpdates
+  applyUpdate = useV2 ? Y.applyUpdateV2 : Y.applyUpdate
+  logUpdate = useV2 ? Y.logUpdateV2 : Y.logUpdate
+  updateEventName = useV2 ? 'updateV2' : 'update'
+}
+
+const useV1Encoding = () => {
+  useV2 = false
+  setEncoders()
+}
+
+const useV2Encoding = () => {
+  useV2 = false
+  console.error('sync protocol doesnt support v2 protocol yet, fallback to v1 encoding') // @Todo
+  setEncoders()
+}
+
 export class TestYInstance extends Y.Doc {
   /**
    * @param {TestConnector} testConnector
@@ -44,12 +71,19 @@ export class TestYInstance extends Y.Doc {
      */
     this.receiving = new Map()
     testConnector.allConns.add(this)
+    /**
+     * The list of received updates.
+     * We are going to merge them later using Y.mergeUpdates and check if the resulting document is correct.
+     * @type {Array<Uint8Array>}
+     */
+    this.updates = []
     // set up observe on local model
-    this.on('update', /** @param {Uint8Array} update @param {any} origin */ (update, origin) => {
+    this.on(updateEventName, /** @param {Uint8Array} update @param {any} origin */ (update, origin) => {
       if (origin !== testConnector) {
         const encoder = encoding.createEncoder()
         syncProtocol.writeUpdate(encoder, update)
         broadcastMessage(this, encoding.toUint8Array(encoder))
+        this.updates.push(update)
       }
     })
     this.connect()
@@ -162,6 +196,17 @@ export class TestConnector {
         // send reply message
         sender._receive(encoding.toUint8Array(encoder), receiver)
       }
+      {
+        // If update message, add the received message to the list of received messages
+        const decoder = decoding.createDecoder(m)
+        const messageType = decoding.readVarUint(decoder)
+        switch (messageType) {
+          case syncProtocol.messageYjsUpdate:
+          case syncProtocol.messageYjsSyncStep2:
+            receiver.updates.push(decoding.readVarUint8Array(decoder))
+            break
+        }
+      }
       return true
     }
     return false
@@ -240,9 +285,9 @@ export const init = (tc, { users = 5 } = {}, initTestObject) => {
   const gen = tc.prng
   // choose an encoding approach at random
   if (prng.bool(gen)) {
-    Y.useV2Encoding()
+    useV2Encoding()
   } else {
-    Y.useV1Encoding()
+    useV1Encoding()
   }
 
   const testConnector = new TestConnector(gen)
@@ -258,7 +303,7 @@ export const init = (tc, { users = 5 } = {}, initTestObject) => {
   }
   testConnector.syncAll()
   result.testObjects = result.users.map(initTestObject || (() => null))
-  Y.useV1Encoding()
+  useV1Encoding()
   return /** @type {any} */ (result)
 }
 
@@ -274,6 +319,14 @@ export const init = (tc, { users = 5 } = {}, initTestObject) => {
 export const compare = users => {
   users.forEach(u => u.connect())
   while (users[0].tc.flushAllMessages()) {}
+  // For each document, merge all received document updates with Y.mergeUpdates and create a new document which will be added to the list of "users"
+  // This ensures that mergeUpdates works correctly
+  const mergedDocs = users.map(user => {
+    const ydoc = new Y.Doc()
+    applyUpdate(ydoc, mergeUpdates(user.updates))
+    return ydoc
+  })
+  users.push(.../** @type {any} */(mergedDocs))
   const userArrayValues = users.map(u => u.getArray('array').toJSON())
   const userMapValues = users.map(u => u.getMap('map').toJSON())
   const userXmlValues = users.map(u => u.get('xml', Y.YXmlElement).toString())

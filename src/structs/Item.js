@@ -640,10 +640,7 @@ export class Item extends AbstractStruct {
     }
     if (origin === null && rightOrigin === null) {
       const parent = /** @type {AbstractType<any>} */ (this.parent)
-      if (parent.constructor === String) { // this edge case was added by differential updates
-        encoder.writeParentInfo(true) // write parentYKey
-        encoder.writeString(parent)
-      } else {
+      if (parent._item !== undefined) {
         const parentItem = parent._item
         if (parentItem === null) {
           // parent type on y._map
@@ -655,6 +652,14 @@ export class Item extends AbstractStruct {
           encoder.writeParentInfo(false) // write parent id
           encoder.writeLeftID(parentItem.id)
         }
+      } else if (parent.constructor === String) { // this edge case was added by differential updates
+        encoder.writeParentInfo(true) // write parentYKey
+        encoder.writeString(parent)
+      } else if (parent.constructor === ID) {
+        encoder.writeParentInfo(false) // write parent id
+        encoder.writeLeftID(parent)
+      } else {
+        error.unexpectedCase()
       }
       if (parentSub !== null) {
         encoder.writeString(parentSub)
