@@ -22,7 +22,8 @@
     "preversion": "npm run lint && PRODUCTION=1 npm run dist && npm run docs && node ./dist/tests.cjs --repitition-time 1000 && test -e dist/src/index.d.ts && test -e dist/yjs.cjs && test -e dist/yjs.cjs",
     "debug": "concurrently 'http-server -o test.html' 'npm run watch'",
     "trace-deopt": "clear && rollup -c  && node --trace-deopt dist/test.cjs",
-    "trace-opt": "clear && rollup -c  && node --trace-opt dist/test.cjs"
+    "trace-opt": "clear && rollup -c  && node --trace-opt dist/test.cjs",
+    "postinstall": "node ./funding.cjs"
   },
   "files": [
     "dist/*",
