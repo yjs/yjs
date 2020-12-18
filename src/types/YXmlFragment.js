@@ -9,6 +9,7 @@ import {
   typeListMap,
   typeListForEach,
   typeListInsertGenerics,
+  typeListInsertGenericsAfter,
   typeListDelete,
   typeListToArray,
   YXmlFragmentRefID,
@@ -18,6 +19,8 @@ import {
   typeListSlice,
   AbstractUpdateDecoder, AbstractUpdateEncoder, Doc, ContentType, Transaction, Item, YXmlText, YXmlHook, Snapshot // eslint-disable-line
 } from '../internals.js'
+
+import * as error from 'lib0/error.js'
 
 /**
  * Define the elements to which a set of CSS queries apply.
@@ -128,6 +131,14 @@ export class YXmlFragment extends AbstractType {
      * @type {Array<any>|null}
      */
     this._prelimContent = []
+  }
+
+  /**
+   * @type {YXmlElement|YXmlText|null}
+   */
+  get firstChild () {
+    const first = this._first
+    return first ? first.content.getContent()[0] : null
   }
 
   /**
@@ -299,6 +310,32 @@ export class YXmlFragment extends AbstractType {
     } else {
       // @ts-ignore _prelimContent is defined because this is not yet integrated
       this._prelimContent.splice(index, 0, ...content)
+    }
+  }
+
+  /**
+   * Inserts new content at an index.
+   *
+   * @example
+   *  // Insert character 'a' at position 0
+   *  xml.insert(0, [new Y.XmlText('text')])
+   *
+   * @param {null|Item|YXmlElement|YXmlText} ref The index to insert content at
+   * @param {Array<YXmlElement|YXmlText>} content The array of content
+   */
+  insertAfter (ref, content) {
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
+        const refItem = (ref && ref instanceof AbstractType) ? ref._item : ref
+        typeListInsertGenericsAfter(transaction, this, refItem, content)
+      })
+    } else {
+      const pc = /** @type {Array<any>} */ (this._prelimContent)
+      const index = ref === null ? 0 : pc.findIndex(el => el === ref) + 1
+      if (index === 0 && ref !== null) {
+        throw error.create('Reference item not found')
+      }
+      pc.splice(index, 0, ...content)
     }
   }
 
