@@ -10,6 +10,9 @@ export class AbstractDSDecoder {
    * @param {decoding.Decoder} decoder
    */
   constructor (decoder) {
+    /**
+     * @type {decoding.Decoder}
+     */
     this.restDecoder = decoder
     error.methodUnimplemented()
   }
@@ -280,7 +283,7 @@ export class UpdateDecoderV2 extends DSDecoderV2 {
      * @type {Array<string>}
      */
     this.keys = []
-    decoding.readUint8(decoder) // read feature flag - currently unused
+    decoding.readVarUint(decoder) // read feature flag - currently unused
     this.keyClockDecoder = new decoding.IntDiffOptRleDecoder(decoding.readVarUint8Array(decoder))
     this.clientDecoder = new decoding.UintOptRleDecoder(decoding.readVarUint8Array(decoder))
     this.leftClockDecoder = new decoding.IntDiffOptRleDecoder(decoding.readVarUint8Array(decoder))

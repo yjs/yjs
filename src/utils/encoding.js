@@ -33,7 +33,7 @@ import {
   DSEncoderV2,
   DSDecoderV1,
   DSEncoderV1,
-  AbstractDSEncoder, AbstractDSDecoder, AbstractUpdateEncoder, AbstractUpdateDecoder, AbstractContent, Doc, Transaction, GC, Item, StructStore, ID // eslint-disable-line
+  AbstractDSDecoder, AbstractUpdateDecoder, Doc, Transaction, GC, Item, StructStore, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -42,7 +42,7 @@ import * as binary from 'lib0/binary.js'
 import * as map from 'lib0/map.js'
 
 /**
- * @param {AbstractUpdateEncoder} encoder
+ * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
  * @param {Array<GC|Item>} structs All structs by `client`
  * @param {number} client
  * @param {number} clock write structs starting with `ID(client,clock)`
@@ -65,7 +65,7 @@ const writeStructs = (encoder, structs, client, clock) => {
 }
 
 /**
- * @param {AbstractUpdateEncoder} encoder
+ * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
  * @param {StructStore} store
  * @param {Map<number,number>} _sm
  *
@@ -317,7 +317,7 @@ export const tryResumePendingDeleteReaders = (transaction, store) => {
 }
 
 /**
- * @param {AbstractUpdateEncoder} encoder
+ * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
  * @param {Transaction} transaction
  *
  * @private
@@ -462,7 +462,7 @@ export const applyUpdate = (ydoc, update, transactionOrigin) => applyUpdateV2(yd
  * Write all the document as a single update message. If you specify the state of the remote client (`targetStateVector`) it will
  * only write the operations that are missing.
  *
- * @param {AbstractUpdateEncoder} encoder
+ * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
  * @param {Doc} doc
  * @param {Map<number,number>} [targetStateVector] The state of the target that receives the update. Leave empty to write all known structs
  *
@@ -481,7 +481,7 @@ export const writeStateAsUpdate = (encoder, doc, targetStateVector = new Map()) 
  *
  * @param {Doc} doc
  * @param {Uint8Array} [encodedTargetStateVector] The state of the target that receives the update. Leave empty to write all known structs
- * @param {AbstractUpdateEncoder} [encoder]
+ * @param {UpdateEncoderV1 | UpdateEncoderV2} [encoder]
  * @return {Uint8Array}
  *
  * @function
@@ -546,7 +546,7 @@ export const decodeStateVectorV2 = decodedState => readStateVector(new DSDecoder
 export const decodeStateVector = decodedState => readStateVector(new DSDecoderV1(decoding.createDecoder(decodedState)))
 
 /**
- * @param {AbstractDSEncoder} encoder
+ * @param {DSEncoderV1 | DSEncoderV2} encoder
  * @param {Map<number,number>} sv
  * @function
  */
@@ -560,7 +560,7 @@ export const writeStateVector = (encoder, sv) => {
 }
 
 /**
- * @param {AbstractDSEncoder} encoder
+ * @param {DSEncoderV1 | DSEncoderV2} encoder
  * @param {Doc} doc
  *
  * @function
@@ -571,7 +571,7 @@ export const writeDocumentStateVector = (encoder, doc) => writeStateVector(encod
  * Encode State as Uint8Array.
  *
  * @param {Doc} doc
- * @param {AbstractDSEncoder} [encoder]
+ * @param {DSEncoderV1 | DSEncoderV2} [encoder]
  * @return {Uint8Array}
  *
  * @function

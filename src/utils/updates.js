@@ -10,6 +10,8 @@ import {
   writeDeleteSet,
   Skip,
   mergeDeleteSets,
+  DSEncoderV1,
+  DSEncoderV2,
   Item, GC, AbstractUpdateDecoder, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2 // eslint-disable-line
 } from '../internals.js'
 
@@ -134,6 +136,52 @@ export class LazyStructWriter {
  * @return {Uint8Array}
  */
 export const mergeUpdates = updates => mergeUpdatesV2(updates, UpdateDecoderV1, UpdateEncoderV1)
+
+/**
+ * @param {Uint8Array} update
+ * @param {typeof DSEncoderV1 | typeof DSEncoderV2} YEncoder
+ * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} YDecoder
+ * @return {Uint8Array}
+ */
+export const encodeStateVectorFromUpdateV2 = (update, YEncoder = DSEncoderV2, YDecoder = UpdateDecoderV2) => {
+  const encoder = new YEncoder()
+  const updateDecoder = new LazyStructReader(new YDecoder(decoding.createDecoder(update)))
+  let curr = updateDecoder.curr
+  if (curr !== null) {
+    let size = 1
+    let currClient = curr.id.client
+    let currClock = curr.id.clock
+    for (; curr !== null; curr = updateDecoder.next()) {
+      if (currClient !== curr.id.client) {
+        size++
+        // We found a new client
+        // write what we have to the encoder
+        encoding.writeVarUint(encoder.restEncoder, currClient)
+        encoding.writeVarUint(encoder.restEncoder, currClock)
+        currClient = curr.id.client
+      }
+      currClock = curr.id.clock + curr.length
+    }
+    // write what we have
+    encoding.writeVarUint(encoder.restEncoder, currClient)
+    encoding.writeVarUint(encoder.restEncoder, currClock)
+    // prepend the size of the state vector
+    const enc = encoding.createEncoder()
+    encoding.writeVarUint(enc, size)
+    encoding.writeBinaryEncoder(enc, encoder.restEncoder)
+    encoder.restEncoder = enc
+    return encoder.toUint8Array()
+  } else {
+    encoding.writeVarUint(encoder.restEncoder, 0)
+    return encoder.toUint8Array()
+  }
+}
+
+/**
+ * @param {Uint8Array} update
+ * @return {Uint8Array}
+ */
+export const encodeStateVectorFromUpdate = update => encodeStateVectorFromUpdateV2(update, DSEncoderV1, UpdateDecoderV2)
 
 /**
  * This method is intended to slice any kind of struct and retrieve the right part.

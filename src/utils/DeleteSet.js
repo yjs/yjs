@@ -4,7 +4,7 @@ import {
   getState,
   splitItem,
   iterateStructs,
-  AbstractUpdateDecoder, AbstractDSDecoder, AbstractDSEncoder, DSDecoderV2, DSEncoderV2, Item, GC, StructStore, Transaction, ID // eslint-disable-line
+  DSDecoderV1, DSEncoderV1, DSDecoderV2, DSEncoderV2, Item, GC, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as array from 'lib0/array.js'
@@ -210,7 +210,7 @@ export const createDeleteSetFromStructStore = ss => {
 }
 
 /**
- * @param {AbstractDSEncoder} encoder
+ * @param {DSEncoderV1 | DSEncoderV2} encoder
  * @param {DeleteSet} ds
  *
  * @private
@@ -232,7 +232,7 @@ export const writeDeleteSet = (encoder, ds) => {
 }
 
 /**
- * @param {AbstractDSDecoder} decoder
+ * @param {DSDecoderV1 | DSDecoderV2} decoder
  * @return {DeleteSet}
  *
  * @private
@@ -260,7 +260,7 @@ export const readDeleteSet = decoder => {
  */
 
 /**
- * @param {AbstractDSDecoder} decoder
+ * @param {DSDecoderV1 | DSDecoderV2} decoder
  * @param {Transaction} transaction
  * @param {StructStore} store
  *

@@ -138,7 +138,7 @@ export const testGetAndSetOfMapPropertySyncs = tc => {
   t.compare(map0.get('stuff'), 'stuffy')
   testConnector.flushAllMessages()
   for (const user of users) {
-    var u = user.getMap('map')
+    const u = user.getMap('map')
     t.compare(u.get('stuff'), 'stuffy')
   }
   compare(users)
@@ -153,7 +153,7 @@ export const testGetAndSetOfMapPropertyWithConflict = tc => {
   map1.set('stuff', 'c1')
   testConnector.flushAllMessages()
   for (const user of users) {
-    var u = user.getMap('map')
+    const u = user.getMap('map')
     t.compare(u.get('stuff'), 'c1')
   }
   compare(users)
@@ -183,7 +183,7 @@ export const testGetAndSetAndDeleteOfMapProperty = tc => {
   map1.delete('stuff')
   testConnector.flushAllMessages()
   for (const user of users) {
-    var u = user.getMap('map')
+    const u = user.getMap('map')
     t.assert(u.get('stuff') === undefined)
   }
   compare(users)
@@ -200,7 +200,7 @@ export const testGetAndSetOfMapPropertyWithThreeConflicts = tc => {
   map2.set('stuff', 'c3')
   testConnector.flushAllMessages()
   for (const user of users) {
-    var u = user.getMap('map')
+    const u = user.getMap('map')
     t.compare(u.get('stuff'), 'c3')
   }
   compare(users)
@@ -223,7 +223,7 @@ export const testGetAndSetAndDeleteOfMapPropertyWithThreeConflicts = tc => {
   map3.delete('stuff')
   testConnector.flushAllMessages()
   for (const user of users) {
-    var u = user.getMap('map')
+    const u = user.getMap('map')
     t.assert(u.get('stuff') === undefined)
   }
   compare(users)
@@ -296,7 +296,7 @@ export const testObserversUsingObservedeep = tc => {
  * @param {Object<string,any>} should
  */
 const compareEvent = (is, should) => {
-  for (var key in should) {
+  for (const key in should) {
     t.compare(should[key], is[key])
   }
 }
@@ -474,12 +474,12 @@ export const testYmapEventHasCorrectValueWhenSettingAPrimitiveFromOtherUser = tc
 const mapTransactions = [
   function set (user, gen) {
     const key = prng.oneOf(gen, ['one', 'two'])
-    var value = prng.utf16String(gen)
+    const value = prng.utf16String(gen)
     user.getMap('map').set(key, value)
   },
   function setType (user, gen) {
     const key = prng.oneOf(gen, ['one', 'two'])
-    var type = prng.oneOf(gen, [new Y.Array(), new Y.Map()])
+    const type = prng.oneOf(gen, [new Y.Array(), new Y.Map()])
     user.getMap('map').set(key, type)
     if (type instanceof Y.Array) {
       type.insert(0, [1, 2, 3, 4])
