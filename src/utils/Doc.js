@@ -217,6 +217,9 @@ export class Doc extends Observable {
 
   /**
    * Converts the entire document into a js object, recursively traversing each yjs type
+   * Doesn't log types that have not been defined (using ydoc.getType(..)).
+   *
+   * @deprecated Do not use this method and rather call toJSON directly on the shared types.
    *
    * @return {Object<string, any>}
    */
