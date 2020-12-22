@@ -29,7 +29,8 @@
     "dist/*",
     "src/*",
     "tests/*",
-    "docs/*"
+    "docs/*",
+    "./funding.cjs"
   ],
   "dictionaries": {
     "doc": "docs",
