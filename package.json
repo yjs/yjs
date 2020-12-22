@@ -30,7 +30,7 @@
     "src/*",
     "tests/*",
     "docs/*",
-    "./funding.cjs"
+    "funding.cjs"
   ],
   "dictionaries": {
     "doc": "docs",
