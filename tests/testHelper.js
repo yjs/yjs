@@ -27,31 +27,35 @@ const broadcastMessage = (y, m) => {
   }
 }
 
-let useV2 = false
+export let useV2 = false
 
-export let encodeStateAsUpdate = Y.encodeStateAsUpdate
-export let mergeUpdates = Y.mergeUpdates
-export let applyUpdate = Y.applyUpdate
-export let logUpdate = Y.logUpdate
-export let updateEventName = 'update'
-
-const setEncoders = () => {
-  encodeStateAsUpdate = useV2 ? Y.encodeStateAsUpdateV2 : Y.encodeStateAsUpdate
-  mergeUpdates = useV2 ? Y.mergeUpdatesV2 : Y.mergeUpdates
-  applyUpdate = useV2 ? Y.applyUpdateV2 : Y.applyUpdate
-  logUpdate = useV2 ? Y.logUpdateV2 : Y.logUpdate
-  updateEventName = useV2 ? 'updateV2' : 'update'
+export const encV1 = {
+  encodeStateAsUpdate: Y.encodeStateAsUpdate,
+  mergeUpdates: Y.mergeUpdates,
+  applyUpdate: Y.applyUpdate,
+  logUpdate: Y.logUpdate,
+  updateEventName: 'update'
 }
+
+export const encV2 = {
+  encodeStateAsUpdate: Y.encodeStateAsUpdateV2,
+  mergeUpdates: Y.mergeUpdatesV2,
+  applyUpdate: Y.applyUpdateV2,
+  logUpdate: Y.logUpdateV2,
+  updateEventName: 'updateV2'
+}
+
+export let enc = encV1
 
 const useV1Encoding = () => {
   useV2 = false
-  setEncoders()
+  enc = encV1
 }
 
 const useV2Encoding = () => {
-  useV2 = false
   console.error('sync protocol doesnt support v2 protocol yet, fallback to v1 encoding') // @Todo
-  setEncoders()
+  useV2 = false
+  enc = encV1
 }
 
 export class TestYInstance extends Y.Doc {
@@ -78,7 +82,7 @@ export class TestYInstance extends Y.Doc {
      */
     this.updates = []
     // set up observe on local model
-    this.on(updateEventName, /** @param {Uint8Array} update @param {any} origin */ (update, origin) => {
+    this.on(enc.updateEventName, /** @param {Uint8Array} update @param {any} origin */ (update, origin) => {
       if (origin !== testConnector) {
         const encoder = encoding.createEncoder()
         syncProtocol.writeUpdate(encoder, update)
@@ -323,7 +327,7 @@ export const compare = users => {
   // This ensures that mergeUpdates works correctly
   const mergedDocs = users.map(user => {
     const ydoc = new Y.Doc()
-    applyUpdate(ydoc, mergeUpdates(user.updates))
+    enc.applyUpdate(ydoc, enc.mergeUpdates(user.updates))
     return ydoc
   })
   users.push(.../** @type {any} */(mergedDocs))
