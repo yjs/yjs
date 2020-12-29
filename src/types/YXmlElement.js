@@ -8,7 +8,7 @@ import {
   typeMapGetAll,
   typeListForEach,
   YXmlElementRefID,
-  YXmlText, ContentType, AbstractType, AbstractUpdateDecoder, AbstractUpdateEncoder, Snapshot, Doc, Item // eslint-disable-line
+  YXmlText, ContentType, AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Snapshot, Doc, Item // eslint-disable-line
 } from '../internals.js'
 
 /**
@@ -208,7 +208,7 @@ export class YXmlElement extends YXmlFragment {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @param {AbstractUpdateEncoder} encoder The encoder to write data to.
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
    */
   _write (encoder) {
     encoder.writeTypeRef(YXmlElementRefID)
@@ -217,7 +217,7 @@ export class YXmlElement extends YXmlFragment {
 }
 
 /**
- * @param {AbstractUpdateDecoder} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @return {YXmlElement}
  *
  * @function

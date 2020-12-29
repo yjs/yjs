@@ -12,11 +12,11 @@ import {
   mergeDeleteSets,
   DSEncoderV1,
   DSEncoderV2,
-  Item, GC, AbstractUpdateDecoder, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2 // eslint-disable-line
+  Item, GC, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2 // eslint-disable-line
 } from '../internals.js'
 
 /**
- * @param {AbstractUpdateDecoder} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  */
 function * lazyStructReaderGenerator (decoder) {
   const numOfStateUpdates = decoding.readVarUint(decoder.restDecoder)
@@ -61,7 +61,7 @@ function * lazyStructReaderGenerator (decoder) {
 
 export class LazyStructReader {
   /**
-   * @param {AbstractUpdateDecoder} decoder
+   * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
    */
   constructor (decoder) {
     this.gen = lazyStructReaderGenerator(decoder)

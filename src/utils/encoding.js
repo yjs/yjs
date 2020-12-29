@@ -33,7 +33,7 @@ import {
   DSEncoderV2,
   DSDecoderV1,
   DSEncoderV1,
-  AbstractDSDecoder, AbstractUpdateDecoder, Doc, Transaction, GC, Item, StructStore, ID // eslint-disable-line
+  Doc, Transaction, GC, Item, StructStore, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -97,7 +97,7 @@ export const writeClientsStructs = (encoder, store, _sm) => {
 }
 
 /**
- * @param {AbstractUpdateDecoder} decoder The decoder object to read data from.
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder The decoder object to read data from.
  * @param {Map<number,Array<GC|Item>>} clientRefs
  * @param {Doc} doc
  * @return {Map<number,Array<GC|Item>>}
@@ -370,7 +370,7 @@ const cleanupPendingStructs = pendingClientsStructRefs => {
  *
  * This is called when data is received from a remote peer.
  *
- * @param {AbstractUpdateDecoder} decoder The decoder object to read data from.
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder The decoder object to read data from.
  * @param {Transaction} transaction
  * @param {StructStore} store
  *
@@ -405,7 +405,7 @@ export const readStructs = (decoder, transaction, store) => {
  * @param {decoding.Decoder} decoder
  * @param {Doc} ydoc
  * @param {any} [transactionOrigin] This will be stored on `transaction.origin` and `.on('update', (update, origin))`
- * @param {AbstractUpdateDecoder} [structDecoder]
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} [structDecoder]
  *
  * @function
  */
@@ -509,7 +509,7 @@ export const encodeStateAsUpdate = (doc, encodedTargetStateVector) => encodeStat
 /**
  * Read state vector from Decoder and return as Map
  *
- * @param {AbstractDSDecoder} decoder
+ * @param {DSDecoderV1 | DSDecoderV2} decoder
  * @return {Map<number,number>} Maps `client` to the number next expected `clock` from that client.
  *
  * @function

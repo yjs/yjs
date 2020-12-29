@@ -22,7 +22,7 @@ import {
   readContentFormat,
   readContentType,
   addChangedTypeToTransaction,
-  AbstractUpdateDecoder, AbstractUpdateEncoder, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error.js'
@@ -620,7 +620,7 @@ export class Item extends AbstractStruct {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @param {AbstractUpdateEncoder} encoder The encoder to write data to.
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
    * @param {number} offset
    */
   write (encoder, offset) {
@@ -670,7 +670,7 @@ export class Item extends AbstractStruct {
 }
 
 /**
- * @param {AbstractUpdateDecoder} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @param {number} info
  */
 export const readItemContent = (decoder, info) => contentRefs[info & binary.BITS5](decoder)
@@ -678,7 +678,7 @@ export const readItemContent = (decoder, info) => contentRefs[info & binary.BITS
 /**
  * A lookup map for reading Item content.
  *
- * @type {Array<function(AbstractUpdateDecoder):AbstractContent>}
+ * @type {Array<function(UpdateDecoderV1 | UpdateDecoderV2):AbstractContent>}
  */
 export const contentRefs = [
   () => { error.unexpectedCase() }, // GC is not ItemContent
@@ -771,7 +771,7 @@ export class AbstractContent {
   }
 
   /**
-   * @param {AbstractUpdateEncoder} encoder
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    * @param {number} offset
    */
   write (encoder, offset) {

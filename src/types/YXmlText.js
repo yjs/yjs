@@ -2,7 +2,7 @@
 import {
   YText,
   YXmlTextRefID,
-  ContentType, YXmlElement, AbstractUpdateDecoder, AbstractUpdateEncoder // eslint-disable-line
+  ContentType, YXmlElement, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, // eslint-disable-line
 } from '../internals.js'
 
 /**
@@ -104,7 +104,7 @@ export class YXmlText extends YText {
   }
 
   /**
-   * @param {AbstractUpdateEncoder} encoder
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    */
   _write (encoder) {
     encoder.writeTypeRef(YXmlTextRefID)
@@ -112,7 +112,7 @@ export class YXmlText extends YText {
 }
 
 /**
- * @param {AbstractUpdateDecoder} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @return {YXmlText}
  *
  * @private

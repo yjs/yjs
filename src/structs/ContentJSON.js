@@ -1,5 +1,5 @@
 import {
-  AbstractUpdateDecoder, AbstractUpdateEncoder, Transaction, Item, StructStore // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Transaction, Item, StructStore // eslint-disable-line
 } from '../internals.js'
 
 /**
@@ -77,7 +77,7 @@ export class ContentJSON {
    */
   gc (store) {}
   /**
-   * @param {AbstractUpdateEncoder} encoder
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
@@ -100,7 +100,7 @@ export class ContentJSON {
 /**
  * @private
  *
- * @param {AbstractUpdateDecoder} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @return {ContentJSON}
  */
 export const readContentJSON = decoder => {

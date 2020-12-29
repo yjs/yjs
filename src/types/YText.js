@@ -26,7 +26,7 @@ import {
   typeMapGet,
   typeMapGetAll,
   updateMarkerChanges,
-  ArraySearchMarker, AbstractUpdateDecoder, AbstractUpdateEncoder, ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
+  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as object from 'lib0/object.js'
@@ -1203,7 +1203,7 @@ export class YText extends AbstractType {
   }
 
   /**
-   * @param {AbstractUpdateEncoder} encoder
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    */
   _write (encoder) {
     encoder.writeTypeRef(YTextRefID)
@@ -1211,7 +1211,7 @@ export class YText extends AbstractType {
 }
 
 /**
- * @param {AbstractUpdateDecoder} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @return {YText}
  *
  * @private

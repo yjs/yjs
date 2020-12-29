@@ -11,7 +11,7 @@ import {
   Item,
   generateNewClientId,
   createID,
-  AbstractUpdateEncoder, GC, StructStore, UpdateEncoderV2, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map.js'
@@ -19,7 +19,6 @@ import * as math from 'lib0/math.js'
 import * as set from 'lib0/set.js'
 import * as logging from 'lib0/logging.js'
 import { callAll } from 'lib0/function.js'
-import { UpdateEncoderV1 } from './UpdateEncoder.js'
 
 /**
  * A transaction is created for every change on the Yjs model. It is possible
@@ -119,7 +118,7 @@ export class Transaction {
 }
 
 /**
- * @param {AbstractUpdateEncoder} encoder
+ * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
  * @param {Transaction} transaction
  * @return {boolean} Whether data was written.
  */

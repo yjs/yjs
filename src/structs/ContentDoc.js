@@ -1,6 +1,6 @@
 
 import {
-  Doc, AbstractUpdateDecoder, AbstractUpdateEncoder, StructStore, Transaction, Item // eslint-disable-line
+  Doc, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error.js'
@@ -110,7 +110,7 @@ export class ContentDoc {
   gc (store) { }
 
   /**
-   * @param {AbstractUpdateEncoder} encoder
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
@@ -129,7 +129,7 @@ export class ContentDoc {
 /**
  * @private
  *
- * @param {AbstractUpdateDecoder} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @return {ContentDoc}
  */
 export const readContentDoc = decoder => new ContentDoc(new Doc({ guid: decoder.readString(), ...decoder.readAny() }))

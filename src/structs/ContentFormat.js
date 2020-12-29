@@ -1,6 +1,6 @@
 
 import {
-  AbstractType, AbstractUpdateDecoder, AbstractUpdateEncoder, Item, StructStore, Transaction // eslint-disable-line
+  AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Item, StructStore, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error.js'
@@ -80,7 +80,7 @@ export class ContentFormat {
    */
   gc (store) {}
   /**
-   * @param {AbstractUpdateEncoder} encoder
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
@@ -97,7 +97,7 @@ export class ContentFormat {
 }
 
 /**
- * @param {AbstractUpdateDecoder} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @return {ContentFormat}
  */
 export const readContentFormat = decoder => new ContentFormat(decoder.readString(), decoder.readJSON())

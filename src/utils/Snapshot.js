@@ -15,14 +15,13 @@ import {
   findIndexSS,
   UpdateEncoderV2,
   applyUpdateV2,
-  AbstractDSDecoder, DSEncoderV2, DSDecoderV1, DSDecoderV2, Transaction, Doc, DeleteSet, Item // eslint-disable-line
+  DSEncoderV1, DSEncoderV2, DSDecoderV1, DSDecoderV2, Transaction, Doc, DeleteSet, Item // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map.js'
 import * as set from 'lib0/set.js'
 import * as decoding from 'lib0/decoding.js'
 import * as encoding from 'lib0/encoding.js'
-import { DSEncoderV1 } from './UpdateEncoder.js'
 
 export class Snapshot {
   /**
@@ -95,7 +94,7 @@ export const encodeSnapshot = snapshot => encodeSnapshotV2(snapshot, new DSEncod
 
 /**
  * @param {Uint8Array} buf
- * @param {AbstractDSDecoder} [decoder]
+ * @param {DSDecoderV1 | DSDecoderV2} [decoder]
  * @return {Snapshot}
  */
 export const decodeSnapshotV2 = (buf, decoder = new DSDecoderV2(decoding.createDecoder(buf))) => {

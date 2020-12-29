@@ -1,7 +1,7 @@
 
 import {
   AbstractStruct,
-  AbstractUpdateEncoder, StructStore, Transaction, ID // eslint-disable-line
+  UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
 import * as error from 'lib0/error.js'
 
@@ -39,7 +39,7 @@ export class Skip extends AbstractStruct {
   }
 
   /**
-   * @param {AbstractUpdateEncoder} encoder
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
