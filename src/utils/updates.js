@@ -184,6 +184,51 @@ export const encodeStateVectorFromUpdateV2 = (update, YEncoder = DSEncoderV2, YD
 export const encodeStateVectorFromUpdate = update => encodeStateVectorFromUpdateV2(update, DSEncoderV1, UpdateDecoderV2)
 
 /**
+ * @param {Uint8Array} update
+ * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} YDecoder
+ * @return {{ from: Map<number,number>, to: Map<number,number> }}
+ */
+export const parseUpdateMetaV2 = (update, YDecoder = UpdateDecoderV2) => {
+  /**
+   * @type {Map<number, number>}
+   */
+  const from = new Map()
+  /**
+   * @type {Map<number, number>}
+   */
+  const to = new Map()
+  const updateDecoder = new LazyStructReader(new YDecoder(decoding.createDecoder(update)))
+  let curr = updateDecoder.curr
+  if (curr !== null) {
+    let currClient = curr.id.client
+    let currClock = curr.id.clock
+    // write the beginning to `from`
+    from.set(currClient, currClock)
+    for (; curr !== null; curr = updateDecoder.next()) {
+      if (currClient !== curr.id.client) {
+        // We found a new client
+        // write the end to `to`
+        to.set(currClient, currClock)
+        // write the beginning to `from`
+        from.set(curr.id.client, curr.id.clock)
+        // update currClient
+        currClient = curr.id.client
+      }
+      currClock = curr.id.clock + curr.length
+    }
+    // write the end to `to`
+    to.set(currClient, currClock)
+  }
+  return { from, to }
+}
+
+/**
+ * @param {Uint8Array} update
+ * @return {{ from: Map<number,number>, to: Map<number,number> }}
+ */
+export const parseUpdateMeta = update => parseUpdateMetaV2(update, UpdateDecoderV1)
+
+/**
  * This method is intended to slice any kind of struct and retrieve the right part.
  * It does not handle side-effects, so it should only be used by the lazy-encoder.
  *

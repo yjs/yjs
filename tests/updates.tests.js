@@ -8,6 +8,9 @@ import * as Y from '../src/index.js'
  * @property {function(Y.Doc):Uint8Array} Enc.encodeStateAsUpdate
  * @property {function(Y.Doc, Uint8Array):void} Enc.applyUpdate
  * @property {function(Uint8Array):void} Enc.logUpdate
+ * @property {function(Uint8Array):{from:Map<number,number>,to:Map<number,number>}} Enc.parseUpdateMeta
+ * @property {function(Y.Doc):Uint8Array} Enc.encodeStateVector
+ * @property {function(Uint8Array):Uint8Array} Enc.encodeStateVectorFromUpdate
  * @property {string} Enc.updateEventName
  * @property {string} Enc.description
  */
@@ -20,6 +23,9 @@ const encV1 = {
   encodeStateAsUpdate: Y.encodeStateAsUpdate,
   applyUpdate: Y.applyUpdate,
   logUpdate: Y.logUpdate,
+  parseUpdateMeta: Y.parseUpdateMeta,
+  encodeStateVectorFromUpdate: Y.encodeStateVectorFromUpdate,
+  encodeStateVector: Y.encodeStateVector,
   updateEventName: 'update',
   description: 'V1'
 }
@@ -32,6 +38,9 @@ const encV2 = {
   encodeStateAsUpdate: Y.encodeStateAsUpdateV2,
   applyUpdate: Y.applyUpdateV2,
   logUpdate: Y.logUpdateV2,
+  parseUpdateMeta: Y.parseUpdateMetaV2,
+  encodeStateVectorFromUpdate: Y.encodeStateVectorFromUpdateV2,
+  encodeStateVector: Y.encodeStateVectorV2,
   updateEventName: 'updateV2',
   description: 'V2'
 }
@@ -50,6 +59,9 @@ const encDoc = {
   encodeStateAsUpdate: Y.encodeStateAsUpdate,
   applyUpdate: Y.applyUpdate,
   logUpdate: Y.logUpdate,
+  parseUpdateMeta: Y.parseUpdateMetaV2,
+  encodeStateVectorFromUpdate: Y.encodeStateVectorFromUpdateV2,
+  encodeStateVector: Y.encodeStateVector,
   updateEventName: 'update',
   description: 'Merge via Y.Doc'
 }
@@ -129,6 +141,14 @@ const checkUpdateCases = (ydoc, updates, enc) => {
     const merged = new Y.Doc()
     enc.applyUpdate(merged, updates)
     t.compareArrays(merged.getArray().toArray(), ydoc.getArray().toArray())
+    t.compare(enc.encodeStateVector(merged), enc.encodeStateVectorFromUpdate(updates))
+    const meta = enc.parseUpdateMeta(updates)
+    meta.from.forEach((clock, client) => t.assert(clock === 0))
+    meta.to.forEach((clock, client) => {
+      const structs = /** @type {Array<Y.Item>} */ (merged.store.clients.get(client))
+      const lastStruct = structs[structs.length - 1]
+      t.assert(lastStruct.id.clock + lastStruct.length === clock)
+    })
   })
 }
 

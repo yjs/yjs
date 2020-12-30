@@ -76,5 +76,9 @@ export {
   AbstractConnector,
   logType,
   mergeUpdates,
-  mergeUpdatesV2
+  mergeUpdatesV2,
+  parseUpdateMeta,
+  parseUpdateMetaV2,
+  encodeStateVectorFromUpdate,
+  encodeStateVectorFromUpdateV2
 } from './internals.js'
