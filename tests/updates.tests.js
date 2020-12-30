@@ -2,27 +2,63 @@ import * as t from 'lib0/testing.js'
 import { init, compare } from './testHelper.js' // eslint-disable-line
 import * as Y from '../src/index.js'
 
+/**
+ * @typedef {Object} Enc
+ * @property {function(Array<Uint8Array>):Uint8Array} Enc.mergeUpdates
+ * @property {function(Y.Doc):Uint8Array} Enc.encodeStateAsUpdate
+ * @property {function(Y.Doc, Uint8Array):void} Enc.applyUpdate
+ * @property {function(Uint8Array):void} Enc.logUpdate
+ * @property {string} Enc.updateEventName
+ * @property {string} Enc.description
+ */
+
+/**
+ * @type {Enc}
+ */
 const encV1 = {
   mergeUpdates: Y.mergeUpdates,
   encodeStateAsUpdate: Y.encodeStateAsUpdate,
   applyUpdate: Y.applyUpdate,
   logUpdate: Y.logUpdate,
-  updateEventName: 'update'
+  updateEventName: 'update',
+  description: 'V1'
 }
 
+/**
+ * @type {Enc}
+ */
 const encV2 = {
   mergeUpdates: Y.mergeUpdatesV2,
   encodeStateAsUpdate: Y.encodeStateAsUpdateV2,
   applyUpdate: Y.applyUpdateV2,
   logUpdate: Y.logUpdateV2,
-  updateEventName: 'updateV2'
+  updateEventName: 'updateV2',
+  description: 'V2'
 }
 
-const encoders = [encV1, encV2]
+/**
+ * @type {Enc}
+ */
+const encDoc = {
+  mergeUpdates: (updates) => {
+    const ydoc = new Y.Doc()
+    updates.forEach(update => {
+      Y.applyUpdate(ydoc, update)
+    })
+    return Y.encodeStateAsUpdate(ydoc)
+  },
+  encodeStateAsUpdate: Y.encodeStateAsUpdate,
+  applyUpdate: Y.applyUpdate,
+  logUpdate: Y.logUpdate,
+  updateEventName: 'update',
+  description: 'Merge via Y.Doc'
+}
+
+const encoders = [encV1, encV2, encDoc]
 
 /**
  * @param {Array<Y.Doc>} users
- * @param {encV1 | encV2} enc
+ * @param {Enc} enc
  */
 const fromUpdates = (users, enc) => {
   const updates = users.map(user =>
@@ -52,7 +88,7 @@ export const testMergeUpdates = tc => {
 /**
  * @param {Y.Doc} ydoc
  * @param {Array<Uint8Array>} updates - expecting at least 4 updates
- * @param {encV1 | encV2} enc
+ * @param {Enc} enc
  */
 const checkUpdateCases = (ydoc, updates, enc) => {
   const cases = []
@@ -101,7 +137,7 @@ const checkUpdateCases = (ydoc, updates, enc) => {
  */
 export const testMergeUpdates1 = tc => {
   encoders.forEach((enc, i) => {
-    t.info(`Using V${i + 1} encoder.`)
+    t.info(`Using encoder: ${enc.description}`)
     const ydoc = new Y.Doc({ gc: false })
     const updates = /** @type {Array<Uint8Array>} */ ([])
     ydoc.on(enc.updateEventName, update => { updates.push(update) })
@@ -121,7 +157,7 @@ export const testMergeUpdates1 = tc => {
  */
 export const testMergeUpdates2 = tc => {
   encoders.forEach((enc, i) => {
-    t.info(`Using V${i + 1} encoder.`)
+    t.info(`Using encoder: ${enc.description}`)
     const ydoc = new Y.Doc({ gc: false })
     const updates = /** @type {Array<Uint8Array>} */ ([])
     ydoc.on(enc.updateEventName, update => { updates.push(update) })
