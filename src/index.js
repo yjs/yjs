@@ -32,8 +32,6 @@ export {
   createRelativePositionFromJSON,
   createAbsolutePositionFromRelativePosition,
   compareRelativePositions,
-  writeRelativePosition,
-  readRelativePosition,
   ID,
   createID,
   compareIDs,

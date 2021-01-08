@@ -45,8 +45,9 @@ export class RelativePosition {
    * @param {ID|null} type
    * @param {string|null} tname
    * @param {ID|null} item
+   * @param {number} assoc
    */
-  constructor (type, tname, item) {
+  constructor (type, tname, item, assoc = 0) {
     /**
      * @type {ID|null}
      */
@@ -59,6 +60,18 @@ export class RelativePosition {
      * @type {ID | null}
      */
     this.item = item
+    /**
+     * A relative position is associated to a specific character. By default
+     * assoc >= 0, the relative position is associated to the character
+     * after the meant position.
+     * I.e. position 1 in 'ab' is associated to character 'b'.
+     *
+     * If assoc < 0, then the relative position is associated to the caharacter
+     * before the meant position.
+     *
+     * @type {number}
+     */
+    this.assoc = assoc
   }
 }
 
@@ -74,8 +87,9 @@ export class AbsolutePosition {
   /**
    * @param {AbstractType<any>} type
    * @param {number} index
+   * @param {number} [assoc]
    */
-  constructor (type, index) {
+  constructor (type, index, assoc = 0) {
     /**
      * @type {AbstractType<any>}
      */
@@ -84,24 +98,27 @@ export class AbsolutePosition {
      * @type {number}
      */
     this.index = index
+    this.assoc = assoc
   }
 }
 
 /**
  * @param {AbstractType<any>} type
  * @param {number} index
+ * @param {number} [assoc]
  *
  * @function
  */
-export const createAbsolutePosition = (type, index) => new AbsolutePosition(type, index)
+export const createAbsolutePosition = (type, index, assoc = 0) => new AbsolutePosition(type, index, assoc)
 
 /**
  * @param {AbstractType<any>} type
  * @param {ID|null} item
+ * @param {number} [assoc]
  *
  * @function
  */
-export const createRelativePosition = (type, item) => {
+export const createRelativePosition = (type, item, assoc) => {
   let typeid = null
   let tname = null
   if (type._item === null) {
@@ -109,7 +126,7 @@ export const createRelativePosition = (type, item) => {
   } else {
     typeid = createID(type._item.id.client, type._item.id.clock)
   }
-  return new RelativePosition(typeid, tname, item)
+  return new RelativePosition(typeid, tname, item, assoc)
 }
 
 /**
@@ -117,23 +134,35 @@ export const createRelativePosition = (type, item) => {
  *
  * @param {AbstractType<any>} type The base type (e.g. YText or YArray).
  * @param {number} index The absolute position.
+ * @param {number} [assoc]
  * @return {RelativePosition}
  *
  * @function
  */
-export const createRelativePositionFromTypeIndex = (type, index) => {
+export const createRelativePositionFromTypeIndex = (type, index, assoc = 0) => {
   let t = type._start
+  if (assoc < 0) {
+    // associated to the left character or the beginning of a type, increment index if possible.
+    if (index === 0) {
+      return createRelativePosition(type, null, assoc)
+    }
+    index++
+  }
   while (t !== null) {
     if (!t.deleted && t.countable) {
       if (t.length > index) {
         // case 1: found position somewhere in the linked list
-        return createRelativePosition(type, createID(t.id.client, t.id.clock + index))
+        return createRelativePosition(type, createID(t.id.client, t.id.clock + index), assoc)
       }
       index -= t.length
     }
+    if (t.right === null && assoc < 0) {
+      // left-associated position, return last available id
+      return createRelativePosition(type, t.lastId, assoc)
+    }
     t = t.right
   }
-  return createRelativePosition(type, null)
+  return createRelativePosition(type, null, assoc)
 }
 
 /**
@@ -143,7 +172,7 @@ export const createRelativePositionFromTypeIndex = (type, index) => {
  * @function
  */
 export const writeRelativePosition = (encoder, rpos) => {
-  const { type, tname, item } = rpos
+  const { type, tname, item, assoc } = rpos
   if (item !== null) {
     encoding.writeVarUint(encoder, 0)
     writeID(encoder, item)
@@ -158,6 +187,7 @@ export const writeRelativePosition = (encoder, rpos) => {
   } else {
     throw error.unexpectedCase()
   }
+  encoding.writeVarInt(encoder, assoc)
   return encoder
 }
 
@@ -173,7 +203,7 @@ export const encodeRelativePosition = rpos => {
 
 /**
  * @param {decoding.Decoder} decoder
- * @return {RelativePosition|null}
+ * @return {RelativePosition}
  *
  * @function
  */
@@ -195,12 +225,13 @@ export const readRelativePosition = decoder => {
       type = readID(decoder)
     }
   }
-  return new RelativePosition(type, tname, itemID)
+  const assoc = decoding.hasContent(decoder) ? decoding.readVarInt(decoder) : 0
+  return new RelativePosition(type, tname, itemID, assoc)
 }
 
 /**
  * @param {Uint8Array} uint8Array
- * @return {RelativePosition|null}
+ * @return {RelativePosition}
  */
 export const decodeRelativePosition = uint8Array => readRelativePosition(decoding.createDecoder(uint8Array))
 
@@ -216,6 +247,7 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
   const rightID = rpos.item
   const typeID = rpos.type
   const tname = rpos.tname
+  const assoc = rpos.assoc
   let type = null
   let index = 0
   if (rightID !== null) {
@@ -229,7 +261,7 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
     }
     type = /** @type {AbstractType<any>} */ (right.parent)
     if (type._item === null || !type._item.deleted) {
-      index = right.deleted || !right.countable ? 0 : res.diff
+      index = (right.deleted || !right.countable) ? 0 : (res.diff + (assoc >= 0 ? 0 : 1)) // adjust position based on left association if necessary
       let n = right.left
       while (n !== null) {
         if (!n.deleted && n.countable) {
@@ -256,9 +288,13 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
     } else {
       throw error.unexpectedCase()
     }
-    index = type._length
+    if (assoc >= 0) {
+      index = type._length
+    } else {
+      index = 0
+    }
   }
-  return createAbsolutePosition(type, index)
+  return createAbsolutePosition(type, index, rpos.assoc)
 }
 
 /**
@@ -269,5 +305,5 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
  * @function
  */
 export const compareRelativePositions = (a, b) => a === b || (
-  a !== null && b !== null && a.tname === b.tname && compareIDs(a.item, b.item) && compareIDs(a.type, b.type)
+  a !== null && b !== null && a.tname === b.tname && compareIDs(a.item, b.item) && compareIDs(a.type, b.type) && a.assoc === b.assoc
 )
