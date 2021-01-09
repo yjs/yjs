@@ -146,7 +146,7 @@ export const createRelativePositionFromTypeIndex = (type, index, assoc = 0) => {
     if (index === 0) {
       return createRelativePosition(type, null, assoc)
     }
-    index++
+    index--
   }
   while (t !== null) {
     if (!t.deleted && t.countable) {
