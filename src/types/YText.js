@@ -169,6 +169,8 @@ const insertNegatedAttributes = (transaction, parent, currPos, negatedAttributes
   negatedAttributes.forEach((val, key) => {
     left = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
     left.integrate(transaction, 0)
+    currPos.currentAttributes.set(key, val)
+    updateCurrentAttributes(currPos.currentAttributes, /** @type {ContentFormat} */ (left.content))
   })
 }
 
