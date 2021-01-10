@@ -61,22 +61,21 @@
   "bugs": {
     "url": "https://github.com/yjs/yjs/issues"
   },
-  "homepage": "https://yjs.dev",
+  "homepage": "https://docs.yjs.dev",
   "dependencies": {
-    "lib0": "^0.2.33"
+    "lib0": "^0.2.35"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^11.1.0",
-    "@rollup/plugin-node-resolve": "^7.1.3",
+    "@rollup/plugin-commonjs": "^17.0.0",
+    "@rollup/plugin-node-resolve": "^11.0.1",
     "concurrently": "^3.6.1",
     "http-server": "^0.12.3",
-    "jsdoc": "^3.6.5",
+    "jsdoc": "^3.6.6",
     "markdownlint-cli": "^0.23.2",
-    "rollup": "^1.32.1",
-    "rollup-cli": "^1.0.9",
+    "rollup": "^2.36.1",
     "standard": "^14.3.4",
     "tui-jsdoc-template": "^1.2.2",
     "typescript": "^3.9.7",
-    "y-protocols": "^0.2.3"
+    "y-protocols": "^1.0.2"
   }
 }
