@@ -26,14 +26,11 @@
     "postinstall": "node ./sponsor-y.js"
   },
   "files": [
-    "dist/*",
-    "src/*",
-    "tests/*",
-    "docs/*",
+    "dist/yjs.*",
+    "dist/src",
     "sponsor-y.js"
   ],
   "dictionaries": {
-    "doc": "docs",
     "test": "tests"
   },
   "standard": {
