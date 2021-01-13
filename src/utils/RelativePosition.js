@@ -76,12 +76,33 @@ export class RelativePosition {
 }
 
 /**
+ * @param {RelativePosition} rpos
+ * @return {any}
+ */
+export const relativePositionToJSON = rpos => {
+  const json = {}
+  if (rpos.type) {
+    json.type = rpos.type
+  }
+  if (rpos.tname) {
+    json.tname = rpos.tname
+  }
+  if (rpos.item) {
+    json.item = rpos.item
+  }
+  if (rpos.assoc != null) {
+    json.assoc = rpos.assoc
+  }
+  return json
+}
+
+/**
  * @param {any} json
  * @return {RelativePosition}
  *
  * @function
  */
-export const createRelativePositionFromJSON = json => new RelativePosition(json.type == null ? null : createID(json.type.client, json.type.clock), json.tname || null, json.item == null ? null : createID(json.item.client, json.item.clock))
+export const createRelativePositionFromJSON = json => new RelativePosition(json.type == null ? null : createID(json.type.client, json.type.clock), json.tname || null, json.item == null ? null : createID(json.item.client, json.item.clock), json.assoc == null ? 0 : json.assoc)
 
 export class AbsolutePosition {
   /**
