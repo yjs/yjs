@@ -80,5 +80,7 @@ export {
   parseUpdateMeta,
   parseUpdateMetaV2,
   encodeStateVectorFromUpdate,
-  encodeStateVectorFromUpdateV2
+  encodeStateVectorFromUpdateV2,
+  encodeRelativePosition,
+  decodeRelativePosition
 } from './internals.js'
