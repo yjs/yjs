@@ -4,6 +4,7 @@ import {
   getState,
   splitItem,
   iterateStructs,
+  UpdateEncoderV2,
   DSDecoderV1, DSEncoderV1, DSDecoderV2, DSEncoderV2, Item, GC, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
 
@@ -263,6 +264,7 @@ export const readDeleteSet = decoder => {
  * @param {DSDecoderV1 | DSDecoderV2} decoder
  * @param {Transaction} transaction
  * @param {StructStore} store
+ * @return {Uint8Array|null} Returns a v2 update containing all deletes that couldn't be applied yet; or null if all deletes were applied successfully.
  *
  * @private
  * @function
@@ -315,9 +317,10 @@ export const readAndApplyDeleteSet = (decoder, transaction, store) => {
     }
   }
   if (unappliedDS.clients.size > 0) {
-    // TODO: no need for encoding+decoding ds anymore
-    const unappliedDSEncoder = new DSEncoderV2()
-    writeDeleteSet(unappliedDSEncoder, unappliedDS)
-    store.pendingDeleteReaders.push(new DSDecoderV2(decoding.createDecoder((unappliedDSEncoder.toUint8Array()))))
+    const ds = new UpdateEncoderV2()
+    encoding.writeVarUint(ds.restEncoder, 0) // encode 0 structs
+    writeDeleteSet(ds, unappliedDS)
+    return ds.toUint8Array()
   }
+  return null
 }

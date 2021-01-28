@@ -52,17 +52,17 @@ const encDoc = {
   mergeUpdates: (updates) => {
     const ydoc = new Y.Doc()
     updates.forEach(update => {
-      Y.applyUpdate(ydoc, update)
+      Y.applyUpdateV2(ydoc, update)
     })
-    return Y.encodeStateAsUpdate(ydoc)
+    return Y.encodeStateAsUpdateV2(ydoc)
   },
-  encodeStateAsUpdate: Y.encodeStateAsUpdate,
-  applyUpdate: Y.applyUpdate,
-  logUpdate: Y.logUpdate,
+  encodeStateAsUpdate: Y.encodeStateAsUpdateV2,
+  applyUpdate: Y.applyUpdateV2,
+  logUpdate: Y.logUpdateV2,
   parseUpdateMeta: Y.parseUpdateMetaV2,
   encodeStateVectorFromUpdate: Y.encodeStateVectorFromUpdateV2,
-  encodeStateVector: Y.encodeStateVector,
-  updateEventName: 'update',
+  encodeStateVector: Y.encodeStateVectorV2,
+  updateEventName: 'updateV2',
   description: 'Merge via Y.Doc'
 }
 
@@ -131,13 +131,13 @@ const checkUpdateCases = (ydoc, updates, enc) => {
   // Case 5: overlapping with many duplicates
   cases.push(enc.mergeUpdates(cases))
 
-  const targetState = enc.encodeStateAsUpdate(ydoc)
-  t.info('Target State: ')
-  enc.logUpdate(targetState)
+  // const targetState = enc.encodeStateAsUpdate(ydoc)
+  // t.info('Target State: ')
+  // enc.logUpdate(targetState)
 
   cases.forEach((updates, i) => {
-    t.info('State Case $' + i + ':')
-    enc.logUpdate(updates)
+    // t.info('State Case $' + i + ':')
+    // enc.logUpdate(updates)
     const merged = new Y.Doc()
     enc.applyUpdate(merged, updates)
     t.compareArrays(merged.getArray().toArray(), ydoc.getArray().toArray())

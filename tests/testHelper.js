@@ -336,9 +336,8 @@ export const compare = users => {
   const userXmlValues = users.map(u => u.get('xml', Y.YXmlElement).toString())
   const userTextValues = users.map(u => u.getText('text').toDelta())
   for (const u of users) {
-    t.assert(u.store.pendingDeleteReaders.length === 0)
-    t.assert(u.store.pendingStack.length === 0)
-    t.assert(u.store.pendingClientsStructRefs.size === 0)
+    t.assert(u.store.pendingDs === null)
+    t.assert(u.store.pendingStructs === null)
   }
   // Test Array iterator
   t.compare(users[0].getArray('array').toArray(), Array.from(users[0].getArray('array')))

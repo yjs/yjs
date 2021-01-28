@@ -151,6 +151,7 @@ export const encodeStateVectorFromUpdateV2 = (update, YEncoder = DSEncoderV2, YD
     let size = 1
     let currClient = curr.id.client
     let currClock = curr.id.clock
+    let stopCounting = false
     for (; curr !== null; curr = updateDecoder.next()) {
       if (currClient !== curr.id.client) {
         size++
@@ -159,8 +160,14 @@ export const encodeStateVectorFromUpdateV2 = (update, YEncoder = DSEncoderV2, YD
         encoding.writeVarUint(encoder.restEncoder, currClient)
         encoding.writeVarUint(encoder.restEncoder, currClock)
         currClient = curr.id.client
+        stopCounting = false
       }
-      currClock = curr.id.clock + curr.length
+      if (curr.constructor === Skip) {
+        stopCounting = true
+      }
+      if (!stopCounting) {
+        currClock = curr.id.clock + curr.length
+      }
     }
     // write what we have
     encoding.writeVarUint(encoder.restEncoder, currClient)
@@ -181,7 +188,7 @@ export const encodeStateVectorFromUpdateV2 = (update, YEncoder = DSEncoderV2, YD
  * @param {Uint8Array} update
  * @return {Uint8Array}
  */
-export const encodeStateVectorFromUpdate = update => encodeStateVectorFromUpdateV2(update, DSEncoderV1, UpdateDecoderV2)
+export const encodeStateVectorFromUpdate = update => encodeStateVectorFromUpdateV2(update, DSEncoderV1, UpdateDecoderV1)
 
 /**
  * @param {Uint8Array} update
@@ -388,9 +395,10 @@ export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = U
 
 /**
  * @param {Uint8Array} update
- * @param {Uint8Array} sv
+ * @param {Uint8Array} [sv]
  */
-export const diffUpdate = (update, sv) => {
+export const diffUpdate = (update, sv = new Uint8Array([0])) => {
+  // @todo!!!
   return update
 }
 
