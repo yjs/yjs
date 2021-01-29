@@ -3,6 +3,7 @@ import * as binary from 'lib0/binary.js'
 import * as decoding from 'lib0/decoding.js'
 import * as encoding from 'lib0/encoding.js'
 import * as logging from 'lib0/logging.js'
+import * as math from 'lib0/math.js'
 import {
   createID,
   readItemContent,
@@ -12,6 +13,7 @@ import {
   mergeDeleteSets,
   DSEncoderV1,
   DSEncoderV2,
+  decodeStateVector,
   Item, GC, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2 // eslint-disable-line
 } from '../internals.js'
 
@@ -28,7 +30,7 @@ function * lazyStructReaderGenerator (decoder) {
       const info = decoder.readInfo()
       // @todo use switch instead of ifs
       if (info === 10) {
-        const len = decoder.readLen()
+        const len = decoding.readVarUint(decoder.restDecoder)
         yield new Skip(createID(client, clock), len)
         clock += len
       } else if ((binary.BITS5 & info) !== 0) {
@@ -62,25 +64,27 @@ function * lazyStructReaderGenerator (decoder) {
 export class LazyStructReader {
   /**
    * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+   * @param {boolean} filterSkips
    */
-  constructor (decoder) {
+  constructor (decoder, filterSkips) {
     this.gen = lazyStructReaderGenerator(decoder)
     /**
-     * @type {null | Item | GC}
+     * @type {null | Item | Skip | GC}
      */
     this.curr = null
     this.done = false
+    this.filterSkips = filterSkips
     this.next()
   }
 
   /**
-   * @return {Item | GC | null}
+   * @return {Item | GC | Skip |null}
    */
   next () {
     // ignore "Skip" structs
     do {
       this.curr = this.gen.next().value || null
-    } while (this.curr !== null && this.curr.constructor === Skip)
+    } while (this.filterSkips && this.curr !== null && this.curr.constructor === Skip)
     return this.curr
   }
 }
@@ -99,7 +103,7 @@ export const logUpdate = update => logUpdateV2(update, UpdateDecoderV1)
 export const logUpdateV2 = (update, YDecoder = UpdateDecoderV2) => {
   const structs = []
   const updateDecoder = new YDecoder(decoding.createDecoder(update))
-  const lazyDecoder = new LazyStructReader(updateDecoder)
+  const lazyDecoder = new LazyStructReader(updateDecoder, false)
   for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
     structs.push(curr)
   }
@@ -145,7 +149,7 @@ export const mergeUpdates = updates => mergeUpdatesV2(updates, UpdateDecoderV1, 
  */
 export const encodeStateVectorFromUpdateV2 = (update, YEncoder = DSEncoderV2, YDecoder = UpdateDecoderV2) => {
   const encoder = new YEncoder()
-  const updateDecoder = new LazyStructReader(new YDecoder(decoding.createDecoder(update)))
+  const updateDecoder = new LazyStructReader(new YDecoder(decoding.createDecoder(update)), true)
   let curr = updateDecoder.curr
   if (curr !== null) {
     let size = 1
@@ -204,7 +208,7 @@ export const parseUpdateMetaV2 = (update, YDecoder = UpdateDecoderV2) => {
    * @type {Map<number, number>}
    */
   const to = new Map()
-  const updateDecoder = new LazyStructReader(new YDecoder(decoding.createDecoder(update)))
+  const updateDecoder = new LazyStructReader(new YDecoder(decoding.createDecoder(update)), false)
   let curr = updateDecoder.curr
   if (curr !== null) {
     let currClient = curr.id.client
@@ -277,7 +281,7 @@ const sliceStruct = (left, diff) => {
  */
 export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = UpdateEncoderV2) => {
   const updateDecoders = updates.map(update => new YDecoder(decoding.createDecoder(update)))
-  let lazyStructDecoders = updateDecoders.map(decoder => new LazyStructReader(decoder))
+  let lazyStructDecoders = updateDecoders.map(decoder => new LazyStructReader(decoder, true))
 
   /**
    * @todo we don't need offset because we always slice before
@@ -395,12 +399,51 @@ export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = U
 
 /**
  * @param {Uint8Array} update
- * @param {Uint8Array} [sv]
+ * @param {Uint8Array} sv
+ * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} [YDecoder]
+ * @param {typeof UpdateEncoderV1 | typeof UpdateEncoderV2} [YEncoder]
  */
-export const diffUpdate = (update, sv = new Uint8Array([0])) => {
-  // @todo!!!
-  return update
+export const diffUpdateV2 = (update, sv, YDecoder = UpdateDecoderV2, YEncoder = UpdateEncoderV2) => {
+  const state = decodeStateVector(sv)
+  const encoder = new YEncoder()
+  const lazyStructWriter = new LazyStructWriter(encoder)
+  const decoder = new YDecoder(decoding.createDecoder(update))
+  const reader = new LazyStructReader(decoder, false)
+  while (reader.curr) {
+    const curr = reader.curr
+    const currClient = curr.id.client
+    const svClock = state.get(currClient) || 0
+    if (reader.curr.constructor === Skip) {
+      // the first written struct shouldn't be a skip
+      reader.next()
+      continue
+    }
+    if (curr.id.clock + curr.length > svClock) {
+      writeStructToLazyStructWriter(lazyStructWriter, curr, math.max(svClock - curr.id.clock, 0))
+      reader.next()
+      while (reader.curr && reader.curr.id.client === currClient) {
+        writeStructToLazyStructWriter(lazyStructWriter, reader.curr, 0)
+        reader.next()
+      }
+    } else {
+      // read until something new comes up
+      while (reader.curr && reader.curr.id.client === currClient && reader.curr.id.clock + reader.curr.length <= svClock) {
+        reader.next()
+      }
+    }
+  }
+  finishLazyStructWriting(lazyStructWriter)
+  // write ds
+  const ds = readDeleteSet(decoder)
+  writeDeleteSet(encoder, ds)
+  return encoder.toUint8Array()
 }
+
+/**
+ * @param {Uint8Array} update
+ * @param {Uint8Array} sv
+ */
+export const diffUpdate = (update, sv) => diffUpdateV2(update, sv, UpdateDecoderV1, UpdateEncoderV1)
 
 /**
  * @param {LazyStructWriter} lazyWriter
@@ -428,7 +471,7 @@ const writeStructToLazyStructWriter = (lazyWriter, struct, offset) => {
     // write next client
     lazyWriter.encoder.writeClient(struct.id.client)
     // write startClock
-    encoding.writeVarUint(lazyWriter.encoder.restEncoder, struct.id.clock)
+    encoding.writeVarUint(lazyWriter.encoder.restEncoder, struct.id.clock + offset)
   }
   struct.write(lazyWriter.encoder, offset)
   lazyWriter.written++

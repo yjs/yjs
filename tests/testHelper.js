@@ -34,7 +34,8 @@ export const encV1 = {
   mergeUpdates: Y.mergeUpdates,
   applyUpdate: Y.applyUpdate,
   logUpdate: Y.logUpdate,
-  updateEventName: 'update'
+  updateEventName: 'update',
+  diffUpdate: Y.diffUpdate
 }
 
 export const encV2 = {
@@ -42,7 +43,8 @@ export const encV2 = {
   mergeUpdates: Y.mergeUpdatesV2,
   applyUpdate: Y.applyUpdateV2,
   logUpdate: Y.logUpdateV2,
-  updateEventName: 'updateV2'
+  updateEventName: 'updateV2',
+  diffUpdate: Y.diffUpdateV2
 }
 
 export let enc = encV1

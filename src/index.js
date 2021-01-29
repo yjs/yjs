@@ -57,14 +57,12 @@ export {
   encodeStateAsUpdate,
   encodeStateAsUpdateV2,
   encodeStateVector,
-  encodeStateVectorV2,
   UndoManager,
   decodeSnapshot,
   encodeSnapshot,
   decodeSnapshotV2,
   encodeSnapshotV2,
   decodeStateVector,
-  decodeStateVectorV2,
   logUpdate,
   logUpdateV2,
   isDeleted,
@@ -82,5 +80,7 @@ export {
   encodeStateVectorFromUpdate,
   encodeStateVectorFromUpdateV2,
   encodeRelativePosition,
-  decodeRelativePosition
+  decodeRelativePosition,
+  diffUpdate,
+  diffUpdateV2
 } from './internals.js'

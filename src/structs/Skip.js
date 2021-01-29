@@ -4,6 +4,7 @@ import {
   UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
 import * as error from 'lib0/error.js'
+import * as encoding from 'lib0/encoding.js'
 
 export const structSkipRefNumber = 10
 
@@ -44,7 +45,8 @@ export class Skip extends AbstractStruct {
    */
   write (encoder, offset) {
     encoder.writeInfo(structSkipRefNumber)
-    encoder.writeLen(this.length - offset)
+    // write as VarUint because Skips can't make use of predictable length-encoding
+    encoding.writeVarUint(encoder.restEncoder, this.length - offset)
   }
 
   /**

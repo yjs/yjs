@@ -29,14 +29,13 @@ import {
   UpdateDecoderV2,
   UpdateEncoderV1,
   UpdateEncoderV2,
-  DSDecoderV2,
   DSEncoderV2,
   DSDecoderV1,
   DSEncoderV1,
   mergeUpdatesV2,
   Skip,
-  diffUpdate,
-  Doc, Transaction, GC, Item, StructStore // eslint-disable-line
+  diffUpdateV2,
+  DSDecoderV2, Doc, Transaction, GC, Item, StructStore // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
@@ -136,7 +135,7 @@ export const readClientsStructRefs = (decoder, doc) => {
         }
         case 10: { // Skip Struct (nothing to apply)
           // @todo we could reduce the amount of checks by adding Skip struct to clientRefs so we know that something is missing.
-          const len = decoder.readLen()
+          const len = decoding.readVarUint(decoder.restDecoder)
           refs[i] = new Skip(createID(client, clock), len)
           clock += len
           break
@@ -517,8 +516,8 @@ export const writeStateAsUpdate = (encoder, doc, targetStateVector = new Map()) 
  *
  * @function
  */
-export const encodeStateAsUpdateV2 = (doc, encodedTargetStateVector, encoder = new UpdateEncoderV2()) => {
-  const targetStateVector = encodedTargetStateVector == null ? new Map() : decodeStateVector(encodedTargetStateVector)
+export const encodeStateAsUpdateV2 = (doc, encodedTargetStateVector = new Uint8Array([0]), encoder = new UpdateEncoderV2()) => {
+  const targetStateVector = decodeStateVector(encodedTargetStateVector)
   writeStateAsUpdate(encoder, doc, targetStateVector)
   const updates = [encoder.toUint8Array()]
   // also add the pending updates (if there are any)
@@ -528,7 +527,7 @@ export const encodeStateAsUpdateV2 = (doc, encodedTargetStateVector, encoder = n
       updates.push(doc.store.pendingDs)
     }
     if (doc.store.pendingStructs) {
-      updates.push(diffUpdate(doc.store.pendingStructs.update, encodedTargetStateVector))
+      updates.push(diffUpdateV2(doc.store.pendingStructs.update, encodedTargetStateVector))
     }
     if (updates.length > 1) {
       return mergeUpdatesV2(updates)
@@ -578,7 +577,7 @@ export const readStateVector = decoder => {
  *
  * @function
  */
-export const decodeStateVectorV2 = decodedState => readStateVector(new DSDecoderV2(decoding.createDecoder(decodedState)))
+// export const decodeStateVectorV2 = decodedState => readStateVector(new DSDecoderV2(decoding.createDecoder(decodedState)))
 
 /**
  * Read decodedState and return State as Map.
@@ -615,21 +614,25 @@ export const writeDocumentStateVector = (encoder, doc) => writeStateVector(encod
 /**
  * Encode State as Uint8Array.
  *
- * @param {Doc} doc
+ * @param {Doc|Map<number,number>} doc
  * @param {DSEncoderV1 | DSEncoderV2} [encoder]
  * @return {Uint8Array}
  *
  * @function
  */
 export const encodeStateVectorV2 = (doc, encoder = new DSEncoderV2()) => {
-  writeDocumentStateVector(encoder, doc)
+  if (doc instanceof Map) {
+    writeStateVector(encoder, doc)
+  } else {
+    writeDocumentStateVector(encoder, doc)
+  }
   return encoder.toUint8Array()
 }
 
 /**
  * Encode State as Uint8Array.
  *
- * @param {Doc} doc
+ * @param {Doc|Map<number,number>} doc
  * @return {Uint8Array}
  *
  * @function
