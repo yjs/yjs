@@ -81,6 +81,29 @@ export const testBasicFormat = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testMultilineFormat = tc => {
+  const ydoc = new Y.Doc()
+  const testText = ydoc.getText('test')
+  testText.insert(0, 'Test\nMulti-line\nFormatting')
+  testText.applyDelta([
+    { retain: 4, attributes: { bold: true } },
+    { retain: 1 }, // newline character
+    { retain: 10, attributes: { bold: true } },
+    { retain: 1 }, // newline character
+    { retain: 10, attributes: { bold: true } }
+  ])
+  t.compare(testText.toDelta(), [
+    { insert: 'Test', attributes: { bold: true } },
+    { insert: '\n' },
+    { insert: 'Multi-line', attributes: { bold: true } },
+    { insert: '\n' },
+    { insert: 'Formatting', attributes: { bold: true } }
+  ])
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testGetDeltaWithEmbeds = tc => {
   const { text0 } = init(tc, { users: 1 })
   text0.applyDelta([{
@@ -286,7 +309,9 @@ export const testBestCase = tc => {
 }
 
 const tryGc = () => {
+  // @ts-ignore
   if (typeof global !== 'undefined' && global.gc) {
+    // @ts-ignore
     global.gc()
   }
 }

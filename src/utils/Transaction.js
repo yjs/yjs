@@ -340,14 +340,14 @@ const cleanupTransactions = (transactionCleanups, i) => {
         const encoder = new UpdateEncoderV1()
         const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
         if (hasContent) {
-          doc.emit('update', [encoder.toUint8Array(), transaction.origin, doc])
+          doc.emit('update', [encoder.toUint8Array(), transaction.origin, doc, transaction])
         }
       }
       if (doc._observers.has('updateV2')) {
         const encoder = new UpdateEncoderV2()
         const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
         if (hasContent) {
-          doc.emit('updateV2', [encoder.toUint8Array(), transaction.origin, doc])
+          doc.emit('updateV2', [encoder.toUint8Array(), transaction.origin, doc, transaction])
         }
       }
       transaction.subdocsAdded.forEach(subdoc => doc.subdocs.add(subdoc))
