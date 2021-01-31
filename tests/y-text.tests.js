@@ -104,6 +104,26 @@ export const testMultilineFormat = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testNotMergeEmptyLinesFormat = tc => {
+  const ydoc = new Y.Doc()
+  const testText = ydoc.getText('test')
+  testText.applyDelta([
+    { insert: 'Text' },
+    { insert: '\n', attributes: { title: true } },
+    { insert: '\nText' },
+    { insert: '\n', attributes: { title: true } }
+  ])
+  t.compare(testText.toDelta(), [
+    { insert: 'Text' },
+    { insert: '\n', attributes: { title: true } },
+    { insert: '\nText' },
+    { insert: '\n', attributes: { title: true } }
+  ])
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testGetDeltaWithEmbeds = tc => {
   const { text0 } = init(tc, { users: 1 })
   text0.applyDelta([{
