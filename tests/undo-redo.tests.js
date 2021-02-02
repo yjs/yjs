@@ -201,10 +201,12 @@ export const testUndoEvents = tc => {
   let receivedMetadata = -1
   undoManager.on('stack-item-added', /** @param {any} event */ event => {
     t.assert(event.type != null)
+    t.assert(event.changedParentTypes != null && event.changedParentTypes.has(text0))
     event.stackItem.meta.set('test', counter++)
   })
   undoManager.on('stack-item-popped', /** @param {any} event */ event => {
     t.assert(event.type != null)
+    t.assert(event.changedParentTypes != null && event.changedParentTypes.has(text0))
     receivedMetadata = event.stackItem.meta.get('test')
   })
   text0.insert(0, 'abc')

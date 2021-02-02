@@ -10,7 +10,7 @@ import {
   followRedone,
   getItemCleanStart,
   getState,
-  ID, Transaction, Doc, Item, GC, DeleteSet, AbstractType // eslint-disable-line
+  Transaction, Doc, Item, GC, DeleteSet, AbstractType, YEvent // eslint-disable-line
 } from '../internals.js'
 
 import * as time from 'lib0/time.js'
@@ -45,6 +45,11 @@ const popStackItem = (undoManager, stack, eventType) => {
    * @type {StackItem?}
    */
   let result = null
+  /**
+   * Keep a reference to the transaction so we can fire the event with the changedParentTypes
+   * @type {any}
+   */
+  let _tr = null
   const doc = undoManager.doc
   const scope = undoManager.scope
   transact(doc, transaction => {
@@ -126,9 +131,11 @@ const popStackItem = (undoManager, stack, eventType) => {
         type._searchMarker.length = 0
       }
     })
+    _tr = transaction
   }, undoManager)
   if (result != null) {
-    undoManager.emit('stack-item-popped', [{ stackItem: result, type: eventType }, undoManager])
+    const changedParentTypes = _tr.changedParentTypes
+    undoManager.emit('stack-item-popped', [{ stackItem: result, type: eventType, changedParentTypes }, undoManager])
   }
   return result
 }
@@ -215,7 +222,7 @@ export class UndoManager extends Observable {
           keepItem(item, true)
         }
       })
-      this.emit('stack-item-added', [{ stackItem: stack[stack.length - 1], origin: transaction.origin, type: undoing ? 'redo' : 'undo' }, this])
+      this.emit('stack-item-added', [{ stackItem: stack[stack.length - 1], origin: transaction.origin, type: undoing ? 'redo' : 'undo', changedParentTypes: transaction.changedParentTypes }, this])
     })
   }
 
