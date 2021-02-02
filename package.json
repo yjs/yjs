@@ -28,6 +28,8 @@
   "files": [
     "dist/yjs.*",
     "dist/src",
+    "src",
+    "tests/testHelper.js",
     "sponsor-y.js"
   ],
   "dictionaries": {
