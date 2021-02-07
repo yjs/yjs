@@ -11,7 +11,7 @@ import {
   Item,
   generateNewClientId,
   createID,
-  AbstractUpdateEncoder, GC, StructStore, UpdateEncoderV2, DefaultUpdateEncoder, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map.js'
@@ -118,7 +118,7 @@ export class Transaction {
 }
 
 /**
- * @param {AbstractUpdateEncoder} encoder
+ * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
  * @param {Transaction} transaction
  * @return {boolean} Whether data was written.
  */
@@ -337,7 +337,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
       // @todo Merge all the transactions into one and provide send the data as a single update message
       doc.emit('afterTransactionCleanup', [transaction, doc])
       if (doc._observers.has('update')) {
-        const encoder = new DefaultUpdateEncoder()
+        const encoder = new UpdateEncoderV1()
         const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
         if (hasContent) {
           doc.emit('update', [encoder.toUint8Array(), transaction.origin, doc, transaction])

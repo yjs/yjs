@@ -1,6 +1,6 @@
 
 import {
-  AbstractUpdateEncoder, ID, Transaction // eslint-disable-line
+  UpdateEncoderV1, UpdateEncoderV2, ID, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error.js'
@@ -34,7 +34,7 @@ export class AbstractStruct {
   }
 
   /**
-   * @param {AbstractUpdateEncoder} encoder The encoder to write data to.
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
    * @param {number} offset
    * @param {number} encodingRef
    */

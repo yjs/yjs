@@ -2,7 +2,7 @@
 import {
   YMap,
   YXmlHookRefID,
-  AbstractUpdateDecoder, AbstractUpdateEncoder // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2 // eslint-disable-line
 } from '../internals.js'
 
 /**
@@ -76,7 +76,7 @@ export class YXmlHook extends YMap {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @param {AbstractUpdateEncoder} encoder The encoder to write data to.
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
    */
   _write (encoder) {
     encoder.writeTypeRef(YXmlHookRefID)
@@ -85,7 +85,7 @@ export class YXmlHook extends YMap {
 }
 
 /**
- * @param {AbstractUpdateDecoder} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @return {YXmlHook}
  *
  * @private

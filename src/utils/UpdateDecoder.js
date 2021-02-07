@@ -1,128 +1,8 @@
 import * as buffer from 'lib0/buffer.js'
-import * as error from 'lib0/error.js'
 import * as decoding from 'lib0/decoding.js'
 import {
   ID, createID
 } from '../internals.js'
-
-export class AbstractDSDecoder {
-  /**
-   * @param {decoding.Decoder} decoder
-   */
-  constructor (decoder) {
-    this.restDecoder = decoder
-    error.methodUnimplemented()
-  }
-
-  resetDsCurVal () { }
-
-  /**
-   * @return {number}
-   */
-  readDsClock () {
-    error.methodUnimplemented()
-  }
-
-  /**
-   * @return {number}
-   */
-  readDsLen () {
-    error.methodUnimplemented()
-  }
-}
-
-export class AbstractUpdateDecoder extends AbstractDSDecoder {
-  /**
-   * @return {ID}
-   */
-  readLeftID () {
-    error.methodUnimplemented()
-  }
-
-  /**
-   * @return {ID}
-   */
-  readRightID () {
-    error.methodUnimplemented()
-  }
-
-  /**
-   * Read the next client id.
-   * Use this in favor of readID whenever possible to reduce the number of objects created.
-   *
-   * @return {number}
-   */
-  readClient () {
-    error.methodUnimplemented()
-  }
-
-  /**
-   * @return {number} info An unsigned 8-bit integer
-   */
-  readInfo () {
-    error.methodUnimplemented()
-  }
-
-  /**
-   * @return {string}
-   */
-  readString () {
-    error.methodUnimplemented()
-  }
-
-  /**
-   * @return {boolean} isKey
-   */
-  readParentInfo () {
-    error.methodUnimplemented()
-  }
-
-  /**
-   * @return {number} info An unsigned 8-bit integer
-   */
-  readTypeRef () {
-    error.methodUnimplemented()
-  }
-
-  /**
-   * Write len of a struct - well suited for Opt RLE encoder.
-   *
-   * @return {number} len
-   */
-  readLen () {
-    error.methodUnimplemented()
-  }
-
-  /**
-   * @return {any}
-   */
-  readAny () {
-    error.methodUnimplemented()
-  }
-
-  /**
-   * @return {Uint8Array}
-   */
-  readBuf () {
-    error.methodUnimplemented()
-  }
-
-  /**
-   * Legacy implementation uses JSON parse. We use any-decoding in v2.
-   *
-   * @return {any}
-   */
-  readJSON () {
-    error.methodUnimplemented()
-  }
-
-  /**
-   * @return {string}
-   */
-  readKey () {
-    error.methodUnimplemented()
-  }
-}
 
 export class DSDecoderV1 {
   /**
@@ -247,6 +127,9 @@ export class DSDecoderV2 {
    * @param {decoding.Decoder} decoder
    */
   constructor (decoder) {
+    /**
+     * @private
+     */
     this.dsCurrVal = 0
     this.restDecoder = decoder
   }
@@ -255,11 +138,17 @@ export class DSDecoderV2 {
     this.dsCurrVal = 0
   }
 
+  /**
+   * @return {number}
+   */
   readDsClock () {
     this.dsCurrVal += decoding.readVarUint(this.restDecoder)
     return this.dsCurrVal
   }
 
+  /**
+   * @return {number}
+   */
   readDsLen () {
     const diff = decoding.readVarUint(this.restDecoder) + 1
     this.dsCurrVal += diff
@@ -280,7 +169,7 @@ export class UpdateDecoderV2 extends DSDecoderV2 {
      * @type {Array<string>}
      */
     this.keys = []
-    decoding.readUint8(decoder) // read feature flag - currently unused
+    decoding.readVarUint(decoder) // read feature flag - currently unused
     this.keyClockDecoder = new decoding.IntDiffOptRleDecoder(decoding.readVarUint8Array(decoder))
     this.clientDecoder = new decoding.UintOptRleDecoder(decoding.readVarUint8Array(decoder))
     this.leftClockDecoder = new decoding.IntDiffOptRleDecoder(decoding.readVarUint8Array(decoder))

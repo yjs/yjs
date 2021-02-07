@@ -14,7 +14,7 @@ import {
   YMapRefID,
   callTypeObservers,
   transact,
-  AbstractUpdateDecoder, AbstractUpdateEncoder, Doc, Transaction, Item // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 
 import * as iterator from 'lib0/iterator.js'
@@ -238,7 +238,7 @@ export class YMap extends AbstractType {
   }
 
   /**
-   * @param {AbstractUpdateEncoder} encoder
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    */
   _write (encoder) {
     encoder.writeTypeRef(YMapRefID)
@@ -246,7 +246,7 @@ export class YMap extends AbstractType {
 }
 
 /**
- * @param {AbstractUpdateDecoder} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  *
  * @private
  * @function

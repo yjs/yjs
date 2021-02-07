@@ -22,7 +22,7 @@ import {
   readContentFormat,
   readContentType,
   addChangedTypeToTransaction,
-  AbstractUpdateDecoder, AbstractUpdateEncoder, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error.js'
@@ -554,6 +554,7 @@ export class Item extends AbstractStruct {
    */
   mergeWith (right) {
     if (
+      this.constructor === right.constructor &&
       compareIDs(right.origin, this.lastId) &&
       this.right === right &&
       compareIDs(this.rightOrigin, right.rightOrigin) &&
@@ -619,7 +620,7 @@ export class Item extends AbstractStruct {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @param {AbstractUpdateEncoder} encoder The encoder to write data to.
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
    * @param {number} offset
    */
   write (encoder, offset) {
@@ -639,16 +640,26 @@ export class Item extends AbstractStruct {
     }
     if (origin === null && rightOrigin === null) {
       const parent = /** @type {AbstractType<any>} */ (this.parent)
-      const parentItem = parent._item
-      if (parentItem === null) {
-        // parent type on y._map
-        // find the correct key
-        const ykey = findRootTypeKey(parent)
+      if (parent._item !== undefined) {
+        const parentItem = parent._item
+        if (parentItem === null) {
+          // parent type on y._map
+          // find the correct key
+          const ykey = findRootTypeKey(parent)
+          encoder.writeParentInfo(true) // write parentYKey
+          encoder.writeString(ykey)
+        } else {
+          encoder.writeParentInfo(false) // write parent id
+          encoder.writeLeftID(parentItem.id)
+        }
+      } else if (parent.constructor === String) { // this edge case was added by differential updates
         encoder.writeParentInfo(true) // write parentYKey
-        encoder.writeString(ykey)
-      } else {
+        encoder.writeString(parent)
+      } else if (parent.constructor === ID) {
         encoder.writeParentInfo(false) // write parent id
-        encoder.writeLeftID(parentItem.id)
+        encoder.writeLeftID(parent)
+      } else {
+        error.unexpectedCase()
       }
       if (parentSub !== null) {
         encoder.writeString(parentSub)
@@ -659,7 +670,7 @@ export class Item extends AbstractStruct {
 }
 
 /**
- * @param {AbstractUpdateDecoder} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @param {number} info
  */
 export const readItemContent = (decoder, info) => contentRefs[info & binary.BITS5](decoder)
@@ -667,10 +678,10 @@ export const readItemContent = (decoder, info) => contentRefs[info & binary.BITS
 /**
  * A lookup map for reading Item content.
  *
- * @type {Array<function(AbstractUpdateDecoder):AbstractContent>}
+ * @type {Array<function(UpdateDecoderV1 | UpdateDecoderV2):AbstractContent>}
  */
 export const contentRefs = [
-  () => { throw error.unexpectedCase() }, // GC is not ItemContent
+  () => { error.unexpectedCase() }, // GC is not ItemContent
   readContentDeleted, // 1
   readContentJSON, // 2
   readContentBinary, // 3
@@ -679,7 +690,8 @@ export const contentRefs = [
   readContentFormat, // 6
   readContentType, // 7
   readContentAny, // 8
-  readContentDoc // 9
+  readContentDoc, // 9
+  () => { error.unexpectedCase() } // 10 - Skip is not ItemContent
 ]
 
 /**
@@ -759,7 +771,7 @@ export class AbstractContent {
   }
 
   /**
-   * @param {AbstractUpdateEncoder} encoder
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    * @param {number} offset
    */
   write (encoder, offset) {

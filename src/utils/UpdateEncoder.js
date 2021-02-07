@@ -6,110 +6,9 @@ import {
   ID // eslint-disable-line
 } from '../internals.js'
 
-export class AbstractDSEncoder {
-  constructor () {
-    this.restEncoder = encoding.createEncoder()
-  }
-
-  /**
-   * @return {Uint8Array}
-   */
-  toUint8Array () {
-    error.methodUnimplemented()
-  }
-
-  /**
-   * Resets the ds value to 0.
-   * The v2 encoder uses this information to reset the initial diff value.
-   */
-  resetDsCurVal () { }
-
-  /**
-   * @param {number} clock
-   */
-  writeDsClock (clock) { }
-
-  /**
-   * @param {number} len
-   */
-  writeDsLen (len) { }
-}
-
-export class AbstractUpdateEncoder extends AbstractDSEncoder {
-  /**
-   * @return {Uint8Array}
-   */
-  toUint8Array () {
-    error.methodUnimplemented()
-  }
-
-  /**
-   * @param {ID} id
-   */
-  writeLeftID (id) { }
-
-  /**
-   * @param {ID} id
-   */
-  writeRightID (id) { }
-
-  /**
-   * Use writeClient and writeClock instead of writeID if possible.
-   * @param {number} client
-   */
-  writeClient (client) { }
-
-  /**
-   * @param {number} info An unsigned 8-bit integer
-   */
-  writeInfo (info) { }
-
-  /**
-   * @param {string} s
-   */
-  writeString (s) { }
-
-  /**
-   * @param {boolean} isYKey
-   */
-  writeParentInfo (isYKey) { }
-
-  /**
-   * @param {number} info An unsigned 8-bit integer
-   */
-  writeTypeRef (info) { }
-
-  /**
-   * Write len of a struct - well suited for Opt RLE encoder.
-   *
-   * @param {number} len
-   */
-  writeLen (len) { }
-
-  /**
-   * @param {any} any
-   */
-  writeAny (any) { }
-
-  /**
-   * @param {Uint8Array} buf
-   */
-  writeBuf (buf) { }
-
-  /**
-   * @param {any} embed
-   */
-  writeJSON (embed) { }
-
-  /**
-   * @param {string} key
-   */
-  writeKey (key) { }
-}
-
 export class DSEncoderV1 {
   constructor () {
-    this.restEncoder = new encoding.Encoder()
+    this.restEncoder = encoding.createEncoder()
   }
 
   toUint8Array () {
@@ -228,7 +127,7 @@ export class UpdateEncoderV1 extends DSEncoderV1 {
 
 export class DSEncoderV2 {
   constructor () {
-    this.restEncoder = new encoding.Encoder() // encodes all the rest / non-optimized
+    this.restEncoder = encoding.createEncoder() // encodes all the rest / non-optimized
     this.dsCurrVal = 0
   }
 
@@ -288,7 +187,7 @@ export class UpdateEncoderV2 extends DSEncoderV2 {
 
   toUint8Array () {
     const encoder = encoding.createEncoder()
-    encoding.writeUint8(encoder, 0) // this is a feature flag that we might use in the future
+    encoding.writeVarUint(encoder, 0) // this is a feature flag that we might use in the future
     encoding.writeVarUint8Array(encoder, this.keyClockEncoder.toUint8Array())
     encoding.writeVarUint8Array(encoder, this.clientEncoder.toUint8Array())
     encoding.writeVarUint8Array(encoder, this.leftClockEncoder.toUint8Array())

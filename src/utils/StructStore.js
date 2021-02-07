@@ -15,24 +15,13 @@ export class StructStore {
      */
     this.clients = new Map()
     /**
-     * Store incompleted struct reads here
-     * `i` denotes to the next read operation
-     * We could shift the array of refs instead, but shift is incredible
-     * slow in Chrome for arrays with more than 100k elements
-     * @see tryResumePendingStructRefs
-     * @type {Map<number,{i:number,refs:Array<GC|Item>}>}
+     * @type {null | { missing: Map<number, number>, update: Uint8Array }}
      */
-    this.pendingClientsStructRefs = new Map()
+    this.pendingStructs = null
     /**
-     * Stack of pending structs waiting for struct dependencies
-     * Maximum length of stack is structReaders.size
-     * @type {Array<GC|Item>}
+     * @type {null | Uint8Array}
      */
-    this.pendingStack = []
-    /**
-     * @type {Array<DSDecoderV2>}
-     */
-    this.pendingDeleteReaders = []
+    this.pendingDs = null
   }
 }
 

@@ -11,7 +11,7 @@ import {
   ContentAny,
   ContentBinary,
   getItemCleanStart,
-  ContentDoc, YText, YArray, AbstractUpdateEncoder, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
+  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map.js'
@@ -324,7 +324,7 @@ export class AbstractType {
   }
 
   /**
-   * @param {AbstractUpdateEncoder} encoder
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    */
   _write (encoder) { }
 

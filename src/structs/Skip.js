@@ -1,16 +1,17 @@
 
 import {
   AbstractStruct,
-  addStruct,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, ID // eslint-disable-line
+  UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
+import * as error from 'lib0/error.js'
+import * as encoding from 'lib0/encoding.js'
 
-export const structGCRefNumber = 0
+export const structSkipRefNumber = 10
 
 /**
  * @private
  */
-export class GC extends AbstractStruct {
+export class Skip extends AbstractStruct {
   get deleted () {
     return true
   }
@@ -18,7 +19,7 @@ export class GC extends AbstractStruct {
   delete () {}
 
   /**
-   * @param {GC} right
+   * @param {Skip} right
    * @return {boolean}
    */
   mergeWith (right) {
@@ -34,11 +35,8 @@ export class GC extends AbstractStruct {
    * @param {number} offset
    */
   integrate (transaction, offset) {
-    if (offset > 0) {
-      this.id.clock += offset
-      this.length -= offset
-    }
-    addStruct(transaction.doc.store, this)
+    // skip structs cannot be integrated
+    error.unexpectedCase()
   }
 
   /**
@@ -46,8 +44,9 @@ export class GC extends AbstractStruct {
    * @param {number} offset
    */
   write (encoder, offset) {
-    encoder.writeInfo(structGCRefNumber)
-    encoder.writeLen(this.length - offset)
+    encoder.writeInfo(structSkipRefNumber)
+    // write as VarUint because Skips can't make use of predictable length-encoding
+    encoding.writeVarUint(encoder.restEncoder, this.length - offset)
   }
 
   /**

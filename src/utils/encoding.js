@@ -29,39 +29,23 @@ import {
   UpdateDecoderV2,
   UpdateEncoderV1,
   UpdateEncoderV2,
-  DSDecoderV2,
   DSEncoderV2,
   DSDecoderV1,
   DSEncoderV1,
-  AbstractDSEncoder, AbstractDSDecoder, AbstractUpdateEncoder, AbstractUpdateDecoder, AbstractContent, Doc, Transaction, GC, Item, StructStore, ID // eslint-disable-line
+  mergeUpdatesV2,
+  Skip,
+  diffUpdateV2,
+  DSDecoderV2, Doc, Transaction, GC, Item, StructStore // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import * as binary from 'lib0/binary.js'
 import * as map from 'lib0/map.js'
-
-export let DefaultDSEncoder = DSEncoderV1
-export let DefaultDSDecoder = DSDecoderV1
-export let DefaultUpdateEncoder = UpdateEncoderV1
-export let DefaultUpdateDecoder = UpdateDecoderV1
-
-export const useV1Encoding = () => {
-  DefaultDSEncoder = DSEncoderV1
-  DefaultDSDecoder = DSDecoderV1
-  DefaultUpdateEncoder = UpdateEncoderV1
-  DefaultUpdateDecoder = UpdateDecoderV1
-}
-
-export const useV2Encoding = () => {
-  DefaultDSEncoder = DSEncoderV2
-  DefaultDSDecoder = DSDecoderV2
-  DefaultUpdateEncoder = UpdateEncoderV2
-  DefaultUpdateDecoder = UpdateDecoderV2
-}
+import * as math from 'lib0/math.js'
 
 /**
- * @param {AbstractUpdateEncoder} encoder
+ * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
  * @param {Array<GC|Item>} structs All structs by `client`
  * @param {number} client
  * @param {number} clock write structs starting with `ID(client,clock)`
@@ -70,6 +54,7 @@ export const useV2Encoding = () => {
  */
 const writeStructs = (encoder, structs, client, clock) => {
   // write first id
+  clock = math.max(clock, structs[0].id.clock) // make sure the first id exists
   const startNewStructs = findIndexSS(structs, clock)
   // write # encoded structs
   encoding.writeVarUint(encoder.restEncoder, structs.length - startNewStructs)
@@ -84,7 +69,7 @@ const writeStructs = (encoder, structs, client, clock) => {
 }
 
 /**
- * @param {AbstractUpdateEncoder} encoder
+ * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
  * @param {StructStore} store
  * @param {Map<number,number>} _sm
  *
@@ -116,15 +101,18 @@ export const writeClientsStructs = (encoder, store, _sm) => {
 }
 
 /**
- * @param {AbstractUpdateDecoder} decoder The decoder object to read data from.
- * @param {Map<number,Array<GC|Item>>} clientRefs
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder The decoder object to read data from.
  * @param {Doc} doc
- * @return {Map<number,Array<GC|Item>>}
+ * @return {Map<number, { i: number, refs: Array<Item | GC> }>}
  *
  * @private
  * @function
  */
-export const readClientsStructRefs = (decoder, clientRefs, doc) => {
+export const readClientsStructRefs = (decoder, doc) => {
+  /**
+   * @type {Map<number, { i: number, refs: Array<Item | GC> }>}
+   */
+  const clientRefs = map.create()
   const numOfStateUpdates = decoding.readVarUint(decoder.restDecoder)
   for (let i = 0; i < numOfStateUpdates; i++) {
     const numberOfStructs = decoding.readVarUint(decoder.restDecoder)
@@ -135,61 +123,72 @@ export const readClientsStructRefs = (decoder, clientRefs, doc) => {
     const client = decoder.readClient()
     let clock = decoding.readVarUint(decoder.restDecoder)
     // const start = performance.now()
-    clientRefs.set(client, refs)
+    clientRefs.set(client, { i: 0, refs })
     for (let i = 0; i < numberOfStructs; i++) {
       const info = decoder.readInfo()
-      if ((binary.BITS5 & info) !== 0) {
-        /**
-         * The optimized implementation doesn't use any variables because inlining variables is faster.
-         * Below a non-optimized version is shown that implements the basic algorithm with
-         * a few comments
-         */
-        const cantCopyParentInfo = (info & (binary.BIT7 | binary.BIT8)) === 0
-        // If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
-        // and we read the next string as parentYKey.
-        // It indicates how we store/retrieve parent from `y.share`
-        // @type {string|null}
-        const struct = new Item(
-          createID(client, clock),
-          null, // leftd
-          (info & binary.BIT8) === binary.BIT8 ? decoder.readLeftID() : null, // origin
-          null, // right
-          (info & binary.BIT7) === binary.BIT7 ? decoder.readRightID() : null, // right origin
-          cantCopyParentInfo ? (decoder.readParentInfo() ? doc.get(decoder.readString()) : decoder.readLeftID()) : null, // parent
-          cantCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoder.readString() : null, // parentSub
-          readItemContent(decoder, info) // item content
-        )
-        /* A non-optimized implementation of the above algorithm:
+      switch (binary.BITS5 & info) {
+        case 0: { // GC
+          const len = decoder.readLen()
+          refs[i] = new GC(createID(client, clock), len)
+          clock += len
+          break
+        }
+        case 10: { // Skip Struct (nothing to apply)
+          // @todo we could reduce the amount of checks by adding Skip struct to clientRefs so we know that something is missing.
+          const len = decoding.readVarUint(decoder.restDecoder)
+          refs[i] = new Skip(createID(client, clock), len)
+          clock += len
+          break
+        }
+        default: { // Item with content
+          /**
+           * The optimized implementation doesn't use any variables because inlining variables is faster.
+           * Below a non-optimized version is shown that implements the basic algorithm with
+           * a few comments
+           */
+          const cantCopyParentInfo = (info & (binary.BIT7 | binary.BIT8)) === 0
+          // If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
+          // and we read the next string as parentYKey.
+          // It indicates how we store/retrieve parent from `y.share`
+          // @type {string|null}
+          const struct = new Item(
+            createID(client, clock),
+            null, // leftd
+            (info & binary.BIT8) === binary.BIT8 ? decoder.readLeftID() : null, // origin
+            null, // right
+            (info & binary.BIT7) === binary.BIT7 ? decoder.readRightID() : null, // right origin
+            cantCopyParentInfo ? (decoder.readParentInfo() ? doc.get(decoder.readString()) : decoder.readLeftID()) : null, // parent
+            cantCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoder.readString() : null, // parentSub
+            readItemContent(decoder, info) // item content
+          )
+          /* A non-optimized implementation of the above algorithm:
 
-        // The item that was originally to the left of this item.
-        const origin = (info & binary.BIT8) === binary.BIT8 ? decoder.readLeftID() : null
-        // The item that was originally to the right of this item.
-        const rightOrigin = (info & binary.BIT7) === binary.BIT7 ? decoder.readRightID() : null
-        const cantCopyParentInfo = (info & (binary.BIT7 | binary.BIT8)) === 0
-        const hasParentYKey = cantCopyParentInfo ? decoder.readParentInfo() : false
-        // If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
-        // and we read the next string as parentYKey.
-        // It indicates how we store/retrieve parent from `y.share`
-        // @type {string|null}
-        const parentYKey = cantCopyParentInfo && hasParentYKey ? decoder.readString() : null
+          // The item that was originally to the left of this item.
+          const origin = (info & binary.BIT8) === binary.BIT8 ? decoder.readLeftID() : null
+          // The item that was originally to the right of this item.
+          const rightOrigin = (info & binary.BIT7) === binary.BIT7 ? decoder.readRightID() : null
+          const cantCopyParentInfo = (info & (binary.BIT7 | binary.BIT8)) === 0
+          const hasParentYKey = cantCopyParentInfo ? decoder.readParentInfo() : false
+          // If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
+          // and we read the next string as parentYKey.
+          // It indicates how we store/retrieve parent from `y.share`
+          // @type {string|null}
+          const parentYKey = cantCopyParentInfo && hasParentYKey ? decoder.readString() : null
 
-        const struct = new Item(
-          createID(client, clock),
-          null, // leftd
-          origin, // origin
-          null, // right
-          rightOrigin, // right origin
-          cantCopyParentInfo && !hasParentYKey ? decoder.readLeftID() : (parentYKey !== null ? doc.get(parentYKey) : null), // parent
-          cantCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoder.readString() : null, // parentSub
-          readItemContent(decoder, info) // item content
-        )
-        */
-        refs[i] = struct
-        clock += struct.length
-      } else {
-        const len = decoder.readLen()
-        refs[i] = new GC(createID(client, clock), len)
-        clock += len
+          const struct = new Item(
+            createID(client, clock),
+            null, // leftd
+            origin, // origin
+            null, // right
+            rightOrigin, // right origin
+            cantCopyParentInfo && !hasParentYKey ? decoder.readLeftID() : (parentYKey !== null ? doc.get(parentYKey) : null), // parent
+            cantCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoder.readString() : null, // parentSub
+            readItemContent(decoder, info) // item content
+          )
+          */
+          refs[i] = struct
+          clock += struct.length
+        }
       }
     }
     // console.log('time to read: ', performance.now() - start) // @todo remove
@@ -218,26 +217,32 @@ export const readClientsStructRefs = (decoder, clientRefs, doc) => {
  *
  * @param {Transaction} transaction
  * @param {StructStore} store
+ * @param {Map<number, { i: number, refs: (GC | Item)[] }>} clientsStructRefs
+ * @return { null | { update: Uint8Array, missing: Map<number,number> } }
  *
  * @private
  * @function
  */
-const resumeStructIntegration = (transaction, store) => {
-  const stack = store.pendingStack // @todo don't forget to append stackhead at the end
-  const clientsStructRefs = store.pendingClientsStructRefs
+const integrateStructs = (transaction, store, clientsStructRefs) => {
+  /**
+   * @type {Array<Item | GC>}
+   */
+  const stack = []
   // sort them so that we take the higher id first, in case of conflicts the lower id will probably not conflict with the id from the higher user.
-  const clientsStructRefsIds = Array.from(clientsStructRefs.keys()).sort((a, b) => a - b)
+  let clientsStructRefsIds = Array.from(clientsStructRefs.keys()).sort((a, b) => a - b)
   if (clientsStructRefsIds.length === 0) {
-    return
+    return null
   }
   const getNextStructTarget = () => {
+    if (clientsStructRefsIds.length === 0) {
+      return null
+    }
     let nextStructsTarget = /** @type {{i:number,refs:Array<GC|Item>}} */ (clientsStructRefs.get(clientsStructRefsIds[clientsStructRefsIds.length - 1]))
     while (nextStructsTarget.refs.length === nextStructsTarget.i) {
       clientsStructRefsIds.pop()
       if (clientsStructRefsIds.length > 0) {
         nextStructsTarget = /** @type {{i:number,refs:Array<GC|Item>}} */ (clientsStructRefs.get(clientsStructRefsIds[clientsStructRefsIds.length - 1]))
       } else {
-        store.pendingClientsStructRefs.clear()
         return null
       }
     }
@@ -245,176 +250,121 @@ const resumeStructIntegration = (transaction, store) => {
   }
   let curStructsTarget = getNextStructTarget()
   if (curStructsTarget === null && stack.length === 0) {
-    return
+    return null
+  }
+
+  /**
+   * @type {StructStore}
+   */
+  const restStructs = new StructStore()
+  const missingSV = new Map()
+  /**
+   * @param {number} client
+   * @param {number} clock
+   */
+  const updateMissingSv = (client, clock) => {
+    const mclock = missingSV.get(client)
+    if (mclock == null || mclock > clock) {
+      missingSV.set(client, clock)
+    }
   }
   /**
    * @type {GC|Item}
    */
-  let stackHead = stack.length > 0
-    ? /** @type {GC|Item} */ (stack.pop())
-    : /** @type {any} */ (curStructsTarget).refs[/** @type {any} */ (curStructsTarget).i++]
+  let stackHead = /** @type {any} */ (curStructsTarget).refs[/** @type {any} */ (curStructsTarget).i++]
   // caching the state because it is used very often
   const state = new Map()
+
+  const addStackToRestSS = () => {
+    for (const item of stack) {
+      const client = item.id.client
+      const unapplicableItems = clientsStructRefs.get(client)
+      if (unapplicableItems) {
+        // decrement because we weren't able to apply previous operation
+        unapplicableItems.i--
+        restStructs.clients.set(client, unapplicableItems.refs.slice(unapplicableItems.i))
+        clientsStructRefs.delete(client)
+        unapplicableItems.i = 0
+        unapplicableItems.refs = []
+      } else {
+        // item was the last item on clientsStructRefs and the field was already cleared. Add item to restStructs and continue
+        restStructs.clients.set(client, [item])
+      }
+      // remove client from clientsStructRefsIds to prevent users from applying the same update again
+      clientsStructRefsIds = clientsStructRefsIds.filter(c => c !== client)
+    }
+    stack.length = 0
+  }
+
   // iterate over all struct readers until we are done
   while (true) {
-    const localClock = map.setIfUndefined(state, stackHead.id.client, () => getState(store, stackHead.id.client))
-    const offset = stackHead.id.clock < localClock ? localClock - stackHead.id.clock : 0
-    if (stackHead.id.clock + offset !== localClock) {
-      // A previous message from this client is missing
-      // check if there is a pending structRef with a smaller clock and switch them
-      /**
-       * @type {{ refs: Array<GC|Item>, i: number }}
-       */
-      const structRefs = clientsStructRefs.get(stackHead.id.client) || { refs: [], i: 0 }
-      if (structRefs.refs.length !== structRefs.i) {
-        const r = structRefs.refs[structRefs.i]
-        if (r.id.clock < stackHead.id.clock) {
-          // put ref with smaller clock on stack instead and continue
-          structRefs.refs[structRefs.i] = stackHead
-          stackHead = r
-          // sort the set because this approach might bring the list out of order
-          structRefs.refs = structRefs.refs.slice(structRefs.i).sort((r1, r2) => r1.id.clock - r2.id.clock)
-          structRefs.i = 0
-          continue
-        }
-      }
-      // wait until missing struct is available
-      stack.push(stackHead)
-      return
-    }
-    const missing = stackHead.getMissing(transaction, store)
-    if (missing === null) {
-      if (offset === 0 || offset < stackHead.length) {
-        stackHead.integrate(transaction, offset)
-        state.set(stackHead.id.client, stackHead.id.clock + stackHead.length)
-      }
-      // iterate to next stackHead
-      if (stack.length > 0) {
-        stackHead = /** @type {GC|Item} */ (stack.pop())
-      } else if (curStructsTarget !== null && curStructsTarget.i < curStructsTarget.refs.length) {
-        stackHead = /** @type {GC|Item} */ (curStructsTarget.refs[curStructsTarget.i++])
-      } else {
-        curStructsTarget = getNextStructTarget()
-        if (curStructsTarget === null) {
-          // we are done!
-          break
-        } else {
-          stackHead = /** @type {GC|Item} */ (curStructsTarget.refs[curStructsTarget.i++])
-        }
-      }
-    } else {
-      // get the struct reader that has the missing struct
-      /**
-       * @type {{ refs: Array<GC|Item>, i: number }}
-       */
-      const structRefs = clientsStructRefs.get(missing) || { refs: [], i: 0 }
-      if (structRefs.refs.length === structRefs.i) {
-        // This update message causally depends on another update message.
+    if (stackHead.constructor !== Skip) {
+      const localClock = map.setIfUndefined(state, stackHead.id.client, () => getState(store, stackHead.id.client))
+      const offset = localClock - stackHead.id.clock
+      if (offset < 0) {
+        // update from the same client is missing
         stack.push(stackHead)
-        return
+        updateMissingSv(stackHead.id.client, stackHead.id.clock - 1)
+        // hid a dead wall, add all items from stack to restSS
+        addStackToRestSS()
+      } else {
+        const missing = stackHead.getMissing(transaction, store)
+        if (missing !== null) {
+          stack.push(stackHead)
+          // get the struct reader that has the missing struct
+          /**
+           * @type {{ refs: Array<GC|Item>, i: number }}
+           */
+          const structRefs = clientsStructRefs.get(/** @type {number} */ (missing)) || { refs: [], i: 0 }
+          if (structRefs.refs.length === structRefs.i) {
+            // This update message causally depends on another update message that doesn't exist yet
+            updateMissingSv(/** @type {number} */ (missing), getState(store, missing))
+            addStackToRestSS()
+          } else {
+            stackHead = structRefs.refs[structRefs.i++]
+            continue
+          }
+        } else if (offset === 0 || offset < stackHead.length) {
+          // all fine, apply the stackhead
+          stackHead.integrate(transaction, offset)
+          state.set(stackHead.id.client, stackHead.id.clock + stackHead.length)
+        }
       }
-      stack.push(stackHead)
-      stackHead = structRefs.refs[structRefs.i++]
+    }
+    // iterate to next stackHead
+    if (stack.length > 0) {
+      stackHead = /** @type {GC|Item} */ (stack.pop())
+    } else if (curStructsTarget !== null && curStructsTarget.i < curStructsTarget.refs.length) {
+      stackHead = /** @type {GC|Item} */ (curStructsTarget.refs[curStructsTarget.i++])
+    } else {
+      curStructsTarget = getNextStructTarget()
+      if (curStructsTarget === null) {
+        // we are done!
+        break
+      } else {
+        stackHead = /** @type {GC|Item} */ (curStructsTarget.refs[curStructsTarget.i++])
+      }
     }
   }
-  store.pendingClientsStructRefs.clear()
-}
-
-/**
- * @param {Transaction} transaction
- * @param {StructStore} store
- *
- * @private
- * @function
- */
-export const tryResumePendingDeleteReaders = (transaction, store) => {
-  const pendingReaders = store.pendingDeleteReaders
-  store.pendingDeleteReaders = []
-  for (let i = 0; i < pendingReaders.length; i++) {
-    readAndApplyDeleteSet(pendingReaders[i], transaction, store)
+  if (restStructs.clients.size > 0) {
+    const encoder = new UpdateEncoderV2()
+    writeClientsStructs(encoder, restStructs, new Map())
+    // write empty deleteset
+    // writeDeleteSet(encoder, new DeleteSet())
+    encoding.writeVarUint(encoder.restEncoder, 0) // => no need for an extra function call, just write 0 deletes
+    return { missing: missingSV, update: encoder.toUint8Array() }
   }
+  return null
 }
 
 /**
- * @param {AbstractUpdateEncoder} encoder
+ * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
  * @param {Transaction} transaction
  *
  * @private
  * @function
  */
 export const writeStructsFromTransaction = (encoder, transaction) => writeClientsStructs(encoder, transaction.doc.store, transaction.beforeState)
-
-/**
- * @param {StructStore} store
- * @param {Map<number, Array<GC|Item>>} clientsStructsRefs
- *
- * @private
- * @function
- */
-const mergeReadStructsIntoPendingReads = (store, clientsStructsRefs) => {
-  const pendingClientsStructRefs = store.pendingClientsStructRefs
-  clientsStructsRefs.forEach((structRefs, client) => {
-    const pendingStructRefs = pendingClientsStructRefs.get(client)
-    if (pendingStructRefs === undefined) {
-      pendingClientsStructRefs.set(client, { refs: structRefs, i: 0 })
-    } else {
-      // merge into existing structRefs
-      const merged = pendingStructRefs.i > 0 ? pendingStructRefs.refs.slice(pendingStructRefs.i) : pendingStructRefs.refs
-      for (let i = 0; i < structRefs.length; i++) {
-        merged.push(structRefs[i])
-      }
-      pendingStructRefs.i = 0
-      pendingStructRefs.refs = merged.sort((r1, r2) => r1.id.clock - r2.id.clock)
-    }
-  })
-}
-
-/**
- * @param {Map<number,{refs:Array<GC|Item>,i:number}>} pendingClientsStructRefs
- */
-const cleanupPendingStructs = pendingClientsStructRefs => {
-  // cleanup pendingClientsStructs if not fully finished
-  pendingClientsStructRefs.forEach((refs, client) => {
-    if (refs.i === refs.refs.length) {
-      pendingClientsStructRefs.delete(client)
-    } else {
-      refs.refs.splice(0, refs.i)
-      refs.i = 0
-    }
-  })
-}
-
-/**
- * Read the next Item in a Decoder and fill this Item with the read data.
- *
- * This is called when data is received from a remote peer.
- *
- * @param {AbstractUpdateDecoder} decoder The decoder object to read data from.
- * @param {Transaction} transaction
- * @param {StructStore} store
- *
- * @private
- * @function
- */
-export const readStructs = (decoder, transaction, store) => {
-  const clientsStructRefs = new Map()
-  // let start = performance.now()
-  readClientsStructRefs(decoder, clientsStructRefs, transaction.doc)
-  // console.log('time to read structs: ', performance.now() - start) // @todo remove
-  // start = performance.now()
-  mergeReadStructsIntoPendingReads(store, clientsStructRefs)
-  // console.log('time to merge: ', performance.now() - start) // @todo remove
-  // start = performance.now()
-  resumeStructIntegration(transaction, store)
-  // console.log('time to integrate: ', performance.now() - start) // @todo remove
-  // start = performance.now()
-  cleanupPendingStructs(store.pendingClientsStructRefs)
-  // console.log('time to cleanup: ', performance.now() - start) // @todo remove
-  // start = performance.now()
-  tryResumePendingDeleteReaders(transaction, store)
-  // console.log('time to resume delete readers: ', performance.now() - start) // @todo remove
-  // start = performance.now()
-}
 
 /**
  * Read and apply a document update.
@@ -424,14 +374,75 @@ export const readStructs = (decoder, transaction, store) => {
  * @param {decoding.Decoder} decoder
  * @param {Doc} ydoc
  * @param {any} [transactionOrigin] This will be stored on `transaction.origin` and `.on('update', (update, origin))`
- * @param {AbstractUpdateDecoder} [structDecoder]
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} [structDecoder]
  *
  * @function
  */
 export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = new UpdateDecoderV2(decoder)) =>
   transact(ydoc, transaction => {
-    readStructs(structDecoder, transaction, ydoc.store)
-    readAndApplyDeleteSet(structDecoder, transaction, ydoc.store)
+    let retry = false
+    const doc = transaction.doc
+    const store = doc.store
+    // let start = performance.now()
+    const ss = readClientsStructRefs(structDecoder, doc)
+    // console.log('time to read structs: ', performance.now() - start) // @todo remove
+    // start = performance.now()
+    // console.log('time to merge: ', performance.now() - start) // @todo remove
+    // start = performance.now()
+    const restStructs = integrateStructs(transaction, store, ss)
+    const pending = store.pendingStructs
+    if (pending) {
+      // check if we can apply something
+      for (const [client, clock] of pending.missing) {
+        if (clock < getState(store, client)) {
+          retry = true
+          break
+        }
+      }
+      if (restStructs) {
+        // merge restStructs into store.pending
+        for (const [client, clock] of restStructs.missing) {
+          const mclock = pending.missing.get(client)
+          if (mclock == null || mclock > clock) {
+            pending.missing.set(client, clock)
+          }
+        }
+        pending.update = mergeUpdatesV2([pending.update, restStructs.update])
+      }
+    } else {
+      store.pendingStructs = restStructs
+    }
+    // console.log('time to integrate: ', performance.now() - start) // @todo remove
+    // start = performance.now()
+    const dsRest = readAndApplyDeleteSet(structDecoder, transaction, store)
+    if (store.pendingDs) {
+      // @todo we could make a lower-bound state-vector check as we do above
+      const pendingDSUpdate = new UpdateDecoderV2(decoding.createDecoder(store.pendingDs))
+      decoding.readVarUint(pendingDSUpdate.restDecoder) // read 0 structs, because we only encode deletes in pendingdsupdate
+      const dsRest2 = readAndApplyDeleteSet(pendingDSUpdate, transaction, store)
+      if (dsRest && dsRest2) {
+        // case 1: ds1 != null && ds2 != null
+        store.pendingDs = mergeUpdatesV2([dsRest, dsRest2])
+      } else {
+        // case 2: ds1 != null
+        // case 3: ds2 != null
+        // case 4: ds1 == null && ds2 == null
+        store.pendingDs = dsRest || dsRest2
+      }
+    } else {
+      // Either dsRest == null && pendingDs == null OR dsRest != null
+      store.pendingDs = dsRest
+    }
+    // console.log('time to cleanup: ', performance.now() - start) // @todo remove
+    // start = performance.now()
+
+    // console.log('time to resume delete readers: ', performance.now() - start) // @todo remove
+    // start = performance.now()
+    if (retry) {
+      const update = /** @type {{update: Uint8Array}} */ (store.pendingStructs).update
+      store.pendingStructs = null
+      applyUpdateV2(transaction.doc, update)
+    }
   }, transactionOrigin, false)
 
 /**
@@ -445,7 +456,7 @@ export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = n
  *
  * @function
  */
-export const readUpdate = (decoder, ydoc, transactionOrigin) => readUpdateV2(decoder, ydoc, transactionOrigin, new DefaultUpdateDecoder(decoder))
+export const readUpdate = (decoder, ydoc, transactionOrigin) => readUpdateV2(decoder, ydoc, transactionOrigin, new UpdateDecoderV1(decoder))
 
 /**
  * Apply a document update created by, for example, `y.on('update', update => ..)` or `update = encodeStateAsUpdate()`.
@@ -475,13 +486,13 @@ export const applyUpdateV2 = (ydoc, update, transactionOrigin, YDecoder = Update
  *
  * @function
  */
-export const applyUpdate = (ydoc, update, transactionOrigin) => applyUpdateV2(ydoc, update, transactionOrigin, DefaultUpdateDecoder)
+export const applyUpdate = (ydoc, update, transactionOrigin) => applyUpdateV2(ydoc, update, transactionOrigin, UpdateDecoderV1)
 
 /**
  * Write all the document as a single update message. If you specify the state of the remote client (`targetStateVector`) it will
  * only write the operations that are missing.
  *
- * @param {AbstractUpdateEncoder} encoder
+ * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
  * @param {Doc} doc
  * @param {Map<number,number>} [targetStateVector] The state of the target that receives the update. Leave empty to write all known structs
  *
@@ -500,15 +511,29 @@ export const writeStateAsUpdate = (encoder, doc, targetStateVector = new Map()) 
  *
  * @param {Doc} doc
  * @param {Uint8Array} [encodedTargetStateVector] The state of the target that receives the update. Leave empty to write all known structs
- * @param {AbstractUpdateEncoder} [encoder]
+ * @param {UpdateEncoderV1 | UpdateEncoderV2} [encoder]
  * @return {Uint8Array}
  *
  * @function
  */
-export const encodeStateAsUpdateV2 = (doc, encodedTargetStateVector, encoder = new UpdateEncoderV2()) => {
-  const targetStateVector = encodedTargetStateVector == null ? new Map() : decodeStateVector(encodedTargetStateVector)
+export const encodeStateAsUpdateV2 = (doc, encodedTargetStateVector = new Uint8Array([0]), encoder = new UpdateEncoderV2()) => {
+  const targetStateVector = decodeStateVector(encodedTargetStateVector)
   writeStateAsUpdate(encoder, doc, targetStateVector)
-  return encoder.toUint8Array()
+  const updates = [encoder.toUint8Array()]
+  // also add the pending updates (if there are any)
+  // @todo support diffirent encoders
+  if (encoder.constructor === UpdateEncoderV2) {
+    if (doc.store.pendingDs) {
+      updates.push(doc.store.pendingDs)
+    }
+    if (doc.store.pendingStructs) {
+      updates.push(diffUpdateV2(doc.store.pendingStructs.update, encodedTargetStateVector))
+    }
+    if (updates.length > 1) {
+      return mergeUpdatesV2(updates)
+    }
+  }
+  return updates[0]
 }
 
 /**
@@ -523,12 +548,12 @@ export const encodeStateAsUpdateV2 = (doc, encodedTargetStateVector, encoder = n
  *
  * @function
  */
-export const encodeStateAsUpdate = (doc, encodedTargetStateVector) => encodeStateAsUpdateV2(doc, encodedTargetStateVector, new DefaultUpdateEncoder())
+export const encodeStateAsUpdate = (doc, encodedTargetStateVector) => encodeStateAsUpdateV2(doc, encodedTargetStateVector, new UpdateEncoderV1())
 
 /**
  * Read state vector from Decoder and return as Map
  *
- * @param {AbstractDSDecoder} decoder
+ * @param {DSDecoderV1 | DSDecoderV2} decoder
  * @return {Map<number,number>} Maps `client` to the number next expected `clock` from that client.
  *
  * @function
@@ -552,7 +577,7 @@ export const readStateVector = decoder => {
  *
  * @function
  */
-export const decodeStateVectorV2 = decodedState => readStateVector(new DSDecoderV2(decoding.createDecoder(decodedState)))
+// export const decodeStateVectorV2 = decodedState => readStateVector(new DSDecoderV2(decoding.createDecoder(decodedState)))
 
 /**
  * Read decodedState and return State as Map.
@@ -562,10 +587,10 @@ export const decodeStateVectorV2 = decodedState => readStateVector(new DSDecoder
  *
  * @function
  */
-export const decodeStateVector = decodedState => readStateVector(new DefaultDSDecoder(decoding.createDecoder(decodedState)))
+export const decodeStateVector = decodedState => readStateVector(new DSDecoderV1(decoding.createDecoder(decodedState)))
 
 /**
- * @param {AbstractDSEncoder} encoder
+ * @param {DSEncoderV1 | DSEncoderV2} encoder
  * @param {Map<number,number>} sv
  * @function
  */
@@ -579,7 +604,7 @@ export const writeStateVector = (encoder, sv) => {
 }
 
 /**
- * @param {AbstractDSEncoder} encoder
+ * @param {DSEncoderV1 | DSEncoderV2} encoder
  * @param {Doc} doc
  *
  * @function
@@ -589,23 +614,27 @@ export const writeDocumentStateVector = (encoder, doc) => writeStateVector(encod
 /**
  * Encode State as Uint8Array.
  *
- * @param {Doc} doc
- * @param {AbstractDSEncoder} [encoder]
+ * @param {Doc|Map<number,number>} doc
+ * @param {DSEncoderV1 | DSEncoderV2} [encoder]
  * @return {Uint8Array}
  *
  * @function
  */
 export const encodeStateVectorV2 = (doc, encoder = new DSEncoderV2()) => {
-  writeDocumentStateVector(encoder, doc)
+  if (doc instanceof Map) {
+    writeStateVector(encoder, doc)
+  } else {
+    writeDocumentStateVector(encoder, doc)
+  }
   return encoder.toUint8Array()
 }
 
 /**
  * Encode State as Uint8Array.
  *
- * @param {Doc} doc
+ * @param {Doc|Map<number,number>} doc
  * @return {Uint8Array}
  *
  * @function
  */
-export const encodeStateVector = doc => encodeStateVectorV2(doc, new DefaultDSEncoder())
+export const encodeStateVector = doc => encodeStateVectorV2(doc, new DSEncoderV1())

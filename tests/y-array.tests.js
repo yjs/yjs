@@ -64,7 +64,7 @@ export const testInsertThreeElementsTryRegetProperty = tc => {
  * @param {t.TestCase} tc
  */
 export const testConcurrentInsertWithThreeConflicts = tc => {
-  var { users, array0, array1, array2 } = init(tc, { users: 3 })
+  const { users, array0, array1, array2 } = init(tc, { users: 3 })
   array0.insert(0, [0])
   array1.insert(0, [1])
   array2.insert(0, [2])
@@ -107,7 +107,7 @@ export const testInsertionsInLateSync = tc => {
  * @param {t.TestCase} tc
  */
 export const testDisconnectReallyPreventsSendingMessages = tc => {
-  var { testConnector, users, array0, array1 } = init(tc, { users: 3 })
+  const { testConnector, users, array0, array1 } = init(tc, { users: 3 })
   array0.insert(0, ['x', 'y'])
   testConnector.flushAllMessages()
   users[1].disconnect()
@@ -388,13 +388,13 @@ const getUniqueNumber = () => _uniqueNumber++
 const arrayTransactions = [
   function insert (user, gen) {
     const yarray = user.getArray('array')
-    var uniqueNumber = getUniqueNumber()
-    var content = []
-    var len = prng.int32(gen, 1, 4)
-    for (var i = 0; i < len; i++) {
+    const uniqueNumber = getUniqueNumber()
+    const content = []
+    const len = prng.int32(gen, 1, 4)
+    for (let i = 0; i < len; i++) {
       content.push(uniqueNumber)
     }
-    var pos = prng.int32(gen, 0, yarray.length)
+    const pos = prng.int32(gen, 0, yarray.length)
     const oldContent = yarray.toArray()
     yarray.insert(pos, content)
     oldContent.splice(pos, 0, ...content)
@@ -402,28 +402,28 @@ const arrayTransactions = [
   },
   function insertTypeArray (user, gen) {
     const yarray = user.getArray('array')
-    var pos = prng.int32(gen, 0, yarray.length)
+    const pos = prng.int32(gen, 0, yarray.length)
     yarray.insert(pos, [new Y.Array()])
-    var array2 = yarray.get(pos)
+    const array2 = yarray.get(pos)
     array2.insert(0, [1, 2, 3, 4])
   },
   function insertTypeMap (user, gen) {
     const yarray = user.getArray('array')
-    var pos = prng.int32(gen, 0, yarray.length)
+    const pos = prng.int32(gen, 0, yarray.length)
     yarray.insert(pos, [new Y.Map()])
-    var map = yarray.get(pos)
+    const map = yarray.get(pos)
     map.set('someprop', 42)
     map.set('someprop', 43)
     map.set('someprop', 44)
   },
   function _delete (user, gen) {
     const yarray = user.getArray('array')
-    var length = yarray.length
+    const length = yarray.length
     if (length > 0) {
-      var somePos = prng.int32(gen, 0, length - 1)
-      var delLength = prng.int32(gen, 1, math.min(2, length - somePos))
+      let somePos = prng.int32(gen, 0, length - 1)
+      let delLength = prng.int32(gen, 1, math.min(2, length - somePos))
       if (prng.bool(gen)) {
-        var type = yarray.get(somePos)
+        const type = yarray.get(somePos)
         if (type.length > 0) {
           somePos = prng.int32(gen, 0, type.length - 1)
           delLength = prng.int32(gen, 0, math.min(2, type.length - somePos))

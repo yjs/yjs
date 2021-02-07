@@ -14,9 +14,8 @@ import {
   getState,
   findIndexSS,
   UpdateEncoderV2,
-  DefaultDSEncoder,
   applyUpdateV2,
-  AbstractDSDecoder, AbstractDSEncoder, DSEncoderV2, DSDecoderV1, DSDecoderV2, Transaction, Doc, DeleteSet, Item // eslint-disable-line
+  DSEncoderV1, DSEncoderV2, DSDecoderV1, DSDecoderV2, Transaction, Doc, DeleteSet, Item // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map.js'
@@ -78,7 +77,7 @@ export const equalSnapshots = (snap1, snap2) => {
 
 /**
  * @param {Snapshot} snapshot
- * @param {AbstractDSEncoder} [encoder]
+ * @param {DSEncoderV1 | DSEncoderV2} [encoder]
  * @return {Uint8Array}
  */
 export const encodeSnapshotV2 = (snapshot, encoder = new DSEncoderV2()) => {
@@ -91,11 +90,11 @@ export const encodeSnapshotV2 = (snapshot, encoder = new DSEncoderV2()) => {
  * @param {Snapshot} snapshot
  * @return {Uint8Array}
  */
-export const encodeSnapshot = snapshot => encodeSnapshotV2(snapshot, new DefaultDSEncoder())
+export const encodeSnapshot = snapshot => encodeSnapshotV2(snapshot, new DSEncoderV1())
 
 /**
  * @param {Uint8Array} buf
- * @param {AbstractDSDecoder} [decoder]
+ * @param {DSDecoderV1 | DSDecoderV2} [decoder]
  * @return {Snapshot}
  */
 export const decodeSnapshotV2 = (buf, decoder = new DSDecoderV2(decoding.createDecoder(buf))) => {

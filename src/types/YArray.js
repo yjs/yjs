@@ -15,7 +15,7 @@ import {
   YArrayRefID,
   callTypeObservers,
   transact,
-  ArraySearchMarker, AbstractUpdateDecoder, AbstractUpdateEncoder, Doc, Transaction, Item // eslint-disable-line
+  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 import { typeListSlice } from './AbstractType.js'
 
@@ -241,7 +241,7 @@ export class YArray extends AbstractType {
   }
 
   /**
-   * @param {AbstractUpdateEncoder} encoder
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    */
   _write (encoder) {
     encoder.writeTypeRef(YArrayRefID)
@@ -249,7 +249,7 @@ export class YArray extends AbstractType {
 }
 
 /**
- * @param {AbstractUpdateDecoder} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  *
  * @private
  * @function

@@ -1,7 +1,7 @@
 
 import {
   addToDeleteSet,
-  AbstractUpdateDecoder, AbstractUpdateEncoder, StructStore, Item, Transaction // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Item, Transaction // eslint-disable-line
 } from '../internals.js'
 
 export class ContentDeleted {
@@ -77,7 +77,7 @@ export class ContentDeleted {
    */
   gc (store) {}
   /**
-   * @param {AbstractUpdateEncoder} encoder
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
@@ -95,7 +95,7 @@ export class ContentDeleted {
 /**
  * @private
  *
- * @param {AbstractUpdateDecoder} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2 } decoder
  * @return {ContentDeleted}
  */
 export const readContentDeleted = decoder => new ContentDeleted(decoder.readLen())

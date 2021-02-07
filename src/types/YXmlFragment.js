@@ -17,7 +17,7 @@ import {
   transact,
   typeListGet,
   typeListSlice,
-  AbstractUpdateDecoder, AbstractUpdateEncoder, Doc, ContentType, Transaction, Item, YXmlText, YXmlHook, Snapshot // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, ContentType, Transaction, Item, YXmlText, YXmlHook, Snapshot // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error.js'
@@ -410,7 +410,7 @@ export class YXmlFragment extends AbstractType {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @param {AbstractUpdateEncoder} encoder The encoder to write data to.
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
    */
   _write (encoder) {
     encoder.writeTypeRef(YXmlFragmentRefID)
@@ -418,7 +418,7 @@ export class YXmlFragment extends AbstractType {
 }
 
 /**
- * @param {AbstractUpdateDecoder} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @return {YXmlFragment}
  *
  * @private

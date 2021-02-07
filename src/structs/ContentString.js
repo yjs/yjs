@@ -1,5 +1,5 @@
 import {
-  AbstractUpdateDecoder, AbstractUpdateEncoder, Transaction, Item, StructStore // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Transaction, Item, StructStore // eslint-disable-line
 } from '../internals.js'
 
 /**
@@ -88,7 +88,7 @@ export class ContentString {
    */
   gc (store) {}
   /**
-   * @param {AbstractUpdateEncoder} encoder
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
@@ -106,7 +106,7 @@ export class ContentString {
 /**
  * @private
  *
- * @param {AbstractUpdateDecoder} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @return {ContentString}
  */
 export const readContentString = decoder => new ContentString(decoder.readString())
