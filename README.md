@@ -701,6 +701,31 @@ Y.applyUpdate(ydoc1, diff2)
 Y.applyUpdate(ydoc2, diff1)
 ```
 
+### Example: Syncing clients without loading the Y.Doc
+
+It is possible to sync clients and compute delta updates without loading the Yjs
+document to memory. Yjs exposes an API to compute the differences directly on the
+binary document updates.
+
+
+```js
+// encode the current state as a binary buffer
+let currentState1 = Y.encodeStateAsUpdate(ydoc1)
+let currentState2 = Y.encodeStateAsUpdate(ydoc2)
+// now we can continue syncing clients using state vectors without using the Y.Doc
+ydoc1.destroy()
+ydoc2.destroy()
+
+const stateVector1 = Y.encodeStateVectorFromUpdate(currentState1)
+const stateVector2 = Y.encodeStateVectorFromUpdate(currentState2)
+const diff1 = Y.diffUpdate(currentState1, stateVector2)
+const diff2 = Y.diffUpdate(currentState2, stateVector1)
+
+// sync clients
+currentState1 = Y.mergeUpdates([currentState1, diff2])
+currentState1 = Y.mergeUpdates([currentState1, diff1])
+```
+
 <dl>
   <b><code>Y.applyUpdate(Y.Doc, update:Uint8Array, [transactionOrigin:any])</code></b>
   <dd>
@@ -717,21 +742,25 @@ differences to the update message.
   </dd>
   <b><code>Y.encodeStateVector(Y.Doc):Uint8Array</code></b>
   <dd>Computes the state vector and encodes it into an Uint8Array.</dd>
+  <b><code>Y.mergeUpdates(Array&lt;Uint8Array&gt;)</code></b>
+  <dd>
+Merge several document updates into a single document update while removing
+duplicate information. The merged document update is always smaller than
+the separate updates because of the compressed encoding.
+  </dd>
+  <b><code>Y.encodeStateVectorFromUpdate(Uint8Array): Uint8Array</code></b>
+  <dd>
+Computes the state vector from a document update and encodes it into an Uint8Array.
+  </dd>
+  <b><code>Y.diffUpdate(update: Uint8Array, stateVector: Uint8Array): Uint8Array</code></b>
+  <dd>
+Encode the missing differences to another update message. This function works
+similarly to <code>Y.encodeStateAsUpdate(ydoc, stateVector)</code> but works
+on updates instead.
+  </dd>
 </dl>
 
 ### Relative Positions
-
-> This API is not stable yet
-
-This feature is intended for managing selections / cursors. When working with
-other users that manipulate the shared document, you can't trust that an index
-position (an integer) will stay at the intended location. A *relative position*
-is fixated to an element in the shared document and is not affected by remote
-changes. I.e. given the document `"a|c"`, the relative position is attached to
-`c`. When a remote user modifies the document by inserting a character before
-the cursor, the cursor will stay attached to the character `c`. `insert(1,
-'x')("a|c") = "ax|c"`. When the *relative position* is set to the end of the
-document, it will stay attached to the end of the document.
 
 #### Example: Transform to RelativePosition and back
 
