@@ -369,6 +369,42 @@ export const testLargeFragmentedDocument = tc => {
 }
 
 /**
+ * @param {t.TestCase} tc
+ */
+export const testIncrementalUpdatesPerformanceOnLargeFragmentedDocument = tc => {
+  const itemsToInsert = largeDocumentSize
+  const updates = /** @type {Array<Uint8Array>} */ ([])
+  ;(() => {
+    const doc1 = new Y.Doc()
+    doc1.on('update', update => {
+      updates.push(update)
+    })
+    const text0 = doc1.getText('txt')
+    tryGc()
+    t.measureTime(`time to insert ${itemsToInsert} items`, () => {
+      doc1.transact(() => {
+        for (let i = 0; i < itemsToInsert; i++) {
+          text0.insert(0, '0')
+        }
+      })
+    })
+    tryGc()
+  })()
+  ;(() => {
+    t.measureTime(`time to merge ${itemsToInsert} updates (differential updates)`, () => {
+      Y.mergeUpdates(updates)
+    })
+    tryGc()
+    t.measureTime(`time to merge ${itemsToInsert} updates (ydoc updates)`, () => {
+      const ydoc = new Y.Doc()
+      updates.forEach(update => {
+        Y.applyUpdate(ydoc, update)
+      })
+    })
+  })()
+}
+
+/**
  * Splitting surrogates can lead to invalid encoded documents.
  *
  * https://github.com/yjs/yjs/issues/248
