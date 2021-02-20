@@ -62,19 +62,19 @@
   },
   "homepage": "https://docs.yjs.dev",
   "dependencies": {
-    "lib0": "^0.2.35"
+    "lib0": "^0.2.37"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^17.0.0",
-    "@rollup/plugin-node-resolve": "^11.0.1",
+    "@rollup/plugin-node-resolve": "^11.2.0",
     "concurrently": "^3.6.1",
     "http-server": "^0.12.3",
     "jsdoc": "^3.6.6",
     "markdownlint-cli": "^0.23.2",
-    "rollup": "^2.36.1",
+    "rollup": "^2.39.0",
     "standard": "^14.3.4",
     "tui-jsdoc-template": "^1.2.2",
-    "typescript": "^3.9.7",
-    "y-protocols": "^1.0.2"
+    "typescript": "^3.9.9",
+    "y-protocols": "^1.0.4"
   }
 }
