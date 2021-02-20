@@ -1,6 +1,6 @@
 
 try {
-  const log = require('lib0/dist/logging.cja2s')
+  const log = require('lib0/dist/logging.cjs')
 
   log.print()
   log.print(log.BOLD, log.GREEN, log.BOLD, 'Thank you for using Yjs ', log.RED, '❤\n')
