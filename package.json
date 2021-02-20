@@ -70,7 +70,7 @@
   },
   "homepage": "https://docs.yjs.dev",
   "dependencies": {
-    "lib0": "^0.2.37"
+    "lib0": "^0.2.38"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^17.0.0",
@@ -82,7 +82,7 @@
     "rollup": "^2.39.0",
     "standard": "^14.3.4",
     "tui-jsdoc-template": "^1.2.2",
-    "typescript": "^3.9.9",
+    "typescript": "^4.1.5",
     "y-protocols": "^1.0.4"
   }
 }

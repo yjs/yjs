@@ -708,7 +708,6 @@ It is possible to sync clients and compute delta updates without loading the Yjs
 document to memory. Yjs exposes an API to compute the differences directly on the
 binary document updates.
 
-
 ```js
 // encode the current state as a binary buffer
 let currentState1 = Y.encodeStateAsUpdate(ydoc1)
