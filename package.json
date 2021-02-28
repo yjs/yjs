@@ -12,14 +12,14 @@
     "url": "https://github.com/sponsors/dmonad"
   },
   "scripts": {
-    "test": "npm run dist && node ./dist/tests.cjs --repitition-time 50",
-    "test-extensive": "npm run lint && npm run dist && node ./dist/tests.cjs --production --repitition-time 10000",
+    "test": "npm run dist && node ./dist/tests.cjs --repetition-time 50",
+    "test-extensive": "npm run lint && npm run dist && node ./dist/tests.cjs --production --repetition-time 10000",
     "dist": "rm -rf dist && rollup -c && tsc",
     "watch": "rollup -wc",
     "lint": "markdownlint README.md && standard && tsc",
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.md --package ./package.json || true",
     "serve-docs": "npm run docs && http-server ./docs/",
-    "preversion": "npm run lint && PRODUCTION=1 npm run dist && npm run docs && node ./dist/tests.cjs --repitition-time 1000 && test -e dist/src/index.d.ts && test -e dist/yjs.cjs && test -e dist/yjs.cjs",
+    "preversion": "npm run lint && PRODUCTION=1 npm run dist && npm run docs && node ./dist/tests.cjs --repetition-time 1000 && test -e dist/src/index.d.ts && test -e dist/yjs.cjs && test -e dist/yjs.cjs",
     "debug": "concurrently 'http-server -o test.html' 'npm run watch'",
     "trace-deopt": "clear && rollup -c  && node --trace-deopt dist/test.cjs",
     "trace-opt": "clear && rollup -c  && node --trace-opt dist/test.cjs",
