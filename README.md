@@ -320,6 +320,8 @@ or any of its children.
   <dl>
     <b><code>parent:Y.AbstractType|null</code></b>
     <dd></dd>
+    <b><code>size: number</code></b>
+    <dd>Total number of key/value pairs.</dd>
     <b><code>get(key:string):object|boolean|string|number|Uint8Array|Y.Type</code></b>
     <dd></dd>
     <b><code>set(key:string, value:object|boolean|string|number|Uint8Array|Y.Type)</code></b>
@@ -410,7 +412,7 @@ YTextEvents compute changes as deltas.
     <dd></dd>
     <b><code>format(index:number, length:number, formattingAttributes:Object&lt;string,string&gt;)</code></b>
     <dd>Assign formatting attributes to a range in the text</dd>
-    <b><code>applyDelta(delta, opts:Object&lt;string,any&gt;)</code></b>
+    <b><code>applyDelta(delta: Delta, opts:Object&lt;string,any&gt;)</code></b>
     <dd>
         See <a href="https://quilljs.com/docs/delta/">Quill Delta</a>
         Can set options for preventing remove ending newLines, default is true.
@@ -483,6 +485,8 @@ or any of its children.
     <dd>Get the XML serialization of all descendants.</dd>
     <b><code>toJSON():string</code></b>
     <dd>See <code>toString</code>.</dd>
+    <b><code>createTreeWalker(filter: function(AbstractType&lt;any&gt;):boolean):Iterable</code></b>
+    <dd>Create an Iterable that walks through the children.</dd>
     <b><code>observe(function(YXmlEvent, Transaction):void)</code></b>
     <dd>
 Adds an event listener to this type that will be called synchronously every time
@@ -540,7 +544,7 @@ content and be actually XML compliant.
     <dd></dd>
     <b><code>getAttribute(attributeName:string):string</code></b>
     <dd></dd>
-    <b><code>getAttributes(attributeName:string):Object&lt;string,string&gt;</code></b>
+    <b><code>getAttributes():Object&lt;string,string&gt;</code></b>
     <dd></dd>
     <b><code>get(i:number):Y.XmlElement|Y.XmlText</code></b>
     <dd>Retrieve the i-th element.</dd>
@@ -609,7 +613,9 @@ parameter that is stored on <code>transaction.origin</code> and
   </dd>
   <b><code>toJSON():any</code></b>
   <dd>
-Converts the entire document into a js object, recursively traversing each yjs type.
+Deprecated: It is recommended to call toJSON directly on the shared types.
+Converts the entire document into a js object, recursively traversing each yjs type. Doesn't
+log types that have not been defined (using <code>ydoc.getType(..)</code>). 
   </dd>
   <b><code>get(string, Y.[TypeClass]):[Type]</code></b>
   <dd>Define a shared type.</dd>
