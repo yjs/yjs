@@ -614,8 +614,9 @@ parameter that is stored on <code>transaction.origin</code> and
   <b><code>toJSON():any</code></b>
   <dd>
 Deprecated: It is recommended to call toJSON directly on the shared types.
-Converts the entire document into a js object, recursively traversing each yjs type. Doesn't
-log types that have not been defined (using <code>ydoc.getType(..)</code>). 
+Converts the entire document into a js object, recursively traversing each yjs
+type. Doesn't log types that have not been defined (using
+<code>ydoc.getType(..)</code>).
   </dd>
   <b><code>get(string, Y.[TypeClass]):[Type]</code></b>
   <dd>Define a shared type.</dd>
