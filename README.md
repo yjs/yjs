@@ -698,7 +698,7 @@ Y.applyUpdate(ydoc2, state1)
 This example shows how to sync two clients with the minimal amount of exchanged
 data by computing only the differences using the state vector of the remote
 client. Syncing clients using the state vector requires another roundtrip, but
-can safe a lot of bandwidth.
+can save a lot of bandwidth.
 
 ```js
 const stateVector1 = Y.encodeStateVector(ydoc1)
