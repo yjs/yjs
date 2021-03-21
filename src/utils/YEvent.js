@@ -35,6 +35,14 @@ export class YEvent {
      * @type {Object|null}
      */
     this._changes = null
+    /**
+     * @type {null | Map<string, { action: 'add' | 'update' | 'delete', oldValue: any, newValue: any }>}
+     */
+    this._keys = null
+    /**
+     * @type {null | Array<{ insert?: string | Array<any>, retain?: number, delete?: number, attributes?: Object<string, any> }>}
+     */
+    this._delta = null
   }
 
   /**
@@ -68,6 +76,66 @@ export class YEvent {
   }
 
   /**
+   * @type {Map<string, { action: 'add' | 'update' | 'delete', oldValue: any, newValue: any }>}
+   */
+  get keys () {
+    if (this._keys === null) {
+      const keys = new Map()
+      const target = this.target
+      const changed = /** @type Set<string|null> */ (this.transaction.changed.get(target))
+      changed.forEach(key => {
+        if (key !== null) {
+          const item = /** @type {Item} */ (target._map.get(key))
+          /**
+           * @type {'delete' | 'add' | 'update'}
+           */
+          let action
+          let oldValue
+          if (this.adds(item)) {
+            let prev = item.left
+            while (prev !== null && this.adds(prev)) {
+              prev = prev.left
+            }
+            if (this.deletes(item)) {
+              if (prev !== null && this.deletes(prev)) {
+                action = 'delete'
+                oldValue = array.last(prev.content.getContent())
+              } else {
+                return
+              }
+            } else {
+              if (prev !== null && this.deletes(prev)) {
+                action = 'update'
+                oldValue = array.last(prev.content.getContent())
+              } else {
+                action = 'add'
+                oldValue = undefined
+              }
+            }
+          } else {
+            if (this.deletes(item)) {
+              action = 'delete'
+              oldValue = array.last(/** @type {Item} */ item.content.getContent())
+            } else {
+              return // nop
+            }
+          }
+          keys.set(key, { action, oldValue })
+        }
+      })
+      this._keys = keys
+    }
+    return this._keys
+  }
+
+  /**
+   * @type {Array<{insert?: string | Array<any>, retain?: number, delete?: number, attributes?: Object<string, any>}>}
+   */
+  get delta () {
+    return this.changes.delta
+  }
+
+  /**
    * Check if a struct is added by this event.
    *
    * In contrast to change.deleted, this method also returns true if the struct was added and then deleted.
@@ -80,7 +148,7 @@ export class YEvent {
   }
 
   /**
-   * @return {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Array<{insert:Array<any>}|{delete:number}|{retain:number}>}}
+   * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Array<{insert?:Array<any>|string, delete?:number, retain?:number}>}}
    */
   get changes () {
     let changes = this._changes
@@ -92,12 +160,11 @@ export class YEvent {
        * @type {Array<{insert:Array<any>}|{delete:number}|{retain:number}>}
        */
       const delta = []
-      /**
-       * @type {Map<string,{ action: 'add' | 'update' | 'delete', oldValue: any}>}
-       */
-      const keys = new Map()
       changes = {
-        added, deleted, delta, keys
+        added,
+        deleted,
+        delta,
+        keys: this.keys
       }
       const changed = /** @type Set<string|null> */ (this.transaction.changed.get(target))
       if (changed.has(null)) {
@@ -141,46 +208,6 @@ export class YEvent {
           packOp()
         }
       }
-      changed.forEach(key => {
-        if (key !== null) {
-          const item = /** @type {Item} */ (target._map.get(key))
-          /**
-           * @type {'delete' | 'add' | 'update'}
-           */
-          let action
-          let oldValue
-          if (this.adds(item)) {
-            let prev = item.left
-            while (prev !== null && this.adds(prev)) {
-              prev = prev.left
-            }
-            if (this.deletes(item)) {
-              if (prev !== null && this.deletes(prev)) {
-                action = 'delete'
-                oldValue = array.last(prev.content.getContent())
-              } else {
-                return
-              }
-            } else {
-              if (prev !== null && this.deletes(prev)) {
-                action = 'update'
-                oldValue = array.last(prev.content.getContent())
-              } else {
-                action = 'add'
-                oldValue = undefined
-              }
-            }
-          } else {
-            if (this.deletes(item)) {
-              action = 'delete'
-              oldValue = array.last(/** @type {Item} */ item.content.getContent())
-            } else {
-              return // nop
-            }
-          }
-          keys.set(key, { action, oldValue })
-        }
-      })
       this._changes = changes
     }
     return /** @type {any} */ (changes)

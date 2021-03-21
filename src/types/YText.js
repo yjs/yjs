@@ -503,14 +503,6 @@ const deleteText = (transaction, currPos, length) => {
   */
 
 /**
- * @typedef {Object} DeltaItem
- * @property {number|undefined} DeltaItem.delete
- * @property {number|undefined} DeltaItem.retain
- * @property {string|undefined} DeltaItem.insert
- * @property {Object<string,any>} DeltaItem.attributes
- */
-
-/**
  * Event that describes the changes on a YText type.
  */
 export class YTextEvent extends YEvent {
@@ -521,10 +513,6 @@ export class YTextEvent extends YEvent {
    */
   constructor (ytext, transaction, subs) {
     super(ytext, transaction)
-    /**
-     * @type {Array<DeltaItem>|null}
-     */
-    this._delta = null
     /**
      * Whether the children changed.
      * @type {Boolean}
@@ -546,19 +534,40 @@ export class YTextEvent extends YEvent {
   }
 
   /**
+   * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Array<{insert?:Array<any>|string, delete?:number, retain?:number}>}}
+   */
+  get changes () {
+    if (this._changes === null) {
+      /**
+       * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Array<{insert?:Array<any>|string, delete?:number, retain?:number}>}}
+       */
+      const changes = {
+        keys: this.keys,
+        delta: this.delta,
+        added: new Set(),
+        deleted: new Set()
+      }
+      this._changes = changes
+    }
+    return /** @type {any} */ (this._changes)
+  }
+
+  /**
    * Compute the changes in the delta format.
    * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
    *
-   * @type {Array<DeltaItem>}
+   * @type {Array<{insert?:string, delete?:number, retain?:number, attributes?: Object<string,any>}>}
    *
    * @public
    */
   get delta () {
     if (this._delta === null) {
       const y = /** @type {Doc} */ (this.target.doc)
-      this._delta = []
+      /**
+       * @type {Array<{insert?:string, delete?:number, retain?:number, attributes?: Object<string,any>}>}
+       */
+      const delta = []
       transact(y, transaction => {
-        const delta = /** @type {Array<DeltaItem>} */ (this._delta)
         const currentAttributes = new Map() // saves all current attributes for insert
         const oldAttributes = new Map()
         let item = this.target._start
@@ -728,8 +737,9 @@ export class YTextEvent extends YEvent {
           }
         }
       })
+      this._delta = delta
     }
-    return this._delta
+    return /** @type {any} */ (this._delta)
   }
 }
 
