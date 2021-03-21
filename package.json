@@ -4,7 +4,6 @@
   "description": "Shared Editing Library",
   "main": "./dist/yjs.cjs",
   "module": "./dist/yjs.mjs",
-  "unpkg": "./dist/yjs.mjs",
   "types": "./dist/src/index.d.ts",
   "sideEffects": false,
   "funding": {
@@ -31,7 +30,7 @@
       "require": "./dist/yjs.cjs"
     },
     "./src/index.js": "./src/index.js",
-    "./tests/testHelper.js": "./tests/testHelper.js"
+    "./tests/testHelper.js": "./tests/testHelper.js",
     "./package.json": "./package.json"
   },
   "files": [
