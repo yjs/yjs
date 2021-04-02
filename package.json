@@ -1,6 +1,6 @@
 {
-  "name": "yjs",
-  "version": "12.3.3",
+  "name": "ys-yjs",
+  "version": "12.5.0",
   "description": "A framework for real-time p2p shared editing on any data",
   "main": "./src/y.js",
   "scripts": {
@@ -23,7 +23,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/y-js/yjs.git"
+    "url": "https://github.com/yousourceinc/yjs.git"
   },
   "keywords": [
     "Yjs",
@@ -38,7 +38,7 @@
   "email": "kevin.jahns@rwth-aachen.de",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/y-js/yjs/issues"
+    "url": "https://github.com/yousourceinc/yjs/issues"
   },
   "homepage": "http://y-js.org",
   "devDependencies": {

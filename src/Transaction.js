@@ -506,10 +506,12 @@ module.exports = function (Y/* :any */) {
             // ** Now the new implementation starts **
             // reset neworigin of all originOf[*]
             for (var _i of o.originOf) {
-              var originsIn = yield* this.getOperation(o.originOf[_i])
-              if (originsIn != null) {
-                originsIn.origin = neworigin
-                yield* this.setOperation(originsIn)
+              if (_i) {
+                var originsIn = yield* this.getOperation(_i)
+                if (originsIn != null) {
+                  originsIn.origin = neworigin
+                  yield* this.setOperation(originsIn)
+                }
               }
             }
             if (neworigin != null) {

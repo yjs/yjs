@@ -658,7 +658,7 @@ module.exports = function (Y /* : any*/) {
         for (i = this.readBuffer.length - 1; i >= 0; i--) {
           r = this.readBuffer[i]
           // we don't have to use compareids, because id is always defined!
-          if (r.id[1] === id[1] && r.id[0] === id[0]) {
+          if (r.id && id && r.id[1] === id[1] && r.id[0] === id[0]) {
             // found r
             // move r to the end of readBuffer
             for (; i < this.readBuffer.length - 1; i++) {
@@ -671,7 +671,7 @@ module.exports = function (Y /* : any*/) {
         var o
         for (i = this.writeBuffer.length - 1; i >= 0; i--) {
           r = this.writeBuffer[i]
-          if (r.id[1] === id[1] && r.id[0] === id[0]) {
+          if (r.id && id && r.id[1] === id[1] && r.id[0] === id[0]) {
             o = r
             break
           }
@@ -694,7 +694,7 @@ module.exports = function (Y /* : any*/) {
         var i, r // helper variables
         for (i = this.writeBuffer.length - 1; i >= 0; i--) {
           r = this.writeBuffer[i]
-          if (r.id[1] === id[1] && r.id[0] === id[0]) {
+          if (r.id && id && r.id[1] === id[1] && r.id[0] === id[0]) {
             // is already in buffer
             // forget r, and move o to the end of writeBuffer
             for (; i < this.writeBuffer.length - 1; i++) {
@@ -721,7 +721,7 @@ module.exports = function (Y /* : any*/) {
         // whether found or not, we'll append o to the readbuffer
         for (i = 0; i < this.readBuffer.length - 1; i++) {
           r = this.readBuffer[i + 1]
-          if (r.id[1] === id[1] && r.id[0] === id[0]) {
+          if (r.id && id && r.id[1] === id[1] && r.id[0] === id[0]) {
             this.readBuffer[i] = o
           } else {
             this.readBuffer[i] = r
@@ -733,7 +733,7 @@ module.exports = function (Y /* : any*/) {
         var i, r
         for (i = 0; i < this.readBuffer.length; i++) {
           r = this.readBuffer[i]
-          if (r.id[1] === id[1] && r.id[0] === id[0]) {
+          if (r.id && id && r.id[1] === id[1] && r.id[0] === id[0]) {
             this.readBuffer[i] = {
               id: [null, null]
             }

@@ -70,8 +70,8 @@ function requestModules (modules) {
           })
           promises.push(requireModule.promise)
         } else {
-          console.info('YJS: Please do not depend on automatic requiring of modules anymore! Extend modules as follows `require(\'y-modulename\')(Y)`')
-          require(modulename)(Y)
+          console.error('YJS: Please do not depend on automatic requiring of modules anymore! Extend modules as follows `require(\'y-modulename\')(Y)`')
+          // require(modulename)(Y) // causing circular dependency for angular
         }
       } else {
         promises.push(requiringModules[modules[i]].promise)
