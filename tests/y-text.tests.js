@@ -8,6 +8,23 @@ const { init, compare } = Y
 /**
  * @param {t.TestCase} tc
  */
+export const testDeltaAfterConcurrentFormatting = tc => {
+  const { text0, text1, testConnector } = init(tc, { users: 2 })
+  text0.insert(0, 'abcde')
+  testConnector.flushAllMessages()
+  text0.format(0, 3, { bold: true })
+  text1.format(2, 2, { bold: true })
+  let delta = null
+  text1.observe(event => {
+    delta = event.delta
+  })
+  testConnector.flushAllMessages()
+  t.compare(delta, [])
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testBasicInsertAndDelete = tc => {
   const { users, text0 } = init(tc, { users: 2 })
   let delta

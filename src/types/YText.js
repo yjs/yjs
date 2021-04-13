@@ -815,6 +815,7 @@ export class YText extends AbstractType {
     super._callObserver(transaction, parentSubs)
     const event = new YTextEvent(this, transaction, parentSubs)
     const doc = transaction.doc
+    callTypeObservers(this, transaction, event)
     // If a remote change happened, we try to cleanup potential formatting duplicates.
     if (!transaction.local) {
       // check if another formatting item was inserted
@@ -863,7 +864,6 @@ export class YText extends AbstractType {
         }
       })
     }
-    callTypeObservers(this, transaction, event)
   }
 
   /**
