@@ -99,7 +99,7 @@ const popStackItem = (undoManager, stack, eventType) => {
           performedChange = true
         }
       }
-      result = stackItem
+      result = performedChange ? stackItem : null
     }
     transaction.changed.forEach((subProps, type) => {
       // destroy search marker if necessary

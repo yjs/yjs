@@ -270,3 +270,34 @@ export const testUndoDeleteFilter = tc => {
   array0.get(0)
   t.assert(Array.from(array0.get(0).keys()).length === 1)
 }
+
+/**
+ * This issue has been reported in https://discuss.yjs.dev/t/undomanager-with-external-updates/454/6
+ * @param {t.TestCase} tc
+ */
+export const testUndoUntilChangePerformed = tc => {
+  const doc = new Y.Doc()
+  const doc2 = new Y.Doc()
+  doc.on('update', update => Y.applyUpdate(doc2, update))
+  doc2.on('update', update => Y.applyUpdate(doc, update))
+
+  const yArray = doc.getArray('array')
+  const yArray2 = doc2.getArray('array')
+  const yMap = new Y.Map()
+  yMap.set('hello', 'world')
+  yArray.push([yMap])
+  const yMap2 = new Y.Map()
+  yMap2.set('key', 'value')
+  yArray.push([yMap2])
+
+  const undoManager = new Y.UndoManager([yArray], { trackedOrigins: new Set([doc.clientID]) })
+  const undoManager2 = new Y.UndoManager([doc2.get('array')], { trackedOrigins: new Set([doc2.clientID]) })
+
+  Y.transact(doc, () => yMap2.set('key', 'value modified'), doc.clientID)
+  undoManager.stopCapturing()
+  Y.transact(doc, () => yMap.set('hello', 'world modified'), doc.clientID)
+  Y.transact(doc2, () => yArray2.delete(0), doc2.clientID)
+  undoManager2.undo()
+  undoManager.undo()
+  t.compareStrings(yMap2.get('key'), 'value')
+}
