@@ -129,7 +129,7 @@ network provider.
   </dd>
   <dt><a href="https://github.com/yjs/y-dat">y-dat</a></dt>
   <dd>
-[WIP] Write document updates effinciently to the dat network using
+[WIP] Write document updates efficiently to the dat network using
 <a href="https://github.com/kappa-db/multifeed">multifeed</a>. Each client has
 an append-only log of CRDT local updates (hypercore). Multifeed manages and sync
 hypercores and y-dat listens to changes and applies them to the Yjs document.
