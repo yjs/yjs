@@ -196,7 +196,7 @@ export const createDeleteSetFromStructStore = ss => {
         const clock = struct.id.clock
         let len = struct.length
         if (i + 1 < structs.length) {
-          for (let next = structs[i + 1]; i + 1 < structs.length && next.id.clock === clock + len && next.deleted; next = structs[++i + 1]) {
+          for (let next = structs[i + 1]; i + 1 < structs.length && next.deleted; next = structs[++i + 1]) {
             len += next.length
           }
         }
