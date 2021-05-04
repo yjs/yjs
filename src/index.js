@@ -25,6 +25,7 @@ export {
   ContentAny,
   ContentString,
   ContentType,
+  typeRefs,
   AbstractType,
   RelativePosition,
   getTypeChildren,
