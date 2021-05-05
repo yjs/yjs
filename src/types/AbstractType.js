@@ -249,6 +249,21 @@ export const callTypeObservers = (type, transaction, event) => {
 }
 
 /**
+ * Event handlers
+ * @type {EventHandler<AbstractType<any>, undefined>}
+ */
+const typeCreatedEventHandler = createEventHandler();
+
+/**
+ * Observe all events that are created on this type.
+ *
+ * @param {function(AbstractType<any>, undefined):void} f Observer function
+ */
+export function observeTypeCreated (f) {
+  addEventHandlerListener(typeCreatedEventHandler, f)
+}
+
+/**
  * @template EventType
  * Abstract Yjs Type class
  */
@@ -285,6 +300,8 @@ export class AbstractType {
      * @type {null | Array<ArraySearchMarker>}
      */
     this._searchMarker = null
+
+    callEventHandlerListeners(typeCreatedEventHandler, this, undefined);
   }
 
   /**
