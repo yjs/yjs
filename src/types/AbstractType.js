@@ -249,13 +249,13 @@ export const callTypeObservers = (type, transaction, event) => {
 }
 
 /**
- * Event handlers
+ * Event handler for when new instances of AbstractType are instantiated
  * @type {EventHandler<AbstractType<any>, undefined>}
  */
 const typeCreatedEventHandler = createEventHandler();
 
 /**
- * Observe all events that are created on this type.
+ * Observe instantiation events of new AbstractTypes
  *
  * @param {function(AbstractType<any>, undefined):void} f Observer function
  */
