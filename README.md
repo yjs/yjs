@@ -815,7 +815,7 @@ pos.index === 2 // => true
 
 ### Y.UndoManager
 
-Yjs ships with an Undo/Redo manager for selective undo/redo of of changes on a
+Yjs ships with an Undo/Redo manager for selective undo/redo of changes on a
 Yjs type. The changes can be optionally scoped to transaction origins.
 
 ```js
