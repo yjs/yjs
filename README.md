@@ -66,7 +66,7 @@ Sponsorship also comes with special perks! [![Become a Sponsor](https://img.shie
   collaboratively organize radio broadcasts.
 * [Cattaz](http://cattaz.io/) A wiki that can run custom applications in the
   wiki pages.
-* [Alldone](https://alldoneapp.com/) A next-gen project management and
+* [Alldone](https://alldone.app/) A next-gen project management and
   collaboration platform.
 
 ## Table of Contents
