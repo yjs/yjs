@@ -34,7 +34,7 @@ Each item in a Yjs list is made up of two objects:
 
 - An `Item` (*src/structs/Item.js*). This is used to relate the item to other
   adjacent items.
-- An object in the `AbstractType` heirachy (subclasses of
+- An object in the `AbstractType` hierarchy (subclasses of
   *src/types/AbstractType.js* - eg `YText`). This stores the actual content in
 the Yjs document.
 
