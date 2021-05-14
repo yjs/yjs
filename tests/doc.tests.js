@@ -1,6 +1,6 @@
 
 import * as Y from '../src/index.js'
-import * as t from 'lib0/testing.js'
+import * as t from 'lib0/testing'
 
 /**
  * Client id should be changed when an instance receives updates from another client using the same client id.

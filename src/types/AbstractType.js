@@ -14,10 +14,10 @@ import {
   ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
 } from '../internals.js'
 
-import * as map from 'lib0/map.js'
-import * as iterator from 'lib0/iterator.js'
-import * as error from 'lib0/error.js'
-import * as math from 'lib0/math.js'
+import * as map from 'lib0/map'
+import * as iterator from 'lib0/iterator'
+import * as error from 'lib0/error'
+import * as math from 'lib0/math'
 
 const maxSearchMarker = 80
 

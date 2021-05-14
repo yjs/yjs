@@ -8,7 +8,7 @@ import {
   DSEncoderV1, DSDecoderV1, ID, DeleteSet, YArrayEvent, Transaction, Doc // eslint-disable-line
 } from '../internals.js'
 
-import * as decoding from 'lib0/decoding.js'
+import * as decoding from 'lib0/decoding'
 
 import { mergeDeleteSets, isDeleted } from './DeleteSet.js'
 

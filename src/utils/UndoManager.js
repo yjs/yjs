@@ -13,8 +13,8 @@ import {
   Transaction, Doc, Item, GC, DeleteSet, AbstractType, YEvent // eslint-disable-line
 } from '../internals.js'
 
-import * as time from 'lib0/time.js'
-import { Observable } from 'lib0/observable.js'
+import * as time from 'lib0/time'
+import { Observable } from 'lib0/observable'
 
 class StackItem {
   /**

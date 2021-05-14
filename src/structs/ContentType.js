@@ -10,7 +10,7 @@ import {
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, Item, YEvent, AbstractType // eslint-disable-line
 } from '../internals.js'
 
-import * as error from 'lib0/error.js'
+import * as error from 'lib0/error'
 
 /**
  * @type {Array<function(UpdateDecoderV1 | UpdateDecoderV2):AbstractType<any>>}

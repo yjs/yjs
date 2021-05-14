@@ -1,5 +1,5 @@
-import * as t from 'lib0/testing.js'
-import * as promise from 'lib0/promise.js'
+import * as t from 'lib0/testing'
+import * as promise from 'lib0/promise'
 
 import {
   contentRefs,

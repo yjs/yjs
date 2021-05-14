@@ -1,6 +1,6 @@
 
-import * as error from 'lib0/error.js'
-import * as encoding from 'lib0/encoding.js'
+import * as error from 'lib0/error'
+import * as encoding from 'lib0/encoding'
 
 import {
   ID // eslint-disable-line

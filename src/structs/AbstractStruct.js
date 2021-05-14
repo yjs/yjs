@@ -3,7 +3,7 @@ import {
   UpdateEncoderV1, UpdateEncoderV2, ID, Transaction // eslint-disable-line
 } from '../internals.js'
 
-import * as error from 'lib0/error.js'
+import * as error from 'lib0/error'
 
 export class AbstractStruct {
   /**

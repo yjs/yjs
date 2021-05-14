@@ -7,8 +7,8 @@
  */
 
 import * as Y from '../src/index.js'
-import * as t from 'lib0/testing.js'
-import * as buffer from 'lib0/buffer.js'
+import * as t from 'lib0/testing'
+import * as buffer from 'lib0/buffer'
 
 /**
  * @param {t.TestCase} tc

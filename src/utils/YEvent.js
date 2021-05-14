@@ -4,8 +4,8 @@ import {
   Item, AbstractType, Transaction, AbstractStruct // eslint-disable-line
 } from '../internals.js'
 
-import * as set from 'lib0/set.js'
-import * as array from 'lib0/array.js'
+import * as set from 'lib0/set'
+import * as array from 'lib0/array'
 
 /**
  * YEvent describes the changes on a YType.

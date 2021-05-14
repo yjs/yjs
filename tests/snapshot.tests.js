@@ -1,5 +1,5 @@
 import { createDocFromSnapshot, Doc, snapshot, YMap } from '../src/internals'
-import * as t from 'lib0/testing.js'
+import * as t from 'lib0/testing'
 import { init } from './testHelper'
 
 /**

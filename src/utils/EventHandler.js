@@ -1,4 +1,4 @@
-import * as f from 'lib0/function.js'
+import * as f from 'lib0/function'
 
 /**
  * General event handler implementation.

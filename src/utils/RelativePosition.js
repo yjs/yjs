@@ -12,9 +12,9 @@ import {
   ID, Doc, AbstractType // eslint-disable-line
 } from '../internals.js'
 
-import * as encoding from 'lib0/encoding.js'
-import * as decoding from 'lib0/decoding.js'
-import * as error from 'lib0/error.js'
+import * as encoding from 'lib0/encoding'
+import * as decoding from 'lib0/decoding'
+import * as error from 'lib0/error'
 
 /**
  * A relative position is based on the Yjs model and is not affected by document changes.

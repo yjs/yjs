@@ -49,7 +49,8 @@ Sponsorship also comes with special perks! [![Become a Sponsor](https://img.shie
 
 ## Who is using Yjs
 
-* [Serenity Notes](https://www.serenity.re/en/notes) End-to-end encrypted collaborative notes app.
+* [Serenity Notes](https://www.serenity.re/en/notes) End-to-end encrypted
+  collaborative notes app.
 * [Relm](https://www.relm.us/) A collaborative gameworld for teamwork and
   community. :star2:
 * [Input](https://input.com/) A collaborative note taking app. :star2:

@@ -29,9 +29,9 @@ import {
   ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
 } from '../internals.js'
 
-import * as object from 'lib0/object.js'
-import * as map from 'lib0/map.js'
-import * as error from 'lib0/error.js'
+import * as object from 'lib0/object'
+import * as map from 'lib0/map'
+import * as error from 'lib0/error'
 
 /**
  * @param {any} a

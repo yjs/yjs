@@ -1,9 +1,9 @@
 
-import * as binary from 'lib0/binary.js'
-import * as decoding from 'lib0/decoding.js'
-import * as encoding from 'lib0/encoding.js'
-import * as logging from 'lib0/logging.js'
-import * as math from 'lib0/math.js'
+import * as binary from 'lib0/binary'
+import * as decoding from 'lib0/decoding'
+import * as encoding from 'lib0/encoding'
+import * as logging from 'lib0/logging'
+import * as math from 'lib0/math'
 import {
   createID,
   readItemContent,

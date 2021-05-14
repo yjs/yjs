@@ -1,9 +1,9 @@
 import { init, compare, applyRandomTests, Doc } from './testHelper.js' // eslint-disable-line
 
 import * as Y from '../src/index.js'
-import * as t from 'lib0/testing.js'
-import * as prng from 'lib0/prng.js'
-import * as math from 'lib0/math.js'
+import * as t from 'lib0/testing'
+import * as prng from 'lib0/prng'
+import * as math from 'lib0/math'
 
 /**
  * @param {t.TestCase} tc

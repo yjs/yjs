@@ -1,6 +1,6 @@
 
 import * as Y from '../src/internals'
-import * as t from 'lib0/testing.js'
+import * as t from 'lib0/testing'
 
 /**
  * @param {Y.YText} ytext

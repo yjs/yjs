@@ -20,7 +20,7 @@ import {
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, ContentType, Transaction, Item, YXmlText, YXmlHook, Snapshot // eslint-disable-line
 } from '../internals.js'
 
-import * as error from 'lib0/error.js'
+import * as error from 'lib0/error'
 
 /**
  * Define the elements to which a set of CSS queries apply.

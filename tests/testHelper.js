@@ -1,10 +1,10 @@
 
-import * as t from 'lib0/testing.js'
-import * as prng from 'lib0/prng.js'
-import * as encoding from 'lib0/encoding.js'
-import * as decoding from 'lib0/decoding.js'
+import * as t from 'lib0/testing'
+import * as prng from 'lib0/prng'
+import * as encoding from 'lib0/encoding'
+import * as decoding from 'lib0/decoding'
 import * as syncProtocol from 'y-protocols/sync.js'
-import * as object from 'lib0/object.js'
+import * as object from 'lib0/object'
 import * as Y from '../src/internals.js'
 export * from '../src/internals.js'
 
