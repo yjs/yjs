@@ -1,6 +1,6 @@
 {
   "name": "yjs",
-  "version": "13.5.5",
+  "version": "13.5.6",
   "description": "Shared Editing Library",
   "main": "./dist/yjs.cjs",
   "module": "./dist/yjs.mjs",
