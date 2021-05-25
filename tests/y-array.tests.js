@@ -33,6 +33,35 @@ export const testSlice = tc => {
 }
 
 /**
+ * Debugging yjs#297 - a critical bug connected to the search-marker approach
+ *
+ * @param {t.TestCase} tc
+ */
+export const testLengthIssue = tc => {
+  const doc1 = new Y.Doc()
+  const arr = doc1.getArray('array')
+  arr.push([0, 1, 2, 3])
+  arr.delete(0)
+  arr.insert(0, [0])
+  t.assert(arr.length === arr.toArray().length)
+  doc1.transact(() => {
+    arr.delete(1)
+    t.assert(arr.length === arr.toArray().length)
+    arr.insert(1, [1])
+    t.assert(arr.length === arr.toArray().length)
+    arr.delete(2)
+    t.assert(arr.length === arr.toArray().length)
+    arr.insert(2, [2])
+    t.assert(arr.length === arr.toArray().length)
+  })
+  t.assert(arr.length === arr.toArray().length)
+  arr.delete(1)
+  t.assert(arr.length === arr.toArray().length)
+  arr.insert(1, [1])
+  t.assert(arr.length === arr.toArray().length)
+}
+
+/**
  * @param {t.TestCase} tc
  */
 export const testDeleteInsert = tc => {
