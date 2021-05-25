@@ -573,7 +573,7 @@ export class Item extends AbstractStruct {
             // right is going to be "forgotten" so we need to update the marker
             marker.p = this
             // adjust marker index
-            if (!this.deleted) {
+            if (!this.deleted && this.countable) {
               marker.index -= this.length
             }
           }
