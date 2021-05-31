@@ -380,6 +380,8 @@ export const writeStructsFromTransaction = (encoder, transaction) => writeClient
  */
 export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = new UpdateDecoderV2(decoder)) =>
   transact(ydoc, transaction => {
+    // force that transaction.local is set to non-local
+    transaction.local = false
     let retry = false
     const doc = transaction.doc
     const store = doc.store

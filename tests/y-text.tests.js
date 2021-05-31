@@ -455,6 +455,44 @@ export const testSplitSurrogateCharacter = tc => {
   }
 }
 
+/**
+ * Search marker bug https://github.com/yjs/yjs/issues/307
+ *
+ * @param {t.TestCase} tc
+ */
+export const testSearchMarkerBug1 = tc => {
+  const { users, text0, text1, testConnector } = init(tc, { users: 2 })
+
+  users[0].on('update', update => {
+    users[0].transact(() => {
+      Y.applyUpdate(users[0], update)
+    })
+  })
+  users[0].on('update', update => {
+    users[1].transact(() => {
+      Y.applyUpdate(users[1], update)
+    })
+  })
+
+  text0.insert(0, 'a_a')
+  testConnector.flushAllMessages()
+  text0.insert(2, 's')
+  testConnector.flushAllMessages()
+  text1.insert(3, 'd')
+  testConnector.flushAllMessages()
+  text0.delete(0, 5)
+  testConnector.flushAllMessages()
+  text0.insert(0, 'a_a')
+  testConnector.flushAllMessages()
+  text0.insert(2, 's')
+  testConnector.flushAllMessages()
+  text1.insert(3, 'd')
+  testConnector.flushAllMessages()
+  t.compareStrings(text0.toString(), text1.toString())
+  t.compareStrings(text0.toString(), 'a_sda')
+  compare(users)
+}
+
 // RANDOM TESTS
 
 let charCounter = 0
