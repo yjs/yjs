@@ -166,9 +166,7 @@ const checkUpdateCases = (ydoc, updates, enc, hasDeletes) => {
         const targetSV = Y.encodeStateVectorFromUpdateV2(Y.mergeUpdatesV2(updates.slice(0, j)))
         const diffed = enc.diffUpdate(mergedUpdates, targetSV)
         const diffedMeta = enc.parseUpdateMeta(diffed)
-        const decDiffedSV = Y.decodeStateVector(enc.encodeStateVectorFromUpdate(diffed))
         t.compare(partMeta, diffedMeta)
-        t.compare(decDiffedSV, partMeta.to)
         {
           // We can'd do the following
           //  - t.compare(diffed, mergedDeletes)

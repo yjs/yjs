@@ -149,33 +149,39 @@ export const mergeUpdates = updates => mergeUpdatesV2(updates, UpdateDecoderV1, 
  */
 export const encodeStateVectorFromUpdateV2 = (update, YEncoder = DSEncoderV2, YDecoder = UpdateDecoderV2) => {
   const encoder = new YEncoder()
-  const updateDecoder = new LazyStructReader(new YDecoder(decoding.createDecoder(update)), true)
+  const updateDecoder = new LazyStructReader(new YDecoder(decoding.createDecoder(update)), false)
   let curr = updateDecoder.curr
   if (curr !== null) {
-    let size = 1
+    let size = 0
     let currClient = curr.id.client
-    let currClock = curr.id.clock
-    let stopCounting = false
+    let currClock = 0
+    let stopCounting = curr.id.clock !== 0 // must start at 0
     for (; curr !== null; curr = updateDecoder.next()) {
-      if (currClient !== curr.id.client) {
-        size++
-        // We found a new client
-        // write what we have to the encoder
-        encoding.writeVarUint(encoder.restEncoder, currClient)
-        encoding.writeVarUint(encoder.restEncoder, currClock)
-        currClient = curr.id.client
-        stopCounting = false
-      }
+      // we ignore skips
       if (curr.constructor === Skip) {
         stopCounting = true
       }
       if (!stopCounting) {
         currClock = curr.id.clock + curr.length
       }
+      if (currClient !== curr.id.client) {
+        if (currClock !== 0) {
+          size++
+          // We found a new client
+          // write what we have to the encoder
+          encoding.writeVarUint(encoder.restEncoder, currClient)
+          encoding.writeVarUint(encoder.restEncoder, currClock)
+        }
+        currClient = curr.id.client
+        stopCounting = false
+      }
     }
     // write what we have
-    encoding.writeVarUint(encoder.restEncoder, currClient)
-    encoding.writeVarUint(encoder.restEncoder, currClock)
+    if (currClock !== 0) {
+      size++
+      encoding.writeVarUint(encoder.restEncoder, currClient)
+      encoding.writeVarUint(encoder.restEncoder, currClock)
+    }
     // prepend the size of the state vector
     const enc = encoding.createEncoder()
     encoding.writeVarUint(enc, size)
