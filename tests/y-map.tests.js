@@ -192,6 +192,49 @@ export const testGetAndSetAndDeleteOfMapProperty = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testSetAndClearOfMapProperties = tc => {
+  const { testConnector, users, map0 } = init(tc, { users: 1 })
+  map0.set('stuff', 'c0')
+  map0.set('otherstuff', 'c1')
+  map0.clear()
+  testConnector.flushAllMessages()
+  for (const user of users) {
+    const u = user.getMap('map')
+    t.assert(u.get('stuff') === undefined)
+    t.assert(u.get('otherstuff') === undefined)
+    t.assert(u.size === 0, `map size after clear is ${u.size}, expected 0`)
+  }
+  compare(users)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testSetAndClearOfMapPropertiesWithConflicts = tc => {
+  const { testConnector, users, map0, map1, map2, map3 } = init(tc, { users: 4 })
+  map0.set('stuff', 'c0')
+  map1.set('stuff', 'c1')
+  map1.set('stuff', 'c2')
+  map2.set('stuff', 'c3')
+  testConnector.flushAllMessages()
+  map0.set('otherstuff', 'c0')
+  map1.set('otherstuff', 'c1')
+  map2.set('otherstuff', 'c2')
+  map3.set('otherstuff', 'c3')
+  map3.clear()
+  testConnector.flushAllMessages()
+  for (const user of users) {
+    const u = user.getMap('map')
+    t.assert(u.get('stuff') === undefined)
+    t.assert(u.get('otherstuff') === undefined)
+    t.assert(u.size === 0, `map size after clear is ${u.size}, expected 0`)
+  }
+  compare(users)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testGetAndSetOfMapPropertyWithThreeConflicts = tc => {
   const { testConnector, users, map0, map1, map2 } = init(tc, { users: 3 })
   map0.set('stuff', 'c0')
@@ -330,6 +373,30 @@ export const testThrowsAddAndUpdateAndDeleteEvents = tc => {
   map0.delete('stuff')
   compareEvent(event, {
     keysChanged: new Set(['stuff']),
+    target: map0
+  })
+  compare(users)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testThrowsDeleteEventsOnClear = tc => {
+  const { users, map0 } = init(tc, { users: 2 })
+  /**
+   * @type {Object<string,any>}
+   */
+  let event = {}
+  map0.observe(e => {
+    event = e // just put it on event, should be thrown synchronously anyway
+  })
+  // set values
+  map0.set('stuff', 4)
+  map0.set('otherstuff', new Y.Array())
+  // clear
+  map0.clear()
+  compareEvent(event, {
+    keysChanged: new Set(['stuff', 'otherstuff']),
     target: map0
   })
   compare(users)

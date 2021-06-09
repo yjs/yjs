@@ -238,6 +238,22 @@ export class YMap extends AbstractType {
   }
 
   /**
+   * Removes all elements from this YMap.
+   */
+  clear () {
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
+        this.forEach(function (value, key, map) {
+          console.log('deleting', key)
+          typeMapDelete(transaction, map, key)
+        })
+      })
+    } else {
+      /** @type {Map<string, any>} */ (this._prelimContent).clear()
+    }
+  }
+
+  /**
    * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    */
   _write (encoder) {

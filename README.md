@@ -334,6 +334,8 @@ or any of its children.
     <dd></dd>
     <b><code>get(index:number)</code></b>
     <dd></dd>
+    <b><code>clear()</code></b>
+    <dd>Removes all elements from this YMap.</dd>
     <b><code>clone():Y.Map</code></b>
     <dd>Clone this type into a fresh Yjs type.</dd>
     <b><code>toJSON():Object&lt;string, Object|boolean|Array|string|number|Uint8Array&gt;</code></b>
