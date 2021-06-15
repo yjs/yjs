@@ -244,7 +244,6 @@ export class YMap extends AbstractType {
     if (this.doc !== null) {
       transact(this.doc, transaction => {
         this.forEach(function (value, key, map) {
-          console.log('deleting', key)
           typeMapDelete(transaction, map, key)
         })
       })
