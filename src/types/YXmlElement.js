@@ -3,6 +3,7 @@ import {
   YXmlFragment,
   transact,
   typeMapDelete,
+  typeMapHas,
   typeMapSet,
   typeMapGet,
   typeMapGetAll,
@@ -158,6 +159,18 @@ export class YXmlElement extends YXmlFragment {
    */
   getAttribute (attributeName) {
     return /** @type {any} */ (typeMapGet(this, attributeName))
+  }
+
+  /**
+   * Returns whether an attribute exists
+   *
+   * @param {String} attributeName The attribute name to check for existence.
+   * @return {boolean} whether the attribute exists.
+   *
+   * @public
+   */
+   hasAttribute (attributeName) {
+    return /** @type {any} */ (typeMapHas(this, attributeName))
   }
 
   /**
