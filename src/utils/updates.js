@@ -514,3 +514,33 @@ const finishLazyStructWriting = (lazyWriter) => {
     encoding.writeUint8Array(restEncoder, partStructs.restEncoder)
   }
 }
+
+/**
+ * @param {Uint8Array} update
+ * @param {typeof UpdateDecoderV2 | typeof UpdateDecoderV1} YDecoder
+ * @param {typeof UpdateEncoderV2 | typeof UpdateEncoderV1 } YEncoder
+ */
+export const convertUpdateFormat = (update, YDecoder, YEncoder) => {
+  const updateDecoder = new YDecoder(decoding.createDecoder(update))
+  const lazyDecoder = new LazyStructReader(updateDecoder, false)
+  const updateEncoder = new YEncoder()
+  const lazyWriter = new LazyStructWriter(updateEncoder)
+
+  for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
+    writeStructToLazyStructWriter(lazyWriter, curr, 0)
+  }
+  finishLazyStructWriting(lazyWriter)
+  const ds = readDeleteSet(updateDecoder)
+  writeDeleteSet(updateEncoder, ds)
+  return updateEncoder.toUint8Array()
+}
+
+/**
+ * @param {Uint8Array} update
+ */
+export const convertUpdateFormatV1ToV2 = update => convertUpdateFormat(update, UpdateDecoderV1, UpdateEncoderV2)
+
+/**
+ * @param {Uint8Array} update
+ */
+export const convertUpdateFormatV2ToV1 = update => convertUpdateFormat(update, UpdateDecoderV2, UpdateEncoderV1)

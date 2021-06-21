@@ -32,9 +32,11 @@ import {
   DSEncoderV2,
   DSDecoderV1,
   DSEncoderV1,
+  mergeUpdates,
   mergeUpdatesV2,
   Skip,
   diffUpdateV2,
+  convertUpdateFormatV2ToV1,
   DSDecoderV2, Doc, Transaction, GC, Item, StructStore // eslint-disable-line
 } from '../internals.js'
 
@@ -523,15 +525,16 @@ export const encodeStateAsUpdateV2 = (doc, encodedTargetStateVector = new Uint8A
   writeStateAsUpdate(encoder, doc, targetStateVector)
   const updates = [encoder.toUint8Array()]
   // also add the pending updates (if there are any)
-  // @todo support diffirent encoders
-  if (encoder.constructor === UpdateEncoderV2) {
-    if (doc.store.pendingDs) {
-      updates.push(doc.store.pendingDs)
-    }
-    if (doc.store.pendingStructs) {
-      updates.push(diffUpdateV2(doc.store.pendingStructs.update, encodedTargetStateVector))
-    }
-    if (updates.length > 1) {
+  if (doc.store.pendingDs) {
+    updates.push(doc.store.pendingDs)
+  }
+  if (doc.store.pendingStructs) {
+    updates.push(diffUpdateV2(doc.store.pendingStructs.update, encodedTargetStateVector))
+  }
+  if (updates.length > 1) {
+    if (encoder.constructor === UpdateEncoderV1) {
+      return mergeUpdates(updates.map((update, i) => i === 0 ? update : convertUpdateFormatV2ToV1(update)))
+    } else if (encoder.constructor === UpdateEncoderV2) {
       return mergeUpdatesV2(updates)
     }
   }
