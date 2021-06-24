@@ -169,7 +169,7 @@ export class YXmlElement extends YXmlFragment {
    *
    * @public
    */
-   hasAttribute (attributeName) {
+  hasAttribute (attributeName) {
     return /** @type {any} */ (typeMapHas(this, attributeName))
   }
 

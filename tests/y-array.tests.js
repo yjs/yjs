@@ -62,6 +62,49 @@ export const testLengthIssue = tc => {
 }
 
 /**
+ * Debugging yjs#314
+ *
+ * @param {t.TestCase} tc
+ */
+export const testLengthIssue2 = tc => {
+  const doc = new Y.Doc()
+  const next = doc.getArray()
+  doc.transact(() => {
+    next.insert(0, ['group2'])
+  })
+  doc.transact(() => {
+    next.insert(1, ['rectangle3'])
+  })
+  doc.transact(() => {
+    next.delete(0)
+    next.insert(0, ['rectangle3'])
+  })
+  next.delete(1)
+  doc.transact(() => {
+    next.insert(1, ['ellipse4'])
+  })
+  doc.transact(() => {
+    next.insert(2, ['ellipse3'])
+  })
+  doc.transact(() => {
+    next.insert(3, ['ellipse2'])
+  })
+  doc.transact(() => {
+    doc.transact(() => {
+      t.fails(() => {
+        next.insert(5, ['rectangle2'])
+      })
+      next.insert(4, ['rectangle2'])
+    })
+    doc.transact(() => {
+      // this should not throw an error message
+      next.delete(4)
+    })
+  })
+  console.log(next.toArray())
+}
+
+/**
  * @param {t.TestCase} tc
  */
 export const testDeleteInsert = tc => {
