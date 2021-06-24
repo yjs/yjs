@@ -154,16 +154,9 @@ export const encodeStateVectorFromUpdateV2 = (update, YEncoder = DSEncoderV2, YD
   if (curr !== null) {
     let size = 0
     let currClient = curr.id.client
-    let currClock = 0
     let stopCounting = curr.id.clock !== 0 // must start at 0
+    let currClock = stopCounting ? 0 : curr.id.clock + curr.length
     for (; curr !== null; curr = updateDecoder.next()) {
-      // we ignore skips
-      if (curr.constructor === Skip) {
-        stopCounting = true
-      }
-      if (!stopCounting) {
-        currClock = curr.id.clock + curr.length
-      }
       if (currClient !== curr.id.client) {
         if (currClock !== 0) {
           size++
@@ -173,7 +166,15 @@ export const encodeStateVectorFromUpdateV2 = (update, YEncoder = DSEncoderV2, YD
           encoding.writeVarUint(encoder.restEncoder, currClock)
         }
         currClient = curr.id.client
-        stopCounting = false
+        currClock = 0
+        stopCounting = curr.id.clock !== 0
+      }
+      // we ignore skips
+      if (curr.constructor === Skip) {
+        stopCounting = true
+      }
+      if (!stopCounting) {
+        currClock = curr.id.clock + curr.length
       }
     }
     // write what we have
@@ -332,13 +333,19 @@ export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = U
 
     if (currWrite !== null) {
       let curr = /** @type {Item | GC | null} */ (currDecoder.curr)
+      let iterated = false
 
       // iterate until we find something that we haven't written already
       // remember: first the high client-ids are written
       while (curr !== null && curr.id.clock + curr.length <= currWrite.struct.id.clock + currWrite.struct.length && curr.id.client >= currWrite.struct.id.client) {
         curr = currDecoder.next()
+        iterated = true
       }
-      if (curr === null || curr.id.client !== firstClient) {
+      if (
+        curr === null || // current decoder is empty
+        curr.id.client !== firstClient || // check whether there is another decoder that has has updates from `firstClient`
+        (iterated && curr.id.clock > currWrite.struct.id.clock + currWrite.struct.length) // the above while loop was used and we are potentially missing updates
+      ) {
         continue
       }
 
