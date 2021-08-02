@@ -82,7 +82,7 @@ export class YXmlElement extends YXmlFragment {
       el.setAttribute(key, attrs[key])
     }
     // @ts-ignore
-    el.insert(0, el.toArray().map(item => item instanceof AbstractType ? item.clone() : item))
+    el.insert(0, this.toArray().map(item => item instanceof AbstractType ? item.clone() : item))
     return el
   }
 

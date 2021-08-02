@@ -167,7 +167,7 @@ export class YXmlFragment extends AbstractType {
   clone () {
     const el = new YXmlFragment()
     // @ts-ignore
-    el.insert(0, el.toArray().map(item => item instanceof AbstractType ? item.clone() : item))
+    el.insert(0, this.toArray().map(item => item instanceof AbstractType ? item.clone() : item))
     return el
   }
 

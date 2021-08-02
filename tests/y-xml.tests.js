@@ -150,3 +150,21 @@ export const testInsertafter = tc => {
     el.insertAfter(deepsecond1, [new Y.XmlText()])
   })
 }
+
+
+/**
+ * @param {t.TestCase} tc
+ */
+ export const testClone = tc => {
+  const ydoc = new Y.Doc()
+  const yxml = ydoc.getXmlFragment()
+  const first = new Y.XmlText('text')
+  const second = new Y.XmlElement('p')
+  const third = new Y.XmlElement('p')
+  yxml.push([first, second, third])
+  t.compareArrays(yxml.toArray(), [first, second, third])
+
+  const cloneYxml = yxml.clone()
+  t.assert(cloneYxml.length === 3)
+  t.assert(cloneYxml.toJSON() === yxml.toJSON())
+}
