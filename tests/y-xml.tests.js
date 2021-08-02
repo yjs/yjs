@@ -151,11 +151,10 @@ export const testInsertafter = tc => {
   })
 }
 
-
 /**
  * @param {t.TestCase} tc
  */
- export const testClone = tc => {
+export const testClone = tc => {
   const ydoc = new Y.Doc()
   const yxml = ydoc.getXmlFragment()
   const first = new Y.XmlText('text')
@@ -165,6 +164,7 @@ export const testInsertafter = tc => {
   t.compareArrays(yxml.toArray(), [first, second, third])
 
   const cloneYxml = yxml.clone()
+  ydoc.getArray('copyarr').insert(0, [cloneYxml])
   t.assert(cloneYxml.length === 3)
-  t.assert(cloneYxml.toJSON() === yxml.toJSON())
+  t.compare(cloneYxml.toJSON(), yxml.toJSON())
 }
