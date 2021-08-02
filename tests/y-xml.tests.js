@@ -168,3 +168,18 @@ export const testClone = tc => {
   t.assert(cloneYxml.length === 3)
   t.compare(cloneYxml.toJSON(), yxml.toJSON())
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testFormattingBug = tc => {
+  const ydoc = new Y.Doc()
+  const yxml = /** @type {Y.XmlText} */ (ydoc.get('', Y.XmlText))
+  const delta = [
+    { insert: 'A', attributes: { em: {}, strong: {} } },
+    { insert: 'B', attributes: { em: {} } },
+    { insert: 'C', attributes: { em: {}, strong: {} } }
+  ]
+  yxml.applyDelta(delta)
+  t.compare(yxml.toDelta(), delta)
+}

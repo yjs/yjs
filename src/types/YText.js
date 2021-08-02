@@ -164,12 +164,13 @@ const insertNegatedAttributes = (transaction, parent, currPos, negatedAttributes
   }
   const doc = transaction.doc
   const ownClientId = doc.clientID
-  let nextFormat = currPos.left
-  const right = currPos.right
   negatedAttributes.forEach((val, key) => {
-    nextFormat = new Item(createID(ownClientId, getState(doc.store, ownClientId)), nextFormat, nextFormat && nextFormat.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
+    const left = currPos.left
+    const right = currPos.right
+    const nextFormat = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
     nextFormat.integrate(transaction, 0)
     currPos.right = nextFormat
+    currPos.forward()
   })
 }
 
