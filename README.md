@@ -69,6 +69,7 @@ Sponsorship also comes with special perks! [![Become a Sponsor](https://img.shie
   wiki pages.
 * [Alldone](https://alldone.app/) A next-gen project management and
   collaboration platform.
+* [Vertex Software](https://collaboration.vertexvis.io/) Collaborate on 3D digital twin models in real-time, syncing part selection, pins, and camera with undo and redo support.
 
 ## Table of Contents
 
