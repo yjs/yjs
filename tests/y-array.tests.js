@@ -488,6 +488,11 @@ const arrayTransactions = [
     map.set('someprop', 43)
     map.set('someprop', 44)
   },
+  function insertTypeNull (user, gen) {
+    const yarray = user.getArray('array')
+    const pos = prng.int32(gen, 0, yarray.length)
+    yarray.insert(pos, [null])
+  },
   function _delete (user, gen) {
     const yarray = user.getArray('array')
     const length = yarray.length
@@ -496,7 +501,7 @@ const arrayTransactions = [
       let delLength = prng.int32(gen, 1, math.min(2, length - somePos))
       if (prng.bool(gen)) {
         const type = yarray.get(somePos)
-        if (type.length > 0) {
+        if (type instanceof Y.Array && type.length > 0) {
           somePos = prng.int32(gen, 0, type.length - 1)
           delLength = prng.int32(gen, 0, math.min(2, type.length - somePos))
           type.delete(somePos, delLength)

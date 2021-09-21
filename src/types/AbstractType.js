@@ -623,7 +623,7 @@ export const typeListGet = (type, index) => {
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {Item?} referenceItem
- * @param {Array<Object<string,any>|Array<any>|boolean|number|string|Uint8Array>} content
+ * @param {Array<Object<string,any>|Array<any>|boolean|number|null|string|Uint8Array>} content
  *
  * @private
  * @function
@@ -635,7 +635,7 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
   const store = doc.store
   const right = referenceItem === null ? parent._start : referenceItem.right
   /**
-   * @type {Array<Object|Array<any>|number>}
+   * @type {Array<Object|Array<any>|number|null>}
    */
   let jsonContent = []
   const packJsonContent = () => {
@@ -646,34 +646,39 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
     }
   }
   content.forEach(c => {
-    switch (c.constructor) {
-      case Number:
-      case Object:
-      case Boolean:
-      case Array:
-      case String:
-        jsonContent.push(c)
-        break
-      default:
-        packJsonContent()
-        switch (c.constructor) {
-          case Uint8Array:
-          case ArrayBuffer:
-            left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))))
-            left.integrate(transaction, 0)
-            break
-          case Doc:
-            left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentDoc(/** @type {Doc} */ (c)))
-            left.integrate(transaction, 0)
-            break
-          default:
-            if (c instanceof AbstractType) {
-              left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentType(c))
+    if(c === null) {
+      jsonContent.push(c)
+    } else {
+      switch (c.constructor) {
+        case Number:
+        case Object:
+        case Boolean:
+        case Array:
+        case String:
+          jsonContent.push(c)
+          break
+        default:
+          packJsonContent()
+          switch (c.constructor) {
+            case Uint8Array:
+            case ArrayBuffer:
+              left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))))
               left.integrate(transaction, 0)
-            } else {
-              throw new Error('Unexpected content type in insert operation')
-            }
-        }
+              break
+            case Doc:
+              left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentDoc(/** @type {Doc} */ (c)))
+              left.integrate(transaction, 0)
+              break
+            default:
+              if (c instanceof AbstractType) {
+                left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentType(c))
+                left.integrate(transaction, 0)
+              } else {
+                throw new Error('Unexpected content type in insert operation')
+              }
+          }
+      }
+
     }
   })
   packJsonContent()
@@ -685,7 +690,7 @@ const lengthExceeded = error.create('Length exceeded!')
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {number} index
- * @param {Array<Object<string,any>|Array<any>|number|string|Uint8Array>} content
+ * @param {Array<Object<string,any>|Array<any>|number|null|string|Uint8Array>} content
  *
  * @private
  * @function
@@ -797,7 +802,7 @@ export const typeMapDelete = (transaction, parent, key) => {
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {string} key
- * @param {Object|number|Array<any>|string|Uint8Array|AbstractType<any>} value
+ * @param {Object|number|null|Array<any>|string|Uint8Array|AbstractType<any>} value
  *
  * @private
  * @function
@@ -838,7 +843,7 @@ export const typeMapSet = (transaction, parent, key, value) => {
 /**
  * @param {AbstractType<any>} parent
  * @param {string} key
- * @return {Object<string,any>|number|Array<any>|string|Uint8Array|AbstractType<any>|undefined}
+ * @return {Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined}
  *
  * @private
  * @function
@@ -850,7 +855,7 @@ export const typeMapGet = (parent, key) => {
 
 /**
  * @param {AbstractType<any>} parent
- * @return {Object<string,Object<string,any>|number|Array<any>|string|Uint8Array|AbstractType<any>|undefined>}
+ * @return {Object<string,Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined>}
  *
  * @private
  * @function
@@ -885,7 +890,7 @@ export const typeMapHas = (parent, key) => {
  * @param {AbstractType<any>} parent
  * @param {string} key
  * @param {Snapshot} snapshot
- * @return {Object<string,any>|number|Array<any>|string|Uint8Array|AbstractType<any>|undefined}
+ * @return {Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined}
  *
  * @private
  * @function
