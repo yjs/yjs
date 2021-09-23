@@ -100,6 +100,7 @@ are implemented in separate modules.
 | [CodeMirror](https://codemirror.net/) | ✔ | [y-codemirror](https://github.com/yjs/y-codemirror) | [demo](https://demos.yjs.dev/codemirror/codemirror.html) |
 | [Monaco](https://microsoft.github.io/monaco-editor/) | ✔ | [y-monaco](https://github.com/yjs/y-monaco) | [demo](https://demos.yjs.dev/monaco/monaco.html) |
 | [Slate](https://github.com/ianstormtaylor/slate) | ✔ | [slate-yjs](https://github.com/bitphinix/slate-yjs) | [demo](https://bitphinix.github.io/slate-yjs-example) |
+| [valtio](https://github.com/pmndrs/valtio) |  | [valtio-yjs](https://github.com/dai-shi/valtio-yjs) | [demo](https://codesandbox.io/s/valtio-yjs-demo-ox3iy) |
 
 ### Providers
 
@@ -988,7 +989,7 @@ order of the structs anymore (e.g. if the parent was deleted).
 **Examples:**
 
 1. If a user inserts elements in sequence, the struct will be merged into a
-   single struct. E.g. `array.insert(0, ['a']), array.insert(0, ['b']);` is
+   single struct. E.g. `text.insert(0, 'a'), text.insert(1, 'b');` is
    first represented as two structs (`[{id: {client, clock: 0}, content: 'a'},
    {id: {client, clock: 1}, content: 'b'}`) and then merged into a single
    struct: `[{id: {client, clock: 0}, content: 'ab'}]`.
