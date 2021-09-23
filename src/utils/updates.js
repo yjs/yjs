@@ -287,6 +287,9 @@ const sliceStruct = (left, diff) => {
  * @return {Uint8Array}
  */
 export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = UpdateEncoderV2) => {
+  if (updates.length === 1) {
+    return updates[0]
+  }
   const updateDecoders = updates.map(update => new YDecoder(decoding.createDecoder(update)))
   let lazyStructDecoders = updateDecoders.map(decoder => new LazyStructReader(decoder, true))
 
@@ -312,8 +315,9 @@ export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = U
         if (dec1.curr.id.client === dec2.curr.id.client) {
           const clockDiff = dec1.curr.id.clock - dec2.curr.id.clock
           if (clockDiff === 0) {
+            // @todo remove references to skip since the structDecoders must filter Skips.
             return dec1.curr.constructor === dec2.curr.constructor ? 0 : (
-              dec1.curr.constructor === Skip ? 1 : -1
+              dec1.curr.constructor === Skip ? 1 : -1 // we are filtering skips anyway.
             )
           } else {
             return clockDiff
