@@ -154,6 +154,29 @@ export const testGetDeltaWithEmbeds = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testTypesAsEmbed = tc => {
+  const { text0, text1, testConnector } = init(tc, { users: 2 })
+  text0.applyDelta([{
+    insert: new Y.YMap([['key', 'val']])
+  }])
+  t.compare(text0.toDelta()[0].insert.toJSON(), { key: 'val' })
+  let firedEvent = false
+  text1.observe(event => {
+    const d = event.delta
+    t.assert(d.length === 1)
+    t.compare(d.map(x => /** @type {Y.AbstractType<any>} */ (x.insert).toJSON()), [{ key: 'val' }])
+    firedEvent = true
+  })
+  testConnector.flushAllMessages()
+  const delta = text1.toDelta()
+  t.assert(delta.length === 1)
+  t.compare(delta[0].insert.toJSON(), { key: 'val' })
+  t.assert(firedEvent, 'fired the event observer containing a Type-Embed')
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testSnapshot = tc => {
   const { text0 } = init(tc, { users: 1 })
   const doc0 = /** @type {Y.Doc} */ (text0.doc)
@@ -628,7 +651,11 @@ const qChanges = [
   (y, gen) => { // insert embed
     const ytext = y.getText('text')
     const insertPos = prng.int32(gen, 0, ytext.length)
-    ytext.insertEmbed(insertPos, { image: 'https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png' })
+    if (prng.bool(gen)) {
+      ytext.insertEmbed(insertPos, { image: 'https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png' })
+    } else {
+      ytext.insertEmbed(insertPos, new Y.YMap())
+    }
   },
   /**
    * @param {Y.Doc} y
@@ -675,8 +702,12 @@ const qChanges = [
  */
 const checkResult = result => {
   for (let i = 1; i < result.testObjects.length; i++) {
-    const p1 = result.users[i].getText('text').toDelta()
-    const p2 = result.users[i].getText('text').toDelta()
+    /**
+     * @param {any} d
+     */
+    const typeToObject = d => d.insert instanceof Y.AbstractType ? d.insert.toJSON() : d
+    const p1 = result.users[i].getText('text').toDelta().map(typeToObject)
+    const p2 = result.users[i].getText('text').toDelta().map(typeToObject)
     t.compare(p1, p2)
   }
   // Uncomment this to find formatting-cleanup issues

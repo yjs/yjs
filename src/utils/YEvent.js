@@ -40,7 +40,7 @@ export class YEvent {
      */
     this._keys = null
     /**
-     * @type {null | Array<{ insert?: string | Array<any>, retain?: number, delete?: number, attributes?: Object<string, any> }>}
+     * @type {null | Array<{ insert?: string | Array<any> | object | AbstractType<any>, retain?: number, delete?: number, attributes?: Object<string, any> }>}
      */
     this._delta = null
   }
@@ -129,7 +129,7 @@ export class YEvent {
   }
 
   /**
-   * @type {Array<{insert?: string | Array<any>, retain?: number, delete?: number, attributes?: Object<string, any>}>}
+   * @type {Array<{insert?: string | Array<any> | object | AbstractType<any>, retain?: number, delete?: number, attributes?: Object<string, any>}>}
    */
   get delta () {
     return this.changes.delta
