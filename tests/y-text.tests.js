@@ -654,7 +654,7 @@ const qChanges = [
     if (prng.bool(gen)) {
       ytext.insertEmbed(insertPos, { image: 'https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png' })
     } else {
-      ytext.insertEmbed(insertPos, new Y.YMap())
+      ytext.insertEmbed(insertPos, new Y.YMap([[prng.word(gen), prng.word(gen)]]))
     }
   },
   /**
