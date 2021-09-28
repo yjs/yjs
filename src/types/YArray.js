@@ -215,7 +215,7 @@ export class YArray extends AbstractType {
    * Returns an Array with the result of calling a provided function on every
    * element of this YArray.
    *
-   * @template T,M
+   * @template M
    * @param {function(T,number,YArray<T>):M} f Function that produces an element of the new Array
    * @return {Array<M>} A new array with each element being the result of the
    *                 callback function
