@@ -43,6 +43,7 @@ export {
   snapshot,
   emptySnapshot,
   findRootTypeKey,
+  findIndexSS,
   getItem,
   typeListToArraySnapshot,
   typeMapGetSnapshot,
