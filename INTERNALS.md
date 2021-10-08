@@ -168,7 +168,7 @@ An implementation of the syncing process is in
 ## Snapshots
 
 A snapshot can be used to restore an old document state. It is a `state vector`
-+ `delete set`. I client can restore an old document state by iterating through
+\+ `delete set`. I client can restore an old document state by iterating through
 the sequence CRDT and ignoring all Items that have an `id.clock >
 stateVector[id.client].clock`. Instead of using `item.deleted` the client will
 use the delete set to find out if an item was deleted or not.
