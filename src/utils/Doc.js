@@ -194,8 +194,9 @@ export class Doc extends Observable {
   }
 
   /**
+   * @template T
    * @param {string} [name]
-   * @return {YMap<any>}
+   * @return {YMap<T>}
    *
    * @public
    */
