@@ -646,7 +646,7 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
     }
   }
   content.forEach(c => {
-    if(c === null) {
+    if (c === null) {
       jsonContent.push(c)
     } else {
       switch (c.constructor) {
@@ -678,7 +678,6 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
               }
           }
       }
-
     }
   })
   packJsonContent()

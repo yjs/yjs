@@ -81,7 +81,7 @@
     "jsdoc": "^3.6.6",
     "markdownlint-cli": "^0.23.2",
     "rollup": "^2.47.0",
-    "standard": "^14.3.4",
+    "standard": "^16.0.4",
     "tui-jsdoc-template": "^1.2.2",
     "typescript": "^4.2.4",
     "y-protocols": "^1.0.4"

@@ -316,9 +316,9 @@ export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = U
           const clockDiff = dec1.curr.id.clock - dec2.curr.id.clock
           if (clockDiff === 0) {
             // @todo remove references to skip since the structDecoders must filter Skips.
-            return dec1.curr.constructor === dec2.curr.constructor ? 0 : (
-              dec1.curr.constructor === Skip ? 1 : -1 // we are filtering skips anyway.
-            )
+            return dec1.curr.constructor === dec2.curr.constructor
+              ? 0
+              : dec1.curr.constructor === Skip ? 1 : -1 // we are filtering skips anyway.
           } else {
             return clockDiff
           }

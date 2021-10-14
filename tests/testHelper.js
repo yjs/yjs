@@ -324,7 +324,7 @@ export const init = (tc, { users = 5 } = {}, initTestObject) => {
  */
 export const compare = users => {
   users.forEach(u => u.connect())
-  while (users[0].tc.flushAllMessages()) {}
+  while (users[0].tc.flushAllMessages()) {} // eslint-disable-line
   // For each document, merge all received document updates with Y.mergeUpdates and create a new document which will be added to the list of "users"
   // This ensures that mergeUpdates works correctly
   const mergedDocs = users.map(user => {
