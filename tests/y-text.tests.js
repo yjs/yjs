@@ -516,6 +516,31 @@ export const testSearchMarkerBug1 = tc => {
   compare(users)
 }
 
+/**
+ * Reported in https://github.com/yjs/yjs/pull/32
+ *
+ * @param {t.TestCase} tc
+ */
+export const testFormattingBug = async tc => {
+  const ydoc1 = new Y.Doc()
+  const ydoc2 = new Y.Doc()
+  const text1 = ydoc1.getText()
+  text1.insert(0, '\n\n\n')
+  text1.format(0, 3, { url: 'http://example.com' })
+  ydoc1.getText().format(1, 1, { url: 'http://docs.yjs.dev' })
+  ydoc2.getText().format(1, 1, { url: 'http://docs.yjs.dev' })
+  Y.applyUpdate(ydoc2, Y.encodeStateAsUpdate(ydoc1))
+  const text2 = ydoc2.getText()
+  const expectedResult = [
+    { insert: '\n', attributes: { url: 'http://example.com' } },
+    { insert: '\n', attributes: { url: 'http://docs.yjs.dev' } },
+    { insert: '\n', attributes: { url: 'http://example.com' } }
+  ]
+  t.compare(text1.toDelta(), expectedResult)
+  t.compare(text1.toDelta(), text2.toDelta())
+  console.log(text1.toDelta())
+}
+
 // RANDOM TESTS
 
 let charCounter = 0
