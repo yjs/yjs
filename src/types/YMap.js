@@ -36,11 +36,11 @@ export class YMapEvent extends YEvent {
 }
 
 /**
- * @template T number|string|Object|Array|Uint8Array
+ * @template MapType
  * A shared Map implementation.
  *
- * @extends AbstractType<YMapEvent<T>>
- * @implements {Iterable<T>}
+ * @extends AbstractType<YMapEvent<MapType>>
+ * @implements {Iterable<MapType>}
  */
 export class YMap extends AbstractType {
   /**
@@ -85,7 +85,7 @@ export class YMap extends AbstractType {
   }
 
   /**
-   * @return {YMap<T>}
+   * @return {YMap<MapType>}
    */
   clone () {
     const map = new YMap()
@@ -108,11 +108,11 @@ export class YMap extends AbstractType {
   /**
    * Transforms this Shared Type to a JSON object.
    *
-   * @return {Object<string,T>}
+   * @return {Object<string,any>}
    */
   toJSON () {
     /**
-     * @type {Object<string,T>}
+     * @type {Object<string,MapType>}
      */
     const map = {}
     this._map.forEach((item, key) => {
@@ -163,11 +163,11 @@ export class YMap extends AbstractType {
   /**
    * Executes a provided function on once on every key-value pair.
    *
-   * @param {function(T,string,YMap<T>):void} f A function to execute on every element of this YArray.
+   * @param {function(MapType,string,YMap<MapType>):void} f A function to execute on every element of this YArray.
    */
   forEach (f) {
     /**
-     * @type {Object<string,T>}
+     * @type {Object<string,MapType>}
      */
     const map = {}
     this._map.forEach((item, key) => {
@@ -179,7 +179,7 @@ export class YMap extends AbstractType {
   }
 
   /**
-   * @return {IterableIterator<T>}
+   * @return {IterableIterator<MapType>}
    */
   [Symbol.iterator] () {
     return this.entries()
@@ -204,7 +204,7 @@ export class YMap extends AbstractType {
    * Adds or updates an element with a specified key and value.
    *
    * @param {string} key The key of the element to add to this YMap
-   * @param {T} value The value of the element to add
+   * @param {MapType} value The value of the element to add
    */
   set (key, value) {
     if (this.doc !== null) {
@@ -221,7 +221,7 @@ export class YMap extends AbstractType {
    * Returns a specified element from this YMap.
    *
    * @param {string} key
-   * @return {T|undefined}
+   * @return {MapType|undefined}
    */
   get (key) {
     return /** @type {any} */ (typeMapGet(this, key))

@@ -301,3 +301,58 @@ export const testUndoUntilChangePerformed = tc => {
   undoManager.undo()
   t.compareStrings(yMap2.get('key'), 'value')
 }
+
+/**
+ * This issue has been reported in https://github.com/yjs/yjs/issues/317
+ * @param {t.TestCase} tc
+ */
+export const testUndoNestedUndoIssue = tc => {
+  const doc = new Y.Doc({ gc: false })
+  const design = doc.getMap()
+  const undoManager = new Y.UndoManager(design, { captureTimeout: 0 })
+
+  /**
+   * @type {Y.Map<any>}
+   */
+  const text = new Y.Map()
+
+  const blocks1 = new Y.Array()
+  const blocks1block = new Y.Map()
+
+  doc.transact(() => {
+    blocks1block.set('text', 'Type Something')
+    blocks1.push([blocks1block])
+    text.set('blocks', blocks1block)
+    design.set('text', text)
+  })
+
+  const blocks2 = new Y.Array()
+  const blocks2block = new Y.Map()
+  doc.transact(() => {
+    blocks2block.set('text', 'Something')
+    blocks2.push([blocks2block])
+    text.set('blocks', blocks2block)
+  })
+
+  const blocks3 = new Y.Array()
+  const blocks3block = new Y.Map()
+  doc.transact(() => {
+    blocks3block.set('text', 'Something Else')
+    blocks3.push([blocks3block])
+    text.set('blocks', blocks3block)
+  })
+
+  t.compare(design.toJSON(), { text: { blocks: { text: 'Something Else' } } })
+  undoManager.undo()
+  t.compare(design.toJSON(), { text: { blocks: { text: 'Something' } } })
+  undoManager.undo()
+  t.compare(design.toJSON(), { text: { blocks: { text: 'Type Something' } } })
+  undoManager.undo()
+  t.compare(design.toJSON(), { })
+  undoManager.redo()
+  t.compare(design.toJSON(), { text: { blocks: { text: 'Type Something' } } })
+  undoManager.redo()
+  t.compare(design.toJSON(), { text: { blocks: { text: 'Something' } } })
+  undoManager.redo()
+  t.compare(design.toJSON(), { text: { blocks: { text: 'Something Else' } } })
+}

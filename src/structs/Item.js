@@ -125,12 +125,13 @@ export const splitItem = (transaction, leftItem, diff) => {
  * @param {Transaction} transaction The Yjs instance.
  * @param {Item} item
  * @param {Set<Item>} redoitems
+ * @param {Array<Item>} itemsToDelete
  *
  * @return {Item|null}
  *
  * @private
  */
-export const redoItem = (transaction, item, redoitems) => {
+export const redoItem = (transaction, item, redoitems, itemsToDelete) => {
   const doc = transaction.doc
   const store = doc.store
   const ownClientID = doc.clientID
@@ -170,7 +171,7 @@ export const redoItem = (transaction, item, redoitems) => {
   // make sure that parent is redone
   if (parentItem !== null && parentItem.deleted === true && parentItem.redone === null) {
     // try to undo parent if it will be undone anyway
-    if (!redoitems.has(parentItem) || redoItem(transaction, parentItem, redoitems) === null) {
+    if (!redoitems.has(parentItem) || redoItem(transaction, parentItem, redoitems, itemsToDelete) === null) {
       return null
     }
   }
@@ -208,6 +209,11 @@ export const redoItem = (transaction, item, redoitems) => {
         break
       }
       right = right.right
+    }
+    // Iterate right while right is in itemsToDelete
+    // If it is intended to delete right while item is redone, we can expect that item should replace right.
+    while (left !== null && left.right !== null && left.right !== right && itemsToDelete.findIndex(d => d === /** @type {Item} */ (left).right) >= 0) {
+      left = left.right
     }
   }
   const nextClock = getState(store, ownClientID)
