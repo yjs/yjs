@@ -362,7 +362,14 @@ export const compare = users => {
     t.compare(userMapValues[i], userMapValues[i + 1])
     t.compare(userXmlValues[i], userXmlValues[i + 1])
     t.compare(userTextValues[i].map(/** @param {any} a */ a => typeof a.insert === 'string' ? a.insert : ' ').join('').length, users[i].getText('text').length)
-    t.compare(userTextValues[i], userTextValues[i + 1])
+    t.compare(userTextValues[i], userTextValues[i + 1], '', (constructor, a, b) => {
+      if (a instanceof Y.AbstractType) {
+        t.compare(a.toJSON(), b.toJSON())
+      } else if (a !== b) {
+        t.fail('Deltas dont match')
+      }
+      return true
+    })
     t.compare(Y.getStateVector(users[i].store), Y.getStateVector(users[i + 1].store))
     compareDS(Y.createDeleteSetFromStructStore(users[i].store), Y.createDeleteSetFromStructStore(users[i + 1].store))
     compareStructStores(users[i].store, users[i + 1].store)

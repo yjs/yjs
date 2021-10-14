@@ -26,6 +26,7 @@ import {
   typeMapGet,
   typeMapGetAll,
   updateMarkerChanges,
+  ContentType,
   ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
 } from '../internals.js'
 
@@ -62,15 +63,14 @@ export class ItemTextListPosition {
       error.unexpectedCase()
     }
     switch (this.right.content.constructor) {
-      case ContentEmbed:
-      case ContentString:
-        if (!this.right.deleted) {
-          this.index += this.right.length
-        }
-        break
       case ContentFormat:
         if (!this.right.deleted) {
           updateCurrentAttributes(this.currentAttributes, /** @type {ContentFormat} */ (this.right.content))
+        }
+        break
+      default:
+        if (!this.right.deleted) {
+          this.index += this.right.length
         }
         break
     }
@@ -91,8 +91,12 @@ export class ItemTextListPosition {
 const findNextPosition = (transaction, pos, count) => {
   while (pos.right !== null && count > 0) {
     switch (pos.right.content.constructor) {
-      case ContentEmbed:
-      case ContentString:
+      case ContentFormat:
+        if (!pos.right.deleted) {
+          updateCurrentAttributes(pos.currentAttributes, /** @type {ContentFormat} */ (pos.right.content))
+        }
+        break
+      default:
         if (!pos.right.deleted) {
           if (count < pos.right.length) {
             // split right
@@ -100,11 +104,6 @@ const findNextPosition = (transaction, pos, count) => {
           }
           pos.index += pos.right.length
           count -= pos.right.length
-        }
-        break
-      case ContentFormat:
-        if (!pos.right.deleted) {
-          updateCurrentAttributes(pos.currentAttributes, /** @type {ContentFormat} */ (pos.right.content))
         }
         break
     }
@@ -245,7 +244,7 @@ const insertAttributes = (transaction, parent, currPos, attributes) => {
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {ItemTextListPosition} currPos
- * @param {string|object} text
+ * @param {string|object|AbstractType<any>} text
  * @param {Object<string,any>} attributes
  *
  * @private
@@ -262,7 +261,7 @@ const insertText = (transaction, parent, currPos, text, attributes) => {
   minimizeAttributeChanges(currPos, attributes)
   const negatedAttributes = insertAttributes(transaction, parent, currPos, attributes)
   // insert content
-  const content = text.constructor === String ? new ContentString(/** @type {string} */ (text)) : new ContentEmbed(text)
+  const content = text.constructor === String ? new ContentString(/** @type {string} */ (text)) : (text instanceof AbstractType ? new ContentType(text) : new ContentEmbed(text))
   let { left, right, index } = currPos
   if (parent._searchMarker) {
     updateMarkerChanges(parent._searchMarker, currPos.index, content.getLength())
@@ -308,8 +307,7 @@ const formatText = (transaction, parent, currPos, length, attributes) => {
           }
           break
         }
-        case ContentEmbed:
-        case ContentString:
+        default:
           if (length < currPos.right.length) {
             getItemCleanStart(transaction, createID(currPos.right.id.client, currPos.right.id.clock + length))
           }
@@ -348,7 +346,7 @@ const formatText = (transaction, parent, currPos, length, attributes) => {
  * @function
  */
 const cleanupFormattingGap = (transaction, start, end, startAttributes, endAttributes) => {
-  while (end && end.content.constructor !== ContentString && end.content.constructor !== ContentEmbed) {
+  while (end && (!end.countable || end.deleted)) {
     if (!end.deleted && end.content.constructor === ContentFormat) {
       updateCurrentAttributes(endAttributes, /** @type {ContentFormat} */ (end.content))
     }
@@ -381,12 +379,12 @@ const cleanupFormattingGap = (transaction, start, end, startAttributes, endAttri
  */
 const cleanupContextlessFormattingGap = (transaction, item) => {
   // iterate until item.right is null or content
-  while (item && item.right && (item.right.deleted || (item.right.content.constructor !== ContentString && item.right.content.constructor !== ContentEmbed))) {
+  while (item && item.right && (item.right.deleted || !item.right.countable)) {
     item = item.right
   }
   const attrs = new Set()
   // iterate back until a content item is found
-  while (item && (item.deleted || (item.content.constructor !== ContentString && item.content.constructor !== ContentEmbed))) {
+  while (item && (item.deleted || !item.countable)) {
     if (!item.deleted && item.content.constructor === ContentFormat) {
       const key = /** @type {ContentFormat} */ (item.content).key
       if (attrs.has(key)) {
@@ -424,8 +422,7 @@ export const cleanupYTextFormatting = type => {
           case ContentFormat:
             updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (end.content))
             break
-          case ContentEmbed:
-          case ContentString:
+          default:
             res += cleanupFormattingGap(transaction, start, end, startAttributes, currentAttributes)
             startAttributes = map.copy(currentAttributes)
             start = end
@@ -454,6 +451,7 @@ const deleteText = (transaction, currPos, length) => {
   while (length > 0 && currPos.right !== null) {
     if (currPos.right.deleted === false) {
       switch (currPos.right.content.constructor) {
+        case ContentType:
         case ContentEmbed:
         case ContentString:
           if (length < currPos.right.length) {
@@ -540,7 +538,7 @@ export class YTextEvent extends YEvent {
   get changes () {
     if (this._changes === null) {
       /**
-       * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Array<{insert?:Array<any>|string, delete?:number, retain?:number}>}}
+       * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Array<{insert?:Array<any>|string|AbstractType<any>|object, delete?:number, retain?:number}>}}
        */
       const changes = {
         keys: this.keys,
@@ -557,7 +555,7 @@ export class YTextEvent extends YEvent {
    * Compute the changes in the delta format.
    * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
    *
-   * @type {Array<{insert?:string, delete?:number, retain?:number, attributes?: Object<string,any>}>}
+   * @type {Array<{insert?:string|object|AbstractType<any>, delete?:number, retain?:number, attributes?: Object<string,any>}>}
    *
    * @public
    */
@@ -565,7 +563,7 @@ export class YTextEvent extends YEvent {
     if (this._delta === null) {
       const y = /** @type {Doc} */ (this.target.doc)
       /**
-       * @type {Array<{insert?:string, delete?:number, retain?:number, attributes?: Object<string,any>}>}
+       * @type {Array<{insert?:string|object|AbstractType<any>, delete?:number, retain?:number, attributes?: Object<string,any>}>}
        */
       const delta = []
       transact(y, transaction => {
@@ -626,12 +624,13 @@ export class YTextEvent extends YEvent {
         }
         while (item !== null) {
           switch (item.content.constructor) {
+            case ContentType:
             case ContentEmbed:
               if (this.adds(item)) {
                 if (!this.deletes(item)) {
                   addOp()
                   action = 'insert'
-                  insert = /** @type {ContentEmbed} */ (item.content).embed
+                  insert = item.content.getContent()[0]
                   addOp()
                 }
               } else if (this.deletes(item)) {
@@ -1008,13 +1007,14 @@ export class YText extends AbstractType {
               str += /** @type {ContentString} */ (n.content).str
               break
             }
+            case ContentType:
             case ContentEmbed: {
               packStr()
               /**
                * @type {Object<string,any>}
                */
               const op = {
-                insert: /** @type {ContentEmbed} */ (n.content).embed
+                insert: n.content.getContent()[0]
               }
               if (currentAttributes.size > 0) {
                 const attrs = /** @type {Object<string,any>} */ ({})
@@ -1075,16 +1075,13 @@ export class YText extends AbstractType {
    * Inserts an embed at a index.
    *
    * @param {number} index The index to insert the embed at.
-   * @param {Object} embed The Object that represents the embed.
+   * @param {Object | AbstractType<any>} embed The Object that represents the embed.
    * @param {TextAttributes} attributes Attribute information to apply on the
    *                                    embed
    *
    * @public
    */
   insertEmbed (index, embed, attributes = {}) {
-    if (embed.constructor !== Object) {
-      throw new Error('Embed must be an Object')
-    }
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
