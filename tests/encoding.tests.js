@@ -106,3 +106,28 @@ export const testDiffStateVectorOfUpdateIgnoresSkips = tc => {
   t.assert(state.get(ydoc.clientID) === 1)
   t.assert(state.size === 1)
 }
+
+/**
+ * Encode a document with a text and decode it into a new document. Then, test if
+ * the same change to both documents results in the same text deltas.
+ *
+ * @param {t.TestCase} tc
+ */
+export const testEncodeDecode = async tc => {
+  const ydoc1 = new Doc()
+  const ydoc2 = new Doc()
+  const text1 = ydoc1.getText()
+  text1.insert(0, "\n\n\n")
+  text1.format(0, 3, { url: 'http://example.com' });
+  applyUpdate(ydoc2, encodeStateAsUpdate(ydoc1))
+  ydoc1.getText().format(1, 1, { url: 'http://docs.yjs.dev' });
+  ydoc2.getText().format(1, 1, { url: 'http://docs.yjs.dev' });
+  const text2 = ydoc2.getText()
+  const expectedResult = [
+    { insert: '\n', attributes: { url: 'http://example.com' } },
+    { insert: '\n', attributes: { url: 'http://docs.yjs.dev' } },
+    { insert: '\n', attributes: { url: 'http://example.com' } }
+  ]
+  t.compare(text1.toDelta(), expectedResult)
+  t.compare(text1.toDelta(), text2.toDelta())
+}
