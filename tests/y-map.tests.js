@@ -42,6 +42,7 @@ export const testBasicMapTests = tc => {
   const { testConnector, users, map0, map1, map2 } = init(tc, { users: 3 })
   users[2].disconnect()
 
+  map0.set('null', null)
   map0.set('number', 1)
   map0.set('string', 'hello Y')
   map0.set('object', { key: { key2: 'value' } })
@@ -54,26 +55,29 @@ export const testBasicMapTests = tc => {
   array.insert(0, [0])
   array.insert(0, [-1])
 
+  t.assert(map0.get('null') === null, 'client 0 computed the change (null)')
   t.assert(map0.get('number') === 1, 'client 0 computed the change (number)')
   t.assert(map0.get('string') === 'hello Y', 'client 0 computed the change (string)')
   t.assert(map0.get('boolean0') === false, 'client 0 computed the change (boolean)')
   t.assert(map0.get('boolean1') === true, 'client 0 computed the change (boolean)')
   t.compare(map0.get('object'), { key: { key2: 'value' } }, 'client 0 computed the change (object)')
   t.assert(map0.get('y-map').get('y-array').get(0) === -1, 'client 0 computed the change (type)')
-  t.assert(map0.size === 6, 'client 0 map has correct size')
+  t.assert(map0.size === 7, 'client 0 map has correct size')
 
   users[2].connect()
   testConnector.flushAllMessages()
 
+  t.assert(map1.get('null') === null, 'client 1 received the update (null)')
   t.assert(map1.get('number') === 1, 'client 1 received the update (number)')
   t.assert(map1.get('string') === 'hello Y', 'client 1 received the update (string)')
   t.assert(map1.get('boolean0') === false, 'client 1 computed the change (boolean)')
   t.assert(map1.get('boolean1') === true, 'client 1 computed the change (boolean)')
   t.compare(map1.get('object'), { key: { key2: 'value' } }, 'client 1 received the update (object)')
   t.assert(map1.get('y-map').get('y-array').get(0) === -1, 'client 1 received the update (type)')
-  t.assert(map1.size === 6, 'client 1 map has correct size')
+  t.assert(map1.size === 7, 'client 1 map has correct size')
 
   // compare disconnected user
+  t.assert(map2.get('null') === null, 'client 2 received the update (null) - was disconnected')
   t.assert(map2.get('number') === 1, 'client 2 received the update (number) - was disconnected')
   t.assert(map2.get('string') === 'hello Y', 'client 2 received the update (string) - was disconnected')
   t.assert(map2.get('boolean0') === false, 'client 2 computed the change (boolean)')

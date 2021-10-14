@@ -250,36 +250,36 @@ necessary.
   <dl>
     <b><code>parent:Y.AbstractType|null</code></b>
     <dd></dd>
-    <b><code>insert(index:number, content:Array&lt;object|boolean|Array|string|number|Uint8Array|Y.Type&gt;)</code></b>
+    <b><code>insert(index:number, content:Array&lt;object|boolean|Array|string|number|null|Uint8Array|Y.Type&gt;)</code></b>
     <dd>
 Insert content at <var>index</var>. Note that content is an array of elements.
 I.e. <code>array.insert(0, [1])</code> splices the list and inserts 1 at
 position 0.
     </dd>
-    <b><code>push(Array&lt;Object|boolean|Array|string|number|Uint8Array|Y.Type&gt;)</code></b>
+    <b><code>push(Array&lt;Object|boolean|Array|string|number|null|Uint8Array|Y.Type&gt;)</code></b>
     <dd></dd>
-    <b><code>unshift(Array&lt;Object|boolean|Array|string|number|Uint8Array|Y.Type&gt;)</code></b>
+    <b><code>unshift(Array&lt;Object|boolean|Array|string|number|null|Uint8Array|Y.Type&gt;)</code></b>
     <dd></dd>
     <b><code>delete(index:number, length:number)</code></b>
     <dd></dd>
     <b><code>get(index:number)</code></b>
     <dd></dd>
-    <b><code>slice(start:number, end:number):Array&lt;Object|boolean|Array|string|number|Uint8Array|Y.Type&gt;</code></b>
+    <b><code>slice(start:number, end:number):Array&lt;Object|boolean|Array|string|number|null|Uint8Array|Y.Type&gt;</code></b>
     <dd>Retrieve a range of content</dd>
     <b><code>length:number</code></b>
     <dd></dd>
     <b>
       <code>
-forEach(function(value:object|boolean|Array|string|number|Uint8Array|Y.Type,
+forEach(function(value:object|boolean|Array|string|number|null|Uint8Array|Y.Type,
  index:number, array: Y.Array))
       </code>
     </b>
     <dd></dd>
     <b><code>map(function(T, number, YArray):M):Array&lt;M&gt;</code></b>
     <dd></dd>
-    <b><code>toArray():Array&lt;object|boolean|Array|string|number|Uint8Array|Y.Type&gt;</code></b>
+    <b><code>toArray():Array&lt;object|boolean|Array|string|number|null|Uint8Array|Y.Type&gt;</code></b>
     <dd>Copies the content of this YArray to a new Array.</dd>
-    <b><code>toJSON():Array&lt;Object|boolean|Array|string|number&gt;</code></b>
+    <b><code>toJSON():Array&lt;Object|boolean|Array|string|number|null&gt;</code></b>
     <dd>
 Copies the content of this YArray to a new Array. It transforms all child types
 to JSON using their <code>toJSON</code> method.
@@ -325,9 +325,9 @@ or any of its children.
     <dd></dd>
     <b><code>size: number</code></b>
     <dd>Total number of key/value pairs.</dd>
-    <b><code>get(key:string):object|boolean|string|number|Uint8Array|Y.Type</code></b>
+    <b><code>get(key:string):object|boolean|string|number|null|Uint8Array|Y.Type</code></b>
     <dd></dd>
-    <b><code>set(key:string, value:object|boolean|string|number|Uint8Array|Y.Type)</code></b>
+    <b><code>set(key:string, value:object|boolean|string|number|null|Uint8Array|Y.Type)</code></b>
     <dd></dd>
     <b><code>delete(key:string)</code></b>
     <dd></dd>
@@ -339,12 +339,12 @@ or any of its children.
     <dd>Removes all elements from this YMap.</dd>
     <b><code>clone():Y.Map</code></b>
     <dd>Clone this type into a fresh Yjs type.</dd>
-    <b><code>toJSON():Object&lt;string, Object|boolean|Array|string|number|Uint8Array&gt;</code></b>
+    <b><code>toJSON():Object&lt;string, Object|boolean|Array|string|number|null|Uint8Array&gt;</code></b>
     <dd>
 Copies the <code>[key,value]</code> pairs of this YMap to a new Object.It
 transforms all child types to JSON using their <code>toJSON</code> method.
     </dd>
-    <b><code>forEach(function(value:object|boolean|Array|string|number|Uint8Array|Y.Type,
+    <b><code>forEach(function(value:object|boolean|Array|string|number|null|Uint8Array|Y.Type,
  key:string, map: Y.Map))</code></b>
     <dd>
       Execute the provided function once for every key-value pair.
