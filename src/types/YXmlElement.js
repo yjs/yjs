@@ -96,6 +96,7 @@ export class YXmlElement extends YXmlFragment {
    * @public
    */
   toString () {
+    const voidElements = ["area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"]
     const attrs = this.getAttributes()
     const stringBuilder = []
     const keys = []
@@ -110,6 +111,9 @@ export class YXmlElement extends YXmlFragment {
     }
     const nodeName = this.nodeName.toLocaleLowerCase()
     const attrsString = stringBuilder.length > 0 ? ' ' + stringBuilder.join(' ') : ''
+    if(voidElements.includes(nodeName)) {
+      return `<${nodeName}${attrsString} />`
+    }
     return `<${nodeName}${attrsString}>${super.toString()}</${nodeName}>`
   }
 
