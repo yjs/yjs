@@ -352,7 +352,13 @@ const cleanupTransactions = (transactionCleanups, i) => {
       }
       const { subdocsAdded, subdocsLoaded, subdocsRemoved } = transaction
       if (subdocsAdded.size > 0 || subdocsRemoved.size > 0 || subdocsLoaded.size > 0) {
-        subdocsAdded.forEach(subdoc => doc.subdocs.add(subdoc))
+        subdocsAdded.forEach(subdoc => {
+          subdoc.clientID = doc.clientID
+          if (subdoc.collectionid == null) {
+            subdoc.collectionid = doc.collectionid
+          }
+          doc.subdocs.add(subdoc)
+        })
         subdocsRemoved.forEach(subdoc => doc.subdocs.delete(subdoc))
         doc.emit('subdocs', [{ loaded: subdocsLoaded, added: subdocsAdded, removed: subdocsRemoved }])
         subdocsRemoved.forEach(subdoc => subdoc.destroy())

@@ -25,6 +25,7 @@ export const generateNewClientId = random.uint32
  * @property {boolean} [DocOpts.gc=true] Disable garbage collection (default: gc=true)
  * @property {function(Item):boolean} [DocOpts.gcFilter] Will be called before an Item is garbage collected. Return false to keep the Item.
  * @property {string} [DocOpts.guid] Define a globally unique identifier for this document
+ * @property {string | null} [DocOpts.collectionid] Associate this document with a collection. This only plays a role if your provider has a concept of collection.
  * @property {any} [DocOpts.meta] Any kind of meta information you want to associate with this document. If this is a subdocument, remote peers will store the meta information as well.
  * @property {boolean} [DocOpts.autoLoad] If a subdocument, automatically load document. If this is a subdocument, remote peers will load the document as well automatically.
  */
@@ -37,12 +38,13 @@ export class Doc extends Observable {
   /**
    * @param {DocOpts} [opts] configuration
    */
-  constructor ({ guid = random.uuidv4(), gc = true, gcFilter = () => true, meta = null, autoLoad = false } = {}) {
+  constructor ({ guid = random.uuidv4(), collectionid = null, gc = true, gcFilter = () => true, meta = null, autoLoad = false } = {}) {
     super()
     this.gc = gc
     this.gcFilter = gcFilter
     this.clientID = generateNewClientId()
     this.guid = guid
+    this.collectionid = collectionid
     /**
      * @type {Map<string, AbstractType<YEvent>>}
      */
