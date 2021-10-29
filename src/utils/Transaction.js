@@ -350,11 +350,13 @@ const cleanupTransactions = (transactionCleanups, i) => {
           doc.emit('updateV2', [encoder.toUint8Array(), transaction.origin, doc, transaction])
         }
       }
-      transaction.subdocsAdded.forEach(subdoc => doc.subdocs.add(subdoc))
-      transaction.subdocsRemoved.forEach(subdoc => doc.subdocs.delete(subdoc))
-
-      doc.emit('subdocs', [{ loaded: transaction.subdocsLoaded, added: transaction.subdocsAdded, removed: transaction.subdocsRemoved }])
-      transaction.subdocsRemoved.forEach(subdoc => subdoc.destroy())
+      const { subdocsAdded, subdocsLoaded, subdocsRemoved } = transaction
+      if (subdocsAdded.size > 0 || subdocsRemoved.size > 0 || subdocsLoaded.size > 0) {
+        subdocsAdded.forEach(subdoc => doc.subdocs.add(subdoc))
+        subdocsRemoved.forEach(subdoc => doc.subdocs.delete(subdoc))
+        doc.emit('subdocs', [{ loaded: subdocsLoaded, added: subdocsAdded, removed: subdocsRemoved }])
+        subdocsRemoved.forEach(subdoc => subdoc.destroy())
+      }
 
       if (transactionCleanups.length <= i + 1) {
         doc._transactionCleanups = []
