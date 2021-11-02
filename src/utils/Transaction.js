@@ -360,7 +360,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
           doc.subdocs.add(subdoc)
         })
         subdocsRemoved.forEach(subdoc => doc.subdocs.delete(subdoc))
-        doc.emit('subdocs', [{ loaded: subdocsLoaded, added: subdocsAdded, removed: subdocsRemoved }, doc])
+        doc.emit('subdocs', [{ loaded: subdocsLoaded, added: subdocsAdded, removed: subdocsRemoved }, doc, transaction])
         subdocsRemoved.forEach(subdoc => subdoc.destroy())
       }
 
