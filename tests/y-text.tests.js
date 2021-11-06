@@ -289,6 +289,41 @@ export const testFormattingRemovedInMidText = tc => {
 }
 
 /**
+ * Reported in https://github.com/yjs/yjs/issues/344
+ *
+ * @param {t.TestCase} tc
+ */
+export const testFormattingDeltaUnnecessaryAttributeChange = tc => {
+  const { text0, text1, testConnector } = init(tc, { users: 2 })
+  text0.insert(0, '\n', {
+    PARAGRAPH_STYLES: 'normal',
+    LIST_STYLES: 'bullet'
+  })
+  text0.insert(1, 'abc', {
+    PARAGRAPH_STYLES: 'normal'
+  })
+  testConnector.flushAllMessages()
+  /**
+   * @type {Array<any>}
+   */
+  const deltas = []
+  text0.observe(event => {
+    deltas.push(event.delta)
+  })
+  text1.observe(event => {
+    deltas.push(event.delta)
+  })
+  text1.format(0, 1, { LIST_STYLES: 'number' })
+  testConnector.flushAllMessages()
+  const filteredDeltas = deltas.filter(d => d.length > 0)
+  t.assert(filteredDeltas.length === 2)
+  t.compare(filteredDeltas[0], [
+    { retain: 1, attributes: { LIST_STYLES: 'number' } }
+  ])
+  t.compare(filteredDeltas[0], filteredDeltas[1])
+}
+
+/**
  * @param {t.TestCase} tc
  */
 export const testInsertAndDeleteAtRandomPositions = tc => {

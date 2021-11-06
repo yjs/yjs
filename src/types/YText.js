@@ -706,9 +706,9 @@ export class YTextEvent extends YEvent {
                       addOp()
                     }
                     if (value === null) {
-                      attributes[key] = value
-                    } else {
                       delete attributes[key]
+                    } else {
+                      attributes[key] = value
                     }
                   } else {
                     item.delete(transaction)
