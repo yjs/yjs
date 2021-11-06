@@ -5,6 +5,7 @@
   "main": "./dist/yjs.cjs",
   "module": "./dist/yjs.mjs",
   "types": "./dist/src/index.d.ts",
+  "type": "module",
   "sideEffects": false,
   "funding": {
     "type": "GitHub Sponsors ❤",
@@ -31,6 +32,7 @@
     },
     "./src/index.js": "./src/index.js",
     "./tests/testHelper.js": "./tests/testHelper.js",
+    "./testHelper": "./dist/testHelper.mjs",
     "./package.json": "./package.json"
   },
   "files": [

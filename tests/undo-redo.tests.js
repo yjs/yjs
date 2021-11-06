@@ -1,9 +1,5 @@
 import { init, compare, applyRandomTests, Doc } from './testHelper.js' // eslint-disable-line
 
-import {
-  UndoManager
-} from '../src/internals.js'
-
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
 
@@ -12,7 +8,7 @@ import * as t from 'lib0/testing'
  */
 export const testUndoText = tc => {
   const { testConnector, text0, text1 } = init(tc, { users: 3 })
-  const undoManager = new UndoManager(text0)
+  const undoManager = new Y.UndoManager(text0)
 
   // items that are added & deleted in the same transaction won't be undo
   text0.insert(0, 'test')
@@ -81,7 +77,7 @@ export const testDoubleUndo = tc => {
 export const testUndoMap = tc => {
   const { testConnector, map0, map1 } = init(tc, { users: 2 })
   map0.set('a', 0)
-  const undoManager = new UndoManager(map0)
+  const undoManager = new Y.UndoManager(map0)
   map0.set('a', 1)
   undoManager.undo()
   t.assert(map0.get('a') === 0)
@@ -120,7 +116,7 @@ export const testUndoMap = tc => {
  */
 export const testUndoArray = tc => {
   const { testConnector, array0, array1 } = init(tc, { users: 3 })
-  const undoManager = new UndoManager(array0)
+  const undoManager = new Y.UndoManager(array0)
   array0.insert(0, [1, 2, 3])
   array1.insert(0, [4, 5, 6])
   testConnector.syncAll()
@@ -171,7 +167,7 @@ export const testUndoArray = tc => {
  */
 export const testUndoXml = tc => {
   const { xml0 } = init(tc, { users: 3 })
-  const undoManager = new UndoManager(xml0)
+  const undoManager = new Y.UndoManager(xml0)
   const child = new Y.XmlElement('p')
   xml0.insert(0, [child])
   const textchild = new Y.XmlText('content')
@@ -196,7 +192,7 @@ export const testUndoXml = tc => {
  */
 export const testUndoEvents = tc => {
   const { text0 } = init(tc, { users: 3 })
-  const undoManager = new UndoManager(text0)
+  const undoManager = new Y.UndoManager(text0)
   let counter = 0
   let receivedMetadata = -1
   undoManager.on('stack-item-added', /** @param {any} event */ event => {
@@ -222,7 +218,7 @@ export const testUndoEvents = tc => {
 export const testTrackClass = tc => {
   const { users, text0 } = init(tc, { users: 3 })
   // only track origins that are numbers
-  const undoManager = new UndoManager(text0, { trackedOrigins: new Set([Number]) })
+  const undoManager = new Y.UndoManager(text0, { trackedOrigins: new Set([Number]) })
   users[0].transact(() => {
     text0.insert(0, 'abc')
   }, 42)
@@ -240,8 +236,8 @@ export const testTypeScope = tc => {
   const text0 = new Y.Text()
   const text1 = new Y.Text()
   array0.insert(0, [text0, text1])
-  const undoManager = new UndoManager(text0)
-  const undoManagerBoth = new UndoManager([text0, text1])
+  const undoManager = new Y.UndoManager(text0)
+  const undoManagerBoth = new Y.UndoManager([text0, text1])
   text1.insert(0, 'abc')
   t.assert(undoManager.undoStack.length === 0)
   t.assert(undoManagerBoth.undoStack.length === 1)
@@ -260,7 +256,7 @@ export const testUndoDeleteFilter = tc => {
    * @type {Array<Y.Map<any>>}
    */
   const array0 = /** @type {any} */ (init(tc, { users: 3 }).array0)
-  const undoManager = new UndoManager(array0, { deleteFilter: item => !(item instanceof Y.Item) || (item.content instanceof Y.ContentType && item.content.type._map.size === 0) })
+  const undoManager = new Y.UndoManager(array0, { deleteFilter: item => !(item instanceof Y.Item) || (item.content instanceof Y.ContentType && item.content.type._map.size === 0) })
   const map0 = new Y.Map()
   map0.set('hi', 1)
   const map1 = new Y.Map()

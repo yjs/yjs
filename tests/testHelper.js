@@ -3,10 +3,10 @@ import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
-import * as syncProtocol from 'y-protocols/sync.js'
+import * as syncProtocol from 'y-protocols/sync'
 import * as object from 'lib0/object'
-import * as Y from '../src/internals.js'
-export * from '../src/internals.js'
+import * as Y from '../src/index.js'
+export * from '../src/index.js'
 
 if (typeof window !== 'undefined') {
   // @ts-ignore
@@ -279,7 +279,7 @@ export class TestConnector {
  * @param {t.TestCase} tc
  * @param {{users?:number}} conf
  * @param {InitTestObjectCallback<T>} [initTestObject]
- * @return {{testObjects:Array<any>,testConnector:TestConnector,users:Array<TestYInstance>,array0:Y.YArray<any>,array1:Y.YArray<any>,array2:Y.YArray<any>,map0:Y.YMap<any>,map1:Y.YMap<any>,map2:Y.YMap<any>,map3:Y.YMap<any>,text0:Y.YText,text1:Y.YText,text2:Y.YText,xml0:Y.YXmlElement,xml1:Y.YXmlElement,xml2:Y.YXmlElement}}
+ * @return {{testObjects:Array<any>,testConnector:TestConnector,users:Array<TestYInstance>,array0:Y.Array<any>,array1:Y.Array<any>,array2:Y.Array<any>,map0:Y.Map<any>,map1:Y.Map<any>,map2:Y.Map<any>,map3:Y.Map<any>,text0:Y.Text,text1:Y.Text,text2:Y.Text,xml0:Y.XmlElement,xml1:Y.XmlElement,xml2:Y.XmlElement}}
  */
 export const init = (tc, { users = 5 } = {}, initTestObject) => {
   /**
@@ -304,7 +304,7 @@ export const init = (tc, { users = 5 } = {}, initTestObject) => {
     result.users.push(y)
     result['array' + i] = y.getArray('array')
     result['map' + i] = y.getMap('map')
-    result['xml' + i] = y.get('xml', Y.YXmlElement)
+    result['xml' + i] = y.get('xml', Y.XmlElement)
     result['text' + i] = y.getText('text')
   }
   testConnector.syncAll()
@@ -335,7 +335,7 @@ export const compare = users => {
   users.push(.../** @type {any} */(mergedDocs))
   const userArrayValues = users.map(u => u.getArray('array').toJSON())
   const userMapValues = users.map(u => u.getMap('map').toJSON())
-  const userXmlValues = users.map(u => u.get('xml', Y.YXmlElement).toString())
+  const userXmlValues = users.map(u => u.get('xml', Y.XmlElement).toString())
   const userTextValues = users.map(u => u.getText('text').toDelta())
   for (const u of users) {
     t.assert(u.store.pendingDs === null)
@@ -370,7 +370,7 @@ export const compare = users => {
       }
       return true
     })
-    t.compare(Y.getStateVector(users[i].store), Y.getStateVector(users[i + 1].store))
+    t.compare(Y.encodeStateVector(users[i]), Y.encodeStateVector(users[i + 1]))
     compareDS(Y.createDeleteSetFromStructStore(users[i].store), Y.createDeleteSetFromStructStore(users[i + 1].store))
     compareStructStores(users[i].store, users[i + 1].store)
   }
@@ -385,8 +385,8 @@ export const compare = users => {
 export const compareItemIDs = (a, b) => a === b || (a !== null && b != null && Y.compareIDs(a.id, b.id))
 
 /**
- * @param {Y.StructStore} ss1
- * @param {Y.StructStore} ss2
+ * @param {import('../src/internals').StructStore} ss1
+ * @param {import('../src/internals').StructStore} ss2
  */
 export const compareStructStores = (ss1, ss2) => {
   t.assert(ss1.clients.size === ss2.clients.size)
@@ -428,13 +428,13 @@ export const compareStructStores = (ss1, ss2) => {
 }
 
 /**
- * @param {Y.DeleteSet} ds1
- * @param {Y.DeleteSet} ds2
+ * @param {import('../src/internals').DeleteSet} ds1
+ * @param {import('../src/internals').DeleteSet} ds2
  */
 export const compareDS = (ds1, ds2) => {
   t.assert(ds1.clients.size === ds2.clients.size)
   ds1.clients.forEach((deleteItems1, client) => {
-    const deleteItems2 = /** @type {Array<Y.DeleteItem>} */ (ds2.clients.get(client))
+    const deleteItems2 = /** @type {Array<import('../src/internals').DeleteItem>} */ (ds2.clients.get(client))
     t.assert(deleteItems2 !== undefined && deleteItems1.length === deleteItems2.length)
     for (let i = 0; i < deleteItems1.length; i++) {
       const di1 = deleteItems1[i]

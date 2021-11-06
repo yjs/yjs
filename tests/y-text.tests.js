@@ -157,7 +157,7 @@ export const testGetDeltaWithEmbeds = tc => {
 export const testTypesAsEmbed = tc => {
   const { text0, text1, testConnector } = init(tc, { users: 2 })
   text0.applyDelta([{
-    insert: new Y.YMap([['key', 'val']])
+    insert: new Y.Map([['key', 'val']])
   }])
   t.compare(text0.toDelta()[0].insert.toJSON(), { key: 'val' })
   let firedEvent = false
@@ -714,7 +714,7 @@ const qChanges = [
     if (prng.bool(gen)) {
       ytext.insertEmbed(insertPos, { image: 'https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png' })
     } else {
-      ytext.insertEmbed(insertPos, new Y.YMap([[prng.word(gen), prng.word(gen)]]))
+      ytext.insertEmbed(insertPos, new Y.Map([[prng.word(gen), prng.word(gen)]]))
     }
   },
   /**

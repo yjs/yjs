@@ -601,7 +601,7 @@ export const decodeStateVector = decodedState => readStateVector(new DSDecoderV1
  */
 export const writeStateVector = (encoder, sv) => {
   encoding.writeVarUint(encoder.restEncoder, sv.size)
-  sv.forEach((clock, client) => {
+  Array.from(sv.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, clock]) => {
     encoding.writeVarUint(encoder.restEncoder, client) // @todo use a special client decoder that is based on mapping
     encoding.writeVarUint(encoder.restEncoder, clock)
   })

@@ -1,9 +1,9 @@
 
-import * as Y from '../src/internals'
+import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
 
 /**
- * @param {Y.YText} ytext
+ * @param {Y.Text} ytext
  */
 const checkRelativePositions = ytext => {
   // test if all positions are encoded and restored correctly

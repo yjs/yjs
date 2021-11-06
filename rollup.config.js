@@ -61,6 +61,23 @@ export default [{
   },
   external: id => /^lib0\//.test(id)
 }, {
+  input: './tests/testHelper.js',
+  output: {
+    name: 'Y',
+    file: 'dist/testHelper.mjs',
+    format: 'esm',
+    sourcemap: true
+  },
+  external: id => /^lib0\//.test(id) || id === 'yjs',
+  plugins: [{
+    resolveId (importee) {
+      if (importee === '../src/index.js') {
+        return 'yjs'
+      }
+      return null
+    }
+  }]
+}, {
   input: './tests/index.js',
   output: {
     name: 'test',
