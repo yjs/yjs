@@ -443,7 +443,7 @@ export class ListPosition {
       this.rel = 0
     }
     while (item && !this.reachedEnd && (len > 0 || (len === 0 && (!item.countable || item.deleted)))) {
-      if (item.countable && !item.deleted && item.movedBy === this.currMove) {
+      if (item.countable && !item.deleted && item.moved === this.currMove) {
         len -= item.length
         if (len <= 0) {
           this.rel = -len

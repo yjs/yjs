@@ -282,14 +282,18 @@ export class Item extends AbstractStruct {
      */
     this.parentSub = parentSub
     /**
-     * If this type is deleted: If this type's effect is reundone this type refers to the type-id that undid
+     * If this type's effect is reundone this type refers to the type-id that undid
      * this operation.
      *
-     * If this item is not deleted: This property is reused by the moved prop. In this case this property refers to an Item.
-     *
-     * @type {ID | Item | null}
+     * @type {ID | null}
      */
-    this._ref = null
+    this.redone = null
+    /**
+     * This property is reused by the moved prop. In this case this property refers to an Item.
+     *
+     * @type {Item | null}
+     */
+    this.moved = null
     /**
      * @type {AbstractContent}
      */
@@ -299,55 +303,9 @@ export class Item extends AbstractStruct {
      * bit2: countable
      * bit3: deleted
      * bit4: mark - mark node as fast-search-marker
-     * bit5: moved - whether this item has been moved. The moved item is then referred to on the "redone" prop.
      * @type {number} byte
      */
     this.info = this.content.isCountable() ? binary.BIT2 : 0
-  }
-
-  /**
-   * If this type's effect is reundone this type refers to the type-id that undid
-   * this operation.
-   *
-   * @return {ID | null}
-   */
-  get redone () {
-    return /** @type {ID | null} */ (this._ref)
-  }
-
-  /**
-   * @param {ID | null} id
-   */
-  set redone (id) {
-    this._ref = id
-  }
-
-  /**
-   * If this item has been moved, the moved property will referr to the item that moved this content.
-   *
-   * @param {Item | null} item
-   */
-  set movedBy (item) {
-    this._ref = item
-    if (item != null) {
-      this.info |= binary.BIT5
-    } else if (this.moved) {
-      this.info ^= binary.BIT5
-    }
-  }
-
-  /**
-   * @return {Item | null}
-   */
-  get movedBy () {
-    return this.moved ? /** @type {Item} */ (this._ref) : null
-  }
-
-  /**
-   * @return {boolean}
-   */
-  get moved () {
-    return (this.info & binary.BIT5) > 0
   }
 
   /**
@@ -617,8 +575,9 @@ export class Item extends AbstractStruct {
       this.id.client === right.id.client &&
       this.id.clock + this.length === right.id.clock &&
       this.deleted === right.deleted &&
-      this._ref === right._ref &&
-      (!this.deleted || this.redone === null) &&
+      this.redone === null &&
+      right.redone === null &&
+      this.moved === right.moved &&
       this.content.constructor === right.content.constructor &&
       this.content.mergeWith(right.content)
     ) {
