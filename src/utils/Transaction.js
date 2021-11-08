@@ -377,9 +377,12 @@ const cleanupTransactions = (transactionCleanups, i) => {
 /**
  * Implements the functionality of `y.transact(()=>{..})`
  *
+ * @template T
+ *
  * @param {Doc} doc
- * @param {function(Transaction):void} f
+ * @param {function(Transaction):T} f
  * @param {any} [origin=true]
+ * @return {T}
  *
  * @function
  */
@@ -395,8 +398,9 @@ export const transact = (doc, f, origin = null, local = true) => {
     }
     doc.emit('beforeTransaction', [doc._transaction, doc])
   }
+  let res
   try {
-    f(doc._transaction)
+    res = f(doc._transaction)
   } finally {
     if (initialCall && transactionCleanups[0] === doc._transaction) {
       // The first transaction ended, now process observer calls.
@@ -410,4 +414,5 @@ export const transact = (doc, f, origin = null, local = true) => {
       cleanupTransactions(transactionCleanups, 0)
     }
   }
+  return res
 }

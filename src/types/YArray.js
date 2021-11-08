@@ -6,7 +6,6 @@ import {
   YEvent,
   AbstractType,
   typeListGet,
-  typeListToArray,
   typeListForEach,
   typeListCreateIterator,
   typeListInsertGenerics,
@@ -15,6 +14,7 @@ import {
   YArrayRefID,
   callTypeObservers,
   transact,
+  ListPosition,
   ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 import { typeListSlice } from './AbstractType.js'
@@ -188,7 +188,9 @@ export class YArray extends AbstractType {
    * @return {Array<T>}
    */
   toArray () {
-    return typeListToArray(this)
+    return transact(/** @type {Doc} */ (this.doc), tr =>
+      new ListPosition(this, tr).slice(this.length)
+    )
   }
 
   /**

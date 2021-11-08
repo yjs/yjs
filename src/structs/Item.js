@@ -21,6 +21,7 @@ import {
   createID,
   readContentFormat,
   readContentType,
+  readContentMove,
   addChangedTypeToTransaction,
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction // eslint-disable-line
 } from '../internals.js'
@@ -281,11 +282,14 @@ export class Item extends AbstractStruct {
      */
     this.parentSub = parentSub
     /**
-     * If this type's effect is reundone this type refers to the type that undid
+     * If this type is deleted: If this type's effect is reundone this type refers to the type-id that undid
      * this operation.
-     * @type {ID | null}
+     *
+     * If this item is not deleted: This property is reused by the moved prop. In this case this property refers to an Item.
+     *
+     * @type {ID | Item | null}
      */
-    this.redone = null
+    this._ref = null
     /**
      * @type {AbstractContent}
      */
@@ -295,9 +299,55 @@ export class Item extends AbstractStruct {
      * bit2: countable
      * bit3: deleted
      * bit4: mark - mark node as fast-search-marker
+     * bit5: moved - whether this item has been moved. The moved item is then referred to on the "redone" prop.
      * @type {number} byte
      */
     this.info = this.content.isCountable() ? binary.BIT2 : 0
+  }
+
+  /**
+   * If this type's effect is reundone this type refers to the type-id that undid
+   * this operation.
+   *
+   * @return {ID | null}
+   */
+  get redone () {
+    return /** @type {ID | null} */ (this._ref)
+  }
+
+  /**
+   * @param {ID | null} id
+   */
+  set redone (id) {
+    this._ref = id
+  }
+
+  /**
+   * If this item has been moved, the moved property will referr to the item that moved this content.
+   *
+   * @param {Item | null} item
+   */
+  set movedBy (item) {
+    this._ref = item
+    if (item != null) {
+      this.info |= binary.BIT5
+    } else if (this.moved) {
+      this.info ^= binary.BIT5
+    }
+  }
+
+  /**
+   * @return {Item | null}
+   */
+  get movedBy () {
+    return this.moved ? /** @type {Item} */ (this._ref) : null
+  }
+
+  /**
+   * @return {boolean}
+   */
+  get moved () {
+    return (this.info & binary.BIT5) > 0
   }
 
   /**
@@ -371,7 +421,7 @@ export class Item extends AbstractStruct {
     // We have all missing ids, now find the items
 
     if (this.origin) {
-      this.left = getItemCleanEnd(transaction, store, this.origin)
+      this.left = getItemCleanEnd(transaction, this.origin)
       this.origin = this.left.lastId
     }
     if (this.rightOrigin) {
@@ -409,7 +459,7 @@ export class Item extends AbstractStruct {
   integrate (transaction, offset) {
     if (offset > 0) {
       this.id.clock += offset
-      this.left = getItemCleanEnd(transaction, transaction.doc.store, createID(this.id.client, this.id.clock - 1))
+      this.left = getItemCleanEnd(transaction, createID(this.id.client, this.id.clock - 1))
       this.origin = this.left.lastId
       this.content = this.content.splice(offset)
       this.length -= offset
@@ -567,8 +617,8 @@ export class Item extends AbstractStruct {
       this.id.client === right.id.client &&
       this.id.clock + this.length === right.id.clock &&
       this.deleted === right.deleted &&
-      this.redone === null &&
-      right.redone === null &&
+      this._ref === right._ref &&
+      (!this.deleted || this.redone === null) &&
       this.content.constructor === right.content.constructor &&
       this.content.mergeWith(right.content)
     ) {
@@ -613,7 +663,7 @@ export class Item extends AbstractStruct {
       this.markDeleted()
       addToDeleteSet(transaction.deleteSet, this.id.client, this.id.clock, this.length)
       addChangedTypeToTransaction(transaction, parent, this.parentSub)
-      this.content.delete(transaction)
+      this.content.delete(transaction, this)
     }
   }
 
@@ -710,7 +760,8 @@ export const contentRefs = [
   readContentType, // 7
   readContentAny, // 8
   readContentDoc, // 9
-  () => { error.unexpectedCase() } // 10 - Skip is not ItemContent
+  () => { error.unexpectedCase() }, // 10 - Skip is not ItemContent
+  readContentMove // 11
 ]
 
 /**
@@ -777,8 +828,9 @@ export class AbstractContent {
 
   /**
    * @param {Transaction} transaction
+   * @param {Item} item
    */
-  delete (transaction) {
+  delete (transaction, item) {
     throw error.methodUnimplemented()
   }
 

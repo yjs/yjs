@@ -11,6 +11,8 @@ import {
   ContentAny,
   ContentBinary,
   getItemCleanStart,
+  ContentMove,
+  getMovedCoords,
   ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
 } from '../internals.js'
 
@@ -393,6 +395,131 @@ export class AbstractType {
    * @return {any}
    */
   toJSON () {}
+}
+
+export class ListPosition {
+  /**
+   * @param {AbstractType<any>} type
+   * @param {Transaction} tr
+   */
+  constructor (type, tr) {
+    this.type = type
+    /**
+     * Current index-position
+     */
+    this.index = 0
+    /**
+     * Relative position to the current item (if item.content.length > 1)
+     */
+    this.rel = 0
+    /**
+     * This refers to the current right item, unless reachedEnd is true. Then it refers to the left item.
+     */
+    this.item = type._start
+    this.reachedEnd = type._start === null
+    /**
+     * @type {Item | null}
+     */
+    this.currMove = null
+    /**
+     * @type {Item | null}
+     */
+    this.currMoveEnd = null
+    /**
+     * @type {Array<{ end: Item | null, move: Item }>}
+     */
+    this.movedStack = []
+    this.tr = tr
+  }
+
+  /**
+   * @param {number} len
+   */
+  forward (len) {
+    let item = this.item
+    this.index += len
+    if (this.rel) {
+      len += this.rel
+      this.rel = 0
+    }
+    while (item && !this.reachedEnd && (len > 0 || (len === 0 && (!item.countable || item.deleted)))) {
+      if (item.countable && !item.deleted && item.movedBy === this.currMove) {
+        len -= item.length
+        if (len <= 0) {
+          this.rel = -len
+          break
+        }
+      } else if (item.content.constructor === ContentMove) {
+        if (this.currMove) {
+          this.movedStack.push({ end: this.currMoveEnd, move: this.currMove })
+        }
+        const { start, end } = getMovedCoords(item.content, this.tr)
+        this.currMove = item
+        this.currMoveEnd = end
+        this.item = start
+        continue
+      }
+      if (item === this.currMoveEnd) {
+        this.item = this.currMove // we iterate to the right after the current condition
+        const { end, move } = this.movedStack.pop() || { end: null, move: null }
+        this.currMove = move
+        this.currMoveEnd = end
+      }
+      if (item.right) {
+        item = item.right
+      } else {
+        this.reachedEnd = true
+      }
+    }
+    this.index -= len
+    this.item = item
+  }
+
+  /**
+   * @param {number} len
+   */
+  slice (len) {
+    const result = []
+    while (len > 0 && !this.reachedEnd) {
+      while (this.item && this.item.countable && !this.reachedEnd && len > 0) {
+        if (!this.item.deleted) {
+          const content = this.item.content.getContent()
+          const slicedContent = content.length <= len || this.rel > 0 ? content : content.slice(this.rel, len)
+          len -= slicedContent.length
+          result.push(...slicedContent)
+          if (content.length !== slicedContent.length) {
+            if (this.rel + slicedContent.length === content.length) {
+              this.rel = 0
+            } else {
+              this.rel += slicedContent.length
+              continue // do not iterate to item.right
+            }
+          }
+        }
+        if (this.item.right) {
+          this.item = this.item.right
+        } else {
+          this.reachedEnd = true
+        }
+      }
+      if (this.item && !this.reachedEnd && len > 0) {
+        this.forward(0)
+      }
+    }
+    return result
+  }
+
+  [Symbol.iterator] () {
+    return this
+  }
+
+  next () {
+    const [value] = this.slice(1)
+    return {
+      done: value == null,
+      value: value
+    }
+  }
 }
 
 /**
