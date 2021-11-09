@@ -445,8 +445,8 @@ export class ListPosition {
     while (item && !this.reachedEnd && (len > 0 || (len === 0 && (!item.countable || item.deleted)))) {
       if (item.countable && !item.deleted && item.moved === this.currMove) {
         len -= item.length
-        if (len <= 0) {
-          this.rel = -len
+        if (len < 0) {
+          this.rel = item.length + len
           break
         }
       } else if (item.content.constructor === ContentMove) {
@@ -473,6 +473,10 @@ export class ListPosition {
     }
     this.index -= len
     this.item = item
+    if (len > 0) {
+      throw lengthExceeded
+    }
+    return this
   }
 
   /**
@@ -484,7 +488,7 @@ export class ListPosition {
       while (this.item && this.item.countable && !this.reachedEnd && len > 0) {
         if (!this.item.deleted) {
           const content = this.item.content.getContent()
-          const slicedContent = content.length <= len || this.rel > 0 ? content : content.slice(this.rel, len)
+          const slicedContent = content.length <= len && this.rel === 0 ? content : content.slice(this.rel, this.rel + len)
           len -= slicedContent.length
           result.push(...slicedContent)
           if (content.length !== slicedContent.length) {

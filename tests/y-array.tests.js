@@ -456,6 +456,8 @@ const getUniqueNumber = () => _uniqueNumber++
 
 /**
  * @type {Array<function(Doc,prng.PRNG,any):void>}
+ *
+ * @todo to replace content to a separate data structure so we know that insert & returns work as expected!!!
  */
 const arrayTransactions = [
   function insert (user, gen) {
