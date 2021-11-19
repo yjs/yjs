@@ -249,13 +249,8 @@ export class Doc extends Observable {
     if (item !== null) {
       this._item = null
       const content = /** @type {ContentDoc} */ (item.content)
-      if (item.deleted) {
-        // @ts-ignore
-        content.doc = null
-      } else {
-        content.doc = new Doc({ guid: this.guid, ...content.opts, shouldLoad: false })
-        content.doc._item = item
-      }
+      content.doc = new Doc({ guid: this.guid, ...content.opts, shouldLoad: false })
+      content.doc._item = item
       transact(/** @type {any} */ (item).parent.doc, transaction => {
         const doc = content.doc
         if (!item.deleted) {

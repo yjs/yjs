@@ -213,3 +213,18 @@ export const testSubdocLoadEdgeCasesAutoload = tc => {
   t.assert(lastEvent !== null && lastEvent.added.has(subdoc3))
   t.assert(lastEvent !== null && lastEvent.loaded.has(subdoc3))
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testSubdocsUndo = tc => {
+  const ydoc = new Y.Doc()
+  const elems = ydoc.getXmlFragment()
+  const undoManager = new Y.UndoManager(elems)
+  const subdoc = new Y.Doc()
+  // @ts-ignore
+  elems.insert(0, [subdoc])
+  undoManager.undo()
+  undoManager.redo()
+  t.assert(elems.length === 1)
+}

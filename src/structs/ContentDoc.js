@@ -6,6 +6,12 @@ import {
 import * as error from 'lib0/error'
 
 /**
+ * @param {string} guid
+ * @param {Object<string, any>} opts
+ */
+const createDocFromOpts = (guid, opts) => new Doc({ guid, ...opts, shouldLoad: opts.shouldLoad || opts.autoLoad || false })
+
+/**
  * @private
  */
 export class ContentDoc {
@@ -61,7 +67,7 @@ export class ContentDoc {
    * @return {ContentDoc}
    */
   copy () {
-    return new ContentDoc(this.doc)
+    return new ContentDoc(createDocFromOpts(this.doc.guid, this.opts))
   }
 
   /**
@@ -132,8 +138,4 @@ export class ContentDoc {
  * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @return {ContentDoc}
  */
-export const readContentDoc = decoder => {
-  const guid = decoder.readString()
-  const opts = decoder.readAny()
-  return new ContentDoc(new Doc({ guid, ...opts, shouldLoad: opts.shouldLoad || opts.autoLoad || false }))
-}
+export const readContentDoc = decoder => new ContentDoc(createDocFromOpts(decoder.readString(), decoder.readAny()))
