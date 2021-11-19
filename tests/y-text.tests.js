@@ -553,8 +553,6 @@ export const testSearchMarkerBug1 = tc => {
 }
 
 /**
- * Reported in https://github.com/yjs/yjs/pull/32
- *
  * @param {t.TestCase} tc
  */
 export const testFormattingBug = async tc => {
@@ -564,7 +562,6 @@ export const testFormattingBug = async tc => {
   text1.insert(0, '\n\n\n')
   text1.format(0, 3, { url: 'http://example.com' })
   ydoc1.getText().format(1, 1, { url: 'http://docs.yjs.dev' })
-  ydoc2.getText().format(1, 1, { url: 'http://docs.yjs.dev' })
   Y.applyUpdate(ydoc2, Y.encodeStateAsUpdate(ydoc1))
   const text2 = ydoc2.getText()
   const expectedResult = [
