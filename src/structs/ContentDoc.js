@@ -132,4 +132,8 @@ export class ContentDoc {
  * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @return {ContentDoc}
  */
-export const readContentDoc = decoder => new ContentDoc(new Doc({ guid: decoder.readString(), ...decoder.readAny() }))
+export const readContentDoc = decoder => {
+  const guid = decoder.readString()
+  const opts = decoder.readAny()
+  return new ContentDoc(new Doc({ guid, ...opts, shouldLoad: opts.shouldLoad || opts.autoLoad || false }))
+}

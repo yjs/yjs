@@ -28,6 +28,7 @@ export const generateNewClientId = random.uint32
  * @property {string | null} [DocOpts.collectionid] Associate this document with a collection. This only plays a role if your provider has a concept of collection.
  * @property {any} [DocOpts.meta] Any kind of meta information you want to associate with this document. If this is a subdocument, remote peers will store the meta information as well.
  * @property {boolean} [DocOpts.autoLoad] If a subdocument, automatically load document. If this is a subdocument, remote peers will load the document as well automatically.
+ * @property {boolean} [DocOpts.shouldLoad] Whether the document should be synced by the provider now. This is toggled to true when you call ydoc.load()
  */
 
 /**
@@ -38,7 +39,7 @@ export class Doc extends Observable {
   /**
    * @param {DocOpts} [opts] configuration
    */
-  constructor ({ guid = random.uuidv4(), collectionid = null, gc = true, gcFilter = () => true, meta = null, autoLoad = false } = {}) {
+  constructor ({ guid = random.uuidv4(), collectionid = null, gc = true, gcFilter = () => true, meta = null, autoLoad = false, shouldLoad = true } = {}) {
     super()
     this.gc = gc
     this.gcFilter = gcFilter
@@ -67,7 +68,7 @@ export class Doc extends Observable {
      * @type {Item?}
      */
     this._item = null
-    this.shouldLoad = autoLoad
+    this.shouldLoad = shouldLoad
     this.autoLoad = autoLoad
     this.meta = meta
   }
@@ -252,12 +253,13 @@ export class Doc extends Observable {
         // @ts-ignore
         content.doc = null
       } else {
-        content.doc = new Doc({ guid: this.guid, ...content.opts })
+        content.doc = new Doc({ guid: this.guid, ...content.opts, shouldLoad: false })
         content.doc._item = item
       }
       transact(/** @type {any} */ (item).parent.doc, transaction => {
+        const doc = content.doc
         if (!item.deleted) {
-          transaction.subdocsAdded.add(content.doc)
+          transaction.subdocsAdded.add(doc)
         }
         transaction.subdocsRemoved.add(this)
       }, null, true)
