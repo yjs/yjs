@@ -20,14 +20,14 @@ import {
   splitSnapshotAffectedStructs,
   iterateDeletedStructs,
   iterateStructs,
-  findMarker,
   typeMapDelete,
   typeMapSet,
   typeMapGet,
   typeMapGetAll,
   updateMarkerChanges,
   ContentType,
-  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
+  useSearchMarker,
+  ListIterator, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as object from 'lib0/object'
@@ -125,10 +125,11 @@ const findNextPosition = (transaction, pos, count) => {
  */
 const findPosition = (transaction, parent, index) => {
   const currentAttributes = new Map()
-  const marker = findMarker(parent, index)
-  if (marker) {
-    const pos = new ItemTextListPosition(marker.p.left, marker.p, marker.index, currentAttributes)
-    return findNextPosition(transaction, pos, index - marker.index)
+  if (parent._searchMarker) {
+    return useSearchMarker(transaction, parent, index, listIter => {
+      const pos = new ItemTextListPosition(listIter.left, listIter.right, listIter.index, currentAttributes)
+      return findNextPosition(transaction, pos, index - listIter.index)
+    })
   } else {
     const pos = new ItemTextListPosition(null, parent._start, 0, currentAttributes)
     return findNextPosition(transaction, pos, index)
@@ -264,7 +265,7 @@ const insertText = (transaction, parent, currPos, text, attributes) => {
   const content = text.constructor === String ? new ContentString(/** @type {string} */ (text)) : (text instanceof AbstractType ? new ContentType(text) : new ContentEmbed(text))
   let { left, right, index } = currPos
   if (parent._searchMarker) {
-    updateMarkerChanges(parent._searchMarker, currPos.index, content.getLength())
+    updateMarkerChanges(transaction, parent._searchMarker, currPos.index, content.getLength())
   }
   right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, content)
   right.integrate(transaction, 0)
@@ -469,7 +470,7 @@ const deleteText = (transaction, currPos, length) => {
   }
   const parent = /** @type {AbstractType<any>} */ (/** @type {Item} */ (currPos.left || currPos.right).parent)
   if (parent._searchMarker) {
-    updateMarkerChanges(parent._searchMarker, currPos.index, -startLength + length)
+    updateMarkerChanges(transaction, parent._searchMarker, currPos.index, -startLength + length)
   }
   return currPos
 }
@@ -764,7 +765,7 @@ export class YText extends AbstractType {
      */
     this._pending = string !== undefined ? [() => this.insert(0, string)] : []
     /**
-     * @type {Array<ArraySearchMarker>}
+     * @type {Array<ListIterator>}
      */
     this._searchMarker = []
   }

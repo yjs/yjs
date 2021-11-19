@@ -10,9 +10,7 @@ import {
   createID,
   ContentAny,
   ContentBinary,
-  getItemCleanStart,
-  ContentMove,
-  getMovedCoords,
+  ListIterator,
   ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
 } from '../internals.js'
 
@@ -24,149 +22,53 @@ import * as math from 'lib0/math'
 const maxSearchMarker = 80
 
 /**
- * A unique timestamp that identifies each marker.
- *
- * Time is relative,.. this is more like an ever-increasing clock.
- *
- * @type {number}
- */
-let globalSearchMarkerTimestamp = 0
-
-export class ArraySearchMarker {
-  /**
-   * @param {Item} p
-   * @param {number} index
-   */
-  constructor (p, index) {
-    p.marker = true
-    this.p = p
-    this.index = index
-    this.timestamp = globalSearchMarkerTimestamp++
-  }
-}
-
-/**
- * @param {ArraySearchMarker} marker
- */
-const refreshMarkerTimestamp = marker => { marker.timestamp = globalSearchMarkerTimestamp++ }
-
-/**
- * This is rather complex so this function is the only thing that should overwrite a marker
- *
- * @param {ArraySearchMarker} marker
- * @param {Item} p
- * @param {number} index
- */
-const overwriteMarker = (marker, p, index) => {
-  marker.p.marker = false
-  marker.p = p
-  p.marker = true
-  marker.index = index
-  marker.timestamp = globalSearchMarkerTimestamp++
-}
-
-/**
- * @param {Array<ArraySearchMarker>} searchMarker
- * @param {Item} p
- * @param {number} index
- */
-const markPosition = (searchMarker, p, index) => {
-  if (searchMarker.length >= maxSearchMarker) {
-    // override oldest marker (we don't want to create more objects)
-    const marker = searchMarker.reduce((a, b) => a.timestamp < b.timestamp ? a : b)
-    overwriteMarker(marker, p, index)
-    return marker
-  } else {
-    // create new marker
-    const pm = new ArraySearchMarker(p, index)
-    searchMarker.push(pm)
-    return pm
-  }
-}
-
-/**
  * Search marker help us to find positions in the associative array faster.
  *
  * They speed up the process of finding a position without much bookkeeping.
  *
  * A maximum of `maxSearchMarker` objects are created.
  *
- * This function always returns a refreshed marker (updated timestamp)
- *
+ * @template T
+ * @param {Transaction} tr
  * @param {AbstractType<any>} yarray
  * @param {number} index
+ * @param {function(ListIterator):T} f
  */
-export const findMarker = (yarray, index) => {
-  if (yarray._start === null || index === 0 || yarray._searchMarker === null) {
-    return null
+export const useSearchMarker = (tr, yarray, index, f) => {
+  const searchMarker = yarray._searchMarker
+  if (searchMarker === null || yarray._start === null || index < 30) {
+    return f(new ListIterator(yarray).forward(tr, index))
   }
-  const marker = yarray._searchMarker.length === 0 ? null : yarray._searchMarker.reduce((a, b) => math.abs(index - a.index) < math.abs(index - b.index) ? a : b)
-  let p = yarray._start
-  let pindex = 0
-  if (marker !== null) {
-    p = marker.p
-    pindex = marker.index
-    refreshMarkerTimestamp(marker) // we used it, we might need to use it again
+  if (searchMarker.length === 0) {
+    const sm = new ListIterator(yarray).forward(tr, index)
+    searchMarker.push(sm)
+    if (sm.nextItem) sm.nextItem.marker = true
+    return f(sm)
   }
-  // iterate to right if possible
-  while (p.right !== null && pindex < index) {
-    if (!p.deleted && p.countable) {
-      if (index < pindex + p.length) {
-        break
-      }
-      pindex += p.length
-    }
-    p = p.right
+  const sm = searchMarker.reduce(
+    (a, b, arrayIndex) => math.abs(index - a.index) < math.abs(index - b.index) ? a : b
+  )
+  const createFreshMarker = searchMarker.length < maxSearchMarker && math.abs(sm.index - index) > 30
+  const fsm = createFreshMarker ? sm.clone() : sm
+  const prevItem = /** @type {Item} */ (sm.nextItem)
+  if (createFreshMarker) {
+    searchMarker.push(fsm)
   }
-  // iterate to left if necessary (might be that pindex > index)
-  while (p.left !== null && pindex > index) {
-    p = p.left
-    if (!p.deleted && p.countable) {
-      pindex -= p.length
-    }
+  const result = f(fsm)
+  if (!createFreshMarker && fsm.nextItem !== prevItem) {
+    // reused old marker and we moved to a different position
+    prevItem.marker = false
   }
-  // we want to make sure that p can't be merged with left, because that would screw up everything
-  // in that cas just return what we have (it is most likely the best marker anyway)
-  // iterate to left until p can't be merged with left
-  while (p.left !== null && p.left.id.client === p.id.client && p.left.id.clock + p.left.length === p.id.clock) {
-    p = p.left
-    if (!p.deleted && p.countable) {
-      pindex -= p.length
+  const fsmItem = fsm.nextItem
+  if (fsmItem) {
+    if (fsmItem.marker) {
+      // already marked, forget current iterator
+      searchMarker.splice(searchMarker.findIndex(m => m === fsm), 1)
+    } else {
+      fsmItem.marker = true
     }
   }
-
-  // @todo remove!
-  // assure position
-  // {
-  //   let start = yarray._start
-  //   let pos = 0
-  //   while (start !== p) {
-  //     if (!start.deleted && start.countable) {
-  //       pos += start.length
-  //     }
-  //     start = /** @type {Item} */ (start.right)
-  //   }
-  //   if (pos !== pindex) {
-  //     debugger
-  //     throw new Error('Gotcha position fail!')
-  //   }
-  // }
-  // if (marker) {
-  //   if (window.lengthes == null) {
-  //     window.lengthes = []
-  //     window.getLengthes = () => window.lengthes.sort((a, b) => a - b)
-  //   }
-  //   window.lengthes.push(marker.index - pindex)
-  //   console.log('distance', marker.index - pindex, 'len', p && p.parent.length)
-  // }
-  if (marker !== null && math.abs(marker.index - pindex) < /** @type {YText|YArray<any>} */ (p.parent).length / maxSearchMarker) {
-    // adjust existing marker
-    overwriteMarker(marker, p, pindex)
-    return marker
-  } else {
-    // create new marker
-    return markPosition(yarray._searchMarker, p, pindex)
-  }
+  return result
 }
 
 /**
@@ -174,39 +76,22 @@ export const findMarker = (yarray, index) => {
  *
  * This should be called before doing a deletion!
  *
- * @param {Array<ArraySearchMarker>} searchMarker
+ * @param {Transaction} tr
+ * @param {Array<ListIterator>} searchMarker
  * @param {number} index
  * @param {number} len If insertion, len is positive. If deletion, len is negative.
  */
-export const updateMarkerChanges = (searchMarker, index, len) => {
+export const updateMarkerChanges = (tr, searchMarker, index, len) => {
   for (let i = searchMarker.length - 1; i >= 0; i--) {
-    const m = searchMarker[i]
-    if (len > 0) {
-      /**
-       * @type {Item|null}
-       */
-      let p = m.p
-      p.marker = false
-      // Ideally we just want to do a simple position comparison, but this will only work if
-      // search markers don't point to deleted items for formats.
-      // Iterate marker to prev undeleted countable position so we know what to do when updating a position
-      while (p && (p.deleted || !p.countable)) {
-        p = p.left
-        if (p && !p.deleted && p.countable) {
-          // adjust position. the loop should break now
-          m.index -= p.length
-        }
-      }
-      if (p === null || p.marker === true) {
-        // remove search marker if updated position is null or if position is already marked
-        searchMarker.splice(i, 1)
-        continue
-      }
-      m.p = p
-      p.marker = true
+    const marker = searchMarker[i]
+    if (len > 0 && index === marker.index) {
+      // inserting at a marked position deletes the marked position because we can't do a simple transformation
+      // (we don't know whether to insert directly before or directly after the position)
+      searchMarker.splice(i, 1)
+      continue
     }
-    if (index < m.index || (len > 0 && index === m.index)) { // a simple index <= m.index check would actually suffice
-      m.index = math.max(index, m.index + len)
+    if (index < marker.index) { // a simple index <= m.index check would actually suffice
+      marker.index = math.max(index, marker.index + len)
     }
   }
 }
@@ -284,7 +169,7 @@ export class AbstractType {
      */
     this._dEH = createEventHandler()
     /**
-     * @type {null | Array<ArraySearchMarker>}
+     * @type {null | Array<ListIterator>}
      */
     this._searchMarker = null
   }
@@ -395,135 +280,6 @@ export class AbstractType {
    * @return {any}
    */
   toJSON () {}
-}
-
-export class ListPosition {
-  /**
-   * @param {AbstractType<any>} type
-   * @param {Transaction} tr
-   */
-  constructor (type, tr) {
-    this.type = type
-    /**
-     * Current index-position
-     */
-    this.index = 0
-    /**
-     * Relative position to the current item (if item.content.length > 1)
-     */
-    this.rel = 0
-    /**
-     * This refers to the current right item, unless reachedEnd is true. Then it refers to the left item.
-     */
-    this.item = type._start
-    this.reachedEnd = type._start === null
-    /**
-     * @type {Item | null}
-     */
-    this.currMove = null
-    /**
-     * @type {Item | null}
-     */
-    this.currMoveEnd = null
-    /**
-     * @type {Array<{ end: Item | null, move: Item }>}
-     */
-    this.movedStack = []
-    this.tr = tr
-  }
-
-  /**
-   * @param {number} len
-   */
-  forward (len) {
-    let item = this.item
-    this.index += len
-    if (this.rel) {
-      len += this.rel
-      this.rel = 0
-    }
-    while (item && !this.reachedEnd && (len > 0 || (len === 0 && (!item.countable || item.deleted)))) {
-      if (item.countable && !item.deleted && item.moved === this.currMove) {
-        len -= item.length
-        if (len < 0) {
-          this.rel = item.length + len
-          break
-        }
-      } else if (item.content.constructor === ContentMove) {
-        if (this.currMove) {
-          this.movedStack.push({ end: this.currMoveEnd, move: this.currMove })
-        }
-        const { start, end } = getMovedCoords(item.content, this.tr)
-        this.currMove = item
-        this.currMoveEnd = end
-        this.item = start
-        continue
-      }
-      if (item === this.currMoveEnd) {
-        this.item = this.currMove // we iterate to the right after the current condition
-        const { end, move } = this.movedStack.pop() || { end: null, move: null }
-        this.currMove = move
-        this.currMoveEnd = end
-      }
-      if (item.right) {
-        item = item.right
-      } else {
-        this.reachedEnd = true
-      }
-    }
-    this.index -= len
-    this.item = item
-    if (len > 0) {
-      throw lengthExceeded
-    }
-    return this
-  }
-
-  /**
-   * @param {number} len
-   */
-  slice (len) {
-    const result = []
-    while (len > 0 && !this.reachedEnd) {
-      while (this.item && this.item.countable && !this.reachedEnd && len > 0) {
-        if (!this.item.deleted) {
-          const content = this.item.content.getContent()
-          const slicedContent = content.length <= len && this.rel === 0 ? content : content.slice(this.rel, this.rel + len)
-          len -= slicedContent.length
-          result.push(...slicedContent)
-          if (content.length !== slicedContent.length) {
-            if (this.rel + slicedContent.length === content.length) {
-              this.rel = 0
-            } else {
-              this.rel += slicedContent.length
-              continue // do not iterate to item.right
-            }
-          }
-        }
-        if (this.item.right) {
-          this.item = this.item.right
-        } else {
-          this.reachedEnd = true
-        }
-      }
-      if (this.item && !this.reachedEnd && len > 0) {
-        this.forward(0)
-      }
-    }
-    return result
-  }
-
-  [Symbol.iterator] () {
-    return this
-  }
-
-  next () {
-    const [value] = this.slice(1)
-    return {
-      done: value == null,
-      value: value
-    }
-  }
 }
 
 /**
@@ -726,31 +482,6 @@ export const typeListForEachSnapshot = (type, f, snapshot) => {
 }
 
 /**
- * @param {AbstractType<any>} type
- * @param {number} index
- * @return {any}
- *
- * @private
- * @function
- */
-export const typeListGet = (type, index) => {
-  const marker = findMarker(type, index)
-  let n = type._start
-  if (marker !== null) {
-    n = marker.p
-    index -= marker.index
-  }
-  for (; n !== null; n = n.right) {
-    if (!n.deleted && n.countable) {
-      if (index < n.length) {
-        return n.content.getContent()[index]
-      }
-      index -= n.length
-    }
-  }
-}
-
-/**
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {Item?} referenceItem
@@ -812,105 +543,6 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
     }
   })
   packJsonContent()
-}
-
-const lengthExceeded = error.create('Length exceeded!')
-
-/**
- * @param {Transaction} transaction
- * @param {AbstractType<any>} parent
- * @param {number} index
- * @param {Array<Object<string,any>|Array<any>|number|null|string|Uint8Array>} content
- *
- * @private
- * @function
- */
-export const typeListInsertGenerics = (transaction, parent, index, content) => {
-  if (index > parent._length) {
-    throw lengthExceeded
-  }
-  if (index === 0) {
-    if (parent._searchMarker) {
-      updateMarkerChanges(parent._searchMarker, index, content.length)
-    }
-    return typeListInsertGenericsAfter(transaction, parent, null, content)
-  }
-  const startIndex = index
-  const marker = findMarker(parent, index)
-  let n = parent._start
-  if (marker !== null) {
-    n = marker.p
-    index -= marker.index
-    // we need to iterate one to the left so that the algorithm works
-    if (index === 0) {
-      // @todo refactor this as it actually doesn't consider formats
-      n = n.prev // important! get the left undeleted item so that we can actually decrease index
-      index += (n && n.countable && !n.deleted) ? n.length : 0
-    }
-  }
-  for (; n !== null; n = n.right) {
-    if (!n.deleted && n.countable) {
-      if (index <= n.length) {
-        if (index < n.length) {
-          // insert in-between
-          getItemCleanStart(transaction, createID(n.id.client, n.id.clock + index))
-        }
-        break
-      }
-      index -= n.length
-    }
-  }
-  if (parent._searchMarker) {
-    updateMarkerChanges(parent._searchMarker, startIndex, content.length)
-  }
-  return typeListInsertGenericsAfter(transaction, parent, n, content)
-}
-
-/**
- * @param {Transaction} transaction
- * @param {AbstractType<any>} parent
- * @param {number} index
- * @param {number} length
- *
- * @private
- * @function
- */
-export const typeListDelete = (transaction, parent, index, length) => {
-  if (length === 0) { return }
-  const startIndex = index
-  const startLength = length
-  const marker = findMarker(parent, index)
-  let n = parent._start
-  if (marker !== null) {
-    n = marker.p
-    index -= marker.index
-  }
-  // compute the first item to be deleted
-  for (; n !== null && index > 0; n = n.right) {
-    if (!n.deleted && n.countable) {
-      if (index < n.length) {
-        getItemCleanStart(transaction, createID(n.id.client, n.id.clock + index))
-      }
-      index -= n.length
-    }
-  }
-  // delete all items until done
-  while (length > 0 && n !== null) {
-    if (!n.deleted) {
-      if (length < n.length) {
-        getItemCleanStart(transaction, createID(n.id.client, n.id.clock + length))
-      }
-      n.delete(transaction)
-      length -= n.length
-    }
-    n = n.right
-  }
-  if (length > 0) {
-    throw lengthExceeded
-  }
-  if (parent._searchMarker) {
-    updateMarkerChanges(parent._searchMarker, startIndex, -startLength + length /* in case we remove the above exception */)
-  }
 }
 
 /**

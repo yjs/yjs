@@ -522,7 +522,7 @@ const arrayTransactions = [
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests6 = tc => {
-  applyRandomTests(tc, arrayTransactions, 6)
+  applyRandomTests(tc, arrayTransactions, 10)
 }
 
 /**

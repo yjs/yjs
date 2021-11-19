@@ -581,18 +581,17 @@ export class Item extends AbstractStruct {
       this.content.constructor === right.content.constructor &&
       this.content.mergeWith(right.content)
     ) {
-      const searchMarker = /** @type {AbstractType<any>} */ (this.parent)._searchMarker
-      if (searchMarker) {
-        searchMarker.forEach(marker => {
-          if (marker.p === right) {
-            // right is going to be "forgotten" so we need to update the marker
-            marker.p = this
-            // adjust marker index
-            if (!this.deleted && this.countable) {
-              marker.index -= this.length
+      if (right.marker) {
+        // Right will be "forgotten", so we delete all
+        // search markers that reference right.
+        const searchMarker = /** @type {AbstractType<any>} */ (this.parent)._searchMarker
+        if (searchMarker) {
+          for (let i = searchMarker.length - 1; i >= 0; i--) {
+            if (searchMarker[i].nextItem === right) {
+              searchMarker.splice(i, 1)
             }
           }
-        })
+        }
       }
       if (right.keep) {
         this.keep = true

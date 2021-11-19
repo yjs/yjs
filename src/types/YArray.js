@@ -2,19 +2,15 @@
  * @module YArray
  */
 
+import { useSearchMarker } from 'tests/testHelper.js'
 import {
   YEvent,
   AbstractType,
-  typeListForEach,
-  typeListCreateIterator,
-  typeListInsertGenerics,
-  typeListDelete,
-  typeListMap,
   YArrayRefID,
   callTypeObservers,
   transact,
-  ListPosition,
-  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
+  ListIterator,
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 
 /**
@@ -47,7 +43,7 @@ export class YArray extends AbstractType {
      */
     this._prelimContent = []
     /**
-     * @type {Array<ArraySearchMarker>}
+     * @type {Array<ListIterator>}
      */
     this._searchMarker = []
   }
@@ -129,7 +125,9 @@ export class YArray extends AbstractType {
   insert (index, content) {
     if (this.doc !== null) {
       transact(this.doc, transaction => {
-        typeListInsertGenerics(transaction, this, index, content)
+        useSearchMarker(transaction, this, index, walker =>
+          walker.insertArrayValue(transaction, content)
+        )
       })
     } else {
       /** @type {Array<any>} */ (this._prelimContent).splice(index, 0, ...content)
@@ -163,7 +161,9 @@ export class YArray extends AbstractType {
   delete (index, length = 1) {
     if (this.doc !== null) {
       transact(this.doc, transaction => {
-        typeListDelete(transaction, this, index, length)
+        useSearchMarker(transaction, this, index, walker =>
+          walker.delete(transaction, length)
+        )
       })
     } else {
       /** @type {Array<any>} */ (this._prelimContent).splice(index, length)
@@ -177,8 +177,10 @@ export class YArray extends AbstractType {
    * @return {T}
    */
   get (index) {
-    return transact(/** @type {Doc} */ (this.doc), tr =>
-      new ListPosition(this, tr).forward(index).slice(1)[0]
+    return transact(/** @type {Doc} */ (this.doc), transaction =>
+      useSearchMarker(transaction, this, index, walker =>
+        walker.slice(transaction, 1)[0]
+      )
     )
   }
 
@@ -189,7 +191,7 @@ export class YArray extends AbstractType {
    */
   toArray () {
     return transact(/** @type {Doc} */ (this.doc), tr =>
-      new ListPosition(this, tr).slice(this.length)
+      new ListIterator(this).slice(tr, this.length)
     )
   }
 
@@ -201,8 +203,10 @@ export class YArray extends AbstractType {
    * @return {Array<T>}
    */
   slice (start = 0, end = this.length) {
-    return transact(/** @type {Doc} */ (this.doc), tr =>
-      new ListPosition(this, tr).forward(start).slice(end < 0 ? this.length + end - start : end - start)
+    return transact(/** @type {Doc} */ (this.doc), transaction =>
+      useSearchMarker(transaction, this, start, walker =>
+        walker.slice(transaction, end < 0 ? this.length + end - start : end - start)
+      )
     )
   }
 
@@ -225,7 +229,9 @@ export class YArray extends AbstractType {
    *                 callback function
    */
   map (f) {
-    return typeListMap(this, /** @type {any} */ (f))
+    return transact(/** @type {Doc} */ (this.doc), tr =>
+      new ListIterator(this).map(tr, f)
+    )
   }
 
   /**
@@ -234,14 +240,16 @@ export class YArray extends AbstractType {
    * @param {function(T,number,YArray<T>):void} f A function to execute on every element of this YArray.
    */
   forEach (f) {
-    typeListForEach(this, f)
+    return transact(/** @type {Doc} */ (this.doc), tr =>
+      new ListIterator(this).forEach(tr, f)
+    )
   }
 
   /**
    * @return {IterableIterator<T>}
    */
   [Symbol.iterator] () {
-    return typeListCreateIterator(this)
+    return this.toArray().values()
   }
 
   /**
