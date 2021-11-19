@@ -127,8 +127,9 @@ const findPosition = (transaction, parent, index) => {
   const currentAttributes = new Map()
   if (parent._searchMarker) {
     return useSearchMarker(transaction, parent, index, listIter => {
+      // @todo this should simply split if .rel > 0
       const pos = new ItemTextListPosition(listIter.left, listIter.right, listIter.index, currentAttributes)
-      return findNextPosition(transaction, pos, index - listIter.index)
+      return findNextPosition(transaction, pos, index - listIter.index + listIter.rel)
     })
   } else {
     const pos = new ItemTextListPosition(null, parent._start, 0, currentAttributes)

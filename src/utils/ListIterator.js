@@ -126,6 +126,7 @@ export class ListIterator {
         len -= item.length
         if (len < 0) {
           this.rel = item.length + len
+          len = 0
           break
         }
       } else if (item.content.constructor === ContentMove && item.moved === this.currMove) {
@@ -176,6 +177,7 @@ export class ListIterator {
         len -= item.length
         if (len < 0) {
           this.rel = item.length + len
+          len = 0
           break
         }
       } else if (item.content.constructor === ContentMove && item.moved === this.currMove) {
