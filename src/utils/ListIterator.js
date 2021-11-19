@@ -289,13 +289,12 @@ export class ListIterator {
     /**
      * @type {Item | null}
      */
-    let item = this.nextItem
     if (this.rel > 0) {
       /**
        * @type {ID}
        */
-      const itemid = /** @type {Item} */ (item).id
-      item = getItemCleanStart(tr, createID(itemid.client, itemid.clock + this.rel))
+      const itemid = /** @type {Item} */ (this.nextItem).id
+      this.nextItem = getItemCleanStart(tr, createID(itemid.client, itemid.clock + this.rel))
       this.rel = 0
     }
     const parent = this.type
@@ -358,12 +357,11 @@ export class ListIterator {
     })
     packJsonContent()
     if (right === null && left !== null) {
-      item = left
+      this.nextItem = left
       this.reachedEnd = true
     } else {
-      item = right
+      this.nextItem = right
     }
-    this.nextItem = item
   }
 
   /**

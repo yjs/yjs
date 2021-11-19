@@ -327,6 +327,7 @@ export const testFormattingDeltaUnnecessaryAttributeChange = tc => {
  * @param {t.TestCase} tc
  */
 export const testInsertAndDeleteAtRandomPositions = tc => {
+  // @todo optimize to run at least as fast as previous marker approach
   const N = 100000
   const { text0 } = init(tc, { users: 1 })
   const gen = tc.prng
