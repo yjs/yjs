@@ -40,6 +40,7 @@ export const testToJSON = tc => {
 
   const arr = doc.getArray('array')
   arr.push(['test1'])
+  t.compare(arr.toJSON(), ['test1'])
 
   const map = doc.getMap('map')
   map.set('k1', 'v1')

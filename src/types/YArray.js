@@ -2,7 +2,6 @@
  * @module YArray
  */
 
-import { useSearchMarker } from 'tests/testHelper.js'
 import {
   YEvent,
   AbstractType,
@@ -10,6 +9,7 @@ import {
   callTypeObservers,
   transact,
   ListIterator,
+  useSearchMarker,
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 

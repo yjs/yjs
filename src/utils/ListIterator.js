@@ -430,6 +430,6 @@ const sliceArrayContent = (itemcontent, start, len) => {
  * @param {Array<any>} added
  */
 const concatArrayContent = (content, added) => {
-  content.push(added)
+  content.push(...added)
   return content
 }
