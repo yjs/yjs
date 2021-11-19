@@ -18,6 +18,7 @@ const lengthExceeded = error.create('Length exceeded!')
 
 /**
  * @todo rename to walker?
+ * @todo check that inserting character one after another always reuses ListIterators
  */
 export class ListIterator {
   /**
@@ -214,6 +215,7 @@ export class ListIterator {
    * @param {function(T, T): T} concat
    */
   _slice (tr, len, value, slice, concat) {
+    this.index += len
     while (len > 0 && !this.reachedEnd) {
       while (this.nextItem && this.nextItem.countable && !this.reachedEnd && len > 0) {
         if (!this.nextItem.deleted) {
@@ -239,6 +241,9 @@ export class ListIterator {
       if (this.nextItem && !this.reachedEnd && len > 0) {
         this.forward(tr, 0)
       }
+    }
+    if (len < 0) {
+      this.index -= len
     }
     return value
   }
@@ -297,6 +302,7 @@ export class ListIterator {
       this.nextItem = getItemCleanStart(tr, createID(itemid.client, itemid.clock + this.rel))
       this.rel = 0
     }
+    const sm = this.type._searchMarker
     const parent = this.type
     const store = tr.doc.store
     const ownClientId = tr.doc.clientID
@@ -362,6 +368,10 @@ export class ListIterator {
     } else {
       this.nextItem = right
     }
+    if (sm) {
+      updateMarkerChanges(tr, sm, this.index, content.length)
+    }
+    this.index += content.length
   }
 
   /**
@@ -406,9 +416,12 @@ export class ListIterator {
         return this
       },
       next: () => {
+        if (this.reachedEnd) {
+          return { done: true }
+        }
         const [value] = this.slice(tr, 1)
         return {
-          done: value == null,
+          done: false,
           value: value
         }
       }

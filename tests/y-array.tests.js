@@ -1,4 +1,4 @@
-import { init, compare, applyRandomTests, Doc } from './testHelper.js' // eslint-disable-line
+import { init, compare, applyRandomTests, Doc, AbstractType } from './testHelper.js' // eslint-disable-line
 
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
@@ -473,6 +473,7 @@ const arrayTransactions = [
     yarray.insert(pos, content)
     oldContent.splice(pos, 0, ...content)
     t.compareArrays(yarray.toArray(), oldContent) // we want to make sure that fastSearch markers insert at the correct position
+    t.compare(yarray.toJSON(), yarray.toArray().map(x => x instanceof AbstractType ? x.toJSON() : x))
   },
   function insertTypeArray (user, gen) {
     const yarray = user.getArray('array')
