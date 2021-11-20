@@ -416,7 +416,7 @@ export class ListIterator {
         return this
       },
       next: () => {
-        if (this.reachedEnd) {
+        if (this.reachedEnd || this.index === this.type._length) {
           return { done: true }
         }
         const [value] = this.slice(tr, 1)
