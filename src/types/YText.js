@@ -27,6 +27,7 @@ import {
   updateMarkerChanges,
   ContentType,
   useSearchMarker,
+  findIndexCleanStart,
   ListIterator, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
 } from '../internals.js'
 
@@ -127,9 +128,27 @@ const findPosition = (transaction, parent, index) => {
   const currentAttributes = new Map()
   if (parent._searchMarker) {
     return useSearchMarker(transaction, parent, index, listIter => {
+      let left, right
+      if (listIter.rel > 0) {
+        // must exist because rel > 0
+        const nextItem = /** @type {Item} */ (listIter.nextItem)
+        if (listIter.rel === nextItem.length) {
+          left = nextItem
+          right = left.right
+        } else {
+          const structs = /** @type {Array<Item|GC>} */ (transaction.doc.store.clients.get(nextItem.id.client))
+          const after = /** @type {Item} */ (structs[findIndexCleanStart(transaction, structs, nextItem.id.clock + listIter.rel)])
+          listIter.nextItem = after
+          listIter.rel = 0
+          left = listIter.left
+          right = listIter.right
+        }
+      } else {
+        left = listIter.left
+        right = listIter.right
+      }
       // @todo this should simply split if .rel > 0
-      const pos = new ItemTextListPosition(listIter.left, listIter.right, listIter.index, currentAttributes)
-      return findNextPosition(transaction, pos, index - listIter.index + listIter.rel)
+      return new ItemTextListPosition(left, right, index, currentAttributes)
     })
   } else {
     const pos = new ItemTextListPosition(null, parent._start, 0, currentAttributes)
@@ -266,7 +285,7 @@ const insertText = (transaction, parent, currPos, text, attributes) => {
   const content = text.constructor === String ? new ContentString(/** @type {string} */ (text)) : (text instanceof AbstractType ? new ContentType(text) : new ContentEmbed(text))
   let { left, right, index } = currPos
   if (parent._searchMarker) {
-    updateMarkerChanges(transaction, parent._searchMarker, currPos.index, content.getLength())
+    updateMarkerChanges(parent._searchMarker, currPos.index, content.getLength(), null)
   }
   right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, content)
   right.integrate(transaction, 0)
@@ -471,7 +490,7 @@ const deleteText = (transaction, currPos, length) => {
   }
   const parent = /** @type {AbstractType<any>} */ (/** @type {Item} */ (currPos.left || currPos.right).parent)
   if (parent._searchMarker) {
-    updateMarkerChanges(transaction, parent._searchMarker, currPos.index, -startLength + length)
+    updateMarkerChanges(parent._searchMarker, currPos.index, -startLength + length, null)
   }
   return currPos
 }

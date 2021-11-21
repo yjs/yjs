@@ -162,13 +162,18 @@ export class ListIterator {
   /**
    * @param {Transaction} tr
    * @param {number} len
+   * @return {ListIterator}
    */
   backward (tr, len) {
     if (this.index - len < 0) {
       throw lengthExceeded
     }
-    let item = this.nextItem && this.nextItem.left
     this.index -= len
+    if (this.rel > len) {
+      this.rel -= len
+      return this
+    }
+    let item = this.nextItem && this.nextItem.left
     if (this.rel) {
       len -= this.rel
       this.rel = 0
@@ -177,8 +182,10 @@ export class ListIterator {
       if (item.countable && !item.deleted && item.moved === this.currMove) {
         len -= item.length
         if (len < 0) {
-          this.rel = item.length + len
+          this.rel = -len
           len = 0
+        }
+        if (len === 0) {
           break
         }
       } else if (item.content.constructor === ContentMove && item.moved === this.currMove) {
@@ -201,8 +208,7 @@ export class ListIterator {
       }
       item = item.left
     }
-    this.index -= len
-    this.nextItem = item && item.right
+    this.nextItem = item
     return this
   }
 

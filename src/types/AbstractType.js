@@ -55,11 +55,19 @@ export const useSearchMarker = (tr, yarray, index, f) => {
     searchMarker.push(fsm)
   }
   const diff = fsm.index - index
+  // @todo create fresh marker if diff > index
   if (diff > 0) {
     fsm.backward(tr, diff)
   } else {
     fsm.forward(tr, -diff)
   }
+  // @todo remove this tests
+  const otherTesting = new ListIterator(yarray)
+  otherTesting.forward(tr, index)
+  if (otherTesting.nextItem !== fsm.nextItem || otherTesting.index !== fsm.index || otherTesting.reachedEnd !== fsm.reachedEnd) {
+    throw new Error('udtirane')
+  }
+
   const result = f(fsm)
   if (fsm.reachedEnd) {
     fsm.reachedEnd = false
@@ -93,7 +101,7 @@ export const useSearchMarker = (tr, yarray, index, f) => {
  * @param {Array<ListIterator>} searchMarker
  * @param {number} index
  * @param {number} len If insertion, len is positive. If deletion, len is negative.
- * @param {ListIterator} origSearchMarker Do not update this searchmarker because it is the one we used to manipulate.
+ * @param {ListIterator|null} origSearchMarker Do not update this searchmarker because it is the one we used to manipulate. @todo !=null for improved perf in ytext
  */
 export const updateMarkerChanges = (searchMarker, index, len, origSearchMarker) => {
   for (let i = searchMarker.length - 1; i >= 0; i--) {
