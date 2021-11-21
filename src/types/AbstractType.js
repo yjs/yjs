@@ -54,7 +54,21 @@ export const useSearchMarker = (tr, yarray, index, f) => {
   if (createFreshMarker) {
     searchMarker.push(fsm)
   }
+  const diff = fsm.index - index
+  if (diff > 0) {
+    fsm.backward(tr, diff)
+  } else {
+    fsm.forward(tr, -diff)
+  }
   const result = f(fsm)
+  if (fsm.reachedEnd) {
+    fsm.reachedEnd = false
+    const nextItem = /** @type {Item} */ (fsm.nextItem)
+    if (nextItem.countable && !nextItem.deleted) {
+      fsm.index -= nextItem.length
+    }
+    fsm.rel = 0
+  }
   if (!createFreshMarker && fsm.nextItem !== prevItem) {
     // reused old marker and we moved to a different position
     prevItem.marker = false
@@ -76,22 +90,25 @@ export const useSearchMarker = (tr, yarray, index, f) => {
  *
  * This should be called before doing a deletion!
  *
- * @param {Transaction} tr
  * @param {Array<ListIterator>} searchMarker
  * @param {number} index
  * @param {number} len If insertion, len is positive. If deletion, len is negative.
+ * @param {ListIterator} origSearchMarker Do not update this searchmarker because it is the one we used to manipulate.
  */
-export const updateMarkerChanges = (tr, searchMarker, index, len) => {
+export const updateMarkerChanges = (searchMarker, index, len, origSearchMarker) => {
   for (let i = searchMarker.length - 1; i >= 0; i--) {
     const marker = searchMarker[i]
-    if (len > 0 && index === marker.index) {
-      // inserting at a marked position deletes the marked position because we can't do a simple transformation
-      // (we don't know whether to insert directly before or directly after the position)
-      searchMarker.splice(i, 1)
-      continue
-    }
-    if (index < marker.index) { // a simple index <= m.index check would actually suffice
-      marker.index = math.max(index, marker.index + len)
+    if (marker !== origSearchMarker) {
+      if (len > 0 && index === marker.index) {
+        // inserting at a marked position deletes the marked position because we can't do a simple transformation
+        // (we don't know whether to insert directly before or directly after the position)
+        searchMarker.splice(i, 1)
+        if (marker.nextItem) marker.nextItem.marker = false
+        continue
+      }
+      if (index < marker.index) { // a simple index <= m.index check would actually suffice
+        marker.index = math.max(index, marker.index + len)
+      }
     }
   }
 }

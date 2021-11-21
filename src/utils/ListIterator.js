@@ -202,7 +202,7 @@ export class ListIterator {
       item = item.left
     }
     this.index -= len
-    this.nextItem = item
+    this.nextItem = item && item.right
     return this
   }
 
@@ -278,11 +278,12 @@ export class ListIterator {
       if (item && !this.reachedEnd && len > 0) {
         this.nextItem = item
         this.forward(tr, 0)
+        item = this.nextItem
       }
     }
     this.nextItem = item
     if (sm) {
-      updateMarkerChanges(tr, sm, this.index, -startLength + len)
+      updateMarkerChanges(sm, this.index, -startLength + len, this)
     }
   }
 
@@ -369,7 +370,7 @@ export class ListIterator {
       this.nextItem = right
     }
     if (sm) {
-      updateMarkerChanges(tr, sm, this.index, content.length)
+      updateMarkerChanges(sm, this.index, content.length, this)
     }
     this.index += content.length
   }
