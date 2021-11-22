@@ -169,7 +169,12 @@ export class ListIterator {
       throw lengthExceeded
     }
     this.index -= len
-    if (this.rel > len) {
+    if (this.reachedEnd) {
+      const nextItem = /** @type {Item} */ (this.nextItem)
+      this.rel = nextItem.countable && !nextItem.deleted ? nextItem.length : 0
+      this.reachedEnd = false
+    }
+    if (this.rel >= len) {
       this.rel -= len
       return this
     }
