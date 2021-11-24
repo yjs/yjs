@@ -17,6 +17,7 @@ import { Observable } from 'lib0/observable'
 import * as random from 'lib0/random'
 import * as map from 'lib0/map'
 import * as array from 'lib0/array'
+import * as promise from 'lib0/promise'
 
 export const generateNewClientId = random.uint32
 
@@ -71,6 +72,13 @@ export class Doc extends Observable {
     this.shouldLoad = shouldLoad
     this.autoLoad = autoLoad
     this.meta = meta
+    this.isLoaded = false
+    this.whenLoaded = promise.create(resolve => {
+      this.on('load', () => {
+        this.isLoaded = true
+        resolve(this)
+      })
+    })
   }
 
   /**

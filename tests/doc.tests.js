@@ -228,3 +228,19 @@ export const testSubdocsUndo = tc => {
   undoManager.redo()
   t.assert(elems.length === 1)
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testLoadDocs = async tc => {
+  const ydoc = new Y.Doc()
+  t.assert(ydoc.isLoaded === false)
+  let loadedEvent = false
+  ydoc.on('load', () => {
+    loadedEvent = true
+  })
+  ydoc.emit('load', [ydoc])
+  await ydoc.whenLoaded
+  t.assert(loadedEvent)
+  t.assert(ydoc.isLoaded)
+}
