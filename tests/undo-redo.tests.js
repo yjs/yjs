@@ -251,6 +251,26 @@ export const testTypeScope = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testUndoInEmbed = tc => {
+  const { text0 } = init(tc, { users: 3 })
+  const undoManager = new Y.UndoManager(text0)
+  const nestedText = new Y.Text('initial text')
+  undoManager.stopCapturing()
+  text0.insertEmbed(0, nestedText, { bold: true })
+  t.assert(nestedText.toString() === 'initial text')
+  undoManager.stopCapturing()
+  nestedText.delete(0, nestedText.length)
+  nestedText.insert(0, 'other text')
+  t.assert(nestedText.toString() === 'other text')
+  undoManager.undo()
+  t.assert(nestedText.toString() === 'initial text')
+  undoManager.undo()
+  t.assert(text0.length === 0)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testUndoDeleteFilter = tc => {
   /**
    * @type {Array<Y.Map<any>>}
