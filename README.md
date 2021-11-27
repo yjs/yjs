@@ -65,8 +65,6 @@ Sponsorship also comes with special perks! [![Become a Sponsor](https://img.shie
 * [JoeDocs](https://joedocs.com/) An open collaborative wiki.
 * [Pluxbox RadioManager](https://pluxbox.com/) A web-based app to
   collaboratively organize radio broadcasts.
-* [Cattaz](http://cattaz.io/) A wiki that can run custom applications in the
-  wiki pages.
 * [Alldone](https://alldone.app/) A next-gen project management and
   collaboration platform.
 
