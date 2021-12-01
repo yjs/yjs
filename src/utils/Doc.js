@@ -227,6 +227,23 @@ export class Doc extends Observable {
     return this.get(name, YXmlFragment)
   }
 
+
+  /**
+   * Clone all shared data types into a fresh Y.Doc instance.
+   *
+   * @return {Doc}
+   */
+  clone({ guid = random.uuidv4(), collectionid = null, gc = true, gcFilter = () => true, meta = null, autoLoad = false, shouldLoad = true } = {}){
+    const cloned = new Doc({guid, collectionid, gc, gcFilter, meta, autoLoad, shouldLoad});
+    this.share.forEach((value, key) => {
+        const clonedType = value.clone();
+        clonedType._integrate(this, null);
+        cloned.share.set(key, clonedType)
+      });
+
+      return cloned;
+  }
+
   /**
    * Converts the entire document into a js object, recursively traversing each yjs type
    * Doesn't log types that have not been defined (using ydoc.getType(..)).

@@ -57,6 +57,37 @@ export const testToJSON = tc => {
     }
   }, 'doc.toJSON has array and recursive map')
 }
+/**
+ * @param {t.TestCase} tc
+ */
+export const testClone = tc => {
+  const doc = new Y.Doc();
+  const map = doc.getMap();
+  const map2 = new Y.Map();
+  map2.set("c","d");
+  map.set("a", "b");
+  map.set("b", map2);
+
+  const yxmlFragment = doc.getXmlFragment('xml')
+
+  const yxmlText = new Y.XmlText()
+  yxmlFragment.insert(0, [yxmlText])
+  yxmlFragment.insertAfter(yxmlText, [new Y.XmlElement('node-name')])
+
+  const ytext = doc.getText('text') 
+  ytext.insert(0, 'abc') ;
+  ytext.format(1, 2, { bold: true }) ;
+
+  const yarray = doc.getArray('array') 
+  yarray.insert(0, [1, 2, 3]);
+  yarray.delete(1, 1) ;
+
+  const clonedDoc = doc.clone();
+
+  for(const key of doc.share.keys()){
+    t.compare(doc.get(key).toJSON(), clonedDoc.get(key).toJSON());
+  }
+}
 
 /**
  * @param {t.TestCase} tc
