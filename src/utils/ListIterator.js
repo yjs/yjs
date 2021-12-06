@@ -412,7 +412,7 @@ export class ListIterator {
     this.insertContents(tr, contents)
     this.index += values.length
     if (sm) {
-      updateMarkerChanges(sm, this.index, values.length, this)
+      updateMarkerChanges(sm, this.index - values.length, values.length, this)
     }
   }
 
