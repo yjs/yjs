@@ -466,6 +466,9 @@ export const testMove = tc => {
   Y.applyUpdate(users[1], Y.encodeStateAsUpdate(users[0]))
   t.compare(array1.toArray(), [2, 1, 3])
   t.compare(event1.delta, [{ insert: [2, 1, 3] }])
+  array0.move(0, 0, 2)
+  t.compare(array0.toArray(), [1, 2, 3])
+  t.compare(event0.delta, [{ delete: 1 }, { retain: 1 }, { insert: [2] }])
   compare(users)
 }
 

@@ -149,9 +149,9 @@ export class YArray extends AbstractType {
     }
     if (this.doc !== null) {
       transact(this.doc, transaction => {
+        const left = createRelativePositionFromTypeIndex(this, start, assocStart)
+        const right = createRelativePositionFromTypeIndex(this, end + 1, assocEnd)
         useSearchMarker(transaction, this, target, walker => {
-          const left = createRelativePositionFromTypeIndex(this, start, assocStart)
-          const right = createRelativePositionFromTypeIndex(this, end + 1, assocEnd)
           walker.insertMove(transaction, left, right)
         })
       })

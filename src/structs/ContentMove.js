@@ -2,8 +2,9 @@
 import * as error from 'lib0/error'
 import * as decoding from 'lib0/decoding'
 import * as encoding from 'lib0/encoding'
+import * as math from 'lib0/math'
 import {
-  AbstractType, ContentType, ID, RelativePosition, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Transaction, Item, StructStore, getItem, getItemCleanStart, getItemCleanEnd // eslint-disable-line
+  AbstractType, ContentType, RelativePosition, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Transaction, Item, StructStore, getItem, getItemCleanStart, getItemCleanEnd // eslint-disable-line
 } from '../internals.js'
 
 /**
@@ -175,12 +176,23 @@ export class ContentMove {
      * @type {{ start: Item | null, end: Item | null }}
      */
     let { start, end } = getMovedCoords(this, transaction)
+    let maxPriority = 0
+    // If this ContentMove was created locally, we set prio = -1. This indicates
+    // that we want to set prio to the current prio-maximum of the moved range.
+    const adaptPriority = this.priority < 0
     while (start !== end && start != null) {
       if (!start.deleted) {
         const currMoved = start.moved
-        if (currMoved === null || /** @type {ContentMove} */ (currMoved.content).priority < this.priority || currMoved.id.client < item.id.client || (currMoved.id.client === item.id.client && currMoved.id.clock < item.id.clock)) {
+        const nextPrio = currMoved ? /** @type {ContentMove} */ (currMoved.content).priority : -1
+        if (currMoved === null || adaptPriority || nextPrio < this.priority || currMoved.id.client < item.id.client || (currMoved.id.client === item.id.client && currMoved.id.clock < item.id.clock)) {
           if (currMoved !== null) {
             this.overrides.add(currMoved)
+          }
+          maxPriority = math.max(maxPriority, nextPrio)
+          // was already moved
+          if (start.moved && !transaction.prevMoved.has(start)) {
+            // we need to know which item previously moved an item
+            transaction.prevMoved.set(start, start.moved)
           }
           start.moved = item
         } else {
@@ -188,6 +200,9 @@ export class ContentMove {
         }
       }
       start = start.right
+    }
+    if (adaptPriority) {
+      this.priority = maxPriority + 1
     }
   }
 
@@ -246,6 +261,7 @@ export class ContentMove {
 
 /**
  * @private
+ * @todo use binary encoding option for start & end relpos's
  *
  * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @return {ContentMove}

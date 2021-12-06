@@ -114,6 +114,14 @@ export class Transaction {
      * @type {Set<Doc>}
      */
     this.subdocsLoaded = new Set()
+    /**
+     * We store the reference that last moved an item.
+     * This is needed to compute the delta when multiple ContentMove move
+     * the same item.
+     *
+     * @type {Map<Item, Item>}
+     */
+    this.prevMoved = new Map()
   }
 }
 

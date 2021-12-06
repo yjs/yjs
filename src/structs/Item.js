@@ -117,6 +117,12 @@ export const splitItem = (transaction, leftItem, diff) => {
     /** @type {AbstractType<any>} */ (rightItem.parent)._map.set(rightItem.parentSub, rightItem)
   }
   leftItem.length = diff
+  if (leftItem.moved) {
+    const m = transaction.prevMoved.get(leftItem)
+    if (m) {
+      transaction.prevMoved.set(rightItem, m)
+    }
+  }
   return rightItem
 }
 

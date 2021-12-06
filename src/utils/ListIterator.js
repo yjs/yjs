@@ -122,7 +122,7 @@ export class ListIterator {
       len += this.rel
       this.rel = 0
     }
-    while (item && !this.reachedEnd && (len > 0 || (len === 0 && (!item.countable || item.deleted || item === this.currMoveEnd)))) {
+    while (item && !this.reachedEnd && (len > 0 || (len === 0 && (!item.countable || item.deleted || item === this.currMoveEnd || item.moved !== this.currMove)))) {
       if (item.countable && !item.deleted && item.moved === this.currMove && len > 0) {
         len -= item.length
         if (len < 0) {
@@ -350,7 +350,7 @@ export class ListIterator {
    * @param {RelativePosition} end
    */
   insertMove (tr, start, end) {
-    this.insertContents(tr, [new ContentMove(start, end, 1)]) // @todo adjust priority
+    this.insertContents(tr, [new ContentMove(start, end, -1)]) // @todo adjust priority
     // @todo is there a better alrogirthm to update searchmarkers? We could simply remove the markers that are in the updated range.
     // Also note that searchmarkers are updated in insertContents as well.
     const sm = this.type._searchMarker

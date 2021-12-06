@@ -213,7 +213,7 @@ export class YEvent {
                 continue // do not move to item.right
               }
             } else if (item.moved !== currMove) {
-              if (!currMoveIsNew && item.countable && !this.adds(item)) {
+              if (!currMoveIsNew && item.countable && !this.adds(item) && (this.transaction.prevMoved.get(item) || null) === currMove) {
                 if (lastOp === null || lastOp.delete === undefined) {
                   packOp()
                   lastOp = { delete: 0 }
