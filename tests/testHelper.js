@@ -373,7 +373,10 @@ export const compare = users => {
     t.compare(Y.encodeStateVector(users[i]), Y.encodeStateVector(users[i + 1]))
     compareDS(Y.createDeleteSetFromStructStore(users[i].store), Y.createDeleteSetFromStructStore(users[i + 1].store))
     compareStructStores(users[i].store, users[i + 1].store)
+    // @todo
     // test list-iterator
+    // console.log('dutiraneduiaentdr', users[0].getArray('array')._searchMarker)
+    /*
     {
       const user = users[0]
       user.transact(tr => {
@@ -396,6 +399,7 @@ export const compare = users => {
         })
       })
     }
+    */
   }
   users.map(u => u.destroy())
 }

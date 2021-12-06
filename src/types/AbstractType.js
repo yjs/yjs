@@ -36,7 +36,7 @@ const maxSearchMarker = 80
  */
 export const useSearchMarker = (tr, yarray, index, f) => {
   const searchMarker = yarray._searchMarker
-  if (searchMarker === null || yarray._start === null || index < 30) {
+  if (searchMarker === null || yarray._start === null || index < 5) {
     return f(new ListIterator(yarray).forward(tr, index))
   }
   if (searchMarker.length === 0) {
@@ -48,26 +48,27 @@ export const useSearchMarker = (tr, yarray, index, f) => {
   const sm = searchMarker.reduce(
     (a, b, arrayIndex) => math.abs(index - a.index) < math.abs(index - b.index) ? a : b
   )
-  const createFreshMarker = searchMarker.length < maxSearchMarker && math.abs(sm.index - index) > 30
-  const fsm = createFreshMarker ? sm.clone() : sm
+  const newIsCheaper = math.abs(sm.index - index) > index
+  const createFreshMarker = searchMarker.length < maxSearchMarker && (math.abs(sm.index - index) > 5 || newIsCheaper)
+  const fsm = createFreshMarker ? (newIsCheaper ? new ListIterator(yarray) : sm.clone()) : sm
   const prevItem = /** @type {Item} */ (sm.nextItem)
   if (createFreshMarker) {
     searchMarker.push(fsm)
   }
   const diff = fsm.index - index
-  // @todo create fresh marker if diff > index
   if (diff > 0) {
     fsm.backward(tr, diff)
   } else {
     fsm.forward(tr, -diff)
   }
   // @todo remove this tests
+  /*
   const otherTesting = new ListIterator(yarray)
   otherTesting.forward(tr, index)
   if (otherTesting.nextItem !== fsm.nextItem || otherTesting.index !== fsm.index || otherTesting.reachedEnd !== fsm.reachedEnd) {
     throw new Error('udtirane')
   }
-
+  */
   const result = f(fsm)
   if (fsm.reachedEnd) {
     fsm.reachedEnd = false
@@ -77,7 +78,7 @@ export const useSearchMarker = (tr, yarray, index, f) => {
     }
     fsm.rel = 0
   }
-  if (!createFreshMarker && fsm.nextItem !== prevItem) {
+  if (!createFreshMarker) {
     // reused old marker and we moved to a different position
     prevItem.marker = false
   }

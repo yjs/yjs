@@ -11,7 +11,7 @@ import {
   ContentType,
   ContentDoc,
   Doc,
-  ID, AbstractContent, ContentMove, Transaction, Item, AbstractType // eslint-disable-line
+  RelativePosition, ID, AbstractContent, ContentMove, Transaction, Item, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 const lengthExceeded = error.create('Length exceeded!')
@@ -122,8 +122,8 @@ export class ListIterator {
       len += this.rel
       this.rel = 0
     }
-    while (item && !this.reachedEnd && (len > 0 || (len === 0 && (!item.countable || item.deleted)))) {
-      if (item.countable && !item.deleted && item.moved === this.currMove) {
+    while (item && !this.reachedEnd && (len > 0 || (len === 0 && (!item.countable || item.deleted || item === this.currMoveEnd)))) {
+      if (item.countable && !item.deleted && item.moved === this.currMove && len > 0) {
         len -= item.length
         if (len < 0) {
           this.rel = item.length + len
@@ -228,10 +228,10 @@ export class ListIterator {
   _slice (tr, len, value, slice, concat) {
     this.index += len
     while (len > 0 && !this.reachedEnd) {
-      while (this.nextItem && this.nextItem.countable && !this.reachedEnd && len > 0) {
-        if (!this.nextItem.deleted) {
+      while (this.nextItem && this.nextItem.countable && !this.reachedEnd && len > 0 && this.nextItem !== this.currMoveEnd) {
+        if (!this.nextItem.deleted && this.nextItem.moved === this.currMove) {
           const item = this.nextItem
-          const slicedContent = slice(this.nextItem.content, this.rel, len)
+          const slicedContent = slice(item.content, this.rel, len)
           len -= slicedContent.length
           value = concat(value, slicedContent)
           if (item.length !== slicedContent.length) {
@@ -268,18 +268,16 @@ export class ListIterator {
     const sm = this.type._searchMarker
     let item = this.nextItem
     while (len > 0 && !this.reachedEnd) {
-      while (item && item.countable && !this.reachedEnd && len > 0) {
-        if (!item.deleted) {
-          if (this.rel > 0) {
-            item = getItemCleanStart(tr, createID(item.id.client, item.id.clock + this.rel))
-            this.rel = 0
-          }
-          if (len < item.length) {
-            getItemCleanStart(tr, createID(item.id.client, item.id.clock + len))
-          }
-          len -= item.length
-          item.delete(tr)
+      while (item && !item.deleted && item.countable && !this.reachedEnd && len > 0) {
+        if (this.rel > 0) {
+          item = getItemCleanStart(tr, createID(item.id.client, item.id.clock + this.rel))
+          this.rel = 0
         }
+        if (len < item.length) {
+          getItemCleanStart(tr, createID(item.id.client, item.id.clock + len))
+        }
+        len -= item.length
+        item.delete(tr)
         if (item.right) {
           item = item.right
         } else {
@@ -300,12 +298,8 @@ export class ListIterator {
 
   /**
    * @param {Transaction} tr
-   * @param {Array<Object<string,any>|Array<any>|boolean|number|null|string|Uint8Array>} content
    */
-  insertArrayValue (tr, content) {
-    /**
-     * @type {Item | null}
-     */
+  _splitRel (tr) {
     if (this.rel > 0) {
       /**
        * @type {ID}
@@ -314,6 +308,14 @@ export class ListIterator {
       this.nextItem = getItemCleanStart(tr, createID(itemid.client, itemid.clock + this.rel))
       this.rel = 0
     }
+  }
+
+  /**
+   * @param {Transaction} tr
+   * @param {Array<AbstractContent>} content
+   */
+  insertContents (tr, content) {
+    this._splitRel(tr)
     const sm = this.type._searchMarker
     const parent = this.type
     const store = tr.doc.store
@@ -327,18 +329,55 @@ export class ListIterator {
      * @type {Item | null}
      */
     let left = this.left
+    content.forEach(c => {
+      left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, c)
+      left.integrate(tr, 0)
+    })
+    if (right === null && left !== null) {
+      this.nextItem = left
+      this.reachedEnd = true
+    } else {
+      this.nextItem = right
+    }
+    if (sm) {
+      updateMarkerChanges(sm, this.index, content.length, this)
+    }
+  }
+
+  /**
+   * @param {Transaction} tr
+   * @param {RelativePosition} start
+   * @param {RelativePosition} end
+   */
+  insertMove (tr, start, end) {
+    this.insertContents(tr, [new ContentMove(start, end, 1)]) // @todo adjust priority
+    // @todo is there a better alrogirthm to update searchmarkers? We could simply remove the markers that are in the updated range.
+    // Also note that searchmarkers are updated in insertContents as well.
+    const sm = this.type._searchMarker
+    if (sm) sm.length = 0
+  }
+
+  /**
+   * @param {Transaction} tr
+   * @param {Array<Object<string,any>|Array<any>|boolean|number|null|string|Uint8Array>} values
+   */
+  insertArrayValue (tr, values) {
+    this._splitRel(tr)
+    /**
+     * @type {Array<AbstractContent>}
+     */
+    const contents = []
     /**
      * @type {Array<Object|Array<any>|number|null>}
      */
     let jsonContent = []
     const packJsonContent = () => {
       if (jsonContent.length > 0) {
-        left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentAny(jsonContent))
-        left.integrate(tr, 0)
+        contents.push(new ContentAny(jsonContent))
         jsonContent = []
       }
     }
-    content.forEach(c => {
+    values.forEach(c => {
       if (c === null) {
         jsonContent.push(c)
       } else {
@@ -355,17 +394,14 @@ export class ListIterator {
             switch (c.constructor) {
               case Uint8Array:
               case ArrayBuffer:
-                left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))))
-                left.integrate(tr, 0)
+                contents.push(new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))))
                 break
               case Doc:
-                left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentDoc(/** @type {Doc} */ (c)))
-                left.integrate(tr, 0)
+                contents.push(new ContentDoc(/** @type {Doc} */ (c)))
                 break
               default:
                 if (c instanceof AbstractType) {
-                  left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentType(c))
-                  left.integrate(tr, 0)
+                  contents.push(new ContentType(c))
                 } else {
                   throw new Error('Unexpected content type in insert operation')
                 }
@@ -374,16 +410,8 @@ export class ListIterator {
       }
     })
     packJsonContent()
-    if (right === null && left !== null) {
-      this.nextItem = left
-      this.reachedEnd = true
-    } else {
-      this.nextItem = right
-    }
-    if (sm) {
-      updateMarkerChanges(sm, this.index, content.length, this)
-    }
-    this.index += content.length
+    this.insertContents(tr, contents)
+    this.index += values.length
   }
 
   /**

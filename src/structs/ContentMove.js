@@ -1,6 +1,7 @@
 
 import * as error from 'lib0/error'
 import * as decoding from 'lib0/decoding'
+import * as encoding from 'lib0/encoding'
 import {
   AbstractType, ContentType, ID, RelativePosition, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Transaction, Item, StructStore, getItem, getItemCleanStart, getItemCleanEnd // eslint-disable-line
 } from '../internals.js'
@@ -8,7 +9,7 @@ import {
 /**
  * @param {ContentMove} moved
  * @param {Transaction} tr
- * @return {{ start: Item | null, end: Item | null }} $start (inclusive) is the beginning and $end (exclusive) is the end of the moved area
+ * @return {{ start: Item, end: Item | null }} $start (inclusive) is the beginning and $end (exclusive) is the end of the moved area
  */
 export const getMovedCoords = (moved, tr) => {
   let start // this (inclusive) is the beginning of the moved area
@@ -37,16 +38,21 @@ export const getMovedCoords = (moved, tr) => {
   } else {
     end = null
   }
-  return { start, end }
+  return { start: /** @type {Item} */ (start), end }
 }
 
 /**
+ * @todo remove this if not needed
+ *
  * @param {ContentMove} moved
  * @param {Item} movedItem
  * @param {Transaction} tr
  * @param {function(Item):void} cb
  */
 export const iterateMoved = (moved, movedItem, tr, cb) => {
+  /**
+   * @type {{ start: Item | null, end: Item | null }}
+   */
   let { start, end } = getMovedCoords(moved, tr)
   while (start !== end && start != null) {
     if (!start.deleted) {
@@ -74,6 +80,9 @@ export const findMoveLoop = (moved, movedItem, trackedMovedItems, tr) => {
     return true
   }
   trackedMovedItems.add(movedItem)
+  /**
+   * @type {{ start: Item | null, end: Item | null }}
+   */
   let { start, end } = getMovedCoords(moved, tr)
   while (start !== end && start != null) {
     if (start.deleted && start.moved === movedItem && start.content.constructor === ContentMove) {
@@ -162,6 +171,9 @@ export class ContentMove {
    */
   integrate (transaction, item) {
     /** @type {AbstractType<any>} */ (item.parent)._searchMarker = []
+    /**
+     * @type {{ start: Item | null, end: Item | null }}
+     */
     let { start, end } = getMovedCoords(this, transaction)
     while (start !== end && start != null) {
       if (!start.deleted) {
@@ -184,6 +196,9 @@ export class ContentMove {
    * @param {Item} item
    */
   delete (transaction, item) {
+    /**
+     * @type {{ start: Item | null, end: Item | null }}
+     */
     let { start, end } = getMovedCoords(this, transaction)
     while (start !== end && start != null) {
       if (start.moved === item) {
@@ -218,6 +233,7 @@ export class ContentMove {
   write (encoder, offset) {
     encoder.writeAny(this.start)
     encoder.writeAny(this.end)
+    encoding.writeVarUint(encoder.restEncoder, this.priority)
   }
 
   /**

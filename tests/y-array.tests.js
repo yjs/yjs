@@ -1,4 +1,4 @@
-import { init, compare, applyRandomTests, Doc, AbstractType } from './testHelper.js' // eslint-disable-line
+import { init, compare, applyRandomTests, Doc, AbstractType, TestConnector } from './testHelper.js' // eslint-disable-line
 
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
@@ -435,6 +435,43 @@ export const testEventTargetIsSetCorrectlyOnRemote = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testMove = tc => {
+  {
+    // move in uninitialized type
+    const yarr = new Y.Array()
+    yarr.insert(0, [1, 2, 3])
+    yarr.move(1, 1, 0)
+    // @ts-ignore
+    t.compare(yarr._prelimContent, [2, 1, 3])
+  }
+  const { array0, array1, users } = init(tc, { users: 3 })
+  /**
+   * @type {any}
+   */
+  let event0 = null
+  /**
+   * @type {any}
+   */
+  let event1 = null
+  array0.observe(event => {
+    event0 = event
+  })
+  array1.observe(event => {
+    event1 = event
+  })
+  array0.insert(0, [1, 2, 3])
+  array0.move(1, 1, 0)
+  t.compare(array0.toArray(), [2, 1, 3])
+  t.compare(event0.delta, [{ insert: [2] }, { retain: 1 }, { delete: 1 }])
+  Y.applyUpdate(users[1], Y.encodeStateAsUpdate(users[0]))
+  t.compare(array1.toArray(), [2, 1, 3])
+  t.compare(event1.delta, [{ insert: [2, 1, 3] }])
+  compare(users)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testIteratingArrayContainingTypes = tc => {
   const y = new Y.Doc()
   const arr = y.getArray('arr')
@@ -473,7 +510,6 @@ const arrayTransactions = [
     yarray.insert(pos, content)
     oldContent.splice(pos, 0, ...content)
     t.compareArrays(yarray.toArray(), oldContent) // we want to make sure that fastSearch markers insert at the correct position
-    t.compare(yarray.toJSON(), yarray.toArray().map(x => x instanceof AbstractType ? x.toJSON() : x))
   },
   function insertTypeArray (user, gen) {
     const yarray = user.getArray('array')

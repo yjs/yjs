@@ -10,6 +10,7 @@ import {
   transact,
   ListIterator,
   useSearchMarker,
+  createRelativePositionFromTypeIndex,
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 
@@ -131,6 +132,32 @@ export class YArray extends AbstractType {
       })
     } else {
       /** @type {Array<any>} */ (this._prelimContent).splice(index, 0, ...content)
+    }
+  }
+
+  /**
+   * @param {number} start Inclusive move-start
+   * @param {number} end Inclusive move-end
+   * @param {number} target
+   * @param {number} assocStart >=0 if start should be associated with the right character. See relative-position assoc parameter.
+   * @param {number} assocEnd >= 0 if end should be associated with the right character.
+   */
+  move (start, end, target, assocStart = 1, assocEnd = -1) {
+    if (start <= target && target <= end) {
+      // It doesn't make sense to move a range into the same range (it's basically a no-op).
+      return
+    }
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
+        useSearchMarker(transaction, this, target, walker => {
+          const left = createRelativePositionFromTypeIndex(this, start, assocStart)
+          const right = createRelativePositionFromTypeIndex(this, end + 1, assocEnd)
+          walker.insertMove(transaction, left, right)
+        })
+      })
+    } else {
+      const content = /** @type {Array<any>} */ (this._prelimContent).splice(start, end - start + 1)
+      ;/** @type {Array<any>} */ (this._prelimContent).splice(target, 0, ...content)
     }
   }
 
