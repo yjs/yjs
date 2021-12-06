@@ -54,6 +54,8 @@ export const useSearchMarker = (tr, yarray, index, f) => {
   const prevItem = /** @type {Item} */ (sm.nextItem)
   if (createFreshMarker) {
     searchMarker.push(fsm)
+  } else {
+    fsm.reinit(tr)
   }
   const diff = fsm.index - index
   if (diff > 0) {

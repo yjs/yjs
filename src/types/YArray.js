@@ -124,14 +124,16 @@ export class YArray extends AbstractType {
    * @param {Array<T>} content The array of content
    */
   insert (index, content) {
-    if (this.doc !== null) {
-      transact(this.doc, transaction => {
-        useSearchMarker(transaction, this, index, walker =>
-          walker.insertArrayValue(transaction, content)
-        )
-      })
-    } else {
-      /** @type {Array<any>} */ (this._prelimContent).splice(index, 0, ...content)
+    if (content.length > 0) {
+      if (this.doc !== null) {
+        transact(this.doc, transaction => {
+          useSearchMarker(transaction, this, index, walker =>
+            walker.insertArrayValue(transaction, content)
+          )
+        })
+      } else {
+        /** @type {Array<any>} */ (this._prelimContent).splice(index, 0, ...content)
+      }
     }
   }
 
