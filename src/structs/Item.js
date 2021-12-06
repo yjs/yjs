@@ -594,6 +594,7 @@ export class Item extends AbstractStruct {
         if (searchMarker) {
           for (let i = searchMarker.length - 1; i >= 0; i--) {
             if (searchMarker[i].nextItem === right) {
+              // @todo do something more efficient than splicing..
               searchMarker.splice(i, 1)
             }
           }

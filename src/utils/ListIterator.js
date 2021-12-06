@@ -1,5 +1,4 @@
 import * as error from 'lib0/error'
-import { getItem } from 'yjs'
 
 import {
   getItemCleanStart,
@@ -72,18 +71,6 @@ export class ListIterator {
     iter.currMoveEnd = this.currMoveEnd
     iter.movedStack = this.movedStack.slice()
     return iter
-  }
-
-  /**
-   * @param {Transaction} tr
-   */
-  reinit (tr) {
-    if (this.nextItem) {
-      const nextId = this.nextItem.id
-      const reinitId = createID(nextId.client, nextId.clock + this.rel)
-      this.nextItem = getItem(tr.doc.store, reinitId)
-      this.rel = reinitId.clock - this.nextItem.id.clock
-    }
   }
 
   /**

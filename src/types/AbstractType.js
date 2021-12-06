@@ -43,7 +43,6 @@ export const useSearchMarker = (tr, yarray, index, f) => {
     const sm = new ListIterator(yarray).forward(tr, index)
     searchMarker.push(sm)
     if (sm.nextItem) sm.nextItem.marker = true
-    return f(sm)
   }
   const sm = searchMarker.reduce(
     (a, b, arrayIndex) => math.abs(index - a.index) < math.abs(index - b.index) ? a : b
@@ -54,8 +53,6 @@ export const useSearchMarker = (tr, yarray, index, f) => {
   const prevItem = /** @type {Item} */ (sm.nextItem)
   if (createFreshMarker) {
     searchMarker.push(fsm)
-  } else {
-    fsm.reinit(tr)
   }
   const diff = fsm.index - index
   if (diff > 0) {
