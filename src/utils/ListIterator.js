@@ -311,12 +311,13 @@ export class ListIterator {
   }
 
   /**
+   * Important: you must update markers after calling this method!
+   *
    * @param {Transaction} tr
    * @param {Array<AbstractContent>} content
    */
   insertContents (tr, content) {
     this._splitRel(tr)
-    const sm = this.type._searchMarker
     const parent = this.type
     const store = tr.doc.store
     const ownClientId = tr.doc.clientID
@@ -339,9 +340,6 @@ export class ListIterator {
     } else {
       this.nextItem = right
     }
-    if (sm) {
-      updateMarkerChanges(sm, this.index, content.length, this)
-    }
   }
 
   /**
@@ -363,6 +361,7 @@ export class ListIterator {
    */
   insertArrayValue (tr, values) {
     this._splitRel(tr)
+    const sm = this.type._searchMarker
     /**
      * @type {Array<AbstractContent>}
      */
@@ -412,6 +411,9 @@ export class ListIterator {
     packJsonContent()
     this.insertContents(tr, contents)
     this.index += values.length
+    if (sm) {
+      updateMarkerChanges(sm, this.index, values.length, this)
+    }
   }
 
   /**
