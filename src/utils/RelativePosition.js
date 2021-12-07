@@ -75,6 +75,10 @@ export class RelativePosition {
      */
     this.assoc = assoc
   }
+
+  clone () {
+    return new RelativePosition(this.type, this.tname, this.item, this.assoc)
+  }
 }
 
 /**

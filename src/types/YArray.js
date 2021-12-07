@@ -138,13 +138,41 @@ export class YArray extends AbstractType {
   }
 
   /**
+   * Move a single item from $index to $target.
+   *
+   * @todo make sure that collapsed moves are removed (i.e. when moving the same item twice)
+   *
+   * @param {number} index
+   * @param {number} target
+   */
+  move (index, target) {
+    if (index === target || index + 1 === target || index >= this.length) {
+      // It doesn't make sense to move a range into the same range (it's basically a no-op).
+      return
+    }
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
+        const left = createRelativePositionFromTypeIndex(this, index, 1)
+        const right = left.clone()
+        right.assoc = -1
+        useSearchMarker(transaction, this, target, walker => {
+          walker.insertMove(transaction, left, right)
+        })
+      })
+    } else {
+      const content = /** @type {Array<any>} */ (this._prelimContent).splice(index, 1)
+      ;/** @type {Array<any>} */ (this._prelimContent).splice(target, 0, ...content)
+    }
+  }
+
+  /**
    * @param {number} start Inclusive move-start
    * @param {number} end Inclusive move-end
    * @param {number} target
    * @param {number} assocStart >=0 if start should be associated with the right character. See relative-position assoc parameter.
    * @param {number} assocEnd >= 0 if end should be associated with the right character.
    */
-  move (start, end, target, assocStart = 1, assocEnd = -1) {
+  moveRange (start, end, target, assocStart = 1, assocEnd = -1) {
     if (start <= target && target <= end) {
       // It doesn't make sense to move a range into the same range (it's basically a no-op).
       return

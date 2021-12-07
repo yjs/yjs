@@ -308,6 +308,7 @@ export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = U
   // Note: Should handle that some operations cannot be applied yet ()
 
   while (true) {
+    // @todo this incurs an exponential overhead. We could instead only sort the item that changed.
     // Write higher clients first ⇒ sort by clientID & clock and remove decoders without content
     lazyStructDecoders = lazyStructDecoders.filter(dec => dec.curr !== null)
     lazyStructDecoders.sort(

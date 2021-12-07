@@ -6,6 +6,7 @@ import * as math from 'lib0/math'
 import {
   AbstractType, ContentType, RelativePosition, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Transaction, Item, StructStore, getItem, getItemCleanStart, getItemCleanEnd // eslint-disable-line
 } from '../internals.js'
+import { decodeRelativePosition, encodeRelativePosition } from 'yjs'
 
 /**
  * @param {ContentMove} moved
@@ -246,8 +247,12 @@ export class ContentMove {
    * @param {number} offset
    */
   write (encoder, offset) {
-    encoder.writeAny(this.start)
-    encoder.writeAny(this.end)
+    const isCollapsed = this.isCollapsed()
+    encoding.writeUint8(encoder.restEncoder, isCollapsed ? 1 : 0)
+    encoder.writeBuf(encodeRelativePosition(this.start))
+    if (!isCollapsed) {
+      encoder.writeBuf(encodeRelativePosition(this.end))
+    }
     encoding.writeVarUint(encoder.restEncoder, this.priority)
   }
 
@@ -256,6 +261,10 @@ export class ContentMove {
    */
   getRef () {
     return 11
+  }
+
+  isCollapsed () {
+    return this.start.item === this.end.item && this.start.item !== null
   }
 }
 
@@ -266,4 +275,12 @@ export class ContentMove {
  * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @return {ContentMove}
  */
-export const readContentMove = decoder => new ContentMove(decoder.readAny(), decoder.readAny(), decoding.readVarUint(decoder.restDecoder))
+export const readContentMove = decoder => {
+  const isCollapsed = decoding.readUint8(decoder.restDecoder) === 1
+  const start = decodeRelativePosition(decoder.readBuf())
+  const end = isCollapsed ? start.clone() : decodeRelativePosition(decoder.readBuf())
+  if (isCollapsed) {
+    end.assoc = -1
+  }
+  return new ContentMove(start, end, decoding.readVarUint(decoder.restDecoder))
+}

@@ -122,8 +122,17 @@ export class ListIterator {
       len += this.rel
       this.rel = 0
     }
-    while (item && !this.reachedEnd && (len > 0 || (len === 0 && (!item.countable || item.deleted || item === this.currMoveEnd || item.moved !== this.currMove)))) {
-      if (item.countable && !item.deleted && item.moved === this.currMove && len > 0) {
+    while ((!this.reachedEnd || this.currMove !== null) && (len > 0 || (len === 0 && item && (!item.countable || item.deleted || item === this.currMoveEnd || (this.reachedEnd && this.currMoveEnd === null) || item.moved !== this.currMove)))) {
+      if (item === this.currMoveEnd || (this.currMoveEnd === null && this.reachedEnd && this.currMove)) {
+        item = /** @type {Item} */ (this.currMove) // we iterate to the right after the current condition
+        const { start, end, move } = this.movedStack.pop() || { start: null, end: null, move: null }
+        this.currMove = move
+        this.currMoveStart = start
+        this.currMoveEnd = end
+        this.reachedEnd = false
+      } else if (item === null) {
+        break
+      } else if (item.countable && !item.deleted && item.moved === this.currMove && len > 0) {
         len -= item.length
         if (len < 0) {
           this.rel = item.length + len
@@ -141,13 +150,6 @@ export class ListIterator {
         item = start
         continue
       }
-      if (item === this.currMoveEnd) {
-        item = /** @type {Item} */ (this.currMove) // we iterate to the right after the current condition
-        const { start, end, move } = this.movedStack.pop() || { start: null, end: null, move: null }
-        this.currMove = move
-        this.currMoveStart = start
-        this.currMoveEnd = end
-      }
       if (item.right) {
         item = item.right
       } else {
@@ -157,6 +159,23 @@ export class ListIterator {
     this.index -= len
     this.nextItem = item
     return this
+  }
+
+  /**
+   * @param {Transaction} tr
+   */
+  reduceMoves (tr) {
+    let item = this.nextItem
+    if (item !== null) {
+      while (item === this.currMoveStart) {
+        item = /** @type {Item} */ (this.currMove) // we iterate to the left after the current condition
+        const { start, end, move } = this.movedStack.pop() || { start: null, end: null, move: null }
+        this.currMove = move
+        this.currMoveStart = start
+        this.currMoveEnd = end
+      }
+      this.nextItem = item
+    }
   }
 
   /**
@@ -249,7 +268,7 @@ export class ListIterator {
           this.reachedEnd = true
         }
       }
-      if (this.nextItem && !this.reachedEnd && len > 0) {
+      if (this.nextItem && (!this.reachedEnd || this.currMove !== null) && len > 0) {
         this.forward(tr, 0)
       }
     }
@@ -317,6 +336,7 @@ export class ListIterator {
    * @param {Array<AbstractContent>} content
    */
   insertContents (tr, content) {
+    this.reduceMoves(tr)
     this._splitRel(tr)
     const parent = this.type
     const store = tr.doc.store

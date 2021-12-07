@@ -440,7 +440,7 @@ export const testMove = tc => {
     // move in uninitialized type
     const yarr = new Y.Array()
     yarr.insert(0, [1, 2, 3])
-    yarr.move(1, 1, 0)
+    yarr.move(1, 0)
     // @ts-ignore
     t.compare(yarr._prelimContent, [2, 1, 3])
   }
@@ -460,13 +460,13 @@ export const testMove = tc => {
     event1 = event
   })
   array0.insert(0, [1, 2, 3])
-  array0.move(1, 1, 0)
+  array0.move(1, 0)
   t.compare(array0.toArray(), [2, 1, 3])
   t.compare(event0.delta, [{ insert: [2] }, { retain: 1 }, { delete: 1 }])
   Y.applyUpdate(users[1], Y.encodeStateAsUpdate(users[0]))
   t.compare(array1.toArray(), [2, 1, 3])
   t.compare(event1.delta, [{ insert: [2, 1, 3] }])
-  array0.move(0, 0, 2)
+  array0.move(0, 2)
   t.compare(array0.toArray(), [1, 2, 3])
   t.compare(event0.delta, [{ delete: 1 }, { retain: 1 }, { insert: [2] }])
   compare(users)
@@ -500,6 +500,19 @@ const getUniqueNumber = () => _uniqueNumber++
  * @todo to replace content to a separate data structure so we know that insert & returns work as expected!!!
  */
 const arrayTransactions = [
+  function move (user, gen) {
+    const yarray = user.getArray('array')
+    if (yarray.length === 0) {
+      return
+    }
+    const pos = prng.int32(gen, 0, yarray.length - 1)
+    const newPos = prng.int32(gen, 0, yarray.length)
+    const oldContent = yarray.toArray()
+    yarray.move(pos, newPos)
+    const [x] = oldContent.splice(pos, 1)
+    oldContent.splice(pos < newPos ? newPos - 1 : newPos, 0, x)
+    t.compareArrays(yarray.toArray(), oldContent) // we want to make sure that fastSearch markers insert at the correct position
+  },
   function insert (user, gen) {
     const yarray = user.getArray('array')
     const uniqueNumber = getUniqueNumber()
@@ -559,10 +572,48 @@ const arrayTransactions = [
 ]
 
 /**
+ * @param {Y.Doc} user
+ */
+const monitorArrayTestObject = user => {
+  /**
+   * @type {Array<any>}
+   */
+  const arr = []
+  const yarr = user.getArray('array')
+  yarr.observe(event => {
+    let currpos = 0
+    const delta = event.delta
+    for (let i = 0; i < delta.length; i++) {
+      const d = delta[i]
+      if (d.insert != null) {
+        arr.splice(currpos, 0, ...(/** @type {Array<any>} */ (d.insert)))
+        currpos += /** @type {Array<any>} */ (d.insert).length
+      } else if (d.retain != null) {
+        currpos += d.retain
+      } else {
+        arr.splice(currpos, d.delete)
+      }
+    }
+  })
+  return arr
+}
+
+/**
+ * @param {{ testObjects: Array<Array<any>>, users: Array<Y.Doc> }} cmp
+ */
+const compareTestobjects = cmp => {
+  const arrs = cmp.testObjects
+  for (let i = 0; i < arrs.length; i++) {
+    const type = cmp.users[i].getArray('array')
+    t.compareArrays(arrs[i], type.toArray())
+  }
+}
+
+/**
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests6 = tc => {
-  applyRandomTests(tc, arrayTransactions, 10)
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 3, monitorArrayTestObject))
 }
 
 /**
