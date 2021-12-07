@@ -197,6 +197,13 @@ export class AbstractType {
      * @type {null | Array<ListIterator>}
      */
     this._searchMarker = null
+    /**
+     * You can store custom stuff here.
+     * This might be useful to associate your application state to this shared type.
+     *
+     * @type {Map<any, any>}
+     */
+    this.meta = new Map()
   }
 
   /**
