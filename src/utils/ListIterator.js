@@ -286,8 +286,8 @@ export class ListIterator {
     const startLength = len
     const sm = this.type._searchMarker
     let item = this.nextItem
-    while (len > 0 && !this.reachedEnd) {
-      while (item && !item.deleted && item.countable && !this.reachedEnd && len > 0) {
+    while (len > 0) {
+      while (item && !item.deleted && item.countable && !this.reachedEnd && len > 0 && item.moved === this.currMove && item !== this.currMoveEnd) {
         if (this.rel > 0) {
           item = getItemCleanStart(tr, createID(item.id.client, item.id.clock + this.rel))
           this.rel = 0
@@ -303,7 +303,7 @@ export class ListIterator {
           this.reachedEnd = true
         }
       }
-      if (item && !this.reachedEnd && len > 0) {
+      if (len > 0) {
         this.nextItem = item
         this.forward(tr, 0)
         item = this.nextItem

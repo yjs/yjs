@@ -475,6 +475,46 @@ export const testMove = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testMove2 = tc => {
+  {
+    // move in uninitialized type
+    const yarr = new Y.Array()
+    yarr.insert(0, [1, 2])
+    yarr.move(1, 0)
+    // @ts-ignore
+    t.compare(yarr._prelimContent, [2, 1])
+  }
+  const { array0, array1, users } = init(tc, { users: 3 })
+  /**
+   * @type {any}
+   */
+  let event0 = null
+  /**
+   * @type {any}
+   */
+  let event1 = null
+  array0.observe(event => {
+    event0 = event
+  })
+  array1.observe(event => {
+    event1 = event
+  })
+  array0.insert(0, [1, 2])
+  array0.move(1, 0)
+  t.compare(array0.toArray(), [2, 1])
+  t.compare(event0.delta, [{ insert: [2] }, { retain: 1 }, { delete: 1 }])
+  Y.applyUpdate(users[1], Y.encodeStateAsUpdate(users[0]))
+  t.compare(array1.toArray(), [2, 1])
+  t.compare(event1.delta, [{ insert: [2, 1] }])
+  array0.move(0, 2)
+  t.compare(array0.toArray(), [1, 2])
+  t.compare(event0.delta, [{ delete: 1 }, { retain: 1 }, { insert: [2] }])
+  compare(users)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testIteratingArrayContainingTypes = tc => {
   const y = new Y.Doc()
   const arr = y.getArray('arr')
@@ -613,7 +653,7 @@ const compareTestobjects = cmp => {
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests6 = tc => {
-  compareTestobjects(applyRandomTests(tc, arrayTransactions, 3, monitorArrayTestObject))
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 7, monitorArrayTestObject))
 }
 
 /**

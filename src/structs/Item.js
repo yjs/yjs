@@ -28,6 +28,7 @@ import {
 
 import * as error from 'lib0/error'
 import * as binary from 'lib0/binary'
+import { ContentMove } from './ContentMove.js'
 
 /**
  * @todo This should return several items
@@ -381,9 +382,19 @@ export class Item extends AbstractStruct {
     if (this.parent && this.parent.constructor === ID && this.id.client !== this.parent.client && this.parent.clock >= getState(store, this.parent.client)) {
       return this.parent.client
     }
+    if (this.content.constructor === ContentMove) {
+      const c = /** @type {ContentMove} */ (this.content)
+      const start = c.start.item
+      const end = c.isCollapsed() ? null : c.end.item
+      if (start && start.clock >= getState(store, start.client)) {
+        return start.client
+      }
+      if (end && end.clock >= getState(store, end.client)) {
+        return end.client
+      }
+    }
 
     // We have all missing ids, now find the items
-
     if (this.origin) {
       this.left = getItemCleanEnd(transaction, this.origin)
       this.origin = this.left.lastId
@@ -413,6 +424,7 @@ export class Item extends AbstractStruct {
         this.parent = /** @type {ContentType} */ (parentItem.content).type
       }
     }
+
     return null
   }
 
@@ -640,6 +652,7 @@ export class Item extends AbstractStruct {
     if (!this.deleted) {
       throw error.unexpectedCase()
     }
+    this.moved = null
     this.content.gc(store)
     if (parentGCd) {
       replaceStruct(store, this, new GC(this.id, this.length))

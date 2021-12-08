@@ -195,13 +195,15 @@ export class YEvent {
               delta.push(lastOp)
             }
           }
-          for (let item = target._start; item !== null;) {
-            if (item === currMoveEnd) {
+          for (let item = target._start; ;) {
+            if (item === currMoveEnd && currMove) {
               item = currMove
               const { end, move, isNew } = movedStack.pop() || { end: null, move: null, isNew: false }
               currMoveIsNew = isNew
               currMoveEnd = end
               currMove = move
+            } else if (item === null) {
+              break
             } else if (item.content.constructor === ContentMove) {
               if (item.moved === currMove) {
                 movedStack.push({ end: currMoveEnd, move: currMove, isNew: currMoveIsNew })
@@ -213,7 +215,7 @@ export class YEvent {
                 continue // do not move to item.right
               }
             } else if (item.moved !== currMove) {
-              if (!currMoveIsNew && item.countable && item.moved && !this.adds(item) && !this.adds(item.moved) && (this.transaction.prevMoved.get(item) || null) === currMove) {
+              if (!currMoveIsNew && item.countable && item.moved && !this.adds(item) && this.adds(item.moved) && (this.transaction.prevMoved.get(item) || null) === currMove) {
                 if (lastOp === null || lastOp.delete === undefined) {
                   packOp()
                   lastOp = { delete: 0 }
