@@ -129,6 +129,10 @@ Efficiently persists document updates to the browsers indexeddb database.
 The document is immediately available and only diffs need to be synced through the
 network provider.
   </dd>
+  <dt><a href="https://github.com/marcopolo/y-libp2p">y-libp2p</a></dt>
+  <dd>
+Uses <a href="https://libp2p.io/">libp2p</a> to propagate updates via <a href="https://github.com/libp2p/specs/tree/master/pubsub/gossipsub">GossipSub</a>. Also includes a peer-sync mechanism to catch up on missed updates.
+  </dd>
   <dt><a href="https://github.com/yjs/y-dat">y-dat</a></dt>
   <dd>
 [WIP] Write document updates efficiently to the dat network using
