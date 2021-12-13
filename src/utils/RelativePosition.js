@@ -9,6 +9,8 @@ import {
   createID,
   ContentType,
   followRedone,
+  transact,
+  useSearchMarker,
   ID, Doc, AbstractType // eslint-disable-line
 } from '../internals.js'
 
@@ -72,6 +74,10 @@ export class RelativePosition {
      * @type {number}
      */
     this.assoc = assoc
+  }
+
+  clone () {
+    return new RelativePosition(this.type, this.tname, this.item, this.assoc)
   }
 }
 
@@ -161,7 +167,6 @@ export const createRelativePosition = (type, item, assoc) => {
  * @function
  */
 export const createRelativePositionFromTypeIndex = (type, index, assoc = 0) => {
-  let t = type._start
   if (assoc < 0) {
     // associated to the left character or the beginning of a type, increment index if possible.
     if (index === 0) {
@@ -169,21 +174,17 @@ export const createRelativePositionFromTypeIndex = (type, index, assoc = 0) => {
     }
     index--
   }
-  while (t !== null) {
-    if (!t.deleted && t.countable) {
-      if (t.length > index) {
-        // case 1: found position somewhere in the linked list
-        return createRelativePosition(type, createID(t.id.client, t.id.clock + index), assoc)
+  return transact(/** @type {Doc} */ (type.doc), tr =>
+    useSearchMarker(tr, type, index, walker => {
+      if (walker.reachedEnd) {
+        const item = assoc < 0 ? /** @type {Item} */ (walker.nextItem).lastId : null
+        return createRelativePosition(type, item, assoc)
+      } else {
+        const id = /** @type {Item} */ (walker.nextItem).id
+        return createRelativePosition(type, createID(id.client, id.clock + walker.rel), assoc)
       }
-      index -= t.length
-    }
-    if (t.right === null && assoc < 0) {
-      // left-associated position, return last available id
-      return createRelativePosition(type, t.lastId, assoc)
-    }
-    t = t.right
-  }
-  return createRelativePosition(type, null, assoc)
+    })
+  )
 }
 
 /**

@@ -1,7 +1,8 @@
 
 import {
   isDeleted,
-  Item, AbstractType, Transaction, AbstractStruct // eslint-disable-line
+  getMovedCoords,
+  ContentMove, Item, AbstractType, Transaction, AbstractStruct // eslint-disable-line
 } from '../internals.js'
 
 import * as set from 'lib0/set'
@@ -153,62 +154,107 @@ export class YEvent {
   get changes () {
     let changes = this._changes
     if (changes === null) {
-      const target = this.target
-      const added = set.create()
-      const deleted = set.create()
-      /**
-       * @type {Array<{insert:Array<any>}|{delete:number}|{retain:number}>}
-       */
-      const delta = []
-      changes = {
-        added,
-        deleted,
-        delta,
-        keys: this.keys
-      }
-      const changed = /** @type Set<string|null> */ (this.transaction.changed.get(target))
-      if (changed.has(null)) {
+      this.transaction.doc.transact(tr => {
+        const target = this.target
+        const added = set.create()
+        const deleted = set.create()
         /**
-         * @type {any}
+         * @type {Array<{insert:Array<any>}|{delete:number}|{retain:number}>}
          */
-        let lastOp = null
-        const packOp = () => {
-          if (lastOp) {
-            delta.push(lastOp)
-          }
+        const delta = []
+        changes = {
+          added,
+          deleted,
+          delta,
+          keys: this.keys
         }
-        for (let item = target._start; item !== null; item = item.right) {
-          if (item.deleted) {
-            if (this.deletes(item) && !this.adds(item)) {
-              if (lastOp === null || lastOp.delete === undefined) {
-                packOp()
-                lastOp = { delete: 0 }
-              }
-              lastOp.delete += item.length
-              deleted.add(item)
-            } // else nop
-          } else {
-            if (this.adds(item)) {
-              if (lastOp === null || lastOp.insert === undefined) {
-                packOp()
-                lastOp = { insert: [] }
-              }
-              lastOp.insert = lastOp.insert.concat(item.content.getContent())
-              added.add(item)
-            } else {
-              if (lastOp === null || lastOp.retain === undefined) {
-                packOp()
-                lastOp = { retain: 0 }
-              }
-              lastOp.retain += item.length
+        const changed = /** @type Set<string|null> */ (this.transaction.changed.get(target))
+        if (changed.has(null)) {
+          /**
+           * @type {Array<{ end: Item | null, move: Item | null, isNew : boolean }>}
+           */
+          const movedStack = []
+          /**
+           * @type {Item | null}
+           */
+          let currMove = null
+          /**
+           * @type {boolean}
+           */
+          let currMoveIsNew = false
+          /**
+           * @type {Item | null}
+           */
+          let currMoveEnd = null
+          /**
+           * @type {any}
+           */
+          let lastOp = null
+          const packOp = () => {
+            if (lastOp) {
+              delta.push(lastOp)
             }
           }
+          for (let item = target._start; ;) {
+            if (item === currMoveEnd && currMove) {
+              item = currMove
+              const { end, move, isNew } = movedStack.pop() || { end: null, move: null, isNew: false }
+              currMoveIsNew = isNew
+              currMoveEnd = end
+              currMove = move
+            } else if (item === null) {
+              break
+            } else if (item.content.constructor === ContentMove) {
+              if (item.moved === currMove) {
+                movedStack.push({ end: currMoveEnd, move: currMove, isNew: currMoveIsNew })
+                const { start, end } = getMovedCoords(item.content, tr)
+                currMove = item
+                currMoveEnd = end
+                currMoveIsNew = this.adds(item)
+                item = start
+                continue // do not move to item.right
+              }
+            } else if (item.moved !== currMove) {
+              if (!currMoveIsNew && item.countable && item.moved && !this.adds(item) && this.adds(item.moved) && (this.transaction.prevMoved.get(item) || null) === currMove) {
+                if (lastOp === null || lastOp.delete === undefined) {
+                  packOp()
+                  lastOp = { delete: 0 }
+                }
+                lastOp.delete += item.length
+              }
+            } else if (item.deleted) {
+              if (!currMoveIsNew && this.deletes(item) && !this.adds(item)) {
+                if (lastOp === null || lastOp.delete === undefined) {
+                  packOp()
+                  lastOp = { delete: 0 }
+                }
+                lastOp.delete += item.length
+                deleted.add(item)
+              }
+            } else {
+              if (currMoveIsNew || this.adds(item)) {
+                if (lastOp === null || lastOp.insert === undefined) {
+                  packOp()
+                  lastOp = { insert: [] }
+                }
+                lastOp.insert = lastOp.insert.concat(item.content.getContent())
+                added.add(item)
+              } else {
+                if (lastOp === null || lastOp.retain === undefined) {
+                  packOp()
+                  lastOp = { retain: 0 }
+                }
+                lastOp.retain += item.length
+              }
+            }
+            item = /** @type {Item} */ (item).right
+          }
+          if (lastOp !== null && lastOp.retain === undefined) {
+            packOp()
+          }
         }
-        if (lastOp !== null && lastOp.retain === undefined) {
-          packOp()
-        }
-      }
-      this._changes = changes
+        this._changes = changes
+      })
     }
     return /** @type {any} */ (changes)
   }

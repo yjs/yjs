@@ -373,6 +373,33 @@ export const compare = users => {
     t.compare(Y.encodeStateVector(users[i]), Y.encodeStateVector(users[i + 1]))
     compareDS(Y.createDeleteSetFromStructStore(users[i].store), Y.createDeleteSetFromStructStore(users[i + 1].store))
     compareStructStores(users[i].store, users[i + 1].store)
+    // @todo
+    // test list-iterator
+    // console.log('dutiraneduiaentdr', users[0].getArray('array')._searchMarker)
+    /*
+    {
+      const user = users[0]
+      user.transact(tr => {
+        const type = user.getArray('array')
+        Y.useSearchMarker(tr, type, type.length, walker => {
+          for (let i = type.length; i >= 0; i--) {
+            const otherWalker = new Y.ListIterator(type)
+            otherWalker.forward(tr, walker.index)
+            otherWalker.forward(tr, 0)
+            walker.forward(tr, 0)
+            t.assert(walker.index === i)
+            t.assert(walker.left === otherWalker.left)
+            t.assert(walker.right === otherWalker.right)
+            t.assert(walker.nextItem === otherWalker.nextItem)
+            t.assert(walker.reachedEnd === otherWalker.reachedEnd)
+            if (i > 0) {
+              walker.backward(tr, 1)
+            }
+          }
+        })
+      })
+    }
+    */
   }
   users.map(u => u.destroy())
 }

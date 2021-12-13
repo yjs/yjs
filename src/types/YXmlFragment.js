@@ -8,15 +8,13 @@ import {
   AbstractType,
   typeListMap,
   typeListForEach,
-  typeListInsertGenerics,
   typeListInsertGenericsAfter,
-  typeListDelete,
   typeListToArray,
   YXmlFragmentRefID,
   callTypeObservers,
   transact,
-  typeListGet,
   typeListSlice,
+  useSearchMarker,
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, ContentType, Transaction, Item, YXmlText, YXmlHook, Snapshot // eslint-disable-line
 } from '../internals.js'
 
@@ -304,9 +302,11 @@ export class YXmlFragment extends AbstractType {
    */
   insert (index, content) {
     if (this.doc !== null) {
-      transact(this.doc, transaction => {
-        typeListInsertGenerics(transaction, this, index, content)
-      })
+      return transact(/** @type {Doc} */ (this.doc), transaction =>
+        useSearchMarker(transaction, this, index, walker =>
+          walker.insertArrayValue(transaction, content)
+        )
+      )
     } else {
       // @ts-ignore _prelimContent is defined because this is not yet integrated
       this._prelimContent.splice(index, 0, ...content)
@@ -347,9 +347,11 @@ export class YXmlFragment extends AbstractType {
    */
   delete (index, length = 1) {
     if (this.doc !== null) {
-      transact(this.doc, transaction => {
-        typeListDelete(transaction, this, index, length)
-      })
+      transact(/** @type {Doc} */ (this.doc), transaction =>
+        useSearchMarker(transaction, this, index, walker =>
+          walker.delete(transaction, length)
+        )
+      )
     } else {
       // @ts-ignore _prelimContent is defined because this is not yet integrated
       this._prelimContent.splice(index, length)
@@ -390,7 +392,11 @@ export class YXmlFragment extends AbstractType {
    * @return {YXmlElement|YXmlText}
    */
   get (index) {
-    return typeListGet(this, index)
+    return transact(/** @type {Doc} */ (this.doc), transaction =>
+      useSearchMarker(transaction, this, index, walker =>
+        walker.slice(transaction, 1)[0]
+      )
+    )
   }
 
   /**

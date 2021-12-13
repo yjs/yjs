@@ -21,12 +21,14 @@ import {
   createID,
   readContentFormat,
   readContentType,
+  readContentMove,
   addChangedTypeToTransaction,
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error'
 import * as binary from 'lib0/binary'
+import { ContentMove } from './ContentMove.js'
 
 /**
  * @todo This should return several items
@@ -116,6 +118,12 @@ export const splitItem = (transaction, leftItem, diff) => {
     /** @type {AbstractType<any>} */ (rightItem.parent)._map.set(rightItem.parentSub, rightItem)
   }
   leftItem.length = diff
+  if (leftItem.moved) {
+    const m = transaction.prevMoved.get(leftItem)
+    if (m) {
+      transaction.prevMoved.set(rightItem, m)
+    }
+  }
   return rightItem
 }
 
@@ -281,11 +289,18 @@ export class Item extends AbstractStruct {
      */
     this.parentSub = parentSub
     /**
-     * If this type's effect is reundone this type refers to the type that undid
+     * If this type's effect is reundone this type refers to the type-id that undid
      * this operation.
+     *
      * @type {ID | null}
      */
     this.redone = null
+    /**
+     * This property is reused by the moved prop. In this case this property refers to an Item.
+     *
+     * @type {Item | null}
+     */
+    this.moved = null
     /**
      * @type {AbstractContent}
      */
@@ -367,11 +382,21 @@ export class Item extends AbstractStruct {
     if (this.parent && this.parent.constructor === ID && this.id.client !== this.parent.client && this.parent.clock >= getState(store, this.parent.client)) {
       return this.parent.client
     }
+    if (this.content.constructor === ContentMove) {
+      const c = /** @type {ContentMove} */ (this.content)
+      const start = c.start.item
+      const end = c.isCollapsed() ? null : c.end.item
+      if (start && start.clock >= getState(store, start.client)) {
+        return start.client
+      }
+      if (end && end.clock >= getState(store, end.client)) {
+        return end.client
+      }
+    }
 
     // We have all missing ids, now find the items
-
     if (this.origin) {
-      this.left = getItemCleanEnd(transaction, store, this.origin)
+      this.left = getItemCleanEnd(transaction, this.origin)
       this.origin = this.left.lastId
     }
     if (this.rightOrigin) {
@@ -399,6 +424,7 @@ export class Item extends AbstractStruct {
         this.parent = /** @type {ContentType} */ (parentItem.content).type
       }
     }
+
     return null
   }
 
@@ -409,7 +435,7 @@ export class Item extends AbstractStruct {
   integrate (transaction, offset) {
     if (offset > 0) {
       this.id.clock += offset
-      this.left = getItemCleanEnd(transaction, transaction.doc.store, createID(this.id.client, this.id.clock - 1))
+      this.left = getItemCleanEnd(transaction, createID(this.id.client, this.id.clock - 1))
       this.origin = this.left.lastId
       this.content = this.content.splice(offset)
       this.length -= offset
@@ -569,21 +595,22 @@ export class Item extends AbstractStruct {
       this.deleted === right.deleted &&
       this.redone === null &&
       right.redone === null &&
+      this.moved === right.moved &&
       this.content.constructor === right.content.constructor &&
       this.content.mergeWith(right.content)
     ) {
-      const searchMarker = /** @type {AbstractType<any>} */ (this.parent)._searchMarker
-      if (searchMarker) {
-        searchMarker.forEach(marker => {
-          if (marker.p === right) {
-            // right is going to be "forgotten" so we need to update the marker
-            marker.p = this
-            // adjust marker index
-            if (!this.deleted && this.countable) {
-              marker.index -= this.length
+      if (right.marker) {
+        // Right will be "forgotten", so we delete all
+        // search markers that reference right.
+        const searchMarker = /** @type {AbstractType<any>} */ (this.parent)._searchMarker
+        if (searchMarker) {
+          for (let i = searchMarker.length - 1; i >= 0; i--) {
+            if (searchMarker[i].nextItem === right) {
+              // @todo do something more efficient than splicing..
+              searchMarker.splice(i, 1)
             }
           }
-        })
+        }
       }
       if (right.keep) {
         this.keep = true
@@ -613,7 +640,7 @@ export class Item extends AbstractStruct {
       this.markDeleted()
       addToDeleteSet(transaction.deleteSet, this.id.client, this.id.clock, this.length)
       addChangedTypeToTransaction(transaction, parent, this.parentSub)
-      this.content.delete(transaction)
+      this.content.delete(transaction, this)
     }
   }
 
@@ -625,6 +652,7 @@ export class Item extends AbstractStruct {
     if (!this.deleted) {
       throw error.unexpectedCase()
     }
+    this.moved = null
     this.content.gc(store)
     if (parentGCd) {
       replaceStruct(store, this, new GC(this.id, this.length))
@@ -710,7 +738,8 @@ export const contentRefs = [
   readContentType, // 7
   readContentAny, // 8
   readContentDoc, // 9
-  () => { error.unexpectedCase() } // 10 - Skip is not ItemContent
+  () => { error.unexpectedCase() }, // 10 - Skip is not ItemContent
+  readContentMove // 11
 ]
 
 /**
@@ -777,8 +806,9 @@ export class AbstractContent {
 
   /**
    * @param {Transaction} transaction
+   * @param {Item} item
    */
-  delete (transaction) {
+  delete (transaction, item) {
     throw error.methodUnimplemented()
   }
 

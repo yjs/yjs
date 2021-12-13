@@ -199,19 +199,18 @@ export const getItemCleanStart = (transaction, id) => {
  * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
  *
  * @param {Transaction} transaction
- * @param {StructStore} store
  * @param {ID} id
  * @return {Item}
  *
  * @private
  * @function
  */
-export const getItemCleanEnd = (transaction, store, id) => {
+export const getItemCleanEnd = (transaction, id) => {
   /**
    * @type {Array<Item>}
    */
   // @ts-ignore
-  const structs = store.clients.get(id.client)
+  const structs = transaction.doc.store.clients.get(id.client)
   const index = findIndexSS(structs, id.clock)
   const struct = structs[index]
   if (id.clock !== struct.id.clock + struct.length - 1 && struct.constructor !== GC) {
