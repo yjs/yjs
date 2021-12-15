@@ -131,7 +131,9 @@ network provider.
   </dd>
   <dt><a href="https://github.com/marcopolo/y-libp2p">y-libp2p</a></dt>
   <dd>
-Uses <a href="https://libp2p.io/">libp2p</a> to propagate updates via <a href="https://github.com/libp2p/specs/tree/master/pubsub/gossipsub">GossipSub</a>. Also includes a peer-sync mechanism to catch up on missed updates.
+Uses <a href="https://libp2p.io/">libp2p</a> to propagate updates via
+<a href="https://github.com/libp2p/specs/tree/master/pubsub/gossipsub">GossipSub</a>.
+Also includes a peer-sync mechanism to catch up on missed updates.
   </dd>
   <dt><a href="https://github.com/yjs/y-dat">y-dat</a></dt>
   <dd>
@@ -717,7 +719,7 @@ Y.applyUpdate(ydoc1, diff2)
 Y.applyUpdate(ydoc2, diff1)
 ```
 
-### Example: Syncing clients without loading the Y.Doc
+#### Example: Syncing clients without loading the Y.Doc
 
 It is possible to sync clients and compute delta updates without loading the Yjs
 document to memory. Yjs exposes an API to compute the differences directly on the
@@ -740,6 +742,17 @@ const diff2 = Y.diffUpdate(currentState2, stateVector1)
 currentState1 = Y.mergeUpdates([currentState1, diff2])
 currentState1 = Y.mergeUpdates([currentState1, diff1])
 ```
+
+#### Using V2 update format
+
+Yjs implements two update formats. By default you are using the V1 update format.
+You can opt-in into the V2 update format wich provides much better compression.
+It is not yet used by all providers. However, you can already use it if
+you are building your own provider. All below functions are available with the
+suffix "V2". E.g. `Y.applyUpdate` ⇒ `Y.applyUpdateV2`. We also support conversion
+functions between both formats: `Y.convertUpdateFormatV1ToV2` & `Y.convertUpdateFormatV2ToV1`.
+
+#### Update API
 
 <dl>
   <b><code>Y.applyUpdate(Y.Doc, update:Uint8Array, [transactionOrigin:any])</code></b>
@@ -772,6 +785,14 @@ Computes the state vector from a document update and encodes it into an Uint8Arr
 Encode the missing differences to another update message. This function works
 similarly to <code>Y.encodeStateAsUpdate(ydoc, stateVector)</code> but works
 on updates instead.
+  </dd>
+  <b><code>convertUpdateFormatV1ToV2</code></b>
+  <dd>
+Convert V1 update format to the V2 update format.
+  </dd>
+  <b><code>convertUpdateFormatV2ToV1</code></b>
+  <dd>
+Convert V2 update format to the V1 update format.
   </dd>
 </dl>
 

@@ -85,12 +85,16 @@ export {
   encodeRelativePosition,
   decodeRelativePosition,
   diffUpdate,
-  diffUpdateV2
+  diffUpdateV2,
+  convertUpdateFormatV1ToV2,
+  convertUpdateFormatV2ToV1
 } from './internals.js'
 
 const glo = /** @type {any} */ (typeof window !== 'undefined'
   ? window
+  // @ts-ignore
   : typeof global !== 'undefined' ? global : {})
+
 const importIdentifier = '__ $YJS$ __'
 
 if (glo[importIdentifier] === true) {
