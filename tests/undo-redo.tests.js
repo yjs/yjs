@@ -358,6 +358,26 @@ export const testUndoNestedUndoIssue = tc => {
     text.set('blocks', blocks3block)
   })
 
+  const blocks4 = new Y.Array()
+  const blocks4block = new Y.Map()
+  doc.transact(() => {
+    blocks4block.set('text', 'Something Else 2')
+    blocks4.push([blocks4block])
+    text.set('blocks', blocks4block)
+  })
+
+  const blocks5 = new Y.Array()
+  const blocks5block = new Y.Map()
+  doc.transact(() => {
+    blocks5block.set('text', 'Something Else 3')
+    blocks5.push([blocks5block])
+    text.set('blocks', blocks5block)
+  })
+
+  t.compare(design.toJSON(), { text: { blocks: { text: 'Something Else 3' } } })
+  undoManager.undo()
+  t.compare(design.toJSON(), { text: { blocks: { text: 'Something Else 2' } } })
+  undoManager.undo()
   t.compare(design.toJSON(), { text: { blocks: { text: 'Something Else' } } })
   undoManager.undo()
   t.compare(design.toJSON(), { text: { blocks: { text: 'Something' } } })
@@ -371,4 +391,8 @@ export const testUndoNestedUndoIssue = tc => {
   t.compare(design.toJSON(), { text: { blocks: { text: 'Something' } } })
   undoManager.redo()
   t.compare(design.toJSON(), { text: { blocks: { text: 'Something Else' } } })
+  undoManager.redo()
+  t.compare(design.toJSON(), { text: { blocks: { text: 'Something Else 2' } } })
+  undoManager.redo()
+  t.compare(design.toJSON(), { text: { blocks: { text: 'Something Else 3' } } })
 }

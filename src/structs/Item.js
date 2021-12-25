@@ -210,10 +210,21 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete) => {
       }
       right = right.right
     }
+
+    /**
+     * @type {Item|null}
+     */
+    let leftTrace = left
     // Iterate right while right is in itemsToDelete
     // If it is intended to delete right while item is redone, we can expect that item should replace right.
-    while (left !== null && left.right !== null && left.right !== right && itemsToDelete.findIndex(d => d === /** @type {Item} */ (left).right) >= 0) {
-      left = left.right
+    while (leftTrace !== null && leftTrace.right !== null && leftTrace.right !== right) {
+      if (itemsToDelete.findIndex(d => d === /** @type {Item} */ leftTrace) >= 0) {
+        break
+      }
+      leftTrace = leftTrace.right
+    }
+    if (leftTrace !== null) {
+      left = leftTrace
     }
   }
   const nextClock = getState(store, ownClientID)
