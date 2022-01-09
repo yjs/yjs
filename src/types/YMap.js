@@ -129,7 +129,7 @@ export class YMap extends AbstractType {
    *
    * @return {number}
    */
-  get size () {
+  size () {
     return [...createMapIterator(this._map)].length
   }
 
