@@ -10,6 +10,7 @@ import {
   typeListForEach,
   typeListCreateIterator,
   typeListInsertGenerics,
+  typeListPushGenerics,
   typeListDelete,
   typeListMap,
   YArrayRefID,
@@ -142,9 +143,17 @@ export class YArray extends AbstractType {
    * Appends content to this YArray.
    *
    * @param {Array<T>} content Array of content to append.
+   *
+   * @todo Use the following implementation in all types.
    */
   push (content) {
-    this.insert(this.length, content)
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
+        typeListPushGenerics(transaction, this, content)
+      })
+    } else {
+      /** @type {Array<any>} */ (this._prelimContent).push(...content)
+    }
   }
 
   /**

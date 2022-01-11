@@ -736,6 +736,29 @@ export const typeListInsertGenerics = (transaction, parent, index, content) => {
 }
 
 /**
+ * Pushing content is special as we generally want to push after the last item. So we don't have to update
+ * the serach marker.
+ *
+ * @param {Transaction} transaction
+ * @param {AbstractType<any>} parent
+ * @param {Array<Object<string,any>|Array<any>|number|null|string|Uint8Array>} content
+ *
+ * @private
+ * @function
+ */
+export const typeListPushGenerics = (transaction, parent, content) => {
+  // Use the marker with the highest index and iterate to the right.
+  const marker = (parent._searchMarker || []).reduce((maxMarker, currMarker) => currMarker.index > maxMarker.index ? currMarker : maxMarker, { index: 0, p: parent._start })
+  let n = marker.p
+  if (n) {
+    while (n.right) {
+      n = n.right
+    }
+  }
+  return typeListInsertGenericsAfter(transaction, parent, n, content)
+}
+
+/**
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {number} index
