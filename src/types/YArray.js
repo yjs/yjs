@@ -23,6 +23,7 @@ import { typeListSlice } from './AbstractType.js'
 /**
  * Event that describes the changes on a YArray
  * @template T
+ * @extends YEvent<YArray<T>>
  */
 export class YArrayEvent extends YEvent {
   /**

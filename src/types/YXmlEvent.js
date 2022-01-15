@@ -5,6 +5,7 @@ import {
 } from '../internals.js'
 
 /**
+ * @extends YEvent<YXmlElement|YXmlText|YXmlFragment>
  * An Event that describes changes on a YXml Element or Yxml Fragment
  */
 export class YXmlEvent extends YEvent {

@@ -8,17 +8,18 @@ import * as set from 'lib0/set'
 import * as array from 'lib0/array'
 
 /**
+ * @template {AbstractType<any>} T
  * YEvent describes the changes on a YType.
  */
 export class YEvent {
   /**
-   * @param {AbstractType<any>} target The changed type.
+   * @param {T} target The changed type.
    * @param {Transaction} transaction
    */
   constructor (target, transaction) {
     /**
      * The type on which this event was created on.
-     * @type {AbstractType<any>}
+     * @type {T}
      */
     this.target = target
     /**

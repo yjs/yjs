@@ -278,7 +278,7 @@ export class AbstractType {
     this._eH = createEventHandler()
     /**
      * Deep event handlers
-     * @type {EventHandler<Array<YEvent>,Transaction>}
+     * @type {EventHandler<Array<YEvent<any>>,Transaction>}
      */
     this._dEH = createEventHandler()
     /**
@@ -364,7 +364,7 @@ export class AbstractType {
   /**
    * Observe all events that are created by this type and its children.
    *
-   * @param {function(Array<YEvent>,Transaction):void} f Observer function
+   * @param {function(Array<YEvent<any>>,Transaction):void} f Observer function
    */
   observeDeep (f) {
     addEventHandlerListener(this._dEH, f)
@@ -382,7 +382,7 @@ export class AbstractType {
   /**
    * Unregister an observer function.
    *
-   * @param {function(Array<YEvent>,Transaction):void} f Observer function
+   * @param {function(Array<YEvent<any>>,Transaction):void} f Observer function
    */
   unobserveDeep (f) {
     removeEventHandlerListener(this._dEH, f)

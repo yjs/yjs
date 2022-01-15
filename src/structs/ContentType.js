@@ -39,7 +39,7 @@ export const YXmlTextRefID = 6
  */
 export class ContentType {
   /**
-   * @param {AbstractType<YEvent>} type
+   * @param {AbstractType<any>} type
    */
   constructor (type) {
     /**

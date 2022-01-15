@@ -21,6 +21,7 @@ import * as iterator from 'lib0/iterator'
 
 /**
  * @template T
+ * @extends YEvent<YMap<T>>
  * Event that describes the changes on a YMap.
  */
 export class YMapEvent extends YEvent {
