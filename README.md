@@ -142,6 +142,10 @@ Also includes a peer-sync mechanism to catch up on missed updates.
 an append-only log of CRDT local updates (hypercore). Multifeed manages and sync
 hypercores and y-dat listens to changes and applies them to the Yjs document.
 </dd>
+  <dt><a href="https://github.com/yousefED/matrix-crdt">Matrix-CRDT</a></dt>
+  <dd>
+    Use <a href="https://www.matrix.org">Matrix</a> as an off-the-shelf backend for Yjs by using the <a href="https://github.com/yousefED/matrix-crdt">MatrixProvider</a>. Use Matrix as transport and storage of Yjs updates, so you can focus building your client app and Matrix can provide powerful features like Authentication, Authorization, Federation, hosting (self-hosting or SaaS) and even End-to-End Encryption (E2EE).
+</dd>
 </dl>
 
 ## Getting Started
