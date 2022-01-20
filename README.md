@@ -984,7 +984,7 @@ undoManager.on('stack-item-popped', event => {
 
 *Conflict-free replicated data types* (CRDT) for collaborative editing are an
 alternative approach to *operational transformation* (OT). A very simple
-differenciation between the two approaches is that OT attempts to transform
+differentiation between the two approaches is that OT attempts to transform
 index positions to ensure convergence (all clients end up with the same
 content), while CRDTs use mathematical models that usually do not involve index
 transformations, like linked lists. OT is currently the de-facto standard for
