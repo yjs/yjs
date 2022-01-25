@@ -63,7 +63,7 @@ Sponsorship also comes with special perks! [![Become a Sponsor](https://img.shie
 * [Nimbus Note](https://nimbusweb.me/note.php) A note-taking app designed by
   Nimbus Web.
 * [JoeDocs](https://joedocs.com/) An open collaborative wiki.
-* [Pluxbox RadioManager](https://pluxbox.com/) A web-based app to
+* [Pluxbox RadioManager](https://getradiomanager.com/) A web-based app to
   collaboratively organize radio broadcasts.
 * [Alldone](https://alldone.app/) A next-gen project management and
   collaboration platform.
