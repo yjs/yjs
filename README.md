@@ -56,10 +56,6 @@ Sponsorship also comes with special perks! [![Become a Sponsor](https://img.shie
 * [Input](https://input.com/) A collaborative note taking app. :star2:
 * [Room.sh](https://room.sh/) A meeting application with integrated
   collaborative drawing, editing, and coding tools. :star:
-* [https://coronavirustechhandbook.com/](https://coronavirustechhandbook.com/)
-  A collaborative wiki that is edited by thousands of different people to work
-  on a rapid and sophisticated response to the coronavirus outbreak and
-  subsequent impacts. :star:
 * [Nimbus Note](https://nimbusweb.me/note.php) A note-taking app designed by
   Nimbus Web.
 * [JoeDocs](https://joedocs.com/) An open collaborative wiki.
