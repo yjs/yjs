@@ -88,7 +88,7 @@ const popStackItem = (undoManager, stack, eventType) => {
         }
       })
       itemsToRedo.forEach(struct => {
-        performedChange = redoItem(transaction, struct, itemsToRedo, itemsToDelete) !== null || performedChange
+        performedChange = redoItem(transaction, struct, itemsToRedo, stackItem.insertions) !== null || performedChange
       })
       // We want to delete in reverse order so that children are deleted before
       // parents, so we have more information available when items are filtered.

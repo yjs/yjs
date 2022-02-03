@@ -372,3 +372,158 @@ export const testUndoNestedUndoIssue = tc => {
   undoManager.redo()
   t.compare(design.toJSON(), { text: { blocks: { text: 'Something Else' } } })
 }
+
+/**
+ * This issue has been reported in https://github.com/yjs/yjs/issues/355
+ *
+ * @param {t.TestCase} tc
+ */
+export const testConsecutiveRedoBug = tc => {
+  const doc = new Y.Doc()
+  const yRoot = doc.getMap()
+  const undoMgr = new Y.UndoManager(yRoot)
+
+  let yPoint = new Y.Map()
+  yPoint.set('x', 0)
+  yPoint.set('y', 0)
+  yRoot.set('a', yPoint)
+  undoMgr.stopCapturing()
+
+  yPoint.set('x', 100)
+  yPoint.set('y', 100)
+  undoMgr.stopCapturing()
+
+  yPoint.set('x', 200)
+  yPoint.set('y', 200)
+  undoMgr.stopCapturing()
+
+  yPoint.set('x', 300)
+  yPoint.set('y', 300)
+  undoMgr.stopCapturing()
+
+  t.compare(yPoint.toJSON(), { x: 300, y: 300 })
+
+  undoMgr.undo() // x=200, y=200
+  t.compare(yPoint.toJSON(), { x: 200, y: 200 })
+  undoMgr.undo() // x=100, y=100
+  t.compare(yPoint.toJSON(), { x: 100, y: 100 })
+  undoMgr.undo() // x=0, y=0
+  t.compare(yPoint.toJSON(), { x: 0, y: 0 })
+  undoMgr.undo() // nil
+  t.compare(yRoot.get('a'), undefined)
+
+  undoMgr.redo() // x=0, y=0
+  yPoint = yRoot.get('a')
+
+  t.compare(yPoint.toJSON(), { x: 0, y: 0 })
+  undoMgr.redo() // x=100, y=100
+  t.compare(yPoint.toJSON(), { x: 100, y: 100 })
+  undoMgr.redo() // x=200, y=200
+  t.compare(yPoint.toJSON(), { x: 200, y: 200 })
+  undoMgr.redo() // expected x=300, y=300, actually nil
+  t.compare(yPoint.toJSON(), { x: 300, y: 300 })
+}
+
+/**
+ * This issue has been reported in https://github.com/yjs/yjs/issues/304
+ *
+ * @param {t.TestCase} tc
+ */
+export const testUndoXmlBug = tc => {
+  const origin = 'origin'
+  const doc = new Y.Doc()
+  const fragment = doc.getXmlFragment('t')
+  const undoManager = new Y.UndoManager(fragment, {
+    captureTimeout: 0,
+    trackedOrigins: new Set([origin])
+  })
+
+  // create element
+  doc.transact(() => {
+    const e = new Y.XmlElement('test-node')
+    e.setAttribute('a', '100')
+    e.setAttribute('b', '0')
+    fragment.insert(fragment.length, [e])
+  }, origin)
+
+  // change one attribute
+  doc.transact(() => {
+    const e = fragment.get(0)
+    e.setAttribute('a', '200')
+  }, origin)
+
+  // change both attributes
+  doc.transact(() => {
+    const e = fragment.get(0)
+    e.setAttribute('a', '180')
+    e.setAttribute('b', '50')
+  }, origin)
+
+  undoManager.undo()
+  undoManager.undo()
+  undoManager.undo()
+
+  undoManager.redo()
+  undoManager.redo()
+  undoManager.redo()
+  t.compare(fragment.toString(), '<test-node a="180" b="50"></test-node>')
+}
+
+/**
+ * This issue has been reported in https://github.com/yjs/yjs/issues/343
+ *
+ * @param {t.TestCase} tc
+ */
+export const testUndoBlockBug = tc => {
+  const doc = new Y.Doc({ gc: false })
+  const design = doc.getMap()
+
+  const undoManager = new Y.UndoManager(design, { captureTimeout: 0 })
+
+  const text = new Y.Map()
+
+  const blocks1 = new Y.Array()
+  const blocks1block = new Y.Map()
+  doc.transact(() => {
+    blocks1block.set('text', '1')
+    blocks1.push([blocks1block])
+
+    text.set('blocks', blocks1block)
+    design.set('text', text)
+  })
+
+  const blocks2 = new Y.Array()
+  const blocks2block = new Y.Map()
+  doc.transact(() => {
+    blocks2block.set('text', '2')
+    blocks2.push([blocks2block])
+    text.set('blocks', blocks2block)
+  })
+
+  const blocks3 = new Y.Array()
+  const blocks3block = new Y.Map()
+  doc.transact(() => {
+    blocks3block.set('text', '3')
+    blocks3.push([blocks3block])
+    text.set('blocks', blocks3block)
+  })
+
+  const blocks4 = new Y.Array()
+  const blocks4block = new Y.Map()
+  doc.transact(() => {
+    blocks4block.set('text', '4')
+    blocks4.push([blocks4block])
+    text.set('blocks', blocks4block)
+  })
+
+  // {"text":{"blocks":{"text":"4"}}}
+  undoManager.undo() // {"text":{"blocks":{"3"}}}
+  undoManager.undo() // {"text":{"blocks":{"text":"2"}}}
+  undoManager.undo() // {"text":{"blocks":{"text":"1"}}}
+  undoManager.undo() // {}
+  undoManager.redo() // {"text":{"blocks":{"text":"1"}}}
+  undoManager.redo() // {"text":{"blocks":{"text":"2"}}}
+  undoManager.redo() // {"text":{"blocks":{"text":"3"}}}
+  undoManager.redo() // {"text":{}}
+  t.compare(design.toJSON(), { text: { blocks: { text: '4' } } })
+}

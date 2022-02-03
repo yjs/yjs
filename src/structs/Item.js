@@ -22,7 +22,8 @@ import {
   readContentFormat,
   readContentType,
   addChangedTypeToTransaction,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction // eslint-disable-line
+  isDeleted,
+  DeleteSet, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -125,7 +126,7 @@ export const splitItem = (transaction, leftItem, diff) => {
  * @param {Transaction} transaction The Yjs instance.
  * @param {Item} item
  * @param {Set<Item>} redoitems
- * @param {Array<Item>} itemsToDelete
+ * @param {DeleteSet} itemsToDelete
  *
  * @return {Item|null}
  *
@@ -143,42 +144,27 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete) => {
   /**
    * @type {Item|null}
    */
-  let left
+  let left = null
   /**
    * @type {Item|null}
    */
   let right
+  // make sure that parent is redone
+  if (parentItem !== null && parentItem.deleted === true) {
+    // try to undo parent if it will be undone anyway
+    if (parentItem.redone === null && (!redoitems.has(parentItem) || redoItem(transaction, parentItem, redoitems, itemsToDelete) === null)) {
+      return null
+    }
+    while (parentItem.redone !== null) {
+      parentItem = getItemCleanStart(transaction, parentItem.redone)
+    }
+  }
+  const parentType = parentItem === null ? /** @type {AbstractType<any>} */ (item.parent) : /** @type {ContentType} */ (parentItem.content).type
+
   if (item.parentSub === null) {
     // Is an array item. Insert at the old position
     left = item.left
     right = item
-  } else {
-    // Is a map item. Insert as current value
-    left = item
-    while (left.right !== null) {
-      left = left.right
-      if (left.id.client !== ownClientID) {
-        // It is not possible to redo this item because it conflicts with a
-        // change from another client
-        return null
-      }
-    }
-    if (left.right !== null) {
-      left = /** @type {Item} */ (/** @type {AbstractType<any>} */ (item.parent)._map.get(item.parentSub))
-    }
-    right = null
-  }
-  // make sure that parent is redone
-  if (parentItem !== null && parentItem.deleted === true && parentItem.redone === null) {
-    // try to undo parent if it will be undone anyway
-    if (!redoitems.has(parentItem) || redoItem(transaction, parentItem, redoitems, itemsToDelete) === null) {
-      return null
-    }
-  }
-  if (parentItem !== null && parentItem.redone !== null) {
-    while (parentItem.redone !== null) {
-      parentItem = getItemCleanStart(transaction, parentItem.redone)
-    }
     // find next cloned_redo items
     while (left !== null) {
       /**
@@ -210,10 +196,32 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete) => {
       }
       right = right.right
     }
-    // Iterate right while right is in itemsToDelete
-    // If it is intended to delete right while item is redone, we can expect that item should replace right.
-    while (left !== null && left.right !== null && left.right !== right && itemsToDelete.findIndex(d => d === /** @type {Item} */ (left).right) >= 0) {
-      left = left.right
+  } else {
+    right = null
+    if (item.right) {
+      left = item
+      // Iterate right while right is in itemsToDelete
+      // If it is intended to delete right while item is redone, we can expect that item should replace right.
+      while (left !== null && left.right !== null && isDeleted(itemsToDelete, left.right.id)) {
+        left = left.right
+      }
+      // follow redone
+      // trace redone until parent matches
+      while (left !== null && left.redone !== null) {
+        left = getItemCleanStart(transaction, left.redone)
+      }
+      // check wether we were allowed to follow right (indicating that originally this op was replaced by another item)
+      if (left === null || /** @type {AbstractType<any>} */ (left.parent)._item !== parentItem) {
+        // invalid parent; should never happen
+        return null
+      }
+      if (left && left.right !== null) {
+        // It is not possible to redo this item because it conflicts with a
+        // change from another client
+        return null
+      }
+    } else {
+      left = parentType._map.get(item.parentSub) || null
     }
   }
   const nextClock = getState(store, ownClientID)
@@ -222,7 +230,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete) => {
     nextId,
     left, left && left.lastId,
     right, right && right.id,
-    parentItem === null ? item.parent : /** @type {ContentType} */ (parentItem.content).type,
+    parentType,
     item.parentSub,
     item.content.copy()
   )
