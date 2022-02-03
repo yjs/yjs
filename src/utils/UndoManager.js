@@ -186,6 +186,7 @@ export class UndoManager extends Observable {
         }
       })
       const now = time.getUnixTime()
+      let didAdd = false
       if (now - this.lastChange < captureTimeout && stack.length > 0 && !undoing && !redoing) {
         // append change to last stack op
         const lastOp = stack[stack.length - 1]
@@ -194,6 +195,7 @@ export class UndoManager extends Observable {
       } else {
         // create a new stack op
         stack.push(new StackItem(transaction.deleteSet, insertions))
+        didAdd = true
       }
       if (!undoing && !redoing) {
         this.lastChange = now
@@ -204,7 +206,9 @@ export class UndoManager extends Observable {
           keepItem(item, true)
         }
       })
-      this.emit('stack-item-added', [{ stackItem: stack[stack.length - 1], origin: transaction.origin, type: undoing ? 'redo' : 'undo', changedParentTypes: transaction.changedParentTypes }, this])
+      if (didAdd) {
+        this.emit('stack-item-added', [{ stackItem: stack[stack.length - 1], origin: transaction.origin, type: undoing ? 'redo' : 'undo', changedParentTypes: transaction.changedParentTypes }, this])
+      }
     })
   }
 
