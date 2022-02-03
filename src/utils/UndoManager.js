@@ -285,19 +285,19 @@ export class UndoManager extends Observable {
 
   /**
    * Are undo steps available?
-   *  
+   *
    * @return {boolean} `true` if undo is possible
    */
-  canUndo() {
+  canUndo () {
     return this.undoStack.length > 0
   }
-  
+
   /**
    * Are redo steps available?
-   *  
+   *
    * @return {boolean} `true` if redo is possible
    */
-  canRedo() {
+  canRedo () {
     return this.redoStack.length > 0
   }
 }
