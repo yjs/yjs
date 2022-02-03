@@ -289,7 +289,7 @@ export class Item extends AbstractStruct {
      */
     this.parentSub = parentSub
     /**
-     * If this type's effect is reundone this type refers to the type that undid
+     * If this type's effect is redone this type refers to the type that undid
      * this operation.
      * @type {ID | null}
      */

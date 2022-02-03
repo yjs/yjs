@@ -153,7 +153,7 @@ an incremental document updates that allows clients to sync with each other.
 The update object is an Uint8Array that efficiently encodes `Item` objects and
 the delete set.
 * `state vector`: A state vector defines the know state of each user (a set of
-  tubles `(client, clock)`). This object is also efficiently encoded as a
+  tuples `(client, clock)`). This object is also efficiently encoded as a
 Uint8Array.
 
 The client can ask a remote client for missing document updates by sending
@@ -168,7 +168,7 @@ An implementation of the syncing process is in
 ## Snapshots
 
 A snapshot can be used to restore an old document state. It is a `state vector`
-\+ `delete set`. I client can restore an old document state by iterating through
+\+ `delete set`. A client can restore an old document state by iterating through
 the sequence CRDT and ignoring all Items that have an `id.clock >
 stateVector[id.client].clock`. Instead of using `item.deleted` the client will
 use the delete set to find out if an item was deleted or not.

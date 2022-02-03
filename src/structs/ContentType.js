@@ -109,7 +109,7 @@ export class ContentType {
       if (!item.deleted) {
         item.delete(transaction)
       } else {
-        // Whis will be gc'd later and we want to merge it if possible
+        // This will be gc'd later and we want to merge it if possible
         // We try to merge all deleted items after each transaction,
         // but we have no knowledge about that this needs to be merged
         // since it is not in transaction.ds. Hence we add it to transaction._mergeStructs

@@ -56,14 +56,10 @@ Sponsorship also comes with special perks! [![Become a Sponsor](https://img.shie
 * [Input](https://input.com/) A collaborative note taking app. :star2:
 * [Room.sh](https://room.sh/) A meeting application with integrated
   collaborative drawing, editing, and coding tools. :star:
-* [https://coronavirustechhandbook.com/](https://coronavirustechhandbook.com/)
-  A collaborative wiki that is edited by thousands of different people to work
-  on a rapid and sophisticated response to the coronavirus outbreak and
-  subsequent impacts. :star:
 * [Nimbus Note](https://nimbusweb.me/note.php) A note-taking app designed by
   Nimbus Web.
 * [JoeDocs](https://joedocs.com/) An open collaborative wiki.
-* [Pluxbox RadioManager](https://pluxbox.com/) A web-based app to
+* [Pluxbox RadioManager](https://getradiomanager.com/) A web-based app to
   collaboratively organize radio broadcasts.
 * [Alldone](https://alldone.app/) A next-gen project management and
   collaboration platform.
@@ -99,7 +95,7 @@ are implemented in separate modules.
 | [Monaco](https://microsoft.github.io/monaco-editor/) | ✔ | [y-monaco](https://github.com/yjs/y-monaco) | [demo](https://demos.yjs.dev/monaco/monaco.html) |
 | [Slate](https://github.com/ianstormtaylor/slate) | ✔ | [slate-yjs](https://github.com/bitphinix/slate-yjs) | [demo](https://bitphinix.github.io/slate-yjs-example) |
 | [valtio](https://github.com/pmndrs/valtio) |  | [valtio-yjs](https://github.com/dai-shi/valtio-yjs) | [demo](https://codesandbox.io/s/valtio-yjs-demo-ox3iy) |
-| React / Vue / MobX | | [SyncedStore](https://syncedstore.org) | [demo](https://syncedstore.org/docs/react) |
+| React / Vue / Svelte / MobX | | [SyncedStore](https://syncedstore.org) | [demo](https://syncedstore.org/docs/react) |
 
 ### Providers
 
@@ -141,6 +137,10 @@ Also includes a peer-sync mechanism to catch up on missed updates.
 <a href="https://github.com/kappa-db/multifeed">multifeed</a>. Each client has
 an append-only log of CRDT local updates (hypercore). Multifeed manages and sync
 hypercores and y-dat listens to changes and applies them to the Yjs document.
+</dd>
+  <dt><a href="https://github.com/yousefED/matrix-crdt">Matrix-CRDT</a></dt>
+  <dd>
+    Use <a href="https://www.matrix.org">Matrix</a> as an off-the-shelf backend for Yjs by using the <a href="https://github.com/yousefED/matrix-crdt">MatrixProvider</a>. Use Matrix as transport and storage of Yjs updates, so you can focus building your client app and Matrix can provide powerful features like Authentication, Authorization, Federation, hosting (self-hosting or SaaS) and even End-to-End Encryption (E2EE).
 </dd>
 </dl>
 
@@ -980,7 +980,7 @@ undoManager.on('stack-item-popped', event => {
 
 *Conflict-free replicated data types* (CRDT) for collaborative editing are an
 alternative approach to *operational transformation* (OT). A very simple
-differenciation between the two approaches is that OT attempts to transform
+differentiation between the two approaches is that OT attempts to transform
 index positions to ensure convergence (all clients end up with the same
 content), while CRDTs use mathematical models that usually do not involve index
 transformations, like linked lists. OT is currently the de-facto standard for
