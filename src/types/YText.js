@@ -338,14 +338,16 @@ const formatText = (transaction, parent, currPos, length, attributes) => {
  *
  * @param {Transaction} transaction
  * @param {Item} start
- * @param {Item|null} end exclusive end, automatically iterates to the next Content Item
+ * @param {Item|null} curr exclusive end, automatically iterates to the next Content Item
  * @param {Map<string,any>} startAttributes
- * @param {Map<string,any>} endAttributes This attribute is modified!
+ * @param {Map<string,any>} currAttributes
  * @return {number} The amount of formatting Items deleted.
  *
  * @function
  */
-const cleanupFormattingGap = (transaction, start, end, startAttributes, endAttributes) => {
+const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAttributes) => {
+  let end = curr
+  const endAttributes = map.copy(currAttributes)
   while (end && (!end.countable || end.deleted)) {
     if (!end.deleted && end.content.constructor === ContentFormat) {
       updateCurrentAttributes(endAttributes, /** @type {ContentFormat} */ (end.content))
@@ -353,7 +355,11 @@ const cleanupFormattingGap = (transaction, start, end, startAttributes, endAttri
     end = end.right
   }
   let cleanups = 0
+  let reachedEndOfCurr = false
   while (start !== end) {
+    if (curr === start) {
+      reachedEndOfCurr = true
+    }
     if (!start.deleted) {
       const content = start.content
       switch (content.constructor) {
@@ -363,6 +369,9 @@ const cleanupFormattingGap = (transaction, start, end, startAttributes, endAttri
             // Either this format is overwritten or it is not necessary because the attribute already existed.
             start.delete(transaction)
             cleanups++
+            if (!reachedEndOfCurr && (currAttributes.get(key) || null) === value) {
+              currAttributes.delete(key)
+            }
           }
           break
         }
