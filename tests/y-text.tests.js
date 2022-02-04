@@ -6,6 +6,10 @@ import * as math from 'lib0/math'
 const { init, compare } = Y
 
 /**
+ * In this test we are mainly interested in the cleanup behavior and whether the resulting delta makes sense.
+ * It is fine if the resulting delta is not minimal. But applying the delta to a rich-text editor should result in a
+ * synced document.
+ *
  * @param {t.TestCase} tc
  */
 export const testDeltaAfterConcurrentFormatting = tc => {
@@ -14,12 +18,17 @@ export const testDeltaAfterConcurrentFormatting = tc => {
   testConnector.flushAllMessages()
   text0.format(0, 3, { bold: true })
   text1.format(2, 2, { bold: true })
-  let delta = null
+  /**
+   * @type {any}
+   */
+  const deltas = []
   text1.observe(event => {
-    delta = event.delta
+    if (event.delta.length > 0) {
+      deltas.push(event.delta)
+    }
   })
   testConnector.flushAllMessages()
-  t.compare(delta, [])
+  t.compare(deltas, [[{ retain: 3, attributes: { bold: true } }, { retain: 2, attributes: { bold: null } }]])
 }
 
 /**

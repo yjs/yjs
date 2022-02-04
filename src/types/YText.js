@@ -369,7 +369,7 @@ const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAtt
             // Either this format is overwritten or it is not necessary because the attribute already existed.
             start.delete(transaction)
             cleanups++
-            if (!reachedEndOfCurr && (currAttributes.get(key) || null) === value) {
+            if (!reachedEndOfCurr && (currAttributes.get(key) || null) === value && (startAttributes.get(key) || null) !== value) {
               currAttributes.delete(key)
             }
           }
@@ -693,7 +693,7 @@ export class YTextEvent extends YEvent {
                     } else {
                       attributes[key] = value
                     }
-                  } else {
+                  } else if (value !== null) {
                     item.delete(transaction)
                   }
                 }
@@ -719,7 +719,7 @@ export class YTextEvent extends YEvent {
                     } else {
                       attributes[key] = value
                     }
-                  } else {
+                  } else if (attr !== null) { // this will be cleaned up automatically by the contextless cleanup function
                     item.delete(transaction)
                   }
                 }
