@@ -67,6 +67,8 @@ export {
   decodeStateVector,
   logUpdate,
   logUpdateV2,
+  decodeUpdate,
+  decodeUpdateV2,
   relativePositionToJSON,
   isDeleted,
   isParentOf,
