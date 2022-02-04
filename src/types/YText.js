@@ -465,7 +465,7 @@ const deleteText = (transaction, currPos, length) => {
     currPos.forward()
   }
   if (start) {
-    cleanupFormattingGap(transaction, start, currPos.right, startAttrs, map.copy(currPos.currentAttributes))
+    cleanupFormattingGap(transaction, start, currPos.right, startAttrs, currPos.currentAttributes)
   }
   const parent = /** @type {AbstractType<any>} */ (/** @type {Item} */ (currPos.left || currPos.right).parent)
   if (parent._searchMarker) {

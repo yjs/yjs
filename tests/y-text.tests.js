@@ -141,6 +141,28 @@ export const testNotMergeEmptyLinesFormat = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testPreserveAttributesThroughDelete = tc => {
+  const ydoc = new Y.Doc()
+  const testText = ydoc.getText('test')
+  testText.applyDelta([
+    { insert: 'Text' },
+    { insert: '\n', attributes: { title: true } },
+    { insert: '\n' }
+  ])
+  testText.applyDelta([
+    { retain: 4 },
+    { delete: 1 },
+    { retain: 1, attributes: { title: true } }
+  ])
+  t.compare(testText.toDelta(), [
+    { insert: 'Text' },
+    { insert: '\n', attributes: { title: true } }
+  ])
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testGetDeltaWithEmbeds = tc => {
   const { text0 } = init(tc, { users: 1 })
   text0.applyDelta([{
