@@ -129,7 +129,6 @@ export const decodeUpdateV2 = (update, YDecoder = UpdateDecoderV2) => {
   const lazyDecoder = new LazyStructReader(updateDecoder, false)
   for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
     structs.push(curr)
-    curr.info
   }
   return {
     'structs': structs,
