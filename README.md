@@ -25,30 +25,13 @@ build collaborative or distributed applications ping us at
 <yjs@tag1consulting.com>. Otherwise you can find help on our
 [discussion board](https://discuss.yjs.dev).
 
-## Sponsors
+## Sponsorship
 
-I'm currently looking for sponsors that allow me to be less dependent on
-contracting work. These awesome backers already fund further development of
-Yjs:
-
-[![davidhq](https://github.com/davidhq.png?size=60)](https://github.com/davidhq)
-[![Ifiok Jr.](https://github.com/ifiokjr.png?size=60)](https://github.com/ifiokjr)
-[![Burke Libbey](https://github.com/burke.png?size=60)](https://github.com/burke)
-[![Beni Cherniavsky-Paskin](https://github.com/cben.png?size=60)](https://github.com/cben)
-[![Tom Moor](https://github.com/tommoor.png?size=60)](https://github.com/tommoor)
-[![Michael Meyers](https://github.com/michaelemeyers.png?size=60)](https://github.com/michaelemeyers)
-[![Cristiano Benjamin](https://github.com/csbenjamin.png?size=60)](https://github.com/csbenjamin)
-[![Braden](https://github.com/AdventureBeard.png?size=60)](https://github.com/AdventureBeard)
-[![nimbuswebinc](https://nimbusweb.me/new-style-img/note-icon.svg)](https://github.com/nimbuswebinc)
-[![JourneyApps](https://github.com/journeyapps.png?size=60)](https://github.com/journeyapps)
-[![Adam Brunnmeier](https://github.com/adabru.png?size=60)](https://github.com/adabru)
-[![Nathanael Anderson](https://github.com/NathanaelA.png?size=60)](https://github.com/NathanaelA)
-[<img src="https://room.sh/img/icons/android-chrome-192x192.png" height="60px" />](https://room.sh/)
-
-Sponsorship also comes with special perks! [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=d42f2d)](https://github.com/sponsors/dmonad)
+Please contribute to the project financially if your company relies on Yjs. Support the project and receive more attention on your tickets. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=d42f2d)](https://github.com/sponsors/dmonad)
 
 ## Who is using Yjs
 
+* [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star2:
 * [Serenity Notes](https://www.serenity.re/en/notes) End-to-end encrypted
   collaborative notes app.
 * [Relm](https://www.relm.us/) A collaborative gameworld for teamwork and
