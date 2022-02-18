@@ -152,7 +152,7 @@ concepts that can be used to create a custom network protocol:
 an incremental document updates that allows clients to sync with each other.
 The update object is an Uint8Array that efficiently encodes `Item` objects and
 the delete set.
-* `state vector`: A state vector defines the know state of each user (a set of
+* `state vector`: A state vector defines the known state of each user (a set of
   tuples `(client, clock)`). This object is also efficiently encoded as a
 Uint8Array.
 
