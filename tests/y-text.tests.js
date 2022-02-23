@@ -607,6 +607,35 @@ export const testFormattingBug = async tc => {
   console.log(text1.toDelta())
 }
 
+/**
+ * Delete formatting should not leave redundant formatting items.
+ *
+ * @param {t.TestCase} tc
+ */
+export const testDeleteFormatting = tc => {
+  const doc = new Y.Doc()
+  const text = doc.getText()
+  text.insert(0, 'Attack ships on fire off the shoulder of Orion.')
+
+  const doc2 = new Y.Doc()
+  const text2 = doc2.getText()
+  Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc))
+
+  text.format(13, 7, { bold: true })
+  Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc))
+
+  text.format(16, 4, { bold: null })
+  Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc))
+
+  const expected = [
+    { insert: 'Attack ships ' },
+    { insert: 'on ', attributes: { bold: true } },
+    { insert: 'fire off the shoulder of Orion.' }
+  ]
+  t.compare(text.toDelta(), expected)
+  t.compare(text2.toDelta(), expected)
+}
+
 // RANDOM TESTS
 
 let charCounter = 0

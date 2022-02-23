@@ -527,3 +527,41 @@ export const testUndoBlockBug = tc => {
   undoManager.redo() // {"text":{}}
   t.compare(design.toJSON(), { text: { blocks: { text: '4' } } })
 }
+
+/**
+ * Undo text formatting delete should not corrupt peer state.
+ * 
+ * @see https://github.com/yjs/yjs/issues/392
+ * @param {t.TestCase} tc
+ */
+export const testUndoDeleteTextFormat = tc => {
+  const doc = new Y.Doc()
+  const text = doc.getText()
+  text.insert(0, 'Attack ships on fire off the shoulder of Orion.')
+  const doc2 = new Y.Doc()
+  const text2 = doc2.getText();
+  Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc))
+  const undoManager = new Y.UndoManager(text)
+
+  text.format(13, 7, { bold: true })
+  undoManager.stopCapturing()
+  Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc))
+
+  text.format(16, 4, { bold: null })
+  undoManager.stopCapturing()
+  Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc))
+
+  undoManager.undo()
+  Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc))
+
+  const expect = [
+    { insert: 'Attack ships ' },
+    {
+      insert: 'on fire',
+      attributes: { bold: true }
+    },
+    { insert: ' off the shoulder of Orion.' }
+  ]
+  t.compare(text.toDelta(), expect)
+  t.compare(text2.toDelta(), expect)
+}

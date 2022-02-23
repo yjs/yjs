@@ -164,6 +164,20 @@ const insertNegatedAttributes = (transaction, parent, currPos, negatedAttributes
   const doc = transaction.doc
   const ownClientId = doc.clientID
   negatedAttributes.forEach((val, key) => {
+    // check if we really need to create attributes
+    //  (the attribute may be set the desired value already)
+    let n = currPos.right
+    while(
+      n !== null && (n.deleted === true || n.content.constructor === ContentFormat)
+    ) {
+      if (!n.deleted && equalAttrs(currPos.currentAttributes.get(/** @type {ContentFormat} */ (n.content).key) ?? null, /** @type {ContentFormat} */ (n.content).value)) {
+        n.delete(transaction)
+        return
+      }
+      n = n.right
+    }
+
+    // create negated attribute
     const left = currPos.left
     const right = currPos.right
     const nextFormat = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
