@@ -164,20 +164,6 @@ const insertNegatedAttributes = (transaction, parent, currPos, negatedAttributes
   const doc = transaction.doc
   const ownClientId = doc.clientID
   negatedAttributes.forEach((val, key) => {
-    // check if we really need to create attributes
-    //  (the attribute may be set the desired value already)
-    let n = currPos.right
-    while(
-      n !== null && (n.deleted === true || n.content.constructor === ContentFormat)
-    ) {
-      if (!n.deleted && equalAttrs(currPos.currentAttributes.get(/** @type {ContentFormat} */ (n.content).key) ?? null, /** @type {ContentFormat} */ (n.content).value)) {
-        n.delete(transaction)
-        return
-      }
-      n = n.right
-    }
-
-    // create negated attribute
     const left = currPos.left
     const right = currPos.right
     const nextFormat = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
@@ -305,7 +291,8 @@ const formatText = (transaction, parent, currPos, length, attributes) => {
   const negatedAttributes = insertAttributes(transaction, parent, currPos, attributes)
   // iterate until first non-format or null is found
   // delete all formats with attributes[format.key] != null
-  while (length > 0 && currPos.right !== null) {
+  // also check the attributes after the first non-format as we do not want to insert redundant negated attributes there
+  while (currPos.right !== null && (length > 0 || currPos.right.content.constructor === ContentFormat)) {
     if (!currPos.right.deleted) {
       switch (currPos.right.content.constructor) {
         case ContentFormat: {
