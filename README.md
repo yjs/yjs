@@ -31,6 +31,7 @@ Please contribute to the project financially if your company relies on Yjs. Supp
 
 ## Who is using Yjs
 
+* [PRSM](https://prsm.uk/) Collaborative mind-mapping and system visualisation. *[(source)](https://github.com/micrology/prsm)*
 * [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star2:
 * [Serenity Notes](https://www.serenity.re/en/notes) End-to-end encrypted
   collaborative notes app.
