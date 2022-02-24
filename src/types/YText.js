@@ -291,7 +291,8 @@ const formatText = (transaction, parent, currPos, length, attributes) => {
   const negatedAttributes = insertAttributes(transaction, parent, currPos, attributes)
   // iterate until first non-format or null is found
   // delete all formats with attributes[format.key] != null
-  while (length > 0 && currPos.right !== null) {
+  // also check the attributes after the first non-format as we do not want to insert redundant negated attributes there
+  while (currPos.right !== null && (length > 0 || currPos.right.content.constructor === ContentFormat)) {
     if (!currPos.right.deleted) {
       switch (currPos.right.content.constructor) {
         case ContentFormat: {
