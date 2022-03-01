@@ -112,6 +112,30 @@ export const logUpdateV2 = (update, YDecoder = UpdateDecoderV2) => {
   logging.print('DeleteSet: ', ds)
 }
 
+/**
+ * @param {Uint8Array} update
+ *
+ */
+export const decodeUpdate = (update) => decodeUpdateV2(update, UpdateDecoderV1)
+
+/**
+ * @param {Uint8Array} update
+ * @param {typeof UpdateDecoderV2 | typeof UpdateDecoderV1} [YDecoder]
+ *
+ */
+export const decodeUpdateV2 = (update, YDecoder = UpdateDecoderV2) => {
+  const structs = []
+  const updateDecoder = new UpdateDecoderV1(decoding.createDecoder(update))
+  const lazyDecoder = new LazyStructReader(updateDecoder, false)
+  for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
+    structs.push(curr)
+  }
+  return {
+    'structs': structs,
+    'ds': readDeleteSet(updateDecoder),
+  }
+}
+
 export class LazyStructWriter {
   /**
    * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
