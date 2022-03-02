@@ -48,7 +48,7 @@ export class Doc extends Observable {
     this.guid = guid
     this.collectionid = collectionid
     /**
-     * @type {Map<string, AbstractType<YEvent>>}
+     * @type {Map<string, AbstractType<YEvent<any>>>}
      */
     this.share = new Map()
     this.store = new StructStore()

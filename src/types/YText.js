@@ -512,6 +512,7 @@ const deleteText = (transaction, currPos, length) => {
   */
 
 /**
+ * @extends YEvent<YText>
  * Event that describes the changes on a YText type.
  */
 export class YTextEvent extends YEvent {
