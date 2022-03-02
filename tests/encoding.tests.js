@@ -72,9 +72,9 @@ export const testPermanentUserData = async tc => {
 export const testDiffStateVectorOfUpdateIsEmpty = tc => {
   const ydoc = new Y.Doc()
   /**
-   * @type {null | Uint8Array}
+   * @type {any}
    */
-  let sv = /* any */ (null)
+  let sv = null
   ydoc.getText().insert(0, 'a')
   ydoc.on('update', update => {
     sv = Y.encodeStateVectorFromUpdate(update)
