@@ -131,8 +131,8 @@ export const decodeUpdateV2 = (update, YDecoder = UpdateDecoderV2) => {
     structs.push(curr)
   }
   return {
-    'structs': structs,
-    'ds': readDeleteSet(updateDecoder),
+    structs,
+    ds: readDeleteSet(updateDecoder)
   }
 }
 

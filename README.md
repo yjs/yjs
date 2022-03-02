@@ -27,7 +27,9 @@ build collaborative or distributed applications ping us at
 
 ## Sponsorship
 
-Please contribute to the project financially if your company relies on Yjs. Support the project and receive more attention on your tickets. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=d42f2d)](https://github.com/sponsors/dmonad)
+Please contribute to the project financially if your company relies on Yjs.
+Support the project and receive more attention on your tickets.
+[![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=d42f2d)](https://github.com/sponsors/dmonad)
 
 ## Who is using Yjs
 

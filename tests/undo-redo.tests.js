@@ -530,7 +530,7 @@ export const testUndoBlockBug = tc => {
 
 /**
  * Undo text formatting delete should not corrupt peer state.
- * 
+ *
  * @see https://github.com/yjs/yjs/issues/392
  * @param {t.TestCase} tc
  */
@@ -539,7 +539,7 @@ export const testUndoDeleteTextFormat = tc => {
   const text = doc.getText()
   text.insert(0, 'Attack ships on fire off the shoulder of Orion.')
   const doc2 = new Y.Doc()
-  const text2 = doc2.getText();
+  const text2 = doc2.getText()
   Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc))
   const undoManager = new Y.UndoManager(text)
 
