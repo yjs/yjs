@@ -44,7 +44,7 @@ Please contribute to the project financially if your company relies on Yjs. Supp
   Nimbus Web.
 * [JoeDocs](https://joedocs.com/) An open collaborative wiki.
 * [Pluxbox RadioManager](https://getradiomanager.com/) A web-based app to
-  collaboratively organize radio broadcasts.
+  collaboratively organize radio broadcasts. :star:
 * [Alldone](https://alldone.app/) A next-gen project management and
   collaboration platform.
 
