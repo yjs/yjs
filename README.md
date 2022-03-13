@@ -49,6 +49,7 @@ Support the project and receive more attention on your tickets.
   collaboratively organize radio broadcasts. :star:
 * [Alldone](https://alldone.app/) A next-gen project management and
   collaboration platform.
+* [Living Spec](https://livingspec.com/) A modern way for product teams to collaborate.
 
 ## Table of Contents
 
