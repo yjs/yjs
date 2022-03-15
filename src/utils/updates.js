@@ -125,7 +125,7 @@ export const decodeUpdate = (update) => decodeUpdateV2(update, UpdateDecoderV1)
  */
 export const decodeUpdateV2 = (update, YDecoder = UpdateDecoderV2) => {
   const structs = []
-  const updateDecoder = new UpdateDecoderV1(decoding.createDecoder(update))
+  const updateDecoder = new YDecoder(decoding.createDecoder(update))
   const lazyDecoder = new LazyStructReader(updateDecoder, false)
   for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
     structs.push(curr)
