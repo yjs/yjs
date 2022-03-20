@@ -873,6 +873,16 @@ undo- or the redo-stack.
   </dd>
   <b>
     <code>
+on('stack-item-updated', { stackItem: { meta: Map&lt;any,any&gt; }, type: 'undo'
+| 'redo' })
+    </code>
+  </b>
+  <dd>
+Register an event that is called when an existing <code>StackItem</code> is updated.
+This happens when two changes happen within a "captureInterval".
+  </dd>
+  <b>
+    <code>
 on('stack-item-popped', { stackItem: { meta: Map&lt;any,any&gt; }, type: 'undo'
 | 'redo' })
     </code>
@@ -880,6 +890,14 @@ on('stack-item-popped', { stackItem: { meta: Map&lt;any,any&gt; }, type: 'undo'
   <dd>
 Register an event that is called when a <code>StackItem</code> is popped from
 the undo- or the redo-stack.
+  </dd>
+  <b>
+    <code>
+on('stack-cleared', { undoStackCleared: boolean, redoStackCleared: boolean })
+    </code>
+  </b>
+  <dd>
+Register an event that is called when the undo- and/or the redo-stack is cleared.
   </dd>
 </dl>
 

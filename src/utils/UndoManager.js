@@ -146,7 +146,7 @@ const popStackItem = (undoManager, stack, eventType) => {
  * Fires 'stack-item-popped' event when a stack item was popped from either the
  * undo- or the redo-stack. You may restore the saved stack information from `event.stackItem.meta`.
  *
- * @extends {Observable<'stack-item-added'|'stack-item-popped'|'stack-cleared'>}
+ * @extends {Observable<'stack-item-added'|'stack-item-popped'|'stack-cleared'|'stack-item-updated'>}
  */
 export class UndoManager extends Observable {
   /**
@@ -223,8 +223,11 @@ export class UndoManager extends Observable {
           keepItem(item, true)
         }
       })
+      const changeEvent = [{ stackItem: stack[stack.length - 1], origin: transaction.origin, type: undoing ? 'redo' : 'undo', changedParentTypes: transaction.changedParentTypes }, this]
       if (didAdd) {
-        this.emit('stack-item-added', [{ stackItem: stack[stack.length - 1], origin: transaction.origin, type: undoing ? 'redo' : 'undo', changedParentTypes: transaction.changedParentTypes }, this])
+        this.emit('stack-item-added', changeEvent)
+      } else {
+        this.emit('stack-item-updated', changeEvent)
       }
     })
     this.doc.on('destroy', () => {
