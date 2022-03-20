@@ -113,6 +113,24 @@ export const testMergeUpdates = tc => {
 }
 
 /**
+ * @param {t.TestCase} tc
+ */
+export const testKeyEncoding = tc => {
+  const { users, text0, text1 } = init(tc, { users: 2 })
+
+  text0.insert(0, 'a', { italic: true })
+  text0.insert(0, 'b')
+  text0.insert(0, 'c', { italic: true })
+
+  const update = Y.encodeStateAsUpdateV2(users[0])
+  Y.applyUpdateV2(users[1], update)
+
+  t.compare(text1.toDelta(), [{ insert: 'c', attributes: { italic: true } }, { insert: 'b' }, { insert: 'a', attributes: { italic: true } }])
+
+  compare(users)
+}
+
+/**
  * @param {Y.Doc} ydoc
  * @param {Array<Uint8Array>} updates - expecting at least 4 updates
  * @param {Enc} enc

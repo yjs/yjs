@@ -298,10 +298,24 @@ export class UpdateEncoderV2 extends DSEncoderV2 {
   writeKey (key) {
     const clock = this.keyMap.get(key)
     if (clock === undefined) {
+      /**
+       * @todo uncomment to introduce this feature finally
+       *
+       * Background. The ContentFormat object was always encoded using writeKey, but the decoder used to use readString.
+       * Furthermore, I forgot to set the keyclock. So everything was working fine.
+       *
+       * However, this feature here is basically useless as it is not being used (it actually only consumes extra memory).
+       *
+       * I don't know yet how to reintroduce this feature..
+       *
+       * Older clients won't be able to read updates when we reintroduce this feature. So this should probably be done using a flag.
+       *
+       */
+      // this.keyMap.set(key, this.keyClock)
       this.keyClockEncoder.write(this.keyClock++)
       this.stringEncoder.write(key)
     } else {
-      this.keyClockEncoder.write(this.keyClock++)
+      this.keyClockEncoder.write(clock)
     }
   }
 }

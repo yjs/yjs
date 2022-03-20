@@ -100,4 +100,4 @@ export class ContentFormat {
  * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @return {ContentFormat}
  */
-export const readContentFormat = decoder => new ContentFormat(decoder.readString(), decoder.readJSON())
+export const readContentFormat = decoder => new ContentFormat(decoder.readKey(), decoder.readJSON())
