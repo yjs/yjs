@@ -180,7 +180,10 @@ export class UndoManager extends Observable {
     this.redoing = false
     this.doc = /** @type {Doc} */ (this.scope[0].doc)
     this.lastChange = 0
-    this.doc.on('afterTransaction', /** @param {Transaction} transaction */ transaction => {
+    /**
+     * @param {Transaction} transaction
+     */
+    this.afterTransactionHandler = transaction => {
       // Only track certain transactions
       if (!this.scope.some(type => transaction.changedParentTypes.has(type)) || (!this.trackedOrigins.has(transaction.origin) && (!transaction.origin || !this.trackedOrigins.has(transaction.origin.constructor)))) {
         return
@@ -229,7 +232,8 @@ export class UndoManager extends Observable {
       } else {
         this.emit('stack-item-updated', changeEvent)
       }
-    })
+    }
+    this.doc.on('afterTransaction', this.afterTransactionHandler)
     this.doc.on('destroy', () => {
       this.destroy()
     })
@@ -349,5 +353,11 @@ export class UndoManager extends Observable {
    */
   canRedo () {
     return this.redoStack.length > 0
+  }
+
+  destroy () {
+    this.trackedOrigins.delete(this)
+    this.doc.off('afterTransaction', this.afterTransactionHandler)
+    super.destroy()
   }
 }
