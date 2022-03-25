@@ -247,6 +247,20 @@ export class UndoManager extends Observable {
     })
   }
 
+  /**
+   * @param {any} origin
+   */
+  addTrackedOrigin (origin) {
+    this.trackedOrigins.add(origin)
+  }
+
+  /**
+   * @param {any} origin
+   */
+  removeTrackedOrigin (origin) {
+    this.trackedOrigins.delete(origin)
+  }
+
   clear (clearUndoStack = true, clearRedoStack = true) {
     if ((clearUndoStack && this.canUndo()) || (clearRedoStack && this.canRedo())) {
       this.doc.transact(tr => {
