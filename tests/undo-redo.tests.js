@@ -565,3 +565,26 @@ export const testUndoDeleteTextFormat = tc => {
   t.compare(text.toDelta(), expect)
   t.compare(text2.toDelta(), expect)
 }
+
+/**
+ * Undo text formatting delete should not corrupt peer state.
+ *
+ * @see https://github.com/yjs/yjs/issues/392
+ * @param {t.TestCase} tc
+ */
+export const testBehaviorOfIgnoreremotemapchangesProperty = tc => {
+  const doc = new Y.Doc()
+  const doc2 = new Y.Doc()
+  doc.on('update', update => Y.applyUpdate(doc2, update, doc))
+  doc2.on('update', update => Y.applyUpdate(doc, update, doc2))
+  const map1 = doc.getMap()
+  const map2 = doc2.getMap()
+  const um1 = new Y.UndoManager(map1, { ignoreRemoteMapChanges: true })
+  map1.set('x', 1)
+  map2.set('x', 2)
+  map1.set('x', 3)
+  map2.set('x', 4)
+  um1.undo()
+  t.assert(map1.get('x') === 2)
+  t.assert(map2.get('x') === 2)
+}

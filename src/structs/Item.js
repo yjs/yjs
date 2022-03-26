@@ -127,12 +127,13 @@ export const splitItem = (transaction, leftItem, diff) => {
  * @param {Item} item
  * @param {Set<Item>} redoitems
  * @param {DeleteSet} itemsToDelete
+ * @param {boolean} ignoreRemoteMapChanges
  *
  * @return {Item|null}
  *
  * @private
  */
-export const redoItem = (transaction, item, redoitems, itemsToDelete) => {
+export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemoteMapChanges) => {
   const doc = transaction.doc
   const store = doc.store
   const ownClientID = doc.clientID
@@ -152,7 +153,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete) => {
   // make sure that parent is redone
   if (parentItem !== null && parentItem.deleted === true) {
     // try to undo parent if it will be undone anyway
-    if (parentItem.redone === null && (!redoitems.has(parentItem) || redoItem(transaction, parentItem, redoitems, itemsToDelete) === null)) {
+    if (parentItem.redone === null && (!redoitems.has(parentItem) || redoItem(transaction, parentItem, redoitems, itemsToDelete, ignoreRemoteMapChanges) === null)) {
       return null
     }
     while (parentItem.redone !== null) {
@@ -198,7 +199,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete) => {
     }
   } else {
     right = null
-    if (item.right) {
+    if (item.right && !ignoreRemoteMapChanges) {
       left = item
       // Iterate right while right is in itemsToDelete
       // If it is intended to delete right while item is redone, we can expect that item should replace right.

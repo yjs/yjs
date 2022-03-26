@@ -101,7 +101,7 @@ const popStackItem = (undoManager, stack, eventType) => {
         }
       })
       itemsToRedo.forEach(struct => {
-        performedChange = redoItem(transaction, struct, itemsToRedo, stackItem.insertions) !== null || performedChange
+        performedChange = redoItem(transaction, struct, itemsToRedo, stackItem.insertions, undoManager.ignoreRemoteMapChanges) !== null || performedChange
       })
       // We want to delete in reverse order so that children are deleted before
       // parents, so we have more information available when items are filtered.
@@ -137,6 +137,7 @@ const popStackItem = (undoManager, stack, eventType) => {
  * filter returns false, the type/item won't be deleted even it is in the
  * undo/redo scope.
  * @property {Set<any>} [UndoManagerOptions.trackedOrigins=new Set([null])]
+ * @property {boolean} [ignoreRemoteMapChanges] Experimental. By default, the UndoManager will never overwrite remote changes. Enable this property to enable overwriting remote changes on key-value changes (Y.Map, properties on Y.Xml, etc..).
  */
 
 /**
@@ -153,7 +154,7 @@ export class UndoManager extends Observable {
    * @param {AbstractType<any>|Array<AbstractType<any>>} typeScope Accepts either a single type, or an array of types
    * @param {UndoManagerOptions} options
    */
-  constructor (typeScope, { captureTimeout = 500, deleteFilter = () => true, trackedOrigins = new Set([null]) } = {}) {
+  constructor (typeScope, { captureTimeout = 500, deleteFilter = () => true, trackedOrigins = new Set([null]), ignoreRemoteMapChanges = false } = {}) {
     super()
     /**
      * @type {Array<AbstractType<any>>}
@@ -180,6 +181,7 @@ export class UndoManager extends Observable {
     this.redoing = false
     this.doc = /** @type {Doc} */ (this.scope[0].doc)
     this.lastChange = 0
+    this.ignoreRemoteMapChanges = ignoreRemoteMapChanges
     /**
      * @param {Transaction} transaction
      */
