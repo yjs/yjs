@@ -191,9 +191,11 @@ export class ContentMove {
           }
           maxPriority = math.max(maxPriority, nextPrio)
           // was already moved
-          if (start.moved && !transaction.prevMoved.has(start)) {
+          const prevMove = start.moved
+          if (prevMove && !transaction.prevMoved.has(start) && prevMove.id.clock < (transaction.beforeState.get(prevMove.id.client) || 0)) {
+            // only override prevMoved if the prevMoved item is not new
             // we need to know which item previously moved an item
-            transaction.prevMoved.set(start, start.moved)
+            transaction.prevMoved.set(start, prevMove)
           }
           start.moved = item
         } else {

@@ -634,6 +634,7 @@ const monitorArrayTestObject = user => {
         arr.splice(currpos, d.delete)
       }
     }
+    t.compare(arr, yarr.toArray())
   })
   return arr
 }
