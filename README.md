@@ -33,23 +33,22 @@ Support the project and receive more attention on your tickets.
 
 ## Who is using Yjs
 
-* [PRSM](https://prsm.uk/) Collaborative mind-mapping and system visualisation. *[(source)](https://github.com/micrology/prsm)*
 * [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star2:
-* [Serenity Notes](https://www.serenity.re/en/notes) End-to-end encrypted
-  collaborative notes app.
 * [Relm](https://www.relm.us/) A collaborative gameworld for teamwork and
   community. :star2:
-* [Input](https://input.com/) A collaborative note taking app. :star2:
 * [Room.sh](https://room.sh/) A meeting application with integrated
   collaborative drawing, editing, and coding tools. :star:
 * [Nimbus Note](https://nimbusweb.me/note.php) A note-taking app designed by
-  Nimbus Web.
-* [JoeDocs](https://joedocs.com/) An open collaborative wiki.
+  Nimbus Web. :star:
 * [Pluxbox RadioManager](https://getradiomanager.com/) A web-based app to
   collaboratively organize radio broadcasts. :star:
+* [Serenity Notes](https://www.serenity.re/en/notes) End-to-end encrypted
+  collaborative notes app.
+* [PRSM](https://prsm.uk/) Collaborative mind-mapping and system visualisation. *[(source)](https://github.com/micrology/prsm)*
 * [Alldone](https://alldone.app/) A next-gen project management and
   collaboration platform.
 * [Living Spec](https://livingspec.com/) A modern way for product teams to collaborate.
+* [BlockSurvey](https://blocksurvey.io) End-to-end encryption for your forms/surveys. No ads, no trackers.
 
 ## Table of Contents
 
