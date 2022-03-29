@@ -185,7 +185,7 @@ export class ContentMove {
       if (!start.deleted) {
         const currMoved = start.moved
         const nextPrio = currMoved ? /** @type {ContentMove} */ (currMoved.content).priority : -1
-        if (currMoved === null || adaptPriority || nextPrio < this.priority || currMoved.id.client < item.id.client || (currMoved.id.client === item.id.client && currMoved.id.clock < item.id.clock)) {
+        if (adaptPriority || nextPrio < this.priority || (currMoved != null && nextPrio === this.priority && (currMoved.id.client < item.id.client || (currMoved.id.client === item.id.client && currMoved.id.clock < item.id.clock)))) {
           if (currMoved !== null) {
             this.overrides.add(currMoved)
           }
@@ -198,7 +198,7 @@ export class ContentMove {
             transaction.prevMoved.set(start, prevMove)
           }
           start.moved = item
-        } else {
+        } else if (currMoved != null) {
           /** @type {ContentMove} */ (currMoved.content).overrides.add(item)
         }
       }

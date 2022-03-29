@@ -118,6 +118,7 @@ export class ListIterator {
     }
     let item = this.nextItem
     this.index += len
+    // @todo this condition is not needed, better to remove it (can always be applied)
     if (this.rel) {
       len += this.rel
       this.rel = 0
@@ -197,11 +198,9 @@ export class ListIterator {
       this.rel -= len
       return this
     }
-    let item = this.nextItem && this.nextItem.left
-    if (this.rel) {
-      len -= this.rel
-      this.rel = 0
-    }
+    let item = this.nextItem
+    len += ((item && item.countable && !item.deleted && item.moved === this.currMove) ? item.length : 0) - this.rel
+    this.rel = 0
     while (item && len > 0) {
       if (item.countable && !item.deleted && item.moved === this.currMove) {
         len -= item.length

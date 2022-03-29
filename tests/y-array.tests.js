@@ -553,6 +553,20 @@ const arrayTransactions = [
     oldContent.splice(pos < newPos ? newPos - 1 : newPos, 0, x)
     t.compareArrays(yarray.toArray(), oldContent) // we want to make sure that fastSearch markers insert at the correct position
   },
+  // @todo remove this duplicate!!
+  function move (user, gen) {
+    const yarray = user.getArray('array')
+    if (yarray.length === 0) {
+      return
+    }
+    const pos = prng.int32(gen, 0, yarray.length - 1)
+    const newPos = prng.int32(gen, 0, yarray.length)
+    const oldContent = yarray.toArray()
+    yarray.move(pos, newPos)
+    const [x] = oldContent.splice(pos, 1)
+    oldContent.splice(pos < newPos ? newPos - 1 : newPos, 0, x)
+    t.compareArrays(yarray.toArray(), oldContent) // we want to make sure that fastSearch markers insert at the correct position
+  },
   function insert (user, gen) {
     const yarray = user.getArray('array')
     const uniqueNumber = getUniqueNumber()
@@ -654,91 +668,91 @@ const compareTestobjects = cmp => {
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests6 = tc => {
-  compareTestobjects(applyRandomTests(tc, arrayTransactions, 7, monitorArrayTestObject))
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 9, monitorArrayTestObject))
 }
 
 /**
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests40 = tc => {
-  applyRandomTests(tc, arrayTransactions, 40)
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 40, monitorArrayTestObject))
 }
 
 /**
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests42 = tc => {
-  applyRandomTests(tc, arrayTransactions, 42)
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 42, monitorArrayTestObject))
 }
 
 /**
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests43 = tc => {
-  applyRandomTests(tc, arrayTransactions, 43)
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 43, monitorArrayTestObject))
 }
 
 /**
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests44 = tc => {
-  applyRandomTests(tc, arrayTransactions, 44)
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 44, monitorArrayTestObject))
 }
 
 /**
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests45 = tc => {
-  applyRandomTests(tc, arrayTransactions, 45)
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 45, monitorArrayTestObject))
 }
 
 /**
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests46 = tc => {
-  applyRandomTests(tc, arrayTransactions, 46)
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 46, monitorArrayTestObject))
 }
 
 /**
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests300 = tc => {
-  applyRandomTests(tc, arrayTransactions, 300)
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 300, monitorArrayTestObject))
 }
 
 /**
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests400 = tc => {
-  applyRandomTests(tc, arrayTransactions, 400)
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 400, monitorArrayTestObject))
 }
 
 /**
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests500 = tc => {
-  applyRandomTests(tc, arrayTransactions, 500)
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 500, monitorArrayTestObject))
 }
 
 /**
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests600 = tc => {
-  applyRandomTests(tc, arrayTransactions, 600)
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 600, monitorArrayTestObject))
 }
 
 /**
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests1000 = tc => {
-  applyRandomTests(tc, arrayTransactions, 1000)
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 1000, monitorArrayTestObject))
 }
 
 /**
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests1800 = tc => {
-  applyRandomTests(tc, arrayTransactions, 1800)
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 1800, monitorArrayTestObject))
 }
 
 /**
@@ -746,7 +760,7 @@ export const testRepeatGeneratingYarrayTests1800 = tc => {
  */
 export const testRepeatGeneratingYarrayTests3000 = tc => {
   t.skip(!t.production)
-  applyRandomTests(tc, arrayTransactions, 3000)
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 3000, monitorArrayTestObject))
 }
 
 /**
@@ -754,7 +768,7 @@ export const testRepeatGeneratingYarrayTests3000 = tc => {
  */
 export const testRepeatGeneratingYarrayTests5000 = tc => {
   t.skip(!t.production)
-  applyRandomTests(tc, arrayTransactions, 5000)
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 5000, monitorArrayTestObject))
 }
 
 /**
@@ -762,5 +776,5 @@ export const testRepeatGeneratingYarrayTests5000 = tc => {
  */
 export const testRepeatGeneratingYarrayTests30000 = tc => {
   t.skip(!t.production)
-  applyRandomTests(tc, arrayTransactions, 30000)
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 30000, monitorArrayTestObject))
 }
