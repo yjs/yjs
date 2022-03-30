@@ -48,7 +48,7 @@ Support the project and receive more attention on your tickets.
 * [Alldone](https://alldone.app/) A next-gen project management and
   collaboration platform.
 * [Living Spec](https://livingspec.com/) A modern way for product teams to collaborate.
-* [BlockSurvey](https://blocksurvey.io) End-to-end encryption for your forms/surveys. No ads, no trackers.
+* [BlockSurvey](https://blocksurvey.io) End-to-end encryption for your forms/surveys.
 
 ## Table of Contents
 
