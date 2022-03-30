@@ -199,7 +199,11 @@ export class ListIterator {
       return this
     }
     let item = this.nextItem
-    len += ((item && item.countable && !item.deleted && item.moved === this.currMove) ? item.length : 0) - this.rel
+    if (item && item.content.constructor === ContentMove) {
+      item = item.left
+    } else {
+      len += ((item && item.countable && !item.deleted && item.moved === this.currMove) ? item.length : 0) - this.rel
+    }
     this.rel = 0
     while (item && len > 0) {
       if (item.countable && !item.deleted && item.moved === this.currMove) {

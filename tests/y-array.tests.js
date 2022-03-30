@@ -668,7 +668,7 @@ const compareTestobjects = cmp => {
  * @param {t.TestCase} tc
  */
 export const testRepeatGeneratingYarrayTests6 = tc => {
-  compareTestobjects(applyRandomTests(tc, arrayTransactions, 9, monitorArrayTestObject))
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 6, monitorArrayTestObject))
 }
 
 /**
