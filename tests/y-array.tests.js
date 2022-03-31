@@ -674,6 +674,20 @@ export const testRepeatGeneratingYarrayTests6 = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testRepeatGeneratingYarrayTests30 = tc => {
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 30, monitorArrayTestObject))
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGeneratingYarrayTests35 = tc => {
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 35, monitorArrayTestObject))
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGeneratingYarrayTests40 = tc => {
   compareTestobjects(applyRandomTests(tc, arrayTransactions, 40, monitorArrayTestObject))
 }

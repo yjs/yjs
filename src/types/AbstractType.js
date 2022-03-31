@@ -77,6 +77,10 @@ export const useSearchMarker = (tr, yarray, index, f) => {
     }
     fsm.rel = 0
   }
+  if (fsm.rel > 0) {
+    fsm.index -= fsm.rel
+    fsm.rel = 0
+  }
   if (!createFreshMarker) {
     // reused old marker and we moved to a different position
     prevItem.marker = false

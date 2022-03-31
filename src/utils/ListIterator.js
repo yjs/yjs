@@ -289,6 +289,9 @@ export class ListIterator {
     const startLength = len
     const sm = this.type._searchMarker
     let item = this.nextItem
+    if (this.index + len > this.type._length) {
+      throw lengthExceeded
+    }
     while (len > 0) {
       while (item && !item.deleted && item.countable && !this.reachedEnd && len > 0 && item.moved === this.currMove && item !== this.currMoveEnd) {
         if (this.rel > 0) {
