@@ -459,7 +459,7 @@ export class Item extends AbstractStruct {
         // Let c in conflictingItems, b in itemsBeforeOrigin
         // ***{origin}bbbb{this}{c,b}{c,b}{o}***
         // Note that conflictingItems is a subset of itemsBeforeOrigin
-        while (o !== null && o !== this.right) {
+        while (o != null && o !== this.right) {
           itemsBeforeOrigin.add(o)
           conflictingItems.add(o)
           if (compareIDs(this.origin, o.origin)) {
