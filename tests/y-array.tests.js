@@ -563,11 +563,15 @@ const arrayTransactions = [
       return
     }
     const pos = prng.int32(gen, 0, yarray.length - 1)
-    const newPos = prng.int32(gen, 0, yarray.length)
+    const len = 1 // prng.int32(gen, 1, math.min(3, yarray.length - pos))
+    const _newPosAdj = prng.int32(gen, 0, yarray.length - len)
+    // make sure that we don't insert in-between the moved range
+    const newPos = _newPosAdj + (_newPosAdj > yarray.length - len ? len : 0)
     const oldContent = yarray.toArray()
-    yarray.move(pos, newPos)
-    const [x] = oldContent.splice(pos, 1)
-    oldContent.splice(pos < newPos ? newPos - 1 : newPos, 0, x)
+    yarray.moveRange(pos, pos + len - 1, newPos)
+    console.log(`moving range ${pos}-${pos + len} to ${newPos}`)
+    const movedValues = oldContent.splice(pos, len)
+    oldContent.splice(pos < newPos ? newPos - len : newPos, 0, ...movedValues)
     t.compareArrays(yarray.toArray(), oldContent) // we want to make sure that fastSearch markers insert at the correct position
   },
   function insert (user, gen) {

@@ -49,9 +49,6 @@ const popMovedStack = (tr, li) => {
       const coords = getMovedCoords(moveContent, tr)
       start = coords.start
       end = coords.end
-      // @todo why are we not running into this?
-      console.log('found edge case 42') // @todo remove
-      debugger
     }
   }
   li.currMove = move
