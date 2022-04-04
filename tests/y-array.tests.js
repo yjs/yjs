@@ -553,20 +553,6 @@ const arrayTransactions = [
     oldContent.splice(pos < newPos ? newPos - 1 : newPos, 0, x)
     t.compareArrays(yarray.toArray(), oldContent) // we want to make sure that fastSearch markers insert at the correct position
   },
-  // @todo remove this duplicate!!
-  function move (user, gen) {
-    const yarray = user.getArray('array')
-    if (yarray.length === 0) {
-      return
-    }
-    const pos = prng.int32(gen, 0, yarray.length - 1)
-    const newPos = prng.int32(gen, 0, yarray.length)
-    const oldContent = yarray.toArray()
-    yarray.move(pos, newPos)
-    const [x] = oldContent.splice(pos, 1)
-    oldContent.splice(pos < newPos ? newPos - 1 : newPos, 0, x)
-    t.compareArrays(yarray.toArray(), oldContent) // we want to make sure that fastSearch markers insert at the correct position
-  },
   function insert (user, gen) {
     const yarray = user.getArray('array')
     const uniqueNumber = getUniqueNumber()
@@ -669,6 +655,13 @@ const compareTestobjects = cmp => {
  */
 export const testRepeatGeneratingYarrayTests6 = tc => {
   compareTestobjects(applyRandomTests(tc, arrayTransactions, 6, monitorArrayTestObject))
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatGeneratingYarrayTests10 = tc => {
+  compareTestobjects(applyRandomTests(tc, arrayTransactions, 10, monitorArrayTestObject))
 }
 
 /**

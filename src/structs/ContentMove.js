@@ -11,7 +11,7 @@ import { decodeRelativePosition, encodeRelativePosition } from 'yjs'
 /**
  * @param {ContentMove} moved
  * @param {Transaction} tr
- * @return {{ start: Item, end: Item | null }} $start (inclusive) is the beginning and $end (exclusive) is the end of the moved area
+ * @return {{ start: Item, end: Item }} $start (inclusive) is the beginning and $end (inclusive) is the end of the moved area
  */
 export const getMovedCoords = (moved, tr) => {
   let start // this (inclusive) is the beginning of the moved area
@@ -38,36 +38,9 @@ export const getMovedCoords = (moved, tr) => {
       end = getItemCleanStart(tr, moved.end.item)
     }
   } else {
-    end = null
+    error.unexpectedCase()
   }
-  return { start: /** @type {Item} */ (start), end }
-}
-
-/**
- * @todo remove this if not needed
- *
- * @param {ContentMove} moved
- * @param {Item} movedItem
- * @param {Transaction} tr
- * @param {function(Item):void} cb
- */
-export const iterateMoved = (moved, movedItem, tr, cb) => {
-  /**
-   * @type {{ start: Item | null, end: Item | null }}
-   */
-  let { start, end } = getMovedCoords(moved, tr)
-  while (start !== end && start != null) {
-    if (!start.deleted) {
-      if (start.moved === movedItem) {
-        if (start.content.constructor === ContentMove) {
-          iterateMoved(start.content, start, tr, cb)
-        } else {
-          cb(start)
-        }
-      }
-    }
-    start = start.right
-  }
+  return { start: /** @type {Item} */ (start), end: /** @type {Item} */ (end) }
 }
 
 /**
@@ -172,7 +145,8 @@ export class ContentMove {
    * @param {Item} item
    */
   integrate (transaction, item) {
-    /** @type {AbstractType<any>} */ (item.parent)._searchMarker = []
+    const sm = /** @type {AbstractType<any>} */ (item.parent)._searchMarker
+    if (sm) sm.length = 0
     /**
      * @type {{ start: Item | null, end: Item | null }}
      */
@@ -182,25 +156,23 @@ export class ContentMove {
     // that we want to set prio to the current prio-maximum of the moved range.
     const adaptPriority = this.priority < 0
     while (start !== end && start != null) {
-      if (!start.deleted) {
-        const currMoved = start.moved
-        const nextPrio = currMoved ? /** @type {ContentMove} */ (currMoved.content).priority : -1
-        if (adaptPriority || nextPrio < this.priority || (currMoved != null && nextPrio === this.priority && (currMoved.id.client < item.id.client || (currMoved.id.client === item.id.client && currMoved.id.clock < item.id.clock)))) {
-          if (currMoved !== null) {
-            this.overrides.add(currMoved)
-          }
-          maxPriority = math.max(maxPriority, nextPrio)
-          // was already moved
-          const prevMove = start.moved
-          if (prevMove && !transaction.prevMoved.has(start) && prevMove.id.clock < (transaction.beforeState.get(prevMove.id.client) || 0)) {
-            // only override prevMoved if the prevMoved item is not new
-            // we need to know which item previously moved an item
-            transaction.prevMoved.set(start, prevMove)
-          }
-          start.moved = item
-        } else if (currMoved != null) {
-          /** @type {ContentMove} */ (currMoved.content).overrides.add(item)
+      const currMoved = start.moved
+      const nextPrio = currMoved ? /** @type {ContentMove} */ (currMoved.content).priority : -1
+      if (adaptPriority || nextPrio < this.priority || (currMoved != null && nextPrio === this.priority && (currMoved.id.client < item.id.client || (currMoved.id.client === item.id.client && currMoved.id.clock < item.id.clock)))) {
+        if (currMoved !== null) {
+          this.overrides.add(currMoved)
         }
+        maxPriority = math.max(maxPriority, nextPrio)
+        // was already moved
+        const prevMove = start.moved
+        if (prevMove && !transaction.prevMoved.has(start) && prevMove.id.clock < (transaction.beforeState.get(prevMove.id.client) || 0)) {
+          // only override prevMoved if the prevMoved item is not new
+          // we need to know which item previously moved an item
+          transaction.prevMoved.set(start, prevMove)
+        }
+        start.moved = item
+      } else if (currMoved != null) {
+        /** @type {ContentMove} */ (currMoved.content).overrides.add(item)
       }
       start = start.right
     }

@@ -652,7 +652,6 @@ export class Item extends AbstractStruct {
     if (!this.deleted) {
       throw error.unexpectedCase()
     }
-    this.moved = null
     this.content.gc(store)
     if (parentGCd) {
       replaceStruct(store, this, new GC(this.id, this.length))

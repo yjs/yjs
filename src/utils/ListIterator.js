@@ -11,10 +11,54 @@ import {
   ContentType,
   ContentDoc,
   Doc,
+  compareIDs,
   RelativePosition, ID, AbstractContent, ContentMove, Transaction, Item, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 const lengthExceeded = error.create('Length exceeded!')
+
+/**
+ * We keep the moved-stack across several transactions. Local or remote changes can invalidate
+ * "moved coords" on the moved-stack.
+ *
+ * The reason for this is that if assoc < 0, then getMovedCoords will return the target.right item.
+ * While the computed item is on the stack, it is possible that a user inserts something between target
+ * and the item on the stack. Then we expect that the newly inserted item is supposed to be on the new
+ * computed item.
+ *
+ * @param {Transaction} tr
+ * @param {ListIterator} li
+ */
+const popMovedStack = (tr, li) => {
+  let { start, end, move } = li.movedStack.pop() || { start: null, end: null, move: null }
+  if (move) {
+    const moveContent = /** @type {ContentMove} */ (move.content)
+    if (
+      (
+        moveContent.start.assoc < 0 && (
+          (start === null && moveContent.start.item !== null) ||
+          (start !== null && !compareIDs(/** @type {Item} */ (start.left).lastId, moveContent.start.item))
+        )
+      ) || (
+        moveContent.end.assoc < 0 && (
+          (end === null && moveContent.end.item !== null) ||
+          (end !== null && !compareIDs(/** @type {Item} */ (end.left).lastId, moveContent.end.item))
+        )
+      )
+    ) {
+      const coords = getMovedCoords(moveContent, tr)
+      start = coords.start
+      end = coords.end
+      // @todo why are we not running into this?
+      console.log('found edge case 42') // @todo remove
+      debugger
+    }
+  }
+  li.currMove = move
+  li.currMoveStart = start
+  li.currMoveEnd = end
+  li.reachedEnd = false
+}
 
 /**
  * @todo rename to walker?
@@ -113,10 +157,13 @@ export class ListIterator {
    * @param {number} len
    */
   forward (tr, len) {
-    if (this.index + len > this.type._length) {
+    if (len === 0 && this.nextItem == null) {
+      return this
+    }
+    if (this.index + len > this.type._length || this.nextItem == null) {
       throw lengthExceeded
     }
-    let item = this.nextItem
+    let item = /** @type {Item} */ (this.nextItem)
     this.index += len
     // @todo this condition is not needed, better to remove it (can always be applied)
     if (this.rel) {
@@ -126,13 +173,9 @@ export class ListIterator {
     while ((!this.reachedEnd || this.currMove !== null) && (len > 0 || (len === 0 && item && (!item.countable || item.deleted || item === this.currMoveEnd || (this.reachedEnd && this.currMoveEnd === null) || item.moved !== this.currMove)))) {
       if (item === this.currMoveEnd || (this.currMoveEnd === null && this.reachedEnd && this.currMove)) {
         item = /** @type {Item} */ (this.currMove) // we iterate to the right after the current condition
-        const { start, end, move } = this.movedStack.pop() || { start: null, end: null, move: null }
-        this.currMove = move
-        this.currMoveStart = start
-        this.currMoveEnd = end
-        this.reachedEnd = false
+        popMovedStack(tr, this)
       } else if (item === null) {
-        break
+        error.unexpectedCase() // should never happen
       } else if (item.countable && !item.deleted && item.moved === this.currMove && len > 0) {
         len -= item.length
         if (len < 0) {
@@ -151,10 +194,13 @@ export class ListIterator {
         item = start
         continue
       }
+      if (this.reachedEnd) {
+        throw error.unexpectedCase
+      }
       if (item.right) {
         item = item.right
       } else {
-        this.reachedEnd = true
+        this.reachedEnd = true // @todo we need to ensure to iterate further if this.currMoveEnd === null
       }
     }
     this.index -= len
@@ -170,10 +216,7 @@ export class ListIterator {
     if (item !== null) {
       while (item === this.currMoveStart) {
         item = /** @type {Item} */ (this.currMove) // we iterate to the left after the current condition
-        const { start, end, move } = this.movedStack.pop() || { start: null, end: null, move: null }
-        this.currMove = move
-        this.currMoveStart = start
-        this.currMoveEnd = end
+        popMovedStack(tr, this)
       }
       this.nextItem = item
     }
@@ -228,10 +271,7 @@ export class ListIterator {
       }
       if (item === this.currMoveStart) {
         item = /** @type {Item} */ (this.currMove) // we iterate to the left after the current condition
-        const { start, end, move } = this.movedStack.pop() || { start: null, end: null, move: null }
-        this.currMove = move
-        this.currMoveStart = start
-        this.currMoveEnd = end
+        popMovedStack(tr, this)
       }
       item = item.left
     }
@@ -248,33 +288,45 @@ export class ListIterator {
    * @param {function(T, T): T} concat
    */
   _slice (tr, len, value, slice, concat) {
+    if (this.index + len > this.type._length) {
+      throw lengthExceeded
+    }
     this.index += len
+    /**
+     * We store nextItem in a variable because this version cannot be null.
+     */
+    let nextItem = /** @type {Item} */ (this.nextItem)
     while (len > 0 && !this.reachedEnd) {
-      while (this.nextItem && this.nextItem.countable && !this.reachedEnd && len > 0 && this.nextItem !== this.currMoveEnd) {
-        if (!this.nextItem.deleted && this.nextItem.moved === this.currMove) {
-          const item = this.nextItem
-          const slicedContent = slice(item.content, this.rel, len)
+      while (nextItem.countable && !this.reachedEnd && len > 0 && nextItem !== this.currMoveEnd) {
+        if (!nextItem.deleted && nextItem.moved === this.currMove) {
+          const slicedContent = slice(nextItem.content, this.rel, len)
           len -= slicedContent.length
           value = concat(value, slicedContent)
-          if (item.length !== slicedContent.length) {
-            if (this.rel + slicedContent.length === item.length) {
-              this.rel = 0
-            } else {
-              this.rel += slicedContent.length
-              continue // do not iterate to item.right
-            }
+          if (this.rel + slicedContent.length === nextItem.length) {
+            this.rel = 0
+          } else {
+            this.rel += slicedContent.length
+            continue // do not iterate to item.right
           }
         }
-        if (this.nextItem.right) {
-          this.nextItem = this.nextItem.right
+        if (nextItem.right) {
+          nextItem = nextItem.right
+          this.nextItem = nextItem
         } else {
           this.reachedEnd = true
         }
       }
-      if (this.nextItem && (!this.reachedEnd || this.currMove !== null) && len > 0) {
+      if ((!this.reachedEnd || this.currMove !== null) && len > 0) {
+        // always set nextItem before any method call
+        this.nextItem = nextItem
         this.forward(tr, 0)
+        if (this.nextItem == null) {
+          throw new Error('debug me') // @todo remove
+        }
+        nextItem = this.nextItem
       }
     }
+    this.nextItem = nextItem
     if (len < 0) {
       this.index -= len
     }
@@ -378,7 +430,7 @@ export class ListIterator {
     // @todo is there a better alrogirthm to update searchmarkers? We could simply remove the markers that are in the updated range.
     // Also note that searchmarkers are updated in insertContents as well.
     const sm = this.type._searchMarker
-    if (sm) sm.length = 0
+    if (sm) sm.length = 0 // @todo instead, iterate through sm and delete all marked properties on items
   }
 
   /**
