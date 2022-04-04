@@ -119,6 +119,7 @@ export const splitItem = (transaction, leftItem, diff) => {
   }
   leftItem.length = diff
   if (leftItem.moved) {
+    rightItem.moved = leftItem.moved
     const m = transaction.prevMoved.get(leftItem)
     if (m) {
       transaction.prevMoved.set(rightItem, m)
@@ -534,6 +535,24 @@ export class Item extends AbstractStruct {
       if (this.parentSub === null && this.countable && !this.deleted) {
         /** @type {AbstractType<any>} */ (this.parent)._length += this.length
       }
+      // check if this item is in a moved range
+      if ((this.left && this.left.moved) || (this.right && this.right.moved)) {
+        const leftMoved = this.left && this.left.moved && /** @type {ContentMove} */ (this.left.moved.content)
+        const rightMoved = this.right && this.right.moved && /** @type {ContentMove} */ (this.right.moved.content)
+        if (leftMoved === rightMoved) {
+          this.moved = /** @type {Item} */ (this.left).moved
+        } else if (
+          (leftMoved != null && !leftMoved.isCollapsed()) ||
+          (rightMoved != null && !rightMoved.isCollapsed())
+        ) {
+          // We know that this item is on the edge of a moved range.
+          // @todo Instead, we could check to which moved-range this item belongs
+          // This approach (reintegration) is pretty expensive in some scenarios
+          leftMoved && leftMoved.integrate(transaction, /** @type {any} */ (this.left).moved)
+          rightMoved && rightMoved.integrate(transaction, /** @type {any} */ (this.right).moved)
+        }
+      }
+
       addStruct(transaction.doc.store, this)
       this.content.integrate(transaction, this)
       // add parent to transaction.changed
@@ -642,6 +661,19 @@ export class Item extends AbstractStruct {
       addChangedTypeToTransaction(transaction, parent, this.parentSub)
       this.content.delete(transaction, this)
     }
+  }
+
+  /**
+   * Similar to `this.delete(tr)`, but additionally ensures
+   * that the deleted range is broadcasted using a different
+   * origin/source in a separate update event, so that
+   * the providers don't filter this message.
+   *
+   * @param {Transaction} transaction
+   */
+  deleteAsCleanup (transaction) {
+    this.delete(transaction)
+    addToDeleteSet(transaction.cleanupDeletions, this.id.client, this.id.clock, this.length)
   }
 
   /**

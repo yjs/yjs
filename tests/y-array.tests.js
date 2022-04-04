@@ -515,6 +515,23 @@ export const testMove2 = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testMoveCircles = tc => {
+  const { testConnector, array0, array1 } = init(tc, { users: 3 })
+  array0.insert(0, [1, 2, 3, 4])
+  testConnector.flushAllMessages()
+  array0.moveRange(0, 1, 3)
+  t.compare(array0.toArray(), [3, 1, 2, 4])
+  array1.moveRange(2, 3, 1)
+  t.compare(array1.toArray(), [1, 3, 4, 2])
+  testConnector.flushAllMessages()
+  t.assert(array0.length === 4)
+  t.assert(array0.length === array0.toArray().length)
+  t.compareArrays(array0.toArray(), array1.toArray())
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testIteratingArrayContainingTypes = tc => {
   const y = new Y.Doc()
   const arr = y.getArray('arr')

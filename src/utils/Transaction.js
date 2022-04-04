@@ -14,6 +14,7 @@ import {
   UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
 } from '../internals.js'
 
+import * as encoding from 'lib0/encoding'
 import * as map from 'lib0/map'
 import * as math from 'lib0/math'
 import * as set from 'lib0/set'
@@ -61,6 +62,13 @@ export class Transaction {
      * @type {DeleteSet}
      */
     this.deleteSet = new DeleteSet()
+    /**
+     * These deletes were used to cleanup the document and
+     * should be broadcasted again using a different transaction-origin.
+     *
+     * @type {DeleteSet}
+     */
+    this.cleanupDeletions = new DeleteSet()
     /**
      * Holds the state before the transaction started.
      * @type {Map<Number,Number>}
@@ -138,6 +146,18 @@ export const writeUpdateMessageFromTransaction = (encoder, transaction) => {
   writeStructsFromTransaction(encoder, transaction)
   writeDeleteSet(encoder, transaction.deleteSet)
   return true
+}
+
+/**
+ * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+ * @param {Transaction} transaction
+ */
+export const writeCleanupMessageFromTransaction = (encoder, transaction) => {
+  const ds = transaction.cleanupDeletions
+  sortAndMergeDeleteSet(ds)
+  // write structs: 0 structs were created
+  encoding.writeVarUint(encoder.restEncoder, 0)
+  writeDeleteSet(encoder, ds)
 }
 
 /**
@@ -344,11 +364,17 @@ const cleanupTransactions = (transactionCleanups, i) => {
       }
       // @todo Merge all the transactions into one and provide send the data as a single update message
       doc.emit('afterTransactionCleanup', [transaction, doc])
+      const needsCleanupEvent = transaction.cleanupDeletions.clients.size > 0
       if (doc._observers.has('update')) {
         const encoder = new UpdateEncoderV1()
         const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
         if (hasContent) {
           doc.emit('update', [encoder.toUint8Array(), transaction.origin, doc, transaction])
+          if (needsCleanupEvent) {
+            const encoder = new UpdateEncoderV1()
+            writeCleanupMessageFromTransaction(encoder, transaction)
+            doc.emit('update', [encoder.toUint8Array(), 'cleanup', doc, transaction])
+          }
         }
       }
       if (doc._observers.has('updateV2')) {
@@ -356,6 +382,11 @@ const cleanupTransactions = (transactionCleanups, i) => {
         const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
         if (hasContent) {
           doc.emit('updateV2', [encoder.toUint8Array(), transaction.origin, doc, transaction])
+          if (needsCleanupEvent) {
+            const encoder = new UpdateEncoderV2()
+            writeCleanupMessageFromTransaction(encoder, transaction)
+            doc.emit('updateV2', [encoder.toUint8Array(), 'cleanup', doc, transaction])
+          }
         }
       }
       const { subdocsAdded, subdocsLoaded, subdocsRemoved } = transaction

@@ -44,13 +44,13 @@ export const getMovedCoords = (moved, tr) => {
 }
 
 /**
+ * @param {Transaction} tr
  * @param {ContentMove} moved
  * @param {Item} movedItem
  * @param {Set<Item>} trackedMovedItems
- * @param {Transaction} tr
  * @return {boolean} true if there is a loop
  */
-export const findMoveLoop = (moved, movedItem, trackedMovedItems, tr) => {
+export const findMoveLoop = (tr, moved, movedItem, trackedMovedItems) => {
   if (trackedMovedItems.has(movedItem)) {
     return true
   }
@@ -60,10 +60,13 @@ export const findMoveLoop = (moved, movedItem, trackedMovedItems, tr) => {
    */
   let { start, end } = getMovedCoords(moved, tr)
   while (start !== end && start != null) {
-    if (start.deleted && start.moved === movedItem && start.content.constructor === ContentMove) {
-      if (findMoveLoop(start.content, start, trackedMovedItems, tr)) {
-        return true
-      }
+    if (
+      !start.deleted &&
+      start.moved === movedItem &&
+      start.content.constructor === ContentMove &&
+      findMoveLoop(tr, start.content, start, trackedMovedItems)
+    ) {
+      return true
     }
     start = start.right
   }
@@ -171,6 +174,10 @@ export class ContentMove {
           transaction.prevMoved.set(start, prevMove)
         }
         start.moved = item
+        if (!start.deleted && start.content.constructor === ContentMove && findMoveLoop(transaction, start.content, start, new Set([item]))) {
+          item.deleteAsCleanup(transaction)
+          return
+        }
       } else if (currMoved != null) {
         /** @type {ContentMove} */ (currMoved.content).overrides.add(item)
       }
