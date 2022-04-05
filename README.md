@@ -49,6 +49,7 @@ Support the project and receive more attention on your tickets.
   collaboration platform.
 * [Living Spec](https://livingspec.com/) A modern way for product teams to collaborate.
 * [BlockSurvey](https://blocksurvey.io) End-to-end encryption for your forms/surveys.
+* [Skiff](https://skiff.org/) Private, decentralized workspace.
 
 ## Table of Contents
 
