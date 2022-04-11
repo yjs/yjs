@@ -569,7 +569,7 @@ const arrayTransactions = [
     const newPos = _newPosAdj + (_newPosAdj > yarray.length - len ? len : 0)
     const oldContent = yarray.toArray()
     yarray.moveRange(pos, pos + len - 1, newPos)
-    console.log(`moving range ${pos}-${pos + len} to ${newPos}`)
+    console.log(`moving range ${pos}-${pos + len - 1} to ${newPos}`)
     const movedValues = oldContent.splice(pos, len)
     oldContent.splice(pos < newPos ? newPos - len : newPos, 0, ...movedValues)
     t.compareArrays(yarray.toArray(), oldContent) // we want to make sure that fastSearch markers insert at the correct position

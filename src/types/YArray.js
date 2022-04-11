@@ -152,15 +152,41 @@ export class YArray extends AbstractType {
     }
     if (this.doc !== null) {
       transact(this.doc, transaction => {
-        const left = createRelativePositionFromTypeIndex(this, index, 1)
-        const right = left.clone()
-        right.assoc = -1
+        const start = createRelativePositionFromTypeIndex(this, index, 1)
+        const end = start.clone()
+        end.assoc = -1
         useSearchMarker(transaction, this, target, walker => {
-          walker.insertMove(transaction, left, right)
+          walker.insertMove(transaction, [{ start, end }])
         })
       })
     } else {
       const content = /** @type {Array<any>} */ (this._prelimContent).splice(index, 1)
+      ;/** @type {Array<any>} */ (this._prelimContent).splice(target, 0, ...content)
+    }
+  }
+
+  /**
+   * @param {number} startIndex Inclusive move-start
+   * @param {number} endIndex Inclusive move-end
+   * @param {number} target
+   * @param {number} assocStart >=0 if start should be associated with the right character. See relative-position assoc parameter.
+   * @param {number} assocEnd >= 0 if end should be associated with the right character.
+   */
+  moveRange (startIndex, endIndex, target, assocStart = 1, assocEnd = -1) {
+    if (startIndex <= target && target <= endIndex) {
+      // It doesn't make sense to move a range into the same range (it's basically a no-op).
+      return
+    }
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
+        const start = createRelativePositionFromTypeIndex(this, startIndex, assocStart)
+        const end = createRelativePositionFromTypeIndex(this, endIndex + 1, assocEnd)
+        useSearchMarker(transaction, this, target, walker => {
+          walker.insertMove(transaction, [{ start, end }])
+        })
+      })
+    } else {
+      const content = /** @type {Array<any>} */ (this._prelimContent).splice(startIndex, endIndex - startIndex + 1)
       ;/** @type {Array<any>} */ (this._prelimContent).splice(target, 0, ...content)
     }
   }
@@ -172,17 +198,18 @@ export class YArray extends AbstractType {
    * @param {number} assocStart >=0 if start should be associated with the right character. See relative-position assoc parameter.
    * @param {number} assocEnd >= 0 if end should be associated with the right character.
    */
-  moveRange (start, end, target, assocStart = 1, assocEnd = -1) {
+  moveRangeNew (start, end, target, assocStart = 1, assocEnd = -1) {
     if (start <= target && target <= end) {
       // It doesn't make sense to move a range into the same range (it's basically a no-op).
       return
     }
     if (this.doc !== null) {
       transact(this.doc, transaction => {
-        const left = createRelativePositionFromTypeIndex(this, start, assocStart)
-        const right = createRelativePositionFromTypeIndex(this, end + 1, assocEnd)
+        const ranges = useSearchMarker(transaction, this, target, walker =>
+          getMinimalListViewRanges(walker, start, end, assocStart, assocEnd)
+        )
         useSearchMarker(transaction, this, target, walker => {
-          walker.insertMove(transaction, left, right)
+          walker.insertMove(transaction, ranges)
         })
       })
     } else {

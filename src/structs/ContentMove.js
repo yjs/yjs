@@ -18,7 +18,7 @@ export const getMovedCoords = (moved, tr) => {
   let end // this (exclusive) is the first item after start that is not part of the moved area
   if (moved.start.item) {
     if (moved.start.assoc < 0) {
-      start = getItemCleanEnd(tr, moved.start.item)
+      start = getItemCleanEnd(tr, moved.start.item) // @todo Try using getItem after all tests succeed again.
       start = start.right
     } else {
       start = getItemCleanStart(tr, moved.start.item)

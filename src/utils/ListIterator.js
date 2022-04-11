@@ -206,16 +206,36 @@ export class ListIterator {
   }
 
   /**
+   * We prefer to insert content outside of a moved range.
+   * Try to escape the moved range by walking to the left over deleted items.
+   *
    * @param {Transaction} tr
    */
-  reduceMoves (tr) {
-    let item = this.nextItem
-    if (item !== null) {
-      while (item === this.currMoveStart) {
-        item = /** @type {Item} */ (this.currMove) // we iterate to the left after the current condition
-        popMovedStack(tr, this)
+  reduceMoveDepth (tr) {
+    let nextItem = this.nextItem
+    if (nextItem !== null) {
+      while (this.currMove) {
+        if (nextItem === this.currMoveStart) {
+          nextItem = /** @type {Item} */ (this.currMove) // we iterate to the left after the current condition
+          popMovedStack(tr, this)
+          continue
+        }
+        // check if we can iterate to the left while stepping over deleted items until we find an item === this.currMoveStart
+        /**
+         * @type {Item} nextItem
+         */
+        let item = nextItem
+        while (item.deleted && item.moved === this.currMove && item !== this.currMoveStart) {
+          item = /** @type {Item} */ (item.left) // this must exist otherwise we miscalculated the move
+        }
+        if (item === this.currMoveStart) {
+          // we only want to iterate over deleted items if we can escape a move
+          nextItem = item
+        } else {
+          break
+        }
       }
-      this.nextItem = item
+      this.nextItem = nextItem
     }
   }
 
@@ -391,7 +411,7 @@ export class ListIterator {
    * @param {Array<AbstractContent>} content
    */
   insertContents (tr, content) {
-    this.reduceMoves(tr)
+    this.reduceMoveDepth(tr)
     this._splitRel(tr)
     const parent = this.type
     const store = tr.doc.store
@@ -419,11 +439,10 @@ export class ListIterator {
 
   /**
    * @param {Transaction} tr
-   * @param {RelativePosition} start
-   * @param {RelativePosition} end
+   * @param {Array<{ start: RelativePosition, end: RelativePosition }>} ranges
    */
-  insertMove (tr, start, end) {
-    this.insertContents(tr, [new ContentMove(start, end, -1)]) // @todo adjust priority
+  insertMove (tr, ranges) {
+    this.insertContents(tr, ranges.map(range => new ContentMove(range.start, range.end, -1)))
     // @todo is there a better alrogirthm to update searchmarkers? We could simply remove the markers that are in the updated range.
     // Also note that searchmarkers are updated in insertContents as well.
     const sm = this.type._searchMarker
@@ -562,4 +581,57 @@ const sliceArrayContent = (itemcontent, start, len) => {
 const concatArrayContent = (content, added) => {
   content.push(...added)
   return content
+}
+
+/**
+ * @param {Transaction} tr
+ * @param {ListIterator} walker
+ * @param {number} len
+ */
+const getMinimalListViewRanges = (tr, walker, len) => {
+  walker.reduceMoveDepth(tr)
+  if (walker.index + len > walker.type._length) {
+    throw lengthExceeded
+  }
+  walker.index += len
+  /**
+   * We store nextItem in a variable because this version cannot be null.
+   */
+  let nextItem = /** @type {Item} */ (walker.nextItem)
+  const ranges = []
+  while (len > 0 && !walker.reachedEnd) {
+    while (nextItem.countable && !walker.reachedEnd && len > 0 && nextItem !== walker.currMoveEnd) {
+      if (!nextItem.deleted && nextItem.moved === walker.currMove) {
+        const slicedContent = slice(nextItem.content, this.rel, len)
+        len -= slicedContent.length
+        value = concat(value, slicedContent)
+        if (this.rel + slicedContent.length === nextItem.length) {
+          this.rel = 0
+        } else {
+          this.rel += slicedContent.length
+          continue // do not iterate to item.right
+        }
+      }
+      if (nextItem.right) {
+        nextItem = nextItem.right
+        this.nextItem = nextItem
+      } else {
+        this.reachedEnd = true
+      }
+    }
+    if ((!this.reachedEnd || this.currMove !== null) && len > 0) {
+      // always set nextItem before any method call
+      this.nextItem = nextItem
+      this.forward(tr, 0)
+      if (this.nextItem == null) {
+        throw new Error('debug me') // @todo remove
+      }
+      nextItem = this.nextItem
+    }
+  }
+  this.nextItem = nextItem
+  if (len < 0) {
+    this.index -= len
+  }
+  return ranges
 }
