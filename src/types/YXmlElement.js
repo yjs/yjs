@@ -201,7 +201,20 @@ export class YXmlElement extends YXmlFragment {
    * @public
    */
   toDOM (_document = document, hooks = {}, binding) {
-    const dom = _document.createElement(this.nodeName)
+    let dom;
+    switch(this.nodeName){
+      case "polyline":
+      case "path":
+      case "rect":
+      case "circle":
+      case "ellipse":
+      case "line":
+      case "svg":
+        dom = _document.createElementNS('http://www.w3.org/2000/svg', this.nodeName);
+        break;
+      default:
+        dom = _document.createElement(this.nodeName);
+    }
     const attrs = this.getAttributes()
     for (const key in attrs) {
       dom.setAttribute(key, attrs[key])
