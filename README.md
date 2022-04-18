@@ -20,16 +20,16 @@ suited for even large documents.
 * Podcast [**"Yjs Deep Dive into real time collaborative editing solutions":**](https://www.tag1consulting.com/blog/deep-dive-real-time-collaborative-editing-solutions-tagteamtalk-001-0)
 * Podcast [**"Google Docs-style editing in Gutenberg with the YJS framework":**](https://publishpress.com/blog/yjs/)
 
-:construction_worker_woman: If you are looking for professional (paid) support to
-build collaborative or distributed applications ping us at
-<yjs@tag1consulting.com>. Otherwise you can find help on our
-[discussion board](https://discuss.yjs.dev).
+:construction_worker_woman: If you are looking for professional support, please
+consider supporting this project via a "support contract" on
+[GitHub Sponsors](https://github.com/sponsors/dmonad). I will attend your issues
+quicker and we can discuss questions and problems in regular video conferences.
+Otherwise you can find help on our community [discussion board](https://discuss.yjs.dev).
 
 ## Sponsorship
 
-Please contribute to the project financially if your company relies on Yjs.
-Support the project and receive more attention on your tickets.
-[![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=d42f2d)](https://github.com/sponsors/dmonad)
+Please contribute to the project financially - especially if your company relies
+on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=d42f2d)](https://github.com/sponsors/dmonad)
 
 ## Who is using Yjs
 
