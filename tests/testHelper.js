@@ -5,6 +5,7 @@ import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
 import * as syncProtocol from 'y-protocols/sync'
 import * as object from 'lib0/object'
+import * as map from 'lib0/map'
 import * as Y from '../src/index.js'
 export * from '../src/index.js'
 
@@ -89,8 +90,8 @@ export class TestYInstance extends Y.Doc {
         const encoder = encoding.createEncoder()
         syncProtocol.writeUpdate(encoder, update)
         broadcastMessage(this, encoding.toUint8Array(encoder))
-        this.updates.push(update)
       }
+      this.updates.push(update)
     })
     this.connect()
   }
@@ -133,12 +134,7 @@ export class TestYInstance extends Y.Doc {
    * @param {TestYInstance} remoteClient
    */
   _receive (message, remoteClient) {
-    let messages = this.receiving.get(remoteClient)
-    if (messages === undefined) {
-      messages = []
-      this.receiving.set(remoteClient, messages)
-    }
-    messages.push(message)
+    map.setIfUndefined(this.receiving, remoteClient, () => []).push(message)
   }
 }
 
@@ -201,17 +197,6 @@ export class TestConnector {
       if (encoding.length(encoder) > 0) {
         // send reply message
         sender._receive(encoding.toUint8Array(encoder), receiver)
-      }
-      {
-        // If update message, add the received message to the list of received messages
-        const decoder = decoding.createDecoder(m)
-        const messageType = decoding.readVarUint(decoder)
-        switch (messageType) {
-          case syncProtocol.messageYjsUpdate:
-          case syncProtocol.messageYjsSyncStep2:
-            receiver.updates.push(decoding.readVarUint8Array(decoder))
-            break
-        }
       }
       return true
     }
