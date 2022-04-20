@@ -180,7 +180,9 @@ export class YMap extends AbstractType {
   }
 
   /**
-   * @return {IterableIterator<MapType>}
+   * Returns an Iterator of [key, value] pairs
+   *
+   * @return {IterableIterator<any>}
    */
   [Symbol.iterator] () {
     return this.entries()
