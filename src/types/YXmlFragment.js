@@ -405,6 +405,15 @@ export class YXmlFragment extends AbstractType {
   }
 
   /**
+   * Executes a provided function on once on overy child element.
+   *
+   * @param {function(YXmlElement|YXmlText,number, typeof this):void} f A function to execute on every element of this YArray.
+   */
+  forEach (f) {
+    typeListForEach(this, f)
+  }
+
+  /**
    * Transform the properties of this type to binary and write it to an
    * BinaryEncoder.
    *
