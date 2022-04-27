@@ -35,7 +35,7 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
 
 * [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star2:
 * [Relm](https://www.relm.us/) A collaborative gameworld for teamwork and
-  community. :star2:
+  community. :star:
 * [Room.sh](https://room.sh/) A meeting application with integrated
   collaborative drawing, editing, and coding tools. :star:
 * [Nimbus Note](https://nimbusweb.me/note.php) A note-taking app designed by
@@ -48,6 +48,7 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
 * [Alldone](https://alldone.app/) A next-gen project management and
   collaboration platform.
 * [Living Spec](https://livingspec.com/) A modern way for product teams to collaborate.
+* [Slidebeamer](https://slidebeamer.com/) Presentation app.
 * [BlockSurvey](https://blocksurvey.io) End-to-end encryption for your forms/surveys.
 * [Skiff](https://skiff.org/) Private, decentralized workspace.
 
