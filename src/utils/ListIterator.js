@@ -12,6 +12,7 @@ import {
   ContentDoc,
   Doc,
   compareIDs,
+  createRelativePosition,
   RelativePosition, ID, AbstractContent, ContentMove, Transaction, Item, AbstractType // eslint-disable-line
 } from '../internals.js'
 
@@ -328,7 +329,7 @@ export class ListIterator {
         }
         if (nextItem.right) {
           nextItem = nextItem.right
-          this.nextItem = nextItem
+          this.nextItem = nextItem // @todo move this after the while loop
         } else {
           this.reachedEnd = true
         }
@@ -584,54 +585,107 @@ const concatArrayContent = (content, added) => {
 }
 
 /**
+ * Move-ranges must not cross each other.
+ *
+ * This function computes the minimal amount of ranges to move a range of content to
+ * a different place.
+ *
+ * Algorithm:
+ * * Store the current stack in $preStack and $preItem = walker.nextItem
+ * * Iterate forward $len items.
+ * * The current stack is stored is $afterStack and $
+ * * Delete the stack-items that both of them have in common
+ *
  * @param {Transaction} tr
  * @param {ListIterator} walker
  * @param {number} len
+ * @return {Array<{ start: RelativePosition, end: RelativePosition }>}
  */
-const getMinimalListViewRanges = (tr, walker, len) => {
-  walker.reduceMoveDepth(tr)
+export const getMinimalListViewRanges = (tr, walker, len) => {
+  if (len === 0) return []
   if (walker.index + len > walker.type._length) {
     throw lengthExceeded
   }
-  walker.index += len
+  // stepping outside the current move-range as much as possible
+  walker.reduceMoveDepth(tr)
+
   /**
-   * We store nextItem in a variable because this version cannot be null.
+   * @type {Array<{ start: RelativePosition, end: RelativePosition }>}
    */
-  let nextItem = /** @type {Item} */ (walker.nextItem)
   const ranges = []
-  while (len > 0 && !walker.reachedEnd) {
-    while (nextItem.countable && !walker.reachedEnd && len > 0 && nextItem !== walker.currMoveEnd) {
-      if (!nextItem.deleted && nextItem.moved === walker.currMove) {
-        const slicedContent = slice(nextItem.content, this.rel, len)
-        len -= slicedContent.length
-        value = concat(value, slicedContent)
-        if (this.rel + slicedContent.length === nextItem.length) {
-          this.rel = 0
-        } else {
-          this.rel += slicedContent.length
-          continue // do not iterate to item.right
-        }
-      }
-      if (nextItem.right) {
-        nextItem = nextItem.right
-        this.nextItem = nextItem
-      } else {
-        this.reachedEnd = true
-      }
-    }
-    if ((!this.reachedEnd || this.currMove !== null) && len > 0) {
-      // always set nextItem before any method call
-      this.nextItem = nextItem
-      this.forward(tr, 0)
-      if (this.nextItem == null) {
-        throw new Error('debug me') // @todo remove
-      }
-      nextItem = this.nextItem
-    }
+  // store relevant information for the beginning, before we iterate forward
+  /**
+   * @type {Array<Item>}
+   */
+  const preStack = walker.movedStack.map(si => si.move)
+  const preMove = walker.currMove
+  const preItem = /** @type {Item} */ (walker.nextItem)
+  const preRel = walker.rel
+
+  walker.forward(tr, len)
+
+  // store the same information for the end, after we iterate forward
+  /**
+   * @type {Array<Item>}
+   */
+  const afterStack = walker.movedStack.map(si => si.move)
+  const afterMove = walker.currMove
+  const afterItem = /** @type {Item} */ (walker.nextItem)
+  const afterRel = walker.rel
+
+  let start = createRelativePosition(walker.type, createID(preItem.id.client, preItem.id.clock + preRel), 0)
+  let end = walker.reachedEnd
+    ? createRelativePosition(
+        walker.type,
+        createID(afterItem.id.client, afterItem.id.clock + afterItem.length - 1),
+        -1
+      )
+    : createRelativePosition(
+      walker.type,
+      createID(afterItem.id.client, afterItem.id.clock + afterRel),
+      0
+    )
+
+  if (preMove) {
+    preStack.push(preMove)
   }
-  this.nextItem = nextItem
-  if (len < 0) {
-    this.index -= len
+  if (afterMove) {
+    afterStack.push(afterMove)
   }
+
+  // remove common stack-items
+  while (preStack.length > 0 && preStack[0] === afterStack[0]) {
+    preStack.shift()
+    afterStack.shift()
+  }
+
+  // remove stack-items that are useless for our computation (that wouldn't produce meaningful ranges)
+  // @todo
+
+  while (preStack.length > 0) {
+    const move = /** @type {Item} */ (preStack.pop())
+    ranges.push({
+      start,
+      end: /** @type {ContentMove} */ (move.content).end
+    })
+    start = createRelativePosition(walker.type, createID(move.id.client, move.id.clock), -1)
+  }
+
+  const middleMove = { start, end }
+  ranges.push(middleMove)
+
+  while (afterStack.length > 0) {
+    const move = /** @type {Item} */ (afterStack.pop())
+    ranges.push({
+      start: /** @type {ContentMove} */ (move.content).start,
+      end
+    })
+    end = createRelativePosition(walker.type, createID(move.id.client, move.id.clock), 0)
+  }
+
+  // Update end of the center move operation
+  // Move ranges must be applied in order
+  middleMove.end = end
+
   return ranges
 }

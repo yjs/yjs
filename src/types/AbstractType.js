@@ -33,6 +33,7 @@ const maxSearchMarker = 80
  * @param {AbstractType<any>} yarray
  * @param {number} index
  * @param {function(ListIterator):T} f
+ * @return T
  */
 export const useSearchMarker = (tr, yarray, index, f) => {
   const searchMarker = yarray._searchMarker

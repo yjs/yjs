@@ -11,7 +11,8 @@ import {
   ListIterator,
   useSearchMarker,
   createRelativePositionFromTypeIndex,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item, // eslint-disable-line
+  getMinimalListViewRanges
 } from '../internals.js'
 
 /**
@@ -173,47 +174,23 @@ export class YArray extends AbstractType {
    * @param {number} assocEnd >= 0 if end should be associated with the right character.
    */
   moveRange (startIndex, endIndex, target, assocStart = 1, assocEnd = -1) {
-    if (startIndex <= target && target <= endIndex) {
-      // It doesn't make sense to move a range into the same range (it's basically a no-op).
+    if (
+      (startIndex <= target && target <= endIndex) || // It doesn't make sense to move a range into the same range (it's basically a no-op).
+      endIndex - startIndex < 0 // require length of >= 0
+    ) {
       return
     }
     if (this.doc !== null) {
       transact(this.doc, transaction => {
-        const start = createRelativePositionFromTypeIndex(this, startIndex, assocStart)
-        const end = createRelativePositionFromTypeIndex(this, endIndex + 1, assocEnd)
-        useSearchMarker(transaction, this, target, walker => {
-          walker.insertMove(transaction, [{ start, end }])
-        })
-      })
-    } else {
-      const content = /** @type {Array<any>} */ (this._prelimContent).splice(startIndex, endIndex - startIndex + 1)
-      ;/** @type {Array<any>} */ (this._prelimContent).splice(target, 0, ...content)
-    }
-  }
-
-  /**
-   * @param {number} start Inclusive move-start
-   * @param {number} end Inclusive move-end
-   * @param {number} target
-   * @param {number} assocStart >=0 if start should be associated with the right character. See relative-position assoc parameter.
-   * @param {number} assocEnd >= 0 if end should be associated with the right character.
-   */
-  moveRangeNew (start, end, target, assocStart = 1, assocEnd = -1) {
-    if (start <= target && target <= end) {
-      // It doesn't make sense to move a range into the same range (it's basically a no-op).
-      return
-    }
-    if (this.doc !== null) {
-      transact(this.doc, transaction => {
-        const ranges = useSearchMarker(transaction, this, target, walker =>
-          getMinimalListViewRanges(walker, start, end, assocStart, assocEnd)
+        const ranges = useSearchMarker(transaction, this, startIndex, walker =>
+          getMinimalListViewRanges(transaction, walker, endIndex - startIndex + 1)
         )
         useSearchMarker(transaction, this, target, walker => {
           walker.insertMove(transaction, ranges)
         })
       })
     } else {
-      const content = /** @type {Array<any>} */ (this._prelimContent).splice(start, end - start + 1)
+      const content = /** @type {Array<any>} */ (this._prelimContent).splice(startIndex, endIndex - startIndex + 1)
       ;/** @type {Array<any>} */ (this._prelimContent).splice(target, 0, ...content)
     }
   }
