@@ -144,17 +144,21 @@ export class ListIterator {
   moveTo (tr, index) {
     const diff = index - this.index
     if (diff > 0) {
-      this.forward(tr, diff)
+      this.forward(tr, diff, true)
     } else if (diff < 0) {
       this.backward(tr, -diff)
     }
   }
 
   /**
+   * When using skipUncountables=false within a "useSearchMarker" call, it is recommended
+   * to move the marker to the end. @todo do this after each useSearchMarkerCall
+   *
    * @param {Transaction} tr
    * @param {number} len
+   * @param {boolean} skipUncountables Iterate as much as possible iterating over uncountables until we find the next item.
    */
-  forward (tr, len) {
+  forward (tr, len, skipUncountables) {
     if (len === 0 && this.nextItem == null) {
       return this
     }
@@ -168,7 +172,8 @@ export class ListIterator {
       len += this.rel
       this.rel = 0
     }
-    while ((!this.reachedEnd || this.currMove !== null) && (len > 0 || (len === 0 && item && (!item.countable || item.deleted || item === this.currMoveEnd || (this.reachedEnd && this.currMoveEnd === null) || item.moved !== this.currMove)))) {
+    // eslint-disable-next-line no-unmodified-loop-condition
+    while ((!this.reachedEnd || this.currMove !== null) && (len > 0 || (skipUncountables && len === 0 && item && (!item.countable || item.deleted || item === this.currMoveEnd || (this.reachedEnd && this.currMoveEnd === null) || item.moved !== this.currMove)))) {
       if (item === this.currMoveEnd || (this.currMoveEnd === null && this.reachedEnd && this.currMove)) {
         item = /** @type {Item} */ (this.currMove) // we iterate to the right after the current condition
         popMovedStack(tr, this)
@@ -337,7 +342,7 @@ export class ListIterator {
       if ((!this.reachedEnd || this.currMove !== null) && len > 0) {
         // always set nextItem before any method call
         this.nextItem = nextItem
-        this.forward(tr, 0)
+        this.forward(tr, 0, true)
         if (this.nextItem == null) {
           throw new Error('debug me') // @todo remove
         }
@@ -381,7 +386,7 @@ export class ListIterator {
       }
       if (len > 0) {
         this.nextItem = item
-        this.forward(tr, 0)
+        this.forward(tr, 0, true)
         item = this.nextItem
       }
     }
@@ -622,7 +627,7 @@ export const getMinimalListViewRanges = (tr, walker, len) => {
   const preItem = /** @type {Item} */ (walker.nextItem)
   const preRel = walker.rel
 
-  walker.forward(tr, len)
+  walker.forward(tr, len, false)
 
   // store the same information for the end, after we iterate forward
   /**
@@ -630,21 +635,30 @@ export const getMinimalListViewRanges = (tr, walker, len) => {
    */
   const afterStack = walker.movedStack.map(si => si.move)
   const afterMove = walker.currMove
-  const afterItem = /** @type {Item} */ (walker.nextItem)
-  const afterRel = walker.rel
+  const nextIsCurrMoveStart = walker.nextItem === walker.currMoveStart
+  const afterItem = /** @type {Item} */ (nextIsCurrMoveStart
+    ? walker.currMove
+    : (walker.rel > 0 || walker.reachedEnd)
+        ? walker.nextItem
+        : /** @type {Item} */ (walker.nextItem).left
+  )
+  /**
+   * afterRel is always > 0
+   */
+  const afterRel = nextIsCurrMoveStart
+    ? 1
+    : walker.rel > 0
+      ? walker.rel
+      : afterItem.length
+
+  walker.forward(tr, 0, false) // @todo remove once this is done is useSearchMarker
 
   let start = createRelativePosition(walker.type, createID(preItem.id.client, preItem.id.clock + preRel), 0)
-  let end = walker.reachedEnd
-    ? createRelativePosition(
-        walker.type,
-        createID(afterItem.id.client, afterItem.id.clock + afterItem.length - 1),
-        -1
-      )
-    : createRelativePosition(
-      walker.type,
-      createID(afterItem.id.client, afterItem.id.clock + afterRel),
-      0
-    )
+  let end = createRelativePosition(
+    walker.type,
+    createID(afterItem.id.client, afterItem.id.clock + afterRel - 1),
+    -1
+  )
 
   if (preMove) {
     preStack.push(preMove)

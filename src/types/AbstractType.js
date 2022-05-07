@@ -38,10 +38,10 @@ const maxSearchMarker = 80
 export const useSearchMarker = (tr, yarray, index, f) => {
   const searchMarker = yarray._searchMarker
   if (searchMarker === null || yarray._start === null) { // @todo add condition `index < 5`
-    return f(new ListIterator(yarray).forward(tr, index))
+    return f(new ListIterator(yarray).forward(tr, index, true))
   }
   if (searchMarker.length === 0) {
-    const sm = new ListIterator(yarray).forward(tr, index)
+    const sm = new ListIterator(yarray).forward(tr, index, true)
     searchMarker.push(sm)
     if (sm.nextItem) sm.nextItem.marker = true
   }
@@ -59,7 +59,7 @@ export const useSearchMarker = (tr, yarray, index, f) => {
   if (diff > 0) {
     fsm.backward(tr, diff)
   } else {
-    fsm.forward(tr, -diff)
+    fsm.forward(tr, -diff, true)
   }
   // @todo remove this test
   /*
