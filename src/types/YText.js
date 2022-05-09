@@ -292,7 +292,16 @@ const formatText = (transaction, parent, currPos, length, attributes) => {
   // iterate until first non-format or null is found
   // delete all formats with attributes[format.key] != null
   // also check the attributes after the first non-format as we do not want to insert redundant negated attributes there
-  while (currPos.right !== null && (length > 0 || currPos.right.content.constructor === ContentFormat)) {
+  // eslint-disable-next-line no-labels
+  iterationLoop: while (
+    currPos.right !== null &&
+    (length > 0 ||
+      (
+        negatedAttributes.size > 0 &&
+        (currPos.right.deleted || currPos.right.content.constructor === ContentFormat)
+      )
+    )
+  ) {
     if (!currPos.right.deleted) {
       switch (currPos.right.content.constructor) {
         case ContentFormat: {
@@ -302,9 +311,16 @@ const formatText = (transaction, parent, currPos, length, attributes) => {
             if (equalAttrs(attr, value)) {
               negatedAttributes.delete(key)
             } else {
+              if (length === 0) {
+                // no need to further extend negatedAttributes
+                // eslint-disable-next-line no-labels
+                break iterationLoop
+              }
               negatedAttributes.set(key, value)
             }
             currPos.right.delete(transaction)
+          } else {
+            currPos.currentAttributes.set(key, value)
           }
           break
         }
