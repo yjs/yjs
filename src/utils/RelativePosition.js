@@ -196,7 +196,7 @@ export const createRelativePositionFromTypeIndex = (type, index, assoc = 0) => {
 export const writeRelativePosition = (encoder, rpos) => {
   const { type, tname, item, assoc } = rpos
   if (item !== null) {
-    encoding.writeVarUint(encoder, 0)
+    encoding.writeUint8(encoder, 0)
     writeID(encoder, item)
   } else if (tname !== null) {
     // case 2: found position at the end of the list and type is stored in y.share
@@ -233,7 +233,7 @@ export const readRelativePosition = decoder => {
   let type = null
   let tname = null
   let itemID = null
-  switch (decoding.readVarUint(decoder)) {
+  switch (decoding.readUint8(decoder)) {
     case 0:
       // case 1: found position somewhere in the linked list
       itemID = readID(decoder)
