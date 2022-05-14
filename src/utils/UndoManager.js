@@ -132,6 +132,7 @@ const popStackItem = (undoManager, stack, eventType) => {
 /**
  * @typedef {Object} UndoManagerOptions
  * @property {number} [UndoManagerOptions.captureTimeout=500]
+ * @property {function(Transaction):boolean} [UndoManagerOptions.captureTransaction] Do not capture changes of a Transaction if result false.
  * @property {function(Item):boolean} [UndoManagerOptions.deleteFilter=()=>true] Sometimes
  * it is necessary to filter whan an Undo/Redo operation can delete. If this
  * filter returns false, the type/item won't be deleted even it is in the
@@ -154,7 +155,13 @@ export class UndoManager extends Observable {
    * @param {AbstractType<any>|Array<AbstractType<any>>} typeScope Accepts either a single type, or an array of types
    * @param {UndoManagerOptions} options
    */
-  constructor (typeScope, { captureTimeout = 500, deleteFilter = () => true, trackedOrigins = new Set([null]), ignoreRemoteMapChanges = false } = {}) {
+  constructor (typeScope, {
+    captureTimeout = 500,
+    captureTransaction = tr => true,
+    deleteFilter = () => true,
+    trackedOrigins = new Set([null]),
+    ignoreRemoteMapChanges = false
+  } = {}) {
     super()
     /**
      * @type {Array<AbstractType<any>>}
@@ -164,6 +171,7 @@ export class UndoManager extends Observable {
     this.deleteFilter = deleteFilter
     trackedOrigins.add(this)
     this.trackedOrigins = trackedOrigins
+    this.captureTransaction = captureTransaction
     /**
      * @type {Array<StackItem>}
      */
@@ -187,7 +195,12 @@ export class UndoManager extends Observable {
      */
     this.afterTransactionHandler = transaction => {
       // Only track certain transactions
-      if (!this.scope.some(type => transaction.changedParentTypes.has(type)) || (!this.trackedOrigins.has(transaction.origin) && (!transaction.origin || !this.trackedOrigins.has(transaction.origin.constructor)))) {
+      if (this.captureTransaction(transaction) && (
+        !this.scope.some(type => transaction.changedParentTypes.has(type)) ||
+        (
+          !this.trackedOrigins.has(transaction.origin) && (!transaction.origin || !this.trackedOrigins.has(transaction.origin.constructor))
+        )
+      )) {
         return
       }
       const undoing = this.undoing
