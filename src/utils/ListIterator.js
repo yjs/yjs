@@ -15,6 +15,7 @@ import {
   createRelativePosition,
   RelativePosition, ID, AbstractContent, ContentMove, Transaction, Item, AbstractType // eslint-disable-line
 } from '../internals.js'
+import { compareRelativePositions } from './RelativePosition.js'
 
 const lengthExceeded = error.create('Length exceeded!')
 
@@ -701,5 +702,6 @@ export const getMinimalListViewRanges = (tr, walker, len) => {
   // Move ranges must be applied in order
   middleMove.end = end
 
-  return ranges
+  // filter out unnecessary ranges
+  return ranges.filter(range => !compareRelativePositions(range.start, range.end))
 }
