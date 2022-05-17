@@ -26,6 +26,7 @@
   },
   "exports": {
     ".": {
+      "types": "./dist/src/index.d.ts",
       "import": "./dist/yjs.mjs",
       "require": "./dist/yjs.cjs"
     },
