@@ -563,7 +563,7 @@ const arrayTransactions = [
       return
     }
     const pos = prng.int32(gen, 0, yarray.length - 1)
-    const len = 1 // prng.int32(gen, 1, math.min(3, yarray.length - pos)) @todo!
+    const len = prng.int32(gen, 1, math.min(1, yarray.length - pos))
     const _newPosAdj = prng.int32(gen, 0, yarray.length - len)
     // make sure that we don't insert in-between the moved range
     const newPos = _newPosAdj + (_newPosAdj > yarray.length - len ? len : 0)

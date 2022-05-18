@@ -77,7 +77,7 @@ export const testDiffStateVectorOfUpdateIsEmpty = tc => {
   /**
    * @type {null | Uint8Array}
    */
-  let sv = /* any */ (null)
+  let sv = /** @type {any} */ (null)
   ydoc.getText().insert(0, 'a')
   ydoc.on('update', update => {
     sv = Y.encodeStateVectorFromUpdate(update)

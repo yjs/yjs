@@ -273,7 +273,7 @@ export const testUndoInEmbed = tc => {
  */
 export const testUndoDeleteFilter = tc => {
   /**
-   * @type {Array<Y.Map<any>>}
+   * @type {Y.Array<any>}
    */
   const array0 = /** @type {any} */ (init(tc, { users: 3 }).array0)
   const undoManager = new Y.UndoManager(array0, { deleteFilter: item => !(item instanceof Y.Item) || (item.content instanceof Y.ContentType && item.content.type._map.size === 0) })
