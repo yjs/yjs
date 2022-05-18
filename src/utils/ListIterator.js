@@ -636,21 +636,25 @@ export const getMinimalListViewRanges = (tr, walker, len) => {
    */
   const afterStack = walker.movedStack.map(si => si.move)
   const afterMove = walker.currMove
+  /**
   const nextIsCurrMoveStart = walker.nextItem === walker.currMoveStart
-  const afterItem = /** @type {Item} */ (nextIsCurrMoveStart
+    const afterItem = /** @type {Item} / (nextIsCurrMoveStart
     ? walker.currMove
     : (walker.rel > 0 || walker.reachedEnd)
         ? walker.nextItem
-        : /** @type {Item} */ (walker.nextItem).left
+        : /** @type {Item} / (walker.nextItem).left
+  ) */
+  const afterItem = /** @type {Item} */ (
+    (walker.rel > 0 || walker.reachedEnd)
+      ? walker.nextItem
+      : /** @type {Item} */ (walker.nextItem).left
   )
   /**
    * afterRel is always > 0
    */
-  const afterRel = nextIsCurrMoveStart
-    ? 1
-    : walker.rel > 0
-      ? walker.rel
-      : afterItem.length
+  const afterRel = walker.rel > 0
+    ? walker.rel
+    : afterItem.length
 
   walker.forward(tr, 0, false) // @todo remove once this is done is useSearchMarker
 
