@@ -15,6 +15,7 @@ suited for even large documents.
 
 * Demos: [https://github.com/yjs/yjs-demos](https://github.com/yjs/yjs-demos)
 * Discuss: [https://discuss.yjs.dev](https://discuss.yjs.dev)
+* Chat: [Gitter](https://gitter.im/Yjs/community) | [Discord](https://discord.gg/T3nqMT6qbM)
 * Benchmark Yjs vs. Automerge:
   [https://github.com/dmonad/crdt-benchmarks](https://github.com/dmonad/crdt-benchmarks)
 * Podcast [**"Yjs Deep Dive into real time collaborative editing solutions":**](https://www.tag1consulting.com/blog/deep-dive-real-time-collaborative-editing-solutions-tagteamtalk-001-0)
