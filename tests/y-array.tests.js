@@ -630,3 +630,27 @@ export const testRepeatGeneratingYarrayTests30000 = tc => {
   t.skip(!t.production)
   applyRandomTests(tc, arrayTransactions, 30000)
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+ export const testArrayRemovalUpdatesStateVector = tc => {
+  const doc = new Y.Doc()
+  const root = doc.getMap("root")
+
+  const arr = new Y.Array()
+  root.set("arr", arr)
+  arr.insert(0, ["apple"])
+  arr.insert(1, ["banana"])
+  arr.insert(2, ["citrus"])
+
+  let sv1 = Y.encodeStateVector(doc)
+  console.log(`Before delete, SV=${sv1} JSON=${JSON.stringify(root.toJSON())}`)
+  arr.delete(2)
+  let sv2 = Y.encodeStateVector(doc)
+  console.log(` After delete, SV=${sv2} JSON=${JSON.stringify(root.toJSON())}`)
+
+  if (sv1.length == sv2.length && sv1.every((v, i) => v === sv2[i])) {
+      throw new Error(`State vector should change after document reverted to other state, both are ${sv1}`)
+  }
+}
