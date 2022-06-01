@@ -588,3 +588,59 @@ export const testBehaviorOfIgnoreremotemapchangesProperty = tc => {
   t.assert(map1.get('x') === 2)
   t.assert(map2.get('x') === 2)
 }
+
+/**
+ * Ensure that we never stop capturing due to a timeout when the timeout is infinite
+ *
+ * @see https://github.com/yjs/yjs/issues/431
+ * @param {t.TestCase} tc
+ */
+ export const testInfiniteCaptureTimeoutNeverCapturesAutomatically = tc => {
+  const { array0 } = init(tc, { users: 3 })
+  const undoManager = new Y.UndoManager(array0, { captureTimeout: Number.POSITIVE_INFINITY })
+
+  array0.push([1, 2, 3]);  
+  undoManager.lastChange = Number.MIN_VALUE;
+  array0.push([7, 8, 9]);
+  undoManager.undo();
+  
+  t.compare(array0.toArray(), []);
+};
+
+/**
+ * Ensure that stopCapturing is still acknowledged for Number.POSITIVE_INFINITY capture timeouts
+ *
+ * @see https://github.com/yjs/yjs/issues/431
+ * @param {t.TestCase} tc
+ */
+export const testInfiniteCaptureTimeoutCapturesWhenStopCapturing = tc => {
+  const { array0 } = init(tc, { users: 3 })
+  const undoManager = new Y.UndoManager(array0, { captureTimeout: Number.POSITIVE_INFINITY });
+
+  array0.push([1, 2, 3]);
+  undoManager.stopCapturing();
+
+  array0.push([4, 5, 6]);
+  undoManager.undo();
+  
+  t.compare(array0.toArray(), [1, 2, 3]);
+};
+
+/**
+ * Ensure that stopCapturing is still acknowledged for Number.MAX_VALUE capture timeouts
+ *
+ * @see https://github.com/yjs/yjs/issues/431
+ * @param {t.TestCase} tc
+ */
+export const testMaxValueCaptureTimeoutCapturesWhenStopCapturing = tc => {
+  const { array0 } = init(tc, { users: 3 })
+  const undoManager = new Y.UndoManager(array0, { captureTimeout: Number.MAX_VALUE });
+
+  array0.push([1, 2, 3]);
+  undoManager.stopCapturing();
+
+  array0.push([4, 5, 6]);
+  undoManager.undo();
+  
+  t.compare(array0.toArray(), [1, 2, 3]);
+};
