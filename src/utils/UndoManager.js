@@ -188,7 +188,7 @@ export class UndoManager extends Observable {
     this.undoing = false
     this.redoing = false
     this.doc = /** @type {Doc} */ (this.scope[0].doc)
-    this.lastChange = 0
+    this.lastChange = Number.NEGATIVE_INFINITY;
     this.ignoreRemoteMapChanges = ignoreRemoteMapChanges
     /**
      * @param {Transaction} transaction
@@ -316,7 +316,7 @@ export class UndoManager extends Observable {
    *
    */
   stopCapturing () {
-    this.lastChange = 0
+    this.lastChange = Number.NEGATIVE_INFINITY;
   }
 
   /**
