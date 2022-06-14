@@ -89,7 +89,8 @@ export {
   diffUpdate,
   diffUpdateV2,
   convertUpdateFormatV1ToV2,
-  convertUpdateFormatV2ToV1
+  convertUpdateFormatV2ToV1,
+  UpdateEncoderV1
 } from './internals.js'
 
 const glo = /** @type {any} */ (typeof window !== 'undefined'
