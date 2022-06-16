@@ -164,6 +164,7 @@ export class ContentMove {
       if (adaptPriority || nextPrio < this.priority || (currMoved != null && nextPrio === this.priority && (currMoved.id.client < item.id.client || (currMoved.id.client === item.id.client && currMoved.id.clock < item.id.clock)))) {
         if (currMoved !== null) {
           this.overrides.add(currMoved)
+          transaction._mergeStructs.push(start)
         }
         maxPriority = math.max(maxPriority, nextPrio)
         // was already moved

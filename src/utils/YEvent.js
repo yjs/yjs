@@ -195,6 +195,19 @@ export class YEvent {
               delta.push(lastOp)
             }
           }
+          /**
+           * @param {Item} item
+           */
+          const isMovedByNew = item => {
+            let moved = item.moved
+            while (moved != null) {
+              if (this.adds(moved)) {
+                return true
+              }
+              moved = moved.moved
+            }
+            return false
+          }
           for (let item = target._start; ;) {
             if (item === currMoveEnd && currMove) {
               item = currMove
@@ -210,12 +223,12 @@ export class YEvent {
                 const { start, end } = getMovedCoords(item.content, tr)
                 currMove = item
                 currMoveEnd = end
-                currMoveIsNew = this.adds(item)
+                currMoveIsNew = this.adds(item) || currMoveIsNew
                 item = start
                 continue // do not move to item.right
               }
             } else if (item.moved !== currMove) {
-              if (!currMoveIsNew && item.countable && (!item.deleted || this.deletes(item)) && item.moved && !this.adds(item) && this.adds(item.moved) && (this.transaction.prevMoved.get(item) || null) === currMove) {
+              if (!currMoveIsNew && item.countable && (!item.deleted || this.deletes(item)) && !this.adds(item) && isMovedByNew(item) && (this.transaction.prevMoved.get(item) || null) === currMove) {
                 if (lastOp === null || lastOp.delete === undefined) {
                   packOp()
                   lastOp = { delete: 0 }
@@ -237,8 +250,11 @@ export class YEvent {
                   packOp()
                   lastOp = { insert: [] }
                 }
+                // @todo push items instead (or splice..)
                 lastOp.insert = lastOp.insert.concat(item.content.getContent())
-                added.add(item)
+                if (!currMoveIsNew) {
+                  added.add(item)
+                }
               } else {
                 if (lastOp === null || lastOp.retain === undefined) {
                   packOp()
