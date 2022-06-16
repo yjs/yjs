@@ -115,6 +115,6 @@ if (glo[importIdentifier] === true) {
    * e.g. `struct instanceof GC`. If you imported different versions of Yjs, it is impossible for us to
    * do the constructor checks anymore - which might break the CRDT algorithm.
    */
-  console.error('Yjs was already imported. This breaks constructor checks and will lead to isssues!')
+  console.error('Your project imports multiple different versions of Yjs. This breaks constructor checks and will lead to serious issues! Read more under https://github.com/yjs/yjs/blob/main/src/index.js#L107')
 }
 glo[importIdentifier] = true
