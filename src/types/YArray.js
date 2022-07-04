@@ -167,6 +167,8 @@ export class YArray extends AbstractType {
   }
 
   /**
+   * @experimental
+   *
    * @param {number} startIndex Inclusive move-start
    * @param {number} endIndex Inclusive move-end
    * @param {number} target

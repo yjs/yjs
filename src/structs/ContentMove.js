@@ -4,9 +4,10 @@ import * as decoding from 'lib0/decoding'
 import * as encoding from 'lib0/encoding'
 import * as math from 'lib0/math'
 import {
-  AbstractType, ContentType, RelativePosition, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Transaction, Item, StructStore, getItem, getItemCleanStart, getItemCleanEnd // eslint-disable-line
+  writeID,
+  readID,
+  ID, AbstractType, ContentType, RelativePosition, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Transaction, Item, StructStore, getItem, getItemCleanStart, getItemCleanEnd // eslint-disable-line
 } from '../internals.js'
-import { decodeRelativePosition, encodeRelativePosition } from 'yjs'
 
 /**
  * @param {ContentMove | { start: RelativePosition, end: RelativePosition }} moved
@@ -230,12 +231,11 @@ export class ContentMove {
    */
   write (encoder, offset) {
     const isCollapsed = this.isCollapsed()
-    encoding.writeUint8(encoder.restEncoder, isCollapsed ? 1 : 0)
-    encoder.writeBuf(encodeRelativePosition(this.start))
+    encoding.writeVarUint(encoder.restEncoder, (isCollapsed ? 1 : 0) | (this.start.assoc >= 0 ? 2 : 0) | (this.end.assoc >= 0 ? 4 : 0) | this.priority << 3)
+    writeID(encoder.restEncoder, /** @type {ID} */ (this.start.item))
     if (!isCollapsed) {
-      encoder.writeBuf(encodeRelativePosition(this.end))
+      writeID(encoder.restEncoder, /** @type {ID} */ (this.end.item))
     }
-    encoding.writeVarUint(encoder.restEncoder, this.priority)
   }
 
   /**
@@ -258,11 +258,13 @@ export class ContentMove {
  * @return {ContentMove}
  */
 export const readContentMove = decoder => {
-  const isCollapsed = decoding.readUint8(decoder.restDecoder) === 1
-  const start = decodeRelativePosition(decoder.readBuf())
-  const end = isCollapsed ? start.clone() : decodeRelativePosition(decoder.readBuf())
-  if (isCollapsed) {
-    end.assoc = -1
-  }
-  return new ContentMove(start, end, decoding.readVarUint(decoder.restDecoder))
+  const info = decoding.readVarUint(decoder.restDecoder)
+  const isCollapsed = (info & 1) === 1
+  const startAssoc = (info & 2) === 2 ? 0 : -1
+  const endAssoc = (info & 4) === 4 ? 0 : -1
+  const priority = info >>> 3
+  const startId = readID(decoder.restDecoder)
+  const start = new RelativePosition(null, null, startId, startAssoc)
+  const end = new RelativePosition(null, null, isCollapsed ? startId : readID(decoder.restDecoder), endAssoc)
+  return new ContentMove(start, end, priority)
 }
