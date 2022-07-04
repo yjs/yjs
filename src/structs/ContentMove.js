@@ -9,7 +9,7 @@ import {
 import { decodeRelativePosition, encodeRelativePosition } from 'yjs'
 
 /**
- * @param {ContentMove} moved
+ * @param {ContentMove | { start: RelativePosition, end: RelativePosition }} moved
  * @param {Transaction} tr
  * @return {{ start: Item, end: Item }} $start (inclusive) is the beginning and $end (inclusive) is the end of the moved area
  */

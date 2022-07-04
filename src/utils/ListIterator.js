@@ -616,7 +616,7 @@ export const getMinimalListViewRanges = (tr, walker, len) => {
   walker.reduceMoveDepth(tr)
 
   /**
-   * @type {Array<{ start: RelativePosition, end: RelativePosition }>}
+   * @type {Array<{ start: RelativePosition, end: RelativePosition, move: Item | null }>}
    */
   const ranges = []
   // store relevant information for the beginning, before we iterate forward
@@ -677,6 +677,7 @@ export const getMinimalListViewRanges = (tr, walker, len) => {
     preStack.shift()
     afterStack.shift()
   }
+  const topLevelMove = preStack.length > 0 ? preStack[0].moved : (afterStack.length > 0 ? afterStack[0].moved : null)
 
   // remove stack-items that are useless for our computation (that wouldn't produce meaningful ranges)
   // @todo
@@ -685,19 +686,21 @@ export const getMinimalListViewRanges = (tr, walker, len) => {
     const move = /** @type {Item} */ (preStack.pop())
     ranges.push({
       start,
-      end: /** @type {ContentMove} */ (move.content).end
+      end: /** @type {ContentMove} */ (move.content).end,
+      move
     })
     start = createRelativePosition(walker.type, createID(move.id.client, move.id.clock), -1)
   }
 
-  const middleMove = { start, end }
+  const middleMove = { start, end, move: topLevelMove }
   ranges.push(middleMove)
 
   while (afterStack.length > 0) {
     const move = /** @type {Item} */ (afterStack.pop())
     ranges.push({
       start: /** @type {ContentMove} */ (move.content).start,
-      end
+      end,
+      move
     })
     end = createRelativePosition(walker.type, createID(move.id.client, move.id.clock), 0)
   }
@@ -706,6 +709,40 @@ export const getMinimalListViewRanges = (tr, walker, len) => {
   // Move ranges must be applied in order
   middleMove.end = end
 
+  const normalizedRanges = ranges.map(range => {
+    // A subset of a range could be moved by another move with a higher priority.
+    // If that is the case, we need to ignore those moved items.
+    const { start, end } = getMovedCoords(range, tr)
+    const move = range.move
+    const ranges = []
+    /**
+     * @type {RelativePosition | null}
+     */
+    let rangeStart = range.start
+    /**
+     * @type {Item}
+     */
+    let item = start
+    while (item !== end) {
+      if (item.moved !== move && rangeStart != null) {
+        ranges.push({ start: rangeStart, end: createRelativePosition(walker.type, createID(item.id.client, item.id.clock), 0) })
+        rangeStart = null
+      }
+      if (item.moved === move && rangeStart === null) {
+        // @todo It might be better to set this to item.left, with assoc -1
+        rangeStart = createRelativePosition(walker.type, createID(item.id.client, item.id.clock), 0)
+      }
+      item = /** @type {Item} */ (item.right)
+    }
+    if (rangeStart != null) {
+      ranges.push({
+        start: rangeStart,
+        end: range.end
+      })
+    }
+    return ranges
+  }).flat()
+
   // filter out unnecessary ranges
-  return ranges.filter(range => !compareRelativePositions(range.start, range.end))
+  return normalizedRanges.filter(range => !compareRelativePositions(range.start, range.end))
 }
