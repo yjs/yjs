@@ -455,3 +455,10 @@ export const transact = (doc, f, origin = null, local = true) => {
   }
   return res
 }
+
+/**
+ * @param {Transaction} tr
+ * @param {AbstractStruct} struct
+ */
+export const addsStruct = (tr, struct) =>
+  struct.id.clock >= (tr.beforeState.get(struct.id.client) || 0)

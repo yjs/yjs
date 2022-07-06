@@ -7,6 +7,7 @@ import {
 
 import * as set from 'lib0/set'
 import * as array from 'lib0/array'
+import { addsStruct } from './Transaction.js'
 
 /**
  * YEvent describes the changes on a YType.
@@ -145,7 +146,7 @@ export class YEvent {
    * @return {boolean}
    */
   adds (struct) {
-    return struct.id.clock >= (this.transaction.beforeState.get(struct.id.client) || 0)
+    return addsStruct(this.transaction, struct)
   }
 
   /**
@@ -218,7 +219,7 @@ export class YEvent {
             } else if (item === null) {
               break
             } else if (item.content.constructor === ContentMove) {
-              if (item.moved === currMove) {
+              if (item.moved === currMove) { // @todo !item.deleted || this.deletes(item)
                 movedStack.push({ end: currMoveEnd, move: currMove, isNew: currMoveIsNew })
                 const { start, end } = getMovedCoords(item.content, tr)
                 currMove = item
@@ -228,7 +229,7 @@ export class YEvent {
                 continue // do not move to item.right
               }
             } else if (item.moved !== currMove) {
-              if (!currMoveIsNew && item.countable && (!item.deleted || this.deletes(item)) && !this.adds(item) && isMovedByNew(item) && (this.transaction.prevMoved.get(item) || null) === currMove) {
+              if (!currMoveIsNew && item.countable && (!item.deleted || this.deletes(item)) && !this.adds(item) && (item.moved === null || isMovedByNew(item)) && (this.transaction.prevMoved.get(item) || null) === currMove) {
                 if (lastOp === null || lastOp.delete === undefined) {
                   packOp()
                   lastOp = { delete: 0 }
@@ -245,7 +246,7 @@ export class YEvent {
                 deleted.add(item)
               }
             } else {
-              if (currMoveIsNew || this.adds(item)) {
+              if (currMoveIsNew || this.adds(item) || this.transaction.prevMoved.has(item)) {
                 if (lastOp === null || lastOp.insert === undefined) {
                   packOp()
                   lastOp = { insert: [] }

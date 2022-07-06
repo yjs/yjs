@@ -1,4 +1,4 @@
-import { init, compare, applyRandomTests, Doc, AbstractType, TestConnector } from './testHelper.js' // eslint-disable-line
+import { init, compare, applyRandomTests, Doc, AbstractType, TestConnector, Item } from './testHelper.js' // eslint-disable-line
 
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
@@ -510,6 +510,69 @@ export const testMove2 = tc => {
   t.compare(array0.toArray(), [1, 2])
   t.compare(event0.delta, [{ delete: 1 }, { retain: 1 }, { insert: [2] }])
   compare(users)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testMoveSingleItemRemovesPrev = tc => {
+  const ydoc = new Y.Doc()
+  const yarray = ydoc.getArray()
+  yarray.insert(0, [1, 2, 3])
+  // @todo should be old-position to new-position. so that below move matches
+  yarray.move(0, 3)
+  t.compareArrays(yarray.toArray(), [2, 3, 1])
+  yarray.move(2, 0)
+  t.compareArrays(yarray.toArray(), [1, 2, 3])
+  let item = yarray._start
+  const items = []
+  while (item) {
+    items.push(item)
+    item = item.right
+  }
+  t.assert(items.length === 4)
+  t.assert(items.filter(item => !item.deleted).length === 3)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testMoveDeletions = tc => {
+  const ydoc = new Y.Doc()
+  const yarray = ydoc.getArray()
+  const array = yarray.toArray()
+  /**
+   * @type {any}
+   */
+  let lastDelta = []
+  yarray.observe(event => {
+    lastDelta = event.delta
+    let pos = 0
+    for (let i = 0; i < lastDelta.length; i++) {
+      const d = lastDelta[i]
+      if (d.retain != null) {
+        pos += d.retain
+      } else if (d.insert instanceof Array) {
+        array.splice(pos, 0, ...d.insert)
+        pos += d.insert.length
+      } else if (d.delete != null) {
+        array.splice(pos, d.delete)
+      }
+    }
+  })
+  yarray.insert(0, [1, 2, 3])
+  // @todo should be old-position to new-position. so that below move matches
+  yarray.move(2, 0)
+  t.compare(lastDelta, [{ insert: [3] }, { retain: 2 }, { delete: 1 }])
+  t.compareArrays(yarray.toArray(), [3, 1, 2])
+  t.compareArrays(yarray.toArray(), array)
+  ydoc.transact(tr => {
+    /** @type {Item} */ (yarray._start).delete(tr)
+  })
+  debugger
+  t.compare(lastDelta, [{ delete: 1 }, { retain: 2 }, { insert: [3] }])
+  t.compareArrays(yarray.toArray(), [1, 2, 3])
+  t.compareArrays(yarray.toArray(), array)
 }
 
 /**

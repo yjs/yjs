@@ -402,6 +402,8 @@ export const typeListToArraySnapshot = (type, snapshot) => {
 /**
  * Executes a provided function on once on overy element of this YArray.
  *
+ * @todo remove!
+ *
  * @param {AbstractType<any>} type
  * @param {function(any,number,any):void} f A function to execute on every element of this YArray.
  *
@@ -423,6 +425,9 @@ export const typeListForEach = (type, f) => {
 }
 
 /**
+ *
+ * @todo remove!
+ *
  * @template C,R
  * @param {AbstractType<any>} type
  * @param {function(C,number,AbstractType<any>):R} f
@@ -443,6 +448,9 @@ export const typeListMap = (type, f) => {
 }
 
 /**
+ *
+ * @todo remove!
+ *
  * @param {AbstractType<any>} type
  * @return {IterableIterator<any>}
  *
@@ -492,6 +500,9 @@ export const typeListCreateIterator = type => {
 }
 
 /**
+ *
+ * @todo remove!
+ *
  * Executes a provided function on once on overy element of this YArray.
  * Operates on a snapshotted state of the document.
  *

@@ -6,7 +6,8 @@ import * as math from 'lib0/math'
 import {
   writeID,
   readID,
-  ID, AbstractType, ContentType, RelativePosition, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Transaction, Item, StructStore, getItem, getItemCleanStart, getItemCleanEnd // eslint-disable-line
+  ID, AbstractType, ContentType, RelativePosition, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Transaction, Item, StructStore, getItem, getItemCleanStart, getItemCleanEnd, // eslint-disable-line
+  addsStruct
 } from '../internals.js'
 
 /**
@@ -160,28 +161,30 @@ export class ContentMove {
     // that we want to set prio to the current prio-maximum of the moved range.
     const adaptPriority = this.priority < 0
     while (start !== end && start != null) {
-      const currMoved = start.moved
-      const nextPrio = currMoved ? /** @type {ContentMove} */ (currMoved.content).priority : -1
-      if (adaptPriority || nextPrio < this.priority || (currMoved != null && nextPrio === this.priority && (currMoved.id.client < item.id.client || (currMoved.id.client === item.id.client && currMoved.id.clock < item.id.clock)))) {
-        if (currMoved !== null) {
-          this.overrides.add(currMoved)
-          transaction._mergeStructs.push(start)
+      const prevMove = start.moved // this is the same as prevMove
+      const nextPrio = prevMove ? /** @type {ContentMove} */ (prevMove.content).priority : -1
+      if (adaptPriority || nextPrio < this.priority || (prevMove != null && nextPrio === this.priority && (prevMove.id.client < item.id.client || (prevMove.id.client === item.id.client && prevMove.id.clock < item.id.clock)))) {
+        if (prevMove !== null) {
+          if (/** @type {ContentMove} */ (prevMove.content).isCollapsed()) {
+            prevMove.deleteAsCleanup(transaction, adaptPriority)
+          }
+          this.overrides.add(prevMove)
+          transaction._mergeStructs.push(start) // @todo is this needed?
         }
         maxPriority = math.max(maxPriority, nextPrio)
         // was already moved
-        const prevMove = start.moved
-        if (prevMove && !transaction.prevMoved.has(start) && prevMove.id.clock < (transaction.beforeState.get(prevMove.id.client) || 0)) {
+        if (prevMove && !transaction.prevMoved.has(start) && !addsStruct(transaction, prevMove)) {
           // only override prevMoved if the prevMoved item is not new
           // we need to know which item previously moved an item
           transaction.prevMoved.set(start, prevMove)
         }
         start.moved = item
         if (!start.deleted && start.content.constructor === ContentMove && findMoveLoop(transaction, start.content, start, new Set([item]))) {
-          item.deleteAsCleanup(transaction)
+          item.deleteAsCleanup(transaction, adaptPriority)
           return
         }
-      } else if (currMoved != null) {
-        /** @type {ContentMove} */ (currMoved.content).overrides.add(item)
+      } else if (prevMove != null) {
+        /** @type {ContentMove} */ (prevMove.content).overrides.add(item)
       }
       start = start.right
     }
@@ -201,6 +204,9 @@ export class ContentMove {
     let { start, end } = getMovedCoords(this, transaction)
     while (start !== end && start != null) {
       if (start.moved === item) {
+        if (!transaction.prevMoved.has(start)) {
+          transaction.prevMoved.set(start, item)
+        }
         start.moved = null
       }
       start = start.right
@@ -210,11 +216,14 @@ export class ContentMove {
      */
     const reIntegrate = reIntegrateItem => {
       const content = /** @type {ContentMove} */ (reIntegrateItem.content)
-      if (reIntegrateItem.deleted) {
-        // potentially we can integrate the items that reIntegrateItem overrides
-        content.overrides.forEach(reIntegrate)
-      } else {
-        content.integrate(transaction, reIntegrateItem)
+      // content is not yet transformed to a ContentDeleted
+      if (content.getRef() === 11) {
+        if (reIntegrateItem.deleted) {
+          // potentially we can integrate the items that reIntegrateItem overrides
+          content.overrides.forEach(reIntegrate)
+        } else {
+          content.integrate(transaction, reIntegrateItem)
+        }
       }
     }
     this.overrides.forEach(reIntegrate)

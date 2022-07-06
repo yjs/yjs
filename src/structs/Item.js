@@ -670,10 +670,13 @@ export class Item extends AbstractStruct {
    * the providers don't filter this message.
    *
    * @param {Transaction} transaction
+   * @param {boolean} isLocal
    */
-  deleteAsCleanup (transaction) {
+  deleteAsCleanup (transaction, isLocal) {
     this.delete(transaction)
-    addToDeleteSet(transaction.cleanupDeletions, this.id.client, this.id.clock, this.length)
+    if (!isLocal) {
+      addToDeleteSet(transaction.cleanupDeletions, this.id.client, this.id.clock, this.length)
+    }
   }
 
   /**
