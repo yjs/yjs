@@ -204,7 +204,14 @@ export class ContentMove {
     let { start, end } = getMovedCoords(this, transaction)
     while (start !== end && start != null) {
       if (start.moved === item) {
-        if (!transaction.prevMoved.has(start)) {
+        const prevMoved = transaction.prevMoved.get(start)
+        if (addsStruct(transaction, item)) {
+          if (prevMoved === item) {
+            // Edge case: Item has been moved by this move op and it has been created & deleted in the same transaction (hence no effect that should be emitted by the change computation)
+            transaction.prevMoved.delete(start)
+          }
+        } else if (prevMoved == null) { // && !addsStruct(tr, item)
+          // Normal case: item has been moved by this move and it has not been created & deleted in the same transaction
           transaction.prevMoved.set(start, item)
         }
         start.moved = null

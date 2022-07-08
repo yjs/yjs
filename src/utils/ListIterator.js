@@ -16,6 +16,7 @@ import {
   RelativePosition, ID, AbstractContent, ContentMove, Transaction, Item, AbstractType // eslint-disable-line
 } from '../internals.js'
 import { compareRelativePositions } from './RelativePosition.js'
+import * as array from 'lib0/array'
 
 const lengthExceeded = error.create('Length exceeded!')
 
@@ -709,7 +710,7 @@ export const getMinimalListViewRanges = (tr, walker, len) => {
   // Move ranges must be applied in order
   middleMove.end = end
 
-  const normalizedRanges = ranges.map(range => {
+  const normalizedRanges = array.flatten(ranges.map(range => {
     // A subset of a range could be moved by another move with a higher priority.
     // If that is the case, we need to ignore those moved items.
     const { start, end } = getMovedCoords(range, tr)
@@ -741,7 +742,7 @@ export const getMinimalListViewRanges = (tr, walker, len) => {
       })
     }
     return ranges
-  }).flat()
+  }))
 
   // filter out unnecessary ranges
   return normalizedRanges.filter(range => !compareRelativePositions(range.start, range.end))

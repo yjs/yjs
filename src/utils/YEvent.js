@@ -142,6 +142,8 @@ export class YEvent {
    *
    * In contrast to change.deleted, this method also returns true if the struct was added and then deleted.
    *
+   * @todo this can be removed in the next release (prefer function)
+   *
    * @param {AbstractStruct} struct
    * @return {boolean}
    */
@@ -172,7 +174,7 @@ export class YEvent {
         const changed = /** @type Set<string|null> */ (this.transaction.changed.get(target))
         if (changed.has(null)) {
           /**
-           * @type {Array<{ end: Item | null, move: Item | null, isNew : boolean }>}
+           * @type {Array<{ end: Item | null, move: Item | null, isNew: boolean, isDeleted: boolean }>}
            */
           const movedStack = []
           /**
@@ -183,6 +185,10 @@ export class YEvent {
            * @type {boolean}
            */
           let currMoveIsNew = false
+          /**
+           * @type {boolean}
+           */
+          let currMoveIsDeleted = false
           /**
            * @type {Item | null}
            */
@@ -212,24 +218,26 @@ export class YEvent {
           for (let item = target._start; ;) {
             if (item === currMoveEnd && currMove) {
               item = currMove
-              const { end, move, isNew } = movedStack.pop() || { end: null, move: null, isNew: false }
+              const { end, move, isNew, isDeleted } = movedStack.pop() || { end: null, move: null, isNew: false, isDeleted: false }
               currMoveIsNew = isNew
+              currMoveIsDeleted = isDeleted
               currMoveEnd = end
               currMove = move
             } else if (item === null) {
               break
             } else if (item.content.constructor === ContentMove) {
-              if (item.moved === currMove) { // @todo !item.deleted || this.deletes(item)
-                movedStack.push({ end: currMoveEnd, move: currMove, isNew: currMoveIsNew })
+              if (item.moved === currMove && (!item.deleted || (this.deletes(item) && !this.adds(item)))) { // @todo !item.deleted || this.deletes(item)
+                movedStack.push({ end: currMoveEnd, move: currMove, isNew: currMoveIsNew, isDeleted: currMoveIsDeleted })
                 const { start, end } = getMovedCoords(item.content, tr)
                 currMove = item
                 currMoveEnd = end
                 currMoveIsNew = this.adds(item) || currMoveIsNew
+                currMoveIsDeleted = item.deleted || currMoveIsDeleted
                 item = start
                 continue // do not move to item.right
               }
             } else if (item.moved !== currMove) {
-              if (!currMoveIsNew && item.countable && (!item.deleted || this.deletes(item)) && !this.adds(item) && (item.moved === null || isMovedByNew(item)) && (this.transaction.prevMoved.get(item) || null) === currMove) {
+              if (!currMoveIsNew && item.countable && (!item.deleted || this.deletes(item)) && !this.adds(item) && (item.moved === null || isMovedByNew(item) || currMoveIsDeleted) && (this.transaction.prevMoved.get(item) || null) === currMove) {
                 if (lastOp === null || lastOp.delete === undefined) {
                   packOp()
                   lastOp = { delete: 0 }

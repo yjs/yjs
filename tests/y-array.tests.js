@@ -569,7 +569,6 @@ export const testMoveDeletions = tc => {
   ydoc.transact(tr => {
     /** @type {Item} */ (yarray._start).delete(tr)
   })
-  debugger
   t.compare(lastDelta, [{ delete: 1 }, { retain: 2 }, { insert: [3] }])
   t.compareArrays(yarray.toArray(), [1, 2, 3])
   t.compareArrays(yarray.toArray(), array)
