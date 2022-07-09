@@ -245,7 +245,7 @@ export class YEvent {
                 lastOp.delete += item.length
               }
             } else if (item.deleted) {
-              if (!currMoveIsNew && this.deletes(item) && !this.adds(item)) {
+              if (!currMoveIsNew && this.deletes(item) && !this.adds(item) && !this.transaction.prevMoved.has(item)) {
                 if (lastOp === null || lastOp.delete === undefined) {
                   packOp()
                   lastOp = { delete: 0 }
@@ -274,7 +274,7 @@ export class YEvent {
             }
             item = /** @type {Item} */ (item).right
           }
-          if (lastOp !== null && lastOp.retain === undefined) {
+          if (lastOp !== null && lastOp.retain == null) {
             packOp()
           }
         }
