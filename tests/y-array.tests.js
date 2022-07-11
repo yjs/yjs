@@ -519,7 +519,6 @@ export const testMoveSingleItemRemovesPrev = tc => {
   const ydoc = new Y.Doc()
   const yarray = ydoc.getArray()
   yarray.insert(0, [1, 2, 3])
-  // @todo should be old-position to new-position. so that below move matches
   yarray.move(0, 3)
   t.compareArrays(yarray.toArray(), [2, 3, 1])
   yarray.move(2, 0)
