@@ -30,7 +30,7 @@ const lengthExceeded = error.create('Length exceeded!')
  * computed item.
  *
  * @param {Transaction} tr
- * @param {ListIterator} li
+ * @param {ListWalker} li
  */
 const popMovedStack = (tr, li) => {
   let { start, end, move } = li.movedStack.pop() || { start: null, end: null, move: null }
@@ -49,7 +49,7 @@ const popMovedStack = (tr, li) => {
         )
       )
     ) {
-      const coords = getMovedCoords(moveContent, tr)
+      const coords = getMovedCoords(moveContent, tr, false)
       start = coords.start
       end = coords.end
     }
@@ -61,10 +61,9 @@ const popMovedStack = (tr, li) => {
 }
 
 /**
- * @todo rename to walker?
- * @todo check that inserting character one after another always reuses ListIterators
+ * Structure that helps to iterate through list-like structures. This is a useful abstraction that keeps track of move operations.
  */
-export class ListIterator {
+export class ListWalker {
   /**
    * @param {AbstractType<any>} type
    */
@@ -105,7 +104,7 @@ export class ListIterator {
   }
 
   clone () {
-    const iter = new ListIterator(this.type)
+    const iter = new ListWalker(this.type)
     iter.index = this.index
     iter.rel = this.rel
     iter.nextItem = this.nextItem
@@ -169,11 +168,6 @@ export class ListIterator {
     }
     let item = /** @type {Item} */ (this.nextItem)
     this.index += len
-    // @todo this condition is not needed, better to remove it (can always be applied)
-    if (this.rel) {
-      len += this.rel
-      this.rel = 0
-    }
     // eslint-disable-next-line no-unmodified-loop-condition
     while ((!this.reachedEnd || this.currMove !== null) && (len > 0 || (skipUncountables && len === 0 && item && (!item.countable || item.deleted || item === this.currMoveEnd || (this.reachedEnd && this.currMoveEnd === null) || item.moved !== this.currMove)))) {
       if (item === this.currMoveEnd || (this.currMoveEnd === null && this.reachedEnd && this.currMove)) {
@@ -192,7 +186,7 @@ export class ListIterator {
         if (this.currMove) {
           this.movedStack.push({ start: this.currMoveStart, end: this.currMoveEnd, move: this.currMove })
         }
-        const { start, end } = getMovedCoords(item.content, tr)
+        const { start, end } = getMovedCoords(item.content, tr, false)
         this.currMove = item
         this.currMoveStart = start
         this.currMoveEnd = end
@@ -205,7 +199,7 @@ export class ListIterator {
       if (item.right) {
         item = item.right
       } else {
-        this.reachedEnd = true // @todo we need to ensure to iterate further if this.currMoveEnd === null
+        this.reachedEnd = true
       }
     }
     this.index -= len
@@ -250,7 +244,7 @@ export class ListIterator {
   /**
    * @param {Transaction} tr
    * @param {number} len
-   * @return {ListIterator}
+   * @return {ListWalker}
    */
   backward (tr, len) {
     if (this.index - len < 0) {
@@ -287,7 +281,7 @@ export class ListIterator {
         if (this.currMove) {
           this.movedStack.push({ start: this.currMoveStart, end: this.currMoveEnd, move: this.currMove })
         }
-        const { start, end } = getMovedCoords(item.content, tr)
+        const { start, end } = getMovedCoords(item.content, tr, false)
         this.currMove = item
         this.currMoveStart = start
         this.currMoveEnd = end
@@ -336,7 +330,6 @@ export class ListIterator {
         }
         if (nextItem.right) {
           nextItem = nextItem.right
-          this.nextItem = nextItem // @todo move this after the while loop
         } else {
           this.reachedEnd = true
         }
@@ -345,9 +338,6 @@ export class ListIterator {
         // always set nextItem before any method call
         this.nextItem = nextItem
         this.forward(tr, 0, true)
-        if (this.nextItem == null) {
-          throw new Error('debug me') // @todo remove
-        }
         nextItem = this.nextItem
       }
     }
@@ -604,7 +594,7 @@ const concatArrayContent = (content, added) => {
  * * Delete the stack-items that both of them have in common
  *
  * @param {Transaction} tr
- * @param {ListIterator} walker
+ * @param {ListWalker} walker
  * @param {number} len
  * @return {Array<{ start: RelativePosition, end: RelativePosition }>}
  */
@@ -713,7 +703,7 @@ export const getMinimalListViewRanges = (tr, walker, len) => {
   const normalizedRanges = array.flatten(ranges.map(range => {
     // A subset of a range could be moved by another move with a higher priority.
     // If that is the case, we need to ignore those moved items.
-    const { start, end } = getMovedCoords(range, tr)
+    const { start, end } = getMovedCoords(range, tr, false)
     const move = range.move
     const ranges = []
     /**

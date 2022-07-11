@@ -762,7 +762,7 @@ export const readItemContent = (decoder, info) => contentRefs[info & binary.BITS
  * @type {Array<function(UpdateDecoderV1 | UpdateDecoderV2):AbstractContent>}
  */
 export const contentRefs = [
-  () => { error.unexpectedCase() }, // GC is not ItemContent
+  error.unexpectedCase, // GC is not ItemContent
   readContentDeleted, // 1
   readContentJSON, // 2
   readContentBinary, // 3
@@ -772,7 +772,7 @@ export const contentRefs = [
   readContentType, // 7
   readContentAny, // 8
   readContentDoc, // 9
-  () => { error.unexpectedCase() }, // 10 - Skip is not ItemContent
+  error.unexpectedCase, // 10 - Skip is not ItemContent
   readContentMove // 11
 ]
 

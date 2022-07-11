@@ -7,7 +7,6 @@ import {
   typeMapSet,
   typeMapGet,
   typeMapGetAll,
-  typeListForEach,
   YXmlElementRefID,
   YXmlText, ContentType, AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Snapshot, Doc, Item // eslint-disable-line
 } from '../internals.js'
@@ -183,36 +182,6 @@ export class YXmlElement extends YXmlFragment {
    */
   getAttributes (snapshot) {
     return typeMapGetAll(this)
-  }
-
-  /**
-   * Creates a Dom Element that mirrors this YXmlElement.
-   *
-   * @param {Document} [_document=document] The document object (you must define
-   *                                        this when calling this method in
-   *                                        nodejs)
-   * @param {Object<string, any>} [hooks={}] Optional property to customize how hooks
-   *                                             are presented in the DOM
-   * @param {any} [binding] You should not set this property. This is
-   *                               used if DomBinding wants to create a
-   *                               association to the created DOM type.
-   * @return {Node} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
-   *
-   * @public
-   */
-  toDOM (_document = document, hooks = {}, binding) {
-    const dom = _document.createElement(this.nodeName)
-    const attrs = this.getAttributes()
-    for (const key in attrs) {
-      dom.setAttribute(key, attrs[key])
-    }
-    typeListForEach(this, yxml => {
-      dom.appendChild(yxml.toDOM(_document, hooks, binding))
-    })
-    if (binding !== undefined) {
-      binding._createAssociation(dom, this)
-    }
-    return dom
   }
 
   /**

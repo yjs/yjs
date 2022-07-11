@@ -8,7 +8,7 @@ import {
   YArrayRefID,
   callTypeObservers,
   transact,
-  ListIterator,
+  ListWalker,
   useSearchMarker,
   createRelativePositionFromTypeIndex,
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item, // eslint-disable-line
@@ -45,7 +45,7 @@ export class YArray extends AbstractType {
      */
     this._prelimContent = []
     /**
-     * @type {Array<ListIterator>}
+     * @type {Array<ListWalker>}
      */
     this._searchMarker = []
   }
@@ -141,7 +141,15 @@ export class YArray extends AbstractType {
   /**
    * Move a single item from $index to $target.
    *
-   * @todo make sure that collapsed moves are removed (i.e. when moving the same item twice)
+   * If the original item is to the left of $target, then the index of the item will decrement.
+   *
+   * ```js
+   * yarray.insert(0, [1, 2, 3])
+   * yarray.move(0, 3) // move "1" to index 3
+   * yarray.toArray() // => [2, 3, 1]
+   * yarray.move(2, 0) // move "1" to index 0
+   * yarray.toArray() // => [1, 2, 3]
+   * ```
    *
    * @param {number} index
    * @param {number} target
@@ -254,7 +262,7 @@ export class YArray extends AbstractType {
    */
   toArray () {
     return transact(/** @type {Doc} */ (this.doc), tr =>
-      new ListIterator(this).slice(tr, this.length)
+      new ListWalker(this).slice(tr, this.length)
     )
   }
 
@@ -293,7 +301,7 @@ export class YArray extends AbstractType {
    */
   map (f) {
     return transact(/** @type {Doc} */ (this.doc), tr =>
-      new ListIterator(this).map(tr, f)
+      new ListWalker(this).map(tr, f)
     )
   }
 
@@ -304,7 +312,7 @@ export class YArray extends AbstractType {
    */
   forEach (f) {
     return transact(/** @type {Doc} */ (this.doc), tr =>
-      new ListIterator(this).forEach(tr, f)
+      new ListWalker(this).forEach(tr, f)
     )
   }
 
@@ -312,6 +320,7 @@ export class YArray extends AbstractType {
    * @return {IterableIterator<T>}
    */
   [Symbol.iterator] () {
+    // @todo, this could be optimized using a real iterator
     return this.toArray().values()
   }
 

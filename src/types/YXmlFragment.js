@@ -6,8 +6,6 @@ import {
   YXmlEvent,
   YXmlElement,
   AbstractType,
-  typeListMap,
-  typeListForEach,
   typeListInsertGenericsAfter,
   typeListToArray,
   YXmlFragmentRefID,
@@ -15,7 +13,8 @@ import {
   transact,
   typeListSlice,
   useSearchMarker,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, ContentType, Transaction, Item, YXmlText, YXmlHook, Snapshot // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, ContentType, Transaction, Item, YXmlText, YXmlHook, Snapshot, // eslint-disable-line
+  ListWalker
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -254,7 +253,10 @@ export class YXmlFragment extends AbstractType {
    * @return {string} The string representation of all children.
    */
   toString () {
-    return typeListMap(this, xml => xml.toString()).join('')
+    if (this.doc != null) {
+      return transact(this.doc, tr => new ListWalker(this).map(tr, xml => xml.toString()).join(''))
+    }
+    return ''
   }
 
   /**
@@ -262,32 +264,6 @@ export class YXmlFragment extends AbstractType {
    */
   toJSON () {
     return this.toString()
-  }
-
-  /**
-   * Creates a Dom Element that mirrors this YXmlElement.
-   *
-   * @param {Document} [_document=document] The document object (you must define
-   *                                        this when calling this method in
-   *                                        nodejs)
-   * @param {Object<string, any>} [hooks={}] Optional property to customize how hooks
-   *                                             are presented in the DOM
-   * @param {any} [binding] You should not set this property. This is
-   *                               used if DomBinding wants to create a
-   *                               association to the created DOM type.
-   * @return {Node} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
-   *
-   * @public
-   */
-  toDOM (_document = document, hooks = {}, binding) {
-    const fragment = _document.createDocumentFragment()
-    if (binding !== undefined) {
-      binding._createAssociation(fragment, this)
-    }
-    typeListForEach(this, xmlType => {
-      fragment.insertBefore(xmlType.toDOM(_document, hooks, binding), null)
-    })
-    return fragment
   }
 
   /**
@@ -302,7 +278,7 @@ export class YXmlFragment extends AbstractType {
    */
   insert (index, content) {
     if (this.doc !== null) {
-      return transact(/** @type {Doc} */ (this.doc), transaction =>
+      return transact(this.doc, transaction =>
         useSearchMarker(transaction, this, index, walker =>
           walker.insertArrayValue(transaction, content)
         )

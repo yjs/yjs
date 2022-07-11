@@ -535,6 +535,32 @@ export const testMoveSingleItemRemovesPrev = tc => {
 }
 
 /**
+ * Check that the searchMarker is reused correctly.
+ *
+ * @param {t.TestCase} tc
+ */
+export const testListWalkerReusesSearchMarker = tc => {
+  const ydoc = new Y.Doc()
+  const yarray = ydoc.getArray()
+  const iterations = 100
+  for (let i = 0; i < iterations; i++) {
+    yarray.insert(0, [i])
+  }
+  /**
+   * @type {any}
+   */
+  let prevSm = null
+  for (let i = 0; i < iterations; i++) {
+    const v = yarray.get(i)
+    t.assert(v === iterations - i - 1)
+    t.assert(yarray._searchMarker.length <= 1)
+    const sm = yarray._searchMarker[0]
+    t.assert(prevSm == null || sm === prevSm)
+    prevSm = sm
+  }
+}
+
+/**
  * @param {t.TestCase} tc
  */
 export const testMoveDeletions = tc => {
@@ -617,8 +643,6 @@ const getUniqueNumber = () => _uniqueNumber++
 
 /**
  * @type {Array<function(Doc,prng.PRNG,any):void>}
- *
- * @todo to replace content to a separate data structure so we know that insert & returns work as expected!!!
  */
 const arrayTransactions = [
   function move (user, gen) {
@@ -732,6 +756,7 @@ const compareTestobjects = cmp => {
   for (let i = 0; i < arrs.length; i++) {
     const type = cmp.users[i].getArray('array')
     t.compareArrays(arrs[i], type.toArray())
+    t.compareArrays(arrs[i], Array.from(type))
   }
 }
 

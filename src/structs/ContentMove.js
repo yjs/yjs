@@ -13,31 +13,36 @@ import {
 /**
  * @param {ContentMove | { start: RelativePosition, end: RelativePosition }} moved
  * @param {Transaction} tr
+ * @param {boolean} split
  * @return {{ start: Item, end: Item }} $start (inclusive) is the beginning and $end (inclusive) is the end of the moved area
  */
-export const getMovedCoords = (moved, tr) => {
+export const getMovedCoords = (moved, tr, split) => {
+  const store = tr.doc.store
+  const startItem = moved.start.item
+  const endItem = moved.end.item
   let start // this (inclusive) is the beginning of the moved area
   let end // this (exclusive) is the first item after start that is not part of the moved area
-  if (moved.start.item) {
+  if (startItem) {
     if (moved.start.assoc < 0) {
-      start = getItemCleanEnd(tr, moved.start.item) // @todo Try using getItem after all tests succeed again.
+      // We know that the items have already been split, hence getItem suffices.
+      start = split ? getItemCleanEnd(tr, startItem) : getItem(store, startItem)
       start = start.right
     } else {
-      start = getItemCleanStart(tr, moved.start.item)
+      start = split ? getItemCleanStart(tr, startItem) : getItem(store, startItem)
     }
   } else if (moved.start.tname != null) {
     start = tr.doc.get(moved.start.tname)._start
   } else if (moved.start.type) {
-    start = /** @type {ContentType} */ (getItem(tr.doc.store, moved.start.type).content).type._start
+    start = /** @type {ContentType} */ (getItem(store, moved.start.type).content).type._start
   } else {
     error.unexpectedCase()
   }
-  if (moved.end.item) {
+  if (endItem) {
     if (moved.end.assoc < 0) {
-      end = getItemCleanEnd(tr, moved.end.item)
+      end = split ? getItemCleanEnd(tr, endItem) : getItem(store, endItem)
       end = end.right
     } else {
-      end = getItemCleanStart(tr, moved.end.item)
+      end = split ? getItemCleanStart(tr, endItem) : getItem(store, endItem)
     }
   } else {
     error.unexpectedCase()
@@ -60,7 +65,7 @@ export const findMoveLoop = (tr, moved, movedItem, trackedMovedItems) => {
   /**
    * @type {{ start: Item | null, end: Item | null }}
    */
-  let { start, end } = getMovedCoords(moved, tr)
+  let { start, end } = getMovedCoords(moved, tr, false)
   while (start !== end && start != null) {
     if (
       !start.deleted &&
@@ -152,10 +157,11 @@ export class ContentMove {
   integrate (transaction, item) {
     const sm = /** @type {AbstractType<any>} */ (item.parent)._searchMarker
     if (sm) sm.length = 0
+    const movedCoords = getMovedCoords(this, transaction, true)
     /**
-     * @type {{ start: Item | null, end: Item | null }}
+     * @type {{ start: Item | null, end: item | null }}
      */
-    let { start, end } = getMovedCoords(this, transaction)
+    let { start, end } = movedCoords
     let maxPriority = 0
     // If this ContentMove was created locally, we set prio = -1. This indicates
     // that we want to set prio to the current prio-maximum of the moved range.
@@ -169,7 +175,10 @@ export class ContentMove {
             prevMove.deleteAsCleanup(transaction, adaptPriority)
           }
           this.overrides.add(prevMove)
-          transaction._mergeStructs.push(start) // @todo is this needed?
+          if (start !== movedCoords.start) {
+            // only add this to mergeStructs if this is not the first item
+            transaction._mergeStructs.push(start)
+          }
         }
         maxPriority = math.max(maxPriority, nextPrio)
         // was already moved
@@ -201,7 +210,7 @@ export class ContentMove {
     /**
      * @type {{ start: Item | null, end: Item | null }}
      */
-    let { start, end } = getMovedCoords(this, transaction)
+    let { start, end } = getMovedCoords(this, transaction, false)
     while (start !== end && start != null) {
       if (start.moved === item) {
         const prevMoved = transaction.prevMoved.get(start)
@@ -268,7 +277,6 @@ export class ContentMove {
 
 /**
  * @private
- * @todo use binary encoding option for start & end relpos's
  *
  * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @return {ContentMove}

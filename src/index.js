@@ -48,7 +48,6 @@ export {
   findRootTypeKey,
   findIndexSS,
   getItem,
-  typeListToArraySnapshot,
   typeMapGetSnapshot,
   createDocFromSnapshot,
   iterateDeletedStructs,

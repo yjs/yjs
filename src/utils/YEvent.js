@@ -226,9 +226,9 @@ export class YEvent {
             } else if (item === null) {
               break
             } else if (item.content.constructor === ContentMove) {
-              if (item.moved === currMove && (!item.deleted || (this.deletes(item) && !this.adds(item)))) { // @todo !item.deleted || this.deletes(item)
+              if (item.moved === currMove && (!item.deleted || (this.deletes(item) && !this.adds(item)))) {
                 movedStack.push({ end: currMoveEnd, move: currMove, isNew: currMoveIsNew, isDeleted: currMoveIsDeleted })
-                const { start, end } = getMovedCoords(item.content, tr)
+                const { start, end } = getMovedCoords(item.content, tr, true) // We must split items for move-ranges, for single moves no splitting suffices
                 currMove = item
                 currMoveEnd = end
                 currMoveIsNew = this.adds(item) || currMoveIsNew

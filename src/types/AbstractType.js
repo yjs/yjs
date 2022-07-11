@@ -10,8 +10,8 @@ import {
   createID,
   ContentAny,
   ContentBinary,
-  ListIterator,
-  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
+  ListWalker,
+  ContentDoc, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map'
@@ -19,7 +19,8 @@ import * as iterator from 'lib0/iterator'
 import * as error from 'lib0/error'
 import * as math from 'lib0/math'
 
-const maxSearchMarker = 80
+const maxSearchMarker = 300
+const freshSearchMarkerDistance = 30
 
 /**
  * Search marker help us to find positions in the associative array faster.
@@ -32,25 +33,25 @@ const maxSearchMarker = 80
  * @param {Transaction} tr
  * @param {AbstractType<any>} yarray
  * @param {number} index
- * @param {function(ListIterator):T} f
+ * @param {function(ListWalker):T} f
  * @return T
  */
 export const useSearchMarker = (tr, yarray, index, f) => {
   const searchMarker = yarray._searchMarker
-  if (searchMarker === null || yarray._start === null) { // @todo add condition `index < 5`
-    return f(new ListIterator(yarray).forward(tr, index, true))
+  if (searchMarker === null || yarray._start === null || index < freshSearchMarkerDistance) {
+    return f(new ListWalker(yarray).forward(tr, index, true))
   }
   if (searchMarker.length === 0) {
-    const sm = new ListIterator(yarray).forward(tr, index, true)
+    const sm = new ListWalker(yarray).forward(tr, index, true)
     searchMarker.push(sm)
     if (sm.nextItem) sm.nextItem.marker = true
   }
   const sm = searchMarker.reduce(
     (a, b, arrayIndex) => math.abs(index - a.index) < math.abs(index - b.index) ? a : b
   )
-  const newIsCheaper = math.abs(sm.index - index) > index // @todo use >= index
-  const createFreshMarker = searchMarker.length < maxSearchMarker && (math.abs(sm.index - index) > 5 || newIsCheaper)
-  const fsm = createFreshMarker ? (newIsCheaper ? new ListIterator(yarray) : sm.clone()) : sm
+  const newIsCheaper = math.abs(sm.index - index) >= index
+  const createFreshMarker = searchMarker.length < maxSearchMarker && (math.abs(sm.index - index) > freshSearchMarkerDistance || newIsCheaper)
+  const fsm = createFreshMarker ? (newIsCheaper ? new ListWalker(yarray) : sm.clone()) : sm
   const prevItem = /** @type {Item} */ (sm.nextItem)
   if (createFreshMarker) {
     searchMarker.push(fsm)
@@ -61,14 +62,6 @@ export const useSearchMarker = (tr, yarray, index, f) => {
   } else {
     fsm.forward(tr, -diff, true)
   }
-  // @todo remove this test
-  /*
-  const otherTesting = new ListIterator(yarray)
-  otherTesting.forward(tr, index)
-  if (otherTesting.nextItem !== fsm.nextItem || otherTesting.index !== fsm.index || otherTesting.reachedEnd !== fsm.reachedEnd) {
-    throw new Error('udtirane')
-  }
-  */
   const result = f(fsm)
   if (fsm.reachedEnd) {
     fsm.reachedEnd = false
@@ -101,10 +94,10 @@ export const useSearchMarker = (tr, yarray, index, f) => {
  *
  * This should be called before doing a deletion!
  *
- * @param {Array<ListIterator>} searchMarker
+ * @param {Array<ListWalker>} searchMarker
  * @param {number} index
  * @param {number} len If insertion, len is positive. If deletion, len is negative.
- * @param {ListIterator|null} origSearchMarker Do not update this searchmarker because it is the one we used to manipulate. @todo !=null for improved perf in ytext
+ * @param {ListWalker|null} origSearchMarker Do not update this searchmarker because it is the one we used to manipulate. @todo !=null for improved perf in ytext
  */
 export const updateMarkerChanges = (searchMarker, index, len, origSearchMarker) => {
   for (let i = searchMarker.length - 1; i >= 0; i--) {
@@ -197,7 +190,7 @@ export class AbstractType {
      */
     this._dEH = createEventHandler()
     /**
-     * @type {null | Array<ListIterator>}
+     * @type {null | Array<ListWalker>}
      */
     this._searchMarker = null
     /**
@@ -374,157 +367,6 @@ export const typeListToArray = type => {
     n = n.right
   }
   return cs
-}
-
-/**
- * @param {AbstractType<any>} type
- * @param {Snapshot} snapshot
- * @return {Array<any>}
- *
- * @private
- * @function
- */
-export const typeListToArraySnapshot = (type, snapshot) => {
-  const cs = []
-  let n = type._start
-  while (n !== null) {
-    if (n.countable && isVisible(n, snapshot)) {
-      const c = n.content.getContent()
-      for (let i = 0; i < c.length; i++) {
-        cs.push(c[i])
-      }
-    }
-    n = n.right
-  }
-  return cs
-}
-
-/**
- * Executes a provided function on once on overy element of this YArray.
- *
- * @todo remove!
- *
- * @param {AbstractType<any>} type
- * @param {function(any,number,any):void} f A function to execute on every element of this YArray.
- *
- * @private
- * @function
- */
-export const typeListForEach = (type, f) => {
-  let index = 0
-  let n = type._start
-  while (n !== null) {
-    if (n.countable && !n.deleted) {
-      const c = n.content.getContent()
-      for (let i = 0; i < c.length; i++) {
-        f(c[i], index++, type)
-      }
-    }
-    n = n.right
-  }
-}
-
-/**
- *
- * @todo remove!
- *
- * @template C,R
- * @param {AbstractType<any>} type
- * @param {function(C,number,AbstractType<any>):R} f
- * @return {Array<R>}
- *
- * @private
- * @function
- */
-export const typeListMap = (type, f) => {
-  /**
-   * @type {Array<any>}
-   */
-  const result = []
-  typeListForEach(type, (c, i) => {
-    result.push(f(c, i, type))
-  })
-  return result
-}
-
-/**
- *
- * @todo remove!
- *
- * @param {AbstractType<any>} type
- * @return {IterableIterator<any>}
- *
- * @private
- * @function
- */
-export const typeListCreateIterator = type => {
-  let n = type._start
-  /**
-   * @type {Array<any>|null}
-   */
-  let currentContent = null
-  let currentContentIndex = 0
-  return {
-    [Symbol.iterator] () {
-      return this
-    },
-    next: () => {
-      // find some content
-      if (currentContent === null) {
-        while (n !== null && n.deleted) {
-          n = n.right
-        }
-        // check if we reached the end, no need to check currentContent, because it does not exist
-        if (n === null) {
-          return {
-            done: true,
-            value: undefined
-          }
-        }
-        // we found n, so we can set currentContent
-        currentContent = n.content.getContent()
-        currentContentIndex = 0
-        n = n.right // we used the content of n, now iterate to next
-      }
-      const value = currentContent[currentContentIndex++]
-      // check if we need to empty currentContent
-      if (currentContent.length <= currentContentIndex) {
-        currentContent = null
-      }
-      return {
-        done: false,
-        value
-      }
-    }
-  }
-}
-
-/**
- *
- * @todo remove!
- *
- * Executes a provided function on once on overy element of this YArray.
- * Operates on a snapshotted state of the document.
- *
- * @param {AbstractType<any>} type
- * @param {function(any,number,AbstractType<any>):void} f A function to execute on every element of this YArray.
- * @param {Snapshot} snapshot
- *
- * @private
- * @function
- */
-export const typeListForEachSnapshot = (type, f, snapshot) => {
-  let index = 0
-  let n = type._start
-  while (n !== null) {
-    if (n.countable && isVisible(n, snapshot)) {
-      const c = n.content.getContent()
-      for (let i = 0; i < c.length; i++) {
-        f(c[i], index++, type)
-      }
-    }
-    n = n.right
-  }
 }
 
 /**

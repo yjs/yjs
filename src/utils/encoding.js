@@ -193,7 +193,6 @@ export const readClientsStructRefs = (decoder, doc) => {
         }
       }
     }
-    // console.log('time to read: ', performance.now() - start) // @todo remove
   }
   return clientRefs
 }
@@ -389,10 +388,6 @@ export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = n
     const store = doc.store
     // let start = performance.now()
     const ss = readClientsStructRefs(structDecoder, doc)
-    // console.log('time to read structs: ', performance.now() - start) // @todo remove
-    // start = performance.now()
-    // console.log('time to merge: ', performance.now() - start) // @todo remove
-    // start = performance.now()
     const restStructs = integrateStructs(transaction, store, ss)
     const pending = store.pendingStructs
     if (pending) {
@@ -416,8 +411,6 @@ export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = n
     } else {
       store.pendingStructs = restStructs
     }
-    // console.log('time to integrate: ', performance.now() - start) // @todo remove
-    // start = performance.now()
     const dsRest = readAndApplyDeleteSet(structDecoder, transaction, store)
     if (store.pendingDs) {
       // @todo we could make a lower-bound state-vector check as we do above
@@ -437,11 +430,6 @@ export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = n
       // Either dsRest == null && pendingDs == null OR dsRest != null
       store.pendingDs = dsRest
     }
-    // console.log('time to cleanup: ', performance.now() - start) // @todo remove
-    // start = performance.now()
-
-    // console.log('time to resume delete readers: ', performance.now() - start) // @todo remove
-    // start = performance.now()
     if (retry) {
       const update = /** @type {{update: Uint8Array}} */ (store.pendingStructs).update
       store.pendingStructs = null
