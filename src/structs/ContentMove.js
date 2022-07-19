@@ -256,7 +256,7 @@ export class ContentMove {
    */
   write (encoder, offset) {
     const isCollapsed = this.isCollapsed()
-    encoding.writeVarUint(encoder.restEncoder, (isCollapsed ? 1 : 0) | (this.start.assoc >= 0 ? 2 : 0) | (this.end.assoc >= 0 ? 4 : 0) | this.priority << 3)
+    encoding.writeVarUint(encoder.restEncoder, (isCollapsed ? 1 : 0) | (this.start.assoc >= 0 ? 2 : 0) | (this.end.assoc >= 0 ? 4 : 0) | this.priority << 6)
     writeID(encoder.restEncoder, /** @type {ID} */ (this.start.item))
     if (!isCollapsed) {
       writeID(encoder.restEncoder, /** @type {ID} */ (this.end.item))
@@ -286,7 +286,9 @@ export const readContentMove = decoder => {
   const isCollapsed = (info & 1) === 1
   const startAssoc = (info & 2) === 2 ? 0 : -1
   const endAssoc = (info & 4) === 4 ? 0 : -1
-  const priority = info >>> 3
+  // @TODO use BIT3 & BIT4 to indicate the case `null` is the start/end
+  // BIT5 is reserved for future extensions
+  const priority = info >>> 6
   const startId = readID(decoder.restDecoder)
   const start = new RelativePosition(null, null, startId, startAssoc)
   const end = new RelativePosition(null, null, isCollapsed ? startId : readID(decoder.restDecoder), endAssoc)
