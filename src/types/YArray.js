@@ -8,7 +8,7 @@ import {
   YArrayRefID,
   callTypeObservers,
   transact,
-  ListWalker,
+  ListCursor,
   useSearchMarker,
   createRelativePositionFromTypeIndex,
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item, // eslint-disable-line
@@ -45,7 +45,7 @@ export class YArray extends AbstractType {
      */
     this._prelimContent = []
     /**
-     * @type {Array<ListWalker>}
+     * @type {Array<ListCursor>}
      */
     this._searchMarker = []
   }
@@ -262,7 +262,7 @@ export class YArray extends AbstractType {
    */
   toArray () {
     return transact(/** @type {Doc} */ (this.doc), tr =>
-      new ListWalker(this).slice(tr, this.length)
+      new ListCursor(this).slice(tr, this.length)
     )
   }
 
@@ -301,7 +301,7 @@ export class YArray extends AbstractType {
    */
   map (f) {
     return transact(/** @type {Doc} */ (this.doc), tr =>
-      new ListWalker(this).map(tr, f)
+      new ListCursor(this).map(tr, f)
     )
   }
 
@@ -312,7 +312,7 @@ export class YArray extends AbstractType {
    */
   forEach (f) {
     return transact(/** @type {Doc} */ (this.doc), tr =>
-      new ListWalker(this).forEach(tr, f)
+      new ListCursor(this).forEach(tr, f)
     )
   }
 

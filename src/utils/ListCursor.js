@@ -30,7 +30,7 @@ const lengthExceeded = error.create('Length exceeded!')
  * computed item.
  *
  * @param {Transaction} tr
- * @param {ListWalker} li
+ * @param {ListCursor} li
  */
 const popMovedStack = (tr, li) => {
   let { start, end, move } = li.movedStack.pop() || { start: null, end: null, move: null }
@@ -63,7 +63,7 @@ const popMovedStack = (tr, li) => {
 /**
  * Structure that helps to iterate through list-like structures. This is a useful abstraction that keeps track of move operations.
  */
-export class ListWalker {
+export class ListCursor {
   /**
    * @param {AbstractType<any>} type
    */
@@ -104,7 +104,7 @@ export class ListWalker {
   }
 
   clone () {
-    const iter = new ListWalker(this.type)
+    const iter = new ListCursor(this.type)
     iter.index = this.index
     iter.rel = this.rel
     iter.nextItem = this.nextItem
@@ -244,7 +244,7 @@ export class ListWalker {
   /**
    * @param {Transaction} tr
    * @param {number} len
-   * @return {ListWalker}
+   * @return {ListCursor}
    */
   backward (tr, len) {
     if (this.index - len < 0) {
@@ -594,7 +594,7 @@ const concatArrayContent = (content, added) => {
  * * Delete the stack-items that both of them have in common
  *
  * @param {Transaction} tr
- * @param {ListWalker} walker
+ * @param {ListCursor} walker
  * @param {number} len
  * @return {Array<{ start: RelativePosition, end: RelativePosition }>}
  */

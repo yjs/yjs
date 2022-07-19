@@ -14,7 +14,7 @@ import {
   typeListSlice,
   useSearchMarker,
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, ContentType, Transaction, Item, YXmlText, YXmlHook, Snapshot, // eslint-disable-line
-  ListWalker
+  ListCursor
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -254,7 +254,7 @@ export class YXmlFragment extends AbstractType {
    */
   toString () {
     if (this.doc != null) {
-      return transact(this.doc, tr => new ListWalker(this).map(tr, xml => xml.toString()).join(''))
+      return transact(this.doc, tr => new ListCursor(this).map(tr, xml => xml.toString()).join(''))
     }
     return ''
   }

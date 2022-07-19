@@ -10,7 +10,7 @@ import {
   createID,
   ContentAny,
   ContentBinary,
-  ListWalker,
+  ListCursor,
   ContentDoc, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
 } from '../internals.js'
 
@@ -33,16 +33,16 @@ const freshSearchMarkerDistance = 30
  * @param {Transaction} tr
  * @param {AbstractType<any>} yarray
  * @param {number} index
- * @param {function(ListWalker):T} f
+ * @param {function(ListCursor):T} f
  * @return T
  */
 export const useSearchMarker = (tr, yarray, index, f) => {
   const searchMarker = yarray._searchMarker
   if (searchMarker === null || yarray._start === null || index < freshSearchMarkerDistance) {
-    return f(new ListWalker(yarray).forward(tr, index, true))
+    return f(new ListCursor(yarray).forward(tr, index, true))
   }
   if (searchMarker.length === 0) {
-    const sm = new ListWalker(yarray).forward(tr, index, true)
+    const sm = new ListCursor(yarray).forward(tr, index, true)
     searchMarker.push(sm)
     if (sm.nextItem) sm.nextItem.marker = true
   }
@@ -51,7 +51,7 @@ export const useSearchMarker = (tr, yarray, index, f) => {
   )
   const newIsCheaper = math.abs(sm.index - index) >= index
   const createFreshMarker = searchMarker.length < maxSearchMarker && (math.abs(sm.index - index) > freshSearchMarkerDistance || newIsCheaper)
-  const fsm = createFreshMarker ? (newIsCheaper ? new ListWalker(yarray) : sm.clone()) : sm
+  const fsm = createFreshMarker ? (newIsCheaper ? new ListCursor(yarray) : sm.clone()) : sm
   const prevItem = /** @type {Item} */ (sm.nextItem)
   if (createFreshMarker) {
     searchMarker.push(fsm)
@@ -94,10 +94,10 @@ export const useSearchMarker = (tr, yarray, index, f) => {
  *
  * This should be called before doing a deletion!
  *
- * @param {Array<ListWalker>} searchMarker
+ * @param {Array<ListCursor>} searchMarker
  * @param {number} index
  * @param {number} len If insertion, len is positive. If deletion, len is negative.
- * @param {ListWalker|null} origSearchMarker Do not update this searchmarker because it is the one we used to manipulate. @todo !=null for improved perf in ytext
+ * @param {ListCursor|null} origSearchMarker Do not update this searchmarker because it is the one we used to manipulate. @todo !=null for improved perf in ytext
  */
 export const updateMarkerChanges = (searchMarker, index, len, origSearchMarker) => {
   for (let i = searchMarker.length - 1; i >= 0; i--) {
@@ -190,7 +190,7 @@ export class AbstractType {
      */
     this._dEH = createEventHandler()
     /**
-     * @type {null | Array<ListWalker>}
+     * @type {null | Array<ListCursor>}
      */
     this._searchMarker = null
     /**

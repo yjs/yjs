@@ -28,7 +28,7 @@ import {
   ContentType,
   useSearchMarker,
   findIndexCleanStart,
-  ListWalker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
+  ListCursor, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as object from 'lib0/object'
@@ -785,7 +785,7 @@ export class YText extends AbstractType {
      */
     this._pending = string !== undefined ? [() => this.insert(0, string)] : []
     /**
-     * @type {Array<ListWalker>}
+     * @type {Array<ListCursor>}
      */
     this._searchMarker = []
   }
