@@ -139,6 +139,7 @@ const popStackItem = (undoManager, stack, eventType) => {
  * undo/redo scope.
  * @property {Set<any>} [UndoManagerOptions.trackedOrigins=new Set([null])]
  * @property {boolean} [ignoreRemoteMapChanges] Experimental. By default, the UndoManager will never overwrite remote changes. Enable this property to enable overwriting remote changes on key-value changes (Y.Map, properties on Y.Xml, etc..).
+ * @property {Doc} [doc] The document that this UndoManager operates on. Only needed if typeScope is empty.
  */
 
 /**
@@ -160,7 +161,8 @@ export class UndoManager extends Observable {
     captureTransaction = tr => true,
     deleteFilter = () => true,
     trackedOrigins = new Set([null]),
-    ignoreRemoteMapChanges = false
+    ignoreRemoteMapChanges = false,
+    doc = /** @type {Doc} */ (array.isArray(typeScope) ? typeScope[0].doc : typeScope.doc)
   } = {}) {
     super()
     /**
@@ -187,7 +189,7 @@ export class UndoManager extends Observable {
      */
     this.undoing = false
     this.redoing = false
-    this.doc = /** @type {Doc} */ (this.scope[0].doc)
+    this.doc = doc
     this.lastChange = 0
     this.ignoreRemoteMapChanges = ignoreRemoteMapChanges
     /**
