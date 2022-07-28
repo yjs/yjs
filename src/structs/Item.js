@@ -211,11 +211,6 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
       while (left !== null && left.redone !== null) {
         left = getItemCleanStart(transaction, left.redone)
       }
-      // check wether we were allowed to follow right (indicating that originally this op was replaced by another item)
-      if (left === null || /** @type {AbstractType<any>} */ (left.parent)._item !== parentItem) {
-        // invalid parent; should never happen
-        return null
-      }
       if (left && left.right !== null) {
         // It is not possible to redo this item because it conflicts with a
         // change from another client

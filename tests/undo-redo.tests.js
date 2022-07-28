@@ -602,3 +602,32 @@ export const testBehaviorOfIgnoreremotemapchangesProperty = tc => {
   t.assert(map1.get('x') === 2)
   t.assert(map2.get('x') === 2)
 }
+
+/**
+ * Special deletion case.
+ *
+ * @see https://github.com/yjs/yjs/issues/447
+ * @param {t.TestCase} tc
+ */
+export const testSpecialDeletionCase = tc => {
+  const origin = 'undoable'
+  const doc = new Y.Doc()
+  const fragment = doc.getXmlFragment()
+  const undoManager = new Y.UndoManager(fragment, { trackedOrigins: new Set([origin]) })
+  doc.transact(() => {
+    const e = new Y.XmlElement('test')
+    e.setAttribute('a', '1')
+    e.setAttribute('b', '2')
+    fragment.insert(0, [e])
+  })
+  t.compareStrings(fragment.toString(), '<test a="1" b="2"></test>')
+  doc.transact(() => {
+    // change attribute "b" and delete test-node
+    const e = fragment.get(0)
+    e.setAttribute('b', '3')
+    fragment.delete(0)
+  }, origin)
+  t.compareStrings(fragment.toString(), '')
+  undoManager.undo()
+  t.compareStrings(fragment.toString(), '<test a="1" b="2"></test>')
+}
