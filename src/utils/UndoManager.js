@@ -142,6 +142,7 @@ const popStackItem = (undoManager, stack, eventType) => {
  * @property {boolean} [UndoManagerOptions.shouldDestroyUndoManager=true] Disable default destroy behavior if false. Sometimes
  * when use undoManager to manage multiply components globally, each component (like y-prosemirror.yUndoPlugin...) may call destroy once being removed, then cause the global undoManager being destoryed.
  * In this case, disable this option maybe be a choice to get the control back to yourself.
+ * @property {Doc} [doc] The document that this UndoManager operates on. Only needed if typeScope is empty.
  */
 
 /**
@@ -165,6 +166,7 @@ export class UndoManager extends Observable {
     trackedOrigins = new Set([null]),
     ignoreRemoteMapChanges = false,
     shouldDestroyUndoManager = true
+    doc = /** @type {Doc} */ (array.isArray(typeScope) ? typeScope[0].doc : typeScope.doc)
   } = {}) {
     super()
     /**
@@ -192,7 +194,7 @@ export class UndoManager extends Observable {
      */
     this.undoing = false
     this.redoing = false
-    this.doc = /** @type {Doc} */ (this.scope[0].doc)
+    this.doc = doc
     this.lastChange = 0
     this.ignoreRemoteMapChanges = ignoreRemoteMapChanges
     /**
