@@ -192,6 +192,7 @@ export class UndoManager extends Observable {
     this.doc = doc
     this.lastChange = 0
     this.ignoreRemoteMapChanges = ignoreRemoteMapChanges
+    this.captureTimeout = captureTimeout
     /**
      * @param {Transaction} transaction
      */
@@ -223,7 +224,7 @@ export class UndoManager extends Observable {
       })
       const now = time.getUnixTime()
       let didAdd = false
-      if (now - this.lastChange < captureTimeout && stack.length > 0 && !undoing && !redoing) {
+      if (now - this.lastChange < this.captureTimeout && stack.length > 0 && !undoing && !redoing) {
         // append change to last stack op
         const lastOp = stack[stack.length - 1]
         lastOp.deletions = mergeDeleteSets([lastOp.deletions, transaction.deleteSet])
