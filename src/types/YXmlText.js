@@ -39,29 +39,6 @@ export class YXmlText extends YText {
     return text
   }
 
-  /**
-   * Creates a Dom Element that mirrors this YXmlText.
-   *
-   * @param {Document} [_document=document] The document object (you must define
-   *                                        this when calling this method in
-   *                                        nodejs)
-   * @param {Object<string, any>} [hooks] Optional property to customize how hooks
-   *                                             are presented in the DOM
-   * @param {any} [binding] You should not set this property. This is
-   *                               used if DomBinding wants to create a
-   *                               association to the created DOM type.
-   * @return {Text} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
-   *
-   * @public
-   */
-  toDOM (_document = document, hooks, binding) {
-    const dom = _document.createTextNode(this.toString())
-    if (binding !== undefined) {
-      binding._createAssociation(dom, this)
-    }
-    return dom
-  }
-
   toString () {
     // @ts-ignore
     return this.toDelta().map(delta => {

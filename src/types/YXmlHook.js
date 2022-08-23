@@ -41,36 +41,6 @@ export class YXmlHook extends YMap {
   }
 
   /**
-   * Creates a Dom Element that mirrors this YXmlElement.
-   *
-   * @param {Document} [_document=document] The document object (you must define
-   *                                        this when calling this method in
-   *                                        nodejs)
-   * @param {Object.<string, any>} [hooks] Optional property to customize how hooks
-   *                                             are presented in the DOM
-   * @param {any} [binding] You should not set this property. This is
-   *                               used if DomBinding wants to create a
-   *                               association to the created DOM type
-   * @return {Element} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
-   *
-   * @public
-   */
-  toDOM (_document = document, hooks = {}, binding) {
-    const hook = hooks[this.hookName]
-    let dom
-    if (hook !== undefined) {
-      dom = hook.createDom(this)
-    } else {
-      dom = document.createElement(this.hookName)
-    }
-    dom.setAttribute('data-yjs-hook', this.hookName)
-    if (binding !== undefined) {
-      binding._createAssociation(dom, this)
-    }
-    return dom
-  }
-
-  /**
    * Transform the properties of this type to binary and write it to an
    * BinaryEncoder.
    *
