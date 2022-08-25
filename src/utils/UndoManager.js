@@ -134,7 +134,7 @@ const popStackItem = (undoManager, stack, eventType) => {
  * @property {number} [UndoManagerOptions.captureTimeout=500]
  * @property {function(Transaction):boolean} [UndoManagerOptions.captureTransaction] Do not capture changes of a Transaction if result false.
  * @property {function(Item):boolean} [UndoManagerOptions.deleteFilter=()=>true] Sometimes
- * it is necessary to filter whan an Undo/Redo operation can delete. If this
+ * it is necessary to filter what an Undo/Redo operation can delete. If this
  * filter returns false, the type/item won't be deleted even it is in the
  * undo/redo scope.
  * @property {Set<any>} [UndoManagerOptions.trackedOrigins=new Set([null])]
