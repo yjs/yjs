@@ -1018,12 +1018,12 @@ export class YText extends AbstractType {
             case ContentString: {
               const cur = currentAttributes.get('ychange')
               if (snapshot !== undefined && !isVisible(n, snapshot)) {
-                if (cur === undefined || cur.user !== n.id.client || cur.state !== 'removed') {
+                if (cur === undefined || cur.user !== n.id.client || cur.type !== 'removed') {
                   packStr()
                   currentAttributes.set('ychange', computeYChange ? computeYChange('removed', n.id) : { type: 'removed' })
                 }
               } else if (prevSnapshot !== undefined && !isVisible(n, prevSnapshot)) {
-                if (cur === undefined || cur.user !== n.id.client || cur.state !== 'added') {
+                if (cur === undefined || cur.user !== n.id.client || cur.type !== 'added') {
                   packStr()
                   currentAttributes.set('ychange', computeYChange ? computeYChange('added', n.id) : { type: 'added' })
                 }
