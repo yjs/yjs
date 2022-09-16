@@ -66,7 +66,7 @@ fields, respectively. These are used when peers concurrently insert at the same
 location in a document. Though quite rare in practice, Yjs needs to make sure
 the list items always resolve to the same order on all peers. The actual logic
 is relatively simple - its only a couple dozen lines of code and it lives in
-the `Item#integrate()` method. The YATA paper has much more detail on the this
+the `Item#integrate()` method. The YATA paper has much more detail on this
 algorithm.
 
 ### Item Storage
