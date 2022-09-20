@@ -167,16 +167,11 @@ export class YMap extends AbstractType {
    * @param {function(MapType,string,YMap<MapType>):void} f A function to execute on every element of this YArray.
    */
   forEach (f) {
-    /**
-     * @type {Object<string,MapType>}
-     */
-    const map = {}
     this._map.forEach((item, key) => {
       if (!item.deleted) {
         f(item.content.getContent()[item.length - 1], key, this)
       }
     })
-    return map
   }
 
   /**
