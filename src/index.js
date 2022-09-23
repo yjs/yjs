@@ -57,6 +57,7 @@ export {
   readUpdate,
   readUpdateV2,
   encodeStateAsUpdate,
+  encodeStateAsStreamOfUpdates,
   encodeStateAsUpdateV2,
   encodeStateVector,
   UndoManager,
