@@ -83,14 +83,13 @@ const writeStructs = (encoder, structs, client, clock) => {
 }
 
 /**
- * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
  * @param {StructStore} store
  * @param {Map<number,number>} _sm
  *
  * @private
  * @function
  */
-export const writeClientsStructs = (encoder, store, _sm) => {
+export const getStatesToWrite = (store, _sm) => {
   // we filter all valid _sm entries into sm
   const sm = new Map()
   _sm.forEach((clock, client) => {
@@ -104,6 +103,19 @@ export const writeClientsStructs = (encoder, store, _sm) => {
       sm.set(client, 0)
     }
   })
+  return sm
+}
+
+/**
+ * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+ * @param {StructStore} store
+ * @param {Map<number,number>} _sm
+ *
+ * @private
+ * @function
+ */
+export const writeClientsStructs = (encoder, store, _sm) => {
+  const sm = getStatesToWrite(store, _sm)
   // write # states that were updated
   encoding.writeVarUint(encoder.restEncoder, sm.size)
   // Write items with higher client ids first
