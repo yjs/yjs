@@ -47,6 +47,18 @@ import * as map from 'lib0/map'
 import * as math from 'lib0/math'
 
 /**
+ * @param {Array<GC|Item>} structs All structs by `client`
+ * @param {number} minClock write structs starting with `ID(client,minClock)`
+ *
+ * @function
+ */
+const getStructsToWrite = (structs, minClock) => {
+  minClock = math.max(minClock, structs[0].id.clock) // make sure the first id exists
+  const startNewStructs = findIndexSS(structs, minClock)
+  return structs.slice(startNewStructs)
+}
+
+/**
  * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
  * @param {Array<GC|Item>} structs All structs by `client`
  * @param {number} client
@@ -57,16 +69,16 @@ import * as math from 'lib0/math'
 const writeStructs = (encoder, structs, client, clock) => {
   // write first id
   clock = math.max(clock, structs[0].id.clock) // make sure the first id exists
-  const startNewStructs = findIndexSS(structs, clock)
+  const newStructs = getStructsToWrite(structs, clock, maxClock)
   // write # encoded structs
-  encoding.writeVarUint(encoder.restEncoder, structs.length - startNewStructs)
+  encoding.writeVarUint(encoder.restEncoder, newStructs.length)
   encoder.writeClient(client)
   encoding.writeVarUint(encoder.restEncoder, clock)
-  const firstStruct = structs[startNewStructs]
+  const firstStruct = newStructs[0]
   // write first struct with an offset
   firstStruct.write(encoder, clock - firstStruct.id.clock)
-  for (let i = startNewStructs + 1; i < structs.length; i++) {
-    structs[i].write(encoder, 0)
+  for (let i = 1; i < newStructs.length; i++) {
+    newStructs[i].write(encoder, 0)
   }
 }
 
