@@ -138,6 +138,10 @@ your client app and Matrix can provide powerful features like Authentication,
 Authorization, Federation, hosting (self-hosting or SaaS) and even End-to-End
 Encryption (E2EE).
 </dd>
+  <dt><a href="https://github.com/MaxNoetzold/y-mongodb-provider">y-mongodb-provider</a></dt>
+  <dd>
+Adds persistent storage to a server with MongoDB. Can be used with the y-websocket provider.
+</dd>
 </dl>
 
 ## Getting Started
