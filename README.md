@@ -53,6 +53,7 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
 * [Slidebeamer](https://slidebeamer.com/) Presentation app.
 * [BlockSurvey](https://blocksurvey.io) End-to-end encryption for your forms/surveys.
 * [Skiff](https://skiff.org/) Private, decentralized workspace.
+* [Hyperquery](https://hyperquery.ai/) A collaborative data workspace for sharing analyses, documentation, spreadsheets, and dashboards.
 
 ## Table of Contents
 
