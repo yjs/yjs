@@ -139,6 +139,9 @@ const popStackItem = (undoManager, stack, eventType) => {
  * undo/redo scope.
  * @property {Set<any>} [UndoManagerOptions.trackedOrigins=new Set([null])]
  * @property {boolean} [ignoreRemoteMapChanges] Experimental. By default, the UndoManager will never overwrite remote changes. Enable this property to enable overwriting remote changes on key-value changes (Y.Map, properties on Y.Xml, etc..).
+ * @property {boolean} [UndoManagerOptions.shouldDestroyUndoManager=true] Disable default destroy behavior if false. Sometimes
+ * when use undoManager to manage multiply components globally, each component (like y-prosemirror.yUndoPlugin...) may call destroy once being removed, then cause the global undoManager being destoryed.
+ * In this case, disable this option maybe be a choice to get the control back to yourself.
  * @property {Doc} [doc] The document that this UndoManager operates on. Only needed if typeScope is empty.
  */
 
@@ -162,6 +165,7 @@ export class UndoManager extends Observable {
     deleteFilter = () => true,
     trackedOrigins = new Set([null]),
     ignoreRemoteMapChanges = false,
+    shouldDestroyUndoManager = true
     doc = /** @type {Doc} */ (array.isArray(typeScope) ? typeScope[0].doc : typeScope.doc)
   } = {}) {
     super()
@@ -174,6 +178,7 @@ export class UndoManager extends Observable {
     trackedOrigins.add(this)
     this.trackedOrigins = trackedOrigins
     this.captureTransaction = captureTransaction
+    this.shouldDestoryUndoManager = shouldDestroyUndoManager
     /**
      * @type {Array<StackItem>}
      */
@@ -373,6 +378,8 @@ export class UndoManager extends Observable {
   }
 
   destroy () {
+    if (!this.shouldDestoryUndoManager) return
+
     this.trackedOrigins.delete(this)
     this.doc.off('afterTransaction', this.afterTransactionHandler)
     super.destroy()
