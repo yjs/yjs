@@ -34,7 +34,8 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
 
 ## Who is using Yjs
 
-* [AFFiNE](https://affine.pro/) A local-first, privacy-first, open source knowledge base. 🏅
+* [AFFiNE](https://affine.pro/) A local-first, privacy-first, open source
+  knowledge base. 🏅
 * [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star2:
 * [Relm](https://www.relm.us/) A collaborative gameworld for teamwork and
   community. :star:
@@ -53,7 +54,8 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
 * [Slidebeamer](https://slidebeamer.com/) Presentation app.
 * [BlockSurvey](https://blocksurvey.io) End-to-end encryption for your forms/surveys.
 * [Skiff](https://skiff.org/) Private, decentralized workspace.
-* [Hyperquery](https://hyperquery.ai/) A collaborative data workspace for sharing analyses, documentation, spreadsheets, and dashboards.
+* [Hyperquery](https://hyperquery.ai/) A collaborative data workspace for
+  sharing analyses, documentation, spreadsheets, and dashboards.
 
 ## Table of Contents
 
@@ -141,7 +143,8 @@ Encryption (E2EE).
 </dd>
   <dt><a href="https://github.com/MaxNoetzold/y-mongodb-provider">y-mongodb-provider</a></dt>
   <dd>
-Adds persistent storage to a server with MongoDB. Can be used with the y-websocket provider.
+Adds persistent storage to a server with MongoDB. Can be used with the
+y-websocket provider.
 </dd>
 </dl>
 
