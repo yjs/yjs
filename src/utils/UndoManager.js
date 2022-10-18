@@ -224,7 +224,7 @@ export class UndoManager extends Observable {
       })
       const now = time.getUnixTime()
       let didAdd = false
-      if (now - this.lastChange < this.captureTimeout && stack.length > 0 && !undoing && !redoing) {
+      if (this.lastChange > 0 && now - this.lastChange < this.captureTimeout && stack.length > 0 && !undoing && !redoing) {
         // append change to last stack op
         const lastOp = stack[stack.length - 1]
         lastOp.deletions = mergeDeleteSets([lastOp.deletions, transaction.deleteSet])

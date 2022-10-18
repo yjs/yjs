@@ -6,6 +6,19 @@ import * as t from 'lib0/testing'
 /**
  * @param {t.TestCase} tc
  */
+export const testInfiniteCaptureTimeout = tc => {
+  const { array0 } = init(tc, { users: 3 })
+  const undoManager = new Y.UndoManager(array0, { captureTimeout: Number.MAX_VALUE })
+  array0.push([1, 2, 3])
+  undoManager.stopCapturing()
+  array0.push([4, 5, 6])
+  undoManager.undo()
+  t.compare(array0.toArray(), [1, 2, 3])
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testUndoText = tc => {
   const { testConnector, text0, text1 } = init(tc, { users: 3 })
   const undoManager = new Y.UndoManager(text0)
