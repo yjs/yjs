@@ -34,6 +34,7 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
 
 ## Who is using Yjs
 
+* [Sana](https://sanalabs.com/) A learning platform with collaborative text editing powered by Yjs.
 * [AFFiNE](https://affine.pro/) A local-first, privacy-first, open source
   knowledge base. 🏅
 * [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star2:
