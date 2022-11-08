@@ -1060,16 +1060,17 @@ More information about the specific implementation is available in
 [INTERNALS.md](./INTERNALS.md) and in
 [this walkthrough of the Yjs codebase](https://youtu.be/0l5XgnQ6rB4).
 
-CRDTs that suitable for shared text editing suffer from the fact that they only grow
-in size. There are CRDTs that do not grow in size, but they do not have the
-characteristics that are benificial for shared text editing (like intention
-preservation). Yjs implements many improvements to the original algorithm that
-diminish the trade-off that the document only grows in size. We can't garbage
-collect deleted structs (tombstones) while ensuring a unique order of the
-structs. But we can 1. merge preceeding structs into a single struct to reduce
-the amount of meta information, 2. we can delete content from the struct if it
-is deleted, and 3. we can garbage collect tombstones if we don't care about the
-order of the structs anymore (e.g. if the parent was deleted).
+CRDTs that are suitable for shared text editing suffer from the fact that they
+only grow in size. There are CRDTs that do not grow in size, but they do not
+have the characteristics that are benificial for shared text editing (like
+intention preservation). Yjs implements many improvements to the original
+algorithm that diminish the trade-off that the document only grows in size. We
+can't garbage collect deleted structs (tombstones) while ensuring a unique
+order of the structs. But we can 1. merge preceeding structs into a single
+struct to reduce the amount of meta information, 2. we can delete content from
+the struct if it is deleted, and 3. we can garbage collect tombstones if we
+don't care about the order of the structs anymore (e.g. if the parent was
+deleted).
 
 **Examples:**
 
