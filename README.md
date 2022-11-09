@@ -147,6 +147,12 @@ Encryption (E2EE).
 Adds persistent storage to a server with MongoDB. Can be used with the
 y-websocket provider.
 </dd>
+  <dt><a href="https://github.com/TexteaInc/y-socket.io">y-socket.io</a></dt>
+  <dd>
+  A module that contains a simple socket.io backend for yjs document syncing.
+  The backend can be extended to a backend with authentication and persistence.
+  Also React.js bindings available for client side.
+</dd>
 </dl>
 
 ## Getting Started
