@@ -3,6 +3,31 @@ import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
 
 /**
+ * @param {t.TestCase} _tc
+ */
+export const testOriginInTransaction = _tc => {
+  const doc = new Y.Doc()
+  const ytext = doc.getText()
+  /**
+   * @type {Array<string>}
+   */
+  const origins = []
+  doc.on('afterTransaction', (tr) => {
+    origins.push(tr.origin)
+    if (origins.length <= 1) {
+      ytext.toDelta()
+      doc.transact(() => {
+        ytext.insert(0, 'a')
+      }, 'nested')
+    }
+  })
+  doc.transact(() => {
+    ytext.insert(0, '0')
+  }, 'first')
+  t.compareArrays(origins, ['first', 'cleanup', 'nested'])
+}
+
+/**
  * Client id should be changed when an instance receives updates from another client using the same client id.
  *
  * @param {t.TestCase} tc

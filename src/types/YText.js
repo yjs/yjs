@@ -1064,7 +1064,7 @@ export class YText extends AbstractType {
         n = n.right
       }
       packStr()
-    }, splitSnapshotAffectedStructs)
+    }, 'cleanup')
     return ops
   }
 

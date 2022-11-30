@@ -251,7 +251,6 @@ const cleanupTransactions = (transactionCleanups, i) => {
     try {
       sortAndMergeDeleteSet(ds)
       transaction.afterState = getStateVector(transaction.doc.store)
-      doc._transaction = null
       doc.emit('beforeObserverCalls', [transaction, doc])
       /**
        * An array of event callbacks.
@@ -398,16 +397,20 @@ export const transact = (doc, f, origin = null, local = true) => {
   try {
     f(doc._transaction)
   } finally {
-    if (initialCall && transactionCleanups[0] === doc._transaction) {
-      // The first transaction ended, now process observer calls.
-      // Observer call may create new transactions for which we need to call the observers and do cleanup.
-      // We don't want to nest these calls, so we execute these calls one after
-      // another.
-      // Also we need to ensure that all cleanups are called, even if the
-      // observes throw errors.
-      // This file is full of hacky try {} finally {} blocks to ensure that an
-      // event can throw errors and also that the cleanup is called.
-      cleanupTransactions(transactionCleanups, 0)
+    if (initialCall) {
+      const finishCleanup = doc._transaction === transactionCleanups[0]
+      doc._transaction = null
+      if (finishCleanup) {
+        // The first transaction ended, now process observer calls.
+        // Observer call may create new transactions for which we need to call the observers and do cleanup.
+        // We don't want to nest these calls, so we execute these calls one after
+        // another.
+        // Also we need to ensure that all cleanups are called, even if the
+        // observes throw errors.
+        // This file is full of hacky try {} finally {} blocks to ensure that an
+        // event can throw errors and also that the cleanup is called.
+        cleanupTransactions(transactionCleanups, 0)
+      }
     }
   }
 }
