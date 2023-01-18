@@ -34,11 +34,11 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
 
 ## Who is using Yjs
 
-* [Sana](https://sanalabs.com/) A learning platform with collaborative text
-  editing powered by Yjs.
 * [AFFiNE](https://affine.pro/) A local-first, privacy-first, open source
   knowledge base. 🏅
 * [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star2:
+* [Sana](https://sanalabs.com/) A learning platform with collaborative text
+  editing powered by Yjs.
 * [Relm](https://www.relm.us/) A collaborative gameworld for teamwork and
   community. :star:
 * [Room.sh](https://room.sh/) A meeting application with integrated
@@ -58,6 +58,7 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
 * [Skiff](https://skiff.org/) Private, decentralized workspace.
 * [Hyperquery](https://hyperquery.ai/) A collaborative data workspace for
   sharing analyses, documentation, spreadsheets, and dashboards.
+* [POXi](poxi.page) is a real-time collaborative application aiming to be a creative space where users can create their own "digital home".
 
 ## Table of Contents
 
