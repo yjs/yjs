@@ -59,7 +59,8 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
 * [Hyperquery](https://hyperquery.ai/) A collaborative data workspace for
   sharing analyses, documentation, spreadsheets, and dashboards.
 * [POXi](poxi.page) is a real-time collaborative application aiming to be a creative space where users can create their own "digital home".
-
+* [Nosgestesclimat](https://nosgestesclimat.fr/groupe) The french carbon footprint calculator has a group P2P mode based on yjs
+ 
 ## Table of Contents
 
 * [Overview](#Overview)
