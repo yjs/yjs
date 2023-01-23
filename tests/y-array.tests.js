@@ -33,6 +33,17 @@ export const testSlice = tc => {
 }
 
 /**
+ * @param {t.TestCase} tc
+ */
+export const testArrayFrom = tc => {
+  const doc1 = new Y.Doc()
+  const db1 = doc1.getMap('root')
+  const nestedArray1 = Y.Array.from([0, 1, 2])
+  db1.set('array', nestedArray1)
+  t.compare(nestedArray1.toArray(), [0, 1, 2])
+}
+
+/**
  * Debugging yjs#297 - a critical bug connected to the search-marker approach
  *
  * @param {t.TestCase} tc
