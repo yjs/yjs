@@ -2,10 +2,9 @@
   "name": "yjs",
   "version": "13.5.44",
   "description": "Shared Editing Library",
-  "main": "./dist/yjs.cjs",
-  "module": "./dist/yjs.mjs",
+  "main": "./dist/yjs.js",
   "types": "./dist/src/index.d.ts",
-  "type": "module",
+  "type": "commonjs",
   "sideEffects": false,
   "funding": {
     "type": "GitHub Sponsors ❤",
@@ -23,18 +22,6 @@
     "debug": "concurrently 'http-server -o test.html' 'npm run watch'",
     "trace-deopt": "clear && rollup -c  && node --trace-deopt dist/test.cjs",
     "trace-opt": "clear && rollup -c  && node --trace-opt dist/test.cjs"
-  },
-  "exports": {
-    ".": {
-      "types": "./dist/src/index.d.ts",
-      "module": "./dist/yjs.mjs",
-      "import": "./dist/yjs.mjs",
-      "require": "./dist/yjs.cjs"
-    },
-    "./src/index.js": "./src/index.js",
-    "./tests/testHelper.js": "./tests/testHelper.js",
-    "./testHelper": "./dist/testHelper.mjs",
-    "./package.json": "./package.json"
   },
   "files": [
     "dist/yjs.*",
