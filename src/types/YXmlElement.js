@@ -9,7 +9,7 @@ import {
   typeMapGetAll,
   typeListForEach,
   YXmlElementRefID,
-  YXmlText, ContentType, AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Snapshot, Doc, Item // eslint-disable-line
+  YXmlText, ContentType, AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item // eslint-disable-line
 } from '../internals.js'
 
 /**

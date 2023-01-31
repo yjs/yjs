@@ -81,6 +81,9 @@ export class YMap extends AbstractType {
     this._prelimContent = null
   }
 
+  /**
+   * @return {YMap<MapType>}
+   */
   _copy () {
     return new YMap()
   }
@@ -89,9 +92,12 @@ export class YMap extends AbstractType {
    * @return {YMap<MapType>}
    */
   clone () {
+    /**
+     * @type {YMap<MapType>}
+     */
     const map = new YMap()
     this.forEach((value, key) => {
-      map.set(key, value instanceof AbstractType ? value.clone() : value)
+      map.set(key, value instanceof AbstractType ? /** @type {typeof value} */ (value.clone()) : value)
     })
     return map
   }
@@ -207,7 +213,7 @@ export class YMap extends AbstractType {
   set (key, value) {
     if (this.doc !== null) {
       transact(this.doc, transaction => {
-        typeMapSet(transaction, this, key, value)
+        typeMapSet(transaction, this, key, /** @type {any} */ (value))
       })
     } else {
       /** @type {Map<string, any>} */ (this._prelimContent).set(key, value)
@@ -241,7 +247,7 @@ export class YMap extends AbstractType {
   clear () {
     if (this.doc !== null) {
       transact(this.doc, transaction => {
-        this.forEach(function (value, key, map) {
+        this.forEach(function (_value, key, map) {
           typeMapDelete(transaction, map, key)
         })
       })
@@ -259,9 +265,9 @@ export class YMap extends AbstractType {
 }
 
 /**
- * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} _decoder
  *
  * @private
  * @function
  */
-export const readYMap = decoder => new YMap()
+export const readYMap = _decoder => new YMap()

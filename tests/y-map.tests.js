@@ -455,9 +455,9 @@ export const testChangeEvent = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testYmapEventExceptionsShouldCompleteTransaction = tc => {
+export const testYmapEventExceptionsShouldCompleteTransaction = _tc => {
   const doc = new Y.Doc()
   const map = doc.getMap('map')
 

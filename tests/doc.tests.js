@@ -30,9 +30,9 @@ export const testOriginInTransaction = _tc => {
 /**
  * Client id should be changed when an instance receives updates from another client using the same client id.
  *
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testClientIdDuplicateChange = tc => {
+export const testClientIdDuplicateChange = _tc => {
   const doc1 = new Y.Doc()
   doc1.clientID = 0
   const doc2 = new Y.Doc()
@@ -44,9 +44,9 @@ export const testClientIdDuplicateChange = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testGetTypeEmptyId = tc => {
+export const testGetTypeEmptyId = _tc => {
   const doc1 = new Y.Doc()
   doc1.getText('').insert(0, 'h')
   doc1.getText().insert(1, 'i')
@@ -57,9 +57,9 @@ export const testGetTypeEmptyId = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testToJSON = tc => {
+export const testToJSON = _tc => {
   const doc = new Y.Doc()
   t.compare(doc.toJSON(), {}, 'doc.toJSON yields empty object')
 
@@ -84,9 +84,9 @@ export const testToJSON = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testSubdoc = tc => {
+export const testSubdoc = _tc => {
   const doc = new Y.Doc()
   doc.load() // doesn't do anything
   {
@@ -151,9 +151,9 @@ export const testSubdoc = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testSubdocLoadEdgeCases = tc => {
+export const testSubdocLoadEdgeCases = _tc => {
   const ydoc = new Y.Doc()
   const yarray = ydoc.getArray()
   const subdoc1 = new Y.Doc()
@@ -198,9 +198,9 @@ export const testSubdocLoadEdgeCases = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testSubdocLoadEdgeCasesAutoload = tc => {
+export const testSubdocLoadEdgeCasesAutoload = _tc => {
   const ydoc = new Y.Doc()
   const yarray = ydoc.getArray()
   const subdoc1 = new Y.Doc({ autoLoad: true })
@@ -240,9 +240,9 @@ export const testSubdocLoadEdgeCasesAutoload = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testSubdocsUndo = tc => {
+export const testSubdocsUndo = _tc => {
   const ydoc = new Y.Doc()
   const elems = ydoc.getXmlFragment()
   const undoManager = new Y.UndoManager(elems)
@@ -255,9 +255,9 @@ export const testSubdocsUndo = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testLoadDocs = async tc => {
+export const testLoadDocs = async _tc => {
   const ydoc = new Y.Doc()
   t.assert(ydoc.isLoaded === false)
   let loadedEvent = false

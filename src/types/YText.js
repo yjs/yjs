@@ -251,7 +251,7 @@ const insertAttributes = (transaction, parent, currPos, attributes) => {
  * @function
  **/
 const insertText = (transaction, parent, currPos, text, attributes) => {
-  currPos.currentAttributes.forEach((val, key) => {
+  currPos.currentAttributes.forEach((_val, key) => {
     if (attributes[key] === undefined) {
       attributes[key] = null
     }
@@ -927,7 +927,7 @@ export class YText extends AbstractType {
    * Apply a {@link Delta} on this shared YText type.
    *
    * @param {any} delta The changes to apply on this element.
-   * @param {object}  [opts]
+   * @param {object}  opts
    * @param {boolean} [opts.sanitize] Sanitize input delta. Removes ending newlines if set to true.
    *
    *
@@ -1229,12 +1229,11 @@ export class YText extends AbstractType {
    *
    * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
    *
-   * @param {Snapshot} [snapshot]
    * @return {Object<string, any>} A JSON Object that describes the attributes.
    *
    * @public
    */
-  getAttributes (snapshot) {
+  getAttributes () {
     return typeMapGetAll(this)
   }
 
@@ -1247,10 +1246,10 @@ export class YText extends AbstractType {
 }
 
 /**
- * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} _decoder
  * @return {YText}
  *
  * @private
  * @function
  */
-export const readYText = decoder => new YText()
+export const readYText = _decoder => new YText()

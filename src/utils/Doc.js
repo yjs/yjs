@@ -38,7 +38,7 @@ export const generateNewClientId = random.uint32
  */
 export class Doc extends Observable {
   /**
-   * @param {DocOpts} [opts] configuration
+   * @param {DocOpts} opts configuration
    */
   constructor ({ guid = random.uuidv4(), collectionid = null, gc = true, gcFilter = () => true, meta = null, autoLoad = false, shouldLoad = true } = {}) {
     super()
