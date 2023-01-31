@@ -257,7 +257,7 @@ export const testSubdocsUndo = _tc => {
 /**
  * @param {t.TestCase} _tc
  */
-export const testLoadDocs = async _tc => {
+export const testLoadDocsEvent = async _tc => {
   const ydoc = new Y.Doc()
   t.assert(ydoc.isLoaded === false)
   let loadedEvent = false
@@ -268,4 +268,45 @@ export const testLoadDocs = async _tc => {
   await ydoc.whenLoaded
   t.assert(loadedEvent)
   t.assert(ydoc.isLoaded)
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testSyncDocsEvent = async _tc => {
+  const ydoc = new Y.Doc()
+  t.assert(ydoc.isLoaded === false)
+  t.assert(ydoc.isSynced === false)
+  let loadedEvent = false
+  ydoc.once('load', () => {
+    loadedEvent = true
+  })
+  let syncedEvent = false
+  ydoc.once('sync', /** @param {any} isSynced */ (isSynced) => {
+    syncedEvent = true
+    t.assert(isSynced)
+  })
+  ydoc.emit('sync', [true, ydoc])
+  await ydoc.whenLoaded
+  const oldWhenSynced = ydoc.whenSynced
+  await ydoc.whenSynced
+  t.assert(loadedEvent)
+  t.assert(syncedEvent)
+  t.assert(ydoc.isLoaded)
+  t.assert(ydoc.isSynced)
+  let loadedEvent2 = false
+  ydoc.on('load', () => {
+    loadedEvent2 = true
+  })
+  let syncedEvent2 = false
+  ydoc.on('sync', (isSynced) => {
+    syncedEvent2 = true
+    t.assert(isSynced === false)
+  })
+  ydoc.emit('sync', [false, ydoc])
+  t.assert(!loadedEvent2)
+  t.assert(syncedEvent2)
+  t.assert(ydoc.isLoaded)
+  t.assert(!ydoc.isSynced)
+  t.assert(ydoc.whenSynced !== oldWhenSynced)
 }
