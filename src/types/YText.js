@@ -56,6 +56,26 @@ export class ItemTextListPosition {
   }
 
   /**
+   *  Don't update the attributes if it is going to be deleted
+   */
+  forwardWithOutUpdatingAttributes () {
+    if (this.right === null) {
+      error.unexpectedCase()
+    }
+    switch (this.right.content.constructor) {
+      case ContentFormat:
+        break
+      default:
+        if (!this.right.deleted) {
+          this.index += this.right.length
+        }
+        break
+    }
+    this.left = this.right
+    this.right = this.right.right
+  }
+
+  /**
    * Only call this if you know that this.right is defined
    */
   forward () {
@@ -488,7 +508,7 @@ const deleteText = (transaction, currPos, length) => {
           break
       }
     }
-    currPos.forward()
+    currPos.forwardWithOutUpdatingAttributes()
   }
   if (start) {
     cleanupFormattingGap(transaction, start, currPos.right, startAttrs, currPos.currentAttributes)
