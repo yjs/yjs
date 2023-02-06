@@ -64,6 +64,9 @@ export class ItemTextListPosition {
     }
     switch (this.right.content.constructor) {
       case ContentFormat:
+        if (!this.right.deleted) {
+          updateCurrentNonNullAttributes(this.currentAttributes, /** @type {ContentFormat} */ (this.right.content))
+        }
         break
       default:
         if (!this.right.deleted) {
@@ -205,6 +208,20 @@ const updateCurrentAttributes = (currentAttributes, format) => {
   if (value === null) {
     currentAttributes.delete(key)
   } else {
+    currentAttributes.set(key, value)
+  }
+}
+
+/**
+ * @param {Map<string,any>} currentAttributes
+ * @param {ContentFormat} format
+ *
+ * @private
+ * @function
+ */
+const updateCurrentNonNullAttributes = (/** @type {Map<string, any>} */ currentAttributes, /** @type {ContentFormat} */ format) => {
+  const { key, value } = format
+  if (value !== null) {
     currentAttributes.set(key, value)
   }
 }
