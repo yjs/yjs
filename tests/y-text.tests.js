@@ -6,6 +6,415 @@ import * as math from 'lib0/math'
 const { init, compare } = Y
 
 /**
+ * https://github.com/yjs/yjs/issues/474
+ * @todo Remove debug: 127.0.0.1:8080/test.html?filter=\[88/
+ * @param {t.TestCase} _tc
+ */
+export const testDeltaBug = _tc => {
+  const initialDelta = [{
+    attributes: {
+      'block-id': 'block-28eea923-9cbb-4b6f-a950-cf7fd82bc087'
+    },
+    insert: '\n'
+  },
+  {
+    attributes: {
+      'table-col': {
+        width: '150'
+      }
+    },
+    insert: '\n\n\n'
+  },
+  {
+    attributes: {
+      'block-id': 'block-9144be72-e528-4f91-b0b2-82d20408e9ea',
+      'table-cell-line': {
+        rowspan: '1',
+        colspan: '1',
+        row: 'row-6kv2ls',
+        cell: 'cell-apba4k'
+      },
+      row: 'row-6kv2ls',
+      cell: 'cell-apba4k',
+      rowspan: '1',
+      colspan: '1'
+    },
+    insert: '\n'
+  },
+  {
+    attributes: {
+      'block-id': 'block-639adacb-1516-43ed-b272-937c55669a1c',
+      'table-cell-line': {
+        rowspan: '1',
+        colspan: '1',
+        row: 'row-6kv2ls',
+        cell: 'cell-a8qf0r'
+      },
+      row: 'row-6kv2ls',
+      cell: 'cell-a8qf0r',
+      rowspan: '1',
+      colspan: '1'
+    },
+    insert: '\n'
+  },
+  {
+    attributes: {
+      'block-id': 'block-6302ca4a-73a3-4c25-8c1e-b542f048f1c6',
+      'table-cell-line': {
+        rowspan: '1',
+        colspan: '1',
+        row: 'row-6kv2ls',
+        cell: 'cell-oi9ikb'
+      },
+      row: 'row-6kv2ls',
+      cell: 'cell-oi9ikb',
+      rowspan: '1',
+      colspan: '1'
+    },
+    insert: '\n'
+  },
+  {
+    attributes: {
+      'block-id': 'block-ceeddd05-330e-4f86-8017-4a3a060c4627',
+      'table-cell-line': {
+        rowspan: '1',
+        colspan: '1',
+        row: 'row-d1sv2g',
+        cell: 'cell-dt6ks2'
+      },
+      row: 'row-d1sv2g',
+      cell: 'cell-dt6ks2',
+      rowspan: '1',
+      colspan: '1'
+    },
+    insert: '\n'
+  },
+  {
+    attributes: {
+      'block-id': 'block-37b19322-cb57-4e6f-8fad-0d1401cae53f',
+      'table-cell-line': {
+        rowspan: '1',
+        colspan: '1',
+        row: 'row-d1sv2g',
+        cell: 'cell-qah2ay'
+      },
+      row: 'row-d1sv2g',
+      cell: 'cell-qah2ay',
+      rowspan: '1',
+      colspan: '1'
+    },
+    insert: '\n'
+  },
+  {
+    attributes: {
+      'block-id': 'block-468a69b5-9332-450b-9107-381d593de249',
+      'table-cell-line': {
+        rowspan: '1',
+        colspan: '1',
+        row: 'row-d1sv2g',
+        cell: 'cell-fpcz5a'
+      },
+      row: 'row-d1sv2g',
+      cell: 'cell-fpcz5a',
+      rowspan: '1',
+      colspan: '1'
+    },
+    insert: '\n'
+  },
+  {
+    attributes: {
+      'block-id': 'block-26b1d252-9b2e-4808-9b29-04e76696aa3c',
+      'table-cell-line': {
+        rowspan: '1',
+        colspan: '1',
+        row: 'row-pflz90',
+        cell: 'cell-zrhylp'
+      },
+      row: 'row-pflz90',
+      cell: 'cell-zrhylp',
+      rowspan: '1',
+      colspan: '1'
+    },
+    insert: '\n'
+  },
+  {
+    attributes: {
+      'block-id': 'block-6af97ba7-8cf9-497a-9365-7075b938837b',
+      'table-cell-line': {
+        rowspan: '1',
+        colspan: '1',
+        row: 'row-pflz90',
+        cell: 'cell-s1q9nt'
+      },
+      row: 'row-pflz90',
+      cell: 'cell-s1q9nt',
+      rowspan: '1',
+      colspan: '1'
+    },
+    insert: '\n'
+  },
+  {
+    attributes: {
+      'block-id': 'block-107e273e-86bc-44fd-b0d7-41ab55aca484',
+      'table-cell-line': {
+        rowspan: '1',
+        colspan: '1',
+        row: 'row-pflz90',
+        cell: 'cell-20b0j9'
+      },
+      row: 'row-pflz90',
+      cell: 'cell-20b0j9',
+      rowspan: '1',
+      colspan: '1'
+    },
+    insert: '\n'
+  },
+  {
+    attributes: {
+      'block-id': 'block-38161f9c-6f6d-44c5-b086-54cc6490f1e3'
+    },
+    insert: '\n'
+  },
+  {
+    insert: 'Content after table'
+  },
+  {
+    attributes: {
+      'block-id': 'block-15630542-ef45-412d-9415-88f0052238ce'
+    },
+    insert: '\n'
+  }
+  ]
+  const ydoc1 = new Y.Doc()
+  const ytext = ydoc1.getText()
+  ytext.applyDelta(initialDelta)
+  const addingDash = [
+    {
+      retain: 12
+    },
+    {
+      insert: '-'
+    }
+  ]
+  ytext.applyDelta(addingDash)
+  const addingSpace = [
+    {
+      retain: 13
+    },
+    {
+      insert: ' '
+    }
+  ]
+  ytext.applyDelta(addingSpace)
+  debugger
+  const addingList = [
+    {
+      retain: 12
+    },
+    {
+      delete: 2
+    },
+    {
+      retain: 1,
+      attributes: {
+        // Clear table line attribute
+        'table-cell-line': null,
+        // Add list attribute in place of table-cell-line
+        list: {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-pflz90',
+          cell: 'cell-20b0j9',
+          list: 'bullet'
+        }
+      }
+    }
+  ]
+  ytext.applyDelta(addingList)
+  const result = ytext.toDelta()
+  const expectedResult = [
+    {
+      attributes: {
+        'block-id': 'block-28eea923-9cbb-4b6f-a950-cf7fd82bc087'
+      },
+      insert: '\n'
+    },
+    {
+      attributes: {
+        'table-col': {
+          width: '150'
+        }
+      },
+      insert: '\n\n\n'
+    },
+    {
+      attributes: {
+        'block-id': 'block-9144be72-e528-4f91-b0b2-82d20408e9ea',
+        'table-cell-line': {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-6kv2ls',
+          cell: 'cell-apba4k'
+        },
+        row: 'row-6kv2ls',
+        cell: 'cell-apba4k',
+        rowspan: '1',
+        colspan: '1'
+      },
+      insert: '\n'
+    },
+    {
+      attributes: {
+        'block-id': 'block-639adacb-1516-43ed-b272-937c55669a1c',
+        'table-cell-line': {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-6kv2ls',
+          cell: 'cell-a8qf0r'
+        },
+        row: 'row-6kv2ls',
+        cell: 'cell-a8qf0r',
+        rowspan: '1',
+        colspan: '1'
+      },
+      insert: '\n'
+    },
+    {
+      attributes: {
+        'block-id': 'block-6302ca4a-73a3-4c25-8c1e-b542f048f1c6',
+        'table-cell-line': {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-6kv2ls',
+          cell: 'cell-oi9ikb'
+        },
+        row: 'row-6kv2ls',
+        cell: 'cell-oi9ikb',
+        rowspan: '1',
+        colspan: '1'
+      },
+      insert: '\n'
+    },
+    {
+      attributes: {
+        'block-id': 'block-ceeddd05-330e-4f86-8017-4a3a060c4627',
+        'table-cell-line': {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-d1sv2g',
+          cell: 'cell-dt6ks2'
+        },
+        row: 'row-d1sv2g',
+        cell: 'cell-dt6ks2',
+        rowspan: '1',
+        colspan: '1'
+      },
+      insert: '\n'
+    },
+    {
+      attributes: {
+        'block-id': 'block-37b19322-cb57-4e6f-8fad-0d1401cae53f',
+        'table-cell-line': {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-d1sv2g',
+          cell: 'cell-qah2ay'
+        },
+        row: 'row-d1sv2g',
+        cell: 'cell-qah2ay',
+        rowspan: '1',
+        colspan: '1'
+      },
+      insert: '\n'
+    },
+    {
+      attributes: {
+        'block-id': 'block-468a69b5-9332-450b-9107-381d593de249',
+        'table-cell-line': {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-d1sv2g',
+          cell: 'cell-fpcz5a'
+        },
+        row: 'row-d1sv2g',
+        cell: 'cell-fpcz5a',
+        rowspan: '1',
+        colspan: '1'
+      },
+      insert: '\n'
+    },
+    {
+      attributes: {
+        'block-id': 'block-26b1d252-9b2e-4808-9b29-04e76696aa3c',
+        'table-cell-line': {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-pflz90',
+          cell: 'cell-zrhylp'
+        },
+        row: 'row-pflz90',
+        cell: 'cell-zrhylp',
+        rowspan: '1',
+        colspan: '1'
+      },
+      insert: '\n'
+    },
+    {
+      attributes: {
+        'block-id': 'block-6af97ba7-8cf9-497a-9365-7075b938837b',
+        'table-cell-line': {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-pflz90',
+          cell: 'cell-s1q9nt'
+        },
+        row: 'row-pflz90',
+        cell: 'cell-s1q9nt',
+        rowspan: '1',
+        colspan: '1'
+      },
+      insert: '\n'
+    },
+    {
+      insert: '\n',
+      // This attibutes has only list and no table-cell-line
+      attributes: {
+        list: {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-pflz90',
+          cell: 'cell-20b0j9',
+          list: 'bullet'
+        },
+        'block-id': 'block-107e273e-86bc-44fd-b0d7-41ab55aca484',
+        row: 'row-pflz90',
+        cell: 'cell-20b0j9',
+        rowspan: '1',
+        colspan: '1'
+      }
+    },
+    // No table-cell-line below here
+    {
+      attributes: {
+        'block-id': 'block-38161f9c-6f6d-44c5-b086-54cc6490f1e3'
+      },
+      insert: '\n'
+    },
+    {
+      insert: 'Content after table'
+    },
+    {
+      attributes: {
+        'block-id': 'block-15630542-ef45-412d-9415-88f0052238ce'
+      },
+      insert: '\n'
+    }
+  ]
+  t.compare(result, expectedResult)
+  debugger
+}
+
+/**
  * In this test we are mainly interested in the cleanup behavior and whether the resulting delta makes sense.
  * It is fine if the resulting delta is not minimal. But applying the delta to a rich-text editor should result in a
  * synced document.
