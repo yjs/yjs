@@ -382,12 +382,17 @@ const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAtt
       switch (content.constructor) {
         case ContentFormat: {
           const { key, value } = /** @type {ContentFormat} */ (content)
-          if ((endAttributes.get(key) || null) !== value || (startAttributes.get(key) || null) === value) {
+          const startAttrValue = startAttributes.get(key) || null
+          if ((endAttributes.get(key) || null) !== value || startAttrValue === value) {
             // Either this format is overwritten or it is not necessary because the attribute already existed.
             start.delete(transaction)
             cleanups++
             if (!reachedEndOfCurr && (currAttributes.get(key) || null) === value && (startAttributes.get(key) || null) !== value) {
-              currAttributes.delete(key)
+              if (startAttrValue === null) {
+                currAttributes.delete(key)
+              } else {
+                currAttributes.set(key, startAttrValue)
+              }
             }
           }
           break

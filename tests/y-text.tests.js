@@ -206,7 +206,6 @@ export const testDeltaBug = _tc => {
     }
   ]
   ytext.applyDelta(addingSpace)
-  debugger
   const addingList = [
     {
       retain: 12
@@ -411,7 +410,6 @@ export const testDeltaBug = _tc => {
     }
   ]
   t.compare(result, expectedResult)
-  debugger
 }
 
 /**
