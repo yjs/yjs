@@ -242,7 +242,7 @@ export const tryGc = (ds, store, gcFilter) => {
  * @param {number} i
  */
 const cleanupTransactions = (transactionCleanups, i) => {
-  if (i < transactionCleanups.length) {
+  while (i < transactionCleanups.length) {
     const transaction = transactionCleanups[i]
     const doc = transaction.doc
     const store = doc.store
@@ -363,11 +363,9 @@ const cleanupTransactions = (transactionCleanups, i) => {
         subdocsRemoved.forEach(subdoc => subdoc.destroy())
       }
 
-      if (transactionCleanups.length <= i + 1) {
+      if (transactionCleanups.length <= ++i) {
         doc._transactionCleanups = []
         doc.emit('afterAllTransactions', [doc, transactionCleanups])
-      } else {
-        cleanupTransactions(transactionCleanups, i + 1)
       }
     }
   }
