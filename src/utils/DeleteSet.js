@@ -219,17 +219,21 @@ export const createDeleteSetFromStructStore = ss => {
  */
 export const writeDeleteSet = (encoder, ds) => {
   encoding.writeVarUint(encoder.restEncoder, ds.clients.size)
-  ds.clients.forEach((dsitems, client) => {
-    encoder.resetDsCurVal()
-    encoding.writeVarUint(encoder.restEncoder, client)
-    const len = dsitems.length
-    encoding.writeVarUint(encoder.restEncoder, len)
-    for (let i = 0; i < len; i++) {
-      const item = dsitems[i]
-      encoder.writeDsClock(item.clock)
-      encoder.writeDsLen(item.len)
-    }
-  })
+
+  // Ensure that the delete set is written in a deterministic order
+  Array.from(ds.clients.entries())
+    .sort((clientA, clientB) => clientA[0] - clientB[0])
+    .forEach(([client, dsitems]) => {
+      encoder.resetDsCurVal()
+      encoding.writeVarUint(encoder.restEncoder, client)
+      const len = dsitems.length
+      encoding.writeVarUint(encoder.restEncoder, len)
+      for (let i = 0; i < len; i++) {
+        const item = dsitems[i]
+        encoder.writeDsClock(item.clock)
+        encoder.writeDsLen(item.len)
+      }
+    })
 }
 
 /**
