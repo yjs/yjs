@@ -21,6 +21,7 @@ import {
 } from '../internals.js'
 
 import * as error from 'lib0/error'
+import * as array from 'lib0/array'
 
 /**
  * Define the elements to which a set of CSS queries apply.
@@ -237,7 +238,7 @@ export class YXmlFragment extends AbstractType {
   querySelectorAll (query) {
     query = query.toUpperCase()
     // @ts-ignore
-    return Array.from(new YXmlTreeWalker(this, element => element.nodeName && element.nodeName.toUpperCase() === query))
+    return array.from(new YXmlTreeWalker(this, element => element.nodeName && element.nodeName.toUpperCase() === query))
   }
 
   /**

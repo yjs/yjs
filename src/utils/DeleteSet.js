@@ -221,8 +221,8 @@ export const writeDeleteSet = (encoder, ds) => {
   encoding.writeVarUint(encoder.restEncoder, ds.clients.size)
 
   // Ensure that the delete set is written in a deterministic order
-  Array.from(ds.clients.entries())
-    .sort((clientA, clientB) => clientA[0] - clientB[0])
+  array.from(ds.clients.entries())
+    .sort((a, b) => b[0] - a[0])
     .forEach(([client, dsitems]) => {
       encoder.resetDsCurVal()
       encoding.writeVarUint(encoder.restEncoder, client)

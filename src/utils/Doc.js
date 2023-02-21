@@ -147,7 +147,7 @@ export class Doc extends Observable {
   }
 
   getSubdocGuids () {
-    return new Set(Array.from(this.subdocs).map(doc => doc.guid))
+    return new Set(array.from(this.subdocs).map(doc => doc.guid))
   }
 
   /**
