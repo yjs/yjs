@@ -498,8 +498,8 @@ const deleteText = (transaction, currPos, length) => {
   if (start) {
     cleanupFormattingGap(transaction, start, currPos.right, startAttrs, currPos.currentAttributes)
   }
-  const parent = /** @type {AbstractType<any>} */ (/** @type {Item} */ (currPos.left || currPos.right).parent)
-  if (parent._searchMarker) {
+  const parent = /** @type {AbstractType<any>} */ (/** @type {Item} */ (currPos.left || currPos.right)?.parent)
+  if (parent?._searchMarker) {
     updateMarkerChanges(parent._searchMarker, currPos.index, -startLength + length)
   }
   return currPos
