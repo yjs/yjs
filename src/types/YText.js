@@ -367,15 +367,16 @@ const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAtt
   const endAttributes = map.copy(currAttributes)
   while (end && (!end.countable || end.deleted)) {
     if (!end.deleted && end.content.constructor === ContentFormat) {
+      // @todo should set endAttributes[end.key] = end and then compare identities instead of values
       updateCurrentAttributes(endAttributes, /** @type {ContentFormat} */ (end.content))
     }
     end = end.right
   }
   let cleanups = 0
-  let reachedEndOfCurr = false
+  let reachedCurr = false
   while (start !== end) {
     if (curr === start) {
-      reachedEndOfCurr = true
+      reachedCurr = true
     }
     if (!start.deleted) {
       const content = start.content
@@ -387,13 +388,16 @@ const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAtt
             // Either this format is overwritten or it is not necessary because the attribute already existed.
             start.delete(transaction)
             cleanups++
-            if (!reachedEndOfCurr && (currAttributes.get(key) || null) === value && (startAttributes.get(key) || null) !== value) {
+            if (!reachedCurr && (currAttributes.get(key) || null) === value && startAttrValue !== value) {
               if (startAttrValue === null) {
                 currAttributes.delete(key)
               } else {
                 currAttributes.set(key, startAttrValue)
               }
             }
+          }
+          if (!reachedCurr && !start.deleted) {
+            updateCurrentAttributes(currAttributes, /** @type {ContentFormat} */ (content))
           }
           break
         }
