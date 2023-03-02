@@ -363,12 +363,18 @@ const formatText = (transaction, parent, currPos, length, attributes) => {
  * @function
  */
 const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAttributes) => {
-  let end = curr
-  const endAttributes = map.copy(currAttributes)
+  /**
+   * @type {Item|null}
+   */
+  let end = start
+  /**
+   * @type {Map<string,ContentFormat>}
+   */
+  const endFormats = map.create()
   while (end && (!end.countable || end.deleted)) {
     if (!end.deleted && end.content.constructor === ContentFormat) {
-      // @todo should set endAttributes[end.key] = end and then compare identities instead of values
-      updateCurrentAttributes(endAttributes, /** @type {ContentFormat} */ (end.content))
+      const cf = /** @type {ContentFormat} */ (end.content)
+      endFormats.set(cf.key, cf)
     }
     end = end.right
   }
@@ -384,7 +390,7 @@ const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAtt
         case ContentFormat: {
           const { key, value } = /** @type {ContentFormat} */ (content)
           const startAttrValue = startAttributes.get(key) || null
-          if ((endAttributes.get(key) || null) !== value || startAttrValue === value) {
+          if (endFormats.get(key) !== content || startAttrValue === value) {
             // Either this format is overwritten or it is not necessary because the attribute already existed.
             start.delete(transaction)
             cleanups++
