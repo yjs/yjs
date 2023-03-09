@@ -130,6 +130,11 @@ export class YEvent {
   }
 
   /**
+   * This is a computed property. Note that this can only be safely computed during the
+   * event call. Computing this property after other changes happened might result in
+   * unexpected behavior (incorrect computation of deltas). A safe way to collect changes
+   * is to store the `changes` or the `delta` object. Avoid storing the `transaction` object.
+   *
    * @type {Array<{insert?: string | Array<any> | object | AbstractType<any>, retain?: number, delete?: number, attributes?: Object<string, any>}>}
    */
   get delta () {
@@ -149,6 +154,11 @@ export class YEvent {
   }
 
   /**
+   * This is a computed property. Note that this can only be safely computed during the
+   * event call. Computing this property after other changes happened might result in
+   * unexpected behavior (incorrect computation of deltas). A safe way to collect changes
+   * is to store the `changes` or the `delta` object. Avoid storing the `transaction` object.
+   *
    * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Array<{insert?:Array<any>|string, delete?:number, retain?:number}>}}
    */
   get changes () {
