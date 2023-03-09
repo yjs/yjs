@@ -257,7 +257,8 @@ export class YXmlFragment extends AbstractType {
    * @return {string} The string representation of all children.
    */
   toString () {
-    return typeListMap(this, xml => xml.toString()).join('')
+    // toString can result in many cleanup transactions. We wrap all cleanup transactions here to reduce the work
+    return transact(/** @type {Doc} */ (this.doc), () => typeListMap(this, xml => xml.toString()).join(''))
   }
 
   /**

@@ -5,6 +5,24 @@ import * as t from 'lib0/testing'
 /**
  * @param {t.TestCase} _tc
  */
+export const testAfterTransactionRecursion = _tc => {
+  const ydoc = new Y.Doc()
+  const yxml = ydoc.getXmlFragment('')
+  ydoc.on('afterTransaction', tr => {
+    if (tr.origin === 'test') {
+      yxml.toJSON()
+    }
+  })
+  ydoc.transact(_tr => {
+    for (let i = 0; i < 15000; i++) {
+      yxml.push([new Y.XmlText('a')])
+    }
+  }, 'test')
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
 export const testOriginInTransaction = _tc => {
   const doc = new Y.Doc()
   const ytext = doc.getText()

@@ -376,15 +376,21 @@ const cleanupTransactions = (transactionCleanups, i) => {
 /**
  * Implements the functionality of `y.transact(()=>{..})`
  *
+ * @template T
  * @param {Doc} doc
- * @param {function(Transaction):void} f
+ * @param {function(Transaction):T} f
  * @param {any} [origin=true]
+ * @return {T}
  *
  * @function
  */
 export const transact = (doc, f, origin = null, local = true) => {
   const transactionCleanups = doc._transactionCleanups
   let initialCall = false
+  /**
+   * @type {any}
+   */
+  let result = null
   if (doc._transaction === null) {
     initialCall = true
     doc._transaction = new Transaction(doc, origin, local)
@@ -395,7 +401,7 @@ export const transact = (doc, f, origin = null, local = true) => {
     doc.emit('beforeTransaction', [doc._transaction, doc])
   }
   try {
-    f(doc._transaction)
+    result = f(doc._transaction)
   } finally {
     if (initialCall) {
       const finishCleanup = doc._transaction === transactionCleanups[0]
@@ -413,4 +419,5 @@ export const transact = (doc, f, origin = null, local = true) => {
       }
     }
   }
+  return result
 }
