@@ -1747,9 +1747,9 @@ export const testBasicFormat = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testMultilineFormat = tc => {
+export const testMultilineFormat = _tc => {
   const ydoc = new Y.Doc()
   const testText = ydoc.getText('test')
   testText.insert(0, 'Test\nMulti-line\nFormatting')
@@ -1770,9 +1770,9 @@ export const testMultilineFormat = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testNotMergeEmptyLinesFormat = tc => {
+export const testNotMergeEmptyLinesFormat = _tc => {
   const ydoc = new Y.Doc()
   const testText = ydoc.getText('test')
   testText.applyDelta([
@@ -1790,9 +1790,9 @@ export const testNotMergeEmptyLinesFormat = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testPreserveAttributesThroughDelete = tc => {
+export const testPreserveAttributesThroughDelete = _tc => {
   const ydoc = new Y.Doc()
   const testText = ydoc.getText('test')
   testText.applyDelta([
@@ -2046,9 +2046,9 @@ const id = Y.createID(0, 0)
 const c = new Y.ContentString('a')
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testBestCase = tc => {
+export const testBestCase = _tc => {
   const N = largeDocumentSize
   const items = new Array(N)
   t.measureTime('time to create two million items in the best case', () => {
@@ -2085,9 +2085,9 @@ const tryGc = () => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testLargeFragmentedDocument = tc => {
+export const testLargeFragmentedDocument = _tc => {
   const itemsToInsert = largeDocumentSize
   let update = /** @type {any} */ (null)
   ;(() => {
@@ -2117,9 +2117,9 @@ export const testLargeFragmentedDocument = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testIncrementalUpdatesPerformanceOnLargeFragmentedDocument = tc => {
+export const testIncrementalUpdatesPerformanceOnLargeFragmentedDocument = _tc => {
   const itemsToInsert = largeDocumentSize
   const updates = /** @type {Array<Uint8Array>} */ ([])
   ;(() => {
@@ -2227,9 +2227,9 @@ export const testSearchMarkerBug1 = tc => {
 /**
  * Reported in https://github.com/yjs/yjs/pull/32
  *
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testFormattingBug = async tc => {
+export const testFormattingBug = async _tc => {
   const ydoc1 = new Y.Doc()
   const ydoc2 = new Y.Doc()
   const text1 = ydoc1.getText()
@@ -2252,9 +2252,9 @@ export const testFormattingBug = async tc => {
 /**
  * Delete formatting should not leave redundant formatting items.
  *
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testDeleteFormatting = tc => {
+export const testDeleteFormatting = _tc => {
   const doc = new Y.Doc()
   const text = doc.getText()
   text.insert(0, 'Attack ships on fire off the shoulder of Orion.')
@@ -2455,6 +2455,41 @@ const qChanges = [
       ops.push({ retain: insertPos })
     }
     ops.push({ insert: text }, { insert: '\n', format: { 'code-block': true } })
+    ytext.applyDelta(ops)
+  },
+  /**
+   * @param {Y.Doc} y
+   * @param {prng.PRNG} gen
+   */
+  (y, gen) => { // complex delta op
+    const ytext = y.getText('text')
+    const contentLen = ytext.toString().length
+    let currentPos = math.max(0, prng.int32(gen, 0, contentLen - 1))
+    /**
+     * @type {Array<any>}
+     */
+    const ops = currentPos > 0 ? [{ retain: currentPos }] : []
+    // create max 3 ops
+    for (let i = 0; i < 7 && currentPos < contentLen; i++) {
+      prng.oneOf(gen, [
+        () => { // format
+          const retain = math.min(prng.int32(gen, 0, contentLen - currentPos), 5)
+          const format = prng.oneOf(gen, marks)
+          ops.push({ retain, attributes: format })
+          currentPos += retain
+        },
+        () => { // insert
+          const attrs = prng.oneOf(gen, marksChoices)
+          const text = prng.word(gen, 1, 3)
+          ops.push({ insert: text, attributes: attrs })
+        },
+        () => { // delete
+          const delLen = math.min(prng.int32(gen, 0, contentLen - currentPos), 10)
+          ops.push({ delete: delLen })
+          currentPos += delLen
+        }
+      ])()
+    }
     ytext.applyDelta(ops)
   }
 ]
