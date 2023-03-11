@@ -156,13 +156,15 @@ export class Doc extends Observable {
    * that happened inside of the transaction are sent as one message to the
    * other peers.
    *
-   * @param {function(Transaction):void} f The function that should be executed as a transaction
+   * @template T
+   * @param {function(Transaction):T} f The function that should be executed as a transaction
    * @param {any} [origin] Origin of who started the transaction. Will be stored on transaction.origin
+   * @return T
    *
    * @public
    */
   transact (f, origin = null) {
-    transact(this, f, origin)
+    return transact(this, f, origin)
   }
 
   /**
