@@ -90,5 +90,9 @@
     "tui-jsdoc-template": "^1.2.2",
     "typescript": "^4.9.5",
     "y-protocols": "^1.0.5"
+  },
+  "engines" : { 
+    "npm" : ">=8.0.0",
+    "node" : ">=16.0.0"
   }
 }
