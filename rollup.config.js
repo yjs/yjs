@@ -88,7 +88,7 @@ export default [{
   plugins: [
     debugResolve,
     nodeResolve({
-      mainFields: ['module', 'browser', 'main']
+      mainFields: ['browser', 'module', 'main']
     }),
     commonjs()
   ]
@@ -103,9 +103,10 @@ export default [{
   plugins: [
     debugResolve,
     nodeResolve({
-      mainFields: ['module', 'main']
+      mainFields: ['node', 'module', 'main'],
+      exportConditions: ['node', 'module', 'import', 'default']
     }),
     commonjs()
   ],
-  external: ['isomorphic.js']
+  external: id => /^lib0\//.test(id)
 }]

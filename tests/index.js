@@ -1,3 +1,4 @@
+/* eslint-env node */
 
 import * as map from './y-map.tests.js'
 import * as array from './y-array.tests.js'

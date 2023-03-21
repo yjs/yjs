@@ -171,7 +171,7 @@ export const mergeDeleteSets = dss => {
  * @function
  */
 export const addToDeleteSet = (ds, client, clock, length) => {
-  map.setIfUndefined(ds.clients, client, () => []).push(new DeleteItem(clock, length))
+  map.setIfUndefined(ds.clients, client, () => /** @type {Array<DeleteItem>} */ ([])).push(new DeleteItem(clock, length))
 }
 
 export const createDeleteSet = () => new DeleteSet()
@@ -251,7 +251,7 @@ export const readDeleteSet = decoder => {
     const client = decoding.readVarUint(decoder.restDecoder)
     const numberOfDeletes = decoding.readVarUint(decoder.restDecoder)
     if (numberOfDeletes > 0) {
-      const dsField = map.setIfUndefined(ds.clients, client, () => [])
+      const dsField = map.setIfUndefined(ds.clients, client, () => /** @type {Array<DeleteItem>} */ ([]))
       for (let i = 0; i < numberOfDeletes; i++) {
         dsField.push(new DeleteItem(decoder.readDsClock(), decoder.readDsLen()))
       }

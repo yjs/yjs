@@ -134,7 +134,7 @@ export class TestYInstance extends Y.Doc {
    * @param {TestYInstance} remoteClient
    */
   _receive (message, remoteClient) {
-    map.setIfUndefined(this.receiving, remoteClient, () => []).push(message)
+    map.setIfUndefined(this.receiving, remoteClient, () => /** @type {Array<Uint8Array>} */ ([])).push(message)
   }
 }
 
