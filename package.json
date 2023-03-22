@@ -1,6 +1,6 @@
 {
   "name": "yjs",
-  "version": "13.5.50",
+  "version": "13.5.51",
   "description": "Shared Editing Library",
   "main": "./dist/yjs.cjs",
   "module": "./dist/yjs.mjs",
@@ -91,8 +91,8 @@
     "typescript": "^4.9.5",
     "y-protocols": "^1.0.5"
   },
-  "engines" : { 
-    "npm" : ">=8.0.0",
-    "node" : ">=16.0.0"
+  "engines": {
+    "npm": ">=8.0.0",
+    "node": ">=16.0.0"
   }
 }
