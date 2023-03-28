@@ -200,7 +200,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
   } else {
     right = null
     if (item.right && !ignoreRemoteMapChanges) {
-      left = item
+      left = item.right
       // Iterate right while right is in itemsToDelete
       // If it is intended to delete right while item is redone, we can expect that item should replace right.
       while (left !== null && left.right !== null && isDeleted(itemsToDelete, left.right.id)) {
