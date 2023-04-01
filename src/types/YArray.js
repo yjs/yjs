@@ -244,7 +244,7 @@ export class YArray extends AbstractType {
   }
 
   /**
-   * Executes a provided function on once on overy element of this YArray.
+   * Executes a provided function once on overy element of this YArray.
    *
    * @param {function(T,number,YArray<T>):void} f A function to execute on every element of this YArray.
    */
