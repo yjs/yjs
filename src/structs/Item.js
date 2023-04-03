@@ -761,48 +761,48 @@ export class AbstractContent {
   }
 
   /**
-   * @param {number} offset
+   * @param {number} _offset
    * @return {AbstractContent}
    */
-  splice (offset) {
+  splice (_offset) {
     throw error.methodUnimplemented()
   }
 
   /**
-   * @param {AbstractContent} right
+   * @param {AbstractContent} _right
    * @return {boolean}
    */
-  mergeWith (right) {
+  mergeWith (_right) {
     throw error.methodUnimplemented()
   }
 
   /**
-   * @param {Transaction} transaction
-   * @param {Item} item
+   * @param {Transaction} _transaction
+   * @param {Item} _item
    */
-  integrate (transaction, item) {
+  integrate (_transaction, _item) {
     throw error.methodUnimplemented()
   }
 
   /**
-   * @param {Transaction} transaction
+   * @param {Transaction} _transaction
    */
-  delete (transaction) {
+  delete (_transaction) {
     throw error.methodUnimplemented()
   }
 
   /**
-   * @param {StructStore} store
+   * @param {StructStore} _store
    */
-  gc (store) {
+  gc (_store) {
     throw error.methodUnimplemented()
   }
 
   /**
-   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
-   * @param {number} offset
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} _encoder
+   * @param {number} _offset
    */
-  write (encoder, offset) {
+  write (_encoder, _offset) {
     throw error.methodUnimplemented()
   }
 

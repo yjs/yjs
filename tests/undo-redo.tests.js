@@ -1,4 +1,4 @@
-import { init, compare, applyRandomTests, Doc } from './testHelper.js' // eslint-disable-line
+import { init } from './testHelper.js' // eslint-disable-line
 
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
@@ -64,9 +64,9 @@ export const testUndoText = tc => {
 
 /**
  * Test case to fix #241
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testEmptyTypeScope = tc => {
+export const testEmptyTypeScope = _tc => {
   const ydoc = new Y.Doc()
   const um = new Y.UndoManager([], { doc: ydoc })
   const yarray = ydoc.getArray()
@@ -78,9 +78,9 @@ export const testEmptyTypeScope = tc => {
 
 /**
  * Test case to fix #241
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testDoubleUndo = tc => {
+export const testDoubleUndo = _tc => {
   const doc = new Y.Doc()
   const text = doc.getText()
   text.insert(0, '1221')
@@ -316,9 +316,9 @@ export const testUndoDeleteFilter = tc => {
 
 /**
  * This issue has been reported in https://discuss.yjs.dev/t/undomanager-with-external-updates/454/6
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testUndoUntilChangePerformed = tc => {
+export const testUndoUntilChangePerformed = _tc => {
   const doc = new Y.Doc()
   const doc2 = new Y.Doc()
   doc.on('update', update => Y.applyUpdate(doc2, update))
@@ -347,9 +347,9 @@ export const testUndoUntilChangePerformed = tc => {
 
 /**
  * This issue has been reported in https://github.com/yjs/yjs/issues/317
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testUndoNestedUndoIssue = tc => {
+export const testUndoNestedUndoIssue = _tc => {
   const doc = new Y.Doc({ gc: false })
   const design = doc.getMap()
   const undoManager = new Y.UndoManager(design, { captureTimeout: 0 })
@@ -403,9 +403,9 @@ export const testUndoNestedUndoIssue = tc => {
 /**
  * This issue has been reported in https://github.com/yjs/yjs/issues/355
  *
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testConsecutiveRedoBug = tc => {
+export const testConsecutiveRedoBug = _tc => {
   const doc = new Y.Doc()
   const yRoot = doc.getMap()
   const undoMgr = new Y.UndoManager(yRoot)
@@ -454,9 +454,9 @@ export const testConsecutiveRedoBug = tc => {
 /**
  * This issue has been reported in https://github.com/yjs/yjs/issues/304
  *
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testUndoXmlBug = tc => {
+export const testUndoXmlBug = _tc => {
   const origin = 'origin'
   const doc = new Y.Doc()
   const fragment = doc.getXmlFragment('t')
@@ -499,9 +499,9 @@ export const testUndoXmlBug = tc => {
 /**
  * This issue has been reported in https://github.com/yjs/yjs/issues/343
  *
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testUndoBlockBug = tc => {
+export const testUndoBlockBug = _tc => {
   const doc = new Y.Doc({ gc: false })
   const design = doc.getMap()
 
@@ -559,9 +559,9 @@ export const testUndoBlockBug = tc => {
  * Undo text formatting delete should not corrupt peer state.
  *
  * @see https://github.com/yjs/yjs/issues/392
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testUndoDeleteTextFormat = tc => {
+export const testUndoDeleteTextFormat = _tc => {
   const doc = new Y.Doc()
   const text = doc.getText()
   text.insert(0, 'Attack ships on fire off the shoulder of Orion.')
@@ -597,9 +597,9 @@ export const testUndoDeleteTextFormat = tc => {
  * Undo text formatting delete should not corrupt peer state.
  *
  * @see https://github.com/yjs/yjs/issues/392
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testBehaviorOfIgnoreremotemapchangesProperty = tc => {
+export const testBehaviorOfIgnoreremotemapchangesProperty = _tc => {
   const doc = new Y.Doc()
   const doc2 = new Y.Doc()
   doc.on('update', update => Y.applyUpdate(doc2, update, doc))
@@ -620,9 +620,9 @@ export const testBehaviorOfIgnoreremotemapchangesProperty = tc => {
  * Special deletion case.
  *
  * @see https://github.com/yjs/yjs/issues/447
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testSpecialDeletionCase = tc => {
+export const testSpecialDeletionCase = _tc => {
   const origin = 'undoable'
   const doc = new Y.Doc()
   const fragment = doc.getXmlFragment()

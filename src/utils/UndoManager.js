@@ -10,7 +10,7 @@ import {
   getItemCleanStart,
   isDeleted,
   addToDeleteSet,
-  Transaction, Doc, Item, GC, DeleteSet, AbstractType, YEvent // eslint-disable-line
+  Transaction, Doc, Item, GC, DeleteSet, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as time from 'lib0/time'
@@ -158,7 +158,7 @@ export class UndoManager extends Observable {
    */
   constructor (typeScope, {
     captureTimeout = 500,
-    captureTransaction = tr => true,
+    captureTransaction = _tr => true,
     deleteFilter = () => true,
     trackedOrigins = new Set([null]),
     ignoreRemoteMapChanges = false,
