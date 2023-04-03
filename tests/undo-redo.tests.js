@@ -654,7 +654,6 @@ export const testSpecialDeletionCase = tc => {
 export const testUndoDeleteInMap = (tc) => {
   const { map0 } = init(tc, { users: 3 })
   const undoManager = new Y.UndoManager(map0, { captureTimeout: 0 })
-
   map0.set('a', 'a')
   map0.delete('a')
   map0.set('a', 'b')
@@ -662,24 +661,17 @@ export const testUndoDeleteInMap = (tc) => {
   map0.set('a', 'c')
   map0.delete('a')
   map0.set('a', 'd')
-
   t.compare(map0.toJSON(), { a: 'd' })
-
   undoManager.undo()
   t.compare(map0.toJSON(), {})
-
   undoManager.undo()
   t.compare(map0.toJSON(), { a: 'c' })
-
   undoManager.undo()
   t.compare(map0.toJSON(), {})
-
   undoManager.undo()
   t.compare(map0.toJSON(), { a: 'b' })
-
   undoManager.undo()
   t.compare(map0.toJSON(), {})
-
   undoManager.undo()
   t.compare(map0.toJSON(), { a: 'a' })
 }

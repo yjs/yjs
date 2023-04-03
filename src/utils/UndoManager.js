@@ -17,7 +17,7 @@ import * as time from 'lib0/time'
 import * as array from 'lib0/array'
 import { Observable } from 'lib0/observable'
 
-class StackItem {
+export class StackItem {
   /**
    * @param {DeleteSet} deletions
    * @param {DeleteSet} insertions
@@ -101,7 +101,7 @@ const popStackItem = (undoManager, stack, eventType) => {
         }
       })
       itemsToRedo.forEach(struct => {
-        performedChange = redoItem(transaction, struct, itemsToRedo, stackItem.insertions, undoManager.ignoreRemoteMapChanges) !== null || performedChange
+        performedChange = redoItem(transaction, struct, itemsToRedo, stackItem.insertions, undoManager.ignoreRemoteMapChanges, undoManager) !== null || performedChange
       })
       // We want to delete in reverse order so that children are deleted before
       // parents, so we have more information available when items are filtered.
