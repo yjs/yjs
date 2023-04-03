@@ -647,7 +647,7 @@ export const testSpecialDeletionCase = tc => {
 
 /**
  * Deleted entries in a map should be restored on undo.
- * 
+ *
  * @see https://github.com/yjs/yjs/issues/500
  * @param {t.TestCase} tc
  */
@@ -667,20 +667,19 @@ export const testUndoDeleteInMap = (tc) => {
 
   undoManager.undo()
   t.compare(map0.toJSON(), {})
-  
+
   undoManager.undo()
   t.compare(map0.toJSON(), { a: 'c' })
-  
+
   undoManager.undo()
   t.compare(map0.toJSON(), {})
-  
+
   undoManager.undo()
   t.compare(map0.toJSON(), { a: 'b' })
-  
+
   undoManager.undo()
   t.compare(map0.toJSON(), {})
-  
+
   undoManager.undo()
   t.compare(map0.toJSON(), { a: 'a' })
-};
-
+}
