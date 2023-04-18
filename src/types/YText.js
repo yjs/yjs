@@ -631,36 +631,39 @@ export class YTextEvent extends YEvent {
             /**
              * @type {any}
              */
-            let op
+            let op = null
             switch (action) {
               case 'delete':
-                op = { delete: deleteLen }
+                if (deleteLen > 0) {
+                  op = { delete: deleteLen }
+                }
                 deleteLen = 0
                 break
               case 'insert':
-                op = { insert }
-                if (currentAttributes.size > 0) {
-                  op.attributes = {}
-                  currentAttributes.forEach((value, key) => {
-                    if (value !== null) {
-                      op.attributes[key] = value
-                    }
-                  })
+                if (typeof insert === 'object' || insert.length > 0) {
+                  op = { insert }
+                  if (currentAttributes.size > 0) {
+                    op.attributes = {}
+                    currentAttributes.forEach((value, key) => {
+                      if (value !== null) {
+                        op.attributes[key] = value
+                      }
+                    })
+                  }
                 }
                 insert = ''
                 break
               case 'retain':
-                op = { retain }
-                if (Object.keys(attributes).length > 0) {
-                  op.attributes = {}
-                  for (const key in attributes) {
-                    op.attributes[key] = attributes[key]
+                if (retain > 0) {
+                  op = { retain }
+                  if (!object.isEmpty(attributes)) {
+                    op.attributes = object.assign({}, attributes)
                   }
                 }
                 retain = 0
                 break
             }
-            delta.push(op)
+            if (op) delta.push(op)
             action = null
           }
         }
