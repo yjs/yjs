@@ -753,6 +753,30 @@ currentState1 = Y.mergeUpdates([currentState1, diff2])
 currentState1 = Y.mergeUpdates([currentState1, diff1])
 ```
 
+#### Obfuscating Updates
+
+If one of your users runs into a weird bug (e.g. the rich-text editor throws
+error messages), then you don't have to request the full document from your
+user. Instead, they can obfuscate the document (i.e. replace the content with
+meaningless generated content) before sending it to you. Note that someone might
+still deduce the type of content by looking at the general structure of the
+document. But this is much better than requesting the original document.
+
+Obfuscated updates contain all the CRDT-related data that is required for
+merging. So it is safe to merge obfuscated updates.
+
+```javascript
+const ydoc = new Y.Doc()
+// perform some changes..
+ydoc.getText().insert(0, 'hello world')
+const update = Y.encodeStateAsUpdate(ydoc)
+// the below update contains scrambled data
+const obfuscatedUpdate = Y.obfuscateUpdate(update)
+const ydoc2 = new Y.Doc()
+Y.applyUpdate(ydoc2, obfuscatedUpdate)
+ydoc2.getText().toString() // => "00000000000"
+```
+
 #### Using V2 update format
 
 Yjs implements two update formats. By default you are using the V1 update format.

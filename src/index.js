@@ -90,6 +90,8 @@ export {
   diffUpdateV2,
   convertUpdateFormatV1ToV2,
   convertUpdateFormatV2ToV1,
+  obfuscateUpdate,
+  obfuscateUpdateV2,
   UpdateEncoderV1
 } from './internals.js'
 
