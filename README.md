@@ -169,6 +169,9 @@ PORT=1234 node ./node_modules/y-websocket/bin/server.js
 ### Example: Observe types
 
 ```js
+import * as Y from 'yjs';
+
+const doc = new Y.Doc();
 const yarray = doc.getArray('my-array')
 yarray.observe(event => {
   console.log('yarray was modified')
