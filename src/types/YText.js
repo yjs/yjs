@@ -625,6 +625,10 @@ export class YTextEvent extends YEvent {
          */
         let insert = ''
         let retain = 0
+        /**
+         * @type {string?}
+         */
+        let retainType = null;
         let deleteLen = 0
         const addOp = () => {
           if (action !== null) {
@@ -656,8 +660,10 @@ export class YTextEvent extends YEvent {
               case 'retain':
                 if (retain > 0) {
                   op = { retain }
-                  if (!object.isEmpty(attributes)) {
-                    op.attributes = object.assign({}, attributes)
+                  if (retainType === 'ContentString') {
+                    if (!object.isEmpty(attributes)) {
+                      op.attributes = object.assign({}, attributes)
+                    }
                   }
                 }
                 retain = 0
@@ -685,9 +691,10 @@ export class YTextEvent extends YEvent {
                 }
                 deleteLen += 1
               } else if (!item.deleted) {
-                if (action !== 'retain') {
+                if (action !== 'retain' || retainType !== 'ContentEmbed') {
                   addOp()
                   action = 'retain'
+                  retainType = 'ContentEmbed'
                 }
                 retain += 1
               }
@@ -708,9 +715,10 @@ export class YTextEvent extends YEvent {
                 }
                 deleteLen += item.length
               } else if (!item.deleted) {
-                if (action !== 'retain') {
+                if (action !== 'retain' || retainType !== 'ContentString') {
                   addOp()
                   action = 'retain'
+                  retainType = 'ContentString'
                 }
                 retain += item.length
               }
