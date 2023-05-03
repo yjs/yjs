@@ -1676,6 +1676,29 @@ export const testDeltaAfterConcurrentFormatting = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testDeltaAfterDelete = tc => {
+  const { text0, text1, testConnector } = init(tc, { users: 2 })
+  text0.insert(0, 'abc', {bold: true});
+  text0.insertEmbed(3, new Y.Map([['key', 'val']]));
+  testConnector.flushAllMessages()
+  /**
+   * @type {any}
+   */
+  const deltas = []
+  text1.observe(event => {
+    if (event.delta.length > 0) {
+      deltas.push(event.delta)
+    }
+  })
+  text0.delete(0, 3);
+  testConnector.flushAllMessages()
+  console.error("The actual deltas", deltas);
+  t.compare(deltas, [[{ delete: 3}]])
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testBasicInsertAndDelete = tc => {
   const { users, text0 } = init(tc, { users: 2 })
   let delta
