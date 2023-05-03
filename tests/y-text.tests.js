@@ -1674,6 +1674,11 @@ export const testDeltaAfterConcurrentFormatting = tc => {
 }
 
 /**
+ * Check if the delta is correct after a delete operation. Specifically, we want to make sure that
+ * an embed following the deleted text does not get an attribute update.
+ * 
+ * See https://github.com/yjs/yjs/issues/529
+ * 
  * @param {t.TestCase} tc
  */
 export const testDeltaAfterDelete = tc => {
@@ -1692,7 +1697,28 @@ export const testDeltaAfterDelete = tc => {
   })
   text0.delete(0, 3);
   testConnector.flushAllMessages()
-  console.error("The actual deltas", deltas);
+  t.compare(deltas, [[{ delete: 3}]])
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testDeltaAfterDeleteWithText = tc => {
+  const { text0, text1, testConnector } = init(tc, { users: 2 })
+  text0.insert(0, 'abc', {bold: true});
+  text0.insert(3, 'def');
+  testConnector.flushAllMessages()
+  /**
+   * @type {any}
+   */
+  const deltas = []
+  text1.observe(event => {
+    if (event.delta.length > 0) {
+      deltas.push(event.delta)
+    }
+  })
+  text0.delete(0, 3);
+  testConnector.flushAllMessages()
   t.compare(deltas, [[{ delete: 3}]])
 }
 
