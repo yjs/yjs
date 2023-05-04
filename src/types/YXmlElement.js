@@ -1,3 +1,4 @@
+import * as object from 'lib0/object'
 
 import {
   YXmlFragment,
@@ -13,13 +14,17 @@ import {
 } from '../internals.js'
 
 /**
+ * @typedef {Object|number|null|Array<any>|string|Uint8Array|AbstractType<any>} ValueTypes
+ */
+
+/**
  * An YXmlElement imitates the behavior of a
  * {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}.
  *
  * * An YXmlElement has attributes (key value pairs)
  * * An YXmlElement has childElements that must inherit from YXmlElement
  *
- * @template {{ [key: string]: Object|number|null|Array<any>|string|Uint8Array|AbstractType<any> }} [KV={ [key: string]: string }]
+ * @template {{ [key: string]: ValueTypes }} [KV={ [key: string]: string }]
  */
 export class YXmlElement extends YXmlFragment {
   constructor (nodeName = 'UNDEFINED') {
@@ -75,14 +80,19 @@ export class YXmlElement extends YXmlFragment {
   }
 
   /**
-   * @return {YXmlElement}
+   * @return {YXmlElement<KV>}
    */
   clone () {
+    /**
+     * @type {YXmlElement<KV>}
+     */
     const el = new YXmlElement(this.nodeName)
     const attrs = this.getAttributes()
-    for (const key in attrs) {
-      el.setAttribute(key, attrs[key])
-    }
+    object.forEach(attrs, (value, key) => {
+      if (typeof value === 'string') {
+        el.setAttribute(key, value)
+      }
+    })
     // @ts-ignore
     el.insert(0, this.toArray().map(item => item instanceof AbstractType ? item.clone() : item))
     return el
@@ -182,12 +192,12 @@ export class YXmlElement extends YXmlFragment {
   /**
    * Returns all attribute name/value pairs in a JSON Object.
    *
-   * @return {Object<string, any>} A JSON Object that describes the attributes.
+   * @return {{ [Key in Extract<keyof KV,string>]?: KV[Key]}} A JSON Object that describes the attributes.
    *
    * @public
    */
   getAttributes () {
-    return typeMapGetAll(this)
+    return /** @type {any} */ (typeMapGetAll(this))
   }
 
   /**
@@ -209,7 +219,10 @@ export class YXmlElement extends YXmlFragment {
     const dom = _document.createElement(this.nodeName)
     const attrs = this.getAttributes()
     for (const key in attrs) {
-      dom.setAttribute(key, attrs[key])
+      const value = attrs[key]
+      if (typeof value === 'string') {
+        dom.setAttribute(key, value)
+      }
     }
     typeListForEach(this, yxml => {
       dom.appendChild(yxml.toDOM(_document, hooks, binding))
