@@ -18,6 +18,8 @@ import {
  *
  * * An YXmlElement has attributes (key value pairs)
  * * An YXmlElement has childElements that must inherit from YXmlElement
+ *
+ * @template {{ [key: string]: Object|number|null|Array<any>|string|Uint8Array|AbstractType<any> }} [KV={ [key: string]: string }]
  */
 export class YXmlElement extends YXmlFragment {
   constructor (nodeName = 'UNDEFINED') {
@@ -116,7 +118,7 @@ export class YXmlElement extends YXmlFragment {
   /**
    * Removes an attribute from this YXmlElement.
    *
-   * @param {String} attributeName The attribute name that is to be removed.
+   * @param {string} attributeName The attribute name that is to be removed.
    *
    * @public
    */
@@ -133,8 +135,10 @@ export class YXmlElement extends YXmlFragment {
   /**
    * Sets or updates an attribute.
    *
-   * @param {String} attributeName The attribute name that is to be set.
-   * @param {String} attributeValue The attribute value that is to be set.
+   * @template {keyof KV & string} KEY
+   *
+   * @param {KEY} attributeName The attribute name that is to be set.
+   * @param {KV[KEY]} attributeValue The attribute value that is to be set.
    *
    * @public
    */
@@ -151,9 +155,11 @@ export class YXmlElement extends YXmlFragment {
   /**
    * Returns an attribute value that belongs to the attribute name.
    *
-   * @param {String} attributeName The attribute name that identifies the
+   * @template {keyof KV & string} KEY
+   *
+   * @param {KEY} attributeName The attribute name that identifies the
    *                               queried value.
-   * @return {String} The queried attribute value.
+   * @return {KV[KEY]|undefined} The queried attribute value.
    *
    * @public
    */
@@ -164,7 +170,7 @@ export class YXmlElement extends YXmlFragment {
   /**
    * Returns whether an attribute exists
    *
-   * @param {String} attributeName The attribute name to check for existence.
+   * @param {string} attributeName The attribute name to check for existence.
    * @return {boolean} whether the attribute exists.
    *
    * @public
