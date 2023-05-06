@@ -1703,6 +1703,33 @@ export const testDeltaAfterDelete = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testDeltaAfterDeleteWithEmbedInsideText = tc => {
+  const { text0, text1, testConnector } = init(tc, { users: 2 })
+  const p1 = new Y.XmlText();
+  p1.setAttribute("type", "paragraph")
+  p1.insert(0, "p1")
+  
+  text0.insert(0, "abc", {bold: true});
+  text0.insert(3, "defghi", {bold: false});
+  text0.insertEmbed(6, p1);
+  testConnector.flushAllMessages()
+  /**
+   * @type {any}
+   */
+  const deltas = []
+  text1.observe(event => {
+    if (event.delta.length > 0) {
+      deltas.push(event.delta)
+    }
+  })
+  text0.delete(3, 3);
+  testConnector.flushAllMessages()
+  t.compare(deltas, [[{retain: 3}, { delete: 3}]])
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testDeltaAfterDeleteWithText = tc => {
   const { text0, text1, testConnector } = init(tc, { users: 2 })
   text0.insert(0, 'abc', {bold: true});
