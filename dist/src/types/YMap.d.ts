@@ -41,7 +41,10 @@ export class YMap<MapType> extends AbstractType<YMapEvent<MapType>> implements I
      * @param {Item} item
      */
     _integrate(y: Doc, item: Item): void;
-    _copy(): YMap<any>;
+    /**
+     * @return {YMap<MapType>}
+     */
+    _copy(): YMap<MapType>;
     /**
      * @return {YMap<MapType>}
      */
@@ -92,11 +95,13 @@ export class YMap<MapType> extends AbstractType<YMapEvent<MapType>> implements I
     delete(key: string): void;
     /**
      * Adds or updates an element with a specified key and value.
+     * @template {MapType} VAL
      *
      * @param {string} key The key of the element to add to this YMap
-     * @param {MapType} value The value of the element to add
+     * @param {VAL} value The value of the element to add
+     * @return {VAL}
      */
-    set(key: string, value: MapType): MapType;
+    set<VAL extends MapType>(key: string, value: VAL): VAL;
     /**
      * Returns a specified element from this YMap.
      *
@@ -122,7 +127,7 @@ export class YMap<MapType> extends AbstractType<YMapEvent<MapType>> implements I
      */
     [Symbol.iterator](): IterableIterator<any>;
 }
-export function readYMap(decoder: UpdateDecoderV1 | UpdateDecoderV2): YMap<any>;
+export function readYMap(_decoder: UpdateDecoderV1 | UpdateDecoderV2): YMap<any>;
 import { YEvent } from "../utils/YEvent.js";
 import { Transaction } from "../utils/Transaction.js";
 import { AbstractType } from "./AbstractType.js";
@@ -130,3 +135,4 @@ import { Doc } from "../utils/Doc.js";
 import { Item } from "../structs/Item.js";
 import { UpdateDecoderV1 } from "../utils/UpdateDecoder.js";
 import { UpdateDecoderV2 } from "../utils/UpdateDecoder.js";
+//# sourceMappingURL=YMap.d.ts.map

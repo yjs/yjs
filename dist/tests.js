@@ -40,11 +40,12 @@
    * ```
    *
    * @function
-   * @template T,K
-   * @param {Map<K, T>} map
+   * @template V,K
+   * @template {Map<K,V>} MAP
+   * @param {MAP} map
    * @param {K} key
-   * @param {function():T} createT
-   * @return {T}
+   * @param {function():V} createT
+   * @return {V}
    */
   const setIfUndefined = (map, key, createT) => {
     let set = map.get(key);
@@ -95,6 +96,87 @@
   };
 
   /**
+   * Utility module to work with sets.
+   *
+   * @module set
+   */
+
+  const create$5 = () => new Set();
+
+  /**
+   * Utility module to work with Arrays.
+   *
+   * @module array
+   */
+
+  /**
+   * Return the last element of an array. The element must exist
+   *
+   * @template L
+   * @param {ArrayLike<L>} arr
+   * @return {L}
+   */
+  const last = arr => arr[arr.length - 1];
+
+  /**
+   * Append elements from src to dest
+   *
+   * @template M
+   * @param {Array<M>} dest
+   * @param {Array<M>} src
+   */
+  const appendTo = (dest, src) => {
+    for (let i = 0; i < src.length; i++) {
+      dest.push(src[i]);
+    }
+  };
+
+  /**
+   * Transforms something array-like to an actual Array.
+   *
+   * @function
+   * @template T
+   * @param {ArrayLike<T>|Iterable<T>} arraylike
+   * @return {T}
+   */
+  const from = Array.from;
+
+  /**
+   * True iff condition holds on some element in the Array.
+   *
+   * @function
+   * @template S
+   * @template {ArrayLike<S>} ARR
+   * @param {ARR} arr
+   * @param {function(S, number, ARR):boolean} f
+   * @return {boolean}
+   */
+  const some = (arr, f) => {
+    for (let i = 0; i < arr.length; i++) {
+      if (f(arr[i], i, arr)) {
+        return true
+      }
+    }
+    return false
+  };
+
+  /**
+   * @template T
+   * @param {number} len
+   * @param {function(number, Array<T>):T} f
+   * @return {Array<T>}
+   */
+  const unfold = (len, f) => {
+    const array = new Array(len);
+    for (let i = 0; i < len; i++) {
+      array[i] = f(i, array);
+    }
+    return array
+  };
+
+  const isArray = Array.isArray;
+
+  /**
    * Utility module to work with strings.
    *
    * @module string
@@ -126,22 +208,55 @@
    */
   const fromCamelCase = (s, separator) => trimLeft(s.replace(fromCamelCaseRegex, match => `${separator}${toLowerCase(match)}`));
 
-  /* istanbul ignore next */
-  /** @type {TextEncoder} */ (typeof TextEncoder !== 'undefined' ? new TextEncoder() : null);
+  /**
+   * @param {string} str
+   * @return {Uint8Array}
+   */
+  const _encodeUtf8Polyfill = str => {
+    const encodedString = unescape(encodeURIComponent(str));
+    const len = encodedString.length;
+    const buf = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      buf[i] = /** @type {number} */ (encodedString.codePointAt(i));
+    }
+    return buf
+  };
 
-  /* istanbul ignore next */
+  /* c8 ignore next */
+  const utf8TextEncoder = /** @type {TextEncoder} */ (typeof TextEncoder !== 'undefined' ? new TextEncoder() : null);
+
+  /**
+   * @param {string} str
+   * @return {Uint8Array}
+   */
+  const _encodeUtf8Native = str => utf8TextEncoder.encode(str);
+
+  /**
+   * @param {string} str
+   * @return {Uint8Array}
+   */
+  /* c8 ignore next */
+  const encodeUtf8 = utf8TextEncoder ? _encodeUtf8Native : _encodeUtf8Polyfill;
+
+  /* c8 ignore next */
   let utf8TextDecoder = typeof TextDecoder === 'undefined' ? null : new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
 
-  /* istanbul ignore next */
+  /* c8 ignore start */
   if (utf8TextDecoder && utf8TextDecoder.decode(new Uint8Array()).length === 1) {
     // Safari doesn't handle BOM correctly.
     // This fixes a bug in Safari 13.0.5 where it produces a BOM the first time it is called.
     // utf8TextDecoder.decode(new Uint8Array()).length === 1 on the first call and
     // utf8TextDecoder.decode(new Uint8Array()).length === 1 on the second call
     // Another issue is that from then on no BOM chars are recognized anymore
-    /* istanbul ignore next */
+    /* c8 ignore next */
     utf8TextDecoder = null;
   }
+
+  /**
+   * @param {string} source
+   * @param {number} n
+   */
+  const repeat = (source, n) => unfold(n, () => source).join('');
 
   /**
    * Often used conditions.
@@ -154,10 +269,10 @@
    * @param {T|null|undefined} v
    * @return {T|null}
    */
-  /* istanbul ignore next */
+  /* c8 ignore next */
   const undefinedToNull = v => v === undefined ? null : v;
 
-  /* global localStorage, addEventListener */
+  /* eslint-env browser */
 
   /**
    * Isomorphic variable storage.
@@ -167,7 +282,7 @@
    * @module storage
    */
 
-  /* istanbul ignore next */
+  /* c8 ignore start */
   class VarStoragePolyfill {
     constructor () {
       this.map = new Map();
@@ -188,28 +303,161 @@
       return this.map.get(key)
     }
   }
+  /* c8 ignore stop */
 
-  /* istanbul ignore next */
   /**
    * @type {any}
    */
   let _localStorage = new VarStoragePolyfill();
   let usePolyfill = true;
 
+  /* c8 ignore start */
   try {
     // if the same-origin rule is violated, accessing localStorage might thrown an error
-    /* istanbul ignore next */
     if (typeof localStorage !== 'undefined') {
       _localStorage = localStorage;
       usePolyfill = false;
     }
   } catch (e) { }
+  /* c8 ignore stop */
 
-  /* istanbul ignore next */
   /**
    * This is basically localStorage in browser, or a polyfill in nodejs
    */
+  /* c8 ignore next */
   const varStorage = _localStorage;
+
+  /**
+   * Utility functions for working with EcmaScript objects.
+   *
+   * @module object
+   */
+
+  /**
+   * Object.assign
+   */
+  const assign = Object.assign;
+
+  /**
+   * @param {Object<string,any>} obj
+   */
+  const keys = Object.keys;
+
+  /**
+   * @template V
+   * @param {{[k:string]:V}} obj
+   * @param {function(V,string):any} f
+   */
+  const forEach$1 = (obj, f) => {
+    for (const key in obj) {
+      f(obj[key], key);
+    }
+  };
+
+  /**
+   * @todo implement mapToArray & map
+   *
+   * @template R
+   * @param {Object<string,any>} obj
+   * @param {function(any,string):R} f
+   * @return {Array<R>}
+   */
+  const map$1 = (obj, f) => {
+    const results = [];
+    for (const key in obj) {
+      results.push(f(obj[key], key));
+    }
+    return results
+  };
+
+  /**
+   * @param {Object<string,any>} obj
+   * @return {number}
+   */
+  const length$1 = obj => keys(obj).length;
+
+  /**
+   * @param {Object|undefined} obj
+   */
+  const isEmpty = obj => {
+    for (const _k in obj) {
+      return false
+    }
+    return true
+  };
+
+  /**
+   * @param {Object<string,any>} obj
+   * @param {function(any,string):boolean} f
+   * @return {boolean}
+   */
+  const every = (obj, f) => {
+    for (const key in obj) {
+      if (!f(obj[key], key)) {
+        return false
+      }
+    }
+    return true
+  };
+
+  /**
+   * Calls `Object.prototype.hasOwnProperty`.
+   *
+   * @param {any} obj
+   * @param {string|symbol} key
+   * @return {boolean}
+   */
+  const hasProperty = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
+
+  /**
+   * @param {Object<string,any>} a
+   * @param {Object<string,any>} b
+   * @return {boolean}
+   */
+  const equalFlat = (a, b) => a === b || (length$1(a) === length$1(b) && every(a, (val, key) => (val !== undefined || hasProperty(b, key)) && b[key] === val));
+
+  /**
+   * Common functions and function call helpers.
+   *
+   * @module function
+   */
+
+  /**
+   * Calls all functions in `fs` with args. Only throws after all functions were called.
+   *
+   * @param {Array<function>} fs
+   * @param {Array<any>} args
+   */
+  const callAll = (fs, args, i = 0) => {
+    try {
+      for (; i < fs.length; i++) {
+        fs[i](...args);
+      }
+    } finally {
+      if (i < fs.length) {
+        callAll(fs, args, i + 1);
+      }
+    }
+  };
+
+  /**
+   * @template A
+   *
+   * @param {A} a
+   * @return {A}
+   */
+  const id$1 = a => a;
+
+  /**
+   * @template V
+   * @template {V} OPTS
+   *
+   * @param {V} value
+   * @param {Array<OPTS>} options
+   */
+  // @ts-ignore
+  const isOneOf = (value, options) => options.includes(value);
+  /* c8 ignore stop */
 
   /**
    * Isomorphic module to work access the environment (query params, env variables).
@@ -217,27 +465,25 @@
    * @module map
    */
 
-  /* istanbul ignore next */
+  /* c8 ignore next */
   // @ts-ignore
-  const isNode = typeof process !== 'undefined' && process.release && /node|io\.js/.test(process.release.name);
-  /* istanbul ignore next */
-  const isBrowser = typeof window !== 'undefined' && !isNode;
-  /* istanbul ignore next */
-  typeof navigator !== 'undefined' ? /Mac/.test(navigator.platform) : false;
+  const isNode = typeof process !== 'undefined' && process.release &&
+    /node|io\.js/.test(process.release.name);
+  /* c8 ignore next */
+  const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined' && !isNode;
 
   /**
    * @type {Map<string,string>}
    */
   let params;
 
-  /* istanbul ignore next */
+  /* c8 ignore start */
   const computeParams = () => {
     if (params === undefined) {
       if (isNode) {
         params = create$6();
         const pargs = process.argv;
         let currParamName = null;
-        /* istanbul ignore next */
         for (let i = 0; i < pargs.length; i++) {
           const parg = pargs[i];
           if (parg[0] === '-') {
@@ -255,11 +501,10 @@
         if (currParamName !== null) {
           params.set(currParamName, '');
         }
-      // in ReactNative for example this would not be true (unless connected to the Remote Debugger)
+        // in ReactNative for example this would not be true (unless connected to the Remote Debugger)
       } else if (typeof location === 'object') {
-        params = create$6()
-        // eslint-disable-next-line no-undef
-        ;(location.search || '?').slice(1).split('&').forEach(kv => {
+        params = create$6(); // eslint-disable-next-line no-undef
+        (location.search || '?').slice(1).split('&').forEach((kv) => {
           if (kv.length !== 0) {
             const [key, value] = kv.split('=');
             params.set(`--${fromCamelCase(key, '-')}`, value);
@@ -272,52 +517,57 @@
     }
     return params
   };
+  /* c8 ignore stop */
 
   /**
    * @param {string} name
    * @return {boolean}
    */
-  /* istanbul ignore next */
-  const hasParam = name => computeParams().has(name);
+  /* c8 ignore next */
+  const hasParam = (name) => computeParams().has(name);
 
   /**
    * @param {string} name
    * @param {string} defaultVal
    * @return {string}
    */
-  /* istanbul ignore next */
-  const getParam = (name, defaultVal) => computeParams().get(name) || defaultVal;
-  // export const getArgs = name => computeParams() && args
+  /* c8 ignore next 2 */
+  const getParam = (name, defaultVal) =>
+    computeParams().get(name) || defaultVal;
 
   /**
    * @param {string} name
    * @return {string|null}
    */
-  /* istanbul ignore next */
-  const getVariable = name => isNode ? undefinedToNull(process.env[name.toUpperCase()]) : undefinedToNull(varStorage.getItem(name));
+  /* c8 ignore next 4 */
+  const getVariable = (name) =>
+    isNode
+      ? undefinedToNull(process.env[name.toUpperCase()])
+      : undefinedToNull(varStorage.getItem(name));
 
   /**
    * @param {string} name
    * @return {boolean}
    */
-  /* istanbul ignore next */
-  const hasConf = name => hasParam('--' + name) || getVariable(name) !== null;
+  /* c8 ignore next 2 */
+  const hasConf = (name) =>
+    hasParam('--' + name) || getVariable(name) !== null;
 
-  /* istanbul ignore next */
+  /* c8 ignore next */
   const production = hasConf('production');
 
-  /**
-   * Utility module to work with EcmaScript Symbols.
-   *
-   * @module symbol
-   */
+  /* c8 ignore next 2 */
+  const forceColor = isNode &&
+    isOneOf(process.env.FORCE_COLOR, ['true', '1', '2']);
 
-  /**
-   * Return fresh symbol.
-   *
-   * @return {Symbol}
-   */
-  const create$5 = Symbol;
+  /* c8 ignore start */
+  const supportsColor = !hasParam('no-colors') &&
+    (!isNode || process.stdout.isTTY || forceColor) && (
+    !isNode || hasParam('color') || forceColor ||
+      getVariable('COLORTERM') !== null ||
+      (getVariable('TERM') || '').includes('color')
+  );
+  /* c8 ignore stop */
 
   /**
    * Working with value pairs.
@@ -352,11 +602,11 @@
    * @param {Array<Pair<L,R>>} arr
    * @param {function(L, R):any} f
    */
-  const forEach$1 = (arr, f) => arr.forEach(p => f(p.left, p.right));
+  const forEach = (arr, f) => arr.forEach(p => f(p.left, p.right));
 
   /* eslint-env browser */
 
-  /* istanbul ignore next */
+  /* c8 ignore start */
   /**
    * @type {Document}
    */
@@ -366,23 +616,19 @@
    * @param {string} name
    * @return {HTMLElement}
    */
-  /* istanbul ignore next */
   const createElement = name => doc$1.createElement(name);
 
   /**
    * @return {DocumentFragment}
    */
-  /* istanbul ignore next */
   const createDocumentFragment = () => doc$1.createDocumentFragment();
 
   /**
    * @param {string} text
    * @return {Text}
    */
-  /* istanbul ignore next */
   const createTextNode = text => doc$1.createTextNode(text);
 
-  /* istanbul ignore next */
   /** @type {DOMParser} */ (typeof DOMParser !== 'undefined' ? new DOMParser() : null);
 
   /**
@@ -390,9 +636,8 @@
    * @param {Array<pair.Pair<string,string|boolean>>} attrs Array of key-value pairs
    * @return {Element}
    */
-  /* istanbul ignore next */
   const setAttributes = (el, attrs) => {
-    forEach$1(attrs, (key, value) => {
+    forEach(attrs, (key, value) => {
       if (value === false) {
         el.removeAttribute(key);
       } else if (value === true) {
@@ -409,7 +654,6 @@
    * @param {Array<Node>|HTMLCollection} children
    * @return {DocumentFragment}
    */
-  /* istanbul ignore next */
   const fragment = children => {
     const fragment = createDocumentFragment();
     for (let i = 0; i < children.length; i++) {
@@ -423,7 +667,6 @@
    * @param {Array<Node>} nodes
    * @return {Element}
    */
-  /* istanbul ignore next */
   const append = (parent, nodes) => {
     appendChild(parent, fragment(nodes));
     return parent
@@ -434,7 +677,6 @@
    * @param {string} name
    * @param {EventListener} f
    */
-  /* istanbul ignore next */
   const addEventListener = (el, name, f) => el.addEventListener(name, f);
 
   /**
@@ -443,7 +685,6 @@
    * @param {Array<Node>} children
    * @return {Element}
    */
-  /* istanbul ignore next */
   const element = (name, attrs = [], children = []) =>
     append(setAttributes(createElement(name), attrs), children);
 
@@ -451,14 +692,12 @@
    * @param {string} t
    * @return {Text}
    */
-  /* istanbul ignore next */
   const text$1 = createTextNode;
 
   /**
    * @param {Map<string,string>} m
    * @return {string}
    */
-  /* istanbul ignore next */
   const mapToStyleString = m => map$2(m, (value, key) => `${key}:${value};`).join('');
 
   /**
@@ -466,7 +705,6 @@
    * @param {Node} child
    * @return {Node}
    */
-  /* istanbul ignore next */
   const appendChild = (parent, child) => parent.appendChild(child);
 
   doc$1.ELEMENT_NODE;
@@ -476,6 +714,7 @@
   doc$1.DOCUMENT_NODE;
   doc$1.DOCUMENT_TYPE_NODE;
   doc$1.DOCUMENT_FRAGMENT_NODE;
+  /* c8 ignore stop */
 
   /**
    * JSON utility functions.
@@ -571,6 +810,19 @@
   const isNegativeZero = n => n !== 0 ? n < 0 : 1 / n < 0;
 
   /**
+   * Utility module to work with EcmaScript Symbols.
+   *
+   * @module symbol
+   */
+
+  /**
+   * Return fresh symbol.
+   *
+   * @return {Symbol}
+   */
+  const create$3 = Symbol;
+
+  /**
    * Utility module to convert metric values.
    *
    * @module metric
@@ -637,162 +889,46 @@
       return days + 'd' + ((hours > 0 || minutes > 30) ? ' ' + (minutes > 30 ? hours + 1 : hours) + 'h' : '')
     }
     if (hours > 0) {
-      /* istanbul ignore next */
+      /* c8 ignore next */
       return hours + 'h' + ((minutes > 0 || seconds > 30) ? ' ' + (seconds > 30 ? minutes + 1 : minutes) + 'min' : '')
     }
     return minutes + 'min' + (seconds > 0 ? ' ' + seconds + 's' : '')
   };
 
-  /**
-   * Utility module to work with Arrays.
-   *
-   * @module array
-   */
+  const BOLD = create$3();
+  const UNBOLD = create$3();
+  const BLUE = create$3();
+  const GREY = create$3();
+  const GREEN = create$3();
+  const RED = create$3();
+  const PURPLE = create$3();
+  const ORANGE = create$3();
+  const UNCOLOR = create$3();
 
+  /* c8 ignore start */
   /**
-   * Return the last element of an array. The element must exist
-   *
-   * @template L
-   * @param {Array<L>} arr
-   * @return {L}
+   * @param {Array<string|Symbol|Object|number>} args
+   * @return {Array<string|object|number>}
    */
-  const last = arr => arr[arr.length - 1];
-
-  /**
-   * Append elements from src to dest
-   *
-   * @template M
-   * @param {Array<M>} dest
-   * @param {Array<M>} src
-   */
-  const appendTo = (dest, src) => {
-    for (let i = 0; i < src.length; i++) {
-      dest.push(src[i]);
-    }
-  };
-
-  /**
-   * Transforms something array-like to an actual Array.
-   *
-   * @function
-   * @template T
-   * @param {ArrayLike<T>|Iterable<T>} arraylike
-   * @return {T}
-   */
-  const from = Array.from;
-
-  const isArray = Array.isArray;
-
-  /**
-   * Utility functions for working with EcmaScript objects.
-   *
-   * @module object
-   */
-
-  /**
-   * @param {Object<string,any>} obj
-   */
-  const keys = Object.keys;
-
-  /**
-   * @param {Object<string,any>} obj
-   * @param {function(any,string):any} f
-   */
-  const forEach = (obj, f) => {
-    for (const key in obj) {
-      f(obj[key], key);
-    }
-  };
-
-  /**
-   * @template R
-   * @param {Object<string,any>} obj
-   * @param {function(any,string):R} f
-   * @return {Array<R>}
-   */
-  const map$1 = (obj, f) => {
-    const results = [];
-    for (const key in obj) {
-      results.push(f(obj[key], key));
-    }
-    return results
-  };
-
-  /**
-   * @param {Object<string,any>} obj
-   * @return {number}
-   */
-  const length$1 = obj => keys(obj).length;
-
-  /**
-   * @param {Object<string,any>} obj
-   * @param {function(any,string):boolean} f
-   * @return {boolean}
-   */
-  const every = (obj, f) => {
-    for (const key in obj) {
-      if (!f(obj[key], key)) {
-        return false
+  const computeNoColorLoggingArgs = args => {
+    const logArgs = [];
+    // try with formatting until we find something unsupported
+    let i = 0;
+    for (; i < args.length; i++) {
+      const arg = args[i];
+      if (arg.constructor === String || arg.constructor === Number) ; else if (arg.constructor === Object) {
+        logArgs.push(JSON.stringify(arg));
       }
     }
-    return true
+    return logArgs
   };
-
-  /**
-   * Calls `Object.prototype.hasOwnProperty`.
-   *
-   * @param {any} obj
-   * @param {string|symbol} key
-   * @return {boolean}
-   */
-  const hasProperty = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
-
-  /**
-   * @param {Object<string,any>} a
-   * @param {Object<string,any>} b
-   * @return {boolean}
-   */
-  const equalFlat = (a, b) => a === b || (length$1(a) === length$1(b) && every(a, (val, key) => (val !== undefined || hasProperty(b, key)) && b[key] === val));
-
-  /**
-   * Common functions and function call helpers.
-   *
-   * @module function
-   */
-
-  /**
-   * Calls all functions in `fs` with args. Only throws after all functions were called.
-   *
-   * @param {Array<function>} fs
-   * @param {Array<any>} args
-   */
-  const callAll = (fs, args, i = 0) => {
-    try {
-      for (; i < fs.length; i++) {
-        fs[i](...args);
-      }
-    } finally {
-      if (i < fs.length) {
-        callAll(fs, args, i + 1);
-      }
-    }
-  };
+  /* c8 ignore stop */
 
   /**
    * Isomorphic logging module with support for colors!
    *
    * @module logging
    */
-
-  const BOLD = create$5();
-  const UNBOLD = create$5();
-  const BLUE = create$5();
-  const GREY = create$5();
-  const GREEN = create$5();
-  const RED = create$5();
-  const PURPLE = create$5();
-  const ORANGE = create$5();
-  const UNCOLOR = create$5();
 
   /**
    * @type {Object<Symbol,pair.Pair<string,string>>}
@@ -809,24 +945,12 @@
     [UNCOLOR]: create$4('color', 'black')
   };
 
-  const _nodeStyleMap = {
-    [BOLD]: '\u001b[1m',
-    [UNBOLD]: '\u001b[2m',
-    [BLUE]: '\x1b[34m',
-    [GREEN]: '\x1b[32m',
-    [GREY]: '\u001b[37m',
-    [RED]: '\x1b[31m',
-    [PURPLE]: '\x1b[35m',
-    [ORANGE]: '\x1b[38;5;208m',
-    [UNCOLOR]: '\x1b[0m'
-  };
-
-  /* istanbul ignore next */
   /**
    * @param {Array<string|Symbol|Object|number>} args
    * @return {Array<string|object|number>}
    */
-  const computeBrowserLoggingArgs = args => {
+  /* c8 ignore start */
+  const computeBrowserLoggingArgs = (args) => {
     const strBuilder = [];
     const styles = [];
     const currentStyle = create$6();
@@ -836,7 +960,6 @@
     let logArgs = [];
     // try with formatting until we find something unsupported
     let i = 0;
-
     for (; i < args.length; i++) {
       const arg = args[i];
       // @ts-ignore
@@ -857,7 +980,6 @@
         }
       }
     }
-
     if (i > 0) {
       // create logArgs with what we have so far
       logArgs = styles;
@@ -872,96 +994,66 @@
     }
     return logArgs
   };
+  /* c8 ignore stop */
 
-  /**
-   * @param {Array<string|Symbol|Object|number>} args
-   * @return {Array<string|object|number>}
-   */
-  const computeNodeLoggingArgs = args => {
-    const strBuilder = [];
-    const logArgs = [];
-
-    // try with formatting until we find something unsupported
-    let i = 0;
-
-    for (; i < args.length; i++) {
-      const arg = args[i];
-      // @ts-ignore
-      const style = _nodeStyleMap[arg];
-      if (style !== undefined) {
-        strBuilder.push(style);
-      } else {
-        if (arg.constructor === String || arg.constructor === Number) {
-          strBuilder.push(arg);
-        } else {
-          break
-        }
-      }
-    }
-    if (i > 0) {
-      // create logArgs with what we have so far
-      strBuilder.push('\x1b[0m');
-      logArgs.push(strBuilder.join(''));
-    }
-    // append the rest
-    for (; i < args.length; i++) {
-      const arg = args[i];
-      /* istanbul ignore else */
-      if (!(arg instanceof Symbol)) {
-        logArgs.push(arg);
-      }
-    }
-    return logArgs
-  };
-
-  /* istanbul ignore next */
-  const computeLoggingArgs = isNode ? computeNodeLoggingArgs : computeBrowserLoggingArgs;
+  /* c8 ignore start */
+  const computeLoggingArgs = supportsColor
+    ? computeBrowserLoggingArgs
+    : computeNoColorLoggingArgs;
+  /* c8 ignore stop */
 
   /**
    * @param {Array<string|Symbol|Object|number>} args
    */
   const print = (...args) => {
     console.log(...computeLoggingArgs(args));
-    /* istanbul ignore next */
-    vconsoles.forEach(vc => vc.print(args));
+    /* c8 ignore next */
+    vconsoles.forEach((vc) => vc.print(args));
   };
+  /* c8 ignore stop */
 
-  /* istanbul ignore next */
   /**
    * @param {Error} err
    */
-  const printError = err => {
+  /* c8 ignore start */
+  const printError = (err) => {
     console.error(err);
-    vconsoles.forEach(vc => vc.printError(err));
+    vconsoles.forEach((vc) => vc.printError(err));
   };
+  /* c8 ignore stop */
 
-  /* istanbul ignore next */
   /**
    * @param {string} url image location
    * @param {number} height height of the image in pixel
    */
+  /* c8 ignore start */
   const printImg = (url, height) => {
     if (isBrowser) {
-      console.log('%c                      ', `font-size: ${height}px; background-size: contain; background-repeat: no-repeat; background-image: url(${url})`);
+      console.log(
+        '%c                      ',
+        `font-size: ${height}px; background-size: contain; background-repeat: no-repeat; background-image: url(${url})`
+      );
       // console.log('%c                ', `font-size: ${height}x; background: url(${url}) no-repeat;`)
     }
-    vconsoles.forEach(vc => vc.printImg(url, height));
+    vconsoles.forEach((vc) => vc.printImg(url, height));
   };
+  /* c8 ignore stop */
 
-  /* istanbul ignore next */
   /**
    * @param {string} base64
    * @param {number} height
    */
-  const printImgBase64 = (base64, height) => printImg(`data:image/gif;base64,${base64}`, height);
+  /* c8 ignore next 2 */
+  const printImgBase64 = (base64, height) =>
+    printImg(`data:image/gif;base64,${base64}`, height);
 
   /**
    * @param {Array<string|Symbol|Object|number>} args
    */
   const group = (...args) => {
     console.group(...computeLoggingArgs(args));
-    /* istanbul ignore next */
-    vconsoles.forEach(vc => vc.group(args));
+    /* c8 ignore next */
+    vconsoles.forEach((vc) => vc.group(args));
   };
 
   /**
@@ -969,24 +1061,24 @@
    */
   const groupCollapsed = (...args) => {
     console.groupCollapsed(...computeLoggingArgs(args));
-    /* istanbul ignore next */
-    vconsoles.forEach(vc => vc.groupCollapsed(args));
+    /* c8 ignore next */
+    vconsoles.forEach((vc) => vc.groupCollapsed(args));
   };
 
   const groupEnd = () => {
     console.groupEnd();
-    /* istanbul ignore next */
-    vconsoles.forEach(vc => vc.groupEnd());
+    /* c8 ignore next */
+    vconsoles.forEach((vc) => vc.groupEnd());
   };
 
-  const vconsoles = new Set();
+  const vconsoles = create$5();
 
-  /* istanbul ignore next */
   /**
    * @param {Array<string|Symbol|Object|number>} args
    * @return {Array<Element>}
    */
-  const _computeLineSpans = args => {
+  /* c8 ignore start */
+  const _computeLineSpans = (args) => {
     const spans = [];
     const currentStyle = new Map();
     // try with formatting until we find something unsupported
@@ -1000,7 +1092,9 @@
       } else {
         if (arg.constructor === String || arg.constructor === Number) {
           // @ts-ignore
-          const span = element('span', [create$4('style', mapToStyleString(currentStyle))], [text$1(arg)]);
+          const span = element('span', [
+            create$4('style', mapToStyleString(currentStyle))
+          ], [text$1(arg.toString())]);
           if (span.innerHTML === '') {
             span.innerHTML = '&nbsp;';
           }
@@ -1017,15 +1111,19 @@
         if (content.constructor !== String && content.constructor !== Number) {
           content = ' ' + stringify(content) + ' ';
         }
-        spans.push(element('span', [], [text$1(/** @type {string} */ (content))]));
+        spans.push(
+          element('span', [], [text$1(/** @type {string} */ (content))])
+        );
       }
     }
     return spans
   };
+  /* c8 ignore stop */
 
-  const lineStyle = 'font-family:monospace;border-bottom:1px solid #e2e2e2;padding:2px;';
+  const lineStyle =
+    'font-family:monospace;border-bottom:1px solid #e2e2e2;padding:2px;';
 
-  /* istanbul ignore next */
+  /* c8 ignore start */
   class VConsole {
     /**
      * @param {Element} dom
@@ -1046,16 +1144,33 @@
      */
     group (args, collapsed = false) {
       enqueue(() => {
-        const triangleDown = element('span', [create$4('hidden', collapsed), create$4('style', 'color:grey;font-size:120%;')], [text$1('▼')]);
-        const triangleRight = element('span', [create$4('hidden', !collapsed), create$4('style', 'color:grey;font-size:125%;')], [text$1('▶')]);
-        const content = element('div', [create$4('style', `${lineStyle};padding-left:${this.depth * 10}px`)], [triangleDown, triangleRight, text$1(' ')].concat(_computeLineSpans(args)));
-        const nextContainer = element('div', [create$4('hidden', collapsed)]);
+        const triangleDown = element('span', [
+          create$4('hidden', collapsed),
+          create$4('style', 'color:grey;font-size:120%;')
+        ], [text$1('▼')]);
+        const triangleRight = element('span', [
+          create$4('hidden', !collapsed),
+          create$4('style', 'color:grey;font-size:125%;')
+        ], [text$1('▶')]);
+        const content = element(
+          'div',
+          [create$4(
+            'style',
+            `${lineStyle};padding-left:${this.depth * 10}px`
+          )],
+          [triangleDown, triangleRight, text$1(' ')].concat(
+            _computeLineSpans(args)
+          )
+        );
+        const nextContainer = element('div', [
+          create$4('hidden', collapsed)
+        ]);
         const nextLine = element('div', [], [content, nextContainer]);
         append(this.ccontainer, [nextLine]);
         this.ccontainer = nextContainer;
         this.depth++;
         // when header is clicked, collapse/uncollapse container
-        addEventListener(content, 'click', event => {
+        addEventListener(content, 'click', (_event) => {
           nextContainer.toggleAttribute('hidden');
           triangleDown.toggleAttribute('hidden');
           triangleRight.toggleAttribute('hidden');
@@ -1085,7 +1200,14 @@
      */
     print (args) {
       enqueue(() => {
-        append(this.ccontainer, [element('div', [create$4('style', `${lineStyle};padding-left:${this.depth * 10}px`)], _computeLineSpans(args))]);
+        append(this.ccontainer, [
+          element('div', [
+            create$4(
+              'style',
+              `${lineStyle};padding-left:${this.depth * 10}px`
+            )
+          ], _computeLineSpans(args))
+        ]);
       });
     }
 
@@ -1102,7 +1224,12 @@
      */
     printImg (url, height) {
       enqueue(() => {
-        append(this.ccontainer, [element('img', [create$4('src', url), create$4('height', `${round(height * 1.5)}px`)])]);
+        append(this.ccontainer, [
+          element('img', [
+            create$4('src', url),
+            create$4('height', `${round(height * 1.5)}px`)
+          ])
+        ]);
       });
     }
 
@@ -1121,12 +1248,13 @@
       });
     }
   }
+  /* c8 ignore stop */
 
-  /* istanbul ignore next */
   /**
    * @param {Element} dom
    */
-  const createVConsole = dom => new VConsole(dom);
+  /* c8 ignore next */
+  const createVConsole = (dom) => new VConsole(dom);
 
   /**
    * Efficient diffs.
@@ -1156,6 +1284,9 @@
    * @template T
    */
 
+  const highSurrogateRegex = /[\uD800-\uDBFF]/;
+  const lowSurrogateRegex = /[\uDC00-\uDFFF]/;
+
   /**
    * Create a diff between two strings. This diff implementation is highly
    * efficient, but not very sophisticated.
@@ -1172,9 +1303,13 @@
     while (left < a.length && left < b.length && a[left] === b[left]) {
       left++;
     }
+    // If the last same character is a high surrogate, we need to rollback to the previous character
+    if (left > 0 && highSurrogateRegex.test(a[left - 1])) left--;
     while (right + left < a.length && right + left < b.length && a[a.length - right - 1] === b[b.length - right - 1]) {
       right++;
     }
+    // If the last same character is a low surrogate, we need to rollback to the previous character
+    if (right > 0 && lowSurrogateRegex.test(a[a.length - right])) right--;
     return {
       index: left,
       remove: a.length - left - right,
@@ -1215,32 +1350,9 @@
   const BITS32 = 0xFFFFFFFF;
 
   /* eslint-env browser */
-  const performance = typeof window === 'undefined' ? null : (typeof window.performance !== 'undefined' && window.performance) || null;
+  const getRandomValues = crypto.getRandomValues.bind(crypto);
 
-  const isoCrypto = typeof crypto === 'undefined' ? null : crypto;
-
-  /**
-   * @type {function(number):ArrayBuffer}
-   */
-  const cryptoRandomBuffer = isoCrypto !== null
-    ? len => {
-      // browser
-      const buf = new ArrayBuffer(len);
-      const arr = new Uint8Array(buf);
-      isoCrypto.getRandomValues(arr);
-      return buf
-    }
-    : len => {
-      // polyfill
-      const buf = new ArrayBuffer(len);
-      const arr = new Uint8Array(buf);
-      for (let i = 0; i < len; i++) {
-        arr[i] = Math.ceil((Math.random() * 0xFFFFFFFF) >>> 0);
-      }
-      return buf
-    };
-
-  const uint32$1 = () => new Uint32Array(cryptoRandomBuffer(4))[0];
+  const uint32$1 = () => getRandomValues(new Uint32Array(1))[0];
 
   // @ts-ignore
   const uuidv4Template = [1e7] + -1e3 + -4e3 + -8e3 + -1e11;
@@ -1397,11 +1509,13 @@
    * @module number
    */
 
+  const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER;
+
   /**
    * @module number
    */
 
-  /* istanbul ignore next */
+  /* c8 ignore next */
   const isInteger = Number.isInteger || (num => typeof num === 'number' && isFinite(num) && floor(num) === num);
 
   /**
@@ -1415,7 +1529,7 @@
    *
    * ```js
    * // encoding step
-   * const encoder = new encoding.createEncoder()
+   * const encoder = encoding.createEncoder()
    * encoding.writeVarUint(encoder, 256)
    * encoding.writeVarString(encoder, 'Hello world!')
    * const buf = encoding.toUint8Array(encoder)
@@ -1423,7 +1537,7 @@
    *
    * ```js
    * // decoding step
-   * const decoder = new decoding.createDecoder(buf)
+   * const decoder = decoding.createDecoder(buf)
    * decoding.readVarUint(decoder) // => 256
    * decoding.readVarString(decoder) // => 'Hello world!'
    * decoding.hasContent(decoder) // => false - all data is read
@@ -1529,9 +1643,7 @@
   const writeUint8 = write;
 
   /**
-   * Write a variable length unsigned integer.
-   *
-   * Encodes integers in the range from [0, 4294967295] / [0, 0xffffffff]. (max 32 bit unsigned integer)
+   * Write a variable length unsigned integer. Max encodable integer is 2^53.
    *
    * @function
    * @param {Encoder} encoder
@@ -1540,18 +1652,13 @@
   const writeVarUint = (encoder, num) => {
     while (num > BITS7) {
       write(encoder, BIT8 | (BITS7 & num));
-      num >>>= 7;
+      num = floor(num / 128); // shift >>> 7
     }
     write(encoder, BITS7 & num);
   };
 
   /**
    * Write a variable length integer.
-   *
-   * Encodes integers in the range from [-2147483648, -2147483647].
-   *
-   * We don't use zig-zag encoding because we want to keep the option open
-   * to use the same function for BigInt and 53bit integers (doubles).
    *
    * We use the 7th bit instead for signaling that this is a negative number.
    *
@@ -1566,12 +1673,39 @@
     }
     //             |- whether to continue reading         |- whether is negative     |- number
     write(encoder, (num > BITS6 ? BIT8 : 0) | (isNegative ? BIT7 : 0) | (BITS6 & num));
-    num >>>= 6;
+    num = floor(num / 64); // shift >>> 6
     // We don't need to consider the case of num === 0 so we can use a different
     // pattern here than above.
     while (num > 0) {
       write(encoder, (num > BITS7 ? BIT8 : 0) | (BITS7 & num));
-      num >>>= 7;
+      num = floor(num / 128); // shift >>> 7
+    }
+  };
+
+  /**
+   * A cache to store strings temporarily
+   */
+  const _strBuffer = new Uint8Array(30000);
+  const _maxStrBSize = _strBuffer.length / 3;
+
+  /**
+   * Write a variable length string.
+   *
+   * @function
+   * @param {Encoder} encoder
+   * @param {String} str The string that is to be encoded.
+   */
+  const _writeVarStringNative = (encoder, str) => {
+    if (str.length < _maxStrBSize) {
+      // We can encode the string into the existing buffer
+      /* c8 ignore next */
+      const written = utf8TextEncoder.encodeInto(str, _strBuffer).written || 0;
+      writeVarUint(encoder, written);
+      for (let i = 0; i < written; i++) {
+        write(encoder, _strBuffer[i]);
+      }
+    } else {
+      writeVarUint8Array(encoder, encodeUtf8(str));
     }
   };
 
@@ -1582,7 +1716,7 @@
    * @param {Encoder} encoder
    * @param {String} str The string that is to be encoded.
    */
-  const writeVarString = (encoder, str) => {
+  const _writeVarStringPolyfill = (encoder, str) => {
     const encodedString = unescape(encodeURIComponent(str));
     const len = encodedString.length;
     writeVarUint(encoder, len);
@@ -1590,6 +1724,16 @@
       write(encoder, /** @type {number} */ (encodedString.codePointAt(i)));
     }
   };
+
+  /**
+   * Write a variable length string.
+   *
+   * @function
+   * @param {Encoder} encoder
+   * @param {String} str The string that is to be encoded.
+   */
+  /* c8 ignore next */
+  const writeVarString = (utf8TextEncoder && /** @type {any} */ (utf8TextEncoder).encodeInto) ? _writeVarStringNative : _writeVarStringPolyfill;
 
   /**
    * Write the content of another Encoder.
@@ -1764,7 +1908,7 @@
         if (data === null) {
           // TYPE 126: null
           write(encoder, 126);
-        } else if (data instanceof Array) {
+        } else if (isArray(data)) {
           // TYPE 117: Array
           write(encoder, 117);
           writeVarUint(encoder, data.length);
@@ -1853,7 +1997,6 @@
    * @param {UintOptRleEncoder} encoder
    */
   const flushUintOptRleEncoder = encoder => {
-    /* istanbul ignore else */
     if (encoder.count > 0) {
       // flush counter, unless this is the first value (count = 0)
       // case 1: just a single value. set sign to positive
@@ -1908,7 +2051,8 @@
   const flushIntDiffOptRleEncoder = encoder => {
     if (encoder.count > 0) {
       //          31 bit making up the diff | wether to write the counter
-      const encodedDiff = encoder.diff << 1 | (encoder.count === 1 ? 0 : 1);
+      // const encodedDiff = encoder.diff << 1 | (encoder.count === 1 ? 0 : 1)
+      const encodedDiff = encoder.diff * 2 + (encoder.count === 1 ? 0 : 1);
       // flush counter, unless this is the first value (count = 0)
       // case 1: just a single value. set first bit to positive
       // case 2: write several values. set first bit to negative to indicate that there is a length coming
@@ -2011,6 +2155,37 @@
   }
 
   /**
+   * Error helpers.
+   *
+   * @module error
+   */
+
+  /**
+   * @param {string} s
+   * @return {Error}
+   */
+  /* c8 ignore next */
+  const create$2 = s => new Error(s);
+
+  /**
+   * @throws {Error}
+   * @return {never}
+   */
+  /* c8 ignore next 3 */
+  const methodUnimplemented = () => {
+    throw create$2('Method unimplemented')
+  };
+
+  /**
+   * @throws {Error}
+   * @return {never}
+   */
+  /* c8 ignore next 3 */
+  const unexpectedCase = () => {
+    throw create$2('Unexpected case')
+  };
+
+  /**
    * Efficient schema-less binary decoding with support for variable length encoding.
    *
    * Use [lib0/decoding] with [lib0/encoding]. Every encoding function has a corresponding decoding function.
@@ -2021,7 +2196,7 @@
    *
    * ```js
    * // encoding step
-   * const encoder = new encoding.createEncoder()
+   * const encoder = encoding.createEncoder()
    * encoding.writeVarUint(encoder, 256)
    * encoding.writeVarString(encoder, 'Hello world!')
    * const buf = encoding.toUint8Array(encoder)
@@ -2029,7 +2204,7 @@
    *
    * ```js
    * // decoding step
-   * const decoder = new decoding.createDecoder(buf)
+   * const decoder = decoding.createDecoder(buf)
    * decoding.readVarUint(decoder) // => 256
    * decoding.readVarString(decoder) // => 'Hello world!'
    * decoding.hasContent(decoder) // => false - all data is read
@@ -2037,6 +2212,9 @@
    *
    * @module decoding
    */
+
+  const errorUnexpectedEndOfArray = create$2('Unexpected end of array');
+  const errorIntegerOutOfRange = create$2('Integer out of Range');
 
   /**
    * A Decoder handles the decoding of an Uint8Array.
@@ -2124,19 +2302,23 @@
    */
   const readVarUint = decoder => {
     let num = 0;
-    let len = 0;
-    while (true) {
+    let mult = 1;
+    const len = decoder.arr.length;
+    while (decoder.pos < len) {
       const r = decoder.arr[decoder.pos++];
-      num = num | ((r & BITS7) << len);
-      len += 7;
+      // num = num | ((r & binary.BITS7) << len)
+      num = num + (r & BITS7) * mult; // shift $r << (7*#iterations) and add it to num
+      mult *= 128; // next iteration, shift 7 "more" to the left
       if (r < BIT8) {
-        return num >>> 0 // return unsigned number!
+        return num
       }
-      /* istanbul ignore if */
-      if (len > 53) {
-        throw new Error('Integer out of range!')
+      /* c8 ignore start */
+      if (num > MAX_SAFE_INTEGER) {
+        throw errorIntegerOutOfRange
       }
+      /* c8 ignore stop */
     }
+    throw errorUnexpectedEndOfArray
   };
 
   /**
@@ -2153,29 +2335,33 @@
   const readVarInt = decoder => {
     let r = decoder.arr[decoder.pos++];
     let num = r & BITS6;
-    let len = 6;
+    let mult = 64;
     const sign = (r & BIT7) > 0 ? -1 : 1;
     if ((r & BIT8) === 0) {
       // don't continue reading
       return sign * num
     }
-    while (true) {
+    const len = decoder.arr.length;
+    while (decoder.pos < len) {
       r = decoder.arr[decoder.pos++];
-      num = num | ((r & BITS7) << len);
-      len += 7;
+      // num = num | ((r & binary.BITS7) << len)
+      num = num + (r & BITS7) * mult;
+      mult *= 128;
       if (r < BIT8) {
-        return sign * (num >>> 0)
+        return sign * num
       }
-      /* istanbul ignore if */
-      if (len > 53) {
-        throw new Error('Integer out of range!')
+      /* c8 ignore start */
+      if (num > MAX_SAFE_INTEGER) {
+        throw errorIntegerOutOfRange
       }
+      /* c8 ignore stop */
     }
+    throw errorUnexpectedEndOfArray
   };
 
   /**
-   * Read string of variable length
-   * * varUint is used to store the length of the string
+   * We don't test this function anymore as we use native decoding/encoding by default now.
+   * Better not modify this anymore..
    *
    * Transforming utf8 to a string is pretty expensive. The code performs 10x better
    * when String.fromCodePoint is fed with all characters as arguments.
@@ -2186,7 +2372,8 @@
    * @param {Decoder} decoder
    * @return {String} The read String.
    */
-  const readVarString = decoder => {
+  /* c8 ignore start */
+  const _readVarStringPolyfill = decoder => {
     let remainingLen = readVarUint(decoder);
     if (remainingLen === 0) {
       return ''
@@ -2210,6 +2397,27 @@
       return decodeURIComponent(escape(encodedString))
     }
   };
+  /* c8 ignore stop */
+
+  /**
+   * @function
+   * @param {Decoder} decoder
+   * @return {String} The read String
+   */
+  const _readVarStringNative = decoder =>
+    /** @type any */ (utf8TextDecoder).decode(readVarUint8Array(decoder));
+
+  /**
+   * Read string of variable length
+   * * varUint is used to store the length of the string
+   *
+   * @function
+   * @param {Decoder} decoder
+   * @return {String} The read String
+   *
+   */
+  /* c8 ignore next */
+  const readVarString = utf8TextDecoder ? _readVarStringNative : _readVarStringPolyfill;
 
   /**
    * @param {Decoder} decoder
@@ -2367,7 +2575,7 @@
         const diff = readVarInt(this);
         // if the first bit is set, we read more data
         const hasCount = diff & 1;
-        this.diff = diff >> 1;
+        this.diff = floor(diff / 2); // shift >> 1
         this.count = 1;
         if (hasCount) {
           this.count = readVarUint(this) + 2;
@@ -2423,7 +2631,7 @@
    */
   const createUint8ArrayViewFromArrayBuffer = (buffer, byteOffset, length) => new Uint8Array(buffer, byteOffset, length);
 
-  /* istanbul ignore next */
+  /* c8 ignore start */
   /**
    * @param {string} s
    * @return {Uint8Array}
@@ -2437,6 +2645,7 @@
     }
     return bytes
   };
+  /* c8 ignore stop */
 
   /**
    * @param {string} s
@@ -2446,7 +2655,7 @@
     return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength)
   };
 
-  /* istanbul ignore next */
+  /* c8 ignore next */
   const fromBase64 = isBrowser ? fromBase64Browser : fromBase64Node;
 
   /**
@@ -2482,7 +2691,6 @@
    * @typedef {Object} PRNG
    * @property {generatorNext} next Generate new number
    */
-
   const DefaultPRNG = Xoroshiro128plus;
 
   /**
@@ -2493,7 +2701,7 @@
    * @param {number} seed A positive 32bit integer. Do not use negative numbers.
    * @return {PRNG}
    */
-  const create$3 = seed => new DefaultPRNG(seed);
+  const create$1 = seed => new DefaultPRNG(seed);
 
   /**
    * Generates a single random bool.
@@ -2589,6 +2797,7 @@
    * @template T
    */
   const oneOf = (gen, array) => array[int31(gen, 0, array.length - 1)];
+  /* c8 ignore stop */
 
   /**
    * Utility helpers for generating statistics.
@@ -2625,13 +2834,13 @@
    * @param {function(PromiseResolve<T>,function(Error):void):any} f
    * @return {Promise<T>}
    */
-  const create$2 = f => /** @type {Promise<T>} */ (new Promise(f));
+  const create = f => /** @type {Promise<T>} */ (new Promise(f));
 
   /**
    * @param {number} timeout
    * @return {Promise<undefined>}
    */
-  const wait = timeout => create$2((resolve, reject) => setTimeout(resolve, timeout));
+  const wait = timeout => create((resolve, reject) => setTimeout(resolve, timeout));
 
   /**
    * Checks if an object is a promise using ducktyping.
@@ -2644,13 +2853,19 @@
    */
   const isPromise = p => p instanceof Promise || (p && p.then && p.catch && p.finally);
 
+  /* eslint-env browser */
+
+  const measure = performance.measure.bind(performance);
+  const now = performance.now.bind(performance);
+  const mark = performance.mark.bind(performance);
+
   /**
    * Testing framework with support for generating tests.
    *
    * ```js
    * // test.js template for creating a test executable
-   * import { runTests } from 'lib0/testing.js'
-   * import * as log from 'lib0/logging.js'
+   * import { runTests } from 'lib0/testing'
+   * import * as log from 'lib0/logging'
    * import * as mod1 from './mod1.test.js'
    * import * as mod2 from './mod2.test.js'
 
@@ -2691,7 +2906,7 @@
 
   hasConf('extensive');
 
-  /* istanbul ignore next */
+  /* c8 ignore next */
   const envSeed = hasParam('--seed') ? Number.parseInt(getParam('--seed', '0')) : null;
 
   class TestCase {
@@ -2720,11 +2935,11 @@
     /**
      * @type {number}
      */
-    /* istanbul ignore next */
+    /* c8 ignore next */
     get seed () {
-      /* istanbul ignore else */
+      /* c8 ignore else */
       if (this._seed === null) {
-        /* istanbul ignore next */
+        /* c8 ignore next */
         this._seed = envSeed === null ? uint32$1() : envSeed;
       }
       return this._seed
@@ -2736,19 +2951,19 @@
      * @type {prng.PRNG}
      */
     get prng () {
-      /* istanbul ignore else */
+      /* c8 ignore else */
       if (this._prng === null) {
-        this._prng = create$3(this.seed);
+        this._prng = create$1(this.seed);
       }
       return this._prng
     }
   }
 
   const repetitionTime = Number(getParam('--repetition-time', '50'));
-  /* istanbul ignore next */
+  /* c8 ignore next */
   const testFilter = hasParam('--filter') ? getParam('--filter', '') : null;
 
-  /* istanbul ignore next */
+  /* c8 ignore next */
   const testFilterRegExp = testFilter !== null ? new RegExp(testFilter) : new RegExp('.*');
 
   const repeatTestRegex = /^(repeat|repeating)\s/;
@@ -2763,27 +2978,27 @@
   const run = async (moduleName, name, f, i, numberOfTests) => {
     const uncamelized = fromCamelCase(name.slice(4), ' ');
     const filtered = !testFilterRegExp.test(`[${i + 1}/${numberOfTests}] ${moduleName}: ${uncamelized}`);
-    /* istanbul ignore if */
+    /* c8 ignore next 3 */
     if (filtered) {
       return true
     }
     const tc = new TestCase(moduleName, name);
     const repeat = repeatTestRegex.test(uncamelized);
     const groupArgs = [GREY, `[${i + 1}/${numberOfTests}] `, PURPLE, `${moduleName}: `, BLUE, uncamelized];
-    /* istanbul ignore next */
+    /* c8 ignore next 5 */
     if (testFilter === null) {
       groupCollapsed(...groupArgs);
     } else {
       group(...groupArgs);
     }
     const times = [];
-    const start = performance.now();
+    const start = now();
     let lastTime = start;
     /**
      * @type {any}
      */
     let err = null;
-    performance.mark(`${name}-start`);
+    mark(`${name}-start`);
     do {
       try {
         const p = f(tc);
@@ -2793,7 +3008,7 @@
       } catch (_err) {
         err = _err;
       }
-      const currTime = performance.now();
+      const currTime = now();
       times.push(currTime - lastTime);
       lastTime = currTime;
       if (repeat && err === null && (lastTime - start) < repetitionTime) {
@@ -2802,31 +3017,32 @@
         break
       }
     } while (err === null && (lastTime - start) < repetitionTime)
-    performance.mark(`${name}-end`);
-    /* istanbul ignore if */
+    mark(`${name}-end`);
+    /* c8 ignore next 3 */
     if (err !== null && err.constructor !== SkipError) {
       printError(err);
     }
-    performance.measure(name, `${name}-start`, `${name}-end`);
+    measure(name, `${name}-start`, `${name}-end`);
     groupEnd();
     const duration = lastTime - start;
     let success = true;
     times.sort((a, b) => a - b);
-    /* istanbul ignore next */
+    /* c8 ignore next 3 */
     const againMessage = isBrowser
-      ? `     - ${window.location.href}?filter=\\[${i + 1}/${tc._seed === null ? '' : `&seed=${tc._seed}`}`
+      ? `     - ${window.location.host + window.location.pathname}?filter=\\[${i + 1}/${tc._seed === null ? '' : `&seed=${tc._seed}`}`
       : `\nrepeat: npm run test -- --filter "\\[${i + 1}/" ${tc._seed === null ? '' : `--seed ${tc._seed}`}`;
     const timeInfo = (repeat && err === null)
       ? ` - ${times.length} repetitions in ${humanizeDuration(duration)} (best: ${humanizeDuration(times[0])}, worst: ${humanizeDuration(last(times))}, median: ${humanizeDuration(median(times))}, average: ${humanizeDuration(average(times))})`
       : ` in ${humanizeDuration(duration)}`;
     if (err !== null) {
-      /* istanbul ignore else */
+      /* c8 ignore start */
       if (err.constructor === SkipError) {
         print(GREY, BOLD, 'Skipped: ', UNBOLD, uncamelized);
       } else {
         success = false;
         print(RED, BOLD, 'Failure: ', UNBOLD, UNCOLOR, uncamelized, GREY, timeInfo, againMessage);
       }
+      /* c8 ignore stop */
     } else {
       print(GREEN, BOLD, 'Success: ', UNBOLD, UNCOLOR, uncamelized, GREY, timeInfo, againMessage);
     }
@@ -2879,11 +3095,11 @@
    */
   const measureTime = (message, f) => {
     let duration;
-    const start = performance.now();
+    const start = now();
     try {
       f();
     } finally {
-      duration = performance.now() - start;
+      duration = now() - start;
       print(PURPLE, message, GREY, ` ${humanizeDuration(duration)}`);
     }
     return duration
@@ -2923,13 +3139,13 @@
   };
 
   /**
-   * @param {any} constructor
+   * @param {any} _constructor
    * @param {any} a
    * @param {any} b
    * @param {string} path
    * @throws {TestError}
    */
-  const compareValues = (constructor, a, b, path) => {
+  const compareValues = (_constructor, a, b, path) => {
     if (a !== b) {
       fail(`Values ${stringify(a)} and ${stringify(b)} don't match (${path})`);
     }
@@ -3007,7 +3223,7 @@
         if (length$1(a) !== length$1(b)) {
           _failMessage(message, 'Objects have a different number of attributes', path);
         }
-        forEach(a, (value, key) => {
+        forEach$1(a, (value, key) => {
           if (!hasProperty(b, key)) {
             _failMessage(message, `Property ${path} does not exist on second argument`, path);
           }
@@ -3021,7 +3237,7 @@
         // @ts-ignore
         a.forEach((value, i) => _compare(value, b[i], `${path}[${i}]`, message, customCompare));
         break
-      /* istanbul ignore next */
+      /* c8 ignore next 4 */
       default:
         if (!customCompare(a.constructor, a, b, path, compareValues)) {
           _failMessage(message, `Values ${stringify(a)} and ${stringify(b)} don't match`, path);
@@ -3040,72 +3256,73 @@
    */
   const compare$2 = (a, b, message = null, customCompare = compareValues) => _compare(a, b, 'obj', message, customCompare);
 
-  /* istanbul ignore next */
   /**
-   * @param {boolean} condition
+   * @template T
+   * @param {T} property
    * @param {string?} [message]
+   * @return {asserts property is NonNullable<T>}
    * @throws {TestError}
    */
-  const assert = (condition, message = null) => condition || fail(`Assertion failed${message !== null ? `: ${message}` : ''}`);
+  /* c8 ignore next */
+  const assert = (property, message = null) => { property || fail(`Assertion failed${message !== null ? `: ${message}` : ''}`); };
 
   /**
    * @param {function():void} f
    * @throws {TestError}
    */
   const fails = f => {
-    let err = null;
     try {
       f();
     } catch (_err) {
-      err = _err;
       print(GREEN, '⇖ This Error was expected');
+      return
     }
-    /* istanbul ignore if */
-    if (err === null) {
-      fail('Expected this to fail');
-    }
+    fail('Expected this to fail');
   };
 
   /**
    * @param {Object<string, Object<string, function(TestCase):void|Promise<any>>>} tests
    */
   const runTests = async tests => {
-    const numberOfTests = map$1(tests, mod => map$1(mod, f => /* istanbul ignore next */ f ? 1 : 0).reduce(add, 0)).reduce(add, 0);
+    /**
+     * @param {string} testname
+     */
+    const filterTest = testname => testname.startsWith('test') || testname.startsWith('benchmark');
+    const numberOfTests = map$1(tests, mod => map$1(mod, (f, fname) => /* c8 ignore next */ f && filterTest(fname) ? 1 : 0).reduce(add, 0)).reduce(add, 0);
     let successfulTests = 0;
     let testnumber = 0;
-    const start = performance.now();
+    const start = now();
     for (const modName in tests) {
       const mod = tests[modName];
       for (const fname in mod) {
         const f = mod[fname];
-        /* istanbul ignore else */
-        if (f) {
+        /* c8 ignore else */
+        if (f && filterTest(fname)) {
           const repeatEachTest = 1;
           let success = true;
           for (let i = 0; success && i < repeatEachTest; i++) {
             success = await run(modName, fname, f, testnumber, numberOfTests);
           }
           testnumber++;
-          /* istanbul ignore else */
+          /* c8 ignore else */
           if (success) {
             successfulTests++;
           }
         }
       }
     }
-    const end = performance.now();
+    const end = now();
     print('');
     const success = successfulTests === numberOfTests;
-    /* istanbul ignore next */
+    /* c8 ignore start */
     if (success) {
-      /* istanbul ignore next */
       print(GREEN, BOLD, 'All tests successful!', GREY, UNBOLD, ` in ${humanizeDuration(end - start)}`);
-      /* istanbul ignore next */
       printImgBase64(nyanCatImage, 50);
     } else {
       const failedTests = numberOfTests - successfulTests;
       print(RED, BOLD, `> ${failedTests} test${failedTests > 1 ? 's' : ''} failed`);
     }
+    /* c8 ignore stop */
     return success
   };
 
@@ -3136,14 +3353,6 @@
   const nyanCatImage = 'R0lGODlhjABMAPcAAMiSE0xMTEzMzUKJzjQ0NFsoKPc7//FM/9mH/z9x0HIiIoKCgmBHN+frGSkZLdDQ0LCwsDk71g0KCUzDdrQQEOFz/8yYdelmBdTiHFxcXDU2erR/mLrTHCgoKK5szBQUFNgSCTk6ymfpCB9VZS2Bl+cGBt2N8kWm0uDcGXhZRUvGq94NCFPhDiwsLGVlZTgqIPMDA1g3aEzS5D6xAURERDtG9JmBjJsZGWs2AD1W6Hp6eswyDeJ4CFNTU1LcEoJRmTMzSd14CTg5ser2GmDzBd17/xkZGUzMvoSMDiEhIfKruCwNAJaWlvRzA8kNDXDrCfi0pe1U/+GS6SZrAB4eHpZwVhoabsx9oiYmJt/TGHFxcYyMjOid0+Zl/0rF6j09PeRr/0zU9DxO6j+z0lXtBtp8qJhMAEssLGhoaPL/GVn/AAsWJ/9/AE3Z/zs9/3cAAOlf/+aa2RIyADo85uhh/0i84WtrazQ0UyMlmDMzPwUFBe16BTMmHau0E03X+g8pMEAoS1MBAf++kkzO8pBaqSZoe9uB/zE0BUQ3Sv///4WFheuiyzo880gzNDIyNissBNqF/8RiAOF2qG5ubj0vL1z6Avl5ASsgGkgUSy8vL/8n/z4zJy8lOv96uEssV1csAN5ZCDQ0Wz1a3tbEGHLeDdYKCg4PATE7PiMVFSoqU83eHEi43gUPAOZ8reGogeKU5dBBC8faHEez2lHYF4bQFMukFtl4CzY3kkzBVJfMGZkAAMfSFf27mP0t//g4/9R6Dfsy/1DRIUnSAPRD/0fMAFQ0Q+l7rnbaD0vEntCDD6rSGtO8GNpUCU/MK07LPNEfC7RaABUWWkgtOst+71v9AfD7GfDw8P19ATtA/NJpAONgB9yL+fm6jzIxMdnNGJxht1/2A9x//9jHGOSX3+5tBP27l35+fk5OTvZ9AhYgTjo0PUhGSDs9+LZjCFf2Aw0IDwcVAA8PD5lwg9+Q7YaChC0kJP8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH/C05FVFNDQVBFMi4wAwEAAAAh/wtYTVAgRGF0YVhNUDw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDpGNEM2MUEyMzE0QTRFMTExOUQzRkE3QTBCRDNBMjdBQyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDpERjQ0NEY0QkI2MTcxMUUxOUJEQkUzNUNGQTkwRTU2MiIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDpERjQ0NEY0QUI2MTcxMUUxOUJEQkUzNUNGQTkwRTU2MiIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IFdpbmRvd3MiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo1OEE3RTIwRjcyQTlFMTExOTQ1QkY2QTU5QzVCQjJBOSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpGNEM2MUEyMzE0QTRFMTExOUQzRkE3QTBCRDNBMjdBQyIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PgH//v38+/r5+Pf29fTz8vHw7+7t7Ovq6ejn5uXk4+Lh4N/e3dzb2tnY19bV1NPS0dDPzs3My8rJyMfGxcTDwsHAv769vLu6ubi3trW0s7KxsK+urayrqqmop6alpKOioaCfnp2cm5qZmJeWlZSTkpGQj46NjIuKiYiHhoWEg4KBgH9+fXx7enl4d3Z1dHNycXBvbm1sa2ppaGdmZWRjYmFgX15dXFtaWVhXVlVUU1JRUE9OTUxLSklIR0ZFRENCQUA/Pj08Ozo5ODc2NTQzMjEwLy4tLCsqKSgnJiUkIyIhIB8eHRwbGhkYFxYVFBMSERAPDg0MCwoJCAcGBQQDAgEAACH5BAkKABEAIf4jUmVzaXplZCBvbiBodHRwczovL2V6Z2lmLmNvbS9yZXNpemUALAAAAACMAEwAAAj/ACMIHEiwoMGDCBMqXMiwocOHECNKnEixosWLGDNq3Mixo8ePIEOKHEmypMmTKFOqXLkxEcuXMAm6jElTZaKZNXOOvOnyps6fInECHdpRKNGjSJMqXZrSKNOnC51CnUq1qtWrWLNC9GmQq9avYMOKHUs2aFmmUs8SlcC2rdu3cNWeTEG3rt27eBnIHflBj6C/gAMLHpxCz16QElJw+7tom+PHkCOP+8utiuHDHRP/5WICgefPkIYV8RAjxudtkwVZjqCnNeaMmheZqADm8+coHn5kyPBt2udFvKrc+7A7gITXFzV77hLF9ucYGRaYo+FhWhHPUKokobFgQYbjyCsq/3fuHHr3BV88HMBeZd357+HFpxBEvnz0961b3+8OP37DtgON5xxznpl3ng5aJKiFDud5B55/Ct3TQwY93COQgLZV0AUC39ihRYMggjhJDw9CeNA9kyygxT2G6TGfcxUY8pkeH3YHgTkMNrgFBJOYs8Akl5l4Yoor3mPki6BpUsGMNS6QiA772WjNPR8CSRAjWBI0B5ZYikGQGFwyMseVYWoZppcDhSkmmVyaySWaAqk5pkBbljnQlnNYEZ05fGaAJGieVQAMjd2ZY+R+X2Rgh5FVBhmBG5BGKumklFZq6aWYZqrpppTOIQQNNPjoJ31RbGibIRXQuIExrSSY4wI66P9gToJlGHOFo374MQg2vGLjRa65etErNoMA68ew2Bi7a6+/Aitsr8UCi6yywzYb7LDR5jotsMvyau0qJJCwGw0vdrEkeTRe0UknC7hQYwYMQrmAMZ2U4WgY+Lahbxt+4Ovvvm34i68fAAscBsD9+kvwvgYDHLDACAu8sL4NFwzxvgkP3EYhhYzw52dFhOPZD5Ns0Iok6PUwyaIuTJLBBwuUIckG8RCkhhrUHKHzEUTcfLM7Ox/hjs9qBH0E0ZUE3bPPQO9cCdFGIx300EwH/bTPUfuc9M5U30zEzhN87NkwcDyXgY/oxaP22vFQIR2JBT3xBDhEUyO33FffXMndT1D/QzTfdPts9915qwEO3377DHjdfBd++N2J47y44Ij7PMN85UgBxzCeQQKJbd9wFyKI6jgqUBqoD6G66qinvvoQ1bSexutDyF4N7bLTHnvruLd+++u5v76766vb3jvxM0wxnyBQxHEued8Y8cX01Fc/fQcHZaG97A1or30DsqPgfRbDpzF+FtyPD37r4ns/fDXnp+/9+qif//74KMj/fRp9TEIDAxb4ixIWQcACFrAMFkigAhPIAAmwyHQDYYMEJ0jBClrwghjMoAY3yMEOYhAdQaCBFtBAAD244oQoTKEKV5iCbizEHjCkoCVgCENLULAJNLTHNSZ4jRzaQ4Y5tOEE+X24Qwn2MIdApKEQJUhEHvowiTBkhh7QVqT8GOmKWHwgFiWghR5AkCA+DKMYx0jGMprxjGhMYw5XMEXvGAZF5piEhQyih1CZ4wt6kIARfORFhjwDBoCEQQkIUoJAwmAFBDEkDAhSCkMOciCFDCQiB6JIgoDAkYQ0JAgSaUhLYnIgFLjH9AggkHsQYHo1oyMVptcCgUjvCx34opAWkp/L1BIhtxxILmfJy17KxJcrSQswhykWYRLzI8Y8pjKXycxfNvOZMEkmNC0izWlSpJrWlAg2s8kQnkRgJt7kpja92ZNwivOcNdkmOqOyzoyos50IeSc850nPegIzIAAh+QQJCgARACwAAAAAjABMAAAI/wAjCBxIsKDBgwgTKlzIsKHDhxAjSpxIsaLFixgzatzIsaPHjyBDihxJcmKikihTZkx0UqXLlw5ZwpxJ02DLmjhz6twJkqVMnz55Ch1KtGhCmUaTYkSqtKnJm05rMl0aVefUqlhtFryatavXr2DDHoRKkKzYs2jTqpW61exani3jun0rlCvdrhLy6t3Lt+9dlykCCx5MuDCDvyU/6BHEuLHjx5BT6EEsUkIKbowXbdvMubPncYy5VZlM+aNlxlxMIFjNGtKwIggqDGO9DbSg0aVNpxC0yEQFMKxZRwmHoEiU4AgW8cKdu+Pp1V2OI6c9bdq2cLARQGEeIV7zjM+nT//3oEfPNDiztTOXoMf7d4vhxbP+ts6cORrfIK3efq+8FnN2kPbeRPEFF918NCywgBZafLNfFffEM4k5C0wi4IARFchaBV0gqGCFDX6zQQqZZPChhRgSuBtyFRiC3DcJfqgFDTTSYOKJF6boUIGQaFLBizF+KOSQKA7EyJEEzXHkkWIQJMaSjMxBEJSMJAllk0ZCKWWWS1q5JJYCUbllBEpC6SWTEehxzz0rBqdfbL1AEsONQ9b5oQ73DOTGnnz26eefgAYq6KCEFmoooCHccosdk5yzYhQdBmfIj3N++AAEdCqoiDU62LGAOXkK5Icfg2BjKjZejDqqF6diM4iqfrT/ig2spZ6aqqqsnvqqqrLS2uqtq7a666i9qlqrqbeeQEIGN2awYhc/ilepghAssM6JaCwAQQ8ufBpqBGGE28a4bfgR7rnktnFuuH6ku24Y6Zp7brvkvpuuuuvGuy6949rrbr7kmltHIS6Yw6AWjgoyXRHErTYnPRtskMEXdLrQgzlffKHDBjZ8q4Ya1Bwh8hFEfPyxOyMf4Y7JaqR8BMuVpFyyySiPXAnLLsOc8so0p3yzyTmbHPPIK8sxyYJr9tdmcMPAwdqcG3TSyQZ2fniF1N8+8QQ4LFOjtdY/f1zJ109QwzLZXJvs9ddhqwEO2WabjHbXZLf99tdxgzy32k8Y/70gK+5UMsNu5UiB3mqQvIkA1FJLfO0CFH8ajxZXd/JtGpgPobnmmGe++RDVdJ7G50OIXg3popMeeueod37656l/vrrnm5uOOgZIfJECBpr3sZsgUMQRLXLTEJJBxPRkkETGRmSS8T1a2CCPZANlYb3oDVhvfQOio6B9FrOn8X0W2H/Pfefeaz97NeOXr/35mI+//vcouJ9MO7V03gcDFjCmxCIADGAAr1CFG2mBWQhEoA600IMLseGBEIygBCdIwQpa8IIYzKAGMcgDaGTMFSAMoQhDaAE9HOyEKOyBewZijxZG0BItbKElItiEGNrjGhC8hg3t8UIbzhCCO8ThA+Z1aMMexvCHDwxiDndoRBk+8A03Slp/1CTFKpaHiv3JS9IMssMuevGLYAyjGMdIxjJ6EYoK0oNivmCfL+RIINAD0GT0YCI8rdAgz4CBHmFQAoKUYI8wWAFBAAkDgpQCkH0cyB/3KMiBEJIgIECkHwEJgkECEpKSVKQe39CCjH0gTUbIWAsQcg8CZMw78TDlF76lowxdUSBXfONArrhC9pSnlbjMpS7rssuZzKWXPQHKL4HZEWESMyXDPKZHkqnMZjrzLnZ5pjSnSc1qWmQuzLSmQrCpzW5685vfjCY4x0nOcprznB4JCAAh+QQJCgBIACwAAAAAjABMAAAI/wCRCBxIsKDBgwgTKlzIsKHDhxAjSpxIsaLFixgzatzIsaPHjyBDihxJcmGiRCVTqsyIcqXLlzBjypxJs6bNmzgPtjR4MqfPn0CDCh1KtKjNnkaTPtyptKlToEyfShUYderTqlaNnkSJNGvTrl6dYg1bdCzZs2jTqvUpoa3bt3DjrnWZoq7du3jzMphb8oMeQYADCx5MOIUeviIlpOAGeNG2x5AjSx4HmFuVw4g/KgbMxQSCz6AhDSuCoMIw0NsoC7qcWXMKQYtMVAADGnSUcAiKRKmNYBEv1q07bv7cZTfvz9OSfw5HGgEU1vHiBdc4/Djvb3refY5y2jlrPeCnY/+sbv1zjAzmzFGZBgnS5+f3PqTvIUG8RfK1i5vPsGDBpB8egPbcF5P0l0F99jV0z4ILCoQfaBV0sV9/C7jwwzcYblAFGhQemGBDX9BAAwH3HKbHa7xVYEht51FYoYgictghgh8iZMQ95vSnBYP3oBiaJhWwyJ+LRLrooUGlwKCkkgSVsCQMKxD0JAwEgfBkCU0+GeVAUxK0wpVZLrmlQF0O9OWSTpRY4ALp0dCjILy5Vxow72hR5J0U2oGZQPb06eefgAYq6KCEFmrooYj6CQMIICgAIw0unINiFBLWZkgFetjZnzU62EEkEw/QoIN/eyLh5zWoXmPJn5akek0TrLr/Cqirq/rZaqqw2ppqrX02QWusuAKr6p++7trnDtAka8o5NKDYRZDHZUohBBkMWaEWTEBwj52TlMrGt+CGK+645JZr7rnopquuuejU9YmPtRWBGwKZ2rCBDV98IeMCPaChRb7ybCBPqVkUnMbBaTRQcMENIJwGCgtnUY3DEWfhsMILN4wwxAtPfHA1EaNwccQaH8xxwR6nAfLCIiOMMcMI9wEvaMPA8VmmV3TSCZ4UGtNJGaV+PMTQQztMNNFGH+1wNUcPkbTSCDe9tNRRH51yGlQLDfXBR8ssSDlSwNFdezdrkfPOX7jAZjzcUrGAz0ATBA44lahhtxrUzD133XdX/6I3ONTcrcbf4Aiet96B9/134nb/zbfdh8/NuBp+I3535HQbvrjdM0zxmiBQxAFtbR74u8EGC3yRSb73qPMFAR8sYIM8KdCIBORH5H4EGYITofsR7gj++xGCV/I773f7rnvwdw9f/O9E9P7742o4f7c70AtOxhEzuEADAxYApsQi5JdPvgUb9udCteyzX2EAtiMRxvxt1N+GH/PP74f9beRPP//+CwP/8Je//dkvgPzrn/8G6D8D1g+BAFyg/QiYv1XQQAtoIIAeXMHBDnqQg1VQhxZGSMISjlCDBvGDHwaBjRZiwwsqVKEXXIiNQcTQDzWg4Q1Z6EIYxnCGLrRhDP9z6MId0tCHMqShEFVIxBYasYc3PIEecrSAHZUIPDzK4hV5pAcJ6IFBCHGDGMdIxjKa8YxoTKMa18jGNqJxDlNcQAYOc49JmGMS9ziIHr6Qni+Axwg56kGpDMKIQhIkAoUs5BwIIoZEMiICBHGkGAgyB0cuciCNTGRBJElJSzLSkZtM5CQHUslECuEe+SKAQO5BgHxJxyB6oEK+WiAQI+SrA4Os0UPAEx4k8DKXAvklQXQwR2DqMiVgOeZLkqnMlTCzmdCcy1aQwJVpRjMk06zmM6/pEbNwEyTb/OZHwinOjpCznNREJzaj4k11TiSZ7XSnPHESz3lW5JnntKc+94kTFnjyUyP1/OdSBErQghr0oB0JCAAh+QQFCgAjACwAAAAAjABMAAAI/wBHCBxIsKDBgwgTKlzIsKHDhxAjSpxIsaLFixgzatzIsaPHjyBDihxJkmCikihTWjw5giVLlTBjHkz0UmBNmThz6tzJs6fPkTRn3vxJtKjRo0iTbgxqUqlTiC5tPt05dOXUnkyval2YdatXg12/ih07lmZQs2bJql27NSzbqW7fOo0rN2nViBLy6t3Lt29dmfGqCB5MuLBhBvH+pmSQQpAgKJAjS54M2XEVBopLSmjseBGCz6BDi37lWFAVPZlHbnb8SvRnSL0qIKjQK/Q2y6hTh1z9ahuYKK4rGEJgSHboV1BO697d+HOFLq4/e/j2zTmYz8lR37u3vOPq6KGnEf/68mXaNjrAEWT/QL5b943fwX+OkWGBOT3TQie/92HBggwSvCeRHgQSKFB8osExzHz12UdDddhVQYM5/gEoYET3ZDBJBveghmBoRRhHn38LaKHFDyimYIcWJFp44UP39KCFDhno0WFzocERTmgjkrhhBkCy2GKALzq03Tk6LEADFffg+NowshU3jR1okGjllf658EWRMN7zhX80NCkIeLTpISSWaC4wSW4ElQLDm28SVAKcMKxAEJ0wEAQCnSXISaedA+FJ0Ap8+gknoAIJOhChcPYpUCAdUphBc8PAEZ2ZJCZC45UQWIPpmgTZI+qopJZq6qmopqrqqqy2eioMTtz/QwMNmTRXQRGXnqnIFw0u0EOVC9zDIqgDjXrNsddYQqolyF7TxLLNltqssqMyi+yz1SJLrahNTAvttd8mS2q32pJ6ATTQfCKma10YZ+YGV1wRJIkuzAgkvPKwOQIb/Pbr778AByzwwAQXbPDBBZvxSWNSbBMOrghEAR0CZl7RSSclJlkiheawaEwnZeibxchplJxGAyOP3IDJaaCQchbVsPxyFiyjnPLKJruccswlV/MyCjW/jHPJOo/Mcxo+pwy0yTarbHIfnL2ioGvvaGExxrzaJ+wCdvT3ccgE9TzE2GOzTDbZZp/NcjVnD5G22ia3vbbccZ99dBp0iw13yWdD/10aF5BERx899CzwhQTxxHMP4hL0R08GlxQEDjiVqGG5GtRMPnnll1eiOTjUXK7G5+CInrnmoXf+eeqWf8655adPzroanqN+eeyUm7665TNMsQlnUCgh/PDCu1JFD/6ZqPzyvhJgEOxHRH8EGaITIf0R7oh+/RGiV3I99ZdbL332l2/f/fVEVH/962qYf7k76ItOxhEzuABkBhbkr//++aeQyf0ADKDzDBKGArbhgG3wQwEL6AcEtmGBBnQgBMPgQAUusIEInKADHwjBCkIQgwfUoAQ7iEALMtAPa5iEfbTQIT0YgTxGKJAMvfSFDhDoHgT4AgE6hBA/+GEQ2AgiNvy84EMfekGI2BhEEf1QAyQuEYhCJGIRjyhEJRaxiUJ8IhKlaEQkWtGHWAyiFqO4RC/UIIUl2s4H9PAlw+lrBPHQQ4UCtDU7vJEgbsijHvfIxz768Y+ADKQgB0lIQGJjDdvZjkBstJ3EHCSRRLLRHQnCiEoSJAKVrOQcCCKGTDIiApTMpBgIMgdPbnIgncxkQTw5yoGUMpOnFEgqLRnKSrZSIK/U5Ag+kLjEDaSXCQGmQHzJpWIasyV3OaYyl8nMZi7nLsl0ZkagKc1qWvOa2JxLNLPJzW6+ZZvevAhdwrkStJCTI2gZ5zknos51shOc7oynPOdJz3ra857hDAgAOw==';
 
   /**
-   * Utility module to work with sets.
-   *
-   * @module set
-   */
-
-  const create$1 = () => new Set();
-
-  /**
    * Observable class prototype.
    *
    * @module observable
@@ -3168,7 +3377,7 @@
      * @param {function} f
      */
     on (name, f) {
-      setIfUndefined(this._observers, name, create$1).add(f);
+      setIfUndefined(this._observers, name, create$5).add(f);
     }
 
     /**
@@ -3396,7 +3605,7 @@
    * @function
    */
   const addToDeleteSet = (ds, client, clock, length) => {
-    setIfUndefined(ds.clients, client, () => []).push(new DeleteItem(clock, length));
+    setIfUndefined(ds.clients, client, () => /** @type {Array<DeleteItem>} */ ([])).push(new DeleteItem(clock, length));
   };
 
   const createDeleteSet = () => new DeleteSet();
@@ -3444,17 +3653,21 @@
    */
   const writeDeleteSet = (encoder, ds) => {
     writeVarUint(encoder.restEncoder, ds.clients.size);
-    ds.clients.forEach((dsitems, client) => {
-      encoder.resetDsCurVal();
-      writeVarUint(encoder.restEncoder, client);
-      const len = dsitems.length;
-      writeVarUint(encoder.restEncoder, len);
-      for (let i = 0; i < len; i++) {
-        const item = dsitems[i];
-        encoder.writeDsClock(item.clock);
-        encoder.writeDsLen(item.len);
-      }
-    });
+
+    // Ensure that the delete set is written in a deterministic order
+    from(ds.clients.entries())
+      .sort((a, b) => b[0] - a[0])
+      .forEach(([client, dsitems]) => {
+        encoder.resetDsCurVal();
+        writeVarUint(encoder.restEncoder, client);
+        const len = dsitems.length;
+        writeVarUint(encoder.restEncoder, len);
+        for (let i = 0; i < len; i++) {
+          const item = dsitems[i];
+          encoder.writeDsClock(item.clock);
+          encoder.writeDsLen(item.len);
+        }
+      });
   };
 
   /**
@@ -3472,7 +3685,7 @@
       const client = readVarUint(decoder.restDecoder);
       const numberOfDeletes = readVarUint(decoder.restDecoder);
       if (numberOfDeletes > 0) {
-        const dsField = setIfUndefined(ds.clients, client, () => []);
+        const dsField = setIfUndefined(ds.clients, client, () => /** @type {Array<DeleteItem>} */ ([]));
         for (let i = 0; i < numberOfDeletes; i++) {
           dsField.push(new DeleteItem(decoder.readDsClock(), decoder.readDsLen()));
         }
@@ -3573,7 +3786,7 @@
    */
   class Doc extends Observable {
     /**
-     * @param {DocOpts} [opts] configuration
+     * @param {DocOpts} opts configuration
      */
     constructor ({ guid = uuidv4(), collectionid = null, gc = true, gcFilter = () => true, meta = null, autoLoad = false, shouldLoad = true } = {}) {
       super();
@@ -3607,13 +3820,57 @@
       this.shouldLoad = shouldLoad;
       this.autoLoad = autoLoad;
       this.meta = meta;
+      /**
+       * This is set to true when the persistence provider loaded the document from the database or when the `sync` event fires.
+       * Note that not all providers implement this feature. Provider authors are encouraged to fire the `load` event when the doc content is loaded from the database.
+       *
+       * @type {boolean}
+       */
       this.isLoaded = false;
-      this.whenLoaded = create$2(resolve => {
+      /**
+       * This is set to true when the connection provider has successfully synced with a backend.
+       * Note that when using peer-to-peer providers this event may not provide very useful.
+       * Also note that not all providers implement this feature. Provider authors are encouraged to fire
+       * the `sync` event when the doc has been synced (with `true` as a parameter) or if connection is
+       * lost (with false as a parameter).
+       */
+      this.isSynced = false;
+      /**
+       * Promise that resolves once the document has been loaded from a presistence provider.
+       */
+      this.whenLoaded = create(resolve => {
         this.on('load', () => {
           this.isLoaded = true;
           resolve(this);
         });
       });
+      const provideSyncedPromise = () => create(resolve => {
+        /**
+         * @param {boolean} isSynced
+         */
+        const eventHandler = (isSynced) => {
+          if (isSynced === undefined || isSynced === true) {
+            this.off('sync', eventHandler);
+            resolve();
+          }
+        };
+        this.on('sync', eventHandler);
+      });
+      this.on('sync', isSynced => {
+        if (isSynced === false && this.isSynced) {
+          this.whenSynced = provideSyncedPromise();
+        }
+        this.isSynced = isSynced === undefined || isSynced === true;
+        if (!this.isLoaded) {
+          this.emit('load', []);
+        }
+      });
+      /**
+       * Promise that resolves once the document has been synced with a backend.
+       * This promise is recreated when the connection is lost.
+       * Note the documentation about the `isSynced` property.
+       */
+      this.whenSynced = provideSyncedPromise();
     }
 
     /**
@@ -3638,7 +3895,7 @@
     }
 
     getSubdocGuids () {
-      return new Set(Array.from(this.subdocs).map(doc => doc.guid))
+      return new Set(from(this.subdocs).map(doc => doc.guid))
     }
 
     /**
@@ -3647,13 +3904,15 @@
      * that happened inside of the transaction are sent as one message to the
      * other peers.
      *
-     * @param {function(Transaction):void} f The function that should be executed as a transaction
+     * @template T
+     * @param {function(Transaction):T} f The function that should be executed as a transaction
      * @param {any} [origin] Origin of who started the transaction. Will be stored on transaction.origin
+     * @return T
      *
      * @public
      */
     transact (f, origin = null) {
-      transact(this, f, origin);
+      return transact(this, f, origin)
     }
 
     /**
@@ -4100,37 +4359,6 @@
     }
   }
 
-  /**
-   * Error helpers.
-   *
-   * @module error
-   */
-
-  /* istanbul ignore next */
-  /**
-   * @param {string} s
-   * @return {Error}
-   */
-  const create = s => new Error(s);
-
-  /* istanbul ignore next */
-  /**
-   * @throws {Error}
-   * @return {never}
-   */
-  const methodUnimplemented = () => {
-    throw create('Method unimplemented')
-  };
-
-  /* istanbul ignore next */
-  /**
-   * @throws {Error}
-   * @return {never}
-   */
-  const unexpectedCase = () => {
-    throw create('Unexpected case')
-  };
-
   class DSEncoderV1 {
     constructor () {
       this.restEncoder = createEncoder();
@@ -4495,7 +4723,7 @@
     writeVarUint(encoder.restEncoder, sm.size);
     // Write items with higher client ids first
     // This heavily improves the conflict algorithm.
-    Array.from(sm.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, clock]) => {
+    from(sm.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, clock]) => {
       // @ts-ignore
       writeStructs(encoder, store.clients.get(client), client, clock);
     });
@@ -4630,7 +4858,7 @@
      */
     const stack = [];
     // sort them so that we take the higher id first, in case of conflicts the lower id will probably not conflict with the id from the higher user.
-    let clientsStructRefsIds = Array.from(clientsStructRefs.keys()).sort((a, b) => a - b);
+    let clientsStructRefsIds = from(clientsStructRefs.keys()).sort((a, b) => a - b);
     if (clientsStructRefsIds.length === 0) {
       return null
     }
@@ -5000,7 +5228,7 @@
    */
   const writeStateVector = (encoder, sv) => {
     writeVarUint(encoder.restEncoder, sv.size);
-    Array.from(sv.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, clock]) => {
+    from(sv.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, clock]) => {
       writeVarUint(encoder.restEncoder, client); // @todo use a special client decoder that is based on mapping
       writeVarUint(encoder.restEncoder, clock);
     });
@@ -5298,7 +5526,7 @@
      * @param {Doc} doc
      * @param {number} clientid
      * @param {string} userDescription
-     * @param {Object} [conf]
+     * @param {Object} conf
      * @param {function(Transaction, DeleteSet):boolean} [conf.filter]
      */
     setUserMapping (doc, clientid, userDescription, { filter = () => true } = {}) {
@@ -5311,7 +5539,7 @@
         users.set(userDescription, user);
       }
       user.get('ids').push([clientid]);
-      users.observe(event => {
+      users.observe(_event => {
         setTimeout(() => {
           const userOverwrite = users.get(userDescription);
           if (userOverwrite !== user) {
@@ -5796,7 +6024,7 @@
    * @param {Snapshot} snapshot
    */
   const splitSnapshotAffectedStructs = (transaction, snapshot) => {
-    const meta = setIfUndefined(transaction.meta, splitSnapshotAffectedStructs, create$1);
+    const meta = setIfUndefined(transaction.meta, splitSnapshotAffectedStructs, create$5);
     const store = transaction.doc.store;
     // check if we already split for this snapshot
     if (!meta.has(snapshot)) {
@@ -5811,6 +6039,14 @@
   };
 
   /**
+   * @example
+   *  const ydoc = new Y.Doc({ gc: false })
+   *  ydoc.getText().insert(0, 'world!')
+   *  const snapshot = Y.snapshot(ydoc)
+   *  ydoc.getText().insert(0, 'hello ')
+   *  const restored = Y.createDocFromSnapshot(ydoc, snapshot)
+   *  assert(restored.getText().toString() === 'world!')
+   *
    * @param {Doc} originDoc
    * @param {Snapshot} snapshot
    * @param {Doc} [newDoc] Optionally, you may define the Yjs document that receives the data from originDoc
@@ -5819,7 +6055,7 @@
   const createDocFromSnapshot = (originDoc, snapshot, newDoc = new Doc()) => {
     if (originDoc.gc) {
       // we should not try to restore a GC-ed document, because some of the restored items might have their content deleted
-      throw new Error('originDoc must not be garbage collected')
+      throw new Error('Garbage-collection must be disabled in `originDoc`!')
     }
     const { sv, ds } = snapshot;
 
@@ -6216,7 +6452,7 @@
   const addChangedTypeToTransaction = (transaction, type, parentSub) => {
     const item = type._item;
     if (item === null || (item.id.clock < (transaction.beforeState.get(item.id.client) || 0) && !item.deleted)) {
-      setIfUndefined(transaction.changed, type, create$1).add(parentSub);
+      setIfUndefined(transaction.changed, type, create$5).add(parentSub);
     }
   };
 
@@ -6438,15 +6674,21 @@
   /**
    * Implements the functionality of `y.transact(()=>{..})`
    *
+   * @template T
    * @param {Doc} doc
-   * @param {function(Transaction):void} f
+   * @param {function(Transaction):T} f
    * @param {any} [origin=true]
+   * @return {T}
    *
    * @function
    */
   const transact = (doc, f, origin = null, local = true) => {
     const transactionCleanups = doc._transactionCleanups;
     let initialCall = false;
+    /**
+     * @type {any}
+     */
+    let result = null;
     if (doc._transaction === null) {
       initialCall = true;
       doc._transaction = new Transaction(doc, origin, local);
@@ -6457,7 +6699,7 @@
       doc.emit('beforeTransaction', [doc._transaction, doc]);
     }
     try {
-      f(doc._transaction);
+      result = f(doc._transaction);
     } finally {
       if (initialCall) {
         const finishCleanup = doc._transaction === transactionCleanups[0];
@@ -6475,6 +6717,7 @@
         }
       }
     }
+    return result
   };
 
   class StackItem {
@@ -6561,7 +6804,7 @@
           }
         });
         itemsToRedo.forEach(struct => {
-          performedChange = redoItem(transaction, struct, itemsToRedo, stackItem.insertions, undoManager.ignoreRemoteMapChanges) !== null || performedChange;
+          performedChange = redoItem(transaction, struct, itemsToRedo, stackItem.insertions, undoManager.ignoreRemoteMapChanges, undoManager) !== null || performedChange;
         });
         // We want to delete in reverse order so that children are deleted before
         // parents, so we have more information available when items are filtered.
@@ -6618,7 +6861,7 @@
      */
     constructor (typeScope, {
       captureTimeout = 500,
-      captureTransaction = tr => true,
+      captureTransaction = _tr => true,
       deleteFilter = () => true,
       trackedOrigins = new Set([null]),
       ignoreRemoteMapChanges = false,
@@ -7374,17 +7617,17 @@
 
   /**
    * @param {Uint8Array} update
+   * @param {function(Item|GC|Skip):Item|GC|Skip} blockTransformer
    * @param {typeof UpdateDecoderV2 | typeof UpdateDecoderV1} YDecoder
    * @param {typeof UpdateEncoderV2 | typeof UpdateEncoderV1 } YEncoder
    */
-  const convertUpdateFormat = (update, YDecoder, YEncoder) => {
+  const convertUpdateFormat = (update, blockTransformer, YDecoder, YEncoder) => {
     const updateDecoder = new YDecoder(createDecoder(update));
     const lazyDecoder = new LazyStructReader(updateDecoder, false);
     const updateEncoder = new YEncoder();
     const lazyWriter = new LazyStructWriter(updateEncoder);
-
     for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
-      writeStructToLazyStructWriter(lazyWriter, curr, 0);
+      writeStructToLazyStructWriter(lazyWriter, blockTransformer(curr), 0);
     }
     finishLazyStructWriting(lazyWriter);
     const ds = readDeleteSet(updateDecoder);
@@ -7393,14 +7636,135 @@
   };
 
   /**
-   * @param {Uint8Array} update
+   * @typedef {Object} ObfuscatorOptions
+   * @property {boolean} [ObfuscatorOptions.formatting=true]
+   * @property {boolean} [ObfuscatorOptions.subdocs=true]
+   * @property {boolean} [ObfuscatorOptions.yxml=true] Whether to obfuscate nodeName / hookName
    */
-  const convertUpdateFormatV1ToV2 = update => convertUpdateFormat(update, UpdateDecoderV1, UpdateEncoderV2);
+
+  /**
+   * @param {ObfuscatorOptions} obfuscator
+   */
+  const createObfuscator = ({ formatting = true, subdocs = true, yxml = true } = {}) => {
+    let i = 0;
+    const mapKeyCache = create$6();
+    const nodeNameCache = create$6();
+    const formattingKeyCache = create$6();
+    const formattingValueCache = create$6();
+    formattingValueCache.set(null, null); // end of a formatting range should always be the end of a formatting range
+    /**
+     * @param {Item|GC|Skip} block
+     * @return {Item|GC|Skip}
+     */
+    return block => {
+      switch (block.constructor) {
+        case GC:
+        case Skip:
+          return block
+        case Item: {
+          const item = /** @type {Item} */ (block);
+          const content = item.content;
+          switch (content.constructor) {
+            case ContentDeleted:
+              break
+            case ContentType: {
+              if (yxml) {
+                const type = /** @type {ContentType} */ (content).type;
+                if (type instanceof YXmlElement) {
+                  type.nodeName = setIfUndefined(nodeNameCache, type.nodeName, () => 'node-' + i);
+                }
+                if (type instanceof YXmlHook) {
+                  type.hookName = setIfUndefined(nodeNameCache, type.hookName, () => 'hook-' + i);
+                }
+              }
+              break
+            }
+            case ContentAny: {
+              const c = /** @type {ContentAny} */ (content);
+              c.arr = c.arr.map(() => i);
+              break
+            }
+            case ContentBinary: {
+              const c = /** @type {ContentBinary} */ (content);
+              c.content = new Uint8Array([i]);
+              break
+            }
+            case ContentDoc: {
+              const c = /** @type {ContentDoc} */ (content);
+              if (subdocs) {
+                c.opts = {};
+                c.doc.guid = i + '';
+              }
+              break
+            }
+            case ContentEmbed: {
+              const c = /** @type {ContentEmbed} */ (content);
+              c.embed = {};
+              break
+            }
+            case ContentFormat: {
+              const c = /** @type {ContentFormat} */ (content);
+              if (formatting) {
+                c.key = setIfUndefined(formattingKeyCache, c.key, () => i + '');
+                c.value = setIfUndefined(formattingValueCache, c.value, () => ({ i }));
+              }
+              break
+            }
+            case ContentJSON: {
+              const c = /** @type {ContentJSON} */ (content);
+              c.arr = c.arr.map(() => i);
+              break
+            }
+            case ContentString: {
+              const c = /** @type {ContentString} */ (content);
+              c.str = repeat((i % 10) + '', c.str.length);
+              break
+            }
+            default:
+              // unknown content type
+              unexpectedCase();
+          }
+          if (item.parentSub) {
+            item.parentSub = setIfUndefined(mapKeyCache, item.parentSub, () => i + '');
+          }
+          i++;
+          return block
+        }
+        default:
+          // unknown block-type
+          unexpectedCase();
+      }
+    }
+  };
+
+  /**
+   * This function obfuscates the content of a Yjs update. This is useful to share
+   * buggy Yjs documents while significantly limiting the possibility that a
+   * developer can on the user. Note that it might still be possible to deduce
+   * some information by analyzing the "structure" of the document or by analyzing
+   * the typing behavior using the CRDT-related metadata that is still kept fully
+   * intact.
+   *
+   * @param {Uint8Array} update
+   * @param {ObfuscatorOptions} [opts]
+   */
+  const obfuscateUpdate = (update, opts) => convertUpdateFormat(update, createObfuscator(opts), UpdateDecoderV1, UpdateEncoderV1);
+
+  /**
+   * @param {Uint8Array} update
+   * @param {ObfuscatorOptions} [opts]
+   */
+  const obfuscateUpdateV2 = (update, opts) => convertUpdateFormat(update, createObfuscator(opts), UpdateDecoderV2, UpdateEncoderV2);
 
   /**
    * @param {Uint8Array} update
    */
-  const convertUpdateFormatV2ToV1 = update => convertUpdateFormat(update, UpdateDecoderV2, UpdateEncoderV1);
+  const convertUpdateFormatV1ToV2 = update => convertUpdateFormat(update, id$1, UpdateDecoderV1, UpdateEncoderV2);
+
+  /**
+   * @param {Uint8Array} update
+   */
+  const convertUpdateFormatV2ToV1 = update => convertUpdateFormat(update, id$1, UpdateDecoderV2, UpdateEncoderV1);
 
   /**
    * @template {AbstractType<any>} T
@@ -7525,6 +7889,11 @@
     }
 
     /**
+     * This is a computed property. Note that this can only be safely computed during the
+     * event call. Computing this property after other changes happened might result in
+     * unexpected behavior (incorrect computation of deltas). A safe way to collect changes
+     * is to store the `changes` or the `delta` object. Avoid storing the `transaction` object.
+     *
      * @type {Array<{insert?: string | Array<any> | object | AbstractType<any>, retain?: number, delete?: number, attributes?: Object<string, any>}>}
      */
     get delta () {
@@ -7544,14 +7913,19 @@
     }
 
     /**
+     * This is a computed property. Note that this can only be safely computed during the
+     * event call. Computing this property after other changes happened might result in
+     * unexpected behavior (incorrect computation of deltas). A safe way to collect changes
+     * is to store the `changes` or the `delta` object. Avoid storing the `transaction` object.
+     *
      * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Array<{insert?:Array<any>|string, delete?:number, retain?:number}>}}
      */
     get changes () {
       let changes = this._changes;
       if (changes === null) {
         const target = this.target;
-        const added = create$1();
-        const deleted = create$1();
+        const added = create$5();
+        const deleted = create$5();
         /**
          * @type {Array<{insert:Array<any>}|{delete:number}|{retain:number}>}
          */
@@ -8000,9 +8374,9 @@
     }
 
     /**
-     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} _encoder
      */
-    _write (encoder) { }
+    _write (_encoder) { }
 
     /**
      * The first non-deleted item
@@ -8020,9 +8394,9 @@
      * Must be implemented by each type.
      *
      * @param {Transaction} transaction
-     * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
+     * @param {Set<null|string>} _parentSubs Keys changed on this type. `null` if list was modified.
      */
-    _callObserver (transaction, parentSubs) {
+    _callObserver (transaction, _parentSubs) {
       if (!transaction.local && this._searchMarker) {
         this._searchMarker.length = 0;
       }
@@ -8334,7 +8708,7 @@
     packJsonContent();
   };
 
-  const lengthExceeded = create('Length exceeded!');
+  const lengthExceeded = create$2('Length exceeded!');
 
   /**
    * @param {Transaction} transaction
@@ -8627,11 +9001,14 @@
 
     /**
      * Construct a new YArray containing the specified items.
-     * @template T
+     * @template {Object<string,any>|Array<any>|number|null|string|Uint8Array} T
      * @param {Array<T>} items
      * @return {YArray<T>}
      */
     static from (items) {
+      /**
+       * @type {YArray<T>}
+       */
       const a = new YArray();
       a.push(items);
       return a
@@ -8653,6 +9030,9 @@
       this._prelimContent = null;
     }
 
+    /**
+     * @return {YArray<T>}
+     */
     _copy () {
       return new YArray()
     }
@@ -8661,9 +9041,12 @@
      * @return {YArray<T>}
      */
     clone () {
+      /**
+       * @type {YArray<T>}
+       */
       const arr = new YArray();
       arr.insert(0, this.toArray().map(el =>
-        el instanceof AbstractType ? el.clone() : el
+        el instanceof AbstractType ? /** @type {typeof el} */ (el.clone()) : el
       ));
       return arr
     }
@@ -8702,7 +9085,7 @@
     insert (index, content) {
       if (this.doc !== null) {
         transact(this.doc, transaction => {
-          typeListInsertGenerics(transaction, this, index, content);
+          typeListInsertGenerics(transaction, this, index, /** @type {any} */ (content));
         });
       } else {
         /** @type {Array<any>} */ (this._prelimContent).splice(index, 0, ...content);
@@ -8719,7 +9102,7 @@
     push (content) {
       if (this.doc !== null) {
         transact(this.doc, transaction => {
-          typeListPushGenerics(transaction, this, content);
+          typeListPushGenerics(transaction, this, /** @type {any} */ (content));
         });
       } else {
         /** @type {Array<any>} */ (this._prelimContent).push(...content);
@@ -8804,7 +9187,7 @@
     }
 
     /**
-     * Executes a provided function on once on overy element of this YArray.
+     * Executes a provided function once on overy element of this YArray.
      *
      * @param {function(T,number,YArray<T>):void} f A function to execute on every element of this YArray.
      */
@@ -8828,12 +9211,12 @@
   }
 
   /**
-   * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+   * @param {UpdateDecoderV1 | UpdateDecoderV2} _decoder
    *
    * @private
    * @function
    */
-  const readYArray = decoder => new YArray();
+  const readYArray = _decoder => new YArray();
 
   /**
    * @template T
@@ -8897,6 +9280,9 @@
       this._prelimContent = null;
     }
 
+    /**
+     * @return {YMap<MapType>}
+     */
     _copy () {
       return new YMap()
     }
@@ -8905,9 +9291,12 @@
      * @return {YMap<MapType>}
      */
     clone () {
+      /**
+       * @type {YMap<MapType>}
+       */
       const map = new YMap();
       this.forEach((value, key) => {
-        map.set(key, value instanceof AbstractType ? value.clone() : value);
+        map.set(key, value instanceof AbstractType ? /** @type {typeof value} */ (value.clone()) : value);
       });
       return map
     }
@@ -9016,14 +9405,16 @@
 
     /**
      * Adds or updates an element with a specified key and value.
+     * @template {MapType} VAL
      *
      * @param {string} key The key of the element to add to this YMap
-     * @param {MapType} value The value of the element to add
+     * @param {VAL} value The value of the element to add
+     * @return {VAL}
      */
     set (key, value) {
       if (this.doc !== null) {
         transact(this.doc, transaction => {
-          typeMapSet(transaction, this, key, value);
+          typeMapSet(transaction, this, key, /** @type {any} */ (value));
         });
       } else {
         /** @type {Map<string, any>} */ (this._prelimContent).set(key, value);
@@ -9057,7 +9448,7 @@
     clear () {
       if (this.doc !== null) {
         transact(this.doc, transaction => {
-          this.forEach(function (value, key, map) {
+          this.forEach(function (_value, key, map) {
             typeMapDelete(transaction, map, key);
           });
         });
@@ -9075,12 +9466,12 @@
   }
 
   /**
-   * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+   * @param {UpdateDecoderV1 | UpdateDecoderV2} _decoder
    *
    * @private
    * @function
    */
-  const readYMap = decoder => new YMap();
+  const readYMap = _decoder => new YMap();
 
   /**
    * @param {any} a
@@ -9297,7 +9688,7 @@
    * @function
    **/
   const insertText = (transaction, parent, currPos, text, attributes) => {
-    currPos.currentAttributes.forEach((val, key) => {
+    currPos.currentAttributes.forEach((_val, key) => {
       if (attributes[key] === undefined) {
         attributes[key] = null;
       }
@@ -9409,32 +9800,47 @@
    * @function
    */
   const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAttributes) => {
-    let end = curr;
-    const endAttributes = copy(currAttributes);
+    /**
+     * @type {Item|null}
+     */
+    let end = start;
+    /**
+     * @type {Map<string,ContentFormat>}
+     */
+    const endFormats = create$6();
     while (end && (!end.countable || end.deleted)) {
       if (!end.deleted && end.content.constructor === ContentFormat) {
-        updateCurrentAttributes(endAttributes, /** @type {ContentFormat} */ (end.content));
+        const cf = /** @type {ContentFormat} */ (end.content);
+        endFormats.set(cf.key, cf);
       }
       end = end.right;
     }
     let cleanups = 0;
-    let reachedEndOfCurr = false;
+    let reachedCurr = false;
     while (start !== end) {
       if (curr === start) {
-        reachedEndOfCurr = true;
+        reachedCurr = true;
       }
       if (!start.deleted) {
         const content = start.content;
         switch (content.constructor) {
           case ContentFormat: {
             const { key, value } = /** @type {ContentFormat} */ (content);
-            if ((endAttributes.get(key) || null) !== value || (startAttributes.get(key) || null) === value) {
+            const startAttrValue = startAttributes.get(key) || null;
+            if (endFormats.get(key) !== content || startAttrValue === value) {
               // Either this format is overwritten or it is not necessary because the attribute already existed.
               start.delete(transaction);
               cleanups++;
-              if (!reachedEndOfCurr && (currAttributes.get(key) || null) === value && (startAttributes.get(key) || null) !== value) {
-                currAttributes.delete(key);
+              if (!reachedCurr && (currAttributes.get(key) || null) === value && startAttrValue !== value) {
+                if (startAttrValue === null) {
+                  currAttributes.delete(key);
+                } else {
+                  currAttributes.set(key, startAttrValue);
+                }
               }
+            }
+            if (!reachedCurr && !start.deleted) {
+              updateCurrentAttributes(currAttributes, /** @type {ContentFormat} */ (content));
             }
             break
           }
@@ -9662,36 +10068,39 @@
               /**
                * @type {any}
                */
-              let op;
+              let op = null;
               switch (action) {
                 case 'delete':
-                  op = { delete: deleteLen };
+                  if (deleteLen > 0) {
+                    op = { delete: deleteLen };
+                  }
                   deleteLen = 0;
                   break
                 case 'insert':
-                  op = { insert };
-                  if (currentAttributes.size > 0) {
-                    op.attributes = {};
-                    currentAttributes.forEach((value, key) => {
-                      if (value !== null) {
-                        op.attributes[key] = value;
-                      }
-                    });
+                  if (typeof insert === 'object' || insert.length > 0) {
+                    op = { insert };
+                    if (currentAttributes.size > 0) {
+                      op.attributes = {};
+                      currentAttributes.forEach((value, key) => {
+                        if (value !== null) {
+                          op.attributes[key] = value;
+                        }
+                      });
+                    }
                   }
                   insert = '';
                   break
                 case 'retain':
-                  op = { retain };
-                  if (Object.keys(attributes).length > 0) {
-                    op.attributes = {};
-                    for (const key in attributes) {
-                      op.attributes[key] = attributes[key];
+                  if (retain > 0) {
+                    op = { retain };
+                    if (!isEmpty(attributes)) {
+                      op.attributes = assign({}, attributes);
                     }
                   }
                   retain = 0;
                   break
               }
-              delta.push(op);
+              if (op) delta.push(op);
               action = null;
             }
           };
@@ -9973,7 +10382,7 @@
      * Apply a {@link Delta} on this shared YText type.
      *
      * @param {any} delta The changes to apply on this element.
-     * @param {object}  [opts]
+     * @param {object}  opts
      * @param {boolean} [opts.sanitize] Sanitize input delta. Removes ending newlines if set to true.
      *
      *
@@ -10049,15 +10458,7 @@
           str = '';
         }
       }
-      // snapshots are merged again after the transaction, so we need to keep the
-      // transalive until we are done
-      transact(doc, transaction => {
-        if (snapshot) {
-          splitSnapshotAffectedStructs(transaction, snapshot);
-        }
-        if (prevSnapshot) {
-          splitSnapshotAffectedStructs(transaction, prevSnapshot);
-        }
+      const computeDelta = () => {
         while (n !== null) {
           if (isVisible(n, snapshot) || (prevSnapshot !== undefined && isVisible(n, prevSnapshot))) {
             switch (n.content.constructor) {
@@ -10110,7 +10511,22 @@
           n = n.right;
         }
         packStr();
-      }, 'cleanup');
+      };
+      if (snapshot || prevSnapshot) {
+        // snapshots are merged again after the transaction, so we need to keep the
+        // transaction alive until we are done
+        transact(doc, transaction => {
+          if (snapshot) {
+            splitSnapshotAffectedStructs(transaction, snapshot);
+          }
+          if (prevSnapshot) {
+            splitSnapshotAffectedStructs(transaction, prevSnapshot);
+          }
+          computeDelta();
+        }, 'cleanup');
+      } else {
+        computeDelta();
+      }
       return ops
     }
 
@@ -10275,12 +10691,11 @@
      *
      * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
      *
-     * @param {Snapshot} [snapshot]
      * @return {Object<string, any>} A JSON Object that describes the attributes.
      *
      * @public
      */
-    getAttributes (snapshot) {
+    getAttributes () {
       return typeMapGetAll(this)
     }
 
@@ -10293,13 +10708,13 @@
   }
 
   /**
-   * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+   * @param {UpdateDecoderV1 | UpdateDecoderV2} _decoder
    * @return {YText}
    *
    * @private
    * @function
    */
-  const readYText = decoder => new YText();
+  const readYText = _decoder => new YText();
 
   /**
    * @module YXml
@@ -10520,7 +10935,7 @@
     querySelectorAll (query) {
       query = query.toUpperCase();
       // @ts-ignore
-      return Array.from(new YXmlTreeWalker(this, element => element.nodeName && element.nodeName.toUpperCase() === query))
+      return from(new YXmlTreeWalker(this, element => element.nodeName && element.nodeName.toUpperCase() === query))
     }
 
     /**
@@ -10616,7 +11031,7 @@
         const pc = /** @type {Array<any>} */ (this._prelimContent);
         const index = ref === null ? 0 : pc.findIndex(el => el === ref) + 1;
         if (index === 0 && ref !== null) {
-          throw create('Reference item not found')
+          throw create$2('Reference item not found')
         }
         pc.splice(index, 0, ...content);
       }
@@ -10690,7 +11105,7 @@
     /**
      * Executes a provided function on once on overy child element.
      *
-     * @param {function(YXmlElement|YXmlText,number, typeof this):void} f A function to execute on every element of this YArray.
+     * @param {function(YXmlElement|YXmlText,number, typeof self):void} f A function to execute on every element of this YArray.
      */
     forEach (f) {
       typeListForEach(this, f);
@@ -10710,13 +11125,17 @@
   }
 
   /**
-   * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+   * @param {UpdateDecoderV1 | UpdateDecoderV2} _decoder
    * @return {YXmlFragment}
    *
    * @private
    * @function
    */
-  const readYXmlFragment = decoder => new YXmlFragment();
+  const readYXmlFragment = _decoder => new YXmlFragment();
+
+  /**
+   * @typedef {Object|number|null|Array<any>|string|Uint8Array|AbstractType<any>} ValueTypes
+   */
 
   /**
    * An YXmlElement imitates the behavior of a
@@ -10724,6 +11143,8 @@
    *
    * * An YXmlElement has attributes (key value pairs)
    * * An YXmlElement has childElements that must inherit from YXmlElement
+   *
+   * @template {{ [key: string]: ValueTypes }} [KV={ [key: string]: string }]
    */
   class YXmlElement extends YXmlFragment {
     constructor (nodeName = 'UNDEFINED') {
@@ -10779,14 +11200,19 @@
     }
 
     /**
-     * @return {YXmlElement}
+     * @return {YXmlElement<KV>}
      */
     clone () {
+      /**
+       * @type {YXmlElement<KV>}
+       */
       const el = new YXmlElement(this.nodeName);
       const attrs = this.getAttributes();
-      for (const key in attrs) {
-        el.setAttribute(key, attrs[key]);
-      }
+      forEach$1(attrs, (value, key) => {
+        if (typeof value === 'string') {
+          el.setAttribute(key, value);
+        }
+      });
       // @ts-ignore
       el.insert(0, this.toArray().map(item => item instanceof AbstractType ? item.clone() : item));
       return el
@@ -10822,7 +11248,7 @@
     /**
      * Removes an attribute from this YXmlElement.
      *
-     * @param {String} attributeName The attribute name that is to be removed.
+     * @param {string} attributeName The attribute name that is to be removed.
      *
      * @public
      */
@@ -10839,8 +11265,10 @@
     /**
      * Sets or updates an attribute.
      *
-     * @param {String} attributeName The attribute name that is to be set.
-     * @param {String} attributeValue The attribute value that is to be set.
+     * @template {keyof KV & string} KEY
+     *
+     * @param {KEY} attributeName The attribute name that is to be set.
+     * @param {KV[KEY]} attributeValue The attribute value that is to be set.
      *
      * @public
      */
@@ -10857,9 +11285,11 @@
     /**
      * Returns an attribute value that belongs to the attribute name.
      *
-     * @param {String} attributeName The attribute name that identifies the
+     * @template {keyof KV & string} KEY
+     *
+     * @param {KEY} attributeName The attribute name that identifies the
      *                               queried value.
-     * @return {String} The queried attribute value.
+     * @return {KV[KEY]|undefined} The queried attribute value.
      *
      * @public
      */
@@ -10870,7 +11300,7 @@
     /**
      * Returns whether an attribute exists
      *
-     * @param {String} attributeName The attribute name to check for existence.
+     * @param {string} attributeName The attribute name to check for existence.
      * @return {boolean} whether the attribute exists.
      *
      * @public
@@ -10882,12 +11312,12 @@
     /**
      * Returns all attribute name/value pairs in a JSON Object.
      *
-     * @return {Object<string, any>} A JSON Object that describes the attributes.
+     * @return {{ [Key in Extract<keyof KV,string>]?: KV[Key]}} A JSON Object that describes the attributes.
      *
      * @public
      */
     getAttributes () {
-      return typeMapGetAll(this)
+      return /** @type {any} */ (typeMapGetAll(this))
     }
 
     /**
@@ -10909,7 +11339,10 @@
       const dom = _document.createElement(this.nodeName);
       const attrs = this.getAttributes();
       for (const key in attrs) {
-        dom.setAttribute(key, attrs[key]);
+        const value = attrs[key];
+        if (typeof value === 'string') {
+          dom.setAttribute(key, value);
+        }
       }
       typeListForEach(this, yxml => {
         dom.appendChild(yxml.toDOM(_document, hooks, binding));
@@ -12369,6 +12802,12 @@
   };
 
   /**
+   * @param {Array<StackItem>} stack
+   * @param {ID} id
+   */
+  const isDeletedByUndoStack = (stack, id) => some(stack, /** @param {StackItem} s */ s => isDeleted(s.deletions, id));
+
+  /**
    * Redoes the effect of this operation.
    *
    * @param {Transaction} transaction The Yjs instance.
@@ -12376,12 +12815,13 @@
    * @param {Set<Item>} redoitems
    * @param {DeleteSet} itemsToDelete
    * @param {boolean} ignoreRemoteMapChanges
+   * @param {import('../utils/UndoManager.js').UndoManager} um
    *
    * @return {Item|null}
    *
    * @private
    */
-  const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemoteMapChanges) => {
+  const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemoteMapChanges, um) => {
     const doc = transaction.doc;
     const store = doc.store;
     const ownClientID = doc.clientID;
@@ -12401,7 +12841,7 @@
     // make sure that parent is redone
     if (parentItem !== null && parentItem.deleted === true) {
       // try to undo parent if it will be undone anyway
-      if (parentItem.redone === null && (!redoitems.has(parentItem) || redoItem(transaction, parentItem, redoitems, itemsToDelete, ignoreRemoteMapChanges) === null)) {
+      if (parentItem.redone === null && (!redoitems.has(parentItem) || redoItem(transaction, parentItem, redoitems, itemsToDelete, ignoreRemoteMapChanges, um) === null)) {
         return null
       }
       while (parentItem.redone !== null) {
@@ -12451,13 +12891,10 @@
         left = item;
         // Iterate right while right is in itemsToDelete
         // If it is intended to delete right while item is redone, we can expect that item should replace right.
-        while (left !== null && left.right !== null && isDeleted(itemsToDelete, left.right.id)) {
+        while (left !== null && left.right !== null && (left.right.redone || isDeleted(itemsToDelete, left.right.id) || isDeletedByUndoStack(um.undoStack, left.right.id) || isDeletedByUndoStack(um.redoStack, left.right.id))) {
           left = left.right;
-        }
-        // follow redone
-        // trace redone until parent matches
-        while (left !== null && left.redone !== null) {
-          left = getItemCleanStart(transaction, left.redone);
+          // follow redone
+          while (left.redone) left = getItemCleanStart(transaction, left.redone);
         }
         if (left && left.right !== null) {
           // It is not possible to redo this item because it conflicts with a
@@ -13050,96 +13487,98 @@
 
   var Y$1 = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    Doc: Doc,
-    Transaction: Transaction,
-    Array: YArray,
-    Map: YMap,
-    Text: YText,
-    XmlText: YXmlText,
-    XmlHook: YXmlHook,
-    XmlElement: YXmlElement,
-    XmlFragment: YXmlFragment,
-    YXmlEvent: YXmlEvent,
-    YMapEvent: YMapEvent,
-    YArrayEvent: YArrayEvent,
-    YTextEvent: YTextEvent,
-    YEvent: YEvent,
-    Item: Item,
+    AbsolutePosition: AbsolutePosition,
+    AbstractConnector: AbstractConnector,
     AbstractStruct: AbstractStruct,
-    GC: GC,
+    AbstractType: AbstractType,
+    Array: YArray,
+    ContentAny: ContentAny,
     ContentBinary: ContentBinary,
     ContentDeleted: ContentDeleted,
     ContentEmbed: ContentEmbed,
     ContentFormat: ContentFormat,
     ContentJSON: ContentJSON,
-    ContentAny: ContentAny,
     ContentString: ContentString,
     ContentType: ContentType,
-    AbstractType: AbstractType,
-    getTypeChildren: getTypeChildren,
-    createRelativePositionFromTypeIndex: createRelativePositionFromTypeIndex,
-    createRelativePositionFromJSON: createRelativePositionFromJSON,
-    createAbsolutePositionFromRelativePosition: createAbsolutePositionFromRelativePosition,
-    compareRelativePositions: compareRelativePositions,
-    AbsolutePosition: AbsolutePosition,
-    RelativePosition: RelativePosition,
+    Doc: Doc,
+    GC: GC,
     ID: ID,
-    createID: createID,
-    compareIDs: compareIDs,
-    getState: getState,
+    Item: Item,
+    Map: YMap,
+    PermanentUserData: PermanentUserData,
+    RelativePosition: RelativePosition,
     Snapshot: Snapshot,
-    createSnapshot: createSnapshot,
-    createDeleteSet: createDeleteSet,
-    createDeleteSetFromStructStore: createDeleteSetFromStructStore,
-    cleanupYTextFormatting: cleanupYTextFormatting,
-    snapshot: snapshot$1,
-    emptySnapshot: emptySnapshot,
-    findRootTypeKey: findRootTypeKey,
-    findIndexSS: findIndexSS,
-    getItem: getItem,
-    typeListToArraySnapshot: typeListToArraySnapshot,
-    typeMapGetSnapshot: typeMapGetSnapshot,
-    createDocFromSnapshot: createDocFromSnapshot,
-    iterateDeletedStructs: iterateDeletedStructs,
+    Text: YText,
+    Transaction: Transaction,
+    UndoManager: UndoManager,
+    UpdateEncoderV1: UpdateEncoderV1,
+    XmlElement: YXmlElement,
+    XmlFragment: YXmlFragment,
+    XmlHook: YXmlHook,
+    XmlText: YXmlText,
+    YArrayEvent: YArrayEvent,
+    YEvent: YEvent,
+    YMapEvent: YMapEvent,
+    YTextEvent: YTextEvent,
+    YXmlEvent: YXmlEvent,
     applyUpdate: applyUpdate,
     applyUpdateV2: applyUpdateV2,
-    readUpdate: readUpdate$1,
-    readUpdateV2: readUpdateV2,
+    cleanupYTextFormatting: cleanupYTextFormatting,
+    compareIDs: compareIDs,
+    compareRelativePositions: compareRelativePositions,
+    convertUpdateFormatV1ToV2: convertUpdateFormatV1ToV2,
+    convertUpdateFormatV2ToV1: convertUpdateFormatV2ToV1,
+    createAbsolutePositionFromRelativePosition: createAbsolutePositionFromRelativePosition,
+    createDeleteSet: createDeleteSet,
+    createDeleteSetFromStructStore: createDeleteSetFromStructStore,
+    createDocFromSnapshot: createDocFromSnapshot,
+    createID: createID,
+    createRelativePositionFromJSON: createRelativePositionFromJSON,
+    createRelativePositionFromTypeIndex: createRelativePositionFromTypeIndex,
+    createSnapshot: createSnapshot,
+    decodeRelativePosition: decodeRelativePosition,
+    decodeSnapshot: decodeSnapshot,
+    decodeSnapshotV2: decodeSnapshotV2,
+    decodeStateVector: decodeStateVector,
+    decodeUpdate: decodeUpdate,
+    decodeUpdateV2: decodeUpdateV2,
+    diffUpdate: diffUpdate,
+    diffUpdateV2: diffUpdateV2,
+    emptySnapshot: emptySnapshot,
+    encodeRelativePosition: encodeRelativePosition,
+    encodeSnapshot: encodeSnapshot,
+    encodeSnapshotV2: encodeSnapshotV2,
     encodeStateAsUpdate: encodeStateAsUpdate,
     encodeStateAsUpdateV2: encodeStateAsUpdateV2,
     encodeStateVector: encodeStateVector,
-    UndoManager: UndoManager,
-    decodeSnapshot: decodeSnapshot,
-    encodeSnapshot: encodeSnapshot,
-    decodeSnapshotV2: decodeSnapshotV2,
-    encodeSnapshotV2: encodeSnapshotV2,
-    decodeStateVector: decodeStateVector,
-    logUpdate: logUpdate,
-    logUpdateV2: logUpdateV2,
-    decodeUpdate: decodeUpdate,
-    decodeUpdateV2: decodeUpdateV2,
-    relativePositionToJSON: relativePositionToJSON,
-    isDeleted: isDeleted,
-    isParentOf: isParentOf,
-    equalSnapshots: equalSnapshots,
-    PermanentUserData: PermanentUserData,
-    tryGc: tryGc$1,
-    transact: transact,
-    AbstractConnector: AbstractConnector,
-    logType: logType,
-    mergeUpdates: mergeUpdates,
-    mergeUpdatesV2: mergeUpdatesV2,
-    parseUpdateMeta: parseUpdateMeta,
-    parseUpdateMetaV2: parseUpdateMetaV2,
     encodeStateVectorFromUpdate: encodeStateVectorFromUpdate,
     encodeStateVectorFromUpdateV2: encodeStateVectorFromUpdateV2,
-    encodeRelativePosition: encodeRelativePosition,
-    decodeRelativePosition: decodeRelativePosition,
-    diffUpdate: diffUpdate,
-    diffUpdateV2: diffUpdateV2,
-    convertUpdateFormatV1ToV2: convertUpdateFormatV1ToV2,
-    convertUpdateFormatV2ToV1: convertUpdateFormatV2ToV1,
-    UpdateEncoderV1: UpdateEncoderV1
+    equalSnapshots: equalSnapshots,
+    findIndexSS: findIndexSS,
+    findRootTypeKey: findRootTypeKey,
+    getItem: getItem,
+    getState: getState,
+    getTypeChildren: getTypeChildren,
+    isDeleted: isDeleted,
+    isParentOf: isParentOf,
+    iterateDeletedStructs: iterateDeletedStructs,
+    logType: logType,
+    logUpdate: logUpdate,
+    logUpdateV2: logUpdateV2,
+    mergeUpdates: mergeUpdates,
+    mergeUpdatesV2: mergeUpdatesV2,
+    obfuscateUpdate: obfuscateUpdate,
+    obfuscateUpdateV2: obfuscateUpdateV2,
+    parseUpdateMeta: parseUpdateMeta,
+    parseUpdateMetaV2: parseUpdateMetaV2,
+    readUpdate: readUpdate$1,
+    readUpdateV2: readUpdateV2,
+    relativePositionToJSON: relativePositionToJSON,
+    snapshot: snapshot$1,
+    transact: transact,
+    tryGc: tryGc$1,
+    typeListToArraySnapshot: typeListToArraySnapshot,
+    typeMapGetSnapshot: typeMapGetSnapshot
   });
 
   /**
@@ -13394,7 +13833,7 @@
      * @param {TestYInstance} remoteClient
      */
     _receive (message, remoteClient) {
-      setIfUndefined(this.receiving, remoteClient, () => []).push(message);
+      setIfUndefined(this.receiving, remoteClient, () => /** @type {Array<Uint8Array>} */ ([])).push(message);
     }
   }
 
@@ -13607,7 +14046,7 @@
       compare$2(userMapValues[i], userMapValues[i + 1]);
       compare$2(userXmlValues[i], userXmlValues[i + 1]);
       compare$2(userTextValues[i].map(/** @param {any} a */ a => typeof a.insert === 'string' ? a.insert : ' ').join('').length, users[i].getText('text').length);
-      compare$2(userTextValues[i], userTextValues[i + 1], '', (constructor, a, b) => {
+      compare$2(userTextValues[i], userTextValues[i + 1], '', (_constructor, a, b) => {
         if (a instanceof AbstractType) {
           compare$2(a.toJSON(), b.toJSON());
         } else if (a !== b) {
@@ -13630,8 +14069,8 @@
   const compareItemIDs = (a, b) => a === b || (a !== null && b != null && compareIDs(a.id, b.id));
 
   /**
-   * @param {import('../src/internals').StructStore} ss1
-   * @param {import('../src/internals').StructStore} ss2
+   * @param {import('../src/internals.js').StructStore} ss1
+   * @param {import('../src/internals.js').StructStore} ss2
    */
   const compareStructStores = (ss1, ss2) => {
     assert(ss1.clients.size === ss2.clients.size);
@@ -13673,13 +14112,13 @@
   };
 
   /**
-   * @param {import('../src/internals').DeleteSet} ds1
-   * @param {import('../src/internals').DeleteSet} ds2
+   * @param {import('../src/internals.js').DeleteSet} ds1
+   * @param {import('../src/internals.js').DeleteSet} ds2
    */
   const compareDS = (ds1, ds2) => {
     assert(ds1.clients.size === ds2.clients.size);
     ds1.clients.forEach((deleteItems1, client) => {
-      const deleteItems2 = /** @type {Array<import('../src/internals').DeleteItem>} */ (ds2.clients.get(client));
+      const deleteItems2 = /** @type {Array<import('../src/internals.js').DeleteItem>} */ (ds2.clients.get(client));
       assert(deleteItems2 !== undefined && deleteItems1.length === deleteItems2.length);
       for (let i = 0; i < deleteItems1.length; i++) {
         const di1 = deleteItems1[i];
@@ -13734,108 +14173,110 @@
 
   var Y = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    get useV2 () { return useV2; },
-    encV1: encV1$1,
-    encV2: encV2$1,
-    get enc () { return enc; },
-    TestYInstance: TestYInstance,
-    TestConnector: TestConnector,
-    init: init$1,
-    compare: compare$1,
-    compareItemIDs: compareItemIDs,
-    compareStructStores: compareStructStores,
-    compareDS: compareDS,
-    applyRandomTests: applyRandomTests,
-    Doc: Doc,
-    Transaction: Transaction,
-    Array: YArray,
-    Map: YMap,
-    Text: YText,
-    XmlText: YXmlText,
-    XmlHook: YXmlHook,
-    XmlElement: YXmlElement,
-    XmlFragment: YXmlFragment,
-    YXmlEvent: YXmlEvent,
-    YMapEvent: YMapEvent,
-    YArrayEvent: YArrayEvent,
-    YTextEvent: YTextEvent,
-    YEvent: YEvent,
-    Item: Item,
+    AbsolutePosition: AbsolutePosition,
+    AbstractConnector: AbstractConnector,
     AbstractStruct: AbstractStruct,
-    GC: GC,
+    AbstractType: AbstractType,
+    Array: YArray,
+    ContentAny: ContentAny,
     ContentBinary: ContentBinary,
     ContentDeleted: ContentDeleted,
     ContentEmbed: ContentEmbed,
     ContentFormat: ContentFormat,
     ContentJSON: ContentJSON,
-    ContentAny: ContentAny,
     ContentString: ContentString,
     ContentType: ContentType,
-    AbstractType: AbstractType,
-    getTypeChildren: getTypeChildren,
-    createRelativePositionFromTypeIndex: createRelativePositionFromTypeIndex,
-    createRelativePositionFromJSON: createRelativePositionFromJSON,
-    createAbsolutePositionFromRelativePosition: createAbsolutePositionFromRelativePosition,
-    compareRelativePositions: compareRelativePositions,
-    AbsolutePosition: AbsolutePosition,
-    RelativePosition: RelativePosition,
+    Doc: Doc,
+    GC: GC,
     ID: ID,
-    createID: createID,
-    compareIDs: compareIDs,
-    getState: getState,
+    Item: Item,
+    Map: YMap,
+    PermanentUserData: PermanentUserData,
+    RelativePosition: RelativePosition,
     Snapshot: Snapshot,
-    createSnapshot: createSnapshot,
-    createDeleteSet: createDeleteSet,
-    createDeleteSetFromStructStore: createDeleteSetFromStructStore,
-    cleanupYTextFormatting: cleanupYTextFormatting,
-    snapshot: snapshot$1,
-    emptySnapshot: emptySnapshot,
-    findRootTypeKey: findRootTypeKey,
-    findIndexSS: findIndexSS,
-    getItem: getItem,
-    typeListToArraySnapshot: typeListToArraySnapshot,
-    typeMapGetSnapshot: typeMapGetSnapshot,
-    createDocFromSnapshot: createDocFromSnapshot,
-    iterateDeletedStructs: iterateDeletedStructs,
+    TestConnector: TestConnector,
+    TestYInstance: TestYInstance,
+    Text: YText,
+    Transaction: Transaction,
+    UndoManager: UndoManager,
+    UpdateEncoderV1: UpdateEncoderV1,
+    XmlElement: YXmlElement,
+    XmlFragment: YXmlFragment,
+    XmlHook: YXmlHook,
+    XmlText: YXmlText,
+    YArrayEvent: YArrayEvent,
+    YEvent: YEvent,
+    YMapEvent: YMapEvent,
+    YTextEvent: YTextEvent,
+    YXmlEvent: YXmlEvent,
+    applyRandomTests: applyRandomTests,
     applyUpdate: applyUpdate,
     applyUpdateV2: applyUpdateV2,
-    readUpdate: readUpdate$1,
-    readUpdateV2: readUpdateV2,
+    cleanupYTextFormatting: cleanupYTextFormatting,
+    compare: compare$1,
+    compareDS: compareDS,
+    compareIDs: compareIDs,
+    compareItemIDs: compareItemIDs,
+    compareRelativePositions: compareRelativePositions,
+    compareStructStores: compareStructStores,
+    convertUpdateFormatV1ToV2: convertUpdateFormatV1ToV2,
+    convertUpdateFormatV2ToV1: convertUpdateFormatV2ToV1,
+    createAbsolutePositionFromRelativePosition: createAbsolutePositionFromRelativePosition,
+    createDeleteSet: createDeleteSet,
+    createDeleteSetFromStructStore: createDeleteSetFromStructStore,
+    createDocFromSnapshot: createDocFromSnapshot,
+    createID: createID,
+    createRelativePositionFromJSON: createRelativePositionFromJSON,
+    createRelativePositionFromTypeIndex: createRelativePositionFromTypeIndex,
+    createSnapshot: createSnapshot,
+    decodeRelativePosition: decodeRelativePosition,
+    decodeSnapshot: decodeSnapshot,
+    decodeSnapshotV2: decodeSnapshotV2,
+    decodeStateVector: decodeStateVector,
+    decodeUpdate: decodeUpdate,
+    decodeUpdateV2: decodeUpdateV2,
+    diffUpdate: diffUpdate,
+    diffUpdateV2: diffUpdateV2,
+    emptySnapshot: emptySnapshot,
+    get enc () { return enc; },
+    encV1: encV1$1,
+    encV2: encV2$1,
+    encodeRelativePosition: encodeRelativePosition,
+    encodeSnapshot: encodeSnapshot,
+    encodeSnapshotV2: encodeSnapshotV2,
     encodeStateAsUpdate: encodeStateAsUpdate,
     encodeStateAsUpdateV2: encodeStateAsUpdateV2,
     encodeStateVector: encodeStateVector,
-    UndoManager: UndoManager,
-    decodeSnapshot: decodeSnapshot,
-    encodeSnapshot: encodeSnapshot,
-    decodeSnapshotV2: decodeSnapshotV2,
-    encodeSnapshotV2: encodeSnapshotV2,
-    decodeStateVector: decodeStateVector,
-    logUpdate: logUpdate,
-    logUpdateV2: logUpdateV2,
-    decodeUpdate: decodeUpdate,
-    decodeUpdateV2: decodeUpdateV2,
-    relativePositionToJSON: relativePositionToJSON,
-    isDeleted: isDeleted,
-    isParentOf: isParentOf,
-    equalSnapshots: equalSnapshots,
-    PermanentUserData: PermanentUserData,
-    tryGc: tryGc$1,
-    transact: transact,
-    AbstractConnector: AbstractConnector,
-    logType: logType,
-    mergeUpdates: mergeUpdates,
-    mergeUpdatesV2: mergeUpdatesV2,
-    parseUpdateMeta: parseUpdateMeta,
-    parseUpdateMetaV2: parseUpdateMetaV2,
     encodeStateVectorFromUpdate: encodeStateVectorFromUpdate,
     encodeStateVectorFromUpdateV2: encodeStateVectorFromUpdateV2,
-    encodeRelativePosition: encodeRelativePosition,
-    decodeRelativePosition: decodeRelativePosition,
-    diffUpdate: diffUpdate,
-    diffUpdateV2: diffUpdateV2,
-    convertUpdateFormatV1ToV2: convertUpdateFormatV1ToV2,
-    convertUpdateFormatV2ToV1: convertUpdateFormatV2ToV1,
-    UpdateEncoderV1: UpdateEncoderV1
+    equalSnapshots: equalSnapshots,
+    findIndexSS: findIndexSS,
+    findRootTypeKey: findRootTypeKey,
+    getItem: getItem,
+    getState: getState,
+    getTypeChildren: getTypeChildren,
+    init: init$1,
+    isDeleted: isDeleted,
+    isParentOf: isParentOf,
+    iterateDeletedStructs: iterateDeletedStructs,
+    logType: logType,
+    logUpdate: logUpdate,
+    logUpdateV2: logUpdateV2,
+    mergeUpdates: mergeUpdates,
+    mergeUpdatesV2: mergeUpdatesV2,
+    obfuscateUpdate: obfuscateUpdate,
+    obfuscateUpdateV2: obfuscateUpdateV2,
+    parseUpdateMeta: parseUpdateMeta,
+    parseUpdateMetaV2: parseUpdateMetaV2,
+    readUpdate: readUpdate$1,
+    readUpdateV2: readUpdateV2,
+    relativePositionToJSON: relativePositionToJSON,
+    snapshot: snapshot$1,
+    transact: transact,
+    tryGc: tryGc$1,
+    typeListToArraySnapshot: typeListToArraySnapshot,
+    typeMapGetSnapshot: typeMapGetSnapshot,
+    get useV2 () { return useV2; }
   });
 
   /**
@@ -14285,9 +14726,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testYmapEventExceptionsShouldCompleteTransaction = tc => {
+  const testYmapEventExceptionsShouldCompleteTransaction = _tc => {
     const doc = new Doc();
     const map = doc.getMap('map');
 
@@ -14511,43 +14952,43 @@
 
   var map = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    testMapHavingIterableAsConstructorParamTests: testMapHavingIterableAsConstructorParamTests,
     testBasicMapTests: testBasicMapTests,
+    testChangeEvent: testChangeEvent$1,
+    testGetAndSetAndDeleteOfMapProperty: testGetAndSetAndDeleteOfMapProperty,
+    testGetAndSetAndDeleteOfMapPropertyWithThreeConflicts: testGetAndSetAndDeleteOfMapPropertyWithThreeConflicts,
     testGetAndSetOfMapProperty: testGetAndSetOfMapProperty,
-    testYmapSetsYmap: testYmapSetsYmap,
-    testYmapSetsYarray: testYmapSetsYarray,
     testGetAndSetOfMapPropertySyncs: testGetAndSetOfMapPropertySyncs,
     testGetAndSetOfMapPropertyWithConflict: testGetAndSetOfMapPropertyWithConflict,
-    testSizeAndDeleteOfMapProperty: testSizeAndDeleteOfMapProperty,
-    testGetAndSetAndDeleteOfMapProperty: testGetAndSetAndDeleteOfMapProperty,
-    testSetAndClearOfMapProperties: testSetAndClearOfMapProperties,
-    testSetAndClearOfMapPropertiesWithConflicts: testSetAndClearOfMapPropertiesWithConflicts,
     testGetAndSetOfMapPropertyWithThreeConflicts: testGetAndSetOfMapPropertyWithThreeConflicts,
-    testGetAndSetAndDeleteOfMapPropertyWithThreeConflicts: testGetAndSetAndDeleteOfMapPropertyWithThreeConflicts,
+    testMapHavingIterableAsConstructorParamTests: testMapHavingIterableAsConstructorParamTests,
     testObserveDeepProperties: testObserveDeepProperties,
     testObserversUsingObservedeep: testObserversUsingObservedeep,
-    testThrowsAddAndUpdateAndDeleteEvents: testThrowsAddAndUpdateAndDeleteEvents,
-    testThrowsDeleteEventsOnClear: testThrowsDeleteEventsOnClear,
-    testChangeEvent: testChangeEvent$1,
-    testYmapEventExceptionsShouldCompleteTransaction: testYmapEventExceptionsShouldCompleteTransaction,
-    testYmapEventHasCorrectValueWhenSettingAPrimitive: testYmapEventHasCorrectValueWhenSettingAPrimitive,
-    testYmapEventHasCorrectValueWhenSettingAPrimitiveFromOtherUser: testYmapEventHasCorrectValueWhenSettingAPrimitiveFromOtherUser,
     testRepeatGeneratingYmapTests10: testRepeatGeneratingYmapTests10,
+    testRepeatGeneratingYmapTests1000: testRepeatGeneratingYmapTests1000,
+    testRepeatGeneratingYmapTests10000: testRepeatGeneratingYmapTests10000,
+    testRepeatGeneratingYmapTests100000: testRepeatGeneratingYmapTests100000,
+    testRepeatGeneratingYmapTests1800: testRepeatGeneratingYmapTests1800,
+    testRepeatGeneratingYmapTests300: testRepeatGeneratingYmapTests300,
     testRepeatGeneratingYmapTests40: testRepeatGeneratingYmapTests40,
+    testRepeatGeneratingYmapTests400: testRepeatGeneratingYmapTests400,
     testRepeatGeneratingYmapTests42: testRepeatGeneratingYmapTests42,
     testRepeatGeneratingYmapTests43: testRepeatGeneratingYmapTests43,
     testRepeatGeneratingYmapTests44: testRepeatGeneratingYmapTests44,
     testRepeatGeneratingYmapTests45: testRepeatGeneratingYmapTests45,
     testRepeatGeneratingYmapTests46: testRepeatGeneratingYmapTests46,
-    testRepeatGeneratingYmapTests300: testRepeatGeneratingYmapTests300,
-    testRepeatGeneratingYmapTests400: testRepeatGeneratingYmapTests400,
     testRepeatGeneratingYmapTests500: testRepeatGeneratingYmapTests500,
-    testRepeatGeneratingYmapTests600: testRepeatGeneratingYmapTests600,
-    testRepeatGeneratingYmapTests1000: testRepeatGeneratingYmapTests1000,
-    testRepeatGeneratingYmapTests1800: testRepeatGeneratingYmapTests1800,
     testRepeatGeneratingYmapTests5000: testRepeatGeneratingYmapTests5000,
-    testRepeatGeneratingYmapTests10000: testRepeatGeneratingYmapTests10000,
-    testRepeatGeneratingYmapTests100000: testRepeatGeneratingYmapTests100000
+    testRepeatGeneratingYmapTests600: testRepeatGeneratingYmapTests600,
+    testSetAndClearOfMapProperties: testSetAndClearOfMapProperties,
+    testSetAndClearOfMapPropertiesWithConflicts: testSetAndClearOfMapPropertiesWithConflicts,
+    testSizeAndDeleteOfMapProperty: testSizeAndDeleteOfMapProperty,
+    testThrowsAddAndUpdateAndDeleteEvents: testThrowsAddAndUpdateAndDeleteEvents,
+    testThrowsDeleteEventsOnClear: testThrowsDeleteEventsOnClear,
+    testYmapEventExceptionsShouldCompleteTransaction: testYmapEventExceptionsShouldCompleteTransaction,
+    testYmapEventHasCorrectValueWhenSettingAPrimitive: testYmapEventHasCorrectValueWhenSettingAPrimitive,
+    testYmapEventHasCorrectValueWhenSettingAPrimitiveFromOtherUser: testYmapEventHasCorrectValueWhenSettingAPrimitiveFromOtherUser,
+    testYmapSetsYarray: testYmapSetsYarray,
+    testYmapSetsYmap: testYmapSetsYmap
   });
 
   /**
@@ -15189,49 +15630,1691 @@
 
   var array = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    testBasicUpdate: testBasicUpdate,
-    testSlice: testSlice,
     testArrayFrom: testArrayFrom,
-    testLengthIssue: testLengthIssue,
-    testLengthIssue2: testLengthIssue2,
-    testDeleteInsert: testDeleteInsert,
-    testInsertThreeElementsTryRegetProperty: testInsertThreeElementsTryRegetProperty,
-    testConcurrentInsertWithThreeConflicts: testConcurrentInsertWithThreeConflicts,
-    testConcurrentInsertDeleteWithThreeConflicts: testConcurrentInsertDeleteWithThreeConflicts,
-    testInsertionsInLateSync: testInsertionsInLateSync,
-    testDisconnectReallyPreventsSendingMessages: testDisconnectReallyPreventsSendingMessages,
-    testDeletionsInLateSync: testDeletionsInLateSync,
-    testInsertThenMergeDeleteOnSync: testInsertThenMergeDeleteOnSync,
-    testInsertAndDeleteEvents: testInsertAndDeleteEvents,
-    testNestedObserverEvents: testNestedObserverEvents,
-    testInsertAndDeleteEventsForTypes: testInsertAndDeleteEventsForTypes,
-    testObserveDeepEventOrder: testObserveDeepEventOrder,
+    testBasicUpdate: testBasicUpdate,
     testChangeEvent: testChangeEvent,
-    testInsertAndDeleteEventsForTypes2: testInsertAndDeleteEventsForTypes2,
-    testNewChildDoesNotEmitEventInTransaction: testNewChildDoesNotEmitEventInTransaction,
-    testGarbageCollector: testGarbageCollector,
+    testConcurrentInsertDeleteWithThreeConflicts: testConcurrentInsertDeleteWithThreeConflicts,
+    testConcurrentInsertWithThreeConflicts: testConcurrentInsertWithThreeConflicts,
+    testDeleteInsert: testDeleteInsert,
+    testDeletionsInLateSync: testDeletionsInLateSync,
+    testDisconnectReallyPreventsSendingMessages: testDisconnectReallyPreventsSendingMessages,
     testEventTargetIsSetCorrectlyOnLocal: testEventTargetIsSetCorrectlyOnLocal,
     testEventTargetIsSetCorrectlyOnRemote: testEventTargetIsSetCorrectlyOnRemote,
+    testGarbageCollector: testGarbageCollector,
+    testInsertAndDeleteEvents: testInsertAndDeleteEvents,
+    testInsertAndDeleteEventsForTypes: testInsertAndDeleteEventsForTypes,
+    testInsertAndDeleteEventsForTypes2: testInsertAndDeleteEventsForTypes2,
+    testInsertThenMergeDeleteOnSync: testInsertThenMergeDeleteOnSync,
+    testInsertThreeElementsTryRegetProperty: testInsertThreeElementsTryRegetProperty,
+    testInsertionsInLateSync: testInsertionsInLateSync,
     testIteratingArrayContainingTypes: testIteratingArrayContainingTypes,
-    testRepeatGeneratingYarrayTests6: testRepeatGeneratingYarrayTests6,
+    testLengthIssue: testLengthIssue,
+    testLengthIssue2: testLengthIssue2,
+    testNestedObserverEvents: testNestedObserverEvents,
+    testNewChildDoesNotEmitEventInTransaction: testNewChildDoesNotEmitEventInTransaction,
+    testObserveDeepEventOrder: testObserveDeepEventOrder,
+    testRepeatGeneratingYarrayTests1000: testRepeatGeneratingYarrayTests1000,
+    testRepeatGeneratingYarrayTests1800: testRepeatGeneratingYarrayTests1800,
+    testRepeatGeneratingYarrayTests300: testRepeatGeneratingYarrayTests300,
+    testRepeatGeneratingYarrayTests3000: testRepeatGeneratingYarrayTests3000,
+    testRepeatGeneratingYarrayTests30000: testRepeatGeneratingYarrayTests30000,
     testRepeatGeneratingYarrayTests40: testRepeatGeneratingYarrayTests40,
+    testRepeatGeneratingYarrayTests400: testRepeatGeneratingYarrayTests400,
     testRepeatGeneratingYarrayTests42: testRepeatGeneratingYarrayTests42,
     testRepeatGeneratingYarrayTests43: testRepeatGeneratingYarrayTests43,
     testRepeatGeneratingYarrayTests44: testRepeatGeneratingYarrayTests44,
     testRepeatGeneratingYarrayTests45: testRepeatGeneratingYarrayTests45,
     testRepeatGeneratingYarrayTests46: testRepeatGeneratingYarrayTests46,
-    testRepeatGeneratingYarrayTests300: testRepeatGeneratingYarrayTests300,
-    testRepeatGeneratingYarrayTests400: testRepeatGeneratingYarrayTests400,
     testRepeatGeneratingYarrayTests500: testRepeatGeneratingYarrayTests500,
-    testRepeatGeneratingYarrayTests600: testRepeatGeneratingYarrayTests600,
-    testRepeatGeneratingYarrayTests1000: testRepeatGeneratingYarrayTests1000,
-    testRepeatGeneratingYarrayTests1800: testRepeatGeneratingYarrayTests1800,
-    testRepeatGeneratingYarrayTests3000: testRepeatGeneratingYarrayTests3000,
     testRepeatGeneratingYarrayTests5000: testRepeatGeneratingYarrayTests5000,
-    testRepeatGeneratingYarrayTests30000: testRepeatGeneratingYarrayTests30000
+    testRepeatGeneratingYarrayTests6: testRepeatGeneratingYarrayTests6,
+    testRepeatGeneratingYarrayTests600: testRepeatGeneratingYarrayTests600,
+    testSlice: testSlice
   });
 
   const { init, compare } = Y;
+
+  /**
+   * https://github.com/yjs/yjs/issues/474
+   * @todo Remove debug: 127.0.0.1:8080/test.html?filter=\[88/
+   * @param {t.TestCase} _tc
+   */
+  const testDeltaBug = _tc => {
+    const initialDelta = [{
+      attributes: {
+        'block-id': 'block-28eea923-9cbb-4b6f-a950-cf7fd82bc087'
+      },
+      insert: '\n'
+    },
+    {
+      attributes: {
+        'table-col': {
+          width: '150'
+        }
+      },
+      insert: '\n\n\n'
+    },
+    {
+      attributes: {
+        'block-id': 'block-9144be72-e528-4f91-b0b2-82d20408e9ea',
+        'table-cell-line': {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-6kv2ls',
+          cell: 'cell-apba4k'
+        },
+        row: 'row-6kv2ls',
+        cell: 'cell-apba4k',
+        rowspan: '1',
+        colspan: '1'
+      },
+      insert: '\n'
+    },
+    {
+      attributes: {
+        'block-id': 'block-639adacb-1516-43ed-b272-937c55669a1c',
+        'table-cell-line': {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-6kv2ls',
+          cell: 'cell-a8qf0r'
+        },
+        row: 'row-6kv2ls',
+        cell: 'cell-a8qf0r',
+        rowspan: '1',
+        colspan: '1'
+      },
+      insert: '\n'
+    },
+    {
+      attributes: {
+        'block-id': 'block-6302ca4a-73a3-4c25-8c1e-b542f048f1c6',
+        'table-cell-line': {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-6kv2ls',
+          cell: 'cell-oi9ikb'
+        },
+        row: 'row-6kv2ls',
+        cell: 'cell-oi9ikb',
+        rowspan: '1',
+        colspan: '1'
+      },
+      insert: '\n'
+    },
+    {
+      attributes: {
+        'block-id': 'block-ceeddd05-330e-4f86-8017-4a3a060c4627',
+        'table-cell-line': {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-d1sv2g',
+          cell: 'cell-dt6ks2'
+        },
+        row: 'row-d1sv2g',
+        cell: 'cell-dt6ks2',
+        rowspan: '1',
+        colspan: '1'
+      },
+      insert: '\n'
+    },
+    {
+      attributes: {
+        'block-id': 'block-37b19322-cb57-4e6f-8fad-0d1401cae53f',
+        'table-cell-line': {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-d1sv2g',
+          cell: 'cell-qah2ay'
+        },
+        row: 'row-d1sv2g',
+        cell: 'cell-qah2ay',
+        rowspan: '1',
+        colspan: '1'
+      },
+      insert: '\n'
+    },
+    {
+      attributes: {
+        'block-id': 'block-468a69b5-9332-450b-9107-381d593de249',
+        'table-cell-line': {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-d1sv2g',
+          cell: 'cell-fpcz5a'
+        },
+        row: 'row-d1sv2g',
+        cell: 'cell-fpcz5a',
+        rowspan: '1',
+        colspan: '1'
+      },
+      insert: '\n'
+    },
+    {
+      attributes: {
+        'block-id': 'block-26b1d252-9b2e-4808-9b29-04e76696aa3c',
+        'table-cell-line': {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-pflz90',
+          cell: 'cell-zrhylp'
+        },
+        row: 'row-pflz90',
+        cell: 'cell-zrhylp',
+        rowspan: '1',
+        colspan: '1'
+      },
+      insert: '\n'
+    },
+    {
+      attributes: {
+        'block-id': 'block-6af97ba7-8cf9-497a-9365-7075b938837b',
+        'table-cell-line': {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-pflz90',
+          cell: 'cell-s1q9nt'
+        },
+        row: 'row-pflz90',
+        cell: 'cell-s1q9nt',
+        rowspan: '1',
+        colspan: '1'
+      },
+      insert: '\n'
+    },
+    {
+      attributes: {
+        'block-id': 'block-107e273e-86bc-44fd-b0d7-41ab55aca484',
+        'table-cell-line': {
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-pflz90',
+          cell: 'cell-20b0j9'
+        },
+        row: 'row-pflz90',
+        cell: 'cell-20b0j9',
+        rowspan: '1',
+        colspan: '1'
+      },
+      insert: '\n'
+    },
+    {
+      attributes: {
+        'block-id': 'block-38161f9c-6f6d-44c5-b086-54cc6490f1e3'
+      },
+      insert: '\n'
+    },
+    {
+      insert: 'Content after table'
+    },
+    {
+      attributes: {
+        'block-id': 'block-15630542-ef45-412d-9415-88f0052238ce'
+      },
+      insert: '\n'
+    }
+    ];
+    const ydoc1 = new Doc();
+    const ytext = ydoc1.getText();
+    ytext.applyDelta(initialDelta);
+    const addingDash = [
+      {
+        retain: 12
+      },
+      {
+        insert: '-'
+      }
+    ];
+    ytext.applyDelta(addingDash);
+    const addingSpace = [
+      {
+        retain: 13
+      },
+      {
+        insert: ' '
+      }
+    ];
+    ytext.applyDelta(addingSpace);
+    const addingList = [
+      {
+        retain: 12
+      },
+      {
+        delete: 2
+      },
+      {
+        retain: 1,
+        attributes: {
+          // Clear table line attribute
+          'table-cell-line': null,
+          // Add list attribute in place of table-cell-line
+          list: {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-pflz90',
+            cell: 'cell-20b0j9',
+            list: 'bullet'
+          }
+        }
+      }
+    ];
+    ytext.applyDelta(addingList);
+    const result = ytext.toDelta();
+    const expectedResult = [
+      {
+        attributes: {
+          'block-id': 'block-28eea923-9cbb-4b6f-a950-cf7fd82bc087'
+        },
+        insert: '\n'
+      },
+      {
+        attributes: {
+          'table-col': {
+            width: '150'
+          }
+        },
+        insert: '\n\n\n'
+      },
+      {
+        attributes: {
+          'block-id': 'block-9144be72-e528-4f91-b0b2-82d20408e9ea',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-6kv2ls',
+            cell: 'cell-apba4k'
+          },
+          row: 'row-6kv2ls',
+          cell: 'cell-apba4k',
+          rowspan: '1',
+          colspan: '1'
+        },
+        insert: '\n'
+      },
+      {
+        attributes: {
+          'block-id': 'block-639adacb-1516-43ed-b272-937c55669a1c',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-6kv2ls',
+            cell: 'cell-a8qf0r'
+          },
+          row: 'row-6kv2ls',
+          cell: 'cell-a8qf0r',
+          rowspan: '1',
+          colspan: '1'
+        },
+        insert: '\n'
+      },
+      {
+        attributes: {
+          'block-id': 'block-6302ca4a-73a3-4c25-8c1e-b542f048f1c6',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-6kv2ls',
+            cell: 'cell-oi9ikb'
+          },
+          row: 'row-6kv2ls',
+          cell: 'cell-oi9ikb',
+          rowspan: '1',
+          colspan: '1'
+        },
+        insert: '\n'
+      },
+      {
+        attributes: {
+          'block-id': 'block-ceeddd05-330e-4f86-8017-4a3a060c4627',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-d1sv2g',
+            cell: 'cell-dt6ks2'
+          },
+          row: 'row-d1sv2g',
+          cell: 'cell-dt6ks2',
+          rowspan: '1',
+          colspan: '1'
+        },
+        insert: '\n'
+      },
+      {
+        attributes: {
+          'block-id': 'block-37b19322-cb57-4e6f-8fad-0d1401cae53f',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-d1sv2g',
+            cell: 'cell-qah2ay'
+          },
+          row: 'row-d1sv2g',
+          cell: 'cell-qah2ay',
+          rowspan: '1',
+          colspan: '1'
+        },
+        insert: '\n'
+      },
+      {
+        attributes: {
+          'block-id': 'block-468a69b5-9332-450b-9107-381d593de249',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-d1sv2g',
+            cell: 'cell-fpcz5a'
+          },
+          row: 'row-d1sv2g',
+          cell: 'cell-fpcz5a',
+          rowspan: '1',
+          colspan: '1'
+        },
+        insert: '\n'
+      },
+      {
+        attributes: {
+          'block-id': 'block-26b1d252-9b2e-4808-9b29-04e76696aa3c',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-pflz90',
+            cell: 'cell-zrhylp'
+          },
+          row: 'row-pflz90',
+          cell: 'cell-zrhylp',
+          rowspan: '1',
+          colspan: '1'
+        },
+        insert: '\n'
+      },
+      {
+        attributes: {
+          'block-id': 'block-6af97ba7-8cf9-497a-9365-7075b938837b',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-pflz90',
+            cell: 'cell-s1q9nt'
+          },
+          row: 'row-pflz90',
+          cell: 'cell-s1q9nt',
+          rowspan: '1',
+          colspan: '1'
+        },
+        insert: '\n'
+      },
+      {
+        insert: '\n',
+        // This attibutes has only list and no table-cell-line
+        attributes: {
+          list: {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-pflz90',
+            cell: 'cell-20b0j9',
+            list: 'bullet'
+          },
+          'block-id': 'block-107e273e-86bc-44fd-b0d7-41ab55aca484',
+          row: 'row-pflz90',
+          cell: 'cell-20b0j9',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      // No table-cell-line below here
+      {
+        attributes: {
+          'block-id': 'block-38161f9c-6f6d-44c5-b086-54cc6490f1e3'
+        },
+        insert: '\n'
+      },
+      {
+        insert: 'Content after table'
+      },
+      {
+        attributes: {
+          'block-id': 'block-15630542-ef45-412d-9415-88f0052238ce'
+        },
+        insert: '\n'
+      }
+    ];
+    compare$2(result, expectedResult);
+  };
+
+  /**
+   * https://github.com/yjs/yjs/issues/503
+   * @param {t.TestCase} _tc
+   */
+  const testDeltaBug2 = _tc => {
+    const initialContent = [
+      { insert: "Thomas' section" },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-61ae80ac-a469-4eae-bac9-3b6a2c380118' }
+      },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-d265d93f-1cc7-40ee-bb58-8270fca2619f' }
+      },
+      { insert: '123' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-592a7bee-76a3-4e28-9c25-7a84344f8813',
+          list: { list: 'toggled', 'toggle-id': 'list-66xfft' }
+        }
+      },
+      { insert: '456' },
+      {
+        insert: '\n',
+        attributes: {
+          indent: 1,
+          'block-id': 'block-3ee2bd70-b97f-45b2-9115-f1e8910235b1',
+          list: { list: 'toggled', 'toggle-id': 'list-6vh0t0' }
+        }
+      },
+      { insert: '789' },
+      {
+        insert: '\n',
+        attributes: {
+          indent: 1,
+          'block-id': 'block-78150cf3-9bb5-4dea-a6f5-0ce1d2a98b9c',
+          list: { list: 'toggled', 'toggle-id': 'list-7jr0l2' }
+        }
+      },
+      { insert: '901' },
+      {
+        insert: '\n',
+        attributes: {
+          indent: 1,
+          'block-id': 'block-13c6416f-f522-41d5-9fd4-ce4eb1cde5ba',
+          list: { list: 'toggled', 'toggle-id': 'list-7uk8qu' }
+        }
+      },
+      {
+        insert: {
+          slash_command: {
+            id: 'doc_94zq-2436',
+            sessionId: 'nkwc70p2j',
+            replace: '/'
+          }
+        }
+      },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-8a1d2bb6-23c2-4bcf-af3c-3919ffea1697' }
+      },
+      { insert: '\n\n', attributes: { 'table-col': { width: '150' } } },
+      {
+        insert: '\n',
+        attributes: { 'table-col': { width: '150' } }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-84ec3ea4-da6a-4e03-b430-0e5f432936a9',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-blmd4s',
+            cell: 'cell-m0u5za'
+          },
+          row: 'row-blmd4s',
+          cell: 'cell-m0u5za',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-83144ca8-aace-401e-8aa5-c05928a8ccf0',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-blmd4s',
+            cell: 'cell-1v8s8t'
+          },
+          row: 'row-blmd4s',
+          cell: 'cell-1v8s8t',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-9a493387-d27f-4b58-b2f7-731dfafda32a',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-blmd4s',
+            cell: 'cell-126947'
+          },
+          row: 'row-blmd4s',
+          cell: 'cell-126947',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-3484f86e-ae42-440f-8de6-857f0d8011ea',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-hmmljo',
+            cell: 'cell-wvutl9'
+          },
+          row: 'row-hmmljo',
+          cell: 'cell-wvutl9',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-d4e0b741-9dea-47a5-85e1-4ded0efbc89d',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-hmmljo',
+            cell: 'cell-nkablr'
+          },
+          row: 'row-hmmljo',
+          cell: 'cell-nkablr',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-352f0d5a-d1b9-422f-b136-4bacefd00b1a',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-hmmljo',
+            cell: 'cell-n8xtd0'
+          },
+          row: 'row-hmmljo',
+          cell: 'cell-n8xtd0',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-95823e57-f29c-44cf-a69d-2b4494b7144b',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-ev4xwq',
+            cell: 'cell-ua9bvu'
+          },
+          row: 'row-ev4xwq',
+          cell: 'cell-ua9bvu',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-cde5c027-15d3-4780-9e76-1e1a9d97a8e8',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-ev4xwq',
+            cell: 'cell-7bwuvk'
+          },
+          row: 'row-ev4xwq',
+          cell: 'cell-7bwuvk',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-11a23ed4-b04d-4e45-8065-8120889cd4a4',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-ev4xwq',
+            cell: 'cell-aouka5'
+          },
+          row: 'row-ev4xwq',
+          cell: 'cell-aouka5',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-15b4483c-da98-4ded-91d3-c3d6ebc82582' }
+      },
+      { insert: { divider: true } },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-68552c8e-b57b-4f4a-9f36-6cc1ef6b3461' }
+      },
+      { insert: 'jklasjdf' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-c8b2df7d-8ec5-4dd4-81f1-8d8efc40b1b4',
+          list: { list: 'toggled', 'toggle-id': 'list-9ss39s' }
+        }
+      },
+      { insert: 'asdf' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-4f252ceb-14da-49ae-8cbd-69a701d18e2a',
+          list: { list: 'toggled', 'toggle-id': 'list-uvo013' }
+        }
+      },
+      { insert: 'adg' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-ccb9b72e-b94d-45a0-aae4-9b0a1961c533',
+          list: { list: 'toggled', 'toggle-id': 'list-k53iwe' }
+        }
+      },
+      { insert: 'asdfasdfasdf' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-ccb9b72e-b94d-45a0-aae4-9b0a1961c533',
+          list: { list: 'none' },
+          indent: 1
+        }
+      },
+      { insert: 'asdf' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-f406f76d-f338-4261-abe7-5c9131f7f1ad',
+          list: { list: 'toggled', 'toggle-id': 'list-en86ur' }
+        }
+      },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-be18141c-9b6b-434e-8fd0-2c214437d560' }
+      },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-36922db3-4af5-48a1-9ea4-0788b3b5d7cf' }
+      },
+      { insert: { table_content: true } },
+      { insert: ' ' },
+      {
+        insert: {
+          slash_command: {
+            id: 'doc_94zq-2436',
+            sessionId: 'hiyrt6fny',
+            replace: '/'
+          }
+        }
+      },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-9d6566a1-be55-4e20-999a-b990bc15e143' }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-4b545085-114d-4d07-844c-789710ec3aab',
+          layout:
+          '12d887e1-d1a2-4814-a1a3-0c904e950b46_1185cd29-ef1b-45d5-8fda-51a70b704e64',
+          'layout-width': '0.25'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+
+          'block-id': 'block-4d3f2321-33d1-470e-9b7c-d5a683570148',
+          layout:
+          '12d887e1-d1a2-4814-a1a3-0c904e950b46_75523ea3-c67f-4f5f-a85f-ac7c8fc0a992',
+          'layout-width': '0.5'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-4c7ae1e6-758e-470f-8d7c-ae0325e4ee8a',
+          layout:
+          '12d887e1-d1a2-4814-a1a3-0c904e950b46_54c740ef-fd7b-48c6-85aa-c14e1bfc9297',
+          'layout-width': '0.25'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-2d6ff0f4-ff00-42b7-a8e2-b816463d8fb5' }
+      },
+      { insert: { divider: true } },
+      {
+        insert: '\n',
+        attributes: { 'table-col': { width: '150' } }
+      },
+      { insert: '\n', attributes: { 'table-col': { width: '154' } } },
+      {
+        insert: '\n',
+        attributes: { 'table-col': { width: '150' } }
+      },
+
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-38545d56-224b-464c-b779-51fcec24dbbf',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-q0qfck',
+            cell: 'cell-hmapv4'
+          },
+          row: 'row-q0qfck',
+          cell: 'cell-hmapv4',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-d413a094-5f52-4fd4-a4aa-00774f6fdb44',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-q0qfck',
+            cell: 'cell-c0czb2'
+          },
+          row: 'row-q0qfck',
+          cell: 'cell-c0czb2',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-ff855cbc-8871-4e0a-9ba7-de0c1c2aa585',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-q0qfck',
+            cell: 'cell-hcpqmm'
+          },
+          row: 'row-q0qfck',
+          cell: 'cell-hcpqmm',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-4841e6ee-fef8-4473-bf04-f5ba62db17f0',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-etopyl',
+            cell: 'cell-0io73v'
+          },
+          row: 'row-etopyl',
+          cell: 'cell-0io73v',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-adeec631-d4fe-4f38-9d5e-e67ba068bd24',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-etopyl',
+            cell: 'cell-gt2waa'
+          },
+          row: 'row-etopyl',
+          cell: 'cell-gt2waa',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-d38a7308-c858-4ce0-b1f3-0f9092384961',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-etopyl',
+            cell: 'cell-os9ksy'
+          },
+          row: 'row-etopyl',
+          cell: 'cell-os9ksy',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-a9df6568-1838-40d1-9d16-3c073b6ce169',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-0jwjg3',
+            cell: 'cell-hbx9ri'
+          },
+          row: 'row-0jwjg3',
+          cell: 'cell-hbx9ri',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-e26a0cf2-fe62-44a5-a4ca-8678a56d62f1',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-0jwjg3',
+            cell: 'cell-yg5m2w'
+          },
+          row: 'row-0jwjg3',
+          cell: 'cell-yg5m2w',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      { insert: 'a' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-bfbc5ac2-7417-44b9-9aa5-8e36e4095627',
+          list: {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-0jwjg3',
+            cell: 'cell-1azhl2',
+            list: 'ordered'
+          },
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-0jwjg3',
+          cell: 'cell-1azhl2'
+        }
+      },
+      { insert: 'b' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-f011c089-6389-47c0-8396-7477a29aa56f',
+          list: {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-0jwjg3',
+            cell: 'cell-1azhl2',
+            list: 'ordered'
+          },
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-0jwjg3',
+          cell: 'cell-1azhl2'
+        }
+      },
+      { insert: 'c' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-4497788d-1e02-4fd5-a80a-48b61a6185cb',
+          list: {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-0jwjg3',
+            cell: 'cell-1azhl2',
+            list: 'ordered'
+          },
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-0jwjg3',
+          cell: 'cell-1azhl2'
+        }
+      },
+      { insert: 'd' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-5d73a2c7-f98b-47c7-a3f5-0d8527962b02',
+          list: {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-0jwjg3',
+            cell: 'cell-1azhl2',
+            list: 'ordered'
+          },
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-0jwjg3',
+          cell: 'cell-1azhl2'
+        }
+      },
+      { insert: 'e' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-bfda76ee-ffdd-45db-a22e-a6707e11cf68',
+          list: {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-0jwjg3',
+            cell: 'cell-1azhl2',
+            list: 'ordered'
+          },
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-0jwjg3',
+          cell: 'cell-1azhl2'
+        }
+      },
+      { insert: 'd' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-35242e64-a69d-4cdb-bd85-2a93766bfab4',
+          list: {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-0jwjg3',
+            cell: 'cell-1azhl2',
+            list: 'ordered'
+          },
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-0jwjg3',
+          cell: 'cell-1azhl2'
+        }
+      },
+      { insert: 'f' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-8baa22c8-491b-4f1b-9502-44179d5ae744',
+          list: {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-0jwjg3',
+            cell: 'cell-1azhl2',
+            list: 'ordered'
+          },
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-0jwjg3',
+          cell: 'cell-1azhl2'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-7fa64af0-6974-4205-8cee-529f8bd46852' }
+      },
+      { insert: { divider: true } },
+      { insert: "Brandon's Section" },
+      {
+        insert: '\n',
+        attributes: {
+          header: 2,
+          'block-id': 'block-cf49462c-2370-48ff-969d-576cb32c39a1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-30ef8361-0dd6-4eee-b4eb-c9012d0e9070' }
+      },
+      {
+        insert: {
+          slash_command: {
+            id: 'doc_94zq-2436',
+            sessionId: 'x9x08o916',
+            replace: '/'
+          }
+        }
+      },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-166ed856-cf8c-486a-9365-f499b21d91b3' }
+      },
+      { insert: { divider: true } },
+      {
+        insert: '\n',
+        attributes: {
+          row: 'row-kssn15',
+          rowspan: '1',
+          colspan: '1',
+          'block-id': 'block-e8079594-4559-4259-98bb-da5280e2a692',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-kssn15',
+            cell: 'cell-qxbksf'
+          },
+          cell: 'cell-qxbksf'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-70132663-14cc-4701-b5c5-eb99e875e2bd',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-kssn15',
+            cell: 'cell-lsohbx'
+          },
+          cell: 'cell-lsohbx',
+          row: 'row-kssn15',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-47a3899c-e3c5-4a7a-a8c4-46e0ae73a4fa',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-kssn15',
+            cell: 'cell-hner9k'
+          },
+          cell: 'cell-hner9k',
+          row: 'row-kssn15',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-0f9e650a-7841-412e-b4f2-5571b6d352c2',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-juxwc0',
+            cell: 'cell-ei4yqp'
+          },
+          cell: 'cell-ei4yqp',
+          row: 'row-juxwc0',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-53a158a9-8c82-4c82-9d4e-f5298257ca43',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-juxwc0',
+            cell: 'cell-25pf5x'
+          },
+          cell: 'cell-25pf5x',
+          row: 'row-juxwc0',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-da8ba35e-ce6e-4518-8605-c51d781eb07a',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-juxwc0',
+            cell: 'cell-m8reor'
+          },
+          cell: 'cell-m8reor',
+          row: 'row-juxwc0',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-2dce37c7-2978-4127-bed0-9549781babcb',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-ot4wy5',
+            cell: 'cell-dinh0i'
+          },
+          cell: 'cell-dinh0i',
+          row: 'row-ot4wy5',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-7b593f8c-4ea3-44b4-8ad9-4a0abffe759b',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-ot4wy5',
+            cell: 'cell-d115b2'
+          },
+          cell: 'cell-d115b2',
+          row: 'row-ot4wy5',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-272c28e6-2bde-4477-9d99-ce35b3045895',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-ot4wy5',
+            cell: 'cell-fuapvo'
+          },
+          cell: 'cell-fuapvo',
+          row: 'row-ot4wy5',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-fbf23cab-1ce9-4ede-9953-f2f8250004cf' }
+      },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-c3fbb8c9-495c-40b0-b0dd-f6e33dd64b1b' }
+      },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-3417ad09-92a3-4a43-b5db-6dbcb0f16db4' }
+      },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-b9eacdce-4ba3-4e66-8b69-3eace5656057' }
+      },
+      { insert: 'Dan Gornstein' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-d7c6ae0d-a17c-433e-85fd-5efc52b587fb',
+          header: 1
+        }
+      },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-814521bd-0e14-4fbf-b332-799c6452a624' }
+      },
+      { insert: 'aaa' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-6aaf4dcf-dc21-45c6-b723-afb25fe0f498',
+          list: { list: 'toggled', 'toggle-id': 'list-idl93b' }
+        }
+      },
+      { insert: 'bb' },
+      {
+        insert: '\n',
+        attributes: {
+          indent: 1,
+          'block-id': 'block-3dd75392-fa50-4bfb-ba6b-3b7d6bd3f1a1',
+          list: { list: 'toggled', 'toggle-id': 'list-mrq7j2' }
+        }
+      },
+      { insert: 'ccc' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-2528578b-ecda-4f74-9fd7-8741d72dc8b3',
+          indent: 2,
+          list: { list: 'toggled', 'toggle-id': 'list-liu7dl' }
+        }
+      },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-18bf68c3-9ef3-4874-929c-9b6bb1a00325' }
+      },
+      {
+        insert: '\n',
+        attributes: { 'table-col': { width: '150' } }
+      },
+      { insert: '\n', attributes: { 'table-col': { width: '150' } } },
+      {
+        insert: '\n',
+        attributes: { 'table-col': { width: '150' } }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-d44e74b4-b37f-48e0-b319-6327a6295a57',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-si1nah',
+            cell: 'cell-cpybie'
+          },
+          row: 'row-si1nah',
+          cell: 'cell-cpybie',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      { insert: 'aaa' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-3e545ee9-0c9a-42d7-a4d0-833edb8087f3',
+          list: {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-si1nah',
+            cell: 'cell-cpybie',
+            list: 'toggled',
+            'toggle-id': 'list-kjl2ik'
+          },
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-si1nah',
+          cell: 'cell-cpybie'
+        }
+      },
+      { insert: 'bb' },
+      {
+        insert: '\n',
+        attributes: {
+          indent: 1,
+          'block-id': 'block-5f1225ad-370f-46ab-8f1e-18b277b5095f',
+          list: {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-si1nah',
+            cell: 'cell-cpybie',
+            list: 'toggled',
+            'toggle-id': 'list-eei1x5'
+          },
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-si1nah',
+          cell: 'cell-cpybie'
+        }
+      },
+      { insert: 'ccc' },
+      {
+        insert: '\n',
+        attributes: {
+          indent: 2,
+          'block-id': 'block-a77fdc11-ad24-431b-9ca2-09e32db94ac2',
+          list: {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-si1nah',
+            cell: 'cell-cpybie',
+            list: 'toggled',
+            'toggle-id': 'list-30us3c'
+          },
+          rowspan: '1',
+          colspan: '1',
+          row: 'row-si1nah',
+          cell: 'cell-cpybie'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-d44e74b4-b37f-48e0-b319-6327a6295a57',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-si1nah',
+            cell: 'cell-cpybie'
+          },
+          row: 'row-si1nah',
+          cell: 'cell-cpybie',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-2c274c8a-757d-4892-8db8-1a7999f7ab51',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-si1nah',
+            cell: 'cell-al1z64'
+          },
+          row: 'row-si1nah',
+          cell: 'cell-al1z64',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-85931afe-1879-471c-bb4b-89e7bd517fe9',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-si1nah',
+            cell: 'cell-q186pb'
+          },
+          row: 'row-si1nah',
+          cell: 'cell-q186pb',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      { insert: 'asdfasdfasdf' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-6e0522e8-c1eb-4c07-98df-2b07c533a139',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-7x2d1o',
+            cell: 'cell-6eid2t'
+          },
+          row: 'row-7x2d1o',
+          cell: 'cell-6eid2t',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-4b3d0bd0-9175-45e9-955c-e8164f4b5376',
+          row: 'row-7x2d1o',
+          cell: 'cell-m1alad',
+          rowspan: '1',
+          colspan: '1',
+          list: {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-7x2d1o',
+            cell: 'cell-m1alad',
+            list: 'ordered'
+          }
+        }
+      },
+      { insert: 'asdfasdfasdf' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-08610089-cb05-4366-bb1e-a0787d5b11bf',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-7x2d1o',
+            cell: 'cell-dm1l2p'
+          },
+          row: 'row-7x2d1o',
+          cell: 'cell-dm1l2p',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-c22b5125-8df3-432f-bd55-5ff456e41b4e',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-o0ujua',
+            cell: 'cell-82g0ca'
+          },
+          row: 'row-o0ujua',
+          cell: 'cell-82g0ca',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-7c6320e4-acaf-4ab4-8355-c9b00408c9c1',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-o0ujua',
+            cell: 'cell-wv6ozp'
+          },
+          row: 'row-o0ujua',
+          cell: 'cell-wv6ozp',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-d1bb7bed-e69e-4807-8d20-2d28fef8d08f',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-o0ujua',
+            cell: 'cell-ldt53x'
+          },
+          row: 'row-o0ujua',
+          cell: 'cell-ldt53x',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-28f28cb8-51a2-4156-acf9-2380e1349745' }
+      },
+      { insert: { divider: true } },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-a1193252-c0c8-47fe-b9f6-32c8b01a1619' }
+      },
+      { insert: '\n', attributes: { 'table-col': { width: '150' } } },
+      {
+        insert: '\n\n',
+        attributes: { 'table-col': { width: '150' } }
+      },
+      { insert: '/This is a test.' },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-14188df0-a63f-4317-9a6d-91b96a7ac9fe',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-5ixdvv',
+            cell: 'cell-9tgyed'
+          },
+          row: 'row-5ixdvv',
+          cell: 'cell-9tgyed',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-7e5ba2af-9903-457d-adf4-2a79be81d823',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-5ixdvv',
+            cell: 'cell-xc56e9'
+          },
+          row: 'row-5ixdvv',
+          cell: 'cell-xc56e9',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-eb6cad93-caf7-4848-8adf-415255139268',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-5ixdvv',
+            cell: 'cell-xrze3u'
+          },
+          row: 'row-5ixdvv',
+          cell: 'cell-xrze3u',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-5bb547a2-6f71-4624-80c7-d0e1318c81a2',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-xbzv98',
+            cell: 'cell-lie0ng'
+          },
+          row: 'row-xbzv98',
+          cell: 'cell-lie0ng',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-b506de0d-efb6-4bd7-ba8e-2186cc57903e',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-xbzv98',
+            cell: 'cell-s9sow1'
+          },
+          row: 'row-xbzv98',
+          cell: 'cell-s9sow1',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-42d2ad20-5521-40e3-a88d-fe6906176e61',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-xbzv98',
+            cell: 'cell-nodtcj'
+          },
+          row: 'row-xbzv98',
+          cell: 'cell-nodtcj',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-7d3e4216-3f68-4dd6-bc77-4a9fad4ba008',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-5bqfil',
+            cell: 'cell-c8c0f3'
+          },
+          row: 'row-5bqfil',
+          cell: 'cell-c8c0f3',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-6671f221-551e-47fb-9b7d-9043b6b12cdc',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-5bqfil',
+            cell: 'cell-jvxxif'
+          },
+          row: 'row-5bqfil',
+          cell: 'cell-jvxxif',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: {
+          'block-id': 'block-51e3161b-0437-4fe3-ac4f-129a93a93fc3',
+          'table-cell-line': {
+            rowspan: '1',
+            colspan: '1',
+            row: 'row-5bqfil',
+            cell: 'cell-rmjpze'
+          },
+          row: 'row-5bqfil',
+          cell: 'cell-rmjpze',
+          rowspan: '1',
+          colspan: '1'
+        }
+      },
+      {
+        insert: '\n',
+        attributes: { 'block-id': 'block-21099df0-afb2-4cd3-834d-bb37800eb06a' }
+      }
+    ];
+    const ydoc = new Doc();
+    const ytext = ydoc.getText('id');
+    ytext.applyDelta(initialContent);
+    const changeEvent = [
+      { retain: 90 },
+      { delete: 4 },
+      {
+        retain: 1,
+        attributes: {
+          layout: null,
+          'layout-width': null,
+          'block-id': 'block-9d6566a1-be55-4e20-999a-b990bc15e143'
+        }
+      }
+    ];
+    ytext.applyDelta(changeEvent);
+    const delta = ytext.toDelta();
+    compare$2(delta[41], {
+      insert: '\n',
+      attributes: {
+        'block-id': 'block-9d6566a1-be55-4e20-999a-b990bc15e143'
+      }
+    });
+  };
 
   /**
    * In this test we are mainly interested in the cleanup behavior and whether the resulting delta makes sense.
@@ -15333,9 +17416,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testMultilineFormat = tc => {
+  const testMultilineFormat = _tc => {
     const ydoc = new Doc();
     const testText = ydoc.getText('test');
     testText.insert(0, 'Test\nMulti-line\nFormatting');
@@ -15356,9 +17439,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testNotMergeEmptyLinesFormat = tc => {
+  const testNotMergeEmptyLinesFormat = _tc => {
     const ydoc = new Doc();
     const testText = ydoc.getText('test');
     testText.applyDelta([
@@ -15376,9 +17459,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testPreserveAttributesThroughDelete = tc => {
+  const testPreserveAttributesThroughDelete = _tc => {
     const ydoc = new Doc();
     const testText = ydoc.getText('test');
     testText.applyDelta([
@@ -15632,9 +17715,9 @@
   const c = new ContentString('a');
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testBestCase = tc => {
+  const testBestCase = _tc => {
     const N = largeDocumentSize;
     const items = new Array(N);
     measureTime('time to create two million items in the best case', () => {
@@ -15671,9 +17754,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testLargeFragmentedDocument = tc => {
+  const testLargeFragmentedDocument = _tc => {
     const itemsToInsert = largeDocumentSize;
     let update = /** @type {any} */ (null)
     ;(() => {
@@ -15703,9 +17786,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testIncrementalUpdatesPerformanceOnLargeFragmentedDocument = tc => {
+  const testIncrementalUpdatesPerformanceOnLargeFragmentedDocument = _tc => {
     const itemsToInsert = largeDocumentSize;
     const updates = /** @type {Array<Uint8Array>} */ ([])
     ;(() => {
@@ -15813,9 +17896,9 @@
   /**
    * Reported in https://github.com/yjs/yjs/pull/32
    *
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testFormattingBug$1 = async tc => {
+  const testFormattingBug$1 = async _tc => {
     const ydoc1 = new Doc();
     const ydoc2 = new Doc();
     const text1 = ydoc1.getText();
@@ -15838,9 +17921,9 @@
   /**
    * Delete formatting should not leave redundant formatting items.
    *
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testDeleteFormatting = tc => {
+  const testDeleteFormatting = _tc => {
     const doc = new Doc();
     const text = doc.getText();
     text.insert(0, 'Attack ships on fire off the shoulder of Orion.');
@@ -16042,6 +18125,41 @@
       }
       ops.push({ insert: text }, { insert: '\n', format: { 'code-block': true } });
       ytext.applyDelta(ops);
+    },
+    /**
+     * @param {Y.Doc} y
+     * @param {prng.PRNG} gen
+     */
+    (y, gen) => { // complex delta op
+      const ytext = y.getText('text');
+      const contentLen = ytext.toString().length;
+      let currentPos = max(0, int32(gen, 0, contentLen - 1));
+      /**
+       * @type {Array<any>}
+       */
+      const ops = currentPos > 0 ? [{ retain: currentPos }] : [];
+      // create max 3 ops
+      for (let i = 0; i < 7 && currentPos < contentLen; i++) {
+        oneOf(gen, [
+          () => { // format
+            const retain = min(int32(gen, 0, contentLen - currentPos), 5);
+            const format = oneOf(gen, marks);
+            ops.push({ retain, attributes: format });
+            currentPos += retain;
+          },
+          () => { // insert
+            const attrs = oneOf(gen, marksChoices);
+            const text = word(gen, 1, 3);
+            ops.push({ insert: text, attributes: attrs });
+          },
+          () => { // delete
+            const delLen = min(int32(gen, 0, contentLen - currentPos), 10);
+            ops.push({ delete: delLen });
+            currentPos += delLen;
+          }
+        ])();
+      }
+      ytext.applyDelta(ops);
     }
   ];
 
@@ -16137,48 +18255,77 @@
 
   var text = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    testDeltaAfterConcurrentFormatting: testDeltaAfterConcurrentFormatting,
-    testBasicInsertAndDelete: testBasicInsertAndDelete,
+    testAppendChars: testAppendChars,
     testBasicFormat: testBasicFormat,
+    testBasicInsertAndDelete: testBasicInsertAndDelete,
+    testBestCase: testBestCase,
+    testDeleteFormatting: testDeleteFormatting,
+    testDeltaAfterConcurrentFormatting: testDeltaAfterConcurrentFormatting,
+    testDeltaBug: testDeltaBug,
+    testDeltaBug2: testDeltaBug2,
+    testFormattingBug: testFormattingBug$1,
+    testFormattingDeltaUnnecessaryAttributeChange: testFormattingDeltaUnnecessaryAttributeChange,
+    testFormattingRemoved: testFormattingRemoved,
+    testFormattingRemovedInMidText: testFormattingRemovedInMidText,
+    testGetDeltaWithEmbeds: testGetDeltaWithEmbeds,
+    testIncrementalUpdatesPerformanceOnLargeFragmentedDocument: testIncrementalUpdatesPerformanceOnLargeFragmentedDocument,
+    testInsertAndDeleteAtRandomPositions: testInsertAndDeleteAtRandomPositions,
+    testLargeFragmentedDocument: testLargeFragmentedDocument,
     testMultilineFormat: testMultilineFormat,
     testNotMergeEmptyLinesFormat: testNotMergeEmptyLinesFormat,
     testPreserveAttributesThroughDelete: testPreserveAttributesThroughDelete,
-    testGetDeltaWithEmbeds: testGetDeltaWithEmbeds,
-    testTypesAsEmbed: testTypesAsEmbed,
-    testSnapshot: testSnapshot,
-    testSnapshotDeleteAfter: testSnapshotDeleteAfter,
-    testToJson: testToJson,
-    testToDeltaEmbedAttributes: testToDeltaEmbedAttributes,
-    testToDeltaEmbedNoAttributes: testToDeltaEmbedNoAttributes,
-    testFormattingRemoved: testFormattingRemoved,
-    testFormattingRemovedInMidText: testFormattingRemovedInMidText,
-    testFormattingDeltaUnnecessaryAttributeChange: testFormattingDeltaUnnecessaryAttributeChange,
-    testInsertAndDeleteAtRandomPositions: testInsertAndDeleteAtRandomPositions,
-    testAppendChars: testAppendChars,
-    testBestCase: testBestCase,
-    testLargeFragmentedDocument: testLargeFragmentedDocument,
-    testIncrementalUpdatesPerformanceOnLargeFragmentedDocument: testIncrementalUpdatesPerformanceOnLargeFragmentedDocument,
-    testSplitSurrogateCharacter: testSplitSurrogateCharacter,
-    testSearchMarkerBug1: testSearchMarkerBug1,
-    testFormattingBug: testFormattingBug$1,
-    testDeleteFormatting: testDeleteFormatting,
-    testRepeatGenerateTextChanges5: testRepeatGenerateTextChanges5,
-    testRepeatGenerateTextChanges30: testRepeatGenerateTextChanges30,
-    testRepeatGenerateTextChanges40: testRepeatGenerateTextChanges40,
-    testRepeatGenerateTextChanges50: testRepeatGenerateTextChanges50,
-    testRepeatGenerateTextChanges70: testRepeatGenerateTextChanges70,
-    testRepeatGenerateTextChanges90: testRepeatGenerateTextChanges90,
-    testRepeatGenerateTextChanges300: testRepeatGenerateTextChanges300,
     testRepeatGenerateQuillChanges1: testRepeatGenerateQuillChanges1,
+    testRepeatGenerateQuillChanges100: testRepeatGenerateQuillChanges100,
     testRepeatGenerateQuillChanges2: testRepeatGenerateQuillChanges2,
     testRepeatGenerateQuillChanges2Repeat: testRepeatGenerateQuillChanges2Repeat,
     testRepeatGenerateQuillChanges3: testRepeatGenerateQuillChanges3,
     testRepeatGenerateQuillChanges30: testRepeatGenerateQuillChanges30,
+    testRepeatGenerateQuillChanges300: testRepeatGenerateQuillChanges300,
     testRepeatGenerateQuillChanges40: testRepeatGenerateQuillChanges40,
     testRepeatGenerateQuillChanges70: testRepeatGenerateQuillChanges70,
-    testRepeatGenerateQuillChanges100: testRepeatGenerateQuillChanges100,
-    testRepeatGenerateQuillChanges300: testRepeatGenerateQuillChanges300
+    testRepeatGenerateTextChanges30: testRepeatGenerateTextChanges30,
+    testRepeatGenerateTextChanges300: testRepeatGenerateTextChanges300,
+    testRepeatGenerateTextChanges40: testRepeatGenerateTextChanges40,
+    testRepeatGenerateTextChanges5: testRepeatGenerateTextChanges5,
+    testRepeatGenerateTextChanges50: testRepeatGenerateTextChanges50,
+    testRepeatGenerateTextChanges70: testRepeatGenerateTextChanges70,
+    testRepeatGenerateTextChanges90: testRepeatGenerateTextChanges90,
+    testSearchMarkerBug1: testSearchMarkerBug1,
+    testSnapshot: testSnapshot,
+    testSnapshotDeleteAfter: testSnapshotDeleteAfter,
+    testSplitSurrogateCharacter: testSplitSurrogateCharacter,
+    testToDeltaEmbedAttributes: testToDeltaEmbedAttributes,
+    testToDeltaEmbedNoAttributes: testToDeltaEmbedNoAttributes,
+    testToJson: testToJson,
+    testTypesAsEmbed: testTypesAsEmbed
   });
+
+  const testCustomTypings = () => {
+    const ydoc = new Doc();
+    const ymap = ydoc.getMap();
+    /**
+     * @type {Y.XmlElement<{ num: number, str: string, [k:string]: object|number|string }>}
+     */
+    const yxml = ymap.set('yxml', new YXmlElement('test'));
+    /**
+     * @type {number|undefined}
+     */
+    const num = yxml.getAttribute('num');
+    /**
+     * @type {string|undefined}
+     */
+    const str = yxml.getAttribute('str');
+    /**
+     * @type {object|number|string|undefined}
+     */
+    const dtrn = yxml.getAttribute('dtrn');
+    const attrs = yxml.getAttributes();
+    /**
+     * @type {object|number|string|undefined}
+     */
+    const any = attrs.shouldBeAny;
+    console.log({ num, str, dtrn, attrs, any });
+  };
 
   /**
    * @param {t.TestCase} tc
@@ -16269,9 +18416,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testYtextAttributes = tc => {
+  const testYtextAttributes = _tc => {
     const ydoc = new Doc();
     const ytext = /** @type {Y.XmlText} */ (ydoc.get('', YXmlText));
     ytext.observe(event => {
@@ -16283,9 +18430,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testSiblings = tc => {
+  const testSiblings = _tc => {
     const ydoc = new Doc();
     const yxml = ydoc.getXmlFragment();
     const first = new YXmlText();
@@ -16299,9 +18446,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testInsertafter = tc => {
+  const testInsertafter = _tc => {
     const ydoc = new Doc();
     const yxml = ydoc.getXmlFragment();
     const first = new YXmlText();
@@ -16329,9 +18476,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testClone = tc => {
+  const testClone = _tc => {
     const ydoc = new Doc();
     const yxml = ydoc.getXmlFragment();
     const first = new YXmlText('text');
@@ -16347,9 +18494,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testFormattingBug = tc => {
+  const testFormattingBug = _tc => {
     const ydoc = new Doc();
     const yxml = /** @type {Y.XmlText} */ (ydoc.get('', YXmlText));
     const delta = [
@@ -16363,15 +18510,16 @@
 
   var xml = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    testSetProperty: testSetProperty,
-    testHasProperty: testHasProperty,
-    testEvents: testEvents,
-    testTreewalker: testTreewalker,
-    testYtextAttributes: testYtextAttributes,
-    testSiblings: testSiblings,
-    testInsertafter: testInsertafter,
     testClone: testClone,
-    testFormattingBug: testFormattingBug
+    testCustomTypings: testCustomTypings,
+    testEvents: testEvents,
+    testFormattingBug: testFormattingBug,
+    testHasProperty: testHasProperty,
+    testInsertafter: testInsertafter,
+    testSetProperty: testSetProperty,
+    testSiblings: testSiblings,
+    testTreewalker: testTreewalker,
+    testYtextAttributes: testYtextAttributes
   });
 
   /**
@@ -16463,10 +18611,10 @@
 
   var encoding = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    testStructReferences: testStructReferences,
-    testPermanentUserData: testPermanentUserData,
+    testDiffStateVectorOfUpdateIgnoresSkips: testDiffStateVectorOfUpdateIgnoresSkips,
     testDiffStateVectorOfUpdateIsEmpty: testDiffStateVectorOfUpdateIsEmpty,
-    testDiffStateVectorOfUpdateIgnoresSkips: testDiffStateVectorOfUpdateIgnoresSkips
+    testPermanentUserData: testPermanentUserData,
+    testStructReferences: testStructReferences
   });
 
   /**
@@ -16530,9 +18678,9 @@
 
   /**
    * Test case to fix #241
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testEmptyTypeScope = tc => {
+  const testEmptyTypeScope = _tc => {
     const ydoc = new Doc();
     const um = new UndoManager([], { doc: ydoc });
     const yarray = ydoc.getArray();
@@ -16544,9 +18692,9 @@
 
   /**
    * Test case to fix #241
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testDoubleUndo = tc => {
+  const testDoubleUndo = _tc => {
     const doc = new Doc();
     const text = doc.getText();
     text.insert(0, '1221');
@@ -16782,9 +18930,9 @@
 
   /**
    * This issue has been reported in https://discuss.yjs.dev/t/undomanager-with-external-updates/454/6
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testUndoUntilChangePerformed = tc => {
+  const testUndoUntilChangePerformed = _tc => {
     const doc = new Doc();
     const doc2 = new Doc();
     doc.on('update', update => applyUpdate(doc2, update));
@@ -16813,9 +18961,9 @@
 
   /**
    * This issue has been reported in https://github.com/yjs/yjs/issues/317
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testUndoNestedUndoIssue = tc => {
+  const testUndoNestedUndoIssue = _tc => {
     const doc = new Doc({ gc: false });
     const design = doc.getMap();
     const undoManager = new UndoManager(design, { captureTimeout: 0 });
@@ -16869,9 +19017,9 @@
   /**
    * This issue has been reported in https://github.com/yjs/yjs/issues/355
    *
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testConsecutiveRedoBug = tc => {
+  const testConsecutiveRedoBug = _tc => {
     const doc = new Doc();
     const yRoot = doc.getMap();
     const undoMgr = new UndoManager(yRoot);
@@ -16920,9 +19068,9 @@
   /**
    * This issue has been reported in https://github.com/yjs/yjs/issues/304
    *
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testUndoXmlBug = tc => {
+  const testUndoXmlBug = _tc => {
     const origin = 'origin';
     const doc = new Doc();
     const fragment = doc.getXmlFragment('t');
@@ -16965,9 +19113,9 @@
   /**
    * This issue has been reported in https://github.com/yjs/yjs/issues/343
    *
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testUndoBlockBug = tc => {
+  const testUndoBlockBug = _tc => {
     const doc = new Doc({ gc: false });
     const design = doc.getMap();
 
@@ -17025,9 +19173,9 @@
    * Undo text formatting delete should not corrupt peer state.
    *
    * @see https://github.com/yjs/yjs/issues/392
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testUndoDeleteTextFormat = tc => {
+  const testUndoDeleteTextFormat = _tc => {
     const doc = new Doc();
     const text = doc.getText();
     text.insert(0, 'Attack ships on fire off the shoulder of Orion.');
@@ -17063,9 +19211,9 @@
    * Undo text formatting delete should not corrupt peer state.
    *
    * @see https://github.com/yjs/yjs/issues/392
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testBehaviorOfIgnoreremotemapchangesProperty = tc => {
+  const testBehaviorOfIgnoreremotemapchangesProperty = _tc => {
     const doc = new Doc();
     const doc2 = new Doc();
     doc.on('update', update => applyUpdate(doc2, update, doc));
@@ -17086,9 +19234,9 @@
    * Special deletion case.
    *
    * @see https://github.com/yjs/yjs/issues/447
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testSpecialDeletionCase = tc => {
+  const testSpecialDeletionCase = _tc => {
     const origin = 'undoable';
     const doc = new Doc();
     const fragment = doc.getXmlFragment();
@@ -17111,28 +19259,60 @@
     compareStrings(fragment.toString(), '<test a="1" b="2"></test>');
   };
 
+  /**
+   * Deleted entries in a map should be restored on undo.
+   *
+   * @see https://github.com/yjs/yjs/issues/500
+   * @param {t.TestCase} tc
+   */
+  const testUndoDeleteInMap = (tc) => {
+    const { map0 } = init$1(tc, { users: 3 });
+    const undoManager = new UndoManager(map0, { captureTimeout: 0 });
+    map0.set('a', 'a');
+    map0.delete('a');
+    map0.set('a', 'b');
+    map0.delete('a');
+    map0.set('a', 'c');
+    map0.delete('a');
+    map0.set('a', 'd');
+    compare$2(map0.toJSON(), { a: 'd' });
+    undoManager.undo();
+    compare$2(map0.toJSON(), {});
+    undoManager.undo();
+    compare$2(map0.toJSON(), { a: 'c' });
+    undoManager.undo();
+    compare$2(map0.toJSON(), {});
+    undoManager.undo();
+    compare$2(map0.toJSON(), { a: 'b' });
+    undoManager.undo();
+    compare$2(map0.toJSON(), {});
+    undoManager.undo();
+    compare$2(map0.toJSON(), { a: 'a' });
+  };
+
   var undoredo = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    testInfiniteCaptureTimeout: testInfiniteCaptureTimeout,
-    testUndoText: testUndoText,
-    testEmptyTypeScope: testEmptyTypeScope,
+    testBehaviorOfIgnoreremotemapchangesProperty: testBehaviorOfIgnoreremotemapchangesProperty,
+    testConsecutiveRedoBug: testConsecutiveRedoBug,
     testDoubleUndo: testDoubleUndo,
-    testUndoMap: testUndoMap,
-    testUndoArray: testUndoArray,
-    testUndoXml: testUndoXml,
-    testUndoEvents: testUndoEvents,
+    testEmptyTypeScope: testEmptyTypeScope,
+    testInfiniteCaptureTimeout: testInfiniteCaptureTimeout,
+    testSpecialDeletionCase: testSpecialDeletionCase,
     testTrackClass: testTrackClass,
     testTypeScope: testTypeScope,
-    testUndoInEmbed: testUndoInEmbed,
-    testUndoDeleteFilter: testUndoDeleteFilter,
-    testUndoUntilChangePerformed: testUndoUntilChangePerformed,
-    testUndoNestedUndoIssue: testUndoNestedUndoIssue,
-    testConsecutiveRedoBug: testConsecutiveRedoBug,
-    testUndoXmlBug: testUndoXmlBug,
+    testUndoArray: testUndoArray,
     testUndoBlockBug: testUndoBlockBug,
+    testUndoDeleteFilter: testUndoDeleteFilter,
+    testUndoDeleteInMap: testUndoDeleteInMap,
     testUndoDeleteTextFormat: testUndoDeleteTextFormat,
-    testBehaviorOfIgnoreremotemapchangesProperty: testBehaviorOfIgnoreremotemapchangesProperty,
-    testSpecialDeletionCase: testSpecialDeletionCase
+    testUndoEvents: testUndoEvents,
+    testUndoInEmbed: testUndoInEmbed,
+    testUndoMap: testUndoMap,
+    testUndoNestedUndoIssue: testUndoNestedUndoIssue,
+    testUndoText: testUndoText,
+    testUndoUntilChangePerformed: testUndoUntilChangePerformed,
+    testUndoXml: testUndoXml,
+    testUndoXmlBug: testUndoXmlBug
   });
 
   /**
@@ -17180,6 +19360,24 @@
   /**
    * @param {t.TestCase} _tc
    */
+  const testAfterTransactionRecursion = _tc => {
+    const ydoc = new Doc();
+    const yxml = ydoc.getXmlFragment('');
+    ydoc.on('afterTransaction', tr => {
+      if (tr.origin === 'test') {
+        yxml.toJSON();
+      }
+    });
+    ydoc.transact(_tr => {
+      for (let i = 0; i < 15000; i++) {
+        yxml.push([new YXmlText('a')]);
+      }
+    }, 'test');
+  };
+
+  /**
+   * @param {t.TestCase} _tc
+   */
   const testOriginInTransaction = _tc => {
     const doc = new Doc();
     const ytext = doc.getText();
@@ -17190,7 +19388,7 @@
     doc.on('afterTransaction', (tr) => {
       origins.push(tr.origin);
       if (origins.length <= 1) {
-        ytext.toDelta();
+        ytext.toDelta(snapshot$1(doc)); // adding a snapshot forces toDelta to create a cleanup transaction
         doc.transact(() => {
           ytext.insert(0, 'a');
         }, 'nested');
@@ -17205,9 +19403,9 @@
   /**
    * Client id should be changed when an instance receives updates from another client using the same client id.
    *
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testClientIdDuplicateChange = tc => {
+  const testClientIdDuplicateChange = _tc => {
     const doc1 = new Doc();
     doc1.clientID = 0;
     const doc2 = new Doc();
@@ -17219,9 +19417,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testGetTypeEmptyId = tc => {
+  const testGetTypeEmptyId = _tc => {
     const doc1 = new Doc();
     doc1.getText('').insert(0, 'h');
     doc1.getText().insert(1, 'i');
@@ -17232,9 +19430,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testToJSON = tc => {
+  const testToJSON = _tc => {
     const doc = new Doc();
     compare$2(doc.toJSON(), {}, 'doc.toJSON yields empty object');
 
@@ -17259,9 +19457,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testSubdoc = tc => {
+  const testSubdoc = _tc => {
     const doc = new Doc();
     doc.load(); // doesn't do anything
     {
@@ -17326,9 +19524,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testSubdocLoadEdgeCases = tc => {
+  const testSubdocLoadEdgeCases = _tc => {
     const ydoc = new Doc();
     const yarray = ydoc.getArray();
     const subdoc1 = new Doc();
@@ -17373,9 +19571,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testSubdocLoadEdgeCasesAutoload = tc => {
+  const testSubdocLoadEdgeCasesAutoload = _tc => {
     const ydoc = new Doc();
     const yarray = ydoc.getArray();
     const subdoc1 = new Doc({ autoLoad: true });
@@ -17415,9 +19613,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testSubdocsUndo = tc => {
+  const testSubdocsUndo = _tc => {
     const ydoc = new Doc();
     const elems = ydoc.getXmlFragment();
     const undoManager = new UndoManager(elems);
@@ -17430,9 +19628,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testLoadDocs = async tc => {
+  const testLoadDocsEvent = async _tc => {
     const ydoc = new Doc();
     assert(ydoc.isLoaded === false);
     let loadedEvent = false;
@@ -17445,18 +19643,73 @@
     assert(ydoc.isLoaded);
   };
 
+  /**
+   * @param {t.TestCase} _tc
+   */
+  const testSyncDocsEvent = async _tc => {
+    const ydoc = new Doc();
+    assert(ydoc.isLoaded === false);
+    assert(ydoc.isSynced === false);
+    let loadedEvent = false;
+    ydoc.once('load', () => {
+      loadedEvent = true;
+    });
+    let syncedEvent = false;
+    ydoc.once('sync', /** @param {any} isSynced */ (isSynced) => {
+      syncedEvent = true;
+      assert(isSynced);
+    });
+    ydoc.emit('sync', [true, ydoc]);
+    await ydoc.whenLoaded;
+    const oldWhenSynced = ydoc.whenSynced;
+    await ydoc.whenSynced;
+    assert(loadedEvent);
+    assert(syncedEvent);
+    assert(ydoc.isLoaded);
+    assert(ydoc.isSynced);
+    let loadedEvent2 = false;
+    ydoc.on('load', () => {
+      loadedEvent2 = true;
+    });
+    let syncedEvent2 = false;
+    ydoc.on('sync', (isSynced) => {
+      syncedEvent2 = true;
+      assert(isSynced === false);
+    });
+    ydoc.emit('sync', [false, ydoc]);
+    assert(!loadedEvent2);
+    assert(syncedEvent2);
+    assert(ydoc.isLoaded);
+    assert(!ydoc.isSynced);
+    assert(ydoc.whenSynced !== oldWhenSynced);
+  };
+
   var doc = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    testOriginInTransaction: testOriginInTransaction,
+    testAfterTransactionRecursion: testAfterTransactionRecursion,
     testClientIdDuplicateChange: testClientIdDuplicateChange,
     testGetTypeEmptyId: testGetTypeEmptyId,
-    testToJSON: testToJSON,
+    testLoadDocsEvent: testLoadDocsEvent,
+    testOriginInTransaction: testOriginInTransaction,
     testSubdoc: testSubdoc,
     testSubdocLoadEdgeCases: testSubdocLoadEdgeCases,
     testSubdocLoadEdgeCasesAutoload: testSubdocLoadEdgeCasesAutoload,
     testSubdocsUndo: testSubdocsUndo,
-    testLoadDocs: testLoadDocs
+    testSyncDocsEvent: testSyncDocsEvent,
+    testToJSON: testToJSON
   });
+
+  /**
+   * @param {t.TestCase} tc
+   */
+  const testBasic = tc => {
+    const ydoc = new Doc({ gc: false });
+    ydoc.getText().insert(0, 'world!');
+    const snapshot = snapshot$1(ydoc);
+    ydoc.getText().insert(0, 'hello ');
+    const restored = createDocFromSnapshot(ydoc, snapshot);
+    assert(restored.getText().toString() === 'world!');
+  };
 
   /**
    * @param {t.TestCase} tc
@@ -17628,14 +19881,15 @@
 
   var snapshot = /*#__PURE__*/Object.freeze({
     __proto__: null,
+    testBasic: testBasic,
     testBasicRestoreSnapshot: testBasicRestoreSnapshot,
+    testDeletedItems2: testDeletedItems2,
+    testDeletedItemsBase: testDeletedItemsBase,
+    testDependentChanges: testDependentChanges,
     testEmptyRestoreSnapshot: testEmptyRestoreSnapshot,
-    testRestoreSnapshotWithSubType: testRestoreSnapshotWithSubType,
     testRestoreDeletedItem1: testRestoreDeletedItem1,
     testRestoreLeftItem: testRestoreLeftItem,
-    testDeletedItemsBase: testDeletedItemsBase,
-    testDeletedItems2: testDeletedItems2,
-    testDependentChanges: testDependentChanges
+    testRestoreSnapshotWithSubType: testRestoreSnapshotWithSubType
   });
 
   /**
@@ -17771,7 +20025,6 @@
    */
   const checkUpdateCases = (ydoc, updates, enc, hasDeletes) => {
     const cases = [];
-
     // Case 1: Simple case, simply merge everything
     cases.push(enc.mergeUpdates(updates));
 
@@ -17938,13 +20191,65 @@
     compareStrings(yText5.toString(), 'nenor');
   };
 
+  /**
+   * @param {t.TestCase} tc
+   */
+  const testObfuscateUpdates = tc => {
+    const ydoc = new Doc();
+    const ytext = ydoc.getText('text');
+    const ymap = ydoc.getMap('map');
+    const yarray = ydoc.getArray('array');
+    // test ytext
+    ytext.applyDelta([{ insert: 'text', attributes: { bold: true } }, { insert: { href: 'supersecreturl' } }]);
+    // test ymap
+    ymap.set('key', 'secret1');
+    ymap.set('key', 'secret2');
+    // test yarray with subtype & subdoc
+    const subtype = new YXmlElement('secretnodename');
+    const subdoc = new Doc({ guid: 'secret' });
+    subtype.setAttribute('attr', 'val');
+    yarray.insert(0, ['teststring', 42, subtype, subdoc]);
+    // obfuscate the content and put it into a new document
+    const obfuscatedUpdate = obfuscateUpdate(encodeStateAsUpdate(ydoc));
+    const odoc = new Doc();
+    applyUpdate(odoc, obfuscatedUpdate);
+    const otext = odoc.getText('text');
+    const omap = odoc.getMap('map');
+    const oarray = odoc.getArray('array');
+    // test ytext
+    const delta = otext.toDelta();
+    assert(delta.length === 2);
+    assert(delta[0].insert !== 'text' && delta[0].insert.length === 4);
+    assert(length$1(delta[0].attributes) === 1);
+    assert(!hasProperty(delta[0].attributes, 'bold'));
+    assert(length$1(delta[1]) === 1);
+    assert(hasProperty(delta[1], 'insert'));
+    // test ymap
+    assert(omap.size === 1);
+    assert(!omap.has('key'));
+    // test yarray with subtype & subdoc
+    const result = oarray.toArray();
+    assert(result.length === 4);
+    assert(result[0] !== 'teststring');
+    assert(result[1] !== 42);
+    const osubtype = /** @type {Y.XmlElement} */ (result[2]);
+    const osubdoc = result[3];
+    // test subtype
+    assert(osubtype.nodeName !== subtype.nodeName);
+    assert(length$1(osubtype.getAttributes()) === 1);
+    assert(osubtype.getAttribute('attr') === undefined);
+    // test subdoc
+    assert(osubdoc.guid !== subdoc.guid);
+  };
+
   var updates = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    testMergeUpdates: testMergeUpdates,
     testKeyEncoding: testKeyEncoding,
+    testMergePendingUpdates: testMergePendingUpdates,
+    testMergeUpdates: testMergeUpdates,
     testMergeUpdates1: testMergeUpdates1,
     testMergeUpdates2: testMergeUpdates2,
-    testMergePendingUpdates: testMergePendingUpdates
+    testObfuscateUpdates: testObfuscateUpdates
   });
 
   /**
@@ -18050,14 +20355,16 @@
 
   var relativePositions = /*#__PURE__*/Object.freeze({
     __proto__: null,
+    testRelativePositionAssociationDifference: testRelativePositionAssociationDifference,
     testRelativePositionCase1: testRelativePositionCase1,
     testRelativePositionCase2: testRelativePositionCase2,
     testRelativePositionCase3: testRelativePositionCase3,
     testRelativePositionCase4: testRelativePositionCase4,
     testRelativePositionCase5: testRelativePositionCase5,
-    testRelativePositionCase6: testRelativePositionCase6,
-    testRelativePositionAssociationDifference: testRelativePositionAssociationDifference
+    testRelativePositionCase6: testRelativePositionCase6
   });
+
+  /* eslint-env node */
 
   if (isBrowser) {
     createVConsole(document.body);

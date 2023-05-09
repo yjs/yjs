@@ -38,3 +38,4 @@ export * from "./structs/ContentString.js";
 export * from "./structs/ContentType.js";
 export * from "./structs/Item.js";
 export * from "./structs/Skip.js";
+//# sourceMappingURL=internals.d.ts.map

@@ -133,7 +133,7 @@ class TestYInstance extends Y.Doc {
    * @param {TestYInstance} remoteClient
    */
   _receive (message, remoteClient) {
-    map.setIfUndefined(this.receiving, remoteClient, () => []).push(message);
+    map.setIfUndefined(this.receiving, remoteClient, () => /** @type {Array<Uint8Array>} */ ([])).push(message);
   }
 }
 
@@ -346,7 +346,7 @@ const compare = users => {
     t.compare(userMapValues[i], userMapValues[i + 1]);
     t.compare(userXmlValues[i], userXmlValues[i + 1]);
     t.compare(userTextValues[i].map(/** @param {any} a */ a => typeof a.insert === 'string' ? a.insert : ' ').join('').length, users[i].getText('text').length);
-    t.compare(userTextValues[i], userTextValues[i + 1], '', (constructor, a, b) => {
+    t.compare(userTextValues[i], userTextValues[i + 1], '', (_constructor, a, b) => {
       if (a instanceof Y.AbstractType) {
         t.compare(a.toJSON(), b.toJSON());
       } else if (a !== b) {
@@ -369,8 +369,8 @@ const compare = users => {
 const compareItemIDs = (a, b) => a === b || (a !== null && b != null && Y.compareIDs(a.id, b.id));
 
 /**
- * @param {import('../src/internals').StructStore} ss1
- * @param {import('../src/internals').StructStore} ss2
+ * @param {import('../src/internals.js').StructStore} ss1
+ * @param {import('../src/internals.js').StructStore} ss2
  */
 const compareStructStores = (ss1, ss2) => {
   t.assert(ss1.clients.size === ss2.clients.size);
@@ -412,13 +412,13 @@ const compareStructStores = (ss1, ss2) => {
 };
 
 /**
- * @param {import('../src/internals').DeleteSet} ds1
- * @param {import('../src/internals').DeleteSet} ds2
+ * @param {import('../src/internals.js').DeleteSet} ds1
+ * @param {import('../src/internals.js').DeleteSet} ds2
  */
 const compareDS = (ds1, ds2) => {
   t.assert(ds1.clients.size === ds2.clients.size);
   ds1.clients.forEach((deleteItems1, client) => {
-    const deleteItems2 = /** @type {Array<import('../src/internals').DeleteItem>} */ (ds2.clients.get(client));
+    const deleteItems2 = /** @type {Array<import('../src/internals.js').DeleteItem>} */ (ds2.clients.get(client));
     t.assert(deleteItems2 !== undefined && deleteItems1.length === deleteItems2.length);
     for (let i = 0; i < deleteItems1.length; i++) {
       const di1 = deleteItems1[i];

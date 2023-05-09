@@ -4,7 +4,7 @@ export function followRedone(store: StructStore, id: ID): {
 };
 export function keepItem(item: Item | null, keep: boolean): void;
 export function splitItem(transaction: Transaction, leftItem: Item, diff: number): Item;
-export function redoItem(transaction: Transaction, item: Item, redoitems: Set<Item>, itemsToDelete: DeleteSet, ignoreRemoteMapChanges: boolean): Item | null;
+export function redoItem(transaction: Transaction, item: Item, redoitems: Set<Item>, itemsToDelete: DeleteSet, ignoreRemoteMapChanges: boolean, um: import('../utils/UndoManager.js').UndoManager): Item | null;
 /**
  * Abstract class that represents any content.
  */
@@ -173,33 +173,33 @@ export class AbstractContent {
      */
     copy(): AbstractContent;
     /**
-     * @param {number} offset
+     * @param {number} _offset
      * @return {AbstractContent}
      */
-    splice(offset: number): AbstractContent;
+    splice(_offset: number): AbstractContent;
     /**
-     * @param {AbstractContent} right
+     * @param {AbstractContent} _right
      * @return {boolean}
      */
-    mergeWith(right: AbstractContent): boolean;
+    mergeWith(_right: AbstractContent): boolean;
     /**
-     * @param {Transaction} transaction
-     * @param {Item} item
+     * @param {Transaction} _transaction
+     * @param {Item} _item
      */
-    integrate(transaction: Transaction, item: Item): void;
+    integrate(_transaction: Transaction, _item: Item): void;
     /**
-     * @param {Transaction} transaction
+     * @param {Transaction} _transaction
      */
-    delete(transaction: Transaction): void;
+    delete(_transaction: Transaction): void;
     /**
-     * @param {StructStore} store
+     * @param {StructStore} _store
      */
-    gc(store: StructStore): void;
+    gc(_store: StructStore): void;
     /**
-     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
-     * @param {number} offset
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} _encoder
+     * @param {number} _offset
      */
-    write(encoder: UpdateEncoderV1 | UpdateEncoderV2, offset: number): void;
+    write(_encoder: UpdateEncoderV1 | UpdateEncoderV2, _offset: number): void;
     /**
      * @return {number}
      */
@@ -215,3 +215,4 @@ import { UpdateEncoderV1 } from "../utils/UpdateEncoder.js";
 import { UpdateEncoderV2 } from "../utils/UpdateEncoder.js";
 import { UpdateDecoderV1 } from "../utils/UpdateDecoder.js";
 import { UpdateDecoderV2 } from "../utils/UpdateDecoder.js";
+//# sourceMappingURL=Item.d.ts.map

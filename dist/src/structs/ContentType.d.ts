@@ -80,3 +80,4 @@ import { Item } from "./Item.js";
 import { StructStore } from "../utils/StructStore.js";
 import { UpdateEncoderV1 } from "../utils/UpdateEncoder.js";
 import { UpdateEncoderV2 } from "../utils/UpdateEncoder.js";
+//# sourceMappingURL=ContentType.d.ts.map

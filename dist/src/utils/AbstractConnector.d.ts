@@ -17,3 +17,4 @@ export class AbstractConnector extends Observable<any> {
 }
 import { Observable } from "lib0/observable";
 import { Doc } from "./Doc.js";
+//# sourceMappingURL=AbstractConnector.d.ts.map

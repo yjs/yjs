@@ -33,7 +33,9 @@ export class YXmlTreeWalker implements Iterable<YXmlElement | YXmlText | YXmlEle
      */
     constructor(root: YXmlFragment | YXmlElement, f?: ((arg0: AbstractType<any>) => boolean) | undefined);
     _filter: (arg0: AbstractType<any>) => boolean;
-    _root: YXmlFragment | YXmlElement;
+    _root: YXmlFragment | YXmlElement<{
+        [key: string]: string;
+    }>;
     /**
      * @type {Item}
      */
@@ -67,7 +69,9 @@ export class YXmlFragment extends AbstractType<YXmlEvent> {
     /**
      * @type {YXmlElement|YXmlText|null}
      */
-    get firstChild(): YXmlElement | YXmlText | null;
+    get firstChild(): YXmlElement<{
+        [key: string]: string;
+    }> | YXmlText | null;
     /**
      * Integrate this type into the Yjs instance.
      *
@@ -218,11 +222,11 @@ export class YXmlFragment extends AbstractType<YXmlEvent> {
     /**
      * Executes a provided function on once on overy child element.
      *
-     * @param {function(YXmlElement|YXmlText,number, typeof this):void} f A function to execute on every element of this YArray.
+     * @param {function(YXmlElement|YXmlText,number, typeof self):void} f A function to execute on every element of this YArray.
      */
-    forEach(f: (arg0: YXmlElement | YXmlText, arg1: number, arg2: YXmlFragment) => void): void;
+    forEach(f: (arg0: YXmlElement | YXmlText, arg1: number, arg2: typeof self) => void): void;
 }
-export function readYXmlFragment(decoder: UpdateDecoderV1 | UpdateDecoderV2): YXmlFragment;
+export function readYXmlFragment(_decoder: UpdateDecoderV1 | UpdateDecoderV2): YXmlFragment;
 /**
  * Define the elements to which a set of CSS queries apply.
  * {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors|CSS_Selectors}
@@ -241,3 +245,4 @@ import { YXmlEvent } from "./YXmlEvent.js";
 import { Doc } from "../utils/Doc.js";
 import { UpdateDecoderV1 } from "../utils/UpdateDecoder.js";
 import { UpdateDecoderV2 } from "../utils/UpdateDecoder.js";
+//# sourceMappingURL=YXmlFragment.d.ts.map

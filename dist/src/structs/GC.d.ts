@@ -26,3 +26,4 @@ import { UpdateEncoderV1 } from "../utils/UpdateEncoder.js";
 import { UpdateEncoderV2 } from "../utils/UpdateEncoder.js";
 import { Transaction } from "../utils/Transaction.js";
 import { StructStore } from "../utils/StructStore.js";
+//# sourceMappingURL=GC.d.ts.map

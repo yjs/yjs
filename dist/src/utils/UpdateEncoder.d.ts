@@ -161,3 +161,4 @@ export class UpdateEncoderV2 extends DSEncoderV2 {
 }
 import * as encoding from "lib0/encoding";
 import { ID } from "./ID.js";
+//# sourceMappingURL=UpdateEncoder.d.ts.map

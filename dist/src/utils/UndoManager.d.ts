@@ -1,3 +1,16 @@
+export class StackItem {
+    /**
+     * @param {DeleteSet} deletions
+     * @param {DeleteSet} insertions
+     */
+    constructor(deletions: DeleteSet, insertions: DeleteSet);
+    insertions: DeleteSet;
+    deletions: DeleteSet;
+    /**
+     * Use this to save and restore metadata like selection range
+     */
+    meta: Map<any, any>;
+}
 /**
  * @typedef {Object} UndoManagerOptions
  * @property {number} [UndoManagerOptions.captureTimeout=500]
@@ -137,23 +150,10 @@ export type UndoManagerOptions = {
      */
     doc?: Doc | undefined;
 };
+import { DeleteSet } from "./DeleteSet.js";
 import { Observable } from "lib0/observable";
 import { AbstractType } from "../types/AbstractType.js";
 import { Item } from "../structs/Item.js";
 import { Transaction } from "./Transaction.js";
-declare class StackItem {
-    /**
-     * @param {DeleteSet} deletions
-     * @param {DeleteSet} insertions
-     */
-    constructor(deletions: DeleteSet, insertions: DeleteSet);
-    insertions: DeleteSet;
-    deletions: DeleteSet;
-    /**
-     * Use this to save and restore metadata like selection range
-     */
-    meta: Map<any, any>;
-}
 import { Doc } from "./Doc.js";
-import { DeleteSet } from "./DeleteSet.js";
-export {};
+//# sourceMappingURL=UndoManager.d.ts.map

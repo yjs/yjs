@@ -31,3 +31,4 @@ import { DSDecoderV1 } from "./UpdateDecoder.js";
 import { DSDecoderV2 } from "./UpdateDecoder.js";
 import { DSEncoderV1 } from "./UpdateEncoder.js";
 import { DSEncoderV2 } from "./UpdateEncoder.js";
+//# sourceMappingURL=encoding.d.ts.map

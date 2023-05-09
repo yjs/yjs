@@ -17,12 +17,12 @@ export class PermanentUserData {
      * @param {Doc} doc
      * @param {number} clientid
      * @param {string} userDescription
-     * @param {Object} [conf]
+     * @param {Object} conf
      * @param {function(Transaction, DeleteSet):boolean} [conf.filter]
      */
     setUserMapping(doc: Doc, clientid: number, userDescription: string, { filter }?: {
         filter?: ((arg0: Transaction, arg1: DeleteSet) => boolean) | undefined;
-    } | undefined): void;
+    }): void;
     /**
      * @param {number} clientid
      * @return {any}
@@ -39,3 +39,4 @@ import { Doc } from "./Doc.js";
 import { DeleteSet } from "./DeleteSet.js";
 import { Transaction } from "./Transaction.js";
 import { ID } from "./ID.js";
+//# sourceMappingURL=PermanentUserData.d.ts.map

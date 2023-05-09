@@ -3,6 +3,7 @@ export function testKeyEncoding(tc: t.TestCase): void;
 export function testMergeUpdates1(tc: t.TestCase): void;
 export function testMergeUpdates2(tc: t.TestCase): void;
 export function testMergePendingUpdates(tc: t.TestCase): void;
+export function testObfuscateUpdates(tc: t.TestCase): void;
 export type Enc = {
     mergeUpdates: (arg0: Array<Uint8Array>) => Uint8Array;
     encodeStateAsUpdate: (arg0: Y.Doc) => Uint8Array;
@@ -20,3 +21,4 @@ export type Enc = {
 };
 import * as t from "lib0/testing";
 import * as Y from "../src/index.js";
+//# sourceMappingURL=updates.tests.d.ts.map

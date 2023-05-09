@@ -16,7 +16,7 @@ export function testObserversUsingObservedeep(tc: t.TestCase): void;
 export function testThrowsAddAndUpdateAndDeleteEvents(tc: t.TestCase): void;
 export function testThrowsDeleteEventsOnClear(tc: t.TestCase): void;
 export function testChangeEvent(tc: t.TestCase): void;
-export function testYmapEventExceptionsShouldCompleteTransaction(tc: t.TestCase): void;
+export function testYmapEventExceptionsShouldCompleteTransaction(_tc: t.TestCase): void;
 export function testYmapEventHasCorrectValueWhenSettingAPrimitive(tc: t.TestCase): void;
 export function testYmapEventHasCorrectValueWhenSettingAPrimitiveFromOtherUser(tc: t.TestCase): void;
 export function testRepeatGeneratingYmapTests10(tc: t.TestCase): void;
@@ -36,3 +36,4 @@ export function testRepeatGeneratingYmapTests5000(tc: t.TestCase): void;
 export function testRepeatGeneratingYmapTests10000(tc: t.TestCase): void;
 export function testRepeatGeneratingYmapTests100000(tc: t.TestCase): void;
 import * as t from "lib0/testing";
+//# sourceMappingURL=y-map.tests.d.ts.map

@@ -1,3 +1,4 @@
+export function testBasic(tc: t.TestCase): void;
 export function testBasicRestoreSnapshot(tc: t.TestCase): void;
 export function testEmptyRestoreSnapshot(tc: t.TestCase): void;
 export function testRestoreSnapshotWithSubType(tc: t.TestCase): void;
@@ -7,3 +8,4 @@ export function testDeletedItemsBase(tc: t.TestCase): void;
 export function testDeletedItems2(tc: t.TestCase): void;
 export function testDependentChanges(tc: t.TestCase): void;
 import * as t from "lib0/testing";
+//# sourceMappingURL=snapshot.tests.d.ts.map

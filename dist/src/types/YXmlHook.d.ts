@@ -43,3 +43,4 @@ export function readYXmlHook(decoder: UpdateDecoderV1 | UpdateDecoderV2): YXmlHo
 import { YMap } from "./YMap.js";
 import { UpdateDecoderV1 } from "../utils/UpdateDecoder.js";
 import { UpdateDecoderV2 } from "../utils/UpdateDecoder.js";
+//# sourceMappingURL=YXmlHook.d.ts.map

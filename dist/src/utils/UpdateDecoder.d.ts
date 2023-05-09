@@ -164,3 +164,4 @@ export class UpdateDecoderV2 extends DSDecoderV2 {
 }
 import * as decoding from "lib0/decoding";
 import { ID } from "./ID.js";
+//# sourceMappingURL=UpdateDecoder.d.ts.map

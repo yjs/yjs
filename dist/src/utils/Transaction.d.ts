@@ -97,7 +97,7 @@ export function writeUpdateMessageFromTransaction(encoder: UpdateEncoderV1 | Upd
 export function nextID(transaction: Transaction): import("./ID.js").ID;
 export function addChangedTypeToTransaction(transaction: Transaction, type: AbstractType<YEvent<any>>, parentSub: string | null): void;
 export function tryGc(ds: DeleteSet, store: StructStore, gcFilter: (arg0: Item) => boolean): void;
-export function transact(doc: Doc, f: (arg0: Transaction) => void, origin?: any, local?: boolean): void;
+export function transact<T>(doc: Doc, f: (arg0: Transaction) => T, origin?: any, local?: boolean): T;
 import { Doc } from "./Doc.js";
 import { DeleteSet } from "./DeleteSet.js";
 import { AbstractType } from "../types/AbstractType.js";
@@ -107,3 +107,4 @@ import { UpdateEncoderV1 } from "./UpdateEncoder.js";
 import { UpdateEncoderV2 } from "./UpdateEncoder.js";
 import { StructStore } from "./StructStore.js";
 import { Item } from "../structs/Item.js";
+//# sourceMappingURL=Transaction.d.ts.map

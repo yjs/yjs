@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2021",
     "lib": ["ES2021", "dom"],
-    "module": "node16",
+    "module": "ES2020",
     "allowJs": true,
     "checkJs": true,
     "declaration": true,
@@ -12,7 +12,7 @@
     "emitDeclarationOnly": true,
     "strict": true,
     "noImplicitAny": true,
-    "moduleResolution": "nodenext",
+    "moduleResolution": "node",
     "paths": {
       "yjs": ["./src/index.js"]
     }

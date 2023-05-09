@@ -130,7 +130,7 @@ export class YText extends AbstractType<YTextEvent> {
      * Apply a {@link Delta} on this shared YText type.
      *
      * @param {any} delta The changes to apply on this element.
-     * @param {object}  [opts]
+     * @param {object}  opts
      * @param {boolean} [opts.sanitize] Sanitize input delta. Removes ending newlines if set to true.
      *
      *
@@ -138,7 +138,7 @@ export class YText extends AbstractType<YTextEvent> {
      */
     public applyDelta(delta: any, { sanitize }?: {
         sanitize?: boolean | undefined;
-    } | undefined): void;
+    }): void;
     /**
      * Returns the Delta representation of this YText type.
      *
@@ -230,16 +230,15 @@ export class YText extends AbstractType<YTextEvent> {
      *
      * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
      *
-     * @param {Snapshot} [snapshot]
      * @return {Object<string, any>} A JSON Object that describes the attributes.
      *
      * @public
      */
-    public getAttributes(snapshot?: Snapshot | undefined): {
+    public getAttributes(): {
         [x: string]: any;
     };
 }
-export function readYText(decoder: UpdateDecoderV1 | UpdateDecoderV2): YText;
+export function readYText(_decoder: UpdateDecoderV1 | UpdateDecoderV2): YText;
 /**
  * Attributes that can be assigned to a selection of text.
  */
@@ -254,3 +253,4 @@ import { Snapshot } from "../utils/Snapshot.js";
 import { ID } from "../utils/ID.js";
 import { UpdateDecoderV1 } from "../utils/UpdateDecoder.js";
 import { UpdateDecoderV2 } from "../utils/UpdateDecoder.js";
+//# sourceMappingURL=YText.d.ts.map

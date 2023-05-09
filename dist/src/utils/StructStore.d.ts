@@ -31,3 +31,4 @@ import { GC } from "../structs/GC.js";
 import { Item } from "../structs/Item.js";
 import { ID } from "./ID.js";
 import { Transaction } from "./Transaction.js";
+//# sourceMappingURL=StructStore.d.ts.map

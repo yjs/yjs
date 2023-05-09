@@ -39,3 +39,4 @@ export function testRepeatGeneratingYarrayTests3000(tc: t.TestCase): void;
 export function testRepeatGeneratingYarrayTests5000(tc: t.TestCase): void;
 export function testRepeatGeneratingYarrayTests30000(tc: t.TestCase): void;
 import * as t from "lib0/testing";
+//# sourceMappingURL=y-array.tests.d.ts.map

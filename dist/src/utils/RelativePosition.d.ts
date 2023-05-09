@@ -88,3 +88,4 @@ import { AbstractType } from "../types/AbstractType.js";
 import * as encoding from "lib0/encoding";
 import * as decoding from "lib0/decoding";
 import { Doc } from "./Doc.js";
+//# sourceMappingURL=RelativePosition.d.ts.map

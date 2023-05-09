@@ -6,11 +6,15 @@ export class YXmlText extends YText {
     /**
      * @type {YXmlElement|YXmlText|null}
      */
-    get nextSibling(): YXmlElement | YXmlText | null;
+    get nextSibling(): YXmlElement<{
+        [key: string]: string;
+    }> | YXmlText | null;
     /**
      * @type {YXmlElement|YXmlText|null}
      */
-    get prevSibling(): YXmlElement | YXmlText | null;
+    get prevSibling(): YXmlElement<{
+        [key: string]: string;
+    }> | YXmlText | null;
     _copy(): YXmlText;
     /**
      * @return {YXmlText}
@@ -41,3 +45,4 @@ import { YText } from "./YText.js";
 import { YXmlElement } from "./YXmlElement.js";
 import { UpdateDecoderV1 } from "../utils/UpdateDecoder.js";
 import { UpdateDecoderV2 } from "../utils/UpdateDecoder.js";
+//# sourceMappingURL=YXmlText.d.ts.map

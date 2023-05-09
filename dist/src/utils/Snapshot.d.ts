@@ -33,3 +33,4 @@ import { DSDecoderV2 } from "./UpdateDecoder.js";
 import { Doc } from "./Doc.js";
 import { Item } from "../structs/Item.js";
 import { Transaction } from "./Transaction.js";
+//# sourceMappingURL=Snapshot.d.ts.map

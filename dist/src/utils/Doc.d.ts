@@ -15,9 +15,9 @@ export const generateNewClientId: typeof random.uint32;
  */
 export class Doc extends Observable<string> {
     /**
-     * @param {DocOpts} [opts] configuration
+     * @param {DocOpts} opts configuration
      */
-    constructor({ guid, collectionid, gc, gcFilter, meta, autoLoad, shouldLoad }?: DocOpts | undefined);
+    constructor({ guid, collectionid, gc, gcFilter, meta, autoLoad, shouldLoad }?: DocOpts);
     gc: boolean;
     gcFilter: (arg0: Item) => boolean;
     clientID: number;
@@ -48,8 +48,26 @@ export class Doc extends Observable<string> {
     shouldLoad: boolean;
     autoLoad: boolean;
     meta: any;
+    /**
+     * This is set to true when the persistence provider loaded the document from the database or when the `sync` event fires.
+     * Note that not all providers implement this feature. Provider authors are encouraged to fire the `load` event when the doc content is loaded from the database.
+     *
+     * @type {boolean}
+     */
     isLoaded: boolean;
+    /**
+     * This is set to true when the connection provider has successfully synced with a backend.
+     * Note that when using peer-to-peer providers this event may not provide very useful.
+     * Also note that not all providers implement this feature. Provider authors are encouraged to fire
+     * the `sync` event when the doc has been synced (with `true` as a parameter) or if connection is
+     * lost (with false as a parameter).
+     */
+    isSynced: boolean;
+    /**
+     * Promise that resolves once the document has been loaded from a presistence provider.
+     */
     whenLoaded: Promise<any>;
+    whenSynced: Promise<any>;
     /**
      * Notify the parent document that you request to load data into this subdocument (if it is a subdocument).
      *
@@ -66,12 +84,14 @@ export class Doc extends Observable<string> {
      * that happened inside of the transaction are sent as one message to the
      * other peers.
      *
-     * @param {function(Transaction):void} f The function that should be executed as a transaction
+     * @template T
+     * @param {function(Transaction):T} f The function that should be executed as a transaction
      * @param {any} [origin] Origin of who started the transaction. Will be stored on transaction.origin
+     * @return T
      *
      * @public
      */
-    public transact(f: (arg0: Transaction) => void, origin?: any): void;
+    public transact<T>(f: (arg0: Transaction) => T, origin?: any): T;
     /**
      * Define a shared data type.
      *
@@ -106,7 +126,7 @@ export class Doc extends Observable<string> {
      *
      * @public
      */
-    public getArray<T>(name?: string | undefined): YArray<T>;
+    public getArray<T_1>(name?: string | undefined): YArray<T_1>;
     /**
      * @param {string} [name]
      * @return {YText}
@@ -121,7 +141,7 @@ export class Doc extends Observable<string> {
      *
      * @public
      */
-    public getMap<T_1>(name?: string | undefined): YMap<T_1>;
+    public getMap<T_2>(name?: string | undefined): YMap<T_2>;
     /**
      * @param {string} [name]
      * @return {YXmlFragment}
@@ -187,3 +207,4 @@ import { YArray } from "../types/YArray.js";
 import { YText } from "../types/YText.js";
 import { YMap } from "../types/YMap.js";
 import { YXmlFragment } from "../types/YXmlFragment.js";
+//# sourceMappingURL=Doc.d.ts.map

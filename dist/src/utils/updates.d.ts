@@ -64,9 +64,19 @@ export function parseUpdateMeta(update: Uint8Array): {
 export function mergeUpdatesV2(updates: Array<Uint8Array>, YDecoder?: typeof UpdateDecoderV1 | typeof UpdateDecoderV2 | undefined, YEncoder?: typeof UpdateEncoderV2 | typeof UpdateEncoderV1 | undefined): Uint8Array;
 export function diffUpdateV2(update: Uint8Array, sv: Uint8Array, YDecoder?: typeof UpdateDecoderV1 | typeof UpdateDecoderV2 | undefined, YEncoder?: typeof UpdateEncoderV2 | typeof UpdateEncoderV1 | undefined): Uint8Array;
 export function diffUpdate(update: Uint8Array, sv: Uint8Array): Uint8Array;
-export function convertUpdateFormat(update: Uint8Array, YDecoder: typeof UpdateDecoderV2 | typeof UpdateDecoderV1, YEncoder: typeof UpdateEncoderV2 | typeof UpdateEncoderV1): Uint8Array;
+export function convertUpdateFormat(update: Uint8Array, blockTransformer: (arg0: Item | GC | Skip) => Item | GC | Skip, YDecoder: typeof UpdateDecoderV2 | typeof UpdateDecoderV1, YEncoder: typeof UpdateEncoderV2 | typeof UpdateEncoderV1): Uint8Array;
+export function obfuscateUpdate(update: Uint8Array, opts?: ObfuscatorOptions | undefined): Uint8Array;
+export function obfuscateUpdateV2(update: Uint8Array, opts?: ObfuscatorOptions | undefined): Uint8Array;
 export function convertUpdateFormatV1ToV2(update: Uint8Array): Uint8Array;
 export function convertUpdateFormatV2ToV1(update: Uint8Array): Uint8Array;
+export type ObfuscatorOptions = {
+    formatting?: boolean | undefined;
+    subdocs?: boolean | undefined;
+    /**
+     * Whether to obfuscate nodeName / hookName
+     */
+    yxml?: boolean | undefined;
+};
 import { GC } from "../structs/GC.js";
 import { Item } from "../structs/Item.js";
 import { Skip } from "../structs/Skip.js";
@@ -76,3 +86,4 @@ import { UpdateEncoderV2 } from "./UpdateEncoder.js";
 import { UpdateEncoderV1 } from "./UpdateEncoder.js";
 import { DSEncoderV1 } from "./UpdateEncoder.js";
 import { DSEncoderV2 } from "./UpdateEncoder.js";
+//# sourceMappingURL=updates.d.ts.map

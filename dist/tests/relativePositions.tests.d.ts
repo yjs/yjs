@@ -6,3 +6,4 @@ export function testRelativePositionCase5(tc: t.TestCase): void;
 export function testRelativePositionCase6(tc: t.TestCase): void;
 export function testRelativePositionAssociationDifference(tc: t.TestCase): void;
 import * as t from "lib0/testing";
+//# sourceMappingURL=relativePositions.tests.d.ts.map

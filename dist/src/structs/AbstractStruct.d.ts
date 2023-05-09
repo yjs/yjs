@@ -34,3 +34,4 @@ import { ID } from "../utils/ID.js";
 import { UpdateEncoderV1 } from "../utils/UpdateEncoder.js";
 import { UpdateEncoderV2 } from "../utils/UpdateEncoder.js";
 import { Transaction } from "../utils/Transaction.js";
+//# sourceMappingURL=AbstractStruct.d.ts.map

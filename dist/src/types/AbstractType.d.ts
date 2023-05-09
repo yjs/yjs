@@ -72,9 +72,9 @@ export class AbstractType<EventType> {
      */
     clone(): AbstractType<EventType>;
     /**
-     * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+     * @param {UpdateEncoderV1 | UpdateEncoderV2} _encoder
      */
-    _write(encoder: UpdateEncoderV1 | UpdateEncoderV2): void;
+    _write(_encoder: UpdateEncoderV1 | UpdateEncoderV2): void;
     /**
      * The first non-deleted item
      */
@@ -84,9 +84,9 @@ export class AbstractType<EventType> {
      * Must be implemented by each type.
      *
      * @param {Transaction} transaction
-     * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
+     * @param {Set<null|string>} _parentSubs Keys changed on this type. `null` if list was modified.
      */
-    _callObserver(transaction: Transaction, parentSubs: Set<null | string>): void;
+    _callObserver(transaction: Transaction, _parentSubs: Set<null | string>): void;
     /**
      * Observe all events that are created on this type.
      *
@@ -158,3 +158,4 @@ import { YEvent } from "../utils/YEvent.js";
 import { UpdateEncoderV1 } from "../utils/UpdateEncoder.js";
 import { UpdateEncoderV2 } from "../utils/UpdateEncoder.js";
 import { Snapshot } from "../utils/Snapshot.js";
+//# sourceMappingURL=AbstractType.d.ts.map

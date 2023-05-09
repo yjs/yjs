@@ -20,11 +20,13 @@ export class YArrayEvent<T> extends YEvent<YArray<T>> {
 export class YArray<T> extends AbstractType<YArrayEvent<T>> implements Iterable<T> {
     /**
      * Construct a new YArray containing the specified items.
-     * @template T
+     * @template {Object<string,any>|Array<any>|number|null|string|Uint8Array} T
      * @param {Array<T>} items
      * @return {YArray<T>}
      */
-    static from<T_1>(items: T_1[]): YArray<T_1>;
+    static from<T_1 extends string | number | any[] | Uint8Array | {
+        [x: string]: any;
+    } | null>(items: T_1[]): YArray<T_1>;
     /**
      * @type {Array<any>?}
      * @private
@@ -45,7 +47,10 @@ export class YArray<T> extends AbstractType<YArrayEvent<T>> implements Iterable<
      * @param {Item} item
      */
     _integrate(y: Doc, item: Item): void;
-    _copy(): YArray<any>;
+    /**
+     * @return {YArray<T>}
+     */
+    _copy(): YArray<T>;
     /**
      * @return {YArray<T>}
      */
@@ -127,7 +132,7 @@ export class YArray<T> extends AbstractType<YArrayEvent<T>> implements Iterable<
      */
     map<M>(f: (arg0: T, arg1: number, arg2: YArray<T>) => M): M[];
     /**
-     * Executes a provided function on once on overy element of this YArray.
+     * Executes a provided function once on overy element of this YArray.
      *
      * @param {function(T,number,YArray<T>):void} f A function to execute on every element of this YArray.
      */
@@ -137,7 +142,7 @@ export class YArray<T> extends AbstractType<YArrayEvent<T>> implements Iterable<
      */
     [Symbol.iterator](): IterableIterator<T>;
 }
-export function readYArray(decoder: UpdateDecoderV1 | UpdateDecoderV2): YArray<any>;
+export function readYArray(_decoder: UpdateDecoderV1 | UpdateDecoderV2): YArray<any>;
 import { YEvent } from "../utils/YEvent.js";
 import { Transaction } from "../utils/Transaction.js";
 import { AbstractType } from "./AbstractType.js";
@@ -146,3 +151,4 @@ import { Doc } from "../utils/Doc.js";
 import { Item } from "../structs/Item.js";
 import { UpdateDecoderV1 } from "../utils/UpdateDecoder.js";
 import { UpdateDecoderV2 } from "../utils/UpdateDecoder.js";
+//# sourceMappingURL=YArray.d.ts.map

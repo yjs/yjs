@@ -23,3 +23,4 @@ export function findRootTypeKey(type: AbstractType<any>): string;
 import * as encoding from "lib0/encoding";
 import * as decoding from "lib0/decoding";
 import { AbstractType } from "../types/AbstractType.js";
+//# sourceMappingURL=ID.d.ts.map
