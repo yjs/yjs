@@ -251,7 +251,7 @@ const insertAttributes = (transaction, parent, currPos, attributes) => {
  * @function
  **/
 const insertText = (transaction, parent, currPos, text, attributes) => {
-  currPos.currentAttributes.forEach((val, key) => {
+  currPos.currentAttributes.forEach((_val, key) => {
     if (attributes[key] === undefined) {
       attributes[key] = null
     }
@@ -363,32 +363,47 @@ const formatText = (transaction, parent, currPos, length, attributes) => {
  * @function
  */
 const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAttributes) => {
-  let end = curr
-  const endAttributes = map.copy(currAttributes)
+  /**
+   * @type {Item|null}
+   */
+  let end = start
+  /**
+   * @type {Map<string,ContentFormat>}
+   */
+  const endFormats = map.create()
   while (end && (!end.countable || end.deleted)) {
     if (!end.deleted && end.content.constructor === ContentFormat) {
-      updateCurrentAttributes(endAttributes, /** @type {ContentFormat} */ (end.content))
+      const cf = /** @type {ContentFormat} */ (end.content)
+      endFormats.set(cf.key, cf)
     }
     end = end.right
   }
   let cleanups = 0
-  let reachedEndOfCurr = false
+  let reachedCurr = false
   while (start !== end) {
     if (curr === start) {
-      reachedEndOfCurr = true
+      reachedCurr = true
     }
     if (!start.deleted) {
       const content = start.content
       switch (content.constructor) {
         case ContentFormat: {
           const { key, value } = /** @type {ContentFormat} */ (content)
-          if ((endAttributes.get(key) || null) !== value || (startAttributes.get(key) || null) === value) {
+          const startAttrValue = startAttributes.get(key) || null
+          if (endFormats.get(key) !== content || startAttrValue === value) {
             // Either this format is overwritten or it is not necessary because the attribute already existed.
             start.delete(transaction)
             cleanups++
-            if (!reachedEndOfCurr && (currAttributes.get(key) || null) === value && (startAttributes.get(key) || null) !== value) {
-              currAttributes.delete(key)
+            if (!reachedCurr && (currAttributes.get(key) || null) === value && startAttrValue !== value) {
+              if (startAttrValue === null) {
+                currAttributes.delete(key)
+              } else {
+                currAttributes.set(key, startAttrValue)
+              }
             }
+          }
+          if (!reachedCurr && !start.deleted) {
+            updateCurrentAttributes(currAttributes, /** @type {ContentFormat} */ (content))
           }
           break
         }
@@ -616,36 +631,39 @@ export class YTextEvent extends YEvent {
             /**
              * @type {any}
              */
-            let op
+            let op = null
             switch (action) {
               case 'delete':
-                op = { delete: deleteLen }
+                if (deleteLen > 0) {
+                  op = { delete: deleteLen }
+                }
                 deleteLen = 0
                 break
               case 'insert':
-                op = { insert }
-                if (currentAttributes.size > 0) {
-                  op.attributes = {}
-                  currentAttributes.forEach((value, key) => {
-                    if (value !== null) {
-                      op.attributes[key] = value
-                    }
-                  })
+                if (typeof insert === 'object' || insert.length > 0) {
+                  op = { insert }
+                  if (currentAttributes.size > 0) {
+                    op.attributes = {}
+                    currentAttributes.forEach((value, key) => {
+                      if (value !== null) {
+                        op.attributes[key] = value
+                      }
+                    })
+                  }
                 }
                 insert = ''
                 break
               case 'retain':
-                op = { retain }
-                if (Object.keys(attributes).length > 0) {
-                  op.attributes = {}
-                  for (const key in attributes) {
-                    op.attributes[key] = attributes[key]
+                if (retain > 0) {
+                  op = { retain }
+                  if (!object.isEmpty(attributes)) {
+                    op.attributes = object.assign({}, attributes)
                   }
                 }
                 retain = 0
                 break
             }
-            delta.push(op)
+            if (op) delta.push(op)
             action = null
           }
         }
@@ -927,7 +945,7 @@ export class YText extends AbstractType {
    * Apply a {@link Delta} on this shared YText type.
    *
    * @param {any} delta The changes to apply on this element.
-   * @param {object}  [opts]
+   * @param {object}  opts
    * @param {boolean} [opts.sanitize] Sanitize input delta. Removes ending newlines if set to true.
    *
    *
@@ -1003,15 +1021,7 @@ export class YText extends AbstractType {
         str = ''
       }
     }
-    // snapshots are merged again after the transaction, so we need to keep the
-    // transalive until we are done
-    transact(doc, transaction => {
-      if (snapshot) {
-        splitSnapshotAffectedStructs(transaction, snapshot)
-      }
-      if (prevSnapshot) {
-        splitSnapshotAffectedStructs(transaction, prevSnapshot)
-      }
+    const computeDelta = () => {
       while (n !== null) {
         if (isVisible(n, snapshot) || (prevSnapshot !== undefined && isVisible(n, prevSnapshot))) {
           switch (n.content.constructor) {
@@ -1064,7 +1074,22 @@ export class YText extends AbstractType {
         n = n.right
       }
       packStr()
-    }, 'cleanup')
+    }
+    if (snapshot || prevSnapshot) {
+      // snapshots are merged again after the transaction, so we need to keep the
+      // transaction alive until we are done
+      transact(doc, transaction => {
+        if (snapshot) {
+          splitSnapshotAffectedStructs(transaction, snapshot)
+        }
+        if (prevSnapshot) {
+          splitSnapshotAffectedStructs(transaction, prevSnapshot)
+        }
+        computeDelta()
+      }, 'cleanup')
+    } else {
+      computeDelta()
+    }
     return ops
   }
 
@@ -1229,12 +1254,11 @@ export class YText extends AbstractType {
    *
    * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
    *
-   * @param {Snapshot} [snapshot]
    * @return {Object<string, any>} A JSON Object that describes the attributes.
    *
    * @public
    */
-  getAttributes (snapshot) {
+  getAttributes () {
     return typeMapGetAll(this)
   }
 
@@ -1247,10 +1271,10 @@ export class YText extends AbstractType {
 }
 
 /**
- * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} _decoder
  * @return {YText}
  *
  * @private
  * @function
  */
-export const readYText = decoder => new YText()
+export const readYText = _decoder => new YText()

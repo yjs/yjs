@@ -2,19 +2,40 @@
 import * as binary from 'lib0/binary'
 import * as decoding from 'lib0/decoding'
 import * as encoding from 'lib0/encoding'
+import * as error from 'lib0/error'
+import * as f from 'lib0/function'
 import * as logging from 'lib0/logging'
+import * as map from 'lib0/map'
 import * as math from 'lib0/math'
+import * as string from 'lib0/string'
+
 import {
+  ContentAny,
+  ContentBinary,
+  ContentDeleted,
+  ContentDoc,
+  ContentEmbed,
+  ContentFormat,
+  ContentJSON,
+  ContentString,
+  ContentType,
   createID,
-  readItemContent,
-  readDeleteSet,
-  writeDeleteSet,
-  Skip,
-  mergeDeleteSets,
+  decodeStateVector,
   DSEncoderV1,
   DSEncoderV2,
-  decodeStateVector,
-  Item, GC, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2 // eslint-disable-line
+  GC,
+  Item,
+  mergeDeleteSets,
+  readDeleteSet,
+  readItemContent,
+  Skip,
+  UpdateDecoderV1,
+  UpdateDecoderV2,
+  UpdateEncoderV1,
+  UpdateEncoderV2,
+  writeDeleteSet,
+  YXmlElement,
+  YXmlHook
 } from '../internals.js'
 
 /**
@@ -552,17 +573,17 @@ const finishLazyStructWriting = (lazyWriter) => {
 
 /**
  * @param {Uint8Array} update
+ * @param {function(Item|GC|Skip):Item|GC|Skip} blockTransformer
  * @param {typeof UpdateDecoderV2 | typeof UpdateDecoderV1} YDecoder
  * @param {typeof UpdateEncoderV2 | typeof UpdateEncoderV1 } YEncoder
  */
-export const convertUpdateFormat = (update, YDecoder, YEncoder) => {
+export const convertUpdateFormat = (update, blockTransformer, YDecoder, YEncoder) => {
   const updateDecoder = new YDecoder(decoding.createDecoder(update))
   const lazyDecoder = new LazyStructReader(updateDecoder, false)
   const updateEncoder = new YEncoder()
   const lazyWriter = new LazyStructWriter(updateEncoder)
-
   for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
-    writeStructToLazyStructWriter(lazyWriter, curr, 0)
+    writeStructToLazyStructWriter(lazyWriter, blockTransformer(curr), 0)
   }
   finishLazyStructWriting(lazyWriter)
   const ds = readDeleteSet(updateDecoder)
@@ -571,11 +592,132 @@ export const convertUpdateFormat = (update, YDecoder, YEncoder) => {
 }
 
 /**
- * @param {Uint8Array} update
+ * @typedef {Object} ObfuscatorOptions
+ * @property {boolean} [ObfuscatorOptions.formatting=true]
+ * @property {boolean} [ObfuscatorOptions.subdocs=true]
+ * @property {boolean} [ObfuscatorOptions.yxml=true] Whether to obfuscate nodeName / hookName
  */
-export const convertUpdateFormatV1ToV2 = update => convertUpdateFormat(update, UpdateDecoderV1, UpdateEncoderV2)
+
+/**
+ * @param {ObfuscatorOptions} obfuscator
+ */
+const createObfuscator = ({ formatting = true, subdocs = true, yxml = true } = {}) => {
+  let i = 0
+  const mapKeyCache = map.create()
+  const nodeNameCache = map.create()
+  const formattingKeyCache = map.create()
+  const formattingValueCache = map.create()
+  formattingValueCache.set(null, null) // end of a formatting range should always be the end of a formatting range
+  /**
+   * @param {Item|GC|Skip} block
+   * @return {Item|GC|Skip}
+   */
+  return block => {
+    switch (block.constructor) {
+      case GC:
+      case Skip:
+        return block
+      case Item: {
+        const item = /** @type {Item} */ (block)
+        const content = item.content
+        switch (content.constructor) {
+          case ContentDeleted:
+            break
+          case ContentType: {
+            if (yxml) {
+              const type = /** @type {ContentType} */ (content).type
+              if (type instanceof YXmlElement) {
+                type.nodeName = map.setIfUndefined(nodeNameCache, type.nodeName, () => 'node-' + i)
+              }
+              if (type instanceof YXmlHook) {
+                type.hookName = map.setIfUndefined(nodeNameCache, type.hookName, () => 'hook-' + i)
+              }
+            }
+            break
+          }
+          case ContentAny: {
+            const c = /** @type {ContentAny} */ (content)
+            c.arr = c.arr.map(() => i)
+            break
+          }
+          case ContentBinary: {
+            const c = /** @type {ContentBinary} */ (content)
+            c.content = new Uint8Array([i])
+            break
+          }
+          case ContentDoc: {
+            const c = /** @type {ContentDoc} */ (content)
+            if (subdocs) {
+              c.opts = {}
+              c.doc.guid = i + ''
+            }
+            break
+          }
+          case ContentEmbed: {
+            const c = /** @type {ContentEmbed} */ (content)
+            c.embed = {}
+            break
+          }
+          case ContentFormat: {
+            const c = /** @type {ContentFormat} */ (content)
+            if (formatting) {
+              c.key = map.setIfUndefined(formattingKeyCache, c.key, () => i + '')
+              c.value = map.setIfUndefined(formattingValueCache, c.value, () => ({ i }))
+            }
+            break
+          }
+          case ContentJSON: {
+            const c = /** @type {ContentJSON} */ (content)
+            c.arr = c.arr.map(() => i)
+            break
+          }
+          case ContentString: {
+            const c = /** @type {ContentString} */ (content)
+            c.str = string.repeat((i % 10) + '', c.str.length)
+            break
+          }
+          default:
+            // unknown content type
+            error.unexpectedCase()
+        }
+        if (item.parentSub) {
+          item.parentSub = map.setIfUndefined(mapKeyCache, item.parentSub, () => i + '')
+        }
+        i++
+        return block
+      }
+      default:
+        // unknown block-type
+        error.unexpectedCase()
+    }
+  }
+}
+
+/**
+ * This function obfuscates the content of a Yjs update. This is useful to share
+ * buggy Yjs documents while significantly limiting the possibility that a
+ * developer can on the user. Note that it might still be possible to deduce
+ * some information by analyzing the "structure" of the document or by analyzing
+ * the typing behavior using the CRDT-related metadata that is still kept fully
+ * intact.
+ *
+ * @param {Uint8Array} update
+ * @param {ObfuscatorOptions} [opts]
+ */
+export const obfuscateUpdate = (update, opts) => convertUpdateFormat(update, createObfuscator(opts), UpdateDecoderV1, UpdateEncoderV1)
+
+/**
+ * @param {Uint8Array} update
+ * @param {ObfuscatorOptions} [opts]
+ */
+export const obfuscateUpdateV2 = (update, opts) => convertUpdateFormat(update, createObfuscator(opts), UpdateDecoderV2, UpdateEncoderV2)
 
 /**
  * @param {Uint8Array} update
  */
-export const convertUpdateFormatV2ToV1 = update => convertUpdateFormat(update, UpdateDecoderV2, UpdateEncoderV1)
+export const convertUpdateFormatV1ToV2 = update => convertUpdateFormat(update, f.id, UpdateDecoderV1, UpdateEncoderV2)
+
+/**
+ * @param {Uint8Array} update
+ */
+export const convertUpdateFormatV2ToV1 = update => convertUpdateFormat(update, f.id, UpdateDecoderV2, UpdateEncoderV1)

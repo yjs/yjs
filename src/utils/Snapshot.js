@@ -153,6 +153,14 @@ export const splitSnapshotAffectedStructs = (transaction, snapshot) => {
 }
 
 /**
+ * @example
+ *  const ydoc = new Y.Doc({ gc: false })
+ *  ydoc.getText().insert(0, 'world!')
+ *  const snapshot = Y.snapshot(ydoc)
+ *  ydoc.getText().insert(0, 'hello ')
+ *  const restored = Y.createDocFromSnapshot(ydoc, snapshot)
+ *  assert(restored.getText().toString() === 'world!')
+ *
  * @param {Doc} originDoc
  * @param {Snapshot} snapshot
  * @param {Doc} [newDoc] Optionally, you may define the Yjs document that receives the data from originDoc
@@ -161,7 +169,7 @@ export const splitSnapshotAffectedStructs = (transaction, snapshot) => {
 export const createDocFromSnapshot = (originDoc, snapshot, newDoc = new Doc()) => {
   if (originDoc.gc) {
     // we should not try to restore a GC-ed document, because some of the restored items might have their content deleted
-    throw new Error('originDoc must not be garbage collected')
+    throw new Error('Garbage-collection must be disabled in `originDoc`!')
   }
   const { sv, ds } = snapshot
 

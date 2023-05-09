@@ -171,7 +171,7 @@ export const mergeDeleteSets = dss => {
  * @function
  */
 export const addToDeleteSet = (ds, client, clock, length) => {
-  map.setIfUndefined(ds.clients, client, () => []).push(new DeleteItem(clock, length))
+  map.setIfUndefined(ds.clients, client, () => /** @type {Array<DeleteItem>} */ ([])).push(new DeleteItem(clock, length))
 }
 
 export const createDeleteSet = () => new DeleteSet()
@@ -219,17 +219,21 @@ export const createDeleteSetFromStructStore = ss => {
  */
 export const writeDeleteSet = (encoder, ds) => {
   encoding.writeVarUint(encoder.restEncoder, ds.clients.size)
-  ds.clients.forEach((dsitems, client) => {
-    encoder.resetDsCurVal()
-    encoding.writeVarUint(encoder.restEncoder, client)
-    const len = dsitems.length
-    encoding.writeVarUint(encoder.restEncoder, len)
-    for (let i = 0; i < len; i++) {
-      const item = dsitems[i]
-      encoder.writeDsClock(item.clock)
-      encoder.writeDsLen(item.len)
-    }
-  })
+
+  // Ensure that the delete set is written in a deterministic order
+  array.from(ds.clients.entries())
+    .sort((a, b) => b[0] - a[0])
+    .forEach(([client, dsitems]) => {
+      encoder.resetDsCurVal()
+      encoding.writeVarUint(encoder.restEncoder, client)
+      const len = dsitems.length
+      encoding.writeVarUint(encoder.restEncoder, len)
+      for (let i = 0; i < len; i++) {
+        const item = dsitems[i]
+        encoder.writeDsClock(item.clock)
+        encoder.writeDsLen(item.len)
+      }
+    })
 }
 
 /**
@@ -247,7 +251,7 @@ export const readDeleteSet = decoder => {
     const client = decoding.readVarUint(decoder.restDecoder)
     const numberOfDeletes = decoding.readVarUint(decoder.restDecoder)
     if (numberOfDeletes > 0) {
-      const dsField = map.setIfUndefined(ds.clients, client, () => [])
+      const dsField = map.setIfUndefined(ds.clients, client, () => /** @type {Array<DeleteItem>} */ ([]))
       for (let i = 0; i < numberOfDeletes; i++) {
         dsField.push(new DeleteItem(decoder.readDsClock(), decoder.readDsLen()))
       }

@@ -38,7 +38,7 @@ export const generateNewClientId = random.uint32
  */
 export class Doc extends Observable {
   /**
-   * @param {DocOpts} [opts] configuration
+   * @param {DocOpts} opts configuration
    */
   constructor ({ guid = random.uuidv4(), collectionid = null, gc = true, gcFilter = () => true, meta = null, autoLoad = false, shouldLoad = true } = {}) {
     super()
@@ -72,13 +72,57 @@ export class Doc extends Observable {
     this.shouldLoad = shouldLoad
     this.autoLoad = autoLoad
     this.meta = meta
+    /**
+     * This is set to true when the persistence provider loaded the document from the database or when the `sync` event fires.
+     * Note that not all providers implement this feature. Provider authors are encouraged to fire the `load` event when the doc content is loaded from the database.
+     *
+     * @type {boolean}
+     */
     this.isLoaded = false
+    /**
+     * This is set to true when the connection provider has successfully synced with a backend.
+     * Note that when using peer-to-peer providers this event may not provide very useful.
+     * Also note that not all providers implement this feature. Provider authors are encouraged to fire
+     * the `sync` event when the doc has been synced (with `true` as a parameter) or if connection is
+     * lost (with false as a parameter).
+     */
+    this.isSynced = false
+    /**
+     * Promise that resolves once the document has been loaded from a presistence provider.
+     */
     this.whenLoaded = promise.create(resolve => {
       this.on('load', () => {
         this.isLoaded = true
         resolve(this)
       })
     })
+    const provideSyncedPromise = () => promise.create(resolve => {
+      /**
+       * @param {boolean} isSynced
+       */
+      const eventHandler = (isSynced) => {
+        if (isSynced === undefined || isSynced === true) {
+          this.off('sync', eventHandler)
+          resolve()
+        }
+      }
+      this.on('sync', eventHandler)
+    })
+    this.on('sync', isSynced => {
+      if (isSynced === false && this.isSynced) {
+        this.whenSynced = provideSyncedPromise()
+      }
+      this.isSynced = isSynced === undefined || isSynced === true
+      if (!this.isLoaded) {
+        this.emit('load', [])
+      }
+    })
+    /**
+     * Promise that resolves once the document has been synced with a backend.
+     * This promise is recreated when the connection is lost.
+     * Note the documentation about the `isSynced` property.
+     */
+    this.whenSynced = provideSyncedPromise()
   }
 
   /**
@@ -103,7 +147,7 @@ export class Doc extends Observable {
   }
 
   getSubdocGuids () {
-    return new Set(Array.from(this.subdocs).map(doc => doc.guid))
+    return new Set(array.from(this.subdocs).map(doc => doc.guid))
   }
 
   /**
@@ -112,13 +156,15 @@ export class Doc extends Observable {
    * that happened inside of the transaction are sent as one message to the
    * other peers.
    *
-   * @param {function(Transaction):void} f The function that should be executed as a transaction
+   * @template T
+   * @param {function(Transaction):T} f The function that should be executed as a transaction
    * @param {any} [origin] Origin of who started the transaction. Will be stored on transaction.origin
+   * @return T
    *
    * @public
    */
   transact (f, origin = null) {
-    transact(this, f, origin)
+    return transact(this, f, origin)
   }
 
   /**

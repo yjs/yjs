@@ -5,6 +5,18 @@ import { init } from './testHelper.js'
 /**
  * @param {t.TestCase} tc
  */
+export const testBasic = tc => {
+  const ydoc = new Y.Doc({ gc: false })
+  ydoc.getText().insert(0, 'world!')
+  const snapshot = Y.snapshot(ydoc)
+  ydoc.getText().insert(0, 'hello ')
+  const restored = Y.createDocFromSnapshot(ydoc, snapshot)
+  t.assert(restored.getText().toString() === 'world!')
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testBasicRestoreSnapshot = tc => {
   const doc = new Y.Doc({ gc: false })
   doc.getArray('array').insert(0, ['hello'])

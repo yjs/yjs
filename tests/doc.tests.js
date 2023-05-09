@@ -5,6 +5,24 @@ import * as t from 'lib0/testing'
 /**
  * @param {t.TestCase} _tc
  */
+export const testAfterTransactionRecursion = _tc => {
+  const ydoc = new Y.Doc()
+  const yxml = ydoc.getXmlFragment('')
+  ydoc.on('afterTransaction', tr => {
+    if (tr.origin === 'test') {
+      yxml.toJSON()
+    }
+  })
+  ydoc.transact(_tr => {
+    for (let i = 0; i < 15000; i++) {
+      yxml.push([new Y.XmlText('a')])
+    }
+  }, 'test')
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
 export const testOriginInTransaction = _tc => {
   const doc = new Y.Doc()
   const ytext = doc.getText()
@@ -15,7 +33,7 @@ export const testOriginInTransaction = _tc => {
   doc.on('afterTransaction', (tr) => {
     origins.push(tr.origin)
     if (origins.length <= 1) {
-      ytext.toDelta()
+      ytext.toDelta(Y.snapshot(doc)) // adding a snapshot forces toDelta to create a cleanup transaction
       doc.transact(() => {
         ytext.insert(0, 'a')
       }, 'nested')
@@ -30,9 +48,9 @@ export const testOriginInTransaction = _tc => {
 /**
  * Client id should be changed when an instance receives updates from another client using the same client id.
  *
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testClientIdDuplicateChange = tc => {
+export const testClientIdDuplicateChange = _tc => {
   const doc1 = new Y.Doc()
   doc1.clientID = 0
   const doc2 = new Y.Doc()
@@ -44,9 +62,9 @@ export const testClientIdDuplicateChange = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testGetTypeEmptyId = tc => {
+export const testGetTypeEmptyId = _tc => {
   const doc1 = new Y.Doc()
   doc1.getText('').insert(0, 'h')
   doc1.getText().insert(1, 'i')
@@ -57,9 +75,9 @@ export const testGetTypeEmptyId = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testToJSON = tc => {
+export const testToJSON = _tc => {
   const doc = new Y.Doc()
   t.compare(doc.toJSON(), {}, 'doc.toJSON yields empty object')
 
@@ -84,9 +102,9 @@ export const testToJSON = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testSubdoc = tc => {
+export const testSubdoc = _tc => {
   const doc = new Y.Doc()
   doc.load() // doesn't do anything
   {
@@ -151,9 +169,9 @@ export const testSubdoc = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testSubdocLoadEdgeCases = tc => {
+export const testSubdocLoadEdgeCases = _tc => {
   const ydoc = new Y.Doc()
   const yarray = ydoc.getArray()
   const subdoc1 = new Y.Doc()
@@ -198,9 +216,9 @@ export const testSubdocLoadEdgeCases = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testSubdocLoadEdgeCasesAutoload = tc => {
+export const testSubdocLoadEdgeCasesAutoload = _tc => {
   const ydoc = new Y.Doc()
   const yarray = ydoc.getArray()
   const subdoc1 = new Y.Doc({ autoLoad: true })
@@ -240,9 +258,9 @@ export const testSubdocLoadEdgeCasesAutoload = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testSubdocsUndo = tc => {
+export const testSubdocsUndo = _tc => {
   const ydoc = new Y.Doc()
   const elems = ydoc.getXmlFragment()
   const undoManager = new Y.UndoManager(elems)
@@ -255,9 +273,9 @@ export const testSubdocsUndo = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testLoadDocs = async tc => {
+export const testLoadDocsEvent = async _tc => {
   const ydoc = new Y.Doc()
   t.assert(ydoc.isLoaded === false)
   let loadedEvent = false
@@ -268,4 +286,45 @@ export const testLoadDocs = async tc => {
   await ydoc.whenLoaded
   t.assert(loadedEvent)
   t.assert(ydoc.isLoaded)
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testSyncDocsEvent = async _tc => {
+  const ydoc = new Y.Doc()
+  t.assert(ydoc.isLoaded === false)
+  t.assert(ydoc.isSynced === false)
+  let loadedEvent = false
+  ydoc.once('load', () => {
+    loadedEvent = true
+  })
+  let syncedEvent = false
+  ydoc.once('sync', /** @param {any} isSynced */ (isSynced) => {
+    syncedEvent = true
+    t.assert(isSynced)
+  })
+  ydoc.emit('sync', [true, ydoc])
+  await ydoc.whenLoaded
+  const oldWhenSynced = ydoc.whenSynced
+  await ydoc.whenSynced
+  t.assert(loadedEvent)
+  t.assert(syncedEvent)
+  t.assert(ydoc.isLoaded)
+  t.assert(ydoc.isSynced)
+  let loadedEvent2 = false
+  ydoc.on('load', () => {
+    loadedEvent2 = true
+  })
+  let syncedEvent2 = false
+  ydoc.on('sync', (isSynced) => {
+    syncedEvent2 = true
+    t.assert(isSynced === false)
+  })
+  ydoc.emit('sync', [false, ydoc])
+  t.assert(!loadedEvent2)
+  t.assert(syncedEvent2)
+  t.assert(ydoc.isLoaded)
+  t.assert(!ydoc.isSynced)
+  t.assert(ydoc.whenSynced !== oldWhenSynced)
 }

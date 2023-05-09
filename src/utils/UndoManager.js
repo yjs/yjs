@@ -10,14 +10,14 @@ import {
   getItemCleanStart,
   isDeleted,
   addToDeleteSet,
-  Transaction, Doc, Item, GC, DeleteSet, AbstractType, YEvent // eslint-disable-line
+  Transaction, Doc, Item, GC, DeleteSet, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as time from 'lib0/time'
 import * as array from 'lib0/array'
 import { Observable } from 'lib0/observable'
 
-class StackItem {
+export class StackItem {
   /**
    * @param {DeleteSet} deletions
    * @param {DeleteSet} insertions
@@ -101,7 +101,7 @@ const popStackItem = (undoManager, stack, eventType) => {
         }
       })
       itemsToRedo.forEach(struct => {
-        performedChange = redoItem(transaction, struct, itemsToRedo, stackItem.insertions, undoManager.ignoreRemoteMapChanges) !== null || performedChange
+        performedChange = redoItem(transaction, struct, itemsToRedo, stackItem.insertions, undoManager.ignoreRemoteMapChanges, undoManager) !== null || performedChange
       })
       // We want to delete in reverse order so that children are deleted before
       // parents, so we have more information available when items are filtered.
@@ -158,7 +158,7 @@ export class UndoManager extends Observable {
    */
   constructor (typeScope, {
     captureTimeout = 500,
-    captureTransaction = tr => true,
+    captureTransaction = _tr => true,
     deleteFilter = () => true,
     trackedOrigins = new Set([null]),
     ignoreRemoteMapChanges = false,

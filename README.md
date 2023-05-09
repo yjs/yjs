@@ -58,8 +58,9 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
 * [Skiff](https://skiff.org/) Private, decentralized workspace.
 * [Hyperquery](https://hyperquery.ai/) A collaborative data workspace for
   sharing analyses, documentation, spreadsheets, and dashboards.
-* [Nosgestesclimat](https://nosgestesclimat.fr/groupe) The french carbon footprint calculator has a group P2P mode based on yjs
- 
+* [Nosgestesclimat](https://nosgestesclimat.fr/groupe) The french carbon
+  footprint calculator has a group P2P mode based on yjs
+
 ## Table of Contents
 
 * [Overview](#Overview)
@@ -168,6 +169,9 @@ PORT=1234 node ./node_modules/y-websocket/bin/server.js
 ### Example: Observe types
 
 ```js
+import * as Y from 'yjs';
+
+const doc = new Y.Doc();
 const yarray = doc.getArray('my-array')
 yarray.observe(event => {
   console.log('yarray was modified')
@@ -750,6 +754,30 @@ const diff2 = Y.diffUpdate(currentState2, stateVector1)
 // sync clients
 currentState1 = Y.mergeUpdates([currentState1, diff2])
 currentState1 = Y.mergeUpdates([currentState1, diff1])
+```
+
+#### Obfuscating Updates
+
+If one of your users runs into a weird bug (e.g. the rich-text editor throws
+error messages), then you don't have to request the full document from your
+user. Instead, they can obfuscate the document (i.e. replace the content with
+meaningless generated content) before sending it to you. Note that someone might
+still deduce the type of content by looking at the general structure of the
+document. But this is much better than requesting the original document.
+
+Obfuscated updates contain all the CRDT-related data that is required for
+merging. So it is safe to merge obfuscated updates.
+
+```javascript
+const ydoc = new Y.Doc()
+// perform some changes..
+ydoc.getText().insert(0, 'hello world')
+const update = Y.encodeStateAsUpdate(ydoc)
+// the below update contains scrambled data
+const obfuscatedUpdate = Y.obfuscateUpdate(update)
+const ydoc2 = new Y.Doc()
+Y.applyUpdate(ydoc2, obfuscatedUpdate)
+ydoc2.getText().toString() // => "00000000000"
 ```
 
 #### Using V2 update format

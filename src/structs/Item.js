@@ -23,11 +23,12 @@ import {
   readContentType,
   addChangedTypeToTransaction,
   isDeleted,
-  DeleteSet, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction // eslint-disable-line
+  StackItem, DeleteSet, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error'
 import * as binary from 'lib0/binary'
+import * as array from 'lib0/array'
 
 /**
  * @todo This should return several items
@@ -121,6 +122,12 @@ export const splitItem = (transaction, leftItem, diff) => {
 }
 
 /**
+ * @param {Array<StackItem>} stack
+ * @param {ID} id
+ */
+const isDeletedByUndoStack = (stack, id) => array.some(stack, /** @param {StackItem} s */ s => isDeleted(s.deletions, id))
+
+/**
  * Redoes the effect of this operation.
  *
  * @param {Transaction} transaction The Yjs instance.
@@ -128,12 +135,13 @@ export const splitItem = (transaction, leftItem, diff) => {
  * @param {Set<Item>} redoitems
  * @param {DeleteSet} itemsToDelete
  * @param {boolean} ignoreRemoteMapChanges
+ * @param {import('../utils/UndoManager.js').UndoManager} um
  *
  * @return {Item|null}
  *
  * @private
  */
-export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemoteMapChanges) => {
+export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemoteMapChanges, um) => {
   const doc = transaction.doc
   const store = doc.store
   const ownClientID = doc.clientID
@@ -153,7 +161,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
   // make sure that parent is redone
   if (parentItem !== null && parentItem.deleted === true) {
     // try to undo parent if it will be undone anyway
-    if (parentItem.redone === null && (!redoitems.has(parentItem) || redoItem(transaction, parentItem, redoitems, itemsToDelete, ignoreRemoteMapChanges) === null)) {
+    if (parentItem.redone === null && (!redoitems.has(parentItem) || redoItem(transaction, parentItem, redoitems, itemsToDelete, ignoreRemoteMapChanges, um) === null)) {
       return null
     }
     while (parentItem.redone !== null) {
@@ -203,13 +211,10 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
       left = item
       // Iterate right while right is in itemsToDelete
       // If it is intended to delete right while item is redone, we can expect that item should replace right.
-      while (left !== null && left.right !== null && isDeleted(itemsToDelete, left.right.id)) {
+      while (left !== null && left.right !== null && (left.right.redone || isDeleted(itemsToDelete, left.right.id) || isDeletedByUndoStack(um.undoStack, left.right.id) || isDeletedByUndoStack(um.redoStack, left.right.id))) {
         left = left.right
-      }
-      // follow redone
-      // trace redone until parent matches
-      while (left !== null && left.redone !== null) {
-        left = getItemCleanStart(transaction, left.redone)
+        // follow redone
+        while (left.redone) left = getItemCleanStart(transaction, left.redone)
       }
       if (left && left.right !== null) {
         // It is not possible to redo this item because it conflicts with a
@@ -756,48 +761,48 @@ export class AbstractContent {
   }
 
   /**
-   * @param {number} offset
+   * @param {number} _offset
    * @return {AbstractContent}
    */
-  splice (offset) {
+  splice (_offset) {
     throw error.methodUnimplemented()
   }
 
   /**
-   * @param {AbstractContent} right
+   * @param {AbstractContent} _right
    * @return {boolean}
    */
-  mergeWith (right) {
+  mergeWith (_right) {
     throw error.methodUnimplemented()
   }
 
   /**
-   * @param {Transaction} transaction
-   * @param {Item} item
+   * @param {Transaction} _transaction
+   * @param {Item} _item
    */
-  integrate (transaction, item) {
+  integrate (_transaction, _item) {
     throw error.methodUnimplemented()
   }
 
   /**
-   * @param {Transaction} transaction
+   * @param {Transaction} _transaction
    */
-  delete (transaction) {
+  delete (_transaction) {
     throw error.methodUnimplemented()
   }
 
   /**
-   * @param {StructStore} store
+   * @param {StructStore} _store
    */
-  gc (store) {
+  gc (_store) {
     throw error.methodUnimplemented()
   }
 
   /**
-   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
-   * @param {number} offset
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} _encoder
+   * @param {number} _offset
    */
-  write (encoder, offset) {
+  write (_encoder, _offset) {
     throw error.methodUnimplemented()
   }
 

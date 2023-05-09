@@ -1,6 +1,6 @@
 {
   "name": "yjs",
-  "version": "13.5.44",
+  "version": "13.6.1",
   "description": "Shared Editing Library",
   "main": "./dist/yjs.js",
   "types": "./dist/src/index.d.ts",
@@ -62,19 +62,24 @@
   },
   "homepage": "https://docs.yjs.dev",
   "dependencies": {
-    "lib0": "^0.2.49"
+    "lib0": "^0.2.74"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^17.0.0",
-    "@rollup/plugin-node-resolve": "^11.2.1",
+    "@rollup/plugin-commonjs": "^24.0.1",
+    "@rollup/plugin-node-resolve": "^15.0.1",
+    "@types/node": "^18.15.5",
     "concurrently": "^3.6.1",
     "http-server": "^0.12.3",
     "jsdoc": "^3.6.7",
     "markdownlint-cli": "^0.23.2",
-    "rollup": "^2.60.0",
+    "rollup": "^3.20.0",
     "standard": "^16.0.4",
     "tui-jsdoc-template": "^1.2.2",
-    "typescript": "^4.4.4",
+    "typescript": "^4.9.5",
     "y-protocols": "^1.0.5"
+  },
+  "engines": {
+    "npm": ">=8.0.0",
+    "node": ">=16.0.0"
   }
 }

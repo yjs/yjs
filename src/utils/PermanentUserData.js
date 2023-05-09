@@ -71,7 +71,7 @@ export class PermanentUserData {
    * @param {Doc} doc
    * @param {number} clientid
    * @param {string} userDescription
-   * @param {Object} [conf]
+   * @param {Object} conf
    * @param {function(Transaction, DeleteSet):boolean} [conf.filter]
    */
   setUserMapping (doc, clientid, userDescription, { filter = () => true } = {}) {
@@ -84,7 +84,7 @@ export class PermanentUserData {
       users.set(userDescription, user)
     }
     user.get('ids').push([clientid])
-    users.observe(event => {
+    users.observe(_event => {
       setTimeout(() => {
         const userOverwrite = users.get(userDescription)
         if (userOverwrite !== user) {

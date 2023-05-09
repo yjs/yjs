@@ -4,6 +4,7 @@ import * as Y from '../src/index.js'
 import { readClientsStructRefs, readDeleteSet, UpdateDecoderV2, UpdateEncoderV2, writeDeleteSet } from '../src/internals.js'
 import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
+import * as object from 'lib0/object'
 
 /**
  * @typedef {Object} Enc
@@ -138,7 +139,6 @@ export const testKeyEncoding = tc => {
  */
 const checkUpdateCases = (ydoc, updates, enc, hasDeletes) => {
   const cases = []
-
   // Case 1: Simple case, simply merge everything
   cases.push(enc.mergeUpdates(updates))
 
@@ -303,4 +303,55 @@ export const testMergePendingUpdates = tc => {
 
   const yText5 = yDoc5.getText('textBlock')
   t.compareStrings(yText5.toString(), 'nenor')
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testObfuscateUpdates = tc => {
+  const ydoc = new Y.Doc()
+  const ytext = ydoc.getText('text')
+  const ymap = ydoc.getMap('map')
+  const yarray = ydoc.getArray('array')
+  // test ytext
+  ytext.applyDelta([{ insert: 'text', attributes: { bold: true } }, { insert: { href: 'supersecreturl' } }])
+  // test ymap
+  ymap.set('key', 'secret1')
+  ymap.set('key', 'secret2')
+  // test yarray with subtype & subdoc
+  const subtype = new Y.XmlElement('secretnodename')
+  const subdoc = new Y.Doc({ guid: 'secret' })
+  subtype.setAttribute('attr', 'val')
+  yarray.insert(0, ['teststring', 42, subtype, subdoc])
+  // obfuscate the content and put it into a new document
+  const obfuscatedUpdate = Y.obfuscateUpdate(Y.encodeStateAsUpdate(ydoc))
+  const odoc = new Y.Doc()
+  Y.applyUpdate(odoc, obfuscatedUpdate)
+  const otext = odoc.getText('text')
+  const omap = odoc.getMap('map')
+  const oarray = odoc.getArray('array')
+  // test ytext
+  const delta = otext.toDelta()
+  t.assert(delta.length === 2)
+  t.assert(delta[0].insert !== 'text' && delta[0].insert.length === 4)
+  t.assert(object.length(delta[0].attributes) === 1)
+  t.assert(!object.hasProperty(delta[0].attributes, 'bold'))
+  t.assert(object.length(delta[1]) === 1)
+  t.assert(object.hasProperty(delta[1], 'insert'))
+  // test ymap
+  t.assert(omap.size === 1)
+  t.assert(!omap.has('key'))
+  // test yarray with subtype & subdoc
+  const result = oarray.toArray()
+  t.assert(result.length === 4)
+  t.assert(result[0] !== 'teststring')
+  t.assert(result[1] !== 42)
+  const osubtype = /** @type {Y.XmlElement} */ (result[2])
+  const osubdoc = result[3]
+  // test subtype
+  t.assert(osubtype.nodeName !== subtype.nodeName)
+  t.assert(object.length(osubtype.getAttributes()) === 1)
+  t.assert(osubtype.getAttribute('attr') === undefined)
+  // test subdoc
+  t.assert(osubdoc.guid !== subdoc.guid)
 }

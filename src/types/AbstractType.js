@@ -324,9 +324,9 @@ export class AbstractType {
   }
 
   /**
-   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} _encoder
    */
-  _write (encoder) { }
+  _write (_encoder) { }
 
   /**
    * The first non-deleted item
@@ -344,9 +344,9 @@ export class AbstractType {
    * Must be implemented by each type.
    *
    * @param {Transaction} transaction
-   * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
+   * @param {Set<null|string>} _parentSubs Keys changed on this type. `null` if list was modified.
    */
-  _callObserver (transaction, parentSubs) {
+  _callObserver (transaction, _parentSubs) {
     if (!transaction.local && this._searchMarker) {
       this._searchMarker.length = 0
     }

@@ -17,10 +17,11 @@ import {
   transact,
   typeListGet,
   typeListSlice,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, ContentType, Transaction, Item, YXmlText, YXmlHook, Snapshot // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, ContentType, Transaction, Item, YXmlText, YXmlHook // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error'
+import * as array from 'lib0/array'
 
 /**
  * Define the elements to which a set of CSS queries apply.
@@ -237,7 +238,7 @@ export class YXmlFragment extends AbstractType {
   querySelectorAll (query) {
     query = query.toUpperCase()
     // @ts-ignore
-    return Array.from(new YXmlTreeWalker(this, element => element.nodeName && element.nodeName.toUpperCase() === query))
+    return array.from(new YXmlTreeWalker(this, element => element.nodeName && element.nodeName.toUpperCase() === query))
   }
 
   /**
@@ -407,7 +408,7 @@ export class YXmlFragment extends AbstractType {
   /**
    * Executes a provided function on once on overy child element.
    *
-   * @param {function(YXmlElement|YXmlText,number, typeof this):void} f A function to execute on every element of this YArray.
+   * @param {function(YXmlElement|YXmlText,number, typeof self):void} f A function to execute on every element of this YArray.
    */
   forEach (f) {
     typeListForEach(this, f)
@@ -427,10 +428,10 @@ export class YXmlFragment extends AbstractType {
 }
 
 /**
- * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} _decoder
  * @return {YXmlFragment}
  *
  * @private
  * @function
  */
-export const readYXmlFragment = decoder => new YXmlFragment()
+export const readYXmlFragment = _decoder => new YXmlFragment()

@@ -58,11 +58,14 @@ export class YArray extends AbstractType {
 
   /**
    * Construct a new YArray containing the specified items.
-   * @template T
+   * @template {Object<string,any>|Array<any>|number|null|string|Uint8Array} T
    * @param {Array<T>} items
    * @return {YArray<T>}
    */
   static from (items) {
+    /**
+     * @type {YArray<T>}
+     */
     const a = new YArray()
     a.push(items)
     return a
@@ -84,6 +87,9 @@ export class YArray extends AbstractType {
     this._prelimContent = null
   }
 
+  /**
+   * @return {YArray<T>}
+   */
   _copy () {
     return new YArray()
   }
@@ -92,9 +98,12 @@ export class YArray extends AbstractType {
    * @return {YArray<T>}
    */
   clone () {
+    /**
+     * @type {YArray<T>}
+     */
     const arr = new YArray()
     arr.insert(0, this.toArray().map(el =>
-      el instanceof AbstractType ? el.clone() : el
+      el instanceof AbstractType ? /** @type {typeof el} */ (el.clone()) : el
     ))
     return arr
   }
@@ -133,7 +142,7 @@ export class YArray extends AbstractType {
   insert (index, content) {
     if (this.doc !== null) {
       transact(this.doc, transaction => {
-        typeListInsertGenerics(transaction, this, index, content)
+        typeListInsertGenerics(transaction, this, index, /** @type {any} */ (content))
       })
     } else {
       /** @type {Array<any>} */ (this._prelimContent).splice(index, 0, ...content)
@@ -150,7 +159,7 @@ export class YArray extends AbstractType {
   push (content) {
     if (this.doc !== null) {
       transact(this.doc, transaction => {
-        typeListPushGenerics(transaction, this, content)
+        typeListPushGenerics(transaction, this, /** @type {any} */ (content))
       })
     } else {
       /** @type {Array<any>} */ (this._prelimContent).push(...content)
@@ -235,7 +244,7 @@ export class YArray extends AbstractType {
   }
 
   /**
-   * Executes a provided function on once on overy element of this YArray.
+   * Executes a provided function once on overy element of this YArray.
    *
    * @param {function(T,number,YArray<T>):void} f A function to execute on every element of this YArray.
    */
@@ -259,9 +268,9 @@ export class YArray extends AbstractType {
 }
 
 /**
- * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} _decoder
  *
  * @private
  * @function
  */
-export const readYArray = decoder => new YArray()
+export const readYArray = _decoder => new YArray()
