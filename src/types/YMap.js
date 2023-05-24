@@ -22,6 +22,18 @@ import * as iterator from 'lib0/iterator'
 /**
  * @template T
  * @typedef {Extract<keyof T, string>} StringKey<T>
+ *
+ * Like keyof, but guarantees the returned type is a subset of string.
+ * `keyof` will include number and Symbol even if the input type requires string keys.
+ */
+
+/**
+ * @template T
+ * @typedef {readonly {
+ *            [K in keyof T]: [K, T[K]];
+ *          }[StringKey<T>][]} EntriesOf<T>
+ *
+ * Converts an object schema into a readonly array containing valid key-value pairs.
  */
 
 /**
@@ -59,12 +71,12 @@ export class YMapEvent extends YEvent {
 export class YMap extends AbstractType {
   /**
    *
-   * @param {Iterable<readonly [string, any]>=} entries - an optional iterable to initialize the YMap
+   * @param {EntriesOf<MapType>=} entries - an optional iterable to initialize the YMap
    */
   constructor (entries) {
     super()
     /**
-     * @type {Map<string,any>?}
+     * @type {Map<StringKey<MapType>, MapType[StringKey<MapType>]>?}
      * @private
      */
     this._prelimContent = null
@@ -88,9 +100,8 @@ export class YMap extends AbstractType {
    */
   _integrate (y, item) {
     super._integrate(y, item)
-    ;/** @type {Map<string, any>} */ (this._prelimContent).forEach((value, key) => {
-      // TODO: fix
-      this.set(/** @type {any} */ (key), value)
+    this._prelimContent?.forEach((value, key) => {
+      this.set(key, value)
     })
     this._prelimContent = null
   }
@@ -111,8 +122,7 @@ export class YMap extends AbstractType {
      */
     const map = new YMap()
     this.forEach((value, key) => {
-      // TODO: fix
-      map.set(key, /** @type {any} */ (value instanceof AbstractType ? /** @type {typeof value} */ (value.clone()) : value))
+      map.set(key, value instanceof AbstractType ? /** @type {typeof value} */ (value.clone()) : value)
     })
     return map
   }
@@ -185,7 +195,7 @@ export class YMap extends AbstractType {
   /**
    * Executes a provided function on once on every key-value pair.
    *
-   * @param {function(MapType[keyof MapType],StringKey<MapType>,YMap<MapType>):void} f A function to execute on every element of this YArray.
+   * @param {function(MapType[StringKey<MapType>],StringKey<MapType>,YMap<MapType>):void} f A function to execute on every element of this YArray.
    */
   forEach (f) {
     this._map.forEach((item, key) => {
@@ -207,7 +217,6 @@ export class YMap extends AbstractType {
   /**
    * Remove a specified element from this YMap.
    *
-   * TODO: type to only allow deletion of optional elements in MapType
    * @param {string} key The key of the element to remove.
    */
   delete (key) {
@@ -291,9 +300,3 @@ export class YMap extends AbstractType {
  * @function
  */
 export const readYMap = _decoder => new YMap()
-
-
-/** @type {YMap<{ foo: { hello: [3, 4, { hiThere: null }] }; }>} */
-const foo = new YMap();
-
-foo.has("")
