@@ -19,14 +19,16 @@ export const testMapHavingIterableAsConstructorParamTests = tc => {
   t.assert(m1.get('number') === 1)
   t.assert(m1.get('string') === 'hello')
 
+  /** @type {Y.Map<{ object: { x: number; }; boolean: boolean; }>} */
   const m2 = new Y.Map([
     ['object', { x: 1 }],
     ['boolean', true]
   ])
   map0.set('m2', m2)
-  t.assert(m2.get('object').x === 1)
+  t.assert(m2.get('object')?.x === 1)
   t.assert(m2.get('boolean') === true)
 
+  /** @type {Y.Map<any>} */
   const m3 = new Y.Map([...m1, ...m2])
   map0.set('m3', m3)
   t.assert(m3.get('number') === 1)
@@ -281,7 +283,7 @@ export const testGetAndSetAndDeleteOfMapPropertyWithThreeConflicts = tc => {
  */
 export const testObserveDeepProperties = tc => {
   const { testConnector, users, map1, map2, map3 } = init(tc, { users: 4 })
-  const _map1 = map1.set('map', new Y.Map())
+  const _map1 = map1.set('map', /** @type {Y.Map<{ deepmap: Y.Map<any> }>} */ (new Y.Map()))
   let calls = 0
   let dmapid
   map1.observeDeep(events => {
@@ -306,10 +308,10 @@ export const testObserveDeepProperties = tc => {
   const dmap2 = _map2.get('deepmap')
   const dmap3 = _map3.get('deepmap')
   t.assert(calls > 0)
-  t.assert(compareIDs(dmap1._item.id, dmap2._item.id))
-  t.assert(compareIDs(dmap1._item.id, dmap3._item.id))
+  t.assert(compareIDs(dmap1?._item?.id || null, dmap2._item.id))
+  t.assert(compareIDs(dmap1?._item?.id || null, dmap3._item.id))
   // @ts-ignore we want the possibility of dmapid being undefined
-  t.assert(compareIDs(dmap1._item.id, dmapid))
+  t.assert(compareIDs(dmap1?._item?.id || null, dmapid))
   compare(users)
 }
 

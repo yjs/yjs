@@ -329,6 +329,7 @@ export const testUndoUntilChangePerformed = _tc => {
   const yMap = new Y.Map()
   yMap.set('hello', 'world')
   yArray.push([yMap])
+  /** @type {Y.Map<{ key: string }>} */
   const yMap2 = new Y.Map()
   yMap2.set('key', 'value')
   yArray.push([yMap2])
@@ -342,7 +343,7 @@ export const testUndoUntilChangePerformed = _tc => {
   Y.transact(doc2, () => yArray2.delete(0), doc2.clientID)
   undoManager2.undo()
   undoManager.undo()
-  t.compareStrings(yMap2.get('key'), 'value')
+  t.compareStrings(yMap2.get('key') || '', 'value')
 }
 
 /**
