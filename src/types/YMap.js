@@ -30,7 +30,7 @@ import * as iterator from 'lib0/iterator'
 /**
  * @template T
  * @typedef {readonly {
- *            [K in keyof T]: [K, T[K]];
+ *            [K in StringKey<T>]: [K, T[K]];
  *          }[StringKey<T>][]} EntriesOf<T>
  *
  * Converts an object schema into a readonly array containing valid key-value pairs.
