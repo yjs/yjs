@@ -18,6 +18,7 @@ import {
   readContentString,
   readContentEmbed,
   readContentDoc,
+  readContentWeakLink,
   createID,
   readContentFormat,
   readContentType,
@@ -719,6 +720,7 @@ export const contentRefs = [
   readContentType, // 7
   readContentAny, // 8
   readContentDoc, // 9
+  readContentWeakLink, // 10
   () => { error.unexpectedCase() } // 10 - Skip is not ItemContent
 ]
 
