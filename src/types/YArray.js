@@ -16,7 +16,8 @@ import {
   YArrayRefID,
   callTypeObservers,
   transact,
-  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
+  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item, // eslint-disable-line
+  WeakLink
 } from '../internals.js'
 import { typeListSlice } from './AbstractType.js'
 
@@ -199,6 +200,16 @@ export class YArray extends AbstractType {
    */
   get (index) {
     return typeListGet(this, index)
+  }
+
+  /**
+   * Returns the weak link to i-th element from a YArray.
+   *
+   * @param {number} index The index of the element to return from the YArray
+   * @return {WeakLink<T>}
+   */
+  link(index) {
+      throw new Error('Method not implemented.')
   }
 
   /**
