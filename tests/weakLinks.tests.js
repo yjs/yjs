@@ -25,15 +25,21 @@ export const testBasicMap = tc => {
  * @param {t.TestCase} tc
  */
 export const testBasicArray = tc => {
-  const doc = new Y.Doc()
-  const array = doc.getArray('array')
-  array.insert(0, [1,2,3])
-  array.insert(3, [array.link(1)])
+  const { testConnector, array0, array1 } = init(tc, {users:2})
+  array0.insert(0, [1,2,3])
+  array0.insert(3, [array0.link(1)])
 
-  t.compare(array.get(0), 1)
-  t.compare(array.get(1), 2)
-  t.compare(array.get(2), 3)
-  t.compare(array.get(3).deref(), 2)
+  t.compare(array0.get(0), 1)
+  t.compare(array0.get(1), 2)
+  t.compare(array0.get(2), 3)
+  t.compare(array0.get(3).deref(), 2)
+
+  testConnector.flushAllMessages()
+
+  t.compare(array1.get(0), 1)
+  t.compare(array1.get(1), 2)
+  t.compare(array1.get(2), 3)
+  t.compare(array1.get(3).deref(), 2)
 }
 
 /**
