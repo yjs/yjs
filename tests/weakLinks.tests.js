@@ -5,18 +5,35 @@ import { init, compare } from './testHelper.js'
 /**
  * @param {t.TestCase} tc
  */
-export const testBasic = tc => {
+export const testBasicMap = tc => {
   const doc = new Y.Doc()
   const map = doc.getMap('map')
   
   const nested = new Y.Map()
   nested.set('a1', 'hello')
   map.set('a', nested)
-  const link = nested.link('a')
+  const link = map.link('a')
   map.set('b', link)
 
-  const nested2 = map.get('b')
-  t.compare(nested2.toJSON(), nested.toJSON())
+  const link2 = /** @type {Y.WeakLink<any>} */ (map.get('b'))
+  const expected = nested.toJSON()
+  const actual = link2.deref().toJSON()
+  t.compare(actual, expected)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testBasicArray = tc => {
+  const doc = new Y.Doc()
+  const array = doc.getArray('array')
+  array.insert(0, [1,2,3])
+  array.insert(3, [array.link(1)])
+
+  t.compare(array.get(0), 1)
+  t.compare(array.get(1), 2)
+  t.compare(array.get(2), 3)
+  t.compare(array.get(3).deref(), 2)
 }
 
 /**

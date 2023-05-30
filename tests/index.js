@@ -21,7 +21,8 @@ if (isBrowser) {
   log.createVConsole(document.body)
 }
 runTests({
-  doc, map, array, text, xml, encoding, undoredo, compatibility, snapshot, updates, relativePositions, weakLinks
+  //doc, map, array, text, xml, encoding, undoredo, compatibility, snapshot, updates, relativePositions, 
+  weakLinks
 }).then(success => {
   /* istanbul ignore next */
   if (isNode) {

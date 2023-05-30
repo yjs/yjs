@@ -24,7 +24,9 @@ import {
   readContentType,
   addChangedTypeToTransaction,
   isDeleted,
-  StackItem, DeleteSet, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction // eslint-disable-line
+  StackItem, DeleteSet, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction, // eslint-disable-line
+  WeakLink,
+  ContentLink
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -297,6 +299,13 @@ export class Item extends AbstractStruct {
      */
     this.redone = null
     /**
+     * If this item was referenced by other weak links, here we keep the references
+     * to these weak refs.
+     * 
+     * @type {Set<WeakLink<any>> | null}
+     */
+    this.linkedBy = null
+    /**
      * @type {AbstractContent}
      */
     this.content = content
@@ -511,6 +520,7 @@ export class Item extends AbstractStruct {
         /** @type {AbstractType<any>} */ (this.parent)._map.set(this.parentSub, this)
         if (this.left !== null) {
           // this is the current attribute value of parent. delete right
+          this.linkedBy = this.left.linkedBy
           this.left.delete(transaction)
         }
       }
@@ -579,6 +589,8 @@ export class Item extends AbstractStruct {
       this.deleted === right.deleted &&
       this.redone === null &&
       right.redone === null &&
+      this.linkedBy === null &&
+      right.linkedBy === null &&
       this.content.constructor === right.content.constructor &&
       this.content.mergeWith(right.content)
     ) {
@@ -624,6 +636,7 @@ export class Item extends AbstractStruct {
       addToDeleteSet(transaction.deleteSet, this.id.client, this.id.clock, this.length)
       addChangedTypeToTransaction(transaction, parent, this.parentSub)
       this.content.delete(transaction)
+      this.linkedBy = null
     }
   }
 
@@ -720,8 +733,8 @@ export const contentRefs = [
   readContentType, // 7
   readContentAny, // 8
   readContentDoc, // 9
-  readContentWeakLink, // 10
-  () => { error.unexpectedCase() } // 10 - Skip is not ItemContent
+  () => { error.unexpectedCase() }, // 10 - Skip is not ItemContent
+  readContentWeakLink // 11
 ]
 
 /**
