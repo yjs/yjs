@@ -17,7 +17,8 @@ import {
   callTypeObservers,
   transact,
   ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item, // eslint-disable-line
-  WeakLink
+  WeakLink,
+  arrayWeakLink
 } from '../internals.js'
 import { typeListSlice } from './AbstractType.js'
 
@@ -209,7 +210,13 @@ export class YArray extends AbstractType {
    * @return {WeakLink<T>}
    */
   link(index) {
-      throw new Error('Method not implemented.')
+    if (this.doc !== null) {
+      return transact(this.doc, transaction => {
+        return arrayWeakLink(transaction, this, index)
+      })
+    } else {
+      throw new Error('todo')
+    }
   }
 
   /**

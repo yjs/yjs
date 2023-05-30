@@ -15,7 +15,8 @@ import {
   callTypeObservers,
   transact,
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item, // eslint-disable-line
-  WeakLink
+  WeakLink,
+  mapWeakLink
 } from '../internals.js'
 
 import * as iterator from 'lib0/iterator'
@@ -241,7 +242,7 @@ export class YMap extends AbstractType {
    * @return {WeakLink<MapType>|undefined}
    */
   link(key) {
-    throw new Error('Method not implemented.')
+    return mapWeakLink(this, key)
   }
 
   /**
