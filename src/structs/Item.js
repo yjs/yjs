@@ -386,6 +386,14 @@ export class Item extends AbstractStruct {
     if (this.parent && this.parent.constructor === ID && this.id.client !== this.parent.client && this.parent.clock >= getState(store, this.parent.client)) {
       return this.parent.client
     }
+    if (this.content.constructor === ContentLink) {
+      const content = /** @type {ContentLink} */ (this.content)
+      if (content.link.item.constructor === ID) {
+        if (content.link.item.client !== this.id.client) {
+          return content.link.item.client
+        }
+      }
+    }
 
     // We have all missing ids, now find the items
 
