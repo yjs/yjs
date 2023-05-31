@@ -8,14 +8,10 @@ import { typeMapGet } from "./AbstractType.js"
  */
 export class WeakLink {
   /**
-    * @param {AbstractType<any>} source
-    * @param {Item|GC} item
-    * @param {string|null} key
+    * @param {{parent:AbstractType<any>,item:Item|GC|null,key:string|null}|null} source
     */
-  constructor(source, item, key) {
+  constructor(source) {
     this.source = source
-    this.item = item
-    this.key = key
   }
   
   /**
@@ -24,14 +20,37 @@ export class WeakLink {
    * @return {T|undefined}
    */
   deref() {
-    if (this.key) {
-      return /** @type {T|undefined} */ (typeMapGet(this.source, this.key))
+    const item = this.linkedItem()
+    if (item !== undefined && !item.deleted) {
+      return /** @type {Item} */ (item).content.getContent()[0]
     } else {
-      if (this.item.constructor === Item) {
-        return this.item.content.getContent()[0]
-      } else {
-        return undefined
+      return undefined
+    }
+  }
+
+  /**
+   * Returns currently linked item to an underlying value existing somewhere on in the document.
+   * 
+   * @return {Item|GC|undefined}
+   */
+  linkedItem() {
+    if (this.source !== null) {
+      const source = this.source
+      if (source.key !== null) {
+        return source.parent._map.get(source.key)
+      } else if (source.item !== null && !source.item.deleted) {
+        return source.item
       }
     }
+    return undefined
+  }
+
+  /**
+   * Checks if a linked content source has been deleted.
+   * 
+   * @return {boolean}
+   */
+  get deleted() {
+    return this.source === null || this.source.item === null || this.source.item.deleted
   }
 }

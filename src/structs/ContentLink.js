@@ -15,10 +15,12 @@ import {
   
   export class ContentLink {
     /**
-     * @param {WeakLink<any>|{parent:string|ID,item:string|ID}} link
+     * @param {WeakLink<any>|null} link
+     * @param {{type:ID|null,tname:string|null,item:ID|null,key:string|null}|null} raw
      */
-    constructor (link) {
+    constructor (link, raw) {
       this.link = link
+      this.raw = raw
     }
   
     /**
@@ -46,7 +48,7 @@ import {
      * @return {ContentLink}
      */
     copy () {
-      return new ContentLink(this.link)
+      return new ContentLink(this.link, this.raw)
     }
   
     /**
@@ -70,38 +72,40 @@ import {
      * @param {Item} item
      */
     integrate (transaction, item) {
-      if (this.link.constructor !== WeakLink) {
-        let { parent, item } = /** @type {any} */ (this.link)
-        let key = null
-        if (parent.constructor === ID) {
-          const parentItem = find(transaction.doc.store, parent)
+      if (this.raw !== null) {
+        const { type, tname, key, item } = this.raw
+        let parent = null
+        if (type !== null) {
+          const parentItem = find(transaction.doc.store, type)
           if (parentItem.constructor === Item) {
             parent = /** @type {ContentType} */ (parentItem.content).type
           } else {
             parent = null
           }
         } else {
-          parent = transaction.doc.share.get(parent)
+          parent = /** @type {AbstractType<any>} */ (transaction.doc.share.get(/** @type {string} */ (tname)))
         }
 
-        if (item.constructor === ID) {
-          item = getItemCleanStart(transaction, item)
-          if (item.length > 1) {
-            item = getItemCleanEnd(transaction, transaction.doc.store, createID(item.id.client, item.id.clock + 1))
+        let target = null
+        if (item !== null) {
+          target = getItemCleanStart(transaction, item)
+          if (target.length > 1) {
+            target = getItemCleanEnd(transaction, transaction.doc.store, createID(target.id.client, target.id.clock + 1))
           }
-        } else {
-          key = item
-          item = parent._map.get(key)
+        } else if (parent !== null) {
+          target = parent._map.get(/** @type {string} */ (key)) || null
         }
-        this.link = new WeakLink(parent, item, key)
+        const source = (parent !== null && target !== null) ? {parent: parent, item: target, key: key} : null
+        this.link = new WeakLink(source)
+        this.raw = null
       }
 
-      const link = /** @type {WeakLink<any>} */ (this.link)
-      if (link.item.constructor === Item) {
-        if (link.item.linkedBy === null) {
-            link.item.linkedBy = new Set()
+      const linked = /** @type {WeakLink<any>} */ (this.link).linkedItem()
+      if (linked !== undefined && linked.constructor === Item) {
+        if (linked.linkedBy === null) {
+          linked.linkedBy = new Set()
         }
-        link.item.linkedBy.add(link)
+        linked.linkedBy.add(/** @type {WeakLink<any>} */ (this.link))
       }
     }
     
@@ -109,11 +113,14 @@ import {
      * @param {Transaction} transaction
      */
     delete (transaction) {
-      const link = /** @type {WeakLink<any>} */ (this.link)
-      if (link.item.constructor === Item) {
-        if (link.item.linkedBy !== null) {
-          link.item.linkedBy.delete(link)
+      if (this.link !== null && this.link.source !== null) {
+        const item = this.link.source.item
+        if (item !== null && item.constructor === Item) {
+          if (item.linkedBy !== null) {
+            item.linkedBy.delete(this.link)
+          }
         }
+        this.link.source = null
       }
     }
 
@@ -127,26 +134,48 @@ import {
      * @param {number} offset
      */
     write (encoder, offset) {
-      const link = /** @type {WeakLink<any>} */ (this.link)
+      let type = null
+      let tname = null
+      let item = null
+      let key = null
       let flags = 0
-      const parentItem = link.source._item
-      if (parentItem) {
+      if (this.raw !== null) {
+        type = this.raw.type
+        tname = this.raw.tname
+        key = this.raw.key
+        item = this.raw.item
+      } else {
+        const source = /** @type {WeakLink<any>} */ (this.link).source
+        if (source !== null) {
+          if (source.parent._item !== null) {
+            type = source.parent._item.id
+          } else {
+            tname = findRootTypeKey(source.parent)
+          }
+          if (source.item !== null) {
+            item = source.item.id
+          } else {
+            key = source.key
+          }
+        }
+      }
+      
+      if (type !== null) {
         flags |= 1
       }
-      if (link.key) {
+      if (item !== null) {
         flags |= 2
       }
       encoding.writeVarUint(encoder.restEncoder, flags)
-      if (parentItem) {
-        encoder.writeLeftID(parentItem.id)
+      if (type !== null) {
+        encoder.writeLeftID(type)
       } else {
-        const ykey = findRootTypeKey(link.source)
-        encoder.writeString(ykey)
+        encoder.writeString(/** @type {string} */ (tname))
       }
-      if (link.key !== null) {
-        encoder.writeString(link.key)
+      if (item !== null) {
+        encoder.writeLeftID(item)
       } else {
-        encoder.writeLeftID(link.item.id)
+        encoder.writeString(/** @type {string} */ (key))
       }
     }
   
@@ -164,19 +193,21 @@ import {
    */
   export const readContentWeakLink = decoder => {
     const flags = decoding.readVarUint(decoder.restDecoder)
-    let parent
-    let item
+    let type = null
+    let tname = null
+    let item = null
+    let key = null
     if ((flags & 1) !== 0) {
-      parent = decoder.readLeftID()
+      type = decoder.readLeftID()
     } else {
-      parent = decoder.readString()
+      tname = decoder.readString()
     }
     if ((flags & 2) !== 0) {
-      item = decoder.readString()
-    } else {
       item = decoder.readLeftID()
+    } else {
+      key = decoder.readString()
     }
-    return new ContentLink({parent, item})
+    return new ContentLink(null, { type, tname, item, key })
   }
   
 const lengthExceeded = error.create('Length exceeded!')
@@ -191,23 +222,23 @@ const lengthExceeded = error.create('Length exceeded!')
  */
 export const arrayWeakLink = (transaction, parent, index) => {
   const marker = findMarker(parent, index)
-  let n = parent._start
+  let item = parent._start
   if (marker !== null) {
-    n = marker.p
+    item = marker.p
     index -= marker.index
   }
-  for (; n !== null; n = n.right) {
-    if (!n.deleted && n.countable) {
-      if (index < n.length) {
+  for (; item !== null; item = item.right) {
+    if (!item.deleted && item.countable) {
+      if (index < item.length) {
         if (index > 0) {
-            n = getItemCleanStart(transaction, createID(n.id.client, n.id.clock + index))
+            item = getItemCleanStart(transaction, createID(item.id.client, item.id.clock + index))
         }
-        if (n.length > 1) {
-            n = getItemCleanEnd(transaction, transaction.doc.store, createID(n.id.client, n.id.clock + 1))
+        if (item.length > 1) {
+            item = getItemCleanEnd(transaction, transaction.doc.store, createID(item.id.client, item.id.clock + 1))
         }
-        return new WeakLink(parent, n, null)
+        return new WeakLink({parent, item, key: null})
       }
-      index -= n.length
+      index -= item.length
     }
   }
 
@@ -224,7 +255,7 @@ export const arrayWeakLink = (transaction, parent, index) => {
 export const mapWeakLink = (parent, key) => {
   const item = parent._map.get(key)
   if (item !== undefined) {
-    return new WeakLink(parent, item, key)
+    return new WeakLink({parent, item, key})
   } else {
     return undefined
   }

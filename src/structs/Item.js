@@ -388,9 +388,12 @@ export class Item extends AbstractStruct {
     }
     if (this.content.constructor === ContentLink) {
       const content = /** @type {ContentLink} */ (this.content)
-      if (content.link.item.constructor === ID) {
-        if (content.link.item.client !== this.id.client) {
-          return content.link.item.client
+      if (content.raw !== null) {
+        const { type, item } = content.raw
+        if (type !== null && type.client !== this.id.client)  {
+          return type.client
+        } else if (item !== null && item.client !== this.id.client) {
+          return item.client
         }
       }
     }
