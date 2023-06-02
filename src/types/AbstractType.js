@@ -670,7 +670,7 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
               left.integrate(transaction, 0)
               break
             case WeakLink:
-              left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentLink(/** @type {WeakLink<any>} */ (c), null))
+              left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentLink(/** @type {WeakLink<any>} */ (c)))
               left.integrate(transaction, 0)
               break
             default:
@@ -856,7 +856,7 @@ export const typeMapSet = (transaction, parent, key, value) => {
         content = new ContentDoc(/** @type {Doc} */ (value))
         break
       case WeakLink:
-        content = new ContentLink(/** @type {WeakLink<any>} */ (value), null)
+        content = new ContentLink(/** @type {WeakLink<any>} */ (value))
         break;
       default:
         if (value instanceof AbstractType) {
