@@ -302,7 +302,7 @@ export class Item extends AbstractStruct {
      * If this item was referenced by other weak links, here we keep the references
      * to these weak refs.
      * 
-     * @type {Set<WeakLink<any>> | null}
+     * @type {Set<Item> | null}
      */
     this.linkedBy = null
     /**
@@ -388,13 +388,8 @@ export class Item extends AbstractStruct {
     }
     if (this.content.constructor === ContentLink) {
       const content = /** @type {ContentLink} */ (this.content)
-      if (content.raw !== null) {
-        const { type, item } = content.raw
-        if (type !== null && type.client !== this.id.client)  {
-          return type.client
-        } else if (item !== null && item.client !== this.id.client) {
-          return item.client
-        }
+      if (content.link.id.client !== this.id.client) {
+        return content.link.id.client
       }
     }
 
@@ -543,6 +538,11 @@ export class Item extends AbstractStruct {
       this.content.integrate(transaction, this)
       // add parent to transaction.changed
       addChangedTypeToTransaction(transaction, /** @type {AbstractType<any>} */ (this.parent), this.parentSub)
+      if (this.linkedBy !== null) {
+        for (let link of this.linkedBy) {
+          addChangedTypeToTransaction(transaction, /** @type {AbstractType<any>} */ (link.parent), this.parentSub)
+        }
+      }
       if ((/** @type {AbstractType<any>} */ (this.parent)._item !== null && /** @type {AbstractType<any>} */ (this.parent)._item.deleted) || (this.parentSub !== null && this.right !== null)) {
         // delete if parent is deleted or if this is not the current attribute value of parent
         this.delete(transaction)

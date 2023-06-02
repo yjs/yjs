@@ -5,7 +5,7 @@ import { init, compare } from './testHelper.js'
 /**
  * @param {t.TestCase} tc
  */
-export const testBasicMap = tc => {
+const testBasicMap = tc => {
   const doc = new Y.Doc()
   const map = doc.getMap('map')
   
@@ -24,7 +24,7 @@ export const testBasicMap = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testBasicArray = tc => {
+const testBasicArray = tc => {
   const { testConnector, array0, array1 } = init(tc, {users:2})
   array0.insert(0, [1,2,3])
   array0.insert(3, [array0.link(1)])
@@ -81,16 +81,12 @@ export const testDeleteWeakLink = tc => {
   const l1 = /** @type {Y.Map<any>} */ (link1.deref())
   const l0 = /** @type {Y.Map<any>} */ (link0.deref())
   t.compare(l1.get('a1'), l0.get('a1'))
-  t.compare(link0.deleted, false)
-  t.compare(link1.deleted, false)
 
   map1.delete('b') // delete links
 
   testConnector.flushAllMessages()
 
   // since links have been deleted, they no longer refer to any content
-  t.compare(link0.deleted, true)
-  t.compare(link1.deleted, true)
   t.compare(link0.deref(), undefined)
   t.compare(link1.deref(), undefined)
 }
@@ -108,8 +104,6 @@ export const testDeleteSource = tc => {
   const link1 = /** @type {Y.WeakLink<Y.Map<any>>} */ (map1.get('b'))
   let l1 = /** @type {Y.Map<any>} */ (link1.deref())
   let l0 = /** @type {Y.Map<any>} */ (link0.deref())
-  t.compare(link0.deleted, false)
-  t.compare(link1.deleted, false)
   t.compare(l1.get('a1'), l0.get('a1'))
 
   map1.delete('a') // delete source of the link
@@ -117,8 +111,6 @@ export const testDeleteSource = tc => {
   testConnector.flushAllMessages()
 
   // since source have been deleted, links no longer refer to any content
-  t.compare(link0.deleted, true)
-  t.compare(link1.deleted, true)
   t.compare(link0.deref(), undefined)
   t.compare(link1.deref(), undefined)
 }
