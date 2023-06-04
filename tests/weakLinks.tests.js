@@ -5,7 +5,7 @@ import { init, compare } from './testHelper.js'
 /**
  * @param {t.TestCase} tc
  */
-const testBasicMap = tc => {
+export const testBasicMap = tc => {
   const doc = new Y.Doc()
   const map = doc.getMap('map')
   
@@ -24,7 +24,7 @@ const testBasicMap = tc => {
 /**
  * @param {t.TestCase} tc
  */
-const testBasicArray = tc => {
+export const testBasicArray = tc => {
   const { testConnector, array0, array1 } = init(tc, {users:2})
   array0.insert(0, [1,2,3])
   array0.insert(3, [array0.link(1)])
@@ -118,78 +118,250 @@ export const testDeleteSource = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testObserve = tc => {
+export const testObserveMapLinkArrayRemove = tc => {
   const doc = new Y.Doc()
   const map = doc.getMap('map')
   const array = doc.getArray('array')
   /**
+   * @type {Map<string, { action: 'add' | 'update' | 'delete', oldValue: any, newValue: any }>}
+   */
+  let keys
+  map.observe((e) => keys = e.keys)
+
+  array.insert(0, [1])
+  const link = array.link(0)
+  map.set('key', link)
+
+  keys = /** @type {any} */ (null)
+  array.delete(0)
+
+  t.compare(keys.get('key'), { action:'delete', oldValue: 1, newValue: null })
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testObserveMapLinkMapUpdate = tc => {
+  const doc = new Y.Doc()
+  const map1 = doc.getMap('map1')
+  const map2 = doc.getMap('map2')
+  /**
+   * @type {Map<string, { action: 'add' | 'update' | 'delete', oldValue: any, newValue: any }>}
+   */
+  let keys
+  map1.observe((e) => keys = e.keys)
+
+  map2.set('key', 'value1')
+  const link = map2.link('key')
+  map1.set('other-key', link)
+
+  keys = /** @type {any} */ (null)
+  map2.set('key', 'value2')
+
+  t.compare(keys.get('key'), { action:'update', oldValue: 'value1', newValue: 'value2' })
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testObserveMapLinkMapRemove = tc => {
+  const doc = new Y.Doc()
+  const map1 = doc.getMap('map1')
+  const map2 = doc.getMap('map2')
+  /**
+   * @type {Map<string, { action: 'add' | 'update' | 'delete', oldValue: any, newValue: any }>}
+   */
+  let keys
+  map1.observe((e) => keys = e.keys)
+
+  map2.set('key', 'value1')
+  const link = map2.link('key')
+  map1.set('other-key', link)
+
+  keys = /** @type {any} */ (null)
+  map2.delete('key')
+
+  t.compare(keys.get('key'), { action:'delete', oldValue: 'value1', newValue: null })
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testObserveArrayLinkMapRemove = tc => {
+  const doc = new Y.Doc()
+  const array = doc.getArray('array')
+  const map = doc.getMap('map')
+  /**
    * @type {Array<any>}
    */
   let delta
-  array.observe((e) => delta = e.changes.delta)
+  array.observe((e) => delta = e.delta)
 
   map.set('key', 'value1')
   const link = map.link('key')
   array.insert(0, [link])
 
-  delta = []
+  delta = /** @type {any} */ (null)
+  map.delete('key')
 
+  t.compare(delta, [{ delete: 1 }])
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testObserveArrayLinkMapUpdate = tc => {
+  const doc = new Y.Doc()
+  const array = doc.getArray('array')
+  const map = doc.getMap('map')
+  /**
+   * @type {Array<any>}
+   */
+  let delta
+  array.observe((e) => delta = e.delta)
+
+  map.set('key', 'value1')
+  const link = map.link('key')
+  array.insert(0, [link])
+
+  delta = /** @type {any} */ (null)
   map.set('key', 'value2')
+
   t.compare(delta, [{ delete: 1 }, { insert: 'value2' }])
 }
 
 /**
  * @param {t.TestCase} tc
  */
-export const testDeepObserve = tc => {
+export const testObserveTransitive = tc => {
+  // test observers in a face of linked chains of values
   const doc = new Y.Doc()
-  const map = doc.getMap('map')
-  const array = doc.getArray('array')
+  const map1 = doc.getMap('map1')
+  const map2 = doc.getMap('map2')
   /**
-   * @type {Array<any>}
+   * @type {Map<string, { action: 'add' | 'update' | 'delete', oldValue: any, newValue: any }>}
    */
-  let events
-  array.observeDeep((e) => events = e)
+  let keys
+  map2.observe((e) => keys = e.keys)
 
-  const nested = new Y.Map([['key', 'value']])
-  map.set('key', nested)
-  const link = map.link('key')
-  array.insert(0, [link])
+  map2.set('a2', 'value1')
+  const link1 = map2.link('a2')
+  map1.set('a1', link1)
+  const link2 = map1.link('a1')
+  map2.set('b2', link2) // make 'b2' link to value of 'a1' which is a link to 'a2'
 
-  events = []
+  keys = /** @type {any} */ (null)
+  map2.set('a2', 'value2')
 
-  nested.set('key', 'value2')
-  for (let i = 0; i < events.length; i++) {
-    let e = events[i]
-    throw new Error('todo')
-  }
+  t.compare(keys.get('a2'), { action:'update', oldValue: 'value1', newValue: 'value2' })
+  t.compare(keys.get('b2'), { action:'update', oldValue: 'value1', newValue: 'value2' })
 }
 
 /**
  * @param {t.TestCase} tc
  */
-export const testObserveRecursive = tc => {
+export const testDeepObserveMap = tc => {
+  // test observers in a face of linked chains of values
   const doc = new Y.Doc()
   const map = doc.getMap('map')
   const array = doc.getArray('array')
-  /**
-   * @type {any}
-   */
-  let arrayChanges
-  array.observe((e) => arrayChanges = e.changes)
-  /**
-   * @type {any}
-   */
-  let mapChanges
-  map.observe((e) => mapChanges = e.changes)
 
-  Y.transact(doc, () => {
-    map.set('key', 'map-value')
-    array.insert(0, [map.link('key')])
-    map.set('key2', array.link(0))
-  })
-  t.compare(arrayChanges.delta, [{ insert: 'map-value' }])
-  t.compare(mapChanges.keys.get('key2'), [{ action: 'insert', oldValue: 'map-value' }])
+  /**
+   * @type {Array<any>}
+   */
+  let event = []
+  map.observeDeep((e) => event = e)
 
-  t.compare(map.get('key2').deref().deref(), 'map-value')
+  const nested = new Y.Map()
+  array.insert(0, [nested])
+  const link = array.link(0)
+  map.set('link', link)
+
+  // update entry in linked map
+  event = []
+  nested.set('key', 'value')
+
+  t.compare(event, [{}]) //TODO
+
+  // delete entry in linked map
+  nested.delete('key')
+  t.compare(event, [{}]) //TODO
+  
+  // delete linked map
+  array.delete(0)
+  t.compare(event, [{}]) //TODO
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testDeepObserveArray = tc => {
+  // test observers in a face of linked chains of values
+  const doc = new Y.Doc()
+  const map = doc.getMap('map')
+  const array = doc.getArray('array')
+
+  /**
+   * @type {Array<any>}
+   */
+  let event = []
+  array.observeDeep((e) => event = e)
+
+  const nested = new Y.Map()
+  map.set('key', nested)
+  const link = map.link('key')
+  array.insert(0, [link])
+
+  // update entry in linked map
+  event = []
+  nested.set('key', 'value')
+
+  t.compare(event, [{}]) //TODO
+
+  // delete entry in linked map
+  nested.delete('key')
+  t.compare(event, [{}]) //TODO
+  
+  // delete linked map
+  map.delete('key')
+  t.compare(event, [{}]) //TODO
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testDeepObserveRecursive = tc => {
+  // test observers in a face of linked chains of values
+  const doc = new Y.Doc()
+  const root = doc.getArray('array')
+
+  const m0 = new Y.Map()
+  const m1 = new Y.Map()
+  const m2 = new Y.Map()
+
+  root.insert(0, [m0])
+  root.insert(1, [m1])
+  root.insert(2, [m2])
+
+  const l0 = root.link(0)
+  const l1 = root.link(1)
+  const l2 = root.link(2)
+
+  // create cyclic reference between links
+  m0.set('k1', m1)
+  m1.set('k2', m2)
+  m2.set('k0', m0)
+
+  /**
+   * @type {Array<any>}
+   */
+  let events = []
+  m0.observeDeep((e) => events = e)
+
+  m1.set('test-key1', 'value1')
+  t.compare(events, [{}]) //TODO
+  
+  events = []
+  m2.set('test-key2', 'value2')
+  t.compare(events, [{}]) //TODO
 }
