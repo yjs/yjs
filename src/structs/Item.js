@@ -540,7 +540,7 @@ export class Item extends AbstractStruct {
       addChangedTypeToTransaction(transaction, /** @type {AbstractType<any>} */ (this.parent), this.parentSub)
       if (this.linkedBy !== null) {
         for (let link of this.linkedBy) {
-          addChangedTypeToTransaction(transaction, /** @type {AbstractType<any>} */ (link.parent), this.parentSub)
+          addChangedTypeToTransaction(transaction, /** @type {AbstractType<any>} */ (link.parent), link.parentSub)
         }
       }
       if ((/** @type {AbstractType<any>} */ (this.parent)._item !== null && /** @type {AbstractType<any>} */ (this.parent)._item.deleted) || (this.parentSub !== null && this.right !== null)) {
