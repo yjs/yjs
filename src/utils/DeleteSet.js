@@ -328,3 +328,23 @@ export const readAndApplyDeleteSet = (decoder, transaction, store) => {
   }
   return null
 }
+
+/**
+ * @param {DeleteSet} ds1
+ * @param {DeleteSet} ds2
+ */
+export const equalDeleteSets = (ds1, ds2) => {
+  if (ds1.clients.size !== ds2.clients.size) return false
+  ds1.clients.forEach((deleteItems1, client) => {
+    const deleteItems2 = /** @type {Array<import('../internals.js').DeleteItem>} */ (ds2.clients.get(client))
+    if (deleteItems2 === undefined || deleteItems1.length !== deleteItems2.length) return false
+    for (let i = 0; i < deleteItems1.length; i++) {
+      const di1 = deleteItems1[i]
+      const di2 = deleteItems2[i]
+      if (di1.clock !== di2.clock || di1.len !== di2.len) {
+        return false
+      }
+    }
+  })
+  return true
+}

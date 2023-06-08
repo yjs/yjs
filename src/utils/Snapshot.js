@@ -15,7 +15,10 @@ import {
   findIndexSS,
   UpdateEncoderV2,
   applyUpdateV2,
-  DSEncoderV1, DSEncoderV2, DSDecoderV1, DSDecoderV2, Transaction, Doc, DeleteSet, Item // eslint-disable-line
+  LazyStructReader,
+  equalDeleteSets,
+  UpdateDecoderV1, UpdateDecoderV2, DSEncoderV1, DSEncoderV2, DSDecoderV1, DSDecoderV2, Transaction, Doc, DeleteSet, Item, // eslint-disable-line
+  mergeDeleteSets
 } from '../internals.js'
 
 import * as map from 'lib0/map'
@@ -147,7 +150,7 @@ export const splitSnapshotAffectedStructs = (transaction, snapshot) => {
         getItemCleanStart(transaction, createID(client, clock))
       }
     })
-    iterateDeletedStructs(transaction, snapshot.ds, item => {})
+    iterateDeletedStructs(transaction, snapshot.ds, _item => {})
     meta.add(snapshot)
   }
 }
@@ -207,3 +210,28 @@ export const createDocFromSnapshot = (originDoc, snapshot, newDoc = new Doc()) =
   applyUpdateV2(newDoc, encoder.toUint8Array(), 'snapshot')
   return newDoc
 }
+
+/**
+ * @param {Snapshot} snapshot
+ * @param {Uint8Array} update
+ * @param {typeof UpdateDecoderV2 | typeof UpdateDecoderV1} [YDecoder]
+ */
+export const snapshotContainsUpdateV2 = (snapshot, update, YDecoder = UpdateDecoderV2) => {
+  const structs = []
+  const updateDecoder = new YDecoder(decoding.createDecoder(update))
+  const lazyDecoder = new LazyStructReader(updateDecoder, false)
+  for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
+    structs.push(curr)
+    if ((snapshot.sv.get(curr.id.client) || 0) < curr.id.clock + curr.length) {
+      return false
+    }
+  }
+  const mergedDS = mergeDeleteSets([snapshot.ds, readDeleteSet(updateDecoder)])
+  return equalDeleteSets(snapshot.ds, mergedDS)
+}
+
+/**
+ * @param {Snapshot} snapshot
+ * @param {Uint8Array} update
+ */
+export const snapshotContainsUpdate = (snapshot, update) => snapshotContainsUpdateV2(snapshot, update, UpdateDecoderV1)

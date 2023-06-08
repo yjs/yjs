@@ -92,7 +92,9 @@ export {
   convertUpdateFormatV2ToV1,
   obfuscateUpdate,
   obfuscateUpdateV2,
-  UpdateEncoderV1
+  UpdateEncoderV1,
+  equalDeleteSets,
+  snapshotContainsUpdate
 } from './internals.js'
 
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'
