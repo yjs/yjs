@@ -210,28 +210,26 @@ export const testObserveArray = tc => {
 /**
  * @param {t.TestCase} tc
  */
- const testObserveTransitive = tc => {
+export const testObserveTransitive = tc => {
   // test observers in a face of linked chains of values
   const doc = new Y.Doc()
   const map1 = doc.getMap('map1')
   const map2 = doc.getMap('map2')
+
+  map2.set('key', 'value1')
+  const link1 = /** @type {Y.WeakLink<String>} */ (map2.link('key'))
+  map1.set('link-to-key', link1)
+  const link2 =  /** @type {Y.WeakLink<String>} */ (map1.link('link-to-key'))
+  map2.set('link-to-link', link2) // make 'b2' link to value of 'a1' which is a link to 'a2'
+
   /**
-   * @type {Map<string, { action: 'add' | 'update' | 'delete', oldValue: any, newValue: any }>}
+   * @type {Array<any>}
    */
-  let keys
-  map2.observe((e) => keys = e.keys)
-
-  map2.set('a2', 'value1')
-  const link1 = map2.link('a2')
-  map1.set('a1', link1)
-  const link2 = map1.link('a1')
-  map2.set('b2', link2) // make 'b2' link to value of 'a1' which is a link to 'a2'
-
-  keys = /** @type {any} */ (null)
-  map2.set('a2', 'value2')
-
-  t.compare(keys.get('a2'), { action:'update', oldValue: 'value1', newValue: 'value2' })
-  t.compare(keys.get('b2'), { action:'update', oldValue: 'value1', newValue: 'value2' })
+  let events = []
+  link2.observeDeep((e) => events = e)
+  map2.set('key', 'value2')
+  const values = events.map((e) => e.target.deref())
+  t.compare(values, ['value2'])
 }
 
 /**
