@@ -122,12 +122,12 @@ export const testObserveMapUpdate = tc => {
   const { testConnector, users, map0, map1 } = init(tc, { users: 2 })
   map0.set('a', 'value')
   const link0 = /** @type {Y.WeakLink<String>} */ (map0.link('a'))
+  map0.set('b', link0)
   /**
    * @type {any}
    */
   let target0
   link0.observe((e) => target0 = e.target)
-  map0.set('b', link0)
 
   testConnector.flushAllMessages()
 
@@ -153,12 +153,12 @@ export const testObserveMapDelete = tc => {
   const { testConnector, users, map0, map1 } = init(tc, { users: 2 })
   map0.set('a', 'value')
   const link0 = /** @type {Y.WeakLink<String>} */ (map0.link('a'))
+  map0.set('b', link0)
   /**
    * @type {any}
    */
   let target0
   link0.observe((e) => target0 = e.target)
-  map0.set('b', link0)
 
   testConnector.flushAllMessages()
 
@@ -176,74 +176,35 @@ export const testObserveMapDelete = tc => {
   testConnector.flushAllMessages()
   t.compare(target1.deref(), undefined)
 }
-
 /**
  * @param {t.TestCase} tc
  */
- const testObserveMapLinkMapRemove = tc => {
-  const doc = new Y.Doc()
-  const map1 = doc.getMap('map1')
-  const map2 = doc.getMap('map2')
+export const testObserveArray = tc => {
+  const { testConnector, array0, array1 } = init(tc, { users: 2 })
+  array0.insert(0, ['A','B','C'])
+  const link0 = /** @type {Y.WeakLink<String>} */ (array0.link(1))
+  array0.insert(0, [link0])
   /**
-   * @type {Map<string, { action: 'add' | 'update' | 'delete', oldValue: any, newValue: any }>}
+   * @type {any}
    */
-  let keys
-  map1.observe((e) => keys = e.keys)
+  let target0
+  link0.observe((e) => target0 = e.target)
 
-  map2.set('key', 'value1')
-  const link = map2.link('key')
-  map1.set('other-key', link)
+  testConnector.flushAllMessages()
 
-  keys = /** @type {any} */ (null)
-  map2.delete('key')
-
-  t.compare(keys.get('key'), { action:'delete', oldValue: 'value1', newValue: null })
-}
-
-/**
- * @param {t.TestCase} tc
- */
- const testObserveArrayLinkMapRemove = tc => {
-  const doc = new Y.Doc()
-  const array = doc.getArray('array')
-  const map = doc.getMap('map')
+  let link1 = /** @type {Y.WeakLink<String>} */ (array1.get(0))
+  t.compare(link1.deref(), 'B')
   /**
-   * @type {Array<any>}
+   * @type {any}
    */
-  let delta
-  array.observe((e) => delta = e.delta)
+  let target1
+  link1.observe((e) => target1 = e.target)
 
-  map.set('key', 'value1')
-  const link = map.link('key')
-  array.insert(0, [link])
+  array0.delete(2)
+  t.compare(target0.deref(), undefined)
 
-  delta = /** @type {any} */ (null)
-  map.delete('key')
-
-  t.compare(delta, [{ delete: 1 }])
-}
-
-/**
- * @param {t.TestCase} tc
- */
- const testObserveArrayLinkMapUpdate = tc => {
-  const doc = new Y.Doc()
-  const array = doc.getArray('array')
-  const map = doc.getMap('map')
-  /**
-   * @type {Array<any>}
-   */
-  let delta
-  array.observe((e) => delta = e.delta)
-
-  map.set('key', 'value1')
-  const link = map.link('key')
-  array.insert(0, [link])
-
-  delta = /** @type {any} */ (null)
-  map.set('key', 'value2')
-
-  t.compare(delta, [{ delete: 1 }, { insert: 'value2' }])
+  testConnector.flushAllMessages()
+  t.compare(target1.deref(), undefined)
 }
 
 /**
