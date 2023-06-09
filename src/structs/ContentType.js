@@ -7,7 +7,8 @@ import {
   readYXmlFragment,
   readYXmlHook,
   readYXmlText,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, Item, YEvent, AbstractType // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, Item, YEvent, AbstractType, // eslint-disable-line
+  readYWeakLink
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -23,7 +24,8 @@ export const typeRefs = [
   readYXmlElement,
   readYXmlFragment,
   readYXmlHook,
-  readYXmlText
+  readYXmlText,
+  readYWeakLink
 ]
 
 export const YArrayRefID = 0
@@ -33,6 +35,7 @@ export const YXmlElementRefID = 3
 export const YXmlFragmentRefID = 4
 export const YXmlHookRefID = 5
 export const YXmlTextRefID = 6
+export const YWeakLinkRefID = 7
 
 /**
  * @private
@@ -104,6 +107,7 @@ export class ContentType {
    * @param {Transaction} transaction
    */
   delete (transaction) {
+    this.type._delete(transaction) // call custom destructor on AbstractType
     let item = this.type._start
     while (item !== null) {
       if (!item.deleted) {
