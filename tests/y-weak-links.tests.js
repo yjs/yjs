@@ -118,55 +118,69 @@ export const testDeleteSource = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testObserveMapLinkArrayRemove = tc => {
-  const doc = new Y.Doc()
-  const map = doc.getMap('map')
-  const array = doc.getArray('array')
-
-  array.insert(0, [1])
-  const link = array.link(0)
-  map.set('key', link)
+export const testObserveMapUpdate = tc => {
+  const { testConnector, users, map0, map1 } = init(tc, { users: 2 })
+  map0.set('a', 'value')
+  const link0 = /** @type {Y.WeakLink<String>} */ (map0.link('a'))
   /**
    * @type {any}
    */
-  let keys = null
-  map.observe((e) => {
-    console.log('map received event', e)
-    keys = e.keys
-  })
+  let target0
+  link0.observe((e) => target0 = e.target)
+  map0.set('b', link0)
 
-  array.delete(0)
+  testConnector.flushAllMessages()
 
-  t.compare(keys.get('key'), { action:'delete', oldValue: 1, newValue: null })
-}
-
-/**
- * @param {t.TestCase} tc
- */
-export const testObserveMapLinkMapUpdate = tc => {
-  const doc = new Y.Doc()
-  const map1 = doc.getMap('map1')
-  const map2 = doc.getMap('map2')
+  let link1 = /** @type {Y.WeakLink<String>} */ (map1.get('b'))
+  t.compare(link1.deref(), 'value')
   /**
-   * @type {Map<string, { action: 'add' | 'update' | 'delete', oldValue: any, newValue: any }>}
+   * @type {any}
    */
-  let keys
-  map1.observe((e) => keys = e.keys)
+  let target1
+  link1.observe((e) => target1 = e.target)
 
-  map2.set('key', 'value1')
-  const link = map2.link('key')
-  map1.set('other-key', link)
+  map0.set('a', 'value2')
+  t.compare(target0.deref(), 'value2')
 
-  keys = /** @type {any} */ (null)
-  map2.set('key', 'value2')
-
-  t.compare(keys.get('key'), { action:'update', oldValue: 'value1', newValue: 'value2' })
+  testConnector.flushAllMessages()
+  t.compare(target1.deref(), 'value2')
 }
 
 /**
  * @param {t.TestCase} tc
  */
-export const testObserveMapLinkMapRemove = tc => {
+export const testObserveMapDelete = tc => {
+  const { testConnector, users, map0, map1 } = init(tc, { users: 2 })
+  map0.set('a', 'value')
+  const link0 = /** @type {Y.WeakLink<String>} */ (map0.link('a'))
+  /**
+   * @type {any}
+   */
+  let target0
+  link0.observe((e) => target0 = e.target)
+  map0.set('b', link0)
+
+  testConnector.flushAllMessages()
+
+  let link1 = /** @type {Y.WeakLink<String>} */ (map1.get('b'))
+  t.compare(link1.deref(), 'value')
+  /**
+   * @type {any}
+   */
+  let target1
+  link1.observe((e) => target1 = e.target)
+
+  map0.delete('a')
+  t.compare(target0.deref(), undefined)
+
+  testConnector.flushAllMessages()
+  t.compare(target1.deref(), undefined)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+ const testObserveMapLinkMapRemove = tc => {
   const doc = new Y.Doc()
   const map1 = doc.getMap('map1')
   const map2 = doc.getMap('map2')
@@ -189,7 +203,7 @@ export const testObserveMapLinkMapRemove = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testObserveArrayLinkMapRemove = tc => {
+ const testObserveArrayLinkMapRemove = tc => {
   const doc = new Y.Doc()
   const array = doc.getArray('array')
   const map = doc.getMap('map')
@@ -212,7 +226,7 @@ export const testObserveArrayLinkMapRemove = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testObserveArrayLinkMapUpdate = tc => {
+ const testObserveArrayLinkMapUpdate = tc => {
   const doc = new Y.Doc()
   const array = doc.getArray('array')
   const map = doc.getMap('map')
@@ -235,7 +249,7 @@ export const testObserveArrayLinkMapUpdate = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testObserveTransitive = tc => {
+ const testObserveTransitive = tc => {
   // test observers in a face of linked chains of values
   const doc = new Y.Doc()
   const map1 = doc.getMap('map1')
@@ -262,7 +276,7 @@ export const testObserveTransitive = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testDeepObserveMap = tc => {
+ const testDeepObserveMap = tc => {
   // test observers in a face of linked chains of values
   const doc = new Y.Doc()
   const map = doc.getMap('map')
@@ -297,7 +311,7 @@ export const testDeepObserveMap = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testDeepObserveArray = tc => {
+ const testDeepObserveArray = tc => {
   // test observers in a face of linked chains of values
   const doc = new Y.Doc()
   const map = doc.getMap('map')
@@ -332,7 +346,7 @@ export const testDeepObserveArray = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testDeepObserveRecursive = tc => {
+ const testDeepObserveRecursive = tc => {
   // test observers in a face of linked chains of values
   const doc = new Y.Doc()
   const root = doc.getArray('array')

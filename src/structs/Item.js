@@ -18,15 +18,13 @@ import {
   readContentString,
   readContentEmbed,
   readContentDoc,
-  readContentWeakLink,
   createID,
   readContentFormat,
   readContentType,
   addChangedTypeToTransaction,
   isDeleted,
   StackItem, DeleteSet, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction, // eslint-disable-line
-  YWeakLink,
-  ContentLink
+  YWeakLink
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -302,7 +300,7 @@ export class Item extends AbstractStruct {
      * If this item was referenced by other weak links, here we keep the references
      * to these weak refs.
      * 
-     * @type {Set<Item> | null}
+     * @type {Set<YWeakLink<any>> | null}
      */
     this.linkedBy = null
     /**
@@ -386,10 +384,10 @@ export class Item extends AbstractStruct {
     if (this.parent && this.parent.constructor === ID && this.id.client !== this.parent.client && this.parent.clock >= getState(store, this.parent.client)) {
       return this.parent.client
     }
-    if (this.content.constructor === ContentLink) {
-      const content = /** @type {ContentLink} */ (this.content)
-      if (content.link.id.client !== this.id.client) {
-        return content.link.id.client
+    if (this.content.constructor === ContentType && /** @type {ContentType} */ (this.content).type.constructor === YWeakLink) {
+      const content = /** @type {any} */ (this.content).type
+      if (content._id.client !== this.id.client) {
+        return content._id.client
       }
     }
 
@@ -540,7 +538,7 @@ export class Item extends AbstractStruct {
       addChangedTypeToTransaction(transaction, /** @type {AbstractType<any>} */ (this.parent), this.parentSub)
       if (this.linkedBy !== null) {
         for (let link of this.linkedBy) {
-          addChangedTypeToTransaction(transaction, /** @type {AbstractType<any>} */ (link.parent), link.parentSub)
+          addChangedTypeToTransaction(transaction, link, this.parentSub)
         }
       }
       if ((/** @type {AbstractType<any>} */ (this.parent)._item !== null && /** @type {AbstractType<any>} */ (this.parent)._item.deleted) || (this.parentSub !== null && this.right !== null)) {
@@ -647,7 +645,12 @@ export class Item extends AbstractStruct {
       addToDeleteSet(transaction.deleteSet, this.id.client, this.id.clock, this.length)
       addChangedTypeToTransaction(transaction, parent, this.parentSub)
       this.content.delete(transaction)
-      this.linkedBy = null
+      if (this.linkedBy !== null) {
+        for (let link of this.linkedBy) {
+          addChangedTypeToTransaction(transaction, link, this.parentSub)
+        }
+        this.linkedBy = null
+      }
     }
   }
 
@@ -744,8 +747,7 @@ export const contentRefs = [
   readContentType, // 7
   readContentAny, // 8
   readContentDoc, // 9
-  () => { error.unexpectedCase() }, // 10 - Skip is not ItemContent
-  readContentWeakLink // 11
+  () => { error.unexpectedCase() } // 10 - Skip is not ItemContent
 ]
 
 /**
