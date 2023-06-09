@@ -1,11 +1,28 @@
-import { AbstractType, GC, ID, Item } from "yjs"
+import { AbstractType, GC, ID, Item, Transaction, YEvent } from "yjs"
+
+/**
+ * @template T extends AbstractType<any>
+ * @extends YEvent<any>
+ * Event that describes the changes on a YMap.
+ */
+export class YWeakLinkEvent extends YEvent {
+  /**
+   * @param {YWeakLink<T>} ylink The YWeakLink to which this event was propagated to.
+   * @param {Transaction} transaction
+   * @param {YEvent<any>} source Source event that has been propagated to ylink.
+   */
+  constructor (ylink, transaction, source) {
+    super(ylink, transaction)
+    this.source = source
+  }
+}
 
 /**
  * @template T
  * 
  * Weak link to another value stored somewhere in the document.
  */
-export class WeakLink {
+export class YWeakLink {
   /**
     * @param {ID} id
     * @param {Item|GC|null} item

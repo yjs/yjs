@@ -11,7 +11,7 @@ import {
   ContentAny,
   ContentBinary,
   getItemCleanStart,
-  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, WeakLink, ContentLink, // eslint-disable-line
+  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, YWeakLink, ContentLink, // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map'
@@ -669,8 +669,8 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
               left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentDoc(/** @type {Doc} */ (c)))
               left.integrate(transaction, 0)
               break
-            case WeakLink:
-              left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentLink(/** @type {WeakLink<any>} */ (c)))
+            case YWeakLink:
+              left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentLink(/** @type {YWeakLink<any>} */ (c)))
               left.integrate(transaction, 0)
               break
             default:
@@ -855,8 +855,8 @@ export const typeMapSet = (transaction, parent, key, value) => {
       case Doc:
         content = new ContentDoc(/** @type {Doc} */ (value))
         break
-      case WeakLink:
-        content = new ContentLink(/** @type {WeakLink<any>} */ (value))
+      case YWeakLink:
+        content = new ContentLink(/** @type {YWeakLink<any>} */ (value))
         break;
       default:
         if (value instanceof AbstractType) {

@@ -11,7 +11,7 @@ import * as doc from './doc.tests.js'
 import * as snapshot from './snapshot.tests.js'
 import * as updates from './updates.tests.js'
 import * as relativePositions from './relativePositions.tests.js'
-import * as weakLinks from './weakLinks.tests.js'
+import * as weakLinks from './y-weak-links.tests.js'
 
 import { runTests } from 'lib0/testing'
 import { isBrowser, isNode } from 'lib0/environment'

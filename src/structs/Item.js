@@ -25,7 +25,7 @@ import {
   addChangedTypeToTransaction,
   isDeleted,
   StackItem, DeleteSet, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction, // eslint-disable-line
-  WeakLink,
+  YWeakLink,
   ContentLink
 } from '../internals.js'
 
