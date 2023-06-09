@@ -1,13 +1,8 @@
 import { decoding, encoding, error } from 'lib0'
 import {
     UpdateEncoderV1, UpdateEncoderV2, UpdateDecoderV1, UpdateDecoderV2, Transaction, Item, StructStore, // eslint-disable-line
-    WeakLink,
-    findRootTypeKey,
-    ID,
-    find,
-    ContentType,
+    YWeakLink,
     AbstractType,
-    findMarker,
     getItemCleanStart,
     createID,
     getItemCleanEnd
@@ -15,7 +10,7 @@ import {
   
   export class ContentLink {
     /**
-     * @param {WeakLink<any>} link
+     * @param {YWeakLink<any>} link
      */
     constructor (link) {
       this.link = link
@@ -138,7 +133,7 @@ import {
   export const readContentWeakLink = decoder => {
     const flags = decoding.readUint8(decoder.restDecoder)
     const id = decoder.readLeftID()
-    return new ContentLink(new WeakLink(id, null))
+    return new ContentLink(new YWeakLink(id, null))
   }
   
 const lengthExceeded = error.create('Length exceeded!')
@@ -149,7 +144,7 @@ const lengthExceeded = error.create('Length exceeded!')
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {number} index
- * @return {WeakLink<any>}
+ * @return {YWeakLink<any>}
  */
 export const arrayWeakLink = (transaction, parent, index) => {
   let item = parent._start
@@ -162,7 +157,7 @@ export const arrayWeakLink = (transaction, parent, index) => {
         if (item.length > 1) {
             item = getItemCleanEnd(transaction, transaction.doc.store, createID(item.id.client, item.id.clock + 1))
         }
-        return new WeakLink(item.id, item)
+        return new YWeakLink(item.id, item)
       }
       index -= item.length
     }
@@ -176,12 +171,12 @@ export const arrayWeakLink = (transaction, parent, index) => {
  * 
  * @param {AbstractType<any>} parent
  * @param {string} key
- * @return {WeakLink<any>|undefined}
+ * @return {YWeakLink<any>|undefined}
  */
 export const mapWeakLink = (parent, key) => {
   const item = parent._map.get(key)
   if (item !== undefined) {
-    return new WeakLink(item.id, item)
+    return new YWeakLink(item.id, item)
   } else {
     return undefined
   }

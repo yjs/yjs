@@ -122,17 +122,19 @@ export const testObserveMapLinkArrayRemove = tc => {
   const doc = new Y.Doc()
   const map = doc.getMap('map')
   const array = doc.getArray('array')
-  /**
-   * @type {Map<string, { action: 'add' | 'update' | 'delete', oldValue: any, newValue: any }>}
-   */
-  let keys
-  map.observe((e) => keys = e.keys)
 
   array.insert(0, [1])
   const link = array.link(0)
   map.set('key', link)
+  /**
+   * @type {any}
+   */
+  let keys = null
+  map.observe((e) => {
+    console.log('map received event', e)
+    keys = e.keys
+  })
 
-  keys = /** @type {any} */ (null)
   array.delete(0)
 
   t.compare(keys.get('key'), { action:'delete', oldValue: 1, newValue: null })
