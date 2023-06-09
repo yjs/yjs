@@ -242,6 +242,11 @@ export const callTypeObservers = (type, transaction, event) => {
     map.setIfUndefined(changedParentTypes, type, () => []).push(event)
     if (type._item === null) {
       break
+    } else if (type._item.linkedBy !== null) {
+      for (let link of type._item.linkedBy) {
+        // @ts-ignore
+        map.setIfUndefined(changedParentTypes, link, () => []).push(event)
+      }
     }
     type = /** @type {AbstractType<any>} */ (type._item.parent)
   }
