@@ -11,7 +11,7 @@ import {
   Item,
   generateNewClientId,
   createID,
-  UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
+  UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc, YText // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map'
@@ -114,6 +114,10 @@ export class Transaction {
      * @type {Set<Doc>}
      */
     this.subdocsLoaded = new Set()
+    /**
+     * @type {Array<YText>}
+     */
+    this._yTexts = []
   }
 }
 
@@ -295,6 +299,13 @@ const cleanupTransactions = (transactionCleanups, i) => {
         fs.push(() => doc.emit('afterTransaction', [transaction, doc]))
       })
       callAll(fs, [])
+      if (transaction._yTexts.length > 0) {
+        transact(doc, () => {
+          transaction._yTexts.forEach(yText => {
+            yText._cleanup(transaction)
+          })
+        })
+      }
     } finally {
       // Replace deleted items with ItemDeleted / GC.
       // This is where content is actually remove from the Yjs Doc.

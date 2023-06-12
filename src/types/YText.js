@@ -859,12 +859,21 @@ export class YText extends AbstractType {
   _callObserver (transaction, parentSubs) {
     super._callObserver(transaction, parentSubs)
     const event = new YTextEvent(this, transaction, parentSubs)
-    const doc = transaction.doc
     callTypeObservers(this, transaction, event)
     // If a remote change happened, we try to cleanup potential formatting duplicates.
     if (!transaction.local) {
+      transaction._yTexts.push(this)
+    }
+  }
+
+  /**
+   * @param {Transaction} transaction
+   */
+  _cleanup (transaction) {
+    if (!transaction.local) {
       // check if another formatting item was inserted
       let foundFormattingItem = false
+      const doc = transaction.doc
       for (const [client, afterClock] of transaction.afterState.entries()) {
         const clock = transaction.beforeState.get(client) || 0
         if (afterClock === clock) {
