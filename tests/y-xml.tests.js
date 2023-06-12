@@ -210,3 +210,21 @@ export const testFormattingBug = _tc => {
   yxml.applyDelta(delta)
   t.compare(yxml.toDelta(), delta)
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testCleanupTransactions = tc => {
+  const ydoc = new Y.Doc()
+  const yxml = ydoc.getXmlFragment('')
+  ydoc.on('afterTransaction', tr => {
+    if (tr.origin === 'test') {
+      yxml.toJSON()
+    }
+  })
+  ydoc.transact(tr => {
+    for (let i = 0; i < 100000; i++) {
+      yxml.push([new Y.XmlText('a')])
+    }
+  }, 'test')
+}
