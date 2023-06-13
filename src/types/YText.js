@@ -862,47 +862,42 @@ export class YText extends AbstractType {
     callTypeObservers(this, transaction, event)
     // If a remote change happened, we try to cleanup potential formatting duplicates.
     if (!transaction.local) {
-      transaction._yTexts.push(this)
+      transaction._yTexts.add(this)
     }
   }
 
   /**
    * @param {Transaction} transaction
    */
-  _cleanup (transaction) {
-    if (!transaction.local) {
-      // check if another formatting item was inserted
-      let foundFormattingItem = false
-      const doc = transaction.doc
-      for (const [client, afterClock] of transaction.afterState.entries()) {
-        const clock = transaction.beforeState.get(client) || 0
-        if (afterClock === clock) {
-          continue
-        }
-        iterateStructs(transaction, /** @type {Array<Item|GC>} */ (doc.store.clients.get(client)), clock, afterClock, item => {
-          if (!item.deleted && /** @type {Item} */ (item).content.constructor === ContentFormat) {
-            foundFormattingItem = true
-          }
-        })
-        if (foundFormattingItem) {
-          break
-        }
+  static _cleanup (transaction) {
+    const withFormattingItems = new Set()
+    // check if another formatting item was inserted
+    const doc = transaction.doc
+    for (const [client, afterClock] of transaction.afterState.entries()) {
+      const clock = transaction.beforeState.get(client) || 0
+      if (afterClock === clock) {
+        continue
       }
-      if (!foundFormattingItem) {
-        iterateDeletedStructs(transaction, transaction.deleteSet, item => {
-          if (item instanceof GC || foundFormattingItem) {
-            return
-          }
-          if (item.parent === this && item.content.constructor === ContentFormat) {
-            foundFormattingItem = true
-          }
-        })
+      iterateStructs(transaction, /** @type {Array<Item|GC>} */ (doc.store.clients.get(client)), clock, afterClock, item => {
+        if (!item.deleted && /** @type {Item} */ (item).content.constructor === ContentFormat && !(item instanceof GC) && transaction._yTexts.has(/** @type YText */ (item.parent))) {
+          withFormattingItems.add(item.parent)
+        }
+      })
+    }
+    iterateDeletedStructs(transaction, transaction.deleteSet, item => {
+      if (item instanceof GC) {
+        return
       }
-      transact(doc, (t) => {
-        if (foundFormattingItem) {
+      if (transaction._yTexts.has(/** @type YText */ (item.parent)) && item.content.constructor === ContentFormat) {
+        withFormattingItems.add(item.parent)
+      }
+    })
+    transact(doc, (t) => {
+      for (const yText of transaction._yTexts) {
+        if (withFormattingItems.has(yText)) {
           // If a formatting item was inserted, we simply clean the whole type.
           // We need to compute currentAttributes for the current position anyway.
-          cleanupYTextFormatting(this)
+          cleanupYTextFormatting(yText)
         } else {
           // If no formatting attribute was inserted, we can make due with contextless
           // formatting cleanups.
@@ -911,13 +906,13 @@ export class YText extends AbstractType {
             if (item instanceof GC) {
               return
             }
-            if (item.parent === this) {
+            if (item.parent === yText) {
               cleanupContextlessFormattingGap(t, item)
             }
           })
         }
-      })
-    }
+      }
+    })
   }
 
   /**

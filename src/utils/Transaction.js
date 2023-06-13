@@ -115,9 +115,9 @@ export class Transaction {
      */
     this.subdocsLoaded = new Set()
     /**
-     * @type {Array<YText>}
+     * @type {Set<YText>}
      */
-    this._yTexts = []
+    this._yTexts = new Set()
   }
 }
 
@@ -299,11 +299,9 @@ const cleanupTransactions = (transactionCleanups, i) => {
         fs.push(() => doc.emit('afterTransaction', [transaction, doc]))
       })
       callAll(fs, [])
-      if (transaction._yTexts.length > 0) {
+      if (transaction._yTexts.size > 0) {
         transact(doc, () => {
-          transaction._yTexts.forEach(yText => {
-            yText._cleanup(transaction)
-          })
+          YText._cleanup(transaction)
         })
       }
     } finally {
