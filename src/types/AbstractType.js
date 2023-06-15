@@ -244,8 +244,8 @@ export const callTypeObservers = (type, transaction, event) => {
       break
     } else if (type._item.linkedBy !== null) {
       for (let link of type._item.linkedBy) {
-        // @ts-ignore
-        map.setIfUndefined(changedParentTypes, link, () => []).push(event)
+        // recursive call
+        callTypeObservers(link, transaction, /** @type {any} */ (event))
       }
     }
     type = /** @type {AbstractType<any>} */ (type._item.parent)
