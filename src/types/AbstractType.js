@@ -244,11 +244,9 @@ export const callTypeObservers = (type, transaction, event, visitedLinks = null)
     if (type._item === null) {
       break
     } else if (type._item.linkedBy !== null) {
-      if (visitedLinks === null) {
-        visitedLinks = new Set()
-      }
       for (let link of type._item.linkedBy) {
-        if (!visitedLinks.has(link)) {
+        if (visitedLinks === null || !visitedLinks.has(link)) {
+          visitedLinks = visitedLinks !== null ? visitedLinks : new Set()
           visitedLinks.add(link)
           // recursive call
           callTypeObservers(link, transaction, /** @type {any} */ (event), visitedLinks)

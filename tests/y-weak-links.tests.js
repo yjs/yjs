@@ -213,6 +213,16 @@ export const testObserveArray = tc => {
 export const testObserveTransitive = tc => {
   // test observers in a face of linked chains of values
   const doc = new Y.Doc()
+
+  /*
+     Structure:
+       - map1
+         - link-key: <=+-+
+       - map2:         | |
+         - key: value1-+ |
+         - link-link: <--+
+   */
+
   const map1 = doc.getMap('map1')
   const map2 = doc.getMap('map2')
 
@@ -237,6 +247,18 @@ export const testObserveTransitive = tc => {
 export const testObserveTransitive2 = tc => {
   // test observers in a face of multi-layer linked chains of values
   const doc = new Y.Doc()
+
+  /*
+     Structure:
+       - map1
+         - link-key: <=+-+
+       - map2:         | |
+         - key: value1-+ |
+         - link-link: <==+--+
+       - map3:              |
+         - link-link-link:<-+
+   */
+
   const map1 = doc.getMap('map1')
   const map2 = doc.getMap('map2')
   const map3 = doc.getMap('map3')
@@ -265,6 +287,14 @@ export const testObserveTransitive2 = tc => {
 export const testDeepObserveMap = tc => {
   // test observers in a face of linked chains of values
   const doc = new Y.Doc()
+  /*
+     Structure:
+       - map (observed):
+         - link:<----+
+       - array:      |
+          0: nested:-+
+            - key: value
+   */
   const map = doc.getMap('map')
   const array = doc.getArray('array')
 
@@ -305,6 +335,14 @@ export const testDeepObserveMap = tc => {
 export const testDeepObserveArray = tc => {
   // test observers in a face of linked chains of values
   const doc = new Y.Doc()
+  /*
+     Structure:
+       - map:
+         - nested: --------+
+           - key: value    |
+       - array (observed): |
+         0: <--------------+
+   */
   const map = doc.getMap('map')
   const array = doc.getArray('array')
 
@@ -329,7 +367,7 @@ export const testDeepObserveArray = tc => {
   nested.set('key', 'value2')
   t.compare(events.length, 1)
   t.compare(events[0].target, nested)
-  t.compare(events[0].keys, new Map([['key', {action:'update', oldValue: 'value'}]]))
+  t.compare(events[0].keys, new Map([['key', {action:'update', oldValue: undefined}]]))
 
   // delete entry in linked map
   nested.delete('key')
@@ -343,13 +381,57 @@ export const testDeepObserveArray = tc => {
   t.compare(events[0].target, map)
   t.compare(events[0].keys, new Map([['nested', {action:'delete', oldValue: undefined}]]))
 }
+/**
+ * @param {t.TestCase} tc
+ */
+export const testMapDeepObserve = tc => {
+  const doc = new Y.Doc()
+  const outer = doc.getMap('outer')
+  const inner = new Y.Map()
+  outer.set('inner', inner)
+
+  /**
+   * @type {Array<any>}
+   */
+  let events = []
+  outer.observeDeep((e) => events = e)
+
+  inner.set('key', 'value1')
+  t.compare(events.length, 1)
+  t.compare(events[0].target, inner)
+  t.compare(events[0].keys, new Map([['key', {action:'add', oldValue: undefined}]]))
+  
+  events = []
+  inner.set('key', 'value2')
+  t.compare(events.length, 1)
+  t.compare(events[0].target, inner)
+  t.compare(events[0].keys, new Map([['key', {action:'update', oldValue: undefined}]]))
+
+  events = []
+  inner.delete('key')
+  t.compare(events.length, 1)
+  t.compare(events[0].target, inner)
+  t.compare(events[0].keys, new Map([['key', {action:'delete', oldValue: undefined}]]))
+}
 
 /**
  * @param {t.TestCase} tc
  */
 export const testDeepObserveRecursive = tc => {
-  // test observers in a face of linked chains of values
+  // test observers in a face of cycled chains of values
   const doc = new Y.Doc()
+  /*
+     Structure:
+      array (observed):
+        m0:--------+
+         - k1:<-+  |
+                |  |
+        m1------+  |
+         - k2:<-+  |
+                |  |
+        m2------+  |
+         - k0:<----+
+   */
   const root = doc.getArray('array')
 
   const m0 = new Y.Map()
