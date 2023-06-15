@@ -218,9 +218,9 @@ export const testObserveTransitive = tc => {
 
   map2.set('key', 'value1')
   const link1 = /** @type {Y.WeakLink<String>} */ (map2.link('key'))
-  map1.set('link-to-key', link1)
-  const link2 =  /** @type {Y.WeakLink<String>} */ (map1.link('link-to-key'))
-  map2.set('link-to-link', link2) // make 'b2' link to value of 'a1' which is a link to 'a2'
+  map1.set('link-key', link1)
+  const link2 =  /** @type {Y.WeakLink<String>} */ (map1.link('link-key'))
+  map2.set('link-link', link2)
 
   /**
    * @type {Array<any>}
@@ -231,11 +231,38 @@ export const testObserveTransitive = tc => {
   const values = events.map((e) => e.target.deref())
   t.compare(values, ['value2'])
 }
+/**
+ * @param {t.TestCase} tc
+ */
+export const testObserveTransitive2 = tc => {
+  // test observers in a face of multi-layer linked chains of values
+  const doc = new Y.Doc()
+  const map1 = doc.getMap('map1')
+  const map2 = doc.getMap('map2')
+  const map3 = doc.getMap('map3')
+
+  map2.set('key', 'value1')
+  const link1 = /** @type {Y.WeakLink<String>} */ (map2.link('key'))
+  map1.set('link-key', link1)
+  const link2 =  /** @type {Y.WeakLink<String>} */ (map1.link('link-key'))
+  map2.set('link-link', link2)
+  const link3 =  /** @type {Y.WeakLink<String>} */ (map2.link('link-link'))
+  map3.set('link-link-link', link3)
+
+  /**
+   * @type {Array<any>}
+   */
+  let events = []
+  link3.observeDeep((e) => events = e)
+  map2.set('key', 'value2')
+  const values = events.map((e) => e.target.deref())
+  t.compare(values, ['value2'])
+}
 
 /**
  * @param {t.TestCase} tc
  */
- const testDeepObserveMap = tc => {
+export const testDeepObserveMap = tc => {
   // test observers in a face of linked chains of values
   const doc = new Y.Doc()
   const map = doc.getMap('map')
@@ -244,8 +271,8 @@ export const testObserveTransitive = tc => {
   /**
    * @type {Array<any>}
    */
-  let event = []
-  map.observeDeep((e) => event = e)
+  let events = []
+  map.observeDeep((e) => events = e)
 
   const nested = new Y.Map()
   array.insert(0, [nested])
@@ -253,24 +280,29 @@ export const testObserveTransitive = tc => {
   map.set('link', link)
 
   // update entry in linked map
-  event = []
+  events = []
   nested.set('key', 'value')
-
-  t.compare(event, [{}]) //TODO
+  t.compare(events.length, 1)
+  t.compare(events[0].target, nested)
+  t.compare(events[0].keys, new Map([['key', {action:'add', oldValue: undefined}]]))
 
   // delete entry in linked map
+  events = []
   nested.delete('key')
-  t.compare(event, [{}]) //TODO
+  t.compare(events.length, 1)
+  t.compare(events[0].target, nested)
+  t.compare(events[0].keys, new Map([['key', {action:'delete', oldValue: undefined}]]))
   
   // delete linked map
   array.delete(0)
-  t.compare(event, [{}]) //TODO
+  t.compare(events.length, 1)
+  t.compare(events[0].target, link)
 }
 
 /**
  * @param {t.TestCase} tc
  */
- const testDeepObserveArray = tc => {
+export const testDeepObserveArray = tc => {
   // test observers in a face of linked chains of values
   const doc = new Y.Doc()
   const map = doc.getMap('map')
@@ -279,27 +311,37 @@ export const testObserveTransitive = tc => {
   /**
    * @type {Array<any>}
    */
-  let event = []
-  array.observeDeep((e) => event = e)
+  let events = []
+  array.observeDeep((e) => events = e)
 
   const nested = new Y.Map()
-  map.set('key', nested)
-  const link = map.link('key')
+  map.set('nested', nested)
+  const link = map.link('nested')
   array.insert(0, [link])
 
   // update entry in linked map
-  event = []
+  events = []
   nested.set('key', 'value')
+  t.compare(events.length, 1)
+  t.compare(events[0].target, nested)
+  t.compare(events[0].keys, new Map([['key', {action:'add', oldValue: undefined}]]))
 
-  t.compare(event, [{}]) //TODO
+  nested.set('key', 'value2')
+  t.compare(events.length, 1)
+  t.compare(events[0].target, nested)
+  t.compare(events[0].keys, new Map([['key', {action:'update', oldValue: 'value'}]]))
 
   // delete entry in linked map
   nested.delete('key')
-  t.compare(event, [{}]) //TODO
+  t.compare(events.length, 1)
+  t.compare(events[0].target, nested)
+  t.compare(events[0].keys, new Map([['key', {action:'delete', oldValue: undefined}]]))
   
   // delete linked map
-  map.delete('key')
-  t.compare(event, [{}]) //TODO
+  map.delete('nested')
+  t.compare(events.length, 1)
+  t.compare(events[0].target, map)
+  t.compare(events[0].keys, new Map([['nested', {action:'delete', oldValue: undefined}]]))
 }
 
 /**
