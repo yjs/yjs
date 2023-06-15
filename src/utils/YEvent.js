@@ -44,6 +44,10 @@ export class YEvent {
      * @type {null | Array<{ insert?: string | Array<any> | object | AbstractType<any>, retain?: number, delete?: number, attributes?: Object<string, any> }>}
      */
     this._delta = null
+    /**
+     * @type {Array<string|number>|null}
+     */
+    this._path = null
   }
 
   /**
@@ -60,8 +64,7 @@ export class YEvent {
    *   type === event.target // => true
    */
   get path () {
-    // @ts-ignore _item is defined because target is integrated
-    return getPathTo(this.currentTarget, this.target)
+    return this._path || (this._path = getPathTo(this.currentTarget, this.target))
   }
 
   /**
