@@ -347,7 +347,7 @@ export const testDeepObserveArray = tc => {
 /**
  * @param {t.TestCase} tc
  */
- const testDeepObserveRecursive = tc => {
+export const testDeepObserveRecursive = tc => {
   // test observers in a face of linked chains of values
   const doc = new Y.Doc()
   const root = doc.getArray('array')
@@ -365,9 +365,9 @@ export const testDeepObserveArray = tc => {
   const l2 = root.link(2)
 
   // create cyclic reference between links
-  m0.set('k1', m1)
-  m1.set('k2', m2)
-  m2.set('k0', m0)
+  m0.set('k1', l1)
+  m1.set('k2', l2)
+  m2.set('k0', l0)
 
   /**
    * @type {Array<any>}
@@ -376,9 +376,18 @@ export const testDeepObserveArray = tc => {
   m0.observeDeep((e) => events = e)
 
   m1.set('test-key1', 'value1')
-  t.compare(events, [{}]) //TODO
+  t.compare(events.length, 1)
+  t.compare(events[0].target, m1)
+  t.compare(events[0].keys, new Map([['test-key1', {action:'add', oldValue: undefined}]]))
   
   events = []
   m2.set('test-key2', 'value2')
-  t.compare(events, [{}]) //TODO
+  t.compare(events.length, 1)
+  t.compare(events[0].target, m2)
+  t.compare(events[0].keys, new Map([['test-key2', {action:'add', oldValue: undefined}]]))
+
+  m1.delete('test-key1')
+  t.compare(events.length, 1)
+  t.compare(events[0].target, m1)
+  t.compare(events[0].keys, new Map([['test-key1', {action:'delete', oldValue: undefined}]]))
 }

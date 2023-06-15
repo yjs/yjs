@@ -98,19 +98,6 @@ export class YWeakLink extends AbstractType {
       })
     }
   }
-  
-  /**
-   * @param {Transaction} transaction
-   */
-  _delete (transaction) {
-    if (this._item !== null && this._linkedItem !== null && !this._linkedItem.deleted) {
-      const item = /** @type {Item} */ (this._linkedItem)
-      if (item.linkedBy !== null) {
-        item.linkedBy.delete(this)
-      }
-      this._linkedItem = null
-    }
-  }
 
   /**
    * @return {YWeakLink<T>}

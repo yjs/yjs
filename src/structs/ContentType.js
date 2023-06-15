@@ -1,4 +1,5 @@
 
+import { WeakLink } from 'yjs'
 import {
   readYArray,
   readYMap,
@@ -107,7 +108,19 @@ export class ContentType {
    * @param {Transaction} transaction
    */
   delete (transaction) {
-    this.type._delete(transaction) // call custom destructor on AbstractType
+    if (this.type.constructor === WeakLink) {
+      // when removing weak links, remove references to them 
+      // from type they're pointing to
+      const type = /** @type {WeakLink<any>} */ (this.type);
+      if (type._linkedItem !== null && !type._linkedItem.deleted) {
+        const item = /** @type {Item} */ (type._linkedItem)
+        if (item.linkedBy !== null) {
+          item.linkedBy.delete(type)
+        }
+        type._linkedItem = null
+      }
+    }
+
     let item = this.type._start
     while (item !== null) {
       if (!item.deleted) {
