@@ -385,6 +385,7 @@ export class Item extends AbstractStruct {
       return this.parent.client
     }
     if (this.content.constructor === ContentType && /** @type {ContentType} */ (this.content).type.constructor === YWeakLink) {
+      // make sure that linked content is integrated first
       const content = /** @type {any} */ (this.content).type
       if (content._id.client !== this.id.client) {
         return content._id.client
@@ -523,8 +524,9 @@ export class Item extends AbstractStruct {
         // set as current parent value if right === null and this is parentSub
         /** @type {AbstractType<any>} */ (this.parent)._map.set(this.parentSub, this)
         if (this.left !== null) {
-          // this is the current attribute value of parent. delete right
+          // inherit links from block we're overriding
           this.linkedBy = this.left.linkedBy
+          // this is the current attribute value of parent. delete right
           this.left.delete(transaction)
         }
       }

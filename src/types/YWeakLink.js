@@ -77,6 +77,9 @@ export class YWeakLink extends AbstractType {
     super._integrate(y, item)
     if (item !== null) {
       transact(y, (transaction) => {
+        // link may refer to a single element in multi-element block
+        // in such case we need to cut of the linked element into a
+        // separate block
         let sourceItem = this._linkedItem !== null ? this._linkedItem : getItemCleanStart(transaction, this._id)
         if (sourceItem.constructor === Item && sourceItem.parentSub !== null) {
           // for maps, advance to most recent item
