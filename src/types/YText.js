@@ -477,6 +477,56 @@ export const cleanupYTextFormatting = type => {
 }
 
 /**
+ * This will be called by the transction once the event handlers are called to potentially cleanup
+ * formatting attributes.
+ *
+ * @param {Transaction} transaction
+ */
+export const cleanupYTextAfterTransaction = transaction => {
+  /**
+   * @type {Set<YText>}
+   */
+  const needFullCleanup = new Set()
+  // check if another formatting item was inserted
+  const doc = transaction.doc
+  for (const [client, afterClock] of transaction.afterState.entries()) {
+    const clock = transaction.beforeState.get(client) || 0
+    if (afterClock === clock) {
+      continue
+    }
+    iterateStructs(transaction, /** @type {Array<Item|GC>} */ (doc.store.clients.get(client)), clock, afterClock, item => {
+      if (
+        !item.deleted && /** @type {Item} */ (item).content.constructor === ContentFormat && item.constructor !== GC
+      ) {
+        needFullCleanup.add(/** @type {any} */ (item).parent)
+      }
+    })
+  }
+  // cleanup in a new transaction
+  transact(doc, (t) => {
+    iterateDeletedStructs(transaction, transaction.deleteSet, item => {
+      if (item instanceof GC || needFullCleanup.has(/** @type {YText} */ (item.parent))) {
+        return
+      }
+      const parent = /** @type {YText} */ (item.parent)
+      if (item.content.constructor === ContentFormat) {
+        needFullCleanup.add(parent)
+      } else {
+        // If no formatting attribute was inserted or deleted, we can make due with contextless
+        // formatting cleanups.
+        // Contextless: it is not necessary to compute currentAttributes for the affected position.
+        cleanupContextlessFormattingGap(t, item)
+      }
+    })
+    // If a formatting item was inserted, we simply clean the whole type.
+    // We need to compute currentAttributes for the current position anyway.
+    for (const yText of needFullCleanup) {
+      cleanupYTextFormatting(yText)
+    }
+  })
+}
+
+/**
  * @param {Transaction} transaction
  * @param {ItemTextListPosition} currPos
  * @param {number} length
@@ -862,57 +912,8 @@ export class YText extends AbstractType {
     callTypeObservers(this, transaction, event)
     // If a remote change happened, we try to cleanup potential formatting duplicates.
     if (!transaction.local) {
-      transaction._yTexts.add(this)
+      transaction._needFormattingCleanup = true
     }
-  }
-
-  /**
-   * @param {Transaction} transaction
-   */
-  static _cleanup (transaction) {
-    const withFormattingItems = new Set()
-    // check if another formatting item was inserted
-    const doc = transaction.doc
-    for (const [client, afterClock] of transaction.afterState.entries()) {
-      const clock = transaction.beforeState.get(client) || 0
-      if (afterClock === clock) {
-        continue
-      }
-      iterateStructs(transaction, /** @type {Array<Item|GC>} */ (doc.store.clients.get(client)), clock, afterClock, item => {
-        if (!item.deleted && /** @type {Item} */ (item).content.constructor === ContentFormat && !(item instanceof GC) && transaction._yTexts.has(/** @type YText */ (item.parent))) {
-          withFormattingItems.add(item.parent)
-        }
-      })
-    }
-    iterateDeletedStructs(transaction, transaction.deleteSet, item => {
-      if (item instanceof GC) {
-        return
-      }
-      if (transaction._yTexts.has(/** @type YText */ (item.parent)) && item.content.constructor === ContentFormat) {
-        withFormattingItems.add(item.parent)
-      }
-    })
-    transact(doc, (t) => {
-      for (const yText of transaction._yTexts) {
-        if (withFormattingItems.has(yText)) {
-          // If a formatting item was inserted, we simply clean the whole type.
-          // We need to compute currentAttributes for the current position anyway.
-          cleanupYTextFormatting(yText)
-        } else {
-          // If no formatting attribute was inserted, we can make due with contextless
-          // formatting cleanups.
-          // Contextless: it is not necessary to compute currentAttributes for the affected position.
-          iterateDeletedStructs(t, t.deleteSet, item => {
-            if (item instanceof GC) {
-              return
-            }
-            if (item.parent === yText) {
-              cleanupContextlessFormattingGap(t, item)
-            }
-          })
-        }
-      }
-    })
   }
 
   /**

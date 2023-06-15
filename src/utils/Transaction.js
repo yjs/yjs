@@ -11,7 +11,8 @@ import {
   Item,
   generateNewClientId,
   createID,
-  UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc, YText // eslint-disable-line
+  cleanupYTextAfterTransaction,
+  UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map'
@@ -115,9 +116,9 @@ export class Transaction {
      */
     this.subdocsLoaded = new Set()
     /**
-     * @type {Set<YText>}
+     * @type {boolean}
      */
-    this._yTexts = new Set()
+    this._needFormattingCleanup = false
   }
 }
 
@@ -299,10 +300,8 @@ const cleanupTransactions = (transactionCleanups, i) => {
         fs.push(() => doc.emit('afterTransaction', [transaction, doc]))
       })
       callAll(fs, [])
-      if (transaction._yTexts.size > 0) {
-        transact(doc, () => {
-          YText._cleanup(transaction)
-        })
+      if (transaction._needFormattingCleanup) {
+        cleanupYTextAfterTransaction(transaction)
       }
     } finally {
       // Replace deleted items with ItemDeleted / GC.
