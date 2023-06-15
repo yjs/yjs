@@ -233,8 +233,9 @@ export const getTypeChildren = t => {
  * @param {AbstractType<EventType>} type
  * @param {Transaction} transaction
  * @param {EventType} event
+ * @param {Set<YWeakLink<any>>|null} visitedLinks
  */
-export const callTypeObservers = (type, transaction, event) => {
+export const callTypeObservers = (type, transaction, event, visitedLinks = null) => {
   const changedType = type
   const changedParentTypes = transaction.changedParentTypes
   while (true) {
@@ -243,9 +244,15 @@ export const callTypeObservers = (type, transaction, event) => {
     if (type._item === null) {
       break
     } else if (type._item.linkedBy !== null) {
+      if (visitedLinks === null) {
+        visitedLinks = new Set()
+      }
       for (let link of type._item.linkedBy) {
-        // recursive call
-        callTypeObservers(link, transaction, /** @type {any} */ (event))
+        if (!visitedLinks.has(link)) {
+          visitedLinks.add(link)
+          // recursive call
+          callTypeObservers(link, transaction, /** @type {any} */ (event), visitedLinks)
+        }
       }
     }
     type = /** @type {AbstractType<any>} */ (type._item.parent)
@@ -313,11 +320,6 @@ export class AbstractType {
     this.doc = y
     this._item = item
   }
-
-  /**
-   * @param {Transaction} transaction 
-   */
-  _delete (transaction) { }
 
   /**
    * @return {AbstractType<EventType>}
