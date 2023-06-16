@@ -112,6 +112,9 @@ export const addStruct = (store, struct) => {
 export const findIndexSS = (structs, clock) => {
   let left = 0
   let right = structs.length - 1
+  while (/** @type any */(structs[right])._wasMerged) {
+    right--
+  }
   let mid = structs[right]
   let midclock = mid.id.clock
   if (midclock === clock) {
@@ -126,6 +129,9 @@ export const findIndexSS = (structs, clock) => {
     midclock = mid.id.clock
     if (midclock <= clock) {
       if (clock < midclock + mid.length) {
+        while (/** @type any */(structs[midindex])._wasMerged) {
+          midindex--
+        }
         return midindex
       }
       left = midindex + 1
