@@ -10,7 +10,7 @@ import {
   typeMapGetAll,
   typeListForEach,
   YXmlElementRefID,
-  YXmlText, ContentType, AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item // eslint-disable-line
+  YXmlText, ContentType, AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item, Snapshot // eslint-disable-line
 } from '../internals.js'
 
 /**
@@ -192,12 +192,14 @@ export class YXmlElement extends YXmlFragment {
   /**
    * Returns all attribute name/value pairs in a JSON Object.
    *
+   * @param {Snapshot} [snapshot]
+   *
    * @return {{ [Key in Extract<keyof KV,string>]?: KV[Key]}} A JSON Object that describes the attributes.
    *
    * @public
    */
-  getAttributes () {
-    return /** @type {any} */ (typeMapGetAll(this))
+  getAttributes (snapshot) {
+    return /** @type {any} */ (typeMapGetAll(this, snapshot))
   }
 
   /**

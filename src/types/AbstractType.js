@@ -877,19 +877,28 @@ export const typeMapGet = (parent, key) => {
 
 /**
  * @param {AbstractType<any>} parent
+ * @param {Snapshot} [snapshot]
  * @return {Object<string,Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined>}
  *
  * @private
  * @function
  */
-export const typeMapGetAll = (parent) => {
+export const typeMapGetAll = (parent, snapshot) => {
   /**
    * @type {Object<string,any>}
    */
   const res = {}
+  const isItemExist = parent._item && isVisible(parent._item, snapshot)
   parent._map.forEach((value, key) => {
-    if (!value.deleted) {
-      res[key] = value.content.getContent()[value.length - 1]
+    /**
+     * @type {Item|null}
+     */
+    let item = value
+    while (isItemExist && item && !isVisible(item, snapshot)) {
+      item = item.left
+    }
+    if (item) {
+      res[key] = item.content.getContent()[item.length - 1]
     }
   })
   return res

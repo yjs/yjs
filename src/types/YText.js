@@ -1259,12 +1259,14 @@ export class YText extends AbstractType {
    *
    * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
    *
+   * @param {Snapshot} [snapshot]
+   *
    * @return {Object<string, any>} A JSON Object that describes the attributes.
    *
    * @public
    */
-  getAttributes () {
-    return typeMapGetAll(this)
+  getAttributes (snapshot) {
+    return typeMapGetAll(this, snapshot)
   }
 
   /**
