@@ -337,6 +337,34 @@ export const testObserversUsingObservedeep = tc => {
   compare(users)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
+export const testPathsOfSiblingEvents = tc => {
+  const { users, map0 } = init(tc, { users: 2 })
+  /**
+   * @type {Array<Array<string|number>>}
+   */
+  const pathes = []
+  let calls = 0
+  const doc = users[0]
+  map0.set('map', new Y.Map())
+  map0.get('map').set('text1', new Y.Text('initial'))
+  map0.observeDeep(events => {
+    events.forEach(event => {
+      pathes.push(event.path)
+    })
+    calls++
+  })
+  doc.transact(() => {
+    map0.get('map').get('text1').insert(0, 'post-')
+    map0.get('map').set('text2', new Y.Text('new'))
+  })
+  t.assert(calls === 1)
+  t.compare(pathes, [['map'], ['map', 'text1']])
+  compare(users)
+}
+
 // TODO: Test events in Y.Map
 /**
  * @param {Object<string,any>} is

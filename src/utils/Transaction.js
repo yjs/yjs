@@ -287,6 +287,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
               events
                 .forEach(event => {
                   event.currentTarget = type
+                  event._path = null
                 })
               // sort events by path length so that top-level events are fired first.
               events
