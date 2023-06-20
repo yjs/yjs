@@ -508,14 +508,16 @@ export const cleanupYTextAfterTransaction = transaction => {
       if (item instanceof GC || needFullCleanup.has(/** @type {YText} */ (item.parent))) {
         return
       }
-      const parent = /** @type {YText} */ (item.parent)
-      if (item.content.constructor === ContentFormat) {
-        needFullCleanup.add(parent)
-      } else {
-        // If no formatting attribute was inserted or deleted, we can make due with contextless
-        // formatting cleanups.
-        // Contextless: it is not necessary to compute currentAttributes for the affected position.
-        cleanupContextlessFormattingGap(t, item)
+      const parent = item.parent
+      if (parent instanceof YText && parent._needFormattingCleanup) {
+        if (item.content.constructor === ContentFormat) {
+          needFullCleanup.add(parent)
+        } else {
+          // If no formatting attribute was inserted or deleted, we can make due with contextless
+          // formatting cleanups.
+          // Contextless: it is not necessary to compute currentAttributes for the affected position.
+          cleanupContextlessFormattingGap(t, item)
+        }
       }
     })
     // If a formatting item was inserted, we simply clean the whole type.
@@ -862,6 +864,7 @@ export class YText extends AbstractType {
      * @type {Array<ArraySearchMarker>}
      */
     this._searchMarker = []
+    this._needFormattingCleanup = false
   }
 
   /**
@@ -910,9 +913,18 @@ export class YText extends AbstractType {
     super._callObserver(transaction, parentSubs)
     const event = new YTextEvent(this, transaction, parentSubs)
     callTypeObservers(this, transaction, event)
+    this._needFormattingCleanup = false
     // If a remote change happened, we try to cleanup potential formatting duplicates.
-    if (!transaction.local) {
-      transaction._needFormattingCleanup = true
+    if (!transaction.local && !transaction._needFormattingCleanup) {
+      let item = this._start
+      while (item) {
+        if (!item.deleted && item.content.constructor === ContentFormat) {
+          this._needFormattingCleanup = true
+          transaction._needFormattingCleanup = true
+          break
+        }
+        item = item.right
+      }
     }
   }
 
