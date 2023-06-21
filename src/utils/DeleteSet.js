@@ -1,18 +1,26 @@
 
 import {
+  DSDecoderV1,
+  DSDecoderV2,
+  DSEncoderV1,
+  DSEncoderV2,
+  GC,
+  ID // eslint-disable-line
+  ,
+  Item,
+  StructStore, Transaction,
+  UpdateEncoderV2,
   findIndexSS,
   getState,
-  splitItem,
   iterateStructs,
-  UpdateEncoderV2,
-  DSDecoderV1, DSEncoderV1, DSDecoderV2, DSEncoderV2, Item, GC, StructStore, Transaction, ID // eslint-disable-line
+  splitItem
 } from '../internals.js'
 
 import * as array from 'lib0/array'
-import * as math from 'lib0/math'
-import * as map from 'lib0/map'
-import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
+import * as encoding from 'lib0/encoding'
+import * as map from 'lib0/map'
+import * as math from 'lib0/math'
 
 export class DeleteItem {
   /**
@@ -335,7 +343,7 @@ export const readAndApplyDeleteSet = (decoder, transaction, store) => {
  */
 export const equalDeleteSets = (ds1, ds2) => {
   if (ds1.clients.size !== ds2.clients.size) return false
-  ds1.clients.forEach((deleteItems1, client) => {
+  for (const [client, deleteItems1] of ds1.clients.entries()) {
     const deleteItems2 = /** @type {Array<import('../internals.js').DeleteItem>} */ (ds2.clients.get(client))
     if (deleteItems2 === undefined || deleteItems1.length !== deleteItems2.length) return false
     for (let i = 0; i < deleteItems1.length; i++) {
@@ -345,6 +353,6 @@ export const equalDeleteSets = (ds1, ds2) => {
         return false
       }
     }
-  })
+  }
   return true
 }
