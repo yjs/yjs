@@ -210,7 +210,7 @@ export const testObserveArray = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testObserveTransitive = tc => {
+export const testDeepObserveTransitive = tc => {
   // test observers in a face of linked chains of values
   const doc = new Y.Doc()
 
@@ -244,7 +244,7 @@ export const testObserveTransitive = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testObserveTransitive2 = tc => {
+export const testDeepObserveTransitive2 = tc => {
   // test observers in a face of multi-layer linked chains of values
   const doc = new Y.Doc()
 
@@ -332,7 +332,7 @@ export const testDeepObserveMap = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testDeepObserveArray = tc => {
+const testDeepObserveArray = tc => { //FIXME
   // test observers in a face of linked chains of values
   const doc = new Y.Doc()
   /*
@@ -384,7 +384,7 @@ export const testDeepObserveArray = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testMapDeepObserve = tc => {
+const testMapDeepObserve = tc => { //FIXME
   const doc = new Y.Doc()
   const outer = doc.getMap('outer')
   const inner = new Y.Map()
@@ -472,4 +472,37 @@ export const testDeepObserveRecursive = tc => {
   t.compare(events.length, 1)
   t.compare(events[0].target, m1)
   t.compare(events[0].keys, new Map([['test-key1', {action:'delete', oldValue: undefined}]]))
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRemoteMapUpdate = tc => {
+  const { testConnector, users, map0, map1, map2 } = init(tc, { users: 3 })
+
+  map0.set('key', 1)
+  testConnector.flushAllMessages()
+
+  map1.set('link', map1.link('key'))
+  map0.set('key', 2)
+  map0.set('key', 3)
+
+  // apply updated content first, link second
+  console.log('update U0 -> U2')
+  Y.applyUpdate(users[2], Y.encodeStateAsUpdate(users[0])) 
+  console.log('update U1 -> U2')
+  Y.applyUpdate(users[2], Y.encodeStateAsUpdate(users[1]))
+
+  // make sure that link can find the most recent block
+  const link2 = map2.get('link')
+  t.compare(link2.deref(), 3)
+
+  testConnector.flushAllMessages()
+
+  const link1 = map1.get('link')
+  const link0 = map0.get('link')
+
+  t.compare(link0.deref(), 3)
+  t.compare(link1.deref(), 3)
+  t.compare(link2.deref(), 3)
 }
