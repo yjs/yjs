@@ -505,7 +505,7 @@ export const cleanupYTextAfterTransaction = transaction => {
   // cleanup in a new transaction
   transact(doc, (t) => {
     iterateDeletedStructs(transaction, transaction.deleteSet, item => {
-      if (item instanceof GC || needFullCleanup.has(/** @type {YText} */ (item.parent))) {
+      if (item instanceof GC || !(/** @type {YText} */ (item.parent)._hasFormatting) || needFullCleanup.has(/** @type {YText} */ (item.parent))) {
         return
       }
       const parent = /** @type {YText} */ (item.parent)
@@ -859,9 +859,14 @@ export class YText extends AbstractType {
      */
     this._pending = string !== undefined ? [() => this.insert(0, string)] : []
     /**
-     * @type {Array<ArraySearchMarker>}
+     * @type {Array<ArraySearchMarker>|null}
      */
     this._searchMarker = []
+    /**
+     * Whether this YText contains formatting attributes.
+     * This flag is updated when a formatting item is integrated (see ContentFormat.integrate)
+     */
+    this._hasFormatting = false
   }
 
   /**
@@ -911,7 +916,7 @@ export class YText extends AbstractType {
     const event = new YTextEvent(this, transaction, parentSubs)
     callTypeObservers(this, transaction, event)
     // If a remote change happened, we try to cleanup potential formatting duplicates.
-    if (!transaction.local) {
+    if (!transaction.local && this._hasFormatting) {
       transaction._needFormattingCleanup = true
     }
   }
