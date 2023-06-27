@@ -6,6 +6,21 @@ import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
 
 /**
+ * foreach has correct index - see yjs#485
+ *
+ * @param {t.TestCase} tc
+ */
+export const testArrayIndexIssue485 = tc => {
+  const doc = new Y.Doc()
+  const yarr = doc.getArray()
+  yarr.push([1, 2])
+  yarr.forEach((el, index) => {
+    t.info('index: ' + index)
+    t.assert(yarr.get(index) === el)
+  })
+}
+
+/**
  * @param {t.TestCase} tc
  */
 export const testBasicUpdate = tc => {

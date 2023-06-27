@@ -522,7 +522,8 @@ export class ListCursor {
    */
   forEach (tr, f) {
     for (const val of this.values(tr)) {
-      f(val, this.index, this.type)
+      // decrease index because retrieving value will increase index
+      f(val, this.index - 1, this.type)
     }
   }
 
@@ -536,7 +537,7 @@ export class ListCursor {
     const arr = new Array(this.type._length - this.index)
     let i = 0
     for (const val of this.values(tr)) {
-      arr[i++] = f(val, this.index, this.type)
+      arr[i++] = f(val, this.index - 1, this.type)
     }
     return arr
   }
