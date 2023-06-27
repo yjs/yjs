@@ -9,6 +9,29 @@ import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 
 /**
+ * Computing event changes after transaction should result in an error. See yjs#539
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testMapEventError = _tc => {
+  const doc = new Y.Doc()
+  const ymap = doc.getMap()
+  /**
+   * @type {any}
+   */
+  let event = null
+  ymap.observe((e) => {
+    event = e
+  })
+  t.fails(() => {
+    t.info(event.keys)
+  })
+  t.fails(() => {
+    t.info(event.keys)
+  })
+}
+
+/**
  * @param {t.TestCase} tc
  */
 export const testMapHavingIterableAsConstructorParamTests = tc => {

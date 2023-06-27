@@ -6,6 +6,9 @@ import {
 
 import * as set from 'lib0/set'
 import * as array from 'lib0/array'
+import * as error from 'lib0/error'
+
+const errorComputeChanges = 'You must not compute changes after the event-handler fired.'
 
 /**
  * @template {AbstractType<any>} T
@@ -84,6 +87,9 @@ export class YEvent {
    */
   get keys () {
     if (this._keys === null) {
+      if (this.transaction.doc._transactionCleanups.length === 0) {
+        throw error.create(errorComputeChanges)
+      }
       const keys = new Map()
       const target = this.target
       const changed = /** @type Set<string|null> */ (this.transaction.changed.get(target))
@@ -167,6 +173,9 @@ export class YEvent {
   get changes () {
     let changes = this._changes
     if (changes === null) {
+      if (this.transaction.doc._transactionCleanups.length === 0) {
+        throw error.create(errorComputeChanges)
+      }
       const target = this.target
       const added = set.create()
       const deleted = set.create()
