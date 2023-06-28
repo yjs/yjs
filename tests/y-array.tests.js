@@ -1,9 +1,55 @@
-import { init, compare, applyRandomTests, Doc, AbstractType, TestConnector, Item } from './testHelper.js' // eslint-disable-line
+import { init, compare, applyRandomTests, Doc, Item } from './testHelper.js' // eslint-disable-line
 
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
+
+/**
+ * path should be correct when moving item - see yjs#481
+ *
+ * @param {t.TestCase} tc
+ */
+export const testArrayMovePathIssue481 = tc => {
+  const { users, testConnector, array0, array1 } = init(tc, { users: 2 })
+  array0.observeDeep(events => {
+    events.forEach(event => {
+      if (event.path.length > 0) {
+        /**
+         * @type {any}
+         */
+        let target = event.currentTarget
+        event.path.forEach(p => {
+          target = target.get(p)
+        })
+        t.assert(target === event.target)
+      }
+    })
+  })
+  array0.push([
+    ['a', '1.1'],
+    ['b', '2.2'],
+    ['c', '3.1'],
+    ['d', '4.1'],
+    ['e', '5.1']
+  ].map(e => Y.Array.from(e)))
+  testConnector.flushAllMessages()
+  users[1].transact(() => {
+    array1.get(1).insert(0, ['0'])
+    array1.move(1, 0)
+  })
+  testConnector.flushAllMessages()
+  users[1].transact(() => {
+    array1.get(3).insert(0, ['1'])
+    array1.move(3, 4)
+  })
+  testConnector.flushAllMessages()
+  users[1].transact(() => {
+    array1.get(2).insert(0, ['2'])
+    array1.move(2, array1.length)
+  })
+  testConnector.flushAllMessages()
+}
 
 /**
  * foreach has correct index - see yjs#485

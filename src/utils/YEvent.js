@@ -8,6 +8,7 @@ import {
 import * as set from 'lib0/set'
 import * as array from 'lib0/array'
 import { addsStruct } from './Transaction.js'
+import { ListCursor } from './ListCursor.js'
 
 /**
  * YEvent describes the changes on a YType.
@@ -62,7 +63,7 @@ export class YEvent {
    */
   get path () {
     // @ts-ignore _item is defined because target is integrated
-    return getPathTo(this.currentTarget, this.target)
+    return getPathTo(this.currentTarget, this.target, this.transaction)
   }
 
   /**
@@ -297,12 +298,13 @@ export class YEvent {
  *
  * @param {AbstractType<any>} parent
  * @param {AbstractType<any>} child target
+ * @param {Transaction} tr
  * @return {Array<string|number>} Path to the target
  *
  * @private
  * @function
  */
-const getPathTo = (parent, child) => {
+const getPathTo = (parent, child, tr) => {
   const path = []
   while (child._item !== null && child !== parent) {
     if (child._item.parentSub !== null) {
@@ -310,15 +312,11 @@ const getPathTo = (parent, child) => {
       path.unshift(child._item.parentSub)
     } else {
       // parent is array-ish
-      let i = 0
-      let c = /** @type {AbstractType<any>} */ (child._item.parent)._start
-      while (c !== child._item && c !== null) {
-        if (!c.deleted) {
-          i++
-        }
-        c = c.right
+      const c = new ListCursor(/** @type {AbstractType<any>} */ (child._item.parent))
+      while (c.nextItem != null && !c.reachedEnd && c.nextItem !== child._item) {
+        c.forward(tr, (c.nextItem.countable && !c.nextItem.deleted) ? c.nextItem.length : 0, true)
       }
-      path.unshift(i)
+      path.unshift(c.index)
     }
     child = /** @type {AbstractType<any>} */ (child._item.parent)
   }
