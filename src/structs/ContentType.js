@@ -9,7 +9,8 @@ import {
   readYXmlHook,
   readYXmlText,
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, Item, YEvent, AbstractType, // eslint-disable-line
-  readYWeakLink
+  readYWeakLink,
+  unlinkFrom
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -114,8 +115,8 @@ export class ContentType {
       const type = /** @type {WeakLink<any>} */ (this.type);
       if (type._linkedItem !== null && !type._linkedItem.deleted) {
         const item = /** @type {Item} */ (type._linkedItem)
-        if (item.linkedBy !== null) {
-          item.linkedBy.delete(type)
+        if (item.linked) {
+          unlinkFrom(transaction, item, type)
         }
         type._linkedItem = null
       }

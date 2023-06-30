@@ -297,13 +297,6 @@ export class Item extends AbstractStruct {
      */
     this.redone = null
     /**
-     * If this item was referenced by other weak links, here we keep the references
-     * to these weak refs.
-     * 
-     * @type {Set<YWeakLink<any>> | null}
-     */
-    this.linkedBy = null
-    /**
      * @type {AbstractContent}
      */
     this.content = content
@@ -312,9 +305,26 @@ export class Item extends AbstractStruct {
      * bit2: countable
      * bit3: deleted
      * bit4: mark - mark node as fast-search-marker
+     * bit5: linked - this item is linked by Weak Link references
      * @type {number} byte
      */
     this.info = this.content.isCountable() ? binary.BIT2 : 0
+  }
+
+  /**
+   * This is used to mark the item as linked by weak link references.
+   * Reference dependencies are being kept in StructStore.
+   *
+   * @type {boolean}
+   */
+  set linked(isLinked) {
+    if (((this.info & binary.BIT9) > 0) !== isLinked) {
+      this.info ^= binary.BIT9
+    }
+  }
+
+  get linked() {
+    return (this.info & binary.BIT9) > 0
   }
 
   /**
@@ -524,8 +534,16 @@ export class Item extends AbstractStruct {
         // set as current parent value if right === null and this is parentSub
         /** @type {AbstractType<any>} */ (this.parent)._map.set(this.parentSub, this)
         if (this.left !== null) {
-          // inherit links from block we're overriding
-          this.linkedBy = this.left.linkedBy
+          // move links from block we're overriding
+          this.linked = this.left.linked
+          this.left.linked = false
+          const allLinks = transaction.doc.store.linkedBy
+          const links = allLinks.get(this.left)
+          if (links !== undefined) {
+            allLinks.set(this, links)
+            // since left is being deleted, it will remove
+            // its links from store.linkedBy anyway
+          }
           // this is the current attribute value of parent. delete right
           this.left.delete(transaction)
         }
@@ -538,9 +556,13 @@ export class Item extends AbstractStruct {
       this.content.integrate(transaction, this)
       // add parent to transaction.changed
       addChangedTypeToTransaction(transaction, /** @type {AbstractType<any>} */ (this.parent), this.parentSub)
-      if (this.linkedBy !== null) {
-        for (let link of this.linkedBy) {
-          addChangedTypeToTransaction(transaction, link, this.parentSub)
+      if (this.linked) {
+        // notify links about changes
+        const linkedBy = transaction.doc.store.linkedBy.get(this)
+        if (linkedBy !== undefined) {
+          for (let link of linkedBy) {
+            addChangedTypeToTransaction(transaction, link, this.parentSub)
+          }
         }
       }
       if ((/** @type {AbstractType<any>} */ (this.parent)._item !== null && /** @type {AbstractType<any>} */ (this.parent)._item.deleted) || (this.parentSub !== null && this.right !== null)) {
@@ -600,8 +622,7 @@ export class Item extends AbstractStruct {
       this.deleted === right.deleted &&
       this.redone === null &&
       right.redone === null &&
-      this.linkedBy === null &&
-      right.linkedBy === null &&
+      !this.linked && !right.linked && // linked items cannot be merged
       this.content.constructor === right.content.constructor &&
       this.content.mergeWith(right.content)
     ) {
@@ -647,11 +668,18 @@ export class Item extends AbstractStruct {
       addToDeleteSet(transaction.deleteSet, this.id.client, this.id.clock, this.length)
       addChangedTypeToTransaction(transaction, parent, this.parentSub)
       this.content.delete(transaction)
-      if (this.linkedBy !== null) {
-        for (let link of this.linkedBy) {
-          addChangedTypeToTransaction(transaction, link, this.parentSub)
+
+      if (this.linked) {
+        // notify links that current element has been removed
+        const allLinks = transaction.doc.store.linkedBy
+        const linkedBy = allLinks.get(this)
+        if (linkedBy !== undefined) {
+          for (let link of linkedBy) {
+            addChangedTypeToTransaction(transaction, link, this.parentSub)
+          }
+          allLinks.delete(this)
         }
-        this.linkedBy = null
+        this.linked = false
       }
     }
   }

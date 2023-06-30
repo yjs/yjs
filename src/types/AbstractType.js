@@ -243,13 +243,16 @@ export const callTypeObservers = (type, transaction, event, visitedLinks = null)
     map.setIfUndefined(changedParentTypes, type, () => []).push(event)
     if (type._item === null) {
       break
-    } else if (type._item.linkedBy !== null) {
-      for (let link of type._item.linkedBy) {
-        if (visitedLinks === null || !visitedLinks.has(link)) {
-          visitedLinks = visitedLinks !== null ? visitedLinks : new Set()
-          visitedLinks.add(link)
-          // recursive call
-          callTypeObservers(link, transaction, /** @type {any} */ (event), visitedLinks)
+    } else if (type._item.linked) {
+      const linkedBy = transaction.doc.store.linkedBy.get(type._item)
+      if (linkedBy !== undefined) {
+        for (let link of linkedBy) {
+          if (visitedLinks === null || !visitedLinks.has(link)) {
+            visitedLinks = visitedLinks !== null ? visitedLinks : new Set()
+            visitedLinks.add(link)
+            // recursive call
+            callTypeObservers(link, transaction, /** @type {any} */ (event), visitedLinks)
+          }
         }
       }
     }
