@@ -488,9 +488,7 @@ export const testRemoteMapUpdate = tc => {
   map0.set('key', 3)
 
   // apply updated content first, link second
-  console.log('update U0 -> U2')
   Y.applyUpdate(users[2], Y.encodeStateAsUpdate(users[0])) 
-  console.log('update U1 -> U2')
   Y.applyUpdate(users[2], Y.encodeStateAsUpdate(users[1]))
 
   // make sure that link can find the most recent block

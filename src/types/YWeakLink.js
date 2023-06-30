@@ -1,4 +1,6 @@
 import { decoding, encoding, error } from "lib0"
+import * as map from 'lib0/map'
+import * as set from 'lib0/set'
 import { 
   YEvent, Transaction, ID, GC, AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item,
   transact,
@@ -92,11 +94,7 @@ export class YWeakLink extends AbstractType {
         }
         this._linkedItem = sourceItem
         if (!sourceItem.deleted) {
-          const src = /** @type {Item} */ (sourceItem)
-          if (src.linkedBy === null) {
-            src.linkedBy = new Set()
-          }
-          src.linkedBy.add(this)
+          createLink(transaction, /** @type {Item} */ (sourceItem), this)
         }
       })
     }
@@ -171,10 +169,12 @@ export const arrayWeakLink = (transaction, parent, index) => {
             item = getItemCleanEnd(transaction, transaction.doc.store, createID(item.id.client, item.id.clock))
         }
         const link = new YWeakLink(item.id, item)
-        if (item.linkedBy === null) {
-          item.linkedBy = new Set()
+        if (parent.doc !== null) {
+          const source = /** @type {Item} */ (item)
+          transact(parent.doc, (transaction) => {
+            createLink(transaction, source, link)
+          })
         }
-        item.linkedBy.add(link)
         return link
       }
       index -= item.length
@@ -195,12 +195,51 @@ export const mapWeakLink = (parent, key) => {
   const item = parent._map.get(key)
   if (item !== undefined) {
     const link = new YWeakLink(item.id, item)
-    if (item.linkedBy === null) {
-      item.linkedBy = new Set()
+    if (parent.doc !== null) {
+      transact(parent.doc, (transaction) => {
+        createLink(transaction, item, link)
+      })
     }
-    item.linkedBy.add(link)
     return link
   } else {
     return undefined
+  }
+}
+
+/**
+ * Establishes a link between source and weak link reference.
+ * It assumes that source has already been split if necessary.
+ * 
+ * @param {Transaction} transaction 
+ * @param {Item} source
+ * @param {YWeakLink<any>} linkRef
+ */
+export const createLink = (transaction, source, linkRef) => {
+  const allLinks = transaction.doc.store.linkedBy
+  map.setIfUndefined(allLinks, source, set.create).add(linkRef)
+  source.linked = true
+}
+
+/**
+ * Deletes the link between source and a weak link reference.
+ * 
+ * @param {Transaction} transaction 
+ * @param {Item} source
+ * @param {YWeakLink<any>} linkRef
+ */
+export const unlinkFrom = (transaction, source, linkRef) => {
+  const allLinks = transaction.doc.store.linkedBy
+  const linkedBy = allLinks.get(source)
+  if (linkedBy !== undefined) {
+    linkedBy.delete(linkRef)
+    if (linkedBy.size === 0) {
+      allLinks.delete(source)
+      source.linked = false
+      if (source.countable) {
+        // since linked property is blocking items from merging,
+        // it may turn out that source item can be merged now
+        transaction._mergeStructs.push(source)
+      }
+    }
   }
 }
