@@ -332,7 +332,7 @@ export const testDeepObserveMap = tc => {
 /**
  * @param {t.TestCase} tc
  */
-const testDeepObserveArray = tc => { //FIXME
+export const testDeepObserveArray = tc => { //FIXME
   // test observers in a face of linked chains of values
   const doc = new Y.Doc()
   /*
@@ -346,16 +346,29 @@ const testDeepObserveArray = tc => { //FIXME
   const map = doc.getMap('map')
   const array = doc.getArray('array')
 
-  /**
-   * @type {Array<any>}
-   */
-  let events = []
-  array.observeDeep((e) => events = e)
-
   const nested = new Y.Map()
   map.set('nested', nested)
   const link = map.link('nested')
   array.insert(0, [link])
+
+  /**
+   * @type {Array<any>}
+   */
+  let events = []
+  array.observeDeep((evts) => {
+    events = []
+    for (let e of evts) {
+      switch (e.constructor) {
+        case Y.YMapEvent:
+          events.push({target: e.target, keys: e.keys})
+          break;
+        case Y.YWeakLinkEvent:
+          events.push({target: e.target})
+          break;
+        default: throw new Error('unexpected event type ' + e.constructor)
+      }
+    }
+  })
 
   // update entry in linked map
   events = []
@@ -367,24 +380,23 @@ const testDeepObserveArray = tc => { //FIXME
   nested.set('key', 'value2')
   t.compare(events.length, 1)
   t.compare(events[0].target, nested)
-  t.compare(events[0].keys, new Map([['key', {action:'update', oldValue: undefined}]]))
+  t.compare(events[0].keys, new Map([['key', {action:'update', oldValue: 'value'}]]))
 
   // delete entry in linked map
   nested.delete('key')
   t.compare(events.length, 1)
   t.compare(events[0].target, nested)
-  t.compare(events[0].keys, new Map([['key', {action:'delete', oldValue: undefined}]]))
+  t.compare(events[0].keys, new Map([['key', {action:'delete', oldValue: 'value2'}]]))
   
   // delete linked map
   map.delete('nested')
   t.compare(events.length, 1)
-  t.compare(events[0].target, map)
-  t.compare(events[0].keys, new Map([['nested', {action:'delete', oldValue: undefined}]]))
+  t.compare(events[0].target, link)
 }
 /**
  * @param {t.TestCase} tc
  */
-const testMapDeepObserve = tc => { //FIXME
+export const testMapDeepObserve = tc => { //FIXME
   const doc = new Y.Doc()
   const outer = doc.getMap('outer')
   const inner = new Y.Map()
@@ -394,7 +406,21 @@ const testMapDeepObserve = tc => { //FIXME
    * @type {Array<any>}
    */
   let events = []
-  outer.observeDeep((e) => events = e)
+  outer.observeDeep((evts) => {
+    events = []
+    for (let e of evts) {
+      switch (e.constructor) {
+        case Y.YMapEvent:
+          events.push({target: e.target, keys: e.keys})
+          break;
+        case Y.YWeakLinkEvent:
+          events.push({target: e.target})
+          break;
+        default: throw new Error('unexpected event type ' + e.constructor)
+      }
+    }
+  })
+
 
   inner.set('key', 'value1')
   t.compare(events.length, 1)
@@ -405,13 +431,13 @@ const testMapDeepObserve = tc => { //FIXME
   inner.set('key', 'value2')
   t.compare(events.length, 1)
   t.compare(events[0].target, inner)
-  t.compare(events[0].keys, new Map([['key', {action:'update', oldValue: undefined}]]))
+  t.compare(events[0].keys, new Map([['key', {action:'update', oldValue: 'value1'}]]))
 
   events = []
   inner.delete('key')
   t.compare(events.length, 1)
   t.compare(events[0].target, inner)
-  t.compare(events[0].keys, new Map([['key', {action:'delete', oldValue: undefined}]]))
+  t.compare(events[0].keys, new Map([['key', {action:'delete', oldValue: 'value2'}]]))
 }
 
 /**
