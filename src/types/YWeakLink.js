@@ -8,7 +8,9 @@ import {
   createID,
   getItemCleanStart,
   callTypeObservers,
-  YWeakLinkRefID
+  YWeakLinkRefID,
+  writeID,
+  readID
 } from "../internals.js"
 
 /**
@@ -132,7 +134,7 @@ export class YWeakLink extends AbstractType {
     encoder.writeTypeRef(YWeakLinkRefID)
     const flags = 0 // flags that could be used in the future
     encoding.writeUint8(encoder.restEncoder, flags)
-    encoder.writeLeftID(this._id)
+    writeID(encoder.restEncoder, this._id)
   }
 }
 
@@ -143,7 +145,7 @@ export class YWeakLink extends AbstractType {
  */
 export const readYWeakLink = decoder => {
   const flags = decoding.readUint8(decoder.restDecoder)
-  const id = decoder.readLeftID()
+  const id = readID(decoder.restDecoder)
   return new YWeakLink(id, null)
 }
 
