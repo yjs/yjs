@@ -184,24 +184,21 @@ const tryToMergeWithLeft = (structs, pos) => {
  * @param {Array<AbstractStruct>} structs
  * @param {number} pos
  */
-const tryToMergeWithLeftNoSplice = (structs, pos) => {
+export const tryToMergeWithLeftNoSplice = (structs, pos) => {
+  const left = structs[pos - 1]
   const right = structs[pos]
-  if (/** @type any */(right)._wasMerged) {
+  if (left === right) {
     return 0
   }
-  let offset = 1
-  let left
-  do {
-    left = structs[pos - offset++]
-  } while (/** @type any */(left)._wasMerged)
   if (left.deleted === right.deleted && left.constructor === right.constructor) {
     if (left.mergeWith(right)) {
-      /** @type any */(right)._wasMerged = true
       if (right instanceof Item && right.parentSub !== null && /** @type {AbstractType<any>} */ (right.parent)._map.get(right.parentSub) === right) {
         /** @type {AbstractType<any>} */ (right.parent)._map.set(right.parentSub, /** @type {Item} */ (left))
       }
-      right.id = left.id
-      right.length = left.length
+      let rightPos = pos
+      while (structs[rightPos] === right) {
+        structs[rightPos++] = left
+      }
       return 1
     }
   }
@@ -215,7 +212,7 @@ const tryToMergeWithLeftNoSplice = (structs, pos) => {
 const filterMergedStructs = (structs, mergedCount) => {
   let from = 0
   for (let to = 0; to < structs.length - mergedCount; to++) {
-    while (/** @type any */(structs[from])._wasMerged) {
+    while (structs[from] === structs[from - 1]) {
       from++
     }
     structs[to] = structs[from]
