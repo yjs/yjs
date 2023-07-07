@@ -251,7 +251,7 @@ export const testObserveMapDelete = tc => {
 export const testObserveArray = tc => {
   const { testConnector, array0, array1 } = init(tc, { users: 2 })
   array0.insert(0, ['A','B','C'])
-  const link0 = /** @type {Y.WeakLink<String>} */ (array0.quote(1))
+  const link0 = /** @type {Y.WeakLink<String>} */ (array0.quote(1, 2))
   array0.insert(0, [link0])
   /**
    * @type {any}
@@ -262,7 +262,7 @@ export const testObserveArray = tc => {
   testConnector.flushAllMessages()
 
   let link1 = /** @type {Y.WeakLink<String>} */ (array1.get(0))
-  t.compare(link1.deref(), 'B')
+  t.compare(link1.unqote(), ['B','C'])
   /**
    * @type {any}
    */
@@ -270,10 +270,20 @@ export const testObserveArray = tc => {
   link1.observe((e) => target1 = e.target)
 
   array0.delete(2)
-  t.compare(target0.deref(), undefined)
+  t.compare(target0.unqote(), ['C'])
 
   testConnector.flushAllMessages()
-  t.compare(target1.deref(), undefined)
+  t.compare(target1.unqote(), ['C'])
+  
+  array1.delete(2)
+  t.compare(target1.unqote(), [])
+
+  testConnector.flushAllMessages()
+  t.compare(target0.unqote(), [])
+
+  target0 = null
+  array0.delete(1)
+  t.compare(target0, null)
 }
 
 /**
