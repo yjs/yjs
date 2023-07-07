@@ -197,7 +197,7 @@ export const readYWeakLink = decoder => {
   return new YWeakLink(start, end, null, null)
 }
 
-const lengthExceeded = error.create('Length exceeded!')
+const invalidQuotedRange = error.create('Invalid quoted range length.')
 
 /**
  * Returns a {WeakLink} to an YArray element at given index.
@@ -208,6 +208,9 @@ const lengthExceeded = error.create('Length exceeded!')
  * @return {YWeakLink<any>}
  */
 export const arrayWeakLink = (transaction, parent, index, length = 1) => {
+  if (length <= 0) {
+    throw invalidQuotedRange
+  }
   let startItem = parent._start
   for (;startItem !== null; startItem = startItem.right) {
     if (!startItem.deleted && startItem.countable) {
@@ -247,7 +250,7 @@ export const arrayWeakLink = (transaction, parent, index, length = 1) => {
     }
   }
 
-  throw lengthExceeded
+  throw invalidQuotedRange
 }
 
 /**

@@ -27,7 +27,7 @@ export const testBasicMap = tc => {
 export const testBasicArray = tc => {
   const { testConnector, array0, array1 } = init(tc, {users:2})
   array0.insert(0, [1,2,3])
-  array0.insert(3, [array0.link(1)])
+  array0.insert(3, [array0.quote(1)])
 
   t.compare(array0.get(0), 1)
   t.compare(array0.get(1), 2)
@@ -182,7 +182,7 @@ export const testObserveMapDelete = tc => {
 export const testObserveArray = tc => {
   const { testConnector, array0, array1 } = init(tc, { users: 2 })
   array0.insert(0, ['A','B','C'])
-  const link0 = /** @type {Y.WeakLink<String>} */ (array0.link(1))
+  const link0 = /** @type {Y.WeakLink<String>} */ (array0.quote(1))
   array0.insert(0, [link0])
   /**
    * @type {any}
@@ -306,7 +306,7 @@ export const testDeepObserveMap = tc => {
 
   const nested = new Y.Map()
   array.insert(0, [nested])
-  const link = array.link(0)
+  const link = array.quote(0)
   map.set('link', link)
 
   // update entry in linked map
@@ -468,9 +468,9 @@ export const testDeepObserveRecursive = tc => {
   root.insert(1, [m1])
   root.insert(2, [m2])
 
-  const l0 = root.link(0)
-  const l1 = root.link(1)
-  const l2 = root.link(2)
+  const l0 = root.quote(0)
+  const l1 = root.quote(1)
+  const l2 = root.quote(2)
 
   // create cyclic reference between links
   m0.set('k1', l1)

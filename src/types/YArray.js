@@ -204,18 +204,21 @@ export class YArray extends AbstractType {
   }
 
   /**
-   * Returns the weak link to i-th element from a YArray.
+   * Returns the weak link that allows to refer and observe live changes of contents of an YArray.
+   * It points at a consecutive range of elements, starting at give `index` and spanning over provided
+   * length of elements.
    *
    * @param {number} index The index of the element to return from the YArray
+   * @param {number} length The number of elements to include in returned weak link reference.
    * @return {YWeakLink<T>}
    */
-  link(index) {
+  quote(index, length = 1) {
     if (this.doc !== null) {
       return transact(this.doc, transaction => {
-        return arrayWeakLink(transaction, this, index)
+        return arrayWeakLink(transaction, this, index, length)
       })
     } else {
-      throw new Error('cannot create a link to an YArray that has not been integrated into YDoc')
+      throw new Error('cannot quote an YArray that has not been integrated into YDoc')
     }
   }
 
