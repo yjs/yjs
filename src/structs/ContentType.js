@@ -10,7 +10,8 @@ import {
   readYXmlText,
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, Item, YEvent, AbstractType, // eslint-disable-line
   readYWeakLink,
-  unlinkFrom
+  unlinkFrom,
+  ID
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -113,15 +114,17 @@ export class ContentType {
       // when removing weak links, remove references to them 
       // from type they're pointing to
       const type = /** @type {WeakLink<any>} */ (this.type);
+      const end = /** @type {ID} */ (type._quoteEnd.item)
       for (let item = type._firstItem; item !== null; item = item.right) {
         if (item.linked) {
           unlinkFrom(transaction, item, type)
         }
-        if (item === type._lastItem) {
+        const lastId = item.lastId
+        if (lastId.client === end.client && lastId.clock === end.clock) {
           break;
         }
       }
-      type._firstItem = type._lastItem = null
+      type._firstItem = null
     }
 
     let item = this.type._start

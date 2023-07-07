@@ -45,6 +45,75 @@ export const testBasicArray = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testArrayQuoteMultipleElements = tc => {
+  const { testConnector, array0, array1 } = init(tc, {users:2})
+  const nested = new Y.Map([['key', 'value']])
+  array0.insert(0, [1, 2, nested, 3])
+  array0.insert(0, [array0.quote(1, 3)])
+
+  const link0 = array0.get(0)
+  t.compare(link0.unqote(), [2, nested, 3])
+  t.compare(array0.get(1), 1)
+  t.compare(array0.get(2), 2)
+  t.compare(array0.get(3), nested)
+  t.compare(array0.get(4), 3)
+
+  testConnector.flushAllMessages()
+
+  const link1 = array1.get(0)
+  let unqoted = link1.unqote()
+  t.compare(unqoted[0], 2)
+  t.compare(unqoted[1].toJSON(), {'key':'value'})
+  t.compare(unqoted[2], 3)
+  t.compare(array1.get(1), 1)
+  t.compare(array1.get(2), 2)
+  t.compare(array1.get(3).toJSON(), {'key':'value'})
+  t.compare(array1.get(4), 3)
+
+  array1.insert(3, ['A', 'B'])
+  unqoted = link1.unqote()
+  t.compare(unqoted[0], 2)
+  t.compare(unqoted[1], 'A')
+  t.compare(unqoted[2], 'B')
+  t.compare(unqoted[3].toJSON(), {'key':'value'})
+  t.compare(unqoted[4], 3)
+  
+  testConnector.flushAllMessages()
+  
+  t.compare(array0.get(0).unqote(), [2, 'A', 'B', nested, 3])
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testSelfQuotation = tc => {
+  const { testConnector, array0, array1 } = init(tc, {users:2})
+  array0.insert(0, [1, 2, 3, 4])
+  const link0 = array0.quote(0, 3)
+  array0.insert(1, [link0]) // link is inserted into its own range
+
+  t.compare(link0.unqote(), [1, link0, 2, 3])
+  t.compare(array0.get(0), 1)
+  t.compare(array0.get(1), link0)
+  t.compare(array0.get(2), 2)
+  t.compare(array0.get(3), 3)
+  t.compare(array0.get(4), 4)
+
+  testConnector.flushAllMessages()
+
+  const link1 = array1.get(1)
+  let unqoted = link1.unqote()
+  t.compare(unqoted, [1, link1, 2, 3])
+  t.compare(array1.get(0), 1)
+  t.compare(array1.get(1), link1)
+  t.compare(array1.get(2), 2)
+  t.compare(array1.get(3), 3)
+  t.compare(array1.get(4), 4)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testUpdate = tc => {
   const { testConnector, users, map0, map1 } = init(tc, { users: 2 })
   map0.set('a', new Y.Map([['a1', 'hello']]))

@@ -40,14 +40,12 @@ export class YWeakLink extends AbstractType {
     * @param {RelativePosition} start
     * @param {RelativePosition} end
     * @param {Item|null} firstItem
-    * @param {Item|null} lastItem
     */
-  constructor(start, end, firstItem, lastItem) {
+  constructor(start, end, firstItem) {
     super()
     this._quoteStart = start
     this._quoteEnd = end
     this._firstItem = firstItem
-    this._lastItem = lastItem
   }
 
   /**
@@ -90,10 +88,15 @@ export class YWeakLink extends AbstractType {
   unqote() {
     let result = /** @type {Array<any>} */ ([])
     let item = this._firstItem
+    const end = /** @type {ID} */ (this._quoteEnd.item)
     //TODO: moved elements
-    while (item !== null && item !== this._lastItem) {
+    while (item !== null) {
       if (!item.deleted) {
         result = result.concat(item.content.getContent())
+      }
+      const lastId = item.lastId
+      if (lastId.client === end.client && lastId.clock === end.clock) {
+        break;
       }
       item = item.right
     }
@@ -118,22 +121,22 @@ export class YWeakLink extends AbstractType {
         // in such case we need to cut of the linked element into a
         // separate block
         let firstItem = this._firstItem !== null ? this._firstItem : getItemCleanStart(transaction, /** @type {ID} */ (this._quoteStart.item))
-        let lastItem = this._lastItem !== null ? this._lastItem : getItemCleanEnd(transaction, y.store, /** @type {ID} */(this._quoteEnd.item))
+        getItemCleanEnd(transaction, y.store, /** @type {ID} */(this._quoteEnd.item))
         if (firstItem.parentSub !== null) {
           // for maps, advance to most recent item
           while (firstItem.right !== null) {
             firstItem = firstItem.right
           }
-          lastItem = firstItem
         }
         this._firstItem = firstItem
-        this._lastItem = lastItem
         
         /** @type {Item|null} */
         let item = firstItem
-        for (; item !== null; item = item.right) {
+        let end = /** @type {ID} */ (this._quoteEnd.item)
+        for (;item !== null; item = item.right) {
           createLink(transaction, item, this)
-          if (item === lastItem) {
+          const lastId = item.lastId
+          if (lastId.client === end.client && lastId.clock === end.clock) {
             break;
           }
         }
@@ -145,14 +148,14 @@ export class YWeakLink extends AbstractType {
    * @return {YWeakLink<T>}
    */
   _copy () {
-    return new YWeakLink(this._quoteStart, this._quoteEnd, this._firstItem, this._lastItem)
+    return new YWeakLink(this._quoteStart, this._quoteEnd, this._firstItem)
   }
 
   /**
    * @return {YWeakLink<T>}
    */
   clone () {
-    return new YWeakLink(this._quoteStart, this._quoteEnd, this._firstItem, this._lastItem)
+    return new YWeakLink(this._quoteStart, this._quoteEnd, this._firstItem)
   }
 
   /**
@@ -194,7 +197,7 @@ export const readYWeakLink = decoder => {
   const startID = readID(decoder.restDecoder)
   const start = new RelativePosition(null, null, startID, startAssoc)
   const end = new RelativePosition(null, null, isSingle ? startID : readID(decoder.restDecoder), endAssoc)
-  return new YWeakLink(start, end, null, null)
+  return new YWeakLink(start, end, null)
 }
 
 const invalidQuotedRange = error.create('Invalid quoted range length.')
@@ -223,33 +226,36 @@ export const arrayWeakLink = (transaction, parent, index, length = 1) => {
       index -= startItem.length
     }
   }
-
-  if (startItem !== null) {
-    let endItem =  startItem
-    let remaining = length
-    for (;endItem !== null && endItem.right !== null && endItem.length > remaining; endItem = endItem.right) {
-      // iterate over the items to reach the last block in the quoted range
-      remaining -= endItem.length
-    }
-    if (endItem.length >= remaining) {
-      endItem = getItemCleanEnd(transaction, transaction.doc.store, createID(startItem.id.client, startItem.id.clock + remaining - 1))
-      const start = new RelativePosition(null, null, startItem.id, 0)
-      const end = new RelativePosition(null, null, endItem.lastId, -1)
-      const link = new YWeakLink(start, end, startItem, endItem)
-      if (parent.doc !== null) {
-        transact(parent.doc, (transaction) => {
-          for (let item = link._firstItem; item !== null; item = item = item.right) {
-            createLink(transaction, item, link)
-            if (item === link._lastItem) {
-              break;
-            }
-          }
-        })
+  let endItem = startItem
+  let remaining = length
+  for (;endItem !== null; endItem = endItem.right) {
+    if (!endItem.deleted && endItem.countable) {
+      if (remaining > endItem.length) {
+        remaining -= endItem.length
+      } else {
+        endItem = getItemCleanEnd(transaction, transaction.doc.store, createID(endItem.id.client, endItem.id.clock + remaining - 1))
+        break;
       }
-      return link
     }
   }
-
+  if (startItem !== null && endItem !== null) {    
+    const start = new RelativePosition(null, null, startItem.id, 0)
+    const end = new RelativePosition(null, null, endItem.lastId, -1)
+    const link = new YWeakLink(start, end, startItem)
+    if (parent.doc !== null) {
+      transact(parent.doc, (transaction) => {
+        const end = /** @type {ID} */ (link._quoteEnd.item)
+        for (let item = link._firstItem; item !== null; item = item = item.right) {
+          createLink(transaction, item, link)
+          const lastId = item.lastId
+          if (lastId.client === end.client && lastId.clock === end.clock) {
+            break;
+          }
+        }
+      })
+    }
+    return link
+  }
   throw invalidQuotedRange
 }
 
@@ -265,7 +271,7 @@ export const mapWeakLink = (parent, key) => {
   if (item !== undefined) {
     const start = new RelativePosition(null, null, item.id, 0)
     const end = new RelativePosition(null, null, item.id, -1)
-    const link = new YWeakLink(start, end, item, item)
+    const link = new YWeakLink(start, end, item)
     if (parent.doc !== null) {
       transact(parent.doc, (transaction) => {
         createLink(transaction, item, link)
