@@ -215,7 +215,7 @@ export class YArray extends AbstractType {
         return arrayWeakLink(transaction, this, index)
       })
     } else {
-      throw new Error('todo')
+      throw new Error('cannot create a link to an YArray that has not been integrated into YDoc')
     }
   }
 

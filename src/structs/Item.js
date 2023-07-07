@@ -396,9 +396,15 @@ export class Item extends AbstractStruct {
     }
     if (this.content.constructor === ContentType && /** @type {ContentType} */ (this.content).type.constructor === YWeakLink) {
       // make sure that linked content is integrated first
-      const linkSource = /** @type {any} */ (this.content).type._id
-      if (linkSource.clock >= getState(store, linkSource.client)) {
-        return linkSource.client
+      const content = /** @type {ContentType} */ (this.content)
+      const link = /** @type {YWeakLink<any>} */ (content.type)
+      const start = link._quoteStart.item
+      if (start !== null && start.clock >= getState(store, start.client)) {
+        return start.client
+      }
+      const end = link._quoteEnd.item
+      if (end !== null && end.clock >= getState(store, end.client)) {
+        return end.client
       }
     }
 

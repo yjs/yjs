@@ -113,13 +113,15 @@ export class ContentType {
       // when removing weak links, remove references to them 
       // from type they're pointing to
       const type = /** @type {WeakLink<any>} */ (this.type);
-      if (type._linkedItem !== null && !type._linkedItem.deleted) {
-        const item = /** @type {Item} */ (type._linkedItem)
+      for (let item = type._firstItem; item !== null; item = item.right) {
         if (item.linked) {
           unlinkFrom(transaction, item, type)
         }
-        type._linkedItem = null
+        if (item === type._lastItem) {
+          break;
+        }
       }
+      type._firstItem = type._lastItem = null
     }
 
     let item = this.type._start
