@@ -241,7 +241,7 @@ export class YMap extends AbstractType {
    * @param {string} key 
    * @return {YWeakLink<MapType>|undefined}
    */
-  link(key) {
+  link (key) {
     return mapWeakLink(this, key)
   }
 

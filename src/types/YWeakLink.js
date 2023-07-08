@@ -11,7 +11,9 @@ import {
   YWeakLinkRefID,
   writeID,
   readID,
-  RelativePosition
+  RelativePosition,
+  ItemTextListPosition,
+  ContentString
 } from "../internals.js"
 
 /**
@@ -53,7 +55,7 @@ export class YWeakLink extends AbstractType {
    * 
    * @returns {boolean}
    */
-  isSingle() {
+  isSingle () {
     return this._quoteStart.item === this._quoteEnd.item
   }
   
@@ -62,7 +64,7 @@ export class YWeakLink extends AbstractType {
    * 
    * @return {T|undefined}
    */
-  deref() {
+  deref () {
     if (this._firstItem !== null) {
       let item = this._firstItem
       if (item.parentSub !== null) {
@@ -85,7 +87,7 @@ export class YWeakLink extends AbstractType {
    * 
    * @return {Array<any>}
    */
-  unqote() {
+  unqote () {
     let result = /** @type {Array<any>} */ ([])
     let item = this._firstItem
     const end = /** @type {ID} */ (this._quoteEnd.item)
@@ -182,6 +184,31 @@ export class YWeakLink extends AbstractType {
       writeID(encoder.restEncoder, /** @type {ID} */ (this._quoteEnd.item))
     }
   }
+
+  /**
+   * Returns the unformatted string representation of this quoted text range.
+   *
+   * @public
+   */
+  toString () {
+    let str = ''
+    /**
+     * @type {Item|null}
+     */
+    let n = this._firstItem
+    const end = /** @type {ID} */ (this._quoteEnd.item)
+    while (n !== null) {
+      if (!n.deleted && n.countable && n.content.constructor === ContentString) {
+        str += /** @type {ContentString} */ (n.content).str
+      }
+      const lastId = n.lastId
+      if (lastId.client === end.client && lastId.clock === end.clock) {
+        break;
+      }
+      n = n.right
+    }
+    return str
+  }
 }
 
   
@@ -262,6 +289,50 @@ export const arrayWeakLink = (transaction, parent, index, length = 1) => {
 /**
  * Returns a {WeakLink} to an YMap element at given key.
  * 
+ * @param {Transaction} transaction
+ * @param {AbstractType<any>} parent
+ * @param {ItemTextListPosition} pos
+ * @param {number} length
+ * @return {YWeakLink<string>}
+ */
+export const quoteText = (transaction, parent, pos, length) => {
+  if (pos.right !== null) {
+    const startItem = pos.right
+    const endIndex = pos.index + length
+    while (pos.index < endIndex) {
+      pos.forward()
+    }
+    if (pos.left !== null) {
+      let endItem = pos.left
+      if (pos.index > endIndex) {
+        const overflow = pos.index - endIndex
+        endItem = getItemCleanEnd(transaction, transaction.doc.store, createID(endItem.id.client, endItem.id.clock + endItem.length - overflow - 1))
+      }
+      const start = new RelativePosition(null, null, startItem.id, 0)
+      const end = new RelativePosition(null, null, endItem.lastId, -1)
+      const link = new YWeakLink(start, end, startItem)
+      if (parent.doc !== null) {
+        transact(parent.doc, (transaction) => {
+          const end = /** @type {ID} */ (link._quoteEnd.item)
+          for (let item = link._firstItem; item !== null; item = item = item.right) {
+            createLink(transaction, item, link)
+            const lastId = item.lastId
+            if (lastId.client === end.client && lastId.clock === end.clock) {
+              break;
+            }
+          }
+        })
+      }
+      return link
+    }
+  }
+  
+  throw invalidQuotedRange  
+}
+
+/**
+ * Returns a {WeakLink} to an YMap element at given key.
+ * 
  * @param {AbstractType<any>} parent
  * @param {string} key
  * @return {YWeakLink<any>|undefined}
@@ -317,6 +388,31 @@ export const unlinkFrom = (transaction, source, linkRef) => {
         // it may turn out that source item can be merged now
         transaction._mergeStructs.push(source)
       }
+    }
+  }
+}
+
+/**
+ * Rebinds linkedBy links pointed between neighbours of a current item.
+ * This method expects that current item has both left and right neighbours.
+ * 
+ * @param {Transaction} transaction
+ * @param {Item} item
+ */
+export const joinLinkedRange = (transaction, item) => {
+  item.linked = true
+  const allLinks = transaction.doc.store.linkedBy
+  const leftLinks = allLinks.get(/** @type {Item} */ (item.left))
+  const rightLinks = allLinks.get(/** @type {Item} */ (item.right))
+  if (leftLinks && rightLinks) {
+    const common = new Set()
+    for (let link of leftLinks) {
+      if (rightLinks.has(link)) {
+        common.add(link)
+      }
+    }
+    if (common.size != 0) {
+      allLinks.set(item, common)
     }
   }
 }

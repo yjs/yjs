@@ -27,12 +27,14 @@ import {
   typeMapGetAll,
   updateMarkerChanges,
   ContentType,
-  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
+  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction, // eslint-disable-line
+  quoteText
 } from '../internals.js'
 
 import * as object from 'lib0/object'
 import * as map from 'lib0/map'
 import * as error from 'lib0/error'
+import { WeakLink } from 'yjs'
 
 /**
  * @param {any} a
@@ -1153,6 +1155,31 @@ export class YText extends AbstractType {
     } else {
       /** @type {Array<function>} */ (this._pending).push(() => this.insertEmbed(index, embed, attributes))
     }
+  }
+
+  /**
+   * Returns a WeakLink representing a dynamic quotation of a range of elements.
+   * 
+   * In case when quotation happens in a middle of formatting range, formatting
+   * attributes will be split into before|within|after eg. quoting fragment of 
+   * `<i>hello world</i>` could result in `<i>he</i>"<i>llo wo</i>"<i>rld</i>`
+   * where `"<i>llo wo</i>"` represents quoted range.
+   *
+   * @param {number} index The index where quoted range should start
+   * @param {number} length Number of quoted elements
+   * @return {WeakLink<string>}
+   *
+   * @public
+   */
+  quote (index, length) {
+    const y = this.doc
+    if (y !== null) {
+      return transact(y, transaction => {
+        const pos = findPosition(transaction, this, index)
+        return quoteText(transaction, this, pos, length)
+      })
+    }
+    throw new Error('cannot quote YText which has not been integrated into any Doc')    
   }
 
   /**

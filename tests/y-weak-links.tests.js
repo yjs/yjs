@@ -472,6 +472,75 @@ export const testDeepObserveArray = tc => { //FIXME
   t.compare(events.length, 1)
   t.compare(events[0].target, link)
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testDeepObserveNewElementWithinQuotedRange = tc => {
+  const { testConnector, users, array0, array1 } = init(tc, { users: 2 })
+  const m1 = new Y.Map()
+  const m3 = new Y.Map()
+  array0.insert(0, [1,m1,m3,2])
+  const link0 = array0.quote(1, 2)
+  array0.insert(0, [link0])
+
+  testConnector.flushAllMessages()
+
+  /**
+   * @type {Array<any>}
+   */
+  let e0 = []
+  link0.observeDeep((evts) => {
+    e0 = []
+    for (let e of evts) {
+      switch (e.constructor) {
+        case Y.YMapEvent:
+          e0.push({target: e.target, keys: e.keys})
+          break;
+        case Y.YWeakLinkEvent:
+          e0.push({target: e.target})
+          break;
+        default: throw new Error('unexpected event type ' + e.constructor)
+      }
+    }
+  })
+
+  const link1 = /** @type {Y.WeakLink<any>} */ (array1.get(0))
+  /**
+   * @type {Array<any>}
+   */
+  let e1 = []
+  link1.observeDeep((evts) => {
+    e1 = []
+    for (let e of evts) {
+      switch (e.constructor) {
+        case Y.YMapEvent:
+          e1.push({target: e.target, keys: e.keys})
+          break;
+        case Y.YWeakLinkEvent:
+          e1.push({target: e.target})
+          break;
+        default: throw new Error('unexpected event type ' + e.constructor)
+      }
+    }
+  })
+
+  const m20 = new Y.Map()
+  array0.insert(3, [m20])
+
+  m20.set('key', 'value')
+  t.compare(e0.length, 1)
+  t.compare(e0[0].target, m20)
+  t.compare(e0[0].keys, new Map([['key', {action:'add', oldValue: undefined}]]))
+
+  testConnector.flushAllMessages()
+
+  const m21 = array1.get(3)
+  t.compare(e1.length, 1)
+  t.compare(e1[0].target, m21)
+  t.compare(e1[0].keys, new Map([['key', {action:'add', oldValue: undefined}]]))
+}
+
 /**
  * @param {t.TestCase} tc
  */
@@ -608,4 +677,56 @@ export const testRemoteMapUpdate = tc => {
   t.compare(link0.deref(), 3)
   t.compare(link1.deref(), 3)
   t.compare(link2.deref(), 3)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testTextBasic = tc => {
+  const { testConnector, text0, array0, text1 } = init(tc, { users: 2 })
+
+  text0.insert(0, 'abcd')
+  const link0 = text0.quote(1, 2)
+  t.compare(link0.toString(), 'bc')
+  text0.insert(2, 'ef')
+  t.compare(link0.toString(), 'befc')
+  text0.delete(3, 3)
+  t.compare(link0.toString(), 'be')
+  text0.insertEmbed(3, link0)
+  
+  testConnector.flushAllMessages()
+
+  const delta = text1.toDelta()
+  const { insert } = delta[1]
+  t.compare(insert.toString(), 'be')
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+const testQuoteFormattedText = tc => {
+  const doc = new Y.Doc()
+  const text = /** @type {Y.XmlText} */ (doc.get('text', Y.XmlText))
+  const text2 = /** @type {Y.XmlText} */ (doc.get('text2', Y.XmlText))
+
+  text.insert(0, 'abcde')
+  text.format(1, 3, {i:true}) // 'a<i>bcd</i>e'
+  const l1 = text.quote(0, 2) // 'a<i>b</i>'
+  const l2 = text.quote(2, 1) // '<i>c</i>'
+  const l3 = text.quote(3, 2) // '<i>d</i>e'
+
+  t.compare(l1.toString(), 'a<i>b</i>')
+  t.compare(l2.toString(), '<i>c</i>')
+  t.compare(l3.toString(), '<i>d</i>e')
+
+  text2.insertEmbed(0, l1)
+  text2.insertEmbed(1, l2)
+  text2.insertEmbed(2, l3)
+
+  const delta = text2.toDelta()
+  t.compare(delta, [
+    {insert: l1},
+    {insert: l2},
+    {insert: l3},
+  ])
 }

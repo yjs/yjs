@@ -24,7 +24,8 @@ import {
   addChangedTypeToTransaction,
   isDeleted,
   StackItem, DeleteSet, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction, // eslint-disable-line
-  YWeakLink
+  YWeakLink,
+  joinLinkedRange
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -105,6 +106,14 @@ export const splitItem = (transaction, leftItem, diff) => {
   }
   if (leftItem.redone !== null) {
     rightItem.redone = createID(leftItem.redone.client, leftItem.redone.clock + diff)
+  }
+  if (leftItem.linked) {
+    rightItem.linked = true
+    const allLinks = transaction.doc.store.linkedBy
+    const linkedBy = allLinks.get(leftItem)
+    if (linkedBy !== undefined) {
+      allLinks.set(rightItem, new Set(linkedBy))
+    }
   }
   // update left (do not set leftItem.rightOrigin as it will lead to problems when syncing)
   leftItem.right = rightItem
@@ -554,9 +563,15 @@ export class Item extends AbstractStruct {
           this.left.delete(transaction)
         }
       }
-      // adjust length of parent
-      if (this.parentSub === null && this.countable && !this.deleted) {
-        /** @type {AbstractType<any>} */ (this.parent)._length += this.length
+      if (this.parentSub === null && !this.deleted) {
+        if (this.countable) {
+          // adjust length of parent
+          /** @type {AbstractType<any>} */ (this.parent)._length += this.length
+        }
+        if (this.left && this.left.linked && this.right && this.right.linked) {
+          // this item exists within a quoted range
+          joinLinkedRange(transaction, this)
+        }
       }
       addStruct(transaction.doc.store, this)
       this.content.integrate(transaction, this)

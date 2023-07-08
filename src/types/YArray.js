@@ -212,7 +212,7 @@ export class YArray extends AbstractType {
    * @param {number} length The number of elements to include in returned weak link reference.
    * @return {YWeakLink<T>}
    */
-  quote(index, length = 1) {
+  quote (index, length = 1) {
     if (this.doc !== null) {
       return transact(this.doc, transaction => {
         return arrayWeakLink(transaction, this, index, length)
