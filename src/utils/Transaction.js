@@ -176,8 +176,10 @@ const tryToMergeWithLeft = (structs, pos) => {
       if (right instanceof Item && right.parentSub !== null && /** @type {AbstractType<any>} */ (right.parent)._map.get(right.parentSub) === right) {
         /** @type {AbstractType<any>} */ (right.parent)._map.set(right.parentSub, /** @type {Item} */ (left))
       }
+      return 1
     }
   }
+  return 0
 }
 
 /**
@@ -259,6 +261,7 @@ const tryMergeDeleteSet = (ds, store) => {
   ds.clients.forEach((deleteItems, client) => {
     const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
     let mergedCount = 0
+    let initialMerges = 0
     for (let di = deleteItems.length - 1; di >= 0; di--) {
       const deleteItem = deleteItems[di]
       // start with merging the item next to the last deleted item
@@ -268,7 +271,11 @@ const tryMergeDeleteSet = (ds, store) => {
         si > 0 && struct.id.clock >= deleteItem.clock;
         struct = structs[--si]
       ) {
-        mergedCount += tryToMergeWithLeftNoSplice(structs, si)
+        if (initialMerges < 10) {
+          initialMerges += tryToMergeWithLeft(structs, si)
+        } else {
+          mergedCount += tryToMergeWithLeftNoSplice(structs, si)
+        }
       }
     }
     if (mergedCount > 0) {
@@ -364,8 +371,13 @@ const cleanupTransactions = (transactionCleanups, i) => {
           // we iterate from right to left so we can safely remove entries
           const firstChangePos = math.max(findIndexSS(structs, beforeClock), 1)
           let mergedCount = 0
+          let initialMerges = 0
           for (let i = structs.length - 1; i >= firstChangePos; i--) {
-            mergedCount += tryToMergeWithLeftNoSplice(structs, i)
+            if (initialMerges < 10) {
+              initialMerges += tryToMergeWithLeft(structs, i)
+            } else {
+              mergedCount += tryToMergeWithLeftNoSplice(structs, i)
+            }
           }
           // eslint-disable-next-line
           if (mergedCount > 0) {
