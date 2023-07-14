@@ -13,7 +13,12 @@ import {
   readID,
   RelativePosition,
   ItemTextListPosition,
-  ContentString
+  ContentString,
+  rangeDelta,
+  formatXmlString,
+  Snapshot,
+  YText,
+  YXmlText
 } from "../internals.js"
 
 /**
@@ -87,7 +92,7 @@ export class YWeakLink extends AbstractType {
    * 
    * @return {Array<any>}
    */
-  unqote () {
+  unquote () {
     let result = /** @type {Array<any>} */ ([])
     let item = this._firstItem
     const end = /** @type {ID} */ (this._quoteEnd.item)
@@ -191,23 +196,50 @@ export class YWeakLink extends AbstractType {
    * @public
    */
   toString () {
-    let str = ''
-    /**
-     * @type {Item|null}
-     */
-    let n = this._firstItem
-    const end = /** @type {ID} */ (this._quoteEnd.item)
-    while (n !== null) {
-      if (!n.deleted && n.countable && n.content.constructor === ContentString) {
-        str += /** @type {ContentString} */ (n.content).str
+    if (this._firstItem !== null) {
+      switch (/** @type {AbstractType<any>} */ (this._firstItem.parent).constructor) {
+        case YText: 
+          let str = ''
+          /**
+           * @type {Item|null}
+           */
+          let n = this._firstItem
+          const end = /** @type {ID} */ (this._quoteEnd.item)
+          while (n !== null) {
+            if (!n.deleted && n.countable && n.content.constructor === ContentString) {
+              str += /** @type {ContentString} */ (n.content).str
+            }
+            const lastId = n.lastId
+            if (lastId.client === end.client && lastId.clock === end.clock) {
+              break;
+            }
+            n = n.right
+          }
+          return str
+
+        case YXmlText:
+          return this.toDelta().map(delta => formatXmlString(delta)).join('')
       }
-      const lastId = n.lastId
-      if (lastId.client === end.client && lastId.clock === end.clock) {
-        break;
-      }
-      n = n.right
+    } else {
+      return ''
     }
-    return str
+  }
+
+  /**
+   * Returns the Delta representation of quoted part of underlying text type.
+   * 
+   * @param {Snapshot|undefined} [snapshot]
+   * @param {Snapshot|undefined} [prevSnapshot]
+   * @param {function('removed' | 'added', ID):any} [computeYChange]
+   * @returns {Array<any>}
+   */
+  toDelta(snapshot, prevSnapshot, computeYChange) {
+    if (this._firstItem !== null && this._quoteStart.item !== null && this._quoteEnd.item !== null) {
+      const parent = /** @type {AbstractType<any>} */ (this._firstItem.parent)
+      return rangeDelta(parent, this._quoteStart.item, this._quoteEnd.item, snapshot, prevSnapshot, computeYChange)
+    } else {
+      return []
+    }
   }
 }
 

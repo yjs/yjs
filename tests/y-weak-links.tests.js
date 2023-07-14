@@ -52,7 +52,7 @@ export const testArrayQuoteMultipleElements = tc => {
   array0.insert(0, [array0.quote(1, 3)])
 
   const link0 = array0.get(0)
-  t.compare(link0.unqote(), [2, nested, 3])
+  t.compare(link0.unquote(), [2, nested, 3])
   t.compare(array0.get(1), 1)
   t.compare(array0.get(2), 2)
   t.compare(array0.get(3), nested)
@@ -61,26 +61,26 @@ export const testArrayQuoteMultipleElements = tc => {
   testConnector.flushAllMessages()
 
   const link1 = array1.get(0)
-  let unqoted = link1.unqote()
-  t.compare(unqoted[0], 2)
-  t.compare(unqoted[1].toJSON(), {'key':'value'})
-  t.compare(unqoted[2], 3)
+  let unquoted = link1.unquote()
+  t.compare(unquoted[0], 2)
+  t.compare(unquoted[1].toJSON(), {'key':'value'})
+  t.compare(unquoted[2], 3)
   t.compare(array1.get(1), 1)
   t.compare(array1.get(2), 2)
   t.compare(array1.get(3).toJSON(), {'key':'value'})
   t.compare(array1.get(4), 3)
 
   array1.insert(3, ['A', 'B'])
-  unqoted = link1.unqote()
-  t.compare(unqoted[0], 2)
-  t.compare(unqoted[1], 'A')
-  t.compare(unqoted[2], 'B')
-  t.compare(unqoted[3].toJSON(), {'key':'value'})
-  t.compare(unqoted[4], 3)
+  unquoted = link1.unquote()
+  t.compare(unquoted[0], 2)
+  t.compare(unquoted[1], 'A')
+  t.compare(unquoted[2], 'B')
+  t.compare(unquoted[3].toJSON(), {'key':'value'})
+  t.compare(unquoted[4], 3)
   
   testConnector.flushAllMessages()
   
-  t.compare(array0.get(0).unqote(), [2, 'A', 'B', nested, 3])
+  t.compare(array0.get(0).unquote(), [2, 'A', 'B', nested, 3])
 }
 
 /**
@@ -92,7 +92,7 @@ export const testSelfQuotation = tc => {
   const link0 = array0.quote(0, 3)
   array0.insert(1, [link0]) // link is inserted into its own range
 
-  t.compare(link0.unqote(), [1, link0, 2, 3])
+  t.compare(link0.unquote(), [1, link0, 2, 3])
   t.compare(array0.get(0), 1)
   t.compare(array0.get(1), link0)
   t.compare(array0.get(2), 2)
@@ -102,8 +102,8 @@ export const testSelfQuotation = tc => {
   testConnector.flushAllMessages()
 
   const link1 = array1.get(1)
-  let unqoted = link1.unqote()
-  t.compare(unqoted, [1, link1, 2, 3])
+  let unquoted = link1.unquote()
+  t.compare(unquoted, [1, link1, 2, 3])
   t.compare(array1.get(0), 1)
   t.compare(array1.get(1), link1)
   t.compare(array1.get(2), 2)
@@ -262,7 +262,7 @@ export const testObserveArray = tc => {
   testConnector.flushAllMessages()
 
   let link1 = /** @type {Y.WeakLink<String>} */ (array1.get(0))
-  t.compare(link1.unqote(), ['B','C'])
+  t.compare(link1.unquote(), ['B','C'])
   /**
    * @type {any}
    */
@@ -270,16 +270,16 @@ export const testObserveArray = tc => {
   link1.observe((e) => target1 = e.target)
 
   array0.delete(2)
-  t.compare(target0.unqote(), ['C'])
+  t.compare(target0.unquote(), ['C'])
 
   testConnector.flushAllMessages()
-  t.compare(target1.unqote(), ['C'])
+  t.compare(target1.unquote(), ['C'])
   
   array1.delete(2)
-  t.compare(target1.unqote(), [])
+  t.compare(target1.unquote(), [])
 
   testConnector.flushAllMessages()
-  t.compare(target0.unqote(), [])
+  t.compare(target0.unquote(), [])
 
   target0 = null
   array0.delete(1)
@@ -682,41 +682,41 @@ export const testRemoteMapUpdate = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testTextBasic = tc => {
-  const { testConnector, text0, array0, text1 } = init(tc, { users: 2 })
+const testTextBasic = tc => {
+  const { testConnector, text0, text1 } = init(tc, { users: 2 })
 
-  text0.insert(0, 'abcd')
-  const link0 = text0.quote(1, 2)
+  text0.insert(0, 'abcd')             // 'abcd'
+  const link0 = text0.quote(1, 2)     // quote: [bc]
   t.compare(link0.toString(), 'bc')
-  text0.insert(2, 'ef')
-  t.compare(link0.toString(), 'befc')
-  text0.delete(3, 3)
+  text0.insert(2, 'ef')               // 'abefcd', quote: [befc]
+  t.compare(link0.toString(), 'befc') 
+  text0.delete(3, 3)                  // 'abe', quote: [be]
   t.compare(link0.toString(), 'be')
-  text0.insertEmbed(3, link0)
+  text0.insertEmbed(3, link0)         // 'abe[be]'
   
   testConnector.flushAllMessages()
 
   const delta = text1.toDelta()
-  const { insert } = delta[1]
+  const { insert } = delta[1] // YWeakLink
   t.compare(insert.toString(), 'be')
 }
 
 /**
  * @param {t.TestCase} tc
  */
-const testQuoteFormattedText = tc => {
+export const testQuoteFormattedText = tc => {
   const doc = new Y.Doc()
   const text = /** @type {Y.XmlText} */ (doc.get('text', Y.XmlText))
   const text2 = /** @type {Y.XmlText} */ (doc.get('text2', Y.XmlText))
 
   text.insert(0, 'abcde')
-  text.format(1, 3, {i:true}) // 'a<i>bcd</i>e'
-  const l1 = text.quote(0, 2) // 'a<i>b</i>'
+  text.format(0, 1, {b:true})
+  text.format(1, 3, {i:true}) // '<b>a</b><i>bcd</i>e'
+  const l1 = text.quote(0, 2)
+  t.compare(l1.toString(), '<b>a</b><i>b</i>')
   const l2 = text.quote(2, 1) // '<i>c</i>'
-  const l3 = text.quote(3, 2) // '<i>d</i>e'
-
-  t.compare(l1.toString(), 'a<i>b</i>')
   t.compare(l2.toString(), '<i>c</i>')
+  const l3 = text.quote(3, 2) // '<i>d</i>e'
   t.compare(l3.toString(), '<i>d</i>e')
 
   text2.insertEmbed(0, l1)
