@@ -427,9 +427,12 @@ export class Item extends AbstractStruct {
     if (this.parent) {
       if ((!this.left && (!this.right || this.right.left !== null)) || (this.left && this.left.right !== this.right)) {
         /**
-         * @type {Item|null}
+         * @type {GC|Item|null}
          */
         let left = this.left
+        if (left && left.constructor === GC) {
+          left = null
+        }
 
         /**
          * @type {Item|null}
