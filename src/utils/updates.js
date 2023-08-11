@@ -90,7 +90,7 @@ export class LazyStructReader {
   constructor (decoder, filterSkips) {
     this.gen = lazyStructReaderGenerator(decoder)
     /**
-     * @type {null | Item | Skip | GC}
+     * @type {null | Item | GC}
      */
     this.curr = null
     this.done = false
@@ -99,11 +99,12 @@ export class LazyStructReader {
   }
 
   /**
-   * @return {Item | GC | Skip |null}
+   * @return {Item | GC |null}
    */
   next () {
     // ignore "Skip" structs
     do {
+      // @ts-ignore this.curr is not `Skip` finally
       this.curr = this.gen.next().value || null
     } while (this.filterSkips && this.curr !== null && this.curr.constructor === Skip)
     return this.curr
@@ -297,7 +298,7 @@ export const parseUpdateMeta = update => parseUpdateMetaV2(update, UpdateDecoder
  *
  * @param {Item | GC | Skip} left
  * @param {number} diff
- * @return {Item | GC}
+ * @return {Item | GC | Skip}
  */
 const sliceStruct = (left, diff) => {
   if (left.constructor === GC) {
@@ -378,10 +379,11 @@ export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = U
     const currDecoder = lazyStructDecoders[0]
     // write from currDecoder until the next operation is from another client or if filler-struct
     // then we need to reorder the decoders and find the next operation to write
+    /** @type {number} */
     const firstClient = /** @type {Item | GC} */ (currDecoder.curr).id.client
 
     if (currWrite !== null) {
-      let curr = /** @type {Item | GC | null} */ (currDecoder.curr)
+      let curr = /** @type {Item | GC | Skip | null} */ (currDecoder.curr)
       let iterated = false
 
       // iterate until we find something that we haven't written already
@@ -520,7 +522,7 @@ const flushLazyStructWriter = lazyWriter => {
 
 /**
  * @param {LazyStructWriter} lazyWriter
- * @param {Item | GC} struct
+ * @param {Item | GC | Skip} struct
  * @param {number} offset
  */
 const writeStructToLazyStructWriter = (lazyWriter, struct, offset) => {
