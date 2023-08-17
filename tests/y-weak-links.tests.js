@@ -682,7 +682,7 @@ export const testRemoteMapUpdate = tc => {
 /**
  * @param {t.TestCase} tc
  */
-const testTextBasic = tc => {
+export const testTextBasic = tc => {
   const { testConnector, text0, text1 } = init(tc, { users: 2 })
 
   text0.insert(0, 'abcd')             // 'abcd'
@@ -701,6 +701,29 @@ const testTextBasic = tc => {
   t.compare(insert.toString(), 'be')
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
+export const testXmlTextBasic = tc => {
+  const { testConnector, xml0, xml1 } = init(tc, { users: 2 })
+  const text0 = new Y.XmlText()
+  xml0.insert(0, [text0])
+
+  text0.insert(0, 'abcd')             // 'abcd'
+  const link0 = text0.quote(1, 2)     // quote: [bc]
+  t.compare(link0.toString(), 'bc')
+  text0.insert(2, 'ef')               // 'abefcd', quote: [befc]
+  t.compare(link0.toString(), 'befc') 
+  text0.delete(3, 3)                  // 'abe', quote: [be]
+  t.compare(link0.toString(), 'be')
+  text0.insertEmbed(3, link0)         // 'abe[be]'
+  
+  testConnector.flushAllMessages()
+  const text1 = /** @type {Y.XmlText} */ (xml1.get(0))
+  const delta = text1.toDelta()
+  const { insert } = delta[1] // YWeakLink
+  t.compare(insert.toString(), 'be')
+}
 /**
  * @param {t.TestCase} tc
  */

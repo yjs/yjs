@@ -1260,13 +1260,13 @@ export const rangeDelta = (parent, start, end, snapshot, prevSnapshot, computeYC
       }
     }
     const computeDelta = () => {
-      // scope represents offset at current block from which we're intersted in picking string
+      // startOffset represents offset at current block from which we're intersted in picking string
       // if it's -1 it means, we're out of scope and we should break at this point
-      let scope = start === null ? 0 : -1 
+      let startOffset = start === null ? 0 : -1 
       loop: while (n !== null) {
-        if (scope < 0 && start !== null) {
+        if (startOffset < 0 && start !== null) {
           if (start.client === n.id.client && start.clock >= n.id.clock && start.clock < n.id.clock + n.length) {
-            scope = n.id.clock + n.length - start.clock - 1
+            startOffset = start.clock - n.id.clock
           }
         }
         if (isVisible(n, snapshot) || (prevSnapshot !== undefined && isVisible(n, prevSnapshot))) {
@@ -1288,16 +1288,16 @@ export const rangeDelta = (parent, start, end, snapshot, prevSnapshot, computeYC
                 currentAttributes.delete('ychange')
               }
               let s = /** @type {ContentString} */ (n.content).str
-              if (scope > 0) {
-                 str += s.slice(scope)
-                 scope = 0
+              if (startOffset > 0) {
+                 str += s.slice(startOffset)
+                 startOffset = 0
               } else if (end !== null && end.client === n.id.client && end.clock >= n.id.clock && end.clock < n.id.clock + n.length) {
                 // we reached the end or range
-                const offset = n.id.clock + n.length - end.clock - 1
-                str += s.slice(0, s.length + offset) // scope is negative
+                const endOffset = n.id.clock + n.length - end.clock - 1
+                str += s.slice(0, s.length + endOffset) // scope is negative
                 packStr()
                 break loop
-              } else if (scope == 0) {
+              } else if (startOffset == 0) {
                 str += s
               }
               break
@@ -1328,6 +1328,9 @@ export const rangeDelta = (parent, start, end, snapshot, prevSnapshot, computeYC
               }
               break
           }
+        } else if (end !== null && end.client === n.id.client && end.clock >= n.id.clock && end.clock < n.id.clock + n.length) {
+          // block may not passed visibility check, but we still need to verify boundaries
+          break;
         }
         n = n.right
       }

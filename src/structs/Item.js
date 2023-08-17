@@ -314,7 +314,7 @@ export class Item extends AbstractStruct {
      * bit2: countable
      * bit3: deleted
      * bit4: mark - mark node as fast-search-marker
-     * bit5: linked - this item is linked by Weak Link references
+     * bit9: linked - this item is linked by Weak Link references
      * @type {number} byte
      */
     this.info = this.content.isCountable() ? binary.BIT2 : 0
