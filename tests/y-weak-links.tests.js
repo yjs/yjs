@@ -1,6 +1,6 @@
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
-import { init, compare } from './testHelper.js'
+import { init } from './testHelper.js'
 
 /**
  * @param {t.TestCase} tc
@@ -8,7 +8,7 @@ import { init, compare } from './testHelper.js'
 export const testBasicMap = tc => {
   const doc = new Y.Doc()
   const map = doc.getMap('map')
-  
+
   const nested = new Y.Map()
   nested.set('a1', 'hello')
   map.set('a', nested)
@@ -25,8 +25,8 @@ export const testBasicMap = tc => {
  * @param {t.TestCase} tc
  */
 export const testBasicArray = tc => {
-  const { testConnector, array0, array1 } = init(tc, {users:2})
-  array0.insert(0, [1,2,3])
+  const { testConnector, array0, array1 } = init(tc, { users: 2 })
+  array0.insert(0, [1, 2, 3])
   array0.insert(3, [array0.quote(1)])
 
   t.compare(array0.get(0), 1)
@@ -46,7 +46,7 @@ export const testBasicArray = tc => {
  * @param {t.TestCase} tc
  */
 export const testArrayQuoteMultipleElements = tc => {
-  const { testConnector, array0, array1 } = init(tc, {users:2})
+  const { testConnector, array0, array1 } = init(tc, { users: 2 })
   const nested = new Y.Map([['key', 'value']])
   array0.insert(0, [1, 2, nested, 3])
   array0.insert(0, [array0.quote(1, 3)])
@@ -63,11 +63,11 @@ export const testArrayQuoteMultipleElements = tc => {
   const link1 = array1.get(0)
   let unquoted = link1.unquote()
   t.compare(unquoted[0], 2)
-  t.compare(unquoted[1].toJSON(), {'key':'value'})
+  t.compare(unquoted[1].toJSON(), { key: 'value' })
   t.compare(unquoted[2], 3)
   t.compare(array1.get(1), 1)
   t.compare(array1.get(2), 2)
-  t.compare(array1.get(3).toJSON(), {'key':'value'})
+  t.compare(array1.get(3).toJSON(), { key: 'value' })
   t.compare(array1.get(4), 3)
 
   array1.insert(3, ['A', 'B'])
@@ -75,11 +75,11 @@ export const testArrayQuoteMultipleElements = tc => {
   t.compare(unquoted[0], 2)
   t.compare(unquoted[1], 'A')
   t.compare(unquoted[2], 'B')
-  t.compare(unquoted[3].toJSON(), {'key':'value'})
+  t.compare(unquoted[3].toJSON(), { key: 'value' })
   t.compare(unquoted[4], 3)
-  
+
   testConnector.flushAllMessages()
-  
+
   t.compare(array0.get(0).unquote(), [2, 'A', 'B', nested, 3])
 }
 
@@ -87,7 +87,7 @@ export const testArrayQuoteMultipleElements = tc => {
  * @param {t.TestCase} tc
  */
 export const testSelfQuotation = tc => {
-  const { testConnector, array0, array1 } = init(tc, {users:2})
+  const { testConnector, array0, array1 } = init(tc, { users: 2 })
   array0.insert(0, [1, 2, 3, 4])
   const link0 = array0.quote(0, 3)
   array0.insert(1, [link0]) // link is inserted into its own range
@@ -102,7 +102,7 @@ export const testSelfQuotation = tc => {
   testConnector.flushAllMessages()
 
   const link1 = array1.get(1)
-  let unquoted = link1.unquote()
+  const unquoted = link1.unquote()
   t.compare(unquoted, [1, link1, 2, 3])
   t.compare(array1.get(0), 1)
   t.compare(array1.get(1), link1)
@@ -115,7 +115,7 @@ export const testSelfQuotation = tc => {
  * @param {t.TestCase} tc
  */
 export const testUpdate = tc => {
-  const { testConnector, users, map0, map1 } = init(tc, { users: 2 })
+  const { testConnector, map0, map1 } = init(tc, { users: 2 })
   map0.set('a', new Y.Map([['a1', 'hello']]))
   const link0 = /** @type {Y.WeakLink<Y.Map<any>>} */ (map0.link('a'))
   map0.set('b', link0)
@@ -139,13 +139,13 @@ export const testUpdate = tc => {
  * @param {t.TestCase} tc
  */
 export const testDeleteWeakLink = tc => {
-  const { testConnector, users, map0, map1 } = init(tc, { users: 2 })
+  const { testConnector, map0, map1 } = init(tc, { users: 2 })
   map0.set('a', new Y.Map([['a1', 'hello']]))
   const link0 = /** @type {Y.WeakLink<Y.Map<any>>} */ (map0.link('a'))
   map0.set('b', link0)
 
   testConnector.flushAllMessages()
-  
+
   const link1 = /** @type {Y.WeakLink<Y.Map>} */ map1.get('b')
   const l1 = /** @type {Y.Map<any>} */ (link1.deref())
   const l0 = /** @type {Y.Map<any>} */ (link0.deref())
@@ -164,15 +164,15 @@ export const testDeleteWeakLink = tc => {
  * @param {t.TestCase} tc
  */
 export const testDeleteSource = tc => {
-  const { testConnector, users, map0, map1 } = init(tc, { users: 2 })
+  const { testConnector, map0, map1 } = init(tc, { users: 2 })
   map0.set('a', new Y.Map([['a1', 'hello']]))
   const link0 = /** @type {Y.WeakLink<Y.Map<any>>} */ (map0.link('a'))
   map0.set('b', link0)
 
   testConnector.flushAllMessages()
   const link1 = /** @type {Y.WeakLink<Y.Map<any>>} */ (map1.get('b'))
-  let l1 = /** @type {Y.Map<any>} */ (link1.deref())
-  let l0 = /** @type {Y.Map<any>} */ (link0.deref())
+  const l1 = /** @type {Y.Map<any>} */ (link1.deref())
+  const l0 = /** @type {Y.Map<any>} */ (link0.deref())
   t.compare(l1.get('a1'), l0.get('a1'))
 
   map1.delete('a') // delete source of the link
@@ -188,7 +188,7 @@ export const testDeleteSource = tc => {
  * @param {t.TestCase} tc
  */
 export const testObserveMapUpdate = tc => {
-  const { testConnector, users, map0, map1 } = init(tc, { users: 2 })
+  const { testConnector, map0, map1 } = init(tc, { users: 2 })
   map0.set('a', 'value')
   const link0 = /** @type {Y.WeakLink<String>} */ (map0.link('a'))
   map0.set('b', link0)
@@ -196,17 +196,21 @@ export const testObserveMapUpdate = tc => {
    * @type {any}
    */
   let target0
-  link0.observe((e) => target0 = e.target)
+  link0.observe((e) => {
+    target0 = e.target
+  })
 
   testConnector.flushAllMessages()
 
-  let link1 = /** @type {Y.WeakLink<String>} */ (map1.get('b'))
+  const link1 = /** @type {Y.WeakLink<String>} */ (map1.get('b'))
   t.compare(link1.deref(), 'value')
   /**
    * @type {any}
    */
   let target1
-  link1.observe((e) => target1 = e.target)
+  link1.observe((e) => {
+    target1 = e.target
+  })
 
   map0.set('a', 'value2')
   t.compare(target0.deref(), 'value2')
@@ -219,7 +223,7 @@ export const testObserveMapUpdate = tc => {
  * @param {t.TestCase} tc
  */
 export const testObserveMapDelete = tc => {
-  const { testConnector, users, map0, map1 } = init(tc, { users: 2 })
+  const { testConnector, map0, map1 } = init(tc, { users: 2 })
   map0.set('a', 'value')
   const link0 = /** @type {Y.WeakLink<String>} */ (map0.link('a'))
   map0.set('b', link0)
@@ -227,17 +231,21 @@ export const testObserveMapDelete = tc => {
    * @type {any}
    */
   let target0
-  link0.observe((e) => target0 = e.target)
+  link0.observe((e) => {
+    target0 = e.target
+  })
 
   testConnector.flushAllMessages()
 
-  let link1 = /** @type {Y.WeakLink<String>} */ (map1.get('b'))
+  const link1 = /** @type {Y.WeakLink<String>} */ (map1.get('b'))
   t.compare(link1.deref(), 'value')
   /**
    * @type {any}
    */
   let target1
-  link1.observe((e) => target1 = e.target)
+  link1.observe((e) => {
+    target1 = e.target
+  })
 
   map0.delete('a')
   t.compare(target0.deref(), undefined)
@@ -250,31 +258,35 @@ export const testObserveMapDelete = tc => {
  */
 export const testObserveArray = tc => {
   const { testConnector, array0, array1 } = init(tc, { users: 2 })
-  array0.insert(0, ['A','B','C'])
+  array0.insert(0, ['A', 'B', 'C'])
   const link0 = /** @type {Y.WeakLink<String>} */ (array0.quote(1, 2))
   array0.insert(0, [link0])
   /**
    * @type {any}
    */
   let target0
-  link0.observe((e) => target0 = e.target)
+  link0.observe((e) => {
+    target0 = e.target
+  })
 
   testConnector.flushAllMessages()
 
-  let link1 = /** @type {Y.WeakLink<String>} */ (array1.get(0))
-  t.compare(link1.unquote(), ['B','C'])
+  const link1 = /** @type {Y.WeakLink<String>} */ (array1.get(0))
+  t.compare(link1.unquote(), ['B', 'C'])
   /**
    * @type {any}
    */
   let target1
-  link1.observe((e) => target1 = e.target)
+  link1.observe((e) => {
+    target1 = e.target
+  })
 
   array0.delete(2)
   t.compare(target0.unquote(), ['C'])
 
   testConnector.flushAllMessages()
   t.compare(target1.unquote(), ['C'])
-  
+
   array1.delete(2)
   t.compare(target1.unquote(), [])
 
@@ -308,14 +320,16 @@ export const testDeepObserveTransitive = tc => {
   map2.set('key', 'value1')
   const link1 = /** @type {Y.WeakLink<String>} */ (map2.link('key'))
   map1.set('link-key', link1)
-  const link2 =  /** @type {Y.WeakLink<String>} */ (map1.link('link-key'))
+  const link2 = /** @type {Y.WeakLink<String>} */ (map1.link('link-key'))
   map2.set('link-link', link2)
 
   /**
    * @type {Array<any>}
    */
   let events = []
-  link2.observeDeep((e) => events = e)
+  link2.observeDeep((e) => {
+    events = e
+  })
   map2.set('key', 'value2')
   const values = events.map((e) => e.target.deref())
   t.compare(values, ['value2'])
@@ -345,16 +359,18 @@ export const testDeepObserveTransitive2 = tc => {
   map2.set('key', 'value1')
   const link1 = /** @type {Y.WeakLink<String>} */ (map2.link('key'))
   map1.set('link-key', link1)
-  const link2 =  /** @type {Y.WeakLink<String>} */ (map1.link('link-key'))
+  const link2 = /** @type {Y.WeakLink<String>} */ (map1.link('link-key'))
   map2.set('link-link', link2)
-  const link3 =  /** @type {Y.WeakLink<String>} */ (map2.link('link-link'))
+  const link3 = /** @type {Y.WeakLink<String>} */ (map2.link('link-link'))
   map3.set('link-link-link', link3)
 
   /**
    * @type {Array<any>}
    */
   let events = []
-  link3.observeDeep((e) => events = e)
+  link3.observeDeep((e) => {
+    events = e
+  })
   map2.set('key', 'value2')
   const values = events.map((e) => e.target.deref())
   t.compare(values, ['value2'])
@@ -381,7 +397,9 @@ export const testDeepObserveMap = tc => {
    * @type {Array<any>}
    */
   let events = []
-  map.observeDeep((e) => events = e)
+  map.observeDeep((e) => {
+    events = e
+  })
 
   const nested = new Y.Map()
   array.insert(0, [nested])
@@ -393,15 +411,15 @@ export const testDeepObserveMap = tc => {
   nested.set('key', 'value')
   t.compare(events.length, 1)
   t.compare(events[0].target, nested)
-  t.compare(events[0].keys, new Map([['key', {action:'add', oldValue: undefined}]]))
+  t.compare(events[0].keys, new Map([['key', { action: 'add', oldValue: undefined }]]))
 
   // delete entry in linked map
   events = []
   nested.delete('key')
   t.compare(events.length, 1)
   t.compare(events[0].target, nested)
-  t.compare(events[0].keys, new Map([['key', {action:'delete', oldValue: undefined}]]))
-  
+  t.compare(events[0].keys, new Map([['key', { action: 'delete', oldValue: undefined }]]))
+
   // delete linked map
   array.delete(0)
   t.compare(events.length, 1)
@@ -411,7 +429,7 @@ export const testDeepObserveMap = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testDeepObserveArray = tc => { //FIXME
+export const testDeepObserveArray = tc => { // FIXME
   // test observers in a face of linked chains of values
   const doc = new Y.Doc()
   /*
@@ -436,14 +454,14 @@ export const testDeepObserveArray = tc => { //FIXME
   let events = []
   array.observeDeep((evts) => {
     events = []
-    for (let e of evts) {
+    for (const e of evts) {
       switch (e.constructor) {
         case Y.YMapEvent:
-          events.push({target: e.target, keys: e.keys})
-          break;
+          events.push({ target: e.target, keys: e.keys })
+          break
         case Y.YWeakLinkEvent:
-          events.push({target: e.target})
-          break;
+          events.push({ target: e.target })
+          break
         default: throw new Error('unexpected event type ' + e.constructor)
       }
     }
@@ -454,19 +472,19 @@ export const testDeepObserveArray = tc => { //FIXME
   nested.set('key', 'value')
   t.compare(events.length, 1)
   t.compare(events[0].target, nested)
-  t.compare(events[0].keys, new Map([['key', {action:'add', oldValue: undefined}]]))
+  t.compare(events[0].keys, new Map([['key', { action: 'add', oldValue: undefined }]]))
 
   nested.set('key', 'value2')
   t.compare(events.length, 1)
   t.compare(events[0].target, nested)
-  t.compare(events[0].keys, new Map([['key', {action:'update', oldValue: 'value'}]]))
+  t.compare(events[0].keys, new Map([['key', { action: 'update', oldValue: 'value' }]]))
 
   // delete entry in linked map
   nested.delete('key')
   t.compare(events.length, 1)
   t.compare(events[0].target, nested)
-  t.compare(events[0].keys, new Map([['key', {action:'delete', oldValue: 'value2'}]]))
-  
+  t.compare(events[0].keys, new Map([['key', { action: 'delete', oldValue: 'value2' }]]))
+
   // delete linked map
   map.delete('nested')
   t.compare(events.length, 1)
@@ -477,10 +495,10 @@ export const testDeepObserveArray = tc => { //FIXME
  * @param {t.TestCase} tc
  */
 export const testDeepObserveNewElementWithinQuotedRange = tc => {
-  const { testConnector, users, array0, array1 } = init(tc, { users: 2 })
+  const { testConnector, array0, array1 } = init(tc, { users: 2 })
   const m1 = new Y.Map()
   const m3 = new Y.Map()
-  array0.insert(0, [1,m1,m3,2])
+  array0.insert(0, [1, m1, m3, 2])
   const link0 = array0.quote(1, 2)
   array0.insert(0, [link0])
 
@@ -492,14 +510,14 @@ export const testDeepObserveNewElementWithinQuotedRange = tc => {
   let e0 = []
   link0.observeDeep((evts) => {
     e0 = []
-    for (let e of evts) {
+    for (const e of evts) {
       switch (e.constructor) {
         case Y.YMapEvent:
-          e0.push({target: e.target, keys: e.keys})
-          break;
+          e0.push({ target: e.target, keys: e.keys })
+          break
         case Y.YWeakLinkEvent:
-          e0.push({target: e.target})
-          break;
+          e0.push({ target: e.target })
+          break
         default: throw new Error('unexpected event type ' + e.constructor)
       }
     }
@@ -512,14 +530,14 @@ export const testDeepObserveNewElementWithinQuotedRange = tc => {
   let e1 = []
   link1.observeDeep((evts) => {
     e1 = []
-    for (let e of evts) {
+    for (const e of evts) {
       switch (e.constructor) {
         case Y.YMapEvent:
-          e1.push({target: e.target, keys: e.keys})
-          break;
+          e1.push({ target: e.target, keys: e.keys })
+          break
         case Y.YWeakLinkEvent:
-          e1.push({target: e.target})
-          break;
+          e1.push({ target: e.target })
+          break
         default: throw new Error('unexpected event type ' + e.constructor)
       }
     }
@@ -531,20 +549,20 @@ export const testDeepObserveNewElementWithinQuotedRange = tc => {
   m20.set('key', 'value')
   t.compare(e0.length, 1)
   t.compare(e0[0].target, m20)
-  t.compare(e0[0].keys, new Map([['key', {action:'add', oldValue: undefined}]]))
+  t.compare(e0[0].keys, new Map([['key', { action: 'add', oldValue: undefined }]]))
 
   testConnector.flushAllMessages()
 
   const m21 = array1.get(3)
   t.compare(e1.length, 1)
   t.compare(e1[0].target, m21)
-  t.compare(e1[0].keys, new Map([['key', {action:'add', oldValue: undefined}]]))
+  t.compare(e1[0].keys, new Map([['key', { action: 'add', oldValue: undefined }]]))
 }
 
 /**
  * @param {t.TestCase} tc
  */
-export const testMapDeepObserve = tc => { //FIXME
+export const testMapDeepObserve = tc => { // FIXME
   const doc = new Y.Doc()
   const outer = doc.getMap('outer')
   const inner = new Y.Map()
@@ -556,36 +574,35 @@ export const testMapDeepObserve = tc => { //FIXME
   let events = []
   outer.observeDeep((evts) => {
     events = []
-    for (let e of evts) {
+    for (const e of evts) {
       switch (e.constructor) {
         case Y.YMapEvent:
-          events.push({target: e.target, keys: e.keys})
-          break;
+          events.push({ target: e.target, keys: e.keys })
+          break
         case Y.YWeakLinkEvent:
-          events.push({target: e.target})
-          break;
+          events.push({ target: e.target })
+          break
         default: throw new Error('unexpected event type ' + e.constructor)
       }
     }
   })
 
-
   inner.set('key', 'value1')
   t.compare(events.length, 1)
   t.compare(events[0].target, inner)
-  t.compare(events[0].keys, new Map([['key', {action:'add', oldValue: undefined}]]))
-  
+  t.compare(events[0].keys, new Map([['key', { action: 'add', oldValue: undefined }]]))
+
   events = []
   inner.set('key', 'value2')
   t.compare(events.length, 1)
   t.compare(events[0].target, inner)
-  t.compare(events[0].keys, new Map([['key', {action:'update', oldValue: 'value1'}]]))
+  t.compare(events[0].keys, new Map([['key', { action: 'update', oldValue: 'value1' }]]))
 
   events = []
   inner.delete('key')
   t.compare(events.length, 1)
   t.compare(events[0].target, inner)
-  t.compare(events[0].keys, new Map([['key', {action:'delete', oldValue: 'value2'}]]))
+  t.compare(events[0].keys, new Map([['key', { action: 'delete', oldValue: 'value2' }]]))
 }
 
 /**
@@ -629,23 +646,25 @@ export const testDeepObserveRecursive = tc => {
    * @type {Array<any>}
    */
   let events = []
-  m0.observeDeep((e) => events = e)
+  m0.observeDeep((e) => {
+    events = e
+  })
 
   m1.set('test-key1', 'value1')
   t.compare(events.length, 1)
   t.compare(events[0].target, m1)
-  t.compare(events[0].keys, new Map([['test-key1', {action:'add', oldValue: undefined}]]))
-  
+  t.compare(events[0].keys, new Map([['test-key1', { action: 'add', oldValue: undefined }]]))
+
   events = []
   m2.set('test-key2', 'value2')
   t.compare(events.length, 1)
   t.compare(events[0].target, m2)
-  t.compare(events[0].keys, new Map([['test-key2', {action:'add', oldValue: undefined}]]))
+  t.compare(events[0].keys, new Map([['test-key2', { action: 'add', oldValue: undefined }]]))
 
   m1.delete('test-key1')
   t.compare(events.length, 1)
   t.compare(events[0].target, m1)
-  t.compare(events[0].keys, new Map([['test-key1', {action:'delete', oldValue: undefined}]]))
+  t.compare(events[0].keys, new Map([['test-key1', { action: 'delete', oldValue: undefined }]]))
 }
 
 /**
@@ -662,7 +681,7 @@ export const testRemoteMapUpdate = tc => {
   map0.set('key', 3)
 
   // apply updated content first, link second
-  Y.applyUpdate(users[2], Y.encodeStateAsUpdate(users[0])) 
+  Y.applyUpdate(users[2], Y.encodeStateAsUpdate(users[0]))
   Y.applyUpdate(users[2], Y.encodeStateAsUpdate(users[1]))
 
   // make sure that link can find the most recent block
@@ -685,15 +704,15 @@ export const testRemoteMapUpdate = tc => {
 export const testTextBasic = tc => {
   const { testConnector, text0, text1 } = init(tc, { users: 2 })
 
-  text0.insert(0, 'abcd')             // 'abcd'
-  const link0 = text0.quote(1, 2)     // quote: [bc]
+  text0.insert(0, 'abcd') // 'abcd'
+  const link0 = text0.quote(1, 2) // quote: [bc]
   t.compare(link0.toString(), 'bc')
-  text0.insert(2, 'ef')               // 'abefcd', quote: [befc]
-  t.compare(link0.toString(), 'befc') 
-  text0.delete(3, 3)                  // 'abe', quote: [be]
+  text0.insert(2, 'ef') // 'abefcd', quote: [befc]
+  t.compare(link0.toString(), 'befc')
+  text0.delete(3, 3) // 'abe', quote: [be]
   t.compare(link0.toString(), 'be')
-  text0.insertEmbed(3, link0)         // 'abe[be]'
-  
+  text0.insertEmbed(3, link0) // 'abe[be]'
+
   testConnector.flushAllMessages()
 
   const delta = text1.toDelta()
@@ -709,15 +728,15 @@ export const testXmlTextBasic = tc => {
   const text0 = new Y.XmlText()
   xml0.insert(0, [text0])
 
-  text0.insert(0, 'abcd')             // 'abcd'
-  const link0 = text0.quote(1, 2)     // quote: [bc]
+  text0.insert(0, 'abcd') // 'abcd'
+  const link0 = text0.quote(1, 2) // quote: [bc]
   t.compare(link0.toString(), 'bc')
-  text0.insert(2, 'ef')               // 'abefcd', quote: [befc]
-  t.compare(link0.toString(), 'befc') 
-  text0.delete(3, 3)                  // 'abe', quote: [be]
+  text0.insert(2, 'ef') // 'abefcd', quote: [befc]
+  t.compare(link0.toString(), 'befc')
+  text0.delete(3, 3) // 'abe', quote: [be]
   t.compare(link0.toString(), 'be')
-  text0.insertEmbed(3, link0)         // 'abe[be]'
-  
+  text0.insertEmbed(3, link0) // 'abe[be]'
+
   testConnector.flushAllMessages()
   const text1 = /** @type {Y.XmlText} */ (xml1.get(0))
   const delta = text1.toDelta()
@@ -733,8 +752,8 @@ export const testQuoteFormattedText = tc => {
   const text2 = /** @type {Y.XmlText} */ (doc.get('text2', Y.XmlText))
 
   text.insert(0, 'abcde')
-  text.format(0, 1, {b:true})
-  text.format(1, 3, {i:true}) // '<b>a</b><i>bcd</i>e'
+  text.format(0, 1, { b: true })
+  text.format(1, 3, { i: true }) // '<b>a</b><i>bcd</i>e'
   const l1 = text.quote(0, 2)
   t.compare(l1.toString(), '<b>a</b><i>b</i>')
   const l2 = text.quote(2, 1) // '<i>c</i>'
@@ -748,8 +767,8 @@ export const testQuoteFormattedText = tc => {
 
   const delta = text2.toDelta()
   t.compare(delta, [
-    {insert: l1},
-    {insert: l2},
-    {insert: l3},
+    { insert: l1 },
+    { insert: l2 },
+    { insert: l3 }
   ])
 }

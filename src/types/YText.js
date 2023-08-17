@@ -27,14 +27,13 @@ import {
   typeMapGetAll,
   updateMarkerChanges,
   ContentType,
-  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction, // eslint-disable-line
+  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction, YWeakLink, // eslint-disable-line
   quoteText
 } from '../internals.js'
 
 import * as object from 'lib0/object'
 import * as map from 'lib0/map'
 import * as error from 'lib0/error'
-import { WeakLink } from 'yjs'
 
 /**
  * @param {any} a
@@ -1059,15 +1058,15 @@ export class YText extends AbstractType {
 
   /**
    * Returns a WeakLink representing a dynamic quotation of a range of elements.
-   * 
+   *
    * In case when quotation happens in a middle of formatting range, formatting
-   * attributes will be split into before|within|after eg. quoting fragment of 
+   * attributes will be split into before|within|after eg. quoting fragment of
    * `<i>hello world</i>` could result in `<i>he</i>"<i>llo wo</i>"<i>rld</i>`
    * where `"<i>llo wo</i>"` represents quoted range.
    *
    * @param {number} index The index where quoted range should start
    * @param {number} length Number of quoted elements
-   * @return {WeakLink<string>}
+   * @return {YWeakLink<string>}
    *
    * @public
    */
@@ -1079,7 +1078,7 @@ export class YText extends AbstractType {
         return quoteText(transaction, this, pos, length)
       })
     }
-    throw new Error('Quoted text was not integrated into Doc')    
+    throw new Error('Quoted text was not integrated into Doc')
   }
 
   /**
@@ -1218,138 +1217,140 @@ export const readYText = _decoder => new YText()
 
 /**
  * Returns a delta representation that happens between `start` and `end` ranges (both sides inclusive).
- * 
- * @param {AbstractType<any>} parent 
+ *
+ * @param {AbstractType<any>} parent
  * @param {ID|null} start
  * @param {ID|null} end
- * @param {Snapshot|undefined} snapshot 
- * @param {Snapshot|undefined} prevSnapshot 
- * @param {(function('removed' | 'added', ID):any)|undefined} computeYChange 
+ * @param {Snapshot|undefined} snapshot
+ * @param {Snapshot|undefined} prevSnapshot
+ * @param {(function('removed' | 'added', ID):any)|undefined} computeYChange
  * @returns {any} The Delta representation of this type.
  */
 export const rangeDelta = (parent, start, end, snapshot, prevSnapshot, computeYChange) => {
-    /**
+  /**
      * @type{Array<any>}
      */
-    const ops = []
-    const currentAttributes = new Map()
-    const doc = /** @type {Doc} */ (parent.doc)
-    let str = ''
-    let n = parent._start
-    function packStr () {
-      if (str.length > 0) {
-        // pack str with attributes to ops
-        /**
+  const ops = []
+  const currentAttributes = new Map()
+  const doc = /** @type {Doc} */ (parent.doc)
+  let str = ''
+  let n = parent._start
+  function packStr () {
+    if (str.length > 0) {
+      // pack str with attributes to ops
+      /**
          * @type {Object<string,any>}
          */
-        const attributes = {}
-        let addAttributes = false
-        currentAttributes.forEach((value, key) => {
-          addAttributes = true
-          attributes[key] = value
-        })
-        /**
+      const attributes = {}
+      let addAttributes = false
+      currentAttributes.forEach((value, key) => {
+        addAttributes = true
+        attributes[key] = value
+      })
+      /**
          * @type {Object<string,any>}
          */
-        const op = { insert: str }
-        if (addAttributes) {
-          op.attributes = attributes
-        }
-        ops.push(op)
-        str = ''
+      const op = { insert: str }
+      if (addAttributes) {
+        op.attributes = attributes
       }
+      ops.push(op)
+      str = ''
     }
-    const computeDelta = () => {
-      // startOffset represents offset at current block from which we're intersted in picking string
-      // if it's -1 it means, we're out of scope and we should break at this point
-      let startOffset = start === null ? 0 : -1 
-      loop: while (n !== null) {
-        if (startOffset < 0 && start !== null) {
-          if (start.client === n.id.client && start.clock >= n.id.clock && start.clock < n.id.clock + n.length) {
-            startOffset = start.clock - n.id.clock
-          }
+  }
+  const computeDelta = () => {
+    // startOffset represents offset at current block from which we're intersted in picking string
+    // if it's -1 it means, we're out of scope and we should break at this point
+    let startOffset = start === null ? 0 : -1
+    // eslint-disable-next-line no-labels
+    loop: while (n !== null) {
+      if (startOffset < 0 && start !== null) {
+        if (start.client === n.id.client && start.clock >= n.id.clock && start.clock < n.id.clock + n.length) {
+          startOffset = start.clock - n.id.clock
         }
-        if (isVisible(n, snapshot) || (prevSnapshot !== undefined && isVisible(n, prevSnapshot))) {
-          switch (n.content.constructor) {
-            case ContentString: {
-              const cur = currentAttributes.get('ychange')
-              if (snapshot !== undefined && !isVisible(n, snapshot)) {
-                if (cur === undefined || cur.user !== n.id.client || cur.type !== 'removed') {
-                  packStr()
-                  currentAttributes.set('ychange', computeYChange ? computeYChange('removed', n.id) : { type: 'removed' })
-                }
-              } else if (prevSnapshot !== undefined && !isVisible(n, prevSnapshot)) {
-                if (cur === undefined || cur.user !== n.id.client || cur.type !== 'added') {
-                  packStr()
-                  currentAttributes.set('ychange', computeYChange ? computeYChange('added', n.id) : { type: 'added' })
-                }
-              } else if (cur !== undefined) {
+      }
+      if (isVisible(n, snapshot) || (prevSnapshot !== undefined && isVisible(n, prevSnapshot))) {
+        switch (n.content.constructor) {
+          case ContentString: {
+            const cur = currentAttributes.get('ychange')
+            if (snapshot !== undefined && !isVisible(n, snapshot)) {
+              if (cur === undefined || cur.user !== n.id.client || cur.type !== 'removed') {
                 packStr()
-                currentAttributes.delete('ychange')
+                currentAttributes.set('ychange', computeYChange ? computeYChange('removed', n.id) : { type: 'removed' })
               }
-              let s = /** @type {ContentString} */ (n.content).str
-              if (startOffset > 0) {
-                 str += s.slice(startOffset)
-                 startOffset = 0
-              } else if (end !== null && end.client === n.id.client && end.clock >= n.id.clock && end.clock < n.id.clock + n.length) {
-                // we reached the end or range
-                const endOffset = n.id.clock + n.length - end.clock - 1
-                str += s.slice(0, s.length + endOffset) // scope is negative
+            } else if (prevSnapshot !== undefined && !isVisible(n, prevSnapshot)) {
+              if (cur === undefined || cur.user !== n.id.client || cur.type !== 'added') {
                 packStr()
-                break loop
-              } else if (startOffset == 0) {
-                str += s
+                currentAttributes.set('ychange', computeYChange ? computeYChange('added', n.id) : { type: 'added' })
               }
-              break
-            }
-            case ContentType:
-            case ContentEmbed: {
+            } else if (cur !== undefined) {
               packStr()
-              /**
+              currentAttributes.delete('ychange')
+            }
+            const s = /** @type {ContentString} */ (n.content).str
+            if (startOffset > 0) {
+              str += s.slice(startOffset)
+              startOffset = 0
+            } else if (end !== null && end.client === n.id.client && end.clock >= n.id.clock && end.clock < n.id.clock + n.length) {
+              // we reached the end or range
+              const endOffset = n.id.clock + n.length - end.clock - 1
+              str += s.slice(0, s.length + endOffset) // scope is negative
+              packStr()
+              // eslint-disable-next-line no-labels
+              break loop
+            } else if (startOffset === 0) {
+              str += s
+            }
+            break
+          }
+          case ContentType:
+          case ContentEmbed: {
+            packStr()
+            /**
                * @type {Object<string,any>}
                */
-              const op = {
-                insert: n.content.getContent()[0]
-              }
-              if (currentAttributes.size > 0) {
-                const attrs = /** @type {Object<string,any>} */ ({})
-                op.attributes = attrs
-                currentAttributes.forEach((value, key) => {
-                  attrs[key] = value
-                })
-              }
-              ops.push(op)
-              break
+            const op = {
+              insert: n.content.getContent()[0]
             }
-            case ContentFormat:
-              if (isVisible(n, snapshot)) {
-                packStr()
-                updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (n.content))
-              }
-              break
+            if (currentAttributes.size > 0) {
+              const attrs = /** @type {Object<string,any>} */ ({})
+              op.attributes = attrs
+              currentAttributes.forEach((value, key) => {
+                attrs[key] = value
+              })
+            }
+            ops.push(op)
+            break
           }
-        } else if (end !== null && end.client === n.id.client && end.clock >= n.id.clock && end.clock < n.id.clock + n.length) {
-          // block may not passed visibility check, but we still need to verify boundaries
-          break;
+          case ContentFormat:
+            if (isVisible(n, snapshot)) {
+              packStr()
+              updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (n.content))
+            }
+            break
         }
-        n = n.right
+      } else if (end !== null && end.client === n.id.client && end.clock >= n.id.clock && end.clock < n.id.clock + n.length) {
+        // block may not passed visibility check, but we still need to verify boundaries
+        break
       }
-      packStr()
+      n = n.right
     }
-    if (snapshot || prevSnapshot) {
-      // snapshots are merged again after the transaction, so we need to keep the
-      // transaction alive until we are done
-      transact(doc, transaction => {
-        if (snapshot) {
-          splitSnapshotAffectedStructs(transaction, snapshot)
-        }
-        if (prevSnapshot) {
-          splitSnapshotAffectedStructs(transaction, prevSnapshot)
-        }
-        computeDelta()
-      }, 'cleanup')
-    } else {
+    packStr()
+  }
+  if (snapshot || prevSnapshot) {
+    // snapshots are merged again after the transaction, so we need to keep the
+    // transaction alive until we are done
+    transact(doc, transaction => {
+      if (snapshot) {
+        splitSnapshotAffectedStructs(transaction, snapshot)
+      }
+      if (prevSnapshot) {
+        splitSnapshotAffectedStructs(transaction, prevSnapshot)
+      }
       computeDelta()
-    }
-    return ops
+    }, 'cleanup')
+  } else {
+    computeDelta()
+  }
+  return ops
 }

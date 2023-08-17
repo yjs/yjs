@@ -84,9 +84,9 @@ export class YXmlText extends YText {
 
 /**
  * Formats individual delta segment provided by `Text.toDelta` into XML-formatted string.
- * 
- * @param {any} delta 
- * @returns {string} 
+ *
+ * @param {any} delta
+ * @returns {string}
  */
 export const formatXmlString = (delta) => {
   const nestedNodes = []

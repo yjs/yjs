@@ -8,10 +8,9 @@ import {
   readYXmlFragment,
   readYXmlHook,
   readYXmlText,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, Item, YEvent, AbstractType, // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, Item, YEvent, AbstractType, ID, // eslint-disable-line
   readYWeakLink,
-  unlinkFrom,
-  ID
+  unlinkFrom
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -111,9 +110,9 @@ export class ContentType {
    */
   delete (transaction) {
     if (this.type.constructor === WeakLink) {
-      // when removing weak links, remove references to them 
+      // when removing weak links, remove references to them
       // from type they're pointing to
-      const type = /** @type {WeakLink<any>} */ (this.type);
+      const type = /** @type {WeakLink<any>} */ (this.type)
       const end = /** @type {ID} */ (type._quoteEnd.item)
       for (let item = type._firstItem; item !== null; item = item.right) {
         if (item.linked) {
@@ -121,7 +120,7 @@ export class ContentType {
         }
         const lastId = item.lastId
         if (lastId.client === end.client && lastId.clock === end.clock) {
-          break;
+          break
         }
       }
       type._firstItem = null

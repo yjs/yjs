@@ -16,8 +16,7 @@ import {
   YArrayRefID,
   callTypeObservers,
   transact,
-  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item, // eslint-disable-line
-  YWeakLink,
+  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item, YWeakLink, // eslint-disable-line
   arrayWeakLink
 } from '../internals.js'
 import { typeListSlice } from './AbstractType.js'

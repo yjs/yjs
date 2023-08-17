@@ -2,8 +2,7 @@
 import {
   GC,
   splitItem,
-  Transaction, ID, Item, DSDecoderV2, // eslint-disable-line
-  YWeakLink
+  Transaction, ID, Item, DSDecoderV2, YWeakLink // eslint-disable-line
 } from '../internals.js'
 
 import * as math from 'lib0/math'
@@ -18,7 +17,7 @@ export class StructStore {
     /**
      * If this item was referenced by other weak links, here we keep the references
      * to these weak refs.
-     * 
+     *
      * @type {Map<Item, Set<YWeakLink<any>>>}
      */
     this.linkedBy = new Map()

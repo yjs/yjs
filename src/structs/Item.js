@@ -326,13 +326,13 @@ export class Item extends AbstractStruct {
    *
    * @type {boolean}
    */
-  set linked(isLinked) {
+  set linked (isLinked) {
     if (((this.info & binary.BIT9) > 0) !== isLinked) {
       this.info ^= binary.BIT9
     }
   }
 
-  get linked() {
+  get linked () {
     return (this.info & binary.BIT9) > 0
   }
 
@@ -581,7 +581,7 @@ export class Item extends AbstractStruct {
         // notify links about changes
         const linkedBy = transaction.doc.store.linkedBy.get(this)
         if (linkedBy !== undefined) {
-          for (let link of linkedBy) {
+          for (const link of linkedBy) {
             addChangedTypeToTransaction(transaction, link, this.parentSub)
           }
         }
@@ -695,7 +695,7 @@ export class Item extends AbstractStruct {
         const allLinks = transaction.doc.store.linkedBy
         const linkedBy = allLinks.get(this)
         if (linkedBy !== undefined) {
-          for (let link of linkedBy) {
+          for (const link of linkedBy) {
             addChangedTypeToTransaction(transaction, link, this.parentSub)
           }
           allLinks.delete(this)

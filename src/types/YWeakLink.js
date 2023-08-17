@@ -1,8 +1,8 @@
-import { decoding, encoding, error } from "lib0"
+import { decoding, encoding, error } from 'lib0'
 import * as map from 'lib0/map'
 import * as set from 'lib0/set'
-import { 
-  YEvent, Transaction, ID, GC, AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item,
+import {
+  YEvent, AbstractType,
   transact,
   getItemCleanEnd,
   createID,
@@ -12,14 +12,13 @@ import {
   writeID,
   readID,
   RelativePosition,
-  ItemTextListPosition,
   ContentString,
   rangeDelta,
   formatXmlString,
-  Snapshot,
   YText,
-  YXmlText
-} from "../internals.js"
+  YXmlText,
+  Transaction, Item, Doc, ID, Snapshot, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ItemTextListPosition // eslint-disable-line
+} from '../internals.js'
 
 /**
  * @template T extends AbstractType<any>
@@ -31,6 +30,7 @@ export class YWeakLinkEvent extends YEvent {
    * @param {YWeakLink<T>} ylink The YWeakLink to which this event was propagated to.
    * @param {Transaction} transaction
    */
+  // eslint-disable-next-line no-useless-constructor
   constructor (ylink, transaction) {
     super(ylink, transaction)
   }
@@ -39,7 +39,7 @@ export class YWeakLinkEvent extends YEvent {
 /**
  * @template T
  * @extends AbstractType<YWeakLinkEvent<T>>
- * 
+ *
  * Weak link to another value stored somewhere in the document.
  */
 export class YWeakLink extends AbstractType {
@@ -48,7 +48,7 @@ export class YWeakLink extends AbstractType {
     * @param {RelativePosition} end
     * @param {Item|null} firstItem
     */
-  constructor(start, end, firstItem) {
+  constructor (start, end, firstItem) {
     super()
     this._quoteStart = start
     this._quoteEnd = end
@@ -57,16 +57,16 @@ export class YWeakLink extends AbstractType {
 
   /**
    * Check if current link contains only a single element.
-   * 
+   *
    * @returns {boolean}
    */
   isSingle () {
     return this._quoteStart.item === this._quoteEnd.item
   }
-  
+
   /**
    * Returns a reference to an underlying value existing somewhere on in the document.
-   * 
+   *
    * @return {T|undefined}
    */
   deref () {
@@ -84,26 +84,26 @@ export class YWeakLink extends AbstractType {
       }
     }
 
-    return undefined;
+    return undefined
   }
-  
+
   /**
    * Returns an array of references to all elements quoted by current weak link.
-   * 
+   *
    * @return {Array<any>}
    */
   unquote () {
     let result = /** @type {Array<any>} */ ([])
     let item = this._firstItem
     const end = /** @type {ID} */ (this._quoteEnd.item)
-    //TODO: moved elements
+    // TODO: moved elements
     while (item !== null) {
       if (!item.deleted) {
         result = result.concat(item.content.getContent())
       }
       const lastId = item.lastId
       if (lastId.client === end.client && lastId.clock === end.clock) {
-        break;
+        break
       }
       item = item.right
     }
@@ -136,15 +136,15 @@ export class YWeakLink extends AbstractType {
           }
         }
         this._firstItem = firstItem
-        
+
         /** @type {Item|null} */
         let item = firstItem
-        let end = /** @type {ID} */ (this._quoteEnd.item)
+        const end = /** @type {ID} */ (this._quoteEnd.item)
         for (;item !== null; item = item.right) {
           createLink(transaction, item, this)
           const lastId = item.lastId
           if (lastId.client === end.client && lastId.clock === end.clock) {
-            break;
+            break
           }
         }
       })
@@ -182,7 +182,7 @@ export class YWeakLink extends AbstractType {
   _write (encoder) {
     encoder.writeTypeRef(YWeakLinkRefID)
     const isSingle = this.isSingle()
-    const info =  (isSingle ? 0 : 1) | (this._quoteStart.assoc >= 0 ? 2 : 0) | (this._quoteEnd.assoc >= 0 ? 4 :0)
+    const info = (isSingle ? 0 : 1) | (this._quoteStart.assoc >= 0 ? 2 : 0) | (this._quoteEnd.assoc >= 0 ? 4 : 0)
     encoding.writeUint8(encoder.restEncoder, info)
     writeID(encoder.restEncoder, /** @type {ID} */ (this._quoteStart.item))
     if (!isSingle) {
@@ -198,7 +198,7 @@ export class YWeakLink extends AbstractType {
   toString () {
     if (this._firstItem !== null) {
       switch (/** @type {AbstractType<any>} */ (this._firstItem.parent).constructor) {
-        case YText: 
+        case YText: {
           let str = ''
           /**
            * @type {Item|null}
@@ -211,12 +211,12 @@ export class YWeakLink extends AbstractType {
             }
             const lastId = n.lastId
             if (lastId.client === end.client && lastId.clock === end.clock) {
-              break;
+              break
             }
             n = n.right
           }
           return str
-
+        }
         case YXmlText:
           return this.toDelta().map(delta => formatXmlString(delta)).join('')
       }
@@ -227,13 +227,13 @@ export class YWeakLink extends AbstractType {
 
   /**
    * Returns the Delta representation of quoted part of underlying text type.
-   * 
+   *
    * @param {Snapshot|undefined} [snapshot]
    * @param {Snapshot|undefined} [prevSnapshot]
    * @param {function('removed' | 'added', ID):any} [computeYChange]
    * @returns {Array<any>}
    */
-  toDelta(snapshot, prevSnapshot, computeYChange) {
+  toDelta (snapshot, prevSnapshot, computeYChange) {
     if (this._firstItem !== null && this._quoteStart.item !== null && this._quoteEnd.item !== null) {
       const parent = /** @type {AbstractType<any>} */ (this._firstItem.parent)
       return rangeDelta(parent, this._quoteStart.item, this._quoteEnd.item, snapshot, prevSnapshot, computeYChange)
@@ -243,7 +243,6 @@ export class YWeakLink extends AbstractType {
   }
 }
 
-  
 /**
  * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @return {YWeakLink<any>}
@@ -263,7 +262,7 @@ const invalidQuotedRange = error.create('Invalid quoted range length.')
 
 /**
  * Returns a {WeakLink} to an YArray element at given index.
- * 
+ *
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {number} index
@@ -278,9 +277,9 @@ export const arrayWeakLink = (transaction, parent, index, length = 1) => {
     if (!startItem.deleted && startItem.countable) {
       if (index < startItem.length) {
         if (index > 0) {
-            startItem = getItemCleanStart(transaction, createID(startItem.id.client, startItem.id.clock + index))
+          startItem = getItemCleanStart(transaction, createID(startItem.id.client, startItem.id.clock + index))
         }
-        break;
+        break
       }
       index -= startItem.length
     }
@@ -293,11 +292,11 @@ export const arrayWeakLink = (transaction, parent, index, length = 1) => {
         remaining -= endItem.length
       } else {
         endItem = getItemCleanEnd(transaction, transaction.doc.store, createID(endItem.id.client, endItem.id.clock + remaining - 1))
-        break;
+        break
       }
     }
   }
-  if (startItem !== null && endItem !== null) {    
+  if (startItem !== null && endItem !== null) {
     const start = new RelativePosition(null, null, startItem.id, 0)
     const end = new RelativePosition(null, null, endItem.lastId, -1)
     const link = new YWeakLink(start, end, startItem)
@@ -308,7 +307,7 @@ export const arrayWeakLink = (transaction, parent, index, length = 1) => {
           createLink(transaction, item, link)
           const lastId = item.lastId
           if (lastId.client === end.client && lastId.clock === end.clock) {
-            break;
+            break
           }
         }
       })
@@ -320,7 +319,7 @@ export const arrayWeakLink = (transaction, parent, index, length = 1) => {
 
 /**
  * Returns a {WeakLink} to an YMap element at given key.
- * 
+ *
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {ItemTextListPosition} pos
@@ -350,7 +349,7 @@ export const quoteText = (transaction, parent, pos, length) => {
             createLink(transaction, item, link)
             const lastId = item.lastId
             if (lastId.client === end.client && lastId.clock === end.clock) {
-              break;
+              break
             }
           }
         })
@@ -358,13 +357,13 @@ export const quoteText = (transaction, parent, pos, length) => {
       return link
     }
   }
-  
-  throw invalidQuotedRange  
+
+  throw invalidQuotedRange
 }
 
 /**
  * Returns a {WeakLink} to an YMap element at given key.
- * 
+ *
  * @param {AbstractType<any>} parent
  * @param {string} key
  * @return {YWeakLink<any>|undefined}
@@ -389,8 +388,8 @@ export const mapWeakLink = (parent, key) => {
 /**
  * Establishes a link between source and weak link reference.
  * It assumes that source has already been split if necessary.
- * 
- * @param {Transaction} transaction 
+ *
+ * @param {Transaction} transaction
  * @param {Item} source
  * @param {YWeakLink<any>} linkRef
  */
@@ -402,8 +401,8 @@ export const createLink = (transaction, source, linkRef) => {
 
 /**
  * Deletes the link between source and a weak link reference.
- * 
- * @param {Transaction} transaction 
+ *
+ * @param {Transaction} transaction
  * @param {Item} source
  * @param {YWeakLink<any>} linkRef
  */
@@ -427,7 +426,7 @@ export const unlinkFrom = (transaction, source, linkRef) => {
 /**
  * Rebinds linkedBy links pointed between neighbours of a current item.
  * This method expects that current item has both left and right neighbours.
- * 
+ *
  * @param {Transaction} transaction
  * @param {Item} item
  */
@@ -438,12 +437,12 @@ export const joinLinkedRange = (transaction, item) => {
   const rightLinks = allLinks.get(/** @type {Item} */ (item.right))
   if (leftLinks && rightLinks) {
     const common = new Set()
-    for (let link of leftLinks) {
+    for (const link of leftLinks) {
       if (rightLinks.has(link)) {
         common.add(link)
       }
     }
-    if (common.size != 0) {
+    if (common.size !== 0) {
       allLinks.set(item, common)
     }
   }

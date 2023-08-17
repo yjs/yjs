@@ -246,7 +246,7 @@ export const callTypeObservers = (type, transaction, event, visitedLinks = null)
     } else if (type._item.linked) {
       const linkedBy = transaction.doc.store.linkedBy.get(type._item)
       if (linkedBy !== undefined) {
-        for (let link of linkedBy) {
+        for (const link of linkedBy) {
           if (visitedLinks === null || !visitedLinks.has(link)) {
             visitedLinks = visitedLinks !== null ? visitedLinks : new Set()
             visitedLinks.add(link)
