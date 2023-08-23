@@ -159,7 +159,7 @@ y-websocket provider.
 There are several Yjs-compatible ports to other programming languages.
 
 * [y-octo](https://github.com/toeverything/y-octo) - Rust implementation by
-Affine
+[AFFiNE](https://affine.pro)
 * [y-crdt](https://github.com/y-crdt/y-crdt) - Rust implementation with multiple
 language bindings to other languages
   * [yrs](https://github.com/y-crdt/y-crdt/tree/main/yrs) - Rust interface
