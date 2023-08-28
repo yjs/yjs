@@ -15,6 +15,7 @@ import {
 
 import * as time from 'lib0/time'
 import * as array from 'lib0/array'
+import * as logging from 'lib0/logging'
 import { Observable } from 'lib0/observable'
 
 export class StackItem {
@@ -169,6 +170,7 @@ export class UndoManager extends Observable {
      * @type {Array<AbstractType<any>>}
      */
     this.scope = []
+    this.doc = doc
     this.addToScope(typeScope)
     this.deleteFilter = deleteFilter
     trackedOrigins.add(this)
@@ -189,7 +191,6 @@ export class UndoManager extends Observable {
      */
     this.undoing = false
     this.redoing = false
-    this.doc = doc
     this.lastChange = 0
     this.ignoreRemoteMapChanges = ignoreRemoteMapChanges
     this.captureTimeout = captureTimeout
@@ -263,6 +264,7 @@ export class UndoManager extends Observable {
     ytypes = array.isArray(ytypes) ? ytypes : [ytypes]
     ytypes.forEach(ytype => {
       if (this.scope.every(yt => yt !== ytype)) {
+        if (ytype.doc !== this.doc) logging.warn('[yjs#509] Not same Y.Doc') // use MultiDocUndoManager instead. also see https://github.com/yjs/yjs/issues/509
         this.scope.push(ytype)
       }
     })

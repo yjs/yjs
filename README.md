@@ -60,13 +60,16 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
   sharing analyses, documentation, spreadsheets, and dashboards.
 * [Nosgestesclimat](https://nosgestesclimat.fr/groupe) The french carbon
   footprint calculator has a group P2P mode based on yjs
+* [oorja.io](https://oorja.io) Online meeting spaces extensible with collaborative apps, end-to-end encrypted.
 * [LegendKeeper](https://legendkeeper.com) Collaborative campaign planner and worldbuilding app for tabletop RPGs.
+
 
 ## Table of Contents
 
 * [Overview](#Overview)
   * [Bindings](#Bindings)
   * [Providers](#Providers)
+  * [Ports](#Ports)
 * [Getting Started](#Getting-Started)
 * [API](#API)
   * [Shared Types](#Shared-Types)
@@ -153,6 +156,22 @@ Adds persistent storage to a server with MongoDB. Can be used with the
 y-websocket provider.
 </dd>
 </dl>
+
+# Ports
+
+There are several Yjs-compatible ports to other programming languages.
+
+* [y-octo](https://github.com/toeverything/y-octo) - Rust implementation by
+[AFFiNE](https://affine.pro)
+* [y-crdt](https://github.com/y-crdt/y-crdt) - Rust implementation with multiple
+language bindings to other languages
+  * [yrs](https://github.com/y-crdt/y-crdt/tree/main/yrs) - Rust interface
+  * [ypy](https://github.com/y-crdt/ypy) - Python binding
+  * [yrb](https://github.com/y-crdt/yrb) - Ruby binding
+  * [yrb](https://github.com/y-crdt/yswift) - Swift binding
+  * [yffi](https://github.com/y-crdt/y-crdt/tree/main/yffi) - C-FFI
+  * [ywasm](https://github.com/y-crdt/y-crdt/tree/main/ywasm) - WASM binding
+* [ycs](https://github.com/yjs/ycs) - .Net compatible C# implementation.
 
 ## Getting Started
 
