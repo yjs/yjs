@@ -36,6 +36,7 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
 
 * [AFFiNE](https://affine.pro/) A local-first, privacy-first, open source
   knowledge base. 🏅
+* [IllumiDesk](https://illumidesk.com/) Build courses and content with A.I. :brain:
 * [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star2:
 * [Sana](https://sanalabs.com/) A learning platform with collaborative text
   editing powered by Yjs.
