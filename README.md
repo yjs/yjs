@@ -36,7 +36,6 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
 
 * [AFFiNE](https://affine.pro/) A local-first, privacy-first, open source
   knowledge base. 🏅
-* [IllumiDesk](https://illumidesk.com/) Build courses and content with A.I. :brain:
 * [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star2:
 * [Sana](https://sanalabs.com/) A learning platform with collaborative text
   editing powered by Yjs.
@@ -63,6 +62,7 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
   footprint calculator has a group P2P mode based on yjs
 * [oorja.io](https://oorja.io) Online meeting spaces extensible with collaborative apps, end-to-end encrypted.
 * [LegendKeeper](https://legendkeeper.com) Collaborative campaign planner and worldbuilding app for tabletop RPGs.
+* [IllumiDesk](https://illumidesk.com/) Build courses and content with A.I.
 
 
 ## Table of Contents
