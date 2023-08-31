@@ -397,8 +397,10 @@ export const testDeepObserveMap = tc => {
    * @type {Array<any>}
    */
   let events = []
-  map.observeDeep((e) => {
-    events = e
+  map.observeDeep((es) => {
+    events = es.map((e) => {
+      return { target: e.target, keys: e.keys }
+    })
   })
 
   const nested = new Y.Map()
@@ -418,7 +420,7 @@ export const testDeepObserveMap = tc => {
   nested.delete('key')
   t.compare(events.length, 1)
   t.compare(events[0].target, nested)
-  t.compare(events[0].keys, new Map([['key', { action: 'delete', oldValue: undefined }]]))
+  t.compare(events[0].keys, new Map([['key', { action: 'delete', oldValue: 'value' }]]))
 
   // delete linked map
   array.delete(0)
@@ -646,8 +648,10 @@ export const testDeepObserveRecursive = tc => {
    * @type {Array<any>}
    */
   let events = []
-  m0.observeDeep((e) => {
-    events = e
+  m0.observeDeep((es) => {
+    events = es.map((e) => { 
+      return { target: e.target, keys: e.keys }
+    })
   })
 
   m1.set('test-key1', 'value1')
@@ -664,7 +668,7 @@ export const testDeepObserveRecursive = tc => {
   m1.delete('test-key1')
   t.compare(events.length, 1)
   t.compare(events[0].target, m1)
-  t.compare(events[0].keys, new Map([['test-key1', { action: 'delete', oldValue: undefined }]]))
+  t.compare(events[0].keys, new Map([['test-key1', { action: 'delete', oldValue: 'value1' }]]))
 }
 
 /**
