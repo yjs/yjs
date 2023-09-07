@@ -683,7 +683,7 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
   packJsonContent()
 }
 
-const lengthExceeded = error.create('Length exceeded!')
+const lengthExceeded = () => error.create('Length exceeded!')
 
 /**
  * @param {Transaction} transaction
@@ -696,7 +696,7 @@ const lengthExceeded = error.create('Length exceeded!')
  */
 export const typeListInsertGenerics = (transaction, parent, index, content) => {
   if (index > parent._length) {
-    throw lengthExceeded
+    throw lengthExceeded()
   }
   if (index === 0) {
     if (parent._searchMarker) {
@@ -798,7 +798,7 @@ export const typeListDelete = (transaction, parent, index, length) => {
     n = n.right
   }
   if (length > 0) {
-    throw lengthExceeded
+    throw lengthExceeded()
   }
   if (parent._searchMarker) {
     updateMarkerChanges(parent._searchMarker, startIndex, -startLength + length /* in case we remove the above exception */)
