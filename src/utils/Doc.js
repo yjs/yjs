@@ -19,7 +19,7 @@ import * as map from 'lib0/map'
 import * as array from 'lib0/array'
 import * as promise from 'lib0/promise'
 
-export const generateNewClientId = random.uint32
+export const generateNewClientId = random.uint53
 
 /**
  * @typedef {Object} DocOpts
