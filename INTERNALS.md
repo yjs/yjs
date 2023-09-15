@@ -25,8 +25,7 @@ article](https://blog.kevinjahns.de/are-crdts-suitable-for-shared-editing/).
   all other duplicates for each key are flagged as deleted.
 
 Each client is assigned a unique *clientID* property on first insert. This is a
-random 53-bit integer (53 bits because that fits in the javascript safe integer
-range).
+random 32-bit integer (32 bits fits in the javascript safe integer range).
 
 ## List items
 
