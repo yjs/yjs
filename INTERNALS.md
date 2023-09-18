@@ -149,8 +149,8 @@ concepts that can be used to create a custom network protocol:
 
 * `update`: The Yjs document can be encoded to an *update* object that can be
   parsed to reconstruct the document. Also every change on the document fires
-an incremental document updates that allows clients to sync with each other.
-The update object is an Uint8Array that efficiently encodes `Item` objects and
+an incremental document update that allows clients to sync with each other.
+The update object is a Uint8Array that efficiently encodes `Item` objects and
 the delete set.
 * `state vector`: A state vector defines the known state of each user (a set of
   tuples `(client, clock)`). This object is also efficiently encoded as a
