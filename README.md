@@ -62,6 +62,7 @@ Sponsorship also comes with special perks! [![Become a Sponsor](https://img.shie
   collaboratively organize radio broadcasts.
 * [Cattaz](http://cattaz.io/) A wiki that can run custom applications in the
   wiki pages.
+* [Evernote](https://evernote.com) A note-taking and task management application.
 
 ## Table of Contents
 
