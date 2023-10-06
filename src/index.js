@@ -10,6 +10,8 @@ export {
   YXmlHook as XmlHook,
   YXmlElement as XmlElement,
   YXmlFragment as XmlFragment,
+  YWeakLink as WeakLink,
+  YWeakLinkEvent,
   YXmlEvent,
   YMapEvent,
   YArrayEvent,

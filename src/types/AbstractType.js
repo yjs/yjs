@@ -11,7 +11,7 @@ import {
   ContentAny,
   ContentBinary,
   getItemCleanStart,
-  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
+  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, YWeakLink, // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map'
@@ -233,8 +233,9 @@ export const getTypeChildren = t => {
  * @param {AbstractType<EventType>} type
  * @param {Transaction} transaction
  * @param {EventType} event
+ * @param {Set<YWeakLink<any>>|null} visitedLinks
  */
-export const callTypeObservers = (type, transaction, event) => {
+export const callTypeObservers = (type, transaction, event, visitedLinks = null) => {
   const changedType = type
   const changedParentTypes = transaction.changedParentTypes
   while (true) {
@@ -242,6 +243,18 @@ export const callTypeObservers = (type, transaction, event) => {
     map.setIfUndefined(changedParentTypes, type, () => []).push(event)
     if (type._item === null) {
       break
+    } else if (type._item.linked) {
+      const linkedBy = transaction.doc.store.linkedBy.get(type._item)
+      if (linkedBy !== undefined) {
+        for (let link of linkedBy) {
+          if (visitedLinks === null || !visitedLinks.has(link)) {
+            visitedLinks = visitedLinks !== null ? visitedLinks : new Set()
+            visitedLinks.add(link)
+            // recursive call
+            callTypeObservers(link, transaction, /** @type {any} */ (event), visitedLinks)
+          }
+        }
+      }
     }
     type = /** @type {AbstractType<any>} */ (type._item.parent)
   }

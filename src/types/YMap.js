@@ -14,7 +14,8 @@ import {
   YMapRefID,
   callTypeObservers,
   transact,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
+  mapWeakLink,
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item, YWeakLink, // eslint-disable-line
 } from '../internals.js'
 
 import * as iterator from 'lib0/iterator'
@@ -231,6 +232,16 @@ export class YMap extends AbstractType {
    */
   get (key) {
     return /** @type {any} */ (typeMapGet(this, key))
+  }
+  
+  /**
+   * Returns a weak reference link to another element stored in the same document.
+   *
+   * @param {string} key
+   * @return {YWeakLink<MapType>|undefined}
+   */
+  link (key) {
+    return mapWeakLink(this, key)
   }
 
   /**

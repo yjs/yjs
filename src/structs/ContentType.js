@@ -6,8 +6,11 @@ import {
   readYXmlElement,
   readYXmlFragment,
   readYXmlHook,
-  readYXmlText,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, Item, YEvent, AbstractType // eslint-disable-line
+  readYXmlText,  
+  readYWeakLink,
+  unlinkFrom,
+  YWeakLink,
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, Item, YEvent, AbstractType, ID, // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -33,6 +36,7 @@ export const YXmlElementRefID = 3
 export const YXmlFragmentRefID = 4
 export const YXmlHookRefID = 5
 export const YXmlTextRefID = 6
+export const YWeakLinkRefID = 7
 
 /**
  * @private
@@ -104,6 +108,22 @@ export class ContentType {
    * @param {Transaction} transaction
    */
   delete (transaction) {
+    if (this.type.constructor === YWeakLink) {
+      // when removing weak links, remove references to them
+      // from type they're pointing to
+      const type = /** @type {YWeakLink<any>} */ (this.type)
+      const end = /** @type {ID} */ (type._quoteEnd.item)
+      for (let item = type._firstItem; item !== null; item = item.right) {
+        if (item.linked) {
+          unlinkFrom(transaction, item, type)
+        }
+        const lastId = item.lastId
+        if (lastId.client === end.client && lastId.clock === end.clock) {
+          break
+        }
+      }
+      type._firstItem = null
+    }
     let item = this.type._start
     while (item !== null) {
       if (!item.deleted) {
