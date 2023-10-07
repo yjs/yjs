@@ -789,7 +789,7 @@ const diff2 = Y.diffUpdate(currentState2, stateVector1)
 
 // sync clients
 currentState1 = Y.mergeUpdates([currentState1, diff2])
-currentState1 = Y.mergeUpdates([currentState1, diff1])
+currentState2 = Y.mergeUpdates([currentState2, diff1])
 ```
 
 #### Obfuscating Updates
