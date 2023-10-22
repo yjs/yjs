@@ -113,7 +113,7 @@ export class Doc extends Observable {
         this.whenSynced = provideSyncedPromise()
       }
       this.isSynced = isSynced === undefined || isSynced === true
-      if (!this.isLoaded) {
+      if (this.isSynced && !this.isLoaded) {
         this.emit('load', [])
       }
     })
