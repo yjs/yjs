@@ -233,7 +233,7 @@ export class YMap extends AbstractType {
   get (key) {
     return /** @type {any} */ (typeMapGet(this, key))
   }
-  
+
   /**
    * Returns a weak reference link to another element stored in the same document.
    *

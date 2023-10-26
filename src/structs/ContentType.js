@@ -6,7 +6,7 @@ import {
   readYXmlElement,
   readYXmlFragment,
   readYXmlHook,
-  readYXmlText,  
+  readYXmlText,
   readYWeakLink,
   unlinkFrom,
   YWeakLink,

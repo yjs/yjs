@@ -17,6 +17,7 @@ export {
   YArrayEvent,
   YTextEvent,
   YEvent,
+  YRange as Range,
   Item,
   AbstractStruct,
   GC,

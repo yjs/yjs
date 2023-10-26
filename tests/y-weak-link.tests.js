@@ -27,7 +27,7 @@ export const testBasicMap = tc => {
 export const testBasicArray = tc => {
   const { testConnector, array0, array1 } = init(tc, { users: 2 })
   array0.insert(0, [1, 2, 3])
-  array0.insert(3, [array0.quote(1)])
+  array0.insert(3, [array0.quote(Y.Range.only(1))])
 
   t.compare(array0.get(0), 1)
   t.compare(array0.get(1), 2)
@@ -49,7 +49,7 @@ export const testArrayQuoteMultipleElements = tc => {
   const { testConnector, array0, array1 } = init(tc, { users: 2 })
   const nested = new Y.Map([['key', 'value']])
   array0.insert(0, [1, 2, nested, 3])
-  array0.insert(0, [array0.quote(1, 3)])
+  array0.insert(0, [array0.quote(Y.Range.bound(1, 3))])
 
   const link0 = array0.get(0)
   t.compare(link0.unquote(), [2, nested, 3])
@@ -89,7 +89,7 @@ export const testArrayQuoteMultipleElements = tc => {
 export const testSelfQuotation = tc => {
   const { testConnector, array0, array1 } = init(tc, { users: 2 })
   array0.insert(0, [1, 2, 3, 4])
-  const link0 = array0.quote(0, 3)
+  const link0 = array0.quote(Y.Range.bound(0, 3, false, true))
   array0.insert(1, [link0]) // link is inserted into its own range
 
   t.compare(link0.unquote(), [1, link0, 2, 3])
@@ -259,7 +259,7 @@ export const testObserveMapDelete = tc => {
 export const testObserveArray = tc => {
   const { testConnector, array0, array1 } = init(tc, { users: 2 })
   array0.insert(0, ['A', 'B', 'C'])
-  const link0 = /** @type {Y.WeakLink<String>} */ (array0.quote(1, 2))
+  const link0 = /** @type {Y.WeakLink<String>} */ (array0.quote(Y.Range.bound(1, 2)))
   array0.insert(0, [link0])
   /**
    * @type {any}
@@ -405,7 +405,7 @@ export const testDeepObserveMap = tc => {
 
   const nested = new Y.Map()
   array.insert(0, [nested])
-  const link = array.quote(0)
+  const link = array.quote(Y.Range.only(0))
   map.set('link', link)
 
   // update entry in linked map
@@ -501,7 +501,7 @@ export const testDeepObserveNewElementWithinQuotedRange = tc => {
   const m1 = new Y.Map()
   const m3 = new Y.Map()
   array0.insert(0, [1, m1, m3, 2])
-  const link0 = array0.quote(1, 2)
+  const link0 = array0.quote(Y.Range.bound(1, 2))
   array0.insert(0, [link0])
 
   testConnector.flushAllMessages()
@@ -635,9 +635,9 @@ export const testDeepObserveRecursive = tc => {
   root.insert(1, [m1])
   root.insert(2, [m2])
 
-  const l0 = root.quote(0)
-  const l1 = root.quote(1)
-  const l2 = root.quote(2)
+  const l0 = root.quote(Y.Range.only(0))
+  const l1 = root.quote(Y.Range.only(1))
+  const l2 = root.quote(Y.Range.only(2))
 
   // create cyclic reference between links
   m0.set('k1', l1)
@@ -649,7 +649,7 @@ export const testDeepObserveRecursive = tc => {
    */
   let events = []
   m0.observeDeep((es) => {
-    events = es.map((e) => { 
+    events = es.map((e) => {
       return { target: e.target, keys: e.keys }
     })
   })
@@ -709,7 +709,7 @@ export const testTextBasic = tc => {
   const { testConnector, text0, text1 } = init(tc, { users: 2 })
 
   text0.insert(0, 'abcd') // 'abcd'
-  const link0 = text0.quote(1, 2) // quote: [bc]
+  const link0 = text0.quote(Y.Range.bound(1, 2)) // quote: [bc]
   t.compare(link0.toString(), 'bc')
   text0.insert(2, 'ef') // 'abefcd', quote: [befc]
   t.compare(link0.toString(), 'befc')
@@ -733,7 +733,7 @@ export const testXmlTextBasic = tc => {
   xml0.insert(0, [text0])
 
   text0.insert(0, 'abcd') // 'abcd'
-  const link0 = text0.quote(1, 2) // quote: [bc]
+  const link0 = text0.quote(Y.Range.bound(1, 2)) // quote: [bc]
   t.compare(link0.toString(), 'bc')
   text0.insert(2, 'ef') // 'abefcd', quote: [befc]
   t.compare(link0.toString(), 'befc')
@@ -747,6 +747,7 @@ export const testXmlTextBasic = tc => {
   const { insert } = delta[1] // YWeakLink
   t.compare(insert.toString(), 'be')
 }
+
 /**
  * @param {t.TestCase} tc
  */
@@ -758,11 +759,11 @@ export const testQuoteFormattedText = tc => {
   text.insert(0, 'abcde')
   text.format(0, 1, { b: true })
   text.format(1, 3, { i: true }) // '<b>a</b><i>bcd</i>e'
-  const l1 = text.quote(0, 2)
+  const l1 = text.quote(Y.Range.bound(0, 1))
   t.compare(l1.toString(), '<b>a</b><i>b</i>')
-  const l2 = text.quote(2, 1) // '<i>c</i>'
+  const l2 = text.quote(Y.Range.only(2)) // '<i>c</i>'
   t.compare(l2.toString(), '<i>c</i>')
-  const l3 = text.quote(3, 2) // '<i>d</i>e'
+  const l3 = text.quote(Y.Range.bound(3, 4)) // '<i>d</i>e'
   t.compare(l3.toString(), '<i>d</i>e')
 
   text2.insertEmbed(0, l1)
@@ -775,4 +776,98 @@ export const testQuoteFormattedText = tc => {
     { insert: l2 },
     { insert: l3 }
   ])
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testTextLowerBoundary = tc => {
+  const { testConnector, text0, text1, array0 } = init(tc, { users: 2 })
+  text0.insert(0, 'abcdef')
+
+  testConnector.flushAllMessages()
+
+  const linkInclusive = text0.quote(Y.Range.bound(1, 4, false, false)) // [1..4]
+  const linkExclusive = text0.quote(Y.Range.bound(0, 4, true, false)) // (0..4]
+  array0.insert(0, [linkInclusive, linkExclusive])
+  t.compare(linkInclusive.toString(), 'bcde')
+  t.compare(linkExclusive.toString(), 'bcde')
+
+  text1.insert(1, 'xyz')
+
+  testConnector.flushAllMessages()
+
+  t.compare(linkInclusive.toString(), 'bcde')
+  t.compare(linkExclusive.toString(), 'xyzbcde')
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testTextUpperBoundary = tc => {
+  const { testConnector, text0, text1, array0 } = init(tc, { users: 2 })
+  text0.insert(0, 'abcdef')
+
+  testConnector.flushAllMessages()
+
+  const linkInclusive = text0.quote(Y.Range.bound(1, 4, false, false)) // [1..4]
+  const linkExclusive = text0.quote(Y.Range.bound(1, 5, false, true)) // [1..5)
+  array0.insert(0, [linkInclusive, linkExclusive])
+  t.compare(linkInclusive.toString(), 'bcde')
+  t.compare(linkExclusive.toString(), 'bcde')
+
+  text1.insert(5, 'xyz')
+
+  testConnector.flushAllMessages()
+
+  t.compare(linkInclusive.toString(), 'bcde')
+  t.compare(linkExclusive.toString(), 'bcdexyz')
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testArrayLowerBoundary = tc => {
+  const { testConnector, array0, array1, map0 } = init(tc, { users: 2 })
+  array0.insert(0, ['a', 'b', 'c', 'd', 'e', 'f'])
+
+  testConnector.flushAllMessages()
+
+  const linkInclusive = array0.quote(Y.Range.bound(1, 4, false, false)) // [1..4]
+  const linkExclusive = array0.quote(Y.Range.bound(0, 4, true, false)) // (0..4]
+  map0.set('inclusive', linkInclusive)
+  map0.set('exclusive', linkExclusive)
+  t.compare(linkInclusive.unquote(), ['b', 'c', 'd', 'e'])
+  t.compare(linkExclusive.unquote(), ['b', 'c', 'd', 'e'])
+
+  array1.insert(1, ['x', 'y', 'z'])
+
+  testConnector.flushAllMessages()
+
+  t.compare(linkInclusive.unquote(), ['b', 'c', 'd', 'e'])
+  t.compare(linkExclusive.unquote(), ['x', 'y', 'z', 'b', 'c', 'd', 'e'])
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testArrayUpperBoundary = tc => {
+  const { testConnector, array0, array1, map0 } = init(tc, { users: 2 })
+  array0.insert(0, ['a', 'b', 'c', 'd', 'e', 'f'])
+
+  testConnector.flushAllMessages()
+
+  const linkInclusive = array0.quote(Y.Range.bound(1, 4, false, false)) // [1..4]
+  const linkExclusive = array0.quote(Y.Range.bound(1, 5, false, true)) // [1..5)
+  map0.set('inclusive', linkInclusive)
+  map0.set('exclusive', linkExclusive)
+  t.compare(linkInclusive.unquote(), ['b', 'c', 'd', 'e'])
+  t.compare(linkExclusive.unquote(), ['b', 'c', 'd', 'e'])
+
+  array1.insert(5, ['x', 'y', 'z'])
+
+  testConnector.flushAllMessages()
+
+  t.compare(linkInclusive.unquote(), ['b', 'c', 'd', 'e'])
+  t.compare(linkExclusive.unquote(), ['b', 'c', 'd', 'e', 'x', 'y', 'z'])
 }

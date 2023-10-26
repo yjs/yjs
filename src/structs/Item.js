@@ -403,7 +403,7 @@ export class Item extends AbstractStruct {
     if (this.parent && this.parent.constructor === ID && this.id.client !== this.parent.client && this.parent.clock >= getState(store, this.parent.client)) {
       return this.parent.client
     }
-    
+
     if (this.content.constructor === ContentType && /** @type {ContentType} */ (this.content).type.constructor === YWeakLink) {
       // make sure that linked content is integrated first
       const content = /** @type {ContentType} */ (this.content)
@@ -568,8 +568,8 @@ export class Item extends AbstractStruct {
           // adjust length of parent
           /** @type {AbstractType<any>} */ (this.parent)._length += this.length
         }
-        if (this.left && this.left.linked && this.right && this.right.linked) {
-          // this item exists within a quoted range
+        if ((this.left && this.left.linked) || (this.right && this.right.linked)) {
+          // this item may exists within a quoted range
           joinLinkedRange(transaction, this)
         }
       }

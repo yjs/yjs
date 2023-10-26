@@ -26,9 +26,9 @@ import {
   typeMapGet,
   typeMapGetAll,
   updateMarkerChanges,
+  quoteRange,
   ContentType,
-  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction, YWeakLink, // eslint-disable-line
-  quoteText
+  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction, YWeakLink, YRange, // eslint-disable-line
 } from '../internals.js'
 
 import * as object from 'lib0/object'
@@ -1064,21 +1064,19 @@ export class YText extends AbstractType {
    * `<i>hello world</i>` could result in `<i>he</i>"<i>llo wo</i>"<i>rld</i>`
    * where `"<i>llo wo</i>"` represents quoted range.
    *
-   * @param {number} index The index where quoted range should start
-   * @param {number} length Number of quoted elements
+   * @param {YRange} range
    * @return {YWeakLink<string>}
    *
    * @public
    */
-  quote (index, length) {
-    const y = this.doc
-    if (y !== null) {
-      return transact(y, transaction => {
-        const pos = findPosition(transaction, this, index)
-        return quoteText(transaction, this, pos, length)
+  quote (range) {
+    if (this.doc !== null) {
+      return transact(this.doc, transaction => {
+        return quoteRange(transaction, this, range)
       })
     }
-    throw new Error('Quoted text was not integrated into Doc')
+
+    throw new Error('cannot quote an YText that has not been integrated into YDoc')
   }
 
   /**

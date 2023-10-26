@@ -1,11 +1,10 @@
-import { decoding, encoding, error } from 'lib0'
+import { decoding, encoding } from 'lib0'
 import * as map from 'lib0/map'
 import * as set from 'lib0/set'
 import {
   YEvent, AbstractType,
   transact,
   getItemCleanEnd,
-  createID,
   getItemCleanStart,
   callTypeObservers,
   YWeakLinkRefID,
@@ -17,7 +16,7 @@ import {
   formatXmlString,
   YText,
   YXmlText,
-  Transaction, Item, Doc, ID, Snapshot, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ItemTextListPosition // eslint-disable-line
+  Transaction, Item, Doc, ID, Snapshot, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, YRange, rangeToRelative, // eslint-disable-line
 } from '../internals.js'
 
 /**
@@ -54,12 +53,13 @@ export class YWeakLink extends AbstractType {
     this._quoteStart = start
     /** @type {RelativePosition} */
     this._quoteEnd = end
+    /** @type {Item|null} */
     this._firstItem = firstItem
   }
 
   /**
    * Position descriptor of the start of a quoted range.
-   * 
+   *
    * @returns {RelativePosition}
    */
   get quoteStart () {
@@ -68,7 +68,7 @@ export class YWeakLink extends AbstractType {
 
   /**
    * Position descriptor of the end of a quoted range.
-   * 
+   *
    * @returns {RelativePosition}
    */
   get quoteEnd () {
@@ -99,8 +99,8 @@ export class YWeakLink extends AbstractType {
         // we don't support quotations over maps
         this._firstItem = item
       }
-      if (!this._firstItem.deleted) {
-        return this._firstItem.content.getContent()[0]
+      if (!item.deleted) {
+        return item.content.getContent()[0]
       }
     }
 
@@ -114,18 +114,27 @@ export class YWeakLink extends AbstractType {
    */
   unquote () {
     let result = /** @type {Array<any>} */ ([])
-    let item = this._firstItem
+    let n = this._firstItem
+    if (n !== null && this._quoteStart.assoc >= 0) {
+      // if assoc >= we exclude start from range
+      n = n.right
+    }
     const end = /** @type {ID} */ (this._quoteEnd.item)
+    const endAssoc = this._quoteEnd.assoc
     // TODO: moved elements
-    while (item !== null) {
-      if (!item.deleted) {
-        result = result.concat(item.content.getContent())
-      }
-      const lastId = item.lastId
-      if (lastId.client === end.client && lastId.clock === end.clock) {
+    while (n !== null) {
+      if (endAssoc < 0 && n.id.client === end.client && n.id.clock === end.clock) {
+        // right side is open (last item excluded)
         break
       }
-      item = item.right
+      if (!n.deleted) {
+        result = result.concat(n.content.getContent())
+      }
+      const lastId = n.lastId
+      if (endAssoc >= 0 && lastId.client === end.client && lastId.clock === end.clock) {
+        break
+      }
+      n = n.right
     }
     return result
   }
@@ -147,8 +156,7 @@ export class YWeakLink extends AbstractType {
         // link may refer to a single element in multi-element block
         // in such case we need to cut of the linked element into a
         // separate block
-        let firstItem = this._firstItem !== null ? this._firstItem : getItemCleanStart(transaction, /** @type {ID} */ (this._quoteStart.item))
-        getItemCleanEnd(transaction, y.store, /** @type {ID} */(this._quoteEnd.item))
+        let [firstItem, lastItem] = sliceBlocksByRange(transaction, this._quoteStart, this.quoteEnd)
         if (firstItem.parentSub !== null) {
           // for maps, advance to most recent item
           while (firstItem.right !== null) {
@@ -159,11 +167,9 @@ export class YWeakLink extends AbstractType {
 
         /** @type {Item|null} */
         let item = firstItem
-        const end = /** @type {ID} */ (this._quoteEnd.item)
         for (;item !== null; item = item.right) {
           createLink(transaction, item, this)
-          const lastId = item.lastId
-          if (lastId.client === end.client && lastId.clock === end.clock) {
+          if (item === lastItem) {
             break
           }
         }
@@ -216,22 +222,31 @@ export class YWeakLink extends AbstractType {
    * @public
    */
   toString () {
-    if (this._firstItem !== null) {
-      switch (/** @type {AbstractType<any>} */ (this._firstItem.parent).constructor) {
+    let n = this._firstItem
+    if (n !== null && this._quoteStart.assoc >= 0) {
+      // if assoc >= we exclude start from range
+      n = n.right
+    }
+    if (n !== null) {
+      switch (/** @type {AbstractType<any>} */ (n.parent).constructor) {
         case YText: {
           let str = ''
-          /**
-           * @type {Item|null}
-           */
-          let n = this._firstItem
           const end = /** @type {ID} */ (this._quoteEnd.item)
+          const endAssoc = this._quoteEnd.assoc
           while (n !== null) {
+            if (endAssoc < 0 && n.id.client === end.client && n.id.clock === end.clock) {
+              // right side is open (last item excluded)
+              break
+            }
             if (!n.deleted && n.countable && n.content.constructor === ContentString) {
               str += /** @type {ContentString} */ (n.content).str
             }
-            const lastId = n.lastId
-            if (lastId.client === end.client && lastId.clock === end.clock) {
-              break
+            if (endAssoc >= 0) {
+              const lastId = n.lastId
+              if (lastId.client === end.client && lastId.clock === end.clock) {
+                // right side is closed (last item included)
+                break
+              }
             }
             n = n.right
           }
@@ -278,107 +293,54 @@ export const readYWeakLink = decoder => {
   return new YWeakLink(start, end, null)
 }
 
-const invalidQuotedRange = error.create('Invalid quoted range length.')
-
 /**
  * Returns a {WeakLink} to an YArray element at given index.
  *
- * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
- * @param {number} index
+ * @param {Transaction} transaction
+ * @param {YRange} range
  * @return {YWeakLink<any>}
  */
-export const arrayWeakLink = (transaction, parent, index, length = 1) => {
-  if (length <= 0) {
-    throw invalidQuotedRange
-  }
-  let startItem = parent._start
-  for (;startItem !== null; startItem = startItem.right) {
-    if (!startItem.deleted && startItem.countable) {
-      if (index < startItem.length) {
-        if (index > 0) {
-          startItem = getItemCleanStart(transaction, createID(startItem.id.client, startItem.id.clock + index))
+export const quoteRange = (transaction, parent, range) => {
+  const [start, end] = rangeToRelative(parent, range)
+  const [startItem, endItem] = sliceBlocksByRange(transaction, start, end)
+  const link = new YWeakLink(start, end, startItem)
+  if (parent.doc !== null) {
+    transact(parent.doc, (transaction) => {
+      for (let item = link._firstItem; item !== null; item = item = item.right) {
+        createLink(transaction, item, link)
+        if (item === endItem) {
+          break
         }
-        break
       }
-      index -= startItem.length
-    }
+    })
   }
-  let endItem = startItem
-  let remaining = length
-  for (;endItem !== null; endItem = endItem.right) {
-    if (!endItem.deleted && endItem.countable) {
-      if (remaining > endItem.length) {
-        remaining -= endItem.length
-      } else {
-        endItem = getItemCleanEnd(transaction, transaction.doc.store, createID(endItem.id.client, endItem.id.clock + remaining - 1))
-        break
-      }
-    }
-  }
-  if (startItem !== null && endItem !== null) {
-    const start = new RelativePosition(null, null, startItem.id, 0)
-    const end = new RelativePosition(null, null, endItem.lastId, -1)
-    const link = new YWeakLink(start, end, startItem)
-    if (parent.doc !== null) {
-      transact(parent.doc, (transaction) => {
-        const end = /** @type {ID} */ (link._quoteEnd.item)
-        for (let item = link._firstItem; item !== null; item = item = item.right) {
-          createLink(transaction, item, link)
-          const lastId = item.lastId
-          if (lastId.client === end.client && lastId.clock === end.clock) {
-            break
-          }
-        }
-      })
-    }
-    return link
-  }
-  throw invalidQuotedRange
+  return link
 }
 
 /**
- * Returns a {WeakLink} to an YMap element at given key.
+ * Checks relative position markers and slices the corresponding struct store items
+ * across their positions.
  *
  * @param {Transaction} transaction
- * @param {AbstractType<any>} parent
- * @param {ItemTextListPosition} pos
- * @param {number} length
- * @return {YWeakLink<string>}
+ * @param {RelativePosition} start
+ * @param {RelativePosition} end
+ * @returns {Array<Item>} first and last item that belongs to a sliced range
  */
-export const quoteText = (transaction, parent, pos, length) => {
-  if (pos.right !== null) {
-    const startItem = pos.right
-    const endIndex = pos.index + length
-    while (pos.index < endIndex) {
-      pos.forward()
-    }
-    if (pos.left !== null) {
-      let endItem = pos.left
-      if (pos.index > endIndex) {
-        const overflow = pos.index - endIndex
-        endItem = getItemCleanEnd(transaction, transaction.doc.store, createID(endItem.id.client, endItem.id.clock + endItem.length - overflow - 1))
-      }
-      const start = new RelativePosition(null, null, startItem.id, 0)
-      const end = new RelativePosition(null, null, endItem.lastId, -1)
-      const link = new YWeakLink(start, end, startItem)
-      if (parent.doc !== null) {
-        transact(parent.doc, (transaction) => {
-          const end = /** @type {ID} */ (link._quoteEnd.item)
-          for (let item = link._firstItem; item !== null; item = item = item.right) {
-            createLink(transaction, item, link)
-            const lastId = item.lastId
-            if (lastId.client === end.client && lastId.clock === end.clock) {
-              break
-            }
-          }
-        })
-      }
-      return link
-    }
+const sliceBlocksByRange = (transaction, start, end) => {
+  if (start.item === null || end.item === null) {
+    throw new Error('this operation requires range to be bounded on both sides')
   }
-
-  throw invalidQuotedRange
+  const first = getItemCleanStart(transaction, start.item)
+  /** @type {Item} */
+  let last
+  if (end.assoc >= 0) {
+    last = getItemCleanEnd(transaction, transaction.doc.store, end.item)
+  } else {
+    const item = getItemCleanStart(transaction, end.item)
+    last = /** @type {Item} */ (item.left)
+  }
+  return [first, last]
 }
 
 /**
@@ -459,6 +421,21 @@ export const joinLinkedRange = (transaction, item) => {
     const common = new Set()
     for (const link of leftLinks) {
       if (rightLinks.has(link)) {
+        // new item existing in a quoted range in between two elements
+        common.add(link)
+      } else if (link._quoteEnd.assoc < 0) {
+        // We're at the right edge of quoted range - right neighbor is not included
+        // but the left one is. Since quotation is open on the right side, we need to
+        // include current item.
+        common.add(link)
+      }
+    }
+    for (const link of rightLinks) {
+      if (!leftLinks.has(link) && link._firstItem === item.left && link._quoteStart.assoc >= 0) {
+        // We're at the right edge of quoted range - right neighbor is not included
+        // but the left one is. Since quotation is open on the right side, we need to
+        // include current item.
+        link._firstItem = item // this item is the new most left-wise
         common.add(link)
       }
     }

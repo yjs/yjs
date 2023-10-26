@@ -16,8 +16,8 @@ import {
   YArrayRefID,
   callTypeObservers,
   transact,
-  arrayWeakLink,
-  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item, YWeakLink, // eslint-disable-line
+  quoteRange,
+  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item, YWeakLink, YRange, // eslint-disable-line
 } from '../internals.js'
 import { typeListSlice } from './AbstractType.js'
 
@@ -201,24 +201,22 @@ export class YArray extends AbstractType {
   get (index) {
     return typeListGet(this, index)
   }
-  
+
   /**
    * Returns the weak link that allows to refer and observe live changes of contents of an YArray.
    * It points at a consecutive range of elements, starting at give `index` and spanning over provided
    * length of elements.
    *
-   * @param {number} index The index of the element to return from the YArray
-   * @param {number} length The number of elements to include in returned weak link reference.
+   * @param {YRange} range quoted range
    * @return {YWeakLink<T>}
    */
-  quote (index, length = 1) {
+  quote (range) {
     if (this.doc !== null) {
       return transact(this.doc, transaction => {
-        return arrayWeakLink(transaction, this, index, length)
+        return quoteRange(transaction, this, range)
       })
-    } else {
-      throw new Error('cannot quote an YArray that has not been integrated into YDoc')
     }
+    throw new Error('cannot quote an YArray that has not been integrated into YDoc')
   }
 
   /**
