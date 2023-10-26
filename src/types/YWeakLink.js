@@ -208,6 +208,23 @@ export class YWeakLink extends AbstractType {
   _write (encoder) {
     encoder.writeTypeRef(YWeakLinkRefID)
     const isSingle = this.isSingle
+    /**
+     * Info flag bits:
+     * - 0: is quote spanning over single element? 
+     *      If this bit is set, we skip writing ID of quotation end.
+     * - 1: is quotation start inclusive
+     * - 2: is quotation end exclusive
+     * 
+     * Future proposition for bits usage:
+     * - 3: is quotation start unbounded. 
+     * - 4: is quotation end unbounded
+     * - 5: if quotation is unbounded on both ends, this bit says if quoted collection is root type.
+     *      The next ID/String is a quoted collection ID or name.
+     * - 6: this quotation links to a subdocument.
+     *      If set, the last segment of data contains info that may be needed to restore subdoc data.
+     * - 7: left unused. Potentially useful as a varint continuation flag if we need to expand this
+     *      flag in the future. 
+     */
     const info = (isSingle ? 0 : 1) | (this._quoteStart.assoc >= 0 ? 2 : 0) | (this._quoteEnd.assoc >= 0 ? 4 : 0)
     encoding.writeUint8(encoder.restEncoder, info)
     writeID(encoder.restEncoder, /** @type {ID} */ (this._quoteStart.item))
