@@ -251,7 +251,7 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
     return nextStructsTarget
   }
   let curStructsTarget = getNextStructTarget()
-  if (curStructsTarget === null && stack.length === 0) {
+  if (curStructsTarget === null) {
     return null
   }
 
