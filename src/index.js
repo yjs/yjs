@@ -18,8 +18,10 @@ export {
   Item,
   AbstractStruct,
   GC,
+  Skip,
   ContentBinary,
   ContentDeleted,
+  ContentDoc,
   ContentEmbed,
   ContentFormat,
   ContentJSON,
@@ -93,6 +95,9 @@ export {
   obfuscateUpdate,
   obfuscateUpdateV2,
   UpdateEncoderV1,
+  UpdateEncoderV2,
+  UpdateDecoderV1,
+  UpdateDecoderV2,
   equalDeleteSets,
   snapshotContainsUpdate
 } from './internals.js'
