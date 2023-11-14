@@ -698,7 +698,8 @@ type. Doesn't log types that have not been defined (using
   <b><code>on('update', function(updateMessage:Uint8Array, origin:any, Y.Doc):void)</code></b>
   <dd>
 Listen to document updates. Document updates must be transmitted to all other
-peers. You can apply document updates in any order and multiple times.
+peers. You can apply document updates in any order and multiple times. Use `updateV2`
+to receive V2 events.
   </dd>
   <b><code>on('beforeTransaction', function(Y.Transaction, Y.Doc):void)</code></b>
   <dd>Emitted before each transaction.</dd>
@@ -823,8 +824,10 @@ Yjs implements two update formats. By default you are using the V1 update format
 You can opt-in into the V2 update format wich provides much better compression.
 It is not yet used by all providers. However, you can already use it if
 you are building your own provider. All below functions are available with the
-suffix "V2". E.g. `Y.applyUpdate` ⇒ `Y.applyUpdateV2`. We also support conversion
-functions between both formats: `Y.convertUpdateFormatV1ToV2` & `Y.convertUpdateFormatV2ToV1`.
+suffix "V2". E.g. `Y.applyUpdate` ⇒ `Y.applyUpdateV2`. Also when listening to updates
+you need to specifically need listen for V2 events e.g. `yDoc.on('updateV2', …)`.
+We also support conversion functions between both formats:
+`Y.convertUpdateFormatV1ToV2` & `Y.convertUpdateFormatV2ToV1`.
 
 #### Update API
 
