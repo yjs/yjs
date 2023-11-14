@@ -109,7 +109,8 @@ export const testGetAndSetOfMapProperty = tc => {
  */
 export const testYmapSetsYmap = tc => {
   const { users, map0 } = init(tc, { users: 2 })
-  const map = map0.set('Map', new Y.Map())
+  const map = new Y.Map()
+  map0.set('Map', map)
   t.assert(map0.get('Map') === map)
   map.set('one', 1)
   t.compare(map.get('one'), 1)
@@ -121,7 +122,8 @@ export const testYmapSetsYmap = tc => {
  */
 export const testYmapSetsYarray = tc => {
   const { users, map0 } = init(tc, { users: 2 })
-  const array = map0.set('Array', new Y.Array())
+  const array = new Y.Array()
+  map0.set('Array', array)
   t.assert(array === map0.get('Array'))
   array.insert(0, [1, 2, 3])
   // @ts-ignore
@@ -234,7 +236,8 @@ export const testGetAndSetAndDeleteOfMapPropertyWithThreeConflicts = tc => {
  */
 export const testObserveDeepProperties = tc => {
   const { testConnector, users, map1, map2, map3 } = init(tc, { users: 4 })
-  const _map1 = map1.set('map', new Y.Map())
+  const _map1 = new Y.Map()
+  map1.set('map', _map1)
   let calls = 0
   let dmapid
   map1.observeDeep(events => {

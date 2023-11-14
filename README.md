@@ -242,17 +242,17 @@ necessary.
   </p>
   <pre>const yarray = new Y.Array()</pre>
   <dl>
-    <b><code>insert(index:number, content:Array&lt;object|boolean|Array|string|number|Uint8Array|Y.Type&gt;)</code></b>
+    <b><code>insert(index:number, content:Array&lt;object|boolean|Array|string|number|Uint8Array|Y.Type&gt;):Y.Array</code></b>
     <dd>
 Insert content at <var>index</var>. Note that content is an array of elements.
 I.e. <code>array.insert(0, [1])</code> splices the list and inserts 1 at
 position 0.
     </dd>
-    <b><code>push(Array&lt;Object|boolean|Array|string|number|Uint8Array|Y.Type&gt;)</code></b>
+    <b><code>push(Array&lt;Object|boolean|Array|string|number|Uint8Array|Y.Type&gt;):Y.Array</code></b>
     <dd></dd>
-    <b><code>unshift(Array&lt;Object|boolean|Array|string|number|Uint8Array|Y.Type&gt;)</code></b>
+    <b><code>unshift(Array&lt;Object|boolean|Array|string|number|Uint8Array|Y.Type&gt;):Y.Array</code></b>
     <dd></dd>
-    <b><code>delete(index:number, length:number)</code></b>
+    <b><code>delete(index:number, length:number):Y.Array</code></b>
     <dd></dd>
     <b><code>get(index:number)</code></b>
     <dd></dd>
@@ -313,9 +313,9 @@ or any of its children.
   <dl>
     <b><code>get(key:string):object|boolean|string|number|Uint8Array|Y.Type</code></b>
     <dd></dd>
-    <b><code>set(key:string, value:object|boolean|string|number|Uint8Array|Y.Type)</code></b>
+    <b><code>set(key:string, value:object|boolean|string|number|Uint8Array|Y.Type):Y.Map</code></b>
     <dd></dd>
-    <b><code>delete(key:string)</code></b>
+    <b><code>delete(key:string):Y.Map</code></b>
     <dd></dd>
     <b><code>has(key:string):boolean</code></b>
     <dd></dd>
@@ -388,14 +388,14 @@ YTextEvents compute changes as deltas.
   </p>
   <pre>const ytext = new Y.Text()</pre>
   <dl>
-    <b><code>insert(index:number, content:string, [formattingAttributes:Object&lt;string,string&gt;])</code></b>
+    <b><code>insert(index:number, content:string, [formattingAttributes:Object&lt;string,string&gt;]):Y.Text</code></b>
     <dd>
       Insert a string at <var>index</var> and assign formatting attributes to it.
       <pre>ytext.insert(0, 'bold text', { bold: true })</pre>
     </dd>
-    <b><code>delete(index:number, length:number)</code></b>
+    <b><code>delete(index:number, length:number):Y.Text</code></b>
     <dd></dd>
-    <b><code>format(index:number, length:number, formattingAttributes:Object&lt;string,string&gt;)</code></b>
+    <b><code>format(index:number, length:number, formattingAttributes:Object&lt;string,string&gt;):Y.Text</code></b>
     <dd>Assign formatting attributes to a range in the text</dd>
     <b><code>applyDelta(delta, opts:Object&lt;string,any&gt;)</code></b>
     <dd>
@@ -446,9 +446,9 @@ or any of its children.
   </p>
   <pre><code>const yxml = new Y.XmlFragment()</code></pre>
   <dl>
-    <b><code>insert(index:number, content:Array&lt;Y.XmlElement|Y.XmlText&gt;)</code></b>
+    <b><code>insert(index:number, content:Array&lt;Y.XmlElement|Y.XmlText&gt;):Y.XmlFragment</code></b>
     <dd></dd>
-    <b><code>delete(index:number, length:number)</code></b>
+    <b><code>delete(index:number, length:number):Y.XmlFragment</code></b>
     <dd></dd>
     <b><code>get(index:number)</code></b>
     <dd></dd>
@@ -497,17 +497,17 @@ content and be actually XML compliant.
   </p>
   <pre><code>const yxml = new Y.XmlElement()</code></pre>
   <dl>
-    <b><code>insert(index:number, content:Array&lt;Y.XmlElement|Y.XmlText&gt;)</code></b>
+    <b><code>insert(index:number, content:Array&lt;Y.XmlElement|Y.XmlText&gt;):Y.XmlElement</code></b>
     <dd></dd>
-    <b><code>delete(index:number, length:number)</code></b>
+    <b><code>delete(index:number, length:number):Y.XmlElement</code></b>
     <dd></dd>
     <b><code>get(index:number)</code></b>
     <dd></dd>
     <b><code>length:number</code></b>
     <dd></dd>
-    <b><code>setAttribute(attributeName:string, attributeValue:string)</code></b>
+    <b><code>setAttribute(attributeName:string, attributeValue:string):Y.XmlElement</code></b>
     <dd></dd>
-    <b><code>removeAttribute(attributeName:string)</code></b>
+    <b><code>removeAttribute(attributeName:string):Y.XmlElement</code></b>
     <dd></dd>
     <b><code>getAttribute(attributeName:string):string</code></b>
     <dd></dd>

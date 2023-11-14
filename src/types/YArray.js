@@ -101,6 +101,7 @@ export class YArray extends AbstractType {
    *
    * @param {number} index The index to insert content at.
    * @param {Array<T>} content The array of content
+   * @return {YArray<T>} Instance of the YArray
    */
   insert (index, content) {
     if (this.doc !== null) {
@@ -110,24 +111,27 @@ export class YArray extends AbstractType {
     } else {
       /** @type {Array<any>} */ (this._prelimContent).splice(index, 0, ...content)
     }
+    return this
   }
 
   /**
    * Appends content to this YArray.
    *
    * @param {Array<T>} content Array of content to append.
+   * @return {YArray<T>} Instance of the YArray
    */
   push (content) {
-    this.insert(this.length, content)
+    return this.insert(this.length, content)
   }
 
   /**
    * Preppends content to this YArray.
    *
    * @param {Array<T>} content Array of content to preppend.
+   * @return {YArray<T>} Instance of the YArray
    */
   unshift (content) {
-    this.insert(0, content)
+    return this.insert(0, content)
   }
 
   /**
@@ -135,6 +139,7 @@ export class YArray extends AbstractType {
    *
    * @param {number} index Index at which to start deleting elements
    * @param {number} length The number of elements to remove. Defaults to 1.
+   * @return {YArray<T>} Instance of the YArray
    */
   delete (index, length = 1) {
     if (this.doc !== null) {
@@ -144,6 +149,7 @@ export class YArray extends AbstractType {
     } else {
       /** @type {Array<any>} */ (this._prelimContent).splice(index, length)
     }
+    return this
   }
 
   /**
