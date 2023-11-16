@@ -436,7 +436,13 @@ export const transact = (doc, f, origin = null, local = true) => {
         // observes throw errors.
         // This file is full of hacky try {} finally {} blocks to ensure that an
         // event can throw errors and also that the cleanup is called.
-        cleanupTransactions(transactionCleanups, 0)
+        if (typeof result?.then === 'function' && result?.constructor?.name === 'Promise') {
+          result.then(() => {
+            cleanupTransactions(transactionCleanups, 0)
+          })
+        } else {
+          cleanupTransactions(transactionCleanups, 0)
+        }
       }
     }
   }
