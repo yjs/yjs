@@ -184,7 +184,7 @@ language bindings to other languages
   * [yrs](https://github.com/y-crdt/y-crdt/tree/main/yrs) - Rust interface
   * [ypy](https://github.com/y-crdt/ypy) - Python binding
   * [yrb](https://github.com/y-crdt/yrb) - Ruby binding
-  * [yrb](https://github.com/y-crdt/yswift) - Swift binding
+  * [yswift](https://github.com/y-crdt/yswift) - Swift binding
   * [yffi](https://github.com/y-crdt/y-crdt/tree/main/yffi) - C-FFI
   * [ywasm](https://github.com/y-crdt/y-crdt/tree/main/ywasm) - WASM binding
 * [ycs](https://github.com/yjs/ycs) - .Net compatible C# implementation.
