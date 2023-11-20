@@ -9,6 +9,31 @@ import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 
 /**
+ * @param {t.TestCase} _tc
+ */
+export const testIterators = _tc => {
+  const ydoc = new Y.Doc()
+  /**
+   * @type {Y.Map<number>}
+   */
+  const ymap = ydoc.getMap()
+  // we are only checking if the type assumptions are correct
+  /**
+   * @type {Array<number>}
+   */
+  const vals = Array.from(ymap.values())
+  /**
+   * @type {Array<[string,number]>}
+   */
+  const entries = Array.from(ymap.entries())
+  /**
+   * @type {Array<string>}
+   */
+  const keys = Array.from(ymap.keys())
+  console.log(vals, entries, keys)
+}
+
+/**
  * Computing event changes after transaction should result in an error. See yjs#539
  *
  * @param {t.TestCase} _tc
