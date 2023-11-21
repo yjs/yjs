@@ -110,7 +110,19 @@ and storing shared data for offline usage is quite a hassle. **Providers**
 manage all that for you and are the perfect starting point for your
 collaborative app.
 
+> This list of providers is incomplete. Please open PRs to add your providers to
+> this list!
+
+#### Connection Providers
+
 <dl>
+  <dt><a href="https://github.com/yjs/y-websocket">y-websocket</a></dt>
+  <dd>
+A module that contains a simple websocket backend and a websocket client that
+connects to that backend. The backend can be extended to persist updates in a
+leveldb database. <b>y-sweet</b> and <b>ypy-websocket</b> (see below) are
+compatible to the y-wesocket protocol.
+  </dd>
   <dt><a href="https://github.com/yjs/y-webrtc">y-webrtc</a></dt>
   <dd>
 Propagates document updates peer-to-peer using WebRTC. The peers exchange
@@ -119,17 +131,22 @@ are available. Communication over the signaling servers can be encrypted by
 providing a shared secret, keeping the connection information and the shared
 document private.
   </dd>
-  <dt><a href="https://github.com/yjs/y-websocket">y-websocket</a></dt>
+  <dt><a href="https://github.com/liveblocks/liveblocks">@liveblocks/yjs</a></dt>
   <dd>
-A module that contains a simple websocket backend and a websocket client that
-connects to that backend. The backend can be extended to persist updates in a
-leveldb database.
+<a href="https://liveblocks.io/document/yjs">Liveblocks Yjs</a> provides a fully
+hosted WebSocket infrastructure and persisted data store for Yjs
+documents. No configuration or maintenance is required. It also features
+Yjs webhook events, REST API to read and update Yjs documents, and a
+browser DevTools extension.
   </dd>
-  <dt><a href="https://github.com/yjs/y-indexeddb">y-indexeddb</a></dt>
+  <dt><a href="https://github.com/drifting-in-space/y-sweet">y-sweet</a></dt>
   <dd>
-Efficiently persists document updates to the browsers indexeddb database.
-The document is immediately available and only diffs need to be synced through the
-network provider.
+A standalone yjs server with persistence to S3 or filesystem. They offer a
+<a href="https://y-sweet.cloud">cloud service</a> as well.
+  </dd>
+  <dt><a href="https://docs.partykit.io/reference/y-partykit-api/">PartyKit</a></dt>
+  <dd>
+Cloud service for building multiplayer apps.
   </dd>
   <dt><a href="https://github.com/marcopolo/y-libp2p">y-libp2p</a></dt>
   <dd>
@@ -144,14 +161,6 @@ Also includes a peer-sync mechanism to catch up on missed updates.
 an append-only log of CRDT local updates (hypercore). Multifeed manages and sync
 hypercores and y-dat listens to changes and applies them to the Yjs document.
 </dd>
-  <dt><a href="https://github.com/liveblocks/liveblocks">@liveblocks/yjs</a></dt>
-  <dd>
-<a href="https://liveblocks.io/document/yjs">Liveblocks Yjs</a> provides a fully
-hosted WebSocket infrastructure and persisted data store for Yjs
-documents. No configuration or maintenance is required. It also features
-Yjs webhook events, REST API to read and update Yjs documents, and a
-browser DevTools extension.
-  </dd>
   <dt><a href="https://github.com/yousefED/matrix-crdt">Matrix-CRDT</a></dt>
   <dd>
 Use <a href="https://www.matrix.org">Matrix</a> as an off-the-shelf backend for
@@ -160,17 +169,37 @@ Use Matrix as transport and storage of Yjs updates, so you can focus building
 your client app and Matrix can provide powerful features like Authentication,
 Authorization, Federation, hosting (self-hosting or SaaS) and even End-to-End
 Encryption (E2EE).
-</dd>
+  </dd>
+  <dt><a href="https://github.com/y-crdt/yrb-actioncable">yrb-actioncable</a></dt>
+  <dd>
+An ActionCable companion for Yjs clients. There is a fitting
+<a href="https://github.com/y-crdt/yrb-redis">redis extension</a> as well.
+  </dd>
+  <dt><a href="https://github.com/y-crdt/ypy-websocket">ypy-websocket</a></dt>
+  <dd>
+Websocket backend, written in Python.
+  </dd>
+</dl>
+
+#### Persistence Providers
+
+<dl>
+  <dt><a href="https://github.com/yjs/y-indexeddb">y-indexeddb</a></dt>
+  <dd>
+Efficiently persists document updates to the browsers indexeddb database.
+The document is immediately available and only diffs need to be synced through the
+network provider.
+  </dd>
   <dt><a href="https://github.com/MaxNoetzold/y-mongodb-provider">y-mongodb-provider</a></dt>
   <dd>
 Adds persistent storage to a server with MongoDB. Can be used with the
 y-websocket provider.
-</dd>
+  </dd>
   <dt><a href="https://github.com/toeverything/AFFiNE/tree/master/packages/y-indexeddb">
 @toeverything/y-indexeddb</a></dt>
   <dd>
 Like y-indexeddb, but with sub-documents support and fully TypeScript.
-</dd>
+  </dd>
 </dl>
 
 # Ports
