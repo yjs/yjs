@@ -926,6 +926,34 @@ export const typeMapGetSnapshot = (parent, key, snapshot) => {
 }
 
 /**
+ * @param {AbstractType<any>} parent
+ * @param {Snapshot} snapshot
+ * @return {Object<string,Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined>}
+ *
+ * @private
+ * @function
+ */
+export const typeMapGetAllSnapshot = (parent, snapshot) => {
+  /**
+   * @type {Object<string,any>}
+   */
+  const res = {}
+  parent._map.forEach((value, key) => {
+    /**
+     * @type {Item|null}
+     */
+    let v = value
+    while (v !== null && (!snapshot.sv.has(v.id.client) || v.id.clock >= (snapshot.sv.get(v.id.client) || 0))) {
+      v = v.left
+    }
+    if (v !== null && isVisible(v, snapshot)) {
+      res[key] = v.content.getContent()[v.length - 1]
+    }
+  })
+  return res
+}
+
+/**
  * @param {Map<string,Item>} map
  * @return {IterableIterator<Array<any>>}
  *

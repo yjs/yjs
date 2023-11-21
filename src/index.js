@@ -52,6 +52,7 @@ export {
   getItem,
   typeListToArraySnapshot,
   typeMapGetSnapshot,
+  typeMapGetAllSnapshot,
   createDocFromSnapshot,
   iterateDeletedStructs,
   applyUpdate,

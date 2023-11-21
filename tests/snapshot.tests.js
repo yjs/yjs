@@ -17,6 +17,21 @@ export const testBasic = _tc => {
 /**
  * @param {t.TestCase} _tc
  */
+export const testBasicXmlAttributes = _tc => {
+  const ydoc = new Y.Doc({ gc: false })
+  const yxml = ydoc.getMap().set('el', new Y.XmlElement('div'))
+  const snapshot1 = Y.snapshot(ydoc)
+  yxml.setAttribute('a', '1')
+  const snapshot2 = Y.snapshot(ydoc)
+  yxml.setAttribute('a', '2')
+  t.compare(yxml.getAttributes(), { a: '2' })
+  t.compare(yxml.getAttributes(snapshot2), { a: '1' })
+  t.compare(yxml.getAttributes(snapshot1), {})
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
 export const testBasicRestoreSnapshot = _tc => {
   const doc = new Y.Doc({ gc: false })
   doc.getArray('array').insert(0, ['hello'])
