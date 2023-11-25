@@ -194,14 +194,16 @@ export const createDocFromSnapshot = (originDoc, snapshot, newDoc = new Doc()) =
         getItemCleanStart(transaction, createID(client, clock))
       }
       const structs = originDoc.store.clients.get(client) || []
-      const lastStructIndex = findIndexSS(structs, clock - 1)
-      // write # encoded structs
-      encoding.writeVarUint(encoder.restEncoder, lastStructIndex + 1)
-      encoder.writeClient(client)
-      // first clock written is 0
-      encoding.writeVarUint(encoder.restEncoder, 0)
-      for (let i = 0; i <= lastStructIndex; i++) {
-        structs[i].write(encoder, 0)
+      if(structs.length != 0) {
+        const lastStructIndex = findIndexSS(structs, clock - 1)
+        // write # encoded structs
+        encoding.writeVarUint(encoder.restEncoder, lastStructIndex + 1)
+        encoder.writeClient(client)
+        // first clock written is 0
+        encoding.writeVarUint(encoder.restEncoder, 0)
+        for (let i = 0; i <= lastStructIndex; i++) {
+          structs[i].write(encoder, 0)
+        }
       }
     }
     writeDeleteSet(encoder, ds)
