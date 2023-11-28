@@ -56,6 +56,9 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
 * [Slidebeamer](https://slidebeamer.com/) Presentation app.
 * [BlockSurvey](https://blocksurvey.io) End-to-end encryption for your forms/surveys.
 * [Skiff](https://skiff.org/) Private, decentralized workspace.
+* [JupyterLab](https://jupyter.org/) Collaborative computational Notebooks
+* [JupyterCad](https://jupytercad.readthedocs.io/en/latest/) Extension to
+  JupyterLab that enables collaborative editing of 3d FreeCAD Models.
 * [Hyperquery](https://hyperquery.ai/) A collaborative data workspace for
   sharing analyses, documentation, spreadsheets, and dashboards.
 * [Nosgestesclimat](https://nosgestesclimat.fr/groupe) The french carbon
@@ -66,6 +69,8 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
   worldbuilding app for tabletop RPGs.
 * [IllumiDesk](https://illumidesk.com/) Build courses and content with A.I.
 * [btw](https://www.btw.so) Open-source Medium alternative
+* [AWS SageMaker](https://aws.amazon.com/sagemaker/) Tools for building Machine
+  Learning Models
 
 ## Table of Contents
 
