@@ -36,9 +36,12 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
 
 * [AFFiNE](https://affine.pro/) A local-first, privacy-first, open source
   knowledge base. 🏅
-* [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star2:
-* [Sana](https://sanalabs.com/) A learning platform with collaborative text
-  editing powered by Yjs.
+* [Cargo](https://cargo.site/) Site builder for designers and artists :star2:
+* [Gitbook](https://gitbook.com) Knowledge management for technical teams :star2:
+* [Evernote](https://evernote.com) Note-taking app :star2:
+* [Lessonspace](https://thelessonspace.com) Enterprise platform for virtual
+  classrooms and online training :star2:
+* [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star:
 * [Relm](https://www.relm.us/) A collaborative gameworld for teamwork and
   community. :star:
 * [Room.sh](https://room.sh/) A meeting application with integrated
@@ -47,6 +50,8 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
   Nimbus Web. :star:
 * [Pluxbox RadioManager](https://getradiomanager.com/) A web-based app to
   collaboratively organize radio broadcasts. :star:
+* [Sana](https://sanalabs.com/) A learning platform with collaborative text
+  editing powered by Yjs.
 * [Serenity Notes](https://www.serenity.re/en/notes) End-to-end encrypted
   collaborative notes app.
 * [PRSM](https://prsm.uk/) Collaborative mind-mapping and system visualisation. *[(source)](https://github.com/micrology/prsm)*
