@@ -1,4 +1,3 @@
-
 import {
   getState,
   writeStructsFromTransaction,

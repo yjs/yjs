@@ -1,4 +1,3 @@
-
 /**
  * @module YText
  */
@@ -118,14 +117,15 @@ const findNextPosition = (transaction, pos, count) => {
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {number} index
+ * @param {boolean} useSearchMarker
  * @return {ItemTextListPosition}
  *
  * @private
  * @function
  */
-const findPosition = (transaction, parent, index) => {
+const findPosition = (transaction, parent, index, useSearchMarker) => {
   const currentAttributes = new Map()
-  const marker = findMarker(parent, index)
+  const marker = useSearchMarker ? findMarker(parent, index) : null
   if (marker) {
     const pos = new ItemTextListPosition(marker.p.left, marker.p, marker.index, currentAttributes)
     return findNextPosition(transaction, pos, index - marker.index)
@@ -1120,7 +1120,7 @@ export class YText extends AbstractType {
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
-        const pos = findPosition(transaction, this, index)
+        const pos = findPosition(transaction, this, index, !attributes)
         if (!attributes) {
           attributes = {}
           // @ts-ignore
@@ -1138,20 +1138,20 @@ export class YText extends AbstractType {
    *
    * @param {number} index The index to insert the embed at.
    * @param {Object | AbstractType<any>} embed The Object that represents the embed.
-   * @param {TextAttributes} attributes Attribute information to apply on the
+   * @param {TextAttributes} [attributes] Attribute information to apply on the
    *                                    embed
    *
    * @public
    */
-  insertEmbed (index, embed, attributes = {}) {
+  insertEmbed (index, embed, attributes) {
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
-        const pos = findPosition(transaction, this, index)
-        insertText(transaction, this, pos, embed, attributes)
+        const pos = findPosition(transaction, this, index, !attributes)
+        insertText(transaction, this, pos, embed, attributes || {})
       })
     } else {
-      /** @type {Array<function>} */ (this._pending).push(() => this.insertEmbed(index, embed, attributes))
+      /** @type {Array<function>} */ (this._pending).push(() => this.insertEmbed(index, embed, attributes || {}))
     }
   }
 
@@ -1170,7 +1170,7 @@ export class YText extends AbstractType {
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
-        deleteText(transaction, findPosition(transaction, this, index), length)
+        deleteText(transaction, findPosition(transaction, this, index, true), length)
       })
     } else {
       /** @type {Array<function>} */ (this._pending).push(() => this.delete(index, length))
@@ -1194,7 +1194,7 @@ export class YText extends AbstractType {
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
-        const pos = findPosition(transaction, this, index)
+        const pos = findPosition(transaction, this, index, false)
         if (pos.right === null) {
           return
         }

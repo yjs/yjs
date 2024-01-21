@@ -1,4 +1,3 @@
-
 import {
   isDeleted,
   Item, AbstractType, Transaction, AbstractStruct // eslint-disable-line

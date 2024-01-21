@@ -1,4 +1,3 @@
-
 import {
   YEvent,
   YXmlText, YXmlElement, YXmlFragment, Transaction // eslint-disable-line

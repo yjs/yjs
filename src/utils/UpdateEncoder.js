@@ -1,4 +1,3 @@
-
 import * as error from 'lib0/error'
 import * as encoding from 'lib0/encoding'
 

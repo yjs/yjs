@@ -34,8 +34,17 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
 
 ## Professional Support
 
-* [Support Contract with the Maintainer](https://github.com/sponsors/dmonad) - By contributing financially to the open-source Yjs project, you can receive professional support directly from the author. This includes the opportunity for weekly video calls to discuss your specific challenges.
-* [Synergy Codes](https://synergycodes.com/yjs-services/) - Specializing in consulting and developing real-time collaborative editing solutions for visual apps, Synergy Codes focuses on interactive diagrams, complex graphs, charts, and various data visualization types. Their expertise empowers developers to build engaging and interactive visual experiences leveraging the power of Yjs. See their work in action at [Visual Collaboration Showcase](https://yjs-diagram.synergy.codes/).
+* [Support Contract with the Maintainer](https://github.com/sponsors/dmonad) -
+By contributing financially to the open-source Yjs project, you can receive
+professional support directly from the author. This includes the opportunity for
+weekly video calls to discuss your specific challenges.
+* [Synergy Codes](https://synergycodes.com/yjs-services/) - Specializing in
+consulting and developing real-time collaborative editing solutions for visual
+apps, Synergy Codes focuses on interactive diagrams, complex graphs, charts, and
+various data visualization types. Their expertise empowers developers to build
+engaging and interactive visual experiences leveraging the power of Yjs. See
+their work in action at [Visual Collaboration
+Showcase](https://yjs-diagram.synergy.codes/).
 
 ## Who is using Yjs
 

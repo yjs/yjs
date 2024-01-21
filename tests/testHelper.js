@@ -1,4 +1,3 @@
-
 import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 import * as encoding from 'lib0/encoding'
