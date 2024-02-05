@@ -210,3 +210,16 @@ export const testFormattingBug = _tc => {
   yxml.applyDelta(delta)
   t.compare(yxml.toDelta(), delta)
 }
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testElement = _tc => {
+  const ydoc = new Y.Doc()
+  const yxmlel = ydoc.getXmlElement()
+
+  const text1 = new Y.XmlText('text1')
+  const text2 = new Y.XmlText('text2')
+  yxmlel.insert(0, [text1, text2])
+  t.compareArrays(yxmlel.toArray(), [text1, text2])
+}

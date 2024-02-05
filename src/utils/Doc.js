@@ -8,6 +8,7 @@ import {
   YArray,
   YText,
   YMap,
+  YXmlElement,
   YXmlFragment,
   transact,
   ContentDoc, Item, Transaction, YEvent // eslint-disable-line
@@ -260,6 +261,17 @@ export class Doc extends Observable {
   getMap (name = '') {
     // @ts-ignore
     return this.get(name, YMap)
+  }
+
+  /**
+   * @param {string} [name]
+   * @return {YXmlElement}
+   *
+   * @public
+   */
+  getXmlElement (name = '') {
+    // @ts-ignore
+    return this.get(name, YXmlElement)
   }
 
   /**

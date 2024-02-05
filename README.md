@@ -739,6 +739,8 @@ type. Doesn't log types that have not been defined (using
   <dd>Define a shared Y.Map type. Is equivalent to <code>y.get(string, Y.Map)</code>.</dd>
   <b><code>getText(string):Y.Text</code></b>
   <dd>Define a shared Y.Text type. Is equivalent to <code>y.get(string, Y.Text)</code>.</dd>
+  <b><code>getXmlElement(string, string):Y.XmlElement</code></b>
+  <dd>Define a shared Y.XmlElement type. Is equivalent to <code>y.get(string, Y.XmlElement)</code>.</dd>
   <b><code>getXmlFragment(string):Y.XmlFragment</code></b>
   <dd>Define a shared Y.XmlFragment type. Is equivalent to <code>y.get(string, Y.XmlFragment)</code>.</dd>
   <b><code>on(string, function)</code></b>
