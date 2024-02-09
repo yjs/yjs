@@ -20,7 +20,7 @@ import {
 
 /**
  * An YXmlElement imitates the behavior of a
- * {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}.
+ * https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element
  *
  * * An YXmlElement has attributes (key value pairs)
  * * An YXmlElement has childElements that must inherit from YXmlElement
