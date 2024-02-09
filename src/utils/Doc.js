@@ -8,6 +8,7 @@ import {
   YArray,
   YText,
   YMap,
+  YXmlElement,
   YXmlFragment,
   transact,
   ContentDoc, Item, Transaction, YEvent // eslint-disable-line
@@ -180,6 +181,7 @@ export class Doc extends Observable {
    * Define all types right after the Yjs instance is created and store them in a separate object.
    * Also use the typed methods `getText(name)`, `getArray(name)`, ..
    *
+   * @template {typeof AbstractType<any>} Type
    * @example
    *   const y = new Y(..)
    *   const appState = {
@@ -188,12 +190,12 @@ export class Doc extends Observable {
    *   }
    *
    * @param {string} name
-   * @param {Function} TypeConstructor The constructor of the type definition. E.g. Y.Text, Y.Array, Y.Map, ...
-   * @return {AbstractType<any>} The created type. Constructed with TypeConstructor
+   * @param {Type} TypeConstructor The constructor of the type definition. E.g. Y.Text, Y.Array, Y.Map, ...
+   * @return {InstanceType<Type>} The created type. Constructed with TypeConstructor
    *
    * @public
    */
-  get (name, TypeConstructor = AbstractType) {
+  get (name, TypeConstructor = /** @type {any} */ (AbstractType)) {
     const type = map.setIfUndefined(this.share, name, () => {
       // @ts-ignore
       const t = new TypeConstructor()
@@ -219,12 +221,12 @@ export class Doc extends Observable {
         t._length = type._length
         this.share.set(name, t)
         t._integrate(this, null)
-        return t
+        return /** @type {InstanceType<Type>} */ (t)
       } else {
         throw new Error(`Type with the name ${name} has already been defined with a different constructor`)
       }
     }
-    return type
+    return /** @type {InstanceType<Type>} */ (type)
   }
 
   /**
@@ -235,8 +237,7 @@ export class Doc extends Observable {
    * @public
    */
   getArray (name = '') {
-    // @ts-ignore
-    return this.get(name, YArray)
+    return /** @type {YArray<T>} */ (this.get(name, YArray))
   }
 
   /**
@@ -246,7 +247,6 @@ export class Doc extends Observable {
    * @public
    */
   getText (name = '') {
-    // @ts-ignore
     return this.get(name, YText)
   }
 
@@ -258,8 +258,17 @@ export class Doc extends Observable {
    * @public
    */
   getMap (name = '') {
-    // @ts-ignore
-    return this.get(name, YMap)
+    return /** @type {YMap<T>} */ (this.get(name, YMap))
+  }
+
+  /**
+   * @param {string} [name]
+   * @return {YXmlElement}
+   *
+   * @public
+   */
+  getXmlElement (name = '') {
+    return /** @type {YXmlElement<{[key:string]:string}>} */ (this.get(name, YXmlElement))
   }
 
   /**
@@ -269,7 +278,6 @@ export class Doc extends Observable {
    * @public
    */
   getXmlFragment (name = '') {
-    // @ts-ignore
     return this.get(name, YXmlFragment)
   }
 
