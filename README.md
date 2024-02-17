@@ -878,7 +878,7 @@ ydoc2.getText().toString() // => "00000000000"
 #### Using V2 update format
 
 Yjs implements two update formats. By default you are using the V1 update format.
-You can opt-in into the V2 update format wich provides much better compression.
+You can opt-in into the V2 update format which provides much better compression.
 It is not yet used by all providers. However, you can already use it if
 you are building your own provider. All below functions are available with the
 suffix "V2". E.g. `Y.applyUpdate` ⇒ `Y.applyUpdateV2`. Also when listening to updates
