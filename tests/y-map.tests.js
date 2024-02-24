@@ -14,7 +14,7 @@ import * as prng from 'lib0/prng'
 export const testIterators = _tc => {
   const ydoc = new Y.Doc()
   /**
-   * @type {Y.Map<number>}
+   * @type {Y.Map<Record<string, number>>}
    */
   const ymap = ydoc.getMap()
   // we are only checking if the type assumptions are correct

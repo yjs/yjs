@@ -65,7 +65,7 @@ export class YMapEvent extends YEvent {
  * A shared Map implementation.
  *
  * @extends AbstractType<YMapEvent<MapType>>
- * @implements {Iterable<[string, MapType]>}
+ * @implements {Iterable<[StringKey<MapType>, MapType[StringKey<MapType>]]>}
  */
 export class YMap extends AbstractType {
   /**
@@ -176,7 +176,7 @@ export class YMap extends AbstractType {
   /**
    * Returns the values for each element in the YMap Type.
    *
-   * @return {IterableIterator<MapType>}
+   * @return {IterableIterator<MapType[keyof MapType]>}
    */
   values () {
     return iterator.iteratorMap(createMapIterator(this._map), /** @param {any} v */ v => v[1].content.getContent()[v[1].length - 1])
@@ -185,7 +185,7 @@ export class YMap extends AbstractType {
   /**
    * Returns an Iterator of [key, value] pairs
    *
-   * @return {IterableIterator<[string, MapType]>}
+   * @return {IterableIterator<[StringKey<MapType>, MapType[StringKey<MapType>]]>}
    */
   entries () {
     return iterator.iteratorMap(createMapIterator(this._map), /** @param {any} v */ v => /** @type {any} */ ([v[0], v[1].content.getContent()[v[1].length - 1]]))
@@ -207,7 +207,7 @@ export class YMap extends AbstractType {
   /**
    * Returns an Iterator of [key, value] pairs
    *
-   * @return {IterableIterator<[string, MapType]>}
+   * @return {IterableIterator<[StringKey<MapType>, MapType[StringKey<MapType>]]>}
    */
   [Symbol.iterator] () {
     return this.entries()
