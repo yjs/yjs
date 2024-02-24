@@ -1,4 +1,3 @@
-
 import {
   GC,
   getState,
@@ -389,9 +388,8 @@ export class Item extends AbstractStruct {
     }
     if ((this.left && this.left.constructor === GC) || (this.right && this.right.constructor === GC)) {
       this.parent = null
-    }
-    // only set parent if this shouldn't be garbage collected
-    if (!this.parent) {
+    } else if (!this.parent) {
+      // only set parent if this shouldn't be garbage collected
       if (this.left && this.left.constructor === Item) {
         this.parent = this.left.parent
         this.parentSub = this.left.parentSub

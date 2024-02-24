@@ -1,6 +1,5 @@
-
 import {
-  AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Item, StructStore, Transaction // eslint-disable-line
+  YText, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Item, StructStore, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -47,28 +46,30 @@ export class ContentFormat {
   }
 
   /**
-   * @param {number} offset
+   * @param {number} _offset
    * @return {ContentFormat}
    */
-  splice (offset) {
+  splice (_offset) {
     throw error.methodUnimplemented()
   }
 
   /**
-   * @param {ContentFormat} right
+   * @param {ContentFormat} _right
    * @return {boolean}
    */
-  mergeWith (right) {
+  mergeWith (_right) {
     return false
   }
 
   /**
-   * @param {Transaction} transaction
+   * @param {Transaction} _transaction
    * @param {Item} item
    */
-  integrate (transaction, item) {
+  integrate (_transaction, item) {
     // @todo searchmarker are currently unsupported for rich text documents
-    /** @type {AbstractType<any>} */ (item.parent)._searchMarker = null
+    const p = /** @type {YText} */ (item.parent)
+    p._searchMarker = null
+    p._hasFormatting = true
   }
 
   /**

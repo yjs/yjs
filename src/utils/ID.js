@@ -1,4 +1,3 @@
-
 import { AbstractType } from '../internals.js' // eslint-disable-line
 
 import * as decoding from 'lib0/decoding'

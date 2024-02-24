@@ -1,4 +1,3 @@
-
 import {
   AbstractStruct,
   UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, ID // eslint-disable-line

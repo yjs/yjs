@@ -3,9 +3,9 @@ import * as t from 'lib0/testing'
 import { init } from './testHelper.js'
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testBasic = tc => {
+export const testBasic = _tc => {
   const ydoc = new Y.Doc({ gc: false })
   ydoc.getText().insert(0, 'world!')
   const snapshot = Y.snapshot(ydoc)
@@ -15,9 +15,24 @@ export const testBasic = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testBasicRestoreSnapshot = tc => {
+export const testBasicXmlAttributes = _tc => {
+  const ydoc = new Y.Doc({ gc: false })
+  const yxml = ydoc.getMap().set('el', new Y.XmlElement('div'))
+  const snapshot1 = Y.snapshot(ydoc)
+  yxml.setAttribute('a', '1')
+  const snapshot2 = Y.snapshot(ydoc)
+  yxml.setAttribute('a', '2')
+  t.compare(yxml.getAttributes(), { a: '2' })
+  t.compare(yxml.getAttributes(snapshot2), { a: '1' })
+  t.compare(yxml.getAttributes(snapshot1), {})
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testBasicRestoreSnapshot = _tc => {
   const doc = new Y.Doc({ gc: false })
   doc.getArray('array').insert(0, ['hello'])
   const snap = Y.snapshot(doc)
@@ -30,9 +45,9 @@ export const testBasicRestoreSnapshot = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testEmptyRestoreSnapshot = tc => {
+export const testEmptyRestoreSnapshot = _tc => {
   const doc = new Y.Doc({ gc: false })
   const snap = Y.snapshot(doc)
   snap.sv.set(9999, 0)
@@ -50,9 +65,9 @@ export const testEmptyRestoreSnapshot = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testRestoreSnapshotWithSubType = tc => {
+export const testRestoreSnapshotWithSubType = _tc => {
   const doc = new Y.Doc({ gc: false })
   doc.getArray('array').insert(0, [new Y.Map()])
   const subMap = doc.getArray('array').get(0)
@@ -73,9 +88,9 @@ export const testRestoreSnapshotWithSubType = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testRestoreDeletedItem1 = tc => {
+export const testRestoreDeletedItem1 = _tc => {
   const doc = new Y.Doc({ gc: false })
   doc.getArray('array').insert(0, ['item1', 'item2'])
 
@@ -89,9 +104,9 @@ export const testRestoreDeletedItem1 = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testRestoreLeftItem = tc => {
+export const testRestoreLeftItem = _tc => {
   const doc = new Y.Doc({ gc: false })
   doc.getArray('array').insert(0, ['item1'])
   doc.getMap('map').set('test', 1)
@@ -107,9 +122,9 @@ export const testRestoreLeftItem = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testDeletedItemsBase = tc => {
+export const testDeletedItemsBase = _tc => {
   const doc = new Y.Doc({ gc: false })
   doc.getArray('array').insert(0, ['item1'])
   doc.getArray('array').delete(0)
@@ -123,9 +138,9 @@ export const testDeletedItemsBase = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testDeletedItems2 = tc => {
+export const testDeletedItems2 = _tc => {
   const doc = new Y.Doc({ gc: false })
   doc.getArray('array').insert(0, ['item1', 'item2', 'item3'])
   doc.getArray('array').delete(1)
@@ -180,4 +195,29 @@ export const testDependentChanges = tc => {
 
   const docRestored1 = Y.createDocFromSnapshot(array1.doc, snap)
   t.compare(docRestored1.getArray('array').toArray(), ['user1item1', 'user2item1'])
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testContainsUpdate = _tc => {
+  const ydoc = new Y.Doc()
+  /**
+   * @type {Array<Uint8Array>}
+   */
+  const updates = []
+  ydoc.on('update', update => {
+    updates.push(update)
+  })
+  const yarr = ydoc.getArray()
+  const snapshot1 = Y.snapshot(ydoc)
+  yarr.insert(0, [1])
+  const snapshot2 = Y.snapshot(ydoc)
+  yarr.delete(0, 1)
+  const snapshotFinal = Y.snapshot(ydoc)
+  t.assert(!Y.snapshotContainsUpdate(snapshot1, updates[0]))
+  t.assert(!Y.snapshotContainsUpdate(snapshot2, updates[1]))
+  t.assert(Y.snapshotContainsUpdate(snapshot2, updates[0]))
+  t.assert(Y.snapshotContainsUpdate(snapshotFinal, updates[0]))
+  t.assert(Y.snapshotContainsUpdate(snapshotFinal, updates[1]))
 }

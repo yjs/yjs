@@ -1,4 +1,3 @@
-
 import * as binary from 'lib0/binary'
 import * as decoding from 'lib0/decoding'
 import * as encoding from 'lib0/encoding'

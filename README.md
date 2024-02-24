@@ -32,13 +32,30 @@ Otherwise you can find help on our community [discussion board](https://discuss.
 Please contribute to the project financially - especially if your company relies
 on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=d42f2d)](https://github.com/sponsors/dmonad)
 
+## Professional Support
+
+* [Support Contract with the Maintainer](https://github.com/sponsors/dmonad) -
+By contributing financially to the open-source Yjs project, you can receive
+professional support directly from the author. This includes the opportunity for
+weekly video calls to discuss your specific challenges.
+* [Synergy Codes](https://synergycodes.com/yjs-services/) - Specializing in
+consulting and developing real-time collaborative editing solutions for visual
+apps, Synergy Codes focuses on interactive diagrams, complex graphs, charts, and
+various data visualization types. Their expertise empowers developers to build
+engaging and interactive visual experiences leveraging the power of Yjs. See
+their work in action at [Visual Collaboration
+Showcase](https://yjs-diagram.synergy.codes/).
+
 ## Who is using Yjs
 
 * [AFFiNE](https://affine.pro/) A local-first, privacy-first, open source
   knowledge base. 🏅
-* [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star2:
-* [Sana](https://sanalabs.com/) A learning platform with collaborative text
-  editing powered by Yjs.
+* [Cargo](https://cargo.site/) Site builder for designers and artists :star2:
+* [Gitbook](https://gitbook.com) Knowledge management for technical teams :star2:
+* [Evernote](https://evernote.com) Note-taking app :star2:
+* [Lessonspace](https://thelessonspace.com) Enterprise platform for virtual
+  classrooms and online training :star2:
+* [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star:
 * [Relm](https://www.relm.us/) A collaborative gameworld for teamwork and
   community. :star:
 * [Room.sh](https://room.sh/) A meeting application with integrated
@@ -47,6 +64,8 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
   Nimbus Web. :star:
 * [Pluxbox RadioManager](https://getradiomanager.com/) A web-based app to
   collaboratively organize radio broadcasts. :star:
+* [Sana](https://sanalabs.com/) A learning platform with collaborative text
+  editing powered by Yjs.
 * [Serenity Notes](https://www.serenity.re/en/notes) End-to-end encrypted
   collaborative notes app.
 * [PRSM](https://prsm.uk/) Collaborative mind-mapping and system visualisation. *[(source)](https://github.com/micrology/prsm)*
@@ -56,16 +75,29 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
 * [Slidebeamer](https://slidebeamer.com/) Presentation app.
 * [BlockSurvey](https://blocksurvey.io) End-to-end encryption for your forms/surveys.
 * [Skiff](https://skiff.org/) Private, decentralized workspace.
+* [JupyterLab](https://jupyter.org/) Collaborative computational Notebooks
+* [JupyterCad](https://jupytercad.readthedocs.io/en/latest/) Extension to
+  JupyterLab that enables collaborative editing of 3d FreeCAD Models.
 * [Hyperquery](https://hyperquery.ai/) A collaborative data workspace for
   sharing analyses, documentation, spreadsheets, and dashboards.
 * [Nosgestesclimat](https://nosgestesclimat.fr/groupe) The french carbon
   footprint calculator has a group P2P mode based on yjs
+* [oorja.io](https://oorja.io) Online meeting spaces extensible with
+  collaborative apps, end-to-end encrypted.
+* [LegendKeeper](https://legendkeeper.com) Collaborative campaign planner and
+  worldbuilding app for tabletop RPGs.
+* [IllumiDesk](https://illumidesk.com/) Build courses and content with A.I.
+* [btw](https://www.btw.so) Open-source Medium alternative
+* [AWS SageMaker](https://aws.amazon.com/sagemaker/) Tools for building Machine
+  Learning Models
+* [linear](https://linear.app) Streamline issues, projects, and product roadmaps.
 
 ## Table of Contents
 
 * [Overview](#Overview)
   * [Bindings](#Bindings)
   * [Providers](#Providers)
+  * [Ports](#Ports)
 * [Getting Started](#Getting-Started)
 * [API](#API)
   * [Shared Types](#Shared-Types)
@@ -91,9 +123,11 @@ are implemented in separate modules.
 | [CodeMirror](https://codemirror.net/) | ✔ | [y-codemirror](https://github.com/yjs/y-codemirror) | [demo](https://demos.yjs.dev/codemirror/codemirror.html) |
 | [Monaco](https://microsoft.github.io/monaco-editor/) | ✔ | [y-monaco](https://github.com/yjs/y-monaco) | [demo](https://demos.yjs.dev/monaco/monaco.html) |
 | [Slate](https://github.com/ianstormtaylor/slate) | ✔ | [slate-yjs](https://github.com/bitphinix/slate-yjs) | [demo](https://bitphinix.github.io/slate-yjs-example) |
+| [BlockSuite](https://github.com/toeverything/blocksuite) | ✔ | (native) | [demo](https://blocksuite-toeverything.vercel.app/?init) |
 | [valtio](https://github.com/pmndrs/valtio) |  | [valtio-yjs](https://github.com/dai-shi/valtio-yjs) | [demo](https://codesandbox.io/s/valtio-yjs-demo-ox3iy) |
 | [immer](https://github.com/immerjs/immer) |  | [immer-yjs](https://github.com/sep2/immer-yjs) | [demo](https://codesandbox.io/s/immer-yjs-demo-6e0znb) |
 | React / Vue / Svelte / MobX | | [SyncedStore](https://syncedstore.org) | [demo](https://syncedstore.org/docs/react) |
+| [mobx-keystone](https://mobx-keystone.js.org/) |  | [mobx-keystone-yjs](https://github.com/xaviergonz/mobx-keystone/tree/master/packages/mobx-keystone-yjs) | [demo](https://mobx-keystone.js.org/examples/yjs-binding) |
 
 ### Providers
 
@@ -102,7 +136,19 @@ and storing shared data for offline usage is quite a hassle. **Providers**
 manage all that for you and are the perfect starting point for your
 collaborative app.
 
+> This list of providers is incomplete. Please open PRs to add your providers to
+> this list!
+
+#### Connection Providers
+
 <dl>
+  <dt><a href="https://github.com/yjs/y-websocket">y-websocket</a></dt>
+  <dd>
+A module that contains a simple websocket backend and a websocket client that
+connects to that backend. The backend can be extended to persist updates in a
+leveldb database. <b>y-sweet</b> and <b>ypy-websocket</b> (see below) are
+compatible to the y-wesocket protocol.
+  </dd>
   <dt><a href="https://github.com/yjs/y-webrtc">y-webrtc</a></dt>
   <dd>
 Propagates document updates peer-to-peer using WebRTC. The peers exchange
@@ -111,17 +157,22 @@ are available. Communication over the signaling servers can be encrypted by
 providing a shared secret, keeping the connection information and the shared
 document private.
   </dd>
-  <dt><a href="https://github.com/yjs/y-websocket">y-websocket</a></dt>
+  <dt><a href="https://github.com/liveblocks/liveblocks">@liveblocks/yjs</a></dt>
   <dd>
-A module that contains a simple websocket backend and a websocket client that
-connects to that backend. The backend can be extended to persist updates in a
-leveldb database.
+<a href="https://liveblocks.io/document/yjs">Liveblocks Yjs</a> provides a fully
+hosted WebSocket infrastructure and persisted data store for Yjs
+documents. No configuration or maintenance is required. It also features
+Yjs webhook events, REST API to read and update Yjs documents, and a
+browser DevTools extension.
   </dd>
-  <dt><a href="https://github.com/yjs/y-indexeddb">y-indexeddb</a></dt>
+  <dt><a href="https://github.com/drifting-in-space/y-sweet">y-sweet</a></dt>
   <dd>
-Efficiently persists document updates to the browsers indexeddb database.
-The document is immediately available and only diffs need to be synced through the
-network provider.
+A standalone yjs server with persistence to S3 or filesystem. They offer a
+<a href="https://y-sweet.cloud">cloud service</a> as well.
+  </dd>
+  <dt><a href="https://docs.partykit.io/reference/y-partykit-api/">PartyKit</a></dt>
+  <dd>
+Cloud service for building multiplayer apps.
   </dd>
   <dt><a href="https://github.com/marcopolo/y-libp2p">y-libp2p</a></dt>
   <dd>
@@ -144,13 +195,58 @@ Use Matrix as transport and storage of Yjs updates, so you can focus building
 your client app and Matrix can provide powerful features like Authentication,
 Authorization, Federation, hosting (self-hosting or SaaS) and even End-to-End
 Encryption (E2EE).
-</dd>
+  </dd>
+  <dt><a href="https://github.com/y-crdt/yrb-actioncable">yrb-actioncable</a></dt>
+  <dd>
+An ActionCable companion for Yjs clients. There is a fitting
+<a href="https://github.com/y-crdt/yrb-redis">redis extension</a> as well.
+  </dd>
+  <dt><a href="https://github.com/y-crdt/ypy-websocket">ypy-websocket</a></dt>
+  <dd>
+Websocket backend, written in Python.
+  </dd>
+</dl>
+
+#### Persistence Providers
+
+<dl>
+  <dt><a href="https://github.com/yjs/y-indexeddb">y-indexeddb</a></dt>
+  <dd>
+Efficiently persists document updates to the browsers indexeddb database.
+The document is immediately available and only diffs need to be synced through the
+network provider.
+  </dd>
   <dt><a href="https://github.com/MaxNoetzold/y-mongodb-provider">y-mongodb-provider</a></dt>
   <dd>
 Adds persistent storage to a server with MongoDB. Can be used with the
 y-websocket provider.
-</dd>
+  </dd>
+  <dt><a href="https://github.com/toeverything/AFFiNE/tree/master/packages/y-indexeddb">
+@toeverything/y-indexeddb</a></dt>
+  <dd>
+Like y-indexeddb, but with sub-documents support and fully TypeScript.
+  </dd>
+  <dt><a href="https://github.com/podraven/y-fire">y-fire</a></dt>
+  <dd>
+A database and connection provider for Yjs based on Firestore.
+  </dd>
 </dl>
+
+# Ports
+
+There are several Yjs-compatible ports to other programming languages.
+
+* [y-octo](https://github.com/toeverything/y-octo) - Rust implementation by
+[AFFiNE](https://affine.pro)
+* [y-crdt](https://github.com/y-crdt/y-crdt) - Rust implementation with multiple
+language bindings to other languages
+  * [yrs](https://github.com/y-crdt/y-crdt/tree/main/yrs) - Rust interface
+  * [ypy](https://github.com/y-crdt/ypy) - Python binding
+  * [yrb](https://github.com/y-crdt/yrb) - Ruby binding
+  * [yswift](https://github.com/y-crdt/yswift) - Swift binding
+  * [yffi](https://github.com/y-crdt/y-crdt/tree/main/yffi) - C-FFI
+  * [ywasm](https://github.com/y-crdt/y-crdt/tree/main/ywasm) - WASM binding
+* [ycs](https://github.com/yjs/ycs) - .Net compatible C# implementation.
 
 ## Getting Started
 
@@ -647,6 +743,8 @@ type. Doesn't log types that have not been defined (using
   <dd>Define a shared Y.Map type. Is equivalent to <code>y.get(string, Y.Map)</code>.</dd>
   <b><code>getText(string):Y.Text</code></b>
   <dd>Define a shared Y.Text type. Is equivalent to <code>y.get(string, Y.Text)</code>.</dd>
+  <b><code>getXmlElement(string, string):Y.XmlElement</code></b>
+  <dd>Define a shared Y.XmlElement type. Is equivalent to <code>y.get(string, Y.XmlElement)</code>.</dd>
   <b><code>getXmlFragment(string):Y.XmlFragment</code></b>
   <dd>Define a shared Y.XmlFragment type. Is equivalent to <code>y.get(string, Y.XmlFragment)</code>.</dd>
   <b><code>on(string, function)</code></b>
@@ -661,7 +759,8 @@ type. Doesn't log types that have not been defined (using
   <b><code>on('update', function(updateMessage:Uint8Array, origin:any, Y.Doc):void)</code></b>
   <dd>
 Listen to document updates. Document updates must be transmitted to all other
-peers. You can apply document updates in any order and multiple times.
+peers. You can apply document updates in any order and multiple times. Use `updateV2`
+to receive V2 events.
   </dd>
   <b><code>on('beforeTransaction', function(Y.Transaction, Y.Doc):void)</code></b>
   <dd>Emitted before each transaction.</dd>
@@ -753,7 +852,7 @@ const diff2 = Y.diffUpdate(currentState2, stateVector1)
 
 // sync clients
 currentState1 = Y.mergeUpdates([currentState1, diff2])
-currentState1 = Y.mergeUpdates([currentState1, diff1])
+currentState2 = Y.mergeUpdates([currentState2, diff1])
 ```
 
 #### Obfuscating Updates
@@ -786,8 +885,10 @@ Yjs implements two update formats. By default you are using the V1 update format
 You can opt-in into the V2 update format wich provides much better compression.
 It is not yet used by all providers. However, you can already use it if
 you are building your own provider. All below functions are available with the
-suffix "V2". E.g. `Y.applyUpdate` ⇒ `Y.applyUpdateV2`. We also support conversion
-functions between both formats: `Y.convertUpdateFormatV1ToV2` & `Y.convertUpdateFormatV2ToV1`.
+suffix "V2". E.g. `Y.applyUpdate` ⇒ `Y.applyUpdateV2`. Also when listening to updates
+you need to specifically need listen for V2 events e.g. `yDoc.on('updateV2', …)`.
+We also support conversion functions between both formats:
+`Y.convertUpdateFormatV1ToV2` & `Y.convertUpdateFormatV2ToV1`.
 
 #### Update API
 
@@ -1032,7 +1133,7 @@ doc.transact(() => {
   ytext.insert(0, 'abc')
 }, 41)
 undoManager.undo()
-ytext.toString() // => '' (not tracked because 41 is not an instance of
+ytext.toString() // => 'abc' (not tracked because 41 is not an instance of
                  //        `trackedTransactionorigins`)
 ytext.delete(0, 3) // revert change
 

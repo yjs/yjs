@@ -1,4 +1,3 @@
-
 import {
   removeEventHandlerListener,
   callEventHandlerListeners,
@@ -683,7 +682,7 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
   packJsonContent()
 }
 
-const lengthExceeded = error.create('Length exceeded!')
+const lengthExceeded = () => error.create('Length exceeded!')
 
 /**
  * @param {Transaction} transaction
@@ -696,7 +695,7 @@ const lengthExceeded = error.create('Length exceeded!')
  */
 export const typeListInsertGenerics = (transaction, parent, index, content) => {
   if (index > parent._length) {
-    throw lengthExceeded
+    throw lengthExceeded()
   }
   if (index === 0) {
     if (parent._searchMarker) {
@@ -798,7 +797,7 @@ export const typeListDelete = (transaction, parent, index, length) => {
     n = n.right
   }
   if (length > 0) {
-    throw lengthExceeded
+    throw lengthExceeded()
   }
   if (parent._searchMarker) {
     updateMarkerChanges(parent._searchMarker, startIndex, -startLength + length /* in case we remove the above exception */)
@@ -923,6 +922,34 @@ export const typeMapGetSnapshot = (parent, key, snapshot) => {
     v = v.left
   }
   return v !== null && isVisible(v, snapshot) ? v.content.getContent()[v.length - 1] : undefined
+}
+
+/**
+ * @param {AbstractType<any>} parent
+ * @param {Snapshot} snapshot
+ * @return {Object<string,Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined>}
+ *
+ * @private
+ * @function
+ */
+export const typeMapGetAllSnapshot = (parent, snapshot) => {
+  /**
+   * @type {Object<string,any>}
+   */
+  const res = {}
+  parent._map.forEach((value, key) => {
+    /**
+     * @type {Item|null}
+     */
+    let v = value
+    while (v !== null && (!snapshot.sv.has(v.id.client) || v.id.clock >= (snapshot.sv.get(v.id.client) || 0))) {
+      v = v.left
+    }
+    if (v !== null && isVisible(v, snapshot)) {
+      res[key] = v.content.getContent()[v.length - 1]
+    }
+  })
+  return res
 }
 
 /**

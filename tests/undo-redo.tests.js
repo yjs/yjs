@@ -3,6 +3,46 @@ import { init } from './testHelper.js' // eslint-disable-line
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
 
+export const testInconsistentFormat = () => {
+  /**
+   * @param {Y.Doc} ydoc
+   */
+  const testYjsMerge = ydoc => {
+    const content = /** @type {Y.XmlText} */ (ydoc.get('text', Y.XmlText))
+    content.format(0, 6, { bold: null })
+    content.format(6, 4, { type: 'text' })
+    t.compare(content.toDelta(), [
+      {
+        attributes: { type: 'text' },
+        insert: 'Merge Test'
+      },
+      {
+        attributes: { type: 'text', italic: true },
+        insert: ' After'
+      }
+    ])
+  }
+  const initializeYDoc = () => {
+    const yDoc = new Y.Doc({ gc: false })
+
+    const content = /** @type {Y.XmlText} */ (yDoc.get('text', Y.XmlText))
+    content.insert(0, ' After', { type: 'text', italic: true })
+    content.insert(0, 'Test', { type: 'text' })
+    content.insert(0, 'Merge ', { type: 'text', bold: true })
+    return yDoc
+  }
+  {
+    const yDoc = initializeYDoc()
+    testYjsMerge(yDoc)
+  }
+  {
+    const initialYDoc = initializeYDoc()
+    const yDoc = new Y.Doc({ gc: false })
+    Y.applyUpdate(yDoc, Y.encodeStateAsUpdate(initialYDoc))
+    testYjsMerge(yDoc)
+  }
+}
+
 /**
  * @param {t.TestCase} tc
  */

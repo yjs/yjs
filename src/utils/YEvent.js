@@ -1,4 +1,3 @@
-
 import {
   isDeleted,
   Item, AbstractType, Transaction, AbstractStruct // eslint-disable-line
@@ -6,6 +5,9 @@ import {
 
 import * as set from 'lib0/set'
 import * as array from 'lib0/array'
+import * as error from 'lib0/error'
+
+const errorComputeChanges = 'You must not compute changes after the event-handler fired.'
 
 /**
  * @template {AbstractType<any>} T
@@ -44,6 +46,10 @@ export class YEvent {
      * @type {null | Array<{ insert?: string | Array<any> | object | AbstractType<any>, retain?: number, delete?: number, attributes?: Object<string, any> }>}
      */
     this._delta = null
+    /**
+     * @type {Array<string|number>|null}
+     */
+    this._path = null
   }
 
   /**
@@ -60,8 +66,7 @@ export class YEvent {
    *   type === event.target // => true
    */
   get path () {
-    // @ts-ignore _item is defined because target is integrated
-    return getPathTo(this.currentTarget, this.target)
+    return this._path || (this._path = getPathTo(this.currentTarget, this.target))
   }
 
   /**
@@ -81,6 +86,9 @@ export class YEvent {
    */
   get keys () {
     if (this._keys === null) {
+      if (this.transaction.doc._transactionCleanups.length === 0) {
+        throw error.create(errorComputeChanges)
+      }
       const keys = new Map()
       const target = this.target
       const changed = /** @type Set<string|null> */ (this.transaction.changed.get(target))
@@ -164,6 +172,9 @@ export class YEvent {
   get changes () {
     let changes = this._changes
     if (changes === null) {
+      if (this.transaction.doc._transactionCleanups.length === 0) {
+        throw error.create(errorComputeChanges)
+      }
       const target = this.target
       const added = set.create()
       const deleted = set.create()

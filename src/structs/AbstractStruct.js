@@ -1,4 +1,3 @@
-
 import {
   UpdateEncoderV1, UpdateEncoderV2, ID, Transaction // eslint-disable-line
 } from '../internals.js'

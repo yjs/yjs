@@ -1,4 +1,3 @@
-
 import {
   getState,
   writeStructsFromTransaction,
@@ -11,6 +10,7 @@ import {
   Item,
   generateNewClientId,
   createID,
+  cleanupYTextAfterTransaction,
   UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
 } from '../internals.js'
 
@@ -114,6 +114,10 @@ export class Transaction {
      * @type {Set<Doc>}
      */
     this.subdocsLoaded = new Set()
+    /**
+     * @type {boolean}
+     */
+    this._needFormattingCleanup = false
   }
 }
 
@@ -161,18 +165,29 @@ export const addChangedTypeToTransaction = (transaction, type, parentSub) => {
 /**
  * @param {Array<AbstractStruct>} structs
  * @param {number} pos
+ * @return {number} # of merged structs
  */
-const tryToMergeWithLeft = (structs, pos) => {
-  const left = structs[pos - 1]
-  const right = structs[pos]
-  if (left.deleted === right.deleted && left.constructor === right.constructor) {
-    if (left.mergeWith(right)) {
-      structs.splice(pos, 1)
-      if (right instanceof Item && right.parentSub !== null && /** @type {AbstractType<any>} */ (right.parent)._map.get(right.parentSub) === right) {
-        /** @type {AbstractType<any>} */ (right.parent)._map.set(right.parentSub, /** @type {Item} */ (left))
+const tryToMergeWithLefts = (structs, pos) => {
+  let right = structs[pos]
+  let left = structs[pos - 1]
+  let i = pos
+  for (; i > 0; right = left, left = structs[--i - 1]) {
+    if (left.deleted === right.deleted && left.constructor === right.constructor) {
+      if (left.mergeWith(right)) {
+        if (right instanceof Item && right.parentSub !== null && /** @type {AbstractType<any>} */ (right.parent)._map.get(right.parentSub) === right) {
+          /** @type {AbstractType<any>} */ (right.parent)._map.set(right.parentSub, /** @type {Item} */ (left))
+        }
+        continue
       }
     }
+    break
   }
+  const merged = pos - i
+  if (merged) {
+    // remove all merged structs from the array
+    structs.splice(pos + 1 - merged, merged)
+  }
+  return merged
 }
 
 /**
@@ -219,9 +234,9 @@ const tryMergeDeleteSet = (ds, store) => {
       for (
         let si = mostRightIndexToCheck, struct = structs[si];
         si > 0 && struct.id.clock >= deleteItem.clock;
-        struct = structs[--si]
+        struct = structs[si]
       ) {
-        tryToMergeWithLeft(structs, si)
+        si -= 1 + tryToMergeWithLefts(structs, si)
       }
     }
   })
@@ -270,31 +285,34 @@ const cleanupTransactions = (transactionCleanups, i) => {
       )
       fs.push(() => {
         // deep observe events
-        transaction.changedParentTypes.forEach((events, type) =>
-          fs.push(() => {
-            // We need to think about the possibility that the user transforms the
-            // Y.Doc in the event.
-            if (type._item === null || !type._item.deleted) {
-              events = events
-                .filter(event =>
-                  event.target._item === null || !event.target._item.deleted
-                )
-              events
-                .forEach(event => {
-                  event.currentTarget = type
-                })
-              // sort events by path length so that top-level events are fired first.
-              events
-                .sort((event1, event2) => event1.path.length - event2.path.length)
-              // We don't need to check for events.length
-              // because we know it has at least one element
-              callEventHandlerListeners(type._dEH, events, transaction)
-            }
-          })
-        )
-        fs.push(() => doc.emit('afterTransaction', [transaction, doc]))
+        transaction.changedParentTypes.forEach((events, type) => {
+          // We need to think about the possibility that the user transforms the
+          // Y.Doc in the event.
+          if (type._dEH.l.length > 0 && (type._item === null || !type._item.deleted)) {
+            events = events
+              .filter(event =>
+                event.target._item === null || !event.target._item.deleted
+              )
+            events
+              .forEach(event => {
+                event.currentTarget = type
+                // path is relative to the current target
+                event._path = null
+              })
+            // sort events by path length so that top-level events are fired first.
+            events
+              .sort((event1, event2) => event1.path.length - event2.path.length)
+            // We don't need to check for events.length
+            // because we know it has at least one element
+            callEventHandlerListeners(type._dEH, events, transaction)
+          }
+        })
       })
+      fs.push(() => doc.emit('afterTransaction', [transaction, doc]))
       callAll(fs, [])
+      if (transaction._needFormattingCleanup) {
+        cleanupYTextAfterTransaction(transaction)
+      }
     } finally {
       // Replace deleted items with ItemDeleted / GC.
       // This is where content is actually remove from the Yjs Doc.
@@ -310,23 +328,25 @@ const cleanupTransactions = (transactionCleanups, i) => {
           const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
           // we iterate from right to left so we can safely remove entries
           const firstChangePos = math.max(findIndexSS(structs, beforeClock), 1)
-          for (let i = structs.length - 1; i >= firstChangePos; i--) {
-            tryToMergeWithLeft(structs, i)
+          for (let i = structs.length - 1; i >= firstChangePos;) {
+            i -= 1 + tryToMergeWithLefts(structs, i)
           }
         }
       })
       // try to merge mergeStructs
       // @todo: it makes more sense to transform mergeStructs to a DS, sort it, and merge from right to left
       //        but at the moment DS does not handle duplicates
-      for (let i = 0; i < mergeStructs.length; i++) {
+      for (let i = mergeStructs.length - 1; i >= 0; i--) {
         const { client, clock } = mergeStructs[i].id
         const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
         const replacedStructPos = findIndexSS(structs, clock)
         if (replacedStructPos + 1 < structs.length) {
-          tryToMergeWithLeft(structs, replacedStructPos + 1)
+          if (tryToMergeWithLefts(structs, replacedStructPos + 1) > 1) {
+            continue // no need to perform next check, both are already merged
+          }
         }
         if (replacedStructPos > 0) {
-          tryToMergeWithLeft(structs, replacedStructPos)
+          tryToMergeWithLefts(structs, replacedStructPos)
         }
       }
       if (!transaction.local && transaction.afterState.get(doc.clientID) !== transaction.beforeState.get(doc.clientID)) {

@@ -1,4 +1,3 @@
-
 import {
   AbstractType // eslint-disable-line
 } from '../internals.js'

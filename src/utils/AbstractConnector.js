@@ -1,4 +1,3 @@
-
 import { Observable } from 'lib0/observable'
 
 import {

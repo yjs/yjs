@@ -1,4 +1,3 @@
-
 /**
  * @module encoding
  */
@@ -88,7 +87,7 @@ export const writeClientsStructs = (encoder, store, _sm) => {
       sm.set(client, clock)
     }
   })
-  getStateVector(store).forEach((clock, client) => {
+  getStateVector(store).forEach((_clock, client) => {
     if (!_sm.has(client)) {
       sm.set(client, 0)
     }
@@ -98,8 +97,7 @@ export const writeClientsStructs = (encoder, store, _sm) => {
   // Write items with higher client ids first
   // This heavily improves the conflict algorithm.
   array.from(sm.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, clock]) => {
-    // @ts-ignore
-    writeStructs(encoder, store.clients.get(client), client, clock)
+    writeStructs(encoder, /** @type {Array<GC|Item>} */ (store.clients.get(client)), client, clock)
   })
 }
 
@@ -252,7 +250,7 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
     return nextStructsTarget
   }
   let curStructsTarget = getNextStructTarget()
-  if (curStructsTarget === null && stack.length === 0) {
+  if (curStructsTarget === null) {
     return null
   }
 

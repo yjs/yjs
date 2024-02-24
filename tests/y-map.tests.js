@@ -9,6 +9,54 @@ import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 
 /**
+ * @param {t.TestCase} _tc
+ */
+export const testIterators = _tc => {
+  const ydoc = new Y.Doc()
+  /**
+   * @type {Y.Map<number>}
+   */
+  const ymap = ydoc.getMap()
+  // we are only checking if the type assumptions are correct
+  /**
+   * @type {Array<number>}
+   */
+  const vals = Array.from(ymap.values())
+  /**
+   * @type {Array<[string,number]>}
+   */
+  const entries = Array.from(ymap.entries())
+  /**
+   * @type {Array<string>}
+   */
+  const keys = Array.from(ymap.keys())
+  console.log(vals, entries, keys)
+}
+
+/**
+ * Computing event changes after transaction should result in an error. See yjs#539
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testMapEventError = _tc => {
+  const doc = new Y.Doc()
+  const ymap = doc.getMap()
+  /**
+   * @type {any}
+   */
+  let event = null
+  ymap.observe((e) => {
+    event = e
+  })
+  t.fails(() => {
+    t.info(event.keys)
+  })
+  t.fails(() => {
+    t.info(event.keys)
+  })
+}
+
+/**
  * @param {t.TestCase} tc
  */
 export const testMapHavingIterableAsConstructorParamTests = tc => {
@@ -336,6 +384,34 @@ export const testObserversUsingObservedeep = tc => {
   map0.get('map').get('array').insert(0, ['content'])
   t.assert(calls === 3)
   t.compare(pathes, [[], ['map'], ['map', 'array']])
+  compare(users)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testPathsOfSiblingEvents = tc => {
+  const { users, map0 } = init(tc, { users: 2 })
+  /**
+   * @type {Array<Array<string|number>>}
+   */
+  const pathes = []
+  let calls = 0
+  const doc = users[0]
+  map0.set('map', new Y.Map())
+  map0.get('map').set('text1', new Y.Text('initial'))
+  map0.observeDeep(events => {
+    events.forEach(event => {
+      pathes.push(event.path)
+    })
+    calls++
+  })
+  doc.transact(() => {
+    map0.get('map').get('text1').insert(0, 'post-')
+    map0.get('map').set('text2', new Y.Text('new'))
+  })
+  t.assert(calls === 1)
+  t.compare(pathes, [['map'], ['map', 'text1']])
   compare(users)
 }
 
