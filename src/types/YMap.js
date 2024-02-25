@@ -40,7 +40,7 @@ import * as iterator from 'lib0/iterator'
  * @typedef {boolean|null|string|number|Uint8Array|JsonArray|JsonObject} Json
  * @typedef {Json[]} JsonArray
  * @typedef {{ [key: string]: Json }} JsonObject
- * @typedef {Json|AbstractType<any>} MapValue
+ * @typedef {Json|AbstractType<any>|Doc} MapValue
  */
 
 /**
