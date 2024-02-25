@@ -139,11 +139,11 @@ export class YMap extends AbstractType {
   /**
    * Transforms this Shared Type to a JSON object.
    *
-   * @return {Object<string,any>}
+   * @return {Partial<MapType>}
    */
   toJSON () {
     /**
-     * @type {Object<string,MapType>}
+     * @type {any}
      */
     const map = {}
     this._map.forEach((item, key) => {
