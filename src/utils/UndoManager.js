@@ -191,6 +191,12 @@ export class UndoManager extends Observable {
      */
     this.undoing = false
     this.redoing = false
+    /**
+     * The currently popped stack item if UndoManager.undoing or UndoManager.redoing
+     *
+     * @type {StackItem|null}
+     */
+    this.doingStackItem = null
     this.lastChange = 0
     this.ignoreRemoteMapChanges = ignoreRemoteMapChanges
     this.captureTimeout = captureTimeout
@@ -331,10 +337,12 @@ export class UndoManager extends Observable {
    */
   undo () {
     this.undoing = true
+    this.doingStackItem = array.last(this.undoStack) ?? null
     let res
     try {
       res = popStackItem(this, this.undoStack, 'undo')
     } finally {
+      this.doingStackItem = null
       this.undoing = false
     }
     return res
@@ -347,10 +355,12 @@ export class UndoManager extends Observable {
    */
   redo () {
     this.redoing = true
+    this.doingStackItem = array.last(this.redoStack) ?? null
     let res
     try {
       res = popStackItem(this, this.redoStack, 'redo')
     } finally {
+      this.doingStackItem = null
       this.redoing = false
     }
     return res

@@ -715,3 +715,66 @@ export const testUndoDeleteInMap = (tc) => {
   undoManager.undo()
   t.compare(map0.toJSON(), { a: 'a' })
 }
+
+/**
+ * It should expose the StackItem being processed if undoing
+ *
+ * @param {t.TestCase} tc
+ */
+export const testUndoDoingStackItem = async (tc) => {
+  const doc = new Y.Doc()
+  const text = doc.getText('text')
+  const undoManager = new Y.UndoManager([text])
+
+  undoManager.on('stack-item-added', /** @param {any} event */ event => {
+    event.stackItem.meta.set('str', '42')
+  })
+
+  const meta = new Promise((resolve) => {
+    setTimeout(() => resolve('ABORTED'), 50)
+    text.observe((event) => {
+      const /** @type {Y.UndoManager} */ origin = event.transaction.origin
+      if (origin === undoManager && origin.undoing) {
+        resolve(origin.doingStackItem?.meta.get('str'))
+      }
+    })
+  })
+
+  text.insert(0, 'abc')
+  undoManager.undo()
+
+  t.compare(await meta, '42')
+  t.compare(undoManager.doingStackItem, null)
+}
+
+/**
+ * It should expose the StackItem being processed if redoing
+ *
+ * @param {t.TestCase} tc
+ */
+export const testRedoDoingStackItem = async (tc) => {
+  const doc = new Y.Doc()
+  const text = doc.getText('text')
+  const undoManager = new Y.UndoManager([text])
+
+  undoManager.on('stack-item-added', /** @param {any} event */ event => {
+    event.stackItem.meta.set('str', '42')
+  })
+
+  const meta = new Promise(resolve => {
+    setTimeout(() => resolve('ABORTED'), 50)
+    text.observe((event) => {
+      const /** @type {Y.UndoManager} */ origin = event.transaction.origin
+      if (origin === undoManager && origin.redoing) {
+        resolve(origin.doingStackItem?.meta.get('str'))
+      }
+    })
+  })
+
+  text.insert(0, 'abc')
+  undoManager.undo()
+  undoManager.redo()
+
+  t.compare(await meta, '42')
+  t.compare(undoManager.doingStackItem, null)
+}
