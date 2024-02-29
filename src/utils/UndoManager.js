@@ -53,11 +53,6 @@ const clearUndoManagerStackItem = (tr, um, stackItem) => {
  */
 const popStackItem = (undoManager, stack, eventType) => {
   /**
-   * Whether a change happened
-   * @type {StackItem?}
-   */
-  let result = null
-  /**
    * Keep a reference to the transaction so we can fire the event with the changedParentTypes
    * @type {any}
    */
@@ -65,7 +60,7 @@ const popStackItem = (undoManager, stack, eventType) => {
   const doc = undoManager.doc
   const scope = undoManager.scope
   transact(doc, transaction => {
-    while (stack.length > 0 && result === null) {
+    while (stack.length > 0 && undoManager.currStackItem === null) {
       const store = doc.store
       const stackItem = /** @type {StackItem} */ (stack.pop())
       /**
@@ -113,7 +108,7 @@ const popStackItem = (undoManager, stack, eventType) => {
           performedChange = true
         }
       }
-      result = performedChange ? stackItem : null
+      undoManager.currStackItem = performedChange ? stackItem : null
     }
     transaction.changed.forEach((subProps, type) => {
       // destroy search marker if necessary
@@ -123,11 +118,12 @@ const popStackItem = (undoManager, stack, eventType) => {
     })
     _tr = transaction
   }, undoManager)
-  if (result != null) {
+  if (undoManager.currStackItem != null) {
     const changedParentTypes = _tr.changedParentTypes
-    undoManager.emit('stack-item-popped', [{ stackItem: result, type: eventType, changedParentTypes }, undoManager])
+    undoManager.emit('stack-item-popped', [{ stackItem: undoManager.currStackItem, type: eventType, changedParentTypes }, undoManager])
+    undoManager.currStackItem = null
   }
-  return result
+  return undoManager.currStackItem
 }
 
 /**
@@ -191,6 +187,12 @@ export class UndoManager extends Observable {
      */
     this.undoing = false
     this.redoing = false
+    /**
+     * The currently popped stack item if UndoManager.undoing or UndoManager.redoing
+     *
+     * @type {StackItem|null}
+     */
+    this.currStackItem = null
     this.lastChange = 0
     this.ignoreRemoteMapChanges = ignoreRemoteMapChanges
     this.captureTimeout = captureTimeout

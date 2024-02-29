@@ -715,3 +715,33 @@ export const testUndoDeleteInMap = (tc) => {
   undoManager.undo()
   t.compare(map0.toJSON(), { a: 'a' })
 }
+
+/**
+ * It should expose the StackItem being processed if undoing
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testUndoDoingStackItem = async (_tc) => {
+  const doc = new Y.Doc()
+  const text = doc.getText('text')
+  const undoManager = new Y.UndoManager([text])
+  undoManager.on('stack-item-added', /** @param {any} event */ event => {
+    event.stackItem.meta.set('str', '42')
+  })
+  let metaUndo = /** @type {any} */ (null)
+  let metaRedo = /** @type {any} */ (null)
+  text.observe((event) => {
+    const /** @type {Y.UndoManager} */ origin = event.transaction.origin
+    if (origin === undoManager && origin.undoing) {
+      metaUndo = origin.currStackItem?.meta.get('str')
+    } else if (origin === undoManager && origin.redoing) {
+      metaRedo = origin.currStackItem?.meta.get('str')
+    }
+  })
+  text.insert(0, 'abc')
+  undoManager.undo()
+  undoManager.redo()
+  t.compare(metaUndo, '42', 'currStackItem is accessible while undoing')
+  t.compare(metaRedo, '42', 'currStackItem is accessible while redoing')
+  t.compare(undoManager.currStackItem, null, 'currStackItem is null after observe/transaction')
+}

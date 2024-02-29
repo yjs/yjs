@@ -12,9 +12,10 @@
     "url": "https://github.com/sponsors/dmonad"
   },
   "scripts": {
+    "clean": "rm -rf dist docs",
     "test": "npm run dist && node ./dist/tests.cjs --repetition-time 50",
     "test-extensive": "npm run lint && npm run dist && node ./dist/tests.cjs --production --repetition-time 10000",
-    "dist": "rm -rf dist && rollup -c && tsc",
+    "dist": "npm run clean && rollup -c && tsc",
     "watch": "rollup -wc",
     "lint": "markdownlint README.md && standard && tsc",
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.md --package ./package.json || true",
