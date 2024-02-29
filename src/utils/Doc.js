@@ -14,7 +14,7 @@ import {
   ContentDoc, Item, Transaction, YEvent // eslint-disable-line
 } from '../internals.js'
 
-import { Observable } from 'lib0/observable'
+import { ObservableV2 } from 'lib0/observable'
 import * as random from 'lib0/random'
 import * as map from 'lib0/map'
 import * as array from 'lib0/array'
@@ -34,10 +34,26 @@ export const generateNewClientId = random.uint32
  */
 
 /**
- * A Yjs instance handles the state of shared data.
- * @extends Observable<string>
+ * @typedef {Object} DocEvents
+ * @property {function(Doc):void} DocEvents.destroy
+ * @property {function(Doc):void} DocEvents.load
+ * @property {function(boolean, Doc):void} DocEvents.sync
+ * @property {function(Uint8Array, any, Doc, Transaction):void} DocEvents.update
+ * @property {function(Uint8Array, any, Doc, Transaction):void} DocEvents.updateV2
+ * @property {function(Doc):void} DocEvents.beforeAllTransactions
+ * @property {function(Transaction, Doc):void} DocEvents.beforeTransaction
+ * @property {function(Transaction, Doc):void} DocEvents.beforeObserverCalls
+ * @property {function(Transaction, Doc):void} DocEvents.afterTransaction
+ * @property {function(Transaction, Doc):void} DocEvents.afterTransactionCleanup
+ * @property {function(Doc, Array<Transaction>):void} DocEvents.afterAllTransactions
+ * @property {function({ loaded: Set<Doc>, added: Set<Doc>, removed: Set<Doc> }, Doc, Transaction):void} DocEvents.subdocs
  */
-export class Doc extends Observable {
+
+/**
+ * A Yjs instance handles the state of shared data.
+ * @extends ObservableV2<DocEvents>
+ */
+export class Doc extends ObservableV2 {
   /**
    * @param {DocOpts} opts configuration
    */
@@ -115,7 +131,7 @@ export class Doc extends Observable {
       }
       this.isSynced = isSynced === undefined || isSynced === true
       if (this.isSynced && !this.isLoaded) {
-        this.emit('load', [])
+        this.emit('load', [this])
       }
     })
     /**
@@ -321,24 +337,9 @@ export class Doc extends Observable {
         transaction.subdocsRemoved.add(this)
       }, null, true)
     }
-    this.emit('destroyed', [true])
+    // @ts-ignore
+    this.emit('destroyed', [true]) // DEPRECATED!
     this.emit('destroy', [this])
     super.destroy()
-  }
-
-  /**
-   * @param {string} eventName
-   * @param {function(...any):any} f
-   */
-  on (eventName, f) {
-    super.on(eventName, f)
-  }
-
-  /**
-   * @param {string} eventName
-   * @param {function} f
-   */
-  off (eventName, f) {
-    super.off(eventName, f)
   }
 }
