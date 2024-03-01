@@ -1747,6 +1747,27 @@ export const testBasicFormat = tc => {
 }
 
 /**
+ * @param {t.TestCase} tc
+ */
+export const testFalsyFormats = tc => {
+  const { users, text0 } = init(tc, { users: 2 })
+  let delta
+  text0.observe(event => {
+    delta = event.delta
+  })
+  text0.insert(0, 'abcde', { falsy: false })
+  t.compare(text0.toDelta(), [{ insert: 'abcde', attributes: { falsy: false } }])
+  t.compare(delta, [{ insert: 'abcde', attributes: { falsy: false } }])
+  text0.format(1, 3, { falsy: true })
+  t.compare(text0.toDelta(), [{ insert: 'a', attributes: { falsy: false } }, { insert: 'bcd', attributes: { falsy: true } }, { insert: 'e', attributes: { falsy: false } }])
+  t.compare(delta, [{ retain: 1 }, { retain: 3, attributes: { falsy: true } }])
+  text0.format(2, 1, { falsy: false })
+  t.compare(text0.toDelta(), [{ insert: 'a', attributes: { falsy: false } }, { insert: 'b', attributes: { falsy: true } }, { insert: 'c', attributes: { falsy: false } }, { insert: 'd', attributes: { falsy: true } }, { insert: 'e', attributes: { falsy: false } }])
+  t.compare(delta, [{ retain: 2 }, { retain: 1, attributes: { falsy: false } }])
+  compare(users)
+}
+
+/**
  * @param {t.TestCase} _tc
  */
 export const testMultilineFormat = _tc => {
