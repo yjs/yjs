@@ -201,7 +201,7 @@ const minimizeAttributeChanges = (currPos, attributes) => {
   while (true) {
     if (currPos.right === null) {
       break
-    } else if (currPos.right.deleted || (currPos.right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (currPos.right.content)).key] || null, /** @type {ContentFormat} */ (currPos.right.content).value))) {
+    } else if (currPos.right.deleted || (currPos.right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (currPos.right.content)).key] ?? null, /** @type {ContentFormat} */ (currPos.right.content).value))) {
       //
     } else {
       break
@@ -389,12 +389,12 @@ const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAtt
       switch (content.constructor) {
         case ContentFormat: {
           const { key, value } = /** @type {ContentFormat} */ (content)
-          const startAttrValue = startAttributes.get(key) || null
+          const startAttrValue = startAttributes.get(key) ?? null
           if (endFormats.get(key) !== content || startAttrValue === value) {
             // Either this format is overwritten or it is not necessary because the attribute already existed.
             start.delete(transaction)
             cleanups++
-            if (!reachedCurr && (currAttributes.get(key) || null) === value && startAttrValue !== value) {
+            if (!reachedCurr && (currAttributes.get(key) ?? null) === value && startAttrValue !== value) {
               if (startAttrValue === null) {
                 currAttributes.delete(key)
               } else {
@@ -769,12 +769,12 @@ export class YTextEvent extends YEvent {
               const { key, value } = /** @type {ContentFormat} */ (item.content)
               if (this.adds(item)) {
                 if (!this.deletes(item)) {
-                  const curVal = currentAttributes.get(key) || null
+                  const curVal = currentAttributes.get(key) ?? null
                   if (!equalAttrs(curVal, value)) {
                     if (action === 'retain') {
                       addOp()
                     }
-                    if (equalAttrs(value, (oldAttributes.get(key) || null))) {
+                    if (equalAttrs(value, (oldAttributes.get(key) ?? null))) {
                       delete attributes[key]
                     } else {
                       attributes[key] = value
@@ -785,7 +785,7 @@ export class YTextEvent extends YEvent {
                 }
               } else if (this.deletes(item)) {
                 oldAttributes.set(key, value)
-                const curVal = currentAttributes.get(key) || null
+                const curVal = currentAttributes.get(key) ?? null
                 if (!equalAttrs(curVal, value)) {
                   if (action === 'retain') {
                     addOp()
