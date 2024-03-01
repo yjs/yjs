@@ -227,7 +227,7 @@ const insertAttributes = (transaction, parent, currPos, attributes) => {
   // insert format-start items
   for (const key in attributes) {
     const val = attributes[key]
-    const currentVal = currPos.currentAttributes.get(key) || null
+    const currentVal = currPos.currentAttributes.get(key) ?? null
     if (!equalAttrs(currentVal, val)) {
       // save negated attribute (set null if currentVal undefined)
       negatedAttributes.set(key, currentVal)
