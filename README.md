@@ -205,6 +205,11 @@ An ActionCable companion for Yjs clients. There is a fitting
   <dd>
 Websocket backend, written in Python.
   </dd>
+  <dt><a href="https://tinybase.org/">Tinybase</a></dt>
+  <dd>
+The reactive data store for local-first apps. They support multiple CRDTs and
+    different network technologies.
+  </dd>
 </dl>
 
 #### Persistence Providers
