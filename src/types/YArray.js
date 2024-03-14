@@ -95,6 +95,10 @@ export class YArray extends AbstractType {
   }
 
   /**
+   * Makes a copy of this data type that can be included somewhere else.
+   *
+   * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+   *
    * @return {YArray<T>}
    */
   clone () {
