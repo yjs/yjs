@@ -210,6 +210,10 @@ Websocket backend, written in Python.
 The reactive data store for local-first apps. They support multiple CRDTs and
     different network technologies.
   </dd>
+  <dt><a href="https://codeberg.org/webxdc/y-webxdc">y-webxdc</a></dt>
+  <dd>
+Provider for sharing data in <a href="https://webxdc.org">webxdc chat apps</a>.
+  </dd>
 </dl>
 
 #### Persistence Providers
