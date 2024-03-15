@@ -145,9 +145,9 @@ collaborative app.
   <dt><a href="https://github.com/yjs/y-websocket">y-websocket</a></dt>
   <dd>
 A module that contains a simple websocket backend and a websocket client that
-connects to that backend. The backend can be extended to persist updates in a
-leveldb database. <b>y-sweet</b> and <b>ypy-websocket</b> (see below) are
-compatible to the y-wesocket protocol.
+connects to that backend. <a href="https://github.com/yjs/y-redis/"><b>y-redis</b></a>,
+<b>y-sweet</b>, and <b>ypy-websocket</b> (see below) are alternative
+backends to y-websocket.
   </dd>
   <dt><a href="https://github.com/yjs/y-webrtc">y-webrtc</a></dt>
   <dd>
