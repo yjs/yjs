@@ -103,6 +103,7 @@ Showcase](https://yjs-diagram.synergy.codes/).
   in shared apps as if they're on your computer. They are using Yrs.
 * [AppMaster](https://appmaster.io) A No-Code platform for creating
   production-ready applications with source code generation.
+* [Synthesia](https://www.synthesia.io) - Collaborative Video Editor
 
 ## Table of Contents
 
