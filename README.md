@@ -106,6 +106,7 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [AppMaster](https://appmaster.io) A No-Code platform for creating
   production-ready applications with source code generation.
 * [Synthesia](https://www.synthesia.io) - Collaborative Video Editor
+* [thinkdeli](https://thinkdeli.com) - A fast and simple notes app powered by AI
 
 ## Table of Contents
 
