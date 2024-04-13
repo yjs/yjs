@@ -187,22 +187,22 @@ export class Doc extends ObservableV2 {
   /**
    * Define a shared data type.
    *
-   * Multiple calls of `y.get(name, TypeConstructor)` yield the same result
+   * Multiple calls of `ydoc.get(name, TypeConstructor)` yield the same result
    * and do not overwrite each other. I.e.
-   * `y.define(name, Y.Array) === y.define(name, Y.Array)`
+   * `ydoc.get(name, Y.Array) === ydoc.get(name, Y.Array)`
    *
-   * After this method is called, the type is also available on `y.share.get(name)`.
+   * After this method is called, the type is also available on `ydoc.share.get(name)`.
    *
    * *Best Practices:*
-   * Define all types right after the Yjs instance is created and store them in a separate object.
+   * Define all types right after the Y.Doc instance is created and store them in a separate object.
    * Also use the typed methods `getText(name)`, `getArray(name)`, ..
    *
    * @template {typeof AbstractType<any>} Type
    * @example
-   *   const y = new Y(..)
+   *   const ydoc = new Y.Doc(..)
    *   const appState = {
-   *     document: y.getText('document')
-   *     comments: y.getArray('comments')
+   *     document: ydoc.getText('document')
+   *     comments: ydoc.getArray('comments')
    *   }
    *
    * @param {string} name
