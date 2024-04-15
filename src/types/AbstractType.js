@@ -481,7 +481,7 @@ export const typeListToArraySnapshot = (type, snapshot) => {
 }
 
 /**
- * Executes a provided function on once on overy element of this YArray.
+ * Executes a provided function on once on every element of this YArray.
  *
  * @param {AbstractType<any>} type
  * @param {function(any,number,any):void} f A function to execute on every element of this YArray.
@@ -573,7 +573,7 @@ export const typeListCreateIterator = type => {
 }
 
 /**
- * Executes a provided function on once on overy element of this YArray.
+ * Executes a provided function on once on every element of this YArray.
  * Operates on a snapshotted state of the document.
  *
  * @param {AbstractType<any>} type
