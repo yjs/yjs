@@ -410,7 +410,7 @@ export class YXmlFragment extends AbstractType {
   }
 
   /**
-   * Executes a provided function on once on overy child element.
+   * Executes a provided function on once on every child element.
    *
    * @param {function(YXmlElement|YXmlText,number, typeof self):void} f A function to execute on every element of this YArray.
    */
