@@ -997,11 +997,12 @@ export class YText extends AbstractType {
    * @param {TextAttributes} [attributes] Optionally define some formatting
    *                                    information to apply on the inserted
    *                                    Text.
+   * @return {YText} Instance of the YText.
    * @public
    */
   insert (index, text, attributes) {
     if (text.length <= 0) {
-      return
+      return this
     }
     const y = this.doc
     if (y !== null) {
@@ -1017,6 +1018,7 @@ export class YText extends AbstractType {
     } else {
       /** @type {Array<function>} */ (this._pending).push(() => this.insert(index, text, attributes))
     }
+    return this
   }
 
   /**
@@ -1049,12 +1051,13 @@ export class YText extends AbstractType {
    *
    * @param {number} index Index at which to start deleting.
    * @param {number} length The number of characters to remove. Defaults to 1.
+   * @return {YText} Instance of the YText.
    *
    * @public
    */
   delete (index, length) {
     if (length === 0) {
-      return
+      return this
     }
     const y = this.doc
     if (y !== null) {
@@ -1065,6 +1068,7 @@ export class YText extends AbstractType {
     } else {
       /** @type {Array<function>} */ (this._pending).push(() => this.delete(index, length))
     }
+    return this
   }
 
   /**
@@ -1074,12 +1078,13 @@ export class YText extends AbstractType {
    * @param {number} length The amount of characters to assign properties to.
    * @param {TextAttributes} attributes Attribute information to apply on the
    *                                    text.
+   * @return {YText} Instance of the YText.
    *
    * @public
    */
   format (index, length, attributes) {
     if (length === 0) {
-      return
+      return this
     }
     const y = this.doc
     if (y !== null) {
@@ -1093,6 +1098,7 @@ export class YText extends AbstractType {
     } else {
       /** @type {Array<function>} */ (this._pending).push(() => this.format(index, length, attributes))
     }
+    return this
   }
 
   /**

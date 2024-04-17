@@ -89,6 +89,7 @@ export class YXmlElement extends YXmlFragment {
    * Removes an attribute from this YXmlElement.
    *
    * @param {String} attributeName The attribute name that is to be removed.
+   * @return {YXmlElement} Instance of the YXmlElement.
    *
    * @public
    */
@@ -100,6 +101,7 @@ export class YXmlElement extends YXmlFragment {
     } else {
       /** @type {Map<string,any>} */ (this._prelimAttrs).delete(attributeName)
     }
+    return this
   }
 
   /**
@@ -107,6 +109,7 @@ export class YXmlElement extends YXmlFragment {
    *
    * @param {String} attributeName The attribute name that is to be set.
    * @param {String} attributeValue The attribute value that is to be set.
+   * @return {YXmlElement} Instance of the YXmlElement.
    *
    * @public
    */
@@ -118,6 +121,7 @@ export class YXmlElement extends YXmlFragment {
     } else {
       /** @type {Map<string, any>} */ (this._prelimAttrs).set(attributeName, attributeValue)
     }
+    return this
   }
 
   /**
