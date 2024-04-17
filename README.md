@@ -49,9 +49,9 @@ Showcase](https://yjs-diagram.synergy.codes/).
 ## Who is using Yjs
 
 * [AFFiNE](https://affine.pro/) A local-first, privacy-first, open source
-  knowledge base. :start2:
+  knowledge base. :star2:
 * [Huly](https://huly.io/) - Open Source All-in-One Project Management Platform
-  :start2:
+  :star2:
 * [Cargo](https://cargo.site/) Site builder for designers and artists :star2:
 * [Gitbook](https://gitbook.com) Knowledge management for technical teams :star2:
 * [Evernote](https://evernote.com) Note-taking app :star2:
