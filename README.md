@@ -107,6 +107,8 @@ Showcase](https://yjs-diagram.synergy.codes/).
   production-ready applications with source code generation.
 * [Synthesia](https://www.synthesia.io) - Collaborative Video Editor
 * [thinkdeli](https://thinkdeli.com) - A fast and simple notes app powered by AI
+* [ourboard](https://github.com/raimohanska/ourboard) - A collaborative whiteboard
+  applicaiton
 
 ## Table of Contents
 
