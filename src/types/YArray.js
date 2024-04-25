@@ -32,7 +32,6 @@ export class YArrayEvent extends YEvent {
    */
   constructor (yarray, transaction) {
     super(yarray, transaction)
-    this._transaction = transaction
   }
 }
 
