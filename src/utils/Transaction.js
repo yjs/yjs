@@ -225,7 +225,7 @@ const tryGcDeleteSet = (ds, store, gcFilter) => {
  */
 const tryMergeDeleteSet = (ds, store) => {
   // try to merge deleted / gc'd items
-  // merge from right to left for better efficiecy and so we don't miss any merge targets
+  // merge from right to left for better efficiency and so we don't miss any merge targets
   ds.clients.forEach((deleteItems, client) => {
     const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
     for (let di = deleteItems.length - 1; di >= 0; di--) {
