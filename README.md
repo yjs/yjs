@@ -164,7 +164,7 @@ collaborative app.
   <dd>
 A module that contains a simple websocket backend and a websocket client that
 connects to that backend. <a href="https://github.com/yjs/y-redis/"><b>y-redis</b></a>,
-<b>y-sweet</b>, and <b>ypy-websocket</b> (see below) are alternative
+<b>y-sweet</b>, <b>ypy-websocket</b> and <a href="https://tiptap.dev/docs/hocuspocus/introduction"><b>Hocuspocus</b></a> (see below) are alternative
 backends to y-websocket.
   </dd>
   <dt><a href="https://github.com/yjs/y-webrtc">y-webrtc</a></dt>
@@ -187,6 +187,10 @@ browser DevTools extension.
   <dd>
 A standalone yjs server with persistence to S3 or filesystem. They offer a
 <a href="https://y-sweet.cloud">cloud service</a> as well.
+  </dd>
+  <dt><a href="https://github.com/ueberdosis/hocuspocus">Hocuspocus</a></dt>
+  <dd>
+A standalone extensible yjs server with sqlite persistence, webhooks, auth and more.
   </dd>
   <dt><a href="https://docs.partykit.io/reference/y-partykit-api/">PartyKit</a></dt>
   <dd>
