@@ -25,15 +25,7 @@ import { typeListSlice } from './AbstractType.js'
  * @template T
  * @extends YEvent<YArray<T>>
  */
-export class YArrayEvent extends YEvent {
-  /**
-   * @param {YArray<T>} yarray The changed type
-   * @param {Transaction} transaction The transaction object
-   */
-  constructor (yarray, transaction) {
-    super(yarray, transaction)
-  }
-}
+export class YArrayEvent extends YEvent {}
 
 /**
  * A shared Array implementation.
