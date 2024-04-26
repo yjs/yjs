@@ -8,6 +8,7 @@ import {
   createID,
   ContentType,
   followRedone,
+  getItem,
   ID, Doc, AbstractType // eslint-disable-line
 } from '../internals.js'
 
@@ -256,13 +257,24 @@ export const readRelativePosition = decoder => {
 export const decodeRelativePosition = uint8Array => readRelativePosition(decoding.createDecoder(uint8Array))
 
 /**
+ * Transform a relative position to an absolute position.
+ *
+ * If you want to share the relative position with other users, you should set
+ * `followUndoneDeletions` to false to get consistent results across all clients.
+ *
+ * When calculating the absolute position, we try to follow the "undone deletions". This yields
+ * better results for the user who performed undo. However, only the user who performed the undo
+ * will get the better results, the other users don't know which operations recreated a deleted
+ * range of content. There is more information in this ticket: https://github.com/yjs/yjs/issues/638
+ *
  * @param {RelativePosition} rpos
  * @param {Doc} doc
+ * @param {boolean} followUndoneDeletions - whether to follow undone deletions - see https://github.com/yjs/yjs/issues/638
  * @return {AbsolutePosition|null}
  *
  * @function
  */
-export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
+export const createAbsolutePositionFromRelativePosition = (rpos, doc, followUndoneDeletions = true) => {
   const store = doc.store
   const rightID = rpos.item
   const typeID = rpos.type
@@ -274,7 +286,7 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
     if (getState(store, rightID.client) <= rightID.clock) {
       return null
     }
-    const res = followRedone(store, rightID)
+    const res = followUndoneDeletions ? followRedone(store, rightID) : { item: getItem(store, rightID), diff: 0 }
     const right = res.item
     if (!(right instanceof Item)) {
       return null
@@ -298,7 +310,7 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
         // type does not exist yet
         return null
       }
-      const { item } = followRedone(store, typeID)
+      const { item } = followUndoneDeletions ? followRedone(store, typeID) : { item: getItem(store, typeID) }
       if (item instanceof Item && item.content instanceof ContentType) {
         type = item.content.type
       } else {
