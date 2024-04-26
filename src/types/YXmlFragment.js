@@ -399,7 +399,8 @@ export class YXmlFragment extends AbstractType {
   }
 
   /**
-   * Returns a portion of this YXmlFragment into a JavaScript Array selected from start to end (end not included).
+   * Returns a portion of this YXmlFragment into a JavaScript Array selected
+   * from start to end (end not included).
    *
    * @param {number} [start]
    * @param {number} [end]

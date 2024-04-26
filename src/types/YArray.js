@@ -206,7 +206,8 @@ export class YArray extends AbstractType {
   }
 
   /**
-   * Returns a portion of this YArray into a JavaScript Array selected from start to end (end not included).
+   * Returns a portion of this YArray into a JavaScript Array selected
+   * from start to end (end not included).
    *
    * @param {number} [start]
    * @param {number} [end]
