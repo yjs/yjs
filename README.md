@@ -57,6 +57,9 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [Evernote](https://evernote.com) Note-taking app :star2:
 * [Lessonspace](https://thelessonspace.com) Enterprise platform for virtual
   classrooms and online training :star2:
+* [Ellipsus]{ellipsus.com} - Collaborative writing app for storytelling etc.
+  Supports versioning, change attribution, and "blame". A solution for the whole
+  publishing process (also selling) :star:
 * [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star:
 * [Relm](https://www.relm.us/) A collaborative gameworld for teamwork and
   community. :star:
@@ -109,6 +112,8 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [thinkdeli](https://thinkdeli.com) - A fast and simple notes app powered by AI
 * [ourboard](https://github.com/raimohanska/ourboard) - A collaborative whiteboard
   applicaiton
+* [Ellie.ai](https://ellie.ai) - Data Product Design and Collaboration
+* [GoPeer](https://gopeer.org/) - Collaborative tutoring
 
 ## Table of Contents
 
