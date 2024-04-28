@@ -380,9 +380,9 @@ export class YXmlFragment extends AbstractType {
   }
 
   /**
-   * Preppends content to this YArray.
+   * Prepends content to this YArray.
    *
-   * @param {Array<YXmlElement|YXmlText>} content Array of content to preppend.
+   * @param {Array<YXmlElement|YXmlText>} content Array of content to prepend.
    */
   unshift (content) {
     this.insert(0, content)
@@ -399,7 +399,8 @@ export class YXmlFragment extends AbstractType {
   }
 
   /**
-   * Transforms this YArray to a JavaScript Array.
+   * Returns a portion of this YXmlFragment into a JavaScript Array selected
+   * from start to end (end not included).
    *
    * @param {number} [start]
    * @param {number} [end]

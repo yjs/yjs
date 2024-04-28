@@ -25,16 +25,7 @@ import { typeListSlice } from './AbstractType.js'
  * @template T
  * @extends YEvent<YArray<T>>
  */
-export class YArrayEvent extends YEvent {
-  /**
-   * @param {YArray<T>} yarray The changed type
-   * @param {Transaction} transaction The transaction object
-   */
-  constructor (yarray, transaction) {
-    super(yarray, transaction)
-    this._transaction = transaction
-  }
-}
+export class YArrayEvent extends YEvent {}
 
 /**
  * A shared Array implementation.
@@ -171,9 +162,9 @@ export class YArray extends AbstractType {
   }
 
   /**
-   * Preppends content to this YArray.
+   * Prepends content to this YArray.
    *
-   * @param {Array<T>} content Array of content to preppend.
+   * @param {Array<T>} content Array of content to prepend.
    */
   unshift (content) {
     this.insert(0, content)
@@ -215,7 +206,8 @@ export class YArray extends AbstractType {
   }
 
   /**
-   * Transforms this YArray to a JavaScript Array.
+   * Returns a portion of this YArray into a JavaScript Array selected
+   * from start to end (end not included).
    *
    * @param {number} [start]
    * @param {number} [end]

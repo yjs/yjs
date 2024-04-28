@@ -154,7 +154,7 @@ export const readClientsStructRefs = (decoder, doc) => {
           // @type {string|null}
           const struct = new Item(
             createID(client, clock),
-            null, // leftd
+            null, // left
             (info & binary.BIT8) === binary.BIT8 ? decoder.readLeftID() : null, // origin
             null, // right
             (info & binary.BIT7) === binary.BIT7 ? decoder.readRightID() : null, // right origin
@@ -178,7 +178,7 @@ export const readClientsStructRefs = (decoder, doc) => {
 
           const struct = new Item(
             createID(client, clock),
-            null, // leftd
+            null, // left
             origin, // origin
             null, // right
             rightOrigin, // right origin
@@ -370,7 +370,7 @@ export const writeStructsFromTransaction = (encoder, transaction) => writeClient
 /**
  * Read and apply a document update.
  *
- * This function has the same effect as `applyUpdate` but accepts an decoder.
+ * This function has the same effect as `applyUpdate` but accepts a decoder.
  *
  * @param {decoding.Decoder} decoder
  * @param {Doc} ydoc
@@ -451,7 +451,7 @@ export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = n
 /**
  * Read and apply a document update.
  *
- * This function has the same effect as `applyUpdate` but accepts an decoder.
+ * This function has the same effect as `applyUpdate` but accepts a decoder.
  *
  * @param {decoding.Decoder} decoder
  * @param {Doc} ydoc
