@@ -1,4 +1,3 @@
-
 /**
  * @module YText
  */
@@ -118,14 +117,15 @@ const findNextPosition = (transaction, pos, count) => {
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {number} index
+ * @param {boolean} useSearchMarker
  * @return {ItemTextListPosition}
  *
  * @private
  * @function
  */
-const findPosition = (transaction, parent, index) => {
+const findPosition = (transaction, parent, index, useSearchMarker) => {
   const currentAttributes = new Map()
-  const marker = findMarker(parent, index)
+  const marker = useSearchMarker ? findMarker(parent, index) : null
   if (marker) {
     const pos = new ItemTextListPosition(marker.p.left, marker.p, marker.index, currentAttributes)
     return findNextPosition(transaction, pos, index - marker.index)
@@ -201,7 +201,7 @@ const minimizeAttributeChanges = (currPos, attributes) => {
   while (true) {
     if (currPos.right === null) {
       break
-    } else if (currPos.right.deleted || (currPos.right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (currPos.right.content)).key] || null, /** @type {ContentFormat} */ (currPos.right.content).value))) {
+    } else if (currPos.right.deleted || (currPos.right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (currPos.right.content)).key] ?? null, /** @type {ContentFormat} */ (currPos.right.content).value))) {
       //
     } else {
       break
@@ -227,7 +227,7 @@ const insertAttributes = (transaction, parent, currPos, attributes) => {
   // insert format-start items
   for (const key in attributes) {
     const val = attributes[key]
-    const currentVal = currPos.currentAttributes.get(key) || null
+    const currentVal = currPos.currentAttributes.get(key) ?? null
     if (!equalAttrs(currentVal, val)) {
       // save negated attribute (set null if currentVal undefined)
       negatedAttributes.set(key, currentVal)
@@ -389,12 +389,12 @@ const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAtt
       switch (content.constructor) {
         case ContentFormat: {
           const { key, value } = /** @type {ContentFormat} */ (content)
-          const startAttrValue = startAttributes.get(key) || null
+          const startAttrValue = startAttributes.get(key) ?? null
           if (endFormats.get(key) !== content || startAttrValue === value) {
             // Either this format is overwritten or it is not necessary because the attribute already existed.
             start.delete(transaction)
             cleanups++
-            if (!reachedCurr && (currAttributes.get(key) || null) === value && startAttrValue !== value) {
+            if (!reachedCurr && (currAttributes.get(key) ?? null) === value && startAttrValue !== value) {
               if (startAttrValue === null) {
                 currAttributes.delete(key)
               } else {
@@ -769,12 +769,12 @@ export class YTextEvent extends YEvent {
               const { key, value } = /** @type {ContentFormat} */ (item.content)
               if (this.adds(item)) {
                 if (!this.deletes(item)) {
-                  const curVal = currentAttributes.get(key) || null
+                  const curVal = currentAttributes.get(key) ?? null
                   if (!equalAttrs(curVal, value)) {
                     if (action === 'retain') {
                       addOp()
                     }
-                    if (equalAttrs(value, (oldAttributes.get(key) || null))) {
+                    if (equalAttrs(value, (oldAttributes.get(key) ?? null))) {
                       delete attributes[key]
                     } else {
                       attributes[key] = value
@@ -785,7 +785,7 @@ export class YTextEvent extends YEvent {
                 }
               } else if (this.deletes(item)) {
                 oldAttributes.set(key, value)
-                const curVal = currentAttributes.get(key) || null
+                const curVal = currentAttributes.get(key) ?? null
                 if (!equalAttrs(curVal, value)) {
                   if (action === 'retain') {
                     addOp()
@@ -897,6 +897,10 @@ export class YText extends AbstractType {
   }
 
   /**
+   * Makes a copy of this data type that can be included somewhere else.
+   *
+   * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+   *
    * @return {YText}
    */
   clone () {
@@ -1120,7 +1124,7 @@ export class YText extends AbstractType {
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
-        const pos = findPosition(transaction, this, index)
+        const pos = findPosition(transaction, this, index, !attributes)
         if (!attributes) {
           attributes = {}
           // @ts-ignore
@@ -1138,20 +1142,20 @@ export class YText extends AbstractType {
    *
    * @param {number} index The index to insert the embed at.
    * @param {Object | AbstractType<any>} embed The Object that represents the embed.
-   * @param {TextAttributes} attributes Attribute information to apply on the
+   * @param {TextAttributes} [attributes] Attribute information to apply on the
    *                                    embed
    *
    * @public
    */
-  insertEmbed (index, embed, attributes = {}) {
+  insertEmbed (index, embed, attributes) {
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
-        const pos = findPosition(transaction, this, index)
-        insertText(transaction, this, pos, embed, attributes)
+        const pos = findPosition(transaction, this, index, !attributes)
+        insertText(transaction, this, pos, embed, attributes || {})
       })
     } else {
-      /** @type {Array<function>} */ (this._pending).push(() => this.insertEmbed(index, embed, attributes))
+      /** @type {Array<function>} */ (this._pending).push(() => this.insertEmbed(index, embed, attributes || {}))
     }
   }
 
@@ -1170,7 +1174,7 @@ export class YText extends AbstractType {
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
-        deleteText(transaction, findPosition(transaction, this, index), length)
+        deleteText(transaction, findPosition(transaction, this, index, true), length)
       })
     } else {
       /** @type {Array<function>} */ (this._pending).push(() => this.delete(index, length))
@@ -1194,7 +1198,7 @@ export class YText extends AbstractType {
     const y = this.doc
     if (y !== null) {
       transact(y, transaction => {
-        const pos = findPosition(transaction, this, index)
+        const pos = findPosition(transaction, this, index, false)
         if (pos.right === null) {
           return
         }

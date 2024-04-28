@@ -1,5 +1,4 @@
-
-import { Observable } from 'lib0/observable'
+import { ObservableV2 } from 'lib0/observable'
 
 import {
   Doc // eslint-disable-line
@@ -11,9 +10,9 @@ import {
  * @note This interface is experimental and it is not advised to actually inherit this class.
  *       It just serves as typing information.
  *
- * @extends {Observable<any>}
+ * @extends {ObservableV2<any>}
  */
-export class AbstractConnector extends Observable {
+export class AbstractConnector extends ObservableV2 {
   /**
    * @param {Doc} ydoc
    * @param {any} awareness

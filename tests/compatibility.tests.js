@@ -1,4 +1,3 @@
-
 /**
  * Testing if encoding/decoding compatibility and integration compatiblity is given.
  * We expect that the document always looks the same, even if we upgrade the integration algorithm, or add additional encoding approaches.

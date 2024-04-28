@@ -1,4 +1,3 @@
-
 import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 import * as encoding from 'lib0/encoding'
@@ -35,7 +34,7 @@ export const encV1 = {
   mergeUpdates: Y.mergeUpdates,
   applyUpdate: Y.applyUpdate,
   logUpdate: Y.logUpdate,
-  updateEventName: 'update',
+  updateEventName: /** @type {'update'} */ ('update'),
   diffUpdate: Y.diffUpdate
 }
 
@@ -44,7 +43,7 @@ export const encV2 = {
   mergeUpdates: Y.mergeUpdatesV2,
   applyUpdate: Y.applyUpdateV2,
   logUpdate: Y.logUpdateV2,
-  updateEventName: 'updateV2',
+  updateEventName: /** @type {'updateV2'} */ ('updateV2'),
   diffUpdate: Y.diffUpdateV2
 }
 

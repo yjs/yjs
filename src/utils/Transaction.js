@@ -1,4 +1,3 @@
-
 import {
   getState,
   writeStructsFromTransaction,
@@ -29,7 +28,8 @@ import { callAll } from 'lib0/function'
  * possible. Here is an example to illustrate the advantages of bundling:
  *
  * @example
- * const map = y.define('map', YMap)
+ * const ydoc = new Y.Doc()
+ * const map = ydoc.getMap('map')
  * // Log content when change is triggered
  * map.observe(() => {
  *   console.log('change triggered')
@@ -38,7 +38,7 @@ import { callAll } from 'lib0/function'
  * map.set('a', 0) // => "change triggered"
  * map.set('b', 0) // => "change triggered"
  * // When put in a transaction, it will trigger the log after the transaction:
- * y.transact(() => {
+ * ydoc.transact(() => {
  *   map.set('a', 1)
  *   map.set('b', 1)
  * }) // => "change triggered"
@@ -225,7 +225,7 @@ const tryGcDeleteSet = (ds, store, gcFilter) => {
  */
 const tryMergeDeleteSet = (ds, store) => {
   // try to merge deleted / gc'd items
-  // merge from right to left for better efficiecy and so we don't miss any merge targets
+  // merge from right to left for better efficiency and so we don't miss any merge targets
   ds.clients.forEach((deleteItems, client) => {
     const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
     for (let di = deleteItems.length - 1; di >= 0; di--) {

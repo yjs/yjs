@@ -1,4 +1,3 @@
-
 import {
   addToDeleteSet,
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Item, Transaction // eslint-disable-line

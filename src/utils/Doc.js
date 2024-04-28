@@ -8,12 +8,13 @@ import {
   YArray,
   YText,
   YMap,
+  YXmlElement,
   YXmlFragment,
   transact,
   ContentDoc, Item, Transaction, YEvent // eslint-disable-line
 } from '../internals.js'
 
-import { Observable } from 'lib0/observable'
+import { ObservableV2 } from 'lib0/observable'
 import * as random from 'lib0/random'
 import * as map from 'lib0/map'
 import * as array from 'lib0/array'
@@ -33,10 +34,26 @@ export const generateNewClientId = random.uint32
  */
 
 /**
- * A Yjs instance handles the state of shared data.
- * @extends Observable<string>
+ * @typedef {Object} DocEvents
+ * @property {function(Doc):void} DocEvents.destroy
+ * @property {function(Doc):void} DocEvents.load
+ * @property {function(boolean, Doc):void} DocEvents.sync
+ * @property {function(Uint8Array, any, Doc, Transaction):void} DocEvents.update
+ * @property {function(Uint8Array, any, Doc, Transaction):void} DocEvents.updateV2
+ * @property {function(Doc):void} DocEvents.beforeAllTransactions
+ * @property {function(Transaction, Doc):void} DocEvents.beforeTransaction
+ * @property {function(Transaction, Doc):void} DocEvents.beforeObserverCalls
+ * @property {function(Transaction, Doc):void} DocEvents.afterTransaction
+ * @property {function(Transaction, Doc):void} DocEvents.afterTransactionCleanup
+ * @property {function(Doc, Array<Transaction>):void} DocEvents.afterAllTransactions
+ * @property {function({ loaded: Set<Doc>, added: Set<Doc>, removed: Set<Doc> }, Doc, Transaction):void} DocEvents.subdocs
  */
-export class Doc extends Observable {
+
+/**
+ * A Yjs instance handles the state of shared data.
+ * @extends ObservableV2<DocEvents>
+ */
+export class Doc extends ObservableV2 {
   /**
    * @param {DocOpts} opts configuration
    */
@@ -114,7 +131,7 @@ export class Doc extends Observable {
       }
       this.isSynced = isSynced === undefined || isSynced === true
       if (this.isSynced && !this.isLoaded) {
-        this.emit('load', [])
+        this.emit('load', [this])
       }
     })
     /**
@@ -170,30 +187,31 @@ export class Doc extends Observable {
   /**
    * Define a shared data type.
    *
-   * Multiple calls of `y.get(name, TypeConstructor)` yield the same result
+   * Multiple calls of `ydoc.get(name, TypeConstructor)` yield the same result
    * and do not overwrite each other. I.e.
-   * `y.define(name, Y.Array) === y.define(name, Y.Array)`
+   * `ydoc.get(name, Y.Array) === ydoc.get(name, Y.Array)`
    *
-   * After this method is called, the type is also available on `y.share.get(name)`.
+   * After this method is called, the type is also available on `ydoc.share.get(name)`.
    *
    * *Best Practices:*
-   * Define all types right after the Yjs instance is created and store them in a separate object.
+   * Define all types right after the Y.Doc instance is created and store them in a separate object.
    * Also use the typed methods `getText(name)`, `getArray(name)`, ..
    *
+   * @template {typeof AbstractType<any>} Type
    * @example
-   *   const y = new Y(..)
+   *   const ydoc = new Y.Doc(..)
    *   const appState = {
-   *     document: y.getText('document')
-   *     comments: y.getArray('comments')
+   *     document: ydoc.getText('document')
+   *     comments: ydoc.getArray('comments')
    *   }
    *
    * @param {string} name
-   * @param {Function} TypeConstructor The constructor of the type definition. E.g. Y.Text, Y.Array, Y.Map, ...
-   * @return {AbstractType<any>} The created type. Constructed with TypeConstructor
+   * @param {Type} TypeConstructor The constructor of the type definition. E.g. Y.Text, Y.Array, Y.Map, ...
+   * @return {InstanceType<Type>} The created type. Constructed with TypeConstructor
    *
    * @public
    */
-  get (name, TypeConstructor = AbstractType) {
+  get (name, TypeConstructor = /** @type {any} */ (AbstractType)) {
     const type = map.setIfUndefined(this.share, name, () => {
       // @ts-ignore
       const t = new TypeConstructor()
@@ -219,12 +237,12 @@ export class Doc extends Observable {
         t._length = type._length
         this.share.set(name, t)
         t._integrate(this, null)
-        return t
+        return /** @type {InstanceType<Type>} */ (t)
       } else {
         throw new Error(`Type with the name ${name} has already been defined with a different constructor`)
       }
     }
-    return type
+    return /** @type {InstanceType<Type>} */ (type)
   }
 
   /**
@@ -235,8 +253,7 @@ export class Doc extends Observable {
    * @public
    */
   getArray (name = '') {
-    // @ts-ignore
-    return this.get(name, YArray)
+    return /** @type {YArray<T>} */ (this.get(name, YArray))
   }
 
   /**
@@ -246,7 +263,6 @@ export class Doc extends Observable {
    * @public
    */
   getText (name = '') {
-    // @ts-ignore
     return this.get(name, YText)
   }
 
@@ -258,8 +274,17 @@ export class Doc extends Observable {
    * @public
    */
   getMap (name = '') {
-    // @ts-ignore
-    return this.get(name, YMap)
+    return /** @type {YMap<T>} */ (this.get(name, YMap))
+  }
+
+  /**
+   * @param {string} [name]
+   * @return {YXmlElement}
+   *
+   * @public
+   */
+  getXmlElement (name = '') {
+    return /** @type {YXmlElement<{[key:string]:string}>} */ (this.get(name, YXmlElement))
   }
 
   /**
@@ -269,7 +294,6 @@ export class Doc extends Observable {
    * @public
    */
   getXmlFragment (name = '') {
-    // @ts-ignore
     return this.get(name, YXmlFragment)
   }
 
@@ -313,24 +337,9 @@ export class Doc extends Observable {
         transaction.subdocsRemoved.add(this)
       }, null, true)
     }
-    this.emit('destroyed', [true])
+    // @ts-ignore
+    this.emit('destroyed', [true]) // DEPRECATED!
     this.emit('destroy', [this])
     super.destroy()
-  }
-
-  /**
-   * @param {string} eventName
-   * @param {function(...any):any} f
-   */
-  on (eventName, f) {
-    super.on(eventName, f)
-  }
-
-  /**
-   * @param {string} eventName
-   * @param {function} f
-   */
-  off (eventName, f) {
-    super.off(eventName, f)
   }
 }

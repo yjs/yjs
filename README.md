@@ -32,13 +32,35 @@ Otherwise you can find help on our community [discussion board](https://discuss.
 Please contribute to the project financially - especially if your company relies
 on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=d42f2d)](https://github.com/sponsors/dmonad)
 
+## Professional Support
+
+* [Support Contract with the Maintainer](https://github.com/sponsors/dmonad) -
+By contributing financially to the open-source Yjs project, you can receive
+professional support directly from the author. This includes the opportunity for
+weekly video calls to discuss your specific challenges.
+* [Synergy Codes](https://synergycodes.com/yjs-services/) - Specializing in
+consulting and developing real-time collaborative editing solutions for visual
+apps, Synergy Codes focuses on interactive diagrams, complex graphs, charts, and
+various data visualization types. Their expertise empowers developers to build
+engaging and interactive visual experiences leveraging the power of Yjs. See
+their work in action at [Visual Collaboration
+Showcase](https://yjs-diagram.synergy.codes/).
+
 ## Who is using Yjs
 
 * [AFFiNE](https://affine.pro/) A local-first, privacy-first, open source
-  knowledge base. 🏅
-* [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star2:
-* [Sana](https://sanalabs.com/) A learning platform with collaborative text
-  editing powered by Yjs.
+  knowledge base. :star2:
+* [Huly](https://huly.io/) - Open Source All-in-One Project Management Platform
+  :star2:
+* [Cargo](https://cargo.site/) Site builder for designers and artists :star2:
+* [Gitbook](https://gitbook.com) Knowledge management for technical teams :star2:
+* [Evernote](https://evernote.com) Note-taking app :star2:
+* [Lessonspace](https://thelessonspace.com) Enterprise platform for virtual
+  classrooms and online training :star2:
+* [Ellipsus]{ellipsus.com} - Collaborative writing app for storytelling etc.
+  Supports versioning, change attribution, and "blame". A solution for the whole
+  publishing process (also selling) :star:
+* [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star:
 * [Relm](https://www.relm.us/) A collaborative gameworld for teamwork and
   community. :star:
 * [Room.sh](https://room.sh/) A meeting application with integrated
@@ -47,9 +69,15 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
   Nimbus Web. :star:
 * [Pluxbox RadioManager](https://getradiomanager.com/) A web-based app to
   collaboratively organize radio broadcasts. :star:
+* [modyfi](https://www.modyfi.com) - Modyfi is the design platform built for
+  multidisciplinary designers. Design, generate, animate, and more — without
+  switching between apps. :star:
+* [Sana](https://sanalabs.com/) A learning platform with collaborative text
+  editing powered by Yjs.
 * [Serenity Notes](https://www.serenity.re/en/notes) End-to-end encrypted
   collaborative notes app.
-* [PRSM](https://prsm.uk/) Collaborative mind-mapping and system visualisation. *[(source)](https://github.com/micrology/prsm)*
+* [PRSM](https://prsm.uk/) Collaborative mind-mapping and system visualisation.
+  *[(source)](https://github.com/micrology/prsm)*
 * [Alldone](https://alldone.app/) A next-gen project management and
   collaboration platform.
 * [Living Spec](https://livingspec.com/) A modern way for product teams to collaborate.
@@ -71,6 +99,21 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
 * [btw](https://www.btw.so) Open-source Medium alternative
 * [AWS SageMaker](https://aws.amazon.com/sagemaker/) Tools for building Machine
   Learning Models
+* [linear](https://linear.app) Streamline issues, projects, and product roadmaps.
+* [btw](https://www.btw.so) - Personal website builder
+* [AWS SageMaker](https://aws.amazon.com/sagemaker/) - Machine Learning Service
+* [Arkiter](https://www.arkiter.com/) - Live interview software
+* [Appflowy](https://www.appflowy.io/) - They use Yrs
+* [Multi.app](https://multi.app) - Multiplayer app sharing: Point, draw and edit
+  in shared apps as if they're on your computer. They are using Yrs.
+* [AppMaster](https://appmaster.io) A No-Code platform for creating
+  production-ready applications with source code generation.
+* [Synthesia](https://www.synthesia.io) - Collaborative Video Editor
+* [thinkdeli](https://thinkdeli.com) - A fast and simple notes app powered by AI
+* [ourboard](https://github.com/raimohanska/ourboard) - A collaborative whiteboard
+  applicaiton
+* [Ellie.ai](https://ellie.ai) - Data Product Design and Collaboration
+* [GoPeer](https://gopeer.org/) - Collaborative tutoring
 * [screen.garden](https://screen.garden) Collaborative backend for PKM apps.
 
 ## Table of Contents
@@ -108,6 +151,7 @@ are implemented in separate modules.
 | [valtio](https://github.com/pmndrs/valtio) |  | [valtio-yjs](https://github.com/dai-shi/valtio-yjs) | [demo](https://codesandbox.io/s/valtio-yjs-demo-ox3iy) |
 | [immer](https://github.com/immerjs/immer) |  | [immer-yjs](https://github.com/sep2/immer-yjs) | [demo](https://codesandbox.io/s/immer-yjs-demo-6e0znb) |
 | React / Vue / Svelte / MobX | | [SyncedStore](https://syncedstore.org) | [demo](https://syncedstore.org/docs/react) |
+| [mobx-keystone](https://mobx-keystone.js.org/) |  | [mobx-keystone-yjs](https://github.com/xaviergonz/mobx-keystone/tree/master/packages/mobx-keystone-yjs) | [demo](https://mobx-keystone.js.org/examples/yjs-binding) |
 
 ### Providers
 
@@ -125,9 +169,10 @@ collaborative app.
   <dt><a href="https://github.com/yjs/y-websocket">y-websocket</a></dt>
   <dd>
 A module that contains a simple websocket backend and a websocket client that
-connects to that backend. The backend can be extended to persist updates in a
-leveldb database. <b>y-sweet</b> and <b>ypy-websocket</b> (see below) are
-compatible to the y-wesocket protocol.
+connects to that backend. <a href="https://github.com/yjs/y-redis/"><b>y-redis</b></a>,
+<b>y-sweet</b>, <b>ypy-websocket</b> and <a href="https://tiptap.dev/docs/hocuspocus/introduction">
+<b>Hocuspocus</b></a> (see below) are alternative
+backends to y-websocket.
   </dd>
   <dt><a href="https://github.com/yjs/y-webrtc">y-webrtc</a></dt>
   <dd>
@@ -149,6 +194,10 @@ browser DevTools extension.
   <dd>
 A standalone yjs server with persistence to S3 or filesystem. They offer a
 <a href="https://y-sweet.cloud">cloud service</a> as well.
+  </dd>
+  <dt><a href="https://github.com/ueberdosis/hocuspocus">Hocuspocus</a></dt>
+  <dd>
+A standalone extensible yjs server with sqlite persistence, webhooks, auth and more.
   </dd>
   <dt><a href="https://docs.partykit.io/reference/y-partykit-api/">PartyKit</a></dt>
   <dd>
@@ -185,6 +234,15 @@ An ActionCable companion for Yjs clients. There is a fitting
   <dd>
 Websocket backend, written in Python.
   </dd>
+  <dt><a href="https://tinybase.org/">Tinybase</a></dt>
+  <dd>
+The reactive data store for local-first apps. They support multiple CRDTs and
+    different network technologies.
+  </dd>
+  <dt><a href="https://codeberg.org/webxdc/y-webxdc">y-webxdc</a></dt>
+  <dd>
+Provider for sharing data in <a href="https://webxdc.org">webxdc chat apps</a>.
+  </dd>
 </dl>
 
 #### Persistence Providers
@@ -205,6 +263,10 @@ y-websocket provider.
 @toeverything/y-indexeddb</a></dt>
   <dd>
 Like y-indexeddb, but with sub-documents support and fully TypeScript.
+  </dd>
+  <dt><a href="https://github.com/podraven/y-fire">y-fire</a></dt>
+  <dd>
+A database and connection provider for Yjs based on Firestore.
   </dd>
 </dl>
 
@@ -719,6 +781,8 @@ type. Doesn't log types that have not been defined (using
   <dd>Define a shared Y.Map type. Is equivalent to <code>y.get(string, Y.Map)</code>.</dd>
   <b><code>getText(string):Y.Text</code></b>
   <dd>Define a shared Y.Text type. Is equivalent to <code>y.get(string, Y.Text)</code>.</dd>
+  <b><code>getXmlElement(string, string):Y.XmlElement</code></b>
+  <dd>Define a shared Y.XmlElement type. Is equivalent to <code>y.get(string, Y.XmlElement)</code>.</dd>
   <b><code>getXmlFragment(string):Y.XmlFragment</code></b>
   <dd>Define a shared Y.XmlFragment type. Is equivalent to <code>y.get(string, Y.XmlFragment)</code>.</dd>
   <b><code>on(string, function)</code></b>
@@ -856,7 +920,7 @@ ydoc2.getText().toString() // => "00000000000"
 #### Using V2 update format
 
 Yjs implements two update formats. By default you are using the V1 update format.
-You can opt-in into the V2 update format wich provides much better compression.
+You can opt-in into the V2 update format which provides much better compression.
 It is not yet used by all providers. However, you can already use it if
 you are building your own provider. All below functions are available with the
 suffix "V2". E.g. `Y.applyUpdate` ⇒ `Y.applyUpdateV2`. Also when listening to updates

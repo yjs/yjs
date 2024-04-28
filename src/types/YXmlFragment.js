@@ -163,6 +163,10 @@ export class YXmlFragment extends AbstractType {
   }
 
   /**
+   * Makes a copy of this data type that can be included somewhere else.
+   *
+   * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+   *
    * @return {YXmlFragment}
    */
   clone () {
@@ -376,9 +380,9 @@ export class YXmlFragment extends AbstractType {
   }
 
   /**
-   * Preppends content to this YArray.
+   * Prepends content to this YArray.
    *
-   * @param {Array<YXmlElement|YXmlText>} content Array of content to preppend.
+   * @param {Array<YXmlElement|YXmlText>} content Array of content to prepend.
    */
   unshift (content) {
     this.insert(0, content)
@@ -395,7 +399,8 @@ export class YXmlFragment extends AbstractType {
   }
 
   /**
-   * Transforms this YArray to a JavaScript Array.
+   * Returns a portion of this YXmlFragment into a JavaScript Array selected
+   * from start to end (end not included).
    *
    * @param {number} [start]
    * @param {number} [end]
@@ -406,7 +411,7 @@ export class YXmlFragment extends AbstractType {
   }
 
   /**
-   * Executes a provided function on once on overy child element.
+   * Executes a provided function on once on every child element.
    *
    * @param {function(YXmlElement|YXmlText,number, typeof self):void} f A function to execute on every element of this YArray.
    */

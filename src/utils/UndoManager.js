@@ -10,13 +10,13 @@ import {
   getItemCleanStart,
   isDeleted,
   addToDeleteSet,
-  Transaction, Doc, Item, GC, DeleteSet, AbstractType // eslint-disable-line
+  YEvent, Transaction, Doc, Item, GC, DeleteSet, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as time from 'lib0/time'
 import * as array from 'lib0/array'
 import * as logging from 'lib0/logging'
-import { Observable } from 'lib0/observable'
+import { ObservableV2 } from 'lib0/observable'
 
 export class StackItem {
   /**
@@ -48,15 +48,10 @@ const clearUndoManagerStackItem = (tr, um, stackItem) => {
 /**
  * @param {UndoManager} undoManager
  * @param {Array<StackItem>} stack
- * @param {string} eventType
+ * @param {'undo'|'redo'} eventType
  * @return {StackItem?}
  */
 const popStackItem = (undoManager, stack, eventType) => {
-  /**
-   * Whether a change happened
-   * @type {StackItem?}
-   */
-  let result = null
   /**
    * Keep a reference to the transaction so we can fire the event with the changedParentTypes
    * @type {any}
@@ -65,7 +60,7 @@ const popStackItem = (undoManager, stack, eventType) => {
   const doc = undoManager.doc
   const scope = undoManager.scope
   transact(doc, transaction => {
-    while (stack.length > 0 && result === null) {
+    while (stack.length > 0 && undoManager.currStackItem === null) {
       const store = doc.store
       const stackItem = /** @type {StackItem} */ (stack.pop())
       /**
@@ -113,7 +108,7 @@ const popStackItem = (undoManager, stack, eventType) => {
           performedChange = true
         }
       }
-      result = performedChange ? stackItem : null
+      undoManager.currStackItem = performedChange ? stackItem : null
     }
     transaction.changed.forEach((subProps, type) => {
       // destroy search marker if necessary
@@ -123,11 +118,12 @@ const popStackItem = (undoManager, stack, eventType) => {
     })
     _tr = transaction
   }, undoManager)
-  if (result != null) {
+  if (undoManager.currStackItem != null) {
     const changedParentTypes = _tr.changedParentTypes
-    undoManager.emit('stack-item-popped', [{ stackItem: result, type: eventType, changedParentTypes }, undoManager])
+    undoManager.emit('stack-item-popped', [{ stackItem: undoManager.currStackItem, type: eventType, changedParentTypes, origin: undoManager }, undoManager])
+    undoManager.currStackItem = null
   }
-  return result
+  return undoManager.currStackItem
 }
 
 /**
@@ -144,15 +140,23 @@ const popStackItem = (undoManager, stack, eventType) => {
  */
 
 /**
+ * @typedef {Object} StackItemEvent
+ * @property {StackItem} StackItemEvent.stackItem
+ * @property {any} StackItemEvent.origin
+ * @property {'undo'|'redo'} StackItemEvent.type
+ * @property {Map<AbstractType<YEvent<any>>,Array<YEvent<any>>>} StackItemEvent.changedParentTypes
+ */
+
+/**
  * Fires 'stack-item-added' event when a stack item was added to either the undo- or
  * the redo-stack. You may store additional stack information via the
  * metadata property on `event.stackItem.meta` (it is a `Map` of metadata properties).
  * Fires 'stack-item-popped' event when a stack item was popped from either the
  * undo- or the redo-stack. You may restore the saved stack information from `event.stackItem.meta`.
  *
- * @extends {Observable<'stack-item-added'|'stack-item-popped'|'stack-cleared'|'stack-item-updated'>}
+ * @extends {ObservableV2<{'stack-item-added':function(StackItemEvent, UndoManager):void, 'stack-item-popped': function(StackItemEvent, UndoManager):void, 'stack-cleared': function({ undoStackCleared: boolean, redoStackCleared: boolean }):void, 'stack-item-updated': function(StackItemEvent, UndoManager):void }>}
  */
-export class UndoManager extends Observable {
+export class UndoManager extends ObservableV2 {
   /**
    * @param {AbstractType<any>|Array<AbstractType<any>>} typeScope Accepts either a single type, or an array of types
    * @param {UndoManagerOptions} options
@@ -191,6 +195,12 @@ export class UndoManager extends Observable {
      */
     this.undoing = false
     this.redoing = false
+    /**
+     * The currently popped stack item if UndoManager.undoing or UndoManager.redoing
+     *
+     * @type {StackItem|null}
+     */
+    this.currStackItem = null
     this.lastChange = 0
     this.ignoreRemoteMapChanges = ignoreRemoteMapChanges
     this.captureTimeout = captureTimeout
@@ -244,6 +254,9 @@ export class UndoManager extends Observable {
           keepItem(item, true)
         }
       })
+      /**
+       * @type {[StackItemEvent, UndoManager]}
+       */
       const changeEvent = [{ stackItem: stack[stack.length - 1], origin: transaction.origin, type: undoing ? 'redo' : 'undo', changedParentTypes: transaction.changedParentTypes }, this]
       if (didAdd) {
         this.emit('stack-item-added', changeEvent)

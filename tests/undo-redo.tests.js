@@ -3,6 +3,46 @@ import { init } from './testHelper.js' // eslint-disable-line
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
 
+export const testInconsistentFormat = () => {
+  /**
+   * @param {Y.Doc} ydoc
+   */
+  const testYjsMerge = ydoc => {
+    const content = /** @type {Y.XmlText} */ (ydoc.get('text', Y.XmlText))
+    content.format(0, 6, { bold: null })
+    content.format(6, 4, { type: 'text' })
+    t.compare(content.toDelta(), [
+      {
+        attributes: { type: 'text' },
+        insert: 'Merge Test'
+      },
+      {
+        attributes: { type: 'text', italic: true },
+        insert: ' After'
+      }
+    ])
+  }
+  const initializeYDoc = () => {
+    const yDoc = new Y.Doc({ gc: false })
+
+    const content = /** @type {Y.XmlText} */ (yDoc.get('text', Y.XmlText))
+    content.insert(0, ' After', { type: 'text', italic: true })
+    content.insert(0, 'Test', { type: 'text' })
+    content.insert(0, 'Merge ', { type: 'text', bold: true })
+    return yDoc
+  }
+  {
+    const yDoc = initializeYDoc()
+    testYjsMerge(yDoc)
+  }
+  {
+    const initialYDoc = initializeYDoc()
+    const yDoc = new Y.Doc({ gc: false })
+    Y.applyUpdate(yDoc, Y.encodeStateAsUpdate(initialYDoc))
+    testYjsMerge(yDoc)
+  }
+}
+
 /**
  * @param {t.TestCase} tc
  */
@@ -674,4 +714,34 @@ export const testUndoDeleteInMap = (tc) => {
   t.compare(map0.toJSON(), {})
   undoManager.undo()
   t.compare(map0.toJSON(), { a: 'a' })
+}
+
+/**
+ * It should expose the StackItem being processed if undoing
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testUndoDoingStackItem = async (_tc) => {
+  const doc = new Y.Doc()
+  const text = doc.getText('text')
+  const undoManager = new Y.UndoManager([text])
+  undoManager.on('stack-item-added', /** @param {any} event */ event => {
+    event.stackItem.meta.set('str', '42')
+  })
+  let metaUndo = /** @type {any} */ (null)
+  let metaRedo = /** @type {any} */ (null)
+  text.observe((event) => {
+    const /** @type {Y.UndoManager} */ origin = event.transaction.origin
+    if (origin === undoManager && origin.undoing) {
+      metaUndo = origin.currStackItem?.meta.get('str')
+    } else if (origin === undoManager && origin.redoing) {
+      metaRedo = origin.currStackItem?.meta.get('str')
+    }
+  })
+  text.insert(0, 'abc')
+  undoManager.undo()
+  undoManager.redo()
+  t.compare(metaUndo, '42', 'currStackItem is accessible while undoing')
+  t.compare(metaRedo, '42', 'currStackItem is accessible while redoing')
+  t.compare(undoManager.currStackItem, null, 'currStackItem is null after observe/transaction')
 }

@@ -1,4 +1,3 @@
-
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
 
@@ -101,4 +100,26 @@ export const testRelativePositionAssociationDifference = tc => {
   const posLeft = Y.createAbsolutePositionFromRelativePosition(rposLeft, ydoc)
   t.assert(posRight != null && posRight.index === 2)
   t.assert(posLeft != null && posLeft.index === 1)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRelativePositionWithUndo = tc => {
+  const ydoc = new Y.Doc()
+  const ytext = ydoc.getText()
+  ytext.insert(0, 'hello world')
+  const rpos = Y.createRelativePositionFromTypeIndex(ytext, 1)
+  const um = new Y.UndoManager(ytext)
+  ytext.delete(0, 6)
+  t.assert(Y.createAbsolutePositionFromRelativePosition(rpos, ydoc)?.index === 0)
+  um.undo()
+  t.assert(Y.createAbsolutePositionFromRelativePosition(rpos, ydoc)?.index === 1)
+  const posWithoutFollow = Y.createAbsolutePositionFromRelativePosition(rpos, ydoc, false)
+  console.log({ posWithoutFollow })
+  t.assert(Y.createAbsolutePositionFromRelativePosition(rpos, ydoc, false)?.index === 6)
+  const ydocClone = new Y.Doc()
+  Y.applyUpdate(ydocClone, Y.encodeStateAsUpdate(ydoc))
+  t.assert(Y.createAbsolutePositionFromRelativePosition(rpos, ydocClone)?.index === 6)
+  t.assert(Y.createAbsolutePositionFromRelativePosition(rpos, ydocClone, false)?.index === 6)
 }

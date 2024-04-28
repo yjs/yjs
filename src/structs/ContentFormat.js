@@ -1,4 +1,3 @@
-
 import {
   YText, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Item, StructStore, Transaction // eslint-disable-line
 } from '../internals.js'

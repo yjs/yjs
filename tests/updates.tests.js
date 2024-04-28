@@ -15,7 +15,7 @@ import * as object from 'lib0/object'
  * @property {function(Uint8Array):{from:Map<number,number>,to:Map<number,number>}} Enc.parseUpdateMeta
  * @property {function(Y.Doc):Uint8Array} Enc.encodeStateVector
  * @property {function(Uint8Array):Uint8Array} Enc.encodeStateVectorFromUpdate
- * @property {string} Enc.updateEventName
+ * @property {'update'|'updateV2'} Enc.updateEventName
  * @property {string} Enc.description
  * @property {function(Uint8Array, Uint8Array):Uint8Array} Enc.diffUpdate
  */
@@ -169,7 +169,7 @@ const checkUpdateCases = (ydoc, updates, enc, hasDeletes) => {
   // t.info('Target State: ')
   // enc.logUpdate(targetState)
 
-  cases.forEach((mergedUpdates, i) => {
+  cases.forEach((mergedUpdates) => {
     // t.info('State Case $' + i + ':')
     // enc.logUpdate(updates)
     const merged = new Y.Doc({ gc: false })
@@ -218,10 +218,10 @@ const checkUpdateCases = (ydoc, updates, enc, hasDeletes) => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testMergeUpdates1 = tc => {
-  encoders.forEach((enc, i) => {
+export const testMergeUpdates1 = _tc => {
+  encoders.forEach((enc) => {
     t.info(`Using encoder: ${enc.description}`)
     const ydoc = new Y.Doc({ gc: false })
     const updates = /** @type {Array<Uint8Array>} */ ([])
@@ -299,16 +299,16 @@ export const testMergePendingUpdates = tc => {
   Y.applyUpdate(yDoc5, update4)
   Y.applyUpdate(yDoc5, serverUpdates[4])
   // @ts-ignore
-  const update5 = Y.encodeStateAsUpdate(yDoc5) // eslint-disable-line
+  const _update5 = Y.encodeStateAsUpdate(yDoc5) // eslint-disable-line
 
   const yText5 = yDoc5.getText('textBlock')
   t.compareStrings(yText5.toString(), 'nenor')
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testObfuscateUpdates = tc => {
+export const testObfuscateUpdates = _tc => {
   const ydoc = new Y.Doc()
   const ytext = ydoc.getText('text')
   const ymap = ydoc.getMap('map')
