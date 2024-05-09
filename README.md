@@ -297,7 +297,7 @@ npm i yjs y-websocket
 Start the y-websocket server:
 
 ```sh
-PORT=1234 node ./node_modules/y-websocket/bin/server.js
+PORT=1234 node ./node_modules/y-websocket/bin/server.cjs
 ```
 
 ### Example: Observe types
