@@ -268,6 +268,10 @@ Like y-indexeddb, but with sub-documents support and fully TypeScript.
   <dd>
 A database and connection provider for Yjs based on Firestore.
   </dd>
+  <dt><a href="https://github.com/malte-j/y-op-sqlite">y-op-sqlite</a></dt>
+  <dd>
+Persist YJS updates in your React Native app using <a href="https://github.com/OP-Engineering/op-sqlite">op-sqlite</a>, the fastest SQLite library for React Native. 
+  </dd>
 </dl>
 
 # Ports
