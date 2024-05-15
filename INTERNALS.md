@@ -26,7 +26,7 @@ article](https://blog.kevinjahns.de/are-crdts-suitable-for-shared-editing/).
 
 Each client is assigned a unique *clientID* property on first insert. This is a
 random 53-bit integer (53 bits because that fits in the javascript safe integer
-range).
+range \[JavaScript uses IEEE 754 floats\]).
 
 ## List items
 
