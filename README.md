@@ -270,7 +270,14 @@ A database and connection provider for Yjs based on Firestore.
   </dd>
   <dt><a href="https://github.com/malte-j/y-op-sqlite">y-op-sqlite</a></dt>
   <dd>
-Persist YJS updates in your React Native app using <a href="https://github.com/OP-Engineering/op-sqlite">op-sqlite</a>, the fastest SQLite library for React Native. 
+  Persist YJS updates in your React Native app using
+   <a href="https://github.com/OP-Engineering/op-sqlite">op-sqlite</a>
+  , the fastest SQLite library for React Native.  
+  </dd>
+  <dt><a href="https://github.com/MaxNoetzold/y-postgresql">y-postgresql</a></dt>
+  <dd>
+  Provides persistent storage for a web server using PostgreSQL and
+  is easily compatible with y-websocket.  
   </dd>
 </dl>
 
