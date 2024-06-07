@@ -100,6 +100,7 @@ export {
   UpdateDecoderV1,
   UpdateDecoderV2,
   equalDeleteSets,
+  mergeDeleteSets,
   snapshotContainsUpdate
 } from './internals.js'
 
