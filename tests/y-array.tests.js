@@ -331,6 +331,29 @@ export const testObserveDeepEventOrder = tc => {
 }
 
 /**
+ * Correct index when computing event.path in observeDeep - https://github.com/yjs/yjs/issues/457
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testObservedeepIndexes = _tc => {
+  const doc = new Y.Doc()
+  const map = doc.getMap()
+  // Create a field with the array as value
+  map.set('my-array', new Y.Array())
+  // Fill the array with some strings and our Map
+  map.get('my-array').push(['a', 'b', 'c', new Y.Map()])
+  /**
+   * @type {Array<any>}
+   */
+  let eventPath = []
+  map.observeDeep((events) => { eventPath = events[0].path })
+  // set a value on the map inside of our array
+  map.get('my-array').get(3).set('hello', 'world')
+  console.log(eventPath)
+  t.compare(eventPath, ['my-array', 3])
+}
+
+/**
  * @param {t.TestCase} tc
  */
 export const testChangeEvent = tc => {

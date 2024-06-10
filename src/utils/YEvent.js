@@ -264,8 +264,8 @@ const getPathTo = (parent, child) => {
       let i = 0
       let c = /** @type {AbstractType<any>} */ (child._item.parent)._start
       while (c !== child._item && c !== null) {
-        if (!c.deleted) {
-          i++
+        if (!c.deleted && c.countable) {
+          i += c.length
         }
         c = c.right
       }
