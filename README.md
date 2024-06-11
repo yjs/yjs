@@ -50,8 +50,7 @@ Showcase](https://yjs-diagram.synergy.codes/).
 
 * [AFFiNE](https://affine.pro/) A local-first, privacy-first, open source
   knowledge base. :star2:
-* [Huly](https://huly.io/) - Open Source All-in-One Project Management Platform
-  :star2:
+* [Huly](https://huly.io/) - Open Source All-in-One Project Management Platform :star2:
 * [Cargo](https://cargo.site/) Site builder for designers and artists :star2:
 * [Gitbook](https://gitbook.com) Knowledge management for technical teams :star2:
 * [Evernote](https://evernote.com) Note-taking app :star2:
