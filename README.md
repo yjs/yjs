@@ -56,7 +56,7 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [Evernote](https://evernote.com) Note-taking app :star2:
 * [Lessonspace](https://thelessonspace.com) Enterprise platform for virtual
   classrooms and online training :star2:
-* [Ellipsus]{ellipsus.com} - Collaborative writing app for storytelling etc.
+* [Ellipsus](ellipsus.com) - Collaborative writing app for storytelling etc.
   Supports versioning, change attribution, and "blame". A solution for the whole
   publishing process (also selling) :star:
 * [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star:
