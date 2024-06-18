@@ -118,12 +118,13 @@ const popStackItem = (undoManager, stack, eventType) => {
     })
     _tr = transaction
   }, undoManager)
-  if (undoManager.currStackItem != null) {
+  const res = undoManager.currStackItem
+  if (res != null) {
     const changedParentTypes = _tr.changedParentTypes
-    undoManager.emit('stack-item-popped', [{ stackItem: undoManager.currStackItem, type: eventType, changedParentTypes, origin: undoManager }, undoManager])
+    undoManager.emit('stack-item-popped', [{ stackItem: res, type: eventType, changedParentTypes, origin: undoManager }, undoManager])
     undoManager.currStackItem = null
   }
-  return undoManager.currStackItem
+  return res
 }
 
 /**
