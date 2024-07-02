@@ -327,3 +327,45 @@ export const testSyncDocsEvent = async _tc => {
   t.assert(!ydoc.isSynced)
   t.assert(ydoc.whenSynced !== oldWhenSynced)
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testMissingStateVector = tc => {
+  const d1 = new Y.Doc()
+  d1.clientID = 1
+  const m1 = d1.getMap('test')
+  /** @type {any[]} */
+  const updates = []
+  d1.on('update', (update) => {
+    updates.push(update)
+  })
+  m1.set('a', '1')
+  m1.set('b', '2')
+  m1.set('c', '3')
+  m1.set('d', '4')
+  m1.set('e', '5')
+
+  // we only apply second half of the updates
+  const second = updates.slice(3)
+
+  const d2 = new Y.Doc()
+  d2.clientID = 2
+  const m2 = d2.getMap('test')
+
+  for (let u of second) {
+    Y.applyUpdate(d2, u)
+  }
+  let json = m2.toJSON()
+  t.compare(json, {})
+
+  // a missing state vector should mark the beginning of missing updates
+  const missingSV = /** @type {Map<number, number>} */ (d2.store.pendingStructs?.missing)
+  //t.compare(missingSV, new Map([[1, 0]]))
+
+  // exchange all updates from missing state vector onwards
+  const update = Y.encodeStateAsUpdate(d1, Y.encodeStateVector(missingSV))
+  Y.applyUpdate(d2, update)
+  json = m2.toJSON()
+  t.compare(json, {'a':'1','b':'2','c':'3','d':'4','e':'5'})
+}
