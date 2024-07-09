@@ -93,6 +93,7 @@ export const splitItem = (transaction, leftItem, diff) => {
     leftItem.rightOrigin,
     leftItem.parent,
     leftItem.parentSub,
+    leftItem.redone !== null ? createID(leftItem.redone.client, leftItem.redone.clock + diff) : null,
     leftItem.content.splice(diff)
   )
   if (leftItem.deleted) {
@@ -100,9 +101,6 @@ export const splitItem = (transaction, leftItem, diff) => {
   }
   if (leftItem.keep) {
     rightItem.keep = true
-  }
-  if (leftItem.redone !== null) {
-    rightItem.redone = createID(leftItem.redone.client, leftItem.redone.clock + diff)
   }
   // update left (do not set leftItem.rightOrigin as it will lead to problems when syncing)
   leftItem.right = rightItem
@@ -232,6 +230,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
     right, right && right.id,
     parentType,
     item.parentSub,
+    null,
     item.content.copy()
   )
   item.redone = nextId
@@ -252,9 +251,10 @@ export class Item extends AbstractStruct {
    * @param {ID | null} rightOrigin
    * @param {AbstractType<any>|ID|null} parent Is a type if integrated, is null if it is possible to copy parent from left or right, is ID before integration to search for it.
    * @param {string | null} parentSub
+   * @param {ID | null} redone
    * @param {AbstractContent} content
    */
-  constructor (id, left, origin, right, rightOrigin, parent, parentSub, content) {
+  constructor (id, left, origin, right, rightOrigin, parent, parentSub, redone, content) {
     super(id, content.getLength())
     /**
      * The item that was originally to the left of this item.
@@ -293,7 +293,7 @@ export class Item extends AbstractStruct {
      * this operation.
      * @type {ID | null}
      */
-    this.redone = null
+    this.redone = redone
     /**
      * @type {AbstractContent}
      */
@@ -653,10 +653,11 @@ export class Item extends AbstractStruct {
     const origin = offset > 0 ? createID(this.id.client, this.id.clock + offset - 1) : this.origin
     const rightOrigin = this.rightOrigin
     const parentSub = this.parentSub
-    const info = (this.content.getRef() & binary.BITS5) |
+    const info = (this.content.getRef() & binary.BITS4) |
       (origin === null ? 0 : binary.BIT8) | // origin is defined
       (rightOrigin === null ? 0 : binary.BIT7) | // right origin is defined
-      (parentSub === null ? 0 : binary.BIT6) // parentSub is non-null
+      (parentSub === null ? 0 : binary.BIT6) | // parentSub is non-null
+      (this.redone === null ? 0 : binary.BIT5) // redone is defined
     encoder.writeInfo(info)
     if (origin !== null) {
       encoder.writeLeftID(origin)
@@ -691,6 +692,9 @@ export class Item extends AbstractStruct {
         encoder.writeString(parentSub)
       }
     }
+    if (this.redone !== null) {
+      encoder.writeRedone(this.redone)
+    }
     this.content.write(encoder, offset)
   }
 }
@@ -699,7 +703,7 @@ export class Item extends AbstractStruct {
  * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @param {number} info
  */
-export const readItemContent = (decoder, info) => contentRefs[info & binary.BITS5](decoder)
+export const readItemContent = (decoder, info) => contentRefs[info & binary.BITS4](decoder)
 
 /**
  * A lookup map for reading Item content.

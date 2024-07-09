@@ -53,7 +53,7 @@ function * lazyStructReaderGenerator (decoder) {
         const len = decoding.readVarUint(decoder.restDecoder)
         yield new Skip(createID(client, clock), len)
         clock += len
-      } else if ((binary.BITS5 & info) !== 0) {
+      } else if ((binary.BITS4 & info) !== 0) {
         const cantCopyParentInfo = (info & (binary.BIT7 | binary.BIT8)) === 0
         // If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
         // and we read the next string as parentYKey.
@@ -68,6 +68,7 @@ function * lazyStructReaderGenerator (decoder) {
           // @ts-ignore Force writing a string here.
           cantCopyParentInfo ? (decoder.readParentInfo() ? decoder.readString() : decoder.readLeftID()) : null, // parent
           cantCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoder.readString() : null, // parentSub
+          (info & binary.BIT5) === binary.BIT5 ? decoder.readRedone() : null, // redone
           readItemContent(decoder, info) // item content
         )
         yield struct
@@ -316,6 +317,7 @@ const sliceStruct = (left, diff) => {
       leftItem.rightOrigin,
       leftItem.parent,
       leftItem.parentSub,
+      null,
       leftItem.content.splice(diff)
     )
   }

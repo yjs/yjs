@@ -51,6 +51,14 @@ export class UpdateEncoderV1 extends DSEncoderV1 {
   }
 
   /**
+   * @param {ID} id
+   */
+  writeRedone (id) {
+    encoding.writeVarUint(this.restEncoder, id.client)
+    encoding.writeVarUint(this.restEncoder, id.clock)
+  }
+
+  /**
    * Use writeClient and writeClock instead of writeID if possible.
    * @param {number} client
    */
@@ -177,6 +185,7 @@ export class UpdateEncoderV2 extends DSEncoderV2 {
     this.clientEncoder = new encoding.UintOptRleEncoder()
     this.leftClockEncoder = new encoding.IntDiffOptRleEncoder()
     this.rightClockEncoder = new encoding.IntDiffOptRleEncoder()
+    this.redoneClockEncoder = new encoding.IntDiffOptRleEncoder()
     this.infoEncoder = new encoding.RleEncoder(encoding.writeUint8)
     this.stringEncoder = new encoding.StringEncoder()
     this.parentInfoEncoder = new encoding.RleEncoder(encoding.writeUint8)
@@ -191,6 +200,7 @@ export class UpdateEncoderV2 extends DSEncoderV2 {
     encoding.writeVarUint8Array(encoder, this.clientEncoder.toUint8Array())
     encoding.writeVarUint8Array(encoder, this.leftClockEncoder.toUint8Array())
     encoding.writeVarUint8Array(encoder, this.rightClockEncoder.toUint8Array())
+    encoding.writeVarUint8Array(encoder, this.redoneClockEncoder.toUint8Array())
     encoding.writeVarUint8Array(encoder, encoding.toUint8Array(this.infoEncoder))
     encoding.writeVarUint8Array(encoder, this.stringEncoder.toUint8Array())
     encoding.writeVarUint8Array(encoder, encoding.toUint8Array(this.parentInfoEncoder))
@@ -215,6 +225,14 @@ export class UpdateEncoderV2 extends DSEncoderV2 {
   writeRightID (id) {
     this.clientEncoder.write(id.client)
     this.rightClockEncoder.write(id.clock)
+  }
+
+  /**
+   * @param {ID} id
+   */
+  writeRedone (id) {
+    this.clientEncoder.write(id.client)
+    this.redoneClockEncoder.write(id.clock)
   }
 
   /**

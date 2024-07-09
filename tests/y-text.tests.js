@@ -2079,7 +2079,7 @@ export const testBestCase = _tc => {
       /**
        * @type {Y.Item}
        */
-      const n = new Y.Item(Y.createID(0, 0), null, null, null, null, null, null, c)
+      const n = new Y.Item(Y.createID(0, 0), null, null, null, null, null, null, null, c)
       // items.push(n)
       items[i] = n
       n.right = prevItem

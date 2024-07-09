@@ -166,7 +166,7 @@ const insertNegatedAttributes = (transaction, parent, currPos, negatedAttributes
   negatedAttributes.forEach((val, key) => {
     const left = currPos.left
     const right = currPos.right
-    const nextFormat = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
+    const nextFormat = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, null, new ContentFormat(key, val))
     nextFormat.integrate(transaction, 0)
     currPos.right = nextFormat
     currPos.forward()
@@ -232,7 +232,7 @@ const insertAttributes = (transaction, parent, currPos, attributes) => {
       // save negated attribute (set null if currentVal undefined)
       negatedAttributes.set(key, currentVal)
       const { left, right } = currPos
-      currPos.right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
+      currPos.right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, null, new ContentFormat(key, val))
       currPos.right.integrate(transaction, 0)
       currPos.forward()
     }
@@ -266,7 +266,7 @@ const insertText = (transaction, parent, currPos, text, attributes) => {
   if (parent._searchMarker) {
     updateMarkerChanges(parent._searchMarker, currPos.index, content.getLength())
   }
-  right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, content)
+  right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, null, content)
   right.integrate(transaction, 0)
   currPos.right = right
   currPos.index = index
@@ -342,7 +342,7 @@ const formatText = (transaction, parent, currPos, length, attributes) => {
     for (; length > 0; length--) {
       newlines += '\n'
     }
-    currPos.right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), currPos.left, currPos.left && currPos.left.lastId, currPos.right, currPos.right && currPos.right.id, parent, null, new ContentString(newlines))
+    currPos.right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), currPos.left, currPos.left && currPos.left.lastId, currPos.right, currPos.right && currPos.right.id, parent, null, null, new ContentString(newlines))
     currPos.right.integrate(transaction, 0)
     currPos.forward()
   }

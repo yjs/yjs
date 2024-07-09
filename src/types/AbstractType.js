@@ -643,7 +643,7 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
   let jsonContent = []
   const packJsonContent = () => {
     if (jsonContent.length > 0) {
-      left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentAny(jsonContent))
+      left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, null, new ContentAny(jsonContent))
       left.integrate(transaction, 0)
       jsonContent = []
     }
@@ -665,16 +665,16 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
           switch (c.constructor) {
             case Uint8Array:
             case ArrayBuffer:
-              left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))))
+              left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, null, new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))))
               left.integrate(transaction, 0)
               break
             case Doc:
-              left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentDoc(/** @type {Doc} */ (c)))
+              left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, null, new ContentDoc(/** @type {Doc} */ (c)))
               left.integrate(transaction, 0)
               break
             default:
               if (c instanceof AbstractType) {
-                left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentType(c))
+                left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, null, new ContentType(c))
                 left.integrate(transaction, 0)
               } else {
                 throw new Error('Unexpected content type in insert operation')
@@ -862,7 +862,7 @@ export const typeMapSet = (transaction, parent, key, value) => {
         }
     }
   }
-  new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, null, null, parent, key, content).integrate(transaction, 0)
+  new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, null, null, parent, key, null, content).integrate(transaction, 0)
 }
 
 /**

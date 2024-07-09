@@ -47,6 +47,13 @@ export class UpdateDecoderV1 extends DSDecoderV1 {
   }
 
   /**
+   * @return {ID}
+   */
+  readRedone () {
+    return createID(decoding.readVarUint(this.restDecoder), decoding.readVarUint(this.restDecoder))
+  }
+
+  /**
    * Read the next client id.
    * Use this in favor of readID whenever possible to reduce the number of objects created.
    */
@@ -174,6 +181,7 @@ export class UpdateDecoderV2 extends DSDecoderV2 {
     this.clientDecoder = new decoding.UintOptRleDecoder(decoding.readVarUint8Array(decoder))
     this.leftClockDecoder = new decoding.IntDiffOptRleDecoder(decoding.readVarUint8Array(decoder))
     this.rightClockDecoder = new decoding.IntDiffOptRleDecoder(decoding.readVarUint8Array(decoder))
+    this.redoneClockDecoder = new decoding.IntDiffOptRleDecoder(decoding.readVarUint8Array(decoder))
     this.infoDecoder = new decoding.RleDecoder(decoding.readVarUint8Array(decoder), decoding.readUint8)
     this.stringDecoder = new decoding.StringDecoder(decoding.readVarUint8Array(decoder))
     this.parentInfoDecoder = new decoding.RleDecoder(decoding.readVarUint8Array(decoder), decoding.readUint8)
@@ -193,6 +201,13 @@ export class UpdateDecoderV2 extends DSDecoderV2 {
    */
   readRightID () {
     return new ID(this.clientDecoder.read(), this.rightClockDecoder.read())
+  }
+
+  /**
+   * @return {ID}
+   */
+  readRedone () {
+    return new ID(this.clientDecoder.read(), this.redoneClockDecoder.read())
   }
 
   /**

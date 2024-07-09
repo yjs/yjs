@@ -120,6 +120,6 @@ export const testRelativePositionWithUndo = tc => {
   t.assert(Y.createAbsolutePositionFromRelativePosition(rpos, ydoc, false)?.index === 6)
   const ydocClone = new Y.Doc()
   Y.applyUpdate(ydocClone, Y.encodeStateAsUpdate(ydoc))
-  t.assert(Y.createAbsolutePositionFromRelativePosition(rpos, ydocClone)?.index === 6)
+  t.assert(Y.createAbsolutePositionFromRelativePosition(rpos, ydocClone)?.index === 1)
   t.assert(Y.createAbsolutePositionFromRelativePosition(rpos, ydocClone, false)?.index === 6)
 }

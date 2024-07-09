@@ -127,7 +127,7 @@ export const readClientsStructRefs = (decoder, doc) => {
     clientRefs.set(client, { i: 0, refs })
     for (let i = 0; i < numberOfStructs; i++) {
       const info = decoder.readInfo()
-      switch (binary.BITS5 & info) {
+      switch (binary.BITS4 & info) {
         case 0: { // GC
           const len = decoder.readLen()
           refs[i] = new GC(createID(client, clock), len)
@@ -160,6 +160,7 @@ export const readClientsStructRefs = (decoder, doc) => {
             (info & binary.BIT7) === binary.BIT7 ? decoder.readRightID() : null, // right origin
             cantCopyParentInfo ? (decoder.readParentInfo() ? doc.get(decoder.readString()) : decoder.readLeftID()) : null, // parent
             cantCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoder.readString() : null, // parentSub
+            (info & binary.BIT5) === binary.BIT5 ? decoder.readRedone() : null, // redone
             readItemContent(decoder, info) // item content
           )
           /* A non-optimized implementation of the above algorithm:
@@ -184,6 +185,7 @@ export const readClientsStructRefs = (decoder, doc) => {
             rightOrigin, // right origin
             cantCopyParentInfo && !hasParentYKey ? decoder.readLeftID() : (parentYKey !== null ? doc.get(parentYKey) : null), // parent
             cantCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoder.readString() : null, // parentSub
+            (info & binary.BIT5) === binary.BIT5 ? decoder.readRedone() : null, // redone
             readItemContent(decoder, info) // item content
           )
           */
