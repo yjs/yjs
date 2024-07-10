@@ -113,7 +113,9 @@ Showcase](https://yjs-diagram.synergy.codes/).
   applicaiton
 * [Ellie.ai](https://ellie.ai) - Data Product Design and Collaboration
 * [GoPeer](https://gopeer.org/) - Collaborative tutoring
-* [screen.garden](https://screen.garden) Collaborative backend for PKM apps.
+* [screen.garden](https://screen.garden) - Collaborative backend for PKM apps.
+* [NextCloud](https://nextcloud.com/) - Content Collaboration Platform
+* [keystatic](https://github.com/Thinkmill/keystatic) - git-based CMS
 
 ## Table of Contents
 
