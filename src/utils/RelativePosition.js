@@ -286,7 +286,14 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc, followUndo
     if (getState(store, rightID.client) <= rightID.clock) {
       return null
     }
-    const res = followUndoneDeletions ? followRedone(store, rightID) : { item: getItem(store, rightID), diff: 0 }
+    /** @type {ReturnType<typeof followRedone>} */
+    let res;
+    if (followUndoneDeletions) {
+      res = followRedone(store, rightID)
+    } else {
+      const item = getItem(store, rightID)
+      res = { item, diff: rightID.clock - item.id.clock }
+    }
     const right = res.item
     if (!(right instanceof Item)) {
       return null
