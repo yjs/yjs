@@ -123,3 +123,17 @@ export const testRelativePositionWithUndo = tc => {
   t.assert(Y.createAbsolutePositionFromRelativePosition(rpos, ydocClone)?.index === 6)
   t.assert(Y.createAbsolutePositionFromRelativePosition(rpos, ydocClone, false)?.index === 6)
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRelativePositionWithoutUndo = tc => {
+  const ydoc = new Y.Doc()
+  const ytext = ydoc.getText()
+  ytext.insert(0, 'abcde')
+  const rpos = Y.createRelativePositionFromTypeIndex(ytext, 2)
+  const posWithFollow = Y.createAbsolutePositionFromRelativePosition(rpos, ydoc, true)
+  t.assert(posWithFollow?.index === 2)
+  const posWithoutFollow = Y.createAbsolutePositionFromRelativePosition(rpos, ydoc, false)
+  t.assert(posWithoutFollow?.index === 2)
+}
