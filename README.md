@@ -501,8 +501,6 @@ or any of its children.
     <dd></dd>
     <b><code>has(key:string):boolean</code></b>
     <dd></dd>
-    <b><code>get(index:number)</code></b>
-    <dd></dd>
     <b><code>clear()</code></b>
     <dd>Removes all elements from this YMap.</dd>
     <b><code>clone():Y.Map</code></b>
