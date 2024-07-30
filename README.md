@@ -412,6 +412,8 @@ necessary.
   </p>
   <pre>const yarray = new Y.Array()</pre>
   <dl>
+    <b><code>Y.Array.from(Array&lt;object|boolean|Array|string|number|null|Uint8Array|Y.Type&gt;): Y.Array</code></b>
+    <dd>An alternative factory function to create a Y.Array based on existing content.</dd>
     <b><code>parent:Y.AbstractType|null</code></b>
     <dd></dd>
     <b><code>insert(index:number, content:Array&lt;object|boolean|Array|string|number|null|Uint8Array|Y.Type&gt;)</code></b>
@@ -441,6 +443,8 @@ forEach(function(value:object|boolean|Array|string|number|null|Uint8Array|Y.Type
     <dd></dd>
     <b><code>map(function(T, number, YArray):M):Array&lt;M&gt;</code></b>
     <dd></dd>
+    <b><code>clone(): Y.Array</code></b>
+    <dd>Clone all values into a fresh Y.Array instance. The returned type can be included into the Yjs document.</dd>
     <b><code>toArray():Array&lt;object|boolean|Array|string|number|null|Uint8Array|Y.Type&gt;</code></b>
     <dd>Copies the content of this YArray to a new Array.</dd>
     <b><code>toJSON():Array&lt;Object|boolean|Array|string|number|null&gt;</code></b>
