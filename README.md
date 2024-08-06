@@ -3,7 +3,7 @@
 
 > A CRDT framework with a powerful abstraction of shared data
 
-Yjs is a [CRDT implementation](#Yjs-CRDT-Algorithm) that exposes its internal
+Yjs is a [CRDT implementation](#yjs-crdt-algorithm) that exposes its internal
 data structure as *shared types*. Shared types are common data types like `Map`
 or `Array` with superpowers: changes are automatically distributed to other
 peers and merged without merge conflicts.
@@ -119,19 +119,19 @@ Showcase](https://yjs-diagram.synergy.codes/).
 
 ## Table of Contents
 
-* [Overview](#Overview)
-  * [Bindings](#Bindings)
-  * [Providers](#Providers)
-  * [Ports](#Ports)
-* [Getting Started](#Getting-Started)
-* [API](#API)
-  * [Shared Types](#Shared-Types)
-  * [Y.Doc](#YDoc)
-  * [Document Updates](#Document-Updates)
-  * [Relative Positions](#Relative-Positions)
-  * [Y.UndoManager](#YUndoManager)
-* [Yjs CRDT Algorithm](#Yjs-CRDT-Algorithm)
-* [License and Author](#License-and-Author)
+* [Overview](#overview)
+  * [Bindings](#bindings)
+  * [Providers](#providers)
+  * [Ports](#ports)
+* [Getting Started](#getting-started)
+* [API](#api)
+  * [Shared Types](#shared-types)
+  * [Y.Doc](#ydoc)
+  * [Document Updates](#document-updates)
+  * [Relative Positions](#relative-positions)
+  * [Y.UndoManager](#yundomanager)
+* [Yjs CRDT Algorithm](#yjs-crdt-algorithm)
+* [License and Author](#license-and-author)
 
 ## Overview
 
@@ -860,7 +860,7 @@ doc1.getArray('myarray').insert(0, ['Hello doc2, you got this?'])
 doc2.getArray('myarray').get(0) // => 'Hello doc2, you got this?'
 ```
 
-Yjs internally maintains a [state vector](#State-Vector) that denotes the next
+Yjs internally maintains a [state vector](#state-vector) that denotes the next
 expected clock from each client. In a different interpretation it holds the
 number of structs created by each client. When two clients sync, you can either
 exchange the complete document structure or only the differences by sending the
