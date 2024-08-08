@@ -265,7 +265,10 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
    */
   const updateMissingSv = (client, clock) => {
     const mclock = missingSV.get(client)
-    if (mclock == null || mclock > clock) {
+    if (mclock === undefined) {
+      // we never seen that client before
+      missingSV.set(client, 0)
+    } else if (mclock > clock) {
       missingSV.set(client, clock)
     }
   }
