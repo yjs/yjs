@@ -116,6 +116,7 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [screen.garden](https://screen.garden) - Collaborative backend for PKM apps.
 * [NextCloud](https://nextcloud.com/) - Content Collaboration Platform
 * [keystatic](https://github.com/Thinkmill/keystatic) - git-based CMS
+* [QDAcity](https://qdacity.com) - Collaborative qualitative data analysis platform
 
 ## Table of Contents
 
