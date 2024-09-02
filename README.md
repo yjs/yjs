@@ -248,6 +248,11 @@ The reactive data store for local-first apps. They support multiple CRDTs and
   <dd>
 Provider for sharing data in <a href="https://webxdc.org">webxdc chat apps</a>.
   </dd>
+  <dt><a href="https://www.secsync.com/">secsync</a></dt>
+  <dd>
+An architecture to relay end-to-end encrypted CRDTs over a central service.
+  </dd>
+
 </dl>
 
 #### Persistence Providers
