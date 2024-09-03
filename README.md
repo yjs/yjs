@@ -118,6 +118,8 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [keystatic](https://github.com/Thinkmill/keystatic) - git-based CMS
 * [QDAcity](https://qdacity.com) - Collaborative qualitative data analysis platform
 * [Kanbert](https://kanbert.com) - Project management software
+* [Eclipse Theia](https://github.com/eclipse-theia/theia) - A cloud & desktop
+  IDE that runs in the browser.
 
 ## Table of Contents
 
