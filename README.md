@@ -315,6 +315,7 @@ language bindings to other languages
   * [yswift](https://github.com/y-crdt/yswift) - Swift binding
   * [yffi](https://github.com/y-crdt/y-crdt/tree/main/yffi) - C-FFI
   * [ywasm](https://github.com/y-crdt/y-crdt/tree/main/ywasm) - WASM binding
+  * [y_ex](https://github.com/satoren/y_ex) - Elixir bindings
 * [ycs](https://github.com/yjs/ycs) - .Net compatible C# implementation.
 
 ## Getting Started
