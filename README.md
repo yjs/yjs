@@ -120,7 +120,7 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [Kanbert](https://kanbert.com) - Project management software
 * [Eclipse Theia](https://github.com/eclipse-theia/theia) - A cloud & desktop
   IDE that runs in the browser.
-* [ScienHub](https://scienhub.com) - An AI-empowered scientific collaboration platform.
+* [ScienHub](https://scienhub.com) - Collaborative LaTeX editor in the browser.
 
 ## Table of Contents
 
