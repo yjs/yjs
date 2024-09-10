@@ -104,6 +104,7 @@ export class Doc extends ObservableV2 {
      * lost (with false as a parameter).
      */
     this.isSynced = false
+    this.isDestroyed = false
     /**
      * Promise that resolves once the document has been loaded from a presistence provider.
      */
@@ -322,6 +323,7 @@ export class Doc extends ObservableV2 {
    * Emit `destroy` event and unregister all event handlers.
    */
   destroy () {
+    this.isDestroyed = true
     array.from(this.subdocs).forEach(subdoc => subdoc.destroy())
     const item = this._item
     if (item !== null) {
