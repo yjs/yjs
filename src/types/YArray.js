@@ -104,7 +104,7 @@ export class YArray extends AbstractType {
   }
 
   get length () {
-    return this._prelimContent === null ? this._length : this._prelimContent.length
+    return this._length
   }
 
   /**
