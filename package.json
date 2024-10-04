@@ -13,7 +13,7 @@
   },
   "scripts": {
     "clean": "rm -rf dist docs",
-    "test": "npm run dist && node ./dist/tests.cjs --repetition-time 50",
+    "test": "npm run dist && NODE_ENV=development node ./dist/tests.cjs --repetition-time 50",
     "test-extensive": "npm run lint && npm run dist && node ./dist/tests.cjs --production --repetition-time 10000",
     "dist": "npm run clean && rollup -c && tsc",
     "watch": "rollup -wc",
@@ -76,7 +76,7 @@
   },
   "homepage": "https://docs.yjs.dev",
   "dependencies": {
-    "lib0": "^0.2.86"
+    "lib0": "^0.2.98"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^24.0.1",
