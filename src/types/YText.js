@@ -26,6 +26,7 @@ import {
   typeMapGetAll,
   updateMarkerChanges,
   ContentType,
+  warnPrematureAccess,
   ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
 } from '../internals.js'
 
@@ -875,6 +876,7 @@ export class YText extends AbstractType {
    * @type {number}
    */
   get length () {
+    this.doc ?? warnPrematureAccess()
     return this._length
   }
 
@@ -931,6 +933,7 @@ export class YText extends AbstractType {
    * @public
    */
   toString () {
+    this.doc ?? warnPrematureAccess()
     let str = ''
     /**
      * @type {Item|null}
@@ -1004,6 +1007,7 @@ export class YText extends AbstractType {
    * @public
    */
   toDelta (snapshot, prevSnapshot, computeYChange) {
+    this.doc ?? warnPrematureAccess()
     /**
      * @type{Array<any>}
      */

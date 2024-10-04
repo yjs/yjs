@@ -17,6 +17,12 @@ import * as map from 'lib0/map'
 import * as iterator from 'lib0/iterator'
 import * as error from 'lib0/error'
 import * as math from 'lib0/math'
+import * as log from 'lib0/logging'
+
+/**
+ * https://docs.yjs.dev/getting-started/working-with-shared-types#caveats
+ */
+export const warnPrematureAccess = () => { log.warn('Invalid access: Add Yjs type to a document before reading data.') }
 
 const maxSearchMarker = 80
 
@@ -215,6 +221,7 @@ export const updateMarkerChanges = (searchMarker, index, len) => {
  * @return {Array<Item>}
  */
 export const getTypeChildren = t => {
+  t.doc ?? warnPrematureAccess()
   let s = t._start
   const arr = []
   while (s) {
@@ -408,6 +415,7 @@ export class AbstractType {
  * @function
  */
 export const typeListSlice = (type, start, end) => {
+  type.doc ?? warnPrematureAccess()
   if (start < 0) {
     start = type._length + start
   }
@@ -443,6 +451,7 @@ export const typeListSlice = (type, start, end) => {
  * @function
  */
 export const typeListToArray = type => {
+  type.doc ?? warnPrematureAccess()
   const cs = []
   let n = type._start
   while (n !== null) {
@@ -492,6 +501,7 @@ export const typeListToArraySnapshot = (type, snapshot) => {
 export const typeListForEach = (type, f) => {
   let index = 0
   let n = type._start
+  type.doc ?? warnPrematureAccess()
   while (n !== null) {
     if (n.countable && !n.deleted) {
       const c = n.content.getContent()
@@ -606,6 +616,7 @@ export const typeListForEachSnapshot = (type, f, snapshot) => {
  * @function
  */
 export const typeListGet = (type, index) => {
+  type.doc ?? warnPrematureAccess()
   const marker = findMarker(type, index)
   let n = type._start
   if (marker !== null) {
@@ -874,6 +885,7 @@ export const typeMapSet = (transaction, parent, key, value) => {
  * @function
  */
 export const typeMapGet = (parent, key) => {
+  parent.doc ?? warnPrematureAccess()
   const val = parent._map.get(key)
   return val !== undefined && !val.deleted ? val.content.getContent()[val.length - 1] : undefined
 }
@@ -890,6 +902,7 @@ export const typeMapGetAll = (parent) => {
    * @type {Object<string,any>}
    */
   const res = {}
+  parent.doc ?? warnPrematureAccess()
   parent._map.forEach((value, key) => {
     if (!value.deleted) {
       res[key] = value.content.getContent()[value.length - 1]
@@ -907,6 +920,7 @@ export const typeMapGetAll = (parent) => {
  * @function
  */
 export const typeMapHas = (parent, key) => {
+  parent.doc ?? warnPrematureAccess()
   const val = parent._map.get(key)
   return val !== undefined && !val.deleted
 }
@@ -957,10 +971,13 @@ export const typeMapGetAllSnapshot = (parent, snapshot) => {
 }
 
 /**
- * @param {Map<string,Item>} map
+ * @param {AbstractType<any> & { _map: Map<string, Item> }} type
  * @return {IterableIterator<Array<any>>}
  *
  * @private
  * @function
  */
-export const createMapIterator = map => iterator.iteratorFilter(map.entries(), /** @param {any} entry */ entry => !entry[1].deleted)
+export const createMapIterator = type => {
+  type.doc ?? warnPrematureAccess()
+  return iterator.iteratorFilter(type._map.entries(), /** @param {any} entry */ entry => !entry[1].deleted)
+}

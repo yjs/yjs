@@ -16,6 +16,7 @@ import {
   YArrayRefID,
   callTypeObservers,
   transact,
+  warnPrematureAccess,
   ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 import { typeListSlice } from './AbstractType.js'
@@ -104,6 +105,7 @@ export class YArray extends AbstractType {
   }
 
   get length () {
+    this.doc ?? warnPrematureAccess()
     return this._length
   }
 

@@ -13,6 +13,7 @@ import {
   YMapRefID,
   callTypeObservers,
   transact,
+  warnPrematureAccess,
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 
@@ -121,6 +122,7 @@ export class YMap extends AbstractType {
    * @return {Object<string,any>}
    */
   toJSON () {
+    this.doc ?? warnPrematureAccess()
     /**
      * @type {Object<string,MapType>}
      */
@@ -140,7 +142,7 @@ export class YMap extends AbstractType {
    * @return {number}
    */
   get size () {
-    return [...createMapIterator(this._map)].length
+    return [...createMapIterator(this)].length
   }
 
   /**
@@ -149,7 +151,7 @@ export class YMap extends AbstractType {
    * @return {IterableIterator<string>}
    */
   keys () {
-    return iterator.iteratorMap(createMapIterator(this._map), /** @param {any} v */ v => v[0])
+    return iterator.iteratorMap(createMapIterator(this), /** @param {any} v */ v => v[0])
   }
 
   /**
@@ -158,7 +160,7 @@ export class YMap extends AbstractType {
    * @return {IterableIterator<MapType>}
    */
   values () {
-    return iterator.iteratorMap(createMapIterator(this._map), /** @param {any} v */ v => v[1].content.getContent()[v[1].length - 1])
+    return iterator.iteratorMap(createMapIterator(this), /** @param {any} v */ v => v[1].content.getContent()[v[1].length - 1])
   }
 
   /**
@@ -167,7 +169,7 @@ export class YMap extends AbstractType {
    * @return {IterableIterator<[string, MapType]>}
    */
   entries () {
-    return iterator.iteratorMap(createMapIterator(this._map), /** @param {any} v */ v => /** @type {any} */ ([v[0], v[1].content.getContent()[v[1].length - 1]]))
+    return iterator.iteratorMap(createMapIterator(this), /** @param {any} v */ v => /** @type {any} */ ([v[0], v[1].content.getContent()[v[1].length - 1]]))
   }
 
   /**
@@ -176,6 +178,7 @@ export class YMap extends AbstractType {
    * @param {function(MapType,string,YMap<MapType>):void} f A function to execute on every element of this YArray.
    */
   forEach (f) {
+    this.doc ?? warnPrematureAccess()
     this._map.forEach((item, key) => {
       if (!item.deleted) {
         f(item.content.getContent()[item.length - 1], key, this)

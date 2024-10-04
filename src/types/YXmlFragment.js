@@ -17,6 +17,7 @@ import {
   transact,
   typeListGet,
   typeListSlice,
+  warnPrematureAccess,
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, ContentType, Transaction, Item, YXmlText, YXmlHook // eslint-disable-line
 } from '../internals.js'
 
@@ -66,6 +67,7 @@ export class YXmlTreeWalker {
      */
     this._currentNode = /** @type {Item} */ (root._start)
     this._firstCall = true
+    root.doc ?? warnPrematureAccess()
   }
 
   [Symbol.iterator] () {
@@ -177,6 +179,7 @@ export class YXmlFragment extends AbstractType {
   }
 
   get length () {
+    this.doc ?? warnPrematureAccess()
     return this._prelimContent === null ? this._length : this._prelimContent.length
   }
 
