@@ -299,6 +299,7 @@ A database and connection provider for Yjs based on Firestore.
 
 - [y-sweet debugger](https://docs.jamsocket.com/y-sweet/advanced/debugger)
 - [liveblocks devtools](https://liveblocks.io/devtools)
+- [Yjs inspector](https://inspector.yjs.dev)
 
 ### Ports
 
