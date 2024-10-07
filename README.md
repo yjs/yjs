@@ -127,6 +127,7 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [Overview](#overview)
   * [Bindings](#bindings)
   * [Providers](#providers)
+  * [Tooling][#tooling]
   * [Ports](#ports)
 * [Getting Started](#getting-started)
 * [API](#api)
@@ -294,7 +295,12 @@ A database and connection provider for Yjs based on Firestore.
   </dd>
 </dl>
 
-# Ports
+### Tooling
+
+- [y-sweet debugger](https://docs.jamsocket.com/y-sweet/advanced/debugger)
+- [liveblocks devtools](https://liveblocks.io/devtools)
+
+### Ports
 
 There are several Yjs-compatible ports to other programming languages.
 
