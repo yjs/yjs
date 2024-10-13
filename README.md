@@ -127,7 +127,7 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [Overview](#overview)
   * [Bindings](#bindings)
   * [Providers](#providers)
-  * [Tooling][#tooling]
+  * [Tooling](#tooling)
   * [Ports](#ports)
 * [Getting Started](#getting-started)
 * [API](#api)
@@ -297,9 +297,9 @@ A database and connection provider for Yjs based on Firestore.
 
 ### Tooling
 
-- [y-sweet debugger](https://docs.jamsocket.com/y-sweet/advanced/debugger)
-- [liveblocks devtools](https://liveblocks.io/devtools)
-- [Yjs inspector](https://inspector.yjs.dev)
+* [y-sweet debugger](https://docs.jamsocket.com/y-sweet/advanced/debugger)
+* [liveblocks devtools](https://liveblocks.io/devtools)
+* [Yjs inspector](https://inspector.yjs.dev)
 
 ### Ports
 
