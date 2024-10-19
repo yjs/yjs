@@ -1,0 +1,97 @@
+{
+    "version": "v1.0.0",
+    "entity": {
+        "type": "group",                     // Required. [individual, group, organisation, other]. Use the closest approximation.
+        "role": "steward",                     // Required. [owner, steward, maintainer, contributor, other]. Use the closest approximation.
+        "name": "Kevin Jahns",                     // Required. Name of the entity. Max len 250.
+        "email": "kevin.jahns@protonmail.com",                    // Required. Max len 250.
+        "description": "OSS Developer",              // Required. Information about the entity. Max len 2000.
+        "webpageUrl": {
+            "url": "https://github.com/dmonad",                  // Required. Webpage with information about the entity. Starts with https:// or http://. Max len 250.
+        }
+    },
+
+    // Optional. One or more projects for which the funding is solicited.
+    "projects": [{
+        "guid": "yjs",                     // Required. A short unique ID for the project. Lowercase-alphanumeric-dashes only. eg: my-cool-project. Max len 32.
+        "name": "Yjs",                     // Required. Name of the project. Max len 250.
+        "description": "A library for building collaborative applications. #p2p #local-first #CRDT Funding this project will also enable me to maintain the other Yjs-related technologies.",              // Required. Description of the project. Max len 2000.
+        "webpageUrl": {
+            "url": "https://github.com/yjs/yjs",                  // Required. Webpage with information about the project. Starts with https:// or http://. Max len 250.
+        },
+        "repositoryUrl": {
+            "url": "https://github.com/yjs/yjs",                  // Required. URL of the repository where the project's source code and other assets are available. Starts with https:// or http://. Max len 250.
+            "wellKnown": ""             // Optional. Required if the above url and the URL of the funding.json manifest do not have the same hostname. Starts with https:// or http://. Max len 250.
+        },
+        "licenses": ["spdx:MIT"],                 // Required. The project's licenses (up to 5). For standard licenses, use the license ID from the SDPX index prefixed by "spdx:". eg: "spdx:GPL-3.0", "spdx:CC-BY-SA-4.0"
+        "tags": ["collaboration", "p2p", "CRDT", "rich-text", "real-time"]                      // Required. Up to 10 general tags describing the project. Lowercase-alphanumeric-dashes (max 32 chars). eg: ["programming", "developer-tools"]. For reference, see tags.txt
+    }, {
+        "guid": "ystream",                     // Required. A short unique ID for the project. Lowercase-alphanumeric-dashes only. eg: my-cool-project. Max len 32.
+        "name": "Y/Stream",                     // Required. Name of the project. Max len 250.
+        "description": "A provider for syncing millions of docs efficiently with other peers. This will become the foundation for building real local-first apps with Yjs.",              // Required. Description of the project. Max len 2000.
+        "webpageUrl": {
+            "url": "https://github.com/yjs/ystream",                  // Required. Webpage with information about the project. Starts with https:// or http://. Max len 250.
+        },
+        "repositoryUrl": {
+            "url": "https://github.com/yjs/ystream",                  // Required. URL of the repository where the project's source code and other assets are available. Starts with https:// or http://. Max len 250.
+        },
+        "licenses": ["spdx:MIT", "spdx:GPL"],                 // Required. The project's licenses (up to 5). For standard licenses, use the license ID from the SDPX index prefixed by "spdx:". eg: "spdx:GPL-3.0", "spdx:CC-BY-SA-4.0"
+        "tags": ["collaboration", "p2p", "CRDT", "rich-text", "real-time"]                      // Required. Up to 10 general tags describing the project. Lowercase-alphanumeric-dashes (max 32 chars). eg: ["programming", "developer-tools"]. For reference, see tags.txt
+    }],
+
+    // Required.
+    "funding": {
+        // Required. This describes one or more channels via which the entity can receive funds.
+        "channels": [{
+            "guid": "github-sponsors",                 // Required. A short unique ID for the channel. Lowercase-alphanumeric-dashes only. eg: mybank, my-paypal. Max len 32.
+            "type": "gateway",                 // Required. [bank, gateway, cheque, cash, other].
+            "address": "",              // Optional. A short unstructured textual representation of the payment address for the channel. eg: "Account: 12345 (branch: ABCX)", "mypaypal@domain.com", "https://payment-url.com", or a physical address for cheques. Max len 250.
+            "description": "For funding of the Yjs project"           // Optional. Any additional description or instructions for the payment channel. Max len 500.
+        }, {
+            "guid": "y-collective",                 // Required. A short unique ID for the channel. Lowercase-alphanumeric-dashes only. eg: mybank, my-paypal. Max len 32.
+            "type": "gateway",                 // Required. [bank, gateway, cheque, cash, other].
+            "address": "https://opencollective.com/y-collective",              // Optional. A short unstructured textual representation of the payment address for the channel. eg: "Account: 12345 (branch: ABCX)", "mypaypal@domain.com", "https://payment-url.com", or a physical address for cheques. Max len 250.
+            "description": "For funding of the Y-CRDT - the Rust implementation of Yjs"           // Optional. Any additional description or instructions for the payment channel. Max len 500.
+        }],
+
+        // Required. One or more funding and payment plans.
+        "plans": [{
+            "guid": "supporter",                 // Required. A short unique ID for the plan. Lowercase-alphanumeric-dashes only. eg: mybank, paypal. Max len 32.
+            "status": "active",               // Required. [active, inactive]. Indicates whether this plan is currently active or inactive.
+            "name": "Supporter",                 // Required. Name of the funding plan. eg: "Starter support plan", "Infra hosting", "Monthly funding plan".
+            "description": "",          // Optional. Any additional description or instructions for the funding plan.
+            "amount": 0,                // Required. The solicited amount for this plan. 0 is a wildcard that indicates "any amount".
+            "currency": "USD",             // Required. Three letter ISO 4217 currency code. eg: USD
+            "frequency": "monthly",            // Required. [one-time, weekly, fortnightly, monthly, yearly, other]
+            "channels": ["github-sponsors", "y-collective"]              // Required. One or more channel IDs defined in channels[] via which this plan can accept payments.
+        }, {
+            "guid": "bronze-sponsor",                 // Required. A short unique ID for the plan. Lowercase-alphanumeric-dashes only. eg: mybank, paypal. Max len 32.
+            "status": "active",               // Required. [active, inactive]. Indicates whether this plan is currently active or inactive.
+            "name": "Bronze Sponsor",                 // Required. Name of the funding plan. eg: "Starter support plan", "Infra hosting", "Monthly funding plan".
+            "description": "This is the recommended plan for companies that use Yjs.",          // Optional. Any additional description or instructions for the funding plan.
+            "amount": 500,                // Required. The solicited amount for this plan. 0 is a wildcard that indicates "any amount".
+            "currency": "USD",             // Required. Three letter ISO 4217 currency code. eg: USD
+            "frequency": "monthly",            // Required. [one-time, weekly, fortnightly, monthly, yearly, other]
+            "channels": ["github-sponsors"]              // Required. One or more channel IDs defined in channels[] via which this plan can accept payments.
+        }, {
+            "guid": "silver-sponsor",                 // Required. A short unique ID for the plan. Lowercase-alphanumeric-dashes only. eg: mybank, paypal. Max len 32.
+            "status": "active",               // Required. [active, inactive]. Indicates whether this plan is currently active or inactive.
+            "name": "Silver Sponsor",                 // Required. Name of the funding plan. eg: "Starter support plan", "Infra hosting", "Monthly funding plan".
+            "description": "This is the recommended plan for large companies that use Yjs.",          // Optional. Any additional description or instructions for the funding plan.
+            "amount": 1000,                // Required. The solicited amount for this plan. 0 is a wildcard that indicates "any amount".
+            "currency": "USD",             // Required. Three letter ISO 4217 currency code. eg: USD
+            "frequency": "monthly",            // Required. [one-time, weekly, fortnightly, monthly, yearly, other]
+            "channels": ["github-sponsors"]              // Required. One or more channel IDs defined in channels[] via which this plan can accept payments.
+        }, {
+            "guid": "gold-sponsor",                 // Required. A short unique ID for the plan. Lowercase-alphanumeric-dashes only. eg: mybank, paypal. Max len 32.
+            "status": "active",               // Required. [active, inactive]. Indicates whether this plan is currently active or inactive.
+            "name": "Gold Sponsor",                 // Required. Name of the funding plan. eg: "Starter support plan", "Infra hosting", "Monthly funding plan".
+            "description": "This is the recommended plan for successfull companies that build their entire product around Yjs-related technologies.",          // Optional. Any additional description or instructions for the funding plan.
+            "amount": 3000,                // Required. The solicited amount for this plan. 0 is a wildcard that indicates "any amount".
+            "currency": "USD",             // Required. Three letter ISO 4217 currency code. eg: USD
+            "frequency": "monthly",            // Required. [one-time, weekly, fortnightly, monthly, yearly, other]
+            "channels": ["github-sponsors"]              // Required. One or more channel IDs defined in channels[] via which this plan can accept payments.
+        }],
+    }
+}
+
