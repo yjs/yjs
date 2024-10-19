@@ -1,15 +1,5 @@
 {
-  "id": 0,
-  "guid": "",
-  "version": "",
-  "url": "",
-  "meta": {},
-  "status": "",
-  "status_message": null,
-  "crawl_errors": 0,
-  "crawl_message": null,
-  "created_at": "0001-01-01T00:00:00Z",
-  "updated_at": "0001-01-01T00:00:00Z",
+  "version": "v1.0.0",
   "entity": {
     "type": "group",
     "role": "steward",
@@ -18,7 +8,7 @@
     "phone": "",
     "description": "OSS Developer",
     "webpageUrl": {
-      "url": "https://github.com/dmonad"
+      "url": "https://github.com/yjs"
     }
   },
   "projects": [
@@ -48,10 +38,12 @@
       "name": "Y/Stream",
       "description": "A provider for syncing millions of docs efficiently with other peers. This will become the foundation for building real local-first apps with Yjs.",
       "webpageUrl": {
-        "url": "https://github.com/yjs/ystream"
+        "url": "https://github.com/yjs/ystream",
+        "wellKnown": "https://github.com/yjs/ystream/blob/main/.well-known/funding-manifest-urls"
       },
       "repositoryUrl": {
-        "url": "https://github.com/yjs/ystream"
+        "url": "https://github.com/yjs/ystream",
+        "wellKnown": "https://github.com/yjs/ystream/blob/main/.well-known/funding-manifest-urls"
       },
       "licenses": [
         "spdx:MIT",
@@ -62,7 +54,8 @@
         "p2p",
         "CRDT",
         "rich-text",
-        "real-time"
+        "real-time",
+        "web-development"
       ]
     }
   ],
@@ -78,7 +71,7 @@
         "guid": "y-collective",
         "type": "payment-provider",
         "address": "https://opencollective.com/y-collective",
-        "description": "For funding of the Y-CRDT - the Rust implementation of Yjs"
+        "description": "For funding the Y-CRDT - the Rust implementation of Yjs and other listed projects."
       }
     ],
     "plans": [
@@ -93,6 +86,18 @@
         "channels": [
           "github-sponsors",
           "y-collective"
+        ]
+      },
+      {
+        "guid": "ystream-funding",
+        "status": "active",
+        "name": "YStream Funding",
+        "description": "Fund the next generation of local-first providers.",
+        "amount": 30000,
+        "currency": "USD",
+        "frequency": "one-time",
+        "channels": [
+          "github-sponsors"
         ]
       },
       {
@@ -111,7 +116,7 @@
         "guid": "silver-sponsor",
         "status": "active",
         "name": "Silver Sponsor",
-        "description": "This is the recommended plan for large companies that use Yjs.",
+        "description": "This is the recommended plan for large/successfull companies that use Yjs.",
         "amount": 1000,
         "currency": "USD",
         "frequency": "monthly",
@@ -123,7 +128,7 @@
         "guid": "gold-sponsor",
         "status": "active",
         "name": "Gold Sponsor",
-        "description": "This is the recommended plan for successfull companies that build their entire product around Yjs-related technologies.",
+        "description": "This is the recommended plan for successful companies that build their entire product around Yjs-related technologies.",
         "amount": 3000,
         "currency": "USD",
         "frequency": "monthly",
