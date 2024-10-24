@@ -191,7 +191,7 @@ are available. Communication over the signaling servers can be encrypted by
 providing a shared secret, keeping the connection information and the shared
 document private.
   </dd>
-  <dt><a href="https://github.com/liveblocks/liveblocks">@liveblocks/yjs</a></dt>
+  <dt><a href="https://github.com/liveblocks/liveblocks">@liveblocks/yjs 🌟</a></dt>
   <dd>
 <a href="https://liveblocks.io/document/yjs">Liveblocks Yjs</a> provides a fully
 hosted WebSocket infrastructure and persisted data store for Yjs
@@ -199,18 +199,25 @@ documents. No configuration or maintenance is required. It also features
 Yjs webhook events, REST API to read and update Yjs documents, and a
 browser DevTools extension.
   </dd>
-  <dt><a href="https://github.com/SuperViz/superviz">@superviz/yjs</a></dt>
-  <dd>
-    <a href="https://docs.superviz.com/collaboration/integrations/YJS/overview">The SuperViz Yjs Provider</a> comes with a secure, scalable real-time infrastructure for Yjs documents, fully compatible with a set of real-time collaboration components offered by SuperViz. This solution ensures synchronization, offline editing, and real-time updates, enabling multiple users to collaborate effectively within shared workspaces.
-  </dd>
-  <dt><a href="https://github.com/drifting-in-space/y-sweet">y-sweet</a></dt>
+  <dt><a href="https://github.com/drifting-in-space/y-sweet">y-sweet ⭐</a></dt>
   <dd>
 A standalone yjs server with persistence to S3 or filesystem. They offer a
 <a href="https://y-sweet.cloud">cloud service</a> as well.
   </dd>
-  <dt><a href="https://github.com/ueberdosis/hocuspocus">Hocuspocus</a></dt>
+  <dt><a href="https://github.com/ueberdosis/hocuspocus">Hocuspocus ⭐</a></dt>
   <dd>
 A standalone extensible yjs server with sqlite persistence, webhooks, auth and more.
+  </dd>
+  <dt><a href="https://github.com/SuperViz/superviz">@superviz/yjs</a></dt>
+  <dd>
+    <a href="https://docs.superviz.com/collaboration/integrations/YJS/overview">The
+        SuperViz Yjs Provider
+    </a>
+    comes with a secure, scalable real-time infrastructure for Yjs
+    documents, fully compatible with a set of real-time collaboration
+    components offered by SuperViz. This solution ensures synchronization,
+    offline editing, and real-time updates, enabling multiple users to
+    collaborate effectively within shared workspaces.
   </dd>
   <dt><a href="https://docs.partykit.io/reference/y-partykit-api/">PartyKit</a></dt>
   <dd>

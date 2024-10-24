@@ -50,6 +50,7 @@
         "spdx:GPL-3.0"
       ],
       "tags": [
+        "privacy",
         "collaboration",
         "p2p",
         "CRDT",
