@@ -121,6 +121,8 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [Eclipse Theia](https://github.com/eclipse-theia/theia) - A cloud & desktop
   IDE that runs in the browser.
 * [ScienHub](https://scienhub.com) - Collaborative LaTeX editor in the browser.
+- [Open Collaboration Tools](https://www.open-collab.tools/) - Collaborative
+editing for your IDE or custom editor
 
 ## Table of Contents
 
