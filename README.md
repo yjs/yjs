@@ -283,11 +283,6 @@ network provider.
 Adds persistent storage to a server with MongoDB. Can be used with the
 y-websocket provider.
   </dd>
-  <dt><a href="https://github.com/toeverything/AFFiNE/tree/master/packages/y-indexeddb">
-@toeverything/y-indexeddb</a></dt>
-  <dd>
-Like y-indexeddb, but with sub-documents support and fully TypeScript.
-  </dd>
   <dt><a href="https://github.com/podraven/y-fire">y-fire</a></dt>
   <dd>
 A database and connection provider for Yjs based on Firestore.
