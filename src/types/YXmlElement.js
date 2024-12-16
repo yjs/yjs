@@ -25,7 +25,7 @@ import {
  * * An YXmlElement has attributes (key value pairs)
  * * An YXmlElement has childElements that must inherit from YXmlElement
  *
- * @template {{ [key: string]: ValueTypes }} [KV={ [key: string]: string }]
+ * @template {{ [key: string]: ValueTypes }} [KV={ [key: string]: string | number }]
  */
 export class YXmlElement extends YXmlFragment {
   constructor (nodeName = 'UNDEFINED') {
@@ -94,7 +94,7 @@ export class YXmlElement extends YXmlFragment {
     const el = new YXmlElement(this.nodeName)
     const attrs = this.getAttributes()
     object.forEach(attrs, (value, key) => {
-      if (typeof value === 'string') {
+      if (typeof value === 'string' || typeof value === 'number') {
         el.setAttribute(key, value)
       }
     })
@@ -226,8 +226,8 @@ export class YXmlElement extends YXmlFragment {
     const attrs = this.getAttributes()
     for (const key in attrs) {
       const value = attrs[key]
-      if (typeof value === 'string') {
-        dom.setAttribute(key, value)
+      if (typeof value === 'string' || typeof value === 'number') {
+        dom.setAttribute(key, String(value))
       }
     }
     typeListForEach(this, yxml => {
