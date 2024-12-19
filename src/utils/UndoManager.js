@@ -131,6 +131,7 @@ const popStackItem = (undoManager, stack, eventType) => {
  * @typedef {Object} UndoManagerOptions
  * @property {number} [UndoManagerOptions.captureTimeout=500]
  * @property {function(Transaction):boolean} [UndoManagerOptions.captureTransaction] Do not capture changes of a Transaction if result false.
+ * @property {function(Transaction):boolean} [UndoManagerOptions.appendToLatestStackItem] Append changes to the previous stack item if result true (regardless of captureTimeout).
  * @property {function(Item):boolean} [UndoManagerOptions.deleteFilter=()=>true] Sometimes
  * it is necessary to filter what an Undo/Redo operation can delete. If this
  * filter returns false, the type/item won't be deleted even it is in the
@@ -165,6 +166,7 @@ export class UndoManager extends ObservableV2 {
   constructor (typeScope, {
     captureTimeout = 500,
     captureTransaction = _tr => true,
+    appendToLatestStackItem = _tr => false,
     deleteFilter = () => true,
     trackedOrigins = new Set([null]),
     ignoreRemoteMapChanges = false,
@@ -181,6 +183,7 @@ export class UndoManager extends ObservableV2 {
     trackedOrigins.add(this)
     this.trackedOrigins = trackedOrigins
     this.captureTransaction = captureTransaction
+    this.appendToLatestStackItem = appendToLatestStackItem
     /**
      * @type {Array<StackItem>}
      */
@@ -236,7 +239,10 @@ export class UndoManager extends ObservableV2 {
       })
       const now = time.getUnixTime()
       let didAdd = false
-      if (this.lastChange > 0 && now - this.lastChange < this.captureTimeout && stack.length > 0 && !undoing && !redoing) {
+      if (this.lastChange > 0 && 
+        (now - this.lastChange < this.captureTimeout || this.appendToLatestStackItem(transaction)) && 
+        stack.length > 0 && !undoing && !redoing
+      ) {
         // append change to last stack op
         const lastOp = stack[stack.length - 1]
         lastOp.deletions = mergeDeleteSets([lastOp.deletions, transaction.deleteSet])
