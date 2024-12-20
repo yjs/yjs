@@ -86,6 +86,26 @@ export const testRelativePositionCase6 = tc => {
 }
 
 /**
+ * Testing https://github.com/yjs/yjs/issues/657
+ *
+ * @param {t.TestCase} tc
+ */
+export const testRelativePositionCase7 = tc => {
+  const docA = new Y.Doc()
+  const textA = docA.getText('text')
+  textA.insert(0, 'abcde')
+  // Create a relative position at index 2 in 'textA'
+  const relativePosition = Y.createRelativePositionFromTypeIndex(textA, 2)
+  // Verify that the absolutes positions on 'docA' are the same
+  const absolutePositionWithFollow =
+    Y.createAbsolutePositionFromRelativePosition(relativePosition, docA, true)
+  const absolutePositionWithoutFollow =
+    Y.createAbsolutePositionFromRelativePosition(relativePosition, docA, false)
+  t.assert(absolutePositionWithFollow?.index === 2)
+  t.assert(absolutePositionWithoutFollow?.index === 2)
+}
+
+/**
  * @param {t.TestCase} tc
  */
 export const testRelativePositionAssociationDifference = tc => {
