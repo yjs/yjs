@@ -114,6 +114,7 @@ export const testSubdoc = _tc => {
     doc.on('subdocs', subdocs => {
       event = [Array.from(subdocs.added).map(x => x.guid), Array.from(subdocs.removed).map(x => x.guid), Array.from(subdocs.loaded).map(x => x.guid)]
     })
+    /** @type {Y.Map<{ a: Y.Doc; b: Y.Doc, c: Y.Doc; }>} */
     const subdocs = doc.getMap('mysubdocs')
     const docA = new Y.Doc({ guid: 'a' })
     docA.load()
@@ -121,18 +122,18 @@ export const testSubdoc = _tc => {
     t.compare(event, [['a'], [], ['a']])
 
     event = null
-    subdocs.get('a').load()
+    subdocs.get('a')?.load()
     t.assert(event === null)
 
     event = null
-    subdocs.get('a').destroy()
+    subdocs.get('a')?.destroy()
     t.compare(event, [['a'], ['a'], []])
-    subdocs.get('a').load()
+    subdocs.get('a')?.load()
     t.compare(event, [[], [], ['a']])
 
     subdocs.set('b', new Y.Doc({ guid: 'a', shouldLoad: false }))
     t.compare(event, [['a'], [], []])
-    subdocs.get('b').load()
+    subdocs.get('b')?.load()
     t.compare(event, [[], [], ['a']])
 
     const docC = new Y.Doc({ guid: 'c' })
@@ -156,7 +157,9 @@ export const testSubdoc = _tc => {
     Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc))
     t.compare(event, [['a', 'a', 'c'], [], []])
 
-    doc2.getMap('mysubdocs').get('a').load()
+    /** @type {Y.Map<Record<string, Y.Doc>>} */
+    const mysubdocs = doc2.getMap('mysubdocs')
+    mysubdocs.get('a')?.load()
     t.compare(event, [[], [], ['a']])
 
     t.compare(Array.from(doc2.getSubdocGuids()), ['a', 'c'])
