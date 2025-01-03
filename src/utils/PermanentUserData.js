@@ -62,7 +62,7 @@ export class PermanentUserData {
         initUser(storeType.get(userDescription), userDescription)
       )
     })
-    // add intial data
+    // add initial data
     storeType.forEach(initUser)
   }
 

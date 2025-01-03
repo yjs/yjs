@@ -110,7 +110,7 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [Synthesia](https://www.synthesia.io) - Collaborative Video Editor
 * [thinkdeli](https://thinkdeli.com) - A fast and simple notes app powered by AI
 * [ourboard](https://github.com/raimohanska/ourboard) - A collaborative whiteboard
-  applicaiton
+  application
 * [Ellie.ai](https://ellie.ai) - Data Product Design and Collaboration
 * [GoPeer](https://gopeer.org/) - Collaborative tutoring
 * [screen.garden](https://screen.garden) - Collaborative backend for PKM apps.
@@ -189,7 +189,7 @@ backends to y-websocket.
   <dt><a href="https://github.com/yjs/y-webrtc">y-webrtc</a></dt>
   <dd>
 Propagates document updates peer-to-peer using WebRTC. The peers exchange
-signaling data over signaling servers. Publically available signaling servers
+signaling data over signaling servers. Publicly available signaling servers
 are available. Communication over the signaling servers can be encrypted by
 providing a shared secret, keeping the connection information and the shared
 document private.
@@ -1097,7 +1097,7 @@ encoding format for document updates. If you prefer JSON encoding, you can
 simply JSON.stringify / JSON.parse the relative position instead.
   </dd>
   <b><code>Y.decodeRelativePosition(Uint8Array):RelativePosition</code></b>
-  <dd>Decode a binary-encoded relative position to a RelativePositon object.</dd>
+  <dd>Decode a binary-encoded relative position to a RelativePosition object.</dd>
 </dl>
 
 ### Y.UndoManager
@@ -1277,11 +1277,11 @@ More information about the specific implementation is available in
 
 CRDTs that are suitable for shared text editing suffer from the fact that they
 only grow in size. There are CRDTs that do not grow in size, but they do not
-have the characteristics that are benificial for shared text editing (like
+have the characteristics that are beneficial for shared text editing (like
 intention preservation). Yjs implements many improvements to the original
 algorithm that diminish the trade-off that the document only grows in size. We
 can't garbage collect deleted structs (tombstones) while ensuring a unique
-order of the structs. But we can 1. merge preceeding structs into a single
+order of the structs. But we can 1. merge preceding structs into a single
 struct to reduce the amount of meta information, 2. we can delete content from
 the struct if it is deleted, and 3. we can garbage collect tombstones if we
 don't care about the order of the structs anymore (e.g. if the parent was

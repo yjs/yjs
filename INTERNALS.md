@@ -60,7 +60,7 @@ characters have either been deleted or all characters are not deleted. The item
 will be split if the run is interrupted for any reason (eg a character in the
 middle of the run is deleted).
 
-When an item is created, it stores a reference to the IDs of the preceeding and
+When an item is created, it stores a reference to the IDs of the preceding and
 succeeding item. These are stored in the item's `origin` and `originRight`
 fields, respectively. These are used when peers concurrently insert at the same
 location in a document. Though quite rare in practice, Yjs needs to make sure

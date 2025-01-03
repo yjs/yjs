@@ -106,7 +106,7 @@ export class Doc extends ObservableV2 {
     this.isSynced = false
     this.isDestroyed = false
     /**
-     * Promise that resolves once the document has been loaded from a presistence provider.
+     * Promise that resolves once the document has been loaded from a persistence provider.
      */
     this.whenLoaded = promise.create(resolve => {
       this.on('load', () => {

@@ -58,7 +58,7 @@ export const testEmptyRestoreSnapshot = _tc => {
   t.compare(docRestored.getArray().toArray(), [])
   t.compare(doc.getArray().toArray(), ['world'])
 
-  // now this snapshot reflects the latest state. It shoult still work.
+  // now this snapshot reflects the latest state. It should still work.
   const snap2 = Y.snapshot(doc)
   const docRestored2 = Y.createDocFromSnapshot(doc, snap2)
   t.compare(docRestored2.getArray().toArray(), ['world'])

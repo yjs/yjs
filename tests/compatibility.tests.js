@@ -1,5 +1,5 @@
 /**
- * Testing if encoding/decoding compatibility and integration compatiblity is given.
+ * Testing if encoding/decoding compatibility and integration compatibility is given.
  * We expect that the document always looks the same, even if we upgrade the integration algorithm, or add additional encoding approaches.
  *
  * The v1 documents were generated with Yjs v13.2.0 based on the randomisized tests.
