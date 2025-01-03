@@ -211,7 +211,7 @@ export const readClientsStructRefs = (decoder, doc) => {
  * then we start emptying the stack.
  *
  * It is not possible to have circles: i.e. struct1 (from client1) depends on struct2 (from client2)
- * depends on struct3 (from client1). Therefore the max stack size is eqaul to `structReaders.length`.
+ * depends on struct3 (from client1). Therefore the max stack size is equal to `structReaders.length`.
  *
  * This method is implemented in a way so that we can resume computation if this update
  * causally depends on another update.
@@ -279,14 +279,14 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
   const addStackToRestSS = () => {
     for (const item of stack) {
       const client = item.id.client
-      const unapplicableItems = clientsStructRefs.get(client)
-      if (unapplicableItems) {
+      const inapplicableItems = clientsStructRefs.get(client)
+      if (inapplicableItems) {
         // decrement because we weren't able to apply previous operation
-        unapplicableItems.i--
-        restStructs.clients.set(client, unapplicableItems.refs.slice(unapplicableItems.i))
+        inapplicableItems.i--
+        restStructs.clients.set(client, inapplicableItems.refs.slice(inapplicableItems.i))
         clientsStructRefs.delete(client)
-        unapplicableItems.i = 0
-        unapplicableItems.refs = []
+        inapplicableItems.i = 0
+        inapplicableItems.refs = []
       } else {
         // item was the last item on clientsStructRefs and the field was already cleared. Add item to restStructs and continue
         restStructs.clients.set(client, [item])

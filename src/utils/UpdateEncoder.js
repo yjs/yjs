@@ -167,7 +167,7 @@ export class UpdateEncoderV2 extends DSEncoderV2 {
      */
     this.keyMap = new Map()
     /**
-     * Refers to the next uniqe key-identifier to me used.
+     * Refers to the next unique key-identifier to me used.
      * See writeKey method for more information.
      *
      * @type {number}

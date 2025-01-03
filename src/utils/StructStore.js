@@ -66,13 +66,13 @@ export const getState = (store, client) => {
  * @private
  * @function
  */
-export const integretyCheck = store => {
+export const integrityCheck = store => {
   store.clients.forEach(structs => {
     for (let i = 1; i < structs.length; i++) {
       const l = structs[i - 1]
       const r = structs[i]
       if (l.id.clock + l.length !== r.id.clock) {
-        throw new Error('StructStore failed integrety check')
+        throw new Error('StructStore failed integrity check')
       }
     }
   })
