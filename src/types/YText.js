@@ -478,7 +478,7 @@ export const cleanupYTextFormatting = type => {
 }
 
 /**
- * This will be called by the transction once the event handlers are called to potentially cleanup
+ * This will be called by the transaction once the event handlers are called to potentially cleanup
  * formatting attributes.
  *
  * @param {Transaction} transaction
@@ -568,7 +568,7 @@ const deleteText = (transaction, currPos, length) => {
 
 /**
  * The Quill Delta format represents changes on a text document with
- * formatting information. For mor information visit {@link https://quilljs.com/docs/delta/|Quill Delta}
+ * formatting information. For more information visit {@link https://quilljs.com/docs/delta/|Quill Delta}
  *
  * @example
  *   {

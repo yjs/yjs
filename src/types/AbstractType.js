@@ -155,11 +155,11 @@ export const findMarker = (yarray, index) => {
   //   }
   // }
   // if (marker) {
-  //   if (window.lengthes == null) {
-  //     window.lengthes = []
-  //     window.getLengthes = () => window.lengthes.sort((a, b) => a - b)
+  //   if (window.lengths == null) {
+  //     window.lengths = []
+  //     window.getLengths = () => window.lengths.sort((a, b) => a - b)
   //   }
-  //   window.lengthes.push(marker.index - pindex)
+  //   window.lengths.push(marker.index - pindex)
   //   console.log('distance', marker.index - pindex, 'len', p && p.parent.length)
   // }
   if (marker !== null && math.abs(marker.index - pindex) < /** @type {YText|YArray<any>} */ (p.parent).length / maxSearchMarker) {
@@ -751,7 +751,7 @@ export const typeListInsertGenerics = (transaction, parent, index, content) => {
 
 /**
  * Pushing content is special as we generally want to push after the last item. So we don't have to update
- * the serach marker.
+ * the search marker.
  *
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent

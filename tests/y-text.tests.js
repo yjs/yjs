@@ -376,7 +376,7 @@ export const testDeltaBug = _tc => {
     },
     {
       insert: '\n',
-      // This attibutes has only list and no table-cell-line
+      // This attributes has only list and no table-cell-line
       attributes: {
         list: {
           rowspan: '1',

@@ -66,7 +66,7 @@ export class RelativePosition {
      * after the meant position.
      * I.e. position 1 in 'ab' is associated to character 'b'.
      *
-     * If assoc < 0, then the relative position is associated to the caharacter
+     * If assoc < 0, then the relative position is associated to the character
      * before the meant position.
      *
      * @type {number}
