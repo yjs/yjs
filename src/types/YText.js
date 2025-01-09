@@ -972,15 +972,16 @@ export class YText extends AbstractType {
     if (this.doc !== null) {
       transact(this.doc, transaction => {
         const currPos = new ItemTextListPosition(null, this._start, 0, new Map())
-        for (let i = 0; i < delta.length; i++) {
-          const op = delta[i]
+        const ops = Array.isArray(delta) ? delta : (Array.isArray(delta?.ops) ? delta.ops : []);
+        for (let i = 0; i < ops.length; i++) {
+          const op = ops[i]
           if (op.insert !== undefined) {
             // Quill assumes that the content starts with an empty paragraph.
             // Yjs/Y.Text assumes that it starts empty. We always hide that
             // there is a newline at the end of the content.
             // If we omit this step, clients will see a different number of
             // paragraphs, but nothing bad will happen.
-            const ins = (!sanitize && typeof op.insert === 'string' && i === delta.length - 1 && currPos.right === null && op.insert.slice(-1) === '\n') ? op.insert.slice(0, -1) : op.insert
+            const ins = (!sanitize && typeof op.insert === 'string' && i === ops.length - 1 && currPos.right === null && op.insert.slice(-1) === '\n') ? op.insert.slice(0, -1) : op.insert
             if (typeof ins !== 'string' || ins.length > 0) {
               insertText(transaction, this, currPos, ins, op.attributes || {})
             }
