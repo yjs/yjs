@@ -961,7 +961,7 @@ export class YText extends AbstractType {
   /**
    * Apply a {@link Delta} on this shared YText type.
    *
-   * @param {any} delta The changes to apply on this element.
+   * @param {Array<any>} delta The changes to apply on this element.
    * @param {object}  opts
    * @param {boolean} [opts.sanitize] Sanitize input delta. Removes ending newlines if set to true.
    *
