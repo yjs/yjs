@@ -50,6 +50,8 @@ export {
   findRootTypeKey,
   findIndexSS,
   getItem,
+  getItemCleanStart,
+  getItemCleanEnd,
   typeListToArraySnapshot,
   typeMapGetSnapshot,
   typeMapGetAllSnapshot,
