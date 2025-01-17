@@ -123,6 +123,7 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [ScienHub](https://scienhub.com) - Collaborative LaTeX editor in the browser.
 * [Open Collaboration Tools](https://www.open-collab.tools/) - Collaborative
 editing for your IDE or custom editor
+* [Typst](https://typst.app/) - Compose, edit, and automate technical documents
 
 ## Table of Contents
 
