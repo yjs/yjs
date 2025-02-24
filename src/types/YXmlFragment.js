@@ -96,8 +96,12 @@ export class YXmlTreeWalker {
         } else {
           // walk right or up in the tree
           while (n !== null) {
-            if (n.right !== null) {
-              n = n.right
+            /**
+             * @type {Item | null}
+             */
+            const nxt = n.next
+            if (nxt !== null) {
+              n = nxt
               break
             } else if (n.parent === this._root) {
               n = null
