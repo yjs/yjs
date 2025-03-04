@@ -120,6 +120,19 @@ export const testEmptyTypeScope = _tc => {
  * Test case to fix #241
  * @param {t.TestCase} _tc
  */
+export const testGlobalScope = _tc => {
+  const ydoc = new Y.Doc()
+  const um = new Y.UndoManager(ydoc)
+  const yarray = ydoc.getArray()
+  yarray.insert(0, [1])
+  um.undo()
+  t.assert(yarray.length === 0)
+}
+
+/**
+ * Test case to fix #241
+ * @param {t.TestCase} _tc
+ */
 export const testDoubleUndo = _tc => {
   const doc = new Y.Doc()
   const text = doc.getText()
