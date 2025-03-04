@@ -159,7 +159,7 @@ const popStackItem = (undoManager, stack, eventType) => {
  */
 export class UndoManager extends ObservableV2 {
   /**
-   * @param {Doc|AbstractType<any>|Array<AbstractType<any>>} typeScope Accepts either a single type, or an array of types
+   * @param {Doc|AbstractType<any>|Array<AbstractType<any>>} typeScope Limits the scope of the UndoManager. If this is set to a ydoc instance, all changes on that ydoc will be undone. If set to a specific type, only changes on that type or its children will be undone. Also accepts an array of types.
    * @param {UndoManagerOptions} options
    */
   constructor (typeScope, {
@@ -272,6 +272,8 @@ export class UndoManager extends ObservableV2 {
   }
 
   /**
+   * Extend the scope.
+   *
    * @param {Array<AbstractType<any> | Doc> | AbstractType<any> | Doc} ytypes
    */
   addToScope (ytypes) {
