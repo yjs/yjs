@@ -34,20 +34,19 @@
       ]
     },
     {
-      "guid": "ystream",
-      "name": "Y/Stream",
+      "guid": "Titanic",
+      "name": "Y/Titanic",
       "description": "A provider for syncing millions of docs efficiently with other peers. This will become the foundation for building real local-first apps with Yjs.",
       "webpageUrl": {
-        "url": "https://github.com/yjs/ystream",
-        "wellKnown": "https://github.com/yjs/ystream/blob/main/.well-known/funding-manifest-urls"
+        "url": "https://github.com/yjs/titanic",
+        "wellKnown": "https://github.com/yjs/titanic/blob/main/.well-known/funding-manifest-urls"
       },
       "repositoryUrl": {
-        "url": "https://github.com/yjs/ystream",
-        "wellKnown": "https://github.com/yjs/ystream/blob/main/.well-known/funding-manifest-urls"
+        "url": "https://github.com/yjs/titanic",
+        "wellKnown": "https://github.com/yjs/titanic/blob/main/.well-known/funding-manifest-urls"
       },
       "licenses": [
-        "spdx:MIT",
-        "spdx:GPL-3.0"
+        "spdx:MIT"
       ],
       "tags": [
         "privacy",
@@ -90,9 +89,9 @@
         ]
       },
       {
-        "guid": "ystream-funding",
+        "guid": "titanic-funding",
         "status": "active",
-        "name": "YStream Funding",
+        "name": "Titanic Funding",
         "description": "Fund the next generation of local-first providers.",
         "amount": 30000,
         "currency": "USD",
