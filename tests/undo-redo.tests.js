@@ -117,6 +117,57 @@ export const testEmptyTypeScope = _tc => {
 }
 
 /**
+ * @param {t.TestCase} _tc
+ */
+export const testRejectUpdateExample = _tc => {
+  const tmpydoc1 = new Y.Doc()
+  tmpydoc1.getArray('restricted').insert(0, [1])
+  tmpydoc1.getArray('public').insert(0, [1])
+  const update1 = Y.encodeStateAsUpdate(tmpydoc1)
+  const tmpydoc2 = new Y.Doc()
+  tmpydoc2.getArray('public').insert(0, [2])
+  const update2 = Y.encodeStateAsUpdate(tmpydoc2)
+
+  const ydoc = new Y.Doc()
+  const restrictedType = ydoc.getArray('restricted')
+
+  /**
+   * Assume this function handles incoming updates via a communication channel like websockets.
+   * Changes to the `ydoc.getMap('restricted')` type should be rejected.
+   *
+   * - set up undo manager on the restricted types
+   * - cache pending* updates from the Ydoc to avoid certain attacks
+   * - apply received update and check whether the restricted type (or any of its children) has been changed.
+   * - catch errors that might try to circumvent the restrictions
+   * - undo changes on restricted types
+   * - reapply pending* updates
+   *
+   * @param {Uint8Array} update
+   */
+  const updateHandler = (update) => {
+    // don't handle changes of the local undo manager, which is used to undo invalid changes
+    const um = new Y.UndoManager(restrictedType, { trackedOrigins: new Set(['remote change']) })
+    const beforePendingDs = ydoc.store.pendingDs
+    const beforePendingStructs = ydoc.store.pendingStructs?.update
+    try {
+      Y.applyUpdate(ydoc, update, 'remote change')
+    } finally {
+      um.undo()
+      um.destroy()
+      ydoc.store.pendingDs = beforePendingDs
+      ydoc.store.pendingStructs = null
+      if (beforePendingStructs) {
+        Y.applyUpdateV2(ydoc, beforePendingStructs)
+      }
+    }
+  }
+  updateHandler(update1)
+  updateHandler(update2)
+  t.assert(restrictedType.length === 0)
+  t.assert(ydoc.getArray('public').length === 2)
+}
+
+/**
  * Test case to fix #241
  * @param {t.TestCase} _tc
  */
