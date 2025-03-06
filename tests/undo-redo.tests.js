@@ -152,7 +152,9 @@ export const testRejectUpdateExample = _tc => {
     try {
       Y.applyUpdate(ydoc, update, 'remote change')
     } finally {
-      um.undo()
+      while (um.undoStack.length) {
+        um.undo()
+      }
       um.destroy()
       ydoc.store.pendingDs = beforePendingDs
       ydoc.store.pendingStructs = null
