@@ -268,14 +268,14 @@ export class Doc extends ObservableV2 {
   }
 
   /**
-   * @template T
+   * @template {Record<string, import("../internals.js").MapValue>} T
    * @param {string} [name]
    * @return {YMap<T>}
    *
    * @public
    */
   getMap (name = '') {
-    return /** @type {YMap<T>} */ (this.get(name, YMap))
+    return /** @type {YMap<T>} */ /** @type {any} */ (this.get(name, YMap))
   }
 
   /**
