@@ -99,7 +99,6 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [AWS SageMaker](https://aws.amazon.com/sagemaker/) Tools for building Machine
   Learning Models
 * [linear](https://linear.app) Streamline issues, projects, and product roadmaps.
-* [btw](https://www.btw.so) - Personal website builder
 * [AWS SageMaker](https://aws.amazon.com/sagemaker/) - Machine Learning Service
 * [Arkiter](https://www.arkiter.com/) - Live interview software
 * [Appflowy](https://www.appflowy.io/) - They use Yrs
