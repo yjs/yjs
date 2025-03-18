@@ -21,12 +21,37 @@ import * as iterator from 'lib0/iterator'
 
 /**
  * @template T
+ * @typedef {Extract<keyof T, string>} StringKey<T>
+ *
+ * Like keyof, but guarantees the returned type is a subset of string.
+ * `keyof` will include number and Symbol even if the input type requires string keys.
+ */
+
+/**
+ * @template T
+ * @typedef {readonly {
+ *            [K in StringKey<T>]: [K, T[K]];
+ *          }[StringKey<T>][]} EntriesOf<T>
+ *
+ * Converts an object schema into a readonly array containing valid key-value pairs.
+ */
+
+/**
+ * This works around some weird JSDoc+TS circular reference issues: https://github.com/microsoft/TypeScript/issues/46369
+ * @typedef {boolean|null|string|number|Uint8Array|JsonArray|JsonObject} Json
+ * @typedef {Json[]} JsonArray
+ * @typedef {{ [key: string]: Json }} JsonObject
+ * @typedef {Json|AbstractType<any>|Doc} MapValue
+ */
+
+/**
+ * @template {Record<string, MapValue>} T
  * @extends YEvent<YMap<T>>
  * Event that describes the changes on a YMap.
  */
 export class YMapEvent extends YEvent {
   /**
-   * @param {YMap<T>} ymap The YArray that changed.
+   * @param {YMap<T>} ymap The YMap that changed.
    * @param {Transaction} transaction
    * @param {Set<any>} subs The keys that changed.
    */
@@ -37,21 +62,21 @@ export class YMapEvent extends YEvent {
 }
 
 /**
- * @template MapType
+ * @template {Record<string, MapValue>} MapType
  * A shared Map implementation.
  *
  * @extends AbstractType<YMapEvent<MapType>>
- * @implements {Iterable<[string, MapType]>}
+ * @implements {Iterable<[StringKey<MapType>, MapType[StringKey<MapType>]]>}
  */
 export class YMap extends AbstractType {
   /**
    *
-   * @param {Iterable<readonly [string, any]>=} entries - an optional iterable to initialize the YMap
+   * @param {EntriesOf<MapType>=} entries - an optional iterable to initialize the YMap
    */
   constructor (entries) {
     super()
     /**
-     * @type {Map<string,any>?}
+     * @type {Map<StringKey<MapType>, MapType[StringKey<MapType>]>?}
      * @private
      */
     this._prelimContent = null
@@ -75,7 +100,7 @@ export class YMap extends AbstractType {
    */
   _integrate (y, item) {
     super._integrate(y, item)
-    ;/** @type {Map<string, any>} */ (this._prelimContent).forEach((value, key) => {
+    this._prelimContent?.forEach((value, key) => {
       this.set(key, value)
     })
     this._prelimContent = null
@@ -119,12 +144,12 @@ export class YMap extends AbstractType {
   /**
    * Transforms this Shared Type to a JSON object.
    *
-   * @return {Object<string,any>}
+   * @return {Partial<MapType>}
    */
   toJSON () {
     this.doc ?? warnPrematureAccess()
     /**
-     * @type {Object<string,MapType>}
+     * @type {any}
      */
     const map = {}
     this._map.forEach((item, key) => {
@@ -157,7 +182,7 @@ export class YMap extends AbstractType {
   /**
    * Returns the values for each element in the YMap Type.
    *
-   * @return {IterableIterator<MapType>}
+   * @return {IterableIterator<MapType[keyof MapType]>}
    */
   values () {
     return iterator.iteratorMap(createMapIterator(this), /** @param {any} v */ v => v[1].content.getContent()[v[1].length - 1])
@@ -166,7 +191,7 @@ export class YMap extends AbstractType {
   /**
    * Returns an Iterator of [key, value] pairs
    *
-   * @return {IterableIterator<[string, MapType]>}
+   * @return {IterableIterator<[StringKey<MapType>, MapType[StringKey<MapType>]]>}
    */
   entries () {
     return iterator.iteratorMap(createMapIterator(this), /** @param {any} v */ v => /** @type {any} */ ([v[0], v[1].content.getContent()[v[1].length - 1]]))
@@ -175,13 +200,13 @@ export class YMap extends AbstractType {
   /**
    * Executes a provided function on once on every key-value pair.
    *
-   * @param {function(MapType,string,YMap<MapType>):void} f A function to execute on every element of this YArray.
+   * @param {function(MapType[StringKey<MapType>],StringKey<MapType>,YMap<MapType>):void} f A function to execute on every element of this YArray.
    */
   forEach (f) {
     this.doc ?? warnPrematureAccess()
     this._map.forEach((item, key) => {
       if (!item.deleted) {
-        f(item.content.getContent()[item.length - 1], key, this)
+        f(item.content.getContent()[item.length - 1], /** @type {StringKey<MapType>} */ (key), this)
       }
     })
   }
@@ -189,7 +214,7 @@ export class YMap extends AbstractType {
   /**
    * Returns an Iterator of [key, value] pairs
    *
-   * @return {IterableIterator<[string, MapType]>}
+   * @return {IterableIterator<[StringKey<MapType>, MapType[StringKey<MapType>]]>}
    */
   [Symbol.iterator] () {
     return this.entries()
@@ -211,17 +236,18 @@ export class YMap extends AbstractType {
   }
 
   /**
+   * @template {StringKey<MapType>} Key
+   * @template {MapType[Key]} Value
    * Adds or updates an element with a specified key and value.
-   * @template {MapType} VAL
    *
-   * @param {string} key The key of the element to add to this YMap
-   * @param {VAL} value The value of the element to add
-   * @return {VAL}
+   * @param {Key} key The key of the element to add to this YMap
+   * @param {Value} value The value of the element to add
+   * @return {Value}
    */
   set (key, value) {
     if (this.doc !== null) {
       transact(this.doc, transaction => {
-        typeMapSet(transaction, this, key, /** @type {any} */ (value))
+        typeMapSet(transaction, this, key, value)
       })
     } else {
       /** @type {Map<string, any>} */ (this._prelimContent).set(key, value)
@@ -230,13 +256,14 @@ export class YMap extends AbstractType {
   }
 
   /**
+   * @template {StringKey<MapType>} Key
    * Returns a specified element from this YMap.
    *
-   * @param {string} key
-   * @return {MapType|undefined}
+   * @param {Key} key
+   * @return {MapType[Key]|undefined}
    */
   get (key) {
-    return /** @type {any} */ (typeMapGet(this, key))
+    return /** @type {MapType[Key]|undefined} */ (typeMapGet(this, key))
   }
 
   /**
