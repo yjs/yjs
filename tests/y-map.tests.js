@@ -1,10 +1,8 @@
+import * as Y from '../src/index.js'
 import { init, compare, applyRandomTests, Doc } from './testHelper.js' // eslint-disable-line
-
 import {
   compareIDs
 } from '../src/internals.js'
-
-import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 

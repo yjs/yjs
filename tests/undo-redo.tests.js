@@ -1,6 +1,5 @@
-import { init } from './testHelper.js' // eslint-disable-line
-
 import * as Y from '../src/index.js'
+import { init } from './testHelper.js' // eslint-disable-line
 import * as t from 'lib0/testing'
 
 export const testInconsistentFormat = () => {
