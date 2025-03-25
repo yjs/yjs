@@ -1,6 +1,6 @@
 import * as t from 'lib0/testing'
-import { init, compare } from './testHelper.js' // eslint-disable-line
 import * as Y from '../src/index.js'
+import { init, compare } from './testHelper.js' // eslint-disable-line
 import { readClientsStructRefs, readDeleteSet, UpdateDecoderV2, UpdateEncoderV2, writeDeleteSet } from '../src/internals.js'
 import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'

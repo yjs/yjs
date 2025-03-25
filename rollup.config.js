@@ -1,106 +1,44 @@
-import nodeResolve from '@rollup/plugin-node-resolve'
-import commonjs from '@rollup/plugin-commonjs'
-
-const localImports = process.env.LOCALIMPORTS
-
-const customModules = new Set([
-  'y-websocket',
-  'y-codemirror',
-  'y-ace',
-  'y-textarea',
-  'y-quill',
-  'y-dom',
-  'y-prosemirror'
-])
-/**
- * @type {Set<any>}
- */
-const customLibModules = new Set([
-  'lib0',
-  'y-protocols'
-])
-const debugResolve = {
+const resolver = {
   resolveId (importee) {
+    return
     if (importee === 'yjs') {
       return `${process.cwd()}/src/index.js`
     }
-    if (localImports) {
-      if (customModules.has(importee.split('/')[0])) {
-        return `${process.cwd()}/../${importee}/src/${importee}.js`
-      }
-      if (customLibModules.has(importee.split('/')[0])) {
-        return `${process.cwd()}/../${importee}`
-      }
-    }
-    return null
   }
 }
 
 export default [{
-  input: './src/index.js',
+  // cjs output
+  input: {
+    yjs: './src/index.js',
+    testHelper: './tests/testHelper.js',
+    internals: './src/internals.js'
+  },
   output: {
-    name: 'Y',
-    file: 'dist/yjs.cjs',
+    dir: 'dist',
     format: 'cjs',
-    sourcemap: true
-  },
-  external: id => /^lib0\//.test(id)
-}, {
-  input: './src/index.js',
-  output: {
-    name: 'Y',
-    file: 'dist/yjs.mjs',
-    format: 'esm',
-    sourcemap: true
-  },
-  external: id => /^lib0\//.test(id)
-}, {
-  input: './tests/testHelper.js',
-  output: {
-    name: 'Y',
-    file: 'dist/testHelper.mjs',
-    format: 'esm',
-    sourcemap: true
-  },
-  external: id => /^lib0\//.test(id) || id === 'yjs',
-  plugins: [{
-    resolveId (importee) {
-      if (importee === '../src/index.js') {
-        return 'yjs'
-      }
-      return null
-    }
-  }]
-}, {
-  input: './tests/index.js',
-  output: {
-    name: 'test',
-    file: 'dist/tests.js',
-    format: 'iife',
+    entryFileNames : '[name].cjs',
     sourcemap: true
   },
   plugins: [
-    debugResolve,
-    nodeResolve({
-      mainFields: ['browser', 'module', 'main']
-    }),
-    commonjs()
-  ]
-}, {
-  input: './tests/index.js',
-  output: {
-    name: 'test',
-    file: 'dist/tests.cjs',
-    format: 'cjs',
-    sourcemap: true
-  },
-  plugins: [
-    debugResolve,
-    nodeResolve({
-      mainFields: ['node', 'module', 'main'],
-      exportConditions: ['node', 'module', 'import', 'default']
-    }),
-    commonjs()
+    resolver
   ],
-  external: id => /^lib0\//.test(id)
+  external: id => /^(lib0|y-protocols)\//.test(id)
+}, {
+  // esm output
+  input: {
+    yjs: './src/index.js',
+    testHelper: './tests/testHelper.js',
+    internals: './src/internals.js'
+  },
+  output: {
+    dir: 'dist',
+    format: 'esm',
+    entryFileNames : '[name].mjs',
+    sourcemap: true
+  },
+  plugins: [
+    resolver
+  ],
+  external: id => /^(lib0|y-protocols)\//.test(id)
 }]

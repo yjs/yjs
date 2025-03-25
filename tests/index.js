@@ -11,11 +11,11 @@ import * as doc from './doc.tests.js'
 import * as snapshot from './snapshot.tests.js'
 import * as updates from './updates.tests.js'
 import * as relativePositions from './relativePositions.tests.js'
+// import * as delta from './delta.tests.js'
 
 import { runTests } from 'lib0/testing'
 import { isBrowser, isNode } from 'lib0/environment'
 import * as log from 'lib0/logging'
-import { environment } from 'lib0'
 
 if (isBrowser) {
   log.createVConsole(document.body)
@@ -25,14 +25,10 @@ if (isBrowser) {
  * @type {any}
  */
 const tests = {
-  doc, map, array, text, xml, encoding, undoredo, compatibility, snapshot, updates, relativePositions
+  doc, map, array, text, xml, encoding, undoredo, compatibility, snapshot, updates, relativePositions, delta
 }
 
 const run = async () => {
-  if (environment.isNode) {
-    // tests.nodejs = await import('./node.tests.js')
-  }
-
   const success = await runTests(tests)
   /* istanbul ignore next */
   if (isNode) {

@@ -14,7 +14,9 @@
     "noImplicitAny": true,
     "moduleResolution": "nodenext",
     "paths": {
-      "yjs": ["./src/index.js"]
+      "yjs": ["./src/index.js"],
+      "yjs/internals": ["./src/internals.js"],
+      "yjs/testHelper": ["./tests/testHelper.js"]
     }
   },
   "include": ["./src/**/*.js", "./tests/**/*.js"]

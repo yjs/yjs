@@ -13,28 +13,38 @@
   },
   "scripts": {
     "clean": "rm -rf dist docs",
-    "test": "npm run dist && NODE_ENV=development node ./dist/tests.cjs --repetition-time 50",
-    "test-extensive": "npm run lint && npm run dist && node ./dist/tests.cjs --production --repetition-time 10000",
+    "test": "NODE_ENV=development node ./tests/index.js --repetition-time 50",
+    "test-extensive": "node ./tests/index.js --production --repetition-time 10000",
     "dist": "npm run clean && rollup -c && tsc",
     "watch": "rollup -wc",
     "lint": "markdownlint README.md && standard && tsc",
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.md --package ./package.json || true",
-    "serve-docs": "npm run docs && http-server ./docs/",
-    "preversion": "npm run lint && PRODUCTION=1 npm run dist && npm run docs && node ./dist/tests.cjs --repetition-time 1000 && test -e dist/src/index.d.ts && test -e dist/yjs.cjs && test -e dist/yjs.cjs",
-    "debug": "concurrently 'http-server -o test.html' 'npm run watch'",
-    "trace-deopt": "clear && rollup -c  && node --trace-deopt dist/test.cjs",
-    "trace-opt": "clear && rollup -c  && node --trace-opt dist/test.cjs"
+    "serve-docs": "npm run docs && 0serve ./docs/",
+    "preversion": "npm run lint && PRODUCTION=1 npm run dist && npm run docs && node ./tests/index.js --repetition-time 1000 && test -e dist/src/index.d.ts && test -e dist/yjs.cjs && test -e dist/yjs.cjs",
+    "debug": "npm run gentesthtml && 0serve -o test.html",
+    "trace-deopt": "clear && node --trace-deopt ./tests/index.js",
+    "trace-opt": "clear && node --trace-opt ./tests/index.js",
+    "gentesthtml": "0gentesthtml --script ./tests/index.js > test.html"
   },
   "exports": {
     ".": {
       "types": "./dist/src/index.d.ts",
       "module": "./dist/yjs.mjs",
-      "import": "./dist/yjs.mjs",
-      "require": "./dist/yjs.cjs"
+      "require": "./dist/yjs.cjs",
+      "import": "./src/index.js"
     },
-    "./src/index.js": "./src/index.js",
-    "./tests/testHelper.js": "./tests/testHelper.js",
-    "./testHelper": "./dist/testHelper.mjs",
+    "./internals": {
+      "types": "./dist/src/internals.d.ts",
+      "module": "./dist/internals.mjs",
+      "require": "./dist/internals.cjs",
+      "import": "./src/internals.js"
+    },
+    "./testHelper": {
+      "types": "./dist/testHelper.d.ts",
+      "module": "./dist/testHelper.mjs",
+      "require": "./dist/testHelper.cjs",
+      "import": "./tests/testHelper.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -76,21 +86,19 @@
   },
   "homepage": "https://docs.yjs.dev",
   "dependencies": {
-    "lib0": "^0.2.99"
+    "lib0": "^0.2.101",
+    "y-protocols": "^1.0.5"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^24.0.1",
-    "@rollup/plugin-node-resolve": "^15.0.1",
     "@types/node": "^18.15.5",
     "concurrently": "^3.6.1",
-    "http-server": "^0.12.3",
     "jsdoc": "^3.6.7",
     "markdownlint-cli": "^0.41.0",
-    "rollup": "^3.20.0",
+    "rollup": "^4.37.0",
     "standard": "^16.0.4",
     "tui-jsdoc-template": "^1.2.2",
     "typescript": "^4.9.5",
-    "y-protocols": "^1.0.5"
+    "yjs": "."
   },
   "engines": {
     "npm": ">=8.0.0",
