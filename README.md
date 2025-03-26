@@ -300,6 +300,10 @@ A database and connection provider for Yjs based on Firestore.
   Provides persistent storage for a web server using PostgreSQL and
   is easily compatible with y-websocket.  
   </dd>
+  <dt><a href="https://github.com/kapv89/k_yrs_go">k_yrs_go</a></dt>
+  <dd>
+  Golang database server for YJS CRDT using Postgres + Redis
+  </dd>
 </dl>
 
 ### Tooling
