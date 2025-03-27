@@ -435,6 +435,7 @@ export const testUndoUntilChangePerformed = _tc => {
   const yMap = new Y.Map()
   yMap.set('hello', 'world')
   yArray.push([yMap])
+  /** @type {Y.Map<{ key: string }>} */
   const yMap2 = new Y.Map()
   yMap2.set('key', 'value')
   yArray.push([yMap2])
@@ -448,7 +449,7 @@ export const testUndoUntilChangePerformed = _tc => {
   Y.transact(doc2, () => yArray2.delete(0), doc2.clientID)
   undoManager2.undo()
   undoManager.undo()
-  t.compareStrings(yMap2.get('key'), 'value')
+  t.compareStrings(yMap2.get('key') || '', 'value')
 }
 
 /**
@@ -513,6 +514,7 @@ export const testUndoNestedUndoIssue = _tc => {
  */
 export const testConsecutiveRedoBug = _tc => {
   const doc = new Y.Doc()
+  /** @type {Y.Map<Record<string, Y.Map<any>>>} */
   const yRoot = doc.getMap()
   const undoMgr = new Y.UndoManager(yRoot)
 
@@ -546,7 +548,7 @@ export const testConsecutiveRedoBug = _tc => {
   t.compare(yRoot.get('a'), undefined)
 
   undoMgr.redo() // x=0, y=0
-  yPoint = yRoot.get('a')
+  yPoint = yRoot.get('a') || new Y.Map()
 
   t.compare(yPoint.toJSON(), { x: 0, y: 0 })
   undoMgr.redo() // x=100, y=100
