@@ -27,8 +27,11 @@ import {
   updateMarkerChanges,
   ContentType,
   warnPrematureAccess,
-  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
+  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction, AttributionManager,  // eslint-disable-line
+  snapshot
 } from '../internals.js'
+
+import * as delta from '../utils/Delta.js'
 
 import * as object from 'lib0/object'
 import * as map from 'lib0/map'
@@ -995,6 +998,96 @@ export class YText extends AbstractType {
       /** @type {Array<function>} */ (this._pending).push(() => this.applyDelta(delta))
     }
   }
+
+  /**
+   * Render the difference to another ydoc (which can be empty) and highlight the differences with
+   * attributions.
+   *
+   * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
+   * attribution `{ isDeleted: true, .. }`.
+   *
+   * @param {AttributionManager} [attributionManager]
+   * @param {Doc} [prevYdoc]
+   * @return {import('../utils/Delta.js').Delta} The Delta representation of this type.
+   *
+   * @public
+   */
+  getContent (attributionManager, prevYdoc) {
+    this.doc ?? warnPrematureAccess()
+    const prevSnapshot = prevYdoc ? snapshot(prevYdoc) : null
+    const d = delta.create()
+    /**
+     * @type {{ [key: string]: any }}
+     */
+    const currentAttributes = {}
+    const doc = /** @type {Doc} */ (this.doc)
+    const computeContent = () => {
+      let n = this._start
+      while (n !== null) {
+        switch (n.content.constructor) {
+          case ContentString: {
+            const cur = currentAttributes.get('ychange')
+            if (snapshot !== undefined && !isVisible(n, snapshot)) {
+              if (cur === undefined || cur.user !== n.id.client || cur.type !== 'removed') {
+                packStr()
+                currentAttributes.set('ychange', computeYChange ? computeYChange('removed', n.id) : { type: 'removed' })
+              }
+            } else if (prevSnapshot !== undefined && !isVisible(n, prevSnapshot)) {
+              if (cur === undefined || cur.user !== n.id.client || cur.type !== 'added') {
+                packStr()
+                currentAttributes.set('ychange', computeYChange ? computeYChange('added', n.id) : { type: 'added' })
+              }
+            } else if (cur !== undefined) {
+              packStr()
+              currentAttributes.delete('ychange')
+            }
+            str += /** @type {ContentString} */ (n.content).str
+            break
+          }
+          case ContentType:
+          case ContentEmbed: {
+            packStr()
+            /**
+             * @type {Object<string,any>}
+             */
+            const op = {
+              insert: n.content.getContent()[0]
+            }
+            if (currentAttributes.size > 0) {
+              const attrs = /** @type {Object<string,any>} */ ({})
+              op.attributes = attrs
+              currentAttributes.forEach((value, key) => {
+                attrs[key] = value
+              })
+            }
+            ops.push(op)
+            break
+          }
+          case ContentFormat:
+            if (isVisible(n, snapshot)) {
+              packStr()
+              updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (n.content))
+            }
+            break
+        }
+        n = n.right
+      }
+    }
+    if (prevSnapshot) {
+      // snapshots are merged again after the transaction, so we need to keep the
+      // transaction alive until we are done
+      transact(doc, transaction => {
+        if (prevSnapshot) {
+          splitSnapshotAffectedStructs(transaction, prevSnapshot)
+        }
+        computeContent()
+      }, 'cleanup')
+    } else {
+      computeContent()
+    }
+    return d.done()
+  }
+
 
   /**
    * Returns the Delta representation of this YText type.
