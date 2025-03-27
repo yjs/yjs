@@ -11,7 +11,8 @@ import * as doc from './doc.tests.js'
 import * as snapshot from './snapshot.tests.js'
 import * as updates from './updates.tests.js'
 import * as relativePositions from './relativePositions.tests.js'
-// import * as delta from './delta.tests.js'
+import * as delta from './delta.tests.js'
+import * as deleteset from './deleteset.tests.js'
 
 import { runTests } from 'lib0/testing'
 import { isBrowser, isNode } from 'lib0/environment'
@@ -21,11 +22,8 @@ if (isBrowser) {
   log.createVConsole(document.body)
 }
 
-/**
- * @type {any}
- */
 const tests = {
-  doc, map, array, text, xml, encoding, undoredo, compatibility, snapshot, updates, relativePositions, delta
+  doc, map, array, text, xml, encoding, undoredo, compatibility, snapshot, updates, relativePositions, delta, deleteset
 }
 
 const run = async () => {

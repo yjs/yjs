@@ -1,5 +1,4 @@
 import * as object from 'lib0/object'
-import * as array from 'lib0/array'
 
 /**
  * @typedef {InsertOp|RetainOp|DeleteOp} DeltaOp
@@ -29,11 +28,11 @@ export class InsertOp {
     this.attribution = attribution
   }
   toJSON () {
-    return object.assign({ insert: this.insert }, this.attributes ? { attributes: this.attributes } : {}, this.attribution ? { attribution: this.attribution } : {})
+    return object.assign({ insert: this.insert }, this.attributes ? { attributes: this.attributes } : ({}), this.attribution ? { attribution: this.attribution } : ({}))
   }
 }
 
-class DeleteOp {
+export class DeleteOp {
   /**
    * @param {number} len
    */
@@ -45,7 +44,7 @@ class DeleteOp {
   }
 }
 
-class RetainOp {
+export class RetainOp {
   /**
    * @param {number} retain
    * @param {FormattingAttributes|null} attributes
@@ -133,7 +132,7 @@ export class DeltaBuilder extends Delta {
     if (attributes === null && attribution === null && this._lastOp instanceof InsertOp) {
       this._lastOp.insert += insert
     } else {
-      this.ops.push(this._lastOp = new InsertOp(insert, mergeAttrs(this.useAttributes, attributes), mergeAttrs(this._useAttribution, attribution)))
+      this.ops.push(this._lastOp = new InsertOp(insert, mergeAttrs(this._useAttributes, attributes), mergeAttrs(this._useAttribution, attribution)))
     }
     return this
   }
@@ -148,7 +147,7 @@ export class DeltaBuilder extends Delta {
     if (attributes === null && attribution === null && this._lastOp instanceof RetainOp) {
       this._lastOp.retain += retain
     } else {
-      this.ops.push(this._lastOp = new RetainOp(retain, mergeAttrs(this.useAttributes, attributes), mergeAttrs(this._useAttribution, attribution)))
+      this.ops.push(this._lastOp = new RetainOp(retain, mergeAttrs(this._useAttributes, attributes), mergeAttrs(this._useAttribution, attribution)))
     }
     return this
   }

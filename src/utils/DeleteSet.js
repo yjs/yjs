@@ -20,10 +20,12 @@ export class DeleteItem {
    */
   constructor (clock, len) {
     /**
+     * @readonly
      * @type {number}
      */
     this.clock = clock
     /**
+     * @readonly
      * @type {number}
      */
     this.len = len
@@ -114,7 +116,7 @@ export const isDeleted = (ds, id) => {
  * @function
  */
 export const sortAndMergeDeleteSet = ds => {
-  ds.clients.forEach(dels => {
+  ds.clients.forEach((dels, client) => {
     dels.sort((a, b) => a.clock - b.clock)
     // merge items without filtering or splicing the array
     // i is the current pointer
@@ -125,7 +127,12 @@ export const sortAndMergeDeleteSet = ds => {
       const left = dels[j - 1]
       const right = dels[i]
       if (left.clock + left.len >= right.clock) {
-        left.len = math.max(left.len, right.clock + right.len - left.clock)
+        const r = right.clock + right.len - left.clock
+        if (left.len < r) {
+          dels[j - 1] = new DeleteItem(left.clock, r)
+        }
+      } else if (left.len === 0) {
+        dels[j - 1] = right
       } else {
         if (j < i) {
           dels[j] = right
@@ -133,7 +140,14 @@ export const sortAndMergeDeleteSet = ds => {
         j++
       }
     }
-    dels.length = j
+    if (dels[j - 1].len === 0) {
+      dels.length = j - 1
+    } else {
+      dels.length = j
+    }
+    if (dels.length === 0) {
+      ds.clients.delete(client)
+    }
   })
 }
 
@@ -161,6 +175,63 @@ export const mergeDeleteSets = dss => {
   }
   sortAndMergeDeleteSet(merged)
   return merged
+}
+
+/**
+ * Remove all ranges from `exclude` from `ds`. The result will contain all ranges from `ds` that are not
+ * in `exclude`.
+ *
+ * @param {DeleteSet} ds
+ * @param {DeleteSet} exclude
+ * @return {DeleteSet}
+ */
+export const diffDeleteSet = (ds, exclude) => {
+  const res = new DeleteSet()
+  ds.clients.forEach((ranges, client) => {
+    /**
+     * @type {Array<DeleteItem>}
+     */
+    const resRanges = []
+    const excludedRanges = exclude.clients.get(client) ?? []
+    let i = 0, j = 0
+    let currRange = ranges[0]
+    while (i < ranges.length && j < excludedRanges.length) {
+      const e = excludedRanges[j]
+      if (currRange.clock + currRange.len <= e.clock) { // no overlapping, use next range item
+        if (currRange.len > 0) resRanges.push(currRange)
+        currRange = ranges[++i]
+      } else if (e.clock + e.len <= currRange.clock) { // no overlapping, use next excluded item
+        j++
+      } else if (e.clock <= currRange.clock) { // exclude laps into range (we already know that the ranges somehow collide)
+        const newClock = e.clock + e.len
+        const newLen = currRange.clock + currRange.len - newClock
+        if (newLen > 0) {
+          currRange = new DeleteItem(newClock, newLen)
+          j++
+        } else {
+          // this item is completely overwritten. len=0. We can jump to the next range
+          currRange = ranges[++i]
+        }
+      } else { // currRange.clock < e.clock -- range laps into exclude => adjust len
+        // beginning can't be empty, add it to the result
+        const nextLen = e.clock - currRange.clock
+        resRanges.push(new DeleteItem(currRange.clock, nextLen))
+        // retain the remaining length after exclude in currRange
+        currRange = new DeleteItem(currRange.clock + e.len + nextLen, math.max(currRange.len - e.len - nextLen, 0))
+        if (currRange.len === 0) currRange = ranges[++i]
+        j++
+      }
+    }
+    if (currRange != null) {
+      resRanges.push(currRange)
+    }
+    i++
+    while (i < ranges.length) {
+      resRanges.push(ranges[i++])
+    }
+    if (resRanges.length > 0) res.clients.set(client, resRanges)
+  })
+  return res
 }
 
 /**
