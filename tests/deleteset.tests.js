@@ -1,5 +1,7 @@
 import * as t from 'lib0/testing'
 import * as d from '../src/utils/DeleteSet.js'
+import * as prng from 'lib0/prng'
+import * as math from 'lib0/math'
 
 /**
  * @param {Array<[number, number, number]>} ops
@@ -154,4 +156,40 @@ export const testDeletesetDiffing = _tc => {
       simpleConstructDs([[0, 6, 1]])
     )
   })
+}
+
+/**
+ * @param {prng.PRNG} gen
+ * @param {number} clients
+ * @param {number} clockRange (max clock - exclusive - by each client)
+ */
+const createRandomDiffSet = (gen, clients, clockRange) => {
+  const maxOpLen = 5
+  const numOfOps = math.ceil((clients * clockRange) / maxOpLen)
+  const ds = new d.DeleteSet()
+  for (let i = 0; i < numOfOps; i++) {
+    const client = prng.uint32(gen, 0, clients - 1)
+    const clockStart = prng.uint32(gen, 0, clockRange)
+    const len = prng.uint32(gen, 0, clockRange - clockStart)
+    d.addToDeleteSet(ds, client, clockStart, len)
+  }
+  d.sortAndMergeDeleteSet(ds)
+  if (ds.clients.size === clients && clients > 1 && prng.bool(gen)) {
+    ds.clients.delete(prng.uint32(gen, 0, clients))
+  }
+  return ds
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatRandomDiffing = tc => {
+  const clients = 4
+  const clockRange = 100
+  const ds1 = createRandomDiffSet(tc.prng, clients, clockRange)
+  const ds2 = createRandomDiffSet(tc.prng, clients, clockRange)
+  const merged = d.mergeDeleteSets([ds1, ds2])
+  const e1 = d.diffDeleteSet(ds1, ds2)
+  const e2 = d.diffDeleteSet(merged, ds2)
+  compareDs(e1, e2)
 }

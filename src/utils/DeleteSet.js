@@ -219,7 +219,7 @@ export const diffDeleteSet = (ds, exclude) => {
         // retain the remaining length after exclude in currRange
         currRange = new DeleteItem(currRange.clock + e.len + nextLen, math.max(currRange.len - e.len - nextLen, 0))
         if (currRange.len === 0) currRange = ranges[++i]
-        j++
+        else j++
       }
     }
     if (currRange != null) {
