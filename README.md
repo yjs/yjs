@@ -123,6 +123,7 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [Open Collaboration Tools](https://www.open-collab.tools/) - Collaborative
 editing for your IDE or custom editor
 * [Typst](https://typst.app/) - Compose, edit, and automate technical documents
+* [Kedyou](https://kedyou.com/) - Digital workspaces for tutoring
 
 ## Table of Contents
 
