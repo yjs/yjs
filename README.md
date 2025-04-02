@@ -186,7 +186,7 @@ collaborative app.
   <dd>
 A module that contains a simple websocket backend and a websocket client that
 connects to that backend. <a href="https://github.com/yjs/y-redis/"><b>y-redis</b></a>,
-<b>y-sweet</b>, <b>ypy-websocket</b> and <a href="https://tiptap.dev/docs/hocuspocus/introduction">
+<b>y-sweet</b>, <b>ypy-websocket</b>, <b>yrs-warp</b> and <a href="https://tiptap.dev/docs/hocuspocus/introduction">
 <b>Hocuspocus</b></a> (see below) are alternative
 backends to y-websocket.
   </dd>
