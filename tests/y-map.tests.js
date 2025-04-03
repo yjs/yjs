@@ -812,8 +812,28 @@ export const testPublicTypeInterface = tc => {
   const invalidMap2 = new Y.Map();
 
   // Arbitrarily complex valid types are still allowed
-  /** @type {Y.Map<ComplexType & { nested: ComplexType & { deeper: ComplexType[] } }>} */
+  /** @type {Y.Map<ComplexType & {
+   *  map: Y.Map<MyType>;
+   *  array: Y.Array<string | number>;
+   *  text: Y.Text;
+   *  nested: ComplexType & { deeper: ComplexType[] } }>} */
   const complexValidType = new Y.Map();
+  // AbstractTypes are mapped to their toJSON return type when directly nested.
+  /** @type {Partial<{
+    n: null;
+    b: boolean;
+    s: string;
+    i: number;
+    u: Uint8Array;
+    a: null | boolean | string | number | Uint8Array[];
+    map: Partial<MyType>;
+    text: string;
+    array: (string | number)[];
+    nested: ComplexType & {
+        deeper: ComplexType[];
+    };
+  }>} */
+  const complexValidJson = complexValidType.toJSON()
 
 
   /*

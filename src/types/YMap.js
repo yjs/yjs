@@ -38,6 +38,10 @@ import * as iterator from 'lib0/iterator'
 
 /**
  * This works around some weird JSDoc+TS circular reference issues: https://github.com/microsoft/TypeScript/issues/46369
+ *
+ * The current implementation doesn't call toJSON on AbstractTypes nested with JSON,
+ * which could be surprising to users. So AbstractType is not included in the Json type here,
+ * to encourage direct nesting of AbstractTypes.
  * @typedef {boolean|null|string|number|Uint8Array|JsonArray|JsonObject} Json
  * @typedef {Json[]} JsonArray
  * @typedef {{ [key: string]: Json }} JsonObject
@@ -144,7 +148,7 @@ export class YMap extends AbstractType {
   /**
    * Transforms this Shared Type to a JSON object.
    *
-   * @return {Partial<MapType>}
+   * @return {Partial<{[K in keyof MapType]: MapType[K] extends AbstractType<any> ? ReturnType<MapType[K]['toJSON']> : MapType[K];}>}
    */
   toJSON () {
     this.doc ?? warnPrematureAccess()
