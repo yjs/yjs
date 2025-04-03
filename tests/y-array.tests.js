@@ -698,12 +698,16 @@ export const testRepeatGeneratingYarrayTests30000 = tc => {
  * @typedef {string | number | Array<boolean> | Y.Array<Uint8Array> | Y.Map<{ prop: number }>} ArrayType
  */
 export const testPublicTypeInterface = tc => {
-    // Typed arrays
+  // Typed arrays
 
-    /** @type {Y.Array<ArrayType>} */
-    const array = new Y.Array();
-    /** @type {Array<string | number | Array<boolean> | Array<Uint8Array> | Partial<{prop: number;}>>} */
-    const json = array.toJSON();
-    /** @type {ArrayType | undefined} */
-    const maybeValue = array.get(5);
+  /** @type {Y.Array<ArrayType>} */
+  const array = new Y.Array();
+  /** @type {Array<string | number | Array<boolean> | Array<Uint8Array> | Partial<{prop: number;}>>} */
+  const json = array.toJSON();
+  /** @type {ArrayType | undefined} */
+  const maybeValue = array.get(5);
+
+  array.push(['love', 3, [true, false], new Y.Map()])
+  // @ts-expect-error: Type 'boolean' is not assignable to type 'ArrayType'.
+  array.push([true])
 }
