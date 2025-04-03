@@ -690,3 +690,20 @@ export const testRepeatGeneratingYarrayTests30000 = tc => {
   t.skip(!t.production)
   applyRandomTests(tc, arrayTransactions, 30000)
 }
+
+/**
+ * Validate the public TypeScript API for Y.Array.
+ *
+ * @param {t.TestCase} tc
+ * @typedef {string | number | Array<boolean> | Y.Array<Uint8Array> | Y.Map<{ prop: number }>} ArrayType
+ */
+export const testPublicTypeInterface = tc => {
+    // Typed arrays
+
+    /** @type {Y.Array<ArrayType>} */
+    const array = new Y.Array();
+    /** @type {Array<string | number | Array<boolean> | Array<Uint8Array> | Partial<{prop: number;}>>} */
+    const json = array.toJSON();
+    /** @type {ArrayType | undefined} */
+    const maybeValue = array.get(5);
+}

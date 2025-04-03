@@ -23,14 +23,14 @@ import { typeListSlice } from './AbstractType.js'
 
 /**
  * Event that describes the changes on a YArray
- * @template T
+ * @template {import('./YMap.js').MapValue} T
  * @extends YEvent<YArray<T>>
  */
 export class YArrayEvent extends YEvent {}
 
 /**
  * A shared Array implementation.
- * @template T
+ * @template {import('./YMap.js').MapValue} T
  * @extends AbstractType<YArrayEvent<T>>
  * @implements {Iterable<T>}
  */
@@ -50,7 +50,7 @@ export class YArray extends AbstractType {
 
   /**
    * Construct a new YArray containing the specified items.
-   * @template {Object<string,any>|Array<any>|number|null|string|Uint8Array} T
+   * @template {import('./YMap.js').MapValue} T
    * @param {Array<T>} items
    * @return {YArray<T>}
    */
@@ -192,7 +192,7 @@ export class YArray extends AbstractType {
    * Returns the i-th element from a YArray.
    *
    * @param {number} index The index of the element to return from the YArray
-   * @return {T}
+   * @return {T | undefined}
    */
   get (index) {
     return typeListGet(this, index)
@@ -222,7 +222,7 @@ export class YArray extends AbstractType {
   /**
    * Transforms this Shared Type to a JSON object.
    *
-   * @return {Array<any>}
+   * @return {Array<T extends AbstractType<any> ? ReturnType<T['toJSON']> : T>}
    */
   toJSON () {
     return this.map(c => c instanceof AbstractType ? c.toJSON() : c)
