@@ -87,7 +87,7 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [JupyterCad](https://jupytercad.readthedocs.io/en/latest/) Extension to
   JupyterLab that enables collaborative editing of 3d FreeCAD Models.
 * [JupyterGIS](https://github.com/geojupyter/jupytergis) Collaborative GIS
-  (Geographic Information System) editor in Jupyter 
+  (Geographic Information System) editor in Jupyter
 * [Hyperquery](https://hyperquery.ai/) A collaborative data workspace for
   sharing analyses, documentation, spreadsheets, and dashboards.
 * [Nosgestesclimat](https://nosgestesclimat.fr/groupe) The french carbon

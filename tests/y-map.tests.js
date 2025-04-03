@@ -756,3 +756,91 @@ export const testRepeatGeneratingYmapTests100000 = tc => {
   t.skip(!t.production)
   applyRandomTests(tc, mapTransactions, 100000)
 }
+
+/**
+ * Validate the public TypeScript API for Y.Map.
+ *
+ * @param {t.TestCase} tc
+ * @typedef {{foo: string; bar: number | null; baz?: boolean;}} MyType
+ * @typedef {{n: null; b: boolean; s: string; i: number; u: Uint8Array; a: null | boolean | string | number | Uint8Array[];}} ComplexType
+ */
+export const testPublicTypeInterface = tc => {
+  /*
+   * Typed maps
+   *
+   * - Key names are autocompleted in first parameter of `get` and `set`.
+   * - `MapType` value types are constrained to valid Y.Map contents.
+   */
+
+  // Constructor argument keys & values are typechecked, and keys are autocompleted.
+  // Multiple items for each key and partial initialization are allowed.
+  /** @type {Y.Map<MyType>} */
+  const map = new Y.Map([
+    ["foo", ""],
+    ["foo", "even better"],
+    // @ts-expect-error: Type '["baz", number]' is not assignable to type '["foo", string] | ["bar", number | null] | ["baz", boolean | undefined]'.
+    ["baz", 3],
+  ]);
+
+  // Entries are allowed to be omitted, so get() still returns <type> | undefined.
+  /** @type {Y.Map<MyType>} */
+  const defaultMap = new Y.Map();
+
+  /** @type {Partial<MyType>} */
+  const json = defaultMap.toJSON();
+
+  /** @type {string | undefined} */
+  const fooValue = map.get("foo");
+  /** @type {"hi"} */
+  const fooSet = map.set("foo", "hi");
+  /** @type {number | null | undefined} */
+  const barValue = map.get("bar");
+  // @ts-expect-error: Argument of type '"hi"' is not assignable to parameter of type 'number | null'.
+  const barSet = map.set("bar", "hi");
+  // @ts-expect-error: Argument of type '"bomb"' is not assignable to parameter of type 'keyof MyType'.
+  const missingGet = map.get("bomb");
+  // Escape hatch: get<any>()
+  // Not sure how to test since JSDoc doesn't support function generic parameters
+  // const migrateGet = map.get<any>("extraneousKey");
+
+  // @ts-expect-error: Type '{ invalid: () => void; }' does not satisfy the constraint 'Record<string, MapValue>'.
+  /** @typedef {Y.Map<{ invalid: () => void }>} */
+  const invalidMap = new Y.Map();
+
+  // @ts-expect-error: Type '{ invalid: Blob; }' does not satisfy the constraint 'Record<string, MapValue>'.
+  /** @typedef {Y.Map<{ invalid: Blob }>} */
+  const invalidMap2 = new Y.Map();
+
+  // Arbitrarily complex valid types are still allowed
+  /** @type {Y.Map<ComplexType & { nested: ComplexType & { deeper: ComplexType[] } }>} */
+  const complexValidType = new Y.Map();
+
+
+  /*
+   * Default behavior
+   *
+   * Provides basic typechecking over the range of possible map values.
+   */
+  /** @type {Y.Map<Record<String, import('../src/internals.js').MapValue>>} */
+  const untyped = new Y.Map();
+
+  /** @type {import('../src/internals.js').MapValue | undefined} */
+  const boop = untyped.get("default");
+  // @ts-expect-error: Still validates value types: ERROR: Argument of type '() => string' is not assignable to parameter of type 'MapValue'.
+  const moop = untyped.set("anything", () => "whoops");
+
+
+  /*
+   * `any` maps (bypass typechecking)
+   */
+  /** @type {Y.Map<any>} */
+  const anyMap = new Y.Map();
+
+  /** @type {any} */
+  const fooValueAny = anyMap.get("foo");
+  /** @type {"hi"} */
+  const fooSetAny = anyMap.set("foo", "hi");
+  // Allowed because `any` unlocks cowboy mode
+  /** @type {() => "hi"} */
+  const barSetAny = anyMap.set("bar", () => "hi");
+}
