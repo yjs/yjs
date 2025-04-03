@@ -497,9 +497,11 @@ export const testEventTargetIsSetCorrectlyOnRemote = tc => {
  */
 export const testIteratingArrayContainingTypes = tc => {
   const y = new Y.Doc()
+  /** @type {Y.Array<Y.Map<{ value: number }>>} */
   const arr = y.getArray('arr')
   const numItems = 10
   for (let i = 0; i < numItems; i++) {
+    /** @type {Y.Map<{ value: number }>} */
     const map = new Y.Map()
     map.set('value', i)
     arr.push([map])
@@ -533,20 +535,22 @@ const arrayTransactions = [
     t.compareArrays(yarray.toArray(), oldContent) // we want to make sure that fastSearch markers insert at the correct position
   },
   function insertTypeArray (user, gen) {
+    /** @type {Y.Array<Y.Array<number>>} */
     const yarray = user.getArray('array')
     const pos = prng.int32(gen, 0, yarray.length)
     yarray.insert(pos, [new Y.Array()])
     const array2 = yarray.get(pos)
-    array2.insert(0, [1, 2, 3, 4])
+    array2?.insert(0, [1, 2, 3, 4])
   },
   function insertTypeMap (user, gen) {
+    /** @type {Y.Array<Y.Map<{ someprop: number }>>} */
     const yarray = user.getArray('array')
     const pos = prng.int32(gen, 0, yarray.length)
     yarray.insert(pos, [new Y.Map()])
     const map = yarray.get(pos)
-    map.set('someprop', 42)
-    map.set('someprop', 43)
-    map.set('someprop', 44)
+    map?.set('someprop', 42)
+    map?.set('someprop', 43)
+    map?.set('someprop', 44)
   },
   function insertTypeNull (user, gen) {
     const yarray = user.getArray('array')

@@ -312,6 +312,7 @@ export const testObfuscateUpdates = _tc => {
   const ydoc = new Y.Doc()
   const ytext = ydoc.getText('text')
   const ymap = ydoc.getMap('map')
+  /** @type {Y.Array<string | number | Y.XmlElement | Y.Doc>} */
   const yarray = ydoc.getArray('array')
   // test ytext
   ytext.applyDelta([{ insert: 'text', attributes: { bold: true } }, { insert: { href: 'supersecreturl' } }])
@@ -329,6 +330,7 @@ export const testObfuscateUpdates = _tc => {
   Y.applyUpdate(odoc, obfuscatedUpdate)
   const otext = odoc.getText('text')
   const omap = odoc.getMap('map')
+  /** @type {Y.Array<string | number | Y.XmlElement | Y.Doc>} */
   const oarray = odoc.getArray('array')
   // test ytext
   const delta = otext.toDelta()
@@ -347,7 +349,7 @@ export const testObfuscateUpdates = _tc => {
   t.assert(result[0] !== 'teststring')
   t.assert(result[1] !== 42)
   const osubtype = /** @type {Y.XmlElement} */ (result[2])
-  const osubdoc = result[3]
+  const osubdoc = /** @type {Y.Doc} */ (result[3])
   // test subtype
   t.assert(osubtype.nodeName !== subtype.nodeName)
   t.assert(object.length(osubtype.getAttributes()) === 1)

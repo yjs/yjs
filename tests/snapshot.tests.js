@@ -70,11 +70,13 @@ export const testEmptyRestoreSnapshot = _tc => {
 export const testRestoreSnapshotWithSubType = _tc => {
   const doc = new Y.Doc({ gc: false })
   doc.getArray('array').insert(0, [new Y.Map()])
-  const subMap = doc.getArray('array').get(0)
-  subMap.set('key1', 'value1')
+  /** @type {Y.Array<Y.Map>} */
+  const array = doc.getArray('array');
+  const subMap = array.get(0)
+  subMap?.set('key1', 'value1')
 
   const snap = Y.snapshot(doc)
-  subMap.set('key2', 'value2')
+  subMap?.set('key2', 'value2')
 
   const docRestored = Y.createDocFromSnapshot(doc, snap)
 

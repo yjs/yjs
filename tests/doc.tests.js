@@ -175,6 +175,7 @@ export const testSubdoc = _tc => {
  */
 export const testSubdocLoadEdgeCases = _tc => {
   const ydoc = new Y.Doc()
+  /** @type {Y.Array<Y.Doc>} */
   const yarray = ydoc.getArray()
   const subdoc1 = new Y.Doc()
   /**
@@ -196,7 +197,7 @@ export const testSubdocLoadEdgeCases = _tc => {
   t.assert(lastEvent !== null && lastEvent.added.has(subdoc2))
   t.assert(lastEvent !== null && !lastEvent.loaded.has(subdoc2))
   // load
-  subdoc2.load()
+  subdoc2?.load()
   t.assert(lastEvent !== null && !lastEvent.added.has(subdoc2))
   t.assert(lastEvent !== null && lastEvent.loaded.has(subdoc2))
   // apply from remote
@@ -205,14 +206,16 @@ export const testSubdocLoadEdgeCases = _tc => {
     lastEvent = event
   })
   Y.applyUpdate(ydoc2, Y.encodeStateAsUpdate(ydoc))
-  const subdoc3 = ydoc2.getArray().get(0)
-  t.assert(subdoc3.shouldLoad === false)
-  t.assert(subdoc3.autoLoad === false)
+  /** @type {Y.Array<Y.Doc>} */
+  const yarray2 = ydoc2.getArray()
+  const subdoc3 = yarray2.get(0)
+  t.assert(subdoc3?.shouldLoad === false)
+  t.assert(subdoc3?.autoLoad === false)
   t.assert(lastEvent !== null && lastEvent.added.has(subdoc3))
   t.assert(lastEvent !== null && !lastEvent.loaded.has(subdoc3))
   // load
-  subdoc3.load()
-  t.assert(subdoc3.shouldLoad)
+  subdoc3?.load()
+  t.assert(subdoc3?.shouldLoad)
   t.assert(lastEvent !== null && !lastEvent.added.has(subdoc3))
   t.assert(lastEvent !== null && lastEvent.loaded.has(subdoc3))
 }
@@ -222,6 +225,7 @@ export const testSubdocLoadEdgeCases = _tc => {
  */
 export const testSubdocLoadEdgeCasesAutoload = _tc => {
   const ydoc = new Y.Doc()
+  /** @type {Y.Array<Y.Doc>} */
   const yarray = ydoc.getArray()
   const subdoc1 = new Y.Doc({ autoLoad: true })
   /**
@@ -243,7 +247,7 @@ export const testSubdocLoadEdgeCasesAutoload = _tc => {
   t.assert(lastEvent !== null && lastEvent.added.has(subdoc2))
   t.assert(lastEvent !== null && !lastEvent.loaded.has(subdoc2))
   // load
-  subdoc2.load()
+  subdoc2?.load()
   t.assert(lastEvent !== null && !lastEvent.added.has(subdoc2))
   t.assert(lastEvent !== null && lastEvent.loaded.has(subdoc2))
   // apply from remote
