@@ -27,6 +27,19 @@ export const warnPrematureAccess = () => { log.warn('Invalid access: Add Yjs typ
 const maxSearchMarker = 80
 
 /**
+ * Union of types that can be serialized for storing within AbstractTypes like YMap & YArray
+ * This works around some weird JSDoc+TS circular reference issues: https://github.com/microsoft/TypeScript/issues/46369
+ *
+ * The current implementation doesn't call toJSON on AbstractTypes nested with JSON,
+ * which could be surprising to users. So AbstractType is not included in the Json type here,
+ * to encourage direct nesting of AbstractTypes.
+ * @typedef {boolean|null|string|number|Uint8Array|JsonArray|JsonObject} Json
+ * @typedef {Json[]} JsonArray
+ * @typedef {{ [key: string]: Json }} JsonObject
+ * @typedef {Json|AbstractType<any>|Doc} SerializableValue
+ */
+
+/**
  * A unique timestamp that identifies each marker.
  *
  * Time is relative,.. this is more like an ever-increasing clock.

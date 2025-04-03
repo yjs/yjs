@@ -114,6 +114,7 @@ export const testSubdoc = _tc => {
     doc.on('subdocs', subdocs => {
       event = [Array.from(subdocs.added).map(x => x.guid), Array.from(subdocs.removed).map(x => x.guid), Array.from(subdocs.loaded).map(x => x.guid)]
     })
+    /** @type {Y.Map<{ a: Y.Doc; b: Y.Doc, c: Y.Doc; }>} */
     const subdocs = doc.getMap('mysubdocs')
     const docA = new Y.Doc({ guid: 'a' })
     docA.load()
@@ -121,18 +122,18 @@ export const testSubdoc = _tc => {
     t.compare(event, [['a'], [], ['a']])
 
     event = null
-    subdocs.get('a').load()
+    subdocs.get('a')?.load()
     t.assert(event === null)
 
     event = null
-    subdocs.get('a').destroy()
+    subdocs.get('a')?.destroy()
     t.compare(event, [['a'], ['a'], []])
-    subdocs.get('a').load()
+    subdocs.get('a')?.load()
     t.compare(event, [[], [], ['a']])
 
     subdocs.set('b', new Y.Doc({ guid: 'a', shouldLoad: false }))
     t.compare(event, [['a'], [], []])
-    subdocs.get('b').load()
+    subdocs.get('b')?.load()
     t.compare(event, [[], [], ['a']])
 
     const docC = new Y.Doc({ guid: 'c' })
@@ -156,7 +157,9 @@ export const testSubdoc = _tc => {
     Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc))
     t.compare(event, [['a', 'a', 'c'], [], []])
 
-    doc2.getMap('mysubdocs').get('a').load()
+    /** @type {Y.Map<Record<string, Y.Doc>>} */
+    const mysubdocs = doc2.getMap('mysubdocs')
+    mysubdocs.get('a')?.load()
     t.compare(event, [[], [], ['a']])
 
     t.compare(Array.from(doc2.getSubdocGuids()), ['a', 'c'])
@@ -172,6 +175,7 @@ export const testSubdoc = _tc => {
  */
 export const testSubdocLoadEdgeCases = _tc => {
   const ydoc = new Y.Doc()
+  /** @type {Y.Array<Y.Doc>} */
   const yarray = ydoc.getArray()
   const subdoc1 = new Y.Doc()
   /**
@@ -193,7 +197,7 @@ export const testSubdocLoadEdgeCases = _tc => {
   t.assert(lastEvent !== null && lastEvent.added.has(subdoc2))
   t.assert(lastEvent !== null && !lastEvent.loaded.has(subdoc2))
   // load
-  subdoc2.load()
+  subdoc2?.load()
   t.assert(lastEvent !== null && !lastEvent.added.has(subdoc2))
   t.assert(lastEvent !== null && lastEvent.loaded.has(subdoc2))
   // apply from remote
@@ -202,14 +206,16 @@ export const testSubdocLoadEdgeCases = _tc => {
     lastEvent = event
   })
   Y.applyUpdate(ydoc2, Y.encodeStateAsUpdate(ydoc))
-  const subdoc3 = ydoc2.getArray().get(0)
-  t.assert(subdoc3.shouldLoad === false)
-  t.assert(subdoc3.autoLoad === false)
+  /** @type {Y.Array<Y.Doc>} */
+  const yarray2 = ydoc2.getArray()
+  const subdoc3 = yarray2.get(0)
+  t.assert(subdoc3?.shouldLoad === false)
+  t.assert(subdoc3?.autoLoad === false)
   t.assert(lastEvent !== null && lastEvent.added.has(subdoc3))
   t.assert(lastEvent !== null && !lastEvent.loaded.has(subdoc3))
   // load
-  subdoc3.load()
-  t.assert(subdoc3.shouldLoad)
+  subdoc3?.load()
+  t.assert(subdoc3?.shouldLoad)
   t.assert(lastEvent !== null && !lastEvent.added.has(subdoc3))
   t.assert(lastEvent !== null && lastEvent.loaded.has(subdoc3))
 }
@@ -219,6 +225,7 @@ export const testSubdocLoadEdgeCases = _tc => {
  */
 export const testSubdocLoadEdgeCasesAutoload = _tc => {
   const ydoc = new Y.Doc()
+  /** @type {Y.Array<Y.Doc>} */
   const yarray = ydoc.getArray()
   const subdoc1 = new Y.Doc({ autoLoad: true })
   /**
@@ -240,7 +247,7 @@ export const testSubdocLoadEdgeCasesAutoload = _tc => {
   t.assert(lastEvent !== null && lastEvent.added.has(subdoc2))
   t.assert(lastEvent !== null && !lastEvent.loaded.has(subdoc2))
   // load
-  subdoc2.load()
+  subdoc2?.load()
   t.assert(lastEvent !== null && !lastEvent.added.has(subdoc2))
   t.assert(lastEvent !== null && lastEvent.loaded.has(subdoc2))
   // apply from remote
