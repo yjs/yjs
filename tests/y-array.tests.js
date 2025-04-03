@@ -362,18 +362,19 @@ export const testObserveDeepEventOrder = tc => {
  */
 export const testObservedeepIndexes = _tc => {
   const doc = new Y.Doc()
+    /** @type Y.Map<{ 'my-array': Y.Array<any> }> */
   const map = doc.getMap()
   // Create a field with the array as value
   map.set('my-array', new Y.Array())
   // Fill the array with some strings and our Map
-  map.get('my-array').push(['a', 'b', 'c', new Y.Map()])
+  map.get('my-array')?.push(['a', 'b', 'c', new Y.Map()])
   /**
    * @type {Array<any>}
    */
   let eventPath = []
   map.observeDeep((events) => { eventPath = events[0].path })
   // set a value on the map inside of our array
-  map.get('my-array').get(3).set('hello', 'world')
+  map.get('my-array')?.get(3).set('hello', 'world')
   console.log(eventPath)
   t.compare(eventPath, ['my-array', 3])
 }
