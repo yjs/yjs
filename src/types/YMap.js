@@ -56,7 +56,7 @@ export class YMapEvent extends YEvent {
 /**
  * A shared Map implementation.
  *
- * @template {Record<string, import('./AbstractType.js').SerializableValue>} MapType
+ * @template {Record<string, import('./AbstractType.js').SerializableValue>} [MapType=Record<string, import('./AbstractType.js').SerializableValue>]
  * @extends AbstractType<YMapEvent<MapType>>
  * @implements {Iterable<[StringKey<MapType>, MapType[StringKey<MapType>]]>}
  */

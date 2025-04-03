@@ -30,7 +30,7 @@ export class YArrayEvent extends YEvent {}
 
 /**
  * A shared Array implementation.
- * @template {import('./AbstractType.js').SerializableValue} T
+ * @template {import('./AbstractType.js').SerializableValue} [T=import('./AbstractType.js').SerializableValue]
  * @extends AbstractType<YArrayEvent<T>>
  * @implements {Iterable<T>}
  */
