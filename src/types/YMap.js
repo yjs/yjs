@@ -37,19 +37,7 @@ import * as iterator from 'lib0/iterator'
  */
 
 /**
- * This works around some weird JSDoc+TS circular reference issues: https://github.com/microsoft/TypeScript/issues/46369
- *
- * The current implementation doesn't call toJSON on AbstractTypes nested with JSON,
- * which could be surprising to users. So AbstractType is not included in the Json type here,
- * to encourage direct nesting of AbstractTypes.
- * @typedef {boolean|null|string|number|Uint8Array|JsonArray|JsonObject} Json
- * @typedef {Json[]} JsonArray
- * @typedef {{ [key: string]: Json }} JsonObject
- * @typedef {Json|AbstractType<any>|Doc} MapValue
- */
-
-/**
- * @template {Record<string, MapValue>} T
+ * @template {Record<string, import('./AbstractType.js').SerializableValue>} T
  * @extends YEvent<YMap<T>>
  * Event that describes the changes on a YMap.
  */
@@ -68,7 +56,7 @@ export class YMapEvent extends YEvent {
 /**
  * A shared Map implementation.
  *
- * @template {Record<string, MapValue>} MapType
+ * @template {Record<string, import('./AbstractType.js').SerializableValue>} MapType
  * @extends AbstractType<YMapEvent<MapType>>
  * @implements {Iterable<[StringKey<MapType>, MapType[StringKey<MapType>]]>}
  */

@@ -803,11 +803,11 @@ export const testPublicTypeInterface = tc => {
   // Not sure how to test since JSDoc doesn't support function generic parameters
   // const migrateGet = map.get<any>("extraneousKey");
 
-  // @ts-expect-error: Type '{ invalid: () => void; }' does not satisfy the constraint 'Record<string, MapValue>'.
+  // @ts-expect-error: Type '{ invalid: () => void; }' does not satisfy the constraint 'Record<string, SerializableValue>'.
   /** @typedef {Y.Map<{ invalid: () => void }>} */
   const invalidMap = new Y.Map();
 
-  // @ts-expect-error: Type '{ invalid: Blob; }' does not satisfy the constraint 'Record<string, MapValue>'.
+  // @ts-expect-error: Type '{ invalid: Blob; }' does not satisfy the constraint 'Record<string, SerializableValue>'.
   /** @typedef {Y.Map<{ invalid: Blob }>} */
   const invalidMap2 = new Y.Map();
 
@@ -841,12 +841,12 @@ export const testPublicTypeInterface = tc => {
    *
    * Provides basic typechecking over the range of possible map values.
    */
-  /** @type {Y.Map<Record<String, import('../src/internals.js').MapValue>>} */
+  /** @type {Y.Map<Record<String, import('../src/internals.js').SerializableValue>>} */
   const untyped = new Y.Map();
 
-  /** @type {import('../src/internals.js').MapValue | undefined} */
+  /** @type {import('../src/internals.js').SerializableValue | undefined} */
   const boop = untyped.get("default");
-  // @ts-expect-error: Still validates value types: ERROR: Argument of type '() => string' is not assignable to parameter of type 'MapValue'.
+  // @ts-expect-error: Still validates value types: ERROR: Argument of type '() => string' is not assignable to parameter of type 'SerializableValue'.
   const moop = untyped.set("anything", () => "whoops");
 
 

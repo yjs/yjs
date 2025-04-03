@@ -23,14 +23,14 @@ import { typeListSlice } from './AbstractType.js'
 
 /**
  * Event that describes the changes on a YArray
- * @template {import('./YMap.js').MapValue} T
+ * @template {import('./AbstractType.js').SerializableValue} T
  * @extends YEvent<YArray<T>>
  */
 export class YArrayEvent extends YEvent {}
 
 /**
  * A shared Array implementation.
- * @template {import('./YMap.js').MapValue} T
+ * @template {import('./AbstractType.js').SerializableValue} T
  * @extends AbstractType<YArrayEvent<T>>
  * @implements {Iterable<T>}
  */
@@ -50,7 +50,7 @@ export class YArray extends AbstractType {
 
   /**
    * Construct a new YArray containing the specified items.
-   * @template {import('./YMap.js').MapValue} T
+   * @template {import('./AbstractType.js').SerializableValue} T
    * @param {Array<T>} items
    * @return {YArray<T>}
    */

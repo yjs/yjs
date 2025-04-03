@@ -268,7 +268,7 @@ export class Doc extends ObservableV2 {
   }
 
   /**
-   * @template {Record<string, import("../internals.js").MapValue>} T
+   * @template {Record<string, import("../internals.js").SerializableValue>} T
    * @param {string} [name]
    * @return {YMap<T>}
    *
