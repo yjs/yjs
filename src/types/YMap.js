@@ -165,7 +165,7 @@ export class YMap extends AbstractType {
   /**
    * Returns the keys for each element in the YMap Type.
    *
-   * @return {IterableIterator<string>}
+   * @return {IterableIterator<StringKey<MapType>>}
    */
   keys () {
     return iterator.iteratorMap(createMapIterator(this), /** @param {any} v */ v => v[0])
@@ -183,7 +183,7 @@ export class YMap extends AbstractType {
   /**
    * Returns an Iterator of [key, value] pairs
    *
-   * @return {IterableIterator<[StringKey<MapType>, MapType[StringKey<MapType>]]>}
+   * @return {IterableIterator<EntriesOf<MapType>[number]>}
    */
   entries () {
     return iterator.iteratorMap(createMapIterator(this), /** @param {any} v */ v => /** @type {any} */ ([v[0], v[1].content.getContent()[v[1].length - 1]]))
@@ -206,7 +206,7 @@ export class YMap extends AbstractType {
   /**
    * Returns an Iterator of [key, value] pairs
    *
-   * @return {IterableIterator<[StringKey<MapType>, MapType[StringKey<MapType>]]>}
+   * @return {IterableIterator<EntriesOf<MapType>[number]>}
    */
   [Symbol.iterator] () {
     return this.entries()

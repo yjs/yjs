@@ -789,6 +789,31 @@ export const testPublicTypeInterface = tc => {
   /** @type {Partial<MyType>} */
   const json = defaultMap.toJSON();
 
+  /** @type {IteratorResult<["foo", string] | ["bar", number | null] | ["baz", boolean | undefined], any>} */
+  const firstEntry = defaultMap.entries().next();
+
+  for (const entry of defaultMap) {
+    /** @type {"foo" | "bar" | "baz"} */
+    const key = entry[0];
+    /** @type {string | number | boolean | null | undefined} */
+    const broadValue = entry[1];
+
+    if (entry[0] === 'bar') {
+      // Type of the value is narrowed by comparison to the key
+      /** @type {number | null} */
+      const narrowValue = entry[1];
+    }
+  }
+
+  for (const key of defaultMap.keys()) {
+    /** @type {'foo' | 'bar' | 'baz'} */
+    const typedKey = key;
+  }
+  for (const value of defaultMap.values()) {
+    /** @type {string | number | boolean | null | undefined}  */
+    const typedValue = value;
+  }
+
   /** @type {string | undefined} */
   const fooValue = map.get("foo");
   /** @type {"hi"} */
@@ -849,6 +874,21 @@ export const testPublicTypeInterface = tc => {
   // @ts-expect-error: Still validates value types: ERROR: Argument of type '() => string' is not assignable to parameter of type 'SerializableValue'.
   const moop = untyped.set("anything", () => "whoops");
 
+  for (const entry of untyped) {
+    /** @type {string} */
+    const key = entry[0];
+    /** @type {import('../src/internals.js').SerializableValue} */
+    const broadValue = entry[1];
+  }
+
+  for (const key of untyped.keys()) {
+    /** @type {string} */
+    const typedKey = key;
+  }
+  for (const value of untyped.values()) {
+    /** @type {import('../src/internals.js').SerializableValue}  */
+    const typedValue = value;
+  }
 
   /*
    * `any` maps (bypass typechecking)
