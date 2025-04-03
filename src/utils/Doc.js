@@ -247,14 +247,14 @@ export class Doc extends ObservableV2 {
   }
 
   /**
-   * @template T
+   * @template {import("../internals.js").SerializableValue} T
    * @param {string} [name]
    * @return {YArray<T>}
    *
    * @public
    */
   getArray (name = '') {
-    return /** @type {YArray<T>} */ (this.get(name, YArray))
+    return /** @type {YArray<T>} */ /** @type {any} */ (this.get(name, YArray))
   }
 
   /**
