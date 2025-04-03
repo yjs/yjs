@@ -371,11 +371,11 @@ export const testObserversUsingObservedeep = tc => {
   /**
    * @type {Array<Array<string|number>>}
    */
-  const pathes = []
+  const paths = []
   let calls = 0
   map0.observeDeep(events => {
     events.forEach(event => {
-      pathes.push(event.path)
+      paths.push(event.path)
     })
     calls++
   })
@@ -383,7 +383,7 @@ export const testObserversUsingObservedeep = tc => {
   map0.get('map').set('array', new Y.Array())
   map0.get('map').get('array').insert(0, ['content'])
   t.assert(calls === 3)
-  t.compare(pathes, [[], ['map'], ['map', 'array']])
+  t.compare(paths, [[], ['map'], ['map', 'array']])
   compare(users)
 }
 
@@ -395,14 +395,14 @@ export const testPathsOfSiblingEvents = tc => {
   /**
    * @type {Array<Array<string|number>>}
    */
-  const pathes = []
+  const paths = []
   let calls = 0
   const doc = users[0]
   map0.set('map', new Y.Map())
   map0.get('map').set('text1', new Y.Text('initial'))
   map0.observeDeep(events => {
     events.forEach(event => {
-      pathes.push(event.path)
+      paths.push(event.path)
     })
     calls++
   })
@@ -411,7 +411,7 @@ export const testPathsOfSiblingEvents = tc => {
     map0.get('map').set('text2', new Y.Text('new'))
   })
   t.assert(calls === 1)
-  t.compare(pathes, [['map'], ['map', 'text1']])
+  t.compare(paths, [['map'], ['map', 'text1']])
   compare(users)
 }
 

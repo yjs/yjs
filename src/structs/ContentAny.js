@@ -2,6 +2,11 @@ import {
   UpdateEncoderV1, UpdateEncoderV2, UpdateDecoderV1, UpdateDecoderV2, Transaction, Item, StructStore // eslint-disable-line
 } from '../internals.js'
 
+import * as env from 'lib0/environment'
+import * as object from 'lib0/object'
+
+const isDevMode = env.getVariable('node_env') === 'development'
+
 export class ContentAny {
   /**
    * @param {Array<any>} arr
@@ -11,6 +16,7 @@ export class ContentAny {
      * @type {Array<any>}
      */
     this.arr = arr
+    isDevMode && object.deepFreeze(arr)
   }
 
   /**

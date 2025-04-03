@@ -26,6 +26,7 @@ import {
   typeMapGetAll,
   updateMarkerChanges,
   ContentType,
+  warnPrematureAccess,
   ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
 } from '../internals.js'
 
@@ -201,7 +202,7 @@ const minimizeAttributeChanges = (currPos, attributes) => {
   while (true) {
     if (currPos.right === null) {
       break
-    } else if (currPos.right.deleted || (currPos.right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (currPos.right.content)).key] || null, /** @type {ContentFormat} */ (currPos.right.content).value))) {
+    } else if (currPos.right.deleted || (currPos.right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (currPos.right.content)).key] ?? null, /** @type {ContentFormat} */ (currPos.right.content).value))) {
       //
     } else {
       break
@@ -227,7 +228,7 @@ const insertAttributes = (transaction, parent, currPos, attributes) => {
   // insert format-start items
   for (const key in attributes) {
     const val = attributes[key]
-    const currentVal = currPos.currentAttributes.get(key) || null
+    const currentVal = currPos.currentAttributes.get(key) ?? null
     if (!equalAttrs(currentVal, val)) {
       // save negated attribute (set null if currentVal undefined)
       negatedAttributes.set(key, currentVal)
@@ -389,12 +390,12 @@ const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAtt
       switch (content.constructor) {
         case ContentFormat: {
           const { key, value } = /** @type {ContentFormat} */ (content)
-          const startAttrValue = startAttributes.get(key) || null
+          const startAttrValue = startAttributes.get(key) ?? null
           if (endFormats.get(key) !== content || startAttrValue === value) {
             // Either this format is overwritten or it is not necessary because the attribute already existed.
             start.delete(transaction)
             cleanups++
-            if (!reachedCurr && (currAttributes.get(key) || null) === value && startAttrValue !== value) {
+            if (!reachedCurr && (currAttributes.get(key) ?? null) === value && startAttrValue !== value) {
               if (startAttrValue === null) {
                 currAttributes.delete(key)
               } else {
@@ -477,7 +478,7 @@ export const cleanupYTextFormatting = type => {
 }
 
 /**
- * This will be called by the transction once the event handlers are called to potentially cleanup
+ * This will be called by the transaction once the event handlers are called to potentially cleanup
  * formatting attributes.
  *
  * @param {Transaction} transaction
@@ -567,7 +568,7 @@ const deleteText = (transaction, currPos, length) => {
 
 /**
  * The Quill Delta format represents changes on a text document with
- * formatting information. For mor information visit {@link https://quilljs.com/docs/delta/|Quill Delta}
+ * formatting information. For more information visit {@link https://quilljs.com/docs/delta/|Quill Delta}
  *
  * @example
  *   {
@@ -769,12 +770,12 @@ export class YTextEvent extends YEvent {
               const { key, value } = /** @type {ContentFormat} */ (item.content)
               if (this.adds(item)) {
                 if (!this.deletes(item)) {
-                  const curVal = currentAttributes.get(key) || null
+                  const curVal = currentAttributes.get(key) ?? null
                   if (!equalAttrs(curVal, value)) {
                     if (action === 'retain') {
                       addOp()
                     }
-                    if (equalAttrs(value, (oldAttributes.get(key) || null))) {
+                    if (equalAttrs(value, (oldAttributes.get(key) ?? null))) {
                       delete attributes[key]
                     } else {
                       attributes[key] = value
@@ -785,7 +786,7 @@ export class YTextEvent extends YEvent {
                 }
               } else if (this.deletes(item)) {
                 oldAttributes.set(key, value)
-                const curVal = currentAttributes.get(key) || null
+                const curVal = currentAttributes.get(key) ?? null
                 if (!equalAttrs(curVal, value)) {
                   if (action === 'retain') {
                     addOp()
@@ -875,6 +876,7 @@ export class YText extends AbstractType {
    * @type {number}
    */
   get length () {
+    this.doc ?? warnPrematureAccess()
     return this._length
   }
 
@@ -897,6 +899,10 @@ export class YText extends AbstractType {
   }
 
   /**
+   * Makes a copy of this data type that can be included somewhere else.
+   *
+   * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+   *
    * @return {YText}
    */
   clone () {
@@ -927,6 +933,7 @@ export class YText extends AbstractType {
    * @public
    */
   toString () {
+    this.doc ?? warnPrematureAccess()
     let str = ''
     /**
      * @type {Item|null}
@@ -954,7 +961,7 @@ export class YText extends AbstractType {
   /**
    * Apply a {@link Delta} on this shared YText type.
    *
-   * @param {any} delta The changes to apply on this element.
+   * @param {Array<any>} delta The changes to apply on this element.
    * @param {object}  opts
    * @param {boolean} [opts.sanitize] Sanitize input delta. Removes ending newlines if set to true.
    *
@@ -1000,6 +1007,7 @@ export class YText extends AbstractType {
    * @public
    */
   toDelta (snapshot, prevSnapshot, computeYChange) {
+    this.doc ?? warnPrematureAccess()
     /**
      * @type{Array<any>}
      */

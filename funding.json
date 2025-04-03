@@ -1,0 +1,142 @@
+{
+  "version": "v1.0.0",
+  "entity": {
+    "type": "group",
+    "role": "steward",
+    "name": "Kevin Jahns",
+    "email": "kevin.jahns@protonmail.com",
+    "phone": "",
+    "description": "OSS Developer",
+    "webpageUrl": {
+      "url": "https://github.com/yjs"
+    }
+  },
+  "projects": [
+    {
+      "guid": "yjs",
+      "name": "Yjs",
+      "description": "A library for building collaborative applications. #p2p #local-first #CRDT Funding this project will also enable me to maintain the other Yjs-related technologies.",
+      "webpageUrl": {
+        "url": "https://github.com/yjs/yjs"
+      },
+      "repositoryUrl": {
+        "url": "https://github.com/yjs/yjs"
+      },
+      "licenses": [
+        "spdx:MIT"
+      ],
+      "tags": [
+        "collaboration",
+        "p2p",
+        "CRDT",
+        "rich-text",
+        "real-time"
+      ]
+    },
+    {
+      "guid": "Titanic",
+      "name": "Y/Titanic",
+      "description": "A provider for syncing millions of docs efficiently with other peers. This will become the foundation for building real local-first apps with Yjs.",
+      "webpageUrl": {
+        "url": "https://github.com/yjs/titanic",
+        "wellKnown": "https://github.com/yjs/titanic/blob/main/.well-known/funding-manifest-urls"
+      },
+      "repositoryUrl": {
+        "url": "https://github.com/yjs/titanic",
+        "wellKnown": "https://github.com/yjs/titanic/blob/main/.well-known/funding-manifest-urls"
+      },
+      "licenses": [
+        "spdx:MIT"
+      ],
+      "tags": [
+        "privacy",
+        "collaboration",
+        "p2p",
+        "CRDT",
+        "rich-text",
+        "real-time",
+        "web-development"
+      ]
+    }
+  ],
+  "funding": {
+    "channels": [
+      {
+        "guid": "github-sponsors",
+        "type": "payment-provider",
+        "address": "",
+        "description": "For funding of the Yjs project"
+      },
+      {
+        "guid": "y-collective",
+        "type": "payment-provider",
+        "address": "https://opencollective.com/y-collective",
+        "description": "For funding the Y-CRDT - the Rust implementation of Yjs and other listed projects."
+      }
+    ],
+    "plans": [
+      {
+        "guid": "supporter",
+        "status": "active",
+        "name": "Supporter",
+        "description": "",
+        "amount": 0,
+        "currency": "USD",
+        "frequency": "monthly",
+        "channels": [
+          "github-sponsors",
+          "y-collective"
+        ]
+      },
+      {
+        "guid": "titanic-funding",
+        "status": "active",
+        "name": "Titanic Funding",
+        "description": "Fund the next generation of local-first providers.",
+        "amount": 30000,
+        "currency": "USD",
+        "frequency": "one-time",
+        "channels": [
+          "github-sponsors"
+        ]
+      },
+      {
+        "guid": "bronze-sponsor",
+        "status": "active",
+        "name": "Bronze Sponsor",
+        "description": "This is the recommended plan for companies that use Yjs.",
+        "amount": 500,
+        "currency": "USD",
+        "frequency": "monthly",
+        "channels": [
+          "github-sponsors"
+        ]
+      },
+      {
+        "guid": "silver-sponsor",
+        "status": "active",
+        "name": "Silver Sponsor",
+        "description": "This is the recommended plan for large/successfull companies that use Yjs.",
+        "amount": 1000,
+        "currency": "USD",
+        "frequency": "monthly",
+        "channels": [
+          "github-sponsors"
+        ]
+      },
+      {
+        "guid": "gold-sponsor",
+        "status": "active",
+        "name": "Gold Sponsor",
+        "description": "This is the recommended plan for successful companies that build their entire product around Yjs-related technologies.",
+        "amount": 3000,
+        "currency": "USD",
+        "frequency": "monthly",
+        "channels": [
+          "github-sponsors"
+        ]
+      }
+    ],
+    "history": null
+  }
+}

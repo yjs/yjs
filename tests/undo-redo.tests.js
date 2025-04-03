@@ -117,6 +117,72 @@ export const testEmptyTypeScope = _tc => {
 }
 
 /**
+ * @param {t.TestCase} _tc
+ */
+export const testRejectUpdateExample = _tc => {
+  const tmpydoc1 = new Y.Doc()
+  tmpydoc1.getArray('restricted').insert(0, [1])
+  tmpydoc1.getArray('public').insert(0, [1])
+  const update1 = Y.encodeStateAsUpdate(tmpydoc1)
+  const tmpydoc2 = new Y.Doc()
+  tmpydoc2.getArray('public').insert(0, [2])
+  const update2 = Y.encodeStateAsUpdate(tmpydoc2)
+
+  const ydoc = new Y.Doc()
+  const restrictedType = ydoc.getArray('restricted')
+
+  /**
+   * Assume this function handles incoming updates via a communication channel like websockets.
+   * Changes to the `ydoc.getMap('restricted')` type should be rejected.
+   *
+   * - set up undo manager on the restricted types
+   * - cache pending* updates from the Ydoc to avoid certain attacks
+   * - apply received update and check whether the restricted type (or any of its children) has been changed.
+   * - catch errors that might try to circumvent the restrictions
+   * - undo changes on restricted types
+   * - reapply pending* updates
+   *
+   * @param {Uint8Array} update
+   */
+  const updateHandler = (update) => {
+    // don't handle changes of the local undo manager, which is used to undo invalid changes
+    const um = new Y.UndoManager(restrictedType, { trackedOrigins: new Set(['remote change']) })
+    const beforePendingDs = ydoc.store.pendingDs
+    const beforePendingStructs = ydoc.store.pendingStructs?.update
+    try {
+      Y.applyUpdate(ydoc, update, 'remote change')
+    } finally {
+      while (um.undoStack.length) {
+        um.undo()
+      }
+      um.destroy()
+      ydoc.store.pendingDs = beforePendingDs
+      ydoc.store.pendingStructs = null
+      if (beforePendingStructs) {
+        Y.applyUpdateV2(ydoc, beforePendingStructs)
+      }
+    }
+  }
+  updateHandler(update1)
+  updateHandler(update2)
+  t.assert(restrictedType.length === 0)
+  t.assert(ydoc.getArray('public').length === 2)
+}
+
+/**
+ * Test case to fix #241
+ * @param {t.TestCase} _tc
+ */
+export const testGlobalScope = _tc => {
+  const ydoc = new Y.Doc()
+  const um = new Y.UndoManager(ydoc)
+  const yarray = ydoc.getArray()
+  yarray.insert(0, [1])
+  um.undo()
+  t.assert(yarray.length === 0)
+}
+
+/**
  * Test case to fix #241
  * @param {t.TestCase} _tc
  */
@@ -716,4 +782,34 @@ export const testUndoDeleteInMap = (tc) => {
   t.compare(map0.toJSON(), {})
   undoManager.undo()
   t.compare(map0.toJSON(), { a: 'a' })
+}
+
+/**
+ * It should expose the StackItem being processed if undoing
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testUndoDoingStackItem = async (_tc) => {
+  const doc = new Y.Doc()
+  const text = doc.getText('text')
+  const undoManager = new Y.UndoManager([text])
+  undoManager.on('stack-item-added', /** @param {any} event */ event => {
+    event.stackItem.meta.set('str', '42')
+  })
+  let metaUndo = /** @type {any} */ (null)
+  let metaRedo = /** @type {any} */ (null)
+  text.observe((event) => {
+    const /** @type {Y.UndoManager} */ origin = event.transaction.origin
+    if (origin === undoManager && origin.undoing) {
+      metaUndo = origin.currStackItem?.meta.get('str')
+    } else if (origin === undoManager && origin.redoing) {
+      metaRedo = origin.currStackItem?.meta.get('str')
+    }
+  })
+  text.insert(0, 'abc')
+  undoManager.undo()
+  undoManager.redo()
+  t.compare(metaUndo, '42', 'currStackItem is accessible while undoing')
+  t.compare(metaRedo, '42', 'currStackItem is accessible while redoing')
+  t.compare(undoManager.currStackItem, null, 'currStackItem is null after observe/transaction')
 }

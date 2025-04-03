@@ -393,8 +393,7 @@ export class Item extends AbstractStruct {
       if (this.left && this.left.constructor === Item) {
         this.parent = this.left.parent
         this.parentSub = this.left.parentSub
-      }
-      if (this.right && this.right.constructor === Item) {
+      } else if (this.right && this.right.constructor === Item) {
         this.parent = this.right.parent
         this.parentSub = this.right.parentSub
       }

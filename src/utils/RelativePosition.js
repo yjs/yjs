@@ -8,7 +8,8 @@ import {
   createID,
   ContentType,
   followRedone,
-  ID, Doc, AbstractType // eslint-disable-line
+  getItem,
+  StructStore, ID, Doc, AbstractType, // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding'
@@ -65,7 +66,7 @@ export class RelativePosition {
      * after the meant position.
      * I.e. position 1 in 'ab' is associated to character 'b'.
      *
-     * If assoc < 0, then the relative position is associated to the caharacter
+     * If assoc < 0, then the relative position is associated to the character
      * before the meant position.
      *
      * @type {number}
@@ -101,7 +102,7 @@ export const relativePositionToJSON = rpos => {
  *
  * @function
  */
-export const createRelativePositionFromJSON = json => new RelativePosition(json.type == null ? null : createID(json.type.client, json.type.clock), json.tname || null, json.item == null ? null : createID(json.item.client, json.item.clock), json.assoc == null ? 0 : json.assoc)
+export const createRelativePositionFromJSON = json => new RelativePosition(json.type == null ? null : createID(json.type.client, json.type.clock), json.tname ?? null, json.item == null ? null : createID(json.item.client, json.item.clock), json.assoc == null ? 0 : json.assoc)
 
 export class AbsolutePosition {
   /**
@@ -256,13 +257,36 @@ export const readRelativePosition = decoder => {
 export const decodeRelativePosition = uint8Array => readRelativePosition(decoding.createDecoder(uint8Array))
 
 /**
+ * @param {StructStore} store
+ * @param {ID} id
+ */
+const getItemWithOffset = (store, id) => {
+  const item = getItem(store, id)
+  const diff = id.clock - item.id.clock
+  return {
+    item, diff
+  }
+}
+
+/**
+ * Transform a relative position to an absolute position.
+ *
+ * If you want to share the relative position with other users, you should set
+ * `followUndoneDeletions` to false to get consistent results across all clients.
+ *
+ * When calculating the absolute position, we try to follow the "undone deletions". This yields
+ * better results for the user who performed undo. However, only the user who performed the undo
+ * will get the better results, the other users don't know which operations recreated a deleted
+ * range of content. There is more information in this ticket: https://github.com/yjs/yjs/issues/638
+ *
  * @param {RelativePosition} rpos
  * @param {Doc} doc
+ * @param {boolean} followUndoneDeletions - whether to follow undone deletions - see https://github.com/yjs/yjs/issues/638
  * @return {AbsolutePosition|null}
  *
  * @function
  */
-export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
+export const createAbsolutePositionFromRelativePosition = (rpos, doc, followUndoneDeletions = true) => {
   const store = doc.store
   const rightID = rpos.item
   const typeID = rpos.type
@@ -274,7 +298,7 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
     if (getState(store, rightID.client) <= rightID.clock) {
       return null
     }
-    const res = followRedone(store, rightID)
+    const res = followUndoneDeletions ? followRedone(store, rightID) : getItemWithOffset(store, rightID)
     const right = res.item
     if (!(right instanceof Item)) {
       return null
@@ -298,7 +322,7 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
         // type does not exist yet
         return null
       }
-      const { item } = followRedone(store, typeID)
+      const { item } = followUndoneDeletions ? followRedone(store, typeID) : { item: getItem(store, typeID) }
       if (item instanceof Item && item.content instanceof ContentType) {
         type = item.content.type
       } else {

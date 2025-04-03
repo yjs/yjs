@@ -1,6 +1,6 @@
 {
   "name": "yjs",
-  "version": "13.6.12",
+  "version": "13.6.24",
   "description": "Shared Editing Library",
   "main": "./dist/yjs.cjs",
   "module": "./dist/yjs.mjs",
@@ -12,9 +12,10 @@
     "url": "https://github.com/sponsors/dmonad"
   },
   "scripts": {
-    "test": "npm run dist && node ./dist/tests.cjs --repetition-time 50",
+    "clean": "rm -rf dist docs",
+    "test": "npm run dist && NODE_ENV=development node ./dist/tests.cjs --repetition-time 50",
     "test-extensive": "npm run lint && npm run dist && node ./dist/tests.cjs --production --repetition-time 10000",
-    "dist": "rm -rf dist && rollup -c && tsc",
+    "dist": "npm run clean && rollup -c && tsc",
     "watch": "rollup -wc",
     "lint": "markdownlint README.md && standard && tsc",
     "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.md --package ./package.json || true",
@@ -75,7 +76,7 @@
   },
   "homepage": "https://docs.yjs.dev",
   "dependencies": {
-    "lib0": "^0.2.86"
+    "lib0": "^0.2.99"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^24.0.1",
@@ -84,7 +85,7 @@
     "concurrently": "^3.6.1",
     "http-server": "^0.12.3",
     "jsdoc": "^3.6.7",
-    "markdownlint-cli": "^0.23.2",
+    "markdownlint-cli": "^0.41.0",
     "rollup": "^3.20.0",
     "standard": "^16.0.4",
     "tui-jsdoc-template": "^1.2.2",

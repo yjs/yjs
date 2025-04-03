@@ -3,7 +3,7 @@
 
 > A CRDT framework with a powerful abstraction of shared data
 
-Yjs is a [CRDT implementation](#Yjs-CRDT-Algorithm) that exposes its internal
+Yjs is a [CRDT implementation](#yjs-crdt-algorithm) that exposes its internal
 data structure as *shared types*. Shared types are common data types like `Map`
 or `Array` with superpowers: changes are automatically distributed to other
 peers and merged without merge conflicts.
@@ -49,12 +49,16 @@ Showcase](https://yjs-diagram.synergy.codes/).
 ## Who is using Yjs
 
 * [AFFiNE](https://affine.pro/) A local-first, privacy-first, open source
-  knowledge base. 🏅
+  knowledge base. :star2:
+* [Huly](https://huly.io/) - Open Source All-in-One Project Management Platform :star2:
 * [Cargo](https://cargo.site/) Site builder for designers and artists :star2:
 * [Gitbook](https://gitbook.com) Knowledge management for technical teams :star2:
 * [Evernote](https://evernote.com) Note-taking app :star2:
 * [Lessonspace](https://thelessonspace.com) Enterprise platform for virtual
   classrooms and online training :star2:
+* [Ellipsus](ellipsus.com) - Collaborative writing app for storytelling etc.
+  Supports versioning, change attribution, and "blame". A solution for the whole
+  publishing process (also selling) :star:
 * [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star:
 * [Relm](https://www.relm.us/) A collaborative gameworld for teamwork and
   community. :star:
@@ -64,11 +68,15 @@ Showcase](https://yjs-diagram.synergy.codes/).
   Nimbus Web. :star:
 * [Pluxbox RadioManager](https://getradiomanager.com/) A web-based app to
   collaboratively organize radio broadcasts. :star:
+* [modyfi](https://www.modyfi.com) - Modyfi is the design platform built for
+  multidisciplinary designers. Design, generate, animate, and more — without
+  switching between apps. :star:
 * [Sana](https://sanalabs.com/) A learning platform with collaborative text
   editing powered by Yjs.
 * [Serenity Notes](https://www.serenity.re/en/notes) End-to-end encrypted
   collaborative notes app.
-* [PRSM](https://prsm.uk/) Collaborative mind-mapping and system visualisation. *[(source)](https://github.com/micrology/prsm)*
+* [PRSM](https://prsm.uk/) Collaborative mind-mapping and system visualisation.
+  *[(source)](https://github.com/micrology/prsm)*
 * [Alldone](https://alldone.app/) A next-gen project management and
   collaboration platform.
 * [Living Spec](https://livingspec.com/) A modern way for product teams to collaborate.
@@ -78,6 +86,8 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [JupyterLab](https://jupyter.org/) Collaborative computational Notebooks
 * [JupyterCad](https://jupytercad.readthedocs.io/en/latest/) Extension to
   JupyterLab that enables collaborative editing of 3d FreeCAD Models.
+* [JupyterGIS](https://github.com/geojupyter/jupytergis) Collaborative GIS
+  (Geographic Information System) editor in Jupyter 
 * [Hyperquery](https://hyperquery.ai/) A collaborative data workspace for
   sharing analyses, documentation, spreadsheets, and dashboards.
 * [Nosgestesclimat](https://nosgestesclimat.fr/groupe) The french carbon
@@ -91,22 +101,47 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [AWS SageMaker](https://aws.amazon.com/sagemaker/) Tools for building Machine
   Learning Models
 * [linear](https://linear.app) Streamline issues, projects, and product roadmaps.
+* [Arkiter](https://www.arkiter.com/) - Live interview software
+* [Appflowy](https://www.appflowy.io/) - They use Yrs
+* [Multi.app](https://multi.app) - Multiplayer app sharing: Point, draw and edit
+  in shared apps as if they're on your computer. They are using Yrs.
+* [AppMaster](https://appmaster.io) A No-Code platform for creating
+  production-ready applications with source code generation.
+* [Synthesia](https://www.synthesia.io) - Collaborative Video Editor
+* [thinkdeli](https://thinkdeli.com) - A fast and simple notes app powered by AI
+* [ourboard](https://github.com/raimohanska/ourboard) - A collaborative whiteboard
+  application
+* [Ellie.ai](https://ellie.ai) - Data Product Design and Collaboration
+* [GoPeer](https://gopeer.org/) - Collaborative tutoring
+* [screen.garden](https://screen.garden) - Collaborative backend for PKM apps.
+* [NextCloud](https://nextcloud.com/) - Content Collaboration Platform
+* [keystatic](https://github.com/Thinkmill/keystatic) - git-based CMS
+* [QDAcity](https://qdacity.com) - Collaborative qualitative data analysis platform
+* [Kanbert](https://kanbert.com) - Project management software
+* [Eclipse Theia](https://github.com/eclipse-theia/theia) - A cloud & desktop
+  IDE that runs in the browser.
+* [ScienHub](https://scienhub.com) - Collaborative LaTeX editor in the browser.
+* [Open Collaboration Tools](https://www.open-collab.tools/) - Collaborative
+editing for your IDE or custom editor
+* [Typst](https://typst.app/) - Compose, edit, and automate technical documents
+* [Kedyou](https://kedyou.com/) - Digital workspaces for tutoring
 
 ## Table of Contents
 
-* [Overview](#Overview)
-  * [Bindings](#Bindings)
-  * [Providers](#Providers)
-  * [Ports](#Ports)
-* [Getting Started](#Getting-Started)
-* [API](#API)
-  * [Shared Types](#Shared-Types)
-  * [Y.Doc](#YDoc)
-  * [Document Updates](#Document-Updates)
-  * [Relative Positions](#Relative-Positions)
-  * [Y.UndoManager](#YUndoManager)
-* [Yjs CRDT Algorithm](#Yjs-CRDT-Algorithm)
-* [License and Author](#License-and-Author)
+* [Overview](#overview)
+  * [Bindings](#bindings)
+  * [Providers](#providers)
+  * [Tooling](#tooling)
+  * [Ports](#ports)
+* [Getting Started](#getting-started)
+* [API](#api)
+  * [Shared Types](#shared-types)
+  * [Y.Doc](#ydoc)
+  * [Document Updates](#document-updates)
+  * [Relative Positions](#relative-positions)
+  * [Y.UndoManager](#yundomanager)
+* [Yjs CRDT Algorithm](#yjs-crdt-algorithm)
+* [License and Author](#license-and-author)
 
 ## Overview
 
@@ -122,12 +157,17 @@ are implemented in separate modules.
 | [Quill](https://quilljs.com/) | ✔ | [y-quill](https://github.com/yjs/y-quill) | [demo](https://demos.yjs.dev/quill/quill.html) |
 | [CodeMirror](https://codemirror.net/) | ✔ | [y-codemirror](https://github.com/yjs/y-codemirror) | [demo](https://demos.yjs.dev/codemirror/codemirror.html) |
 | [Monaco](https://microsoft.github.io/monaco-editor/) | ✔ | [y-monaco](https://github.com/yjs/y-monaco) | [demo](https://demos.yjs.dev/monaco/monaco.html) |
+| [Ace](https://ace.c9.io/) | ✔ | [y-ace](https://github.com/bajrangCoder/y-ace) | |
 | [Slate](https://github.com/ianstormtaylor/slate) | ✔ | [slate-yjs](https://github.com/bitphinix/slate-yjs) | [demo](https://bitphinix.github.io/slate-yjs-example) |
 | [BlockSuite](https://github.com/toeverything/blocksuite) | ✔ | (native) | [demo](https://blocksuite-toeverything.vercel.app/?init) |
+| [Lexical](https://lexical.dev/) | ✔ | (native) | [demo](https://lexical.dev/docs/collaboration/react#see-it-in-action) |
 | [valtio](https://github.com/pmndrs/valtio) |  | [valtio-yjs](https://github.com/dai-shi/valtio-yjs) | [demo](https://codesandbox.io/s/valtio-yjs-demo-ox3iy) |
 | [immer](https://github.com/immerjs/immer) |  | [immer-yjs](https://github.com/sep2/immer-yjs) | [demo](https://codesandbox.io/s/immer-yjs-demo-6e0znb) |
+| React | | [react-yjs](https://github.com/nikgraf/react-yjs) | [demo](https://react-yjs-example.vercel.app/) |
 | React / Vue / Svelte / MobX | | [SyncedStore](https://syncedstore.org) | [demo](https://syncedstore.org/docs/react) |
 | [mobx-keystone](https://mobx-keystone.js.org/) |  | [mobx-keystone-yjs](https://github.com/xaviergonz/mobx-keystone/tree/master/packages/mobx-keystone-yjs) | [demo](https://mobx-keystone.js.org/examples/yjs-binding) |
+| [PSPDFKit](https://www.nutrient.io/) |  | [yjs-pspdfkit](https://github.com/hoangqwe159/yjs-pspdfkit) | [demo](https://github.com/hoangqwe159/yjs-pspdfkit) |
+| [Rows n'Columns](https://www.rowsncolumns.app/) | ✔ | [@rowsncolumns/y-spreadsheet](https://docs.rowsncolumns.app/collaboration/yjs-collaboration) | |
 
 ### Providers
 
@@ -145,19 +185,20 @@ collaborative app.
   <dt><a href="https://github.com/yjs/y-websocket">y-websocket</a></dt>
   <dd>
 A module that contains a simple websocket backend and a websocket client that
-connects to that backend. The backend can be extended to persist updates in a
-leveldb database. <b>y-sweet</b> and <b>ypy-websocket</b> (see below) are
-compatible to the y-wesocket protocol.
+connects to that backend. <a href="https://github.com/yjs/y-redis/"><b>y-redis</b></a>,
+<b>y-sweet</b>, <b>ypy-websocket</b>, <b>yrs-warp</b> and <a href="https://tiptap.dev/docs/hocuspocus/introduction">
+<b>Hocuspocus</b></a> (see below) are alternative
+backends to y-websocket.
   </dd>
   <dt><a href="https://github.com/yjs/y-webrtc">y-webrtc</a></dt>
   <dd>
 Propagates document updates peer-to-peer using WebRTC. The peers exchange
-signaling data over signaling servers. Publically available signaling servers
+signaling data over signaling servers. Publicly available signaling servers
 are available. Communication over the signaling servers can be encrypted by
 providing a shared secret, keeping the connection information and the shared
 document private.
   </dd>
-  <dt><a href="https://github.com/liveblocks/liveblocks">@liveblocks/yjs</a></dt>
+  <dt><a href="https://github.com/liveblocks/liveblocks">@liveblocks/yjs </a> 🌟</dt>
   <dd>
 <a href="https://liveblocks.io/document/yjs">Liveblocks Yjs</a> provides a fully
 hosted WebSocket infrastructure and persisted data store for Yjs
@@ -165,10 +206,22 @@ documents. No configuration or maintenance is required. It also features
 Yjs webhook events, REST API to read and update Yjs documents, and a
 browser DevTools extension.
   </dd>
-  <dt><a href="https://github.com/drifting-in-space/y-sweet">y-sweet</a></dt>
+  <dt><a href="https://github.com/drifting-in-space/y-sweet">y-sweet</a> ⭐</dt>
   <dd>
 A standalone yjs server with persistence to S3 or filesystem. They offer a
 <a href="https://y-sweet.cloud">cloud service</a> as well.
+  </dd>
+  <dt><a href="https://github.com/ueberdosis/hocuspocus">Hocuspocus</a> ⭐</dt>
+  <dd>
+A standalone extensible yjs server with sqlite persistence, webhooks, auth and more.
+  </dd>
+  <dt><a href="https://docs.superviz.com/collaboration/integrations/YJS/overview">@superviz/yjs</a></dt>
+  <dd>
+    SuperViz Yjs Provider comes with a secure, scalable real-time infrastructure
+    for Yjs documents, fully compatible with a set of real-time
+    collaboration components offered by SuperViz. This solution ensures
+    synchronization, offline editing, and real-time updates, enabling
+    multiple users to collaborate effectively within shared workspaces.
   </dd>
   <dt><a href="https://docs.partykit.io/reference/y-partykit-api/">PartyKit</a></dt>
   <dd>
@@ -205,6 +258,20 @@ An ActionCable companion for Yjs clients. There is a fitting
   <dd>
 Websocket backend, written in Python.
   </dd>
+  <dt><a href="https://tinybase.org/">Tinybase</a></dt>
+  <dd>
+The reactive data store for local-first apps. They support multiple CRDTs and
+    different network technologies.
+  </dd>
+  <dt><a href="https://codeberg.org/webxdc/y-webxdc">y-webxdc</a></dt>
+  <dd>
+Provider for sharing data in <a href="https://webxdc.org">webxdc chat apps</a>.
+  </dd>
+  <dt><a href="https://www.secsync.com/">secsync</a></dt>
+  <dd>
+An architecture to relay end-to-end encrypted CRDTs over a central service.
+  </dd>
+
 </dl>
 
 #### Persistence Providers
@@ -221,18 +288,34 @@ network provider.
 Adds persistent storage to a server with MongoDB. Can be used with the
 y-websocket provider.
   </dd>
-  <dt><a href="https://github.com/toeverything/AFFiNE/tree/master/packages/y-indexeddb">
-@toeverything/y-indexeddb</a></dt>
-  <dd>
-Like y-indexeddb, but with sub-documents support and fully TypeScript.
-  </dd>
   <dt><a href="https://github.com/podraven/y-fire">y-fire</a></dt>
   <dd>
 A database and connection provider for Yjs based on Firestore.
   </dd>
+  <dt><a href="https://github.com/malte-j/y-op-sqlite">y-op-sqlite</a></dt>
+  <dd>
+  Persist YJS updates in your React Native app using
+   <a href="https://github.com/OP-Engineering/op-sqlite">op-sqlite</a>
+  , the fastest SQLite library for React Native.  
+  </dd>
+  <dt><a href="https://github.com/MaxNoetzold/y-postgresql">y-postgresql</a></dt>
+  <dd>
+  Provides persistent storage for a web server using PostgreSQL and
+  is easily compatible with y-websocket.  
+  </dd>
+  <dt><a href="https://github.com/kapv89/k_yrs_go">k_yrs_go</a></dt>
+  <dd>
+  Golang database server for YJS CRDT using Postgres + Redis
+  </dd>
 </dl>
 
-# Ports
+### Tooling
+
+* [y-sweet debugger](https://docs.jamsocket.com/y-sweet/advanced/debugger)
+* [liveblocks devtools](https://liveblocks.io/devtools)
+* [Yjs inspector](https://inspector.yjs.dev)
+
+### Ports
 
 There are several Yjs-compatible ports to other programming languages.
 
@@ -246,6 +329,7 @@ language bindings to other languages
   * [yswift](https://github.com/y-crdt/yswift) - Swift binding
   * [yffi](https://github.com/y-crdt/y-crdt/tree/main/yffi) - C-FFI
   * [ywasm](https://github.com/y-crdt/y-crdt/tree/main/ywasm) - WASM binding
+  * [y_ex](https://github.com/satoren/y_ex) - Elixir bindings
 * [ycs](https://github.com/yjs/ycs) - .Net compatible C# implementation.
 
 ## Getting Started
@@ -259,7 +343,7 @@ npm i yjs y-websocket
 Start the y-websocket server:
 
 ```sh
-PORT=1234 node ./node_modules/y-websocket/bin/server.js
+PORT=1234 node ./node_modules/y-websocket/bin/server.cjs
 ```
 
 ### Example: Observe types
@@ -360,6 +444,11 @@ necessary.
   </p>
   <pre>const yarray = new Y.Array()</pre>
   <dl>
+    <b><code>
+Y.Array.from(Array&lt;object|boolean|Array|string|number|null|Uint8Array|Y.Type&gt;):
+Y.Array
+    </code></b>
+    <dd>An alternative factory function to create a Y.Array based on existing content.</dd>
     <b><code>parent:Y.AbstractType|null</code></b>
     <dd></dd>
     <b><code>insert(index:number, content:Array&lt;object|boolean|Array|string|number|null|Uint8Array|Y.Type&gt;)</code></b>
@@ -389,6 +478,11 @@ forEach(function(value:object|boolean|Array|string|number|null|Uint8Array|Y.Type
     <dd></dd>
     <b><code>map(function(T, number, YArray):M):Array&lt;M&gt;</code></b>
     <dd></dd>
+    <b><code>clone(): Y.Array</code></b>
+    <dd>
+Clone all values into a fresh Y.Array instance. The returned type can be
+included into the Yjs document.
+    </dd>
     <b><code>toArray():Array&lt;object|boolean|Array|string|number|null|Uint8Array|Y.Type&gt;</code></b>
     <dd>Copies the content of this YArray to a new Array.</dd>
     <b><code>toJSON():Array&lt;Object|boolean|Array|string|number|null&gt;</code></b>
@@ -444,8 +538,6 @@ or any of its children.
     <b><code>delete(key:string)</code></b>
     <dd></dd>
     <b><code>has(key:string):boolean</code></b>
-    <dd></dd>
-    <b><code>get(index:number)</code></b>
     <dd></dd>
     <b><code>clear()</code></b>
     <dd>Removes all elements from this YMap.</dd>
@@ -800,7 +892,7 @@ doc1.getArray('myarray').insert(0, ['Hello doc2, you got this?'])
 doc2.getArray('myarray').get(0) // => 'Hello doc2, you got this?'
 ```
 
-Yjs internally maintains a [state vector](#State-Vector) that denotes the next
+Yjs internally maintains a [state vector](#state-vector) that denotes the next
 expected clock from each client. In a different interpretation it holds the
 number of structs created by each client. When two clients sync, you can either
 exchange the complete document structure or only the differences by sending the
@@ -882,7 +974,7 @@ ydoc2.getText().toString() // => "00000000000"
 #### Using V2 update format
 
 Yjs implements two update formats. By default you are using the V1 update format.
-You can opt-in into the V2 update format wich provides much better compression.
+You can opt-in into the V2 update format which provides much better compression.
 It is not yet used by all providers. However, you can already use it if
 you are building your own provider. All below functions are available with the
 suffix "V2". E.g. `Y.applyUpdate` ⇒ `Y.applyUpdateV2`. Also when listening to updates
@@ -1013,7 +1105,7 @@ encoding format for document updates. If you prefer JSON encoding, you can
 simply JSON.stringify / JSON.parse the relative position instead.
   </dd>
   <b><code>Y.decodeRelativePosition(Uint8Array):RelativePosition</code></b>
-  <dd>Decode a binary-encoded relative position to a RelativePositon object.</dd>
+  <dd>Decode a binary-encoded relative position to a RelativePosition object.</dd>
 </dl>
 
 ### Y.UndoManager
@@ -1193,11 +1285,11 @@ More information about the specific implementation is available in
 
 CRDTs that are suitable for shared text editing suffer from the fact that they
 only grow in size. There are CRDTs that do not grow in size, but they do not
-have the characteristics that are benificial for shared text editing (like
+have the characteristics that are beneficial for shared text editing (like
 intention preservation). Yjs implements many improvements to the original
 algorithm that diminish the trade-off that the document only grows in size. We
 can't garbage collect deleted structs (tombstones) while ensuring a unique
-order of the structs. But we can 1. merge preceeding structs into a single
+order of the structs. But we can 1. merge preceding structs into a single
 struct to reduce the amount of meta information, 2. we can delete content from
 the struct if it is deleted, and 3. we can garbage collect tombstones if we
 don't care about the order of the structs anymore (e.g. if the parent was

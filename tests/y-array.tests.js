@@ -4,6 +4,9 @@ import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
+import * as env from 'lib0/environment'
+
+const isDevMode = env.getVariable('node_env') === 'development'
 
 /**
  * @param {t.TestCase} tc
@@ -15,6 +18,28 @@ export const testBasicUpdate = tc => {
   const update = Y.encodeStateAsUpdate(doc1)
   Y.applyUpdate(doc2, update)
   t.compare(doc2.getArray('array').toArray(), ['hi'])
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testFailsObjectManipulationInDevMode = tc => {
+  if (isDevMode) {
+    t.info('running in dev mode')
+    const doc = new Y.Doc()
+    const a = [1, 2, 3]
+    const b = { o: 1 }
+    doc.getArray('test').insert(0, [a])
+    doc.getMap('map').set('k', b)
+    t.fails(() => {
+      a[0] = 42
+    })
+    t.fails(() => {
+      b.o = 42
+    })
+  } else {
+    t.info('not in dev mode')
+  }
 }
 
 /**
@@ -328,6 +353,29 @@ export const testObserveDeepEventOrder = tc => {
   for (let i = 1; i < events.length; i++) {
     t.assert(events[i - 1].path.length <= events[i].path.length, 'path size increases, fire top-level events first')
   }
+}
+
+/**
+ * Correct index when computing event.path in observeDeep - https://github.com/yjs/yjs/issues/457
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testObservedeepIndexes = _tc => {
+  const doc = new Y.Doc()
+  const map = doc.getMap()
+  // Create a field with the array as value
+  map.set('my-array', new Y.Array())
+  // Fill the array with some strings and our Map
+  map.get('my-array').push(['a', 'b', 'c', new Y.Map()])
+  /**
+   * @type {Array<any>}
+   */
+  let eventPath = []
+  map.observeDeep((events) => { eventPath = events[0].path })
+  // set a value on the map inside of our array
+  map.get('my-array').get(3).set('hello', 'world')
+  console.log(eventPath)
+  t.compare(eventPath, ['my-array', 3])
 }
 
 /**

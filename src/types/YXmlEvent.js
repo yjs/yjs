@@ -12,7 +12,7 @@ export class YXmlEvent extends YEvent {
    * @param {YXmlElement|YXmlText|YXmlFragment} target The target on which the event is created.
    * @param {Set<string|null>} subs The set of changed attributes. `null` is included if the
    *                   child list changed.
-   * @param {Transaction} transaction The transaction instance with wich the
+   * @param {Transaction} transaction The transaction instance with which the
    *                                  change was created.
    */
   constructor (target, subs, transaction) {
