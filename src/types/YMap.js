@@ -66,9 +66,9 @@ export class YMapEvent extends YEvent {
 }
 
 /**
- * @template {Record<string, MapValue>} MapType
  * A shared Map implementation.
  *
+ * @template {Record<string, MapValue>} MapType
  * @extends AbstractType<YMapEvent<MapType>>
  * @implements {Iterable<[StringKey<MapType>, MapType[StringKey<MapType>]]>}
  */
@@ -240,10 +240,10 @@ export class YMap extends AbstractType {
   }
 
   /**
-   * @template {StringKey<MapType>} Key
-   * @template {MapType[Key]} Value
    * Adds or updates an element with a specified key and value.
    *
+   * @template {StringKey<MapType>} Key
+   * @template {MapType[Key]} Value
    * @param {Key} key The key of the element to add to this YMap
    * @param {Value} value The value of the element to add
    * @return {Value}
@@ -260,9 +260,9 @@ export class YMap extends AbstractType {
   }
 
   /**
-   * @template {StringKey<MapType>} Key
    * Returns a specified element from this YMap.
    *
+   * @template {StringKey<MapType>} Key
    * @param {Key} key
    * @return {MapType[Key]|undefined}
    */
