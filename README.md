@@ -307,6 +307,11 @@ A database and connection provider for Yjs based on Firestore.
   <dd>
   Golang database server for YJS CRDT using Postgres + Redis
   </dd>
+  <dt><a href="https://github.com/malte-j/y-op-sqlite">y-op-sqlite</a></dt>
+  <dd>
+ Yjs persistence provider for op-sqlite 
+  </dd>
+
 </dl>
 
 ### Tooling
