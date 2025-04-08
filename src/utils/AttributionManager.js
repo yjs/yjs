@@ -1,7 +1,7 @@
 
 export class AttributionManager {
   /**
-   * 
+   *
    */
   constructor () {
   }

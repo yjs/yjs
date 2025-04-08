@@ -27,6 +27,7 @@ export class InsertOp {
     this.attributes = attributes
     this.attribution = attribution
   }
+
   toJSON () {
     return object.assign({ insert: this.insert }, this.attributes ? { attributes: this.attributes } : ({}), this.attribution ? { attribution: this.attribution } : ({}))
   }
@@ -39,6 +40,7 @@ export class DeleteOp {
   constructor (len) {
     this.delete = len
   }
+
   toJSON () {
     return { delete: this.delete }
   }
@@ -55,6 +57,7 @@ export class RetainOp {
     this.attributes = attributes
     this.attribution = attribution
   }
+
   toJSON () {
     return object.assign({ retain: this.retain }, this.attributes ? { attributes: this.attributes } : {}, this.attribution ? { attribution: this.attribution } : {})
   }
@@ -67,6 +70,7 @@ export class Delta {
      */
     this.ops = []
   }
+
   toJSON () {
     return { ops: this.ops.map(o => o.toJSON()) }
   }

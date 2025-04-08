@@ -1,5 +1,5 @@
 import {
-  addToDeleteSet,
+  addToIdSet,
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Item, Transaction // eslint-disable-line
 } from '../internals.js'
 
@@ -63,7 +63,7 @@ export class ContentDeleted {
    * @param {Item} item
    */
   integrate (transaction, item) {
-    addToDeleteSet(transaction.deleteSet, item.id.client, item.id.clock, this.len)
+    addToIdSet(transaction.deleteSet, item.id.client, item.id.clock, this.len)
     item.markDeleted()
   }
 

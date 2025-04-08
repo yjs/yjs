@@ -1,5 +1,5 @@
 export * from './utils/AbstractConnector.js'
-export * from './utils/DeleteSet.js'
+export * from './utils/IdSet.js'
 export * from './utils/Doc.js'
 export * from './utils/UpdateDecoder.js'
 export * from './utils/UpdateEncoder.js'

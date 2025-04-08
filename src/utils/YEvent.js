@@ -1,5 +1,4 @@
 import {
-  isDeleted,
   Item, AbstractType, Transaction, AbstractStruct // eslint-disable-line
 } from '../internals.js'
 
@@ -78,7 +77,7 @@ export class YEvent {
    * @return {boolean}
    */
   deletes (struct) {
-    return isDeleted(this.transaction.deleteSet, struct.id)
+    return this.transaction.deleteSet.has(struct.id)
   }
 
   /**
@@ -158,7 +157,7 @@ export class YEvent {
    * @return {boolean}
    */
   adds (struct) {
-    return isDeleted(this.transaction.insertSet, struct.id)
+    return this.transaction.insertSet.has(struct.id)
   }
 
   /**

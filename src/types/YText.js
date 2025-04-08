@@ -17,8 +17,7 @@ import {
   ContentFormat,
   ContentString,
   splitSnapshotAffectedStructs,
-  iterateDeletedStructs,
-  iterateStructs,
+  iterateStructsByIdSet,
   findMarker,
   typeMapDelete,
   typeMapSet,
@@ -493,7 +492,7 @@ export const cleanupYTextAfterTransaction = transaction => {
   const needFullCleanup = new Set()
   // check if another formatting item was inserted
   const doc = transaction.doc
-  iterateDeletedStructs(transaction, transaction.insertSet, (item) => {
+  iterateStructsByIdSet(transaction, transaction.insertSet, (item) => {
     if (
       !item.deleted && /** @type {Item} */ (item).content.constructor === ContentFormat && item.constructor !== GC
     ) {
@@ -502,7 +501,7 @@ export const cleanupYTextAfterTransaction = transaction => {
   })
   // cleanup in a new transaction
   transact(doc, (t) => {
-    iterateDeletedStructs(transaction, transaction.deleteSet, item => {
+    iterateStructsByIdSet(transaction, transaction.deleteSet, item => {
       if (item instanceof GC || !(/** @type {YText} */ (item.parent)._hasFormatting) || needFullCleanup.has(/** @type {YText} */ (item.parent))) {
         return
       }
@@ -1081,7 +1080,6 @@ export class YText extends AbstractType {
     }
     return d.done()
   }
-
 
   /**
    * Returns the Delta representation of this YText type.
