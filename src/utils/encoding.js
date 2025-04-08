@@ -36,7 +36,8 @@ import {
   Skip,
   diffUpdateV2,
   convertUpdateFormatV2ToV1,
-  DSDecoderV2, Doc, Transaction, GC, Item, StructStore // eslint-disable-line
+  DeleteSet, DSDecoderV2, Doc, Transaction, GC, Item, StructStore, // eslint-disable-line
+  iterateDeletedStructs
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding'
@@ -98,6 +99,26 @@ export const writeClientsStructs = (encoder, store, _sm) => {
   // This heavily improves the conflict algorithm.
   array.from(sm.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, clock]) => {
     writeStructs(encoder, /** @type {Array<GC|Item>} */ (store.clients.get(client)), client, clock)
+  })
+}
+
+/**
+ * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+ * @param {StructStore} store
+ * @param {DeleteSet} idset
+ *
+ * @todo at the moment this writes the full deleteset range
+ *
+ * @private
+ * @function
+ */
+export const writeStructsFromIdSet = (encoder, store, idset) => {
+  // write # states that were updated
+  encoding.writeVarUint(encoder.restEncoder, idset.clients.size)
+  // Write items with higher client ids first
+  // This heavily improves the conflict algorithm.
+  array.from(idset.clients.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, ids]) => {
+    writeStructs(encoder, /** @type {Array<GC|Item>} */ (store.clients.get(client)), client, ids[0].clock)
   })
 }
 
@@ -365,7 +386,7 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
  * @private
  * @function
  */
-export const writeStructsFromTransaction = (encoder, transaction) => writeClientsStructs(encoder, transaction.doc.store, transaction.beforeState)
+export const writeStructsFromTransaction = (encoder, transaction) => writeStructsFromIdSet(encoder, transaction.doc.store, transaction.insertSet)
 
 /**
  * Read and apply a document update.

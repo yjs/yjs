@@ -6,6 +6,7 @@ import {
   readYXmlFragment,
   readYXmlHook,
   readYXmlText,
+  isDeleted,
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, Item, YEvent, AbstractType // eslint-disable-line
 } from '../internals.js'
 
@@ -107,7 +108,7 @@ export class ContentType {
     while (item !== null) {
       if (!item.deleted) {
         item.delete(transaction)
-      } else if (item.id.clock < (transaction.beforeState.get(item.id.client) || 0)) {
+      } else if (!isDeleted(transaction.insertSet, item.id)) {
         // This will be gc'd later and we want to merge it if possible
         // We try to merge all deleted items after each transaction,
         // but we have no knowledge about that this needs to be merged
@@ -119,7 +120,7 @@ export class ContentType {
     this.type._map.forEach(item => {
       if (!item.deleted) {
         item.delete(transaction)
-      } else if (item.id.clock < (transaction.beforeState.get(item.id.client) || 0)) {
+      } else if (!isDeleted(transaction.insertSet, item.id)) {
         // same as above
         transaction._mergeStructs.push(item)
       }

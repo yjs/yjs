@@ -493,19 +493,13 @@ export const cleanupYTextAfterTransaction = transaction => {
   const needFullCleanup = new Set()
   // check if another formatting item was inserted
   const doc = transaction.doc
-  for (const [client, afterClock] of transaction.afterState.entries()) {
-    const clock = transaction.beforeState.get(client) || 0
-    if (afterClock === clock) {
-      continue
+  iterateDeletedStructs(transaction, transaction.insertSet, (item) => {
+    if (
+      !item.deleted && /** @type {Item} */ (item).content.constructor === ContentFormat && item.constructor !== GC
+    ) {
+      needFullCleanup.add(/** @type {any} */ (item).parent)
     }
-    iterateStructs(transaction, /** @type {Array<Item|GC>} */ (doc.store.clients.get(client)), clock, afterClock, item => {
-      if (
-        !item.deleted && /** @type {Item} */ (item).content.constructor === ContentFormat && item.constructor !== GC
-      ) {
-        needFullCleanup.add(/** @type {any} */ (item).parent)
-      }
-    })
-  }
+  })
   // cleanup in a new transaction
   transact(doc, (t) => {
     iterateDeletedStructs(transaction, transaction.deleteSet, item => {

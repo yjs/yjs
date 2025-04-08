@@ -158,7 +158,7 @@ export class YEvent {
    * @return {boolean}
    */
   adds (struct) {
-    return struct.id.clock >= (this.transaction.beforeState.get(struct.id.client) || 0)
+    return isDeleted(this.transaction.insertSet, struct.id)
   }
 
   /**
