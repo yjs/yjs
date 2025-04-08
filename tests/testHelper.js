@@ -92,6 +92,11 @@ export class TestYInstance extends Y.Doc {
       }
       this.updates.push(update)
     })
+    this.on('afterTransaction', tr => {
+      if (Array.from(tr.insertSet.clients.values()).some(ids => ids.length !== 1)) {
+        throw new Error('Currently, we expect that idset contains exactly one item per client.')
+      }
+    })
     this.connect()
   }
 
