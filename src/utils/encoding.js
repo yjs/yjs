@@ -20,7 +20,7 @@ import {
   createID,
   getStateVector,
   readAndApplyDeleteSet,
-  writeDeleteSet,
+  writeIdSet,
   createDeleteSetFromStructStore,
   transact,
   readItemContent,
@@ -36,8 +36,7 @@ import {
   Skip,
   diffUpdateV2,
   convertUpdateFormatV2ToV1,
-  DeleteSet, DSDecoderV2, Doc, Transaction, GC, Item, StructStore, // eslint-disable-line
-  iterateDeletedStructs
+  IdSet, DSDecoderV2, Doc, Transaction, GC, Item, StructStore, // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding'
@@ -105,7 +104,7 @@ export const writeClientsStructs = (encoder, store, _sm) => {
 /**
  * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
  * @param {StructStore} store
- * @param {DeleteSet} idset
+ * @param {IdSet} idset
  *
  * @todo at the moment this writes the full deleteset range
  *
@@ -118,7 +117,7 @@ export const writeStructsFromIdSet = (encoder, store, idset) => {
   // Write items with higher client ids first
   // This heavily improves the conflict algorithm.
   array.from(idset.clients.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, ids]) => {
-    writeStructs(encoder, /** @type {Array<GC|Item>} */ (store.clients.get(client)), client, ids[0].clock)
+    writeStructs(encoder, /** @type {Array<GC|Item>} */ (store.clients.get(client)), client, ids.getIds()[0].clock)
   })
 }
 
@@ -524,7 +523,7 @@ export const applyUpdate = (ydoc, update, transactionOrigin) => applyUpdateV2(yd
  */
 export const writeStateAsUpdate = (encoder, doc, targetStateVector = new Map()) => {
   writeClientsStructs(encoder, doc.store, targetStateVector)
-  writeDeleteSet(encoder, createDeleteSetFromStructStore(doc.store))
+  writeIdSet(encoder, createDeleteSetFromStructStore(doc.store))
 }
 
 /**

@@ -1,8 +1,8 @@
 import {
   AbstractStruct,
   addStruct,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, ID, // eslint-disable-line
-  addItemToInsertSet
+  addStructToIdSet,
+  UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction // eslint-disable-line
 } from '../internals.js'
 
 export const structGCRefNumber = 0
@@ -38,7 +38,7 @@ export class GC extends AbstractStruct {
       this.id.clock += offset
       this.length -= offset
     }
-    addItemToInsertSet(transaction, this)
+    addStructToIdSet(transaction.insertSet, this)
     addStruct(transaction.doc.store, this)
   }
 

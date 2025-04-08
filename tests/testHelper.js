@@ -6,6 +6,7 @@ import * as syncProtocol from 'y-protocols/sync'
 import * as object from 'lib0/object'
 import * as map from 'lib0/map'
 import * as Y from '../src/index.js'
+
 export * from '../src/index.js'
 
 if (typeof window !== 'undefined') {
@@ -93,7 +94,8 @@ export class TestYInstance extends Y.Doc {
       this.updates.push(update)
     })
     this.on('afterTransaction', tr => {
-      if (Array.from(tr.insertSet.clients.values()).some(ids => ids.length !== 1)) {
+      // @ts-ignore
+      if (Array.from(tr.insertSet.clients.values()).some(ids => ids._ids.length !== 1)) {
         throw new Error('Currently, we expect that idset contains exactly one item per client.')
       }
     })
@@ -360,7 +362,7 @@ export const compare = users => {
       return true
     })
     t.compare(Y.encodeStateVector(users[i]), Y.encodeStateVector(users[i + 1]))
-    Y.equalDeleteSets(Y.createDeleteSetFromStructStore(users[i].store), Y.createDeleteSetFromStructStore(users[i + 1].store))
+    Y.equalIdSets(Y.createDeleteSetFromStructStore(users[i].store), Y.createDeleteSetFromStructStore(users[i + 1].store))
     compareStructStores(users[i].store, users[i + 1].store)
     t.compare(Y.encodeSnapshot(Y.snapshot(users[i])), Y.encodeSnapshot(Y.snapshot(users[i + 1])))
   }

@@ -1,23 +1,22 @@
 import {
-  isDeleted,
   createDeleteSetFromStructStore,
   getStateVector,
   getItemCleanStart,
-  iterateDeletedStructs,
-  writeDeleteSet,
+  iterateStructsByIdSet,
+  writeIdSet,
   writeStateVector,
-  readDeleteSet,
+  readIdSet,
   readStateVector,
-  createDeleteSet,
+  createIdSet,
   createID,
   getState,
   findIndexSS,
   UpdateEncoderV2,
   applyUpdateV2,
   LazyStructReader,
-  equalDeleteSets,
-  UpdateDecoderV1, UpdateDecoderV2, DSEncoderV1, DSEncoderV2, DSDecoderV1, DSDecoderV2, Transaction, Doc, DeleteSet, Item, // eslint-disable-line
-  mergeDeleteSets
+  equalIdSets,
+  UpdateDecoderV1, UpdateDecoderV2, DSEncoderV1, DSEncoderV2, DSDecoderV1, DSDecoderV2, Transaction, Doc, IdSet, Item, // eslint-disable-line
+  mergeIdSets
 } from '../internals.js'
 
 import * as map from 'lib0/map'
@@ -27,12 +26,12 @@ import * as encoding from 'lib0/encoding'
 
 export class Snapshot {
   /**
-   * @param {DeleteSet} ds
+   * @param {IdSet} ds
    * @param {Map<number,number>} sv state map
    */
   constructor (ds, sv) {
     /**
-     * @type {DeleteSet}
+     * @type {IdSet}
      */
     this.ds = ds
     /**
@@ -49,11 +48,9 @@ export class Snapshot {
  * @return {boolean}
  */
 export const equalSnapshots = (snap1, snap2) => {
-  const ds1 = snap1.ds.clients
-  const ds2 = snap2.ds.clients
   const sv1 = snap1.sv
   const sv2 = snap2.sv
-  if (sv1.size !== sv2.size || ds1.size !== ds2.size) {
+  if (sv1.size !== sv2.size) {
     return false
   }
   for (const [key, value] of sv1.entries()) {
@@ -61,20 +58,7 @@ export const equalSnapshots = (snap1, snap2) => {
       return false
     }
   }
-  for (const [client, dsitems1] of ds1.entries()) {
-    const dsitems2 = ds2.get(client) || []
-    if (dsitems1.length !== dsitems2.length) {
-      return false
-    }
-    for (let i = 0; i < dsitems1.length; i++) {
-      const dsitem1 = dsitems1[i]
-      const dsitem2 = dsitems2[i]
-      if (dsitem1.clock !== dsitem2.clock || dsitem1.len !== dsitem2.len) {
-        return false
-      }
-    }
-  }
-  return true
+  return equalIdSets(snap1.ds, snap2.ds)
 }
 
 /**
@@ -83,7 +67,7 @@ export const equalSnapshots = (snap1, snap2) => {
  * @return {Uint8Array}
  */
 export const encodeSnapshotV2 = (snapshot, encoder = new DSEncoderV2()) => {
-  writeDeleteSet(encoder, snapshot.ds)
+  writeIdSet(encoder, snapshot.ds)
   writeStateVector(encoder, snapshot.sv)
   return encoder.toUint8Array()
 }
@@ -100,7 +84,7 @@ export const encodeSnapshot = snapshot => encodeSnapshotV2(snapshot, new DSEncod
  * @return {Snapshot}
  */
 export const decodeSnapshotV2 = (buf, decoder = new DSDecoderV2(decoding.createDecoder(buf))) => {
-  return new Snapshot(readDeleteSet(decoder), readStateVector(decoder))
+  return new Snapshot(readIdSet(decoder), readStateVector(decoder))
 }
 
 /**
@@ -110,13 +94,13 @@ export const decodeSnapshotV2 = (buf, decoder = new DSDecoderV2(decoding.createD
 export const decodeSnapshot = buf => decodeSnapshotV2(buf, new DSDecoderV1(decoding.createDecoder(buf)))
 
 /**
- * @param {DeleteSet} ds
+ * @param {IdSet} ds
  * @param {Map<number,number>} sm
  * @return {Snapshot}
  */
 export const createSnapshot = (ds, sm) => new Snapshot(ds, sm)
 
-export const emptySnapshot = createSnapshot(createDeleteSet(), new Map())
+export const emptySnapshot = createSnapshot(createIdSet(), new Map())
 
 /**
  * @param {Doc} doc
@@ -133,7 +117,7 @@ export const snapshot = doc => createSnapshot(createDeleteSetFromStructStore(doc
  */
 export const isVisible = (item, snapshot) => snapshot === undefined
   ? !item.deleted
-  : snapshot.sv.has(item.id.client) && (snapshot.sv.get(item.id.client) || 0) > item.id.clock && !isDeleted(snapshot.ds, item.id)
+  : snapshot.sv.has(item.id.client) && (snapshot.sv.get(item.id.client) || 0) > item.id.clock && !snapshot.ds.has(item.id)
 
 /**
  * @param {Transaction} transaction
@@ -149,7 +133,7 @@ export const splitSnapshotAffectedStructs = (transaction, snapshot) => {
         getItemCleanStart(transaction, createID(client, clock))
       }
     })
-    iterateDeletedStructs(transaction, snapshot.ds, _item => {})
+    iterateStructsByIdSet(transaction, snapshot.ds, _item => {})
     meta.add(snapshot)
   }
 }
@@ -203,7 +187,7 @@ export const createDocFromSnapshot = (originDoc, snapshot, newDoc = new Doc()) =
         structs[i].write(encoder, 0)
       }
     }
-    writeDeleteSet(encoder, ds)
+    writeIdSet(encoder, ds)
   })
 
   applyUpdateV2(newDoc, encoder.toUint8Array(), 'snapshot')
@@ -225,8 +209,8 @@ export const snapshotContainsUpdateV2 = (snapshot, update, YDecoder = UpdateDeco
       return false
     }
   }
-  const mergedDS = mergeDeleteSets([snapshot.ds, readDeleteSet(updateDecoder)])
-  return equalDeleteSets(snapshot.ds, mergedDS)
+  const mergedDS = mergeIdSets([snapshot.ds, readIdSet(updateDecoder)])
+  return equalIdSets(snapshot.ds, mergedDS)
 }
 
 /**

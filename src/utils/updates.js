@@ -24,15 +24,15 @@ import {
   DSEncoderV2,
   GC,
   Item,
-  mergeDeleteSets,
-  readDeleteSet,
+  mergeIdSets,
+  readIdSet,
   readItemContent,
   Skip,
   UpdateDecoderV1,
   UpdateDecoderV2,
   UpdateEncoderV1,
   UpdateEncoderV2,
-  writeDeleteSet,
+  writeIdSet,
   YXmlElement,
   YXmlHook
 } from '../internals.js'
@@ -128,7 +128,7 @@ export const logUpdateV2 = (update, YDecoder = UpdateDecoderV2) => {
     structs.push(curr)
   }
   logging.print('Structs: ', structs)
-  const ds = readDeleteSet(updateDecoder)
+  const ds = readIdSet(updateDecoder)
   logging.print('DeleteSet: ', ds)
 }
 
@@ -152,7 +152,7 @@ export const decodeUpdateV2 = (update, YDecoder = UpdateDecoderV2) => {
   }
   return {
     structs,
-    ds: readDeleteSet(updateDecoder)
+    ds: readIdSet(updateDecoder)
   }
 }
 
@@ -452,9 +452,9 @@ export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = U
   }
   finishLazyStructWriting(lazyStructEncoder)
 
-  const dss = updateDecoders.map(decoder => readDeleteSet(decoder))
-  const ds = mergeDeleteSets(dss)
-  writeDeleteSet(updateEncoder, ds)
+  const dss = updateDecoders.map(decoder => readIdSet(decoder))
+  const ds = mergeIdSets(dss)
+  writeIdSet(updateEncoder, ds)
   return updateEncoder.toUint8Array()
 }
 
@@ -495,8 +495,8 @@ export const diffUpdateV2 = (update, sv, YDecoder = UpdateDecoderV2, YEncoder = 
   }
   finishLazyStructWriting(lazyStructWriter)
   // write ds
-  const ds = readDeleteSet(decoder)
-  writeDeleteSet(encoder, ds)
+  const ds = readIdSet(decoder)
+  writeIdSet(encoder, ds)
   return encoder.toUint8Array()
 }
 
@@ -585,8 +585,8 @@ export const convertUpdateFormat = (update, blockTransformer, YDecoder, YEncoder
     writeStructToLazyStructWriter(lazyWriter, blockTransformer(curr), 0)
   }
   finishLazyStructWriting(lazyWriter)
-  const ds = readDeleteSet(updateDecoder)
-  writeDeleteSet(updateEncoder, ds)
+  const ds = readIdSet(updateDecoder)
+  writeIdSet(updateEncoder, ds)
   return updateEncoder.toUint8Array()
 }
 

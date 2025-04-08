@@ -6,8 +6,7 @@ import {
   readYXmlFragment,
   readYXmlHook,
   readYXmlText,
-  isDeleted,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, Item, YEvent, AbstractType // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, Item, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -77,18 +76,18 @@ export class ContentType {
   }
 
   /**
-   * @param {number} offset
+   * @param {number} _offset
    * @return {ContentType}
    */
-  splice (offset) {
+  splice (_offset) {
     throw error.methodUnimplemented()
   }
 
   /**
-   * @param {ContentType} right
+   * @param {ContentType} _right
    * @return {boolean}
    */
-  mergeWith (right) {
+  mergeWith (_right) {
     return false
   }
 
@@ -108,7 +107,7 @@ export class ContentType {
     while (item !== null) {
       if (!item.deleted) {
         item.delete(transaction)
-      } else if (!isDeleted(transaction.insertSet, item.id)) {
+      } else if (!transaction.insertSet.has(item.id)) {
         // This will be gc'd later and we want to merge it if possible
         // We try to merge all deleted items after each transaction,
         // but we have no knowledge about that this needs to be merged
@@ -120,7 +119,7 @@ export class ContentType {
     this.type._map.forEach(item => {
       if (!item.deleted) {
         item.delete(transaction)
-      } else if (!isDeleted(transaction.insertSet, item.id)) {
+      } else if (!transaction.insertSet.has(item.id)) {
         // same as above
         transaction._mergeStructs.push(item)
       }

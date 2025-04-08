@@ -1,19 +1,16 @@
 import {
   getState,
   writeStructsFromTransaction,
-  writeDeleteSet,
-  DeleteSet,
-  sortAndMergeDeleteSet,
+  writeIdSet,
   getStateVector,
   findIndexSS,
   callEventHandlerListeners,
+  createIdSet,
   Item,
   generateNewClientId,
   createID,
   cleanupYTextAfterTransaction,
-  isDeleted,
-  UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc, // eslint-disable-line
-  DeleteItem
+  IdSet, UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -62,14 +59,12 @@ export class Transaction {
     this.doc = doc
     /**
      * Describes the set of deleted items by ids
-     * @type {DeleteSet}
      */
-    this.deleteSet = new DeleteSet()
+    this.deleteSet = createIdSet()
     /**
      * Describes the set of inserted items by ids
-     * @type {DeleteSet}
      */
-    this.insertSet = new DeleteSet()
+    this.insertSet = createIdSet()
     /**
      * Holds the state before the transaction started.
      * @type {Map<Number,Number>?}
@@ -140,7 +135,7 @@ export class Transaction {
     if (this._beforeState == null) {
       const sv = getStateVector(this.doc.store)
       this.insertSet.clients.forEach((ranges, client) => {
-        sv.set(client, ranges[0].clock)
+        sv.set(client, ranges.getIds()[0].clock)
       })
       this._beforeState = sv
     }
@@ -157,7 +152,8 @@ export class Transaction {
     if (!this._done) error.unexpectedCase()
     if (this._afterState == null) {
       const sv = getStateVector(this.doc.store)
-      this.insertSet.clients.forEach((ranges, client) => {
+      this.insertSet.clients.forEach((_ranges, client) => {
+        const ranges = _ranges.getIds()
         const d = ranges[ranges.length - 1]
         sv.set(client, d.clock + d.len)
       })
@@ -176,9 +172,8 @@ export const writeUpdateMessageFromTransaction = (encoder, transaction) => {
   if (transaction.deleteSet.clients.size === 0 && transaction.insertSet.clients.size === 0) {
     return false
   }
-  sortAndMergeDeleteSet(transaction.deleteSet)
   writeStructsFromTransaction(encoder, transaction)
-  writeDeleteSet(encoder, transaction.deleteSet)
+  writeIdSet(encoder, transaction.deleteSet)
   return true
 }
 
@@ -203,26 +198,9 @@ export const nextID = transaction => {
  */
 export const addChangedTypeToTransaction = (transaction, type, parentSub) => {
   const item = type._item
-  if (item === null || (!item.deleted && !isDeleted(transaction.insertSet, item.id))) {
+  if (item === null || (!item.deleted && !transaction.insertSet.has(item.id))) {
     map.setIfUndefined(transaction.changed, type, set.create).add(parentSub)
   }
-}
-
-/**
- * @param {Transaction} tr
- * @param {AbstractStruct} item
- */
-export const addItemToInsertSet = (tr, item) => {
-  const ranges = map.setIfUndefined(tr.insertSet.clients, item.id.client, () => /** @type {Array<import('./DeleteSet.js').DeleteItem>} */ ([]))
-  if (ranges.length > 0) {
-    const r = ranges[ranges.length - 1]
-    if (r.clock + r.len === item.id.clock) {
-      // @ts-ignore
-      r.len += item.length
-      return
-    }
-  }
-  ranges.push(new DeleteItem(item.id.clock, item.length))
 }
 
 /**
@@ -254,12 +232,13 @@ const tryToMergeWithLefts = (structs, pos) => {
 }
 
 /**
- * @param {DeleteSet} ds
+ * @param {IdSet} ds
  * @param {StructStore} store
  * @param {function(Item):boolean} gcFilter
  */
 const tryGcDeleteSet = (ds, store, gcFilter) => {
-  for (const [client, deleteItems] of ds.clients.entries()) {
+  for (const [client, _deleteItems] of ds.clients.entries()) {
+    const deleteItems = _deleteItems.getIds()
     const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
     for (let di = deleteItems.length - 1; di >= 0; di--) {
       const deleteItem = deleteItems[di]
@@ -282,13 +261,14 @@ const tryGcDeleteSet = (ds, store, gcFilter) => {
 }
 
 /**
- * @param {DeleteSet} ds
+ * @param {IdSet} ds
  * @param {StructStore} store
  */
 const tryMergeDeleteSet = (ds, store) => {
   // try to merge deleted / gc'd items
   // merge from right to left for better efficiency and so we don't miss any merge targets
-  ds.clients.forEach((deleteItems, client) => {
+  ds.clients.forEach((_deleteItems, client) => {
+    const deleteItems = _deleteItems.getIds()
     const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
     for (let di = deleteItems.length - 1; di >= 0; di--) {
       const deleteItem = deleteItems[di]
@@ -306,7 +286,7 @@ const tryMergeDeleteSet = (ds, store) => {
 }
 
 /**
- * @param {DeleteSet} ds
+ * @param {IdSet} ds
  * @param {StructStore} store
  * @param {function(Item):boolean} gcFilter
  */
@@ -326,11 +306,8 @@ const cleanupTransactions = (transactionCleanups, i) => {
     const doc = transaction.doc
     const store = doc.store
     const ds = transaction.deleteSet
-    const insertSet = transaction.insertSet
     const mergeStructs = transaction._mergeStructs
     try {
-      sortAndMergeDeleteSet(ds)
-      sortAndMergeDeleteSet(insertSet)
       doc.emit('beforeObserverCalls', [transaction, doc])
       /**
        * An array of event callbacks.
@@ -388,7 +365,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
 
       // on all affected store.clients props, try to merge
       transaction.insertSet.clients.forEach((ids, client) => {
-        const firstClock = ids[0].clock
+        const firstClock = ids.getIds()[0].clock
         const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
         // we iterate from right to left so we can safely remove entries
         const firstChangePos = math.max(findIndexSS(structs, firstClock), 1)

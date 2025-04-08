@@ -1,6 +1,6 @@
 import {
-  mergeDeleteSets,
-  iterateDeletedStructs,
+  mergeIdSets,
+  iterateStructsByIdSet,
   keepItem,
   transact,
   createID,
@@ -8,9 +8,7 @@ import {
   isParentOf,
   followRedone,
   getItemCleanStart,
-  isDeleted,
-  addToDeleteSet,
-  YEvent, Transaction, Doc, Item, GC, DeleteSet, AbstractType // eslint-disable-line
+  YEvent, Transaction, Doc, Item, GC, IdSet, AbstractType // eslint-disable-line
 } from '../internals.js'
 
 import * as time from 'lib0/time'
@@ -20,8 +18,8 @@ import { ObservableV2 } from 'lib0/observable'
 
 export class StackItem {
   /**
-   * @param {DeleteSet} deletions
-   * @param {DeleteSet} insertions
+   * @param {IdSet} deletions
+   * @param {IdSet} insertions
    */
   constructor (deletions, insertions) {
     this.insertions = insertions
@@ -38,7 +36,7 @@ export class StackItem {
  * @param {StackItem} stackItem
  */
 const clearUndoManagerStackItem = (tr, um, stackItem) => {
-  iterateDeletedStructs(tr, stackItem.deletions, item => {
+  iterateStructsByIdSet(tr, stackItem.deletions, item => {
     if (item instanceof Item && um.scope.some(type => type === tr.doc || isParentOf(/** @type {AbstractType<any>} */ (type), item))) {
       keepItem(item, false)
     }
@@ -72,7 +70,7 @@ const popStackItem = (undoManager, stack, eventType) => {
        */
       const itemsToDelete = []
       let performedChange = false
-      iterateDeletedStructs(transaction, stackItem.insertions, struct => {
+      iterateStructsByIdSet(transaction, stackItem.insertions, struct => {
         if (struct instanceof Item) {
           if (struct.redone !== null) {
             let { item, diff } = followRedone(store, struct.id)
@@ -86,12 +84,12 @@ const popStackItem = (undoManager, stack, eventType) => {
           }
         }
       })
-      iterateDeletedStructs(transaction, stackItem.deletions, struct => {
+      iterateStructsByIdSet(transaction, stackItem.deletions, struct => {
         if (
           struct instanceof Item &&
           scope.some(type => type === transaction.doc || isParentOf(/** @type {AbstractType<any>} */ (type), struct)) &&
           // Never redo structs in stackItem.insertions because they were created and deleted in the same capture interval.
-          !isDeleted(stackItem.insertions, struct.id)
+          !stackItem.insertions.has(struct.id)
         ) {
           itemsToRedo.add(struct)
         }
@@ -232,8 +230,8 @@ export class UndoManager extends ObservableV2 {
       if (this.lastChange > 0 && now - this.lastChange < this.captureTimeout && stack.length > 0 && !undoing && !redoing) {
         // append change to last stack op
         const lastOp = stack[stack.length - 1]
-        lastOp.deletions = mergeDeleteSets([lastOp.deletions, transaction.deleteSet])
-        lastOp.insertions = mergeDeleteSets([lastOp.insertions, insertions])
+        lastOp.deletions = mergeIdSets([lastOp.deletions, transaction.deleteSet])
+        lastOp.insertions = mergeIdSets([lastOp.insertions, insertions])
       } else {
         // create a new stack op
         stack.push(new StackItem(transaction.deleteSet, insertions))
@@ -243,7 +241,7 @@ export class UndoManager extends ObservableV2 {
         this.lastChange = now
       }
       // make sure that deleted structs are not gc'd
-      iterateDeletedStructs(transaction, transaction.deleteSet, /** @param {Item|GC} item */ item => {
+      iterateStructsByIdSet(transaction, transaction.deleteSet, /** @param {Item|GC} item */ item => {
         if (item instanceof Item && this.scope.some(type => type === transaction.doc || isParentOf(/** @type {AbstractType<any>} */ (type), item))) {
           keepItem(item, true)
         }

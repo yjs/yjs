@@ -42,8 +42,6 @@ export {
   getState,
   Snapshot,
   createSnapshot,
-  createDeleteSet,
-  createDeleteSetFromStructStore,
   cleanupYTextFormatting,
   snapshot,
   emptySnapshot,
@@ -56,7 +54,6 @@ export {
   typeMapGetSnapshot,
   typeMapGetAllSnapshot,
   createDocFromSnapshot,
-  iterateDeletedStructs,
   applyUpdate,
   applyUpdateV2,
   readUpdate,
@@ -75,7 +72,6 @@ export {
   decodeUpdate,
   decodeUpdateV2,
   relativePositionToJSON,
-  isDeleted,
   isParentOf,
   equalSnapshots,
   PermanentUserData, // @TODO experimental
@@ -101,9 +97,10 @@ export {
   UpdateEncoderV2,
   UpdateDecoderV1,
   UpdateDecoderV2,
-  equalDeleteSets,
-  mergeDeleteSets,
-  snapshotContainsUpdate
+  snapshotContainsUpdate,
+  // idset
+  equalIdSets,
+  createDeleteSetFromStructStore
 } from './internals.js'
 
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'

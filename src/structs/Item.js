@@ -4,7 +4,7 @@ import {
   AbstractStruct,
   replaceStruct,
   addStruct,
-  addToDeleteSet,
+  addToIdSet,
   findRootTypeKey,
   compareIDs,
   getItem,
@@ -21,9 +21,8 @@ import {
   readContentFormat,
   readContentType,
   addChangedTypeToTransaction,
-  isDeleted,
-  StackItem, DeleteSet, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction, // eslint-disable-line
-  addItemToInsertSet
+  addStructToIdSet,
+  IdSet, StackItem, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction, // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -125,7 +124,7 @@ export const splitItem = (transaction, leftItem, diff) => {
  * @param {Array<StackItem>} stack
  * @param {ID} id
  */
-const isDeletedByUndoStack = (stack, id) => array.some(stack, /** @param {StackItem} s */ s => isDeleted(s.deletions, id))
+const isDeletedByUndoStack = (stack, id) => array.some(stack, /** @param {StackItem} s */ s => s.deletions.has(id))
 
 /**
  * Redoes the effect of this operation.
@@ -133,7 +132,7 @@ const isDeletedByUndoStack = (stack, id) => array.some(stack, /** @param {StackI
  * @param {Transaction} transaction The Yjs instance.
  * @param {Item} item
  * @param {Set<Item>} redoitems
- * @param {DeleteSet} itemsToDelete
+ * @param {IdSet} itemsToDelete
  * @param {boolean} ignoreRemoteMapChanges
  * @param {import('../utils/UndoManager.js').UndoManager} um
  *
@@ -211,7 +210,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
       left = item
       // Iterate right while right is in itemsToDelete
       // If it is intended to delete right while item is redone, we can expect that item should replace right.
-      while (left !== null && left.right !== null && (left.right.redone || isDeleted(itemsToDelete, left.right.id) || isDeletedByUndoStack(um.undoStack, left.right.id) || isDeletedByUndoStack(um.redoStack, left.right.id))) {
+      while (left !== null && left.right !== null && (left.right.redone || itemsToDelete.has(left.right.id) || isDeletedByUndoStack(um.undoStack, left.right.id) || isDeletedByUndoStack(um.redoStack, left.right.id))) {
         left = left.right
         // follow redone
         while (left.redone) left = getItemCleanStart(transaction, left.redone)
@@ -515,7 +514,7 @@ export class Item extends AbstractStruct {
       if (this.parentSub === null && this.countable && !this.deleted) {
         /** @type {AbstractType<any>} */ (this.parent)._length += this.length
       }
-      addItemToInsertSet(transaction, this)
+      addStructToIdSet(transaction.insertSet, this)
       addStruct(transaction.doc.store, this)
       this.content.integrate(transaction, this)
       // add parent to transaction.changed
@@ -619,7 +618,7 @@ export class Item extends AbstractStruct {
         parent._length -= this.length
       }
       this.markDeleted()
-      addToDeleteSet(transaction.deleteSet, this.id.client, this.id.clock, this.length)
+      addToIdSet(transaction.deleteSet, this.id.client, this.id.clock, this.length)
       addChangedTypeToTransaction(transaction, parent, this.parentSub)
       this.content.delete(transaction)
     }

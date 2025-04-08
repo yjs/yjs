@@ -1,15 +1,14 @@
 import {
   YArray,
   YMap,
-  readDeleteSet,
-  writeDeleteSet,
-  createDeleteSet,
-  DSEncoderV1, DSDecoderV1, ID, DeleteSet, YArrayEvent, Transaction, Doc // eslint-disable-line
+  readIdSet,
+  writeIdSet,
+  createIdSet,
+  mergeIdSets,
+  DSEncoderV1, DSDecoderV1, ID, IdSet, YArrayEvent, Transaction, Doc // eslint-disable-line
 } from '../internals.js'
 
 import * as decoding from 'lib0/decoding'
-
-import { mergeDeleteSets, isDeleted } from './DeleteSet.js'
 
 export class PermanentUserData {
   /**
@@ -18,7 +17,7 @@ export class PermanentUserData {
    */
   constructor (doc, storeType = doc.getMap('users')) {
     /**
-     * @type {Map<string,DeleteSet>}
+     * @type {Map<string,IdSet>}
      */
     const dss = new Map()
     this.yusers = storeType
@@ -45,12 +44,12 @@ export class PermanentUserData {
         event.changes.added.forEach(item => {
           item.content.getContent().forEach(encodedDs => {
             if (encodedDs instanceof Uint8Array) {
-              this.dss.set(userDescription, mergeDeleteSets([this.dss.get(userDescription) || createDeleteSet(), readDeleteSet(new DSDecoderV1(decoding.createDecoder(encodedDs)))]))
+              this.dss.set(userDescription, mergeIdSets([this.dss.get(userDescription) || createIdSet(), readIdSet(new DSDecoderV1(decoding.createDecoder(encodedDs)))]))
             }
           })
         })
       })
-      this.dss.set(userDescription, mergeDeleteSets(ds.map(encodedDs => readDeleteSet(new DSDecoderV1(decoding.createDecoder(encodedDs))))))
+      this.dss.set(userDescription, mergeIdSets(ds.map(encodedDs => readIdSet(new DSDecoderV1(decoding.createDecoder(encodedDs))))))
       ids.observe(/** @param {YArrayEvent<any>} event */ event =>
         event.changes.added.forEach(item => item.content.getContent().forEach(addClientId))
       )
@@ -71,7 +70,7 @@ export class PermanentUserData {
    * @param {number} clientid
    * @param {string} userDescription
    * @param {Object} conf
-   * @param {function(Transaction, DeleteSet):boolean} [conf.filter]
+   * @param {function(Transaction, IdSet):boolean} [conf.filter]
    */
   setUserMapping (doc, clientid, userDescription, { filter = () => true } = {}) {
     const users = this.yusers
@@ -99,7 +98,7 @@ export class PermanentUserData {
           const encoder = new DSEncoderV1()
           const ds = this.dss.get(userDescription)
           if (ds) {
-            writeDeleteSet(encoder, ds)
+            writeIdSet(encoder, ds)
             user.get('ds').push([encoder.toUint8Array()])
           }
         }
@@ -111,7 +110,7 @@ export class PermanentUserData {
         const ds = transaction.deleteSet
         if (transaction.local && ds.clients.size > 0 && filter(transaction, ds)) {
           const encoder = new DSEncoderV1()
-          writeDeleteSet(encoder, ds)
+          writeIdSet(encoder, ds)
           yds.push([encoder.toUint8Array()])
         }
       })
@@ -132,7 +131,7 @@ export class PermanentUserData {
    */
   getUserByDeletedId (id) {
     for (const [userDescription, ds] of this.dss.entries()) {
-      if (isDeleted(ds, id)) {
+      if (ds.has(id)) {
         return userDescription
       }
     }
