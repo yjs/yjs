@@ -226,14 +226,7 @@ export class UndoManager extends ObservableV2 {
         // neither undoing nor redoing: delete redoStack
         this.clear(false, true)
       }
-      const insertions = new DeleteSet()
-      transaction.afterState.forEach((endClock, client) => {
-        const startClock = transaction.beforeState.get(client) || 0
-        const len = endClock - startClock
-        if (len > 0) {
-          addToDeleteSet(insertions, client, startClock, len)
-        }
-      })
+      const insertions = transaction.insertSet
       const now = time.getUnixTime()
       let didAdd = false
       if (this.lastChange > 0 && now - this.lastChange < this.captureTimeout && stack.length > 0 && !undoing && !redoing) {

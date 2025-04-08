@@ -22,7 +22,8 @@ import {
   readContentType,
   addChangedTypeToTransaction,
   isDeleted,
-  StackItem, DeleteSet, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction // eslint-disable-line
+  StackItem, DeleteSet, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction, // eslint-disable-line
+  addItemToInsertSet
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -514,6 +515,7 @@ export class Item extends AbstractStruct {
       if (this.parentSub === null && this.countable && !this.deleted) {
         /** @type {AbstractType<any>} */ (this.parent)._length += this.length
       }
+      addItemToInsertSet(transaction, this)
       addStruct(transaction.doc.store, this)
       this.content.integrate(transaction, this)
       // add parent to transaction.changed

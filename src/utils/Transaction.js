@@ -11,9 +11,12 @@ import {
   generateNewClientId,
   createID,
   cleanupYTextAfterTransaction,
-  UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
+  isDeleted,
+  UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc, // eslint-disable-line
+  DeleteItem
 } from '../internals.js'
 
+import * as error from 'lib0/error'
 import * as map from 'lib0/map'
 import * as math from 'lib0/math'
 import * as set from 'lib0/set'
@@ -63,15 +66,20 @@ export class Transaction {
      */
     this.deleteSet = new DeleteSet()
     /**
-     * Holds the state before the transaction started.
-     * @type {Map<Number,Number>}
+     * Describes the set of inserted items by ids
+     * @type {DeleteSet}
      */
-    this.beforeState = getStateVector(doc.store)
+    this.insertSet = new DeleteSet()
+    /**
+     * Holds the state before the transaction started.
+     * @type {Map<Number,Number>?}
+     */
+    this._beforeState = null
     /**
      * Holds the state after the transaction.
-     * @type {Map<Number,Number>}
+     * @type {Map<Number,Number>?}
      */
-    this.afterState = new Map()
+    this._afterState = null
     /**
      * All types that were directly modified (property added or child
      * inserted/deleted). New types are not included in this Set.
@@ -119,6 +127,43 @@ export class Transaction {
      * @type {boolean}
      */
     this._needFormattingCleanup = false
+    this._done = false
+  }
+
+  /**
+   * Holds the state before the transaction started.
+   *
+   * @deprecated
+   * @type {Map<Number,Number>}
+   */
+  get beforeState () {
+    if (this._beforeState == null) {
+      const sv = getStateVector(this.doc.store)
+      this.insertSet.clients.forEach((ranges, client) => {
+        sv.set(client, ranges[0].clock)
+      })
+      this._beforeState = sv
+    }
+    return this._beforeState
+  }
+
+  /**
+   * Holds the state after the transaction.
+   *
+   * @deprecated
+   * @type {Map<Number,Number>}
+   */
+  get afterState () {
+    if (!this._done) error.unexpectedCase()
+    if (this._afterState == null) {
+      const sv = getStateVector(this.doc.store)
+      this.insertSet.clients.forEach((ranges, client) => {
+        const d = ranges[ranges.length - 1]
+        sv.set(client, d.clock + d.len)
+      })
+      this._afterState = sv
+    }
+    return this._afterState
   }
 }
 
@@ -128,7 +173,7 @@ export class Transaction {
  * @return {boolean} Whether data was written.
  */
 export const writeUpdateMessageFromTransaction = (encoder, transaction) => {
-  if (transaction.deleteSet.clients.size === 0 && !map.any(transaction.afterState, (clock, client) => transaction.beforeState.get(client) !== clock)) {
+  if (transaction.deleteSet.clients.size === 0 && transaction.insertSet.clients.size === 0) {
     return false
   }
   sortAndMergeDeleteSet(transaction.deleteSet)
@@ -158,9 +203,26 @@ export const nextID = transaction => {
  */
 export const addChangedTypeToTransaction = (transaction, type, parentSub) => {
   const item = type._item
-  if (item === null || (item.id.clock < (transaction.beforeState.get(item.id.client) || 0) && !item.deleted)) {
+  if (item === null || (!item.deleted && !isDeleted(transaction.insertSet, item.id))) {
     map.setIfUndefined(transaction.changed, type, set.create).add(parentSub)
   }
+}
+
+/**
+ * @param {Transaction} tr
+ * @param {AbstractStruct} item
+ */
+export const addItemToInsertSet = (tr, item) => {
+  const ranges = map.setIfUndefined(tr.insertSet.clients, item.id.client, () => /** @type {Array<import('./DeleteSet.js').DeleteItem>} */ ([]))
+  if (ranges.length > 0) {
+    const r = ranges[ranges.length - 1]
+    if (r.clock + r.len === item.id.clock) {
+      // @ts-ignore
+      r.len += item.length
+      return
+    }
+  }
+  ranges.push(new DeleteItem(item.id.clock, item.length))
 }
 
 /**
@@ -260,13 +322,15 @@ export const tryGc = (ds, store, gcFilter) => {
 const cleanupTransactions = (transactionCleanups, i) => {
   if (i < transactionCleanups.length) {
     const transaction = transactionCleanups[i]
+    transaction._done = true
     const doc = transaction.doc
     const store = doc.store
     const ds = transaction.deleteSet
+    const insertSet = transaction.insertSet
     const mergeStructs = transaction._mergeStructs
     try {
       sortAndMergeDeleteSet(ds)
-      transaction.afterState = getStateVector(transaction.doc.store)
+      sortAndMergeDeleteSet(insertSet)
       doc.emit('beforeObserverCalls', [transaction, doc])
       /**
        * An array of event callbacks.
@@ -323,15 +387,13 @@ const cleanupTransactions = (transactionCleanups, i) => {
       tryMergeDeleteSet(ds, store)
 
       // on all affected store.clients props, try to merge
-      transaction.afterState.forEach((clock, client) => {
-        const beforeClock = transaction.beforeState.get(client) || 0
-        if (beforeClock !== clock) {
-          const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
-          // we iterate from right to left so we can safely remove entries
-          const firstChangePos = math.max(findIndexSS(structs, beforeClock), 1)
-          for (let i = structs.length - 1; i >= firstChangePos;) {
-            i -= 1 + tryToMergeWithLefts(structs, i)
-          }
+      transaction.insertSet.clients.forEach((ids, client) => {
+        const firstClock = ids[0].clock
+        const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
+        // we iterate from right to left so we can safely remove entries
+        const firstChangePos = math.max(findIndexSS(structs, firstClock), 1)
+        for (let i = structs.length - 1; i >= firstChangePos;) {
+          i -= 1 + tryToMergeWithLefts(structs, i)
         }
       })
       // try to merge mergeStructs
@@ -350,7 +412,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
           tryToMergeWithLefts(structs, replacedStructPos)
         }
       }
-      if (!transaction.local && transaction.afterState.get(doc.clientID) !== transaction.beforeState.get(doc.clientID)) {
+      if (!transaction.local && transaction.insertSet.clients.has(doc.clientID)) {
         logging.print(logging.ORANGE, logging.BOLD, '[yjs] ', logging.UNBOLD, logging.RED, 'Changed the client-id because another client seems to be using it.')
         doc.clientID = generateNewClientId()
       }
