@@ -1,7 +1,8 @@
 import {
   GC,
   splitItem,
-  Transaction, ID, Item, DSDecoderV2 // eslint-disable-line
+  IdSet,
+  Transaction, ID, Item // eslint-disable-line
 } from '../internals.js'
 
 import * as math from 'lib0/math'
@@ -13,6 +14,7 @@ export class StructStore {
      * @type {Map<number,Array<GC|Item>>}
      */
     this.clients = new Map()
+    this.ds = new IdSet()
     /**
      * @type {null | { missing: Map<number, number>, update: Uint8Array }}
      */

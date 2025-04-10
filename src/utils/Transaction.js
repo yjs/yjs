@@ -10,7 +10,8 @@ import {
   generateNewClientId,
   createID,
   cleanupYTextAfterTransaction,
-  IdSet, UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
+  IdSet, UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc, // eslint-disable-line
+  insertIntoIdSet
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -307,6 +308,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
     const store = doc.store
     const ds = transaction.deleteSet
     const mergeStructs = transaction._mergeStructs
+    insertIntoIdSet(store.ds, ds)
     try {
       doc.emit('beforeObserverCalls', [transaction, doc])
       /**
