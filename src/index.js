@@ -99,6 +99,7 @@ export {
   UpdateDecoderV2,
   snapshotContainsUpdate,
   // idset
+  IdSet,
   equalIdSets,
   createDeleteSetFromStructStore
 } from './internals.js'

@@ -190,6 +190,25 @@ export const mergeIdSets = idSets => {
 }
 
 /**
+ * @param {IdSet} dest
+ * @param {IdSet} src
+ */
+export const insertIntoIdSet = (dest, src) => {
+  src.clients.forEach((srcRanges, client) => {
+    const targetRanges = dest.clients.get(client)
+    if (targetRanges) {
+      array.appendTo(targetRanges.getIds(), srcRanges.getIds())
+      targetRanges.sorted = false
+    } else {
+      const res = new IdRanges(srcRanges.getIds().slice())
+      res.sorted = true
+      dest.clients.set(client, res)
+    }
+  })
+}
+
+
+/**
  * Remove all ranges from `exclude` from `ds`. The result is a fresh IdSet containing all ranges from `idSet` that are not
  * in `exclude`.
  *

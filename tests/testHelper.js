@@ -305,6 +305,26 @@ export const init = (tc, { users = 5 } = {}, initTestObject) => {
 }
 
 /**
+ * @param {Y.IdSet} idSet1
+ * @param {Y.IdSet} idSet2
+ */
+export const compareIdSets = (idSet1, idSet2) => {
+  if (idSet1.clients.size !== idSet2.clients.size) return false
+  for (const [client, _items1] of idSet1.clients.entries()) {
+    const items1 = _items1.getIds()
+    const items2 = idSet2.clients.get(client)?.getIds()
+    t.assert(items2 !== undefined && items1.length === items2.length)
+    for (let i = 0; i < items1.length; i++) {
+      const di1 = items1[i]
+      const di2 = /** @type {Array<import('../src/utils/IdSet.js').IdRange>} */ (items2)[i]
+      t.assert(di1.clock === di2.clock && di1.len === di2.len)
+    }
+  }
+  return true
+}
+
+
+/**
  * 1. reconnect and flush all
  * 2. user 0 gc
  * 3. get type content
@@ -366,6 +386,9 @@ export const compare = users => {
     compareStructStores(users[i].store, users[i + 1].store)
     t.compare(Y.encodeSnapshot(Y.snapshot(users[i])), Y.encodeSnapshot(Y.snapshot(users[i + 1])))
   }
+  users.forEach(user => {
+    compareIdSets(user.store.ds, Y.createDeleteSetFromStructStore(user.store))
+  })
   users.map(u => u.destroy())
 }
 

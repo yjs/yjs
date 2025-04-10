@@ -2,6 +2,7 @@ import * as t from 'lib0/testing'
 import * as d from '../src/utils/IdSet.js'
 import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
+import { compareIdSets } from './testHelper.js'
 
 /**
  * @param {Array<[number, number, number]>} ops
@@ -12,25 +13,6 @@ const simpleConstructIdSet = ops => {
     d.addToIdSet(ds, op[0], op[1], op[2])
   })
   return ds
-}
-
-/**
- * @param {d.IdSet} idSet1
- * @param {d.IdSet} idSet2
- */
-const compareIdSets = (idSet1, idSet2) => {
-  if (idSet1.clients.size !== idSet2.clients.size) return false
-  for (const [client, _items1] of idSet1.clients.entries()) {
-    const items1 = _items1.getIds()
-    const items2 = idSet2.clients.get(client)?.getIds()
-    t.assert(items2 !== undefined && items1.length === items2.length)
-    for (let i = 0; i < items1.length; i++) {
-      const di1 = items1[i]
-      const di2 = /** @type {Array<d.IdRange>} */ (items2)[i]
-      t.assert(di1.clock === di2.clock && di1.len === di2.len)
-    }
-  }
-  return true
 }
 
 /**

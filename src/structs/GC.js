@@ -2,6 +2,7 @@ import {
   AbstractStruct,
   addStruct,
   addStructToIdSet,
+  addToIdSet,
   UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction // eslint-disable-line
 } from '../internals.js'
 
@@ -38,6 +39,7 @@ export class GC extends AbstractStruct {
       this.id.clock += offset
       this.length -= offset
     }
+    addToIdSet(transaction.deleteSet, this.id.client, this.id.clock, this.length)
     addStructToIdSet(transaction.insertSet, this)
     addStruct(transaction.doc.store, this)
   }
