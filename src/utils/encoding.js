@@ -21,7 +21,6 @@ import {
   getStateVector,
   readAndApplyDeleteSet,
   writeIdSet,
-  createDeleteSetFromStructStore,
   transact,
   readItemContent,
   UpdateDecoderV1,
@@ -523,7 +522,7 @@ export const applyUpdate = (ydoc, update, transactionOrigin) => applyUpdateV2(yd
  */
 export const writeStateAsUpdate = (encoder, doc, targetStateVector = new Map()) => {
   writeClientsStructs(encoder, doc.store, targetStateVector)
-  writeIdSet(encoder, createDeleteSetFromStructStore(doc.store))
+  writeIdSet(encoder, doc.store.ds)
 }
 
 /**
