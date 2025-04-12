@@ -308,7 +308,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
     const store = doc.store
     const ds = transaction.deleteSet
     const mergeStructs = transaction._mergeStructs
-    insertIntoIdSet(store.ds, ds)
+    // insertIntoIdSet(store.ds, ds)
     try {
       doc.emit('beforeObserverCalls', [transaction, doc])
       /**

@@ -35,7 +35,7 @@ import {
   Skip,
   diffUpdateV2,
   convertUpdateFormatV2ToV1,
-  IdSet, DSDecoderV2, Doc, Transaction, GC, Item, StructStore, // eslint-disable-line
+  IdSet, DSDecoderV2, Doc, Transaction, GC, Item, StructStore, createDeleteSetFromStructStore, // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding'
