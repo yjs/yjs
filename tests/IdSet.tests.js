@@ -1,8 +1,6 @@
 import * as t from 'lib0/testing'
 import * as d from '../src/utils/IdSet.js'
-import * as prng from 'lib0/prng'
-import * as math from 'lib0/math'
-import { compareIdSets, ID } from './testHelper.js'
+import { compareIdSets, createRandomIdSet, ID } from './testHelper.js'
 
 /**
  * @param {Array<[number, number, number]>} ops
@@ -69,7 +67,7 @@ export const testIdsetMerge = _tc => {
 export const testDiffing = _tc => {
   t.group('simple case (1))', () => {
     compareIdSets(
-      d.diffIdSets(
+      d.diffIdSet(
         simpleConstructIdSet([[0, 1, 1], [0, 3, 1]]),
         simpleConstructIdSet([[0, 3, 1]])
       ),
@@ -78,7 +76,7 @@ export const testDiffing = _tc => {
   })
   t.group('subset left', () => {
     compareIdSets(
-      d.diffIdSets(
+      d.diffIdSet(
         simpleConstructIdSet([[0, 1, 3]]),
         simpleConstructIdSet([[0, 1, 1]])
       ),
@@ -87,7 +85,7 @@ export const testDiffing = _tc => {
   })
   t.group('subset right', () => {
     compareIdSets(
-      d.diffIdSets(
+      d.diffIdSet(
         simpleConstructIdSet([[0, 1, 3]]),
         simpleConstructIdSet([[0, 3, 1]])
       ),
@@ -96,7 +94,7 @@ export const testDiffing = _tc => {
   })
   t.group('subset middle', () => {
     compareIdSets(
-      d.diffIdSets(
+      d.diffIdSet(
         simpleConstructIdSet([[0, 1, 3]]),
         simpleConstructIdSet([[0, 2, 1]])
       ),
@@ -105,7 +103,7 @@ export const testDiffing = _tc => {
   })
   t.group('overlapping left', () => {
     compareIdSets(
-      d.diffIdSets(
+      d.diffIdSet(
         simpleConstructIdSet([[0, 1, 3]]),
         simpleConstructIdSet([[0, 0, 2]])
       ),
@@ -114,7 +112,7 @@ export const testDiffing = _tc => {
   })
   t.group('overlapping right', () => {
     compareIdSets(
-      d.diffIdSets(
+      d.diffIdSet(
         simpleConstructIdSet([[0, 1, 3]]),
         simpleConstructIdSet([[0, 3, 5]])
       ),
@@ -123,7 +121,7 @@ export const testDiffing = _tc => {
   })
   t.group('overlapping completely', () => {
     compareIdSets(
-      d.diffIdSets(
+      d.diffIdSet(
         simpleConstructIdSet([[0, 1, 3]]),
         simpleConstructIdSet([[0, 0, 5]])
       ),
@@ -132,7 +130,7 @@ export const testDiffing = _tc => {
   })
   t.group('overlapping into new range', () => {
     compareIdSets(
-      d.diffIdSets(
+      d.diffIdSet(
         simpleConstructIdSet([[0, 1, 3], [0, 5, 2]]),
         simpleConstructIdSet([[0, 0, 6]])
       ),
@@ -142,37 +140,16 @@ export const testDiffing = _tc => {
 }
 
 /**
- * @param {prng.PRNG} gen
- * @param {number} clients
- * @param {number} clockRange (max clock - exclusive - by each client)
- */
-const createRandomDiffSet = (gen, clients, clockRange) => {
-  const maxOpLen = 5
-  const numOfOps = math.ceil((clients * clockRange) / maxOpLen)
-  const ds = d.createIdSet()
-  for (let i = 0; i < numOfOps; i++) {
-    const client = prng.uint32(gen, 0, clients - 1)
-    const clockStart = prng.uint32(gen, 0, clockRange)
-    const len = prng.uint32(gen, 0, clockRange - clockStart)
-    d.addToIdSet(ds, client, clockStart, len)
-  }
-  if (ds.clients.size === clients && clients > 1 && prng.bool(gen)) {
-    ds.clients.delete(prng.uint32(gen, 0, clients))
-  }
-  return ds
-}
-
-/**
  * @param {t.TestCase} tc
  */
 export const testRepeatRandomDiffing = tc => {
   const clients = 4
   const clockRange = 100
-  const ds1 = createRandomDiffSet(tc.prng, clients, clockRange)
-  const ds2 = createRandomDiffSet(tc.prng, clients, clockRange)
+  const ds1 = createRandomIdSet(tc.prng, clients, clockRange)
+  const ds2 = createRandomIdSet(tc.prng, clients, clockRange)
   const merged = d.mergeIdSets([ds1, ds2])
-  const e1 = d.diffIdSets(ds1, ds2)
-  const e2 = d.diffIdSets(merged, ds2)
+  const e1 = d.diffIdSet(ds1, ds2)
+  const e2 = d.diffIdSet(merged, ds2)
   compareIdSets(e1, e2)
 }
 
@@ -187,7 +164,7 @@ export const testRepeatMergingMultipleIdsets = tc => {
    */
   const idss = []
   for (let i = 0; i < 3; i++) {
-    idss.push(createRandomDiffSet(tc.prng, clients, clockRange))
+    idss.push(createRandomIdSet(tc.prng, clients, clockRange))
   }
   const merged = d.mergeIdSets(idss)
   const mergedReverse = d.mergeIdSets(idss.reverse())
@@ -206,3 +183,19 @@ export const testRepeatMergingMultipleIdsets = tc => {
   compareIdSets(merged, composed)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatRandomDiffing2 = tc => {
+  const clients = 4
+  const clockRange = 100
+  const ids1 = createRandomIdSet(tc.prng, clients, clockRange)
+  const ids2 = createRandomIdSet(tc.prng, clients, clockRange)
+  const idsExclude = createRandomIdSet(tc.prng, clients, clockRange)
+  const merged = d.mergeIdSets([ids1, ids2])
+  const mergedExcluded = d.diffIdSet(merged, idsExclude)
+  const e1 = d.diffIdSet(ids1, idsExclude)
+  const e2 = d.diffIdSet(ids2, idsExclude)
+  const excludedMerged = d.mergeIdSets([e1, e2])
+  compareIdSets(mergedExcluded, excludedMerged)
+}

@@ -6,7 +6,10 @@ import * as syncProtocol from 'y-protocols/sync'
 import * as object from 'lib0/object'
 import * as map from 'lib0/map'
 import * as Y from '../src/index.js'
-import { amAttrsEqual } from '../src/internals.js'
+import * as math from 'lib0/math'
+import {
+  amAttrsEqual, createIdSet, createAttributionManager, addToIdSet
+} from '../src/internals.js'
 
 export * from '../src/index.js'
 
@@ -344,7 +347,55 @@ export const compareAttributionManagers = (am1, am2) => {
   return true
 }
 
+/**
+ * @param {prng.PRNG} gen
+ * @param {number} clients
+ * @param {number} clockRange (max clock - exclusive - by each client)
+ */
+export const createRandomIdSet = (gen, clients, clockRange) => {
+  const maxOpLen = 5
+  const numOfOps = math.ceil((clients * clockRange) / maxOpLen)
+  const ds = createIdSet()
+  for (let i = 0; i < numOfOps; i++) {
+    const client = prng.uint32(gen, 0, clients - 1)
+    const clockStart = prng.uint32(gen, 0, clockRange)
+    const len = prng.uint32(gen, 0, clockRange - clockStart)
+    addToIdSet(ds, client, clockStart, len)
+  }
+  if (ds.clients.size === clients && clients > 1 && prng.bool(gen)) {
+    ds.clients.delete(prng.uint32(gen, 0, clients))
+  }
+  return ds
+}
 
+/**
+ * @template T
+ * @param {prng.PRNG} gen
+ * @param {number} clients
+ * @param {number} clockRange (max clock - exclusive - by each client)
+ * @param {Array<T>} attrChoices (max clock - exclusive - by each client)
+ * @return {Y.AttributionManager<T>}
+ */
+export const createRandomAttributionManager = (gen, clients, clockRange, attrChoices) => {
+  const maxOpLen = 5
+  const numOfOps = math.ceil((clients * clockRange) / maxOpLen)
+  const attrMngr = createAttributionManager()
+  for (let i = 0; i < numOfOps; i++) {
+    const client = prng.uint32(gen, 0, clients - 1)
+    const clockStart = prng.uint32(gen, 0, clockRange)
+    const len = prng.uint32(gen, 0, clockRange - clockStart)
+    const attrs = [prng.oneOf(gen, attrChoices)]
+    // maybe add another attr
+    if (prng.bool(gen)) {
+      const a = prng.oneOf(gen, attrChoices)
+      if (attrs.find(attr => attr === a) == null) {
+        attrs.push(a)
+      }
+    }
+    attrMngr.add(client, clockStart, len, attrs)
+  }
+  return attrMngr
+}
 
 /**
  * 1. reconnect and flush all

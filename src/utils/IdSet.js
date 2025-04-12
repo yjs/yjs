@@ -4,6 +4,8 @@ import {
   splitItem,
   iterateStructs,
   UpdateEncoderV2,
+  AttributionManager,
+  AttrRanges,
   AbstractStruct, DSDecoderV1, DSEncoderV1, DSDecoderV2, DSEncoderV2, Item, GC, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
 
@@ -26,6 +28,14 @@ export class IdRange {
      * @type {number}
      */
     this.len = len
+  }
+
+  /**
+   * @param {number} clock
+   * @param {number} len
+   */
+  copyWith (clock, len) {
+    return new IdRange(clock, len)
   }
 }
 
@@ -203,54 +213,58 @@ export const insertIntoIdSet = (dest, src) => {
   })
 }
 
-
 /**
  * Remove all ranges from `exclude` from `ds`. The result is a fresh IdSet containing all ranges from `idSet` that are not
  * in `exclude`.
  *
- * @param {IdSet} idSet
- * @param {IdSet} exclude
- * @return {IdSet}
+ * @template {IdSet | AttributionManager<any>} Set
+ * @param {Set} set
+ * @param {IdSet | AttributionManager<any>} exclude
+ * @return {Set}
  */
-export const diffIdSets = (idSet, exclude) => {
-  const res = new IdSet()
-  idSet.clients.forEach((_idRanges, client) => {
+export const _diffSet = (set, exclude) => {
+  /**
+   * @type {Set}
+   */
+  const res = /** @type {any } */ (set instanceof IdSet ? new IdSet() : new AttributionManager())
+  const Ranges = set instanceof IdSet ? IdRanges : AttrRanges
+  set.clients.forEach((_setRanges, client) => {
     /**
      * @type {Array<IdRange>}
      */
     let resRanges = []
     const _excludedRanges = exclude.clients.get(client)
-    const idRanges = _idRanges.getIds()
+    const setRanges = _setRanges.getIds()
     if (_excludedRanges == null) {
-      resRanges = idRanges.slice()
+      resRanges = setRanges.slice()
     } else {
       const excludedRanges = _excludedRanges.getIds()
       let i = 0; let j = 0
-      let currRange = idRanges[0]
-      while (i < idRanges.length && j < excludedRanges.length) {
+      let currRange = setRanges[0]
+      while (i < setRanges.length && j < excludedRanges.length) {
         const e = excludedRanges[j]
         if (currRange.clock + currRange.len <= e.clock) { // no overlapping, use next range item
           if (currRange.len > 0) resRanges.push(currRange)
-          currRange = idRanges[++i]
+          currRange = setRanges[++i]
         } else if (e.clock + e.len <= currRange.clock) { // no overlapping, use next excluded item
           j++
         } else if (e.clock <= currRange.clock) { // exclude laps into range (we already know that the ranges somehow collide)
           const newClock = e.clock + e.len
           const newLen = currRange.clock + currRange.len - newClock
           if (newLen > 0) {
-            currRange = new IdRange(newClock, newLen)
+            currRange = currRange.copyWith(newClock, newLen)
             j++
           } else {
             // this item is completely overwritten. len=0. We can jump to the next range
-            currRange = idRanges[++i]
+            currRange = setRanges[++i]
           }
         } else { // currRange.clock < e.clock -- range laps into exclude => adjust len
           // beginning can't be empty, add it to the result
           const nextLen = e.clock - currRange.clock
-          resRanges.push(new IdRange(currRange.clock, nextLen))
+          resRanges.push(currRange.copyWith(currRange.clock, nextLen))
           // retain the remaining length after exclude in currRange
-          currRange = new IdRange(currRange.clock + e.len + nextLen, math.max(currRange.len - e.len - nextLen, 0))
-          if (currRange.len === 0) currRange = idRanges[++i]
+          currRange = currRange.copyWith(currRange.clock + e.len + nextLen, math.max(currRange.len - e.len - nextLen, 0))
+          if (currRange.len === 0) currRange = setRanges[++i]
           else j++
         }
       }
@@ -258,14 +272,26 @@ export const diffIdSets = (idSet, exclude) => {
         resRanges.push(currRange)
       }
       i++
-      while (i < idRanges.length) {
-        resRanges.push(idRanges[i++])
+      while (i < setRanges.length) {
+        resRanges.push(setRanges[i++])
       }
     }
-    if (resRanges.length > 0) res.clients.set(client, new IdRanges(resRanges))
+    // @ts-ignore
+    if (resRanges.length > 0) res.clients.set(client, /** @type {any} */ (new Ranges(resRanges)))
   })
   return res
 }
+
+/**
+ * Remove all ranges from `exclude` from `ds`. The result is a fresh IdSet containing all ranges from `idSet` that are not
+ * in `exclude`.
+ *
+ * @template {IdSet} Set
+ * @param {Set} set
+ * @param {IdSet | AttributionManager<any>} exclude
+ * @return {Set}
+ */
+export const diffIdSet = _diffSet
 
 /**
  * @param {IdSet} idSet

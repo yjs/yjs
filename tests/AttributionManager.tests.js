@@ -1,8 +1,6 @@
 import * as t from 'lib0/testing'
 import * as am from '../src/utils/AttributionManager.js'
-import * as prng from 'lib0/prng'
-import * as math from 'lib0/math'
-import { compareAttributionManagers, createAttributionManager, ID } from './testHelper.js'
+import { compareAttributionManagers, createAttributionManager, ID, createRandomIdSet, createRandomAttributionManager } from './testHelper.js'
 
 /**
  * @template T
@@ -14,35 +12,6 @@ const simpleConstructAttrs = ops => {
     attrs.add(op[0], op[1], op[2], op[3])
   })
   return attrs
-}
-
-/**
- * @template T
- * @param {prng.PRNG} gen
- * @param {number} clients
- * @param {number} clockRange (max clock - exclusive - by each client)
- * @param {Array<T>} attrChoices (max clock - exclusive - by each client)
- * @return {am.AttributionManager<T>}
- */
-const createRandomAttributionManager = (gen, clients, clockRange, attrChoices) => {
-  const maxOpLen = 5
-  const numOfOps = math.ceil((clients * clockRange) / maxOpLen)
-  const attrMngr = createAttributionManager()
-  for (let i = 0; i < numOfOps; i++) {
-    const client = prng.uint32(gen, 0, clients - 1)
-    const clockStart = prng.uint32(gen, 0, clockRange)
-    const len = prng.uint32(gen, 0, clockRange - clockStart)
-    const attrs = [prng.oneOf(gen, attrChoices)]
-    // maybe add another attr
-    if (prng.bool(gen)) {
-      const a = prng.oneOf(gen, attrChoices)
-      if (attrs.find((attr => attr === a)) == null) {
-        attrs.push(a)
-      }
-    }
-    attrMngr.add(client, clockStart, len, attrs)
-  }
-  return attrMngr
 }
 
 /**
@@ -133,3 +102,35 @@ export const testRepeatMergingMultipleAttrManagers = tc => {
   compareAttributionManagers(merged, composed)
 }
 
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatRandomDiffing = tc => {
+  const clients = 4
+  const clockRange = 100
+  const attrs = [1, 2, 3]
+  const ds1 = createRandomAttributionManager(tc.prng, clients, clockRange, attrs)
+  const ds2 = createRandomAttributionManager(tc.prng, clients, clockRange, attrs)
+  const merged = am.mergeAttributionManagers([ds1, ds2])
+  const e1 = am.diffAttributionManager(ds1, ds2)
+  const e2 = am.diffAttributionManager(merged, ds2)
+  compareAttributionManagers(e1, e2)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatRandomDiffing2 = tc => {
+  const clients = 4
+  const clockRange = 100
+  const attrs = [1, 2, 3]
+  const am1 = createRandomAttributionManager(tc.prng, clients, clockRange, attrs)
+  const am2 = createRandomAttributionManager(tc.prng, clients, clockRange, attrs)
+  const idsExclude = createRandomIdSet(tc.prng, clients, clockRange)
+  const merged = am.mergeAttributionManagers([am1, am2])
+  const mergedExcluded = am.diffAttributionManager(merged, idsExclude)
+  const e1 = am.diffAttributionManager(am1, idsExclude)
+  const e2 = am.diffAttributionManager(am2, idsExclude)
+  const excludedMerged = am.mergeAttributionManagers([e1, e2])
+  compareAttributionManagers(mergedExcluded, excludedMerged)
+}
