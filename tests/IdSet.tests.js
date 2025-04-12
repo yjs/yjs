@@ -198,7 +198,9 @@ export const testRepeatMergingMultipleIdsets = tc => {
       const mergedHas = merged.has(new ID(iclient, iclock))
       const oneHas = idss.some(ids => ids.has(new ID(iclient, iclock)))
       t.assert(mergedHas === oneHas)
-      d.addToIdSet(composed, iclient, iclock, 1)
+      if (oneHas) {
+        d.addToIdSet(composed, iclient, iclock, 1)
+      }
     }
   }
   compareIdSets(merged, composed)

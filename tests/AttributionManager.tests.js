@@ -33,8 +33,12 @@ const createRandomAttributionManager = (gen, clients, clockRange, attrChoices) =
     const clockStart = prng.uint32(gen, 0, clockRange)
     const len = prng.uint32(gen, 0, clockRange - clockStart)
     const attrs = [prng.oneOf(gen, attrChoices)]
+    // maybe add another attr
     if (prng.bool(gen)) {
-      attrs.push(prng.oneOf(gen, attrChoices))
+      const a = prng.oneOf(gen, attrChoices)
+      if (attrs.find((attr => attr === a)) == null) {
+        attrs.push(a)
+      }
     }
     attrMngr.add(client, clockStart, len, attrs)
   }
@@ -91,7 +95,7 @@ export const testAmMerge = _tc => {
   t.group('no merge of overlapping id ranges with different attributes', () => {
     compareAttributionManagers(
       simpleConstructAttrs([[0, 1, 2, [1]], [0, 0, 2, [2]]]),
-      simpleConstructAttrs([[0, 0, 1, [2]], [0, 1, 1, [1, 2]], [0, 2, 1, [2]]])
+      simpleConstructAttrs([[0, 0, 1, [2]], [0, 1, 1, [1, 2]], [0, 2, 1, [1]]])
     )
   })
 }
@@ -101,7 +105,7 @@ export const testAmMerge = _tc => {
  */
 export const testRepeatMergingMultipleAttrManagers = tc => {
   const clients = 4
-  const clockRange = 100
+  const clockRange = 5
   /**
    * @type {Array<am.AttributionManager<number>>}
    */
