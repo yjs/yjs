@@ -1,12 +1,3 @@
-const resolver = {
-  resolveId (importee) {
-    return
-    if (importee === 'yjs') {
-      return `${process.cwd()}/src/index.js`
-    }
-  }
-}
-
 export default [{
   // cjs output
   input: {
@@ -20,9 +11,6 @@ export default [{
     entryFileNames: '[name].cjs',
     sourcemap: true
   },
-  plugins: [
-    resolver
-  ],
   external: id => /^(lib0|y-protocols)\//.test(id)
 }, {
   // esm output
@@ -37,8 +25,5 @@ export default [{
     entryFileNames: '[name].mjs',
     sourcemap: true
   },
-  plugins: [
-    resolver
-  ],
   external: id => /^(lib0|y-protocols)\//.test(id)
 }]

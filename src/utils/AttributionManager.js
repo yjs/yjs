@@ -1,6 +1,7 @@
 import {
+  _diffSet,
   findIndexInIdRanges,
-  ID // @eslint-disable-line
+  IdSet, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as array from 'lib0/array'
@@ -50,12 +51,20 @@ export class AttrRange {
      */
     this.attrs = attrs
   }
+
+  /**
+   * @param {number} clock
+   * @param {number} len
+   */
+  copyWith (clock, len) {
+    return new AttrRange(clock, len, this.attrs)
+  }
 }
 
 /**
  * @template Attrs
  */
-class AttrRanges {
+export class AttrRanges {
   /**
    * @param {Array<AttrRange<Attrs>>} ids
    */
@@ -104,7 +113,7 @@ class AttrRanges {
        */
       for (let i = 0; i < ids.length - 1;) {
         const range = ids[i]
-        const nextRange = ids[i+1]
+        const nextRange = ids[i + 1]
         // find out how to split range. it must match with next range.
         // 1) we have space. Split if necessary.
         // 2) concat attributes in range to the next range. Split range and splice the remainder at
@@ -257,3 +266,14 @@ export class AttributionManager {
 }
 
 export const createAttributionManager = () => new AttributionManager()
+
+/**
+ * Remove all ranges from `exclude` from `ds`. The result is a fresh AttributionManager containing all ranges from `idSet` that are not
+ * in `exclude`.
+ *
+ * @template {AttributionManager<any>} Set
+ * @param {Set} set
+ * @param {IdSet | AttributionManager<any>} exclude
+ * @return {Set}
+ */
+export const diffAttributionManager = _diffSet
