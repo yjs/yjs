@@ -6,6 +6,7 @@ import * as syncProtocol from 'y-protocols/sync'
 import * as object from 'lib0/object'
 import * as map from 'lib0/map'
 import * as Y from '../src/index.js'
+import { amAttrsEqual } from '../src/internals.js'
 
 export * from '../src/index.js'
 
@@ -322,6 +323,27 @@ export const compareIdSets = (idSet1, idSet2) => {
   }
   return true
 }
+
+/**
+ * @template T
+ * @param {Y.AttributionManager<T>} am1
+ * @param {Y.AttributionManager<T>} am2
+ */
+export const compareAttributionManagers = (am1, am2) => {
+  if (am1.clients.size !== am2.clients.size) return false
+  for (const [client, _items1] of am1.clients.entries()) {
+    const items1 = _items1.getIds()
+    const items2 = am2.clients.get(client)?.getIds()
+    t.assert(items2 !== undefined && items1.length === items2.length)
+    for (let i = 0; i < items1.length; i++) {
+      const di1 = items1[i]
+      const di2 = /** @type {Array<import('../src/utils/AttributionManager.js').AttrRange<T>>} */ (items2)[i]
+      t.assert(di1.clock === di2.clock && di1.len === di2.len && amAttrsEqual(di1.attrs, di2.attrs))
+    }
+  }
+  return true
+}
+
 
 
 /**

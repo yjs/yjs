@@ -19,12 +19,10 @@ export class IdRange {
    */
   constructor (clock, len) {
     /**
-     * @readonly
      * @type {number}
      */
     this.clock = clock
     /**
-     * @readonly
      * @type {number}
      */
     this.len = len
@@ -87,11 +85,7 @@ class IdRanges {
           j++
         }
       }
-      if (ids[j - 1].len === 0) {
-        ids.length = j - 1
-      } else {
-        ids.length = j
-      }
+      ids.length = ids[j - 1].len === 0 ? j - 1 : j
     }
     return ids
   }

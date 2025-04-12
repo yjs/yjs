@@ -101,7 +101,9 @@ export {
   // idset
   IdSet,
   equalIdSets,
-  createDeleteSetFromStructStore
+  createDeleteSetFromStructStore,
+  AttributionManager,
+  createAttributionManager
 } from './internals.js'
 
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'

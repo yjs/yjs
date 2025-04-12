@@ -2,7 +2,7 @@ import * as t from 'lib0/testing'
 import * as d from '../src/utils/IdSet.js'
 import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
-import { compareIdSets } from './testHelper.js'
+import { compareIdSets, ID } from './testHelper.js'
 
 /**
  * @param {Array<[number, number, number]>} ops
@@ -175,3 +175,32 @@ export const testRepeatRandomDiffing = tc => {
   const e2 = d.diffIdSets(merged, ds2)
   compareIdSets(e1, e2)
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatMergingMultipleIdsets = tc => {
+  const clients = 4
+  const clockRange = 100
+  /**
+   * @type {Array<d.IdSet>}
+   */
+  const idss = []
+  for (let i = 0; i < 3; i++) {
+    idss.push(createRandomDiffSet(tc.prng, clients, clockRange))
+  }
+  const merged = d.mergeIdSets(idss)
+  const mergedReverse = d.mergeIdSets(idss.reverse())
+  compareIdSets(merged, mergedReverse)
+  const composed = d.createIdSet()
+  for (let iclient = 0; iclient < clients; iclient++) {
+    for (let iclock = 0; iclock < clockRange + 42; iclock++) {
+      const mergedHas = merged.has(new ID(iclient, iclock))
+      const oneHas = idss.some(ids => ids.has(new ID(iclient, iclock)))
+      t.assert(mergedHas === oneHas)
+      d.addToIdSet(composed, iclient, iclock, 1)
+    }
+  }
+  compareIdSets(merged, composed)
+}
+
