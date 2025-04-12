@@ -1,8 +1,8 @@
 import {
   GC,
   splitItem,
-  IdSet,
-  Transaction, ID, Item // eslint-disable-line
+  Transaction, ID, Item, // eslint-disable-line
+  createDeleteSetFromStructStore
 } from '../internals.js'
 
 import * as math from 'lib0/math'
@@ -14,7 +14,7 @@ export class StructStore {
      * @type {Map<number,Array<GC|Item>>}
      */
     this.clients = new Map()
-    this.ds = new IdSet()
+    // this.ds = new IdSet()
     /**
      * @type {null | { missing: Map<number, number>, update: Uint8Array }}
      */
@@ -23,6 +23,9 @@ export class StructStore {
      * @type {null | Uint8Array}
      */
     this.pendingDs = null
+  }
+  get ds () {
+    return createDeleteSetFromStructStore(this)
   }
 }
 
