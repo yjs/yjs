@@ -102,7 +102,7 @@ class AttrRanges {
        *   Split them if necessary. After split, i must insert the retainer at a valid position.
        * - merge items if neighbor has same attributes
        */
-      for (let i = 0; i < ids.length - 1; i++) {
+      for (let i = 0; i < ids.length - 1;) {
         const range = ids[i]
         const nextRange = ids[i+1]
         // find out how to split range. it must match with next range.
@@ -116,6 +116,7 @@ class AttrRanges {
             ids[i] = new AttrRange(range.clock, diff, range.attrs)
             ids.splice(i + 1, 0, new AttrRange(nextRange.clock, range.len - diff, range.attrs))
           }
+          i++
           continue
         }
         // now we know that range.clock === nextRange.clock
@@ -125,13 +126,15 @@ class AttrRanges {
         ids[i] = new AttrRange(range.clock, smallerLen, amAttrRangeJoin(range.attrs, nextRange.attrs))
         if (range.len === nextRange.len) {
           ids.splice(i + 1, 1)
-          i--
         } else {
           ids[i + 1] = new AttrRange(range.clock + smallerLen, largerRange.len - smallerLen, largerRange.attrs)
           array.bubblesortItem(ids, i + 1, (a, b) => a.clock - b.clock)
         }
+        if (smallerLen === 0) i++
       }
-
+      while (ids.length > 0 && ids[0].len === 0) {
+        ids.splice(0, 1)
+      }
       // merge items without filtering or splicing the array.
       // i is the current pointer
       // j refers to the current insert position for the pointed item
@@ -149,7 +152,7 @@ class AttrRanges {
           j++
         }
       }
-      ids.length = ids[j - 1].len === 0 ? j - 1 : j
+      ids.length = ids.length === 0 ? 0 : (ids[j - 1].len === 0 ? j - 1 : j)
     }
     return ids
   }
@@ -219,7 +222,7 @@ export class AttributionManager {
       let index = findIndexInIdRanges(ranges, id.clock)
       if (index !== null) {
         const res = []
-        while (true) {
+        while (index < ranges.length) {
           let r = ranges[index]
           if (r.clock < id.clock) {
             r = new AttrRange(id.clock, r.len - (id.clock - r.clock), r.attrs)

@@ -86,7 +86,7 @@
   },
   "homepage": "https://docs.yjs.dev",
   "dependencies": {
-    "lib0": "^0.2.103",
+    "lib0": "^0.2.104",
     "y-protocols": "^1.0.5"
   },
   "devDependencies": {
