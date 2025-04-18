@@ -24,6 +24,7 @@ export class StructStore {
      */
     this.pendingDs = null
   }
+
   get ds () {
     return createDeleteSetFromStructStore(this)
   }

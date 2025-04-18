@@ -5,6 +5,50 @@ import {
 } from '../internals.js'
 
 import * as array from 'lib0/array'
+import * as map from 'lib0/map'
+import * as encoding from 'lib0/encoding'
+import * as buf from 'lib0/buffer'
+import * as rabin from 'lib0/hash/rabin'
+
+/**
+ * @template V
+ */
+export class Attribution {
+  /**
+   * @param {string} name
+   * @param {V} val
+   */
+  constructor (name, val) {
+    this.name = name
+    this.val = val
+  }
+
+  hash () {
+    const encoder = encoding.createEncoder()
+    encoding.writeVarString(encoder, this.name)
+    encoding.writeAny(encoder, /** @type {any} */ (this.val))
+    return buf.toBase64(rabin.fingerprint(rabin.StandardIrreducible128, encoding.toUint8Array(encoder)))
+  }
+}
+
+/**
+ * @param {Attribution<any>} attr
+ */
+const _hashAttribution = attr => {
+  const encoder = encoding.createEncoder()
+  encoding.writeVarString(encoder, attr.name)
+  encoding.writeAny(encoder, attr.val)
+  return buf.toBase64(rabin.fingerprint(rabin.StandardIrreducible128, encoding.toUint8Array(encoder)))
+}
+
+
+/**
+ * @template V
+ * @param {string} name
+ * @param {V} val
+ * @return {Attribution<V>}
+ */
+export const createAttribution = (name, val) => new Attribution(name, val)
 
 /**
  * @template T
@@ -35,7 +79,7 @@ export class AttrRange {
   /**
    * @param {number} clock
    * @param {number} len
-   * @param {Array<Attrs>} attrs
+   * @param {Array<Attribution<Attrs>>} attrs
    */
   constructor (clock, len, attrs) {
     /**
@@ -79,7 +123,7 @@ export class AttrRanges {
   /**
    * @param {number} clock
    * @param {number} length
-   * @param {Array<Attrs>} attrs
+   * @param {Array<Attribution<Attrs>>} attrs
    */
   add (clock, length, attrs) {
     this.sorted = false
@@ -168,11 +212,20 @@ export class AttrRanges {
 }
 
 /**
+ * Merge multiple idmaps. Ensures that there are no redundant attribution definitions (two
+ * Attributions that describe the same thing).
+ *
  * @template T
  * @param {Array<IdMap<T>>} ams
  * @return {IdMap<T>} A fresh IdSet
  */
 export const mergeIdMaps = ams => {
+  /**
+   * Maps attribution to the attribution of the merged idmap.
+   *
+   * @type {Map<Attribution<any>,Attribution<any>>}
+   */
+  const attrMapper = new Map()
   const merged = createIdMap()
   for (let amsI = 0; amsI < ams.length; amsI++) {
     ams[amsI].clients.forEach((rangesLeft, client) => {
@@ -186,6 +239,14 @@ export const mergeIdMaps = ams => {
             array.appendTo(ids, nextIds.getIds())
           }
         }
+        ids.forEach(id => {
+          // @ts-ignore
+          id.attrs = id.attrs.map(attr =>
+            map.setIfUndefined(attrMapper, attr, () =>
+              _ensureAttrs(merged, [attr])[0]
+            )
+          )
+        })
         merged.clients.set(client, new AttrRanges(ids))
       }
     })
@@ -202,6 +263,14 @@ export class IdMap {
      * @type {Map<number,AttrRanges<Attrs>>}
      */
     this.clients = new Map()
+    /**
+     * @type {Map<string, Attribution<Attrs>>}
+     */
+    this.attrsH = new Map()
+    /**
+     * @type {Set<Attribution<Attrs>>}
+     */
+    this.attrs = new Set()
   }
 
   /**
@@ -253,9 +322,10 @@ export class IdMap {
    * @param {number} client
    * @param {number} clock
    * @param {number} len
-   * @param {Array<Attrs>} attrs
+   * @param {Array<Attribution<Attrs>>} attrs
    */
   add (client, clock, len, attrs) {
+    attrs = _ensureAttrs(this, attrs)
     const ranges = this.clients.get(client)
     if (ranges == null) {
       this.clients.set(client, new AttrRanges([new AttrRange(clock, len, attrs)]))
@@ -265,15 +335,27 @@ export class IdMap {
   }
 }
 
+/**
+ * @template Attrs
+ * @param {IdMap<Attrs>} idmap
+ * @param {Array<Attribution<Attrs>>} attrs
+ * @return {Array<Attribution<Attrs>>}
+ */
+const _ensureAttrs = (idmap, attrs) => attrs.map(attr =>
+  idmap.attrs.has(attr) ? attr : map.setIfUndefined(idmap.attrsH, _hashAttribution(attr), () => {
+    idmap.attrs.add(attr)
+    return attr
+  }))
+
 export const createIdMap = () => new IdMap()
 
 /**
  * Remove all ranges from `exclude` from `ds`. The result is a fresh IdMap containing all ranges from `idSet` that are not
  * in `exclude`.
  *
- * @template {IdMap<any>} Set
- * @param {Set} set
+ * @template {IdMap<any>} ISet
+ * @param {ISet} set
  * @param {IdSet | IdMap<any>} exclude
- * @return {Set}
+ * @return {ISet}
  */
 export const diffIdMap = _diffSet
