@@ -8,7 +8,7 @@ import * as map from 'lib0/map'
 import * as Y from '../src/index.js'
 import * as math from 'lib0/math'
 import {
-  idmapAttrsEqual, createIdSet, createIdMap, addToIdSet
+  createIdSet, createIdMap, addToIdSet
 } from '../src/internals.js'
 
 export * from '../src/index.js'
@@ -328,6 +328,28 @@ export const compareIdSets = (idSet1, idSet2) => {
 }
 
 /**
+ * only use for testing
+ *
+ * @template T
+ * @param {Array<Y.Attribution<T>>} attrs
+ * @param {Y.Attribution<T>} attr
+ *
+ */
+const _idmapAttrsHas = (attrs, attr) => {
+  const hash = attr.hash()
+  return attrs.find(a => a.hash() === hash)
+}
+
+/**
+ * only use for testing
+ *
+ * @template T
+ * @param {Array<Y.Attribution<T>>} a
+ * @param {Array<Y.Attribution<T>>} b
+ */
+export const _idmapAttrsEqual = (a, b) => a.length === b.length && a.every(v => _idmapAttrsHas(b, v))
+
+/**
  * @template T
  * @param {Y.IdMap<T>} am1
  * @param {Y.IdMap<T>} am2
@@ -341,7 +363,7 @@ export const compareIdmaps = (am1, am2) => {
     for (let i = 0; i < items1.length; i++) {
       const di1 = items1[i]
       const di2 = /** @type {Array<import('../src/utils/IdMap.js').AttrRange<T>>} */ (items2)[i]
-      t.assert(di1.clock === di2.clock && di1.len === di2.len && idmapAttrsEqual(di1.attrs, di2.attrs))
+      t.assert(di1.clock === di2.clock && di1.len === di2.len && _idmapAttrsEqual(di1.attrs, di2.attrs))
     }
   }
   return true
@@ -392,7 +414,7 @@ export const createRandomIdMap = (gen, clients, clockRange, attrChoices) => {
         attrs.push(a)
       }
     }
-    idMap.add(client, clockStart, len, attrs)
+    idMap.add(client, clockStart, len, attrs.map(v => Y.createAttribution('', v)))
   }
   return idMap
 }
