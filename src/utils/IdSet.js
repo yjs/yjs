@@ -4,7 +4,7 @@ import {
   splitItem,
   iterateStructs,
   UpdateEncoderV2,
-  AttributionManager,
+  IdMap,
   AttrRanges,
   AbstractStruct, DSDecoderV1, DSEncoderV1, DSDecoderV2, DSEncoderV2, Item, GC, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
@@ -217,16 +217,16 @@ export const insertIntoIdSet = (dest, src) => {
  * Remove all ranges from `exclude` from `ds`. The result is a fresh IdSet containing all ranges from `idSet` that are not
  * in `exclude`.
  *
- * @template {IdSet | AttributionManager<any>} Set
+ * @template {IdSet | IdMap<any>} Set
  * @param {Set} set
- * @param {IdSet | AttributionManager<any>} exclude
+ * @param {IdSet | IdMap<any>} exclude
  * @return {Set}
  */
 export const _diffSet = (set, exclude) => {
   /**
    * @type {Set}
    */
-  const res = /** @type {any } */ (set instanceof IdSet ? new IdSet() : new AttributionManager())
+  const res = /** @type {any } */ (set instanceof IdSet ? new IdSet() : new IdMap())
   const Ranges = set instanceof IdSet ? IdRanges : AttrRanges
   set.clients.forEach((_setRanges, client) => {
     /**
@@ -288,7 +288,7 @@ export const _diffSet = (set, exclude) => {
  *
  * @template {IdSet} Set
  * @param {Set} set
- * @param {IdSet | AttributionManager<any>} exclude
+ * @param {IdSet | IdMap<any>} exclude
  * @return {Set}
  */
 export const diffIdSet = _diffSet

@@ -12,21 +12,21 @@ import * as array from 'lib0/array'
  * @param {T} attr
  *
  */
-const amAttrsHas = (attrs, attr) => attrs.find(a => a === attr)
+const idmapAttrsHas = (attrs, attr) => attrs.find(a => a === attr)
 
 /**
  * @template T
  * @param {Array<T>} a
  * @param {Array<T>} b
  */
-export const amAttrsEqual = (a, b) => a.length === b.length && a.every(v => amAttrsHas(b, v))
+export const idmapAttrsEqual = (a, b) => a.length === b.length && a.every(v => idmapAttrsHas(b, v))
 
 /**
  * @template T
  * @param {Array<T>} a
  * @param {Array<T>} b
  */
-const amAttrRangeJoin = (a, b) => a.concat(b.filter(attr => !amAttrsHas(a, attr)))
+const idmapAttrRangeJoin = (a, b) => a.concat(b.filter(attr => !idmapAttrsHas(a, attr)))
 
 /**
  * @template Attrs
@@ -132,7 +132,7 @@ export class AttrRanges {
         // merge range with nextRange
         const largerRange = range.len > nextRange.len ? range : nextRange
         const smallerLen = range.len < nextRange.len ? range.len : nextRange.len
-        ids[i] = new AttrRange(range.clock, smallerLen, amAttrRangeJoin(range.attrs, nextRange.attrs))
+        ids[i] = new AttrRange(range.clock, smallerLen, idmapAttrRangeJoin(range.attrs, nextRange.attrs))
         if (range.len === nextRange.len) {
           ids.splice(i + 1, 1)
         } else {
@@ -152,7 +152,7 @@ export class AttrRanges {
       for (i = 1, j = 1; i < ids.length; i++) {
         const left = ids[j - 1]
         const right = ids[i]
-        if (left.clock + left.len === right.clock && amAttrsEqual(left.attrs, right.attrs)) {
+        if (left.clock + left.len === right.clock && idmapAttrsEqual(left.attrs, right.attrs)) {
           ids[j - 1] = new AttrRange(left.clock, left.len + right.len, left.attrs)
         } else if (right.len !== 0) {
           if (j < i) {
@@ -169,11 +169,11 @@ export class AttrRanges {
 
 /**
  * @template T
- * @param {Array<AttributionManager<T>>} ams
- * @return {AttributionManager<T>} A fresh IdSet
+ * @param {Array<IdMap<T>>} ams
+ * @return {IdMap<T>} A fresh IdSet
  */
-export const mergeAttributionManagers = ams => {
-  const merged = createAttributionManager()
+export const mergeIdMaps = ams => {
+  const merged = createIdMap()
   for (let amsI = 0; amsI < ams.length; amsI++) {
     ams[amsI].clients.forEach((rangesLeft, client) => {
       if (!merged.clients.has(client)) {
@@ -196,7 +196,7 @@ export const mergeAttributionManagers = ams => {
 /**
  * @template Attrs
  */
-export class AttributionManager {
+export class IdMap {
   constructor () {
     /**
      * @type {Map<number,AttrRanges<Attrs>>}
@@ -265,15 +265,15 @@ export class AttributionManager {
   }
 }
 
-export const createAttributionManager = () => new AttributionManager()
+export const createIdMap = () => new IdMap()
 
 /**
- * Remove all ranges from `exclude` from `ds`. The result is a fresh AttributionManager containing all ranges from `idSet` that are not
+ * Remove all ranges from `exclude` from `ds`. The result is a fresh IdMap containing all ranges from `idSet` that are not
  * in `exclude`.
  *
- * @template {AttributionManager<any>} Set
+ * @template {IdMap<any>} Set
  * @param {Set} set
- * @param {IdSet | AttributionManager<any>} exclude
+ * @param {IdSet | IdMap<any>} exclude
  * @return {Set}
  */
-export const diffAttributionManager = _diffSet
+export const diffIdMap = _diffSet
