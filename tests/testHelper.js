@@ -8,7 +8,7 @@ import * as map from 'lib0/map'
 import * as Y from '../src/index.js'
 import * as math from 'lib0/math'
 import {
-  amAttrsEqual, createIdSet, createAttributionManager, addToIdSet
+  idmapAttrsEqual, createIdSet, createIdMap, addToIdSet
 } from '../src/internals.js'
 
 export * from '../src/index.js'
@@ -329,10 +329,10 @@ export const compareIdSets = (idSet1, idSet2) => {
 
 /**
  * @template T
- * @param {Y.AttributionManager<T>} am1
- * @param {Y.AttributionManager<T>} am2
+ * @param {Y.IdMap<T>} am1
+ * @param {Y.IdMap<T>} am2
  */
-export const compareAttributionManagers = (am1, am2) => {
+export const compareIdmaps = (am1, am2) => {
   if (am1.clients.size !== am2.clients.size) return false
   for (const [client, _items1] of am1.clients.entries()) {
     const items1 = _items1.getIds()
@@ -340,8 +340,8 @@ export const compareAttributionManagers = (am1, am2) => {
     t.assert(items2 !== undefined && items1.length === items2.length)
     for (let i = 0; i < items1.length; i++) {
       const di1 = items1[i]
-      const di2 = /** @type {Array<import('../src/utils/AttributionManager.js').AttrRange<T>>} */ (items2)[i]
-      t.assert(di1.clock === di2.clock && di1.len === di2.len && amAttrsEqual(di1.attrs, di2.attrs))
+      const di2 = /** @type {Array<import('../src/utils/IdMap.js').AttrRange<T>>} */ (items2)[i]
+      t.assert(di1.clock === di2.clock && di1.len === di2.len && idmapAttrsEqual(di1.attrs, di2.attrs))
     }
   }
   return true
@@ -374,12 +374,12 @@ export const createRandomIdSet = (gen, clients, clockRange) => {
  * @param {number} clients
  * @param {number} clockRange (max clock - exclusive - by each client)
  * @param {Array<T>} attrChoices (max clock - exclusive - by each client)
- * @return {Y.AttributionManager<T>}
+ * @return {Y.IdMap<T>}
  */
-export const createRandomAttributionManager = (gen, clients, clockRange, attrChoices) => {
+export const createRandomIdMap = (gen, clients, clockRange, attrChoices) => {
   const maxOpLen = 5
   const numOfOps = math.ceil((clients * clockRange) / maxOpLen)
-  const attrMngr = createAttributionManager()
+  const idMap = createIdMap()
   for (let i = 0; i < numOfOps; i++) {
     const client = prng.uint32(gen, 0, clients - 1)
     const clockStart = prng.uint32(gen, 0, clockRange)
@@ -392,9 +392,9 @@ export const createRandomAttributionManager = (gen, clients, clockRange, attrCho
         attrs.push(a)
       }
     }
-    attrMngr.add(client, clockStart, len, attrs)
+    idMap.add(client, clockStart, len, attrs)
   }
-  return attrMngr
+  return idMap
 }
 
 /**

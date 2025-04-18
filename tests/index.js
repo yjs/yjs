@@ -13,7 +13,7 @@ import * as updates from './updates.tests.js'
 import * as relativePositions from './relativePositions.tests.js'
 import * as delta from './delta.tests.js'
 import * as idset from './IdSet.tests.js'
-import * as attributionManager from './AttributionManager.tests.js'
+import * as idmap from './IdMap.tests.js'
 
 import { runTests } from 'lib0/testing'
 import { isBrowser, isNode } from 'lib0/environment'
@@ -24,7 +24,7 @@ if (isBrowser) {
 }
 
 const tests = {
-  doc, map, array, text, xml, encoding, undoredo, compatibility, snapshot, updates, relativePositions, delta, idset, attributionManager
+  doc, map, array, text, xml, encoding, undoredo, compatibility, snapshot, updates, relativePositions, delta, idset, idmap
 }
 
 const run = async () => {

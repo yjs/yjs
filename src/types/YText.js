@@ -26,7 +26,7 @@ import {
   updateMarkerChanges,
   ContentType,
   warnPrematureAccess,
-  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction, AttributionManager,  // eslint-disable-line
+  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction, IdMap,  // eslint-disable-line
   snapshot
 } from '../internals.js'
 
@@ -999,13 +999,13 @@ export class YText extends AbstractType {
    * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
    * attribution `{ isDeleted: true, .. }`.
    *
-   * @param {AttributionManager} [attributionManager]
+   * @param {IdMap<any>} [idMap]
    * @param {Doc} [prevYdoc]
    * @return {import('../utils/Delta.js').Delta} The Delta representation of this type.
    *
    * @public
    */
-  getContent (attributionManager, prevYdoc) {
+  getContent (idMap, prevYdoc) {
     this.doc ?? warnPrematureAccess()
     const prevSnapshot = prevYdoc ? snapshot(prevYdoc) : null
     const d = delta.create()
