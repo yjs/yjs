@@ -87,7 +87,7 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [JupyterCad](https://jupytercad.readthedocs.io/en/latest/) Extension to
   JupyterLab that enables collaborative editing of 3d FreeCAD Models.
 * [JupyterGIS](https://github.com/geojupyter/jupytergis) Collaborative GIS
-  (Geographic Information System) editor in Jupyter 
+  (Geographic Information System) editor in Jupyter
 * [Hyperquery](https://hyperquery.ai/) A collaborative data workspace for
   sharing analyses, documentation, spreadsheets, and dashboards.
 * [Nosgestesclimat](https://nosgestesclimat.fr/groupe) The french carbon
@@ -309,7 +309,7 @@ A database and connection provider for Yjs based on Firestore.
   </dd>
   <dt><a href="https://github.com/malte-j/y-op-sqlite">y-op-sqlite</a></dt>
   <dd>
- Yjs persistence provider for op-sqlite 
+ Yjs persistence provider for op-sqlite
   </dd>
 
 </dl>
