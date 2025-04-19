@@ -6,7 +6,7 @@ import {
   UpdateEncoderV2,
   IdMap,
   AttrRanges,
-  AbstractStruct, DSDecoderV1, DSEncoderV1, DSDecoderV2, DSEncoderV2, Item, GC, StructStore, Transaction, ID // eslint-disable-line
+  AbstractStruct, DSDecoderV1, IdSetEncoderV1, DSDecoderV2, IdSetEncoderV2, Item, GC, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as array from 'lib0/array'
@@ -356,7 +356,7 @@ export const createDeleteSetFromStructStore = ss => {
 }
 
 /**
- * @param {DSEncoderV1 | DSEncoderV2} encoder
+ * @param {IdSetEncoderV1 | IdSetEncoderV2} encoder
  * @param {IdSet} idSet
  *
  * @private
@@ -369,14 +369,14 @@ export const writeIdSet = (encoder, idSet) => {
     .sort((a, b) => b[0] - a[0])
     .forEach(([client, _idRanges]) => {
       const idRanges = _idRanges.getIds()
-      encoder.resetDsCurVal()
+      encoder.resetIdSetCurVal()
       encoding.writeVarUint(encoder.restEncoder, client)
       const len = idRanges.length
       encoding.writeVarUint(encoder.restEncoder, len)
       for (let i = 0; i < len; i++) {
         const item = idRanges[i]
-        encoder.writeDsClock(item.clock)
-        encoder.writeDsLen(item.len)
+        encoder.writeIdSetClock(item.clock)
+        encoder.writeIdSetLen(item.len)
       }
     })
 }

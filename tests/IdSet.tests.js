@@ -6,11 +6,11 @@ import { compareIdSets, createRandomIdSet, ID } from './testHelper.js'
  * @param {Array<[number, number, number]>} ops
  */
 const simpleConstructIdSet = ops => {
-  const ds = d.createIdSet()
+  const idset = d.createIdSet()
   ops.forEach(op => {
-    d.addToIdSet(ds, op[0], op[1], op[2])
+    d.addToIdSet(idset, op[0], op[1], op[2])
   })
-  return ds
+  return idset
 }
 
 /**

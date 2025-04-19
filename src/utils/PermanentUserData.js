@@ -5,7 +5,7 @@ import {
   writeIdSet,
   createIdSet,
   mergeIdSets,
-  DSEncoderV1, DSDecoderV1, ID, IdSet, YArrayEvent, Transaction, Doc // eslint-disable-line
+  IdSetEncoderV1, DSDecoderV1, ID, IdSet, YArrayEvent, Transaction, Doc // eslint-disable-line
 } from '../internals.js'
 
 import * as decoding from 'lib0/decoding'
@@ -95,7 +95,7 @@ export class PermanentUserData {
               user.get('ids').push([clientid])
             }
           })
-          const encoder = new DSEncoderV1()
+          const encoder = new IdSetEncoderV1()
           const ds = this.dss.get(userDescription)
           if (ds) {
             writeIdSet(encoder, ds)
@@ -109,7 +109,7 @@ export class PermanentUserData {
         const yds = user.get('ds')
         const ds = transaction.deleteSet
         if (transaction.local && ds.clients.size > 0 && filter(transaction, ds)) {
-          const encoder = new DSEncoderV1()
+          const encoder = new IdSetEncoderV1()
           writeIdSet(encoder, ds)
           yds.push([encoder.toUint8Array()])
         }

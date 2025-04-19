@@ -20,8 +20,8 @@ import {
   ContentType,
   createID,
   decodeStateVector,
-  DSEncoderV1,
-  DSEncoderV2,
+  IdSetEncoderV1,
+  IdSetEncoderV2,
   GC,
   Item,
   mergeIdSets,
@@ -187,11 +187,11 @@ export const mergeUpdates = updates => mergeUpdatesV2(updates, UpdateDecoderV1, 
 
 /**
  * @param {Uint8Array} update
- * @param {typeof DSEncoderV1 | typeof DSEncoderV2} YEncoder
+ * @param {typeof IdSetEncoderV1 | typeof IdSetEncoderV2} YEncoder
  * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} YDecoder
  * @return {Uint8Array}
  */
-export const encodeStateVectorFromUpdateV2 = (update, YEncoder = DSEncoderV2, YDecoder = UpdateDecoderV2) => {
+export const encodeStateVectorFromUpdateV2 = (update, YEncoder = IdSetEncoderV2, YDecoder = UpdateDecoderV2) => {
   const encoder = new YEncoder()
   const updateDecoder = new LazyStructReader(new YDecoder(decoding.createDecoder(update)), false)
   let curr = updateDecoder.curr
@@ -243,7 +243,7 @@ export const encodeStateVectorFromUpdateV2 = (update, YEncoder = DSEncoderV2, YD
  * @param {Uint8Array} update
  * @return {Uint8Array}
  */
-export const encodeStateVectorFromUpdate = update => encodeStateVectorFromUpdateV2(update, DSEncoderV1, UpdateDecoderV1)
+export const encodeStateVectorFromUpdate = update => encodeStateVectorFromUpdateV2(update, IdSetEncoderV1, UpdateDecoderV1)
 
 /**
  * @param {Uint8Array} update
