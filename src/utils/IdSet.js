@@ -301,6 +301,7 @@ export const diffIdSet = _diffSet
  * @function
  */
 export const addToIdSet = (idSet, client, clock, length) => {
+  if (length === 0) return
   const idRanges = idSet.clients.get(client)
   if (idRanges) {
     idRanges.add(clock, length)

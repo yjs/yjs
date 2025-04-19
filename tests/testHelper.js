@@ -8,7 +8,7 @@ import * as map from 'lib0/map'
 import * as Y from '../src/index.js'
 import * as math from 'lib0/math'
 import {
-  createIdSet, createIdMap, addToIdSet
+  createIdSet, createIdMap, addToIdSet, encodeIdMap
 } from '../src/internals.js'
 
 export * from '../src/index.js'
@@ -313,7 +313,7 @@ export const init = (tc, { users = 5 } = {}, initTestObject) => {
  * @param {Y.IdSet} idSet2
  */
 export const compareIdSets = (idSet1, idSet2) => {
-  if (idSet1.clients.size !== idSet2.clients.size) return false
+  t.assert(idSet1.clients.size === idSet2.clients.size)
   for (const [client, _items1] of idSet1.clients.entries()) {
     const items1 = _items1.getIds()
     const items2 = idSet2.clients.get(client)?.getIds()
@@ -350,12 +350,33 @@ const _idmapAttrsHas = (attrs, attr) => {
 export const _idmapAttrsEqual = (a, b) => a.length === b.length && a.every(v => _idmapAttrsHas(b, v))
 
 /**
+ * Ensure that all attributes exist. Also create a copy and compare it to the original.
+ *
+ * @template T
+ * @param {Y.IdMap<T>} idmap
+ */
+export const validateIdMap = idmap => {
+  const copy = Y.createIdMap()
+  idmap.clients.forEach((ranges, client) => {
+    ranges.getIds().forEach(range => {
+      range.attrs.forEach(attr => {
+        t.assert(idmap.attrs.has(attr))
+        t.assert(idmap.attrsH.get(attr.hash()) === attr)
+        copy.add(client, range.clock, range.len, range.attrs.slice())
+      })
+    })
+    t.assert(copy.clients.get(client)?.getIds().length === ranges.getIds().length)
+  })
+  t.assert(idmap.attrsH.size === idmap.attrs.size)
+}
+
+/**
  * @template T
  * @param {Y.IdMap<T>} am1
  * @param {Y.IdMap<T>} am2
  */
 export const compareIdmaps = (am1, am2) => {
-  if (am1.clients.size !== am2.clients.size) return false
+  t.assert(am1.clients.size === am2.clients.size)
   for (const [client, _items1] of am1.clients.entries()) {
     const items1 = _items1.getIds()
     const items2 = am2.clients.get(client)?.getIds()
@@ -366,7 +387,8 @@ export const compareIdmaps = (am1, am2) => {
       t.assert(di1.clock === di2.clock && di1.len === di2.len && _idmapAttrsEqual(di1.attrs, di2.attrs))
     }
   }
-  return true
+  validateIdMap(am1)
+  validateIdMap(am2)
 }
 
 /**
@@ -416,6 +438,7 @@ export const createRandomIdMap = (gen, clients, clockRange, attrChoices) => {
     }
     idMap.add(client, clockStart, len, attrs.map(v => Y.createAttribution('', v)))
   }
+  t.info(`Created IdMap with ${numOfOps} ranges and ${attrChoices.length} different attributes. Encoded size: ${encodeIdMap(idMap).byteLength}`)
   return idMap
 }
 
