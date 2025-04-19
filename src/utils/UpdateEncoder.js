@@ -5,7 +5,7 @@ import {
   ID // eslint-disable-line
 } from '../internals.js'
 
-export class DSEncoderV1 {
+export class IdSetEncoderV1 {
   constructor () {
     this.restEncoder = encoding.createEncoder()
   }
@@ -14,26 +14,26 @@ export class DSEncoderV1 {
     return encoding.toUint8Array(this.restEncoder)
   }
 
-  resetDsCurVal () {
+  resetIdSetCurVal () {
     // nop
   }
 
   /**
    * @param {number} clock
    */
-  writeDsClock (clock) {
+  writeIdSetClock (clock) {
     encoding.writeVarUint(this.restEncoder, clock)
   }
 
   /**
    * @param {number} len
    */
-  writeDsLen (len) {
+  writeIdSetLen (len) {
     encoding.writeVarUint(this.restEncoder, len)
   }
 }
 
-export class UpdateEncoderV1 extends DSEncoderV1 {
+export class UpdateEncoderV1 extends IdSetEncoderV1 {
   /**
    * @param {ID} id
    */
@@ -124,7 +124,7 @@ export class UpdateEncoderV1 extends DSEncoderV1 {
   }
 }
 
-export class DSEncoderV2 {
+export class IdSetEncoderV2 {
   constructor () {
     this.restEncoder = encoding.createEncoder() // encodes all the rest / non-optimized
     this.dsCurrVal = 0
@@ -134,14 +134,14 @@ export class DSEncoderV2 {
     return encoding.toUint8Array(this.restEncoder)
   }
 
-  resetDsCurVal () {
+  resetIdSetCurVal () {
     this.dsCurrVal = 0
   }
 
   /**
    * @param {number} clock
    */
-  writeDsClock (clock) {
+  writeIdSetClock (clock) {
     const diff = clock - this.dsCurrVal
     this.dsCurrVal = clock
     encoding.writeVarUint(this.restEncoder, diff)
@@ -150,7 +150,7 @@ export class DSEncoderV2 {
   /**
    * @param {number} len
    */
-  writeDsLen (len) {
+  writeIdSetLen (len) {
     if (len === 0) {
       error.unexpectedCase()
     }
@@ -159,7 +159,7 @@ export class DSEncoderV2 {
   }
 }
 
-export class UpdateEncoderV2 extends DSEncoderV2 {
+export class UpdateEncoderV2 extends IdSetEncoderV2 {
   constructor () {
     super()
     /**

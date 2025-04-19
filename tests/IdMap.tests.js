@@ -110,11 +110,11 @@ export const testRepeatRandomDiffing = tc => {
   const clients = 4
   const clockRange = 100
   const attrs = [1, 2, 3]
-  const ds1 = createRandomIdMap(tc.prng, clients, clockRange, attrs)
-  const ds2 = createRandomIdMap(tc.prng, clients, clockRange, attrs)
-  const merged = idmap.mergeIdMaps([ds1, ds2])
-  const e1 = idmap.diffIdMap(ds1, ds2)
-  const e2 = idmap.diffIdMap(merged, ds2)
+  const idset1 = createRandomIdMap(tc.prng, clients, clockRange, attrs)
+  const idset2 = createRandomIdMap(tc.prng, clients, clockRange, attrs)
+  const merged = idmap.mergeIdMaps([idset1, idset2])
+  const e1 = idmap.diffIdMap(idset1, idset2)
+  const e2 = idmap.diffIdMap(merged, idset2)
   compareIdmaps(e1, e2)
   const copy = YY.decodeIdMap(YY.encodeIdMap(e1))
   compareIdmaps(e1, copy)

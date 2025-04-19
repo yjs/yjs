@@ -27,9 +27,9 @@ import {
   UpdateDecoderV2,
   UpdateEncoderV1,
   UpdateEncoderV2,
-  DSEncoderV2,
+  IdSetEncoderV2,
   DSDecoderV1,
-  DSEncoderV1,
+  IdSetEncoderV1,
   mergeUpdates,
   mergeUpdatesV2,
   Skip,
@@ -613,7 +613,7 @@ export const readStateVector = decoder => {
 export const decodeStateVector = decodedState => readStateVector(new DSDecoderV1(decoding.createDecoder(decodedState)))
 
 /**
- * @param {DSEncoderV1 | DSEncoderV2} encoder
+ * @param {IdSetEncoderV1 | IdSetEncoderV2} encoder
  * @param {Map<number,number>} sv
  * @function
  */
@@ -627,7 +627,7 @@ export const writeStateVector = (encoder, sv) => {
 }
 
 /**
- * @param {DSEncoderV1 | DSEncoderV2} encoder
+ * @param {IdSetEncoderV1 | IdSetEncoderV2} encoder
  * @param {Doc} doc
  *
  * @function
@@ -638,12 +638,12 @@ export const writeDocumentStateVector = (encoder, doc) => writeStateVector(encod
  * Encode State as Uint8Array.
  *
  * @param {Doc|Map<number,number>} doc
- * @param {DSEncoderV1 | DSEncoderV2} [encoder]
+ * @param {IdSetEncoderV1 | IdSetEncoderV2} [encoder]
  * @return {Uint8Array}
  *
  * @function
  */
-export const encodeStateVectorV2 = (doc, encoder = new DSEncoderV2()) => {
+export const encodeStateVectorV2 = (doc, encoder = new IdSetEncoderV2()) => {
   if (doc instanceof Map) {
     writeStateVector(encoder, doc)
   } else {
@@ -660,4 +660,4 @@ export const encodeStateVectorV2 = (doc, encoder = new DSEncoderV2()) => {
  *
  * @function
  */
-export const encodeStateVector = doc => encodeStateVectorV2(doc, new DSEncoderV1())
+export const encodeStateVector = doc => encodeStateVectorV2(doc, new IdSetEncoderV1())

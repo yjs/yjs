@@ -1,7 +1,7 @@
 import {
   _diffSet,
   findIndexInIdRanges,
-  DSDecoderV1, DSDecoderV2,  DSEncoderV1, DSEncoderV2, IdSet, ID // eslint-disable-line
+  DSDecoderV1, DSDecoderV2,  IdSetEncoderV1, IdSetEncoderV2, IdSet, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as array from 'lib0/array'
@@ -342,7 +342,7 @@ export class IdMap {
  * written. Attribute.names are referenced by id. Attributes themselfs are also referenced by id.
  *
  * @template Attr
- * @param {DSEncoderV1 | DSEncoderV2} encoder
+ * @param {IdSetEncoderV1 | IdSetEncoderV2} encoder
  * @param {IdMap<Attr>} idmap
  *
  * @private
@@ -364,7 +364,7 @@ export const writeIdMap = (encoder, idmap) => {
     .sort((a, b) => a[0] - b[0])
     .forEach(([client, _idRanges]) => {
       const attrRanges = _idRanges.getIds()
-      encoder.resetDsCurVal()
+      encoder.resetIdSetCurVal()
       const diff = client - lastWrittenClientId
       encoding.writeVarUint(encoder.restEncoder, diff)
       lastWrittenClientId = client
@@ -374,8 +374,8 @@ export const writeIdMap = (encoder, idmap) => {
         const item = attrRanges[i]
         const attrs = item.attrs
         const attrLen = attrs.length
-        encoder.writeDsClock(item.clock)
-        encoder.writeDsLen(item.len)
+        encoder.writeIdSetClock(item.clock)
+        encoder.writeIdSetLen(item.len)
         encoding.writeVarUint(encoder.restEncoder, attrLen)
         for (let j = 0; j < attrLen; j++) {
           const attr = attrs[j]
@@ -407,7 +407,7 @@ export const writeIdMap = (encoder, idmap) => {
  * @param {IdMap<any>} idmap
  */
 export const encodeIdMap = idmap => {
-  const encoder = new DSEncoderV2()
+  const encoder = new IdSetEncoderV2()
   writeIdMap(encoder, idmap)
   return encoder.toUint8Array()
 }

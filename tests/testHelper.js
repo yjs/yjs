@@ -399,17 +399,17 @@ export const compareIdmaps = (idmap1, idmap2) => {
 export const createRandomIdSet = (gen, clients, clockRange) => {
   const maxOpLen = 5
   const numOfOps = math.ceil((clients * clockRange) / maxOpLen)
-  const ds = createIdSet()
+  const idset = createIdSet()
   for (let i = 0; i < numOfOps; i++) {
     const client = prng.uint32(gen, 0, clients - 1)
     const clockStart = prng.uint32(gen, 0, clockRange)
     const len = prng.uint32(gen, 0, clockRange - clockStart)
-    addToIdSet(ds, client, clockStart, len)
+    addToIdSet(idset, client, clockStart, len)
   }
-  if (ds.clients.size === clients && clients > 1 && prng.bool(gen)) {
-    ds.clients.delete(prng.uint32(gen, 0, clients))
+  if (idset.clients.size === clients && clients > 1 && prng.bool(gen)) {
+    idset.clients.delete(prng.uint32(gen, 0, clients))
   }
-  return ds
+  return idset
 }
 
 /**
