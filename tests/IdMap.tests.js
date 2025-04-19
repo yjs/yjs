@@ -1,5 +1,5 @@
 import * as t from 'lib0/testing'
-import * as am from '../src/utils/IdMap.js'
+import * as idmap from '../src/utils/IdMap.js'
 import { compareIdmaps, createIdMap, ID, createRandomIdSet, createRandomIdMap, createAttribution } from './testHelper.js'
 import * as YY from '../src/internals.js'
 
@@ -77,16 +77,16 @@ export const testRepeatMergingMultipleIdMaps = tc => {
   const clients = 4
   const clockRange = 5
   /**
-   * @type {Array<am.IdMap<number>>}
+   * @type {Array<idmap.IdMap<number>>}
    */
   const sets = []
   for (let i = 0; i < 3; i++) {
     sets.push(createRandomIdMap(tc.prng, clients, clockRange, [1, 2, 3]))
   }
-  const merged = am.mergeIdMaps(sets)
-  const mergedReverse = am.mergeIdMaps(sets.reverse())
+  const merged = idmap.mergeIdMaps(sets)
+  const mergedReverse = idmap.mergeIdMaps(sets.reverse())
   compareIdmaps(merged, mergedReverse)
-  const composed = am.createIdMap()
+  const composed = idmap.createIdMap()
   for (let iclient = 0; iclient < clients; iclient++) {
     for (let iclock = 0; iclock < clockRange + 42; iclock++) {
       const mergedHas = merged.has(new ID(iclient, iclock))
@@ -112,9 +112,9 @@ export const testRepeatRandomDiffing = tc => {
   const attrs = [1, 2, 3]
   const ds1 = createRandomIdMap(tc.prng, clients, clockRange, attrs)
   const ds2 = createRandomIdMap(tc.prng, clients, clockRange, attrs)
-  const merged = am.mergeIdMaps([ds1, ds2])
-  const e1 = am.diffIdMap(ds1, ds2)
-  const e2 = am.diffIdMap(merged, ds2)
+  const merged = idmap.mergeIdMaps([ds1, ds2])
+  const e1 = idmap.diffIdMap(ds1, ds2)
+  const e2 = idmap.diffIdMap(merged, ds2)
   compareIdmaps(e1, e2)
   const copy = YY.decodeIdMap(YY.encodeIdMap(e1))
   compareIdmaps(e1, copy)
@@ -127,14 +127,14 @@ export const testRepeatRandomDiffing2 = tc => {
   const clients = 4
   const clockRange = 100
   const attrs = [1, 2, 3]
-  const am1 = createRandomIdMap(tc.prng, clients, clockRange, attrs)
-  const am2 = createRandomIdMap(tc.prng, clients, clockRange, attrs)
+  const idmap1 = createRandomIdMap(tc.prng, clients, clockRange, attrs)
+  const idmap2 = createRandomIdMap(tc.prng, clients, clockRange, attrs)
   const idsExclude = createRandomIdSet(tc.prng, clients, clockRange)
-  const merged = am.mergeIdMaps([am1, am2])
-  const mergedExcluded = am.diffIdMap(merged, idsExclude)
-  const e1 = am.diffIdMap(am1, idsExclude)
-  const e2 = am.diffIdMap(am2, idsExclude)
-  const excludedMerged = am.mergeIdMaps([e1, e2])
+  const merged = idmap.mergeIdMaps([idmap1, idmap2])
+  const mergedExcluded = idmap.diffIdMap(merged, idsExclude)
+  const e1 = idmap.diffIdMap(idmap1, idsExclude)
+  const e2 = idmap.diffIdMap(idmap2, idsExclude)
+  const excludedMerged = idmap.mergeIdMaps([e1, e2])
   compareIdmaps(mergedExcluded, excludedMerged)
   const copy = YY.decodeIdMap(YY.encodeIdMap(mergedExcluded))
   compareIdmaps(mergedExcluded, copy)

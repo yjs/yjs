@@ -372,14 +372,14 @@ export const validateIdMap = idmap => {
 
 /**
  * @template T
- * @param {Y.IdMap<T>} am1
- * @param {Y.IdMap<T>} am2
+ * @param {Y.IdMap<T>} idmap1
+ * @param {Y.IdMap<T>} idmap2
  */
-export const compareIdmaps = (am1, am2) => {
-  t.assert(am1.clients.size === am2.clients.size)
-  for (const [client, _items1] of am1.clients.entries()) {
+export const compareIdmaps = (idmap1, idmap2) => {
+  t.assert(idmap1.clients.size === idmap2.clients.size)
+  for (const [client, _items1] of idmap1.clients.entries()) {
     const items1 = _items1.getIds()
-    const items2 = am2.clients.get(client)?.getIds()
+    const items2 = idmap2.clients.get(client)?.getIds()
     t.assert(items2 !== undefined && items1.length === items2.length)
     for (let i = 0; i < items1.length; i++) {
       const di1 = items1[i]
@@ -387,8 +387,8 @@ export const compareIdmaps = (am1, am2) => {
       t.assert(di1.clock === di2.clock && di1.len === di2.len && _idmapAttrsEqual(di1.attrs, di2.attrs))
     }
   }
-  validateIdMap(am1)
-  validateIdMap(am2)
+  validateIdMap(idmap1)
+  validateIdMap(idmap2)
 }
 
 /**
