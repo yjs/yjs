@@ -1,6 +1,7 @@
 import * as t from 'lib0/testing'
 import * as am from '../src/utils/IdMap.js'
 import { compareIdmaps, createIdMap, ID, createRandomIdSet, createRandomIdMap, createAttribution } from './testHelper.js'
+import * as YY from '../src/internals.js'
 
 /**
  * @template T
@@ -115,6 +116,8 @@ export const testRepeatRandomDiffing = tc => {
   const e1 = am.diffIdMap(ds1, ds2)
   const e2 = am.diffIdMap(merged, ds2)
   compareIdmaps(e1, e2)
+  const copy = YY.decodeIdMap(YY.encodeIdMap(e1))
+  compareIdmaps(e1, copy)
 }
 
 /**
@@ -133,4 +136,6 @@ export const testRepeatRandomDiffing2 = tc => {
   const e2 = am.diffIdMap(am2, idsExclude)
   const excludedMerged = am.mergeIdMaps([e1, e2])
   compareIdmaps(mergedExcluded, excludedMerged)
+  const copy = YY.decodeIdMap(YY.encodeIdMap(mergedExcluded))
+  compareIdmaps(mergedExcluded, copy)
 }

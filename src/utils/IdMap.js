@@ -1,12 +1,13 @@
 import {
   _diffSet,
   findIndexInIdRanges,
-  IdSet, ID // eslint-disable-line
+  DSDecoderV1, DSDecoderV2,  DSEncoderV1, DSEncoderV2, IdSet, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as array from 'lib0/array'
 import * as map from 'lib0/map'
 import * as encoding from 'lib0/encoding'
+import * as decoding from 'lib0/decoding'
 import * as buf from 'lib0/buffer'
 import * as rabin from 'lib0/hash/rabin'
 
@@ -40,7 +41,6 @@ const _hashAttribution = attr => {
   encoding.writeAny(encoder, attr.val)
   return buf.toBase64(rabin.fingerprint(rabin.StandardIrreducible128, encoding.toUint8Array(encoder)))
 }
-
 
 /**
  * @template V
@@ -126,6 +126,7 @@ export class AttrRanges {
    * @param {Array<Attribution<Attrs>>} attrs
    */
   add (clock, length, attrs) {
+    if (length === 0) return
     this.sorted = false
     this._ids.push(new AttrRange(clock, length, attrs))
   }
@@ -325,6 +326,7 @@ export class IdMap {
    * @param {Array<Attribution<Attrs>>} attrs
    */
   add (client, clock, len, attrs) {
+    if (len === 0) return
     attrs = _ensureAttrs(this, attrs)
     const ranges = this.clients.get(client)
     if (ranges == null) {
@@ -336,16 +338,158 @@ export class IdMap {
 }
 
 /**
+ * Efficiently encodes IdMap to a binary form. Ensures that information is de-duplicated when
+ * written. Attribute.names are referenced by id. Attributes themselfs are also referenced by id.
+ *
+ * @template Attr
+ * @param {DSEncoderV1 | DSEncoderV2} encoder
+ * @param {IdMap<Attr>} idmap
+ *
+ * @private
+ * @function
+ */
+export const writeIdMap = (encoder, idmap) => {
+  encoding.writeVarUint(encoder.restEncoder, idmap.clients.size)
+  let lastWrittenClientId = 0
+  /**
+   * @type {Map<Attribution<Attr>, number>}
+   */
+  const visitedAttributions = map.create()
+  /**
+   * @type {Map<string, number>}
+   */
+  const visitedAttrNames = map.create()
+  // Ensure that the delete set is written in a deterministic order (smaller clientids first)
+  array.from(idmap.clients.entries())
+    .sort((a, b) => a[0] - b[0])
+    .forEach(([client, _idRanges]) => {
+      const attrRanges = _idRanges.getIds()
+      encoder.resetDsCurVal()
+      const diff = client - lastWrittenClientId
+      encoding.writeVarUint(encoder.restEncoder, diff)
+      lastWrittenClientId = client
+      const len = attrRanges.length
+      encoding.writeVarUint(encoder.restEncoder, len)
+      for (let i = 0; i < len; i++) {
+        const item = attrRanges[i]
+        const attrs = item.attrs
+        const attrLen = attrs.length
+        encoder.writeDsClock(item.clock)
+        encoder.writeDsLen(item.len)
+        encoding.writeVarUint(encoder.restEncoder, attrLen)
+        for (let j = 0; j < attrLen; j++) {
+          const attr = attrs[j]
+          const attrId = visitedAttributions.get(attr)
+          if (attrId != null) {
+            encoding.writeVarUint(encoder.restEncoder, attrId)
+          } else {
+            const newAttrId = visitedAttributions.size
+            visitedAttributions.set(attr, newAttrId)
+            encoding.writeVarUint(encoder.restEncoder, newAttrId)
+            const attrNameId = visitedAttrNames.get(attr.name)
+            // write attr.name
+            if (attrNameId != null) {
+              encoding.writeVarUint(encoder.restEncoder, attrNameId)
+            } else {
+              const newAttrNameId = visitedAttrNames.size
+              encoding.writeVarUint(encoder.restEncoder, newAttrNameId)
+              encoding.writeVarString(encoder.restEncoder, attr.name)
+              visitedAttrNames.set(attr.name, newAttrNameId)
+            }
+            encoding.writeAny(encoder.restEncoder, /** @type {any} */ (attr.val))
+          }
+        }
+      }
+    })
+}
+
+/**
+ * @param {IdMap<any>} idmap
+ */
+export const encodeIdMap = idmap => {
+  const encoder = new DSEncoderV2()
+  writeIdMap(encoder, idmap)
+  return encoder.toUint8Array()
+}
+
+/**
+ * @param {DSDecoderV1 | DSDecoderV2} decoder
+ * @return {IdMap<any>}
+ *
+ * @private
+ * @function
+ */
+export const readIdMap = decoder => {
+  const idmap = new IdMap()
+  const numClients = decoding.readVarUint(decoder.restDecoder)
+  /**
+   * @type {Array<Attribution<any>>}
+   */
+  const visitedAttributions = []
+  /**
+   * @type {Array<string>}
+   */
+  const visitedAttrNames = []
+  let lastClientId = 0
+  for (let i = 0; i < numClients; i++) {
+    decoder.resetDsCurVal()
+    const client = lastClientId + decoding.readVarUint(decoder.restDecoder)
+    lastClientId = client
+    const numberOfDeletes = decoding.readVarUint(decoder.restDecoder)
+    /**
+     * @type {Array<AttrRange<any>>}
+     */
+    const attrRanges = []
+    for (let i = 0; i < numberOfDeletes; i++) {
+      const rangeClock = decoder.readDsClock()
+      const rangeLen = decoder.readDsLen()
+      /**
+       * @type {Array<Attribution<any>>}
+       */
+      const attrs = []
+      const attrsLen = decoding.readVarUint(decoder.restDecoder)
+      for (let j = 0; j < attrsLen; j++) {
+        const attrId = decoding.readVarUint(decoder.restDecoder)
+        if (attrId >= visitedAttributions.length) {
+          // attrId not known yet
+          const attrNameId = decoding.readVarUint(decoder.restDecoder)
+          if (attrNameId >= visitedAttrNames.length) {
+            visitedAttrNames.push(decoding.readVarString(decoder.restDecoder))
+          }
+          visitedAttributions.push(new Attribution(visitedAttrNames[attrNameId], decoding.readAny(decoder.restDecoder)))
+        }
+        attrs.push(visitedAttributions[attrId])
+      }
+      attrRanges.push(new AttrRange(rangeClock, rangeLen, attrs))
+    }
+    idmap.clients.set(client, new AttrRanges(attrRanges))
+  }
+  visitedAttributions.forEach(attr => {
+    idmap.attrs.add(attr)
+    idmap.attrsH.set(attr.hash(), attr)
+  })
+  return idmap
+}
+
+/**
+ * @param {Uint8Array} data
+ * @return {IdMap<any>}
+ */
+export const decodeIdMap = data => readIdMap(new DSDecoderV2(decoding.createDecoder(data)))
+
+/**
  * @template Attrs
  * @param {IdMap<Attrs>} idmap
  * @param {Array<Attribution<Attrs>>} attrs
  * @return {Array<Attribution<Attrs>>}
  */
 const _ensureAttrs = (idmap, attrs) => attrs.map(attr =>
-  idmap.attrs.has(attr) ? attr : map.setIfUndefined(idmap.attrsH, _hashAttribution(attr), () => {
-    idmap.attrs.add(attr)
-    return attr
-  }))
+  idmap.attrs.has(attr)
+    ? attr
+    : map.setIfUndefined(idmap.attrsH, _hashAttribution(attr), () => {
+      idmap.attrs.add(attr)
+      return attr
+    }))
 
 export const createIdMap = () => new IdMap()
 
@@ -358,4 +502,9 @@ export const createIdMap = () => new IdMap()
  * @param {IdSet | IdMap<any>} exclude
  * @return {ISet}
  */
-export const diffIdMap = _diffSet
+export const diffIdMap = (set, exclude) => {
+  const diffed = _diffSet(set, exclude)
+  diffed.attrs = set.attrs
+  diffed.attrsH = set.attrsH
+  return diffed
+}
