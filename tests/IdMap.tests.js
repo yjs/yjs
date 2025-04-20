@@ -1,6 +1,6 @@
 import * as t from 'lib0/testing'
 import * as idmap from '../src/utils/IdMap.js'
-import { compareIdmaps, createIdMap, ID, createRandomIdSet, createRandomIdMap, createAttribution } from './testHelper.js'
+import { compareIdmaps, createIdMap, ID, createRandomIdSet, createRandomIdMap, createAttribution, validateIdMap } from './testHelper.js'
 import * as YY from '../src/internals.js'
 
 /**
@@ -93,13 +93,11 @@ export const testRepeatMergingMultipleIdMaps = tc => {
       const oneHas = sets.some(ids => ids.has(new ID(iclient, iclock)))
       t.assert(mergedHas === oneHas)
       const mergedAttrs = merged.slice(new ID(iclient, iclock), 1)
-      if (mergedAttrs) {
-        mergedAttrs.forEach(a => {
-          if (a.attrs != null) {
-            composed.add(iclient, a.clock, a.len, a.attrs)
-          }
-        })
-      }
+      mergedAttrs.forEach(a => {
+        if (a.attrs != null) {
+          composed.add(iclient, a.clock, a.len, a.attrs)
+        }
+      })
     }
   }
   compareIdmaps(merged, composed)

@@ -1016,11 +1016,12 @@ export class YText extends AbstractType {
         let attributions = null
         if (attrs != null) {
           attributions = {}
+          attributions.changeType = deleted ? 'delete' : 'insert'
           attrs.forEach(attr => {
             switch (attr.name) {
-              case '_insertedBy':
-              case '_deletedBy':
-              case '_suggestedBy': {
+              case 'insertedBy':
+              case 'deletedBy':
+              case 'suggestedBy': {
                 const as = /** @type {any} */ (attributions)
                 const ls = as[attr.name] = as[attr.name] ?? []
                 ls.push(attr.val)
@@ -1046,10 +1047,15 @@ export class YText extends AbstractType {
           }
           case ContentFormat:
             if (attributions != null) {
-              attributions.formattedBy = (deleted ? attributions.deletedBy : attributions.insertedBy) ?? []
-              delete attributions.deletedBy
-              delete attributions.insertedBy
-              d.useAttribution(attributions)
+              if (deleted) {
+                d.useAttribution(null)
+              } else {
+                attributions.formattedBy = (deleted ? attributions.deletedBy : attributions.insertedBy) ?? []
+                attributions.changeType = 'format'
+                delete attributions.deletedBy
+                delete attributions.insertedBy
+                d.useAttribution(attributions)
+              }
             }
             break
         }
