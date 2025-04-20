@@ -106,22 +106,22 @@ export class DeltaBuilder extends Delta {
   }
 
   /**
-   * @param {FormattingAttributes} attributes
+   * @param {FormattingAttributes?} attributes
    * @return {this}
    */
   useAttributes (attributes) {
     if (this._useAttributes === attributes) return this
-    this._useAttributes = object.assign({}, attributes)
+    this._useAttributes = attributes && object.assign({}, attributes)
     if (this._lastOp?.constructor !== DeleteOp) this._lastOp = null
     return this
   }
 
   /**
-   * @param {Attribution} attribution
+   * @param {Attribution?} attribution
    */
   useAttribution (attribution) {
     if (this._useAttribution === attribution) return this
-    this._useAttribution = object.assign({}, attribution)
+    this._useAttribution = attribution && object.assign({}, attribution)
     if (this._lastOp?.constructor !== DeleteOp) this._lastOp = null
     return this
   }

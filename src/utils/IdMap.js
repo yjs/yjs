@@ -112,6 +112,16 @@ export class AttrRange {
 
 /**
  * @template Attrs
+ *
+ * @param {number} clock
+ * @param {number} len
+ * @param {Array<Attribution<Attrs>>?} attrs
+ * @return {MaybeAttrRange<Attrs>}
+ */
+export const createMaybeAttrRange = (clock, len, attrs) => new AttrRange(clock, len, /** @type {any} */ (attrs))
+
+/**
+ * @template Attrs
  */
 export class AttrRanges {
   /**
@@ -238,21 +248,18 @@ export const mergeIdMaps = ams => {
       if (!merged.clients.has(client)) {
         // Write all missing keys from current set and all following.
         // If merged already contains `client` current ds has already been added.
-        const ids = rangesLeft.getIds().slice()
+        let ids = rangesLeft.getIds().slice()
         for (let i = amsI + 1; i < ams.length; i++) {
           const nextIds = ams[i].clients.get(client)
           if (nextIds) {
             array.appendTo(ids, nextIds.getIds())
           }
         }
-        ids.forEach(id => {
-          // @ts-ignore
-          id.attrs = id.attrs.map(attr =>
-            map.setIfUndefined(attrMapper, attr, () =>
-              _ensureAttrs(merged, [attr])[0]
-            )
+        ids = ids.map(id => new AttrRange(id.clock, id.len, id.attrs.map(attr =>
+          map.setIfUndefined(attrMapper, attr, () =>
+            _ensureAttrs(merged, [attr])[0]
           )
-        })
+        )))
         merged.clients.set(client, new AttrRanges(ids))
       }
     })
@@ -323,7 +330,7 @@ export class IdMap {
           if (r.len <= 0) break
           const prevEnd = prev != null ? prev.clock + prev.len : index
           if (prevEnd < index) {
-            res.push(/** @type {MaybeAttrRange<Attrs>} */ (new AttrRange(prevEnd, index - prevEnd, /** @type {any} */ (null))))
+            res.push(createMaybeAttrRange(prevEnd, index - prevEnd, null))
           }
           prev = r
           res.push(r)
@@ -335,10 +342,10 @@ export class IdMap {
       const last = res[res.length - 1]
       const end = last.clock + last.len
       if (end < id.clock + len) {
-        res.push(new AttrRange(end, id.clock + len - end, []))
+        res.push(createMaybeAttrRange(end, id.clock + len - end, null))
       }
     } else {
-      res.push(new AttrRange(id.clock, len, []))
+      res.push(createMaybeAttrRange(id.clock, len, null))
     }
     return res
   }
