@@ -107,6 +107,11 @@ export class AttrRange {
 
 /**
  * @template Attrs
+ * @typedef {{ clock: number, len: number, attrs: Array<Attribution<Attrs>>? }} MaybeAttrRange
+ */
+
+/**
+ * @template Attrs
  */
 export class AttrRanges {
   /**
@@ -287,12 +292,18 @@ export class IdMap {
   }
 
   /**
+   * Return attributions for a slice of ids.
+   *
    * @param {ID} id
    * @param {number} len
-   * @return {Array<AttrRange<Attrs>>?}
+   * @return {Array<MaybeAttrRange<Attrs>>}
    */
   slice (id, len) {
     const dr = this.clients.get(id.client)
+    /**
+     * @type {Array<MaybeAttrRange<Attrs>>}
+     */
+    const res = []
     if (dr) {
       /**
        * @type {Array<AttrRange<Attrs>>}
@@ -300,7 +311,7 @@ export class IdMap {
       const ranges = dr.getIds()
       let index = findIndexInIdRanges(ranges, id.clock)
       if (index !== null) {
-        const res = []
+        let prev = null
         while (index < ranges.length) {
           let r = ranges[index]
           if (r.clock < id.clock) {
@@ -310,13 +321,26 @@ export class IdMap {
             r = new AttrRange(r.clock, id.clock + len - r.clock, r.attrs)
           }
           if (r.len <= 0) break
+          const prevEnd = prev != null ? prev.clock + prev.len : index
+          if (prevEnd < index) {
+            res.push(/** @type {MaybeAttrRange<Attrs>} */ (new AttrRange(prevEnd, index - prevEnd, /** @type {any} */ (null))))
+          }
+          prev = r
           res.push(r)
           index++
         }
-        return res
       }
     }
-    return null
+    if (res.length > 0) {
+      const last = res[res.length - 1]
+      const end = last.clock + last.len
+      if (end < id.clock + len) {
+        res.push(new AttrRange(end, id.clock + len - end, []))
+      }
+    } else {
+      res.push(new AttrRange(id.clock, len, []))
+    }
+    return res
   }
 
   /**

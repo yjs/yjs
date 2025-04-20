@@ -95,7 +95,9 @@ export const testRepeatMergingMultipleIdMaps = tc => {
       const mergedAttrs = merged.slice(new ID(iclient, iclock), 1)
       if (mergedAttrs) {
         mergedAttrs.forEach(a => {
-          composed.add(iclient, a.clock, a.len, a.attrs)
+          if (a.attrs != null) {
+            composed.add(iclient, a.clock, a.len, a.attrs)
+          }
         })
       }
     }
