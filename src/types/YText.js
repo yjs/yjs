@@ -26,8 +26,7 @@ import {
   updateMarkerChanges,
   ContentType,
   warnPrematureAccess,
-  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction, IdMap,  // eslint-disable-line
-  snapshot
+  noAttributionsManager, AbstractAttributionManager, ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as delta from '../utils/Delta.js'
@@ -999,84 +998,62 @@ export class YText extends AbstractType {
    * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
    * attribution `{ isDeleted: true, .. }`.
    *
-   * @param {IdMap<any>} [idMap]
-   * @param {Doc} [prevYdoc]
+   * @param {AbstractAttributionManager} am
    * @return {import('../utils/Delta.js').Delta} The Delta representation of this type.
    *
    * @public
    */
-  getContent (idMap, prevYdoc) {
+  getContent (am = noAttributionsManager) {
     this.doc ?? warnPrematureAccess()
-    const prevSnapshot = prevYdoc ? snapshot(prevYdoc) : null
     const d = delta.create()
-    /**
-     * @type {{ [key: string]: any }}
-     */
-    const currentAttributes = {}
-    const doc = /** @type {Doc} */ (this.doc)
-    const computeContent = () => {
-      let n = this._start
-      while (n !== null) {
-        switch (n.content.constructor) {
-          case ContentString: {
-            const cur = currentAttributes.get('ychange')
-            if (snapshot !== undefined && !isVisible(n, snapshot)) {
-              if (cur === undefined || cur.user !== n.id.client || cur.type !== 'removed') {
-                packStr()
-                currentAttributes.set('ychange', computeYChange ? computeYChange('removed', n.id) : { type: 'removed' })
+    for (let item = this._start; item !== null; item = item.right) {
+      const cs = am.getContent(item)
+      for (let i = 0; i < cs.length; i++) {
+        const { content, deleted, attrs } = cs[i]
+        /**
+         * @type {{ [key: string]: any }?}
+         */
+        let attributions = null
+        if (attrs != null) {
+          attributions = {}
+          attrs.forEach(attr => {
+            switch (attr.name) {
+              case '_insertedBy':
+              case '_deletedBy':
+              case '_suggestedBy': {
+                const as = /** @type {any} */ (attributions)
+                const ls = as[attr.name] = as[attr.name] ?? []
+                ls.push(attr.val)
+                break
               }
-            } else if (prevSnapshot !== undefined && !isVisible(n, prevSnapshot)) {
-              if (cur === undefined || cur.user !== n.id.client || cur.type !== 'added') {
-                packStr()
-                currentAttributes.set('ychange', computeYChange ? computeYChange('added', n.id) : { type: 'added' })
+              default: {
+                if (attr.name[0] !== '_') {
+                  /** @type {any} */ (attributions)[attr.name] = attr.val
+                }
               }
-            } else if (cur !== undefined) {
-              packStr()
-              currentAttributes.delete('ychange')
             }
-            str += /** @type {ContentString} */ (n.content).str
+          })
+        }
+        switch (content.constructor) {
+          case ContentString: {
+            d.insert(/** @type {ContentString} */ (content).str, {}, attributions)
             break
           }
           case ContentType:
           case ContentEmbed: {
-            packStr()
-            /**
-             * @type {Object<string,any>}
-             */
-            const op = {
-              insert: n.content.getContent()[0]
-            }
-            if (currentAttributes.size > 0) {
-              const attrs = /** @type {Object<string,any>} */ ({})
-              op.attributes = attrs
-              currentAttributes.forEach((value, key) => {
-                attrs[key] = value
-              })
-            }
-            ops.push(op)
+            d.insert(/** @type {ContentEmbed | ContentType} */ (content).getContent()[0], {}, attributions)
             break
           }
           case ContentFormat:
-            if (isVisible(n, snapshot)) {
-              packStr()
-              updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (n.content))
+            if (attributions != null) {
+              attributions.formattedBy = (deleted ? attributions.deletedBy : attributions.insertedBy) ?? []
+              delete attributions.deletedBy
+              delete attributions.insertedBy
+              d.useAttribution(attributions)
             }
             break
         }
-        n = n.right
       }
-    }
-    if (prevSnapshot) {
-      // snapshots are merged again after the transaction, so we need to keep the
-      // transaction alive until we are done
-      transact(doc, transaction => {
-        if (prevSnapshot) {
-          splitSnapshotAffectedStructs(transaction, prevSnapshot)
-        }
-        computeContent()
-      }, 'cleanup')
-    } else {
-      computeContent()
     }
     return d.done()
   }
