@@ -10,6 +10,8 @@ import * as fun from 'lib0/function'
  */
 
 /**
+ * @todo specify this better
+ *
  * @typedef {Object} Attribution
  * @property {boolean} [Attribution.isDeleted]
  * @property {boolean} [Attribution.isAdded]
@@ -124,7 +126,11 @@ export class Delta {
  * @param {T | null} a
  * @param {T | null} b
  */
-const mergeAttrs = (a, b) => a == null ? b : (b == null ? a : object.assign({}, a, b))
+const mergeAttrs = (a, b) => {
+  const merged = a == null ? b : (b == null ? a : object.assign({}, a, b))
+  if (object.isEmpty(merged ?? {})) { return null }
+  return merged
+}
 
 export class DeltaBuilder extends Delta {
   constructor () {
@@ -153,7 +159,6 @@ export class DeltaBuilder extends Delta {
   useAttributes (attributes) {
     if (this._useAttributes === attributes) return this
     this._useAttributes = attributes && object.assign({}, attributes)
-    if (this._lastOp?.constructor !== DeleteOp) this._lastOp = null
     return this
   }
 
@@ -163,7 +168,6 @@ export class DeltaBuilder extends Delta {
   useAttribution (attribution) {
     if (this._useAttribution === attribution) return this
     this._useAttribution = attribution && object.assign({}, attribution)
-    if (this._lastOp?.constructor !== DeleteOp) this._lastOp = null
     return this
   }
 
@@ -174,10 +178,12 @@ export class DeltaBuilder extends Delta {
    * @return {this}
    */
   insert (insert, attributes = null, attribution = null) {
-    if (attributes === null && attribution === null && this._lastOp instanceof InsertOp) {
+    const mergedAttributes = mergeAttrs(this._useAttributes, attributes)
+    const mergedAttribution = mergeAttrs(this._useAttribution, attribution)
+    if (this._lastOp instanceof InsertOp && fun.equalityDeep(mergedAttributes, this._lastOp.attributes) && fun.equalityDeep(mergedAttribution, this._lastOp.attribution)) {
       this._lastOp.insert += insert
     } else {
-      this.ops.push(this._lastOp = new InsertOp(insert, mergeAttrs(this._useAttributes, attributes), mergeAttrs(this._useAttribution, attribution)))
+      this.ops.push(this._lastOp = new InsertOp(insert, mergedAttributes, mergedAttribution))
     }
     return this
   }
@@ -189,10 +195,12 @@ export class DeltaBuilder extends Delta {
    * @return {this}
    */
   retain (retain, attributes = null, attribution = null) {
-    if (attributes === null && attribution === null && this._lastOp instanceof RetainOp) {
+    const mergedAttributes = mergeAttrs(this._useAttributes, attributes)
+    const mergedAttribution = mergeAttrs(this._useAttribution, attribution)
+    if (this._lastOp instanceof RetainOp && fun.equalityDeep(mergedAttributes, this._lastOp.attributes) && fun.equalityDeep(mergedAttribution, this._lastOp.attribution)) {
       this._lastOp.retain += retain
     } else {
-      this.ops.push(this._lastOp = new RetainOp(retain, mergeAttrs(this._useAttributes, attributes), mergeAttrs(this._useAttribution, attribution)))
+      this.ops.push(this._lastOp = new RetainOp(retain, mergedAttributes, mergedAttribution))
     }
     return this
   }

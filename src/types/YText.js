@@ -1037,12 +1037,12 @@ export class YText extends AbstractType {
         }
         switch (content.constructor) {
           case ContentString: {
-            d.insert(/** @type {ContentString} */ (content).str, {}, attributions)
+            d.insert(/** @type {ContentString} */ (content).str, null, attributions)
             break
           }
           case ContentType:
           case ContentEmbed: {
-            d.insert(/** @type {ContentEmbed | ContentType} */ (content).getContent()[0], {}, attributions)
+            d.insert(/** @type {ContentEmbed | ContentType} */ (content).getContent()[0], null, attributions)
             break
           }
           case ContentFormat:
