@@ -268,6 +268,32 @@ export const mergeIdMaps = ams => {
 }
 
 /**
+ * @param {IdSet} idset
+ * @param {Array<Attribution<any>>} attrs
+ */
+export const createIdMapFromIdSet = (idset, attrs) => {
+  const idmap = createIdMap()
+  // map attrs to idmap
+  attrs = _ensureAttrs(idmap, attrs)
+  // filter out duplicates
+  /**
+   * @type {Array<Attribution<any>>}
+   */
+  const checkedAttrs = []
+  attrs.forEach(attr => {
+    if (!idmapAttrsHas(checkedAttrs, attr)) {
+      checkedAttrs.push(attr)
+    }
+  })
+  idset.clients.forEach((ranges, client) => {
+    const attrRanges = new AttrRanges(ranges.getIds().map(range => new AttrRange(range.clock, range.len, checkedAttrs)))
+    attrRanges.sorted = true // is sorted because idset is sorted
+    idmap.clients.set(client, attrRanges)
+  })
+  return idmap
+}
+
+/**
  * @template Attrs
  */
 export class IdMap {
