@@ -1,4 +1,5 @@
 import * as object from 'lib0/object'
+import * as fun from 'lib0/function'
 
 /**
  * @typedef {InsertOp|RetainOp|DeleteOp} DeltaOp
@@ -69,6 +70,46 @@ export class Delta {
      * @type {Array<DeltaOp>}
      */
     this.ops = []
+  }
+
+  /**
+   * @param {Delta} d
+   * @return {boolean}
+   */
+  equals (d) {
+    return this.ops.length === d.ops.length && this.ops.every((op, i) => {
+      const dop = d.ops[i]
+      if (op.constructor !== dop.constructor) return false
+      switch (op.constructor) {
+        case DeleteOp: {
+          if (/** @type {DeleteOp} */ (op).delete !== /** @type {DeleteOp} */ (dop).delete) {
+            return false
+          }
+          break
+        }
+        case InsertOp: {
+          if (
+            !fun.equalityDeep(/** @type {InsertOp} */ (op).insert, /** @type {InsertOp} */ (dop).insert)
+            || !fun.equalityDeep(/** @type {InsertOp} */ (op).attributes, /** @type {InsertOp} */ (dop).attributes)
+            || !fun.equalityDeep(/** @type {InsertOp} */ (op).attribution, /** @type {InsertOp} */ (dop).attribution)
+          ) {
+            return false
+          }
+          break
+        }
+        case RetainOp: {
+          if (
+            /** @type {RetainOp} */ (op).retain !== /** @type {RetainOp} */ (dop).retain
+            || !fun.equalityDeep(/** @type {RetainOp} */ (op).attributes, /** @type {RetainOp} */ (dop).attributes)
+            || !fun.equalityDeep(/** @type {RetainOp} */ (op).attribution, /** @type {RetainOp} */ (dop).attribution)
+          ) {
+            return false
+          }
+          break
+        }
+      }
+      return true
+    })
   }
 
   toJSON () {

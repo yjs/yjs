@@ -2,6 +2,8 @@ import * as Y from './testHelper.js'
 import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
+import * as delta from '../src/utils/Delta.js'
+import { createIdMapFromIdSet, noAttributionsManager, TwosetAttributionManager } from 'yjs/internals'
 
 const { init, compare } = Y
 
@@ -2297,6 +2299,23 @@ export const testDeleteFormatting = _tc => {
   ]
   t.compare(text.toDelta(), expected)
   t.compare(text2.toDelta(), expected)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testAttributedContent = tc => {
+  const ydoc = new Y.Doc()
+  const ytext = ydoc.getText()
+  ytext.insert(0, 'Hello World!')
+  let am = noAttributionsManager
+  ydoc.on('afterTransaction', tr => {
+    am = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, []), createIdMapFromIdSet(tr.deleteSet, []))
+  })
+  ytext.applyDelta([{ retain: 6 }, { delete: 5 }, { insert: 'attributions' }])
+  const attributedContent = ytext.getContent(am)
+  t.assert(attributedContent.equals(delta.create().retain(6).insert('World', {}, { type: 'delete' }).insert('attributions', {}, { type: 'insert' })))
+  debugger
 }
 
 // RANDOM TESTS
