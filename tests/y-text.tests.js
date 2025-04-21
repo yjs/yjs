@@ -2302,9 +2302,9 @@ export const testDeleteFormatting = _tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testAttributedContent = tc => {
+export const testAttributedContent = _tc => {
   const ydoc = new Y.Doc({ gc: false })
   const ytext = ydoc.getText()
   ytext.insert(0, 'Hello World!')
@@ -2312,11 +2312,20 @@ export const testAttributedContent = tc => {
   ydoc.on('afterTransaction', tr => {
     am = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, []), createIdMapFromIdSet(tr.deleteSet, []))
   })
-  ytext.applyDelta([{ retain: 6 }, { delete: 5 }, { insert: 'attributions' }])
-  const attributedContent = ytext.getContent(am)
-  const expectedContent = delta.create().insert('Hello ').insert('World', {}, { changeType: 'delete' }).insert('attributions', {}, { changeType: 'insert' }).insert('!')
-  t.assert(attributedContent.equals(expectedContent))
-  debugger
+  t.group('insert / delete / format', () => {
+    ytext.applyDelta([{ retain: 4, attributes: { italic: true } }, { retain: 2 }, { delete: 5 }, { insert: 'attributions' }])
+    let expectedContent = delta.create().insert('Hell', { italic: true }, { attributes: { italic: [] } }).insert('o ').insert('World', {}, { delete: [] }).insert('attributions', {}, { insert: [] }).insert('!')
+    let attributedContent = ytext.getContent(am)
+    console.log(attributedContent.toJSON().ops)
+    t.assert(attributedContent.equals(expectedContent))
+  })
+  t.group('unformat', () => {
+    ytext.applyDelta([{retain: 5, attributes: { italic: null }}])
+    let expectedContent = delta.create().insert('Hell', null, { attributes: { italic: [] } }).insert('o attributions!')
+    let attributedContent = ytext.getContent(am)
+    console.log(attributedContent.toJSON().ops)
+    t.assert(attributedContent.equals(expectedContent))
+  })
 }
 
 // RANDOM TESTS
