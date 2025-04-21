@@ -2305,7 +2305,7 @@ export const testDeleteFormatting = _tc => {
  * @param {t.TestCase} tc
  */
 export const testAttributedContent = tc => {
-  const ydoc = new Y.Doc()
+  const ydoc = new Y.Doc({ gc: false })
   const ytext = ydoc.getText()
   ytext.insert(0, 'Hello World!')
   let am = noAttributionsManager
@@ -2314,7 +2314,8 @@ export const testAttributedContent = tc => {
   })
   ytext.applyDelta([{ retain: 6 }, { delete: 5 }, { insert: 'attributions' }])
   const attributedContent = ytext.getContent(am)
-  t.assert(attributedContent.equals(delta.create().retain(6).insert('World', {}, { type: 'delete' }).insert('attributions', {}, { type: 'insert' })))
+  const expectedContent = delta.create().insert('Hello ').insert('World', {}, { changeType: 'delete' }).insert('attributions', {}, { changeType: 'insert' }).insert('!')
+  t.assert(attributedContent.equals(expectedContent))
   debugger
 }
 
