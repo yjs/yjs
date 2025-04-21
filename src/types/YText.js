@@ -1011,18 +1011,22 @@ export class YText extends AbstractType {
       for (let i = 0; i < cs.length; i++) {
         const { content, deleted, attrs } = cs[i]
         /**
-         * @type {{ [key: string]: any }?}
+         * @type {import('../utils/Delta.js').Attribution?}
          */
         let attributions = null
         if (attrs != null) {
           attributions = {}
-          attributions.changeType = deleted ? 'delete' : 'insert'
+          if (deleted) {
+            attributions.delete = []
+          } else {
+            attributions.insert = []
+          }
           attrs.forEach(attr => {
             switch (attr.name) {
-              case 'insertedBy':
-              case 'deletedBy':
-              case 'suggestedBy': {
-                const as = /** @type {any} */ (attributions)
+              case 'insert':
+              case 'delete':
+              case 'suggest': {
+                const as = /** @type {import('../utils/Delta.js').Attribution} */ (attributions)
                 const ls = as[attr.name] = as[attr.name] ?? []
                 ls.push(attr.val)
                 break
@@ -1046,15 +1050,37 @@ export class YText extends AbstractType {
             break
           }
           case ContentFormat:
+            const contentFormat = /** @type {ContentFormat} */ (content)
             if (attributions != null) {
-              if (deleted) {
+              /**
+               * @type {import('../utils/Delta.js').Attribution}
+               */
+              const formattingAttributions = object.assign({}, d.usedAttribution)
+              const attributesChanged = /** @type {{ [key: string]: Array<any> }} */ (formattingAttributions.attributes = object.assign({}, formattingAttributions.attributes ?? {}))
+              if (contentFormat.value === null) {
+                delete attributesChanged[contentFormat.key]
+              } else {
+                const by = attributesChanged[contentFormat.key] = attributesChanged[contentFormat.key]?.slice() ?? []
+                by.push(...((deleted ? attributions.delete : attributions.insert) ?? []))
+                const attributedAt = (deleted ? attributions.deletedAt : attributions.insertedAt)
+                if (attributedAt) formattingAttributions.attributedAt = attributedAt
+              }
+              if (object.isEmpty(attributesChanged)) {
                 d.useAttribution(null)
               } else {
-                attributions.formattedBy = (deleted ? attributions.deletedBy : attributions.insertedBy) ?? []
-                attributions.changeType = 'format'
-                delete attributions.deletedBy
-                delete attributions.insertedBy
-                d.useAttribution(attributions)
+                const attributedAt = (deleted ? attributions.deletedAt : attributions.insertedAt)
+                if (attributedAt != null) formattingAttributions.attributedAt = attributedAt
+                d.useAttribution(formattingAttributions)
+              }
+            }
+            if (!deleted) {
+              const currAttrs = d.usedAttributes
+              if (contentFormat.value == null) {
+                const nextAttrs = object.assign({}, currAttrs)
+                delete nextAttrs[contentFormat.key]
+                d.useAttributes(nextAttrs)
+              } else {
+                d.useAttributes(object.assign({}, currAttrs, { [contentFormat.key]: contentFormat.value }))
               }
             }
             break

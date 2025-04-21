@@ -121,6 +121,8 @@ export class AttrRange {
 export const createMaybeAttrRange = (clock, len, attrs) => new AttrRange(clock, len, /** @type {any} */ (attrs))
 
 /**
+ * Whenever this is instantiated, it must receive a fresh array of ops, not something copied.
+ *
  * @template Attrs
  */
 export class AttrRanges {
