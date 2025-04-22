@@ -2308,21 +2308,23 @@ export const testAttributedContent = _tc => {
   const ydoc = new Y.Doc({ gc: false })
   const ytext = ydoc.getText()
   ytext.insert(0, 'Hello World!')
-  let am = noAttributionsManager
+  let attributionManager = noAttributionsManager
+
   ydoc.on('afterTransaction', tr => {
-    am = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, []), createIdMapFromIdSet(tr.deleteSet, []))
+    // attributionManager = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, [new Y.Attribution('insertedAt', 42), new Y.Attribution('insert', 'kevin')]), createIdMapFromIdSet(tr.deleteSet, [new Y.Attribution('delete', 'kevin')]))
+    attributionManager = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, []), createIdMapFromIdSet(tr.deleteSet, []))
   })
   t.group('insert / delete / format', () => {
     ytext.applyDelta([{ retain: 4, attributes: { italic: true } }, { retain: 2 }, { delete: 5 }, { insert: 'attributions' }])
     let expectedContent = delta.create().insert('Hell', { italic: true }, { attributes: { italic: [] } }).insert('o ').insert('World', {}, { delete: [] }).insert('attributions', {}, { insert: [] }).insert('!')
-    let attributedContent = ytext.getContent(am)
+    let attributedContent = ytext.getContent(attributionManager)
     console.log(attributedContent.toJSON().ops)
     t.assert(attributedContent.equals(expectedContent))
   })
   t.group('unformat', () => {
     ytext.applyDelta([{retain: 5, attributes: { italic: null }}])
     let expectedContent = delta.create().insert('Hell', null, { attributes: { italic: [] } }).insert('o attributions!')
-    let attributedContent = ytext.getContent(am)
+    let attributedContent = ytext.getContent(attributionManager)
     console.log(attributedContent.toJSON().ops)
     t.assert(attributedContent.equals(expectedContent))
   })
@@ -2553,7 +2555,14 @@ const checkResult = result => {
      * @param {any} d
      */
     const typeToObject = d => d.insert instanceof Y.AbstractType ? d.insert.toJSON() : d
-    const p1 = result.users[i].getText('text').toDelta().map(typeToObject)
+
+    t.measureTime('original toDelta perf', () => {
+      result.users[i-1].getText('text').toDelta().map(typeToObject)
+    })
+    t.measureTime('getContent(attributionManager) performance)', () => {
+      result.users[i-1].getText('text').getContent()
+    })
+    const p1 = result.users[i-1].getText('text').toDelta().map(typeToObject)
     const p2 = result.users[i].getText('text').toDelta().map(typeToObject)
     t.compare(p1, p2)
   }
