@@ -170,6 +170,7 @@ are implemented in separate modules.
 | [Rows n'Columns](https://www.rowsncolumns.app/) | ✔ | [@rowsncolumns/y-spreadsheet](https://docs.rowsncolumns.app/collaboration/yjs-collaboration) | |
 
 ### Utilities
+Tools that extend the core functionality of Yjs.
 
 <dl>
   <dt><a href="https://github.com/yjs/y-utility">y-utility</a></dt>
