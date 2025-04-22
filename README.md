@@ -169,6 +169,23 @@ are implemented in separate modules.
 | [PSPDFKit](https://www.nutrient.io/) |  | [yjs-pspdfkit](https://github.com/hoangqwe159/yjs-pspdfkit) | [demo](https://github.com/hoangqwe159/yjs-pspdfkit) |
 | [Rows n'Columns](https://www.rowsncolumns.app/) | ✔ | [@rowsncolumns/y-spreadsheet](https://docs.rowsncolumns.app/collaboration/yjs-collaboration) | |
 
+### Utilities
+Tools that extend the core functionality of Yjs.
+
+<dl>
+  <dt><a href="https://github.com/yjs/y-utility">y-utility</a></dt>
+  <dd>
+Library with <code>YMultiDocUndoManager</code> (undo/redo across Yjs docs) and <code>YKeyValue</code> (optimized key-value store). 
+  </dd>
+
+  <dt><a href="https://github.com/Tulip-Writer/yjs-orderedtree">yjs-orderedtree</a> 🌳 </dt>
+  <dd>
+Class for ordered trees via Y.Map. Handles <code>insert</code>, <code>delete</code>, and <code>move</code> operations for folder-like hierarchies.  
+  </dd>
+
+</dl>
+
+
 ### Providers
 
 Setting up the communication between clients, managing awareness information,
