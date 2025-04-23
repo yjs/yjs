@@ -356,6 +356,37 @@ export const createDeleteSetFromStructStore = ss => {
 }
 
 /**
+ * @param {import('../internals.js').StructStore} ss
+ */
+export const createInsertionSetFromStructStore = ss => {
+  const idset = createIdSet()
+  ss.clients.forEach((structs, client) => {
+    /**
+     * @type {Array<IdRange>}
+     */
+    const iditems = []
+    for (let i = 0; i < structs.length; i++) {
+      const struct = structs[i]
+      if (!struct.deleted) {
+        const clock = struct.id.clock
+        let len = struct.length
+        if (i + 1 < structs.length) {
+          for (let next = structs[i + 1]; i + 1 < structs.length && !next.deleted; next = structs[++i + 1]) {
+            len += next.length
+          }
+        }
+        iditems.push(new IdRange(clock, len))
+      }
+    }
+    if (iditems.length > 0) {
+      idset.clients.set(client, new IdRanges(iditems))
+    }
+  })
+  return idset
+}
+
+
+/**
  * @param {IdSetEncoderV1 | IdSetEncoderV2} encoder
  * @param {IdSet} idSet
  *
