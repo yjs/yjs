@@ -2330,6 +2330,38 @@ export const testAttributedContent = _tc => {
   })
 }
 
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testAttributedDiffing = _tc => {
+  const ydocVersion0 = new Y.Doc({ gc: false })
+  ydocVersion0.clientID = 0
+  ydocVersion0.getText().insert(0, 'Hello World!')
+  const ydoc = new Y.Doc({ gc: false })
+  ydoc.clientID = 1
+  Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(ydocVersion0))
+  const ytext = ydoc.getText()
+  ytext.applyDelta([{ retain: 4, attributes: { italic: true } }, { retain: 2 }, { delete: 5 }, { insert: 'attributions' }])
+  // this represents to all insertions of ydoc
+  const insertionSet = Y.createInsertionSetFromStructStore(ydoc.store)
+  const deleteSet = Y.createDeleteSetFromStructStore(ydoc.store)
+  // exclude the changes from `ydocVersion0`
+  const insertionSetDiff = Y.diffIdSet(insertionSet, Y.createInsertionSetFromStructStore(ydocVersion0.store))
+  const deleteSetDiff = Y.diffIdSet(deleteSet, Y.createDeleteSetFromStructStore(ydocVersion0.store))
+  // assign attributes to the diff
+  const attributedInsertions = createIdMapFromIdSet(insertionSetDiff, [new Y.Attribution('insert', 'Bob')])
+  const attributedDeletions = createIdMapFromIdSet(deleteSetDiff, [new Y.Attribution('delete', 'Bob')])
+  // now we can define an attribution manager that maps these changes to output. One of the
+  // implementations is the TwosetAttributionManager
+  const attributionManager = new TwosetAttributionManager(attributedInsertions, attributedDeletions)
+  // we render the attributed content with the attributionManager
+  let attributedContent = ytext.getContent(attributionManager)
+  console.log(JSON.stringify(attributedContent.toJSON().ops, null, 2))
+  let expectedContent = delta.create().insert('Hell', { italic: true }, { attributes: { italic: ['Bob'] } }).insert('o ').insert('World', {}, { delete: ['Bob'] }).insert('attributions', {}, { insert: ['Bob'] }).insert('!')
+  t.assert(attributedContent.equals(expectedContent))
+  console.log(Y.encodeIdMap(attributedInsertions).length)
+}
+
 // RANDOM TESTS
 
 let charCounter = 0
@@ -2556,6 +2588,7 @@ const checkResult = result => {
      */
     const typeToObject = d => d.insert instanceof Y.AbstractType ? d.insert.toJSON() : d
 
+    t.info('length of text = ' + result.users[i-1].getText('text').length)
     t.measureTime('original toDelta perf', () => {
       result.users[i-1].getText('text').toDelta().map(typeToObject)
     })

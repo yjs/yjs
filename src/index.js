@@ -105,7 +105,11 @@ export {
   IdMap,
   createIdMap,
   createAttribution,
-  Attribution
+  createInsertionSetFromStructStore,
+  diffIdMap,
+  diffIdSet,
+  Attribution,
+  encodeIdMap
 } from './internals.js'
 
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'
