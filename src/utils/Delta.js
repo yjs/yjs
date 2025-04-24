@@ -130,7 +130,7 @@ export class Delta {
  */
 const mergeAttrs = (a, b) => {
   const merged = a == null ? b : (b == null ? a : object.assign({}, a, b))
-  if (object.isEmpty(merged ?? {})) { return null }
+  if (merged == null || object.isEmpty(merged)) { return null }
   return merged
 }
 
@@ -158,7 +158,7 @@ export class DeltaBuilder extends Delta {
    */
   useAttributes (attributes) {
     if (this.usedAttributes === attributes) return this
-    this.usedAttributes = attributes && object.assign({}, attributes)
+    this.usedAttributes = attributes ?? object.assign({}, attributes)
     return this
   }
 
@@ -167,7 +167,7 @@ export class DeltaBuilder extends Delta {
    */
   useAttribution (attribution) {
     if (this.usedAttribution === attribution) return this
-    this.usedAttribution = attribution && object.assign({}, attribution)
+    this.usedAttribution = attribution ?? object.assign({}, attribution)
     return this
   }
 

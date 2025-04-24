@@ -81,7 +81,7 @@ export class NoAttributionsManager {
    * @return {Array<AttributedContent<any>>}
    */
   getContent (item) {
-    return item.deleted ? [] : [new AttributedContent(item.content, item.deleted, null)]
+    return item.deleted ? [] : [new AttributedContent(item.content, false, null)]
   }
 }
 
