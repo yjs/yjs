@@ -2606,30 +2606,44 @@ const checkResult = result => {
 }
 
 /**
+ * Generally, the content reader with attributed content works better if there is more deleted
+ * content. Increasing the number of deletions improves performance of getContent (even to the point
+ * that is beats toString(), but that might be because of internal js optimization steps).
+ *
  * @param {t.TestCase} tc
  */
 export const testAttributionManagerDefaultPerformance = tc => {
   const N = 100000
+  const MaxDeletionLength = 5 // 25% chance of deletion
+  const MaxInsertionLength = 5
   const ydoc = new Y.Doc()
   const ytext = ydoc.getText()
   for (let i = 0; i < N; i++) {
-    if (prng.bool(tc.prng) && ytext.length > 0) {
+    if (prng.bool(tc.prng) && prng.bool(tc.prng) && ytext.length > 0) {
       const index = prng.int31(tc.prng, 0, ytext.length - 1)
-      const len = prng.int31(tc.prng, 0, math.min(ytext.length - index, 5))
+      const len = prng.int31(tc.prng, 0, math.min(ytext.length - index, MaxDeletionLength))
       ytext.delete(index, len)
     } else {
       const index = prng.int31(tc.prng, 0, ytext.length)
-      const content = prng.utf16String(tc.prng, 30)
+      const content = prng.utf16String(tc.prng, MaxInsertionLength)
       ytext.insert(index, content)
     }
   }
+  t.info(`number of changes: ${N/1000}k`)
+  t.info(`length of text: ${ytext.length}`)
   const M = 100
-  t.measureTime('original toDelta perf', () => {
+
+  t.measureTime(`original toString perf <executed ${M} times>`, () => {
     for (let i = 0; i < M; i++) {
       ytext.toDelta()
     }
   })
-  t.measureTime('getContent(attributionManager) performance)', () => {
+  t.measureTime(`original toDelta perf <executed ${M} times>`, () => {
+    for (let i = 0; i < M; i++) {
+      ytext.toDelta()
+    }
+  })
+  t.measureTime(`getContent(attributionManager) performance <executed ${M} times>`, () => {
     for (let i = 0; i < M; i++) {
       ytext.getContent()
     }
