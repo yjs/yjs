@@ -19,6 +19,56 @@ export const testAfterTransactionRecursion = _tc => {
   }, 'test')
 }
 
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testFindTypeInOtherDoc = _tc => {
+  const ydoc = new Y.Doc()
+  const ymap = ydoc.getMap()
+  const ytext = ymap.set('ytext', new Y.Text())
+  const ydocClone = new Y.Doc()
+  Y.applyUpdate(ydocClone, Y.encodeStateAsUpdate(ydoc))
+  /**
+   * @template {Y.AbstractType<any>} Type
+   * @param {Type} ytype
+   * @param {Y.Doc} otherYdoc
+   * @return {Type}
+   */
+  const findTypeInOtherYdoc = (ytype, otherYdoc) => {
+    const ydoc = /** @type {Y.Doc} */ (ytype.doc)
+    if (ytype._item === null) {
+      /**
+       * If is a root type, we need to find the root key in the original ydoc 
+       * and use it to get the type in the other ydoc.
+       */
+      const rootKey = Array.from(ydoc.share.keys()).find(
+        (key) => ydoc.share.get(key) === ytype
+      )
+      if (rootKey == null) {
+        throw new Error('type does not exist in other ydoc')
+      }
+      return /** @type {Type} */ (otherYdoc.get(rootKey, /** @type {typeof Y.AbstractType<any>} */ (ytype.constructor)))
+    } else {
+      /**
+       * If it is a sub type, we use the item id to find the history type.
+       */
+      const ytypeItem = ytype._item
+      const otherStructs = otherYdoc.store.clients.get(ytypeItem.id.client) ?? []
+      const itemIndex = Y.findIndexSS(
+        otherStructs,
+        ytypeItem.id.clock
+      )
+      const otherItem = /** @type {Y.Item} */ (otherStructs[itemIndex])
+      const otherContent = /** @type {Y.ContentType} */ (otherItem.content)
+      return /** @type {Type} */ (otherContent.type)
+    }
+  }
+  t.assert(findTypeInOtherYdoc(ymap, ydocClone) != null)
+  t.assert(findTypeInOtherYdoc(ytext, ydocClone) != null)
+}
+
+
 /**
  * @param {t.TestCase} _tc
  */
