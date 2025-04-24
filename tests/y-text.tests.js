@@ -2608,6 +2608,37 @@ const checkResult = result => {
 /**
  * @param {t.TestCase} tc
  */
+export const testAttributionManagerDefaultPerformance = tc => {
+  const N = 100000
+  const ydoc = new Y.Doc()
+  const ytext = ydoc.getText()
+  for (let i = 0; i < N; i++) {
+    if (prng.bool(tc.prng) && ytext.length > 0) {
+      const index = prng.int31(tc.prng, 0, ytext.length - 1)
+      const len = prng.int31(tc.prng, 0, math.min(ytext.length - index, 5))
+      ytext.delete(index, len)
+    } else {
+      const index = prng.int31(tc.prng, 0, ytext.length)
+      const content = prng.utf16String(tc.prng, 30)
+      ytext.insert(index, content)
+    }
+  }
+  const M = 100
+  t.measureTime('original toDelta perf', () => {
+    for (let i = 0; i < M; i++) {
+      ytext.toDelta()
+    }
+  })
+  t.measureTime('getContent(attributionManager) performance)', () => {
+    for (let i = 0; i < M; i++) {
+      ytext.getContent()
+    }
+  })
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatGenerateQuillChanges1 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, qChanges, 1))
   const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
