@@ -178,9 +178,9 @@ export class DeltaBuilder extends Delta {
    * @return {this}
    */
   insert (insert, attributes = null, attribution = null) {
-    const mergedAttributes = mergeAttrs(this.usedAttributes, attributes)
-    const mergedAttribution = mergeAttrs(this.usedAttribution, attribution)
-    if (this._lastOp instanceof InsertOp && fun.equalityDeep(mergedAttributes, this._lastOp.attributes) && fun.equalityDeep(mergedAttribution, this._lastOp.attribution)) {
+    const mergedAttributes = attributes == null ? this.usedAttributes : mergeAttrs(this.usedAttributes, attributes)
+    const mergedAttribution = attribution == null ? this.usedAttribution : mergeAttrs(this.usedAttribution, attribution)
+    if (this._lastOp instanceof InsertOp && (mergedAttributes === this._lastOp.attributes || fun.equalityDeep(mergedAttributes, this._lastOp.attributes)) && (mergedAttribution === this._lastOp.attribution || fun.equalityDeep(mergedAttribution, this._lastOp.attribution))) {
       this._lastOp.insert += insert
     } else {
       this.ops.push(this._lastOp = new InsertOp(insert, mergedAttributes, mergedAttribution))
