@@ -6,7 +6,7 @@
     "name": "Kevin Jahns",
     "email": "kevin.jahns@protonmail.com",
     "phone": "",
-    "description": "OSS Developer",
+    "description": "Independent OSS Developer maintaining Yjs and many related libraries. My goal is to make the web more (real-time) collaborative.",
     "webpageUrl": {
       "url": "https://yjs.dev",
       "wellKnown": "https://yjs.dev/.well-known/funding-manifest-urls"
