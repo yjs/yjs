@@ -8,7 +8,8 @@
     "phone": "",
     "description": "OSS Developer",
     "webpageUrl": {
-      "url": "https://github.com/yjs"
+      "url": "https://yjs.dev",
+      "wellKnown": "https://yjs.dev/.well-known/funding-manifest-urls"
     }
   },
   "projects": [
@@ -17,7 +18,8 @@
       "name": "Yjs",
       "description": "A library for building collaborative applications. #p2p #local-first #CRDT Funding this project will also enable me to maintain the other Yjs-related technologies.",
       "webpageUrl": {
-        "url": "https://github.com/yjs/yjs"
+        "url": "https://yjs.dev",
+        "wellKnown": "https://yjs.dev/.well-known/funding-manifest-urls"
       },
       "repositoryUrl": {
         "url": "https://github.com/yjs/yjs"
@@ -34,8 +36,8 @@
       ]
     },
     {
-      "guid": "Titanic",
-      "name": "Y/Titanic",
+      "guid": "titanic",
+      "name": "Titanic",
       "description": "A provider for syncing millions of docs efficiently with other peers. This will become the foundation for building real local-first apps with Yjs.",
       "webpageUrl": {
         "url": "https://github.com/yjs/titanic",
@@ -64,14 +66,20 @@
       {
         "guid": "github-sponsors",
         "type": "payment-provider",
-        "address": "",
+        "address": "https://github.com/sponsors/dmonad",
         "description": "For funding of the Yjs project"
       },
       {
-        "guid": "y-collective",
+        "guid": "yjs-opencollective",
         "type": "payment-provider",
-        "address": "https://opencollective.com/y-collective",
-        "description": "For funding the Y-CRDT - the Rust implementation of Yjs and other listed projects."
+        "address": "https://opencollective.com/y-collective/projects/yjs",
+        "description": "For funding Yjs via the OpenCollective."
+      },
+      {
+        "guid": "ycrdt-opencollective",
+        "type": "payment-provider",
+        "address": "https://opencollective.com/y-collective/projects/y-crdt",
+        "description": "For funding Y-CRDT via the OpenCollective."
       }
     ],
     "plans": [
@@ -85,7 +93,7 @@
         "frequency": "monthly",
         "channels": [
           "github-sponsors",
-          "y-collective"
+          "yjs-opencollective"
         ]
       },
       {
@@ -97,7 +105,8 @@
         "currency": "USD",
         "frequency": "one-time",
         "channels": [
-          "github-sponsors"
+          "github-sponsors",
+          "yjs-opencollective"
         ]
       },
       {
@@ -109,7 +118,8 @@
         "currency": "USD",
         "frequency": "monthly",
         "channels": [
-          "github-sponsors"
+          "github-sponsors",
+          "yjs-opencollective"
         ]
       },
       {
@@ -121,7 +131,8 @@
         "currency": "USD",
         "frequency": "monthly",
         "channels": [
-          "github-sponsors"
+          "github-sponsors",
+          "yjs-opencollective"
         ]
       },
       {
@@ -133,7 +144,8 @@
         "currency": "USD",
         "frequency": "monthly",
         "channels": [
-          "github-sponsors"
+          "github-sponsors",
+          "yjs-opencollective"
         ]
       }
     ],
