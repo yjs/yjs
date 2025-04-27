@@ -25,10 +25,10 @@ export class AttributedContent {
  */
 export class AbstractAttributionManager {
   /**
+   * @param {Array<AttributedContent<any>>} _contents
    * @param {Item} _item
-   * @return {Array<AttributedContent<any>>?}
    */
-  getContent (_item) {
+  readContent (_contents, _item) {
     error.methodUnimplemented()
   }
 }
@@ -49,24 +49,22 @@ export class TwosetAttributionManager {
   }
 
   /**
+   * @param {Array<AttributedContent<any>>} contents
    * @param {Item} item
-   * @return {Array<AttributedContent<any>>}
    */
-  getContent (item) {
+  readContent (contents, item) {
     const deleted = item.deleted
     const slice = (deleted ? this.deletes : this.inserts).slice(item.id, item.length)
     let content = slice.length === 1 ? item.content : item.content.copy()
-    let res = slice.map(s => {
+    slice.forEach(s => {
       const c = content
       if (s.len < c.getLength()) {
         content = c.splice(s.len)
       }
-      return new AttributedContent(c, deleted, s.attrs)
+      if (!deleted || s.attrs != null) {
+        contents.push(new AttributedContent(c, deleted, s.attrs))
+      }
     })
-    if (deleted) {
-      res = res.filter(s => s.attrs != null)
-    }
-    return res
   }
 }
 
@@ -77,11 +75,13 @@ export class TwosetAttributionManager {
  */
 export class NoAttributionsManager {
   /**
+   * @param {Array<AttributedContent<any>>} contents
    * @param {Item} item
-   * @return {Array<AttributedContent<any>>?}
    */
-  getContent (item) {
-    return item.deleted ? null : [new AttributedContent(item.content, false, null)]
+  readContent (contents, item) {
+    if (!item.deleted) {
+      contents.push(new AttributedContent(item.content, false, null))
+    }
   }
 }
 

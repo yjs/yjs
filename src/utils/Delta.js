@@ -158,7 +158,7 @@ export class DeltaBuilder extends Delta {
    */
   useAttributes (attributes) {
     if (this.usedAttributes === attributes) return this
-    this.usedAttributes = attributes ?? object.assign({}, attributes)
+    this.usedAttributes = attributes && (object.isEmpty(attributes) ? null : object.assign({}, attributes))
     return this
   }
 
@@ -167,7 +167,7 @@ export class DeltaBuilder extends Delta {
    */
   useAttribution (attribution) {
     if (this.usedAttribution === attribution) return this
-    this.usedAttribution = attribution ?? object.assign({}, attribution)
+    this.usedAttribution = attribution && (object.isEmpty(attribution) ? null : object.assign({}, attribution))
     return this
   }
 
