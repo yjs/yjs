@@ -26,7 +26,7 @@ export class AttributedContent {
 export class AbstractAttributionManager {
   /**
    * @param {Item} _item
-   * @return {Array<AttributedContent<any>>}
+   * @return {Array<AttributedContent<any>>?}
    */
   getContent (_item) {
     error.methodUnimplemented()
@@ -78,10 +78,10 @@ export class TwosetAttributionManager {
 export class NoAttributionsManager {
   /**
    * @param {Item} item
-   * @return {Array<AttributedContent<any>>}
+   * @return {Array<AttributedContent<any>>?}
    */
   getContent (item) {
-    return item.deleted ? [] : [new AttributedContent(item.content, false, null)]
+    return item.deleted ? null : [new AttributedContent(item.content, false, null)]
   }
 }
 
