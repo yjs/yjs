@@ -4,13 +4,14 @@ import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
 import * as env from 'lib0/environment'
+import * as delta from '../src/utils/Delta.js'
 
 const isDevMode = env.getVariable('node_env') === 'development'
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testBasicUpdate = tc => {
+export const testBasicUpdate = _tc => {
   const doc1 = new Y.Doc()
   const doc2 = new Y.Doc()
   doc1.getArray('array').insert(0, ['hi'])
@@ -20,9 +21,9 @@ export const testBasicUpdate = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testFailsObjectManipulationInDevMode = tc => {
+export const testFailsObjectManipulationInDevMode = _tc => {
   if (isDevMode) {
     t.info('running in dev mode')
     const doc = new Y.Doc()
@@ -42,9 +43,9 @@ export const testFailsObjectManipulationInDevMode = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testSlice = tc => {
+export const testSlice = _tc => {
   const doc1 = new Y.Doc()
   const arr = doc1.getArray('array')
   arr.insert(0, [1, 2, 3])
@@ -57,9 +58,9 @@ export const testSlice = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testArrayFrom = tc => {
+export const testArrayFrom = _tc => {
   const doc1 = new Y.Doc()
   const db1 = doc1.getMap('root')
   const nestedArray1 = Y.Array.from([0, 1, 2])
@@ -70,9 +71,9 @@ export const testArrayFrom = tc => {
 /**
  * Debugging yjs#297 - a critical bug connected to the search-marker approach
  *
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testLengthIssue = tc => {
+export const testLengthIssue = _tc => {
   const doc1 = new Y.Doc()
   const arr = doc1.getArray('array')
   arr.push([0, 1, 2, 3])
@@ -99,9 +100,9 @@ export const testLengthIssue = tc => {
 /**
  * Debugging yjs#314
  *
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testLengthIssue2 = tc => {
+export const testLengthIssue2 = _tc => {
   const doc = new Y.Doc()
   const next = doc.getArray()
   doc.transact(() => {
@@ -288,7 +289,7 @@ export const testNestedObserverEvents = tc => {
    * @type {Array<number>}
    */
   const vals = []
-  array0.observe(e => {
+  array0.observe(() => {
     if (array0.length === 1) {
       // inserting, will call this observer again
       // we expect that this observer is called after this event handler finishedn
@@ -491,9 +492,9 @@ export const testEventTargetIsSetCorrectlyOnRemote = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testIteratingArrayContainingTypes = tc => {
+export const testIteratingArrayContainingTypes = _tc => {
   const y = new Y.Doc()
   const arr = y.getArray('arr')
   const numItems = 10
@@ -507,6 +508,31 @@ export const testIteratingArrayContainingTypes = tc => {
     t.assert(item.get('value') === cnt++, 'value is correct')
   }
   y.destroy()
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testAttributedContent = _tc => {
+  const ydoc = new Y.Doc({ gc: false })
+  const yarray = ydoc.getArray()
+  yarray.insert(0, [1, 2])
+  let attributionManager = Y.noAttributionsManager
+
+  ydoc.on('afterTransaction', tr => {
+    // attributionManager = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, [new Y.Attribution('insertedAt', 42), new Y.Attribution('insert', 'kevin')]), createIdMapFromIdSet(tr.deleteSet, [new Y.Attribution('delete', 'kevin')]))
+    attributionManager = new Y.TwosetAttributionManager(Y.createIdMapFromIdSet(tr.insertSet, []), Y.createIdMapFromIdSet(tr.deleteSet, []))
+  })
+  t.group('insert / delete', () => {
+    ydoc.transact(() => {
+      yarray.delete(0, 1)
+      yarray.insert(1, [42])
+    })
+    let expectedContent = delta.createArrayDelta().insert([1], null, { delete: [] }).insert([2]).insert([42], null, { insert: [] })
+    let attributedContent = yarray.getContent(attributionManager)
+    console.log(attributedContent.toJSON().ops)
+    t.assert(attributedContent.equals(expectedContent))
+  })
 }
 
 let _uniqueNumber = 0

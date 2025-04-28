@@ -1,6 +1,7 @@
 import * as Y from '../src/index.js'
 import { init, compare } from './testHelper.js'
 import * as t from 'lib0/testing'
+import * as delta from '../src/utils/Delta.js'
 
 export const testCustomTypings = () => {
   const ydoc = new Y.Doc()
@@ -220,3 +221,63 @@ export const testElement = _tc => {
   yxmlel.insert(0, [text1, text2])
   t.compareArrays(yxmlel.toArray(), [text1, text2])
 }
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testFragmentAttributedContent = _tc => {
+  const ydoc = new Y.Doc({ gc: false })
+  const yfragment = new Y.XmlFragment()
+  const elem1 = new Y.XmlText('hello')
+  const elem2 = new Y.XmlElement()
+  const elem3 = new Y.XmlText('world')
+  yfragment.insert(0, [elem1, elem2])
+  ydoc.getArray().insert(0, [yfragment])
+  let attributionManager = Y.noAttributionsManager
+  ydoc.on('afterTransaction', tr => {
+    // attributionManager = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, [new Y.Attribution('insertedAt', 42), new Y.Attribution('insert', 'kevin')]), createIdMapFromIdSet(tr.deleteSet, [new Y.Attribution('delete', 'kevin')]))
+    attributionManager = new Y.TwosetAttributionManager(Y.createIdMapFromIdSet(tr.insertSet, []), Y.createIdMapFromIdSet(tr.deleteSet, []))
+  })
+  t.group('insert / delete', () => {
+    ydoc.transact(() => {
+      yfragment.delete(0, 1)
+      yfragment.insert(1, [elem3])
+    })
+    let expectedContent = delta.createArrayDelta().insert([elem1], null, { delete: [] }).insert([elem2]).insert([elem3], null, { insert: [] })
+    let attributedContent = yfragment.getContent(attributionManager)
+    console.log(attributedContent.children.toJSON().ops)
+    t.assert(attributedContent.children.equals(expectedContent))
+    t.compare(elem1.getContent(attributionManager).toJSON(), delta.createTextDelta().insert('hello', null, { delete: [] }).done().toJSON())
+  })
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testElementAttributedContent = _tc => {
+  const ydoc = new Y.Doc({ gc: false })
+  const yelement = ydoc.getXmlElement('p')
+  const elem1 = new Y.XmlElement('span')
+  const elem2 = new Y.XmlText('hello')
+  const elem3 = new Y.XmlText('world')
+  yelement.insert(0, [elem1, elem2])
+  let attributionManager = Y.noAttributionsManager
+  ydoc.on('afterTransaction', tr => {
+    // attributionManager = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, [new Y.Attribution('insertedAt', 42), new Y.Attribution('insert', 'kevin')]), createIdMapFromIdSet(tr.deleteSet, [new Y.Attribution('delete', 'kevin')]))
+    attributionManager = new Y.TwosetAttributionManager(Y.createIdMapFromIdSet(tr.insertSet, []), Y.createIdMapFromIdSet(tr.deleteSet, []))
+  })
+  t.group('insert / delete', () => {
+    ydoc.transact(() => {
+      yelement.delete(0, 1)
+      yelement.insert(1, [elem3])
+      yelement.setAttribute('key', '42')
+    })
+    let expectedContent = delta.createArrayDelta().insert([elem1], null, { delete: [] }).insert([elem2]).insert([elem3], null, { insert: [] })
+    let attributedContent = yelement.getContent(attributionManager)
+    console.log('children', attributedContent.children.toJSON().ops)
+    console.log('attributes', attributedContent.attributes)
+    t.assert(attributedContent.children.equals(expectedContent))
+    t.compare(attributedContent.attributes, { key: { prevValue: undefined, value: '42', attribution: { insert: [] } } })
+  })
+}
+

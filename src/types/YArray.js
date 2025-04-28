@@ -17,9 +17,10 @@ import {
   callTypeObservers,
   transact,
   warnPrematureAccess,
-  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
+  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item, // eslint-disable-line
+  AbstractAttributionManager
 } from '../internals.js'
-import { typeListSlice } from './AbstractType.js'
+import { typeListGetContent, typeListSlice } from './AbstractType.js'
 
 /**
  * Event that describes the changes on a YArray
@@ -205,6 +206,22 @@ export class YArray extends AbstractType {
    */
   toArray () {
     return typeListToArray(this)
+  }
+
+  /**
+   * Render the difference to another ydoc (which can be empty) and highlight the differences with
+   * attributions.
+   *
+   * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
+   * attribution `{ isDeleted: true, .. }`.
+   *
+   * @param {AbstractAttributionManager} am
+   * @return {import('../utils/Delta.js').Delta<Array<T>>} The Delta representation of this type.
+   *
+   * @public
+   */
+  getContent (am) {
+    return typeListGetContent(this, am)
   }
 
   /**
