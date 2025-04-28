@@ -2632,7 +2632,6 @@ export const testAttributionManagerDefaultPerformance = tc => {
   t.info(`number of changes: ${N/1000}k`)
   t.info(`length of text: ${ytext.length}`)
   const M = 100
-
   t.measureTime(`original toString perf <executed ${M} times>`, () => {
     for (let i = 0; i < M; i++) {
       ytext.toDelta()

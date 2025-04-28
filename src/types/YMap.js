@@ -14,10 +14,17 @@ import {
   callTypeObservers,
   transact,
   warnPrematureAccess,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item, // eslint-disable-line
+  createAttributionFromAttrs
 } from '../internals.js'
 
+import * as array from 'lib0/array'
 import * as iterator from 'lib0/iterator'
+
+/**
+ * @template MapType
+ * @typedef {{ [key: string]: { prevValue: MapType | undefined, value: MapType | undefined, attribution: any } }} MapAttributedContent
+ */
 
 /**
  * @template T
@@ -184,6 +191,61 @@ export class YMap extends AbstractType {
         f(item.content.getContent()[item.length - 1], key, this)
       }
     })
+  }
+
+  /**
+   * Render the difference to another ydoc (which can be empty) and highlight the differences with
+   * attributions.
+   *
+   * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
+   * attribution `{ isDeleted: true, .. }`.
+   *
+   * @param {import('../internals.js').AbstractAttributionManager} am
+   * @return {MapAttributedContent<MapType>} The Delta representation of this type.
+   *
+   * @public
+   */
+  getContent (am) {
+    /**
+     * @type {MapAttributedContent<MapType>}
+     */
+    const mapcontent = {}
+    this._map.forEach((item, key) => {
+      /**
+       * @type {Array<import('../internals.js').AttributedContent<any>>}
+       */
+      const cs = []
+      am.readContent(cs, item)
+      const { deleted, attrs, content } = cs[cs.length - 1]
+      const c = array.last(content.getContent())
+      const attribution = createAttributionFromAttrs(attrs, deleted)
+      if (deleted) {
+        mapcontent[key] = { prevValue: c, value: undefined, attribution }
+      } else {
+        /**
+         * @type {Array<import('../internals.js').AttributedContent<any>>}
+         */
+        let cs = []
+        for (let prevItem = item.left; prevItem != null; prevItem = prevItem.left) {
+          /**
+           * @type {Array<import('../internals.js').AttributedContent<any>>}
+           */
+          const tmpcs = []
+          am.readContent(tmpcs, prevItem)
+          cs = tmpcs.concat(cs)
+          if (cs[0].attrs == null) {
+            cs.splice(0, cs.findIndex(c => c.attrs != null))
+            break
+          }
+          if (cs.length > 0) {
+            cs.length = 1
+          }
+        }
+        const prevValue = cs.length > 0 ? array.last(cs[0].content.getContent()) : undefined
+        mapcontent[key] = { prevValue, value: c, attribution }
+      }
+    })
+    return mapcontent
   }
 
   /**

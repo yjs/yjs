@@ -1,7 +1,11 @@
 import * as Y from '../src/index.js'
 import { init, compare, applyRandomTests, Doc } from './testHelper.js' // eslint-disable-line
+import * as delta from '../src/utils/Delta.js'
 import {
-  compareIDs
+  compareIDs,
+  noAttributionsManager,
+  TwosetAttributionManager,
+  createIdMapFromIdSet
 } from '../src/internals.js'
 import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
@@ -611,6 +615,41 @@ export const testYmapEventHasCorrectValueWhenSettingAPrimitiveFromOtherUser = tc
   testConnector.flushAllMessages()
   t.compare(event.value, event.target.get(event.name))
   compare(users)
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testAttributedContent = _tc => {
+  const ydoc = new Y.Doc({ gc: false })
+  const ymap = ydoc.getMap()
+  let attributionManager = noAttributionsManager
+
+  ydoc.on('afterTransaction', tr => {
+    // attributionManager = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, [new Y.Attribution('insertedAt', 42), new Y.Attribution('insert', 'kevin')]), createIdMapFromIdSet(tr.deleteSet, [new Y.Attribution('delete', 'kevin')]))
+    attributionManager = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, []), createIdMapFromIdSet(tr.deleteSet, []))
+  })
+  t.group('initial value', () => {
+    ymap.set('test', 42)
+    let expectedContent = { test: { prevValue: undefined, value: 42, attribution: { insert: [] } } }
+    let attributedContent = ymap.getContent(attributionManager)
+    console.log(attributedContent)
+    t.compare(expectedContent, attributedContent)
+  })
+  t.group('overwrite value', () => {
+    ymap.set('test', 'fourtytwo')
+    let expectedContent = { test: { prevValue: 42, value: 'fourtytwo', attribution: { insert: [] } } }
+    let attributedContent = ymap.getContent(attributionManager)
+    console.log(attributedContent)
+    t.compare(expectedContent, attributedContent)
+  })
+  t.group('delete value', () => {
+    ymap.delete('test')
+    let expectedContent = { test: { prevValue: 'fourtytwo', value: undefined, attribution: { delete: [] } } }
+    let attributedContent = ymap.getContent(attributionManager)
+    console.log(attributedContent)
+    t.compare(expectedContent, attributedContent)
+  })
 }
 
 /**

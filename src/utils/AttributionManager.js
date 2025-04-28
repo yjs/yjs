@@ -5,13 +5,63 @@ import {
 import * as error from 'lib0/error'
 
 /**
+ * @typedef {Object} Attribution
+ * @property {Array<any>} [Attribution.insert]
+ * @property {number} [Attribution.insertedAt]
+ * @property {Array<any>} [Attribution.suggest]
+ * @property {number} [Attribution.suggestedAt]
+ * @property {Array<any>} [Attribution.delete]
+ * @property {number} [Attribution.deletedAt]
+ * @property {{ [key: string]: Array<any> }} [Attribution.attributes]
+ * @property {number} [Attribution.attributedAt]
+ */
+
+/**
+ * @param {Array<import('./IdMap.js').AttributionItem<any>>?} attrs
+ * @param {boolean} deleted - whether the attributed item is deleted
+ * @return {Attribution?}
+ */
+export const createAttributionFromAttrs = (attrs, deleted) => {
+  /**
+   * @type {Attribution?}
+   */
+  let attribution = null
+  if (attrs != null) {
+    attribution = {}
+    if (deleted) {
+      attribution.delete = []
+    } else {
+      attribution.insert = []
+    }
+    attrs.forEach(attr => {
+      switch (attr.name) {
+        case 'insert':
+        case 'delete':
+        case 'suggest': {
+          const as = /** @type {import('../utils/Delta.js').Attribution} */ (attribution)
+          const ls = as[attr.name] = as[attr.name] ?? []
+          ls.push(attr.val)
+          break
+        }
+        default: {
+          if (attr.name[0] !== '_') {
+            /** @type {any} */ (attribution)[attr.name] = attr.val
+          }
+        }
+      }
+    })
+  }
+  return attribution
+}
+
+/**
  * @template T
  */
 export class AttributedContent {
   /**
    * @param {AbstractContent} content
    * @param {boolean} deleted
-   * @param {Array<import('./IdMap.js').Attribution<T>> | null} attrs
+   * @param {Array<import('./IdMap.js').AttributionItem<T>> | null} attrs
    */
   constructor (content, deleted, attrs) {
     this.content = content

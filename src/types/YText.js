@@ -26,7 +26,8 @@ import {
   updateMarkerChanges,
   ContentType,
   warnPrematureAccess,
-  noAttributionsManager, AbstractAttributionManager, ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
+  noAttributionsManager, AbstractAttributionManager, ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction, // eslint-disable-line
+  createAttributionFromAttrs
 } from '../internals.js'
 
 import * as delta from '../utils/Delta.js'
@@ -1017,67 +1018,39 @@ export class YText extends AbstractType {
       }
       for (let i = 0; i < cs.length; i++) {
         const { content, deleted, attrs } = cs[i]
-        /**
-         * @type {import('../utils/Delta.js').Attribution?}
-         */
-        let attributions = null
-        if (attrs != null) {
-          attributions = {}
-          if (deleted) {
-            attributions.delete = []
-          } else {
-            attributions.insert = []
-          }
-          attrs.forEach(attr => {
-            switch (attr.name) {
-              case 'insert':
-              case 'delete':
-              case 'suggest': {
-                const as = /** @type {import('../utils/Delta.js').Attribution} */ (attributions)
-                const ls = as[attr.name] = as[attr.name] ?? []
-                ls.push(attr.val)
-                break
-              }
-              default: {
-                if (attr.name[0] !== '_') {
-                  /** @type {any} */ (attributions)[attr.name] = attr.val
-                }
-              }
-            }
-          })
-        }
+        const attribution = createAttributionFromAttrs(attrs, deleted)
         switch (content.constructor) {
           case ContentString: {
-            d.insert(/** @type {ContentString} */ (content).str, null, attributions)
+            d.insert(/** @type {ContentString} */ (content).str, null, attribution)
             break
           }
           case ContentType:
           case ContentEmbed: {
-            d.insert(/** @type {ContentEmbed | ContentType} */ (content).getContent()[0], null, attributions)
+            d.insert(/** @type {ContentEmbed | ContentType} */ (content).getContent()[0], null, attribution)
             break
           }
           case ContentFormat: {
             const contentFormat = /** @type {ContentFormat} */ (content)
-            if (attributions != null) {
+            if (attribution != null) {
               /**
                * @type {import('../utils/Delta.js').Attribution}
                */
-              const formattingAttributions = object.assign({}, d.usedAttribution)
-              const attributesChanged = /** @type {{ [key: string]: Array<any> }} */ (formattingAttributions.attributes = object.assign({}, formattingAttributions.attributes ?? {}))
+              const formattingAttribution = object.assign({}, d.usedAttribution)
+              const attributesChanged = /** @type {{ [key: string]: Array<any> }} */ (formattingAttribution.attributes = object.assign({}, formattingAttribution.attributes ?? {}))
               if (contentFormat.value === null) {
                 delete attributesChanged[contentFormat.key]
               } else {
                 const by = attributesChanged[contentFormat.key] = attributesChanged[contentFormat.key]?.slice() ?? []
-                by.push(...((deleted ? attributions.delete : attributions.insert) ?? []))
-                const attributedAt = (deleted ? attributions.deletedAt : attributions.insertedAt)
-                if (attributedAt) formattingAttributions.attributedAt = attributedAt
+                by.push(...((deleted ? attribution.delete : attribution.insert) ?? []))
+                const attributedAt = (deleted ? attribution.deletedAt : attribution.insertedAt)
+                if (attributedAt) formattingAttribution.attributedAt = attributedAt
               }
               if (object.isEmpty(attributesChanged)) {
                 d.useAttribution(null)
               } else {
-                const attributedAt = (deleted ? attributions.deletedAt : attributions.insertedAt)
-                if (attributedAt != null) formattingAttributions.attributedAt = attributedAt
-                d.useAttribution(formattingAttributions)
+                const attributedAt = (deleted ? attribution.deletedAt : attribution.insertedAt)
+                if (attributedAt != null) formattingAttribution.attributedAt = attributedAt
+                d.useAttribution(formattingAttribution)
               }
             }
             if (!deleted) {

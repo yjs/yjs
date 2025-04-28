@@ -6,19 +6,11 @@ import * as fun from 'lib0/function'
  */
 
 /**
- * @typedef {{ [key: string]: any }} FormattingAttributes
+ * @typedef {import('./AttributionManager.js').Attribution} Attribution
  */
 
 /**
- * @typedef {Object} Attribution
- * @property {Array<any>} [Attribution.insert]
- * @property {number} [Attribution.insertedAt]
- * @property {Array<any>} [Attribution.suggest]
- * @property {number} [Attribution.suggestedAt]
- * @property {Array<any>} [Attribution.delete]
- * @property {number} [Attribution.deletedAt]
- * @property {{ [key: string]: Array<any> }} [Attribution.attributes]
- * @property {number} [Attribution.attributedAt]
+ * @typedef {{ [key: string]: any }} FormattingAttributes
  */
 
 export class InsertOp {

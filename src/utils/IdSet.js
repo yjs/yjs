@@ -171,6 +171,35 @@ export const findIndexInIdRanges = (dis, clock) => {
 }
 
 /**
+ * Find the first range that contains clock or comes after clock.
+ *
+ * @param {Array<IdRange>} dis
+ * @param {number} clock
+ * @return {number|null}
+ *
+ * @private
+ * @function
+ */
+export const findRangeStartInIdRanges = (dis, clock) => {
+  let left = 0
+  let right = dis.length - 1
+  while (left <= right) {
+    const midindex = math.floor((left + right) / 2)
+    const mid = dis[midindex]
+    const midclock = mid.clock
+    if (midclock <= clock) {
+      if (clock < midclock + mid.len) {
+        return midindex
+      }
+      left = midindex + 1
+    } else {
+      right = midindex - 1
+    }
+  }
+  return left < dis.length ? left : null
+}
+
+/**
  * @param {Array<IdSet>} idSets
  * @return {IdSet} A fresh IdSet
  */
