@@ -108,7 +108,7 @@ export {
   createInsertionSetFromStructStore,
   diffIdMap,
   diffIdSet,
-  Attribution,
+  AttributionItem as Attribution,
   encodeIdMap
 } from './internals.js'
 
