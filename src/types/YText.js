@@ -1000,13 +1000,13 @@ export class YText extends AbstractType {
    * attribution `{ isDeleted: true, .. }`.
    *
    * @param {AbstractAttributionManager} am
-   * @return {import('../utils/Delta.js').Delta} The Delta representation of this type.
+   * @return {import('../utils/Delta.js').Delta<import('../utils/Delta.js').TextDeltaContent>} The Delta representation of this type.
    *
    * @public
    */
   getContent (am = noAttributionsManager) {
     this.doc ?? warnPrematureAccess()
-    const d = delta.create()
+    const d = delta.createTextDelta()
     /**
      * @type {Array<import('../internals.js').AttributedContent<any>>}
      */

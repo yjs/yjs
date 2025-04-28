@@ -18,7 +18,9 @@ import {
   typeListGet,
   typeListSlice,
   warnPrematureAccess,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, ContentType, Transaction, Item, YXmlText, YXmlHook // eslint-disable-line
+  noAttributionsManager,
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, ContentType, Transaction, Item, YXmlText, YXmlHook, // eslint-disable-line
+  typeListGetContent
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -375,6 +377,17 @@ export class YXmlFragment extends AbstractType {
    */
   toArray () {
     return typeListToArray(this)
+  }
+
+  /**
+   * Calculate the attributed content using the attribution manager.
+   *
+   * @param {import('../internals.js').AbstractAttributionManager} am
+   * @return {{ children: import('../utils/Delta.js').Delta<Array<YXmlElement|YXmlText|YXmlHook>> }}
+   */
+  getContent (am = noAttributionsManager) {
+    const children = typeListGetContent(this, am)
+    return { children }
   }
 
   /**

@@ -10,9 +10,12 @@ import {
   ContentAny,
   ContentBinary,
   getItemCleanStart,
-  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
+  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item,
+  createAttributionFromAttrs, // eslint-disable-line
 } from '../internals.js'
 
+import * as delta from '../utils/Delta.js'
+import * as array from 'lib0/array'
 import * as map from 'lib0/map'
 import * as iterator from 'lib0/iterator'
 import * as error from 'lib0/error'
@@ -467,6 +470,42 @@ export const typeListToArray = type => {
 }
 
 /**
+ * Render the difference to another ydoc (which can be empty) and highlight the differences with
+ * attributions.
+ *
+ * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
+ * attribution `{ isDeleted: true, .. }`.
+ *
+ * @template MapType
+ * @param {AbstractType<any>} type
+ * @param {import('../internals.js').AbstractAttributionManager} am
+ * @return {delta.Delta<Array<MapType>>} The Delta representation of this type.
+ *
+ * @private
+ * @function
+ */
+export const typeListGetContent = (type, am) => {
+  type.doc ?? warnPrematureAccess()
+  const d = /** @type {delta.DeltaBuilder<Array<MapType>>} */ (delta.create())
+  /**
+   * @type {Array<import('../internals.js').AttributedContent<any>>}
+   */
+  const cs = []
+  for (let item = type._start; item !== null; cs.length = 0) {
+    // populate cs
+    for (; item !== null && cs.length < 50; item = item.right) {
+      am.readContent(cs, item)
+    }
+    for (let i = 0; i < cs.length; i++) {
+      const { content, deleted, attrs } = cs[i]
+      const attribution = createAttributionFromAttrs(attrs, deleted)
+      d.insert(content.getContent(), null, attribution)
+    }
+  }
+  return d.done()
+}
+
+/**
  * @param {AbstractType<any>} type
  * @param {Snapshot} snapshot
  * @return {Array<any>}
@@ -912,6 +951,71 @@ export const typeMapGetAll = (parent) => {
   })
   return res
 }
+
+/**
+ * @template MapType
+ * @typedef {{ [key: string]: { prevValue: MapType | undefined, value: MapType | undefined, attribution: any } }} MapAttributedContent
+ */
+
+/**
+ * Render the difference to another ydoc (which can be empty) and highlight the differences with
+ * attributions.
+ *
+ * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
+ * attribution `{ isDeleted: true, .. }`.
+ *
+ * @template MapType
+ * @param {AbstractType<any>} parent
+ * @param {import('../internals.js').AbstractAttributionManager} am
+ * @return {MapAttributedContent<MapType>} The Delta representation of this type.
+ *
+ * @private
+ * @function
+ */
+export const typeMapGetContent = (parent, am) => {
+  /**
+   * @type {MapAttributedContent<MapType>}
+   */
+  const mapcontent = {}
+  parent.doc ?? warnPrematureAccess()
+  parent._map.forEach((item, key) => {
+    /**
+     * @type {Array<import('../internals.js').AttributedContent<any>>}
+     */
+    const cs = []
+    am.readContent(cs, item)
+    const { deleted, attrs, content } = cs[cs.length - 1]
+    const c = array.last(content.getContent())
+    const attribution = createAttributionFromAttrs(attrs, deleted)
+    if (deleted) {
+      mapcontent[key] = { prevValue: c, value: undefined, attribution }
+    } else {
+      /**
+       * @type {Array<import('../internals.js').AttributedContent<any>>}
+       */
+      let cs = []
+      for (let prevItem = item.left; prevItem != null; prevItem = prevItem.left) {
+        /**
+         * @type {Array<import('../internals.js').AttributedContent<any>>}
+         */
+        const tmpcs = []
+        am.readContent(tmpcs, prevItem)
+        cs = tmpcs.concat(cs)
+        if (cs[0].attrs == null) {
+          cs.splice(0, cs.findIndex(c => c.attrs != null))
+          break
+        }
+        if (cs.length > 0) {
+          cs.length = 1
+        }
+      }
+      const prevValue = cs.length > 0 ? array.last(cs[0].content.getContent()) : undefined
+      mapcontent[key] = { prevValue, value: c, attribution }
+    }
+  })
+  return mapcontent
+}
+
 
 /**
  * @param {AbstractType<any>} parent

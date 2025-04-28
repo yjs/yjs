@@ -109,7 +109,10 @@ export {
   diffIdMap,
   diffIdSet,
   AttributionItem as Attribution,
-  encodeIdMap
+  encodeIdMap,
+  createIdMapFromIdSet,
+  TwosetAttributionManager,
+  noAttributionsManager
 } from './internals.js'
 
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'

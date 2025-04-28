@@ -11,7 +11,9 @@ import {
   typeMapGetAllSnapshot,
   typeListForEach,
   YXmlElementRefID,
-  Snapshot, YXmlText, ContentType, AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item // eslint-disable-line
+  typeMapGetContent,
+  noAttributionsManager,
+  Snapshot, YXmlText, ContentType, AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item, // eslint-disable-line
 } from '../internals.js'
 
 /**
@@ -204,6 +206,23 @@ export class YXmlElement extends YXmlFragment {
    */
   getAttributes (snapshot) {
     return /** @type {any} */ (snapshot ? typeMapGetAllSnapshot(this, snapshot) : typeMapGetAll(this))
+  }
+
+  /**
+   * Render the difference to another ydoc (which can be empty) and highlight the differences with
+   * attributions.
+   *
+   * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
+   * attribution `{ isDeleted: true, .. }`.
+   *
+   * @param {import('../internals.js').AbstractAttributionManager} am
+   *
+   * @public
+   */
+  getContent (am = noAttributionsManager) {
+    const attributes = typeMapGetContent(this, am)
+    const { children } = super.getContent(am)
+    return { children, attributes }
   }
 
   /**
