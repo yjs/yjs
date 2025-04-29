@@ -1,5 +1,6 @@
 import * as object from 'lib0/object'
 import * as fun from 'lib0/function'
+import * as traits from 'lib0/traits'
 
 /**
  * @template {string|Array<any>|{[key: string]: any}} Content
@@ -29,8 +30,19 @@ export class InsertOp {
     this.attribution = attribution
   }
 
+  get length () {
+    return (this.insert.constructor === Array || this.insert.constructor === String) ? this.insert.length : 1
+  }
+
   toJSON () {
     return object.assign({ insert: this.insert }, this.attributes ? { attributes: this.attributes } : ({}), this.attribution ? { attribution: this.attribution } : ({}))
+  }
+
+  /**
+   * @param {InsertOp<Content>} other
+   */
+  [traits.EqualityTraitSymbol] (other) {
+    return fun.equalityDeep(this.insert, other.insert) && fun.equalityDeep(this.attributes, other.attributes) && fun.equalityDeep(this.attribution, other.attribution)
   }
 }
 
@@ -42,8 +54,19 @@ export class DeleteOp {
     this.delete = len
   }
 
+  get length () {
+    return 0
+  }
+
   toJSON () {
     return { delete: this.delete }
+  }
+
+  /**
+   * @param {DeleteOp} other
+   */
+  [traits.EqualityTraitSymbol] (other) {
+    return this.delete === other.delete
   }
 }
 
@@ -59,16 +82,48 @@ export class RetainOp {
     this.attribution = attribution
   }
 
+  get length () {
+    return this.retain
+  }
+
   toJSON () {
     return object.assign({ retain: this.retain }, this.attributes ? { attributes: this.attributes } : {}, this.attribution ? { attribution: this.attribution } : {})
+  }
+
+  /**
+   * @param {RetainOp} other
+   */
+  [traits.EqualityTraitSymbol] (other) {
+    return this.retain === other.retain && fun.equalityDeep(this.attributes, other.attributes) && fun.equalityDeep(this.attribution, other.attribution)
   }
 }
 
 /**
- * @template {string|Array<any>|{[key: string]: any}} Content
+ * @typedef {Array<any>} ArrayDeltaContent
  */
-export class Delta {
-  constructor () {
+
+/**
+ * @typedef {string | { [key: string]: any }} TextDeltaContent
+ */
+
+/**
+ * @typedef {{ array: ArrayDeltaContent, text: TextDeltaContent, custom: string|Array<any>|{[key:string]:any}}} DeltaTypeMapper
+ */
+
+/**
+ * @typedef {(TextDelta | ArrayDelta)} Delta
+ */
+
+/**
+ * @template {'array' | 'text' | 'custom'} Type
+ * @template {DeltaTypeMapper[Type]} [Content=DeltaTypeMapper[Type]]
+ */
+export class AbstractDelta {
+  /**
+   * @param {Type} type
+   */
+  constructor (type) {
+    this.type = type
     /**
      * @type {Array<DeltaOp<Content>>}
      */
@@ -76,47 +131,48 @@ export class Delta {
   }
 
   /**
-   * @param {Delta<Content>} d
+   * @template {DeltaTypeMapper[Type]} MContent
+   * @param {(d:DeltaOp<Content>)=>DeltaOp<MContent>} f
+   * @return {DeltaBuilder<Type, MContent>}
+   */
+  map (f) {
+    const d = /** @type {DeltaBuilder<Type,any>} */ (new /** @type {any} */ (this.constructor)(this.type))
+    d.ops = this.ops.map(f)
+    // @ts-ignore
+    d._lastOp = d.ops[d.ops.length - 1] ?? null
+    return d
+  }
+
+  /**
+   * @param {(d:DeltaOp<Content>,index:number)=>void} f
+   */
+  forEach (f) {
+    for (
+      let i = 0, index = 0, op = this.ops[i];
+      i < this.ops.length;
+      i++, index += op.length, op = this.ops[i]
+    ) {
+      f(op, index)
+    }
+  }
+
+  /**
+   * @param {AbstractDelta<Type, Content>} other
    * @return {boolean}
    */
-  equals (d) {
-    return this.ops.length === d.ops.length && this.ops.every((op, i) => {
-      const dop = d.ops[i]
-      if (op.constructor !== dop.constructor) return false
-      switch (op.constructor) {
-        case DeleteOp: {
-          if (/** @type {DeleteOp} */ (op).delete !== /** @type {DeleteOp} */ (dop).delete) {
-            return false
-          }
-          break
-        }
-        case InsertOp: {
-          if (
-            !fun.equalityDeep(/** @type {InsertOp<Content>} */ (op).insert, /** @type {InsertOp<Content>} */ (dop).insert)
-            || !fun.equalityDeep(/** @type {InsertOp<Content>} */ (op).attributes, /** @type {InsertOp<Content>} */ (dop).attributes)
-            || !fun.equalityDeep(/** @type {InsertOp<Content>} */ (op).attribution, /** @type {InsertOp<Content>} */ (dop).attribution)
-          ) {
-            return false
-          }
-          break
-        }
-        case RetainOp: {
-          if (
-            /** @type {RetainOp} */ (op).retain !== /** @type {RetainOp} */ (dop).retain
-            || !fun.equalityDeep(/** @type {RetainOp} */ (op).attributes, /** @type {RetainOp} */ (dop).attributes)
-            || !fun.equalityDeep(/** @type {RetainOp} */ (op).attribution, /** @type {RetainOp} */ (dop).attribution)
-          ) {
-            return false
-          }
-          break
-        }
-      }
-      return true
-    })
+  equals (other) {
+    return this[traits.EqualityTraitSymbol](other)
   }
 
   toJSON () {
     return { ops: this.ops.map(o => o.toJSON()) }
+  }
+
+  /**
+   * @param {AbstractDelta<Type,Content>} other
+   */
+  [traits.EqualityTraitSymbol] (other) {
+    return this.type === other.type && fun.equalityDeep(this.ops, other.ops)
   }
 }
 
@@ -134,12 +190,16 @@ const mergeAttrs = (a, b) => {
 }
 
 /**
- * @template {string|Array<any>|{[key: string]: any}} Content
- * @extends Delta<Content>
+ * @template {'array' | 'text' | 'custom'} [Type='custom']
+ * @template {DeltaTypeMapper[Type]} [Content=DeltaTypeMapper[Type]]
+ * @extends AbstractDelta<Type,Content>
  */
-export class DeltaBuilder extends Delta {
-  constructor () {
-    super()
+export class DeltaBuilder extends AbstractDelta {
+  /**
+   * @param {Type} type
+   */
+  constructor (type) {
+    super(type)
     /**
      * @type {FormattingAttributes?}
      */
@@ -185,10 +245,10 @@ export class DeltaBuilder extends Delta {
     const mergedAttribution = attribution == null ? this.usedAttribution : mergeAttrs(this.usedAttribution, attribution)
     if (this._lastOp instanceof InsertOp && (mergedAttributes === this._lastOp.attributes || fun.equalityDeep(mergedAttributes, this._lastOp.attributes)) && (mergedAttribution === this._lastOp.attribution || fun.equalityDeep(mergedAttribution, this._lastOp.attribution))) {
       if (insert.constructor === String) {
-        // @ts-ignore 
+        // @ts-ignore
         this._lastOp.insert += insert
       } else if (insert.constructor === Array && this._lastOp.insert.constructor === Array) {
-        // @ts-ignore 
+        // @ts-ignore
         this._lastOp.insert.push(...insert)
       } else {
         this.ops.push(this._lastOp = new InsertOp(insert, mergedAttributes, mergedAttribution))
@@ -230,31 +290,39 @@ export class DeltaBuilder extends Delta {
   }
 
   /**
-   * @return {Delta<Content>}
+   * @return {AbstractDelta<Type,Content>}
    */
   done () {
     return this
   }
 }
 
-export const create = () => new DeltaBuilder()
+/**
+ * @template {ArrayDeltaContent} [Content=ArrayDeltaContent]
+ * @extends DeltaBuilder<'array',Content>
+ */
+export class ArrayDelta extends DeltaBuilder {
+  constructor () {
+    super('array')
+  }
+}
 
 /**
- * @typedef {string | { [key: string]: any }} TextDeltaContent
+ * @template {TextDeltaContent} [Content=TextDeltaContent]
+ * @extends DeltaBuilder<'text',Content>
  */
+export class TextDelta extends DeltaBuilder {
+  constructor () {
+    super('text')
+  }
+}
 
 /**
- * @template {TextDeltaContent} Content
- * @return {DeltaBuilder<Content>}
+ * @return {TextDelta<TextDeltaContent>}
  */
-export const createTextDelta = () => new DeltaBuilder()
+export const createTextDelta = () => new TextDelta()
 
 /**
- * @typedef {Array<any>} ArrayDeltaContent
+ * @return {ArrayDelta<ArrayDeltaContent>}
  */
-
-/**
- * @template {ArrayDeltaContent} Content
- * @return {DeltaBuilder<Content>}
- */
-export const createArrayDelta = () => new DeltaBuilder()
+export const createArrayDelta = () => new ArrayDelta()

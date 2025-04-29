@@ -1,6 +1,5 @@
 import * as Y from '../src/index.js'
 import { init, compare, applyRandomTests, Doc } from './testHelper.js' // eslint-disable-line
-import * as delta from '../src/utils/Delta.js'
 import {
   compareIDs,
   noAttributionsManager,
@@ -631,22 +630,22 @@ export const testAttributedContent = _tc => {
   })
   t.group('initial value', () => {
     ymap.set('test', 42)
-    let expectedContent = { test: { prevValue: undefined, value: 42, attribution: { insert: [] } } }
-    let attributedContent = ymap.getContent(attributionManager)
+    const expectedContent = { test: { prevValue: undefined, value: 42, attribution: { insert: [] } } }
+    const attributedContent = ymap.getContent(attributionManager)
     console.log(attributedContent)
     t.compare(expectedContent, attributedContent)
   })
   t.group('overwrite value', () => {
     ymap.set('test', 'fourtytwo')
-    let expectedContent = { test: { prevValue: 42, value: 'fourtytwo', attribution: { insert: [] } } }
-    let attributedContent = ymap.getContent(attributionManager)
+    const expectedContent = { test: { prevValue: 42, value: 'fourtytwo', attribution: { insert: [] } } }
+    const attributedContent = ymap.getContent(attributionManager)
     console.log(attributedContent)
     t.compare(expectedContent, attributedContent)
   })
   t.group('delete value', () => {
     ymap.delete('test')
-    let expectedContent = { test: { prevValue: 'fourtytwo', value: undefined, attribution: { delete: [] } } }
-    let attributedContent = ymap.getContent(attributionManager)
+    const expectedContent = { test: { prevValue: 'fourtytwo', value: undefined, attribution: { delete: [] } } }
+    const attributedContent = ymap.getContent(attributionManager)
     console.log(attributedContent)
     t.compare(expectedContent, attributedContent)
   })

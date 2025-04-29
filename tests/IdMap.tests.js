@@ -1,6 +1,6 @@
 import * as t from 'lib0/testing'
 import * as idmap from '../src/utils/IdMap.js'
-import { compareIdmaps, createIdMap, ID, createRandomIdSet, createRandomIdMap, createAttribution, validateIdMap } from './testHelper.js'
+import { compareIdmaps, createIdMap, ID, createRandomIdSet, createRandomIdMap, createAttribution } from './testHelper.js'
 import * as YY from '../src/internals.js'
 
 /**

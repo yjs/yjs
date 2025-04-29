@@ -383,10 +383,25 @@ export class YXmlFragment extends AbstractType {
    * Calculate the attributed content using the attribution manager.
    *
    * @param {import('../internals.js').AbstractAttributionManager} am
-   * @return {{ children: import('../utils/Delta.js').Delta<Array<YXmlElement|YXmlText|YXmlHook>> }}
+   * @return {{ children: import('../utils/Delta.js').ArrayDelta<Array<YXmlElement|YXmlText|YXmlHook>> }}
    */
   getContent (am = noAttributionsManager) {
     const children = typeListGetContent(this, am)
+    return { children }
+  }
+
+  /**
+   * Calculate the attributed content using the attribution manager.
+   *
+   * @param {import('../internals.js').AbstractAttributionManager} am
+   * @return {{ children: import('../utils/Delta.js').ArrayDelta<Array<import('./AbstractType.js').YXmlDeepContent>> }}
+   */
+  getContentDeep (am) {
+    const { children: origChildren } = this.getContent()
+    /**
+     * @type {import('../utils/Delta.js').ArrayDelta<Array<import('./AbstractType.js').YXmlDeepContent>>}
+     */
+    const children = origChildren.map(d => /** @type {any} */ (d instanceof AbstractType ? d.getContentDeep(am) : d))
     return { children }
   }
 

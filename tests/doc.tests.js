@@ -19,7 +19,6 @@ export const testAfterTransactionRecursion = _tc => {
   }, 'test')
 }
 
-
 /**
  * @param {t.TestCase} _tc
  */
@@ -39,7 +38,7 @@ export const testFindTypeInOtherDoc = _tc => {
     const ydoc = /** @type {Y.Doc} */ (ytype.doc)
     if (ytype._item === null) {
       /**
-       * If is a root type, we need to find the root key in the original ydoc 
+       * If is a root type, we need to find the root key in the original ydoc
        * and use it to get the type in the other ydoc.
        */
       const rootKey = Array.from(ydoc.share.keys()).find(
@@ -67,7 +66,6 @@ export const testFindTypeInOtherDoc = _tc => {
   t.assert(findTypeInOtherYdoc(ymap, ydocClone) != null)
   t.assert(findTypeInOtherYdoc(ytext, ydocClone) != null)
 }
-
 
 /**
  * @param {t.TestCase} _tc

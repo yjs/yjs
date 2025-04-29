@@ -10,8 +10,7 @@ import {
   ContentAny,
   ContentBinary,
   getItemCleanStart,
-  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item,
-  createAttributionFromAttrs, // eslint-disable-line
+  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, createAttributionFromAttrs, AbstractAttributionManager, // eslint-disable-line
 } from '../internals.js'
 
 import * as delta from '../utils/Delta.js'
@@ -21,6 +20,13 @@ import * as iterator from 'lib0/iterator'
 import * as error from 'lib0/error'
 import * as math from 'lib0/math'
 import * as log from 'lib0/logging'
+
+/**
+ * @typedef {delta.ArrayDelta|delta.TextDelta|{ children: delta.ArrayDelta<Array<YXmlDeepContent>> }|{ children: delta.ArrayDelta, attributes: {[key:string]:{ value: any, prevValue: any, attribution: import('../utils/AttributionManager.js').Attribution } } }} YXmlDeepContent
+ */
+/**
+ * @typedef {delta.ArrayDelta|delta.TextDelta|{ children: delta.ArrayDelta<Array<DeepContent>> }|{ children: delta.ArrayDelta, attributes: {[key:string]:{ value: any, prevValue: any, attribution: import('../utils/AttributionManager.js').Attribution} } }} DeepContent
+ */
 
 /**
  * https://docs.yjs.dev/getting-started/working-with-shared-types#caveats
@@ -406,6 +412,22 @@ export class AbstractType {
    * @return {any}
    */
   toJSON () {}
+
+  /**
+   * @param {AbstractAttributionManager} _am
+   * @return {any}
+   */
+  getContent (_am) {
+    error.methodUnimplemented()
+  }
+
+  /**
+   * @param {AbstractAttributionManager} _am
+   * @return {DeepContent}
+   */
+  getContentDeep (_am) {
+    error.methodUnimplemented()
+  }
 }
 
 /**
@@ -476,17 +498,15 @@ export const typeListToArray = type => {
  * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
  * attribution `{ isDeleted: true, .. }`.
  *
- * @template MapType
  * @param {AbstractType<any>} type
  * @param {import('../internals.js').AbstractAttributionManager} am
- * @return {delta.Delta<Array<MapType>>} The Delta representation of this type.
  *
  * @private
  * @function
  */
 export const typeListGetContent = (type, am) => {
   type.doc ?? warnPrematureAccess()
-  const d = /** @type {delta.DeltaBuilder<Array<MapType>>} */ (delta.create())
+  const d = delta.createArrayDelta()
   /**
    * @type {Array<import('../internals.js').AttributedContent<any>>}
    */
@@ -502,7 +522,7 @@ export const typeListGetContent = (type, am) => {
       d.insert(content.getContent(), null, attribution)
     }
   }
-  return d.done()
+  return d
 }
 
 /**
@@ -1015,7 +1035,6 @@ export const typeMapGetContent = (parent, am) => {
   })
   return mapcontent
 }
-
 
 /**
  * @param {AbstractType<any>} parent

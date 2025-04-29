@@ -2316,15 +2316,15 @@ export const testAttributedContent = _tc => {
   })
   t.group('insert / delete / format', () => {
     ytext.applyDelta([{ retain: 4, attributes: { italic: true } }, { retain: 2 }, { delete: 5 }, { insert: 'attributions' }])
-    let expectedContent = delta.create().insert('Hell', { italic: true }, { attributes: { italic: [] } }).insert('o ').insert('World', {}, { delete: [] }).insert('attributions', {}, { insert: [] }).insert('!')
-    let attributedContent = ytext.getContent(attributionManager)
+    const expectedContent = delta.createTextDelta().insert('Hell', { italic: true }, { attributes: { italic: [] } }).insert('o ').insert('World', {}, { delete: [] }).insert('attributions', {}, { insert: [] }).insert('!')
+    const attributedContent = ytext.getContent(attributionManager)
     console.log(attributedContent.toJSON().ops)
     t.assert(attributedContent.equals(expectedContent))
   })
   t.group('unformat', () => {
-    ytext.applyDelta([{retain: 5, attributes: { italic: null }}])
-    let expectedContent = delta.create().insert('Hell', null, { attributes: { italic: [] } }).insert('o attributions!')
-    let attributedContent = ytext.getContent(attributionManager)
+    ytext.applyDelta([{ retain: 5, attributes: { italic: null } }])
+    const expectedContent = delta.createTextDelta().insert('Hell', null, { attributes: { italic: [] } }).insert('o attributions!')
+    const attributedContent = ytext.getContent(attributionManager)
     console.log(attributedContent.toJSON().ops)
     t.assert(attributedContent.equals(expectedContent))
   })
@@ -2355,9 +2355,9 @@ export const testAttributedDiffing = _tc => {
   // implementations is the TwosetAttributionManager
   const attributionManager = new TwosetAttributionManager(attributedInsertions, attributedDeletions)
   // we render the attributed content with the attributionManager
-  let attributedContent = ytext.getContent(attributionManager)
+  const attributedContent = ytext.getContent(attributionManager)
   console.log(JSON.stringify(attributedContent.toJSON().ops, null, 2))
-  let expectedContent = delta.create().insert('Hell', { italic: true }, { attributes: { italic: ['Bob'] } }).insert('o ').insert('World', {}, { delete: ['Bob'] }).insert('attributions', {}, { insert: ['Bob'] }).insert('!')
+  const expectedContent = delta.createTextDelta().insert('Hell', { italic: true }, { attributes: { italic: ['Bob'] } }).insert('o ').insert('World', {}, { delete: ['Bob'] }).insert('attributions', {}, { insert: ['Bob'] }).insert('!')
   t.assert(attributedContent.equals(expectedContent))
   console.log(Y.encodeIdMap(attributedInsertions).length)
 }
@@ -2588,14 +2588,14 @@ const checkResult = result => {
      */
     const typeToObject = d => d.insert instanceof Y.AbstractType ? d.insert.toJSON() : d
 
-    t.info('length of text = ' + result.users[i-1].getText('text').length)
+    t.info('length of text = ' + result.users[i - 1].getText('text').length)
     t.measureTime('original toDelta perf', () => {
-      result.users[i-1].getText('text').toDelta().map(typeToObject)
+      result.users[i - 1].getText('text').toDelta().map(typeToObject)
     })
     t.measureTime('getContent(attributionManager) performance)', () => {
-      result.users[i-1].getText('text').getContent()
+      result.users[i - 1].getText('text').getContent()
     })
-    const p1 = result.users[i-1].getText('text').toDelta().map(typeToObject)
+    const p1 = result.users[i - 1].getText('text').toDelta().map(typeToObject)
     const p2 = result.users[i].getText('text').toDelta().map(typeToObject)
     t.compare(p1, p2)
   }
@@ -2629,7 +2629,7 @@ export const testAttributionManagerDefaultPerformance = tc => {
       ytext.insert(index, content)
     }
   }
-  t.info(`number of changes: ${N/1000}k`)
+  t.info(`number of changes: ${N / 1000}k`)
   t.info(`length of text: ${ytext.length}`)
   const M = 100
   t.measureTime(`original toString perf <executed ${M} times>`, () => {
