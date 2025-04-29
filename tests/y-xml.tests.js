@@ -342,3 +342,74 @@ export const testElementAttributedContentViaDiffer = _tc => {
     })
   })
 }
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testAttributionManagerSimpleExample = _tc => {
+const ydoc = new Y.Doc()
+// create some initial content
+ydoc.getXmlFragment().insert(0, [new Y.XmlText('hello world')])
+const ydocFork = new Y.Doc()
+Y.applyUpdate(ydocFork, Y.encodeStateAsUpdate(ydoc))
+// modify the fork
+// append a span element
+ydocFork.getXmlFragment().insert(1, [new Y.XmlElement('span')])
+const ytext = /** @type {Y.XmlText} */ (ydocFork.getXmlFragment().get(0))
+// make "hello" italic
+ytext.format(0, 5, { italic: true }) 
+ytext.insert(11, '!')
+// highlight the changes
+console.log(JSON.stringify(ydocFork.getXmlFragment().getContentDeep(Y.createAttributionManagerFromDiff(ydoc, ydocFork)), null, 2))
+/* =>
+{
+  "children": {
+    "ops": [
+      {
+        "insert": [
+          {
+            "ops": [
+              {
+                "insert": "hello",
+                "attributes": {
+                  "italic": true
+                },
+                "attribution": {
+                  "attributes": {
+                    "italic": []     -- the attribute "italic" was changed
+                  }
+                }
+              },
+              {
+                "insert": " world"   -- "world" remains unchanged
+              },
+              {
+                "insert": "!",
+                "attribution": {
+                  "insert": []       -- "!" was inserted
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "insert": [
+          {
+            "nodeName": "span",
+            "children": {
+              "ops": []
+            },
+            "attributes": {}
+          }
+        ],
+        "attribution": {
+          "insert": []               -- A <span/> tag was inserted
+        }
+      }
+    ]
+  }
+}
+*/
+}
+

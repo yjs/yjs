@@ -23,6 +23,7 @@ import {
   typeListGetContent
 } from '../internals.js'
 
+import * as delta from '../utils/Delta.js'
 import * as error from 'lib0/error'
 import * as array from 'lib0/array'
 
@@ -397,11 +398,15 @@ export class YXmlFragment extends AbstractType {
    * @return {{ children: import('../utils/Delta.js').ArrayDelta<Array<import('./AbstractType.js').YXmlDeepContent>> }}
    */
   getContentDeep (am) {
-    const { children: origChildren } = this.getContent()
+    const { children: origChildren } = this.getContent(am)
     /**
      * @type {import('../utils/Delta.js').ArrayDelta<Array<import('./AbstractType.js').YXmlDeepContent>>}
      */
-    const children = origChildren.map(d => /** @type {any} */ (d instanceof AbstractType ? d.getContentDeep(am) : d))
+    const children = origChildren.map(d => /** @type {any} */ (
+      d instanceof delta.InsertOp && d.insert instanceof Array
+        ? new delta.InsertOp(d.insert.map(e => e instanceof AbstractType ? e.getContentDeep(am) : e), d.attributes, d.attribution)
+        : d
+    ))
     return { children }
   }
 
