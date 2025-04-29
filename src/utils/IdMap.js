@@ -49,7 +49,7 @@ const _hashAttribution = attr => {
  * @param {V} val
  * @return {AttributionItem<V>}
  */
-export const createAttribution = (name, val) => new AttributionItem(name, val)
+export const createAttributionItem = (name, val) => new AttributionItem(name, val)
 
 /**
  * @template T

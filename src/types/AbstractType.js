@@ -10,7 +10,7 @@ import {
   ContentAny,
   ContentBinary,
   getItemCleanStart,
-  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, createAttributionFromAttrs, AbstractAttributionManager, // eslint-disable-line
+  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, createAttributionFromAttributionItems, AbstractAttributionManager, // eslint-disable-line
 } from '../internals.js'
 
 import * as delta from '../utils/Delta.js'
@@ -518,7 +518,7 @@ export const typeListGetContent = (type, am) => {
     }
     for (let i = 0; i < cs.length; i++) {
       const { content, deleted, attrs } = cs[i]
-      const attribution = createAttributionFromAttrs(attrs, deleted)
+      const attribution = createAttributionFromAttributionItems(attrs, deleted)
       d.insert(content.getContent(), null, attribution)
     }
   }
@@ -1006,7 +1006,7 @@ export const typeMapGetContent = (parent, am) => {
     am.readContent(cs, item)
     const { deleted, attrs, content } = cs[cs.length - 1]
     const c = array.last(content.getContent())
-    const attribution = createAttributionFromAttrs(attrs, deleted)
+    const attribution = createAttributionFromAttributionItems(attrs, deleted)
     if (deleted) {
       mapcontent[key] = { prevValue: c, value: undefined, attribution }
     } else {

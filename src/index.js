@@ -104,7 +104,7 @@ export {
   createDeleteSetFromStructStore,
   IdMap,
   createIdMap,
-  createAttribution,
+  createAttributionItem,
   createInsertionSetFromStructStore,
   diffIdMap,
   diffIdSet,
@@ -112,7 +112,8 @@ export {
   encodeIdMap,
   createIdMapFromIdSet,
   TwosetAttributionManager,
-  noAttributionsManager
+  noAttributionsManager,
+  createAttributionManagerFromDiff
 } from './internals.js'
 
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'

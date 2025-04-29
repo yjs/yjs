@@ -27,7 +27,7 @@ import {
   ContentType,
   warnPrematureAccess,
   noAttributionsManager, AbstractAttributionManager, ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction, // eslint-disable-line
-  createAttributionFromAttrs
+  createAttributionFromAttributionItems
 } from '../internals.js'
 
 import * as delta from '../utils/Delta.js'
@@ -1038,7 +1038,7 @@ export class YText extends AbstractType {
       }
       for (let i = 0; i < cs.length; i++) {
         const { content, deleted, attrs } = cs[i]
-        const attribution = createAttributionFromAttrs(attrs, deleted)
+        const attribution = createAttributionFromAttributionItems(attrs, deleted)
         switch (content.constructor) {
           case ContentString: {
             d.insert(/** @type {ContentString} */ (content).str, null, attribution)
