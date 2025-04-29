@@ -436,7 +436,7 @@ export const createRandomIdMap = (gen, clients, clockRange, attrChoices) => {
         attrs.push(a)
       }
     }
-    idMap.add(client, clockStart, len, attrs.map(v => Y.createAttribution('', v)))
+    idMap.add(client, clockStart, len, attrs.map(v => Y.createAttributionItem('', v)))
   }
   t.info(`Created IdMap with ${numOfOps} ranges and ${attrChoices.length} different attributes. Encoded size: ${encodeIdMap(idMap).byteLength}`)
   return idMap

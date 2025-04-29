@@ -1,6 +1,6 @@
 import * as t from 'lib0/testing'
 import * as idmap from '../src/utils/IdMap.js'
-import { compareIdmaps, createIdMap, ID, createRandomIdSet, createRandomIdMap, createAttribution } from './testHelper.js'
+import { compareIdmaps, createIdMap, ID, createRandomIdSet, createRandomIdMap, createAttributionItem } from './testHelper.js'
 import * as YY from '../src/internals.js'
 
 /**
@@ -10,7 +10,7 @@ import * as YY from '../src/internals.js'
 const simpleConstructAttrs = ops => {
   const attrs = createIdMap()
   ops.forEach(op => {
-    attrs.add(op[0], op[1], op[2], op[3].map(v => createAttribution('', v)))
+    attrs.add(op[0], op[1], op[2], op[3].map(v => createAttributionItem('', v)))
   })
   return attrs
 }

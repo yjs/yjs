@@ -310,11 +310,11 @@ export const _diffSet = (set, exclude) => {
 }
 
 /**
- * Remove all ranges from `exclude` from `ds`. The result is a fresh IdSet containing all ranges from `idSet` that are not
+ * Remove all ranges from `exclude` from `idSet`. The result is a fresh IdSet containing all ranges from `idSet` that are not
  * in `exclude`.
  *
  * @template {IdSet} Set
- * @param {Set} set
+ * @param {Set} idSet
  * @param {IdSet | IdMap<any>} exclude
  * @return {Set}
  */

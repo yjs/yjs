@@ -254,7 +254,7 @@ export class YXmlElement extends YXmlFragment {
   getContent (am = noAttributionsManager) {
     const attributes = typeMapGetContent(this, am)
     const { children } = super.getContent(am)
-    return { children, attributes }
+    return { nodeName: this.nodeName, children, attributes }
   }
 
   /**
