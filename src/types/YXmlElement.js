@@ -13,8 +13,10 @@ import {
   YXmlElementRefID,
   typeMapGetContent,
   noAttributionsManager,
-  Snapshot, YXmlText, ContentType, AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item, // eslint-disable-line
+  AbstractAttributionManager, Snapshot, YXmlText, ContentType, AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item, // eslint-disable-line
 } from '../internals.js'
+
+import * as delta from '../utils/Delta.js'
 
 /**
  * @typedef {Object|number|null|Array<any>|string|Uint8Array|AbstractType<any>} ValueTypes
@@ -206,6 +208,36 @@ export class YXmlElement extends YXmlFragment {
    */
   getAttributes (snapshot) {
     return /** @type {any} */ (snapshot ? typeMapGetAllSnapshot(this, snapshot) : typeMapGetAll(this))
+  }
+
+  /**
+   * Render the difference to another ydoc (which can be empty) and highlight the differences with
+   * attributions.
+   *
+   * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
+   * attribution `{ isDeleted: true, .. }`.
+   *
+   * @param {AbstractAttributionManager} am
+   * @return {{ nodeName: string, children: delta.ArrayDelta<Array<import('./AbstractType.js').DeepContent>>, attributes: import('./AbstractType.js').MapAttributedContent<any> }}
+   *
+   * @public
+   */
+  getContentDeep (am = noAttributionsManager) {
+    const { children: origChildren, attributes: origAttributes } = this.getContent(am)
+    const children = origChildren.map(d => /** @type {any} */ (
+      (d instanceof delta.InsertOp && d.insert instanceof Array)
+        ? new delta.InsertOp(d.insert.map(e => e instanceof AbstractType ? /** @type {delta.ArrayDelta<Array<any>>} */ (e.getContentDeep(am)) : e), d.attributes, d.attribution)
+        : d
+    ))
+    /**
+     * @todo there is a Attributes type and a DeepAttributes type.
+     * @type {import('./AbstractType.js').MapAttributedContent<any>}
+     */
+    const attributes = {}
+    object.forEach(origAttributes, (v, key) => {
+      attributes[key] = Object.assign({}, v, { value: v.value instanceof AbstractType ? v.value.getContentDeep(am) : v.value })
+    })
+    return { nodeName: this.nodeName, children, attributes }
   }
 
   /**

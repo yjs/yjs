@@ -414,7 +414,6 @@ export const createInsertionSetFromStructStore = ss => {
   return idset
 }
 
-
 /**
  * @param {IdSetEncoderV1 | IdSetEncoderV2} encoder
  * @param {IdSet} idSet

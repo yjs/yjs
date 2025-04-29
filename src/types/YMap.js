@@ -13,13 +13,11 @@ import {
   YMapRefID,
   callTypeObservers,
   transact,
+  typeMapGetContent,
   warnPrematureAccess,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item, // eslint-disable-line
-  createAttributionFromAttrs,
-  typeMapGetContent
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 
-import * as array from 'lib0/array'
 import * as iterator from 'lib0/iterator'
 
 /**

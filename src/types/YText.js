@@ -1000,7 +1000,27 @@ export class YText extends AbstractType {
    * attribution `{ isDeleted: true, .. }`.
    *
    * @param {AbstractAttributionManager} am
-   * @return {import('../utils/Delta.js').Delta<import('../utils/Delta.js').TextDeltaContent>} The Delta representation of this type.
+   * @return {import('../utils/Delta.js').TextDelta<string | import('./AbstractType.js').DeepContent >} The Delta representation of this type.
+   *
+   * @public
+   */
+  getContentDeep (am = noAttributionsManager) {
+    return this.getContent(am).map(d =>
+      d instanceof delta.InsertOp && d.insert instanceof AbstractType
+        ? new delta.InsertOp(d.insert.getContent(am), d.attributes, d.attribution)
+        : d
+    )
+  }
+
+  /**
+   * Render the difference to another ydoc (which can be empty) and highlight the differences with
+   * attributions.
+   *
+   * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
+   * attribution `{ isDeleted: true, .. }`.
+   *
+   * @param {AbstractAttributionManager} am
+   * @return {import('../utils/Delta.js').TextDelta} The Delta representation of this type.
    *
    * @public
    */
@@ -1068,7 +1088,7 @@ export class YText extends AbstractType {
         }
       }
     }
-    return d.done()
+    return d
   }
 
   /**
