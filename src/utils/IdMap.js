@@ -2,6 +2,7 @@ import {
   _diffSet,
   findIndexInIdRanges,
   findRangeStartInIdRanges,
+  _deleteRangeFromIdSet,
   DSDecoderV1, DSDecoderV2,  IdSetEncoderV1, IdSetEncoderV2, IdSet, ID // eslint-disable-line
 } from '../internals.js'
 
@@ -319,10 +320,19 @@ export class IdMap {
    * @param {ID} id
    * @return {boolean}
    */
-  has (id) {
-    const dr = this.clients.get(id.client)
+  hasId (id) {
+    return this.has(id.client, id.clock)
+  }
+
+  /**
+   * @param {number} client
+   * @param {number} clock
+   * @return {boolean}
+   */
+  has (client, clock) {
+    const dr = this.clients.get(client)
     if (dr) {
-      return findIndexInIdRanges(dr.getIds(), id.clock) !== null
+      return findIndexInIdRanges(dr.getIds(), clock) !== null
     }
     return false
   }
@@ -394,6 +404,15 @@ export class IdMap {
     } else {
       ranges.add(clock, len, attrs)
     }
+  }
+
+  /**
+   * @param {number} client
+   * @param {number} clock
+   * @param {number} len
+   */
+  delete (client, clock, len) {
+    _deleteRangeFromIdSet(this, client, clock, len)
   }
 }
 

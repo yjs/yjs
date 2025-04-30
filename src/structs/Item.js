@@ -124,7 +124,7 @@ export const splitItem = (transaction, leftItem, diff) => {
  * @param {Array<StackItem>} stack
  * @param {ID} id
  */
-const isDeletedByUndoStack = (stack, id) => array.some(stack, /** @param {StackItem} s */ s => s.deletions.has(id))
+const isDeletedByUndoStack = (stack, id) => array.some(stack, /** @param {StackItem} s */ s => s.deletions.hasId(id))
 
 /**
  * Redoes the effect of this operation.
@@ -210,7 +210,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
       left = item
       // Iterate right while right is in itemsToDelete
       // If it is intended to delete right while item is redone, we can expect that item should replace right.
-      while (left !== null && left.right !== null && (left.right.redone || itemsToDelete.has(left.right.id) || isDeletedByUndoStack(um.undoStack, left.right.id) || isDeletedByUndoStack(um.redoStack, left.right.id))) {
+      while (left !== null && left.right !== null && (left.right.redone || itemsToDelete.hasId(left.right.id) || isDeletedByUndoStack(um.undoStack, left.right.id) || isDeletedByUndoStack(um.redoStack, left.right.id))) {
         left = left.right
         // follow redone
         while (left.redone) left = getItemCleanStart(transaction, left.redone)

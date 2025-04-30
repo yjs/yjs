@@ -1,5 +1,7 @@
 import * as t from 'lib0/testing'
 import * as d from '../src/utils/IdSet.js'
+import * as math from 'lib0/math'
+import * as prng from 'lib0/prng'
 import { compareIdSets, createRandomIdSet, ID } from './testHelper.js'
 
 /**
@@ -156,6 +158,26 @@ export const testRepeatRandomDiffing = tc => {
 /**
  * @param {t.TestCase} tc
  */
+export const testRepeatRandomDeletes = tc => {
+  const clients = 1
+  const clockRange = 100
+  const idset = createRandomIdSet(tc.prng, clients, clockRange)
+  const client = Array.from(idset.clients.keys())[0]
+  const clock = prng.int31(tc.prng, 0, clockRange)
+  const len = prng.int31(tc.prng, 0, math.round((clockRange - clock) * 1.2)) // allow exceeding range to cover more edge cases
+  const idsetOfDeletes = d.createIdSet()
+  idsetOfDeletes.add(client, clock, len)
+  const diffed = d.diffIdSet(idset, idsetOfDeletes)
+  idset.delete(client, clock, len)
+  for (let i = 0; i < len; i++) {
+    t.assert(!idset.has(client, clock + i))
+  }
+  compareIdSets(idset, diffed)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
 export const testRepeatMergingMultipleIdsets = tc => {
   const clients = 4
   const clockRange = 100
@@ -172,8 +194,8 @@ export const testRepeatMergingMultipleIdsets = tc => {
   const composed = d.createIdSet()
   for (let iclient = 0; iclient < clients; iclient++) {
     for (let iclock = 0; iclock < clockRange + 42; iclock++) {
-      const mergedHas = merged.has(new ID(iclient, iclock))
-      const oneHas = idss.some(ids => ids.has(new ID(iclient, iclock)))
+      const mergedHas = merged.hasId(new ID(iclient, iclock))
+      const oneHas = idss.some(ids => ids.hasId(new ID(iclient, iclock)))
       t.assert(mergedHas === oneHas)
       if (oneHas) {
         d.addToIdSet(composed, iclient, iclock, 1)

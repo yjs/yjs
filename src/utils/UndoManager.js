@@ -89,7 +89,7 @@ const popStackItem = (undoManager, stack, eventType) => {
           struct instanceof Item &&
           scope.some(type => type === transaction.doc || isParentOf(/** @type {AbstractType<any>} */ (type), struct)) &&
           // Never redo structs in stackItem.insertions because they were created and deleted in the same capture interval.
-          !stackItem.insertions.has(struct.id)
+          !stackItem.insertions.hasId(struct.id)
         ) {
           itemsToRedo.add(struct)
         }

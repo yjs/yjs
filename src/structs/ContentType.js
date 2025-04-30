@@ -107,7 +107,7 @@ export class ContentType {
     while (item !== null) {
       if (!item.deleted) {
         item.delete(transaction)
-      } else if (!transaction.insertSet.has(item.id)) {
+      } else if (!transaction.insertSet.hasId(item.id)) {
         // This will be gc'd later and we want to merge it if possible
         // We try to merge all deleted items after each transaction,
         // but we have no knowledge about that this needs to be merged
@@ -119,7 +119,7 @@ export class ContentType {
     this.type._map.forEach(item => {
       if (!item.deleted) {
         item.delete(transaction)
-      } else if (!transaction.insertSet.has(item.id)) {
+      } else if (!transaction.insertSet.hasId(item.id)) {
         // same as above
         transaction._mergeStructs.push(item)
       }

@@ -1,6 +1,8 @@
 import * as t from 'lib0/testing'
 import * as idmap from '../src/utils/IdMap.js'
-import { compareIdmaps, createIdMap, ID, createRandomIdSet, createRandomIdMap, createAttributionItem } from './testHelper.js'
+import * as prng from 'lib0/prng'
+import * as math from 'lib0/math'
+import { compareIdmaps as compareIdMaps, createIdMap, ID, createRandomIdSet, createRandomIdMap, createAttributionItem } from './testHelper.js'
 import * as YY from '../src/internals.js'
 
 /**
@@ -21,49 +23,49 @@ const simpleConstructAttrs = ops => {
 export const testAmMerge = _tc => {
   const attrs = [42]
   t.group('filter out empty items (1))', () => {
-    compareIdmaps(
+    compareIdMaps(
       simpleConstructAttrs([[0, 1, 0, attrs]]),
       simpleConstructAttrs([])
     )
   })
   t.group('filter out empty items (2))', () => {
-    compareIdmaps(
+    compareIdMaps(
       simpleConstructAttrs([[0, 1, 0, attrs], [0, 2, 0, attrs]]),
       simpleConstructAttrs([])
     )
   })
   t.group('filter out empty items (3 - end))', () => {
-    compareIdmaps(
+    compareIdMaps(
       simpleConstructAttrs([[0, 1, 1, attrs], [0, 2, 0, attrs]]),
       simpleConstructAttrs([[0, 1, 1, attrs]])
     )
   })
   t.group('filter out empty items (4 - middle))', () => {
-    compareIdmaps(
+    compareIdMaps(
       simpleConstructAttrs([[0, 1, 1, attrs], [0, 2, 0, attrs], [0, 3, 1, attrs]]),
       simpleConstructAttrs([[0, 1, 1, attrs], [0, 3, 1, attrs]])
     )
   })
   t.group('filter out empty items (5 - beginning))', () => {
-    compareIdmaps(
+    compareIdMaps(
       simpleConstructAttrs([[0, 1, 0, attrs], [0, 2, 1, attrs], [0, 3, 1, attrs]]),
       simpleConstructAttrs([[0, 2, 1, attrs], [0, 3, 1, attrs]])
     )
   })
   t.group('merge of overlapping id ranges', () => {
-    compareIdmaps(
+    compareIdMaps(
       simpleConstructAttrs([[0, 1, 2, attrs], [0, 0, 2, attrs]]),
       simpleConstructAttrs([[0, 0, 3, attrs]])
     )
   })
   t.group('construct without hole', () => {
-    compareIdmaps(
+    compareIdMaps(
       simpleConstructAttrs([[0, 1, 2, attrs], [0, 3, 1, attrs]]),
       simpleConstructAttrs([[0, 1, 3, attrs]])
     )
   })
   t.group('no merge of overlapping id ranges with different attributes', () => {
-    compareIdmaps(
+    compareIdMaps(
       simpleConstructAttrs([[0, 1, 2, [1]], [0, 0, 2, [2]]]),
       simpleConstructAttrs([[0, 0, 1, [2]], [0, 1, 1, [1, 2]], [0, 2, 1, [1]]])
     )
@@ -85,12 +87,12 @@ export const testRepeatMergingMultipleIdMaps = tc => {
   }
   const merged = idmap.mergeIdMaps(sets)
   const mergedReverse = idmap.mergeIdMaps(sets.reverse())
-  compareIdmaps(merged, mergedReverse)
+  compareIdMaps(merged, mergedReverse)
   const composed = idmap.createIdMap()
   for (let iclient = 0; iclient < clients; iclient++) {
     for (let iclock = 0; iclock < clockRange + 42; iclock++) {
-      const mergedHas = merged.has(new ID(iclient, iclock))
-      const oneHas = sets.some(ids => ids.has(new ID(iclient, iclock)))
+      const mergedHas = merged.hasId(new ID(iclient, iclock))
+      const oneHas = sets.some(ids => ids.hasId(new ID(iclient, iclock)))
       t.assert(mergedHas === oneHas)
       const mergedAttrs = merged.slice(new ID(iclient, iclock), 1)
       mergedAttrs.forEach(a => {
@@ -100,7 +102,7 @@ export const testRepeatMergingMultipleIdMaps = tc => {
       })
     }
   }
-  compareIdmaps(merged, composed)
+  compareIdMaps(merged, composed)
 }
 
 /**
@@ -115,9 +117,9 @@ export const testRepeatRandomDiffing = tc => {
   const merged = idmap.mergeIdMaps([idset1, idset2])
   const e1 = idmap.diffIdMap(idset1, idset2)
   const e2 = idmap.diffIdMap(merged, idset2)
-  compareIdmaps(e1, e2)
+  compareIdMaps(e1, e2)
   const copy = YY.decodeIdMap(YY.encodeIdMap(e1))
-  compareIdmaps(e1, copy)
+  compareIdMaps(e1, copy)
 }
 
 /**
@@ -135,7 +137,27 @@ export const testRepeatRandomDiffing2 = tc => {
   const e1 = idmap.diffIdMap(idmap1, idsExclude)
   const e2 = idmap.diffIdMap(idmap2, idsExclude)
   const excludedMerged = idmap.mergeIdMaps([e1, e2])
-  compareIdmaps(mergedExcluded, excludedMerged)
+  compareIdMaps(mergedExcluded, excludedMerged)
   const copy = YY.decodeIdMap(YY.encodeIdMap(mergedExcluded))
-  compareIdmaps(mergedExcluded, copy)
+  compareIdMaps(mergedExcluded, copy)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testRepeatRandomDeletes = tc => {
+  const clients = 1
+  const clockRange = 100
+  const idset = createRandomIdMap(tc.prng, clients, clockRange, [])
+  const client = Array.from(idset.clients.keys())[0]
+  const clock = prng.int31(tc.prng, 0, clockRange)
+  const len = prng.int31(tc.prng, 0, math.round((clockRange - clock) * 1.2)) // allow exceeding range to cover more edge cases
+  const idsetOfDeletes = idmap.createIdMap()
+  idsetOfDeletes.add(client, clock, len, [])
+  const diffed = idmap.diffIdMap(idset, idsetOfDeletes)
+  idset.delete(client, clock, len)
+  for (let i = 0; i < len; i++) {
+    t.assert(!idset.has(client, clock + i))
+  }
+  compareIdMaps(idset, diffed)
 }

@@ -113,12 +113,70 @@ export class IdSet {
    * @param {ID} id
    * @return {boolean}
    */
-  has (id) {
-    const dr = this.clients.get(id.client)
+  hasId (id) {
+    return this.has(id.client, id.clock)
+  }
+
+  /**
+   * @param {number} client
+   * @param {number} clock
+   */
+  has (client, clock) {
+    const dr = this.clients.get(client)
     if (dr) {
-      return findIndexInIdRanges(dr.getIds(), id.clock) !== null
+      return findIndexInIdRanges(dr.getIds(), clock) !== null
     }
     return false
+  }
+
+  /**
+   * @param {number} client
+   * @param {number} clock
+   * @param {number} len
+   */
+  add (client, clock, len) {
+    addToIdSet(this, client, clock, len)
+  }
+
+  /**
+   * @param {number} client
+   * @param {number} clock
+   * @param {number} len
+   */
+  delete (client, clock, len) {
+    _deleteRangeFromIdSet(this, client, clock, len)
+  }
+}
+
+/**
+ * @param {IdSet | IdMap<any>} set
+ * @param {number} client
+ * @param {number} clock
+ * @param {number} len
+ */
+export const _deleteRangeFromIdSet = (set, client, clock, len) => {
+  const dr = set.clients.get(client)
+  if (dr && len > 0) {
+    const ids = dr.getIds()
+    let index = findRangeStartInIdRanges(ids, clock)
+    if (index != null) {
+      for (let r = ids[index]; index < ids.length && r.clock < clock + len; r = ids[++index]) {
+        if (r.clock < clock) {
+          ids[index] = r.copyWith(r.clock, clock-r.clock)
+          if (clock + len < r.clock + r.len) {
+            ids.splice(index + 1, 0, r.copyWith(clock + len, r.clock + r.len - clock - len))
+          }
+        } else if (clock + len < r.clock + r.len) {
+          // need to retain end
+          ids[index] = r.copyWith(clock + len , r.clock + r.len - clock - len)
+        } else if (ids.length === 1) {
+          set.clients.delete(client)
+          return
+        } else {
+          ids.splice(index--, 1)
+        }
+      }
+    }
   }
 }
 
