@@ -3,7 +3,8 @@ import {
   findIndexInIdRanges,
   findRangeStartInIdRanges,
   _deleteRangeFromIdSet,
-  DSDecoderV1, DSDecoderV2,  IdSetEncoderV1, IdSetEncoderV2, IdSet, ID // eslint-disable-line
+  DSDecoderV1, DSDecoderV2,  IdSetEncoderV1, IdSetEncoderV2, IdSet, ID, // eslint-disable-line
+  _insertIntoIdSet
 } from '../internals.js'
 
 import * as array from 'lib0/array'
@@ -137,6 +138,10 @@ export class AttrRanges {
      * @private
      */
     this._ids = ids
+  }
+
+  copy () {
+    return new AttrRanges(this._ids.slice())
   }
 
   /**
@@ -571,6 +576,13 @@ const _ensureAttrs = (idmap, attrs) => attrs.map(attr =>
     }))
 
 export const createIdMap = () => new IdMap()
+
+/**
+ * @template T
+ * @param {IdMap<T>} dest
+ * @param {IdMap<T>} src
+ */
+export const insertIntoIdMap = _insertIntoIdSet
 
 /**
  * Remove all ranges from `exclude` from `ds`. The result is a fresh IdMap containing all ranges from `idSet` that are not

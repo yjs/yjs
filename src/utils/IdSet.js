@@ -51,6 +51,10 @@ class IdRanges {
     this._ids = ids
   }
 
+  copy () {
+    return new IdRanges(this._ids.slice())
+  }
+
   /**
    * @param {number} clock
    * @param {number} length
@@ -162,13 +166,13 @@ export const _deleteRangeFromIdSet = (set, client, clock, len) => {
     if (index != null) {
       for (let r = ids[index]; index < ids.length && r.clock < clock + len; r = ids[++index]) {
         if (r.clock < clock) {
-          ids[index] = r.copyWith(r.clock, clock-r.clock)
+          ids[index] = r.copyWith(r.clock, clock - r.clock)
           if (clock + len < r.clock + r.len) {
             ids.splice(index + 1, 0, r.copyWith(clock + len, r.clock + r.len - clock - len))
           }
         } else if (clock + len < r.clock + r.len) {
           // need to retain end
-          ids[index] = r.copyWith(clock + len , r.clock + r.len - clock - len)
+          ids[index] = r.copyWith(clock + len, r.clock + r.len - clock - len)
         } else if (ids.length === 1) {
           set.clients.delete(client)
           return
@@ -283,22 +287,29 @@ export const mergeIdSets = idSets => {
 }
 
 /**
- * @param {IdSet} dest
- * @param {IdSet} src
+ * @template {IdSet | IdMap<any>} S
+ * @param {S} dest
+ * @param {S} src
  */
-export const insertIntoIdSet = (dest, src) => {
+export const _insertIntoIdSet = (dest, src) => {
   src.clients.forEach((srcRanges, client) => {
     const targetRanges = dest.clients.get(client)
     if (targetRanges) {
       array.appendTo(targetRanges.getIds(), srcRanges.getIds())
       targetRanges.sorted = false
     } else {
-      const res = new IdRanges(srcRanges.getIds().slice())
+      const res = srcRanges.copy()
       res.sorted = true
-      dest.clients.set(client, res)
+      dest.clients.set(client, /** @type {any} */ (res))
     }
   })
 }
+
+/**
+ * @param {IdSet} dest
+ * @param {IdSet} src
+ */
+export const insertIntoIdSet = _insertIntoIdSet
 
 /**
  * Remove all ranges from `exclude` from `ds`. The result is a fresh IdSet containing all ranges from `idSet` that are not
@@ -373,10 +384,7 @@ export const _diffSet = (set, exclude) => {
  * Remove all ranges from `exclude` from `idSet`. The result is a fresh IdSet containing all ranges from `idSet` that are not
  * in `exclude`.
  *
- * @template {IdSet} Set
- * @param {Set} idSet
- * @param {IdSet | IdMap<any>} exclude
- * @return {Set}
+ * @type {(idSet: IdSet, exclude: IdSet|IdMap<any>) => IdSet}
  */
 export const diffIdSet = _diffSet
 
