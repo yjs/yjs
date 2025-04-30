@@ -5,8 +5,7 @@ import {
   createDeleteSetFromStructStore,
   createIdMapFromIdSet,
   ContentDeleted,
-  Doc, Item, AbstractContent, IdMap, // eslint-disable-line
-  findIndexCleanStart
+  Doc, Item, AbstractContent, IdMap // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -192,8 +191,6 @@ export class DiffAttributionManager {
     })
   }
 }
-
-
 
 /**
  * Attribute changes from ydoc1 to ydoc2.
