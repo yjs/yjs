@@ -5,7 +5,10 @@ import {
   createDeleteSetFromStructStore,
   createIdMapFromIdSet,
   ContentDeleted,
-  Doc, Item, AbstractContent, IdMap // eslint-disable-line
+  Doc, Item, AbstractContent, IdMap, // eslint-disable-line
+  insertIntoIdMap,
+  insertIntoIdSet,
+  diffIdMap
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -146,16 +149,46 @@ export const noAttributionsManager = new NoAttributionsManager()
  */
 export class DiffAttributionManager {
   /**
-   * @param {IdMap<any>} inserts
-   * @param {IdMap<any>} deletes
    * @param {Doc} prevDoc
    * @param {Doc} nextDoc
    */
-  constructor (inserts, deletes, prevDoc, nextDoc) {
-    this.inserts = inserts
-    this.deletes = deletes
+  constructor (prevDoc, nextDoc) {
+    const nextDocInserts = createInsertionSetFromStructStore(nextDoc.store)
+    const prevDocInserts = createInsertionSetFromStructStore(prevDoc.store)
+    const nextDocDeletes = createDeleteSetFromStructStore(nextDoc.store)
+    const prevDocDeletes = createDeleteSetFromStructStore(prevDoc.store)
+    this.inserts = createIdMapFromIdSet(diffIdSet(nextDocInserts, prevDocInserts), [])
+    this.deletes = createIdMapFromIdSet(diffIdSet(nextDocDeletes, prevDocDeletes), [])
+
+    this._prevDoc = prevDoc
     this._prevDocStore = prevDoc.store
     this._nextDoc = nextDoc
+    // update before observer calls fired
+    this._nextBOH = nextDoc.on('beforeObserverCalls', tr => {
+      // update inserts
+      insertIntoIdSet(nextDocInserts, tr.insertSet)
+      const diffInserts = diffIdSet(tr.insertSet, prevDocInserts)
+      insertIntoIdMap(this.inserts, createIdMapFromIdSet(diffInserts, []))
+      // update deletes
+      insertIntoIdSet(nextDocDeletes, tr.deleteSet)
+      const diffDeletes = diffIdSet(tr.deleteSet, prevDocDeletes)
+      insertIntoIdMap(this.deletes, createIdMapFromIdSet(diffDeletes, []))
+      // @todo fire update ranges on `diffInserts` and `diffDeletes`
+    })
+    this._prevBOH = prevDoc.on('beforeObserverCalls', tr => {
+      this.inserts = diffIdMap(this.inserts, tr.insertSet)
+      this.deletes = diffIdMap(this.deletes, tr.deleteSet)
+      // @todo fire update ranges on `tr.insertSet` and `tr.deleteSet`
+    })
+    this._destroyHandler = nextDoc.on('destroy', this.destroy.bind(this))
+    prevDoc.on('destroy', this._destroyHandler)
+  }
+
+  destroy () {
+    this._nextDoc.off('destroy', this._destroyHandler)
+    this._prevDoc.off('destroy', this._destroyHandler)
+    this._nextDoc.off('beforeObserverCalls', this._nextBOH)
+    this._prevDoc.off('beforeObserverCalls', this._prevBOH)
   }
 
   /**
@@ -198,11 +231,4 @@ export class DiffAttributionManager {
  * @param {Doc} prevDoc
  * @param {Doc} nextDoc
  */
-export const createAttributionManagerFromDiff = (prevDoc, nextDoc) => {
-  const inserts = diffIdSet(createInsertionSetFromStructStore(nextDoc.store), createInsertionSetFromStructStore(prevDoc.store))
-  const deletes = diffIdSet(createDeleteSetFromStructStore(nextDoc.store), createDeleteSetFromStructStore(prevDoc.store))
-  const insertMap = createIdMapFromIdSet(inserts, [])
-  const deleteMap = createIdMapFromIdSet(deletes, [])
-  // @todo, get deletes from the older doc
-  return new DiffAttributionManager(insertMap, deleteMap, prevDoc, nextDoc)
-}
+export const createAttributionManagerFromDiff = (prevDoc, nextDoc) => new DiffAttributionManager(prevDoc, nextDoc)
