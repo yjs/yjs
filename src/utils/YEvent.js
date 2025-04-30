@@ -77,7 +77,7 @@ export class YEvent {
    * @return {boolean}
    */
   deletes (struct) {
-    return this.transaction.deleteSet.has(struct.id)
+    return this.transaction.deleteSet.hasId(struct.id)
   }
 
   /**
@@ -157,7 +157,7 @@ export class YEvent {
    * @return {boolean}
    */
   adds (struct) {
-    return this.transaction.insertSet.has(struct.id)
+    return this.transaction.insertSet.hasId(struct.id)
   }
 
   /**

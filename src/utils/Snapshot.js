@@ -117,7 +117,7 @@ export const snapshot = doc => createSnapshot(createDeleteSetFromStructStore(doc
  */
 export const isVisible = (item, snapshot) => snapshot === undefined
   ? !item.deleted
-  : snapshot.sv.has(item.id.client) && (snapshot.sv.get(item.id.client) || 0) > item.id.clock && !snapshot.ds.has(item.id)
+  : snapshot.sv.has(item.id.client) && (snapshot.sv.get(item.id.client) || 0) > item.id.clock && !snapshot.ds.hasId(item.id)
 
 /**
  * @param {Transaction} transaction
