@@ -59,32 +59,6 @@
         "real-time",
         "web-development"
       ]
-    },
-    {
-      "guid": "y-crdt",
-      "name": "Y-CRDT",
-      "description": "Rust implementation of Yjs with many bindings to other languages (C#, Python, Cffi, Wasm, Swift, ..)",
-      "webpageUrl": {
-        "url": "https://github.com/y-crdt/y-crdt",
-        "wellKnown": "https://github.com/y-crdt/y-crdt/blob/main/.well-known/funding-manifest-urls"
-      },
-      "repositoryUrl": {
-        "url": "https://github.com/y-crdt/y-crdt",
-        "wellKnown": "https://github.com/y-crdt/y-crdt/blob/main/.well-known/funding-manifest-urls"
-      },
-      "licenses": [
-        "spdx:MIT"
-      ],
-      "tags": [
-        "privacy",
-        "collaboration",
-        "p2p",
-        "CRDT",
-        "rich-text",
-        "real-time",
-        "web-development"
-      ]
-
     }
   ],
   "funding": {
@@ -100,12 +74,6 @@
         "type": "payment-provider",
         "address": "https://opencollective.com/y-collective/projects/yjs",
         "description": "For funding Yjs via the OpenCollective."
-      },
-      {
-        "guid": "ycrdt-opencollective",
-        "type": "payment-provider",
-        "address": "https://opencollective.com/y-collective/projects/y-crdt",
-        "description": "For funding Y-CRDT via the OpenCollective."
       }
     ],
     "plans": [
