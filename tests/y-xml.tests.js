@@ -307,7 +307,6 @@ export const testElementAttributedContentViaDiffer = _tc => {
   const ydoc = new Y.Doc()
   Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(ydocV1))
   const yelement = ydoc.getXmlElement('p')
-  const elem1 = yelement.get(0) // new Y.XmlText('hello')
   const elem2 = yelement.get(1) // new Y.XmlElement('span')
   const elem3 = new Y.XmlText('world')
   t.group('insert / delete', () => {
@@ -347,20 +346,20 @@ export const testElementAttributedContentViaDiffer = _tc => {
  * @param {t.TestCase} _tc
  */
 export const testAttributionManagerSimpleExample = _tc => {
-const ydoc = new Y.Doc()
-// create some initial content
-ydoc.getXmlFragment().insert(0, [new Y.XmlText('hello world')])
-const ydocFork = new Y.Doc()
-Y.applyUpdate(ydocFork, Y.encodeStateAsUpdate(ydoc))
-// modify the fork
-// append a span element
-ydocFork.getXmlFragment().insert(1, [new Y.XmlElement('span')])
-const ytext = /** @type {Y.XmlText} */ (ydocFork.getXmlFragment().get(0))
-// make "hello" italic
-ytext.format(0, 5, { italic: true }) 
-ytext.insert(11, '!')
-// highlight the changes
-console.log(JSON.stringify(ydocFork.getXmlFragment().getContentDeep(Y.createAttributionManagerFromDiff(ydoc, ydocFork)), null, 2))
+  const ydoc = new Y.Doc()
+  // create some initial content
+  ydoc.getXmlFragment().insert(0, [new Y.XmlText('hello world')])
+  const ydocFork = new Y.Doc()
+  Y.applyUpdate(ydocFork, Y.encodeStateAsUpdate(ydoc))
+  // modify the fork
+  // append a span element
+  ydocFork.getXmlFragment().insert(1, [new Y.XmlElement('span')])
+  const ytext = /** @type {Y.XmlText} */ (ydocFork.getXmlFragment().get(0))
+  // make "hello" italic
+  ytext.format(0, 5, { italic: true })
+  ytext.insert(11, '!')
+  // highlight the changes
+  console.log(JSON.stringify(ydocFork.getXmlFragment().getContentDeep(Y.createAttributionManagerFromDiff(ydoc, ydocFork)), null, 2))
 /* =>
 {
   "children": {
@@ -412,4 +411,3 @@ console.log(JSON.stringify(ydocFork.getXmlFragment().getContentDeep(Y.createAttr
 }
 */
 }
-
