@@ -113,7 +113,9 @@ export {
   createIdMapFromIdSet,
   TwosetAttributionManager,
   noAttributionsManager,
-  createAttributionManagerFromDiff
+  iterateStructsByIdSet,
+  createAttributionManagerFromDiff,
+  createIdSet
 } from './internals.js'
 
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'
