@@ -114,6 +114,17 @@ export class IdSet {
   }
 
   /**
+   * @param {(idrange:IdRange, client:number) => void} f
+   */
+  forEach (f) {
+    this.clients.forEach((ranges, client) => {
+      ranges.getIds().forEach((range) => {
+        f(range, client)
+      })
+    })
+  }
+
+  /**
    * @param {ID} id
    * @return {boolean}
    */

@@ -175,8 +175,20 @@ export class DiffAttributionManager {
     this._prevBOH = prevDoc.on('beforeObserverCalls', tr => {
       insertIntoIdSet(_prevDocInserts, tr.insertSet)
       insertIntoIdSet(prevDocDeletes, tr.deleteSet)
-      this.inserts = diffIdMap(this.inserts, tr.insertSet)
-      this.deletes = diffIdMap(this.deletes, tr.deleteSet)
+      if (tr.insertSet.clients.size < 2) {
+        tr.insertSet.forEach((idrange, client) => {
+          this.inserts.delete(client, idrange.clock, idrange.len)
+        })
+      } else {
+        this.inserts = diffIdMap(this.inserts, tr.insertSet)
+      }
+      if (tr.deleteSet.clients.size < 2) {
+        tr.deleteSet.forEach((attrRange, client) => {
+          this.deletes.delete(client, attrRange.clock, attrRange.len)
+        })
+      } else {
+        this.deletes = diffIdMap(this.deletes, tr.deleteSet)
+      }
       // @todo fire update ranges on `tr.insertSet` and `tr.deleteSet`
     })
     this._destroyHandler = nextDoc.on('destroy', this.destroy.bind(this))
