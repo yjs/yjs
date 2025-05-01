@@ -247,14 +247,14 @@ export class Doc extends ObservableV2 {
   }
 
   /**
-   * @template T
+   * @template {import("../internals.js").SerializableValue} T
    * @param {string} [name]
    * @return {YArray<T>}
    *
    * @public
    */
   getArray (name = '') {
-    return /** @type {YArray<T>} */ (this.get(name, YArray))
+    return /** @type {YArray<T>} */ /** @type {any} */ (this.get(name, YArray))
   }
 
   /**
@@ -268,14 +268,14 @@ export class Doc extends ObservableV2 {
   }
 
   /**
-   * @template T
+   * @template {Record<string, import("../internals.js").SerializableValue>} T
    * @param {string} [name]
    * @return {YMap<T>}
    *
    * @public
    */
   getMap (name = '') {
-    return /** @type {YMap<T>} */ (this.get(name, YMap))
+    return /** @type {YMap<T>} */ /** @type {any} */ (this.get(name, YMap))
   }
 
   /**
