@@ -11,7 +11,7 @@ export default [{
     entryFileNames: '[name].cjs',
     sourcemap: true
   },
-  external: id => /^(lib0|y-protocols)\//.test(id)
+  external: id => /^(lib0|@y)\//.test(id)
 }, {
   // esm output
   input: {
@@ -25,5 +25,5 @@ export default [{
     entryFileNames: '[name].mjs',
     sourcemap: true
   },
-  external: id => /^(lib0|y-protocols)\//.test(id)
+  external: id => /^(lib0|@y)\//.test(id)
 }]

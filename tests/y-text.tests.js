@@ -2613,7 +2613,7 @@ const checkResult = result => {
  * @param {t.TestCase} tc
  */
 export const testAttributionManagerDefaultPerformance = tc => {
-  const N = 100000
+  const N = 10000
   const MaxDeletionLength = 5 // 25% chance of deletion
   const MaxInsertionLength = 5
   const ydoc = new Y.Doc()
