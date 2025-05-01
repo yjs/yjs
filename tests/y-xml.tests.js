@@ -380,9 +380,11 @@ export const testElementAttributedContentViaDiffer = _tc => {
  */
 export const testAttributionManagerSimpleExample = _tc => {
   const ydoc = new Y.Doc()
+  ydoc.clientID = 0
   // create some initial content
   ydoc.getXmlFragment().insert(0, [new Y.XmlText('hello world')])
   const ydocFork = new Y.Doc()
+  ydocFork.clientID = 1
   Y.applyUpdate(ydocFork, Y.encodeStateAsUpdate(ydoc))
   // modify the fork
   // append a span element
@@ -390,6 +392,8 @@ export const testAttributionManagerSimpleExample = _tc => {
   const ytext = /** @type {Y.XmlText} */ (ydocFork.getXmlFragment().get(0))
   // make "hello" italic
   ytext.format(0, 5, { italic: true })
+  ytext.insert(11, 'deleteme')
+  ytext.delete(11, 8)
   ytext.insert(11, '!')
   // highlight the changes
   console.log(JSON.stringify(ydocFork.getXmlFragment().getContentDeep(Y.createAttributionManagerFromDiff(ydoc, ydocFork)), null, 2))

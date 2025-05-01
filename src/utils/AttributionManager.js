@@ -153,29 +153,28 @@ export class DiffAttributionManager {
    * @param {Doc} nextDoc
    */
   constructor (prevDoc, nextDoc) {
-    const nextDocInserts = createInsertionSetFromStructStore(nextDoc.store)
-    const prevDocInserts = createInsertionSetFromStructStore(prevDoc.store)
-    const nextDocDeletes = createDeleteSetFromStructStore(nextDoc.store)
-    const prevDocDeletes = createDeleteSetFromStructStore(prevDoc.store)
-    this.inserts = createIdMapFromIdSet(diffIdSet(nextDocInserts, prevDocInserts), [])
+    const _nextDocInserts = createInsertionSetFromStructStore(nextDoc.store, false) // unmaintained
+    const _prevDocInserts = createInsertionSetFromStructStore(prevDoc.store, false) // unmaintained
+    const nextDocDeletes = createDeleteSetFromStructStore(nextDoc.store) // maintained
+    const prevDocDeletes = createDeleteSetFromStructStore(prevDoc.store) // maintained
+    this.inserts = createIdMapFromIdSet(diffIdSet(_nextDocInserts, _prevDocInserts), [])
     this.deletes = createIdMapFromIdSet(diffIdSet(nextDocDeletes, prevDocDeletes), [])
-
     this._prevDoc = prevDoc
     this._prevDocStore = prevDoc.store
     this._nextDoc = nextDoc
     // update before observer calls fired
     this._nextBOH = nextDoc.on('beforeObserverCalls', tr => {
       // update inserts
-      insertIntoIdSet(nextDocInserts, tr.insertSet)
-      const diffInserts = diffIdSet(tr.insertSet, prevDocInserts)
+      const diffInserts = diffIdSet(tr.insertSet, _prevDocInserts)
       insertIntoIdMap(this.inserts, createIdMapFromIdSet(diffInserts, []))
       // update deletes
-      insertIntoIdSet(nextDocDeletes, tr.deleteSet)
       const diffDeletes = diffIdSet(tr.deleteSet, prevDocDeletes)
       insertIntoIdMap(this.deletes, createIdMapFromIdSet(diffDeletes, []))
       // @todo fire update ranges on `diffInserts` and `diffDeletes`
     })
     this._prevBOH = prevDoc.on('beforeObserverCalls', tr => {
+      insertIntoIdSet(_prevDocInserts, tr.insertSet)
+      insertIntoIdSet(prevDocDeletes, tr.deleteSet)
       this.inserts = diffIdMap(this.inserts, tr.insertSet)
       this.deletes = diffIdMap(this.deletes, tr.deleteSet)
       // @todo fire update ranges on `tr.insertSet` and `tr.deleteSet`
@@ -199,7 +198,7 @@ export class DiffAttributionManager {
     const deleted = item.deleted || /** @type {any} */ (item.parent).doc !== this._nextDoc
     const slice = (deleted ? this.deletes : this.inserts).slice(item.id, item.length)
     let content = slice.length === 1 ? item.content : item.content.copy()
-    if (content instanceof ContentDeleted && slice[0].attrs != null) {
+    if (content instanceof ContentDeleted && slice[0].attrs != null && !this.inserts.hasId(item.id)) {
       // Retrieved item is never more fragmented than the newer item.
       const prevItem = getItem(this._prevDocStore, item.id)
       content = prevItem.length > 1 ? prevItem.content.copy() : prevItem.content

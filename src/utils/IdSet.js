@@ -454,8 +454,9 @@ export const createDeleteSetFromStructStore = ss => {
 
 /**
  * @param {import('../internals.js').StructStore} ss
+ * @param {boolean} filterDeleted
  */
-export const createInsertionSetFromStructStore = ss => {
+export const createInsertionSetFromStructStore = (ss, filterDeleted) => {
   const idset = createIdSet()
   ss.clients.forEach((structs, client) => {
     /**
@@ -464,11 +465,12 @@ export const createInsertionSetFromStructStore = ss => {
     const iditems = []
     for (let i = 0; i < structs.length; i++) {
       const struct = structs[i]
-      if (!struct.deleted) {
+      if (!(filterDeleted && struct.deleted)) {
         const clock = struct.id.clock
         let len = struct.length
         if (i + 1 < structs.length) {
-          for (let next = structs[i + 1]; i + 1 < structs.length && !next.deleted; next = structs[++i + 1]) {
+          // eslint-disable-next-line
+          for (let next = structs[i + 1]; i + 1 < structs.length && !(filterDeleted && next.deleted); next = structs[++i + 1]) {
             len += next.length
           }
         }

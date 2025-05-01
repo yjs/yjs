@@ -2343,10 +2343,10 @@ export const testAttributedDiffing = _tc => {
   const ytext = ydoc.getText()
   ytext.applyDelta([{ retain: 4, attributes: { italic: true } }, { retain: 2 }, { delete: 5 }, { insert: 'attributions' }])
   // this represents to all insertions of ydoc
-  const insertionSet = Y.createInsertionSetFromStructStore(ydoc.store)
+  const insertionSet = Y.createInsertionSetFromStructStore(ydoc.store, false)
   const deleteSet = Y.createDeleteSetFromStructStore(ydoc.store)
   // exclude the changes from `ydocVersion0`
-  const insertionSetDiff = Y.diffIdSet(insertionSet, Y.createInsertionSetFromStructStore(ydocVersion0.store))
+  const insertionSetDiff = Y.diffIdSet(insertionSet, Y.createInsertionSetFromStructStore(ydocVersion0.store, false))
   const deleteSetDiff = Y.diffIdSet(deleteSet, Y.createDeleteSetFromStructStore(ydocVersion0.store))
   // assign attributes to the diff
   const attributedInsertions = createIdMapFromIdSet(insertionSetDiff, [new Y.Attribution('insert', 'Bob')])
