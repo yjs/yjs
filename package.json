@@ -48,12 +48,11 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "dist/yjs.*",
+    "dist/*",
     "dist/src",
     "src",
     "tests/testHelper.js",
-    "dist/testHelper.mjs",
-    "sponsor-y.js"
+    "dist/testHelper.mjs"
   ],
   "dictionaries": {
     "test": "tests"
@@ -86,10 +85,10 @@
   },
   "homepage": "https://docs.yjs.dev",
   "dependencies": {
-    "lib0": "^0.2.105",
-    "y-protocols": "^1.0.5"
+    "lib0": "^0.2.105"
   },
   "devDependencies": {
+    "@y/protocols": "^1.0.6-1",
     "@types/node": "^22.14.1",
     "concurrently": "^3.6.1",
     "jsdoc": "^3.6.7",
