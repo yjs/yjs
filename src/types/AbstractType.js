@@ -1021,7 +1021,7 @@ export const typeMapGetContent = (parent, am) => {
         const tmpcs = []
         am.readContent(tmpcs, prevItem)
         cs = tmpcs.concat(cs)
-        if (cs[0].attrs == null) {
+        if (cs.length === 0 || cs[0].attrs == null) {
           cs.splice(0, cs.findIndex(c => c.attrs != null))
           break
         }

@@ -67,27 +67,27 @@ const output = [
     "attributes": {
       "italic": true
     },
-    "attribution": {
+    "attribution": {                // no "insert" attribution: the insertion "Hell" is not attributed to anyone
       "attributes": {
-        "italic": [
+        "italic": [                 // the attribute "italic" was added by Bob
           "Bob"
         ]
       }
     }
   },
   {
-    "insert": "o "
+    "insert": "o "                  // the insertion "o " has no attributions
   },
   {
     "insert": "World",
-    "attribution": {
+    "attribution": {                // the insertion "World" was deleted by Bob
       "delete": [
         "Bob"
       ]
     }
   },
   {
-    "insert": "attributions",
+    "insert": "attributions",       // the insertion "attributions" was inserted by Bob
     "attribution": {
       "insert": [
         "Bob"
@@ -95,7 +95,7 @@ const output = [
     }
   },
   {
-    "insert": "!"
+    "insert": "!"                   // the insertion "!" has no attributions
   }
 ]
 ```
