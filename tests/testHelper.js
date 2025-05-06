@@ -465,7 +465,7 @@ export const compare = users => {
   const userArrayValues = users.map(u => u.getArray('array').toJSON())
   const userMapValues = users.map(u => u.getMap('map').toJSON())
   const userXmlValues = users.map(u => u.get('xml', Y.XmlElement).toString())
-  const userTextValues = users.map(u => u.getText('text').toDelta())
+  const userTextValues = users.map(u => u.getText('text').getContent())
   for (const u of users) {
     t.assert(u.store.pendingDs === null)
     t.assert(u.store.pendingStructs === null)
@@ -490,7 +490,7 @@ export const compare = users => {
     t.compare(userArrayValues[i], userArrayValues[i + 1])
     t.compare(userMapValues[i], userMapValues[i + 1])
     t.compare(userXmlValues[i], userXmlValues[i + 1])
-    t.compare(userTextValues[i].map(/** @param {any} a */ a => typeof a.insert === 'string' ? a.insert : ' ').join('').length, users[i].getText('text').length)
+    t.compare(userTextValues[i].ops.map(/** @param {any} a */ a => typeof a.insert === 'string' ? a.insert : ' ').join('').length, users[i].getText('text').length)
     t.compare(userTextValues[i], userTextValues[i + 1], '', (_constructor, a, b) => {
       if (a instanceof Y.AbstractType) {
         t.compare(a.toJSON(), b.toJSON())

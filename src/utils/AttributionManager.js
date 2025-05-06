@@ -5,10 +5,14 @@ import {
   createDeleteSetFromStructStore,
   createIdMapFromIdSet,
   ContentDeleted,
-  Doc, Item, AbstractContent, IdMap, // eslint-disable-line
+  Snapshot, Doc, Item, AbstractContent, IdMap, // eslint-disable-line
   insertIntoIdMap,
   insertIntoIdSet,
-  diffIdMap
+  diffIdMap,
+  createIdMap,
+  createAttributionItem,
+  mergeIdMaps,
+  AttributionItem
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -90,6 +94,8 @@ export class AbstractAttributionManager {
   readContent (_contents, _item) {
     error.methodUnimplemented()
   }
+
+  destroy () {}
 }
 
 /**
@@ -104,6 +110,8 @@ export class TwosetAttributionManager {
     this.inserts = inserts
     this.deletes = deletes
   }
+
+  destroy () {}
 
   /**
    * @param {Array<AttributedContent<any>>} contents
@@ -131,6 +139,8 @@ export class TwosetAttributionManager {
  * @implements AbstractAttributionManager
  */
 export class NoAttributionsManager {
+  destroy () {}
+
   /**
    * @param {Array<AttributedContent<any>>} contents
    * @param {Item} item
@@ -243,3 +253,59 @@ export class DiffAttributionManager {
  * @param {Doc} nextDoc
  */
 export const createAttributionManagerFromDiff = (prevDoc, nextDoc) => new DiffAttributionManager(prevDoc, nextDoc)
+
+/**
+ * Intended for projects that used the v13 snapshot feature. With this AttributionManager you can
+ * read content similar to the previous snapshot api. Requires that `ydoc.gc` is turned off.
+ *
+ * @implements AbstractAttributionManager
+ */
+export class SnapshotAttributionManager {
+  /**
+   * @param {Snapshot} prevSnapshot
+   * @param {Snapshot} nextSnapshot
+   */
+  constructor (prevSnapshot, nextSnapshot) {
+    this.prevSnapshot = prevSnapshot
+    this.nextSnapshot = nextSnapshot
+    const inserts = createIdMap()
+    const deletes = createIdMapFromIdSet(diffIdSet(nextSnapshot.ds, prevSnapshot.ds), [createAttributionItem('change', '')])
+    nextSnapshot.sv.forEach((clock, client) => {
+      inserts.add(client, 0, prevSnapshot.sv.get(client) || 0, [])
+      inserts.add(client, prevSnapshot.sv.get(client) || 0, clock, [createAttributionItem('change', '')])
+    })
+    this.attrs = mergeIdMaps([diffIdMap(inserts, prevSnapshot.ds), deletes])
+  }
+
+  destroy () { }
+
+  /**
+   * @param {Array<AttributedContent<any>>} contents
+   * @param {Item} item
+   */
+  readContent (contents, item) {
+    if ((this.nextSnapshot.sv.get(item.id.client) ?? 0) <= item.id.clock) return // future item that should not be displayed
+    const slice = this.attrs.slice(item.id, item.length)
+    let content = slice.length === 1 ? item.content : item.content.copy()
+    slice.forEach(s => {
+      const deleted = this.nextSnapshot.ds.has(item.id.client, s.clock)
+      const c = content
+      if (s.len < c.getLength()) {
+        content = c.splice(s.len)
+      }
+      if (!deleted || (s.attrs != null && s.attrs.length > 0)) {
+        let attrsWithoutChange = s.attrs?.filter(attr => attr.name !== 'change') ?? null
+        if (s.attrs?.length === 0) {
+          attrsWithoutChange = null
+        }
+        contents.push(new AttributedContent(c, deleted, attrsWithoutChange))
+      }
+    })
+  }
+}
+
+/**
+ * @param {Snapshot} prevSnapshot
+ * @param {Snapshot} nextSnapshot
+ */
+export const createAttributionManagerFromSnapshots = (prevSnapshot, nextSnapshot = prevSnapshot) => new SnapshotAttributionManager(prevSnapshot, nextSnapshot)

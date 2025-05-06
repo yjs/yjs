@@ -728,6 +728,8 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
         case Boolean:
         case Array:
         case String:
+        case BigInt:
+        case Date:
           jsonContent.push(c)
           break
         default:
@@ -916,6 +918,8 @@ export const typeMapSet = (transaction, parent, key, value) => {
       case Boolean:
       case Array:
       case String:
+      case Date:
+      case BigInt:
         content = new ContentAny([value])
         break
       case Uint8Array:
