@@ -7,7 +7,6 @@ import {
   AbstractType,
   getItemCleanStart,
   getState,
-  isVisible,
   createID,
   YTextRefID,
   callTypeObservers,
@@ -16,7 +15,6 @@ import {
   GC,
   ContentFormat,
   ContentString,
-  splitSnapshotAffectedStructs,
   iterateStructsByIdSet,
   findMarker,
   typeMapDelete,
@@ -26,7 +24,7 @@ import {
   updateMarkerChanges,
   ContentType,
   warnPrematureAccess,
-  noAttributionsManager, AbstractAttributionManager, ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction, // eslint-disable-line
+  noAttributionsManager, AbstractAttributionManager, ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item, Transaction, // eslint-disable-line
   createAttributionFromAttributionItems
 } from '../internals.js'
 
@@ -622,12 +620,12 @@ export class YTextEvent extends YEvent {
   }
 
   /**
-   * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Array<{insert?:Array<any>|string, delete?:number, retain?:number}>}}
+   * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:delta.TextDelta}}
    */
   get changes () {
     if (this._changes === null) {
       /**
-       * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Array<{insert?:Array<any>|string|AbstractType<any>|object, delete?:number, retain?:number}>}}
+       * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:delta.TextDelta}}
        */
       const changes = {
         keys: this.keys,
@@ -644,192 +642,106 @@ export class YTextEvent extends YEvent {
    * Compute the changes in the delta format.
    * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
    *
-   * @type {Array<{insert?:string|object|AbstractType<any>, delete?:number, retain?:number, attributes?: Object<string,any>}>}
+   * @type {delta.TextDelta}
    *
    * @public
    */
   get delta () {
     if (this._delta === null) {
-      const y = /** @type {Doc} */ (this.target.doc)
-      /**
-       * @type {Array<{insert?:string|object|AbstractType<any>, delete?:number, retain?:number, attributes?: Object<string,any>}>}
-       */
-      const delta = []
-      transact(y, transaction => {
-        const currentAttributes = new Map() // saves all current attributes for insert
-        const oldAttributes = new Map()
+      const ydoc = /** @type {Doc} */ (this.target.doc)
+      const d = this._delta = delta.createTextDelta()
+      transact(ydoc, transaction => {
+        /**
+         * @type {import('../utils/Delta.js').FormattingAttributes}
+         */
+        let currentAttributes = {} // saves all current attributes for insert
+        let usingCurrentAttributes = false
+        /**
+         * @type {import('../utils/Delta.js').FormattingAttributes}
+         */
+        let changedAttributes = {} // saves changed attributes for retain
+        let usingChangedAttributes = false
+        /**
+         * @type {import('../utils/Delta.js').FormattingAttributes}
+         */
+        const previousAttributes = {} // The value before changes
+        const tr = this.transaction
         let item = this.target._start
-        /**
-         * @type {string?}
-         */
-        let action = null
-        /**
-         * @type {Object<string,any>}
-         */
-        const attributes = {} // counts added or removed new attributes for retain
-        /**
-         * @type {string|object}
-         */
-        let insert = ''
-        let retain = 0
-        let deleteLen = 0
-        const addOp = () => {
-          if (action !== null) {
-            /**
-             * @type {any}
-             */
-            let op = null
-            switch (action) {
-              case 'delete':
-                if (deleteLen > 0) {
-                  op = { delete: deleteLen }
-                }
-                deleteLen = 0
-                break
-              case 'insert':
-                if (typeof insert === 'object' || insert.length > 0) {
-                  op = { insert }
-                  if (currentAttributes.size > 0) {
-                    op.attributes = {}
-                    currentAttributes.forEach((value, key) => {
-                      if (value !== null) {
-                        op.attributes[key] = value
-                      }
-                    })
-                  }
-                }
-                insert = ''
-                break
-              case 'retain':
-                if (retain > 0) {
-                  op = { retain }
-                  if (!object.isEmpty(attributes)) {
-                    op.attributes = object.assign({}, attributes)
-                  }
-                }
-                retain = 0
-                break
-            }
-            if (op) delta.push(op)
-            action = null
-          }
-        }
         while (item !== null) {
+          const freshDelete = item.deleted && tr.deleteSet.hasId(item.id) && !tr.insertSet.hasId(item.id)
+          const freshInsert = !item.deleted && tr.insertSet.hasId(item.id)
           switch (item.content.constructor) {
             case ContentType:
             case ContentEmbed:
-              if (this.adds(item)) {
-                if (!this.deletes(item)) {
-                  addOp()
-                  action = 'insert'
-                  insert = item.content.getContent()[0]
-                  addOp()
-                }
-              } else if (this.deletes(item)) {
-                if (action !== 'delete') {
-                  addOp()
-                  action = 'delete'
-                }
-                deleteLen += 1
+              if (freshInsert) {
+                d.usedAttributes = currentAttributes
+                usingCurrentAttributes = true
+                d.insert(item.content.getContent()[0])
+              } else if (freshDelete) {
+                d.delete(1)
               } else if (!item.deleted) {
-                if (action !== 'retain') {
-                  addOp()
-                  action = 'retain'
-                }
-                retain += 1
+                d.usedAttributes = changedAttributes
+                usingChangedAttributes = true
+                d.retain(1)
               }
               break
             case ContentString:
-              if (this.adds(item)) {
-                if (!this.deletes(item)) {
-                  if (action !== 'insert') {
-                    addOp()
-                    action = 'insert'
-                  }
-                  insert += /** @type {ContentString} */ (item.content).str
-                }
-              } else if (this.deletes(item)) {
-                if (action !== 'delete') {
-                  addOp()
-                  action = 'delete'
-                }
-                deleteLen += item.length
+              if (freshInsert) {
+                d.usedAttributes = currentAttributes
+                usingCurrentAttributes = true
+                d.insert(/** @type {ContentString} */ (item.content).str)
+              } else if (freshDelete) {
+                d.delete(item.length)
               } else if (!item.deleted) {
-                if (action !== 'retain') {
-                  addOp()
-                  action = 'retain'
-                }
-                retain += item.length
+                d.usedAttributes = changedAttributes
+                usingChangedAttributes = true
+                d.retain(item.length)
               }
               break
             case ContentFormat: {
               const { key, value } = /** @type {ContentFormat} */ (item.content)
-              if (this.adds(item)) {
-                if (!this.deletes(item)) {
-                  const curVal = currentAttributes.get(key) ?? null
-                  if (!equalAttrs(curVal, value)) {
-                    if (action === 'retain') {
-                      addOp()
-                    }
-                    if (equalAttrs(value, (oldAttributes.get(key) ?? null))) {
-                      delete attributes[key]
-                    } else {
-                      attributes[key] = value
-                    }
-                  } else if (value !== null) {
-                    item.delete(transaction)
-                  }
+              const currAttrVal = currentAttributes[key] ?? null
+              if (freshDelete || freshInsert) {
+                // create fresh references
+                if (usingCurrentAttributes) {
+                  currentAttributes = object.assign({}, currentAttributes)
+                  usingCurrentAttributes = false
                 }
-              } else if (this.deletes(item)) {
-                oldAttributes.set(key, value)
-                const curVal = currentAttributes.get(key) ?? null
-                if (!equalAttrs(curVal, value)) {
-                  if (action === 'retain') {
-                    addOp()
-                  }
-                  attributes[key] = curVal
-                }
-              } else if (!item.deleted) {
-                oldAttributes.set(key, value)
-                const attr = attributes[key]
-                if (attr !== undefined) {
-                  if (!equalAttrs(attr, value)) {
-                    if (action === 'retain') {
-                      addOp()
-                    }
-                    if (value === null) {
-                      delete attributes[key]
-                    } else {
-                      attributes[key] = value
-                    }
-                  } else if (attr !== null) { // this will be cleaned up automatically by the contextless cleanup function
-                    item.delete(transaction)
-                  }
+                if (usingChangedAttributes) {
+                  usingChangedAttributes = false
+                  changedAttributes = object.assign({}, changedAttributes)
                 }
               }
-              if (!item.deleted) {
-                if (action === 'insert') {
-                  addOp()
+              if (freshInsert) {
+                if (equalAttrs(value, currAttrVal)) {
+                  item.delete(transaction)
+                } else if (equalAttrs(value, previousAttributes[key] ?? null)) {
+                  delete currentAttributes[key]
+                  delete changedAttributes[key]
+                } else {
+                  currentAttributes[key] = value
+                  changedAttributes[key] = value
                 }
-                updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (item.content))
+              } else if (freshDelete) {
+                changedAttributes[key] = currAttrVal
+                currentAttributes[key] = currAttrVal
+                previousAttributes[key] = value
+              } else if (!item.deleted) {
+                // fresh reference to currentAttributes only
+                if (usingCurrentAttributes) {
+                  currentAttributes = object.assign({}, currentAttributes)
+                  usingCurrentAttributes = false
+                }
+                currentAttributes[key] = value
+                previousAttributes[key] = value
               }
               break
             }
           }
           item = item.right
         }
-        addOp()
-        while (delta.length > 0) {
-          const lastOp = delta[delta.length - 1]
-          if (lastOp.retain !== undefined && lastOp.attributes === undefined) {
-            // retain delta's if they don't assign attributes
-            delta.pop()
-          } else {
-            break
-          }
-        }
       })
-      this._delta = delta
+      d.done()
     }
     return /** @type {any} */ (this._delta)
   }
@@ -903,7 +815,7 @@ export class YText extends AbstractType {
    */
   clone () {
     const text = new YText()
-    text.applyDelta(this.toDelta())
+    text.applyDelta(this.getContent())
     return text
   }
 
@@ -957,7 +869,7 @@ export class YText extends AbstractType {
   /**
    * Apply a {@link Delta} on this shared YText type.
    *
-   * @param {Array<any>} delta The changes to apply on this element.
+   * @param {Array<any> | delta.Delta} delta The changes to apply on this element.
    * @param {object}  opts
    * @param {boolean} [opts.sanitize] Sanitize input delta. Removes ending newlines if set to true.
    *
@@ -967,16 +879,20 @@ export class YText extends AbstractType {
   applyDelta (delta, { sanitize = true } = {}) {
     if (this.doc !== null) {
       transact(this.doc, transaction => {
+        /**
+         * @type {Array<any>}
+         */
+        const deltaOps = /** @type {Array<any>} */ (/** @type {delta.Delta} */ (delta).ops instanceof Array ? /** @type {delta.Delta} */ (delta).ops : delta)
         const currPos = new ItemTextListPosition(null, this._start, 0, new Map())
-        for (let i = 0; i < delta.length; i++) {
-          const op = delta[i]
+        for (let i = 0; i < deltaOps.length; i++) {
+          const op = deltaOps[i]
           if (op.insert !== undefined) {
             // Quill assumes that the content starts with an empty paragraph.
             // Yjs/Y.Text assumes that it starts empty. We always hide that
             // there is a newline at the end of the content.
             // If we omit this step, clients will see a different number of
             // paragraphs, but nothing bad will happen.
-            const ins = (!sanitize && typeof op.insert === 'string' && i === delta.length - 1 && currPos.right === null && op.insert.slice(-1) === '\n') ? op.insert.slice(0, -1) : op.insert
+            const ins = (!sanitize && typeof op.insert === 'string' && i === deltaOps.length - 1 && currPos.right === null && op.insert.slice(-1) === '\n') ? op.insert.slice(0, -1) : op.insert
             if (typeof ins !== 'string' || ins.length > 0) {
               insertText(transaction, this, currPos, ins, op.attributes || {})
             }
@@ -1006,8 +922,8 @@ export class YText extends AbstractType {
    */
   getContentDeep (am = noAttributionsManager) {
     return this.getContent(am).map(d =>
-      d instanceof delta.InsertOp && d.insert instanceof AbstractType
-        ? new delta.InsertOp(d.insert.getContent(am), d.attributes, d.attribution)
+      d instanceof delta.InsertStringOp && d.insert instanceof AbstractType
+        ? new delta.InsertStringOp(d.insert.getContent(am), d.attributes, d.attribution)
         : d
     )
   }
@@ -1089,121 +1005,6 @@ export class YText extends AbstractType {
       }
     }
     return d
-  }
-
-  /**
-   * Returns the Delta representation of this YText type.
-   *
-   * @param {Snapshot} [snapshot]
-   * @param {Snapshot} [prevSnapshot]
-   * @param {function('removed' | 'added', ID):any} [computeYChange]
-   * @return {any} The Delta representation of this type.
-   *
-   * @public
-   */
-  toDelta (snapshot, prevSnapshot, computeYChange) {
-    this.doc ?? warnPrematureAccess()
-    /**
-     * @type{Array<any>}
-     */
-    const ops = []
-    const currentAttributes = new Map()
-    const doc = /** @type {Doc} */ (this.doc)
-    let str = ''
-    let n = this._start
-    function packStr () {
-      if (str.length > 0) {
-        // pack str with attributes to ops
-        /**
-         * @type {Object<string,any>}
-         */
-        const attributes = {}
-        let addAttributes = false
-        currentAttributes.forEach((value, key) => {
-          addAttributes = true
-          attributes[key] = value
-        })
-        /**
-         * @type {Object<string,any>}
-         */
-        const op = { insert: str }
-        if (addAttributes) {
-          op.attributes = attributes
-        }
-        ops.push(op)
-        str = ''
-      }
-    }
-    const computeDelta = () => {
-      while (n !== null) {
-        if (isVisible(n, snapshot) || (prevSnapshot !== undefined && isVisible(n, prevSnapshot))) {
-          switch (n.content.constructor) {
-            case ContentString: {
-              const cur = currentAttributes.get('ychange')
-              if (snapshot !== undefined && !isVisible(n, snapshot)) {
-                if (cur === undefined || cur.user !== n.id.client || cur.type !== 'removed') {
-                  packStr()
-                  currentAttributes.set('ychange', computeYChange ? computeYChange('removed', n.id) : { type: 'removed' })
-                }
-              } else if (prevSnapshot !== undefined && !isVisible(n, prevSnapshot)) {
-                if (cur === undefined || cur.user !== n.id.client || cur.type !== 'added') {
-                  packStr()
-                  currentAttributes.set('ychange', computeYChange ? computeYChange('added', n.id) : { type: 'added' })
-                }
-              } else if (cur !== undefined) {
-                packStr()
-                currentAttributes.delete('ychange')
-              }
-              str += /** @type {ContentString} */ (n.content).str
-              break
-            }
-            case ContentType:
-            case ContentEmbed: {
-              packStr()
-              /**
-               * @type {Object<string,any>}
-               */
-              const op = {
-                insert: n.content.getContent()[0]
-              }
-              if (currentAttributes.size > 0) {
-                const attrs = /** @type {Object<string,any>} */ ({})
-                op.attributes = attrs
-                currentAttributes.forEach((value, key) => {
-                  attrs[key] = value
-                })
-              }
-              ops.push(op)
-              break
-            }
-            case ContentFormat:
-              if (isVisible(n, snapshot)) {
-                packStr()
-                updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (n.content))
-              }
-              break
-          }
-        }
-        n = n.right
-      }
-      packStr()
-    }
-    if (snapshot || prevSnapshot) {
-      // snapshots are merged again after the transaction, so we need to keep the
-      // transaction alive until we are done
-      transact(doc, transaction => {
-        if (snapshot) {
-          splitSnapshotAffectedStructs(transaction, snapshot)
-        }
-        if (prevSnapshot) {
-          splitSnapshotAffectedStructs(transaction, prevSnapshot)
-        }
-        computeDelta()
-      }, 'cleanup')
-    } else {
-      computeDelta()
-    }
-    return ops
   }
 
   /**

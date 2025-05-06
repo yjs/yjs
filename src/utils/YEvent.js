@@ -6,6 +6,14 @@ import * as set from 'lib0/set'
 import * as array from 'lib0/array'
 import * as error from 'lib0/error'
 
+/**
+ * @typedef {import('../utils/Delta.js').TextDelta} TextDelta
+ */
+
+/**
+ * @typedef {import('../utils/Delta.js').Delta} Delta
+ */
+
 const errorComputeChanges = 'You must not compute changes after the event-handler fired.'
 
 /**
@@ -42,7 +50,7 @@ export class YEvent {
      */
     this._keys = null
     /**
-     * @type {null | Array<{ insert?: string | Array<any> | object | AbstractType<any>, retain?: number, delete?: number, attributes?: Object<string, any> }>}
+     * @type {TextDelta?}
      */
     this._delta = null
     /**
@@ -142,7 +150,7 @@ export class YEvent {
    * unexpected behavior (incorrect computation of deltas). A safe way to collect changes
    * is to store the `changes` or the `delta` object. Avoid storing the `transaction` object.
    *
-   * @type {Array<{insert?: string | Array<any> | object | AbstractType<any>, retain?: number, delete?: number, attributes?: Object<string, any>}>}
+   * @type {Delta}
    */
   get delta () {
     return this.changes.delta
@@ -166,7 +174,7 @@ export class YEvent {
    * unexpected behavior (incorrect computation of deltas). A safe way to collect changes
    * is to store the `changes` or the `delta` object. Avoid storing the `transaction` object.
    *
-   * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Array<{insert?:Array<any>|string, delete?:number, retain?:number}>}}
+   * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Delta}}
    */
   get changes () {
     let changes = this._changes

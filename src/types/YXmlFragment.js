@@ -403,8 +403,8 @@ export class YXmlFragment extends AbstractType {
      * @type {import('../utils/Delta.js').ArrayDelta<Array<import('./AbstractType.js').YXmlDeepContent>>}
      */
     const children = origChildren.map(d => /** @type {any} */ (
-      d instanceof delta.InsertOp && d.insert instanceof Array
-        ? new delta.InsertOp(d.insert.map(e => e instanceof AbstractType ? e.getContentDeep(am) : e), d.attributes, d.attribution)
+      d instanceof delta.InsertArrayOp && d.insert instanceof Array
+        ? new delta.InsertArrayOp(d.insert.map(e => e instanceof AbstractType ? e.getContentDeep(am) : e), d.attributes, d.attribution)
         : d
     ))
     return { children }

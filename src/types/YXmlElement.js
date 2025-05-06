@@ -225,8 +225,8 @@ export class YXmlElement extends YXmlFragment {
   getContentDeep (am = noAttributionsManager) {
     const { children: origChildren, attributes: origAttributes } = this.getContent(am)
     const children = origChildren.map(d => /** @type {any} */ (
-      (d instanceof delta.InsertOp && d.insert instanceof Array)
-        ? new delta.InsertOp(d.insert.map(e => e instanceof AbstractType ? /** @type {delta.ArrayDelta<Array<any>>} */ (e.getContentDeep(am)) : e), d.attributes, d.attribution)
+      (d instanceof delta.InsertArrayOp && d.insert instanceof Array)
+        ? new delta.InsertArrayOp(d.insert.map(e => e instanceof AbstractType ? /** @type {delta.ArrayDelta<Array<any>>} */ (e.getContentDeep(am)) : e), d.attributes, d.attribution)
         : d
     ))
     /**

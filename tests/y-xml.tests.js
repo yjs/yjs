@@ -207,7 +207,7 @@ export const testFormattingBug = _tc => {
     { insert: 'C', attributes: { em: {}, strong: {} } }
   ]
   yxml.applyDelta(delta)
-  t.compare(yxml.toDelta(), delta)
+  t.compare(yxml.getContent().toJSON(), delta)
 }
 
 /**
@@ -366,8 +366,8 @@ export const testElementAttributedContentViaDiffer = _tc => {
       delta.createTextDelta().insert('bigworld')
     ])
     const attributedContent = yelement.getContentDeep(attributionManager)
-    console.log('children', JSON.stringify(attributedContent.children.toJSON().ops, null, 2))
-    console.log('cs expec', JSON.stringify(expectedContent.toJSON().ops, null, 2))
+    console.log('children', JSON.stringify(attributedContent.children.toJSON(), null, 2))
+    console.log('cs expec', JSON.stringify(expectedContent.toJSON(), null, 2))
     console.log('attributes', attributedContent.attributes)
     t.assert(attributedContent.children.equals(expectedContent))
     t.compare(attributedContent.attributes, { key: { prevValue: undefined, value: '42', attribution: null } })

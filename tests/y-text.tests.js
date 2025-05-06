@@ -3,7 +3,7 @@ import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
 import * as delta from '../src/utils/Delta.js'
-import { createIdMapFromIdSet, noAttributionsManager, TwosetAttributionManager } from 'yjs/internals'
+import { createIdMapFromIdSet, noAttributionsManager, TwosetAttributionManager, createAttributionManagerFromSnapshots } from 'yjs/internals'
 
 const { init, compare } = Y
 
@@ -232,185 +232,138 @@ export const testDeltaBug = _tc => {
     }
   ]
   ytext.applyDelta(addingList)
-  const result = ytext.toDelta()
-  const expectedResult = [
-    {
-      attributes: {
-        'block-id': 'block-28eea923-9cbb-4b6f-a950-cf7fd82bc087'
-      },
-      insert: '\n'
-    },
-    {
-      attributes: {
-        'table-col': {
-          width: '150'
-        }
-      },
-      insert: '\n\n\n'
-    },
-    {
-      attributes: {
-        'block-id': 'block-9144be72-e528-4f91-b0b2-82d20408e9ea',
-        'table-cell-line': {
-          rowspan: '1',
-          colspan: '1',
-          row: 'row-6kv2ls',
-          cell: 'cell-apba4k'
-        },
+  const result = ytext.getContent()
+  const expectedResult = delta.createTextDelta()
+    .insert('\n', { 'block-id': 'block-28eea923-9cbb-4b6f-a950-cf7fd82bc087' })
+    .insert('\n\n\n', { 'table-col': { width: '150' } })
+    .insert('\n', {
+      'block-id': 'block-9144be72-e528-4f91-b0b2-82d20408e9ea',
+      'table-cell-line': {
+        rowspan: '1',
+        colspan: '1',
         row: 'row-6kv2ls',
-        cell: 'cell-apba4k',
-        rowspan: '1',
-        colspan: '1'
+        cell: 'cell-apba4k'
       },
-      insert: '\n'
-    },
-    {
-      attributes: {
-        'block-id': 'block-639adacb-1516-43ed-b272-937c55669a1c',
-        'table-cell-line': {
-          rowspan: '1',
-          colspan: '1',
-          row: 'row-6kv2ls',
-          cell: 'cell-a8qf0r'
-        },
+      row: 'row-6kv2ls',
+      cell: 'cell-apba4k',
+      rowspan: '1',
+      colspan: '1'
+    })
+    .insert('\n', {
+      'block-id': 'block-639adacb-1516-43ed-b272-937c55669a1c',
+      'table-cell-line': {
+        rowspan: '1',
+        colspan: '1',
         row: 'row-6kv2ls',
-        cell: 'cell-a8qf0r',
-        rowspan: '1',
-        colspan: '1'
+        cell: 'cell-a8qf0r'
       },
-      insert: '\n'
-    },
-    {
-      attributes: {
-        'block-id': 'block-6302ca4a-73a3-4c25-8c1e-b542f048f1c6',
-        'table-cell-line': {
-          rowspan: '1',
-          colspan: '1',
-          row: 'row-6kv2ls',
-          cell: 'cell-oi9ikb'
-        },
+      row: 'row-6kv2ls',
+      cell: 'cell-a8qf0r',
+      rowspan: '1',
+      colspan: '1'
+    })
+    .insert('\n', {
+      'block-id': 'block-6302ca4a-73a3-4c25-8c1e-b542f048f1c6',
+      'table-cell-line': {
+        rowspan: '1',
+        colspan: '1',
         row: 'row-6kv2ls',
-        cell: 'cell-oi9ikb',
-        rowspan: '1',
-        colspan: '1'
+        cell: 'cell-oi9ikb'
       },
-      insert: '\n'
-    },
-    {
-      attributes: {
-        'block-id': 'block-ceeddd05-330e-4f86-8017-4a3a060c4627',
-        'table-cell-line': {
-          rowspan: '1',
-          colspan: '1',
-          row: 'row-d1sv2g',
-          cell: 'cell-dt6ks2'
-        },
+      row: 'row-6kv2ls',
+      cell: 'cell-oi9ikb',
+      rowspan: '1',
+      colspan: '1'
+    })
+    .insert('\n', {
+      'block-id': 'block-ceeddd05-330e-4f86-8017-4a3a060c4627',
+      'table-cell-line': {
+        rowspan: '1',
+        colspan: '1',
         row: 'row-d1sv2g',
-        cell: 'cell-dt6ks2',
-        rowspan: '1',
-        colspan: '1'
+        cell: 'cell-dt6ks2'
       },
-      insert: '\n'
-    },
-    {
-      attributes: {
-        'block-id': 'block-37b19322-cb57-4e6f-8fad-0d1401cae53f',
-        'table-cell-line': {
-          rowspan: '1',
-          colspan: '1',
-          row: 'row-d1sv2g',
-          cell: 'cell-qah2ay'
-        },
+      row: 'row-d1sv2g',
+      cell: 'cell-dt6ks2',
+      rowspan: '1',
+      colspan: '1'
+    })
+    .insert('\n', {
+      'block-id': 'block-37b19322-cb57-4e6f-8fad-0d1401cae53f',
+      'table-cell-line': {
+        rowspan: '1',
+        colspan: '1',
         row: 'row-d1sv2g',
-        cell: 'cell-qah2ay',
-        rowspan: '1',
-        colspan: '1'
+        cell: 'cell-qah2ay'
       },
-      insert: '\n'
-    },
-    {
-      attributes: {
-        'block-id': 'block-468a69b5-9332-450b-9107-381d593de249',
-        'table-cell-line': {
-          rowspan: '1',
-          colspan: '1',
-          row: 'row-d1sv2g',
-          cell: 'cell-fpcz5a'
-        },
+      row: 'row-d1sv2g',
+      cell: 'cell-qah2ay',
+      rowspan: '1',
+      colspan: '1'
+    })
+    .insert('\n', {
+      'block-id': 'block-468a69b5-9332-450b-9107-381d593de249',
+      'table-cell-line': {
+        rowspan: '1',
+        colspan: '1',
         row: 'row-d1sv2g',
-        cell: 'cell-fpcz5a',
-        rowspan: '1',
-        colspan: '1'
+        cell: 'cell-fpcz5a'
       },
-      insert: '\n'
-    },
-    {
-      attributes: {
-        'block-id': 'block-26b1d252-9b2e-4808-9b29-04e76696aa3c',
-        'table-cell-line': {
-          rowspan: '1',
-          colspan: '1',
-          row: 'row-pflz90',
-          cell: 'cell-zrhylp'
-        },
+      row: 'row-d1sv2g',
+      cell: 'cell-fpcz5a',
+      rowspan: '1',
+      colspan: '1'
+    })
+    .insert('\n', {
+      'block-id': 'block-26b1d252-9b2e-4808-9b29-04e76696aa3c',
+      'table-cell-line': {
+        rowspan: '1',
+        colspan: '1',
         row: 'row-pflz90',
-        cell: 'cell-zrhylp',
-        rowspan: '1',
-        colspan: '1'
+        cell: 'cell-zrhylp'
       },
-      insert: '\n'
-    },
-    {
-      attributes: {
-        'block-id': 'block-6af97ba7-8cf9-497a-9365-7075b938837b',
-        'table-cell-line': {
-          rowspan: '1',
-          colspan: '1',
-          row: 'row-pflz90',
-          cell: 'cell-s1q9nt'
-        },
+      row: 'row-pflz90',
+      cell: 'cell-zrhylp',
+      rowspan: '1',
+      colspan: '1'
+    })
+    .insert('\n', {
+      'block-id': 'block-6af97ba7-8cf9-497a-9365-7075b938837b',
+      'table-cell-line': {
+        rowspan: '1',
+        colspan: '1',
         row: 'row-pflz90',
-        cell: 'cell-s1q9nt',
-        rowspan: '1',
-        colspan: '1'
+        cell: 'cell-s1q9nt'
       },
-      insert: '\n'
-    },
-    {
-      insert: '\n',
-      // This attributes has only list and no table-cell-line
-      attributes: {
-        list: {
-          rowspan: '1',
-          colspan: '1',
-          row: 'row-pflz90',
-          cell: 'cell-20b0j9',
-          list: 'bullet'
-        },
-        'block-id': 'block-107e273e-86bc-44fd-b0d7-41ab55aca484',
+      row: 'row-pflz90',
+      cell: 'cell-s1q9nt',
+      rowspan: '1',
+      colspan: '1'
+    })
+    // This attributes has only list and no table-cell-line
+    .insert('\n', {
+      list: {
+        rowspan: '1',
+        colspan: '1',
         row: 'row-pflz90',
         cell: 'cell-20b0j9',
-        rowspan: '1',
-        colspan: '1'
-      }
-    },
+        list: 'bullet'
+      },
+      'block-id': 'block-107e273e-86bc-44fd-b0d7-41ab55aca484',
+      row: 'row-pflz90',
+      cell: 'cell-20b0j9',
+      rowspan: '1',
+      colspan: '1'
+    })
     // No table-cell-line below here
-    {
-      attributes: {
-        'block-id': 'block-38161f9c-6f6d-44c5-b086-54cc6490f1e3'
-      },
-      insert: '\n'
-    },
-    {
-      insert: 'Content after table'
-    },
-    {
-      attributes: {
-        'block-id': 'block-15630542-ef45-412d-9415-88f0052238ce'
-      },
-      insert: '\n'
-    }
-  ]
+    .insert('\n', {
+      'block-id': 'block-38161f9c-6f6d-44c5-b086-54cc6490f1e3'
+    })
+    .insert('Content after table')
+    .insert('\n', {
+      'block-id': 'block-15630542-ef45-412d-9415-88f0052238ce'
+    })
+    .done()
   t.compare(result, expectedResult)
 }
 
@@ -477,11 +430,7 @@ export const testDeltaBug2 = _tc => {
       insert: '\n',
       attributes: { 'block-id': 'block-8a1d2bb6-23c2-4bcf-af3c-3919ffea1697' }
     },
-    { insert: '\n\n', attributes: { 'table-col': { width: '150' } } },
-    {
-      insert: '\n',
-      attributes: { 'table-col': { width: '150' } }
-    },
+    { insert: '\n\n\n', attributes: { 'table-col': { width: '150' } } },
     {
       insert: '\n',
       attributes: {
@@ -1640,8 +1589,8 @@ export const testDeltaBug2 = _tc => {
     }
   ]
   ytext.applyDelta(changeEvent)
-  const delta = ytext.toDelta()
-  t.compare(delta[41], {
+  const delta = ytext.getContent()
+  t.compare(delta.ops[40].toJSON(), {
     insert: '\n',
     attributes: {
       'block-id': 'block-9d6566a1-be55-4e20-999a-b990bc15e143'
@@ -1667,8 +1616,8 @@ export const testDeltaAfterConcurrentFormatting = tc => {
    */
   const deltas = []
   text1.observe(event => {
-    if (event.delta.length > 0) {
-      deltas.push(event.delta)
+    if (event.delta.ops.length > 0) {
+      deltas.push(event.delta.toJSON())
     }
   })
   testConnector.flushAllMessages()
@@ -1680,10 +1629,10 @@ export const testDeltaAfterConcurrentFormatting = tc => {
  */
 export const testBasicInsertAndDelete = tc => {
   const { users, text0 } = init(tc, { users: 2 })
-  let delta
+  let eventDelta
 
   text0.observe(event => {
-    delta = event.delta
+    eventDelta = event.delta
   })
 
   text0.delete(0, 0)
@@ -1691,21 +1640,21 @@ export const testBasicInsertAndDelete = tc => {
 
   text0.insert(0, 'abc')
   t.assert(text0.toString() === 'abc', 'Basic insert works')
-  t.compare(delta, [{ insert: 'abc' }])
+  t.compare(eventDelta, delta.fromJSON([{ insert: 'abc' }]))
 
   text0.delete(0, 1)
   t.assert(text0.toString() === 'bc', 'Basic delete works (position 0)')
-  t.compare(delta, [{ delete: 1 }])
+  t.compare(eventDelta, delta.fromJSON([{ delete: 1 }]))
 
   text0.delete(1, 1)
   t.assert(text0.toString() === 'b', 'Basic delete works (position 1)')
-  t.compare(delta, [{ retain: 1 }, { delete: 1 }])
+  t.compare(eventDelta, delta.fromJSON([{ retain: 1 }, { delete: 1 }]))
 
   users[0].transact(() => {
     text0.insert(0, '1')
     text0.delete(0, 1)
   })
-  t.compare(delta, [])
+  t.compare(eventDelta, delta.fromJSON([]))
 
   compare(users)
 }
@@ -1715,36 +1664,36 @@ export const testBasicInsertAndDelete = tc => {
  */
 export const testBasicFormat = tc => {
   const { users, text0 } = init(tc, { users: 2 })
-  let delta
+  let eventDelta
   text0.observe(event => {
-    delta = event.delta
+    eventDelta = event.delta
   })
   text0.insert(0, 'abc', { bold: true })
   t.assert(text0.toString() === 'abc', 'Basic insert with attributes works')
-  t.compare(text0.toDelta(), [{ insert: 'abc', attributes: { bold: true } }])
-  t.compare(delta, [{ insert: 'abc', attributes: { bold: true } }])
+  t.compare(text0.getContent(), delta.createTextDelta().insert('abc', { bold: true }).done())
+  t.compare(eventDelta, delta.createTextDelta().insert('abc', { bold: true }))
   text0.delete(0, 1)
   t.assert(text0.toString() === 'bc', 'Basic delete on formatted works (position 0)')
-  t.compare(text0.toDelta(), [{ insert: 'bc', attributes: { bold: true } }])
-  t.compare(delta, [{ delete: 1 }])
+  t.compare(text0.getContent(), delta.createTextDelta().insert('bc', { bold: true }))
+  t.compare(eventDelta, delta.createTextDelta().delete(1))
   text0.delete(1, 1)
   t.assert(text0.toString() === 'b', 'Basic delete works (position 1)')
-  t.compare(text0.toDelta(), [{ insert: 'b', attributes: { bold: true } }])
-  t.compare(delta, [{ retain: 1 }, { delete: 1 }])
+  t.compare(text0.getContent(), delta.createTextDelta().insert('b', { bold: true }))
+  t.compare(eventDelta, delta.createTextDelta().retain(1).delete(1))
   text0.insert(0, 'z', { bold: true })
   t.assert(text0.toString() === 'zb')
-  t.compare(text0.toDelta(), [{ insert: 'zb', attributes: { bold: true } }])
-  t.compare(delta, [{ insert: 'z', attributes: { bold: true } }])
+  t.compare(text0.getContent(), delta.createTextDelta().insert('zb', { bold: true }))
+  t.compare(eventDelta, delta.createTextDelta().insert('z', { bold: true }))
   // @ts-ignore
   t.assert(text0._start.right.right.right.content.str === 'b', 'Does not insert duplicate attribute marker')
   text0.insert(0, 'y')
   t.assert(text0.toString() === 'yzb')
-  t.compare(text0.toDelta(), [{ insert: 'y' }, { insert: 'zb', attributes: { bold: true } }])
-  t.compare(delta, [{ insert: 'y' }])
+  t.compare(text0.getContent(), delta.createTextDelta().insert('y').insert('zb', { bold: true }))
+  t.compare(eventDelta, delta.createTextDelta().insert('y'))
   text0.format(0, 2, { bold: null })
   t.assert(text0.toString() === 'yzb')
-  t.compare(text0.toDelta(), [{ insert: 'yz' }, { insert: 'b', attributes: { bold: true } }])
-  t.compare(delta, [{ retain: 1 }, { retain: 1, attributes: { bold: null } }])
+  t.compare(text0.getContent(), delta.createTextDelta().insert('yz').insert('b', { bold: true }))
+  t.compare(eventDelta, delta.createTextDelta().retain(1).retain(1, { bold: null }))
   compare(users)
 }
 
@@ -1755,16 +1704,16 @@ export const testFalsyFormats = tc => {
   const { users, text0 } = init(tc, { users: 2 })
   let delta
   text0.observe(event => {
-    delta = event.delta
+    delta = event.delta.toJSON()
   })
   text0.insert(0, 'abcde', { falsy: false })
-  t.compare(text0.toDelta(), [{ insert: 'abcde', attributes: { falsy: false } }])
+  t.compare(text0.getContent().toJSON(), [{ insert: 'abcde', attributes: { falsy: false } }])
   t.compare(delta, [{ insert: 'abcde', attributes: { falsy: false } }])
   text0.format(1, 3, { falsy: true })
-  t.compare(text0.toDelta(), [{ insert: 'a', attributes: { falsy: false } }, { insert: 'bcd', attributes: { falsy: true } }, { insert: 'e', attributes: { falsy: false } }])
+  t.compare(text0.getContent().toJSON(), [{ insert: 'a', attributes: { falsy: false } }, { insert: 'bcd', attributes: { falsy: true } }, { insert: 'e', attributes: { falsy: false } }])
   t.compare(delta, [{ retain: 1 }, { retain: 3, attributes: { falsy: true } }])
   text0.format(2, 1, { falsy: false })
-  t.compare(text0.toDelta(), [{ insert: 'a', attributes: { falsy: false } }, { insert: 'b', attributes: { falsy: true } }, { insert: 'c', attributes: { falsy: false } }, { insert: 'd', attributes: { falsy: true } }, { insert: 'e', attributes: { falsy: false } }])
+  t.compare(text0.getContent().toJSON(), [{ insert: 'a', attributes: { falsy: false } }, { insert: 'b', attributes: { falsy: true } }, { insert: 'c', attributes: { falsy: false } }, { insert: 'd', attributes: { falsy: true } }, { insert: 'e', attributes: { falsy: false } }])
   t.compare(delta, [{ retain: 2 }, { retain: 1, attributes: { falsy: false } }])
   compare(users)
 }
@@ -1783,7 +1732,7 @@ export const testMultilineFormat = _tc => {
     { retain: 1 }, // newline character
     { retain: 10, attributes: { bold: true } }
   ])
-  t.compare(testText.toDelta(), [
+  t.compare(testText.getContent().toJSON(), [
     { insert: 'Test', attributes: { bold: true } },
     { insert: '\n' },
     { insert: 'Multi-line', attributes: { bold: true } },
@@ -1804,7 +1753,7 @@ export const testNotMergeEmptyLinesFormat = _tc => {
     { insert: '\nText' },
     { insert: '\n', attributes: { title: true } }
   ])
-  t.compare(testText.toDelta(), [
+  t.compare(testText.getContent().toJSON(), [
     { insert: 'Text' },
     { insert: '\n', attributes: { title: true } },
     { insert: '\nText' },
@@ -1828,7 +1777,7 @@ export const testPreserveAttributesThroughDelete = _tc => {
     { delete: 1 },
     { retain: 1, attributes: { title: true } }
   ])
-  t.compare(testText.toDelta(), [
+  t.compare(testText.getContent().toJSON(), [
     { insert: 'Text' },
     { insert: '\n', attributes: { title: true } }
   ])
@@ -1842,7 +1791,7 @@ export const testGetDeltaWithEmbeds = tc => {
   text0.applyDelta([{
     insert: { linebreak: 's' }
   }])
-  t.compare(text0.toDelta(), [{
+  t.compare(text0.getContent().toJSON(), [{
     insert: { linebreak: 's' }
   }])
 }
@@ -1855,18 +1804,18 @@ export const testTypesAsEmbed = tc => {
   text0.applyDelta([{
     insert: new Y.Map([['key', 'val']])
   }])
-  t.compare(text0.toDelta()[0].insert.toJSON(), { key: 'val' })
+  t.compare(/** @type {delta.InsertOp<any>} */ (text0.getContent().ops[0]).insert.toJSON(), { key: 'val' })
   let firedEvent = false
   text1.observe(event => {
     const d = event.delta
-    t.assert(d.length === 1)
-    t.compare(d.map(x => /** @type {Y.AbstractType<any>} */ (x.insert).toJSON()), [{ key: 'val' }])
+    t.assert(d.ops.length === 1)
+    t.compare(d.ops.map(x => /** @type {any} */ (x).insert.toJSON()), [{ key: 'val' }])
     firedEvent = true
   })
   testConnector.flushAllMessages()
-  const delta = text1.toDelta()
+  const delta = text1.getContent().toJSON()
   t.assert(delta.length === 1)
-  t.compare(delta[0].insert.toJSON(), { key: 'val' })
+  t.compare(/** @type {any} */ (delta[0]).insert.toJSON(), { key: 'val' })
   t.assert(firedEvent, 'fired the event observer containing a Type-Embed')
 }
 
@@ -1898,18 +1847,13 @@ export const testSnapshot = tc => {
   }, {
     delete: 1
   }])
-  const state1 = text0.toDelta(snapshot1)
-  t.compare(state1, [{ insert: 'abcd' }])
-  const state2 = text0.toDelta(snapshot2)
-  t.compare(state2, [{ insert: 'axcd' }])
-  const state2Diff = text0.toDelta(snapshot2, snapshot1)
-  // @ts-ignore Remove userid info
-  state2Diff.forEach(v => {
-    if (v.attributes && v.attributes.ychange) {
-      delete v.attributes.ychange.user
-    }
-  })
-  t.compare(state2Diff, [{ insert: 'a' }, { insert: 'x', attributes: { ychange: { type: 'added' } } }, { insert: 'b', attributes: { ychange: { type: 'removed' } } }, { insert: 'cd' }])
+  const state1 = text0.getContent(createAttributionManagerFromSnapshots(snapshot1))
+  t.compare(state1.toJSON(), [{ insert: 'abcd' }])
+  const state2 = text0.getContent(createAttributionManagerFromSnapshots(snapshot2))
+  t.compare(state2.toJSON(), [{ insert: 'axcd' }])
+  const state2Diff = text0.getContent(createAttributionManagerFromSnapshots(snapshot1, snapshot2)).toJSON()
+  const expected = [{ insert: 'a' }, { insert: 'x', attribution: { insert: [] } }, { insert: 'b', attribution: { delete: [] } }, { insert: 'cd' }]
+  t.compare(state2Diff, expected)
 }
 
 /**
@@ -1928,8 +1872,8 @@ export const testSnapshotDeleteAfter = tc => {
   }, {
     insert: 'e'
   }])
-  const state1 = text0.toDelta(snapshot1)
-  t.compare(state1, [{ insert: 'abcd' }])
+  const state1 = text0.getContent(createAttributionManagerFromSnapshots(snapshot1, snapshot1))
+  t.compare(state1, delta.fromJSON([{ insert: 'abcd' }]))
 }
 
 /**
@@ -1948,7 +1892,7 @@ export const testToDeltaEmbedAttributes = tc => {
   const { text0 } = init(tc, { users: 1 })
   text0.insert(0, 'ab', { bold: true })
   text0.insertEmbed(1, { image: 'imageSrc.png' }, { width: 100 })
-  const delta0 = text0.toDelta()
+  const delta0 = text0.getContent().toJSON()
   t.compare(delta0, [{ insert: 'a', attributes: { bold: true } }, { insert: { image: 'imageSrc.png' }, attributes: { width: 100 } }, { insert: 'b', attributes: { bold: true } }])
 }
 
@@ -1959,7 +1903,7 @@ export const testToDeltaEmbedNoAttributes = tc => {
   const { text0 } = init(tc, { users: 1 })
   text0.insert(0, 'ab', { bold: true })
   text0.insertEmbed(1, { image: 'imageSrc.png' })
-  const delta0 = text0.toDelta()
+  const delta0 = text0.getContent().toJSON()
   t.compare(delta0, [{ insert: 'a', attributes: { bold: true } }, { insert: { image: 'imageSrc.png' } }, { insert: 'b', attributes: { bold: true } }], 'toDelta does not set attributes key when no attributes are present')
 }
 
@@ -2000,7 +1944,7 @@ export const testFormattingDeltaUnnecessaryAttributeChange = tc => {
   })
   testConnector.flushAllMessages()
   /**
-   * @type {Array<any>}
+   * @type {Array<delta.TextDelta>}
    */
   const deltas = []
   text0.observe(event => {
@@ -2011,9 +1955,9 @@ export const testFormattingDeltaUnnecessaryAttributeChange = tc => {
   })
   text1.format(0, 1, { LIST_STYLES: 'number' })
   testConnector.flushAllMessages()
-  const filteredDeltas = deltas.filter(d => d.length > 0)
+  const filteredDeltas = deltas.filter(d => d.ops.length > 0)
   t.assert(filteredDeltas.length === 2)
-  t.compare(filteredDeltas[0], [
+  t.compare(filteredDeltas[0].toJSON(), [
     { retain: 1, attributes: { LIST_STYLES: 'number' } }
   ])
   t.compare(filteredDeltas[0], filteredDeltas[1])
@@ -2267,9 +2211,9 @@ export const testFormattingBug = async _tc => {
     { insert: '\n', attributes: { url: 'http://docs.yjs.dev' } },
     { insert: '\n', attributes: { url: 'http://example.com' } }
   ]
-  t.compare(text1.toDelta(), expectedResult)
-  t.compare(text1.toDelta(), text2.toDelta())
-  console.log(text1.toDelta())
+  t.compare(text1.getContent().toJSON(), expectedResult)
+  t.compare(text1.getContent().toJSON(), text2.getContent().toJSON())
+  console.log(text1.getContent().toJSON())
 }
 
 /**
@@ -2297,8 +2241,8 @@ export const testDeleteFormatting = _tc => {
     { insert: 'on ', attributes: { bold: true } },
     { insert: 'fire off the shoulder of Orion.' }
   ]
-  t.compare(text.toDelta(), expected)
-  t.compare(text2.toDelta(), expected)
+  t.compare(text.getContent().toJSON(), expected)
+  t.compare(text2.getContent().toJSON(), expected)
 }
 
 /**
@@ -2590,13 +2534,13 @@ const checkResult = result => {
 
     t.info('length of text = ' + result.users[i - 1].getText('text').length)
     t.measureTime('original toDelta perf', () => {
-      result.users[i - 1].getText('text').toDelta().map(typeToObject)
+      result.users[i - 1].getText('text').getContent().toJSON().map(typeToObject)
     })
     t.measureTime('getContent(attributionManager) performance)', () => {
       result.users[i - 1].getText('text').getContent()
     })
-    const p1 = result.users[i - 1].getText('text').toDelta().map(typeToObject)
-    const p2 = result.users[i].getText('text').toDelta().map(typeToObject)
+    const p1 = result.users[i - 1].getText('text').getContent().toJSON().map(typeToObject)
+    const p2 = result.users[i].getText('text').getContent().toJSON().map(typeToObject)
     t.compare(p1, p2)
   }
   // Uncomment this to find formatting-cleanup issues
@@ -2613,7 +2557,7 @@ const checkResult = result => {
  * @param {t.TestCase} tc
  */
 export const testAttributionManagerDefaultPerformance = tc => {
-  const N = 10000
+  const N = 100000
   const MaxDeletionLength = 5 // 25% chance of deletion
   const MaxInsertionLength = 5
   const ydoc = new Y.Doc()
@@ -2634,12 +2578,7 @@ export const testAttributionManagerDefaultPerformance = tc => {
   const M = 100
   t.measureTime(`original toString perf <executed ${M} times>`, () => {
     for (let i = 0; i < M; i++) {
-      ytext.toDelta()
-    }
-  })
-  t.measureTime(`original toDelta perf <executed ${M} times>`, () => {
-    for (let i = 0; i < M; i++) {
-      ytext.toDelta()
+      ytext.toString()
     }
   })
   t.measureTime(`getContent(attributionManager) performance <executed ${M} times>`, () => {

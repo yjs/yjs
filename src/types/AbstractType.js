@@ -728,6 +728,8 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
         case Boolean:
         case Array:
         case String:
+        case BigInt:
+        case Date:
           jsonContent.push(c)
           break
         default:
