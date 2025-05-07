@@ -11,8 +11,7 @@ import {
   diffIdMap,
   createIdMap,
   createAttributionItem,
-  mergeIdMaps,
-  AttributionItem
+  mergeIdMaps
 } from '../internals.js'
 
 import * as error from 'lib0/error'

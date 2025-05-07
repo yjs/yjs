@@ -755,8 +755,8 @@ export class YTextEvent extends YEvent {
  * block formats (format information on a paragraph), embeds (complex elements
  * like pictures and videos), and text formats (**bold**, *italic*).
  *
- * @template {any} Embeds
- * @extends AbstractType<YTextEvent>
+ * @template {{ [key:string]:any } | AbstractType<any>} [Embeds={ [key:string]:any } | AbstractType<any>]
+ * @extends AbstractType<YTextEvent<Embeds>>
  */
 export class YText extends AbstractType {
   /**
@@ -804,6 +804,9 @@ export class YText extends AbstractType {
     this._pending = null
   }
 
+  /**
+   * @return {YText<Embeds>}
+   */
   _copy () {
     return new YText()
   }
@@ -816,6 +819,9 @@ export class YText extends AbstractType {
    * @return {YText<Embeds>}
    */
   clone () {
+    /**
+     * @type {YText<Embeds>}
+     */
     const text = new YText()
     text.applyDelta(this.getContent())
     return text
@@ -944,6 +950,9 @@ export class YText extends AbstractType {
    */
   getContent (am = noAttributionsManager) {
     this.doc ?? warnPrematureAccess()
+    /**
+     * @type {delta.TextDelta<Embeds>}
+     */
     const d = delta.createTextDelta()
     /**
      * @type {Array<import('../internals.js').AttributedContent<any>>}

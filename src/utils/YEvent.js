@@ -7,7 +7,8 @@ import * as array from 'lib0/array'
 import * as error from 'lib0/error'
 
 /**
- * @typedef {import('../utils/Delta.js').TextDelta} TextDelta
+ * @template {object} Embed
+ * @typedef {import('../utils/Delta.js').TextDelta<Embed>} TextDelta
  */
 
 /**
@@ -50,7 +51,7 @@ export class YEvent {
      */
     this._keys = null
     /**
-     * @type {TextDelta?}
+     * @type {TextDelta<any>?}
      */
     this._delta = null
     /**

@@ -1804,7 +1804,7 @@ export const testTypesAsEmbed = tc => {
   text0.applyDelta([{
     insert: new Y.Map([['key', 'val']])
   }])
-  t.compare(/** @type {delta.InsertOp<any>} */ (text0.getContent().ops[0]).insert.toJSON(), { key: 'val' })
+  t.compare(/** @type {delta.InsertEmbedOp<any>} */ (text0.getContent().ops[0]).insert.toJSON(), { key: 'val' })
   let firedEvent = false
   text1.observe(event => {
     const d = event.delta
@@ -1944,7 +1944,7 @@ export const testFormattingDeltaUnnecessaryAttributeChange = tc => {
   })
   testConnector.flushAllMessages()
   /**
-   * @type {Array<delta.TextDelta>}
+   * @type {Array<delta.TextDelta<any>>}
    */
   const deltas = []
   text0.observe(event => {
@@ -2262,14 +2262,14 @@ export const testAttributedContent = _tc => {
     ytext.applyDelta([{ retain: 4, attributes: { italic: true } }, { retain: 2 }, { delete: 5 }, { insert: 'attributions' }])
     const expectedContent = delta.createTextDelta().insert('Hell', { italic: true }, { attributes: { italic: [] } }).insert('o ').insert('World', {}, { delete: [] }).insert('attributions', {}, { insert: [] }).insert('!')
     const attributedContent = ytext.getContent(attributionManager)
-    console.log(attributedContent.toJSON().ops)
+    console.log(attributedContent.toJSON())
     t.assert(attributedContent.equals(expectedContent))
   })
   t.group('unformat', () => {
     ytext.applyDelta([{ retain: 5, attributes: { italic: null } }])
     const expectedContent = delta.createTextDelta().insert('Hell', null, { attributes: { italic: [] } }).insert('o attributions!')
     const attributedContent = ytext.getContent(attributionManager)
-    console.log(attributedContent.toJSON().ops)
+    console.log(attributedContent.toJSON())
     t.assert(attributedContent.equals(expectedContent))
   })
 }
@@ -2300,7 +2300,7 @@ export const testAttributedDiffing = _tc => {
   const attributionManager = new TwosetAttributionManager(attributedInsertions, attributedDeletions)
   // we render the attributed content with the attributionManager
   const attributedContent = ytext.getContent(attributionManager)
-  console.log(JSON.stringify(attributedContent.toJSON().ops, null, 2))
+  console.log(JSON.stringify(attributedContent.toJSON(), null, 2))
   const expectedContent = delta.createTextDelta().insert('Hell', { italic: true }, { attributes: { italic: ['Bob'] } }).insert('o ').insert('World', {}, { delete: ['Bob'] }).insert('attributions', {}, { insert: ['Bob'] }).insert('!')
   t.assert(attributedContent.equals(expectedContent))
   console.log(Y.encodeIdMap(attributedInsertions).length)

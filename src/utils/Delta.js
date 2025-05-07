@@ -5,17 +5,17 @@ import * as error from 'lib0/error'
 
 /**
  * @template {any} ArrayContent
- * @template {{[key: string]: any}} Embeds
+ * @template {object} Embeds
  * @typedef {InsertStringOp|InsertEmbedOp<Embeds>|InsertArrayOp<ArrayContent>|RetainOp|DeleteOp} DeltaOp
  */
 
 /**
- * @template {{[key: string]: any}} Embeds
+ * @template {object} Embeds
  * @typedef {InsertStringOp|InsertEmbedOp<Embeds>|RetainOp|DeleteOp} TextDeltaOp
  */
 
 /**
- * @template {any} ArrayContent
+ * @template ArrayContent
  * @typedef {InsertArrayOp<ArrayContent>|RetainOp|DeleteOp} ArrayDeltaOp
  */
 
@@ -101,7 +101,7 @@ export class InsertArrayOp {
 }
 
 /**
- * @template {{[key: string]: any}} Embeds
+ * @template {object} Embeds
  */
 export class InsertEmbedOp {
   /**
@@ -274,8 +274,8 @@ const mergeAttrs = (a, b) => {
 }
 
 /**
- * @template {'array' | 'text' | 'custom'} [Type='custom']
- * @template {DeltaOp<any,any>} [TDeltaOp=DeltaOp<any,any>]
+ * @template {'array' | 'text' | 'custom'} Type
+ * @template {DeltaOp<any,any>} TDeltaOp
  * @extends AbstractDelta<Type,TDeltaOp>
  */
 export class DeltaBuilder extends AbstractDelta {
@@ -353,7 +353,7 @@ export class DeltaBuilder extends AbstractDelta {
   }
 
   /**
-   * @param {(TDeltaOp extends TextDelta<infer Embeds> ? string | Embeds : never) | (TDeltaOp extends InsertArrayOp<infer Content> ? Array<Content> : never) } insert
+   * @param {(TDeltaOp extends InsertStringOp ? string : never) | (TDeltaOp extends InsertEmbedOp<infer Embeds> ? (Embeds) : never) | (TDeltaOp extends InsertArrayOp<infer Content> ? Array<Content> : never) } insert
    * @param {FormattingAttributes?} attributes
    * @param {Attribution?} attribution
    * @return {this}
@@ -362,6 +362,7 @@ export class DeltaBuilder extends AbstractDelta {
     const mergedAttributes = mergeAttrs(this.usedAttributes, attributes)
     const mergedAttribution = mergeAttrs(this.usedAttribution, attribution)
     if (((this.lastOp instanceof InsertStringOp && insert.constructor === String) || (this.lastOp instanceof InsertArrayOp && insert.constructor === Array)) && (mergedAttributes === this.lastOp.attributes || fun.equalityDeep(mergedAttributes, this.lastOp.attributes)) && (mergedAttribution === this.lastOp.attribution || fun.equalityDeep(mergedAttribution, this.lastOp.attribution))) {
+      // @ts-ignore
       if (insert.constructor === String) {
         // @ts-ignore
         this.lastOp.insert += insert
@@ -441,12 +442,14 @@ export class TextDelta extends DeltaBuilder {
 }
 
 /**
- * @return {TextDelta<TextDeltaContent>}
+ * @template {object} Embeds
+ * @return {TextDelta<Embeds>}
  */
 export const createTextDelta = () => new TextDelta()
 
 /**
- * @return {ArrayDelta<any>}
+ * @template [V=any]
+ * @return {ArrayDelta<V>}
  */
 export const createArrayDelta = () => new ArrayDelta()
 
