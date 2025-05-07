@@ -193,10 +193,6 @@ export class RetainOp {
 }
 
 /**
- * @typedef {string | { [key: string]: any }} TextDeltaContent
- */
-
-/**
  * @typedef {(TextDelta<any> | ArrayDelta<any>)} Delta
  */
 

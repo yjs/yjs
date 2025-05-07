@@ -116,16 +116,6 @@ deletions and insertions only, without Attributions).
 `AttributionManager` is an abstract class for mapping attributions. It is
 possible to highlight arbitrary content with this approach. 
 
-The next steps are to:
-
-- finish the implementation for Y.Map and Y.Xml* (which should be easy, compared
-to Y.Map).
-- Implement an AttributionManager-CRDT for the backend that sits there and
-associates changes with users.
-- use `getContent(attributionManager)` instead of `toDelta` in y-prosemirror.
-Would like to make the attribution part of y-prosemirror, however Nick can also
-use this approach to customly render the changes in ProseMirror.
-
 The AttributionManager is encodes very efficiently. The ids are encoded using
 run-length encoding and the Attributes are de-duplicated and only encoded once.
 The above example encodes in 20 bytes.
