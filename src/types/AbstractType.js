@@ -22,10 +22,10 @@ import * as math from 'lib0/math'
 import * as log from 'lib0/logging'
 
 /**
- * @typedef {delta.ArrayDelta|delta.TextDelta|{ children: delta.ArrayDelta<Array<YXmlDeepContent>> }|{ children: delta.ArrayDelta, attributes: {[key:string]:{ value: any, prevValue: any, attribution: import('../utils/AttributionManager.js').Attribution } } }} YXmlDeepContent
+ * @typedef {delta.ArrayDelta<any>|delta.TextDelta<any>|{ children: delta.ArrayDelta<Array<YXmlDeepContent>> }|{ children: delta.ArrayDelta<any>, attributes: {[key:string]:{ value: any, prevValue: any, attribution: import('../utils/AttributionManager.js').Attribution } } }} YXmlDeepContent
  */
 /**
- * @typedef {delta.ArrayDelta|delta.TextDelta|{ children: delta.ArrayDelta<Array<DeepContent>> }|{ children: delta.ArrayDelta, attributes: {[key:string]:{ value: any, prevValue: any, attribution: import('../utils/AttributionManager.js').Attribution} } }} DeepContent
+ * @typedef {delta.ArrayDelta<any>|delta.TextDelta<any>|{ children: delta.ArrayDelta<Array<DeepContent>> }|{ children: delta.ArrayDelta<any>, attributes: {[key:string]:{ value: any, prevValue: any, attribution: import('../utils/AttributionManager.js').Attribution} } }} DeepContent
  */
 
 /**

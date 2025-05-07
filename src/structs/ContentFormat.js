@@ -67,24 +67,24 @@ export class ContentFormat {
    */
   integrate (_transaction, item) {
     // @todo searchmarker are currently unsupported for rich text documents
-    const p = /** @type {YText} */ (item.parent)
+    const p = /** @type {YText<any>} */ (item.parent)
     p._searchMarker = null
     p._hasFormatting = true
   }
 
   /**
-   * @param {Transaction} transaction
+   * @param {Transaction} _transaction
    */
-  delete (transaction) {}
+  delete (_transaction) {}
   /**
-   * @param {StructStore} store
+   * @param {StructStore} _store
    */
-  gc (store) {}
+  gc (_store) {}
   /**
    * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
-   * @param {number} offset
+   * @param {number} _offset
    */
-  write (encoder, offset) {
+  write (encoder, _offset) {
     encoder.writeKey(this.key)
     encoder.writeJSON(this.value)
   }
