@@ -1872,7 +1872,7 @@ export const testSnapshotDeleteAfter = tc => {
   }, {
     insert: 'e'
   }])
-  const state1 = text0.getContent(createAttributionManagerFromSnapshots(snapshot1, snapshot1))
+  const state1 = text0.getContent(createAttributionManagerFromSnapshots(snapshot1))
   t.compare(state1, delta.fromJSON([{ insert: 'abcd' }]))
 }
 

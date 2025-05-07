@@ -271,8 +271,9 @@ export class SnapshotAttributionManager {
     const inserts = createIdMap()
     const deletes = createIdMapFromIdSet(diffIdSet(nextSnapshot.ds, prevSnapshot.ds), [createAttributionItem('change', '')])
     nextSnapshot.sv.forEach((clock, client) => {
-      inserts.add(client, 0, prevSnapshot.sv.get(client) || 0, [])
-      inserts.add(client, prevSnapshot.sv.get(client) || 0, clock, [createAttributionItem('change', '')])
+      const prevClock = prevSnapshot.sv.get(client) || 0
+      inserts.add(client, 0, prevClock, []) // content is included in prevSnapshot is rendered without attributes
+      inserts.add(client, prevClock, clock - prevClock, [createAttributionItem('change', '')]) // content is rendered as "inserted"
     })
     this.attrs = mergeIdMaps([diffIdMap(inserts, prevSnapshot.ds), deletes])
   }
@@ -289,10 +290,12 @@ export class SnapshotAttributionManager {
     let content = slice.length === 1 ? item.content : item.content.copy()
     slice.forEach(s => {
       const deleted = this.nextSnapshot.ds.has(item.id.client, s.clock)
+      const nonExistend = (this.nextSnapshot.sv.get(item.id.client) ?? 0) <= s.clock
       const c = content
       if (s.len < c.getLength()) {
         content = c.splice(s.len)
       }
+      if (nonExistend) return
       if (!deleted || (s.attrs != null && s.attrs.length > 0)) {
         let attrsWithoutChange = s.attrs?.filter(attr => attr.name !== 'change') ?? null
         if (s.attrs?.length === 0) {

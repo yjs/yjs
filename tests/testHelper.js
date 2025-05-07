@@ -465,7 +465,7 @@ export const compare = users => {
   const userArrayValues = users.map(u => u.getArray('array').toJSON())
   const userMapValues = users.map(u => u.getMap('map').toJSON())
   const userXmlValues = users.map(u => u.get('xml', Y.XmlElement).toString())
-  const userTextValues = users.map(u => u.getText('text').getContent())
+  const userTextValues = users.map(u => u.getText('text').getContentDeep())
   for (const u of users) {
     t.assert(u.store.pendingDs === null)
     t.assert(u.store.pendingStructs === null)

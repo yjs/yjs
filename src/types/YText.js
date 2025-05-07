@@ -448,7 +448,7 @@ const cleanupContextlessFormattingGap = (transaction, item) => {
  *
  * This function won't be exported anymore as soon as there is confidence that the YText type works as intended.
  *
- * @param {YText} type
+ * @param {YText<any>} type
  * @return {number} How many formatting attributes have been cleaned up.
  */
 export const cleanupYTextFormatting = type => {
@@ -485,7 +485,7 @@ export const cleanupYTextFormatting = type => {
  */
 export const cleanupYTextAfterTransaction = transaction => {
   /**
-   * @type {Set<YText>}
+   * @type {Set<YText<any>>}
    */
   const needFullCleanup = new Set()
   // check if another formatting item was inserted
@@ -500,10 +500,10 @@ export const cleanupYTextAfterTransaction = transaction => {
   // cleanup in a new transaction
   transact(doc, (t) => {
     iterateStructsByIdSet(transaction, transaction.deleteSet, item => {
-      if (item instanceof GC || !(/** @type {YText} */ (item.parent)._hasFormatting) || needFullCleanup.has(/** @type {YText} */ (item.parent))) {
+      if (item instanceof GC || !(/** @type {YText<any>} */ (item.parent)._hasFormatting) || needFullCleanup.has(/** @type {YText<any>} */ (item.parent))) {
         return
       }
-      const parent = /** @type {YText} */ (item.parent)
+      const parent = /** @type {YText<any>} */ (item.parent)
       if (item.content.constructor === ContentFormat) {
         needFullCleanup.add(parent)
       } else {
@@ -588,12 +588,13 @@ const deleteText = (transaction, currPos, length) => {
   */
 
 /**
- * @extends YEvent<YText>
+ * @template {{ [key:string]: any } | AbstractType<any> } TextEmbeds
+ * @extends YEvent<YText<any>>
  * Event that describes the changes on a YText type.
  */
 export class YTextEvent extends YEvent {
   /**
-   * @param {YText} ytext
+   * @param {YText<TextEmbeds>} ytext
    * @param {Transaction} transaction
    * @param {Set<any>} subs The keys that changed
    */
@@ -620,12 +621,12 @@ export class YTextEvent extends YEvent {
   }
 
   /**
-   * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:delta.TextDelta}}
+   * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:delta.TextDelta<TextEmbeds>}}
    */
   get changes () {
     if (this._changes === null) {
       /**
-       * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:delta.TextDelta}}
+       * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:delta.TextDelta<TextEmbeds>}}
        */
       const changes = {
         keys: this.keys,
@@ -642,7 +643,7 @@ export class YTextEvent extends YEvent {
    * Compute the changes in the delta format.
    * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
    *
-   * @type {delta.TextDelta}
+   * @type {delta.TextDelta<TextEmbeds>}
    *
    * @public
    */
@@ -754,6 +755,7 @@ export class YTextEvent extends YEvent {
  * block formats (format information on a paragraph), embeds (complex elements
  * like pictures and videos), and text formats (**bold**, *italic*).
  *
+ * @template {any} Embeds
  * @extends AbstractType<YTextEvent>
  */
 export class YText extends AbstractType {
@@ -811,7 +813,7 @@ export class YText extends AbstractType {
    *
    * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
    *
-   * @return {YText}
+   * @return {YText<Embeds>}
    */
   clone () {
     const text = new YText()
@@ -916,14 +918,14 @@ export class YText extends AbstractType {
    * attribution `{ isDeleted: true, .. }`.
    *
    * @param {AbstractAttributionManager} am
-   * @return {import('../utils/Delta.js').TextDelta<string | import('./AbstractType.js').DeepContent >} The Delta representation of this type.
+   * @return {import('../utils/Delta.js').TextDelta< Embeds extends import('./AbstractType.js').AbstractType<any> ? import('./AbstractType.js').DeepContent : Embeds >} The Delta representation of this type.
    *
    * @public
    */
   getContentDeep (am = noAttributionsManager) {
     return this.getContent(am).map(d =>
-      d instanceof delta.InsertStringOp && d.insert instanceof AbstractType
-        ? new delta.InsertStringOp(d.insert.getContent(am), d.attributes, d.attribution)
+      d instanceof delta.InsertEmbedOp && d.insert instanceof AbstractType
+        ? new delta.InsertEmbedOp(d.insert.getContent(am), d.attributes, d.attribution)
         : d
     )
   }
@@ -936,7 +938,7 @@ export class YText extends AbstractType {
    * attribution `{ isDeleted: true, .. }`.
    *
    * @param {AbstractAttributionManager} am
-   * @return {import('../utils/Delta.js').TextDelta} The Delta representation of this type.
+   * @return {import('../utils/Delta.js').TextDelta<Embeds>} The Delta representation of this type.
    *
    * @public
    */
