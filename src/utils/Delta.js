@@ -410,7 +410,7 @@ export class DeltaBuilder extends AbstractDelta {
   }
 
   /**
-   * @return {AbstractDelta<Type,TDeltaOp>}
+   * @return {this}
    */
   done () {
     while (this.lastOp != null && this.lastOp instanceof RetainOp && this.lastOp.attributes === null) {
@@ -432,7 +432,7 @@ export class ArrayDelta extends DeltaBuilder {
 }
 
 /**
- * @template {{ [key:string]: any }} Embeds
+ * @template {object} Embeds
  * @extends DeltaBuilder<'text',TextDeltaOp<Embeds>>
  */
 export class TextDelta extends DeltaBuilder {
@@ -440,6 +440,17 @@ export class TextDelta extends DeltaBuilder {
     super('text')
   }
 }
+
+/**
+ * @template {'text'|'array'|'custom'} Type
+ * @template {DeltaOp<any,any>} DeltaOps
+ * @typedef {AbstractDelta<Type, DeltaOps>} DeltaReadonly
+ */
+
+/**
+ * @template {object} Embeds
+ * @typedef {DeltaReadonly<'text',TextDeltaOp<Embeds>>} TextDeltaReadonly
+ */
 
 /**
  * @template {object} Embeds

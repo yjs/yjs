@@ -640,47 +640,55 @@ export class YTextEvent extends YEvent {
   }
 
   /**
-   * Compute the changes in the delta format.
-   * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
-   *
-   * @type {delta.TextDelta<TextEmbeds>}
+   * @param {AbstractAttributionManager} am
+   * @return {import('../utils/Delta.js').TextDelta<TextEmbeds>} The Delta representation of this type.
    *
    * @public
    */
-  get delta () {
-    if (this._delta === null) {
-      const ydoc = /** @type {Doc} */ (this.target.doc)
-      const d = this._delta = delta.createTextDelta()
-      transact(ydoc, transaction => {
-        /**
-         * @type {import('../utils/Delta.js').FormattingAttributes}
-         */
-        let currentAttributes = {} // saves all current attributes for insert
-        let usingCurrentAttributes = false
-        /**
-         * @type {import('../utils/Delta.js').FormattingAttributes}
-         */
-        let changedAttributes = {} // saves changed attributes for retain
-        let usingChangedAttributes = false
-        /**
-         * @type {import('../utils/Delta.js').FormattingAttributes}
-         */
-        const previousAttributes = {} // The value before changes
-        const tr = this.transaction
-        let item = this.target._start
-        while (item !== null) {
-          const freshDelete = item.deleted && tr.deleteSet.hasId(item.id) && !tr.insertSet.hasId(item.id)
-          const freshInsert = !item.deleted && tr.insertSet.hasId(item.id)
-          switch (item.content.constructor) {
+  getDelta (am = noAttributionsManager) {
+    const ydoc = /** @type {Doc} */ (this.target.doc)
+    /**
+     * @type {import('../utils/Delta.js').TextDelta<TextEmbeds>}
+     */
+    const d = delta.createTextDelta()
+    transact(ydoc, transaction => {
+      /**
+       * @type {import('../utils/Delta.js').FormattingAttributes}
+       */
+      let currentAttributes = {} // saves all current attributes for insert
+      let usingCurrentAttributes = false
+      /**
+       * @type {import('../utils/Delta.js').FormattingAttributes}
+       */
+      let changedAttributes = {} // saves changed attributes for retain
+      let usingChangedAttributes = false
+      /**
+       * @type {import('../utils/Delta.js').FormattingAttributes}
+       */
+      const previousAttributes = {} // The value before changes
+      const tr = this.transaction
+
+      /**
+       * @type {Array<import('../internals.js').AttributedContent<any>>}
+       */
+      const cs = []
+      for (let item = this.target._start; item !== null; cs.length = 0, item = item.right) {
+        const freshDelete = item.deleted && tr.deleteSet.hasId(item.id) && !tr.insertSet.hasId(item.id)
+        const freshInsert = !item.deleted && tr.insertSet.hasId(item.id)
+        am.readContent(cs, item, freshDelete) // do item.right after calling this
+        for (let i = 0; i < cs.length; i++) {
+          const c = cs[i]
+          const attribution = createAttributionFromAttributionItems(c.attrs, c.deleted)
+          switch (c.content.constructor) {
             case ContentType:
             case ContentEmbed:
               if (freshInsert) {
                 d.usedAttributes = currentAttributes
                 usingCurrentAttributes = true
-                d.insert(item.content.getContent()[0])
+                d.insert(c.content.getContent()[0], null, attribution)
               } else if (freshDelete) {
                 d.delete(1)
-              } else if (!item.deleted) {
+              } else if (!c.deleted) {
                 d.usedAttributes = changedAttributes
                 usingChangedAttributes = true
                 d.retain(1)
@@ -690,17 +698,17 @@ export class YTextEvent extends YEvent {
               if (freshInsert) {
                 d.usedAttributes = currentAttributes
                 usingCurrentAttributes = true
-                d.insert(/** @type {ContentString} */ (item.content).str)
+                d.insert(/** @type {ContentString} */ (c.content).str, null, attribution)
               } else if (freshDelete) {
-                d.delete(item.length)
-              } else if (!item.deleted) {
+                d.delete(c.content.getLength())
+              } else if (!c.deleted) {
                 d.usedAttributes = changedAttributes
                 usingChangedAttributes = true
-                d.retain(item.length)
+                d.retain(c.content.getLength())
               }
               break
             case ContentFormat: {
-              const { key, value } = /** @type {ContentFormat} */ (item.content)
+              const { key, value } = /** @type {ContentFormat} */ (c.content)
               const currAttrVal = currentAttributes[key] ?? null
               if (freshDelete || freshInsert) {
                 // create fresh references
@@ -727,7 +735,7 @@ export class YTextEvent extends YEvent {
                 changedAttributes[key] = currAttrVal
                 currentAttributes[key] = currAttrVal
                 previousAttributes[key] = value
-              } else if (!item.deleted) {
+              } else if (!c.deleted) {
                 // fresh reference to currentAttributes only
                 if (usingCurrentAttributes) {
                   currentAttributes = object.assign({}, currentAttributes)
@@ -739,12 +747,22 @@ export class YTextEvent extends YEvent {
               break
             }
           }
-          item = item.right
         }
-      })
-      d.done()
-    }
-    return /** @type {any} */ (this._delta)
+      }
+    })
+    return d.done()
+  }
+
+  /**
+   * Compute the changes in the delta format.
+   * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
+   *
+   * @type {delta.TextDelta<TextEmbeds>}
+   *
+   * @public
+   */
+  get delta () {
+    return this._delta ?? (this._delta = this.getDelta())
   }
 }
 
@@ -961,7 +979,7 @@ export class YText extends AbstractType {
     for (let item = this._start; item !== null; cs.length = 0) {
       // populate cs
       for (; item !== null && cs.length < 50; item = item.right) {
-        am.readContent(cs, item)
+        am.readContent(cs, item, false)
       }
       for (let i = 0; i < cs.length; i++) {
         const { content, deleted, attrs } = cs[i]
