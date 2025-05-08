@@ -89,8 +89,9 @@ export class AbstractAttributionManager {
   /**
    * @param {Array<AttributedContent<any>>} _contents
    * @param {Item} _item
+   * @param {boolean} _forceRead read content even if it is unattributed and deleted
    */
-  readContent (_contents, _item) {
+  readContent (_contents, _item, _forceRead) {
     error.methodUnimplemented()
   }
 
@@ -115,8 +116,9 @@ export class TwosetAttributionManager {
   /**
    * @param {Array<AttributedContent<any>>} contents
    * @param {Item} item
+   * @param {boolean} forceRead read content even if it is unattributed and deleted
    */
-  readContent (contents, item) {
+  readContent (contents, item, forceRead) {
     const deleted = item.deleted
     const slice = (deleted ? this.deletes : this.inserts).slice(item.id, item.length)
     let content = slice.length === 1 ? item.content : item.content.copy()
@@ -125,7 +127,7 @@ export class TwosetAttributionManager {
       if (s.len < c.getLength()) {
         content = c.splice(s.len)
       }
-      if (!deleted || s.attrs != null) {
+      if (!deleted || s.attrs != null || forceRead) {
         contents.push(new AttributedContent(c, deleted, s.attrs))
       }
     })
@@ -143,9 +145,10 @@ export class NoAttributionsManager {
   /**
    * @param {Array<AttributedContent<any>>} contents
    * @param {Item} item
+   * @param {boolean} forceRead read content even if it is unattributed and deleted
    */
-  readContent (contents, item) {
-    if (!item.deleted) {
+  readContent (contents, item, forceRead) {
+    if (!item.deleted || forceRead) {
       contents.push(new AttributedContent(item.content, false, null))
     }
   }
@@ -214,8 +217,9 @@ export class DiffAttributionManager {
   /**
    * @param {Array<AttributedContent<any>>} contents
    * @param {Item} item
+   * @param {boolean} forceRead read content even if it is unattributed and deleted
    */
-  readContent (contents, item) {
+  readContent (contents, item, forceRead) {
     const deleted = item.deleted || /** @type {any} */ (item.parent).doc !== this._nextDoc
     const slice = (deleted ? this.deletes : this.inserts).slice(item.id, item.length)
     let content = slice.length === 1 ? item.content : item.content.copy()
@@ -238,7 +242,7 @@ export class DiffAttributionManager {
       if (s.len < c.getLength()) {
         content = c.splice(s.len)
       }
-      if (!deleted || s.attrs != null) {
+      if (!deleted || s.attrs != null || forceRead) {
         contents.push(new AttributedContent(c, deleted, s.attrs))
       }
     })
@@ -282,8 +286,9 @@ export class SnapshotAttributionManager {
   /**
    * @param {Array<AttributedContent<any>>} contents
    * @param {Item} item
+   * @param {boolean} forceRead read content even if it is unattributed and deleted
    */
-  readContent (contents, item) {
+  readContent (contents, item, forceRead) {
     if ((this.nextSnapshot.sv.get(item.id.client) ?? 0) <= item.id.clock) return // future item that should not be displayed
     const slice = this.attrs.slice(item.id, item.length)
     let content = slice.length === 1 ? item.content : item.content.copy()
@@ -295,7 +300,7 @@ export class SnapshotAttributionManager {
         content = c.splice(s.len)
       }
       if (nonExistend) return
-      if (!deleted || (s.attrs != null && s.attrs.length > 0)) {
+      if (!deleted || forceRead || (s.attrs != null && s.attrs.length > 0)) {
         let attrsWithoutChange = s.attrs?.filter(attr => attr.name !== 'change') ?? null
         if (s.attrs?.length === 0) {
           attrsWithoutChange = null
