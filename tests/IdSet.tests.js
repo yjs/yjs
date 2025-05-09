@@ -221,3 +221,22 @@ export const testRepeatRandomDiffing2 = tc => {
   const excludedMerged = d.mergeIdSets([e1, e2])
   compareIdSets(mergedExcluded, excludedMerged)
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testrepeatRandomIntersects = tc => {
+  const clients = 4
+  const clockRange = 100
+  const ids1 = createRandomIdSet(tc.prng, clients, clockRange)
+  const ids2 = createRandomIdSet(tc.prng, clients, clockRange)
+  const intersected = d.intersectSets(ids1, ids2)
+  for (let client = 0; client < clients; client++) {
+    for (let clock = 0; clock < clockRange; clock++) {
+      t.assert((ids1.has(client, clock) && ids2.has(client, clock)) === intersected.has(client, clock))
+    }
+  }
+  const diffed1 = d.diffIdSet(ids1, ids2)
+  const altDiffed1 = d.diffIdSet(ids1, intersected)
+  compareIdSets(diffed1, altDiffed1)
+}

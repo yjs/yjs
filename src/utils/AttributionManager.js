@@ -31,13 +31,14 @@ import * as error from 'lib0/error'
 /**
  * @param {Array<import('./IdMap.js').AttributionItem<any>>?} attrs
  * @param {boolean} deleted - whether the attributed item is deleted
- * @return {Attribution?}
+ * @return {{ attribution: Attribution?, retainOnly: boolean }}
  */
 export const createAttributionFromAttributionItems = (attrs, deleted) => {
   /**
    * @type {Attribution?}
    */
   let attribution = null
+  let retainOnly = false
   if (attrs != null) {
     attribution = {}
     if (deleted) {
@@ -47,6 +48,9 @@ export const createAttributionFromAttributionItems = (attrs, deleted) => {
     }
     attrs.forEach(attr => {
       switch (attr.name) {
+        case 'retain':
+          retainOnly = true
+          break
         case 'insert':
         case 'delete':
         case 'suggest': {
@@ -63,7 +67,7 @@ export const createAttributionFromAttributionItems = (attrs, deleted) => {
       }
     })
   }
-  return attribution
+  return { attribution, retainOnly }
 }
 
 /**
@@ -120,7 +124,7 @@ export class TwosetAttributionManager {
    */
   readContent (contents, item, forceRead) {
     const deleted = item.deleted
-    const slice = (deleted ? this.deletes : this.inserts).slice(item.id, item.length)
+    const slice = (deleted ? this.deletes : this.inserts).sliceId(item.id, item.length)
     let content = slice.length === 1 ? item.content : item.content.copy()
     slice.forEach(s => {
       const c = content
@@ -221,7 +225,7 @@ export class DiffAttributionManager {
    */
   readContent (contents, item, forceRead) {
     const deleted = item.deleted || /** @type {any} */ (item.parent).doc !== this._nextDoc
-    const slice = (deleted ? this.deletes : this.inserts).slice(item.id, item.length)
+    const slice = (deleted ? this.deletes : this.inserts).sliceId(item.id, item.length)
     let content = slice.length === 1 ? item.content : item.content.copy()
     if (content instanceof ContentDeleted && slice[0].attrs != null && !this.inserts.hasId(item.id)) {
       // Retrieved item is never more fragmented than the newer item.
@@ -290,7 +294,7 @@ export class SnapshotAttributionManager {
    */
   readContent (contents, item, forceRead) {
     if ((this.nextSnapshot.sv.get(item.id.client) ?? 0) <= item.id.clock) return // future item that should not be displayed
-    const slice = this.attrs.slice(item.id, item.length)
+    const slice = this.attrs.sliceId(item.id, item.length)
     let content = slice.length === 1 ? item.content : item.content.copy()
     slice.forEach(s => {
       const deleted = this.nextSnapshot.ds.has(item.id.client, s.clock)

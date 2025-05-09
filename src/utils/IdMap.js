@@ -4,7 +4,8 @@ import {
   findRangeStartInIdRanges,
   _deleteRangeFromIdSet,
   DSDecoderV1, DSDecoderV2,  IdSetEncoderV1, IdSetEncoderV2, IdSet, ID, // eslint-disable-line
-  _insertIntoIdSet
+  _insertIntoIdSet,
+  _intersectSets
 } from '../internals.js'
 
 import * as array from 'lib0/array'
@@ -360,8 +361,20 @@ export class IdMap {
    * @param {number} len
    * @return {Array<MaybeAttrRange<Attrs>>}
    */
-  slice (id, len) {
-    const dr = this.clients.get(id.client)
+  sliceId (id, len) {
+    return this.slice(id.client, id.clock, len)
+  }
+
+  /**
+   * Return attributions for a slice of ids.
+   *
+   * @param {number} client
+   * @param {number} clock
+   * @param {number} len
+   * @return {Array<MaybeAttrRange<Attrs>>}
+   */
+  slice (client, clock, len) {
+    const dr = this.clients.get(client)
     /**
      * @type {Array<MaybeAttrRange<Attrs>>}
      */
@@ -371,19 +384,19 @@ export class IdMap {
        * @type {Array<AttrRange<Attrs>>}
        */
       const ranges = dr.getIds()
-      let index = findRangeStartInIdRanges(ranges, id.clock)
+      let index = findRangeStartInIdRanges(ranges, clock)
       if (index !== null) {
         let prev = null
         while (index < ranges.length) {
           let r = ranges[index]
-          if (r.clock < id.clock) {
-            r = new AttrRange(id.clock, r.len - (id.clock - r.clock), r.attrs)
+          if (r.clock < clock) {
+            r = new AttrRange(clock, r.len - (clock - r.clock), r.attrs)
           }
-          if (r.clock + r.len > id.clock + len) {
-            r = new AttrRange(r.clock, id.clock + len - r.clock, r.attrs)
+          if (r.clock + r.len > clock + len) {
+            r = new AttrRange(r.clock, clock + len - r.clock, r.attrs)
           }
           if (r.len <= 0) break
-          const prevEnd = prev != null ? prev.clock + prev.len : id.clock
+          const prevEnd = prev != null ? prev.clock + prev.len : clock
           if (prevEnd < r.clock) {
             res.push(createMaybeAttrRange(prevEnd, r.clock - prevEnd, null))
           }
@@ -396,11 +409,11 @@ export class IdMap {
     if (res.length > 0) {
       const last = res[res.length - 1]
       const end = last.clock + last.len
-      if (end < id.clock + len) {
-        res.push(createMaybeAttrRange(end, id.clock + len - end, null))
+      if (end < clock + len) {
+        res.push(createMaybeAttrRange(end, clock + len - end, null))
       }
     } else {
-      res.push(createMaybeAttrRange(id.clock, len, null))
+      res.push(createMaybeAttrRange(clock, len, null))
     }
     return res
   }
@@ -610,3 +623,5 @@ export const diffIdMap = (set, exclude) => {
   diffed.attrsH = set.attrsH
   return diffed
 }
+
+export const intersectMaps = _intersectSets
