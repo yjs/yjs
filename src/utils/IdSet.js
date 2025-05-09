@@ -6,7 +6,8 @@ import {
   UpdateEncoderV2,
   IdMap,
   AttrRanges,
-  AbstractStruct, DSDecoderV1, IdSetEncoderV1, DSDecoderV2, IdSetEncoderV2, Item, GC, StructStore, Transaction, ID // eslint-disable-line
+  AttrRange,
+  AbstractStruct, DSDecoderV1, IdSetEncoderV1, DSDecoderV2, IdSetEncoderV2, Item, GC, StructStore, Transaction, ID, AttributionItem, // eslint-disable-line
 } from '../internals.js'
 
 import * as array from 'lib0/array'
@@ -37,7 +38,46 @@ export class IdRange {
   copyWith (clock, len) {
     return new IdRange(clock, len)
   }
+
+  /**
+   * Helper method making this compatible with IdMap.
+   *
+   * @return {Array<import('./IdMap.js').AttributionItem<any>>}
+   */
+  get attrs () {
+    return []
+  }
 }
+
+export class MaybeIdRange {
+  /**
+   * @param {number} clock
+   * @param {number} len
+   * @param {boolean} exists
+   */
+  constructor (clock, len, exists) {
+    /**
+     * @type {number}
+     */
+    this.clock = clock
+    /**
+     * @type {number}
+     */
+    this.len = len
+    /**
+     * @type {boolean}
+     */
+    this.exists = exists
+  }
+}
+
+/**
+ * @param {number} clock
+ * @param {number} len
+ * @param {boolean} exists
+ * @return {MaybeIdRange}
+ */
+export const createMaybeIdRange = (clock, len, exists) => new MaybeIdRange(clock, len, exists)
 
 class IdRanges {
   /**
@@ -142,6 +182,59 @@ export class IdSet {
       return findIndexInIdRanges(dr.getIds(), clock) !== null
     }
     return false
+  }
+
+  /**
+   * Return slices of ids that exist in this idset.
+   *
+   * @param {number} client
+   * @param {number} clock
+   * @param {number} len
+   * @return {Array<MaybeIdRange>}
+   */
+  slice (client, clock, len) {
+    const dr = this.clients.get(client)
+    /**
+     * @type {Array<MaybeIdRange>}
+     */
+    const res = []
+    if (dr) {
+      /**
+       * @type {Array<IdRange>}
+       */
+      const ranges = dr.getIds()
+      let index = findRangeStartInIdRanges(ranges, clock)
+      if (index !== null) {
+        let prev = null
+        while (index < ranges.length) {
+          let r = ranges[index]
+          if (r.clock < clock) {
+            r = new IdRange(clock, r.len - (clock - r.clock))
+          }
+          if (r.clock + r.len > clock + len) {
+            r = new IdRange(r.clock, clock + len - r.clock)
+          }
+          if (r.len <= 0) break
+          const prevEnd = prev != null ? prev.clock + prev.len : clock
+          if (prevEnd < r.clock) {
+            res.push(createMaybeIdRange(prevEnd, r.clock - prevEnd, false))
+          }
+          prev = r
+          res.push(createMaybeIdRange(r.clock, r.len, true))
+          index++
+        }
+      }
+    }
+    if (res.length > 0) {
+      const last = res[res.length - 1]
+      const end = last.clock + last.len
+      if (end < clock + len) {
+        res.push(createMaybeIdRange(end, clock + len - end, false))
+      }
+    } else {
+      res.push(createMaybeIdRange(clock, len, false))
+    }
+    return res
   }
 
   /**
@@ -398,6 +491,55 @@ export const _diffSet = (set, exclude) => {
  * @type {(idSet: IdSet, exclude: IdSet|IdMap<any>) => IdSet}
  */
 export const diffIdSet = _diffSet
+
+/**
+ * @template {IdSet | IdMap<any>} SetA
+ * @template {IdSet | IdMap<any>} SetB
+ * @param {SetA} setA
+ * @param {SetB} setB
+ * @return {SetA extends IdMap<infer A> ? (SetB extends IdMap<infer B> ? IdMap<A | B> : IdMap<A>) : IdSet}
+ */
+export const _intersectSets = (setA, setB) => {
+  /**
+   * @type {IdMap<any> | IdSet}
+   */
+  const res = /** @type {any } */ (setA instanceof IdSet ? new IdSet() : new IdMap())
+  const Ranges = setA instanceof IdSet ? IdRanges : AttrRanges
+  setA.clients.forEach((_aRanges, client) => {
+    /**
+     * @type {Array<IdRange>}
+     */
+    const resRanges = []
+    const _bRanges = setB.clients.get(client)
+    const aRanges = _aRanges.getIds()
+    if (_bRanges != null) {
+      const bRanges = _bRanges.getIds()
+      for (let a = 0, b = 0; a < aRanges.length && b < bRanges.length;) {
+        const aRange = aRanges[a]
+        const bRange = bRanges[b]
+        // construct overlap
+        const clock = math.max(aRange.clock, bRange.clock)
+        const len = math.min(aRange.len - (clock - aRange.clock), bRange.len - (clock - bRange.clock))
+        if (len > 0) {
+          resRanges.push(aRange instanceof AttrRange
+            ? new AttrRange(clock, len, /** @type {Array<AttributionItem<any>>} */ (aRange.attrs).concat(bRange.attrs))
+            : new IdRange(clock, len)
+          )
+        }
+        if (aRange.clock + aRange.len < bRange.clock + bRange.len) {
+          a++
+        } else {
+          b++
+        }
+      }
+    }
+    // @ts-ignore
+    if (resRanges.length > 0) res.clients.set(client, /** @type {any} */ (new Ranges(resRanges)))
+  })
+  return /** @type {any} */ (res)
+}
+
+export const intersectSets = _intersectSets
 
 /**
  * @param {IdSet} idSet

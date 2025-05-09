@@ -518,8 +518,12 @@ export const typeListGetContent = (type, am) => {
     }
     for (let i = 0; i < cs.length; i++) {
       const { content, deleted, attrs } = cs[i]
-      const attribution = createAttributionFromAttributionItems(attrs, deleted)
-      d.insert(content.getContent(), null, attribution)
+      const { attribution, retainOnly } = createAttributionFromAttributionItems(attrs, deleted)
+      if (retainOnly) {
+        d.retain(content.getLength())
+      } else if (content.isCountable()) {
+        d.insert(content.getContent(), null, attribution)
+      }
     }
   }
   return d
@@ -1008,7 +1012,7 @@ export const typeMapGetContent = (parent, am) => {
     am.readContent(cs, item, false)
     const { deleted, attrs, content } = cs[cs.length - 1]
     const c = array.last(content.getContent())
-    const attribution = createAttributionFromAttributionItems(attrs, deleted)
+    const { attribution } = createAttributionFromAttributionItems(attrs, deleted)
     if (deleted) {
       mapcontent[key] = { prevValue: c, value: undefined, attribution }
     } else {

@@ -24,7 +24,7 @@ import {
   updateMarkerChanges,
   ContentType,
   warnPrematureAccess,
-  noAttributionsManager, AbstractAttributionManager, ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item, Transaction, // eslint-disable-line
+  IdSet, noAttributionsManager, AbstractAttributionManager, ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item, Transaction, // eslint-disable-line
   createAttributionFromAttributionItems
 } from '../internals.js'
 
@@ -678,7 +678,7 @@ export class YTextEvent extends YEvent {
         am.readContent(cs, item, freshDelete) // do item.right after calling this
         for (let i = 0; i < cs.length; i++) {
           const c = cs[i]
-          const attribution = createAttributionFromAttributionItems(c.attrs, c.deleted)
+          const { attribution } = createAttributionFromAttributionItems(c.attrs, c.deleted)
           switch (c.content.constructor) {
             case ContentType:
             case ContentEmbed:
@@ -983,15 +983,23 @@ export class YText extends AbstractType {
       }
       for (let i = 0; i < cs.length; i++) {
         const { content, deleted, attrs } = cs[i]
-        const attribution = createAttributionFromAttributionItems(attrs, deleted)
+        const { attribution, retainOnly } = createAttributionFromAttributionItems(attrs, deleted)
         switch (content.constructor) {
           case ContentString: {
-            d.insert(/** @type {ContentString} */ (content).str, null, attribution)
+            if (retainOnly) {
+              d.retain(content.getLength(), null, attribution)
+            } else {
+              d.insert(/** @type {ContentString} */ (content).str, null, attribution)
+            }
             break
           }
           case ContentType:
           case ContentEmbed: {
-            d.insert(/** @type {ContentEmbed | ContentType} */ (content).getContent()[0], null, attribution)
+            if (retainOnly) {
+              d.retain(content.getLength(), null, attribution)
+            } else {
+              d.insert(/** @type {ContentEmbed | ContentType} */ (content).getContent()[0], null, attribution)
+            }
             break
           }
           case ContentFormat: {

@@ -94,7 +94,7 @@ export const testRepeatMergingMultipleIdMaps = tc => {
       const mergedHas = merged.hasId(new ID(iclient, iclock))
       const oneHas = sets.some(ids => ids.hasId(new ID(iclient, iclock)))
       t.assert(mergedHas === oneHas)
-      const mergedAttrs = merged.slice(new ID(iclient, iclock), 1)
+      const mergedAttrs = merged.sliceId(new ID(iclient, iclock), 1)
       mergedAttrs.forEach(a => {
         if (a.attrs != null) {
           composed.add(iclient, a.clock, a.len, a.attrs)
@@ -160,4 +160,37 @@ export const testRepeatRandomDeletes = tc => {
     t.assert(!idset.has(client, clock + i))
   }
   compareIdMaps(idset, diffed)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testrepeatRandomIntersects = tc => {
+  const clients = 4
+  const clockRange = 100
+  const ids1 = createRandomIdMap(tc.prng, clients, clockRange, [1])
+  const ids2 = createRandomIdMap(tc.prng, clients, clockRange, ['two'])
+  const intersected = idmap.intersectMaps(ids1, ids2)
+  for (let client = 0; client < clients; client++) {
+    for (let clock = 0; clock < clockRange; clock++) {
+      t.assert((ids1.has(client, clock) && ids2.has(client, clock)) === intersected.has(client, clock))
+      /**
+       * @type {Array<any>?}
+       */
+      const slice1 = ids1.slice(client, clock, 1)[0].attrs
+      /**
+       * @type {Array<any>?}
+       */
+      const slice2 = ids2.slice(client, clock, 1)[0].attrs
+      /**
+       * @type {Array<any>?}
+       */
+      const expectedAttrs = (slice1 != null && slice2 != null) ? slice1.concat(slice2) : null
+      const attrs = intersected.slice(client, clock, 1)[0].attrs
+      t.assert(attrs?.length === expectedAttrs?.length)
+    }
+  }
+  const diffed1 = idmap.diffIdMap(ids1, ids2)
+  const altDiffed1 = idmap.diffIdMap(ids1, intersected)
+  compareIdMaps(diffed1, altDiffed1)
 }
