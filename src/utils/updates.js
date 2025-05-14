@@ -36,21 +36,25 @@ import {
   YXmlElement,
   YXmlHook
 } from '../internals.js'
+import { assertMaxGCLength, assertMaxSkipLength, assertMaxStructs, assertMaxUpdates } from './limits.js'
 
 /**
  * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  */
 function * lazyStructReaderGenerator (decoder) {
   const numOfStateUpdates = decoding.readVarUint(decoder.restDecoder)
+  assertMaxUpdates(numOfStateUpdates)
   for (let i = 0; i < numOfStateUpdates; i++) {
     const numberOfStructs = decoding.readVarUint(decoder.restDecoder)
     const client = decoder.readClient()
     let clock = decoding.readVarUint(decoder.restDecoder)
+    assertMaxStructs(numberOfStructs)
     for (let i = 0; i < numberOfStructs; i++) {
       const info = decoder.readInfo()
       // @todo use switch instead of ifs
       if (info === 10) {
         const len = decoding.readVarUint(decoder.restDecoder)
+        assertMaxSkipLength(len)
         yield new Skip(createID(client, clock), len)
         clock += len
       } else if ((binary.BITS5 & info) !== 0) {
@@ -74,6 +78,7 @@ function * lazyStructReaderGenerator (decoder) {
         clock += struct.length
       } else {
         const len = decoder.readLen()
+        assertMaxGCLength(len)
         yield new GC(createID(client, clock), len)
         clock += len
       }
