@@ -103,7 +103,9 @@ export {
   UpdateDecoderV2,
   equalDeleteSets,
   mergeDeleteSets,
-  snapshotContainsUpdate
+  snapshotContainsUpdate,
+  LazyStructReader,
+  readDeleteSet
 } from './internals.js'
 
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'
