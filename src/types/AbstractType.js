@@ -514,15 +514,17 @@ export const typeListGetContent = (type, am) => {
   for (let item = type._start; item !== null; cs.length = 0) {
     // populate cs
     for (; item !== null && cs.length < 50; item = item.right) {
-      am.readContent(cs, item, false)
+      am.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, true)
     }
     for (let i = 0; i < cs.length; i++) {
-      const { content, deleted, attrs } = cs[i]
-      const { attribution, retainOnly } = createAttributionFromAttributionItems(attrs, deleted)
-      if (retainOnly) {
-        d.retain(content.getLength())
-      } else if (content.isCountable()) {
-        d.insert(content.getContent(), null, attribution)
+      const c = cs[i]
+      const attribution = createAttributionFromAttributionItems(c.attrs, c.deleted).attribution
+      if (c.content.isCountable()) {
+        if (c.render) {
+          d.insert(c.content.getContent(), null, attribution)
+        } else {
+          d.retain(c.content.getLength())
+        }
       }
     }
   }
@@ -1009,7 +1011,7 @@ export const typeMapGetContent = (parent, am) => {
      * @type {Array<import('../internals.js').AttributedContent<any>>}
      */
     const cs = []
-    am.readContent(cs, item, false)
+    am.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, true)
     const { deleted, attrs, content } = cs[cs.length - 1]
     const c = array.last(content.getContent())
     const { attribution } = createAttributionFromAttributionItems(attrs, deleted)
@@ -1025,7 +1027,7 @@ export const typeMapGetContent = (parent, am) => {
          * @type {Array<import('../internals.js').AttributedContent<any>>}
          */
         const tmpcs = []
-        am.readContent(tmpcs, prevItem, false)
+        am.readContent(tmpcs, prevItem.id.client, prevItem.id.clock, prevItem.deleted, prevItem.content, true)
         cs = tmpcs.concat(cs)
         if (cs.length === 0 || cs[0].attrs == null) {
           cs.splice(0, cs.findIndex(c => c.attrs != null))
