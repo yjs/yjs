@@ -2267,7 +2267,7 @@ export const testAttributedContent = _tc => {
   })
   t.group('unformat', () => {
     ytext.applyDelta([{ retain: 5, attributes: { italic: null } }])
-    const expectedContent = delta.createTextDelta().insert('Hell', null, { attributes: { italic: [] } }).insert('o attributions!')
+    const expectedContent = delta.createTextDelta().insert('Hell', { italic: null }, { attributes: { italic: [] } }).insert('o attributions!')
     const attributedContent = ytext.getContent(attributionManager)
     console.log(attributedContent.toJSON())
     t.assert(attributedContent.equals(expectedContent))

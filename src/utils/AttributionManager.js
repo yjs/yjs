@@ -5,13 +5,14 @@ import {
   createDeleteSetFromStructStore,
   createIdMapFromIdSet,
   ContentDeleted,
-  Snapshot, Doc, Item, AbstractContent, IdMap, // eslint-disable-line
+  Snapshot, Doc, AbstractContent, IdMap, // eslint-disable-line
   insertIntoIdMap,
   insertIntoIdSet,
   diffIdMap,
   createIdMap,
   createAttributionItem,
-  mergeIdMaps
+  mergeIdMaps,
+  createID
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -29,6 +30,7 @@ import * as error from 'lib0/error'
  */
 
 /**
+ * @todo SHOULD NOT RETURN AN OBJECT!
  * @param {Array<import('./IdMap.js').AttributionItem<any>>?} attrs
  * @param {boolean} deleted - whether the attributed item is deleted
  * @return {{ attribution: Attribution?, retainOnly: boolean }}
@@ -78,11 +80,13 @@ export class AttributedContent {
    * @param {AbstractContent} content
    * @param {boolean} deleted
    * @param {Array<import('./IdMap.js').AttributionItem<T>> | null} attrs
+   * @param {boolean} render
    */
-  constructor (content, deleted, attrs) {
+  constructor (content, deleted, attrs, render) {
     this.content = content
     this.deleted = deleted
     this.attrs = attrs
+    this.render = render
   }
 }
 
@@ -91,11 +95,14 @@ export class AttributedContent {
  */
 export class AbstractAttributionManager {
   /**
-   * @param {Array<AttributedContent<any>>} _contents
-   * @param {Item} _item
-   * @param {boolean} _forceRead read content even if it is unattributed and deleted
+   * @param {Array<AttributedContent<any>>} _contents - where to write the result
+   * @param {number} _client
+   * @param {number} _clock
+   * @param {boolean} _deleted
+   * @param {AbstractContent} _content
+   * @param {boolean} _shouldRender - whether this should render or just result in a `retain` operation
    */
-  readContent (_contents, _item, _forceRead) {
+  readContent (_contents, _client, _clock, _deleted, _content, _shouldRender) {
     error.methodUnimplemented()
   }
 
@@ -118,21 +125,23 @@ export class TwosetAttributionManager {
   destroy () {}
 
   /**
-   * @param {Array<AttributedContent<any>>} contents
-   * @param {Item} item
-   * @param {boolean} forceRead read content even if it is unattributed and deleted
+   * @param {Array<AttributedContent<any>>} contents - where to write the result
+   * @param {number} client
+   * @param {number} clock
+   * @param {boolean} deleted
+   * @param {AbstractContent} content
+   * @param {boolean} shouldRender - whether this should render or just result in a `retain` operation
    */
-  readContent (contents, item, forceRead) {
-    const deleted = item.deleted
-    const slice = (deleted ? this.deletes : this.inserts).sliceId(item.id, item.length)
-    let content = slice.length === 1 ? item.content : item.content.copy()
+  readContent (contents, client, clock, deleted, content, shouldRender) {
+    const slice = (deleted ? this.deletes : this.inserts).slice(client, clock, content.getLength())
+    content = slice.length === 1 ? content : content.copy()
     slice.forEach(s => {
       const c = content
       if (s.len < c.getLength()) {
         content = c.splice(s.len)
       }
-      if (!deleted || s.attrs != null || forceRead) {
-        contents.push(new AttributedContent(c, deleted, s.attrs))
+      if (!deleted || s.attrs != null) {
+        contents.push(new AttributedContent(c, deleted, s.attrs, shouldRender))
       }
     })
   }
@@ -147,13 +156,16 @@ export class NoAttributionsManager {
   destroy () {}
 
   /**
-   * @param {Array<AttributedContent<any>>} contents
-   * @param {Item} item
-   * @param {boolean} forceRead read content even if it is unattributed and deleted
+   * @param {Array<AttributedContent<any>>} contents - where to write the result
+   * @param {number} _client
+   * @param {number} _clock
+   * @param {boolean} deleted
+   * @param {AbstractContent} content
+   * @param {boolean} shouldRender - whether this should render or just result in a `retain` operation
    */
-  readContent (contents, item, forceRead) {
-    if (!item.deleted || forceRead) {
-      contents.push(new AttributedContent(item.content, false, null))
+  readContent (contents, _client, _clock, deleted, content, shouldRender) {
+    if (!deleted || shouldRender) {
+      contents.push(new AttributedContent(content, deleted, null, shouldRender))
     }
   }
 }
@@ -219,21 +231,23 @@ export class DiffAttributionManager {
   }
 
   /**
-   * @param {Array<AttributedContent<any>>} contents
-   * @param {Item} item
-   * @param {boolean} forceRead read content even if it is unattributed and deleted
+   * @param {Array<AttributedContent<any>>} contents - where to write the result
+   * @param {number} client
+   * @param {number} clock
+   * @param {boolean} deleted
+   * @param {AbstractContent} content
+   * @param {boolean} shouldRender - whether this should render or just result in a `retain` operation
    */
-  readContent (contents, item, forceRead) {
-    const deleted = item.deleted || /** @type {any} */ (item.parent).doc !== this._nextDoc
-    const slice = (deleted ? this.deletes : this.inserts).sliceId(item.id, item.length)
-    let content = slice.length === 1 ? item.content : item.content.copy()
-    if (content instanceof ContentDeleted && slice[0].attrs != null && !this.inserts.hasId(item.id)) {
+  readContent (contents, client, clock, deleted, content, shouldRender) {
+    const slice = (deleted ? this.deletes : this.inserts).slice(client, clock, content.getLength())
+    content = slice.length === 1 ? content : content.copy()
+    if (content instanceof ContentDeleted && slice[0].attrs != null && !this.inserts.has(client, clock)) {
       // Retrieved item is never more fragmented than the newer item.
-      const prevItem = getItem(this._prevDocStore, item.id)
+      const prevItem = getItem(this._prevDocStore, createID(client, clock))
       content = prevItem.length > 1 ? prevItem.content.copy() : prevItem.content
       // trim itemContent to the correct size.
-      const diffStart = prevItem.id.clock - item.id.clock
-      const diffEnd = prevItem.id.clock + prevItem.length - item.id.clock - item.length
+      const diffStart = prevItem.id.clock - clock
+      const diffEnd = prevItem.id.clock + prevItem.length - clock - content.getLength()
       if (diffStart > 0) {
         content = content.splice(diffStart)
       }
@@ -246,8 +260,8 @@ export class DiffAttributionManager {
       if (s.len < c.getLength()) {
         content = c.splice(s.len)
       }
-      if (!deleted || s.attrs != null || forceRead) {
-        contents.push(new AttributedContent(c, deleted, s.attrs))
+      if (!deleted || s.attrs != null || shouldRender) {
+        contents.push(new AttributedContent(c, deleted, s.attrs, shouldRender))
       }
     })
   }
@@ -288,28 +302,31 @@ export class SnapshotAttributionManager {
   destroy () { }
 
   /**
-   * @param {Array<AttributedContent<any>>} contents
-   * @param {Item} item
-   * @param {boolean} forceRead read content even if it is unattributed and deleted
+   * @param {Array<AttributedContent<any>>} contents - where to write the result
+   * @param {number} client
+   * @param {number} clock
+   * @param {boolean} _deleted
+   * @param {AbstractContent} content
+   * @param {boolean} shouldRender - whether this should render or just result in a `retain` operation
    */
-  readContent (contents, item, forceRead) {
-    if ((this.nextSnapshot.sv.get(item.id.client) ?? 0) <= item.id.clock) return // future item that should not be displayed
-    const slice = this.attrs.sliceId(item.id, item.length)
-    let content = slice.length === 1 ? item.content : item.content.copy()
+  readContent (contents, client, clock, _deleted, content, shouldRender) {
+    if ((this.nextSnapshot.sv.get(client) ?? 0) <= clock) return // future item that should not be displayed
+    const slice = this.attrs.slice(client, clock, content.getLength())
+    content = slice.length === 1 ? content : content.copy()
     slice.forEach(s => {
-      const deleted = this.nextSnapshot.ds.has(item.id.client, s.clock)
-      const nonExistend = (this.nextSnapshot.sv.get(item.id.client) ?? 0) <= s.clock
+      const deleted = this.nextSnapshot.ds.has(client, s.clock)
+      const nonExistend = (this.nextSnapshot.sv.get(client) ?? 0) <= s.clock
       const c = content
       if (s.len < c.getLength()) {
         content = c.splice(s.len)
       }
       if (nonExistend) return
-      if (!deleted || forceRead || (s.attrs != null && s.attrs.length > 0)) {
+      if (!deleted || shouldRender || (s.attrs != null && s.attrs.length > 0)) {
         let attrsWithoutChange = s.attrs?.filter(attr => attr.name !== 'change') ?? null
         if (s.attrs?.length === 0) {
           attrsWithoutChange = null
         }
-        contents.push(new AttributedContent(c, deleted, attrsWithoutChange))
+        contents.push(new AttributedContent(c, deleted, attrsWithoutChange, shouldRender))
       }
     })
   }

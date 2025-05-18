@@ -24,7 +24,7 @@ import {
   updateMarkerChanges,
   ContentType,
   warnPrematureAccess,
-  IdSet, noAttributionsManager, AbstractAttributionManager, ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item, Transaction, // eslint-disable-line
+  noAttributionsManager, AbstractAttributionManager, ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item, Transaction, // eslint-disable-line
   createAttributionFromAttributionItems
 } from '../internals.js'
 
@@ -675,7 +675,7 @@ export class YTextEvent extends YEvent {
       for (let item = this.target._start; item !== null; cs.length = 0, item = item.right) {
         const freshDelete = item.deleted && tr.deleteSet.hasId(item.id) && !tr.insertSet.hasId(item.id)
         const freshInsert = !item.deleted && tr.insertSet.hasId(item.id)
-        am.readContent(cs, item, freshDelete) // do item.right after calling this
+        am.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, !item.deleted || freshDelete) // do item.right after calling this
         for (let i = 0; i < cs.length; i++) {
           const c = cs[i]
           const { attribution } = createAttributionFromAttributionItems(c.attrs, c.deleted)
@@ -709,6 +709,7 @@ export class YTextEvent extends YEvent {
               break
             case ContentFormat: {
               const { key, value } = /** @type {ContentFormat} */ (c.content)
+              // # update attributes
               const currAttrVal = currentAttributes[key] ?? null
               if (freshDelete || freshInsert) {
                 // create fresh references
@@ -743,6 +744,29 @@ export class YTextEvent extends YEvent {
                 }
                 currentAttributes[key] = value
                 previousAttributes[key] = value
+              }
+              // # Update Attributions
+              if (attribution != null) {
+                /**
+                 * @type {import('../utils/Delta.js').Attribution}
+                 */
+                const formattingAttribution = object.assign({}, d.usedAttribution)
+                const attributesChanged = /** @type {{ [key: string]: Array<any> }} */ (formattingAttribution.attributes = object.assign({}, formattingAttribution.attributes ?? {}))
+                if (value === null) {
+                  delete attributesChanged[key]
+                } else {
+                  const by = attributesChanged[key] = (attributesChanged[key]?.slice() ?? [])
+                  by.push(...((c.deleted ? attribution.delete : attribution.insert) ?? []))
+                  const attributedAt = (c.deleted ? attribution.deletedAt : attribution.insertedAt)
+                  if (attributedAt) formattingAttribution.attributedAt = attributedAt
+                }
+                if (object.isEmpty(attributesChanged)) {
+                  d.useAttribution(null)
+                } else {
+                  const attributedAt = (c.deleted ? attribution.deletedAt : attribution.insertedAt)
+                  if (attributedAt != null) formattingAttribution.attributedAt = attributedAt
+                  d.useAttribution(formattingAttribution)
+                }
               }
               break
             }
@@ -967,6 +991,7 @@ export class YText extends AbstractType {
    * @public
    */
   getContent (am = noAttributionsManager) {
+    return this.getDelta(am)
     this.doc ?? warnPrematureAccess()
     /**
      * @type {delta.TextDelta<Embeds>}
@@ -1042,6 +1067,168 @@ export class YText extends AbstractType {
       }
     }
     return d
+  }
+
+  /**
+   * @param {AbstractAttributionManager} am
+   * @param {import('../utils/IdSet.js').IdSet?} itemsToRender
+   * @param {boolean} retainOnly - if true, retain the rendered items with attributes and attributions.
+   * @return {import('../utils/Delta.js').TextDelta<Embeds>} The Delta representation of this type.
+   *
+   * @public
+   */
+  getDelta (am = noAttributionsManager, itemsToRender = null, retainOnly = false) {
+    /**
+     * @type {import('../utils/Delta.js').TextDelta<Embeds>}
+     */
+    const d = delta.createTextDelta()
+    /**
+     * @type {import('../utils/Delta.js').FormattingAttributes}
+     */
+    let currentAttributes = {} // saves all current attributes for insert
+    let usingCurrentAttributes = false
+    /**
+     * @type {import('../utils/Delta.js').FormattingAttributes}
+     */
+    let changedAttributes = {} // saves changed attributes for retain
+    let usingChangedAttributes = false
+    /**
+     * @type {import('../utils/Delta.js').FormattingAttributes}
+     */
+    const previousAttributes = {} // The value before changes
+
+    /**
+     * @type {Array<import('../internals.js').AttributedContent<any>>}
+     */
+    const cs = []
+    for (let item = this._start; item !== null; cs.length = 0) {
+      if (itemsToRender != null) {
+        for (; item !== null && cs.length < 50; item = item.right) {
+          const rslice = itemsToRender.slice(item.id.client, item.id.clock, item.length)
+          let itemContent = rslice.length > 1 ? item.content.copy() : item.content
+          for (let ir = 0; ir < rslice.length; ir++) {
+            const idrange = rslice[ir]
+            const content = itemContent
+            if (ir !== rslice.length - 1) {
+              itemContent.splice(idrange.len)
+            }
+            am.readContent(cs, item.id.client, idrange.clock, item.deleted, content, idrange.exists)
+          }
+        }
+      } else {
+        for (; item !== null && cs.length < 50; item = item.right) {
+          am.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, true)
+        }
+      }
+      for (let i = 0; i < cs.length; i++) {
+        const c = cs[i]
+        const renderDelete = c.deleted && c.attrs != null && c.render
+        const renderInsert = !c.deleted && (c.render || c.attrs != null)
+        const attribution = (renderDelete || renderInsert) ? createAttributionFromAttributionItems(c.attrs, c.deleted).attribution : null
+        switch (c.content.constructor) {
+          case ContentType:
+          case ContentEmbed:
+            if (renderInsert) {
+              d.usedAttributes = currentAttributes
+              usingCurrentAttributes = true
+              d.insert(c.content.getContent()[0], null, attribution)
+            } else if (renderDelete) {
+              d.delete(1)
+            } else if (!c.deleted) {
+              d.usedAttributes = changedAttributes
+              usingChangedAttributes = true
+              d.retain(1)
+            }
+            break
+          case ContentString:
+            if (renderInsert || (renderDelete && attribution?.delete != null)) {
+              d.usedAttributes = currentAttributes
+              usingCurrentAttributes = true
+              d.insert(/** @type {ContentString} */ (c.content).str, null, attribution)
+            } else if (renderDelete) {
+              d.delete(c.content.getLength())
+            } else if (!c.deleted) {
+              d.usedAttributes = changedAttributes
+              usingChangedAttributes = true
+              d.retain(c.content.getLength())
+            }
+            break
+          case ContentFormat: {
+            const { key, value } = /** @type {ContentFormat} */ (c.content)
+            const currAttrVal = currentAttributes[key] ?? null
+            // # Update Attributes
+            if (renderDelete || renderInsert) {
+              // create fresh references
+              if (usingCurrentAttributes) {
+                currentAttributes = object.assign({}, currentAttributes)
+                usingCurrentAttributes = false
+              }
+              if (usingChangedAttributes) {
+                usingChangedAttributes = false
+                changedAttributes = object.assign({}, changedAttributes)
+              }
+            }
+            if (renderInsert) {
+              if (equalAttrs(value, currAttrVal)) {
+                // item.delete(transaction)
+              } else if (equalAttrs(value, previousAttributes[key] ?? null)) {
+                delete currentAttributes[key]
+                delete changedAttributes[key]
+              } else {
+                currentAttributes[key] = value
+                changedAttributes[key] = value
+              }
+            } else if (renderDelete) {
+              if (equalAttrs(value,currAttrVal)) {
+                delete changedAttributes[key]
+                delete currentAttributes[key]
+              } else {
+                changedAttributes[key] = currAttrVal
+                currentAttributes[key] = currAttrVal
+              }
+              previousAttributes[key] = value
+            } else if (!c.deleted) {
+              // fresh reference to currentAttributes only
+              if (usingCurrentAttributes) {
+                currentAttributes = object.assign({}, currentAttributes)
+                usingCurrentAttributes = false
+              }
+              if (equalAttrs(value, previousAttributes[key] ?? null)) {
+                delete currentAttributes[key]
+              } else {
+                currentAttributes[key] = value
+              }
+              previousAttributes[key] = value
+            }
+            // # Update Attributions
+            if (attribution != null) {
+              /**
+               * @type {import('../utils/Delta.js').Attribution}
+               */
+              const formattingAttribution = object.assign({}, d.usedAttribution)
+              const attributesChanged = /** @type {{ [key: string]: Array<any> }} */ (formattingAttribution.attributes = object.assign({}, formattingAttribution.attributes ?? {}))
+              if (value === null) {
+                delete attributesChanged[key]
+              } else {
+                const by = attributesChanged[key] = (attributesChanged[key]?.slice() ?? [])
+                by.push(...((c.deleted ? attribution.delete : attribution.insert) ?? []))
+                const attributedAt = (c.deleted ? attribution.deletedAt : attribution.insertedAt)
+                if (attributedAt) formattingAttribution.attributedAt = attributedAt
+              }
+              if (object.isEmpty(attributesChanged)) {
+                d.useAttribution(null)
+              } else {
+                const attributedAt = (c.deleted ? attribution.deletedAt : attribution.insertedAt)
+                if (attributedAt != null) formattingAttribution.attributedAt = attributedAt
+                d.useAttribution(formattingAttribution)
+              }
+            }
+            break
+          }
+        }
+      }
+    }
+    return d.done()
   }
 
   /**

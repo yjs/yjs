@@ -315,15 +315,16 @@ export const testElementAttributedContentViaDiffer = _tc => {
     yelement.setAttribute('key', '42')
   })
   const attributionManager = Y.createAttributionManagerFromDiff(ydocV1, ydoc)
-  const expectedContent = delta.createArrayDelta().insert([delta.createTextDelta().insert('hello', null, { delete: [] })], null, { delete: [] }).insert([elem2.getContentDeep()]).insert([delta.createTextDelta().insert('world', null, { insert: [] })], null, { insert: [] })
+  const expectedContent = delta.createArrayDelta().insert([delta.createTextDelta().insert('hello')], null, { delete: [] }).insert([elem2.getContentDeep()]).insert([delta.createTextDelta().insert('world', null, { insert: [] })], null, { insert: [] })
   const attributedContent = yelement.getContentDeep(attributionManager)
   console.log('children', attributedContent.children.toJSON())
   console.log('attributes', attributedContent.attributes)
+  t.compare(attributedContent.children.toJSON(), expectedContent.toJSON())
   t.assert(attributedContent.children.equals(expectedContent))
   t.compare(attributedContent.attributes, { key: { prevValue: undefined, value: '42', attribution: { insert: [] } } })
   t.group('test getContentDeep', () => {
     const expectedContent = delta.createArrayDelta().insert(
-      [delta.createTextDelta().insert('hello', null, { delete: [] })],
+      [delta.createTextDelta().insert('hello')],
       null,
       { delete: [] }
     ).insert([{ nodeName: 'span', children: delta.createArrayDelta(), attributes: {} }])
@@ -344,7 +345,7 @@ export const testElementAttributedContentViaDiffer = _tc => {
   t.group('test getContentDeep after some more updates', () => {
     t.info('expecting diffingAttributionManager to auto update itself')
     const expectedContent = delta.createArrayDelta().insert(
-      [delta.createTextDelta().insert('hello', null, { delete: [] })],
+      [delta.createTextDelta().insert('hello')],
       null,
       { delete: [] }
     ).insert([{ nodeName: 'span', children: delta.createArrayDelta(), attributes: {} }])
