@@ -25,7 +25,10 @@ import {
   ContentType,
   warnPrematureAccess,
   noAttributionsManager, AbstractAttributionManager, ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item, Transaction, // eslint-disable-line
-  createAttributionFromAttributionItems
+  createAttributionFromAttributionItems,
+  mergeIdSets,
+  diffIdSet,
+  intersectSets
 } from '../internals.js'
 
 import * as delta from '../utils/Delta.js'
@@ -775,6 +778,16 @@ export class YTextEvent extends YEvent {
       }
     })
     return d.done()
+    // const whatToWatch = mergeIdSets([diffIdSet(this.transaction.insertSet, this.transaction.deleteSet), diffIdSet(this.transaction.deleteSet, this.transaction.insertSet)])
+    // const genericDelta = this.target.getDelta(am, whatToWatch)
+    // if (!d.equals(genericDelta)) {
+    //   console.log(d.toJSON())
+    //   console.log(genericDelta.toJSON())
+    //   debugger
+    //   const d2 = this.target.getDelta(am, whatToWatch)
+    //   throw new Error('should match', d2)
+    // }
+    // return d
   }
 
   /**
@@ -1117,12 +1130,12 @@ export class YText extends AbstractType {
         }
       } else {
         for (; item !== null && cs.length < 50; item = item.right) {
-          am.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, true)
+          am.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, !item.deleted)
         }
       }
       for (let i = 0; i < cs.length; i++) {
         const c = cs[i]
-        const renderDelete = c.deleted && c.attrs != null && c.render
+        const renderDelete = c.deleted && (c.attrs != null || c.render)
         const renderInsert = !c.deleted && (c.render || c.attrs != null)
         const attribution = (renderDelete || renderInsert) ? createAttributionFromAttributionItems(c.attrs, c.deleted).attribution : null
         switch (c.content.constructor) {
@@ -1179,7 +1192,7 @@ export class YText extends AbstractType {
                 changedAttributes[key] = value
               }
             } else if (renderDelete) {
-              if (equalAttrs(value,currAttrVal)) {
+              if (equalAttrs(value, currAttrVal)) {
                 delete changedAttributes[key]
                 delete currentAttributes[key]
               } else {

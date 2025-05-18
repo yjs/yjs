@@ -326,7 +326,7 @@ export class SnapshotAttributionManager {
         if (s.attrs?.length === 0) {
           attrsWithoutChange = null
         }
-        contents.push(new AttributedContent(c, deleted, attrsWithoutChange, shouldRender))
+        contents.push(new AttributedContent(c, deleted, attrsWithoutChange, !deleted))
       }
     })
   }
