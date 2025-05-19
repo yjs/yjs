@@ -29,19 +29,19 @@
   "exports": {
     ".": {
       "types": "./dist/src/index.d.ts",
-      "module": "./dist/yjs.mjs",
+      "module": "./src/index.js",
       "require": "./dist/yjs.cjs",
       "import": "./src/index.js"
     },
     "./internals": {
       "types": "./dist/src/internals.d.ts",
-      "module": "./dist/internals.mjs",
+      "module": "./src/internals.js",
       "require": "./dist/internals.cjs",
       "import": "./src/internals.js"
     },
     "./testHelper": {
       "types": "./dist/testHelper.d.ts",
-      "module": "./dist/testHelper.mjs",
+      "module": "./tests/testHelper.js",
       "require": "./dist/testHelper.cjs",
       "import": "./tests/testHelper.js"
     },

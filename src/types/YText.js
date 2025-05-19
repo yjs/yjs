@@ -33,6 +33,7 @@ import {
 
 import * as delta from '../utils/Delta.js'
 
+import * as traits from 'lib0/traits'
 import * as object from 'lib0/object'
 import * as map from 'lib0/map'
 import * as error from 'lib0/error'
@@ -649,6 +650,18 @@ export class YTextEvent extends YEvent {
    * @public
    */
   getDelta (am = noAttributionsManager) {
+    const whatToWatch = mergeIdSets([diffIdSet(this.transaction.insertSet, this.transaction.deleteSet), diffIdSet(this.transaction.deleteSet, this.transaction.insertSet)])
+    const genericDelta = this.target.getDelta(am, whatToWatch)
+    return genericDelta;
+    /*
+    if (!d.equals(genericDelta)) {
+      console.log(d.toJSON())
+      console.log(genericDelta.toJSON())
+      debugger
+      const d2 = this.target.getDelta(am, whatToWatch)
+      throw new Error('should match', d2)
+    }
+    return d
     const ydoc = /** @type {Doc} */ (this.target.doc)
     /**
      * @type {import('../utils/Delta.js').TextDelta<TextEmbeds>}
@@ -729,23 +742,42 @@ export class YTextEvent extends YEvent {
                 if (equalAttrs(value, currAttrVal)) {
                   item.delete(transaction)
                 } else if (equalAttrs(value, previousAttributes[key] ?? null)) {
-                  delete currentAttributes[key]
                   delete changedAttributes[key]
                 } else {
-                  currentAttributes[key] = value
                   changedAttributes[key] = value
                 }
+                if (value == null) {
+                  delete currentAttributes[key]
+                } else {
+                  currentAttributes[key] = value
+                }
               } else if (freshDelete) {
-                changedAttributes[key] = currAttrVal
-                currentAttributes[key] = currAttrVal
+                if (equalAttrs(value, currAttrVal)) {
+                  // nop
+                } else if (equalAttrs(currAttrVal, previousAttributes[key] ?? null)) {
+                  delete changedAttributes[key]
+                } else {
+                  changedAttributes[key] = currAttrVal
+                }
+                // current attributes doesn't change
                 previousAttributes[key] = value
+
               } else if (!c.deleted) {
                 // fresh reference to currentAttributes only
                 if (usingCurrentAttributes) {
                   currentAttributes = object.assign({}, currentAttributes)
                   usingCurrentAttributes = false
                 }
-                currentAttributes[key] = value
+                if (usingChangedAttributes && changedAttributes[key] !== undefined) {
+                  usingChangedAttributes = false
+                  changedAttributes = object.assign({}, changedAttributes)
+                }
+                if (value == null) {
+                  delete currentAttributes[key]
+                } else {
+                  currentAttributes[key] = value
+                }
+                delete changedAttributes[key]
                 previousAttributes[key] = value
               }
               // # Update Attributions
@@ -788,6 +820,7 @@ export class YTextEvent extends YEvent {
     //   throw new Error('should match', d2)
     // }
     // return d
+    // */
   }
 
   /**
@@ -1005,81 +1038,81 @@ export class YText extends AbstractType {
    */
   getContent (am = noAttributionsManager) {
     return this.getDelta(am)
-    this.doc ?? warnPrematureAccess()
-    /**
-     * @type {delta.TextDelta<Embeds>}
-     */
-    const d = delta.createTextDelta()
-    /**
-     * @type {Array<import('../internals.js').AttributedContent<any>>}
-     */
-    const cs = []
-    for (let item = this._start; item !== null; cs.length = 0) {
-      // populate cs
-      for (; item !== null && cs.length < 50; item = item.right) {
-        am.readContent(cs, item, false)
-      }
-      for (let i = 0; i < cs.length; i++) {
-        const { content, deleted, attrs } = cs[i]
-        const { attribution, retainOnly } = createAttributionFromAttributionItems(attrs, deleted)
-        switch (content.constructor) {
-          case ContentString: {
-            if (retainOnly) {
-              d.retain(content.getLength(), null, attribution)
-            } else {
-              d.insert(/** @type {ContentString} */ (content).str, null, attribution)
-            }
-            break
-          }
-          case ContentType:
-          case ContentEmbed: {
-            if (retainOnly) {
-              d.retain(content.getLength(), null, attribution)
-            } else {
-              d.insert(/** @type {ContentEmbed | ContentType} */ (content).getContent()[0], null, attribution)
-            }
-            break
-          }
-          case ContentFormat: {
-            const contentFormat = /** @type {ContentFormat} */ (content)
-            if (attribution != null) {
-              /**
-               * @type {import('../utils/Delta.js').Attribution}
-               */
-              const formattingAttribution = object.assign({}, d.usedAttribution)
-              const attributesChanged = /** @type {{ [key: string]: Array<any> }} */ (formattingAttribution.attributes = object.assign({}, formattingAttribution.attributes ?? {}))
-              if (contentFormat.value === null) {
-                delete attributesChanged[contentFormat.key]
-              } else {
-                const by = attributesChanged[contentFormat.key] = attributesChanged[contentFormat.key]?.slice() ?? []
-                by.push(...((deleted ? attribution.delete : attribution.insert) ?? []))
-                const attributedAt = (deleted ? attribution.deletedAt : attribution.insertedAt)
-                if (attributedAt) formattingAttribution.attributedAt = attributedAt
-              }
-              if (object.isEmpty(attributesChanged)) {
-                d.useAttribution(null)
-              } else {
-                const attributedAt = (deleted ? attribution.deletedAt : attribution.insertedAt)
-                if (attributedAt != null) formattingAttribution.attributedAt = attributedAt
-                d.useAttribution(formattingAttribution)
-              }
-            }
-            if (!deleted) {
-              const currAttrs = d.usedAttributes
-              if (contentFormat.value == null) {
-                const nextAttrs = object.assign({}, currAttrs)
-                delete nextAttrs[contentFormat.key]
-                d.useAttributes(nextAttrs)
-              } else {
-                d.useAttributes(object.assign({}, currAttrs, { [contentFormat.key]: contentFormat.value }))
-              }
-            }
-            break
-          }
-        }
-      }
-    }
-    return d
+      // this.doc ?? warnPrematureAccess()
+      // /**
+      //  * @type {delta.TextDelta<Embeds>}
+      //  */
+      // const d = delta.createTextDelta()
+      // /**
+      //  * @type {Array<import('../internals.js').AttributedContent<any>>}
+      //  */
+      // const cs = []
+      // for (let item = this._start; item !== null; cs.length = 0) {
+      //   // populate cs
+      //   for (; item !== null && cs.length < 50; item = item.right) {
+      //     am.readContent(cs, item, false)
+      //   }
+      //   for (let i = 0; i < cs.length; i++) {
+      //     const { content, deleted, attrs } = cs[i]
+      //     const { attribution, retainOnly } = createAttributionFromAttributionItems(attrs, deleted)
+      //     switch (content.constructor) {
+      //       case ContentString: {
+      //         if (retainOnly) {
+      //           d.retain(content.getLength(), null, attribution)
+      //         } else {
+      //           d.insert(/** @type {ContentString} */ (content).str, null, attribution)
+      //         }
+      //         break
+      //       }
+      //       case ContentType:
+      //       case ContentEmbed: {
+      //         if (retainOnly) {
+      //           d.retain(content.getLength(), null, attribution)
+      //         } else {
+      //           d.insert(/** @type {ContentEmbed | ContentType} */ (content).getContent()[0], null, attribution)
+      //         }
+      //         break
+      //       }
+      //       case ContentFormat: {
+      //         const contentFormat = /** @type {ContentFormat} */ (content)
+      //         if (attribution != null) {
+      //           /**
+      //            * @type {import('../utils/Delta.js').Attribution}
+      //            */
+      //           const formattingAttribution = object.assign({}, d.usedAttribution)
+      //           const attributesChanged = /** @type {{ [key: string]: Array<any> }} */ (formattingAttribution.attributes = object.assign({}, formattingAttribution.attributes ?? {}))
+      //           if (contentFormat.value === null) {
+      //             delete attributesChanged[contentFormat.key]
+      //           } else {
+      //             const by = attributesChanged[contentFormat.key] = attributesChanged[contentFormat.key]?.slice() ?? []
+      //             by.push(...((deleted ? attribution.delete : attribution.insert) ?? []))
+      //             const attributedAt = (deleted ? attribution.deletedAt : attribution.insertedAt)
+      //             if (attributedAt) formattingAttribution.attributedAt = attributedAt
+      //           }
+      //           if (object.isEmpty(attributesChanged)) {
+      //             d.useAttribution(null)
+      //           } else {
+      //             const attributedAt = (deleted ? attribution.deletedAt : attribution.insertedAt)
+      //             if (attributedAt != null) formattingAttribution.attributedAt = attributedAt
+      //             d.useAttribution(formattingAttribution)
+      //           }
+      //         }
+      //         if (!deleted) {
+      //           const currAttrs = d.usedAttributes
+      //           if (contentFormat.value == null) {
+      //             const nextAttrs = object.assign({}, currAttrs)
+      //             delete nextAttrs[contentFormat.key]
+      //             d.useAttributes(nextAttrs)
+      //           } else {
+      //             d.useAttributes(object.assign({}, currAttrs, { [contentFormat.key]: contentFormat.value }))
+      //           }
+      //         }
+      //         break
+      //       }
+      //     }
+      //   }
+      // }
+      // return d
   }
 
   /**
@@ -1169,6 +1202,7 @@ export class YText extends AbstractType {
           case ContentFormat: {
             const { key, value } = /** @type {ContentFormat} */ (c.content)
             const currAttrVal = currentAttributes[key] ?? null
+            // @todo write a function "updateCurrentAttributes" and "updateChangedAttributes"
             // # Update Attributes
             if (renderDelete || renderInsert) {
               // create fresh references
@@ -1185,20 +1219,24 @@ export class YText extends AbstractType {
               if (equalAttrs(value, currAttrVal)) {
                 // item.delete(transaction)
               } else if (equalAttrs(value, previousAttributes[key] ?? null)) {
-                delete currentAttributes[key]
                 delete changedAttributes[key]
               } else {
-                currentAttributes[key] = value
                 changedAttributes[key] = value
+              }
+              if (value == null) {
+                delete currentAttributes[key]
+              } else {
+                currentAttributes[key] = value
               }
             } else if (renderDelete) {
               if (equalAttrs(value, currAttrVal)) {
+                // nop
+              } else if (equalAttrs(currAttrVal, previousAttributes[key] ?? null) && changedAttributes[key] !== undefined) {
                 delete changedAttributes[key]
-                delete currentAttributes[key]
               } else {
                 changedAttributes[key] = currAttrVal
-                currentAttributes[key] = currAttrVal
               }
+              // current attributes doesn't change
               previousAttributes[key] = value
             } else if (!c.deleted) {
               // fresh reference to currentAttributes only
@@ -1206,11 +1244,16 @@ export class YText extends AbstractType {
                 currentAttributes = object.assign({}, currentAttributes)
                 usingCurrentAttributes = false
               }
-              if (equalAttrs(value, previousAttributes[key] ?? null)) {
+              if (usingChangedAttributes && changedAttributes[key] !== undefined) {
+                usingChangedAttributes = false
+                changedAttributes = object.assign({}, changedAttributes)
+              }
+              if (value == null) {
                 delete currentAttributes[key]
               } else {
                 currentAttributes[key] = value
               }
+              delete changedAttributes[key]
               previousAttributes[key] = value
             }
             // # Update Attributions
@@ -1418,6 +1461,13 @@ export class YText extends AbstractType {
    */
   _write (encoder) {
     encoder.writeTypeRef(YTextRefID)
+  }
+
+  /**
+   * @param {this} other 
+   */
+  [traits.EqualityTraitSymbol] (other) {
+    return this.getContent().equals(other.getContent())
   }
 }
 
