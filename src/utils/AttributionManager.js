@@ -5,14 +5,14 @@ import {
   createDeleteSetFromStructStore,
   createIdMapFromIdSet,
   ContentDeleted,
-  Snapshot, Doc, AbstractContent, IdMap, // eslint-disable-line
+  Item, Snapshot, Doc, AbstractContent, IdMap, // eslint-disable-line
   insertIntoIdMap,
   insertIntoIdSet,
   diffIdMap,
   createIdMap,
   createAttributionItem,
   mergeIdMaps,
-  createID
+  createID,
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -106,6 +106,17 @@ export class AbstractAttributionManager {
     error.methodUnimplemented()
   }
 
+  /**
+   * Calculate the length of the attributed content. This is used by iterators that walk through the
+   * content.
+   *
+   * @param {Item} _item
+   * @return {number}
+   */
+  contentLength (_item) {
+    error.methodUnimplemented()
+  }
+
   destroy () {}
 }
 
@@ -145,6 +156,18 @@ export class TwosetAttributionManager {
       }
     })
   }
+
+  /**
+   * @param {Item} item
+   * @return {number}
+   */
+  contentLength (item) {
+    if (!item.deleted) {
+      return item.length
+    } else {
+      return this.deletes.sliceId(item.id, item.length).reduce((len, s) => s.attrs != null ? len + s.len : len, 0)
+    }
+  }
 }
 
 /**
@@ -167,6 +190,14 @@ export class NoAttributionsManager {
     if (!deleted || shouldRender) {
       contents.push(new AttributedContent(content, deleted, null, shouldRender))
     }
+  }
+
+  /**
+   * @param {Item} item
+   * @return {number}
+   */
+  contentLength (item) {
+    return item.deleted ? 0 : item.length
   }
 }
 
@@ -266,6 +297,18 @@ export class DiffAttributionManager {
       }
     })
   }
+
+  /**
+   * @param {Item} item
+   * @return {number}
+   */
+  contentLength (item) {
+    if (!item.deleted) {
+      return item.length
+    } else {
+      return this.deletes.sliceId(item.id, item.length).reduce((len, s) => s.attrs != null ? len + s.len : len, 0)
+    }
+  }
 }
 
 /**
@@ -330,6 +373,14 @@ export class SnapshotAttributionManager {
         contents.push(new AttributedContent(c, deleted, attrsWithoutChange, shouldRender))
       }
     })
+  }
+
+  /**
+   * @param {Item} item
+   * @return {number}
+   */
+  contentLength (item) {
+    return this.attrs.sliceId(item.id, item.length).reduce((len, s) => s.attrs != null ? len + s.len : len, 0)
   }
 }
 
