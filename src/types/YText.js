@@ -1158,42 +1158,47 @@ export class YText extends AbstractType {
             if (ir !== rslice.length - 1) {
               itemContent.splice(idrange.len)
             }
-            am.readContent(cs, item.id.client, idrange.clock, item.deleted, content, idrange.exists)
+            am.readContent(cs, item.id.client, idrange.clock, item.deleted, content, idrange.exists ? 2 : 0)
           }
         }
       } else {
         for (; item !== null && cs.length < 50; item = item.right) {
-          am.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, !item.deleted)
+          am.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, 1)
         }
       }
       for (let i = 0; i < cs.length; i++) {
         const c = cs[i]
-        const renderDelete = c.deleted && (c.attrs != null || c.render)
-        const renderInsert = !c.deleted && (c.render || c.attrs != null)
-        const attribution = (renderDelete || renderInsert) ? createAttributionFromAttributionItems(c.attrs, c.deleted).attribution : null
+        // render (attributed) content even if it was deleted
+        const renderContent = c.render && (!c.deleted || c.attrs != null)
+        // content that was just deleted. It is not rendered as an insertion, because it doesn't
+        // have any attributes.
+        const renderDelete = c.render && c.deleted
+        // existing content that should be retained, only adding changed attributes
+        const retainContent = !c.render && (!c.deleted || c.attrs != null)
+        const attribution = renderContent ? createAttributionFromAttributionItems(c.attrs, c.deleted).attribution : null
         switch (c.content.constructor) {
           case ContentType:
           case ContentEmbed:
-            if (renderInsert) {
+            if (renderContent) {
               d.usedAttributes = currentAttributes
               usingCurrentAttributes = true
               d.insert(c.content.getContent()[0], null, attribution)
             } else if (renderDelete) {
               d.delete(1)
-            } else if (!c.deleted) {
+            } else if (retainContent) {
               d.usedAttributes = changedAttributes
               usingChangedAttributes = true
               d.retain(1)
             }
             break
           case ContentString:
-            if (renderInsert || (renderDelete && attribution?.delete != null)) {
+            if (renderContent) {
               d.usedAttributes = currentAttributes
               usingCurrentAttributes = true
               d.insert(/** @type {ContentString} */ (c.content).str, null, attribution)
             } else if (renderDelete) {
               d.delete(c.content.getLength())
-            } else if (!c.deleted) {
+            } else if (retainContent) {
               d.usedAttributes = changedAttributes
               usingChangedAttributes = true
               d.retain(c.content.getLength())
@@ -1204,7 +1209,7 @@ export class YText extends AbstractType {
             const currAttrVal = currentAttributes[key] ?? null
             // @todo write a function "updateCurrentAttributes" and "updateChangedAttributes"
             // # Update Attributes
-            if (renderDelete || renderInsert) {
+            if (renderContent || renderDelete) {
               // create fresh references
               if (usingCurrentAttributes) {
                 currentAttributes = object.assign({}, currentAttributes)
@@ -1215,30 +1220,34 @@ export class YText extends AbstractType {
                 changedAttributes = object.assign({}, changedAttributes)
               }
             }
-            if (renderInsert) {
-              if (equalAttrs(value, currAttrVal)) {
-                // item.delete(transaction)
-              } else if (equalAttrs(value, previousAttributes[key] ?? null)) {
-                delete changedAttributes[key]
-              } else {
-                changedAttributes[key] = value
+            if (renderContent || renderDelete) {
+              if (c.deleted) {
+                // content was deleted, but is possibly attributed
+                if (equalAttrs(value, currAttrVal)) {
+                  // nop
+                } else if (equalAttrs(currAttrVal, previousAttributes[key] ?? null) && changedAttributes[key] !== undefined) {
+                  delete changedAttributes[key]
+                } else {
+                  changedAttributes[key] = currAttrVal
+                }
+                // current attributes doesn't change
+                previousAttributes[key] = value
+              } else { // !c.deleted
+                // content was inserted, and is possibly attributed
+                if (equalAttrs(value, currAttrVal)) {
+                  // item.delete(transaction)
+                } else if (equalAttrs(value, previousAttributes[key] ?? null)) {
+                  delete changedAttributes[key]
+                } else {
+                  changedAttributes[key] = value
+                }
+                if (value == null) {
+                  delete currentAttributes[key]
+                } else {
+                  currentAttributes[key] = value
+                }
               }
-              if (value == null) {
-                delete currentAttributes[key]
-              } else {
-                currentAttributes[key] = value
-              }
-            } else if (renderDelete) {
-              if (equalAttrs(value, currAttrVal)) {
-                // nop
-              } else if (equalAttrs(currAttrVal, previousAttributes[key] ?? null) && changedAttributes[key] !== undefined) {
-                delete changedAttributes[key]
-              } else {
-                changedAttributes[key] = currAttrVal
-              }
-              // current attributes doesn't change
-              previousAttributes[key] = value
-            } else if (!c.deleted) {
+            } else if (retainContent && !c.deleted) {
               // fresh reference to currentAttributes only
               if (usingCurrentAttributes) {
                 currentAttributes = object.assign({}, currentAttributes)

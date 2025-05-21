@@ -11,7 +11,9 @@ import {
   YXmlElement,
   YXmlFragment,
   transact,
-  ContentDoc, Item, Transaction, YEvent // eslint-disable-line
+  applyUpdate,
+  ContentDoc, Item, Transaction, YEvent, // eslint-disable-line
+  encodeStateAsUpdate
 } from '../internals.js'
 
 import { ObservableV2 } from 'lib0/observable'
@@ -344,4 +346,13 @@ export class Doc extends ObservableV2 {
     this.emit('destroy', [this])
     super.destroy()
   }
+}
+
+/**
+ * @param {Doc} ydoc
+ */
+export const cloneDoc = ydoc => {
+  const clone = new Doc()
+  applyUpdate(clone, encodeStateAsUpdate(ydoc))
+  return clone
 }

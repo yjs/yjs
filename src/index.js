@@ -115,7 +115,8 @@ export {
   noAttributionsManager,
   iterateStructsByIdSet,
   createAttributionManagerFromDiff,
-  createIdSet
+  createIdSet,
+  cloneDoc
 } from './internals.js'
 
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'
