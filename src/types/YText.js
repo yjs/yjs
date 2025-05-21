@@ -27,8 +27,7 @@ import {
   noAttributionsManager, AbstractAttributionManager, ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item, Transaction, // eslint-disable-line
   createAttributionFromAttributionItems,
   mergeIdSets,
-  diffIdSet,
-  intersectSets
+  diffIdSet
 } from '../internals.js'
 
 import * as delta from '../utils/Delta.js'
@@ -51,12 +50,14 @@ export class ItemTextListPosition {
    * @param {Item|null} right
    * @param {number} index
    * @param {Map<string,any>} currentAttributes
+   * @param {AbstractAttributionManager} am
    */
-  constructor (left, right, index, currentAttributes) {
+  constructor (left, right, index, currentAttributes, am) {
     this.left = left
     this.right = right
     this.index = index
     this.currentAttributes = currentAttributes
+    this.am = am
   }
 
   /**
@@ -73,13 +74,85 @@ export class ItemTextListPosition {
         }
         break
       default:
-        if (!this.right.deleted) {
-          this.index += this.right.length
-        }
+        this.index += this.am.contentLength(this.right)
         break
     }
     this.left = this.right
     this.right = this.right.right
+  }
+
+  /**
+   * @param {Transaction} transaction
+   * @param {AbstractType<any>} parent
+   * @param {number} length
+   * @param {Object<string,any>} attributes
+   *
+   * @function
+   */
+  formatText (transaction, parent, length, attributes) {
+    const doc = transaction.doc
+    const ownClientId = doc.clientID
+    minimizeAttributeChanges(this, attributes)
+    const negatedAttributes = insertAttributes(transaction, parent, this, attributes)
+    // iterate until first non-format or null is found
+    // delete all formats with attributes[format.key] != null
+    // also check the attributes after the first non-format as we do not want to insert redundant negated attributes there
+    // eslint-disable-next-line no-labels
+    iterationLoop: while (
+      this.right !== null &&
+      (length > 0 ||
+        (
+          negatedAttributes.size > 0 &&
+          (this.right.deleted || this.right.content.constructor === ContentFormat)
+        )
+      )
+    ) {
+      switch (this.right.content.constructor) {
+        case ContentFormat: {
+          if (!this.right.deleted) {
+            const { key, value } = /** @type {ContentFormat} */ (this.right.content)
+            const attr = attributes[key]
+            if (attr !== undefined) {
+              if (equalAttrs(attr, value)) {
+                negatedAttributes.delete(key)
+              } else {
+                if (length === 0) {
+                  // no need to further extend negatedAttributes
+                  // eslint-disable-next-line no-labels
+                  break iterationLoop
+                }
+                negatedAttributes.set(key, value)
+              }
+              this.right.delete(transaction)
+            } else {
+              this.currentAttributes.set(key, value)
+            }
+          }
+          break
+        }
+        default:
+          const rightLen = this.am.contentLength(this.right)
+          if (length < rightLen) {
+            getItemCleanStart(transaction, createID(this.right.id.client, this.right.id.clock + length))
+          }
+          length -= rightLen
+          break
+      }
+      this.forward()
+    }
+    // Quill just assumes that the editor starts with a newline and that it always
+    // ends with a newline. We only insert that newline when a new newline is
+    // inserted - i.e when length is bigger than type.length
+    if (length > 0) {
+      let newlines = ''
+      for (; length > 0; length--) {
+        newlines += '\n'
+      }
+      this.right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), this.left, this.left && this.left.lastId, this.right, this.right && this.right.id, parent, null, new ContentString(newlines))
+      this.right.integrate(transaction, 0)
+      this.forward()
+    }
+    insertNegatedAttributes(transaction, parent, this, negatedAttributes)
   }
 }
 
@@ -132,10 +205,10 @@ const findPosition = (transaction, parent, index, useSearchMarker) => {
   const currentAttributes = new Map()
   const marker = useSearchMarker ? findMarker(parent, index) : null
   if (marker) {
-    const pos = new ItemTextListPosition(marker.p.left, marker.p, marker.index, currentAttributes)
+    const pos = new ItemTextListPosition(marker.p.left, marker.p, marker.index, currentAttributes, noAttributionsManager)
     return findNextPosition(transaction, pos, index - marker.index)
   } else {
-    const pos = new ItemTextListPosition(null, parent._start, 0, currentAttributes)
+    const pos = new ItemTextListPosition(null, parent._start, 0, currentAttributes, noAttributionsManager)
     return findNextPosition(transaction, pos, index)
   }
 }
@@ -276,81 +349,6 @@ const insertText = (transaction, parent, currPos, text, attributes) => {
   currPos.right = right
   currPos.index = index
   currPos.forward()
-  insertNegatedAttributes(transaction, parent, currPos, negatedAttributes)
-}
-
-/**
- * @param {Transaction} transaction
- * @param {AbstractType<any>} parent
- * @param {ItemTextListPosition} currPos
- * @param {number} length
- * @param {Object<string,any>} attributes
- *
- * @private
- * @function
- */
-const formatText = (transaction, parent, currPos, length, attributes) => {
-  const doc = transaction.doc
-  const ownClientId = doc.clientID
-  minimizeAttributeChanges(currPos, attributes)
-  const negatedAttributes = insertAttributes(transaction, parent, currPos, attributes)
-  // iterate until first non-format or null is found
-  // delete all formats with attributes[format.key] != null
-  // also check the attributes after the first non-format as we do not want to insert redundant negated attributes there
-  // eslint-disable-next-line no-labels
-  iterationLoop: while (
-    currPos.right !== null &&
-    (length > 0 ||
-      (
-        negatedAttributes.size > 0 &&
-        (currPos.right.deleted || currPos.right.content.constructor === ContentFormat)
-      )
-    )
-  ) {
-    if (!currPos.right.deleted) {
-      switch (currPos.right.content.constructor) {
-        case ContentFormat: {
-          const { key, value } = /** @type {ContentFormat} */ (currPos.right.content)
-          const attr = attributes[key]
-          if (attr !== undefined) {
-            if (equalAttrs(attr, value)) {
-              negatedAttributes.delete(key)
-            } else {
-              if (length === 0) {
-                // no need to further extend negatedAttributes
-                // eslint-disable-next-line no-labels
-                break iterationLoop
-              }
-              negatedAttributes.set(key, value)
-            }
-            currPos.right.delete(transaction)
-          } else {
-            currPos.currentAttributes.set(key, value)
-          }
-          break
-        }
-        default:
-          if (length < currPos.right.length) {
-            getItemCleanStart(transaction, createID(currPos.right.id.client, currPos.right.id.clock + length))
-          }
-          length -= currPos.right.length
-          break
-      }
-    }
-    currPos.forward()
-  }
-  // Quill just assumes that the editor starts with a newline and that it always
-  // ends with a newline. We only insert that newline when a new newline is
-  // inserted - i.e when length is bigger than type.length
-  if (length > 0) {
-    let newlines = ''
-    for (; length > 0; length--) {
-      newlines += '\n'
-    }
-    currPos.right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), currPos.left, currPos.left && currPos.left.lastId, currPos.right, currPos.right && currPos.right.id, parent, null, new ContentString(newlines))
-    currPos.right.integrate(transaction, 0)
-    currPos.forward()
-  }
   insertNegatedAttributes(transaction, parent, currPos, negatedAttributes)
 }
 
@@ -651,176 +649,7 @@ export class YTextEvent extends YEvent {
    */
   getDelta (am = noAttributionsManager) {
     const whatToWatch = mergeIdSets([diffIdSet(this.transaction.insertSet, this.transaction.deleteSet), diffIdSet(this.transaction.deleteSet, this.transaction.insertSet)])
-    const genericDelta = this.target.getDelta(am, whatToWatch)
-    return genericDelta;
-    /*
-    if (!d.equals(genericDelta)) {
-      console.log(d.toJSON())
-      console.log(genericDelta.toJSON())
-      debugger
-      const d2 = this.target.getDelta(am, whatToWatch)
-      throw new Error('should match', d2)
-    }
-    return d
-    const ydoc = /** @type {Doc} */ (this.target.doc)
-    /**
-     * @type {import('../utils/Delta.js').TextDelta<TextEmbeds>}
-     */
-    const d = delta.createTextDelta()
-    transact(ydoc, transaction => {
-      /**
-       * @type {import('../utils/Delta.js').FormattingAttributes}
-       */
-      let currentAttributes = {} // saves all current attributes for insert
-      let usingCurrentAttributes = false
-      /**
-       * @type {import('../utils/Delta.js').FormattingAttributes}
-       */
-      let changedAttributes = {} // saves changed attributes for retain
-      let usingChangedAttributes = false
-      /**
-       * @type {import('../utils/Delta.js').FormattingAttributes}
-       */
-      const previousAttributes = {} // The value before changes
-      const tr = this.transaction
-
-      /**
-       * @type {Array<import('../internals.js').AttributedContent<any>>}
-       */
-      const cs = []
-      for (let item = this.target._start; item !== null; cs.length = 0, item = item.right) {
-        const freshDelete = item.deleted && tr.deleteSet.hasId(item.id) && !tr.insertSet.hasId(item.id)
-        const freshInsert = !item.deleted && tr.insertSet.hasId(item.id)
-        am.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, !item.deleted || freshDelete) // do item.right after calling this
-        for (let i = 0; i < cs.length; i++) {
-          const c = cs[i]
-          const { attribution } = createAttributionFromAttributionItems(c.attrs, c.deleted)
-          switch (c.content.constructor) {
-            case ContentType:
-            case ContentEmbed:
-              if (freshInsert) {
-                d.usedAttributes = currentAttributes
-                usingCurrentAttributes = true
-                d.insert(c.content.getContent()[0], null, attribution)
-              } else if (freshDelete) {
-                d.delete(1)
-              } else if (!c.deleted) {
-                d.usedAttributes = changedAttributes
-                usingChangedAttributes = true
-                d.retain(1)
-              }
-              break
-            case ContentString:
-              if (freshInsert) {
-                d.usedAttributes = currentAttributes
-                usingCurrentAttributes = true
-                d.insert(/** @type {ContentString} */ (c.content).str, null, attribution)
-              } else if (freshDelete) {
-                d.delete(c.content.getLength())
-              } else if (!c.deleted) {
-                d.usedAttributes = changedAttributes
-                usingChangedAttributes = true
-                d.retain(c.content.getLength())
-              }
-              break
-            case ContentFormat: {
-              const { key, value } = /** @type {ContentFormat} */ (c.content)
-              // # update attributes
-              const currAttrVal = currentAttributes[key] ?? null
-              if (freshDelete || freshInsert) {
-                // create fresh references
-                if (usingCurrentAttributes) {
-                  currentAttributes = object.assign({}, currentAttributes)
-                  usingCurrentAttributes = false
-                }
-                if (usingChangedAttributes) {
-                  usingChangedAttributes = false
-                  changedAttributes = object.assign({}, changedAttributes)
-                }
-              }
-              if (freshInsert) {
-                if (equalAttrs(value, currAttrVal)) {
-                  item.delete(transaction)
-                } else if (equalAttrs(value, previousAttributes[key] ?? null)) {
-                  delete changedAttributes[key]
-                } else {
-                  changedAttributes[key] = value
-                }
-                if (value == null) {
-                  delete currentAttributes[key]
-                } else {
-                  currentAttributes[key] = value
-                }
-              } else if (freshDelete) {
-                if (equalAttrs(value, currAttrVal)) {
-                  // nop
-                } else if (equalAttrs(currAttrVal, previousAttributes[key] ?? null)) {
-                  delete changedAttributes[key]
-                } else {
-                  changedAttributes[key] = currAttrVal
-                }
-                // current attributes doesn't change
-                previousAttributes[key] = value
-
-              } else if (!c.deleted) {
-                // fresh reference to currentAttributes only
-                if (usingCurrentAttributes) {
-                  currentAttributes = object.assign({}, currentAttributes)
-                  usingCurrentAttributes = false
-                }
-                if (usingChangedAttributes && changedAttributes[key] !== undefined) {
-                  usingChangedAttributes = false
-                  changedAttributes = object.assign({}, changedAttributes)
-                }
-                if (value == null) {
-                  delete currentAttributes[key]
-                } else {
-                  currentAttributes[key] = value
-                }
-                delete changedAttributes[key]
-                previousAttributes[key] = value
-              }
-              // # Update Attributions
-              if (attribution != null) {
-                /**
-                 * @type {import('../utils/Delta.js').Attribution}
-                 */
-                const formattingAttribution = object.assign({}, d.usedAttribution)
-                const attributesChanged = /** @type {{ [key: string]: Array<any> }} */ (formattingAttribution.attributes = object.assign({}, formattingAttribution.attributes ?? {}))
-                if (value === null) {
-                  delete attributesChanged[key]
-                } else {
-                  const by = attributesChanged[key] = (attributesChanged[key]?.slice() ?? [])
-                  by.push(...((c.deleted ? attribution.delete : attribution.insert) ?? []))
-                  const attributedAt = (c.deleted ? attribution.deletedAt : attribution.insertedAt)
-                  if (attributedAt) formattingAttribution.attributedAt = attributedAt
-                }
-                if (object.isEmpty(attributesChanged)) {
-                  d.useAttribution(null)
-                } else {
-                  const attributedAt = (c.deleted ? attribution.deletedAt : attribution.insertedAt)
-                  if (attributedAt != null) formattingAttribution.attributedAt = attributedAt
-                  d.useAttribution(formattingAttribution)
-                }
-              }
-              break
-            }
-          }
-        }
-      }
-    })
-    return d.done()
-    // const whatToWatch = mergeIdSets([diffIdSet(this.transaction.insertSet, this.transaction.deleteSet), diffIdSet(this.transaction.deleteSet, this.transaction.insertSet)])
-    // const genericDelta = this.target.getDelta(am, whatToWatch)
-    // if (!d.equals(genericDelta)) {
-    //   console.log(d.toJSON())
-    //   console.log(genericDelta.toJSON())
-    //   debugger
-    //   const d2 = this.target.getDelta(am, whatToWatch)
-    //   throw new Error('should match', d2)
-    // }
-    // return d
-    // */
+    return this.target.getDelta(am, whatToWatch)
   }
 
   /**
@@ -966,34 +795,26 @@ export class YText extends AbstractType {
    * Apply a {@link Delta} on this shared YText type.
    *
    * @param {Array<any> | delta.Delta} delta The changes to apply on this element.
-   * @param {object}  opts
-   * @param {boolean} [opts.sanitize] Sanitize input delta. Removes ending newlines if set to true.
-   *
+   * @param {AbstractAttributionManager} am
    *
    * @public
    */
-  applyDelta (delta, { sanitize = true } = {}) {
+  applyDelta (delta, am = noAttributionsManager) {
     if (this.doc !== null) {
       transact(this.doc, transaction => {
         /**
          * @type {Array<any>}
          */
         const deltaOps = /** @type {Array<any>} */ (/** @type {delta.Delta} */ (delta).ops instanceof Array ? /** @type {delta.Delta} */ (delta).ops : delta)
-        const currPos = new ItemTextListPosition(null, this._start, 0, new Map())
+        const currPos = new ItemTextListPosition(null, this._start, 0, new Map(), am)
         for (let i = 0; i < deltaOps.length; i++) {
           const op = deltaOps[i]
           if (op.insert !== undefined) {
-            // Quill assumes that the content starts with an empty paragraph.
-            // Yjs/Y.Text assumes that it starts empty. We always hide that
-            // there is a newline at the end of the content.
-            // If we omit this step, clients will see a different number of
-            // paragraphs, but nothing bad will happen.
-            const ins = (!sanitize && typeof op.insert === 'string' && i === deltaOps.length - 1 && currPos.right === null && op.insert.slice(-1) === '\n') ? op.insert.slice(0, -1) : op.insert
-            if (typeof ins !== 'string' || ins.length > 0) {
-              insertText(transaction, this, currPos, ins, op.attributes || {})
+            if (op.insert.length > 0 || typeof op.insert !== 'string') {
+              insertText(transaction, this, currPos, op.insert, op.attributes || {})
             }
           } else if (op.retain !== undefined) {
-            formatText(transaction, this, currPos, op.retain, op.attributes || {})
+            currPos.formatText(transaction, this, op.retain, op.attributes || {})
           } else if (op.delete !== undefined) {
             deleteText(transaction, currPos, op.delete)
           }
@@ -1182,7 +1003,11 @@ export class YText extends AbstractType {
             if (renderContent) {
               d.usedAttributes = currentAttributes
               usingCurrentAttributes = true
-              d.insert(c.content.getContent()[0], null, attribution)
+              if (!retainOnly) {
+                d.insert(c.content.getContent()[0], null, attribution)
+              } else {
+                d.retain(c.content.getLength(), null, attribution)
+              }
             } else if (renderDelete) {
               d.delete(1)
             } else if (retainContent) {
@@ -1195,7 +1020,11 @@ export class YText extends AbstractType {
             if (renderContent) {
               d.usedAttributes = currentAttributes
               usingCurrentAttributes = true
-              d.insert(/** @type {ContentString} */ (c.content).str, null, attribution)
+              if (!retainOnly) {
+                d.insert(/** @type {ContentString} */ (c.content).str, null, attribution)
+              } else {
+                d.retain(/** @type {ContentString} */ (c.content).str.length, null, attribution)
+              }
             } else if (renderDelete) {
               d.delete(c.content.getLength())
             } else if (retainContent) {
@@ -1391,7 +1220,7 @@ export class YText extends AbstractType {
         if (pos.right === null) {
           return
         }
-        formatText(transaction, this, pos, length, attributes)
+        pos.formatText(transaction, this, length, attributes)
       })
     } else {
       /** @type {Array<function>} */ (this._pending).push(() => this.format(index, length, attributes))

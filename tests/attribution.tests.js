@@ -32,3 +32,39 @@ export const testAttributedEvents = _tc => {
   ytext.insert(11, '!')
   t.assert(calledObserver)
 }
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testInsertionsMindingAttributedContent = _tc => {
+  const ydoc = new Y.Doc()
+  const ytext = ydoc.getText()
+  ytext.insert(0, 'hello world')
+  const v1 = Y.cloneDoc(ydoc)
+  ydoc.transact(() => {
+    ytext.delete(6, 5)
+  })
+  let am = Y.createAttributionManagerFromDiff(v1, ydoc)
+  const c1 = ytext.getDelta(am)
+  t.compare(c1, delta.createTextDelta().insert('hello ').insert('world', null, { delete: [] }))
+  ytext.applyDelta(delta.createTextDelta().retain(11).insert('content'), am)
+  t.assert(ytext.toString() === 'hello content')
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testInsertionsIntoAttributedContent = _tc => {
+  const ydoc = new Y.Doc()
+  const ytext = ydoc.getText()
+  ytext.insert(0, 'hello ')
+  const v1 = Y.cloneDoc(ydoc)
+  ydoc.transact(() => {
+    ytext.insert(6, 'word')
+  })
+  let am = Y.createAttributionManagerFromDiff(v1, ydoc)
+  const c1 = ytext.getDelta(am)
+  t.compare(c1, delta.createTextDelta().insert('hello ').insert('word', null, { insert: [] }))
+  ytext.applyDelta(delta.createTextDelta().retain(9).insert('l'), am)
+  t.assert(ytext.toString() === 'hello world')
+}
