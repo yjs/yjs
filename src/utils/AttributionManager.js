@@ -80,13 +80,13 @@ export class AttributedContent {
    * @param {AbstractContent} content
    * @param {boolean} deleted
    * @param {Array<import('./IdMap.js').AttributionItem<T>> | null} attrs
-   * @param {boolean} render
+   * @param {0|1|2} renderBehavior
    */
-  constructor (content, deleted, attrs, render) {
+  constructor (content, deleted, attrs, renderBehavior) {
     this.content = content
     this.deleted = deleted
     this.attrs = attrs
-    this.render = render
+    this.render = renderBehavior === 0 ? false : (renderBehavior === 1 ? (!deleted || attrs != null) : true)
   }
 }
 
@@ -100,7 +100,7 @@ export class AbstractAttributionManager {
    * @param {number} _clock
    * @param {boolean} _deleted
    * @param {AbstractContent} _content
-   * @param {boolean} _shouldRender - whether this should render or just result in a `retain` operation
+   * @param {0|1|2} _shouldRender - 0: if undeleted or attributed, render as a retain operation. 1: render only if undeleted or attributed. 2: render as insert operation (if unattributed and deleted, render as delete).
    */
   readContent (_contents, _client, _clock, _deleted, _content, _shouldRender) {
     error.methodUnimplemented()
@@ -130,7 +130,7 @@ export class TwosetAttributionManager {
    * @param {number} clock
    * @param {boolean} deleted
    * @param {AbstractContent} content
-   * @param {boolean} shouldRender - whether this should render or just result in a `retain` operation
+   * @param {0|1|2} shouldRender - whether this should render or just result in a `retain` operation
    */
   readContent (contents, client, clock, deleted, content, shouldRender) {
     const slice = (deleted ? this.deletes : this.inserts).slice(client, clock, content.getLength())
@@ -140,7 +140,7 @@ export class TwosetAttributionManager {
       if (s.len < c.getLength()) {
         content = c.splice(s.len)
       }
-      if (!deleted || s.attrs != null) {
+      if (!deleted || s.attrs != null || shouldRender) {
         contents.push(new AttributedContent(c, deleted, s.attrs, shouldRender))
       }
     })
@@ -161,7 +161,7 @@ export class NoAttributionsManager {
    * @param {number} _clock
    * @param {boolean} deleted
    * @param {AbstractContent} content
-   * @param {boolean} shouldRender - whether this should render or just result in a `retain` operation
+   * @param {0|1|2} shouldRender - whether this should render or just result in a `retain` operation
    */
   readContent (contents, _client, _clock, deleted, content, shouldRender) {
     if (!deleted || shouldRender) {
@@ -236,7 +236,7 @@ export class DiffAttributionManager {
    * @param {number} clock
    * @param {boolean} deleted
    * @param {AbstractContent} content
-   * @param {boolean} shouldRender - whether this should render or just result in a `retain` operation
+   * @param {0|1|2} shouldRender - whether this should render or just result in a `retain` operation
    */
   readContent (contents, client, clock, deleted, content, shouldRender) {
     const slice = (deleted ? this.deletes : this.inserts).slice(client, clock, content.getLength())
@@ -244,10 +244,11 @@ export class DiffAttributionManager {
     if (content instanceof ContentDeleted && slice[0].attrs != null && !this.inserts.has(client, clock)) {
       // Retrieved item is never more fragmented than the newer item.
       const prevItem = getItem(this._prevDocStore, createID(client, clock))
+      const originalContentLen = content.getLength()
       content = prevItem.length > 1 ? prevItem.content.copy() : prevItem.content
       // trim itemContent to the correct size.
-      const diffStart = prevItem.id.clock - clock
-      const diffEnd = prevItem.id.clock + prevItem.length - clock - content.getLength()
+      const diffStart = clock - prevItem.id.clock
+      const diffEnd = prevItem.id.clock + prevItem.length - clock - originalContentLen
       if (diffStart > 0) {
         content = content.splice(diffStart)
       }
@@ -260,7 +261,7 @@ export class DiffAttributionManager {
       if (s.len < c.getLength()) {
         content = c.splice(s.len)
       }
-      if (!deleted || s.attrs != null || shouldRender) {
+      if (shouldRender || !deleted || s.attrs != null) {
         contents.push(new AttributedContent(c, deleted, s.attrs, shouldRender))
       }
     })
@@ -307,7 +308,7 @@ export class SnapshotAttributionManager {
    * @param {number} clock
    * @param {boolean} _deleted
    * @param {AbstractContent} content
-   * @param {boolean} shouldRender - whether this should render or just result in a `retain` operation
+   * @param {0|1|2} shouldRender - whether this should render or just result in a `retain` operation
    */
   readContent (contents, client, clock, _deleted, content, shouldRender) {
     if ((this.nextSnapshot.sv.get(client) ?? 0) <= clock) return // future item that should not be displayed
@@ -321,12 +322,12 @@ export class SnapshotAttributionManager {
         content = c.splice(s.len)
       }
       if (nonExistend) return
-      if (!deleted || shouldRender || (s.attrs != null && s.attrs.length > 0)) {
+      if (shouldRender || !deleted || (s.attrs != null && s.attrs.length > 0)) {
         let attrsWithoutChange = s.attrs?.filter(attr => attr.name !== 'change') ?? null
         if (s.attrs?.length === 0) {
           attrsWithoutChange = null
         }
-        contents.push(new AttributedContent(c, deleted, attrsWithoutChange, !deleted))
+        contents.push(new AttributedContent(c, deleted, attrsWithoutChange, shouldRender))
       }
     })
   }

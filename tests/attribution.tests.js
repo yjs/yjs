@@ -1,0 +1,34 @@
+/**
+ * Testing if encoding/decoding compatibility and integration compatibility is given.
+ * We expect that the document always looks the same, even if we upgrade the integration algorithm, or add additional encoding approaches.
+ *
+ * The v1 documents were generated with Yjs v13.2.0 based on the randomisized tests.
+ */
+
+import * as Y from '../src/index.js'
+import * as t from 'lib0/testing'
+import * as delta from '../src/utils/Delta.js'
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testAttributedEvents = _tc => {
+  const ydoc = new Y.Doc()
+  const ytext = ydoc.getText()
+  ytext.insert(0, 'hello world')
+  const v1 = Y.cloneDoc(ydoc)
+  ydoc.transact(() => {
+    ytext.delete(6, 5)
+  })
+  let am = Y.createAttributionManagerFromDiff(v1, ydoc)
+  const c1 = ytext.getDelta(am)
+  t.compare(c1, delta.createTextDelta().insert('hello ').insert('world', null, { delete: [] }))
+  let calledObserver = false
+  ytext.observe(event => {
+    const d = event.getDelta(am)
+    t.compare(d, delta.createTextDelta().retain(11).insert('!', null, { insert: [] }))
+    calledObserver = true
+  })
+  ytext.insert(11, '!')
+  t.assert(calledObserver)
+}
