@@ -113,6 +113,7 @@ export {
   createIdMapFromIdSet,
   TwosetAttributionManager,
   noAttributionsManager,
+  AbstractAttributionManager,
   iterateStructsByIdSet,
   createAttributionManagerFromDiff,
   createIdSet,
