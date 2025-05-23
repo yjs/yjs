@@ -5,7 +5,6 @@ import {
   createDeleteSetFromStructStore,
   createIdMapFromIdSet,
   ContentDeleted,
-  Item, Snapshot, Doc, AbstractContent, IdMap, // eslint-disable-line
   insertIntoIdMap,
   insertIntoIdSet,
   diffIdMap,
@@ -13,9 +12,12 @@ import {
   createAttributionItem,
   mergeIdMaps,
   createID,
+  mergeIdSets,
+  IdSet, Item, Snapshot, Doc, AbstractContent, IdMap // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error'
+import { ObservableV2 } from 'lib0/observable'
 
 /**
  * @typedef {Object} Attribution
@@ -92,8 +94,13 @@ export class AttributedContent {
 
 /**
  * Abstract class for associating Attributions to content / changes
+ *
+ * Should fire an event when the attributions changed _after_ the original change happens. This
+ * Event will be used to update the attribution on the current content.
+ *
+ * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
  */
-export class AbstractAttributionManager {
+export class AbstractAttributionManager extends ObservableV2 {
   /**
    * @param {Array<AttributedContent<any>>} _contents - where to write the result
    * @param {number} _client
@@ -116,24 +123,23 @@ export class AbstractAttributionManager {
   contentLength (_item) {
     error.methodUnimplemented()
   }
-
-  destroy () {}
 }
 
 /**
  * @implements AbstractAttributionManager
+ *
+ * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
  */
-export class TwosetAttributionManager {
+export class TwosetAttributionManager extends ObservableV2 {
   /**
    * @param {IdMap<any>} inserts
    * @param {IdMap<any>} deletes
    */
   constructor (inserts, deletes) {
+    super()
     this.inserts = inserts
     this.deletes = deletes
   }
-
-  destroy () {}
 
   /**
    * @param {Array<AttributedContent<any>>} contents - where to write the result
@@ -174,10 +180,10 @@ export class TwosetAttributionManager {
  * Abstract class for associating Attributions to content / changes
  *
  * @implements AbstractAttributionManager
+ *
+ * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
  */
-export class NoAttributionsManager {
-  destroy () {}
-
+export class NoAttributionsManager extends ObservableV2 {
   /**
    * @param {Array<AttributedContent<any>>} contents - where to write the result
    * @param {number} _client
@@ -205,13 +211,16 @@ export const noAttributionsManager = new NoAttributionsManager()
 
 /**
  * @implements AbstractAttributionManager
+ *
+ * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
  */
-export class DiffAttributionManager {
+export class DiffAttributionManager extends ObservableV2 {
   /**
    * @param {Doc} prevDoc
    * @param {Doc} nextDoc
    */
   constructor (prevDoc, nextDoc) {
+    super()
     const _nextDocInserts = createInsertionSetFromStructStore(nextDoc.store, false) // unmaintained
     const _prevDocInserts = createInsertionSetFromStructStore(prevDoc.store, false) // unmaintained
     const nextDocDeletes = createDeleteSetFromStructStore(nextDoc.store) // maintained
@@ -227,7 +236,7 @@ export class DiffAttributionManager {
       const diffInserts = diffIdSet(tr.insertSet, _prevDocInserts)
       insertIntoIdMap(this.inserts, createIdMapFromIdSet(diffInserts, []))
       // update deletes
-      const diffDeletes = diffIdSet(tr.deleteSet, prevDocDeletes)
+      const diffDeletes = diffIdSet(diffIdSet(tr.deleteSet, prevDocDeletes), this.inserts)
       insertIntoIdMap(this.deletes, createIdMapFromIdSet(diffDeletes, []))
       // @todo fire update ranges on `diffInserts` and `diffDeletes`
     })
@@ -249,12 +258,14 @@ export class DiffAttributionManager {
         this.deletes = diffIdMap(this.deletes, tr.deleteSet)
       }
       // @todo fire update ranges on `tr.insertSet` and `tr.deleteSet`
+      this.emit('change', [mergeIdSets([tr.insertSet, tr.deleteSet]), tr.origin, tr.local])
     })
     this._destroyHandler = nextDoc.on('destroy', this.destroy.bind(this))
     prevDoc.on('destroy', this._destroyHandler)
   }
 
   destroy () {
+    super.destroy()
     this._nextDoc.off('destroy', this._destroyHandler)
     this._prevDoc.off('destroy', this._destroyHandler)
     this._nextDoc.off('beforeObserverCalls', this._nextBOH)
@@ -324,13 +335,16 @@ export const createAttributionManagerFromDiff = (prevDoc, nextDoc) => new DiffAt
  * read content similar to the previous snapshot api. Requires that `ydoc.gc` is turned off.
  *
  * @implements AbstractAttributionManager
+ *
+ * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
  */
-export class SnapshotAttributionManager {
+export class SnapshotAttributionManager extends ObservableV2 {
   /**
    * @param {Snapshot} prevSnapshot
    * @param {Snapshot} nextSnapshot
    */
   constructor (prevSnapshot, nextSnapshot) {
+    super()
     this.prevSnapshot = prevSnapshot
     this.nextSnapshot = nextSnapshot
     const inserts = createIdMap()
@@ -342,8 +356,6 @@ export class SnapshotAttributionManager {
     })
     this.attrs = mergeIdMaps([diffIdMap(inserts, prevSnapshot.ds), deletes])
   }
-
-  destroy () { }
 
   /**
    * @param {Array<AttributedContent<any>>} contents - where to write the result

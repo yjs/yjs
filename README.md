@@ -128,6 +128,8 @@ editing for your IDE or custom editor
 * [Lightpage](https://lightpage.com/) - Personal living notebook
 * [reearth-flow](https://github.com/reearth/reearth-flow) -
   Collaboratively calculate and convert various data
+* [ProtonMail | Proton Docs](https://proton.me/drive/docs) - E2E encrypted
+  collaborative documents in Proton Drive.
 
 ## Table of Contents
 
