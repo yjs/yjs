@@ -123,6 +123,8 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [Open Collaboration Tools](https://www.open-collab.tools/) - Collaborative
 editing for your IDE or custom editor
 * [Typst](https://typst.app/) - Compose, edit, and automate technical documents
+* [ProtonMail | Proton Docs](https://proton.me/drive/docs) - E2E encrypted
+collaborative documents in Proton Drive.
 
 ## Table of Contents
 

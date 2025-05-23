@@ -130,13 +130,14 @@ export class ItemTextListPosition {
           }
           break
         }
-        default:
+        default: {
           const rightLen = this.am.contentLength(this.right)
           if (length < rightLen) {
             getItemCleanStart(transaction, createID(this.right.id.client, this.right.id.clock + length))
           }
           length -= rightLen
           break
+        }
       }
       this.forward()
     }
@@ -648,8 +649,8 @@ export class YTextEvent extends YEvent {
    * @public
    */
   getDelta (am = noAttributionsManager) {
-    const whatToWatch = mergeIdSets([diffIdSet(this.transaction.insertSet, this.transaction.deleteSet), diffIdSet(this.transaction.deleteSet, this.transaction.insertSet)])
-    return this.target.getDelta(am, whatToWatch)
+    const itemsToRender = mergeIdSets([diffIdSet(this.transaction.insertSet, this.transaction.deleteSet), diffIdSet(this.transaction.deleteSet, this.transaction.insertSet)])
+    return this.target.getDelta(am, { itemsToRender, retainDeletes: true })
   }
 
   /**
@@ -846,12 +847,6 @@ export class YText extends AbstractType {
   }
 
   /**
-   * Render the difference to another ydoc (which can be empty) and highlight the differences with
-   * attributions.
-   *
-   * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
-   * attribution `{ isDeleted: true, .. }`.
-   *
    * @param {AbstractAttributionManager} am
    * @return {import('../utils/Delta.js').TextDelta<Embeds>} The Delta representation of this type.
    *
@@ -859,92 +854,25 @@ export class YText extends AbstractType {
    */
   getContent (am = noAttributionsManager) {
     return this.getDelta(am)
-      // this.doc ?? warnPrematureAccess()
-      // /**
-      //  * @type {delta.TextDelta<Embeds>}
-      //  */
-      // const d = delta.createTextDelta()
-      // /**
-      //  * @type {Array<import('../internals.js').AttributedContent<any>>}
-      //  */
-      // const cs = []
-      // for (let item = this._start; item !== null; cs.length = 0) {
-      //   // populate cs
-      //   for (; item !== null && cs.length < 50; item = item.right) {
-      //     am.readContent(cs, item, false)
-      //   }
-      //   for (let i = 0; i < cs.length; i++) {
-      //     const { content, deleted, attrs } = cs[i]
-      //     const { attribution, retainOnly } = createAttributionFromAttributionItems(attrs, deleted)
-      //     switch (content.constructor) {
-      //       case ContentString: {
-      //         if (retainOnly) {
-      //           d.retain(content.getLength(), null, attribution)
-      //         } else {
-      //           d.insert(/** @type {ContentString} */ (content).str, null, attribution)
-      //         }
-      //         break
-      //       }
-      //       case ContentType:
-      //       case ContentEmbed: {
-      //         if (retainOnly) {
-      //           d.retain(content.getLength(), null, attribution)
-      //         } else {
-      //           d.insert(/** @type {ContentEmbed | ContentType} */ (content).getContent()[0], null, attribution)
-      //         }
-      //         break
-      //       }
-      //       case ContentFormat: {
-      //         const contentFormat = /** @type {ContentFormat} */ (content)
-      //         if (attribution != null) {
-      //           /**
-      //            * @type {import('../utils/Delta.js').Attribution}
-      //            */
-      //           const formattingAttribution = object.assign({}, d.usedAttribution)
-      //           const attributesChanged = /** @type {{ [key: string]: Array<any> }} */ (formattingAttribution.attributes = object.assign({}, formattingAttribution.attributes ?? {}))
-      //           if (contentFormat.value === null) {
-      //             delete attributesChanged[contentFormat.key]
-      //           } else {
-      //             const by = attributesChanged[contentFormat.key] = attributesChanged[contentFormat.key]?.slice() ?? []
-      //             by.push(...((deleted ? attribution.delete : attribution.insert) ?? []))
-      //             const attributedAt = (deleted ? attribution.deletedAt : attribution.insertedAt)
-      //             if (attributedAt) formattingAttribution.attributedAt = attributedAt
-      //           }
-      //           if (object.isEmpty(attributesChanged)) {
-      //             d.useAttribution(null)
-      //           } else {
-      //             const attributedAt = (deleted ? attribution.deletedAt : attribution.insertedAt)
-      //             if (attributedAt != null) formattingAttribution.attributedAt = attributedAt
-      //             d.useAttribution(formattingAttribution)
-      //           }
-      //         }
-      //         if (!deleted) {
-      //           const currAttrs = d.usedAttributes
-      //           if (contentFormat.value == null) {
-      //             const nextAttrs = object.assign({}, currAttrs)
-      //             delete nextAttrs[contentFormat.key]
-      //             d.useAttributes(nextAttrs)
-      //           } else {
-      //             d.useAttributes(object.assign({}, currAttrs, { [contentFormat.key]: contentFormat.value }))
-      //           }
-      //         }
-      //         break
-      //       }
-      //     }
-      //   }
-      // }
-      // return d
   }
 
   /**
+   * Render the difference to another ydoc (which can be empty) and highlight the differences with
+   * attributions.
+   *
+   * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
+   * attribution `{ isDeleted: true, .. }`.
+   *
    * @param {AbstractAttributionManager} am
-   * @param {import('../utils/IdSet.js').IdSet?} itemsToRender
-   * @param {boolean} retainOnly - if true, retain the rendered items with attributes and attributions.
+   * @param {Object} [opts]
+   * @param {import('../utils/IdSet.js').IdSet?} [opts.itemsToRender]
+   * @param {boolean} [opts.retainInserts] - if true, retain rendered inserts with attributions
+   * @param {boolean} [opts.retainDeletes] - if true, retain rendered+attributed deletes only
    * @return {import('../utils/Delta.js').TextDelta<Embeds>} The Delta representation of this type.
    *
    * @public
    */
-  getDelta (am = noAttributionsManager, itemsToRender = null, retainOnly = false) {
+  getDelta (am = noAttributionsManager, { itemsToRender = null, retainInserts = false, retainDeletes = false } = {}) {
     /**
      * @type {import('../utils/Delta.js').TextDelta<Embeds>}
      */
@@ -972,7 +900,7 @@ export class YText extends AbstractType {
       if (itemsToRender != null) {
         for (; item !== null && cs.length < 50; item = item.right) {
           const rslice = itemsToRender.slice(item.id.client, item.id.clock, item.length)
-          let itemContent = rslice.length > 1 ? item.content.copy() : item.content
+          const itemContent = rslice.length > 1 ? item.content.copy() : item.content
           for (let ir = 0; ir < rslice.length; ir++) {
             const idrange = rslice[ir]
             const content = itemContent
@@ -1003,10 +931,10 @@ export class YText extends AbstractType {
             if (renderContent) {
               d.usedAttributes = currentAttributes
               usingCurrentAttributes = true
-              if (!retainOnly) {
-                d.insert(c.content.getContent()[0], null, attribution)
-              } else {
+              if (c.deleted ? retainDeletes : retainInserts) {
                 d.retain(c.content.getLength(), null, attribution)
+              } else {
+                d.insert(c.content.getContent()[0], null, attribution)
               }
             } else if (renderDelete) {
               d.delete(1)
@@ -1020,10 +948,10 @@ export class YText extends AbstractType {
             if (renderContent) {
               d.usedAttributes = currentAttributes
               usingCurrentAttributes = true
-              if (!retainOnly) {
-                d.insert(/** @type {ContentString} */ (c.content).str, null, attribution)
-              } else {
+              if (c.deleted ? retainDeletes : retainInserts) {
                 d.retain(/** @type {ContentString} */ (c.content).str.length, null, attribution)
+              } else {
+                d.insert(/** @type {ContentString} */ (c.content).str, null, attribution)
               }
             } else if (renderDelete) {
               d.delete(c.content.getLength())
@@ -1302,7 +1230,7 @@ export class YText extends AbstractType {
   }
 
   /**
-   * @param {this} other 
+   * @param {this} other
    */
   [traits.EqualityTraitSymbol] (other) {
     return this.getContent().equals(other.getContent())

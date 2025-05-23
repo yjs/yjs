@@ -413,7 +413,7 @@ export class DeltaBuilder extends AbstractDelta {
    * @return {this}
    */
   done () {
-    while (this.lastOp != null && this.lastOp instanceof RetainOp && this.lastOp.attributes === null) {
+    while (this.lastOp != null && this.lastOp instanceof RetainOp && this.lastOp.attributes === null && this.lastOp.attribution === null) {
       this.ops.pop()
       this.lastOp = this.ops[this.ops.length - 1] ?? null
     }

@@ -117,6 +117,7 @@ export {
   iterateStructsByIdSet,
   createAttributionManagerFromDiff,
   createIdSet,
+  mergeIdSets,
   cloneDoc
 } from './internals.js'
 
