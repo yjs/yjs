@@ -27,7 +27,8 @@ import {
   noAttributionsManager, AbstractAttributionManager, ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item, Transaction, // eslint-disable-line
   createAttributionFromAttributionItems,
   mergeIdSets,
-  diffIdSet
+  diffIdSet,
+  ContentDeleted
 } from '../internals.js'
 
 import * as delta from '../utils/Delta.js'
@@ -900,12 +901,12 @@ export class YText extends AbstractType {
       if (itemsToRender != null) {
         for (; item !== null && cs.length < 50; item = item.right) {
           const rslice = itemsToRender.slice(item.id.client, item.id.clock, item.length)
-          const itemContent = rslice.length > 1 ? item.content.copy() : item.content
+          let itemContent = rslice.length > 1 ? item.content.copy() : item.content
           for (let ir = 0; ir < rslice.length; ir++) {
             const idrange = rslice[ir]
             const content = itemContent
             if (ir !== rslice.length - 1) {
-              itemContent.splice(idrange.len)
+              itemContent = itemContent.splice(idrange.len)
             }
             am.readContent(cs, item.id.client, idrange.clock, item.deleted, content, idrange.exists ? 2 : 0)
           }
@@ -924,15 +925,19 @@ export class YText extends AbstractType {
         const renderDelete = c.render && c.deleted
         // existing content that should be retained, only adding changed attributes
         const retainContent = !c.render && (!c.deleted || c.attrs != null)
-        const attribution = renderContent ? createAttributionFromAttributionItems(c.attrs, c.deleted).attribution : null
+        const attribution = renderContent ? createAttributionFromAttributionItems(c.attrs, c.deleted) : null
         switch (c.content.constructor) {
+          case ContentDeleted: {
+            if (renderDelete) d.delete(c.content.getLength())
+            break
+          }
           case ContentType:
           case ContentEmbed:
             if (renderContent) {
               d.usedAttributes = currentAttributes
               usingCurrentAttributes = true
               if (c.deleted ? retainDeletes : retainInserts) {
-                d.retain(c.content.getLength(), null, attribution)
+                d.retain(c.content.getLength(), null, attribution ?? {})
               } else {
                 d.insert(c.content.getContent()[0], null, attribution)
               }
@@ -949,7 +954,7 @@ export class YText extends AbstractType {
               d.usedAttributes = currentAttributes
               usingCurrentAttributes = true
               if (c.deleted ? retainDeletes : retainInserts) {
-                d.retain(/** @type {ContentString} */ (c.content).str.length, null, attribution)
+                d.retain(/** @type {ContentString} */ (c.content).str.length, null, attribution ?? null)
               } else {
                 d.insert(/** @type {ContentString} */ (c.content).str, null, attribution)
               }
