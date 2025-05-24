@@ -13,18 +13,23 @@ import {
   mergeIdMaps,
   createID,
   mergeIdSets,
-  IdSet, Item, Snapshot, Doc, AbstractContent, IdMap // eslint-disable-line
+  IdSet, Item, Snapshot, Doc, AbstractContent, IdMap, // eslint-disable-line
+  intersectSets
 } from '../internals.js'
 
 import * as error from 'lib0/error'
 import { ObservableV2 } from 'lib0/observable'
 
 /**
+ * @todo rename this to `insertBy`, `insertAt`, ..
+ *
  * @typedef {Object} Attribution
  * @property {Array<any>} [Attribution.insert]
  * @property {number} [Attribution.insertedAt]
- * @property {Array<any>} [Attribution.suggest]
- * @property {number} [Attribution.suggestedAt]
+ * @property {Array<any>} [Attribution.acceptInsert]
+ * @property {number} [Attribution.acceptedDeleteAt]
+ * @property {Array<any>} [Attribution.acceptDelete]
+ * @property {number} [Attribution.acceptedDeleteAt]
  * @property {Array<any>} [Attribution.delete]
  * @property {number} [Attribution.deletedAt]
  * @property {{ [key: string]: Array<any> }} [Attribution.attributes]
@@ -35,16 +40,15 @@ import { ObservableV2 } from 'lib0/observable'
  * @todo SHOULD NOT RETURN AN OBJECT!
  * @param {Array<import('./IdMap.js').AttributionItem<any>>?} attrs
  * @param {boolean} deleted - whether the attributed item is deleted
- * @return {{ attribution: Attribution?, retainOnly: boolean }}
+ * @return {Attribution?}
  */
 export const createAttributionFromAttributionItems = (attrs, deleted) => {
+  if (attrs == null) return null
   /**
-   * @type {Attribution?}
+   * @type {Attribution}
    */
-  let attribution = null
-  let retainOnly = false
+  const attribution = {}
   if (attrs != null) {
-    attribution = {}
     if (deleted) {
       attribution.delete = []
     } else {
@@ -52,12 +56,14 @@ export const createAttributionFromAttributionItems = (attrs, deleted) => {
     }
     attrs.forEach(attr => {
       switch (attr.name) {
-        case 'retain':
-          retainOnly = true
-          break
+        case 'acceptDelete':
+          delete attribution.delete
+          // eslint-disable-next-line no-fallthrough
+        case 'acceptInsert':
+          delete attribution.insert
+          // eslint-disable-next-line no-fallthrough
         case 'insert':
-        case 'delete':
-        case 'suggest': {
+        case 'delete': {
           const as = /** @type {import('../utils/Delta.js').Attribution} */ (attribution)
           const ls = as[attr.name] = as[attr.name] ?? []
           ls.push(attr.val)
@@ -71,7 +77,7 @@ export const createAttributionFromAttributionItems = (attrs, deleted) => {
       }
     })
   }
-  return { attribution, retainOnly }
+  return attribution
 }
 
 /**
@@ -243,13 +249,8 @@ export class DiffAttributionManager extends ObservableV2 {
     this._prevBOH = prevDoc.on('beforeObserverCalls', tr => {
       insertIntoIdSet(_prevDocInserts, tr.insertSet)
       insertIntoIdSet(prevDocDeletes, tr.deleteSet)
-      if (tr.insertSet.clients.size < 2) {
-        tr.insertSet.forEach((idrange, client) => {
-          this.inserts.delete(client, idrange.clock, idrange.len)
-        })
-      } else {
-        this.inserts = diffIdMap(this.inserts, tr.insertSet)
-      }
+      insertIntoIdMap(this.inserts, createIdMapFromIdSet(intersectSets(tr.insertSet, this.inserts), [createAttributionItem('acceptInsert', 'unknown')]))
+      // insertIntoIdMap(this.deletes, createIdMapFromIdSet(intersectSets(tr.deleteSet, this.deletes), [createAttributionItem('acceptDelete', 'unknown')]))
       if (tr.deleteSet.clients.size < 2) {
         tr.deleteSet.forEach((attrRange, client) => {
           this.deletes.delete(client, attrRange.clock, attrRange.len)
