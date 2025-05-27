@@ -292,7 +292,10 @@ Provider for sharing data in <a href="https://webxdc.org">webxdc chat apps</a>.
   <dd>
 An architecture to relay end-to-end encrypted CRDTs over a central service.
   </dd>
-
+  <dt><a href="https://www.npmjs.com/package/@electric-sql/y-electric">y-electric</a></dt>
+  <dd>
+    Sync Yjs over <a href="https://electric-sql.com/">ElectricSQL</a>.
+  </dd>
 </dl>
 
 #### Persistence Providers
