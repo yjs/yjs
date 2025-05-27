@@ -296,6 +296,9 @@ An architecture to relay end-to-end encrypted CRDTs over a central service.
   <dd>
     Sync Yjs over <a href="https://electric-sql.com/">ElectricSQL</a>.
   </dd>
+  <dt><a href="https://github.com/TimoWilhelm/yjs-cf-ws-provider">yjs-cf-ws-provider</a></dt><dd>
+    Cloudflare provider for Yjs based on durable objects.
+  </dd>
 </dl>
 
 #### Persistence Providers
