@@ -28,6 +28,7 @@ import {
   createAttributionFromAttributionItems,
   mergeIdSets,
   diffIdSet,
+  createIdSet,
   ContentDeleted
 } from '../internals.js'
 
@@ -230,7 +231,7 @@ const insertNegatedAttributes = (transaction, parent, currPos, negatedAttributes
   // check if we really need to remove attributes
   while (
     currPos.right !== null && (
-      currPos.right.deleted === true || (
+      (currPos.right.deleted && (currPos.am == noAttributionsManager || currPos.am.contentLength(currPos.right) === 0)) || (
         currPos.right.content.constructor === ContentFormat &&
         equalAttrs(negatedAttributes.get(/** @type {ContentFormat} */ (currPos.right.content).key), /** @type {ContentFormat} */ (currPos.right.content).value)
       )
@@ -281,7 +282,7 @@ const minimizeAttributeChanges = (currPos, attributes) => {
   while (true) {
     if (currPos.right === null) {
       break
-    } else if (currPos.right.deleted || (currPos.right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (currPos.right.content)).key] ?? null, /** @type {ContentFormat} */ (currPos.right.content).value))) {
+    } else if (currPos.right.deleted ? (currPos.am.contentLength(currPos.right) === 0) : (!currPos.right.deleted && currPos.right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (currPos.right.content)).key] ?? null, /** @type {ContentFormat} */ (currPos.right.content).value))) {
       //
     } else {
       break
@@ -539,7 +540,7 @@ const deleteText = (transaction, currPos, length) => {
   const startAttrs = map.copy(currPos.currentAttributes)
   const start = currPos.right
   while (length > 0 && currPos.right !== null) {
-    if (currPos.right.deleted === false) {
+    if (!currPos.right.deleted) {
       switch (currPos.right.content.constructor) {
         case ContentType:
         case ContentEmbed:
@@ -550,6 +551,19 @@ const deleteText = (transaction, currPos, length) => {
           length -= currPos.right.length
           currPos.right.delete(transaction)
           break
+      }
+    } else if (currPos.am !== noAttributionsManager) {
+      const item = currPos.right
+      let d = currPos.am.contentLength(item)
+      if (d > 0) {
+        if (length < d) {
+          getItemCleanStart(transaction, createID(currPos.right.id.client, currPos.right.id.clock + length))
+          d = length
+        }
+        // deleting already deleted content. store that information in a meta property, but do
+        // nothing
+        map.setIfUndefined(transaction.meta, 'attributedDeletes', createIdSet).add(item.id.client, item.id.clock, d)
+        length -= d
       }
     }
     currPos.forward()
@@ -954,7 +968,7 @@ export class YText extends AbstractType {
               d.usedAttributes = currentAttributes
               usingCurrentAttributes = true
               if (c.deleted ? retainDeletes : retainInserts) {
-                d.retain(/** @type {ContentString} */ (c.content).str.length, null, attribution ?? null)
+                d.retain(/** @type {ContentString} */ (c.content).str.length, null, attribution ?? {})
               } else {
                 d.insert(/** @type {ContentString} */ (c.content).str, null, attribution)
               }

@@ -12,6 +12,24 @@ import * as delta from '../src/utils/Delta.js'
 /**
  * @param {t.TestCase} _tc
  */
+export const testRelativePositions = _tc => {
+  const ydoc = new Y.Doc()
+  const ytext = ydoc.getText()
+  ytext.insert(0, 'hello world')
+  const v1 = Y.cloneDoc(ydoc)
+  ytext.delete(1, 6)
+  ytext.insert(1, 'x', )
+  const am = Y.createAttributionManagerFromDiff(v1, ydoc)
+  const rel = Y.createRelativePositionFromTypeIndex(ytext, 9, 1, am) // pos after "hello wo"
+  const abs1 = Y.createAbsolutePositionFromRelativePosition(rel, ydoc, true, am)
+  const abs2 = Y.createAbsolutePositionFromRelativePosition(rel, ydoc, true)
+  t.assert(abs1?.index === 9)
+  t.assert(abs2?.index === 3)
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
 export const testAttributedEvents = _tc => {
   const ydoc = new Y.Doc()
   const ytext = ydoc.getText()

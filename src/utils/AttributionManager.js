@@ -14,11 +14,15 @@ import {
   createID,
   mergeIdSets,
   IdSet, Item, Snapshot, Doc, AbstractContent, IdMap, // eslint-disable-line
-  intersectSets
+  applyUpdate,
+  writeIdSet,
+  UpdateEncoderV1,
+  transact
 } from '../internals.js'
 
 import * as error from 'lib0/error'
 import { ObservableV2 } from 'lib0/observable'
+import * as encoding from 'lib0/encoding'
 
 /**
  * @todo rename this to `insertBy`, `insertAt`, ..
@@ -48,35 +52,33 @@ export const createAttributionFromAttributionItems = (attrs, deleted) => {
    * @type {Attribution}
    */
   const attribution = {}
-  if (attrs != null) {
-    if (deleted) {
-      attribution.delete = []
-    } else {
-      attribution.insert = []
-    }
-    attrs.forEach(attr => {
-      switch (attr.name) {
-        case 'acceptDelete':
-          delete attribution.delete
-          // eslint-disable-next-line no-fallthrough
-        case 'acceptInsert':
-          delete attribution.insert
-          // eslint-disable-next-line no-fallthrough
-        case 'insert':
-        case 'delete': {
-          const as = /** @type {import('../utils/Delta.js').Attribution} */ (attribution)
-          const ls = as[attr.name] = as[attr.name] ?? []
-          ls.push(attr.val)
-          break
-        }
-        default: {
-          if (attr.name[0] !== '_') {
-            /** @type {any} */ (attribution)[attr.name] = attr.val
-          }
+  if (deleted) {
+    attribution.delete = []
+  } else {
+    attribution.insert = []
+  }
+  attrs.forEach(attr => {
+    switch (attr.name) {
+      case 'acceptDelete':
+        delete attribution.delete
+        // eslint-disable-next-line no-fallthrough
+      case 'acceptInsert':
+        delete attribution.insert
+        // eslint-disable-next-line no-fallthrough
+      case 'insert':
+      case 'delete': {
+        const as = /** @type {import('../utils/Delta.js').Attribution} */ (attribution)
+        const ls = as[attr.name] = as[attr.name] ?? []
+        ls.push(attr.val)
+        break
+      }
+      default: {
+        if (attr.name[0] !== '_') {
+          /** @type {any} */ (attribution)[attr.name] = attr.val
         }
       }
-    })
-  }
+    }
+  })
   return attribution
 }
 
@@ -122,6 +124,8 @@ export class AbstractAttributionManager extends ObservableV2 {
   /**
    * Calculate the length of the attributed content. This is used by iterators that walk through the
    * content.
+   *
+   * If the content is not countable, it should return 0.
    *
    * @param {Item} _item
    * @return {number}
@@ -174,7 +178,9 @@ export class TwosetAttributionManager extends ObservableV2 {
    * @return {number}
    */
   contentLength (item) {
-    if (!item.deleted) {
+    if (!item.content.isCountable()) {
+      return 0
+    } else if (!item.deleted) {
       return item.length
     } else {
       return this.deletes.sliceId(item.id, item.length).reduce((len, s) => s.attrs != null ? len + s.len : len, 0)
@@ -209,7 +215,7 @@ export class NoAttributionsManager extends ObservableV2 {
    * @return {number}
    */
   contentLength (item) {
-    return item.deleted ? 0 : item.length
+    return (item.deleted || !item.content.isCountable()) ? 0 : item.length
   }
 }
 
@@ -249,7 +255,14 @@ export class DiffAttributionManager extends ObservableV2 {
     this._prevBOH = prevDoc.on('beforeObserverCalls', tr => {
       insertIntoIdSet(_prevDocInserts, tr.insertSet)
       insertIntoIdSet(prevDocDeletes, tr.deleteSet)
-      insertIntoIdMap(this.inserts, createIdMapFromIdSet(intersectSets(tr.insertSet, this.inserts), [createAttributionItem('acceptInsert', 'unknown')]))
+      // insertIntoIdMap(this.inserts, createIdMapFromIdSet(intersectSets(tr.insertSet, this.inserts), [createAttributionItem('acceptInsert', 'unknown')]))
+      if (tr.insertSet.clients.size < 2) {
+        tr.insertSet.forEach((attrRange, client) => {
+          this.inserts.delete(client, attrRange.clock, attrRange.len)
+        })
+      } else {
+        this.inserts = diffIdMap(this.inserts, tr.insertSet)
+      }
       // insertIntoIdMap(this.deletes, createIdMapFromIdSet(intersectSets(tr.deleteSet, this.deletes), [createAttributionItem('acceptDelete', 'unknown')]))
       if (tr.deleteSet.clients.size < 2) {
         tr.deleteSet.forEach((attrRange, client) => {
@@ -261,6 +274,41 @@ export class DiffAttributionManager extends ObservableV2 {
       // @todo fire update ranges on `tr.insertSet` and `tr.deleteSet`
       this.emit('change', [mergeIdSets([tr.insertSet, tr.deleteSet]), tr.origin, tr.local])
     })
+    // changes from prevDoc should always flow into suggestionDoc
+    // changes from suggestionDoc only flow into ydoc if suggestion-mode is disabled
+    this._prevUpdateListener = prevDoc.on('update', (update, origin) => {
+      origin !== this && applyUpdate(nextDoc, update)
+    })
+    this._ndUpdateListener = nextDoc.on('update', (update, origin, _doc, tr) => {
+      // only if event is local and suggestion mode is enabled
+      if (!this.suggestionMode && tr.local && (this.suggestionOrigins == null || this.suggestionOrigins.some(o => o === origin))) {
+        applyUpdate(prevDoc, update, this)
+      }
+    })
+    this._afterTrListener = nextDoc.on('afterTransaction', (tr) => {
+      // apply deletes on attributed deletes (content that is already deleted, but is rendered by
+      // the attribution manager)
+      if (!this.suggestionMode && tr.local && (this.suggestionOrigins == null || this.suggestionOrigins.some(o => o === origin))) {
+        const attributedDeletes = tr.meta.get('attributedDeletes')
+        if (attributedDeletes != null) {
+          transact(prevDoc, () => {
+            // apply attributed deletes if there are any
+            const ds = new UpdateEncoderV1()
+            encoding.writeVarUint(ds.restEncoder, 0) // encode 0 structs
+            writeIdSet(ds, attributedDeletes)
+            applyUpdate(prevDoc, ds.toUint8Array())
+          }, this)
+        }
+      }
+    })
+    this.suggestionMode = true
+    /**
+     * Optionally limit origins that may sync changes to the main doc if suggestion-mode is
+     * disabled.
+     *
+     * @type {Array<any>?}
+     */
+    this.suggestionOrigins = null
     this._destroyHandler = nextDoc.on('destroy', this.destroy.bind(this))
     prevDoc.on('destroy', this._destroyHandler)
   }
@@ -271,6 +319,9 @@ export class DiffAttributionManager extends ObservableV2 {
     this._prevDoc.off('destroy', this._destroyHandler)
     this._nextDoc.off('beforeObserverCalls', this._nextBOH)
     this._prevDoc.off('beforeObserverCalls', this._prevBOH)
+    this._prevDoc.off('update', this._prevUpdateListener)
+    this._nextDoc.off('update', this._ndUpdateListener)
+    this._nextDoc.off('afterTransaction', this._afterTrListener)
   }
 
   /**
@@ -316,10 +367,18 @@ export class DiffAttributionManager extends ObservableV2 {
    */
   contentLength (item) {
     if (!item.deleted) {
-      return item.length
-    } else {
-      return this.deletes.sliceId(item.id, item.length).reduce((len, s) => s.attrs != null ? len + s.len : len, 0)
+      return item.content.isCountable() ? item.length : 0
     }
+    const slice = this.deletes.sliceId(item.id, item.length)
+    let content = item.content
+    if (content instanceof ContentDeleted && slice[0].attrs != null && !this.inserts.hasId(item.id)) {
+      const prevItem = getItem(this._prevDocStore, item.id)
+      content = prevItem.content
+    }
+    if (!content.isCountable()) {
+      return 0
+    }
+    return slice.reduce((len, s) => s.attrs != null ? len + s.len : len, 0)
   }
 }
 
@@ -393,7 +452,12 @@ export class SnapshotAttributionManager extends ObservableV2 {
    * @return {number}
    */
   contentLength (item) {
-    return this.attrs.sliceId(item.id, item.length).reduce((len, s) => s.attrs != null ? len + s.len : len, 0)
+    return item.content.isCountable() 
+      ? (item.deleted
+          ? this.attrs.sliceId(item.id, item.length).reduce((len, s) => s.attrs != null ? len + s.len : len, 0)
+          : item.length
+        )
+      : 0
   }
 }
 

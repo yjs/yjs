@@ -268,10 +268,7 @@ export class AbstractDelta {
  * @param {T | null} a
  * @param {T | null} b
  */
-const mergeAttrs = (a, b) => {
-  const merged = object.isEmpty(a) ? b : (object.isEmpty(b) ? a : object.assign({}, a, b))
-  return object.isEmpty(merged) ? null : merged
-}
+const mergeAttrs = (a, b) => object.isEmpty(a) ? b : (object.isEmpty(b) ? a : object.assign({}, a, b))
 
 /**
  * @template {'array' | 'text' | 'custom'} Type

@@ -270,7 +270,6 @@ Provider for sharing data in <a href="https://webxdc.org">webxdc chat apps</a>.
   <dd>
 An architecture to relay end-to-end encrypted CRDTs over a central service.
   </dd>
-
 </dl>
 
 #### Persistence Providers
