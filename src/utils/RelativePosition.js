@@ -9,7 +9,8 @@ import {
   ContentType,
   followRedone,
   getItem,
-  StructStore, ID, Doc, AbstractType, // eslint-disable-line
+  StructStore, ID, Doc, AbstractType,
+  noAttributionsManager, // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding'
@@ -72,6 +73,7 @@ export class RelativePosition {
      * @type {number}
      */
     this.assoc = assoc
+    this.item && console.log('created relpos', this.item) // @todo remove
   }
 }
 
@@ -156,11 +158,12 @@ export const createRelativePosition = (type, item, assoc) => {
  * @param {AbstractType<any>} type The base type (e.g. YText or YArray).
  * @param {number} index The absolute position.
  * @param {number} [assoc]
+ * @param {import('../utils/AttributionManager.js').AbstractAttributionManager} attributionManager
  * @return {RelativePosition}
  *
  * @function
  */
-export const createRelativePositionFromTypeIndex = (type, index, assoc = 0) => {
+export const createRelativePositionFromTypeIndex = (type, index, assoc = 0, attributionManager = noAttributionsManager) => {
   let t = type._start
   if (assoc < 0) {
     // associated to the left character or the beginning of a type, increment index if possible.
@@ -170,13 +173,12 @@ export const createRelativePositionFromTypeIndex = (type, index, assoc = 0) => {
     index--
   }
   while (t !== null) {
-    if (!t.deleted && t.countable) {
-      if (t.length > index) {
-        // case 1: found position somewhere in the linked list
-        return createRelativePosition(type, createID(t.id.client, t.id.clock + index), assoc)
-      }
-      index -= t.length
+    const len = attributionManager.contentLength(t)
+    if (len > index) {
+      // case 1: found position somewhere in the linked list
+      return createRelativePosition(type, createID(t.id.client, t.id.clock + index), assoc)
     }
+    index -= len
     if (t.right === null && assoc < 0) {
       // left-associated position, return last available id
       return createRelativePosition(type, t.lastId, assoc)
@@ -282,11 +284,12 @@ const getItemWithOffset = (store, id) => {
  * @param {RelativePosition} rpos
  * @param {Doc} doc
  * @param {boolean} followUndoneDeletions - whether to follow undone deletions - see https://github.com/yjs/yjs/issues/638
+ * @param {import('../utils/AttributionManager.js').AbstractAttributionManager} attributionManager
  * @return {AbsolutePosition|null}
  *
  * @function
  */
-export const createAbsolutePositionFromRelativePosition = (rpos, doc, followUndoneDeletions = true) => {
+export const createAbsolutePositionFromRelativePosition = (rpos, doc, followUndoneDeletions = true, attributionManager = noAttributionsManager) => {
   const store = doc.store
   const rightID = rpos.item
   const typeID = rpos.type
@@ -305,12 +308,10 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc, followUndo
     }
     type = /** @type {AbstractType<any>} */ (right.parent)
     if (type._item === null || !type._item.deleted) {
-      index = (right.deleted || !right.countable) ? 0 : (res.diff + (assoc >= 0 ? 0 : 1)) // adjust position based on left association if necessary
+      index = attributionManager.contentLength(right) === 0 ? 0 : (res.diff + (assoc >= 0 ? 0 : 1)) // adjust position based on left association if necessary
       let n = right.left
       while (n !== null) {
-        if (!n.deleted && n.countable) {
-          index += n.length
-        }
+        index += attributionManager.contentLength(n)
         n = n.left
       }
     }
