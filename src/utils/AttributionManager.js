@@ -335,22 +335,18 @@ export class DiffAttributionManager extends ObservableV2 {
   readContent (contents, client, clock, deleted, content, shouldRender) {
     const slice = (deleted ? this.deletes : this.inserts).slice(client, clock, content.getLength())
     content = slice.length === 1 ? content : content.copy()
-    if (content instanceof ContentDeleted && slice[0].attrs != null && !this.inserts.has(client, clock)) {
-      // Retrieved item is never more fragmented than the newer item.
-      const prevItem = getItem(this._prevDocStore, createID(client, clock))
-      const originalContentLen = content.getLength()
-      content = prevItem.length > 1 ? prevItem.content.copy() : prevItem.content
-      // trim itemContent to the correct size.
-      const diffStart = clock - prevItem.id.clock
-      const diffEnd = prevItem.id.clock + prevItem.length - clock - originalContentLen
-      if (diffStart > 0) {
-        content = content.splice(diffStart)
-      }
-      if (diffEnd > 0) {
-        content.splice(content.getLength() - diffEnd)
-      }
-    }
     slice.forEach(s => {
+      if (content.getLength() === 0 || (content instanceof ContentDeleted && (s.attrs != null || shouldRender) && !this.inserts.has(client, s.clock))) { // @todo possibly remove this.inserts..
+        // Retrieved item is never more fragmented than the newer item.
+        const prevItem = getItem(this._prevDocStore, createID(client, s.clock))
+        const originalContentLen = content.getLength()
+        content = prevItem.length > 1 ? prevItem.content.copy() : prevItem.content
+        // trim itemContent to the correct size.
+        const diffStart = s.clock - prevItem.id.clock
+        if (diffStart > 0) {
+          content = content.splice(diffStart)
+        }
+      }
       const c = content
       if (s.len < c.getLength()) {
         content = c.splice(s.len)
