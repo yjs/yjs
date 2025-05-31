@@ -339,7 +339,6 @@ export class DiffAttributionManager extends ObservableV2 {
       if (content.getLength() === 0 || (content instanceof ContentDeleted && (s.attrs != null || shouldRender) && !this.inserts.has(client, s.clock))) { // @todo possibly remove this.inserts..
         // Retrieved item is never more fragmented than the newer item.
         const prevItem = getItem(this._prevDocStore, createID(client, s.clock))
-        const originalContentLen = content.getLength()
         content = prevItem.length > 1 ? prevItem.content.copy() : prevItem.content
         // trim itemContent to the correct size.
         const diffStart = s.clock - prevItem.id.clock
@@ -348,9 +347,7 @@ export class DiffAttributionManager extends ObservableV2 {
         }
       }
       const c = content
-      if (s.len < c.getLength()) {
-        content = c.splice(s.len)
-      }
+      content = c.splice(s.len)
       if (shouldRender || !deleted || s.attrs != null) {
         contents.push(new AttributedContent(c, deleted, s.attrs, shouldRender))
       }
