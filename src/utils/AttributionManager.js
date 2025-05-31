@@ -17,7 +17,8 @@ import {
   applyUpdate,
   writeIdSet,
   UpdateEncoderV1,
-  transact
+  transact,
+  createMaybeAttrRange
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -329,29 +330,41 @@ export class DiffAttributionManager extends ObservableV2 {
    * @param {number} client
    * @param {number} clock
    * @param {boolean} deleted
-   * @param {AbstractContent} content
+   * @param {AbstractContent} _content
    * @param {0|1|2} shouldRender - whether this should render or just result in a `retain` operation
    */
-  readContent (contents, client, clock, deleted, content, shouldRender) {
-    const slice = (deleted ? this.deletes : this.inserts).slice(client, clock, content.getLength())
-    content = slice.length === 1 ? content : content.copy()
-    slice.forEach(s => {
-      if (content.getLength() === 0 || (content instanceof ContentDeleted && (s.attrs != null || shouldRender) && !this.inserts.has(client, s.clock))) { // @todo possibly remove this.inserts..
+  readContent (contents, client, clock, deleted, _content, shouldRender) {
+    const slice = (deleted ? this.deletes : this.inserts).slice(client, clock, _content.getLength())
+    /**
+     * @type {AbstractContent?}
+     */
+    let content = slice.length === 1 ? _content : _content.copy()
+    for (let i = 0; i < slice.length; i++) {
+      const s = slice[i]
+      if (content == null || content instanceof ContentDeleted) {
+        if ((!shouldRender && s.attrs == null) || this.inserts.has(client, s.clock)) {
+          continue
+        }
         // Retrieved item is never more fragmented than the newer item.
         const prevItem = getItem(this._prevDocStore, createID(client, s.clock))
+        const diffStart = s.clock - prevItem.id.clock
         content = prevItem.length > 1 ? prevItem.content.copy() : prevItem.content
         // trim itemContent to the correct size.
-        const diffStart = s.clock - prevItem.id.clock
         if (diffStart > 0) {
           content = content.splice(diffStart)
         }
       }
-      const c = content
-      content = c.splice(s.len)
+      const c = /** @type {AbstractContent} */ (content)
+      const clen = c.getLength()
+      if (clen < s.len) {
+        slice.splice(i + 1, 0, createMaybeAttrRange(s.clock + clen, s.len - clen, s.attrs))
+        s.len = clen
+      }
+      content = s.len < clen ? c.splice(s.len) : null
       if (shouldRender || !deleted || s.attrs != null) {
         contents.push(new AttributedContent(c, deleted, s.attrs, shouldRender))
       }
-    })
+    }
   }
 
   /**
@@ -362,16 +375,12 @@ export class DiffAttributionManager extends ObservableV2 {
     if (!item.deleted) {
       return item.content.isCountable() ? item.length : 0
     }
-    const slice = this.deletes.sliceId(item.id, item.length)
-    let content = item.content
-    if (content instanceof ContentDeleted && slice[0].attrs != null && !this.inserts.hasId(item.id)) {
-      const prevItem = getItem(this._prevDocStore, item.id)
-      content = prevItem.content
-    }
-    if (!content.isCountable()) {
-      return 0
-    }
-    return slice.reduce((len, s) => s.attrs != null ? len + s.len : len, 0)
+    /**
+     * @type {Array<AttributedContent<any>>}
+     */
+    const cs = []
+    this.readContent(cs, item.id.client, item.id.clock, true, item.content, 0)
+    return cs.reduce((cnt, c) => cnt + ((c.attrs != null && c.content.isCountable()) ? c.content.getLength() : 0), 0)
   }
 }
 
