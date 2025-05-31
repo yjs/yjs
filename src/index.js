@@ -116,6 +116,7 @@ export {
   AbstractAttributionManager,
   iterateStructsByIdSet,
   createAttributionManagerFromDiff,
+  DiffAttributionManager,
   createIdSet,
   mergeIdSets,
   cloneDoc
