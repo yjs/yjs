@@ -34,6 +34,7 @@ import {
 
 import * as delta from '../utils/Delta.js'
 
+import * as math from 'lib0/math'
 import * as traits from 'lib0/traits'
 import * as object from 'lib0/object'
 import * as map from 'lib0/map'
@@ -105,7 +106,7 @@ export class ItemTextListPosition {
       (length > 0 ||
         (
           negatedAttributes.size > 0 &&
-          (this.right.deleted || this.right.content.constructor === ContentFormat)
+          ((this.right.deleted && this.am.contentLength(this.right) === 0) || this.right.content.constructor === ContentFormat)
         )
       )
     ) {
@@ -133,11 +134,28 @@ export class ItemTextListPosition {
           break
         }
         default: {
-          const rightLen = this.am.contentLength(this.right)
+          const item = this.right
+          const rightLen = this.am.contentLength(item)
           if (length < rightLen) {
-            getItemCleanStart(transaction, createID(this.right.id.client, this.right.id.clock + length))
+            /**
+             * @type {Array<import('../internals.js').AttributedContent<any>>}
+             */
+            const contents = []
+            this.am.readContent(contents, item.id.client, item.id.clock, item.deleted, item.content, 0)
+            let i = 0
+            for (; i < contents.length && length > 0; i++) {
+              const c = contents[i]
+              if ((!c.deleted || c.attrs != null) && c.content.isCountable()) {
+                length -= c.content.getLength()
+              }
+            }
+            if (length < 0 || (length === 0 && i !== contents.length)) {
+              const c = contents[--i]
+              getItemCleanStart(transaction, createID(item.id.client, c.clock + c.content.getLength() + length))
+            }
+          } else {
+            length -= rightLen
           }
-          length -= rightLen
           break
         }
       }
@@ -554,16 +572,26 @@ const deleteText = (transaction, currPos, length) => {
       }
     } else if (currPos.am !== noAttributionsManager) {
       const item = currPos.right
-      let d = currPos.am.contentLength(item)
-      if (d > 0) {
-        if (length < d) {
-          getItemCleanStart(transaction, createID(currPos.right.id.client, currPos.right.id.clock + length))
-          d = length
+      /**
+       * @type {Array<import('../internals.js').AttributedContent<any>>}
+       */
+      const contents = []
+      currPos.am.readContent(contents, item.id.client, item.id.clock, true, item.content, 0)
+      for (let i = 0; i < contents.length; i++) {
+        const c = contents[i]
+        if (c.content.isCountable() && c.attrs != null) {
+          // deleting already deleted content. store that information in a meta property, but do
+          // nothing
+          const contentLen = math.min(c.content.getLength(), length)
+          map.setIfUndefined(transaction.meta, 'attributedDeletes', createIdSet).add(item.id.client, c.clock, contentLen)
+          length -= contentLen
         }
-        // deleting already deleted content. store that information in a meta property, but do
-        // nothing
-        map.setIfUndefined(transaction.meta, 'attributedDeletes', createIdSet).add(item.id.client, item.id.clock, d)
-        length -= d
+      }
+      const lastContent = contents.length > 0 ? contents[contents.length - 1] : null
+      const nextItemClock = item.id.clock + item.length
+      const nextContentClock = lastContent != null ? lastContent.clock + lastContent.content.getLength() : nextItemClock
+      if (nextContentClock < nextItemClock) {
+        getItemCleanStart(transaction, createID(item.id.client, nextContentClock))
       }
     }
     currPos.forward()
