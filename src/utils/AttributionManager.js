@@ -89,12 +89,14 @@ export const createAttributionFromAttributionItems = (attrs, deleted) => {
 export class AttributedContent {
   /**
    * @param {AbstractContent} content
+   * @param {number} clock
    * @param {boolean} deleted
    * @param {Array<import('./IdMap.js').AttributionItem<T>> | null} attrs
    * @param {0|1|2} renderBehavior
    */
-  constructor (content, deleted, attrs, renderBehavior) {
+  constructor (content, clock, deleted, attrs, renderBehavior) {
     this.content = content
+    this.clock = clock
     this.deleted = deleted
     this.attrs = attrs
     this.render = renderBehavior === 0 ? false : (renderBehavior === 1 ? (!deleted || attrs != null) : true)
@@ -169,7 +171,7 @@ export class TwosetAttributionManager extends ObservableV2 {
         content = c.splice(s.len)
       }
       if (!deleted || s.attrs != null || shouldRender) {
-        contents.push(new AttributedContent(c, deleted, s.attrs, shouldRender))
+        contents.push(new AttributedContent(c, s.clock, deleted, s.attrs, shouldRender))
       }
     })
   }
@@ -200,14 +202,14 @@ export class NoAttributionsManager extends ObservableV2 {
   /**
    * @param {Array<AttributedContent<any>>} contents - where to write the result
    * @param {number} _client
-   * @param {number} _clock
+   * @param {number} clock
    * @param {boolean} deleted
    * @param {AbstractContent} content
    * @param {0|1|2} shouldRender - whether this should render or just result in a `retain` operation
    */
-  readContent (contents, _client, _clock, deleted, content, shouldRender) {
+  readContent (contents, _client, clock, deleted, content, shouldRender) {
     if (!deleted || shouldRender) {
-      contents.push(new AttributedContent(content, deleted, null, shouldRender))
+      contents.push(new AttributedContent(content, clock, deleted, null, shouldRender))
     }
   }
 
@@ -362,7 +364,7 @@ export class DiffAttributionManager extends ObservableV2 {
       }
       content = s.len < clen ? c.splice(s.len) : null
       if (shouldRender || !deleted || s.attrs != null) {
-        contents.push(new AttributedContent(c, deleted, s.attrs, shouldRender))
+        contents.push(new AttributedContent(c, s.clock, deleted, s.attrs, shouldRender))
       }
     }
   }
@@ -444,7 +446,7 @@ export class SnapshotAttributionManager extends ObservableV2 {
         if (s.attrs?.length === 0) {
           attrsWithoutChange = null
         }
-        contents.push(new AttributedContent(c, deleted, attrsWithoutChange, shouldRender))
+        contents.push(new AttributedContent(c, s.clock, deleted, attrsWithoutChange, shouldRender))
       }
     })
   }
