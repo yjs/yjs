@@ -33,6 +33,9 @@ export const generateNewClientId = random.uint32
  * @property {any} [DocOpts.meta] Any kind of meta information you want to associate with this document. If this is a subdocument, remote peers will store the meta information as well.
  * @property {boolean} [DocOpts.autoLoad] If a subdocument, automatically load document. If this is a subdocument, remote peers will load the document as well automatically.
  * @property {boolean} [DocOpts.shouldLoad] Whether the document should be synced by the provider now. This is toggled to true when you call ydoc.load()
+ * @property {boolean} [DocOpts.isSuggestionDoc] Set to true if this document merely suggests
+ * changes. If this flag is not set in a suggestion document, automatic formatting changes will be
+ * displayed as suggestions, which might not be intended.
  */
 
 /**
@@ -59,13 +62,15 @@ export class Doc extends ObservableV2 {
   /**
    * @param {DocOpts} opts configuration
    */
-  constructor ({ guid = random.uuidv4(), collectionid = null, gc = true, gcFilter = () => true, meta = null, autoLoad = false, shouldLoad = true } = {}) {
+  constructor ({ guid = random.uuidv4(), collectionid = null, gc = true, gcFilter = () => true, meta = null, autoLoad = false, shouldLoad = true, isSuggestionDoc = true } = {}) {
     super()
     this.gc = gc
     this.gcFilter = gcFilter
     this.clientID = generateNewClientId()
     this.guid = guid
     this.collectionid = collectionid
+    this.isSuggestionDoc = isSuggestionDoc
+    this.cleanupFormatting = !isSuggestionDoc
     /**
      * @type {Map<string, AbstractType<YEvent<any>>>}
      */
@@ -350,9 +355,10 @@ export class Doc extends ObservableV2 {
 
 /**
  * @param {Doc} ydoc
+ * @param {DocOpts} [opts]
  */
-export const cloneDoc = ydoc => {
-  const clone = new Doc()
+export const cloneDoc = (ydoc, opts) => {
+  const clone = new Doc(opts)
   applyUpdate(clone, encodeStateAsUpdate(ydoc))
   return clone
 }

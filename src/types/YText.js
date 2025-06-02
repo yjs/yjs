@@ -387,6 +387,7 @@ const insertText = (transaction, parent, currPos, text, attributes) => {
  * @function
  */
 const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAttributes) => {
+  if (!transaction.doc.cleanupFormatting) return 0
   /**
    * @type {Item|null}
    */
@@ -417,6 +418,7 @@ const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAtt
           if (endFormats.get(key) !== content || startAttrValue === value) {
             // Either this format is overwritten or it is not necessary because the attribute already existed.
             start.delete(transaction)
+            transaction.cleanUps.add(start.id.client, start.id.clock, start.length)
             cleanups++
             if (!reachedCurr && (currAttributes.get(key) ?? null) === value && startAttrValue !== value) {
               if (startAttrValue === null) {
@@ -443,6 +445,7 @@ const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAtt
  * @param {Item | null} item
  */
 const cleanupContextlessFormattingGap = (transaction, item) => {
+  if (!transaction.doc.cleanupFormatting) return 0
   // iterate until item.right is null or content
   while (item && item.right && (item.right.deleted || !item.right.countable)) {
     item = item.right
@@ -454,6 +457,7 @@ const cleanupContextlessFormattingGap = (transaction, item) => {
       const key = /** @type {ContentFormat} */ (item.content).key
       if (attrs.has(key)) {
         item.delete(transaction)
+        transaction.cleanUps.add(item.id.client, item.id.clock, item.length)
       } else {
         attrs.add(key)
       }
@@ -475,6 +479,7 @@ const cleanupContextlessFormattingGap = (transaction, item) => {
  * @return {number} How many formatting attributes have been cleaned up.
  */
 export const cleanupYTextFormatting = type => {
+  if (!type.doc?.cleanupFormatting) return 0
   let res = 0
   transact(/** @type {Doc} */ (type.doc), transaction => {
     let start = /** @type {Item} */ (type._start)

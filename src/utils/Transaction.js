@@ -63,6 +63,11 @@ export class Transaction {
      */
     this.deleteSet = createIdSet()
     /**
+     * Describes the set of items that are cleaned up / deleted by ids. It is a subset of
+     * this.deleteSet
+     */
+    this.cleanUps = createIdSet()
+    /**
      * Describes the set of inserted items by ids
      */
     this.insertSet = createIdSet()
@@ -354,7 +359,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
       })
       fs.push(() => doc.emit('afterTransaction', [transaction, doc]))
       callAll(fs, [])
-      if (transaction._needFormattingCleanup) {
+      if (transaction._needFormattingCleanup && doc.cleanupFormatting) {
         cleanupYTextAfterTransaction(transaction)
       }
     } finally {
