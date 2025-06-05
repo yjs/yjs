@@ -1,7 +1,7 @@
 import {
   getItem,
   diffIdSet,
-  createInsertionSetFromStructStore,
+  createInsertSetFromStructStore,
   createDeleteSetFromStructStore,
   createIdMapFromIdSet,
   ContentDeleted,
@@ -236,8 +236,8 @@ export class DiffAttributionManager extends ObservableV2 {
    */
   constructor (prevDoc, nextDoc) {
     super()
-    const _nextDocInserts = createInsertionSetFromStructStore(nextDoc.store, false) // unmaintained
-    const _prevDocInserts = createInsertionSetFromStructStore(prevDoc.store, false) // unmaintained
+    const _nextDocInserts = createInsertSetFromStructStore(nextDoc.store, false) // unmaintained
+    const _prevDocInserts = createInsertSetFromStructStore(prevDoc.store, false) // unmaintained
     const nextDocDeletes = createDeleteSetFromStructStore(nextDoc.store) // maintained
     const prevDocDeletes = createDeleteSetFromStructStore(prevDoc.store) // maintained
     this.inserts = createIdMapFromIdSet(diffIdSet(_nextDocInserts, _prevDocInserts), [])
@@ -291,7 +291,7 @@ export class DiffAttributionManager extends ObservableV2 {
     this._afterTrListener = nextDoc.on('afterTransaction', (tr) => {
       // apply deletes on attributed deletes (content that is already deleted, but is rendered by
       // the attribution manager)
-      if (!this.suggestionMode && tr.local && (this.suggestionOrigins == null || this.suggestionOrigins.some(o => o === origin))) {
+      if (!this.suggestionMode && tr.local && (this.suggestionOrigins == null || this.suggestionOrigins.some(o => o === tr.origin))) {
         const attributedDeletes = tr.meta.get('attributedDeletes')
         if (attributedDeletes != null) {
           transact(prevDoc, () => {
@@ -456,7 +456,7 @@ export class SnapshotAttributionManager extends ObservableV2 {
    * @return {number}
    */
   contentLength (item) {
-    return item.content.isCountable() 
+    return item.content.isCountable()
       ? (item.deleted
           ? this.attrs.sliceId(item.id, item.length).reduce((len, s) => s.attrs != null ? len + s.len : len, 0)
           : item.length

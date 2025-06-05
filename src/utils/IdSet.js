@@ -79,12 +79,18 @@ export class MaybeIdRange {
  */
 export const createMaybeIdRange = (clock, len, exists) => new MaybeIdRange(clock, len, exists)
 
-class IdRanges {
+export class IdRanges {
   /**
    * @param {Array<IdRange>} ids
    */
   constructor (ids) {
     this.sorted = false
+    /**
+     * A typical use-case for IdSet is to append data. We heavily optimize this case by allowing the
+     * last item to be mutated ef it isn't used currently.
+     * This flag is true if the last item was exposed to the outside.
+     */
+    this._lastIsUsed = false
     /**
      * @private
      */
@@ -102,7 +108,12 @@ class IdRanges {
   add (clock, length) {
     const last = this._ids[this._ids.length - 1]
     if (last.clock + last.len === clock) {
-      this._ids[this._ids.length - 1] = new IdRange(last.clock, last.len + length)
+      if (this._lastIsUsed) {
+        this._ids[this._ids.length - 1] = new IdRange(last.clock, last.len + length)
+        this._lastIsUsed = false
+      } else {
+        this._ids[this._ids.length - 1].len += length
+      }
     } else {
       this.sorted = false
       this._ids.push(new IdRange(clock, length))
@@ -110,10 +121,11 @@ class IdRanges {
   }
 
   /**
-   * Return the list of id ranges, sorted and merged.
+   * Return the list of immutable id ranges, sorted and merged.
    */
   getIds () {
     const ids = this._ids
+    this._lastIsUsed = true
     if (!this.sorted) {
       this.sorted = true
       ids.sort((a, b) => a.clock - b.clock)
@@ -151,6 +163,10 @@ export class IdSet {
      * @type {Map<number,IdRanges>}
      */
     this.clients = new Map()
+  }
+
+  isEmpty () {
+    return this.clients.size === 0
   }
 
   /**
@@ -604,31 +620,41 @@ export const createDeleteSetFromStructStore = ss => {
 }
 
 /**
+ * @param {Array<GC | Item>} structs
+ * @param {boolean} filterDeleted
+ *
+ */
+export const _createInsertSliceFromStructs = (structs, filterDeleted) => {
+  /**
+   * @type {Array<IdRange>}
+   */
+  const iditems = []
+  for (let i = 0; i < structs.length; i++) {
+    const struct = structs[i]
+    if (!(filterDeleted && struct.deleted)) {
+      const clock = struct.id.clock
+      let len = struct.length
+      if (i + 1 < structs.length) {
+        // eslint-disable-next-line
+        for (let next = structs[i + 1]; i + 1 < structs.length && !(filterDeleted && next.deleted); next = structs[++i + 1]) {
+          len += next.length
+        }
+      }
+      iditems.push(new IdRange(clock, len))
+    }
+  }
+  return iditems
+}
+
+/**
  * @param {import('../internals.js').StructStore} ss
  * @param {boolean} filterDeleted
  */
-export const createInsertionSetFromStructStore = (ss, filterDeleted) => {
+export const createInsertSetFromStructStore = (ss, filterDeleted) => {
   const idset = createIdSet()
   ss.clients.forEach((structs, client) => {
-    /**
-     * @type {Array<IdRange>}
-     */
-    const iditems = []
-    for (let i = 0; i < structs.length; i++) {
-      const struct = structs[i]
-      if (!(filterDeleted && struct.deleted)) {
-        const clock = struct.id.clock
-        let len = struct.length
-        if (i + 1 < structs.length) {
-          // eslint-disable-next-line
-          for (let next = structs[i + 1]; i + 1 < structs.length && !(filterDeleted && next.deleted); next = structs[++i + 1]) {
-            len += next.length
-          }
-        }
-        iditems.push(new IdRange(clock, len))
-      }
-    }
-    if (iditems.length > 0) {
+    const iditems = _createInsertSliceFromStructs(structs, filterDeleted)
+    if (iditems.length !== 0) {
       idset.clients.set(client, new IdRanges(iditems))
     }
   })

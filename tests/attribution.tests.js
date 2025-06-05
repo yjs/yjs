@@ -18,7 +18,7 @@ export const testRelativePositions = _tc => {
   ytext.insert(0, 'hello world')
   const v1 = Y.cloneDoc(ydoc)
   ytext.delete(1, 6)
-  ytext.insert(1, 'x', )
+  ytext.insert(1, 'x')
   const am = Y.createAttributionManagerFromDiff(v1, ydoc)
   const rel = Y.createRelativePositionFromTypeIndex(ytext, 9, 1, am) // pos after "hello wo"
   const abs1 = Y.createAbsolutePositionFromRelativePosition(rel, ydoc, true, am)
