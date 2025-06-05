@@ -1,8 +1,11 @@
 import {
   AbstractStruct,
-  UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, ID // eslint-disable-line
+  addStruct,
+  addToIdSet,
+  UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, // eslint-disable-line
+  createID
 } from '../internals.js'
-import * as error from 'lib0/error'
+
 import * as encoding from 'lib0/encoding'
 
 export const structSkipRefNumber = 10
@@ -12,7 +15,7 @@ export const structSkipRefNumber = 10
  */
 export class Skip extends AbstractStruct {
   get deleted () {
-    return true
+    return false
   }
 
   delete () {}
@@ -34,8 +37,12 @@ export class Skip extends AbstractStruct {
    * @param {number} offset
    */
   integrate (transaction, offset) {
-    // skip structs cannot be integrated
-    error.unexpectedCase()
+    if (offset > 0) {
+      this.id.clock += offset
+      this.length -= offset
+    }
+    addToIdSet(transaction.doc.store.skips, this.id.client, this.id.clock, this.length)
+    addStruct(transaction.doc.store, this)
   }
 
   /**
@@ -49,11 +56,20 @@ export class Skip extends AbstractStruct {
   }
 
   /**
-   * @param {Transaction} transaction
-   * @param {StructStore} store
+   * @param {Transaction} _transaction
+   * @param {StructStore} _store
    * @return {null | number}
    */
-  getMissing (transaction, store) {
+  getMissing (_transaction, _store) {
     return null
+  }
+
+  /**
+   * @param {number} diff
+   */
+  splice (diff) {
+    const other = new Skip(createID(this.id.client, this.id.clock + diff), this.length - diff)
+    this.length = diff
+    return other
   }
 }

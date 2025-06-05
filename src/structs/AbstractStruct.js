@@ -48,4 +48,11 @@ export class AbstractStruct {
   integrate (transaction, offset) {
     throw error.methodUnimplemented()
   }
+
+  /**
+   * @param {number} diff
+   */
+  splice (diff) {
+    throw error.methodUnimplemented()
+  }
 }

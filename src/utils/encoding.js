@@ -36,7 +36,8 @@ import {
   readStructSet,
   removeRangesFromStructSet,
   createIdSet,
-  StructSet, IdSet, DSDecoderV2, Doc, Transaction, GC, Item, StructStore // eslint-disable-line
+  StructSet, IdSet, DSDecoderV2, Doc, Transaction, GC, Item, StructStore, // eslint-disable-line
+  createID
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding'
@@ -231,34 +232,31 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
     if (stackHead.constructor !== Skip) {
       const localClock = map.setIfUndefined(state, stackHead.id.client, () => getState(store, stackHead.id.client))
       const offset = localClock - stackHead.id.clock
-      if (offset < 0) {
-        // update from the same client is missing
+      const missing = stackHead.getMissing(transaction, store)
+      if (missing !== null) {
         stack.push(stackHead)
-        updateMissingSv(stackHead.id.client, stackHead.id.clock - 1)
-        // hid a dead wall, add all items from stack to restSS
-        addStackToRestSS()
-      } else {
-        const missing = stackHead.getMissing(transaction, store)
-        if (missing !== null) {
-          stack.push(stackHead)
-          // get the struct reader that has the missing struct
-          /**
-           * @type {{ refs: Array<GC|Item>, i: number }}
-           */
-          const structRefs = clientsStructRefs.clients.get(/** @type {number} */ (missing)) || { refs: [], i: 0 }
-          if (structRefs.refs.length === structRefs.i) {
-            // This update message causally depends on another update message that doesn't exist yet
-            updateMissingSv(/** @type {number} */ (missing), getState(store, missing))
-            addStackToRestSS()
-          } else {
-            stackHead = structRefs.refs[structRefs.i++]
-            continue
-          }
-        } else if (offset === 0 || offset < stackHead.length) {
-          // all fine, apply the stackhead
-          stackHead.integrate(transaction, offset) // since I'm splitting structs before integrating them, offset is no longer necessary
-          state.set(stackHead.id.client, stackHead.id.clock + stackHead.length)
+        // get the struct reader that has the missing struct
+        /**
+         * @type {{ refs: Array<GC|Item>, i: number }}
+         */
+        const structRefs = clientsStructRefs.clients.get(/** @type {number} */ (missing)) || { refs: [], i: 0 }
+        if (structRefs.refs.length === structRefs.i || missing === stackHead.id.client || stack.some(s => s.id.client === missing)) { // @todo this could be optimized!
+          // This update message causally depends on another update message that doesn't exist yet
+          updateMissingSv(/** @type {number} */ (missing), getState(store, missing))
+          addStackToRestSS()
+        } else {
+          stackHead = structRefs.refs[structRefs.i++]
+          continue
         }
+      } else {
+        // all fine, apply the stackhead
+        // but first add a skip to structs if necessary
+        if (offset < 0) {
+          const skip = new Skip(createID(stackHead.id.client, localClock), -offset)
+          skip.integrate(transaction, 0)
+        }
+        stackHead.integrate(transaction, 0)
+        state.set(stackHead.id.client, math.max(stackHead.id.clock + stackHead.length, localClock))
       }
     }
     // iterate to next stackHead
@@ -321,7 +319,8 @@ export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = n
     ss.clients.forEach((_, client) => {
       const storeStructs = store.clients.get(client)
       if (storeStructs) {
-        knownState.add(client, 0, storeStructs.length)
+        const last = storeStructs[storeStructs.length - 1]
+        knownState.add(client, 0, last.id.clock + last.length)
         // remove known items from ss
         store.skips.clients.get(client)?.getIds().forEach(idrange => {
           knownState.delete(client, idrange.clock, idrange.len)
@@ -339,7 +338,7 @@ export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = n
     if (pending) {
       // check if we can apply something
       for (const [client, clock] of pending.missing) {
-        if (clock < getState(store, client)) {
+        if (ss.clients.has(client) || clock < getState(store, client)) {
           retry = true
           break
         }

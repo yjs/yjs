@@ -22,6 +22,7 @@ import {
   readContentType,
   addChangedTypeToTransaction,
   addStructToIdSet,
+  Skip,
   IdSet, StackItem, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction, // eslint-disable-line
 } from '../internals.js'
 
@@ -117,6 +118,9 @@ export const splitItem = (transaction, leftItem, diff) => {
     if (rightItem.parentSub !== null && rightItem.right === null) {
       /** @type {AbstractType<any>} */ (rightItem.parent)._map.set(rightItem.parentSub, rightItem)
     }
+  } else {
+    rightItem.left = null
+    rightItem.right = null
   }
   leftItem.length = diff
   return rightItem
@@ -368,18 +372,16 @@ export class Item extends AbstractStruct {
    * @return {null | number}
    */
   getMissing (transaction, store) {
-    if (this.origin && this.origin.client !== this.id.client && this.origin.clock >= getState(store, this.origin.client)) {
+    if (this.origin && (this.origin.clock >= getState(store, this.origin.client) || store.skips.hasId(this.origin))) {
       return this.origin.client
     }
-    if (this.rightOrigin && this.rightOrigin.client !== this.id.client && this.rightOrigin.clock >= getState(store, this.rightOrigin.client)) {
+    if (this.rightOrigin && (this.rightOrigin.clock >= getState(store, this.rightOrigin.client) || store.skips.hasId(this.rightOrigin))) {
       return this.rightOrigin.client
     }
-    if (this.parent && this.parent.constructor === ID && this.id.client !== this.parent.client && this.parent.clock >= getState(store, this.parent.client)) {
+    if (this.parent && this.parent.constructor === ID && (this.parent.clock >= getState(store, this.parent.client) || store.skips.hasId(this.parent))) {
       return this.parent.client
     }
-
     // We have all missing ids, now find the items
-
     if (this.origin) {
       this.left = getItemCleanEnd(transaction, store, this.origin)
       this.origin = this.left.lastId
@@ -406,6 +408,11 @@ export class Item extends AbstractStruct {
       } else {
         this.parent = /** @type {ContentType} */ (parentItem.content).type
       }
+    }
+    // @todo remove thgis
+    if (this.left instanceof Skip || this.right instanceof Skip || this.parent instanceof Skip) {
+      debugger
+      throw new Error('dtruinae')
     }
     return null
   }

@@ -3,7 +3,9 @@ import {
   splitItem,
   createDeleteSetFromStructStore,
   createIdSet,
-  Transaction, ID, Item // eslint-disable-line
+  Transaction, ID, Item, // eslint-disable-line
+  Skip,
+  createID
 } from '../internals.js'
 
 import * as math from 'lib0/math'
@@ -104,7 +106,20 @@ export const addStruct = (store, struct) => {
   } else {
     const lastStruct = structs[structs.length - 1]
     if (lastStruct.id.clock + lastStruct.length !== struct.id.clock) {
-      throw error.unexpectedCase()
+      // this replaces an integrated skip
+      let index = findIndexSS(structs, struct.id.clock)
+      const skip = structs[index]
+      const diffStart = struct.id.clock - skip.id.clock
+      const diffEnd = skip.id.clock + skip.length - struct.id.clock - struct.length
+      if (diffStart > 0) {
+        structs.splice(index++, 0, new Skip(createID(struct.id.client, struct.id.clock), diffStart))
+      }
+      if (diffEnd > 0) {
+        structs.splice(index + 1, 0, new Skip(createID(struct.id.client, struct.id.clock + struct.length), diffEnd))
+      }
+      structs[index] = struct
+      store.skips.delete(struct.id.client, struct.id.clock, struct.length)
+      return
     }
   }
   structs.push(struct)
@@ -183,8 +198,8 @@ export const getItem = /** @type {function(StructStore,ID):Item} */ (find)
 export const findIndexCleanStart = (transaction, structs, clock) => {
   const index = findIndexSS(structs, clock)
   const struct = structs[index]
-  if (struct.id.clock < clock && struct instanceof Item) {
-    structs.splice(index + 1, 0, splitItem(transaction, struct, clock - struct.id.clock))
+  if (struct.id.clock < clock) {
+    structs.splice(index + 1, 0, struct instanceof Item ? splitItem(transaction, struct, clock - struct.id.clock) : struct.splice(clock - struct.id.clock))
     return index + 1
   }
   return index

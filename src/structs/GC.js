@@ -3,7 +3,8 @@ import {
   addStruct,
   addStructToIdSet,
   addToIdSet,
-  UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction // eslint-disable-line
+  UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, // eslint-disable-line
+  createID
 } from '../internals.js'
 
 export const structGCRefNumber = 0
@@ -32,7 +33,7 @@ export class GC extends AbstractStruct {
 
   /**
    * @param {Transaction} transaction
-   * @param {number} offset
+   * @param {number} offset - @todo remove offset parameter
    */
   integrate (transaction, offset) {
     if (offset > 0) {
@@ -60,5 +61,14 @@ export class GC extends AbstractStruct {
    */
   getMissing (transaction, store) {
     return null
+  }
+
+  /**
+   * @param {number} diff
+   */
+  splice (diff) {
+    const other = new GC(createID(this.id.client, this.id.clock + diff), this.length - diff)
+    this.length = diff
+    return other
   }
 }

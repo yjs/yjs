@@ -7,7 +7,7 @@ import {
   IdMap,
   AttrRanges,
   AttrRange,
-  AbstractStruct, DSDecoderV1, IdSetEncoderV1, DSDecoderV2, IdSetEncoderV2, Item, GC, StructStore, Transaction, ID, AttributionItem, // eslint-disable-line
+  Skip, AbstractStruct, DSDecoderV1, IdSetEncoderV1, DSDecoderV2, IdSetEncoderV2, Item, GC, StructStore, Transaction, ID, AttributionItem, // eslint-disable-line
 } from '../internals.js'
 
 import * as array from 'lib0/array'
@@ -749,24 +749,28 @@ export const readAndApplyDeleteSet = (decoder, transaction, store) => {
         let index = findIndexSS(structs, clock)
         /**
          * We can ignore the case of GC and Delete structs, because we are going to skip them
-         * @type {Item}
+         * @type {Item | GC | Skip}
          */
-        // @ts-ignore
         let struct = structs[index]
         // split the first item if necessary
-        if (!struct.deleted && struct.id.clock < clock) {
-          structs.splice(index + 1, 0, splitItem(transaction, struct, clock - struct.id.clock))
-          index++ // increase we now want to use the next struct
+        if (!struct.deleted && struct.id.clock < clock && struct instanceof Item) {
+          // increment index, we now want to use the next struct
+          structs.splice(++index, 0, splitItem(transaction, struct, clock - struct.id.clock))
         }
         while (index < structs.length) {
           // @ts-ignore
           struct = structs[index++]
           if (struct.id.clock < clockEnd) {
             if (!struct.deleted) {
-              if (clockEnd < struct.id.clock + struct.length) {
-                structs.splice(index, 0, splitItem(transaction, struct, clockEnd - struct.id.clock))
+              if (struct instanceof Item) {
+                if (clockEnd < struct.id.clock + struct.length) {
+                  structs.splice(index, 0, splitItem(transaction, struct, clockEnd - struct.id.clock))
+                }
+                struct.delete(transaction)
+              } else { // is a Skip - add range to unappliedDS
+                const c = math.max(struct.id.clock, clock)
+                unappliedDS.add(client, c, math.min(struct.length, clockEnd - c))
               }
-              struct.delete(transaction)
             }
           } else {
             break
