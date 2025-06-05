@@ -169,19 +169,19 @@ const checkUpdateCases = (ydoc, updates, enc, hasDeletes) => {
   // t.info('Target State: ')
   // enc.logUpdate(targetState)
 
-  cases.forEach((mergedUpdates) => {
-    // t.info('State Case $' + i + ':')
+  cases.forEach((mergedUpdates, i) => {
+    t.info(`State Case $${i} (${enc.description}):`)
     // enc.logUpdate(updates)
     const merged = new Y.Doc({ gc: false })
     enc.applyUpdate(merged, mergedUpdates)
     t.compareArrays(merged.getArray().toArray(), ydoc.getArray().toArray())
     t.compare(enc.encodeStateVector(merged), enc.encodeStateVectorFromUpdate(mergedUpdates))
-
     if (enc.updateEventName !== 'update') { // @todo should this also work on legacy updates?
       for (let j = 1; j < updates.length; j++) {
         const partMerged = enc.mergeUpdates(updates.slice(j))
         const partMeta = enc.parseUpdateMeta(partMerged)
-        const targetSV = Y.encodeStateVectorFromUpdateV2(Y.mergeUpdatesV2(updates.slice(0, j)))
+        
+        const targetSV = enc.encodeStateVectorFromUpdate(enc.mergeUpdates(updates.slice(0, j)))
         const diffed = enc.diffUpdate(mergedUpdates, targetSV)
         const diffedMeta = enc.parseUpdateMeta(diffed)
         t.compare(partMeta, diffedMeta)

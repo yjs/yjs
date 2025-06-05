@@ -105,7 +105,7 @@ export const removeRangesFromStructSet = (ss, exclude) => {
           structs[startIndex] = new Skip(new ID(client, range.clock), range.len)
           const d = endIndex - startIndex
           if (d > 1) {
-            structs.splice(startIndex, d)
+            structs.splice(startIndex + 1, d - 1)
           }
         }
       }
