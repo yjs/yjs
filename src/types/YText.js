@@ -249,7 +249,7 @@ const insertNegatedAttributes = (transaction, parent, currPos, negatedAttributes
   // check if we really need to remove attributes
   while (
     currPos.right !== null && (
-      (currPos.right.deleted && (currPos.am == noAttributionsManager || currPos.am.contentLength(currPos.right) === 0)) || (
+      (currPos.right.deleted && (currPos.am === noAttributionsManager || currPos.am.contentLength(currPos.right) === 0)) || (
         currPos.right.content.constructor === ContentFormat &&
         equalAttrs(negatedAttributes.get(/** @type {ContentFormat} */ (currPos.right.content).key), /** @type {ContentFormat} */ (currPos.right.content).value)
       )

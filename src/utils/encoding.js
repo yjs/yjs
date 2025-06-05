@@ -17,12 +17,10 @@
 import {
   findIndexSS,
   getState,
-  createID,
   getStateVector,
   readAndApplyDeleteSet,
   writeIdSet,
   transact,
-  readItemContent,
   UpdateDecoderV1,
   UpdateDecoderV2,
   UpdateEncoderV1,
@@ -35,12 +33,14 @@ import {
   Skip,
   diffUpdateV2,
   convertUpdateFormatV2ToV1,
-  IdSet, DSDecoderV2, Doc, Transaction, GC, Item, StructStore, createDeleteSetFromStructStore, // eslint-disable-line
+  readStructSet,
+  removeRangesFromStructSet,
+  createIdSet,
+  StructSet, IdSet, DSDecoderV2, Doc, Transaction, GC, Item, StructStore // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
-import * as binary from 'lib0/binary'
 import * as map from 'lib0/map'
 import * as math from 'lib0/math'
 import * as array from 'lib0/array'
@@ -121,102 +121,6 @@ export const writeStructsFromIdSet = (encoder, store, idset) => {
 }
 
 /**
- * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder The decoder object to read data from.
- * @param {Doc} doc
- * @return {Map<number, { i: number, refs: Array<Item | GC> }>}
- *
- * @private
- * @function
- */
-export const readClientsStructRefs = (decoder, doc) => {
-  /**
-   * @type {Map<number, { i: number, refs: Array<Item | GC> }>}
-   */
-  const clientRefs = map.create()
-  const numOfStateUpdates = decoding.readVarUint(decoder.restDecoder)
-  for (let i = 0; i < numOfStateUpdates; i++) {
-    const numberOfStructs = decoding.readVarUint(decoder.restDecoder)
-    /**
-     * @type {Array<GC|Item>}
-     */
-    const refs = new Array(numberOfStructs)
-    const client = decoder.readClient()
-    let clock = decoding.readVarUint(decoder.restDecoder)
-    // const start = performance.now()
-    clientRefs.set(client, { i: 0, refs })
-    for (let i = 0; i < numberOfStructs; i++) {
-      const info = decoder.readInfo()
-      switch (binary.BITS5 & info) {
-        case 0: { // GC
-          const len = decoder.readLen()
-          refs[i] = new GC(createID(client, clock), len)
-          clock += len
-          break
-        }
-        case 10: { // Skip Struct (nothing to apply)
-          // @todo we could reduce the amount of checks by adding Skip struct to clientRefs so we know that something is missing.
-          const len = decoding.readVarUint(decoder.restDecoder)
-          refs[i] = new Skip(createID(client, clock), len)
-          clock += len
-          break
-        }
-        default: { // Item with content
-          /**
-           * The optimized implementation doesn't use any variables because inlining variables is faster.
-           * Below a non-optimized version is shown that implements the basic algorithm with
-           * a few comments
-           */
-          const cantCopyParentInfo = (info & (binary.BIT7 | binary.BIT8)) === 0
-          // If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
-          // and we read the next string as parentYKey.
-          // It indicates how we store/retrieve parent from `y.share`
-          // @type {string|null}
-          const struct = new Item(
-            createID(client, clock),
-            null, // left
-            (info & binary.BIT8) === binary.BIT8 ? decoder.readLeftID() : null, // origin
-            null, // right
-            (info & binary.BIT7) === binary.BIT7 ? decoder.readRightID() : null, // right origin
-            cantCopyParentInfo ? (decoder.readParentInfo() ? doc.get(decoder.readString()) : decoder.readLeftID()) : null, // parent
-            cantCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoder.readString() : null, // parentSub
-            readItemContent(decoder, info) // item content
-          )
-          /* A non-optimized implementation of the above algorithm:
-
-          // The item that was originally to the left of this item.
-          const origin = (info & binary.BIT8) === binary.BIT8 ? decoder.readLeftID() : null
-          // The item that was originally to the right of this item.
-          const rightOrigin = (info & binary.BIT7) === binary.BIT7 ? decoder.readRightID() : null
-          const cantCopyParentInfo = (info & (binary.BIT7 | binary.BIT8)) === 0
-          const hasParentYKey = cantCopyParentInfo ? decoder.readParentInfo() : false
-          // If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
-          // and we read the next string as parentYKey.
-          // It indicates how we store/retrieve parent from `y.share`
-          // @type {string|null}
-          const parentYKey = cantCopyParentInfo && hasParentYKey ? decoder.readString() : null
-
-          const struct = new Item(
-            createID(client, clock),
-            null, // left
-            origin, // origin
-            null, // right
-            rightOrigin, // right origin
-            cantCopyParentInfo && !hasParentYKey ? decoder.readLeftID() : (parentYKey !== null ? doc.get(parentYKey) : null), // parent
-            cantCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoder.readString() : null, // parentSub
-            readItemContent(decoder, info) // item content
-          )
-          */
-          refs[i] = struct
-          clock += struct.length
-        }
-      }
-    }
-    // console.log('time to read: ', performance.now() - start) // @todo remove
-  }
-  return clientRefs
-}
-
-/**
  * Resume computing structs generated by struct readers.
  *
  * While there is something to do, we integrate structs in this order
@@ -237,7 +141,7 @@ export const readClientsStructRefs = (decoder, doc) => {
  *
  * @param {Transaction} transaction
  * @param {StructStore} store
- * @param {Map<number, { i: number, refs: (GC | Item)[] }>} clientsStructRefs
+ * @param {StructSet} clientsStructRefs
  * @return { null | { update: Uint8Array, missing: Map<number,number> } }
  *
  * @private
@@ -249,7 +153,7 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
    */
   const stack = []
   // sort them so that we take the higher id first, in case of conflicts the lower id will probably not conflict with the id from the higher user.
-  let clientsStructRefsIds = array.from(clientsStructRefs.keys()).sort((a, b) => a - b)
+  let clientsStructRefsIds = array.from(clientsStructRefs.clients.keys()).sort((a, b) => a - b)
   if (clientsStructRefsIds.length === 0) {
     return null
   }
@@ -257,11 +161,11 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
     if (clientsStructRefsIds.length === 0) {
       return null
     }
-    let nextStructsTarget = /** @type {{i:number,refs:Array<GC|Item>}} */ (clientsStructRefs.get(clientsStructRefsIds[clientsStructRefsIds.length - 1]))
+    let nextStructsTarget = /** @type {{i:number,refs:Array<GC|Item>}} */ (clientsStructRefs.clients.get(clientsStructRefsIds[clientsStructRefsIds.length - 1]))
     while (nextStructsTarget.refs.length === nextStructsTarget.i) {
       clientsStructRefsIds.pop()
       if (clientsStructRefsIds.length > 0) {
-        nextStructsTarget = /** @type {{i:number,refs:Array<GC|Item>}} */ (clientsStructRefs.get(clientsStructRefsIds[clientsStructRefsIds.length - 1]))
+        nextStructsTarget = /** @type {{i:number,refs:Array<GC|Item>}} */ (clientsStructRefs.clients.get(clientsStructRefsIds[clientsStructRefsIds.length - 1]))
       } else {
         return null
       }
@@ -295,15 +199,21 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
   // caching the state because it is used very often
   const state = new Map()
 
+  // // caching the state because it is used very often
+  // const currentInsertSet = createIdSet()
+  // clientsStructRefsIds.forEach(clientId => {
+  //   currentInsertSet.clients.set(clientid, new IdRanges(_createInsertSliceFromStructs(store.clients.get(clientId) ?? [], false)))
+  // })
+
   const addStackToRestSS = () => {
     for (const item of stack) {
       const client = item.id.client
-      const inapplicableItems = clientsStructRefs.get(client)
+      const inapplicableItems = clientsStructRefs.clients.get(client)
       if (inapplicableItems) {
         // decrement because we weren't able to apply previous operation
         inapplicableItems.i--
         restStructs.clients.set(client, inapplicableItems.refs.slice(inapplicableItems.i))
-        clientsStructRefs.delete(client)
+        clientsStructRefs.clients.delete(client)
         inapplicableItems.i = 0
         inapplicableItems.refs = []
       } else {
@@ -335,7 +245,7 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
           /**
            * @type {{ refs: Array<GC|Item>, i: number }}
            */
-          const structRefs = clientsStructRefs.get(/** @type {number} */ (missing)) || { refs: [], i: 0 }
+          const structRefs = clientsStructRefs.clients.get(/** @type {number} */ (missing)) || { refs: [], i: 0 }
           if (structRefs.refs.length === structRefs.i) {
             // This update message causally depends on another update message that doesn't exist yet
             updateMissingSv(/** @type {number} */ (missing), getState(store, missing))
@@ -346,7 +256,7 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
           }
         } else if (offset === 0 || offset < stackHead.length) {
           // all fine, apply the stackhead
-          stackHead.integrate(transaction, offset)
+          stackHead.integrate(transaction, offset) // since I'm splitting structs before integrating them, offset is no longer necessary
           state.set(stackHead.id.client, stackHead.id.clock + stackHead.length)
         }
       }
@@ -406,7 +316,20 @@ export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = n
     const doc = transaction.doc
     const store = doc.store
     // let start = performance.now()
-    const ss = readClientsStructRefs(structDecoder, doc)
+    const ss = readStructSet(structDecoder, doc)
+    const knownState = createIdSet()
+    ss.clients.forEach((_, client) => {
+      const storeStructs = store.clients.get(client)
+      if (storeStructs) {
+        knownState.add(client, 0, storeStructs.length)
+        // remove known items from ss
+        store.skips.clients.get(client)?.getIds().forEach(idrange => {
+          knownState.delete(client, idrange.clock, idrange.len)
+        })
+      }
+    })
+    // remove known items from ss
+    removeRangesFromStructSet(ss, knownState)
     // console.log('time to read structs: ', performance.now() - start) // @todo remove
     // start = performance.now()
     // console.log('time to merge: ', performance.now() - start) // @todo remove

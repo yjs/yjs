@@ -74,7 +74,7 @@ export const keepItem = (item, keep) => {
 
 /**
  * Split leftItem into two items
- * @param {Transaction} transaction
+ * @param {Transaction?} transaction
  * @param {Item} leftItem
  * @param {number} diff
  * @return {Item}
@@ -104,17 +104,19 @@ export const splitItem = (transaction, leftItem, diff) => {
   if (leftItem.redone !== null) {
     rightItem.redone = createID(leftItem.redone.client, leftItem.redone.clock + diff)
   }
-  // update left (do not set leftItem.rightOrigin as it will lead to problems when syncing)
-  leftItem.right = rightItem
-  // update right
-  if (rightItem.right !== null) {
-    rightItem.right.left = rightItem
-  }
-  // right is more specific.
-  transaction._mergeStructs.push(rightItem)
-  // update parent._map
-  if (rightItem.parentSub !== null && rightItem.right === null) {
-    /** @type {AbstractType<any>} */ (rightItem.parent)._map.set(rightItem.parentSub, rightItem)
+  if (transaction != null) {
+    // update left (do not set leftItem.rightOrigin as it will lead to problems when syncing)
+    leftItem.right = rightItem
+    // update right
+    if (rightItem.right !== null) {
+      rightItem.right.left = rightItem
+    }
+    // right is more specific.
+    transaction._mergeStructs.push(rightItem)
+    // update parent._map
+    if (rightItem.parentSub !== null && rightItem.right === null) {
+      /** @type {AbstractType<any>} */ (rightItem.parent)._map.set(rightItem.parentSub, rightItem)
+    }
   }
   leftItem.length = diff
   return rightItem

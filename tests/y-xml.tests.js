@@ -364,14 +364,14 @@ export const testElementAttributedContentViaDiffer = _tc => {
   t.group('test getContentDeep both docs synced', () => {
     t.info('expecting diffingAttributionManager to auto update itself')
     const expectedContent = delta.createArrayDelta().insert([{ nodeName: 'span', children: delta.createArrayDelta(), attributes: {} }]).insert([
-      delta.createTextDelta().insert('bigworld', null, { acceptInsert: ['unknown'] })
-    ], null, { acceptInsert: ['unknown'] })
+      delta.createTextDelta().insert('bigworld')
+    ])
     const attributedContent = yelement.getContentDeep(attributionManager)
     console.log('children', JSON.stringify(attributedContent.children.toJSON(), null, 2))
     console.log('cs expec', JSON.stringify(expectedContent.toJSON(), null, 2))
     console.log('attributes', attributedContent.attributes)
     t.assert(attributedContent.children.equals(expectedContent))
-    t.compare(attributedContent.attributes, { key: { prevValue: undefined, value: '42', attribution: { acceptInsert: ['unknown'] } } })
+    t.compare(attributedContent.attributes, { key: { prevValue: undefined, value: '42', attribution: null } })
     t.assert(attributedContent.nodeName === 'UNDEFINED')
   })
 }

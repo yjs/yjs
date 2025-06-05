@@ -1,7 +1,7 @@
 import * as t from 'lib0/testing'
 import * as Y from '../src/index.js'
 import { init, compare } from './testHelper.js' // eslint-disable-line
-import { readClientsStructRefs, readIdSet, UpdateDecoderV2, UpdateEncoderV2, writeIdSet } from '../src/internals.js'
+import { readStructSet, readIdSet, UpdateDecoderV2, UpdateEncoderV2, writeIdSet } from '../src/internals.js'
 import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
 import * as object from 'lib0/object'
@@ -192,7 +192,7 @@ const checkUpdateCases = (ydoc, updates, enc, hasDeletes) => {
           // So we add all deletes from `diffed` to `partDeletes` and compare then
           const decoder = decoding.createDecoder(diffed)
           const updateDecoder = new UpdateDecoderV2(decoder)
-          readClientsStructRefs(updateDecoder, new Y.Doc())
+          readStructSet(updateDecoder, new Y.Doc())
           const ds = readIdSet(updateDecoder)
           const updateEncoder = new UpdateEncoderV2()
           encoding.writeVarUint(updateEncoder.restEncoder, 0) // 0 structs

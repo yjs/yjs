@@ -105,7 +105,7 @@ export {
   IdMap,
   createIdMap,
   createAttributionItem,
-  createInsertionSetFromStructStore,
+  createInsertSetFromStructStore as createInsertionSetFromStructStore,
   diffIdMap,
   diffIdSet,
   AttributionItem as Attribution,

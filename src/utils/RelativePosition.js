@@ -9,8 +9,7 @@ import {
   ContentType,
   followRedone,
   getItem,
-  StructStore, ID, Doc, AbstractType,
-  noAttributionsManager, // eslint-disable-line
+  StructStore, ID, Doc, AbstractType, noAttributionsManager, // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding'

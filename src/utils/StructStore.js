@@ -1,8 +1,9 @@
 import {
   GC,
   splitItem,
-  Transaction, ID, Item, // eslint-disable-line
-  createDeleteSetFromStructStore
+  createDeleteSetFromStructStore,
+  createIdSet,
+  Transaction, ID, Item // eslint-disable-line
 } from '../internals.js'
 
 import * as math from 'lib0/math'
@@ -23,6 +24,7 @@ export class StructStore {
      * @type {null | Uint8Array}
      */
     this.pendingDs = null
+    this.skips = createIdSet()
   }
 
   get ds () {
@@ -45,6 +47,9 @@ export const getStateVector = store => {
   store.clients.forEach((structs, client) => {
     const struct = structs[structs.length - 1]
     sm.set(client, struct.id.clock + struct.length)
+  })
+  store.skips.clients.forEach((range, client) => {
+    sm.set(client, range.getIds()[0].clock)
   })
   return sm
 }
@@ -171,7 +176,7 @@ export const find = (store, id) => {
 export const getItem = /** @type {function(StructStore,ID):Item} */ (find)
 
 /**
- * @param {Transaction} transaction
+ * @param {Transaction?} transaction
  * @param {Array<Item|GC>} structs
  * @param {number} clock
  */
