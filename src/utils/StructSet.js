@@ -92,11 +92,11 @@ export const removeRangesFromStructSet = (ss, exclude) => {
       for (let i = 0; i < idranges.length; i++) {
         const range = idranges[i]
         let startIndex = 0
-        let endIndex = structs.length
         if (range.clock >= lastStruct.id.clock + lastStruct.length) continue
         if (range.clock > firstStruct.id.clock) {
           startIndex = findIndexCleanStart(null, structs, range.clock)
         }
+        let endIndex = structs.length // must be set here, after structs is modified
         if (range.clock + range.len <= firstStruct.id.clock) continue
         if (range.clock + range.len < lastStruct.id.clock + lastStruct.length) {
           endIndex = findIndexCleanStart(null, structs, range.clock + range.len)
