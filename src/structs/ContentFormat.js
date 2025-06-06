@@ -77,9 +77,9 @@ export class ContentFormat {
    */
   delete (_transaction) {}
   /**
-   * @param {StructStore} _store
+   * @param {Transaction} _tr
    */
-  gc (_store) {}
+  gc (_tr) {}
   /**
    * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    * @param {number} _offset

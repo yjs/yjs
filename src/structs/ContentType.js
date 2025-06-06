@@ -128,18 +128,18 @@ export class ContentType {
   }
 
   /**
-   * @param {StructStore} store
+   * @param {Transaction} tr
    */
-  gc (store) {
+  gc (tr) {
     let item = this.type._start
     while (item !== null) {
-      item.gc(store, true)
+      item.gc(tr, true)
       item = item.right
     }
     this.type._start = null
     this.type._map.forEach(/** @param {Item | null} item */ (item) => {
       while (item !== null) {
-        item.gc(store, true)
+        item.gc(tr, true)
         item = item.left
       }
     })
@@ -148,9 +148,9 @@ export class ContentType {
 
   /**
    * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
-   * @param {number} offset
+   * @param {number} _offset
    */
-  write (encoder, offset) {
+  write (encoder, _offset) {
     this.type._write(encoder)
   }
 

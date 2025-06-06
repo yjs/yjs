@@ -634,16 +634,16 @@ export class Item extends AbstractStruct {
   }
 
   /**
-   * @param {StructStore} store
+   * @param {Transaction} tr 
    * @param {boolean} parentGCd
    */
-  gc (store, parentGCd) {
+  gc (tr, parentGCd) {
     if (!this.deleted) {
       throw error.unexpectedCase()
     }
-    this.content.gc(store)
+    this.content.gc(tr)
     if (parentGCd) {
-      replaceStruct(store, this, new GC(this.id, this.length))
+      replaceStruct(tr, this, new GC(this.id, this.length))
     } else {
       this.content = new ContentDeleted(this.length)
     }
@@ -799,9 +799,9 @@ export class AbstractContent {
   }
 
   /**
-   * @param {StructStore} _store
+   * @param {Transaction} _transaction
    */
-  gc (_store) {
+  gc (_transaction) {
     throw error.methodUnimplemented()
   }
 

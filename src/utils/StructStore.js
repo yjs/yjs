@@ -198,7 +198,7 @@ export const getItem = /** @type {function(StructStore,ID):Item} */ (find)
 export const findIndexCleanStart = (transaction, structs, clock) => {
   const index = findIndexSS(structs, clock)
   const struct = structs[index]
-  if (struct.id.clock < clock) {
+  if (struct.id.clock < clock && struct.constructor !== GC) {
     structs.splice(index + 1, 0, struct instanceof Item ? splitItem(transaction, struct, clock - struct.id.clock) : struct.splice(clock - struct.id.clock))
     return index + 1
   }
@@ -247,16 +247,17 @@ export const getItemCleanEnd = (transaction, store, id) => {
 
 /**
  * Replace `item` with `newitem` in store
- * @param {StructStore} store
+ * @param {Transaction} tr
  * @param {GC|Item} struct
  * @param {GC|Item} newStruct
  *
  * @private
  * @function
  */
-export const replaceStruct = (store, struct, newStruct) => {
-  const structs = /** @type {Array<GC|Item>} */ (store.clients.get(struct.id.client))
+export const replaceStruct = (tr, struct, newStruct) => {
+  const structs = /** @type {Array<GC|Item>} */ (tr.doc.store.clients.get(struct.id.client))
   structs[findIndexSS(structs, struct.id.clock)] = newStruct
+  tr._mergeStructs.push(newStruct)
 }
 
 /**

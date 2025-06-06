@@ -10,8 +10,7 @@ import {
   generateNewClientId,
   createID,
   cleanupYTextAfterTransaction,
-  IdSet, UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc,
-  diffIdSet, // eslint-disable-line
+  IdSet, UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc
   // insertIntoIdSet
 } from '../internals.js'
 
@@ -239,14 +238,14 @@ const tryToMergeWithLefts = (structs, pos) => {
 }
 
 /**
+ * @param {Transaction} tr
  * @param {IdSet} ds
- * @param {StructStore} store
  * @param {function(Item):boolean} gcFilter
  */
-const tryGcDeleteSet = (ds, store, gcFilter) => {
+const tryGcDeleteSet = (tr, ds, gcFilter) => {
   for (const [client, _deleteItems] of ds.clients.entries()) {
     const deleteItems = _deleteItems.getIds()
-    const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
+    const structs = /** @type {Array<GC|Item>} */ (tr.doc.store.clients.get(client))
     for (let di = deleteItems.length - 1; di >= 0; di--) {
       const deleteItem = deleteItems[di]
       const endDeleteItemClock = deleteItem.clock + deleteItem.len
@@ -260,7 +259,7 @@ const tryGcDeleteSet = (ds, store, gcFilter) => {
           break
         }
         if (struct instanceof Item && struct.deleted && !struct.keep && gcFilter(struct)) {
-          struct.gc(store, false)
+          struct.gc(tr, false)
         }
       }
     }
@@ -271,7 +270,7 @@ const tryGcDeleteSet = (ds, store, gcFilter) => {
  * @param {IdSet} ds
  * @param {StructStore} store
  */
-const tryMergeDeleteSet = (ds, store) => {
+const tryMerge = (ds, store) => {
   // try to merge deleted / gc'd items
   // merge from right to left for better efficiency and so we don't miss any merge targets
   ds.clients.forEach((_deleteItems, client) => {
@@ -293,13 +292,13 @@ const tryMergeDeleteSet = (ds, store) => {
 }
 
 /**
- * @param {IdSet} ds
- * @param {StructStore} store
+ * @param {Transaction} tr
+ * @param {IdSet} idset
  * @param {function(Item):boolean} gcFilter
  */
-export const tryGc = (ds, store, gcFilter) => {
-  tryGcDeleteSet(ds, store, gcFilter)
-  tryMergeDeleteSet(ds, store)
+export const tryGc = (tr, idset, gcFilter) => {
+  tryGcDeleteSet(tr, idset, gcFilter)
+  tryMerge(idset, tr.doc.store)
 }
 
 /**
@@ -367,9 +366,9 @@ const cleanupTransactions = (transactionCleanups, i) => {
       // Replace deleted items with ItemDeleted / GC.
       // This is where content is actually remove from the Yjs Doc.
       if (doc.gc) {
-        tryGcDeleteSet(ds, store, doc.gcFilter)
+        tryGcDeleteSet(transaction, ds, doc.gcFilter)
       }
-      tryMergeDeleteSet(ds, store)
+      tryMerge(ds, store)
 
       // on all affected store.clients props, try to merge
       transaction.insertSet.clients.forEach((ids, client) => {
