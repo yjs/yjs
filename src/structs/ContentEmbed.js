@@ -69,9 +69,9 @@ export class ContentEmbed {
    */
   delete (transaction) {}
   /**
-   * @param {StructStore} store
+   * @param {Transaction} _tr
    */
-  gc (store) {}
+  gc (_tr) {}
   /**
    * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    * @param {number} offset

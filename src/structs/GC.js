@@ -3,8 +3,7 @@ import {
   addStruct,
   addStructToIdSet,
   addToIdSet,
-  UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, // eslint-disable-line
-  createID
+  UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction // eslint-disable-line
 } from '../internals.js'
 
 export const structGCRefNumber = 0
@@ -55,20 +54,23 @@ export class GC extends AbstractStruct {
   }
 
   /**
-   * @param {Transaction} transaction
-   * @param {StructStore} store
+   * @param {Transaction} _transaction
+   * @param {StructStore} _store
    * @return {null | number}
    */
-  getMissing (transaction, store) {
+  getMissing (_transaction, _store) {
     return null
   }
 
   /**
-   * @param {number} diff
+   * gc structs can't be spliced.
+   *
+   * If this feature is required in the future, then need to try to merge this struct after
+   * transaction.
+   *
+   * @param {number} _diff
    */
-  splice (diff) {
-    const other = new GC(createID(this.id.client, this.id.clock + diff), this.length - diff)
-    this.length = diff
-    return other
+  splice (_diff) {
+    return this
   }
 }
