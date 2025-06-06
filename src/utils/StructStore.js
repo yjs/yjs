@@ -112,7 +112,7 @@ export const addStruct = (store, struct) => {
       const diffStart = struct.id.clock - skip.id.clock
       const diffEnd = skip.id.clock + skip.length - struct.id.clock - struct.length
       if (diffStart > 0) {
-        structs.splice(index++, 0, new Skip(createID(struct.id.client, struct.id.clock), diffStart))
+        structs.splice(index++, 0, new Skip(createID(struct.id.client, skip.id.clock), diffStart))
       }
       if (diffEnd > 0) {
         structs.splice(index + 1, 0, new Skip(createID(struct.id.client, struct.id.clock + struct.length), diffEnd))
