@@ -90,9 +90,10 @@ export class ContentString {
   /**
    * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    * @param {number} offset
+   * @param {number} offsetEnd
    */
-  write (encoder, offset) {
-    encoder.writeString(offset === 0 ? this.str : this.str.slice(offset))
+  write (encoder, offset, offsetEnd) {
+    encoder.writeString((offset === 0 && offsetEnd === 0) ? this.str : this.str.slice(offset, this.str.length - offsetEnd))
   }
 
   /**

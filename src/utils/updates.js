@@ -534,7 +534,7 @@ const writeStructToLazyStructWriter = (lazyWriter, struct, offset) => {
     // write startClock
     encoding.writeVarUint(lazyWriter.encoder.restEncoder, struct.id.clock + offset)
   }
-  struct.write(lazyWriter.encoder, offset)
+  struct.write(lazyWriter.encoder, offset, 0)
   lazyWriter.written++
 }
 /**

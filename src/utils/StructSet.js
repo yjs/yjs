@@ -83,6 +83,7 @@ export const readStructSet = (decoder, doc) => {
  * @param {IdSet} exclude
  */
 export const removeRangesFromStructSet = (ss, exclude) => {
+  // @todo walk through ss instead to reduce iterations
   exclude.clients.forEach((range, client) => {
     const structs = /** @type {StructRange} */ (ss.clients.get(client))?.refs
     if (structs != null) {

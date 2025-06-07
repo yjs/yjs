@@ -82,11 +82,12 @@ export class ContentAny {
   /**
    * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    * @param {number} offset
+   * @param {number} offsetEnd
    */
-  write (encoder, offset) {
-    const len = this.arr.length
-    encoder.writeLen(len - offset)
-    for (let i = offset; i < len; i++) {
+  write (encoder, offset, offsetEnd) {
+    const end = this.arr.length - offsetEnd
+    encoder.writeLen(end - offset)
+    for (let i = offset; i < end; i++) {
       const c = this.arr[i]
       encoder.writeAny(c)
     }

@@ -22,7 +22,6 @@ import {
   readContentType,
   addChangedTypeToTransaction,
   addStructToIdSet,
-  Skip,
   IdSet, StackItem, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction, // eslint-disable-line
 } from '../internals.js'
 
@@ -124,6 +123,26 @@ export const splitItem = (transaction, leftItem, diff) => {
   }
   leftItem.length = diff
   return rightItem
+}
+
+/**
+ * More generalized version of splitItem. Split leftStruct into two structs
+ * @param {Transaction?} transaction
+ * @param {AbstractStruct} leftStruct
+ * @param {number} diff
+ * @return {GC|Item}
+ *
+ * @function
+ * @private
+ */
+export const splitStruct = (transaction, leftStruct, diff) => {
+  if (leftStruct instanceof Item) {
+    return splitItem(transaction, leftStruct, diff)
+  } else {
+    const rightItem = leftStruct.splice(diff)
+    transaction?._mergeStructs.push(rightItem)
+    return rightItem
+  }
 }
 
 /**
@@ -409,11 +428,6 @@ export class Item extends AbstractStruct {
         this.parent = /** @type {ContentType} */ (parentItem.content).type
       }
     }
-    // @todo remove thgis
-    if (this.left instanceof Skip || this.right instanceof Skip || this.parent instanceof Skip) {
-      debugger
-      throw new Error('dtruinae')
-    }
     return null
   }
 
@@ -634,7 +648,7 @@ export class Item extends AbstractStruct {
   }
 
   /**
-   * @param {Transaction} tr 
+   * @param {Transaction} tr
    * @param {boolean} parentGCd
    */
   gc (tr, parentGCd) {
@@ -657,8 +671,9 @@ export class Item extends AbstractStruct {
    *
    * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
    * @param {number} offset
+   * @param {number} offsetEnd
    */
-  write (encoder, offset) {
+  write (encoder, offset, offsetEnd) {
     const origin = offset > 0 ? createID(this.id.client, this.id.clock + offset - 1) : this.origin
     const rightOrigin = this.rightOrigin
     const parentSub = this.parentSub
@@ -700,7 +715,7 @@ export class Item extends AbstractStruct {
         encoder.writeString(parentSub)
       }
     }
-    this.content.write(encoder, offset)
+    this.content.write(encoder, offset, offsetEnd)
   }
 }
 
@@ -808,8 +823,9 @@ export class AbstractContent {
   /**
    * @param {UpdateEncoderV1 | UpdateEncoderV2} _encoder
    * @param {number} _offset
+   * @param {number} _offsetEnd
    */
-  write (_encoder, _offset) {
+  write (_encoder, _offset, _offsetEnd) {
     throw error.methodUnimplemented()
   }
 

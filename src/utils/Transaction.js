@@ -10,8 +10,7 @@ import {
   generateNewClientId,
   createID,
   cleanupYTextAfterTransaction,
-  IdSet, UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc
-  // insertIntoIdSet
+  IdSet, UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error'

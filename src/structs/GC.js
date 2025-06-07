@@ -3,6 +3,7 @@ import {
   addStruct,
   addStructToIdSet,
   addToIdSet,
+  createID,
   UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction // eslint-disable-line
 } from '../internals.js'
 
@@ -47,10 +48,11 @@ export class GC extends AbstractStruct {
   /**
    * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    * @param {number} offset
+   * @param {number} offsetEnd
    */
-  write (encoder, offset) {
+  write (encoder, offset, offsetEnd) {
     encoder.writeInfo(structGCRefNumber)
-    encoder.writeLen(this.length - offset)
+    encoder.writeLen(this.length - offset - offsetEnd)
   }
 
   /**
@@ -68,9 +70,11 @@ export class GC extends AbstractStruct {
    * If this feature is required in the future, then need to try to merge this struct after
    * transaction.
    *
-   * @param {number} _diff
+   * @param {number} diff
    */
-  splice (_diff) {
-    return this
+  splice (diff) {
+    const other = new GC(createID(this.id.client, this.id.clock + diff), this.length - diff)
+    this.length = diff
+    return other
   }
 }
