@@ -83,8 +83,9 @@ export class ContentFormat {
   /**
    * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    * @param {number} _offset
+   * @param {number} _offsetEnd
    */
-  write (encoder, _offset) {
+  write (encoder, _offset, _offsetEnd) {
     encoder.writeKey(this.key)
     encoder.writeJSON(this.value)
   }

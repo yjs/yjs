@@ -180,7 +180,6 @@ const checkUpdateCases = (ydoc, updates, enc, hasDeletes) => {
       for (let j = 1; j < updates.length; j++) {
         const partMerged = enc.mergeUpdates(updates.slice(j))
         const partMeta = enc.parseUpdateMeta(partMerged)
-        
         const targetSV = enc.encodeStateVectorFromUpdate(enc.mergeUpdates(updates.slice(0, j)))
         const diffed = enc.diffUpdate(mergedUpdates, targetSV)
         const diffedMeta = enc.parseUpdateMeta(diffed)

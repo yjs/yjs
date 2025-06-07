@@ -5,7 +5,8 @@ import {
   createIdSet,
   Transaction, ID, Item, // eslint-disable-line
   Skip,
-  createID
+  createID,
+  splitStruct
 } from '../internals.js'
 
 import * as math from 'lib0/math'
@@ -198,8 +199,8 @@ export const getItem = /** @type {function(StructStore,ID):Item} */ (find)
 export const findIndexCleanStart = (transaction, structs, clock) => {
   const index = findIndexSS(structs, clock)
   const struct = structs[index]
-  if (struct.id.clock < clock && struct.constructor !== GC) {
-    structs.splice(index + 1, 0, struct instanceof Item ? splitItem(transaction, struct, clock - struct.id.clock) : struct.splice(clock - struct.id.clock))
+  if (struct.id.clock < clock) {
+    structs.splice(index + 1, 0, splitStruct(transaction, struct, clock - struct.id.clock))
     return index + 1
   }
   return index

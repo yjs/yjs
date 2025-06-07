@@ -184,7 +184,7 @@ export const createDocFromSnapshot = (originDoc, snapshot, newDoc = new Doc()) =
       // first clock written is 0
       encoding.writeVarUint(encoder.restEncoder, 0)
       for (let i = 0; i <= lastStructIndex; i++) {
-        structs[i].write(encoder, 0)
+        structs[i].write(encoder, 0, 0)
       }
     }
     writeIdSet(encoder, ds)

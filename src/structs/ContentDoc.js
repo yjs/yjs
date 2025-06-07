@@ -116,9 +116,10 @@ export class ContentDoc {
 
   /**
    * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
-   * @param {number} offset
+   * @param {number} _offset
+   * @param {number} _offsetEnd
    */
-  write (encoder, offset) {
+  write (encoder, _offset, _offsetEnd) {
     encoder.writeString(this.doc.guid)
     encoder.writeAny(this.opts)
   }

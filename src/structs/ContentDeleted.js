@@ -78,9 +78,10 @@ export class ContentDeleted {
   /**
    * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    * @param {number} offset
+   * @param {number} offsetEnd
    */
-  write (encoder, offset) {
-    encoder.writeLen(this.len - offset)
+  write (encoder, offset, offsetEnd) {
+    encoder.writeLen(this.len - offset - offsetEnd)
   }
 
   /**

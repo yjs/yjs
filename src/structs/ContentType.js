@@ -149,8 +149,9 @@ export class ContentType {
   /**
    * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
    * @param {number} _offset
+   * @param {number} _offsetEnd
    */
-  write (encoder, _offset) {
+  write (encoder, _offset, _offsetEnd) {
     this.type._write(encoder)
   }
 

@@ -74,9 +74,10 @@ export class ContentEmbed {
   gc (_tr) {}
   /**
    * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
-   * @param {number} offset
+   * @param {number} _offset
+   * @param {number} _offsetEnd
    */
-  write (encoder, offset) {
+  write (encoder, _offset, _offsetEnd) {
     encoder.writeJSON(this.embed)
   }
 

@@ -51,6 +51,7 @@ export class AbstractStruct {
 
   /**
    * @param {number} diff
+   * @return {import('../internals.js').GC|import('../internals.js').Item}
    */
   splice (diff) {
     throw error.methodUnimplemented()
