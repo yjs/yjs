@@ -13,12 +13,14 @@ import {
   mergeIdMaps,
   createID,
   mergeIdSets,
-  IdSet, Item, Snapshot, Doc, AbstractContent, IdMap, // eslint-disable-line
+  ID, IdSet, Item, Snapshot, Doc, AbstractContent, IdMap, // eslint-disable-line
   applyUpdate,
   writeIdSet,
   UpdateEncoderV1,
   transact,
-  createMaybeAttrRange
+  createMaybeAttrRange,
+  createIdSet,
+  writeStructsFromIdSet
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -325,6 +327,48 @@ export class DiffAttributionManager extends ObservableV2 {
     this._prevDoc.off('update', this._prevUpdateListener)
     this._nextDoc.off('update', this._ndUpdateListener)
     this._nextDoc.off('afterTransaction', this._afterTrListener)
+  }
+
+  /**
+   * @param {ID} start
+   * @param {ID?} end
+   */
+  acceptChanges (start, end = start) {
+    const encoder = new UpdateEncoderV1()
+    const store = this._nextDoc.store
+    const inserts = createIdSet()
+    const deletes = createIdSet()
+    /**
+     * @type {Item?}
+     */
+    let item = getItem(store, start)
+    const endItem = start === end ? item : (end == null ? null : getItem(store, end))
+    // walk to the left and find first un-attributed change that is rendered
+    while (item.left != null) {
+      item = item.left
+      if (!item.deleted) {
+        const slice = this.inserts.slice(item.id.client, item.id.clock, item.length)
+        if (slice.some(s => s.attrs === null)) {
+          break
+        }
+      }
+    }
+    let foundEndItem = false
+    while (item != null) {
+      inserts.add(item.id.client, item.id.clock, item.length)
+      if (item.deleted) {
+        deletes.add(item.id.client, item.id.clock, item.length)
+      }
+      foundEndItem ||= item === endItem
+      if (foundEndItem && !item.deleted && this.inserts.slice(item.id.client, item.id.clock, item.length).some(s => s.attrs === null)) {
+        break
+      }
+      item = item.right
+    }
+    writeStructsFromIdSet(encoder, this._nextDoc.store, inserts)
+    writeIdSet(encoder, deletes)
+    const acceptUpdate = encoder.toUint8Array()
+    applyUpdate(this._prevDoc, acceptUpdate)
   }
 
   /**
