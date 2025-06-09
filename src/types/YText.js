@@ -972,7 +972,7 @@ export class YText extends AbstractType {
         const renderDelete = c.render && c.deleted
         // existing content that should be retained, only adding changed attributes
         const retainContent = !c.render && (!c.deleted || c.attrs != null)
-        const attribution = renderContent ? createAttributionFromAttributionItems(c.attrs, c.deleted) : null
+        const attribution = (renderContent || c.content.constructor === ContentFormat) ? createAttributionFromAttributionItems(c.attrs, c.deleted) : null
         switch (c.content.constructor) {
           case ContentDeleted: {
             if (renderDelete) d.delete(c.content.getLength())
@@ -1032,15 +1032,15 @@ export class YText extends AbstractType {
             if (renderContent || renderDelete) {
               if (c.deleted) {
                 // content was deleted, but is possibly attributed
-                if (equalAttrs(value, currAttrVal)) {
-                  // nop
-                } else if (equalAttrs(currAttrVal, previousAttributes[key] ?? null) && changedAttributes[key] !== undefined) {
-                  delete changedAttributes[key]
-                } else {
-                  changedAttributes[key] = currAttrVal
+                if (!equalAttrs(value, currAttrVal)) { // do nothing if nothing changed
+                  if (equalAttrs(currAttrVal, previousAttributes[key] ?? null) && changedAttributes[key] !== undefined) {
+                    delete changedAttributes[key]
+                  } else {
+                    changedAttributes[key] = currAttrVal
+                  }
+                  // current attributes doesn't change
+                  previousAttributes[key] = value
                 }
-                // current attributes doesn't change
-                previousAttributes[key] = value
               } else { // !c.deleted
                 // content was inserted, and is possibly attributed
                 if (equalAttrs(value, currAttrVal)) {
