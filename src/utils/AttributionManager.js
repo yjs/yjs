@@ -20,7 +20,13 @@ import {
   transact,
   createMaybeAttrRange,
   createIdSet,
-  writeStructsFromIdSet
+  writeStructsFromIdSet,
+  UndoManager,
+  StackItem,
+  getItemCleanStart,
+  Transaction,
+  StructStore,
+  intersectSets
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -227,6 +233,98 @@ export class NoAttributionsManager extends ObservableV2 {
 export const noAttributionsManager = new NoAttributionsManager()
 
 /**
+ * @param {StructStore} store
+ * @param {number} client
+ * @param {number} clock
+ * @param {number} len
+ */
+const getItemContent = (store, client, clock, len) => {
+  // Retrieved item is never more fragmented than the newer item.
+  const prevItem = getItem(store, createID(client, clock))
+  const diffStart = clock - prevItem.id.clock
+  let content = prevItem.length > 1 ? prevItem.content.copy() : prevItem.content
+  // trim itemContent to the correct size.
+  if (diffStart > 0) {
+    content = content.splice(diffStart)
+  }
+  if (len > 0) {
+    content.splice(len)
+  }
+  return content
+}
+
+/**
+ * @param {Transaction?} tr - only specify this if you want to fill the content of deleted content
+ * @param {DiffAttributionManager} am
+ * @param {ID} start
+ * @param {ID} end
+ * @param {boolean} collectAll - collect as many items as possible. Accept adding redundant changes.
+ */
+const collectSuggestedChanges = (tr, am, start, end, collectAll) => {
+  const inserts = createIdSet()
+  const deletes = createIdSet()
+  const store = am._nextDoc.store
+  /**
+   * @type {Item?}
+   */
+  let item = getItem(store, start)
+  const endItem = start === end ? item : (end == null ? null : getItem(store, end))
+  // walk to the left and find first un-attributed change that is rendered
+  while (item.left != null) {
+    item = item.left
+    if (!item.deleted) {
+      const slice = am.inserts.slice(item.id.client, item.id.clock, item.length)
+      if (slice.some(s => s.attrs === null)) {
+        for (let i = slice.length -1; i >= 0; i--) {
+          const s = slice[i]
+          if (s.attrs == null) break
+          inserts.add(item.id.client, s.clock, s.len)
+        }
+        item = item.right
+        break
+      }
+    }
+  }
+  let foundEndItem = false
+  itemLoop: while (item != null) {
+    const itemClient = item.id.client
+    const slice = (item.deleted ? am.deletes : am.inserts).slice(itemClient, item.id.clock, item.length)
+    foundEndItem ||= item === endItem
+    if (item.deleted) {
+      // item probably gc'd content. Need to split item and fill with content again
+      for (let i = slice.length - 1; i >= 0; i--) {
+        const s = slice[i]
+        if (s.attrs != null || collectAll) {
+          deletes.add(itemClient, s.clock, s.len)
+          if (collectAll) {
+            // in case item has been added and deleted this might be necessary. the forked document
+            // will automatically filter this if it doesn't have it already.
+            inserts.add(itemClient, s.clock, s.len)
+          }
+        }
+        if (tr != null) {
+          const splicedItem = getItemCleanStart(tr, createID(itemClient, s.clock))
+          if (s.attrs != null) {
+            splicedItem.content = getItemContent(am._prevDocStore, itemClient, s.clock, s.len)
+          }
+        }
+      }
+    } else {
+      for (let i = 0; i < slice.length; i++) {
+        const s = slice[i]
+        if (s.attrs != null) {
+          inserts.add(itemClient, s.clock, s.len)
+        } else if (foundEndItem) {
+          break itemLoop
+        }
+      }
+    }
+    item = item.right
+  }
+  return { inserts, deletes }
+}
+
+/**
  * @implements AbstractAttributionManager
  *
  * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
@@ -276,8 +374,9 @@ export class DiffAttributionManager extends ObservableV2 {
       } else {
         this.deletes = diffIdMap(this.deletes, tr.deleteSet)
       }
-      // @todo fire update ranges on `tr.insertSet` and `tr.deleteSet`
-      this.emit('change', [mergeIdSets([tr.insertSet, tr.deleteSet]), tr.origin, tr.local])
+      // fire event of "changed" attributions. exclude items that were added & deleted in the same
+      // transaction
+      this.emit('change', [diffIdSet(mergeIdSets([tr.insertSet, tr.deleteSet]), intersectSets(tr.insertSet, tr.deleteSet)), tr.origin, tr.local])
     })
     // changes from prevDoc should always flow into suggestionDoc
     // changes from suggestionDoc only flow into ydoc if suggestion-mode is disabled
@@ -331,44 +430,32 @@ export class DiffAttributionManager extends ObservableV2 {
 
   /**
    * @param {ID} start
-   * @param {ID?} end
+   * @param {ID} end
    */
   acceptChanges (start, end = start) {
+    const { inserts, deletes } = collectSuggestedChanges(null, this, start, end, true)
     const encoder = new UpdateEncoderV1()
-    const store = this._nextDoc.store
-    const inserts = createIdSet()
-    const deletes = createIdSet()
-    /**
-     * @type {Item?}
-     */
-    let item = getItem(store, start)
-    const endItem = start === end ? item : (end == null ? null : getItem(store, end))
-    // walk to the left and find first un-attributed change that is rendered
-    while (item.left != null) {
-      item = item.left
-      if (!item.deleted) {
-        const slice = this.inserts.slice(item.id.client, item.id.clock, item.length)
-        if (slice.some(s => s.attrs === null)) {
-          break
-        }
-      }
-    }
-    let foundEndItem = false
-    while (item != null) {
-      inserts.add(item.id.client, item.id.clock, item.length)
-      if (item.deleted) {
-        deletes.add(item.id.client, item.id.clock, item.length)
-      }
-      foundEndItem ||= item === endItem
-      if (foundEndItem && !item.deleted && this.inserts.slice(item.id.client, item.id.clock, item.length).some(s => s.attrs === null)) {
-        break
-      }
-      item = item.right
-    }
     writeStructsFromIdSet(encoder, this._nextDoc.store, inserts)
     writeIdSet(encoder, deletes)
-    const acceptUpdate = encoder.toUint8Array()
-    applyUpdate(this._prevDoc, acceptUpdate)
+    applyUpdate(this._prevDoc, encoder.toUint8Array())
+  }
+
+  /**
+   * @param {ID} start
+   * @param {ID} end
+   */
+  rejectChanges (start, end = start) {
+    this._nextDoc.transact(tr => {
+      const { inserts, deletes } = collectSuggestedChanges(tr, this, start, end, false)
+      const encoder = new UpdateEncoderV1()
+      writeStructsFromIdSet(encoder, this._nextDoc.store, inserts)
+      writeIdSet(encoder, deletes)
+      const um = new UndoManager(this._nextDoc)
+      um.undoStack.push(new StackItem(deletes, inserts))
+      um.undo()
+      um.destroy()
+    })
+    this.acceptChanges(start, end)
   }
 
   /**
