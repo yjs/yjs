@@ -125,6 +125,7 @@ Showcase](https://yjs-diagram.synergy.codes/).
 editing for your IDE or custom editor
 * [Typst](https://typst.app/) - Compose, edit, and automate technical documents
 * [Kedyou](https://kedyou.com/) - Digital workspaces for tutoring
+* [Lightpage](https://lightpage.com/) - Personal living notebook
 
 ## Table of Contents
 
