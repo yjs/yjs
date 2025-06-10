@@ -56,7 +56,9 @@ import * as encoding from 'lib0/encoding'
  * @return {Attribution?}
  */
 export const createAttributionFromAttributionItems = (attrs, deleted) => {
-  if (attrs == null) return null
+  if (attrs == null) {
+    return null
+  }
   /**
    * @type {Attribution}
    */

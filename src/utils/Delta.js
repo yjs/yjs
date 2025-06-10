@@ -300,7 +300,7 @@ export class DeltaBuilder extends AbstractDelta {
    * @return {this}
    */
   useAttributes (attributes) {
-    this.usedAttributes = object.isEmpty(attributes) ? null : object.assign({}, attributes)
+    this.usedAttributes = attributes
     return this
   }
 
@@ -345,7 +345,7 @@ export class DeltaBuilder extends AbstractDelta {
    * @param {Attribution?} attribution
    */
   useAttribution (attribution) {
-    this.usedAttribution = object.isEmpty(attribution) ? null : object.assign({}, attribution)
+    this.usedAttribution = attribution
     return this
   }
 
