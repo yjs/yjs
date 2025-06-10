@@ -26,7 +26,8 @@ import {
   getItemCleanStart,
   Transaction,
   StructStore,
-  intersectSets
+  intersectSets,
+  ContentFormat
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -249,7 +250,7 @@ const getItemContent = (store, client, clock, len) => {
   if (diffStart > 0) {
     content = content.splice(diffStart)
   }
-  if (len > 0) {
+  if (len < content.getLength()) {
     content.splice(len)
   }
   return content
@@ -267,13 +268,23 @@ const collectSuggestedChanges = (tr, am, start, end, collectAll) => {
   const deletes = createIdSet()
   const store = am._nextDoc.store
   /**
+   * make sure to collect suggestions until all formats are closed
+   * @type {Set<string>}
+   */
+  const openedCollectedFormats = new Set()
+  /**
    * @type {Item?}
    */
   let item = getItem(store, start)
   const endItem = start === end ? item : (end == null ? null : getItem(store, end))
+
   // walk to the left and find first un-attributed change that is rendered
   while (item.left != null) {
     item = item.left
+    if (item.content instanceof ContentFormat && item.content.value == null) {
+      item = item.right
+      break
+    }
     if (!item.deleted) {
       const slice = am.inserts.slice(item.id.client, item.id.clock, item.length)
       if (slice.some(s => s.attrs === null)) {
@@ -312,11 +323,19 @@ const collectSuggestedChanges = (tr, am, start, end, collectAll) => {
         }
       }
     } else {
+      if (item.content instanceof ContentFormat) {
+        const {key, value} = item.content 
+        if (value == null) {
+          openedCollectedFormats.delete(key)
+        } else {
+          openedCollectedFormats.add(key)
+        }
+      }
       for (let i = 0; i < slice.length; i++) {
         const s = slice[i]
         if (s.attrs != null) {
           inserts.add(itemClient, s.clock, s.len)
-        } else if (foundEndItem) {
+        } else if (foundEndItem && openedCollectedFormats.size === 0) {
           break itemLoop
         }
       }
