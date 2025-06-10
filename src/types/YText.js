@@ -1081,7 +1081,6 @@ export class YText extends AbstractType {
                */
               const formattingAttribution = object.assign({}, d.usedAttribution)
               const attributesChanged = /** @type {{ [key: string]: Array<any> }} */ (formattingAttribution.attributes = object.assign({}, formattingAttribution.attributes ?? {}))
-              debugger
               if (value === null) {
                 delete attributesChanged[key]
               } else {
