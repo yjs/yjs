@@ -72,7 +72,6 @@ export class RelativePosition {
      * @type {number}
      */
     this.assoc = assoc
-    this.item && console.log('created relpos', this.item) // @todo remove
   }
 }
 
