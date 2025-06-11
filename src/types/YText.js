@@ -1075,13 +1075,13 @@ export class YText extends AbstractType {
               previousAttributes[key] = value
             }
             // # Update Attributions
-            if (attribution != null) {
+            if (attribution != null || d.usedAttribution?.attributes?.[key] != null) {
               /**
                * @type {import('../utils/Delta.js').Attribution}
                */
               const formattingAttribution = object.assign({}, d.usedAttribution)
               const attributesChanged = /** @type {{ [key: string]: Array<any> }} */ (formattingAttribution.attributes = object.assign({}, formattingAttribution.attributes ?? {}))
-              if (value === null) {
+              if (value === null || attribution == null) {
                 delete attributesChanged[key]
               } else {
                 const by = attributesChanged[key] = (attributesChanged[key]?.slice() ?? [])
@@ -1089,12 +1089,14 @@ export class YText extends AbstractType {
                 const attributedAt = (c.deleted ? attribution.deletedAt : attribution.insertedAt)
                 if (attributedAt) formattingAttribution.attributedAt = attributedAt
               }
-              if (object.isEmpty(attributesChanged)) {
-                d.useAttribution(null)
-              } else {
-                const attributedAt = (c.deleted ? attribution.deletedAt : attribution.insertedAt)
-                if (attributedAt != null) formattingAttribution.attributedAt = attributedAt
-                d.useAttribution(formattingAttribution)
+              if (attribution != null) {
+                if (object.isEmpty(attributesChanged)) {
+                  d.useAttribution(null)
+                } else {
+                  const attributedAt = (c.deleted ? attribution.deletedAt : attribution.insertedAt)
+                  if (attributedAt != null) formattingAttribution.attributedAt = attributedAt
+                  d.useAttribution(formattingAttribution)
+                }
               }
             }
             break
