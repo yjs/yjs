@@ -13,7 +13,6 @@ import {
   mergeIdMaps,
   createID,
   mergeIdSets,
-  ID, IdSet, Item, Snapshot, Doc, AbstractContent, IdMap, // eslint-disable-line
   applyUpdate,
   writeIdSet,
   UpdateEncoderV1,
@@ -24,10 +23,9 @@ import {
   UndoManager,
   StackItem,
   getItemCleanStart,
-  Transaction,
-  StructStore,
   intersectSets,
-  ContentFormat
+  ContentFormat,
+  StructStore, Transaction, ID, IdSet, Item, Snapshot, Doc, AbstractContent, IdMap // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -288,7 +286,7 @@ const collectSuggestedChanges = (tr, am, start, end, collectAll) => {
     if (!item.deleted) {
       const slice = am.inserts.slice(item.id.client, item.id.clock, item.length)
       if (slice.some(s => s.attrs === null)) {
-        for (let i = slice.length -1; i >= 0; i--) {
+        for (let i = slice.length - 1; i >= 0; i--) {
           const s = slice[i]
           if (s.attrs == null) break
           inserts.add(item.id.client, s.clock, s.len)
@@ -299,6 +297,7 @@ const collectSuggestedChanges = (tr, am, start, end, collectAll) => {
     }
   }
   let foundEndItem = false
+  // eslint-disable-next-line
   itemLoop: while (item != null) {
     const itemClient = item.id.client
     const slice = (item.deleted ? am.deletes : am.inserts).slice(itemClient, item.id.clock, item.length)
@@ -324,7 +323,7 @@ const collectSuggestedChanges = (tr, am, start, end, collectAll) => {
       }
     } else {
       if (item.content instanceof ContentFormat) {
-        const {key, value} = item.content 
+        const { key, value } = item.content
         if (value == null) {
           openedCollectedFormats.delete(key)
         } else {
@@ -336,6 +335,7 @@ const collectSuggestedChanges = (tr, am, start, end, collectAll) => {
         if (s.attrs != null) {
           inserts.add(itemClient, s.clock, s.len)
         } else if (foundEndItem && openedCollectedFormats.size === 0) {
+          // eslint-disable-next-line
           break itemLoop
         }
       }
