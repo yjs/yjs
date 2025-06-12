@@ -936,6 +936,16 @@ export class YText extends AbstractType {
     let changedAttributes = {} // saves changed attributes for retain
     let usingChangedAttributes = false
     /**
+     * Logic for formatting attribute attribution
+     * Everything that comes after an formatting attribute is formatted by the user that created it.
+     * Two exceptions:
+     * - the user resets formatting to the previously known formatting that is not attributed
+     * - the user deletes a formatting attribute and hence restores the previously known formatting
+     *   that is not attributed.
+     * @type {import('../utils/Delta.js').FormattingAttributes}
+     */
+    let previousUnattributedAttributes = {} // contains previously known unattributed formatting
+    /**
      * @type {import('../utils/Delta.js').FormattingAttributes}
      */
     const previousAttributes = {} // The value before changes
@@ -1016,6 +1026,9 @@ export class YText extends AbstractType {
           case ContentFormat: {
             const { key, value } = /** @type {ContentFormat} */ (c.content)
             const currAttrVal = currentAttributes[key] ?? null
+            if (attribution != null && (c.deleted || !previousUnattributedAttributes.hasOwnProperty(key))) {
+              previousUnattributedAttributes[key] = c.deleted ? value : currAttrVal
+            }
             // @todo write a function "updateCurrentAttributes" and "updateChangedAttributes"
             // # Update Attributes
             if (renderContent || renderDelete) {
@@ -1075,28 +1088,30 @@ export class YText extends AbstractType {
               previousAttributes[key] = value
             }
             // # Update Attributions
-            if (attribution != null || d.usedAttribution?.attributes?.[key] != null) {
+            if (attribution != null || previousUnattributedAttributes.hasOwnProperty(key)) {
               /**
                * @type {import('../utils/Delta.js').Attribution}
                */
               const formattingAttribution = object.assign({}, d.usedAttribution)
-              const attributesChanged = /** @type {{ [key: string]: Array<any> }} */ (formattingAttribution.attributes = object.assign({}, formattingAttribution.attributes ?? {}))
-              if (value === null || attribution == null) {
-                delete attributesChanged[key]
+              const changedAttributedAttributes = /** @type {{ [key: string]: Array<any> }} */ (formattingAttribution.attributes = object.assign({}, formattingAttribution.attributes ?? {}))
+
+              if (attribution == null || equalAttrs(previousUnattributedAttributes[key], currentAttributes[key] ?? null)) {
+                // an unattributed formatting attribute was found or an attributed formatting
+                // attribute was found that resets to the previous status
+                delete changedAttributedAttributes[key]
+                delete previousUnattributedAttributes[key]
               } else {
-                const by = attributesChanged[key] = (attributesChanged[key]?.slice() ?? [])
+                const by = changedAttributedAttributes[key] = (changedAttributedAttributes[key]?.slice() ?? [])
                 by.push(...((c.deleted ? attribution.delete : attribution.insert) ?? []))
                 const attributedAt = (c.deleted ? attribution.deletedAt : attribution.insertedAt)
                 if (attributedAt) formattingAttribution.attributedAt = attributedAt
               }
-              if (attribution != null) {
-                if (object.isEmpty(attributesChanged)) {
-                  d.useAttribution(null)
-                } else {
-                  const attributedAt = (c.deleted ? attribution.deletedAt : attribution.insertedAt)
-                  if (attributedAt != null) formattingAttribution.attributedAt = attributedAt
-                  d.useAttribution(formattingAttribution)
-                }
+              if (object.isEmpty(changedAttributedAttributes)) {
+                d.useAttribution(null)
+              } else if (attribution != null) {
+                const attributedAt = (c.deleted ? attribution.deletedAt : attribution.insertedAt)
+                if (attributedAt != null) formattingAttribution.attributedAt = attributedAt
+                d.useAttribution(formattingAttribution)
               }
             }
             break
