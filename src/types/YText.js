@@ -944,7 +944,7 @@ export class YText extends AbstractType {
      *   that is not attributed.
      * @type {import('../utils/Delta.js').FormattingAttributes}
      */
-    let previousUnattributedAttributes = {} // contains previously known unattributed formatting
+    const previousUnattributedAttributes = {} // contains previously known unattributed formatting
     /**
      * @type {import('../utils/Delta.js').FormattingAttributes}
      */
@@ -1026,7 +1026,7 @@ export class YText extends AbstractType {
           case ContentFormat: {
             const { key, value } = /** @type {ContentFormat} */ (c.content)
             const currAttrVal = currentAttributes[key] ?? null
-            if (attribution != null && (c.deleted || !previousUnattributedAttributes.hasOwnProperty(key))) {
+            if (attribution != null && (c.deleted || !object.hasProperty(previousUnattributedAttributes, key))) {
               previousUnattributedAttributes[key] = c.deleted ? value : currAttrVal
             }
             // @todo write a function "updateCurrentAttributes" and "updateChangedAttributes"
@@ -1088,13 +1088,12 @@ export class YText extends AbstractType {
               previousAttributes[key] = value
             }
             // # Update Attributions
-            if (attribution != null || previousUnattributedAttributes.hasOwnProperty(key)) {
+            if (attribution != null || object.hasProperty(previousUnattributedAttributes, key)) {
               /**
                * @type {import('../utils/Delta.js').Attribution}
                */
               const formattingAttribution = object.assign({}, d.usedAttribution)
               const changedAttributedAttributes = /** @type {{ [key: string]: Array<any> }} */ (formattingAttribution.attributes = object.assign({}, formattingAttribution.attributes ?? {}))
-
               if (attribution == null || equalAttrs(previousUnattributedAttributes[key], currentAttributes[key] ?? null)) {
                 // an unattributed formatting attribute was found or an attributed formatting
                 // attribute was found that resets to the previous status
