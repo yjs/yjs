@@ -344,7 +344,7 @@ A database and connection provider for Yjs based on Firestore.
 
 ### Tooling
 
-* [y-sweet debugger](https://docs.jamsocket.com/y-sweet/advanced/debugger)
+* [y-sweet debugger](https://y-sweet.cloud/advanced/debugger)
 * [liveblocks devtools](https://liveblocks.io/devtools)
 * [Yjs inspector](https://inspector.yjs.dev)
 
