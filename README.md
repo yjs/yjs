@@ -162,6 +162,7 @@ are implemented in separate modules.
 | [Slate](https://github.com/ianstormtaylor/slate) | ✔ | [slate-yjs](https://github.com/bitphinix/slate-yjs) | [demo](https://bitphinix.github.io/slate-yjs-example) |
 | [BlockSuite](https://github.com/toeverything/blocksuite) | ✔ | (native) | [demo](https://blocksuite-toeverything.vercel.app/?init) |
 | [Lexical](https://lexical.dev/) | ✔ | (native) | [demo](https://lexical.dev/docs/collaboration/react#see-it-in-action) |
+| [BlockNote](https://www.blocknotejs.org/docs/collaboration/real-time-collaboration) | ✔ | [y-prosemirror](https://github.com/yjs/y-prosemirror) | [demo](https://www.blocknotejs.org/docs/collaboration/real-time-collaboration) |
 | [Superdoc](https://superdoc.dev/) | ✔ | (native) | [demo](https://superdoc.dev/) |
 | [valtio](https://github.com/pmndrs/valtio) |  | [valtio-yjs](https://github.com/dai-shi/valtio-yjs) | [demo](https://codesandbox.io/s/valtio-yjs-demo-ox3iy) |
 | [immer](https://github.com/immerjs/immer) |  | [immer-yjs](https://github.com/sep2/immer-yjs) | [demo](https://codesandbox.io/s/immer-yjs-demo-6e0znb) |
@@ -298,8 +299,13 @@ An architecture to relay end-to-end encrypted CRDTs over a central service.
   <dd>
     Sync Yjs over <a href="https://electric-sql.com/">ElectricSQL</a>.
   </dd>
-  <dt><a href="https://github.com/TimoWilhelm/yjs-cf-ws-provider">yjs-cf-ws-provider</a></dt><dd>
+  <dt><a href="https://github.com/TimoWilhelm/yjs-cf-ws-provider">yjs-cf-ws-provider</a></dt>
+  <dd>
     Cloudflare provider for Yjs based on durable objects.
+  </dd>
+  <dt><a href="https://github.com/yousefED/nostr-crdt">nostr-crdt</a></dt>
+  <dd>
+    Sync Yjs over <a href="https://github.com/nostr-protocol/">nostr</a>.
   </dd>
 </dl>
 
