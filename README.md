@@ -163,6 +163,7 @@ are implemented in separate modules.
 | [BlockSuite](https://github.com/toeverything/blocksuite) | ✔ | (native) | [demo](https://blocksuite-toeverything.vercel.app/?init) |
 | [Lexical](https://lexical.dev/) | ✔ | (native) | [demo](https://lexical.dev/docs/collaboration/react#see-it-in-action) |
 | [BlockNote](https://www.blocknotejs.org/docs/collaboration/real-time-collaboration) | ✔ | [y-prosemirror](https://github.com/yjs/y-prosemirror) | [demo](https://www.blocknotejs.org/docs/collaboration/real-time-collaboration) |
+| [Milkdown](https://github.com/Milkdown/milkdown) | ✔ | [y-prosemirror](https://github.com/yjs/y-prosemirror) | [demo](https://milkdown.dev/playground) |
 | [Superdoc](https://superdoc.dev/) | ✔ | (native) | [demo](https://superdoc.dev/) |
 | [valtio](https://github.com/pmndrs/valtio) |  | [valtio-yjs](https://github.com/dai-shi/valtio-yjs) | [demo](https://codesandbox.io/s/valtio-yjs-demo-ox3iy) |
 | [immer](https://github.com/immerjs/immer) |  | [immer-yjs](https://github.com/sep2/immer-yjs) | [demo](https://codesandbox.io/s/immer-yjs-demo-6e0znb) |
