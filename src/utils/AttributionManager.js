@@ -77,7 +77,7 @@ export const createAttributionFromAttributionItems = (attrs, deleted) => {
         // eslint-disable-next-line no-fallthrough
       case 'insert':
       case 'delete': {
-        const as = /** @type {import('../utils/Delta.js').Attribution} */ (attribution)
+        const as = /** @type {import('../utils/Delta.js').Attribution_} */ (attribution)
         const ls = as[attr.name] = as[attr.name] ?? []
         ls.push(attr.val)
         break

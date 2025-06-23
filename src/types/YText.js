@@ -1090,7 +1090,7 @@ export class YText extends AbstractType {
             // # Update Attributions
             if (attribution != null || object.hasProperty(previousUnattributedAttributes, key)) {
               /**
-               * @type {import('../utils/Delta.js').Attribution}
+               * @type {import('../utils/AttributionManager.js').Attribution}
                */
               const formattingAttribution = object.assign({}, d.usedAttribution)
               const changedAttributedAttributes = /** @type {{ [key: string]: Array<any> }} */ (formattingAttribution.attributes = object.assign({}, formattingAttribution.attributes ?? {}))

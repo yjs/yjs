@@ -19,6 +19,7 @@ export * from './utils/YEvent.js'
 export * from './utils/StructSet.js'
 export * from './utils/IdMap.js'
 export * from './utils/AttributionManager.js'
+export * from './utils/Delta.js'
 
 export * from './types/AbstractType.js'
 export * from './types/YArray.js'

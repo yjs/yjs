@@ -1,19 +1,10 @@
 import {
-  Item, AbstractType, Transaction, AbstractStruct // eslint-disable-line
+  TextDelta, Item, AbstractType, Transaction, AbstractStruct // eslint-disable-line
 } from '../internals.js'
 
 import * as set from 'lib0/set'
 import * as array from 'lib0/array'
 import * as error from 'lib0/error'
-
-/**
- * @template {object} Embed
- * @typedef {import('../utils/Delta.js').TextDelta<Embed>} TextDelta
- */
-
-/**
- * @typedef {import('../utils/Delta.js').Delta} Delta
- */
 
 const errorComputeChanges = 'You must not compute changes after the event-handler fired.'
 
@@ -151,7 +142,7 @@ export class YEvent {
    * unexpected behavior (incorrect computation of deltas). A safe way to collect changes
    * is to store the `changes` or the `delta` object. Avoid storing the `transaction` object.
    *
-   * @type {Delta}
+   * @type {import('./Delta.js').Delta}
    */
   get delta () {
     return this.changes.delta
@@ -175,7 +166,7 @@ export class YEvent {
    * unexpected behavior (incorrect computation of deltas). A safe way to collect changes
    * is to store the `changes` or the `delta` object. Avoid storing the `transaction` object.
    *
-   * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:Delta}}
+   * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:import('./Delta.js').Delta}}
    */
   get changes () {
     let changes = this._changes

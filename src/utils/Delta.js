@@ -20,7 +20,7 @@ import * as error from 'lib0/error'
  */
 
 /**
- * @typedef {import('./AttributionManager.js').Attribution} Attribution
+ * @typedef {import('./AttributionManager.js').Attribution} Attribution_
  */
 
 /**
@@ -32,14 +32,14 @@ import * as error from 'lib0/error'
  */
 
 /**
- * @typedef {{ insert: string|object, attributes?: { [key: string]: any }, attribution?: Attribution } | { delete: number } | { retain: number, attributes?: { [key:string]: any }, attribution?: Attribution }} DeltaJsonOp
+ * @typedef {{ insert: string|object, attributes?: { [key: string]: any }, attribution?: Attribution_ } | { delete: number } | { retain: number, attributes?: { [key:string]: any }, attribution?: Attribution_ }} DeltaJsonOp
  */
 
 export class InsertStringOp {
   /**
    * @param {string} insert
    * @param {FormattingAttributes|null} attributes
-   * @param {Attribution|null} attribution
+   * @param {Attribution_|null} attribution
    */
   constructor (insert, attributes, attribution) {
     this.insert = insert
@@ -73,7 +73,7 @@ export class InsertArrayOp {
   /**
    * @param {Array<ArrayContent>} insert
    * @param {FormattingAttributes|null} attributes
-   * @param {Attribution|null} attribution
+   * @param {Attribution_|null} attribution
    */
   constructor (insert, attributes, attribution) {
     this.insert = insert
@@ -107,7 +107,7 @@ export class InsertEmbedOp {
   /**
    * @param {Embeds} insert
    * @param {FormattingAttributes|null} attributes
-   * @param {Attribution|null} attribution
+   * @param {Attribution_|null} attribution
    */
   constructor (insert, attributes, attribution) {
     this.insert = insert
@@ -165,7 +165,7 @@ export class RetainOp {
   /**
    * @param {number} retain
    * @param {FormattingAttributes|null} attributes
-   * @param {Attribution|null} attribution
+   * @param {Attribution_|null} attribution
    */
   constructor (retain, attributes, attribution) {
     this.retain = retain
@@ -286,7 +286,7 @@ export class DeltaBuilder extends AbstractDelta {
      */
     this.usedAttributes = null
     /**
-     * @type {Attribution?}
+     * @type {Attribution_?}
      */
     this.usedAttribution = null
     /**
@@ -323,9 +323,9 @@ export class DeltaBuilder extends AbstractDelta {
   }
 
   /**
-   * @template {keyof Attribution} NAME
+   * @template {keyof Attribution_} NAME
    * @param {NAME} name
-   * @param {Attribution[NAME]?} value
+   * @param {Attribution_[NAME]?} value
    */
   updateUsedAttribution (name, value) {
     if (value == null) {
@@ -342,7 +342,7 @@ export class DeltaBuilder extends AbstractDelta {
   }
 
   /**
-   * @param {Attribution?} attribution
+   * @param {Attribution_?} attribution
    */
   useAttribution (attribution) {
     this.usedAttribution = attribution
@@ -352,7 +352,7 @@ export class DeltaBuilder extends AbstractDelta {
   /**
    * @param {(TDeltaOp extends InsertStringOp ? string : never) | (TDeltaOp extends InsertEmbedOp<infer Embeds> ? (Embeds) : never) | (TDeltaOp extends InsertArrayOp<infer Content> ? Array<Content> : never) } insert
    * @param {FormattingAttributes?} attributes
-   * @param {Attribution?} attribution
+   * @param {Attribution_?} attribution
    * @return {this}
    */
   insert (insert, attributes = null, attribution = null) {
@@ -377,7 +377,7 @@ export class DeltaBuilder extends AbstractDelta {
   /**
    * @param {number} retain
    * @param {FormattingAttributes?} attributes
-   * @param {Attribution?} attribution
+   * @param {Attribution_?} attribution
    * @return {this}
    */
   retain (retain, attributes = null, attribution = null) {
