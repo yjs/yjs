@@ -120,7 +120,7 @@
         "guid": "silver-sponsor",
         "status": "active",
         "name": "Silver Sponsor",
-        "description": "This is the recommended plan for large/successfull companies that use Yjs.",
+        "description": "This is the recommended plan for large/successful companies that use Yjs.",
         "amount": 1000,
         "currency": "USD",
         "frequency": "monthly",
