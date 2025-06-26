@@ -362,18 +362,19 @@ export const testObserveDeepEventOrder = tc => {
  */
 export const testObservedeepIndexes = _tc => {
   const doc = new Y.Doc()
+    /** @type Y.Map<{ 'my-array': Y.Array<any> }> */
   const map = doc.getMap()
   // Create a field with the array as value
   map.set('my-array', new Y.Array())
   // Fill the array with some strings and our Map
-  map.get('my-array').push(['a', 'b', 'c', new Y.Map()])
+  map.get('my-array')?.push(['a', 'b', 'c', new Y.Map()])
   /**
    * @type {Array<any>}
    */
   let eventPath = []
   map.observeDeep((events) => { eventPath = events[0].path })
   // set a value on the map inside of our array
-  map.get('my-array').get(3).set('hello', 'world')
+  map.get('my-array')?.get(3).set('hello', 'world')
   console.log(eventPath)
   t.compare(eventPath, ['my-array', 3])
 }
@@ -496,9 +497,11 @@ export const testEventTargetIsSetCorrectlyOnRemote = tc => {
  */
 export const testIteratingArrayContainingTypes = tc => {
   const y = new Y.Doc()
+  /** @type {Y.Array<Y.Map<{ value: number }>>} */
   const arr = y.getArray('arr')
   const numItems = 10
   for (let i = 0; i < numItems; i++) {
+    /** @type {Y.Map<{ value: number }>} */
     const map = new Y.Map()
     map.set('value', i)
     arr.push([map])
@@ -532,20 +535,22 @@ const arrayTransactions = [
     t.compareArrays(yarray.toArray(), oldContent) // we want to make sure that fastSearch markers insert at the correct position
   },
   function insertTypeArray (user, gen) {
+    /** @type {Y.Array<Y.Array<number>>} */
     const yarray = user.getArray('array')
     const pos = prng.int32(gen, 0, yarray.length)
     yarray.insert(pos, [new Y.Array()])
     const array2 = yarray.get(pos)
-    array2.insert(0, [1, 2, 3, 4])
+    array2?.insert(0, [1, 2, 3, 4])
   },
   function insertTypeMap (user, gen) {
+    /** @type {Y.Array<Y.Map<{ someprop: number }>>} */
     const yarray = user.getArray('array')
     const pos = prng.int32(gen, 0, yarray.length)
     yarray.insert(pos, [new Y.Map()])
     const map = yarray.get(pos)
-    map.set('someprop', 42)
-    map.set('someprop', 43)
-    map.set('someprop', 44)
+    map?.set('someprop', 42)
+    map?.set('someprop', 43)
+    map?.set('someprop', 44)
   },
   function insertTypeNull (user, gen) {
     const yarray = user.getArray('array')
@@ -688,4 +693,25 @@ export const testRepeatGeneratingYarrayTests5000 = tc => {
 export const testRepeatGeneratingYarrayTests30000 = tc => {
   t.skip(!t.production)
   applyRandomTests(tc, arrayTransactions, 30000)
+}
+
+/**
+ * Validate the public TypeScript API for Y.Array.
+ *
+ * @param {t.TestCase} tc
+ * @typedef {string | number | Array<boolean> | Y.Array<Uint8Array> | Y.Map<{ prop: number }>} ArrayType
+ */
+export const testPublicTypeInterface = tc => {
+  // Typed arrays
+
+  /** @type {Y.Array<ArrayType>} */
+  const array = new Y.Array();
+  /** @type {Array<string | number | Array<boolean> | Array<Uint8Array> | Partial<{prop: number;}>>} */
+  const json = array.toJSON();
+  /** @type {ArrayType | undefined} */
+  const maybeValue = array.get(5);
+
+  array.push(['love', 3, [true, false], new Y.Map()])
+  // @ts-expect-error: Type 'boolean' is not assignable to type 'ArrayType'.
+  array.push([true])
 }

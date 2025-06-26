@@ -14,7 +14,7 @@ import * as prng from 'lib0/prng'
 export const testIterators = _tc => {
   const ydoc = new Y.Doc()
   /**
-   * @type {Y.Map<number>}
+   * @type {Y.Map<Record<string, number>>}
    */
   const ymap = ydoc.getMap()
   // we are only checking if the type assumptions are correct
@@ -67,14 +67,16 @@ export const testMapHavingIterableAsConstructorParamTests = tc => {
   t.assert(m1.get('number') === 1)
   t.assert(m1.get('string') === 'hello')
 
+  /** @type {Y.Map<{ object: { x: number; }; boolean: boolean; }>} */
   const m2 = new Y.Map([
     ['object', { x: 1 }],
     ['boolean', true]
   ])
   map0.set('m2', m2)
-  t.assert(m2.get('object').x === 1)
+  t.assert(m2.get('object')?.x === 1)
   t.assert(m2.get('boolean') === true)
 
+  /** @type {Y.Map<any>} */
   const m3 = new Y.Map([...m1, ...m2])
   map0.set('m3', m3)
   t.assert(m3.get('number') === 1)
@@ -329,7 +331,7 @@ export const testGetAndSetAndDeleteOfMapPropertyWithThreeConflicts = tc => {
  */
 export const testObserveDeepProperties = tc => {
   const { testConnector, users, map1, map2, map3 } = init(tc, { users: 4 })
-  const _map1 = map1.set('map', new Y.Map())
+  const _map1 = map1.set('map', /** @type {Y.Map<{ deepmap: Y.Map<any> }>} */ (new Y.Map()))
   let calls = 0
   let dmapid
   map1.observeDeep(events => {
@@ -354,10 +356,10 @@ export const testObserveDeepProperties = tc => {
   const dmap2 = _map2.get('deepmap')
   const dmap3 = _map3.get('deepmap')
   t.assert(calls > 0)
-  t.assert(compareIDs(dmap1._item.id, dmap2._item.id))
-  t.assert(compareIDs(dmap1._item.id, dmap3._item.id))
+  t.assert(compareIDs(dmap1?._item?.id || null, dmap2._item.id))
+  t.assert(compareIDs(dmap1?._item?.id || null, dmap3._item.id))
   // @ts-ignore we want the possibility of dmapid being undefined
-  t.assert(compareIDs(dmap1._item.id, dmapid))
+  t.assert(compareIDs(dmap1?._item?.id || null, dmapid))
   compare(users)
 }
 
@@ -753,4 +755,152 @@ export const testRepeatGeneratingYmapTests10000 = tc => {
 export const testRepeatGeneratingYmapTests100000 = tc => {
   t.skip(!t.production)
   applyRandomTests(tc, mapTransactions, 100000)
+}
+
+/**
+ * Validate the public TypeScript API for Y.Map.
+ *
+ * @param {t.TestCase} tc
+ * @typedef {{foo: string; bar: number | null; baz?: boolean;}} MyType
+ * @typedef {{n: null; b: boolean; s: string; i: number; u: Uint8Array; a: null | boolean | string | number | Uint8Array[];}} ComplexType
+ */
+export const testPublicTypeInterface = tc => {
+  /*
+   * Typed maps
+   *
+   * - Key names are autocompleted in first parameter of `get` and `set`.
+   * - `MapType` value types are constrained to valid Y.Map contents.
+   */
+
+  // Constructor argument keys & values are typechecked, and keys are autocompleted.
+  // Multiple items for each key and partial initialization are allowed.
+  /** @type {Y.Map<MyType>} */
+  const map = new Y.Map([
+    ["foo", ""],
+    ["foo", "even better"],
+    // @ts-expect-error: Type '["baz", number]' is not assignable to type '["foo", string] | ["bar", number | null] | ["baz", boolean | undefined]'.
+    ["baz", 3],
+  ]);
+
+  // Entries are allowed to be omitted, so get() still returns <type> | undefined.
+  /** @type {Y.Map<MyType>} */
+  const defaultMap = new Y.Map();
+
+  /** @type {Partial<MyType>} */
+  const json = defaultMap.toJSON();
+
+  /** @type {IteratorResult<["foo", string] | ["bar", number | null] | ["baz", boolean | undefined], any>} */
+  const firstEntry = defaultMap.entries().next();
+
+  for (const entry of defaultMap) {
+    /** @type {"foo" | "bar" | "baz"} */
+    const key = entry[0];
+    /** @type {string | number | boolean | null | undefined} */
+    const broadValue = entry[1];
+
+    if (entry[0] === 'bar') {
+      // Type of the value is narrowed by comparison to the key
+      /** @type {number | null} */
+      const narrowValue = entry[1];
+    }
+  }
+
+  for (const key of defaultMap.keys()) {
+    /** @type {'foo' | 'bar' | 'baz'} */
+    const typedKey = key;
+  }
+  for (const value of defaultMap.values()) {
+    /** @type {string | number | boolean | null | undefined}  */
+    const typedValue = value;
+  }
+
+  /** @type {string | undefined} */
+  const fooValue = map.get("foo");
+  /** @type {"hi"} */
+  const fooSet = map.set("foo", "hi");
+  /** @type {number | null | undefined} */
+  const barValue = map.get("bar");
+  // @ts-expect-error: Argument of type '"hi"' is not assignable to parameter of type 'number | null'.
+  const barSet = map.set("bar", "hi");
+  // @ts-expect-error: Argument of type '"bomb"' is not assignable to parameter of type 'keyof MyType'.
+  const missingGet = map.get("bomb");
+  // Escape hatch: get<any>()
+  // Not sure how to test since JSDoc doesn't support function generic parameters
+  // const migrateGet = map.get<any>("extraneousKey");
+
+  // @ts-expect-error: Type '{ invalid: () => void; }' does not satisfy the constraint 'Record<string, SerializableValue>'.
+  /** @typedef {Y.Map<{ invalid: () => void }>} */
+  const invalidMap = new Y.Map();
+
+  // @ts-expect-error: Type '{ invalid: Blob; }' does not satisfy the constraint 'Record<string, SerializableValue>'.
+  /** @typedef {Y.Map<{ invalid: Blob }>} */
+  const invalidMap2 = new Y.Map();
+
+  // Arbitrarily complex valid types are still allowed
+  /** @type {Y.Map<ComplexType & {
+   *  map: Y.Map<MyType>;
+   *  array: Y.Array<string | number>;
+   *  text: Y.Text;
+   *  nested: ComplexType & { deeper: ComplexType[] } }>} */
+  const complexValidType = new Y.Map();
+  // AbstractTypes are mapped to their toJSON return type when directly nested.
+  /** @type {Partial<{
+    n: null;
+    b: boolean;
+    s: string;
+    i: number;
+    u: Uint8Array;
+    a: null | boolean | string | number | Uint8Array[];
+    map: Partial<MyType>;
+    text: string;
+    array: (string | number)[];
+    nested: ComplexType & {
+        deeper: ComplexType[];
+    };
+  }>} */
+  const complexValidJson = complexValidType.toJSON()
+
+
+  /*
+   * Default behavior
+   *
+   * Provides basic typechecking over the range of possible map values.
+   */
+  /** @type {Y.Map<Record<String, import('../src/internals.js').SerializableValue>>} */
+  const untyped = new Y.Map();
+
+  /** @type {import('../src/internals.js').SerializableValue | undefined} */
+  const boop = untyped.get("default");
+  // @ts-expect-error: Still validates value types: ERROR: Argument of type '() => string' is not assignable to parameter of type 'SerializableValue'.
+  const moop = untyped.set("anything", () => "whoops");
+
+  for (const entry of untyped) {
+    /** @type {string} */
+    const key = entry[0];
+    /** @type {import('../src/internals.js').SerializableValue} */
+    const broadValue = entry[1];
+  }
+
+  for (const key of untyped.keys()) {
+    /** @type {string} */
+    const typedKey = key;
+  }
+  for (const value of untyped.values()) {
+    /** @type {import('../src/internals.js').SerializableValue}  */
+    const typedValue = value;
+  }
+
+  /*
+   * `any` maps (bypass typechecking)
+   */
+  /** @type {Y.Map<any>} */
+  const anyMap = new Y.Map();
+
+  /** @type {any} */
+  const fooValueAny = anyMap.get("foo");
+  /** @type {"hi"} */
+  const fooSetAny = anyMap.set("foo", "hi");
+  // Allowed because `any` unlocks cowboy mode
+  /** @type {() => "hi"} */
+  const barSetAny = anyMap.set("bar", () => "hi");
 }
