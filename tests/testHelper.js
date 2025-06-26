@@ -227,7 +227,7 @@ export class TestConnector {
   }
 
   /**
-   * @return {boolean} Whether it was possible to disconnect a randon connection.
+   * @return {boolean} Whether it was possible to disconnect a random connection.
    */
   disconnectRandom () {
     if (this.onlineConns.size === 0) {
