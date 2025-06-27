@@ -12,6 +12,7 @@ import * as math from 'lib0/math'
 import * as map from 'lib0/map'
 import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
+import * as error from 'lib0/error'
 
 export class DeleteItem {
   /**
@@ -276,50 +277,160 @@ export const readDeleteSet = decoder => {
  * @function
  */
 export const readAndApplyDeleteSet = (decoder, transaction, store) => {
+  const Op = { Add2Ds: 0, Splice: 1, Delete: 2 }
   const unappliedDS = new DeleteSet()
   const numClients = decoding.readVarUint(decoder.restDecoder)
+
   for (let i = 0; i < numClients; i++) {
     decoder.resetDsCurVal()
     const client = decoding.readVarUint(decoder.restDecoder)
     const numberOfDeletes = decoding.readVarUint(decoder.restDecoder)
     const structs = store.clients.get(client) || []
     const state = getState(store, client)
+    const add2DSOps = []
+    const spliceOps = []
+    const deleteOps = []
+    const structsDeleted = new Set()
+    const ops = []
     for (let i = 0; i < numberOfDeletes; i++) {
       const clock = decoder.readDsClock()
       const clockEnd = clock + decoder.readDsLen()
       if (clock < state) {
         if (state < clockEnd) {
-          addToDeleteSet(unappliedDS, client, state, clockEnd - state)
+          ops.push(Op.Add2Ds, add2DSOps.length)
+          add2DSOps.push({ c: state, l: clockEnd - state })
         }
-        let index = findIndexSS(structs, clock)
-        /**
-         * We can ignore the case of GC and Delete structs, because we are going to skip them
-         * @type {Item}
-         */
-        // @ts-ignore
-        let struct = structs[index]
-        // split the first item if necessary
-        if (!struct.deleted && struct.id.clock < clock) {
-          structs.splice(index + 1, 0, splitItem(transaction, struct, clock - struct.id.clock))
-          index++ // increase we now want to use the next struct
+
+        let index = -1
+        let struct = /** @type {Item} */ (structs[index])
+        let isNewlyAddedStruct = false
+
+        // Delete may occur within new added structs, check it first. Since all
+        // deletes occur in ascending clock order without overlap, it's reasonably
+        // only check the latest one
+        if (spliceOps.length) {
+          const { t, i } = spliceOps[spliceOps.length - 1]
+          if (clock > t.id.clock && clock < t.id.clock + t.length) {
+            struct = t
+            index = i
+            isNewlyAddedStruct = true
+          }
         }
-        while (index < structs.length) {
+
+        if (index === -1) {
+          index = findIndexSS(structs, clock)
+          /**
+           * We can ignore the case of GC and Delete structs, because we are going to skip them
+           * @type {Item}
+           */
           // @ts-ignore
-          struct = structs[index++]
-          if (struct.id.clock < clockEnd) {
-            if (!struct.deleted) {
-              if (clockEnd < struct.id.clock + struct.length) {
-                structs.splice(index, 0, splitItem(transaction, struct, clockEnd - struct.id.clock))
-              }
-              struct.delete(transaction)
+          struct = structs[index]
+          isNewlyAddedStruct = false
+        }
+
+        // split the first item if necessary
+        if (!struct.deleted && !structsDeleted.has(struct.id.clock) && struct.id.clock < clock) {
+          const newItem = splitItem(transaction, struct, clock - struct.id.clock)
+          ops.push(Op.Splice, spliceOps.length)
+          spliceOps.push({ i: index + 1, t: newItem })
+          struct = newItem
+          // index only increased if the struct comes from store structs, if it comes from
+          // newly added struct in spliceOps, then the struct under index in store 
+          // structs hasn't been processed
+          if (!isNewlyAddedStruct) {
+            index++ // increase we now want to use the next struct
+          }
+        }
+        
+        while (struct && struct.id.clock < clockEnd) {
+          if (!struct.deleted && !structsDeleted.has(struct.id.clock)) {
+            if (clockEnd < struct.id.clock + struct.length) {
+              const newItem = splitItem(transaction, struct, clockEnd - struct.id.clock)
+              ops.push(Op.Splice, spliceOps.length)
+              spliceOps.push({ i: index, t: newItem })
+
+              ops.push(Op.Delete, deleteOps.length)
+              deleteOps.push(struct)
+              // Temporally mark struct as deleted, it hasn't been deleted yet.
+              structsDeleted.add(struct.id.clock)
+
+              struct = newItem
+            } else {
+              ops.push(Op.Delete, deleteOps.length)
+              deleteOps.push(struct)
+              structsDeleted.add(struct.id.clock)
+              // @ts-ignore
+              struct = structs[index++]
             }
           } else {
-            break
+            // @ts-ignore
+            struct = structs[index++]
           }
         }
       } else {
-        addToDeleteSet(unappliedDS, client, clock, clockEnd - clock)
+        ops.push(Op.Add2Ds, add2DSOps.length)
+        add2DSOps.push({ c: clock, l: clockEnd - clock })
       }
+    }
+
+    // Rebuild structs from ops
+    const oldStructs = structs.slice()
+    let structCursor = 0
+    let opCursor = 0
+    const oLen = oldStructs.length
+    const opLen = ops.length - 1
+    structs.length = 0
+
+    // Copy all structs and execute ops in order
+    while (structCursor < oLen && opCursor < opLen) {
+      const oldItem = oldStructs[structCursor++]
+      const oldItemClock = oldItem.id.clock
+      while (opCursor < opLen) {
+        const t = ops[opCursor]
+        const i = ops[opCursor + 1]
+        if (t === Op.Add2Ds) {
+          const item = add2DSOps[i]
+          addToDeleteSet(unappliedDS, client, item.c, item.l)
+        } else if (t === Op.Splice) {
+          const item = spliceOps[i].t
+          if (item.id.clock < oldItemClock) {
+            structs.push(item)
+          } else {
+            break
+          }
+        } else if (t === Op.Delete) {
+          const struct = deleteOps[i]
+          struct.delete(transaction)
+        } else {
+          error.unexpectedCase()
+        }
+        opCursor += 2
+      }
+      structs.push(oldItem)
+    }
+
+    // Copy remaining structs and execute remaining ops in order
+    while (opCursor < opLen) {
+      const t = ops[opCursor]
+      const i = ops[opCursor + 1]
+      if (t === Op.Add2Ds) {
+        const item = add2DSOps[i]
+        addToDeleteSet(unappliedDS, client, item.c, item.l)
+      } else if (t === Op.Splice) {
+        const item = spliceOps[i].t
+        structs.push(item)
+      } else if (t === Op.Delete) {
+        const struct = deleteOps[i]
+        struct.delete(transaction)
+      } else {
+        error.unexpectedCase()
+      }
+      opCursor += 2
+    }
+
+    // Copy remaining old structs
+    while (structCursor < oLen) {
+      structs.push(oldStructs[structCursor++])
     }
   }
   if (unappliedDS.clients.size > 0) {
