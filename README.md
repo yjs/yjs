@@ -255,6 +255,14 @@ A standalone extensible yjs server with sqlite persistence, webhooks, auth and m
   <dd>
 Cloud service for building multiplayer apps.
   </dd>
+  </dd>
+    <dt><a href="https://github.com/pluv-io/pluv">@pluv/crdt-yjs</a></dt>
+  <dd>
+Use <a href="https://pluv.io/docs/storage/using-yjs">pluv.io</a> as a
+full-featured backend for Yjs. pluv.io can either be be used on its
+fully-managed WebSocket infrastructure, or self-hosted on Cloudflare Workers
+and Node.js runtimes. Offers a typesafe API with authentication, webhooks,
+rooms, and more.
   <dt><a href="https://github.com/marcopolo/y-libp2p">y-libp2p</a></dt>
   <dd>
 Uses <a href="https://libp2p.io/">libp2p</a> to propagate updates via
