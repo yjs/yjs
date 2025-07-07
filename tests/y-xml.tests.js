@@ -207,7 +207,7 @@ export const testFormattingBug = _tc => {
     { insert: 'C', attributes: { em: {}, strong: {} } }
   ]
   yxml.applyDelta(delta)
-  t.compare(yxml.getContent().toJSON(), delta)
+  t.compare(yxml.getDelta().toJSON(), delta)
 }
 
 /**
@@ -244,10 +244,10 @@ export const testFragmentAttributedContent = _tc => {
       yfragment.insert(1, [elem3])
     })
     const expectedContent = delta.createArrayDelta().insert([elem1], null, { delete: [] }).insert([elem2]).insert([elem3], null, { insert: [] })
-    const attributedContent = yfragment.getContent(attributionManager)
+    const attributedContent = yfragment.getDelta(attributionManager)
     console.log(attributedContent.children.toJSON())
     t.assert(attributedContent.children.equals(expectedContent))
-    t.compare(elem1.getContent(attributionManager).toJSON(), delta.createTextDelta().insert('hello', null, { delete: [] }).done().toJSON())
+    t.compare(elem1.getDelta(attributionManager).toJSON(), delta.createTextDelta().insert('hello', null, { delete: [] }).done().toJSON())
   })
 }
 
@@ -273,7 +273,7 @@ export const testElementAttributedContent = _tc => {
       yelement.setAttribute('key', '42')
     })
     const expectedContent = delta.createArrayDelta().insert([elem1], null, { delete: [] }).insert([elem2]).insert([elem3], null, { insert: [] })
-    const attributedContent = yelement.getContent(attributionManager)
+    const attributedContent = yelement.getDelta(attributionManager)
     console.log('children', attributedContent.children.toJSON())
     console.log('attributes', attributedContent.attributes)
     t.assert(attributedContent.children.equals(expectedContent))

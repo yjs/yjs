@@ -529,7 +529,7 @@ export const testAttributedContent = _tc => {
       yarray.insert(1, [42])
     })
     const expectedContent = delta.createArrayDelta().insert([1], null, { delete: [] }).insert([2]).insert([42], null, { insert: [] })
-    const attributedContent = yarray.getContent(attributionManager)
+    const attributedContent = yarray.getDelta(attributionManager)
     console.log(attributedContent.toJSON())
     t.assert(attributedContent.equals(expectedContent))
   })

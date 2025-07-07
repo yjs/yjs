@@ -11,7 +11,7 @@ import {
   typeMapGetAllSnapshot,
   typeListForEach,
   YXmlElementRefID,
-  typeMapGetContent,
+  typeMapGetDelta,
   noAttributionsManager,
   AbstractAttributionManager, Snapshot, YXmlText, ContentType, AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item, // eslint-disable-line
 } from '../internals.js'
@@ -223,7 +223,7 @@ export class YXmlElement extends YXmlFragment {
    * @public
    */
   getContentDeep (am = noAttributionsManager) {
-    const { children: origChildren, attributes: origAttributes } = this.getContent(am)
+    const { children: origChildren, attributes: origAttributes } = this.getDelta(am)
     const children = origChildren.map(d => /** @type {any} */ (
       (d instanceof delta.InsertArrayOp && d.insert instanceof Array)
         ? new delta.InsertArrayOp(d.insert.map(e => e instanceof AbstractType ? /** @type {delta.ArrayDelta<Array<any>>} */ (e.getContentDeep(am)) : e), d.attributes, d.attribution)
@@ -231,9 +231,9 @@ export class YXmlElement extends YXmlFragment {
     ))
     /**
      * @todo there is a Attributes type and a DeepAttributes type.
-     * @type {import('./AbstractType.js').MapAttributedContent<any>}
+     * @type {delta.MapDelta<>}
      */
-    const attributes = {}
+    const attributes = delta.createMapDelta()
     object.forEach(origAttributes, (v, key) => {
       attributes[key] = Object.assign({}, v, { value: v.value instanceof AbstractType ? v.value.getContentDeep(am) : v.value })
     })
@@ -251,10 +251,10 @@ export class YXmlElement extends YXmlFragment {
    *
    * @public
    */
-  getContent (am = noAttributionsManager) {
-    const attributes = typeMapGetContent(this, am)
-    const { children } = super.getContent(am)
-    return { nodeName: this.nodeName, children, attributes }
+  getDelta (am = noAttributionsManager) {
+    const { children } = super.getDelta(am)
+    const attributes = typeMapGetDelta(this, am)
+    return new delta.XmlDelta(this.nodeName, children, attributes)
   }
 
   /**

@@ -11,7 +11,7 @@ export const testInconsistentFormat = () => {
     const content = /** @type {Y.XmlText} */ (ydoc.get('text', Y.XmlText))
     content.format(0, 6, { bold: null })
     content.format(6, 4, { type: 'text' })
-    t.compare(content.getContent(), delta.fromJSON([
+    t.compare(content.getDelta(), delta.fromJSON([
       {
         attributes: { type: 'text' },
         insert: 'Merge Test'
@@ -94,11 +94,11 @@ export const testUndoText = tc => {
   t.assert(text0.toString() === 'bcxyz')
   // test marks
   text0.format(1, 3, { bold: true })
-  t.compare(text0.getContent(), delta.fromJSON([{ insert: 'b' }, { insert: 'cxy', attributes: { bold: true } }, { insert: 'z' }]))
+  t.compare(text0.getDelta(), delta.fromJSON([{ insert: 'b' }, { insert: 'cxy', attributes: { bold: true } }, { insert: 'z' }]))
   undoManager.undo()
-  t.compare(text0.getContent(), delta.fromJSON([{ insert: 'bcxyz' }]))
+  t.compare(text0.getDelta(), delta.fromJSON([{ insert: 'bcxyz' }]))
   undoManager.redo()
-  t.compare(text0.getContent(), delta.fromJSON([{ insert: 'b' }, { insert: 'cxy', attributes: { bold: true } }, { insert: 'z' }]))
+  t.compare(text0.getDelta(), delta.fromJSON([{ insert: 'b' }, { insert: 'cxy', attributes: { bold: true } }, { insert: 'z' }]))
 }
 
 /**
@@ -694,8 +694,8 @@ export const testUndoDeleteTextFormat = _tc => {
     },
     { insert: ' off the shoulder of Orion.' }
   ])
-  t.compare(text.getContent(), expect)
-  t.compare(text2.getContent(), expect)
+  t.compare(text.getDelta(), expect)
+  t.compare(text2.getDelta(), expect)
 }
 
 /**
