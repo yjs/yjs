@@ -40,7 +40,7 @@ export class YXmlText extends YText {
    */
   clone () {
     const text = new YXmlText()
-    text.applyDelta(this.getContent())
+    text.applyDelta(this.getDelta())
     return text
   }
 
@@ -68,7 +68,7 @@ export class YXmlText extends YText {
   }
 
   toString () {
-    return this.getContent().ops.map(dop => {
+    return this.getDelta().ops.map(dop => {
       if (dop instanceof delta.InsertStringOp) {
         const nestedNodes = []
         for (const nodeName in dop.attributes) {

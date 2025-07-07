@@ -789,7 +789,7 @@ export class YText extends AbstractType {
      * @type {YText<Embeds>}
      */
     const text = new YText()
-    text.applyDelta(this.getContent())
+    text.applyDelta(this.getDelta())
     return text
   }
 
@@ -887,21 +887,11 @@ export class YText extends AbstractType {
    * @public
    */
   getContentDeep (am = noAttributionsManager) {
-    return this.getContent(am).map(d =>
+    return this.getDelta(am).map(d =>
       d instanceof delta.InsertEmbedOp && d.insert instanceof AbstractType
-        ? new delta.InsertEmbedOp(d.insert.getContent(am), d.attributes, d.attribution)
+        ? new delta.InsertEmbedOp(d.insert.getDelta(am), d.attributes, d.attribution)
         : d
     )
-  }
-
-  /**
-   * @param {AbstractAttributionManager} am
-   * @return {import('../utils/Delta.js').TextDelta<Embeds>} The Delta representation of this type.
-   *
-   * @public
-   */
-  getContent (am = noAttributionsManager) {
-    return this.getDelta(am)
   }
 
   /**
@@ -1301,7 +1291,7 @@ export class YText extends AbstractType {
    * @param {this} other
    */
   [traits.EqualityTraitSymbol] (other) {
-    return this.getContent().equals(other.getContent())
+    return this.getDelta().equals(other.getDelta())
   }
 }
 

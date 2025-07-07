@@ -224,7 +224,7 @@ export class YArray extends AbstractType {
    * @public
    */
   getContentDeep (am = noAttributionsManager) {
-    return this.getContent(am).map(d => /** @type {any} */ (
+    return this.getDelta(am).map(d => /** @type {any} */ (
       d instanceof delta.InsertArrayOp && d.insert instanceof Array
         ? new delta.InsertArrayOp(d.insert.map(e => e instanceof AbstractType ? e.getContentDeep(am) : e), d.attributes, d.attribution)
         : d
@@ -243,7 +243,7 @@ export class YArray extends AbstractType {
    *
    * @public
    */
-  getContent (am = noAttributionsManager) {
+  getDelta (am = noAttributionsManager) {
     return typeListGetContent(this, am)
   }
 

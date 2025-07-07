@@ -417,7 +417,7 @@ export class AbstractType {
    * @param {AbstractAttributionManager} _am
    * @return {any}
    */
-  getContent (_am) {
+  getDelta (_am) {
     error.methodUnimplemented()
   }
 
@@ -981,11 +981,6 @@ export const typeMapGetAll = (parent) => {
 }
 
 /**
- * @template MapType
- * @typedef {{ [key: string]: { prevValue: MapType | undefined, value: MapType | undefined, attribution: any } }} MapAttributedContent
- */
-
-/**
  * Render the difference to another ydoc (which can be empty) and highlight the differences with
  * attributions.
  *
@@ -995,16 +990,12 @@ export const typeMapGetAll = (parent) => {
  * @template MapType
  * @param {AbstractType<any>} parent
  * @param {import('../internals.js').AbstractAttributionManager} am
- * @return {MapAttributedContent<MapType>} The Delta representation of this type.
  *
  * @private
  * @function
  */
-export const typeMapGetContent = (parent, am) => {
-  /**
-   * @type {MapAttributedContent<MapType>}
-   */
-  const mapcontent = {}
+export const typeMapGetDelta = (parent, am) => {
+  const mapdelta = /** @type {delta.MapDeltaBuilder<{ [key:string]: MapType }>} */ (delta.createMapDelta())
   parent.doc ?? warnPrematureAccess()
   parent._map.forEach((item, key) => {
     /**
@@ -1016,7 +1007,7 @@ export const typeMapGetContent = (parent, am) => {
     const c = array.last(content.getContent())
     const attribution = createAttributionFromAttributionItems(attrs, deleted)
     if (deleted) {
-      mapcontent[key] = { prevValue: c, value: undefined, attribution }
+      mapdelta.delete(key, c, attribution)
     } else {
       /**
        * @type {Array<import('../internals.js').AttributedContent<any>>}
@@ -1038,10 +1029,10 @@ export const typeMapGetContent = (parent, am) => {
         }
       }
       const prevValue = cs.length > 0 ? array.last(cs[0].content.getContent()) : undefined
-      mapcontent[key] = { prevValue, value: c, attribution }
+      mapdelta.set(key, c, prevValue, attribution)
     }
   })
-  return mapcontent
+  return mapdelta
 }
 
 /**

@@ -13,9 +13,9 @@ import {
   YMapRefID,
   callTypeObservers,
   transact,
-  typeMapGetContent,
+  typeMapGetDelta,
   warnPrematureAccess,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
+  MapDelta, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 
 import * as iterator from 'lib0/iterator'
@@ -195,12 +195,12 @@ export class YMap extends AbstractType {
    * attribution `{ isDeleted: true, .. }`.
    *
    * @param {import('../internals.js').AbstractAttributionManager} am
-   * @return {import('./AbstractType.js').MapAttributedContent<MapType>} The Delta representation of this type.
+   * @return {MapDelta<{[key:string]: MapType}>} The Delta representation of this type.
    *
    * @public
    */
-  getContent (am) {
-    return typeMapGetContent(this, am)
+  getDelta (am) {
+    return typeMapGetDelta(this, am)
   }
 
   /**
