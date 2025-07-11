@@ -39,7 +39,7 @@ export class YEvent {
      */
     this._changes = null
     /**
-     * @type {null | Map<string, { action: 'add' | 'update' | 'delete', oldValue: any, newValue: any }>}
+     * @type {null | Map<string, { action: 'add' | 'update' | 'delete', oldValue: any }>}
      */
     this._keys = null
     /**
@@ -82,7 +82,7 @@ export class YEvent {
   }
 
   /**
-   * @type {Map<string, { action: 'add' | 'update' | 'delete', oldValue: any, newValue: any }>}
+   * @type {Map<string, { action: 'add' | 'update' | 'delete', oldValue: any }>}
    */
   get keys () {
     if (this._keys === null) {
