@@ -45,6 +45,7 @@ import * as binary from 'lib0/binary'
 import * as map from 'lib0/map'
 import * as math from 'lib0/math'
 import * as array from 'lib0/array'
+import { assertMaxGCLength, assertMaxSkipLength, assertMaxStructs, assertMaxUpdates } from './limits.js'
 
 /**
  * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
@@ -115,8 +116,10 @@ export const readClientsStructRefs = (decoder, doc) => {
    */
   const clientRefs = map.create()
   const numOfStateUpdates = decoding.readVarUint(decoder.restDecoder)
+  assertMaxUpdates(numOfStateUpdates)
   for (let i = 0; i < numOfStateUpdates; i++) {
     const numberOfStructs = decoding.readVarUint(decoder.restDecoder)
+    assertMaxStructs(numberOfStructs)
     /**
      * @type {Array<GC|Item>}
      */
@@ -130,6 +133,7 @@ export const readClientsStructRefs = (decoder, doc) => {
       switch (binary.BITS5 & info) {
         case 0: { // GC
           const len = decoder.readLen()
+          assertMaxGCLength(len)
           refs[i] = new GC(createID(client, clock), len)
           clock += len
           break
@@ -137,6 +141,7 @@ export const readClientsStructRefs = (decoder, doc) => {
         case 10: { // Skip Struct (nothing to apply)
           // @todo we could reduce the amount of checks by adding Skip struct to clientRefs so we know that something is missing.
           const len = decoding.readVarUint(decoder.restDecoder)
+          assertMaxSkipLength(len)
           refs[i] = new Skip(createID(client, clock), len)
           clock += len
           break
