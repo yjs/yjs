@@ -198,6 +198,25 @@ export const testClone = _tc => {
 /**
  * @param {t.TestCase} _tc
  */
+export const testCloneElementAttributes = _tc => {
+  const ydoc = new Y.Doc()
+  const yxml = ydoc.getXmlFragment()
+  const first = new Y.XmlText('text')
+  const second = new Y.XmlElement('p')
+  second.setAttribute('answer', 42)
+  const third = new Y.XmlElement('p')
+  third.setAttribute('question', 'unknown')
+  yxml.push([first, second, third])
+  t.compareArrays(yxml.toArray(), [first, second, third])
+  const cloneYxml = yxml.clone()
+  ydoc.getArray('copyarr').insert(0, [cloneYxml])
+  t.assert(cloneYxml.length === 3)
+  t.compare(cloneYxml.toJSON(), yxml.toJSON())
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
 export const testFormattingBug = _tc => {
   const ydoc = new Y.Doc()
   const yxml = /** @type {Y.XmlText} */ (ydoc.get('', Y.XmlText))
