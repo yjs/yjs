@@ -1,6 +1,7 @@
 import * as t from 'lib0/testing'
 import * as delta from '../src/utils/Delta.js'
 import * as Y from 'yjs'
+import * as schema from 'lib0/schema'
 
 /**
  * @param {t.TestCase} _tc
@@ -88,12 +89,11 @@ export const testMapDelta = _tc => {
     .useAttribution({ delete: ['me'] })
     .delete('v', 94)
     .useAttribution(null)
-    .set('over', 'writeme', 'i existed before')
-    .set('over', 'andout')
+    .set('over', 'andout', 'i existed before')
     .done()
   t.compare(d.toJSON(), {
     key: { type: 'insert', value: 'value', prevValue: undefined, attribution: null },
-    v: { type: 'delete', value: undefined, prevValue: 94, attribution: { delete: ['me'] } },
+    v: { type: 'delete', prevValue: 94, attribution: { delete: ['me'] } },
     over: { type: 'insert', value: 'andout', prevValue: 'i existed before', attribution: null }
   })
   t.compare(d.origin, null)
@@ -117,7 +117,7 @@ export const testMapDelta = _tc => {
       t.assert(d.get(key)?.prevValue === 94)
       t.assert(change.prevValue === 94) // should know that value is number
     } else if (key === 'key') {
-      t.assert(change.value === 'value') // should know that value is number
+      t.assert(change.value === 'value') // should know that value is string
     } else if (key === 'over') {
       t.assert(change.value === 'andout')
     } else {
@@ -147,10 +147,10 @@ export const testXmlDelta = _tc => {
     (op, index) => {
       arr.push(op.insert, index)
     },
-    (op, index) => {
+    (op, _index) => {
       arr.push(op.retain)
     },
-    (op, index) => {
+    (op, _index) => {
       arr.push(op.delete)
     }
   )
@@ -159,10 +159,69 @@ export const testXmlDelta = _tc => {
   console.log(x)
 }
 
+const textDeltaSchema = schema.object({
+  ops: schema.array(
+    schema.any
+  )
+})
+
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testTextModifyingDelta = tc => {
-  const d = /** @type {delta.TextDelta<Y.Map<any>|Y.Array<any>>} */ (delta.createTextDelta()).insert('hi').insert(new Y.Map()).done()
+export const testTextModifyingDelta = _tc => {
+  const d = /** @type {delta.TextDelta<Y.Map<any>|Y.Array<any>,undefined>} */ (delta.createTextDelta().insert('hi').insert(new Y.Map()).done())
+  schema.assert(d, textDeltaSchema)
   console.log(d)
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testYtypeDeltaTypings = _tc => {
+  const ydoc = new Y.Doc({ gc: false })
+  {
+    const yarray = /** @type {Y.Array<Y.Text|number>} */ (ydoc.getArray('numbers'))
+    const content = yarray.getContent()
+    content.forEach(
+      op => {
+        schema.union(
+          schema.constructedBy(delta.InsertArrayOp),
+          schema.constructedBy(delta.RetainOp),
+          schema.constructedBy(delta.DeleteOp)
+        ).ensure(op)
+      },
+      op => {
+        schema.constructedBy(delta.InsertArrayOp).ensure(op)
+      },
+      op => {
+        schema.constructedBy(delta.RetainOp).ensure(op)
+      },
+      op => {
+        schema.constructedBy(delta.DeleteOp).ensure(op)
+      }
+    )
+    const cdeep = yarray.getContentDeep()
+    cdeep.forEach(
+      op => {
+        schema.union(
+          schema.constructedBy(delta.InsertArrayOp),
+          schema.constructedBy(delta.RetainOp),
+          schema.constructedBy(delta.DeleteOp),
+          schema.constructedBy(delta.ModifyOp)
+        ).ensure(op)
+      },
+      op => {
+        schema.constructedBy(delta.InsertArrayOp).ensure(op)
+      },
+      op => {
+        schema.constructedBy(delta.RetainOp).ensure(op)
+      },
+      op => {
+        schema.constructedBy(delta.DeleteOp).ensure(op)
+      },
+      op => {
+        schema.constructedBy(delta.ModifyOp).ensure(op)
+      }
+    )
+  }
 }

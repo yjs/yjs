@@ -384,9 +384,9 @@ export class YXmlFragment extends AbstractType {
    * Calculate the attributed content using the attribution manager.
    *
    * @param {import('../internals.js').AbstractAttributionManager} am
-   * @return {{ children: import('../utils/Delta.js').ArrayDelta<Array<YXmlElement|YXmlText|YXmlHook>> }}
+   * @return {{ children: import('../utils/Delta.js').ArrayDeltaBuilderBuilder<Array<YXmlElement|YXmlText|YXmlHook>> }}
    */
-  getDelta (am = noAttributionsManager) {
+  getContent (am = noAttributionsManager) {
     const children = typeListGetContent(this, am)
     return { children }
   }
@@ -395,12 +395,12 @@ export class YXmlFragment extends AbstractType {
    * Calculate the attributed content using the attribution manager.
    *
    * @param {import('../internals.js').AbstractAttributionManager} am
-   * @return {{ children: import('../utils/Delta.js').ArrayDelta<Array<import('./AbstractType.js').YXmlDeepContent>> }}
+   * @return {{ children: import('../utils/Delta.js').ArrayDeltaBuilderBuilder<Array<import('./AbstractType.js').YXmlDeepContent>> }}
    */
   getContentDeep (am) {
-    const { children: origChildren } = this.getDelta(am)
+    const { children: origChildren } = this.getContent(am)
     /**
-     * @type {import('../utils/Delta.js').ArrayDelta<Array<import('./AbstractType.js').YXmlDeepContent>>}
+     * @type {import('../utils/Delta.js').ArrayDeltaBuilderBuilder<Array<import('./AbstractType.js').YXmlDeepContent>>}
      */
     const children = origChildren.map(d => /** @type {any} */ (
       d instanceof delta.InsertArrayOp && d.insert instanceof Array

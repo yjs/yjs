@@ -3,6 +3,8 @@ import * as map from 'lib0/map'
 import * as fun from 'lib0/function'
 import * as traits from 'lib0/traits'
 import * as error from 'lib0/error'
+import * as s from 'lib0/schema'
+import { attributionJsonSchema } from './AttributionManager.js'
 
 /**
  * @template {any} ArrayContent
@@ -50,6 +52,13 @@ export class InsertStringOp {
     this.attribution = attribution
   }
 
+  /**
+   * @return {'insert'}
+   */
+  get type () {
+    return 'insert'
+  }
+
   get length () {
     return (this.insert.constructor === Array || this.insert.constructor === String) ? this.insert.length : 1
   }
@@ -82,6 +91,13 @@ export class InsertArrayOp {
     this.insert = insert
     this.attributes = attributes
     this.attribution = attribution
+  }
+
+  /**
+   * @return {'insert'}
+   */
+  get type () {
+    return 'insert'
   }
 
   get length () {
@@ -118,6 +134,13 @@ export class InsertEmbedOp {
     this.attribution = attribution
   }
 
+  /**
+   * @return {'insertEmbed'}
+   */
+  get type () {
+    return 'insertEmbed'
+  }
+
   get length () {
     return 1
   }
@@ -143,6 +166,13 @@ export class DeleteOp {
    */
   constructor (len) {
     this.delete = len
+  }
+
+  /**
+   * @return {'delete'}
+   */
+  get type () {
+    return 'delete'
   }
 
   get length () {
@@ -176,6 +206,13 @@ export class RetainOp {
     this.attribution = attribution
   }
 
+  /**
+   * @return {'retain'}
+   */
+  get type () {
+    return 'retain'
+  }
+
   get length () {
     return this.retain
   }
@@ -206,6 +243,13 @@ export class ModifyOp {
    */
   constructor (delta) {
     this.modify = delta
+  }
+
+  /**
+   * @return {'modify'}
+   */
+  get type () {
+    return 'modify'
   }
 
   get length () {
@@ -247,7 +291,7 @@ export class AbstractDelta {
 
 /**
  * @template {Delta|undefined} [Modifiers=any]
- * @typedef {(TextDelta<any,Modifiers> | ArrayDelta<any,Modifiers> | MapDelta<object> | XmlDelta<string,any,any,Modifiers,Modifiers> )} Delta
+ * @typedef {(TextDelta<any,Modifiers> | ArrayDelta<any,Modifiers> | MapDelta<object,Modifiers> | XmlDelta<string,any,any,Modifiers,Modifiers> )} Delta
  */
 
 /**
@@ -271,10 +315,10 @@ export class AbstractArrayDelta extends AbstractDelta {
   /**
    * @template {(d:TDeltaOp) => DeltaOp<any,any,any>} Mapper
    * @param {Mapper} f
-   * @return {DeltaBuilder<Type, Mapper extends (d:TDeltaOp) => infer OP ? OP : unknown,Modifiers>}
+   * @return {AbstractArrayDeltaBuilder<Type, Mapper extends (d:TDeltaOp) => infer OP ? OP : unknown,Modifiers>}
    */
   map (f) {
-    const d = /** @type {DeltaBuilder<Type,any,Modifiers>} */ (new /** @type {any} */ (this.constructor)(this.type))
+    const d = /** @type {AbstractArrayDeltaBuilder<Type,any,Modifiers>} */ (new /** @type {any} */ (this.constructor)(this.type))
     d.ops = this.ops.map(f)
     // @ts-ignore
     d.lastOp = d.ops[d.ops.length - 1] ?? null
@@ -307,7 +351,7 @@ export class AbstractArrayDelta extends AbstractDelta {
    *   )
    *
    * @param {null|((d:TDeltaOp,index:number)=>void)} f
-   * @param {null|((insertOp: (InsertEmbedOp<any> | InsertStringOp | InsertArrayOp<any>) & TDeltaOp,index:number)=>void)} insertHandler
+   * @param {null|((insertOp:Exclude<TDeltaOp,RetainOp|DeleteOp|ModifyOp<any>>,index:number)=>void)} insertHandler
    * @param {null|((retainOp:RetainOp,index:number)=>void)} retainHandler
    * @param {null|((deleteOp:DeleteOp,index:number)=>void)} deleteHandler
    * @param {null|(Modifiers extends undefined ? null : ((modifyOp:ModifyOp<Modifiers extends undefined ? never : Modifiers>,index:number)=>void))} modifyHandler
@@ -380,13 +424,25 @@ class MapInsertOp {
     this.value = value
   }
 
+  /**
+   * @return {'insert'}
+   */
   get type () { return 'insert' }
 
   toJSON () {
     return {
       type: this.type,
-      value: this.value
+      value: this.value,
+      prevValue: this.prevValue,
+      attribution: this.attribution
     }
+  }
+
+  /**
+   * @param {MapInsertOp<V>} other
+   */
+  [traits.EqualityTraitSymbol] (other) {
+    return fun.equalityDeep(this.value, other.value) && fun.equalityDeep(this.prevValue, other.prevValue) && fun.equalityDeep(this.attribution, other.attribution)
   }
 }
 
@@ -405,12 +461,24 @@ class MapDeleteOp {
 
   get value () { return undefined }
 
+  /**
+   * @type {'delete'}
+   */
   get type () { return 'delete' }
 
   toJSON () {
     return {
-      type: 'delete'
+      type: this.type,
+      prevValue: this.prevValue,
+      attribution: this.attribution
     }
+  }
+
+  /**
+   * @param {MapDeleteOp<V>} other
+   */
+  [traits.EqualityTraitSymbol] (other) {
+    return fun.equalityDeep(this.prevValue, other.prevValue) && fun.equalityDeep(this.attribution, other.attribution)
   }
 }
 
@@ -427,13 +495,23 @@ class MapModifyOp {
 
   get value () { return undefined }
 
-  get type () { return 'insert' }
+  /**
+   * @type {'modify'}
+   */
+  get type () { return 'modify' }
 
   toJSON () {
     return {
-      type: 'modify',
+      type: this.type,
       modify: this.modify.toJSON()
     }
+  }
+
+  /**
+   * @param {MapModifyOp<Modifiers>} other
+   */
+  [traits.EqualityTraitSymbol] (other) {
+    return this.modify[traits.EqualityTraitSymbol](other.modify)
   }
 }
 
@@ -443,9 +521,17 @@ class MapModifyOp {
  * @typedef {MapInsertOp<V> | MapDeleteOp<V> | (Modifiers extends undefined ? never : MapModifyOp<Modifiers extends undefined ? never : Modifiers>)} MapDeltaChange
  */
 
+export const mapDeltaChangeJsonSchema = s.union(
+  s.object({ type: s.literal('insert'), value: s.any, prevValue: s.any.optional, attribution: attributionJsonSchema.nullable.optional }),
+  s.object({ type: s.literal('delete'), prevValue: s.any.optional, attribution: attributionJsonSchema.nullable.optional }),
+  s.object({ type: s.literal('modify'), modify: s.any })
+)
+
+export const mapDeltaJsonSchema = s.record(s.string, mapDeltaChangeJsonSchema)
+
 /**
  * @template {object} Vals
- * @template {Delta|undefined} [Modifiers=undefined]
+ * @template {Delta|undefined} Modifiers
  */
 export class MapDelta extends AbstractDelta {
   constructor () {
@@ -528,7 +614,7 @@ export class MapDelta extends AbstractDelta {
   }
 
   /**
-   * @param {MapDelta<any>} other
+   * @param {MapDelta<any,any>} other
    * @return {boolean}
    */
   equals (other) {
@@ -536,15 +622,15 @@ export class MapDelta extends AbstractDelta {
   }
 
   /**
-   * @return {object}
+   * @return {s.Unwrap<typeof mapDeltaJsonSchema>}
    */
   toJSON () {
     /**
-     * @type {any}
+     * @type {s.Unwrap<typeof mapDeltaJsonSchema>}
      */
     const changes = {}
     this.changes.forEach((change, key) => {
-      changes[key] = change.toJSON()
+      changes[/** @type {string} */ (key)] = change.toJSON()
     })
     return changes
   }
@@ -560,7 +646,7 @@ export class MapDelta extends AbstractDelta {
   }
 
   /**
-   * @param {MapDelta<any>} other
+   * @param {MapDelta<any,any>} other
    */
   [traits.EqualityTraitSymbol] (other) {
     return fun.equalityDeep(this.changes, other.changes)
@@ -585,18 +671,18 @@ export class MapDelta extends AbstractDelta {
 export class XmlDelta extends AbstractDelta {
   /**
    * @param {NodeName} nodeName
-   * @param {ArrayDelta<Children,ChildModifiers>} children
+   * @param {ArrayDeltaBuilder<Children,ChildModifiers>} children
    * @param {MapDelta<Attrs,AttrModifiers>} attributes
    */
-  constructor (nodeName, children = createArrayDelta(), attributes = /** @type {any} */ (createMapDelta())) {
+  constructor (nodeName, children, attributes) {
     super()
     this.nodeName = nodeName
     /**
-     * @type {ArrayDelta<Children,ChildModifiers>}
+     * @type {ArrayDeltaBuilder<Children,ChildModifiers>}
      */
     this.children = children
     /**
-     * @type {Done extends 'mutable' ? MapDeltaBuilder<Attrs> : MapDelta<Attrs>}
+     * @type {Done extends 'mutable' ? MapDeltaBuilder<Attrs> : MapDelta<Attrs,AttrModifiers>}
      */
     this.attributes = /** @type {any} */ (attributes)
   }
@@ -617,12 +703,27 @@ export class XmlDelta extends AbstractDelta {
     this.attributes.done()
     return /** @type {any} */ (this)
   }
+
+  /**
+   * @param {XmlDelta<any,any,any>} other
+   */
+  [traits.EqualityTraitSymbol] (other) {
+    return this.nodeName === other.nodeName && this.children[traits.EqualityTraitSymbol](other.children) && this.attributes[traits.EqualityTraitSymbol](other.attributes)
+  }
 }
 
 /**
- * @param {string|undefined} nodeName
+ * @template {string|undefined} NodeName
+ * @template Children
+ * @template {object} Attrs
+ * @template {Delta|undefined} [ChildModifiers=undefined]
+ * @template {Delta|undefined} [AttrModifiers=undefined]
+ * @param {NodeName} nodeName
+ * @param {ArrayDeltaBuilder<Children,ChildModifiers>} children
+ * @param {MapDeltaBuilder<Attrs,AttrModifiers>} attributes
+ * @return {XmlDelta<NodeName,Children,Attrs,ChildModifiers, AttrModifiers>}
  */
-export const createXmlDelta = (nodeName = undefined) => new XmlDelta(nodeName)
+export const createXmlDelta = (nodeName, children = createArrayDelta(), attributes = /** @type {any} */ (createMapDelta())) => new XmlDelta(nodeName, children, attributes)
 
 /**
  * @template {object} Vals
@@ -691,7 +792,7 @@ const mergeAttrs = (a, b) => object.isEmpty(a) ? b : (object.isEmpty(b) ? a : ob
  * @template {Delta|undefined} Modifiers
  * @extends AbstractArrayDelta<Type,TDeltaOp,Modifiers>
  */
-export class DeltaBuilder extends AbstractArrayDelta {
+export class AbstractArrayDeltaBuilder extends AbstractArrayDelta {
   /**
    * @param {Type} type
    */
@@ -823,72 +924,72 @@ export class DeltaBuilder extends AbstractArrayDelta {
   }
 
   /**
-   * @return {this}
+   * @return {Type extends 'array' ? ArrayDelta<TDeltaOp,Modifiers> : (Type extends 'text' ? TextDelta<TDeltaOp,Modifiers> : AbstractArrayDelta<Type,TDeltaOp,Modifiers>)}
    */
   done () {
     while (this.lastOp != null && this.lastOp instanceof RetainOp && this.lastOp.attributes === null && this.lastOp.attribution === null) {
       this.ops.pop()
       this.lastOp = this.ops[this.ops.length - 1] ?? null
     }
-    return this
+    return /** @type {any} */ (this)
   }
 }
 
 /**
  * @template {any} ArrayContent
  * @template {Delta|undefined} Modifiers
- * @extends DeltaBuilder<'array', ArrayDeltaOp<ArrayContent>,Modifiers>
+ * @extends AbstractArrayDeltaBuilder<'array', ArrayDeltaOp<ArrayContent>,Modifiers>
  */
-export class ArrayDelta extends DeltaBuilder {
+export class ArrayDeltaBuilder extends AbstractArrayDeltaBuilder {
   constructor () {
     super('array')
   }
 }
 
 /**
+ * @template {any} ArrayContent
+ * @template {Delta|undefined} Modifiers
+ * @typedef {AbstractArrayDelta<'array', ArrayDeltaOp<ArrayContent>,Modifiers>} ArrayDelta
+ */
+
+/**
+ * @template {object} Embeds
+ * @template {Delta|undefined} Modifiers
+ * @typedef {AbstractArrayDelta<'text',TextDeltaOp<Embeds,Modifiers>,Modifiers>} TextDelta
+ */
+
+/**
  * @template {object} Embeds
  * @template {Delta|undefined} [Modifiers=undefined]
- * @extends DeltaBuilder<'text',TextDeltaOp<Embeds,Modifiers>,Modifiers>
+ * @extends AbstractArrayDeltaBuilder<'text',TextDeltaOp<Embeds,Modifiers>,Modifiers>
  */
-export class TextDelta extends DeltaBuilder {
+export class TextDeltaBuilder extends AbstractArrayDeltaBuilder {
   constructor () {
     super('text')
   }
 }
 
 /**
- * @template {'text'|'array'|'custom'} Type
- * @template {DeltaOp<any,any,Modifiers>} DeltaOps
- * @template {Delta|undefined} Modifiers
- * @typedef {AbstractArrayDelta<Type,DeltaOps,Modifiers>} DeltaReadonly
+ * @template {object} [Embeds=any]
+ * @template {Delta|undefined} [Modifiers=undefined]
+ * @return {TextDeltaBuilder<Embeds,Modifiers>}
  */
-
-/**
- * @template {object} Embeds
- * @template {Delta|undefined} Modifiers
- * @typedef {DeltaReadonly<'text',TextDeltaOp<Embeds,Modifiers>,Modifiers>} TextDeltaReadonly
- */
-
-/**
- * @template {object} Embeds
- * @template {Delta|undefined} Modifiers
- * @return {TextDelta<Embeds,Modifiers>}
- */
-export const createTextDelta = () => new TextDelta()
+export const createTextDelta = () => new TextDeltaBuilder()
 
 /**
  * @template [V=any]
  * @template {Delta|undefined} [Modifiers=undefined]
- * @return {ArrayDelta<V,Modifiers>}
+ * @return {ArrayDeltaBuilder<V,Modifiers>}
  */
-export const createArrayDelta = () => new ArrayDelta()
+export const createArrayDelta = () => new ArrayDeltaBuilder()
 
 /**
+ * @template {'custom' | 'text' | 'array'} T
  * @param {DeltaJson} ops
- * @param {'custom' | 'text' | 'array'} type
+ * @param {T} type
  */
-export const fromJSON = (ops, type = 'custom') => {
-  const d = new DeltaBuilder(type)
+export const fromJSON = (ops, type) => {
+  const d = new AbstractArrayDeltaBuilder(type)
   for (let i = 0; i < ops.length; i++) {
     const op = /** @type {any} */ (ops[i])
     // @ts-ignore

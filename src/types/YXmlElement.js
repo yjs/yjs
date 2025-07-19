@@ -218,26 +218,33 @@ export class YXmlElement extends YXmlFragment {
    * attribution `{ isDeleted: true, .. }`.
    *
    * @param {AbstractAttributionManager} am
-   * @return {{ nodeName: string, children: delta.ArrayDelta<Array<import('./AbstractType.js').DeepContent>>, attributes: import('./AbstractType.js').MapAttributedContent<any> }}
+   * @return {{ nodeName: string, children: delta.ArrayDeltaBuilder<Array<import('./AbstractType.js').DeepContent>>, attributes: import('./AbstractType.js').MapAttributedContent<any> }}
    *
    * @public
    */
   getContentDeep (am = noAttributionsManager) {
-    const { children: origChildren, attributes: origAttributes } = this.getDelta(am)
+    const { children: origChildren, attributes: origAttributes } = this.getContent(am)
     const children = origChildren.map(d => /** @type {any} */ (
       (d instanceof delta.InsertArrayOp && d.insert instanceof Array)
-        ? new delta.InsertArrayOp(d.insert.map(e => e instanceof AbstractType ? /** @type {delta.ArrayDelta<Array<any>>} */ (e.getContentDeep(am)) : e), d.attributes, d.attribution)
+        ? new delta.InsertArrayOp(d.insert.map(e => e instanceof AbstractType ? /** @type {delta.ArrayDeltaBuilder<Array<any>>} */ (e.getContentDeep(am)) : e), d.attributes, d.attribution)
         : d
     ))
     /**
      * @todo there is a Attributes type and a DeepAttributes type.
-     * @type {delta.MapDelta<>}
+     * @type {delta.MapDeltaBuilder<any,any>}
      */
     const attributes = delta.createMapDelta()
-    object.forEach(origAttributes, (v, key) => {
-      attributes[key] = Object.assign({}, v, { value: v.value instanceof AbstractType ? v.value.getContentDeep(am) : v.value })
-    })
-    return { nodeName: this.nodeName, children, attributes }
+    origAttributes.forEach(
+      null,
+      (insertOp, key) => {
+        if (insertOp.value instanceof AbstractType) {
+          attributes.set(key, insertOp.value.getContentDeep(am), null, insertOp.attribution)
+        } else {
+          attributes.set(key, insertOp.value, undefined, insertOp.attribution)
+        }
+      }
+    )
+    return delta.createXmlDelta(this.nodeName, children, attributes)
   }
 
   /**
@@ -251,8 +258,8 @@ export class YXmlElement extends YXmlFragment {
    *
    * @public
    */
-  getDelta (am = noAttributionsManager) {
-    const { children } = super.getDelta(am)
+  getContent (am = noAttributionsManager) {
+    const { children } = super.getContent(am)
     const attributes = typeMapGetDelta(this, am)
     return new delta.XmlDelta(this.nodeName, children, attributes)
   }
