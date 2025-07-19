@@ -1,5 +1,5 @@
 import {
-  TextDelta, Item, AbstractType, Transaction, AbstractStruct // eslint-disable-line
+  TextDeltaBuilder, Item, AbstractType, Transaction, AbstractStruct // eslint-disable-line
 } from '../internals.js'
 
 import * as set from 'lib0/set'
@@ -42,7 +42,7 @@ export class YEvent {
      */
     this._keys = null
     /**
-     * @type {TextDelta<any>?}
+     * @type {import('./Delta.js').TextDelta<any,undefined>?}
      */
     this._delta = null
     /**

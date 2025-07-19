@@ -31,21 +31,21 @@ import {
 import * as error from 'lib0/error'
 import { ObservableV2 } from 'lib0/observable'
 import * as encoding from 'lib0/encoding'
+import * as s from 'lib0/schema'
+
+export const attributionJsonSchema = s.object({
+  insert: s.array(s.string).optional,
+  insertedAt: s.number.optional,
+  delete: s.array(s.string).optional,
+  deletedAt: s.number.optional,
+  attributes: s.record(s.string, s.array(s.string)).optional,
+  attributedAt: s.number.optional
+})
 
 /**
  * @todo rename this to `insertBy`, `insertAt`, ..
  *
- * @typedef {Object} Attribution
- * @property {Array<any>} [Attribution.insert]
- * @property {number} [Attribution.insertedAt]
- * @property {Array<any>} [Attribution.acceptInsert]
- * @property {number} [Attribution.acceptedDeleteAt]
- * @property {Array<any>} [Attribution.acceptDelete]
- * @property {number} [Attribution.acceptedDeleteAt]
- * @property {Array<any>} [Attribution.delete]
- * @property {number} [Attribution.deletedAt]
- * @property {{ [key: string]: Array<any> }} [Attribution.attributes]
- * @property {number} [Attribution.attributedAt]
+ * @typedef {s.Unwrap<typeof attributionJsonSchema>} Attribution
  */
 
 /**
@@ -63,18 +63,13 @@ export const createAttributionFromAttributionItems = (attrs, deleted) => {
    */
   const attribution = {}
   if (deleted) {
-    attribution.delete = []
+    attribution.delete = s.array(s.string).ensure([])
   } else {
     attribution.insert = []
   }
   attrs.forEach(attr => {
     switch (attr.name) {
-      case 'acceptDelete':
-        delete attribution.delete
-        // eslint-disable-next-line no-fallthrough
-      case 'acceptInsert':
-        delete attribution.insert
-        // eslint-disable-next-line no-fallthrough
+      // eslint-disable-next-line no-fallthrough
       case 'insert':
       case 'delete': {
         const as = /** @type {import('../utils/Delta.js').Attribution_} */ (attribution)

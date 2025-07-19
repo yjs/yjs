@@ -39,7 +39,7 @@ export const testAttributedEvents = _tc => {
     ytext.delete(6, 5)
   })
   const am = Y.createAttributionManagerFromDiff(v1, ydoc)
-  const c1 = ytext.getDelta(am)
+  const c1 = ytext.getContent(am)
   t.compare(c1, delta.createTextDelta().insert('hello ').insert('world', null, { delete: [] }))
   let calledObserver = false
   ytext.observe(event => {
@@ -63,7 +63,7 @@ export const testInsertionsMindingAttributedContent = _tc => {
     ytext.delete(6, 5)
   })
   const am = Y.createAttributionManagerFromDiff(v1, ydoc)
-  const c1 = ytext.getDelta(am)
+  const c1 = ytext.getContent(am)
   t.compare(c1, delta.createTextDelta().insert('hello ').insert('world', null, { delete: [] }))
   ytext.applyDelta(delta.createTextDelta().retain(11).insert('content'), am)
   t.assert(ytext.toString() === 'hello content')
@@ -81,7 +81,7 @@ export const testInsertionsIntoAttributedContent = _tc => {
     ytext.insert(6, 'word')
   })
   const am = Y.createAttributionManagerFromDiff(v1, ydoc)
-  const c1 = ytext.getDelta(am)
+  const c1 = ytext.getContent(am)
   t.compare(c1, delta.createTextDelta().insert('hello ').insert('word', null, { insert: [] }))
   ytext.applyDelta(delta.createTextDelta().retain(9).insert('l'), am)
   t.assert(ytext.toString() === 'hello world')

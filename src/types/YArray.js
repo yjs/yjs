@@ -23,19 +23,28 @@ import {
   AbstractAttributionManager, ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 
+/**
+ *
+ * @template Content
+ * @template {import('../internals.js').Delta|undefined} Modifiers
+ * @typedef {import('../internals.js').ArrayDelta<Content,Modifiers>} ArrayDelta
+ */
+
 import * as delta from '../utils/Delta.js'
 
 /**
  * Event that describes the changes on a YArray
- * @template T
+ * @template {import('../utils/types.js').YValue} T
  * @extends YEvent<YArray<T>>
  */
 export class YArrayEvent extends YEvent {}
 
 /**
  * A shared Array implementation.
- * @template T
- * @extends AbstractType<YArrayEvent<T>>
+ * @template {import('../utils/types.js').YValue} T
+ * @template {ArrayDelta<T,undefined>} [TypeDelta=ArrayDelta<T,undefined>]
+ * @template {T extends AbstractType<any,any,infer DeepD> ? ArrayDelta<Exclude<T,AbstractType<any>>|DeepD,DeepD> : ArrayDelta<T,undefined>} [EventDeltaDeep=T extends AbstractType<any,any,infer DeepD> ? ArrayDelta<Exclude<T,AbstractType<any>>|DeepD,DeepD> : ArrayDelta<T,undefined>]
+ * @extends AbstractType<YArrayEvent<T>,TypeDelta,EventDeltaDeep>
  * @implements {Iterable<T>}
  */
 export class YArray extends AbstractType {
@@ -54,7 +63,7 @@ export class YArray extends AbstractType {
 
   /**
    * Construct a new YArray containing the specified items.
-   * @template {Object<string,any>|Array<any>|number|null|string|Uint8Array} T
+   * @template {import('../utils/types.js').YValue} T
    * @param {Array<T>} items
    * @return {YArray<T>}
    */
@@ -219,16 +228,16 @@ export class YArray extends AbstractType {
    * attribution `{ isDeleted: true, .. }`.
    *
    * @param {AbstractAttributionManager} am
-   * @return {import('../utils/Delta.js').ArrayDelta<Array<import('../types/AbstractType.js').DeepContent>>} The Delta representation of this type.
+   * @return {EventDeltaDeep} The Delta representation of this type.
    *
    * @public
    */
   getContentDeep (am = noAttributionsManager) {
-    return this.getDelta(am).map(d => /** @type {any} */ (
+    return /** @type {any} */ (this.getContent(am).map(d => /** @type {any} */ (
       d instanceof delta.InsertArrayOp && d.insert instanceof Array
         ? new delta.InsertArrayOp(d.insert.map(e => e instanceof AbstractType ? e.getContentDeep(am) : e), d.attributes, d.attribution)
         : d
-    ))
+    )))
   }
 
   /**
@@ -239,11 +248,11 @@ export class YArray extends AbstractType {
    * attribution `{ isDeleted: true, .. }`.
    *
    * @param {AbstractAttributionManager} am
-   * @return {import('../utils/Delta.js').ArrayDelta<Array<T>>} The Delta representation of this type.
+   * @return {TypeDelta} The Delta representation of this type.
    *
    * @public
    */
-  getDelta (am = noAttributionsManager) {
+  getContent (am = noAttributionsManager) {
     return typeListGetContent(this, am)
   }
 

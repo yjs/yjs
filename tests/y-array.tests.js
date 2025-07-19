@@ -515,6 +515,9 @@ export const testIteratingArrayContainingTypes = _tc => {
  */
 export const testAttributedContent = _tc => {
   const ydoc = new Y.Doc({ gc: false })
+  /**
+   * @type {Y.Array<number>}
+   */
   const yarray = ydoc.getArray()
   yarray.insert(0, [1, 2])
   let attributionManager = Y.noAttributionsManager
@@ -529,7 +532,7 @@ export const testAttributedContent = _tc => {
       yarray.insert(1, [42])
     })
     const expectedContent = delta.createArrayDelta().insert([1], null, { delete: [] }).insert([2]).insert([42], null, { insert: [] })
-    const attributedContent = yarray.getDelta(attributionManager)
+    const attributedContent = yarray.getContent(attributionManager)
     console.log(attributedContent.toJSON())
     t.assert(attributedContent.equals(expectedContent))
   })

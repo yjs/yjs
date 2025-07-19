@@ -672,12 +672,12 @@ export class YTextEvent extends YEvent {
   }
 
   /**
-   * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:delta.TextDelta<TextEmbeds>}}
+   * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:delta.TextDelta<TextEmbeds,undefined>}}
    */
   get changes () {
     if (this._changes === null) {
       /**
-       * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:delta.TextDelta<TextEmbeds>}}
+       * @type {{added:Set<Item>,deleted:Set<Item>,keys:Map<string,{action:'add'|'update'|'delete',oldValue:any}>,delta:delta.TextDelta<TextEmbeds,undefined>}}
        */
       const changes = {
         keys: this.keys,
@@ -692,20 +692,20 @@ export class YTextEvent extends YEvent {
 
   /**
    * @param {AbstractAttributionManager} am
-   * @return {import('../utils/Delta.js').TextDelta<TextEmbeds>} The Delta representation of this type.
+   * @return {import('../utils/Delta.js').TextDelta<TextEmbeds,undefined>} The Delta representation of this type.
    *
    * @public
    */
   getDelta (am = noAttributionsManager) {
     const itemsToRender = mergeIdSets([diffIdSet(this.transaction.insertSet, this.transaction.deleteSet), diffIdSet(this.transaction.deleteSet, this.transaction.insertSet)])
-    return this.target.getDelta(am, { itemsToRender, retainDeletes: true })
+    return this.target.getContent(am, { itemsToRender, retainDeletes: true })
   }
 
   /**
    * Compute the changes in the delta format.
    * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
    *
-   * @type {delta.TextDelta<TextEmbeds>}
+   * @type {delta.TextDelta<TextEmbeds,undefined>}
    *
    * @public
    */
@@ -789,7 +789,7 @@ export class YText extends AbstractType {
      * @type {YText<Embeds>}
      */
     const text = new YText()
-    text.applyDelta(this.getDelta())
+    text.applyDelta(this.getContent())
     return text
   }
 
@@ -843,7 +843,7 @@ export class YText extends AbstractType {
   /**
    * Apply a {@link Delta} on this shared YText type.
    *
-   * @param {Array<any> | delta.Delta} delta The changes to apply on this element.
+   * @param {Array<any> | delta.TextDelta<Embeds,undefined>} delta The changes to apply on this element.
    * @param {AbstractAttributionManager} am
    *
    * @public
@@ -851,10 +851,7 @@ export class YText extends AbstractType {
   applyDelta (delta, am = noAttributionsManager) {
     if (this.doc !== null) {
       transact(this.doc, transaction => {
-        /**
-         * @type {Array<any>}
-         */
-        const deltaOps = /** @type {Array<any>} */ (/** @type {delta.Delta} */ (delta).ops instanceof Array ? /** @type {delta.Delta} */ (delta).ops : delta)
+        const deltaOps = /** @type {Array<any>} */ (/** @type {delta.TextDelta<any,undefined>} */ (delta).ops instanceof Array ? /** @type {delta.TextDelta<any,undefined>} */ (delta).ops : delta)
         const currPos = new ItemTextListPosition(null, this._start, 0, new Map(), am)
         for (let i = 0; i < deltaOps.length; i++) {
           const op = deltaOps[i]
@@ -882,14 +879,14 @@ export class YText extends AbstractType {
    * attribution `{ isDeleted: true, .. }`.
    *
    * @param {AbstractAttributionManager} am
-   * @return {import('../utils/Delta.js').TextDelta< Embeds extends import('./AbstractType.js').AbstractType<any> ? import('./AbstractType.js').DeepContent : Embeds >} The Delta representation of this type.
+   * @return {import('../utils/Delta.js').TextDelta<Embeds extends import('./AbstractType.js').AbstractType<infer SubEvent> ? SubEvent : Embeds, undefined>} The Delta representation of this type.
    *
    * @public
    */
   getContentDeep (am = noAttributionsManager) {
-    return this.getDelta(am).map(d =>
+    return this.getContent(am).map(d =>
       d instanceof delta.InsertEmbedOp && d.insert instanceof AbstractType
-        ? new delta.InsertEmbedOp(d.insert.getDelta(am), d.attributes, d.attribution)
+        ? new delta.InsertEmbedOp(d.insert.getContent(am), d.attributes, d.attribution)
         : d
     )
   }
@@ -906,13 +903,13 @@ export class YText extends AbstractType {
    * @param {import('../utils/IdSet.js').IdSet?} [opts.itemsToRender]
    * @param {boolean} [opts.retainInserts] - if true, retain rendered inserts with attributions
    * @param {boolean} [opts.retainDeletes] - if true, retain rendered+attributed deletes only
-   * @return {import('../utils/Delta.js').TextDelta<Embeds>} The Delta representation of this type.
+   * @return {import('../utils/Delta.js').TextDelta<Embeds,undefined>} The Delta representation of this type.
    *
    * @public
    */
-  getDelta (am = noAttributionsManager, { itemsToRender = null, retainInserts = false, retainDeletes = false } = {}) {
+  getContent (am = noAttributionsManager, { itemsToRender = null, retainInserts = false, retainDeletes = false } = {}) {
     /**
-     * @type {import('../utils/Delta.js').TextDelta<Embeds>}
+     * @type {import('../utils/Delta.js').TextDeltaBuilder<Embeds>}
      */
     const d = delta.createTextDelta()
     /**
@@ -1108,7 +1105,8 @@ export class YText extends AbstractType {
         }
       }
     }
-    return d.done()
+    // @todo! fix the typings here
+    return /** @type {any} */ (d.done())
   }
 
   /**
@@ -1291,7 +1289,7 @@ export class YText extends AbstractType {
    * @param {this} other
    */
   [traits.EqualityTraitSymbol] (other) {
-    return this.getDelta().equals(other.getDelta())
+    return this.getContent().equals(other.getContent())
   }
 }
 

@@ -126,7 +126,7 @@ export const testKeyEncoding = tc => {
   const update = Y.encodeStateAsUpdateV2(users[0])
   Y.applyUpdateV2(users[1], update)
 
-  t.compare(text1.getDelta().toJSON(), [{ insert: 'c', attributes: { italic: true } }, { insert: 'b' }, { insert: 'a', attributes: { italic: true } }])
+  t.compare(text1.getContent().toJSON(), [{ insert: 'c', attributes: { italic: true } }, { insert: 'b' }, { insert: 'a', attributes: { italic: true } }])
 
   compare(users)
 }
@@ -330,7 +330,7 @@ export const testObfuscateUpdates = _tc => {
   const omap = odoc.getMap('map')
   const oarray = odoc.getArray('array')
   // test ytext
-  const delta = /** @type {Array<any>} */ (otext.getDelta().toJSON())
+  const delta = /** @type {Array<any>} */ (otext.getContent().toJSON())
   t.assert(delta.length === 2)
   t.assert(delta[0].insert !== 'text' && delta[0].insert.length === 4)
   t.assert(object.length(delta[0].attributes) === 1)

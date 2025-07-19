@@ -195,11 +195,11 @@ export class YMap extends AbstractType {
    * attribution `{ isDeleted: true, .. }`.
    *
    * @param {import('../internals.js').AbstractAttributionManager} am
-   * @return {MapDelta<{[key:string]: MapType}>} The Delta representation of this type.
+   * @return {MapDelta<{[key:string]: MapType},undefined>} The Delta representation of this type.
    *
    * @public
    */
-  getDelta (am) {
+  getContent (am) {
     return typeMapGetDelta(this, am)
   }
 

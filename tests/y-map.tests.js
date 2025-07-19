@@ -4,7 +4,8 @@ import {
   compareIDs,
   noAttributionsManager,
   TwosetAttributionManager,
-  createIdMapFromIdSet
+  createIdMapFromIdSet,
+  mapDeltaJsonSchema
 } from '../src/internals.js'
 import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
@@ -630,24 +631,24 @@ export const testAttributedContent = _tc => {
   })
   t.group('initial value', () => {
     ymap.set('test', 42)
-    const expectedContent = { test: { prevValue: undefined, value: 42, attribution: { insert: [] } } }
-    const attributedContent = ymap.getDelta(attributionManager)
-    console.log(attributedContent)
-    t.compare(expectedContent, attributedContent)
+    const expectedContent = mapDeltaJsonSchema.ensure({ test: { type: 'insert', prevValue: undefined, value: 42, attribution: { insert: [] } } })
+    const attributedContent = ymap.getContent(attributionManager)
+    console.log(attributedContent.toJSON())
+    t.compare(expectedContent, attributedContent.toJSON())
   })
   t.group('overwrite value', () => {
     ymap.set('test', 'fourtytwo')
-    const expectedContent = { test: { prevValue: 42, value: 'fourtytwo', attribution: { insert: [] } } }
-    const attributedContent = ymap.getDelta(attributionManager)
+    const expectedContent = mapDeltaJsonSchema.ensure({ test: { type: 'insert', prevValue: 42, value: 'fourtytwo', attribution: { insert: [] } } })
+    const attributedContent = ymap.getContent(attributionManager)
     console.log(attributedContent)
-    t.compare(expectedContent, attributedContent)
+    t.compare(expectedContent, attributedContent.toJSON())
   })
   t.group('delete value', () => {
     ymap.delete('test')
-    const expectedContent = { test: { prevValue: 'fourtytwo', value: undefined, attribution: { delete: [] } } }
-    const attributedContent = ymap.getDelta(attributionManager)
+    const expectedContent = mapDeltaJsonSchema.ensure({ test: { type: 'delete', prevValue: 'fourtytwo', attribution: { delete: [] } } })
+    const attributedContent = ymap.getContent(attributionManager)
     console.log(attributedContent)
-    t.compare(expectedContent, attributedContent)
+    t.compare(expectedContent, attributedContent.toJSON())
   })
 }
 

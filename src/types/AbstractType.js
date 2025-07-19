@@ -22,13 +22,6 @@ import * as math from 'lib0/math'
 import * as log from 'lib0/logging'
 
 /**
- * @typedef {delta.ArrayDelta<any>|delta.TextDelta<any>|{ children: delta.ArrayDelta<Array<YXmlDeepContent>> }|{ children: delta.ArrayDelta<any>, attributes: {[key:string]:{ value: any, prevValue: any, attribution: import('../utils/AttributionManager.js').Attribution } } }} YXmlDeepContent
- */
-/**
- * @typedef {delta.ArrayDelta<any>|delta.TextDelta<any>|{ children: delta.ArrayDelta<Array<DeepContent>> }|{ children: delta.ArrayDelta<any>, attributes: {[key:string]:{ value: any, prevValue: any, attribution: import('../utils/AttributionManager.js').Attribution} } }} DeepContent
- */
-
-/**
  * https://docs.yjs.dev/getting-started/working-with-shared-types#caveats
  */
 export const warnPrematureAccess = () => { log.warn('Invalid access: Add Yjs type to a document before reading data.') }
@@ -264,8 +257,11 @@ export const callTypeObservers = (type, transaction, event) => {
 }
 
 /**
- * @template EventType
  * Abstract Yjs Type class
+ *
+ * @template EventType
+ * @template {import('../utils/Delta.js').Delta} [EventDelta=any]
+ * @template {import('../utils/Delta.js').Delta} [EventDeltaDeep=any]
  */
 export class AbstractType {
   constructor () {
@@ -303,10 +299,10 @@ export class AbstractType {
   }
 
   /**
-   * @return {AbstractType<any>|null}
+   * @return {AbstractType<any,any>|null}
    */
   get parent () {
-    return this._item ? /** @type {AbstractType<any>} */ (this._item.parent) : null
+    return this._item ? /** @type {AbstractType<any,any>} */ (this._item.parent) : null
   }
 
   /**
@@ -325,7 +321,7 @@ export class AbstractType {
   }
 
   /**
-   * @return {AbstractType<EventType>}
+   * @return {AbstractType<EventType,any>}
    */
   _copy () {
     throw error.methodUnimplemented()
@@ -336,7 +332,7 @@ export class AbstractType {
    *
    * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
    *
-   * @return {AbstractType<EventType>}
+   * @return {AbstractType<EventType,any>}
    */
   clone () {
     throw error.methodUnimplemented()
@@ -415,15 +411,15 @@ export class AbstractType {
 
   /**
    * @param {AbstractAttributionManager} _am
-   * @return {any}
+   * @return {EventDelta}
    */
-  getDelta (_am) {
+  getContent (_am) {
     error.methodUnimplemented()
   }
 
   /**
    * @param {AbstractAttributionManager} _am
-   * @return {DeepContent}
+   * @return {EventDeltaDeep}
    */
   getContentDeep (_am) {
     error.methodUnimplemented()
@@ -431,7 +427,7 @@ export class AbstractType {
 }
 
 /**
- * @param {AbstractType<any>} type
+ * @param {AbstractType<any,any>} type
  * @param {number} start
  * @param {number} end
  * @return {Array<any>}
@@ -469,7 +465,7 @@ export const typeListSlice = (type, start, end) => {
 }
 
 /**
- * @param {AbstractType<any>} type
+ * @param {AbstractType<any,any>} type
  * @return {Array<any>}
  *
  * @private
@@ -498,8 +494,10 @@ export const typeListToArray = type => {
  * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
  * attribution `{ isDeleted: true, .. }`.
  *
- * @param {AbstractType<any>} type
+ * @template {delta.ArrayDelta<any,any>} TypeDelta
+ * @param {AbstractType<any,TypeDelta,any>} type
  * @param {import('../internals.js').AbstractAttributionManager} am
+ * @return {TypeDelta}
  *
  * @private
  * @function
@@ -528,11 +526,11 @@ export const typeListGetContent = (type, am) => {
       }
     }
   }
-  return d
+  return /** @type {TypeDelta} */ (d.done())
 }
 
 /**
- * @param {AbstractType<any>} type
+ * @param {AbstractType<any,any>} type
  * @param {Snapshot} snapshot
  * @return {Array<any>}
  *
@@ -557,7 +555,7 @@ export const typeListToArraySnapshot = (type, snapshot) => {
 /**
  * Executes a provided function on once on every element of this YArray.
  *
- * @param {AbstractType<any>} type
+ * @param {AbstractType<any,any>} type
  * @param {function(any,number,any):void} f A function to execute on every element of this YArray.
  *
  * @private
@@ -580,8 +578,8 @@ export const typeListForEach = (type, f) => {
 
 /**
  * @template C,R
- * @param {AbstractType<any>} type
- * @param {function(C,number,AbstractType<any>):R} f
+ * @param {AbstractType<any,any>} type
+ * @param {function(C,number,AbstractType<any,any>):R} f
  * @return {Array<R>}
  *
  * @private
@@ -599,7 +597,7 @@ export const typeListMap = (type, f) => {
 }
 
 /**
- * @param {AbstractType<any>} type
+ * @param {AbstractType<any,any>} type
  * @return {IterableIterator<any>}
  *
  * @private
@@ -651,8 +649,8 @@ export const typeListCreateIterator = type => {
  * Executes a provided function on once on every element of this YArray.
  * Operates on a snapshotted state of the document.
  *
- * @param {AbstractType<any>} type
- * @param {function(any,number,AbstractType<any>):void} f A function to execute on every element of this YArray.
+ * @param {AbstractType<any,any>} type
+ * @param {function(any,number,AbstractType<any,any>):void} f A function to execute on every element of this YArray.
  * @param {Snapshot} snapshot
  *
  * @private
@@ -673,7 +671,7 @@ export const typeListForEachSnapshot = (type, f, snapshot) => {
 }
 
 /**
- * @param {AbstractType<any>} type
+ * @param {AbstractType<any,any>} type
  * @param {number} index
  * @return {any}
  *
@@ -700,7 +698,7 @@ export const typeListGet = (type, index) => {
 
 /**
  * @param {Transaction} transaction
- * @param {AbstractType<any>} parent
+ * @param {AbstractType<any,any>} parent
  * @param {Item?} referenceItem
  * @param {Array<Object<string,any>|Array<any>|boolean|number|null|string|Uint8Array>} content
  *
@@ -768,7 +766,7 @@ const lengthExceeded = () => error.create('Length exceeded!')
 
 /**
  * @param {Transaction} transaction
- * @param {AbstractType<any>} parent
+ * @param {AbstractType<any,any>} parent
  * @param {number} index
  * @param {Array<Object<string,any>|Array<any>|number|null|string|Uint8Array>} content
  *
@@ -821,7 +819,7 @@ export const typeListInsertGenerics = (transaction, parent, index, content) => {
  * the search marker.
  *
  * @param {Transaction} transaction
- * @param {AbstractType<any>} parent
+ * @param {AbstractType<any,any>} parent
  * @param {Array<Object<string,any>|Array<any>|number|null|string|Uint8Array>} content
  *
  * @private
@@ -841,7 +839,7 @@ export const typeListPushGenerics = (transaction, parent, content) => {
 
 /**
  * @param {Transaction} transaction
- * @param {AbstractType<any>} parent
+ * @param {AbstractType<any,any>} parent
  * @param {number} index
  * @param {number} length
  *
@@ -888,7 +886,7 @@ export const typeListDelete = (transaction, parent, index, length) => {
 
 /**
  * @param {Transaction} transaction
- * @param {AbstractType<any>} parent
+ * @param {AbstractType<any,any>} parent
  * @param {string} key
  *
  * @private
@@ -903,9 +901,9 @@ export const typeMapDelete = (transaction, parent, key) => {
 
 /**
  * @param {Transaction} transaction
- * @param {AbstractType<any>} parent
+ * @param {AbstractType<any,any>} parent
  * @param {string} key
- * @param {Object|number|null|Array<any>|string|Uint8Array|AbstractType<any>} value
+ * @param {Object|number|null|Array<any>|string|Uint8Array|AbstractType<any,any>} value
  *
  * @private
  * @function
