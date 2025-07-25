@@ -130,6 +130,7 @@ editing for your IDE or custom editor
   Collaboratively calculate and convert various data
 * [ProtonMail | Proton Docs](https://proton.me/drive/docs) - E2E encrypted
   collaborative documents in Proton Drive.
+* [Theneo](https://www.theneo.io/) - AI-powered API docs with live team collaboration.
 
 ## Table of Contents
 
