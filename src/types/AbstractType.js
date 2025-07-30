@@ -369,20 +369,26 @@ export class AbstractType {
 
   /**
    * Observe all events that are created on this type.
+   * Returns a function to stop sending events to the provided callback once called
    *
    * @param {function(EventType, Transaction):void} f Observer function
+   * @returns {function():void}
    */
   observe (f) {
     addEventHandlerListener(this._eH, f)
+    return () => this.unobserve(f)
   }
 
   /**
    * Observe all events that are created by this type and its children.
+   * Returns a function to stop sending events to the provided callback once called
    *
    * @param {function(Array<YEvent<any>>,Transaction):void} f Observer function
+   * @returns {function():void}
    */
   observeDeep (f) {
     addEventHandlerListener(this._dEH, f)
+    return () => this.unobserveDeep(f)
   }
 
   /**
