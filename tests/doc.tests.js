@@ -350,3 +350,44 @@ export const testSyncDocsEvent = async _tc => {
   t.assert(!ydoc.isSynced)
   t.assert(ydoc.whenSynced !== oldWhenSynced)
 }
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testDocDestroy = async _tc => {
+  const ydoc = new Y.Doc()
+  let destroyEvent = false
+  let subDocDestroyEvent = false
+  ydoc.on('destroy', () => {
+    destroyEvent = true
+  })
+  const subdoc = new Y.Doc()
+  subdoc.on('destroy', () => {
+    subDocDestroyEvent = true
+  })
+  ydoc.getMap().set('subdoc', subdoc)
+  const ymap = ydoc.getMap()
+  ymap.set('key1', 'value1')
+
+  t.assert(ydoc.isDestroyed === false)
+
+  ydoc.destroy()
+  t.assert(destroyEvent)
+  t.assert(ydoc.isDestroyed)
+  t.assert(subDocDestroyEvent)
+  t.assert(subdoc.isDestroyed)
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testCloneDoc = async _tc => {
+  const ydoc = new Y.Doc()
+  const ymap = ydoc.getMap()
+  ymap.set('key1', 'value1')
+  const ydocClone = Y.cloneDoc(ydoc)
+  t.assert(ydoc.clientID !== ydocClone.clientID)
+  t.assert(ydocClone.getMap().get('key1') === ydoc.getMap().get('key1'))
+}
+
+
