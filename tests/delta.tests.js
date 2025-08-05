@@ -225,3 +225,274 @@ export const testYtypeDeltaTypings = _tc => {
     )
   }
 }
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testRetainBasic = _tc => {
+  // Test basic retain operation - retain content without applying any attributes
+  const d = delta.createTextDelta()
+    .insert('hello world')
+    .retain(5) 
+    .done() // The last retain operation without attributes will be cleaned up
+  t.compare(d.toJSON(), [
+    { insert: 'hello world' }
+  ])
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testRetainWithAttributes = _tc => {
+  // Test retain operation with formatting attributes
+  const d = delta.createTextDelta()
+    .insert('hello world')
+    .retain(5, { bold: true, italic: true })
+    .done()
+  t.compare(d.toJSON(), [
+    { insert: 'hello world' },
+    { retain: 5, attributes: { bold: true, italic: true } }
+  ])
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testRetainWithAttribution = _tc => {
+  // Test retain operation with attribution information
+  const d = delta.createTextDelta()
+    .insert('hello world')
+    .retain(5, null, { insert: ['user1'] })
+    .done()
+  t.compare(d.toJSON(), [
+    { insert: 'hello world' },
+    { retain: 5, attribution: { insert: ['user1'] } }
+  ])
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testRetainWithAttributesAndAttribution = _tc => {
+  // Test retain operation with both formatting attributes and attribution information
+  const d = delta.createTextDelta()
+    .insert('hello world')
+    .retain(5, { bold: true }, { insert: ['user1'] })
+    .done()
+  t.compare(d.toJSON(), [
+    { insert: 'hello world' },
+    { retain: 5, attributes: { bold: true }, attribution: { insert: ['user1'] } }
+  ])
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testRetainMerging = _tc => {
+  // Test that consecutive retain operations with same attributes are merged
+  const d = delta.createTextDelta()
+    .insert('hello world')
+    .retain(3, { bold: true })
+    .retain(2, { bold: true }) // Same attributes, should be merged
+    .retain(1, { italic: true }) // Different attributes, should not be merged
+    .done()
+  t.compare(d.toJSON(), [
+    { insert: 'hello world' },
+    { retain: 5, attributes: { bold: true } },
+    { retain: 1, attributes: { italic: true } }
+  ])
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testRetainComplexScenario = _tc => {
+  // Test complex retain scenarios - simulating text editor operations
+  const d = delta.createTextDelta()
+    .insert('Hello, this is a test document.')
+    .retain(6, { bold: true }) // Set "Hello," to bold
+    .retain(5) // Skip " this"
+    .retain(4, { italic: true }) // Set "is a" to italic
+    .retain(1) // Skip space
+    .retain(4, { bold: true, italic: true }) // Set "test" to bold italic
+    .retain(10) // Skip remaining content
+    .done()
+  t.compare(d.toJSON(), [
+    { insert: 'Hello, this is a test document.' },
+    { retain: 6, attributes: { bold: true } },
+    { retain: 5 },
+    { retain: 4, attributes: { italic: true } },
+    { retain: 1 },
+    { retain: 4, attributes: { bold: true, italic: true } }
+  ])
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testRetainInArrayDelta = _tc => {
+  // Test using retain in array Delta
+  const d = delta.createArrayDelta()
+    .insert(['a', 'b', 'c', 'd', 'e'])
+    .retain(2) // Retain first two elements
+    .retain(1, { highlight: true }) // Add highlight attribute to third element
+    .retain(2) // Retain last two elements
+    .done()
+  t.compare(d.toJSON(), [
+    { insert: ['a', 'b', 'c', 'd', 'e'] },
+    { retain: 2 },
+    { retain: 1, attributes: { highlight: true } }
+  ])
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testRetainAfterDelete = _tc => {
+  // Test using retain after delete operation
+  const d = delta.createTextDelta()
+    .insert('hello world')
+    .delete(5) // Delete "hello"
+    .retain(5, { bold: true }) // Apply bold to remaining "world"
+    .done()
+  t.compare(d.toJSON(), [
+    { insert: 'hello world' },
+    { delete: 5 },
+    { retain: 5, attributes: { bold: true } }
+  ])
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testFromJson = _tc => {
+  // Test creating Delta from JSON operations
+  const jsonOps = [
+    { insert: 'hello' },
+    { insert: ' ', attributes: { bold: true } },
+    { insert: 'world', attributes: { bold: true, italic: true } },
+    { retain: 5, attributes: { color: 'red' } },
+    { delete: 3 }
+  ]
+  
+  const d = delta.fromJSON(jsonOps, 'text')
+  
+  // Verify the created Delta has the correct structure
+  t.compare(d.toJSON(), jsonOps)
+  
+  // Test that the Delta can be used for iteration
+  let totalCallCount = 0
+  let insertCount = 0
+  let retainCount = 0
+  let deleteCount = 0
+  
+  d.forEach(
+    (op) => {
+      totalCallCount++
+    },
+    (op) => {
+      insertCount++
+    },
+    (op) => {
+      retainCount++
+    },
+    (op) => {
+      deleteCount++
+    }
+  )
+  t.compare(totalCallCount, 5)   // 5 calls
+  t.compare(insertCount, 3)      // 3 insert operations
+  t.compare(retainCount, 1)      // 1 retain operation
+  t.compare(deleteCount, 1)      // 1 delete operation
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testFromJsonWithAttribution = _tc => {
+  // Test creating Delta from JSON with attribution information
+  const jsonOps = [
+    { insert: 'hello', attribution: { insert: ['user1'] } },
+    { retain: 5, attributes: { bold: true }, attribution: { insert: ['user2'] } },
+    { delete: 3 }
+  ]
+  
+  const d = delta.fromJSON(jsonOps, 'text')
+  
+  // Verify the created Delta preserves attribution
+  t.compare(d.toJSON(), jsonOps)
+  
+  // Test that attribution is properly handled
+  const result = d.toJSON()
+  t.compare(/** @type {any} */ (result[0]).attribution, { insert: ['user1'] })
+  t.compare(/** @type {any} */ (result[1]).attribution, { insert: ['user2'] })
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testFromJsonArrayDelta = _tc => {
+  // Test creating Array Delta from JSON
+  const jsonOps = [
+    { insert: ['a', 'b', 'c'] },
+    { retain: 2, attributes: { highlight: true } },
+    { delete: 1 }
+  ]
+  
+  const d = delta.fromJSON(jsonOps, 'array')
+  
+  // Verify the created Array Delta
+  t.compare(d.toJSON(), jsonOps)
+  
+  // Test that it's an array delta
+  t.assert(d.type === 'array')
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testFromJsonComplexScenario = _tc => {
+  // Test creating Delta from complex JSON scenario
+  const jsonOps = [
+    { insert: 'Hello, ' },
+    { insert: 'this is a ', attributes: { bold: true } },
+    { insert: 'test', attributes: { bold: true, italic: true } },
+    { insert: ' document.', attributes: { bold: true } },
+    { retain: 6, attributes: { color: 'blue' } },
+    { retain: 5 },
+    { retain: 4, attributes: { underline: true } },
+    { delete: 2 } // delete operation is not counted
+  ]
+  
+  const d = delta.fromJSON(jsonOps, 'text')
+  
+  // Verify the complex Delta structure
+  t.compare(d.toJSON(), jsonOps)
+  
+  // Test that all operations are properly reconstructed
+  let totalLength = 0
+  let insertLength = 0
+  let retainLength = 0
+  let deleteLength = 0
+
+  d.forEach(
+    (op) => {
+      totalLength += op.length
+    },
+    (op) => {
+      insertLength += op.length
+    },
+    (op) => {
+      retainLength += op.length
+    },
+    (op) => {
+      deleteLength += op.length
+    }
+  )
+  
+  // Calculate expected length: "Hello, this is a test document.".length = 31; 31 + 6 + 5 + 4 = 46 characters
+  t.compare(totalLength, 46)
+  t.compare(insertLength, 31)
+  t.compare(retainLength, 15)
+  t.compare(deleteLength, 0)
+}

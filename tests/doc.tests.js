@@ -365,7 +365,7 @@ export const testDocDestroy = async _tc => {
   subdoc.on('destroy', () => {
     subDocDestroyEvent = true
   })
-  ydoc.getMap().set('subdoc', subdoc)
+  ydoc.subdocs.add(subdoc)
   const ymap = ydoc.getMap()
   ymap.set('key1', 'value1')
 
