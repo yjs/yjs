@@ -11,6 +11,7 @@ import {
   YXmlElement,
   YXmlFragment,
   transact,
+  beginTransaction,
   applyUpdate,
   ContentDoc, Item, Transaction, YEvent, // eslint-disable-line
   encodeStateAsUpdate
@@ -190,6 +191,22 @@ export class Doc extends ObservableV2 {
    */
   transact (f, origin = null) {
     return transact(this, f, origin)
+  }
+
+  /**
+   * Begins a transaction and returns a callback that finishes it.
+   * This is equivalent to `y.transact(() => { ... })` but
+   * allows you to perform transactions without passing a callback.
+   * You must call the returned function to finish the transaction.
+   *
+   * @param {any} [origin=null]
+   * @return {[Transaction, function():void]}
+   *
+   * @public
+   * @function
+   */
+  beginTransaction (origin = null) {
+    return beginTransaction(this, origin)
   }
 
   /**

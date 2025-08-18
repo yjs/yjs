@@ -22,6 +22,28 @@ export const testAfterTransactionRecursion = _tc => {
 /**
  * @param {t.TestCase} _tc
  */
+export const testBeginTransaction = _tc => {
+  // Same as testAfterTransactionRecursion, but using beginTransaction
+  const ydoc = new Y.Doc()
+  const yxml = ydoc.getXmlFragment('')
+  ydoc.on('afterTransaction', tr => {
+    if (tr.origin === 'test') {
+      yxml.toJSON()
+    }
+  })
+  const [tx, endTransaction] = ydoc.beginTransaction('test');
+  try {
+      for (let i = 0; i < 15000; i++) {
+      yxml.push([new Y.XmlText('a')])
+      }
+  } finally {
+      endTransaction()
+  }
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
 export const testFindTypeInOtherDoc = _tc => {
   const ydoc = new Y.Doc()
   const ymap = ydoc.getMap()
