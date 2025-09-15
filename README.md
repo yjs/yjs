@@ -1385,6 +1385,15 @@ But we use state vectors only to describe the state of the local document, so we
 can compute the missing struct of the remote client. We do not use it to track
 causality.
 
+### Formal Proof
+
+[lean-yjs](https://github.com/iasakura/lean-yjs) provides a formal verification
+of the YATA CRDT algorithm that Yjs implements, using the Lean theorem prover to
+mathematically prove correctness properties. While the CRDT algorithm itself is
+correct (currently proven for preservation and commutativity), the project
+reveals that [the pseudocode in the original YATA paper contains
+errors](https://discuss.yjs.dev/t/lean-yjs-formally-proving-the-yjs-conflict-resolution-algorithms/3875/2).
+
 ## License and Author
 
 Yjs and all related projects are [**MIT licensed**](./LICENSE).
