@@ -12,7 +12,7 @@ import {
   YXmlFragment,
   transact,
   applyUpdate,
-  ContentDoc, Item, Transaction, YEvent, // eslint-disable-line
+  ContentDoc, Item, Transaction, // eslint-disable-line
   encodeStateAsUpdate
 } from '../internals.js'
 
@@ -23,6 +23,13 @@ import * as array from 'lib0/array'
 import * as promise from 'lib0/promise'
 
 export const generateNewClientId = random.uint32
+
+/**
+ * @typedef {import('../utils/types.js').YTypeConstructors} YTypeConstructors
+ */
+/**
+ * @typedef {import('../utils/types.js').YType} YType
+ */
 
 /**
  * @typedef {Object} DocOpts
@@ -72,7 +79,7 @@ export class Doc extends ObservableV2 {
     this.isSuggestionDoc = isSuggestionDoc
     this.cleanupFormatting = !isSuggestionDoc
     /**
-     * @type {Map<string, AbstractType<YEvent<any>>>}
+     * @type {Map<string, YType>}
      */
     this.share = new Map()
     this.store = new StructStore()
@@ -205,7 +212,7 @@ export class Doc extends ObservableV2 {
    * Define all types right after the Y.Doc instance is created and store them in a separate object.
    * Also use the typed methods `getText(name)`, `getArray(name)`, ..
    *
-   * @template {typeof AbstractType<any>} Type
+   * @template {YTypeConstructors} TypeC
    * @example
    *   const ydoc = new Y.Doc(..)
    *   const appState = {
@@ -214,8 +221,8 @@ export class Doc extends ObservableV2 {
    *   }
    *
    * @param {string} name
-   * @param {Type} TypeConstructor The constructor of the type definition. E.g. Y.Text, Y.Array, Y.Map, ...
-   * @return {InstanceType<Type>} The created type. Constructed with TypeConstructor
+   * @param {TypeC} TypeConstructor The constructor of the type definition. E.g. Y.Text, Y.Array, Y.Map, ...
+   * @return {InstanceType<TypeC>} The created type. Constructed with TypeConstructor
    *
    * @public
    */
@@ -227,6 +234,7 @@ export class Doc extends ObservableV2 {
       return t
     })
     const Constr = type.constructor
+    // @ts-ignore
     if (TypeConstructor !== AbstractType && Constr !== TypeConstructor) {
       if (Constr === AbstractType) {
         // @ts-ignore
@@ -245,12 +253,12 @@ export class Doc extends ObservableV2 {
         t._length = type._length
         this.share.set(name, t)
         t._integrate(this, null)
-        return /** @type {InstanceType<Type>} */ (t)
+        return /** @type {InstanceType<TypeC>} */ (t)
       } else {
         throw new Error(`Type with the name ${name} has already been defined with a different constructor`)
       }
     }
-    return /** @type {InstanceType<Type>} */ (type)
+    return /** @type {InstanceType<TypeC>} */ (type)
   }
 
   /**
@@ -261,7 +269,7 @@ export class Doc extends ObservableV2 {
    * @public
    */
   getArray (name = '') {
-    return /** @type {YArray<T>} */ (this.get(name, YArray))
+    return /** @type {YArray<any>} */ (this.get(name, YArray))
   }
 
   /**

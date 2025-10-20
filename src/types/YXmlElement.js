@@ -9,14 +9,9 @@ import {
   typeMapGet,
   typeMapGetAll,
   typeMapGetAllSnapshot,
-  typeListForEach,
   YXmlElementRefID,
-  typeMapGetDelta,
-  noAttributionsManager,
-  AbstractAttributionManager, Snapshot, YXmlText, ContentType, AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item, // eslint-disable-line
+  Snapshot, YXmlText, ContentType, AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item, // eslint-disable-line
 } from '../internals.js'
-
-import * as delta from '../utils/Delta.js'
 
 /**
  * @typedef {Object|number|null|Array<any>|string|Uint8Array|AbstractType<any>} ValueTypes
@@ -29,7 +24,9 @@ import * as delta from '../utils/Delta.js'
  * * An YXmlElement has attributes (key value pairs)
  * * An YXmlElement has childElements that must inherit from YXmlElement
  *
- * @template {{ [key: string]: ValueTypes }} [KV={ [key: string]: string }]
+ * @template {{ [key: string]: ValueTypes }} [Attrs={ [key: string]: string }]
+ * @template {any} [Children=any]
+ * @extends YXmlFragment<Children,Attrs>
  */
 export class YXmlElement extends YXmlFragment {
   constructor (nodeName = 'UNDEFINED') {
@@ -65,7 +62,7 @@ export class YXmlElement extends YXmlFragment {
    * * Observer functions are fired
    *
    * @param {Doc} y The Yjs instance
-   * @param {Item} item
+   * @param {Item?} item
    */
   _integrate (y, item) {
     super._integrate(y, item)
@@ -78,10 +75,10 @@ export class YXmlElement extends YXmlFragment {
   /**
    * Creates an Item with the same effect as this Item (without position effect)
    *
-   * @return {YXmlElement}
+   * @return {this}
    */
   _copy () {
-    return new YXmlElement(this.nodeName)
+    return /** @type {any} */ (new YXmlElement(this.nodeName))
   }
 
   /**
@@ -89,13 +86,10 @@ export class YXmlElement extends YXmlFragment {
    *
    * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
    *
-   * @return {YXmlElement<KV>}
+   * @return {this}
    */
   clone () {
-    /**
-     * @type {YXmlElement<KV>}
-     */
-    const el = new YXmlElement(this.nodeName)
+    const el = this._copy()
     const attrs = this.getAttributes()
     object.forEach(attrs, (value, key) => {
       if (typeof value === 'string') {
@@ -154,17 +148,17 @@ export class YXmlElement extends YXmlFragment {
   /**
    * Sets or updates an attribute.
    *
-   * @template {keyof KV & string} KEY
+   * @template {keyof Attrs & string} KEY
    *
    * @param {KEY} attributeName The attribute name that is to be set.
-   * @param {KV[KEY]} attributeValue The attribute value that is to be set.
+   * @param {Attrs[KEY]} attributeValue The attribute value that is to be set.
    *
    * @public
    */
   setAttribute (attributeName, attributeValue) {
     if (this.doc !== null) {
       transact(this.doc, transaction => {
-        typeMapSet(transaction, this, attributeName, attributeValue)
+        typeMapSet(transaction, this, attributeName, /** @type {any} */ (attributeValue))
       })
     } else {
       /** @type {Map<string, any>} */ (this._prelimAttrs).set(attributeName, attributeValue)
@@ -174,11 +168,11 @@ export class YXmlElement extends YXmlFragment {
   /**
    * Returns an attribute value that belongs to the attribute name.
    *
-   * @template {keyof KV & string} KEY
+   * @template {keyof Attrs & string} KEY
    *
    * @param {KEY} attributeName The attribute name that identifies the
    *                               queried value.
-   * @return {KV[KEY]|undefined} The queried attribute value.
+   * @return {Attrs[KEY]|undefined} The queried attribute value.
    *
    * @public
    */
@@ -202,99 +196,12 @@ export class YXmlElement extends YXmlFragment {
    * Returns all attribute name/value pairs in a JSON Object.
    *
    * @param {Snapshot} [snapshot]
-   * @return {{ [Key in Extract<keyof KV,string>]?: KV[Key]}} A JSON Object that describes the attributes.
+   * @return {{ [Key in Extract<keyof Attrs,string>]?: Attrs[Key]}} A JSON Object that describes the attributes.
    *
    * @public
    */
   getAttributes (snapshot) {
     return /** @type {any} */ (snapshot ? typeMapGetAllSnapshot(this, snapshot) : typeMapGetAll(this))
-  }
-
-  /**
-   * Render the difference to another ydoc (which can be empty) and highlight the differences with
-   * attributions.
-   *
-   * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
-   * attribution `{ isDeleted: true, .. }`.
-   *
-   * @param {AbstractAttributionManager} am
-   * @return {{ nodeName: string, children: delta.ArrayDeltaBuilder<Array<import('./AbstractType.js').DeepContent>>, attributes: import('./AbstractType.js').MapAttributedContent<any> }}
-   *
-   * @public
-   */
-  getContentDeep (am = noAttributionsManager) {
-    const { children: origChildren, attributes: origAttributes } = this.getContent(am)
-    const children = origChildren.map(d => /** @type {any} */ (
-      (d instanceof delta.InsertArrayOp && d.insert instanceof Array)
-        ? new delta.InsertArrayOp(d.insert.map(e => e instanceof AbstractType ? /** @type {delta.ArrayDeltaBuilder<Array<any>>} */ (e.getContentDeep(am)) : e), d.attributes, d.attribution)
-        : d
-    ))
-    /**
-     * @todo there is a Attributes type and a DeepAttributes type.
-     * @type {delta.MapDeltaBuilder<any,any>}
-     */
-    const attributes = delta.createMapDelta()
-    origAttributes.forEach(
-      null,
-      (insertOp, key) => {
-        if (insertOp.value instanceof AbstractType) {
-          attributes.set(key, insertOp.value.getContentDeep(am), null, insertOp.attribution)
-        } else {
-          attributes.set(key, insertOp.value, undefined, insertOp.attribution)
-        }
-      }
-    )
-    return delta.createXmlDelta(this.nodeName, children, attributes)
-  }
-
-  /**
-   * Render the difference to another ydoc (which can be empty) and highlight the differences with
-   * attributions.
-   *
-   * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
-   * attribution `{ isDeleted: true, .. }`.
-   *
-   * @param {import('../internals.js').AbstractAttributionManager} am
-   *
-   * @public
-   */
-  getContent (am = noAttributionsManager) {
-    const { children } = super.getContent(am)
-    const attributes = typeMapGetDelta(this, am)
-    return new delta.XmlDelta(this.nodeName, children, attributes)
-  }
-
-  /**
-   * Creates a Dom Element that mirrors this YXmlElement.
-   *
-   * @param {Document} [_document=document] The document object (you must define
-   *                                        this when calling this method in
-   *                                        nodejs)
-   * @param {Object<string, any>} [hooks={}] Optional property to customize how hooks
-   *                                             are presented in the DOM
-   * @param {any} [binding] You should not set this property. This is
-   *                               used if DomBinding wants to create a
-   *                               association to the created DOM type.
-   * @return {Node} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
-   *
-   * @public
-   */
-  toDOM (_document = document, hooks = {}, binding) {
-    const dom = _document.createElement(this.nodeName)
-    const attrs = this.getAttributes()
-    for (const key in attrs) {
-      const value = attrs[key]
-      if (typeof value === 'string') {
-        dom.setAttribute(key, value)
-      }
-    }
-    typeListForEach(this, yxml => {
-      dom.appendChild(yxml.toDOM(_document, hooks, binding))
-    })
-    if (binding !== undefined) {
-      binding._createAssociation(dom, this)
-    }
-    return dom
   }
 
   /**
@@ -313,7 +220,7 @@ export class YXmlElement extends YXmlFragment {
 
 /**
  * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
- * @return {YXmlElement}
+ * @return {import('../utils/types.js').YType}
  *
  * @function
  */

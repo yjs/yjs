@@ -33,13 +33,13 @@ import { ObservableV2 } from 'lib0/observable'
 import * as encoding from 'lib0/encoding'
 import * as s from 'lib0/schema'
 
-export const attributionJsonSchema = s.object({
-  insert: s.array(s.string).optional,
-  insertedAt: s.number.optional,
-  delete: s.array(s.string).optional,
-  deletedAt: s.number.optional,
-  attributes: s.record(s.string, s.array(s.string)).optional,
-  attributedAt: s.number.optional
+export const attributionJsonSchema = s.$object({
+  insert: s.$array(s.$string).optional,
+  insertedAt: s.$number.optional,
+  delete: s.$array(s.$string).optional,
+  deletedAt: s.$number.optional,
+  attributes: s.$record(s.$string, s.$array(s.$string)).optional,
+  attributedAt: s.$number.optional
 })
 
 /**
@@ -63,7 +63,7 @@ export const createAttributionFromAttributionItems = (attrs, deleted) => {
    */
   const attribution = {}
   if (deleted) {
-    attribution.delete = s.array(s.string).ensure([])
+    attribution.delete = s.$array(s.$string).cast([])
   } else {
     attribution.insert = []
   }
@@ -72,7 +72,7 @@ export const createAttributionFromAttributionItems = (attrs, deleted) => {
       // eslint-disable-next-line no-fallthrough
       case 'insert':
       case 'delete': {
-        const as = /** @type {import('../utils/Delta.js').Attribution_} */ (attribution)
+        const as = /** @type {import('lib0/delta').Attribution} */ (attribution)
         const ls = as[attr.name] = as[attr.name] ?? []
         ls.push(attr.val)
         break

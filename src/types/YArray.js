@@ -23,28 +23,12 @@ import {
   AbstractAttributionManager, ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 
-/**
- *
- * @template Content
- * @template {import('../internals.js').Delta|undefined} Modifiers
- * @typedef {import('../internals.js').ArrayDelta<Content,Modifiers>} ArrayDelta
- */
-
-import * as delta from '../utils/Delta.js'
-
-/**
- * Event that describes the changes on a YArray
- * @template {import('../utils/types.js').YValue} T
- * @extends YEvent<YArray<T>>
- */
-export class YArrayEvent extends YEvent {}
+import * as delta from 'lib0/delta' // eslint-disable-line
 
 /**
  * A shared Array implementation.
  * @template {import('../utils/types.js').YValue} T
- * @template {ArrayDelta<T,undefined>} [TypeDelta=ArrayDelta<T,undefined>]
- * @template {T extends AbstractType<any,any,infer DeepD> ? ArrayDelta<Exclude<T,AbstractType<any>>|DeepD,DeepD> : ArrayDelta<T,undefined>} [EventDeltaDeep=T extends AbstractType<any,any,infer DeepD> ? ArrayDelta<Exclude<T,AbstractType<any>>|DeepD,DeepD> : ArrayDelta<T,undefined>]
- * @extends AbstractType<YArrayEvent<T>,TypeDelta,EventDeltaDeep>
+ * @extends {AbstractType<delta.ArrayDelta<T>,YArray<T>>}
  * @implements {Iterable<T>}
  */
 export class YArray extends AbstractType {
@@ -84,19 +68,12 @@ export class YArray extends AbstractType {
    * * Observer functions are fired
    *
    * @param {Doc} y The Yjs instance
-   * @param {Item} item
+   * @param {Item?} item
    */
   _integrate (y, item) {
     super._integrate(y, item)
     this.insert(0, /** @type {Array<any>} */ (this._prelimContent))
     this._prelimContent = null
-  }
-
-  /**
-   * @return {YArray<T>}
-   */
-  _copy () {
-    return new YArray()
   }
 
   /**
@@ -108,11 +85,12 @@ export class YArray extends AbstractType {
    */
   clone () {
     /**
-     * @type {YArray<T>}
+     * @type {this}
      */
-    const arr = new YArray()
+    const arr = /** @type {this} */ (new YArray())
     arr.insert(0, this.toArray().map(el =>
-      el instanceof AbstractType ? /** @type {typeof el} */ (el.clone()) : el
+      // @ts-ignore
+      el instanceof AbstractType ? /** @type {any} */ (el.clone()) : el
     ))
     return arr
   }
@@ -130,7 +108,7 @@ export class YArray extends AbstractType {
    */
   _callObserver (transaction, parentSubs) {
     super._callObserver(transaction, parentSubs)
-    callTypeObservers(this, transaction, new YArrayEvent(this, transaction))
+    callTypeObservers(this, transaction, new YEvent(this, transaction, null))
   }
 
   /**
@@ -228,16 +206,12 @@ export class YArray extends AbstractType {
    * attribution `{ isDeleted: true, .. }`.
    *
    * @param {AbstractAttributionManager} am
-   * @return {EventDeltaDeep} The Delta representation of this type.
+   * @return {delta.ArrayDelta<import('./AbstractType.js').TypeToDelta<T>>} The Delta representation of this type.
    *
    * @public
    */
   getContentDeep (am = noAttributionsManager) {
-    return /** @type {any} */ (this.getContent(am).map(d => /** @type {any} */ (
-      d instanceof delta.InsertArrayOp && d.insert instanceof Array
-        ? new delta.InsertArrayOp(d.insert.map(e => e instanceof AbstractType ? e.getContentDeep(am) : e), d.attributes, d.attribution)
-        : d
-    )))
+    return super.getContentDeep(am)
   }
 
   /**
@@ -248,12 +222,14 @@ export class YArray extends AbstractType {
    * attribution `{ isDeleted: true, .. }`.
    *
    * @param {AbstractAttributionManager} am
-   * @return {TypeDelta} The Delta representation of this type.
+   * @return {delta.ArrayDelta<T>} The Delta representation of this type.
    *
    * @public
    */
   getContent (am = noAttributionsManager) {
-    return typeListGetContent(this, am)
+    const d = this.change
+    typeListGetContent(d, this, am)
+    return d
   }
 
   /**
@@ -316,6 +292,7 @@ export class YArray extends AbstractType {
 
 /**
  * @param {UpdateDecoderV1 | UpdateDecoderV2} _decoder
+ * @return {import('../utils/types.js').YType}
  *
  * @private
  * @function

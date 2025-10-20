@@ -11,7 +11,6 @@ import * as doc from './doc.tests.js'
 import * as snapshot from './snapshot.tests.js'
 import * as updates from './updates.tests.js'
 import * as relativePositions from './relativePositions.tests.js'
-import * as delta from './delta.tests.js'
 import * as idset from './IdSet.tests.js'
 import * as idmap from './IdMap.tests.js'
 import * as attribution from './attribution.tests.js'
@@ -25,7 +24,7 @@ if (isBrowser) {
 }
 
 const tests = {
-  doc, map, array, text, xml, encoding, undoredo, compatibility, snapshot, updates, relativePositions, delta, idset, idmap, attribution
+  doc, map, array, text, xml, encoding, undoredo, compatibility, snapshot, updates, relativePositions, idset, idmap, attribution
 }
 
 const run = async () => {

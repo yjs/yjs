@@ -19,5 +19,6 @@
       "yjs/testHelper": ["./tests/testHelper.js"]
     }
   },
-  "include": ["./src/**/*.js", "./tests/**/*.js"]
+  "include": ["./src/**/*.js", "./tests/**/*.js"],
+  "exclude": ["../lib0/**"]
 }

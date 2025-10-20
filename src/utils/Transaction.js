@@ -84,13 +84,13 @@ export class Transaction {
      * All types that were directly modified (property added or child
      * inserted/deleted). New types are not included in this Set.
      * Maps from type to parentSubs (`item.parentSub = null` for YArray)
-     * @type {Map<AbstractType<YEvent<any>>,Set<String|null>>}
+     * @type {Map<import('../utils/types.js').YType,Set<String|null>>}
      */
     this.changed = new Map()
     /**
      * Stores the events for the types that observe also child elements.
      * It is mainly used by `observeDeep`.
-     * @type {Map<AbstractType<YEvent<any>>,Array<YEvent<any>>>}
+     * @type {Map<import('../utils/types.js').YType,Array<YEvent<any>>>}
      */
     this.changedParentTypes = new Map()
     /**
@@ -198,7 +198,7 @@ export const nextID = transaction => {
  * did not change, it was just added and we should not fire events for `type`.
  *
  * @param {Transaction} transaction
- * @param {AbstractType<YEvent<any>>} type
+ * @param {import('../utils/types.js').YType} type
  * @param {string|null} parentSub
  */
 export const addChangedTypeToTransaction = (transaction, type, parentSub) => {

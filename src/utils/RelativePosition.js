@@ -153,7 +153,7 @@ export const createRelativePosition = (type, item, assoc) => {
 /**
  * Create a relativePosition based on a absolute position.
  *
- * @param {AbstractType<any>} type The base type (e.g. YText or YArray).
+ * @param {AbstractType} type The base type (e.g. YText or YArray).
  * @param {number} index The absolute position.
  * @param {number} [assoc]
  * @param {import('../utils/AttributionManager.js').AbstractAttributionManager} attributionManager

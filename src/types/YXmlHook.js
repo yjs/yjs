@@ -22,10 +22,10 @@ export class YXmlHook extends YMap {
   }
 
   /**
-   * Creates an Item with the same effect as this Item (without position effect)
+   * @return {this}
    */
   _copy () {
-    return new YXmlHook(this.hookName)
+    return /** @type {this} */ (new YXmlHook(this.hookName))
   }
 
   /**
@@ -33,44 +33,14 @@ export class YXmlHook extends YMap {
    *
    * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
    *
-   * @return {YXmlHook}
+   * @return {this}
    */
   clone () {
-    const el = new YXmlHook(this.hookName)
+    const el = this._copy()
     this.forEach((value, key) => {
       el.set(key, value)
     })
     return el
-  }
-
-  /**
-   * Creates a Dom Element that mirrors this YXmlElement.
-   *
-   * @param {Document} [_document=document] The document object (you must define
-   *                                        this when calling this method in
-   *                                        nodejs)
-   * @param {Object.<string, any>} [hooks] Optional property to customize how hooks
-   *                                             are presented in the DOM
-   * @param {any} [binding] You should not set this property. This is
-   *                               used if DomBinding wants to create a
-   *                               association to the created DOM type
-   * @return {Element} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
-   *
-   * @public
-   */
-  toDOM (_document = document, hooks = {}, binding) {
-    const hook = hooks[this.hookName]
-    let dom
-    if (hook !== undefined) {
-      dom = hook.createDom(this)
-    } else {
-      dom = document.createElement(this.hookName)
-    }
-    dom.setAttribute('data-yjs-hook', this.hookName)
-    if (binding !== undefined) {
-      binding._createAssociation(dom, this)
-    }
-    return dom
   }
 
   /**
@@ -89,7 +59,7 @@ export class YXmlHook extends YMap {
 
 /**
  * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
- * @return {YXmlHook}
+ * @return {import('../utils/types.js').YType}
  *
  * @private
  * @function

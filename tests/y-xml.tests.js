@@ -1,7 +1,7 @@
 import * as Y from '../src/index.js'
 import { init, compare } from './testHelper.js'
 import * as t from 'lib0/testing'
-import * as delta from '../src/utils/Delta.js'
+import * as delta from 'lib0/delta'
 
 export const testCustomTypings = () => {
   const ydoc = new Y.Doc()
@@ -100,32 +100,13 @@ export const testEvents = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
- */
-export const testTreewalker = tc => {
-  const { users, xml0 } = init(tc, { users: 3 })
-  const paragraph1 = new Y.XmlElement('p')
-  const paragraph2 = new Y.XmlElement('p')
-  const text1 = new Y.XmlText('init')
-  const text2 = new Y.XmlText('text')
-  paragraph1.insert(0, [text1, text2])
-  xml0.insert(0, [paragraph1, paragraph2, new Y.XmlElement('img')])
-  const allParagraphs = xml0.querySelectorAll('p')
-  t.assert(allParagraphs.length === 2, 'found exactly two paragraphs')
-  t.assert(allParagraphs[0] === paragraph1, 'querySelectorAll found paragraph1')
-  t.assert(allParagraphs[1] === paragraph2, 'querySelectorAll found paragraph2')
-  t.assert(xml0.querySelector('p') === paragraph1, 'querySelector found paragraph1')
-  compare(users)
-}
-
-/**
  * @param {t.TestCase} _tc
  */
 export const testYtextAttributes = _tc => {
   const ydoc = new Y.Doc()
   const ytext = /** @type {Y.XmlText} */ (ydoc.get('', Y.XmlText))
   ytext.observe(event => {
-    t.compare(event.changes.keys.get('test'), { action: 'add', oldValue: undefined })
+    t.assert(event.delta.attrs.get('test')?.type === 'insert')
   })
   ytext.setAttribute('test', 42)
   t.compare(ytext.getAttribute('test'), 42)
@@ -201,13 +182,12 @@ export const testClone = _tc => {
 export const testFormattingBug = _tc => {
   const ydoc = new Y.Doc()
   const yxml = /** @type {Y.XmlText} */ (ydoc.get('', Y.XmlText))
-  const delta = [
-    { insert: 'A', attributes: { em: {}, strong: {} } },
-    { insert: 'B', attributes: { em: {} } },
-    { insert: 'C', attributes: { em: {}, strong: {} } }
-  ]
-  yxml.applyDelta(delta)
-  t.compare(yxml.getContent().toJSON(), delta)
+  const q = delta.create()
+    .insert('A', { em: {}, strong: {} })
+    .insert('B', { em: {} })
+    .insert('C', { em: {}, strong: {} })
+  yxml.applyDelta(q)
+  t.compare(yxml.getContent(), q)
 }
 
 /**
@@ -243,11 +223,11 @@ export const testFragmentAttributedContent = _tc => {
       yfragment.delete(0, 1)
       yfragment.insert(1, [elem3])
     })
-    const expectedContent = delta.createArrayDelta().insert([elem1], null, { delete: [] }).insert([elem2]).insert([elem3], null, { insert: [] })
+    const expectedContent = delta.create().insert([elem1], null, { delete: [] }).insert([elem2]).insert([elem3], null, { insert: [] })
     const attributedContent = yfragment.getContent(attributionManager)
-    console.log(attributedContent.children.toJSON())
-    t.assert(attributedContent.children.equals(expectedContent))
-    t.compare(elem1.getContent(attributionManager).toJSON(), delta.createTextDelta().insert('hello', null, { delete: [] }).done().toJSON())
+    console.log(attributedContent.toJSON())
+    t.assert(attributedContent.equals(expectedContent))
+    t.compare(elem1.getContent(attributionManager).toJSON(), delta.create().insert('hello', null, { delete: [] }).toJSON())
   })
 }
 
@@ -272,29 +252,29 @@ export const testElementAttributedContent = _tc => {
       yelement.insert(1, [elem3])
       yelement.setAttribute('key', '42')
     })
-    const expectedContent = delta.createArrayDelta().insert([elem1], null, { delete: [] }).insert([elem2]).insert([elem3], null, { insert: [] })
+    const expectedContent = delta.create().insert([elem1], null, { delete: [] }).insert([elem2]).insert([elem3], null, { insert: [] })
     const attributedContent = yelement.getContent(attributionManager)
-    console.log('children', attributedContent.children.toJSON())
-    console.log('attributes', attributedContent.attributes)
-    t.assert(attributedContent.children.equals(expectedContent))
-    t.compare(attributedContent.attributes.toJSON(), { key: { type: 'insert', prevValue: undefined, value: '42', attribution: { insert: [] } } })
+    console.log('children', attributedContent.toJSON())
+    console.log('attributes', attributedContent)
+    t.assert(attributedContent.equals(expectedContent))
+    t.compare(attributedContent.toJSON().attrs, { key: { type: 'insert', prevValue: undefined, value: '42', attribution: { insert: [] } } })
     t.group('test getContentDeep', () => {
-      const expectedContent = delta.createArrayDelta().insert(
-        [delta.createTextDelta().insert('hello', null, { delete: [] })],
+      const expectedContent = delta.create().insert(
+        [delta.text().insert('hello', null, { delete: [] })],
         null,
         { delete: [] }
-      ).insert([delta.createXmlDelta('span')])
+      ).insert([delta.create('span')])
         .insert([
-          delta.createTextDelta().insert('world', null, { insert: [] })
+          delta.text().insert('world', null, { insert: [] })
         ], null, { insert: [] })
       const attributedContent = yelement.getContentDeep(attributionManager)
-      console.log('children', JSON.stringify(attributedContent.children.toJSON(), null, 2))
+      console.log('children', JSON.stringify(attributedContent.toJSON().children, null, 2))
       console.log('cs expec', JSON.stringify(expectedContent.toJSON(), null, 2))
-      console.log('attributes', attributedContent.attributes)
-      t.assert(attributedContent.children.equals(expectedContent))
-      t.compare(attributedContent.attributes, /** @type {delta.MapDeltaBuilder<any>} */ (delta.createMapDelta()).set('key', '42', undefined, { insert: [] }))
-      t.compare(attributedContent.attributes.toJSON(), { key: { type: 'insert', prevValue: undefined, value: '42', attribution: { insert: [] } } })
-      t.assert(attributedContent.nodeName === 'UNDEFINED')
+      console.log('attributes', attributedContent.toJSON().attrs)
+      t.assert(attributedContent.equals(expectedContent))
+      t.compare(attributedContent, /** @type {delta.MapDelta<any>} */ (delta.map()).set('key', '42', { insert: [] }))
+      t.compare(attributedContent.toJSON().attrs, { key: { type: 'insert', prevValue: undefined, value: '42', attribution: { insert: [] } } })
+      t.assert(attributedContent.name === 'UNDEFINED')
     })
   })
 }
@@ -316,64 +296,64 @@ export const testElementAttributedContentViaDiffer = _tc => {
     yelement.setAttribute('key', '42')
   })
   const attributionManager = Y.createAttributionManagerFromDiff(ydocV1, ydoc)
-  const expectedContent = delta.createArrayDelta().insert([delta.createTextDelta().insert('hello')], null, { delete: [] }).insert([elem2.getContentDeep()]).insert([delta.createTextDelta().insert('world', null, { insert: [] })], null, { insert: [] })
+  const expectedContent = delta.create().insert([delta.create().insert('hello')], null, { delete: [] }).insert([elem2.getContentDeep()]).insert([delta.create().insert('world', null, { insert: [] })], null, { insert: [] })
   const attributedContent = yelement.getContentDeep(attributionManager)
-  console.log('children', attributedContent.children.toJSON())
-  console.log('attributes', attributedContent.attributes)
-  t.compare(attributedContent.children.toJSON(), expectedContent.toJSON())
-  t.assert(attributedContent.children.equals(expectedContent))
-  t.compare(attributedContent.attributes.toJSON(), { key: { type: 'insert', prevValue: undefined, value: '42', attribution: { insert: [] } } })
+  console.log('children', attributedContent.toJSON().children)
+  console.log('attributes', attributedContent.toJSON().attrs)
+  t.compare(attributedContent.toJSON(), expectedContent.toJSON())
+  t.assert(attributedContent.equals(expectedContent))
+  t.compare(attributedContent.toJSON().attrs, { key: { type: 'insert', prevValue: undefined, value: '42', attribution: { insert: [] } } })
   t.group('test getContentDeep', () => {
-    const expectedContent = delta.createArrayDelta().insert(
-      [delta.createTextDelta().insert('hello')],
+    const expectedContent = delta.create().insert(
+      [delta.create().insert('hello')],
       null,
       { delete: [] }
-    ).insert([delta.createXmlDelta('span')])
+    ).insert([delta.create('span')])
       .insert([
-        delta.createTextDelta().insert('world', null, { insert: [] })
+        delta.create().insert('world', null, { insert: [] })
       ], null, { insert: [] })
     const attributedContent = yelement.getContentDeep(attributionManager)
-    console.log('children', JSON.stringify(attributedContent.children.toJSON(), null, 2))
+    console.log('children', JSON.stringify(attributedContent.toJSON().children, null, 2))
     console.log('cs expec', JSON.stringify(expectedContent.toJSON(), null, 2))
-    console.log('attributes', attributedContent.attributes)
-    t.assert(attributedContent.children.equals(expectedContent))
-    t.compare(attributedContent.attributes.toJSON(), { key: { type: 'insert', prevValue: undefined, value: '42', attribution: { insert: [] } } })
-    t.assert(attributedContent.nodeName === 'UNDEFINED')
+    console.log('attributes', attributedContent.toJSON().attrs)
+    t.assert(attributedContent.equals(expectedContent))
+    t.compare(attributedContent.toJSON().attrs, { key: { type: 'insert', prevValue: undefined, value: '42', attribution: { insert: [] } } })
+    t.assert(attributedContent.name === 'UNDEFINED')
   })
   ydoc.transact(() => {
     elem3.insert(0, 'big')
   })
   t.group('test getContentDeep after some more updates', () => {
     t.info('expecting diffingAttributionManager to auto update itself')
-    const expectedContent = delta.createArrayDelta().insert(
-      [delta.createTextDelta().insert('hello')],
+    const expectedContent = delta.create().insert(
+      [delta.create().insert('hello')],
       null,
       { delete: [] }
-    ).insert([delta.createXmlDelta('span')])
+    ).insert([delta.create('span')])
       .insert([
-        delta.createTextDelta().insert('bigworld', null, { insert: [] })
+        delta.create().insert('bigworld', null, { insert: [] })
       ], null, { insert: [] })
     const attributedContent = yelement.getContentDeep(attributionManager)
-    console.log('children', JSON.stringify(attributedContent.children.toJSON(), null, 2))
+    console.log('children', JSON.stringify(attributedContent.toJSON().children, null, 2))
     console.log('cs expec', JSON.stringify(expectedContent.toJSON(), null, 2))
-    console.log('attributes', attributedContent.attributes)
-    t.assert(attributedContent.children.equals(expectedContent))
-    t.compare(attributedContent.attributes.toJSON(), { key: { type: 'insert', prevValue: undefined, value: '42', attribution: { insert: [] } } })
-    t.assert(attributedContent.nodeName === 'UNDEFINED')
+    console.log('attributes', attributedContent.toJSON().attrs)
+    t.assert(attributedContent.equals(expectedContent))
+    t.compare(attributedContent.toJSON().attrs, { key: { type: 'insert', prevValue: undefined, value: '42', attribution: { insert: [] } } })
+    t.assert(attributedContent.name === 'UNDEFINED')
   })
   Y.applyUpdate(ydocV1, Y.encodeStateAsUpdate(ydoc))
   t.group('test getContentDeep both docs synced', () => {
     t.info('expecting diffingAttributionManager to auto update itself')
-    const expectedContent = delta.createArrayDelta().insert([delta.createXmlDelta('span')]).insert([
-      delta.createTextDelta().insert('bigworld')
+    const expectedContent = delta.create().insert([delta.create('span')]).insert([
+      delta.create().insert('bigworld')
     ])
     const attributedContent = yelement.getContentDeep(attributionManager)
-    console.log('children', JSON.stringify(attributedContent.children.toJSON(), null, 2))
+    console.log('children', JSON.stringify(attributedContent.toJSON().children, null, 2))
     console.log('cs expec', JSON.stringify(expectedContent.toJSON(), null, 2))
-    console.log('attributes', attributedContent.attributes)
-    t.assert(attributedContent.children.equals(expectedContent))
-    t.compare(attributedContent.attributes.toJSON(), { key: { type: 'insert', prevValue: undefined, value: '42', attribution: null } })
-    t.assert(attributedContent.nodeName === 'UNDEFINED')
+    console.log('attributes', attributedContent.toJSON().attrs)
+    t.assert(attributedContent.equals(expectedContent))
+    t.compare(attributedContent.toJSON().attrs, { key: { type: 'insert', prevValue: undefined, value: '42' } })
+    t.assert(attributedContent.name === 'UNDEFINED')
   })
 }
 

@@ -2,7 +2,7 @@ import * as Y from './testHelper.js'
 import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
-import * as delta from '../src/utils/Delta.js'
+import * as delta from 'lib0/delta'
 import { createIdMapFromIdSet, noAttributionsManager, TwosetAttributionManager, createAttributionManagerFromSnapshots } from 'yjs/internals'
 
 const { init, compare } = Y
@@ -13,22 +13,19 @@ const { init, compare } = Y
  * @param {t.TestCase} _tc
  */
 export const testDeltaBug = _tc => {
-  const initialDelta = [{
-    attributes: {
-      'block-id': 'block-28eea923-9cbb-4b6f-a950-cf7fd82bc087'
-    },
-    insert: '\n'
-  },
-  {
-    attributes: {
+  const initialDelta = delta.create()
+    .insert('\n', {
+      attributes: {
+        'block-id': 'block-28eea923-9cbb-4b6f-a950-cf7fd82bc087'
+      },
+      insert: '\n'
+    })
+    .insert('\n\n\n', {
       'table-col': {
         width: '150'
       }
-    },
-    insert: '\n\n\n'
-  },
-  {
-    attributes: {
+    })
+    .insert('\n', {
       'block-id': 'block-9144be72-e528-4f91-b0b2-82d20408e9ea',
       'table-cell-line': {
         rowspan: '1',
@@ -40,11 +37,8 @@ export const testDeltaBug = _tc => {
       cell: 'cell-apba4k',
       rowspan: '1',
       colspan: '1'
-    },
-    insert: '\n'
-  },
-  {
-    attributes: {
+    })
+    .insert('\n', {
       'block-id': 'block-639adacb-1516-43ed-b272-937c55669a1c',
       'table-cell-line': {
         rowspan: '1',
@@ -56,11 +50,8 @@ export const testDeltaBug = _tc => {
       cell: 'cell-a8qf0r',
       rowspan: '1',
       colspan: '1'
-    },
-    insert: '\n'
-  },
-  {
-    attributes: {
+    })
+    .insert('\n', {
       'block-id': 'block-6302ca4a-73a3-4c25-8c1e-b542f048f1c6',
       'table-cell-line': {
         rowspan: '1',
@@ -72,11 +63,8 @@ export const testDeltaBug = _tc => {
       cell: 'cell-oi9ikb',
       rowspan: '1',
       colspan: '1'
-    },
-    insert: '\n'
-  },
-  {
-    attributes: {
+    })
+    .insert('\n', {
       'block-id': 'block-ceeddd05-330e-4f86-8017-4a3a060c4627',
       'table-cell-line': {
         rowspan: '1',
@@ -88,11 +76,8 @@ export const testDeltaBug = _tc => {
       cell: 'cell-dt6ks2',
       rowspan: '1',
       colspan: '1'
-    },
-    insert: '\n'
-  },
-  {
-    attributes: {
+    })
+    .insert('\n', {
       'block-id': 'block-37b19322-cb57-4e6f-8fad-0d1401cae53f',
       'table-cell-line': {
         rowspan: '1',
@@ -104,11 +89,8 @@ export const testDeltaBug = _tc => {
       cell: 'cell-qah2ay',
       rowspan: '1',
       colspan: '1'
-    },
-    insert: '\n'
-  },
-  {
-    attributes: {
+    })
+    .insert('\n', {
       'block-id': 'block-468a69b5-9332-450b-9107-381d593de249',
       'table-cell-line': {
         rowspan: '1',
@@ -120,11 +102,8 @@ export const testDeltaBug = _tc => {
       cell: 'cell-fpcz5a',
       rowspan: '1',
       colspan: '1'
-    },
-    insert: '\n'
-  },
-  {
-    attributes: {
+    })
+    .insert('\n', {
       'block-id': 'block-26b1d252-9b2e-4808-9b29-04e76696aa3c',
       'table-cell-line': {
         rowspan: '1',
@@ -136,11 +115,8 @@ export const testDeltaBug = _tc => {
       cell: 'cell-zrhylp',
       rowspan: '1',
       colspan: '1'
-    },
-    insert: '\n'
-  },
-  {
-    attributes: {
+    })
+    .insert('\n', {
       'block-id': 'block-6af97ba7-8cf9-497a-9365-7075b938837b',
       'table-cell-line': {
         rowspan: '1',
@@ -152,11 +128,8 @@ export const testDeltaBug = _tc => {
       cell: 'cell-s1q9nt',
       rowspan: '1',
       colspan: '1'
-    },
-    insert: '\n'
-  },
-  {
-    attributes: {
+    })
+    .insert('\n', {
       'block-id': 'block-107e273e-86bc-44fd-b0d7-41ab55aca484',
       'table-cell-line': {
         rowspan: '1',
@@ -168,56 +141,22 @@ export const testDeltaBug = _tc => {
       cell: 'cell-20b0j9',
       rowspan: '1',
       colspan: '1'
-    },
-    insert: '\n'
-  },
-  {
-    attributes: {
+    })
+    .insert('\n', {
       'block-id': 'block-38161f9c-6f6d-44c5-b086-54cc6490f1e3'
-    },
-    insert: '\n'
-  },
-  {
-    insert: 'Content after table'
-  },
-  {
-    attributes: {
+    })
+    .insert('Content after table')
+    .insert('\n', {
       'block-id': 'block-15630542-ef45-412d-9415-88f0052238ce'
-    },
-    insert: '\n'
-  }
-  ]
+    })
   const ydoc1 = new Y.Doc()
   const ytext = ydoc1.getText()
   ytext.applyDelta(initialDelta)
-  const addingDash = [
-    {
-      retain: 12
-    },
-    {
-      insert: '-'
-    }
-  ]
+  const addingDash = delta.create().retain(12).insert('-')
   ytext.applyDelta(addingDash)
-  const addingSpace = [
-    {
-      retain: 13
-    },
-    {
-      insert: ' '
-    }
-  ]
+  const addingSpace = delta.create().retain(13).insert(' ')
   ytext.applyDelta(addingSpace)
-  const addingList = [
-    {
-      retain: 12
-    },
-    {
-      delete: 2
-    },
-    {
-      retain: 1,
-      attributes: {
+  const addingList = delta.create().retain(12).delete(2).retain(1, {
         // Clear table line attribute
         'table-cell-line': null,
         // Add list attribute in place of table-cell-line
@@ -228,15 +167,10 @@ export const testDeltaBug = _tc => {
           cell: 'cell-20b0j9',
           list: 'bullet'
         }
-      }
-    }
-  ]
+      })
   ytext.applyDelta(addingList)
   const result = ytext.getContent()
-  /**
-   * @type {delta.TextDelta<any,any>}
-   */
-  const expectedResult = delta.createTextDelta()
+  const expectedResult = delta.text()
     .insert('\n', { 'block-id': 'block-28eea923-9cbb-4b6f-a950-cf7fd82bc087' })
     .insert('\n\n\n', { 'table-col': { width: '150' } })
     .insert('\n', {
@@ -366,7 +300,6 @@ export const testDeltaBug = _tc => {
     .insert('\n', {
       'block-id': 'block-15630542-ef45-412d-9415-88f0052238ce'
     })
-    .done()
   t.compare(result, expectedResult)
 }
 

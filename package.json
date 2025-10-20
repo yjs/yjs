@@ -88,15 +88,15 @@
     "lib0": "^0.2.114"
   },
   "devDependencies": {
-    "@y/protocols": "^1.0.6-1",
     "@types/node": "^22.14.1",
+    "@y/protocols": "^1.0.6-1",
     "concurrently": "^3.6.1",
     "jsdoc": "^3.6.7",
     "markdownlint-cli": "^0.41.0",
     "rollup": "^4.37.0",
     "standard": "^16.0.4",
     "tui-jsdoc-template": "^1.2.2",
-    "typescript": "^5.8.3",
+    "typescript": "^5.9.3",
     "yjs": "."
   },
   "engines": {

@@ -3,7 +3,7 @@ import { AbstractType, Item } from '../internals.js' // eslint-disable-line
 /**
  * Check if `parent` is a parent of `child`.
  *
- * @param {AbstractType<any>} parent
+ * @param {import('../utils/types.js').YType} parent
  * @param {Item|null} child
  * @return {Boolean} Whether `parent` is a parent of `child`.
  *

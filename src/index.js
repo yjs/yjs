@@ -10,10 +10,6 @@ export {
   YXmlHook as XmlHook,
   YXmlElement as XmlElement,
   YXmlFragment as XmlFragment,
-  YXmlEvent,
-  YMapEvent,
-  YArrayEvent,
-  YTextEvent,
   YEvent,
   Item,
   AbstractStruct,
@@ -74,7 +70,6 @@ export {
   relativePositionToJSON,
   isParentOf,
   equalSnapshots,
-  PermanentUserData, // @TODO experimental
   tryGc,
   transact,
   AbstractConnector,

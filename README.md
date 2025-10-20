@@ -743,8 +743,6 @@ or any of its children.
     <dd>Clone this type into a fresh Yjs type.</dd>
     <b><code>toArray():Array&lt;Y.XmlElement|Y.XmlText&gt;</code></b>
     <dd>Copies the children to a new Array.</dd>
-    <b><code>toDOM():DocumentFragment</code></b>
-    <dd>Transforms this type and all children to new DOM elements.</dd>
     <b><code>toString():string</code></b>
     <dd>Get the XML serialization of all descendants.</dd>
     <b><code>toJSON():string</code></b>
@@ -818,8 +816,6 @@ content and be actually XML compliant.
     <dd>Clone this type into a fresh Yjs type.</dd>
     <b><code>toArray():Array&lt;Y.XmlElement|Y.XmlText&gt;</code></b>
     <dd>Copies the children to a new Array.</dd>
-    <b><code>toDOM():Element</code></b>
-    <dd>Transforms this type and all children to a new DOM element.</dd>
     <b><code>toString():string</code></b>
     <dd>Get the XML serialization of all descendants.</dd>
     <b><code>toJSON():string</code></b>

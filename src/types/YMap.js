@@ -13,35 +13,18 @@ import {
   YMapRefID,
   callTypeObservers,
   transact,
-  typeMapGetDelta,
   warnPrematureAccess,
-  MapDelta, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 
 import * as iterator from 'lib0/iterator'
-
-/**
- * @template T
- * @extends YEvent<YMap<T>>
- * Event that describes the changes on a YMap.
- */
-export class YMapEvent extends YEvent {
-  /**
-   * @param {YMap<T>} ymap The YArray that changed.
-   * @param {Transaction} transaction
-   * @param {Set<any>} subs The keys that changed.
-   */
-  constructor (ymap, transaction, subs) {
-    super(ymap, transaction)
-    this.keysChanged = subs
-  }
-}
+import * as delta from 'lib0/delta' // eslint-disable-line
 
 /**
  * @template MapType
  * A shared Map implementation.
  *
- * @extends AbstractType<YMapEvent<MapType>>
+ * @extends AbstractType<delta.MapDelta<{[K in string]:MapType}>>
  * @implements {Iterable<[string, MapType]>}
  */
 export class YMap extends AbstractType {
@@ -72,7 +55,7 @@ export class YMap extends AbstractType {
    * * Observer functions are fired
    *
    * @param {Doc} y The Yjs instance
-   * @param {Item} item
+   * @param {Item?} item
    */
   _integrate (y, item) {
     super._integrate(y, item)
@@ -83,24 +66,14 @@ export class YMap extends AbstractType {
   }
 
   /**
-   * @return {YMap<MapType>}
-   */
-  _copy () {
-    return new YMap()
-  }
-
-  /**
    * Makes a copy of this data type that can be included somewhere else.
    *
    * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
    *
-   * @return {YMap<MapType>}
+   * @return {this}
    */
   clone () {
-    /**
-     * @type {YMap<MapType>}
-     */
-    const map = new YMap()
+    const map = this._copy()
     this.forEach((value, key) => {
       map.set(key, value instanceof AbstractType ? /** @type {typeof value} */ (value.clone()) : value)
     })
@@ -114,7 +87,7 @@ export class YMap extends AbstractType {
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
   _callObserver (transaction, parentSubs) {
-    callTypeObservers(this, transaction, new YMapEvent(this, transaction, parentSubs))
+    callTypeObservers(this, transaction, new YEvent(this, transaction, parentSubs))
   }
 
   /**
@@ -185,22 +158,6 @@ export class YMap extends AbstractType {
         f(item.content.getContent()[item.length - 1], key, this)
       }
     })
-  }
-
-  /**
-   * Render the difference to another ydoc (which can be empty) and highlight the differences with
-   * attributions.
-   *
-   * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
-   * attribution `{ isDeleted: true, .. }`.
-   *
-   * @param {import('../internals.js').AbstractAttributionManager} am
-   * @return {MapDelta<{[key:string]: MapType},undefined>} The Delta representation of this type.
-   *
-   * @public
-   */
-  getContent (am) {
-    return typeMapGetDelta(this, am)
   }
 
   /**
@@ -291,6 +248,7 @@ export class YMap extends AbstractType {
 
 /**
  * @param {UpdateDecoderV1 | UpdateDecoderV2} _decoder
+ * @return {import('../utils/types.js').YType}
  *
  * @private
  * @function

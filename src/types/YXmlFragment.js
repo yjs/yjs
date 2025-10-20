@@ -3,8 +3,7 @@
  */
 
 import {
-  YXmlEvent,
-  YXmlElement,
+  YEvent,
   AbstractType,
   typeListMap,
   typeListForEach,
@@ -18,14 +17,11 @@ import {
   typeListGet,
   typeListSlice,
   warnPrematureAccess,
-  noAttributionsManager,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, ContentType, Transaction, Item, YXmlText, YXmlHook, // eslint-disable-line
-  typeListGetContent
+  YXmlElement, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item, YXmlText, YXmlHook // eslint-disable-line
 } from '../internals.js'
 
-import * as delta from '../utils/Delta.js'
+import * as delta from 'lib0/delta' // eslint-disable-line
 import * as error from 'lib0/error'
-import * as array from 'lib0/array'
 
 /**
  * Define the elements to which a set of CSS queries apply.
@@ -49,90 +45,15 @@ import * as array from 'lib0/array'
  */
 
 /**
- * Represents a subset of the nodes of a YXmlElement / YXmlFragment and a
- * position within them.
- *
- * Can be created with {@link YXmlFragment#createTreeWalker}
- *
- * @public
- * @implements {Iterable<YXmlElement|YXmlText|YXmlElement|YXmlHook>}
- */
-export class YXmlTreeWalker {
-  /**
-   * @param {YXmlFragment | YXmlElement} root
-   * @param {function(AbstractType<any>):boolean} [f]
-   */
-  constructor (root, f = () => true) {
-    this._filter = f
-    this._root = root
-    /**
-     * @type {Item}
-     */
-    this._currentNode = /** @type {Item} */ (root._start)
-    this._firstCall = true
-    root.doc ?? warnPrematureAccess()
-  }
-
-  [Symbol.iterator] () {
-    return this
-  }
-
-  /**
-   * Get the next node.
-   *
-   * @return {IteratorResult<YXmlElement|YXmlText|YXmlHook>} The next node.
-   *
-   * @public
-   */
-  next () {
-    /**
-     * @type {Item|null}
-     */
-    let n = this._currentNode
-    let type = n && n.content && /** @type {any} */ (n.content).type
-    if (n !== null && (!this._firstCall || n.deleted || !this._filter(type))) { // if first call, we check if we can use the first item
-      do {
-        type = /** @type {any} */ (n.content).type
-        if (!n.deleted && (type.constructor === YXmlElement || type.constructor === YXmlFragment) && type._start !== null) {
-          // walk down in the tree
-          n = type._start
-        } else {
-          // walk right or up in the tree
-          while (n !== null) {
-            /**
-             * @type {Item | null}
-             */
-            const nxt = n.next
-            if (nxt !== null) {
-              n = nxt
-              break
-            } else if (n.parent === this._root) {
-              n = null
-            } else {
-              n = /** @type {AbstractType<any>} */ (n.parent)._item
-            }
-          }
-        }
-      } while (n !== null && (n.deleted || !this._filter(/** @type {ContentType} */ (n.content).type)))
-    }
-    this._firstCall = false
-    if (n === null) {
-      // @ts-ignore
-      return { value: undefined, done: true }
-    }
-    this._currentNode = n
-    return { value: /** @type {any} */ (n.content).type, done: false }
-  }
-}
-
-/**
  * Represents a list of {@link YXmlElement}.and {@link YXmlText} types.
  * A YxmlFragment is similar to a {@link YXmlElement}, but it does not have a
  * nodeName and it does not have attributes. Though it can be bound to a DOM
  * element - in this case the attributes and the nodeName are not shared.
  *
  * @public
- * @extends AbstractType<YXmlEvent>
+ * @template {any} [Children=any]
+ * @template {{[K in string]:any}} [Attrs={}]
+ * @extends AbstractType<delta.Delta<any,Attrs,Children,any>>
  */
 export class YXmlFragment extends AbstractType {
   constructor () {
@@ -159,7 +80,7 @@ export class YXmlFragment extends AbstractType {
    * * Observer functions are fired
    *
    * @param {Doc} y The Yjs instance
-   * @param {Item} item
+   * @param {Item?} item
    */
   _integrate (y, item) {
     super._integrate(y, item)
@@ -167,20 +88,15 @@ export class YXmlFragment extends AbstractType {
     this._prelimContent = null
   }
 
-  _copy () {
-    return new YXmlFragment()
-  }
-
   /**
    * Makes a copy of this data type that can be included somewhere else.
    *
    * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
    *
-   * @return {YXmlFragment}
+   * @return {this}
    */
   clone () {
-    const el = new YXmlFragment()
-    // @ts-ignore
+    const el = this._copy()
     el.insert(0, this.toArray().map(item => item instanceof AbstractType ? item.clone() : item))
     return el
   }
@@ -191,78 +107,13 @@ export class YXmlFragment extends AbstractType {
   }
 
   /**
-   * Create a subtree of childNodes.
-   *
-   * @example
-   * const walker = elem.createTreeWalker(dom => dom.nodeName === 'div')
-   * for (let node in walker) {
-   *   // `node` is a div node
-   *   nop(node)
-   * }
-   *
-   * @param {function(AbstractType<any>):boolean} filter Function that is called on each child element and
-   *                          returns a Boolean indicating whether the child
-   *                          is to be included in the subtree.
-   * @return {YXmlTreeWalker} A subtree and a position within it.
-   *
-   * @public
-   */
-  createTreeWalker (filter) {
-    return new YXmlTreeWalker(this, filter)
-  }
-
-  /**
-   * Returns the first YXmlElement that matches the query.
-   * Similar to DOM's {@link querySelector}.
-   *
-   * Query support:
-   *   - tagname
-   * TODO:
-   *   - id
-   *   - attribute
-   *
-   * @param {CSS_Selector} query The query on the children.
-   * @return {YXmlElement|YXmlText|YXmlHook|null} The first element that matches the query or null.
-   *
-   * @public
-   */
-  querySelector (query) {
-    query = query.toUpperCase()
-    // @ts-ignore
-    const iterator = new YXmlTreeWalker(this, element => element.nodeName && element.nodeName.toUpperCase() === query)
-    const next = iterator.next()
-    if (next.done) {
-      return null
-    } else {
-      return next.value
-    }
-  }
-
-  /**
-   * Returns all YXmlElements that match the query.
-   * Similar to Dom's {@link querySelectorAll}.
-   *
-   * @todo Does not yet support all queries. Currently only query by tagName.
-   *
-   * @param {CSS_Selector} query The query on the children
-   * @return {Array<YXmlElement|YXmlText|YXmlHook|null>} The elements that match this query.
-   *
-   * @public
-   */
-  querySelectorAll (query) {
-    query = query.toUpperCase()
-    // @ts-ignore
-    return array.from(new YXmlTreeWalker(this, element => element.nodeName && element.nodeName.toUpperCase() === query))
-  }
-
-  /**
    * Creates YXmlEvent and calls observers.
    *
    * @param {Transaction} transaction
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
   _callObserver (transaction, parentSubs) {
-    callTypeObservers(this, transaction, new YXmlEvent(this, parentSubs, transaction))
+    callTypeObservers(this, transaction, new YEvent(this, transaction, parentSubs))
   }
 
   /**
@@ -282,32 +133,6 @@ export class YXmlFragment extends AbstractType {
   }
 
   /**
-   * Creates a Dom Element that mirrors this YXmlElement.
-   *
-   * @param {Document} [_document=document] The document object (you must define
-   *                                        this when calling this method in
-   *                                        nodejs)
-   * @param {Object<string, any>} [hooks={}] Optional property to customize how hooks
-   *                                             are presented in the DOM
-   * @param {any} [binding] You should not set this property. This is
-   *                               used if DomBinding wants to create a
-   *                               association to the created DOM type.
-   * @return {Node} The {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}
-   *
-   * @public
-   */
-  toDOM (_document = document, hooks = {}, binding) {
-    const fragment = _document.createDocumentFragment()
-    if (binding !== undefined) {
-      binding._createAssociation(fragment, this)
-    }
-    typeListForEach(this, xmlType => {
-      fragment.insertBefore(xmlType.toDOM(_document, hooks, binding), null)
-    })
-    return fragment
-  }
-
-  /**
    * Inserts new content at an index.
    *
    * @example
@@ -315,7 +140,7 @@ export class YXmlFragment extends AbstractType {
    *  xml.insert(0, [new Y.XmlText('text')])
    *
    * @param {number} index The index to insert content at
-   * @param {Array<YXmlElement|YXmlText>} content The array of content
+   * @param {Array<YXmlElement|YXmlText|YXmlHook>} content The array of content
    */
   insert (index, content) {
     if (this.doc !== null) {
@@ -378,36 +203,6 @@ export class YXmlFragment extends AbstractType {
    */
   toArray () {
     return typeListToArray(this)
-  }
-
-  /**
-   * Calculate the attributed content using the attribution manager.
-   *
-   * @param {import('../internals.js').AbstractAttributionManager} am
-   * @return {{ children: import('../utils/Delta.js').ArrayDeltaBuilderBuilder<Array<YXmlElement|YXmlText|YXmlHook>> }}
-   */
-  getContent (am = noAttributionsManager) {
-    const children = typeListGetContent(this, am)
-    return { children }
-  }
-
-  /**
-   * Calculate the attributed content using the attribution manager.
-   *
-   * @param {import('../internals.js').AbstractAttributionManager} am
-   * @return {{ children: import('../utils/Delta.js').ArrayDeltaBuilderBuilder<Array<import('./AbstractType.js').YXmlDeepContent>> }}
-   */
-  getContentDeep (am) {
-    const { children: origChildren } = this.getContent(am)
-    /**
-     * @type {import('../utils/Delta.js').ArrayDeltaBuilderBuilder<Array<import('./AbstractType.js').YXmlDeepContent>>}
-     */
-    const children = origChildren.map(d => /** @type {any} */ (
-      d instanceof delta.InsertArrayOp && d.insert instanceof Array
-        ? new delta.InsertArrayOp(d.insert.map(e => e instanceof AbstractType ? e.getContentDeep(am) : e), d.attributes, d.attribution)
-        : d
-    ))
-    return { children }
   }
 
   /**
@@ -474,7 +269,7 @@ export class YXmlFragment extends AbstractType {
 
 /**
  * @param {UpdateDecoderV1 | UpdateDecoderV2} _decoder
- * @return {YXmlFragment}
+ * @return {import('../utils/types.js').YType}
  *
  * @private
  * @function

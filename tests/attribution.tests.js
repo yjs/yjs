@@ -7,7 +7,7 @@
 
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
-import * as delta from '../src/utils/Delta.js'
+import * as delta from 'lib0/delta'
 
 /**
  * @param {t.TestCase} _tc
@@ -40,11 +40,11 @@ export const testAttributedEvents = _tc => {
   })
   const am = Y.createAttributionManagerFromDiff(v1, ydoc)
   const c1 = ytext.getContent(am)
-  t.compare(c1, delta.createTextDelta().insert('hello ').insert('world', null, { delete: [] }))
+  t.compare(c1, delta.text().insert('hello ').insert('world', null, { delete: [] }))
   let calledObserver = false
   ytext.observe(event => {
     const d = event.getDelta(am)
-    t.compare(d, delta.createTextDelta().retain(11).insert('!', null, { insert: [] }))
+    t.compare(d, delta.text().retain(11).insert('!', null, { insert: [] }))
     calledObserver = true
   })
   ytext.insert(11, '!')
@@ -64,8 +64,8 @@ export const testInsertionsMindingAttributedContent = _tc => {
   })
   const am = Y.createAttributionManagerFromDiff(v1, ydoc)
   const c1 = ytext.getContent(am)
-  t.compare(c1, delta.createTextDelta().insert('hello ').insert('world', null, { delete: [] }))
-  ytext.applyDelta(delta.createTextDelta().retain(11).insert('content'), am)
+  t.compare(c1, delta.text().insert('hello ').insert('world', null, { delete: [] }))
+  ytext.applyDelta(delta.text().retain(11).insert('content'), am)
   t.assert(ytext.toString() === 'hello content')
 }
 
@@ -82,7 +82,7 @@ export const testInsertionsIntoAttributedContent = _tc => {
   })
   const am = Y.createAttributionManagerFromDiff(v1, ydoc)
   const c1 = ytext.getContent(am)
-  t.compare(c1, delta.createTextDelta().insert('hello ').insert('word', null, { insert: [] }))
-  ytext.applyDelta(delta.createTextDelta().retain(9).insert('l'), am)
+  t.compare(c1, delta.text().insert('hello ').insert('word', null, { insert: [] }))
+  ytext.applyDelta(delta.text().retain(9).insert('l'), am)
   t.assert(ytext.toString() === 'hello world')
 }

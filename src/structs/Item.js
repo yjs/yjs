@@ -30,6 +30,10 @@ import * as binary from 'lib0/binary'
 import * as array from 'lib0/array'
 
 /**
+ * @typedef {import('../utils/types.js').YType} YType__
+ */
+
+/**
  * @todo This should return several items
  *
  * @param {StructStore} store
@@ -68,7 +72,7 @@ export const followRedone = (store, id) => {
 export const keepItem = (item, keep) => {
   while (item !== null && item.keep !== keep) {
     item.keep = keep
-    item = /** @type {AbstractType<any>} */ (item.parent)._item
+    item = /** @type {YType__} */ (item.parent)._item
   }
 }
 
@@ -115,7 +119,7 @@ export const splitItem = (transaction, leftItem, diff) => {
     transaction._mergeStructs.push(rightItem)
     // update parent._map
     if (rightItem.parentSub !== null && rightItem.right === null) {
-      /** @type {AbstractType<any>} */ (rightItem.parent)._map.set(rightItem.parentSub, rightItem)
+      /** @type {YType__} */ (rightItem.parent)._map.set(rightItem.parentSub, rightItem)
     }
   } else {
     rightItem.left = null
@@ -173,7 +177,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
   if (redone !== null) {
     return getItemCleanStart(transaction, redone)
   }
-  let parentItem = /** @type {AbstractType<any>} */ (item.parent)._item
+  let parentItem = /** @type {YType__} */ (item.parent)._item
   /**
    * @type {Item|null}
    */
@@ -192,7 +196,10 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
       parentItem = getItemCleanStart(transaction, parentItem.redone)
     }
   }
-  const parentType = parentItem === null ? /** @type {AbstractType<any>} */ (item.parent) : /** @type {ContentType} */ (parentItem.content).type
+  /**
+   * @type {YType__}
+   */
+  const parentType = /** @type {YType__} */ (parentItem === null ? item.parent : /** @type {ContentType} */ (parentItem.content).type)
 
   if (item.parentSub === null) {
     // Is an array item. Insert at the old position
@@ -205,10 +212,10 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
        */
       let leftTrace = left
       // trace redone until parent matches
-      while (leftTrace !== null && /** @type {AbstractType<any>} */ (leftTrace.parent)._item !== parentItem) {
+      while (leftTrace !== null && /** @type {YType__} */ (leftTrace.parent)._item !== parentItem) {
         leftTrace = leftTrace.redone === null ? null : getItemCleanStart(transaction, leftTrace.redone)
       }
-      if (leftTrace !== null && /** @type {AbstractType<any>} */ (leftTrace.parent)._item === parentItem) {
+      if (leftTrace !== null && /** @type {YType__} */ (leftTrace.parent)._item === parentItem) {
         left = leftTrace
         break
       }
@@ -220,10 +227,10 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
        */
       let rightTrace = right
       // trace redone until parent matches
-      while (rightTrace !== null && /** @type {AbstractType<any>} */ (rightTrace.parent)._item !== parentItem) {
+      while (rightTrace !== null && /** @type {YType__} */ (rightTrace.parent)._item !== parentItem) {
         rightTrace = rightTrace.redone === null ? null : getItemCleanStart(transaction, rightTrace.redone)
       }
-      if (rightTrace !== null && /** @type {AbstractType<any>} */ (rightTrace.parent)._item === parentItem) {
+      if (rightTrace !== null && /** @type {YType__} */ (rightTrace.parent)._item === parentItem) {
         right = rightTrace
         break
       }
@@ -275,7 +282,7 @@ export class Item extends AbstractStruct {
    * @param {ID | null} origin
    * @param {Item | null} right
    * @param {ID | null} rightOrigin
-   * @param {AbstractType<any>|ID|null} parent Is a type if integrated, is null if it is possible to copy parent from left or right, is ID before integration to search for it.
+   * @param {YType__|ID|null} parent Is a type if integrated, is null if it is possible to copy parent from left or right, is ID before integration to search for it.
    * @param {string | null} parentSub
    * @param {AbstractContent} content
    */
@@ -302,7 +309,7 @@ export class Item extends AbstractStruct {
      */
     this.rightOrigin = rightOrigin
     /**
-     * @type {AbstractType<any>|ID|null}
+     * @type {YType__|ID|null}
      */
     this.parent = parent
     /**
@@ -541,7 +548,7 @@ export class Item extends AbstractStruct {
       addStruct(transaction.doc.store, this)
       this.content.integrate(transaction, this)
       // add parent to transaction.changed
-      addChangedTypeToTransaction(transaction, /** @type {AbstractType<any>} */ (this.parent), this.parentSub)
+      addChangedTypeToTransaction(transaction, /** @type {import('../utils/types.js').YType} */ (this.parent), this.parentSub)
       if ((/** @type {AbstractType<any>} */ (this.parent)._item !== null && /** @type {AbstractType<any>} */ (this.parent)._item.deleted) || (this.parentSub !== null && this.right !== null)) {
         // delete if parent is deleted or if this is not the current attribute value of parent
         this.delete(transaction)
@@ -635,7 +642,7 @@ export class Item extends AbstractStruct {
    */
   delete (transaction) {
     if (!this.deleted) {
-      const parent = /** @type {AbstractType<any>} */ (this.parent)
+      const parent = /** @type {import('../utils/types.js').YType} */ (this.parent)
       // adjust the length of parent
       if (this.countable && this.parentSub === null) {
         parent._length -= this.length

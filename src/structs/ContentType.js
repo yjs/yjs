@@ -6,13 +6,17 @@ import {
   readYXmlFragment,
   readYXmlHook,
   readYXmlText,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, Item, AbstractType // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Transaction, Item // eslint-disable-line
 } from '../internals.js'
+
+/**
+ * @typedef {import('../utils/types.js').YType} YType_CT
+ */
 
 import * as error from 'lib0/error'
 
 /**
- * @type {Array<function(UpdateDecoderV1 | UpdateDecoderV2):AbstractType<any>>}
+ * @type {Array<(decoder: UpdateDecoderV1 | UpdateDecoderV2)=>(import('../utils/types.js').YType)>}
  * @private
  */
 export const typeRefs = [
@@ -38,11 +42,11 @@ export const YXmlTextRefID = 6
  */
 export class ContentType {
   /**
-   * @param {AbstractType<any>} type
+   * @param {YType_CT} type
    */
   constructor (type) {
     /**
-     * @type {AbstractType<any>}
+     * @type {YType_CT}
      */
     this.type = type
   }
