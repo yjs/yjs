@@ -7,6 +7,8 @@ import * as object from 'lib0/object'
 import * as map from 'lib0/map'
 import * as Y from '../src/index.js'
 import * as math from 'lib0/math'
+import * as list from 'lib0/list'
+import * as delta from 'lib0/delta'
 import {
   createIdSet, createIdMap, addToIdSet, encodeIdMap
 } from '../src/internals.js'
@@ -484,7 +486,7 @@ export const compare = users => {
     t.compare(userArrayValues[i], userArrayValues[i + 1])
     t.compare(userMapValues[i], userMapValues[i + 1])
     t.compare(userXmlValues[i], userXmlValues[i + 1])
-    t.compare(userTextValues[i].ops.map(/** @param {any} a */ a => typeof a.insert === 'string' ? a.insert : ' ').join('').length, users[i].getText('text').length)
+    t.compare(list.toArray(userTextValues[i].children).map(a => delta.$textOp.check(a) ? a.insert : ' ').join('').length, users[i].getText('text').length)
     t.compare(userTextValues[i], userTextValues[i + 1], '', (_constructor, a, b) => {
       if (a instanceof Y.AbstractType) {
         t.compare(a.toJSON(), b.toJSON())

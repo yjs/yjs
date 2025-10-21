@@ -20,5 +20,5 @@
     }
   },
   "include": ["./src/**/*.js", "./tests/**/*.js"],
-  "exclude": ["../lib0/**"]
+  "exclude": ["./node_modules/**/*"]
 }

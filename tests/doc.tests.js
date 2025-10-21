@@ -29,7 +29,7 @@ export const testFindTypeInOtherDoc = _tc => {
   const ydocClone = new Y.Doc()
   Y.applyUpdate(ydocClone, Y.encodeStateAsUpdate(ydoc))
   /**
-   * @template {Y.AbstractType<any>} Type
+   * @template {import('../src/utils/types.js').YType} Type
    * @param {Type} ytype
    * @param {Y.Doc} otherYdoc
    * @return {Type}
@@ -47,7 +47,7 @@ export const testFindTypeInOtherDoc = _tc => {
       if (rootKey == null) {
         throw new Error('type does not exist in other ydoc')
       }
-      return /** @type {Type} */ (otherYdoc.get(rootKey, /** @type {typeof Y.AbstractType<any>} */ (ytype.constructor)))
+      return /** @type {Type} */ (otherYdoc.get(rootKey, /** @type {import('../src/utils/types.js').YTypeConstructors} */ (ytype.constructor)))
     } else {
       /**
        * If it is a sub type, we use the item id to find the history type.

@@ -1,7 +1,7 @@
 import * as Y from '../src/index.js'
 import { init } from './testHelper.js' // eslint-disable-line
 import * as t from 'lib0/testing'
-import * as delta from '../src/utils/Delta.js'
+import * as delta from 'lib0/delta'
 
 export const testInconsistentFormat = () => {
   /**
@@ -11,7 +11,7 @@ export const testInconsistentFormat = () => {
     const content = /** @type {Y.XmlText} */ (ydoc.get('text', Y.XmlText))
     content.format(0, 6, { bold: null })
     content.format(6, 4, { type: 'text' })
-    t.compare(content.getContent(), delta.createTextDelta().insert('Merge Test', { type: 'text' }).insert(' After', { type: 'text', italic: true }))
+    t.compare(content.getContent(), delta.create().insert('Merge Test', { type: 'text' }).insert(' After', { type: 'text', italic: true }))
   }
   const initializeYDoc = () => {
     const yDoc = new Y.Doc({ gc: false })
@@ -85,11 +85,11 @@ export const testUndoText = tc => {
   t.assert(text0.toString() === 'bcxyz')
   // test marks
   text0.format(1, 3, { bold: true })
-  t.compare(text0.getContent(), delta.fromJSON([{ insert: 'b' }, { insert: 'cxy', attributes: { bold: true } }, { insert: 'z' }]))
+  t.compare(text0.getContent(), delta.create().insert('b').insert('cxy', { bold: true }).insert('z'))
   undoManager.undo()
-  t.compare(text0.getContent(), delta.fromJSON([{ insert: 'bcxyz' }]))
+  t.compare(text0.getContent(), delta.create().insert('bcxyz'))
   undoManager.redo()
-  t.compare(text0.getContent(), delta.fromJSON([{ insert: 'b' }, { insert: 'cxy', attributes: { bold: true } }, { insert: 'z' }]))
+  t.compare(text0.getContent(), delta.create().insert('b').insert('cxy', { bold: true }).insert('z'))
 }
 
 /**
@@ -677,14 +677,10 @@ export const testUndoDeleteTextFormat = _tc => {
   undoManager.undo()
   Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc))
 
-  const expect = delta.fromJSON([
-    { insert: 'Attack ships ' },
-    {
-      insert: 'on fire',
-      attributes: { bold: true }
-    },
-    { insert: ' off the shoulder of Orion.' }
-  ])
+  const expect = delta.create()
+    .insert('Attack ships ')
+    .insert('on fire', { bold: true })
+    .insert(' off the shoulder of Orion.')
   t.compare(text.getContent(), expect)
   t.compare(text2.getContent(), expect)
 }

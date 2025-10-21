@@ -42,10 +42,6 @@ export class YEvent {
      */
     this.transaction = transaction
     /**
-     * @type {Object|null}
-     */
-    this._changes = null
-    /**
      * @type {null | Map<string, { action: 'add' | 'update' | 'delete', oldValue: any }>}
      */
     this._keys = null
@@ -183,7 +179,7 @@ export class YEvent {
    */
   getDelta (am = noAttributionsManager) {
     const itemsToRender = mergeIdSets([diffIdSet(this.transaction.insertSet, this.transaction.deleteSet), diffIdSet(this.transaction.deleteSet, this.transaction.insertSet)])
-    return /** @type {any} */ (this.target.getContent(am, { itemsToRender, retainDeletes: true, renderAttrs: this.keysChanged, renderChildren: this.childListChanged }))
+    return /** @type {any} */ (this.target.getContent(am, { itemsToRender, retainDeletes: true, renderAttrs: this.keysChanged, renderChildren: this.childListChanged, deletedItems: this.transaction.deleteSet }))
   }
 
   /**

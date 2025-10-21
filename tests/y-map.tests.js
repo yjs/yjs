@@ -4,11 +4,12 @@ import {
   compareIDs,
   noAttributionsManager,
   TwosetAttributionManager,
-  createIdMapFromIdSet,
-  mapDeltaJsonSchema
+  createIdMapFromIdSet
 } from '../src/internals.js'
 import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
+import * as delta from 'lib0/delta'
+import * as s from 'lib0/schema'
 
 /**
  * @param {t.TestCase} _tc
@@ -490,45 +491,41 @@ export const testThrowsDeleteEventsOnClear = tc => {
 export const testChangeEvent = tc => {
   const { map0, users } = init(tc, { users: 2 })
   /**
-   * @type {any}
+   * @type {delta.Delta<any,any,any,any>?}
    */
-  let changes = null
-  /**
-   * @type {any}
-   */
-  let keyChange = null
+  let changes = delta.create()
   map0.observe(e => {
-    changes = e.changes
+    changes = e.delta
   })
   map0.set('a', 1)
-  keyChange = changes.keys.get('a')
-  t.assert(changes !== null && keyChange.action === 'add' && keyChange.oldValue === undefined)
+  let keyChange = changes.attrs.get('a')
+  t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === undefined)
   map0.set('a', 2)
-  keyChange = changes.keys.get('a')
-  t.assert(changes !== null && keyChange.action === 'update' && keyChange.oldValue === 1)
+  keyChange = changes.attrs.get('a')
+  t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === 1)
   users[0].transact(() => {
     map0.set('a', 3)
     map0.set('a', 4)
   })
-  keyChange = changes.keys.get('a')
-  t.assert(changes !== null && keyChange.action === 'update' && keyChange.oldValue === 2)
+  keyChange = changes.attrs.get('a')
+  t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === 2)
   users[0].transact(() => {
     map0.set('b', 1)
     map0.set('b', 2)
   })
-  keyChange = changes.keys.get('b')
-  t.assert(changes !== null && keyChange.action === 'add' && keyChange.oldValue === undefined)
+  keyChange = changes.attrs.get('b')
+  t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === undefined)
   users[0].transact(() => {
     map0.set('c', 1)
     map0.delete('c')
   })
-  t.assert(changes !== null && changes.keys.size === 0)
+  t.assert(changes !== null && changes.attrs.size === 0)
   users[0].transact(() => {
     map0.set('d', 1)
     map0.set('d', 2)
   })
-  keyChange = changes.keys.get('d')
-  t.assert(changes !== null && keyChange.action === 'add' && keyChange.oldValue === undefined)
+  keyChange = changes.attrs.get('d')
+  t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === undefined)
   compare(users)
 }
 
@@ -631,24 +628,24 @@ export const testAttributedContent = _tc => {
   })
   t.group('initial value', () => {
     ymap.set('test', 42)
-    const expectedContent = mapDeltaJsonSchema.ensure({ test: { type: 'insert', prevValue: undefined, value: 42, attribution: { insert: [] } } })
+    const expectedContent = { test: delta.$deltaMapChangeJson.expect({ type: 'insert', value: 42, attribution: { insert: [] } }) }
     const attributedContent = ymap.getContent(attributionManager)
     console.log(attributedContent.toJSON())
-    t.compare(expectedContent, attributedContent.toJSON())
+    t.compare(expectedContent, attributedContent.toJSON().attrs)
   })
   t.group('overwrite value', () => {
     ymap.set('test', 'fourtytwo')
-    const expectedContent = mapDeltaJsonSchema.ensure({ test: { type: 'insert', prevValue: 42, value: 'fourtytwo', attribution: { insert: [] } } })
+    const expectedContent = { test: delta.$deltaMapChangeJson.expect({ type: 'insert', prevValue: 42, value: 'fourtytwo', attribution: { insert: [] } }) }
     const attributedContent = ymap.getContent(attributionManager)
     console.log(attributedContent)
-    t.compare(expectedContent, attributedContent.toJSON())
+    t.compare(expectedContent, attributedContent.toJSON().attrs)
   })
   t.group('delete value', () => {
     ymap.delete('test')
-    const expectedContent = mapDeltaJsonSchema.ensure({ test: { type: 'delete', prevValue: 'fourtytwo', attribution: { delete: [] } } })
+    const expectedContent = { test: delta.$deltaMapChangeJson.expect({ type: 'delete', prevValue: 'fourtytwo', attribution: { delete: [] } }) }
     const attributedContent = ymap.getContent(attributionManager)
-    console.log(attributedContent)
-    t.compare(expectedContent, attributedContent.toJSON())
+    console.log(attributedContent.toJSON())
+    t.compare(expectedContent, attributedContent.toJSON().attrs)
   })
 }
 

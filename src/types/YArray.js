@@ -17,7 +17,6 @@ import {
   callTypeObservers,
   transact,
   warnPrematureAccess,
-  typeListGetContent,
   typeListSlice,
   noAttributionsManager,
   AbstractAttributionManager, ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
@@ -108,7 +107,7 @@ export class YArray extends AbstractType {
    */
   _callObserver (transaction, parentSubs) {
     super._callObserver(transaction, parentSubs)
-    callTypeObservers(this, transaction, new YEvent(this, transaction, null))
+    callTypeObservers(this, transaction, new YEvent(this, transaction, parentSubs))
   }
 
   /**
@@ -212,24 +211,6 @@ export class YArray extends AbstractType {
    */
   getContentDeep (am = noAttributionsManager) {
     return super.getContentDeep(am)
-  }
-
-  /**
-   * Render the difference to another ydoc (which can be empty) and highlight the differences with
-   * attributions.
-   *
-   * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
-   * attribution `{ isDeleted: true, .. }`.
-   *
-   * @param {AbstractAttributionManager} am
-   * @return {delta.ArrayDelta<T>} The Delta representation of this type.
-   *
-   * @public
-   */
-  getContent (am = noAttributionsManager) {
-    const d = this.change
-    typeListGetContent(d, this, am)
-    return d
   }
 
   /**

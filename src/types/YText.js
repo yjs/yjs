@@ -758,9 +758,11 @@ export class YText extends AbstractType {
       transact(this.doc, transaction => {
         const currPos = new ItemTextListPosition(null, this._start, 0, new Map(), am)
         for (const op of d.children) {
-          if (delta.$insertOp.check(op)) {
-            if (op.insert.length > 0 || typeof op.insert !== 'string') {
-              insertText(transaction, this, currPos, op.insert, op.format || {})
+          if (delta.$textOp.check(op)) {
+            insertText(transaction, this, currPos, op.insert, op.format || {})
+          } else if (delta.$insertOp.check(op)) {
+            for (let i = 0; i < op.insert.length; i++) {
+              insertText(transaction, this, currPos, op.insert[i], op.format || {})
             }
           } else if (delta.$retainOp.check(op)) {
             currPos.formatText(transaction, this, op.retain, op.format || {})

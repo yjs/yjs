@@ -4,7 +4,7 @@ import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
 import * as env from 'lib0/environment'
-import * as delta from '../src/utils/Delta.js'
+import * as delta from 'lib0/delta'
 
 const isDevMode = env.getVariable('node_env') === 'development'
 
@@ -384,24 +384,22 @@ export const testObservedeepIndexes = _tc => {
 export const testChangeEvent = tc => {
   const { array0, users } = init(tc, { users: 2 })
   /**
-   * @type {any}
+   * @type {delta.Delta<any,any,any,any,any>}
    */
-  let changes = null
+  let d = delta.create()
   array0.observe(e => {
-    changes = e.changes
+    d = e.delta
   })
   const newArr = new Y.Array()
   array0.insert(0, [newArr, 4, 'dtrn'])
-  t.assert(changes !== null && changes.added.size === 2 && changes.deleted.size === 0)
-  t.compare(changes.delta, [{ insert: [newArr, 4, 'dtrn'] }])
-  changes = null
+  t.assert(d !== null && d.children.len === 1)
+  t.compare(d.toJSON().children, [{ insert: [newArr, 4, 'dtrn'] }])
   array0.delete(0, 2)
-  t.assert(changes !== null && changes.added.size === 0 && changes.deleted.size === 2)
-  t.compare(changes.delta, [{ delete: 2 }])
-  changes = null
+  t.assert(d !== null && d.children.len === 1)
+  t.compare(d.toJSON().children, [{ delete: 2 }])
   array0.insert(1, [0.1])
-  t.assert(changes !== null && changes.added.size === 1 && changes.deleted.size === 0)
-  t.compare(changes.delta, [{ retain: 1 }, { insert: [0.1] }])
+  t.assert(d !== null && d.children.len === 2)
+  t.compare(d.toJSON().children, [{ retain: 1 }, { insert: [0.1] }])
   compare(users)
 }
 
@@ -531,7 +529,7 @@ export const testAttributedContent = _tc => {
       yarray.delete(0, 1)
       yarray.insert(1, [42])
     })
-    const expectedContent = delta.createArrayDelta().insert([1], null, { delete: [] }).insert([2]).insert([42], null, { insert: [] })
+    const expectedContent = delta.create().insert([1], null, { delete: [] }).insert([2]).insert([42], null, { insert: [] })
     const attributedContent = yarray.getContent(attributionManager)
     console.log(attributedContent.toJSON())
     t.assert(attributedContent.equals(expectedContent))

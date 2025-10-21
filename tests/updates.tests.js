@@ -5,6 +5,7 @@ import { readStructSet, readIdSet, UpdateDecoderV2, UpdateEncoderV2, writeIdSet 
 import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
 import * as object from 'lib0/object'
+import * as delta from 'lib0/delta'
 
 /**
  * @typedef {Object} Enc
@@ -126,7 +127,7 @@ export const testKeyEncoding = tc => {
   const update = Y.encodeStateAsUpdateV2(users[0])
   Y.applyUpdateV2(users[1], update)
 
-  t.compare(text1.getContent().toJSON(), [{ insert: 'c', attributes: { italic: true } }, { insert: 'b' }, { insert: 'a', attributes: { italic: true } }])
+  t.compare(text1.getContent().toJSON().children, [{ insert: 'c', format: { italic: true } }, { insert: 'b' }, { insert: 'a', format: { italic: true } }])
 
   compare(users)
 }
@@ -207,7 +208,7 @@ const checkUpdateCases = (ydoc, updates, enc, hasDeletes) => {
     }
 
     const meta = enc.parseUpdateMeta(mergedUpdates)
-    meta.from.forEach((clock, client) => t.assert(clock === 0))
+    meta.from.forEach((clock, _client) => t.assert(clock === 0))
     meta.to.forEach((clock, client) => {
       const structs = /** @type {Array<Y.Item>} */ (merged.store.clients.get(client))
       const lastStruct = structs[structs.length - 1]
@@ -237,10 +238,10 @@ export const testMergeUpdates1 = _tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testMergeUpdates2 = tc => {
-  encoders.forEach((enc, i) => {
+export const testMergeUpdates2 = _tc => {
+  encoders.forEach((enc, _i) => {
     t.info(`Using encoder: ${enc.description}`)
     const ydoc = new Y.Doc({ gc: false })
     const updates = /** @type {Array<Uint8Array>} */ ([])
@@ -257,23 +258,23 @@ export const testMergeUpdates2 = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testMergePendingUpdates = tc => {
+export const testMergePendingUpdates = _tc => {
   const yDoc = new Y.Doc()
   /**
    * @type {Array<Uint8Array>}
    */
   const serverUpdates = []
-  yDoc.on('update', (update, origin, c) => {
+  yDoc.on('update', (update, _origin, _c) => {
     serverUpdates.splice(serverUpdates.length, 0, update)
   })
   const yText = yDoc.getText('textBlock')
-  yText.applyDelta([{ insert: 'r' }])
-  yText.applyDelta([{ insert: 'o' }])
-  yText.applyDelta([{ insert: 'n' }])
-  yText.applyDelta([{ insert: 'e' }])
-  yText.applyDelta([{ insert: 'n' }])
+  yText.applyDelta(delta.create().insert('r'))
+  yText.applyDelta(delta.create().insert('o'))
+  yText.applyDelta(delta.create().insert('n'))
+  yText.applyDelta(delta.create().insert('e'))
+  yText.applyDelta(delta.create().insert('n'))
 
   const yDoc1 = new Y.Doc()
   Y.applyUpdate(yDoc1, serverUpdates[0])
@@ -297,8 +298,7 @@ export const testMergePendingUpdates = tc => {
   const yDoc5 = new Y.Doc()
   Y.applyUpdate(yDoc5, update4)
   Y.applyUpdate(yDoc5, serverUpdates[4])
-  // @ts-ignore
-  const _update5 = Y.encodeStateAsUpdate(yDoc5) // eslint-disable-line
+  Y.encodeStateAsUpdate(yDoc5)
 
   const yText5 = yDoc5.getText('textBlock')
   t.compareStrings(yText5.toString(), 'nenor')
@@ -313,7 +313,7 @@ export const testObfuscateUpdates = _tc => {
   const ymap = ydoc.getMap('map')
   const yarray = ydoc.getArray('array')
   // test ytext
-  ytext.applyDelta([{ insert: 'text', attributes: { bold: true } }, { insert: { href: 'supersecreturl' } }])
+  ytext.applyDelta(delta.create().insert('text', { bold: true }).insert([{ href: 'supersecreturl' }]))
   // test ymap
   ymap.set('key', 'secret1')
   ymap.set('key', 'secret2')
@@ -330,13 +330,14 @@ export const testObfuscateUpdates = _tc => {
   const omap = odoc.getMap('map')
   const oarray = odoc.getArray('array')
   // test ytext
-  const delta = /** @type {Array<any>} */ (otext.getContent().toJSON())
-  t.assert(delta.length === 2)
-  t.assert(delta[0].insert !== 'text' && delta[0].insert.length === 4)
-  t.assert(object.length(delta[0].attributes) === 1)
-  t.assert(!object.hasProperty(delta[0].attributes, 'bold'))
-  t.assert(object.length(delta[1]) === 1)
-  t.assert(object.hasProperty(delta[1], 'insert'))
+  const d = /** @type {any} */ (otext.getContent().toJSON().children)
+  t.assert(d.length === 2)
+  const q = d[0]
+  t.assert(d[0].insert !== 'text' && d[0].insert.length === 4)
+  t.assert(object.length(d[0].format) === 1)
+  t.assert(!object.hasProperty(d[0].format, 'bold'))
+  t.assert(object.length(d[1]) === 1)
+  t.assert(object.hasProperty(d[1], 'insert'))
   // test ymap
   t.assert(omap.size === 1)
   t.assert(!omap.has('key'))

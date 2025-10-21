@@ -38,8 +38,8 @@ export const attributionJsonSchema = s.$object({
   insertedAt: s.$number.optional,
   delete: s.$array(s.$string).optional,
   deletedAt: s.$number.optional,
-  attributes: s.$record(s.$string, s.$array(s.$string)).optional,
-  attributedAt: s.$number.optional
+  format: s.$record(s.$string, s.$array(s.$string)).optional,
+  formatAt: s.$number.optional
 })
 
 /**

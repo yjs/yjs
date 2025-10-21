@@ -233,7 +233,7 @@ export const updateMarkerChanges = (searchMarker, index, len) => {
 /**
  * Accumulate all (list) children of a type and return them as an Array.
  *
- * @param {AbstractType} t
+ * @param {import('../utils/types.js').YType} t
  * @return {Array<Item>}
  */
 export const getTypeChildren = t => {
@@ -272,7 +272,7 @@ export const callTypeObservers = (type, transaction, event) => {
 /**
  * Abstract Yjs Type class
  * @template {delta.Delta<any,any,any,any,any>} [EventDelta=delta.Delta<any,any,any,any,any>]
- * @template {YType_} [Self=any]
+ * @template {AbstractType<any,any>} [Self=any]
  */
 export class AbstractType {
   constructor () {
@@ -442,18 +442,19 @@ export class AbstractType {
    * @param {import('../utils/IdSet.js').IdSet?} [opts.itemsToRender]
    * @param {boolean} [opts.retainInserts] - if true, retain rendered inserts with attributions
    * @param {boolean} [opts.retainDeletes] - if true, retain rendered+attributed deletes only
-   * @param {Set<string>?} [opts.renderAttrs] - if true, retain rendered+attributed deletes only
+   * @param {Set<string>?} [opts.renderAttrs] - set of attrs to render. if null, render all attributes
    * @param {boolean} [opts.renderChildren] - if true, retain rendered+attributed deletes only
+   * @param {import('../utils/IdSet.js').IdSet?} [opts.deletedItems] - used for computing prevItem in attributes
    * @return {EventDelta} The Delta representation of this type.
    *
    * @public
    */
-  getContent (am = noAttributionsManager, { itemsToRender = null, retainInserts = false, retainDeletes = false, renderAttrs = null, renderChildren = true } = {}) {
+  getContent (am = noAttributionsManager, { itemsToRender = null, retainInserts = false, retainDeletes = false, renderAttrs = null, renderChildren = true, deletedItems = null } = {}) {
     /**
      * @type {EventDelta}
      */
     const d = /** @type {any} */ (delta.create())
-    typeMapGetDelta(d, /** @type {any} */ (this), renderAttrs, am)
+    typeMapGetDelta(d, /** @type {any} */ (this), renderAttrs, am, deletedItems, itemsToRender)
     if (renderChildren) {
       /**
        * @type {delta.FormattingAttributes}
@@ -625,7 +626,7 @@ export class AbstractType {
                  * @type {import('../utils/AttributionManager.js').Attribution}
                  */
                 const formattingAttribution = object.assign({}, d.usedAttribution)
-                const changedAttributedAttributes = /** @type {{ [key: string]: Array<any> }} */ (formattingAttribution.attributes = object.assign({}, formattingAttribution.attributes ?? {}))
+                const changedAttributedAttributes = /** @type {{ [key: string]: Array<any> }} */ (formattingAttribution.format = object.assign({}, formattingAttribution.format ?? {}))
                 if (attribution == null || equalAttrs(previousUnattributedAttributes[key], currentAttributes[key] ?? null)) {
                   // an unattributed formatting attribute was found or an attributed formatting
                   // attribute was found that resets to the previous status
@@ -635,13 +636,13 @@ export class AbstractType {
                   const by = changedAttributedAttributes[key] = (changedAttributedAttributes[key]?.slice() ?? [])
                   by.push(...((c.deleted ? attribution.delete : attribution.insert) ?? []))
                   const attributedAt = (c.deleted ? attribution.deletedAt : attribution.insertedAt)
-                  if (attributedAt) formattingAttribution.attributedAt = attributedAt
+                  if (attributedAt) formattingAttribution.formatAt = attributedAt
                 }
                 if (object.isEmpty(changedAttributedAttributes)) {
                   d.useAttribution(null)
                 } else if (attribution != null) {
                   const attributedAt = (c.deleted ? attribution.deletedAt : attribution.insertedAt)
-                  if (attributedAt != null) formattingAttribution.attributedAt = attributedAt
+                  if (attributedAt != null) formattingAttribution.formatAt = attributedAt
                   d.useAttribution(formattingAttribution)
                 }
               }
@@ -651,7 +652,7 @@ export class AbstractType {
         }
       }
     }
-    return d
+    return /** @type {any} */ (d.done())
   }
 
   /**
@@ -678,7 +679,7 @@ export class AbstractType {
         op.value = op.value.getContentDeep(am)
       }
     })
-    return /** @type {any} */ (d)
+    return /** @type {any} */ (d.done())
   }
 }
 
@@ -766,47 +767,6 @@ export const typeListToArray = type => {
     n = n.right
   }
   return cs
-}
-
-/**
- * @todo this can be removed as this can be replaced by a generic function
- * Render the difference to another ydoc (which can be empty) and highlight the differences with
- * attributions.
- *
- * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
- * attribution `{ isDeleted: true, .. }`.
- *
- * @template {delta.Delta<any,any,any,any>} TypeDelta
- * @param {TypeDelta} d
- * @param {import('../utils/types.js').YType} type
- * @param {import('../internals.js').AbstractAttributionManager} am
- *
- * @private
- * @function
- */
-export const typeListGetContent = (d, type, am) => {
-  type.doc ?? warnPrematureAccess()
-  /**
-   * @type {Array<import('../internals.js').AttributedContent<any>>}
-   */
-  const cs = []
-  for (let item = type._start; item !== null; cs.length = 0) {
-    // populate cs
-    for (; item !== null && cs.length < 50; item = item.right) {
-      am.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, 1)
-    }
-    for (let i = 0; i < cs.length; i++) {
-      const c = cs[i]
-      const attribution = createAttributionFromAttributionItems(c.attrs, c.deleted)
-      if (c.content.isCountable()) {
-        if (c.render || attribution != null) {
-          d.insert(c.content.getContent(), null, attribution)
-        } else if (!c.deleted) {
-          d.retain(c.content.getLength())
-        }
-      }
-    }
-  }
 }
 
 /**
@@ -1270,13 +1230,13 @@ export const typeMapGetAll = (parent) => {
  * @param {YType_} parent
  * @param {Set<string>?} attrsToRender
  * @param {import('../internals.js').AbstractAttributionManager} am
+ * @param {import('../utils/IdSet.js').IdSet?} [deletedItems]
+ * @param {import('../utils/IdSet.js').IdSet?} [itemsToRender]
  *
  * @private
  * @function
  */
-export const typeMapGetDelta = (d, parent, attrsToRender, am) => {
-  parent.doc ?? warnPrematureAccess()
-
+export const typeMapGetDelta = (d, parent, attrsToRender, am, deletedItems, itemsToRender) => {
   /**
    * @param {Item} item
    * @param {string} key
@@ -1291,28 +1251,17 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am) => {
     const c = array.last(content.getContent())
     const attribution = createAttributionFromAttributionItems(attrs, deleted)
     if (deleted) {
-      d.unset(key, attribution, c)
-    } else {
-      /**
-       * @type {Array<import('../internals.js').AttributedContent<any>>}
-       */
-      let cs = []
-      for (let prevItem = item.left; prevItem != null; prevItem = prevItem.left) {
-        /**
-         * @type {Array<import('../internals.js').AttributedContent<any>>}
-         */
-        const tmpcs = []
-        am.readContent(tmpcs, prevItem.id.client, prevItem.id.clock, prevItem.deleted, prevItem.content, 1)
-        cs = tmpcs.concat(cs)
-        if (cs.length === 0 || cs[0].attrs == null) {
-          cs.splice(0, cs.findIndex(c => c.attrs != null))
-          break
-        }
-        if (cs.length > 0) {
-          cs.length = 1
-        }
+      if (itemsToRender == null || itemsToRender.hasId(item.lastId)) {
+        d.unset(key, attribution, c)
       }
-      const prevValue = cs.length > 0 ? array.last(cs[0].content.getContent()) : undefined
+    } else {
+      // find prev content
+      let prevContentItem = item
+      // this algorithm is problematic. should check all previous content using am.readcontent
+      for (; prevContentItem.left !== null && deletedItems?.hasId(prevContentItem.left.lastId); prevContentItem = prevContentItem.left) {
+        // nop
+      }
+      const prevValue = (prevContentItem !== item && itemsToRender?.hasId(prevContentItem.lastId)) ? array.last(prevContentItem.content.getContent()) : undefined
       d.set(key, c, attribution, prevValue)
     }
   }
