@@ -16,7 +16,12 @@ import {
   ContentEmbed,
   getItemCleanStart,
   noAttributionsManager,
-  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, createAttributionFromAttributionItems, AbstractAttributionManager, // eslint-disable-line
+  transact,
+  ItemTextListPosition,
+  insertText,
+  deleteText,
+  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, createAttributionFromAttributionItems, AbstractAttributionManager,
+  YXmlElement, // eslint-disable-line
 } from '../internals.js'
 
 import * as delta from 'lib0/delta'
@@ -178,7 +183,7 @@ export const findMarker = (yarray, index) => {
   //   window.lengths.push(marker.index - pindex)
   //   console.log('distance', marker.index - pindex, 'len', p && p.parent.length)
   // }
-  if (marker !== null && math.abs(marker.index - pindex) < /** @type {YText|YArray<any>} */ (p.parent).length / maxSearchMarker) {
+  if (marker !== null && math.abs(marker.index - pindex) < /** @type {any} */ (p.parent).length / maxSearchMarker) {
     // adjust existing marker
     overwriteMarker(marker, p, pindex)
     return marker
@@ -307,6 +312,10 @@ export class AbstractType {
      * @type {null | Array<ArraySearchMarker>}
      */
     this._searchMarker = null
+    /**
+     * @type {EventDelta?}
+     */
+    this._prelim = null
   }
 
   /**
@@ -337,6 +346,10 @@ export class AbstractType {
   _integrate (y, item) {
     this.doc = y
     this._item = item
+    if (this._prelim) {
+      this.applyDelta(this._prelim)
+      this._prelim = null
+    }
   }
 
   /**
@@ -437,6 +450,8 @@ export class AbstractType {
    * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
    * attribution `{ isDeleted: true, .. }`.
    *
+   * @template {boolean} [Deep=false]
+   *
    * @param {AbstractAttributionManager} am
    * @param {Object} [opts]
    * @param {import('../utils/IdSet.js').IdSet?} [opts.itemsToRender]
@@ -445,16 +460,19 @@ export class AbstractType {
    * @param {Set<string>?} [opts.renderAttrs] - set of attrs to render. if null, render all attributes
    * @param {boolean} [opts.renderChildren] - if true, retain rendered+attributed deletes only
    * @param {import('../utils/IdSet.js').IdSet?} [opts.deletedItems] - used for computing prevItem in attributes
-   * @return {EventDelta} The Delta representation of this type.
+   * @param {Set<import('../utils/types.js').YType>|Map<import('../utils/types.js').YType,any>|null} [opts.modified] - set of types that should be rendered as modified children
+   * @param {Deep} [opts.deep] - render child types as delta
+   * @return {Deep extends true ? ToDeepEventDelta<EventDelta> : EventDelta} The Delta representation of this type.
    *
    * @public
    */
-  getContent (am = noAttributionsManager, { itemsToRender = null, retainInserts = false, retainDeletes = false, renderAttrs = null, renderChildren = true, deletedItems = null } = {}) {
+  getContent (am = noAttributionsManager, opts = {}) {
+    const { itemsToRender = null, retainInserts = false, retainDeletes = false, renderAttrs = null, renderChildren = true, deletedItems = null, modified = null, deep = false } = opts
     /**
      * @type {EventDelta}
      */
-    const d = /** @type {any} */ (delta.create())
-    typeMapGetDelta(d, /** @type {any} */ (this), renderAttrs, am, deletedItems, itemsToRender)
+    const d = /** @type {any} */ (delta.create(this.nodeName || null))
+    typeMapGetDelta(d, /** @type {any} */ (this), renderAttrs, am, deep, modified, deletedItems, itemsToRender)
     if (renderChildren) {
       /**
        * @type {delta.FormattingAttributes}
@@ -545,15 +563,21 @@ export class AbstractType {
                 usingCurrentAttributes = true
                 if (c.deleted ? retainDeletes : retainInserts) {
                   d.retain(c.content.getLength(), null, attribution ?? {})
+                } else if (deep && c.content.constructor === ContentType) {
+                  d.insert([/** @type {any} */ (c.content).type.getContent(am, opts)], null, attribution)
                 } else {
                   d.insert(c.content.getContent(), null, attribution)
                 }
               } else if (renderDelete) {
                 d.delete(1)
               } else if (retainContent) {
-                d.usedAttributes = changedAttributes
-                usingChangedAttributes = true
-                d.retain(1)
+                if (c.content.constructor === ContentType && modified?.has(/** @type {ContentType} */ (c.content).type)) {
+                  d.modify(/** @type {any} */ (c.content).type.getContent(am, opts))
+                } else {
+                  d.usedAttributes = changedAttributes
+                  usingChangedAttributes = true
+                  d.retain(1)
+                }
               }
               break
             case ContentFormat: {
@@ -663,23 +687,52 @@ export class AbstractType {
    * @return {ToDeepEventDelta<EventDelta>}
    */
   getContentDeep (am = noAttributionsManager) {
-    const d = this.getContent(am)
-    d.children.forEach(op => {
-      if (op instanceof delta.InsertOp) {
-        op.insert = /** @type {any} */ (op.insert.map(ins =>
-          ins instanceof AbstractType
-            // @ts-ignore
-            ? ins.getContentDeep(am)
-            : ins)
-        )
-      }
-    })
-    d.attrs.forEach((op) => {
-      if (delta.$insertOp.check(op) && op.value instanceof AbstractType) {
-        op.value = op.value.getContentDeep(am)
-      }
-    })
-    return /** @type {any} */ (d.done())
+    return /** @type {any} */ (this.getContent(am, { deep: true }))
+  }
+
+  /**
+   * Apply a {@link Delta} on this shared type.
+   *
+   * @param {delta.Delta<any,any,any,any,any>} d The changes to apply on this element.
+   * @param {AbstractAttributionManager} am
+   *
+   * @public
+   */
+  applyDelta (d, am = noAttributionsManager) {
+    if (this.doc == null) 
+      (this._prelim || (this._prelim = /** @type {any} */ (delta.create()))).apply(d)
+    else {
+      // @todo this was moved here from ytext. Make this more generic
+      transact(this.doc, transaction => {
+        const currPos = new ItemTextListPosition(null, this._start, 0, new Map(), am)
+        for (const op of d.children) {
+          if (delta.$textOp.check(op)) {
+            insertText(transaction, this, currPos, op.insert, op.format || {})
+          } else if (delta.$insertOp.check(op)) {
+            for (let i = 0; i < op.insert.length; i++) {
+              let ins = op.insert[i]
+              if (delta.$deltaAny.check(ins)) {
+                if (ins.name != null) {
+                  const t = new YXmlElement(ins.name)
+                  t.applyDelta(ins)
+                  ins = t
+                } else {
+                  error.unexpectedCase()
+                }
+              }
+              insertText(transaction, this, currPos, ins, op.format || {})
+            }
+          } else if (delta.$retainOp.check(op)) {
+            currPos.formatText(transaction, this, op.retain, op.format || {})
+          } else if (delta.$deleteOp.check(op)) {
+            deleteText(transaction, currPos, op.delete)
+          } else if (delta.$modifyOp.check(op)) {
+            /** @type {ContentType} */ (currPos.right?.content).type.applyDelta(op.modify)
+            currPos.formatText(transaction, this, 1, op.format || {})
+          }
+        }
+      })
+    }
   }
 }
 
@@ -1230,13 +1283,16 @@ export const typeMapGetAll = (parent) => {
  * @param {YType_} parent
  * @param {Set<string>?} attrsToRender
  * @param {import('../internals.js').AbstractAttributionManager} am
+ * @param {boolean} deep
+ * @param {Set<import('../utils/types.js').YType>|Map<import('../utils/types.js').YType,any>|null} [modified] - set of types that should be rendered as modified children
  * @param {import('../utils/IdSet.js').IdSet?} [deletedItems]
  * @param {import('../utils/IdSet.js').IdSet?} [itemsToRender]
  *
  * @private
  * @function
  */
-export const typeMapGetDelta = (d, parent, attrsToRender, am, deletedItems, itemsToRender) => {
+export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, deletedItems, itemsToRender) => {
+  // @todo support modified ops!
   /**
    * @param {Item} item
    * @param {string} key
@@ -1248,8 +1304,8 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deletedItems, item
     const cs = []
     am.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, 1)
     const { deleted, attrs, content } = cs[cs.length - 1]
-    const c = array.last(content.getContent())
     const attribution = createAttributionFromAttributionItems(attrs, deleted)
+    let c = array.last(content.getContent())
     if (deleted) {
       if (itemsToRender == null || itemsToRender.hasId(item.lastId)) {
         d.unset(key, attribution, c)
@@ -1262,6 +1318,9 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deletedItems, item
         // nop
       }
       const prevValue = (prevContentItem !== item && itemsToRender?.hasId(prevContentItem.lastId)) ? array.last(prevContentItem.content.getContent()) : undefined
+      if (deep && c instanceof AbstractType) {
+        c = c.getContent(am)
+      }
       d.set(key, c, attribution, prevValue)
     }
   }

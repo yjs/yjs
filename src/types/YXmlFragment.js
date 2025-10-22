@@ -59,6 +59,7 @@ export class YXmlFragment extends AbstractType {
   constructor () {
     super()
     /**
+     * @todo remove _prelimContent
      * @type {Array<any>|null}
      */
     this._prelimContent = []

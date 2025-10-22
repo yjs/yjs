@@ -42,13 +42,13 @@ export class YEvent {
      */
     this.transaction = transaction
     /**
-     * @type {null | Map<string, { action: 'add' | 'update' | 'delete', oldValue: any }>}
-     */
-    this._keys = null
-    /**
      * @type {(Target extends AbstractType<infer D,any> ? D : delta.Delta<any,any,any,any,any>)|null}
      */
     this._delta = null
+    /**
+     * @type {(Target extends AbstractType<infer D,any> ? import('../internals.js').ToDeepEventDelta<D> : delta.Delta<any,any,any,any,any>)|null}
+     */
+    this._deltaDeep = null
     /**
      * @type {Array<string|number>|null}
      */
@@ -103,63 +103,6 @@ export class YEvent {
   }
 
   /**
-   * @type {Map<string, { action: 'add' | 'update' | 'delete', oldValue: any }>}
-   */
-  get keys () {
-    if (this._keys === null) {
-      if (this.transaction.doc._transactionCleanups.length === 0) {
-        throw error.create(errorComputeChanges)
-      }
-      const keys = new Map()
-      const target = this.target
-      // @ts-ignore
-      const changed = /** @type Set<string|null> */ (this.transaction.changed.get(target))
-      changed.forEach(key => {
-        if (key !== null) {
-          const item = /** @type {Item} */ (target._map.get(key))
-          /**
-           * @type {'delete' | 'add' | 'update'}
-           */
-          let action
-          let oldValue
-          if (this.adds(item)) {
-            let prev = item.left
-            while (prev !== null && this.adds(prev)) {
-              prev = prev.left
-            }
-            if (this.deletes(item)) {
-              if (prev !== null && this.deletes(prev)) {
-                action = 'delete'
-                oldValue = array.last(prev.content.getContent())
-              } else {
-                return
-              }
-            } else {
-              if (prev !== null && this.deletes(prev)) {
-                action = 'update'
-                oldValue = array.last(prev.content.getContent())
-              } else {
-                action = 'add'
-                oldValue = undefined
-              }
-            }
-          } else {
-            if (this.deletes(item)) {
-              action = 'delete'
-              oldValue = array.last(/** @type {Item} */ item.content.getContent())
-            } else {
-              return // nop
-            }
-          }
-          keys.set(key, { action, oldValue })
-        }
-      })
-      this._keys = keys
-    }
-    return this._keys
-  }
-
-  /**
    * Check if a struct is added by this event.
    *
    * In contrast to change.deleted, this method also returns true if the struct was added and then deleted.
@@ -172,14 +115,18 @@ export class YEvent {
   }
 
   /**
+   * @template {boolean} [Deep=false]
    * @param {AbstractAttributionManager} am
-   * @return {Target extends AbstractType<infer D,any> ? D : delta.Delta<any,any,any,any>} The Delta representation of this type.
+   * @param {object} [opts]
+   * @param {Deep} [opts.deep]
+   * @return {Target extends AbstractType<infer D,any> ? (Deep extends true ? import('../internals.js').ToDeepEventDelta<D> : D) : delta.Delta<any,any,any,any>} The Delta representation of this type.
    *
    * @public
    */
-  getDelta (am = noAttributionsManager) {
+  getDelta (am = noAttributionsManager, { deep } = {}) {
     const itemsToRender = mergeIdSets([diffIdSet(this.transaction.insertSet, this.transaction.deleteSet), diffIdSet(this.transaction.deleteSet, this.transaction.insertSet)])
-    return /** @type {any} */ (this.target.getContent(am, { itemsToRender, retainDeletes: true, renderAttrs: this.keysChanged, renderChildren: this.childListChanged, deletedItems: this.transaction.deleteSet }))
+    const modified = deep ? this.transaction.changedParentTypes : null
+    return /** @type {any} */ (this.target.getContent(am, { itemsToRender, retainDeletes: true, renderAttrs: this.keysChanged, renderChildren: deep || this.childListChanged, deletedItems: this.transaction.deleteSet, deep: !!deep, modified }))
   }
 
   /**
@@ -191,6 +138,17 @@ export class YEvent {
    */
   get delta () {
     return /** @type {any} */ (this._delta ?? (this._delta = this.getDelta()))
+  }
+
+  /**
+   * Compute the changes in the delta format.
+   * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
+   *
+   * @type {Target extends AbstractType<infer D,any> ? D : delta.Delta<any,any,any,any,any>} The Delta representation of this type.
+   * @public
+   */
+  get deltaDeep () {
+    return /** @type {any} */ (this._deltaDeep ?? (this._deltaDeep = this.getDelta(noAttributionsManager, { deep: true })))
   }
 }
 

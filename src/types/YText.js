@@ -337,7 +337,7 @@ const insertAttributes = (transaction, parent, currPos, attributes) => {
  * @private
  * @function
  **/
-const insertText = (transaction, parent, currPos, text, attributes) => {
+export const insertText = (transaction, parent, currPos, text, attributes) => {
   currPos.currentAttributes.forEach((_val, key) => {
     if (attributes[key] === undefined) {
       attributes[key] = null
@@ -546,7 +546,7 @@ export const cleanupYTextAfterTransaction = transaction => {
  * @private
  * @function
  */
-const deleteText = (transaction, currPos, length) => {
+export const deleteText = (transaction, currPos, length) => {
   const startLength = length
   const startAttrs = map.copy(currPos.currentAttributes)
   const start = currPos.right
@@ -743,37 +743,6 @@ export class YText extends AbstractType {
    */
   toJSON () {
     return this.toString()
-  }
-
-  /**
-   * Apply a {@link Delta} on this shared YText type.
-   *
-   * @param {delta.TextDelta<Embeds>} d The changes to apply on this element.
-   * @param {AbstractAttributionManager} am
-   *
-   * @public
-   */
-  applyDelta (d, am = noAttributionsManager) {
-    if (this.doc !== null) {
-      transact(this.doc, transaction => {
-        const currPos = new ItemTextListPosition(null, this._start, 0, new Map(), am)
-        for (const op of d.children) {
-          if (delta.$textOp.check(op)) {
-            insertText(transaction, this, currPos, op.insert, op.format || {})
-          } else if (delta.$insertOp.check(op)) {
-            for (let i = 0; i < op.insert.length; i++) {
-              insertText(transaction, this, currPos, op.insert[i], op.format || {})
-            }
-          } else if (delta.$retainOp.check(op)) {
-            currPos.formatText(transaction, this, op.retain, op.format || {})
-          } else if (delta.$deleteOp.check(op)) {
-            deleteText(transaction, currPos, op.delete)
-          }
-        }
-      })
-    } else {
-      /** @type {Array<function>} */ (this._pending).push(() => this.applyDelta(d))
-    }
   }
 
   /**
