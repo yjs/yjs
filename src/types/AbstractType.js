@@ -20,8 +20,7 @@ import {
   ItemTextListPosition,
   insertText,
   deleteText,
-  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, createAttributionFromAttributionItems, AbstractAttributionManager,
-  YXmlElement, // eslint-disable-line
+  ContentDoc, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, createAttributionFromAttributionItems, AbstractAttributionManager, YXmlElement, // eslint-disable-line
 } from '../internals.js'
 
 import * as delta from 'lib0/delta'
@@ -471,7 +470,7 @@ export class AbstractType {
     /**
      * @type {EventDelta}
      */
-    const d = /** @type {any} */ (delta.create(this.nodeName || null))
+    const d = /** @type {any} */ (delta.create(/** @type {any} */ (this).nodeName || null))
     typeMapGetDelta(d, /** @type {any} */ (this), renderAttrs, am, deep, modified, deletedItems, itemsToRender)
     if (renderChildren) {
       /**
@@ -564,7 +563,7 @@ export class AbstractType {
                 if (c.deleted ? retainDeletes : retainInserts) {
                   d.retain(c.content.getLength(), null, attribution ?? {})
                 } else if (deep && c.content.constructor === ContentType) {
-                  d.insert([/** @type {any} */ (c.content).type.getContent(am, opts)], null, attribution)
+                  d.insert([/** @type {any} */(c.content).type.getContent(am, opts)], null, attribution)
                 } else {
                   d.insert(c.content.getContent(), null, attribution)
                 }
@@ -699,15 +698,15 @@ export class AbstractType {
    * @public
    */
   applyDelta (d, am = noAttributionsManager) {
-    if (this.doc == null) 
+    if (this.doc == null) {
       (this._prelim || (this._prelim = /** @type {any} */ (delta.create()))).apply(d)
-    else {
+    } else {
       // @todo this was moved here from ytext. Make this more generic
       transact(this.doc, transaction => {
         const currPos = new ItemTextListPosition(null, this._start, 0, new Map(), am)
         for (const op of d.children) {
           if (delta.$textOp.check(op)) {
-            insertText(transaction, this, currPos, op.insert, op.format || {})
+            insertText(transaction, /** @type {any} */ (this), currPos, op.insert, op.format || {})
           } else if (delta.$insertOp.check(op)) {
             for (let i = 0; i < op.insert.length; i++) {
               let ins = op.insert[i]
@@ -720,15 +719,15 @@ export class AbstractType {
                   error.unexpectedCase()
                 }
               }
-              insertText(transaction, this, currPos, ins, op.format || {})
+              insertText(transaction, /** @type {any} */ (this), currPos, ins, op.format || {})
             }
           } else if (delta.$retainOp.check(op)) {
-            currPos.formatText(transaction, this, op.retain, op.format || {})
+            currPos.formatText(transaction, /** @type {any} */ (this), op.retain, op.format || {})
           } else if (delta.$deleteOp.check(op)) {
             deleteText(transaction, currPos, op.delete)
           } else if (delta.$modifyOp.check(op)) {
             /** @type {ContentType} */ (currPos.right?.content).type.applyDelta(op.modify)
-            currPos.formatText(transaction, this, 1, op.format || {})
+            currPos.formatText(transaction, /** @type {any} */ (this), 1, op.format || {})
           }
         }
       })
@@ -1319,7 +1318,7 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, de
       }
       const prevValue = (prevContentItem !== item && itemsToRender?.hasId(prevContentItem.lastId)) ? array.last(prevContentItem.content.getContent()) : undefined
       if (deep && c instanceof AbstractType) {
-        c = c.getContent(am)
+        c = /** @type {any} */(c).getContent(am)
       }
       d.set(key, c, attribution, prevValue)
     }

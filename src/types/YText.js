@@ -33,7 +33,6 @@ import * as math from 'lib0/math'
 import * as traits from 'lib0/traits'
 import * as map from 'lib0/map'
 import * as error from 'lib0/error'
-import * as delta from 'lib0/delta'
 
 export class ItemTextListPosition {
   /**
@@ -634,7 +633,7 @@ export const deleteText = (transaction, currPos, length) => {
  * like pictures and videos), and text formats (**bold**, *italic*).
  *
  * @template {{ [key:string]:any } | import('../utils/types.js').YType} [Embeds={ [key:string]:any } | import('../utils/types.js').YType]
- * @extends {AbstractType<delta.TextDelta<Embeds>>}
+ * @extends {AbstractType<import('lib0/delta').TextDelta<Embeds>>}
  */
 export class YText extends AbstractType {
   /**

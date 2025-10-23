@@ -332,7 +332,6 @@ export const testObfuscateUpdates = _tc => {
   // test ytext
   const d = /** @type {any} */ (otext.getContent().toJSON().children)
   t.assert(d.length === 2)
-  const q = d[0]
   t.assert(d[0].insert !== 'text' && d[0].insert.length === 4)
   t.assert(object.length(d[0].format) === 1)
   t.assert(!object.hasProperty(d[0].format, 'bold'))

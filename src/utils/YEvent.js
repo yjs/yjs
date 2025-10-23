@@ -5,15 +5,11 @@ import {
   AbstractAttributionManager, Item, AbstractType, Transaction, AbstractStruct // eslint-disable-line
 } from '../internals.js'
 
-import * as array from 'lib0/array'
-import * as error from 'lib0/error'
 import * as delta from 'lib0/delta' // eslint-disable-line
 
 /**
  * @typedef {import('./types.js').YType} _YType
  */
-
-const errorComputeChanges = 'You must not compute changes after the event-handler fired.'
 
 /**
  * @template {_YType} Target

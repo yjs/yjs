@@ -30,6 +30,8 @@ import * as delta from 'lib0/delta' // eslint-disable-line
  * @extends {AbstractType<delta.ArrayDelta<T>,YArray<T>>}
  * @implements {Iterable<T>}
  */
+// @todo remove this
+// @ts-ignore
 export class YArray extends AbstractType {
   constructor () {
     super()
