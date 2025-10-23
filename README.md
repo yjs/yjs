@@ -297,6 +297,10 @@ An ActionCable companion for Yjs clients. There is a fitting
   <dd>
 Websocket backend, written in Python.
   </dd>
+  <dt><a href="https://github.com/s2-streamstore/y-s2">y-s2</a></dt>
+  <dd>
+A Cloudflare Worker that provides real-time collaborative document editing using Yjs with <a href="https://s2.dev/">S2.dev</a> as a durable distribution channel and an R2 bucket as the storage provider.
+  </dd>
   <dt><a href="https://tinybase.org/">Tinybase</a></dt>
   <dd>
 The reactive data store for local-first apps. They support multiple CRDTs and
