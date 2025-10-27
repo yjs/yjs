@@ -63,6 +63,7 @@ export {
   decodeSnapshotV2,
   encodeSnapshotV2,
   decodeStateVector,
+  getStateVector,
   logUpdate,
   logUpdateV2,
   decodeUpdate,
