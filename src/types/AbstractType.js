@@ -468,7 +468,7 @@ export class AbstractType {
   getContent (am = noAttributionsManager, opts = {}) {
     const { itemsToRender = null, retainInserts = false, retainDeletes = false, renderAttrs = null, renderChildren = true, deletedItems = null, modified = null, deep = false } = opts
     /**
-     * @type {EventDelta}
+     * @type {EventDelta extends delta.Delta<infer N,infer Attrs,infer Children,infer Text,any> ? delta.DeltaBuilder<N,Attrs,Children,Text,any> : never}
      */
     const d = /** @type {any} */ (delta.create(/** @type {any} */ (this).nodeName || null))
     typeMapGetDelta(d, /** @type {any} */ (this), renderAttrs, am, deep, modified, deletedItems, itemsToRender)
@@ -726,7 +726,7 @@ export class AbstractType {
           } else if (delta.$deleteOp.check(op)) {
             deleteText(transaction, currPos, op.delete)
           } else if (delta.$modifyOp.check(op)) {
-            /** @type {ContentType} */ (currPos.right?.content).type.applyDelta(op.modify)
+            /** @type {ContentType} */ (currPos.right?.content).type.applyDelta(op.value)
             currPos.formatText(transaction, /** @type {any} */ (this), 1, op.format || {})
           }
         }
@@ -1277,7 +1277,7 @@ export const typeMapGetAll = (parent) => {
  * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
  * attribution `{ isDeleted: true, .. }`.
  *
- * @template {delta.Delta<any,any,any,any>} TypeDelta
+ * @template {delta.DeltaBuilder<any,any,any,any>} TypeDelta
  * @param {TypeDelta} d
  * @param {YType_} parent
  * @param {Set<string>?} attrsToRender

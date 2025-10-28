@@ -24,7 +24,7 @@ import {
  * * An YXmlElement has attributes (key value pairs)
  * * An YXmlElement has childElements that must inherit from YXmlElement
  *
- * @template {{ [key: string]: ValueTypes }} [Attrs={ [key: string]: string }]
+ * @template {{ [key: string]: any }} [Attrs={ [key: string]: string }]
  * @template {any} [Children=any]
  * @extends YXmlFragment<Children,Attrs>
  */

@@ -393,13 +393,13 @@ export const testChangeEvent = tc => {
   const newArr = new Y.Array()
   array0.insert(0, [newArr, 4, 'dtrn'])
   t.assert(d !== null && d.children.len === 1)
-  t.compare(d.toJSON().children, [{ insert: [newArr, 4, 'dtrn'] }])
+  t.compare(d, delta.create().insert([newArr, 4, 'dtrn']))
   array0.delete(0, 2)
   t.assert(d !== null && d.children.len === 1)
   t.compare(d.toJSON().children, [{ delete: 2 }])
   array0.insert(1, [0.1])
   t.assert(d !== null && d.children.len === 2)
-  t.compare(d.toJSON().children, [{ retain: 1 }, { insert: [0.1] }])
+  t.compare(d, delta.create().retain(1).insert([0.1]).done())
   compare(users)
 }
 

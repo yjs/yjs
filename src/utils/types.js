@@ -1,4 +1,3 @@
-
 /**
  * @typedef {import('../types/YArray.js').YArray<any>
  *   | import('../types/YMap.js').YMap<any>

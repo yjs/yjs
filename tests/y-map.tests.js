@@ -10,6 +10,7 @@ import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 import * as delta from 'lib0/delta'
 import * as s from 'lib0/schema'
+import * as object from 'lib0/object'
 
 /**
  * @param {t.TestCase} _tc
@@ -498,33 +499,33 @@ export const testChangeEvent = tc => {
     changes = e.delta
   })
   map0.set('a', 1)
-  let keyChange = changes.attrs.get('a')
+  let keyChange = changes.attrs.a
   t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === undefined)
   map0.set('a', 2)
-  keyChange = changes.attrs.get('a')
+  keyChange = changes.attrs.a
   t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === 1)
   users[0].transact(() => {
     map0.set('a', 3)
     map0.set('a', 4)
   })
-  keyChange = changes.attrs.get('a')
+  keyChange = changes.attrs.a
   t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === 2)
   users[0].transact(() => {
     map0.set('b', 1)
     map0.set('b', 2)
   })
-  keyChange = changes.attrs.get('b')
+  keyChange = changes.attrs.b
   t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === undefined)
   users[0].transact(() => {
     map0.set('c', 1)
     map0.delete('c')
   })
-  t.assert(changes !== null && changes.attrs.size === 0)
+  t.assert(changes !== null && object.isEmpty(changes.attrs))
   users[0].transact(() => {
     map0.set('d', 1)
     map0.set('d', 2)
   })
-  keyChange = changes.attrs.get('d')
+  keyChange = changes.attrs.d
   t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === undefined)
   compare(users)
 }
@@ -635,7 +636,7 @@ export const testAttributedContent = _tc => {
   })
   t.group('overwrite value', () => {
     ymap.set('test', 'fourtytwo')
-    const expectedContent = { test: delta.$deltaMapChangeJson.expect({ type: 'insert', prevValue: 42, value: 'fourtytwo', attribution: { insert: [] } }) }
+    const expectedContent = { test: delta.$deltaMapChangeJson.expect({ type: 'insert', value: 'fourtytwo', attribution: { insert: [] } }) }
     const attributedContent = ymap.getContent(attributionManager)
     console.log(attributedContent)
     t.compare(expectedContent, attributedContent.toJSON().attrs)

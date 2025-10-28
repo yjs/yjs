@@ -460,7 +460,7 @@ export const compare = users => {
   users.push(.../** @type {any} */(mergedDocs))
   const userArrayValues = users.map(u => u.getArray('array').toJSON())
   const userMapValues = users.map(u => u.getMap('map').toJSON())
-  const userXmlValues = users.map(u => u.get('xml', Y.XmlElement).toString())
+  const userXmlValues = users.map(u => /** @type {Y.XmlElement} */ (u.get('xml', Y.XmlElement)).toString())
   const userTextValues = users.map(u => u.getText('text').getContentDeep())
   for (const u of users) {
     t.assert(u.store.pendingDs === null)
@@ -486,7 +486,7 @@ export const compare = users => {
     t.compare(userArrayValues[i], userArrayValues[i + 1])
     t.compare(userMapValues[i], userMapValues[i + 1])
     t.compare(userXmlValues[i], userXmlValues[i + 1])
-    t.compare(list.toArray(userTextValues[i].children).map(a => delta.$textOp.check(a) ? a.insert : ' ').join('').length, users[i].getText('text').length)
+    t.compare(list.toArray(userTextValues[i].children).map(a => (delta.$textOp.check(a) || delta.$insertOp.check(a)) ? a.insert.length : 0).reduce((a, b) => a + b, 0), users[i].getText('text').length)
     t.compare(userTextValues[i], userTextValues[i + 1], '', (_constructor, a, b) => {
       if (a instanceof Y.AbstractType) {
         t.compare(a.toJSON(), b.toJSON())

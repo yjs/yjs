@@ -18,7 +18,6 @@
     "dist": "npm run clean && rollup -c && tsc --skipLibCheck",
     "watch": "rollup -wc",
     "lint": "markdownlint README.md && standard && tsc",
-    "docs": "rm -rf docs; jsdoc --configure ./.jsdoc.json --verbose --readme ./README.md --package ./package.json || true",
     "serve-docs": "npm run docs && 0serve ./docs/",
     "preversion": "PRODUCTION=1 npm run dist && npm run docs && test -e dist/src/index.d.ts && test -e dist/yjs.cjs && test -e dist/yjs.cjs",
     "debug": "npm run gentesthtml && 0serve -o test.html",
@@ -85,17 +84,15 @@
   },
   "homepage": "https://docs.yjs.dev",
   "dependencies": {
-    "lib0": "^0.2.115-0"
+    "lib0": "^0.2.115-1"
   },
   "devDependencies": {
     "@types/node": "^22.14.1",
     "@y/protocols": "^1.0.6-1",
-    "concurrently": "^3.6.1",
-    "jsdoc": "^3.6.7",
-    "markdownlint-cli": "^0.41.0",
-    "rollup": "^4.37.0",
-    "standard": "^16.0.4",
-    "tui-jsdoc-template": "^1.2.2",
+    "concurrently": "^9.2.1",
+    "markdownlint-cli": "^0.45.0",
+    "rollup": "^4.52.5",
+    "standard": "^17.1.2",
     "typescript": "^5.9.3"
   },
   "engines": {

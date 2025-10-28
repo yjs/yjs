@@ -106,7 +106,7 @@ export const testYtextAttributes = _tc => {
   const ydoc = new Y.Doc()
   const ytext = /** @type {Y.XmlText} */ (ydoc.get('', Y.XmlText))
   ytext.observe(event => {
-    t.assert(event.delta.attrs.get('test')?.type === 'insert')
+    t.assert(event.delta.attrs.test?.type === 'insert')
   })
   ytext.setAttribute('test', 42)
   t.compare(ytext.getAttribute('test'), 42)
@@ -124,7 +124,7 @@ export const testSiblings = _tc => {
   yxml.insert(0, [first, second])
   t.assert(first.nextSibling === second)
   t.assert(second.prevSibling === first)
-  t.assert(first.parent === yxml)
+  t.assert(first.parent === /** @type {Y.AbstractType<any>} */ (yxml))
   t.assert(yxml.parent === null)
   t.assert(yxml.firstChild === first)
 }
@@ -272,7 +272,7 @@ export const testElementAttributedContent = _tc => {
       console.log('cs expec', JSON.stringify(expectedContent.toJSON(), null, 2))
       console.log('attributes', attributedContent.toJSON().attrs)
       t.assert(attributedContent.equals(expectedContent))
-      t.compare(attributedContent, /** @type {delta.MapDelta<any>} */ (delta.map()).set('key', '42', { insert: [] }))
+      t.compare(attributedContent, delta.map().set('key', '42', { insert: [] }))
       t.compare(attributedContent.toJSON().attrs, { key: { type: 'insert', prevValue: undefined, value: '42', attribution: { insert: [] } } })
       t.assert(attributedContent.name === 'UNDEFINED')
     })

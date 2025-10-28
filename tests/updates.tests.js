@@ -127,7 +127,15 @@ export const testKeyEncoding = tc => {
   const update = Y.encodeStateAsUpdateV2(users[0])
   Y.applyUpdateV2(users[1], update)
 
-  t.compare(text1.getContent().toJSON().children, [{ insert: 'c', format: { italic: true } }, { insert: 'b' }, { insert: 'a', format: { italic: true } }])
+  const c = text1.getContent()
+  t.compare(
+    c,
+    delta.create()
+      .insert('c', { italic: true })
+      .insert('b')
+      .insert('a', { italic: true })
+      .done()
+  )
 
   compare(users)
 }
@@ -335,7 +343,7 @@ export const testObfuscateUpdates = _tc => {
   t.assert(d[0].insert !== 'text' && d[0].insert.length === 4)
   t.assert(object.length(d[0].format) === 1)
   t.assert(!object.hasProperty(d[0].format, 'bold'))
-  t.assert(object.length(d[1]) === 1)
+  t.assert(object.length(d[1].insert) === 1)
   t.assert(object.hasProperty(d[1], 'insert'))
   // test ymap
   t.assert(omap.size === 1)

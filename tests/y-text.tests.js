@@ -1216,6 +1216,7 @@ export const testDeltaBug2 = _tc => {
   ytext.applyDelta(changeEvent)
   const d = ytext.getContent()
   t.compare(list.toArray(d.children)[40].toJSON(), {
+    type: 'insert',
     insert: '\n',
     format: {
       'block-id': 'block-9d6566a1-be55-4e20-999a-b990bc15e143'
@@ -1242,11 +1243,12 @@ export const testDeltaAfterConcurrentFormatting = tc => {
   const deltas = []
   text1.observe(event => {
     if (event.delta.children.len > 0) {
-      deltas.push(event.delta.toJSON())
+      deltas.push(event.delta)
     }
   })
   testConnector.flushAllMessages()
-  t.compare(deltas, [[{ retain: 2, format: { bold: true } }, { retain: 1 }, { retain: 1, format: { bold: null } }]])
+  t.assert(deltas.length === 1)
+  t.compare(deltas[0], delta.create().retain(2, { bold: true }).retain(1).retain(1, { bold: null }).done())
 }
 
 /**
@@ -1295,29 +1297,29 @@ export const testBasicFormat = tc => {
   })
   text0.insert(0, 'abc', { bold: true })
   t.assert(text0.toString() === 'abc', 'Basic insert with attributes works')
-  t.compare(text0.getContent(), delta.create().insert('abc', { bold: true }))
+  t.compare(text0.getContent(), delta.create().insert('abc', { bold: true }).done())
   t.compare(eventDelta, delta.create().insert('abc', { bold: true }))
   text0.delete(0, 1)
   t.assert(text0.toString() === 'bc', 'Basic delete on formatted works (position 0)')
-  t.compare(text0.getContent(), delta.create().insert('bc', { bold: true }))
+  t.compare(text0.getContent(), delta.create().insert('bc', { bold: true }).done())
   t.compare(eventDelta, delta.create().delete(1))
   text0.delete(1, 1)
   t.assert(text0.toString() === 'b', 'Basic delete works (position 1)')
-  t.compare(text0.getContent(), delta.create().insert('b', { bold: true }))
+  t.compare(text0.getContent(), delta.create().insert('b', { bold: true }).done())
   t.compare(eventDelta, delta.create().retain(1).delete(1))
   text0.insert(0, 'z', { bold: true })
   t.assert(text0.toString() === 'zb')
-  t.compare(text0.getContent(), delta.create().insert('zb', { bold: true }))
+  t.compare(text0.getContent(), delta.create().insert('zb', { bold: true }).done())
   t.compare(eventDelta, delta.create().insert('z', { bold: true }))
   // @ts-ignore
   t.assert(text0._start.right.right.right.content.str === 'b', 'Does not insert duplicate attribute marker')
   text0.insert(0, 'y')
   t.assert(text0.toString() === 'yzb')
-  t.compare(text0.getContent(), delta.create().insert('y').insert('zb', { bold: true }))
+  t.compare(text0.getContent(), delta.create().insert('y').insert('zb', { bold: true }).done())
   t.compare(eventDelta, delta.create().insert('y'))
   text0.format(0, 2, { bold: null })
   t.assert(text0.toString() === 'yzb')
-  t.compare(text0.getContent(), delta.create().insert('yz').insert('b', { bold: true }))
+  t.compare(text0.getContent(), delta.create().insert('yz').insert('b', { bold: true }).done())
   t.compare(eventDelta, delta.create().retain(1).retain(1, { bold: null }))
   compare(users)
 }
@@ -1332,14 +1334,14 @@ export const testFalsyFormats = tc => {
     delta = event.delta.toJSON().children
   })
   text0.insert(0, 'abcde', { falsy: false })
-  t.compare(text0.getContent().toJSON().children, [{ insert: 'abcde', format: { falsy: false } }])
-  t.compare(delta, [{ insert: 'abcde', format: { falsy: false } }])
+  t.compare(text0.getContent().toJSON().children, [{ type: 'insert', insert: 'abcde', format: { falsy: false } }])
+  t.compare(delta, [{ type: 'insert', insert: 'abcde', format: { falsy: false } }])
   text0.format(1, 3, { falsy: true })
-  t.compare(text0.getContent().toJSON().children, [{ insert: 'a', format: { falsy: false } }, { insert: 'bcd', format: { falsy: true } }, { insert: 'e', format: { falsy: false } }])
-  t.compare(delta, [{ retain: 1 }, { retain: 3, format: { falsy: true } }])
+  t.compare(text0.getContent().toJSON().children, [{ type: 'insert', insert: 'a', format: { falsy: false } }, { type: 'insert', insert: 'bcd', format: { falsy: true } }, { type: 'insert', insert: 'e', format: { falsy: false } }])
+  t.compare(delta, [{ type: 'retain', retain: 1 }, { type: 'retain', retain: 3, format: { falsy: true } }])
   text0.format(2, 1, { falsy: false })
-  t.compare(text0.getContent().toJSON().children, [{ insert: 'a', format: { falsy: false } }, { insert: 'b', format: { falsy: true } }, { insert: 'c', format: { falsy: false } }, { insert: 'd', format: { falsy: true } }, { insert: 'e', format: { falsy: false } }])
-  t.compare(delta, [{ retain: 2 }, { retain: 1, format: { falsy: false } }])
+  t.compare(text0.getContent().toJSON().children, [{ type: 'insert', insert: 'a', format: { falsy: false } }, { type: 'insert', insert: 'b', format: { falsy: true } }, { type: 'insert', insert: 'c', format: { falsy: false } }, { type: 'insert', insert: 'd', format: { falsy: true } }, { type: 'insert', insert: 'e', format: { falsy: false } }])
+  t.compare(delta, [{ type: 'retain', retain: 2 }, { type: 'retain', retain: 1, format: { falsy: false } }])
   compare(users)
 }
 
@@ -1357,13 +1359,16 @@ export const testMultilineFormat = _tc => {
     .retain(1) // newline character
     .retain(10, { bold: true })
   testText.applyDelta(tt)
-  t.compare(testText.getContent().toJSON().children, [
-    { insert: 'Test', format: { bold: true } },
-    { insert: '\n' },
-    { insert: 'Multi-line', format: { bold: true } },
-    { insert: '\n' },
-    { insert: 'Formatting', format: { bold: true } }
-  ])
+  t.compare(
+    testText.getContent(),
+    delta.create()
+      .insert('Test', { bold: true })
+      .insert('\n')
+      .insert('Multi-line', { bold: true })
+      .insert('\n')
+      .insert('Formatting', { bold: true })
+      .done()
+  )
 }
 
 /**
@@ -1378,12 +1383,15 @@ export const testNotMergeEmptyLinesFormat = _tc => {
     .insert('\nText')
     .insert('\n', { title: true })
   )
-  t.compare(testText.getContent().toJSON().children, [
-    { insert: 'Text' },
-    { insert: '\n', format: { title: true } },
-    { insert: '\nText' },
-    { insert: '\n', format: { title: true } }
-  ])
+  t.compare(
+    testText.getContent(),
+    delta.create()
+      .insert('Text')
+      .insert('\n', { title: true })
+      .insert('\nText')
+      .insert('\n', { title: true })
+      .done()
+  )
 }
 
 /**
@@ -1402,10 +1410,12 @@ export const testPreserveAttributesThroughDelete = _tc => {
     .delete(1)
     .retain(1, { title: true })
   )
-  t.compare(testText.getContent().toJSON().children, [
-    { insert: 'Text' },
-    { insert: '\n', format: { title: true } }
-  ])
+  t.compare(testText.getContent(),
+    delta.create()
+      .insert('Text')
+      .insert('\n', { title: true })
+      .done()
+  )
 }
 
 /**
@@ -1414,9 +1424,11 @@ export const testPreserveAttributesThroughDelete = _tc => {
 export const testGetDeltaWithEmbeds = tc => {
   const { text0 } = init(tc, { users: 1 })
   text0.applyDelta(delta.create().insert([{ linebreak: 's' }]))
-  t.compare(text0.getContent().toJSON().children, [{
-    insert: [{ linebreak: 's' }]
-  }])
+  t.compare(text0.getContent(),
+    delta.create()
+      .insert([{ linebreak: 's' }])
+      .done()
+  )
 }
 
 /**
@@ -1427,18 +1439,18 @@ export const testTypesAsEmbed = tc => {
   text0.applyDelta(delta.create()
     .insert([new Y.Map([['key', 'val']])])
   )
-  t.compare(/** @type {any} */ (text0).getContentDeep().toJSON().children[0]?.insert, { key: 'val' })
+  t.compare(/** @type {any} */ (text0).getContentDeep().toJSON().children, [{ type: 'insert', insert: [{ attrs: { key: { type: 'insert', value: 'val' } }}] }])
   let firedEvent = false
   text1.observe(event => {
-    const d = event.delta
+    const d = event.deltaDeep
     t.assert(d.children.len === 1)
-    t.compare(list.toArray(d.children).map(x => /** @type {any} */ (x).insert.toJSON()), [{ key: 'val' }])
+    t.compare(d.toJSON().children?.map(x => /** @type {any} */ (x).insert), [[{ key: { type: 'insert', value: 'val' } }]])
     firedEvent = true
   })
   testConnector.flushAllMessages()
   const dd = text1.getContent().toJSON().children
   t.assert(dd?.length === 1)
-  t.compare(/** @type {any} */ (dd?.[0]).insert.toJSON(), { key: 'val' })
+  t.compare(/** @type {any} */ (dd?.[0]).insert, { key: 'val' })
   t.assert(firedEvent, 'fired the event observer containing a Type-Embed')
 }
 
@@ -1463,12 +1475,19 @@ export const testSnapshot = tc => {
     .delete(1)
   )
   const state1 = text0.getContent(createAttributionManagerFromSnapshots(snapshot1))
-  t.compare(state1.toJSON().children, [{ insert: 'abcd' }])
+  t.compare(state1, delta.create().insert('abcd').done())
   const state2 = text0.getContent(createAttributionManagerFromSnapshots(snapshot2))
-  t.compare(state2.toJSON().children, [{ insert: 'axcd' }])
-  const state2Diff = text0.getContent(createAttributionManagerFromSnapshots(snapshot1, snapshot2)).toJSON().children
-  const expected = [{ insert: 'a' }, { insert: 'x', attribution: { insert: [] } }, { insert: 'b', attribution: { delete: [] } }, { insert: 'cd' }]
-  t.compare(state2Diff, expected)
+  t.compare(state2, delta.create().insert('axcd').done())
+  const state2Diff = text0.getContent(createAttributionManagerFromSnapshots(snapshot1, snapshot2))
+  t.compare(
+    state2Diff,
+    delta.create()
+      .insert('a')
+      .insert('x', null, { insert: [] })
+      .insert('b', null, { delete: [] })
+      .insert('cd')
+      .done()
+  )
 }
 
 /**
@@ -1506,8 +1525,15 @@ export const testToDeltaEmbedAttributes = tc => {
   const { text0 } = init(tc, { users: 1 })
   text0.insert(0, 'ab', { bold: true })
   text0.insertEmbed(1, { image: 'imageSrc.png' }, { width: 100 })
-  const delta0 = text0.getContent().toJSON().children
-  t.compare(delta0, [{ insert: 'a', format: { bold: true } }, { insert: [{ image: 'imageSrc.png' }], format: { width: 100 } }, { insert: 'b', format: { bold: true } }])
+  const delta0 = text0.getContent()
+  t.compare(
+    delta0,
+    delta.create()
+      .insert('a', { bold: true })
+      .insert([{ image: 'imageSrc.png' }], { width: 100 })
+      .insert('b', { bold: true })
+      .done()
+  )
 }
 
 /**
@@ -1517,8 +1543,16 @@ export const testToDeltaEmbedNoAttributes = tc => {
   const { text0 } = init(tc, { users: 1 })
   text0.insert(0, 'ab', { bold: true })
   text0.insertEmbed(1, { image: 'imageSrc.png' })
-  const delta0 = text0.getContent().toJSON().children
-  t.compare(delta0, [{ insert: 'a', format: { bold: true } }, { insert: [{ image: 'imageSrc.png' }] }, { insert: 'b', format: { bold: true } }], 'toDelta does not set attributes key when no attributes are present')
+  const delta0 = text0.getContent()
+  t.compare(
+    delta0,
+    delta.create()
+      .insert('a', { bold: true })
+      .insert([{ image: 'imageSrc.png' }])
+      .insert('b', { bold: true })
+      .done()
+    , 'toDelta does not set attributes key when no attributes are present'
+  )
 }
 
 /**
@@ -1528,6 +1562,7 @@ export const testFormattingRemoved = tc => {
   const { text0 } = init(tc, { users: 1 })
   text0.insert(0, 'ab', { bold: true })
   text0.delete(0, 2)
+  // @ts-ignore
   t.assert(Y.getTypeChildren(text0).length === 1)
 }
 
@@ -1571,9 +1606,7 @@ export const testFormattingDeltaUnnecessaryAttributeChange = tc => {
   testConnector.flushAllMessages()
   const filteredDeltas = deltas.filter(d => d.children.len > 0)
   t.assert(filteredDeltas.length === 2)
-  t.compare(filteredDeltas[0].toJSON().children, [
-    { retain: 1, format: { LIST_STYLES: 'number' } }
-  ])
+  t.compare(filteredDeltas[0], delta.create().retain(1, { LIST_STYLES: 'number' }).done())
   t.compare(filteredDeltas[0], filteredDeltas[1])
 }
 
@@ -1820,12 +1853,12 @@ export const testFormattingBug = async _tc => {
   ydoc2.getText().format(1, 1, { url: 'http://docs.yjs.dev' })
   Y.applyUpdate(ydoc2, Y.encodeStateAsUpdate(ydoc1))
   const text2 = ydoc2.getText()
-  const expectedResult = [
-    { insert: '\n', format: { url: 'http://example.com' } },
-    { insert: '\n', format: { url: 'http://docs.yjs.dev' } },
-    { insert: '\n', format: { url: 'http://example.com' } }
-  ]
-  t.compare(text1.getContent().toJSON().children, expectedResult)
+  const expectedResult = delta.create()
+    .insert('\n', { url: 'http://example.com' })
+    .insert('\n', { url: 'http://docs.yjs.dev' })
+    .insert('\n', { url: 'http://example.com' })
+    .done()
+  t.compare(text1.getContent(), expectedResult)
   t.compare(text1.getContent().toJSON(), text2.getContent().toJSON())
   console.log(text1.getContent().toJSON())
 }
@@ -1850,13 +1883,13 @@ export const testDeleteFormatting = _tc => {
   text.format(16, 4, { bold: null })
   Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc))
 
-  const expected = [
-    { insert: 'Attack ships ' },
-    { insert: 'on ', format: { bold: true } },
-    { insert: 'fire off the shoulder of Orion.' }
-  ]
-  t.compare(text.getContent().toJSON().children, expected)
-  t.compare(text2.getContent().toJSON().children, expected)
+  const expected = delta.create()
+    .insert('Attack ships ')
+    .insert('on ', { bold: true })
+    .insert('fire off the shoulder of Orion.')
+    .done()
+  t.compare(text.getContent(), expected)
+  t.compare(text2.getContent(), expected)
 }
 
 /**
