@@ -1439,7 +1439,7 @@ export const testTypesAsEmbed = tc => {
   text0.applyDelta(delta.create()
     .insert([new Y.Map([['key', 'val']])])
   )
-  t.compare(/** @type {any} */ (text0).getContentDeep().toJSON().children, [{ type: 'insert', insert: [{ attrs: { key: { type: 'insert', value: 'val' } }}] }])
+  t.compare(/** @type {any} */ (text0).getContentDeep().toJSON().children, [{ type: 'insert', insert: [{ attrs: { key: { type: 'insert', value: 'val' } } }] }])
   let firedEvent = false
   text1.observe(event => {
     const d = event.deltaDeep

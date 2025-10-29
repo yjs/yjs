@@ -301,7 +301,6 @@ export const testUndoXml = tc => {
   textchild.format(3, 4, { bold: {} })
   t.compare(xml0.getContentDeep(), delta.create('UNDEFINED').insert([delta.text().insert('con').insert('tent', { bold: true }).done()]).done())
   t.assert(xml0.toString() === '<undefined><p>con<bold>tent</bold></p></undefined>')
-  debugger
   undoManager.undo()
   t.assert(xml0.toString() === '<undefined><p>content</p></undefined>')
   undoManager.redo()
