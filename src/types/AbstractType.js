@@ -403,19 +403,25 @@ export class AbstractType {
   /**
    * Observe all events that are created on this type.
    *
-   * @param {(target: YEvent<Self>, tr: Transaction) => void} f Observer function
+   * @template {(target: YEvent<Self>, tr: Transaction) => void} F
+   * @param {F} f Observer function
+   * @return {F}
    */
   observe (f) {
     addEventHandlerListener(this._eH, f)
+    return f
   }
 
   /**
    * Observe all events that are created by this type and its children.
    *
-   * @param {function(Array<YEvent<any>>,Transaction):void} f Observer function
+   * @template {function(Array<YEvent<any>>,Transaction):void} F
+   * @param {F} f Observer function
+   * @return {F}
    */
   observeDeep (f) {
     addEventHandlerListener(this._dEH, f)
+    return f
   }
 
   /**
@@ -728,6 +734,8 @@ export class AbstractType {
           } else if (delta.$modifyOp.check(op)) {
             /** @type {ContentType} */ (currPos.right?.content).type.applyDelta(op.value)
             currPos.formatText(transaction, /** @type {any} */ (this), 1, op.format || {})
+          } else {
+            error.unexpectedCase()
           }
         }
       })

@@ -39,7 +39,7 @@
       "import": "./src/internals.js"
     },
     "./testHelper": {
-      "types": "./dist/testHelper.d.ts",
+      "types": "./dist/tests/testHelper.d.ts",
       "module": "./tests/testHelper.js",
       "require": "./dist/testHelper.cjs",
       "import": "./tests/testHelper.js"
