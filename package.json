@@ -12,14 +12,13 @@
     "url": "https://github.com/sponsors/dmonad"
   },
   "scripts": {
-    "clean": "rm -rf dist docs",
+    "clean": "rm -rf dist",
     "test": "NODE_ENV=development node ./tests/index.js --repetition-time 50",
     "test-extensive": "node ./tests/index.js --production --repetition-time 10000",
     "dist": "npm run clean && rollup -c && tsc --skipLibCheck",
     "watch": "rollup -wc",
     "lint": "markdownlint README.md && standard && tsc",
-    "serve-docs": "npm run docs && 0serve ./docs/",
-    "preversion": "PRODUCTION=1 npm run dist && npm run docs && test -e dist/src/index.d.ts && test -e dist/yjs.cjs && test -e dist/yjs.cjs",
+    "preversion": "PRODUCTION=1 npm run dist && test -e dist/src/index.d.ts && test -e dist/yjs.cjs && test -e dist/yjs.cjs",
     "debug": "npm run gentesthtml && 0serve -o test.html",
     "trace-deopt": "clear && node --trace-deopt ./tests/index.js",
     "trace-opt": "clear && node --trace-opt ./tests/index.js",
@@ -59,8 +58,7 @@
   "standard": {
     "ignore": [
       "/dist",
-      "/node_modules",
-      "/docs"
+      "/node_modules"
     ]
   },
   "repository": {
