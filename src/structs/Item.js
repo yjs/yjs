@@ -282,7 +282,7 @@ export class Item extends AbstractStruct {
    * @param {ID | null} origin
    * @param {Item | null} right
    * @param {ID | null} rightOrigin
-   * @param {YType__|ID|null} parent Is a type if integrated, is null if it is possible to copy parent from left or right, is ID before integration to search for it.
+   * @param {AbstractType<any,any>|ID|null} parent Is a type if integrated, is null if it is possible to copy parent from left or right, is ID before integration to search for it.
    * @param {string | null} parentSub
    * @param {AbstractContent} content
    */
@@ -309,7 +309,7 @@ export class Item extends AbstractStruct {
      */
     this.rightOrigin = rightOrigin
     /**
-     * @type {YType__|ID|null}
+     * @type {AbstractType<any,any>|ID|null}
      */
     this.parent = parent
     /**

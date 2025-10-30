@@ -14,7 +14,6 @@ import {
   typeListDelete,
   typeListMap,
   YArrayRefID,
-  callTypeObservers,
   transact,
   warnPrematureAccess,
   typeListSlice,
@@ -99,17 +98,6 @@ export class YArray extends AbstractType {
   get length () {
     this.doc ?? warnPrematureAccess()
     return this._length
-  }
-
-  /**
-   * Creates YArrayEvent and calls observers.
-   *
-   * @param {Transaction} transaction
-   * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
-   */
-  _callObserver (transaction, parentSubs) {
-    super._callObserver(transaction, parentSubs)
-    callTypeObservers(this, transaction, new YEvent(this, transaction, parentSubs))
   }
 
   /**

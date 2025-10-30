@@ -3,7 +3,6 @@
  */
 
 import {
-  YEvent,
   AbstractType,
   typeMapDelete,
   typeMapSet,
@@ -11,10 +10,9 @@ import {
   typeMapHas,
   createMapIterator,
   YMapRefID,
-  callTypeObservers,
   transact,
   warnPrematureAccess,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item // eslint-disable-line
 } from '../internals.js'
 
 import * as iterator from 'lib0/iterator'
@@ -78,16 +76,6 @@ export class YMap extends AbstractType {
       map.set(key, value instanceof AbstractType ? /** @type {typeof value} */ (value.clone()) : value)
     })
     return map
-  }
-
-  /**
-   * Creates YMapEvent and calls observers.
-   *
-   * @param {Transaction} transaction
-   * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
-   */
-  _callObserver (transaction, parentSubs) {
-    callTypeObservers(this, transaction, new YEvent(this, transaction, parentSubs))
   }
 
   /**

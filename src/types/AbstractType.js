@@ -275,7 +275,7 @@ export const callTypeObservers = (type, transaction, event) => {
 
 /**
  * Abstract Yjs Type class
- * @template {delta.Delta<any,any,any,any,any>} [EventDelta=delta.Delta<any,any,any,any,any>]
+ * @template {delta.Delta<any,any,any,any,any>} [EventDelta=any]
  * @template {AbstractType<any,any>} [Self=any]
  */
 export class AbstractType {
@@ -392,9 +392,11 @@ export class AbstractType {
    * Must be implemented by each type.
    *
    * @param {Transaction} transaction
-   * @param {Set<null|string>} _parentSubs Keys changed on this type. `null` if list was modified.
+   * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
-  _callObserver (transaction, _parentSubs) {
+  _callObserver (transaction, parentSubs) {
+    const event = new YEvent(/** @type {any} */ (this), transaction, parentSubs)
+    callTypeObservers(/** @type {any} */ (this), transaction, event)
     if (!transaction.local && this._searchMarker) {
       this._searchMarker.length = 0
     }
@@ -736,6 +738,19 @@ export class AbstractType {
             currPos.formatText(transaction, /** @type {any} */ (this), 1, op.format || {})
           } else {
             error.unexpectedCase()
+          }
+        }
+        for (const op of d.attrs) {
+          if (delta.$insertOp.check(op)) {
+            typeMapSet(transaction, /** @type {any} */ (this), op.key, op.value)
+          } else if (delta.$deleteOp.check(op)) {
+            typeMapDelete(transaction, /** @type {any} */ (this), op.key)
+          } else {
+            const sub = typeMapGet(/** @type {any} */ (this), op.key)
+            if (!(sub instanceof AbstractType)) {
+              error.unexpectedCase()
+            }
+            sub.applyDelta(op.value)
           }
         }
       })
@@ -1201,7 +1216,7 @@ export const typeMapDelete = (transaction, parent, key) => {
 
 /**
  * @param {Transaction} transaction
- * @param {YType_} parent
+ * @param {AbstractType} parent
  * @param {string} key
  * @param {_YValue} value
  *
@@ -1244,7 +1259,7 @@ export const typeMapSet = (transaction, parent, key, value) => {
 }
 
 /**
- * @param {YType_} parent
+ * @param {AbstractType<any,any>} parent
  * @param {string} key
  * @return {Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined}
  *

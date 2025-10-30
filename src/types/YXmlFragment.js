@@ -12,7 +12,6 @@ import {
   typeListDelete,
   typeListToArray,
   YXmlFragmentRefID,
-  callTypeObservers,
   transact,
   typeListGet,
   typeListSlice,
@@ -105,16 +104,6 @@ export class YXmlFragment extends AbstractType {
   get length () {
     this.doc ?? warnPrematureAccess()
     return this._prelimContent === null ? this._length : this._prelimContent.length
-  }
-
-  /**
-   * Creates YXmlEvent and calls observers.
-   *
-   * @param {Transaction} transaction
-   * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
-   */
-  _callObserver (transaction, parentSubs) {
-    callTypeObservers(this, transaction, new YEvent(this, transaction, parentSubs))
   }
 
   /**

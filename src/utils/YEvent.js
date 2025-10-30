@@ -12,7 +12,7 @@ import * as delta from 'lib0/delta' // eslint-disable-line
  */
 
 /**
- * @template {_YType} Target
+ * @template {AbstractType<any,any>} Target
  * YEvent describes the changes on a YType.
  */
 export class YEvent {

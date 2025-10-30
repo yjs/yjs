@@ -3,13 +3,11 @@
  */
 
 import {
-  YEvent,
   AbstractType,
   getItemCleanStart,
   getState,
   createID,
   YTextRefID,
-  callTypeObservers,
   transact,
   ContentEmbed,
   GC,
@@ -705,8 +703,6 @@ export class YText extends AbstractType {
    */
   _callObserver (transaction, parentSubs) {
     super._callObserver(transaction, parentSubs)
-    const event = new YEvent(/** @type {YText<any>} */ (this), transaction, parentSubs)
-    callTypeObservers(/** @type {YText<any>} */ (this), transaction, event)
     // If a remote change happened, we try to cleanup potential formatting duplicates.
     if (!transaction.local && this._hasFormatting) {
       transaction._needFormattingCleanup = true
