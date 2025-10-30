@@ -114,7 +114,8 @@ export {
   DiffAttributionManager,
   createIdSet,
   mergeIdSets,
-  cloneDoc
+  cloneDoc,
+  registerTypeRef
 } from './internals.js'
 
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'

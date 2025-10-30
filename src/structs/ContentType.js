@@ -15,19 +15,6 @@ import {
 
 import * as error from 'lib0/error'
 
-/**
- * @type {Array<(decoder: UpdateDecoderV1 | UpdateDecoderV2)=>(import('../utils/types.js').YType)>}
- * @private
- */
-export const typeRefs = [
-  readYArray,
-  readYMap,
-  readYText,
-  readYXmlElement,
-  readYXmlFragment,
-  readYXmlHook,
-  readYXmlText
-]
 
 export const YArrayRefID = 0
 export const YMapRefID = 1
@@ -36,6 +23,22 @@ export const YXmlElementRefID = 3
 export const YXmlFragmentRefID = 4
 export const YXmlHookRefID = 5
 export const YXmlTextRefID = 6
+
+/**
+ * @type {Map<number, (decoder: UpdateDecoderV1 | UpdateDecoderV2)=>(import('../utils/types.js').YType)>}
+ * @private
+ */
+const typeRefs = new Map([
+  [YArrayRefID, readYArray],
+  [YMapRefID, readYMap],
+  [YTextRefID, readYText],
+  [YXmlElementRefID, readYXmlElement],
+  [YXmlFragmentRefID, readYXmlFragment],
+  [YXmlHookRefID, readYXmlHook],
+  [YXmlTextRefID, readYXmlText],
+])
+
+export const YArrayLikeRefID = 7
 
 /**
  * @private
@@ -173,4 +176,17 @@ export class ContentType {
  * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @return {ContentType}
  */
-export const readContentType = decoder => new ContentType(typeRefs[decoder.readTypeRef()](decoder))
+export const readContentType = decoder => {
+  const typeRef = typeRefs.get(decoder.readTypeRef())
+  if (!typeRef) throw error.unexpectedCase()
+  return new ContentType(typeRef(decoder))
+}
+
+/**
+ * @param {number} ref
+ * @param {(decoder: UpdateDecoderV1 | UpdateDecoderV2)=>(import('../utils/types.js').YType)} readFn
+ */
+export const registerTypeRef = (ref, readFn) => {
+  if (typeRefs.has(ref)) throw error.create('Type ref already registered')
+  typeRefs.set(ref, readFn)
+}
