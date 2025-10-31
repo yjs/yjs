@@ -38,8 +38,6 @@ const typeRefs = new Map([
   [YXmlTextRefID, readYXmlText],
 ])
 
-export const YArrayLikeRefID = 7
-
 /**
  * @private
  */
