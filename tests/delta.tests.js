@@ -1,6 +1,7 @@
 import * as Y from '../src/index.js'
 import * as delta from 'lib0/delta'
 import * as t from 'lib0/testing'
+import * as s from 'lib0/schema'
 
 /**
  * Delta is a versatyle format enabling you to efficiently describe changes. It is part of lib0, so
@@ -20,7 +21,7 @@ import * as t from 'lib0/testing'
  * The "|" describes the current cursor position.
  *
  * - d.retain(5) - "|hello world" => "hello| world" - jump over the next five characters
- * - d.delete(6) - "hello| world" => "hello|" - delete the next 6 characres  
+ * - d.delete(6) - "hello| world" => "hello|" - delete the next 6 characres
  * - d.insert('!') - "hello!|" - insert "!" at the current position
  * => compact form: d.retain(5).delete(6).insert('!')
  *
@@ -42,6 +43,34 @@ export const testDeltaBasics = _tc => {
   state.apply(change)
   // compare state to expected state
   t.assert(state.equals(delta.create().insert('hello!')))
+}
+
+/**
+ * lib0 also ships a schema library that can be used to validate JSON objects and custom data types,
+ * like Yjs types.
+ *
+ * As a convention, schemas are usually prefixed with a $ sign. This clarifies the difference
+ * between a schema, and an instance of a schema.
+ *
+ * const $myobj = s.$object({ key: s.$number })
+ * let inputValue: any
+ * if ($myobj.check(inputValue)) {
+ *   inputValue // is validated and of type $myobj
+ * }
+ *
+ * We can also define the expected values on a delta.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testDeltaBasicSchema = _tc => {
+  const $d = delta.$delta({ attrs: s.$object({ key: s.$string }), children: s.$number, hasText: false })
+  const d = delta.create($d)
+  // @ts-expect-error
+  d.set('key', false) // invalid change: will throw a type error
+  t.fails(() => {
+    // @ts-expect-error
+    d.apply(delta.create().set('key', false)) // invalid delta: will throw a type error
+  })
 }
 
 /**
@@ -71,9 +100,9 @@ export const testDeltaValues = _tc => {
     } else if (delta.$deleteOp.check(childChange)) {
       console.log(`delete ${childChange.delete} child items`)
     } else if (delta.$insertOp.check(childChange)) {
-      console.log(`insert child items:`, childChange.insert)
+      console.log('insert child items:', childChange.insert)
     } else if (delta.$textOp.check(childChange)) {
-      console.log(`insert textual content`, childChange.insert)
+      console.log('insert textual content', childChange.insert)
     }
   }
 }

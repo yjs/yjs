@@ -571,7 +571,7 @@ export class AbstractType {
                 if (c.deleted ? retainDeletes : retainInserts) {
                   d.retain(c.content.getLength(), null, attribution ?? {})
                 } else if (deep && c.content.constructor === ContentType) {
-                  d.insert([/** @type {any} */(c.content).type.getContent(am, opts)], null, attribution)
+                  d.insert([/** @type {any} */(c.content).type.getContent(am, { ...opts, renderChildren: true, renderAttrs: null })], null, attribution)
                 } else {
                   d.insert(c.content.getContent(), null, attribution)
                 }
@@ -579,6 +579,7 @@ export class AbstractType {
                 d.delete(1)
               } else if (retainContent) {
                 if (c.content.constructor === ContentType && modified?.has(/** @type {ContentType} */ (c.content).type)) {
+                  // @todo use current transaction instead
                   d.modify(/** @type {any} */ (c.content).type.getContent(am, opts))
                 } else {
                   d.usedAttributes = changedAttributes

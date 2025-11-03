@@ -11,7 +11,7 @@ export const testInconsistentFormat = () => {
     const content = /** @type {Y.XmlText} */ (ydoc.get('text', Y.XmlText))
     content.format(0, 6, { bold: null })
     content.format(6, 4, { type: 'text' })
-    t.compare(content.getContent(), delta.create().insert('Merge Test', { type: 'text' }).insert(' After', { type: 'text', italic: true }))
+    t.compare(content.getContent(), delta.create().insert('Merge Test', { type: 'text' }).insert(' After', { type: 'text', italic: true }).done())
   }
   const initializeYDoc = () => {
     const yDoc = new Y.Doc({ gc: false })
@@ -298,17 +298,18 @@ export const testUndoXml = tc => {
   t.assert(xml0.toString() === '<undefined><p>content</p></undefined>')
   // format textchild and revert that change
   undoManager.stopCapturing()
-  textchild.format(3, 4, { bold: {} })
-  t.compare(xml0.getContentDeep(), delta.create('UNDEFINED').insert([delta.text().insert('con').insert('tent', { bold: true }).done()]).done())
-  t.assert(xml0.toString() === '<undefined><p>con<bold>tent</bold></p></undefined>')
+  textchild.format(3, 4, { bold: true })
+  const v1 = delta.create('UNDEFINED').insert([delta.create('p').insert([delta.text().insert('con').insert('tent', { bold: true }).done()]).done()]).done()
+  const v2 = delta.create('UNDEFINED').insert([delta.create('p').insert([delta.text().insert('content').done()]).done()]).done()
+  t.compare(xml0.getContentDeep(), v1)
   undoManager.undo()
-  t.assert(xml0.toString() === '<undefined><p>content</p></undefined>')
+  t.compare(xml0.getContentDeep(), v2)
   undoManager.redo()
-  t.assert(xml0.toString() === '<undefined><p>con<bold>tent</bold></p></undefined>')
+  t.compare(xml0.getContentDeep(), v1)
   xml0.delete(0, 1)
-  t.assert(xml0.toString() === '<undefined></undefined>')
+  t.compare(xml0.getContentDeep(), delta.create('UNDEFINED'))
   undoManager.undo()
-  t.assert(xml0.toString() === '<undefined><p>con<bold>tent</bold></p></undefined>')
+  t.compare(xml0.getContentDeep(), v1)
 }
 
 /**

@@ -1439,18 +1439,18 @@ export const testTypesAsEmbed = tc => {
   text0.applyDelta(delta.create()
     .insert([new Y.Map([['key', 'val']])])
   )
-  t.compare(/** @type {any} */ (text0).getContentDeep().toJSON().children, [{ type: 'insert', insert: [{ attrs: { key: { type: 'insert', value: 'val' } } }] }])
+  t.compare(/** @type {any} */ (text0).getContentDeep().toJSON().children, [{ type: 'insert', insert: [{ type: 'delta', attrs: { key: { type: 'insert', value: 'val' } } }] }])
   let firedEvent = false
   text1.observe(event => {
     const d = event.deltaDeep
     t.assert(d.children.len === 1)
-    t.compare(d.toJSON().children?.map(x => /** @type {any} */ (x).insert), [[{ key: { type: 'insert', value: 'val' } }]])
+    t.compare(d.toJSON().children?.map(x => /** @type {any} */ (x).insert), [[{ type: 'delta', attrs: { key: { type: 'insert', value: 'val' } } }]])
     firedEvent = true
   })
   testConnector.flushAllMessages()
-  const dd = text1.getContent().toJSON().children
+  const dd = text1.getContentDeep().toJSON().children
   t.assert(dd?.length === 1)
-  t.compare(/** @type {any} */ (dd?.[0]).insert, { key: 'val' })
+  t.compare(/** @type {any} */ (dd?.[0]).insert[0], { type: 'delta', attrs: { key: { type: 'insert', value: 'val' } } })
   t.assert(firedEvent, 'fired the event observer containing a Type-Embed')
 }
 

@@ -3,7 +3,6 @@
  */
 
 import {
-  YEvent,
   AbstractType,
   typeListMap,
   typeListForEach,
