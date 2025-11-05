@@ -67,5 +67,5 @@ export const testUndoArrayBug = _tc => {
 
   undoManager.undo()
   // 1,2,3
-  t.compare(array.toJSON(), [1, 2, 3]) // !! Expected [1,2,3] but actually has [1,2,7,3]
+  t.compare(array.toJSON(), [1, 2, 3])
 }
