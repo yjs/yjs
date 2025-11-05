@@ -2,7 +2,7 @@ import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
 
 /**
- * This issue has been reported in https://github.com/yjs/yjs/issues/...
+ * This issue has been reported in https://github.com/yjs/yjs/issues/736
  * Undo-manager over arrays sometimes generates a wrong result when undoing.
  *
  * @param {t.TestCase} _tc
