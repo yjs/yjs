@@ -350,3 +350,57 @@ export const testSyncDocsEvent = async _tc => {
   t.assert(!ydoc.isSynced)
   t.assert(ydoc.whenSynced !== oldWhenSynced)
 }
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testAddTextToDocTwice = async _tc => {
+  const ydoc = new Y.Doc()
+  const mainMap = ydoc.getMap('test')
+  const text = new Y.Text()
+  mainMap.set('text', text)
+  expectThrows(() => mainMap.set('text2', text))  
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testAddMapToDocTwice = async _tc => {
+  const ydoc = new Y.Doc()
+  const mainMap = ydoc.getMap('test')
+  const text = new Y.Text()
+  
+  const map = new Y.Map()
+  mainMap.set('map', map)
+  expectThrows(() => mainMap.set('map2', map))  
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testAddArrayToDocTwice = async _tc => {
+  const ydoc = new Y.Doc()
+  const mainMap = ydoc.getMap('test')
+  const array = new Y.Array()
+  
+  const map = new Y.Map()
+  mainMap.set('array', array)
+  expectThrows(() => mainMap.set('array2', array))  
+}
+
+/**
+ * @param {*} f 
+ */
+function expectThrows(f) {
+  let success = false
+  try {
+    f()
+    success = true
+    throw new Error('Function did not throw')
+  } catch (e) {
+    // Expected to throw
+  }
+  if (success) {
+    t.fail("Expected to throw")
+  }
+}
