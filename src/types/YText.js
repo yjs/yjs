@@ -670,7 +670,10 @@ export class YText extends AbstractType {
    * @param {Item?} item
    */
   _integrate (y, item) {
-    super._integrate(y, item);
+    super._integrate(y, item)
+    if (!this._pending) {
+      throw Error('YText was already added to a document')
+    }
     /** @type {Array<function>} */ (this._pending).forEach(f => f())
     this._pending = null
   }

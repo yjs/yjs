@@ -359,7 +359,7 @@ export const testAddTextToDocTwice = async _tc => {
   const mainMap = ydoc.getMap('test')
   const text = new Y.Text()
   mainMap.set('text', text)
-  expectThrows(() => mainMap.set('text2', text))  
+  expectThrows(() => mainMap.set('text2', text))
 }
 
 /**
@@ -368,11 +368,9 @@ export const testAddTextToDocTwice = async _tc => {
 export const testAddMapToDocTwice = async _tc => {
   const ydoc = new Y.Doc()
   const mainMap = ydoc.getMap('test')
-  const text = new Y.Text()
-  
   const map = new Y.Map()
   mainMap.set('map', map)
-  expectThrows(() => mainMap.set('map2', map))  
+  expectThrows(() => mainMap.set('map2', map))
 }
 
 /**
@@ -382,16 +380,14 @@ export const testAddArrayToDocTwice = async _tc => {
   const ydoc = new Y.Doc()
   const mainMap = ydoc.getMap('test')
   const array = new Y.Array()
-  
-  const map = new Y.Map()
   mainMap.set('array', array)
-  expectThrows(() => mainMap.set('array2', array))  
+  expectThrows(() => mainMap.set('array2', array))
 }
 
 /**
- * @param {*} f 
+ * @param {*} f
  */
-function expectThrows(f) {
+function expectThrows (f) {
   let success = false
   try {
     f()
@@ -401,6 +397,6 @@ function expectThrows(f) {
     // Expected to throw
   }
   if (success) {
-    t.fail("Expected to throw")
+    t.fail('Expected to throw')
   }
 }
