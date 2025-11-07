@@ -670,12 +670,8 @@ export class YText extends AbstractType {
    * @param {Item?} item
    */
   _integrate (y, item) {
-    super._integrate(y, item)
-    try {
-      /** @type {Array<function>} */ (this._pending).forEach(f => f())
-    } catch (e) {
-      console.error(e)
-    }
+    super._integrate(y, item);
+    /** @type {Array<function>} */ (this._pending).forEach(f => f())
     this._pending = null
   }
 
