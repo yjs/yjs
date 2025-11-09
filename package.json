@@ -13,7 +13,7 @@
   },
   "scripts": {
     "clean": "rm -rf dist",
-    "test": "NODE_ENV=development node ./tests/index.js --repetition-time 50",
+    "test": "NODE_ENV=development node --loader ./tests/yjs-alias-loader.js ./tests/index.js --repetition-time 50",
     "test-extensive": "node ./tests/index.js --production --repetition-time 10000",
     "dist": "npm run clean && rollup -c && tsc --skipLibCheck",
     "watch": "rollup -wc",
