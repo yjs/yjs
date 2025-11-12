@@ -91,7 +91,8 @@
     "markdownlint-cli": "^0.45.0",
     "rollup": "^4.52.5",
     "standard": "^17.1.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "yjs": "."
   },
   "engines": {
     "npm": ">=8.0.0",
