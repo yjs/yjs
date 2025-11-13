@@ -1045,6 +1045,7 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
       switch (c.constructor) {
         case Number:
         case Object:
+        case undefined:
         case Boolean:
         case Array:
         case String:
