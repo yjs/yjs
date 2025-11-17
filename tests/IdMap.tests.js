@@ -4,6 +4,7 @@ import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
 import { compareIdmaps as compareIdMaps, createIdMap, ID, createRandomIdSet, createRandomIdMap, createAttributionItem } from './testHelper.js'
 import * as YY from '../src/internals.js'
+import * as time from 'lib0/time'
 
 /**
  * @template T
@@ -165,7 +166,7 @@ export const testRepeatRandomDeletes = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testrepeatRandomIntersects = tc => {
+export const testRepeatRandomIntersects = tc => {
   const clients = 4
   const clockRange = 100
   const ids1 = createRandomIdMap(tc.prng, clients, clockRange, [1])
@@ -193,4 +194,44 @@ export const testrepeatRandomIntersects = tc => {
   const diffed1 = idmap.diffIdMap(ids1, ids2)
   const altDiffed1 = idmap.diffIdMap(ids1, intersected)
   compareIdMaps(diffed1, altDiffed1)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testUserAttributionEncodingBenchmark = tc => {
+  /**
+   * @todo debug why this approach needs 30 bytes per item
+   * @todo it should be possible to only use a single idmap and, in each attr entry, encode the diff
+   * to the previous entries (e.g. remove a,b, insert c,d)
+   */
+  let attributions = createIdMap()
+  let currentTime = time.getUnixTime()
+  const ydoc = new YY.Doc()
+  ydoc.on('afterTransaction', tr => {
+    idmap.insertIntoIdMap(attributions, idmap.createIdMapFromIdSet(tr.insertSet, [createAttributionItem('insert', 'userX'), createAttributionItem('insertAt', currentTime)]))
+    idmap.insertIntoIdMap(attributions, idmap.createIdMapFromIdSet(tr.deleteSet, [createAttributionItem('delete', 'userX'), createAttributionItem('deleteAt', currentTime)]))
+    currentTime += 1
+  })
+  const ytext = ydoc.getText()
+  const N = 10000
+  t.measureTime(`time to attribute ${N/1000}k changes`, () => {
+    for (let i = 0; i < N; i++) {
+      if (i % 2 > 0 && ytext.length > 0) {
+        const pos = prng.int31(tc.prng, 0, ytext.length)
+        const delLen = prng.int31(tc.prng, 0, ytext.length - pos)
+        ytext.delete(pos, delLen)
+      } else {
+        ytext.insert(prng.int31(tc.prng, 0, ytext.length), prng.word(tc.prng))
+      }
+    }
+  })
+  t.measureTime(`time to encode attributions map`, () => {
+    /**
+     * @todo I can optimize size by encoding only the differences to the prev item.
+     */
+    const encAttributions = idmap.encodeIdMap(attributions)
+    t.info('encoded size: ' + encAttributions.byteLength)
+    t.info('size per change: ' + math.floor((encAttributions.byteLength / N) * 100)/100 + ' bytes')
+  })
 }

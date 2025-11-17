@@ -467,7 +467,7 @@ export const writeIdMap = (encoder, idmap) => {
    * @type {Map<string, number>}
    */
   const visitedAttrNames = map.create()
-  // Ensure that the delete set is written in a deterministic order (smaller clientids first)
+  // Ensure that the ids are written in a deterministic order (smaller clientids first)
   array.from(idmap.clients.entries())
     .sort((a, b) => a[0] - b[0])
     .forEach(([client, _idRanges]) => {

@@ -225,7 +225,7 @@ export const testRepeatRandomDiffing2 = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testrepeatRandomIntersects = tc => {
+export const testRepeatRandomIntersects = tc => {
   const clients = 4
   const clockRange = 100
   const ids1 = createRandomIdSet(tc.prng, clients, clockRange)
