@@ -494,7 +494,7 @@ export const writeStateAsUpdate = (encoder, doc, targetStateVector = new Map()) 
  * @param {Doc} doc
  * @param {Uint8Array} [encodedTargetStateVector] The state of the target that receives the update. Leave empty to write all known structs
  * @param {UpdateEncoderV1 | UpdateEncoderV2} [encoder]
- * @return {Uint8Array}
+ * @return {Uint8Array<ArrayBuffer>}
  *
  * @function
  */
@@ -530,7 +530,7 @@ export const encodeStateAsUpdateV2 = (doc, encodedTargetStateVector = new Uint8A
  *
  * @param {Doc} doc
  * @param {Uint8Array} [encodedTargetStateVector] The state of the target that receives the update. Leave empty to write all known structs
- * @return {Uint8Array}
+ * @return {Uint8Array<ArrayBuffer>}
  *
  * @function
  */

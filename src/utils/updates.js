@@ -180,8 +180,8 @@ export class LazyStructWriter {
 }
 
 /**
- * @param {Array<Uint8Array>} updates
- * @return {Uint8Array}
+ * @param {Array<Uint8Array<ArrayBuffer>>} updates
+ * @return {Uint8Array<ArrayBuffer>}
  */
 export const mergeUpdates = updates => mergeUpdatesV2(updates, UpdateDecoderV1, UpdateEncoderV1)
 
@@ -325,10 +325,10 @@ const sliceStruct = (left, diff) => {
  *
  * This function works similarly to `readUpdateV2`.
  *
- * @param {Array<Uint8Array>} updates
+ * @param {Array<Uint8Array<ArrayBuffer>>} updates
  * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} [YDecoder]
  * @param {typeof UpdateEncoderV1 | typeof UpdateEncoderV2} [YEncoder]
- * @return {Uint8Array}
+ * @return {Uint8Array<ArrayBuffer>}
  */
 export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = UpdateEncoderV2) => {
   if (updates.length === 1) {
