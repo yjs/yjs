@@ -212,7 +212,7 @@ export class Doc extends ObservableV2 {
    * Define all types right after the Y.Doc instance is created and store them in a separate object.
    * Also use the typed methods `getText(name)`, `getArray(name)`, ..
    *
-   * @template {YTypeConstructors} TypeC
+   * @template {YTypeConstructors} [TypeC=typeof AbstractType]
    * @example
    *   const ydoc = new Y.Doc(..)
    *   const appState = {
@@ -222,7 +222,7 @@ export class Doc extends ObservableV2 {
    *
    * @param {string} name
    * @param {TypeC} TypeConstructor The constructor of the type definition. E.g. Y.Text, Y.Array, Y.Map, ...
-   * @return {InstanceType<TypeC>} The created type. Constructed with TypeConstructor
+   * @return {AbstractType} The created type. Constructed with TypeConstructor
    *
    * @public
    */
@@ -279,7 +279,7 @@ export class Doc extends ObservableV2 {
    * @public
    */
   getText (name = '') {
-    return this.get(name, YText)
+    return /** @type {YText} */ (this.get(name, YText))
   }
 
   /**
@@ -310,7 +310,7 @@ export class Doc extends ObservableV2 {
    * @public
    */
   getXmlFragment (name = '') {
-    return this.get(name, YXmlFragment)
+    return /** @type {YXmlFragment} */ (this.get(name, YXmlFragment))
   }
 
   /**

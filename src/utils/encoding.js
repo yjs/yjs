@@ -181,7 +181,7 @@ export const writeStructsFromIdSet = (encoder, store, idset) => {
  * @param {Transaction} transaction
  * @param {StructStore} store
  * @param {StructSet} clientsStructRefs
- * @return { null | { update: Uint8Array, missing: Map<number,number> } }
+ * @return { null | { update: Uint8Array<ArrayBuffer>, missing: Map<number,number> } }
  *
  * @private
  * @function
@@ -501,9 +501,6 @@ export const writeStateAsUpdate = (encoder, doc, targetStateVector = new Map()) 
 export const encodeStateAsUpdateV2 = (doc, encodedTargetStateVector = new Uint8Array([0]), encoder = new UpdateEncoderV2()) => {
   const targetStateVector = decodeStateVector(encodedTargetStateVector)
   writeStateAsUpdate(encoder, doc, targetStateVector)
-  /**
-   * @type {Uint8Array<ArrayBufferLike>[]}
-   */
   const updates = [encoder.toUint8Array()]
   // also add the pending updates (if there are any)
   if (doc.store.pendingDs) {

@@ -20,11 +20,11 @@ export class StructStore {
     this.clients = new Map()
     // this.ds = new IdSet()
     /**
-     * @type {null | { missing: Map<number, number>, update: Uint8Array }}
+     * @type {null | { missing: Map<number, number>, update: Uint8Array<ArrayBuffer> }}
      */
     this.pendingStructs = null
     /**
-     * @type {null | Uint8Array}
+     * @type {null | Uint8Array<ArrayBuffer>}
      */
     this.pendingDs = null
     this.skips = createIdSet()

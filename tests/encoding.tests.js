@@ -16,9 +16,9 @@ import {
 import * as Y from '../src/index.js'
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testStructReferences = tc => {
+export const testStructReferences = _tc => {
   t.assert(contentRefs.length === 11)
   t.assert(contentRefs[1] === readContentDeleted)
   t.assert(contentRefs[2] === readContentJSON) // TODO: deprecate content json?
@@ -34,9 +34,9 @@ export const testStructReferences = tc => {
 
 /**
  * Reported here: https://github.com/yjs/yjs/issues/308
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testDiffStateVectorOfUpdateIsEmpty = tc => {
+export const testDiffStateVectorOfUpdateIsEmpty = _tc => {
   const ydoc = new Y.Doc()
   /**
    * @type {any}
@@ -53,12 +53,12 @@ export const testDiffStateVectorOfUpdateIsEmpty = tc => {
 
 /**
  * Reported here: https://github.com/yjs/yjs/issues/308
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testDiffStateVectorOfUpdateIgnoresSkips = tc => {
+export const testDiffStateVectorOfUpdateIgnoresSkips = _tc => {
   const ydoc = new Y.Doc()
   /**
-   * @type {Array<Uint8Array>}
+   * @type {Array<Uint8Array<ArrayBuffer>>}
    */
   const updates = []
   ydoc.on('update', update => {

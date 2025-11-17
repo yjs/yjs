@@ -620,6 +620,7 @@ const createObfuscator = ({ formatting = true, subdocs = true, yxml = true } = {
               if (type instanceof YXmlElement) {
                 type.nodeName = map.setIfUndefined(nodeNameCache, type.nodeName, () => 'node-' + i)
               }
+              // @ts-ignore
               if (type instanceof YXmlHook) {
                 type.hookName = map.setIfUndefined(nodeNameCache, type.hookName, () => 'hook-' + i)
               }

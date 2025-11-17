@@ -1735,7 +1735,7 @@ export const testLargeFragmentedDocument = _tc => {
  */
 export const testIncrementalUpdatesPerformanceOnLargeFragmentedDocument = _tc => {
   const itemsToInsert = largeDocumentSize
-  const updates = /** @type {Array<Uint8Array>} */ ([])
+  const updates = /** @type {Array<Uint8Array<ArrayBuffer>>} */ ([])
   ;(() => {
     const doc1 = new Y.Doc()
     doc1.on('update', update => {

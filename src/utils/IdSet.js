@@ -736,7 +736,7 @@ export const readIdSet = decoder => {
  * @param {DSDecoderV1 | DSDecoderV2} decoder
  * @param {Transaction} transaction
  * @param {StructStore} store
- * @return {Uint8Array|null} Returns a v2 update containing all deletes that couldn't be applied yet; or null if all deletes were applied successfully.
+ * @return {Uint8Array<ArrayBuffer>|null} Returns a v2 update containing all deletes that couldn't be applied yet; or null if all deletes were applied successfully.
  *
  * @private
  * @function

@@ -87,11 +87,11 @@ export class TestYInstance extends Y.Doc {
     /**
      * The list of received updates.
      * We are going to merge them later using Y.mergeUpdates and check if the resulting document is correct.
-     * @type {Array<Uint8Array>}
+     * @type {Array<Uint8Array<ArrayBuffer>>}
      */
     this.updates = []
     // set up observe on local model
-    this.on(enc.updateEventName, /** @param {Uint8Array} update @param {any} origin */ (update, origin) => {
+    this.on(enc.updateEventName, (update, origin) => {
       if (origin !== testConnector) {
         const encoder = encoding.createEncoder()
         syncProtocol.writeUpdate(encoder, update)
@@ -460,6 +460,7 @@ export const compare = users => {
   users.push(.../** @type {any} */(mergedDocs))
   const userArrayValues = users.map(u => u.getArray('array').toJSON())
   const userMapValues = users.map(u => u.getMap('map').toJSON())
+  const q = users[0].get('xml', Y.XmlElement)
   const userXmlValues = users.map(u => /** @type {Y.XmlElement} */ (u.get('xml', Y.XmlElement)).toString())
   const userTextValues = users.map(u => u.getText('text').getContentDeep())
   for (const u of users) {

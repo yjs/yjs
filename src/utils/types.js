@@ -17,5 +17,12 @@
  */
 
 /**
- * @typedef {typeof import('../types/AbstractType.js').AbstractType<any,any>} YTypeConstructors
+ * @typedef {typeof import('../types/YArray.js').YArray<any>
+ *   | typeof import('../types/YMap.js').YMap<any>
+ *   | typeof import('../types/YText.js').YText<any>
+ *   | typeof import('../types/YXmlFragment.js').YXmlFragment<any,any>
+ *   | typeof import('../types/YXmlElement.js').YXmlElement<any,any>
+ *   | typeof import('../types/YXmlHook.js').YXmlHook
+ *   | typeof import('../types/YXmlText.js').YXmlText
+ *   | typeof import('../types/AbstractType.js').AbstractType} YTypeConstructors
  */
