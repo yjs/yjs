@@ -34,7 +34,8 @@ import {
   UpdateEncoderV2,
   writeIdSet,
   YXmlElement,
-  YXmlHook
+  YXmlHook,
+  createIdSet
 } from '../internals.js'
 
 /**
@@ -118,7 +119,6 @@ export const logUpdate = update => logUpdateV2(update, UpdateDecoderV1)
 /**
  * @param {Uint8Array} update
  * @param {typeof UpdateDecoderV2 | typeof UpdateDecoderV1} [YDecoder]
- *
  */
 export const logUpdateV2 = (update, YDecoder = UpdateDecoderV2) => {
   const structs = []
@@ -247,48 +247,40 @@ export const encodeStateVectorFromUpdate = update => encodeStateVectorFromUpdate
 
 /**
  * @param {Uint8Array} update
- * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} YDecoder
- * @return {{ from: Map<number,number>, to: Map<number,number> }}
+ * @param {typeof UpdateDecoderV2 | typeof UpdateDecoderV1} [YDecoder]
  */
-export const parseUpdateMetaV2 = (update, YDecoder = UpdateDecoderV2) => {
-  /**
-   * @type {Map<number, number>}
-   */
-  const from = new Map()
-  /**
-   * @type {Map<number, number>}
-   */
-  const to = new Map()
-  const updateDecoder = new LazyStructReader(new YDecoder(decoding.createDecoder(update)), false)
-  let curr = updateDecoder.curr
-  if (curr !== null) {
-    let currClient = curr.id.client
-    let currClock = curr.id.clock
-    // write the beginning to `from`
-    from.set(currClient, currClock)
-    for (; curr !== null; curr = updateDecoder.next()) {
-      if (currClient !== curr.id.client) {
-        // We found a new client
-        // write the end to `to`
-        to.set(currClient, currClock)
-        // write the beginning to `from`
-        from.set(curr.id.client, curr.id.clock)
-        // update currClient
-        currClient = curr.id.client
+export const readUpdateIdRangesV2 = (update, YDecoder = UpdateDecoderV2) => {
+  const updateDecoder = new YDecoder(decoding.createDecoder(update))
+  const lazyDecoder = new LazyStructReader(updateDecoder, true)
+  const inserts = createIdSet()
+  let lastClientId = -1
+  let lastClock = 0
+  let lastLen = 0
+  for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
+    const currId = curr.id
+    if (lastClientId === currId.client && lastClock + lastLen === currId.clock) {
+      // default case: extend prev entry
+      lastLen += curr.length
+    } else {
+      if (lastClientId >= 0) {
+        inserts.add(lastClientId, lastClock, lastLen)
       }
-      currClock = curr.id.clock + curr.length
+      lastClientId = currId.client
+      lastClock = currId.clock
+      lastLen = curr.length
     }
-    // write the end to `to`
-    to.set(currClient, currClock)
   }
-  return { from, to }
+  if (lastClientId >= 0) {
+    inserts.add(lastClientId, lastClock, lastLen)
+  }
+  const deletes = readIdSet(updateDecoder)
+  return { inserts, deletes }
 }
 
 /**
  * @param {Uint8Array} update
- * @return {{ from: Map<number,number>, to: Map<number,number> }}
  */
-export const parseUpdateMeta = update => parseUpdateMetaV2(update, UpdateDecoderV1)
+export const readUpdateIdRanges = update => readUpdateIdRangesV2(update, UpdateDecoderV1)
 
 /**
  * This method is intended to slice any kind of struct and retrieve the right part.

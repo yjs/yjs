@@ -6,14 +6,15 @@ import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
 import * as object from 'lib0/object'
 import * as delta from 'lib0/delta'
+import * as array from 'lib0/array'
 
 /**
  * @typedef {Object} Enc
- * @property {function(Array<Uint8Array>):Uint8Array} Enc.mergeUpdates
- * @property {function(Y.Doc):Uint8Array} Enc.encodeStateAsUpdate
+ * @property {function(Array<Uint8Array<ArrayBuffer>>):Uint8Array<ArrayBuffer>} Enc.mergeUpdates
+ * @property {function(Y.Doc):Uint8Array<ArrayBuffer>} Enc.encodeStateAsUpdate
  * @property {function(Y.Doc, Uint8Array):void} Enc.applyUpdate
  * @property {function(Uint8Array):void} Enc.logUpdate
- * @property {function(Uint8Array):{from:Map<number,number>,to:Map<number,number>}} Enc.parseUpdateMeta
+ * @property {function(Uint8Array):{deletes:Y.IdSet,inserts:Y.IdSet}} Enc.readUpdateIdRanges
  * @property {function(Y.Doc):Uint8Array} Enc.encodeStateVector
  * @property {function(Uint8Array):Uint8Array} Enc.encodeStateVectorFromUpdate
  * @property {'update'|'updateV2'} Enc.updateEventName
@@ -29,7 +30,7 @@ const encV1 = {
   encodeStateAsUpdate: Y.encodeStateAsUpdate,
   applyUpdate: Y.applyUpdate,
   logUpdate: Y.logUpdate,
-  parseUpdateMeta: Y.parseUpdateMeta,
+  readUpdateIdRanges: Y.readUpdateIdRanges,
   encodeStateVectorFromUpdate: Y.encodeStateVectorFromUpdate,
   encodeStateVector: Y.encodeStateVector,
   updateEventName: 'update',
@@ -45,7 +46,7 @@ const encV2 = {
   encodeStateAsUpdate: Y.encodeStateAsUpdateV2,
   applyUpdate: Y.applyUpdateV2,
   logUpdate: Y.logUpdateV2,
-  parseUpdateMeta: Y.parseUpdateMetaV2,
+  readUpdateIdRanges: Y.readUpdateIdRangesV2,
   encodeStateVectorFromUpdate: Y.encodeStateVectorFromUpdateV2,
   encodeStateVector: Y.encodeStateVector,
   updateEventName: 'updateV2',
@@ -67,7 +68,7 @@ const encDoc = {
   encodeStateAsUpdate: Y.encodeStateAsUpdateV2,
   applyUpdate: Y.applyUpdateV2,
   logUpdate: Y.logUpdateV2,
-  parseUpdateMeta: Y.parseUpdateMetaV2,
+  readUpdateIdRanges: Y.readUpdateIdRangesV2,
   encodeStateVectorFromUpdate: Y.encodeStateVectorFromUpdateV2,
   encodeStateVector: Y.encodeStateVector,
   updateEventName: 'updateV2',
@@ -142,7 +143,7 @@ export const testKeyEncoding = tc => {
 
 /**
  * @param {Y.Doc} ydoc
- * @param {Array<Uint8Array>} updates - expecting at least 4 updates
+ * @param {Array<Uint8Array<ArrayBuffer>>} updates - expecting at least 4 updates
  * @param {Enc} enc
  * @param {boolean} hasDeletes
  */
@@ -188,11 +189,11 @@ const checkUpdateCases = (ydoc, updates, enc, hasDeletes) => {
     if (enc.updateEventName !== 'update') { // @todo should this also work on legacy updates?
       for (let j = 1; j < updates.length; j++) {
         const partMerged = enc.mergeUpdates(updates.slice(j))
-        const partMeta = enc.parseUpdateMeta(partMerged)
+        const partMeta = enc.readUpdateIdRanges(partMerged)
         const targetSV = enc.encodeStateVectorFromUpdate(enc.mergeUpdates(updates.slice(0, j)))
         const diffed = enc.diffUpdate(mergedUpdates, targetSV)
-        const diffedMeta = enc.parseUpdateMeta(diffed)
-        t.compare(partMeta, diffedMeta)
+        const diffedMeta = enc.readUpdateIdRanges(diffed)
+        t.compare(partMeta.inserts, diffedMeta.inserts)
         {
           // We can'd do the following
           //  - t.compare(diffed, mergedDeletes)
@@ -214,13 +215,13 @@ const checkUpdateCases = (ydoc, updates, enc, hasDeletes) => {
         }
       }
     }
-
-    const meta = enc.parseUpdateMeta(mergedUpdates)
-    meta.from.forEach((clock, _client) => t.assert(clock === 0))
-    meta.to.forEach((clock, client) => {
+    const meta = enc.readUpdateIdRanges(mergedUpdates)
+    meta.inserts.clients.forEach(range => { t.assert(range.getIds()[0].clock === 0) })
+    meta.inserts.clients.forEach((range, client) => {
       const structs = /** @type {Array<Y.Item>} */ (merged.store.clients.get(client))
       const lastStruct = structs[structs.length - 1]
-      t.assert(lastStruct.id.clock + lastStruct.length === clock)
+      const lastIdRange = array.last(range.getIds())
+      t.assert(lastStruct.id.clock + lastStruct.length === lastIdRange.clock + lastIdRange.len)
     })
   })
 }
@@ -232,15 +233,13 @@ export const testMergeUpdates1 = _tc => {
   encoders.forEach((enc) => {
     t.info(`Using encoder: ${enc.description}`)
     const ydoc = new Y.Doc({ gc: false })
-    const updates = /** @type {Array<Uint8Array>} */ ([])
+    const updates = /** @type {Array<Uint8Array<ArrayBuffer>>} */ ([])
     ydoc.on(enc.updateEventName, update => { updates.push(update) })
-
     const array = ydoc.getArray()
     array.insert(0, [1])
     array.insert(0, [2])
     array.insert(0, [3])
     array.insert(0, [4])
-
     checkUpdateCases(ydoc, updates, enc, false)
   })
 }
@@ -252,15 +251,13 @@ export const testMergeUpdates2 = _tc => {
   encoders.forEach((enc, _i) => {
     t.info(`Using encoder: ${enc.description}`)
     const ydoc = new Y.Doc({ gc: false })
-    const updates = /** @type {Array<Uint8Array>} */ ([])
+    const updates = /** @type {Array<Uint8Array<ArrayBuffer>>} */ ([])
     ydoc.on(enc.updateEventName, update => { updates.push(update) })
-
     const array = ydoc.getArray()
     array.insert(0, [1, 2])
     array.delete(1, 1)
     array.insert(0, [3, 4])
     array.delete(1, 2)
-
     checkUpdateCases(ydoc, updates, enc, true)
   })
 }

@@ -76,8 +76,6 @@ export {
   logType,
   mergeUpdates,
   mergeUpdatesV2,
-  parseUpdateMeta,
-  parseUpdateMetaV2,
   encodeStateVectorFromUpdate,
   encodeStateVectorFromUpdateV2,
   encodeRelativePosition,
@@ -114,7 +112,9 @@ export {
   DiffAttributionManager,
   createIdSet,
   mergeIdSets,
-  cloneDoc
+  cloneDoc,
+  readUpdateIdRanges,
+  readUpdateIdRangesV2
 } from './internals.js'
 
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'

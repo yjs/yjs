@@ -205,7 +205,7 @@ export const testUserAttributionEncodingBenchmark = tc => {
    * @todo it should be possible to only use a single idmap and, in each attr entry, encode the diff
    * to the previous entries (e.g. remove a,b, insert c,d)
    */
-  let attributions = createIdMap()
+  const attributions = createIdMap()
   let currentTime = time.getUnixTime()
   const ydoc = new YY.Doc()
   ydoc.on('afterTransaction', tr => {
@@ -215,7 +215,7 @@ export const testUserAttributionEncodingBenchmark = tc => {
   })
   const ytext = ydoc.getText()
   const N = 10000
-  t.measureTime(`time to attribute ${N/1000}k changes`, () => {
+  t.measureTime(`time to attribute ${N / 1000}k changes`, () => {
     for (let i = 0; i < N; i++) {
       if (i % 2 > 0 && ytext.length > 0) {
         const pos = prng.int31(tc.prng, 0, ytext.length)
@@ -226,12 +226,12 @@ export const testUserAttributionEncodingBenchmark = tc => {
       }
     }
   })
-  t.measureTime(`time to encode attributions map`, () => {
+  t.measureTime('time to encode attributions map', () => {
     /**
      * @todo I can optimize size by encoding only the differences to the prev item.
      */
     const encAttributions = idmap.encodeIdMap(attributions)
     t.info('encoded size: ' + encAttributions.byteLength)
-    t.info('size per change: ' + math.floor((encAttributions.byteLength / N) * 100)/100 + ' bytes')
+    t.info('size per change: ' + math.floor((encAttributions.byteLength / N) * 100) / 100 + ' bytes')
   })
 }

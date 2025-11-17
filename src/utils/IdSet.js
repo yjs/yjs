@@ -14,6 +14,7 @@ import * as array from 'lib0/array'
 import * as math from 'lib0/math'
 import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
+import * as traits from 'lib0/traits'
 
 export class IdRange {
   /**
@@ -157,6 +158,9 @@ export class IdRanges {
   }
 }
 
+/**
+ * @implements {traits.EqualityTrait}
+ */
 export class IdSet {
   constructor () {
     /**
@@ -269,6 +273,13 @@ export class IdSet {
    */
   delete (client, clock, len) {
     _deleteRangeFromIdSet(this, client, clock, len)
+  }
+
+  /**
+   * @param {any} other
+   */
+  [traits.EqualityTraitSymbol] (other) {
+    return equalIdSets(this, other)
   }
 }
 
