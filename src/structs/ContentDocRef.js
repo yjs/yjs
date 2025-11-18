@@ -71,18 +71,29 @@ export class ContentDocRef {
       //   }
       // } else
       if (this._type) {
-        // type から作成の場合、doc はまだ存在しないので、新規作成する
-        // TODO: option をいくつか引き継ぐべき
-        const newDoc = new Doc({
-          gc: rootDoc.gc,
-          clientID: rootDoc.clientID,
-          autoRef: rootDoc.autoRef,
-        })
-        rootDoc.addRefDoc(newDoc)
-        this.guid = newDoc.guid
-        this._type._integrate(newDoc, null)
-        newDoc.share.set('', this._type)
-        newDoc._referrer = item
+        let doc = this._type.doc
+        if (doc) {
+          if (doc.isRoot) {
+            throw new Error('Cannot create a ContentDocRef to a root doc')
+          }
+          this.guid = doc.guid
+          if (doc._referrer) {
+            // この item を削除して、ref の競合を解決する
+            resolveRefConflict(rootDoc, this)
+            return
+          }
+        } else {
+          doc = new Doc({
+            gc: rootDoc.gc,
+            clientID: rootDoc.clientID,
+            autoRef: rootDoc.autoRef
+          })
+          rootDoc.addRefDoc(doc)
+          this.guid = doc.guid
+          this._type._integrate(doc, null)
+          doc.share.set('', this._type)
+        }
+        doc._referrer = item
         validateCircularRef(item)
       } else {
         throw error.unexpectedCase()
@@ -97,7 +108,7 @@ export class ContentDocRef {
             guid: this.guid,
             gc: rootDoc.gc,
             clientID: rootDoc.clientID,
-            autoRef: rootDoc.autoRef,
+            autoRef: rootDoc.autoRef
           })
           rootDoc.addRefDoc(doc)
           // referrer の設定などは transaction の最後で行われる
@@ -139,8 +150,7 @@ export class ContentDocRef {
    * @return {Array<any>}
    */
   getContent () {
-    if (this._type !== null) return [this._type]
-    return [this.guid]
+    return [this._type]
   }
 
   /**
@@ -176,7 +186,9 @@ export class ContentDocRef {
    */
   delete (transaction) {
     const doc = this.getDoc()
-    doc._referrer = null
+    if (doc._referrer && doc._referrer === this._item) {
+      doc._referrer = null
+    }
     if (transaction.rootTransaction) {
       const rt = transaction.rootTransaction
       if (rt.docRefsAdded.has(this)) {
@@ -328,7 +340,7 @@ export function resolveRefConflict (rootDoc, ref) {
     const key = refItem.parentSub
     const map = /** @type {YMap<any>} */ (refItem.parent)
     map.delete(key)
-    const cloned = cloneDoc(rootDoc, ref)
+    const cloned = cloneDoc(rootDoc, ref.guid)
     map.set(key, cloned)
   } else {
     const array = /** @type {import('../types/YArray.js').YArray<any>} */ (refItem.parent)
@@ -342,19 +354,23 @@ export function resolveRefConflict (rootDoc, ref) {
       n = n.left
     }
     array.delete(index)
-    const cloned = cloneDoc(rootDoc, ref)
+    const cloned = cloneDoc(rootDoc, ref.guid)
     array.insert(index, [cloned])
   }
 }
 
 /**
- * @param {import('../utils/Doc.js').Doc} rootDoc
- * @param {ContentDocRef} ref
+ * @param {Doc} rootDoc
+ * @param {string} guid
  * @return {AbstractType<any>}
  */
-function cloneDoc (rootDoc, ref) {
-  const sourceDoc = ref.getDoc()
-  const type = /** @type {AbstractType<any>} | undefined */ (sourceDoc.share.get('root'))
+function cloneDoc (rootDoc, guid) {
+  const sourceDoc = rootDoc.getRefDoc(guid)
+  if (!sourceDoc) {
+    throw new Error('Referenced doc not found: ' + guid)
+  }
+  // Root type of a referenced doc is stored under '' (first entry). Fall back to first share entry if needed.
+  const type = /** @type {AbstractType<any>} | undefined */ sourceDoc.share.get('')
   if (!type) throw new Error('root type not found on referenced doc')
   if (type instanceof YArray) {
     const newType = new YArray()
@@ -363,7 +379,7 @@ function cloneDoc (rootDoc, ref) {
     while (item) {
       if (item.countable && !item.deleted) {
         if (item.content instanceof ContentDocRef) {
-          const nested = cloneDoc(rootDoc, item.content)
+          const nested = cloneDoc(rootDoc, item.content.guid)
           newType.push([nested])
         } else {
           newType.push(item.content.getContent().map(c => {
@@ -385,7 +401,7 @@ function cloneDoc (rootDoc, ref) {
     type._map.forEach((itm, key) => {
       if (itm.countable && !itm.deleted) {
         if (itm.content instanceof ContentDocRef) {
-          const nested = cloneDoc(rootDoc, itm.content)
+          const nested = cloneDoc(rootDoc, itm.content.guid)
           newType.set(key, nested)
         } else {
           const c = itm.content.getContent()
@@ -415,22 +431,26 @@ function cloneDoc (rootDoc, ref) {
 export function validateCircularRef (item) {
   if (item?.deleted) return
   const targetGuid = item.content.guid
+  let found = false
   let cursor = /** @type {Item | null} */ (item)
+  // Traverse referrer chain to see if any parent doc matches the target guid.
   while (cursor && cursor.parent && /** @type {any} */ (cursor.parent).doc) {
-    const d = /** @type {any} */ (cursor.parent).doc
+    const d = /** @type {AbstractType<any>} */ (cursor.parent).doc
     if (d.guid === targetGuid) {
-      // circular detected: remove the ref placement
-      if (item.parentSub) {
-        const map = /** @type {YMap<any>} */ (item.parent)
-        map.delete(item.parentSub)
-      } else {
-        const array = /** @type {import('../types/YArray.js').YArray<any>} */ (item.parent)
-        const index = findIndexInArray(item)
-        array.delete(index)
-      }
-      return
+      found = true
+      break
     }
     cursor = d._referrer
+  }
+  if (!found) return
+  // On circular detection, drop the offending placement.
+  if (item.parentSub) {
+    const map = /** @type {YMap<any>} */ (item.parent)
+    map.delete(item.parentSub)
+  } else {
+    const array = /** @type {import('../types/YArray.js').YArray<any>} */ (item.parent)
+    const index = findIndexInArray(item)
+    array.delete(index)
   }
 }
 

@@ -10,7 +10,9 @@ import {
   ContentAny,
   ContentBinary,
   getItemCleanStart,
-  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, ContentDocRef, // eslint-disable-line
+  ContentDocRef,
+  ContentDocUnref,
+  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map'
@@ -693,9 +695,13 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
               left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentDoc(/** @type {Doc} */ (c)))
               left.integrate(transaction, 0)
               break
+            case ContentDocUnref:
+              left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, /** @type {ContentDocUnref} */ (c))
+              left.integrate(transaction, 0)
+              break
             default:
               if (c instanceof AbstractType) {
-                if (c.createRef ?? c.doc?.autoRef) {
+                if (c.createRef ?? parent.doc?.autoRef) {
                   left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentDocRef(c))
                 } else {
                   left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentType(c))
@@ -883,7 +889,7 @@ export const typeMapSet = (transaction, parent, key, value) => {
         break
       default:
         if (value instanceof AbstractType) {
-          if (value.createRef ?? value.doc?.autoRef) {
+          if (value.createRef ?? parent.doc?.autoRef) {
             content = new ContentDocRef(value)
           } else {
             content = new ContentType(value)

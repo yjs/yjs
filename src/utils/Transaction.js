@@ -147,7 +147,7 @@ export class Transaction {
     /**
      * @type {RootTransaction | null}
      */
-    this.rootTransaction = doc._rootTransaction
+    this.rootTransaction = doc.rootDoc ? doc.rootDoc._rootTransaction : null
   }
 }
 
@@ -435,16 +435,16 @@ const cleanupTransactions = (transactionCleanups, i) => {
  * @function
  */
 export const transact = (doc, f, origin = null, local = true) => {
-  // if (doc.rootDoc) {
-  //   return transactInRoot(doc.rootDoc, (rootTr) => {
-  //     if (doc._transaction == null) {
-  //       doc._transaction = new Transaction(doc, origin, local)
-  //       rootTr.transactions.set(doc.guid, doc._transaction)
-  //       doc.emit('beforeTransaction', [doc._transaction, doc])
-  //     }
-  //     return f(doc._transaction)
-  //   }, origin, local)
-  // }
+  if (doc.rootDoc) {
+    return transactInRoot(doc.rootDoc, (rootTr) => {
+      if (doc._transaction == null) {
+        doc._transaction = new Transaction(doc, origin, local)
+        rootTr.transactions.set(doc.guid, doc._transaction)
+        doc.emit('beforeTransaction', [doc._transaction, doc])
+      }
+      return f(doc._transaction)
+    }, origin, local)
+  }
 
   const transactionCleanups = doc._transactionCleanups
   let initialCall = false

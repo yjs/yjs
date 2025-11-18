@@ -86,13 +86,14 @@ export class Doc extends ObservableV2 {
       autoLoad = false,
       shouldLoad = true,
       autoRef = false,
-      root = true
+      root = false
     } = opts
     super()
     this.gc = gc
     this.gcFilter = gcFilter
     this.clientID = clientID
     this.guid = guid
+    this.isRoot = root
     /**
      * Root doc that owns this doc bundle (refs). Only set when root=true or when integrated.
      * @type {Doc|null}

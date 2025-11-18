@@ -46,6 +46,25 @@ backend で blockType を保持しないとしたら
 observeRoot の設計が困っている
 今は type が eventHandler を持つようになっているが、実際の集計は Root Doc 単位で行われる
 理想的には doc.emit("rootObserver", rootTransaction) のようにされるべきか
+-> これは実装した
+
+ContentBlockRef から type を削除したのは間違いだった
+map.set("child", array) のようにした時に、どうやってもそこのインスタンスを復元する方法がない。完全にミスっ。 ここはやり直しだな。
+ただし、backend に blockType を保持する必要はないはず。まあどうせ page とかも持たせる方針だったし、同時にやり直すか。
+
+## PoC からの変更点まとめ
+
+- NanoBlock は Doc に統合された
+- NanoStore はなくなり、Doc(root) になった。Root ごとに独立している
+- Transaction も Doc(root) 単位になったので、XYClient も Doc(root) 単位に作ることになる
+- ContentBlockRef / ContentBlockUnref は ContentDocRef / ContentDocUnref に
+- ContentDocRef は blockType を持たない。
+  - データベースに保存する値も削除して良くなった
+  - 代わりに、`doc.getMap()` などの方法で親が子の type を知っている必要がある
+
+
+
+---
 
 ## 新機能テストの実装計画
 
@@ -74,3 +93,12 @@ observeRoot の設計が困っている
 - 既存の contentRefs マッピング検証は残しつつ、encode/apply を使うケースで `tests/encoding.tests.js` に最小の往復テストを追加（ContentDocRef/Unref がバイナリラウンドトリップすること）。
 - 新規テスト追加後は `npm test` で一括確認、doc-ref だけを反復するために `node dist/tests.cjs doc-ref` のようなターゲット指定もメモしておく。
 
+### 実行結果メモ
+- `npm run dist` の上で `node ./dist/tests.cjs --filter docRefExtended` を実行。現状の成否:
+  - OK: `testDocRefAutoRefRegistersRefs`, `testDocRefCreateRefFlagOverridesAutoRef`.
+  - NG: `testDocRefCircularReferencesArePruned`（root を set した時点で「root doc には ContentDocRef 作れない」例外、テストは throw を期待する形に変更済み）。
+  - NG: `testDocRefCircularReferencesOnNestedDocsArePruned`（非 root 同士の循環で Unexpected content type in insert operation）。
+  - NG: `testDocRefConflictsClonePerPlacement`（同じエラー: Unexpected content type in insert operation 経由で落ちる）。
+  - NG: `testDocRefDeletionAddsUnrefAndSerializes`（同上）。
+  - NG: `testDocRefSyncRoundtripRestoresRefs`（replicated が Array にならずアサート落ち）。
+- 全テスト実行 (`node ./tests/index.js`) では y-map 系など既存ユニットも初期段階から構造不一致で失敗している状態。
