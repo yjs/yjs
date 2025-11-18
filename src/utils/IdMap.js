@@ -16,6 +16,7 @@ import * as buf from 'lib0/buffer'
 import * as rabin from 'lib0/hash/rabin'
 
 /**
+ * @todo rename this to `Attribute`
  * @template V
  */
 export class AttributionItem {
@@ -47,6 +48,7 @@ const _hashAttribution = attr => {
 }
 
 /**
+ * @todo rename this to `createAttribute`
  * @template V
  * @param {string} name
  * @param {V} val

@@ -114,7 +114,12 @@ export {
   mergeIdSets,
   cloneDoc,
   readUpdateIdRanges,
-  readUpdateIdRangesV2
+  readUpdateIdRangesV2,
+  insertIntoIdMap,
+  insertIntoIdSet,
+  mergeIdMaps,
+  readIdMap,
+  readIdSet
 } from './internals.js'
 
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'
