@@ -51,6 +51,7 @@ observeRoot の設計が困っている
 ContentBlockRef から type を削除したのは間違いだった
 map.set("child", array) のようにした時に、どうやってもそこのインスタンスを復元する方法がない。完全にミスっ。 ここはやり直しだな。
 ただし、backend に blockType を保持する必要はないはず。まあどうせ page とかも持たせる方針だったし、同時にやり直すか。
+-> いけた。すぐに直せてよかった。
 
 ## PoC からの変更点まとめ
 
@@ -58,11 +59,9 @@ map.set("child", array) のようにした時に、どうやってもそこの�
 - NanoStore はなくなり、Doc(root) になった。Root ごとに独立している
 - Transaction も Doc(root) 単位になったので、XYClient も Doc(root) 単位に作ることになる
 - ContentBlockRef / ContentBlockUnref は ContentDocRef / ContentDocUnref に
-- ContentDocRef は blockType を持たない。
-  - データベースに保存する値も削除して良くなった
-  - 代わりに、`doc.getMap()` などの方法で親が子の type を知っている必要がある
-
-
+- ContentDocRef は blockType を RefID として持つ
+  - データベースに blockType を保存する必要は無くなった
+- event 周りは、既存のものと衝突しないようにいくつかのイベントを追加した
 
 ---
 

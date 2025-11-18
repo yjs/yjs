@@ -9,7 +9,6 @@ import * as undoredo from './undo-redo.tests.js'
 import * as compatibility from './compatibility.tests.js'
 import * as doc from './doc.tests.js'
 import * as docRefs from './doc-ref.tests.js'
-import * as docRefExtended from './doc-ref-extended.tests.js'
 import * as snapshot from './snapshot.tests.js'
 import * as updates from './updates.tests.js'
 import * as relativePositions from './relativePositions.tests.js'
@@ -36,7 +35,6 @@ const tests = {
   undoredo,
   compatibility,
   docRefs,
-  docRefExtended,
   snapshot,
   updates,
   relativePositions

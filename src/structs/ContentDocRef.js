@@ -1,4 +1,4 @@
-import { AbstractType, Item, Transaction, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, YArray, Doc, YMap, ID } from '../internals.js' // eslint-disable-line
+import { AbstractType, Item, Transaction, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, YArray, Doc, YMap, ID, YText, YXmlElement, YXmlFragment, YXmlText } from '../internals.js' // eslint-disable-line
 import * as error from 'lib0/error'
 
 /**
@@ -10,6 +10,7 @@ import * as error from 'lib0/error'
 /**
  * @typedef {Object} ContentDocRefOpts
  * @property {string} guid
+ * @property {number} typeRef
  */
 
 export class ContentDocRef {
@@ -22,6 +23,10 @@ export class ContentDocRef {
      * @type {string}
      */
     this.guid = ''
+    /**
+     * @type {number}
+     */
+    this.typeRef = -1
 
     /** @type {Item & { content: ContentDocRef } | null} */
     this._item = null
@@ -34,8 +39,11 @@ export class ContentDocRef {
     // - guid から作る: Decoder から読み込むとき
     if (opt instanceof AbstractType) {
       this._type = opt
+      // @ts-expect-error
+      this.typeRef = typeConstructorToRef.get(opt.constructor)
     } else {
       this.guid = opt.guid
+      this.typeRef = opt.typeRef
     }
   }
 
@@ -150,6 +158,14 @@ export class ContentDocRef {
    * @return {Array<any>}
    */
   getContent () {
+    if (!this._type) {
+      const doc = this.getDoc()
+      const TypeConstructor = typeRefToConstructor[this.typeRef]
+      if (!TypeConstructor) {
+        throw new Error('Unknown typeRef: ' + this.typeRef)
+      }
+      this._type = doc.get('', TypeConstructor)
+    }
     return [this._type]
   }
 
@@ -168,7 +184,7 @@ export class ContentDocRef {
   }
 
   copy () {
-    return new ContentDocRef({ guid: this.guid })
+    return new ContentDocRef({ guid: this.guid, typeRef: this.typeRef })
   }
 
   /**
@@ -216,10 +232,8 @@ export class ContentDocRef {
    * @param {number} offset
    */
   write (encoder, offset) {
-    if (offset > 0) {
-      throw error.methodUnimplemented()
-    }
     encoder.writeString(this.guid)
+    encoder.writeTypeRef(this.typeRef)
   }
 }
 
@@ -303,7 +317,8 @@ export class ContentDocUnref {
  */
 export const readContentDocRef = (decoder) => {
   const guid = decoder.readString()
-  return new ContentDocRef({ guid })
+  const typeRef = decoder.readTypeRef()
+  return new ContentDocRef({ guid, typeRef })
 }
 
 /**
@@ -468,3 +483,15 @@ function findIndexInArray (item) {
   }
   return index
 }
+
+const typeRefToConstructor = [
+  YArray,
+  YMap,
+  YText,
+  YXmlElement,
+  YXmlFragment,
+  null,
+  YXmlText
+]
+
+const typeConstructorToRef = new Map(typeRefToConstructor.map((ctr, idx) => [ctr, idx]))
