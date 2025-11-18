@@ -133,7 +133,7 @@ export class YEvent {
    * @public
    */
   get delta () {
-    return /** @type {any} */ (this._delta ?? (this._delta = this.getDelta()))
+    return /** @type {any} */ (this._delta ?? (this._delta = this.getDelta().done()))
   }
 
   /**
