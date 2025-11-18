@@ -11,7 +11,9 @@ import {
   generateNewClientId,
   createID,
   cleanupYTextAfterTransaction,
-  UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
+  resolveRefConflict,
+  validateCircularRef,
+  UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc,　ContentDocRef // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map'
@@ -19,6 +21,29 @@ import * as math from 'lib0/math'
 import * as set from 'lib0/set'
 import * as logging from 'lib0/logging'
 import { callAll } from 'lib0/function'
+
+export class RootTransaction {
+  /**
+   * @param {Doc} rootDoc
+   * @param {any} origin
+   * @param {boolean} local
+   */
+  constructor (rootDoc, origin, local) {
+    this.rootDoc = rootDoc
+    /** @type {Map<string, Transaction>} */
+    this.transactions = new Map()
+    /** @type {any} */
+    this.origin = origin
+    /** @type {boolean} */
+    this.local = local
+    /** @type {Set<import('../structs/ContentDocRef.js').ContentDocRef>} */
+    this.docRefsAdded = new Set()
+    /** @type {Set<import('../structs/ContentDocRef.js').ContentDocRef>} */
+    this.docRefsRemoved = new Set()
+    /** @type {Array<YEvent<any>>} */
+    this.events = []
+  }
+}
 
 /**
  * A transaction is created for every change on the Yjs model. It is possible
@@ -119,6 +144,10 @@ export class Transaction {
      * @type {boolean}
      */
     this._needFormattingCleanup = false
+    /**
+     * @type {RootTransaction | null}
+     */
+    this.rootTransaction = doc._rootTransaction
   }
 }
 
@@ -176,7 +205,7 @@ const tryToMergeWithLefts = (structs, pos) => {
     if (left.deleted === right.deleted && left.constructor === right.constructor) {
       if (left.mergeWith(right)) {
         if (right instanceof Item && right.parentSub !== null && /** @type {AbstractType<any>} */ (right.parent)._map.get(right.parentSub) === right) {
-          /** @type {AbstractType<any>} */ (right.parent)._map.set(right.parentSub, /** @type {Item} */ (left))
+          /** @type {AbstractType<any>} */ (right.parent)._map.set(right.parentSub, /** @type {Item} */(left))
         }
         continue
       }
@@ -406,6 +435,17 @@ const cleanupTransactions = (transactionCleanups, i) => {
  * @function
  */
 export const transact = (doc, f, origin = null, local = true) => {
+  // if (doc.rootDoc) {
+  //   return transactInRoot(doc.rootDoc, (rootTr) => {
+  //     if (doc._transaction == null) {
+  //       doc._transaction = new Transaction(doc, origin, local)
+  //       rootTr.transactions.set(doc.guid, doc._transaction)
+  //       doc.emit('beforeTransaction', [doc._transaction, doc])
+  //     }
+  //     return f(doc._transaction)
+  //   }, origin, local)
+  // }
+
   const transactionCleanups = doc._transactionCleanups
   let initialCall = false
   /**
@@ -441,4 +481,248 @@ export const transact = (doc, f, origin = null, local = true) => {
     }
   }
   return result
+}
+
+/**
+ * Implements the functionality of `store.transact(()=>{..})`
+ *
+ * @template T
+ * @param {Doc} rootDoc
+ * @param {function(RootTransaction):T} f
+ * @param {any} [origin=true]
+ * @return {T}
+ *
+ * @function
+ */
+const transactInRoot = (rootDoc, f, origin = null, local = true) => {
+  const transactionCleanups = rootDoc._rootTransactionCleanups
+  let initialCall = false
+
+  if (rootDoc._rootTransaction === null) {
+    initialCall = true
+    rootDoc._rootTransaction = new RootTransaction(rootDoc, origin, local)
+    transactionCleanups.push(rootDoc._rootTransaction)
+    if (transactionCleanups.length === 1) {
+      rootDoc.emit('beforeAllRootTransactions', [rootDoc])
+    }
+    rootDoc.emit('beforeRootTransaction', [rootDoc._rootTransaction, rootDoc])
+  }
+  let result = null
+  try {
+    result = f(rootDoc._rootTransaction)
+  } finally {
+    if (initialCall) {
+      const finishCleanup = rootDoc._rootTransaction === transactionCleanups[0]
+      // これ以降に呼ばれた変更は、新しい transaction になる
+      rootDoc._rootTransaction.transactions.forEach((tr) => {
+        tr.doc._transaction = null
+      })
+      rootDoc._rootTransaction = null
+      if (finishCleanup) {
+        let i = 0
+        while (i < transactionCleanups.length) {
+          const transaction = transactionCleanups[i]
+
+          transaction.transactions.forEach((tr) => {
+            const ds = tr.deleteSet
+            sortAndMergeDeleteSet(ds)
+            tr.afterState = getStateVector(tr.doc.store)
+          })
+
+          // Resolve block refs
+          resolveDocRefs(transaction)
+          // At first, call all transaction observers.
+          callRootTransactionsObservers(transaction)
+          // Next, call root observers
+          callRootObservers(transaction)
+          // Then, Try GC And Merge
+          cleanupConsumedTransaction(transaction)
+          // Emit store transaction cleanup events
+          emitStoreTransactionCleanupEvents(transaction)
+          // Finally call next cleanups
+          i++
+        }
+        rootDoc.emit('afterAllRootTransactions', [rootDoc, transactionCleanups])
+        rootDoc._rootTransactionCleanups = []
+      }
+    }
+  }
+  return result
+}
+
+/**
+ * Resolve block refs
+ * @param {RootTransaction} rootTransaction
+ */
+const resolveDocRefs = (rootTransaction) => {
+  if (rootTransaction.docRefsAdded.size === 0 && rootTransaction.docRefsRemoved.size === 0) return
+
+  // FIXME: Transaction で囲った方が良さそう
+  rootTransaction.docRefsAdded.forEach(ref => {
+    // ここで ref が conflict していないかをチェックする
+    const doc = ref.getDoc()
+    if (doc._referrer && ref._item !== doc._referrer) {
+      console.warn('Resolving conflict in transaction cleanup', ref)
+      const rootDoc = doc.rootDoc
+      if (rootDoc) {
+        resolveRefConflict(rootDoc, doc._referrer.content)
+      }
+    }
+    doc._referrer = ref._item
+    validateCircularRef(/** @type {Item & { content: ContentDocRef }} */(ref._item))
+  })
+}
+
+/**
+ * Cleanup all transactions that are not currently in progress.
+ *
+ * @param {RootTransaction} rootTransaction
+ */
+const callRootTransactionsObservers = (rootTransaction) => {
+  rootTransaction.transactions.forEach((transaction) => {
+    try {
+      const doc = transaction.doc
+
+      doc.emit('beforeObserverCalls', [transaction, doc])
+      /**
+       * An array of event callbacks.
+       *
+       * Each callback is called even if the other ones throw errors.
+       *
+       * @type {Array<function():void>}
+       */
+      const fs = []
+      // observe events on changed types
+      transaction.changed.forEach((subs, itemtype) =>
+        fs.push(() => {
+          if (itemtype._item === null || !itemtype._item.deleted) {
+            itemtype._callObserver(transaction, subs)
+          }
+        })
+      )
+      fs.push(() => {
+        // deep observe events
+        transaction.changedParentTypes.forEach((events, type) => {
+          // We need to think about the possibility that the user transforms the
+          // Y.Doc in the event.
+          if (type._dEH.l.length > 0 && (type._item === null || !type._item.deleted)) {
+            events = events
+              .filter(event =>
+                event.target._item === null || !event.target._item.deleted
+              )
+            events
+              .forEach(event => {
+                event.currentTarget = type
+                // path is relative to the current target
+                event._path = null
+              })
+            // sort events by path length so that top-level events are fired first.
+            events
+              .sort((event1, event2) => event1.path.length - event2.path.length)
+
+            // We don't need to check for events.length
+            // because we know it has at least one element
+            callEventHandlerListeners(type._dEH, events, transaction)
+          }
+        })
+      })
+      fs.push(() => doc.emit('afterTransaction', [transaction, doc]))
+      callAll(fs, [])
+    } catch (e) {
+      console.trace(e)
+    }
+  })
+}
+
+/**
+ * Call root observers
+ * @param {RootTransaction} rootTransaction
+ */
+const callRootObservers = (rootTransaction) => {
+  // TODO: これは消したままでいいのか？
+  // rootTransaction.docRefsAdded.forEach((ref) => {
+  //   // Calc and cache root block
+  //   block.getRootBlock()
+  // })
+  // Gather changed root block types
+  rootTransaction.rootDoc.emit('afterAllObserverCalls', [rootTransaction.rootDoc, rootTransaction.events, rootTransaction])
+}
+
+/**
+ * Try GC and cleanup
+ * @param {RootTransaction} rootTransaction
+ */
+const cleanupConsumedTransaction = (rootTransaction) => {
+  rootTransaction.transactions.forEach((transaction) => {
+    if (transaction._needFormattingCleanup) {
+      cleanupYTextAfterTransaction(transaction)
+    }
+
+    const doc = transaction.doc
+    const structStore = doc.store
+    const ds = transaction.deleteSet
+    const mergeStructs = transaction._mergeStructs
+    // Replace deleted items with ItemDeleted / GC.
+    // This is where content is actually remove from the Yjs Doc.
+    if (doc.gc) {
+      tryGcDeleteSet(ds, structStore, doc.gcFilter)
+    }
+    tryMergeDeleteSet(ds, structStore)
+
+    // on all affected store.clients props, try to merge
+    transaction.afterState.forEach((clock, client) => {
+      const beforeClock = transaction.beforeState.get(client) || 0
+      if (beforeClock !== clock) {
+        const structs = /** @type {Array<GC|Item>} */ (structStore.clients.get(client))
+        // we iterate from right to left so we can safely remove entries
+        const firstChangePos = math.max(findIndexSS(structs, beforeClock), 1)
+        for (let i = structs.length - 1; i >= firstChangePos;) {
+          i -= 1 + tryToMergeWithLefts(structs, i)
+        }
+      }
+    })
+    // try to merge mergeStructs
+    // @todo: it makes more sense to transform mergeStructs to a DS, sort it, and merge from right to left
+    //        but at the moment DS does not handle duplicates
+    for (let i = mergeStructs.length - 1; i >= 0; i--) {
+      const { client, clock } = mergeStructs[i].id
+      const structs = /** @type {Array<GC|Item>} */ (structStore.clients.get(client))
+      const replacedStructPos = findIndexSS(structs, clock)
+      if (replacedStructPos + 1 < structs.length) {
+        if (tryToMergeWithLefts(structs, replacedStructPos + 1) > 1) {
+          continue // no need to perform next check, both are already merged
+        }
+      }
+      if (replacedStructPos > 0) {
+        tryToMergeWithLefts(structs, replacedStructPos)
+      }
+    }
+    if (!transaction.local && transaction.afterState.get(doc.clientID) !== transaction.beforeState.get(doc.clientID)) {
+      logging.print(logging.ORANGE, logging.BOLD, '[yjs] ', logging.UNBOLD, logging.RED, 'Changed the client-id because another client seems to be using it.')
+      doc.clientID = generateNewClientId()
+    }
+    // @todo Merge all the transactions into one and provide send the data as a single update message
+    doc.emit('afterTransactionCleanup', [transaction, doc])
+  })
+}
+
+/**
+ *
+ * @param {RootTransaction} rootTransaction
+ */
+function emitStoreTransactionCleanupEvents (rootTransaction) {
+  rootTransaction.rootDoc.emit('afterRootTransactionCleanup', [rootTransaction, rootTransaction.rootDoc])
+  if (rootTransaction.rootDoc._observers.has('updateV2Root')) {
+    /** @type {Map<Doc, Uint8Array>} */
+    const updates = new Map()
+    for (const transaction of rootTransaction.transactions.values()) {
+      const encoder = new UpdateEncoderV2()
+      const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
+      if (hasContent) {
+        const doc = transaction.doc
+        updates.set(doc, encoder.toUint8Array())
+      }
+    }
+    rootTransaction.rootDoc.emit('updateV2Root', [updates, rootTransaction.origin, rootTransaction.rootDoc, rootTransaction])
+  }
 }

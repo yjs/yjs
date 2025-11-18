@@ -10,7 +10,7 @@ import {
   ContentAny,
   ContentBinary,
   getItemCleanStart,
-  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
+  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, ContentDocRef, // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map'
@@ -251,6 +251,10 @@ export const callTypeObservers = (type, transaction, event) => {
     }
     type = /** @type {AbstractType<any>} */ (type._item.parent)
   }
+  if (transaction.rootTransaction) {
+    // @ts-ignore
+    transaction.rootTransaction.events.push(event)
+  }
   callEventHandlerListeners(changedType._eH, event, transaction)
 }
 
@@ -291,6 +295,12 @@ export class AbstractType {
      * @type {null | Array<ArraySearchMarker>}
      */
     this._searchMarker = null
+
+    /**
+     * Hint to embed this type as a reference instead of deep content.
+     * @type {boolean|undefined}
+     */
+    this.createRef = undefined
   }
 
   /**
@@ -685,7 +695,11 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
               break
             default:
               if (c instanceof AbstractType) {
-                left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentType(c))
+                if (c.createRef ?? c.doc?.autoRef) {
+                  left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentDocRef(c))
+                } else {
+                  left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentType(c))
+                }
                 left.integrate(transaction, 0)
               } else {
                 throw new Error('Unexpected content type in insert operation')
@@ -869,7 +883,11 @@ export const typeMapSet = (transaction, parent, key, value) => {
         break
       default:
         if (value instanceof AbstractType) {
-          content = new ContentType(value)
+          if (value.createRef ?? value.doc?.autoRef) {
+            content = new ContentDocRef(value)
+          } else {
+            content = new ContentType(value)
+          }
         } else {
           throw new Error('Unexpected content type')
         }

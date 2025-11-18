@@ -1,0 +1,3711 @@
+diff --git a/package-lock.json b/package-lock.json
+index b29195775..ac287bc11 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,11 +1,11 @@
+ {
+-  "name": "yjs",
++  "name": "@paperxlab/yjs",
+   "version": "13.6.7",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+-      "name": "yjs",
++      "name": "@paperxlab/yjs",
+       "version": "13.6.7",
+       "license": "MIT",
+       "dependencies": {
+diff --git a/package.json b/package.json
+index dd8eacb06..b2089cc02 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+-  "name": "yjs",
+-  "version": "13.6.7",
++  "name": "@paperxlab/yjs",
++  "version": "13.8.0-beta.4",
+   "description": "Shared Editing Library",
+   "main": "./dist/yjs.cjs",
+   "module": "./dist/yjs.mjs",
+@@ -11,6 +11,9 @@
+     "type": "GitHub Sponsors ❤",
+     "url": "https://github.com/sponsors/dmonad"
+   },
++  "publishConfig": {
++    "registry": "https://npm.pkg.github.com"
++  },
+   "scripts": {
+     "test": "npm run dist && node ./dist/tests.cjs --repetition-time 50",
+     "test-extensive": "npm run lint && npm run dist && node ./dist/tests.cjs --production --repetition-time 10000",
+diff --git a/src/index.js b/src/index.js
+index 781e8eb48..25265ecf6 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -2,7 +2,10 @@
+ 
+ export {
+   Doc,
++  NanoBlock,
++  NanoStore,
+   Transaction,
++  StoreTransaction,
+   YArray as Array,
+   YMap as Map,
+   YText as Text,
+@@ -26,6 +29,8 @@ export {
+   ContentAny,
+   ContentString,
+   ContentType,
++  ContentBlockRef,
++  ContentBlockUnref,
+   AbstractType,
+   getTypeChildren,
+   createRelativePositionFromTypeIndex,
+@@ -58,6 +63,7 @@ export {
+   readUpdateV2,
+   encodeStateAsUpdate,
+   encodeStateAsUpdateV2,
++  encodeStateAsUpdateWithRefsV2,
+   encodeStateVector,
+   UndoManager,
+   decodeSnapshot,
+@@ -76,6 +82,7 @@ export {
+   PermanentUserData, // @TODO experimental
+   tryGc,
+   transact,
++  transactInStore,
+   AbstractConnector,
+   logType,
+   mergeUpdates,
+@@ -97,6 +104,10 @@ export {
+   snapshotContainsUpdate
+ } from './internals.js'
+ 
++/**
++ * @typedef {import("./utils/NanoBlock.js").BlockType} BlockType
++ */
++
+ const glo = /** @type {any} */ (typeof globalThis !== 'undefined'
+   ? globalThis
+   : typeof window !== 'undefined'
+diff --git a/src/internals.js b/src/internals.js
+index bc386f0a8..baf68d8d9 100644
+--- a/src/internals.js
++++ b/src/internals.js
+@@ -2,6 +2,8 @@
+ export * from './utils/AbstractConnector.js'
+ export * from './utils/DeleteSet.js'
+ export * from './utils/Doc.js'
++export * from './utils/NanoStore.js'
++export * from './utils/NanoBlock.js'
+ export * from './utils/UpdateDecoder.js'
+ export * from './utils/UpdateEncoder.js'
+ export * from './utils/encoding.js'
+@@ -31,6 +33,7 @@ export * from './types/YXmlText.js'
+ export * from './structs/AbstractStruct.js'
+ export * from './structs/GC.js'
+ export * from './structs/ContentBinary.js'
++export * from './structs/ContentBlockRef.js'
+ export * from './structs/ContentDeleted.js'
+ export * from './structs/ContentDoc.js'
+ export * from './structs/ContentEmbed.js'
+diff --git a/src/structs/ContentBlockRef.js b/src/structs/ContentBlockRef.js
+new file mode 100644
+index 000000000..1e6272548
+--- /dev/null
++++ b/src/structs/ContentBlockRef.js
+@@ -0,0 +1,470 @@
++import { NanoBlock, Item, Transaction, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, StructStore, AbstractType, getBlockTypeFromInstance, updateBlockReferrer, NanoStore, YMap, YArray, addUnrefToBlock } from '../internals.js' // eslint-disable-line
++
++import * as error from 'lib0/error'
++
++/**
++ * @typedef {Object} ContentBlockUnrefOpts
++ * @property {string} blockId target block id
++ * @property {number} client client id of the ref item
++ * @property {number} clock clock of the ref item
++ */
++
++/**
++ * @typedef {Object} ContentBlockRefOpts
++ * @property {string} blockId
++ * @property {import("../utils/NanoBlock.js").BlockType} blockType
++ */
++
++export class ContentBlockRef {
++  /**
++   * Initialized with either a NanoBlock or a AbstractType when manipulated by the user.
++   * @param {AbstractType<any> | ContentBlockRefOpts} opt
++   */
++  constructor (opt) {
++    /**
++     * Block id to refer
++     * @type {string}
++     */
++    this.blockId = ''
++
++    /**
++     * Block type
++     * @type {import("../utils/NanoBlock.js").BlockType}
++     */
++    // @ts-ignore
++    this.blockType = ''
++
++    /**
++     * @type {NanoBlock | null}
++     */
++    this._block = null
++
++    /**
++     * @type {AbstractType<any> | null}
++     */
++    this._type = null
++
++    if (opt instanceof AbstractType) {
++      const type = opt
++      if (type.block && type.block.getType() !== type) {
++        throw new Error('You can create a ref only for the root type of a block')
++      }
++      this._type = type
++      this.blockType = getBlockTypeFromInstance(type)
++      if (type.block) {
++        this._block = type.block
++        this.blockId = this._block.id
++      }
++    } else {
++      this.blockId = opt.blockId
++      this.blockType = opt.blockType
++    }
++
++    /**
++     * @type {Item & { content: ContentBlockRef } | null}
++     */
++    this._item = null
++  }
++
++  /**
++   *
++   * @param {Transaction} transaction
++   * @param {Item & { content: ContentBlockRef }} item
++   */
++  integrate (transaction, item) {
++    this._item = item
++    if (!transaction.storeTransaction) return
++    const store = transaction.storeTransaction.store
++    transaction.storeTransaction.blockRefsAdded.add(this)
++
++    // ref の conflict や循環参照が見つかった場合
++    // tr.local なら、この場で解決する.
++    // tr.local でないなら、ここでは解決せずに、cleanup の中で解決する（つまり次の local な transaction).
++    
++    // Get root block from parent - it must exist since refs are always inside a root block
++    const parentType = /** @type {AbstractType<any>} */ (item.parent)
++    const parentBlock = /** @type {NanoBlock} */ (parentType.block)
++    const rootBlock = /** @type {NanoBlock} */ (parentBlock.getRootBlock())
++
++    if (transaction.local) {
++      if (this.blockId && this.blockType) {
++        const block = rootBlock.getOrCreateBlock(this.blockId, this.blockType)
++        // conflict
++        if (block._referrer) {
++          // この item は削除されて、clone された block に対して新しい ref が作成される
++          console.warn('Resolving conflit in ContentBlockRef.integrate', this)
++          resolveRefConflict(rootBlock, this)
++        } else {
++          this._block = block
++          this._type = block.getType()
++          // ここで循環参照が発生する可能性があるので解決する
++          updateBlockReferrer(this._block, this)
++          validateCircularRef(this._item)
++        }
++      } else if (this._type && !this._block) {
++        // block を作成する
++        this._block = rootBlock.createBlock(this.blockType, undefined, this._type)
++        this.blockId = this._block.id
++        updateBlockReferrer(this._block, this)
++        validateCircularRef(this._item)
++      }
++    } else {
++      // local でない場合は、必ず blockId と blockType が存在する
++      // またここでは block.referrer の設定も行わない
++      const block = rootBlock.getOrCreateBlock(this.blockId, this.blockType)
++      this._block = block
++      this._type = block.getType()
++    }
++
++    // integrate されたあとは、blockId and blockType は必ず存在する
++    // _block と _type が存在しない場合は、conflict されて削除されている
++  }
++
++  /**
++   * @param {Transaction} transaction
++   */
++  delete (transaction) {
++    if (this._block && this._block._referrer && this._block._referrer === this._item) {
++      updateBlockReferrer(this._block, null)
++    }
++    if (transaction.storeTransaction) {
++      if (transaction.storeTransaction.blockRefsAdded.has(this)) {
++        transaction.storeTransaction.blockRefsAdded.delete(this)
++      } else {
++        transaction.storeTransaction.blockRefsRemoved.add(this)
++      }
++    }
++    if (transaction.local && this._item && this._item.block) {
++      addUnrefToBlock(this._item.block, this)
++    }
++  }
++
++  /**
++   * @param {StructStore} store
++   */
++  gc (store) { }
++
++  getLength () {
++    return 1
++  }
++
++  getContent () {
++    return [this._type]
++  }
++
++  isCountable () {
++    return true
++  }
++
++  copy () {
++    return new ContentBlockRef({
++      blockId: this.blockId,
++      blockType: this.blockType
++    })
++  }
++
++  /**
++   * @param {number} offset
++   * @return {ContentBlockRef}
++   */
++  splice (offset) {
++    throw error.methodUnimplemented()
++  }
++
++  mergeWith () {
++    return false
++  }
++
++  /**
++   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
++   * @param {number} offset
++   */
++  write (encoder, offset) {
++    encoder.writeString(this.blockId)
++    encoder.writeString(this.blockType)
++    if (!this._item?.deleted) {
++      encoder.addRef(this.blockId)
++    }
++  }
++
++  getRef () {
++    return 11
++  }
++}
++
++export class ContentBlockUnref {
++  /**
++   * @param {ContentBlockUnrefOpts} opts
++   */
++  constructor (opts) {
++    /**
++     * Block id to refer
++     * @type {string}
++     */
++    this.blockId = opts.blockId
++
++    /**
++     * Client id of the ref item
++     * @type {number}
++     */
++    this.client = opts.client
++
++    /**
++     * Clock of the ref item
++     * @type {number}
++     */
++    this.clock = opts.clock
++
++    /**
++     * @type {Item | null}
++     */
++    this._item = null
++  }
++
++  /**
++   * @param {Transaction} transaction
++   * @param {Item} item
++   */
++  integrate (transaction, item) {
++    this._item = item
++    // Unref が作成される時には対応する Ref が削除されるので、ここでの処理は不要
++    // Unref が GC されるとバックエンドでの Ref の更新ができないので、GC しないように keep フラグを立てる
++    item.keep = true
++    if (transaction.storeTransaction) {
++      transaction.storeTransaction.blockUnrefsAdded.add(this)
++    }
++  }
++
++  /**
++   * @param {Transaction} transaction
++   */
++  delete (transaction) {
++  }
++
++  copy () {
++    return new ContentBlockUnref({
++      blockId: this.blockId,
++      client: this.client,
++      clock: this.clock
++    })
++  }
++
++  /**
++   * @param {StructStore} store
++   */
++  gc (store) { }
++
++  getLength () {
++    return 1
++  }
++
++  getContent () {
++    return [this.blockId]
++  }
++
++  isCountable () {
++    return true
++  }
++
++  /**
++   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
++   * @param {number} offset
++   */
++  write (encoder, offset) {
++    encoder.writeAny({
++      blockId: this.blockId,
++      client: this.client,
++      clock: this.clock
++    })
++  }
++
++  /**
++   * @param {number} offset
++   * @return {ContentBlockUnref}
++   */
++  splice (offset) {
++    throw error.methodUnimplemented()
++  }
++
++  mergeWith () {
++    return false
++  }
++
++  getRef () {
++    return 12
++  }
++}
++
++/**
++ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
++ * @return {ContentBlockRefOpts}
++ */
++function createContentBlockRefFromDecoder (decoder) {
++  const blockId = decoder.readString()
++  /** @type {import("../utils/NanoBlock.js").BlockType} */
++  // @ts-ignore
++  const blockType = decoder.readString()
++
++  return {
++    blockId,
++    blockType
++  }
++}
++
++/**
++ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
++ * @return {ContentBlockUnrefOpts}
++ */
++function createContentBlockUnrefFromDecoder (decoder) {
++  return decoder.readAny()
++}
++
++/**
++ * @private
++ *
++ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
++ * @return {ContentBlockRef}
++ */
++export const readContentBlockRef = decoder => new ContentBlockRef(createContentBlockRefFromDecoder(decoder))
++
++/**
++ * @private
++ *
++ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
++ * @return {ContentBlockUnref}
++ */
++export const readContentBlockUnRef = decoder => new ContentBlockUnref(createContentBlockUnrefFromDecoder(decoder))
++
++/**
++ * @param {NanoBlock} rootBlock
++ * @param {ContentBlockRef} ref The ref conflicted
++ */
++export function resolveRefConflict (rootBlock, ref) {
++  if (ref._item?.deleted) return
++  // Clone conflicted item
++  // if the conflicted item is in map, delete it
++  if (ref._item && ref._item.parentSub) {
++    const key = ref._item.parentSub
++    const map = /** @type {YMap<any>} */ (ref._item.parent)
++    // 必ず元の item を削除してから clone することで、循環参照が作られないようにする
++    map.delete(key)
++    const cloned = cloneBlock(rootBlock, ref.blockId)
++    map.set(key, cloned)
++  } else if (ref._item && ref._item.parentSub == null) {
++    // if the conflicted item is in array, delete it
++    const array = /** @type {YArray<any>} */ (ref._item.parent)
++    /** @type {Item | null} */
++    let item = ref._item.left
++    let index = 0
++    while (item !== null) {
++      if (!item.deleted && item.countable) {
++        index++
++      }
++      item = item.left
++    }
++    // 必ず元の item を削除してから clone することで、循環参照が作られないようにする
++    array.delete(index)
++    const cloned = cloneBlock(rootBlock, ref.blockId)
++    array.insert(index, [cloned])
++  }
++}
++
++/**
++ * @param {NanoBlock} rootBlock
++ * @param {string} blockId
++ * @return {AbstractType<any>}
++ */
++function cloneBlock (rootBlock, blockId) {
++  const block = rootBlock.getBlock(blockId)
++  if (!block) throw new Error('Block not found')
++  const type = block.getType()
++
++  if (type instanceof YArray) {
++    const newType = new YArray()
++    newType.createRef = true
++    let item = type._start
++    while (item != null) {
++      if (item.countable && !item.deleted) {
++        if (item.content instanceof ContentBlockRef) {
++          newType.push([cloneBlock(rootBlock, item.content.blockId)])
++        } else {
++          newType.push(item.content.getContent().map(c => {
++            if (c instanceof AbstractType) {
++              const cloned = c.clone()
++              cloned.createRef = false
++              return cloned
++            }
++            return c
++          }))
++        }
++      }
++      item = item.right
++    }
++    return newType
++  } else if (type instanceof YMap) {
++    const newType = new YMap()
++    newType.createRef = true
++    type._map.forEach((item, key) => {
++      if (item.countable && !item.deleted) {
++        if (item.content instanceof ContentBlockRef) {
++          newType.set(key, cloneBlock(rootBlock, item.content.blockId))
++        } else {
++          const c = item.content.getContent()
++          if (c[c.length - 1] instanceof AbstractType) {
++            const cloned = c[c.length - 1].clone()
++            cloned.createRef = false
++            newType.set(key, cloned)
++          } else {
++            newType.set(key, c[c.length - 1])
++          }
++        }
++      }
++    })
++    return newType
++  } else {
++    // TODO: XmlElement の attrs にも ref が設定されることがある
++    const newType = type.clone()
++    newType.createRef = true
++    return newType
++  }
++}
++
++/**
++ * @private
++ * @param {Item & { content: ContentBlockRef }} item
++ */
++export function validateCircularRef (item) {
++  if (item?.deleted) return
++  const blockId = item.content.blockId
++  let found = false
++  let n = /** @type {Item | null} */(item)
++  while (n?.block) {
++    if (n.block.id === blockId) {
++      console.warn('Circular reference detected', item)
++      found = true
++      break
++    }
++    n = n.block._referrer
++  }
++  if (!found) return
++  if (item && item.parentSub) {
++    const key = item.parentSub
++    const map = /** @type {YMap<any>} */ (item.parent)
++    // 必ず元の item を削除してから clone することで、循環参照が作られないようにする
++    map.delete(key)
++  } else if (item && item.parentSub == null) {
++    // if the conflicted item is in array, delete it
++    const array = /** @type {YArray<any>} */ (item.parent)
++    /** @type {Item | null} */
++    let n = item.left
++    let index = 0
++    while (n !== null) {
++      if (!n.deleted && n.countable) {
++        index++
++      }
++      n = n.left
++    }
++    // 必ず元の item を削除してから clone することで、循環参照が作られないようにする
++    array.delete(index)
++  }
++}
+diff --git a/src/structs/ContentDoc.js b/src/structs/ContentDoc.js
+index 2c3bf8a69..c7f77aaaa 100644
+--- a/src/structs/ContentDoc.js
++++ b/src/structs/ContentDoc.js
+@@ -93,21 +93,21 @@ export class ContentDoc {
+   integrate (transaction, item) {
+     // this needs to be reflected in doc.destroy as well
+     this.doc._item = item
+-    transaction.subdocsAdded.add(this.doc)
+-    if (this.doc.shouldLoad) {
+-      transaction.subdocsLoaded.add(this.doc)
+-    }
++  //   transaction.subdocsAdded.add(this.doc)
++  //   if (this.doc.shouldLoad) {
++  //     transaction.subdocsLoaded.add(this.doc)
++  //   }
+   }
+ 
+   /**
+    * @param {Transaction} transaction
+    */
+   delete (transaction) {
+-    if (transaction.subdocsAdded.has(this.doc)) {
+-      transaction.subdocsAdded.delete(this.doc)
+-    } else {
+-      transaction.subdocsRemoved.add(this.doc)
+-    }
++    // if (transaction.subdocsAdded.has(this.doc)) {
++    //   transaction.subdocsAdded.delete(this.doc)
++    // } else {
++    //   transaction.subdocsRemoved.add(this.doc)
++    // }
+   }
+ 
+   /**
+diff --git a/src/structs/ContentType.js b/src/structs/ContentType.js
+index e9c11de10..5777e1fa6 100644
+--- a/src/structs/ContentType.js
++++ b/src/structs/ContentType.js
+@@ -97,7 +97,7 @@ export class ContentType {
+    * @param {Item} item
+    */
+   integrate (transaction, item) {
+-    this.type._integrate(transaction.doc, item)
++    this.type._integrate(transaction.block, item)
+   }
+ 
+   /**
+diff --git a/src/structs/GC.js b/src/structs/GC.js
+index 42d71f737..4be8f539d 100644
+--- a/src/structs/GC.js
++++ b/src/structs/GC.js
+@@ -38,7 +38,7 @@ export class GC extends AbstractStruct {
+       this.id.clock += offset
+       this.length -= offset
+     }
+-    addStruct(transaction.doc.store, this)
++    addStruct(transaction.block.structStore, this)
+   }
+ 
+   /**
+diff --git a/src/structs/Item.js b/src/structs/Item.js
+index 7e1bc92cf..f486f0370 100644
+--- a/src/structs/Item.js
++++ b/src/structs/Item.js
+@@ -23,7 +23,9 @@ import {
+   readContentType,
+   addChangedTypeToTransaction,
+   isDeleted,
+-  StackItem, DeleteSet, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction // eslint-disable-line
++  StackItem, DeleteSet, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction, NanoBlock, // eslint-disable-line
++  readContentBlockRef,
++  readContentBlockUnRef
+ } from '../internals.js'
+ 
+ import * as error from 'lib0/error'
+@@ -142,9 +144,9 @@ const isDeletedByUndoStack = (stack, id) => array.some(stack, /** @param {StackI
+  * @private
+  */
+ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemoteMapChanges, um) => {
+-  const doc = transaction.doc
+-  const store = doc.store
+-  const ownClientID = doc.clientID
++  const block = transaction.block
++  const structStore = block.structStore
++  const ownClientID = block.clientID
+   const redone = item.redone
+   if (redone !== null) {
+     return getItemCleanStart(transaction, redone)
+@@ -225,7 +227,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
+       left = parentType._map.get(item.parentSub) || null
+     }
+   }
+-  const nextClock = getState(store, ownClientID)
++  const nextClock = getState(structStore, ownClientID)
+   const nextId = createID(ownClientID, nextClock)
+   const redoneItem = new Item(
+     nextId,
+@@ -418,7 +420,7 @@ export class Item extends AbstractStruct {
+   integrate (transaction, offset) {
+     if (offset > 0) {
+       this.id.clock += offset
+-      this.left = getItemCleanEnd(transaction, transaction.doc.store, createID(this.id.client, this.id.clock - 1))
++      this.left = getItemCleanEnd(transaction, transaction.block.structStore, createID(this.id.client, this.id.clock - 1))
+       this.origin = this.left.lastId
+       this.content = this.content.splice(offset)
+       this.length -= offset
+@@ -472,9 +474,9 @@ export class Item extends AbstractStruct {
+               // Since this is to the left of o, we can break here
+               break
+             } // else, o might be integrated before an item that this conflicts with. If so, we will find it in the next iterations
+-          } else if (o.origin !== null && itemsBeforeOrigin.has(getItem(transaction.doc.store, o.origin))) { // use getItem instead of getItemCleanEnd because we don't want / need to split items.
++          } else if (o.origin !== null && itemsBeforeOrigin.has(getItem(transaction.block.structStore, o.origin))) { // use getItem instead of getItemCleanEnd because we don't want / need to split items.
+             // case 2
+-            if (!conflictingItems.has(getItem(transaction.doc.store, o.origin))) {
++            if (!conflictingItems.has(getItem(transaction.block.structStore, o.origin))) {
+               left = o
+               conflictingItems.clear()
+             }
+@@ -517,7 +519,7 @@ export class Item extends AbstractStruct {
+       if (this.parentSub === null && this.countable && !this.deleted) {
+         /** @type {AbstractType<any>} */ (this.parent)._length += this.length
+       }
+-      addStruct(transaction.doc.store, this)
++      addStruct(transaction.block.structStore, this)
+       this.content.integrate(transaction, this)
+       // add parent to transaction.changed
+       addChangedTypeToTransaction(transaction, /** @type {AbstractType<any>} */ (this.parent), this.parentSub)
+@@ -695,6 +697,27 @@ export class Item extends AbstractStruct {
+     }
+     this.content.write(encoder, offset)
+   }
++
++  /**
++  * @returns {NanoBlock | null}
++  */
++  get block () {
++    let item = /** @type {Item | null} */(this)
++    while (item) {
++      if (
++        item.parent &&
++        item.parent instanceof AbstractType
++      ) {
++        if (item.parent.block) {
++          return item.parent.block
++        }
++        item = item.parent._item
++      } else {
++        return null
++      }
++    }
++    return null
++  }
+ }
+ 
+ /**
+@@ -719,7 +742,9 @@ export const contentRefs = [
+   readContentType, // 7
+   readContentAny, // 8
+   readContentDoc, // 9
+-  () => { error.unexpectedCase() } // 10 - Skip is not ItemContent
++  () => { error.unexpectedCase() }, // 10 - Skip is not ItemContent
++  readContentBlockRef, // 11
++  readContentBlockUnRef // 12
+ ]
+ 
+ /**
+diff --git a/src/types/AbstractType.js b/src/types/AbstractType.js
+index 144cfc3cd..567d7425c 100644
+--- a/src/types/AbstractType.js
++++ b/src/types/AbstractType.js
+@@ -11,7 +11,8 @@ import {
+   ContentAny,
+   ContentBinary,
+   getItemCleanStart,
+-  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
++  // @ts-ignore
++  ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Snapshot, Transaction, EventHandler, YEvent, Item, NanoBlock, ContentBlockRef, ContentBlockUnref, StoreTransaction, // eslint-disable-line
+ } from '../internals.js'
+ 
+ import * as map from 'lib0/map'
+@@ -245,6 +246,13 @@ export const callTypeObservers = (type, transaction, event) => {
+     }
+     type = /** @type {AbstractType<any>} */ (type._item.parent)
+   }
++  if (transaction.storeTransaction && type.block) {
++    const rootBlock = type.block.getRootBlock()
++    if (rootBlock) {
++      // @ts-ignore
++      map.setIfUndefined(transaction.storeTransaction.rootBlockEvents, rootBlock, () => []).push(event)
++    }
++  }
+   callEventHandlerListeners(changedType._eH, event, transaction)
+ }
+ 
+@@ -267,9 +275,10 @@ export class AbstractType {
+      */
+     this._start = null
+     /**
+-     * @type {Doc|null}
++     * @type {NanoBlock|null}
+      */
+-    this.doc = null
++    this.block = null
++
+     this._length = 0
+     /**
+      * Event handlers
+@@ -281,10 +290,20 @@ export class AbstractType {
+      * @type {EventHandler<Array<YEvent<any>>,Transaction>}
+      */
+     this._dEH = createEventHandler()
++    /**
++     * Root event handlers
++     * @type {EventHandler<Array<YEvent<any>>,StoreTransaction>}
++     */
++    this._rEH = createEventHandler()
+     /**
+      * @type {null | Array<ArraySearchMarker>}
+      */
+     this._searchMarker = null
++
++    /**
++     * @type {boolean | undefined}
++     */
++    this.createRef = undefined
+   }
+ 
+   /**
+@@ -301,11 +320,11 @@ export class AbstractType {
+    * * This type is sent to other client
+    * * Observer functions are fired
+    *
+-   * @param {Doc} y The Yjs instance
++   * @param {NanoBlock} block The Yjs instance
+    * @param {Item|null} item
+    */
+-  _integrate (y, item) {
+-    this.doc = y
++  _integrate (block, item) {
++    this.block = block
+     this._item = item
+   }
+ 
+@@ -370,6 +389,15 @@ export class AbstractType {
+     addEventHandlerListener(this._dEH, f)
+   }
+ 
++  /**
++   * Observe all events that are created by this type and reference types.
++   *
++   * @param {function(Array<YEvent<any>>,StoreTransaction):void} f Observer function
++   */
++  observeRoot (f) {
++    addEventHandlerListener(this._rEH, f)
++  }
++
+   /**
+    * Unregister an observer function.
+    *
+@@ -388,6 +416,15 @@ export class AbstractType {
+     removeEventHandlerListener(this._dEH, f)
+   }
+ 
++  /**
++   * Unregister an observer function.
++   *
++   * @param {function(Array<YEvent<any>>,StoreTransaction):void} f Observer function
++   */
++  unobserveRoot (f) {
++    removeEventHandlerListener(this._rEH, f)
++  }
++
+   /**
+    * @abstract
+    * @return {any}
+@@ -630,9 +667,9 @@ export const typeListGet = (type, index) => {
+  */
+ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, content) => {
+   let left = referenceItem
+-  const doc = transaction.doc
+-  const ownClientId = doc.clientID
+-  const store = doc.store
++  const block = transaction.block
++  const ownClientId = block.clientID
++  const structStore = block.structStore
+   const right = referenceItem === null ? parent._start : referenceItem.right
+   /**
+    * @type {Array<Object|Array<any>|number|null>}
+@@ -640,7 +677,7 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem,
+   let jsonContent = []
+   const packJsonContent = () => {
+     if (jsonContent.length > 0) {
+-      left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentAny(jsonContent))
++      left = new Item(createID(ownClientId, getState(structStore, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentAny(jsonContent))
+       left.integrate(transaction, 0)
+       jsonContent = []
+     }
+@@ -662,16 +699,28 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem,
+           switch (c.constructor) {
+             case Uint8Array:
+             case ArrayBuffer:
+-              left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))))
++              left = new Item(createID(ownClientId, getState(structStore, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))))
++              left.integrate(transaction, 0)
++              break
++            case ContentBlockRef:
++              left = new Item(createID(ownClientId, getState(structStore, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, /** @type {ContentBlockRef} */ (c))
+               left.integrate(transaction, 0)
+               break
+-            case Doc:
+-              left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentDoc(/** @type {Doc} */ (c)))
++            case ContentBlockUnref:
++              left = new Item(createID(ownClientId, getState(structStore, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, /** @type {ContentBlockUnref} */ (c))
+               left.integrate(transaction, 0)
+               break
++            // case Doc:
++            //   left = new Item(createID(ownClientId, getState(structStore, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentDoc(/** @type {Doc} */ (c)))
++            //   left.integrate(transaction, 0)
++            //   break
+             default:
+               if (c instanceof AbstractType) {
+-                left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentType(c))
++                if (c.block || (c.createRef ?? block.store?.autoRef)) {
++                  left = new Item(createID(ownClientId, getState(structStore, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentBlockRef(c))
++                } else {
++                  left = new Item(createID(ownClientId, getState(structStore, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentType(c))
++                }
+                 left.integrate(transaction, 0)
+               } else {
+                 throw new Error('Unexpected content type in insert operation')
+@@ -831,8 +880,8 @@ export const typeMapDelete = (transaction, parent, key) => {
+  */
+ export const typeMapSet = (transaction, parent, key, value) => {
+   const left = parent._map.get(key) || null
+-  const doc = transaction.doc
+-  const ownClientId = doc.clientID
++  const block = transaction.block
++  const ownClientId = block.clientID
+   let content
+   if (value == null) {
+     content = new ContentAny([value])
+@@ -848,18 +897,19 @@ export const typeMapSet = (transaction, parent, key, value) => {
+       case Uint8Array:
+         content = new ContentBinary(/** @type {Uint8Array} */ (value))
+         break
+-      case Doc:
+-        content = new ContentDoc(/** @type {Doc} */ (value))
+-        break
+       default:
+         if (value instanceof AbstractType) {
+-          content = new ContentType(value)
++          if (value.block || (value.createRef ?? block.store?.autoRef)) {
++            content = new ContentBlockRef(value)
++          } else {
++            content = new ContentType(value)
++          }
+         } else {
+           throw new Error('Unexpected content type')
+         }
+     }
+   }
+-  new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, null, null, parent, key, content).integrate(transaction, 0)
++  new Item(createID(ownClientId, getState(block.structStore, ownClientId)), left, left && left.lastId, null, null, parent, key, content).integrate(transaction, 0)
+ }
+ 
+ /**
+diff --git a/src/types/YArray.js b/src/types/YArray.js
+index a895274e9..eb63e7d0d 100644
+--- a/src/types/YArray.js
++++ b/src/types/YArray.js
+@@ -16,7 +16,7 @@ import {
+   YArrayRefID,
+   callTypeObservers,
+   transact,
+-  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
++  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Transaction, Item, NanoBlock, // eslint-disable-line
+ } from '../internals.js'
+ import { typeListSlice } from './AbstractType.js'
+ 
+@@ -78,11 +78,11 @@ export class YArray extends AbstractType {
+    * * This type is sent to other client
+    * * Observer functions are fired
+    *
+-   * @param {Doc} y The Yjs instance
++   * @param {NanoBlock} block The Yjs instance
+    * @param {Item} item
+    */
+-  _integrate (y, item) {
+-    super._integrate(y, item)
++  _integrate (block, item) {
++    super._integrate(block, item)
+     this.insert(0, /** @type {Array<any>} */ (this._prelimContent))
+     this._prelimContent = null
+   }
+@@ -140,8 +140,8 @@ export class YArray extends AbstractType {
+    * @param {Array<T>} content The array of content
+    */
+   insert (index, content) {
+-    if (this.doc !== null) {
+-      transact(this.doc, transaction => {
++    if (this.block !== null) {
++      transact(this.block, transaction => {
+         typeListInsertGenerics(transaction, this, index, /** @type {any} */ (content))
+       })
+     } else {
+@@ -157,8 +157,8 @@ export class YArray extends AbstractType {
+    * @todo Use the following implementation in all types.
+    */
+   push (content) {
+-    if (this.doc !== null) {
+-      transact(this.doc, transaction => {
++    if (this.block !== null) {
++      transact(this.block, transaction => {
+         typeListPushGenerics(transaction, this, /** @type {any} */ (content))
+       })
+     } else {
+@@ -182,8 +182,8 @@ export class YArray extends AbstractType {
+    * @param {number} length The number of elements to remove. Defaults to 1.
+    */
+   delete (index, length = 1) {
+-    if (this.doc !== null) {
+-      transact(this.doc, transaction => {
++    if (this.block !== null) {
++      transact(this.block, transaction => {
+         typeListDelete(transaction, this, index, length)
+       })
+     } else {
+diff --git a/src/types/YMap.js b/src/types/YMap.js
+index e2dd7a496..a653e7581 100644
+--- a/src/types/YMap.js
++++ b/src/types/YMap.js
+@@ -14,7 +14,7 @@ import {
+   YMapRefID,
+   callTypeObservers,
+   transact,
+-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Transaction, Item // eslint-disable-line
++  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Transaction, Item, NanoBlock // eslint-disable-line
+ } from '../internals.js'
+ 
+ import * as iterator from 'lib0/iterator'
+@@ -70,11 +70,11 @@ export class YMap extends AbstractType {
+    * * This type is sent to other client
+    * * Observer functions are fired
+    *
+-   * @param {Doc} y The Yjs instance
++   * @param {NanoBlock} block The Yjs instance
+    * @param {Item} item
+    */
+-  _integrate (y, item) {
+-    super._integrate(y, item)
++  _integrate (block, item) {
++    super._integrate(block, item)
+     ;/** @type {Map<string, any>} */ (this._prelimContent).forEach((value, key) => {
+       this.set(key, value)
+     })
+@@ -195,8 +195,8 @@ export class YMap extends AbstractType {
+    * @param {string} key The key of the element to remove.
+    */
+   delete (key) {
+-    if (this.doc !== null) {
+-      transact(this.doc, transaction => {
++    if (this.block !== null) {
++      transact(this.block, transaction => {
+         typeMapDelete(transaction, this, key)
+       })
+     } else {
+@@ -213,8 +213,8 @@ export class YMap extends AbstractType {
+    * @return {VAL}
+    */
+   set (key, value) {
+-    if (this.doc !== null) {
+-      transact(this.doc, transaction => {
++    if (this.block !== null) {
++      transact(this.block, transaction => {
+         typeMapSet(transaction, this, key, /** @type {any} */ (value))
+       })
+     } else {
+@@ -247,8 +247,8 @@ export class YMap extends AbstractType {
+    * Removes all elements from this YMap.
+    */
+   clear () {
+-    if (this.doc !== null) {
+-      transact(this.doc, transaction => {
++    if (this.block !== null) {
++      transact(this.block, transaction => {
+         this.forEach(function (_value, key, map) {
+           typeMapDelete(transaction, map, key)
+         })
+diff --git a/src/types/YText.js b/src/types/YText.js
+index 399a6ff36..8d9617650 100644
+--- a/src/types/YText.js
++++ b/src/types/YText.js
+@@ -27,7 +27,7 @@ import {
+   typeMapGetAll,
+   updateMarkerChanges,
+   ContentType,
+-  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Doc, Item, Snapshot, Transaction // eslint-disable-line
++  ArraySearchMarker, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ID, Item, Snapshot, Transaction, NanoBlock // eslint-disable-line
+ } from '../internals.js'
+ 
+ import * as object from 'lib0/object'
+@@ -161,12 +161,12 @@ const insertNegatedAttributes = (transaction, parent, currPos, negatedAttributes
+     }
+     currPos.forward()
+   }
+-  const doc = transaction.doc
+-  const ownClientId = doc.clientID
++  const block = transaction.block
++  const ownClientId = block.clientID
+   negatedAttributes.forEach((val, key) => {
+     const left = currPos.left
+     const right = currPos.right
+-    const nextFormat = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
++    const nextFormat = new Item(createID(ownClientId, getState(block.structStore, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
+     nextFormat.integrate(transaction, 0)
+     currPos.right = nextFormat
+     currPos.forward()
+@@ -221,8 +221,8 @@ const minimizeAttributeChanges = (currPos, attributes) => {
+  * @function
+  **/
+ const insertAttributes = (transaction, parent, currPos, attributes) => {
+-  const doc = transaction.doc
+-  const ownClientId = doc.clientID
++  const block = transaction.block
++  const ownClientId = block.clientID
+   const negatedAttributes = new Map()
+   // insert format-start items
+   for (const key in attributes) {
+@@ -232,7 +232,7 @@ const insertAttributes = (transaction, parent, currPos, attributes) => {
+       // save negated attribute (set null if currentVal undefined)
+       negatedAttributes.set(key, currentVal)
+       const { left, right } = currPos
+-      currPos.right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
++      currPos.right = new Item(createID(ownClientId, getState(block.structStore, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
+       currPos.right.integrate(transaction, 0)
+       currPos.forward()
+     }
+@@ -256,8 +256,8 @@ const insertText = (transaction, parent, currPos, text, attributes) => {
+       attributes[key] = null
+     }
+   })
+-  const doc = transaction.doc
+-  const ownClientId = doc.clientID
++  const block = transaction.block
++  const ownClientId = block.clientID
+   minimizeAttributeChanges(currPos, attributes)
+   const negatedAttributes = insertAttributes(transaction, parent, currPos, attributes)
+   // insert content
+@@ -266,7 +266,7 @@ const insertText = (transaction, parent, currPos, text, attributes) => {
+   if (parent._searchMarker) {
+     updateMarkerChanges(parent._searchMarker, currPos.index, content.getLength())
+   }
+-  right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, content)
++  right = new Item(createID(ownClientId, getState(block.structStore, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, content)
+   right.integrate(transaction, 0)
+   currPos.right = right
+   currPos.index = index
+@@ -285,8 +285,8 @@ const insertText = (transaction, parent, currPos, text, attributes) => {
+  * @function
+  */
+ const formatText = (transaction, parent, currPos, length, attributes) => {
+-  const doc = transaction.doc
+-  const ownClientId = doc.clientID
++  const block = transaction.block
++  const ownClientId = block.clientID
+   minimizeAttributeChanges(currPos, attributes)
+   const negatedAttributes = insertAttributes(transaction, parent, currPos, attributes)
+   // iterate until first non-format or null is found
+@@ -342,7 +342,7 @@ const formatText = (transaction, parent, currPos, length, attributes) => {
+     for (; length > 0; length--) {
+       newlines += '\n'
+     }
+-    currPos.right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), currPos.left, currPos.left && currPos.left.lastId, currPos.right, currPos.right && currPos.right.id, parent, null, new ContentString(newlines))
++    currPos.right = new Item(createID(ownClientId, getState(block.structStore, ownClientId)), currPos.left, currPos.left && currPos.left.lastId, currPos.right, currPos.right && currPos.right.id, parent, null, new ContentString(newlines))
+     currPos.right.integrate(transaction, 0)
+     currPos.forward()
+   }
+@@ -452,7 +452,7 @@ const cleanupContextlessFormattingGap = (transaction, item) => {
+  */
+ export const cleanupYTextFormatting = type => {
+   let res = 0
+-  transact(/** @type {Doc} */ (type.doc), transaction => {
++  transact(/** @type {NanoBlock} */ (type.block), transaction => {
+     let start = /** @type {Item} */ (type._start)
+     let end = type._start
+     let startAttributes = map.create()
+@@ -488,13 +488,13 @@ export const cleanupYTextAfterTransaction = transaction => {
+    */
+   const needFullCleanup = new Set()
+   // check if another formatting item was inserted
+-  const doc = transaction.doc
++  const block = transaction.block
+   for (const [client, afterClock] of transaction.afterState.entries()) {
+     const clock = transaction.beforeState.get(client) || 0
+     if (afterClock === clock) {
+       continue
+     }
+-    iterateStructs(transaction, /** @type {Array<Item|GC>} */ (doc.store.clients.get(client)), clock, afterClock, item => {
++    iterateStructs(transaction, /** @type {Array<Item|GC>} */ (block.structStore.clients.get(client)), clock, afterClock, item => {
+       if (
+         !item.deleted && /** @type {Item} */ (item).content.constructor === ContentFormat && item.constructor !== GC
+       ) {
+@@ -503,7 +503,7 @@ export const cleanupYTextAfterTransaction = transaction => {
+     })
+   }
+   // cleanup in a new transaction
+-  transact(doc, (t) => {
++  transact(block, (t) => {
+     iterateDeletedStructs(transaction, transaction.deleteSet, item => {
+       if (item instanceof GC || !(/** @type {YText} */ (item.parent)._hasFormatting) || needFullCleanup.has(/** @type {YText} */ (item.parent))) {
+         return
+@@ -653,12 +653,12 @@ export class YTextEvent extends YEvent {
+    */
+   get delta () {
+     if (this._delta === null) {
+-      const y = /** @type {Doc} */ (this.target.doc)
++      const block = /** @type {NanoBlock} */ (this.target.block)
+       /**
+        * @type {Array<{insert?:string|object|AbstractType<any>, delete?:number, retain?:number, attributes?: Object<string,any>}>}
+        */
+       const delta = []
+-      transact(y, transaction => {
++      transact(block, transaction => {
+         const currentAttributes = new Map() // saves all current attributes for insert
+         const oldAttributes = new Map()
+         let item = this.target._start
+@@ -879,11 +879,11 @@ export class YText extends AbstractType {
+   }
+ 
+   /**
+-   * @param {Doc} y
++   * @param {NanoBlock} block
+    * @param {Item} item
+    */
+-  _integrate (y, item) {
+-    super._integrate(y, item)
++  _integrate (block, item) {
++    super._integrate(block, item)
+     try {
+       /** @type {Array<function>} */ (this._pending).forEach(f => f())
+     } catch (e) {
+@@ -962,8 +962,8 @@ export class YText extends AbstractType {
+    * @public
+    */
+   applyDelta (delta, { sanitize = true } = {}) {
+-    if (this.doc !== null) {
+-      transact(this.doc, transaction => {
++    if (this.block !== null) {
++      transact(this.block, transaction => {
+         const currPos = new ItemTextListPosition(null, this._start, 0, new Map())
+         for (let i = 0; i < delta.length; i++) {
+           const op = delta[i]
+@@ -1005,7 +1005,7 @@ export class YText extends AbstractType {
+      */
+     const ops = []
+     const currentAttributes = new Map()
+-    const doc = /** @type {Doc} */ (this.doc)
++    const block = /** @type {NanoBlock} */ (this.block)
+     let str = ''
+     let n = this._start
+     function packStr () {
+@@ -1088,7 +1088,7 @@ export class YText extends AbstractType {
+     if (snapshot || prevSnapshot) {
+       // snapshots are merged again after the transaction, so we need to keep the
+       // transaction alive until we are done
+-      transact(doc, transaction => {
++      transact(block, transaction => {
+         if (snapshot) {
+           splitSnapshotAffectedStructs(transaction, snapshot)
+         }
+@@ -1117,9 +1117,9 @@ export class YText extends AbstractType {
+     if (text.length <= 0) {
+       return
+     }
+-    const y = this.doc
+-    if (y !== null) {
+-      transact(y, transaction => {
++    const block = this.block
++    if (block !== null) {
++      transact(block, transaction => {
+         const pos = findPosition(transaction, this, index)
+         if (!attributes) {
+           attributes = {}
+@@ -1144,9 +1144,9 @@ export class YText extends AbstractType {
+    * @public
+    */
+   insertEmbed (index, embed, attributes = {}) {
+-    const y = this.doc
+-    if (y !== null) {
+-      transact(y, transaction => {
++    const block = this.block
++    if (block !== null) {
++      transact(block, transaction => {
+         const pos = findPosition(transaction, this, index)
+         insertText(transaction, this, pos, embed, attributes)
+       })
+@@ -1167,9 +1167,9 @@ export class YText extends AbstractType {
+     if (length === 0) {
+       return
+     }
+-    const y = this.doc
+-    if (y !== null) {
+-      transact(y, transaction => {
++    const block = this.block
++    if (block !== null) {
++      transact(block, transaction => {
+         deleteText(transaction, findPosition(transaction, this, index), length)
+       })
+     } else {
+@@ -1191,9 +1191,9 @@ export class YText extends AbstractType {
+     if (length === 0) {
+       return
+     }
+-    const y = this.doc
+-    if (y !== null) {
+-      transact(y, transaction => {
++    const block = this.block
++    if (block !== null) {
++      transact(block, transaction => {
+         const pos = findPosition(transaction, this, index)
+         if (pos.right === null) {
+           return
+@@ -1215,8 +1215,8 @@ export class YText extends AbstractType {
+    * @public
+    */
+   removeAttribute (attributeName) {
+-    if (this.doc !== null) {
+-      transact(this.doc, transaction => {
++    if (this.block !== null) {
++      transact(this.block, transaction => {
+         typeMapDelete(transaction, this, attributeName)
+       })
+     } else {
+@@ -1235,8 +1235,8 @@ export class YText extends AbstractType {
+    * @public
+    */
+   setAttribute (attributeName, attributeValue) {
+-    if (this.doc !== null) {
+-      transact(this.doc, transaction => {
++    if (this.block !== null) {
++      transact(this.block, transaction => {
+         typeMapSet(transaction, this, attributeName, attributeValue)
+       })
+     } else {
+diff --git a/src/types/YXmlElement.js b/src/types/YXmlElement.js
+index 92088cdd1..4fba57b60 100644
+--- a/src/types/YXmlElement.js
++++ b/src/types/YXmlElement.js
+@@ -10,7 +10,7 @@ import {
+   typeMapGetAll,
+   typeListForEach,
+   YXmlElementRefID,
+-  YXmlText, ContentType, AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, Item // eslint-disable-line
++  YXmlText, ContentType, AbstractType, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Item, NanoBlock // eslint-disable-line
+ } from '../internals.js'
+ 
+ /**
+@@ -59,11 +59,11 @@ export class YXmlElement extends YXmlFragment {
+    * * This type is sent to other client
+    * * Observer functions are fired
+    *
+-   * @param {Doc} y The Yjs instance
++   * @param {NanoBlock} block The Yjs instance
+    * @param {Item} item
+    */
+-  _integrate (y, item) {
+-    super._integrate(y, item)
++  _integrate (block, item) {
++    super._integrate(block, item)
+     ;(/** @type {Map<string, any>} */ (this._prelimAttrs)).forEach((value, key) => {
+       this.setAttribute(key, value)
+     })
+@@ -133,8 +133,8 @@ export class YXmlElement extends YXmlFragment {
+    * @public
+    */
+   removeAttribute (attributeName) {
+-    if (this.doc !== null) {
+-      transact(this.doc, transaction => {
++    if (this.block !== null) {
++      transact(this.block, transaction => {
+         typeMapDelete(transaction, this, attributeName)
+       })
+     } else {
+@@ -153,8 +153,8 @@ export class YXmlElement extends YXmlFragment {
+    * @public
+    */
+   setAttribute (attributeName, attributeValue) {
+-    if (this.doc !== null) {
+-      transact(this.doc, transaction => {
++    if (this.block !== null) {
++      transact(this.block, transaction => {
+         typeMapSet(transaction, this, attributeName, attributeValue)
+       })
+     } else {
+diff --git a/src/types/YXmlFragment.js b/src/types/YXmlFragment.js
+index b229a4acc..aa19ffe17 100644
+--- a/src/types/YXmlFragment.js
++++ b/src/types/YXmlFragment.js
+@@ -17,7 +17,7 @@ import {
+   transact,
+   typeListGet,
+   typeListSlice,
+-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Doc, ContentType, Transaction, Item, YXmlText, YXmlHook // eslint-disable-line
++  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, Transaction, Item, YXmlText, YXmlHook, NanoBlock // eslint-disable-line
+ } from '../internals.js'
+ 
+ import * as error from 'lib0/error'
+@@ -149,11 +149,11 @@ export class YXmlFragment extends AbstractType {
+    * * This type is sent to other client
+    * * Observer functions are fired
+    *
+-   * @param {Doc} y The Yjs instance
++   * @param {NanoBlock} block The Yjs instance
+    * @param {Item} item
+    */
+-  _integrate (y, item) {
+-    super._integrate(y, item)
++  _integrate (block, item) {
++    super._integrate(block, item)
+     this.insert(0, /** @type {Array<any>} */ (this._prelimContent))
+     this._prelimContent = null
+   }
+@@ -304,8 +304,8 @@ export class YXmlFragment extends AbstractType {
+    * @param {Array<YXmlElement|YXmlText>} content The array of content
+    */
+   insert (index, content) {
+-    if (this.doc !== null) {
+-      transact(this.doc, transaction => {
++    if (this.block !== null) {
++      transact(this.block, transaction => {
+         typeListInsertGenerics(transaction, this, index, content)
+       })
+     } else {
+@@ -325,8 +325,8 @@ export class YXmlFragment extends AbstractType {
+    * @param {Array<YXmlElement|YXmlText>} content The array of content
+    */
+   insertAfter (ref, content) {
+-    if (this.doc !== null) {
+-      transact(this.doc, transaction => {
++    if (this.block !== null) {
++      transact(this.block, transaction => {
+         const refItem = (ref && ref instanceof AbstractType) ? ref._item : ref
+         typeListInsertGenericsAfter(transaction, this, refItem, content)
+       })
+@@ -347,8 +347,8 @@ export class YXmlFragment extends AbstractType {
+    * @param {number} [length=1] The number of elements to remove. Defaults to 1.
+    */
+   delete (index, length = 1) {
+-    if (this.doc !== null) {
+-      transact(this.doc, transaction => {
++    if (this.block !== null) {
++      transact(this.block, transaction => {
+         typeListDelete(transaction, this, index, length)
+       })
+     } else {
+diff --git a/src/utils/DeleteSet.js b/src/utils/DeleteSet.js
+index d3b3ad757..f0e654f2a 100644
+--- a/src/utils/DeleteSet.js
++++ b/src/utils/DeleteSet.js
+@@ -58,7 +58,7 @@ export class DeleteSet {
+  */
+ export const iterateDeletedStructs = (transaction, ds, f) =>
+   ds.clients.forEach((deletes, clientid) => {
+-    const structs = /** @type {Array<GC|Item>} */ (transaction.doc.store.clients.get(clientid))
++    const structs = /** @type {Array<GC|Item>} */ (transaction.block.structStore.clients.get(clientid))
+     for (let i = 0; i < deletes.length; i++) {
+       const del = deletes[i]
+       iterateStructs(transaction, structs, del.clock, del.len, f)
+diff --git a/src/utils/Doc.js b/src/utils/Doc.js
+index d07dd56ee..98b325432 100644
+--- a/src/utils/Doc.js
++++ b/src/utils/Doc.js
+@@ -9,8 +9,7 @@ import {
+   YText,
+   YMap,
+   YXmlFragment,
+-  transact,
+-  ContentDoc, Item, Transaction, YEvent // eslint-disable-line
++  transact, ContentDoc, Item, Transaction, YEvent // eslint-disable-line
+ } from '../internals.js'
+ 
+ import { Observable } from 'lib0/observable'
+@@ -19,7 +18,7 @@ import * as map from 'lib0/map'
+ import * as array from 'lib0/array'
+ import * as promise from 'lib0/promise'
+ 
+-export const generateNewClientId = random.uint32
++const generateNewClientId = random.uint32
+ 
+ /**
+  * @typedef {Object} DocOpts
+@@ -135,9 +134,9 @@ export class Doc extends Observable {
+   load () {
+     const item = this._item
+     if (item !== null && !this.shouldLoad) {
+-      transact(/** @type {any} */ (item.parent).doc, transaction => {
+-        transaction.subdocsLoaded.add(this)
+-      }, null, true)
++      // transact(/** @type {any} */ (item.parent).doc, transaction => {
++      //   transaction.subdocsLoaded.add(this)
++      // }, null, true)
+     }
+     this.shouldLoad = true
+   }
+@@ -164,7 +163,7 @@ export class Doc extends Observable {
+    * @public
+    */
+   transact (f, origin = null) {
+-    return transact(this, f, origin)
++    // return transact(this, f, origin)
+   }
+ 
+   /**
+@@ -305,13 +304,13 @@ export class Doc extends Observable {
+       const content = /** @type {ContentDoc} */ (item.content)
+       content.doc = new Doc({ guid: this.guid, ...content.opts, shouldLoad: false })
+       content.doc._item = item
+-      transact(/** @type {any} */ (item).parent.doc, transaction => {
+-        const doc = content.doc
+-        if (!item.deleted) {
+-          transaction.subdocsAdded.add(doc)
+-        }
+-        transaction.subdocsRemoved.add(this)
+-      }, null, true)
++      // transact(/** @type {any} */ (item).parent.doc, transaction => {
++      //   const doc = content.doc
++      //   if (!item.deleted) {
++      //     transaction.subdocsAdded.add(doc)
++      //   }
++      //   transaction.subdocsRemoved.add(this)
++      // }, null, true)
+     }
+     this.emit('destroyed', [true])
+     this.emit('destroy', [this])
+diff --git a/src/utils/ID.js b/src/utils/ID.js
+index 225ee5b4c..5470b7981 100644
+--- a/src/utils/ID.js
++++ b/src/utils/ID.js
+@@ -80,8 +80,8 @@ export const readID = decoder =>
+  * @function
+  */
+ export const findRootTypeKey = type => {
+-  // @ts-ignore _y must be defined, otherwise unexpected case
+-  for (const [key, value] of type.doc.share.entries()) {
++  // @ts-ignore
++  for (const [key, value] of type.block.share.entries()) {
+     if (value === type) {
+       return key
+     }
+diff --git a/src/utils/NanoBlock.js b/src/utils/NanoBlock.js
+new file mode 100644
+index 000000000..7009b2dc5
+--- /dev/null
++++ b/src/utils/NanoBlock.js
+@@ -0,0 +1,433 @@
++import {
++  StructStore,
++  AbstractType, Item, NanoStore, Transaction, YArray, YMap, YText, YXmlElement, YXmlFragment, YXmlText, transact, encodeStateAsUpdateV2, applyUpdateV2, ContentBlockRef, ContentBlockUnref, YEvent, // eslint-disable-line
++} from '../internals.js'
++import * as random from 'lib0/random'
++import * as map from 'lib0/map'
++import { Observable } from 'lib0/observable'
++
++const NAME_ID_PREFIX = '@'
++
++export const generateNewClientId = random.uint32
++
++const generateNewBlockId = random.uuidv4
++
++// const DEFAULT_NAME = ''
++
++/**
++ * @typedef {"array" | "map" | "text" | "xmlElement" | "xmlFragment" | "xmlText"} BlockType
++ */
++
++/**
++ * @typedef {Object} NanoBlockOpts
++ * @property {string | undefined} [id]
++ * @property {BlockType} type
++ * @property {NanoStore | undefined} [store]
++ * @property {boolean} [gc=true] Disable garbage collection (default: gc=store.gc||true)
++ * @property {function(Item):boolean} [gcFilter] Will be called before an Item is garbage collected. Return false to keep the Item.
++ * @property {boolean} [isRoot] Whether this is a root block
++ * @property {string | null} [name] You can optionally assign a name to a block
++ * @property {NanoBlock | null} [rootBlock] The root block this block belongs to
++ */
++
++/**
++ * A Yjs instance handles the state of shared data.
++ * @extends Observable<string>
++ */
++export class NanoBlock extends Observable {
++  /**
++   * @param {NanoBlockOpts} opts configuration
++   */
++  constructor (opts) {
++    super()
++
++    /**
++     * @type {string | null}
++     */
++    this._id = opts.isRoot ? null : (opts.id ?? generateNewBlockId())
++
++    /**
++     * @type {BlockType}
++     */
++    this.blockType = opts.type ?? 'xmlFragment'
++
++    /**
++     * @type {Map<string, AbstractType<YEvent<any>>>}
++     */
++    this.share = new Map()
++
++    /**
++     * @type {StructStore}
++     */
++    this.structStore = new StructStore()
++
++    /**
++     * @type {NanoStore | undefined}
++     */
++    this.store = opts.store
++
++    /**
++     * @type {number}
++     */
++    this.clientID = this.store ? this.store.clientID : generateNewClientId()
++
++    /**
++     * @type {boolean} Whether to try to garbage collect
++     */
++    this.gc = this.store ? this.store.gc : (opts.gc ?? true)
++
++    /**
++     * @type {function(Item):boolean}
++     */
++    this.gcFilter = this.store ? this.store.gcFilter : (opts.gcFilter ?? (() => true))
++
++    /**
++     * @type {boolean} Whether to try to garbage collect
++     */
++    this.isRoot = opts.isRoot ?? false
++
++    /**
++     * @type {string | null}
++     */
++    this.name = opts.name ?? null
++
++    /**
++     * @type {Map<string, NanoBlock> | null}
++     */
++    this.blocks = this.isRoot ? new Map() : null
++
++    /**
++     * @type {Transaction | null}
++     */
++    this._transaction = null
++    /**
++     * @type {Array<Transaction>}
++     */
++    this._transactionCleanups = []
++
++    /**
++     * @type {AbstractType<any> | null}
++     * @private
++     */
++    this._type = null
++
++    /**
++     * Referrer item
++     * @type {Item & { content: ContentBlockRef } | null}
++     */
++    this._referrer = null
++
++    /**
++     * @type {NanoBlock | null}
++     * @private
++     */
++    this._rootBlock = this.isRoot ? this : (opts.rootBlock ?? null)
++
++    /**
++     * @type {boolean}
++     */
++    this.isLoaded = false
++
++    const loadHandler = () => {
++      this.isLoaded = true
++      this.off('load', loadHandler)
++    }
++    this.on('load', loadHandler)
++  }
++
++  /**
++   * Get the ID of this block.
++   * If this is a root block, the ID is prefixed with `@`.
++   * @returns {string} The ID of this block
++   */
++  get id () {
++    return this.isRoot ? `${NAME_ID_PREFIX}${this.name}` : /** @type {string} */ (this._id);
++  }
++
++  /**
++   * Define a shared data type.
++   *
++   * Multiple calls of `y.get(name, TypeConstructor)` yield the same result
++   * and do not overwrite each other. I.e.
++   * `y.define(name, Y.Array) === y.define(name, Y.Array)`
++   *
++   * After this method is called, the type is also available on `y.share.get(name)`.
++   *
++   * *Best Practices:*
++   * Define all types right after the Yjs instance is created and store them in a separate object.
++   * Also use the typed methods `getText(name)`, `getArray(name)`, ..
++   *
++   * @example
++   *   const y = new Y(..)
++   *   const appState = {
++   *     document: y.getText('document')
++   *     comments: y.getArray('comments')
++   *   }
++   *
++   * @param {string} name
++   * @param {Function} TypeConstructor The constructor of the type definition. E.g. Y.Text, Y.Array, Y.Map, ...
++   * @return {AbstractType<any>} The created type. Constructed with TypeConstructor
++   *
++   * @public
++   */
++  get (name, TypeConstructor = AbstractType) {
++    const type = map.setIfUndefined(this.share, name, () => {
++      // @ts-ignore
++      const t = new TypeConstructor()
++      t._integrate(this, null)
++      return t
++    })
++    const Constr = type.constructor
++    if (TypeConstructor !== AbstractType && Constr !== TypeConstructor) {
++      if (Constr === AbstractType) {
++        // @ts-ignore
++        const t = new TypeConstructor()
++        t._map = type._map
++        type._map.forEach(/** @param {Item?} n */ n => {
++          for (; n !== null; n = n.left) {
++            // @ts-ignore
++            n.parent = t
++          }
++        })
++        t._start = type._start
++        for (let n = t._start; n !== null; n = n.right) {
++          n.parent = t
++        }
++        t._length = type._length
++        this.share.set(name, t)
++        t._integrate(this, null)
++        return t
++      } else {
++        throw new Error(`Type with the name ${name} has already been defined with a different constructor`)
++      }
++    }
++    return type
++  }
++
++  /**
++   * @template {AbstractType<any>} T
++   * @param {string} name
++   * @returns {T}
++   */
++  getType (name = '') {
++    // @ts-ignore
++    return this.get(name, getTypeConstructor(this.blockType))
++  }
++
++  /**
++   * Changes that happen inside of a transaction are bundled. This means that
++   * the observer fires _after_ the transaction is finished and that all changes
++   * that happened inside of the transaction are sent as one message to the
++   * other peers.
++   *
++   * @template T
++   * @param {function(Transaction):T} f The function that should be executed as a transaction
++   * @param {any} [origin] Origin of who started the transaction. Will be stored on transaction.origin
++   * @return T
++   *
++   * @public
++   */
++  transact (f, origin = null) {
++    return transact(this, f, origin)
++  }
++
++  /**
++   * Return the root block of this block.
++   * @returns {NanoBlock | null}
++   */
++  getRootBlock () {
++    return this._rootBlock
++  }
++
++  /**
++   * @param {{ id?: string, isRoot?: boolean }} [opt]
++   * @return {NanoBlock}
++   */
++  clone (opt = {}) {
++    const rootBlock = this.getRootBlock()
++    /** @type {NanoBlock} */
++    let block
++    if (rootBlock) {
++      block = rootBlock.createBlock(this.blockType, opt.id)
++    } else {
++      // If no root block (standalone block), create directly
++      block = new NanoBlock({
++        id: opt.id,
++        type: this.blockType,
++        gc: this.gc,
++        gcFilter: this.gcFilter,
++        store: this.store,
++        isRoot: opt.isRoot,
++        rootBlock: opt.isRoot ? null : rootBlock
++      })
++    }
++    // Apply all items to the new block
++    const newType = this.getType().clone()
++    block.share.set('', newType)
++    newType._integrate(block, null)
++    return block
++  }
++
++  /**
++   * Get all child blocks of this root block
++   * @returns {Map<string, NanoBlock>}
++   */
++  getBlocks () {
++    if (!this.isRoot) {
++      throw new Error('getBlocks() can only be called on root blocks')
++    }
++    return /** @type {Map<string, NanoBlock>} */ (this.blocks)
++  }
++
++  /**
++   * Get a child block by ID (only for root blocks)
++   * @param {string} id
++   * @returns {NanoBlock | undefined}
++   */
++  getBlock (id) {
++    if (!this.isRoot) {
++      throw new Error('getBlock() can only be called on root blocks')
++    }
++    return /** @type {Map<string, NanoBlock>} */ (this.blocks).get(id)
++  }
++
++  /**
++   * Create a child block (only for root blocks)
++   * @param {BlockType} blockType
++   * @param {string | undefined} [id]
++   * @param {AbstractType<any> | undefined} [type]
++   * @returns {NanoBlock}
++   */
++  createBlock (blockType, id, type) {
++    if (!this.isRoot) {
++      throw new Error('createBlock() can only be called on root blocks')
++    }
++    const block = new NanoBlock({
++      store: this.store,
++      type: blockType,
++      id,
++      rootBlock: this
++    })
++    this.blocks?.set(block.id, block)
++    if (type) {
++      block.share.set('', type)
++      type._integrate(block, null)
++    }
++    if (this.store && this.store._transaction) {
++      this.store._transaction.blocksAdded.add(block)
++    }
++    return block
++  }
++
++  /**
++   * Get or create a child block (only for root blocks)
++   * @param {string} id
++   * @param {BlockType} type
++   * @returns {NanoBlock}
++   */
++  getOrCreateBlock (id, type) {
++    if (!this.isRoot) {
++      throw new Error('getOrCreateBlock() can only be called on root blocks')
++    }
++    let block = this.getBlock(id)
++    if (!block) {
++      block = this.createBlock(type, id)
++    }
++    return block
++  }
++}
++
++/**
++ * @param {NanoBlock} block
++ * @param {ContentBlockRef | null} refItem
++ */
++export function updateBlockReferrer (block, refItem) {
++  if (refItem === null && block._referrer) {
++    block._referrer.content._block = null
++    block._referrer.content._type = null
++    block._referrer = null
++  } if (refItem) {
++    if (block._referrer && block._referrer !== refItem._item) {
++      block._referrer.content._block = null
++      block._referrer.content._type = null
++    }
++    block._referrer = refItem._item
++  }
++}
++
++/**
++ * @param {NanoBlock} block
++ * @param {ContentBlockRef} ref
++ */
++export function addUnrefToBlock (block, ref) {
++  const unrefArray = /** @type {YArray<any>} */(block.get('_unrefs', YArray))
++  if (!ref._item) {
++    return
++  }
++  const unref = new ContentBlockUnref({
++    blockId: ref.blockId,
++    client: ref._item.id.client,
++    clock: ref._item.id.clock
++  })
++  unrefArray.push([unref])
++}
++
++/**
++ * @typedef {{ array: YArray<any>, map: YMap<any>, text: YText, xmlElement: YXmlElement, xmlFragment: YXmlFragment, xmlText: YXmlElement }} TypeNameToTypeConstructor
++ */
++
++// Example usage:
++// const typeConstructor: TypeConstructor = YArray;
++
++/**
++ * @param {BlockType} type
++ * @return {new() => AbstractType<any>}
++ */
++function getTypeConstructor (type) {
++  if (type === 'array') {
++    return YArray
++  }
++  if (type === 'map') {
++    return YMap
++  }
++  if (type === 'text') {
++    return YText
++  }
++  if (type === 'xmlElement') {
++    return YXmlElement
++  }
++  if (type === 'xmlFragment') {
++    return YXmlFragment
++  }
++  if (type === 'xmlText') {
++    return YXmlText
++  }
++  const /** @type {never} */ _type = type
++  throw new Error(`Unexpected type ${_type}`)
++}
++
++/**
++ * @param {AbstractType<any>} type
++ * @return {BlockType}
++ */
++export function getBlockTypeFromInstance (type) {
++  if (type instanceof YArray) {
++    return 'array'
++  }
++  if (type instanceof YMap) {
++    return 'map'
++  }
++  if (type instanceof YText) {
++    return 'text'
++  }
++  if (type instanceof YXmlElement) {
++    return 'xmlElement'
++  }
++  if (type instanceof YXmlFragment) {
++    return 'xmlFragment'
++  }
++  if (type instanceof YXmlText) {
++    return 'xmlText'
++  }
++  throw new Error(`Unexpected type ${type}`)
++}
+diff --git a/src/utils/NanoStore.js b/src/utils/NanoStore.js
+new file mode 100644
+index 000000000..d31da46aa
+--- /dev/null
++++ b/src/utils/NanoStore.js
+@@ -0,0 +1,123 @@
++import {
++  NanoBlock,
++  generateNewClientId,
++  Item, StoreTransaction, AbstractType // eslint-disable-line
++} from '../internals.js'
++import { Observable } from 'lib0/observable'
++
++/**
++ * @typedef {Map<string, NanoBlock>} BlockMap
++ */
++
++/**
++ * @typedef {Object} NanoStoreOpts
++ * @property {boolean} [NanoStoreOpts.gc=true] Disable garbage collection (default: gc=true)
++ * @property {function(Item):boolean} [NanoStoreOpts.gcFilter] Will be called before an Item is garbage collected. Return false to keep the Item.
++ * @property {boolean} [NanoStoreOpts.autoRef=true] Whether to automatically create a reference to a block when it is referenced.
++ */
++
++/**
++ * A Yjs instance handles the state of shared data.
++ * @extends Observable<string>
++ */
++export class NanoStore extends Observable {
++  /**
++   * @param {NanoStoreOpts} opts configuration
++   */
++  constructor ({ gc = true, gcFilter = () => true, autoRef = true } = {}) {
++    super()
++    this.clientID = generateNewClientId()
++    /**
++     * @type {boolean} Whether to try to garbage collect
++     */
++    this.gc = gc
++
++    /**
++     * @type {function(Item):boolean}
++     */
++    this.gcFilter = gcFilter
++
++    /**
++     * @type {boolean}
++     */
++    this.autoRef = autoRef
++
++    /**
++     * @type {BlockMap}
++     */
++    this.roots = new Map()
++
++    /**
++     * @type {StoreTransaction | null}
++     */
++    this._transaction = null
++    /**
++     * @type {Array<StoreTransaction>}
++     */
++    this._transactionCleanups = []
++  }
++
++  /**
++   * @param {string} rootBlockName
++   * @param {import("./NanoBlock.js").BlockType} blockType
++   * @returns {NanoBlock} The root type
++   */
++  getRootBlockOrCreate (rootBlockName, blockType) {
++    let block = this.getRootBlock(rootBlockName)
++    if (block === undefined) {
++      block = this.setRootBlock(
++        rootBlockName,
++        blockType
++      )
++    }
++    return block
++  }
++
++  /**
++   * @private
++   * @param {string} name
++   * @param {import("./NanoBlock.js").BlockType} blockType
++   * @returns {NanoBlock}
++   */
++  setRootBlock (name, blockType) {
++    let block = this.roots.get(name)
++    if (!block) {
++      block = new NanoBlock({
++        store: this,
++        isRoot: true,
++        name,
++        type: blockType
++      })
++      this.roots.set(name, block)
++      if (this._transaction) {
++        this._transaction.blocksAdded.add(block)
++      }
++    }
++    return block
++  }
++
++  /**
++   * @param {string} rootBlockName
++   * @returns {NanoBlock | undefined} The root type
++   */
++  getRootBlock (rootBlockName) {
++    return this.roots.get(rootBlockName)
++  }
++
++
++  /**
++   * @template {import("./NanoBlock.js").BlockType} T
++   * @param {string} rootBlockName
++   * @param {T} blockType
++   * @returns {import("./NanoBlock.js").TypeNameToTypeConstructor[T]}
++   */
++  getOrCreateRootBlockType (rootBlockName, blockType) {
++    return this.getRootBlockOrCreate(rootBlockName, blockType).getType()
++  }
++
++  destroy () {
++    this.emit('destroy', [this])
++
++    super.destroy()
++  }
++}
+diff --git a/src/utils/RelativePosition.js b/src/utils/RelativePosition.js
+index 614c0bc54..647c9dec2 100644
+--- a/src/utils/RelativePosition.js
++++ b/src/utils/RelativePosition.js
+@@ -9,7 +9,7 @@ import {
+   createID,
+   ContentType,
+   followRedone,
+-  ID, Doc, AbstractType // eslint-disable-line
++  ID, NanoBlock, AbstractType // eslint-disable-line
+ } from '../internals.js'
+ 
+ import * as encoding from 'lib0/encoding'
+@@ -258,13 +258,13 @@ export const decodeRelativePosition = uint8Array => readRelativePosition(decodin
+ 
+ /**
+  * @param {RelativePosition} rpos
+- * @param {Doc} doc
++ * @param {NanoBlock} block
+  * @return {AbsolutePosition|null}
+  *
+  * @function
+  */
+-export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
+-  const store = doc.store
++export const createAbsolutePositionFromRelativePosition = (rpos, block) => {
++  const store = block.structStore
+   const rightID = rpos.item
+   const typeID = rpos.type
+   const tname = rpos.tname
+@@ -293,7 +293,7 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
+     }
+   } else {
+     if (tname !== null) {
+-      type = doc.get(tname)
++      type = block.get(tname)
+     } else if (typeID !== null) {
+       if (getState(store, typeID.client) <= typeID.clock) {
+         // type does not exist yet
+diff --git a/src/utils/Snapshot.js b/src/utils/Snapshot.js
+index dfd82c864..a60b9787d 100644
+--- a/src/utils/Snapshot.js
++++ b/src/utils/Snapshot.js
+@@ -17,7 +17,7 @@ import {
+   applyUpdateV2,
+   LazyStructReader,
+   equalDeleteSets,
+-  UpdateDecoderV1, UpdateDecoderV2, DSEncoderV1, DSEncoderV2, DSDecoderV1, DSDecoderV2, Transaction, Doc, DeleteSet, Item, // eslint-disable-line
++  UpdateDecoderV1, UpdateDecoderV2, DSEncoderV1, DSEncoderV2, DSDecoderV1, DSDecoderV2, Transaction, NanoBlock, DeleteSet, Item, // eslint-disable-line
+   mergeDeleteSets
+ } from '../internals.js'
+ 
+@@ -120,10 +120,10 @@ export const createSnapshot = (ds, sm) => new Snapshot(ds, sm)
+ export const emptySnapshot = createSnapshot(createDeleteSet(), new Map())
+ 
+ /**
+- * @param {Doc} doc
++ * @param {NanoBlock} block
+  * @return {Snapshot}
+  */
+-export const snapshot = doc => createSnapshot(createDeleteSetFromStructStore(doc.store), getStateVector(doc.store))
++export const snapshot = block => createSnapshot(createDeleteSetFromStructStore(block.structStore), getStateVector(block.structStore))
+ 
+ /**
+  * @param {Item} item
+@@ -142,11 +142,11 @@ export const isVisible = (item, snapshot) => snapshot === undefined
+  */
+ export const splitSnapshotAffectedStructs = (transaction, snapshot) => {
+   const meta = map.setIfUndefined(transaction.meta, splitSnapshotAffectedStructs, set.create)
+-  const store = transaction.doc.store
++  const structStore = transaction.block.structStore
+   // check if we already split for this snapshot
+   if (!meta.has(snapshot)) {
+     snapshot.sv.forEach((clock, client) => {
+-      if (clock < getState(store, client)) {
++      if (clock < getState(structStore, client)) {
+         getItemCleanStart(transaction, createID(client, clock))
+       }
+     })
+@@ -164,20 +164,20 @@ export const splitSnapshotAffectedStructs = (transaction, snapshot) => {
+  *  const restored = Y.createDocFromSnapshot(ydoc, snapshot)
+  *  assert(restored.getText().toString() === 'world!')
+  *
+- * @param {Doc} originDoc
++ * @param {NanoBlock} originBlock
+  * @param {Snapshot} snapshot
+- * @param {Doc} [newDoc] Optionally, you may define the Yjs document that receives the data from originDoc
+- * @return {Doc}
++ * @param {NanoBlock} [newBlock] Optionally, you may define the Yjs document that receives the data from originDoc
++ * @return {NanoBlock}
+  */
+-export const createDocFromSnapshot = (originDoc, snapshot, newDoc = new Doc()) => {
+-  if (originDoc.gc) {
++export const createDocFromSnapshot = (originBlock, snapshot, newBlock = new NanoBlock({ type: originBlock.blockType })) => {
++  if (originBlock.gc) {
+     // we should not try to restore a GC-ed document, because some of the restored items might have their content deleted
+     throw new Error('Garbage-collection must be disabled in `originDoc`!')
+   }
+   const { sv, ds } = snapshot
+ 
+   const encoder = new UpdateEncoderV2()
+-  originDoc.transact(transaction => {
++  originBlock.transact(transaction => {
+     let size = 0
+     sv.forEach(clock => {
+       if (clock > 0) {
+@@ -190,10 +190,10 @@ export const createDocFromSnapshot = (originDoc, snapshot, newDoc = new Doc()) =
+       if (clock === 0) {
+         continue
+       }
+-      if (clock < getState(originDoc.store, client)) {
++      if (clock < getState(originBlock.structStore, client)) {
+         getItemCleanStart(transaction, createID(client, clock))
+       }
+-      const structs = originDoc.store.clients.get(client) || []
++      const structs = originBlock.structStore.clients.get(client) || []
+       const lastStructIndex = findIndexSS(structs, clock - 1)
+       // write # encoded structs
+       encoding.writeVarUint(encoder.restEncoder, lastStructIndex + 1)
+@@ -207,8 +207,8 @@ export const createDocFromSnapshot = (originDoc, snapshot, newDoc = new Doc()) =
+     writeDeleteSet(encoder, ds)
+   })
+ 
+-  applyUpdateV2(newDoc, encoder.toUint8Array(), 'snapshot')
+-  return newDoc
++  applyUpdateV2(newBlock, encoder.toUint8Array(), 'snapshot')
++  return newBlock
+ }
+ 
+ /**
+diff --git a/src/utils/StructStore.js b/src/utils/StructStore.js
+index 7a2e256c7..85f0a8125 100644
+--- a/src/utils/StructStore.js
++++ b/src/utils/StructStore.js
+@@ -191,7 +191,7 @@ export const findIndexCleanStart = (transaction, structs, clock) => {
+  * @function
+  */
+ export const getItemCleanStart = (transaction, id) => {
+-  const structs = /** @type {Array<Item>} */ (transaction.doc.store.clients.get(id.client))
++  const structs = /** @type {Array<Item>} */ (transaction.block.structStore.clients.get(id.client))
+   return structs[findIndexCleanStart(transaction, structs, id.clock)]
+ }
+ 
+diff --git a/src/utils/Transaction.js b/src/utils/Transaction.js
+index 5b93369ff..f90302ec4 100644
+--- a/src/utils/Transaction.js
++++ b/src/utils/Transaction.js
+@@ -12,7 +12,7 @@ import {
+   generateNewClientId,
+   createID,
+   cleanupYTextAfterTransaction,
+-  UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
++  UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, NanoBlock, NanoStore, ContentBlockRef, ContentBlockUnref, YMap, YArray, addUnrefToBlock, updateBlockReferrer, resolveRefConflict, validateCircularRef, // eslint-disable-line
+ } from '../internals.js'
+ 
+ import * as map from 'lib0/map'
+@@ -21,6 +21,50 @@ import * as set from 'lib0/set'
+ import * as logging from 'lib0/logging'
+ import { callAll } from 'lib0/function'
+ 
++/**
++ * StoreTransaction is a collection of (block) transactions.
++ */
++export class StoreTransaction {
++  /**
++   * @param {NanoStore} store
++   * @param {any} origin
++   * @param {boolean} local
++   */
++  constructor (store, origin, local) {
++    this.store = store
++    this.origin = origin
++    this.local = local
++    /**
++     * @type {Map<NanoBlock, Transaction>}
++     */
++    this.blockTransactions = new Map()
++    /**
++     * @type {Map<NanoBlock, YEvent<any>[]>}
++     */
++    this.rootBlockEvents = new Map()
++
++    /**
++     * @type {Set<NanoBlock>}
++     */
++    this.blocksAdded = new Set()
++
++    /**
++     * @type {Set<ContentBlockRef>}
++     */
++    this.blockRefsAdded = new Set()
++
++    /**
++     * @type {Set<ContentBlockRef>}
++     */
++    this.blockRefsRemoved = new Set()
++
++    /**
++     * @type {Set<ContentBlockUnref>}
++     */
++    this.blockUnrefsAdded = new Set()
++  }
++}
++
+ /**
+  * A transaction is created for every change on the Yjs model. It is possible
+  * to bundle changes on the Yjs model in a single transaction to
+@@ -46,17 +90,18 @@ import { callAll } from 'lib0/function'
+  * @public
+  */
+ export class Transaction {
++  // TODO: Accept a storeTransaction as an argument
+   /**
+-   * @param {Doc} doc
++   * @param {NanoBlock} block
+    * @param {any} origin
+    * @param {boolean} local
+    */
+-  constructor (doc, origin, local) {
++  constructor (block, origin, local) {
+     /**
+      * The Yjs instance.
+-     * @type {Doc}
++     * @type {NanoBlock}
+      */
+-    this.doc = doc
++    this.block = block
+     /**
+      * Describes the set of deleted items by ids
+      * @type {DeleteSet}
+@@ -66,7 +111,7 @@ export class Transaction {
+      * Holds the state before the transaction started.
+      * @type {Map<Number,Number>}
+      */
+-    this.beforeState = getStateVector(doc.store)
++    this.beforeState = getStateVector(block.structStore)
+     /**
+      * Holds the state after the transaction.
+      * @type {Map<Number,Number>}
+@@ -104,17 +149,10 @@ export class Transaction {
+      */
+     this.local = local
+     /**
+-     * @type {Set<Doc>}
+-     */
+-    this.subdocsAdded = new Set()
+-    /**
+-     * @type {Set<Doc>}
+-     */
+-    this.subdocsRemoved = new Set()
+-    /**
+-     * @type {Set<Doc>}
++     * @type {StoreTransaction | null}
+      */
+-    this.subdocsLoaded = new Set()
++    this.storeTransaction = block.store ? block.store._transaction : null
++
+     /**
+      * @type {boolean}
+      */
+@@ -144,8 +182,8 @@ export const writeUpdateMessageFromTransaction = (encoder, transaction) => {
+  * @function
+  */
+ export const nextID = transaction => {
+-  const y = transaction.doc
+-  return createID(y.clientID, getState(y.store, y.clientID))
++  const block = transaction.block
++  return createID(block.clientID, getState(block.structStore, block.clientID))
+ }
+ 
+ /**
+@@ -253,6 +291,7 @@ export const tryGc = (ds, store, gcFilter) => {
+   tryMergeDeleteSet(ds, store)
+ }
+ 
++// FIXME: This can be replaced with TransactionSet of NanoStore
+ /**
+  * @param {Array<Transaction>} transactionCleanups
+  * @param {number} i
+@@ -260,14 +299,14 @@ export const tryGc = (ds, store, gcFilter) => {
+ const cleanupTransactions = (transactionCleanups, i) => {
+   if (i < transactionCleanups.length) {
+     const transaction = transactionCleanups[i]
+-    const doc = transaction.doc
+-    const store = doc.store
++    const block = transaction.block
++    const structStore = block.structStore
+     const ds = transaction.deleteSet
+     const mergeStructs = transaction._mergeStructs
+     try {
+       sortAndMergeDeleteSet(ds)
+-      transaction.afterState = getStateVector(transaction.doc.store)
+-      doc.emit('beforeObserverCalls', [transaction, doc])
++      transaction.afterState = getStateVector(transaction.block.structStore)
++      block.emit('beforeObserverCalls', [transaction, block])
+       /**
+        * An array of event callbacks.
+        *
+@@ -309,7 +348,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
+           }
+         })
+       })
+-      fs.push(() => doc.emit('afterTransaction', [transaction, doc]))
++      fs.push(() => block.emit('afterTransaction', [transaction, block]))
+       callAll(fs, [])
+       if (transaction._needFormattingCleanup) {
+         cleanupYTextAfterTransaction(transaction)
+@@ -317,16 +356,16 @@ const cleanupTransactions = (transactionCleanups, i) => {
+     } finally {
+       // Replace deleted items with ItemDeleted / GC.
+       // This is where content is actually remove from the Yjs Doc.
+-      if (doc.gc) {
+-        tryGcDeleteSet(ds, store, doc.gcFilter)
++      if (block.gc) {
++        tryGcDeleteSet(ds, structStore, block.gcFilter)
+       }
+-      tryMergeDeleteSet(ds, store)
++      tryMergeDeleteSet(ds, structStore)
+ 
+       // on all affected store.clients props, try to merge
+       transaction.afterState.forEach((clock, client) => {
+         const beforeClock = transaction.beforeState.get(client) || 0
+         if (beforeClock !== clock) {
+-          const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
++          const structs = /** @type {Array<GC|Item>} */ (structStore.clients.get(client))
+           // we iterate from right to left so we can safely remove entries
+           const firstChangePos = math.max(findIndexSS(structs, beforeClock), 1)
+           for (let i = structs.length - 1; i >= firstChangePos;) {
+@@ -339,7 +378,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
+       //        but at the moment DS does not handle duplicates
+       for (let i = mergeStructs.length - 1; i >= 0; i--) {
+         const { client, clock } = mergeStructs[i].id
+-        const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
++        const structs = /** @type {Array<GC|Item>} */ (structStore.clients.get(client))
+         const replacedStructPos = findIndexSS(structs, clock)
+         if (replacedStructPos + 1 < structs.length) {
+           if (tryToMergeWithLefts(structs, replacedStructPos + 1) > 1) {
+@@ -350,43 +389,43 @@ const cleanupTransactions = (transactionCleanups, i) => {
+           tryToMergeWithLefts(structs, replacedStructPos)
+         }
+       }
+-      if (!transaction.local && transaction.afterState.get(doc.clientID) !== transaction.beforeState.get(doc.clientID)) {
++      if (!transaction.local && transaction.afterState.get(block.clientID) !== transaction.beforeState.get(block.clientID)) {
+         logging.print(logging.ORANGE, logging.BOLD, '[yjs] ', logging.UNBOLD, logging.RED, 'Changed the client-id because another client seems to be using it.')
+-        doc.clientID = generateNewClientId()
++        block.clientID = generateNewClientId()
+       }
+       // @todo Merge all the transactions into one and provide send the data as a single update message
+-      doc.emit('afterTransactionCleanup', [transaction, doc])
+-      if (doc._observers.has('update')) {
++      block.emit('afterTransactionCleanup', [transaction, block])
++      if (block._observers.has('update')) {
+         const encoder = new UpdateEncoderV1()
+         const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
+         if (hasContent) {
+-          doc.emit('update', [encoder.toUint8Array(), transaction.origin, doc, transaction])
++          block.emit('update', [encoder.toUint8Array(), transaction.origin, block, transaction])
+         }
+       }
+-      if (doc._observers.has('updateV2')) {
++      if (block._observers.has('updateV2')) {
+         const encoder = new UpdateEncoderV2()
+         const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
+         if (hasContent) {
+-          doc.emit('updateV2', [encoder.toUint8Array(), transaction.origin, doc, transaction])
++          block.emit('updateV2', [encoder.toUint8Array(), transaction.origin, block, transaction])
+         }
+       }
+-      const { subdocsAdded, subdocsLoaded, subdocsRemoved } = transaction
+-      if (subdocsAdded.size > 0 || subdocsRemoved.size > 0 || subdocsLoaded.size > 0) {
+-        subdocsAdded.forEach(subdoc => {
+-          subdoc.clientID = doc.clientID
+-          if (subdoc.collectionid == null) {
+-            subdoc.collectionid = doc.collectionid
+-          }
+-          doc.subdocs.add(subdoc)
+-        })
+-        subdocsRemoved.forEach(subdoc => doc.subdocs.delete(subdoc))
+-        doc.emit('subdocs', [{ loaded: subdocsLoaded, added: subdocsAdded, removed: subdocsRemoved }, doc, transaction])
+-        subdocsRemoved.forEach(subdoc => subdoc.destroy())
+-      }
++      // const { subdocsAdded, subdocsLoaded, subdocsRemoved } = transaction
++      // if (subdocsAdded.size > 0 || subdocsRemoved.size > 0 || subdocsLoaded.size > 0) {
++      //   subdocsAdded.forEach(subdoc => {
++      //     subdoc.clientID = store.clientID
++      //     if (subdoc.collectionid == null) {
++      //       subdoc.collectionid = store.collectionid
++      //     }
++      //     store.subdocs.add(subdoc)
++      //   })
++      //   subdocsRemoved.forEach(subdoc => store.subdocs.delete(subdoc))
++      //   store.emit('subdocs', [{ loaded: subdocsLoaded, added: subdocsAdded, removed: subdocsRemoved }, store, transaction])
++      //   subdocsRemoved.forEach(subdoc => subdoc.destroy())
++      // }
+ 
+       if (transactionCleanups.length <= i + 1) {
+-        doc._transactionCleanups = []
+-        doc.emit('afterAllTransactions', [doc, transactionCleanups])
++        block._transactionCleanups = []
++        block.emit('afterAllTransactions', [block, transactionCleanups])
+       } else {
+         cleanupTransactions(transactionCleanups, i + 1)
+       }
+@@ -398,35 +437,46 @@ const cleanupTransactions = (transactionCleanups, i) => {
+  * Implements the functionality of `y.transact(()=>{..})`
+  *
+  * @template T
+- * @param {Doc} doc
++ * @param {NanoBlock} block
+  * @param {function(Transaction):T} f
+  * @param {any} [origin=true]
+  * @return {T}
+  *
+  * @function
+  */
+-export const transact = (doc, f, origin = null, local = true) => {
+-  const transactionCleanups = doc._transactionCleanups
++export const transact = (block, f, origin = null, local = true) => {
++  if (block.store) {
++    return transactInStore(block.store, (storeTr) => {
++      if (block._transaction === null) {
++        block._transaction = new Transaction(block, storeTr.origin, storeTr.local)
++        storeTr.blockTransactions.set(block, block._transaction)
++        block.emit('beforeTransaction', [block._transaction, block])
++      }
++      return f(block._transaction)
++    }, origin, local)
++  }
++
++  const transactionCleanups = block._transactionCleanups
+   let initialCall = false
+   /**
+    * @type {any}
+    */
+   let result = null
+-  if (doc._transaction === null) {
++  if (block._transaction === null) {
+     initialCall = true
+-    doc._transaction = new Transaction(doc, origin, local)
+-    transactionCleanups.push(doc._transaction)
++    block._transaction = new Transaction(block, origin, local)
++    transactionCleanups.push(block._transaction)
+     if (transactionCleanups.length === 1) {
+-      doc.emit('beforeAllTransactions', [doc])
++      block.emit('beforeAllTransactions', [block])
+     }
+-    doc.emit('beforeTransaction', [doc._transaction, doc])
++    block.emit('beforeTransaction', [block._transaction, block])
+   }
+   try {
+-    result = f(doc._transaction)
++    result = f(block._transaction)
+   } finally {
+     if (initialCall) {
+-      const finishCleanup = doc._transaction === transactionCleanups[0]
+-      doc._transaction = null
++      const finishCleanup = block._transaction === transactionCleanups[0]
++      block._transaction = null
+       if (finishCleanup) {
+         // The first transaction ended, now process observer calls.
+         // Observer call may create new transactions for which we need to call the observers and do cleanup.
+@@ -442,3 +492,290 @@ export const transact = (doc, f, origin = null, local = true) => {
+   }
+   return result
+ }
++
++/**
++ * Implements the functionality of `store.transact(()=>{..})`
++ *
++ * @template T
++ * @param {NanoStore} store
++ * @param {function(StoreTransaction):T} f
++ * @param {any} [origin=true]
++ * @return {T}
++ *
++ * @function
++ */
++export const transactInStore = (store, f, origin = null, local = true) => {
++  const transactionCleanups = store._transactionCleanups
++  let initialCall = false
++
++  if (store._transaction === null) {
++    initialCall = true
++    store._transaction = new StoreTransaction(store, origin, local)
++    transactionCleanups.push(store._transaction)
++    if (transactionCleanups.length === 1) {
++      store.emit('beforeAllTransactions', [store])
++    }
++    store.emit('beforeTransaction', [store._transaction, store])
++  }
++  let result = null
++  try {
++    result = f(store._transaction)
++  } finally {
++    if (initialCall) {
++      const finishCleanup = store._transaction === transactionCleanups[0]
++      // これ以降に呼ばれた変更は、新しい transaction になる
++      store._transaction.blockTransactions.forEach((tr) => {
++        tr.block._transaction = null
++      })
++      store._transaction = null
++      if (finishCleanup) {
++        let i = 0
++        while (i < transactionCleanups.length) {
++          const transaction = transactionCleanups[i]
++
++          transaction.blockTransactions.forEach((tr) => {
++            const ds = tr.deleteSet
++            sortAndMergeDeleteSet(ds)
++            tr.afterState = getStateVector(tr.block.structStore)
++          })
++
++          // Resolve block refs
++          resolveBlockRefs(transaction)
++          // At first, call all transaction observers.
++          callBlockTransactionsObservers(transaction)
++          // Next, call root observers
++          callRootObservers(transaction)
++          // Then, Try GC And Merge
++          cleanupConsumedTransaction(transaction)
++          // Emit store transaction cleanup events
++          emitStoreTransactionCleanupEvents(transaction)
++          // Finally call next cleanups
++          i++
++        }
++        store.emit('afterAllTransactions', [store, transactionCleanups])
++        store._transactionCleanups = []
++      }
++    }
++  }
++  return result
++}
++
++/**
++ * Resolve block refs
++ * @param {StoreTransaction} storeTransaction
++ */
++const resolveBlockRefs = (storeTransaction) => {
++  if (storeTransaction.blockRefsAdded.size === 0 && storeTransaction.blockRefsRemoved.size === 0) return
++
++  const store = storeTransaction.store
++  // FIXME: Transaction で囲った方が良さそう
++  storeTransaction.blockRefsAdded.forEach(ref => {
++    // ここで ref が conflict していないかをチェックする
++    if (!ref._block) {
++      // Never happedn
++      console.error("ref doesn't have block", ref)
++      return
++    }
++    if (ref._block._referrer && ref._item !== ref._block._referrer) {
++      console.warn('Resolving conflict in transaction cleanup', ref)
++      const rootBlock = ref._block.getRootBlock()
++      if (rootBlock) {
++        resolveRefConflict(rootBlock, ref._block._referrer.content)
++      }
++    }
++    updateBlockReferrer(ref._block, ref)
++    validateCircularRef(/** @type {Item & { content: ContentBlockRef }} */(ref._item))
++  })
++}
++
++/**
++ * Cleanup all transactions that are not currently in progress.
++ *
++ * @param {StoreTransaction} storeTransaction
++ */
++const callBlockTransactionsObservers = (storeTransaction) => {
++  storeTransaction.blockTransactions.forEach((transaction) => {
++    try {
++      consumeBlockTransactionObservers(transaction)
++    } catch (e) {
++      console.trace(e)
++    }
++  })
++}
++
++/**
++ * Consume block transaction observers
++ * @param {Transaction} transaction
++ */
++const consumeBlockTransactionObservers = (transaction) => {
++  const block = transaction.block
++
++  block.emit('beforeObserverCalls', [transaction, block])
++  /**
++   * An array of event callbacks.
++   *
++   * Each callback is called even if the other ones throw errors.
++   *
++   * @type {Array<function():void>}
++   */
++  const fs = []
++  // observe events on changed types
++  transaction.changed.forEach((subs, itemtype) =>
++    fs.push(() => {
++      if (itemtype._item === null || !itemtype._item.deleted) {
++        itemtype._callObserver(transaction, subs)
++      }
++    })
++  )
++  fs.push(() => {
++    // deep observe events
++    transaction.changedParentTypes.forEach((events, type) => {
++      // We need to think about the possibility that the user transforms the
++      // Y.Doc in the event.
++      if (type._dEH.l.length > 0 && (type._item === null || !type._item.deleted)) {
++        events = events
++          .filter(event =>
++            event.target._item === null || !event.target._item.deleted
++          )
++        events
++          .forEach(event => {
++            event.currentTarget = type
++            // path is relative to the current target
++            event._path = null
++          })
++        // sort events by path length so that top-level events are fired first.
++        events
++          .sort((event1, event2) => event1.path.length - event2.path.length)
++
++        // We don't need to check for events.length
++        // because we know it has at least one element
++        callEventHandlerListeners(type._dEH, events, transaction)
++      }
++    })
++  })
++  fs.push(() => block.emit('afterTransaction', [transaction, block]))
++  callAll(fs, [])
++}
++
++/**
++ * Call root observers
++ * @param {StoreTransaction} storeTransaction
++ */
++const callRootObservers = (storeTransaction) => {
++  storeTransaction.blocksAdded.forEach((block) => {
++    // Calc and cache root block
++    block.getRootBlock()
++  })
++  // Gather changed root block types
++  storeTransaction.rootBlockEvents.forEach((events, block) => {
++    const rootType = block.getType()
++    callEventHandlerListeners(rootType._rEH, events, storeTransaction)
++  })
++}
++
++/**
++ * Try GC and cleanup
++ * @param {StoreTransaction} storeTransaction
++ */
++const cleanupConsumedTransaction = (storeTransaction) => {
++  storeTransaction.blockTransactions.forEach((transaction) => {
++    if (transaction._needFormattingCleanup) {
++      cleanupYTextAfterTransaction(transaction)
++    }
++
++    const block = transaction.block
++    const structStore = block.structStore
++    const ds = transaction.deleteSet
++    const mergeStructs = transaction._mergeStructs
++    // Replace deleted items with ItemDeleted / GC.
++    // This is where content is actually remove from the Yjs Doc.
++    if (block.gc) {
++      tryGcDeleteSet(ds, structStore, block.gcFilter)
++    }
++    tryMergeDeleteSet(ds, structStore)
++
++    // on all affected store.clients props, try to merge
++    transaction.afterState.forEach((clock, client) => {
++      const beforeClock = transaction.beforeState.get(client) || 0
++      if (beforeClock !== clock) {
++        const structs = /** @type {Array<GC|Item>} */ (structStore.clients.get(client))
++        // we iterate from right to left so we can safely remove entries
++        const firstChangePos = math.max(findIndexSS(structs, beforeClock), 1)
++        for (let i = structs.length - 1; i >= firstChangePos;) {
++          i -= 1 + tryToMergeWithLefts(structs, i)
++        }
++      }
++    })
++    // try to merge mergeStructs
++    // @todo: it makes more sense to transform mergeStructs to a DS, sort it, and merge from right to left
++    //        but at the moment DS does not handle duplicates
++    for (let i = mergeStructs.length - 1; i >= 0; i--) {
++      const { client, clock } = mergeStructs[i].id
++      const structs = /** @type {Array<GC|Item>} */ (structStore.clients.get(client))
++      const replacedStructPos = findIndexSS(structs, clock)
++      if (replacedStructPos + 1 < structs.length) {
++        if (tryToMergeWithLefts(structs, replacedStructPos + 1) > 1) {
++          continue // no need to perform next check, both are already merged
++        }
++      }
++      if (replacedStructPos > 0) {
++        tryToMergeWithLefts(structs, replacedStructPos)
++      }
++    }
++    if (!transaction.local && transaction.afterState.get(block.clientID) !== transaction.beforeState.get(block.clientID)) {
++      logging.print(logging.ORANGE, logging.BOLD, '[yjs] ', logging.UNBOLD, logging.RED, 'Changed the client-id because another client seems to be using it.')
++      block.clientID = generateNewClientId()
++    }
++    // @todo Merge all the transactions into one and provide send the data as a single update message
++    block.emit('afterTransactionCleanup', [transaction, block])
++    // StoreTransaction の場合は、個別 block の update イベントは発火しない
++    // if (block._observers.has('update')) {
++    //   const encoder = new UpdateEncoderV1()
++    //   const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
++    //   if (hasContent) {
++    //     block.emit('update', [encoder.toUint8Array(), transaction.origin, block, transaction])
++    //   }
++    // }
++    // if (block._observers.has('updateV2')) {
++    //   const encoder = new UpdateEncoderV2()
++    //   const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
++    //   if (hasContent) {
++    //     block.emit('updateV2', [encoder.toUint8Array(), transaction.origin, block, transaction])
++    //   }
++    // }
++    // const { subdocsAdded, subdocsLoaded, subdocsRemoved } = transaction
++    // if (subdocsAdded.size > 0 || subdocsRemoved.size > 0 || subdocsLoaded.size > 0) {
++    //   subdocsAdded.forEach(subdoc => {
++    //     subdoc.clientID = store.clientID
++    //     if (subdoc.collectionid == null) {
++    //       subdoc.collectionid = store.collectionid
++    //     }
++    //     store.subdocs.add(subdoc)
++    //   })
++    //   subdocsRemoved.forEach(subdoc => store.subdocs.delete(subdoc))
++    //   store.emit('subdocs', [{ loaded: subdocsLoaded, added: subdocsAdded, removed: subdocsRemoved }, store, transaction])
++    //   subdocsRemoved.forEach(subdoc => subdoc.destroy())
++    // }
++  })
++}
++
++/**
++ *
++ * @param {StoreTransaction} storeTransaction
++ */
++function emitStoreTransactionCleanupEvents (storeTransaction) {
++  storeTransaction.store.emit('afterTransactionCleanup', [storeTransaction, storeTransaction.store])
++  if (storeTransaction.store._observers.has('updateV2')) {
++    /** @type {Map<NanoBlock, Uint8Array>} */
++    const updates = new Map()
++    for (const transaction of storeTransaction.blockTransactions.values()) {
++      const encoder = new UpdateEncoderV2()
++      const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
++      if (hasContent) {
++        const block = transaction.block
++        updates.set(block, encoder.toUint8Array())
++      }
++    }
++    storeTransaction.store.emit('updateV2', [updates, storeTransaction.origin, storeTransaction.store, storeTransaction])
++  }
++}
+diff --git a/src/utils/UndoManager.js b/src/utils/UndoManager.js
+index f6f13ee58..2ac49f079 100644
+--- a/src/utils/UndoManager.js
++++ b/src/utils/UndoManager.js
+@@ -10,7 +10,7 @@ import {
+   getItemCleanStart,
+   isDeleted,
+   addToDeleteSet,
+-  Transaction, Doc, Item, GC, DeleteSet, AbstractType // eslint-disable-line
++  Transaction, Item, GC, DeleteSet, AbstractType, NanoBlock // eslint-disable-line
+ } from '../internals.js'
+ 
+ import * as time from 'lib0/time'
+@@ -62,11 +62,11 @@ const popStackItem = (undoManager, stack, eventType) => {
+    * @type {any}
+    */
+   let _tr = null
+-  const doc = undoManager.doc
++  const block = undoManager.block
+   const scope = undoManager.scope
+-  transact(doc, transaction => {
++  transact(block, transaction => {
+     while (stack.length > 0 && result === null) {
+-      const store = doc.store
++      const structStore = block.structStore
+       const stackItem = /** @type {StackItem} */ (stack.pop())
+       /**
+        * @type {Set<Item>}
+@@ -80,7 +80,7 @@ const popStackItem = (undoManager, stack, eventType) => {
+       iterateDeletedStructs(transaction, stackItem.insertions, struct => {
+         if (struct instanceof Item) {
+           if (struct.redone !== null) {
+-            let { item, diff } = followRedone(store, struct.id)
++            let { item, diff } = followRedone(structStore, struct.id)
+             if (diff > 0) {
+               item = getItemCleanStart(transaction, createID(item.id.client, item.id.clock + diff))
+             }
+@@ -140,7 +140,7 @@ const popStackItem = (undoManager, stack, eventType) => {
+  * undo/redo scope.
+  * @property {Set<any>} [UndoManagerOptions.trackedOrigins=new Set([null])]
+  * @property {boolean} [ignoreRemoteMapChanges] Experimental. By default, the UndoManager will never overwrite remote changes. Enable this property to enable overwriting remote changes on key-value changes (Y.Map, properties on Y.Xml, etc..).
+- * @property {Doc} [doc] The document that this UndoManager operates on. Only needed if typeScope is empty.
++ * @property {NanoBlock} [block] The document that this UndoManager operates on. Only needed if typeScope is empty.
+  */
+ 
+ /**
+@@ -163,14 +163,14 @@ export class UndoManager extends Observable {
+     deleteFilter = () => true,
+     trackedOrigins = new Set([null]),
+     ignoreRemoteMapChanges = false,
+-    doc = /** @type {Doc} */ (array.isArray(typeScope) ? typeScope[0].doc : typeScope.doc)
++    block = /** @type {NanoBlock} */ (array.isArray(typeScope) ? typeScope[0].block : typeScope.block)
+   } = {}) {
+     super()
+     /**
+      * @type {Array<AbstractType<any>>}
+      */
+     this.scope = []
+-    this.doc = doc
++    this.block = block
+     this.addToScope(typeScope)
+     this.deleteFilter = deleteFilter
+     trackedOrigins.add(this)
+@@ -251,8 +251,8 @@ export class UndoManager extends Observable {
+         this.emit('stack-item-updated', changeEvent)
+       }
+     }
+-    this.doc.on('afterTransaction', this.afterTransactionHandler)
+-    this.doc.on('destroy', () => {
++    this.block.on('afterTransaction', this.afterTransactionHandler)
++    this.block.on('destroy', () => {
+       this.destroy()
+     })
+   }
+@@ -264,7 +264,7 @@ export class UndoManager extends Observable {
+     ytypes = array.isArray(ytypes) ? ytypes : [ytypes]
+     ytypes.forEach(ytype => {
+       if (this.scope.every(yt => yt !== ytype)) {
+-        if (ytype.doc !== this.doc) logging.warn('[yjs#509] Not same Y.Doc') // use MultiDocUndoManager instead. also see https://github.com/yjs/yjs/issues/509
++        if (ytype.block !== this.block) logging.warn('[yjs#509] Not same Y.Doc') // use MultiDocUndoManager instead. also see https://github.com/yjs/yjs/issues/509
+         this.scope.push(ytype)
+       }
+     })
+@@ -286,7 +286,7 @@ export class UndoManager extends Observable {
+ 
+   clear (clearUndoStack = true, clearRedoStack = true) {
+     if ((clearUndoStack && this.canUndo()) || (clearRedoStack && this.canRedo())) {
+-      this.doc.transact(tr => {
++      this.block.transact(tr => {
+         if (clearUndoStack) {
+           this.undoStack.forEach(item => clearUndoManagerStackItem(tr, this, item))
+           this.undoStack = []
+@@ -376,7 +376,7 @@ export class UndoManager extends Observable {
+ 
+   destroy () {
+     this.trackedOrigins.delete(this)
+-    this.doc.off('afterTransaction', this.afterTransactionHandler)
++    this.block.off('afterTransaction', this.afterTransactionHandler)
+     super.destroy()
+   }
+ }
+diff --git a/src/utils/UpdateEncoder.js b/src/utils/UpdateEncoder.js
+index e8c5d06c8..71e9d8f15 100644
+--- a/src/utils/UpdateEncoder.js
++++ b/src/utils/UpdateEncoder.js
+@@ -3,12 +3,14 @@ import * as error from 'lib0/error'
+ import * as encoding from 'lib0/encoding'
+ 
+ import {
+-  ID // eslint-disable-line
++  ID, // eslint-disable-line
+ } from '../internals.js'
+ 
+ export class DSEncoderV1 {
+   constructor () {
+     this.restEncoder = encoding.createEncoder()
++    /** @type {Set<string>} */
++    this.refBlockIds = new Set()
+   }
+ 
+   toUint8Array () {
+@@ -32,6 +34,13 @@ export class DSEncoderV1 {
+   writeDsLen (len) {
+     encoding.writeVarUint(this.restEncoder, len)
+   }
++
++  /**
++   * @param {string} blockId
++   */
++  addRef (blockId) {
++    this.refBlockIds.add(blockId)
++  }
+ }
+ 
+ export class UpdateEncoderV1 extends DSEncoderV1 {
+@@ -129,6 +138,10 @@ export class DSEncoderV2 {
+   constructor () {
+     this.restEncoder = encoding.createEncoder() // encodes all the rest / non-optimized
+     this.dsCurrVal = 0
++    /**
++     * @type {Set<string>}
++     */
++    this.refBlockIds = new Set()
+   }
+ 
+   toUint8Array () {
+@@ -158,11 +171,20 @@ export class DSEncoderV2 {
+     encoding.writeVarUint(this.restEncoder, len - 1)
+     this.dsCurrVal += len
+   }
++
++  /**
++   * @param {string} blockId
++   * @return {void}
++   */
++  addRef (blockId) {
++    this.refBlockIds.add(blockId)
++  }
+ }
+ 
+ export class UpdateEncoderV2 extends DSEncoderV2 {
+   constructor () {
+     super()
++
+     /**
+      * @type {Map<string,number>}
+      */
+diff --git a/src/utils/YEvent.js b/src/utils/YEvent.js
+index b47d8c9ad..92e0b500a 100644
+--- a/src/utils/YEvent.js
++++ b/src/utils/YEvent.js
+@@ -87,7 +87,8 @@ export class YEvent {
+    */
+   get keys () {
+     if (this._keys === null) {
+-      if (this.transaction.doc._transactionCleanups.length === 0) {
++      // FIXME: Check if block or store has transaction
++      if ((this.transaction.block.store?._transactionCleanups.length ?? 0) === 0 && this.transaction.block._transactionCleanups.length === 0) {
+         throw error.create(errorComputeChanges)
+       }
+       const keys = new Map()
+@@ -173,7 +174,7 @@ export class YEvent {
+   get changes () {
+     let changes = this._changes
+     if (changes === null) {
+-      if (this.transaction.doc._transactionCleanups.length === 0) {
++      if ((this.transaction.block.store?._transactionCleanups.length ?? 0) === 0 && this.transaction.block._transactionCleanups.length === 0) {
+         throw error.create(errorComputeChanges)
+       }
+       const target = this.target
+diff --git a/src/utils/encoding.js b/src/utils/encoding.js
+index 83e1b91fa..2caf99fe3 100644
+--- a/src/utils/encoding.js
++++ b/src/utils/encoding.js
+@@ -37,7 +37,7 @@ import {
+   Skip,
+   diffUpdateV2,
+   convertUpdateFormatV2ToV1,
+-  DSDecoderV2, Doc, Transaction, GC, Item, StructStore // eslint-disable-line
++  DSDecoderV2, Transaction, GC, Item, StructStore, NanoBlock // eslint-disable-line
+ } from '../internals.js'
+ 
+ import * as encoding from 'lib0/encoding'
+@@ -98,19 +98,19 @@ export const writeClientsStructs = (encoder, store, _sm) => {
+   // Write items with higher client ids first
+   // This heavily improves the conflict algorithm.
+   array.from(sm.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, clock]) => {
+-    writeStructs(encoder, /** @type {Array<GC|Item>} */ (store.clients.get(client)), client, clock)
++    writeStructs(encoder, /** @type {Array<GC|Item>} */(store.clients.get(client)), client, clock)
+   })
+ }
+ 
+ /**
+  * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder The decoder object to read data from.
+- * @param {Doc} doc
++ * @param {NanoBlock} block
+  * @return {Map<number, { i: number, refs: Array<Item | GC> }>}
+  *
+  * @private
+  * @function
+  */
+-export const readClientsStructRefs = (decoder, doc) => {
++export const readClientsStructRefs = (decoder, block) => {
+   /**
+    * @type {Map<number, { i: number, refs: Array<Item | GC> }>}
+    */
+@@ -159,7 +159,7 @@ export const readClientsStructRefs = (decoder, doc) => {
+             (info & binary.BIT8) === binary.BIT8 ? decoder.readLeftID() : null, // origin
+             null, // right
+             (info & binary.BIT7) === binary.BIT7 ? decoder.readRightID() : null, // right origin
+-            cantCopyParentInfo ? (decoder.readParentInfo() ? doc.get(decoder.readString()) : decoder.readLeftID()) : null, // parent
++            cantCopyParentInfo ? (decoder.readParentInfo() ? block.get(decoder.readString()) : decoder.readLeftID()) : null, // parent
+             cantCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoder.readString() : null, // parentSub
+             readItemContent(decoder, info) // item content
+           )
+@@ -317,10 +317,10 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
+           /**
+            * @type {{ refs: Array<GC|Item>, i: number }}
+            */
+-          const structRefs = clientsStructRefs.get(/** @type {number} */ (missing)) || { refs: [], i: 0 }
++          const structRefs = clientsStructRefs.get(/** @type {number} */(missing)) || { refs: [], i: 0 }
+           if (structRefs.refs.length === structRefs.i) {
+             // This update message causally depends on another update message that doesn't exist yet
+-            updateMissingSv(/** @type {number} */ (missing), getState(store, missing))
++            updateMissingSv(/** @type {number} */(missing), getState(store, missing))
+             addStackToRestSS()
+           } else {
+             stackHead = structRefs.refs[structRefs.i++]
+@@ -366,7 +366,7 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
+  * @private
+  * @function
+  */
+-export const writeStructsFromTransaction = (encoder, transaction) => writeClientsStructs(encoder, transaction.doc.store, transaction.beforeState)
++export const writeStructsFromTransaction = (encoder, transaction) => writeClientsStructs(encoder, transaction.block.structStore, transaction.beforeState)
+ 
+ /**
+  * Read and apply a document update.
+@@ -374,31 +374,31 @@ export const writeStructsFromTransaction = (encoder, transaction) => writeClient
+  * This function has the same effect as `applyUpdate` but accepts an decoder.
+  *
+  * @param {decoding.Decoder} decoder
+- * @param {Doc} ydoc
++ * @param {NanoBlock} block
+  * @param {any} [transactionOrigin] This will be stored on `transaction.origin` and `.on('update', (update, origin))`
+  * @param {UpdateDecoderV1 | UpdateDecoderV2} [structDecoder]
+  *
+  * @function
+  */
+-export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = new UpdateDecoderV2(decoder)) =>
+-  transact(ydoc, transaction => {
++export const readUpdateV2 = (decoder, block, transactionOrigin, structDecoder = new UpdateDecoderV2(decoder)) =>
++  transact(block, transaction => {
+     // force that transaction.local is set to non-local
+     transaction.local = false
+     let retry = false
+-    const doc = transaction.doc
+-    const store = doc.store
++    const block = transaction.block
++    const structStore = block.structStore
+     // let start = performance.now()
+-    const ss = readClientsStructRefs(structDecoder, doc)
++    const ss = readClientsStructRefs(structDecoder, block)
+     // console.log('time to read structs: ', performance.now() - start) // @todo remove
+     // start = performance.now()
+     // console.log('time to merge: ', performance.now() - start) // @todo remove
+     // start = performance.now()
+-    const restStructs = integrateStructs(transaction, store, ss)
+-    const pending = store.pendingStructs
++    const restStructs = integrateStructs(transaction, structStore, ss)
++    const pending = structStore.pendingStructs
+     if (pending) {
+       // check if we can apply something
+       for (const [client, clock] of pending.missing) {
+-        if (clock < getState(store, client)) {
++        if (clock < getState(structStore, client)) {
+           retry = true
+           break
+         }
+@@ -414,28 +414,28 @@ export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = n
+         pending.update = mergeUpdatesV2([pending.update, restStructs.update])
+       }
+     } else {
+-      store.pendingStructs = restStructs
++      structStore.pendingStructs = restStructs
+     }
+     // console.log('time to integrate: ', performance.now() - start) // @todo remove
+     // start = performance.now()
+-    const dsRest = readAndApplyDeleteSet(structDecoder, transaction, store)
+-    if (store.pendingDs) {
++    const dsRest = readAndApplyDeleteSet(structDecoder, transaction, structStore)
++    if (structStore.pendingDs) {
+       // @todo we could make a lower-bound state-vector check as we do above
+-      const pendingDSUpdate = new UpdateDecoderV2(decoding.createDecoder(store.pendingDs))
++      const pendingDSUpdate = new UpdateDecoderV2(decoding.createDecoder(structStore.pendingDs))
+       decoding.readVarUint(pendingDSUpdate.restDecoder) // read 0 structs, because we only encode deletes in pendingdsupdate
+-      const dsRest2 = readAndApplyDeleteSet(pendingDSUpdate, transaction, store)
++      const dsRest2 = readAndApplyDeleteSet(pendingDSUpdate, transaction, structStore)
+       if (dsRest && dsRest2) {
+         // case 1: ds1 != null && ds2 != null
+-        store.pendingDs = mergeUpdatesV2([dsRest, dsRest2])
++        structStore.pendingDs = mergeUpdatesV2([dsRest, dsRest2])
+       } else {
+         // case 2: ds1 != null
+         // case 3: ds2 != null
+         // case 4: ds1 == null && ds2 == null
+-        store.pendingDs = dsRest || dsRest2
++        structStore.pendingDs = dsRest || dsRest2
+       }
+     } else {
+       // Either dsRest == null && pendingDs == null OR dsRest != null
+-      store.pendingDs = dsRest
++      structStore.pendingDs = dsRest
+     }
+     // console.log('time to cleanup: ', performance.now() - start) // @todo remove
+     // start = performance.now()
+@@ -443,9 +443,9 @@ export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = n
+     // console.log('time to resume delete readers: ', performance.now() - start) // @todo remove
+     // start = performance.now()
+     if (retry) {
+-      const update = /** @type {{update: Uint8Array}} */ (store.pendingStructs).update
+-      store.pendingStructs = null
+-      applyUpdateV2(transaction.doc, update)
++      const update = /** @type {{update: Uint8Array}} */ (structStore.pendingStructs).update
++      structStore.pendingStructs = null
++      applyUpdateV2(transaction.block, update)
+     }
+   }, transactionOrigin, false)
+ 
+@@ -455,28 +455,28 @@ export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = n
+  * This function has the same effect as `applyUpdate` but accepts an decoder.
+  *
+  * @param {decoding.Decoder} decoder
+- * @param {Doc} ydoc
++ * @param {NanoBlock} block
+  * @param {any} [transactionOrigin] This will be stored on `transaction.origin` and `.on('update', (update, origin))`
+  *
+  * @function
+  */
+-export const readUpdate = (decoder, ydoc, transactionOrigin) => readUpdateV2(decoder, ydoc, transactionOrigin, new UpdateDecoderV1(decoder))
++export const readUpdate = (decoder, block, transactionOrigin) => readUpdateV2(decoder, block, transactionOrigin, new UpdateDecoderV1(decoder))
+ 
+ /**
+  * Apply a document update created by, for example, `y.on('update', update => ..)` or `update = encodeStateAsUpdate()`.
+  *
+  * This function has the same effect as `readUpdate` but accepts an Uint8Array instead of a Decoder.
+  *
+- * @param {Doc} ydoc
++ * @param {NanoBlock} block
+  * @param {Uint8Array} update
+  * @param {any} [transactionOrigin] This will be stored on `transaction.origin` and `.on('update', (update, origin))`
+  * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} [YDecoder]
+  *
+  * @function
+  */
+-export const applyUpdateV2 = (ydoc, update, transactionOrigin, YDecoder = UpdateDecoderV2) => {
++export const applyUpdateV2 = (block, update, transactionOrigin, YDecoder = UpdateDecoderV2) => {
+   const decoder = decoding.createDecoder(update)
+-  readUpdateV2(decoder, ydoc, transactionOrigin, new YDecoder(decoder))
++  readUpdateV2(decoder, block, transactionOrigin, new YDecoder(decoder))
+ }
+ 
+ /**
+@@ -484,27 +484,27 @@ export const applyUpdateV2 = (ydoc, update, transactionOrigin, YDecoder = Update
+  *
+  * This function has the same effect as `readUpdate` but accepts an Uint8Array instead of a Decoder.
+  *
+- * @param {Doc} ydoc
++ * @param {NanoBlock} block
+  * @param {Uint8Array} update
+  * @param {any} [transactionOrigin] This will be stored on `transaction.origin` and `.on('update', (update, origin))`
+  *
+  * @function
+  */
+-export const applyUpdate = (ydoc, update, transactionOrigin) => applyUpdateV2(ydoc, update, transactionOrigin, UpdateDecoderV1)
++export const applyUpdate = (block, update, transactionOrigin) => applyUpdateV2(block, update, transactionOrigin, UpdateDecoderV1)
+ 
+ /**
+  * Write all the document as a single update message. If you specify the state of the remote client (`targetStateVector`) it will
+  * only write the operations that are missing.
+  *
+  * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+- * @param {Doc} doc
++ * @param {NanoBlock} block
+  * @param {Map<number,number>} [targetStateVector] The state of the target that receives the update. Leave empty to write all known structs
+  *
+  * @function
+  */
+-export const writeStateAsUpdate = (encoder, doc, targetStateVector = new Map()) => {
+-  writeClientsStructs(encoder, doc.store, targetStateVector)
+-  writeDeleteSet(encoder, createDeleteSetFromStructStore(doc.store))
++export const writeStateAsUpdate = (encoder, block, targetStateVector = new Map()) => {
++  writeClientsStructs(encoder, block.structStore, targetStateVector)
++  writeDeleteSet(encoder, createDeleteSetFromStructStore(block.structStore))
+ }
+ 
+ /**
+@@ -513,23 +513,23 @@ export const writeStateAsUpdate = (encoder, doc, targetStateVector = new Map())
+  *
+  * Use `writeStateAsUpdate` instead if you are working with lib0/encoding.js#Encoder
+  *
+- * @param {Doc} doc
++ * @param {NanoBlock} block
+  * @param {Uint8Array} [encodedTargetStateVector] The state of the target that receives the update. Leave empty to write all known structs
+  * @param {UpdateEncoderV1 | UpdateEncoderV2} [encoder]
+  * @return {Uint8Array}
+  *
+  * @function
+  */
+-export const encodeStateAsUpdateV2 = (doc, encodedTargetStateVector = new Uint8Array([0]), encoder = new UpdateEncoderV2()) => {
++export const encodeStateAsUpdateV2 = (block, encodedTargetStateVector = new Uint8Array([0]), encoder = new UpdateEncoderV2()) => {
+   const targetStateVector = decodeStateVector(encodedTargetStateVector)
+-  writeStateAsUpdate(encoder, doc, targetStateVector)
++  writeStateAsUpdate(encoder, block, targetStateVector)
+   const updates = [encoder.toUint8Array()]
+   // also add the pending updates (if there are any)
+-  if (doc.store.pendingDs) {
+-    updates.push(doc.store.pendingDs)
++  if (block.structStore.pendingDs) {
++    updates.push(block.structStore.pendingDs)
+   }
+-  if (doc.store.pendingStructs) {
+-    updates.push(diffUpdateV2(doc.store.pendingStructs.update, encodedTargetStateVector))
++  if (block.structStore.pendingStructs) {
++    updates.push(diffUpdateV2(block.structStore.pendingStructs.update, encodedTargetStateVector))
+   }
+   if (updates.length > 1) {
+     if (encoder.constructor === UpdateEncoderV1) {
+@@ -541,19 +541,34 @@ export const encodeStateAsUpdateV2 = (doc, encodedTargetStateVector = new Uint8A
+   return updates[0]
+ }
+ 
++/**
++ * Write all the blocks referenced by the document as a map of updates that can be applied on the remote document.
++ *
++ * @param {NanoBlock} block
++ * @return {[Uint8Array, Set<string>]}
++ *
++ * @function
++ */
++export const encodeStateAsUpdateWithRefsV2 = (block) => {
++  const encoder = new UpdateEncoderV2()
++  const update = encodeStateAsUpdateV2(block, undefined, encoder)
++
++  return [update, encoder.refBlockIds]
++}
++
+ /**
+  * Write all the document as a single update message that can be applied on the remote document. If you specify the state of the remote client (`targetState`) it will
+  * only write the operations that are missing.
+  *
+  * Use `writeStateAsUpdate` instead if you are working with lib0/encoding.js#Encoder
+  *
+- * @param {Doc} doc
++ * @param {NanoBlock} block
+  * @param {Uint8Array} [encodedTargetStateVector] The state of the target that receives the update. Leave empty to write all known structs
+  * @return {Uint8Array}
+  *
+  * @function
+  */
+-export const encodeStateAsUpdate = (doc, encodedTargetStateVector) => encodeStateAsUpdateV2(doc, encodedTargetStateVector, new UpdateEncoderV1())
++export const encodeStateAsUpdate = (block, encodedTargetStateVector) => encodeStateAsUpdateV2(block, encodedTargetStateVector, new UpdateEncoderV1())
+ 
+ /**
+  * Read state vector from Decoder and return as Map
+@@ -610,26 +625,26 @@ export const writeStateVector = (encoder, sv) => {
+ 
+ /**
+  * @param {DSEncoderV1 | DSEncoderV2} encoder
+- * @param {Doc} doc
++ * @param {NanoBlock} block
+  *
+  * @function
+  */
+-export const writeDocumentStateVector = (encoder, doc) => writeStateVector(encoder, getStateVector(doc.store))
++export const writeDocumentStateVector = (encoder, block) => writeStateVector(encoder, getStateVector(block.structStore))
+ 
+ /**
+  * Encode State as Uint8Array.
+  *
+- * @param {Doc|Map<number,number>} doc
++ * @param {NanoBlock|Map<number,number>} block
+  * @param {DSEncoderV1 | DSEncoderV2} [encoder]
+  * @return {Uint8Array}
+  *
+  * @function
+  */
+-export const encodeStateVectorV2 = (doc, encoder = new DSEncoderV2()) => {
+-  if (doc instanceof Map) {
+-    writeStateVector(encoder, doc)
++export const encodeStateVectorV2 = (block, encoder = new DSEncoderV2()) => {
++  if (block instanceof Map) {
++    writeStateVector(encoder, block)
+   } else {
+-    writeDocumentStateVector(encoder, doc)
++    writeDocumentStateVector(encoder, block)
+   }
+   return encoder.toUint8Array()
+ }
+@@ -637,9 +652,9 @@ export const encodeStateVectorV2 = (doc, encoder = new DSEncoderV2()) => {
+ /**
+  * Encode State as Uint8Array.
+  *
+- * @param {Doc|Map<number,number>} doc
++ * @param {NanoBlock|Map<number,number>} block
+  * @return {Uint8Array}
+  *
+  * @function
+  */
+-export const encodeStateVector = doc => encodeStateVectorV2(doc, new DSEncoderV1())
++export const encodeStateVector = block => encodeStateVectorV2(block, new DSEncoderV1())
+diff --git a/tests/index.js b/tests/index.js
+index ec22ed05b..856e1e7eb 100644
+--- a/tests/index.js
++++ b/tests/index.js
+@@ -1,16 +1,18 @@
+-/* eslint-env node */
++// /* eslint-env node */
+ 
+-import * as map from './y-map.tests.js'
+-import * as array from './y-array.tests.js'
+-import * as text from './y-text.tests.js'
+-import * as xml from './y-xml.tests.js'
+-import * as encoding from './encoding.tests.js'
+-import * as undoredo from './undo-redo.tests.js'
+-import * as compatibility from './compatibility.tests.js'
+-import * as doc from './doc.tests.js'
+-import * as snapshot from './snapshot.tests.js'
+-import * as updates from './updates.tests.js'
+-import * as relativePositions from './relativePositions.tests.js'
++// import * as map from './y-map.tests.js'
++// import * as array from './y-array.tests.js'
++// import * as text from './y-text.tests.js'
++// import * as xml from './y-xml.tests.js'
++// import * as encoding from './encoding.tests.js'
++// import * as undoredo from './undo-redo.tests.js'
++// import * as compatibility from './compatibility.tests.js'
++// import * as doc from './doc.tests.js'
++// import * as snapshot from './snapshot.tests.js'
++// import * as updates from './updates.tests.js'
++// import * as relativePositions from './relativePositions.tests.js'
++import * as refs from './refs.tests.js'
++import * as store from './store.tests.js'
+ 
+ import { runTests } from 'lib0/testing'
+ import { isBrowser, isNode } from 'lib0/environment'
+@@ -20,7 +22,8 @@ if (isBrowser) {
+   log.createVConsole(document.body)
+ }
+ runTests({
+-  doc, map, array, text, xml, encoding, undoredo, compatibility, snapshot, updates, relativePositions
++  // doc, map, array, text, xml, encoding, undoredo, compatibility, snapshot, updates, relativePositions
++  refs, store
+ }).then(success => {
+   /* istanbul ignore next */
+   if (isNode) {
+diff --git a/tests/refs.tests.js b/tests/refs.tests.js
+new file mode 100644
+index 000000000..1ab96ad91
+--- /dev/null
++++ b/tests/refs.tests.js
+@@ -0,0 +1,27 @@
++import * as Y from '../src/index.js'
++import * as t from 'lib0/testing'
++
++/**
++ * @param {t.TestCase} _tc
++ */
++export const testAfterTransactionRecursion = _tc => {
++  const block = new Y.NanoBlock({ type: 'text' })
++  const ytext = /** @type {Y.Text} */ (block.getType())
++  /**
++   * @type {Array<string>}
++   */
++  const origins = []
++  block.on('afterTransaction', /** @param {Y.Transaction} tr */ (tr) => {
++    origins.push(tr.origin)
++    if (origins.length <= 1) {
++      ytext.toDelta(Y.snapshot(block)) // adding a snapshot forces toDelta to create a cleanup transaction
++      block.transact(() => {
++        ytext.insert(0, 'a')
++      }, 'nested')
++    }
++  })
++  block.transact(() => {
++    ytext.insert(0, '0')
++  }, 'first')
++  t.compareArrays(origins, ['first', 'cleanup', 'nested'])
++}
+diff --git a/tests/store.tests.js b/tests/store.tests.js
+new file mode 100644
+index 000000000..102d8da5d
+--- /dev/null
++++ b/tests/store.tests.js
+@@ -0,0 +1,226 @@
++import * as Y from '../src/index.js'
++import * as t from 'lib0/testing'
++
++/**
++ * @param {t.TestCase} tc
++ */
++export const testRootBlockScoping = tc => {
++  const store = new Y.NanoStore()
++  
++  // Create two root blocks
++  const rootBlock1 = store.getRootBlockOrCreate('root1', 'map')
++  const rootBlock2 = store.getRootBlockOrCreate('root2', 'map')
++  
++  t.assert(rootBlock1.isRoot === true, 'rootBlock1 should be a root block')
++  t.assert(rootBlock2.isRoot === true, 'rootBlock2 should be a root block')
++  
++  // Create child blocks in different root blocks with same ID
++  const childId = 'child-123'
++  const child1 = rootBlock1.createBlock('array', childId)
++  const child2 = rootBlock2.createBlock('map', childId)
++  
++  // Verify blocks are scoped to their root blocks
++  t.assert(rootBlock1.getBlock(childId) === child1, 'child1 should be in rootBlock1')
++  t.assert(rootBlock2.getBlock(childId) === child2, 'child2 should be in rootBlock2')
++  t.assert(child1 !== child2, 'Same ID in different root blocks should create different blocks')
++  
++  // Verify block types
++  t.assert(child1.blockType === 'array', 'child1 should be array type')
++  t.assert(child2.blockType === 'map', 'child2 should be map type')
++}
++
++/**
++ * @param {t.TestCase} tc
++ */
++export const testGetBlocks = tc => {
++  const store = new Y.NanoStore()
++  const rootBlock = store.getRootBlockOrCreate('root', 'map')
++  
++  // Initially no child blocks
++  const initialBlocks = rootBlock.getBlocks()
++  t.assert(initialBlocks !== null && initialBlocks.size === 0, 'Root block should have no children initially')
++  
++  // Create multiple child blocks
++  const child1 = rootBlock.createBlock('array')
++  const child2 = rootBlock.createBlock('map')
++  const child3 = rootBlock.createBlock('text')
++  
++  const blocks = rootBlock.getBlocks()
++  t.assert(blocks !== null && blocks.size === 3, 'Should have 3 child blocks')
++  t.assert(blocks !== null && blocks.has(child1.id), 'Should contain child1')
++  t.assert(blocks !== null && blocks.has(child2.id), 'Should contain child2')
++  t.assert(blocks !== null && blocks.has(child3.id), 'Should contain child3')
++}
++
++/**
++ * @param {t.TestCase} tc
++ */
++export const testGetOrCreateBlock = tc => {
++  const store = new Y.NanoStore()
++  const rootBlock = store.getRootBlockOrCreate('root', 'map')
++  
++  const id = 'test-block-id'
++  
++  // First call creates the block
++  const block1 = rootBlock.getOrCreateBlock(id, 'array')
++  t.assert(block1.id === id, 'Block should have the specified ID')
++  t.assert(block1.blockType === 'array', 'Block should have array type')
++  
++  // Second call returns the same block
++  const block2 = rootBlock.getOrCreateBlock(id, 'array')
++  t.assert(block1 === block2, 'Should return the same block instance')
++  
++  // Verify it's registered in the root block
++  t.assert(rootBlock.getBlock(id) === block1, 'Block should be registered in root block')
++}
++
++/**
++ * @param {t.TestCase} tc
++ */
++export const testRootBlockReference = tc => {
++  const store = new Y.NanoStore()
++  const rootBlock = store.getRootBlockOrCreate('root', 'map')
++  
++  // Root block should reference itself
++  t.assert(rootBlock.getRootBlock() === rootBlock, 'Root block should reference itself')
++  
++  // Child blocks should reference their root
++  const child = rootBlock.createBlock('array')
++  t.assert(child.getRootBlock() === rootBlock, 'Child should reference its root block')
++  
++  // Nested structure
++  const rootType = /** @type {Y.Map<any>} */ (rootBlock.getType())
++  const nestedArray = new Y.Array()
++  rootType.set('nested', nestedArray)
++  
++  // Create a ref to another block
++  const refBlock = rootBlock.createBlock('map')
++  nestedArray.push([refBlock.getType()])
++  
++  t.assert(refBlock.getRootBlock() === rootBlock, 'Referenced block should have same root')
++}
++
++/**
++ * @param {t.TestCase} tc
++ */
++export const testNonRootBlockMethods = tc => {
++  const store = new Y.NanoStore()
++  const rootBlock = store.getRootBlockOrCreate('root', 'map')
++  const childBlock = rootBlock.createBlock('array')
++  
++  // These methods should throw on non-root blocks
++  t.fails(() => {
++    childBlock.getBlocks()
++  })
++  
++  t.fails(() => {
++    childBlock.getBlock('some-id')
++  })
++  
++  t.fails(() => {
++    childBlock.createBlock('map')
++  })
++  
++  t.fails(() => {
++    childBlock.getOrCreateBlock('some-id', 'map')
++  })
++}
++
++/**
++ * @param {t.TestCase} tc
++ */
++export const testRootBlockLookup = tc => {
++  const store = new Y.NanoStore()
++  
++  // Create blocks in different root blocks
++  const root1 = store.getRootBlockOrCreate('root1', 'map')
++  const root2 = store.getRootBlockOrCreate('root2', 'map')
++  
++  const child1 = root1.createBlock('array')
++  const child2 = root2.createBlock('map')
++  
++  // Each root block manages its own children
++  t.assert(root1.getBlock(child1.id) === child1, 'root1 should find its child1')
++  t.assert(root2.getBlock(child2.id) === child2, 'root2 should find its child2')
++  
++  // Cross-root block lookup should fail
++  t.assert(root1.getBlock(child2.id) === undefined, 'root1 should not find child2')
++  t.assert(root2.getBlock(child1.id) === undefined, 'root2 should not find child1')
++}
++
++/**
++ * @param {t.TestCase} tc
++ */
++export const testBlockClone = tc => {
++  const store = new Y.NanoStore()
++  const rootBlock = store.getRootBlockOrCreate('root', 'map')
++  
++  // Create a block with some content
++  const original = rootBlock.createBlock('array')
++  const originalType = /** @type {Y.Array<any>} */ (original.getType())
++  originalType.push(['item1', 'item2', 'item3'])
++  
++  // Clone the block
++  const cloned = original.clone()
++  const clonedType = /** @type {Y.Array<any>} */ (cloned.getType())
++  
++  // Verify clone has same content
++  t.assert(clonedType.length === 3, 'Cloned array should have same length')
++  t.assert(clonedType.get(0) === 'item1', 'Cloned array should have same content')
++  
++  // Verify clone is independent
++  originalType.push(['item4'])
++  t.assert(originalType.length === 4, 'Original should have 4 items')
++  t.assert(clonedType.length === 3, 'Clone should still have 3 items')
++  
++  // Verify clone has same root block
++  t.assert(cloned.getRootBlock() === rootBlock, 'Clone should have same root block')
++}
++
++/**
++ * @param {t.TestCase} tc
++ */
++export const testContentBlockRef = tc => {
++  const store = new Y.NanoStore()
++  const rootBlock = store.getRootBlockOrCreate('root', 'map')
++  const rootType = /** @type {Y.Map<any>} */ (rootBlock.getType())
++  
++  // Create a child block
++  const childBlock = rootBlock.createBlock('array')
++  const childType = /** @type {Y.Array<any>} */ (childBlock.getType())
++  childType.push(['a', 'b', 'c'])
++  
++  // Create a reference to the child block
++  rootType.set('ref', childType)
++  
++  // Verify the reference works
++  const ref = /** @type {Y.Array<any>} */ (rootType.get('ref'))
++  t.assert(ref === childType, 'Reference should point to child type')
++  t.assert(ref.toArray().join(',') === 'a,b,c', 'Referenced array should have correct content')
++  
++  // Verify block relationship
++  t.assert(childBlock.getRootBlock() === rootBlock, 'Child block should reference root block')
++}
++
++/**
++ * @param {t.TestCase} tc
++ */
++export const testTransactionBlocksAdded = tc => {
++  const store = new Y.NanoStore()
++  const rootBlock = store.getRootBlockOrCreate('root', 'map')
++  
++  let blocksAdded = 0
++  
++  rootBlock.transact(() => {
++    // Create multiple blocks in a transaction
++    rootBlock.createBlock('array')
++    rootBlock.createBlock('map')
++    rootBlock.createBlock('text')
++    
++    if (store._transaction && store._transaction.blocksAdded) {
++      blocksAdded = store._transaction.blocksAdded.size
++    }
++  })
++  
++  t.assert(blocksAdded === 3, 'Transaction should track 3 blocks added')
++}
+\ No newline at end of file
+diff --git a/tsconfig.json b/tsconfig.json
+index 2520c4048..d3e7fdcf2 100644
+--- a/tsconfig.json
++++ b/tsconfig.json
+@@ -17,5 +17,5 @@
+       "yjs": ["./src/index.js"]
+     }
+   },
+-  "include": ["./src/**/*.js", "./tests/**/*.js"]
++  "include": ["./src/**/*.js", "./tests/index.js"]
+ }

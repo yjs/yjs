@@ -28,6 +28,8 @@ export {
   ContentAny,
   ContentString,
   ContentType,
+  ContentDocRef,
+  ContentDocUnref,
   AbstractType,
   getTypeChildren,
   createRelativePositionFromTypeIndex,

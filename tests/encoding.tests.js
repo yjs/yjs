@@ -12,6 +12,8 @@ import {
   readContentFormat,
   readContentAny,
   readContentDoc,
+  readContentDocRef,
+  readContentDocUnref,
   Doc,
   PermanentUserData,
   encodeStateAsUpdate,
@@ -24,7 +26,7 @@ import * as Y from '../src/index.js'
  * @param {t.TestCase} tc
  */
 export const testStructReferences = tc => {
-  t.assert(contentRefs.length === 11)
+  t.assert(contentRefs.length === 13)
   t.assert(contentRefs[1] === readContentDeleted)
   t.assert(contentRefs[2] === readContentJSON) // TODO: deprecate content json?
   t.assert(contentRefs[3] === readContentBinary)
@@ -34,6 +36,8 @@ export const testStructReferences = tc => {
   t.assert(contentRefs[7] === readContentType)
   t.assert(contentRefs[8] === readContentAny)
   t.assert(contentRefs[9] === readContentDoc)
+  t.assert(contentRefs[11] === readContentDocRef)
+  t.assert(contentRefs[12] === readContentDocUnref)
   // contentRefs[10] is reserved for Skip structs
 }
 

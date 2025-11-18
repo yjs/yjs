@@ -22,7 +22,7 @@ import {
   readContentType,
   addChangedTypeToTransaction,
   isDeleted,
-  StackItem, DeleteSet, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction // eslint-disable-line
+  StackItem, DeleteSet, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction, readContentDocRef, readContentDocUnref // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -716,7 +716,9 @@ export const contentRefs = [
   readContentType, // 7
   readContentAny, // 8
   readContentDoc, // 9
-  () => { error.unexpectedCase() } // 10 - Skip is not ItemContent
+  () => { error.unexpectedCase() }, // 10 - Skip is not ItemContent
+  readContentDocRef, // 11
+  readContentDocUnref // 12
 ]
 
 /**

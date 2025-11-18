@@ -11,7 +11,7 @@ import {
   YXmlElement,
   YXmlFragment,
   transact,
-  ContentDoc, Item, Transaction, YEvent // eslint-disable-line
+  ContentDoc, ContentDocRef, Item, Transaction, RootTransaction, YEvent // eslint-disable-line
 } from '../internals.js'
 
 import { ObservableV2 } from 'lib0/observable'
@@ -24,6 +24,7 @@ export const generateNewClientId = random.uint32
 
 /**
  * @typedef {Object} DocOpts
+ * @property {number} [DocOpts.clientID] Specify a client identifier. If not set, a random client identifier will be created.
  * @property {boolean} [DocOpts.gc=true] Disable garbage collection (default: gc=true)
  * @property {function(Item):boolean} [DocOpts.gcFilter] Will be called before an Item is garbage collected. Return false to keep the Item.
  * @property {string} [DocOpts.guid] Define a globally unique identifier for this document
@@ -31,6 +32,14 @@ export const generateNewClientId = random.uint32
  * @property {any} [DocOpts.meta] Any kind of meta information you want to associate with this document. If this is a subdocument, remote peers will store the meta information as well.
  * @property {boolean} [DocOpts.autoLoad] If a subdocument, automatically load document. If this is a subdocument, remote peers will load the document as well automatically.
  * @property {boolean} [DocOpts.shouldLoad] Whether the document should be synced by the provider now. This is toggled to true when you call ydoc.load()
+ * @property {boolean} [DocOpts.autoRef=false] Whether to automatically treat embedded types as references when no explicit createRef is set.
+ * @property {boolean} [DocOpts.root=true] Whether this Doc is a root entrypoint for transactions. Non-root docs receive rootDoc when integrated.
+ */
+
+/**
+ * @typedef {Object} DocCloneOpts
+ * @property {string} [guid]
+ * @property {Doc} [rootDoc]
  */
 
 /**
@@ -40,12 +49,21 @@ export const generateNewClientId = random.uint32
  * @property {function(boolean, Doc):void} DocEvents.sync
  * @property {function(Uint8Array, any, Doc, Transaction):void} DocEvents.update
  * @property {function(Uint8Array, any, Doc, Transaction):void} DocEvents.updateV2
+ * @property {function(Map<Doc, Uint8Array>, any, Doc, RootTransaction):void} DocEvents.updateRoot
+ * @property {function(Map<Doc, Uint8Array>, any, Doc, RootTransaction):void} DocEvents.updateV2Root
  * @property {function(Doc):void} DocEvents.beforeAllTransactions
  * @property {function(Transaction, Doc):void} DocEvents.beforeTransaction
  * @property {function(Transaction, Doc):void} DocEvents.beforeObserverCalls
  * @property {function(Transaction, Doc):void} DocEvents.afterTransaction
  * @property {function(Transaction, Doc):void} DocEvents.afterTransactionCleanup
  * @property {function(Doc, Array<Transaction>):void} DocEvents.afterAllTransactions
+ * @property {function(Doc):void} DocEvents.beforeAllRootTransactions
+ * @property {function(RootTransaction, Doc):void} DocEvents.beforeRootTransaction
+ * @property {function(RootTransaction, Doc):void} DocEvents.beforeRootObserverCalls
+ * @property {function(RootTransaction, Doc):void} DocEvents.afterRootTransaction
+ * @property {function(RootTransaction, Doc):void} DocEvents.afterRootTransactionCleanup
+ * @property {function(Doc, Array<RootTransaction>):void} DocEvents.afterAllRootTransactions
+ * @property {function(Doc, Array<YEvent<any>>, RootTransaction):void} DocEvents.afterAllObserverCalls
  * @property {function({ loaded: Set<Doc>, added: Set<Doc>, removed: Set<Doc> }, Doc, Transaction):void} DocEvents.subdocs
  */
 
@@ -57,12 +75,29 @@ export class Doc extends ObservableV2 {
   /**
    * @param {DocOpts} opts configuration
    */
-  constructor ({ guid = random.uuidv4(), collectionid = null, gc = true, gcFilter = () => true, meta = null, autoLoad = false, shouldLoad = true } = {}) {
+  constructor (opts = {}) {
+    const {
+      clientID = generateNewClientId(),
+      guid = random.uuidv4(),
+      collectionid = null,
+      gc = true,
+      gcFilter = () => true,
+      meta = null,
+      autoLoad = false,
+      shouldLoad = true,
+      autoRef = false,
+      root = true
+    } = opts
     super()
     this.gc = gc
     this.gcFilter = gcFilter
-    this.clientID = generateNewClientId()
+    this.clientID = clientID
     this.guid = guid
+    /**
+     * Root doc that owns this doc bundle (refs). Only set when root=true or when integrated.
+     * @type {Doc|null}
+     */
+    this.rootDoc = root ? this : null
     this.collectionid = collectionid
     /**
      * @type {Map<string, AbstractType<YEvent<any>>>}
@@ -78,6 +113,15 @@ export class Doc extends ObservableV2 {
      */
     this._transactionCleanups = []
     /**
+     * Active root-level transaction bundle.
+     * @type {RootTransaction|null}
+     */
+    this._rootTransaction = null
+    /**
+     * @type {Array<RootTransaction>}
+     */
+    this._rootTransactionCleanups = []
+    /**
      * @type {Set<Doc>}
      */
     this.subdocs = new Set()
@@ -89,6 +133,21 @@ export class Doc extends ObservableV2 {
     this.shouldLoad = shouldLoad
     this.autoLoad = autoLoad
     this.meta = meta
+    /**
+     * Default behaviour when embedding nested types: if true, and the nested type does not explicitly set createRef,
+     * it will be treated as a reference (ContentDocRef 相当の扱い) instead of deep embedding.
+     */
+    this.autoRef = autoRef
+    /**
+     * Referenced docs managed under this root (subdoc とは別扱い).
+     * @type {Map<string, Doc>}
+     */
+    this.refDocs = new Map()
+    /**
+     * Referrer item (when this doc is referenced from another doc)
+     * @type {Item & { content: ContentDocRef } | null}
+     */
+    this._referrer = null
     /**
      * This is set to true when the persistence provider loaded the document from the database or when the `sync` event fires.
      * Note that not all providers implement this feature. Provider authors are encouraged to fire the `load` event when the doc content is loaded from the database.
@@ -165,7 +224,27 @@ export class Doc extends ObservableV2 {
   }
 
   getSubdocGuids () {
-    return new Set(array.from(this.subdocs).map(doc => doc.guid))
+    return new Set(array.from(this.subdocs).map((doc) => doc.guid))
+  }
+
+  /**
+   * Get a referenced doc by guid (subdoc とは別扱い).
+   * @param {string} guid
+   * @returns {Doc | undefined}
+   */
+  getRefDoc (guid) {
+    return this.refDocs.get(guid)
+  }
+
+  /**
+   * Register a referenced doc under this root.
+   * @param {Doc} doc
+   */
+  addRefDoc (doc) {
+    if (!doc.rootDoc) {
+      doc.rootDoc = this.rootDoc || this
+    }
+    this.refDocs.set(doc.guid, doc)
   }
 
   /**
@@ -324,6 +403,13 @@ export class Doc extends ObservableV2 {
    */
   destroy () {
     this.isDestroyed = true
+    // this.refDocs.forEach((doc) => {
+    //   // avoid cascading destroy loops by checking flag
+    //   if (!doc.isDestroyed) {
+    //     doc.destroy()
+    //   }
+    // })
+    // this.refDocs.clear()
     array.from(this.subdocs).forEach(subdoc => subdoc.destroy())
     const item = this._item
     if (item !== null) {
