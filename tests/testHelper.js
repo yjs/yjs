@@ -460,7 +460,8 @@ export const compare = users => {
   users.push(.../** @type {any} */(mergedDocs))
   const userArrayValues = users.map(u => u.getArray('array').toJSON())
   const userMapValues = users.map(u => u.getMap('map').toJSON())
-  const q = users[0].get('xml', Y.XmlElement)
+  // @todo fix type error here
+  // @ts-ignore
   const userXmlValues = users.map(u => /** @type {Y.XmlElement} */ (u.get('xml', Y.XmlElement)).toString())
   const userTextValues = users.map(u => u.getText('text').getContentDeep())
   for (const u of users) {

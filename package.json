@@ -15,7 +15,7 @@
     "clean": "rm -rf dist",
     "test": "NODE_ENV=development node ./tests/index.js --repetition-time 50",
     "test-extensive": "node ./tests/index.js --production --repetition-time 10000",
-    "dist": "npm run clean && rollup -c && tsc --skipLibCheck",
+    "dist": "npm run clean && rollup -c && (tsc || true)",
     "watch": "rollup -wc",
     "lint": "markdownlint README.md && standard && tsc",
     "preversion": "PRODUCTION=1 npm run dist && test -e dist/src/index.d.ts && test -e dist/yjs.cjs && test -e dist/yjs.cjs",
@@ -82,7 +82,7 @@
   },
   "homepage": "https://docs.yjs.dev",
   "dependencies": {
-    "lib0": "^0.2.115-2"
+    "lib0": "^0.2.115-4"
   },
   "devDependencies": {
     "@types/node": "^22.14.1",

@@ -175,7 +175,7 @@ export const testAttributions = _tc => {
   ytype.observe(event => {
     const attributedChange = event.getDelta(am)
     console.log('the attributed change', attributedChange.toJSON())
-    t.assert(attributedChange.equals(delta.create().retain(11).insert('!', null, { insert: [] })))
+    t.assert(attributedChange.done().equals(delta.create().retain(11).insert('!', null, { insert: [] })))
     const unattributedChange = event.delta
     console.log('the UNattributed change', unattributedChange.toJSON())
     t.assert(unattributedChange.equals(delta.create().retain(5).insert('!')))

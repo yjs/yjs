@@ -684,7 +684,7 @@ export class AbstractType {
         }
       }
     }
-    return /** @type {any} */ (d)
+    return /** @type {any} */ (d.done(false))
   }
 
   /**
