@@ -119,7 +119,8 @@ export {
   insertIntoIdSet,
   mergeIdMaps,
   readIdMap,
-  readIdSet
+  readIdSet,
+  decodeIdMap
 } from './internals.js'
 
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'
