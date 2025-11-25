@@ -237,14 +237,18 @@ documents. No configuration or maintenance is required. It also features
 Yjs webhook events, REST API to read and update Yjs documents, and a
 browser DevTools extension.
   </dd>
-  <dt><a href="https://github.com/drifting-in-space/y-sweet">y-sweet</a> ⭐</dt>
-  <dd>
-A standalone yjs server with persistence to S3 or filesystem. They offer a
-<a href="https://y-sweet.cloud">cloud service</a> as well.
-  </dd>
   <dt><a href="https://github.com/ueberdosis/hocuspocus">Hocuspocus</a> ⭐</dt>
   <dd>
 A standalone extensible yjs server with sqlite persistence, webhooks, auth and more.
+  </dd>
+  <dt><a href="https://github.com/nperez0111/teleportal">teleportal</a></dt>
+  <dd>
+Build your own Y.js sync server: any storage, any JS runtime, any transport.
+  </dd>
+  <dt><a href="https://github.com/drifting-in-space/y-sweet">y-sweet</a></dt>
+  <dd>
+A standalone yjs server with persistence to S3 or filesystem. They offer a
+<a href="https://y-sweet.cloud">cloud service</a> as well.
   </dd>
   <dt><a href="https://docs.superviz.com/collaboration/integrations/YJS/overview">@superviz/yjs</a></dt>
   <dd>

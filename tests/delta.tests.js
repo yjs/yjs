@@ -4,7 +4,7 @@ import * as t from 'lib0/testing'
 import * as s from 'lib0/schema'
 
 /**
- * Delta is a versatyle format enabling you to efficiently describe changes. It is part of lib0, so
+ * Delta is a versatile format enabling you to efficiently describe changes. It is part of lib0, so
  * that non-yjs applications can use it without consuming the full Yjs package. It is well suited
  * for efficiently describing state & changesets.
  *
@@ -63,7 +63,7 @@ export const testDeltaBasics = _tc => {
  * @param {t.TestCase} _tc
  */
 export const testDeltaBasicSchema = _tc => {
-  const $d = delta.$delta({ attrs: s.$object({ key: s.$string }), children: s.$number, hasText: false })
+  const $d = delta.$delta({ attrs: { key: s.$string }, children: s.$number, text: false })
   const d = delta.create($d)
   // @ts-expect-error
   d.set('key', false) // invalid change: will throw a type error
