@@ -1351,7 +1351,7 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, de
   if (attrsToRender == null) {
     parent._map.forEach(renderAttrs)
   } else {
-    attrsToRender.forEach(key => renderAttrs(/** @type {Item} */ (parent._map.get(key)), key))
+    attrsToRender.forEach(key => key != null && renderAttrs(/** @type {Item} */ (parent._map.get(key)), key))
   }
 }
 

@@ -120,7 +120,8 @@ export {
   mergeIdMaps,
   readIdMap,
   readIdSet,
-  decodeIdMap
+  decodeIdMap,
+  diffDocsToDelta
 } from './internals.js'
 
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'

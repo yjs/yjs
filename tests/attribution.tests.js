@@ -86,3 +86,25 @@ export const testInsertionsIntoAttributedContent = _tc => {
   ytext.applyDelta(delta.text().retain(9).insert('l'), am)
   t.assert(ytext.toString() === 'hello world')
 }
+
+export const testYdocDiff = () => {
+  const ydocStart = new Y.Doc()
+  ydocStart.getText('text').insert(0, 'hello')
+  ydocStart.getArray('array').insert(0, [1, 2, 3])
+  ydocStart.getMap('map').set('k', 42)
+  ydocStart.getMap('map').set('nested', new Y.Array())
+  const ydocUpdated = Y.cloneDoc(ydocStart)
+  ydocUpdated.getText('text').insert(5, ' world')
+  ydocUpdated.getArray('array').insert(1, ['x'])
+  ydocUpdated.getMap('map').set('newk', 42)
+  ydocUpdated.getMap('map').get('nested').insert(0, [1])
+  // @todo add custom attribution
+  const d = Y.diffDocsToDelta(ydocStart, ydocUpdated)
+  t.compare(d, delta.create()
+    .update('text', delta.create().retain(5).insert('world'))
+    .update('array', delta.create().retain(1).insert(['x']))
+    .update('map', delta.create().set('newk', 42).update('nested', delta.create().insert([1])))
+  )
+  console.log(d.toJSON())
+  debugger
+}
