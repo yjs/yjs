@@ -5,7 +5,9 @@ import {
   AbstractAttributionManager, Item, AbstractType, Transaction, AbstractStruct // eslint-disable-line
 } from '../internals.js'
 
+import * as map from 'lib0/map'
 import * as delta from 'lib0/delta' // eslint-disable-line
+import * as set from 'lib0/set'
 
 /**
  * @typedef {import('./types.js').YType} _YType
@@ -121,8 +123,33 @@ export class YEvent {
    */
   getDelta (am = noAttributionsManager, { deep } = {}) {
     const itemsToRender = mergeIdSets([diffIdSet(this.transaction.insertSet, this.transaction.deleteSet), diffIdSet(this.transaction.deleteSet, this.transaction.insertSet)])
-    const modified = deep ? this.transaction.changedParentTypes : null
-    return /** @type {any} */ (this.target.getContent(am, { itemsToRender, retainDeletes: true, renderAttrs: this.keysChanged, renderChildren: deep || this.childListChanged, deletedItems: this.transaction.deleteSet, deep: !!deep, modified }))
+    /**
+     * @todo this should be done only one in the transaction step
+     *
+     * @type {Map<import('./types.js').YType,Set<string|null>>|null}
+     */
+    let modified = this.transaction.changed
+    if (deep) {
+      // need to add deep changes to copy of modified
+      const dchanged = new Map()
+      modified.forEach((attrs, type) => {
+        dchanged.set(type, new Set(attrs))
+      })
+      for (let m of modified.keys()) {
+        while (m._item != null) {
+          const item = m._item
+          const ms = map.setIfUndefined(dchanged, item?.parent, set.create)
+          if (item && !ms.has(item.parentSub)) {
+            ms.add(item.parentSub)
+            m = /** @type {any} */ (item.parent)
+          } else {
+            break
+          }
+        }
+      }
+      modified = dchanged
+    }
+    return /** @type {any} */ (this.target.getContent(am, { itemsToRender, retainDeletes: true, deletedItems: this.transaction.deleteSet, deep: !!deep, modified }))
   }
 
   /**

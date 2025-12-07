@@ -464,22 +464,22 @@ export class AbstractType {
    * @param {import('../utils/IdSet.js').IdSet?} [opts.itemsToRender]
    * @param {boolean} [opts.retainInserts] - if true, retain rendered inserts with attributions
    * @param {boolean} [opts.retainDeletes] - if true, retain rendered+attributed deletes only
-   * @param {Set<string>?} [opts.renderAttrs] - set of attrs to render. if null, render all attributes
-   * @param {boolean} [opts.renderChildren] - if true, retain rendered+attributed deletes only
    * @param {import('../utils/IdSet.js').IdSet?} [opts.deletedItems] - used for computing prevItem in attributes
-   * @param {Set<import('../utils/types.js').YType>|Map<import('../utils/types.js').YType,any>|null} [opts.modified] - set of types that should be rendered as modified children
+   * @param {Map<import('../utils/types.js').YType,Set<string|null>>|null} [opts.modified] - set of types that should be rendered as modified children
    * @param {Deep} [opts.deep] - render child types as delta
    * @return {Deep extends true ? ToDeepEventDelta<EventDelta> : EventDelta} The Delta representation of this type.
    *
    * @public
    */
   getContent (am = noAttributionsManager, opts = {}) {
-    const { itemsToRender = null, retainInserts = false, retainDeletes = false, renderAttrs = null, renderChildren = true, deletedItems = null, modified = null, deep = false } = opts
+    const { itemsToRender = null, retainInserts = false, retainDeletes = false, deletedItems = null, modified = null, deep = false } = opts
+    const renderAttrs = modified?.get(this) || null
+    const renderChildren = (modified == null || opts.modified.get(this)?.has(null))
     /**
      * @type {EventDelta extends delta.Delta<infer N,infer Attrs,infer Children,infer Text,any> ? delta.DeltaBuilder<N,Attrs,Children,Text,any> : never}
      */
     const d = /** @type {any} */ (delta.create(/** @type {any} */ (this).nodeName || null))
-    typeMapGetDelta(d, /** @type {any} */ (this), renderAttrs, am, deep, modified, deletedItems, itemsToRender)
+    typeMapGetDelta(d, /** @type {any} */ (this), renderAttrs, am, deep, modified, deletedItems, itemsToRender, opts)
     if (renderChildren) {
       /**
        * @type {delta.FormattingAttributes}
@@ -571,7 +571,7 @@ export class AbstractType {
                 if (c.deleted ? retainDeletes : retainInserts) {
                   d.retain(c.content.getLength(), null, attribution ?? {})
                 } else if (deep && c.content.constructor === ContentType) {
-                  d.insert([/** @type {any} */(c.content).type.getContent(am, { ...opts, renderChildren: true, renderAttrs: null })], null, attribution)
+                  d.insert([/** @type {any} */(c.content).type.getContent(am, opts)], null, attribution)
                 } else {
                   d.insert(c.content.getContent(), null, attribution)
                 }
@@ -1296,6 +1296,8 @@ export const typeMapGetAll = (parent) => {
 }
 
 /**
+ * @todo move this to getContent/getDelta
+ *
  * Render the difference to another ydoc (which can be empty) and highlight the differences with
  * attributions.
  *
@@ -1305,17 +1307,18 @@ export const typeMapGetAll = (parent) => {
  * @template {delta.DeltaBuilder<any,any,any,any>} TypeDelta
  * @param {TypeDelta} d
  * @param {YType_} parent
- * @param {Set<string>?} attrsToRender
+ * @param {Set<string|null>?} attrsToRender
  * @param {import('../internals.js').AbstractAttributionManager} am
  * @param {boolean} deep
  * @param {Set<import('../utils/types.js').YType>|Map<import('../utils/types.js').YType,any>|null} [modified] - set of types that should be rendered as modified children
  * @param {import('../utils/IdSet.js').IdSet?} [deletedItems]
  * @param {import('../utils/IdSet.js').IdSet?} [itemsToRender]
+ * @param {any} [opts]
  *
  * @private
  * @function
  */
-export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, deletedItems, itemsToRender) => {
+export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, deletedItems, itemsToRender, opts) => {
   // @todo support modified ops!
   /**
    * @param {Item} item
@@ -1334,6 +1337,8 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, de
       if (itemsToRender == null || itemsToRender.hasId(item.lastId)) {
         d.unset(key, attribution, c)
       }
+    } else if (deep && c instanceof AbstractType && modified?.has(c)) {
+      d.update(key, c.getContent(am, opts))
     } else {
       // find prev content
       let prevContentItem = item

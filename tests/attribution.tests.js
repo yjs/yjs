@@ -100,11 +100,10 @@ export const testYdocDiff = () => {
   ydocUpdated.getMap('map').get('nested').insert(0, [1])
   // @todo add custom attribution
   const d = Y.diffDocsToDelta(ydocStart, ydocUpdated)
+  console.log('calculated diff', d.toJSON())
   t.compare(d, delta.create()
-    .update('text', delta.create().retain(5).insert('world'))
-    .update('array', delta.create().retain(1).insert(['x']))
-    .update('map', delta.create().set('newk', 42).update('nested', delta.create().insert([1])))
+    .update('text', delta.create().retain(5).insert(' world', null, { insert: [] }))
+    .update('array', delta.create().retain(1).insert(['x'], null, { insert: [] }))
+    .update('map', delta.create().set('newk', 42, { insert: [] }).update('nested', delta.create().insert([1], null, { insert: [] })))
   )
-  console.log(d.toJSON())
-  debugger
 }

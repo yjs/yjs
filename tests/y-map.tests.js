@@ -37,6 +37,37 @@ export const testIterators = _tc => {
   console.log(vals, entries, keys)
 }
 
+export const testNestedMapEvent = () => {
+  const ydoc = new Y.Doc()
+  const ymap = ydoc.getMap()
+  const ymapNested = ymap.set('nested', new Y.Map())
+  let called = 0
+  ymap.observeDeep((events, tr) => {
+    const event = events.find(event => event.target === ymap) || new Y.YEvent(ymap, tr, new Set())
+    const d = event.deltaDeep
+    called++
+    t.compare(d, delta.create().update('nested', delta.create().set('k', 'v')))
+  })
+  ymapNested.set('k', 'v')
+  t.assert(called === 1)
+}
+
+export const testNestedMapEvent2 = () => {
+  const ydoc = new Y.Doc()
+  const yarr = ydoc.getArray()
+  const ymapNested = new Y.Map()
+  yarr.insert(0, [ymapNested])
+  let called = 0
+  yarr.observeDeep((events, tr) => {
+    const event = events.find(event => event.target === yarr) || new Y.YEvent(yarr, tr, new Set())
+    const d = event.deltaDeep
+    called++
+    t.compare(d, delta.create().modify(delta.create().set('k', 'v')))
+  })
+  ymapNested.set('k', 'v')
+  t.assert(called === 1)
+}
+
 /**
  * Computing event changes after transaction should result in an error. See yjs#539
  *

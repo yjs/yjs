@@ -82,7 +82,7 @@
   },
   "homepage": "https://docs.yjs.dev",
   "dependencies": {
-    "lib0": "^0.2.115-4"
+    "lib0": "^0.2.115-6"
   },
   "devDependencies": {
     "@types/node": "^22.14.1",
