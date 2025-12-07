@@ -479,7 +479,8 @@ export class AbstractType {
      * @type {EventDelta extends delta.Delta<infer N,infer Attrs,infer Children,infer Text,any> ? delta.DeltaBuilder<N,Attrs,Children,Text,any> : never}
      */
     const d = /** @type {any} */ (delta.create(/** @type {any} */ (this).nodeName || null))
-    typeMapGetDelta(d, /** @type {any} */ (this), renderAttrs, am, deep, modified, deletedItems, itemsToRender, opts)
+    const optsAll = modified == null ? opts : object.assign({}, opts, { modified: null })
+    typeMapGetDelta(d, /** @type {any} */ (this), renderAttrs, am, deep, modified, deletedItems, itemsToRender, opts, optsAll)
     if (renderChildren) {
       /**
        * @type {delta.FormattingAttributes}
@@ -571,7 +572,7 @@ export class AbstractType {
                 if (c.deleted ? retainDeletes : retainInserts) {
                   d.retain(c.content.getLength(), null, attribution ?? {})
                 } else if (deep && c.content.constructor === ContentType) {
-                  d.insert([/** @type {any} */(c.content).type.getContent(am, opts)], null, attribution)
+                  d.insert([/** @type {any} */(c.content).type.getContent(am, optsAll)], null, attribution)
                 } else {
                   d.insert(c.content.getContent(), null, attribution)
                 }
@@ -1314,11 +1315,12 @@ export const typeMapGetAll = (parent) => {
  * @param {import('../utils/IdSet.js').IdSet?} [deletedItems]
  * @param {import('../utils/IdSet.js').IdSet?} [itemsToRender]
  * @param {any} [opts]
+ * @param {any} [optsAll]
  *
  * @private
  * @function
  */
-export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, deletedItems, itemsToRender, opts) => {
+export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, deletedItems, itemsToRender, opts, optsAll) => {
   // @todo support modified ops!
   /**
    * @param {Item} item
@@ -1348,7 +1350,7 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, de
       }
       const prevValue = (prevContentItem !== item && itemsToRender?.hasId(prevContentItem.lastId)) ? array.last(prevContentItem.content.getContent()) : undefined
       if (deep && c instanceof AbstractType) {
-        c = /** @type {any} */(c).getContent(am)
+        c = /** @type {any} */(c).getContent(am, optsAll)
       }
       d.set(key, c, attribution, prevValue)
     }

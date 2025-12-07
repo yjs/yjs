@@ -107,3 +107,27 @@ export const testYdocDiff = () => {
     .update('map', delta.create().set('newk', 42, { insert: [] }).update('nested', delta.create().insert([1], null, { insert: [] })))
   )
 }
+
+export const testChildListContent = () => {
+  const ydocStart = new Y.Doc()
+  const ydocUpdated = Y.cloneDoc(ydocStart)
+  const yf = new Y.XmlElement('test')
+  let calledEvent = 0
+  yf.applyDelta(delta.create().insert('test content').set('k', 'v'))
+
+  const yarray = ydocUpdated.getArray('array')
+  yarray.observeDeep((events, tr) => {
+    calledEvent++
+    const event = events.find(event => event.target === yarray) || new Y.YEvent(yarray, tr, new Set(null))
+    const d = event.deltaDeep
+    const expectedD = delta.create().insert([delta.create('test').insert('test content').set('k', 'v')])
+    t.compare(d, expectedD)
+  })
+  ydocUpdated.getArray('array').insert(0, [yf])
+  t.assert(calledEvent === 1)
+  const d = Y.diffDocsToDelta(ydocStart, ydocUpdated)
+  console.log('calculated diff', d.toJSON())
+  t.compare(d, delta.create()
+    .update('array', delta.create().insert([delta.create('test').insert('test content', null, { insert: [] }).set('k', 'v', { insert: [] })], null, { insert: [] }))
+  )
+}
