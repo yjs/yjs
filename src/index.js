@@ -131,7 +131,7 @@ const glo = /** @type {any} */ (typeof globalThis !== 'undefined'
     // @ts-ignore
     : typeof global !== 'undefined' ? global : {})
 
-const importIdentifier = '__ $YJS$ __'
+const importIdentifier = '__ $YJS14$ __'
 
 if (glo[importIdentifier] === true) {
   /**
