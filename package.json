@@ -1,6 +1,6 @@
 {
   "name": "@y/y",
-  "version": "14.0.0-17",
+  "version": "14.0.0-18",
   "description": "Shared Editing Library",
   "main": "./dist/yjs.js",
   "module": "./dist/yjs.js",
