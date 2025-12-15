@@ -18,7 +18,7 @@
     "dist": "npm run clean && rollup -c && (tsc --skipLibCheck|| true)",
     "watch": "rollup -wc",
     "lint": "markdownlint README.md && standard && tsc --skipLibCheck",
-    "preversion": "PRODUCTION=1 npm run dist && test -e dist/src/index.d.ts && test -e dist/yjs.cjs && test -e dist/yjs.cjs",
+    "preversion": "PRODUCTION=1 npm run dist && test -e dist/src/index.d.ts && test -e dist/yjs.js",
     "debug": "npm run gentesthtml && 0serve -o test.html",
     "trace-deopt": "clear && node --trace-deopt ./tests/index.js",
     "trace-opt": "clear && node --trace-opt ./tests/index.js",
