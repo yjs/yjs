@@ -2,8 +2,8 @@
   "name": "@y/y",
   "version": "14.0.0-16",
   "description": "Shared Editing Library",
-  "main": "./dist/yjs.cjs",
-  "module": "./dist/yjs.mjs",
+  "main": "./dist/yjs.js",
+  "module": "./dist/yjs.js",
   "types": "./dist/src/index.d.ts",
   "type": "module",
   "sideEffects": false,
@@ -27,30 +27,21 @@
   "exports": {
     ".": {
       "types": "./dist/src/index.d.ts",
-      "module": "./src/index.js",
-      "require": "./dist/yjs.cjs",
-      "import": "./src/index.js"
+      "default": "./dist/yjs.js"
     },
     "./internals": {
       "types": "./dist/src/internals.d.ts",
-      "module": "./src/internals.js",
-      "require": "./dist/internals.cjs",
-      "import": "./src/internals.js"
+      "default": "./dist/internals.js"
     },
     "./testHelper": {
       "types": "./dist/tests/testHelper.d.ts",
-      "module": "./tests/testHelper.js",
-      "require": "./dist/testHelper.cjs",
-      "import": "./tests/testHelper.js"
+      "default": "./dist/testHelper.js"
     },
     "./package.json": "./package.json"
   },
   "files": [
     "dist/*",
-    "dist/src",
-    "src",
-    "tests/testHelper.js",
-    "dist/testHelper.mjs"
+    "dist/src"
   ],
   "dictionaries": {
     "test": "tests"
