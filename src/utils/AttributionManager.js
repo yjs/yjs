@@ -9,7 +9,6 @@ import {
   insertIntoIdSet,
   diffIdMap,
   createIdMap,
-  createAttributionItem,
   mergeIdMaps,
   createID,
   mergeIdSets,
@@ -349,9 +348,10 @@ export class DiffAttributionManager extends ObservableV2 {
   /**
    * @param {Doc} prevDoc
    * @param {Doc} nextDoc
-   * @param {Array<import('./IdMap.js').AttributionItem<any>>} [attrs] - the attributes to apply to the diff
+   * @param {Object} [options] - options for the attribution manager
+   * @param {Array<import('./IdMap.js').AttributionItem<any>>} [options.attrs] - the attributes to apply to the diff
    */
-  constructor (prevDoc, nextDoc, attrs = [createAttributionItem('change', '')]) {
+  constructor (prevDoc, nextDoc, { attrs = [] } = {}) {
     super()
     const _nextDocInserts = createInsertSetFromStructStore(nextDoc.store, false) // unmaintained
     const _prevDocInserts = createInsertSetFromStructStore(prevDoc.store, false) // unmaintained
@@ -539,9 +539,10 @@ export class DiffAttributionManager extends ObservableV2 {
  *
  * @param {Doc} prevDoc
  * @param {Doc} nextDoc
- * @param {Array<import('./IdMap.js').AttributionItem<any>>} [attrs] - the attributes to apply to the diff
+ * @param {Object} [options] - options for the attribution manager
+ * @param {Array<import('./IdMap.js').AttributionItem<any>>} [options.attrs] - the attributes to apply to the diff
  */
-export const createAttributionManagerFromDiff = (prevDoc, nextDoc, attrs) => new DiffAttributionManager(prevDoc, nextDoc, attrs)
+export const createAttributionManagerFromDiff = (prevDoc, nextDoc, options) => new DiffAttributionManager(prevDoc, nextDoc, options)
 
 /**
  * Intended for projects that used the v13 snapshot feature. With this AttributionManager you can
@@ -555,9 +556,10 @@ export class SnapshotAttributionManager extends ObservableV2 {
   /**
    * @param {Snapshot} prevSnapshot
    * @param {Snapshot} nextSnapshot
-   * @param {Array<import('./IdMap.js').AttributionItem<any>>} [attrs]
+   * @param {Object} [options] - options for the attribution manager
+   * @param {Array<import('./IdMap.js').AttributionItem<any>>} [options.attrs] - the attributes to apply to the diff
    */
-  constructor (prevSnapshot, nextSnapshot, attrs = [createAttributionItem('change', '')]) {
+  constructor (prevSnapshot, nextSnapshot, { attrs = [] } = {}) {
     super()
     this.prevSnapshot = prevSnapshot
     this.nextSnapshot = nextSnapshot
@@ -618,6 +620,7 @@ export class SnapshotAttributionManager extends ObservableV2 {
 /**
  * @param {Snapshot} prevSnapshot
  * @param {Snapshot} nextSnapshot
- * @param {Array<import('./IdMap.js').AttributionItem<any>>} [attrs]
+ * @param {Object} [options] - options for the attribution manager
+ * @param {Array<import('./IdMap.js').AttributionItem<any>>} [options.attrs] - the attributes to apply to the diff
  */
-export const createAttributionManagerFromSnapshots = (prevSnapshot, nextSnapshot = prevSnapshot, attrs) => new SnapshotAttributionManager(prevSnapshot, nextSnapshot, attrs)
+export const createAttributionManagerFromSnapshots = (prevSnapshot, nextSnapshot = prevSnapshot, options) => new SnapshotAttributionManager(prevSnapshot, nextSnapshot, options)
