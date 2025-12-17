@@ -38,16 +38,6 @@ export class AttributionItem {
 }
 
 /**
- * @param {AttributionItem<any>} attr
- */
-const _hashAttribution = attr => {
-  const encoder = encoding.createEncoder()
-  encoding.writeVarString(encoder, attr.name)
-  encoding.writeAny(encoder, attr.val)
-  return buf.toBase64(rabin.fingerprint(rabin.StandardIrreducible128, encoding.toUint8Array(encoder)))
-}
-
-/**
  * @todo rename this to `createAttribute`
  * @template V
  * @param {string} name
@@ -596,7 +586,7 @@ export const decodeIdMap = data => readIdMap(new DSDecoderV2(decoding.createDeco
 const _ensureAttrs = (idmap, attrs) => attrs.map(attr =>
   idmap.attrs.has(attr)
     ? attr
-    : map.setIfUndefined(idmap.attrsH, _hashAttribution(attr), () => {
+    : map.setIfUndefined(idmap.attrsH, attr.hash(), () => {
       idmap.attrs.add(attr)
       return attr
     }))
