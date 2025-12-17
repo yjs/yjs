@@ -349,15 +349,16 @@ export class DiffAttributionManager extends ObservableV2 {
   /**
    * @param {Doc} prevDoc
    * @param {Doc} nextDoc
+   * @param {Array<import('./IdMap.js').AttributionItem<any>>} [attrs] - the attributes to apply to the diff
    */
-  constructor (prevDoc, nextDoc) {
+  constructor (prevDoc, nextDoc, attrs = [createAttributionItem('change', '')]) {
     super()
     const _nextDocInserts = createInsertSetFromStructStore(nextDoc.store, false) // unmaintained
     const _prevDocInserts = createInsertSetFromStructStore(prevDoc.store, false) // unmaintained
     const nextDocDeletes = createDeleteSetFromStructStore(nextDoc.store) // maintained
     const prevDocDeletes = createDeleteSetFromStructStore(prevDoc.store) // maintained
-    this.inserts = createIdMapFromIdSet(diffIdSet(_nextDocInserts, _prevDocInserts), [])
-    this.deletes = createIdMapFromIdSet(diffIdSet(nextDocDeletes, prevDocDeletes), [])
+    this.inserts = createIdMapFromIdSet(diffIdSet(_nextDocInserts, _prevDocInserts), attrs)
+    this.deletes = createIdMapFromIdSet(diffIdSet(nextDocDeletes, prevDocDeletes), attrs)
     this._prevDoc = prevDoc
     this._prevDocStore = prevDoc.store
     this._nextDoc = nextDoc
@@ -365,10 +366,10 @@ export class DiffAttributionManager extends ObservableV2 {
     this._nextBOH = nextDoc.on('beforeObserverCalls', tr => {
       // update inserts
       const diffInserts = diffIdSet(tr.insertSet, _prevDocInserts)
-      insertIntoIdMap(this.inserts, createIdMapFromIdSet(diffInserts, []))
+      insertIntoIdMap(this.inserts, createIdMapFromIdSet(diffInserts, attrs))
       // update deletes
       const diffDeletes = diffIdSet(diffIdSet(tr.deleteSet, prevDocDeletes), this.inserts)
-      insertIntoIdMap(this.deletes, createIdMapFromIdSet(diffDeletes, []))
+      insertIntoIdMap(this.deletes, createIdMapFromIdSet(diffDeletes, attrs))
       // @todo fire update ranges on `diffInserts` and `diffDeletes`
     })
     this._prevBOH = prevDoc.on('beforeObserverCalls', tr => {
@@ -538,8 +539,9 @@ export class DiffAttributionManager extends ObservableV2 {
  *
  * @param {Doc} prevDoc
  * @param {Doc} nextDoc
+ * @param {Array<import('./IdMap.js').AttributionItem<any>>} [attrs] - the attributes to apply to the diff
  */
-export const createAttributionManagerFromDiff = (prevDoc, nextDoc) => new DiffAttributionManager(prevDoc, nextDoc)
+export const createAttributionManagerFromDiff = (prevDoc, nextDoc, attrs) => new DiffAttributionManager(prevDoc, nextDoc, attrs)
 
 /**
  * Intended for projects that used the v13 snapshot feature. With this AttributionManager you can
@@ -553,17 +555,18 @@ export class SnapshotAttributionManager extends ObservableV2 {
   /**
    * @param {Snapshot} prevSnapshot
    * @param {Snapshot} nextSnapshot
+   * @param {Array<import('./IdMap.js').AttributionItem<any>>} [attrs]
    */
-  constructor (prevSnapshot, nextSnapshot) {
+  constructor (prevSnapshot, nextSnapshot, attrs = [createAttributionItem('change', '')]) {
     super()
     this.prevSnapshot = prevSnapshot
     this.nextSnapshot = nextSnapshot
     const inserts = createIdMap()
-    const deletes = createIdMapFromIdSet(diffIdSet(nextSnapshot.ds, prevSnapshot.ds), [createAttributionItem('change', '')])
+    const deletes = createIdMapFromIdSet(diffIdSet(nextSnapshot.ds, prevSnapshot.ds), attrs)
     nextSnapshot.sv.forEach((clock, client) => {
       const prevClock = prevSnapshot.sv.get(client) || 0
       inserts.add(client, 0, prevClock, []) // content is included in prevSnapshot is rendered without attributes
-      inserts.add(client, prevClock, clock - prevClock, [createAttributionItem('change', '')]) // content is rendered as "inserted"
+      inserts.add(client, prevClock, clock - prevClock, attrs) // content is rendered as "inserted"
     })
     this.attrs = mergeIdMaps([diffIdMap(inserts, prevSnapshot.ds), deletes])
   }
@@ -615,5 +618,6 @@ export class SnapshotAttributionManager extends ObservableV2 {
 /**
  * @param {Snapshot} prevSnapshot
  * @param {Snapshot} nextSnapshot
+ * @param {Array<import('./IdMap.js').AttributionItem<any>>} [attrs]
  */
-export const createAttributionManagerFromSnapshots = (prevSnapshot, nextSnapshot = prevSnapshot) => new SnapshotAttributionManager(prevSnapshot, nextSnapshot)
+export const createAttributionManagerFromSnapshots = (prevSnapshot, nextSnapshot = prevSnapshot, attrs) => new SnapshotAttributionManager(prevSnapshot, nextSnapshot, attrs)
