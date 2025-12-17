@@ -94,12 +94,10 @@ export class YXmlElement extends YXmlFragment {
     const el = new YXmlElement(this.nodeName)
     const attrs = this.getAttributes()
     object.forEach(attrs, (value, key) => {
-      if (typeof value === 'string') {
-        el.setAttribute(key, value)
-      }
+      el.setAttribute(key, /** @type {any} */ (value))
     })
     // @ts-ignore
-    el.insert(0, this.toArray().map(item => item instanceof AbstractType ? item.clone() : item))
+    el.insert(0, this.toArray().map(v => v instanceof AbstractType ? v.clone() : v))
     return el
   }
 
