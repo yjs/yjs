@@ -78,7 +78,6 @@
   "devDependencies": {
     "@types/node": "^22.14.1",
     "@y/protocols": "^1.0.6-1",
-    "concurrently": "^9.2.1",
     "markdownlint-cli": "^0.45.0",
     "rollup": "^4.52.5",
     "standard": "^17.1.2",
