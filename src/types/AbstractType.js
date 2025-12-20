@@ -736,7 +736,11 @@ export class AbstractType {
           } else if (delta.$deleteOp.check(op)) {
             deleteText(transaction, currPos, op.delete)
           } else if (delta.$modifyOp.check(op)) {
-            /** @type {ContentType} */ (currPos.right?.content).type.applyDelta(op.value)
+            if (currPos.right) {
+              /** @type {ContentType} */ (currPos.right.content).type.applyDelta(op.value)
+            } else {
+              error.unexpectedCase()
+            }
             currPos.formatText(transaction, /** @type {any} */ (this), 1, op.format || {})
           } else {
             error.unexpectedCase()
