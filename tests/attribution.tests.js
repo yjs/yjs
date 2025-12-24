@@ -40,11 +40,11 @@ export const testAttributedEvents = _tc => {
   })
   const am = Y.createAttributionManagerFromDiff(v1, ydoc)
   const c1 = ytext.getContent(am)
-  t.compare(c1, delta.text().insert('hello ').insert('world', null, { delete: [] }))
+  t.compare(c1, delta.create().insert('hello ').insert('world', null, { delete: [] }))
   let calledObserver = false
   ytext.observe(event => {
     const d = event.getDelta(am)
-    t.compare(d, delta.text().retain(11).insert('!', null, { insert: [] }))
+    t.compare(d, delta.create().retain(11).insert('!', null, { insert: [] }))
     calledObserver = true
   })
   ytext.insert(11, '!')
@@ -64,8 +64,8 @@ export const testInsertionsMindingAttributedContent = _tc => {
   })
   const am = Y.createAttributionManagerFromDiff(v1, ydoc)
   const c1 = ytext.getContent(am)
-  t.compare(c1, delta.text().insert('hello ').insert('world', null, { delete: [] }))
-  ytext.applyDelta(delta.text().retain(11).insert('content'), am)
+  t.compare(c1, delta.create().insert('hello ').insert('world', null, { delete: [] }))
+  ytext.applyDelta(delta.create().retain(11).insert('content'), am)
   t.assert(ytext.toString() === 'hello content')
 }
 
@@ -82,8 +82,8 @@ export const testInsertionsIntoAttributedContent = _tc => {
   })
   const am = Y.createAttributionManagerFromDiff(v1, ydoc)
   const c1 = ytext.getContent(am)
-  t.compare(c1, delta.text().insert('hello ').insert('word', null, { insert: [] }))
-  ytext.applyDelta(delta.text().retain(9).insert('l'), am)
+  t.compare(c1, delta.create().insert('hello ').insert('word', null, { insert: [] }))
+  ytext.applyDelta(delta.create().retain(9).insert('l'), am)
   t.assert(ytext.toString() === 'hello world')
 }
 
@@ -102,9 +102,9 @@ export const testYdocDiff = () => {
   const d = Y.diffDocsToDelta(ydocStart, ydocUpdated)
   console.log('calculated diff', d.toJSON())
   t.compare(d, delta.create()
-    .update('text', delta.create().retain(5).insert(' world', null, { insert: [] }))
-    .update('array', delta.create().retain(1).insert(['x'], null, { insert: [] }))
-    .update('map', delta.create().set('newk', 42, { insert: [] }).update('nested', delta.create().insert([1], null, { insert: [] })))
+    .modifyAttr('text', delta.create().retain(5).insert(' world', null, { insert: [] }))
+    .modifyAttr('array', delta.create().retain(1).insert(['x'], null, { insert: [] }))
+    .modifyAttr('map', delta.create().setAttr('newk', 42, { insert: [] }).modifyAttr('nested', delta.create().insert([1], null, { insert: [] })))
   )
 }
 
@@ -113,21 +113,21 @@ export const testChildListContent = () => {
   const ydocUpdated = Y.cloneDoc(ydocStart)
   const yf = new Y.XmlElement('test')
   let calledEvent = 0
-  yf.applyDelta(delta.create().insert('test content').set('k', 'v'))
+  yf.applyDelta(delta.create().insert('test content').setAttr('k', 'v'))
 
   const yarray = ydocUpdated.getArray('array')
   yarray.observeDeep((events, tr) => {
     calledEvent++
     const event = events.find(event => event.target === yarray) || new Y.YEvent(yarray, tr, new Set(null))
     const d = event.deltaDeep
-    const expectedD = delta.create().insert([delta.create('test').insert('test content').set('k', 'v')])
+    const expectedD = delta.create().insert([delta.create('test').insert('test content').setAttr('k', 'v')])
     t.compare(d, expectedD)
   })
   ydocUpdated.getArray('array').insert(0, [yf])
   t.assert(calledEvent === 1)
   const d = Y.diffDocsToDelta(ydocStart, ydocUpdated)
   console.log('calculated diff', d.toJSON())
-  t.compare(d, delta.create()
-    .update('array', delta.create().insert([delta.create('test').insert('test content', null, { insert: [] }).set('k', 'v', { insert: [] })], null, { insert: [] }))
-  )
+  const expected = delta.create()
+    .modifyAttr('array', delta.create().insert([delta.create('test').insert('test content', null, { insert: [] }).setAttr('k', 'v', { insert: [] })], null, { insert: [] }))
+  t.compare(d.done(), expected.done())
 }

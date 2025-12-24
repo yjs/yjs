@@ -46,7 +46,7 @@ export const diffDocsToDelta = (v1, v2, { am = createAttributionManagerFromDiff(
         const shareDelta = type.getContent(am, {
           itemsToRender, retainDeletes: true, deletedItems: deletesOnly, modified: changedTypes, deep: true
         })
-        d.update(typename, shareDelta)
+        d.modifyAttr(typename, shareDelta)
       }
     })
   })

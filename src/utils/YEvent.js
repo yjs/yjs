@@ -13,28 +13,24 @@ import * as delta from 'lib0/delta' // eslint-disable-line
 import * as set from 'lib0/set'
 
 /**
- * @typedef {import('./types.js').YType} _YType
- */
-
-/**
- * @template {AbstractType<any,any>} Target
+ * @template {delta.DeltaConf} DConf
  * YEvent describes the changes on a YType.
  */
 export class YEvent {
   /**
-   * @param {Target} target The changed type.
+   * @param {AbstractType<DConf>} target The changed type.
    * @param {Transaction} transaction
    * @param {Set<any>?} subs The keys that changed
    */
   constructor (target, transaction, subs) {
     /**
      * The type on which this event was created on.
-     * @type {Target}
+     * @type {AbstractType<DConf>}
      */
     this.target = target
     /**
      * The current target on which the observe callback is called.
-     * @type {_YType}
+     * @type {AbstractType<any>}
      */
     this.currentTarget = target
     /**
@@ -43,11 +39,11 @@ export class YEvent {
      */
     this.transaction = transaction
     /**
-     * @type {(Target extends AbstractType<infer D,any> ? D : delta.Delta<any,any,any,any,any>)|null}
+     * @type {delta.Delta<DConf>|null}
      */
     this._delta = null
     /**
-     * @type {(Target extends AbstractType<infer D,any> ? import('../internals.js').ToDeepEventDelta<D> : delta.Delta<any,any,any,any,any>)|null}
+     * @type {import('../types/AbstractType.js').DeltaConfTypesToDeltaDelta<DConf>|null}
      */
     this._deltaDeep = null
     /**
@@ -120,7 +116,7 @@ export class YEvent {
    * @param {AbstractAttributionManager} am
    * @param {object} [opts]
    * @param {Deep} [opts.deep]
-   * @return {Target extends AbstractType<infer D,any> ? (Deep extends true ? import('../internals.js').ToDeepEventDelta<D> : D) : delta.Delta<any,any,any,any>} The Delta representation of this type.
+   * @return {Deep extends true ? delta.Delta<import('../internals.js').DeltaConfTypesToDelta<DConf>> : delta.Delta<DConf>} The Delta representation of this type.
    *
    * @public
    */
@@ -159,7 +155,7 @@ export class YEvent {
    * Compute the changes in the delta format.
    * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
    *
-   * @type {Target extends AbstractType<infer D,any> ? D : delta.Delta<any,any,any,any,any>} The Delta representation of this type.
+   * @type {delta.Delta<DConf>} The Delta representation of this type.
    * @public
    */
   get delta () {
@@ -170,11 +166,11 @@ export class YEvent {
    * Compute the changes in the delta format.
    * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
    *
-   * @type {Target extends AbstractType<infer D,any> ? D : delta.Delta<any,any,any,any,any>} The Delta representation of this type.
+   * @type {import('../internals.js').DeltaConfTypesToDeltaDelta<DConf>} The Delta representation of this type.
    * @public
    */
   get deltaDeep () {
-    return /** @type {any} */ (this._deltaDeep ?? (this._deltaDeep = this.getDelta(noAttributionsManager, { deep: true })))
+    return /** @type {any} */ (this._deltaDeep ?? (this._deltaDeep = /** @type {any} */ (this.getDelta(noAttributionsManager, { deep: true }))))
   }
 }
 
@@ -188,8 +184,8 @@ export class YEvent {
  *   console.log(path) // might look like => [2, 'key1']
  *   child === type.get(path[0]).get(path[1])
  *
- * @param {_YType} parent
- * @param {_YType} child target
+ * @param {AbstractType} parent
+ * @param {AbstractType} child target
  * @param {AbstractAttributionManager} am
  * @return {Array<string|number>} Path to the target
  *
@@ -209,7 +205,7 @@ export const getPathTo = (parent, child, am = noAttributionsManager) => {
       const apos = /** @type {AbsolutePosition} */ (createAbsolutePositionFromRelativePosition(createRelativePosition(parent, child._item.id), doc, false, am))
       path.unshift(apos.index)
     }
-    child = /** @type {_YType} */ (child._item.parent)
+    child = /** @type {AbstractType} */ (child._item.parent)
   }
   return path
 }

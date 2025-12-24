@@ -275,8 +275,7 @@ export const callTypeObservers = (type, transaction, event) => {
 
 /**
  * Abstract Yjs Type class
- * @template {delta.Delta<any,any,any,any,any>} [EventDelta=any]
- * @template {AbstractType<any,any>} [Self=any]
+ * @template {delta.DeltaConf} [DConf=any]
  */
 export class AbstractType {
   constructor () {
@@ -299,7 +298,7 @@ export class AbstractType {
     this._length = 0
     /**
      * Event handlers
-     * @type {EventHandler<YEvent<Self>,Transaction>}
+     * @type {EventHandler<YEvent<DConf>,Transaction>}
      */
     this._eH = createEventHandler()
     /**
@@ -312,14 +311,15 @@ export class AbstractType {
      */
     this._searchMarker = null
     /**
-     * @type {EventDelta?}
+     * @type {delta.DeltaBuilder<DConf>}
+     * @private
      */
-    this._prelim = null
+    this._content = /** @type {delta.DeltaBuilderAny} */ (delta.create())
   }
 
   /**
    * Returns a fresh delta that can be used to change this YType.
-   * @type {EventDelta}
+   * @type {delta.DeltaBuilder<DConf>}
    */
   get change () {
     return /** @type {any} */ (delta.create())
@@ -352,7 +352,7 @@ export class AbstractType {
   }
 
   /**
-   * @return {Self}
+   * @return {this}
    */
   _copy () {
     // @ts-ignore
@@ -364,7 +364,7 @@ export class AbstractType {
    *
    * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
    *
-   * @return {Self}
+   * @return {this}
    */
   clone () {
     // @todo remove this method from othern types by doing `_copy().apply(this.getContent())`
@@ -405,7 +405,7 @@ export class AbstractType {
   /**
    * Observe all events that are created on this type.
    *
-   * @template {(target: YEvent<Self>, tr: Transaction) => void} F
+   * @template {(target: YEvent<DConf>, tr: Transaction) => void} F
    * @param {F} f Observer function
    * @return {F}
    */
@@ -429,7 +429,7 @@ export class AbstractType {
   /**
    * Unregister an observer function.
    *
-   * @param {(type:YEvent<Self>,tr:Transaction)=>void} f Observer function
+   * @param {(type:YEvent<DConf>,tr:Transaction)=>void} f Observer function
    */
   unobserve (f) {
     removeEventHandlerListener(this._eH, f)
@@ -467,16 +467,16 @@ export class AbstractType {
    * @param {import('../utils/IdSet.js').IdSet?} [opts.deletedItems] - used for computing prevItem in attributes
    * @param {Map<import('../utils/types.js').YType,Set<string|null>>|null} [opts.modified] - set of types that should be rendered as modified children
    * @param {Deep} [opts.deep] - render child types as delta
-   * @return {Deep extends true ? ToDeepEventDelta<EventDelta> : EventDelta} The Delta representation of this type.
+   * @return {Deep extends true ? delta.Delta<DeltaConfTypesToDelta<DConf>> : delta.Delta<DConf>} The Delta representation of this type.
    *
    * @public
    */
   getContent (am = noAttributionsManager, opts = {}) {
     const { itemsToRender = null, retainInserts = false, retainDeletes = false, deletedItems = null, modified = null, deep = false } = opts
     const renderAttrs = modified?.get(this) || null
-    const renderChildren = (modified == null || opts.modified.get(this)?.has(null))
+    const renderChildren = !!(modified == null || modified.get(this)?.has(null))
     /**
-     * @type {EventDelta extends delta.Delta<infer N,infer Attrs,infer Children,infer Text,any> ? delta.DeltaBuilder<N,Attrs,Children,Text,any> : never}
+     * @type {delta.DeltaBuilderAny}
      */
     const d = /** @type {any} */ (delta.create(/** @type {any} */ (this).nodeName || null))
     const optsAll = modified == null ? opts : object.assign({}, opts, { modified: null })
@@ -693,7 +693,7 @@ export class AbstractType {
    * attributions.
    *
    * @param {AbstractAttributionManager} am
-   * @return {ToDeepEventDelta<EventDelta>}
+   * @return {delta.Delta<DeltaConfTypesToDelta<DConf>>}
    */
   getContentDeep (am = noAttributionsManager) {
     return /** @type {any} */ (this.getContent(am, { deep: true }))
@@ -702,7 +702,7 @@ export class AbstractType {
   /**
    * Apply a {@link Delta} on this shared type.
    *
-   * @param {delta.Delta<any,any,any,any,any>} d The changes to apply on this element.
+   * @param {delta.DeltaAny} d The changes to apply on this element.
    * @param {AbstractAttributionManager} am
    *
    * @public
@@ -747,12 +747,12 @@ export class AbstractType {
           }
         }
         for (const op of d.attrs) {
-          if (delta.$insertOp.check(op)) {
-            typeMapSet(transaction, /** @type {any} */ (this), op.key, op.value)
+          if (delta.$setAttrOp.check(op)) {
+            typeMapSet(transaction, /** @type {any} */ (this), /** @type {any} */ (op.key), op.value)
           } else if (delta.$deleteOp.check(op)) {
-            typeMapDelete(transaction, /** @type {any} */ (this), op.key)
+            typeMapDelete(transaction, /** @type {any} */ (this), /** @type {any} */ (op.key))
           } else {
-            const sub = typeMapGet(/** @type {any} */ (this), op.key)
+            const sub = typeMapGet(/** @type {any} */ (this), /** @type {any} */ (op.key))
             if (!(sub instanceof AbstractType)) {
               error.unexpectedCase()
             }
@@ -772,21 +772,14 @@ export class AbstractType {
 export const equalAttrs = (a, b) => a === b || (typeof a === 'object' && typeof b === 'object' && a && b && object.equalFlat(a, b))
 
 /**
- * @template {delta.Delta<any,any,any,any,any>} D
- * @typedef {D extends delta.Delta<infer N,infer Attrs,infer Cs,infer Text,any>
- *   ? delta.Delta<
- *       N,
- *       { [K in keyof Attrs]: TypeToDelta<Attrs[K]> },
- *       TypeToDelta<Cs>,
- *       Text
- *     >
- *   : D
- * } ToDeepEventDelta
- */
-
-/**
- * @template {any} T
- * @typedef {(Extract<T,AbstractType<any>> extends AbstractType<infer D> ? (unknown extends D ? never : ToDeepEventDelta<D>) : never) | Exclude<T,AbstractType<any>>} TypeToDelta
+ * @template {delta.DeltaConf} DConf
+ * @typedef {delta.DeltaConfOverwrite<DConf, {
+ *     attrs: { [K in keyof delta.DeltaConfGetAttrs<DConf>]: delta.DeltaConfGetAttrs<DConf>[K] },
+ *     children: (Extract<delta.DeltaConfGetChildren<DConf>,AbstractType<any>> extends AbstractType<infer SubDConf> ? (
+ *       unknown extends SubDConf ? never : (delta.Delta<DeltaConfTypesToDelta<SubDConf>>)
+ *     ) : never) | Exclude<delta.DeltaConfGetChildren<DConf>,AbstractType<any>>
+ *   }>
+ * } DeltaConfTypesToDelta
  */
 
 /**
@@ -1309,7 +1302,7 @@ export const typeMapGetAll = (parent) => {
  * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
  * attribution `{ isDeleted: true, .. }`.
  *
- * @template {delta.DeltaBuilder<any,any,any,any>} TypeDelta
+ * @template {delta.DeltaBuilderAny} TypeDelta
  * @param {TypeDelta} d
  * @param {YType_} parent
  * @param {Set<string|null>?} attrsToRender
@@ -1341,10 +1334,10 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, de
     let c = array.last(content.getContent())
     if (deleted) {
       if (itemsToRender == null || itemsToRender.hasId(item.lastId)) {
-        d.unset(key, attribution, c)
+        d.deleteAttr(key, attribution, c)
       }
     } else if (deep && c instanceof AbstractType && modified?.has(c)) {
-      d.update(key, c.getContent(am, opts))
+      d.modifyAttr(key, c.getContent(am, opts))
     } else {
       // find prev content
       let prevContentItem = item
@@ -1356,7 +1349,7 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, de
       if (deep && c instanceof AbstractType) {
         c = /** @type {any} */(c).getContent(am, optsAll)
       }
-      d.set(key, c, attribution, prevValue)
+      d.setAttr(key, c, attribution, prevValue)
     }
   }
   if (attrsToRender == null) {

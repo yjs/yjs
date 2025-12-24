@@ -299,8 +299,8 @@ export const testUndoXml = tc => {
   // format textchild and revert that change
   undoManager.stopCapturing()
   textchild.format(3, 4, { bold: true })
-  const v1 = delta.create('UNDEFINED').insert([delta.create('p').insert([delta.text().insert('con').insert('tent', { bold: true }).done()]).done()]).done()
-  const v2 = delta.create('UNDEFINED').insert([delta.create('p').insert([delta.text().insert('content').done()]).done()]).done()
+  const v1 = delta.create('UNDEFINED').insert([delta.create('p').insert([delta.create().insert('con').insert('tent', { bold: true }).done()]).done()]).done()
+  const v2 = delta.create('UNDEFINED').insert([delta.create('p').insert([delta.create().insert('content').done()]).done()]).done()
   t.compare(xml0.getContentDeep(), v1)
   undoManager.undo()
   t.compare(xml0.getContentDeep(), v2)
