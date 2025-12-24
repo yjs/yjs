@@ -704,10 +704,13 @@ export class AbstractType {
    *
    * @param {delta.Delta<any,any,any,any,any>} d The changes to apply on this element.
    * @param {AbstractAttributionManager} am
+   * @param {object} [opts]
+   * @param {any} [opts.origin] - The origin of the transaction
+   * @param {boolean} [opts.local] - Whether the transaction is local
    *
    * @public
    */
-  applyDelta (d, am = noAttributionsManager) {
+  applyDelta (d, am = noAttributionsManager, opts = {}) {
     if (this.doc == null) {
       (this._prelim || (this._prelim = /** @type {any} */ (delta.create()))).apply(d)
     } else {
@@ -759,7 +762,7 @@ export class AbstractType {
             sub.applyDelta(op.value)
           }
         }
-      })
+      }, opts.origin, opts.local)
     }
   }
 }
