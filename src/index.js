@@ -110,6 +110,8 @@ export {
   iterateStructsByIdSet,
   createAttributionManagerFromDiff,
   DiffAttributionManager,
+  createAttributionManagerFromSnapshots,
+  SnapshotAttributionManager,
   createIdSet,
   mergeIdSets,
   cloneDoc,
