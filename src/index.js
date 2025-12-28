@@ -24,7 +24,7 @@ export {
   ContentAny,
   ContentString,
   ContentType,
-  AbstractType,
+  YType as AbstractType,
   getTypeChildren,
   createRelativePositionFromTypeIndex,
   createRelativePositionFromJSON,

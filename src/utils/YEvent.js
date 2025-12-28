@@ -2,7 +2,7 @@ import {
   diffIdSet,
   mergeIdSets,
   noAttributionsManager,
-  Doc, AbstractAttributionManager, Item, AbstractType, Transaction, AbstractStruct, // eslint-disable-line
+  YType, Doc, AbstractAttributionManager, Item, Transaction, AbstractStruct, // eslint-disable-line
   createAbsolutePositionFromRelativePosition,
   createRelativePosition,
   AbsolutePosition
@@ -18,19 +18,19 @@ import * as set from 'lib0/set'
  */
 export class YEvent {
   /**
-   * @param {AbstractType<DConf>} target The changed type.
+   * @param {YType<DConf>} target The changed type.
    * @param {Transaction} transaction
    * @param {Set<any>?} subs The keys that changed
    */
   constructor (target, transaction, subs) {
     /**
      * The type on which this event was created on.
-     * @type {AbstractType<DConf>}
+     * @type {YType<DConf>}
      */
     this.target = target
     /**
      * The current target on which the observe callback is called.
-     * @type {AbstractType<any>}
+     * @type {YType<any>}
      */
     this.currentTarget = target
     /**
@@ -39,11 +39,11 @@ export class YEvent {
      */
     this.transaction = transaction
     /**
-     * @type {delta.Delta<DConf>|null}
+     * @type {import('../ytype.js').DeltaConfTypesToDelta<DConf>|null}
      */
     this._delta = null
     /**
-     * @type {import('../types/AbstractType.js').DeltaConfTypesToDeltaDelta<DConf>|null}
+     * @type {delta.Delta<DConf>|null}
      */
     this._deltaDeep = null
     /**
@@ -125,7 +125,7 @@ export class YEvent {
     /**
      * @todo this should be done only one in the transaction step
      *
-     * @type {Map<import('./types.js').YType,Set<string|null>>|null}
+     * @type {Map<YType,Set<string|null>>|null}
      */
     let modified = this.transaction.changed
     if (deep) {
@@ -184,8 +184,8 @@ export class YEvent {
  *   console.log(path) // might look like => [2, 'key1']
  *   child === type.get(path[0]).get(path[1])
  *
- * @param {AbstractType} parent
- * @param {AbstractType} child target
+ * @param {YType} parent
+ * @param {YType} child target
  * @param {AbstractAttributionManager} am
  * @return {Array<string|number>} Path to the target
  *
@@ -205,7 +205,7 @@ export const getPathTo = (parent, child, am = noAttributionsManager) => {
       const apos = /** @type {AbsolutePosition} */ (createAbsolutePositionFromRelativePosition(createRelativePosition(parent, child._item.id), doc, false, am))
       path.unshift(apos.index)
     }
-    child = /** @type {AbstractType} */ (child._item.parent)
+    child = /** @type {YType} */ (child._item.parent)
   }
   return path
 }

@@ -4,12 +4,7 @@
 
 import {
   StructStore,
-  AbstractType,
-  YArray,
-  YText,
-  YMap,
-  YXmlElement,
-  YXmlFragment,
+  YType,
   transact,
   applyUpdate,
   ContentDoc, Item, Transaction, // eslint-disable-line
@@ -23,13 +18,6 @@ import * as array from 'lib0/array'
 import * as promise from 'lib0/promise'
 
 export const generateNewClientId = random.uint32
-
-/**
- * @typedef {import('../utils/types.js').YTypeConstructors} YTypeConstructors
- */
-/**
- * @typedef {import('../utils/types.js').YType} YType
- */
 
 /**
  * @typedef {Object} DocOpts
@@ -212,105 +200,17 @@ export class Doc extends ObservableV2 {
    * Define all types right after the Y.Doc instance is created and store them in a separate object.
    * Also use the typed methods `getText(name)`, `getArray(name)`, ..
    *
-   * @template {YTypeConstructors} [TypeC=typeof AbstractType]
-   * @example
-   *   const ydoc = new Y.Doc(..)
-   *   const appState = {
-   *     document: ydoc.getText('document')
-   *     comments: ydoc.getArray('comments')
-   *   }
+   * @param {string} key
+   * @param {string?} name Type-name
    *
-   * @param {string} name
-   * @param {TypeC} TypeConstructor The constructor of the type definition. E.g. Y.Text, Y.Array, Y.Map, ...
-   * @return {AbstractType} The created type. Constructed with TypeConstructor
-   *
-   * @public
+   * @return {YType}
    */
-  get (name, TypeConstructor = /** @type {any} */ (AbstractType)) {
-    const type = map.setIfUndefined(this.share, name, () => {
-      // @ts-ignore
-      const t = new TypeConstructor()
+  get (key, name = null) {
+    return map.setIfUndefined(this.share, key, () => {
+      const t = new YType(name)
       t._integrate(this, null)
       return t
     })
-    const Constr = type.constructor
-    // @ts-ignore
-    if (TypeConstructor !== AbstractType && Constr !== TypeConstructor) {
-      if (Constr === AbstractType) {
-        // @ts-ignore
-        const t = new TypeConstructor()
-        t._map = type._map
-        type._map.forEach(/** @param {Item?} n */ n => {
-          for (; n !== null; n = n.left) {
-            // @ts-ignore
-            n.parent = t
-          }
-        })
-        t._start = type._start
-        for (let n = t._start; n !== null; n = n.right) {
-          n.parent = t
-        }
-        t._length = type._length
-        this.share.set(name, t)
-        t._integrate(this, null)
-        return /** @type {InstanceType<TypeC>} */ (t)
-      } else {
-        throw new Error(`Type with the name ${name} has already been defined with a different constructor`)
-      }
-    }
-    return /** @type {InstanceType<TypeC>} */ (type)
-  }
-
-  /**
-   * @template T
-   * @param {string} [name]
-   * @return {YArray<T>}
-   *
-   * @public
-   */
-  getArray (name = '') {
-    return /** @type {YArray<any>} */ (this.get(name, YArray))
-  }
-
-  /**
-   * @param {string} [name]
-   * @return {YText}
-   *
-   * @public
-   */
-  getText (name = '') {
-    return /** @type {YText} */ (this.get(name, YText))
-  }
-
-  /**
-   * @template T
-   * @param {string} [name]
-   * @return {YMap<T>}
-   *
-   * @public
-   */
-  getMap (name = '') {
-    return /** @type {YMap<T>} */ (this.get(name, YMap))
-  }
-
-  /**
-   * @param {string} [name]
-   * @return {YXmlElement}
-   *
-   * @public
-   */
-  getXmlElement (name = '') {
-    return /** @type {YXmlElement<{[key:string]:string}>} */ (this.get(name, YXmlElement))
-  }
-
-  /**
-   * @param {string} [name]
-   * @return {YXmlFragment}
-   *
-   * @public
-   */
-  getXmlFragment (name = '') {
-    return /** @type {YXmlFragment} */ (this.get(name, YXmlFragment))
   }
 
   /**
@@ -326,11 +226,9 @@ export class Doc extends ObservableV2 {
      * @type {Object<string, any>}
      */
     const doc = {}
-
     this.share.forEach((value, key) => {
       doc[key] = value.toJSON()
     })
-
     return doc
   }
 

@@ -22,7 +22,7 @@ import {
   readContentType,
   addChangedTypeToTransaction,
   addStructToIdSet,
-  IdSet, StackItem, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, AbstractType, Transaction, // eslint-disable-line
+  IdSet, StackItem, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, YType, Transaction, // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -282,7 +282,7 @@ export class Item extends AbstractStruct {
    * @param {ID | null} origin
    * @param {Item | null} right
    * @param {ID | null} rightOrigin
-   * @param {AbstractType<any,any>|ID|null} parent Is a type if integrated, is null if it is possible to copy parent from left or right, is ID before integration to search for it.
+   * @param {YType<any,any>|ID|null} parent Is a type if integrated, is null if it is possible to copy parent from left or right, is ID before integration to search for it.
    * @param {string | null} parentSub
    * @param {AbstractContent} content
    */
@@ -309,7 +309,7 @@ export class Item extends AbstractStruct {
      */
     this.rightOrigin = rightOrigin
     /**
-     * @type {AbstractType<any,any>|ID|null}
+     * @type {YType<any,any>|ID|null}
      */
     this.parent = parent
     /**
@@ -696,7 +696,7 @@ export class Item extends AbstractStruct {
       encoder.writeRightID(rightOrigin)
     }
     if (origin === null && rightOrigin === null) {
-      const parent = /** @type {AbstractType<any>} */ (this.parent)
+      const parent = /** @type {YType<any>} */ (this.parent)
       if (parent._item !== undefined) {
         const parentItem = parent._item
         if (parentItem === null) {

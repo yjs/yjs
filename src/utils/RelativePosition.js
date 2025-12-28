@@ -9,7 +9,7 @@ import {
   ContentType,
   followRedone,
   getItem,
-  StructStore, ID, Doc, AbstractType, noAttributionsManager, // eslint-disable-line
+  StructStore, ID, Doc, YType, noAttributionsManager, // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding'
@@ -106,13 +106,13 @@ export const createRelativePositionFromJSON = json => new RelativePosition(json.
 
 export class AbsolutePosition {
   /**
-   * @param {AbstractType<any>} type
+   * @param {YType<any>} type
    * @param {number} index
    * @param {number} [assoc]
    */
   constructor (type, index, assoc = 0) {
     /**
-     * @type {AbstractType<any>}
+     * @type {YType<any>}
      */
     this.type = type
     /**
@@ -124,7 +124,7 @@ export class AbsolutePosition {
 }
 
 /**
- * @param {AbstractType<any>} type
+ * @param {YType<any>} type
  * @param {number} index
  * @param {number} [assoc]
  *
@@ -133,7 +133,7 @@ export class AbsolutePosition {
 export const createAbsolutePosition = (type, index, assoc = 0) => new AbsolutePosition(type, index, assoc)
 
 /**
- * @param {AbstractType<any>} type
+ * @param {YType<any>} type
  * @param {ID|null} item
  * @param {number} [assoc]
  *
@@ -153,7 +153,7 @@ export const createRelativePosition = (type, item, assoc) => {
 /**
  * Create a relativePosition based on a absolute position.
  *
- * @param {AbstractType} type The base type (e.g. YText or YArray).
+ * @param {YType} type The base type (e.g. YText or YArray).
  * @param {number} index The absolute position.
  * @param {number} [assoc]
  * @param {import('../utils/AttributionManager.js').AbstractAttributionManager} attributionManager
@@ -304,7 +304,7 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc, followUndo
     if (!(right instanceof Item)) {
       return null
     }
-    type = /** @type {AbstractType<any>} */ (right.parent)
+    type = /** @type {YType<any>} */ (right.parent)
     if (type._item === null || !type._item.deleted) {
       index = attributionManager.contentLength(right) === 0 ? 0 : (res.diff + (assoc >= 0 ? 0 : 1)) // adjust position based on left association if necessary
       let n = right.left

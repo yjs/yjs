@@ -33,8 +33,6 @@ import {
   UpdateEncoderV1,
   UpdateEncoderV2,
   writeIdSet,
-  YXmlElement,
-  YXmlHook,
   createIdSet
 } from '../internals.js'
 
@@ -617,12 +615,8 @@ const createObfuscator = ({ formatting = true, subdocs = true, yxml = true } = {
           case ContentType: {
             if (yxml) {
               const type = /** @type {ContentType} */ (content).type
-              if (type instanceof YXmlElement) {
-                type.nodeName = map.setIfUndefined(nodeNameCache, type.nodeName, () => 'node-' + i)
-              }
-              // @ts-ignore
-              if (type instanceof YXmlHook) {
-                type.hookName = map.setIfUndefined(nodeNameCache, type.hookName, () => 'hook-' + i)
+              if (type.name != null) {
+                type.name = map.setIfUndefined(nodeNameCache, type.nodeName, () => 'typename-' + i)
               }
             }
             break
