@@ -14,7 +14,7 @@ import {
   IdSet, UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractStruct, YEvent, Doc // eslint-disable-line
 } from '../internals.js'
 
-import {YType} from '../ytype.js'
+import { YType } from '../ytype.js' // eslint-disable-line
 import * as error from 'lib0/error'
 import * as map from 'lib0/map'
 import * as math from 'lib0/math'
@@ -343,7 +343,6 @@ const updateCurrentAttributes = (currentAttributes, { key, value }) => {
   }
 }
 
-
 /**
  * Call this function after string content has been deleted in order to
  * clean up formatting Items.
@@ -411,7 +410,6 @@ export const cleanupFormattingGap = (transaction, start, curr, startAttributes, 
   return cleanups
 }
 
-
 /**
  * This function is experimental and subject to change / be removed.
  *
@@ -450,7 +448,6 @@ export const cleanupYTextFormatting = type => {
   })
   return res
 }
-
 
 /**
  * This will be called by the transaction once the event handlers are called to potentially cleanup

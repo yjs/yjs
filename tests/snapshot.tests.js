@@ -24,9 +24,9 @@ export const testBasicXmlAttributes = _tc => {
   yxml.setAttribute('a', '1')
   const snapshot2 = Y.snapshot(ydoc)
   yxml.setAttribute('a', '2')
-  t.compare(yxml.getAttributes(), { a: '2' })
-  t.compare(yxml.getAttributes(snapshot2), { a: '1' })
-  t.compare(yxml.getAttributes(snapshot1), {})
+  t.compare(yxml.getAttrs(), { a: '2' })
+  t.compare(yxml.getAttrs(snapshot2), { a: '1' })
+  t.compare(yxml.getAttrs(snapshot1), {})
 }
 
 /**

@@ -4,13 +4,13 @@
 
 import {
   StructStore,
-  YType,
   transact,
   applyUpdate,
   ContentDoc, Item, Transaction, // eslint-disable-line
   encodeStateAsUpdate
 } from '../internals.js'
 
+import { YType } from '../ytype.js'
 import { ObservableV2 } from 'lib0/observable'
 import * as random from 'lib0/random'
 import * as map from 'lib0/map'
@@ -190,22 +190,18 @@ export class Doc extends ObservableV2 {
   /**
    * Define a shared data type.
    *
-   * Multiple calls of `ydoc.get(name, TypeConstructor)` yield the same result
+   * Multiple calls of `ydoc.get(name)` yield the same result
    * and do not overwrite each other. I.e.
-   * `ydoc.get(name, Y.Array) === ydoc.get(name, Y.Array)`
+   * `ydoc.get(name) === ydoc.get(name)`
    *
    * After this method is called, the type is also available on `ydoc.share.get(name)`.
-   *
-   * *Best Practices:*
-   * Define all types right after the Y.Doc instance is created and store them in a separate object.
-   * Also use the typed methods `getText(name)`, `getArray(name)`, ..
    *
    * @param {string} key
    * @param {string?} name Type-name
    *
    * @return {YType}
    */
-  get (key, name = null) {
+  get (key = '', name = null) {
     return map.setIfUndefined(this.share, key, () => {
       const t = new YType(name)
       t._integrate(this, null)

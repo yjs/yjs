@@ -185,63 +185,6 @@ export class ItemTextListPosition {
 }
 
 /**
- * @param {Transaction} transaction
- * @param {ItemTextListPosition} pos
- * @param {number} count steps to move forward
- * @return {ItemTextListPosition}
- *
- * @private
- * @function
- */
-const findNextPosition = (transaction, pos, count) => {
-  while (pos.right !== null && count > 0) {
-    switch (pos.right.content.constructor) {
-      case ContentFormat:
-        if (!pos.right.deleted) {
-          updateCurrentAttributes(pos.currentAttributes, /** @type {ContentFormat} */ (pos.right.content))
-        }
-        break
-      default:
-        if (!pos.right.deleted) {
-          if (count < pos.right.length) {
-            // split right
-            getItemCleanStart(transaction, createID(pos.right.id.client, pos.right.id.clock + count))
-          }
-          pos.index += pos.right.length
-          count -= pos.right.length
-        }
-        break
-    }
-    pos.left = pos.right
-    pos.right = pos.right.right
-    // pos.forward() - we don't forward because that would halve the performance because we already do the checks above
-  }
-  return pos
-}
-
-/**
- * @param {Transaction} transaction
- * @param {YType} parent
- * @param {number} index
- * @param {boolean} useSearchMarker
- * @return {ItemTextListPosition}
- *
- * @private
- * @function
- */
-const findPosition = (transaction, parent, index, useSearchMarker) => {
-  const currentAttributes = new Map()
-  const marker = useSearchMarker ? findMarker(parent, index) : null
-  if (marker) {
-    const pos = new ItemTextListPosition(marker.p.left, marker.p, marker.index, currentAttributes, noAttributionsManager)
-    return findNextPosition(transaction, pos, index - marker.index)
-  } else {
-    const pos = new ItemTextListPosition(null, parent._start, 0, currentAttributes, noAttributionsManager)
-    return findNextPosition(transaction, pos, index)
-  }
-}
-
-/**
  * Negate applied formats
  *
  * @param {Transaction} transaction
@@ -696,11 +639,21 @@ export class YType {
     this._hasFormatting = false
   }
 
+  /**
+   * @template {delta.DeltaConf} DC
+   * @param {delta.Delta<DC>} d
+   * @return {YType<DC>}
+   */
+  static from (d) {
+    const yt = new YType(d.name)
+    yt.applyDelta(d)
+    return yt
+  }
+
   get length () {
     this.doc ?? warnPrematureAccess()
     return this._length
   }
-
 
   /**
    * Returns a fresh delta that can be used to change this YType.
@@ -1075,13 +1028,7 @@ export class YType {
             for (let i = 0; i < op.insert.length; i++) {
               let ins = op.insert[i]
               if (delta.$deltaAny.check(ins)) {
-                if (ins.name != null) {
-                  const t = new YType(ins.name)
-                  t.applyDelta(ins)
-                  ins = t
-                } else {
-                  error.unexpectedCase()
-                }
+                ins = YType.from(ins)
               }
               insertText(transaction, /** @type {any} */ (this), currPos, ins, op.format || {})
             }
@@ -1103,7 +1050,7 @@ export class YType {
         for (const op of d.attrs) {
           if (delta.$setAttrOp.check(op)) {
             typeMapSet(transaction, /** @type {any} */ (this), /** @type {any} */ (op.key), op.value)
-          } else if (delta.$deleteOp.check(op)) {
+          } else if (delta.$deleteAttrOp.check(op)) {
             typeMapDelete(transaction, /** @type {any} */ (this), /** @type {any} */ (op.key))
           } else {
             const sub = typeMapGet(/** @type {any} */ (this), /** @type {any} */ (op.key))
@@ -1115,6 +1062,7 @@ export class YType {
         }
       })
     }
+    return this
   }
 
   /**
@@ -1134,13 +1082,12 @@ export class YType {
    * Removes all elements from this YMap.
    */
   clearAttrs () {
-    let d = delta.create()
-    this.forEachAttr((_,key) => {
+    const d = delta.create()
+    this.forEachAttr((_, key) => {
       d.deleteAttr(/** @type {any} */ (key))
     })
     this.applyDelta(d)
   }
-
 
   /**
    * Removes an attribute from this YXmlElement.
@@ -1163,8 +1110,9 @@ export class YType {
    *
    * @public
    */
-  setAttribute (attributeName, attributeValue) {
+  setAttr (attributeName, attributeValue) {
     this.applyDelta(delta.create().setAttr(attributeName, attributeValue).done())
+    return attributeValue
   }
 
   /**
@@ -1175,7 +1123,7 @@ export class YType {
    * @return {delta.DeltaConfGetAttrs<DConf>[KEY]|undefined} The queried attribute value.
    * @public
    */
-  getAttribute (attributeName) {
+  getAttr (attributeName) {
     return /** @type {any} */ (typeMapGet(this, attributeName))
   }
 
@@ -1187,7 +1135,7 @@ export class YType {
    *
    * @public
    */
-  hasAttribute (attributeName) {
+  hasAttr (attributeName) {
     return /** @type {any} */ (typeMapHas(this, attributeName))
   }
 
@@ -1199,7 +1147,7 @@ export class YType {
    *
    * @public
    */
-  getAttributes (snapshot) {
+  getAttrs (snapshot) {
     return /** @type {any} */ (snapshot ? typeMapGetAllSnapshot(this, snapshot) : typeMapGetAll(this))
   }
 
@@ -1218,9 +1166,54 @@ export class YType {
    *
    * @param {number} index The index to insert content at.
    * @param {Array<delta.DeltaConfGetChildren<DConf>>|delta.DeltaConfGetText<DConf>} content Array of content to append.
+   * @param {delta.FormattingAttributes} [format]
    */
-  insert (index, content) {
-    this.applyDelta(delta.create().retain(index).insert(/** @type {any} */ (content)))
+  insert (index, content, format) {
+    this.applyDelta(delta.create().retain(index).insert(/** @type {any} */ (content), format))
+  }
+
+  /**
+   * Inserts new content at an index.
+   *
+   * Important: This function expects an array of content. Not just a content
+   * object. The reason for this "weirdness" is that inserting several elements
+   * is very efficient when it is done as a single operation.
+   *
+   * @example
+   *  // Insert character 'a' at position 0
+   *  yarray.insert(0, ['a'])
+   *  // Insert numbers 1, 2 at position 1
+   *  yarray.insert(1, [1, 2])
+   *
+   * @param {number} index The index to insert content at.
+   * @param {number} length The index to insert content at.
+   * @param {delta.FormattingAttributes} formats
+   *
+   */
+  format (index, length, formats) {
+    this.applyDelta(delta.create().retain(index).retain(length, formats))
+  }
+
+  /**
+   * Inserts new content after another element.
+   *
+   * @example
+   *  // Insert character 'a' at position 0
+   *  xml.insert(0, [new Y.XmlText('text')])
+   *
+   * @param {null|Item|YType} ref The index to insert content at
+   * @param {Array<delta.DeltaConfGetChildren<DConf>>} content The array of content
+   */
+  insertAfter (ref, content) {
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
+        const refItem = ref && ref instanceof YType ? ref._item : ref
+        typeListInsertGenericsAfter(transaction, this, refItem, content)
+      })
+    } else {
+      // only possible once this item has been integrated
+      error.unexpectedCase()
+    }
   }
 
   /**
@@ -1275,21 +1268,38 @@ export class YType {
     return typeListSlice(this, start, end)
   }
 
-
   /**
+   * @todo refactor this, this should use getContent only!
+   *
    * Transforms this YArray to a JavaScript Array.
    *
-   * @return {Array<delta.DeltaConfGetChildren<DConf>>}
+   * @return {Array<delta.DeltaConfGetChildren<DConf> | delta.DeltaConfGetText<DConf>>}
    */
   toArray () {
-    return typeListToArray(this)
+    const dcontent = this.getContent()
+    /**
+     * @type {Array<any>}
+     */
+    const children = []
+    for (const child of dcontent.children) {
+      if (delta.$insertOp.check(child) || delta.$textOp.check(child)) {
+        children.push(child.insert)
+      }
+    }
+    return children
   }
 
   /**
    * Transforms this Shared Type to a JSON object.
    */
   toJSON () {
-    return this.getContent().toJSON()
+    const attrs = this.getAttrs()
+    const children = this.toArray()
+    return {
+      name: this.name,
+      children,
+      attrs
+    }
   }
 
   /**
@@ -1297,22 +1307,21 @@ export class YType {
    * child-element.
    *
    * @template M
-   * @param {(child:delta.DeltaConfGetChildren<DConf>,index:number,ytype:this)=>M} f Function that produces an element of the new Array
+   * @param {(child:delta.DeltaConfGetChildren<DConf>|delta.DeltaConfGetText<DConf>,index:number)=>M} f Function that produces an element of the new Array
    * @return {Array<M>} A new array with each element being the result of the
    *                 callback function
    */
   map (f) {
-    return typeListMap(this, /** @type {any} */ (f))
+    return this.toArray().map(f)
   }
 
   /**
    * Executes a provided function once on every element of this YArray.
    *
-   * @template M
-   * @param {(child:delta.DeltaConfGetChildren<DConf>,index:number,ytype:this)=>M} f Function that produces an element of the new Array
+   * @param {(child:delta.DeltaConfGetChildren<DConf>|delta.DeltaConfGetText<DConf>,index:number)=>any} f Function that produces an element of the new Array
    */
   forEach (f) {
-    typeListForEach(this, f)
+    return this.toArray().forEach(f)
   }
 
   /**
@@ -1328,19 +1337,10 @@ export class YType {
     })
   }
 
-
-
-  /**
-   * @return {IterableIterator<delta.DeltaConfGetChildren<DConf>>}
-   */
-  [Symbol.iterator] () {
-    return typeListCreateIterator(this)
-  }
-
   /**
    * Returns the keys for each element in the YMap Type.
    *
-   * @return {IterableIterator<keyof delta.DeltaConfGetAttrs<DConf>>}
+   * @return {IterableIterator<import('lib0/ts').KeyOf<delta.DeltaConfGetAttrs<DConf>>>}
    */
   attrKeys () {
     return iterator.iteratorMap(createMapIterator(this), /** @param {any} v */ v => v[0])
@@ -1358,7 +1358,7 @@ export class YType {
   /**
    * Returns an Iterator of [key, value] pairs
    *
-   * @return {IterableIterator<{ [K in keyof delta.DeltaConfGetAttrs<DConf>]: [K,delta.DeltaConfGetAttrs<DConf>] }[any]>}
+   * @return {IterableIterator<{ [K in keyof delta.DeltaConfGetAttrs<DConf>]: [K,delta.DeltaConfGetAttrs<DConf>[K]] }[any]>}
    */
   attrEntries () {
     return iterator.iteratorMap(createMapIterator(this), /** @param {any} v */ v => /** @type {any} */ ([v[0], v[1].content.getContent()[v[1].length - 1]]))
@@ -1369,7 +1369,7 @@ export class YType {
    *
    * @return {number}
    */
-  attrSize () {
+  get attrSize () {
     return [...createMapIterator(this)].length
   }
 
@@ -1379,7 +1379,7 @@ export class YType {
   [traits.EqualityTraitSymbol] (other) {
     return this.getContent().equals(other.getContent())
   }
-  
+
   /**
    * @todo this doesn't need to live in a method.
    *
@@ -1473,145 +1473,6 @@ export const typeListSlice = (type, start, end) => {
     n = n.right
   }
   return cs
-}
-
-/**
- * @param {YType} type
- * @return {Array<any>}
- *
- * @private
- * @function
- */
-export const typeListToArray = type => {
-  type.doc ?? warnPrematureAccess()
-  const cs = []
-  let n = type._start
-  while (n !== null) {
-    if (n.countable && !n.deleted) {
-      const c = n.content.getContent()
-      for (let i = 0; i < c.length; i++) {
-        cs.push(c[i])
-      }
-    }
-    n = n.right
-  }
-  return cs
-}
-
-/**
- * @param {YType<any>} type
- * @param {Snapshot} snapshot
- * @return {Array<any>}
- *
- * @private
- * @function
- */
-export const typeListToArraySnapshot = (type, snapshot) => {
-  const cs = []
-  let n = type._start
-  while (n !== null) {
-    if (n.countable && isVisible(n, snapshot)) {
-      const c = n.content.getContent()
-      for (let i = 0; i < c.length; i++) {
-        cs.push(c[i])
-      }
-    }
-    n = n.right
-  }
-  return cs
-}
-
-/**
- * Executes a provided function on once on every element of this YArray.
- *
- * @param {YType<any>} type
- * @param {function(any,number,any):void} f A function to execute on every element of this YArray.
- *
- * @private
- * @function
- */
-export const typeListForEach = (type, f) => {
-  let index = 0
-  let n = type._start
-  type.doc ?? warnPrematureAccess()
-  while (n !== null) {
-    if (n.countable && !n.deleted) {
-      const c = n.content.getContent()
-      for (let i = 0; i < c.length; i++) {
-        f(c[i], index++, type)
-      }
-    }
-    n = n.right
-  }
-}
-
-/**
- * @template C,R
- * @param {YType<any>} type
- * @param {function(C,number,YType<any>):R} f
- * @return {Array<R>}
- *
- * @private
- * @function
- */
-export const typeListMap = (type, f) => {
-  /**
-   * @type {Array<any>}
-   */
-  const result = []
-  typeListForEach(type, (c, i) => {
-    result.push(f(c, i, type))
-  })
-  return result
-}
-
-/**
- * @param {YType} type
- * @return {IterableIterator<any>}
- *
- * @private
- * @function
- */
-export const typeListCreateIterator = type => {
-  let n = type._start
-  /**
-   * @type {Array<any>|null}
-   */
-  let currentContent = null
-  let currentContentIndex = 0
-  return {
-    [Symbol.iterator] () {
-      return this
-    },
-    next: () => {
-      // find some content
-      if (currentContent === null) {
-        while (n !== null && n.deleted) {
-          n = n.right
-        }
-        // check if we reached the end, no need to check currentContent, because it does not exist
-        if (n === null) {
-          return {
-            done: true,
-            value: undefined
-          }
-        }
-        // we found n, so we can set currentContent
-        currentContent = n.content.getContent()
-        currentContentIndex = 0
-        n = n.right // we used the content of n, now iterate to next
-      }
-      const value = currentContent[currentContentIndex++]
-      // check if we need to empty currentContent
-      if (currentContent.length <= currentContentIndex) {
-        currentContent = null
-      }
-      return {
-        done: false,
-        value
-      }
-    }
-  }
 }
 
 /**

@@ -39,7 +39,7 @@ export class YEvent {
      */
     this.transaction = transaction
     /**
-     * @type {import('../ytype.js').DeltaConfTypesToDelta<DConf>|null}
+     * @type {delta.Delta<import('../ytype.js').DeltaConfDeltaToYType<DConf>>|null}
      */
     this._delta = null
     /**
@@ -116,7 +116,7 @@ export class YEvent {
    * @param {AbstractAttributionManager} am
    * @param {object} [opts]
    * @param {Deep} [opts.deep]
-   * @return {Deep extends true ? delta.Delta<import('../internals.js').DeltaConfTypesToDelta<DConf>> : delta.Delta<DConf>} The Delta representation of this type.
+   * @return {Deep extends true ? delta.Delta<DConf> : delta.Delta<import('../internals.js').DeltaConfDeltaToYType<DConf>>} The Delta representation of this type.
    *
    * @public
    */
@@ -155,7 +155,7 @@ export class YEvent {
    * Compute the changes in the delta format.
    * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
    *
-   * @type {delta.Delta<DConf>} The Delta representation of this type.
+   * @type {delta.Delta<import('../internals.js').DeltaConfDeltaToYType<DConf>>} The Delta representation of this type.
    * @public
    */
   get delta () {
@@ -166,7 +166,7 @@ export class YEvent {
    * Compute the changes in the delta format.
    * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
    *
-   * @type {import('../internals.js').DeltaConfTypesToDeltaDelta<DConf>} The Delta representation of this type.
+   * @type {delta.Delta<DConf>} The Delta representation of this type.
    * @public
    */
   get deltaDeep () {
@@ -200,7 +200,7 @@ export const getPathTo = (parent, child, am = noAttributionsManager) => {
       // parent is map-ish
       path.unshift(child._item.parentSub)
     } else {
-      const parent = /** @type {import('../utils/types.js').YType} */ (child._item.parent)
+      const parent = /** @type {import('../ytype.js').YType} */ (child._item.parent)
       // parent is array-ish
       const apos = /** @type {AbsolutePosition} */ (createAbsolutePositionFromRelativePosition(createRelativePosition(parent, child._item.id), doc, false, am))
       path.unshift(apos.index)

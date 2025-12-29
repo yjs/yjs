@@ -30,10 +30,6 @@ import * as binary from 'lib0/binary'
 import * as array from 'lib0/array'
 
 /**
- * @typedef {import('../utils/types.js').YType} YType__
- */
-
-/**
  * @todo This should return several items
  *
  * @param {StructStore} store
@@ -72,7 +68,7 @@ export const followRedone = (store, id) => {
 export const keepItem = (item, keep) => {
   while (item !== null && item.keep !== keep) {
     item.keep = keep
-    item = /** @type {YType__} */ (item.parent)._item
+    item = /** @type {YType} */ (item.parent)._item
   }
 }
 
@@ -119,7 +115,7 @@ export const splitItem = (transaction, leftItem, diff) => {
     transaction._mergeStructs.push(rightItem)
     // update parent._map
     if (rightItem.parentSub !== null && rightItem.right === null) {
-      /** @type {YType__} */ (rightItem.parent)._map.set(rightItem.parentSub, rightItem)
+      /** @type {YType} */ (rightItem.parent)._map.set(rightItem.parentSub, rightItem)
     }
   } else {
     rightItem.left = null
@@ -177,7 +173,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
   if (redone !== null) {
     return getItemCleanStart(transaction, redone)
   }
-  let parentItem = /** @type {YType__} */ (item.parent)._item
+  let parentItem = /** @type {YType} */ (item.parent)._item
   /**
    * @type {Item|null}
    */
@@ -197,9 +193,9 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
     }
   }
   /**
-   * @type {YType__}
+   * @type {YType}
    */
-  const parentType = /** @type {YType__} */ (parentItem === null ? item.parent : /** @type {ContentType} */ (parentItem.content).type)
+  const parentType = /** @type {YType} */ (parentItem === null ? item.parent : /** @type {ContentType} */ (parentItem.content).type)
 
   if (item.parentSub === null) {
     // Is an array item. Insert at the old position
@@ -212,10 +208,10 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
        */
       let leftTrace = left
       // trace redone until parent matches
-      while (leftTrace !== null && /** @type {YType__} */ (leftTrace.parent)._item !== parentItem) {
+      while (leftTrace !== null && /** @type {YType} */ (leftTrace.parent)._item !== parentItem) {
         leftTrace = leftTrace.redone === null ? null : getItemCleanStart(transaction, leftTrace.redone)
       }
-      if (leftTrace !== null && /** @type {YType__} */ (leftTrace.parent)._item === parentItem) {
+      if (leftTrace !== null && /** @type {YType} */ (leftTrace.parent)._item === parentItem) {
         left = leftTrace
         break
       }
@@ -227,10 +223,10 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
        */
       let rightTrace = right
       // trace redone until parent matches
-      while (rightTrace !== null && /** @type {YType__} */ (rightTrace.parent)._item !== parentItem) {
+      while (rightTrace !== null && /** @type {YType} */ (rightTrace.parent)._item !== parentItem) {
         rightTrace = rightTrace.redone === null ? null : getItemCleanStart(transaction, rightTrace.redone)
       }
-      if (rightTrace !== null && /** @type {YType__} */ (rightTrace.parent)._item === parentItem) {
+      if (rightTrace !== null && /** @type {YType} */ (rightTrace.parent)._item === parentItem) {
         right = rightTrace
         break
       }
@@ -282,7 +278,7 @@ export class Item extends AbstractStruct {
    * @param {ID | null} origin
    * @param {Item | null} right
    * @param {ID | null} rightOrigin
-   * @param {YType<any,any>|ID|null} parent Is a type if integrated, is null if it is possible to copy parent from left or right, is ID before integration to search for it.
+   * @param {YType|ID|null} parent Is a type if integrated, is null if it is possible to copy parent from left or right, is ID before integration to search for it.
    * @param {string | null} parentSub
    * @param {AbstractContent} content
    */
@@ -309,7 +305,7 @@ export class Item extends AbstractStruct {
      */
     this.rightOrigin = rightOrigin
     /**
-     * @type {YType<any,any>|ID|null}
+     * @type {YType|ID|null}
      */
     this.parent = parent
     /**
@@ -466,12 +462,12 @@ export class Item extends AbstractStruct {
         if (left !== null) {
           o = left.right
         } else if (this.parentSub !== null) {
-          o = /** @type {AbstractType<any>} */ (this.parent)._map.get(this.parentSub) || null
+          o = /** @type {YType} */ (this.parent)._map.get(this.parentSub) || null
           while (o !== null && o.left !== null) {
             o = o.left
           }
         } else {
-          o = /** @type {AbstractType<any>} */ (this.parent)._start
+          o = /** @type {YType} */ (this.parent)._start
         }
         // TODO: use something like DeleteSet here (a tree implementation would be best)
         // @todo use global set definitions
@@ -520,13 +516,13 @@ export class Item extends AbstractStruct {
       } else {
         let r
         if (this.parentSub !== null) {
-          r = /** @type {AbstractType<any>} */ (this.parent)._map.get(this.parentSub) || null
+          r = /** @type {YType} */ (this.parent)._map.get(this.parentSub) || null
           while (r !== null && r.left !== null) {
             r = r.left
           }
         } else {
-          r = /** @type {AbstractType<any>} */ (this.parent)._start
-          ;/** @type {AbstractType<any>} */ (this.parent)._start = this
+          r = /** @type {YType} */ (this.parent)._start
+          ;/** @type {YType} */ (this.parent)._start = this
         }
         this.right = r
       }
@@ -534,7 +530,7 @@ export class Item extends AbstractStruct {
         this.right.left = this
       } else if (this.parentSub !== null) {
         // set as current parent value if right === null and this is parentSub
-        /** @type {AbstractType<any>} */ (this.parent)._map.set(this.parentSub, this)
+        /** @type {YType} */ (this.parent)._map.set(this.parentSub, this)
         if (this.left !== null) {
           // this is the current attribute value of parent. delete right
           this.left.delete(transaction)
@@ -542,14 +538,14 @@ export class Item extends AbstractStruct {
       }
       // adjust length of parent
       if (this.parentSub === null && this.countable && !this.deleted) {
-        /** @type {AbstractType<any>} */ (this.parent)._length += this.length
+        /** @type {YType} */ (this.parent)._length += this.length
       }
       addStructToIdSet(transaction.insertSet, this)
       addStruct(transaction.doc.store, this)
       this.content.integrate(transaction, this)
       // add parent to transaction.changed
-      addChangedTypeToTransaction(transaction, /** @type {import('../utils/types.js').YType} */ (this.parent), this.parentSub)
-      if ((/** @type {AbstractType<any>} */ (this.parent)._item !== null && /** @type {AbstractType<any>} */ (this.parent)._item.deleted) || (this.parentSub !== null && this.right !== null)) {
+      addChangedTypeToTransaction(transaction, /** @type {YType} */ (this.parent), this.parentSub)
+      if ((/** @type {YType} */ (this.parent)._item !== null && /** @type {YType} */ (this.parent)._item.deleted) || (this.parentSub !== null && this.right !== null)) {
         // delete if parent is deleted or if this is not the current attribute value of parent
         this.delete(transaction)
       }
@@ -609,7 +605,7 @@ export class Item extends AbstractStruct {
       this.content.constructor === right.content.constructor &&
       this.content.mergeWith(right.content)
     ) {
-      const searchMarker = /** @type {AbstractType<any>} */ (this.parent)._searchMarker
+      const searchMarker = /** @type {YType} */ (this.parent)._searchMarker
       if (searchMarker) {
         searchMarker.forEach(marker => {
           if (marker.p === right) {
@@ -642,7 +638,7 @@ export class Item extends AbstractStruct {
    */
   delete (transaction) {
     if (!this.deleted) {
-      const parent = /** @type {import('../utils/types.js').YType} */ (this.parent)
+      const parent = /** @type {YType} */ (this.parent)
       // adjust the length of parent
       if (this.countable && this.parentSub === null) {
         parent._length -= this.length

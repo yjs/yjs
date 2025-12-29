@@ -1,4 +1,3 @@
-export * from './utils/AbstractConnector.js'
 export * from './utils/IdSet.js'
 export * from './utils/Doc.js'
 export * from './utils/UpdateDecoder.js'

@@ -111,7 +111,7 @@ export const testMergeUpdates = tc => {
   compare(users)
   encoders.forEach(enc => {
     const merged = fromUpdates(users, enc)
-    t.compareArrays(array0.toArray(), merged.getArray('array').toArray())
+    t.compareArrays(array0.toArray(), merged.get('array').toArray())
   })
 }
 
@@ -184,7 +184,7 @@ const checkUpdateCases = (ydoc, updates, enc, hasDeletes) => {
     // enc.logUpdate(updates)
     const merged = new Y.Doc({ gc: false })
     enc.applyUpdate(merged, mergedUpdates)
-    t.compareArrays(merged.getArray().toArray(), ydoc.getArray().toArray())
+    t.compareArrays(merged.get().toArray(), ydoc.get().toArray())
     t.compare(enc.encodeStateVector(merged), enc.encodeStateVectorFromUpdate(mergedUpdates))
     if (enc.updateEventName !== 'update') { // @todo should this also work on legacy updates?
       for (let j = 1; j < updates.length; j++) {
@@ -235,7 +235,7 @@ export const testMergeUpdates1 = _tc => {
     const ydoc = new Y.Doc({ gc: false })
     const updates = /** @type {Array<Uint8Array<ArrayBuffer>>} */ ([])
     ydoc.on(enc.updateEventName, update => { updates.push(update) })
-    const array = ydoc.getArray()
+    const array = ydoc.get()
     array.insert(0, [1])
     array.insert(0, [2])
     array.insert(0, [3])
@@ -253,7 +253,7 @@ export const testMergeUpdates2 = _tc => {
     const ydoc = new Y.Doc({ gc: false })
     const updates = /** @type {Array<Uint8Array<ArrayBuffer>>} */ ([])
     ydoc.on(enc.updateEventName, update => { updates.push(update) })
-    const array = ydoc.getArray()
+    const array = ydoc.get()
     array.insert(0, [1, 2])
     array.delete(1, 1)
     array.insert(0, [3, 4])
@@ -274,7 +274,7 @@ export const testMergePendingUpdates = _tc => {
   yDoc.on('update', (update, _origin, _c) => {
     serverUpdates.splice(serverUpdates.length, 0, update)
   })
-  const yText = yDoc.getText('textBlock')
+  const yText = yDoc.get('textBlock')
   yText.applyDelta(delta.create().insert('r'))
   yText.applyDelta(delta.create().insert('o'))
   yText.applyDelta(delta.create().insert('n'))
@@ -305,7 +305,7 @@ export const testMergePendingUpdates = _tc => {
   Y.applyUpdate(yDoc5, serverUpdates[4])
   Y.encodeStateAsUpdate(yDoc5)
 
-  const yText5 = yDoc5.getText('textBlock')
+  const yText5 = yDoc5.get('textBlock')
   t.compareStrings(yText5.toString(), 'nenor')
 }
 
@@ -314,26 +314,26 @@ export const testMergePendingUpdates = _tc => {
  */
 export const testObfuscateUpdates = _tc => {
   const ydoc = new Y.Doc()
-  const ytext = ydoc.getText('text')
-  const ymap = ydoc.getMap('map')
-  const yarray = ydoc.getArray('array')
+  const ytext = ydoc.get('text')
+  const ymap = ydoc.get('map')
+  const yarray = ydoc.get('array')
   // test ytext
   ytext.applyDelta(delta.create().insert('text', { bold: true }).insert([{ href: 'supersecreturl' }]))
   // test ymap
-  ymap.set('key', 'secret1')
-  ymap.set('key', 'secret2')
+  ymap.setAttr('key', 'secret1')
+  ymap.setAttr('key', 'secret2')
   // test yarray with subtype & subdoc
-  const subtype = new Y.XmlElement('secretnodename')
+  const subtype = new Y.Type('secretnodename')
   const subdoc = new Y.Doc({ guid: 'secret' })
-  subtype.setAttribute('attr', 'val')
+  subtype.setAttr('attr', 'val')
   yarray.insert(0, ['teststring', 42, subtype, subdoc])
   // obfuscate the content and put it into a new document
   const obfuscatedUpdate = Y.obfuscateUpdate(Y.encodeStateAsUpdate(ydoc))
   const odoc = new Y.Doc()
   Y.applyUpdate(odoc, obfuscatedUpdate)
-  const otext = odoc.getText('text')
-  const omap = odoc.getMap('map')
-  const oarray = odoc.getArray('array')
+  const otext = odoc.get('text')
+  const omap = odoc.get('map')
+  const oarray = odoc.get('array')
   // test ytext
   const d = /** @type {any} */ (otext.getContent().toJSON().children)
   t.assert(d.length === 2)
@@ -343,19 +343,19 @@ export const testObfuscateUpdates = _tc => {
   t.assert(object.length(d[1].insert) === 1)
   t.assert(object.hasProperty(d[1], 'insert'))
   // test ymap
-  t.assert(omap.size === 1)
-  t.assert(!omap.has('key'))
+  t.assert(omap.attrSize === 1)
+  t.assert(!omap.hasAttr('key'))
   // test yarray with subtype & subdoc
   const result = oarray.toArray()
   t.assert(result.length === 4)
   t.assert(result[0] !== 'teststring')
   t.assert(result[1] !== 42)
-  const osubtype = /** @type {Y.XmlElement} */ (result[2])
+  const osubtype = /** @type {Y.Type} */ (result[2])
   const osubdoc = result[3]
   // test subtype
-  t.assert(osubtype.nodeName !== subtype.nodeName)
-  t.assert(object.length(osubtype.getAttributes()) === 1)
-  t.assert(osubtype.getAttribute('attr') === undefined)
+  t.assert(osubtype.name !== subtype.name)
+  t.assert(object.length(osubtype.getAttrs()) === 1)
+  t.assert(osubtype.getAttr('attr') === undefined)
   // test subdoc
   t.assert(osubdoc.guid !== subdoc.guid)
 }

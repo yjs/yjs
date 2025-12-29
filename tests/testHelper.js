@@ -270,7 +270,7 @@ export class TestConnector {
  * @param {t.TestCase} tc
  * @param {{users?:number}} conf
  * @param {InitTestObjectCallback<T>} [initTestObject]
- * @return {{testObjects:Array<any>,testConnector:TestConnector,users:Array<TestYInstance>,array0:Y.Array<any>,array1:Y.Array<any>,array2:Y.Array<any>,map0:Y.Map<any>,map1:Y.Map<any>,map2:Y.Map<any>,map3:Y.Map<any>,text0:Y.Text,text1:Y.Text,text2:Y.Text,xml0:Y.XmlElement,xml1:Y.XmlElement,xml2:Y.XmlElement}}
+ * @return {{testObjects:Array<any>,testConnector:TestConnector,users:Array<TestYInstance>,array0:Y.Type<any>,array1:Y.Type<any>,array2:Y.Type<any>,map0:Y.Type<any>,map1:Y.Type<any>,map2:Y.Type<any>,map3:Y.Type<any>,text0:Y.Type,text1:Y.Type,text2:Y.Type,xml0:Y.Type,xml1:Y.Type,xml2:Y.Type}}
  */
 export const init = (tc, { users = 5 } = {}, initTestObject) => {
   /**
@@ -293,10 +293,10 @@ export const init = (tc, { users = 5 } = {}, initTestObject) => {
     const y = testConnector.createY(i)
     y.clientID = i
     result.users.push(y)
-    result['array' + i] = y.getArray('array')
-    result['map' + i] = y.getMap('map')
-    result['xml' + i] = y.get('xml', Y.XmlElement)
-    result['text' + i] = y.getText('text')
+    result['array' + i] = y.get('array')
+    result['map' + i] = y.get('map')
+    result['xml' + i] = y.get('xml')
+    result['text' + i] = y.get('text')
   }
   testConnector.syncAll()
   result.testObjects = result.users.map(initTestObject || (() => null))
@@ -458,37 +458,37 @@ export const compare = users => {
     return ydoc
   })
   users.push(.../** @type {any} */(mergedDocs))
-  const userArrayValues = users.map(u => u.getArray('array').toJSON())
-  const userMapValues = users.map(u => u.getMap('map').toJSON())
+  const userArrayValues = users.map(u => u.get('array').toJSON().children || [])
+  const userMapValues = users.map(u => u.get('map').toJSON())
   // @todo fix type error here
   // @ts-ignore
   const userXmlValues = users.map(u => /** @type {Y.XmlElement} */ (u.get('xml', Y.XmlElement)).toString())
-  const userTextValues = users.map(u => u.getText('text').getContentDeep())
+  const userTextValues = users.map(u => u.get('text').getContentDeep())
   for (const u of users) {
     t.assert(u.store.pendingDs === null)
     t.assert(u.store.pendingStructs === null)
   }
   // Test Array iterator
-  t.compare(users[0].getArray('array').toArray(), Array.from(users[0].getArray('array')))
+  t.compare(users[0].get('array').toArray(), Array.from(users[0].get('array')))
   // Test Map iterator
-  const ymapkeys = Array.from(users[0].getMap('map').keys())
+  const ymapkeys = Array.from(users[0].get('map').attrKeys())
   t.assert(ymapkeys.length === Object.keys(userMapValues[0]).length)
   ymapkeys.forEach(key => t.assert(object.hasProperty(userMapValues[0], key)))
   /**
    * @type {Object<string,any>}
    */
   const mapRes = {}
-  for (const [k, v] of users[0].getMap('map')) {
+  for (const [k, v] of users[0].get('map')) {
     mapRes[k] = v instanceof Y.AbstractType ? v.toJSON() : v
   }
   t.compare(userMapValues[0], mapRes)
   // Compare all users
   for (let i = 0; i < users.length - 1; i++) {
-    t.compare(userArrayValues[i].length, users[i].getArray('array').length)
+    t.compare(userArrayValues[i].length, users[i].get('array').length)
     t.compare(userArrayValues[i], userArrayValues[i + 1])
     t.compare(userMapValues[i], userMapValues[i + 1])
     t.compare(userXmlValues[i], userXmlValues[i + 1])
-    t.compare(list.toArray(userTextValues[i].children).map(a => (delta.$textOp.check(a) || delta.$insertOp.check(a)) ? a.insert.length : 0).reduce((a, b) => a + b, 0), users[i].getText('text').length)
+    t.compare(list.toArray(userTextValues[i].children).map(a => (delta.$textOp.check(a) || delta.$insertOp.check(a)) ? a.insert.length : 0).reduce((a, b) => a + b, 0), users[i].get('text').length)
     t.compare(userTextValues[i], userTextValues[i + 1], '', (_constructor, a, b) => {
       if (a instanceof Y.AbstractType) {
         t.compare(a.toJSON(), b.toJSON())

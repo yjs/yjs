@@ -14,7 +14,7 @@ import * as delta from 'lib0/delta'
  */
 export const testRelativePositions = _tc => {
   const ydoc = new Y.Doc()
-  const ytext = ydoc.getText()
+  const ytext = ydoc.get()
   ytext.insert(0, 'hello world')
   const v1 = Y.cloneDoc(ydoc)
   ytext.delete(1, 6)
@@ -32,7 +32,7 @@ export const testRelativePositions = _tc => {
  */
 export const testAttributedEvents = _tc => {
   const ydoc = new Y.Doc()
-  const ytext = ydoc.getText()
+  const ytext = ydoc.get()
   ytext.insert(0, 'hello world')
   const v1 = Y.cloneDoc(ydoc)
   ydoc.transact(() => {
@@ -56,7 +56,7 @@ export const testAttributedEvents = _tc => {
  */
 export const testInsertionsMindingAttributedContent = _tc => {
   const ydoc = new Y.Doc()
-  const ytext = ydoc.getText()
+  const ytext = ydoc.get()
   ytext.insert(0, 'hello world')
   const v1 = Y.cloneDoc(ydoc)
   ydoc.transact(() => {
@@ -74,7 +74,7 @@ export const testInsertionsMindingAttributedContent = _tc => {
  */
 export const testInsertionsIntoAttributedContent = _tc => {
   const ydoc = new Y.Doc()
-  const ytext = ydoc.getText()
+  const ytext = ydoc.get()
   ytext.insert(0, 'hello ')
   const v1 = Y.cloneDoc(ydoc)
   ydoc.transact(() => {
@@ -89,15 +89,15 @@ export const testInsertionsIntoAttributedContent = _tc => {
 
 export const testYdocDiff = () => {
   const ydocStart = new Y.Doc()
-  ydocStart.getText('text').insert(0, 'hello')
-  ydocStart.getArray('array').insert(0, [1, 2, 3])
-  ydocStart.getMap('map').set('k', 42)
-  ydocStart.getMap('map').set('nested', new Y.Array())
+  ydocStart.get('text').insert(0, 'hello')
+  ydocStart.get('array').insert(0, [1, 2, 3])
+  ydocStart.get('map').setAttr('k', 42)
+  ydocStart.get('map').setAttr('nested', new Y.Type())
   const ydocUpdated = Y.cloneDoc(ydocStart)
-  ydocUpdated.getText('text').insert(5, ' world')
-  ydocUpdated.getArray('array').insert(1, ['x'])
-  ydocUpdated.getMap('map').set('newk', 42)
-  ydocUpdated.getMap('map').get('nested').insert(0, [1])
+  ydocUpdated.get('text').insert(5, ' world')
+  ydocUpdated.get('array').insert(1, ['x'])
+  ydocUpdated.get('map').setAttr('newk', 42)
+  ydocUpdated.get('map').getAttr('nested').insert(0, [1])
   // @todo add custom attribution
   const d = Y.diffDocsToDelta(ydocStart, ydocUpdated)
   console.log('calculated diff', d.toJSON())
@@ -111,19 +111,18 @@ export const testYdocDiff = () => {
 export const testChildListContent = () => {
   const ydocStart = new Y.Doc()
   const ydocUpdated = Y.cloneDoc(ydocStart)
-  const yf = new Y.XmlElement('test')
+  const yf = new Y.Type('test')
   let calledEvent = 0
   yf.applyDelta(delta.create().insert('test content').setAttr('k', 'v'))
 
-  const yarray = ydocUpdated.getArray('array')
-  yarray.observeDeep((events, tr) => {
+  const yarray = ydocUpdated.get('array')
+  yarray.observeDeep(event => {
     calledEvent++
-    const event = events.find(event => event.target === yarray) || new Y.YEvent(yarray, tr, new Set(null))
     const d = event.deltaDeep
     const expectedD = delta.create().insert([delta.create('test').insert('test content').setAttr('k', 'v')])
     t.compare(d, expectedD)
   })
-  ydocUpdated.getArray('array').insert(0, [yf])
+  ydocUpdated.get('array').insert(0, [yf])
   t.assert(calledEvent === 1)
   const d = Y.diffDocsToDelta(ydocStart, ydocUpdated)
   console.log('calculated diff', d.toJSON())
