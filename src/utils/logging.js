@@ -1,5 +1,5 @@
 import {
-  AbstractType // eslint-disable-line
+  YType // eslint-disable-line
 } from '../internals.js'
 
 /**
@@ -7,7 +7,7 @@ import {
  *
  * Do not use in productive systems as the output can be immense!
  *
- * @param {AbstractType<any>} type
+ * @param {YType<any>} type
  */
 export const logType = type => {
   const res = []

@@ -8,7 +8,7 @@ import {
   isParentOf,
   followRedone,
   getItemCleanStart,
-  YEvent, Transaction, Doc, Item, GC, IdSet, AbstractType // eslint-disable-line
+  YEvent, Transaction, Doc, Item, GC, IdSet, YType // eslint-disable-line
 } from '../internals.js'
 
 import * as time from 'lib0/time'
@@ -273,7 +273,7 @@ export class UndoManager extends ObservableV2 {
     ytypes.forEach(ytype => {
       if (!tmpSet.has(ytype)) {
         tmpSet.add(ytype)
-        if (ytype instanceof AbstractType ? ytype.doc !== this.doc : ytype !== this.doc) logging.warn('[yjs#509] Not same Y.Doc') // use MultiDocUndoManager instead. also see https://github.com/yjs/yjs/issues/509
+        if (ytype instanceof YType ? ytype.doc !== this.doc : ytype !== this.doc) logging.warn('[yjs#509] Not same Y.Doc') // use MultiDocUndoManager instead. also see https://github.com/yjs/yjs/issues/509
         this.scope.push(ytype)
       }
     })

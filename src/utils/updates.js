@@ -33,8 +33,6 @@ import {
   UpdateEncoderV1,
   UpdateEncoderV2,
   writeIdSet,
-  YXmlElement,
-  YXmlHook,
   createIdSet
 } from '../internals.js'
 
@@ -586,13 +584,13 @@ export const convertUpdateFormat = (update, blockTransformer, YDecoder, YEncoder
  * @typedef {Object} ObfuscatorOptions
  * @property {boolean} [ObfuscatorOptions.formatting=true]
  * @property {boolean} [ObfuscatorOptions.subdocs=true]
- * @property {boolean} [ObfuscatorOptions.yxml=true] Whether to obfuscate nodeName / hookName
+ * @property {boolean} [ObfuscatorOptions.name=true] Whether to obfuscate nodeName / hookName
  */
 
 /**
  * @param {ObfuscatorOptions} obfuscator
  */
-const createObfuscator = ({ formatting = true, subdocs = true, yxml = true } = {}) => {
+const createObfuscator = ({ formatting = true, subdocs = true, name = true } = {}) => {
   let i = 0
   const mapKeyCache = map.create()
   const nodeNameCache = map.create()
@@ -615,14 +613,10 @@ const createObfuscator = ({ formatting = true, subdocs = true, yxml = true } = {
           case ContentDeleted:
             break
           case ContentType: {
-            if (yxml) {
+            if (name) {
               const type = /** @type {ContentType} */ (content).type
-              if (type instanceof YXmlElement) {
-                type.nodeName = map.setIfUndefined(nodeNameCache, type.nodeName, () => 'node-' + i)
-              }
-              // @ts-ignore
-              if (type instanceof YXmlHook) {
-                type.hookName = map.setIfUndefined(nodeNameCache, type.hookName, () => 'hook-' + i)
+              if (type.name != null) {
+                type.name = map.setIfUndefined(nodeNameCache, type.name, () => 'typename-' + i)
               }
             }
             break

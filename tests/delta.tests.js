@@ -84,7 +84,7 @@ export const testDeltaBasicSchema = _tc => {
  * @param {t.TestCase} _tc
  */
 export const testDeltaValues = _tc => {
-  const change = delta.create().set('a', 42).unset('b').retain(5).delete(6).insert('!').insert([{ my: 'custom object' }])
+  const change = delta.create().setAttr('a', 42).deleteAttr('b').retain(5).delete(6).insert('!').insert([{ my: 'custom object' }])
   // iterate through attribute changes
   for (const attrChange of change.attrs) {
     if (delta.$insertOp.check(attrChange)) {
@@ -122,7 +122,7 @@ export const testBasics = _tc => {
   const ydoc = new Y.Doc()
   const ytype = ydoc.get('my data')
   /**
-   * @type {delta.Delta<any,{ a: number }, { my: string }, string>}
+   * @type {delta.Delta<{attrs: { a: number }, children: { my: string }, text: true }>}
    */
   let observedDelta = delta.create()
   ytype.observe(event => {
@@ -130,7 +130,7 @@ export const testBasics = _tc => {
     console.log('ytype changed:', observedDelta.toJSON())
   })
   // define a change: set attribute: a=42
-  const attrChange = delta.create().set('a', 42).done()
+  const attrChange = delta.create().setAttr('a', 42).done()
   // define a change: insert textual content and an object
   const childChange = delta.create().insert('hello').insert([{ my: 'object' }]).done()
   // merge changes

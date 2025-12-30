@@ -14,10 +14,10 @@ const isDevMode = env.getVariable('node_env') === 'development'
 export const testBasicUpdate = _tc => {
   const doc1 = new Y.Doc()
   const doc2 = new Y.Doc()
-  doc1.getArray('array').insert(0, ['hi'])
+  doc1.get('array').insert(0, ['hi'])
   const update = Y.encodeStateAsUpdate(doc1)
   Y.applyUpdate(doc2, update)
-  t.compare(doc2.getArray('array').toArray(), ['hi'])
+  t.compare(doc2.get('array').toArray(), ['hi'])
 }
 
 /**
@@ -29,8 +29,8 @@ export const testFailsObjectManipulationInDevMode = _tc => {
     const doc = new Y.Doc()
     const a = [1, 2, 3]
     const b = { o: 1 }
-    doc.getArray('test').insert(0, [a])
-    doc.getMap('map').set('k', b)
+    doc.get('test').insert(0, [a])
+    doc.get('map').setAttr('k', b)
     t.fails(() => {
       a[0] = 42
     })
@@ -47,7 +47,7 @@ export const testFailsObjectManipulationInDevMode = _tc => {
  */
 export const testSlice = _tc => {
   const doc1 = new Y.Doc()
-  const arr = doc1.getArray('array')
+  const arr = doc1.get('array')
   arr.insert(0, [1, 2, 3])
   t.compareArrays(arr.slice(0), [1, 2, 3])
   t.compareArrays(arr.slice(1), [2, 3])
@@ -62,9 +62,9 @@ export const testSlice = _tc => {
  */
 export const testArrayFrom = _tc => {
   const doc1 = new Y.Doc()
-  const db1 = doc1.getMap('root')
-  const nestedArray1 = Y.Array.from([0, 1, 2])
-  db1.set('array', nestedArray1)
+  const db1 = doc1.get('root')
+  const nestedArray1 = Y.Type.from(delta.create().insert([0, 1, 2]))
+  db1.setAttr('array', nestedArray1)
   t.compare(nestedArray1.toArray(), [0, 1, 2])
 }
 
@@ -75,7 +75,7 @@ export const testArrayFrom = _tc => {
  */
 export const testLengthIssue = _tc => {
   const doc1 = new Y.Doc()
-  const arr = doc1.getArray('array')
+  const arr = doc1.get('array')
   arr.push([0, 1, 2, 3])
   arr.delete(0)
   arr.insert(0, [0])
@@ -104,7 +104,7 @@ export const testLengthIssue = _tc => {
  */
 export const testLengthIssue2 = _tc => {
   const doc = new Y.Doc()
-  const next = doc.getArray()
+  const next = doc.get()
   doc.transact(() => {
     next.insert(0, ['group2'])
   })
@@ -162,9 +162,9 @@ export const testDeleteInsert = tc => {
 export const testInsertThreeElementsTryRegetProperty = tc => {
   const { testConnector, users, array0, array1 } = init(tc, { users: 2 })
   array0.insert(0, [1, true, false])
-  t.compare(array0.toJSON(), [1, true, false], '.toJSON() works')
+  t.compare(array0.getContent(), delta.create().insert([1, true, false]), 'content works')
   testConnector.flushAllMessages()
-  t.compare(array1.toJSON(), [1, true, false], '.toJSON() works after sync')
+  t.compare(array1.getContent(), delta.create().insert([1, true, false]), 'comparison works after sync')
   compare(users)
 }
 
@@ -222,8 +222,8 @@ export const testDisconnectReallyPreventsSendingMessages = tc => {
   users[2].disconnect()
   array0.insert(1, ['user0'])
   array1.insert(1, ['user1'])
-  t.compare(array0.toJSON(), ['x', 'user0', 'y'])
-  t.compare(array1.toJSON(), ['x', 'user1', 'y'])
+  t.compare(array0.toJSON().children, ['x', 'user0', 'y'])
+  t.compare(array1.toJSON().children, ['x', 'user1', 'y'])
   users[1].connect()
   users[2].connect()
   compare(users)
@@ -318,7 +318,7 @@ export const testInsertAndDeleteEventsForTypes = tc => {
   array0.observe(e => {
     event = e
   })
-  array0.insert(0, [new Y.Array()])
+  array0.insert(0, [new Y.Type()])
   t.assert(event !== null)
   event = null
   array0.delete(0)
@@ -328,52 +328,24 @@ export const testInsertAndDeleteEventsForTypes = tc => {
 }
 
 /**
- * This issue has been reported in https://discuss.yjs.dev/t/order-in-which-events-yielded-by-observedeep-should-be-applied/261/2
- *
- * Deep observers generate multiple events. When an array added at item at, say, position 0,
- * and item 1 changed then the array-add event should fire first so that the change event
- * path is correct. A array binding might lead to an inconsistent state otherwise.
- *
- * @param {t.TestCase} tc
- */
-export const testObserveDeepEventOrder = tc => {
-  const { array0, users } = init(tc, { users: 2 })
-  /**
-   * @type {Array<any>}
-   */
-  let events = []
-  array0.observeDeep(e => {
-    events = e
-  })
-  array0.insert(0, [new Y.Map()])
-  users[0].transact(() => {
-    array0.get(0).set('a', 'a')
-    array0.insert(0, [0])
-  })
-  for (let i = 1; i < events.length; i++) {
-    t.assert(events[i - 1].path.length <= events[i].path.length, 'path size increases, fire top-level events first')
-  }
-}
-
-/**
  * Correct index when computing event.path in observeDeep - https://github.com/yjs/yjs/issues/457
  *
  * @param {t.TestCase} _tc
  */
 export const testObservedeepIndexes = _tc => {
   const doc = new Y.Doc()
-  const map = doc.getMap()
+  const map = doc.get()
   // Create a field with the array as value
-  map.set('my-array', new Y.Array())
+  map.setAttr('my-array', new Y.Type())
   // Fill the array with some strings and our Map
-  map.get('my-array').push(['a', 'b', 'c', new Y.Map()])
+  map.getAttr('my-array').push(['a', 'b', 'c', new Y.Type()])
   /**
    * @type {Array<any>}
    */
   let eventPath = []
-  map.observeDeep((events) => { eventPath = events[0].path })
+  map.observeDeep((event) => { eventPath = event.path })
   // set a value on the map inside of our array
-  map.get('my-array').get(3).set('hello', 'world')
+  map.getAttr('my-array').get(3).set('hello', 'world')
   console.log(eventPath)
   t.compare(eventPath, ['my-array', 3])
 }
@@ -384,13 +356,13 @@ export const testObservedeepIndexes = _tc => {
 export const testChangeEvent = tc => {
   const { array0, users } = init(tc, { users: 2 })
   /**
-   * @type {delta.Delta<any,any,any,any,any>}
+   * @type {delta.Delta<any>}
    */
   let d = delta.create()
   array0.observe(e => {
     d = e.delta
   })
-  const newArr = new Y.Array()
+  const newArr = new Y.Type()
   array0.insert(0, [newArr, 4, 'dtrn'])
   t.assert(d !== null && d.children.len === 1)
   t.compare(d, delta.create().insert([newArr, 4, 'dtrn']))
@@ -415,7 +387,7 @@ export const testInsertAndDeleteEventsForTypes2 = tc => {
   array0.observe(e => {
     events.push(e)
   })
-  array0.insert(0, ['hi', new Y.Map()])
+  array0.insert(0, ['hi', new Y.Type()])
   t.assert(events.length === 1, 'Event is triggered exactly once for insertion of two elements')
   array0.delete(1)
   t.assert(events.length === 2, 'Event is triggered exactly once for deletion')
@@ -430,12 +402,12 @@ export const testNewChildDoesNotEmitEventInTransaction = tc => {
   const { array0, users } = init(tc, { users: 2 })
   let fired = false
   users[0].transact(() => {
-    const newMap = new Y.Map()
+    const newMap = new Y.Type()
     newMap.observe(() => {
       fired = true
     })
     array0.insert(0, [newMap])
-    newMap.set('tst', 42)
+    newMap.setAttr('tst', 42)
   })
   t.assert(!fired, 'Event does not trigger')
 }
@@ -494,15 +466,15 @@ export const testEventTargetIsSetCorrectlyOnRemote = tc => {
  */
 export const testIteratingArrayContainingTypes = _tc => {
   const y = new Y.Doc()
-  const arr = y.getArray('arr')
+  const arr = y.get('arr')
   const numItems = 10
   for (let i = 0; i < numItems; i++) {
-    const map = new Y.Map()
-    map.set('value', i)
+    const map = new Y.Type()
+    map.setAttr('value', i)
     arr.push([map])
   }
   let cnt = 0
-  for (const item of arr) {
+  for (const item of arr.toArray()) {
     t.assert(item.get('value') === cnt++, 'value is correct')
   }
   y.destroy()
@@ -514,9 +486,9 @@ export const testIteratingArrayContainingTypes = _tc => {
 export const testAttributedContent = _tc => {
   const ydoc = new Y.Doc({ gc: false })
   /**
-   * @type {Y.Array<number>}
+   * @type {Y.Type<{ children: number }>}
    */
-  const yarray = ydoc.getArray()
+  const yarray = ydoc.get()
   yarray.insert(0, [1, 2])
   let attributionManager = Y.noAttributionsManager
 
@@ -544,7 +516,7 @@ const getUniqueNumber = () => _uniqueNumber++
  */
 const arrayTransactions = [
   function insert (user, gen) {
-    const yarray = user.getArray('array')
+    const yarray = user.get('array')
     const uniqueNumber = getUniqueNumber()
     const content = []
     const len = prng.int32(gen, 1, 4)
@@ -558,35 +530,35 @@ const arrayTransactions = [
     t.compareArrays(yarray.toArray(), oldContent) // we want to make sure that fastSearch markers insert at the correct position
   },
   function insertTypeArray (user, gen) {
-    const yarray = user.getArray('array')
+    const yarray = user.get('array')
     const pos = prng.int32(gen, 0, yarray.length)
-    yarray.insert(pos, [new Y.Array()])
+    yarray.insert(pos, [new Y.Type()])
     const array2 = yarray.get(pos)
     array2.insert(0, [1, 2, 3, 4])
   },
   function insertTypeMap (user, gen) {
-    const yarray = user.getArray('array')
+    const yarray = user.get('array')
     const pos = prng.int32(gen, 0, yarray.length)
-    yarray.insert(pos, [new Y.Map()])
+    yarray.insert(pos, [new Y.Type()])
     const map = yarray.get(pos)
     map.set('someprop', 42)
     map.set('someprop', 43)
     map.set('someprop', 44)
   },
   function insertTypeNull (user, gen) {
-    const yarray = user.getArray('array')
+    const yarray = user.get('array')
     const pos = prng.int32(gen, 0, yarray.length)
     yarray.insert(pos, [null])
   },
   function _delete (user, gen) {
-    const yarray = user.getArray('array')
+    const yarray = user.get('array')
     const length = yarray.length
     if (length > 0) {
       let somePos = prng.int32(gen, 0, length - 1)
       let delLength = prng.int32(gen, 1, math.min(2, length - somePos))
       if (prng.bool(gen)) {
         const type = yarray.get(somePos)
-        if (type instanceof Y.Array && type.length > 0) {
+        if (type instanceof Y.Type && type.length > 0) {
           somePos = prng.int32(gen, 0, type.length - 1)
           delLength = prng.int32(gen, 0, math.min(2, type.length - somePos))
           type.delete(somePos, delLength)

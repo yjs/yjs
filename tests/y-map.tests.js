@@ -1,7 +1,6 @@
 import * as Y from '../src/index.js'
 import { init, compare, applyRandomTests, Doc } from './testHelper.js' // eslint-disable-line
 import {
-  compareIDs,
   noAttributionsManager,
   TwosetAttributionManager,
   createIdMapFromIdSet
@@ -18,35 +17,34 @@ import * as object from 'lib0/object'
 export const testIterators = _tc => {
   const ydoc = new Y.Doc()
   /**
-   * @type {Y.Map<number>}
+   * @type {Y.Type<{attrs: { [k:string]: number} }>}
    */
-  const ymap = ydoc.getMap()
+  const ymap = ydoc.get()
   // we are only checking if the type assumptions are correct
   /**
    * @type {Array<number>}
    */
-  const vals = Array.from(ymap.values())
+  const vals = Array.from(ymap.attrValues())
   /**
    * @type {Array<[string,number]>}
    */
-  const entries = Array.from(ymap.entries())
+  const entries = Array.from(ymap.attrEntries())
   /**
    * @type {Array<string>}
    */
-  const keys = Array.from(ymap.keys())
+  const keys = Array.from(ymap.attrKeys())
   console.log(vals, entries, keys)
 }
 
 export const testNestedMapEvent = () => {
   const ydoc = new Y.Doc()
-  const ymap = ydoc.getMap()
-  const ymapNested = ymap.set('nested', new Y.Map())
+  const ymap = ydoc.get()
+  const ymapNested = ymap.setAttr('nested', new Y.Type())
   let called = 0
-  ymap.observeDeep((events, tr) => {
-    const event = events.find(event => event.target === ymap) || new Y.YEvent(ymap, tr, new Set())
+  ymap.observeDeep(event => {
     const d = event.deltaDeep
     called++
-    t.compare(d, delta.create().update('nested', delta.create().set('k', 'v')))
+    t.compare(d, delta.create().modifyAttr('nested', delta.create().setAttr('k', 'v')))
   })
   ymapNested.set('k', 'v')
   t.assert(called === 1)
@@ -54,17 +52,16 @@ export const testNestedMapEvent = () => {
 
 export const testNestedMapEvent2 = () => {
   const ydoc = new Y.Doc()
-  const yarr = ydoc.getArray()
-  const ymapNested = new Y.Map()
+  const yarr = ydoc.get()
+  const ymapNested = new Y.Type()
   yarr.insert(0, [ymapNested])
   let called = 0
-  yarr.observeDeep((events, tr) => {
-    const event = events.find(event => event.target === yarr) || new Y.YEvent(yarr, tr, new Set())
+  yarr.observeDeep(event => {
     const d = event.deltaDeep
     called++
-    t.compare(d, delta.create().modify(delta.create().set('k', 'v')))
+    t.compare(d, delta.create().modify(delta.create().setAttr('k', 'v')))
   })
-  ymapNested.set('k', 'v')
+  ymapNested.setAttr('k', 'v')
   t.assert(called === 1)
 }
 
@@ -75,7 +72,7 @@ export const testNestedMapEvent2 = () => {
  */
 export const testMapEventError = _tc => {
   const doc = new Y.Doc()
-  const ymap = doc.getMap()
+  const ymap = doc.get()
   /**
    * @type {any}
    */
@@ -96,26 +93,20 @@ export const testMapEventError = _tc => {
  */
 export const testMapHavingIterableAsConstructorParamTests = tc => {
   const { map0 } = init(tc, { users: 1 })
-
-  const m1 = new Y.Map(Object.entries({ number: 1, string: 'hello' }))
-  map0.set('m1', m1)
-  t.assert(m1.get('number') === 1)
-  t.assert(m1.get('string') === 'hello')
-
-  const m2 = new Y.Map([
-    ['object', { x: 1 }],
-    ['boolean', true]
-  ])
-  map0.set('m2', m2)
-  t.assert(m2.get('object').x === 1)
-  t.assert(m2.get('boolean') === true)
-
-  const m3 = new Y.Map([...m1, ...m2])
-  map0.set('m3', m3)
-  t.assert(m3.get('number') === 1)
-  t.assert(m3.get('string') === 'hello')
-  t.assert(m3.get('object').x === 1)
-  t.assert(m3.get('boolean') === true)
+  const m1 = Y.Type.from(delta.create().setAttr('number', 1).setAttr('string', 'hello'))
+  map0.setAttr('m1', m1)
+  t.assert(m1.getAttr('number') === 1)
+  t.assert(m1.getAttr('string') === 'hello')
+  const m2 = Y.Type.from(delta.create(delta.$deltaAny).setAttrs({ object: { x: 1 }, boolean: true }).done())
+  map0.setAttr('m2', m2)
+  t.assert(m2.getAttr('object')?.x === 1)
+  t.assert(m2.getAttr('boolean') === true)
+  const m3 = new Y.Type().applyDelta(m1.getContent()).applyDelta(m2.getContent())
+  map0.setAttr('m3', m3)
+  t.assert(m3.getAttr('number') === 1)
+  t.assert(m3.getAttr('string') === 'hello')
+  t.assert(m3.getAttr('object')?.x === 1)
+  t.assert(m3.getAttr('boolean') === true)
 }
 
 /**
@@ -125,48 +116,48 @@ export const testBasicMapTests = tc => {
   const { testConnector, users, map0, map1, map2 } = init(tc, { users: 3 })
   users[2].disconnect()
 
-  map0.set('null', null)
-  map0.set('number', 1)
-  map0.set('string', 'hello Y')
-  map0.set('object', { key: { key2: 'value' } })
-  map0.set('y-map', new Y.Map())
-  map0.set('boolean1', true)
-  map0.set('boolean0', false)
-  const map = map0.get('y-map')
-  map.set('y-array', new Y.Array())
+  map0.setAttr('null', null)
+  map0.setAttr('number', 1)
+  map0.setAttr('string', 'hello Y')
+  map0.setAttr('object', { key: { key2: 'value' } })
+  map0.setAttr('y-map', new Y.Type())
+  map0.setAttr('boolean1', true)
+  map0.setAttr('boolean0', false)
+  const map = map0.getAttr('y-map')
+  map.set('y-array', new Y.Type())
   const array = map.get('y-array')
   array.insert(0, [0])
   array.insert(0, [-1])
 
-  t.assert(map0.get('null') === null, 'client 0 computed the change (null)')
-  t.assert(map0.get('number') === 1, 'client 0 computed the change (number)')
-  t.assert(map0.get('string') === 'hello Y', 'client 0 computed the change (string)')
-  t.assert(map0.get('boolean0') === false, 'client 0 computed the change (boolean)')
-  t.assert(map0.get('boolean1') === true, 'client 0 computed the change (boolean)')
-  t.compare(map0.get('object'), { key: { key2: 'value' } }, 'client 0 computed the change (object)')
-  t.assert(map0.get('y-map').get('y-array').get(0) === -1, 'client 0 computed the change (type)')
-  t.assert(map0.size === 7, 'client 0 map has correct size')
+  t.assert(map0.getAttr('null') === null, 'client 0 computed the change (null)')
+  t.assert(map0.getAttr('number') === 1, 'client 0 computed the change (number)')
+  t.assert(map0.getAttr('string') === 'hello Y', 'client 0 computed the change (string)')
+  t.assert(map0.getAttr('boolean0') === false, 'client 0 computed the change (boolean)')
+  t.assert(map0.getAttr('boolean1') === true, 'client 0 computed the change (boolean)')
+  t.compare(map0.getAttr('object'), { key: { key2: 'value' } }, 'client 0 computed the change (object)')
+  t.assert(map0.getAttr('y-map').get('y-array').get(0) === -1, 'client 0 computed the change (type)')
+  t.assert(map0.attrSize === 7, 'client 0 map has correct size')
 
   users[2].connect()
   testConnector.flushAllMessages()
 
-  t.assert(map1.get('null') === null, 'client 1 received the update (null)')
-  t.assert(map1.get('number') === 1, 'client 1 received the update (number)')
-  t.assert(map1.get('string') === 'hello Y', 'client 1 received the update (string)')
-  t.assert(map1.get('boolean0') === false, 'client 1 computed the change (boolean)')
-  t.assert(map1.get('boolean1') === true, 'client 1 computed the change (boolean)')
-  t.compare(map1.get('object'), { key: { key2: 'value' } }, 'client 1 received the update (object)')
-  t.assert(map1.get('y-map').get('y-array').get(0) === -1, 'client 1 received the update (type)')
-  t.assert(map1.size === 7, 'client 1 map has correct size')
+  t.assert(map1.getAttr('null') === null, 'client 1 received the update (null)')
+  t.assert(map1.getAttr('number') === 1, 'client 1 received the update (number)')
+  t.assert(map1.getAttr('string') === 'hello Y', 'client 1 received the update (string)')
+  t.assert(map1.getAttr('boolean0') === false, 'client 1 computed the change (boolean)')
+  t.assert(map1.getAttr('boolean1') === true, 'client 1 computed the change (boolean)')
+  t.compare(map1.getAttr('object'), { key: { key2: 'value' } }, 'client 1 received the update (object)')
+  t.assert(map1.getAttr('y-map').get('y-array').get(0) === -1, 'client 1 received the update (type)')
+  t.assert(map1.attrSize === 7, 'client 1 map has correct size')
 
   // compare disconnected user
-  t.assert(map2.get('null') === null, 'client 2 received the update (null) - was disconnected')
-  t.assert(map2.get('number') === 1, 'client 2 received the update (number) - was disconnected')
-  t.assert(map2.get('string') === 'hello Y', 'client 2 received the update (string) - was disconnected')
-  t.assert(map2.get('boolean0') === false, 'client 2 computed the change (boolean)')
-  t.assert(map2.get('boolean1') === true, 'client 2 computed the change (boolean)')
-  t.compare(map2.get('object'), { key: { key2: 'value' } }, 'client 2 received the update (object) - was disconnected')
-  t.assert(map2.get('y-map').get('y-array').get(0) === -1, 'client 2 received the update (type) - was disconnected')
+  t.assert(map2.getAttr('null') === null, 'client 2 received the update (null) - was disconnected')
+  t.assert(map2.getAttr('number') === 1, 'client 2 received the update (number) - was disconnected')
+  t.assert(map2.getAttr('string') === 'hello Y', 'client 2 received the update (string) - was disconnected')
+  t.assert(map2.getAttr('boolean0') === false, 'client 2 computed the change (boolean)')
+  t.assert(map2.getAttr('boolean1') === true, 'client 2 computed the change (boolean)')
+  t.compare(map2.getAttr('object'), { key: { key2: 'value' } }, 'client 2 received the update (object) - was disconnected')
+  t.assert(map2.getAttr('y-map').get('y-array').get(0) === -1, 'client 2 received the update (type) - was disconnected')
   compare(users)
 }
 
@@ -175,18 +166,18 @@ export const testBasicMapTests = tc => {
  */
 export const testGetAndSetOfMapProperty = tc => {
   const { testConnector, users, map0 } = init(tc, { users: 2 })
-  map0.set('stuff', 'stuffy')
-  map0.set('undefined', undefined)
-  map0.set('null', null)
-  t.compare(map0.get('stuff'), 'stuffy')
+  map0.setAttr('stuff', 'stuffy')
+  map0.setAttr('undefined', undefined)
+  map0.setAttr('null', null)
+  t.compare(map0.getAttr('stuff'), 'stuffy')
 
   testConnector.flushAllMessages()
 
   for (const user of users) {
-    const u = user.getMap('map')
-    t.compare(u.get('stuff'), 'stuffy')
-    t.assert(u.get('undefined') === undefined, 'undefined')
-    t.compare(u.get('null'), null, 'null')
+    const u = user.get('map')
+    t.compare(u.getAttr('stuff'), 'stuffy')
+    t.assert(u.getAttr('undefined') === undefined, 'undefined')
+    t.compare(u.getAttr('null'), null, 'null')
   }
   compare(users)
 }
@@ -196,8 +187,8 @@ export const testGetAndSetOfMapProperty = tc => {
  */
 export const testYmapSetsYmap = tc => {
   const { users, map0 } = init(tc, { users: 2 })
-  const map = map0.set('Map', new Y.Map())
-  t.assert(map0.get('Map') === map)
+  const map = map0.setAttr('Map', new Y.Type())
+  t.assert(map0.getAttr('Map') === map)
   map.set('one', 1)
   t.compare(map.get('one'), 1)
   compare(users)
@@ -208,8 +199,8 @@ export const testYmapSetsYmap = tc => {
  */
 export const testYmapSetsYarray = tc => {
   const { users, map0 } = init(tc, { users: 2 })
-  const array = map0.set('Array', new Y.Array())
-  t.assert(array === map0.get('Array'))
+  const array = map0.setAttr('Array', new Y.Type())
+  t.assert(array === map0.getAttr('Array'))
   array.insert(0, [1, 2, 3])
   // @ts-ignore
   t.compare(map0.toJSON(), { Array: [1, 2, 3] })
@@ -221,12 +212,12 @@ export const testYmapSetsYarray = tc => {
  */
 export const testGetAndSetOfMapPropertySyncs = tc => {
   const { testConnector, users, map0 } = init(tc, { users: 2 })
-  map0.set('stuff', 'stuffy')
-  t.compare(map0.get('stuff'), 'stuffy')
+  map0.setAttr('stuff', 'stuffy')
+  t.compare(map0.getAttr('stuff'), 'stuffy')
   testConnector.flushAllMessages()
   for (const user of users) {
-    const u = user.getMap('map')
-    t.compare(u.get('stuff'), 'stuffy')
+    const u = user.get('map')
+    t.compare(u.getAttr('stuff'), 'stuffy')
   }
   compare(users)
 }
@@ -236,12 +227,12 @@ export const testGetAndSetOfMapPropertySyncs = tc => {
  */
 export const testGetAndSetOfMapPropertyWithConflict = tc => {
   const { testConnector, users, map0, map1 } = init(tc, { users: 3 })
-  map0.set('stuff', 'c0')
-  map1.set('stuff', 'c1')
+  map0.setAttr('stuff', 'c0')
+  map1.setAttr('stuff', 'c1')
   testConnector.flushAllMessages()
   for (const user of users) {
-    const u = user.getMap('map')
-    t.compare(u.get('stuff'), 'c1')
+    const u = user.get('map')
+    t.compare(u.getAttr('stuff'), 'c1')
   }
   compare(users)
 }
@@ -251,13 +242,13 @@ export const testGetAndSetOfMapPropertyWithConflict = tc => {
  */
 export const testSizeAndDeleteOfMapProperty = tc => {
   const { map0 } = init(tc, { users: 1 })
-  map0.set('stuff', 'c0')
-  map0.set('otherstuff', 'c1')
-  t.assert(map0.size === 2, `map size is ${map0.size} expected 2`)
-  map0.delete('stuff')
-  t.assert(map0.size === 1, `map size after delete is ${map0.size}, expected 1`)
-  map0.delete('otherstuff')
-  t.assert(map0.size === 0, `map size after delete is ${map0.size}, expected 0`)
+  map0.setAttr('stuff', 'c0')
+  map0.setAttr('otherstuff', 'c1')
+  t.assert(map0.attrSize === 2, `map size is ${map0.attrSize} expected 2`)
+  map0.deleteAttr('stuff')
+  t.assert(map0.attrSize === 1, `map size after delete is ${map0.attrSize}, expected 1`)
+  map0.deleteAttr('otherstuff')
+  t.assert(map0.attrSize === 0, `map size after delete is ${map0.attrSize}, expected 0`)
 }
 
 /**
@@ -265,13 +256,13 @@ export const testSizeAndDeleteOfMapProperty = tc => {
  */
 export const testGetAndSetAndDeleteOfMapProperty = tc => {
   const { testConnector, users, map0, map1 } = init(tc, { users: 3 })
-  map0.set('stuff', 'c0')
-  map1.set('stuff', 'c1')
-  map1.delete('stuff')
+  map0.setAttr('stuff', 'c0')
+  map1.setAttr('stuff', 'c1')
+  map1.deleteAttr('stuff')
   testConnector.flushAllMessages()
   for (const user of users) {
-    const u = user.getMap('map')
-    t.assert(u.get('stuff') === undefined)
+    const u = user.get('map')
+    t.assert(u.getAttr('stuff') === undefined)
   }
   compare(users)
 }
@@ -281,15 +272,15 @@ export const testGetAndSetAndDeleteOfMapProperty = tc => {
  */
 export const testSetAndClearOfMapProperties = tc => {
   const { testConnector, users, map0 } = init(tc, { users: 1 })
-  map0.set('stuff', 'c0')
-  map0.set('otherstuff', 'c1')
-  map0.clear()
+  map0.setAttr('stuff', 'c0')
+  map0.setAttr('otherstuff', 'c1')
+  map0.clearAttrs()
   testConnector.flushAllMessages()
   for (const user of users) {
-    const u = user.getMap('map')
-    t.assert(u.get('stuff') === undefined)
-    t.assert(u.get('otherstuff') === undefined)
-    t.assert(u.size === 0, `map size after clear is ${u.size}, expected 0`)
+    const u = user.get('map')
+    t.assert(u.getAttr('stuff') === undefined)
+    t.assert(u.getAttr('otherstuff') === undefined)
+    t.assert(u.attrSize === 0, `map size after clear is ${u.attrSize}, expected 0`)
   }
   compare(users)
 }
@@ -299,22 +290,22 @@ export const testSetAndClearOfMapProperties = tc => {
  */
 export const testSetAndClearOfMapPropertiesWithConflicts = tc => {
   const { testConnector, users, map0, map1, map2, map3 } = init(tc, { users: 4 })
-  map0.set('stuff', 'c0')
-  map1.set('stuff', 'c1')
-  map1.set('stuff', 'c2')
-  map2.set('stuff', 'c3')
+  map0.setAttr('stuff', 'c0')
+  map1.setAttr('stuff', 'c1')
+  map1.setAttr('stuff', 'c2')
+  map2.setAttr('stuff', 'c3')
   testConnector.flushAllMessages()
-  map0.set('otherstuff', 'c0')
-  map1.set('otherstuff', 'c1')
-  map2.set('otherstuff', 'c2')
-  map3.set('otherstuff', 'c3')
-  map3.clear()
+  map0.setAttr('otherstuff', 'c0')
+  map1.setAttr('otherstuff', 'c1')
+  map2.setAttr('otherstuff', 'c2')
+  map3.setAttr('otherstuff', 'c3')
+  map3.clearAttrs()
   testConnector.flushAllMessages()
   for (const user of users) {
-    const u = user.getMap('map')
-    t.assert(u.get('stuff') === undefined)
-    t.assert(u.get('otherstuff') === undefined)
-    t.assert(u.size === 0, `map size after clear is ${u.size}, expected 0`)
+    const u = user.get('map')
+    t.assert(u.getAttr('stuff') === undefined)
+    t.assert(u.getAttr('otherstuff') === undefined)
+    t.assert(u.attrSize === 0, `map size after clear is ${u.attrSize}, expected 0`)
   }
   compare(users)
 }
@@ -324,14 +315,14 @@ export const testSetAndClearOfMapPropertiesWithConflicts = tc => {
  */
 export const testGetAndSetOfMapPropertyWithThreeConflicts = tc => {
   const { testConnector, users, map0, map1, map2 } = init(tc, { users: 3 })
-  map0.set('stuff', 'c0')
-  map1.set('stuff', 'c1')
-  map1.set('stuff', 'c2')
-  map2.set('stuff', 'c3')
+  map0.setAttr('stuff', 'c0')
+  map1.setAttr('stuff', 'c1')
+  map1.setAttr('stuff', 'c2')
+  map2.setAttr('stuff', 'c3')
   testConnector.flushAllMessages()
   for (const user of users) {
-    const u = user.getMap('map')
-    t.compare(u.get('stuff'), 'c3')
+    const u = user.get('map')
+    t.compare(u.getAttr('stuff'), 'c3')
   }
   compare(users)
 }
@@ -341,114 +332,24 @@ export const testGetAndSetOfMapPropertyWithThreeConflicts = tc => {
  */
 export const testGetAndSetAndDeleteOfMapPropertyWithThreeConflicts = tc => {
   const { testConnector, users, map0, map1, map2, map3 } = init(tc, { users: 4 })
-  map0.set('stuff', 'c0')
-  map1.set('stuff', 'c1')
-  map1.set('stuff', 'c2')
-  map2.set('stuff', 'c3')
+  map0.setAttr('stuff', 'c0')
+  map1.setAttr('stuff', 'c1')
+  map1.setAttr('stuff', 'c2')
+  map2.setAttr('stuff', 'c3')
   testConnector.flushAllMessages()
-  map0.set('stuff', 'deleteme')
-  map1.set('stuff', 'c1')
-  map2.set('stuff', 'c2')
-  map3.set('stuff', 'c3')
-  map3.delete('stuff')
+  map0.setAttr('stuff', 'deleteme')
+  map1.setAttr('stuff', 'c1')
+  map2.setAttr('stuff', 'c2')
+  map3.setAttr('stuff', 'c3')
+  map3.deleteAttr('stuff')
   testConnector.flushAllMessages()
   for (const user of users) {
-    const u = user.getMap('map')
-    t.assert(u.get('stuff') === undefined)
+    const u = user.get('map')
+    t.assert(u.getAttr('stuff') === undefined)
   }
   compare(users)
 }
 
-/**
- * @param {t.TestCase} tc
- */
-export const testObserveDeepProperties = tc => {
-  const { testConnector, users, map1, map2, map3 } = init(tc, { users: 4 })
-  const _map1 = map1.set('map', new Y.Map())
-  let calls = 0
-  let dmapid
-  map1.observeDeep(events => {
-    events.forEach(event => {
-      calls++
-      // @ts-ignore
-      t.assert(event.keysChanged.has('deepmap'))
-      t.assert(event.path.length === 1)
-      t.assert(event.path[0] === 'map')
-      // @ts-ignore
-      dmapid = event.target.get('deepmap')._item.id
-    })
-  })
-  testConnector.flushAllMessages()
-  const _map3 = map3.get('map')
-  _map3.set('deepmap', new Y.Map())
-  testConnector.flushAllMessages()
-  const _map2 = map2.get('map')
-  _map2.set('deepmap', new Y.Map())
-  testConnector.flushAllMessages()
-  const dmap1 = _map1.get('deepmap')
-  const dmap2 = _map2.get('deepmap')
-  const dmap3 = _map3.get('deepmap')
-  t.assert(calls > 0)
-  t.assert(compareIDs(dmap1._item.id, dmap2._item.id))
-  t.assert(compareIDs(dmap1._item.id, dmap3._item.id))
-  // @ts-ignore we want the possibility of dmapid being undefined
-  t.assert(compareIDs(dmap1._item.id, dmapid))
-  compare(users)
-}
-
-/**
- * @param {t.TestCase} tc
- */
-export const testObserversUsingObservedeep = tc => {
-  const { users, map0 } = init(tc, { users: 2 })
-  /**
-   * @type {Array<Array<string|number>>}
-   */
-  const paths = []
-  let calls = 0
-  map0.observeDeep(events => {
-    events.forEach(event => {
-      paths.push(event.path)
-    })
-    calls++
-  })
-  map0.set('map', new Y.Map())
-  map0.get('map').set('array', new Y.Array())
-  map0.get('map').get('array').insert(0, ['content'])
-  t.assert(calls === 3)
-  t.compare(paths, [[], ['map'], ['map', 'array']])
-  compare(users)
-}
-
-/**
- * @param {t.TestCase} tc
- */
-export const testPathsOfSiblingEvents = tc => {
-  const { users, map0 } = init(tc, { users: 2 })
-  /**
-   * @type {Array<Array<string|number>>}
-   */
-  const paths = []
-  let calls = 0
-  const doc = users[0]
-  map0.set('map', new Y.Map())
-  map0.get('map').set('text1', new Y.Text('initial'))
-  map0.observeDeep(events => {
-    events.forEach(event => {
-      paths.push(event.path)
-    })
-    calls++
-  })
-  doc.transact(() => {
-    map0.get('map').get('text1').insert(0, 'post-')
-    map0.get('map').set('text2', new Y.Text('new'))
-  })
-  t.assert(calls === 1)
-  t.compare(paths, [['map'], ['map', 'text1']])
-  compare(users)
-}
-
-// TODO: Test events in Y.Map
 /**
  * @param {Object<string,any>} is
  * @param {Object<string,any>} should
@@ -471,21 +372,21 @@ export const testThrowsAddAndUpdateAndDeleteEvents = tc => {
   map0.observe(e => {
     event = e // just put it on event, should be thrown synchronously anyway
   })
-  map0.set('stuff', 4)
+  map0.setAttr('stuff', 4)
   compareEvent(event, {
     target: map0,
     keysChanged: new Set(['stuff'])
   })
   // update, oldValue is in contents
-  map0.set('stuff', new Y.Array())
+  map0.setAttr('stuff', new Y.Type())
   compareEvent(event, {
     target: map0,
     keysChanged: new Set(['stuff'])
   })
   // update, oldValue is in opContents
-  map0.set('stuff', 5)
+  map0.setAttr('stuff', 5)
   // delete
-  map0.delete('stuff')
+  map0.deleteAttr('stuff')
   compareEvent(event, {
     keysChanged: new Set(['stuff']),
     target: map0
@@ -506,10 +407,10 @@ export const testThrowsDeleteEventsOnClear = tc => {
     event = e // just put it on event, should be thrown synchronously anyway
   })
   // set values
-  map0.set('stuff', 4)
-  map0.set('otherstuff', new Y.Array())
+  map0.setAttr('stuff', 4)
+  map0.setAttr('otherstuff', new Y.Type())
   // clear
-  map0.clear()
+  map0.clearAttrs()
   compareEvent(event, {
     keysChanged: new Set(['stuff', 'otherstuff']),
     target: map0
@@ -523,38 +424,38 @@ export const testThrowsDeleteEventsOnClear = tc => {
 export const testChangeEvent = tc => {
   const { map0, users } = init(tc, { users: 2 })
   /**
-   * @type {delta.Delta<any,any,any,any>?}
+   * @type {delta.Delta<any>?}
    */
   let changes = delta.create()
   map0.observe(e => {
     changes = e.delta
   })
-  map0.set('a', 1)
+  map0.setAttr('a', 1)
   let keyChange = changes.attrs.a
   t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === undefined)
-  map0.set('a', 2)
+  map0.setAttr('a', 2)
   keyChange = changes.attrs.a
   t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === 1)
   users[0].transact(() => {
-    map0.set('a', 3)
-    map0.set('a', 4)
+    map0.setAttr('a', 3)
+    map0.setAttr('a', 4)
   })
   keyChange = changes.attrs.a
   t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === 2)
   users[0].transact(() => {
-    map0.set('b', 1)
-    map0.set('b', 2)
+    map0.setAttr('b', 1)
+    map0.setAttr('b', 2)
   })
   keyChange = changes.attrs.b
   t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === undefined)
   users[0].transact(() => {
-    map0.set('c', 1)
-    map0.delete('c')
+    map0.setAttr('c', 1)
+    map0.deleteAttr('c')
   })
   t.assert(changes !== null && object.isEmpty(changes.attrs))
   users[0].transact(() => {
-    map0.set('d', 1)
-    map0.set('d', 2)
+    map0.setAttr('d', 1)
+    map0.setAttr('d', 2)
   })
   keyChange = changes.attrs.d
   t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === undefined)
@@ -566,7 +467,7 @@ export const testChangeEvent = tc => {
  */
 export const testYmapEventExceptionsShouldCompleteTransaction = _tc => {
   const doc = new Y.Doc()
-  const map = doc.getMap('map')
+  const map = doc.get('map')
 
   let updateCalled = false
   let throwingObserverCalled = false
@@ -589,7 +490,7 @@ export const testYmapEventExceptionsShouldCompleteTransaction = _tc => {
   map.observeDeep(throwingDeepObserver)
 
   t.fails(() => {
-    map.set('y', '2')
+    map.setAttr('y', '2')
   })
 
   t.assert(updateCalled)
@@ -601,14 +502,14 @@ export const testYmapEventExceptionsShouldCompleteTransaction = _tc => {
   throwingObserverCalled = false
   throwingDeepObserverCalled = false
   t.fails(() => {
-    map.set('z', '3')
+    map.setAttr('z', '3')
   })
 
   t.assert(updateCalled)
   t.assert(throwingObserverCalled)
   t.assert(throwingDeepObserverCalled)
 
-  t.assert(map.get('z') === '3')
+  t.assert(map.getAttr('z') === '3')
 }
 
 /**
@@ -623,7 +524,7 @@ export const testYmapEventHasCorrectValueWhenSettingAPrimitive = tc => {
   map0.observe(e => {
     event = e
   })
-  map0.set('stuff', 2)
+  map0.setAttr('stuff', 2)
   t.compare(event.value, event.target.get(event.name))
   compare(users)
 }
@@ -640,7 +541,7 @@ export const testYmapEventHasCorrectValueWhenSettingAPrimitiveFromOtherUser = tc
   map0.observe(e => {
     event = e
   })
-  map1.set('stuff', 2)
+  map1.setAttr('stuff', 2)
   testConnector.flushAllMessages()
   t.compare(event.value, event.target.get(event.name))
   compare(users)
@@ -651,7 +552,7 @@ export const testYmapEventHasCorrectValueWhenSettingAPrimitiveFromOtherUser = tc
  */
 export const testAttributedContent = _tc => {
   const ydoc = new Y.Doc({ gc: false })
-  const ymap = ydoc.getMap()
+  const ymap = ydoc.get()
   let attributionManager = noAttributionsManager
 
   ydoc.on('afterTransaction', tr => {
@@ -659,21 +560,21 @@ export const testAttributedContent = _tc => {
     attributionManager = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, []), createIdMapFromIdSet(tr.deleteSet, []))
   })
   t.group('initial value', () => {
-    ymap.set('test', 42)
+    ymap.setAttr('test', 42)
     const expectedContent = { test: delta.$deltaMapChangeJson.expect({ type: 'insert', value: 42, attribution: { insert: [] } }) }
     const attributedContent = ymap.getContent(attributionManager)
     console.log(attributedContent.toJSON())
     t.compare(expectedContent, attributedContent.toJSON().attrs)
   })
   t.group('overwrite value', () => {
-    ymap.set('test', 'fourtytwo')
+    ymap.setAttr('test', 'fourtytwo')
     const expectedContent = { test: delta.$deltaMapChangeJson.expect({ type: 'insert', value: 'fourtytwo', attribution: { insert: [] } }) }
     const attributedContent = ymap.getContent(attributionManager)
     console.log(attributedContent)
     t.compare(expectedContent, attributedContent.toJSON().attrs)
   })
   t.group('delete value', () => {
-    ymap.delete('test')
+    ymap.deleteAttr('test')
     const expectedContent = { test: delta.$deltaMapChangeJson.expect({ type: 'delete', prevValue: 'fourtytwo', attribution: { delete: [] } }) }
     const attributedContent = ymap.getContent(attributionManager)
     console.log(attributedContent.toJSON())
@@ -688,21 +589,21 @@ const mapTransactions = [
   function set (user, gen) {
     const key = prng.oneOf(gen, ['one', 'two'])
     const value = prng.utf16String(gen)
-    user.getMap('map').set(key, value)
+    user.get('map').setAttr(key, value)
   },
   function setType (user, gen) {
     const key = prng.oneOf(gen, ['one', 'two'])
-    const type = prng.oneOf(gen, [new Y.Array(), new Y.Map()])
-    user.getMap('map').set(key, type)
-    if (type instanceof Y.Array) {
+    const type = new Y.Type()
+    user.get('map').setAttr(key, type)
+    if (prng.bool(gen)) {
       type.insert(0, [1, 2, 3, 4])
     } else {
-      type.set('deepkey', 'deepvalue')
+      type.setAttr('deepkey', 'deepvalue')
     }
   },
   function _delete (user, gen) {
     const key = prng.oneOf(gen, ['one', 'two'])
-    user.getMap('map').delete(key)
+    user.get('map').deleteAttr(key)
   }
 ]
 

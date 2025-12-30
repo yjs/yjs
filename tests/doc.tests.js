@@ -6,7 +6,7 @@ import * as t from 'lib0/testing'
  */
 export const testAfterTransactionRecursion = _tc => {
   const ydoc = new Y.Doc()
-  const yxml = ydoc.getXmlFragment('')
+  const yxml = ydoc.get('')
   ydoc.on('afterTransaction', tr => {
     if (tr.origin === 'test') {
       yxml.toJSON()
@@ -14,7 +14,7 @@ export const testAfterTransactionRecursion = _tc => {
   })
   ydoc.transact(_tr => {
     for (let i = 0; i < 15000; i++) {
-      yxml.push([new Y.XmlText('a')])
+      yxml.push([new Y.Type('a')])
     }
   }, 'test')
 }
@@ -24,12 +24,12 @@ export const testAfterTransactionRecursion = _tc => {
  */
 export const testFindTypeInOtherDoc = _tc => {
   const ydoc = new Y.Doc()
-  const ymap = ydoc.getMap()
-  const ytext = ymap.set('ytext', new Y.Text())
+  const ymap = ydoc.get()
+  const ytext = ymap.setAttr('ytext', new Y.Type())
   const ydocClone = new Y.Doc()
   Y.applyUpdate(ydocClone, Y.encodeStateAsUpdate(ydoc))
   /**
-   * @template {import('../src/utils/types.js').YType} Type
+   * @template {Y.Type} Type
    * @param {Type} ytype
    * @param {Y.Doc} otherYdoc
    * @return {Type}
@@ -47,7 +47,7 @@ export const testFindTypeInOtherDoc = _tc => {
       if (rootKey == null) {
         throw new Error('type does not exist in other ydoc')
       }
-      return /** @type {Type} */ (otherYdoc.get(rootKey, /** @type {import('../src/utils/types.js').YTypeConstructors} */ (ytype.constructor)))
+      return /** @type {Type} */ (otherYdoc.get(rootKey, /** @type {import('../src/utils/ts.js').YTypeConstructors} */ (ytype.constructor)))
     } else {
       /**
        * If it is a sub type, we use the item id to find the history type.
