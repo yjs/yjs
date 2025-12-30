@@ -446,8 +446,9 @@ export class DiffAttributionManager extends ObservableV2 {
   }
 
   /**
+   * Accept all changes between start {@link ID} and end {@link ID}.
    * @param {ID} start
-   * @param {ID} end
+   * @param {ID} [end]
    */
   acceptChanges (start, end = start) {
     const { inserts, deletes } = collectSuggestedChanges(null, this, start, end, true)
@@ -458,8 +459,9 @@ export class DiffAttributionManager extends ObservableV2 {
   }
 
   /**
+   * Reject all changes between start {@link ID} and end {@link ID}.
    * @param {ID} start
-   * @param {ID} end
+   * @param {ID} [end]
    */
   rejectChanges (start, end = start) {
     this._nextDoc.transact(tr => {
@@ -473,6 +475,30 @@ export class DiffAttributionManager extends ObservableV2 {
       um.destroy()
     })
     this.acceptChanges(start, end)
+  }
+
+  /**
+   * Accept all changes from the next document.
+   * @param {import('./types.js').YType} type - Accept all changes within the type
+   */
+  acceptAllChanges (type) {
+    const id = type._item?.id
+    if (!id) {
+      error.unexpectedCase()
+    }
+
+    this.acceptChanges(id)
+  }
+
+  /**
+   * Reject all changes from the next document.
+   * @param {import('./types.js').YType} type - Reject all changes within the type
+   */
+  rejectAllChanges (type) {
+    const id = type._item?.id
+    if (!id) {
+      error.unexpectedCase()
+    }
   }
 
   /**
