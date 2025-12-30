@@ -911,6 +911,8 @@ to receive V2 events.
   </dd>
   <b><code>on('beforeTransaction', function(Y.Transaction, Y.Doc):void)</code></b>
   <dd>Emitted before each transaction.</dd>
+  <b><code>on('beforeTransactionBuilt', function(Y.Transaction, Y.Doc):void)</code></b>
+  <dd>Emitted after each transaction is built but before commited.</dd>
   <b><code>on('afterTransaction', function(Y.Transaction, Y.Doc):void)</code></b>
   <dd>Emitted after each transaction.</dd>
   <b><code>on('beforeAllTransactions', function(Y.Doc):void)</code></b>
