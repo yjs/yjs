@@ -24,7 +24,8 @@ import {
   getItemCleanStart,
   intersectSets,
   ContentFormat,
-  StructStore, Transaction, ID, IdSet, Item, Snapshot, Doc, AbstractContent, IdMap // eslint-disable-line
+  StructStore, Transaction, ID, IdSet, Item, Snapshot, Doc, AbstractContent, IdMap, // eslint-disable-line
+  encodeStateAsUpdate
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -443,6 +444,20 @@ export class DiffAttributionManager extends ObservableV2 {
     this._prevDoc.off('update', this._prevUpdateListener)
     this._nextDoc.off('update', this._ndUpdateListener)
     this._nextDoc.off('afterTransaction', this._afterTrListener)
+  }
+
+  acceptAllChanges () {
+    applyUpdate(this._prevDoc, encodeStateAsUpdate(this._nextDoc))
+  }
+
+  rejectAllChanges () {
+    this._prevDoc.transact(tr => {
+      applyUpdate(this._prevDoc, encodeStateAsUpdate(this._nextDoc))
+      const um = new UndoManager(this._prevDoc)
+      um.undoStack.push(new StackItem(tr.deleteSet, tr.insertSet))
+      um.undo()
+      um.destroy()
+    })
   }
 
   /**
