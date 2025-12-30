@@ -2,7 +2,10 @@ import {
   diffIdSet,
   mergeIdSets,
   noAttributionsManager,
-  AbstractAttributionManager, Item, AbstractType, Transaction, AbstractStruct // eslint-disable-line
+  Doc, AbstractAttributionManager, Item, AbstractType, Transaction, AbstractStruct, // eslint-disable-line
+  createAbsolutePositionFromRelativePosition,
+  createRelativePosition,
+  AbsolutePosition
 } from '../internals.js'
 
 import * as map from 'lib0/map'
@@ -187,28 +190,24 @@ export class YEvent {
  *
  * @param {_YType} parent
  * @param {_YType} child target
+ * @param {AbstractAttributionManager} am
  * @return {Array<string|number>} Path to the target
  *
  * @private
  * @function
  */
-const getPathTo = (parent, child) => {
+export const getPathTo = (parent, child, am = noAttributionsManager) => {
   const path = []
+  const doc = /** @type {Doc} */ (parent.doc)
   while (child._item !== null && child !== parent) {
     if (child._item.parentSub !== null) {
       // parent is map-ish
       path.unshift(child._item.parentSub)
     } else {
+      const parent = /** @type {import('../utils/types.js').YType} */ (child._item.parent)
       // parent is array-ish
-      let i = 0
-      let c = /** @type {import('../utils/types.js').YType} */ (child._item.parent)._start
-      while (c !== child._item && c !== null) {
-        if (!c.deleted && c.countable) {
-          i += c.length
-        }
-        c = c.right
-      }
-      path.unshift(i)
+      const apos = /** @type {AbsolutePosition} */ (createAbsolutePositionFromRelativePosition(createRelativePosition(parent, child._item.id), doc, false, am))
+      path.unshift(apos.index)
     }
     child = /** @type {_YType} */ (child._item.parent)
   }
