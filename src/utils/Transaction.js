@@ -303,17 +303,21 @@ const cleanupTransactions = (transactionCleanups, i) => {
             // sort events by path length so that top-level events are fired first.
             events
               .sort((event1, event2) => event1.path.length - event2.path.length)
-            // We don't need to check for events.length
-            // because we know it has at least one element
-            callEventHandlerListeners(type._dEH, events, transaction)
+            fs.push(() => {
+              // We don't need to check for events.length
+              // because we know it has at least one element
+              callEventHandlerListeners(type._dEH, events, transaction)
+            })
+          }
+        })
+        fs.push(() => doc.emit('afterTransaction', [transaction, doc]))
+        fs.push(() => {
+          if (transaction._needFormattingCleanup) {
+            cleanupYTextAfterTransaction(transaction)
           }
         })
       })
-      fs.push(() => doc.emit('afterTransaction', [transaction, doc]))
       callAll(fs, [])
-      if (transaction._needFormattingCleanup) {
-        cleanupYTextAfterTransaction(transaction)
-      }
     } finally {
       // Replace deleted items with ItemDeleted / GC.
       // This is where content is actually remove from the Yjs Doc.
