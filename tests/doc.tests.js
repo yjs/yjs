@@ -350,3 +350,36 @@ export const testSyncDocsEvent = async _tc => {
   t.assert(!ydoc.isSynced)
   t.assert(ydoc.whenSynced !== oldWhenSynced)
 }
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testBeforeTransactionBuilt = async _tc => {
+  const ydoc = new Y.Doc()
+  const ymap = ydoc.getMap('map')
+
+  let beforeTransactionBuiltNotEmpty = false
+  let afterTransactionIsModified = false
+  let transactionCount = 0
+
+  ydoc.on('beforeTransactionBuilt', (tr) => {
+    beforeTransactionBuiltNotEmpty = tr.insertSet.clients.size > 0
+    ymap.set('modified', 'bar')
+  })
+
+  ydoc.on('afterTransaction', () => {
+    afterTransactionIsModified = ymap.get('modified') === 'bar'
+    transactionCount++
+  })
+
+  ydoc.transact(() => {
+    ymap.set('original', 'foo')
+  })
+
+  // A little pause to catch transactions created asynchronously
+  await new Promise(resolve => setTimeout(resolve))
+
+  t.assert(beforeTransactionBuiltNotEmpty, '`beforeTransactionBuilt` should be called with a not empty transaction')
+  t.assert(afterTransactionIsModified, '`afterTransaction` should receive transaction modified in `beforeTransactionBuilt`')
+  t.assert(transactionCount === 1, 'modifying transaction in `beforeTransactionBuilt` should not create another transaction')
+}
