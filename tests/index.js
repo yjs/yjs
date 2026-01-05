@@ -6,6 +6,7 @@ import * as text from './y-text.tests.js'
 import * as xml from './y-xml.tests.js'
 import * as encoding from './encoding.tests.js'
 import * as undoredo from './undo-redo.tests.js'
+import * as undoArrayBug from './undo-array-bug.tests.js'
 import * as compatibility from './compatibility.tests.js'
 import * as doc from './doc.tests.js'
 import * as snapshot from './snapshot.tests.js'
@@ -25,7 +26,7 @@ if (isBrowser) {
  * @type {any}
  */
 const tests = {
-  doc, map, array, text, xml, encoding, undoredo, compatibility, snapshot, updates, relativePositions
+  doc, map, array, text, xml, encoding, undoredo, undoArrayBug, compatibility, snapshot, updates, relativePositions
 }
 
 const run = async () => {
