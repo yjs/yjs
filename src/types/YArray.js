@@ -71,6 +71,9 @@ export class YArray extends AbstractType {
    */
   _integrate (y, item) {
     super._integrate(y, item)
+    if (!this._prelimContent) {
+      throw Error('YArray was already added to a document')
+    }
     this.insert(0, /** @type {Array<any>} */ (this._prelimContent))
     this._prelimContent = null
   }

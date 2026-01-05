@@ -57,6 +57,9 @@ export class YMap extends AbstractType {
    */
   _integrate (y, item) {
     super._integrate(y, item)
+    if (!this._prelimContent) {
+      throw Error('YMap was already added to a document')
+    }
     ;/** @type {Map<string, any>} */ (this._prelimContent).forEach((value, key) => {
       this.set(key, value)
     })
