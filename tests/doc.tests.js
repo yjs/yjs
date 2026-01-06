@@ -29,10 +29,9 @@ export const testFindTypeInOtherDoc = _tc => {
   const ydocClone = new Y.Doc()
   Y.applyUpdate(ydocClone, Y.encodeStateAsUpdate(ydoc))
   /**
-   * @template {Y.Type} Type
-   * @param {Type} ytype
+   * @param {Y.Type} ytype
    * @param {Y.Doc} otherYdoc
-   * @return {Type}
+   * @return {Y.Type}
    */
   const findTypeInOtherYdoc = (ytype, otherYdoc) => {
     const ydoc = /** @type {Y.Doc} */ (ytype.doc)
@@ -47,7 +46,7 @@ export const testFindTypeInOtherDoc = _tc => {
       if (rootKey == null) {
         throw new Error('type does not exist in other ydoc')
       }
-      return /** @type {Type} */ (otherYdoc.get(rootKey, /** @type {import('../src/utils/ts.js').YTypeConstructors} */ (ytype.constructor)))
+      return otherYdoc.get(rootKey)
     } else {
       /**
        * If it is a sub type, we use the item id to find the history type.
@@ -60,7 +59,7 @@ export const testFindTypeInOtherDoc = _tc => {
       )
       const otherItem = /** @type {Y.Item} */ (otherStructs[itemIndex])
       const otherContent = /** @type {Y.ContentType} */ (otherItem.content)
-      return /** @type {Type} */ (otherContent.type)
+      return /** @type {Y.Type} */ (otherContent.type)
     }
   }
   t.assert(findTypeInOtherYdoc(ymap, ydocClone) != null)
@@ -78,7 +77,7 @@ export const testClientIdDuplicateChange = _tc => {
   const doc2 = new Y.Doc()
   doc2.clientID = 0
   t.assert(doc2.clientID === doc1.clientID)
-  doc1.getArray('a').insert(0, [1, 2])
+  doc1.get('a').insert(0, [1, 2])
   Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc1))
   t.assert(doc2.clientID !== doc1.clientID)
 }
@@ -88,12 +87,12 @@ export const testClientIdDuplicateChange = _tc => {
  */
 export const testGetTypeEmptyId = _tc => {
   const doc1 = new Y.Doc()
-  doc1.getText('').insert(0, 'h')
-  doc1.getText().insert(1, 'i')
+  doc1.get('').insert(0, 'h')
+  doc1.get().insert(1, 'i')
   const doc2 = new Y.Doc()
   Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc1))
-  t.assert(doc2.getText().toString() === 'hi')
-  t.assert(doc2.getText('').toString() === 'hi')
+  t.assert(doc2.get().toString() === 'hi')
+  t.assert(doc2.get('').toString() === 'hi')
 }
 
 /**
@@ -103,14 +102,14 @@ export const testToJSON = _tc => {
   const doc = new Y.Doc()
   t.compare(doc.toJSON(), {}, 'doc.toJSON yields empty object')
 
-  const arr = doc.getArray('array')
+  const arr = doc.get('array')
   arr.push(['test1'])
 
-  const map = doc.getMap('map')
-  map.set('k1', 'v1')
-  const map2 = new Y.Map()
-  map.set('k2', map2)
-  map2.set('m2k1', 'm2v1')
+  const map = doc.get('map')
+  map.setAttr('k1', 'v1')
+  const map2 = new Y.Type()
+  map.setAttr('k2', map2)
+  map2.setAttr('m2k1', 'm2v1')
 
   t.compare(doc.toJSON(), {
     array: ['test1'],
@@ -137,30 +136,30 @@ export const testSubdoc = _tc => {
     doc.on('subdocs', subdocs => {
       event = [Array.from(subdocs.added).map(x => x.guid), Array.from(subdocs.removed).map(x => x.guid), Array.from(subdocs.loaded).map(x => x.guid)]
     })
-    const subdocs = doc.getMap('mysubdocs')
+    const subdocs = doc.get('mysubdocs')
     const docA = new Y.Doc({ guid: 'a' })
     docA.load()
-    subdocs.set('a', docA)
+    subdocs.setAttr('a', docA)
     t.compare(event, [['a'], [], ['a']])
 
     event = null
-    subdocs.get('a').load()
+    subdocs.getAttr('a').load()
     t.assert(event === null)
 
     event = null
-    subdocs.get('a').destroy()
+    subdocs.getAttr('a').destroy()
     t.compare(event, [['a'], ['a'], []])
-    subdocs.get('a').load()
+    subdocs.getAttr('a').load()
     t.compare(event, [[], [], ['a']])
 
-    subdocs.set('b', new Y.Doc({ guid: 'a', shouldLoad: false }))
+    subdocs.setAttr('b', new Y.Doc({ guid: 'a', shouldLoad: false }))
     t.compare(event, [['a'], [], []])
-    subdocs.get('b').load()
+    subdocs.getAttr('b').load()
     t.compare(event, [[], [], ['a']])
 
     const docC = new Y.Doc({ guid: 'c' })
     docC.load()
-    subdocs.set('c', docC)
+    subdocs.setAttr('c', docC)
     t.compare(event, [['c'], [], ['c']])
 
     t.compare(Array.from(doc.getSubdocGuids()), ['a', 'c'])
@@ -179,12 +178,12 @@ export const testSubdoc = _tc => {
     Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc))
     t.compare(event, [['a', 'a', 'c'], [], []])
 
-    doc2.getMap('mysubdocs').get('a').load()
+    doc2.get('mysubdocs').getAttr('a').load()
     t.compare(event, [[], [], ['a']])
 
     t.compare(Array.from(doc2.getSubdocGuids()), ['a', 'c'])
 
-    doc2.getMap('mysubdocs').delete('a')
+    doc2.get('mysubdocs').deleteAttr('a')
     t.compare(event, [[], ['a'], []])
     t.compare(Array.from(doc2.getSubdocGuids()), ['a', 'c'])
   }
@@ -195,7 +194,7 @@ export const testSubdoc = _tc => {
  */
 export const testSubdocLoadEdgeCases = _tc => {
   const ydoc = new Y.Doc()
-  const yarray = ydoc.getArray()
+  const yarray = ydoc.get()
   const subdoc1 = new Y.Doc()
   /**
    * @type {any}
@@ -225,7 +224,7 @@ export const testSubdocLoadEdgeCases = _tc => {
     lastEvent = event
   })
   Y.applyUpdate(ydoc2, Y.encodeStateAsUpdate(ydoc))
-  const subdoc3 = ydoc2.getArray().get(0)
+  const subdoc3 = ydoc2.get().get(0)
   t.assert(subdoc3.shouldLoad === false)
   t.assert(subdoc3.autoLoad === false)
   t.assert(lastEvent !== null && lastEvent.added.has(subdoc3))
@@ -242,7 +241,7 @@ export const testSubdocLoadEdgeCases = _tc => {
  */
 export const testSubdocLoadEdgeCasesAutoload = _tc => {
   const ydoc = new Y.Doc()
-  const yarray = ydoc.getArray()
+  const yarray = ydoc.get()
   const subdoc1 = new Y.Doc({ autoLoad: true })
   /**
    * @type {any}
@@ -272,7 +271,7 @@ export const testSubdocLoadEdgeCasesAutoload = _tc => {
     lastEvent = event
   })
   Y.applyUpdate(ydoc2, Y.encodeStateAsUpdate(ydoc))
-  const subdoc3 = ydoc2.getArray().get(0)
+  const subdoc3 = ydoc2.get().get(0)
   t.assert(subdoc1.shouldLoad)
   t.assert(subdoc1.autoLoad)
   t.assert(lastEvent !== null && lastEvent.added.has(subdoc3))
@@ -284,7 +283,7 @@ export const testSubdocLoadEdgeCasesAutoload = _tc => {
  */
 export const testSubdocsUndo = _tc => {
   const ydoc = new Y.Doc()
-  const elems = ydoc.getXmlFragment()
+  const elems = ydoc.get()
   const undoManager = new Y.UndoManager(elems)
   const subdoc = new Y.Doc()
   // @ts-ignore

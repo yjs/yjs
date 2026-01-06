@@ -468,8 +468,6 @@ export const compare = users => {
     t.assert(u.store.pendingDs === null)
     t.assert(u.store.pendingStructs === null)
   }
-  // Test Array iterator
-  t.compare(users[0].get('array').toArray(), Array.from(users[0].get('array')))
   // Test Map iterator
   const ymapkeys = Array.from(users[0].get('map').attrKeys())
   t.assert(ymapkeys.length === Object.keys(userMapValues[0]).length)
@@ -478,8 +476,10 @@ export const compare = users => {
    * @type {Object<string,any>}
    */
   const mapRes = {}
-  for (const [k, v] of users[0].get('map')) {
-    mapRes[k] = v instanceof Y.AbstractType ? v.toJSON() : v
+  const attrs0 = users[0].get('map').getAttrs()
+  for (const k in attrs0) {
+    const v = attrs0[k]
+    mapRes[k] = v instanceof Y.Type ? v.toJSON() : v
   }
   t.compare(userMapValues[0], mapRes)
   // Compare all users

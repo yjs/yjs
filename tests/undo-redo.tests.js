@@ -8,14 +8,14 @@ export const testInconsistentFormat = () => {
    * @param {Y.Doc} ydoc
    */
   const testYjsMerge = ydoc => {
-    const content = /** @type {Y.XmlText} */ (ydoc.get('text', Y.XmlText))
+    const content = ydoc.get('text')
     content.format(0, 6, { bold: null })
     content.format(6, 4, { type: 'text' })
     t.compare(content.getContent(), delta.create().insert('Merge Test', { type: 'text' }).insert(' After', { type: 'text', italic: true }).done())
   }
   const initializeYDoc = () => {
     const yDoc = new Y.Doc({ gc: false })
-    const content = /** @type {Y.XmlText} */ (yDoc.get('text', Y.XmlText))
+    const content = yDoc.get('text')
     content.insert(0, ' After', { type: 'text', italic: true })
     content.insert(0, 'Test', { type: 'text' })
     content.insert(0, 'Merge ', { type: 'text', bold: true })
@@ -99,7 +99,7 @@ export const testUndoText = tc => {
 export const testEmptyTypeScope = _tc => {
   const ydoc = new Y.Doc()
   const um = new Y.UndoManager([], { doc: ydoc })
-  const yarray = ydoc.getArray()
+  const yarray = ydoc.get()
   um.addToScope(yarray)
   yarray.insert(0, [1])
   um.undo()
@@ -111,15 +111,15 @@ export const testEmptyTypeScope = _tc => {
  */
 export const testRejectUpdateExample = _tc => {
   const tmpydoc1 = new Y.Doc()
-  tmpydoc1.getArray('restricted').insert(0, [1])
-  tmpydoc1.getArray('public').insert(0, [1])
+  tmpydoc1.get('restricted').insert(0, [1])
+  tmpydoc1.get('public').insert(0, [1])
   const update1 = Y.encodeStateAsUpdate(tmpydoc1)
   const tmpydoc2 = new Y.Doc()
-  tmpydoc2.getArray('public').insert(0, [2])
+  tmpydoc2.get('public').insert(0, [2])
   const update2 = Y.encodeStateAsUpdate(tmpydoc2)
 
   const ydoc = new Y.Doc()
-  const restrictedType = ydoc.getArray('restricted')
+  const restrictedType = ydoc.get('restricted')
 
   /**
    * Assume this function handles incoming updates via a communication channel like websockets.
@@ -156,7 +156,7 @@ export const testRejectUpdateExample = _tc => {
   updateHandler(update1)
   updateHandler(update2)
   t.assert(restrictedType.length === 0)
-  t.assert(ydoc.getArray('public').length === 2)
+  t.assert(ydoc.get('public').length === 2)
 }
 
 /**
@@ -166,7 +166,7 @@ export const testRejectUpdateExample = _tc => {
 export const testGlobalScope = _tc => {
   const ydoc = new Y.Doc()
   const um = new Y.UndoManager(ydoc)
-  const yarray = ydoc.getArray()
+  const yarray = ydoc.get()
   yarray.insert(0, [1])
   um.undo()
   t.assert(yarray.length === 0)
@@ -178,7 +178,7 @@ export const testGlobalScope = _tc => {
  */
 export const testDoubleUndo = _tc => {
   const doc = new Y.Doc()
-  const text = doc.getText()
+  const text = doc.get()
   text.insert(0, '1221')
 
   const manager = new Y.UndoManager(text)
@@ -199,39 +199,39 @@ export const testDoubleUndo = _tc => {
  */
 export const testUndoMap = tc => {
   const { testConnector, map0, map1 } = init(tc, { users: 2 })
-  map0.set('a', 0)
+  map0.setAttr('a', 0)
   const undoManager = new Y.UndoManager(map0)
-  map0.set('a', 1)
+  map0.setAttr('a', 1)
   undoManager.undo()
-  t.assert(map0.get('a') === 0)
+  t.assert(map0.getAttr('a') === 0)
   undoManager.redo()
-  t.assert(map0.get('a') === 1)
+  t.assert(map0.getAttr('a') === 1)
   // testing sub-types and if it can restore a whole type
-  const subType = new Y.Map()
-  map0.set('a', subType)
-  subType.set('x', 42)
+  const subType = new Y.Type()
+  map0.setAttr('a', subType)
+  subType.setAttr('x', 42)
   t.compare(map0.toJSON(), /** @type {any} */ ({ a: { x: 42 } }))
   undoManager.undo()
-  t.assert(map0.get('a') === 1)
+  t.assert(map0.getAttr('a') === 1)
   undoManager.redo()
   t.compare(map0.toJSON(), /** @type {any} */ ({ a: { x: 42 } }))
   testConnector.syncAll()
   // if content is overwritten by another user, undo operations should be skipped
-  map1.set('a', 44)
+  map1.setAttr('a', 44)
   testConnector.syncAll()
   undoManager.undo()
-  t.assert(map0.get('a') === 44)
+  t.assert(map0.getAttr('a') === 44)
   undoManager.redo()
-  t.assert(map0.get('a') === 44)
+  t.assert(map0.getAttr('a') === 44)
 
   // test setting value multiple times
-  map0.set('b', 'initial')
+  map0.setAttr('b', 'initial')
   undoManager.stopCapturing()
-  map0.set('b', 'val1')
-  map0.set('b', 'val2')
+  map0.setAttr('b', 'val1')
+  map0.setAttr('b', 'val2')
   undoManager.stopCapturing()
   undoManager.undo()
-  t.assert(map0.get('b') === 'initial')
+  t.assert(map0.getAttr('b') === 'initial')
 }
 
 /**
@@ -257,32 +257,32 @@ export const testUndoArray = tc => {
   t.compare(array0.toArray(), [2, 3, 4, 5, 6])
   array0.delete(0, 5)
   // test nested structure
-  const ymap = new Y.Map()
+  const ymap = new Y.Type()
   array0.insert(0, [ymap])
-  t.compare(array0.toJSON(), [{}])
+  t.compare(array0.toJSON().children, [{}])
   undoManager.stopCapturing()
-  ymap.set('a', 1)
-  t.compare(array0.toJSON(), [{ a: 1 }])
+  ymap.setAttr('a', 1)
+  t.compare(array0.toJSON().children, [{ a: 1 }])
   undoManager.undo()
-  t.compare(array0.toJSON(), [{}])
+  t.compare(array0.toJSON().children, [{}])
   undoManager.undo()
-  t.compare(array0.toJSON(), [2, 3, 4, 5, 6])
+  t.compare(array0.toJSON().children, [2, 3, 4, 5, 6])
   undoManager.redo()
-  t.compare(array0.toJSON(), [{}])
+  t.compare(array0.toJSON().children, [{}])
   undoManager.redo()
-  t.compare(array0.toJSON(), [{ a: 1 }])
+  t.compare(array0.toJSON().children, [{ a: 1 }])
   testConnector.syncAll()
   array1.get(0).set('b', 2)
   testConnector.syncAll()
-  t.compare(array0.toJSON(), [{ a: 1, b: 2 }])
+  t.compare(array0.toJSON().children, [{ a: 1, b: 2 }])
   undoManager.undo()
-  t.compare(array0.toJSON(), [{ b: 2 }])
+  t.compare(array0.toJSON().children, [{ b: 2 }])
   undoManager.undo()
-  t.compare(array0.toJSON(), [2, 3, 4, 5, 6])
+  t.compare(array0.toJSON().children, [2, 3, 4, 5, 6])
   undoManager.redo()
-  t.compare(array0.toJSON(), [{ b: 2 }])
+  t.compare(array0.toJSON().children, [{ b: 2 }])
   undoManager.redo()
-  t.compare(array0.toJSON(), [{ a: 1, b: 2 }])
+  t.compare(array0.toJSON().children, [{ a: 1, b: 2 }])
 }
 
 /**
@@ -291,11 +291,10 @@ export const testUndoArray = tc => {
 export const testUndoXml = tc => {
   const { xml0 } = init(tc, { users: 3 })
   const undoManager = new Y.UndoManager(xml0)
-  const child = new Y.XmlElement('p')
+  const child = new Y.Type('p')
   xml0.insert(0, [child])
-  const textchild = new Y.XmlText('content')
+  const textchild = new Y.Type('content')
   child.insert(0, [textchild])
-  t.assert(xml0.toString() === '<undefined><p>content</p></undefined>')
   // format textchild and revert that change
   undoManager.stopCapturing()
   textchild.format(3, 4, { bold: true })
@@ -358,8 +357,8 @@ export const testTrackClass = tc => {
 export const testTypeScope = tc => {
   const { array0 } = init(tc, { users: 3 })
   // only track origins that are numbers
-  const text0 = new Y.Text()
-  const text1 = new Y.Text()
+  const text0 = new Y.Type()
+  const text1 = new Y.Type()
   array0.insert(0, [text0, text1])
   const undoManager = new Y.UndoManager(text0)
   const undoManagerBoth = new Y.UndoManager([text0, text1])
@@ -379,9 +378,9 @@ export const testTypeScope = tc => {
 export const testUndoInEmbed = tc => {
   const { text0 } = init(tc, { users: 3 })
   const undoManager = new Y.UndoManager(text0)
-  const nestedText = new Y.Text('initial text')
+  const nestedText = new Y.Type('initial text')
   undoManager.stopCapturing()
-  text0.insertEmbed(0, nestedText, { bold: true })
+  text0.insert(0, [nestedText], { bold: true })
   t.assert(nestedText.toString() === 'initial text')
   undoManager.stopCapturing()
   nestedText.delete(0, nestedText.length)
@@ -397,14 +396,11 @@ export const testUndoInEmbed = tc => {
  * @param {t.TestCase} tc
  */
 export const testUndoDeleteFilter = tc => {
-  /**
-   * @type {Y.Array<any>}
-   */
-  const array0 = /** @type {any} */ (init(tc, { users: 3 }).array0)
+  const array0 = init(tc, { users: 3 }).array0
   const undoManager = new Y.UndoManager(array0, { deleteFilter: item => !(item instanceof Y.Item) || (item.content instanceof Y.ContentType && item.content.type._map.size === 0) })
-  const map0 = new Y.Map()
-  map0.set('hi', 1)
-  const map1 = new Y.Map()
+  const map0 = new Y.Type()
+  map0.setAttr('hi', 1)
+  const map1 = new Y.Type()
   array0.insert(0, [map0, map1])
   undoManager.undo()
   t.assert(array0.length === 1)
@@ -422,25 +418,25 @@ export const testUndoUntilChangePerformed = _tc => {
   doc.on('update', update => Y.applyUpdate(doc2, update))
   doc2.on('update', update => Y.applyUpdate(doc, update))
 
-  const yArray = doc.getArray('array')
-  const yArray2 = doc2.getArray('array')
-  const yMap = new Y.Map()
-  yMap.set('hello', 'world')
+  const yArray = doc.get('array')
+  const yArray2 = doc2.get('array')
+  const yMap = new Y.Type()
+  yMap.setAttr('hello', 'world')
   yArray.push([yMap])
-  const yMap2 = new Y.Map()
-  yMap2.set('key', 'value')
+  const yMap2 = new Y.Type()
+  yMap2.setAttr('key', 'value')
   yArray.push([yMap2])
 
   const undoManager = new Y.UndoManager([yArray], { trackedOrigins: new Set([doc.clientID]) })
   const undoManager2 = new Y.UndoManager([doc2.get('array')], { trackedOrigins: new Set([doc2.clientID]) })
 
-  Y.transact(doc, () => yMap2.set('key', 'value modified'), doc.clientID)
+  Y.transact(doc, () => yMap2.setAttr('key', 'value modified'), doc.clientID)
   undoManager.stopCapturing()
-  Y.transact(doc, () => yMap.set('hello', 'world modified'), doc.clientID)
+  Y.transact(doc, () => yMap.setAttr('hello', 'world modified'), doc.clientID)
   Y.transact(doc2, () => yArray2.delete(0), doc2.clientID)
   undoManager2.undo()
   undoManager.undo()
-  t.compareStrings(yMap2.get('key'), 'value')
+  t.compareStrings(yMap2.getAttr('key'), 'value')
 }
 
 /**
@@ -449,53 +445,50 @@ export const testUndoUntilChangePerformed = _tc => {
  */
 export const testUndoNestedUndoIssue = _tc => {
   const doc = new Y.Doc({ gc: false })
-  const design = doc.getMap()
+  const design = doc.get()
   const undoManager = new Y.UndoManager(design, { captureTimeout: 0 })
 
-  /**
-   * @type {Y.Map<any>}
-   */
-  const text = new Y.Map()
+  const text = new Y.Type()
 
-  const blocks1 = new Y.Array()
-  const blocks1block = new Y.Map()
+  const blocks1 = new Y.Type()
+  const blocks1block = new Y.Type()
 
   doc.transact(() => {
-    blocks1block.set('text', 'Type Something')
+    blocks1block.setAttr('text', 'Type Something')
     blocks1.push([blocks1block])
-    text.set('blocks', blocks1block)
-    design.set('text', text)
+    text.setAttr('blocks', blocks1block)
+    design.setAttr('text', text)
   })
 
-  const blocks2 = new Y.Array()
-  const blocks2block = new Y.Map()
+  const blocks2 = new Y.Type()
+  const blocks2block = new Y.Type()
   doc.transact(() => {
-    blocks2block.set('text', 'Something')
+    blocks2block.setAttr('text', 'Something')
     blocks2.push([blocks2block])
-    text.set('blocks', blocks2block)
+    text.setAttr('blocks', blocks2block)
   })
 
-  const blocks3 = new Y.Array()
-  const blocks3block = new Y.Map()
+  const blocks3 = new Y.Type()
+  const blocks3block = new Y.Type()
   doc.transact(() => {
-    blocks3block.set('text', 'Something Else')
+    blocks3block.setAttr('text', 'Something Else')
     blocks3.push([blocks3block])
-    text.set('blocks', blocks3block)
+    text.setAttr('blocks', blocks3block)
   })
 
-  t.compare(design.toJSON(), { text: { blocks: { text: 'Something Else' } } })
+  t.compare(design.toJSON().attrs, { text: { blocks: { text: 'Something Else' } } })
   undoManager.undo()
-  t.compare(design.toJSON(), { text: { blocks: { text: 'Something' } } })
+  t.compare(design.toJSON().attrs, { text: { blocks: { text: 'Something' } } })
   undoManager.undo()
-  t.compare(design.toJSON(), { text: { blocks: { text: 'Type Something' } } })
+  t.compare(design.toJSON().attrs, { text: { blocks: { text: 'Type Something' } } })
   undoManager.undo()
-  t.compare(design.toJSON(), { })
+  t.compare(design.toJSON().attrs, { })
   undoManager.redo()
-  t.compare(design.toJSON(), { text: { blocks: { text: 'Type Something' } } })
+  t.compare(design.toJSON().attrs, { text: { blocks: { text: 'Type Something' } } })
   undoManager.redo()
-  t.compare(design.toJSON(), { text: { blocks: { text: 'Something' } } })
+  t.compare(design.toJSON().attrs, { text: { blocks: { text: 'Something' } } })
   undoManager.redo()
-  t.compare(design.toJSON(), { text: { blocks: { text: 'Something Else' } } })
+  t.compare(design.toJSON().attrs, { text: { blocks: { text: 'Something Else' } } })
 }
 
 /**
@@ -505,48 +498,48 @@ export const testUndoNestedUndoIssue = _tc => {
  */
 export const testConsecutiveRedoBug = _tc => {
   const doc = new Y.Doc()
-  const yRoot = doc.getMap()
+  const yRoot = doc.get()
   const undoMgr = new Y.UndoManager(yRoot)
 
-  let yPoint = new Y.Map()
-  yPoint.set('x', 0)
-  yPoint.set('y', 0)
-  yRoot.set('a', yPoint)
+  let yPoint = new Y.Type()
+  yPoint.setAttr('x', 0)
+  yPoint.setAttr('y', 0)
+  yRoot.setAttr('a', yPoint)
   undoMgr.stopCapturing()
 
-  yPoint.set('x', 100)
-  yPoint.set('y', 100)
+  yPoint.setAttr('x', 100)
+  yPoint.setAttr('y', 100)
   undoMgr.stopCapturing()
 
-  yPoint.set('x', 200)
-  yPoint.set('y', 200)
+  yPoint.setAttr('x', 200)
+  yPoint.setAttr('y', 200)
   undoMgr.stopCapturing()
 
-  yPoint.set('x', 300)
-  yPoint.set('y', 300)
+  yPoint.setAttr('x', 300)
+  yPoint.setAttr('y', 300)
   undoMgr.stopCapturing()
 
-  t.compare(yPoint.toJSON(), { x: 300, y: 300 })
+  t.compare(yPoint.toJSON().attrs, { x: 300, y: 300 })
 
   undoMgr.undo() // x=200, y=200
-  t.compare(yPoint.toJSON(), { x: 200, y: 200 })
+  t.compare(yPoint.toJSON().attrs, { x: 200, y: 200 })
   undoMgr.undo() // x=100, y=100
-  t.compare(yPoint.toJSON(), { x: 100, y: 100 })
+  t.compare(yPoint.toJSON().attrs, { x: 100, y: 100 })
   undoMgr.undo() // x=0, y=0
-  t.compare(yPoint.toJSON(), { x: 0, y: 0 })
+  t.compare(yPoint.toJSON().attrs, { x: 0, y: 0 })
   undoMgr.undo() // nil
-  t.compare(yRoot.get('a'), undefined)
+  t.compare(yRoot.getAttr('a'), undefined)
 
   undoMgr.redo() // x=0, y=0
-  yPoint = yRoot.get('a')
+  yPoint = yRoot.getAttr('a')
 
-  t.compare(yPoint.toJSON(), { x: 0, y: 0 })
+  t.compare(yPoint.toJSON().attrs, { x: 0, y: 0 })
   undoMgr.redo() // x=100, y=100
-  t.compare(yPoint.toJSON(), { x: 100, y: 100 })
+  t.compare(yPoint.toJSON().attrs, { x: 100, y: 100 })
   undoMgr.redo() // x=200, y=200
-  t.compare(yPoint.toJSON(), { x: 200, y: 200 })
+  t.compare(yPoint.toJSON().attrs, { x: 200, y: 200 })
   undoMgr.redo() // expected x=300, y=300, actually nil
-  t.compare(yPoint.toJSON(), { x: 300, y: 300 })
+  t.compare(yPoint.toJSON().attrs, { x: 300, y: 300 })
 }
 
 /**
@@ -557,7 +550,7 @@ export const testConsecutiveRedoBug = _tc => {
 export const testUndoXmlBug = _tc => {
   const origin = 'origin'
   const doc = new Y.Doc()
-  const fragment = doc.getXmlFragment('t')
+  const fragment = doc.get('t')
   const undoManager = new Y.UndoManager(fragment, {
     captureTimeout: 0,
     trackedOrigins: new Set([origin])
@@ -565,9 +558,9 @@ export const testUndoXmlBug = _tc => {
 
   // create element
   doc.transact(() => {
-    const e = new Y.XmlElement('test-node')
-    e.setAttribute('a', '100')
-    e.setAttribute('b', '0')
+    const e = new Y.Type('test-node')
+    e.setAttr('a', '100')
+    e.setAttr('b', '0')
     fragment.insert(fragment.length, [e])
   }, origin)
 
@@ -601,44 +594,44 @@ export const testUndoXmlBug = _tc => {
  */
 export const testUndoBlockBug = _tc => {
   const doc = new Y.Doc({ gc: false })
-  const design = doc.getMap()
+  const design = doc.get()
 
   const undoManager = new Y.UndoManager(design, { captureTimeout: 0 })
 
-  const text = new Y.Map()
+  const text = new Y.Type()
 
-  const blocks1 = new Y.Array()
-  const blocks1block = new Y.Map()
+  const blocks1 = new Y.Type()
+  const blocks1block = new Y.Type()
   doc.transact(() => {
-    blocks1block.set('text', '1')
+    blocks1block.setAttr('text', '1')
     blocks1.push([blocks1block])
 
-    text.set('blocks', blocks1block)
-    design.set('text', text)
+    text.setAttr('blocks', blocks1block)
+    design.setAttr('text', text)
   })
 
-  const blocks2 = new Y.Array()
-  const blocks2block = new Y.Map()
+  const blocks2 = new Y.Type()
+  const blocks2block = new Y.Type()
   doc.transact(() => {
-    blocks2block.set('text', '2')
+    blocks2block.setAttr('text', '2')
     blocks2.push([blocks2block])
-    text.set('blocks', blocks2block)
+    text.setAttr('blocks', blocks2block)
   })
 
-  const blocks3 = new Y.Array()
-  const blocks3block = new Y.Map()
+  const blocks3 = new Y.Type()
+  const blocks3block = new Y.Type()
   doc.transact(() => {
-    blocks3block.set('text', '3')
+    blocks3block.setAttr('text', '3')
     blocks3.push([blocks3block])
-    text.set('blocks', blocks3block)
+    text.setAttr('blocks', blocks3block)
   })
 
-  const blocks4 = new Y.Array()
-  const blocks4block = new Y.Map()
+  const blocks4 = new Y.Type()
+  const blocks4block = new Y.Type()
   doc.transact(() => {
-    blocks4block.set('text', '4')
+    blocks4block.setAttr('text', '4')
     blocks4.push([blocks4block])
-    text.set('blocks', blocks4block)
+    text.setAttr('blocks', blocks4block)
   })
 
   // {"text":{"blocks":{"text":"4"}}}
@@ -650,7 +643,7 @@ export const testUndoBlockBug = _tc => {
   undoManager.redo() // {"text":{"blocks":{"text":"2"}}}
   undoManager.redo() // {"text":{"blocks":{"text":"3"}}}
   undoManager.redo() // {"text":{}}
-  t.compare(design.toJSON(), { text: { blocks: { text: '4' } } })
+  t.compare(design.toJSON().attrs, { text: { blocks: { text: '4' } } })
 }
 
 /**
@@ -661,10 +654,10 @@ export const testUndoBlockBug = _tc => {
  */
 export const testUndoDeleteTextFormat = _tc => {
   const doc = new Y.Doc()
-  const text = doc.getText()
+  const text = doc.get()
   text.insert(0, 'Attack ships on fire off the shoulder of Orion.')
   const doc2 = new Y.Doc()
-  const text2 = doc2.getText()
+  const text2 = doc2.get()
   Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc))
   const undoManager = new Y.UndoManager(text)
 
@@ -698,16 +691,16 @@ export const testBehaviorOfIgnoreremotemapchangesProperty = _tc => {
   const doc2 = new Y.Doc()
   doc.on('update', update => Y.applyUpdate(doc2, update, doc))
   doc2.on('update', update => Y.applyUpdate(doc, update, doc2))
-  const map1 = doc.getMap()
-  const map2 = doc2.getMap()
+  const map1 = doc.get()
+  const map2 = doc2.get()
   const um1 = new Y.UndoManager(map1, { ignoreRemoteMapChanges: true })
-  map1.set('x', 1)
-  map2.set('x', 2)
-  map1.set('x', 3)
-  map2.set('x', 4)
+  map1.setAttr('x', 1)
+  map2.setAttr('x', 2)
+  map1.setAttr('x', 3)
+  map2.setAttr('x', 4)
   um1.undo()
-  t.assert(map1.get('x') === 2)
-  t.assert(map2.get('x') === 2)
+  t.assert(map1.getAttr('x') === 2)
+  t.assert(map2.getAttr('x') === 2)
 }
 
 /**
@@ -719,12 +712,12 @@ export const testBehaviorOfIgnoreremotemapchangesProperty = _tc => {
 export const testSpecialDeletionCase = _tc => {
   const origin = 'undoable'
   const doc = new Y.Doc()
-  const fragment = doc.getXmlFragment()
+  const fragment = doc.get()
   const undoManager = new Y.UndoManager(fragment, { trackedOrigins: new Set([origin]) })
   doc.transact(() => {
-    const e = new Y.XmlElement('test')
-    e.setAttribute('a', '1')
-    e.setAttribute('b', '2')
+    const e = new Y.Type('test')
+    e.setAttr('a', '1')
+    e.setAttr('b', '2')
     fragment.insert(0, [e])
   })
   t.compareStrings(fragment.toString(), '<test a="1" b="2"></test>')
@@ -748,26 +741,26 @@ export const testSpecialDeletionCase = _tc => {
 export const testUndoDeleteInMap = (tc) => {
   const { map0 } = init(tc, { users: 3 })
   const undoManager = new Y.UndoManager(map0, { captureTimeout: 0 })
-  map0.set('a', 'a')
-  map0.delete('a')
-  map0.set('a', 'b')
-  map0.delete('a')
-  map0.set('a', 'c')
-  map0.delete('a')
-  map0.set('a', 'd')
-  t.compare(map0.toJSON(), { a: 'd' })
+  map0.setAttr('a', 'a')
+  map0.deleteAttr('a')
+  map0.setAttr('a', 'b')
+  map0.deleteAttr('a')
+  map0.setAttr('a', 'c')
+  map0.deleteAttr('a')
+  map0.setAttr('a', 'd')
+  t.compare(map0.toJSON().attrs, { a: 'd' })
   undoManager.undo()
-  t.compare(map0.toJSON(), {})
+  t.compare(map0.toJSON().attrs, {})
   undoManager.undo()
-  t.compare(map0.toJSON(), { a: 'c' })
+  t.compare(map0.toJSON().attrs, { a: 'c' })
   undoManager.undo()
-  t.compare(map0.toJSON(), {})
+  t.compare(map0.toJSON().attrs, {})
   undoManager.undo()
-  t.compare(map0.toJSON(), { a: 'b' })
+  t.compare(map0.toJSON().attrs, { a: 'b' })
   undoManager.undo()
-  t.compare(map0.toJSON(), {})
+  t.compare(map0.toJSON().attrs, {})
   undoManager.undo()
-  t.compare(map0.toJSON(), { a: 'a' })
+  t.compare(map0.toJSON().attrs, { a: 'a' })
 }
 
 /**
@@ -777,7 +770,7 @@ export const testUndoDeleteInMap = (tc) => {
  */
 export const testUndoDoingStackItem = async (_tc) => {
   const doc = new Y.Doc()
-  const text = doc.getText('text')
+  const text = doc.get('text')
   const undoManager = new Y.UndoManager([text])
   undoManager.on('stack-item-added', /** @param {any} event */ event => {
     event.stackItem.meta.set('str', '42')

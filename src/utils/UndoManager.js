@@ -37,7 +37,7 @@ export class StackItem {
  */
 const clearUndoManagerStackItem = (tr, um, stackItem) => {
   iterateStructsByIdSet(tr, stackItem.deletions, item => {
-    if (item instanceof Item && um.scope.some(type => type === tr.doc || isParentOf(/** @type {import('../utils/types.js').YType} */ (type), item))) {
+    if (item instanceof Item && um.scope.some(type => type === tr.doc || isParentOf(/** @type {YType} */ (type), item))) {
       keepItem(item, false)
     }
   })
@@ -79,7 +79,7 @@ const popStackItem = (undoManager, stack, eventType) => {
             }
             struct = item
           }
-          if (!struct.deleted && scope.some(type => type === transaction.doc || isParentOf(/** @type {import('../utils/types.js').YType} */ (type), /** @type {Item} */ (struct)))) {
+          if (!struct.deleted && scope.some(type => type === transaction.doc || isParentOf(/** @type {YType} */ (type), /** @type {Item} */ (struct)))) {
             itemsToDelete.push(struct)
           }
         }
@@ -87,7 +87,7 @@ const popStackItem = (undoManager, stack, eventType) => {
       iterateStructsByIdSet(transaction, stackItem.deletions, struct => {
         if (
           struct instanceof Item &&
-          scope.some(type => type === transaction.doc || isParentOf(/** @type {import('../utils/types.js').YType} */ (type), struct)) &&
+          scope.some(type => type === transaction.doc || isParentOf(/** @type {YType} */ (type), struct)) &&
           // Never redo structs in stackItem.insertions because they were created and deleted in the same capture interval.
           !stackItem.insertions.hasId(struct.id)
         ) {
@@ -143,7 +143,7 @@ const popStackItem = (undoManager, stack, eventType) => {
  * @property {StackItem} StackItemEvent.stackItem
  * @property {any} StackItemEvent.origin
  * @property {'undo'|'redo'} StackItemEvent.type
- * @property {Map<import('../utils/types.js').YType,Array<YEvent<any>>>} StackItemEvent.changedParentTypes
+ * @property {Map<YType,Array<YEvent<any>>>} StackItemEvent.changedParentTypes
  */
 
 /**
@@ -157,7 +157,7 @@ const popStackItem = (undoManager, stack, eventType) => {
  */
 export class UndoManager extends ObservableV2 {
   /**
-   * @param {Doc|import('../utils/types.js').YType|Array<import('../utils/types.js').YType>} typeScope Limits the scope of the UndoManager. If this is set to a ydoc instance, all changes on that ydoc will be undone. If set to a specific type, only changes on that type or its children will be undone. Also accepts an array of types.
+   * @param {Doc|YType|Array<YType>} typeScope Limits the scope of the UndoManager. If this is set to a ydoc instance, all changes on that ydoc will be undone. If set to a specific type, only changes on that type or its children will be undone. Also accepts an array of types.
    * @param {UndoManagerOptions} options
    */
   constructor (typeScope, {
@@ -170,7 +170,7 @@ export class UndoManager extends ObservableV2 {
   } = {}) {
     super()
     /**
-     * @type {Array<import('../utils/types.js').YType | Doc>}
+     * @type {Array<YType | Doc>}
      */
     this.scope = []
     this.doc = doc
@@ -210,7 +210,7 @@ export class UndoManager extends ObservableV2 {
       // Only track certain transactions
       if (
         !this.captureTransaction(transaction) ||
-        !this.scope.some(type => transaction.changedParentTypes.has(/** @type {import('../utils/types.js').YType} */ (type)) || type === this.doc) ||
+        !this.scope.some(type => transaction.changedParentTypes.has(/** @type {YType} */ (type)) || type === this.doc) ||
         (!this.trackedOrigins.has(transaction.origin) && (!transaction.origin || !this.trackedOrigins.has(transaction.origin.constructor)))
       ) {
         return
@@ -242,7 +242,7 @@ export class UndoManager extends ObservableV2 {
       }
       // make sure that deleted structs are not gc'd
       iterateStructsByIdSet(transaction, transaction.deleteSet, /** @param {Item|GC} item */ item => {
-        if (item instanceof Item && this.scope.some(type => type === transaction.doc || isParentOf(/** @type {import('../utils/types.js').YType} */ (type), item))) {
+        if (item instanceof Item && this.scope.some(type => type === transaction.doc || isParentOf(/** @type {YType} */ (type), item))) {
           keepItem(item, true)
         }
       })
@@ -265,7 +265,7 @@ export class UndoManager extends ObservableV2 {
   /**
    * Extend the scope.
    *
-   * @param {Array<import('../utils/types.js').YType | Doc> | import('../utils/types.js').YType | Doc} ytypes
+   * @param {Array<YType | Doc> | YType | Doc} ytypes
    */
   addToScope (ytypes) {
     const tmpSet = new Set(this.scope)

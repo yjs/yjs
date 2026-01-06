@@ -213,7 +213,7 @@ export const testUserAttributionEncodingBenchmark = tc => {
     idmap.insertIntoIdMap(attributions, idmap.createIdMapFromIdSet(tr.deleteSet, [createAttributionItem('delete', 'userX'), createAttributionItem('deleteAt', currentTime)]))
     currentTime += 1
   })
-  const ytext = ydoc.getText()
+  const ytext = ydoc.get()
   const N = 10000
   t.measureTime(`time to attribute ${N / 1000}k changes`, () => {
     for (let i = 0; i < N; i++) {

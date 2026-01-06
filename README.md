@@ -231,11 +231,13 @@ document private.
   </dd>
   <dt><a href="https://github.com/liveblocks/liveblocks">@liveblocks/yjs </a> 🌟</dt>
   <dd>
-<a href="https://liveblocks.io/docs/api-reference/liveblocks-yjs">Liveblocks Yjs</a> provides a fully
-hosted WebSocket infrastructure and persisted data store for Yjs
-documents. No configuration or maintenance is required. It also features
-Yjs webhook events, REST API to read and update Yjs documents, and a
-browser DevTools extension.
+<a href="https://liveblocks.io/docs/api-reference/liveblocks-yjs">
+Liveblocks Yjs
+</a>
+provides a fully hosted WebSocket infrastructure and persisted data
+store for Yjs documents. No configuration or maintenance is required. It
+also features Yjs webhook events, REST API to read and update Yjs
+documents, and a browser DevTools extension.
   </dd>
   <dt><a href="https://github.com/ueberdosis/hocuspocus">Hocuspocus</a> ⭐</dt>
   <dd>

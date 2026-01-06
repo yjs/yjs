@@ -1,17 +1,18 @@
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
 import { init } from './testHelper.js'
+import * as delta from 'lib0/delta'
 
 /**
  * @param {t.TestCase} _tc
  */
 export const testBasic = _tc => {
   const ydoc = new Y.Doc({ gc: false })
-  ydoc.getText().insert(0, 'world!')
+  ydoc.get().insert(0, 'world!')
   const snapshot = Y.snapshot(ydoc)
-  ydoc.getText().insert(0, 'hello ')
+  ydoc.get().insert(0, 'hello ')
   const restored = Y.createDocFromSnapshot(ydoc, snapshot)
-  t.assert(restored.getText().toString() === 'world!')
+  t.assert(restored.get().getContent().equals(delta.create().insert('world!')))
 }
 
 /**
@@ -19,7 +20,7 @@ export const testBasic = _tc => {
  */
 export const testBasicXmlAttributes = _tc => {
   const ydoc = new Y.Doc({ gc: false })
-  const yxml = ydoc.getMap().set('el', new Y.XmlElement('div'))
+  const yxml = ydoc.get().setAttr('el', new Y.Type('div'))
   const snapshot1 = Y.snapshot(ydoc)
   yxml.setAttribute('a', '1')
   const snapshot2 = Y.snapshot(ydoc)
@@ -34,14 +35,14 @@ export const testBasicXmlAttributes = _tc => {
  */
 export const testBasicRestoreSnapshot = _tc => {
   const doc = new Y.Doc({ gc: false })
-  doc.getArray('array').insert(0, ['hello'])
+  doc.get('array').insert(0, ['hello'])
   const snap = Y.snapshot(doc)
-  doc.getArray('array').insert(1, ['world'])
+  doc.get('array').insert(1, ['world'])
 
   const docRestored = Y.createDocFromSnapshot(doc, snap)
 
-  t.compare(docRestored.getArray('array').toArray(), ['hello'])
-  t.compare(doc.getArray('array').toArray(), ['hello', 'world'])
+  t.compare(docRestored.get('array').toArray(), ['hello'])
+  t.compare(doc.get('array').toJSON().children, ['hello', 'world'])
 }
 
 /**
@@ -51,17 +52,17 @@ export const testEmptyRestoreSnapshot = _tc => {
   const doc = new Y.Doc({ gc: false })
   const snap = Y.snapshot(doc)
   snap.sv.set(9999, 0)
-  doc.getArray().insert(0, ['world'])
+  doc.get().insert(0, ['world'])
 
   const docRestored = Y.createDocFromSnapshot(doc, snap)
 
-  t.compare(docRestored.getArray().toArray(), [])
-  t.compare(doc.getArray().toArray(), ['world'])
+  t.compare(docRestored.get().toArray(), [])
+  t.compare(doc.get().toArray(), ['world'])
 
   // now this snapshot reflects the latest state. It should still work.
   const snap2 = Y.snapshot(doc)
   const docRestored2 = Y.createDocFromSnapshot(doc, snap2)
-  t.compare(docRestored2.getArray().toArray(), ['world'])
+  t.compare(docRestored2.get().toArray(), ['world'])
 }
 
 /**
@@ -69,8 +70,8 @@ export const testEmptyRestoreSnapshot = _tc => {
  */
 export const testRestoreSnapshotWithSubType = _tc => {
   const doc = new Y.Doc({ gc: false })
-  doc.getArray('array').insert(0, [new Y.Map()])
-  const subMap = doc.getArray('array').get(0)
+  doc.get('array').insert(0, [new Y.Type()])
+  const subMap = doc.get('array').get(0)
   subMap.set('key1', 'value1')
 
   const snap = Y.snapshot(doc)
@@ -78,10 +79,10 @@ export const testRestoreSnapshotWithSubType = _tc => {
 
   const docRestored = Y.createDocFromSnapshot(doc, snap)
 
-  t.compare(docRestored.getArray('array').toJSON(), [{
+  t.compare(docRestored.get('array').toJSON().children, [{
     key1: 'value1'
   }])
-  t.compare(doc.getArray('array').toJSON(), [{
+  t.compare(doc.get('array').toJSON().children, [{
     key1: 'value1',
     key2: 'value2'
   }])
@@ -92,15 +93,15 @@ export const testRestoreSnapshotWithSubType = _tc => {
  */
 export const testRestoreDeletedItem1 = _tc => {
   const doc = new Y.Doc({ gc: false })
-  doc.getArray('array').insert(0, ['item1', 'item2'])
+  doc.get('array').insert(0, ['item1', 'item2'])
 
   const snap = Y.snapshot(doc)
-  doc.getArray('array').delete(0)
+  doc.get('array').delete(0)
 
   const docRestored = Y.createDocFromSnapshot(doc, snap)
 
-  t.compare(docRestored.getArray('array').toArray(), ['item1', 'item2'])
-  t.compare(doc.getArray('array').toArray(), ['item2'])
+  t.compare(docRestored.get('array').toArray(), ['item1', 'item2'])
+  t.compare(doc.get('array').toArray(), ['item2'])
 }
 
 /**
@@ -108,17 +109,17 @@ export const testRestoreDeletedItem1 = _tc => {
  */
 export const testRestoreLeftItem = _tc => {
   const doc = new Y.Doc({ gc: false })
-  doc.getArray('array').insert(0, ['item1'])
-  doc.getMap('map').set('test', 1)
-  doc.getArray('array').insert(0, ['item0'])
+  doc.get('array').insert(0, ['item1'])
+  doc.get('map').setAttr('test', 1)
+  doc.get('array').insert(0, ['item0'])
 
   const snap = Y.snapshot(doc)
-  doc.getArray('array').delete(1)
+  doc.get('array').delete(1)
 
   const docRestored = Y.createDocFromSnapshot(doc, snap)
 
-  t.compare(docRestored.getArray('array').toArray(), ['item0', 'item1'])
-  t.compare(doc.getArray('array').toArray(), ['item0'])
+  t.compare(docRestored.get('array').toArray(), ['item0', 'item1'])
+  t.compare(doc.get('array').toArray(), ['item0'])
 }
 
 /**
@@ -126,15 +127,15 @@ export const testRestoreLeftItem = _tc => {
  */
 export const testDeletedItemsBase = _tc => {
   const doc = new Y.Doc({ gc: false })
-  doc.getArray('array').insert(0, ['item1'])
-  doc.getArray('array').delete(0)
+  doc.get('array').insert(0, ['item1'])
+  doc.get('array').delete(0)
   const snap = Y.snapshot(doc)
-  doc.getArray('array').insert(0, ['item0'])
+  doc.get('array').insert(0, ['item0'])
 
   const docRestored = Y.createDocFromSnapshot(doc, snap)
 
-  t.compare(docRestored.getArray('array').toArray(), [])
-  t.compare(doc.getArray('array').toArray(), ['item0'])
+  t.compare(docRestored.get('array').toArray(), [])
+  t.compare(doc.get('array').toArray(), ['item0'])
 }
 
 /**
@@ -142,15 +143,15 @@ export const testDeletedItemsBase = _tc => {
  */
 export const testDeletedItems2 = _tc => {
   const doc = new Y.Doc({ gc: false })
-  doc.getArray('array').insert(0, ['item1', 'item2', 'item3'])
-  doc.getArray('array').delete(1)
+  doc.get('array').insert(0, ['item1', 'item2', 'item3'])
+  doc.get('array').delete(1)
   const snap = Y.snapshot(doc)
-  doc.getArray('array').insert(0, ['item0'])
+  doc.get('array').insert(0, ['item0'])
 
   const docRestored = Y.createDocFromSnapshot(doc, snap)
 
-  t.compare(docRestored.getArray('array').toArray(), ['item1', 'item3'])
-  t.compare(doc.getArray('array').toArray(), ['item0', 'item1', 'item3'])
+  t.compare(docRestored.get('array').toArray(), ['item1', 'item3'])
+  t.compare(doc.get('array').toArray(), ['item0', 'item1', 'item3'])
 }
 
 /**
@@ -191,10 +192,10 @@ export const testDependentChanges = tc => {
   testConnector.syncAll()
 
   const docRestored0 = Y.createDocFromSnapshot(array0.doc, snap)
-  t.compare(docRestored0.getArray('array').toArray(), ['user1item1', 'user2item1'])
+  t.compare(docRestored0.get('array').toArray(), ['user1item1', 'user2item1'])
 
   const docRestored1 = Y.createDocFromSnapshot(array1.doc, snap)
-  t.compare(docRestored1.getArray('array').toArray(), ['user1item1', 'user2item1'])
+  t.compare(docRestored1.get('array').toArray(), ['user1item1', 'user2item1'])
 }
 
 /**
@@ -209,7 +210,7 @@ export const testContainsUpdate = _tc => {
   ydoc.on('update', update => {
     updates.push(update)
   })
-  const yarr = ydoc.getArray()
+  const yarr = ydoc.get()
   const snapshot1 = Y.snapshot(ydoc)
   yarr.insert(0, [1])
   const snapshot2 = Y.snapshot(ydoc)

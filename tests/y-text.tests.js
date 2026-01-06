@@ -3,7 +3,6 @@ import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
 import * as delta from 'lib0/delta'
-import * as list from 'lib0/list'
 import { createIdMapFromIdSet, noAttributionsManager, TwosetAttributionManager, createAttributionManagerFromSnapshots } from 'yjs/internals'
 
 const { init, compare } = Y
@@ -1215,7 +1214,7 @@ export const testDeltaBug2 = _tc => {
   })
   ytext.applyDelta(changeEvent)
   const d = ytext.getContent()
-  t.compare(list.toArray(d.children)[40].toJSON(), {
+  t.compare(d.toJSON().children?.[40], {
     type: 'insert',
     insert: '\n',
     format: {

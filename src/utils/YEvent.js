@@ -4,8 +4,7 @@ import {
   noAttributionsManager,
   YType, Doc, AbstractAttributionManager, Item, Transaction, AbstractStruct, // eslint-disable-line
   createAbsolutePositionFromRelativePosition,
-  createRelativePosition,
-  AbsolutePosition
+  createRelativePosition
 } from '../internals.js'
 
 import * as map from 'lib0/map'
@@ -202,7 +201,7 @@ export const getPathTo = (parent, child, am = noAttributionsManager) => {
     } else {
       const parent = /** @type {import('../ytype.js').YType} */ (child._item.parent)
       // parent is array-ish
-      const apos = /** @type {AbsolutePosition} */ (createAbsolutePositionFromRelativePosition(createRelativePosition(parent, child._item.id), doc, false, am))
+      const apos = /** @type {import('../utils/RelativePosition.js').AbsolutePosition} */ (createAbsolutePositionFromRelativePosition(createRelativePosition(parent, child._item.id), doc, false, am))
       path.unshift(apos.index)
     }
     child = /** @type {YType} */ (child._item.parent)
