@@ -110,15 +110,16 @@ export const testToJSON = _tc => {
   const map2 = new Y.Type()
   map.setAttr('k2', map2)
   map2.setAttr('m2k1', 'm2v1')
-
   t.compare(doc.toJSON(), {
-    array: ['test1'],
-    map: {
+    array: { children: ['test1'] },
+    map: { attrs: {
       k1: 'v1',
       k2: {
-        m2k1: 'm2v1'
+        attrs: {
+          m2k1: 'm2v1'
+        }
       }
-    }
+    }}
   }, 'doc.toJSON has array and recursive map')
 }
 

@@ -2,8 +2,6 @@
   "name": "@y/y",
   "version": "14.0.0-19",
   "description": "Shared Editing Library",
-  "main": "./dist/yjs.js",
-  "module": "./dist/yjs.js",
   "types": "./dist/src/index.d.ts",
   "type": "module",
   "sideEffects": false,
@@ -20,6 +18,7 @@
     "lint": "markdownlint README.md && standard && tsc --skipLibCheck",
     "preversion": "PRODUCTION=1 npm run dist && test -e dist/src/index.d.ts && test -e dist/yjs.js",
     "debug": "npm run gentesthtml && 0serve -o test.html",
+    "debug:node": "node --inspect-brk tests/index.js",
     "trace-deopt": "clear && node --trace-deopt ./tests/index.js",
     "trace-opt": "clear && node --trace-opt ./tests/index.js",
     "gentesthtml": "0gentesthtml --script ./tests/index.js --include-dependencies @y/protocols > test.html"
@@ -27,15 +26,15 @@
   "exports": {
     ".": {
       "types": "./dist/src/index.d.ts",
-      "default": "./dist/yjs.js"
+      "default": "./src/index.js"
     },
     "./internals": {
       "types": "./dist/src/internals.d.ts",
-      "default": "./dist/internals.js"
+      "default": "./src/internals.js"
     },
     "./testHelper": {
       "types": "./dist/tests/testHelper.d.ts",
-      "default": "./dist/testHelper.js"
+      "default": "./tests/testHelper.js"
     },
     "./package.json": "./package.json"
   },
@@ -82,8 +81,7 @@
     "markdownlint-cli": "^0.45.0",
     "rollup": "^4.52.5",
     "standard": "^17.1.2",
-    "typescript": "^5.9.3",
-    "yjs": "."
+    "typescript": "^5.9.3"
   },
   "engines": {
     "npm": ">=8.0.0",

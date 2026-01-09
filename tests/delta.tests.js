@@ -66,10 +66,10 @@ export const testDeltaBasicSchema = _tc => {
   const $d = delta.$delta({ attrs: { key: s.$string }, children: s.$number, text: false })
   const d = delta.create($d)
   // @ts-expect-error
-  d.set('key', false) // invalid change: will throw a type error
+  d.setAttr('key', false) // invalid change: will throw a type error
   t.fails(() => {
     // @ts-expect-error
-    d.apply(delta.create().set('key', false)) // invalid delta: will throw a type error
+    d.apply(delta.create().setAttr('key', false)) // invalid delta: will throw a type error
   })
 }
 
@@ -79,7 +79,7 @@ export const testDeltaBasicSchema = _tc => {
  * Key-value pairs can be represented as attributes. This "convoluted" changeset enables us to
  * describe many changes in the same breath:
  *
- * delta.create().set('a', 42).retain(5).delete(6).insert('!').unset('b')
+ * delta.create().setAttr('a', 42).retain(5).delete(6).insert('!').deleteAttr('b')
  *
  * @param {t.TestCase} _tc
  */

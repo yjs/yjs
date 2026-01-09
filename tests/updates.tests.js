@@ -347,11 +347,11 @@ export const testObfuscateUpdates = _tc => {
   t.assert(!omap.hasAttr('key'))
   // test yarray with subtype & subdoc
   const result = oarray.toArray()
-  t.assert(result.length === 4)
+  t.assert(result.length === 3)
   t.assert(result[0] !== 'teststring')
   t.assert(result[1] !== 42)
   const osubtype = /** @type {Y.Type} */ (result[2])
-  const osubdoc = result[3]
+  const osubdoc = result[2]
   // test subtype
   t.assert(osubtype.name !== subtype.name)
   t.assert(object.length(osubtype.getAttrs()) === 1)

@@ -210,11 +210,11 @@ export const testUndoMap = tc => {
   const subType = new Y.Type()
   map0.setAttr('a', subType)
   subType.setAttr('x', 42)
-  t.compare(map0.toJSON(), /** @type {any} */ ({ a: { x: 42 } }))
+  t.compare(map0.toJSON().attrs, /** @type {any} */ ({ a: { attrs: { x: 42 } } }))
   undoManager.undo()
   t.assert(map0.getAttr('a') === 1)
   undoManager.redo()
-  t.compare(map0.toJSON(), /** @type {any} */ ({ a: { x: 42 } }))
+  t.compare(map0.toJSON().attrs, /** @type {any} */ ({ a: { attrs: { x: 42 } } }))
   testConnector.syncAll()
   // if content is overwritten by another user, undo operations should be skipped
   map1.setAttr('a', 44)
@@ -272,7 +272,7 @@ export const testUndoArray = tc => {
   undoManager.redo()
   t.compare(array0.toJSON().children, [{ a: 1 }])
   testConnector.syncAll()
-  array1.get(0).set('b', 2)
+  array1.get(0).setAttr('b', 2)
   testConnector.syncAll()
   t.compare(array0.toJSON().children, [{ a: 1, b: 2 }])
   undoManager.undo()
@@ -293,23 +293,24 @@ export const testUndoXml = tc => {
   const undoManager = new Y.UndoManager(xml0)
   const child = new Y.Type('p')
   xml0.insert(0, [child])
-  const textchild = new Y.Type('content')
+  const textchild = Y.Type.from(delta.create().insert('content'))
   child.insert(0, [textchild])
   // format textchild and revert that change
   undoManager.stopCapturing()
   textchild.format(3, 4, { bold: true })
-  const v1 = delta.create('UNDEFINED').insert([delta.create('p').insert([delta.create().insert('con').insert('tent', { bold: true }).done()]).done()]).done()
-  const v2 = delta.create('UNDEFINED').insert([delta.create('p').insert([delta.create().insert('content').done()]).done()]).done()
+  const v1 = delta.create().insert([delta.create('p').insert([delta.create().insert('con').insert('tent', { bold: true }).done()]).done()]).done()
+  const v2 = delta.create().insert([delta.create('p').insert([delta.create().insert('content').done()]).done()]).done()
   t.compare(xml0.getContentDeep(), v1)
   undoManager.undo()
   t.compare(xml0.getContentDeep(), v2)
   undoManager.redo()
   t.compare(xml0.getContentDeep(), v1)
   xml0.delete(0, 1)
-  t.compare(xml0.getContentDeep(), delta.create('UNDEFINED'))
+  t.compare(xml0.getContentDeep(), delta.create().done())
   undoManager.undo()
   t.compare(xml0.getContentDeep(), v1)
 }
+
 
 /**
  * @param {t.TestCase} tc
@@ -378,7 +379,7 @@ export const testTypeScope = tc => {
 export const testUndoInEmbed = tc => {
   const { text0 } = init(tc, { users: 3 })
   const undoManager = new Y.UndoManager(text0)
-  const nestedText = new Y.Type('initial text')
+  const nestedText = Y.Type.from(delta.create().insert('initial text'))
   undoManager.stopCapturing()
   text0.insert(0, [nestedText], { bold: true })
   t.assert(nestedText.toString() === 'initial text')
@@ -405,7 +406,7 @@ export const testUndoDeleteFilter = tc => {
   undoManager.undo()
   t.assert(array0.length === 1)
   array0.get(0)
-  t.assert(Array.from(array0.get(0).keys()).length === 1)
+  t.assert(Array.from(array0.get(0).attrKeys()).length === 1)
 }
 
 /**
@@ -475,20 +476,19 @@ export const testUndoNestedUndoIssue = _tc => {
     blocks3.push([blocks3block])
     text.setAttr('blocks', blocks3block)
   })
-
-  t.compare(design.toJSON().attrs, { text: { blocks: { text: 'Something Else' } } })
+  t.compare(design.getContentDeep(), delta.from({ text: delta.from({ blocks: delta.from({ text: 'Something Else' }) }) }))
   undoManager.undo()
-  t.compare(design.toJSON().attrs, { text: { blocks: { text: 'Something' } } })
+  t.compare(design.getContentDeep(), delta.from({ text: delta.from({ blocks: delta.from({ text: 'Something' }) }) }))
   undoManager.undo()
-  t.compare(design.toJSON().attrs, { text: { blocks: { text: 'Type Something' } } })
+  t.compare(design.getContentDeep(), delta.from({ text: delta.from({ blocks: delta.from({ text: 'Type Something' }) }) }))
   undoManager.undo()
-  t.compare(design.toJSON().attrs, { })
+  t.compare(design.getContentDeep(), delta.from({}))
   undoManager.redo()
-  t.compare(design.toJSON().attrs, { text: { blocks: { text: 'Type Something' } } })
+  t.compare(design.getContentDeep(), delta.from({ text: delta.from({ blocks: delta.from({ text: 'Type Something' }) }) }))
   undoManager.redo()
-  t.compare(design.toJSON().attrs, { text: { blocks: { text: 'Something' } } })
+  t.compare(design.getContentDeep(), delta.from({ text: delta.from({ blocks: delta.from({ text: 'Something' }) }) }))
   undoManager.redo()
-  t.compare(design.toJSON().attrs, { text: { blocks: { text: 'Something Else' } } })
+  t.compare(design.getContentDeep(), delta.from({ text: delta.from({ blocks: delta.from({ text: 'Something Else' }) }) }))
 }
 
 /**
@@ -567,14 +567,14 @@ export const testUndoXmlBug = _tc => {
   // change one attribute
   doc.transact(() => {
     const e = fragment.get(0)
-    e.setAttribute('a', '200')
+    e.setAttr('a', '200')
   }, origin)
 
   // change both attributes
   doc.transact(() => {
     const e = fragment.get(0)
-    e.setAttribute('a', '180')
-    e.setAttribute('b', '50')
+    e.setAttr('a', '180')
+    e.setAttr('b', '50')
   }, origin)
 
   undoManager.undo()
@@ -584,7 +584,7 @@ export const testUndoXmlBug = _tc => {
   undoManager.redo()
   undoManager.redo()
   undoManager.redo()
-  t.compare(fragment.toString(), '<test-node a="180" b="50"></test-node>')
+  t.compare(fragment.toString(), '<test-node a=180 b=50 />')
 }
 
 /**
@@ -750,15 +750,15 @@ export const testUndoDeleteInMap = (tc) => {
   map0.setAttr('a', 'd')
   t.compare(map0.toJSON().attrs, { a: 'd' })
   undoManager.undo()
-  t.compare(map0.toJSON().attrs, {})
+  t.compare(map0.toJSON(), {})
   undoManager.undo()
   t.compare(map0.toJSON().attrs, { a: 'c' })
   undoManager.undo()
-  t.compare(map0.toJSON().attrs, {})
+  t.compare(map0.toJSON(), {})
   undoManager.undo()
   t.compare(map0.toJSON().attrs, { a: 'b' })
   undoManager.undo()
-  t.compare(map0.toJSON().attrs, {})
+  t.compare(map0.toJSON(), {})
   undoManager.undo()
   t.compare(map0.toJSON().attrs, { a: 'a' })
 }

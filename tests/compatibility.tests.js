@@ -8,6 +8,14 @@
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
 import * as buffer from 'lib0/buffer'
+import * as s from 'lib0/schema'
+import * as delta from 'lib0/delta'
+import * as error from 'lib0/error'
+
+/**
+ * @param {Y.Type} ytype
+ */
+const ytypeToJSON = ytype => ytype.toJSON()?.children?.map(x => s.$objectAny.check(x) ? (x.attrs || x.children) : x)
 
 /**
  * @param {t.TestCase} _tc
@@ -17,7 +25,7 @@ export const testArrayCompatibilityV1 = _tc => {
   const oldVal = JSON.parse('[[1,2,3,4],472,472,{"someprop":44},472,[1,2,3,4],{"someprop":44},[1,2,3,4],[1,2,3,4],[1,2,3,4],{"someprop":44},449,448,[1,2,3,4],[1,2,3,4],{"someprop":44},452,{"someprop":44},[1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3,4],452,[1,2,3,4],497,{"someprop":44},497,497,497,{"someprop":44},[1,2,3,4],522,522,452,470,{"someprop":44},[1,2,3,4],453,{"someprop":44},480,480,480,508,508,508,[1,2,3,4],[1,2,3,4],502,492,492,453,{"someprop":44},496,496,496,[1,2,3,4],496,493,495,495,495,495,493,[1,2,3,4],493,493,453,{"someprop":44},{"someprop":44},505,505,517,517,505,[1,2,3,4],{"someprop":44},509,{"someprop":44},521,521,521,509,477,{"someprop":44},{"someprop":44},485,485,{"someprop":44},515,{"someprop":44},451,{"someprop":44},[1,2,3,4],516,516,516,516,{"someprop":44},499,499,469,469,[1,2,3,4],[1,2,3,4],512,512,512,{"someprop":44},454,487,487,487,[1,2,3,4],[1,2,3,4],454,[1,2,3,4],[1,2,3,4],{"someprop":44},[1,2,3,4],459,[1,2,3,4],513,459,{"someprop":44},[1,2,3,4],482,{"someprop":44},[1,2,3,4],[1,2,3,4],459,[1,2,3,4],{"someprop":44},[1,2,3,4],484,454,510,510,510,510,468,{"someprop":44},468,[1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3,4],467,[1,2,3,4],467,486,486,486,[1,2,3,4],489,451,[1,2,3,4],{"someprop":44},[1,2,3,4],[1,2,3,4],{"someprop":44},{"someprop":44},483,[1,2,3,4],{"someprop":44},{"someprop":44},{"someprop":44},{"someprop":44},519,519,519,519,506,506,[1,2,3,4],{"someprop":44},464,{"someprop":44},481,481,[1,2,3,4],{"someprop":44},[1,2,3,4],464,475,475,475,463,{"someprop":44},[1,2,3,4],518,[1,2,3,4],[1,2,3,4],463,455,498,498,498,466,471,471,471,501,[1,2,3,4],501,501,476,{"someprop":44},466,[1,2,3,4],{"someprop":44},503,503,503,466,455,490,474,{"someprop":44},457,494,494,{"someprop":44},457,479,{"someprop":44},[1,2,3,4],500,500,500,{"someprop":44},[1,2,3,4],[1,2,3,4],{"someprop":44},{"someprop":44},{"someprop":44},[1,2,3,4],[1,2,3,4],{"someprop":44},[1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3],491,491,[1,2,3,4],504,504,504,504,465,[1,2,3,4],{"someprop":44},460,{"someprop":44},488,488,488,[1,2,3,4],[1,2,3,4],{"someprop":44},{"someprop":44},514,514,514,514,{"someprop":44},{"someprop":44},{"someprop":44},458,[1,2,3,4],[1,2,3,4],462,[1,2,3,4],[1,2,3,4],{"someprop":44},462,{"someprop":44},[1,2,3,4],{"someprop":44},[1,2,3,4],507,{"someprop":44},{"someprop":44},507,507,{"someprop":44},{"someprop":44},[1,2,3,4],{"someprop":44},461,{"someprop":44},473,461,[1,2,3,4],461,511,511,461,{"someprop":44},{"someprop":44},520,520,520,[1,2,3,4],458]')
   const doc = new Y.Doc()
   Y.applyUpdate(doc, buffer.fromBase64(oldDoc))
-  t.compare(doc.get('array').toJSON().children, oldVal)
+  t.compare(ytypeToJSON(doc.get('array')), oldVal)
 }
 
 /**
@@ -26,10 +34,10 @@ export const testArrayCompatibilityV1 = _tc => {
 export const testMapDecodingCompatibilityV1 = _tc => {
   const oldDoc = 'BVcEAKEBAAGhAwEBAAShBAABAAGhBAECoQEKAgAEoQQLAQAEoQMcAaEEFQGhAiECAAShAS4BoQQYAaEEHgGhBB8BoQQdAQABoQQhAaEEIAGhBCMBAAGhBCUCoQQkAqEEKAEABKEEKgGhBCsBoQQwAQABoQQxAaEEMgGhBDQBAAGhBDYBoQQ1AQAEoQQ5AQABoQQ4AQAEoQM6AQAEoQRFAaEESgEAAaEESwEABKEETQGhBEABoQRSAgABoQRTAgAEoQRVAgABoQReAaEEWAEABKEEYAEAAaEEZgKhBGECAAShBGsBAAGhAaUBAgAEoQRwAgABoQRzAQAEoQR5AQABoQSAAQEABKEEggEBAAGhBIcBAwABoQGzAQEAAaEEjQECpwHMAQAIAASRAQR9AX0CfQN9BGcDACEBA21hcAN0d28BoQMAAQAEoQMBAQABoQMGAQAEIQEDbWFwA29uZQOhBAEBAAShAw8CoQMQAaEDFgEAAaEDFwEAAaEDGAGhAxwBAAGhAx0BoQIaBAAEoQMjAgABoQMpAQABoQMfAQABoQMrAQABoQMvAaEDLQEAAaEDMQIABKEDNQGhAzIBoQM6AaEDPAGhBCMBAAGhAU8BAAGhA0ADoQJCAQABoQNEAgABoQNFAgAEoQJEAQABoQNLAaEEQAEABKEESgEAAaEDWAGhA1MBAAGhA1oBAAGhA10DoQNbAQABoQNhAwABoQNiAQAEoQNmAaEDaAWhA20BAAShA3IBAAGhA3MBAAShA3gBoQN6A6EDfwEAAaEDgwEBAAShA4UBAgABoQOLAQGhA4IBAaEDjQEBoQOOAQEAAaEDjwEBAAShA5ABAaEDkgEBoQOXAQEABKEDmQEBAAGhA5gBAQABoQOgAQEAAaEDngEBaQIAIQEDbWFwA3R3bwGhAwABoQEAAQABoQIBAQAEoQIEAaEDAQKhAQwDAAShAg4BAAShAhMBoQQJBAABoQQVAQABoQIeAaECHAGhBBgBAAShAiICAAShBB4BAAShBB8BAAGhAzwBAAGhBCMCoQM9AqEDPgEAAaECOQEABKECPAGhAkEBAAGhAjoBAAGhAkIBAAShAkQBAAShAksBAAGhA0UCAAShAlMCoQJQAQAEoQJZAaECWgEAAaECYAKhAl8BAAShAmMCAAGhAmoBoQJkAgAEoQRSAQABoQJzAQAEoQRTAQAEoQJ6AQAEoQJ1AQABoQKEAQEABKEChgEBoQJ/AgABoQKLAQEABKECjwECAAGhApUBAQABoQKXAQGhAo0BAQABoQKaAQGhApkBAQABoQKcAQEAAaECnwEBAAShAqEBAaECnQEBAAShAqYBAaECpwEBAAGhAqwBAQABoQKtAQEABKECrwECAAF5AQAhAQNtYXADb25lASEBA21hcAN0d28CAAGhAQABoQMAAaEBBAEAAaEBBQGhAQYBoQMPAaEEAQGhAQoBoQELAaEBDAEABKEBDgEAAaEBDQEABKEBFQEABKEDHAKhBBUBAAShASECAAShAScBoQQWAwAEoQIhAgABoQEvAaECIgEABKEBOAEAAaEBNwEAAaEBPwGhAzoBAAShAUIBoQQjAQABoQFIAQABoQFKAaEDPgEAAaECOgEAAaEBTwIAAaEBUgEAAaECQQGhAVQCoQFWAgABoQFYAQAEoQFcAqEBWgEAAaEBYgShAWMBAAGhAWgBAAGhAWkCAAGhAW4BAAGhAWsBAAShAXABAAShAXcCAAShAX0BAAShAYIBAaEBcgEAAaEBhwEBoQGIAQEABKEBigEBAAShAZABAQAEoQGLAQIABKEBlQEBAAShBGkEAAGhAagBAQAEoQRzAQABoQGvAQKhBHsBAAGhAbMBAgAEoQSAAQEAAaEBuwECAAGhAbYBAqEEiwEBAAShAcIBAQAEoQHHAQEABKEEkAEBpwHRAQEoAAHSAQdkZWVwa2V5AXcJZGVlcHZhbHVloQHMAQFiAAAhAQNtYXADb25lAwABoQACASEBA21hcAN0d28CAAShAAQBoQAGAaEACwEAAaEADQIABKEADAEABKEAEAEABKEAGgEABKEAHwEABKEAFQGhACQBAAGhACoBoQApAaEALAGhAC0BoQAuAaEALwEAAaEAMAIAAaEANAEABKEAMQEABKEANgEAAaEAQAIAAaEAOwGhAEMCAAShAEcBAAShAEwBoQBFAQAEoQBRAQAEoQBXAqEAUgEABKEAXgIAAaEAZAKhAF0BoQBnAqEAaAEABKEAawGhAGoCoQBwAQABoQBzAQAEoQB1AQABoQB6AaEAcgGhAHwBAAShAH4BoQB9AgABoQCFAQEABKEAhwEBAAShAIwBAaEAgwEBAAShAJIBAQAEoQCXAQIABKEAkQEBAAGhAJ0BAQAEoQCiAQEABKEApAECAAGhAK8BAqEAqQEBAAGhALMBAQABBQABALcBAQIA0gHUAQEEAQCRAQMBAKUBAgEAuQE='
   // eslint-disable-next-line
-  const oldVal = /** @type {any} */ ({"one":[1,2,3,4],"two":{"deepkey":"deepvalue"}})
+  const oldVal = /** @type {any} */ ({"one":{children:[1,2,3,4]},"two":{attrs: {"deepkey":"deepvalue"}}})
   const doc = new Y.Doc()
   Y.applyUpdate(doc, buffer.fromBase64(oldDoc))
-  t.compare(doc.get('map').toJSON().children, oldVal)
+  t.compare(doc.get('map').toJSON().attrs, oldVal)
 }
 
 /**
@@ -41,5 +49,21 @@ export const testTextDecodingCompatibilityV1 = _tc => {
   const oldVal = [{"insert":"1306rup"},{"insert":"uj","format":{"italic":true,"color":"#888"}},{"insert":"ikkcjnrcpsckw1319bccgkp\n"},{"insert":"\n1131","format":{"bold":true}},{"insert":"1326rpcznqahopcrtd","format":{"italic":true}},{"insert":"3axhkthhu","format":{"bold":true}},{"insert":"28"},{"insert":[{"image":"https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png"}]},{"insert":"9"},{"insert":"04ku","format":{"italic":true}},{"insert":"1323nucvxsqlznwlfavmpc\nu"},{"insert":"tc","format":{"italic":true}},{"insert":"je1318jwskjabdndrdlmjae\n1293tj\nj1292qrmf"},{"insert":[{"image":"https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png"}]},{"insert":"k\nuf"},{"insert":"14hs","format":{"italic":true}},{"insert":"13dccxdyxg"},{"insert":"zc","format":{"italic":true,"color":"#888"}},{"insert":"apo"},{"insert":"tn","format":{"bold":true}},{"insert":"r"},{"insert":[{"image":"https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png"}]},{"insert":"gn\n"},{"insert":"z","format":{"italic":true}},{"insert":"\n121"},{"insert":[{"image":"https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png"}]},{"insert":"291311kk9zjznywohpx"},{"insert":[{"image":"https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png"}]},{"insert":"cnbrcaq\n"},{"insert":"1","format":{"italic":true,"color":"#888"}},{"insert":"1310g"},{"insert":"ws","format":{"italic":true,"color":"#888"}},{"insert":"hxwych"},{"insert":"kq","format":{"italic":true}},{"insert":"sdru1320cohbvcrkrpjngdoc\njqic\n"},{"insert":"2","format":{"italic":true,"color":"#888"}},{"insert":[{"image":"https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png"}]},{"insert":"90n1297zm"},{"insert":"v1309zlgvjx","format":{"bold":true}},{"insert":[{"image":"https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png"}]},{"insert":"g","format":{"bold":true}},{"insert":"1314pycavu","format":{"italic":true,"color":"#888"}},{"insert":"pkzqcj"},{"insert":"sa","format":{"italic":true,"color":"#888"}},{"insert":"sjy\n"},{"insert":[{"image":"https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png"}]},{"insert":"xr\n"},{"insert":[{"image":"https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png"},{"image":"https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png"}, {"image":"https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png"}]},{"insert":"1"},{"insert":[{"image":"https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png"}]},{"insert":"1295qfrvlyfap201312qrwt"},{"insert":[{"image":"https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png"}]},{"insert":"b1322rnbaokorixenvp\nrxq"},{"insert":"j","format":{"italic":true}},{"insert":"x","format":{"italic":true,"color":"#888"}},{"insert":"15mziwabzkrrmscvdovao\n0","format":{"italic":true}},{"insert":"hx","format":{"italic":true,"bold":true}},{"insert":"ojeetrjhxkr13031317pfcyhksrkpkt\nuhv1","format":{"italic":true}},{"insert":"32","format":{"italic":true,"color":"#888"}},{"insert":"4rorywthq1325iodbzizxhmlibvpyrxmq\n\nganln\nqne\n"},{"insert":[{"image":"https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png"}]},{"insert":"dvf"},{"insert":"ac","format":{"bold":true}},{"insert":"1302xciwa"},{"insert":"1305rl","format":{"bold":true}},{"insert":"08\n"},{"insert":"eyk","format":{"bold":true}},{"insert":"y1321apgivydqsjfsehhezukiqtt1307tvjiejlh"},{"insert":"1316zlpkmctoqomgfthbpg","format":{"bold":true}},{"insert":"gv"},{"insert":"lb","format":{"bold":true}},{"insert":"f\nhntk\njv1uu\n"},{"insert":[{"image":"https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png"}]}].map(x => ({ type: 'insert', ...x }))
   const doc = new Y.Doc()
   Y.applyUpdate(doc, buffer.fromBase64(oldDoc))
-  t.compare(doc.get('text').getContent().toJSON().children, /** @type {any} */ (oldVal))
+
+  /**
+   * @param {Array<{insert?:string|Array<any>,format?:{[K:string]:any},retain?:number,delete?:number}>} q
+   */
+  const quillDeltaToDelta = q => {
+    const d = delta.create()
+    for (let i = 0; i < q.length; i++) {
+      const qd = q[i]
+      if (qd.insert != null) {
+        d.insert(qd.insert, qd.format || {})
+      } else {
+        error.unexpectedCase()
+      }
+    }
+    return d.done()
+  }
+  t.compare(doc.get('text').getContent(), quillDeltaToDelta(oldVal))
 }

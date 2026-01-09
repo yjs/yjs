@@ -33,6 +33,7 @@ import * as error from 'lib0/error'
 import * as math from 'lib0/math'
 import * as log from 'lib0/logging'
 import * as object from 'lib0/object'
+import * as s from 'lib0/schema'
 
 /**
  * @typedef {Object<string,any>|Array<any>|number|null|string|Uint8Array|BigInt|YType<any>} YValue
@@ -168,17 +169,8 @@ export class ItemTextListPosition {
       }
       this.forward()
     }
-    // Quill just assumes that the editor starts with a newline and that it always
-    // ends with a newline. We only insert that newline when a new newline is
-    // inserted - i.e when length is bigger than type.length
     if (length > 0) {
-      let newlines = ''
-      for (; length > 0; length--) {
-        newlines += '\n'
-      }
-      this.right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), this.left, this.left && this.left.lastId, this.right, this.right && this.right.id, parent, null, new ContentString(newlines))
-      this.right.integrate(transaction, 0)
-      this.forward()
+      throw new Error('Exceeded content range')
     }
     insertNegatedAttributes(transaction, parent, this, negatedAttributes)
   }
@@ -293,13 +285,13 @@ const insertAttributes = (transaction, parent, currPos, attributes) => {
  * @param {Transaction} transaction
  * @param {YType} parent
  * @param {ItemTextListPosition} currPos
- * @param {string|object|YType} text
+ * @param {import('./structs/Item.js').AbstractContent} content
  * @param {Object<string,any>} attributes
  *
  * @private
  * @function
  **/
-export const insertText = (transaction, parent, currPos, text, attributes) => {
+export const insertContent = (transaction, parent, currPos, content, attributes) => {
   currPos.currentAttributes.forEach((_val, key) => {
     if (attributes[key] === undefined) {
       attributes[key] = null
@@ -309,8 +301,6 @@ export const insertText = (transaction, parent, currPos, text, attributes) => {
   const ownClientId = doc.clientID
   minimizeAttributeChanges(currPos, attributes)
   const negatedAttributes = insertAttributes(transaction, parent, currPos, attributes)
-  // insert content
-  const content = text.constructor === String ? new ContentString(/** @type {string} */ (text)) : (text instanceof YType ? new ContentType(text) : new ContentEmbed(text))
   let { left, right, index } = currPos
   if (parent._searchMarker) {
     updateMarkerChanges(parent._searchMarker, currPos.index, content.getLength())
@@ -321,6 +311,38 @@ export const insertText = (transaction, parent, currPos, text, attributes) => {
   currPos.index = index
   currPos.forward()
   insertNegatedAttributes(transaction, parent, currPos, negatedAttributes)
+}
+
+/**
+ * @param {Transaction} transaction
+ * @param {YType} parent
+ * @param {ItemTextListPosition} currPos
+ * @param {Array<any>|string} insert
+ * @param {Object<string,any>} attributes
+ */
+export const insertContentHelper = (transaction, parent, currPos, insert, attributes) => {
+  if (s.$string.check(insert)) {
+    insertContent(transaction, parent, currPos, new ContentString(insert), attributes)
+  } else {
+    insert = insert.map(ins => delta.$deltaAny.check(ins) ? YType.from(ins) : ins)
+    for (let i = 0; i < insert.length;) {
+      const first = insert[i]
+      if (first instanceof YType) {
+        insertContent(transaction, parent, currPos, new ContentType(first), attributes)
+        i++
+      } else if (first instanceof Doc) {
+        insertContent(transaction, parent, currPos, new ContentDoc(first), attributes)
+        i++
+      } else {
+        // insert "any" content
+        // compute slice len
+        let j = i + 1
+        for (; j < insert.length && !(insert[j] instanceof YType || insert[j] instanceof Doc); j++) { /* nop */ }
+        insertContent(transaction, parent, currPos, new ContentAny((i === 0 && j === insert.length) ? insert : insert.slice(i, j)), attributes)
+        i = j
+      }
+    }
+  }
 }
 
 /**
@@ -337,20 +359,14 @@ export const deleteText = (transaction, currPos, length) => {
   const startAttrs = map.copy(currPos.currentAttributes)
   const start = currPos.right
   while (length > 0 && currPos.right !== null) {
-    if (!currPos.right.deleted) {
-      switch (currPos.right.content.constructor) {
-        case ContentType:
-        case ContentEmbed:
-        case ContentString:
-          if (length < currPos.right.length) {
-            getItemCleanStart(transaction, createID(currPos.right.id.client, currPos.right.id.clock + length))
-          }
-          length -= currPos.right.length
-          currPos.right.delete(transaction)
-          break
+    const item = currPos.right
+    if (!item.deleted && item.countable) {
+      if (length < item.length) {
+        getItemCleanStart(transaction, createID(item.id.client, item.id.clock + length))
       }
+      length -= item.length
+      item.delete(transaction)
     } else if (currPos.am !== noAttributionsManager) {
-      const item = currPos.right
       /**
        * @type {Array<import('./internals.js').AttributedContent<any>>}
        */
@@ -785,7 +801,7 @@ export class YType {
     /**
      * @type {delta.DeltaBuilderAny}
      */
-    const d = /** @type {any} */ (delta.create(/** @type {any} */ (this).nodeName || null))
+    const d = /** @type {any} */ (delta.create(this.name))
     const optsAll = modified == null ? opts : object.assign({}, opts, { modified: null })
     typeMapGetDelta(d, /** @type {any} */ (this), renderAttrs, am, deep, modified, deletedItems, itemsToRender, opts, optsAll)
     if (renderChildren) {
@@ -1023,15 +1039,9 @@ export class YType {
         const currPos = new ItemTextListPosition(null, this._start, 0, new Map(), am)
         for (const op of d.children) {
           if (delta.$textOp.check(op)) {
-            insertText(transaction, /** @type {any} */ (this), currPos, op.insert, op.format || {})
+            insertContent(transaction, /** @type {any} */ (this), currPos, new ContentString(op.insert), op.format || {})
           } else if (delta.$insertOp.check(op)) {
-            for (let i = 0; i < op.insert.length; i++) {
-              let ins = op.insert[i]
-              if (delta.$deltaAny.check(ins)) {
-                ins = YType.from(ins)
-              }
-              insertText(transaction, /** @type {any} */ (this), currPos, ins, op.format || {})
-            }
+            insertContentHelper(transaction, this, currPos, op.insert, op.format || {})
           } else if (delta.$retainOp.check(op)) {
             currPos.formatText(transaction, /** @type {any} */ (this), op.retain, op.format || {})
           } else if (delta.$deleteOp.check(op)) {
@@ -1104,9 +1114,11 @@ export class YType {
    * Sets or updates an attribute.
    *
    * @template {Exclude<keyof delta.DeltaConfGetAttrs<DConf>,symbol>} KEY
+   * @template {delta.DeltaConfGetAttrs<DConf>[KEY]} VAL
    *
    * @param {KEY} attributeName The attribute name that is to be set.
-   * @param {delta.DeltaConfGetAttrs<DConf>[KEY]} attributeValue The attribute value that is to be set.
+   * @param {VAL} attributeValue The attribute value that is to be set.
+   * @return {VAL}
    *
    * @public
    */
@@ -1282,7 +1294,9 @@ export class YType {
      */
     const children = []
     for (const child of dcontent.children) {
-      if (delta.$insertOp.check(child) || delta.$textOp.check(child)) {
+      if (delta.$insertOp.check(child)) {
+        children.push(...child.insert)
+      } else if (delta.$textOp.check(child)) {
         children.push(child.insert)
       }
     }
@@ -1291,15 +1305,58 @@ export class YType {
 
   /**
    * Transforms this Shared Type to a JSON object.
+   * @return {{ name?: string, attrs?: { [K:string|number]: any }, children?: Array<any>  }}
    */
   toJSON () {
+    /**
+     * @type {{[K:string]:any}}
+     */
     const attrs = this.getAttrs()
-    const children = this.toArray()
-    return {
-      name: this.name,
-      children,
-      attrs
+    for (let k in attrs) {
+      const attr = attrs[k]
+      attrs[k] = attr instanceof YType ? attr.toJSON() : attr
     }
+    const children = this.toArray().map(child => child instanceof YType ? /** @type {any} */ (child.toJSON()) : child)
+    /**
+     * @type {any}
+     */
+    const res = {}
+    if (this.name != null) {
+      res.name = this.name
+    }
+    if (this.length > 0) {
+      res.children = children
+    }
+    if (this.attrSize > 0) {
+      res.attrs = attrs
+    }
+    return res
+  }
+
+  /**
+   * @param {object} opts
+   * @param {boolean} [opts.forceTag] enforce creating a surrouning <name /> tag, even if it is null.
+   */
+  toString ({ forceTag = false } = {}) {
+    /**
+     * @type {Array<[string|number,string]>}
+     */
+    const attrs = []
+    this.forEachAttr((attr, key) => {
+      attrs.push([(key), attr.toString({ forceTag: true })])
+    })
+    const attrsString = (attrs.length > 0 ? ' ' : '') + attrs.sort((a, b) => a[0].toString() < b[0].toString() ? -1 : 1).map(attr => attr[0] + '=' + attr[1]).join(' ')
+    /**
+     * @type {string}
+     */
+    const children = this.toArray().map(c => s.$string.check(c) ? c : (c instanceof YType ? c.toString({ forceTag: true }) : JSON.stringify(c))).join('')
+    if (this.name == null && !forceTag && attrs.length === 0) {
+      return children
+    }
+    if (this.length === 0) {
+      return `<${this.name ?? ''}${attrsString} />`
+    }
+    return `<${this.name ?? ''}${attrsString}>${children}</${this.name ?? ''}>`
   }
 
   /**
@@ -1327,7 +1384,7 @@ export class YType {
   /**
    * Executes a provided function on once on every key-value pair.
    *
-   * @param {(val:delta.DeltaConfGetAttrs<DConf>[any],key:keyof delta.DeltaConfGetAttrs<DConf>,ytype:this)=>any} f
+   * @param {(val:delta.DeltaConfGetAttrs<DConf>[any],key:Exclude<keyof delta.DeltaConfGetAttrs<DConf>,symbol>,ytype:this)=>any} f
    */
   forEachAttr (f) {
     this._map.forEach((item, key) => {
@@ -1824,7 +1881,8 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, de
      */
     const cs = []
     am.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, 1)
-    const { deleted, attrs, content } = cs[cs.length - 1]
+    const { deleted, attrs, content, render } = cs[cs.length - 1]
+    if (!render) return
     const attribution = createAttributionFromAttributionItems(attrs, deleted)
     let c = array.last(content.getContent())
     if (deleted) {

@@ -47,7 +47,7 @@ export const testAttributedEvents = _tc => {
     t.compare(d, delta.create().retain(11).insert('!', null, { insert: [] }))
     calledObserver = true
   })
-  ytext.insert(11, '!')
+  ytext.applyDelta(delta.create().retain(11).insert('!'), am)
   t.assert(calledObserver)
 }
 

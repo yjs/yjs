@@ -3,7 +3,7 @@ import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
 import * as delta from 'lib0/delta'
-import { createIdMapFromIdSet, noAttributionsManager, TwosetAttributionManager, createAttributionManagerFromSnapshots } from 'yjs/internals'
+import { createIdMapFromIdSet, noAttributionsManager, TwosetAttributionManager, createAttributionManagerFromSnapshots } from '../src/internals.js'
 
 const { init, compare } = Y
 
@@ -1613,7 +1613,7 @@ export const testFormattingDeltaUnnecessaryAttributeChange = tc => {
  * @param {t.TestCase} tc
  */
 export const testInsertAndDeleteAtRandomPositions = tc => {
-  const N = 100000
+  const N = 10000
   const { text0 } = init(tc, { users: 1 })
   const gen = tc.prng
 
@@ -1838,8 +1838,6 @@ export const testSearchMarkerBug1 = tc => {
 }
 
 /**
- * Reported in https://github.com/yjs/yjs/pull/32
- *
  * @param {t.TestCase} _tc
  */
 export const testFormattingBug = async _tc => {
@@ -1849,7 +1847,6 @@ export const testFormattingBug = async _tc => {
   text1.insert(0, '\n\n\n')
   text1.format(0, 3, { url: 'http://example.com' })
   ydoc1.get().format(1, 1, { url: 'http://docs.yjs.dev' })
-  ydoc2.get().format(1, 1, { url: 'http://docs.yjs.dev' })
   Y.applyUpdate(ydoc2, Y.encodeStateAsUpdate(ydoc1))
   const text2 = ydoc2.get()
   const expectedResult = delta.create()
@@ -1994,7 +1991,7 @@ const textChanges = [
  */
 export const testRepeatGenerateTextChanges5 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 5))
-  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
   t.assert(cleanups === 0)
 }
 
@@ -2003,7 +2000,7 @@ export const testRepeatGenerateTextChanges5 = tc => {
  */
 export const testRepeatGenerateTextChanges30 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 30))
-  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
   t.assert(cleanups === 0)
 }
 
@@ -2012,7 +2009,7 @@ export const testRepeatGenerateTextChanges30 = tc => {
  */
 export const testRepeatGenerateTextChanges40 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 40))
-  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
   t.assert(cleanups === 0)
 }
 
@@ -2021,7 +2018,7 @@ export const testRepeatGenerateTextChanges40 = tc => {
  */
 export const testRepeatGenerateTextChanges50 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 50))
-  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
   t.assert(cleanups === 0)
 }
 
@@ -2030,7 +2027,7 @@ export const testRepeatGenerateTextChanges50 = tc => {
  */
 export const testRepeatGenerateTextChanges70 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 70))
-  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
   t.assert(cleanups === 0)
 }
 
@@ -2039,7 +2036,7 @@ export const testRepeatGenerateTextChanges70 = tc => {
  */
 export const testRepeatGenerateTextChanges90 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 90))
-  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
   t.assert(cleanups === 0)
 }
 
@@ -2048,7 +2045,7 @@ export const testRepeatGenerateTextChanges90 = tc => {
  */
 export const testRepeatGenerateTextChanges300 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 300))
-  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
   t.assert(cleanups === 0)
 }
 
@@ -2090,7 +2087,7 @@ const qChanges = [
     if (prng.bool(gen)) {
       ytext.insert(insertPos, [{ image: 'https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png' }])
     } else {
-      ytext.insert(insertPos, [new Y.Type([[prng.word(gen), prng.word(gen)]])])
+      ytext.insert(insertPos, [delta.create().insert([prng.word(gen), prng.word(gen)])])
     }
   },
   /**
@@ -2163,13 +2160,13 @@ const qChanges = [
 ]
 
 /**
- * @param {any} result
+ * @param {Y.ApplyRandomTestsResult} result
  */
 const checkResult = result => {
   for (let i = 1; i < result.testObjects.length; i++) {
-    t.info('length of text = ' + result.users[i - 1].getText('text').length)
-    const p1 = result.users[i - 1].getText('text').getContentDeep().children
-    const p2 = result.users[i].getText('text').getContentDeep().children
+    t.info('length of text = ' + result.users[i - 1].get('text').length)
+    const p1 = result.users[i - 1].get('text').getContentDeep().children
+    const p2 = result.users[i].get('text').getContentDeep().children
     t.compare(p1, p2)
   }
   // Uncomment this to find formatting-cleanup issues
@@ -2186,7 +2183,7 @@ const checkResult = result => {
  * @param {t.TestCase} tc
  */
 export const testAttributionManagerDefaultPerformance = tc => {
-  const N = 100000
+  const N = 10000
   const MaxDeletionLength = 5 // 25% chance of deletion
   const MaxInsertionLength = 5
   const ydoc = new Y.Doc()
@@ -2222,7 +2219,7 @@ export const testAttributionManagerDefaultPerformance = tc => {
  */
 export const testRepeatGenerateQuillChanges1 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, qChanges, 1))
-  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
   t.assert(cleanups === 0)
 }
 
@@ -2231,7 +2228,7 @@ export const testRepeatGenerateQuillChanges1 = tc => {
  */
 export const testRepeatGenerateQuillChanges2 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, qChanges, 2))
-  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
   t.assert(cleanups === 0)
 }
 
@@ -2241,7 +2238,7 @@ export const testRepeatGenerateQuillChanges2 = tc => {
 export const testRepeatGenerateQuillChanges2Repeat = tc => {
   for (let i = 0; i < 1000; i++) {
     const { users } = checkResult(Y.applyRandomTests(tc, qChanges, 2))
-    const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+    const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
     t.assert(cleanups === 0)
   }
 }

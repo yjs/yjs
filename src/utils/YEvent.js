@@ -46,10 +46,6 @@ export class YEvent {
      */
     this._deltaDeep = null
     /**
-     * @type {Array<string|number>|null}
-     */
-    this._path = null
-    /**
      * Whether the children changed.
      * @type {Boolean}
      * @private
@@ -67,23 +63,6 @@ export class YEvent {
         this.keysChanged.add(sub)
       }
     })
-  }
-
-  /**
-   * Computes the path from `y` to the changed type.
-   *
-   * @todo v14 should standardize on path: Array<{parent, index}> because that is easier to work with.
-   *
-   * The following property holds:
-   * @example
-   *   let type = y
-   *   event.path.forEach(dir => {
-   *     type = type.get(dir)
-   *   })
-   *   type === event.target // => true
-   */
-  get path () {
-    return this._path || (this._path = getPathTo(this.currentTarget, this.target))
   }
 
   /**

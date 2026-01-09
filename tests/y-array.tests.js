@@ -328,29 +328,6 @@ export const testInsertAndDeleteEventsForTypes = tc => {
 }
 
 /**
- * Correct index when computing event.path in observeDeep - https://github.com/yjs/yjs/issues/457
- *
- * @param {t.TestCase} _tc
- */
-export const testObservedeepIndexes = _tc => {
-  const doc = new Y.Doc()
-  const map = doc.get()
-  // Create a field with the array as value
-  map.setAttr('my-array', new Y.Type())
-  // Fill the array with some strings and our Map
-  map.getAttr('my-array').push(['a', 'b', 'c', new Y.Type()])
-  /**
-   * @type {Array<any>}
-   */
-  let eventPath = []
-  map.observeDeep((event) => { eventPath = event.path })
-  // set a value on the map inside of our array
-  map.getAttr('my-array').get(3).set('hello', 'world')
-  console.log(eventPath)
-  t.compare(eventPath, ['my-array', 3])
-}
-
-/**
  * @param {t.TestCase} tc
  */
 export const testChangeEvent = tc => {
@@ -475,7 +452,7 @@ export const testIteratingArrayContainingTypes = _tc => {
   }
   let cnt = 0
   for (const item of arr.toArray()) {
-    t.assert(item.get('value') === cnt++, 'value is correct')
+    t.assert(item.getAttr('value') === cnt++, 'value is correct')
   }
   y.destroy()
 }
@@ -541,9 +518,9 @@ const arrayTransactions = [
     const pos = prng.int32(gen, 0, yarray.length)
     yarray.insert(pos, [new Y.Type()])
     const map = yarray.get(pos)
-    map.set('someprop', 42)
-    map.set('someprop', 43)
-    map.set('someprop', 44)
+    map.setAttr('someprop', 42)
+    map.setAttr('someprop', 43)
+    map.setAttr('someprop', 44)
   },
   function insertTypeNull (user, gen) {
     const yarray = user.get('array')

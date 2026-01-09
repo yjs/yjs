@@ -46,7 +46,7 @@ export const testNestedMapEvent = () => {
     called++
     t.compare(d, delta.create().modifyAttr('nested', delta.create().setAttr('k', 'v')))
   })
-  ymapNested.set('k', 'v')
+  ymapNested.setAttr('k', 'v')
   t.assert(called === 1)
 }
 
@@ -124,8 +124,8 @@ export const testBasicMapTests = tc => {
   map0.setAttr('boolean1', true)
   map0.setAttr('boolean0', false)
   const map = map0.getAttr('y-map')
-  map.set('y-array', new Y.Type())
-  const array = map.get('y-array')
+  map.setAttr('y-array', new Y.Type())
+  const array = map.getAttr('y-array')
   array.insert(0, [0])
   array.insert(0, [-1])
 
@@ -135,7 +135,7 @@ export const testBasicMapTests = tc => {
   t.assert(map0.getAttr('boolean0') === false, 'client 0 computed the change (boolean)')
   t.assert(map0.getAttr('boolean1') === true, 'client 0 computed the change (boolean)')
   t.compare(map0.getAttr('object'), { key: { key2: 'value' } }, 'client 0 computed the change (object)')
-  t.assert(map0.getAttr('y-map').get('y-array').get(0) === -1, 'client 0 computed the change (type)')
+  t.assert(map0.getAttr('y-map').getAttr('y-array').get(0) === -1, 'client 0 computed the change (type)')
   t.assert(map0.attrSize === 7, 'client 0 map has correct size')
 
   users[2].connect()
@@ -147,7 +147,7 @@ export const testBasicMapTests = tc => {
   t.assert(map1.getAttr('boolean0') === false, 'client 1 computed the change (boolean)')
   t.assert(map1.getAttr('boolean1') === true, 'client 1 computed the change (boolean)')
   t.compare(map1.getAttr('object'), { key: { key2: 'value' } }, 'client 1 received the update (object)')
-  t.assert(map1.getAttr('y-map').get('y-array').get(0) === -1, 'client 1 received the update (type)')
+  t.assert(map1.getAttr('y-map').getAttr('y-array').get(0) === -1, 'client 1 received the update (type)')
   t.assert(map1.attrSize === 7, 'client 1 map has correct size')
 
   // compare disconnected user
@@ -157,7 +157,7 @@ export const testBasicMapTests = tc => {
   t.assert(map2.getAttr('boolean0') === false, 'client 2 computed the change (boolean)')
   t.assert(map2.getAttr('boolean1') === true, 'client 2 computed the change (boolean)')
   t.compare(map2.getAttr('object'), { key: { key2: 'value' } }, 'client 2 received the update (object) - was disconnected')
-  t.assert(map2.getAttr('y-map').get('y-array').get(0) === -1, 'client 2 received the update (type) - was disconnected')
+  t.assert(map2.getAttr('y-map').getAttr('y-array').get(0) === -1, 'client 2 received the update (type) - was disconnected')
   compare(users)
 }
 
@@ -189,8 +189,8 @@ export const testYmapSetsYmap = tc => {
   const { users, map0 } = init(tc, { users: 2 })
   const map = map0.setAttr('Map', new Y.Type())
   t.assert(map0.getAttr('Map') === map)
-  map.set('one', 1)
-  t.compare(map.get('one'), 1)
+  map.setAttr('one', 1)
+  t.compare(map.getAttr('one'), 1)
   compare(users)
 }
 
@@ -432,22 +432,22 @@ export const testChangeEvent = tc => {
   })
   map0.setAttr('a', 1)
   let keyChange = changes.attrs.a
-  t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === undefined)
+  t.assert(delta.$setAttrOpWith(s.$number).check(keyChange) && keyChange.prevValue === undefined)
   map0.setAttr('a', 2)
   keyChange = changes.attrs.a
-  t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === 1)
+  t.assert(delta.$setAttrOpWith(s.$number).check(keyChange) && keyChange.prevValue === 1)
   users[0].transact(() => {
     map0.setAttr('a', 3)
     map0.setAttr('a', 4)
   })
   keyChange = changes.attrs.a
-  t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === 2)
+  t.assert(delta.$setAttrOpWith(s.$number).check(keyChange) && keyChange.prevValue === 2)
   users[0].transact(() => {
     map0.setAttr('b', 1)
     map0.setAttr('b', 2)
   })
   keyChange = changes.attrs.b
-  t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === undefined)
+  t.assert(delta.$setAttrOpWith(s.$number).check(keyChange) && keyChange.prevValue === undefined)
   users[0].transact(() => {
     map0.setAttr('c', 1)
     map0.deleteAttr('c')
@@ -458,7 +458,7 @@ export const testChangeEvent = tc => {
     map0.setAttr('d', 2)
   })
   keyChange = changes.attrs.d
-  t.assert(delta.$insertOpWith(s.$number).check(keyChange) && keyChange.prevValue === undefined)
+  t.assert(delta.$setAttrOpWith(s.$number).check(keyChange) && keyChange.prevValue === undefined)
   compare(users)
 }
 

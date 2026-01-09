@@ -22,9 +22,9 @@ export const testBasicXmlAttributes = _tc => {
   const ydoc = new Y.Doc({ gc: false })
   const yxml = ydoc.get().setAttr('el', new Y.Type('div'))
   const snapshot1 = Y.snapshot(ydoc)
-  yxml.setAttribute('a', '1')
+  yxml.setAttr('a', '1')
   const snapshot2 = Y.snapshot(ydoc)
-  yxml.setAttribute('a', '2')
+  yxml.setAttr('a', '2')
   t.compare(yxml.getAttrs(), { a: '2' })
   t.compare(yxml.getAttrs(snapshot2), { a: '1' })
   t.compare(yxml.getAttrs(snapshot1), {})
@@ -72,19 +72,23 @@ export const testRestoreSnapshotWithSubType = _tc => {
   const doc = new Y.Doc({ gc: false })
   doc.get('array').insert(0, [new Y.Type()])
   const subMap = doc.get('array').get(0)
-  subMap.set('key1', 'value1')
+  subMap.setAttr('key1', 'value1')
 
   const snap = Y.snapshot(doc)
-  subMap.set('key2', 'value2')
+  subMap.setAttr('key2', 'value2')
 
   const docRestored = Y.createDocFromSnapshot(doc, snap)
 
   t.compare(docRestored.get('array').toJSON().children, [{
-    key1: 'value1'
+    attrs: {
+      key1: 'value1'
+    }
   }])
   t.compare(doc.get('array').toJSON().children, [{
-    key1: 'value1',
-    key2: 'value2'
+    attrs: {
+      key1: 'value1',
+      key2: 'value2'
+    }
   }])
 }
 

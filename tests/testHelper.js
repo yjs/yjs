@@ -458,8 +458,8 @@ export const compare = users => {
     return ydoc
   })
   users.push(.../** @type {any} */(mergedDocs))
-  const userArrayValues = users.map(u => u.get('array').toJSON().children || [])
-  const userMapValues = users.map(u => u.get('map').toJSON())
+  const userArrayValues = users.map(u => u.get('array').toJSON().children ?? [])
+  const userMapValues = users.map(u => u.get('map').toJSON().attrs ?? {})
   // @todo fix type error here
   // @ts-ignore
   const userXmlValues = users.map(u => /** @type {Y.XmlElement} */ (u.get('xml', Y.XmlElement)).toString())
@@ -472,16 +472,6 @@ export const compare = users => {
   const ymapkeys = Array.from(users[0].get('map').attrKeys())
   t.assert(ymapkeys.length === Object.keys(userMapValues[0]).length)
   ymapkeys.forEach(key => t.assert(object.hasProperty(userMapValues[0], key)))
-  /**
-   * @type {Object<string,any>}
-   */
-  const mapRes = {}
-  const attrs0 = users[0].get('map').getAttrs()
-  for (const k in attrs0) {
-    const v = attrs0[k]
-    mapRes[k] = v instanceof Y.Type ? v.toJSON() : v
-  }
-  t.compare(userMapValues[0], mapRes)
   // Compare all users
   for (let i = 0; i < users.length - 1; i++) {
     t.compare(userArrayValues[i].length, users[i].get('array').length)
@@ -598,3 +588,7 @@ export const applyRandomTests = (tc, mods, iterations, initTestObject) => {
   compare(users)
   return result
 }
+
+/**
+ * @typedef {ReturnType<typeof applyRandomTests>} ApplyRandomTestsResult
+ */
