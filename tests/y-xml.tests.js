@@ -88,34 +88,6 @@ export const testSiblings = _tc => {
 /**
  * @param {t.TestCase} _tc
  */
-export const testInsertafter = _tc => {
-  const ydoc = new Y.Doc()
-  const yxml = ydoc.get()
-  const first = new Y.Type()
-  const second = new Y.Type('p')
-  const third = new Y.Type('p')
-  const deepsecond1 = new Y.Type('span')
-  const deepsecond2 = new Y.Type()
-  yxml.insertAfter(null, [first, second])
-  yxml.insertAfter(second, [third])
-  second.insertAfter(null, [deepsecond1])
-  second.insertAfter(deepsecond1, [deepsecond2])
-
-  t.assert(yxml.length === 3)
-  t.assert(second.get(0) === deepsecond1)
-  t.assert(second.get(1) === deepsecond2)
-
-  t.compareArrays(yxml.toArray(), [first, second, third])
-
-  t.fails(() => {
-    const el = new Y.Type('p')
-    el.insertAfter(deepsecond1, [new Y.Type()])
-  })
-}
-
-/**
- * @param {t.TestCase} _tc
- */
 export const testClone = _tc => {
   const ydoc = new Y.Doc()
   const yxml = ydoc.get()

@@ -1205,28 +1205,6 @@ export class YType {
   }
 
   /**
-   * Inserts new content after another element.
-   *
-   * @example
-   *  // Insert character 'a' at position 0
-   *  xml.insert(0, [new Y.XmlText('text')])
-   *
-   * @param {null|Item|YType} ref The index to insert content at
-   * @param {Array<delta.DeltaConfGetChildren<DConf>>} content The array of content
-   */
-  insertAfter (ref, content) {
-    if (this.doc !== null) {
-      transact(this.doc, transaction => {
-        const refItem = ref && ref instanceof YType ? ref._item : ref
-        typeListInsertGenericsAfter(transaction, this, refItem, content)
-      })
-    } else {
-      // only possible once this item has been integrated
-      error.unexpectedCase()
-    }
-  }
-
-  /**
    * Appends content to this YArray.
    *
    * @param {Array<delta.DeltaConfGetChildren<DConf>>|delta.DeltaConfGetText<DConf>} content Array of content to append.
