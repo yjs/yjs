@@ -29,6 +29,28 @@ export const createContentIdsFromContentMap = contentMap => createContentIds(
 )
 
 /**
+ * @param {import('./Doc.js').Doc} ydoc
+ */
+export const createContentIdsFromDoc = ydoc => createContentIds(
+  idset.createInsertSetFromStructStore(ydoc.store, false),
+  idset.createDeleteSetFromStructStore(ydoc.store)
+)
+
+/**
+ * @param {import('./Doc.js').Doc} ydocPrev
+ * @param {import('./Doc.js').Doc} ydocNext
+ */
+export const createContentIdsFromDocDiff = (ydocPrev, ydocNext) =>
+  excludeContentIds(createContentIdsFromDoc(ydocPrev), createContentIdsFromDoc(ydocNext))
+
+/**
+ * @param {ContentIds} content
+ * @param {ContentIds} excludeContent
+ */
+export const excludeContentIds = (content, excludeContent) =>
+  createContentIds(idset.diffIdSet(content.inserts, excludeContent.inserts), idset.diffIdSet(content.deletes, excludeContent.deletes))
+
+/**
  * @param {import('./IdMap.js').IdMap<any>} inserts
  * @param {import('./IdMap.js').IdMap<any>} deletes
  */

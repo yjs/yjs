@@ -118,12 +118,10 @@ export {
   getPathTo,
   Attributions,
   filterIdMap,
-  undoContentIds,
-  createContentIds,
-  createContentMap,
-  createContentIdsFromContentMap,
-  createContentMapFromContentIds
+  undoContentIds
 } from './internals.js'
+
+export * from './utils/meta.js'
 
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'
   ? globalThis

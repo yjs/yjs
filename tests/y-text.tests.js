@@ -2164,7 +2164,7 @@ const qChanges = [
  */
 const checkResult = result => {
   for (let i = 1; i < result.testObjects.length; i++) {
-    t.info('length of text = ' + result.users[i - 1].get('text').length)
+    // t.info('length of text = ' + result.users[i - 1].get('text').length)
     const p1 = result.users[i - 1].get('text').toDeltaDeep().children
     const p2 = result.users[i].get('text').toDeltaDeep().children
     t.compare(p1, p2)

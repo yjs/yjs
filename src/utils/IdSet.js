@@ -443,6 +443,8 @@ export const _insertIntoIdSet = (dest, src) => {
 export const insertIntoIdSet = _insertIntoIdSet
 
 /**
+ * @todo rename to excludeIdSet | excludeIdMap
+ *
  * Remove all ranges from `exclude` from `ds`. The result is a fresh IdSet containing all ranges from `idSet` that are not
  * in `exclude`.
  *

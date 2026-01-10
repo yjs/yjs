@@ -393,7 +393,7 @@ export class UndoManager extends ObservableV2 {
 
 /**
  * @experimental
- * 
+ *
  * This is not guaranteed to work on documents with gc enabled!
  *
  * @param {Doc} ydoc
