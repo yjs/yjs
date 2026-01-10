@@ -81,7 +81,7 @@ export const testSiblings = _tc => {
   const first = new Y.Type()
   const second = new Y.Type('p')
   yxml.insert(0, [first, second])
-  t.assert(first.parent === /** @type {Y.AbstractType<any>} */ (yxml))
+  t.assert(first.parent === /** @type {Y.Type<any>} */ (yxml))
   t.assert(yxml.parent === null)
 }
 

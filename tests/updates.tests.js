@@ -14,7 +14,7 @@ import * as array from 'lib0/array'
  * @property {function(Y.Doc):Uint8Array<ArrayBuffer>} Enc.encodeStateAsUpdate
  * @property {function(Y.Doc, Uint8Array):void} Enc.applyUpdate
  * @property {function(Uint8Array):void} Enc.logUpdate
- * @property {function(Uint8Array):{deletes:Y.IdSet,inserts:Y.IdSet}} Enc.readUpdateIdRanges
+ * @property {function(Uint8Array):{deletes:Y.IdSet,inserts:Y.IdSet}} Enc.readUpdateToContentIds
  * @property {function(Y.Doc):Uint8Array} Enc.encodeStateVector
  * @property {function(Uint8Array):Uint8Array} Enc.encodeStateVectorFromUpdate
  * @property {'update'|'updateV2'} Enc.updateEventName
@@ -30,7 +30,7 @@ const encV1 = {
   encodeStateAsUpdate: Y.encodeStateAsUpdate,
   applyUpdate: Y.applyUpdate,
   logUpdate: Y.logUpdate,
-  readUpdateIdRanges: Y.readUpdateIdRanges,
+  readUpdateToContentIds: Y.readUpdateToContentIds,
   encodeStateVectorFromUpdate: Y.encodeStateVectorFromUpdate,
   encodeStateVector: Y.encodeStateVector,
   updateEventName: 'update',
@@ -46,7 +46,7 @@ const encV2 = {
   encodeStateAsUpdate: Y.encodeStateAsUpdateV2,
   applyUpdate: Y.applyUpdateV2,
   logUpdate: Y.logUpdateV2,
-  readUpdateIdRanges: Y.readUpdateIdRangesV2,
+  readUpdateToContentIds: Y.readUpdateToContentIdsV2,
   encodeStateVectorFromUpdate: Y.encodeStateVectorFromUpdateV2,
   encodeStateVector: Y.encodeStateVector,
   updateEventName: 'updateV2',
@@ -68,7 +68,7 @@ const encDoc = {
   encodeStateAsUpdate: Y.encodeStateAsUpdateV2,
   applyUpdate: Y.applyUpdateV2,
   logUpdate: Y.logUpdateV2,
-  readUpdateIdRanges: Y.readUpdateIdRangesV2,
+  readUpdateToContentIds: Y.readUpdateToContentIdsV2,
   encodeStateVectorFromUpdate: Y.encodeStateVectorFromUpdateV2,
   encodeStateVector: Y.encodeStateVector,
   updateEventName: 'updateV2',
@@ -189,10 +189,10 @@ const checkUpdateCases = (ydoc, updates, enc, hasDeletes) => {
     if (enc.updateEventName !== 'update') { // @todo should this also work on legacy updates?
       for (let j = 1; j < updates.length; j++) {
         const partMerged = enc.mergeUpdates(updates.slice(j))
-        const partMeta = enc.readUpdateIdRanges(partMerged)
+        const partMeta = enc.readUpdateToContentIds(partMerged)
         const targetSV = enc.encodeStateVectorFromUpdate(enc.mergeUpdates(updates.slice(0, j)))
         const diffed = enc.diffUpdate(mergedUpdates, targetSV)
-        const diffedMeta = enc.readUpdateIdRanges(diffed)
+        const diffedMeta = enc.readUpdateToContentIds(diffed)
         t.compare(partMeta.inserts, diffedMeta.inserts)
         {
           // We can'd do the following
@@ -215,7 +215,7 @@ const checkUpdateCases = (ydoc, updates, enc, hasDeletes) => {
         }
       }
     }
-    const meta = enc.readUpdateIdRanges(mergedUpdates)
+    const meta = enc.readUpdateToContentIds(mergedUpdates)
     meta.inserts.clients.forEach(range => { t.assert(range.getIds()[0].clock === 0) })
     meta.inserts.clients.forEach((range, client) => {
       const structs = /** @type {Array<Y.Item>} */ (merged.store.clients.get(client))

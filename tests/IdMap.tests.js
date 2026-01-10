@@ -2,7 +2,7 @@ import * as t from 'lib0/testing'
 import * as idmap from '../src/utils/IdMap.js'
 import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
-import { compareIdmaps as compareIdMaps, createIdMap, ID, createRandomIdSet, createRandomIdMap, createAttributionItem } from './testHelper.js'
+import { compareIdmaps as compareIdMaps, createIdMap, ID, createRandomIdSet, createRandomIdMap, createContentAttribute } from './testHelper.js'
 import * as YY from '../src/internals.js'
 import * as time from 'lib0/time'
 
@@ -13,7 +13,7 @@ import * as time from 'lib0/time'
 const simpleConstructAttrs = ops => {
   const attrs = createIdMap()
   ops.forEach(op => {
-    attrs.add(op[0], op[1], op[2], op[3].map(v => createAttributionItem('', v)))
+    attrs.add(op[0], op[1], op[2], op[3].map(v => createContentAttribute('', v)))
   })
   return attrs
 }
@@ -206,12 +206,11 @@ export const testUserAttributionEncodingBenchmark = tc => {
    * to the previous entries (e.g. remove a,b, insert c,d)
    */
   const attributions = createIdMap()
-  let currentTime = time.getUnixTime()
+  const currentTime = time.getUnixTime()
   const ydoc = new YY.Doc()
   ydoc.on('afterTransaction', tr => {
-    idmap.insertIntoIdMap(attributions, idmap.createIdMapFromIdSet(tr.insertSet, [createAttributionItem('insert', 'userX'), createAttributionItem('insertAt', currentTime)]))
-    idmap.insertIntoIdMap(attributions, idmap.createIdMapFromIdSet(tr.deleteSet, [createAttributionItem('delete', 'userX'), createAttributionItem('deleteAt', currentTime)]))
-    currentTime += 1
+    idmap.insertIntoIdMap(attributions, idmap.createIdMapFromIdSet(tr.insertSet, [createContentAttribute('insert', 'userX'), createContentAttribute('insertAt', currentTime)]))
+    idmap.insertIntoIdMap(attributions, idmap.createIdMapFromIdSet(tr.deleteSet, [createContentAttribute('delete', 'userX'), createContentAttribute('deleteAt', currentTime)]))
   })
   const ytext = ydoc.get()
   const N = 10000

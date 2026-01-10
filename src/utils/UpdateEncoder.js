@@ -318,3 +318,10 @@ export class UpdateEncoderV2 extends IdSetEncoderV2 {
     }
   }
 }
+
+/**
+ * @typedef {IdSetEncoderV1 | IdSetEncoderV2} IdSetEncoder
+ */
+/**
+ * @typedef {UpdateEncoderV1 | UpdateEncoderV2} UpdateEncoder
+ */

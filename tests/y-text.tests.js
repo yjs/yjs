@@ -1930,14 +1930,14 @@ export const testAttributedDiffing = _tc => {
   const ytext = ydoc.get()
   ytext.applyDelta(delta.create().retain(4, { italic: true }).retain(2).delete(5).insert('attributions'))
   // this represents to all insertions of ydoc
-  const insertionSet = Y.createInsertionSetFromStructStore(ydoc.store, false)
+  const insertionSet = Y.createInsertSetFromStructStore(ydoc.store, false)
   const deleteSet = Y.createDeleteSetFromStructStore(ydoc.store)
   // exclude the changes from `ydocVersion0`
-  const insertionSetDiff = Y.diffIdSet(insertionSet, Y.createInsertionSetFromStructStore(ydocVersion0.store, false))
+  const insertionSetDiff = Y.diffIdSet(insertionSet, Y.createInsertSetFromStructStore(ydocVersion0.store, false))
   const deleteSetDiff = Y.diffIdSet(deleteSet, Y.createDeleteSetFromStructStore(ydocVersion0.store))
   // assign attributes to the diff
-  const attributedInsertions = createIdMapFromIdSet(insertionSetDiff, [new Y.Attribution('insert', 'Bob')])
-  const attributedDeletions = createIdMapFromIdSet(deleteSetDiff, [new Y.Attribution('delete', 'Bob')])
+  const attributedInsertions = createIdMapFromIdSet(insertionSetDiff, [Y.createContentAttribute('insert', 'Bob')])
+  const attributedDeletions = createIdMapFromIdSet(deleteSetDiff, [Y.createContentAttribute('delete', 'Bob')])
   // now we can define an attribution manager that maps these changes to output. One of the
   // implementations is the TwosetAttributionManager
   const attributionManager = new TwosetAttributionManager(attributedInsertions, attributedDeletions)

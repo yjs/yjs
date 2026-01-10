@@ -8,6 +8,7 @@
 import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
 import * as delta from 'lib0/delta'
+import { init } from './testHelper.js' // eslint-disable-line
 
 /**
  * @param {t.TestCase} _tc
@@ -129,4 +130,31 @@ export const testChildListContent = () => {
   const expected = delta.create()
     .modifyAttr('array', delta.create().insert([delta.create('test').insert('test content', null, { insert: [] }).setAttr('k', 'v', { insert: [] })], null, { insert: [] }))
   t.compare(d.done(), expected.done())
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testAttributionSession1 = tc => {
+  const { testConnector, users, text0, text1 } = init(tc, { users: 3 })
+  const globalAttributions = new Y.Attributions()
+  const v1 = Y.cloneDoc(users[0])
+  users.forEach(user => user.on('update', (update, _, ydoc, tr) => {
+    if (!tr.local) return
+    const userid = ydoc.clientID.toString()
+    const contentIds = Y.readUpdateToContentIds(update)
+    Y.insertIntoIdMap(globalAttributions.inserts, Y.createIdMapFromIdSet(contentIds.inserts, [Y.createContentAttribute('insert', userid)]))
+    Y.insertIntoIdMap(globalAttributions.deletes, Y.createIdMapFromIdSet(contentIds.deletes, [Y.createContentAttribute('delete', userid)]))
+  }))
+  text0.insert(0, 'a')
+  text1.insert(0, 'b')
+  testConnector.flushAllMessages()
+  const d1 = text0.toDelta(Y.createAttributionManagerFromDiff(v1, users[0], { attrs: globalAttributions }))
+  t.compare(d1, delta.create().insert('a', null, { insert: ['0'] }).insert('b', null, { insert: ['1'] }))
+  const v2 = Y.cloneDoc(users[0])
+  text0.delete(0, 1)
+  text1.insert(1, 'c')
+  testConnector.flushAllMessages()
+  const d2 = text0.toDelta(Y.createAttributionManagerFromDiff(v2, users[0], { attrs: globalAttributions }))
+  t.compare(d2, delta.create().insert('a', null, { delete: ['0'] }).insert('c', null, { insert: ['1'] }).insert('b'))
 }

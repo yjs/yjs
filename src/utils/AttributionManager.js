@@ -23,8 +23,9 @@ import {
   StackItem,
   getItemCleanStart,
   intersectSets,
+  intersectMaps,
   ContentFormat,
-  createAttributionItem,
+  createContentAttribute,
   StructStore, Transaction, ID, IdSet, Item, Snapshot, Doc, AbstractContent, IdMap, // eslint-disable-line
   encodeStateAsUpdate
 } from '../internals.js'
@@ -51,7 +52,7 @@ export const attributionJsonSchema = s.$object({
 
 /**
  * @todo SHOULD NOT RETURN AN OBJECT!
- * @param {Array<import('./IdMap.js').AttributionItem<any>>?} attrs
+ * @param {Array<import('./IdMap.js').ContentAttribute<any>>?} attrs
  * @param {boolean} deleted - whether the attributed item is deleted
  * @return {Attribution?}
  */
@@ -64,7 +65,7 @@ export const createAttributionFromAttributionItems = (attrs, deleted) => {
    */
   const attribution = {}
   if (deleted) {
-    attribution.delete = s.$array(s.$string).cast([])
+    attribution.delete = []
   } else {
     attribution.insert = []
   }
@@ -73,9 +74,8 @@ export const createAttributionFromAttributionItems = (attrs, deleted) => {
       // eslint-disable-next-line no-fallthrough
       case 'insert':
       case 'delete': {
-        const as = /** @type {import('lib0/delta').Attribution} */ (attribution)
-        const ls = as[attr.name] = as[attr.name] ?? []
-        ls.push(attr.val)
+        // needs to be non-ambiguous: don't add existing attr if it doesn't match the actual status
+        attribution[attr.name]?.push(attr.val)
         break
       }
       default: {
@@ -96,7 +96,7 @@ export class AttributedContent {
    * @param {AbstractContent} content
    * @param {number} clock
    * @param {boolean} deleted
-   * @param {Array<import('./IdMap.js').AttributionItem<T>> | null} attrs
+   * @param {Array<import('./IdMap.js').ContentAttribute<T>> | null} attrs
    * @param {0|1|2} renderBehavior
    */
   constructor (content, clock, deleted, attrs, renderBehavior) {
@@ -341,6 +341,20 @@ const collectSuggestedChanges = (tr, am, start, end, collectAll) => {
   return { inserts, deletes }
 }
 
+export class Attributions {
+  constructor () {
+    this.inserts = createIdMap()
+    this.deletes = createIdMap()
+  }
+}
+
+/**
+ * @param {IdMap<any>|undefined} attrs
+ * @param {IdSet} slice
+ *
+ */
+const extractAttributions = (attrs, slice) => attrs == null ? createIdMapFromIdSet(slice, []) : mergeIdMaps([intersectMaps(attrs, slice), createIdMapFromIdSet(slice, [])])
+
 /**
  * @implements AbstractAttributionManager
  *
@@ -351,16 +365,16 @@ export class DiffAttributionManager extends ObservableV2 {
    * @param {Doc} prevDoc
    * @param {Doc} nextDoc
    * @param {Object} [options] - options for the attribution manager
-   * @param {Array<import('./IdMap.js').AttributionItem<any>>} [options.attrs] - the attributes to apply to the diff
+   * @param {Attributions?} [options.attrs] - the attributes to apply to the diff
    */
-  constructor (prevDoc, nextDoc, { attrs = [] } = {}) {
+  constructor (prevDoc, nextDoc, { attrs = null } = {}) {
     super()
     const _nextDocInserts = createInsertSetFromStructStore(nextDoc.store, false) // unmaintained
     const _prevDocInserts = createInsertSetFromStructStore(prevDoc.store, false) // unmaintained
     const nextDocDeletes = createDeleteSetFromStructStore(nextDoc.store) // maintained
     const prevDocDeletes = createDeleteSetFromStructStore(prevDoc.store) // maintained
-    this.inserts = createIdMapFromIdSet(diffIdSet(_nextDocInserts, _prevDocInserts), attrs)
-    this.deletes = createIdMapFromIdSet(diffIdSet(nextDocDeletes, prevDocDeletes), attrs)
+    this.inserts = extractAttributions(attrs?.inserts, diffIdSet(_nextDocInserts, _prevDocInserts))
+    this.deletes = extractAttributions(attrs?.deletes, diffIdSet(nextDocDeletes, prevDocDeletes))
     this._prevDoc = prevDoc
     this._prevDocStore = prevDoc.store
     this._nextDoc = nextDoc
@@ -368,16 +382,15 @@ export class DiffAttributionManager extends ObservableV2 {
     this._nextBOH = nextDoc.on('beforeObserverCalls', tr => {
       // update inserts
       const diffInserts = diffIdSet(tr.insertSet, _prevDocInserts)
-      insertIntoIdMap(this.inserts, createIdMapFromIdSet(diffInserts, attrs))
+      insertIntoIdMap(this.inserts, extractAttributions(attrs?.inserts, diffInserts))
       // update deletes
       const diffDeletes = diffIdSet(diffIdSet(tr.deleteSet, prevDocDeletes), this.inserts)
-      insertIntoIdMap(this.deletes, createIdMapFromIdSet(diffDeletes, attrs))
+      insertIntoIdMap(this.deletes, extractAttributions(attrs?.deletes, diffDeletes))
       // @todo fire update ranges on `diffInserts` and `diffDeletes`
     })
     this._prevBOH = prevDoc.on('beforeObserverCalls', tr => {
       insertIntoIdSet(_prevDocInserts, tr.insertSet)
       insertIntoIdSet(prevDocDeletes, tr.deleteSet)
-      // insertIntoIdMap(this.inserts, createIdMapFromIdSet(intersectSets(tr.insertSet, this.inserts), [createAttributionItem('acceptInsert', 'unknown')]))
       if (tr.insertSet.clients.size < 2) {
         tr.insertSet.forEach((attrRange, client) => {
           this.inserts.delete(client, attrRange.clock, attrRange.len)
@@ -556,7 +569,7 @@ export class DiffAttributionManager extends ObservableV2 {
  * @param {Doc} prevDoc
  * @param {Doc} nextDoc
  * @param {Object} [options] - options for the attribution manager
- * @param {Array<import('./IdMap.js').AttributionItem<any>>} [options.attrs] - the attributes to apply to the diff
+ * @param {Attributions?} [options.attrs] - the attributes to apply to the diff
  */
 export const createAttributionManagerFromDiff = (prevDoc, nextDoc, options) => new DiffAttributionManager(prevDoc, nextDoc, options)
 
@@ -573,18 +586,18 @@ export class SnapshotAttributionManager extends ObservableV2 {
    * @param {Snapshot} prevSnapshot
    * @param {Snapshot} nextSnapshot
    * @param {Object} [options] - options for the attribution manager
-   * @param {Array<import('./IdMap.js').AttributionItem<any>>} [options.attrs] - the attributes to apply to the diff
+   * @param {Array<import('./IdMap.js').ContentAttribute<any>>} [options.attrs] - the attributes to apply to the diff
    */
   constructor (prevSnapshot, nextSnapshot) {
     super()
     this.prevSnapshot = prevSnapshot
     this.nextSnapshot = nextSnapshot
     const inserts = createIdMap()
-    const deletes = createIdMapFromIdSet(diffIdSet(nextSnapshot.ds, prevSnapshot.ds), [createAttributionItem('change', '')])
+    const deletes = createIdMapFromIdSet(diffIdSet(nextSnapshot.ds, prevSnapshot.ds), [createContentAttribute('change', '')])
     nextSnapshot.sv.forEach((clock, client) => {
       const prevClock = prevSnapshot.sv.get(client) || 0
       inserts.add(client, 0, prevClock, []) // content is included in prevSnapshot is rendered without attributes
-      inserts.add(client, prevClock, clock - prevClock, [createAttributionItem('change', '')]) // content is rendered as "inserted"
+      inserts.add(client, prevClock, clock - prevClock, [createContentAttribute('change', '')]) // content is rendered as "inserted"
     })
     this.attrs = mergeIdMaps([diffIdMap(inserts, prevSnapshot.ds), deletes])
   }

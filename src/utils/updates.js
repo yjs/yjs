@@ -246,8 +246,9 @@ export const encodeStateVectorFromUpdate = update => encodeStateVectorFromUpdate
 /**
  * @param {Uint8Array} update
  * @param {typeof UpdateDecoderV2 | typeof UpdateDecoderV1} [YDecoder]
+ * @return {import('./meta.js').ContentIds}
  */
-export const readUpdateIdRangesV2 = (update, YDecoder = UpdateDecoderV2) => {
+export const readUpdateToContentIdsV2 = (update, YDecoder = UpdateDecoderV2) => {
   const updateDecoder = new YDecoder(decoding.createDecoder(update))
   const lazyDecoder = new LazyStructReader(updateDecoder, true)
   const inserts = createIdSet()
@@ -277,8 +278,9 @@ export const readUpdateIdRangesV2 = (update, YDecoder = UpdateDecoderV2) => {
 
 /**
  * @param {Uint8Array} update
+ * @return {import('./meta.js').ContentIds}
  */
-export const readUpdateIdRanges = update => readUpdateIdRangesV2(update, UpdateDecoderV1)
+export const readUpdateToContentIds = update => readUpdateToContentIdsV2(update, UpdateDecoderV1)
 
 /**
  * This method is intended to slice any kind of struct and retrieve the right part.

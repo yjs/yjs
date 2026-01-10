@@ -19,7 +19,7 @@ import * as rabin from 'lib0/hash/rabin'
  * @todo rename this to `Attribute`
  * @template V
  */
-export class AttributionItem {
+export class ContentAttribute {
   /**
    * @param {string} name
    * @param {V} val
@@ -38,13 +38,12 @@ export class AttributionItem {
 }
 
 /**
- * @todo rename this to `createAttribute`
  * @template V
  * @param {string} name
  * @param {V} val
- * @return {AttributionItem<V>}
+ * @return {ContentAttribute<V>}
  */
-export const createAttributionItem = (name, val) => new AttributionItem(name, val)
+export const createContentAttribute = (name, val) => new ContentAttribute(name, val)
 
 /**
  * @template T
@@ -75,7 +74,7 @@ export class AttrRange {
   /**
    * @param {number} clock
    * @param {number} len
-   * @param {Array<AttributionItem<Attrs>>} attrs
+   * @param {Array<ContentAttribute<Attrs>>} attrs
    */
   constructor (clock, len, attrs) {
     /**
@@ -103,7 +102,7 @@ export class AttrRange {
 
 /**
  * @template Attrs
- * @typedef {{ clock: number, len: number, attrs: Array<AttributionItem<Attrs>>? }} MaybeAttrRange
+ * @typedef {{ clock: number, len: number, attrs: Array<ContentAttribute<Attrs>>? }} MaybeAttrRange
  */
 
 /**
@@ -111,7 +110,7 @@ export class AttrRange {
  *
  * @param {number} clock
  * @param {number} len
- * @param {Array<AttributionItem<Attrs>>?} attrs
+ * @param {Array<ContentAttribute<Attrs>>?} attrs
  * @return {MaybeAttrRange<Attrs>}
  */
 export const createMaybeAttrRange = (clock, len, attrs) => new AttrRange(clock, len, /** @type {any} */ (attrs))
@@ -140,7 +139,7 @@ export class AttrRanges {
   /**
    * @param {number} clock
    * @param {number} length
-   * @param {Array<AttributionItem<Attrs>>} attrs
+   * @param {Array<ContentAttribute<Attrs>>} attrs
    */
   add (clock, length, attrs) {
     if (length === 0) return
@@ -241,7 +240,7 @@ export const mergeIdMaps = ams => {
   /**
    * Maps attribution to the attribution of the merged idmap.
    *
-   * @type {Map<AttributionItem<any>,AttributionItem<any>>}
+   * @type {Map<ContentAttribute<any>,ContentAttribute<any>>}
    */
   const attrMapper = new Map()
   const merged = createIdMap()
@@ -271,7 +270,7 @@ export const mergeIdMaps = ams => {
 
 /**
  * @param {IdSet} idset
- * @param {Array<AttributionItem<any>>} attrs
+ * @param {Array<ContentAttribute<any>>} attrs
  */
 export const createIdMapFromIdSet = (idset, attrs) => {
   const idmap = createIdMap()
@@ -279,7 +278,7 @@ export const createIdMapFromIdSet = (idset, attrs) => {
   attrs = _ensureAttrs(idmap, attrs)
   // filter out duplicates
   /**
-   * @type {Array<AttributionItem<any>>}
+   * @type {Array<ContentAttribute<any>>}
    */
   const checkedAttrs = []
   attrs.forEach(attr => {
@@ -305,11 +304,11 @@ export class IdMap {
      */
     this.clients = new Map()
     /**
-     * @type {Map<string, AttributionItem<Attrs>>}
+     * @type {Map<string, ContentAttribute<Attrs>>}
      */
     this.attrsH = new Map()
     /**
-     * @type {Set<AttributionItem<Attrs>>}
+     * @type {Set<ContentAttribute<Attrs>>}
      */
     this.attrs = new Set()
   }
@@ -414,7 +413,7 @@ export class IdMap {
    * @param {number} client
    * @param {number} clock
    * @param {number} len
-   * @param {Array<AttributionItem<Attrs>>} attrs
+   * @param {Array<ContentAttribute<Attrs>>} attrs
    */
   add (client, clock, len, attrs) {
     if (len === 0) return
@@ -452,7 +451,7 @@ export const writeIdMap = (encoder, idmap) => {
   encoding.writeVarUint(encoder.restEncoder, idmap.clients.size)
   let lastWrittenClientId = 0
   /**
-   * @type {Map<AttributionItem<Attr>, number>}
+   * @type {Map<ContentAttribute<Attr>, number>}
    */
   const visitedAttributions = map.create()
   /**
@@ -523,7 +522,7 @@ export const readIdMap = decoder => {
   const idmap = new IdMap()
   const numClients = decoding.readVarUint(decoder.restDecoder)
   /**
-   * @type {Array<AttributionItem<any>>}
+   * @type {Array<ContentAttribute<any>>}
    */
   const visitedAttributions = []
   /**
@@ -544,7 +543,7 @@ export const readIdMap = decoder => {
       const rangeClock = decoder.readDsClock()
       const rangeLen = decoder.readDsLen()
       /**
-       * @type {Array<AttributionItem<any>>}
+       * @type {Array<ContentAttribute<any>>}
        */
       const attrs = []
       const attrsLen = decoding.readVarUint(decoder.restDecoder)
@@ -556,7 +555,7 @@ export const readIdMap = decoder => {
           if (attrNameId >= visitedAttrNames.length) {
             visitedAttrNames.push(decoding.readVarString(decoder.restDecoder))
           }
-          visitedAttributions.push(new AttributionItem(visitedAttrNames[attrNameId], decoding.readAny(decoder.restDecoder)))
+          visitedAttributions.push(new ContentAttribute(visitedAttrNames[attrNameId], decoding.readAny(decoder.restDecoder)))
         }
         attrs.push(visitedAttributions[attrId])
       }
@@ -580,8 +579,8 @@ export const decodeIdMap = data => readIdMap(new DSDecoderV2(decoding.createDeco
 /**
  * @template Attrs
  * @param {IdMap<Attrs>} idmap
- * @param {Array<AttributionItem<Attrs>>} attrs
- * @return {Array<AttributionItem<Attrs>>}
+ * @param {Array<ContentAttribute<Attrs>>} attrs
+ * @return {Array<ContentAttribute<Attrs>>}
  */
 const _ensureAttrs = (idmap, attrs) => attrs.map(attr =>
   idmap.attrs.has(attr)

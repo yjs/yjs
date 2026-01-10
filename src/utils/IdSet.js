@@ -7,7 +7,7 @@ import {
   IdMap,
   AttrRanges,
   AttrRange,
-  Skip, AbstractStruct, DSDecoderV1, IdSetEncoderV1, DSDecoderV2, IdSetEncoderV2, Item, GC, StructStore, Transaction, ID, AttributionItem, // eslint-disable-line
+  Skip, AbstractStruct, DSDecoderV1, IdSetEncoderV1, DSDecoderV2, IdSetEncoderV2, Item, GC, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as array from 'lib0/array'
@@ -43,7 +43,7 @@ export class IdRange {
   /**
    * Helper method making this compatible with IdMap.
    *
-   * @return {Array<import('./IdMap.js').AttributionItem<any>>}
+   * @return {Array<import('./IdMap.js').ContentAttribute<any>>}
    */
   get attrs () {
     return []
@@ -549,7 +549,7 @@ export const _intersectSets = (setA, setB) => {
         const len = math.min(aRange.len - (clock - aRange.clock), bRange.len - (clock - bRange.clock))
         if (len > 0) {
           resRanges.push(aRange instanceof AttrRange
-            ? new AttrRange(clock, len, /** @type {Array<AttributionItem<any>>} */ (aRange.attrs).concat(bRange.attrs))
+            ? new AttrRange(clock, len, /** @type {Array<any>} */ (aRange.attrs).concat(bRange.attrs))
             : new IdRange(clock, len)
           )
         }

@@ -327,8 +327,8 @@ export const compareIdSets = (idSet1, idSet2) => {
  * only use for testing
  *
  * @template T
- * @param {Array<Y.Attribution<T>>} attrs
- * @param {Y.Attribution<T>} attr
+ * @param {Array<Y.ContentAttribute<T>>} attrs
+ * @param {Y.ContentAttribute<T>} attr
  *
  */
 const _idmapAttrsHas = (attrs, attr) => {
@@ -340,8 +340,8 @@ const _idmapAttrsHas = (attrs, attr) => {
  * only use for testing
  *
  * @template T
- * @param {Array<Y.Attribution<T>>} a
- * @param {Array<Y.Attribution<T>>} b
+ * @param {Array<Y.ContentAttribute<T>>} a
+ * @param {Array<Y.ContentAttribute<T>>} b
  */
 export const _idmapAttrsEqual = (a, b) => a.length === b.length && a.every(v => _idmapAttrsHas(b, v))
 
@@ -432,7 +432,7 @@ export const createRandomIdMap = (gen, clients, clockRange, attrChoices) => {
         attrs.push(a)
       }
     }
-    idMap.add(client, clockStart, len, attrs.map(v => Y.createAttributionItem('', v)))
+    idMap.add(client, clockStart, len, attrs.map(v => Y.createContentAttribute('', v)))
   }
   t.info(`Created IdMap with ${numOfOps} ranges and ${attrChoices.length} different attributes. Encoded size: ${encodeIdMap(idMap).byteLength}`)
   return idMap
@@ -480,7 +480,7 @@ export const compare = users => {
     t.compare(userXmlValues[i], userXmlValues[i + 1])
     t.compare(list.toArray(userTextValues[i].children).map(a => (delta.$textOp.check(a) || delta.$insertOp.check(a)) ? a.insert.length : 0).reduce((a, b) => a + b, 0), users[i].get('text').length)
     t.compare(userTextValues[i], userTextValues[i + 1], '', (_constructor, a, b) => {
-      if (a instanceof Y.AbstractType) {
+      if (a instanceof Y.Type) {
         t.compare(a.toJSON(), b.toJSON())
       } else if (a !== b) {
         t.fail('Deltas dont match')

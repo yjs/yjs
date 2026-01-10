@@ -32,6 +32,10 @@
       "types": "./dist/src/internals.d.ts",
       "default": "./src/internals.js"
     },
+    "/meta": {
+      "types": "./dist/src/utils/meta.d.ts",
+      "default": "./src/utils/meta.js"
+    },
     "./testHelper": {
       "types": "./dist/tests/testHelper.d.ts",
       "default": "./tests/testHelper.js"

@@ -18,7 +18,6 @@ export {
   ContentAny,
   ContentString,
   ContentType,
-  YType as AbstractType,
   getTypeChildren,
   createRelativePositionFromTypeIndex,
   createRelativePositionFromJSON,
@@ -89,11 +88,11 @@ export {
   createDeleteSetFromStructStore,
   IdMap,
   createIdMap,
-  createAttributionItem,
-  createInsertSetFromStructStore as createInsertionSetFromStructStore,
+  createContentAttribute,
+  createInsertSetFromStructStore,
   diffIdMap,
   diffIdSet,
-  AttributionItem as Attribution,
+  ContentAttribute,
   encodeIdMap,
   createIdMapFromIdSet,
   TwosetAttributionManager,
@@ -107,8 +106,8 @@ export {
   createIdSet,
   mergeIdSets,
   cloneDoc,
-  readUpdateIdRanges,
-  readUpdateIdRangesV2,
+  readUpdateToContentIds,
+  readUpdateToContentIdsV2,
   insertIntoIdMap,
   insertIntoIdSet,
   mergeIdMaps,
@@ -116,7 +115,8 @@ export {
   readIdSet,
   decodeIdMap,
   diffDocsToDelta,
-  getPathTo
+  getPathTo,
+  Attributions
 } from './internals.js'
 
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'
