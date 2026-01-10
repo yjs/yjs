@@ -5,24 +5,24 @@ import * as delta from 'lib0/delta'
 
 export const testCustomTypings = () => {
   const ydoc = new Y.Doc()
-  const ymap = ydoc.getMap()
+  const ymap = ydoc.get()
   /**
-   * @type {Y.XmlElement<{ num: number, str: string, [k:string]: object|number|string }>}
+   * @type {Y.Type<{ attrs: { num: number, str: string, [k:string]: number|string } }>}
    */
-  const yxml = ymap.set('yxml', new Y.XmlElement('test'))
+  const yxml = ymap.setAttr('yxml', new Y.Type('test'))
   /**
    * @type {number|undefined}
    */
-  const num = yxml.getAttribute('num')
+  const num = yxml.getAttr('num')
   /**
    * @type {string|undefined}
    */
-  const str = yxml.getAttribute('str')
+  const str = yxml.getAttr('str')
   /**
    * @type {object|number|string|undefined}
    */
-  const dtrn = yxml.getAttribute('dtrn')
-  const attrs = yxml.getAttributes()
+  const dtrn = yxml.getAttr('dtrn')
+  const attrs = yxml.getAttrs()
   /**
    * @type {object|number|string|undefined}
    */
@@ -35,10 +35,10 @@ export const testCustomTypings = () => {
  */
 export const testSetProperty = tc => {
   const { testConnector, users, xml0, xml1 } = init(tc, { users: 2 })
-  xml0.setAttribute('height', '10')
-  t.assert(xml0.getAttribute('height') === '10', 'Simple set+get works')
+  xml0.setAttr('height', '10')
+  t.assert(xml0.getAttr('height') === '10', 'Simple set+get works')
   testConnector.flushAllMessages()
-  t.assert(xml1.getAttribute('height') === '10', 'Simple set+get works (remote)')
+  t.assert(xml1.getAttr('height') === '10', 'Simple set+get works (remote)')
   compare(users)
 }
 
@@ -47,15 +47,14 @@ export const testSetProperty = tc => {
  */
 export const testHasProperty = tc => {
   const { testConnector, users, xml0, xml1 } = init(tc, { users: 2 })
-  xml0.setAttribute('height', '10')
-  t.assert(xml0.hasAttribute('height'), 'Simple set+has works')
+  xml0.setAttr('height', '10')
+  t.assert(xml0.hasAttr('height'), 'Simple set+has works')
   testConnector.flushAllMessages()
-  t.assert(xml1.hasAttribute('height'), 'Simple set+has works (remote)')
-
-  xml0.removeAttribute('height')
-  t.assert(!xml0.hasAttribute('height'), 'Simple set+remove+has works')
+  t.assert(xml1.hasAttr('height'), 'Simple set+has works (remote)')
+  xml0.deleteAttr('height')
+  t.assert(!xml0.hasAttr('height'), 'Simple set+remove+has works')
   testConnector.flushAllMessages()
-  t.assert(!xml1.hasAttribute('height'), 'Simple set+remove+has works (remote)')
+  t.assert(!xml1.hasAttr('height'), 'Simple set+remove+has works (remote)')
   compare(users)
 }
 
@@ -64,13 +63,13 @@ export const testHasProperty = tc => {
  */
 export const testYtextAttributes = _tc => {
   const ydoc = new Y.Doc()
-  const ytext = /** @type {Y.XmlText} */ (ydoc.get('', Y.XmlText))
+  const ytext = ydoc.get('')
   ytext.observe(event => {
     t.assert(event.delta.attrs.test?.type === 'insert')
   })
-  ytext.setAttribute('test', 42)
-  t.compare(ytext.getAttribute('test'), 42)
-  t.compare(ytext.getAttributes(), { test: 42 })
+  ytext.setAttr('test', 42)
+  t.compare(ytext.getAttr('test'), 42)
+  t.compare(ytext.getAttrs(), { test: 42 })
 }
 
 /**
@@ -78,45 +77,12 @@ export const testYtextAttributes = _tc => {
  */
 export const testSiblings = _tc => {
   const ydoc = new Y.Doc()
-  const yxml = ydoc.getXmlFragment()
-  const first = new Y.XmlText()
-  const second = new Y.XmlElement('p')
+  const yxml = ydoc.get()
+  const first = new Y.Type()
+  const second = new Y.Type('p')
   yxml.insert(0, [first, second])
-  t.assert(first.nextSibling === second)
-  t.assert(second.prevSibling === first)
   t.assert(first.parent === /** @type {Y.AbstractType<any>} */ (yxml))
   t.assert(yxml.parent === null)
-  t.assert(yxml.firstChild === first)
-}
-
-/**
- * @param {t.TestCase} _tc
- */
-export const testInsertafter = _tc => {
-  const ydoc = new Y.Doc()
-  const yxml = ydoc.getXmlFragment()
-  const first = new Y.XmlText()
-  const second = new Y.XmlElement('p')
-  const third = new Y.XmlElement('p')
-
-  const deepsecond1 = new Y.XmlElement('span')
-  const deepsecond2 = new Y.XmlText()
-  second.insertAfter(null, [deepsecond1])
-  second.insertAfter(deepsecond1, [deepsecond2])
-
-  yxml.insertAfter(null, [first, second])
-  yxml.insertAfter(second, [third])
-
-  t.assert(yxml.length === 3)
-  t.assert(second.get(0) === deepsecond1)
-  t.assert(second.get(1) === deepsecond2)
-
-  t.compareArrays(yxml.toArray(), [first, second, third])
-
-  t.fails(() => {
-    const el = new Y.XmlElement('p')
-    el.insertAfter(deepsecond1, [new Y.XmlText()])
-  })
 }
 
 /**
@@ -124,14 +90,14 @@ export const testInsertafter = _tc => {
  */
 export const testClone = _tc => {
   const ydoc = new Y.Doc()
-  const yxml = ydoc.getXmlFragment()
-  const first = new Y.XmlText('text')
-  const second = new Y.XmlElement('p')
-  const third = new Y.XmlElement('p')
+  const yxml = ydoc.get()
+  const first = new Y.Type('text')
+  const second = new Y.Type('p')
+  const third = new Y.Type('p')
   yxml.push([first, second, third])
   t.compareArrays(yxml.toArray(), [first, second, third])
   const cloneYxml = yxml.clone()
-  ydoc.getArray('copyarr').insert(0, [cloneYxml])
+  ydoc.get('copyarr').insert(0, [cloneYxml])
   t.assert(cloneYxml.length === 3)
   t.compare(cloneYxml.toJSON(), yxml.toJSON())
 }
@@ -141,7 +107,7 @@ export const testClone = _tc => {
  */
 export const testFormattingBug = _tc => {
   const ydoc = new Y.Doc()
-  const yxml = /** @type {Y.XmlText} */ (ydoc.get('', Y.XmlText))
+  const yxml = ydoc.get()
   const q = delta.create()
     .insert('A', { em: {}, strong: {} })
     .insert('B', { em: {} })
@@ -155,9 +121,9 @@ export const testFormattingBug = _tc => {
  */
 export const testElement = _tc => {
   const ydoc = new Y.Doc()
-  const yxmlel = ydoc.getXmlElement()
-  const text1 = new Y.XmlText('text1')
-  const text2 = new Y.XmlText('text2')
+  const yxmlel = ydoc.get()
+  const text1 = new Y.Type('text1')
+  const text2 = new Y.Type('text2')
   yxmlel.insert(0, [text1, text2])
   t.compareArrays(yxmlel.toArray(), [text1, text2])
 }
@@ -167,12 +133,12 @@ export const testElement = _tc => {
  */
 export const testFragmentAttributedContent = _tc => {
   const ydoc = new Y.Doc({ gc: false })
-  const yfragment = new Y.XmlFragment()
-  const elem1 = new Y.XmlText('hello')
-  const elem2 = new Y.XmlElement()
-  const elem3 = new Y.XmlText('world')
+  const yfragment = new Y.Type()
+  const elem1 = Y.Type.from(delta.create().insert('hello'))
+  const elem2 = new Y.Type()
+  const elem3 = Y.Type.from(delta.create().insert('world'))
   yfragment.insert(0, [elem1, elem2])
-  ydoc.getArray().insert(0, [yfragment])
+  ydoc.get().insert(0, [yfragment])
   let attributionManager = Y.noAttributionsManager
   ydoc.on('afterTransaction', tr => {
     // attributionManager = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, [new Y.Attribution('insertedAt', 42), new Y.Attribution('insert', 'kevin')]), createIdMapFromIdSet(tr.deleteSet, [new Y.Attribution('delete', 'kevin')]))
@@ -196,10 +162,10 @@ export const testFragmentAttributedContent = _tc => {
  */
 export const testElementAttributedContent = _tc => {
   const ydoc = new Y.Doc({ gc: false })
-  const yelement = ydoc.getXmlElement('p')
-  const elem1 = new Y.XmlText('hello')
-  const elem2 = new Y.XmlElement('span')
-  const elem3 = new Y.XmlText('world')
+  const yelement = ydoc.get('p')
+  const elem1 = delta.create().insert('hello').done()
+  const elem2 = delta.create('span').done()
+  const elem3 = delta.create().insert('world').done()
   yelement.insert(0, [elem1, elem2])
   let attributionManager = Y.noAttributionsManager
   ydoc.on('afterTransaction', tr => {
@@ -210,35 +176,17 @@ export const testElementAttributedContent = _tc => {
     ydoc.transact(() => {
       yelement.delete(0, 1)
       yelement.insert(1, [elem3])
-      yelement.setAttribute('key', '42')
+      yelement.setAttr('key', '42')
     })
-    const expectedContent = delta.create('UNDEFINED').insert([elem1], null, { delete: [] }).insert([elem2]).insert([elem3], null, { insert: [] }).set('key', '42', { insert: [] })
-    const attributedContent = yelement.getContent(attributionManager)
-    console.log('children', attributedContent.toJSON())
-    console.log('attributes', attributedContent)
+    const expectedContent = delta.create()
+      .insert([delta.create().insert('hello', null, { delete: [] })], null, { delete: [] })
+      .insert([elem2])
+      .insert([delta.create().insert('world', null, { insert: [] })], null, { insert: [] })
+      .setAttr('key', '42', { insert: [] })
+    const attributedContent = yelement.getContentDeep(attributionManager)
+    console.log('retrieved content', attributedContent.toJSON())
     t.assert(attributedContent.equals(expectedContent))
     t.compare(attributedContent.toJSON().attrs, { key: { type: 'insert', value: '42', attribution: { insert: [] } } })
-    t.group('test getContentDeep', () => {
-      const expectedContent = delta.create('UNDEFINED')
-        .insert(
-          [delta.text().insert('hello', null, { delete: [] })],
-          null,
-          { delete: [] }
-        )
-        .insert([delta.create('span')])
-        .insert([
-          delta.text().insert('world', null, { insert: [] })
-        ], null, { insert: [] })
-        .set('key', '42', { insert: [] })
-        .done()
-      const attributedContent = yelement.getContentDeep(attributionManager)
-      console.log('children', JSON.stringify(attributedContent.toJSON().children, null, 2))
-      console.log('cs expec', JSON.stringify(expectedContent.toJSON(), null, 2))
-      console.log('attributes', attributedContent.toJSON().attrs)
-      t.assert(attributedContent.equals(expectedContent))
-      t.compare(attributedContent.toJSON().attrs, { key: { type: 'insert', value: '42', attribution: { insert: [] } } })
-      t.assert(attributedContent.name === 'UNDEFINED')
-    })
   })
 }
 
@@ -247,19 +195,19 @@ export const testElementAttributedContent = _tc => {
  */
 export const testElementAttributedContentViaDiffer = _tc => {
   const ydocV1 = new Y.Doc()
-  ydocV1.getXmlElement('p').insert(0, [new Y.XmlText('hello'), new Y.XmlElement('span')])
+  ydocV1.get('p').insert(0, [delta.create().insert('hello'), delta.create('span')])
   const ydoc = new Y.Doc()
   Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(ydocV1))
-  const yelement = ydoc.getXmlElement('p')
+  const yelement = ydoc.get('p')
   const elem2 = yelement.get(1) // new Y.XmlElement('span')
-  const elem3 = new Y.XmlText('world')
+  const elem3 = Y.Type.from(delta.create().insert('world'))
   ydoc.transact(() => {
     yelement.delete(0, 1)
     yelement.insert(1, [elem3])
-    yelement.setAttribute('key', '42')
+    yelement.setAttr('key', '42')
   })
   const attributionManager = Y.createAttributionManagerFromDiff(ydocV1, ydoc)
-  const expectedContent = delta.create('UNDEFINED').insert([delta.create().insert('hello')], null, { delete: [] }).insert([elem2.getContentDeep()]).insert([delta.create().insert('world', null, { insert: [] })], null, { insert: [] }).set('key', '42', { insert: [] })
+  const expectedContent = delta.create().insert([delta.create().insert('hello')], null, { delete: [] }).insert([elem2.getContentDeep()]).insert([delta.create().insert('world', null, { insert: [] })], null, { insert: [] }).setAttr('key', '42', { insert: [] })
   const attributedContent = yelement.getContentDeep(attributionManager)
   console.log('children', attributedContent.toJSON().children)
   console.log('attributes', attributedContent.toJSON().attrs)
@@ -267,7 +215,7 @@ export const testElementAttributedContentViaDiffer = _tc => {
   t.assert(attributedContent.equals(expectedContent))
   t.compare(attributedContent.toJSON().attrs, { key: { type: 'insert', value: '42', attribution: { insert: [] } } })
   t.group('test getContentDeep', () => {
-    const expectedContent = delta.create('UNDEFINED')
+    const expectedContent = delta.create()
       .insert(
         [delta.create().insert('hello')],
         null,
@@ -277,21 +225,21 @@ export const testElementAttributedContentViaDiffer = _tc => {
       .insert([
         delta.create().insert('world', null, { insert: [] })
       ], null, { insert: [] })
-      .set('key', '42', { insert: [] })
+      .setAttr('key', '42', { insert: [] })
     const attributedContent = yelement.getContentDeep(attributionManager)
     console.log('children', JSON.stringify(attributedContent.toJSON().children, null, 2))
     console.log('cs expec', JSON.stringify(expectedContent.toJSON(), null, 2))
     console.log('attributes', attributedContent.toJSON().attrs)
     t.assert(attributedContent.equals(expectedContent))
     t.compare(attributedContent.toJSON().attrs, { key: { type: 'insert', value: '42', attribution: { insert: [] } } })
-    t.assert(attributedContent.name === 'UNDEFINED')
+    t.assert(attributedContent.name === null)
   })
   ydoc.transact(() => {
     elem3.insert(0, 'big')
   })
   t.group('test getContentDeep after some more updates', () => {
     t.info('expecting diffingAttributionManager to auto update itself')
-    const expectedContent = delta.create('UNDEFINED')
+    const expectedContent = delta.create()
       .insert(
         [delta.create().insert('hello')],
         null,
@@ -301,28 +249,28 @@ export const testElementAttributedContentViaDiffer = _tc => {
       .insert([
         delta.create().insert('bigworld', null, { insert: [] })
       ], null, { insert: [] })
-      .set('key', '42', { insert: [] })
+      .setAttr('key', '42', { insert: [] })
     const attributedContent = yelement.getContentDeep(attributionManager)
     console.log('children', JSON.stringify(attributedContent.toJSON().children, null, 2))
     console.log('cs expec', JSON.stringify(expectedContent.toJSON(), null, 2))
     console.log('attributes', attributedContent.toJSON().attrs)
     t.assert(attributedContent.equals(expectedContent))
     t.compare(attributedContent.toJSON().attrs, { key: { type: 'insert', value: '42', attribution: { insert: [] } } })
-    t.assert(attributedContent.name === 'UNDEFINED')
+    t.assert(attributedContent.name === null)
   })
   Y.applyUpdate(ydocV1, Y.encodeStateAsUpdate(ydoc))
   t.group('test getContentDeep both docs synced', () => {
     t.info('expecting diffingAttributionManager to auto update itself')
-    const expectedContent = delta.create('UNDEFINED').insert([delta.create('span')]).insert([
+    const expectedContent = delta.create().insert([delta.create('span')]).insert([
       delta.create().insert('bigworld')
-    ]).set('key', '42')
+    ]).setAttr('key', '42')
     const attributedContent = yelement.getContentDeep(attributionManager)
     console.log('children', JSON.stringify(attributedContent.toJSON().children, null, 2))
     console.log('cs expec', JSON.stringify(expectedContent.toJSON(), null, 2))
     console.log('attributes', attributedContent.toJSON().attrs)
     t.assert(attributedContent.equals(expectedContent))
     t.compare(attributedContent.toJSON().attrs, { key: { type: 'insert', value: '42' } })
-    t.assert(attributedContent.name === 'UNDEFINED')
+    t.assert(attributedContent.name === null)
   })
 }
 
@@ -333,21 +281,21 @@ export const testAttributionManagerSimpleExample = _tc => {
   const ydoc = new Y.Doc()
   ydoc.clientID = 0
   // create some initial content
-  ydoc.getXmlFragment().insert(0, [new Y.XmlText('hello world')])
+  ydoc.get().insert(0, [delta.create().insert('hello world')])
   const ydocFork = new Y.Doc()
   ydocFork.clientID = 1
   Y.applyUpdate(ydocFork, Y.encodeStateAsUpdate(ydoc))
   // modify the fork
   // append a span element
-  ydocFork.getXmlFragment().insert(1, [new Y.XmlElement('span')])
-  const ytext = /** @type {Y.XmlText} */ (ydocFork.getXmlFragment().get(0))
+  ydocFork.get().insert(1, [new Y.Type('span')])
+  const ytext = ydocFork.get().get(0)
   // make "hello" italic
   ytext.format(0, 5, { italic: true })
   ytext.insert(11, 'deleteme')
   ytext.delete(11, 8)
   ytext.insert(11, '!')
   // highlight the changes
-  console.log(JSON.stringify(ydocFork.getXmlFragment().getContentDeep(Y.createAttributionManagerFromDiff(ydoc, ydocFork)), null, 2))
+  console.log(JSON.stringify(ydocFork.get().getContentDeep(Y.createAttributionManagerFromDiff(ydoc, ydocFork)), null, 2))
 /* =>
 {
   "children": {

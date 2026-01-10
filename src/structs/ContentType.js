@@ -1,33 +1,9 @@
 import {
-  readYArray,
-  readYMap,
-  readYText,
-  readYXmlElement,
-  readYXmlFragment,
-  readYXmlHook,
-  readYXmlText,
   UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Transaction, Item // eslint-disable-line
 } from '../internals.js'
 
-/**
- * @typedef {import('../utils/types.js').YType} YType_CT
- */
-
 import * as error from 'lib0/error'
-
-/**
- * @type {Array<(decoder: UpdateDecoderV1 | UpdateDecoderV2)=>(import('../utils/types.js').YType)>}
- * @private
- */
-export const typeRefs = [
-  readYArray,
-  readYMap,
-  readYText,
-  readYXmlElement,
-  readYXmlFragment,
-  readYXmlHook,
-  readYXmlText
-]
+import { readYType } from '../ytype.js'
 
 export const YArrayRefID = 0
 export const YMapRefID = 1
@@ -42,11 +18,11 @@ export const YXmlTextRefID = 6
  */
 export class ContentType {
   /**
-   * @param {YType_CT} type
+   * @param {import('../ytype.js').YType} type
    */
   constructor (type) {
     /**
-     * @type {YType_CT}
+     * @type {import('../ytype.js').YType}
      */
     this.type = type
   }
@@ -173,4 +149,4 @@ export class ContentType {
  * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  * @return {ContentType}
  */
-export const readContentType = decoder => new ContentType(typeRefs[decoder.readTypeRef()](decoder))
+export const readContentType = decoder => new ContentType(readYType(decoder))

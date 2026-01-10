@@ -2,7 +2,7 @@ import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
 
 /**
- * @param {Y.Text} ytext
+ * @param {Y.Type<{text:true}>} ytext
  */
 const checkRelativePositions = ytext => {
   // test if all positions are encoded and restored correctly
@@ -20,11 +20,11 @@ const checkRelativePositions = ytext => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testRelativePositionCase1 = tc => {
+export const testRelativePositionCase1 = _tc => {
   const ydoc = new Y.Doc()
-  const ytext = ydoc.getText()
+  const ytext = ydoc.get()
   ytext.insert(0, '1')
   ytext.insert(0, 'abc')
   ytext.insert(0, 'z')
@@ -34,21 +34,21 @@ export const testRelativePositionCase1 = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testRelativePositionCase2 = tc => {
+export const testRelativePositionCase2 = _tc => {
   const ydoc = new Y.Doc()
-  const ytext = ydoc.getText()
+  const ytext = ydoc.get()
   ytext.insert(0, 'abc')
   checkRelativePositions(ytext)
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testRelativePositionCase3 = tc => {
+export const testRelativePositionCase3 = _tc => {
   const ydoc = new Y.Doc()
-  const ytext = ydoc.getText()
+  const ytext = ydoc.get()
   ytext.insert(0, 'abc')
   ytext.insert(0, '1')
   ytext.insert(0, 'xyz')
@@ -56,43 +56,43 @@ export const testRelativePositionCase3 = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testRelativePositionCase4 = tc => {
+export const testRelativePositionCase4 = _tc => {
   const ydoc = new Y.Doc()
-  const ytext = ydoc.getText()
+  const ytext = ydoc.get()
   ytext.insert(0, '1')
   checkRelativePositions(ytext)
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testRelativePositionCase5 = tc => {
+export const testRelativePositionCase5 = _tc => {
   const ydoc = new Y.Doc()
-  const ytext = ydoc.getText()
+  const ytext = ydoc.get()
   ytext.insert(0, '2')
   ytext.insert(0, '1')
   checkRelativePositions(ytext)
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testRelativePositionCase6 = tc => {
+export const testRelativePositionCase6 = _tc => {
   const ydoc = new Y.Doc()
-  const ytext = ydoc.getText()
+  const ytext = ydoc.get()
   checkRelativePositions(ytext)
 }
 
 /**
  * Testing https://github.com/yjs/yjs/issues/657
  *
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testRelativePositionCase7 = tc => {
+export const testRelativePositionCase7 = _tc => {
   const docA = new Y.Doc()
-  const textA = docA.getText('text')
+  const textA = docA.get('text')
   textA.insert(0, 'abcde')
   // Create a relative position at index 2 in 'textA'
   const relativePosition = Y.createRelativePositionFromTypeIndex(textA, 2)
@@ -106,11 +106,11 @@ export const testRelativePositionCase7 = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testRelativePositionAssociationDifference = tc => {
+export const testRelativePositionAssociationDifference = _tc => {
   const ydoc = new Y.Doc()
-  const ytext = ydoc.getText()
+  const ytext = ydoc.get()
   ytext.insert(0, '2')
   ytext.insert(0, '1')
   const rposRight = Y.createRelativePositionFromTypeIndex(ytext, 1, 0)
@@ -123,11 +123,11 @@ export const testRelativePositionAssociationDifference = tc => {
 }
 
 /**
- * @param {t.TestCase} tc
+ * @param {t.TestCase} _tc
  */
-export const testRelativePositionWithUndo = tc => {
+export const testRelativePositionWithUndo = _tc => {
   const ydoc = new Y.Doc()
-  const ytext = ydoc.getText()
+  const ytext = ydoc.get()
   ytext.insert(0, 'hello world')
   const rpos = Y.createRelativePositionFromTypeIndex(ytext, 1)
   const um = new Y.UndoManager(ytext)

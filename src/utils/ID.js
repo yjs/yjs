@@ -1,4 +1,4 @@
-import { AbstractType } from '../internals.js' // eslint-disable-line
+import { YType } from '../internals.js' // eslint-disable-line
 
 import * as decoding from 'lib0/decoding'
 import * as encoding from 'lib0/encoding'
@@ -72,7 +72,7 @@ export const readID = decoder =>
  * `type` does not store any information about the `keyname`.
  * This function finds the correct `keyname` for `type` and throws otherwise.
  *
- * @param {AbstractType<any>} type
+ * @param {YType<any>} type
  * @return {string}
  *
  * @private

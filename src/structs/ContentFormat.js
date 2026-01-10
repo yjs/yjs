@@ -1,5 +1,5 @@
 import {
-  YText, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Item, StructStore, Transaction // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Item, Transaction // eslint-disable-line
 } from '../internals.js'
 
 import * as error from 'lib0/error'
@@ -67,7 +67,7 @@ export class ContentFormat {
    */
   integrate (_transaction, item) {
     // @todo searchmarker are currently unsupported for rich text documents
-    const p = /** @type {YText<any>} */ (item.parent)
+    const p = /** @type {import('../ytype.js').YType<any>} */ (item.parent)
     p._searchMarker = null
     p._hasFormatting = true
   }

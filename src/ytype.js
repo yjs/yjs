@@ -1,4 +1,6 @@
 import {
+  cleanupFormattingGap,
+  createIdSet,
   removeEventHandlerListener,
   callEventHandlerListeners,
   addEventHandlerListener,
@@ -17,12 +19,12 @@ import {
   getItemCleanStart,
   noAttributionsManager,
   transact,
-  ItemTextListPosition,
-  insertText,
-  deleteText,
-  ContentDoc, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, createAttributionFromAttributionItems, AbstractAttributionManager, YXmlElement, // eslint-disable-line
-} from '../internals.js'
+  ContentDoc, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, createAttributionFromAttributionItems, AbstractAttributionManager // eslint-disable-line
+} from './internals.js'
 
+import * as contentType from './structs/ContentType.js'
+
+import * as traits from 'lib0/traits'
 import * as delta from 'lib0/delta'
 import * as array from 'lib0/array'
 import * as map from 'lib0/map'
@@ -31,12 +33,10 @@ import * as error from 'lib0/error'
 import * as math from 'lib0/math'
 import * as log from 'lib0/logging'
 import * as object from 'lib0/object'
+import * as s from 'lib0/schema'
 
 /**
- * @typedef {import('../utils/types.js').YType} YType_
- */
-/**
- * @typedef {import('../utils/types.js').YValue} _YValue
+ * @typedef {Object<string,any>|Array<any>|number|null|string|Uint8Array|BigInt|YType<any>} YValue
  */
 
 /**
@@ -54,6 +54,350 @@ const maxSearchMarker = 80
  * @type {number}
  */
 let globalSearchMarkerTimestamp = 0
+
+export class ItemTextListPosition {
+  /**
+   * @param {Item|null} left
+   * @param {Item|null} right
+   * @param {number} index
+   * @param {Map<string,any>} currentAttributes
+   * @param {AbstractAttributionManager} am
+   */
+  constructor (left, right, index, currentAttributes, am) {
+    this.left = left
+    this.right = right
+    this.index = index
+    this.currentAttributes = currentAttributes
+    this.am = am
+  }
+
+  /**
+   * Only call this if you know that this.right is defined
+   */
+  forward () {
+    if (this.right === null) {
+      error.unexpectedCase()
+    }
+    switch (this.right.content.constructor) {
+      case ContentFormat:
+        if (!this.right.deleted) {
+          updateCurrentAttributes(this.currentAttributes, /** @type {ContentFormat} */ (this.right.content))
+        }
+        break
+      default:
+        this.index += this.am.contentLength(this.right)
+        break
+    }
+    this.left = this.right
+    this.right = this.right.right
+  }
+
+  /**
+   * @param {Transaction} transaction
+   * @param {YType} parent
+   * @param {number} length
+   * @param {Object<string,any>} attributes
+   *
+   * @function
+   */
+  formatText (transaction, parent, length, attributes) {
+    minimizeAttributeChanges(this, attributes)
+    const negatedAttributes = insertAttributes(transaction, parent, this, attributes)
+    // iterate until first non-format or null is found
+    // delete all formats with attributes[format.key] != null
+    // also check the attributes after the first non-format as we do not want to insert redundant negated attributes there
+    // eslint-disable-next-line no-labels
+    iterationLoop: while (
+      this.right !== null &&
+      (length > 0 ||
+        (
+          negatedAttributes.size > 0 &&
+          ((this.right.deleted && this.am.contentLength(this.right) === 0) || this.right.content.constructor === ContentFormat)
+        )
+      )
+    ) {
+      switch (this.right.content.constructor) {
+        case ContentFormat: {
+          if (!this.right.deleted) {
+            const { key, value } = /** @type {ContentFormat} */ (this.right.content)
+            const attr = attributes[key]
+            if (attr !== undefined) {
+              if (equalAttrs(attr, value)) {
+                negatedAttributes.delete(key)
+              } else {
+                if (length === 0) {
+                  // no need to further extend negatedAttributes
+                  // eslint-disable-next-line no-labels
+                  break iterationLoop
+                }
+                negatedAttributes.set(key, value)
+              }
+              this.right.delete(transaction)
+            } else {
+              this.currentAttributes.set(key, value)
+            }
+          }
+          break
+        }
+        default: {
+          const item = this.right
+          const rightLen = this.am.contentLength(item)
+          if (length < rightLen) {
+            /**
+             * @type {Array<import('./internals.js').AttributedContent<any>>}
+             */
+            const contents = []
+            this.am.readContent(contents, item.id.client, item.id.clock, item.deleted, item.content, 0)
+            let i = 0
+            for (; i < contents.length && length > 0; i++) {
+              const c = contents[i]
+              if ((!c.deleted || c.attrs != null) && c.content.isCountable()) {
+                length -= c.content.getLength()
+              }
+            }
+            if (length < 0 || (length === 0 && i !== contents.length)) {
+              const c = contents[--i]
+              getItemCleanStart(transaction, createID(item.id.client, c.clock + c.content.getLength() + length))
+            }
+          } else {
+            length -= rightLen
+          }
+          break
+        }
+      }
+      this.forward()
+    }
+    if (length > 0) {
+      throw new Error('Exceeded content range')
+    }
+    insertNegatedAttributes(transaction, parent, this, negatedAttributes)
+  }
+}
+
+/**
+ * Negate applied formats
+ *
+ * @param {Transaction} transaction
+ * @param {YType} parent
+ * @param {ItemTextListPosition} currPos
+ * @param {Map<string,any>} negatedAttributes
+ *
+ * @private
+ * @function
+ */
+const insertNegatedAttributes = (transaction, parent, currPos, negatedAttributes) => {
+  // check if we really need to remove attributes
+  while (
+    currPos.right !== null && (
+      (currPos.right.deleted && (currPos.am === noAttributionsManager || currPos.am.contentLength(currPos.right) === 0)) || (
+        currPos.right.content.constructor === ContentFormat &&
+        equalAttrs(negatedAttributes.get(/** @type {ContentFormat} */ (currPos.right.content).key), /** @type {ContentFormat} */ (currPos.right.content).value)
+      )
+    )
+  ) {
+    if (!currPos.right.deleted) {
+      negatedAttributes.delete(/** @type {ContentFormat} */ (currPos.right.content).key)
+    }
+    currPos.forward()
+  }
+  const doc = transaction.doc
+  const ownClientId = doc.clientID
+  negatedAttributes.forEach((val, key) => {
+    const left = currPos.left
+    const right = currPos.right
+    const nextFormat = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
+    nextFormat.integrate(transaction, 0)
+    currPos.right = nextFormat
+    currPos.forward()
+  })
+}
+
+/**
+ * @param {Map<string,any>} currentAttributes
+ * @param {ContentFormat} format
+ *
+ * @private
+ * @function
+ */
+const updateCurrentAttributes = (currentAttributes, format) => {
+  const { key, value } = format
+  if (value === null) {
+    currentAttributes.delete(key)
+  } else {
+    currentAttributes.set(key, value)
+  }
+}
+
+/**
+ * @param {ItemTextListPosition} currPos
+ * @param {Object<string,any>} attributes
+ *
+ * @private
+ * @function
+ */
+const minimizeAttributeChanges = (currPos, attributes) => {
+  // go right while attributes[right.key] === right.value (or right is deleted)
+  while (true) {
+    if (currPos.right === null) {
+      break
+    } else if (currPos.right.deleted ? (currPos.am.contentLength(currPos.right) === 0) : (!currPos.right.deleted && currPos.right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (currPos.right.content)).key] ?? null, /** @type {ContentFormat} */ (currPos.right.content).value))) {
+      //
+    } else {
+      break
+    }
+    currPos.forward()
+  }
+}
+
+/**
+ * @param {Transaction} transaction
+ * @param {YType} parent
+ * @param {ItemTextListPosition} currPos
+ * @param {Object<string,any>} attributes
+ * @return {Map<string,any>}
+ *
+ * @private
+ * @function
+ **/
+const insertAttributes = (transaction, parent, currPos, attributes) => {
+  const doc = transaction.doc
+  const ownClientId = doc.clientID
+  const negatedAttributes = new Map()
+  // insert format-start items
+  for (const key in attributes) {
+    const val = attributes[key]
+    const currentVal = currPos.currentAttributes.get(key) ?? null
+    if (!equalAttrs(currentVal, val)) {
+      // save negated attribute (set null if currentVal undefined)
+      negatedAttributes.set(key, currentVal)
+      const { left, right } = currPos
+      currPos.right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
+      currPos.right.integrate(transaction, 0)
+      currPos.forward()
+    }
+  }
+  return negatedAttributes
+}
+
+/**
+ * @param {Transaction} transaction
+ * @param {YType} parent
+ * @param {ItemTextListPosition} currPos
+ * @param {import('./structs/Item.js').AbstractContent} content
+ * @param {Object<string,any>} attributes
+ *
+ * @private
+ * @function
+ **/
+export const insertContent = (transaction, parent, currPos, content, attributes) => {
+  currPos.currentAttributes.forEach((_val, key) => {
+    if (attributes[key] === undefined) {
+      attributes[key] = null
+    }
+  })
+  const doc = transaction.doc
+  const ownClientId = doc.clientID
+  minimizeAttributeChanges(currPos, attributes)
+  const negatedAttributes = insertAttributes(transaction, parent, currPos, attributes)
+  let { left, right, index } = currPos
+  if (parent._searchMarker) {
+    updateMarkerChanges(parent._searchMarker, currPos.index, content.getLength())
+  }
+  right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, content)
+  right.integrate(transaction, 0)
+  currPos.right = right
+  currPos.index = index
+  currPos.forward()
+  insertNegatedAttributes(transaction, parent, currPos, negatedAttributes)
+}
+
+/**
+ * @param {Transaction} transaction
+ * @param {YType} parent
+ * @param {ItemTextListPosition} currPos
+ * @param {Array<any>|string} insert
+ * @param {Object<string,any>} attributes
+ */
+export const insertContentHelper = (transaction, parent, currPos, insert, attributes) => {
+  if (s.$string.check(insert)) {
+    insertContent(transaction, parent, currPos, new ContentString(insert), attributes)
+  } else {
+    insert = insert.map(ins => delta.$deltaAny.check(ins) ? YType.from(ins) : ins)
+    for (let i = 0; i < insert.length;) {
+      const first = insert[i]
+      if (first instanceof YType) {
+        insertContent(transaction, parent, currPos, new ContentType(first), attributes)
+        i++
+      } else if (first instanceof Doc) {
+        insertContent(transaction, parent, currPos, new ContentDoc(first), attributes)
+        i++
+      } else {
+        // insert "any" content
+        // compute slice len
+        let j = i + 1
+        for (; j < insert.length && !(insert[j] instanceof YType || insert[j] instanceof Doc); j++) { /* nop */ }
+        insertContent(transaction, parent, currPos, new ContentAny((i === 0 && j === insert.length) ? insert : insert.slice(i, j)), attributes)
+        i = j
+      }
+    }
+  }
+}
+
+/**
+ * @param {Transaction} transaction
+ * @param {ItemTextListPosition} currPos
+ * @param {number} length
+ * @return {ItemTextListPosition}
+ *
+ * @private
+ * @function
+ */
+export const deleteText = (transaction, currPos, length) => {
+  const startLength = length
+  const startAttrs = map.copy(currPos.currentAttributes)
+  const start = currPos.right
+  while (length > 0 && currPos.right !== null) {
+    const item = currPos.right
+    if (!item.deleted && item.countable) {
+      if (length < item.length) {
+        getItemCleanStart(transaction, createID(item.id.client, item.id.clock + length))
+      }
+      length -= item.length
+      item.delete(transaction)
+    } else if (currPos.am !== noAttributionsManager) {
+      /**
+       * @type {Array<import('./internals.js').AttributedContent<any>>}
+       */
+      const contents = []
+      currPos.am.readContent(contents, item.id.client, item.id.clock, true, item.content, 0)
+      for (let i = 0; i < contents.length; i++) {
+        const c = contents[i]
+        if (c.content.isCountable() && c.attrs != null) {
+          // deleting already deleted content. store that information in a meta property, but do
+          // nothing
+          const contentLen = math.min(c.content.getLength(), length)
+          map.setIfUndefined(transaction.meta, 'attributedDeletes', createIdSet).add(item.id.client, c.clock, contentLen)
+          length -= contentLen
+        }
+      }
+      const lastContent = contents.length > 0 ? contents[contents.length - 1] : null
+      const nextItemClock = item.id.clock + item.length
+      const nextContentClock = lastContent != null ? lastContent.clock + lastContent.content.getLength() : nextItemClock
+      if (nextContentClock < nextItemClock) {
+        getItemCleanStart(transaction, createID(item.id.client, nextContentClock))
+      }
+    }
+    currPos.forward()
+  }
+  if (start) {
+    cleanupFormattingGap(transaction, start, currPos.right, startAttrs, currPos.currentAttributes)
+  }
+  const parent = /** @type {YType<any>} */ (/** @type {Item} */ (currPos.left || currPos.right).parent)
+  if (parent._searchMarker) {
+    updateMarkerChanges(parent._searchMarker, currPos.index, -startLength + length)
+  }
+  return currPos
+}
 
 export class ArraySearchMarker {
   /**
@@ -116,7 +460,7 @@ const markPosition = (searchMarker, p, index) => {
  *
  * This function always returns a refreshed marker (updated timestamp)
  *
- * @param {import('../utils/types.js').YType} yarray
+ * @param {YType} yarray
  * @param {number} index
  */
 export const findMarker = (yarray, index) => {
@@ -157,31 +501,6 @@ export const findMarker = (yarray, index) => {
       pindex -= p.length
     }
   }
-
-  // @todo remove!
-  // assure position
-  // {
-  //   let start = yarray._start
-  //   let pos = 0
-  //   while (start !== p) {
-  //     if (!start.deleted && start.countable) {
-  //       pos += start.length
-  //     }
-  //     start = /** @type {Item} */ (start.right)
-  //   }
-  //   if (pos !== pindex) {
-  //     debugger
-  //     throw new Error('Gotcha position fail!')
-  //   }
-  // }
-  // if (marker) {
-  //   if (window.lengths == null) {
-  //     window.lengths = []
-  //     window.getLengths = () => window.lengths.sort((a, b) => a - b)
-  //   }
-  //   window.lengths.push(marker.index - pindex)
-  //   console.log('distance', marker.index - pindex, 'len', p && p.parent.length)
-  // }
   if (marker !== null && math.abs(marker.index - pindex) < /** @type {any} */ (p.parent).length / maxSearchMarker) {
     // adjust existing marker
     overwriteMarker(marker, p, pindex)
@@ -237,7 +556,7 @@ export const updateMarkerChanges = (searchMarker, index, len) => {
 /**
  * Accumulate all (list) children of a type and return them as an Array.
  *
- * @param {import('../utils/types.js').YType} t
+ * @param {YType} t
  * @return {Array<Item>}
  */
 export const getTypeChildren = t => {
@@ -255,7 +574,7 @@ export const getTypeChildren = t => {
  * Call event listeners with an event. This will also add an event to all
  * parents (for `.observeDeep` handlers).
  *
- * @param {import('../utils/types.js').YType} type
+ * @param {YType} type
  * @param {Transaction} transaction
   * @param {YEvent<any>} event
  */
@@ -268,18 +587,24 @@ export const callTypeObservers = (type, transaction, event) => {
     if (type._item === null) {
       break
     }
-    type = /** @type {import('../utils/types.js').YType} */ (type._item.parent)
+    type = /** @type {YType} */ (type._item.parent)
   }
   callEventHandlerListeners(/** @type {any} */ (changedType._eH), event, transaction)
 }
 
 /**
  * Abstract Yjs Type class
- * @template {delta.Delta<any,any,any,any,any>} [EventDelta=any]
- * @template {AbstractType<any,any>} [Self=any]
+ * @template {delta.DeltaConf} [DConf=any]
  */
-export class AbstractType {
-  constructor () {
+export class YType {
+  /**
+   * @param {delta.DeltaConfGetName<DConf>?} name
+   */
+  constructor (name = null) {
+    /**
+     * @type {delta.DeltaConfGetName<DConf>}
+     */
+    this.name = /** @type {delta.DeltaConfGetName<DConf>} */ (name)
     /**
      * @type {Item|null}
      */
@@ -299,12 +624,12 @@ export class AbstractType {
     this._length = 0
     /**
      * Event handlers
-     * @type {EventHandler<YEvent<Self>,Transaction>}
+     * @type {EventHandler<YEvent<DeltaToYType<DConf>>,Transaction>}
      */
     this._eH = createEventHandler()
     /**
      * Deep event handlers
-     * @type {EventHandler<Array<YEvent<any>>,Transaction>}
+     * @type {EventHandler<YEvent<DConf>,Transaction>}
      */
     this._dEH = createEventHandler()
     /**
@@ -312,24 +637,51 @@ export class AbstractType {
      */
     this._searchMarker = null
     /**
-     * @type {EventDelta?}
+     * @type {delta.DeltaBuilder<DConf>}
+     * @private
      */
-    this._prelim = null
+    this._content = /** @type {delta.DeltaBuilderAny} */ (delta.create())
+    this._legacyTypeRef = this.name == null ? contentType.YXmlFragmentRefID : contentType.YXmlElementRefID
+    /**
+     * @type {Array<ArraySearchMarker>|null}
+     */
+    this._searchMarker = []
+    /**
+     * Whether this YText contains formatting attributes.
+     * This flag is updated when a formatting item is integrated (see ContentFormat.integrate)
+     */
+    this._hasFormatting = false
+  }
+
+  /**
+   * @template {delta.DeltaConf} DC
+   * @param {delta.Delta<DC>} d
+   * @return {YType<DC>}
+   */
+  static from (d) {
+    const yt = new YType(d.name)
+    yt.applyDelta(d)
+    return yt
+  }
+
+  get length () {
+    this.doc ?? warnPrematureAccess()
+    return this._length
   }
 
   /**
    * Returns a fresh delta that can be used to change this YType.
-   * @type {EventDelta}
+   * @type {delta.DeltaBuilder<DeltaToYType<DConf>>}
    */
   get change () {
     return /** @type {any} */ (delta.create())
   }
 
   /**
-   * @return {import('../utils/types.js').YType|null}
+   * @return {YType<any>?}
    */
   get parent () {
-    return /** @type {import('../utils/types.js').YType} */ (this._item ? this._item.parent : null)
+    return /** @type {YType<any>?} */ (this._item ? this._item.parent : null)
   }
 
   /**
@@ -352,39 +704,10 @@ export class AbstractType {
   }
 
   /**
-   * @return {Self}
+   * @return {YType<DConf>}
    */
   _copy () {
-    // @ts-ignore
-    return new this.constructor()
-  }
-
-  /**
-   * Makes a copy of this data type that can be included somewhere else.
-   *
-   * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
-   *
-   * @return {Self}
-   */
-  clone () {
-    // @todo remove this method from othern types by doing `_copy().apply(this.getContent())`
-    throw error.methodUnimplemented()
-  }
-
-  /**
-   * @param {UpdateEncoderV1 | UpdateEncoderV2} _encoder
-   */
-  _write (_encoder) { }
-
-  /**
-   * The first non-deleted item
-   */
-  get _first () {
-    let n = this._start
-    while (n !== null && n.deleted) {
-      n = n.right
-    }
-    return n
+    return new YType(this.name)
   }
 
   /**
@@ -400,12 +723,16 @@ export class AbstractType {
     if (!transaction.local && this._searchMarker) {
       this._searchMarker.length = 0
     }
+    // If a remote change happened, we try to cleanup potential formatting duplicates.
+    if (!transaction.local && this._hasFormatting) {
+      transaction._needFormattingCleanup = true
+    }
   }
 
   /**
    * Observe all events that are created on this type.
    *
-   * @template {(target: YEvent<Self>, tr: Transaction) => void} F
+   * @template {(target: YEvent<DeltaToYType<DConf>>, tr: Transaction) => void} F
    * @param {F} f Observer function
    * @return {F}
    */
@@ -417,7 +744,7 @@ export class AbstractType {
   /**
    * Observe all events that are created by this type and its children.
    *
-   * @template {function(Array<YEvent<any>>,Transaction):void} F
+   * @template {function(YEvent<DConf>,Transaction):void} F
    * @param {F} f Observer function
    * @return {F}
    */
@@ -429,7 +756,7 @@ export class AbstractType {
   /**
    * Unregister an observer function.
    *
-   * @param {(type:YEvent<Self>,tr:Transaction)=>void} f Observer function
+   * @param {(type:YEvent<DeltaToYType<DConf>>,tr:Transaction)=>void} f Observer function
    */
   unobserve (f) {
     removeEventHandlerListener(this._eH, f)
@@ -438,17 +765,11 @@ export class AbstractType {
   /**
    * Unregister an observer function.
    *
-   * @param {function(Array<YEvent<any>>,Transaction):void} f Observer function
+   * @param {function(YEvent<DConf>,Transaction):void} f Observer function
    */
   unobserveDeep (f) {
     removeEventHandlerListener(this._dEH, f)
   }
-
-  /**
-   * @abstract
-   * @return {any}
-   */
-  toJSON () {}
 
   /**
    * Render the difference to another ydoc (which can be empty) and highlight the differences with
@@ -461,24 +782,24 @@ export class AbstractType {
    *
    * @param {AbstractAttributionManager} am
    * @param {Object} [opts]
-   * @param {import('../utils/IdSet.js').IdSet?} [opts.itemsToRender]
+   * @param {import('./utils/IdSet.js').IdSet?} [opts.itemsToRender]
    * @param {boolean} [opts.retainInserts] - if true, retain rendered inserts with attributions
    * @param {boolean} [opts.retainDeletes] - if true, retain rendered+attributed deletes only
-   * @param {import('../utils/IdSet.js').IdSet?} [opts.deletedItems] - used for computing prevItem in attributes
-   * @param {Map<import('../utils/types.js').YType,Set<string|null>>|null} [opts.modified] - set of types that should be rendered as modified children
+   * @param {import('./utils/IdSet.js').IdSet?} [opts.deletedItems] - used for computing prevItem in attributes
+   * @param {Map<YType,Set<string|null>>|null} [opts.modified] - set of types that should be rendered as modified children
    * @param {Deep} [opts.deep] - render child types as delta
-   * @return {Deep extends true ? ToDeepEventDelta<EventDelta> : EventDelta} The Delta representation of this type.
+   * @return {Deep extends true ? delta.Delta<DConf> : delta.Delta<DeltaConfDeltaToYType<DConf>>} The Delta representation of this type.
    *
    * @public
    */
   getContent (am = noAttributionsManager, opts = {}) {
     const { itemsToRender = null, retainInserts = false, retainDeletes = false, deletedItems = null, modified = null, deep = false } = opts
     const renderAttrs = modified?.get(this) || null
-    const renderChildren = (modified == null || opts.modified.get(this)?.has(null))
+    const renderChildren = !!(modified == null || modified.get(this)?.has(null))
     /**
-     * @type {EventDelta extends delta.Delta<infer N,infer Attrs,infer Children,infer Text,any> ? delta.DeltaBuilder<N,Attrs,Children,Text,any> : never}
+     * @type {delta.DeltaBuilderAny}
      */
-    const d = /** @type {any} */ (delta.create(/** @type {any} */ (this).nodeName || null))
+    const d = /** @type {any} */ (delta.create(this.name))
     const optsAll = modified == null ? opts : object.assign({}, opts, { modified: null })
     typeMapGetDelta(d, /** @type {any} */ (this), renderAttrs, am, deep, modified, deletedItems, itemsToRender, opts, optsAll)
     if (renderChildren) {
@@ -507,7 +828,7 @@ export class AbstractType {
        */
       const previousAttributes = {} // The value before changes
       /**
-       * @type {Array<import('../internals.js').AttributedContent<any>>}
+       * @type {Array<import('./internals.js').AttributedContent<any>>}
        */
       const cs = []
       for (let item = this._start; item !== null; cs.length = 0) {
@@ -656,7 +977,7 @@ export class AbstractType {
               // # Update Attributions
               if (attribution != null || object.hasProperty(previousUnattributedAttributes, key)) {
                 /**
-                 * @type {import('../utils/AttributionManager.js').Attribution}
+                 * @type {import('./utils/AttributionManager.js').Attribution}
                  */
                 const formattingAttribution = object.assign({}, d.usedAttribution)
                 const changedAttributedAttributes = /** @type {{ [key: string]: Array<any> }} */ (formattingAttribution.format = object.assign({}, formattingAttribution.format ?? {}))
@@ -693,7 +1014,7 @@ export class AbstractType {
    * attributions.
    *
    * @param {AbstractAttributionManager} am
-   * @return {ToDeepEventDelta<EventDelta>}
+   * @return {delta.Delta<DConf>}
    */
   getContentDeep (am = noAttributionsManager) {
     return /** @type {any} */ (this.getContent(am, { deep: true }))
@@ -702,7 +1023,7 @@ export class AbstractType {
   /**
    * Apply a {@link Delta} on this shared type.
    *
-   * @param {delta.Delta<any,any,any,any,any>} d The changes to apply on this element.
+   * @param {delta.DeltaAny} d The changes to apply on this element.
    * @param {AbstractAttributionManager} am
    *
    * @public
@@ -716,21 +1037,9 @@ export class AbstractType {
         const currPos = new ItemTextListPosition(null, this._start, 0, new Map(), am)
         for (const op of d.children) {
           if (delta.$textOp.check(op)) {
-            insertText(transaction, /** @type {any} */ (this), currPos, op.insert, op.format || {})
+            insertContent(transaction, /** @type {any} */ (this), currPos, new ContentString(op.insert), op.format || {})
           } else if (delta.$insertOp.check(op)) {
-            for (let i = 0; i < op.insert.length; i++) {
-              let ins = op.insert[i]
-              if (delta.$deltaAny.check(ins)) {
-                if (ins.name != null) {
-                  const t = new YXmlElement(ins.name)
-                  t.applyDelta(ins)
-                  ins = t
-                } else {
-                  error.unexpectedCase()
-                }
-              }
-              insertText(transaction, /** @type {any} */ (this), currPos, ins, op.format || {})
-            }
+            insertContentHelper(transaction, this, currPos, op.insert, op.format || {})
           } else if (delta.$retainOp.check(op)) {
             currPos.formatText(transaction, /** @type {any} */ (this), op.retain, op.format || {})
           } else if (delta.$deleteOp.check(op)) {
@@ -747,13 +1056,13 @@ export class AbstractType {
           }
         }
         for (const op of d.attrs) {
-          if (delta.$insertOp.check(op)) {
-            typeMapSet(transaction, /** @type {any} */ (this), op.key, op.value)
-          } else if (delta.$deleteOp.check(op)) {
-            typeMapDelete(transaction, /** @type {any} */ (this), op.key)
+          if (delta.$setAttrOp.check(op)) {
+            typeMapSet(transaction, /** @type {any} */ (this), /** @type {any} */ (op.key), op.value)
+          } else if (delta.$deleteAttrOp.check(op)) {
+            typeMapDelete(transaction, /** @type {any} */ (this), /** @type {any} */ (op.key))
           } else {
-            const sub = typeMapGet(/** @type {any} */ (this), op.key)
-            if (!(sub instanceof AbstractType)) {
+            const sub = typeMapGet(/** @type {any} */ (this), /** @type {any} */ (op.key))
+            if (!(sub instanceof YType)) {
               error.unexpectedCase()
             }
             sub.applyDelta(op.value)
@@ -761,7 +1070,383 @@ export class AbstractType {
         }
       })
     }
+    return this
   }
+
+  /**
+   * Makes a copy of this data type that can be included somewhere else.
+   *
+   * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+   *
+   * @return {YType<DConf>}
+   */
+  clone () {
+    const cpy = this._copy()
+    cpy.applyDelta(this.getContentDeep())
+    return cpy
+  }
+
+  /**
+   * Removes all elements from this YMap.
+   */
+  clearAttrs () {
+    const d = delta.create()
+    this.forEachAttr((_, key) => {
+      d.deleteAttr(/** @type {any} */ (key))
+    })
+    this.applyDelta(d)
+  }
+
+  /**
+   * Removes an attribute from this YXmlElement.
+   *
+   * @param {string} attributeName The attribute name that is to be removed.
+   *
+   * @public
+   */
+  deleteAttr (attributeName) {
+    this.applyDelta(delta.create().deleteAttr(attributeName).done())
+  }
+
+  /**
+   * Sets or updates an attribute.
+   *
+   * @template {Exclude<keyof delta.DeltaConfGetAttrs<DConf>,symbol>} KEY
+   * @template {delta.DeltaConfGetAttrs<DConf>[KEY]} VAL
+   *
+   * @param {KEY} attributeName The attribute name that is to be set.
+   * @param {VAL} attributeValue The attribute value that is to be set.
+   * @return {VAL}
+   *
+   * @public
+   */
+  setAttr (attributeName, attributeValue) {
+    this.applyDelta(delta.create().setAttr(attributeName, attributeValue).done())
+    return attributeValue
+  }
+
+  /**
+   * Returns an attribute value that belongs to the attribute name.
+   *
+   * @template {Exclude<keyof delta.DeltaConfGetAttrs<DConf>,symbol|number>} KEY
+   * @param {KEY} attributeName The attribute name that identifies the queried value.
+   * @return {delta.DeltaConfGetAttrs<DConf>[KEY]|undefined} The queried attribute value.
+   * @public
+   */
+  getAttr (attributeName) {
+    return /** @type {any} */ (typeMapGet(this, attributeName))
+  }
+
+  /**
+   * Returns whether an attribute exists
+   *
+   * @param {string} attributeName The attribute name to check for existence.
+   * @return {boolean} whether the attribute exists.
+   *
+   * @public
+   */
+  hasAttr (attributeName) {
+    return /** @type {any} */ (typeMapHas(this, attributeName))
+  }
+
+  /**
+   * Returns all attribute name/value pairs in a JSON Object.
+   *
+   * @param {Snapshot} [snapshot]
+   * @return {{ [Key in Extract<keyof delta.DeltaConfGetAttrs<DConf>,string>]?: delta.DeltaConfGetAttrs<DConf>[Key]}} A JSON Object that describes the attributes.
+   *
+   * @public
+   */
+  getAttrs (snapshot) {
+    return /** @type {any} */ (snapshot ? typeMapGetAllSnapshot(this, snapshot) : typeMapGetAll(this))
+  }
+
+  /**
+   * Inserts new content at an index.
+   *
+   * Important: This function expects an array of content. Not just a content
+   * object. The reason for this "weirdness" is that inserting several elements
+   * is very efficient when it is done as a single operation.
+   *
+   * @example
+   *  // Insert character 'a' at position 0
+   *  yarray.insert(0, ['a'])
+   *  // Insert numbers 1, 2 at position 1
+   *  yarray.insert(1, [1, 2])
+   *
+   * @param {number} index The index to insert content at.
+   * @param {Array<delta.DeltaConfGetChildren<DConf>>|delta.DeltaConfGetText<DConf>} content Array of content to append.
+   * @param {delta.FormattingAttributes} [format]
+   */
+  insert (index, content, format) {
+    this.applyDelta(delta.create().retain(index).insert(/** @type {any} */ (content), format))
+  }
+
+  /**
+   * Inserts new content at an index.
+   *
+   * Important: This function expects an array of content. Not just a content
+   * object. The reason for this "weirdness" is that inserting several elements
+   * is very efficient when it is done as a single operation.
+   *
+   * @example
+   *  // Insert character 'a' at position 0
+   *  yarray.insert(0, ['a'])
+   *  // Insert numbers 1, 2 at position 1
+   *  yarray.insert(1, [1, 2])
+   *
+   * @param {number} index The index to insert content at.
+   * @param {number} length The index to insert content at.
+   * @param {delta.FormattingAttributes} formats
+   *
+   */
+  format (index, length, formats) {
+    this.applyDelta(delta.create().retain(index).retain(length, formats))
+  }
+
+  /**
+   * Appends content to this YArray.
+   *
+   * @param {Array<delta.DeltaConfGetChildren<DConf>>|delta.DeltaConfGetText<DConf>} content Array of content to append.
+   *
+   * @todo Use the following implementation in all types.
+   */
+  push (content) {
+    this.insert(this.length, content)
+  }
+
+  /**
+   * Prepends content to this YArray.
+   *
+   * @param {delta.DeltaConfGetText<DConf>} content Array of content to prepend.
+   */
+  unshift (content) {
+    this.insert(0, content)
+  }
+
+  /**
+   * Deletes elements starting from an index.
+   *
+   * @param {number} index Index at which to start deleting elements
+   * @param {number} length The number of elements to remove. Defaults to 1.
+   */
+  delete (index, length = 1) {
+    this.applyDelta(delta.create().retain(index).delete(length))
+  }
+
+  /**
+   * Returns the i-th element from a YArray.
+   *
+   * @param {number} index The index of the element to return from the YArray
+   * @return {delta.DeltaConfGetChildren<DConf>}
+   */
+  get (index) {
+    return typeListGet(this, index)
+  }
+
+  /**
+   * Returns a portion of this YXmlFragment into a JavaScript Array selected
+   * from start to end (end not included).
+   *
+   * @param {number} [start]
+   * @param {number} [end]
+   * @return {Array<delta.DeltaConfGetChildren<DConf>>}
+   */
+  slice (start = 0, end = this.length) {
+    return typeListSlice(this, start, end)
+  }
+
+  /**
+   * @todo refactor this, this should use getContent only!
+   *
+   * Transforms this YArray to a JavaScript Array.
+   *
+   * @return {Array<delta.DeltaConfGetChildren<DConf> | delta.DeltaConfGetText<DConf>>}
+   */
+  toArray () {
+    const dcontent = this.getContent()
+    /**
+     * @type {Array<any>}
+     */
+    const children = []
+    for (const child of dcontent.children) {
+      if (delta.$insertOp.check(child)) {
+        children.push(...child.insert)
+      } else if (delta.$textOp.check(child)) {
+        children.push(child.insert)
+      }
+    }
+    return children
+  }
+
+  /**
+   * Transforms this Shared Type to a JSON object.
+   * @return {{ name?: string, attrs?: { [K:string|number]: any }, children?: Array<any>  }}
+   */
+  toJSON () {
+    /**
+     * @type {{[K:string]:any}}
+     */
+    const attrs = this.getAttrs()
+    for (const k in attrs) {
+      const attr = attrs[k]
+      attrs[k] = attr instanceof YType ? attr.toJSON() : attr
+    }
+    const children = this.toArray().map(child => child instanceof YType ? /** @type {any} */ (child.toJSON()) : child)
+    /**
+     * @type {any}
+     */
+    const res = {}
+    if (this.name != null) {
+      res.name = this.name
+    }
+    if (this.length > 0) {
+      res.children = children
+    }
+    if (this.attrSize > 0) {
+      res.attrs = attrs
+    }
+    return res
+  }
+
+  /**
+   * @param {object} opts
+   * @param {boolean} [opts.forceTag] enforce creating a surrouning <name /> tag, even if it is null.
+   */
+  toString ({ forceTag = false } = {}) {
+    /**
+     * @type {Array<[string|number,string]>}
+     */
+    const attrs = []
+    this.forEachAttr((attr, key) => {
+      attrs.push([(key), /** @type {any} */ (attr) instanceof YType ? attr.toString({ forceTag: true }) : JSON.stringify(attr)])
+    })
+    const attrsString = (attrs.length > 0 ? ' ' : '') + attrs.sort((a, b) => a[0].toString() < b[0].toString() ? -1 : 1).map(attr => attr[0] + '=' + attr[1]).join(' ')
+    /**
+     * @type {string}
+     */
+    const children = this.toArray().map(c => s.$string.check(c) ? c : (c instanceof YType ? c.toString({ forceTag: true }) : JSON.stringify(c))).join('')
+    if (this.name == null && !forceTag && attrs.length === 0) {
+      return children
+    }
+    if (this.length === 0) {
+      return `<${this.name ?? ''}${attrsString} />`
+    }
+    return `<${this.name ?? ''}${attrsString}>${children}</${this.name ?? ''}>`
+  }
+
+  /**
+   * Returns an Array with the result of calling a provided function on every
+   * child-element.
+   *
+   * @template M
+   * @param {(child:delta.DeltaConfGetChildren<DConf>|delta.DeltaConfGetText<DConf>,index:number)=>M} f Function that produces an element of the new Array
+   * @return {Array<M>} A new array with each element being the result of the
+   *                 callback function
+   */
+  map (f) {
+    return this.toArray().map(f)
+  }
+
+  /**
+   * Executes a provided function once on every element of this YArray.
+   *
+   * @param {(child:delta.DeltaConfGetChildren<DConf>|delta.DeltaConfGetText<DConf>,index:number)=>any} f Function that produces an element of the new Array
+   */
+  forEach (f) {
+    return this.toArray().forEach(f)
+  }
+
+  /**
+   * Executes a provided function on once on every key-value pair.
+   *
+   * @param {(val:delta.DeltaConfGetAttrs<DConf>[any],key:Exclude<keyof delta.DeltaConfGetAttrs<DConf>,symbol>,ytype:this)=>any} f
+   */
+  forEachAttr (f) {
+    this._map.forEach((item, key) => {
+      if (!item.deleted) {
+        f(item.content.getContent()[item.length - 1], /** @type {any} */ (key), this)
+      }
+    })
+  }
+
+  /**
+   * Returns the keys for each element in the YMap Type.
+   *
+   * @return {IterableIterator<import('lib0/ts').KeyOf<delta.DeltaConfGetAttrs<DConf>>>}
+   */
+  attrKeys () {
+    return iterator.iteratorMap(createMapIterator(this), /** @param {any} v */ v => v[0])
+  }
+
+  /**
+   * Returns the values for each element in the YMap Type.
+   *
+   * @return {IterableIterator<delta.DeltaConfGetAttrs<DConf>[any]>}
+   */
+  attrValues () {
+    return iterator.iteratorMap(createMapIterator(this), /** @param {any} v */ v => v[1].content.getContent()[v[1].length - 1])
+  }
+
+  /**
+   * Returns an Iterator of [key, value] pairs
+   *
+   * @return {IterableIterator<{ [K in keyof delta.DeltaConfGetAttrs<DConf>]: [K,delta.DeltaConfGetAttrs<DConf>[K]] }[any]>}
+   */
+  attrEntries () {
+    return iterator.iteratorMap(createMapIterator(this), /** @param {any} v */ v => /** @type {any} */ ([v[0], v[1].content.getContent()[v[1].length - 1]]))
+  }
+
+  /**
+   * Returns the number of stored attributes (count of key/value pairs)
+   *
+   * @return {number}
+   */
+  get attrSize () {
+    return [...createMapIterator(this)].length
+  }
+
+  /**
+   * @param {this} other
+   */
+  [traits.EqualityTraitSymbol] (other) {
+    return this.getContent().equals(other.getContent())
+  }
+
+  /**
+   * @todo this doesn't need to live in a method.
+   *
+   * Transform the properties of this type to binary and write it to an
+   * BinaryEncoder.
+   *
+   * This is called when this Item is sent to a remote peer.
+   *
+   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
+   */
+  _write (encoder) {
+    encoder.writeTypeRef(this._legacyTypeRef)
+    switch (this._legacyTypeRef) {
+      case contentType.YXmlElementRefID:
+      case contentType.YXmlHookRefID: {
+        encoder.writeKey(this.name)
+        break
+      }
+    }
+  }
+}
+
+/**
+ * @param {import('./utils/UpdateDecoder.js').UpdateDecoderV1 | import('./utils/UpdateDecoder.js').UpdateDecoderV2} decoder
+ * @return {YType}
+ *
+ * @private
+ * @function
+ */
+export const readYType = decoder => {
+  const typeRef = decoder.readTypeRef()
+  const ytype = new YType(typeRef === contentType.YXmlElementRefID || typeRef === contentType.YXmlHookRefID ? decoder.readKey() : null)
+  ytype._legacyTypeRef = typeRef
+  return ytype
 }
 
 /**
@@ -772,25 +1457,21 @@ export class AbstractType {
 export const equalAttrs = (a, b) => a === b || (typeof a === 'object' && typeof b === 'object' && a && b && object.equalFlat(a, b))
 
 /**
- * @template {delta.Delta<any,any,any,any,any>} D
- * @typedef {D extends delta.Delta<infer N,infer Attrs,infer Cs,infer Text,any>
- *   ? delta.Delta<
- *       N,
- *       { [K in keyof Attrs]: TypeToDelta<Attrs[K]> },
- *       TypeToDelta<Cs>,
- *       Text
- *     >
- *   : D
- * } ToDeepEventDelta
+ * @template {delta.DeltaConf} DConf
+ * @typedef {delta.DeltaConfOverwrite<DConf, {
+ *     attrs: { [K in keyof delta.DeltaConfGetAttrs<DConf>]: DeltaToYType<delta.DeltaConfGetAttrs<DConf>[K]> },
+ *     children: DeltaToYType<delta.DeltaConfGetChildren<DConf>>
+ *   }>
+ * } DeltaConfDeltaToYType
  */
 
 /**
- * @template {any} T
- * @typedef {(Extract<T,AbstractType<any>> extends AbstractType<infer D> ? (unknown extends D ? never : ToDeepEventDelta<D>) : never) | Exclude<T,AbstractType<any>>} TypeToDelta
+ * @template {any} Data
+ * @typedef {Exclude<Data,delta.DeltaAny> | (Extract<Data,delta.DeltaAny> extends delta.Delta<infer DConf> ? (unknown extends DConf ? YType<DConf> : never) : never)} DeltaToYType
  */
 
 /**
- * @param {AbstractType<any>} type
+ * @param {YType<any>} type
  * @param {number} start
  * @param {number} end
  * @return {Array<any>}
@@ -828,171 +1509,9 @@ export const typeListSlice = (type, start, end) => {
 }
 
 /**
- * @param {import('../utils/types.js').YType} type
- * @return {Array<any>}
+ * @todo remove / inline this
  *
- * @private
- * @function
- */
-export const typeListToArray = type => {
-  type.doc ?? warnPrematureAccess()
-  const cs = []
-  let n = type._start
-  while (n !== null) {
-    if (n.countable && !n.deleted) {
-      const c = n.content.getContent()
-      for (let i = 0; i < c.length; i++) {
-        cs.push(c[i])
-      }
-    }
-    n = n.right
-  }
-  return cs
-}
-
-/**
- * @param {AbstractType<any>} type
- * @param {Snapshot} snapshot
- * @return {Array<any>}
- *
- * @private
- * @function
- */
-export const typeListToArraySnapshot = (type, snapshot) => {
-  const cs = []
-  let n = type._start
-  while (n !== null) {
-    if (n.countable && isVisible(n, snapshot)) {
-      const c = n.content.getContent()
-      for (let i = 0; i < c.length; i++) {
-        cs.push(c[i])
-      }
-    }
-    n = n.right
-  }
-  return cs
-}
-
-/**
- * Executes a provided function on once on every element of this YArray.
- *
- * @param {AbstractType<any>} type
- * @param {function(any,number,any):void} f A function to execute on every element of this YArray.
- *
- * @private
- * @function
- */
-export const typeListForEach = (type, f) => {
-  let index = 0
-  let n = type._start
-  type.doc ?? warnPrematureAccess()
-  while (n !== null) {
-    if (n.countable && !n.deleted) {
-      const c = n.content.getContent()
-      for (let i = 0; i < c.length; i++) {
-        f(c[i], index++, type)
-      }
-    }
-    n = n.right
-  }
-}
-
-/**
- * @template C,R
- * @param {AbstractType<any>} type
- * @param {function(C,number,AbstractType<any>):R} f
- * @return {Array<R>}
- *
- * @private
- * @function
- */
-export const typeListMap = (type, f) => {
-  /**
-   * @type {Array<any>}
-   */
-  const result = []
-  typeListForEach(type, (c, i) => {
-    result.push(f(c, i, type))
-  })
-  return result
-}
-
-/**
- * @param {AbstractType} type
- * @return {IterableIterator<any>}
- *
- * @private
- * @function
- */
-export const typeListCreateIterator = type => {
-  let n = type._start
-  /**
-   * @type {Array<any>|null}
-   */
-  let currentContent = null
-  let currentContentIndex = 0
-  return {
-    [Symbol.iterator] () {
-      return this
-    },
-    next: () => {
-      // find some content
-      if (currentContent === null) {
-        while (n !== null && n.deleted) {
-          n = n.right
-        }
-        // check if we reached the end, no need to check currentContent, because it does not exist
-        if (n === null) {
-          return {
-            done: true,
-            value: undefined
-          }
-        }
-        // we found n, so we can set currentContent
-        currentContent = n.content.getContent()
-        currentContentIndex = 0
-        n = n.right // we used the content of n, now iterate to next
-      }
-      const value = currentContent[currentContentIndex++]
-      // check if we need to empty currentContent
-      if (currentContent.length <= currentContentIndex) {
-        currentContent = null
-      }
-      return {
-        done: false,
-        value
-      }
-    }
-  }
-}
-
-/**
- * Executes a provided function on once on every element of this YArray.
- * Operates on a snapshotted state of the document.
- *
- * @param {AbstractType} type
- * @param {function(any,number,AbstractType):void} f A function to execute on every element of this YArray.
- * @param {Snapshot} snapshot
- *
- * @private
- * @function
- */
-export const typeListForEachSnapshot = (type, f, snapshot) => {
-  let index = 0
-  let n = type._start
-  while (n !== null) {
-    if (n.countable && isVisible(n, snapshot)) {
-      const c = n.content.getContent()
-      for (let i = 0; i < c.length; i++) {
-        f(c[i], index++, type)
-      }
-    }
-    n = n.right
-  }
-}
-
-/**
- * @param {import('../utils/types.js').YType} type
+ * @param {YType} type
  * @param {number} index
  * @return {any}
  *
@@ -1018,10 +1537,12 @@ export const typeListGet = (type, index) => {
 }
 
 /**
+ * @todo this is a duplicate. use the unified insert function and remove this.
+ *
  * @param {Transaction} transaction
- * @param {YType_} parent
+ * @param {YType} parent
  * @param {Item?} referenceItem
- * @param {Array<_YValue>} content
+ * @param {Array<YValue>} content
  *
  * @private
  * @function
@@ -1071,7 +1592,7 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
               left.integrate(transaction, 0)
               break
             default:
-              if (c instanceof AbstractType) {
+              if (c instanceof YType) {
                 left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentType(/** @type {any} */ (c)))
                 left.integrate(transaction, 0)
               } else {
@@ -1088,7 +1609,7 @@ const lengthExceeded = () => error.create('Length exceeded!')
 
 /**
  * @param {Transaction} transaction
- * @param {YType_} parent
+ * @param {YType} parent
  * @param {number} index
  * @param {Array<Object<string,any>|Array<any>|number|null|string|Uint8Array>} content
  *
@@ -1141,7 +1662,7 @@ export const typeListInsertGenerics = (transaction, parent, index, content) => {
  * the search marker.
  *
  * @param {Transaction} transaction
- * @param {YType_} parent
+ * @param {YType} parent
  * @param {Array<Object<string,any>|Array<any>|number|null|string|Uint8Array>} content
  *
  * @private
@@ -1161,7 +1682,7 @@ export const typeListPushGenerics = (transaction, parent, content) => {
 
 /**
  * @param {Transaction} transaction
- * @param {import('../utils/types.js').YType} parent
+ * @param {YType} parent
  * @param {number} index
  * @param {number} length
  *
@@ -1207,8 +1728,10 @@ export const typeListDelete = (transaction, parent, index, length) => {
 }
 
 /**
+ * @todo inline this code
+ *
  * @param {Transaction} transaction
- * @param {YType_} parent
+ * @param {YType} parent
  * @param {string} key
  *
  * @private
@@ -1223,9 +1746,9 @@ export const typeMapDelete = (transaction, parent, key) => {
 
 /**
  * @param {Transaction} transaction
- * @param {AbstractType} parent
+ * @param {YType} parent
  * @param {string} key
- * @param {_YValue} value
+ * @param {YValue} value
  *
  * @private
  * @function
@@ -1255,7 +1778,7 @@ export const typeMapSet = (transaction, parent, key, value) => {
         content = new ContentDoc(/** @type {Doc} */ (value))
         break
       default:
-        if (value instanceof AbstractType) {
+        if (value instanceof YType) {
           content = new ContentType(/** @type {any} */ (value))
         } else {
           throw new Error('Unexpected content type')
@@ -1266,9 +1789,9 @@ export const typeMapSet = (transaction, parent, key, value) => {
 }
 
 /**
- * @param {AbstractType<any,any>} parent
+ * @param {YType<any>} parent
  * @param {string} key
- * @return {Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined}
+ * @return {Object<string,any>|number|null|Array<any>|string|Uint8Array|YType<any>|undefined}
  *
  * @private
  * @function
@@ -1280,8 +1803,8 @@ export const typeMapGet = (parent, key) => {
 }
 
 /**
- * @param {AbstractType<any>} parent
- * @return {Object<string,Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined>}
+ * @param {YType<any>} parent
+ * @return {Object<string,Object<string,any>|number|null|Array<any>|string|Uint8Array|YType<any>|undefined>}
  *
  * @private
  * @function
@@ -1309,15 +1832,15 @@ export const typeMapGetAll = (parent) => {
  * Note that deleted content that was not deleted in prevYdoc is rendered as an insertion with the
  * attribution `{ isDeleted: true, .. }`.
  *
- * @template {delta.DeltaBuilder<any,any,any,any>} TypeDelta
+ * @template {delta.DeltaBuilderAny} TypeDelta
  * @param {TypeDelta} d
- * @param {YType_} parent
+ * @param {YType} parent
  * @param {Set<string|null>?} attrsToRender
- * @param {import('../internals.js').AbstractAttributionManager} am
+ * @param {import('./internals.js').AbstractAttributionManager} am
  * @param {boolean} deep
- * @param {Set<import('../utils/types.js').YType>|Map<import('../utils/types.js').YType,any>|null} [modified] - set of types that should be rendered as modified children
- * @param {import('../utils/IdSet.js').IdSet?} [deletedItems]
- * @param {import('../utils/IdSet.js').IdSet?} [itemsToRender]
+ * @param {Set<YType>|Map<YType,any>|null} [modified] - set of types that should be rendered as modified children
+ * @param {import('./utils/IdSet.js').IdSet?} [deletedItems]
+ * @param {import('./utils/IdSet.js').IdSet?} [itemsToRender]
  * @param {any} [opts]
  * @param {any} [optsAll]
  *
@@ -1332,19 +1855,20 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, de
    */
   const renderAttrs = (item, key) => {
     /**
-     * @type {Array<import('../internals.js').AttributedContent<any>>}
+     * @type {Array<import('./internals.js').AttributedContent<any>>}
      */
     const cs = []
     am.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, 1)
-    const { deleted, attrs, content } = cs[cs.length - 1]
+    const { deleted, attrs, content, render } = cs[cs.length - 1]
+    if (!render) return
     const attribution = createAttributionFromAttributionItems(attrs, deleted)
     let c = array.last(content.getContent())
     if (deleted) {
       if (itemsToRender == null || itemsToRender.hasId(item.lastId)) {
-        d.unset(key, attribution, c)
+        d.deleteAttr(key, attribution, c)
       }
-    } else if (deep && c instanceof AbstractType && modified?.has(c)) {
-      d.update(key, c.getContent(am, opts))
+    } else if (deep && c instanceof YType && modified?.has(c)) {
+      d.modifyAttr(key, c.getContent(am, opts))
     } else {
       // find prev content
       let prevContentItem = item
@@ -1353,10 +1877,10 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, de
         // nop
       }
       const prevValue = (prevContentItem !== item && itemsToRender?.hasId(prevContentItem.lastId)) ? array.last(prevContentItem.content.getContent()) : undefined
-      if (deep && c instanceof AbstractType) {
+      if (deep && c instanceof YType) {
         c = /** @type {any} */(c).getContent(am, optsAll)
       }
-      d.set(key, c, attribution, prevValue)
+      d.setAttr(key, c, attribution, prevValue)
     }
   }
   if (attrsToRender == null) {
@@ -1367,7 +1891,7 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, de
 }
 
 /**
- * @param {AbstractType<any>} parent
+ * @param {YType<any>} parent
  * @param {string} key
  * @return {boolean}
  *
@@ -1381,10 +1905,10 @@ export const typeMapHas = (parent, key) => {
 }
 
 /**
- * @param {AbstractType<any>} parent
+ * @param {YType<any>} parent
  * @param {string} key
  * @param {Snapshot} snapshot
- * @return {Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined}
+ * @return {Object<string,any>|number|null|Array<any>|string|Uint8Array|YType<any>|undefined}
  *
  * @private
  * @function
@@ -1398,9 +1922,9 @@ export const typeMapGetSnapshot = (parent, key, snapshot) => {
 }
 
 /**
- * @param {AbstractType<any>} parent
+ * @param {YType<any>} parent
  * @param {Snapshot} snapshot
- * @return {Object<string,Object<string,any>|number|null|Array<any>|string|Uint8Array|AbstractType<any>|undefined>}
+ * @return {Object<string,Object<string,any>|number|null|Array<any>|string|Uint8Array|YType<any>|undefined>}
  *
  * @private
  * @function
@@ -1426,7 +1950,7 @@ export const typeMapGetAllSnapshot = (parent, snapshot) => {
 }
 
 /**
- * @param {AbstractType<any> & { _map: Map<string, Item> }} type
+ * @param {YType<any> & { _map: Map<string, Item> }} type
  * @return {IterableIterator<Array<any>>}
  *
  * @private

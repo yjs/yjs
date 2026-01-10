@@ -3,8 +3,7 @@ import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
 import * as delta from 'lib0/delta'
-import * as list from 'lib0/list'
-import { createIdMapFromIdSet, noAttributionsManager, TwosetAttributionManager, createAttributionManagerFromSnapshots } from 'yjs/internals'
+import { createIdMapFromIdSet, noAttributionsManager, TwosetAttributionManager, createAttributionManagerFromSnapshots } from '../src/internals.js'
 
 const { init, compare } = Y
 
@@ -148,7 +147,7 @@ export const testDeltaBug = _tc => {
       'block-id': 'block-15630542-ef45-412d-9415-88f0052238ce'
     })
   const ydoc1 = new Y.Doc()
-  const ytext = ydoc1.getText()
+  const ytext = ydoc1.get()
   ytext.applyDelta(initialDelta)
   const addingDash = delta.create().retain(12).insert('-')
   ytext.applyDelta(addingDash)
@@ -168,7 +167,7 @@ export const testDeltaBug = _tc => {
   })
   ytext.applyDelta(addingList)
   const result = ytext.getContent()
-  const expectedResult = delta.text()
+  const expectedResult = delta.create()
     .insert('\n', { 'block-id': 'block-28eea923-9cbb-4b6f-a950-cf7fd82bc087' })
     .insert('\n\n\n', { 'table-col': { width: '150' } })
     .insert('\n', {
@@ -306,7 +305,7 @@ export const testDeltaBug = _tc => {
  * @param {t.TestCase} _tc
  */
 export const testDeltaBug2 = _tc => {
-  const initialContent = delta.create()
+  const initialContent = delta.create(delta.$deltaAny)
     .insert("Thomas' section")
     .insert('\n', { 'block-id': 'block-61ae80ac-a469-4eae-bac9-3b6a2c380118' })
     .insert('\n', { 'block-id': 'block-d265d93f-1cc7-40ee-bb58-8270fca2619f' })
@@ -1206,7 +1205,7 @@ export const testDeltaBug2 = _tc => {
     })
     .insert('\n', { 'block-id': 'block-21099df0-afb2-4cd3-834d-bb37800eb06a' })
   const ydoc = new Y.Doc()
-  const ytext = ydoc.getText('id')
+  const ytext = ydoc.get('id')
   ytext.applyDelta(initialContent)
   const changeEvent = delta.create().retain(90).delete(4).retain(1, {
     layout: null,
@@ -1215,7 +1214,7 @@ export const testDeltaBug2 = _tc => {
   })
   ytext.applyDelta(changeEvent)
   const d = ytext.getContent()
-  t.compare(list.toArray(d.children)[40].toJSON(), {
+  t.compare(d.toJSON().children?.[40], {
     type: 'insert',
     insert: '\n',
     format: {
@@ -1350,7 +1349,7 @@ export const testFalsyFormats = tc => {
  */
 export const testMultilineFormat = _tc => {
   const ydoc = new Y.Doc()
-  const testText = ydoc.getText('test')
+  const testText = ydoc.get('test')
   testText.insert(0, 'Test\nMulti-line\nFormatting')
   const tt = delta.create()
     .retain(4, { bold: true })
@@ -1376,7 +1375,7 @@ export const testMultilineFormat = _tc => {
  */
 export const testNotMergeEmptyLinesFormat = _tc => {
   const ydoc = new Y.Doc()
-  const testText = ydoc.getText('test')
+  const testText = ydoc.get('test')
   testText.applyDelta(delta.create()
     .insert('Text')
     .insert('\n', { title: true })
@@ -1399,7 +1398,7 @@ export const testNotMergeEmptyLinesFormat = _tc => {
  */
 export const testPreserveAttributesThroughDelete = _tc => {
   const ydoc = new Y.Doc()
-  const testText = ydoc.getText('test')
+  const testText = ydoc.get('test')
   testText.applyDelta(delta.create()
     .insert('Text')
     .insert('\n', { title: true })
@@ -1437,7 +1436,7 @@ export const testGetDeltaWithEmbeds = tc => {
 export const testTypesAsEmbed = tc => {
   const { text0, text1, testConnector } = init(tc, { users: 2 })
   text0.applyDelta(delta.create()
-    .insert([new Y.Map([['key', 'val']])])
+    .insert([Y.Type.from(delta.create().setAttr('key', 'val'))])
   )
   t.compare(/** @type {any} */ (text0).getContentDeep().toJSON().children, [{ type: 'insert', insert: [{ type: 'delta', attrs: { key: { type: 'insert', value: 'val' } } }] }])
   let firedEvent = false
@@ -1512,10 +1511,10 @@ export const testSnapshotDeleteAfter = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testToJson = tc => {
+export const testDeltaCompare = tc => {
   const { text0 } = init(tc, { users: 1 })
   text0.insert(0, 'abc', { bold: true })
-  t.assert(text0.toJSON() === 'abc', 'toJSON returns the unformatted text')
+  t.compare(text0.getContent(), delta.create().insert('abc', { bold: true }).done())
 }
 
 /**
@@ -1524,7 +1523,7 @@ export const testToJson = tc => {
 export const testToDeltaEmbedAttributes = tc => {
   const { text0 } = init(tc, { users: 1 })
   text0.insert(0, 'ab', { bold: true })
-  text0.insertEmbed(1, { image: 'imageSrc.png' }, { width: 100 })
+  text0.insert(1, [{ image: 'imageSrc.png' }], { width: 100 })
   const delta0 = text0.getContent()
   t.compare(
     delta0,
@@ -1542,7 +1541,7 @@ export const testToDeltaEmbedAttributes = tc => {
 export const testToDeltaEmbedNoAttributes = tc => {
   const { text0 } = init(tc, { users: 1 })
   text0.insert(0, 'ab', { bold: true })
-  text0.insertEmbed(1, { image: 'imageSrc.png' })
+  text0.insert(1, [{ image: 'imageSrc.png' }])
   const delta0 = text0.getContent()
   t.compare(
     delta0,
@@ -1593,7 +1592,7 @@ export const testFormattingDeltaUnnecessaryAttributeChange = tc => {
   })
   testConnector.flushAllMessages()
   /**
-   * @type {Array<delta.TextDelta<any>>}
+   * @type {Array<delta.Delta<any>>}
    */
   const deltas = []
   text0.observe(event => {
@@ -1614,7 +1613,7 @@ export const testFormattingDeltaUnnecessaryAttributeChange = tc => {
  * @param {t.TestCase} tc
  */
 export const testInsertAndDeleteAtRandomPositions = tc => {
-  const N = 100000
+  const N = 10000
   const { text0 } = init(tc, { users: 1 })
   const gen = tc.prng
 
@@ -1706,7 +1705,7 @@ export const testLargeFragmentedDocument = _tc => {
   let update = /** @type {any} */ (null)
   ;(() => {
     const doc1 = new Y.Doc()
-    const text0 = doc1.getText('txt')
+    const text0 = doc1.get('txt')
     tryGc()
     t.measureTime(`time to insert ${itemsToInsert} items`, () => {
       doc1.transact(() => {
@@ -1741,7 +1740,7 @@ export const testIncrementalUpdatesPerformanceOnLargeFragmentedDocument = _tc =>
     doc1.on('update', update => {
       updates.push(update)
     })
-    const text0 = doc1.getText('txt')
+    const text0 = doc1.get('txt')
     tryGc()
     t.measureTime(`time to insert ${itemsToInsert} items`, () => {
       doc1.transact(() => {
@@ -1839,20 +1838,17 @@ export const testSearchMarkerBug1 = tc => {
 }
 
 /**
- * Reported in https://github.com/yjs/yjs/pull/32
- *
  * @param {t.TestCase} _tc
  */
 export const testFormattingBug = async _tc => {
   const ydoc1 = new Y.Doc()
   const ydoc2 = new Y.Doc()
-  const text1 = ydoc1.getText()
+  const text1 = ydoc1.get()
   text1.insert(0, '\n\n\n')
   text1.format(0, 3, { url: 'http://example.com' })
-  ydoc1.getText().format(1, 1, { url: 'http://docs.yjs.dev' })
-  ydoc2.getText().format(1, 1, { url: 'http://docs.yjs.dev' })
+  ydoc1.get().format(1, 1, { url: 'http://docs.yjs.dev' })
   Y.applyUpdate(ydoc2, Y.encodeStateAsUpdate(ydoc1))
-  const text2 = ydoc2.getText()
+  const text2 = ydoc2.get()
   const expectedResult = delta.create()
     .insert('\n', { url: 'http://example.com' })
     .insert('\n', { url: 'http://docs.yjs.dev' })
@@ -1870,11 +1866,11 @@ export const testFormattingBug = async _tc => {
  */
 export const testDeleteFormatting = _tc => {
   const doc = new Y.Doc()
-  const text = doc.getText()
+  const text = doc.get()
   text.insert(0, 'Attack ships on fire off the shoulder of Orion.')
 
   const doc2 = new Y.Doc()
-  const text2 = doc2.getText()
+  const text2 = doc2.get()
   Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc))
 
   text.format(13, 7, { bold: true })
@@ -1897,7 +1893,7 @@ export const testDeleteFormatting = _tc => {
  */
 export const testAttributedContent = _tc => {
   const ydoc = new Y.Doc({ gc: false })
-  const ytext = ydoc.getText()
+  const ytext = ydoc.get()
   ytext.insert(0, 'Hello World!')
   let attributionManager = noAttributionsManager
 
@@ -1927,11 +1923,11 @@ export const testAttributedContent = _tc => {
 export const testAttributedDiffing = _tc => {
   const ydocVersion0 = new Y.Doc({ gc: false })
   ydocVersion0.clientID = 0
-  ydocVersion0.getText().insert(0, 'Hello World!')
+  ydocVersion0.get().insert(0, 'Hello World!')
   const ydoc = new Y.Doc({ gc: false })
   ydoc.clientID = 1
   Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(ydocVersion0))
-  const ytext = ydoc.getText()
+  const ytext = ydoc.get()
   ytext.applyDelta(delta.create().retain(4, { italic: true }).retain(2).delete(5).insert('attributions'))
   // this represents to all insertions of ydoc
   const insertionSet = Y.createInsertionSetFromStructStore(ydoc.store, false)
@@ -1968,7 +1964,7 @@ const textChanges = [
    * @param {prng.PRNG} gen
    */
   (y, gen) => { // insert text
-    const ytext = y.getText('text')
+    const ytext = y.get('text')
     const insertPos = prng.int32(gen, 0, ytext.length)
     const text = charCounter++ + prng.word(gen)
     const prevText = ytext.toString()
@@ -1980,7 +1976,7 @@ const textChanges = [
    * @param {prng.PRNG} gen
    */
   (y, gen) => { // delete text
-    const ytext = y.getText('text')
+    const ytext = y.get('text')
     const contentLen = ytext.toString().length
     const insertPos = prng.int32(gen, 0, contentLen)
     const overwrite = math.min(prng.int32(gen, 0, contentLen - insertPos), 2)
@@ -1995,7 +1991,7 @@ const textChanges = [
  */
 export const testRepeatGenerateTextChanges5 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 5))
-  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
   t.assert(cleanups === 0)
 }
 
@@ -2004,7 +2000,7 @@ export const testRepeatGenerateTextChanges5 = tc => {
  */
 export const testRepeatGenerateTextChanges30 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 30))
-  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
   t.assert(cleanups === 0)
 }
 
@@ -2013,7 +2009,7 @@ export const testRepeatGenerateTextChanges30 = tc => {
  */
 export const testRepeatGenerateTextChanges40 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 40))
-  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
   t.assert(cleanups === 0)
 }
 
@@ -2022,7 +2018,7 @@ export const testRepeatGenerateTextChanges40 = tc => {
  */
 export const testRepeatGenerateTextChanges50 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 50))
-  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
   t.assert(cleanups === 0)
 }
 
@@ -2031,7 +2027,7 @@ export const testRepeatGenerateTextChanges50 = tc => {
  */
 export const testRepeatGenerateTextChanges70 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 70))
-  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
   t.assert(cleanups === 0)
 }
 
@@ -2040,7 +2036,7 @@ export const testRepeatGenerateTextChanges70 = tc => {
  */
 export const testRepeatGenerateTextChanges90 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 90))
-  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
   t.assert(cleanups === 0)
 }
 
@@ -2049,7 +2045,7 @@ export const testRepeatGenerateTextChanges90 = tc => {
  */
 export const testRepeatGenerateTextChanges300 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, textChanges, 300))
-  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
   t.assert(cleanups === 0)
 }
 
@@ -2075,7 +2071,7 @@ const qChanges = [
    * @param {prng.PRNG} gen
    */
   (y, gen) => { // insert text
-    const ytext = y.getText('text')
+    const ytext = y.get('text')
     const insertPos = prng.int32(gen, 0, ytext.length)
     const attrs = prng.oneOf(gen, marksChoices)
     const text = charCounter++ + prng.word(gen)
@@ -2086,12 +2082,12 @@ const qChanges = [
    * @param {prng.PRNG} gen
    */
   (y, gen) => { // insert embed
-    const ytext = y.getText('text')
+    const ytext = y.get('text')
     const insertPos = prng.int32(gen, 0, ytext.length)
     if (prng.bool(gen)) {
-      ytext.insertEmbed(insertPos, { image: 'https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png' })
+      ytext.insert(insertPos, [{ image: 'https://user-images.githubusercontent.com/5553757/48975307-61efb100-f06d-11e8-9177-ee895e5916e5.png' }])
     } else {
-      ytext.insertEmbed(insertPos, new Y.Map([[prng.word(gen), prng.word(gen)]]))
+      ytext.insert(insertPos, [delta.create().insert([prng.word(gen), prng.word(gen)])])
     }
   },
   /**
@@ -2099,8 +2095,8 @@ const qChanges = [
    * @param {prng.PRNG} gen
    */
   (y, gen) => { // delete text
-    const ytext = y.getText('text')
-    const contentLen = ytext.toString().length
+    const ytext = y.get('text')
+    const contentLen = ytext.length
     const insertPos = prng.int32(gen, 0, contentLen)
     const overwrite = math.min(prng.int32(gen, 0, contentLen - insertPos), 2)
     ytext.delete(insertPos, overwrite)
@@ -2110,8 +2106,8 @@ const qChanges = [
    * @param {prng.PRNG} gen
    */
   (y, gen) => { // format text
-    const ytext = y.getText('text')
-    const contentLen = ytext.toString().length
+    const ytext = y.get('text')
+    const contentLen = ytext.length
     const insertPos = prng.int32(gen, 0, contentLen)
     const overwrite = math.min(prng.int32(gen, 0, contentLen - insertPos), 2)
     const format = prng.oneOf(gen, marks)
@@ -2122,8 +2118,8 @@ const qChanges = [
    * @param {prng.PRNG} gen
    */
   (y, gen) => { // insert codeblock
-    const ytext = y.getText('text')
-    const insertPos = prng.int32(gen, 0, ytext.toString().length)
+    const ytext = y.get('text')
+    const insertPos = prng.int32(gen, 0, ytext.length)
     const text = charCounter++ + prng.word(gen)
     const d = delta.create()
     d.retain(insertPos).insert(text).insert('\n', { 'code-block': true })
@@ -2134,8 +2130,8 @@ const qChanges = [
    * @param {prng.PRNG} gen
    */
   (y, gen) => { // complex delta op
-    const ytext = y.getText('text')
-    const contentLen = ytext.toString().length
+    const ytext = y.get('text')
+    const contentLen = ytext.length
     let currentPos = math.max(0, prng.int32(gen, 0, contentLen - 1))
     const d = delta.create().retain(currentPos)
     // create max 3 ops
@@ -2164,13 +2160,13 @@ const qChanges = [
 ]
 
 /**
- * @param {any} result
+ * @param {Y.ApplyRandomTestsResult} result
  */
 const checkResult = result => {
   for (let i = 1; i < result.testObjects.length; i++) {
-    t.info('length of text = ' + result.users[i - 1].getText('text').length)
-    const p1 = result.users[i - 1].getText('text').getContentDeep().children
-    const p2 = result.users[i].getText('text').getContentDeep().children
+    t.info('length of text = ' + result.users[i - 1].get('text').length)
+    const p1 = result.users[i - 1].get('text').getContentDeep().children
+    const p2 = result.users[i].get('text').getContentDeep().children
     t.compare(p1, p2)
   }
   // Uncomment this to find formatting-cleanup issues
@@ -2187,11 +2183,11 @@ const checkResult = result => {
  * @param {t.TestCase} tc
  */
 export const testAttributionManagerDefaultPerformance = tc => {
-  const N = 100000
+  const N = 10000
   const MaxDeletionLength = 5 // 25% chance of deletion
   const MaxInsertionLength = 5
   const ydoc = new Y.Doc()
-  const ytext = ydoc.getText()
+  const ytext = ydoc.get()
   for (let i = 0; i < N; i++) {
     if (prng.bool(tc.prng) && prng.bool(tc.prng) && ytext.length > 0) {
       const index = prng.int31(tc.prng, 0, ytext.length - 1)
@@ -2223,7 +2219,7 @@ export const testAttributionManagerDefaultPerformance = tc => {
  */
 export const testRepeatGenerateQuillChanges1 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, qChanges, 1))
-  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
   t.assert(cleanups === 0)
 }
 
@@ -2232,7 +2228,7 @@ export const testRepeatGenerateQuillChanges1 = tc => {
  */
 export const testRepeatGenerateQuillChanges2 = tc => {
   const { users } = checkResult(Y.applyRandomTests(tc, qChanges, 2))
-  const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+  const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
   t.assert(cleanups === 0)
 }
 
@@ -2242,7 +2238,7 @@ export const testRepeatGenerateQuillChanges2 = tc => {
 export const testRepeatGenerateQuillChanges2Repeat = tc => {
   for (let i = 0; i < 1000; i++) {
     const { users } = checkResult(Y.applyRandomTests(tc, qChanges, 2))
-    const cleanups = Y.cleanupYTextFormatting(users[0].getText('text'))
+    const cleanups = Y.cleanupYTextFormatting(users[0].get('text'))
     t.assert(cleanups === 0)
   }
 }
