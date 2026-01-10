@@ -112,14 +112,16 @@ export const testToJSON = _tc => {
   map2.setAttr('m2k1', 'm2v1')
   t.compare(doc.toJSON(), {
     array: { children: ['test1'] },
-    map: { attrs: {
-      k1: 'v1',
-      k2: {
-        attrs: {
-          m2k1: 'm2v1'
+    map: {
+      attrs: {
+        k1: 'v1',
+        k2: {
+          attrs: {
+            m2k1: 'm2v1'
+          }
         }
       }
-    }}
+    }
   }, 'doc.toJSON has array and recursive map')
 }
 

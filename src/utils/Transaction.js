@@ -530,22 +530,6 @@ const cleanupTransactions = (transactionCleanups, i) => {
           // We need to think about the possibility that the user transforms the
           // Y.Doc in the event.
           if (type._dEH.l.length > 0 && (type._item === null || !type._item.deleted)) {
-            events = events
-              .filter(event =>
-                event.target._item === null || !event.target._item.deleted
-              )
-            events
-              .forEach(event => {
-                event.currentTarget = type
-                // path is relative to the current target
-                event._path = null
-              })
-            // sort events by path length so that top-level events are fired first.
-            events
-              .sort((event1, event2) => event1.path.length - event2.path.length)
-            // We don't need to check for events.length
-            // because we know it has at least one element
-
             /**
              * @type {YEvent<any>}
              */

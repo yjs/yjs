@@ -94,14 +94,12 @@ export const testInsertafter = _tc => {
   const first = new Y.Type()
   const second = new Y.Type('p')
   const third = new Y.Type('p')
-
   const deepsecond1 = new Y.Type('span')
   const deepsecond2 = new Y.Type()
-  second.insertAfter(null, [deepsecond1])
-  second.insertAfter(deepsecond1, [deepsecond2])
-
   yxml.insertAfter(null, [first, second])
   yxml.insertAfter(second, [third])
+  second.insertAfter(null, [deepsecond1])
+  second.insertAfter(deepsecond1, [deepsecond2])
 
   t.assert(yxml.length === 3)
   t.assert(second.get(0) === deepsecond1)
@@ -164,9 +162,9 @@ export const testElement = _tc => {
 export const testFragmentAttributedContent = _tc => {
   const ydoc = new Y.Doc({ gc: false })
   const yfragment = new Y.Type()
-  const elem1 = new Y.Type('hello')
+  const elem1 = Y.Type.from(delta.create().insert('hello'))
   const elem2 = new Y.Type()
-  const elem3 = new Y.Type('world')
+  const elem3 = Y.Type.from(delta.create().insert('world'))
   yfragment.insert(0, [elem1, elem2])
   ydoc.get().insert(0, [yfragment])
   let attributionManager = Y.noAttributionsManager
@@ -230,7 +228,7 @@ export const testElementAttributedContentViaDiffer = _tc => {
   Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(ydocV1))
   const yelement = ydoc.get('p')
   const elem2 = yelement.get(1) // new Y.XmlElement('span')
-  const elem3 = new Y.Type('world')
+  const elem3 = Y.Type.from(delta.create().insert('world'))
   ydoc.transact(() => {
     yelement.delete(0, 1)
     yelement.insert(1, [elem3])

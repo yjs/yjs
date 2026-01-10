@@ -2096,7 +2096,7 @@ const qChanges = [
    */
   (y, gen) => { // delete text
     const ytext = y.get('text')
-    const contentLen = ytext.toString().length
+    const contentLen = ytext.length
     const insertPos = prng.int32(gen, 0, contentLen)
     const overwrite = math.min(prng.int32(gen, 0, contentLen - insertPos), 2)
     ytext.delete(insertPos, overwrite)
@@ -2107,7 +2107,7 @@ const qChanges = [
    */
   (y, gen) => { // format text
     const ytext = y.get('text')
-    const contentLen = ytext.toString().length
+    const contentLen = ytext.length
     const insertPos = prng.int32(gen, 0, contentLen)
     const overwrite = math.min(prng.int32(gen, 0, contentLen - insertPos), 2)
     const format = prng.oneOf(gen, marks)
@@ -2119,7 +2119,7 @@ const qChanges = [
    */
   (y, gen) => { // insert codeblock
     const ytext = y.get('text')
-    const insertPos = prng.int32(gen, 0, ytext.toString().length)
+    const insertPos = prng.int32(gen, 0, ytext.length)
     const text = charCounter++ + prng.word(gen)
     const d = delta.create()
     d.retain(insertPos).insert(text).insert('\n', { 'code-block': true })
@@ -2131,7 +2131,7 @@ const qChanges = [
    */
   (y, gen) => { // complex delta op
     const ytext = y.get('text')
-    const contentLen = ytext.toString().length
+    const contentLen = ytext.length
     let currentPos = math.max(0, prng.int32(gen, 0, contentLen - 1))
     const d = delta.create().retain(currentPos)
     // create max 3 ops

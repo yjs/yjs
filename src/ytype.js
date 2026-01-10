@@ -101,8 +101,6 @@ export class ItemTextListPosition {
    * @function
    */
   formatText (transaction, parent, length, attributes) {
-    const doc = transaction.doc
-    const ownClientId = doc.clientID
     minimizeAttributeChanges(this, attributes)
     const negatedAttributes = insertAttributes(transaction, parent, this, attributes)
     // iterate until first non-format or null is found
@@ -1312,7 +1310,7 @@ export class YType {
      * @type {{[K:string]:any}}
      */
     const attrs = this.getAttrs()
-    for (let k in attrs) {
+    for (const k in attrs) {
       const attr = attrs[k]
       attrs[k] = attr instanceof YType ? attr.toJSON() : attr
     }
@@ -1343,7 +1341,7 @@ export class YType {
      */
     const attrs = []
     this.forEachAttr((attr, key) => {
-      attrs.push([(key), attr.toString({ forceTag: true })])
+      attrs.push([(key), /** @type {any} */ (attr) instanceof YType ? attr.toString({ forceTag: true }) : JSON.stringify(attr)])
     })
     const attrsString = (attrs.length > 0 ? ' ' : '') + attrs.sort((a, b) => a[0].toString() < b[0].toString() ? -1 : 1).map(attr => attr[0] + '=' + attr[1]).join(' ')
     /**
@@ -1561,6 +1559,8 @@ export const typeListGet = (type, index) => {
 }
 
 /**
+ * @todo this is a duplicate. use the unified insert function and remove this.
+ *
  * @param {Transaction} transaction
  * @param {YType} parent
  * @param {Item?} referenceItem

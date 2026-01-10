@@ -203,7 +203,7 @@ export const testYmapSetsYarray = tc => {
   t.assert(array === map0.getAttr('Array'))
   array.insert(0, [1, 2, 3])
   // @ts-ignore
-  t.compare(map0.toJSON(), { Array: [1, 2, 3] })
+  t.compare(map0.toJSON().attrs, { Array: { children: [1, 2, 3] } })
   compare(users)
 }
 

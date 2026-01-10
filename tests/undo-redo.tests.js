@@ -262,7 +262,7 @@ export const testUndoArray = tc => {
   t.compare(array0.toJSON().children, [{}])
   undoManager.stopCapturing()
   ymap.setAttr('a', 1)
-  t.compare(array0.toJSON().children, [{ a: 1 }])
+  t.compare(array0.toJSON().children, [{ attrs: { a: 1 } }])
   undoManager.undo()
   t.compare(array0.toJSON().children, [{}])
   undoManager.undo()
@@ -270,19 +270,19 @@ export const testUndoArray = tc => {
   undoManager.redo()
   t.compare(array0.toJSON().children, [{}])
   undoManager.redo()
-  t.compare(array0.toJSON().children, [{ a: 1 }])
+  t.compare(array0.toJSON().children, [{ attrs: { a: 1 } }])
   testConnector.syncAll()
   array1.get(0).setAttr('b', 2)
   testConnector.syncAll()
-  t.compare(array0.toJSON().children, [{ a: 1, b: 2 }])
+  t.compare(array0.toJSON().children, [{ attrs: { a: 1, b: 2 } }])
   undoManager.undo()
-  t.compare(array0.toJSON().children, [{ b: 2 }])
+  t.compare(array0.toJSON().children, [{ attrs: { b: 2 } }])
   undoManager.undo()
   t.compare(array0.toJSON().children, [2, 3, 4, 5, 6])
   undoManager.redo()
-  t.compare(array0.toJSON().children, [{ b: 2 }])
+  t.compare(array0.toJSON().children, [{ attrs: { b: 2 } }])
   undoManager.redo()
-  t.compare(array0.toJSON().children, [{ a: 1, b: 2 }])
+  t.compare(array0.toJSON().children, [{ attrs: { a: 1, b: 2 } }])
 }
 
 /**
@@ -310,7 +310,6 @@ export const testUndoXml = tc => {
   undoManager.undo()
   t.compare(xml0.getContentDeep(), v1)
 }
-
 
 /**
  * @param {t.TestCase} tc
@@ -584,7 +583,7 @@ export const testUndoXmlBug = _tc => {
   undoManager.redo()
   undoManager.redo()
   undoManager.redo()
-  t.compare(fragment.toString(), '<test-node a=180 b=50 />')
+  t.compare(fragment.toString(), '<test-node a="180" b="50" />')
 }
 
 /**
@@ -643,7 +642,7 @@ export const testUndoBlockBug = _tc => {
   undoManager.redo() // {"text":{"blocks":{"text":"2"}}}
   undoManager.redo() // {"text":{"blocks":{"text":"3"}}}
   undoManager.redo() // {"text":{}}
-  t.compare(design.toJSON().attrs, { text: { blocks: { text: '4' } } })
+  t.compare(design.toJSON().attrs, { text: { attrs: { blocks: { attrs: { text: '4' } } } } })
 }
 
 /**
@@ -720,16 +719,16 @@ export const testSpecialDeletionCase = _tc => {
     e.setAttr('b', '2')
     fragment.insert(0, [e])
   })
-  t.compareStrings(fragment.toString(), '<test a="1" b="2"></test>')
+  t.compareStrings(fragment.toString(), '<test a="1" b="2" />')
   doc.transact(() => {
     // change attribute "b" and delete test-node
     const e = fragment.get(0)
-    e.setAttribute('b', '3')
+    e.setAttr('b', '3')
     fragment.delete(0)
   }, origin)
   t.compareStrings(fragment.toString(), '')
   undoManager.undo()
-  t.compareStrings(fragment.toString(), '<test a="1" b="2"></test>')
+  t.compareStrings(fragment.toString(), '<test a="1" b="2" />')
 }
 
 /**

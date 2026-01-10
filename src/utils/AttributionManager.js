@@ -24,6 +24,7 @@ import {
   getItemCleanStart,
   intersectSets,
   ContentFormat,
+  createAttributionItem,
   StructStore, Transaction, ID, IdSet, Item, Snapshot, Doc, AbstractContent, IdMap, // eslint-disable-line
   encodeStateAsUpdate
 } from '../internals.js'
@@ -574,16 +575,16 @@ export class SnapshotAttributionManager extends ObservableV2 {
    * @param {Object} [options] - options for the attribution manager
    * @param {Array<import('./IdMap.js').AttributionItem<any>>} [options.attrs] - the attributes to apply to the diff
    */
-  constructor (prevSnapshot, nextSnapshot, { attrs = [] } = {}) {
+  constructor (prevSnapshot, nextSnapshot) {
     super()
     this.prevSnapshot = prevSnapshot
     this.nextSnapshot = nextSnapshot
     const inserts = createIdMap()
-    const deletes = createIdMapFromIdSet(diffIdSet(nextSnapshot.ds, prevSnapshot.ds), attrs)
+    const deletes = createIdMapFromIdSet(diffIdSet(nextSnapshot.ds, prevSnapshot.ds), [createAttributionItem('change', '')])
     nextSnapshot.sv.forEach((clock, client) => {
       const prevClock = prevSnapshot.sv.get(client) || 0
       inserts.add(client, 0, prevClock, []) // content is included in prevSnapshot is rendered without attributes
-      inserts.add(client, prevClock, clock - prevClock, attrs) // content is rendered as "inserted"
+      inserts.add(client, prevClock, clock - prevClock, [createAttributionItem('change', '')]) // content is rendered as "inserted"
     })
     this.attrs = mergeIdMaps([diffIdMap(inserts, prevSnapshot.ds), deletes])
   }
@@ -635,7 +636,5 @@ export class SnapshotAttributionManager extends ObservableV2 {
 /**
  * @param {Snapshot} prevSnapshot
  * @param {Snapshot} nextSnapshot
- * @param {Object} [options] - options for the attribution manager
- * @param {Array<import('./IdMap.js').AttributionItem<any>>} [options.attrs] - the attributes to apply to the diff
  */
-export const createAttributionManagerFromSnapshots = (prevSnapshot, nextSnapshot = prevSnapshot, options) => new SnapshotAttributionManager(prevSnapshot, nextSnapshot, options)
+export const createAttributionManagerFromSnapshots = (prevSnapshot, nextSnapshot = prevSnapshot) => new SnapshotAttributionManager(prevSnapshot, nextSnapshot)
