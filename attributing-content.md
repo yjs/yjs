@@ -55,7 +55,7 @@ const attributedDeletions = createIdMapFromIdSet(deleteSetDiff, [new Y.Attributi
 // implementations is the TwosetAttributionManager
 const attributionManager = new TwosetAttributionManager(attributedInsertions, attributedDeletions)
 // we render the attributed content with the attributionManager
-let attributedContent = ytext.getContent(attributionManager)
+let attributedContent = ytext.toDelta(attributionManager)
 console.log(JSON.stringify(attributedContent.toJSON().ops, null, 2))
 let expectedContent = delta.create().insert('Hell', { italic: true }, { attributes: { italic: ['Bob'] } }).insert('o ').insert('World', {}, { delete: ['Bob'] }).insert('attributions', {}, { insert: ['Bob'] }).insert('!')
 t.assert(attributedContent.equals(expectedContent))

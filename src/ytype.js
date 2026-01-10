@@ -792,7 +792,7 @@ export class YType {
    *
    * @public
    */
-  getContent (am = noAttributionsManager, opts = {}) {
+  toDelta (am = noAttributionsManager, opts = {}) {
     const { itemsToRender = null, retainInserts = false, retainDeletes = false, deletedItems = null, modified = null, deep = false } = opts
     const renderAttrs = modified?.get(this) || null
     const renderChildren = !!(modified == null || modified.get(this)?.has(null))
@@ -893,7 +893,7 @@ export class YType {
                 if (c.deleted ? retainDeletes : retainInserts) {
                   d.retain(c.content.getLength(), null, attribution ?? {})
                 } else if (deep && c.content.constructor === ContentType) {
-                  d.insert([/** @type {any} */(c.content).type.getContent(am, optsAll)], null, attribution)
+                  d.insert([/** @type {any} */(c.content).type.toDelta(am, optsAll)], null, attribution)
                 } else {
                   d.insert(c.content.getContent(), null, attribution)
                 }
@@ -902,7 +902,7 @@ export class YType {
               } else if (retainContent) {
                 if (c.content.constructor === ContentType && modified?.has(/** @type {ContentType} */ (c.content).type)) {
                   // @todo use current transaction instead
-                  d.modify(/** @type {any} */ (c.content).type.getContent(am, opts))
+                  d.modify(/** @type {any} */ (c.content).type.toDelta(am, opts))
                 } else {
                   d.usedAttributes = changedAttributes
                   usingChangedAttributes = true
@@ -1016,8 +1016,8 @@ export class YType {
    * @param {AbstractAttributionManager} am
    * @return {delta.Delta<DConf>}
    */
-  getContentDeep (am = noAttributionsManager) {
-    return /** @type {any} */ (this.getContent(am, { deep: true }))
+  toDeltaDeep (am = noAttributionsManager) {
+    return /** @type {any} */ (this.toDelta(am, { deep: true }))
   }
 
   /**
@@ -1082,7 +1082,7 @@ export class YType {
    */
   clone () {
     const cpy = this._copy()
-    cpy.applyDelta(this.getContentDeep())
+    cpy.applyDelta(this.toDeltaDeep())
     return cpy
   }
 
@@ -1264,7 +1264,7 @@ export class YType {
    * @return {Array<delta.DeltaConfGetChildren<DConf> | delta.DeltaConfGetText<DConf>>}
    */
   toArray () {
-    const dcontent = this.getContent()
+    const dcontent = this.toDelta()
     /**
      * @type {Array<any>}
      */
@@ -1410,7 +1410,7 @@ export class YType {
    * @param {this} other
    */
   [traits.EqualityTraitSymbol] (other) {
-    return this.getContent().equals(other.getContent())
+    return this.toDelta().equals(other.toDelta())
   }
 
   /**
@@ -1868,7 +1868,7 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, de
         d.deleteAttr(key, attribution, c)
       }
     } else if (deep && c instanceof YType && modified?.has(c)) {
-      d.modifyAttr(key, c.getContent(am, opts))
+      d.modifyAttr(key, c.toDelta(am, opts))
     } else {
       // find prev content
       let prevContentItem = item
@@ -1878,7 +1878,7 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, de
       }
       const prevValue = (prevContentItem !== item && itemsToRender?.hasId(prevContentItem.lastId)) ? array.last(prevContentItem.content.getContent()) : undefined
       if (deep && c instanceof YType) {
-        c = /** @type {any} */(c).getContent(am, optsAll)
+        c = /** @type {any} */(c).toDelta(am, optsAll)
       }
       d.setAttr(key, c, attribution, prevValue)
     }

@@ -113,7 +113,7 @@ export const testFormattingBug = _tc => {
     .insert('B', { em: {} })
     .insert('C', { em: {}, strong: {} })
   yxml.applyDelta(q)
-  t.compare(yxml.getContent(), q)
+  t.compare(yxml.toDelta(), q)
 }
 
 /**
@@ -150,10 +150,10 @@ export const testFragmentAttributedContent = _tc => {
       yfragment.insert(1, [elem3])
     })
     const expectedContent = delta.create().insert([elem1], null, { delete: [] }).insert([elem2]).insert([elem3], null, { insert: [] })
-    const attributedContent = yfragment.getContent(attributionManager)
+    const attributedContent = yfragment.toDelta(attributionManager)
     console.log(attributedContent.toJSON())
     t.assert(attributedContent.equals(expectedContent))
-    t.compare(elem1.getContent(attributionManager).toJSON(), delta.create().insert('hello', null, { delete: [] }).toJSON())
+    t.compare(elem1.toDelta(attributionManager).toJSON(), delta.create().insert('hello', null, { delete: [] }).toJSON())
   })
 }
 
@@ -183,7 +183,7 @@ export const testElementAttributedContent = _tc => {
       .insert([elem2])
       .insert([delta.create().insert('world', null, { insert: [] })], null, { insert: [] })
       .setAttr('key', '42', { insert: [] })
-    const attributedContent = yelement.getContentDeep(attributionManager)
+    const attributedContent = yelement.toDeltaDeep(attributionManager)
     console.log('retrieved content', attributedContent.toJSON())
     t.assert(attributedContent.equals(expectedContent))
     t.compare(attributedContent.toJSON().attrs, { key: { type: 'insert', value: '42', attribution: { insert: [] } } })
@@ -207,8 +207,8 @@ export const testElementAttributedContentViaDiffer = _tc => {
     yelement.setAttr('key', '42')
   })
   const attributionManager = Y.createAttributionManagerFromDiff(ydocV1, ydoc)
-  const expectedContent = delta.create().insert([delta.create().insert('hello')], null, { delete: [] }).insert([elem2.getContentDeep()]).insert([delta.create().insert('world', null, { insert: [] })], null, { insert: [] }).setAttr('key', '42', { insert: [] })
-  const attributedContent = yelement.getContentDeep(attributionManager)
+  const expectedContent = delta.create().insert([delta.create().insert('hello')], null, { delete: [] }).insert([elem2.toDeltaDeep()]).insert([delta.create().insert('world', null, { insert: [] })], null, { insert: [] }).setAttr('key', '42', { insert: [] })
+  const attributedContent = yelement.toDeltaDeep(attributionManager)
   console.log('children', attributedContent.toJSON().children)
   console.log('attributes', attributedContent.toJSON().attrs)
   t.compare(attributedContent.toJSON(), expectedContent.toJSON())
@@ -226,7 +226,7 @@ export const testElementAttributedContentViaDiffer = _tc => {
         delta.create().insert('world', null, { insert: [] })
       ], null, { insert: [] })
       .setAttr('key', '42', { insert: [] })
-    const attributedContent = yelement.getContentDeep(attributionManager)
+    const attributedContent = yelement.toDeltaDeep(attributionManager)
     console.log('children', JSON.stringify(attributedContent.toJSON().children, null, 2))
     console.log('cs expec', JSON.stringify(expectedContent.toJSON(), null, 2))
     console.log('attributes', attributedContent.toJSON().attrs)
@@ -250,7 +250,7 @@ export const testElementAttributedContentViaDiffer = _tc => {
         delta.create().insert('bigworld', null, { insert: [] })
       ], null, { insert: [] })
       .setAttr('key', '42', { insert: [] })
-    const attributedContent = yelement.getContentDeep(attributionManager)
+    const attributedContent = yelement.toDeltaDeep(attributionManager)
     console.log('children', JSON.stringify(attributedContent.toJSON().children, null, 2))
     console.log('cs expec', JSON.stringify(expectedContent.toJSON(), null, 2))
     console.log('attributes', attributedContent.toJSON().attrs)
@@ -264,7 +264,7 @@ export const testElementAttributedContentViaDiffer = _tc => {
     const expectedContent = delta.create().insert([delta.create('span')]).insert([
       delta.create().insert('bigworld')
     ]).setAttr('key', '42')
-    const attributedContent = yelement.getContentDeep(attributionManager)
+    const attributedContent = yelement.toDeltaDeep(attributionManager)
     console.log('children', JSON.stringify(attributedContent.toJSON().children, null, 2))
     console.log('cs expec', JSON.stringify(expectedContent.toJSON(), null, 2))
     console.log('attributes', attributedContent.toJSON().attrs)
@@ -295,7 +295,7 @@ export const testAttributionManagerSimpleExample = _tc => {
   ytext.delete(11, 8)
   ytext.insert(11, '!')
   // highlight the changes
-  console.log(JSON.stringify(ydocFork.get().getContentDeep(Y.createAttributionManagerFromDiff(ydoc, ydocFork)), null, 2))
+  console.log(JSON.stringify(ydocFork.get().toDeltaDeep(Y.createAttributionManagerFromDiff(ydoc, ydocFork)), null, 2))
 /* =>
 {
   "children": {

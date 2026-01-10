@@ -101,7 +101,7 @@ export const testMapHavingIterableAsConstructorParamTests = tc => {
   map0.setAttr('m2', m2)
   t.assert(m2.getAttr('object')?.x === 1)
   t.assert(m2.getAttr('boolean') === true)
-  const m3 = new Y.Type().applyDelta(m1.getContent()).applyDelta(m2.getContent())
+  const m3 = new Y.Type().applyDelta(m1.toDelta()).applyDelta(m2.toDelta())
   map0.setAttr('m3', m3)
   t.assert(m3.getAttr('number') === 1)
   t.assert(m3.getAttr('string') === 'hello')
@@ -562,21 +562,21 @@ export const testAttributedContent = _tc => {
   t.group('initial value', () => {
     ymap.setAttr('test', 42)
     const expectedContent = { test: delta.$deltaMapChangeJson.expect({ type: 'insert', value: 42, attribution: { insert: [] } }) }
-    const attributedContent = ymap.getContent(attributionManager)
+    const attributedContent = ymap.toDelta(attributionManager)
     console.log(attributedContent.toJSON())
     t.compare(expectedContent, attributedContent.toJSON().attrs)
   })
   t.group('overwrite value', () => {
     ymap.setAttr('test', 'fourtytwo')
     const expectedContent = { test: delta.$deltaMapChangeJson.expect({ type: 'insert', value: 'fourtytwo', attribution: { insert: [] } }) }
-    const attributedContent = ymap.getContent(attributionManager)
+    const attributedContent = ymap.toDelta(attributionManager)
     console.log(attributedContent)
     t.compare(expectedContent, attributedContent.toJSON().attrs)
   })
   t.group('delete value', () => {
     ymap.deleteAttr('test')
     const expectedContent = { test: delta.$deltaMapChangeJson.expect({ type: 'delete', prevValue: 'fourtytwo', attribution: { delete: [] } }) }
-    const attributedContent = ymap.getContent(attributionManager)
+    const attributedContent = ymap.toDelta(attributionManager)
     console.log(attributedContent.toJSON())
     t.compare(expectedContent, attributedContent.toJSON().attrs)
   })

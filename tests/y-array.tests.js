@@ -162,9 +162,9 @@ export const testDeleteInsert = tc => {
 export const testInsertThreeElementsTryRegetProperty = tc => {
   const { testConnector, users, array0, array1 } = init(tc, { users: 2 })
   array0.insert(0, [1, true, false])
-  t.compare(array0.getContent(), delta.create().insert([1, true, false]), 'content works')
+  t.compare(array0.toDelta(), delta.create().insert([1, true, false]), 'content works')
   testConnector.flushAllMessages()
-  t.compare(array1.getContent(), delta.create().insert([1, true, false]), 'comparison works after sync')
+  t.compare(array1.toDelta(), delta.create().insert([1, true, false]), 'comparison works after sync')
   compare(users)
 }
 
@@ -479,7 +479,7 @@ export const testAttributedContent = _tc => {
       yarray.insert(1, [42])
     })
     const expectedContent = delta.create().insert([1], null, { delete: [] }).insert([2]).insert([42], null, { insert: [] })
-    const attributedContent = yarray.getContent(attributionManager)
+    const attributedContent = yarray.toDelta(attributionManager)
     console.log(attributedContent.toJSON())
     t.assert(attributedContent.equals(expectedContent))
   })

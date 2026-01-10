@@ -166,7 +166,7 @@ export const testDeltaBug = _tc => {
     }
   })
   ytext.applyDelta(addingList)
-  const result = ytext.getContent()
+  const result = ytext.toDelta()
   const expectedResult = delta.create()
     .insert('\n', { 'block-id': 'block-28eea923-9cbb-4b6f-a950-cf7fd82bc087' })
     .insert('\n\n\n', { 'table-col': { width: '150' } })
@@ -1213,7 +1213,7 @@ export const testDeltaBug2 = _tc => {
     'block-id': 'block-9d6566a1-be55-4e20-999a-b990bc15e143'
   })
   ytext.applyDelta(changeEvent)
-  const d = ytext.getContent()
+  const d = ytext.toDelta()
   t.compare(d.toJSON().children?.[40], {
     type: 'insert',
     insert: '\n',
@@ -1296,29 +1296,29 @@ export const testBasicFormat = tc => {
   })
   text0.insert(0, 'abc', { bold: true })
   t.assert(text0.toString() === 'abc', 'Basic insert with attributes works')
-  t.compare(text0.getContent(), delta.create().insert('abc', { bold: true }).done())
+  t.compare(text0.toDelta(), delta.create().insert('abc', { bold: true }).done())
   t.compare(eventDelta, delta.create().insert('abc', { bold: true }))
   text0.delete(0, 1)
   t.assert(text0.toString() === 'bc', 'Basic delete on formatted works (position 0)')
-  t.compare(text0.getContent(), delta.create().insert('bc', { bold: true }).done())
+  t.compare(text0.toDelta(), delta.create().insert('bc', { bold: true }).done())
   t.compare(eventDelta, delta.create().delete(1))
   text0.delete(1, 1)
   t.assert(text0.toString() === 'b', 'Basic delete works (position 1)')
-  t.compare(text0.getContent(), delta.create().insert('b', { bold: true }).done())
+  t.compare(text0.toDelta(), delta.create().insert('b', { bold: true }).done())
   t.compare(eventDelta, delta.create().retain(1).delete(1))
   text0.insert(0, 'z', { bold: true })
   t.assert(text0.toString() === 'zb')
-  t.compare(text0.getContent(), delta.create().insert('zb', { bold: true }).done())
+  t.compare(text0.toDelta(), delta.create().insert('zb', { bold: true }).done())
   t.compare(eventDelta, delta.create().insert('z', { bold: true }))
   // @ts-ignore
   t.assert(text0._start.right.right.right.content.str === 'b', 'Does not insert duplicate attribute marker')
   text0.insert(0, 'y')
   t.assert(text0.toString() === 'yzb')
-  t.compare(text0.getContent(), delta.create().insert('y').insert('zb', { bold: true }).done())
+  t.compare(text0.toDelta(), delta.create().insert('y').insert('zb', { bold: true }).done())
   t.compare(eventDelta, delta.create().insert('y'))
   text0.format(0, 2, { bold: null })
   t.assert(text0.toString() === 'yzb')
-  t.compare(text0.getContent(), delta.create().insert('yz').insert('b', { bold: true }).done())
+  t.compare(text0.toDelta(), delta.create().insert('yz').insert('b', { bold: true }).done())
   t.compare(eventDelta, delta.create().retain(1).retain(1, { bold: null }))
   compare(users)
 }
@@ -1328,18 +1328,18 @@ export const testBasicFormat = tc => {
  */
 export const testFalsyFormats = tc => {
   const { users, text0 } = init(tc, { users: 2 })
-  let delta = text0.getContent().toJSON().children
+  let delta = text0.toDelta().toJSON().children
   text0.observe(event => {
     delta = event.delta.toJSON().children
   })
   text0.insert(0, 'abcde', { falsy: false })
-  t.compare(text0.getContent().toJSON().children, [{ type: 'insert', insert: 'abcde', format: { falsy: false } }])
+  t.compare(text0.toDelta().toJSON().children, [{ type: 'insert', insert: 'abcde', format: { falsy: false } }])
   t.compare(delta, [{ type: 'insert', insert: 'abcde', format: { falsy: false } }])
   text0.format(1, 3, { falsy: true })
-  t.compare(text0.getContent().toJSON().children, [{ type: 'insert', insert: 'a', format: { falsy: false } }, { type: 'insert', insert: 'bcd', format: { falsy: true } }, { type: 'insert', insert: 'e', format: { falsy: false } }])
+  t.compare(text0.toDelta().toJSON().children, [{ type: 'insert', insert: 'a', format: { falsy: false } }, { type: 'insert', insert: 'bcd', format: { falsy: true } }, { type: 'insert', insert: 'e', format: { falsy: false } }])
   t.compare(delta, [{ type: 'retain', retain: 1 }, { type: 'retain', retain: 3, format: { falsy: true } }])
   text0.format(2, 1, { falsy: false })
-  t.compare(text0.getContent().toJSON().children, [{ type: 'insert', insert: 'a', format: { falsy: false } }, { type: 'insert', insert: 'b', format: { falsy: true } }, { type: 'insert', insert: 'c', format: { falsy: false } }, { type: 'insert', insert: 'd', format: { falsy: true } }, { type: 'insert', insert: 'e', format: { falsy: false } }])
+  t.compare(text0.toDelta().toJSON().children, [{ type: 'insert', insert: 'a', format: { falsy: false } }, { type: 'insert', insert: 'b', format: { falsy: true } }, { type: 'insert', insert: 'c', format: { falsy: false } }, { type: 'insert', insert: 'd', format: { falsy: true } }, { type: 'insert', insert: 'e', format: { falsy: false } }])
   t.compare(delta, [{ type: 'retain', retain: 2 }, { type: 'retain', retain: 1, format: { falsy: false } }])
   compare(users)
 }
@@ -1359,7 +1359,7 @@ export const testMultilineFormat = _tc => {
     .retain(10, { bold: true })
   testText.applyDelta(tt)
   t.compare(
-    testText.getContent(),
+    testText.toDelta(),
     delta.create()
       .insert('Test', { bold: true })
       .insert('\n')
@@ -1383,7 +1383,7 @@ export const testNotMergeEmptyLinesFormat = _tc => {
     .insert('\n', { title: true })
   )
   t.compare(
-    testText.getContent(),
+    testText.toDelta(),
     delta.create()
       .insert('Text')
       .insert('\n', { title: true })
@@ -1409,7 +1409,7 @@ export const testPreserveAttributesThroughDelete = _tc => {
     .delete(1)
     .retain(1, { title: true })
   )
-  t.compare(testText.getContent(),
+  t.compare(testText.toDelta(),
     delta.create()
       .insert('Text')
       .insert('\n', { title: true })
@@ -1423,7 +1423,7 @@ export const testPreserveAttributesThroughDelete = _tc => {
 export const testGetDeltaWithEmbeds = tc => {
   const { text0 } = init(tc, { users: 1 })
   text0.applyDelta(delta.create().insert([{ linebreak: 's' }]))
-  t.compare(text0.getContent(),
+  t.compare(text0.toDelta(),
     delta.create()
       .insert([{ linebreak: 's' }])
       .done()
@@ -1438,7 +1438,7 @@ export const testTypesAsEmbed = tc => {
   text0.applyDelta(delta.create()
     .insert([Y.Type.from(delta.create().setAttr('key', 'val'))])
   )
-  t.compare(/** @type {any} */ (text0).getContentDeep().toJSON().children, [{ type: 'insert', insert: [{ type: 'delta', attrs: { key: { type: 'insert', value: 'val' } } }] }])
+  t.compare(/** @type {any} */ (text0).toDeltaDeep().toJSON().children, [{ type: 'insert', insert: [{ type: 'delta', attrs: { key: { type: 'insert', value: 'val' } } }] }])
   let firedEvent = false
   text1.observe(event => {
     const d = event.deltaDeep
@@ -1447,7 +1447,7 @@ export const testTypesAsEmbed = tc => {
     firedEvent = true
   })
   testConnector.flushAllMessages()
-  const dd = text1.getContentDeep().toJSON().children
+  const dd = text1.toDeltaDeep().toJSON().children
   t.assert(dd?.length === 1)
   t.compare(/** @type {any} */ (dd?.[0]).insert[0], { type: 'delta', attrs: { key: { type: 'insert', value: 'val' } } })
   t.assert(firedEvent, 'fired the event observer containing a Type-Embed')
@@ -1473,11 +1473,11 @@ export const testSnapshot = tc => {
     .insert('x')
     .delete(1)
   )
-  const state1 = text0.getContent(createAttributionManagerFromSnapshots(snapshot1))
+  const state1 = text0.toDelta(createAttributionManagerFromSnapshots(snapshot1))
   t.compare(state1, delta.create().insert('abcd').done())
-  const state2 = text0.getContent(createAttributionManagerFromSnapshots(snapshot2))
+  const state2 = text0.toDelta(createAttributionManagerFromSnapshots(snapshot2))
   t.compare(state2, delta.create().insert('axcd').done())
-  const state2Diff = text0.getContent(createAttributionManagerFromSnapshots(snapshot1, snapshot2))
+  const state2Diff = text0.toDelta(createAttributionManagerFromSnapshots(snapshot1, snapshot2))
   t.compare(
     state2Diff,
     delta.create()
@@ -1504,7 +1504,7 @@ export const testSnapshotDeleteAfter = tc => {
     .retain(4)
     .insert('e')
   )
-  const state1 = text0.getContent(createAttributionManagerFromSnapshots(snapshot1))
+  const state1 = text0.toDelta(createAttributionManagerFromSnapshots(snapshot1))
   t.compare(state1, delta.create().insert('abcd'))
 }
 
@@ -1514,7 +1514,7 @@ export const testSnapshotDeleteAfter = tc => {
 export const testDeltaCompare = tc => {
   const { text0 } = init(tc, { users: 1 })
   text0.insert(0, 'abc', { bold: true })
-  t.compare(text0.getContent(), delta.create().insert('abc', { bold: true }).done())
+  t.compare(text0.toDelta(), delta.create().insert('abc', { bold: true }).done())
 }
 
 /**
@@ -1524,7 +1524,7 @@ export const testToDeltaEmbedAttributes = tc => {
   const { text0 } = init(tc, { users: 1 })
   text0.insert(0, 'ab', { bold: true })
   text0.insert(1, [{ image: 'imageSrc.png' }], { width: 100 })
-  const delta0 = text0.getContent()
+  const delta0 = text0.toDelta()
   t.compare(
     delta0,
     delta.create()
@@ -1542,7 +1542,7 @@ export const testToDeltaEmbedNoAttributes = tc => {
   const { text0 } = init(tc, { users: 1 })
   text0.insert(0, 'ab', { bold: true })
   text0.insert(1, [{ image: 'imageSrc.png' }])
-  const delta0 = text0.getContent()
+  const delta0 = text0.toDelta()
   t.compare(
     delta0,
     delta.create()
@@ -1854,9 +1854,9 @@ export const testFormattingBug = async _tc => {
     .insert('\n', { url: 'http://docs.yjs.dev' })
     .insert('\n', { url: 'http://example.com' })
     .done()
-  t.compare(text1.getContent(), expectedResult)
-  t.compare(text1.getContent().toJSON(), text2.getContent().toJSON())
-  console.log(text1.getContent().toJSON())
+  t.compare(text1.toDelta(), expectedResult)
+  t.compare(text1.toDelta().toJSON(), text2.toDelta().toJSON())
+  console.log(text1.toDelta().toJSON())
 }
 
 /**
@@ -1884,8 +1884,8 @@ export const testDeleteFormatting = _tc => {
     .insert('on ', { bold: true })
     .insert('fire off the shoulder of Orion.')
     .done()
-  t.compare(text.getContent(), expected)
-  t.compare(text2.getContent(), expected)
+  t.compare(text.toDelta(), expected)
+  t.compare(text2.toDelta(), expected)
 }
 
 /**
@@ -1904,14 +1904,14 @@ export const testAttributedContent = _tc => {
   t.group('insert / delete / format', () => {
     ytext.applyDelta(delta.create().retain(4, { italic: true }).retain(2).delete(5).insert('attributions'))
     const expectedContent = delta.create().insert('Hell', { italic: true }, { format: { italic: [] } }).insert('o ').insert('World', {}, { delete: [] }).insert('attributions', {}, { insert: [] }).insert('!')
-    const attributedContent = ytext.getContent(attributionManager)
+    const attributedContent = ytext.toDelta(attributionManager)
     console.log(attributedContent.toJSON())
     t.assert(attributedContent.equals(expectedContent))
   })
   t.group('unformat', () => {
     ytext.applyDelta(delta.create().retain(5, { italic: null }))
     const expectedContent = delta.create().insert('Hell', null, { format: { italic: [] } }).insert('o attributions!')
-    const attributedContent = ytext.getContent(attributionManager)
+    const attributedContent = ytext.toDelta(attributionManager)
     console.log(attributedContent.toJSON())
     t.assert(attributedContent.equals(expectedContent))
   })
@@ -1942,7 +1942,7 @@ export const testAttributedDiffing = _tc => {
   // implementations is the TwosetAttributionManager
   const attributionManager = new TwosetAttributionManager(attributedInsertions, attributedDeletions)
   // we render the attributed content with the attributionManager
-  const attributedContent = ytext.getContent(attributionManager)
+  const attributedContent = ytext.toDelta(attributionManager)
   console.log(JSON.stringify(attributedContent.toJSON(), null, 2))
   const expectedContent = delta.create().insert('Hell', { italic: true }, { format: { italic: ['Bob'] } }).insert('o ').insert('World', {}, { delete: ['Bob'] }).insert('attributions', {}, { insert: ['Bob'] }).insert('!')
   t.assert(attributedContent.equals(expectedContent))
@@ -2165,8 +2165,8 @@ const qChanges = [
 const checkResult = result => {
   for (let i = 1; i < result.testObjects.length; i++) {
     t.info('length of text = ' + result.users[i - 1].get('text').length)
-    const p1 = result.users[i - 1].get('text').getContentDeep().children
-    const p2 = result.users[i].get('text').getContentDeep().children
+    const p1 = result.users[i - 1].get('text').toDeltaDeep().children
+    const p2 = result.users[i].get('text').toDeltaDeep().children
     t.compare(p1, p2)
   }
   // Uncomment this to find formatting-cleanup issues
@@ -2177,7 +2177,7 @@ const checkResult = result => {
 
 /**
  * Generally, the content reader with attributed content works better if there is more deleted
- * content. Increasing the number of deletions improves performance of getContent (even to the point
+ * content. Increasing the number of deletions improves performance of toDelta (even to the point
  * that is beats toString(), but that might be because of internal js optimization steps).
  *
  * @param {t.TestCase} tc
@@ -2207,9 +2207,9 @@ export const testAttributionManagerDefaultPerformance = tc => {
       ytext.toString()
     }
   })
-  t.measureTime(`getContent(attributionManager) performance <executed ${M} times>`, () => {
+  t.measureTime(`toDelta(attributionManager) performance <executed ${M} times>`, () => {
     for (let i = 0; i < M; i++) {
-      ytext.getContent()
+      ytext.toDelta()
     }
   })
 }

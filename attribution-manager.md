@@ -79,19 +79,19 @@ const attributedDelta = ytext.getDelta(attributionManager)
 // ]
 ```
 
-#### `getContent([attributionManager])`
+#### `toDelta([attributionManager])`
 
 Returns the content representation with optional attribution information.
 
 **Parameters:**
-- `attributionManager` (optional): The attribution manager instance
+- `toDelta` (optional): The attribution manager instance
 
 **Returns:**
 - Content representation with attribution metadata if `attributionManager` is provided
 
 ### YArray
 
-#### `getContent([attributionManager])`
+#### `toDelta([attributionManager])`
 
 Returns the array content with optional attribution information for each element.
 
@@ -103,7 +103,7 @@ Returns the array content with optional attribution information for each element
 
 ### YMap
 
-#### `getContent([attributionManager])`
+#### `toDelta([attributionManager])`
 
 Returns the map content with optional attribution information for each key-value pair.
 

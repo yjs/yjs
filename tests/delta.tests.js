@@ -140,7 +140,7 @@ export const testBasics = _tc => {
   // the observed change should equal the applied change
   t.assert(observedDelta.equals(mergedChanges))
   // read the current state of the yjs types as a delta
-  const currState = ytype.getContentDeep()
+  const currState = ytype.toDeltaDeep()
   t.assert(currState.equals(mergedChanges)) // equal to the changes that we applied
 }
 
@@ -168,7 +168,7 @@ export const testAttributions = _tc => {
   ytype.applyDelta(delta.create().retain(5).delete(6).insert('!'))
   const am = Y.createAttributionManagerFromDiff(ydocV1, ydoc)
   // get the attributed differences
-  const attributedContent = ytype.getContent(am)
+  const attributedContent = ytype.toDelta(am)
   console.log('attributed content', attributedContent.toJSON())
   t.assert(attributedContent.equals(delta.create().insert('hello').insert(' world', null, { delete: [] }).insert('!', null, { insert: [] })))
   // for editor bindings, it is also necessary to observe changes and get the attributed changes

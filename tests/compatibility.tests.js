@@ -65,5 +65,5 @@ export const testTextDecodingCompatibilityV1 = _tc => {
     }
     return d.done()
   }
-  t.compare(doc.get('text').getContent(), quillDeltaToDelta(oldVal))
+  t.compare(doc.get('text').toDelta(), quillDeltaToDelta(oldVal))
 }

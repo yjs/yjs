@@ -12,7 +12,7 @@ export const testBasic = _tc => {
   const snapshot = Y.snapshot(ydoc)
   ydoc.get().insert(0, 'hello ')
   const restored = Y.createDocFromSnapshot(ydoc, snapshot)
-  t.assert(restored.get().getContent().equals(delta.create().insert('world!')))
+  t.assert(restored.get().toDelta().equals(delta.create().insert('world!')))
 }
 
 /**

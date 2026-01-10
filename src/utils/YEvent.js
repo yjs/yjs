@@ -126,7 +126,7 @@ export class YEvent {
       }
       modified = dchanged
     }
-    return /** @type {any} */ (this.target.getContent(am, { itemsToRender, retainDeletes: true, deletedItems: this.transaction.deleteSet, deep: !!deep, modified }))
+    return /** @type {any} */ (this.target.toDelta(am, { itemsToRender, retainDeletes: true, deletedItems: this.transaction.deleteSet, deep: !!deep, modified }))
   }
 
   /**

@@ -11,7 +11,7 @@ export const testInconsistentFormat = () => {
     const content = ydoc.get('text')
     content.format(0, 6, { bold: null })
     content.format(6, 4, { type: 'text' })
-    t.compare(content.getContent(), delta.create().insert('Merge Test', { type: 'text' }).insert(' After', { type: 'text', italic: true }).done())
+    t.compare(content.toDelta(), delta.create().insert('Merge Test', { type: 'text' }).insert(' After', { type: 'text', italic: true }).done())
   }
   const initializeYDoc = () => {
     const yDoc = new Y.Doc({ gc: false })
@@ -85,11 +85,11 @@ export const testUndoText = tc => {
   t.assert(text0.toString() === 'bcxyz')
   // test marks
   text0.format(1, 3, { bold: true })
-  t.compare(text0.getContent(), delta.create().insert('b').insert('cxy', { bold: true }).insert('z'))
+  t.compare(text0.toDelta(), delta.create().insert('b').insert('cxy', { bold: true }).insert('z'))
   undoManager.undo()
-  t.compare(text0.getContent(), delta.create().insert('bcxyz'))
+  t.compare(text0.toDelta(), delta.create().insert('bcxyz'))
   undoManager.redo()
-  t.compare(text0.getContent(), delta.create().insert('b').insert('cxy', { bold: true }).insert('z'))
+  t.compare(text0.toDelta(), delta.create().insert('b').insert('cxy', { bold: true }).insert('z'))
 }
 
 /**
@@ -300,15 +300,15 @@ export const testUndoXml = tc => {
   textchild.format(3, 4, { bold: true })
   const v1 = delta.create().insert([delta.create('p').insert([delta.create().insert('con').insert('tent', { bold: true }).done()]).done()]).done()
   const v2 = delta.create().insert([delta.create('p').insert([delta.create().insert('content').done()]).done()]).done()
-  t.compare(xml0.getContentDeep(), v1)
+  t.compare(xml0.toDeltaDeep(), v1)
   undoManager.undo()
-  t.compare(xml0.getContentDeep(), v2)
+  t.compare(xml0.toDeltaDeep(), v2)
   undoManager.redo()
-  t.compare(xml0.getContentDeep(), v1)
+  t.compare(xml0.toDeltaDeep(), v1)
   xml0.delete(0, 1)
-  t.compare(xml0.getContentDeep(), delta.create().done())
+  t.compare(xml0.toDeltaDeep(), delta.create().done())
   undoManager.undo()
-  t.compare(xml0.getContentDeep(), v1)
+  t.compare(xml0.toDeltaDeep(), v1)
 }
 
 /**
@@ -475,19 +475,19 @@ export const testUndoNestedUndoIssue = _tc => {
     blocks3.push([blocks3block])
     text.setAttr('blocks', blocks3block)
   })
-  t.compare(design.getContentDeep(), delta.from({ text: delta.from({ blocks: delta.from({ text: 'Something Else' }) }) }))
+  t.compare(design.toDeltaDeep(), delta.from({ text: delta.from({ blocks: delta.from({ text: 'Something Else' }) }) }))
   undoManager.undo()
-  t.compare(design.getContentDeep(), delta.from({ text: delta.from({ blocks: delta.from({ text: 'Something' }) }) }))
+  t.compare(design.toDeltaDeep(), delta.from({ text: delta.from({ blocks: delta.from({ text: 'Something' }) }) }))
   undoManager.undo()
-  t.compare(design.getContentDeep(), delta.from({ text: delta.from({ blocks: delta.from({ text: 'Type Something' }) }) }))
+  t.compare(design.toDeltaDeep(), delta.from({ text: delta.from({ blocks: delta.from({ text: 'Type Something' }) }) }))
   undoManager.undo()
-  t.compare(design.getContentDeep(), delta.from({}))
+  t.compare(design.toDeltaDeep(), delta.from({}))
   undoManager.redo()
-  t.compare(design.getContentDeep(), delta.from({ text: delta.from({ blocks: delta.from({ text: 'Type Something' }) }) }))
+  t.compare(design.toDeltaDeep(), delta.from({ text: delta.from({ blocks: delta.from({ text: 'Type Something' }) }) }))
   undoManager.redo()
-  t.compare(design.getContentDeep(), delta.from({ text: delta.from({ blocks: delta.from({ text: 'Something' }) }) }))
+  t.compare(design.toDeltaDeep(), delta.from({ text: delta.from({ blocks: delta.from({ text: 'Something' }) }) }))
   undoManager.redo()
-  t.compare(design.getContentDeep(), delta.from({ text: delta.from({ blocks: delta.from({ text: 'Something Else' }) }) }))
+  t.compare(design.toDeltaDeep(), delta.from({ text: delta.from({ blocks: delta.from({ text: 'Something Else' }) }) }))
 }
 
 /**
@@ -675,8 +675,8 @@ export const testUndoDeleteTextFormat = _tc => {
     .insert('Attack ships ')
     .insert('on fire', { bold: true })
     .insert(' off the shoulder of Orion.')
-  t.compare(text.getContent(), expect)
-  t.compare(text2.getContent(), expect)
+  t.compare(text.toDelta(), expect)
+  t.compare(text2.toDelta(), expect)
 }
 
 /**
