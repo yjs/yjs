@@ -116,7 +116,13 @@ export {
   decodeIdMap,
   diffDocsToDelta,
   getPathTo,
-  Attributions
+  Attributions,
+  filterIdMap,
+  undoContentIds,
+  createContentIds,
+  createContentMap,
+  createContentIdsFromContentMap,
+  createContentMapFromContentIds
 } from './internals.js'
 
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'

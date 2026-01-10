@@ -32,7 +32,7 @@
       "types": "./dist/src/internals.d.ts",
       "default": "./src/internals.js"
     },
-    "/meta": {
+    "./meta": {
       "types": "./dist/src/utils/meta.d.ts",
       "default": "./src/utils/meta.js"
     },

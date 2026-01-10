@@ -108,7 +108,7 @@ export class IdRanges {
    */
   add (clock, length) {
     const last = this._ids[this._ids.length - 1]
-    if (last.clock + last.len === clock) {
+    if (last != null && last.clock + last.len === clock) {
       if (this._lastIsUsed) {
         this._ids[this._ids.length - 1] = new IdRange(last.clock, last.len + length)
         this._lastIsUsed = false

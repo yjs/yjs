@@ -5,7 +5,9 @@ import {
   _deleteRangeFromIdSet,
   DSDecoderV1, DSDecoderV2,  IdSetEncoderV1, IdSetEncoderV2, IdSet, ID, // eslint-disable-line
   _insertIntoIdSet,
-  _intersectSets
+  _intersectSets,
+  createIdSet,
+  IdRanges
 } from '../internals.js'
 
 import * as array from 'lib0/array'
@@ -295,6 +297,22 @@ export const createIdMapFromIdSet = (idset, attrs) => {
 }
 
 /**
+ * Create an IdSet from an IdMap by stripping the attributes.
+ *
+ * @param {IdMap<any>} idmap
+ * @return {IdSet}
+ */
+export const createIdSetFromIdMap = idmap => {
+  const idset = createIdSet()
+  idmap.clients.forEach((ranges, client) => {
+    const idRanges = new IdRanges([])
+    ranges.getIds().forEach(range => idRanges.add(range.clock, range.len))
+    idset.clients.set(client, idRanges)
+  })
+  return idset
+}
+
+/**
  * @template Attrs
  */
 export class IdMap {
@@ -322,6 +340,10 @@ export class IdMap {
         f(range, client)
       })
     })
+  }
+
+  isEmpty () {
+    return this.clients.size === 0
   }
 
   /**
@@ -616,3 +638,36 @@ export const diffIdMap = (set, exclude) => {
 }
 
 export const intersectMaps = _intersectSets
+
+/**
+ * Filter attributes in an IdMap based on a predicate function.
+ * Returns a new IdMap containing idranges that match the predicate.
+ *
+ * @template Attrs
+ * @param {IdMap<Attrs>} idmap
+ * @param {(attr: ContentAttribute<Attrs>) => boolean} predicate
+ * @return {IdMap<Attrs>}
+ */
+export const filterIdMap = (idmap, predicate) => {
+  const filtered = createIdMap()
+  idmap.clients.forEach((ranges, client) => {
+    /**
+     * @type {Array<AttrRange<Attrs>>}
+     */
+    const attrRanges = []
+    ranges.getIds().forEach((range) => {
+      if (range.attrs.some(predicate)) {
+        const rangeCpy = range.copyWith(range.clock, range.len)
+        attrRanges.push(rangeCpy)
+        rangeCpy.attrs.forEach(attr => {
+          filtered.attrs.add(attr)
+          filtered.attrsH.set(attr.hash(), attr)
+        })
+      }
+    })
+    if (attrRanges.length > 0) {
+      filtered.clients.set(client, new AttrRanges(attrRanges))
+    }
+  })
+  return filtered
+}

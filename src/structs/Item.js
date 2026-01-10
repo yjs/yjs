@@ -149,7 +149,7 @@ export const splitStruct = (transaction, leftStruct, diff) => {
  * @param {Array<StackItem>} stack
  * @param {ID} id
  */
-const isDeletedByUndoStack = (stack, id) => array.some(stack, /** @param {StackItem} s */ s => s.deletions.hasId(id))
+const isDeletedByUndoStack = (stack, id) => array.some(stack, /** @param {StackItem} s */ s => s.deletes.hasId(id))
 
 /**
  * Redoes the effect of this operation.

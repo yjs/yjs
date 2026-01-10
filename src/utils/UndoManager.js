@@ -8,7 +8,8 @@ import {
   isParentOf,
   followRedone,
   getItemCleanStart,
-  YEvent, Transaction, Doc, Item, GC, IdSet, YType // eslint-disable-line
+  YEvent, Transaction, Doc, Item, GC, IdSet, YType, // eslint-disable-line
+  diffIdSet
 } from '../internals.js'
 
 import * as time from 'lib0/time'
@@ -18,12 +19,12 @@ import { ObservableV2 } from 'lib0/observable'
 
 export class StackItem {
   /**
-   * @param {IdSet} deletions
    * @param {IdSet} insertions
+   * @param {IdSet} deletions
    */
-  constructor (deletions, insertions) {
-    this.insertions = insertions
-    this.deletions = deletions
+  constructor (insertions, deletions) {
+    this.inserts = insertions
+    this.deletes = deletions
     /**
      * Use this to save and restore metadata like selection range
      */
@@ -36,7 +37,7 @@ export class StackItem {
  * @param {StackItem} stackItem
  */
 const clearUndoManagerStackItem = (tr, um, stackItem) => {
-  iterateStructsByIdSet(tr, stackItem.deletions, item => {
+  iterateStructsByIdSet(tr, stackItem.deletes, item => {
     if (item instanceof Item && um.scope.some(type => type === tr.doc || isParentOf(/** @type {YType} */ (type), item))) {
       keepItem(item, false)
     }
@@ -70,7 +71,7 @@ const popStackItem = (undoManager, stack, eventType) => {
        */
       const itemsToDelete = []
       let performedChange = false
-      iterateStructsByIdSet(transaction, stackItem.insertions, struct => {
+      iterateStructsByIdSet(transaction, stackItem.inserts, struct => {
         if (struct instanceof Item) {
           if (struct.redone !== null) {
             let { item, diff } = followRedone(store, struct.id)
@@ -84,18 +85,18 @@ const popStackItem = (undoManager, stack, eventType) => {
           }
         }
       })
-      iterateStructsByIdSet(transaction, stackItem.deletions, struct => {
+      iterateStructsByIdSet(transaction, stackItem.deletes, struct => {
         if (
           struct instanceof Item &&
           scope.some(type => type === transaction.doc || isParentOf(/** @type {YType} */ (type), struct)) &&
           // Never redo structs in stackItem.insertions because they were created and deleted in the same capture interval.
-          !stackItem.insertions.hasId(struct.id)
+          !stackItem.inserts.hasId(struct.id)
         ) {
           itemsToRedo.add(struct)
         }
       })
       itemsToRedo.forEach(struct => {
-        performedChange = redoItem(transaction, struct, itemsToRedo, stackItem.insertions, undoManager.ignoreRemoteMapChanges, undoManager) !== null || performedChange
+        performedChange = redoItem(transaction, struct, itemsToRedo, stackItem.inserts, undoManager.ignoreRemoteMapChanges, undoManager) !== null || performedChange
       })
       // We want to delete in reverse order so that children are deleted before
       // parents, so we have more information available when items are filtered.
@@ -230,11 +231,11 @@ export class UndoManager extends ObservableV2 {
       if (this.lastChange > 0 && now - this.lastChange < this.captureTimeout && stack.length > 0 && !undoing && !redoing) {
         // append change to last stack op
         const lastOp = stack[stack.length - 1]
-        lastOp.deletions = mergeIdSets([lastOp.deletions, transaction.deleteSet])
-        lastOp.insertions = mergeIdSets([lastOp.insertions, insertions])
+        lastOp.deletes = mergeIdSets([lastOp.deletes, transaction.deleteSet])
+        lastOp.inserts = mergeIdSets([lastOp.inserts, insertions])
       } else {
         // create a new stack op
-        stack.push(new StackItem(transaction.deleteSet, insertions))
+        stack.push(new StackItem(insertions, transaction.deleteSet))
         didAdd = true
       }
       if (!undoing && !redoing) {
@@ -388,4 +389,18 @@ export class UndoManager extends ObservableV2 {
     this.doc.off('afterTransaction', this.afterTransactionHandler)
     super.destroy()
   }
+}
+
+/**
+ * @experimental
+ * 
+ * This is not guaranteed to work on documents with gc enabled!
+ *
+ * @param {Doc} ydoc
+ * @param {import('./meta.js').ContentIds} contentIds
+ */
+export const undoContentIds = (ydoc, contentIds) => {
+  const um = new UndoManager(ydoc)
+  um.undoStack.push(new StackItem(diffIdSet(contentIds.inserts, contentIds.deletes), diffIdSet(contentIds.deletes, contentIds.inserts)))
+  um.undo()
 }

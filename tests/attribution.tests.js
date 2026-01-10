@@ -137,6 +137,7 @@ export const testChildListContent = () => {
  */
 export const testAttributionSession1 = tc => {
   const { testConnector, users, text0, text1 } = init(tc, { users: 3 })
+  users[0].gc = false
   const globalAttributions = new Y.Attributions()
   const v1 = Y.cloneDoc(users[0])
   users.forEach(user => user.on('update', (update, _, ydoc, tr) => {
@@ -152,9 +153,21 @@ export const testAttributionSession1 = tc => {
   const d1 = text0.toDelta(Y.createAttributionManagerFromDiff(v1, users[0], { attrs: globalAttributions }))
   t.compare(d1, delta.create().insert('a', null, { insert: ['0'] }).insert('b', null, { insert: ['1'] }))
   const v2 = Y.cloneDoc(users[0])
-  text0.delete(0, 1)
-  text1.insert(1, 'c')
+  text0.delete(1, 1)
+  text1.insert(2, 'c')
   testConnector.flushAllMessages()
   const d2 = text0.toDelta(Y.createAttributionManagerFromDiff(v2, users[0], { attrs: globalAttributions }))
-  t.compare(d2, delta.create().insert('a', null, { delete: ['0'] }).insert('c', null, { insert: ['1'] }).insert('b'))
+  t.compare(d2, delta.create().insert('a').insert('b', null, { delete: ['0'] }).insert('c', null, { insert: ['1'] }))
+
+  const onlyUser0ChangesAttributed = {
+    inserts: Y.filterIdMap(globalAttributions.inserts, attr => attr.name === 'insert' && attr.val === '0'),
+    deletes: Y.filterIdMap(globalAttributions.deletes, attr => attr.name === 'delete' && attr.val === '0')
+  }
+  const amUser0 = new Y.TwosetAttributionManager(onlyUser0ChangesAttributed.inserts, onlyUser0ChangesAttributed.deletes)
+  const d3 = text0.toDelta(amUser0)
+  t.compare(d3, delta.create().insert('a', null, { insert: ['0'] }).insert('b', null, { delete: ['0'] }).insert('c'))
+  Y.undoContentIds(users[0], Y.createContentIdsFromContentMap(onlyUser0ChangesAttributed))
+
+  const d4 = text0.toDelta()
+  t.compare(d4, delta.create().insert('bc'))
 }

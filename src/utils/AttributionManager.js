@@ -468,7 +468,7 @@ export class DiffAttributionManager extends ObservableV2 {
     this._prevDoc.transact(tr => {
       applyUpdate(this._prevDoc, encodeStateAsUpdate(this._nextDoc))
       const um = new UndoManager(this._prevDoc)
-      um.undoStack.push(new StackItem(tr.deleteSet, tr.insertSet))
+      um.undoStack.push(new StackItem(tr.insertSet, tr.deleteSet))
       um.undo()
       um.destroy()
     })
@@ -497,7 +497,7 @@ export class DiffAttributionManager extends ObservableV2 {
       writeStructsFromIdSet(encoder, this._nextDoc.store, inserts)
       writeIdSet(encoder, deletes)
       const um = new UndoManager(this._nextDoc)
-      um.undoStack.push(new StackItem(deletes, inserts))
+      um.undoStack.push(new StackItem(inserts, deletes))
       um.undo()
       um.destroy()
     })

@@ -21,6 +21,14 @@ import { IdSetEncoderV2 } from './UpdateEncoder.js'
 export const createContentIds = (inserts, deletes) => ({ inserts, deletes })
 
 /**
+ * @param {ContentMap} contentMap
+ */
+export const createContentIdsFromContentMap = contentMap => createContentIds(
+  idmap.createIdSetFromIdMap(contentMap.inserts),
+  idmap.createIdSetFromIdMap(contentMap.deletes)
+)
+
+/**
  * @param {import('./IdMap.js').IdMap<any>} inserts
  * @param {import('./IdMap.js').IdMap<any>} deletes
  */
