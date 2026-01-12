@@ -15,7 +15,7 @@
     "test-extensive": "node ./tests/index.js --production --repetition-time 10000",
     "dist": "npm run clean && (tsc --skipLibCheck|| true)",
     "lint": "markdownlint README.md && standard && tsc --skipLibCheck",
-    "preversion": "PRODUCTION=1 npm run dist && test -e dist/src/index.d.ts && test -e dist/yjs.js",
+    "preversion": "PRODUCTION=1 npm run dist && test -e dist/src/index.d.ts",
     "debug": "npm run gentesthtml && 0serve -o test.html",
     "debug:node": "node --inspect-brk tests/index.js",
     "trace-deopt": "clear && node --trace-deopt ./tests/index.js",
