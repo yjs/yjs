@@ -1,3 +1,5 @@
+// @todo remove
+
 export default [{
   input: {
     yjs: './src/index.js',
