@@ -1,6 +1,6 @@
 {
   "name": "@y/y",
-  "version": "14.0.0-19",
+  "version": "14.0.0-20",
   "description": "Shared Editing Library",
   "types": "./dist/src/index.d.ts",
   "type": "module",
