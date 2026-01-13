@@ -143,7 +143,7 @@ export const testAttributionSession1 = tc => {
   users.forEach(user => user.on('update', (update, _, ydoc, tr) => {
     if (!tr.local) return
     const userid = ydoc.clientID.toString()
-    const contentIds = Y.readUpdateToContentIds(update)
+    const contentIds = Y.createContentIdsFromUpdate(update)
     Y.insertIntoIdMap(globalAttributions.inserts, Y.createIdMapFromIdSet(contentIds.inserts, [Y.createContentAttribute('insert', userid)]))
     Y.insertIntoIdMap(globalAttributions.deletes, Y.createIdMapFromIdSet(contentIds.deletes, [Y.createContentAttribute('delete', userid)]))
   }))
