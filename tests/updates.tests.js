@@ -359,3 +359,15 @@ export const testObfuscateUpdates = _tc => {
   // test subdoc
   t.assert(osubdoc.guid !== subdoc.guid)
 }
+
+export const testIntersectDoc = () => {
+  const ydoc = new Y.Doc()
+  ydoc.get().setAttr('k', 1)
+  const c1 = Y.createContentIdsFromDoc(ydoc)
+  ydoc.get().setAttr('k', 2)
+
+  const v1 = Y.intersectUpdateWithContentIds(Y.encodeStateAsUpdate(ydoc), c1)
+  const y1 = new Y.Doc()
+  Y.applyUpdate(y1, v1)
+  t.assert(ydoc.get().getAttr('k'))
+}

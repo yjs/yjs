@@ -120,7 +120,7 @@ export const encodeContentIds = contentIds => {
 export const readContentIds = decoder => createContentIds(
   idset.readIdSet(decoder),
   idset.readIdSet(decoder)
-) 
+)
 
 /**
  * @param {Uint8Array<any>} buf
@@ -188,4 +188,3 @@ export const decodeContentMap = buf => readContentMap(new IdSetDecoderV2(decodin
  * @param {(c:Array<idmap.ContentAttribute<any>>)=>boolean} deletePredicate
  */
 export const filterContentMap = (contentMap, insertPredicate, deletePredicate) => createContentMap(idmap.filterIdMap(contentMap.inserts, insertPredicate), idmap.filterIdMap(contentMap.deletes, deletePredicate))
-

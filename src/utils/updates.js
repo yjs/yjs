@@ -36,6 +36,8 @@ import {
   createIdSet
 } from '../internals.js'
 
+import * as idset from './IdSet.js'
+
 /**
  * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
  */
@@ -390,7 +392,7 @@ export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = U
       }
 
       if (firstClient !== currWrite.struct.id.client) {
-        writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset)
+        writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset, 0)
         currWrite = { struct: curr, offset: 0 }
         currDecoder.next()
       } else {
@@ -400,7 +402,7 @@ export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = U
             // extend existing skip
             currWrite.struct.length = curr.id.clock + curr.length - currWrite.struct.id.clock
           } else {
-            writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset)
+            writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset, 0)
             const diff = curr.id.clock - currWrite.struct.id.clock - currWrite.struct.length
             /**
              * @type {Skip}
@@ -419,7 +421,7 @@ export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = U
             }
           }
           if (!currWrite.struct.mergeWith(/** @type {any} */ (curr))) {
-            writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset)
+            writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset, 0)
             currWrite = { struct: curr, offset: 0 }
             currDecoder.next()
           }
@@ -434,12 +436,12 @@ export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = U
       next !== null && next.id.client === firstClient && next.id.clock === currWrite.struct.id.clock + currWrite.struct.length && next.constructor !== Skip;
       next = currDecoder.next()
     ) {
-      writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset)
+      writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset, 0)
       currWrite = { struct: next, offset: 0 }
     }
   }
   if (currWrite !== null) {
-    writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset)
+    writeStructToLazyStructWriter(lazyStructEncoder, currWrite.struct, currWrite.offset, 0)
     currWrite = null
   }
   finishLazyStructWriting(lazyStructEncoder)
@@ -451,6 +453,7 @@ export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = U
 }
 
 /**
+ * @deprecated
  * @param {Uint8Array} update
  * @param {Uint8Array} sv
  * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} [YDecoder]
@@ -472,10 +475,10 @@ export const diffUpdateV2 = (update, sv, YDecoder = UpdateDecoderV2, YEncoder = 
       continue
     }
     if (curr.id.clock + curr.length > svClock) {
-      writeStructToLazyStructWriter(lazyStructWriter, curr, math.max(svClock - curr.id.clock, 0))
+      writeStructToLazyStructWriter(lazyStructWriter, curr, math.max(svClock - curr.id.clock, 0), 0)
       reader.next()
       while (reader.curr && reader.curr.id.client === currClient) {
-        writeStructToLazyStructWriter(lazyStructWriter, reader.curr, 0)
+        writeStructToLazyStructWriter(lazyStructWriter, reader.curr, 0, 0)
         reader.next()
       }
     } else {
@@ -493,6 +496,9 @@ export const diffUpdateV2 = (update, sv, YDecoder = UpdateDecoderV2, YEncoder = 
 }
 
 /**
+ * @deprecated
+ * @todo remove this in favor of intersectupdate
+ *
  * @param {Uint8Array} update
  * @param {Uint8Array} sv
  */
@@ -513,8 +519,9 @@ const flushLazyStructWriter = lazyWriter => {
  * @param {LazyStructWriter} lazyWriter
  * @param {Item | GC} struct
  * @param {number} offset
+ * @param {number} offsetEnd
  */
-const writeStructToLazyStructWriter = (lazyWriter, struct, offset) => {
+const writeStructToLazyStructWriter = (lazyWriter, struct, offset, offsetEnd) => {
   // flush curr if we start another client
   if (lazyWriter.written > 0 && lazyWriter.currClient !== struct.id.client) {
     flushLazyStructWriter(lazyWriter)
@@ -526,7 +533,7 @@ const writeStructToLazyStructWriter = (lazyWriter, struct, offset) => {
     // write startClock
     encoding.writeVarUint(lazyWriter.encoder.restEncoder, struct.id.clock + offset)
   }
-  struct.write(lazyWriter.encoder, offset, 0)
+  struct.write(lazyWriter.encoder, offset, offsetEnd)
   lazyWriter.written++
 }
 /**
@@ -574,7 +581,7 @@ export const convertUpdateFormat = (update, blockTransformer, YDecoder, YEncoder
   const updateEncoder = new YEncoder()
   const lazyWriter = new LazyStructWriter(updateEncoder)
   for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
-    writeStructToLazyStructWriter(lazyWriter, blockTransformer(curr), 0)
+    writeStructToLazyStructWriter(lazyWriter, blockTransformer(curr), 0, 0)
   }
   finishLazyStructWriting(lazyWriter)
   const ds = readIdSet(updateDecoder)
@@ -709,3 +716,66 @@ export const convertUpdateFormatV1ToV2 = update => convertUpdateFormat(update, f
  * @param {Uint8Array} update
  */
 export const convertUpdateFormatV2ToV1 = update => convertUpdateFormat(update, f.id, UpdateDecoderV2, UpdateEncoderV1)
+
+/**
+ * Filter an update to only include content specified by a ContentIds pattern.
+ *
+ * This function extracts a subset of an update, keeping only the structs whose IDs
+ * are present in `contentIds.inserts` and only the delete set entries that are
+ * present in `contentIds.deletes`.
+ *
+ * Note: If a struct partially overlaps with the contentIds pattern, only the
+ * overlapping portion is included in the result.
+ *
+ * @param {Uint8Array} update
+ * @param {import('./meta.js').ContentIds} contentIds - Pattern specifying which content to include
+ * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} [YDecoder]
+ * @param {typeof UpdateEncoderV1 | typeof UpdateEncoderV2} [YEncoder]
+ * @return {Uint8Array}
+ */
+export const intersectUpdateWithContentIdsV2 = (update, contentIds, YDecoder = UpdateDecoderV2, YEncoder = UpdateEncoderV2) => {
+  const { inserts, deletes } = contentIds
+  const encoder = new YEncoder()
+  const lazyStructWriter = new LazyStructWriter(encoder)
+  const decoder = new YDecoder(decoding.createDecoder(update))
+  const reader = new LazyStructReader(decoder, true)
+
+  while (reader.curr) {
+    const currClientId = reader.curr.id.client
+    let nextClock = reader.curr.id.clock
+    let firstWrite = false
+    while (reader.curr != null && reader.curr.id.client === currClientId) {
+      const curr = reader.curr
+      for (const slice of inserts.slice(currClientId, nextClock, curr.length)) {
+        if (slice.exists) {
+          const skipLen = slice.clock - nextClock
+          if (skipLen > 0 && firstWrite) {
+            // write missing skip
+            writeStructToLazyStructWriter(lazyStructWriter, new Skip(createID(currClientId, nextClock), skipLen), 0, 0)
+          }
+          // write sliced content
+          writeStructToLazyStructWriter(lazyStructWriter, curr, slice.clock - curr.id.clock, (curr.id.clock + curr.length) - (slice.clock + slice.len))
+          nextClock = slice.clock + slice.len
+          firstWrite = true
+        }
+      }
+      reader.next()
+    }
+  }
+  finishLazyStructWriting(lazyStructWriter)
+  // Filter the delete set to only include entries in contentIds.deletes
+  const ds = readIdSet(decoder)
+  const filteredDs = idset.intersectSets(ds, deletes)
+  writeIdSet(encoder, filteredDs)
+  return encoder.toUint8Array()
+}
+
+/**
+ * Filter an update (V1 format) to only include content specified by a ContentIds pattern.
+ *
+ * @param {Uint8Array} update
+ * @param {import('./meta.js').ContentIds} contentIds - Pattern specifying which content to include
+ * @return {Uint8Array}
+ */
+export const intersectUpdateWithContentIds = (update, contentIds) =>
+  intersectUpdateWithContentIdsV2(update, contentIds, UpdateDecoderV1, UpdateEncoderV1)

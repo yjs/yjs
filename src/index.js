@@ -118,7 +118,9 @@ export {
   getPathTo,
   Attributions,
   filterIdMap,
-  undoContentIds
+  undoContentIds,
+  intersectUpdateWithContentIds,
+  intersectUpdateWithContentIdsV2
 } from './internals.js'
 
 export * from './utils/meta.js'
