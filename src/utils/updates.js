@@ -33,7 +33,10 @@ import {
   UpdateEncoderV1,
   UpdateEncoderV2,
   writeIdSet,
-  createIdSet
+  createIdSet,
+  Doc,
+  applyUpdate,
+  applyUpdateV2
 } from '../internals.js'
 
 import * as idset from './IdSet.js'
@@ -779,3 +782,21 @@ export const intersectUpdateWithContentIdsV2 = (update, contentIds, YDecoder = U
  */
 export const intersectUpdateWithContentIds = (update, contentIds) =>
   intersectUpdateWithContentIdsV2(update, contentIds, UpdateDecoderV1, UpdateEncoderV1)
+
+/**
+ * @param {Uint8Array} update
+ */
+export const createDocFromUpdate = update => {
+  const ydoc = new Doc()
+  applyUpdate(ydoc, update)
+  return ydoc
+}
+
+/**
+ * @param {Uint8Array} update
+ */
+export const createDocFromUpdateV2 = update => {
+  const ydoc = new Doc()
+  applyUpdateV2(ydoc, update)
+  return ydoc
+}

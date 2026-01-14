@@ -120,7 +120,9 @@ export {
   filterIdMap,
   undoContentIds,
   intersectUpdateWithContentIds,
-  intersectUpdateWithContentIdsV2
+  intersectUpdateWithContentIdsV2,
+  createDocFromUpdate,
+  createDocFromUpdateV2
 } from './internals.js'
 
 export * from './utils/meta.js'
