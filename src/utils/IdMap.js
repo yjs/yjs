@@ -3,7 +3,7 @@ import {
   findIndexInIdRanges,
   findRangeStartInIdRanges,
   _deleteRangeFromIdSet,
-  DSDecoderV1, DSDecoderV2,  IdSetEncoderV1, IdSetEncoderV2, IdSet, ID, // eslint-disable-line
+  IdSetDecoderV1, IdSetDecoderV2,  IdSetEncoderV1, IdSetEncoderV2, IdSet, ID, // eslint-disable-line
   _insertIntoIdSet,
   _intersectSets,
   createIdSet,
@@ -534,7 +534,7 @@ export const encodeIdMap = idmap => {
 }
 
 /**
- * @param {DSDecoderV1 | DSDecoderV2} decoder
+ * @param {IdSetDecoderV1 | IdSetDecoderV2} decoder
  * @return {IdMap<any>}
  *
  * @private
@@ -596,7 +596,7 @@ export const readIdMap = decoder => {
  * @param {Uint8Array} data
  * @return {IdMap<any>}
  */
-export const decodeIdMap = data => readIdMap(new DSDecoderV2(decoding.createDecoder(data)))
+export const decodeIdMap = data => readIdMap(new IdSetDecoderV2(decoding.createDecoder(data)))
 
 /**
  * @template Attrs
@@ -645,7 +645,7 @@ export const intersectMaps = _intersectSets
  *
  * @template Attrs
  * @param {IdMap<Attrs>} idmap
- * @param {(attr: ContentAttribute<Attrs>) => boolean} predicate
+ * @param {(attr: Array<ContentAttribute<Attrs>>) => boolean} predicate
  * @return {IdMap<Attrs>}
  */
 export const filterIdMap = (idmap, predicate) => {
@@ -656,7 +656,7 @@ export const filterIdMap = (idmap, predicate) => {
      */
     const attrRanges = []
     ranges.getIds().forEach((range) => {
-      if (range.attrs.some(predicate)) {
+      if (predicate(range.attrs)) {
         const rangeCpy = range.copyWith(range.clock, range.len)
         attrRanges.push(rangeCpy)
         rangeCpy.attrs.forEach(attr => {

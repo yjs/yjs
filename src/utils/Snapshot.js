@@ -15,7 +15,7 @@ import {
   applyUpdateV2,
   LazyStructReader,
   equalIdSets,
-  UpdateDecoderV1, UpdateDecoderV2, IdSetEncoderV1, IdSetEncoderV2, DSDecoderV1, DSDecoderV2, Transaction, Doc, IdSet, Item, // eslint-disable-line
+  UpdateDecoderV1, UpdateDecoderV2, IdSetEncoderV1, IdSetEncoderV2, IdSetDecoderV1, IdSetDecoderV2, Transaction, Doc, IdSet, Item, // eslint-disable-line
   mergeIdSets
 } from '../internals.js'
 
@@ -80,10 +80,10 @@ export const encodeSnapshot = snapshot => encodeSnapshotV2(snapshot, new IdSetEn
 
 /**
  * @param {Uint8Array} buf
- * @param {DSDecoderV1 | DSDecoderV2} [decoder]
+ * @param {IdSetDecoderV1 | IdSetDecoderV2} [decoder]
  * @return {Snapshot}
  */
-export const decodeSnapshotV2 = (buf, decoder = new DSDecoderV2(decoding.createDecoder(buf))) => {
+export const decodeSnapshotV2 = (buf, decoder = new IdSetDecoderV2(decoding.createDecoder(buf))) => {
   return new Snapshot(readIdSet(decoder), readStateVector(decoder))
 }
 
@@ -91,7 +91,7 @@ export const decodeSnapshotV2 = (buf, decoder = new DSDecoderV2(decoding.createD
  * @param {Uint8Array} buf
  * @return {Snapshot}
  */
-export const decodeSnapshot = buf => decodeSnapshotV2(buf, new DSDecoderV1(decoding.createDecoder(buf)))
+export const decodeSnapshot = buf => decodeSnapshotV2(buf, new IdSetDecoderV1(decoding.createDecoder(buf)))
 
 /**
  * @param {IdSet} ds

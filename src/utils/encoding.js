@@ -26,7 +26,7 @@ import {
   UpdateEncoderV1,
   UpdateEncoderV2,
   IdSetEncoderV2,
-  DSDecoderV1,
+  IdSetDecoderV1,
   IdSetEncoderV1,
   mergeUpdates,
   mergeUpdatesV2,
@@ -36,7 +36,7 @@ import {
   readStructSet,
   removeRangesFromStructSet,
   createIdSet,
-  StructSet, IdSet, DSDecoderV2, Doc, Transaction, GC, Item, StructStore, // eslint-disable-line
+  StructSet, IdSet, IdSetDecoderV2, Doc, Transaction, GC, Item, StructStore, // eslint-disable-line
   createID,
   IdRange
 } from '../internals.js'
@@ -536,7 +536,7 @@ export const encodeStateAsUpdate = (doc, encodedTargetStateVector) => encodeStat
 /**
  * Read state vector from Decoder and return as Map
  *
- * @param {DSDecoderV1 | DSDecoderV2} decoder
+ * @param {IdSetDecoderV1 | IdSetDecoderV2} decoder
  * @return {Map<number,number>} Maps `client` to the number next expected `clock` from that client.
  *
  * @function
@@ -570,7 +570,7 @@ export const readStateVector = decoder => {
  *
  * @function
  */
-export const decodeStateVector = decodedState => readStateVector(new DSDecoderV1(decoding.createDecoder(decodedState)))
+export const decodeStateVector = decodedState => readStateVector(new IdSetDecoderV1(decoding.createDecoder(decodedState)))
 
 /**
  * @param {IdSetEncoderV1 | IdSetEncoderV2} encoder

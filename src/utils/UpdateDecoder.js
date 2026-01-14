@@ -4,7 +4,11 @@ import {
   ID, createID
 } from '../internals.js'
 
-export class DSDecoderV1 {
+/**
+ * @typedef {IdSetDecoderV1 | IdSetDecoderV2} IdSetDecoder
+ */
+
+export class IdSetDecoderV1 {
   /**
    * @param {decoding.Decoder} decoder
    */
@@ -31,7 +35,7 @@ export class DSDecoderV1 {
   }
 }
 
-export class UpdateDecoderV1 extends DSDecoderV1 {
+export class UpdateDecoderV1 extends IdSetDecoderV1 {
   /**
    * @return {ID}
    */
@@ -122,7 +126,7 @@ export class UpdateDecoderV1 extends DSDecoderV1 {
   }
 }
 
-export class DSDecoderV2 {
+export class IdSetDecoderV2 {
   /**
    * @param {decoding.Decoder} decoder
    */
@@ -156,7 +160,7 @@ export class DSDecoderV2 {
   }
 }
 
-export class UpdateDecoderV2 extends DSDecoderV2 {
+export class UpdateDecoderV2 extends IdSetDecoderV2 {
   /**
    * @param {decoding.Decoder} decoder
    */

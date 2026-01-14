@@ -7,7 +7,7 @@ import {
   IdMap,
   AttrRanges,
   AttrRange,
-  Skip, AbstractStruct, DSDecoderV1, IdSetEncoderV1, DSDecoderV2, IdSetEncoderV2, Item, GC, StructStore, Transaction, ID // eslint-disable-line
+  Skip, AbstractStruct, IdSetDecoderV1, IdSetEncoderV1, IdSetDecoderV2, IdSetEncoderV2, Item, GC, StructStore, Transaction, ID // eslint-disable-line
 } from '../internals.js'
 
 import * as array from 'lib0/array'
@@ -703,7 +703,7 @@ export const writeIdSet = (encoder, idSet) => {
 }
 
 /**
- * @param {DSDecoderV1 | DSDecoderV2} decoder
+ * @param {IdSetDecoderV1 | IdSetDecoderV2} decoder
  * @return {IdSet}
  *
  * @private
@@ -735,7 +735,7 @@ export const readIdSet = decoder => {
  */
 
 /**
- * @param {DSDecoderV1 | DSDecoderV2} decoder
+ * @param {IdSetDecoderV1 | IdSetDecoderV2} decoder
  * @param {Transaction} transaction
  * @param {StructStore} store
  * @return {Uint8Array<ArrayBuffer>|null} Returns a v2 update containing all deletes that couldn't be applied yet; or null if all deletes were applied successfully.

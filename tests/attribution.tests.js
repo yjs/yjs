@@ -160,8 +160,8 @@ export const testAttributionSession1 = tc => {
   t.compare(d2, delta.create().insert('a').insert('b', null, { delete: ['0'] }).insert('c', null, { insert: ['1'] }))
 
   const onlyUser0ChangesAttributed = {
-    inserts: Y.filterIdMap(globalAttributions.inserts, attr => attr.name === 'insert' && attr.val === '0'),
-    deletes: Y.filterIdMap(globalAttributions.deletes, attr => attr.name === 'delete' && attr.val === '0')
+    inserts: Y.filterIdMap(globalAttributions.inserts, attrs => attrs.some(attr => attr.name === 'insert' && attr.val === '0')),
+    deletes: Y.filterIdMap(globalAttributions.deletes, attrs => attrs.some(attr => attr.name === 'delete' && attr.val === '0'))
   }
   const amUser0 = new Y.TwosetAttributionManager(onlyUser0ChangesAttributed.inserts, onlyUser0ChangesAttributed.deletes)
   const d3 = text0.toDelta(amUser0)
