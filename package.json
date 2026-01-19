@@ -43,7 +43,8 @@
   },
   "files": [
     "src",
-    "dist"
+    "dist",
+    "tests/testHelper.js"
   ],
   "dictionaries": {
     "test": "tests"
