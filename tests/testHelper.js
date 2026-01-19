@@ -462,7 +462,7 @@ export const compare = users => {
   const userMapValues = users.map(u => u.get('map').toJSON().attrs ?? {})
   // @todo fix type error here
   // @ts-ignore
-  const userXmlValues = users.map(u => /** @type {Y.XmlElement} */ (u.get('xml', Y.XmlElement)).toString())
+  const userXmlValues = users.map(u => u.get('xml').toString())
   const userTextValues = users.map(u => u.get('text').toDeltaDeep())
   for (const u of users) {
     t.assert(u.store.pendingDs === null)
