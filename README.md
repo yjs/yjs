@@ -367,7 +367,7 @@ A database and connection provider for Yjs based on Firestore.
   <dd>
  Yjs persistence provider for op-sqlite
   </dd>
-  <dt><a href="https://velt.dev/libraries/yjs">Velt YJs CRDT</a> 🌟</dt>
+  <dt><a href="https://velt.dev/libraries/yjs">Velt YJs CRDT</a></dt>
   <dd>
 <a href="https://docs.velt.dev/realtime-collaboration/crdt/overview">
 Velt
