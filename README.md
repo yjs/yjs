@@ -239,6 +239,14 @@ store for Yjs documents. No configuration or maintenance is required. It
 also features Yjs webhook events, REST API to read and update Yjs
 documents, and a browser DevTools extension.
   </dd>
+  <dt><a href="https://velt.dev/libraries/yjs">Velt YJs CRDT</a> 🌟</dt>
+  <dd>
+<a href="https://docs.velt.dev/realtime-collaboration/crdt/overview">
+Velt
+</a>
+provides a fully managed Yjs backend with realtime WebSocket sync and persistent storage—no server setup required. Includes offline support with automatic reconnection, version history, end-to-end custom encryption. It also features Yjs webhook events, REST API to read and update Yjs
+documents, and a browser DevTools extension.
+  </dd>
   <dt><a href="https://github.com/ueberdosis/hocuspocus">Hocuspocus</a> ⭐</dt>
   <dd>
 A standalone extensible yjs server with sqlite persistence, webhooks, auth and more.
@@ -375,6 +383,7 @@ A database and connection provider for Yjs based on Firestore.
 * [y-sweet debugger](https://y-sweet.cloud/advanced/debugger)
 * [liveblocks devtools](https://liveblocks.io/devtools)
 * [Yjs inspector](https://inspector.yjs.dev)
+* [velt devtools](https://velt.dev/devtools)
 
 ### Ports
 
