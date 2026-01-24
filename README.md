@@ -367,6 +367,13 @@ A database and connection provider for Yjs based on Firestore.
   <dd>
  Yjs persistence provider for op-sqlite
   </dd>
+  <dt><a href="https://velt.dev/libraries/yjs">Velt YJs CRDT</a> 🌟</dt>
+  <dd>
+<a href="https://docs.velt.dev/realtime-collaboration/crdt/overview">
+Velt
+</a>
+provides a fully managed Yjs backend with realtime WebSocket sync and persistent storage—no server setup required. Includes offline support with automatic reconnection, version history, end-to-end custom encryption. Additionally it also provides Yjs webhook events, REST API to read and update Yjs documents, and a browser DevTools extension.
+  </dd>
 
 </dl>
 
@@ -375,6 +382,7 @@ A database and connection provider for Yjs based on Firestore.
 * [y-sweet debugger](https://y-sweet.cloud/advanced/debugger)
 * [liveblocks devtools](https://liveblocks.io/devtools)
 * [Yjs inspector](https://inspector.yjs.dev)
+* [velt devtools](https://velt.dev/devtools)
 
 ### Ports
 
