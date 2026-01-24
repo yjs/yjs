@@ -328,6 +328,13 @@ An architecture to relay end-to-end encrypted CRDTs over a central service.
   <dd>
     Sync Yjs over <a href="https://github.com/nostr-protocol/">nostr</a>.
   </dd>
+  <dt><a href="https://velt.dev/libraries/yjs">Velt YJs</a></dt>
+  <dd>
+<a href="https://docs.velt.dev/realtime-collaboration/crdt/overview">
+Velt
+</a>
+provides a fully managed Yjs backend with realtime WebSocket sync and persistent storage—no server setup required. Includes offline support with automatic reconnection, version history, end-to-end custom encryption. Additionally it also provides Yjs webhook events, REST API to read and update Yjs documents, and a browser DevTools extension.
+  </dd>
 </dl>
 
 #### Persistence Providers
@@ -367,14 +374,6 @@ A database and connection provider for Yjs based on Firestore.
   <dd>
  Yjs persistence provider for op-sqlite
   </dd>
-  <dt><a href="https://velt.dev/libraries/yjs">Velt YJs</a></dt>
-  <dd>
-<a href="https://docs.velt.dev/realtime-collaboration/crdt/overview">
-Velt
-</a>
-provides a fully managed Yjs backend with realtime WebSocket sync and persistent storage—no server setup required. Includes offline support with automatic reconnection, version history, end-to-end custom encryption. Additionally it also provides Yjs webhook events, REST API to read and update Yjs documents, and a browser DevTools extension.
-  </dd>
-
 </dl>
 
 ### Tooling
