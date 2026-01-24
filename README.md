@@ -244,8 +244,7 @@ documents, and a browser DevTools extension.
 <a href="https://docs.velt.dev/realtime-collaboration/crdt/overview">
 Velt
 </a>
-provides a fully managed Yjs backend with realtime WebSocket sync and persistent storage—no server setup required. Includes offline support with automatic reconnection, version history, end-to-end custom encryption. It also features Yjs webhook events, REST API to read and update Yjs
-documents, and a browser DevTools extension.
+provides a fully managed Yjs backend with realtime WebSocket sync and persistent storage—no server setup required. Includes offline support with automatic reconnection, version history, end-to-end custom encryption. Additionally it also provides Yjs webhook events, REST API to read and update Yjs documents, and a browser DevTools extension.
   </dd>
   <dt><a href="https://github.com/ueberdosis/hocuspocus">Hocuspocus</a> ⭐</dt>
   <dd>
