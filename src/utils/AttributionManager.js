@@ -569,7 +569,7 @@ export class DiffAttributionManager extends ObservableV2 {
  * @param {Doc} prevDoc
  * @param {Doc} nextDoc
  * @param {Object} [options] - options for the attribution manager
- * @param {Attributions?} [options.attrs] - the attributes to apply to the diff
+ * @param {import('./meta.js').ContentMap?} [options.attrs] - the attributes to apply to the diff
  */
 export const createAttributionManagerFromDiff = (prevDoc, nextDoc, options) => new DiffAttributionManager(prevDoc, nextDoc, options)
 

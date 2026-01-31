@@ -785,18 +785,20 @@ export const intersectUpdateWithContentIds = (update, contentIds) =>
 
 /**
  * @param {Uint8Array} update
+ * @param {import('./Doc.js').DocOpts} opts
  */
-export const createDocFromUpdate = update => {
-  const ydoc = new Doc()
+export const createDocFromUpdate = (update, opts = {}) => {
+  const ydoc = new Doc(opts)
   applyUpdate(ydoc, update)
   return ydoc
 }
 
 /**
  * @param {Uint8Array} update
+ * @param {import('./Doc.js').DocOpts} opts
  */
-export const createDocFromUpdateV2 = update => {
-  const ydoc = new Doc()
+export const createDocFromUpdateV2 = (update, opts = {}) => {
+  const ydoc = new Doc(opts)
   applyUpdateV2(ydoc, update)
   return ydoc
 }
