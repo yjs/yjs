@@ -115,7 +115,6 @@ export class LazyStructReader {
 
 /**
  * @param {Uint8Array} update
- *
  */
 export const logUpdate = update => logUpdateV2(update, UpdateDecoderV1)
 
@@ -137,7 +136,6 @@ export const logUpdateV2 = (update, YDecoder = UpdateDecoderV2) => {
 
 /**
  * @param {Uint8Array} update
- *
  */
 export const decodeUpdate = (update) => decodeUpdateV2(update, UpdateDecoderV1)
 
@@ -192,7 +190,7 @@ export const mergeUpdates = updates => mergeUpdatesV2(updates, UpdateDecoderV1, 
  * @param {Uint8Array} update
  * @param {typeof IdSetEncoderV1 | typeof IdSetEncoderV2} YEncoder
  * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} YDecoder
- * @return {Uint8Array}
+ * @return {Uint8Array<ArrayBuffer>}
  */
 export const encodeStateVectorFromUpdateV2 = (update, YEncoder = IdSetEncoderV2, YDecoder = UpdateDecoderV2) => {
   const encoder = new YEncoder()
@@ -244,7 +242,7 @@ export const encodeStateVectorFromUpdateV2 = (update, YEncoder = IdSetEncoderV2,
 
 /**
  * @param {Uint8Array} update
- * @return {Uint8Array}
+ * @return {Uint8Array<ArrayBuffer>}
  */
 export const encodeStateVectorFromUpdate = update => encodeStateVectorFromUpdateV2(update, IdSetEncoderV1, UpdateDecoderV1)
 
@@ -503,7 +501,7 @@ export const diffUpdateV2 = (update, sv, YDecoder = UpdateDecoderV2, YEncoder = 
  * @todo remove this in favor of intersectupdate
  *
  * @param {Uint8Array} update
- * @param {Uint8Array} sv
+ * @param {Uint8Array<ArrayBuffer>} sv
  */
 export const diffUpdate = (update, sv) => diffUpdateV2(update, sv, UpdateDecoderV1, UpdateEncoderV1)
 
@@ -734,7 +732,7 @@ export const convertUpdateFormatV2ToV1 = update => convertUpdateFormat(update, f
  * @param {import('./meta.js').ContentIds} contentIds - Pattern specifying which content to include
  * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} [YDecoder]
  * @param {typeof UpdateEncoderV1 | typeof UpdateEncoderV2} [YEncoder]
- * @return {Uint8Array}
+ * @return {Uint8Array<ArrayBuffer>}
  */
 export const intersectUpdateWithContentIdsV2 = (update, contentIds, YDecoder = UpdateDecoderV2, YEncoder = UpdateEncoderV2) => {
   const { inserts, deletes } = contentIds
@@ -778,7 +776,7 @@ export const intersectUpdateWithContentIdsV2 = (update, contentIds, YDecoder = U
  *
  * @param {Uint8Array} update
  * @param {import('./meta.js').ContentIds} contentIds - Pattern specifying which content to include
- * @return {Uint8Array}
+ * @return {Uint8Array<ArrayBuffer>}
  */
 export const intersectUpdateWithContentIds = (update, contentIds) =>
   intersectUpdateWithContentIdsV2(update, contentIds, UpdateDecoderV1, UpdateEncoderV1)
