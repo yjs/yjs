@@ -500,7 +500,7 @@ export const diffUpdateV2 = (update, sv, YDecoder = UpdateDecoderV2, YEncoder = 
  * @deprecated
  * @todo remove this in favor of intersectupdate
  *
- * @param {Uint8Array} update
+ * @param {Uint8Array<ArrayBuffer>} update
  * @param {Uint8Array<ArrayBuffer>} sv
  */
 export const diffUpdate = (update, sv) => diffUpdateV2(update, sv, UpdateDecoderV1, UpdateEncoderV1)

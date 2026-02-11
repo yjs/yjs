@@ -599,7 +599,7 @@ export const writeDocumentStateVector = (encoder, doc) => writeStateVector(encod
  *
  * @param {Doc|Map<number,number>} doc
  * @param {IdSetEncoderV1 | IdSetEncoderV2} [encoder]
- * @return {Uint8Array}
+ * @return {Uint8Array<ArrayBuffer>}
  *
  * @function
  */
@@ -616,7 +616,7 @@ export const encodeStateVectorV2 = (doc, encoder = new IdSetEncoderV2()) => {
  * Encode State as Uint8Array.
  *
  * @param {Doc|Map<number,number>} doc
- * @return {Uint8Array}
+ * @return {Uint8Array<ArrayBuffer>}
  *
  * @function
  */

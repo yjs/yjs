@@ -15,11 +15,11 @@ import * as array from 'lib0/array'
  * @property {function(Y.Doc, Uint8Array):void} Enc.applyUpdate
  * @property {function(Uint8Array):void} Enc.logUpdate
  * @property {function(Uint8Array):{deletes:Y.IdSet,inserts:Y.IdSet}} Enc.readUpdateToContentIds
- * @property {function(Y.Doc):Uint8Array} Enc.encodeStateVector
- * @property {function(Uint8Array):Uint8Array} Enc.encodeStateVectorFromUpdate
+ * @property {function(Y.Doc):Uint8Array<ArrayBuffer>} Enc.encodeStateVector
+ * @property {function(Uint8Array):Uint8Array<ArrayBuffer>} Enc.encodeStateVectorFromUpdate
  * @property {'update'|'updateV2'} Enc.updateEventName
  * @property {string} Enc.description
- * @property {function(Uint8Array, Uint8Array):Uint8Array} Enc.diffUpdate
+ * @property {function(Uint8Array<ArrayBuffer>, Uint8Array<ArrayBuffer>):Uint8Array<ArrayBuffer>} Enc.diffUpdate
  */
 
 /**
