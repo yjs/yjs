@@ -229,19 +229,25 @@ are available. Communication over the signaling servers can be encrypted by
 providing a shared secret, keeping the connection information and the shared
 document private.
   </dd>
-  <dt><a href="https://github.com/liveblocks/liveblocks">@liveblocks/yjs </a> 🌟</dt>
+  <dt><a href="https://github.com/ueberdosis/hocuspocus">Hocuspocus</a> 🌟</dt>
   <dd>
-<a href="https://liveblocks.io/docs/api-reference/liveblocks-yjs">
-Liveblocks Yjs
-</a>
+A standalone extensible yjs server with sqlite persistence, webhooks, auth and more.
+  </dd>
+  <dt><a href="https://velt.dev/libraries/yjs">Velt YJs</a> ⭐</dt>
+  <dd><a href="https://docs.velt.dev/realtime-collaboration/crdt/overview">Velt</a>
+A managed Yjs backend with realtime WebSocket sync and persistent storage - no
+server setup required. Includes offline support with automatic reconnection,
+version history, end-to-end custom encryption. Additionally it also provides Yjs
+webhook events, REST API to read and update Yjs documents, and a browser
+DevTools extension.
+  </dd>
+  <dt><a href="https://github.com/liveblocks/liveblocks">@liveblocks/yjs</a> ⭐</dt>
+  <dd>
+<a href="https://liveblocks.io/docs/api-reference/liveblocks-yjs">Liveblocks Yjs</a>
 provides a fully hosted WebSocket infrastructure and persisted data
 store for Yjs documents. No configuration or maintenance is required. It
 also features Yjs webhook events, REST API to read and update Yjs
 documents, and a browser DevTools extension.
-  </dd>
-  <dt><a href="https://github.com/ueberdosis/hocuspocus">Hocuspocus</a> ⭐</dt>
-  <dd>
-A standalone extensible yjs server with sqlite persistence, webhooks, auth and more.
   </dd>
   <dt><a href="https://github.com/nperez0111/teleportal">teleportal</a></dt>
   <dd>
@@ -327,13 +333,6 @@ An architecture to relay end-to-end encrypted CRDTs over a central service.
   <dt><a href="https://github.com/yousefED/nostr-crdt">nostr-crdt</a></dt>
   <dd>
     Sync Yjs over <a href="https://github.com/nostr-protocol/">nostr</a>.
-  </dd>
-  <dt><a href="https://velt.dev/libraries/yjs">Velt YJs</a></dt>
-  <dd>
-<a href="https://docs.velt.dev/realtime-collaboration/crdt/overview">
-Velt
-</a>
-provides a fully managed Yjs backend with realtime WebSocket sync and persistent storage—no server setup required. Includes offline support with automatic reconnection, version history, end-to-end custom encryption. Additionally it also provides Yjs webhook events, REST API to read and update Yjs documents, and a browser DevTools extension.
   </dd>
 </dl>
 
