@@ -652,6 +652,7 @@ export const transact = (doc, f, origin = null, local = true) => {
     result = f(doc._transaction)
   } finally {
     if (initialCall) {
+      doc.emit('beforeTransactionBuilt', [doc._transaction, doc])
       const finishCleanup = doc._transaction === transactionCleanups[0]
       doc._transaction = null
       if (finishCleanup) {
