@@ -791,3 +791,26 @@ export const testUndoDoingStackItem = async (_tc) => {
   t.compare(metaRedo, '42', 'currStackItem is accessible while redoing')
   t.compare(undoManager.currStackItem, null, 'currStackItem is null after observe/transaction')
 }
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testAppendToLatestStackItem = tc => {
+  const { array0, array1 } = init(tc, { users: 2 })
+  const undoManager0 = new Y.UndoManager(array0, { captureTimeout: 0, appendToLatestStackItem: (_transaction) => true})
+  const undoManager1 = new Y.UndoManager(array1, { captureTimeout: 0, appendToLatestStackItem: (_transaction) => false})
+
+  array0.push([1, 2, 3])
+  undoManager0.stopCapturing()
+  array0.push([4, 5, 6])
+  array0.push([7, 8, 9])
+  undoManager0.undo()
+  t.compare(array0.toArray(), [1, 2, 3])
+
+  array1.push([1, 2, 3])
+  undoManager0.stopCapturing()
+  array1.push([4, 5, 6])
+  array1.push([7, 8, 9])
+  undoManager1.undo()
+  t.compare(array1.toArray(), [1, 2, 3, 4, 5, 6])
+}
