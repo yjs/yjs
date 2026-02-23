@@ -100,13 +100,14 @@ export const testYdocDiff = () => {
   ydocUpdated.get('map').setAttr('newk', 42)
   ydocUpdated.get('map').getAttr('nested').insert(0, [1])
   // @todo add custom attribution
-  const d = Y.diffDocsToDelta(ydocStart, ydocUpdated)
+  const d = Y.diffDocsToDelta(ydocStart, ydocUpdated).done()
   console.log('calculated diff', d.toJSON())
-  t.compare(d, delta.create()
+  const expected = delta.create()
     .modifyAttr('text', delta.create().retain(5).insert(' world', null, { insert: [] }))
     .modifyAttr('array', delta.create().retain(1).insert(['x'], null, { insert: [] }))
     .modifyAttr('map', delta.create().setAttr('newk', 42, { insert: [] }).modifyAttr('nested', delta.create().insert([1], null, { insert: [] })))
-  )
+  const expectedDone = expected.done()
+  t.compare(d, expectedDone) 
 }
 
 export const testChildListContent = () => {
