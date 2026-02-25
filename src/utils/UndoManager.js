@@ -398,9 +398,10 @@ export class UndoManager extends ObservableV2 {
  *
  * @param {Doc} ydoc
  * @param {import('./meta.js').ContentIds} contentIds
+ * @param {UndoManagerOptions} opts
  */
-export const undoContentIds = (ydoc, contentIds) => {
-  const um = new UndoManager(ydoc)
+export const undoContentIds = (ydoc, contentIds, opts = {}) => {
+  const um = new UndoManager(ydoc, opts)
   um.undoStack.push(new StackItem(diffIdSet(contentIds.inserts, contentIds.deletes), diffIdSet(contentIds.deletes, contentIds.inserts)))
   um.undo()
 }
