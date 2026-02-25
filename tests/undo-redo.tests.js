@@ -85,11 +85,11 @@ export const testUndoText = tc => {
   t.assert(text0.toString() === 'bcxyz')
   // test marks
   text0.format(1, 3, { bold: true })
-  t.compare(text0.toDelta(), delta.create().insert('b').insert('cxy', { bold: true }).insert('z'))
+  t.compare(text0.toDelta(), delta.create().insert('b').insert('cxy', { bold: true }).insert('z').done())
   undoManager.undo()
-  t.compare(text0.toDelta(), delta.create().insert('bcxyz'))
+  t.compare(text0.toDelta(), delta.create().insert('bcxyz').done())
   undoManager.redo()
-  t.compare(text0.toDelta(), delta.create().insert('b').insert('cxy', { bold: true }).insert('z'))
+  t.compare(text0.toDelta(), delta.create().insert('b').insert('cxy', { bold: true }).insert('z').done())
 }
 
 /**

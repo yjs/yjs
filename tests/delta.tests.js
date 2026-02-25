@@ -42,7 +42,7 @@ export const testDeltaBasics = _tc => {
   // apply changes to state
   state.apply(change)
   // compare state to expected state
-  t.assert(state.equals(delta.create().insert('hello!')))
+  t.assert(state.equals(delta.create().insert('hello!').done()))
 }
 
 /**
@@ -159,26 +159,26 @@ export const testBasics = _tc => {
 export const testAttributions = _tc => {
   const ydocV1 = new Y.Doc()
   const ytypeV1 = ydocV1.get('txt')
-  ytypeV1.applyDelta(delta.create().insert('hello world'))
+  ytypeV1.applyDelta(delta.create().insert('hello world').done())
   // create a new version with updated content
   const ydoc = new Y.Doc()
   Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(ydocV1))
   const ytype = ydoc.get('txt')
   // delete " world" and insert exclamation mark "!".
-  ytype.applyDelta(delta.create().retain(5).delete(6).insert('!'))
+  ytype.applyDelta(delta.create().retain(5).delete(6).insert('!').done())
   const am = Y.createAttributionManagerFromDiff(ydocV1, ydoc)
   // get the attributed differences
   const attributedContent = ytype.toDelta(am)
   console.log('attributed content', attributedContent.toJSON())
-  t.assert(attributedContent.equals(delta.create().insert('hello').insert(' world', null, { delete: [] }).insert('!', null, { insert: [] })))
+  t.assert(attributedContent.equals(delta.create().insert('hello').insert(' world', null, { delete: [] }).insert('!', null, { insert: [] }).done()))
   // for editor bindings, it is also necessary to observe changes and get the attributed changes
   ytype.observe(event => {
     const attributedChange = event.getDelta(am)
     console.log('the attributed change', attributedChange.toJSON())
-    t.assert(attributedChange.done().equals(delta.create().retain(11).insert('!', null, { insert: [] })))
+    t.assert(attributedChange.done().equals(delta.create().retain(11).insert('!', null, { insert: [] }).done()))
     const unattributedChange = event.delta
     console.log('the UNattributed change', unattributedChange.toJSON())
-    t.assert(unattributedChange.equals(delta.create().retain(5).insert('!')))
+    t.assert(unattributedChange.equals(delta.create().retain(5).insert('!').done()))
   })
   /**
    * Content now has different representations.
@@ -189,7 +189,7 @@ export const testAttributions = _tc => {
    * UNattributed: 'world!'
    */
   // Apply a change to the attributed content
-  ytype.applyDelta(delta.create().retain(11).insert('!'), am)
+  ytype.applyDelta(delta.create().retain(11).insert('!').done(), am)
   // // Equivalent to applying a change to the UNattributed content:
   // ytype.applyDelta(delta.create().retain(5).insert('!'))
 }

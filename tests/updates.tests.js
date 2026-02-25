@@ -275,11 +275,11 @@ export const testMergePendingUpdates = _tc => {
     serverUpdates.splice(serverUpdates.length, 0, update)
   })
   const yText = yDoc.get('textBlock')
-  yText.applyDelta(delta.create().insert('r'))
-  yText.applyDelta(delta.create().insert('o'))
-  yText.applyDelta(delta.create().insert('n'))
-  yText.applyDelta(delta.create().insert('e'))
-  yText.applyDelta(delta.create().insert('n'))
+  yText.applyDelta(delta.create().insert('r').done())
+  yText.applyDelta(delta.create().insert('o').done())
+  yText.applyDelta(delta.create().insert('n').done())
+  yText.applyDelta(delta.create().insert('e').done())
+  yText.applyDelta(delta.create().insert('n').done())
 
   const yDoc1 = new Y.Doc()
   Y.applyUpdate(yDoc1, serverUpdates[0])
@@ -318,7 +318,7 @@ export const testObfuscateUpdates = _tc => {
   const ymap = ydoc.get('map')
   const yarray = ydoc.get('array')
   // test ytext
-  ytext.applyDelta(delta.create().insert('text', { bold: true }).insert([{ href: 'supersecreturl' }]))
+  ytext.applyDelta(delta.create().insert('text', { bold: true }).insert([{ href: 'supersecreturl' }]).done())
   // test ymap
   ymap.setAttr('key', 'secret1')
   ymap.setAttr('key', 'secret2')

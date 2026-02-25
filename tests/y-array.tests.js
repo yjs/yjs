@@ -162,9 +162,9 @@ export const testDeleteInsert = tc => {
 export const testInsertThreeElementsTryRegetProperty = tc => {
   const { testConnector, users, array0, array1 } = init(tc, { users: 2 })
   array0.insert(0, [1, true, false])
-  t.compare(array0.toDelta(), delta.create().insert([1, true, false]), 'content works')
+  t.compare(array0.toDelta(), delta.create().insert([1, true, false]).done(), 'content works')
   testConnector.flushAllMessages()
-  t.compare(array1.toDelta(), delta.create().insert([1, true, false]), 'comparison works after sync')
+  t.compare(array1.toDelta(), delta.create().insert([1, true, false]).done(), 'comparison works after sync')
   compare(users)
 }
 
@@ -342,7 +342,7 @@ export const testChangeEvent = tc => {
   const newArr = new Y.Type()
   array0.insert(0, [newArr, 4, 'dtrn'])
   t.assert(d !== null && d.children.len === 1)
-  t.compare(d, delta.create().insert([newArr, 4, 'dtrn']))
+  t.compare(d, delta.create().insert([newArr, 4, 'dtrn']).done())
   array0.delete(0, 2)
   t.assert(d !== null && d.children.len === 1)
   t.compare(d.toJSON().children, [{ delete: 2 }])

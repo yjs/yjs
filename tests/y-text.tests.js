@@ -1380,7 +1380,7 @@ export const testNotMergeEmptyLinesFormat = _tc => {
     .insert('Text')
     .insert('\n', { title: true })
     .insert('\nText')
-    .insert('\n', { title: true })
+    .insert('\n', { title: true }).done()
   )
   t.compare(
     testText.toDelta(),
@@ -1403,6 +1403,7 @@ export const testPreserveAttributesThroughDelete = _tc => {
     .insert('Text')
     .insert('\n', { title: true })
     .insert('\n')
+    .done()
   )
   testText.applyDelta(delta.create()
     .retain(4)
@@ -1422,7 +1423,7 @@ export const testPreserveAttributesThroughDelete = _tc => {
  */
 export const testGetDeltaWithEmbeds = tc => {
   const { text0 } = init(tc, { users: 1 })
-  text0.applyDelta(delta.create().insert([{ linebreak: 's' }]))
+  text0.applyDelta(delta.create().insert([{ linebreak: 's' }]).done())
   t.compare(text0.toDelta(),
     delta.create()
       .insert([{ linebreak: 's' }])
@@ -1437,6 +1438,7 @@ export const testTypesAsEmbed = tc => {
   const { text0, text1, testConnector } = init(tc, { users: 2 })
   text0.applyDelta(delta.create()
     .insert([Y.Type.from(delta.create().setAttr('key', 'val'))])
+    .done()
   )
   t.compare(/** @type {any} */ (text0).toDeltaDeep().toJSON().children, [{ type: 'insert', insert: [{ type: 'delta', attrs: { key: { type: 'insert', value: 'val' } } }] }])
   let firedEvent = false
@@ -1460,7 +1462,7 @@ export const testSnapshot = tc => {
   const { text0 } = init(tc, { users: 1 })
   const doc0 = /** @type {Y.Doc} */ (text0.doc)
   doc0.gc = false
-  text0.applyDelta(delta.create().insert('abcd'))
+  text0.applyDelta(delta.create().insert('abcd').done())
   const snapshot1 = Y.snapshot(doc0)
   text0.applyDelta(delta.create()
     .retain(1)
@@ -1498,14 +1500,16 @@ export const testSnapshotDeleteAfter = tc => {
   doc0.gc = false
   text0.applyDelta(delta.create()
     .insert('abcd')
+    .done()
   )
   const snapshot1 = Y.snapshot(doc0)
   text0.applyDelta(delta.create()
     .retain(4)
     .insert('e')
+    .done()
   )
   const state1 = text0.toDelta(createAttributionManagerFromSnapshots(snapshot1))
-  t.compare(state1, delta.create().insert('abcd'))
+  t.compare(state1, delta.create().insert('abcd').done())
 }
 
 /**
@@ -1902,7 +1906,7 @@ export const testAttributedContent = _tc => {
     attributionManager = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, []), createIdMapFromIdSet(tr.deleteSet, []))
   })
   t.group('insert / delete / format', () => {
-    ytext.applyDelta(delta.create().retain(4, { italic: true }).retain(2).delete(5).insert('attributions'))
+    ytext.applyDelta(delta.create().retain(4, { italic: true }).retain(2).delete(5).insert('attributions').done())
     const expectedContent = delta.create().insert('Hell', { italic: true }, { format: { italic: [] } }).insert('o ').insert('World', {}, { delete: [] }).insert('attributions', {}, { insert: [] }).insert('!')
     const attributedContent = ytext.toDelta(attributionManager)
     console.log(attributedContent.toJSON())
@@ -1928,7 +1932,7 @@ export const testAttributedDiffing = _tc => {
   ydoc.clientID = 1
   Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(ydocVersion0))
   const ytext = ydoc.get()
-  ytext.applyDelta(delta.create().retain(4, { italic: true }).retain(2).delete(5).insert('attributions'))
+  ytext.applyDelta(delta.create().retain(4, { italic: true }).retain(2).delete(5).insert('attributions').done())
   // this represents to all insertions of ydoc
   const insertionSet = Y.createInsertSetFromStructStore(ydoc.store, false)
   const deleteSet = Y.createDeleteSetFromStructStore(ydoc.store)

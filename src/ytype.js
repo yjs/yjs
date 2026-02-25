@@ -1179,7 +1179,7 @@ export class YType {
    * @param {delta.FormattingAttributes} [format]
    */
   insert (index, content, format) {
-    this.applyDelta(delta.create().retain(index).insert(/** @type {any} */ (content), format))
+    this.applyDelta(delta.create().retain(index).insert(/** @type {any} */ (content), format).done())
   }
 
   /**

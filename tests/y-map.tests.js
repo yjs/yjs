@@ -44,7 +44,7 @@ export const testNestedMapEvent = () => {
   ymap.observeDeep(event => {
     const d = event.deltaDeep
     called++
-    t.compare(d, delta.create().modifyAttr('nested', delta.create().setAttr('k', 'v')))
+    t.compare(d, delta.create().modifyAttr('nested', delta.create().setAttr('k', 'v')).done())
   })
   ymapNested.setAttr('k', 'v')
   t.assert(called === 1)

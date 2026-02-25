@@ -41,14 +41,14 @@ export const testAttributedEvents = _tc => {
   })
   const am = Y.createAttributionManagerFromDiff(v1, ydoc)
   const c1 = ytext.toDelta(am)
-  t.compare(c1, delta.create().insert('hello ').insert('world', null, { delete: [] }))
+  t.compare(c1, delta.create().insert('hello ').insert('world', null, { delete: [] }).done())
   let calledObserver = false
   ytext.observe(event => {
     const d = event.getDelta(am)
-    t.compare(d, delta.create().retain(11).insert('!', null, { insert: [] }))
+    t.compare(d, delta.create().retain(11).insert('!', null, { insert: [] }).done())
     calledObserver = true
   })
-  ytext.applyDelta(delta.create().retain(11).insert('!'), am)
+  ytext.applyDelta(delta.create().retain(11).insert('!').done(), am)
   t.assert(calledObserver)
 }
 
@@ -65,8 +65,8 @@ export const testInsertionsMindingAttributedContent = _tc => {
   })
   const am = Y.createAttributionManagerFromDiff(v1, ydoc)
   const c1 = ytext.toDelta(am)
-  t.compare(c1, delta.create().insert('hello ').insert('world', null, { delete: [] }))
-  ytext.applyDelta(delta.create().retain(11).insert('content'), am)
+  t.compare(c1, delta.create().insert('hello ').insert('world', null, { delete: [] }).done())
+  ytext.applyDelta(delta.create().retain(11).insert('content').done(), am)
   t.assert(ytext.toString() === 'hello content')
 }
 
@@ -83,8 +83,8 @@ export const testInsertionsIntoAttributedContent = _tc => {
   })
   const am = Y.createAttributionManagerFromDiff(v1, ydoc)
   const c1 = ytext.toDelta(am)
-  t.compare(c1, delta.create().insert('hello ').insert('word', null, { insert: [] }))
-  ytext.applyDelta(delta.create().retain(9).insert('l'), am)
+  t.compare(c1, delta.create().insert('hello ').insert('word', null, { insert: [] }).done())
+  ytext.applyDelta(delta.create().retain(9).insert('l').done(), am)
   t.assert(ytext.toString() === 'hello world')
 }
 
@@ -107,7 +107,7 @@ export const testYdocDiff = () => {
     .modifyAttr('array', delta.create().retain(1).insert(['x'], null, { insert: [] }))
     .modifyAttr('map', delta.create().setAttr('newk', 42, { insert: [] }).modifyAttr('nested', delta.create().insert([1], null, { insert: [] })))
   const expectedDone = expected.done()
-  t.compare(d, expectedDone) 
+  t.compare(d, expectedDone)
 }
 
 export const testChildListContent = () => {
@@ -115,7 +115,7 @@ export const testChildListContent = () => {
   const ydocUpdated = Y.cloneDoc(ydocStart)
   const yf = new Y.Type('test')
   let calledEvent = 0
-  yf.applyDelta(delta.create().insert('test content').setAttr('k', 'v'))
+  yf.applyDelta(delta.create().insert('test content').setAttr('k', 'v').done())
 
   const yarray = ydocUpdated.get('array')
   yarray.observeDeep(event => {
@@ -129,7 +129,7 @@ export const testChildListContent = () => {
   const d = Y.diffDocsToDelta(ydocStart, ydocUpdated)
   console.log('calculated diff', d.toJSON())
   const expected = delta.create()
-    .modifyAttr('array', delta.create().insert([delta.create('test').insert('test content', null, { insert: [] }).setAttr('k', 'v', { insert: [] })], null, { insert: [] }))
+    .modifyAttr('array', delta.create().insert([delta.create('test').insert('test content', null, { insert: [] }).setAttr('k', 'v', { insert: [] })], null, { insert: [] }).done())
   t.compare(d.done(), expected.done())
 }
 
@@ -152,13 +152,13 @@ export const testAttributionSession1 = tc => {
   text1.insert(0, 'b')
   testConnector.flushAllMessages()
   const d1 = text0.toDelta(Y.createAttributionManagerFromDiff(v1, users[0], { attrs: globalAttributions }))
-  t.compare(d1, delta.create().insert('a', null, { insert: ['0'] }).insert('b', null, { insert: ['1'] }))
+  t.compare(d1, delta.create().insert('a', null, { insert: ['0'] }).insert('b', null, { insert: ['1'] }).done())
   const v2 = Y.cloneDoc(users[0])
   text0.delete(1, 1)
   text1.insert(2, 'c')
   testConnector.flushAllMessages()
   const d2 = text0.toDelta(Y.createAttributionManagerFromDiff(v2, users[0], { attrs: globalAttributions }))
-  t.compare(d2, delta.create().insert('a').insert('b', null, { delete: ['0'] }).insert('c', null, { insert: ['1'] }))
+  t.compare(d2, delta.create().insert('a').insert('b', null, { delete: ['0'] }).insert('c', null, { insert: ['1'] }).done())
 
   const onlyUser0ChangesAttributed = {
     inserts: Y.filterIdMap(globalAttributions.inserts, attrs => attrs.some(attr => attr.name === 'insert' && attr.val === '0')),
@@ -166,9 +166,9 @@ export const testAttributionSession1 = tc => {
   }
   const amUser0 = new Y.TwosetAttributionManager(onlyUser0ChangesAttributed.inserts, onlyUser0ChangesAttributed.deletes)
   const d3 = text0.toDelta(amUser0)
-  t.compare(d3, delta.create().insert('a', null, { insert: ['0'] }).insert('b', null, { delete: ['0'] }).insert('c'))
+  t.compare(d3, delta.create().insert('a', null, { insert: ['0'] }).insert('b', null, { delete: ['0'] }).insert('c').done())
   Y.undoContentIds(users[0], Y.createContentIdsFromContentMap(onlyUser0ChangesAttributed))
 
   const d4 = text0.toDelta()
-  t.compare(d4, delta.create().insert('bc'))
+  t.compare(d4, delta.create().insert('bc').done())
 }
