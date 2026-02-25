@@ -80,11 +80,12 @@
   },
   "devDependencies": {
     "@types/node": "^22.14.1",
-    "@y/protocols": "^1.0.6-1",
+    "@y/protocols": "^1.0.6-rc.1",
     "markdownlint": "^0.40.0",
     "markdownlint-cli": "^0.45.0",
     "standard": "^17.1.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@y/y": "."
   },
   "engines": {
     "npm": ">=8.0.0",

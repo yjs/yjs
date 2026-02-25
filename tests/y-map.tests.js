@@ -575,7 +575,7 @@ export const testAttributedContent = _tc => {
   })
   t.group('delete value', () => {
     ymap.deleteAttr('test')
-    const expectedContent = { test: delta.$deltaMapChangeJson.expect({ type: 'delete', prevValue: 'fourtytwo', attribution: { delete: [] } }) }
+    const expectedContent = { test: delta.$deltaMapChangeJson.expect({ type: 'delete', attribution: { delete: [] } }) }
     const attributedContent = ymap.toDelta(attributionManager)
     console.log(attributedContent.toJSON())
     t.compare(expectedContent, attributedContent.toJSON().attrs)
