@@ -377,7 +377,6 @@ export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = U
     if (currWrite !== null) {
       let curr = /** @type {Item | GC | null} */ (currDecoder.curr)
       let iterated = false
-
       // iterate until we find something that we haven't written already
       // remember: first the high client-ids are written
       while (curr !== null && curr.id.clock + curr.length <= currWrite.struct.id.clock + currWrite.struct.length && curr.id.client >= currWrite.struct.id.client) {

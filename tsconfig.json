@@ -7,6 +7,7 @@
     "checkJs": true,
     "declaration": true,
     "declarationMap": true,
+    "noEmit": true,
     "outDir": "./dist",
     "baseUrl": "./",
     "emitDeclarationOnly": true,
@@ -19,6 +20,7 @@
       "yjs/testHelper": ["./tests/testHelper.js"]
     }
   },
+  "files": ["./global.d.ts"],
   "include": ["./src/**/*.js", "./tests/**/*.js"],
-  "exclude": ["./node_modules/**/*"]
+  "exclude": ["node_modules", "dist"]
 }
