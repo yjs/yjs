@@ -33,10 +33,9 @@ import {
   Skip,
   diffUpdateV2,
   convertUpdateFormatV2ToV1,
-  readStructSet,
-  removeRangesFromStructSet,
+  readBlockSet,
   createIdSet,
-  StructSet, IdSet, IdSetDecoderV2, Doc, Transaction, GC, Item, StructStore, // eslint-disable-line
+  BlockSet, IdSet, IdSetDecoderV2, Doc, Transaction, GC, Item, StructStore, // eslint-disable-line
   createID,
   IdRange
 } from '../internals.js'
@@ -55,7 +54,7 @@ import * as array from 'lib0/array'
  *
  * @function
  */
-const writeStructs = (encoder, structs, client, idranges) => {
+export const writeStructs = (encoder, structs, client, idranges) => {
   let structsToWrite = 0 // this accounts for the skips
   /**
    * @type {Array<{ start: number, end: number, startClock: number, endClock: number }>}
@@ -180,7 +179,7 @@ export const writeStructsFromIdSet = (encoder, store, idset) => {
  *
  * @param {Transaction} transaction
  * @param {StructStore} store
- * @param {StructSet} clientsStructRefs
+ * @param {BlockSet} clientsStructRefs
  * @return { null | { update: Uint8Array<ArrayBuffer>, missing: Map<number,number> } }
  *
  * @private
@@ -352,7 +351,7 @@ export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = n
     const doc = transaction.doc
     const store = doc.store
     // let start = performance.now()
-    const ss = readStructSet(structDecoder, doc)
+    const ss = readBlockSet(structDecoder)
     const knownState = createIdSet()
     ss.clients.forEach((_, client) => {
       const storeStructs = store.clients.get(client)
@@ -366,7 +365,7 @@ export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = n
       }
     })
     // remove known items from ss
-    removeRangesFromStructSet(ss, knownState)
+    ss.exclude(knownState)
     // console.log('time to read structs: ', performance.now() - start) // @todo remove
     // start = performance.now()
     // console.log('time to merge: ', performance.now() - start) // @todo remove

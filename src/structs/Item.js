@@ -278,7 +278,7 @@ export class Item extends AbstractStruct {
    * @param {ID | null} origin
    * @param {Item | null} right
    * @param {ID | null} rightOrigin
-   * @param {YType|ID|null} parent Is a type if integrated, is null if it is possible to copy parent from left or right, is ID before integration to search for it.
+   * @param {YType|ID|string|null} parent Is a type if integrated, is null if it is possible to copy parent from left or right, is ID before integration to search for it, is string if child of top-level-parent
    * @param {string | null} parentSub
    * @param {AbstractContent} content
    */
@@ -305,7 +305,7 @@ export class Item extends AbstractStruct {
      */
     this.rightOrigin = rightOrigin
     /**
-     * @type {YType|ID|null}
+     * @type {YType|ID|string|null}
      */
     this.parent = parent
     /**
@@ -414,7 +414,7 @@ export class Item extends AbstractStruct {
     }
     if ((this.left && this.left.constructor === GC) || (this.right && this.right.constructor === GC)) {
       this.parent = null
-    } else if (!this.parent) {
+    } else if (this.parent == null) {
       // only set parent if this shouldn't be garbage collected
       if (this.left && this.left.constructor === Item) {
         this.parent = this.left.parent
@@ -430,6 +430,8 @@ export class Item extends AbstractStruct {
       } else {
         this.parent = /** @type {ContentType} */ (parentItem.content).type
       }
+    } else if (typeof this.parent === 'string') {
+      this.parent = transaction.doc.get(this.parent)
     }
     return null
   }

@@ -67,6 +67,9 @@ const useV2Encoding = () => {
   enc = encV1
 }
 
+/**
+ * @extends {Y.Doc}
+ */
 export class TestYInstance extends Y.Doc {
   /**
    * @param {TestConnector} testConnector

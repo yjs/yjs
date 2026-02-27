@@ -1,7 +1,7 @@
 import * as t from 'lib0/testing'
 import * as Y from '../src/index.js'
 import { init, compare } from './testHelper.js' // eslint-disable-line
-import { readStructSet, readIdSet, UpdateDecoderV2, UpdateEncoderV2, writeIdSet } from '../src/internals.js'
+import { readBlockSet, readIdSet, UpdateDecoderV2, UpdateEncoderV2, writeIdSet } from '../src/internals.js'
 import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
 import * as object from 'lib0/object'
@@ -201,7 +201,7 @@ const checkUpdateCases = (ydoc, updates, enc, hasDeletes) => {
           // So we add all deletes from `diffed` to `partDeletes` and compare then
           const decoder = decoding.createDecoder(diffed)
           const updateDecoder = new UpdateDecoderV2(decoder)
-          readStructSet(updateDecoder, new Y.Doc())
+          readBlockSet(updateDecoder)
           const ds = readIdSet(updateDecoder)
           const updateEncoder = new UpdateEncoderV2()
           encoding.writeVarUint(updateEncoder.restEncoder, 0) // 0 structs
@@ -259,6 +259,36 @@ export const testMergeUpdates2 = _tc => {
     array.insert(0, [3, 4])
     array.delete(1, 2)
     checkUpdateCases(ydoc, updates, enc, true)
+  })
+}
+
+/**
+ * @param {t.TestCase} _tc
+ */
+export const testMergeUpdatesStressTest = _tc => {
+  const N = 100
+  const M = 100
+  encoders.forEach((enc, _i) => {
+    t.info(`Using encoder: ${enc.description}`)
+    const ydoc = new Y.Doc({ gc: false })
+    const updates = /** @type {Array<Uint8Array<ArrayBuffer>>} */ ([])
+    ydoc.on(enc.updateEventName, update => { updates.push(update) })
+    const array = ydoc.get()
+    for (let clientid = 0; clientid < N; clientid++) {
+      ydoc.clientID = clientid
+      for (let i = 0; i < M; i++) {
+        array.push([i])
+      }
+    }
+    t.measureTime('merge via Y.mergeUpdates', () => {
+      enc.mergeUpdates(updates)
+    })
+    t.measureTime('merge via Y.applyUpdate on Y.Doc', () => {
+      const ydoc = new Y.Doc()
+      updates.forEach(update => {
+        enc.applyUpdate(ydoc, update)
+      })
+    })
   })
 }
 
