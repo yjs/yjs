@@ -13,7 +13,7 @@
     "clean": "rm -rf dist",
     "test": "NODE_ENV=development node ./tests/index.js --repetition-time 50",
     "test-extensive": "node ./tests/index.js --production --repetition-time 10000",
-    "dist": "npm run clean && (tsc --skipLibCheck|| true)",
+    "dist": "npm run clean && (tsc --skipLibCheck --noEmit false|| true)",
     "lint": "markdownlint README.md && standard && tsc --skipLibCheck",
     "preversion": "PRODUCTION=1 npm run dist && test -e dist/src/index.d.ts",
     "debug": "npm run gentesthtml && 0serve -o test.html",
