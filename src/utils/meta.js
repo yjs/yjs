@@ -56,7 +56,7 @@ export const excludeContentIds = (content, excludeContent) =>
  * @param {ContentMap} content
  * @param {ContentIds | ContentMap} excludeContent
  */
-export const excludeContentMaps = (content, excludeContent) => createContentMap(
+export const excludeContentMap = (content, excludeContent) => createContentMap(
   idmap.diffIdMap(content.inserts, excludeContent.inserts),
   idmap.diffIdMap(content.deletes, excludeContent.deletes)
 )
