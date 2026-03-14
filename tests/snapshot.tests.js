@@ -226,3 +226,18 @@ export const testContainsUpdate = _tc => {
   t.assert(Y.snapshotContainsUpdate(snapshotFinal, updates[0]))
   t.assert(Y.snapshotContainsUpdate(snapshotFinal, updates[1]))
 }
+
+/**
+ * Reported by https://github.com/yjs/yjs/issues/767
+ * @param {t.TestCase} _tc
+ */
+export const testContainsUpdate2 = _tc => {
+  const local = new Y.Doc(), remote = new Y.Doc()
+  local.get('t').insert(0, 'abcdefghij')
+  local.get('t').delete(0, 3)
+  Y.applyUpdate(remote, Y.encodeStateAsUpdate(local))
+  const snap = Y.snapshot(remote)
+  local.get('t').delete(0, 3)
+  const update = Y.encodeStateAsUpdate(local)
+  t.assert(!Y.snapshotContainsUpdate(snap, update))
+}
