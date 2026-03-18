@@ -707,7 +707,9 @@ export class YType {
    * @return {YType<DConf>}
    */
   _copy () {
-    return new YType(this.name)
+    const ytype = new YType(this.name)
+    ytype._legacyTypeRef = this._legacyTypeRef
+    return ytype
   }
 
   /**
