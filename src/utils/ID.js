@@ -1,8 +1,9 @@
-import { YType } from '../internals.js' // eslint-disable-line
-
 import * as decoding from 'lib0/decoding'
 import * as encoding from 'lib0/encoding'
 import * as error from 'lib0/error'
+import * as random from 'lib0/random'
+
+export const generateNewClientId = random.uint32
 
 export class ID {
   /**
@@ -72,7 +73,7 @@ export const readID = decoder =>
  * `type` does not store any information about the `keyname`.
  * This function finds the correct `keyname` for `type` and throws otherwise.
  *
- * @param {YType<any>} type
+ * @param {import('../ytype.js').YType<any>} type
  * @return {string}
  *
  * @private

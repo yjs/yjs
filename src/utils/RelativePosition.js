@@ -1,16 +1,9 @@
-import {
-  writeID,
-  readID,
-  compareIDs,
-  getState,
-  findRootTypeKey,
-  Item,
-  createID,
-  ContentType,
-  followRedone,
-  getItem,
-  StructStore, ID, Doc, YType, noAttributionsManager, // eslint-disable-line
-} from '../internals.js'
+import { writeID, readID, compareIDs, createID, findRootTypeKey } from './ID.js'
+import { getState, getItem } from './StructStore.js'
+import { Item, followRedone } from '../structs/Item.js'
+import { ContentType } from '../structs/ContentType.js'
+import { noAttributionsManager } from './AttributionManager.js'
+
 
 import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
@@ -42,14 +35,14 @@ import * as error from 'lib0/error'
  */
 export class RelativePosition {
   /**
-   * @param {ID|null} type
+   * @param {import('./ID.js').ID|null} type
    * @param {string|null} tname
-   * @param {ID|null} item
+   * @param {import('./ID.js').ID|null} item
    * @param {number} assoc
    */
   constructor (type, tname, item, assoc = 0) {
     /**
-     * @type {ID|null}
+     * @type {import('./ID.js').ID|null}
      */
     this.type = type
     /**
@@ -57,7 +50,7 @@ export class RelativePosition {
      */
     this.tname = tname
     /**
-     * @type {ID | null}
+     * @type {import('./ID.js').ID | null}
      */
     this.item = item
     /**
@@ -106,13 +99,13 @@ export const createRelativePositionFromJSON = json => new RelativePosition(json.
 
 export class AbsolutePosition {
   /**
-   * @param {YType<any>} type
+   * @param {import('../ytype.js').YType<any>} type
    * @param {number} index
    * @param {number} [assoc]
    */
   constructor (type, index, assoc = 0) {
     /**
-     * @type {YType<any>}
+     * @type {import('../ytype.js').YType<any>}
      */
     this.type = type
     /**
@@ -124,7 +117,7 @@ export class AbsolutePosition {
 }
 
 /**
- * @param {YType<any>} type
+ * @param {import('../ytype.js').YType<any>} type
  * @param {number} index
  * @param {number} [assoc]
  *
@@ -133,8 +126,8 @@ export class AbsolutePosition {
 export const createAbsolutePosition = (type, index, assoc = 0) => new AbsolutePosition(type, index, assoc)
 
 /**
- * @param {YType<any>} type
- * @param {ID|null} item
+ * @param {import('../ytype.js').YType<any>} type
+ * @param {import('./ID.js').ID|null} item
  * @param {number} [assoc]
  *
  * @function
@@ -153,7 +146,7 @@ export const createRelativePosition = (type, item, assoc) => {
 /**
  * Create a relativePosition based on a absolute position.
  *
- * @param {YType} type The base type (e.g. YText or YArray).
+ * @param {import('../ytype.js').YType} type The base type (e.g. YText or YArray).
  * @param {number} index The absolute position.
  * @param {number} [assoc]
  * @param {import('../utils/AttributionManager.js').AbstractAttributionManager} attributionManager
@@ -257,8 +250,8 @@ export const readRelativePosition = decoder => {
 export const decodeRelativePosition = uint8Array => readRelativePosition(decoding.createDecoder(uint8Array))
 
 /**
- * @param {StructStore} store
- * @param {ID} id
+ * @param {import('./StructStore.js').StructStore} store
+ * @param {import('./ID.js').ID} id
  */
 const getItemWithOffset = (store, id) => {
   const item = getItem(store, id)
@@ -280,7 +273,7 @@ const getItemWithOffset = (store, id) => {
  * range of content. There is more information in this ticket: https://github.com/yjs/yjs/issues/638
  *
  * @param {RelativePosition} rpos
- * @param {Doc} doc
+ * @param {import('./Doc.js').Doc} doc
  * @param {boolean} followUndoneDeletions - whether to follow undone deletions - see https://github.com/yjs/yjs/issues/638
  * @param {import('../utils/AttributionManager.js').AbstractAttributionManager} attributionManager
  * @return {AbsolutePosition|null}
@@ -304,7 +297,7 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc, followUndo
     if (!(right instanceof Item)) {
       return null
     }
-    type = /** @type {YType<any>} */ (right.parent)
+    type = /** @type {import('../ytype.js').YType<any>} */ (right.parent)
     if (type._item === null || !type._item.deleted) {
       index = attributionManager.contentLength(right) === 0 ? 0 : (res.diff + (assoc >= 0 ? 0 : 1)) // adjust position based on left association if necessary
       let n = right.left

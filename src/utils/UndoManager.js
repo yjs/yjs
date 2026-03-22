@@ -1,16 +1,12 @@
-import {
-  mergeIdSets,
-  iterateStructsByIdSet,
-  keepItem,
-  transact,
-  createID,
-  redoItem,
-  isParentOf,
-  followRedone,
-  getItemCleanStart,
-  YEvent, Transaction, Doc, Item, GC, IdSet, YType, // eslint-disable-line
-  diffIdSet
-} from '../internals.js'
+import { mergeIdSets, iterateStructsByIdSet, diffIdSet } from './IdSet.js'
+import { keepItem, followRedone, redoItem, Item } from '../structs/Item.js'
+import { transact } from './Transaction.js'
+import { createID } from './ID.js'
+import { isParentOf } from './isParentOf.js'
+import { getItemCleanStart } from './StructStore.js'
+import { Doc } from './Doc.js'
+import { YType } from '../ytype.js'
+
 
 import * as time from 'lib0/time'
 import * as array from 'lib0/array'
@@ -19,8 +15,8 @@ import { ObservableV2 } from 'lib0/observable'
 
 export class StackItem {
   /**
-   * @param {IdSet} insertions
-   * @param {IdSet} deletions
+   * @param {import('./IdSet.js').IdSet} insertions
+   * @param {import('./IdSet.js').IdSet} deletions
    */
   constructor (insertions, deletions) {
     this.inserts = insertions
@@ -32,7 +28,7 @@ export class StackItem {
   }
 }
 /**
- * @param {Transaction} tr
+ * @param {import('./Transaction.js').Transaction} tr
  * @param {UndoManager} um
  * @param {StackItem} stackItem
  */
@@ -129,7 +125,7 @@ const popStackItem = (undoManager, stack, eventType) => {
 /**
  * @typedef {Object} UndoManagerOptions
  * @property {number} [UndoManagerOptions.captureTimeout=500]
- * @property {function(Transaction):boolean} [UndoManagerOptions.captureTransaction] Do not capture changes of a Transaction if result false.
+ * @property {function(import('./Transaction.js').Transaction):boolean} [UndoManagerOptions.captureTransaction] Do not capture changes of a Transaction if result false.
  * @property {function(Item):boolean} [UndoManagerOptions.deleteFilter=()=>true] Sometimes
  * it is necessary to filter what an Undo/Redo operation can delete. If this
  * filter returns false, the type/item won't be deleted even it is in the
@@ -144,7 +140,7 @@ const popStackItem = (undoManager, stack, eventType) => {
  * @property {StackItem} StackItemEvent.stackItem
  * @property {any} StackItemEvent.origin
  * @property {'undo'|'redo'} StackItemEvent.type
- * @property {Map<YType,Array<YEvent<any>>>} StackItemEvent.changedParentTypes
+ * @property {Map<YType,Array<import('./YEvent.js').YEvent<any>>>} StackItemEvent.changedParentTypes
  */
 
 /**
@@ -205,7 +201,7 @@ export class UndoManager extends ObservableV2 {
     this.ignoreRemoteMapChanges = ignoreRemoteMapChanges
     this.captureTimeout = captureTimeout
     /**
-     * @param {Transaction} transaction
+     * @param {import('./Transaction.js').Transaction} transaction
      */
     this.afterTransactionHandler = transaction => {
       // Only track certain transactions
@@ -242,7 +238,7 @@ export class UndoManager extends ObservableV2 {
         this.lastChange = now
       }
       // make sure that deleted structs are not gc'd
-      iterateStructsByIdSet(transaction, transaction.deleteSet, /** @param {Item|GC} item */ item => {
+      iterateStructsByIdSet(transaction, transaction.deleteSet, /** @param {Item|import('../structs/GC.js').GC} item */ item => {
         if (item instanceof Item && this.scope.some(type => type === transaction.doc || isParentOf(/** @type {YType} */ (type), item))) {
           keepItem(item, true)
         }

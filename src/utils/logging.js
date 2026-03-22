@@ -1,13 +1,9 @@
-import {
-  YType // eslint-disable-line
-} from '../internals.js'
-
 /**
  * Convenient helper to log type information.
  *
  * Do not use in productive systems as the output can be immense!
  *
- * @param {YType<any>} type
+ * @param {import('../ytype.js').YType<any>} type
  */
 export const logType = type => {
   const res = []

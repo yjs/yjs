@@ -1,10 +1,8 @@
-import { Item } from '../internals.js' // eslint-disable-line
-
 /**
  * Check if `parent` is a parent of `child`.
  *
  * @param {import('../ytype.js').YType} parent
- * @param {Item|null} child
+ * @param {import('../structs/Item.js').Item|null} child
  * @return {Boolean} Whether `parent` is a parent of `child`.
  *
  * @private

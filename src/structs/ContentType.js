@@ -1,7 +1,3 @@
-import {
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Transaction, Item // eslint-disable-line
-} from '../internals.js'
-
 import * as error from 'lib0/error'
 import { readYType } from '../ytype.js'
 
@@ -72,15 +68,15 @@ export class ContentType {
   }
 
   /**
-   * @param {Transaction} transaction
-   * @param {Item} item
+   * @param {import('../utils/Transaction.js').Transaction} transaction
+   * @param {import('../structs/Item.js').Item} item
    */
   integrate (transaction, item) {
     this.type._integrate(transaction.doc, item)
   }
 
   /**
-   * @param {Transaction} transaction
+   * @param {import('../utils/Transaction.js').Transaction} transaction
    */
   delete (transaction) {
     let item = this.type._start
@@ -108,7 +104,7 @@ export class ContentType {
   }
 
   /**
-   * @param {Transaction} tr
+   * @param {import('../utils/Transaction.js').Transaction} tr
    */
   gc (tr) {
     let item = this.type._start
@@ -117,7 +113,7 @@ export class ContentType {
       item = item.right
     }
     this.type._start = null
-    this.type._map.forEach(/** @param {Item | null} item */ (item) => {
+    this.type._map.forEach(/** @param {import('../structs/Item.js').Item | null} item */ (item) => {
       while (item !== null) {
         item.gc(tr, true)
         item = item.left
@@ -127,7 +123,7 @@ export class ContentType {
   }
 
   /**
-   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+   * @param {import('../utils/UpdateEncoder.js').UpdateEncoderV1 | import('../utils/UpdateEncoder.js').UpdateEncoderV2} encoder
    * @param {number} _offset
    * @param {number} _offsetEnd
    */
@@ -146,7 +142,7 @@ export class ContentType {
 /**
  * @private
  *
- * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @param {import('../utils/UpdateDecoder.js').UpdateDecoderV1 | import('../utils/UpdateDecoder.js').UpdateDecoderV2} decoder
  * @return {ContentType}
  */
 export const readContentType = decoder => new ContentType(readYType(decoder))

@@ -1,10 +1,6 @@
 import * as error from 'lib0/error'
 import * as encoding from 'lib0/encoding'
 
-import {
-  ID // eslint-disable-line
-} from '../internals.js'
-
 export class IdSetEncoderV1 {
   constructor () {
     this.restEncoder = encoding.createEncoder()
@@ -35,7 +31,7 @@ export class IdSetEncoderV1 {
 
 export class UpdateEncoderV1 extends IdSetEncoderV1 {
   /**
-   * @param {ID} id
+   * @param {import('./ID.js').ID} id
    */
   writeLeftID (id) {
     encoding.writeVarUint(this.restEncoder, id.client)
@@ -43,7 +39,7 @@ export class UpdateEncoderV1 extends IdSetEncoderV1 {
   }
 
   /**
-   * @param {ID} id
+   * @param {import('./ID.js').ID} id
    */
   writeRightID (id) {
     encoding.writeVarUint(this.restEncoder, id.client)
@@ -202,7 +198,7 @@ export class UpdateEncoderV2 extends IdSetEncoderV2 {
   }
 
   /**
-   * @param {ID} id
+   * @param {import('./ID.js').ID} id
    */
   writeLeftID (id) {
     this.clientEncoder.write(id.client)
@@ -210,7 +206,7 @@ export class UpdateEncoderV2 extends IdSetEncoderV2 {
   }
 
   /**
-   * @param {ID} id
+   * @param {import('./ID.js').ID} id
    */
   writeRightID (id) {
     this.clientEncoder.write(id.client)

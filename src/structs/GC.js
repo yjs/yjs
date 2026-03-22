@@ -1,11 +1,7 @@
-import {
-  AbstractStruct,
-  addStruct,
-  addStructToIdSet,
-  addToIdSet,
-  createID,
-  UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction // eslint-disable-line
-} from '../internals.js'
+import { AbstractStruct } from './AbstractStruct.js'
+import { addStruct } from '../utils/StructStore.js'
+import { addToIdSet, addStructToIdSet } from '../utils/IdSet.js'
+import { createID } from '../utils/ID.js'
 
 export const structGCRefNumber = 0
 
@@ -32,7 +28,7 @@ export class GC extends AbstractStruct {
   }
 
   /**
-   * @param {Transaction} transaction
+   * @param {import('../utils/Transaction.js').Transaction} transaction
    * @param {number} offset - @todo remove offset parameter
    */
   integrate (transaction, offset) {
@@ -46,7 +42,7 @@ export class GC extends AbstractStruct {
   }
 
   /**
-   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+   * @param {import('../utils/UpdateEncoder.js').UpdateEncoderV1 | import('../utils/UpdateEncoder.js').UpdateEncoderV2} encoder
    * @param {number} offset
    * @param {number} offsetEnd
    */
@@ -56,8 +52,8 @@ export class GC extends AbstractStruct {
   }
 
   /**
-   * @param {Transaction} _transaction
-   * @param {StructStore} _store
+   * @param {import('../utils/Transaction.js').Transaction} _transaction
+   * @param {import('../utils/StructStore.js').StructStore} _store
    * @return {null | number}
    */
   getMissing (_transaction, _store) {

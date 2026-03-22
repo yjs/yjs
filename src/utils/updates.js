@@ -8,39 +8,25 @@ import * as map from 'lib0/map'
 import * as math from 'lib0/math'
 import * as string from 'lib0/string'
 
-import {
-  ContentAny,
-  ContentBinary,
-  ContentDeleted,
-  ContentDoc,
-  ContentEmbed,
-  ContentFormat,
-  ContentJSON,
-  ContentString,
-  ContentType,
-  createID,
-  decodeStateVector,
-  IdSetEncoderV1,
-  IdSetEncoderV2,
-  GC,
-  Item,
-  mergeIdSets,
-  readIdSet,
-  readItemContent,
-  Skip,
-  UpdateDecoderV1,
-  UpdateDecoderV2,
-  UpdateEncoderV1,
-  UpdateEncoderV2,
-  writeIdSet,
-  createIdSet,
-  Doc,
-  applyUpdate,
-  applyUpdateV2,
-  readBlockSet,
-  writeBlockSet,
-  encodeStateAsUpdateV2
-} from '../internals.js'
+import { ContentAny } from '../structs/ContentAny.js'
+import { ContentBinary } from '../structs/ContentBinary.js'
+import { ContentDeleted } from '../structs/ContentDeleted.js'
+import { ContentDoc } from '../structs/ContentDoc.js'
+import { ContentEmbed } from '../structs/ContentEmbed.js'
+import { ContentFormat } from '../structs/ContentFormat.js'
+import { ContentJSON } from '../structs/ContentJSON.js'
+import { ContentString } from '../structs/ContentString.js'
+import { ContentType } from '../structs/ContentType.js'
+import { createID } from './ID.js'
+import { decodeStateVector, applyUpdate, applyUpdateV2, encodeStateAsUpdateV2 } from './encoding.js'
+import { IdSetEncoderV1, IdSetEncoderV2, UpdateEncoderV1, UpdateEncoderV2 } from './UpdateEncoder.js'
+import { UpdateDecoderV1, UpdateDecoderV2 } from './UpdateDecoder.js'
+import { GC } from '../structs/GC.js'
+import { Item, readItemContent } from '../structs/Item.js'
+import { mergeIdSets, readIdSet, writeIdSet, createIdSet } from './IdSet.js'
+import { Skip } from '../structs/Skip.js'
+import { Doc } from './Doc.js'
+import { readBlockSet, writeBlockSet } from './BlockSet.js'
 
 import * as idset from './IdSet.js'
 

@@ -1,26 +1,22 @@
-import {
-  cleanupFormattingGap,
-  createIdSet,
-  removeEventHandlerListener,
-  callEventHandlerListeners,
-  addEventHandlerListener,
-  createEventHandler,
-  getState,
-  isVisible,
-  ContentType,
-  createID,
-  ContentAny,
-  ContentFormat,
-  ContentBinary,
-  ContentJSON,
-  ContentDeleted,
-  ContentString,
-  ContentEmbed,
-  getItemCleanStart,
-  noAttributionsManager,
-  transact,
-  ContentDoc, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, createAttributionFromAttributionItems, AbstractAttributionManager // eslint-disable-line
-} from './internals.js'
+import { cleanupFormattingGap, transact } from './utils/Transaction.js'
+import { createIdSet } from './utils/IdSet.js'
+import { removeEventHandlerListener, callEventHandlerListeners, addEventHandlerListener, createEventHandler } from './utils/EventHandler.js'
+import { getState, getItemCleanStart } from './utils/StructStore.js'
+import { isVisible } from './utils/Snapshot.js'
+import { ContentType } from './structs/ContentType.js'
+import { createID } from './utils/ID.js'
+import { ContentAny } from './structs/ContentAny.js'
+import { ContentFormat } from './structs/ContentFormat.js'
+import { ContentBinary } from './structs/ContentBinary.js'
+import { ContentJSON } from './structs/ContentJSON.js'
+import { ContentDeleted } from './structs/ContentDeleted.js'
+import { ContentString } from './structs/ContentString.js'
+import { ContentEmbed } from './structs/ContentEmbed.js'
+import { ContentDoc } from './structs/ContentDoc.js'
+import { noAttributionsManager, createAttributionFromAttributionItems } from './utils/AttributionManager.js'
+import { Item } from './structs/Item.js'
+import { YEvent } from './utils/YEvent.js'
+import { Doc } from './utils/Doc.js'
 
 import * as contentType from './structs/ContentType.js'
 
@@ -61,7 +57,7 @@ export class ItemTextListPosition {
    * @param {Item|null} right
    * @param {number} index
    * @param {Map<string,any>} currentAttributes
-   * @param {AbstractAttributionManager} am
+   * @param {import('./utils/AttributionManager.js').AbstractAttributionManager} am
    */
   constructor (left, right, index, currentAttributes, am) {
     this.left = left
@@ -93,7 +89,7 @@ export class ItemTextListPosition {
   }
 
   /**
-   * @param {Transaction} transaction
+   * @param {import('./utils/Transaction.js').Transaction} transaction
    * @param {YType} parent
    * @param {number} length
    * @param {Object<string,any>} attributes
@@ -144,7 +140,7 @@ export class ItemTextListPosition {
           const rightLen = this.am.contentLength(item)
           if (length < rightLen) {
             /**
-             * @type {Array<import('./internals.js').AttributedContent<any>>}
+             * @type {Array<import('./utils/AttributionManager.js').AttributedContent<any>>}
              */
             const contents = []
             this.am.readContent(contents, item.id.client, item.id.clock, item.deleted, item.content, 0)
@@ -177,7 +173,7 @@ export class ItemTextListPosition {
 /**
  * Negate applied formats
  *
- * @param {Transaction} transaction
+ * @param {import('./utils/Transaction.js').Transaction} transaction
  * @param {YType} parent
  * @param {ItemTextListPosition} currPos
  * @param {Map<string,any>} negatedAttributes
@@ -250,7 +246,7 @@ const minimizeAttributeChanges = (currPos, attributes) => {
 }
 
 /**
- * @param {Transaction} transaction
+ * @param {import('./utils/Transaction.js').Transaction} transaction
  * @param {YType} parent
  * @param {ItemTextListPosition} currPos
  * @param {Object<string,any>} attributes
@@ -280,7 +276,7 @@ const insertAttributes = (transaction, parent, currPos, attributes) => {
 }
 
 /**
- * @param {Transaction} transaction
+ * @param {import('./utils/Transaction.js').Transaction} transaction
  * @param {YType} parent
  * @param {ItemTextListPosition} currPos
  * @param {import('./structs/Item.js').AbstractContent} content
@@ -312,7 +308,7 @@ export const insertContent = (transaction, parent, currPos, content, attributes)
 }
 
 /**
- * @param {Transaction} transaction
+ * @param {import('./utils/Transaction.js').Transaction} transaction
  * @param {YType} parent
  * @param {ItemTextListPosition} currPos
  * @param {Array<any>|string} insert
@@ -344,7 +340,7 @@ export const insertContentHelper = (transaction, parent, currPos, insert, attrib
 }
 
 /**
- * @param {Transaction} transaction
+ * @param {import('./utils/Transaction.js').Transaction} transaction
  * @param {ItemTextListPosition} currPos
  * @param {number} length
  * @return {ItemTextListPosition}
@@ -366,7 +362,7 @@ export const deleteText = (transaction, currPos, length) => {
       item.delete(transaction)
     } else if (currPos.am !== noAttributionsManager) {
       /**
-       * @type {Array<import('./internals.js').AttributedContent<any>>}
+       * @type {Array<import('./utils/AttributionManager.js').AttributedContent<any>>}
        */
       const contents = []
       currPos.am.readContent(contents, item.id.client, item.id.clock, true, item.content, 0)
@@ -575,7 +571,7 @@ export const getTypeChildren = t => {
  * parents (for `.observeDeep` handlers).
  *
  * @param {YType} type
- * @param {Transaction} transaction
+ * @param {import('./utils/Transaction.js').Transaction} transaction
   * @param {YEvent<any>} event
  */
 export const callTypeObservers = (type, transaction, event) => {
@@ -624,12 +620,12 @@ export class YType {
     this._length = 0
     /**
      * Event handlers
-     * @type {EventHandler<YEvent<DeltaToYType<DConf>>,Transaction>}
+     * @type {import('./utils/EventHandler.js').EventHandler<YEvent<DeltaToYType<DConf>>,import('./utils/Transaction.js').Transaction>}
      */
     this._eH = createEventHandler()
     /**
      * Deep event handlers
-     * @type {EventHandler<YEvent<DConf>,Transaction>}
+     * @type {import('./utils/EventHandler.js').EventHandler<YEvent<DConf>,import('./utils/Transaction.js').Transaction>}
      */
     this._dEH = createEventHandler()
     /**
@@ -716,7 +712,7 @@ export class YType {
    * Creates YEvent and calls all type observers.
    * Must be implemented by each type.
    *
-   * @param {Transaction} transaction
+   * @param {import('./utils/Transaction.js').Transaction} transaction
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
   _callObserver (transaction, parentSubs) {
@@ -734,7 +730,7 @@ export class YType {
   /**
    * Observe all events that are created on this type.
    *
-   * @template {(target: YEvent<DeltaToYType<DConf>>, tr: Transaction) => void} F
+   * @template {(target: YEvent<DeltaToYType<DConf>>, tr: import('./utils/Transaction.js').Transaction) => void} F
    * @param {F} f Observer function
    * @return {F}
    */
@@ -746,7 +742,7 @@ export class YType {
   /**
    * Observe all events that are created by this type and its children.
    *
-   * @template {function(YEvent<DConf>,Transaction):void} F
+   * @template {function(YEvent<DConf>,import('./utils/Transaction.js').Transaction):void} F
    * @param {F} f Observer function
    * @return {F}
    */
@@ -758,7 +754,7 @@ export class YType {
   /**
    * Unregister an observer function.
    *
-   * @param {(type:YEvent<DeltaToYType<DConf>>,tr:Transaction)=>void} f Observer function
+   * @param {(type:YEvent<DeltaToYType<DConf>>,tr:import('./utils/Transaction.js').Transaction)=>void} f Observer function
    */
   unobserve (f) {
     removeEventHandlerListener(this._eH, f)
@@ -767,7 +763,7 @@ export class YType {
   /**
    * Unregister an observer function.
    *
-   * @param {function(YEvent<DConf>,Transaction):void} f Observer function
+   * @param {function(YEvent<DConf>,import('./utils/Transaction.js').Transaction):void} f Observer function
    */
   unobserveDeep (f) {
     removeEventHandlerListener(this._dEH, f)
@@ -782,7 +778,7 @@ export class YType {
    *
    * @template {boolean} [Deep=false]
    *
-   * @param {AbstractAttributionManager} am
+   * @param {import('./utils/AttributionManager.js').AbstractAttributionManager} am
    * @param {Object} [opts]
    * @param {import('./utils/IdSet.js').IdSet?} [opts.itemsToRender]
    * @param {boolean} [opts.retainInserts] - if true, retain rendered inserts with attributions
@@ -830,7 +826,7 @@ export class YType {
        */
       const previousAttributes = {} // The value before changes
       /**
-       * @type {Array<import('./internals.js').AttributedContent<any>>}
+       * @type {Array<import('./utils/AttributionManager.js').AttributedContent<any>>}
        */
       const cs = []
       for (let item = this._start; item !== null; cs.length = 0) {
@@ -1015,7 +1011,7 @@ export class YType {
    * Render the difference to another ydoc (which can be empty) and highlight the differences with
    * attributions.
    *
-   * @param {AbstractAttributionManager} am
+   * @param {import('./utils/AttributionManager.js').AbstractAttributionManager} am
    * @return {delta.Delta<DConf>}
    */
   toDeltaDeep (am = noAttributionsManager) {
@@ -1026,7 +1022,7 @@ export class YType {
    * Apply a {@link Delta} on this shared type.
    *
    * @param {delta.DeltaAny} d The changes to apply on this element.
-   * @param {AbstractAttributionManager} am
+   * @param {import('./utils/AttributionManager.js').AbstractAttributionManager} am
    *
    * @public
    */
@@ -1154,7 +1150,7 @@ export class YType {
   /**
    * Returns all attribute name/value pairs in a JSON Object.
    *
-   * @param {Snapshot} [snapshot]
+   * @param {import('./utils/Snapshot.js').Snapshot} [snapshot]
    * @return {{ [Key in Extract<keyof delta.DeltaConfGetAttrs<DConf>,string>]?: delta.DeltaConfGetAttrs<DConf>[Key]}} A JSON Object that describes the attributes.
    *
    * @public
@@ -1423,7 +1419,7 @@ export class YType {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
+   * @param {import('./utils/UpdateEncoder.js').UpdateEncoderV1 | import('./utils/UpdateEncoder.js').UpdateEncoderV2} encoder The encoder to write data to.
    */
   _write (encoder) {
     encoder.writeTypeRef(this._legacyTypeRef)
@@ -1541,7 +1537,7 @@ export const typeListGet = (type, index) => {
 /**
  * @todo this is a duplicate. use the unified insert function and remove this.
  *
- * @param {Transaction} transaction
+ * @param {import('./utils/Transaction.js').Transaction} transaction
  * @param {YType} parent
  * @param {Item?} referenceItem
  * @param {Array<YValue>} content
@@ -1610,7 +1606,7 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
 const lengthExceeded = () => error.create('Length exceeded!')
 
 /**
- * @param {Transaction} transaction
+ * @param {import('./utils/Transaction.js').Transaction} transaction
  * @param {YType} parent
  * @param {number} index
  * @param {Array<Object<string,any>|Array<any>|number|null|string|Uint8Array>} content
@@ -1663,7 +1659,7 @@ export const typeListInsertGenerics = (transaction, parent, index, content) => {
  * Pushing content is special as we generally want to push after the last item. So we don't have to update
  * the search marker.
  *
- * @param {Transaction} transaction
+ * @param {import('./utils/Transaction.js').Transaction} transaction
  * @param {YType} parent
  * @param {Array<Object<string,any>|Array<any>|number|null|string|Uint8Array>} content
  *
@@ -1683,7 +1679,7 @@ export const typeListPushGenerics = (transaction, parent, content) => {
 }
 
 /**
- * @param {Transaction} transaction
+ * @param {import('./utils/Transaction.js').Transaction} transaction
  * @param {YType} parent
  * @param {number} index
  * @param {number} length
@@ -1732,7 +1728,7 @@ export const typeListDelete = (transaction, parent, index, length) => {
 /**
  * @todo inline this code
  *
- * @param {Transaction} transaction
+ * @param {import('./utils/Transaction.js').Transaction} transaction
  * @param {YType} parent
  * @param {string} key
  *
@@ -1747,7 +1743,7 @@ export const typeMapDelete = (transaction, parent, key) => {
 }
 
 /**
- * @param {Transaction} transaction
+ * @param {import('./utils/Transaction.js').Transaction} transaction
  * @param {YType} parent
  * @param {string} key
  * @param {YValue} value
@@ -1838,7 +1834,7 @@ export const typeMapGetAll = (parent) => {
  * @param {TypeDelta} d
  * @param {YType} parent
  * @param {Set<string|null>?} attrsToRender
- * @param {import('./internals.js').AbstractAttributionManager} am
+ * @param {import('./utils/AttributionManager.js').AbstractAttributionManager} am
  * @param {boolean} deep
  * @param {Set<YType>|Map<YType,any>|null} [modified] - set of types that should be rendered as modified children
  * @param {import('./utils/IdSet.js').IdSet?} [deletedItems]
@@ -1857,7 +1853,7 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, de
    */
   const renderAttrs = (item, key) => {
     /**
-     * @type {Array<import('./internals.js').AttributedContent<any>>}
+     * @type {Array<import('./utils/AttributionManager.js').AttributedContent<any>>}
      */
     const cs = []
     am.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, 1)
@@ -1909,7 +1905,7 @@ export const typeMapHas = (parent, key) => {
 /**
  * @param {YType<any>} parent
  * @param {string} key
- * @param {Snapshot} snapshot
+ * @param {import('./utils/Snapshot.js').Snapshot} snapshot
  * @return {Object<string,any>|number|null|Array<any>|string|Uint8Array|YType<any>|undefined}
  *
  * @private
@@ -1925,7 +1921,7 @@ export const typeMapGetSnapshot = (parent, key, snapshot) => {
 
 /**
  * @param {YType<any>} parent
- * @param {Snapshot} snapshot
+ * @param {import('./utils/Snapshot.js').Snapshot} snapshot
  * @return {Object<string,Object<string,any>|number|null|Array<any>|string|Uint8Array|YType<any>|undefined>}
  *
  * @private

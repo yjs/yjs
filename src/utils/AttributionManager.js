@@ -1,34 +1,13 @@
-import {
-  getItem,
-  diffIdSet,
-  createInsertSetFromStructStore,
-  createDeleteSetFromStructStore,
-  createIdMapFromIdSet,
-  ContentDeleted,
-  insertIntoIdMap,
-  insertIntoIdSet,
-  diffIdMap,
-  createIdMap,
-  mergeIdMaps,
-  createID,
-  mergeIdSets,
-  applyUpdate,
-  writeIdSet,
-  UpdateEncoderV1,
-  transact,
-  createMaybeAttrRange,
-  createIdSet,
-  writeStructsFromIdSet,
-  UndoManager,
-  StackItem,
-  getItemCleanStart,
-  intersectSets,
-  intersectMaps,
-  ContentFormat,
-  createContentAttribute,
-  StructStore, Transaction, ID, IdSet, Item, Snapshot, Doc, AbstractContent, IdMap, // eslint-disable-line
-  encodeStateAsUpdate
-} from '../internals.js'
+import { getItem, getItemCleanStart } from './StructStore.js'
+import { diffIdSet, createInsertSetFromStructStore, createDeleteSetFromStructStore, insertIntoIdSet, mergeIdSets, createIdSet, writeIdSet, intersectSets } from './IdSet.js'
+import { createIdMapFromIdSet, insertIntoIdMap, diffIdMap, createIdMap, mergeIdMaps, createMaybeAttrRange, intersectMaps, createContentAttribute } from './IdMap.js'
+import { ContentDeleted } from '../structs/ContentDeleted.js'
+import { ContentFormat } from '../structs/ContentFormat.js'
+import { createID } from './ID.js'
+import { applyUpdate, encodeStateAsUpdate, writeStructsFromIdSet } from './encoding.js'
+import { UpdateEncoderV1 } from './UpdateEncoder.js'
+import { transact } from './Transaction.js'
+import { UndoManager, StackItem } from './UndoManager.js'
 
 import * as error from 'lib0/error'
 import { ObservableV2 } from 'lib0/observable'
@@ -93,7 +72,7 @@ export const createAttributionFromAttributionItems = (attrs, deleted) => {
  */
 export class AttributedContent {
   /**
-   * @param {AbstractContent} content
+   * @param {import('../structs/Item.js').AbstractContent} content
    * @param {number} clock
    * @param {boolean} deleted
    * @param {Array<import('./IdMap.js').ContentAttribute<T>> | null} attrs
@@ -114,7 +93,7 @@ export class AttributedContent {
  * Should fire an event when the attributions changed _after_ the original change happens. This
  * Event will be used to update the attribution on the current content.
  *
- * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
+ * @extends {ObservableV2<{change:(idset:import('./IdSet.js').IdSet,origin:any,local:boolean)=>void}>}
  */
 export class AbstractAttributionManager extends ObservableV2 {
   /**
@@ -122,7 +101,7 @@ export class AbstractAttributionManager extends ObservableV2 {
    * @param {number} _client
    * @param {number} _clock
    * @param {boolean} _deleted
-   * @param {AbstractContent} _content
+   * @param {import('../structs/Item.js').AbstractContent} _content
    * @param {0|1|2} _shouldRender - 0: if undeleted or attributed, render as a retain operation. 1: render only if undeleted or attributed. 2: render as insert operation (if unattributed and deleted, render as delete).
    */
   readContent (_contents, _client, _clock, _deleted, _content, _shouldRender) {
@@ -135,7 +114,7 @@ export class AbstractAttributionManager extends ObservableV2 {
    *
    * If the content is not countable, it should return 0.
    *
-   * @param {Item} _item
+   * @param {import('../structs/Item.js').Item} _item
    * @return {number}
    */
   contentLength (_item) {
@@ -146,12 +125,12 @@ export class AbstractAttributionManager extends ObservableV2 {
 /**
  * @implements AbstractAttributionManager
  *
- * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
+ * @extends {ObservableV2<{change:(idset:import('./IdSet.js').IdSet,origin:any,local:boolean)=>void}>}
  */
 export class TwosetAttributionManager extends ObservableV2 {
   /**
-   * @param {IdMap<any>} inserts
-   * @param {IdMap<any>} deletes
+   * @param {import('./IdMap.js').IdMap<any>} inserts
+   * @param {import('./IdMap.js').IdMap<any>} deletes
    */
   constructor (inserts, deletes) {
     super()
@@ -164,7 +143,7 @@ export class TwosetAttributionManager extends ObservableV2 {
    * @param {number} client
    * @param {number} clock
    * @param {boolean} deleted
-   * @param {AbstractContent} content
+   * @param {import('../structs/Item.js').AbstractContent} content
    * @param {0|1|2} shouldRender - whether this should render or just result in a `retain` operation
    */
   readContent (contents, client, clock, deleted, content, shouldRender) {
@@ -182,7 +161,7 @@ export class TwosetAttributionManager extends ObservableV2 {
   }
 
   /**
-   * @param {Item} item
+   * @param {import('../structs/Item.js').Item} item
    * @return {number}
    */
   contentLength (item) {
@@ -201,7 +180,7 @@ export class TwosetAttributionManager extends ObservableV2 {
  *
  * @implements AbstractAttributionManager
  *
- * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
+ * @extends {ObservableV2<{change:(idset:import('./IdSet.js').IdSet,origin:any,local:boolean)=>void}>}
  */
 export class NoAttributionsManager extends ObservableV2 {
   /**
@@ -209,7 +188,7 @@ export class NoAttributionsManager extends ObservableV2 {
    * @param {number} _client
    * @param {number} clock
    * @param {boolean} deleted
-   * @param {AbstractContent} content
+   * @param {import('../structs/Item.js').AbstractContent} content
    * @param {0|1|2} shouldRender - whether this should render or just result in a `retain` operation
    */
   readContent (contents, _client, clock, deleted, content, shouldRender) {
@@ -219,7 +198,7 @@ export class NoAttributionsManager extends ObservableV2 {
   }
 
   /**
-   * @param {Item} item
+   * @param {import('../structs/Item.js').Item} item
    * @return {number}
    */
   contentLength (item) {
@@ -230,7 +209,7 @@ export class NoAttributionsManager extends ObservableV2 {
 export const noAttributionsManager = new NoAttributionsManager()
 
 /**
- * @param {StructStore} store
+ * @param {import('./StructStore.js').StructStore} store
  * @param {number} client
  * @param {number} clock
  * @param {number} len
@@ -251,10 +230,10 @@ const getItemContent = (store, client, clock, len) => {
 }
 
 /**
- * @param {Transaction?} tr - only specify this if you want to fill the content of deleted content
+ * @param {import('./Transaction.js').Transaction?} tr - only specify this if you want to fill the content of deleted content
  * @param {DiffAttributionManager} am
- * @param {ID} start
- * @param {ID} end
+ * @param {import('./ID.js').ID} start
+ * @param {import('./ID.js').ID} end
  * @param {boolean} collectAll - collect as many items as possible. Accept adding redundant changes.
  */
 const collectSuggestedChanges = (tr, am, start, end, collectAll) => {
@@ -267,7 +246,7 @@ const collectSuggestedChanges = (tr, am, start, end, collectAll) => {
    */
   const openedCollectedFormats = new Set()
   /**
-   * @type {Item?}
+   * @type {import('../structs/Item.js').Item?}
    */
   let item = getItem(store, start)
   const endItem = start === end ? item : (end == null ? null : getItem(store, end))
@@ -349,8 +328,8 @@ export class Attributions {
 }
 
 /**
- * @param {IdMap<any>|undefined} attrs
- * @param {IdSet} slice
+ * @param {import('./IdMap.js').IdMap<any>|undefined} attrs
+ * @param {import('./IdSet.js').IdSet} slice
  *
  */
 const extractAttributions = (attrs, slice) => attrs == null ? createIdMapFromIdSet(slice, []) : mergeIdMaps([intersectMaps(attrs, slice), createIdMapFromIdSet(slice, [])])
@@ -358,12 +337,12 @@ const extractAttributions = (attrs, slice) => attrs == null ? createIdMapFromIdS
 /**
  * @implements AbstractAttributionManager
  *
- * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
+ * @extends {ObservableV2<{change:(idset:import('./IdSet.js').IdSet,origin:any,local:boolean)=>void}>}
  */
 export class DiffAttributionManager extends ObservableV2 {
   /**
-   * @param {Doc} prevDoc
-   * @param {Doc} nextDoc
+   * @param {import('./Doc.js').Doc} prevDoc
+   * @param {import('./Doc.js').Doc} nextDoc
    * @param {Object} [options] - options for the attribution manager
    * @param {Attributions?} [options.attrs] - the attributes to apply to the diff
    */
@@ -475,8 +454,8 @@ export class DiffAttributionManager extends ObservableV2 {
   }
 
   /**
-   * @param {ID} start
-   * @param {ID} end
+   * @param {import('./ID.js').ID} start
+   * @param {import('./ID.js').ID} end
    */
   acceptChanges (start, end = start) {
     const { inserts, deletes } = collectSuggestedChanges(null, this, start, end, true)
@@ -487,8 +466,8 @@ export class DiffAttributionManager extends ObservableV2 {
   }
 
   /**
-   * @param {ID} start
-   * @param {ID} end
+   * @param {import('./ID.js').ID} start
+   * @param {import('./ID.js').ID} end
    */
   rejectChanges (start, end = start) {
     this._nextDoc.transact(tr => {
@@ -509,13 +488,13 @@ export class DiffAttributionManager extends ObservableV2 {
    * @param {number} client
    * @param {number} clock
    * @param {boolean} deleted
-   * @param {AbstractContent} _content
+   * @param {import('../structs/Item.js').AbstractContent} _content
    * @param {0|1|2} shouldRender - whether this should render or just result in a `retain` operation
    */
   readContent (contents, client, clock, deleted, _content, shouldRender) {
     const slice = (deleted ? this.deletes : this.inserts).slice(client, clock, _content.getLength())
     /**
-     * @type {AbstractContent?}
+     * @type {import('../structs/Item.js').AbstractContent?}
      */
     let content = slice.length === 1 ? _content : _content.copy()
     for (let i = 0; i < slice.length; i++) {
@@ -533,7 +512,7 @@ export class DiffAttributionManager extends ObservableV2 {
           content = content.splice(diffStart)
         }
       }
-      const c = /** @type {AbstractContent} */ (content)
+      const c = /** @type {import('../structs/Item.js').AbstractContent} */ (content)
       const clen = c.getLength()
       if (clen < s.len) {
         slice.splice(i + 1, 0, createMaybeAttrRange(s.clock + clen, s.len - clen, s.attrs))
@@ -547,7 +526,7 @@ export class DiffAttributionManager extends ObservableV2 {
   }
 
   /**
-   * @param {Item} item
+   * @param {import('../structs/Item.js').Item} item
    * @return {number}
    */
   contentLength (item) {
@@ -566,8 +545,8 @@ export class DiffAttributionManager extends ObservableV2 {
 /**
  * Attribute changes from ydoc1 to ydoc2.
  *
- * @param {Doc} prevDoc
- * @param {Doc} nextDoc
+ * @param {import('./Doc.js').Doc} prevDoc
+ * @param {import('./Doc.js').Doc} nextDoc
  * @param {Object} [options] - options for the attribution manager
  * @param {import('./meta.js').ContentMap?} [options.attrs] - the attributes to apply to the diff
  */
@@ -579,12 +558,12 @@ export const createAttributionManagerFromDiff = (prevDoc, nextDoc, options) => n
  *
  * @implements AbstractAttributionManager
  *
- * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
+ * @extends {ObservableV2<{change:(idset:import('./IdSet.js').IdSet,origin:any,local:boolean)=>void}>}
  */
 export class SnapshotAttributionManager extends ObservableV2 {
   /**
-   * @param {Snapshot} prevSnapshot
-   * @param {Snapshot} nextSnapshot
+   * @param {import('./Snapshot.js').Snapshot} prevSnapshot
+   * @param {import('./Snapshot.js').Snapshot} nextSnapshot
    * @param {Object} [options] - options for the attribution manager
    * @param {Array<import('./IdMap.js').ContentAttribute<any>>} [options.attrs] - the attributes to apply to the diff
    */
@@ -607,7 +586,7 @@ export class SnapshotAttributionManager extends ObservableV2 {
    * @param {number} client
    * @param {number} clock
    * @param {boolean} _deleted
-   * @param {AbstractContent} content
+   * @param {import('../structs/Item.js').AbstractContent} content
    * @param {0|1|2} shouldRender - whether this should render or just result in a `retain` operation
    */
   readContent (contents, client, clock, _deleted, content, shouldRender) {
@@ -633,7 +612,7 @@ export class SnapshotAttributionManager extends ObservableV2 {
   }
 
   /**
-   * @param {Item} item
+   * @param {import('../structs/Item.js').Item} item
    * @return {number}
    */
   contentLength (item) {
@@ -647,7 +626,7 @@ export class SnapshotAttributionManager extends ObservableV2 {
 }
 
 /**
- * @param {Snapshot} prevSnapshot
- * @param {Snapshot} nextSnapshot
+ * @param {import('./Snapshot.js').Snapshot} prevSnapshot
+ * @param {import('./Snapshot.js').Snapshot} nextSnapshot
  */
 export const createAttributionManagerFromSnapshots = (prevSnapshot, nextSnapshot = prevSnapshot) => new SnapshotAttributionManager(prevSnapshot, nextSnapshot)

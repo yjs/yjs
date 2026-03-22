@@ -1,11 +1,6 @@
-import {
-  diffIdSet,
-  mergeIdSets,
-  noAttributionsManager,
-  YType, Doc, AbstractAttributionManager, Item, Transaction, AbstractStruct, // eslint-disable-line
-  createAbsolutePositionFromRelativePosition,
-  createRelativePosition
-} from '../internals.js'
+import { diffIdSet, mergeIdSets } from './IdSet.js'
+import { noAttributionsManager } from './AttributionManager.js'
+import { createAbsolutePositionFromRelativePosition, createRelativePosition } from './RelativePosition.js'
 
 import * as map from 'lib0/map'
 import * as delta from 'lib0/delta' // eslint-disable-line
@@ -17,24 +12,24 @@ import * as set from 'lib0/set'
  */
 export class YEvent {
   /**
-   * @param {YType<DConf>} target The changed type.
-   * @param {Transaction} transaction
+   * @param {import('../ytype.js').YType<DConf>} target The changed type.
+   * @param {import('./Transaction.js').Transaction} transaction
    * @param {Set<any>?} subs The keys that changed
    */
   constructor (target, transaction, subs) {
     /**
      * The type on which this event was created on.
-     * @type {YType<DConf>}
+     * @type {import('../ytype.js').YType<DConf>}
      */
     this.target = target
     /**
      * The current target on which the observe callback is called.
-     * @type {YType<any>}
+     * @type {import('../ytype.js').YType<any>}
      */
     this.currentTarget = target
     /**
      * The transaction that triggered this event.
-     * @type {Transaction}
+     * @type {import('./Transaction.js').Transaction}
      */
     this.transaction = transaction
     /**
@@ -70,7 +65,7 @@ export class YEvent {
    *
    * In contrast to change.deleted, this method also returns true if the struct was added and then deleted.
    *
-   * @param {AbstractStruct} struct
+   * @param {import('../structs/AbstractStruct.js').AbstractStruct} struct
    * @return {boolean}
    */
   deletes (struct) {
@@ -82,7 +77,7 @@ export class YEvent {
    *
    * In contrast to change.deleted, this method also returns true if the struct was added and then deleted.
    *
-   * @param {AbstractStruct} struct
+   * @param {import('../structs/AbstractStruct.js').AbstractStruct} struct
    * @return {boolean}
    */
   adds (struct) {
@@ -91,10 +86,10 @@ export class YEvent {
 
   /**
    * @template {boolean} [Deep=false]
-   * @param {AbstractAttributionManager} am
+   * @param {import('./AttributionManager.js').AbstractAttributionManager} am
    * @param {object} [opts]
    * @param {Deep} [opts.deep]
-   * @return {Deep extends true ? delta.Delta<DConf> : delta.Delta<import('../internals.js').DeltaConfDeltaToYType<DConf>>} The Delta representation of this type.
+   * @return {Deep extends true ? delta.Delta<DConf> : delta.Delta<import('../ytype.js').DeltaConfDeltaToYType<DConf>>} The Delta representation of this type.
    *
    * @public
    */
@@ -103,7 +98,7 @@ export class YEvent {
     /**
      * @todo this should be done only one in the transaction step
      *
-     * @type {Map<YType,Set<string|null>>|null}
+     * @type {Map<import('../ytype.js').YType,Set<string|null>>|null}
      */
     let modified = this.transaction.changed
     if (deep) {
@@ -133,7 +128,7 @@ export class YEvent {
    * Compute the changes in the delta format.
    * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
    *
-   * @type {delta.Delta<import('../internals.js').DeltaConfDeltaToYType<DConf>>} The Delta representation of this type.
+   * @type {delta.Delta<import('../ytype.js').DeltaConfDeltaToYType<DConf>>} The Delta representation of this type.
    * @public
    */
   get delta () {
@@ -162,9 +157,9 @@ export class YEvent {
  *   console.log(path) // might look like => [2, 'key1']
  *   child === type.get(path[0]).get(path[1])
  *
- * @param {YType} parent
- * @param {YType} child target
- * @param {AbstractAttributionManager} am
+ * @param {import('../ytype.js').YType} parent
+ * @param {import('../ytype.js').YType} child target
+ * @param {import('./AttributionManager.js').AbstractAttributionManager} am
  * @return {Array<string|number>} Path to the target
  *
  * @private
@@ -172,7 +167,7 @@ export class YEvent {
  */
 export const getPathTo = (parent, child, am = noAttributionsManager) => {
   const path = []
-  const doc = /** @type {Doc} */ (parent.doc)
+  const doc = /** @type {import('./Doc.js').Doc} */ (parent.doc)
   while (child._item !== null && child !== parent) {
     if (child._item.parentSub !== null) {
       // parent is map-ish
@@ -183,7 +178,7 @@ export const getPathTo = (parent, child, am = noAttributionsManager) => {
       const apos = /** @type {import('../utils/RelativePosition.js').AbsolutePosition} */ (createAbsolutePositionFromRelativePosition(createRelativePosition(parent, child._item.id), doc, false, am))
       path.unshift(apos.index)
     }
-    child = /** @type {YType} */ (child._item.parent)
+    child = /** @type {import('../ytype.js').YType} */ (child._item.parent)
   }
   return path
 }

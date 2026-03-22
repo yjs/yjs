@@ -1,10 +1,7 @@
-import {
-  AbstractStruct,
-  addStruct,
-  addToIdSet,
-  UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, // eslint-disable-line
-  createID
-} from '../internals.js'
+import { AbstractStruct } from './AbstractStruct.js'
+import { addStruct } from '../utils/StructStore.js'
+import { addToIdSet } from '../utils/IdSet.js'
+import { createID } from '../utils/ID.js'
 
 import * as encoding from 'lib0/encoding'
 
@@ -33,7 +30,7 @@ export class Skip extends AbstractStruct {
   }
 
   /**
-   * @param {Transaction} transaction
+   * @param {import('../utils/Transaction.js').Transaction} transaction
    * @param {number} offset
    */
   integrate (transaction, offset) {
@@ -46,7 +43,7 @@ export class Skip extends AbstractStruct {
   }
 
   /**
-   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+   * @param {import('../utils/UpdateEncoder.js').UpdateEncoderV1 | import('../utils/UpdateEncoder.js').UpdateEncoderV2} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
@@ -56,8 +53,8 @@ export class Skip extends AbstractStruct {
   }
 
   /**
-   * @param {Transaction} _transaction
-   * @param {StructStore} _store
+   * @param {import('../utils/Transaction.js').Transaction} _transaction
+   * @param {import('../utils/StructStore.js').StructStore} _store
    * @return {null | number}
    */
   getMissing (_transaction, _store) {

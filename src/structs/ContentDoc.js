@@ -1,6 +1,4 @@
-import {
-  Doc, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, Item // eslint-disable-line
-} from '../internals.js'
+import { Doc } from '../utils/Doc.js'
 
 import * as error from 'lib0/error'
 
@@ -86,8 +84,8 @@ export class ContentDoc {
   }
 
   /**
-   * @param {Transaction} transaction
-   * @param {Item} item
+   * @param {import('../utils/Transaction.js').Transaction} transaction
+   * @param {import('../structs/Item.js').Item} item
    */
   integrate (transaction, item) {
     // this needs to be reflected in doc.destroy as well
@@ -99,7 +97,7 @@ export class ContentDoc {
   }
 
   /**
-   * @param {Transaction} transaction
+   * @param {import('../utils/Transaction.js').Transaction} transaction
    */
   delete (transaction) {
     if (transaction.subdocsAdded.has(this.doc)) {
@@ -110,12 +108,12 @@ export class ContentDoc {
   }
 
   /**
-   * @param {Transaction} _tr
+   * @param {import('../utils/Transaction.js').Transaction} _tr
    */
   gc (_tr) {}
 
   /**
-   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+   * @param {import('../utils/UpdateEncoder.js').UpdateEncoderV1 | import('../utils/UpdateEncoder.js').UpdateEncoderV2} encoder
    * @param {number} _offset
    * @param {number} _offsetEnd
    */
@@ -135,7 +133,7 @@ export class ContentDoc {
 /**
  * @private
  *
- * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @param {import('../utils/UpdateDecoder.js').UpdateDecoderV1 | import('../utils/UpdateDecoder.js').UpdateDecoderV2} decoder
  * @return {ContentDoc}
  */
 export const readContentDoc = decoder => new ContentDoc(createDocFromOpts(decoder.readString(), decoder.readAny()))

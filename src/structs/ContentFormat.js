@@ -1,7 +1,3 @@
-import {
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Item, Transaction // eslint-disable-line
-} from '../internals.js'
-
 import * as error from 'lib0/error'
 
 /**
@@ -62,8 +58,8 @@ export class ContentFormat {
   }
 
   /**
-   * @param {Transaction} _transaction
-   * @param {Item} item
+   * @param {import('../utils/Transaction.js').Transaction} _transaction
+   * @param {import('./Item.js').Item} item
    */
   integrate (_transaction, item) {
     // @todo searchmarker are currently unsupported for rich text documents
@@ -73,15 +69,15 @@ export class ContentFormat {
   }
 
   /**
-   * @param {Transaction} _transaction
+   * @param {import('../utils/Transaction.js').Transaction} _transaction
    */
   delete (_transaction) {}
   /**
-   * @param {Transaction} _tr
+   * @param {import('../utils/Transaction.js').Transaction} _tr
    */
   gc (_tr) {}
   /**
-   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+   * @param {import('../utils/UpdateEncoder.js').UpdateEncoderV1 | import('../utils/UpdateEncoder.js').UpdateEncoderV2} encoder
    * @param {number} _offset
    * @param {number} _offsetEnd
    */
@@ -99,7 +95,7 @@ export class ContentFormat {
 }
 
 /**
- * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @param {import('../utils/UpdateDecoder.js').UpdateDecoderV1 | import('../utils/UpdateDecoder.js').UpdateDecoderV2} decoder
  * @return {ContentFormat}
  */
 export const readContentFormat = decoder => new ContentFormat(decoder.readKey(), decoder.readJSON())

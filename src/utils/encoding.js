@@ -14,31 +14,15 @@
  * 7: Item with Type
  */
 
-import {
-  findIndexSS,
-  getState,
-  getStateVector,
-  readAndApplyDeleteSet,
-  writeIdSet,
-  transact,
-  UpdateDecoderV1,
-  UpdateDecoderV2,
-  UpdateEncoderV1,
-  UpdateEncoderV2,
-  IdSetEncoderV2,
-  IdSetDecoderV1,
-  IdSetEncoderV1,
-  mergeUpdates,
-  mergeUpdatesV2,
-  Skip,
-  diffUpdateV2,
-  convertUpdateFormatV2ToV1,
-  readBlockSet,
-  createIdSet,
-  BlockSet, IdSet, IdSetDecoderV2, Doc, Transaction, GC, Item, StructStore, // eslint-disable-line
-  createID,
-  IdRange
-} from '../internals.js'
+import { findIndexSS, getState, getStateVector, StructStore } from './StructStore.js'
+import { readAndApplyDeleteSet, writeIdSet, createIdSet, IdRange } from './IdSet.js'
+import { transact } from './Transaction.js'
+import { UpdateDecoderV1, UpdateDecoderV2, IdSetDecoderV1 } from './UpdateDecoder.js'
+import { UpdateEncoderV1, UpdateEncoderV2, IdSetEncoderV1, IdSetEncoderV2 } from './UpdateEncoder.js'
+import { mergeUpdates, mergeUpdatesV2, diffUpdateV2, convertUpdateFormatV2ToV1 } from './updates.js'
+import { Skip } from '../structs/Skip.js'
+import { readBlockSet, BlockSet } from './BlockSet.js'
+import { createID } from './ID.js'
 
 import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
@@ -48,7 +32,7 @@ import * as array from 'lib0/array'
 
 /**
  * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
- * @param {Array<GC|Item>} structs All structs by `client`
+ * @param {Array<import('../structs/GC.js').GC|import('../structs/Item.js').Item>} structs All structs by `client`
  * @param {number} client
  * @param {Array<IdRange>} idranges
  *
@@ -130,7 +114,7 @@ export const writeClientsStructs = (encoder, store, _sm) => {
   // Write items with higher client ids first
   // This heavily improves the conflict algorithm.
   array.from(sm.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, clock]) => {
-    const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
+    const structs = /** @type {Array<import('../structs/GC.js').GC|import('../structs/Item.js').Item>} */ (store.clients.get(client))
     const lastStruct = structs[structs.length - 1]
     writeStructs(encoder, structs, client, [new IdRange(clock, lastStruct.id.clock + lastStruct.length - clock)])
   })
@@ -139,7 +123,7 @@ export const writeClientsStructs = (encoder, store, _sm) => {
 /**
  * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
  * @param {StructStore} store
- * @param {IdSet} idset
+ * @param {import('./IdSet.js').IdSet} idset
  *
  * @todo at the moment this writes the full deleteset range
  *
@@ -153,7 +137,7 @@ export const writeStructsFromIdSet = (encoder, store, idset) => {
   // This heavily improves the conflict algorithm.
   array.from(idset.clients.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, ids]) => {
     const idRanges = ids.getIds()
-    const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
+    const structs = /** @type {Array<import('../structs/GC.js').GC|import('../structs/Item.js').Item>} */ (store.clients.get(client))
     writeStructs(encoder, structs, client, idRanges)
   })
 }
@@ -177,7 +161,7 @@ export const writeStructsFromIdSet = (encoder, store, idset) => {
  * This method is implemented in a way so that we can resume computation if this update
  * causally depends on another update.
  *
- * @param {Transaction} transaction
+ * @param {import('./Transaction.js').Transaction} transaction
  * @param {StructStore} store
  * @param {BlockSet} clientsStructRefs
  * @return { null | { update: Uint8Array<ArrayBuffer>, missing: Map<number,number> } }
@@ -187,7 +171,7 @@ export const writeStructsFromIdSet = (encoder, store, idset) => {
  */
 const integrateStructs = (transaction, store, clientsStructRefs) => {
   /**
-   * @type {Array<Item | GC>}
+   * @type {Array<import('../structs/Item.js').Item | import('../structs/GC.js').GC>}
    */
   const stack = []
   // sort them so that we take the higher id first, in case of conflicts the lower id will probably not conflict with the id from the higher user.
@@ -199,11 +183,11 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
     if (clientsStructRefsIds.length === 0) {
       return null
     }
-    let nextStructsTarget = /** @type {{i:number,refs:Array<GC|Item>}} */ (clientsStructRefs.clients.get(clientsStructRefsIds[clientsStructRefsIds.length - 1]))
+    let nextStructsTarget = /** @type {{i:number,refs:Array<import('../structs/GC.js').GC|import('../structs/Item.js').Item>}} */ (clientsStructRefs.clients.get(clientsStructRefsIds[clientsStructRefsIds.length - 1]))
     while (nextStructsTarget.refs.length === nextStructsTarget.i) {
       clientsStructRefsIds.pop()
       if (clientsStructRefsIds.length > 0) {
-        nextStructsTarget = /** @type {{i:number,refs:Array<GC|Item>}} */ (clientsStructRefs.clients.get(clientsStructRefsIds[clientsStructRefsIds.length - 1]))
+        nextStructsTarget = /** @type {{i:number,refs:Array<import('../structs/GC.js').GC|import('../structs/Item.js').Item>}} */ (clientsStructRefs.clients.get(clientsStructRefsIds[clientsStructRefsIds.length - 1]))
       } else {
         return null
       }
@@ -231,7 +215,7 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
     }
   }
   /**
-   * @type {GC|Item}
+   * @type {import('../structs/GC.js').GC|import('../structs/Item.js').Item}
    */
   let stackHead = /** @type {any} */ (curStructsTarget).refs[/** @type {any} */ (curStructsTarget).i++]
   // caching the state because it is used very often
@@ -274,7 +258,7 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
         stack.push(stackHead)
         // get the struct reader that has the missing struct
         /**
-         * @type {{ refs: Array<GC|Item>, i: number }}
+         * @type {{ refs: Array<import('../structs/GC.js').GC|import('../structs/Item.js').Item>, i: number }}
          */
         const structRefs = clientsStructRefs.clients.get(/** @type {number} */ (missing)) || { refs: [], i: 0 }
         if (structRefs.refs.length === structRefs.i || missing === stackHead.id.client || stack.some(s => s.id.client === missing)) { // @todo this could be optimized!
@@ -298,16 +282,16 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
     }
     // iterate to next stackHead
     if (stack.length > 0) {
-      stackHead = /** @type {GC|Item} */ (stack.pop())
+      stackHead = /** @type {import('../structs/GC.js').GC|import('../structs/Item.js').Item} */ (stack.pop())
     } else if (curStructsTarget !== null && curStructsTarget.i < curStructsTarget.refs.length) {
-      stackHead = /** @type {GC|Item} */ (curStructsTarget.refs[curStructsTarget.i++])
+      stackHead = /** @type {import('../structs/GC.js').GC|import('../structs/Item.js').Item} */ (curStructsTarget.refs[curStructsTarget.i++])
     } else {
       curStructsTarget = getNextStructTarget()
       if (curStructsTarget === null) {
         // we are done!
         break
       } else {
-        stackHead = /** @type {GC|Item} */ (curStructsTarget.refs[curStructsTarget.i++])
+        stackHead = /** @type {import('../structs/GC.js').GC|import('../structs/Item.js').Item} */ (curStructsTarget.refs[curStructsTarget.i++])
       }
     }
   }
@@ -324,7 +308,7 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
 
 /**
  * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
- * @param {Transaction} transaction
+ * @param {import('./Transaction.js').Transaction} transaction
  *
  * @private
  * @function
@@ -337,7 +321,7 @@ export const writeStructsFromTransaction = (encoder, transaction) => writeStruct
  * This function has the same effect as `applyUpdate` but accepts a decoder.
  *
  * @param {decoding.Decoder} decoder
- * @param {Doc} ydoc
+ * @param {import('./Doc.js').Doc} ydoc
  * @param {any} [transactionOrigin] This will be stored on `transaction.origin` and `.on('update', (update, origin))`
  * @param {UpdateDecoderV1 | UpdateDecoderV2} [structDecoder]
  *
@@ -432,7 +416,7 @@ export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = n
  * This function has the same effect as `applyUpdate` but accepts a decoder.
  *
  * @param {decoding.Decoder} decoder
- * @param {Doc} ydoc
+ * @param {import('./Doc.js').Doc} ydoc
  * @param {any} [transactionOrigin] This will be stored on `transaction.origin` and `.on('update', (update, origin))`
  *
  * @function
@@ -444,7 +428,7 @@ export const readUpdate = (decoder, ydoc, transactionOrigin) => readUpdateV2(dec
  *
  * This function has the same effect as `readUpdate` but accepts an Uint8Array instead of a Decoder.
  *
- * @param {Doc} ydoc
+ * @param {import('./Doc.js').Doc} ydoc
  * @param {Uint8Array} update
  * @param {any} [transactionOrigin] This will be stored on `transaction.origin` and `.on('update', (update, origin))`
  * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} [YDecoder]
@@ -461,7 +445,7 @@ export const applyUpdateV2 = (ydoc, update, transactionOrigin, YDecoder = Update
  *
  * This function has the same effect as `readUpdate` but accepts an Uint8Array instead of a Decoder.
  *
- * @param {Doc} ydoc
+ * @param {import('./Doc.js').Doc} ydoc
  * @param {Uint8Array} update
  * @param {any} [transactionOrigin] This will be stored on `transaction.origin` and `.on('update', (update, origin))`
  *
@@ -474,7 +458,7 @@ export const applyUpdate = (ydoc, update, transactionOrigin) => applyUpdateV2(yd
  * only write the operations that are missing.
  *
  * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
- * @param {Doc} doc
+ * @param {import('./Doc.js').Doc} doc
  * @param {Map<number,number>} [targetStateVector] The state of the target that receives the update. Leave empty to write all known structs
  *
  * @function
@@ -490,7 +474,7 @@ export const writeStateAsUpdate = (encoder, doc, targetStateVector = new Map()) 
  *
  * Use `writeStateAsUpdate` instead if you are working with lib0/encoding.js#Encoder
  *
- * @param {Doc} doc
+ * @param {import('./Doc.js').Doc} doc
  * @param {Uint8Array} [encodedTargetStateVector] The state of the target that receives the update. Leave empty to write all known structs
  * @param {UpdateEncoderV1 | UpdateEncoderV2} [encoder]
  * @return {Uint8Array<ArrayBuffer>}
@@ -524,7 +508,7 @@ export const encodeStateAsUpdateV2 = (doc, encodedTargetStateVector = new Uint8A
  *
  * Use `writeStateAsUpdate` instead if you are working with lib0/encoding.js#Encoder
  *
- * @param {Doc} doc
+ * @param {import('./Doc.js').Doc} doc
  * @param {Uint8Array} [encodedTargetStateVector] The state of the target that receives the update. Leave empty to write all known structs
  * @return {Uint8Array<ArrayBuffer>}
  *
@@ -535,7 +519,7 @@ export const encodeStateAsUpdate = (doc, encodedTargetStateVector) => encodeStat
 /**
  * Read state vector from Decoder and return as Map
  *
- * @param {IdSetDecoderV1 | IdSetDecoderV2} decoder
+ * @param {IdSetDecoderV1 | import('./UpdateDecoder.js').IdSetDecoderV2} decoder
  * @return {Map<number,number>} Maps `client` to the number next expected `clock` from that client.
  *
  * @function
@@ -587,7 +571,7 @@ export const writeStateVector = (encoder, sv) => {
 
 /**
  * @param {IdSetEncoderV1 | IdSetEncoderV2} encoder
- * @param {Doc} doc
+ * @param {import('./Doc.js').Doc} doc
  *
  * @function
  */
@@ -596,7 +580,7 @@ export const writeDocumentStateVector = (encoder, doc) => writeStateVector(encod
 /**
  * Encode State as Uint8Array.
  *
- * @param {Doc|Map<number,number>} doc
+ * @param {import('./Doc.js').Doc|Map<number,number>} doc
  * @param {IdSetEncoderV1 | IdSetEncoderV2} [encoder]
  * @return {Uint8Array<ArrayBuffer>}
  *
@@ -614,7 +598,7 @@ export const encodeStateVectorV2 = (doc, encoder = new IdSetEncoderV2()) => {
 /**
  * Encode State as Uint8Array.
  *
- * @param {Doc|Map<number,number>} doc
+ * @param {import('./Doc.js').Doc|Map<number,number>} doc
  * @return {Uint8Array<ArrayBuffer>}
  *
  * @function

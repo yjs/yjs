@@ -1,14 +1,7 @@
-import {
-  findIndexSS,
-  getState,
-  splitItem,
-  iterateStructs,
-  UpdateEncoderV2,
-  IdMap,
-  AttrRanges,
-  AttrRange,
-  Skip, AbstractStruct, IdSetDecoderV1, IdSetEncoderV1, IdSetDecoderV2, IdSetEncoderV2, Item, GC, StructStore, Transaction, ID // eslint-disable-line
-} from '../internals.js'
+import { findIndexSS, getState, iterateStructs } from './StructStore.js'
+import { Item, splitItem } from '../structs/Item.js'
+import { UpdateEncoderV2 } from './UpdateEncoder.js'
+import { IdMap, AttrRanges, AttrRange } from './IdMap.js'
 
 import * as array from 'lib0/array'
 import * as math from 'lib0/math'
@@ -185,7 +178,7 @@ export class IdSet {
   }
 
   /**
-   * @param {ID} id
+   * @param {import('./ID.js').ID} id
    * @return {boolean}
    */
   hasId (id) {
@@ -318,16 +311,16 @@ export const _deleteRangeFromIdSet = (set, client, clock, len) => {
 /**
  * Iterate over all structs that are mentioned by the IdSet.
  *
- * @param {Transaction} transaction
+ * @param {import('./Transaction.js').Transaction} transaction
  * @param {IdSet} ds
- * @param {function(GC|Item):void} f
+ * @param {function(import('../structs/GC.js').GC|import('../structs/Item.js').Item):void} f
  *
  * @function
  */
 export const iterateStructsByIdSet = (transaction, ds, f) =>
   ds.clients.forEach((idRanges, clientid) => {
     const ranges = idRanges.getIds()
-    const structs = /** @type {Array<GC|Item>} */ (transaction.doc.store.clients.get(clientid))
+    const structs = /** @type {Array<import('../structs/GC.js').GC|import('../structs/Item.js').Item>} */ (transaction.doc.store.clients.get(clientid))
     if (structs != null) {
       for (let i = 0; i < ranges.length; i++) {
         const del = ranges[i]
@@ -591,7 +584,7 @@ export const addToIdSet = (idSet, client, clock, length) => {
 
 /**
  * @param {IdSet} idSet
- * @param {AbstractStruct} struct
+ * @param {import('../structs/AbstractStruct.js').AbstractStruct} struct
  *
  * @private
  * @function
@@ -601,7 +594,7 @@ export const addStructToIdSet = (idSet, struct) => addToIdSet(idSet, struct.id.c
 export const createIdSet = () => new IdSet()
 
 /**
- * @param {StructStore} ss
+ * @param {import('./StructStore.js').StructStore} ss
  * @return {IdSet}
  *
  * @private
@@ -635,7 +628,7 @@ export const createDeleteSetFromStructStore = ss => {
 }
 
 /**
- * @param {Array<GC | Item>} structs
+ * @param {Array<import('../structs/GC.js').GC | import('../structs/Item.js').Item>} structs
  * @param {boolean} filterDeleted
  *
  */
@@ -662,7 +655,7 @@ export const _createInsertSliceFromStructs = (structs, filterDeleted) => {
 }
 
 /**
- * @param {import('../internals.js').StructStore} ss
+ * @param {import('./StructStore.js').StructStore} ss
  * @param {boolean} filterDeleted
  */
 export const createInsertSetFromStructStore = (ss, filterDeleted) => {
@@ -677,7 +670,7 @@ export const createInsertSetFromStructStore = (ss, filterDeleted) => {
 }
 
 /**
- * @param {IdSetEncoderV1 | IdSetEncoderV2} encoder
+ * @param {import('./UpdateEncoder.js').IdSetEncoderV1 | import('./UpdateEncoder.js').IdSetEncoderV2} encoder
  * @param {IdSet} idSet
  *
  * @private
@@ -703,7 +696,7 @@ export const writeIdSet = (encoder, idSet) => {
 }
 
 /**
- * @param {IdSetDecoderV1 | IdSetDecoderV2} decoder
+ * @param {import('./UpdateDecoder.js').IdSetDecoderV1 | import('./UpdateDecoder.js').IdSetDecoderV2} decoder
  * @return {IdSet}
  *
  * @private
@@ -735,9 +728,9 @@ export const readIdSet = decoder => {
  */
 
 /**
- * @param {IdSetDecoderV1 | IdSetDecoderV2} decoder
- * @param {Transaction} transaction
- * @param {StructStore} store
+ * @param {import('./UpdateDecoder.js').IdSetDecoderV1 | import('./UpdateDecoder.js').IdSetDecoderV2} decoder
+ * @param {import('./Transaction.js').Transaction} transaction
+ * @param {import('./StructStore.js').StructStore} store
  * @return {Uint8Array<ArrayBuffer>|null} Returns a v2 update containing all deletes that couldn't be applied yet; or null if all deletes were applied successfully.
  *
  * @private
@@ -762,7 +755,7 @@ export const readAndApplyDeleteSet = (decoder, transaction, store) => {
         let index = findIndexSS(structs, clock)
         /**
          * We can ignore the case of GC and Delete structs, because we are going to skip them
-         * @type {Item | GC | Skip}
+         * @type {import('../structs/Item.js').Item | import('../structs/GC.js').GC | import('../structs/Skip.js').Skip}
          */
         let struct = structs[index]
         // split the first item if necessary

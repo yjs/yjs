@@ -1,20 +1,14 @@
-import {
-  createInsertSetFromStructStore,
-  createDeleteSetFromStructStore,
-  createAttributionManagerFromDiff,
-  diffIdSet,
-  mergeIdSets,
-  Item,
-  YType, Doc, // eslint-disable-line
-  iterateStructsByIdSet
-} from '../internals.js'
+import { createInsertSetFromStructStore, createDeleteSetFromStructStore, diffIdSet, mergeIdSets, iterateStructsByIdSet } from './IdSet.js'
+import { createAttributionManagerFromDiff } from './AttributionManager.js'
+import { Item } from '../structs/Item.js'
+
 import * as delta from 'lib0/delta'
 import * as map from 'lib0/map'
 import * as set from 'lib0/set'
 
 /**
- * @param {Doc} v1
- * @param {Doc} v2
+ * @param {import('./Doc.js').Doc} v1
+ * @param {import('./Doc.js').Doc} v2
  * @return {delta.DeltaBuilderAny}
  */
 export const diffDocsToDelta = (v1, v2, { am = createAttributionManagerFromDiff(v1, v2) } = {}) => {
@@ -28,12 +22,12 @@ export const diffDocsToDelta = (v1, v2, { am = createAttributionManagerFromDiff(
       const deletesOnly = diffIdSet(deleteDiff, insertDiff)
       const itemsToRender = mergeIdSets([insertsOnly, deleteDiff])
       /**
-       * @type {Map<YType, Set<string|null>>}
+       * @type {Map<import('../ytype.js').YType, Set<string|null>>}
        */
       const changedTypes = new Map()
       iterateStructsByIdSet(tr, itemsToRender, /** @param {any} item */ item => {
         while (item instanceof Item) {
-          const parent = /** @type {YType} */ (item.parent)
+          const parent = /** @type {import('../ytype.js').YType} */ (item.parent)
           const conf = map.setIfUndefined(changedTypes, parent, set.create)
           if (conf.has(item.parentSub)) break // has already been marked as modified
           conf.add(item.parentSub)

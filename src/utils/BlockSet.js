@@ -1,14 +1,12 @@
-import {
-  createID,
-  readItemContent,
-  findIndexCleanStart,
-  Skip,
-  createIdSet,
-  sliceStruct,
-  IdRange,
-  GC, Item, ID,
-  writeStructs
-} from '../internals.js'
+import { createID, ID } from './ID.js'
+import { Item, readItemContent } from '../structs/Item.js'
+import { findIndexCleanStart } from './StructStore.js'
+import { Skip } from '../structs/Skip.js'
+import { createIdSet, IdRange } from './IdSet.js'
+import { sliceStruct } from './updates.js'
+import { GC } from '../structs/GC.js'
+import { writeStructs } from './encoding.js'
+
 
 import * as decoding from 'lib0/decoding'
 import * as binary from 'lib0/binary'
@@ -19,7 +17,7 @@ import * as encoding from 'lib0/encoding'
 import * as number from 'lib0/number'
 
 /**
- * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder The decoder object to read data from.
+ * @param {import('./UpdateDecoder.js').UpdateDecoderV1 | import('./UpdateDecoder.js').UpdateDecoderV2} decoder The decoder object to read data from.
  * @return {BlockSet}
  *
  * @private
@@ -84,7 +82,7 @@ export const readBlockSet = (decoder) => {
 }
 
 /**
- * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+ * @param {import('./UpdateEncoder.js').UpdateEncoderV1 | import('./UpdateEncoder.js').UpdateEncoderV2} encoder
  * @param {BlockSet} blocks
  */
 export const writeBlockSet = (encoder, blocks) => {

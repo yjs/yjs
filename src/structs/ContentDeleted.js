@@ -1,7 +1,4 @@
-import {
-  addToIdSet,
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, StructStore, Item, Transaction // eslint-disable-line
-} from '../internals.js'
+import { addToIdSet } from '../utils/IdSet.js'
 
 export class ContentDeleted {
   /**
@@ -59,8 +56,8 @@ export class ContentDeleted {
   }
 
   /**
-   * @param {Transaction} transaction
-   * @param {Item} item
+   * @param {import('../utils/Transaction.js').Transaction} transaction
+   * @param {import('../structs/Item.js').Item} item
    */
   integrate (transaction, item) {
     addToIdSet(transaction.deleteSet, item.id.client, item.id.clock, this.len)
@@ -68,15 +65,15 @@ export class ContentDeleted {
   }
 
   /**
-   * @param {Transaction} _transaction
+   * @param {import('../utils/Transaction.js').Transaction} _transaction
    */
   delete (_transaction) {}
   /**
-   * @param {Transaction} _tr
+   * @param {import('../utils/Transaction.js').Transaction} _tr
    */
   gc (_tr) {}
   /**
-   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+   * @param {import('../utils/UpdateEncoder.js').UpdateEncoderV1 | import('../utils/UpdateEncoder.js').UpdateEncoderV2} encoder
    * @param {number} offset
    * @param {number} offsetEnd
    */
@@ -95,7 +92,7 @@ export class ContentDeleted {
 /**
  * @private
  *
- * @param {UpdateDecoderV1 | UpdateDecoderV2 } decoder
+ * @param {import('../utils/UpdateDecoder.js').UpdateDecoderV1 | import('../utils/UpdateDecoder.js').UpdateDecoderV2} decoder
  * @return {ContentDeleted}
  */
 export const readContentDeleted = decoder => new ContentDeleted(decoder.readLen())

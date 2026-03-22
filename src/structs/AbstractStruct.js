@@ -1,12 +1,8 @@
-import {
-  UpdateEncoderV1, UpdateEncoderV2, ID, Transaction // eslint-disable-line
-} from '../internals.js'
-
 import * as error from 'lib0/error'
 
 export class AbstractStruct {
   /**
-   * @param {ID} id
+   * @param {import('../utils/ID.js').ID} id
    * @param {number} length
    */
   constructor (id, length) {
@@ -33,7 +29,7 @@ export class AbstractStruct {
   }
 
   /**
-   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
+   * @param {import('../utils/UpdateEncoder.js').UpdateEncoderV1 | import('../utils/UpdateEncoder.js').UpdateEncoderV2} encoder The encoder to write data to.
    * @param {number} offset
    * @param {number} encodingRef
    */
@@ -42,7 +38,7 @@ export class AbstractStruct {
   }
 
   /**
-   * @param {Transaction} transaction
+   * @param {import('../utils/Transaction.js').Transaction} transaction
    * @param {number} offset
    */
   integrate (transaction, offset) {
@@ -51,7 +47,7 @@ export class AbstractStruct {
 
   /**
    * @param {number} diff
-   * @return {import('../internals.js').GC|import('../internals.js').Item}
+   * @return {import('./GC.js').GC|import('./Item.js').Item}
    */
   splice (diff) {
     throw error.methodUnimplemented()

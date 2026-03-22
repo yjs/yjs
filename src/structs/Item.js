@@ -1,29 +1,18 @@
-import {
-  GC,
-  getState,
-  AbstractStruct,
-  replaceStruct,
-  addStruct,
-  addToIdSet,
-  findRootTypeKey,
-  compareIDs,
-  getItem,
-  getItemCleanEnd,
-  getItemCleanStart,
-  readContentDeleted,
-  readContentBinary,
-  readContentJSON,
-  readContentAny,
-  readContentString,
-  readContentEmbed,
-  readContentDoc,
-  createID,
-  readContentFormat,
-  readContentType,
-  addChangedTypeToTransaction,
-  addStructToIdSet,
-  IdSet, StackItem, UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, ContentType, ContentDeleted, StructStore, ID, YType, Transaction, // eslint-disable-line
-} from '../internals.js'
+import { GC } from './GC.js'
+import { AbstractStruct } from './AbstractStruct.js'
+import { getState, replaceStruct, addStruct, getItem, getItemCleanEnd, getItemCleanStart } from '../utils/StructStore.js'
+import { addToIdSet, addStructToIdSet } from '../utils/IdSet.js'
+import { ID, createID, compareIDs, findRootTypeKey } from '../utils/ID.js'
+import { ContentDeleted, readContentDeleted } from './ContentDeleted.js'
+import { addChangedTypeToTransaction } from '../utils/Transaction.js'
+import { readContentBinary } from './ContentBinary.js'
+import { readContentJSON } from './ContentJSON.js'
+import { readContentAny } from './ContentAny.js'
+import { readContentString } from './ContentString.js'
+import { readContentEmbed } from './ContentEmbed.js'
+import { readContentDoc } from './ContentDoc.js'
+import { readContentFormat } from './ContentFormat.js'
+import { readContentType } from './ContentType.js'
 
 import * as error from 'lib0/error'
 import * as binary from 'lib0/binary'
@@ -32,13 +21,13 @@ import * as array from 'lib0/array'
 /**
  * @todo This should return several items
  *
- * @param {StructStore} store
- * @param {ID} id
+ * @param {import('../utils/StructStore.js').StructStore} store
+ * @param {import('../utils/ID.js').ID} id
  * @return {{item:Item, diff:number}}
  */
 export const followRedone = (store, id) => {
   /**
-   * @type {ID|null}
+   * @type {import('../utils/ID.js').ID|null}
    */
   let nextID = id
   let diff = 0
@@ -68,13 +57,13 @@ export const followRedone = (store, id) => {
 export const keepItem = (item, keep) => {
   while (item !== null && item.keep !== keep) {
     item.keep = keep
-    item = /** @type {YType} */ (item.parent)._item
+    item = /** @type {import('../ytype.js').YType} */ (item.parent)._item
   }
 }
 
 /**
  * Split leftItem into two items
- * @param {Transaction?} transaction
+ * @param {import('../utils/Transaction.js').Transaction?} transaction
  * @param {Item} leftItem
  * @param {number} diff
  * @return {Item}
@@ -115,7 +104,7 @@ export const splitItem = (transaction, leftItem, diff) => {
     transaction._mergeStructs.push(rightItem)
     // update parent._map
     if (rightItem.parentSub !== null && rightItem.right === null) {
-      /** @type {YType} */ (rightItem.parent)._map.set(rightItem.parentSub, rightItem)
+      /** @type {import('../ytype.js').YType} */ (rightItem.parent)._map.set(rightItem.parentSub, rightItem)
     }
   } else {
     rightItem.left = null
@@ -127,7 +116,7 @@ export const splitItem = (transaction, leftItem, diff) => {
 
 /**
  * More generalized version of splitItem. Split leftStruct into two structs
- * @param {Transaction?} transaction
+ * @param {import('../utils/Transaction.js').Transaction?} transaction
  * @param {AbstractStruct} leftStruct
  * @param {number} diff
  * @return {GC|Item}
@@ -146,18 +135,18 @@ export const splitStruct = (transaction, leftStruct, diff) => {
 }
 
 /**
- * @param {Array<StackItem>} stack
- * @param {ID} id
+ * @param {Array<import('../utils/UndoManager.js').StackItem>} stack
+ * @param {import('../utils/ID.js').ID} id
  */
-const isDeletedByUndoStack = (stack, id) => array.some(stack, /** @param {StackItem} s */ s => s.deletes.hasId(id))
+const isDeletedByUndoStack = (stack, id) => array.some(stack, /** @param {import('../utils/UndoManager.js').StackItem} s */ s => s.deletes.hasId(id))
 
 /**
  * Redoes the effect of this operation.
  *
- * @param {Transaction} transaction The Yjs instance.
+ * @param {import('../utils/Transaction.js').Transaction} transaction The Yjs instance.
  * @param {Item} item
  * @param {Set<Item>} redoitems
- * @param {IdSet} itemsToDelete
+ * @param {import('../utils/IdSet.js').IdSet} itemsToDelete
  * @param {boolean} ignoreRemoteMapChanges
  * @param {import('../utils/UndoManager.js').UndoManager} um
  *
@@ -173,7 +162,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
   if (redone !== null) {
     return getItemCleanStart(transaction, redone)
   }
-  let parentItem = /** @type {YType} */ (item.parent)._item
+  let parentItem = /** @type {import('../ytype.js').YType} */ (item.parent)._item
   /**
    * @type {Item|null}
    */
@@ -193,9 +182,9 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
     }
   }
   /**
-   * @type {YType}
+   * @type {import('../ytype.js').YType}
    */
-  const parentType = /** @type {YType} */ (parentItem === null ? item.parent : /** @type {ContentType} */ (parentItem.content).type)
+  const parentType = /** @type {import('../ytype.js').YType} */ (parentItem === null ? item.parent : /** @type {import('./ContentType.js').ContentType} */ (parentItem.content).type)
 
   if (item.parentSub === null) {
     // Is an array item. Insert at the old position
@@ -208,10 +197,10 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
        */
       let leftTrace = left
       // trace redone until parent matches
-      while (leftTrace !== null && /** @type {YType} */ (leftTrace.parent)._item !== parentItem) {
+      while (leftTrace !== null && /** @type {import('../ytype.js').YType} */ (leftTrace.parent)._item !== parentItem) {
         leftTrace = leftTrace.redone === null ? null : getItemCleanStart(transaction, leftTrace.redone)
       }
-      if (leftTrace !== null && /** @type {YType} */ (leftTrace.parent)._item === parentItem) {
+      if (leftTrace !== null && /** @type {import('../ytype.js').YType} */ (leftTrace.parent)._item === parentItem) {
         left = leftTrace
         break
       }
@@ -223,10 +212,10 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
        */
       let rightTrace = right
       // trace redone until parent matches
-      while (rightTrace !== null && /** @type {YType} */ (rightTrace.parent)._item !== parentItem) {
+      while (rightTrace !== null && /** @type {import('../ytype.js').YType} */ (rightTrace.parent)._item !== parentItem) {
         rightTrace = rightTrace.redone === null ? null : getItemCleanStart(transaction, rightTrace.redone)
       }
-      if (rightTrace !== null && /** @type {YType} */ (rightTrace.parent)._item === parentItem) {
+      if (rightTrace !== null && /** @type {import('../ytype.js').YType} */ (rightTrace.parent)._item === parentItem) {
         right = rightTrace
         break
       }
@@ -273,12 +262,12 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
  */
 export class Item extends AbstractStruct {
   /**
-   * @param {ID} id
+   * @param {import('../utils/ID.js').ID} id
    * @param {Item | null} left
-   * @param {ID | null} origin
+   * @param {import('../utils/ID.js').ID | null} origin
    * @param {Item | null} right
-   * @param {ID | null} rightOrigin
-   * @param {YType|ID|string|null} parent Is a type if integrated, is null if it is possible to copy parent from left or right, is ID before integration to search for it, is string if child of top-level-parent
+   * @param {import('../utils/ID.js').ID | null} rightOrigin
+   * @param {import('../ytype.js').YType|import('../utils/ID.js').ID|string|null} parent Is a type if integrated, is null if it is possible to copy parent from left or right, is ID before integration to search for it, is string if child of top-level-parent
    * @param {string | null} parentSub
    * @param {AbstractContent} content
    */
@@ -286,7 +275,7 @@ export class Item extends AbstractStruct {
     super(id, content.getLength())
     /**
      * The item that was originally to the left of this item.
-     * @type {ID | null}
+     * @type {import('../utils/ID.js').ID | null}
      */
     this.origin = origin
     /**
@@ -301,11 +290,11 @@ export class Item extends AbstractStruct {
     this.right = right
     /**
      * The item that was originally to the right of this item.
-     * @type {ID | null}
+     * @type {import('../utils/ID.js').ID | null}
      */
     this.rightOrigin = rightOrigin
     /**
-     * @type {YType|ID|string|null}
+     * @type {import('../ytype.js').YType|import('../utils/ID.js').ID|string|null}
      */
     this.parent = parent
     /**
@@ -319,7 +308,7 @@ export class Item extends AbstractStruct {
     /**
      * If this type's effect is redone this type refers to the type that undid
      * this operation.
-     * @type {ID | null}
+     * @type {import('../utils/ID.js').ID | null}
      */
     this.redone = null
     /**
@@ -389,8 +378,8 @@ export class Item extends AbstractStruct {
   /**
    * Return the creator clientID of the missing op or define missing items and return null.
    *
-   * @param {Transaction} transaction
-   * @param {StructStore} store
+   * @param {import('../utils/Transaction.js').Transaction} transaction
+   * @param {import('../utils/StructStore.js').StructStore} store
    * @return {null | number}
    */
   getMissing (transaction, store) {
@@ -428,7 +417,7 @@ export class Item extends AbstractStruct {
       if (parentItem.constructor === GC) {
         this.parent = null
       } else {
-        this.parent = /** @type {ContentType} */ (parentItem.content).type
+        this.parent = /** @type {import('./ContentType.js').ContentType} */ (parentItem.content).type
       }
     } else if (typeof this.parent === 'string') {
       this.parent = transaction.doc.get(this.parent)
@@ -437,7 +426,7 @@ export class Item extends AbstractStruct {
   }
 
   /**
-   * @param {Transaction} transaction
+   * @param {import('../utils/Transaction.js').Transaction} transaction
    * @param {number} offset
    */
   integrate (transaction, offset) {
@@ -464,12 +453,12 @@ export class Item extends AbstractStruct {
         if (left !== null) {
           o = left.right
         } else if (this.parentSub !== null) {
-          o = /** @type {YType} */ (this.parent)._map.get(this.parentSub) || null
+          o = /** @type {import('../ytype.js').YType} */ (this.parent)._map.get(this.parentSub) || null
           while (o !== null && o.left !== null) {
             o = o.left
           }
         } else {
-          o = /** @type {YType} */ (this.parent)._start
+          o = /** @type {import('../ytype.js').YType} */ (this.parent)._start
         }
         // TODO: use something like DeleteSet here (a tree implementation would be best)
         // @todo use global set definitions
@@ -518,13 +507,13 @@ export class Item extends AbstractStruct {
       } else {
         let r
         if (this.parentSub !== null) {
-          r = /** @type {YType} */ (this.parent)._map.get(this.parentSub) || null
+          r = /** @type {import('../ytype.js').YType} */ (this.parent)._map.get(this.parentSub) || null
           while (r !== null && r.left !== null) {
             r = r.left
           }
         } else {
-          r = /** @type {YType} */ (this.parent)._start
-          ;/** @type {YType} */ (this.parent)._start = this
+          r = /** @type {import('../ytype.js').YType} */ (this.parent)._start
+          ;/** @type {import('../ytype.js').YType} */ (this.parent)._start = this
         }
         this.right = r
       }
@@ -532,7 +521,7 @@ export class Item extends AbstractStruct {
         this.right.left = this
       } else if (this.parentSub !== null) {
         // set as current parent value if right === null and this is parentSub
-        /** @type {YType} */ (this.parent)._map.set(this.parentSub, this)
+        /** @type {import('../ytype.js').YType} */ (this.parent)._map.set(this.parentSub, this)
         if (this.left !== null) {
           // this is the current attribute value of parent. delete right
           this.left.delete(transaction)
@@ -540,14 +529,14 @@ export class Item extends AbstractStruct {
       }
       // adjust length of parent
       if (this.parentSub === null && this.countable && !this.deleted) {
-        /** @type {YType} */ (this.parent)._length += this.length
+        /** @type {import('../ytype.js').YType} */ (this.parent)._length += this.length
       }
       addStructToIdSet(transaction.insertSet, this)
       addStruct(transaction.doc.store, this)
       this.content.integrate(transaction, this)
       // add parent to transaction.changed
-      addChangedTypeToTransaction(transaction, /** @type {YType} */ (this.parent), this.parentSub)
-      if ((/** @type {YType} */ (this.parent)._item !== null && /** @type {YType} */ (this.parent)._item.deleted) || (this.parentSub !== null && this.right !== null)) {
+      addChangedTypeToTransaction(transaction, /** @type {import('../ytype.js').YType} */ (this.parent), this.parentSub)
+      if ((/** @type {import('../ytype.js').YType} */ (this.parent)._item !== null && /** @type {import('../ytype.js').YType} */ (this.parent)._item.deleted) || (this.parentSub !== null && this.right !== null)) {
         // delete if parent is deleted or if this is not the current attribute value of parent
         this.delete(transaction)
       }
@@ -607,7 +596,7 @@ export class Item extends AbstractStruct {
       this.content.constructor === right.content.constructor &&
       this.content.mergeWith(right.content)
     ) {
-      const searchMarker = /** @type {YType} */ (this.parent)._searchMarker
+      const searchMarker = /** @type {import('../ytype.js').YType} */ (this.parent)._searchMarker
       if (searchMarker) {
         searchMarker.forEach(marker => {
           if (marker.p === right) {
@@ -636,11 +625,11 @@ export class Item extends AbstractStruct {
   /**
    * Mark this Item as deleted.
    *
-   * @param {Transaction} transaction
+   * @param {import('../utils/Transaction.js').Transaction} transaction
    */
   delete (transaction) {
     if (!this.deleted) {
-      const parent = /** @type {YType} */ (this.parent)
+      const parent = /** @type {import('../ytype.js').YType} */ (this.parent)
       // adjust the length of parent
       if (this.countable && this.parentSub === null) {
         parent._length -= this.length
@@ -653,7 +642,7 @@ export class Item extends AbstractStruct {
   }
 
   /**
-   * @param {Transaction} tr
+   * @param {import('../utils/Transaction.js').Transaction} tr
    * @param {boolean} parentGCd
    */
   gc (tr, parentGCd) {
@@ -674,7 +663,7 @@ export class Item extends AbstractStruct {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder The encoder to write data to.
+   * @param {import('../utils/UpdateEncoder.js').UpdateEncoderV1 | import('../utils/UpdateEncoder.js').UpdateEncoderV2} encoder The encoder to write data to.
    * @param {number} offset
    * @param {number} offsetEnd
    */
@@ -694,7 +683,7 @@ export class Item extends AbstractStruct {
       encoder.writeRightID(rightOrigin)
     }
     if (origin === null && rightOrigin === null) {
-      const parent = /** @type {YType<any>} */ (this.parent)
+      const parent = /** @type {import('../ytype.js').YType<any>} */ (this.parent)
       if (parent._item !== undefined) {
         const parentItem = parent._item
         if (parentItem === null) {
@@ -725,7 +714,7 @@ export class Item extends AbstractStruct {
 }
 
 /**
- * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @param {import('../utils/UpdateDecoder.js').UpdateDecoderV1 | import('../utils/UpdateDecoder.js').UpdateDecoderV2} decoder
  * @param {number} info
  */
 export const readItemContent = (decoder, info) => contentRefs[info & binary.BITS5](decoder)
@@ -733,7 +722,7 @@ export const readItemContent = (decoder, info) => contentRefs[info & binary.BITS
 /**
  * A lookup map for reading Item content.
  *
- * @type {Array<function(UpdateDecoderV1 | UpdateDecoderV2):AbstractContent>}
+ * @type {Array<function(import('../utils/UpdateDecoder.js').UpdateDecoderV1 | import('../utils/UpdateDecoder.js').UpdateDecoderV2):AbstractContent>}
  */
 export const contentRefs = [
   () => { error.unexpectedCase() }, // GC is not ItemContent
@@ -804,7 +793,7 @@ export class AbstractContent {
   }
 
   /**
-   * @param {Transaction} _transaction
+   * @param {import('../utils/Transaction.js').Transaction} _transaction
    * @param {Item} _item
    */
   integrate (_transaction, _item) {
@@ -812,21 +801,21 @@ export class AbstractContent {
   }
 
   /**
-   * @param {Transaction} _transaction
+   * @param {import('../utils/Transaction.js').Transaction} _transaction
    */
   delete (_transaction) {
     throw error.methodUnimplemented()
   }
 
   /**
-   * @param {Transaction} _transaction
+   * @param {import('../utils/Transaction.js').Transaction} _transaction
    */
   gc (_transaction) {
     throw error.methodUnimplemented()
   }
 
   /**
-   * @param {UpdateEncoderV1 | UpdateEncoderV2} _encoder
+   * @param {import('../utils/UpdateEncoder.js').UpdateEncoderV1 | import('../utils/UpdateEncoder.js').UpdateEncoderV2} _encoder
    * @param {number} _offset
    * @param {number} _offsetEnd
    */

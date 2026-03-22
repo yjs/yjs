@@ -1,14 +1,6 @@
-import {
-  _diffSet,
-  findIndexInIdRanges,
-  findRangeStartInIdRanges,
-  _deleteRangeFromIdSet,
-  IdSetDecoderV1, IdSetDecoderV2,  IdSetEncoderV1, IdSetEncoderV2, IdSet, ID, // eslint-disable-line
-  _insertIntoIdSet,
-  _intersectSets,
-  createIdSet,
-  IdRanges
-} from '../internals.js'
+import { _diffSet, _deleteRangeFromIdSet, _insertIntoIdSet, _intersectSets, createIdSet, IdRanges, IdSet, findIndexInIdRanges, findRangeStartInIdRanges } from './IdSet.js'
+import { IdSetDecoderV2 } from './UpdateDecoder.js'
+import { IdSetEncoderV2 } from './UpdateEncoder.js'
 
 import * as array from 'lib0/array'
 import * as map from 'lib0/map'
@@ -347,7 +339,7 @@ export class IdMap {
   }
 
   /**
-   * @param {ID} id
+   * @param {import('./ID.js').ID} id
    * @return {boolean}
    */
   hasId (id) {
@@ -370,7 +362,7 @@ export class IdMap {
   /**
    * Return attributions for a slice of ids.
    *
-   * @param {ID} id
+   * @param {import('./ID.js').ID} id
    * @param {number} len
    * @return {Array<MaybeAttrRange<Attrs>>}
    */
@@ -463,7 +455,7 @@ export class IdMap {
  * written. Attribute.names are referenced by id. Attributes themselfs are also referenced by id.
  *
  * @template Attr
- * @param {IdSetEncoderV1 | IdSetEncoderV2} encoder
+ * @param {import('./UpdateEncoder.js').IdSetEncoderV1 | IdSetEncoderV2} encoder
  * @param {IdMap<Attr>} idmap
  *
  * @private
@@ -534,7 +526,7 @@ export const encodeIdMap = idmap => {
 }
 
 /**
- * @param {IdSetDecoderV1 | IdSetDecoderV2} decoder
+ * @param {import('./UpdateDecoder.js').IdSetDecoderV1 | IdSetDecoderV2} decoder
  * @return {IdMap<any>}
  *
  * @private
@@ -619,7 +611,7 @@ export const createIdMap = () => new IdMap()
  * @param {IdMap<T>} dest
  * @param {IdMap<T>} src
  */
-export const insertIntoIdMap = _insertIntoIdSet
+export const insertIntoIdMap = (dest, src) => _insertIntoIdSet(dest, src)
 
 /**
  * Remove all ranges from `exclude` from `ds`. The result is a fresh IdMap containing all ranges from `idSet` that are not
@@ -637,7 +629,13 @@ export const diffIdMap = (set, exclude) => {
   return diffed
 }
 
-export const intersectMaps = _intersectSets
+/**
+ * @template {IdSet | IdMap<any>} SetA
+ * @template {IdSet | IdMap<any>} SetB
+ * @param {SetA} setA
+ * @param {SetB} setB
+ */
+export const intersectMaps = (setA, setB) => _intersectSets(setA, setB)
 
 /**
  * Filter attributes in an IdMap based on a predicate function.

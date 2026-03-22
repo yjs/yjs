@@ -2,27 +2,25 @@
  * @module Y
  */
 
-import {
-  StructStore,
-  transact,
-  applyUpdate,
-  ContentDoc, Item, Transaction, // eslint-disable-line
-  encodeStateAsUpdate
-} from '../internals.js'
+import { StructStore } from './StructStore.js'
+import { transact } from './Transaction.js'
+import { applyUpdate, encodeStateAsUpdate } from './encoding.js'
 
 import { YType } from '../ytype.js'
 import { ObservableV2 } from 'lib0/observable'
+
 import * as random from 'lib0/random'
 import * as map from 'lib0/map'
 import * as array from 'lib0/array'
 import * as promise from 'lib0/promise'
 
-export const generateNewClientId = random.uint32
+import { generateNewClientId } from './ID.js'
+export { generateNewClientId }
 
 /**
  * @typedef {Object} DocOpts
  * @property {boolean} [DocOpts.gc=true] Disable garbage collection (default: gc=true)
- * @property {function(Item):boolean} [DocOpts.gcFilter] Will be called before an Item is garbage collected. Return false to keep the Item.
+ * @property {function(import('../structs/Item.js').Item):boolean} [DocOpts.gcFilter] Will be called before an Item is garbage collected. Return false to keep the Item.
  * @property {string} [DocOpts.guid] Define a globally unique identifier for this document
  * @property {string | null} [DocOpts.collectionid] Associate this document with a collection. This only plays a role if your provider has a concept of collection.
  * @property {any} [DocOpts.meta] Any kind of meta information you want to associate with this document. If this is a subdocument, remote peers will store the meta information as well.
@@ -38,15 +36,15 @@ export const generateNewClientId = random.uint32
  * @property {function(Doc):void} DocEvents.destroy
  * @property {function(Doc):void} DocEvents.load
  * @property {function(boolean, Doc):void} DocEvents.sync
- * @property {function(Uint8Array<ArrayBuffer>, any, Doc, Transaction):void} DocEvents.update
- * @property {function(Uint8Array<ArrayBuffer>, any, Doc, Transaction):void} DocEvents.updateV2
+ * @property {function(Uint8Array<ArrayBuffer>, any, Doc, import('./Transaction.js').Transaction):void} DocEvents.update
+ * @property {function(Uint8Array<ArrayBuffer>, any, Doc, import('./Transaction.js').Transaction):void} DocEvents.updateV2
  * @property {function(Doc):void} DocEvents.beforeAllTransactions
- * @property {function(Transaction, Doc):void} DocEvents.beforeTransaction
- * @property {function(Transaction, Doc):void} DocEvents.beforeObserverCalls
- * @property {function(Transaction, Doc):void} DocEvents.afterTransaction
- * @property {function(Transaction, Doc):void} DocEvents.afterTransactionCleanup
- * @property {function(Doc, Array<Transaction>):void} DocEvents.afterAllTransactions
- * @property {function({ loaded: Set<Doc>, added: Set<Doc>, removed: Set<Doc> }, Doc, Transaction):void} DocEvents.subdocs
+ * @property {function(import('./Transaction.js').Transaction, Doc):void} DocEvents.beforeTransaction
+ * @property {function(import('./Transaction.js').Transaction, Doc):void} DocEvents.beforeObserverCalls
+ * @property {function(import('./Transaction.js').Transaction, Doc):void} DocEvents.afterTransaction
+ * @property {function(import('./Transaction.js').Transaction, Doc):void} DocEvents.afterTransactionCleanup
+ * @property {function(Doc, Array<import('./Transaction.js').Transaction>):void} DocEvents.afterAllTransactions
+ * @property {function({ loaded: Set<Doc>, added: Set<Doc>, removed: Set<Doc> }, Doc, import('./Transaction.js').Transaction):void} DocEvents.subdocs
  */
 
 /**
@@ -72,11 +70,11 @@ export class Doc extends ObservableV2 {
     this.share = new Map()
     this.store = new StructStore()
     /**
-     * @type {Transaction | null}
+     * @type {import('./Transaction.js').Transaction | null}
      */
     this._transaction = null
     /**
-     * @type {Array<Transaction>}
+     * @type {Array<import('./Transaction.js').Transaction>}
      */
     this._transactionCleanups = []
     /**
@@ -85,7 +83,7 @@ export class Doc extends ObservableV2 {
     this.subdocs = new Set()
     /**
      * If this document is a subdocument - a document integrated into another document - then _item is defined.
-     * @type {Item?}
+     * @type {import('../structs/Item.js').Item?}
      */
     this._item = null
     this.shouldLoad = shouldLoad
@@ -177,7 +175,7 @@ export class Doc extends ObservableV2 {
    * other peers.
    *
    * @template T
-   * @param {function(Transaction):T} f The function that should be executed as a transaction
+   * @param {function(import('./Transaction.js').Transaction):T} f The function that should be executed as a transaction
    * @param {any} [origin] Origin of who started the transaction. Will be stored on transaction.origin
    * @return T
    *
@@ -237,7 +235,7 @@ export class Doc extends ObservableV2 {
     const item = this._item
     if (item !== null) {
       this._item = null
-      const content = /** @type {ContentDoc} */ (item.content)
+      const content = /** @type {import('../structs/ContentDoc.js').ContentDoc} */ (item.content)
       content.doc = new Doc({ guid: this.guid, ...content.opts, shouldLoad: false })
       content.doc._item = item
       transact(/** @type {any} */ (item).parent.doc, transaction => {

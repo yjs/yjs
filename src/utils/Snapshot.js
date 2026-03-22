@@ -1,23 +1,11 @@
-import {
-  createDeleteSetFromStructStore,
-  getStateVector,
-  getItemCleanStart,
-  iterateStructsByIdSet,
-  writeIdSet,
-  writeStateVector,
-  readIdSet,
-  readStateVector,
-  createIdSet,
-  createID,
-  getState,
-  findIndexSS,
-  UpdateEncoderV2,
-  applyUpdateV2,
-  LazyStructReader,
-  equalIdSets,
-  UpdateDecoderV1, UpdateDecoderV2, IdSetEncoderV1, IdSetEncoderV2, IdSetDecoderV1, IdSetDecoderV2, Transaction, Doc, IdSet, Item, // eslint-disable-line
-  mergeIdSets
-} from '../internals.js'
+import { createDeleteSetFromStructStore, iterateStructsByIdSet, writeIdSet, readIdSet, createIdSet, equalIdSets, mergeIdSets } from './IdSet.js'
+import { getStateVector, getState, findIndexSS, getItemCleanStart } from './StructStore.js'
+import { writeStateVector, readStateVector, applyUpdateV2 } from './encoding.js'
+import { createID } from './ID.js'
+import { UpdateEncoderV2, IdSetEncoderV1, IdSetEncoderV2 } from './UpdateEncoder.js'
+import { UpdateDecoderV1, UpdateDecoderV2, IdSetDecoderV1, IdSetDecoderV2 } from './UpdateDecoder.js'
+import { LazyStructReader } from './updates.js'
+import { Doc } from './Doc.js'
 
 import * as map from 'lib0/map'
 import * as set from 'lib0/set'
@@ -26,12 +14,12 @@ import * as encoding from 'lib0/encoding'
 
 export class Snapshot {
   /**
-   * @param {IdSet} ds
+   * @param {import('./IdSet.js').IdSet} ds
    * @param {Map<number,number>} sv state map
    */
   constructor (ds, sv) {
     /**
-     * @type {IdSet}
+     * @type {import('./IdSet.js').IdSet}
      */
     this.ds = ds
     /**
@@ -94,13 +82,26 @@ export const decodeSnapshotV2 = (buf, decoder = new IdSetDecoderV2(decoding.crea
 export const decodeSnapshot = buf => decodeSnapshotV2(buf, new IdSetDecoderV1(decoding.createDecoder(buf)))
 
 /**
- * @param {IdSet} ds
+ * @param {import('./IdSet.js').IdSet} ds
  * @param {Map<number,number>} sm
  * @return {Snapshot}
  */
 export const createSnapshot = (ds, sm) => new Snapshot(ds, sm)
 
-export const emptySnapshot = createSnapshot(createIdSet(), new Map())
+/**
+ * @type {Snapshot}
+ */
+let _emptySnapshot
+export const getEmptySnapshot = () => {
+  if (!_emptySnapshot) _emptySnapshot = createSnapshot(createIdSet(), new Map())
+  return _emptySnapshot
+}
+
+// @ts-ignore - lazy singleton, initialized on first property access
+export const emptySnapshot = new Proxy(/** @type {Snapshot} */ ({}), {
+  get (_, prop) { return /** @type {any} */ (getEmptySnapshot())[prop] },
+  has (_, prop) { return prop in getEmptySnapshot() }
+})
 
 /**
  * @param {Doc} doc
@@ -109,7 +110,7 @@ export const emptySnapshot = createSnapshot(createIdSet(), new Map())
 export const snapshot = doc => createSnapshot(createDeleteSetFromStructStore(doc.store), getStateVector(doc.store))
 
 /**
- * @param {Item} item
+ * @param {import('../structs/Item.js').Item} item
  * @param {Snapshot|undefined} snapshot
  *
  * @protected
@@ -120,7 +121,7 @@ export const isVisible = (item, snapshot) => snapshot === undefined
   : snapshot.sv.has(item.id.client) && (snapshot.sv.get(item.id.client) || 0) > item.id.clock && !snapshot.ds.hasId(item.id)
 
 /**
- * @param {Transaction} transaction
+ * @param {import('./Transaction.js').Transaction} transaction
  * @param {Snapshot} snapshot
  */
 export const splitSnapshotAffectedStructs = (transaction, snapshot) => {

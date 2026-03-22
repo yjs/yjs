@@ -1,13 +1,8 @@
-import {
-  GC,
-  splitItem,
-  createDeleteSetFromStructStore,
-  createIdSet,
-  Transaction, ID, Item, // eslint-disable-line
-  Skip,
-  createID,
-  splitStruct
-} from '../internals.js'
+import { GC } from '../structs/GC.js'
+import { splitItem, splitStruct } from '../structs/Item.js'
+import { Skip } from '../structs/Skip.js'
+import { createDeleteSetFromStructStore, createIdSet } from './IdSet.js'
+import { createID } from './ID.js'
 
 import * as math from 'lib0/math'
 import * as error from 'lib0/error'
@@ -15,7 +10,7 @@ import * as error from 'lib0/error'
 export class StructStore {
   constructor () {
     /**
-     * @type {Map<number,Array<GC|Item>>}
+     * @type {Map<number,Array<GC|import('../structs/Item.js').Item>>}
      */
     this.clients = new Map()
     // this.ds = new IdSet()
@@ -94,7 +89,7 @@ export const integrityCheck = store => {
 
 /**
  * @param {StructStore} store
- * @param {GC|Item} struct
+ * @param {GC|import('../structs/Item.js').Item} struct
  *
  * @private
  * @function
@@ -128,7 +123,7 @@ export const addStruct = (store, struct) => {
 
 /**
  * Perform a binary search on a sorted array
- * @param {Array<Item|GC>} structs
+ * @param {Array<import('../structs/Item.js').Item|GC>} structs
  * @param {number} clock
  * @return {number}
  *
@@ -169,15 +164,15 @@ export const findIndexSS = (structs, clock) => {
  * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
  *
  * @param {StructStore} store
- * @param {ID} id
- * @return {GC|Item}
+ * @param {import('./ID.js').ID} id
+ * @return {GC|import('../structs/Item.js').Item}
  *
  * @private
  * @function
  */
 export const find = (store, id) => {
   /**
-   * @type {Array<GC|Item>}
+   * @type {Array<GC|import('../structs/Item.js').Item>}
    */
   // @ts-ignore
   const structs = store.clients.get(id.client)
@@ -189,11 +184,11 @@ export const find = (store, id) => {
  * @private
  * @function
  */
-export const getItem = /** @type {function(StructStore,ID):Item} */ (find)
+export const getItem = /** @type {function(StructStore,import('./ID.js').ID):import('../structs/Item.js').Item} */ (find)
 
 /**
- * @param {Transaction?} transaction
- * @param {Array<Item|GC>} structs
+ * @param {import('./Transaction.js').Transaction?} transaction
+ * @param {Array<import('../structs/Item.js').Item|GC>} structs
  * @param {number} clock
  */
 export const findIndexCleanStart = (transaction, structs, clock) => {
@@ -209,32 +204,32 @@ export const findIndexCleanStart = (transaction, structs, clock) => {
 /**
  * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
  *
- * @param {Transaction} transaction
- * @param {ID} id
- * @return {Item}
+ * @param {import('./Transaction.js').Transaction} transaction
+ * @param {import('./ID.js').ID} id
+ * @return {import('../structs/Item.js').Item}
  *
  * @private
  * @function
  */
 export const getItemCleanStart = (transaction, id) => {
-  const structs = /** @type {Array<Item>} */ (transaction.doc.store.clients.get(id.client))
+  const structs = /** @type {Array<import('../structs/Item.js').Item>} */ (transaction.doc.store.clients.get(id.client))
   return structs[findIndexCleanStart(transaction, structs, id.clock)]
 }
 
 /**
  * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
  *
- * @param {Transaction} transaction
+ * @param {import('./Transaction.js').Transaction} transaction
  * @param {StructStore} store
- * @param {ID} id
- * @return {Item}
+ * @param {import('./ID.js').ID} id
+ * @return {import('../structs/Item.js').Item}
  *
  * @private
  * @function
  */
 export const getItemCleanEnd = (transaction, store, id) => {
   /**
-   * @type {Array<Item>}
+   * @type {Array<import('../structs/Item.js').Item>}
    */
   // @ts-ignore
   const structs = store.clients.get(id.client)
@@ -248,15 +243,15 @@ export const getItemCleanEnd = (transaction, store, id) => {
 
 /**
  * Replace `item` with `newitem` in store
- * @param {Transaction} tr
- * @param {GC|Item} struct
- * @param {GC|Item} newStruct
+ * @param {import('./Transaction.js').Transaction} tr
+ * @param {GC|import('../structs/Item.js').Item} struct
+ * @param {GC|import('../structs/Item.js').Item} newStruct
  *
  * @private
  * @function
  */
 export const replaceStruct = (tr, struct, newStruct) => {
-  const structs = /** @type {Array<GC|Item>} */ (tr.doc.store.clients.get(struct.id.client))
+  const structs = /** @type {Array<GC|import('../structs/Item.js').Item>} */ (tr.doc.store.clients.get(struct.id.client))
   structs[findIndexSS(structs, struct.id.clock)] = newStruct
   tr._mergeStructs.push(newStruct)
 }
@@ -264,11 +259,11 @@ export const replaceStruct = (tr, struct, newStruct) => {
 /**
  * Iterate over a range of structs
  *
- * @param {Transaction} transaction
- * @param {Array<Item|GC>} structs
+ * @param {import('./Transaction.js').Transaction} transaction
+ * @param {Array<import('../structs/Item.js').Item|GC>} structs
  * @param {number} clockStart Inclusive start
  * @param {number} len
- * @param {function(GC|Item):void} f
+ * @param {function(GC|import('../structs/Item.js').Item):void} f
  *
  * @function
  */

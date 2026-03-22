@@ -1,7 +1,3 @@
-import {
-  UpdateDecoderV1, UpdateDecoderV2, UpdateEncoderV1, UpdateEncoderV2, Transaction, Item, StructStore // eslint-disable-line
-} from '../internals.js'
-
 /**
  * @private
  */
@@ -75,20 +71,20 @@ export class ContentString {
   }
 
   /**
-   * @param {Transaction} transaction
-   * @param {Item} item
+   * @param {import('../utils/Transaction.js').Transaction} transaction
+   * @param {import('./Item.js').Item} item
    */
   integrate (transaction, item) {}
   /**
-   * @param {Transaction} transaction
+   * @param {import('../utils/Transaction.js').Transaction} transaction
    */
   delete (transaction) {}
   /**
-   * @param {Transaction} _tr
+   * @param {import('../utils/Transaction.js').Transaction} _tr
    */
   gc (_tr) {}
   /**
-   * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
+   * @param {import('../utils/UpdateEncoder.js').UpdateEncoderV1 | import('../utils/UpdateEncoder.js').UpdateEncoderV2} encoder
    * @param {number} offset
    * @param {number} offsetEnd
    */
@@ -107,7 +103,7 @@ export class ContentString {
 /**
  * @private
  *
- * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @param {import('../utils/UpdateDecoder.js').UpdateDecoderV1 | import('../utils/UpdateDecoder.js').UpdateDecoderV2} decoder
  * @return {ContentString}
  */
 export const readContentString = decoder => new ContentString(decoder.readString())

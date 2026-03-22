@@ -1,18 +1,14 @@
-import {
-  getState,
-  writeStructsFromTransaction,
-  writeIdSet,
-  getStateVector,
-  findIndexSS,
-  callEventHandlerListeners,
-  createIdSet,
-  Item,
-  generateNewClientId,
-  createID,
-  iterateStructsByIdSet,
-  ContentFormat,
-  IdSet, UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractStruct, YEvent, Doc // eslint-disable-line
-} from '../internals.js'
+import { getState, getStateVector, findIndexSS } from './StructStore.js'
+import { writeStructsFromTransaction } from './encoding.js'
+import { writeIdSet, createIdSet, iterateStructsByIdSet } from './IdSet.js'
+import { callEventHandlerListeners } from './EventHandler.js'
+import { Item } from '../structs/Item.js'
+import { generateNewClientId } from './ID.js'
+import { createID } from './ID.js'
+import { ContentFormat } from '../structs/ContentFormat.js'
+import { UpdateEncoderV1, UpdateEncoderV2 } from './UpdateEncoder.js'
+import { GC } from '../structs/GC.js'
+import { YEvent } from './YEvent.js'
 
 import { YType } from '../ytype.js' // eslint-disable-line
 import * as error from 'lib0/error'
@@ -49,14 +45,14 @@ import { callAll } from 'lib0/function'
  */
 export class Transaction {
   /**
-   * @param {Doc} doc
+   * @param {import('./Doc.js').Doc} doc
    * @param {any} origin
    * @param {boolean} local
    */
   constructor (doc, origin, local) {
     /**
      * The Yjs instance.
-     * @type {Doc}
+     * @type {import('./Doc.js').Doc}
      */
     this.doc = doc
     /**
@@ -96,7 +92,7 @@ export class Transaction {
      */
     this.changedParentTypes = new Map()
     /**
-     * @type {Array<AbstractStruct>}
+     * @type {Array<import('../structs/AbstractStruct.js').AbstractStruct>}
      */
     this._mergeStructs = []
     /**
@@ -114,15 +110,15 @@ export class Transaction {
      */
     this.local = local
     /**
-     * @type {Set<Doc>}
+     * @type {Set<import('./Doc.js').Doc>}
      */
     this.subdocsAdded = new Set()
     /**
-     * @type {Set<Doc>}
+     * @type {Set<import('./Doc.js').Doc>}
      */
     this.subdocsRemoved = new Set()
     /**
-     * @type {Set<Doc>}
+     * @type {Set<import('./Doc.js').Doc>}
      */
     this.subdocsLoaded = new Set()
     /**
@@ -211,7 +207,7 @@ export const addChangedTypeToTransaction = (transaction, type, parentSub) => {
 }
 
 /**
- * @param {Array<AbstractStruct>} structs
+ * @param {Array<import('../structs/AbstractStruct.js').AbstractStruct>} structs
  * @param {number} pos
  * @return {number} # of merged structs
  */
@@ -240,7 +236,7 @@ const tryToMergeWithLefts = (structs, pos) => {
 
 /**
  * @param {Transaction} tr
- * @param {IdSet} ds
+ * @param {import('./IdSet.js').IdSet} ds
  * @param {function(Item):boolean} gcFilter
  */
 const tryGcDeleteSet = (tr, ds, gcFilter) => {
@@ -268,8 +264,8 @@ const tryGcDeleteSet = (tr, ds, gcFilter) => {
 }
 
 /**
- * @param {IdSet} ds
- * @param {StructStore} store
+ * @param {import('./IdSet.js').IdSet} ds
+ * @param {import('./StructStore.js').StructStore} store
  */
 const tryMerge = (ds, store) => {
   // try to merge deleted / gc'd items
@@ -294,7 +290,7 @@ const tryMerge = (ds, store) => {
 
 /**
  * @param {Transaction} tr
- * @param {IdSet} idset
+ * @param {import('./IdSet.js').IdSet} idset
  * @param {function(Item):boolean} gcFilter
  */
 export const tryGc = (tr, idset, gcFilter) => {
@@ -425,7 +421,7 @@ export const cleanupFormattingGap = (transaction, start, curr, startAttributes, 
 export const cleanupYTextFormatting = type => {
   if (!type.doc?.cleanupFormatting) return 0
   let res = 0
-  transact(/** @type {Doc} */ (type.doc), transaction => {
+  transact(/** @type {import('./Doc.js').Doc} */ (type.doc), transaction => {
     let start = /** @type {Item} */ (type._start)
     let end = type._start
     let startAttributes = map.create()
@@ -625,7 +621,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
  * Implements the functionality of `y.transact(()=>{..})`
  *
  * @template T
- * @param {Doc} doc
+ * @param {import('./Doc.js').Doc} doc
  * @param {function(Transaction):T} f
  * @param {any} [origin=true]
  * @return {T}
