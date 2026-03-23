@@ -143,6 +143,8 @@ export class AbstractAttributionManager extends ObservableV2 {
   }
 }
 
+export const $attributionManager = AbstractAttributionManager.prototype.$type = s.$type('y:am', AbstractAttributionManager)
+
 /**
  * @implements AbstractAttributionManager
  *
@@ -158,6 +160,8 @@ export class TwosetAttributionManager extends ObservableV2 {
     this.inserts = inserts
     this.deletes = deletes
   }
+
+  get $type () { return $attributionManager }
 
   /**
    * @param {Array<AttributedContent<any>>} contents - where to write the result
@@ -204,6 +208,8 @@ export class TwosetAttributionManager extends ObservableV2 {
  * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
  */
 export class NoAttributionsManager extends ObservableV2 {
+  get $type () { return $attributionManager }
+
   /**
    * @param {Array<AttributedContent<any>>} contents - where to write the result
    * @param {number} _client
@@ -449,6 +455,8 @@ export class DiffAttributionManager extends ObservableV2 {
     prevDoc.on('destroy', this._destroyHandler)
   }
 
+  get $type () { return $attributionManager }
+
   destroy () {
     super.destroy()
     this._nextDoc.off('destroy', this._destroyHandler)
@@ -601,6 +609,8 @@ export class SnapshotAttributionManager extends ObservableV2 {
     })
     this.attrs = mergeIdMaps([diffIdMap(inserts, prevSnapshot.ds), deletes])
   }
+
+  get $type () { return $attributionManager }
 
   /**
    * @param {Array<AttributedContent<any>>} contents - where to write the result

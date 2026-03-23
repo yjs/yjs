@@ -232,7 +232,8 @@ export const testContainsUpdate = _tc => {
  * @param {t.TestCase} _tc
  */
 export const testContainsUpdate2 = _tc => {
-  const local = new Y.Doc(), remote = new Y.Doc()
+  const local = new Y.Doc()
+  const remote = new Y.Doc()
   local.get('t').insert(0, 'abcdefghij')
   local.get('t').delete(0, 3)
   Y.applyUpdate(remote, Y.encodeStateAsUpdate(local))

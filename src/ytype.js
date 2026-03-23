@@ -23,7 +23,6 @@ import {
 } from './internals.js'
 
 import * as contentType from './structs/ContentType.js'
-
 import * as traits from 'lib0/traits'
 import * as delta from 'lib0/delta'
 import * as array from 'lib0/array'
@@ -1436,6 +1435,14 @@ export class YType {
     }
   }
 }
+
+/**
+ * @template {import('lib0/delta').ReadableDeltaConf} DConf
+ * @param {DConf} _dconf
+ * @return {s.Schema<YType<import('lib0/delta').ReadDeltaConf<DConf>>>}
+ */
+export const $ytype = _dconf => s.$instanceOf(YType)
+export const $ytypeAny = s.$instanceOf(YType)
 
 /**
  * @param {import('./utils/UpdateDecoder.js').UpdateDecoderV1 | import('./utils/UpdateDecoder.js').UpdateDecoderV2} decoder
