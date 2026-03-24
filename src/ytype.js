@@ -1046,11 +1046,10 @@ export class YType {
           } else if (delta.$deleteOp.check(op)) {
             deleteText(transaction, currPos, op.delete)
           } else if (delta.$modifyOp.check(op)) {
-            if (currPos.right) {
-              /** @type {ContentType} */ (currPos.right.content).type.applyDelta(op.value)
-            } else {
-              error.unexpectedCase()
-            }
+            let item = currPos.right
+            while (item?.deleted && !item.countable) { item = item.next }
+            if (item == null || item.content.constructor !== ContentType) { error.unexpectedCase() }
+            /** @type {ContentType} */ (item.content).type.applyDelta(op.value)
             currPos.formatText(transaction, /** @type {any} */ (this), 1, op.format || {})
           } else {
             error.unexpectedCase()
