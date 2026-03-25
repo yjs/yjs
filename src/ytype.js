@@ -1271,7 +1271,9 @@ export class YType {
     const children = []
     for (const child of dcontent.children) {
       if (delta.$insertOp.check(child)) {
-        children.push(...child.insert)
+        for (let i = 0; i < child.insert.length; i++) {
+          children.push(child.insert[i])
+        }
       } else if (delta.$textOp.check(child)) {
         children.push(child.insert)
       }

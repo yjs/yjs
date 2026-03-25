@@ -196,7 +196,9 @@ export class BlockSet {
           if (gapSize > 0) {
             leftRanges.push(new Skip(new ID(clientid, lastBlockLeft.id.clock + lastBlockLeft.length), gapSize))
           }
-          leftRanges.push(...rightRanges)
+          for (let i = 0; i < rightRanges.length; i++) {
+            leftRanges.push(rightRanges[i])
+          }
           ranges.refs = leftRanges
         } else {
           // requires more computation because we need to filter duplicates
